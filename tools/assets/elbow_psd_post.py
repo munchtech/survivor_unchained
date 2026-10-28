@@ -18,6 +18,11 @@ masses below the crease, the crease itself (a short soft groove on the bend's bi
 olecranon's point and the epicondyles. The move wanted there is carried back to bind space through the inverse of each
 point's blended skin matrix, so at the sample it is exactly that target and between samples it rides with the skin.
 
+r3 (Body 20, after judge 2's "a large rounded corner like a bent hose"): no olecranon padding; the outer corner CUT
+back as bone (cut, CUT_Z, CUT_A) with a narrow olecranon point left proud (pt), the forearm's outer mass reaching the
+side outline (br, BR_ANG), the biceps' tendon end eased in above the crease (tcut); the log gives each sample's corner
+seen side-on (corner(): apex move, point radius; EPSD_PROF=1 the profile).
+
 HerJoints drives them as in-betweens of the flexion (helpers.SPEC "correctives", keys [lo, at, hi]: 0 at lo, whole at
 `at`, 0 again at hi; the last holds past 135), linear between: 0 at flexion 0 and below, so a straight arm is
 bit-identical. elbow_point_{s} is KEPT (its drive and its garment copies as before); these shapes are authored on top
@@ -68,11 +73,27 @@ FADE = 0.04
 #   ole   the olecranon: the elbow's back point brought to this PROMINENCE (mm past the triceps' back line carried on,
 #         as tools/anim/elbow_sweep.py measures it), whatever the body gives (a function of the input body), and at
 #         least ole_min tall (the corner's round tightened to a point: the measure alone left a round corner);
+#   (r3, Body 20, after judge 2: r2's olecranon padding read as "a large rounded corner like a bent hose"; the read is
+#   the OUTLINE, ~0.9 px per mm at the town close-up)
+#   cut   the outer corner cut back as bone (mm, along the posed normal, round the back to CUT_A): whole from rest z
+#         CUT_Z[1]..CUT_Z[2] about the corner's apex, fading to none at CUT_Z[0] / CUT_Z[3] (the triceps tendon's flat
+#         above, the ulna's border below);
+#   pt    the olecranon left standing pt mm proud of the cut (pt_len mm along, pt_ang deg round: a point ~15-20 mm wide);
+#   tcut  the biceps' tendon end eased in above the crease (the narrow point's front);
+#   ole   0: no prominence target (r2's ole/ole_min pushed the corner out, a rounder hose).
 SCULPT = {
-    45.0: dict(fill=1.0, bic=3.0, bic_lo=1.5, fs=3.0, br=2.5, flex=1.5, epi=1.8, flat=0.5, ole=6.5, ole_min=2.5),
-    90.0: dict(fill=1.5, bic=5.5, bic_lo=3.0, fs=6.0, br=4.0, flex=3.0, epi=3.0, flat=2.0, ole=6.0, ole_min=7.0),
-    135.0: dict(fill=1.5, bic=5.5, bic_lo=0.0, fs=4.0, br=4.0, flex=2.5, epi=3.0, flat=2.0, ole=6.0, ole_min=7.0),
+    45.0: dict(fill=1.0, bic=2.5, bic_lo=0.0, fs=3.0, br=3.5, flex=2.0, epi=1.8, flat=0.0, ole=0.0, ole_min=0.0,
+               cut=3.0, tcut=1.0, pt=2.0, pt_len=9.5, pt_ang=26.0),
+    90.0: dict(fill=2.5, bic=3.5, bic_lo=0.0, fs=3.0, br=7.5, flex=5.0, epi=3.0, flat=0.0, ole=0.0, ole_min=0.0,
+               cut=8.0, tcut=3.0, pt=4.0, pt_len=9.5, pt_ang=26.0),
+    135.0: dict(fill=2.5, bic=3.5, bic_lo=0.0, fs=2.5, br=7.5, flex=4.5, epi=3.0, flat=0.0, ole=0.0, ole_min=0.0,
+                cut=7.0, tcut=3.0, pt=4.0, pt_len=9.5, pt_ang=26.0),
 }
+CUT_Z = (-95.0, -40.0, 18.0, 55.0)      # rest mm about the apex: the cut's fade-in, whole, whole, fade-out
+CUT_A = (65.0, 110.0, 50.0, 80.0)      # deg from the back: the cut whole within, none past (the anconeus' hollow
+#                                         between the olecranon and the lateral epicondyle cut too); above the joint on
+#                                         the outer side the last two
+BR_ANG = (80.0, 0.6, 45.0)              # the forearm's outer swell round the arm: centre at z 0, its turn back per mm, half-width at z 0
 if _E("EPSD_SCULPT"):
     for k, v in json.loads(_E("EPSD_SCULPT")).items():
         SCULPT[float(k)].update(v)
@@ -191,6 +212,31 @@ def prominence(Y, sel, sh, el):
     return float(np.nanmax(tip[:, 1] - np.polyval(cf, tip[:, 0])))
 
 
+def corner(Y, sel, sh, el, wr):
+    """The bent elbow's outer corner seen side-on (along the hinge, the arm's points within 25 mm of the bend plane):
+    the back outline's height along the outward bisector per 2 mm across it (x, mm: - toward the shoulder), its apex
+    (mm) and the point's radius (mm; a parabola's at its vertex over the apex +-8 mm)."""
+    u, v = (sh - el) / np.linalg.norm(sh - el), (wr - el) / np.linalg.norm(wr - el)
+    o = -(u + v) / np.linalg.norm(u + v)
+    hh = np.cross(u, v) / np.linalg.norm(np.cross(u, v))
+    e2 = np.cross(hh, o)
+    e2 = e2 if e2 @ u < 0 else -e2
+    rel = Y[sel] - el
+    k = np.abs(rel @ hh) < 0.025
+    x, y = -(rel[k] @ e2) * 1000, (rel[k] @ o) * 1000
+    prof = {}
+    for x0 in range(-60, 61, 2):
+        m = np.abs(x - x0) < 1.0
+        if m.sum() > 2:
+            prof[x0] = float(y[m].max())
+    xs = np.array(sorted(prof))
+    ys = np.array([prof[q] for q in xs])
+    i = int(np.argmax(ys))
+    m = np.abs(xs - xs[i]) <= 8
+    cf = np.polyfit(xs[m], ys[m], 2)
+    return float(ys[i]), float(1 / max(2 * abs(cf[0]), 1e-6)) if cf[0] < 0 else float("inf"), prof
+
+
 def author(G, s, log=print):
     U, F, J, W, wid = skin_union(G)
     rig = Rig(G)
@@ -242,7 +288,8 @@ def author(G, s, log=print):
         shrink = ((1 - bf) * (r - ru) + bf * (r2 - rf)) * 1000
         sides = np.clip(_bw(_wrap(ang - 95) / 85) + 0.8 * _bw(_wrap(ang + 100) / 70), 0, 1)
         zone = _ss((zm + 70) / 25) * (1 - _ss((zm - 15) / 30))
-        fill = (np.clip(shrink, 0, 12) + c["fill"] * _bw(_wrap(ang - 95) / 70)) * sides * zone
+        # (r3: the outer extra at the joint only, so it doesn't fill the narrow point above it)
+        fill = (np.clip(shrink, 0, 12) + c["fill"] * _bw(_wrap(ang - 95) / 50) * _bw(zm / 40)) * sides * zone
         fill = _smooth(fill[:, None], A, deg, 10, grow)[:, 0]
         # the masses
         bic = (c["bic"] * _bw((zm + (1 - BIC_T) * L * 1000) / 80) * _bw(_wrap(ang + 5) / 70)
@@ -251,16 +298,30 @@ def author(G, s, log=print):
         # outer side, lower on the inner (the medial epicondyle's line)
         top = -5.0 - 15.0 * np.sin(np.radians(ang))
         fs = c["fs"] * _bw((zm - 40) / np.where(zm < 40, 40 - top + 5, 110)) * _bw(_wrap(ang - 10) / 85) * (zm > top - 5)
-        a0 = np.clip(45 - 0.3 * zm, 5, 60)
-        br = c["br"] * _bw((zm - 30) / np.where(zm < 30, 65, 110)) * _bw(_wrap(ang - a0) / 70)
+        # (at the joint on the outer side, over the supracondylar ridge; below, spreading back over the extensors: the
+        # back-outer corner between the olecranon and the lateral epicondyle is the anconeus' flat, the cut's)
+        a0 = np.clip(BR_ANG[0] + BR_ANG[1] * zm, 75, 110)
+        hw = np.clip(BR_ANG[2] + 0.75 * (zm - 10), BR_ANG[2], 80)
+        br = c["br"] * _bw((zm - 40) / np.where(zm < 40, 72, 110)) * _bw(_wrap(ang - a0) / hw)
         fx = c["flex"] * _bw((zm - 35) / np.where(zm < 35, 45, 100)) * _bw(_wrap(ang + 45) / 60)
-        epi = c["epi"] * _bw((zm + 8) / 22) * (_bw(_wrap(ang - 100) / 35) + 0.8 * _bw(_wrap(ang + 100) / 35))
+        epi = c["epi"] * _bw((zm + 8) / 22) * (_bw(_wrap(ang - 95) / 25) + 0.8 * _bw(_wrap(ang + 100) / 30))
         # the outer corner: where the bend's outside turns (the rest z landing on its bisector) the olecranon's point;
         # either side of it the triceps' tendon (above) and the ulna's border (below) eased in, so the round reads as a
         # point between two flat planes, not a pipe's bend
         za = apex_z(X, zm, ang, side, P["upperarm"], P["lowerarm"], flex)
         flat = -c["flat"] * (_bw((zm - za + 24) / 14) + 0.8 * _bw((zm - za - 24) / 14)) * _bw(_wrap(ang - 180) / 55)
-        h = fill + bic + fs + br + fx + epi + flat
+        # (r3) the corner cut back as bone, the olecranon left a narrow point proud of the cut
+        dz = zm - za
+        plate = _ss((dz - CUT_Z[0]) / (CUT_Z[1] - CUT_Z[0])) * (1 - _ss((dz - CUT_Z[2]) / (CUT_Z[3] - CUT_Z[2])))
+        # (not the outer side above the joint: the lateral supracondylar ridge, the forearm's outer mass rising there)
+        kl = _ss(-dz / 20.0) * _ss(_wrap(ang) / 30.0)
+        ca0, ca1 = CUT_A[0] - (CUT_A[0] - CUT_A[2]) * kl, CUT_A[1] - (CUT_A[1] - CUT_A[3]) * kl
+        cut = -c.get("cut", 0.0) * plate * (1 - _ss((np.abs(_wrap(ang - 180)) - ca0) / (ca1 - ca0)))
+        pt = c.get("pt", 0.0) * _bw(dz / c.get("pt_len", 11.0)) * _bw(_wrap(ang - 180) / c.get("pt_ang", 26.0))
+        # (r3) the front above the crease: the biceps' tendon end eased in as the belly bunches up (the narrow point
+        # above the elbow, its front), ending above the crease so the fold stays soft
+        tcut = -c.get("tcut", 0.0) * _ss((zm + 85) / 30) * (1 - _ss((zm + 22) / 16)) * _bw(_wrap(ang) / 60) * (1 - bf)
+        h = fill + bic + fs + br + fx + epi + flat + cut + pt + tcut
         # the olecranon: tall enough to bring its prominence to c["ole"], at least c["ole_min"]
         olek = _bw((zm - za) / 16) * _bw(_wrap(ang - 180) / 40)
         sel = (armw > 0.6) & (t > -0.1) & (t < 1.6) & (r < 0.08) & (sd * U[:, 0] > 0.05)
@@ -268,7 +329,7 @@ def author(G, s, log=print):
                                     P["upperarm"], P["lowerarm"])
         oa, p0 = 0.0, prom(0.0)
         pr = p0
-        for _ in range(3):
+        for _ in range(3 if c["ole"] else 0):
             oa = float(np.clip(oa + c["ole"] - pr, c["ole_min"], 9.0))
             pr = prom(oa)
         h = (h + oa * olek) * 1e-3 * reg
@@ -278,6 +339,14 @@ def author(G, s, log=print):
         Dp = _smooth(Dp, A, deg, 2, grow)
         Dp, nf0, nf1 = untangle(X, Dp, F, A, deg, grow, reg)
         Dp[~active] = 0
+        a0_, r0_, pr0_ = corner(X, sel, P["upperarm"], P["lowerarm"], P["hand"])
+        a1_, r1_, pr1_ = corner(X + Dp, sel, P["upperarm"], P["lowerarm"], P["hand"])
+        log("ELBOW_PSD %s_%s corner: apex %+.1f mm on the bisector, point radius %.1f -> %.1f mm; the side outline's move "
+            "(mm, along the bisector's square, - up the humerus) %s" % (name, s, a1_ - a0_, r0_, r1_, " ".join(
+                "%+d:%+.1f" % (x, pr1_[x] - pr0_[x]) for x in sorted(pr0_) if x in pr1_ and x % 10 == 0)))
+        if _E("EPSD_PROF"):
+            log("  corner profile (x: before after, mm on the bisector) " + " ".join(
+                "%+d:%.1f/%.1f" % (x, pr0_[x], pr1_.get(x, np.nan)) for x in sorted(pr0_) if x % 4 == 0))
         Db = np.einsum("nij,nj->ni", np.linalg.inv(Bm[:, :3, :3]), Dp)
         Db[np.linalg.norm(Db, axis=1) < 1e-6] = 0
         dn = (Dp * _vn(X, F)).sum(1)
