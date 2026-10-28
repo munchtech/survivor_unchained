@@ -291,6 +291,9 @@ public sealed partial class Battle
     /// damage over time goes to whatever put it there. For the damage meter
     /// and the balance harness.</summary>
     public readonly Dictionary<string, double> DamageBy = new();
+    /// <summary>Her blows' damage before a creature's health caps it (the overkill kept): what her hands could deal,
+    /// where DamageBy is what the horde had to give (the harness's Hand measure reads both).</summary>
+    public double DamageRaw;
     /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
     public readonly Dictionary<string, double> BossDamageBy = new();
     /// <summary>What each source truly took off bosses: health lost, and a gate's Break only up to the tenth of
@@ -824,6 +827,7 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        DamageRaw += dmg;
         // Health it lost, and a gate's Break only up to the tenth of its health the Break itself rewards:
         // uncapped, poison ticking on a gated boss filled 30 Flares a fight.
         double breakCap = 0.1 * e.MaxHp;

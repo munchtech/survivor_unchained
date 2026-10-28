@@ -49,6 +49,8 @@ public sealed class RunResult
     public List<double> HeraldTtk = new();
     public List<Minute> ByMinute = new();
     public Dictionary<string, double> DamageBy = new();
+    /// <summary>Her damage uncapped by the creatures' health (Battle.DamageRaw).</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public double DamageRaw;
     public Dictionary<string, int> Offered = new(), Taken = new();
     /// <summary>Evolutions, with the minute each came.</summary>
     public List<(string Id, double At)> Evolved = new();
@@ -130,6 +132,8 @@ public static class ArenaSim
     {
         public bool? Hand;
         public bool NoFall;
+        /// <summary>A calibration: all her damage More by this (0: none), to read a metric's answer to a known x.</summary>
+        public double DamageMore;
         /// <summary>Minutes to play, then stop (0: the run's own end).</summary>
         public double Span;
         /// <summary>The build to play at its times instead of drafting and opening chests (a twin's Took).</summary>
@@ -237,6 +241,7 @@ public static class ArenaSim
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
         if (fx?.Replay != null) b.ChestsInert = true;
+        if (fx is { DamageMore: > 0 }) b.AddBuff("calibration", Stat.Damage, fx.DamageMore, ModKind.More, 1e9, 1);
         else if (fx != null)
             host.Opened = c =>
             {
@@ -384,6 +389,7 @@ public static class ArenaSim
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;
         r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
+        r.DamageRaw = b.DamageRaw;
         r.Build = Describe(b);
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;

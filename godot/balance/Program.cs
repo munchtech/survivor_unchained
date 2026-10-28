@@ -131,6 +131,9 @@ void HandPairs(List<RunSpec> specs, string outPath)
     bool noFall = opt.Get("nofall", "1") != "0", replay = opt.Get("replay", "1") != "0";
     double span = opt.Double("span", 30);
     bool nul = opt.Get("null", "0") != "0";
+    // (--cal 1.10: a third run, the Hand off and all her damage x1.10 on the same build: the yardstick a Hand is read
+    // against, "worth x1.07 damage".)
+    double cal = opt.Double("cal", 0);
     Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
     var sw = Stopwatch.StartNew();
     int done = 0;
@@ -138,8 +141,12 @@ void HandPairs(List<RunSpec> specs, string outPath)
     var gate = new object();
     object Side(RunResult r, ArenaSim.Fixed f) => new
     {
-        Dmg = r.DamageBy.Values.Sum(), r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
+        Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
         Hand = r.DamageBy.GetValueOrDefault("hand"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
+        Alive = r.ByMinute.Count > 0 ? r.ByMinute.Average(x => x.Alive) : 0,
+        TtkF = r.ByMinute.Where(x => !double.IsNaN(x.TtkFodder)).Select(x => x.TtkFodder).DefaultIfEmpty(0).Average(),
+        TtkE = r.ByMinute.Where(x => !double.IsNaN(x.TtkElite)).Select(x => x.TtkElite).DefaultIfEmpty(0).Average(),
+        r.Champions, r.BossTtk, r.WonAt,
     };
     Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
     {
@@ -150,9 +157,11 @@ void HandPairs(List<RunSpec> specs, string outPath)
             // (--null 1: the Hand off in both, the measure's own bias: the replay alone should read x1.00.)
             var on = new ArenaSim.Fixed { Hand = !nul, NoFall = noFall, Span = span, Replay = replay ? off.Took : null };
             var r1 = ArenaSim.Play(spec, on);
+            var yard = new ArenaSim.Fixed { Hand = false, NoFall = noFall, Span = span, Replay = replay ? off.Took : null, DamageMore = cal - 1 };
+            var r2 = cal > 0 ? ArenaSim.Play(spec, yard) : null;
             lock (gate)
             {
-                file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = Side(r0, off), On = Side(r1, on) }));
+                file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = Side(r0, off), On = Side(r1, on), Cal = r2 == null ? null : Side(r2, yard) }));
                 file.Flush();
                 done++;
                 if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");
