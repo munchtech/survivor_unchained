@@ -50,9 +50,10 @@ public sealed class Redcowl : StoryBoss
     // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
     // 13 October: 110 -> 103, its pre-Flare health: the Flare now cuts a story boss's floors, and a fight with the Flare
     // timed is ~8% shorter than the tuned length (bankers ~14%) while one without it timed stays near it (+4%; judge 6).
-    // 28 October (classes 14): 103 -> 122. Access (P2: narrower pools, better builds) and the four Hands (P4) made Act 1
-    // ~12% shorter; at 122 never-pressing is within 3% of integration and of pre-Flare 11 Oct, falls lower (96 seeds, both pilots).
-    public override double HealthMul(int tier) => 122;
+    // 28 October (classes 14): 103 -> 116. Access (P2: narrower pools, better builds) and the four Hands (P4) made Act 1
+    // ~12% shorter. 122 read +7% pressing on seeds 1-288 after the P5a Turn retune; at 116 (seeds 1-288, both pilots)
+    // never-pressing -0.2% and pressing +1.4% against integration, cells -2.6 to +2.2%, falls lower.
+    public override double HealthMul(int tier) => 116;
     public override double Teeth => 0.4;
     protected override bool DiesAtZero => false;
 
