@@ -26,6 +26,16 @@ public static class GripSlide
     public static float Ease(float current, float target, float dt, float rate = 12f)
         => current + (target - current) * (1f - MathF.Exp(-rate * dt));
 
+    /// <summary>A seat part way between two (animation 58: the second axe eased from its plain mount onto the left tilt's
+    /// pocket by `w`, 0 the first, 1 the second): the origin lerped, the turn slerped.</summary>
+    public static (Quaternion Turn, Vector3 At) Blend(Quaternion a, Vector3 aAt, Quaternion b, Vector3 bAt, float w)
+    {
+        w = Math.Clamp(w, 0f, 1f);
+        if (w == 0f) return (a, aAt);
+        if (w == 1f) return (b, bAt);
+        return (Quaternion.Normalize(Quaternion.Slerp(a, b, w)), Vector3.Lerp(aAt, bAt, w));
+    }
+
     /// <summary>A seated piece moved by a clip's grip, in its mount's space: turned `tiltDeg` about `axis` (the hand's
     /// palm normal, hand +X) through `pivot` (the fist's fitted pocket, where the seat lays the piece's grip point),
     /// then slid `metres` along its own turned +Y (`seatUp`: the seat's +Y, unit). Returns the turn to set before the

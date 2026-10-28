@@ -90,13 +90,17 @@ public partial class PersonView : Node3D, INpcView
     // The seat each held piece had in its hand mount (Slide's base), and the point and axis its tilt turns it about
     // (the fist's fitted pocket and the palm's normal, in the mount's space; none for a piece without a pocket): re-read
     // when the mount is a new one (Sheathe swaps the mount node), so a sheath transform never gets cached.
-    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Transform3D seat, Vector3? pivot, Vector3 axis)> seats = new();
+    // A left piece without a fitted left pocket (the second axe) also keeps the seat a left tilt moves it onto (onPocket:
+    // WeaponSockets.TiltPocketL, animation 58).
+    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Transform3D seat, Vector3? pivot, Vector3 axis, Transform3D? onPocket)> seats = new();
 
     /// <summary>The piece in a hand slot sits this far along its own shaft (metres) from its seat, so the fist grips
     /// lower on it (animation 47: the arcanist's combat idle), turned `tilt` degrees in the fist about the palm's normal
-    /// through the fitted pocket first (animation 48; a piece without a pocket only slides). Does nothing while the
-    /// piece is sheathed.</summary>
-    public void Slide(string slot, float metres, float tilt = 0f)
+    /// through the fitted pocket first (animation 48; a piece without a pocket only slides). The left fist (animation 58)
+    /// turns about the mirrored normal (WeaponSockets.TiltAxisL) through its pocket (TiltPocketL): a piece with no fitted
+    /// left pocket (the second axe) is eased from its plain mount onto the right's mirrored pocket by `pocket` (0..1, the
+    /// clips' "grip_tilt_l" weight, eased as the tilt is). Does nothing while the piece is sheathed.</summary>
+    public void Slide(string slot, float metres, float tilt = 0f, float pocket = 0f)
     {
         if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith("mount:")) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
@@ -104,40 +108,63 @@ public partial class PersonView : Node3D, INpcView
         {
             Vector3? pivot = null;
             var axis = Vector3.Right;
+            Transform3D? onPocket = null;
             if (pieces.TryGetValue(slot, out var id) && Arms.All.TryGetValue(id, out var spec))
             {
                 var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
-                if (WeaponSockets.Pocket(kind, BoneOf(slot)) is { } pocket)
+                var bone = BoneOf(slot);
+                var pk = WeaponSockets.Pocket(kind, bone);
+                var handAxis = Vector3.Right;
+                if (bone == "hand_l" && !spec.Pistol)
+                {
+                    var al = WeaponSockets.TiltAxisL;
+                    handAxis = new Vector3(al.X, al.Y, al.Z);
+                    if (pk == null && WeaponSockets.TiltPocketL(kind) is { } tp)
+                    {
+                        pk = tp;
+                        onPocket = Arms.SeatOn(id, bone, person.Own != null, tp.At, tp.Dir);
+                    }
+                }
+                if (pk is { } pocketAt)
                 {
                     var inv = mount.Transform.AffineInverse();
-                    pivot = inv * new Vector3(pocket.At.X, pocket.At.Y, pocket.At.Z);
-                    axis = (inv.Basis * Vector3.Right).Normalized();
+                    pivot = inv * new Vector3(pocketAt.At.X, pocketAt.At.Y, pocketAt.At.Z);
+                    axis = (inv.Basis * handAxis).Normalized();
                 }
             }
-            seats[slot] = s = (piece, piece.Transform, pivot, axis);
+            seats[slot] = s = (piece, piece.Transform, pivot, axis, onPocket);
         }
         if (s.pivot == null) tilt = 0f;
         static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
-        var (turn, at) = GripSlide.Apply(N(s.seat.Origin), N((s.seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
+        static System.Numerics.Quaternion Q(Basis b) { var q = b.GetRotationQuaternion(); return new(q.X, q.Y, q.Z, q.W); }
+        var seat = s.seat;
+        if (s.onPocket is { } op && pocket != 0f)
+        {
+            var (bq, ba) = GripSlide.Blend(Q(seat.Basis), N(seat.Origin), Q(op.Basis), N(op.Origin), pocket);
+            seat = new Transform3D(new Basis(new Quaternion(bq.X, bq.Y, bq.Z, bq.W)) * Basis.FromScale(seat.Basis.Scale), new Vector3(ba.X, ba.Y, ba.Z));
+        }
+        var (turn, at) = GripSlide.Apply(N(seat.Origin), N((seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
             N(s.axis), tilt, metres);
-        piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * s.seat.Basis, new Vector3(at.X, at.Y, at.Z));
+        piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * seat.Basis, new Vector3(at.X, at.Y, at.Z));
     }
 
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
     // figure in town), eased as PlayerView eases it.
-    float ownSlide, ownTilt, ownSlideL;
+    float ownSlide, ownTilt, ownSlideL, ownTiltL, ownPocketL;
 
     void OwnGrip(double delta, bool snap = false)
     {
         if (Driven || person.Own is not { } own || !held.ContainsKey("handslot.r")) return;
         var clip = person.Anim.CurrentAnimation.ToString();
-        float s = own.GripSlide(clip), t = own.GripTilt(clip), sl = own.GripSlideL(clip);
-        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0 && sl == 0 && ownSlideL == 0) return;
+        float s = own.GripSlide(clip), t = own.GripTilt(clip), sl = own.GripSlideL(clip), tl = own.GripTiltL(clip), pl = tl != 0 ? 1 : 0;
+        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0 && sl == 0 && ownSlideL == 0 && tl == 0 && ownTiltL == 0 && ownPocketL == 0) return;
         ownSlide = snap ? s : GripSlide.Ease(ownSlide, s, (float)delta);
         ownTilt = snap ? t : GripSlide.Ease(ownTilt, t, (float)delta);
         ownSlideL = snap ? sl : GripSlide.Ease(ownSlideL, sl, (float)delta);
+        ownTiltL = snap ? tl : GripSlide.Ease(ownTiltL, tl, (float)delta);
+        ownPocketL = snap ? pl : GripSlide.Ease(ownPocketL, pl, (float)delta);
         Slide("handslot.r", ownSlide, ownTilt);
-        Slide("handslot.l", ownSlideL);
+        Slide("handslot.l", ownSlideL, ownTiltL, ownPocketL);
     }
 
     public People.Person Person => person;
