@@ -1,5 +1,17 @@
 # Handoff: UI design lead
 
+## DONE (UI 19, 28 Oct): The Drowned Girl's hair polish, branch ui-19 (worktree .claude/worktrees/ui18-mr; remove after the merge)
+**The owner's note:** "not sure the small transparent patch on the left is worth it, and the hair in middle/end could be more defined, mostly the end (right side)". The owner confirmed the patch as the two see-through spots left of and behind the draught flask, and said to close both.
+**Done:** all of it goes through `tools/uiforge/dg_river_cut.py` (UNDER_PATCHES u19L, POST_PATCHES u19R3; sources in survivorsunchained_inputs/ui19_dg_src/hair/, all procedural, no Krea) into `godot/art/ui/dg_river/river.png`, and the XP masks are re-baked.
+- The left spots are closed by layered strands under her figure.
+- The right end is the UI 18 paint carved along its own curves (warm crests, teal grooves) and wraps into the Flare cup: top lock on the lip, middle locks under the rim, bottom lock under the cup.
+- The middle has a light pass.
+- Round 1's procedural redraw was rejected: it read as "parallel brass rods ... cables".
+**Judged:** max r1 FAIL medium (cables); max r2 PASS, gate YES, no must-fix. The XP light keeps UI 18's broad sheen.
+**Closes as known (told the owner):** the middle reads the same as UI 18 at 1:1, on purpose: it sits behind six seats and carries the XP sheen, and carving it harder streaks the light. The top lock's tip can only lie on the lip, because the glass draws over the river.
+**Frames:** survivorsunchained_inputs/ui19_dg (dg19d = final; owner sheet ui19_owner_before_after.png). **Scratch:** coordinator ee2b9848 scratchpad ui19 (briefs, judges, run.sh, holes.py).
+**The UI 18 handoff** (the Drowned Girl's full history) is on branch ui-11 at be8653c3, docs/handoff/ui_design.md, top section.
+
 ## Paused here (UI 17, 27 Oct, coordinator wind-down; branch ui-11 @ 090277b9, integration merged at 732674cc, junction godot/assets to its OWN public/assets)
 **State:** the whole Drowned Girl HUD is built behind `--hud drowned`. Pieces 1-5: the figure + orb, her hair as the river bar with six hair-bound seats, the XP line (OLD, to be replaced), the Flare coal in the eddy, and draught/dash as hair-bound pieces. **Max judge r2 (whole HUD): PASS-WITH-NOTES, close** ("the first HUD here with soul"). The owner has round 2's frame `survivorsunchained_inputs\ui17_dg\dg6_hud3.png`. Round 3 (A3 090277b9, B3 cbbd1ff6) is built from r2's notes and is **UNJUDGED**.
 **The owner so far:** "its a lot better! ... a little tighter, so there is a little more screen space. but its looking amazing" (the lock is cut; top 812 -> 822). "the exp/ember tracker line isn't landing though". On the centerpiece: "a nice place to start. it will get lots of polish right?"
