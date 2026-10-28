@@ -186,8 +186,8 @@ public sealed partial class Battle
     internal bool RebukeStrike(WeaponInst w, double x, double z, Enemy? blocker)
     {
         var p = Player;
-        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 4);
-        int others = (int)(w.Num(s => s.Others) ?? 3);
+        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5);
+        int others = (int)(w.Num(s => s.Others) ?? 5);
         var struck = new List<Enemy>(others + 1);
         if (blocker != null) struck.Add(blocker);
         struck.AddRange(HostilesInRadius(x, z, r).Where(e => e != blocker && e.Alive && e.State != EnemyState.Dying)
@@ -282,9 +282,16 @@ public sealed partial class Battle
             // A Pulse's tolls are smaller: each one's barrier scaled as its damage is.
             if (w.Wick is { Pulses: > 1 } pw)
                 foreach (var t in pw.Turns) if (Content.Wicks.Turn(t) is { Pulses: > 1 } pt) share *= pt.Damage;
-            double amount = MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 5));
-            BellBarrier += amount;
-            Barrier(amount, 6);
+            // It tops her barrier up toward a ceiling (15% of health held; the lamp doesn't raise it), never past it;
+            // barrier from elsewhere is untouched (at 5% a toll and 17 tolls a minute it gave 72-77% of health a minute).
+            double amount = StonesBarrier(MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 5)));
+            amount = Math.Min(amount, Math.Max(0, MaxHp * (w.Num(s => s.BarrierCap) ?? 0.15) - Math.Max(0, Player.Shield)));
+            if (amount > 0)
+            {
+                BellBarrier += amount;
+                Player.Shield = Math.Max(Player.Shield, 0) + amount;
+                Player.ShieldT = Math.Max(Player.ShieldT, 6);
+            }
         }
         // Stone Bell: the toll lays stones on the wall (the Hand's wall, Shield Arm or not).
         if (w.Wick is { } fx && (fx.Stones > 0 || fx.StonesChampion > 0))

@@ -198,8 +198,7 @@ public sealed class WardenSkillsTests
 
     /* ------------------------------------------------------------- Rebuke -- */
 
-    /// <summary>The blocker 2 m off; three near it (1, 1.5, 2.1 m from it); a fourth 3 m from it (not among the three
-    /// nearest); one 7 m from it.</summary>
+    /// <summary>The blocker 2 m off; four near it (1, 1.5, 2.1, 3 m from it, all within Rebuke's 5 m); one 7 m from it.</summary>
     static readonly (double, double)[] Blocker = [(2, 0), (3, 0), (2, 1.5), (1, -1.8), (2, -3), (9, 0)];
 
     /// <summary>A sure block (the Warding light) of a blow from `from`.</summary>
@@ -230,8 +229,7 @@ public sealed class WardenSkillsTests
         Pin(b, es, Blocker);
         Block(b, es[0]);
         Assert.Equal(strikes + 1, b.RebukeStrikes);
-        Assert.All(es.Take(4), e => Assert.True(Hurt(e)));
-        Assert.False(Hurt(es[4]));
+        Assert.All(es.Take(5), e => Assert.True(Hurt(e)));
         Assert.False(Hurt(es[5]));
         Assert.True(b.DamageBy.GetValueOrDefault("rebuke") > 0);
         Assert.Equal(0, b.DamageBy.GetValueOrDefault("wall"));
@@ -241,8 +239,15 @@ public sealed class WardenSkillsTests
         var c = Fight("rebuke");
         var cs = Dummies(c, Blocker);
         Block(c, null);
-        Assert.Equal(3, cs.Count(Hurt));
-        Assert.True(Hurt(cs[0]) && Hurt(cs[2]) && Hurt(cs[3]));
+        Assert.Equal(5, cs.Count(Hurt));
+        Assert.False(Hurt(cs[5]));
+        // At most five beside the one who struck: seven near, the farthest two spared.
+        var d = Fight("rebuke");
+        (double, double)[] crowd = [(2, 0), (2.5, 0), (2, 0.6), (1.4, 0), (2, -0.7), (3.0, 0.5), (3.3, -0.8), (3.6, 0)];
+        var ds = Dummies(d, crowd);
+        Block(d, ds[0]);
+        Assert.Equal(6, ds.Count(Hurt));
+        Assert.False(Hurt(ds[6]) || Hurt(ds[7]));
     }
 
     [Fact]
@@ -327,11 +332,12 @@ public sealed class WardenSkillsTests
     public void Rebuke_strikes_from_an_echo_s_corpse_and_on_kill_suits_it()
     {
         var b = Fight("rebuke");
-        (double, double)[] at = [(6, 0), (7, 0), (6, 1), (6, -1.2), (8.5, 0)];
+        (double, double)[] at = [(6, 0), (7, 0), (6, 1), (6, -1.2), (8.5, 0), (6.5, 0.4), (12.5, 0)];
         var es = Dummies(b, at);
         Assert.True(Firing.OnKillEcho(b, b.Weapons[0], b.Player.X + 6, b.Player.Z));
-        Assert.Equal(3, es.Count(Hurt));
-        Assert.False(Hurt(es[4]));
+        // The five nearest the corpse; the farthest (2.5 m) and the one beyond reach (6.5 m) spared.
+        Assert.Equal(5, es.Count(Hurt));
+        Assert.False(Hurt(es[4]) || Hurt(es[6]));
         var rb = Weapons.Get("rebuke");
         Assert.True(Wicks.Suits(Wicks.Strand("rebuke", "onkill")!, WeaponBehavior.Reactive, rb.Tags, rb.School, false));
     }
@@ -386,6 +392,25 @@ public sealed class WardenSkillsTests
         FireOnce(b, b.Weapons[0], es, seven);
         Assert.All(es, e => Assert.True(Hurt(e)));
         Assert.Equal(b.MaxHp * 0.01 * 5, b.BellBarrier, 6);
+    }
+
+    [Fact]
+    public void The_bell_tops_her_barrier_up_to_15_percent_and_no_further()
+    {
+        (double, double)[] seven = [(3, 0), (0, 3), (-3, 0), (0, -3), (4, 4), (-4, 4), (4, -4)];
+        var b = Fight("watch_bell", rules: ["watch_bell.barrier"]);
+        var es = Dummies(b, seven);
+        b.Player.Shield = b.MaxHp * 0.12;
+        b.Player.ShieldT = 3;
+        FireOnce(b, b.Weapons[0], es, seven);
+        Assert.Equal(b.MaxHp * 0.15, b.Player.Shield, 6);
+        Assert.Equal(b.MaxHp * 0.03, b.BellBarrier, 6);
+        FireOnce(b, b.Weapons[0], es, seven);
+        Assert.Equal(b.MaxHp * 0.15, b.Player.Shield, 6);
+        // Barrier from elsewhere isn't cut back.
+        b.Player.Shield = b.MaxHp * 0.3;
+        FireOnce(b, b.Weapons[0], es, seven);
+        Assert.Equal(b.MaxHp * 0.3, b.Player.Shield, 6);
     }
 
     [Fact]

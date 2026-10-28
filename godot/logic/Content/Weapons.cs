@@ -62,6 +62,8 @@ public sealed class WeaponStats
     public double? Others;
     /// <summary>Toll (Watch Bell): the barrier, a share of max health, for each thing drawn; at most DrawMost of them count.</summary>
     public double? Barrier, DrawMost;
+    /// <summary>Toll: the bell tops her barrier up to this share of max health and no further.</summary>
+    public double? BarrierCap;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
