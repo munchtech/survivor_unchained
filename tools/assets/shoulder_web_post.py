@@ -14,10 +14,12 @@ fairing pull on the outer face (phi 30-150, s 30-135: the radius a smooth taper,
 Taubin fairing of the deltoid's surface (the crease on its front, a dent and a lump at the Look). Feathered by her
 arm's skinning share and to nothing by s 150 (the biceps' middle: the elbow and forearm are not this step's).
 
-THE WEB (fix 6): the front armpit's notch bridged. At the hanging arm's pose (w_p45, right) and the bent arm's (w_m45,
-left), her posed surface's rolling-ball closing (R 24 mm) gives the bridge over the slot's mouth; its move on the
-camera-facing rim (in a band 0-75 mm below the shoulder joint, in front of it) is the handle of a biharmonic field on
-her posed surface (zero 85 mm out), taken to rest by each vertex's blended skin matrix, mirrored, per side the larger.
+THE WEB (fix 6): the front armpit's notch bridged. At the hanging arm's pose (w_p45, her right), her posed surface's
+rolling-ball closing (R 24 mm) gives the bridge over the slot's mouth; its move on the camera-visible rim (in a band
+0-75 mm below the shoulder joint, in front of it) is the handle of a biharmonic field on her posed surface (zero 85 mm
+out), taken to rest by each vertex's blended skin matrix and mirrored to her left. (A second field built at w_m45's
+bent left arm, merged per side, opened the pit wider at s_p45, r132 and rL90: not used.) It fills the notch; it does
+not yet build the fold's convex rounded edge.
 Baked per welded vertex (shoulder_web_post.json, with each vertex's rest position as a guard: same topology only).
 No skin-weight change.
 
