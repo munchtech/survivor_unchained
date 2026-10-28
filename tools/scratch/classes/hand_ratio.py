@@ -1,24 +1,22 @@
-# The Hand pairs (Balance arena --pair 1, hand_measure.sh): per calling x tier, summed damage over the span with the
-# Hand on / off (the same build: a mismatch is counted), its delta-method sigma, the Hand's own share of the damage
-# (hand + rebuke), falls and seconds below half health per run (off/on). "all" pools tiers 1-4; "tmean" is their mean.
-import json, sys, math, collections
-cells = collections.defaultdict(list); bad = 0
-for path in sys.argv[1:]:
-    for l in open(path):
-        if not l.strip(): continue
-        r = json.loads(l); o, f = r['On'], r['Off']
-        bad += o['Build'] != f['Build']
-        x = (o['Dmg'], f['Dmg'], o['Hand'] + o['Rebuke'], f['Falls'], o['Falls'], f['Low'], o['Low'])
-        cells[(r['Calling'], r['Tier'])].append(x); cells[(r['Calling'], 0)].append(x)
-def stat(L):
-    n = len(L); a = sum(x[0] for x in L) / n; b = sum(x[1] for x in L) / n; R = a / b
-    return n, R, math.sqrt(sum((x[0] - R * x[1]) ** 2 for x in L) / max(1, n - 1)) / math.sqrt(n) / b
-print(f"build mismatches {bad}")
-print("calling   tier    n  ratio sigma  hand%  falls off/on  low-s off/on")
-for c in sorted({k[0] for k in cells}):
-    trs = []
-    for t in sorted(k[1] for k in cells if k[0] == c):
-        L = cells[(c, t)]; n, R, sd = stat(L)
-        if t: trs.append(R)
-        print(f"{c:9} {t or 'all':>4} {n:4}  {R:.3f} {sd:.3f}  {100*sum(x[2] for x in L)/sum(x[0] for x in L):4.1f}  {sum(x[3] for x in L)/n:5.2f}/{sum(x[4] for x in L)/n:5.2f}  {sum(x[5] for x in L)/n:4.0f}/{sum(x[6] for x in L)/n:4.0f}")
-    print(f"{c:9} tmean       {sum(trs)/len(trs):.3f}")
+# The Hand measure's reading (hand_measure.sh; Balance arena --pair 1): each arena twice on the same build (the on run
+# replays the off run's cards and chests), no falls, 30 minutes. The horde, not her hands, caps the damage dealt (a x1.10
+# damage yardstick, --cal 1.10, reads only x1.015 there), so a Hand shows in damage dealt AND damage taken:
+# P = dealt(on/off) x taken(off/on). The yardstick x1.10 reads P x1.06-1.11, so P is in about damage-multiplier units.
+import json,sys,math,collections
+C=collections.defaultdict(list)
+for f in sys.argv[1:]:
+    for l in open(f):
+        r=json.loads(l); C[(r['Calling'],r['Tier'])].append(r); C[(r['Calling'],0)].append(r)
+def P(L,side):
+    d=sum(x[side]['Dmg'] for x in L)/sum(x['Off']['Dmg'] for x in L); t=sum(x['Off']['DamageTaken'] for x in L)/sum(x[side]['DamageTaken'] for x in L)
+    return d,t,d*t
+def sig(L,side):
+    # delta method on log P = log sum on dmg - log sum off dmg + log sum off taken - log sum on taken
+    n=len(L); a=sum(x[side]['Dmg'] for x in L); b=sum(x['Off']['Dmg'] for x in L); c=sum(x['Off']['DamageTaken'] for x in L); d=sum(x[side]['DamageTaken'] for x in L)
+    z=[x[side]['Dmg']/a-x['Off']['Dmg']/b+x['Off']['DamageTaken']/c-x[side]['DamageTaken']/d for x in L]
+    m=sum(z)/n; return math.sqrt(sum((v-m)**2 for v in z)*n/max(1,n-1))
+print("calling  tier   n  dealt  taken    P    sigma   falls off/on  | yardstick P")
+for k in sorted(C):
+    L=C[k]; d,t,p=P(L,'On'); s=sig(L,'On')*p
+    y=f"{P(L,'Cal')[2]:.3f}" if all(x.get('Cal') for x in L) else ''
+    print(f"{k[0]:8} {k[1] or 'all':>4} {len(L):4}  {d:.3f}  {t:.3f}  {p:.3f}  {s:.3f}  {sum(x['Off']['Falls'] for x in L)/len(L):.2f}/{sum(x['On']['Falls'] for x in L)/len(L):.2f}  | {y}")
