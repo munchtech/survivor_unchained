@@ -28,7 +28,10 @@ public class BalanceTests(ITestOutputHelper log)
             // at twelve, the host on a stalker read 0.68 of the median on seeds 1-12 and 0.745 on 13-36 once access
             // narrowed the pools (27 October), so a path near its floor passed or failed by its seeds.
             for (int s = 1; s <= 48; s++)
-                specs.Add(new ProbeSpec(s, p.Callings[0], $"path:{p.Id}", Targets.LevelAt(15)));
+                // Without the Wicks (P5a): only two skills have one yet, so lit they measure the rollout, not the paths
+                // (dawn and hunt rose 4-5% and the median with them; the host sat at 0.699). The Classes lead re-measures
+                // these floors with every skill wicked.
+                specs.Add(new ProbeSpec(s, p.Callings[0], $"path:{p.Id}", Targets.LevelAt(15), Wicks: false));
         var o = new ConcurrentBag<ProbeResult>();
         Parallel.ForEach(specs, spec => o.Add(Probe.Run(spec)));
         return o.ToList();

@@ -14,7 +14,8 @@ namespace SurvivorUnchained.Balance;
 /// test: a crowd of the people at a minute's strength, then a champion that
 /// does not die, the survivor untouchable and walking a slow circle. Fast
 /// enough for the tests (a second or so), steady enough to compare builds.</summary>
-public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead")
+/// <param name="Wicks">The skills' wicks lit (false: as before the Wicks, for a floor measured without them).</param>
+public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead", bool Wicks = true)
 {
     public string Key => $"{Calling}/{Policy}/L{Level}/s{Seed}/w{Weapon}";
 }
@@ -58,6 +59,8 @@ public static class Probe
             WeaponItem = a.Weapons[Math.Min(spec.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(spec.Art, a.Abilities.Count - 1)],
         }, (uint)spec.Seed);
         var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)spec.Seed, arena: true);
+        // No paths, and none lit on what she brought in: the fight as before the Wicks.
+        if (!spec.Wicks) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
         var pick = Picker.Make(spec.Policy);
         var rng = new Rng((uint)(spec.Seed * 104729 + 7));
         var r = new RunResult { Spec = new RunSpec(spec.Seed, spec.Calling, spec.Policy) };
