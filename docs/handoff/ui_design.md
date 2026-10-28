@@ -1,5 +1,17 @@
 # Handoff: UI design lead
 
+## MR READY (UI 18, 28 Oct): the Drowned Girl HUD as the game's ONLY HUD, branch ui-18-mr@787b2cae (worktree .claude/worktrees/ui18-mr; pushed)
+**Judged:** the whole-HUD max r3 was PASS-WITH-NOTES; after the fixes a max check ruled "ready to ship as the game's default" (hair pass included). **Perf:** dense, 4 interleaved pairs: drowned -0.33 ms against the old default, inside the noise (the hud column 0.06 ms). **Tests:** integration 1194/0/10, ui-18-mr 1213/0/10.
+**The owner's calls this session:**
+- Her hair is back to round 2's (a2e4fe1d); round 3's repainted locks were rejected. The circled lock was already cut: the owner saw it in the XP A/B sheet, which was built on the old dg5 frame.
+- XP is (c), "no XP until it moves". A cool light runs along her hair and the river to the fraction, holds 1.5 s, settles to a dim glow, and goes dark after 90 s with no gain. The knobs are in data/content/hud.json. The hold key is left Alt, pad LB. A level-up names the level over the river.
+- Hair: strands filled in by her neck, the crest calmed left of the coal, wraps with contact shadows, the crown's fill grooved.
+**Port:** the final file state from ui-11 (f414e343 art, 787b2cae code). Retired: the A2 lamp shapes, the orb casings, the v2 chain/cuff/sill/lock art and code, and their flags and tools. There is no --hud flag now. The male hero also sees her; his own figure comes later.
+**After main merges:** remove ui18-mr with wt_remove.ps1. ui-11 is history: never merge it whole. **Routed to Experience:** ChainFill spans the river now. EmberLockArea is always null (no level knot), so the "lock" teach target never fires. The callout ring sizes still use the old HUD's numbers.
+**Open (polish, not visible at 1:1):** a grainy patch at a lock crossing, x 555-570, y 903-916 (reads as a glint at 1:1); the passive beads' strand loop (needs art). The first run after a fresh import once crashed the GPU at 2.4 s; the rerun was clean.
+**Scratch:** the coordinator ee2b9848 scratchpad, folder ui18 (briefs brief_*.md, judges judge_*.md; F/run.sh builds, imports and shoots with the XP pins). **Frames:** survivorsunchained_inputs/ui18_dg (dgG = final, dgMR = the MR branch).
+**Cost UI 18:** builders 145+165+130+214+234+97+67+128+122k, MR 240k; judges 93+118+58+66+145+95k; runners 41+41k.
+
 ## Paused here (UI 17, 27 Oct, coordinator wind-down; branch ui-11 @ 090277b9, integration merged at 732674cc, junction godot/assets to its OWN public/assets)
 **State:** the whole Drowned Girl HUD is built behind `--hud drowned`. Pieces 1-5: the figure + orb, her hair as the river bar with six hair-bound seats, the XP line (OLD, to be replaced), the Flare coal in the eddy, and draught/dash as hair-bound pieces. **Max judge r2 (whole HUD): PASS-WITH-NOTES, close** ("the first HUD here with soul"). The owner has round 2's frame `survivorsunchained_inputs\ui17_dg\dg6_hud3.png`. Round 3 (A3 090277b9, B3 cbbd1ff6) is built from r2's notes and is **UNJUDGED**.
 **The owner so far:** "its a lot better! ... a little tighter, so there is a little more screen space. but its looking amazing" (the lock is cut; top 812 -> 822). "the exp/ember tracker line isn't landing though". On the centerpiece: "a nice place to start. it will get lots of polish right?"
