@@ -96,8 +96,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// <summary>The day curve was tuned for three day skills; six day slots by level 20 (CLASS_IDENTITY 3.7)
     /// and the Hands made day builds stronger. So each slot past three at the map's level adds PackPerSlot
     /// to every pack creature's health (champions' own multiples on top) and BossPerSlot to the ruler's.
-    /// The harness overrides them with --maphp PACK,BOSS.</summary>
-    public static double PackPerSlot = 0, BossPerSlot = 0;
+    /// Measured (classes 14, tiers 1-6 x 8 seeds against integration 3ef34f61's three-slot curve): 0.9 and 0.4 put
+    /// every tier's minutes, pack gap and ruler TTK within 5% (tiers 5-6 within 6%). The harness sets them with --maphp PACK,BOSS.</summary>
+    public static double PackPerSlot = 0.9, BossPerSlot = 0.4;
     static double DayMul(double per, int level) => 1 + per * Math.Max(0, SkillBook.SlotsAt(level) - 3);
 
     public MapRun(IZoneHost host, MapBuild map, Chart chart) : base(host, map.Meta)
