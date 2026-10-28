@@ -2,6 +2,22 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Work runs in `.claude/worktrees/armor-7` (branch armor-7, junction worktree: never git stash / reset --hard / checkout . / merge / pull with `godot\assets` linked; remove the link before merging integration, remake it after). One writer: the body chain and the armor pieces both live there.
 
+## HANDOFF to Body 22 (27 Oct late): two tracks approved by main/owner. Run them, then ONE blind max judge on both, then the owner's bare A|B (half size) to main
+**(a) Bank the bend (main: "go (a)").** The bend pass solver (11244752, ~213k) added FAIR (a lower-forearm smoothing) and a +5 mm thumb-side swell to arm_anatomy_post.py. Its elbow-back reshaping was tried and reverted, and the skin patch wasn't started. Body `B20\bend\heroine.glb` (a9722275); frames `B20\bend\after\`.
+- **The forearm line is the anatomy REST shape, not the elbow PSDs.** Tested by me at 1:1, w_m80: `B20\bend\brtest\fore_w_m80_1x.png` (shipped | B2 | bend | br-off) and `fore2_w_m80_1x.png` (shipped | anat rest only, no PSDs | bend). The line and a gaunt, veiny forearm show in every anatomy build, even with no PSDs. With `br` off it's still there. The shipped forearm is smooth and fuller.
+- **What's good:** the elbow PSDs (r3 corner) give the pointed elbow.
+- **DECIDED route:**
+  1. Limit arm_anatomy_post to the upper arm and the elbow's bones: feather it OFF from ~40 mm below the elbow joint, so the shipped forearm stays below that.
+  2. Keep the thumb-side swell only if it doesn't bring the line back.
+  3. Re-run `elbow_psd_post.py` on top.
+  4. Shoot w_m80 and w_m45 (`LIST=B20\bend\brtest\list.txt bash B20\bend\shoot.sh <outdir> <glb>`; the args are positional: OUT then BODY).
+  5. Check 1:1 crops with the same box (x 860-1300, y 620-900 at w_m80).
+- **Pass bar:** no line, the elbow a corner, the forearm toned and not gaunt.
+- **Left for later:** judge 5's item 3, the elbow back line straight into the tip (shape the cut to the profile: fit the two straight lines on each side, cut the round to them, tip 4-5 mm proud); the elbow skin patch (`heroine_arm_tone.bake`/`_encode`, period >= 7 mm, inside heroine.glb).
+**(b) Shoulder and armpit, ONE last in-team loop** (the owner: "Try one more in-team loop on the shoulder and armpit (the in-camera silhouette solver)"). One solver (~300-400k, su-lead-max) shapes the shoulder cap, the deltoid step (no ledge: a 35-45 mm taper into the V ~45% down) and the front armpit fold (a WEB: radius 10-15 mm, 30-40 mm wide at the breast's upper outer edge, ~20 mm where it passes under the deltoid's front). It works against a reference silhouette at 1:1 at w_p45, w_m45 and look_f, measured IN-CAMERA each iteration (the B20 harness: zr2.py / ov.py on the dumps in `B20\dump`), not in mesh space. The Look's width stays within ±3 px. It can run alongside (a) if the regions stay separate (shoulder vs below the elbow); take Blender turns. If the judge still calls the shoulder/armpit FAR: STOP, no further in-team rounds (main).
+**The judge:** blind, max, 1:1. Frames: w_m80, w_m45, w_p45, look_f, plus s_p45. Re-shoot the BEFORE set on the current code (look_f's before in shots3 predates the Look rim, a confound). Build the pairs as `B20\judge5` (the pairs script is inline in the Body 21 history: crops 760 wide). SCORE the blind calls against the key yourself before reading the notes (judge 5 got 2/6 and wrote its notes about the wrong side).
+**Cost to here, Body 21:** about 1.15M (adds the bend solver 213k and my tests ~25k). Scratch `B20\` = coordinator ee2b9848's scratchpad `body20\`.
+
 ## Body 21, 27 Oct night: STOPPED at main's gate (the B2 resculpt FAILED at max judge 5; the Meshy probe failed its raw-shape check). WAITING on main/owner
 **The owner:** "no, try to fix it some more" (no artist), then "start the Meshy shape probe alongside the resculpt". Main's rule: change the SHAPE at real scale, have one max judge, and stop if it's still far.
 **B2 (anatomy resculpt):** `tools/assets/arm_anatomy_post.py` (1ca7bbc8, 18331a4b; NOT registered in heroine_body_post.py). SDF muscle and bone volumes in her bone frames, her arm skin projected onto them, then `elbow_psd_post.py` on top. Rebuild: `python tools/assets/arm_anatomy_post.py godot/art/people/heroine.glb B20\b21p2\anat.glb`, then `python tools/assets/elbow_psd_post.py B20\b21p2\anat.glb B20\b21p2\heroine.glb` (sha1 d465ea06). The Look width is back to git (cap clamp); the elbow corner is radius 7-8 mm at 90. The front armpit fold was never built (it read as a fin or a nub).
