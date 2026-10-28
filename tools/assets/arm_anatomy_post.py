@@ -123,8 +123,24 @@ FORM = {
         (98.0, 28.0, 145.0, 30.0, -2.5),    # its back border onto the triceps' lateral head
         (150.0, 55.0, -12.0, 48.0, 4.5),    # the biceps' belly (peak ~57% down), the narrow point above the elbow kept
         (150.0, 50.0, 190.0, 38.0, 2.0),    # the triceps' long head
-        (226.0, 24.0, 180.0, 34.0, -2.0),   # its flat tendon plate above the olecranon
+        # (pass 3: its flat tendon plate's -2 mm dip at s 226 off: judge 5, the bent elbow side-on, the back line runs
+        #  straight into the point; the narrowing above the elbow belongs on the inner and outer sides)
     ],
+    # (pass 3, Body 21 bend) RELIEF on the forearm (F: s2 from the elbow joint, phi 0 radial/front, 90 dorsal/out):
+    # the thumb-side swell (brachioradialis and the long wrist extensors) judge 5 found missing at w_m80: 4-5 mm on the
+    # radial side over the forearm's top 80 mm, widest just below the crease, rising 30-40 mm above it over the
+    # biceps' lower end. Rows: (s2 mm, mm) amplitude; phi window (phi0, half-width) (1 - x^2)^2.
+    "relief_F": dict(rows=[(-48, 0.0), (-36, 1.2), (-20, 3.0), (0, 4.3), (20, 5.0), (45, 4.8), (70, 3.4), (95, 1.6),
+                           (120, 0.4), (140, 0.0)], phi=(30.0, 80.0)),
+    # (pass 3) FAIR: the lower forearm as one smooth flat oval. Judge 5 at w_m80: a dark lengthwise line along the
+    # forearm's top from its upper third to the wrist, ropy tendon lines at the wrist (w_m45, s_p45, rL90): the
+    # spindles' tails (br_belly to s2 175, extensors, flexors, the ulna's ridge) and the per-vertex projection left
+    # corners and narrow valleys in its cross-sections (a radial mass standing on a flat dorsal plane, its edge
+    # drifting from phi ~45 at s2 145 to ~80 at s2 210). Each ring (s2) of her final surface fitted round its centre by
+    # a Fourier series to order K (r(phi)), the coefficients smoothed along s2 (sigma mm), and the points moved
+    # radially onto it: anything narrower than ~360/(2K) deg of the ring is gone. Whole from s2 s[1] to s[2], fading
+    # in from s[0] (the elbow's forms above stay) and out to s[3] (into her hand).
+    "fair_F": dict(K=4, s=(35.0, 90.0, 240.0, 268.0), ds=3.0, half=4.0, sigma=7.0),
     # (pass 2) never outward at the shoulder top: the outward move clamped to `out` mm above s[0] (fading out by s[1]),
     # round the back half (phi ramps in phi[0]..phi[1], out phi[2]..phi[3]); the Look's camera sees this side
     "cap_clamp": dict(s=(80.0, 105.0), phi=(70.0, 85.0, 200.0, 215.0), out=0.3),
@@ -266,13 +282,20 @@ class Form:
         return D - s.form["skin"] - s.relief(P)
 
     def relief(s, P):
-        """the relief offset (mm, + out) at points P: FORM["relief"] bumps on the upper arm's (s, phi)"""
+        """the relief offset (mm, + out) at points P: FORM["relief"] bumps on the upper arm's (s, phi), and
+        FORM["relief_F"] on the forearm's"""
         rl = s.form.get("relief")
+        out = np.zeros(len(P))
+        rf = s.form.get("relief_F")
+        if rf:
+            QF = local(s.FR, "F", P)
+            pf = np.degrees(np.arctan2(QF[:, 0], QF[:, 1]))
+            dp = (pf - rf["phi"][0] + 180.0) % 360.0 - 180.0
+            out += _prof(rf["rows"], QF[:, 2]) * np.clip(1 - (dp / rf["phi"][1]) ** 2, 0, None) ** 2
         if not rl:
-            return 0.0
+            return out
         Q = local(s.FR, "U", P)
         ph = np.degrees(np.arctan2(Q[:, 0], Q[:, 1]))
-        out = np.zeros(len(P))
         for s0, sh, p0, phh, mm in rl:
             ws = np.clip(1 - ((Q[:, 2] - s0) / sh) ** 2, 0, None) ** 2
             dp = (ph - p0 + 180.0) % 360.0 - 180.0
@@ -399,7 +422,59 @@ def moves(b, form=FORM, amt=1.0, smooth=SMOOTH, report=None):
         grow = grow | (b.A @ grow.astype(float) > 0)
     for _ in range(smooth):
         dU = np.where(grow[:, None], dU + 0.5 * b.lap(dU), dU)
-    return dU * amt, info
+    dU = dU * amt
+    if form.get("fair_F"):                                # (pass 3) the lower forearm a smooth flat oval
+        for side in ("l", "r"):
+            dU, info[side]["fair_mm"] = fair(b, FR, dU, side, form["fair_F"])
+    return dU, info
+
+
+def fair(b, FR, dU, side, cfg):
+    """(pass 3) her forearm's rings (her final rest surface, s2 from the elbow joint) fitted by Fourier series to
+    order K round their centres, smoothed along s2, and her points moved radially onto them: (dU, most mm moved)"""
+    import arm_contour_post as ac
+    from scipy.ndimage import gaussian_filter1d
+    sg = 1 if side == "l" else -1
+    mir = np.array([sg, 1, 1.0])
+    off = np.array([XM * (1 - sg), 0, 0])
+    P = (b.U + dU) * mir + off
+    side_ok = (b.U[:, 0] > XM) if side == "l" else (b.U[:, 0] < XM)
+    wf = ac._armw(b, side, ("lowerarm", "hand"))
+    wh = ac._armw(b, side, ("hand",))
+    Q = local(FR, "F", P)
+    s0, s1, s2_, s3 = cfg["s"]
+    sel = np.nonzero(side_ok & (wf > 0.5) & (wh < 0.5) & (Q[:, 2] > s0 - 12) & (Q[:, 2] < s3 + 6))[0]
+    K, ds, hw = int(cfg["K"]), float(cfg["ds"]), float(cfg["half"])
+    cs = np.arange(s0 - 8, s3 + 6 + 1e-6, ds)
+    C, A, ok = np.zeros((len(cs), 2)), np.zeros((len(cs), 2 * K + 1)), np.zeros(len(cs), bool)
+    ks = np.arange(1, K + 1)
+
+    def basis(ph):
+        return np.concatenate([np.ones((len(ph), 1)), np.cos(np.outer(ph, ks)), np.sin(np.outer(ph, ks))], 1)
+    for i, c in enumerate(cs):
+        m = sel[np.abs(Q[sel, 2] - c) < hw]
+        if len(m) < 4 * K + 4:
+            continue
+        xy = Q[m, :2]
+        C[i] = 0.5 * (xy.min(0) + xy.max(0))
+        d = xy - C[i]
+        A[i] = np.linalg.lstsq(basis(np.arctan2(d[:, 0], d[:, 1])), np.hypot(d[:, 0], d[:, 1]), rcond=None)[0]
+        ok[i] = True
+    cs, C, A = cs[ok], C[ok], A[ok]
+    sig = float(cfg["sigma"]) / ds
+    C, A = gaussian_filter1d(C, sig, axis=0, mode="nearest"), gaussian_filter1d(A, sig, axis=0, mode="nearest")
+    sv = Q[sel, 2]
+    Ci = np.stack([np.interp(sv, cs, C[:, j]) for j in range(2)], 1)
+    Ai = np.stack([np.interp(sv, cs, A[:, j]) for j in range(A.shape[1])], 1)
+    d = Q[sel, :2] - Ci
+    ph = np.arctan2(d[:, 0], d[:, 1])
+    r1 = (basis(ph) * Ai).sum(1)
+    mv = (r1 - np.hypot(d[:, 0], d[:, 1]))[:, None] * np.stack([np.sin(ph), np.cos(ph)], 1)
+    w = _ss(s0, s1, sv) * (1 - _ss(s2_, s3, sv)) * _ss(0.5, 0.75, wf[sel]) * (1 - _ss(0.25, 0.5, wh[sel]))
+    mv *= w[:, None]
+    D = np.zeros_like(dU)
+    D[sel] = (mv[:, :1] * FR["F"]["l"] + mv[:, 1:] * FR["F"]["f"]) / 1000.0
+    return dU + D * mir, round(float(np.abs(mv).max()), 2)
 
 
 # ----------------------------------------------------------------------------------------------------- writing --
