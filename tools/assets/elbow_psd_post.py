@@ -53,19 +53,30 @@ DEV = {45.0: 16.0, 90.0: 10.0, 135.0: 3.0}
 DMI = int(_E("EPSD_DM", 40))          # delta mush rounds (her arm's edges ~4.7 mm: about 2 cm of smoothing)
 DM_BACK = float(_E("EPSD_BACK", 0.0))  # the delta mush's share at the elbow's back (|phi| past 130: the share and point
 #                                       bones' round and the olecranon are the rig's; smoothing them took volume)
-REACH_UP, REACH_FORE = 0.11, 0.11      # m from the elbow joint up the humerus / down the forearm: whole, then fading
+REACH_UP, REACH_FORE = 0.15, 0.14      # m from the elbow joint up the humerus / down the forearm: whole, then fading
 FADE = 0.04
-# the sculpt per sample (mm; t up the humerus from the shoulder in humerus lengths, t2 down the forearm in forearm
-# lengths from the elbow; phi deg round the arm: 0 front, 90 out, 180 back, -90 in)
+# The sculpt per sample (r2, after judge 1: r1's 1-4 mm forms didn't read at the town close-up, ~0.9 px per mm), in mm
+# along the posed normal, on one chart continuous across the joint (z mm along the arm, - up the humerus, + down the
+# forearm; ang deg round it: 0 front, 90 out, 180 back, -90 in):
+#   fill  the posed skin's radial shrink round the joint's sides put back (the side caved by the bend), plus this much
+#         on the outer side (never caved);
+#   bic   the biceps' belly bunched (~5 mm at 90);
+#   br    the brachioradialis/extensor mass (the mobile wad), rising 30-40 mm above the joint on the outer side, over the
+#         humerus' lower end, its peak ~25 mm below the joint, spiralling to the thumb side;
+#   flex  the flexor-pronator mass from the medial epicondyle, bulging into the biceps (4-6 mm at 90-135);
+#   epi   the lateral epicondyle's bump (the medial's 0.8 of it);
+#   ole   the olecranon: the elbow's back point brought to this PROMINENCE (mm past the triceps' back line carried on,
+#         as tools/anim/elbow_sweep.py measures it), whatever the body gives (a function of the input body), and at
+#         least ole_min tall (the corner's round tightened to a point: the measure alone left a round corner);
 SCULPT = {
-    45.0: dict(bic=2.0, bic_t=0.62, bic_lo=0.3, fore=1.0, crease=0.8, lip=0.5, ole=1.5, epi=0.6, vol=0.8),
-    90.0: dict(bic=3.5, bic_t=0.58, bic_lo=0.5, fore=2.0, crease=1.6, lip=0.9, ole=3.0, epi=1.0, vol=2.5),
-    135.0: dict(bic=3.5, bic_t=0.56, bic_lo=0.3, fore=1.5, crease=2.0, lip=1.0, ole=2.5, epi=1.0, vol=4.0),
+    45.0: dict(fill=1.0, bic=3.0, bic_lo=1.5, fs=3.0, br=2.5, flex=1.5, epi=1.8, flat=0.5, ole=6.5, ole_min=2.5),
+    90.0: dict(fill=1.5, bic=5.5, bic_lo=3.0, fs=6.0, br=4.0, flex=3.0, epi=3.0, flat=2.0, ole=6.0, ole_min=7.0),
+    135.0: dict(fill=1.5, bic=5.5, bic_lo=0.0, fs=4.0, br=4.0, flex=2.5, epi=3.0, flat=2.0, ole=6.0, ole_min=7.0),
 }
 if _E("EPSD_SCULPT"):
     for k, v in json.loads(_E("EPSD_SCULPT")).items():
         SCULPT[float(k)].update(v)
-CREASE_W, LIP_AT, LIP_W, CREASE_ARC = 4.0, 7.5, 3.5, 75.0   # mm, mm, mm, deg either side of the bend's inside
+BIC_T = 0.62                            # the biceps' bunched belly, humerus lengths from the shoulder
 
 
 def _bw(x):
@@ -124,6 +135,62 @@ def charts(U, M0, I, s):
     return out
 
 
+def elbow_chart(t, phi, L, t2, phi2, L2):
+    """One chart continuous across the joint: z (mm along the arm: - up the humerus, + down the forearm), ang (deg
+    round it: 0 front, 90 out, 180 back, -90 in), and bf (0 the humerus' chart, 1 the forearm's; blended over the
+    joint's +-15 mm)."""
+    zu, zf = (t - 1.0) * L * 1000, t2 * L2 * 1000
+    bf = _ss((zf + 15.0) / 30.0)
+    pu, pf = np.radians(phi), np.radians(phi2)
+    ang = np.degrees(np.arctan2((1 - bf) * np.sin(pu) + bf * np.sin(pf), (1 - bf) * np.cos(pu) + bf * np.cos(pf)))
+    return (1 - bf) * zu + bf * zf, ang, bf
+
+
+def apex_z(X, zm, ang, side, sh, el, flex):
+    """The rest z (mm) whose back (ang ~180) lands on the posed outer corner's bisector: round the joint, flex/2 from
+    the humerus' back line toward the forearm's (the humerus at rest: flex_pose turns the forearm only)."""
+    u = (el - sh) / np.linalg.norm(el - sh)
+    f = np.array([0, 0, 1.0]) - u * u[2]
+    f /= np.linalg.norm(f)
+    m = side & (np.abs(_wrap(ang - 180)) < 15) & (np.abs(zm) < 60)
+    rel = X[m] - el
+    th = np.arctan2(rel @ u, -(rel @ f))
+    zs = np.arange(-50.0, 51.0, 5.0)
+    med = np.array([np.median(th[np.abs(zm[m] - z0) < 4]) for z0 in zs])
+    med = np.degrees(np.unwrap(med))
+    k = np.r_[True, np.diff(med) > 0]          # (monotone near the joint; past a fold, cut)
+    k = np.cumprod(k).astype(bool)
+    return float(np.interp(flex / 2, med[k], zs[k]))
+
+
+def _line_dist(X, a, b):
+    ax = (b - a) / np.linalg.norm(b - a)
+    rel = X - a
+    return np.linalg.norm(rel - np.outer(rel @ ax, ax), axis=1)
+
+
+def prominence(Y, sel, sh, el):
+    """The elbow's back point (mm), as tools/anim/elbow_sweep.py olecranon() reads it on the posed arm: the back edge
+    (|across| < 25 mm) per 7.5 mm along the humerus from the joint, its most past the upper arm's back line (z -60..-30
+    mm) carried on, at z -7.5..+22.5 mm. The humerus at rest here (flex_pose turns the forearm only)."""
+    u = (el - sh) / np.linalg.norm(el - sh)
+    f = np.array([0, 0, 1.0]) - u * u[2]
+    f /= np.linalg.norm(f)
+    h = np.cross(u, f)
+    rel = Y[sel] - el
+    y, z, x = rel @ f, rel @ u * 1000, rel @ h
+    near = np.abs(x) < 0.025
+    rows = []
+    for z0 in np.arange(-60, 31, 7.5):
+        k = near & (np.abs(z - z0) < 3.75)
+        rows.append((z0, -y[k].min() * 1000 if k.any() else np.nan))
+    rows = np.array(rows)
+    up = rows[(rows[:, 0] >= -60) & (rows[:, 0] <= -30)]
+    cf = np.polyfit(up[:, 0], up[:, 1], 1)
+    tip = rows[(rows[:, 0] >= -7.5) & (rows[:, 0] <= 22.5)]
+    return float(np.nanmax(tip[:, 1] - np.polyval(cf, tip[:, 0])))
+
+
 def author(G, s, log=print):
     U, F, J, W, wid = skin_union(G)
     rig = Rig(G)
@@ -151,6 +218,8 @@ def author(G, s, log=print):
     active = reg > 1e-3
     grow = _smooth(active[:, None].astype(float), A, deg, DMI + 4)[:, 0] > 0
     upper = t2 <= 0.0
+    zm, ang, bf = elbow_chart(t, phi, L, t2, phi2, L2)
+    side = sd * U[:, 0] > 0.05
     out = {}
     for flex, name in zip(SAMPLES, NAMES):
         M, wep, fl = flex_pose(rig, s, flex, DEV[flex])
@@ -159,42 +228,52 @@ def author(G, s, log=print):
         X = np.einsum("nij,nj->ni", Bm, np.c_[Ur, np.ones(len(U))])[:, :3]
         T = delta_mush(Ur, X, F, A, deg, nb, DMI, grow)
         # (the back keeps DM_BACK of it: the point bone's olecranon is the rig's; |phi| past 120 is the back)
-        ph = np.where(upper, phi, phi2)
-        kdm = 1 - (1 - DM_BACK) * _ss((np.abs(ph) - 90) / 40)
+        kdm = 1 - (1 - DM_BACK) * _ss((np.abs(ang) - 90) / 40)
         Dp = (T - X) * (reg * kdm)[:, None]
-        # the sculpt, along the posed normal, in the posed elbow's frame
+        # the sculpt, along the posed normal (mm), on the elbow's chart (z, ang)
         c = SCULPT[flex]
         Y = X + Dp
         Ny = _vn(Y, F)
-        bic = c["bic"] * _bw((t - c["bic_t"]) / 0.2) * _bw(_wrap(phi + 8) / 55) * upper
-        bic -= c["bic_lo"] * _bw((t - 0.86) / 0.07) * _bw(phi / 50) * upper
-        fore = c["fore"] * _bw((t2 - 0.2) / 0.16) * _bw(_wrap(phi2 - 25) / 65) * (t2 > 0)
-        # the crease: on the bend's bisector (the plane through the joint between the humerus and the forearm)
-        ce = M[I[f"lowerarm_{s}"], :3, 3]
-        uu = M[I[f"upperarm_{s}"], :3, 3] - ce
-        uu /= np.linalg.norm(uu)
-        ff = M[I[f"hand_{s}"], :3, 3] - ce
-        ff /= np.linalg.norm(ff)
-        nbis = uu - ff
-        nbis /= np.linalg.norm(nbis)
-        dlt = (Y - ce) @ nbis * 1000
-        inside = uu + ff
-        inside = inside / max(np.linalg.norm(inside), 1e-9)
-        rel = Y - ce
-        rel_p = rel - np.outer(rel @ nbis, nbis)
-        cosang = (rel_p @ inside) / np.maximum(np.linalg.norm(rel_p, axis=1), 1e-9)
-        arc = _bw(np.degrees(np.arccos(np.clip(cosang, -1, 1))) / CREASE_ARC)
-        near = 1 - _ss((np.linalg.norm(rel, axis=1) - 0.055) / 0.02)
-        crease = (-c["crease"] * np.exp(-0.5 * (dlt / CREASE_W) ** 2)
-                  + c["lip"] * np.exp(-0.5 * ((np.abs(dlt) - LIP_AT) / LIP_W) ** 2)) * arc * near
-        # the olecranon's point (the back at the joint's line, up the bend's outside) and the epicondyles
-        back = _bw(np.degrees(np.arccos(np.clip(-cosang, -1, 1))) / 35) * _bw(dlt / 14)
-        ole = c["ole"] * back * (1 - _ss((np.linalg.norm(rel, axis=1) - 0.045) / 0.02))
-        epi = c["epi"] * (_bw(_wrap(phi - 100) / 30) + 1.3 * _bw(_wrap(phi + 100) / 30)) * _bw((t - 0.97) / 0.06) * upper
-        # the outer elbow's volume: the corner's sides and back, where the bend presses it in, filled out round the joint
-        side = _ss((np.abs(ph) - 60) / 40)
-        vol = c["vol"] * side * (1 - _ss((np.linalg.norm(rel, axis=1) - 0.035) / 0.03)) * (1 - 0.6 * back)
-        h = (bic + fore + crease + ole + epi + vol) * 1e-3 * reg
+        P = {n: M[I[f"{n}_{s}"], :3, 3] for n in ("upperarm", "lowerarm", "hand")}
+        # fill: the skin's radial shrink round each bone's line (posed against rest; + caved) put back on the joint's
+        # sides and back, plus `fill` on the outer side, kept broad
+        ru = _line_dist(Y, P["upperarm"], P["lowerarm"])
+        rf = _line_dist(Y, P["lowerarm"], P["hand"])
+        shrink = ((1 - bf) * (r - ru) + bf * (r2 - rf)) * 1000
+        sides = np.clip(_bw(_wrap(ang - 95) / 85) + 0.8 * _bw(_wrap(ang + 100) / 70), 0, 1)
+        zone = _ss((zm + 70) / 25) * (1 - _ss((zm - 15) / 30))
+        fill = (np.clip(shrink, 0, 12) + c["fill"] * _bw(_wrap(ang - 95) / 70)) * sides * zone
+        fill = _smooth(fill[:, None], A, deg, 10, grow)[:, 0]
+        # the masses
+        bic = (c["bic"] * _bw((zm + (1 - BIC_T) * L * 1000) / 80) * _bw(_wrap(ang + 5) / 70)
+               + c["bic_lo"] * _bw((zm + 38) / 32) * _bw(_wrap(ang) / 60)) * (1 - bf)
+        # the forearm's front (what faces the biceps as it bends), swelling from a fold that slants: higher on the
+        # outer side, lower on the inner (the medial epicondyle's line)
+        top = -5.0 - 15.0 * np.sin(np.radians(ang))
+        fs = c["fs"] * _bw((zm - 40) / np.where(zm < 40, 40 - top + 5, 110)) * _bw(_wrap(ang - 10) / 85) * (zm > top - 5)
+        a0 = np.clip(45 - 0.3 * zm, 5, 60)
+        br = c["br"] * _bw((zm - 30) / np.where(zm < 30, 65, 110)) * _bw(_wrap(ang - a0) / 70)
+        fx = c["flex"] * _bw((zm - 35) / np.where(zm < 35, 45, 100)) * _bw(_wrap(ang + 45) / 60)
+        epi = c["epi"] * _bw((zm + 8) / 22) * (_bw(_wrap(ang - 100) / 35) + 0.8 * _bw(_wrap(ang + 100) / 35))
+        # the outer corner: where the bend's outside turns (the rest z landing on its bisector) the olecranon's point;
+        # either side of it the triceps' tendon (above) and the ulna's border (below) eased in, so the round reads as a
+        # point between two flat planes, not a pipe's bend
+        za = apex_z(X, zm, ang, side, P["upperarm"], P["lowerarm"], flex)
+        flat = -c["flat"] * (_bw((zm - za + 24) / 14) + 0.8 * _bw((zm - za - 24) / 14)) * _bw(_wrap(ang - 180) / 55)
+        h = fill + bic + fs + br + fx + epi + flat
+        # the olecranon: tall enough to bring its prominence to c["ole"], at least c["ole_min"]
+        olek = _bw((zm - za) / 16) * _bw(_wrap(ang - 180) / 40)
+        sel = (armw > 0.6) & (t > -0.1) & (t < 1.6) & (r < 0.08) & (sd * U[:, 0] > 0.05)
+        prom = lambda a: prominence(Y + Ny * ((h + a * olek) * 1e-3 * reg)[:, None], sel,  # noqa: E731
+                                    P["upperarm"], P["lowerarm"])
+        oa, p0 = 0.0, prom(0.0)
+        pr = p0
+        for _ in range(3):
+            oa = float(np.clip(oa + c["ole"] - pr, c["ole_min"], 9.0))
+            pr = prom(oa)
+        h = (h + oa * olek) * 1e-3 * reg
+        log("ELBOW_PSD %s_%s: olecranon %.1f -> %.1f mm (point %.1f mm at rest z %+.1f); fill most %.1f"
+            % (name, s, p0, pr, oa, za, fill.max()))
         Dp = Dp + Ny * h[:, None]
         Dp = _smooth(Dp, A, deg, 2, grow)
         Dp, nf0, nf1 = untangle(X, Dp, F, A, deg, grow, reg)
@@ -205,8 +284,23 @@ def author(G, s, log=print):
         log("ELBOW_PSD %s_%s (flexion %.1f, elbow_point %s): folds %d -> %d; %d points, most %.1f mm, out %.1f in %.1f mm"
             % (name, s, fl, {k: round(v, 2) for k, v in wep.items()}, nf0, nf1, int((np.abs(Db).max(1) > 0).sum()),
                1000 * np.linalg.norm(Dp, axis=1).max(), 1000 * dn.max(), -1000 * dn.min()))
+        if _E("EPSD_TABLE"):
+            log(_table(zm, ang, dn * 1000, reg > 0.05, "%s_%s: the shape's move along the posed normal (mm, mean)"
+                       % (name, s)))
         out[name] = Db
     return out, (U, F, wid)
+
+
+def _table(zm, ang, v, m, title):
+    """A (z, ang) table of v's mean over m (a check for the authoring: EPSD_TABLE=1)."""
+    rows = [title, "   z / ang  " + " ".join("%5d" % a for a in range(-150, 181, 30))]
+    for z0 in range(-90, 136, 15):
+        row = []
+        for a0 in range(-150, 181, 30):
+            k = m & (np.abs(zm - z0) < 7.5) & (np.abs(_wrap(ang - a0)) < 15)
+            row.append("%5.1f" % v[k].mean() if k.sum() > 2 else "    .")
+        rows.append("  %4d      " % z0 + " ".join(row))
+    return chr(10).join(rows)
 
 
 def main(a):

@@ -63,9 +63,9 @@ public class ElbowPsdTests
         Assert.Equal(1f, ElbowPsd.Weight(k[2][0], k[2][1], k[2][2], 135f));
         Assert.Equal(1f, ElbowPsd.Weight(k[2][0], k[2][1], k[2][2], 160f));
         foreach (var d in new[] { 50f, 67.5f, 89f, 91f, 120f, 134f })
-            Assert.Equal(1f, k.Sum(x => ElbowPsd.Weight(x[0], x[1], x[2], d)), 4);
-        Assert.Equal(0f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitY, 1.2f)), 3);
-        Assert.Equal(90f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI / 2)), 3);
-        Assert.Equal(0f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 0.3f)), 3);
+            Assert.Equal(1f, k.Sum(x => ElbowPsd.Weight(x[0], x[1], x[2], d)), 1e-4f);
+        Assert.Equal(0f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitY, 1.2f)), 1e-3f);
+        Assert.Equal(90f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitX, MathF.PI / 2)), 1e-3f);
+        Assert.Equal(0f, ElbowPsd.Flexion(Quaternion.Identity, Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 0.3f)), 1e-3f);
     }
 }
