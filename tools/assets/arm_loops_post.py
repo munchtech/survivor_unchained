@@ -84,6 +84,19 @@ DELT = {
     "delt_front": dict(chart="U", pts=[(60.0, 15.0), (95.0, 50.0), (117.0, 82.0)], cuts=[-2, 2], half=9.0, ext=0.06),
     "delt_back": dict(chart="U", pts=[(20.0, 200.0), (75.0, 150.0), (117.0, 95.0)], cuts=[-2, 2], half=9.0, ext=0.06),
 }
+# (Body 23 r2) the PIT BAND: cuts ACROSS the pit's front opening, from the breast's upper-outer edge to the arm's front
+# under the deltoid, laid where the fold shows: her arm HANGING (the rest arm turned down `adduct` deg in her front plane
+# and back `extend` deg about her shoulder joint, blended by her arm's weight). There the opening is a slit; the front
+# fold rim's cuts close round it in a U (a roll along them pinched), and these run across it, chest side and arm side.
+# Field: the signed distance (mm, hanging pose, her front plane) to the quadratic through p1 (on her chest's side: the
+# first surface out from inside her chest along a ray p1[0] mm below the pit's apex, p1[1] deg from straight out toward
+# her front, starting p1[2] mm in from the apex), its middle sagged `sag` mm toward her shoulder, and p2 (on her arm: U
+# chart s mm down the humerus, phi deg round it); only within `reach` of the hanging p1-p2 segment, not facing back. Appended AFTER every other cut (both arms), so the loops' points keep their indices: append-only.
+BAND = dict(cuts=[-6, -3, 0, 3, 6], half=11.0, ext=0.1, adduct=26.0, extend=8.0, p1=(-20.0, 35.0, 30.0), p2=(40.0, -15.0),
+            sag=4.0, reach=0.025, face=-0.3)
+if os.environ.get("LOOPS_BAND"):
+    BAND.update(json.loads(os.environ["LOOPS_BAND"]))
+ARMB = ("upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
 
 
 # ------------------------------------------------------------------ the mesh --
@@ -766,6 +779,87 @@ def plan_side(m, sd, log):
     return ops, info, arm
 
 
+def _rot(axis, deg):
+    a = np.asarray(axis, float) / np.linalg.norm(axis)
+    t = np.radians(deg)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) + np.sin(t) * K + (1 - np.cos(t)) * K @ K
+
+
+def plan_band(m, sd, log):
+    """the pit band's cuts of one arm (after every other op): [(kind, name, field, value, region)], info"""
+    cfg = BAND
+    Uc0 = sd.c(m.U)
+    Fw0 = m.faces()
+    Js = sd.Jn["upperarm"]
+    names = [n for n in m.names if n.endswith("_" + sd.side) and n.split("_")[0] in ARMB]
+    R = _rot([1.0, 0, 0], cfg["extend"]) @ _rot([0, 0, 1.0], -cfg["adduct"])     # canonical: down toward her side, back
+
+    def hang(X, w):
+        return X + w[:, None] * ((X - Js) @ R.T + Js - X)
+    # the pit's apex (as plan_side finds it)
+    N0 = m.vnormals() * sd.k
+    cand = (np.abs(Uc0[:, 2] - Js[2]) < 0.006) & (Uc0[:, 0] > 0.08) & (Uc0[:, 0] < Js[0]) & (N0[:, 1] < -0.3) & \
+           (Uc0[:, 1] < Js[1]) & (Uc0[:, 1] > Js[1] - 0.2)
+    ap = Uc0[np.nonzero(cand)[0][np.argmax(Uc0[cand, 1])]]
+    # p1: her chest's side at the breast's upper-outer edge; p2: her arm's front under the deltoid
+    th = np.radians(cfg["p1"][1])
+    o1 = ap + np.array([-cfg["p1"][2], cfg["p1"][0], cfg["p1"][2] * 0.5]) * MM
+    d1 = np.array([np.cos(th), 0.0, np.sin(th)])
+    near1 = np.linalg.norm(Uc0 - o1, axis=1) < 0.08
+    p1 = ray_hit(Uc0, Fw0, o1, d1, near1)
+    F = sd.Uf
+    ax = F["O"] + cfg["p2"][0] * MM * F["a"]
+    near2 = np.linalg.norm(Uc0 - ax, axis=1) < 0.09
+    p2 = ray_hit(Uc0, Fw0, ax, sd.sp2dir(cfg["p2"][1]), near2)
+    w0 = m.weights(names)
+    i1, i2 = (int(np.argmin(np.linalg.norm(Uc0 - p, axis=1))) for p in (p1, p2))
+    q1, q2 = hang(p1[None], w0[[i1]])[0], hang(p2[None], w0[[i2]])[0]
+    # the curve in her front plane (x, y), its middle sagged toward the shoulder (+ side: up/out)
+    a2, b2 = q1[:2], q2[:2]
+    dv = (b2 - a2) / np.linalg.norm(b2 - a2)
+    nrm = np.array([-dv[1], dv[0]])
+    if nrm[1] < 0:
+        nrm = -nrm
+    mid = (a2 + b2) / 2 + nrm * cfg["sag"] * MM
+    crv = bezier3(np.array([a2, mid, b2]) / MM, cfg["ext"])
+
+    def posed(X):
+        w = m.weights(names)
+        if len(w) != len(X):
+            w = w[:len(X)]
+        return hang(X, w), w
+
+    def f(X):
+        H, _ = posed(X)
+        d, _u = curve_dist(H[:, :2] / MM, crv)
+        # (+ toward the shoulder: curve_dist's left of p1 -> p2)
+        sgn = 1.0 if (np.array([-dv[1], dv[0]]) @ nrm) > 0 else -1.0
+        return sgn * d * MM
+
+    def reg(X):
+        H, w = posed(X)
+        d, u = curve_dist(H[:, :2] / MM, crv)
+        m_ = (np.abs(d) < cfg["half"]) & (u > -cfg["ext"]) & (u < 1 + cfg["ext"])
+        # near the hanging segment (not her breast's front nor the pit's back) and not facing back
+        dseg, _ = seg_dist(H, np.array([q1, q2]))
+        m_ &= dseg < cfg["reach"]
+        Fw = m.faces()
+        q = np.cross(X[Fw[:, 1]] - X[Fw[:, 0]], X[Fw[:, 2]] - X[Fw[:, 0]])
+        Nn = np.zeros_like(X)
+        for k in range(3):
+            np.add.at(Nn, Fw[:, k], q)
+        Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-20)
+        Nn = Nn * sd.k[0]                      # (canonical: the right side's mirror turns the faces' winding)
+        Nh = Nn + w[:, None] * (Nn @ R.T - Nn)
+        return m_ & (Nh[:, 2] > cfg["face"])
+    info = dict(p1=p1.round(4).tolist(), p2=p2.round(4).tolist(), p1_hang=q1.round(4).tolist(), p2_hang=q2.round(4).tolist(),
+                len_hang_mm=round(float(np.linalg.norm(q2 - q1) / MM), 1), cfg={k: v for k, v in cfg.items()})
+    ops = [("cut", "pit_band%+d" % c, f, c * MM, reg) for c in cfg["cuts"]]
+    log("  %s pit_band: p1 %s p2 %s, hanging span %.0f mm" % (sd.side, info["p1"], info["p2"], info["len_hang_mm"]))
+    return ops, info
+
+
 # ------------------------------------------------------------------ chains --
 def chains(m, cut_id):
     """the welded points of one cut in order along it (one list per piece; closed loops repeat no point)"""
@@ -899,6 +993,19 @@ def run(src, dst, map_path=None, log=print):
             else:
                 n = m.refine(reg(Uc), (side, name))
                 log("  %s %-18s refined: %4d edges split" % (side, name, n))
+    # (r2) the pit band, after every other op of both arms: the loops' points above keep their indices
+    if BAND.get("cuts") and not os.environ.get("LOOPS_NO_BAND"):
+        for side in ("l", "r"):
+            sd = Side(m, side)
+            ops, info = plan_band(m, sd, log)
+            plan_info[side]["pit_band"] = info
+            for kind, name, f, c, reg in ops:
+                Uc = sd.c(m.U)
+                cid = len(cut_names)
+                cut_names.append((side, name))
+                fam = [i for i, (sd_, nm) in enumerate(cut_names[:-1]) if sd_ == side and nm.rstrip("+-0123456789") == "pit_band"]
+                n, on = m.cut(f(Uc), c, reg(Uc), cid, fam)
+                log("  %s %-18s split %4d edges, through %3d old points" % (side, name, n, on))
     log("  flips inside old faces: %d" % improve(m))
     E1, c1 = m.edges()
     Fw1 = m.faces()
