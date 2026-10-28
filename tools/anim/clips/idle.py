@@ -778,7 +778,7 @@ arcanist_wand.free_left = True
 # left hand carried with it on the fore-stock.
 # (The bow's line 26-28 deg below level before, pointing ~60 deg across her toward her left; now 36-38, its muzzle 29-32
 # below the wrist: an 11 deg turn.)
-STALKER_LOW = {"pitch": 11.0, "yaw": 38.0, "shift": (0.0, 0.0, 0.0)}
+STALKER_LOW = {"pitch": 11.0, "yaw": 38.0, "shift": (0.0, 0.0, -0.02)}
 _SHOULDER_X = 0.19   # (each shoulder's x off her middle at rest, the chest frame: the two hands' arcs in one space)
 
 
