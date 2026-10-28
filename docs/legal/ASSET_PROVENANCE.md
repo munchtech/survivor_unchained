@@ -40,8 +40,8 @@ The owner's goal: identify everything we use that isn't ours (that we didn't mak
 | Code, engine, libraries (CO) | 1 | 4 | 2 | 0 | 0 | 7 |
 | Data and writing (DA) | 2 | 1 | 0 | 0 | 2 | 5 |
 | Build and export (BU) | 0 | 1 | 2 | 0 | 0 | 3 |
-| On disk or in the repo, not shipped (WL) | 3 | 3 | 0 | 1 | 1 | 8 |
-| **Total** | **18** | **54** | **10** | **9** | **11** | **102** |
+| On disk or in the repo, not shipped (WL) | 5 | 3 | 0 | 1 | 1 | 10 |
+| **Total** | **20** | **54** | **10** | **9** | **11** | **104** |
 
 The 9 high rows are PE-08, CR-02, UI-01, UI-02, UI-03, FX-03, AI-01, AI-13 and WL-04. The 11 UNKNOWN rows are PE-05, PE-06, PE-09, UI-05, AI-04, AI-14, AI-15, AI-17, DA-02, DA-03 and WL-02.
 
@@ -332,7 +332,7 @@ AU-06's source files (SHA-256 of each file as fetched; the zips' hashes are in `
 | AI-15 | Installed on this PC but unused by any repo tool: MiniMax H3 (+ turbo LoRA), `MysticXXX_KREA2_v1` LoRA (a third-party Krea 2 LoRA trained with ai-toolkit; source unknown). **Identified (legal, 4 Oct):** Civitai model 2728644, "[KREA 2] Mystic XXX" by alcaitiff, v1.0 of 25 Jun 2026 (found by its SHA-256) | MiniMax H3 Community License; Mystic XXX: Krea 2 base terms, and the creator allows commercial use of images (Image, Sell, Rent), no credit, derivatives (Civitai) | Probably the picture for the hero's body (PE-09); the log fits its 256 layers | No | low: allowed by its creator; flagged an adult concept LoRA, not a real person | Owner question 6: the owner to confirm which LoRA the hero picture used. Either is allowed
 | AI-16 | Claude (Anthropic), in Claude Code | Anthropic's commercial terms assign outputs to the customer | The code (`godot/src`, `godot/logic`, shaders, `tools/`), the writing and dialogue (`godot/data/content`), this audit | Yes | low | Steam's survey covers dialogue "consumed by players": disclose AI-assisted writing |
 | AI-17 | ElevenLabs (planned final voices; packets in `docs/voice/elevenlabs`) | ElevenLabs terms: commercial use needs a paid plan; Voice Library voices carry their own terms | Nothing yet | Not yet | UNKNOWN until the plan and the voices are chosen | Keep the plan, invoices and each voice's terms with the takes |
-| AI-18 | Meshy (meshy.ai) API, Pro plan on the owner's account (from 27 Oct 2026); Marionette `meshy.cjs` | Meshy terms: paid-plan users "own all assets you create with Meshy" (https://www.meshy.ai/pricing); free-plan output would be CC BY 4.0 (never used) | 3D models from our own Krea 2 concepts: WE-12 so far | Yes | low | Rule (the owner, 27 Oct): "only spend meshy credits after a judge approves the concept. if a concept is bad don't meshy it." Every task is in Marionette `generated/meshy/ledger.jsonl` (name, task id, credits); keep the plan invoices |
+| AI-18 | Meshy (meshy.ai) API, Pro plan on the owner's account (from 27 Oct 2026); Marionette `meshy.cjs` | Meshy terms: paid-plan users "own all assets you create with Meshy" (https://www.meshy.ai/pricing); free-plan output would be CC BY 4.0 (never used) | 3D models from our own Krea 2 concepts: WE-12 so far (and WL-10, a probe) | Yes | low | Rule (the owner, 27 Oct): "only spend meshy credits after a judge approves the concept. if a concept is bad don't meshy it." Every task is in Marionette `generated/meshy/ledger.jsonl` (name, task id, credits); keep the plan invoices |
 
 ### Code, engine and libraries (CO)
 
@@ -376,6 +376,8 @@ AU-06's source files (SHA-256 of each file as fetched; the zips' hashes are in `
 | WL-06 | `docs/voice/samples/*` | Voice shoot-out samples | AI-12 | Various | none (repo only) |
 | WL-07 | `docs/bosses/notes/*`, `docs/feel/notes/*`, `docs/items/RESEARCH.md` | Research notes on other games (Diablo, Halls of Torment and others) | Our notes | Our work | none: notes, not shipped. Keep any quotes short |
 | WL-08 | `tools/vo/refs/*.flac` (37) | Voice references for the placeholders | VoxCPM2 voice designs from text, with seeds (`refs/casting.json`) | Apache-2.0 model; outputs ours | none: synthetic, no real voice cloned |
+| WL-09 | Session scratch `body20\meshy\E2_front.png` (+ `E2_front.json`) | **Probe, not shipped**: a front-view anatomy reference of an athletic woman in sports bra and briefs (Body 21's arm-shape probe), the concept a judge approved for the Meshy probe | OURS: generated 27 Oct 2026 on the local Krea 2 turbo (AI-01, ComfyUI), no LoRA, seed 2007, 8 steps; the full prompt is in `E2_front.json` | Krea 2 terms (AI-01) | none: reference only, never shipped |
+| WL-10 | Marionette `generated/meshy/body21_arm_probe/` (model.glb, textures, task.json) | **Probe, not shipped**: a Meshy figure made to test an arm shape for wrapping the heroine's own mesh onto; its arm came out a smooth tube, so no wrap was built and nothing of it is in any game file | Generated 28 Oct 2026 (UTC) on Meshy (Pro plan, the owner's account; AI-18) by image-to-3D from WL-09 alone (character preset, A-pose, symmetry on, 2k geometry), task `01a180e0-99fe-72ea-bb31-9ad572243050` in Marionette `generated/meshy/ledger.jsonl` | Meshy paid plan: the owner owns the output (AI-18); no credit needed | none: probe, not shipped. If a wrapped shape ever ships, the body row gains this as a source |
 
 ## Notes for the people who act on this
 
