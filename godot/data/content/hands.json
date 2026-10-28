@@ -13,7 +13,7 @@
     "boss": 0.5
   },
   "reaver": {
-    "per": 0.007,
+    "per": 0.008,
     "cap": 8,
     "fade": 3,
     "gate": 0.1,
@@ -23,7 +23,7 @@
   "arcanist": {
     "radius": 1,
     "seconds": 2,
-    "burn": 0.4,
+    "burn": 0.35,
     "chill": 1,
     "mark": 1,
     "cap": 12,
