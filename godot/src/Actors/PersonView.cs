@@ -102,7 +102,7 @@ public partial class PersonView : Node3D, INpcView
     /// clips' "grip_tilt_l" weight, eased as the tilt is). Does nothing while the piece is sheathed.</summary>
     public void Slide(string slot, float metres, float tilt = 0f, float pocket = 0f)
     {
-        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith("mount_")) return;
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
         if (!seats.TryGetValue(slot, out var s) || s.piece != piece)
         {

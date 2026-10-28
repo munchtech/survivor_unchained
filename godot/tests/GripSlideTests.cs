@@ -8,6 +8,16 @@ namespace SurvivorUnchained.Tests;
 /// <summary>The grip slide and tilt (Play/GripSlide.cs): which clip's value counts, the ease between them, and where the piece sits.</summary>
 public class GripSlideTests
 {
+    [Theory]
+    [InlineData("hand_r")]
+    [InlineData("hand_l")]
+    public void MountNameSurvivesGodotNodeNameRule(string bone) =>
+        Assert.Equal(GripSlide.MountPrefix + bone, GripSlide.ValidNodeName(GripSlide.MountPrefix + bone));
+
+    [Fact]
+    public void NodeNameRuleReplacesTheForbiddenCharacters() =>
+        Assert.Equal("mount_hand_r", GripSlide.ValidNodeName("mount:hand_r"));
+
     [Fact]
     public void FullShotWinsOverUpperAndMove() =>
         Assert.Equal(0.3f, GripSlide.Target(true, 0.3f, true, 0.2f, 0.5f, 0.1f, 0.0f));

@@ -206,7 +206,7 @@ public static class Arms
     {
         var att = new BoneAttachment3D { BoneName = bone };
         person.Skeleton.AddChild(att);
-        var mount = new Node3D { Name = $"mount_{bone}" };
+        var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
         mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);

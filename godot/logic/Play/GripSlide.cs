@@ -9,6 +9,17 @@ namespace SurvivorUnchained.Play;
 /// for the slide and the tilt), and where the piece then sits in its mount.</summary>
 public static class GripSlide
 {
+    /// <summary>Name prefix of a held piece's mount node (Arms.Hold) and what PersonView.Slide looks for. Must survive ValidNodeName unchanged.</summary>
+    public const string MountPrefix = "mount_";
+
+    /// <summary>Godot's node-name rule: each of . : @ / " % becomes '_' (silently, so a name using them never matches a later lookup).</summary>
+    public static string ValidNodeName(string name)
+    {
+        var c = name.ToCharArray();
+        for (int i = 0; i < c.Length; i++) if (".:@/\"%".IndexOf(c[i]) >= 0) c[i] = '_';
+        return new string(c);
+    }
+
     /// <summary>The slide wanted now: a whole-body one-shot's, else an upper-body one's, else the idle/run pair's by the move blend.</summary>
     public static float Target(bool fullOn, float fullS, bool upperOn, float upperS, float moveBlend, float idleS, float runS)
         => fullOn ? fullS : upperOn ? upperS : idleS + (runS - idleS) * Math.Clamp(moveBlend, 0f, 1f);
