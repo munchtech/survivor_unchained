@@ -78,12 +78,14 @@ public static class WickBook
     /// <summary>The order a skill's lamps light: the forced strand (the harness), the plan, then Light my way. Each
     /// candidate is taken only if it keeps the rules (its strand's lamps before it, one Turn), so the path is
     /// always a legal plan.</summary>
-    public static string[] Path(IReadOnlyList<string> plan, string skill)
+    public static string[] Path(IReadOnlyList<string> plan, string skill) => Path(plan, skill, ForceTurn);
+
+    public static string[] Path(IReadOnlyList<string> plan, string skill, string? force)
     {
         if (Wicks.Of(skill) is not { } w) return System.Array.Empty<string>();
         var strands = Wicks.StrandsOf(skill).ToList();
         var want = new List<string>();
-        if (ForceTurn != null && strands.Find(s => s.Id == ForceTurn) is { } forced)
+        if (force != null && strands.Find(s => s.Id == force) is { } forced)
             for (int n = 1; n <= Wicks.PerStrand; n++) want.Add(forced.LampId(n));
         want.AddRange(plan);
         if (strands.Find(s => s.Id == w.Suggested) is { } sug)
