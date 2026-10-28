@@ -29,6 +29,12 @@ the orb's centre at (378, 950) on the screen (was 382, 960; her head unmoved), 2
 inpainted (dg4_hand.png, ui17 p1: three fingertips fanned apart up the glass's lower left, each over the rim no more
 than the RING, a thumb pad at 4-5 o'clock, the palm under the glass). Her hand and forearm lifted HAND_LIFT brighter
 and the orb's red laid on the faces next to its lower half (RED_BOUNCE).
+
+ui17 A3 (the judge: "regroup the hair into 4-6 locks"; "the bronze ... leans toward shiny AI gold"): the source is
+dg6_hair.png, dg5_hand.png with its hair repainted as large locks (Krea 2 turbo + darkbrush 0.8, masked, denoise 0.70,
+seed 9300, over a guide that is dg5_hand regrouped by value into LOCKS by lock_pass; its alpha dg5_hand's: scripts and
+prompt in survivorsunchained_inputs/ui17_dg_src/patches/README.txt). The bronze pass now keeps dg5's verdigris, darkens
+the broad light (BZ), adds verdigris in the deep hollows (more in the hair's grooves) and only tight old-brass ridges.
 """
 import json
 import os
@@ -41,7 +47,7 @@ from scipy import ndimage
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui16_dg_src"
 SEED = 6305
-NAME = "dg5_hand"          # the inpainted source (and NAME_cut.png, its BiRefNet cut); ui17 A: dg5 = fuller fingers, round pads (ui17_dg_src/patches/README.txt)
+NAME = "dg6_hair"          # the inpainted source (and NAME_cut.png, its alpha); ui17 A: dg5 = fuller fingers, round pads; A3: dg6_hair = the hair as locks (ui17_dg_src/patches/README.txt)
 PADL = 128                 # the source's left padding (dg3: the orb further left)
 GLASS = (238.64, 336.6, 139.8)  # dg4's glass (placed by the guide, screen (378, 950)): centre, radius
 RING = 12.0                # her fingertips and thumb may lie over the glass's outer RING px (1080), no further in
@@ -57,7 +63,7 @@ GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
 SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source px): toned down
 HAND_LIFT = 0.06    # her hand and forearm a touch brighter than the rest of her bronze (ui17 A: 0.22 read yellow)
 RED_BOUNCE = (0.0, 0.0, 0.0)   # (ui17 A: the orb's red on her is live now, hud_dg_orb.gdshader, scaled to her life)
-STRAND_GAIN = 1.0   # ui17 A: the hair's joined highlights (strand_pass)
+STRAND_GAIN = 0.0   # ui17 A: the hair's joined highlights (strand_pass); A3: off (the hair is repainted as locks, LOCKS)
 HAND_MATCH = 1.0    # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
 
 
@@ -67,7 +73,7 @@ CHEEK = (545.0, 238.0, 38.0, 44.0)      # source px (dg4_hand.png, already padde
 SHOULDER_E = (650.0, 590.0, 110.0, 70.0)
 
 
-def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None):
+def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None, verd_k=None):
     """g: graded RGB (0..1), a: alpha; scale: source px per the figure's source px (the river's are coarser).
     The verdigris kept only in the hollows (where the bronze is darker than round it), bronzed elsewhere at its own
     value; the raised edges' highlights tightened (a narrow warm lift where the bronze is lighter than round it);
@@ -84,22 +90,43 @@ def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None
         bl = cv2.GaussianBlur(pa, (0, 0), 6.0 * scale)
         bl = bl[..., :3] / np.maximum(bl[..., 3:], 1e-3)
         g = g + (np.clip(bl, 0, 1) - g) * (round_mask * (a > 0.5))[..., None]
+    # ui17 A3 (the judge: "darker base, continuous verdigris in the hollows, highlights tight on the ridges only"; the
+    # round-2 pass had bronzed the verdigris away and the bust read as shiny gold): back to dg5's verdigris and value
     L = 0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]
-    Lb = cv2.GaussianBlur(L, (0, 0), 7.0 * scale)
-    cav = np.clip((Lb - L) / 0.07, 0, 1)
-    gr = np.clip((g[..., 1] - g[..., 0]) * 7.0 + 0.15, 0, 1)
-    bz = L[..., None] * np.array([1.28, 0.98, 0.66], np.float32)
-    keep = np.clip((cav - 0.06) / 0.35, 0, 1)
-    w = gr * (1 - keep) * 0.6
-    g = g * (1 - w[..., None]) + bz * w[..., None]
+    on = (a > 0.5).astype(np.float32)
+    # (1) a darker base: the broad light (blurred) pulled down, its brights the most; the carving's detail kept
+    Lb = cv2.GaussianBlur(L, (0, 0), 6.0 * scale)
+    base = Lb * BZ["base"] - np.clip(Lb - BZ["knee"], 0, None) * BZ["comp"]
+    Ln = np.clip(base + (L - Lb), 0, 1)
+    g = g * (Ln / np.maximum(L, 1e-3))[..., None]
+    # (2) the bronze's body a dark old brown, less yellow (the round-2 gold): its hue pulled toward BODY at its own value
     L = 0.3 * g[..., 0] + 0.59 * g[..., 1] + 0.11 * g[..., 2]
-    # (the ridges from a smoothed value, so the paint's speckle never sparkles: only edges a few px long)
+    body = L[..., None] * np.array(BZ["body"], np.float32)
+    g = g + (body - g) * BZ["body_k"]
+    # (3) the verdigris, continuous in the hollows: where the bronze is darker than round it (two scales, smoothed so it
+    # runs as a line, never a speckle), and the source's own green kept off the raised parts, its blotches blurred
+    cav = np.clip((cv2.GaussianBlur(L, (0, 0), 7.0 * scale) - L) / 0.05, 0, 1)
+    cav = np.maximum(cav, np.clip((cv2.GaussianBlur(L, (0, 0), 3.0 * scale) - L) / 0.04, 0, 1) * 0.5)
+    cav = cv2.GaussianBlur(cav, (0, 0), 1.3 * scale)
+    gr = np.clip((g[..., 1] - g[..., 0]) * 6.0 + 0.25, 0, 1)
+    gr = cv2.GaussianBlur(gr, (0, 0), 2.5 * scale)
     Ls = cv2.GaussianBlur(L, (0, 0), 1.2 * scale)
     ridge = np.clip((Ls - cv2.GaussianBlur(L, (0, 0), 3.5 * scale)) / 0.06 - 0.25, 0, 1)
-    lit = np.clip((Ls - 0.28) / 0.22, 0, 1)
+    vk = BZ["verd_cav"] if verd_k is None else verd_k
+    vw = np.clip(np.maximum(np.clip((cav - BZ["cav_t"]) / 0.4, 0, 1) * vk, gr * BZ["verd_src"]) * (1 - ridge), 0, 1) * on
+    Lv = np.maximum(L, BZ["verd_floor"])
+    verd = Lv[..., None] * np.array(BZ["verd"], np.float32)
+    g = g + (verd - g) * vw[..., None]
+    # (4) tight highlights on the raised edges only, old brass (not new gold)
+    lit = np.clip((Ls - 0.22) / 0.22, 0, 1)
     rk = 1.0 if ridge_k is None else ridge_k
-    g = g + np.array([0.22, 0.16, 0.08], np.float32) * (ridge * lit * (a > 0.5) * rk)[..., None]
+    g = g + np.array(BZ["ridge"], np.float32) * (ridge * lit * on * rk)[..., None]
     return np.clip(g, 0, 1)
+
+
+# ui17 A3: the bronze pass's numbers (the figure, the river and the seats' rings all take them: one material)
+BZ = dict(base=0.92, knee=0.28, comp=0.50, body=(1.32, 0.97, 0.60), body_k=0.15,
+          cav_t=0.45, verd_cav=0.30, verd_src=0.0, verd_floor=0.11, verd=(0.66, 1.16, 1.00), ridge=(0.13, 0.10, 0.06))
 
 
 def strand_pass(g, a, mask, scale=1.0, gain=1.0):
@@ -135,6 +162,71 @@ def strand_pass(g, a, mask, scale=1.0, gain=1.0):
     lic = acc / wsum
     add = np.clip(lic * 2.4 - hp, 0, None) * mask * (a > 0.5)
     return np.clip(g + np.array([1.0, 0.78, 0.45], np.float32) * (add * gain)[..., None], 0, 1)
+
+
+# ui17 A3 (the judge: "regroup the hair into 4-6 locks; the thin ribbons read busy"): four locks' centre lines (source
+# px), crown to the river, used by lock_pass
+LOCKS = [
+    [(690, 50), (780, 95), (815, 180), (828, 300), (845, 400), (895, 485), (1000, 532), (1160, 556)],
+    [(640, 45), (720, 120), (762, 230), (778, 340), (805, 440), (865, 515), (985, 562), (1160, 588)],
+    [(605, 78), (665, 172), (705, 282), (727, 382), (762, 470), (832, 540), (955, 597), (1100, 650)],
+    [(588, 160), (625, 255), (660, 352), (690, 442), (742, 522), (822, 592), (905, 650)],
+]
+LOCK_GAIN = 0.0     # (the procedural regroup: off, the hair is repainted, NAME)
+HAIR_LIFT = 0.15
+HAIR_GAMMA = 0.15
+HAIR_VERD = 0.75
+LOCK = dict(flatten=0.6, edge=0.65, groove=0.85, crest=(0.20, 0.15, 0.09))
+
+
+def lock_field(shape, alpha, locks, oxy=(0.0, 0.0), k=1.0):
+    """Each pixel's place across its lock: s in -1 (the upper groove) .. 0 (the centre line) .. +1 (the lower groove), a
+    Voronoi of the locks' centre lines (points scaled by k and shifted by oxy into this image)."""
+    from scipy.spatial import cKDTree
+    H, W = shape
+    yy, xx = np.mgrid[:H, :W].astype(np.float32)
+    P = np.c_[xx.ravel(), yy.ravel()]
+    D, S = [], []
+    for L in locks:
+        p = np.array(L, np.float32) * k + np.array(oxy, np.float32)
+        pts = [p[0]]
+        for a0, b0 in zip(p[:-1], p[1:]):
+            n = int(np.hypot(*(b0 - a0)) / 1.5) + 1
+            pts += [a0 + (b0 - a0) * t for t in np.linspace(0, 1, n)[1:]]
+        p = np.array(pts)
+        d, i = cKDTree(p).query(P)
+        i2, i1 = np.clip(i + 1, 0, len(p) - 1), np.clip(i - 1, 0, len(p) - 1)
+        tx, ty = p[i2, 0] - p[i1, 0], p[i2, 1] - p[i1, 1]
+        cr = tx * (P[:, 1] - p[i, 1]) - ty * (P[:, 0] - p[i, 0])
+        D.append(d.reshape(H, W).astype(np.float32)); S.append(np.sign(cr).reshape(H, W).astype(np.float32))
+    D, S = np.stack(D), np.stack(S)
+    o = np.argsort(D, axis=0)
+    d1 = np.take_along_axis(D, o[:1], 0)[0]
+    d2 = np.take_along_axis(D, o[1:2], 0)[0]
+    side = np.take_along_axis(S, o[:1], 0)[0]
+    dout = ndimage.distance_transform_edt(alpha > 0.5).astype(np.float32)
+    d2 = np.minimum(d2, d1 + 2 * dout)
+    return 2 * d1 / np.maximum(d1 + d2, 1e-3) * side
+
+
+def lock_pass(g, a, mask, s, scale=1.0):
+    """The hair regrouped by value: inside each lock the thin ribbons' contrast flattened, the lock rounded (darker to
+    its edges), dark verdigris grooves between the locks, one warm highlight running along each lock's upper crest."""
+    import cv2
+    m = mask[..., None]
+    lp = cv2.GaussianBlur(g, (0, 0), 3.0 * scale)
+    g1 = lp + (g - lp) * (1 - LOCK["flatten"])
+    cyl = np.sqrt(np.clip(1 - s * s, 0, 1))
+    shade = 1 - LOCK["edge"] * (1 - cyl ** 1.3)
+    groove = np.clip((np.abs(s) - 0.80) / 0.20, 0, 1)
+    L = 0.3 * g1[..., 0] + 0.59 * g1[..., 1] + 0.11 * g1[..., 2]
+    Lf = cv2.GaussianBlur(L, (0, 0), 20.0 * scale)
+    g1 = g1 * shade[..., None]
+    verd = np.maximum(L * 0.7, 0.06)[..., None] * np.array([0.66, 1.16, 1.00], np.float32)
+    g1 = g1 + (verd - g1) * (groove * LOCK["groove"])[..., None]
+    crest = np.exp(-((s + 0.36) / 0.13) ** 2) * np.clip((Lf - 0.10) / 0.25, 0.15, 1)
+    g1 = g1 + np.array(LOCK["crest"], np.float32) * crest[..., None]
+    return np.clip(g * (1 - m) + g1 * m, 0, 1)
 
 
 def fit_circle(alpha, box):
@@ -245,8 +337,17 @@ def main():
         return np.clip(1.6 - 1.6 * np.sqrt(((xx - e[0]) / e[2]) ** 2 + ((yy - e[1]) / e[3]) ** 2), 0, 1)
     # (her face passed: the pass at half there, its value kept)
     face = ell((520.0, 190.0, 95.0, 150.0))
+    # (ui17 A3) the hair regrouped into LOCKS (before the bronze pass, so its grooves take the verdigris)
+    skin_l = np.clip(np.maximum.reduce([ell((515.0, 200.0, 112.0, 178.0)), ell((555.0, 420.0, 105.0, 135.0)), ell((650.0, 600.0, 135.0, 95.0))]) * 1.6, 0, 1)
+    hair_l = (alpha > 0.5) * (1 - skin_l) * (1 - held) * (xx > 430) * (1 - ((xx < 610) & (yy > 440)))
+    hair_l = ndimage.gaussian_filter(ndimage.binary_erosion(hair_l > 0.5, iterations=2).astype(np.float32), 3.0)
+    if LOCK_GAIN > 0:
+        g = g + (lock_pass(g, a, hair_l, lock_field(a.shape, alpha, LOCKS)) - g) * LOCK_GAIN
     g0 = g
-    g = bronze_pass(g, a, ell(CHEEK) * 0.85, ridge_k=1 - 0.5 * face, round_mask=ell(SHOULDER_E) * 0.8)
+    # (ui17 A3: the repainted locks a touch lighter, and more verdigris in their grooves than on her skin)
+    g = np.clip(g, 0, 1) ** (1 - HAIR_GAMMA * hair_l)[..., None] * (1 + HAIR_LIFT * hair_l)[..., None]
+    g = bronze_pass(g, a, ell(CHEEK) * 0.85, ridge_k=1 - 0.5 * face, round_mask=ell(SHOULDER_E) * 0.8,
+                    verd_k=BZ["verd_cav"] + (HAIR_VERD - BZ["verd_cav"]) * hair_l)
     g = g0 + (g - g0) * (1 - 0.5 * face)[..., None]
     # (ui17 A) the hair's highlights joined along its strands: her hair only (not her face, neck, shoulder or hand)
     skin = np.clip(np.maximum.reduce([ell((520.0, 200.0, 110.0, 175.0)), ell((560.0, 420.0, 120.0, 140.0)), ell(SHOULDER_E) * 1.3]) * 1.5, 0, 1)

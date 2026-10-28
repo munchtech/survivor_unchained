@@ -90,7 +90,12 @@ void fragment()
 	float dO = max(length(px - orb_c) - orb_r, 0.0);
 	float olife = smoothstep(0.12, 0.85, level) * (1.0 + 0.5 * beat);
 	float ol = exp(-dO / 18.0) * olife;
+	// (ui17 A3, the judge: "invisible at 1:1: raise it"): toward her face (up and right of the glass: lips ~45 px off
+	// the glass, chin ~32) the light carries further and stronger
+	float toface = smoothstep(0.05, 0.55, dot(normalize(px - orb_c), normalize(vec2(0.82, -0.57))));
+	float olf = exp(-dO / 30.0) * olife * toface;
 	fc += fc * vec3(1.90, 0.14, 0.05) * ol * smoothstep(0.04, 0.30, flum);
+	fc += fc * vec3(2.8, 0.20, 0.07) * olf * smoothstep(0.03, 0.20, flum);
 	// the idle sheen on her raised edges (her highlights catch it, her hollows do not)
 	fc += fc * vec3(0.55, 0.45, 0.30) * sheen(scr_at + px, TIME) * smoothstep(0.16, 0.45, flum);
 	// her figure in two layers: under the glass (all but her fingers over it) and over it
@@ -240,20 +245,28 @@ void fragment()
 			float arc = (atan(fd.y, fd.x) + 3.14159265) * orb_r;  // round the rim, px
 			// how far in it reaches: up to ~20 px (a third of the radius), ragged along the rim, a little deeper low
 			// in the glass (the cold settles)
-			float reach = (2.5 + 18.0 * fr) * (0.70 + 0.55 * fbm(vec2(arc * 0.09, 3.0))) * (1.0 + 0.25 * smoothstep(-0.2, 0.9, fd.y));
+			// ui17 A3 (the judge: "coverage proportional to the ward: .1 a visible fringe, .4 a third of the rim"): the
+			// rime holds a share of the rim, growing down both sides from the top (cover: .1 -> 14%, .4 -> 39%, full ->
+			// 89%), its ends ragged and thinning; at a full ward it creeps further in
+			float cover = 0.06 + 0.83 * fr;
+			float ang = acos(clamp(-fd.y, -1.0, 1.0)) / 3.14159265;          // 0 at the top, 1 at the foot (each side)
+			float endn = cover + 0.07 * (fbm(vec2(arc * 0.05 + 11.0, 5.0)) - 0.5) - 0.03;
+			float cov = smoothstep(endn + 0.035, endn - 0.035, ang);
+			float tip = clamp(ang / max(endn, 0.02), 0.0, 1.0);              // 0 at the top, 1 at its end
+			float reach = (6.5 + 4.0 * fr + 9.0 * fr * fr) * (0.70 + 0.55 * fbm(vec2(arc * 0.09, 3.0))) * mix(1.0, 0.45, tip * tip) * cov;
 			// the fronds: radial feathers at the front (ridged noise stretched along the radius)
 			float fern = 1.0 - abs(2.0 * vnoise(vec2(arc * 0.42, dep * 0.11 + 7.0)) - 1.0);
 			float fern2 = 1.0 - abs(2.0 * vnoise(vec2(arc * 0.9 + 13.0, dep * 0.2)) - 1.0);
 			float edge = reach * (0.75 + 0.45 * fern);
-			float on = smoothstep(edge + 0.9, edge - 0.9, dep) * smoothstep(-0.2, 0.8, dep);
+			float on = smoothstep(edge + 0.9, edge - 0.9, dep) * smoothstep(-0.2, 0.8, dep) * smoothstep(0.0, 0.25, cov);
 			float k = clamp(dep / max(edge, 1.0), 0.0, 1.0);    // 0 at the rim, 1 at its front
-			float dens = mix(0.90, 0.32, k) * mix(1.0, 0.55 + 0.65 * pow(fern2, 3.0), smoothstep(0.25, 0.8, k));
+			float dens = mix(1.0, 0.50, k) * mix(1.0, 0.55 + 0.65 * pow(fern2, 3.0), smoothstep(0.25, 0.8, k));
 			float grain = 0.82 + 0.18 * vnoise(px * 0.9);
 			float lit_f = mix(0.70, 1.05, 0.5 + 0.5 * dot(fd, lightd));
-			vec3 rime = vec3(0.70, 0.84, 0.96) * lit_f * grain;
+			vec3 rime = vec3(0.80, 0.90, 1.0) * lit_f * grain;
 			gcol = mix(gcol, rime, clamp(on * dens * 0.88 * fade, 0.0, 1.0));
 			// (its creeping front: a faint cold line along the fronds' tips)
-			gcol += vec3(0.55, 0.78, 1.0) * 0.20 * exp(-pow((dep - edge) / 0.8, 2.0)) * fade * step(0.02, fr);
+			gcol += vec3(0.55, 0.78, 1.0) * 0.20 * exp(-pow((dep - edge) / 0.8, 2.0)) * fade * step(0.02, fr) * cov;
 			// (a few cold glints in the rime, each twinkling slowly)
 			float gid = h21(floor(px / 3.0) + 17.0);
 			float tw = 0.5 + 0.5 * sin(t * (0.8 + 1.4 * gid) + gid * 40.0);
