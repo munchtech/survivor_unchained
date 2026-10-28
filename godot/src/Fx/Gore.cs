@@ -26,6 +26,9 @@ public partial class Gore : Node3D
     public sealed record Blood(Color Spray, Color Pool);
 
     static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#4a0404"));
+    /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
+    /// sent as it was drew as (196, 61, 61), coral-pink droplets (round 3's judge).</summary>
+    static Color Lin(Color c) => c.SrgbToLinear();
     static readonly Blood Ichor = new(new Color("#3a4a10"), new Color("#1c240a"));
     /// <summary>The lamplings': thick and dark, from a long way under.</summary>
     static readonly Blood Deep = new(new Color("#6a1a0c"), new Color("#2c0906"));
@@ -394,7 +397,7 @@ public partial class Gore : Node3D
                 {
                     At = at, V = new Vector3(dir.X * sp + Mathf.Cos(a) * sp * 0.45f, 1.5f + R() * 3.5f, dir.Z * sp + Mathf.Sin(a) * sp * 0.45f),
                     Gravity = 16, Drag = 0.6f, Life = 0.35f + R() * 0.35f, Size = 0.05f + R() * 0.07f, SizeEnd = 0.03f,
-                    Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f, Sprite = -1,
+                    Color = Lin(blood.Spray), ColorEnd = Lin(blood.Pool), Alpha = 0.95f, Sprite = -1,
                 });
             }
             // Some of it reaches the ground.
@@ -446,7 +449,7 @@ public partial class Gore : Node3D
             for (int i = 0; i < 26 * Level; i++)
             {
                 float a = R() * Mathf.Tau, sp = 3 + R() * 7;
-                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.3f, V = new Vector3(Mathf.Cos(a) * sp + dir.X * 3, 2 + R() * 6, Mathf.Sin(a) * sp + dir.Z * 3), Gravity = 18, Drag = 0.5f, Life = 0.5f + R() * 0.4f, Size = 0.08f + R() * 0.1f, SizeEnd = 0.04f, Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f, Sprite = -1 });
+                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.3f, V = new Vector3(Mathf.Cos(a) * sp + dir.X * 3, 2 + R() * 6, Mathf.Sin(a) * sp + dir.Z * 3), Gravity = 18, Drag = 0.5f, Life = 0.5f + R() * 0.4f, Size = 0.08f + R() * 0.1f, SizeEnd = 0.04f, Color = Lin(blood.Spray), ColorEnd = Lin(blood.Pool), Alpha = 0.95f, Sprite = -1 });
             }
             for (int i = 0; i < 3; i++)
             {

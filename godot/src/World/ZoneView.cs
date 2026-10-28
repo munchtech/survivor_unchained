@@ -61,7 +61,12 @@ public partial class ZoneView : Node3D
     public override void _EnterTree() { if (later) WaterLevel(); }
 
     /// <summary>(the water's height for our own stones' wet band, kit.gdshader's OWN_ROCK; none: far under everything)</summary>
-    void WaterLevel() => RenderingServer.GlobalShaderParameterSet("water_level", Data.Meta.Places.TryGetValue("WATER_Y", out var wly) ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
+    void WaterLevel()
+    {
+        bool has = Data.Meta.Places.TryGetValue("WATER_Y", out var wly);
+        Water.Level = has ? wly.GetSingle() : null;
+        RenderingServer.GlobalShaderParameterSet("water_level", has ? new Vector4(wly.GetSingle(), 0, 0, 1) : new Vector4(0, -1000, 0, 0));
+    }
 
     /// <summary>Its steps (Slices): the ground and water, the flora, the scatter, the props piece by piece, the
     /// landmarks, the meadow, the lights and fires one by one. Built ahead (Game.Prepare), a frame may end at

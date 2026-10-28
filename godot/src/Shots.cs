@@ -72,8 +72,16 @@ public partial class Shots : Node
         live.wanted.Add((live.time + inSeconds, tag));
     }
 
+    /// <summary>Frames the game asks for this many drawn frames on (a hit-stop holds the clock, not the frames).</summary>
+    readonly List<(long At, string Tag)> wantedFrames = new();
+    public static void WantFrames(string tag, int frames)
+    {
+        if (live == null) return;
+        live.wantedFrames.Add(((long)Engine.GetFramesDrawn() + frames, tag));
+    }
+
     /// <summary>Whether a frame of that tag is still to be taken.</summary>
-    public static bool Pending(string tag) => live != null && live.wanted.Exists(w => w.Tag == tag);
+    public static bool Pending(string tag) => live != null && (live.wanted.Exists(w => w.Tag == tag) || live.wantedFrames.Exists(w => w.Tag == tag));
 
     /// <summary>The run ends this many seconds on (sooner than --until: a whole night ends at its result).</summary>
     public static void EndIn(double seconds)
@@ -83,11 +91,40 @@ public partial class Shots : Node
         live.count = System.Math.Min(live.count, live.taken);
     }
 
+    /// <summary>The camera as each of the last frames was drawn (the frame read back is an earlier one than this
+    /// frame's camera: a mark's measuring band missed it by pixels while the camera moved, and a mark's first frames
+    /// read as bare ground).</summary>
+    readonly string?[] drawnCams = new string?[4];
+    void Drawn()
+    {
+        if (GetViewport()?.GetCamera3D() is not { } c) return;
+        System.Array.Copy(drawnCams, 0, drawnCams, 1, drawnCams.Length - 1);
+        drawnCams[0] = $"{c.GlobalTransform} fov {c.Fov}";
+    }
+
+    /// <summary>"camera": the one the frame read back was drawn with (SHOT_CAMLAG drawn frames back, 1 by default);
+    /// "camera_now" and "camera_lag2" beside it for checking.</summary>
+    void CamLines()
+    {
+        if (GetViewport().GetCamera3D() is not { } wc) return;
+        int lag = int.TryParse(System.Environment.GetEnvironmentVariable("SHOT_CAMLAG"), out var lg) ? lg : 1;
+        var now = $"{wc.GlobalTransform} fov {wc.Fov}";
+        GD.Print($"camera {(lag <= 0 ? now : drawnCams[lag - 1] ?? now)}");
+        GD.Print($"camera_now {now}");
+        GD.Print($"camera_lag2 {drawnCams[1] ?? now}");
+    }
+
+    public override void _ExitTree()
+    {
+        if (live == this) RenderingServer.FramePostDraw -= Drawn;
+    }
+
     public override void _Ready()
     {
         name = Args.Get("shot") ?? "";
         if (name == "") { SetProcess(false); return; }
         live = this;
+        RenderingServer.FramePostDraw += Drawn;
         seconds = Args.Num("seconds", 3);
         every = Args.Num("every", 0);
         until = Args.Num("until", Args.Has("on") ? 120 : 0);
@@ -135,7 +172,22 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
-            GD.Print($"saved {f} at {time:0.00}s{HerAt()}");
+            GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
+            // (the camera, so a mark's ground can be found in the frame and measured)
+            CamLines();
+        }
+        for (int i = wantedFrames.Count - 1; i >= 0; i--)
+        {
+            if ((long)Engine.GetFramesDrawn() < wantedFrames[i].At) continue;
+            var tag = Safe(wantedFrames[i].Tag);
+            wantedFrames.RemoveAt(i);
+            int k = tagged[tag] = tagged.GetValueOrDefault(tag) + 1;
+            var d = ProjectSettings.GlobalizePath("res://.shots");
+            DirAccess.MakeDirRecursiveAbsolute(d);
+            var f = $"{d}/{name}_{tag}_{k}.png";
+            GetViewport().GetTexture().GetImage().SavePng(f);
+            GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
+            CamLines();
         }
         if (until > 0 && time >= until) { GetTree().Quit(); return; }
         if (taken >= count) return;
@@ -147,7 +199,7 @@ public partial class Shots : Node
         GetViewport().GetTexture().GetImage().SavePng(file);
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
-        if (GetViewport().GetCamera3D() is { } cam3) GD.Print($"camera {cam3.GlobalTransform} fov {cam3.Fov}");
+        CamLines();
         if (Args.Has("mark-bones")) PrintMarks();
         if (Args.Get("dump-her") is string dumpTo) DumpHer(dumpTo);
         // --navcheck: the open screen's focus routes walked as the picture is taken.
