@@ -362,7 +362,9 @@ public partial class DgRiver : Control
         {
             if (Visible != show) Visible = show;
             if (!show) return;
-            var at = new Vector2(Mathf.Clamp(Mathf.Round(anchor.X - 40), 8, 1920 - 8 - Size.X), Mathf.Clamp(Mathf.Round(anchor.Y - Size.Y - 24), 8, 1080 - Size.Y));
+            // (its right edge kept 12 px clear of the Flare cup's rim: the last judge saw it touch at 1447)
+            float maxX = FlareAt.X > 0 ? Mathf.Min(1920 - 8, FlareAt.X - FlareR - 12) - Size.X : 1920 - 8 - Size.X;
+            var at = new Vector2(Mathf.Clamp(Mathf.Round(anchor.X - 40), 8, maxX), Mathf.Clamp(Mathf.Round(anchor.Y - Size.Y - 24), 8, 1080 - Size.Y));
             if (Position != at) Position = at;
             string k = $"{l}|{f:0.000}|{day}";
             if (k == key) return;
