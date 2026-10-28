@@ -130,6 +130,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
 {
     bool noFall = opt.Get("nofall", "1") != "0", replay = opt.Get("replay", "1") != "0";
     double span = opt.Double("span", 30);
+    bool nul = opt.Get("null", "0") != "0";
     Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
     var sw = Stopwatch.StartNew();
     int done = 0;
@@ -146,7 +147,8 @@ void HandPairs(List<RunSpec> specs, string outPath)
         {
             var off = new ArenaSim.Fixed { Hand = false, NoFall = noFall, Span = span };
             var r0 = ArenaSim.Play(spec, off);
-            var on = new ArenaSim.Fixed { Hand = true, NoFall = noFall, Span = span, Replay = replay ? off.Took : null };
+            // (--null 1: the Hand off in both, the measure's own bias: the replay alone should read x1.00.)
+            var on = new ArenaSim.Fixed { Hand = !nul, NoFall = noFall, Span = span, Replay = replay ? off.Took : null };
             var r1 = ArenaSim.Play(spec, on);
             lock (gate)
             {
