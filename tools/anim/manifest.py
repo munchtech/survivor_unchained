@@ -23,6 +23,7 @@ PLAN = {
     "idle_reaver_axes": ("idle, reaver with two axes", "Idle_Loop", "100STYLE Angry_ID (idle_reaver's base), arms keyed"),
     "idle_stalker": ("idle, stalker", "Idle_Loop", "100STYLE Crouched_ID, arms keyed"),
     "idle_stalker_daggers": ("idle, stalker with daggers", "Idle_Loop", "100STYLE Crouched_ID (idle_stalker's base), arms keyed"),
+    "idle_arcanist_wand": ("idle, arcanist with a wand", "Idle_Loop", "100STYLE HandsInPockets_ID (idle_arcanist's base), arms keyed"),
     "idle_warden_break": ("idle break, warden", "-", "keyed"),
     "idle_arcanist_break": ("idle break, arcanist", "-", "keyed"),
     "idle_reaver_break": ("idle break, reaver", "-", "keyed"),

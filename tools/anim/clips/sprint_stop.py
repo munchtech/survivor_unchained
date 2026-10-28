@@ -18,7 +18,7 @@ import math
 import numpy as np
 
 from clips import idle
-from clips.run import POST, RUNS, SPRINT_ARMS
+from clips.run import POST, REAVER_CARRY, RUN_GRIPS, RUNS, SPRINT_ARMS, WARDEN_CARRY
 from gait import arc_of, run_cycle
 from keyed import build
 
@@ -32,8 +32,16 @@ SPRINT_SWING = (5, -3, 1.25, -3)
 # shield slung on her back (judge r3: 3-5 mm through at ph0 and ph50 at x1.25).
 # A fifth number: the free (left) upper arm's out, both ends, +deg. The axes sprint's hung second axe 5 in: at the run's 14 (+1 back)
 # the sprint's elbow swung round 25 deg further out, the forearm turned in, and the head came in onto her knee (anim 44
-# solver 7c).
+# solver 7c). Animation 56 (the low point): the left arm swings its second axe like the first, so it takes the
+# default swing and 3 out (at the old 5 in its upper arm met her side, 3 mm, in the sprint).
 SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
+# Animation 57: the warden's high carry (run.WARDEN_CARRY) takes its sword arm 3 further out in the sprint (at the run's 29
+# its upper arm went 5 mm into her plate at the forward drive, motion --outfits); the low and belt carries keep the default.
+if REAVER_CARRY == "low":  # Animation 56/57's low point (REAVER_CARRY; "trail" keeps Animation 55's entries above)
+    SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.0, -3, 0, 9)
+    SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.0, -3, 10, 9)
+if WARDEN_CARRY == "high":
+    SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
 
 
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
@@ -62,11 +70,11 @@ def sprint(rig, run):
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
         k = SPRINT_SWING_RUN.get(run, SPRINT_SWING)
 
-        def sped(sw, o=0):
+        def sped(sw, o=0):  # (o: the upper arm's extra out, +deg; k[4] for the left, k[5] for the right)
             (ft, fo, fe, fr), (bt, bo, be, br) = sw
             return ((ft + k[0], fo + o, fe + k[1], fr), (bt * k[2], bo + 1 + o, be + k[3], br))
-        s = replace(s, swing=sped(g.swing, k[4] if len(k) > 4 else 0), swing_r=None if g.swing_r is None else sped(g.swing_r))
-    clip = run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
+        s = replace(s, swing=sped(g.swing, k[4] if len(k) > 4 else 0), swing_r=None if g.swing_r is None else sped(g.swing_r, k[5] if len(k) > 5 else 0))
+    clip = run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon, **RUN_GRIPS.get(run, {})})
     # (The run's post-pass too: the warden's town hand on her sword's hilt, run.hilt_carry.)
     return POST[run](rig, clip) if run in POST else clip
 
@@ -190,6 +198,8 @@ def stop(rig, calling, side):
     meta = {"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]}
     if calling == "arcanist":
         meta.update(idle.arc_grip())   # (the idle's grip: the staff tilted in her fist as the idle holds it, animation 48)
+    if calling == "reaver":
+        meta.update(idle.axe_grip())   # (the idle's grip: the fist 13 cm up the haft, as idle_reaver holds it, animation 57)
     if calling == "stalker":
         # (Her left hand kept on the crossbow's fore-stock as she brakes: idle.ride_stock.)
         return idle.ride_stock(rig, lambda post: build(f"stop_{calling}_{side}", rig, keys, meta=meta, post=post))

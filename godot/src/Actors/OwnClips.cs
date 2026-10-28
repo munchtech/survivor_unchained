@@ -81,6 +81,15 @@ public sealed class OwnClips
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
 
+    /// <summary>The same for the piece in her LEFT hand (meta "grip_slide_l", animation 55: the second axe of the reaver's pair
+    /// hangs from a fist gripped higher up its haft); 0 for none. Takes the clip with or without this library's prefix.</summary>
+    public float GripSlideL(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_slide_l");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
     /// <summary>How far the piece in her right hand is turned in her fist about the palm's normal while the clip plays,
     /// in degrees, + its head away from her fingers (meta "grip_tilt", animation 48: keyed.py grip_of); 0 for none.
     /// Takes the clip with or without this library's prefix.</summary>

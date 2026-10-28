@@ -26,6 +26,19 @@ public class GripSlideTests
     }
 
     [Fact]
+    public void WalkBlendUsesWalkValueBetweenIdleAndRun()
+    {
+        Assert.Equal(-0.13f, GripSlide.Target(false, 0, false, 0, 0f, 0f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(0f, GripSlide.Target(false, 0, false, 0, 1f, 0f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(0.05f, GripSlide.Target(false, 0, false, 0, 1f, 1f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(0.05f, GripSlide.Target(false, 0, false, 0, 0f, 1f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(-0.065f, GripSlide.Target(false, 0, false, 0, 0.5f, 0f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(0.025f, GripSlide.Target(false, 0, false, 0, 1f, 0.5f, -0.13f, 0f, 0.05f), 1e-5f);
+        Assert.Equal(0.3f, GripSlide.Target(true, 0.3f, true, 0.2f, 1f, 0f, -0.13f, 0f, 0.05f));
+        Assert.Equal(0.2f, GripSlide.Target(false, 0.3f, true, 0.2f, 1f, 0f, -0.13f, 0f, 0.05f));
+    }
+
+    [Fact]
     public void EaseKeepsAtZeroDtAndReachesTargetWithLargeDt()
     {
         Assert.Equal(0.02f, GripSlide.Ease(0.02f, 0.09f, 0f));

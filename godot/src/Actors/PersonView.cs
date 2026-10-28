@@ -125,17 +125,19 @@ public partial class PersonView : Node3D, INpcView
 
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
     // figure in town), eased as PlayerView eases it.
-    float ownSlide, ownTilt;
+    float ownSlide, ownTilt, ownSlideL;
 
     void OwnGrip(double delta, bool snap = false)
     {
         if (Driven || person.Own is not { } own || !held.ContainsKey("handslot.r")) return;
         var clip = person.Anim.CurrentAnimation.ToString();
-        float s = own.GripSlide(clip), t = own.GripTilt(clip);
-        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0) return;
+        float s = own.GripSlide(clip), t = own.GripTilt(clip), sl = own.GripSlideL(clip);
+        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0 && sl == 0 && ownSlideL == 0) return;
         ownSlide = snap ? s : GripSlide.Ease(ownSlide, s, (float)delta);
         ownTilt = snap ? t : GripSlide.Ease(ownTilt, t, (float)delta);
+        ownSlideL = snap ? sl : GripSlide.Ease(ownSlideL, sl, (float)delta);
         Slide("handslot.r", ownSlide, ownTilt);
+        Slide("handslot.l", ownSlideL);
     }
 
     public People.Person Person => person;

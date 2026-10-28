@@ -46,6 +46,7 @@ from rig import qinv, qmul, qrot  # noqa: E402
 import skin  # noqa: E402
 from skin import OUT, Body, Gltf  # noqa: E402
 import audit  # noqa: E402
+import staged  # noqa: E402
 
 OUTFITS = ("warden", "arcanist", "reaver", "ranger")
 
@@ -548,6 +549,7 @@ def clip_names(folder, want):
 
 def main(argv):
     global CLIP_FOLDER
+    argv = staged.set_from_argv(argv)   # --raw: the clips as written, not as the game plays them
     if "--folder" in argv:
         i = argv.index("--folder")
         CLIP_FOLDER = Path(argv[i + 1])
