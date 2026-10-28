@@ -1166,7 +1166,7 @@ public partial class VatCrowd : MultiMeshInstance3D
     }
 
     /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
-    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
+    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false)
     {
         if (!slotOf.TryGetValue(key, out int s))
         {
@@ -1189,7 +1189,8 @@ public partial class VatCrowd : MultiMeshInstance3D
         if (s >= top) top = s + 1;
         var (f0, f1, blend) = Asset.Frame(role, t);
         static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
-        int word = Q(flash, 255) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
+        // (the flash in 7 bits and its top bit a critical's: a word past 24 bits is no longer a whole float)
+        int word = (Q(flash, 127) | (crit && flash > 0 ? 128 : 0)) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
         var b = at.Basis;
         var buf = buffer;
         buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = at.Origin.X;

@@ -20,6 +20,9 @@ public enum Act
     Answer,
     /// <summary>The book's Journal or Map opened wide over the world, or folded back into its panel.</summary>
     Expand,
+    /// <summary>Held in play (the Drowned Girl HUD): her level and experience (by night the ember) on the river's card,
+    /// readable without a mouse (UI 18, XpLight).</summary>
+    Experience,
 }
 
 /// <summary>
@@ -45,10 +48,10 @@ public partial class Controls : Node
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
-        [Act.Expand] = ["KeyZ"],
+        [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs
@@ -65,6 +68,8 @@ public partial class Controls : Node
         [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
         // (the right stick's click is the skip in play; in the book it opens a page wide)
         [Act.Expand] = [JoyButton.RightStick],
+        // (UI 18: held in play, the level's card; LB turns the book's pages only in a menu)
+        [Act.Experience] = [JoyButton.LeftShoulder],
     };
 
     /// <summary>In a menu one button means its menu meaning first: A is

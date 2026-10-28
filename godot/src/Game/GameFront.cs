@@ -215,7 +215,8 @@ public partial class Game
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
     }
 
-    SpotLight3D? fillLight, edgeLight, rimLight, bounceLight;
+    SpotLight3D? fillLight, edgeLight, rimLight, bounceLight, lookBodyRim;
+    static float LookBodyRim => Args.Num("look-body-rim", 2.5f);   // (Body 20 light judge, max: ADOPT at the Look: her body no longer muddy and darker than her face; --look-body-rim 0 = before)
     // --key-aim Y: the key's aim over her eyes (metres; -0.05 as before face 34), --key-falloff E (see the key).
     // --key-body S: the key's share on its broad cone (bodyKey; 1: all of it, as before face 34).
     // (Face 34: the key's own cone 4.5 degrees (about 18 cm at her), its edge falloff 1.5, aimed 2 cm under her eyes, a quarter
@@ -394,6 +395,16 @@ public partial class Game
         Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * edgeUp, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
         if (bounceLight != null) Aim(bounceLight, eyes + dir * bounceAt.X + Vector3.Down * bounceAt.Y, eyes + Vector3.Down * 0.14f, bounce * p);
+        // --look-body-rim E (Body 20 light test, 27 Oct): a soft rim on her skin from behind, on the rim's side, at her upper
+        // arms' height, so her arms' outline and broad planes read (0: off, as before 27 Oct). --look-body-rim-side S (m to her
+        // left of the lens's line; negative: the other side), --look-body-rim-up U (m from her eyes).
+        if (LookBodyRim > 0)
+        {
+            lookBodyRim ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.84f), 30, false, 0.2f);
+            lookBodyRim.LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer;
+            Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * Args.Num("look-body-rim-up", 0.3f), eyes + Vector3.Down * 0.45f,
+                LookBodyRim * Mathf.Clamp(p / 0.74f, 0, 1));   // (as judged at zoom 0.45 (p 0.74) and closer; it fades with the rig toward her whole figure)
+        }
         // The sky's own light (the moon) off her from head and shoulders in: the
         // portrait's lights are hers there. Left on, it was a fourth light, cold
         // and flat across her face, and its reflection a white blob as big as her
@@ -438,8 +449,8 @@ public partial class Game
     {
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
-        foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
-        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = null;
+        foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim, herFire }) l?.QueueFree();
+        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
         Campfire.ClearNear(0);

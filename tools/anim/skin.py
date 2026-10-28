@@ -41,6 +41,7 @@ from pathlib import Path
 import numpy as np
 
 from rig import DATA, REPO, Skeleton, qfrom_matrix, qmatrix, qnorm
+import staged
 
 # (ANIM_PEOPLE, ANIM_SKELETONS, ANIM_OUT: another body, skeleton dump or
 # clip library to measure, a "before" kept aside say.)
@@ -447,6 +448,8 @@ class Body:
     def clip(self, name, folder=None):
         folder = Path(folder) if folder else OUT / ("clips" if self.label == "her" else "hero")
         d = json.loads((folder / f"{name}.json").read_text())
+        if self.label == "her" and staged.want():
+            d = staged.staged_json(d)   # the clip as the game plays it (tools/anim/staged.py; --raw: as written)
         sk = self.sk
         n = len(d["tracks"][0]["keys"])
         rot = np.tile(sk.rest_rot, (n, 1, 1)).astype(float)

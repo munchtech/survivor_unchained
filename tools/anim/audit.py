@@ -37,6 +37,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from rig import DATA, Skeleton, qinv, qmul, qrot  # noqa: E402
+import staged  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 FLIP = 30.0
@@ -97,8 +98,10 @@ def angle(a, b):
     return math.degrees(2 * math.acos(min(1.0, d)))
 
 
-def load(path, sk):
+def load(path, sk, stage=False):
     d = json.loads(path.read_text())
+    if stage:
+        d = staged.staged_json(d, sk)
     n = len(d["tracks"][0]["keys"])
     rot = np.tile(sk.rest_rot, (n, 1, 1)).astype(float)
     pos = np.tile(sk.rest_pos, (n, 1, 1)).astype(float)
@@ -129,8 +132,8 @@ def hinge_off(g, p, sk, f, top, mid, end, way, rest):
     return math.degrees(math.acos(max(-1.0, min(1.0, np.dot(n / np.linalg.norm(n), h)))))
 
 
-def audit(path, sk):
-    d, rot, pos = load(path, sk)
+def audit(path, sk, stage=False):
+    d, rot, pos = load(path, sk, stage)
     g, p = sk.fk(rot, pos)
     I = sk.index
     n = rot.shape[0]
@@ -206,6 +209,7 @@ def audit(path, sk):
 
 
 def main(argv):
+    argv = staged.set_from_argv(argv)   # --raw: the clips as written, not as the game plays them
     want = [a for a in argv if not a.startswith("--")]
     verbose = "--all" in argv
     total = 0
@@ -221,7 +225,7 @@ def main(argv):
         for f in files:
             if want and not any(w in f.stem for w in want):
                 continue
-            d, out = audit(f, sk)
+            d, out = audit(f, sk, label == "her" and staged.want())
             arms = {s: out[s] for s in "lr"}
             bad = {s: o for s, o in arms.items() if o["flags"]}
             if bad or verbose:

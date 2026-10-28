@@ -42,6 +42,7 @@ into her skin / into the outfit with that clearance, over the clips (default: id
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -312,22 +313,36 @@ class Checker:
         shaft (keyed.slide_dir of its kind, PIECE_KIND), and its "grip_tilt" (degrees, animation 48) turns it in the
         fist about the palm's normal through the pocket first (keyed.grip_pose), as the game does (PersonView.Slide)."""
         c = self.b.clip(name, folder)
+        with self.gripped(c, pieces):
+            return self._clip(c, pieces, step)
+
+    @contextlib.contextmanager
+    def gripped(self, c, pieces):
+        """The pieces of `pieces` moved in her fists as the clip `c` moves them (its "grip_slide" for the right fist and tilt;
+        "grip_slide_l" for the left, animation 55: no pocket, so a slide along the plain mount's shaft, keyed.slide_dir_left),
+        then put back."""
         s = float(c.meta.get("grip_slide", 0.0) or 0.0)
         tl = float(c.meta.get("grip_tilt", 0.0) or 0.0)
+        sl = float(c.meta.get("grip_slide_l", 0.0) or 0.0)
         kept = {}
-        if s or tl:
-            from keyed import slide_dir, grip_pose
+        if s or tl or sl:
+            from keyed import slide_dir, slide_dir_left, grip_pose
             for k in pieces:
                 kind = PIECE_KIND.get(k.split("@")[0])
-                d = slide_dir(kind) if k.endswith("@hand_r") else None
-                if d is not None:
+                if k.endswith("@hand_r"):
+                    d = slide_dir(kind) if (s or tl) else None
+                    mv = (lambda kind=kind: grip_pose(kind, s, tl)) if d is not None else None
+                else:
+                    d = slide_dir_left("axes" if kind == "axe" else kind) if sl and k.endswith("@hand_l") else None
+                    mv = (lambda d=d: (np.eye(3), sl * d)) if d is not None else None
+                if mv is not None:
                     kept[k] = (self.local[k], self.pts[k], self.coarse[k])
                     v, t = self.local[k]
-                    R, tr = grip_pose(kind, s, tl)
+                    R, tr = mv()
                     self.local[k], self.pts[k], self.coarse[k] = ((v @ R.T + tr, t), self.pts[k] @ R.T + tr,
                                                                   self.coarse[k] @ R.T + tr)
         try:
-            return self._clip(c, pieces, step)
+            yield
         finally:
             for k, (lo, pt, co) in kept.items():
                 self.local[k], self.pts[k], self.coarse[k] = lo, pt, co
@@ -555,7 +570,10 @@ def main():
     ap.add_argument("--arms", help="another arms_local.json (an older mount, to compare)")
     ap.add_argument("--sockets", action="store_true", help="fit art/anim/socket_clearance.json and measure every weapon kind sheathed, per outfit")
     ap.add_argument("--keep", action="store_true", help="with --sockets: measure with the clearance file as it is (no refit, no write)")
+    ap.add_argument("--raw", action="store_true", help="clips as written, not staged (clavhold + armroll) as the game plays them")
     a = ap.parse_args()
+    import staged
+    staged.set_from_argv(["--raw"] if a.raw else [])
     if a.sockets:
         return run_sockets(a)
     t0 = time.time()

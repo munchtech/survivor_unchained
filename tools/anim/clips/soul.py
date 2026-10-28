@@ -471,11 +471,12 @@ def reaver_break(rig):
         (18, over("reaver", head=(14, 4, 0)), "auto"),
         (26, over("reaver", head=(0, -14, -14)), "auto"),
         (32, over("reaver", head=(-10, 0, 0)), "ease"),
-        # The axe off her shoulder and twirled in the fist, over and back, twice.
-        (40, over("reaver", hand_r=spin(-75)), "auto"),
-        (45, over("reaver", hand_r=spin(70)), "auto"),
-        (50, over("reaver", hand_r=spin(-70)), "auto"),
-        (55, over("reaver", hand_r=spin(70)), "auto"),
+        # The axe off her shoulder and twirled in the fist, over and back, twice. (27 Oct: +-64-68, not +-70-75: with the
+        # fist higher on the haft the wrist turned 30-32 deg in a frame at the turns, past the audit's 30.)
+        (40, over("reaver", hand_r=spin(-68)), "auto"),
+        (45, over("reaver", hand_r=spin(64)), "auto"),
+        (50, over("reaver", hand_r=spin(-64)), "auto"),
+        (55, over("reaver", hand_r=spin(64)), "auto"),
         (60, over("reaver", hand_r=spin(-40)), "auto"),
         (64, over("reaver", hand_r=spin(10)), "auto"),
         (70, over("reaver", hips={"rot": (6, 0, 3)}), "ease"),
@@ -486,7 +487,7 @@ def reaver_break(rig):
                   fingers_l="spread"), "auto"),
         (100, over("reaver"), "ease"),
     ]
-    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
+    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe", **idle.axe_grip()})
 
 
 def _vpath(pts, fr):

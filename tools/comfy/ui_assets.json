@@ -1166,6 +1166,29 @@
    "prompt": "An empty wide low plate of blackened forged iron, a short crest strip along its top edge, lamp-iron brackets at its top corners, the face plain and dark, seamless left to right.",
    "where": "A crested card too low for crest_card's slice: creation's calling cards (470x92) and any row-shaped choice. Neutral iron, the code tints its crest strip and hairline",
    "made_by": "not yet made"
+  },
+  {
+   "id": "hud_dg_figure",
+   "name": "The Drowned Girl HUD, piece 1: her bronze figure lifting the life orb to her lips",
+   "file": "lamp_life/drowned/lamp_cold.png",
+   "also": [
+    "lamp_life/drowned/lamp_geo.json",
+    "lamp_life/drowned/lamp_mask.png"
+   ],
+   "size": [
+    1024,
+    768
+   ],
+   "kind": "hud",
+   "aspect": "4:3, 1024x768",
+   "seed": 6305,
+   "seeds_painted": "6300..6307 (this prompt); earlier whole-bar framings 6100..6103 and 6200..6203 (1536x768) painted the figure too small, not used",
+   "prompt": "Dark fantasy action RPG game HUD ornament, a close view of one sculpted relief cast in dark river-worn bronze with green verdigris, Art Nouveau, elegant flowing lines; everything is bronze, a statue, her face, skin and hand bronze too. The head and bare shoulders of a beautiful drowned young woman in clean side profile facing left, filling the whole height of the frame, the top of her head near the top edge, her face tilted upward, eyes closed, lips softly parted. With one slender hand she lifts a very large polished glass orb, bigger than her head, filled with glowing deep blood-red liquid, raised to her lips so it almost touches them; the orb rests on her open palm from below, her slender fingers curling up round its lower edge only, most of the sphere clear and unobstructed. Her very long hair streams back behind her head and sweeps down to the lower right in great smooth flowing locks like the current of a river, running out of the frame at the right edge along the bottom as a low band of hair. Graceful elegant anatomy, a slender neck, a delicate well-drawn hand with five slender fingers and a thumb. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the red glow of the orb on her fingers and chin, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps (ui_art.paint's graph via gen.py, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "UI 16, 27 Oct 2026, the owner's pick 'The Drowned Girl' (--hud drowned). The painted glass is fitted and cut out (hud_orb.gdshader theme 3 draws the live orb there), her fingers over it kept; graded to mid-low bronze. Sources, prompts and gen.py in survivorsunchained_inputs/ui16_dg_src/.",
+   "made_by": "tools/uiforge/dg_figure_cut.py",
+   "dg2_hand": "27 Oct, dg2: the hand and forearm repainted over seed 6305 (face, hair, chest untouched, composited back outside the mask): Krea 2 turbo fp8 + krea2_darkbrush 0.8 with DifferentialDiffusion, SetLatentNoiseMask, denoise 0.72, seed 7105, 8 steps, cfg 1, over a guide of the owner-approved d1b concept's cradle hand scaled to the glass and lowered 26 px (survivorsunchained_inputs/ui16_dg_src/dg2/: guide.py, inpaint.py, guide_a.png, mask_a.png, the other seeds 7100..7108, 7200..7203); source dg2_hand.png, cut by BiRefNet (dg2_hand_cut.png); local ComfyUI, no API",
+   "dg3_hand": "27 Oct, dg3: the orb moved to d1b's spacing (top at her lips, 25 px of air to her chin; source padded 128 px left), the old orb, hand and forearm cleared and a new cradle inpainted over seed 6305 (face, hair, chest untouched): Krea 2 turbo fp8 + krea2_darkbrush 0.8, DifferentialDiffusion, SetLatentNoiseMask, denoise 0.90, seed 7302, 8 steps, cfg 1, over a drawn sketch guide (palm under the glass, fingertips at 7-8 o'clock, thumb at 4-5, short diagonal forearm); other seeds 7300..7305 at 0.80/0.90 and free 7400..7405 at 1.0 (survivorsunchained_inputs/ui16_dg_src/dg3/: guide3.py, inpaint3.py, guide_s.png, mask_s.png); source dg3_hand.png, cut by BiRefNet (dg3_hand_cut.png); local ComfyUI, no API"
   }
  ],
  "icon_sets": {
@@ -1214,5 +1237,170 @@
    "tint": "full colour",
    "prompt": "A game controller button prompt icon: {name}, dark rounded button, clean and flat, front view, on a pure black background."
   }
- }
+ },
+ "_concepts": "Painted concepts that are not in the game (owner picks first): their Krea seeds and prompts, for provenance. Not read by ui_art.py.",
+ "concepts": [
+  {
+   "id": "life_orb_concept_mothers_vigil",
+   "name": "The Mother's Vigil",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c1_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4705,
+   "seeds_painted": "4700-4705 (4:3; an earlier portrait run of the same seeds also painted)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. A carved grey marble grave statue of a kneeling woman in a long hooded mourning veil, at the left, holding a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left in both arms against her breast; her hooded head is bowed and her cheek rests on the top of the orb, eyes closed; heavy clean folds of veil and sleeve fall to the left and down. The orb is as wide as her whole body; statue and orb together are wider than tall. Tender and sorrowful. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Mother's Vigil' (UI 16, 27 Oct 2026; concepts only, not built): seed 4705 chosen of 4700-4705 (4:3; an earlier portrait run of the same seeds also painted); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_hands_of_the_dead",
+   "name": "Hands of the Dead",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c2_1x.png",
+   "kind": "concept",
+   "aspect": "1:1 (Square), 1024x1024",
+   "seed": 4733,
+   "seeds_painted": "4730-4734 (and the many-hands variant 4720-4724, not used)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. Two large carved stone hands rising from below, cupped together like hands lifting water from a river, holding up a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left that rests in the cup of the palms, the long fingers curving up around its lower half, the wrists fading into black below. Pale grey river-worn marble, smooth and clean. Tender, like an offering. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'Hands of the Dead' (UI 16, 27 Oct 2026; concepts only, not built): seed 4733 chosen of 4730-4734 (and the many-hands variant 4720-4724, not used); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_drowned_girl",
+   "name": "The Drowned Girl",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c3_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4761,
+   "seeds_painted": "4760-4765 (the compact variant 4790-4795 not used)",
+   "prompt": "Dark fantasy action RPG HUD ornament: the health orb at the left end of the game's bottom bar. A sculpted relief of a beautiful drowned young woman at the left, her face in profile turned upward, eyes closed, lips parted, in dark river-worn bronze with green verdigris; her very long hair flows out behind her in great smooth curving locks like the currents of a river, the locks sweeping around and cradling a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left at the right. Art Nouveau, elegant flowing lines. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Drowned Girl' (UI 16, 27 Oct 2026; concepts only, not built): seed 4761 chosen of 4760-4765 (the compact variant 4790-4795 not used); cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "life_orb_concept_broken_grave",
+   "name": "The Broken Grave",
+   "file": "survivorsunchained_inputs/ui16_orb_concepts/c4_1x.png",
+   "kind": "concept",
+   "aspect": "4:3 (Standard), 1184x888",
+   "seed": 4783,
+   "seeds_painted": "4780-4784",
+   "prompt": "Dark fantasy action RPG health orb ornament. a large polished glass orb filled to the very top with glowing deep blood-red liquid, dark swirling currents inside it, one small sharp white highlight on the glass at its upper left bursting up out of a broken grave slab: the heavy flat slab of dark grey stone, its edge carved with a plain border, split by the orb rising through it, two great sharp-edged slab pieces tilted up and apart on either side of the orb like opened doors, a few smaller shards thrown up, the orb sitting low in the break. The slab low and wide; the orb the biggest thing. Defiant, the dead getting up. Seen straight from the front, centred, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the orb's red glow on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no bars, no frames.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, 1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "HUD life orb casing concept 'The Broken Grave' (UI 16, 27 Oct 2026; concepts only, not built): seed 4783 chosen of 4780-4784; cut, its orb's liquid repainted procedurally (scratch orb.py), graded to the night HUD and composited in PIL onto ui-11's godot/.shots/v11r_00.png. Sheet: survivorsunchained_inputs/ui16_orb_concepts/concepts_sheet.png; sources and scripts in survivorsunchained_inputs/ui16_orb_concepts/src/",
+   "made_by": "UI 16 concept composite (src/comp.py)"
+  },
+  {
+   "id": "hud_direction_drowned_girl_d1v",
+   "name": "The Drowned Girl: the whole bar: the bronze girl holding the life orb, her hair as the bar, the eddy holding the Flare",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d1_1x.png",
+   "kind": "concept",
+   "size": "2048x512",
+   "seed": 5071,
+   "seeds_painted": "5070..5072",
+   "prompt": "Dark fantasy action RPG game HUD: the whole bottom bar of the screen as one long, very low sculpted relief, much wider than tall, cast in one piece of dark river-worn bronze with green verdigris, Art Nouveau, elegant flowing lines; everything is bronze, a statue, her face and skin bronze too. At the far left, the head and shoulders of a beautiful drowned young woman in profile, her face turned upward, eyes closed, lips parted, one slender hand cradling a very large polished glass orb, bigger than her head, filled to the top with glowing deep blood-red liquid. Her very long hair streams out behind her to the right along the whole length of the bar in great smooth flowing locks like the currents of a river, a long low horizontal band of hair, and at the far right end the locks curl into a whirlpool spiral around a second large glass orb filled with glowing molten golden fire. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the glow of the orb and the fire on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'The Drowned Girl' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_drowned_girl_d1b",
+   "name": "The Drowned Girl: the hair-bound bronze rings of the six skill seats and the dash",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d1_1x.png",
+   "kind": "concept",
+   "size": "1024x1024",
+   "seed": [
+    5040,
+    5041,
+    5042
+   ],
+   "seeds_painted": "5040..5042",
+   "prompt": "Dark fantasy action RPG HUD ornament: one round skill socket for the game's bottom bar. A smooth round bezel ring in dark river-worn bronze with green verdigris, its inside an empty flat black disc, with long flowing sculpted locks of hair sweeping past it from left to right and parting around it like a river current around a stone. Art Nouveau, elegant flowing lines. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'The Drowned Girl' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_drowned_girl_d1d",
+   "name": "The Drowned Girl: the hair-bound draught flask",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d1_1x.png",
+   "kind": "concept",
+   "size": "1024x1024",
+   "seed": 5050,
+   "seeds_painted": "5050..5051",
+   "prompt": "Dark fantasy action RPG HUD ornament: a small potion for the game's bottom bar. A small round glass bead filled with glowing deep red liquid, bound in a few flowing locks of sculpted hair in dark river-worn bronze with green verdigris, like a pearl caught in a river current. Art Nouveau, elegant flowing lines. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the glow of the orb and the fire on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'The Drowned Girl' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_hands_of_the_dead_d2w",
+   "name": "Hands of the Dead: the whole bar: marble wave frieze, the hands lifting the life orb and holding the ember (the Flare)",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d2_1x.png",
+   "kind": "concept",
+   "size": "2048x512",
+   "seed": 5104,
+   "seeds_painted": "5100..5104",
+   "prompt": "Dark fantasy action RPG game HUD: the whole bottom bar of the screen as one long, very low carved ornament, much wider than tall, in pale grey river-worn marble. A long low frieze of stylized carved river waves runs the whole width, the surface of a river at a ford. At the left end, two large cupped stone hands of the drowned dead rise out of the waves, lifting a large polished glass orb filled to the top with glowing deep blood-red liquid, like an offering. At the right end, two cupped stone hands rise out of the waves holding a large glowing ember, a round burning coal with bright orange fire in its cracks. Tender and eerie. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the glow of the orb and the fire on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'Hands of the Dead' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_hands_of_the_dead_d2b",
+   "name": "Hands of the Dead: the six slate stepping stones held up from under the water (skill seats) and the dash",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d2_1x.png",
+   "kind": "concept",
+   "size": "1024x1024",
+   "seed": [
+    5140,
+    5141,
+    5142,
+    5143,
+    5144,
+    5145
+   ],
+   "seeds_painted": "5140..5145",
+   "prompt": "Dark fantasy action RPG HUD ornament: one skill slot for the game's bottom bar. A flat square stepping stone of dark smooth slate with softly rounded corners, its face flat and empty, standing in stylized carved river waves of pale grey marble, and the pale marble fingers of a drowned hand curling up over the stone's lower edge from beneath the waves, holding it up. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'Hands of the Dead' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_hands_of_the_dead_d2d",
+   "name": "Hands of the Dead: the hand holding up the draught flask",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d2_1x.png",
+   "kind": "concept",
+   "size": "1024x1024",
+   "seed": 5151,
+   "seeds_painted": "5150..5151",
+   "prompt": "Dark fantasy action RPG HUD ornament: a small potion for the game's bottom bar. A single slender pale grey marble hand rising from stylized carved river waves, holding up a small round glass phial filled with glowing deep red liquid. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the glow of the orb and the fire on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'Hands of the Dead' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_mothers_vigil_d3w",
+   "name": "The Mother's Vigil: the tomb chest with six niches and the rose window (the Flare); its own small mourner cut away",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d3_1x.png",
+   "kind": "concept",
+   "size": "2048x512",
+   "seed": 5203,
+   "seeds_painted": "5200..5204",
+   "prompt": "Dark fantasy action RPG game HUD: the whole bottom bar of the screen as one long, very low carved ornament, much wider than tall, in pale weathered limestone: the long side of a Gothic tomb chest, a row of six small pointed-arch niches with simple tracery, evenly spaced, above a plain smooth band and a molded plinth. At the left end, a veiled stone mourner in heavy robes kneels, her head bowed, holding a large polished glass orb filled to the top with glowing deep blood-red liquid against her breast. At the right end, a round carved stone window with Gothic tracery glows from behind with golden fire, the lamp she lit. Seen straight from the front, the whole piece inside the frame with black space all around it, isolated on a pure flat black background. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes and a strong silhouette, smooth surfaces with restrained weathering, warm candlelight from the upper left, the glow of the orb and the fire on the nearby surfaces, a faint cool blue rim light, deep shadows. No text, no letters, no numbers, no icons.",
+   "model": "Krea 2 turbo fp8 + krea2_darkbrush 0.8, cfg 1, 8 steps, ~1 MP (ui_art.paint's graph, prompt enhancer off, latent size set outright), local ComfyUI; cut by BiRefNet (ui_art.birefnet)",
+   "note": "Whole-HUD direction 'The Mother's Vigil' (UI 16, 27 Oct 2026; concept only, not built): cut, graded to the night HUD, liquids/levels/glyphs/type painted in PIL and composited onto ui-11's godot/.shots/v11r_00.png with the old HUD painted out. Sheet: survivorsunchained_inputs/ui16_hud_directions/directions_sheet.png; sources and scripts in its src/.",
+   "made_by": "UI 16 whole-HUD paintover (src/d1.py, d2.py, d3.py)"
+  },
+  {
+   "id": "hud_direction_mothers_vigil_mourner",
+   "name": "The Mother's Vigil: the kneeling mourner with the life orb",
+   "file": "survivorsunchained_inputs/ui16_hud_directions/d3_1x.png",
+   "kind": "concept",
+   "note": "Reuses life_orb_concept_mothers_vigil (seed 4705, logged above) at the chest's head; same model and prompt.",
+   "made_by": "UI 16 whole-HUD paintover (src/d3.py)"
+  }
+ ]
 }

@@ -324,7 +324,7 @@ public partial class PlayerView : Node3D
 
     // The clips in the one-shots, by the name the library knows, and the grip slide (metres) and tilt (degrees) now.
     string fullClip = "", upperClip = "";
-    float slide, tilt;
+    float slide, tilt, slideL;
 
     void Upper(string clip, double speed)
     {
@@ -550,6 +550,8 @@ public partial class PlayerView : Node3D
             slide = own.GripSlide(hold[0]); // the clip's grip, straight (no easing)
             tilt = own.GripTilt(hold[0]);
             view?.Slide("handslot.r", slide, tilt);
+            slideL = own.GripSlideL(hold[0]);
+            view?.Slide("handslot.l", slideL); // (the left fist has no pocket to tilt in)
             // An upper-body clip (a swing) is held as play shows it: over her idle's hips and legs (the
             // upperShot filter), not on the clip's own keyed legs. --hold-full shows the clip's legs.
             var sk = person.Skeleton;
@@ -862,13 +864,17 @@ public partial class PlayerView : Node3D
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.
         if (idleNode != null && runNode != null)
         {
-            float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), w,
-                own.GripSlide(idleNode.Animation), own.GripSlide(runNode.Animation));
-            float toT = GripSlide.Target(fullOn, own.GripTilt(fullClip), upperOn, own.GripTilt(upperClip), w,
-                own.GripTilt(idleNode.Animation), own.GripTilt(runNode.Animation));
+            float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), wWalk, w,
+                own.GripSlide(idleNode.Animation), own.GripSlide((walkNode ?? idleNode).Animation), own.GripSlide(runNode.Animation));
+            float toT = GripSlide.Target(fullOn, own.GripTilt(fullClip), upperOn, own.GripTilt(upperClip), wWalk, w,
+                own.GripTilt(idleNode.Animation), own.GripTilt((walkNode ?? idleNode).Animation), own.GripTilt(runNode.Animation));
             slide = GripSlide.Ease(slide, to, dt);
             tilt = GripSlide.Ease(tilt, toT, dt);
             view?.Slide("handslot.r", slide, tilt);
+            float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), wWalk, w,
+                own.GripSlideL(idleNode.Animation), own.GripSlideL((walkNode ?? idleNode).Animation), own.GripSlideL(runNode.Animation));
+            slideL = GripSlide.Ease(slideL, toL, dt);
+            view?.Slide("handslot.l", slideL);
         }
         float lowerT = fullOn ? (fullNative ? 1 : 0) : 1;
         float upperT = fullOn ? (fullNative ? 1 : 0) : upperOn ? (upperNative ? 1 : 0) : 1;
