@@ -18,14 +18,16 @@ THE WEB (fix 6): the front armpit's notch bridged. At the hanging arm's pose (w_
 rolling-ball closing (R 24 mm) gives the bridge over the slot's mouth; its move on the camera-visible rim (in a band
 0-75 mm below the shoulder joint, in front of it) is the handle of a biharmonic field on her posed surface (zero 85 mm
 out), taken to rest by each vertex's blended skin matrix and mirrored to her left. (A second field built at w_m45's
-bent left arm, merged per side, opened the pit wider at s_p45, r132 and rL90: not used.) It fills the notch; it does
-not yet build the fold's convex rounded edge.
+bent left arm, merged per side, opened the pit wider at s_p45, r132 and rL90: not used.) OFF by default (--web turns
+it on): the harness's visible pit shrank 45-57% at w_p45, look_f and w_m45, but in real game frames (27 Oct) the
+bridged vertices bunch into a small bright knot with dark creases round it at all three: a nub, the same failure as
+the fold volumes. A fold needs new surface (topology) there, not the old pit's vertices pulled forward.
 Baked per welded vertex (shoulder_web_post.json, with each vertex's rest position as a guard: same topology only).
 No skin-weight change.
 
 Her shoulder pose-space shapes (shoulder_*) kept as approved (arm_contour_post.psd_keep); the rest ride on the shape.
 
-    python tools/assets/shoulder_web_post.py <in heroine.glb> <out heroine.glb>
+    python tools/assets/shoulder_web_post.py <in heroine.glb> <out heroine.glb> [--web]
 Idempotent: done-mark shoulder_web (a marked body is copied unchanged).
 """
 import json
@@ -125,7 +127,7 @@ def web_move(b, D):
     return d
 
 
-def run(src, dst, quiet=False):
+def run(src, dst, quiet=False, web=False):
     from heroine_neck import _Gl
     import pit_hollow_post as ph
     import arm_contour_post as ac
@@ -140,7 +142,7 @@ def run(src, dst, quiet=False):
     D = json.load(open(DATA))
     b = ph.Body(G)
     dD = deltoid_move(b, D)
-    dW = web_move(b, D)
+    dW = web_move(b, D) if web else np.zeros_like(dD)
     dU = dD + dW
     n0 = ph.vn(b.U, b.F)
     n1 = ph.vn(b.U + dU, b.F)
@@ -177,4 +179,5 @@ def run(src, dst, quiet=False):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1], sys.argv[2])
+    a = [x for x in sys.argv[1:] if not x.startswith("--")]
+    run(a[0], a[1], web="--web" in sys.argv)
