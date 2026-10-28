@@ -197,7 +197,7 @@ public sealed class WickTests
     public void Split_throws_three_smaller()
     {
         var plan = Strand("split");
-        Assert.Equal(1.1 * 0.45, Ratio((_, w) => w.Damage, "judgement_disc", 4, plan), 6);
+        Assert.Equal(1.1 * 0.28, Ratio((_, w) => w.Damage, "judgement_disc", 4, plan), 6);
         Assert.Equal(0.75, Ratio((b, w) => Firing.AreaOf(b, w, 1), "judgement_disc", 4, plan), 6);
         Assert.Equal(3, Ratio((b, w) => Firing.CountOf(b, w), "judgement_disc", 4, plan), 6);
         // Its second lamp on a projectile is speed, not area; its third, the cooldown.
@@ -221,9 +221,9 @@ public sealed class WickTests
     public void Wide_is_bigger_and_slower()
     {
         var plan = Strand("wide");
-        Assert.Equal(1.5 * 1.1, Ratio((b, w) => Firing.AreaOf(b, w, 1), "oathblade", 4, plan), 6);
+        Assert.Equal(1.2 * 1.1, Ratio((b, w) => Firing.AreaOf(b, w, 1), "oathblade", 4, plan), 6);
         Assert.Equal(1.3 * 0.92, Ratio((b, w) => Firing.CooldownOf(b, w), "oathblade", 4, plan), 6);
-        Assert.Equal(1.1 * 1.1, Ratio((_, w) => w.Damage, "oathblade", 4, plan), 6);
+        Assert.Equal(1.1 * 0.85, Ratio((_, w) => w.Damage, "oathblade", 4, plan), 6);
     }
 
     [Fact]
