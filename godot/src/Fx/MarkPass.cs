@@ -32,6 +32,7 @@ public partial class MarkPass : CompositorEffect
         ["le"] = 0.6f,     // the rims' and the heart's light (x the mark's energy)
         ["fs"] = 0.88f, ["fh"] = 5f, // the red's fold: no light past where the seen scarlet's saturation drops under fs or its hue passes fh
         ["knee"] = 0.6f,   // the light eases into the fold from this share of it
+        ["bed"] = 1f,      // the inner bed's re-tint: 1 the whole mark, 0 edges only (a scarlet band at the rims fading inward, and under the running fill)
     };
 
     static MarkPass()
@@ -168,6 +169,7 @@ public partial class MarkPass : CompositorEffect
             T["front"], T["tail"], T["body"], T["fill"],
             bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
             T["le"], T["fs"], T["fh"], T["knee"],
+            T["bed"], 0, 0, 0,
         };
         Rid lut = lutOn && lutTex.IsValid ? lutTex : idLut;
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
@@ -226,6 +228,7 @@ public partial class MarkPass : CompositorEffect
             float front; float tail; float body; float fill_e;
             float bri; float con; float sat; float flags;
             float le; float fs; float fh; float knee;
+            float bed; float pad0; float pad1; float pad2;
         } pc;
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth;
@@ -309,7 +312,7 @@ public partial class MarkPass : CompositorEffect
         void shape(int i, vec2 l, out float cover, out float light) {
             vec4 a = mk.m[i * 4], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
             int kind = int(a.w + 0.5);
-            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca;
+            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm;
             if (kind == 0) {
                 // a lane: rims along its sides at 0.9 of its half width, soft ends (no cap line: a lane, not a box)
                 float sc = hx;
@@ -317,7 +320,7 @@ public partial class MarkPass : CompositorEffect
                 float core = max(0.012 * sc, 0.008), soft = max(0.014 * sc, 0.008), glw = max(0.05 * sc, 0.03);
                 edge = rim(d, core, soft, glw, 0.5);
                 ca = clamp(1.0 - max(abs(d) - core, 0.0) / soft, 0.0, 1.0);
-                float sm = smoothstep(-0.35 * hx, 0.0, d);
+                sm = smoothstep(-0.35 * hx, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 float fe = hz - abs(l.y);
                 ends = smoothstep(0.0, 0.45, fe);
@@ -342,13 +345,14 @@ public partial class MarkPass : CompositorEffect
                 ca = rm * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
                 float fall = d < 0.0 ? 0.35 * exp(d / fin) : 0.25 * exp(-d / fout);
                 edge = max(rm, fall) * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
-                float sm = smoothstep(-0.33 * R, 0.0, d);
+                sm = smoothstep(-0.33 * R, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 wh = fout * 2.0;
                 if (e.x >= 0.0 && kind == 1) f = fillf(e.x * 0.97 - r);
             }
             // (the rims' cores over the bed's scarlet, not the ground's own colour: a rim added over grey went salmon)
-            cover = max((d < 0.0 ? 1.0 : exp(-d / wh)) * ends, ca);
+            cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends, ca);
+            cover = max(cover, min(f * 4.0, 1.0) * (1.0 - pc.bed));
             light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
