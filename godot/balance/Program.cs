@@ -34,6 +34,14 @@ using SurvivorUnchained.Rpg;
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
+ *          --hand 0 (every calling's Hand off, to measure them)
+ *          --pair 1 (the Hand measure: each arena twice, Hand off then on, the on run replaying the off run's cards
+ *          at their minutes; --nofall 1 stands her up at full health instead of a fall, --span 30 stops both at that
+ *          minute; one line a pair to --out, dmg/min over the span: tools/scratch/classes/hand_measure.sh)
+ *          --wicks none|suggested|plan (default suggested: Light my way), --turn <strand> (that strand first)
+ *          --pair turn:<strand>[@skill] (the Turn measure: off = the skill's wick without its Turn, on = with it,
+ *          the on run replaying the off run's cards; the skill carried from the start at --skillrank, default 4:
+ *          tools/scratch/classes/turn_measure.sh)  --strands skill=a/b/c (that skill's strands, a measuring aid)
  *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
  *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
  *
@@ -46,9 +54,36 @@ Pilot.Banks = opt.Get("bank", "1") != "0";
 Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
+// --hand 0: every calling's Hand off (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2), to measure what the Hands bring.
+SurvivorUnchained.Sim.Battle.Hands = opt.Get("hand", "1") != "0";
+// The Wicks: none, Light my way (a player who never plans: the default here), or the character's plan; --turn
+// lights that strand first on every skill that has it.
+SurvivorUnchained.Rpg.WickBook.Lights = opt.Get("wicks", "suggested") switch
+{
+    "none" => SurvivorUnchained.Rpg.WickBook.Mode.None,
+    "plan" => SurvivorUnchained.Rpg.WickBook.Mode.Plan,
+    "suggested" => SurvivorUnchained.Rpg.WickBook.Mode.Suggested,
+    var w => throw new ArgumentException($"--wicks {w}: none, suggested or plan"),
+};
+// --strands skill=a,b,c (a measuring aid): that skill's wick strands for this run, e.g. a Turn no skill carries yet.
+foreach (var so in opt.List("strands", "").Where(x => x.Contains('=')))
+{
+    var (sk, strands) = (so[..so.IndexOf('=')], so[(so.IndexOf('=') + 1)..].Split('/'));
+    (SurvivorUnchained.Content.Wicks.Of(sk) ?? throw new ArgumentException($"--strands {sk}: no wick")).Strands = strands;
+}
+SurvivorUnchained.Rpg.WickBook.ForceTurn = opt.Get("turn", "") is { Length: > 0 } turn ? turn : null;
+if (SurvivorUnchained.Rpg.WickBook.ForceTurn is { } ft && !SurvivorUnchained.Content.Wicks.Skills.Any(k => SurvivorUnchained.Content.Wicks.StrandsOf(k).Any(x => x.Id == ft)))
+    throw new ArgumentException($"--turn {ft}: no skill has that strand");
 SurvivorUnchained.Sim.Battle.FlareRout = double.Parse(opt.Get("rout", "0"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.FlareReachMul = double.Parse(opt.Get("flarereach", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";
+// --maphp PACK,BOSS: health added per day slot past three, to a map's packs and its ruler (MapRun.PackPerSlot, BossPerSlot).
+if (opt.Has("maphp"))
+{
+    var mh = opt.Get("maphp", "1").Split(',');
+    SurvivorUnchained.Play.Zones.MapRun.PackPerSlot = double.Parse(mh[0], System.Globalization.CultureInfo.InvariantCulture);
+    if (mh.Length > 1) SurvivorUnchained.Play.Zones.MapRun.BossPerSlot = double.Parse(mh[1], System.Globalization.CultureInfo.InvariantCulture);
+}
 // --storyhp roost=103,vault=130: a story boss's health multiple in place of its script's (by the fight's short name).
 foreach (var kv in opt.List("storyhp", "").Where(x => x.Contains('=')))
 {
@@ -104,6 +139,98 @@ string[] Callers() => opt.List("callings", "all") is ["all"] ? ["warden", "reave
 string[] Policies() =>
     opt.List("policies", "greedy").SelectMany(p => p == "paths" ? Paths.All.Select(x => $"path:{x.Id}") : [p]).ToArray();
 
+// The Hand measure (--pair): one arena with the Hand off, then on with the off run's cards replayed at their minutes,
+// both with no falls (--nofall, default 1) over a fixed span (--span, default 30: the horde's half hour). What differs
+// is the Hand and the fight it changes, not the build or the run's length.
+void HandPairs(List<RunSpec> specs, string outPath)
+{
+    bool noFall = opt.Get("nofall", "1") != "0", replay = opt.Get("replay", "1") != "0";
+    double span = opt.Double("span", 30);
+    bool nul = opt.Get("null", "0") != "0";
+    // (--cal 1.10: a third run, the Hand off and all her damage x1.10 on the same build: the yardstick a Hand is read
+    // against, "worth x1.07 damage".)
+    double cal = opt.Double("cal", 0);
+    // --pair turn:STRAND[@SKILL] (the Turn measure): off = the skill's wick with no Turn (that strand's lead-ins first,
+    // then Light my way's, the Turn lamp left out), on = the same path with that strand's Turn in fourth; the skill
+    // carried from the start at --skillrank (default 4: the Turn lit from the first minute), the Hand as it is.
+    string? turnStrand = null, turnSkill = null; string[]? pathOn = null, pathOff = null;
+    if (opt.Get("pair", "0") is { } pm && pm.StartsWith("turn:"))
+    {
+        var tt = pm[5..].Split('@');
+        turnStrand = tt[0];
+        turnSkill = tt.Length > 1 ? tt[1] : SurvivorUnchained.Content.Wicks.Skills.First(k => SurvivorUnchained.Content.Wicks.StrandsOf(k).Any(x => x.Id == turnStrand));
+        if (!SurvivorUnchained.Content.Wicks.StrandsOf(turnSkill).Any(x => x.Id == turnStrand)) throw new ArgumentException($"--pair {pm}: {turnSkill} has no {turnStrand} strand");
+        pathOn = SurvivorUnchained.Rpg.WickBook.Path(Array.Empty<string>(), turnSkill, turnStrand);
+        pathOff = pathOn.Where(id => !SurvivorUnchained.Content.Wicks.IsTurn(turnSkill, id)).ToArray();
+        int had = specs.Count;
+        specs = specs.Where(x => Weapons.CanCarry(x.Calling, turnSkill)).ToList();
+        if (specs.Count < had) Console.WriteLine($"turn pair: {had - specs.Count} arenas dropped (their calling can't carry {turnSkill})");
+        Console.WriteLine($"turn pair {turnStrand} on {turnSkill}: on {string.Join(" ", pathOn)} | off {string.Join(" ", pathOff)}");
+    }
+    int skillRank = opt.Int("skillrank", 4);
+    ArenaSim.Fixed Fx(bool? hand, List<(double T, Action<SurvivorUnchained.Sim.Battle> Do)>? rep, bool on) => new ArenaSim.Fixed
+    {
+        Hand = hand, NoFall = noFall, Span = span, Replay = rep,
+        Skill = turnSkill, SkillRank = skillRank, WickPath = turnSkill == null ? null : on ? pathOn : pathOff,
+    };
+    object TurnSide(RunResult r, ArenaSim.Fixed f) => new
+    {
+        Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.DamageTaken,
+        Skill = f.SkillDmg, Elite = f.SkillElite, Boss = f.SkillBoss, f.TurnsOn, f.TurnsDark, By = f.DamageBy, r.Build,
+    };
+    Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
+    var sw = Stopwatch.StartNew();
+    int done = 0;
+    using var file = new StreamWriter(outPath, append: opt.Has("append"));
+    var gate = new object();
+    object Side(RunResult r, ArenaSim.Fixed f) => new
+    {
+        Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
+        Hand = r.DamageBy.GetValueOrDefault("hand"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
+        Alive = r.ByMinute.Count > 0 ? r.ByMinute.Average(x => x.Alive) : 0,
+        TtkF = r.ByMinute.Where(x => !double.IsNaN(x.TtkFodder)).Select(x => x.TtkFodder).DefaultIfEmpty(0).Average(),
+        TtkE = r.ByMinute.Where(x => !double.IsNaN(x.TtkElite)).Select(x => x.TtkElite).DefaultIfEmpty(0).Average(),
+        r.Champions, r.BossTtk, r.WonAt,
+    };
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        try
+        {
+            if (turnSkill != null)
+            {
+                var toff = Fx(null, null, false);
+                var t0 = ArenaSim.Play(spec, toff);
+                var ton = Fx(null, replay ? toff.Took : null, !nul);
+                var t1 = ArenaSim.Play(spec, ton);
+                lock (gate)
+                {
+                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Turn = turnStrand, Off = TurnSide(t0, toff), On = TurnSide(t1, ton) }));
+                    file.Flush();
+                    done++;
+                    if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");
+                }
+                return;
+            }
+            var off = new ArenaSim.Fixed { Hand = false, NoFall = noFall, Span = span };
+            var r0 = ArenaSim.Play(spec, off);
+            // (--null 1: the Hand off in both, the measure's own bias: the replay alone should read x1.00.)
+            var on = new ArenaSim.Fixed { Hand = !nul, NoFall = noFall, Span = span, Replay = replay ? off.Took : null };
+            var r1 = ArenaSim.Play(spec, on);
+            var yard = new ArenaSim.Fixed { Hand = false, NoFall = noFall, Span = span, Replay = replay ? off.Took : null, DamageMore = cal - 1 };
+            var r2 = cal > 0 ? ArenaSim.Play(spec, yard) : null;
+            lock (gate)
+            {
+                file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = Side(r0, off), On = Side(r1, on), Cal = r2 == null ? null : Side(r2, yard) }));
+                file.Flush();
+                done++;
+                if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");
+            }
+        }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
+    });
+    Console.WriteLine($"done {sw.Elapsed:mm\\:ss}");
+}
+
 void Arena()
 {
     var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
@@ -132,6 +259,14 @@ void Arena()
     {
         // Each road T of calling C: on-calling (C, type T) and off-calling (each other calling C', its first road), all drafting road T's skills.
         string[] all4 = ["warden", "reaver", "arcanist", "stalker"];
+        // An off-calling host drafts only what it may carry (Weapons.CanCarry): say what each road's draft loses.
+        foreach (var c in Callers())
+          foreach (var ty in TypesOf(c).Where(t => t != ""))
+            foreach (var host in all4.Where(h => h != c))
+            {
+                var lost = Lamps.Roads[ty].Skills.Where(id => !Weapons.CanCarry(host, id)).ToList();
+                if (lost.Count > 0) Console.WriteLine($"offcalling {ty} on {host}: cannot carry {string.Join(", ", lost)}");
+            }
         foreach (var c in Callers())
           foreach (var ty in TypesOf(c))
             foreach (var host in all4)
@@ -162,6 +297,7 @@ void Arena()
                                 Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", "")));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
+    if (opt.Get("pair", "0") != "0") { HandPairs(specs, outPath); return; }
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");
     var results = new ConcurrentBag<RunResult>();
     var sw = Stopwatch.StartNew();
@@ -356,8 +492,7 @@ void SuggestPath()
     foreach (var road in SurvivorUnchained.Content.Lamps.Roads.Values.Where(r => r.Stand != null).OrderBy(r => r.Id))
     {
         var a = Callings.Archetype(road.Calling);
-        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1);
-        LampBook.SetType(j.Ch, road.Id);
+        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice { Name = "Bot", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0], Type = road.Id }, 1);
         // --lamps full: the arena's full board (story fights won, the atlas, past Act 1), as ArenaSim lights it.
         if (opt.Get("lamps", "") == "full")
         {

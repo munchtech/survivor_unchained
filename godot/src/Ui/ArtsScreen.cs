@@ -222,7 +222,7 @@ public partial class ArtsScreen : Overlay
             list.AddChild(Kit.Head("Seen in the arenas", "not yet learned"));
             foreach (var id in seen) list.AddChild(SkillEntry(ch, id, false));
         }
-        int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id));
+        int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id) && SkillBook.Carries(ch, id));
         if (unseen > 0) list.AddChild(Style.Label($"{unseen} more burn in the arenas, not yet shown to you.", Style.TextItalic, 15, Kit.Faint, true));
         row.AddChild(list);
         row.AddChild(new LedgerRule { CustomMinimumSize = new Vector2(49, 0), SizeFlagsVertical = SizeFlags.Fill });
@@ -287,6 +287,8 @@ public partial class ArtsScreen : Overlay
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Kit.Ink2, true));
+        // What her calling's Hand does to it, in her hands by day and by night (plain text; the look is the UI lead's).
+        if (Content.Hands.Line(ch.Archetype, w) is { } hand) d.AddChild(Style.Label(hand, Style.Text, 16, Kit.Ink2, true));
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
@@ -301,7 +303,7 @@ public partial class ArtsScreen : Overlay
         else if (ch.Slotted.Count < SkillBook.Slots(ch))
             d.AddChild(Nav.Id(Kit.Word($"Carry {w.Name}", () => G.Gear((j, _) => SkillBook.Slot(j.Ch, w.Id)), Style.EmberHi, 17), "carry"));
         else
-            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level and the eighth.", Style.TextItalic, 14, Kit.Dim, true));
+            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level, the eighth, the fourteenth and the twentieth.", Style.TextItalic, 14, Kit.Dim, true));
         return d;
     }
 }

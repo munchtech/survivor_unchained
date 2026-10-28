@@ -45,7 +45,19 @@ public sealed class WeaponInst
     public int Swing;
     /// <summary>The strength of the cast now in hand (the Ledger, the Crowded Sky, the Echo): a multiplier on its projectiles.</summary>
     public double CastMul = 1;
+    /// <summary>Firings so far, and the Melee or Thrown ones the warden's Hand counts toward its heavy blow (Sim/Hands.cs).</summary>
+    public int Casts, HandBlows;
+    /// <summary>The last firing was heavy: its burst shots still to come are too.</summary>
+    public bool HeavyCast;
     Tag[]? tags;
+    WickFx? wick;
+
+    /// <summary>Its lit wick's numbers (Sim/Turns.cs); null, no wick, and it fights as it always did.</summary>
+    public WickFx? Wick
+    {
+        get => wick;
+        set { wick = value; tags = null; }
+    }
 
     public WeaponInst(string id, int rank, int slot)
     {
@@ -63,7 +75,8 @@ public sealed class WeaponInst
     }
 
     public WeaponBehavior Behavior => evolution?.Behavior ?? Def.Behavior;
-    public School School => evolution?.School ?? Def.School;
+    /// <summary>A school Turn's school first: the Turn is what she chose for it.</summary>
+    public School School => wick?.School ?? evolution?.School ?? Def.School;
     public string Art => evolution?.Art ?? Def.Art;
 
     /// <summary>What it is: its own tags, what the evolution adds, and its school.</summary>
@@ -74,6 +87,8 @@ public sealed class WeaponInst
             if (tags != null) return tags;
             var t = new List<Tag>(Def.Tags);
             if (evolution?.AddTags is { } add) foreach (var a in add) if (!t.Contains(a)) t.Add(a);
+            // A school Turn takes the old school's tag away (physical stays: the steel is still steel).
+            if (wick?.School != null && wick.From != School.Physical) t.Remove(wick.From.AsTag());
             var s = School.AsTag();
             if (!t.Contains(s)) t.Add(s);
             return tags = t.ToArray();
@@ -84,8 +99,12 @@ public sealed class WeaponInst
     public double? Num(Func<WeaponStats, double?> f) => (evolution?.Set is { } s ? f(s) : null) ?? f(Def.Base);
     public int? Int(Func<WeaponStats, int?> f) => (evolution?.Set is { } s ? f(s) : null) ?? f(Def.Base);
     public bool Flag(Func<WeaponStats, bool?> f) => ((evolution?.Set is { } s ? f(s) : null) ?? f(Def.Base)) == true;
-    public StatusPayload? StatusOf => evolution?.Set?.Status ?? Def.Base.Status;
-    public GroundSpec? GroundOf => evolution?.Set?.GroundOnHit ?? Def.Base.GroundOnHit;
+    public StatusPayload? StatusOf => WickStatus(evolution?.Set?.Status ?? Def.Base.Status);
+    public GroundSpec? GroundOf => evolution?.Set?.GroundOnHit ?? Def.Base.GroundOnHit ?? wick?.Ground;
+
+    /// <summary>A school Turn: the old school's own status becomes the new school's (a frost bolt turned fire burns).</summary>
+    StatusPayload? WickStatus(StatusPayload? p) =>
+        p != null && wick is { School: not null, Status: { } to } && p.Kind == Turns.NativeStatus(wick.From) ? to with { Chance = p.Chance } : p;
 
     public double Damage
     {
@@ -93,6 +112,7 @@ public sealed class WeaponInst
         {
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
+            if (wick != null) d *= wick.Damage;
             return d;
         }
     }
@@ -110,6 +130,7 @@ public static class Firing
     {
         double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
+        if (w.Wick != null) c *= w.Wick.Cooldown;
         return Math.Max(0.08, Math.Min(20, c));
     }
 
@@ -117,8 +138,11 @@ public static class Firing
     {
         double a = baseValue * b.Stats.Get(Stat.Area) * (1 + Content.Weapons.AreaStep * (w.Rank - 1)) * w.Mods.Area;
         if (w.Evolution != null) a *= w.Evolution.Mods.Area ?? 1;
+        if (w.Wick != null) a *= w.Wick.Area;
         // sunderer.skill.area / tags.area: the skill's lamps and its tags' lamps reach wider.
         a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags) + b.StormReach(w);
+        // The reaver's Hand: hurt below half, her areas reach wider.
+        a *= b.HandAreaMul(w);
         return a;
     }
 
@@ -143,6 +167,8 @@ public static class Firing
         if (w.Rank >= Content.Weapons.ProjRankB) n++;
         n += RoundInt(b.Stats.Get(Stat.Projectiles)) + w.Mods.Projectiles + b.ArcanistProjectiles(w) + b.StalkerProjectiles(w);
         if (w.Evolution != null) n += w.Evolution.Mods.Projectiles ?? 0;
+        // Split: three smaller, of everything it would throw.
+        if (w.Wick is { Projectiles: not 1 } wk) n = (int)Math.Round(n * wk.Projectiles);
         return Math.Max(1, n);
     }
 
@@ -150,11 +176,12 @@ public static class Firing
     {
         double s = (w.Def.Base.Speed ?? 9) * b.Stats.Get(Stat.ProjectileSpeed) * w.Mods.Speed * b.ArcanistSpeedMul(w);
         if (w.Evolution != null) s *= w.Evolution.Mods.Speed ?? 1;
+        if (w.Wick != null) s *= w.Wick.Speed;
         return s;
     }
 
     static int PierceOf(Battle b, WeaponInst w) =>
-        b.StalkerPierce(w, (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0));
+        b.StalkerPierce(w, (int)(w.Num(s => s.Pierce) ?? 0) + RoundInt(b.Stats.Get(Stat.Pierce)) + w.Mods.Pierce + (w.Evolution?.Mods.Pierce ?? 0)) + b.HandPierce(w);
 
     static double RangeOf(WeaponInst w) => w.Num(s => s.Range) ?? 14;
 
@@ -171,13 +198,23 @@ public static class Firing
             {
                 w.BurstLeft--;
                 w.BurstT = 0.07;
+                var hb0 = b.HeavyBy;
+                b.HeavyBy = w.HeavyCast ? w : null;
                 FireBurstShot(b, w);
+                b.HeavyBy = hb0;
             }
         }
         if (w.Timer > 0) return;
         int kills0 = w.Kills;
         b.ArcanistBeforeCast(w);
+        // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
+        bool heavy = b.HandBeginCast(w);
+        var hb = b.HeavyBy;
+        b.HeavyBy = heavy ? w : null;
         bool fired = Fire(b, w);
+        b.HeavyBy = hb;
+        b.HandEndCast(w, fired);
+        if (fired) w.HeavyCast = heavy;
         b.ArcanistAfterCast(w, fired);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
@@ -263,7 +300,8 @@ public static class Firing
             pr.Tags = w.Tags;
             pr.Radius = (w.Num(s => s.Radius) ?? 0.2) * Math.Sqrt(b.Stats.Get(Stat.Area));
             pr.Pierce = PierceOf(b, w);
-            pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
+            if (b.HandPierce(w) > 0) b.HandPierced(pr);
+            pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0) + (w.Wick?.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
             pr.Seek = b.StalkerSeek(w, b.ArcanistSeek(w, SeekOf(w)));
@@ -400,7 +438,7 @@ public static class Firing
         var p = b.Player;
         var first = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (first == null) return false;
-        int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0);
+        int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0) + (w.Wick?.Chains ?? 0);
         double reach = AreaOf(b, w, w.Num(s => s.ChainRange) ?? 6);
         bool fork = w.Flag(s => s.Fork);
         ChainFrom(b, p.X, p.Z, first, jumps, reach, w.Damage, w.School, w.Tags, w, fork);
@@ -589,13 +627,21 @@ public static class Firing
             double da = Wrap(Math.Atan2(c.Z - p.Z, c.X - p.X) - a);
             if (Math.Abs(da) <= arc / 2 + 0.3) b.Hooks.OnHitProp?.Invoke(c.Tag, c.Id, w.School, w.Damage, c.X, c.Z);
         }
+        // Linger: the swing leaves its ground where the arc's middle fell.
+        if (w.Wick?.Ground is { } g)
+        {
+            double gx = p.X + Math.Cos(a) * reach * 0.55, gz = p.Z + Math.Sin(a) * reach * 0.55;
+            var zn = b.SpawnZone(Side.Player, gx, gz, AreaOf(b, w, g.Radius), DurationOf(b, w, g.Duration), w.Damage * g.DpsPct, w.School);
+            if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
+        }
         w.Swing++;
         p.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
         // Oathkeeper: every swing throws a crescent onward.
         if (w.Evolution?.Id == "oathkeeper")
         {
             var pr = Launch(b, w, a, speedMul: 1, life: 0.9);
-            if (pr != null) { pr.Pierce = 99; pr.Radius = 1.1; pr.Art = "crescent_holy"; pr.School = School.Holy; }
+            // (The crescent pierces everything: a Linger ground at each would carpet the field. The swing's is enough.)
+            if (pr != null) { pr.Pierce = 99; pr.Radius = 1.1; pr.Art = "crescent_holy"; pr.School = School.Holy; if (w.Wick?.Ground is { } wg && ReferenceEquals(pr.GroundOnHit, wg)) pr.GroundOnHit = null; }
         }
         if (w.Evolution?.Id == "bonesplitter")
             b.ScheduleStrike(p.X + Math.Cos(a) * reach * 1.4, p.Z + Math.Sin(a) * reach * 1.4, 1.8, w.Damage * 0.8, School.Physical, w.Tags, 0.12, w);

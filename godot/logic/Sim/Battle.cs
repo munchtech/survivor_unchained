@@ -160,6 +160,8 @@ public sealed class BattleSetup
     /// <summary>What the lit lamps bring (Rpg/LampBook.Loadout), the reflexes' ranks (ArtBook), the
     /// survivor's level (the Flare's damage by day), and the Flare's starting charge (story fights: half).</summary>
     public LampLoadout? Lamps;
+    /// <summary>Each skill's wick in the order it lights (Rpg/WickBook.Paths); null, no wicks.</summary>
+    public Dictionary<string, string[]>? Wicks;
     public Dictionary<string, int>? ReflexRanks;
     public int Level = 1;
     public double FlareStart;
@@ -216,6 +218,8 @@ public struct HitOpts
     public bool Provoke;
     /// <summary>What the damage is credited to when no weapon dealt it (Battle.DamageBy).</summary>
     public string? Credit;
+    /// <summary>A heavy blow's (the warden's Hand): set by a heavy projectile's hit.</summary>
+    public bool Heavy;
 }
 
 /// <summary>What a trigger sees when it fires.</summary>
@@ -268,6 +272,8 @@ public sealed partial class Battle
     /// it does not; the survivor grows instead.</summary>
     public bool EmberOn = true;
     public int PendingLevels;
+    /// <summary>A measuring aid (the harness's Hand pair): chests open empty, the build coming only as its twin's came.</summary>
+    public bool ChestsInert;
     /// <summary>Milestone levels whose blessing is still to be chosen (it comes
     /// on top of that level's skill, after it).</summary>
     public readonly List<int> PendingBlessings = new();
@@ -285,8 +291,13 @@ public sealed partial class Battle
     /// damage over time goes to whatever put it there. For the damage meter
     /// and the balance harness.</summary>
     public readonly Dictionary<string, double> DamageBy = new();
+    /// <summary>Her blows' damage before a creature's health caps it (the overkill kept): what her hands could deal,
+    /// where DamageBy is what the horde had to give (the harness's Hand measure reads both).</summary>
+    public double DamageRaw;
     /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
     public readonly Dictionary<string, double> BossDamageBy = new();
+    /// <summary>The same, on champions (elites, not bosses): a skill's crowd and champion shares (the Turn measure).</summary>
+    public readonly Dictionary<string, double> EliteDamageBy = new();
     /// <summary>What each source truly took off bosses: health lost, and a gate's Break only up to the tenth of
     /// its health the Break rewards (as the Flare's fill counts it). Damage poured into a gate past that
     /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
@@ -378,6 +389,7 @@ public sealed partial class Battle
             X = s.StartX, Z = s.StartZ, Facing = s.StartFacing, Hp = s.Hp ?? maxHp,
             DashCharges = RoundInt(Stats.Get(Stat.DashCharges)),
         };
+        if (s.Wicks != null) WickPaths = s.Wicks;
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
         Level = Math.Max(1, s.Level);
@@ -604,6 +616,7 @@ public sealed partial class Battle
         }
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         StalkerOnDash();
+        HandOnDash();
         OpenGate(x0, z0);
         return true;
     }
@@ -755,6 +768,7 @@ public sealed partial class Battle
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
+        if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
         dmg *= ReaverDamageMul(e, school, tags, o);
         dmg *= ArcanistDamageMul(e, school, tags, o);
         dmg *= StalkerDamageMul(e, school, tags, o);
@@ -775,9 +789,11 @@ public sealed partial class Battle
         // roadknife.adders_patience: no *sure* strike (true = sure crit); the build's own crit chance still rolls.
         bool noTrue = StalkerNoTrue;
         bool crit = o.Crit && !noTrue;
+        // The stalker's Hand: just after a dash, a blow on a champion strikes true.
+        bool handTrue = !noTrue && StalkerHand && HandTrue(e, o);
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o));
+            double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o)) + (handTrue ? 1 : 0);
             // The Hunters' Blind: the first blow on anything unhurt.
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
@@ -813,11 +829,13 @@ public sealed partial class Battle
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         string by = o.Weapon?.Id ?? o.Credit ?? (o.Summon ? "summon" : credit ?? "other");
         DamageBy[by] = DamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
+        DamageRaw += dmg;
         // Health it lost, and a gate's Break only up to the tenth of its health the Break itself rewards:
         // uncapped, poison ticking on a gated boss filled 30 Flares a fight.
         double breakCap = 0.1 * e.MaxHp;
         double took = Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap));
         FlareOnDealt(e, took, by);
+        if (e.Elite && !e.Boss) EliteDamageBy[by] = EliteDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
         if (e.Boss)
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
@@ -847,9 +865,11 @@ public sealed partial class Battle
 
         // Knockback: heavier things move less, bosses not at all.
         if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback));
+        // The warden's Hand: a heavy blow (every few firings of a Melee or Thrown skill; all of its hits).
+        bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
-            double k = o.Knockback * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
+            double k = o.Knockback * (heavy ? Content.Hands.Warden.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
         }
@@ -857,6 +877,7 @@ public sealed partial class Battle
         // Status payloads ride the hit.
         statusWeapon = o.Weapon;
         if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
+        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, dmg, o.Depth, by);
         statusWeapon = null;
 
         int depth = o.Depth;
@@ -870,6 +891,8 @@ public sealed partial class Battle
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
+        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
+        if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
@@ -921,6 +944,8 @@ public sealed partial class Battle
         if (credit == "flare" && !e.Boss) FlareKillsNow++;
         crowdDied?.Add(e.Id);
         if (weapon != null) { weapon.Kills++; ReaverWeaponKill(weapon); }
+        // The arcanist's Hand: a Spell's kill leaves its ground and passes its mark (before the lamps' own passing).
+        if (credited && e.Disposition != Disposition.Ally && ArcanistHand) HandArcanistKill(e, weapon);
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
         FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
@@ -1010,6 +1035,7 @@ public sealed partial class Battle
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
         // Longer burning is more burning: the rate holds, the time stretches.
         double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
+        if (statusWeapon?.Wick != null) dur *= WickDuration(p.Kind);
         from ??= credit;
         switch (p.Kind)
         {
@@ -1568,6 +1594,7 @@ public sealed partial class Battle
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
+        e.HandStoneKey = 0;
         e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
         // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
         e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;
@@ -1589,6 +1616,7 @@ public sealed partial class Battle
         if (pr == null) return null;
         pr.Reset();
         pr.Owner = owner; pr.X = x; pr.Z = z; pr.Damage = damage; pr.School = school; pr.Credit = credit;
+        if (owner == Side.Player) pr.HeavyId = HeavyBy?.Id;
         return pr;
     }
 
@@ -2019,7 +2047,16 @@ public sealed partial class Battle
         return null;
     }
 
+    /// <summary>A projectile strikes; one loosed in a heavy blow lands heavy, splash and all.</summary>
     void ProjectileHit(Projectile pr, Enemy e)
+    {
+        var hb = HeavyBy;
+        HeavyBy = pr.HeavyId != null && ReferenceEquals(pr.HeavyId, pr.Weapon) ? WeaponById(pr.Weapon) : null;
+        ProjectileStrikes(pr, e);
+        HeavyBy = hb;
+    }
+
+    void ProjectileStrikes(Projectile pr, Enemy e)
     {
         var weapon = WeaponById(pr.Weapon);
         HitEnemy(e, pr.Damage, pr.School, pr.Tags, new HitOpts
@@ -2297,6 +2334,7 @@ public sealed partial class Battle
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
+        Relight(w, false);
         Weapons.Add(w);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
@@ -2331,6 +2369,7 @@ public sealed partial class Battle
         building++;
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
+        if (w != null) CarryTurns(w, a, c);
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;
@@ -2342,6 +2381,8 @@ public sealed partial class Battle
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Rank >= Content.Weapons.MaxRank) return;
         w.Rank++;
+        // The wick lights along the day's plan as the ember ranks it.
+        Relight(w, true);
     }
 
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
@@ -2364,6 +2405,8 @@ public sealed partial class Battle
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == branch);
         if (evo == null) return;
         w.Evolution = evo;
+        // Its Turn holds where the evolution still suits it, and goes dark where it replaced the shape.
+        Relight(w, false);
         // What it does beyond numbers: its own rules, credited to it.
         foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
         // It shows what it has become at once: the first volley is now.

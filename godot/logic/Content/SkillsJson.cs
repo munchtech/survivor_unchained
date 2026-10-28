@@ -36,7 +36,7 @@ public static class SkillsJson
 
     /* Reading order for a skill's and an evolution's keys; anything not named
      * keeps its place after these. */
-    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "tags", "findable", "growth", "bossDamage", "art", "description", "base", "triggers", "evolutions"];
+    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "base", "triggers", "evolutions"];
     static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "school", "addTags", "art", "mods", "set", "triggers"];
     static readonly string[] UnionKeys = ["id", "name", "a", "b", "into", "description"];
 

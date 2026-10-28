@@ -1,5 +1,14 @@
 # Handoff: skills look and feel
 
+## QUEUED INPUT (28 Oct, from Classes 15 P6, via main): the warden's 4 new skills need VFX
+Sim lands with placeholder art keys (classes-15; MR1 = P5b+P6). All warden-only, holy + steel. Build after MR1 merges.
+1. **Sunder** (greatsword grip): slow heavy 220-deg cleave (300 with Wide Swing). Every 4th swing (3rd with Third Blow, 2nd with its Turn) a heavy overhead splits the ground in a line 7 m long, ~1.2 m wide, ahead of her; Burning Edge = holy fire along the crack. Her greatsword prop + clips are Phase 3; until then it swings whatever she holds.
+2. **Groundbreaker:** every 5 s a crack races from her to the densest pack within 10 m (14 with Fault Line); the end heaves ~2.5 m round, 0.6 s stun. Twin Cracks = two cracks splayed 30 deg; Upheaval = lesser things popped airborne 0.8 s; Turn "Aftershock" = the same spot heaves again 0.8 s later.
+3. **Rebuke** (reactive, no cast): each block strikes the blocker + 3 nearest with holy light, shield to targets. Turn "Shield of Morning" = a barrier glint to her per creature struck.
+4. **Watch Bell:** every 6 s a bell toll rings 8 m round (10 with Loud Bell); everything drawn in to her for 2 s (draw-in streaks), she gains barrier (shimmer) per creature. Iron Bell slows what's drawn. Turn "Stone Bell" lays wall stones as it tolls.
+**Generic Turn looks (parameters on each skill's look, not new art per Turn):** Pulse = fires 3x at 85% size, 0.3 s apart; On-kill = fires again from a corpse at 30% damage; school Turns recolor (fire/frost/holy); Wide/Linger exist (P5a). Turn names are placeholders for the story lead.
+Owner standards apply: every press visible; Flare "BOOM" scale is for Flares, not these (keep these readable under a Flare).
+
 ## MR READY (Combat VFX 3, vfx-1, 28 Oct): the red line re-tint (MarkPass) ships; after the merge, the next lead starts at step 2 below
 
 **Judged and done (all on vfx-1, tests 1191/0/10):**

@@ -21,7 +21,7 @@ public sealed partial class Battle
 
     public double Frenzy => frenzy;
 
-    double FrenzyCap() => Math.Max(Lamps.Full("frenzy", "cap", 20), Lamps.Has("frenzy.deep") ? Lamps.Full("frenzy.deep", "cap", 40) : 0);
+    double FrenzyCap() => Math.Max(Math.Max(Lamps.Full("frenzy", "cap", 20), Lamps.Has("frenzy.deep") ? Lamps.Full("frenzy.deep", "cap", 40) : 0), HandFrenzyCap);
 
     /// <summary>Butcher's Hour: Frenzy fills at once (as far as the lamps let it).</summary>
     void FillFrenzy() { if (FrenzyCap() > 0) AddFrenzy(FrenzyCap()); }
@@ -39,14 +39,15 @@ public sealed partial class Battle
     void TickReaver(double dt)
     {
         var l = Lamps;
-        if (l.Rules.Count == 0) return;
+        // Frenzy fades first: the reaver's Hand fills it on an empty board too.
         if (frenzy > 0)
         {
             frenzyIdle += dt;
             // butcher.red_hands: it fades when the fight lulls (design pick: five stacks a second, once the lull is 3 s).
             // butcher.s7 (frenzy.slow_fade): half as fast.
-            if (frenzyIdle > l.Full("frenzy", "fade", 3)) frenzy = Math.Max(0, frenzy - 5 * (1 - Math.Min(0.9, l.Size("frenzy.slow_fade", "share"))) * dt);
+            if (frenzyIdle > FrenzyFade()) frenzy = Math.Max(0, frenzy - 5 * (1 - Math.Min(0.9, l.Size("frenzy.slow_fade", "share"))) * dt);
         }
+        if (l.Rules.Count == 0) return;
         knotCool -= dt;
         if (!l.Has("bound.armor") && !l.Has("bound.storm_reach") && !l.Has("knot")) return;
         if ((boundScan -= dt) > 0) return;
@@ -91,7 +92,7 @@ public sealed partial class Battle
         var l = Lamps;
         double m = 1;
         // butcher.red_hands: Frenzy is attack speed.
-        if (frenzy > 0) m /= 1 + frenzy * l.Size("frenzy", "per", 0.01);
+        if (frenzy > 0) m /= 1 + frenzy * FrenzyPer();
         // chainbound.iron_palms.palm_storm: strikes more often.
         // (Iron Palms only: the id is shared with the arcanist quarter's Swift Motes, which that quarter wires.)
         double sooner = w.Def.Id == "iron_palms" ? l.SizeOn("skill.sooner", "sooner", w.Def.Id, w.Def.Tags) : 0;

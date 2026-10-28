@@ -181,6 +181,8 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
+    /// <summary>The type: one of the calling's roads (data/content/lamps.json); empty or foreign walks the default.</summary>
+    public string Type = "";
     public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle, HairHighlight;
     public bool? Headgear, Beard;
     public Sex? Sex;
@@ -223,7 +225,9 @@ public static class Inventory
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
             int n = Math.Min(3, it.Rarity);
-            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique).ToList();
+            // A skill worn that the survivor's calling may not carry rolls something else.
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique
+                && (a.Grants == null || ch == null || Content.Weapons.CanCarry(ch.Archetype, a.Grants))).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
@@ -602,6 +606,7 @@ public static class Character
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
         ArtBook.HoldKin(ch);
+        LampBook.Begin(ch, c.Type);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         foreach (var id in bg.Items)
         {
@@ -716,14 +721,15 @@ public static class Character
             }
             // Skills the gear grants, while there is room for them.
             foreach (var ar in it.Affixes)
-                if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
+                if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
                     kit.Weapons.Add((g, 1 + ar.Tier / 2));
             // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
             // twice is the finer of the two (design 20.3).
             if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
                 && (kit.Marks.ContainsKey(mk.Id) || kit.Marks.Count < Crafting.Rules.Mark.Worn))
                 kit.Marks[mk.Id] = Math.Max(kit.Marks.GetValueOrDefault(mk.Id), Items.MarkStrength(mk.Tier));
-            if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
+            // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
+            if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
                 int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);

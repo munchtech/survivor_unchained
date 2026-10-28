@@ -56,6 +56,9 @@ public static class Visuals
         {
             "skeleton_minion" => new(visual, P(Sex.Male, "peasant", hair: "Hair_Buzzed", hairColor: "#5a5448", skin: Rot, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam }),
+            // The plain risen: the Marionette package npc_risen_s (its own walk, the lurch).
+            "risen_shroud" => new(visual, new PersonSpec { Sex = Sex.Male, Body = NpcPackage.Prefix + "npc_risen_s" }, null,
+                Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam }),
             "risen_ally" => new(visual, P(Sex.Female, "peasant", hair: "Hair_Long", hairColor: "#6a665e", skin: Rot, figure: 0.9, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop")),
             "skeleton_warrior" => new(visual, P(Sex.Male, "ranger", pauldron: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#3e4238"),

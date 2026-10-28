@@ -77,6 +77,9 @@ public sealed class WeaponDef
     public School School;
     public WeaponBehavior Behavior;
     public Tag[] Tags = System.Array.Empty<Tag>();
+    /// <summary>The callings that may carry it (a kindred pair); absent, everyone
+    /// (the valley's). A union's is never set: it is its parts' in common.</summary>
+    public string[]? Access;
     public WeaponStats Base = new();
     public string Art = "";
     /// <summary>Bosses and elites: crowd weapons hit one big target softly.</summary>
@@ -105,6 +108,31 @@ public static class Weapons
 
     /// <summary>The weapons the level-up draft can offer.</summary>
     public static readonly string[] Pool = All.Values.Where(w => w.Findable).Select(w => w.Id).ToArray();
+
+    /* Which skill an evolution belongs to: it is carried by whoever may carry its skill. */
+    static readonly Dictionary<string, string> EvolutionOf = All.Values
+        .SelectMany(w => w.Evolutions.Select(e => (e.Id, w.Id))).ToDictionary(p => p.Item1, p => p.Item2);
+
+    /// <summary>The callings that may carry a skill, an evolution or a union (null:
+    /// everyone). A union's is the intersection of its two parts', computed so
+    /// it can never drift from them.</summary>
+    public static IReadOnlyCollection<string>? AccessOf(string id)
+    {
+        if (Unions.All.FirstOrDefault(u => u.Id == id || u.Into == id) is { } un)
+        {
+            var a = AccessOf(un.A);
+            var b = AccessOf(un.B);
+            return a == null ? b : b == null ? a : a.Intersect(b).ToArray();
+        }
+        if (!All.TryGetValue(id, out var d) && EvolutionOf.TryGetValue(id, out var parent)) d = All[parent];
+        return d?.Access is { Length: > 0 } acc ? acc : null;
+    }
+
+    /// <summary>May this calling carry the skill (or evolution, or union)? The one
+    /// truth every draft, lesson, tome and piece of gear asks. No calling (a bare
+    /// test battle) carries anything.</summary>
+    public static bool CanCarry(string? calling, string id) =>
+        string.IsNullOrEmpty(calling) || AccessOf(id) is not { } acc || acc.Contains(calling);
 
     public static WeaponDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown weapon {id}");
 }
