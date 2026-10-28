@@ -82,21 +82,28 @@ FADE = 0.04
 #   tcut  the biceps' tendon end eased in above the crease (the narrow point's front);
 #   ole   0: no prominence target (r2's ole/ole_min pushed the corner out, a rounder hose).
 SCULPT = {
-    45.0: dict(fill=1.0, bic=2.5, bic_lo=0.0, fs=3.0, br=3.5, flex=2.0, epi=1.8, flat=0.0, ole=0.0, ole_min=0.0,
-               cut=3.0, tcut=1.0, pt=2.0, pt_len=9.5, pt_ang=26.0),
-    90.0: dict(fill=2.5, bic=3.5, bic_lo=0.0, fs=3.0, br=7.5, flex=5.0, epi=3.0, flat=0.0, ole=0.0, ole_min=0.0,
-               cut=8.0, tcut=3.0, pt=4.0, pt_len=9.5, pt_ang=26.0),
-    135.0: dict(fill=2.5, bic=3.5, bic_lo=0.0, fs=2.5, br=7.5, flex=4.5, epi=3.0, flat=0.0, ole=0.0, ole_min=0.0,
-                cut=7.0, tcut=3.0, pt=4.0, pt_len=9.5, pt_ang=26.0),
+    # (Body 21 pass 2, on the anatomy body: judge 3's bend: the forearm's extra volume on the THUMB side above the
+    # crease, not all round (br up, flex and the medial fill down); the back flat to a bony corner, radius <= 8 mm at
+    # 90, the point 5-6 mm proud (cut, pt, pt_len, pt_ang); end-on a triangle (epi); the volume back (bic) without
+    # refilling the corner)
+    45.0: dict(fill=1.0, bic=3.0, bic_lo=0.0, fs=3.0, br=5.0, flex=2.0, epi=2.0, flat=0.0, ole=0.0, ole_min=0.0,
+               cut=3.5, tcut=1.0, pt=2.5, pt_len=8.5, pt_ang=24.0),
+    90.0: dict(fill=2.0, bic=5.5, bic_lo=0.0, fs=3.0, br=10.0, flex=3.0, epi=4.0, flat=0.0, ole=0.0, ole_min=0.0,
+               cut=9.0, tcut=2.0, pt=5.5, pt_len=8.0, pt_ang=22.0),
+    135.0: dict(fill=2.0, bic=6.0, bic_lo=0.0, fs=2.5, br=10.0, flex=3.0, epi=4.0, flat=0.0, ole=0.0, ole_min=0.0,
+                cut=8.0, tcut=2.0, pt=5.5, pt_len=8.0, pt_ang=22.0),
 }
 CUT_Z = (-95.0, -40.0, 18.0, 55.0)      # rest mm about the apex: the cut's fade-in, whole, whole, fade-out
 CUT_A = (65.0, 110.0, 50.0, 80.0)      # deg from the back: the cut whole within, none past (the anconeus' hollow
 #                                         between the olecranon and the lateral epicondyle cut too); above the joint on
 #                                         the outer side the last two
-BR_ANG = (80.0, 0.6, 45.0)              # the forearm's outer swell round the arm: centre at z 0, its turn back per mm, half-width at z 0
+BR_ANG = (65.0, 0.6, 45.0)
+BR_Z = (20.0, 60.0)                     # the swell's peak (mm below the joint) and its reach up the arm (pass 2: 40/72 -> 20/60: it rises
+#                                         ~40 mm above the crease on the thumb side, overlapping the biceps)              # the forearm's outer swell round the arm: centre at z 0, its turn back per mm, half-width at z 0
 if _E("EPSD_SCULPT"):
     for k, v in json.loads(_E("EPSD_SCULPT")).items():
         SCULPT[float(k)].update(v)
+MED_FILL = 0.4                          # the fill's share on the inner side (pass 2: 0.8 -> 0.4, the volume to the thumb side)
 BIC_T = 0.62                            # the biceps' bunched belly, humerus lengths from the shoulder
 
 
@@ -286,7 +293,7 @@ def author(G, s, log=print):
         ru = _line_dist(Y, P["upperarm"], P["lowerarm"])
         rf = _line_dist(Y, P["lowerarm"], P["hand"])
         shrink = ((1 - bf) * (r - ru) + bf * (r2 - rf)) * 1000
-        sides = np.clip(_bw(_wrap(ang - 95) / 85) + 0.8 * _bw(_wrap(ang + 100) / 70), 0, 1)
+        sides = np.clip(_bw(_wrap(ang - 95) / 85) + MED_FILL * _bw(_wrap(ang + 100) / 70), 0, 1)
         zone = _ss((zm + 70) / 25) * (1 - _ss((zm - 15) / 30))
         # (r3: the outer extra at the joint only, so it doesn't fill the narrow point above it)
         fill = (np.clip(shrink, 0, 12) + c["fill"] * _bw(_wrap(ang - 95) / 50) * _bw(zm / 40)) * sides * zone
@@ -300,9 +307,9 @@ def author(G, s, log=print):
         fs = c["fs"] * _bw((zm - 40) / np.where(zm < 40, 40 - top + 5, 110)) * _bw(_wrap(ang - 10) / 85) * (zm > top - 5)
         # (at the joint on the outer side, over the supracondylar ridge; below, spreading back over the extensors: the
         # back-outer corner between the olecranon and the lateral epicondyle is the anconeus' flat, the cut's)
-        a0 = np.clip(BR_ANG[0] + BR_ANG[1] * zm, 75, 110)
+        a0 = np.clip(BR_ANG[0] + BR_ANG[1] * zm, 55, 110)
         hw = np.clip(BR_ANG[2] + 0.75 * (zm - 10), BR_ANG[2], 80)
-        br = c["br"] * _bw((zm - 40) / np.where(zm < 40, 72, 110)) * _bw(_wrap(ang - a0) / hw)
+        br = c["br"] * _bw((zm - BR_Z[0]) / np.where(zm < BR_Z[0], BR_Z[1], 110)) * _bw(_wrap(ang - a0) / hw)
         fx = c["flex"] * _bw((zm - 35) / np.where(zm < 35, 45, 100)) * _bw(_wrap(ang + 45) / 60)
         epi = c["epi"] * _bw((zm + 8) / 22) * (_bw(_wrap(ang - 95) / 25) + 0.8 * _bw(_wrap(ang + 100) / 30))
         # the outer corner: where the bend's outside turns (the rest z landing on its bisector) the olecranon's point;

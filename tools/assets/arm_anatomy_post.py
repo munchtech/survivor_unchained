@@ -26,6 +26,12 @@ FORM below holds every number):
   axilla    the pectoral's lower edge as the front fold (a soft rounded wedge from her chest wall into the front of her
             arm), unioned on her own surface (it only adds).
 Blended with smooth-min (polynomial, radii 6-15 mm), then the skin offset (SKIN mm).
+Pass 2 (Body 21): the deltoid's heads blended among themselves, then into the arm with a tighter radius (delt_k); a
+RELIEF field (mm bumps on the upper arm's (s, phi)) for the forms the blend alone kept timid: the deltoid's belly out
+and forward, the step below its V round the outer face, its front and back borders, the biceps' belly, the triceps'
+long head and flat tendon plate; the cap CLAMP (no outward move round the shoulder top's back half: the Look's width,
++4.5 px in pass 1 from the posterior and middle heads at s 35-65 bulging 2-4 mm past her skin there); the forearm's
+radial front fuller (core_F; its groove read as a lengthwise vein line). The axillary fold stays off (see FORM).
 
 THE SKIN ON IT: each of her arm's vertices moves along its rest normal to the form's surface (the root of the implicit
 along that line nearest to it), feathered by her arm's share of the skinning and into her shoulder's top, her armpit
@@ -62,9 +68,10 @@ FORM = {
         (-10, 26, 36, 34, 36), (20, 28, 40, 37, 38), (60, 29, 41, 39, 39), (100, 29.5, 40, 39, 38.5),
         (130, 30, 38.5, 39, 37.5), (160, 31, 36.5, 38.5, 35), (190, 32.5, 33.5, 36.5, 30.5),
         (215, 33, 30.5, 33.5, 26.5), (240, 32, 28.5, 29.5, 23.5), (262, 31, 28.5, 27, 22.5)],
-    "core_F": [  # s2: out (dorsal), in (palmar), front (radial), back (ulnar)
-        (-12, 32, 28, 27.5, 22.5), (15, 34, 29.5, 30, 23), (50, 35.5, 30, 31, 23.5), (90, 33, 28, 30, 23.5),
-        (130, 29, 24, 28.5, 23), (170, 24.5, 19.5, 26.5, 23), (210, 20, 15.5, 25.5, 23.5),
+    "core_F": [  # s2: out (dorsal), in (palmar), front (radial), back (ulnar); (pass 2: the radial front fuller, the
+        #          groove between the flexors and the brachioradialis read as a lengthwise vein line at w_m80)
+        (-12, 32, 28, 28.5, 22.5), (15, 34, 29.5, 32.5, 23), (50, 35.5, 30, 34, 23.5), (90, 33, 28, 33.5, 23.5),
+        (130, 29, 24, 31.5, 23), (170, 24.5, 19.5, 28, 23), (210, 20, 15.5, 26, 23.5),
         (240, 17.5, 14, 25, 24), (262, 17, 14, 24.5, 24.5)],
     "spindles": {
         # the deltoid's three heads to the V (U: x 24, y 4, s 118); outward hints point away from the humerus line
@@ -95,7 +102,7 @@ FORM = {
         "extensors": ("F", (24, -8, 0), (14, -6, 200), (1, -0.25), [(0, 7), (.2, 11), (.4, 10), (.7, 5), (1, 2)],
                       [(0, 13), (.3, 16), (.6, 12), (1, 7)], 13),
         "flexors": ("F", (-21, 3, -10), (-8, 12, 185), (-0.8, 0.6), [(0, 6), (.12, 10), (.28, 14), (.45, 12), (.65, 7.5), (.85, 4), (1, 2)],
-                    [(0, 11), (.25, 18), (.5, 14), (1, 8)], 12),
+                    [(0, 12), (.25, 20), (.5, 16), (1, 9)], 12),
         "ulna": ("F", (0, -20.5, 6), (-2, -20.5, 248), (0, -1), [(0, 4.5), (1, 4)], [(0, 7), (1, 6)], 8),
     },
     "ellipsoids": {
@@ -103,9 +110,39 @@ FORM = {
         "epi_med": ("U", (-26, -3, 249), (7.5, 8, 10), 6),
         "epi_lat": ("U", (25, -1, 251), (6, 7.5, 9), 6),
     },
-    # the front axillary fold (a round cone from her chest wall into her arm's front, unioned on her skin): OFF. Tried
-    # chest (-72, 95, 25) -> arm (-30, 42, 95), r 14/10, k 12: it read as a nub on the breast's side, not a wedge.
+    # (pass 2) the deltoid's three heads blended among themselves (k 10), then into the arm with a tighter k, so its
+    # borders read as a change of slope, not a smooth tube
+    "delt_k": (10.0, 7.0),
+    # (pass 2) RELIEF: offsets (mm, + out) on the form, bumps (s0, s half-width, phi0, phi half-width, mm) on the upper
+    # arm's (s, phi: 0 front, 90 out, 180 back, -90 in); each a (1 - x^2)^2 window in s and in phi
+    "relief": [
+        (55.0, 35.0, 65.0, 40.0, 2.5),      # the deltoid's belly, out and forward (its back-lateral side is clamped)
+        (140.0, 45.0, 100.0, 60.0, -4.5),   # below the V round the outer face: the brachialis / lateral head's flat,
+        #                                     the step the deltoid's teardrop ends on (the Look sees its back half)
+        (108.0, 30.0, 40.0, 30.0, -2.5),    # the deltoid's front border into the biceps (the lateral bicipital groove)
+        (98.0, 28.0, 145.0, 30.0, -2.5),    # its back border onto the triceps' lateral head
+        (150.0, 55.0, -12.0, 48.0, 4.5),    # the biceps' belly (peak ~57% down), the narrow point above the elbow kept
+        (150.0, 50.0, 190.0, 38.0, 2.0),    # the triceps' long head
+        (226.0, 24.0, 180.0, 34.0, -2.0),   # its flat tendon plate above the olecranon
+    ],
+    # (pass 2) never outward at the shoulder top: the outward move clamped to `out` mm above s[0] (fading out by s[1]),
+    # round the back half (phi ramps in phi[0]..phi[1], out phi[2]..phi[3]); the Look's camera sees this side
+    "cap_clamp": dict(s=(80.0, 105.0), phi=(70.0, 85.0, 200.0, 215.0), out=0.3),
+    # the axillary folds, unioned on her skin and on the arm's form: flattened spindles (U), wide across (ra, along
+    # `hint`), thin through (rb). (A round cone, chest (-72, 95, 25) -> arm (-30, 42, 95), r 14/10, read as a nub on
+    # the breast's side: pass 1, off.) The front one is the pectoral's lower border sweeping from her chest wall above
+    # the breast's outer upper edge into the front of her arm; the back one a hint of the lat's edge.
+    # OFF (pass 2): as a union on her skin its rows nearest the breast's side stood out as a fin (build 1, up to 18 mm)
+    # or a nub (push capped at 8 mm, smoothed); on the arm's form alone the pit's feather leaves it nothing to move. The
+    # fold needs a bridge built between her chest's lateral edge and the arm's front (two surfaces' smooth union), or a
+    # sculpt. Kept for that work:
     "fold": None,
+    "fold_tried": dict(k=10.0, push=8.0, smooth=6, wedges=[
+        # (pass 2 build 1 ran it chest (-70, 116, 16) -> arm (-26, 46, 72), its wide axis up: seen edge-on from the
+        # front 3/4 it was a fin; here its thin axis faces front, so the front cameras see the band's face)
+        dict(A=(-66.0, 92.0, 30.0), B=(-28.0, 45.0, 72.0), hint=(0.74, 0.0, -0.67),
+             ra=[(0, 12), (.4, 14.5), (.75, 13), (1, 9)], rb=[(0, 8), (.4, 10), (.8, 9), (1, 7)]),
+    ]),
 }
 FEATHER = {"arm_w": (0.35, 0.75), "top_s": (-28.0, 12.0), "pit_s": (48.0, 98.0), "pit_x": (-18.0, -38.0),
            "hand_s2": (238.0, 266.0)}
@@ -165,7 +202,7 @@ def spindle(Q, A, B, hint, ra_rows, rb_rows):
     t = B - A
     Ln = np.linalg.norm(t)
     t /= Ln
-    h = np.array([hint[0], hint[1], 0.0])
+    h = np.array([hint[0], hint[1], hint[2] if len(hint) > 2 else 0.0], float)
     ea = h - (h @ t) * t
     ea /= np.linalg.norm(ea)
     eb = np.cross(t, ea)
@@ -216,16 +253,41 @@ class Form:
 
     def __call__(s, P):
         pr = s.parts(P)
-        D = None
+        D = Dd = None
         for n, (d, k) in pr.items():
-            D = d if D is None else smin(D, d, k)
+            if n.startswith("delt_") and s.form.get("delt_k"):
+                Dd = d if Dd is None else smin(Dd, d, s.form["delt_k"][0])
+            else:
+                D = d if D is None else smin(D, d, k)
+        if Dd is not None:
+            D = smin(D, Dd, s.form["delt_k"][1])
         if s.form.get("fold"):
             D = smin(D, s.fold(P), s.form["fold"]["k"])
-        return D - s.form["skin"]
+        return D - s.form["skin"] - s.relief(P)
+
+    def relief(s, P):
+        """the relief offset (mm, + out) at points P: FORM["relief"] bumps on the upper arm's (s, phi)"""
+        rl = s.form.get("relief")
+        if not rl:
+            return 0.0
+        Q = local(s.FR, "U", P)
+        ph = np.degrees(np.arctan2(Q[:, 0], Q[:, 1]))
+        out = np.zeros(len(P))
+        for s0, sh, p0, phh, mm in rl:
+            ws = np.clip(1 - ((Q[:, 2] - s0) / sh) ** 2, 0, None) ** 2
+            dp = (ph - p0 + 180.0) % 360.0 - 180.0
+            wp = np.clip(1 - (dp / phh) ** 2, 0, None) ** 2
+            out += mm * ws * wp
+        return out
 
     def fold(s, P):
-        f = s.form["fold"]
-        return round_cone(local(s.FR, "U", P), f["chest"], f["arm"], f["r"])
+        """the axillary folds (flattened spindles in U: wide across, thin through), their union"""
+        Q = local(s.FR, "U", P)
+        d = None
+        for f in s.form["fold"]["wedges"]:
+            e = spindle(Q, f["A"], f["B"], f["hint"], f["ra"], f["rb"])
+            d = e if d is None else np.minimum(d, e)
+        return d
 
 
 # ------------------------------------------------------------------------------------------------- projection --
@@ -300,6 +362,13 @@ def moves(b, form=FORM, amt=1.0, smooth=SMOOTH, report=None):
                 tt[fill] = num[fill] / den[fill]
                 have[fill] = 1.0
             t = np.where(miss, tt[on], t)
+        cc = form.get("cap_clamp")
+        if cc:                                            # never outward at the shoulder top (the Look's width)
+            Qc = local(FR, "U", P[on])
+            phc = np.degrees(np.arctan2(Qc[:, 0], Qc[:, 1]))
+            phc = np.where(phc < -90, phc + 360, phc)
+            kc = (1 - _ss(cc["s"][0], cc["s"][1], Qc[:, 2])) * _ss(cc["phi"][0], cc["phi"][1], phc)                 * (1 - _ss(cc["phi"][2], cc["phi"][3], phc))
+            t = np.where(t > cc["out"], t - kc * (t - cc["out"]), t)
         D = np.zeros((n, 3))
         D[on] = (t * w[on])[:, None] * N[on] / 1000.0
         # the front axillary fold on her own surface where the arm's form doesn't hold (her chest, the pit): it adds
@@ -315,7 +384,9 @@ def moves(b, form=FORM, amt=1.0, smooth=SMOOTH, report=None):
                     tt = ((Pq - P0c[sel]) * 1000 * N0c[sel]).sum(1)
                     return smin(tt, fm.fold(Pq), f["k"])
                 tr = _roots(u_fn, P0c, N0c, ray=30.0, step=1.5)
-                tf[cand] = np.where(np.isfinite(tr), np.maximum(tr, 0), 0)
+                tf[cand] = np.clip(np.where(np.isfinite(tr), tr, 0), 0, f.get("push", 30.0))
+                for _ in range(f.get("smooth", 0)):              # a soft band, not a ridge of single rows
+                    tf = 0.5 * tf + 0.5 * (b.A @ tf) / np.maximum(b.A.sum(1).A1 if hasattr(b.A.sum(1), "A1") else np.asarray(b.A.sum(1)).ravel(), 1)
             D += ((1 - w) * tf)[:, None] * N / 1000.0
         D = D * mir                                       # back to her side
         dU += D
