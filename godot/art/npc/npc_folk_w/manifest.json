@@ -551,9 +551,13 @@
    }
   }
  },
+ "arms": {
+  "in": 12,
+  "wrist": 0.5
+ },
  "baked": true,
  "bake": {
-  "bytes": 2724448,
+  "bytes": 2724076,
   "nodes": [
    {
     "name": "npc_folk_w",

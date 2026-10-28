@@ -26,7 +26,7 @@ public static class NpcPackage
     public const string Prefix = "npc:";
 
     public sealed record Piece(string Id, string Slot, string File, Variant Hide);
-    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null);
+    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
@@ -74,6 +74,15 @@ public static class NpcPackage
                 d.TryGetValue("lod", out var lv) && lv.VariantType == Variant.Type.Dictionary && lv.AsGodotDictionary().TryGetValue("file", out var lf) && lf.VariantType == Variant.Type.String ? (string)lf : null,
                 // (its walk: "lurch", the crowd's undead lurch (NpcWalks); none, the townsfolk's walk)
                 d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null);
+            // (its arm set over the shared clips: "arms": {"in": DEG, "wrist": SHARE}, World.NpcArmSet; a shot's --npc-arms IN,WRIST overrides)
+            if (d.TryGetValue("arms", out var av) && av.VariantType == Variant.Type.Dictionary)
+            {
+                var a = av.AsGodotDictionary();
+                var (ai, aw) = SurvivorUnchained.World.NpcArmSet.Parse(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0},{1}",
+                    a.TryGetValue("in", out var ain) ? (double)ain : 0, a.TryGetValue("wrist", out var awr) ? (double)awr : 0));
+                m = m with { ArmsIn = ai, ArmsWrist = aw };
+            }
+            if (Args.Get("npc-arms") is string ao) { var (ai, aw) = SurvivorUnchained.World.NpcArmSet.Parse(ao); m = m with { ArmsIn = ai, ArmsWrist = aw }; }
         }
         return manifests[name] = m;
     }
@@ -216,6 +225,8 @@ public static class NpcPackage
         // The skin under the pieces, dropped.
         if (!m.Baked) Hide(person, name, m);
 
+        // Its arm set over the shared clips (manifest "arms"), before HerJoints so the twist bones follow.
+        if (m.ArmsIn > 0f || m.ArmsWrist > 0f) skel.AddChild(new NpcArms(m.ArmsIn, m.ArmsWrist));
         // Her twist and share bones (and any others the rig's helpers name), driven from the pose the clips make.
         skel.AddChild(new HerJoints());
         skel.AddChild(new NpcHeadLevel()); // package NPCs only: head kept level under the heroine's clips

@@ -922,7 +922,7 @@
  "walk": "lurch",
  "baked": true,
  "bake": {
-  "bytes": 942816,
+  "bytes": 943724,
   "nodes": [
    {
     "name": "npc_risen_s",

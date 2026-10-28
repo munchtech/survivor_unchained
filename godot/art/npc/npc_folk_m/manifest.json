@@ -34,15 +34,15 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_generated": 3830
+   "lod_generated": 3868
   },
-  "total": 3830,
-  "shadowTris": 905,
+  "total": 3868,
+  "shadowTris": 925,
   "errMm": {
    "cut": 4,
    "lod_generated": {
-    "p99": 4.73,
-    "max": 10.48
+    "p99": 4.65,
+    "max": 9.62
    }
   },
   "dropped": []
@@ -149,36 +149,36 @@
  "generated": {
   "dressed": true,
   "whole": true,
-  "source": "generated/meshy/meshy_folk_m/model.glb (generated), Fix -> generated/game/npc_folk_m_clean.glb, wrap -> catalogue gen_npc_folk_m",
+  "source": "generated/meshy/meshy_folk_m_fix/model.glb (generated), Fix -> generated/game/npc_folk_m_clean.glb, wrap -> catalogue gen_npc_folk_m",
   "note": "generated mesh -> Fix (cleanup) -> wrap (skeleton fit, weight donor) -> genfix/whole.js: the generated surface itself on the game skeleton, its own head, hair and paint, graded; no base surfaces",
   "report": {
    "offsetScale": 1.0073,
    "wrapGapMm": {
     "mean": 11.3,
-    "median": 8.6,
-    "p90": 24.1,
-    "p99": 45.9
+    "median": 8.7,
+    "p90": 24,
+    "p99": 46.5
    },
    "wrapGapRegionsMm": {
     "headNeck": {
-     "n": 2999,
-     "mean": 12.1,
-     "p90": 34.1
+     "n": 3013,
+     "mean": 12.2,
+     "p90": 34.3
     },
     "arms": {
-     "n": 3987,
+     "n": 3976,
      "mean": 12.9,
-     "p90": 25.7
+     "p90": 25.6
     },
     "legs": {
-     "n": 4075,
+     "n": 4067,
      "mean": 7.7,
      "p90": 14.6
     },
     "torso": {
-     "n": 2933,
+     "n": 2938,
      "mean": 13.2,
-     "p90": 25.2
+     "p90": 25.1
     }
    },
    "rigid": 0,
@@ -189,7 +189,7 @@
    },
    "weights": {
     "copied": 100,
-    "far": 5.9,
+    "far": 5.8,
     "dotHist": [
      1,
      1,
@@ -211,34 +211,34 @@
    },
    "deform": {
     "walk": {
-     "l_shoulder": "p99 68.8/65.9 (1.04x) bad 2.9/4.64% flip 1.24/0%",
+     "l_shoulder": "p99 70.1/65.9 (1.06x) bad 0.78/4.64% flip 0.39/0%",
      "l_elbow": "p99 34.8/35.6 (0.98x) bad 0/3.08% flip 0/0%",
      "l_hip": "p99 33.2/43.9 (0.76x) bad 0.61/2.38% flip 0/0%",
-     "l_knee": "p99 72.9/97.6 (0.75x) bad 14.59/24.24% flip 0.72/4.55%",
-     "r_shoulder": "p99 76.7/76.9 (1.00x) bad 1.89/3.61% flip 2.26/1.03%",
+     "l_knee": "p99 73.1/97.6 (0.75x) bad 14.75/24.24% flip 0.18/4.55%",
+     "r_shoulder": "p99 81.4/76.9 (1.06x) bad 2.42/3.61% flip 0.4/1.03%",
      "r_elbow": "p99 36.5/33.4 (1.09x) bad 0/2.18% flip 0/0%",
      "r_hip": "p99 41.4/44.4 (0.93x) bad 0.56/2.44% flip 0/0%",
-     "r_knee": "p99 69.4/85.9 (0.81x) bad 15.11/20% flip 0.35/7%"
+     "r_knee": "p99 69.1/85.9 (0.80x) bad 15.4/20% flip 0.35/7%"
     },
     "gen": {
      "l_shoulder": {
-      "p99": 68.8,
-      "max": 130.7,
-      "bad": 2.9,
-      "flip": 1.24,
-      "tris": 241,
+      "p99": 70.1,
+      "max": 151.7,
+      "bad": 0.78,
+      "flip": 0.39,
+      "tris": 256,
       "worst": {
-       "qf": 1.3068870300854107,
-       "q": 130.7,
-       "l0Mm": 13.6,
-       "l1Mm": 31.4,
+       "qf": 1.5167884602515027,
+       "q": 151.7,
+       "l0Mm": 10.6,
+       "l1Mm": 26.7,
        "at": [
-        0.103,
-        1.51,
-        0
+        0.111,
+        1.512,
+        -0.003
        ],
-       "a": 5359,
-       "b": 5387
+       "a": 7566,
+       "b": 7551
       }
      },
      "l_elbow": {
@@ -257,8 +257,8 @@
         1.183,
         -0.169
        ],
-       "a": 10972,
-       "b": 10973
+       "a": 9382,
+       "b": 9386
       }
      },
      "l_hip": {
@@ -277,19 +277,19 @@
         0.973,
         0.002
        ],
-       "a": 5699,
-       "b": 5697
+       "a": 12012,
+       "b": 12020
       }
      },
      "l_knee": {
-      "p99": 72.9,
-      "max": 83.6,
-      "bad": 14.59,
-      "flip": 0.72,
-      "tris": 555,
+      "p99": 73.1,
+      "max": 83.2,
+      "bad": 14.75,
+      "flip": 0.18,
+      "tris": 549,
       "worst": {
-       "qf": 0.8358987665425246,
-       "q": 83.6,
+       "qf": 0.8321186958051443,
+       "q": 83.2,
        "l0Mm": 9.8,
        "l1Mm": 18,
        "at": [
@@ -297,28 +297,28 @@
         0.506,
         0.051
        ],
-       "a": 9285,
-       "b": 9290
+       "a": 8742,
+       "b": 8749
       }
      },
      "r_shoulder": {
-      "p99": 76.7,
-      "max": 96.6,
-      "bad": 1.89,
-      "flip": 2.26,
-      "tris": 265,
+      "p99": 81.4,
+      "max": 90.4,
+      "bad": 2.42,
+      "flip": 0.4,
+      "tris": 248,
       "worst": {
-       "qf": 0.9663145520896033,
-       "q": 96.6,
-       "l0Mm": 12.5,
-       "l1Mm": 24.6,
+       "qf": 0.9038616584143373,
+       "q": 90.4,
+       "l0Mm": 19.8,
+       "l1Mm": 37.6,
        "at": [
-        -0.162,
-        1.479,
-        0.03
+        -0.183,
+        1.52,
+        -0.038
        ],
-       "a": 5309,
-       "b": 5306
+       "a": 18348,
+       "b": 18350
       }
      },
      "r_elbow": {
@@ -328,7 +328,7 @@
       "flip": 0,
       "tris": 288,
       "worst": {
-       "qf": 0.45474437490086594,
+       "qf": 0.45475162135560165,
        "q": 45.5,
        "l0Mm": 15.6,
        "l1Mm": 8.5,
@@ -337,8 +337,8 @@
         1.224,
         -0.017
        ],
-       "a": 8088,
-       "b": 8082
+       "a": 7278,
+       "b": 7269
       }
      },
      "r_hip": {
@@ -348,7 +348,7 @@
       "flip": 0,
       "tris": 177,
       "worst": {
-       "qf": 0.48860177999214593,
+       "qf": 0.4885979431067833,
        "q": 48.9,
        "l0Mm": 28.4,
        "l1Mm": 14.5,
@@ -357,28 +357,28 @@
         0.949,
         0.011
        ],
-       "a": 14556,
-       "b": 14627
+       "a": 2587,
+       "b": 2589
       }
      },
      "r_knee": {
-      "p99": 69.4,
-      "max": 84.7,
-      "bad": 15.11,
+      "p99": 69.1,
+      "max": 86.4,
+      "bad": 15.4,
       "flip": 0.35,
-      "tris": 569,
+      "tris": 565,
       "worst": {
-       "qf": 0.8473539446388445,
-       "q": 84.7,
+       "qf": 0.8640491752959487,
+       "q": 86.4,
        "l0Mm": 20.9,
-       "l1Mm": 3.2,
+       "l1Mm": 2.8,
        "at": [
         -0.157,
         0.471,
         -0.121
        ],
-       "a": 7570,
-       "b": 7581
+       "a": 6226,
+       "b": 6235
       }
      }
     },
@@ -549,7 +549,7 @@
  },
  "baked": true,
  "bake": {
-  "bytes": 2656668,
+  "bytes": 2578196,
   "nodes": [
    {
     "name": "npc_folk_m",
