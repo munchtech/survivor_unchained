@@ -422,8 +422,8 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # went 1 mm into her plate in the run, 7 in the sprint; motion --outfits). Animation 57's high stays behind
 # the switch as "high57" (HIGH_ARM_57, pitch (80, 80), out (30, 30), no tilt).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high")
-REAVER_CARRY = os.environ.get("REAVER_CARRY", "high")  # high | trail | low (see RUNS)
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high57")
+REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
 HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
