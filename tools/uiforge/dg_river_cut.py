@@ -80,6 +80,18 @@ NUB_CUT = ([640, 655, 668, 690, 700, 712], [952, 965, 971.5, 977.5, 979, 978.5])
 # contact shadows: the seats' rings lie on the river; it darkens just outside each ring, more below and right (away
 # from the light): (strength, falloff px, offset px) at 1080
 SEAT_AO = (0.45, 4.0, (1.0, 2.0))
+# (UI 19, the owner: "the hair in middle/end could be more defined, mostly the end (right side)") a patch laid over the
+# finished river AFTER the seats' shadows (it carries its own, and the dash's and the cup's): from the middle's last swell
+# (x ~1000) to the Flare cup, three top sweeps along the river's top line into the cup's rim and three body bands from
+# behind the dash ring, one thin S across them; sculpted bands that keep the paint under them (procedural, no Krea).
+# Alpha untouched (the top line, the openwork and the crest stay). survivorsunchained_inputs/ui19_dg_src/hair/r_design5.py
+HAIR_DIR_19 = "C:/Users/munch/Desktop/survivorsunchained_inputs/ui19_dg_src/hair"
+POST_PATCHES = [("u19R", (980, 940, 1490, 1080))]
+# (UI 19, the owner: "not sure the small transparent patch on the left is worth it") the see-through spots left of the
+# flask (the slit between the top strands, the pocket behind the flask's neck) and every other see-through pixel inside
+# her hair's outline at x 600-760: a dark under-layer with back strands laid under what is there, in this layer (under
+# her figure), alpha 1 there. Her figure is untouched. ui19_dg_src/hair/l_design.py
+UNDER_PATCHES = [("u19L", (600, 880, 770, 1075))]
 
 
 def smooth(e0, e1, x):
@@ -227,6 +239,26 @@ def river():
         d = np.hypot(Xs - (SEAT_MID + (i - 2.5) * SEAT_PITCH) - ox, Ys - SEAT_Y - oy) - (SEAT_D / 2 - 1)
         sh = np.maximum(sh, np.exp(-np.clip(d, 0, None) / wd) * (d > -3))
     col = col * (1 - k * sh)[..., None]
+    for tag, (x0, y0, x1, y1) in POST_PATCHES:
+        f = os.path.join(HAIR_DIR_19, f"patch_{tag}.png")
+        if not os.path.exists(f):
+            print(f"(no patch {tag})")
+            continue
+        P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
+        w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
+        sl = np.s_[y0 * 2 - by0:y1 * 2 - by0, x0 * 2 - bx0:x1 * 2 - bx0]
+        col[sl] = col[sl] * (1 - w) + P[..., :3] * w      # colour only: the alpha (the silhouette) stays as it is
+    for tag, (x0, y0, x1, y1) in UNDER_PATCHES:
+        f = os.path.join(HAIR_DIR_19, f"patch_{tag}.png")
+        if not os.path.exists(f):
+            print(f"(no patch {tag})")
+            continue
+        P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
+        w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
+        sl = np.s_[y0 * 2 - by0:y1 * 2 - by0, x0 * 2 - bx0:x1 * 2 - bx0]
+        pre = col[sl] * al[sl][..., None] * (1 - w) + P[..., :3] * P[..., 3:] * w
+        al[sl] = al[sl] * (1 - w[..., 0]) + P[..., 3] * w[..., 0]
+        col[sl] = np.where(al[sl][..., None] > 1e-3, pre / np.maximum(al[sl][..., None], 1e-3), 0)
     img = Image.fromarray((np.dstack([np.clip(col, 0, 1), al]) * 255 + 0.5).astype(np.uint8), "RGBA")
     return img, (int(bx0 // 2), int(by0 // 2))
 
