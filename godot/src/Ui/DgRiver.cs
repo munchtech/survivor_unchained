@@ -170,6 +170,7 @@ public partial class DgRiver : Control
     /// <summary>The front's glint over the crest (additive, under the seats); the numbers' card (over everything).</summary>
     public readonly Glint Spark = new();
     public readonly XpCard Card = new();
+    public readonly LevelTitle Title = new();
     /// <summary>A callout teaches the run ("Ember fills this", Instrument.ChainFill): the light loops along it, 0 to 1.</summary>
     public float Pulse;
     ShaderMaterial? figMat;
@@ -284,6 +285,60 @@ public partial class DgRiver : Control
         }
     }
 
+    /// <summary>UI 18 (judge M2): a level-up's name over the river, centred on it as the owner's approved sheet (c) showed
+    /// it: "EMBER 5" over "the ember rises" by night, "LEVEL 13" by day, in the display face at 30 px, cream with a soft
+    /// glow in the light's hue and a small shadow; held about 2 s, then faded (XpLight.Title). Redrawn only when its
+    /// words change; the fade is its modulate.</summary>
+    public partial class LevelTitle : Control
+    {
+        /// <summary>The name's middle at its baseline (1080 px).</summary>
+        public static readonly Vector2 At = new(1078, 952);
+        static readonly Vector2 Half = new(220, 44);
+        string name = "", sub = "";
+        bool day;
+        public LevelTitle()
+        {
+            MouseFilter = MouseFilterEnum.Ignore;
+            Position = At - Half;
+            Size = Half * 2;
+            Visible = false;
+        }
+        public void Set(float alpha, string name, string sub, bool day)
+        {
+            bool show = alpha > 0.002f;
+            if (Visible != show) Visible = show;
+            if (!show) return;
+            var mod = Colors.White with { A = alpha };
+            if (Modulate != mod) Modulate = mod;
+            if (name == this.name && sub == this.sub && day == this.day) return;
+            this.name = name; this.sub = sub; this.day = day;
+            QueueRedraw();
+        }
+        public override void _Draw()
+        {
+            var f = Style.Display;
+            const int size = 30;
+            var ts = f.GetStringSize(name, HorizontalAlignment.Left, -1, size);
+            var p = new Vector2(Mathf.Round(Half.X - ts.X / 2), Half.Y);
+            var h = day ? DayHue : NightHue;
+            // the glow in the light's hue, widest and faintest first (a soft halo, not a stroke)
+            foreach (var (o, a) in new[] { (22, 0.045f), (15, 0.07f), (9, 0.10f), (5, 0.13f) })
+                DrawStringOutline(f, p, name, HorizontalAlignment.Left, -1, size, o, h with { A = a });
+            // the small shadow under it
+            DrawStringOutline(f, p + new Vector2(0, 2), name, HorizontalAlignment.Left, -1, size, 2, new Color(0, 0, 0, 0.35f));
+            DrawString(f, p + new Vector2(0, 2), name, HorizontalAlignment.Left, -1, size, new Color(0, 0, 0, 0.75f));
+            DrawString(f, p, name, HorizontalAlignment.Left, -1, size, new Color("#f6efe0"));
+            if (sub == "") return;
+            var g = Style.Ui;
+            const int ss = 17;
+            var sz = g.GetStringSize(sub, HorizontalAlignment.Left, -1, ss);
+            var q = new Vector2(Mathf.Round(Half.X - sz.X / 2), Half.Y + 19);
+            DrawStringOutline(g, q, sub, HorizontalAlignment.Left, -1, ss, 6, h with { A = 0.08f });
+            DrawString(g, q + new Vector2(1, 1), sub, HorizontalAlignment.Left, -1, ss, new Color(0, 0, 0, 0.7f));
+            DrawString(g, q, sub, HorizontalAlignment.Left, -1, ss, new Color("#d8ccb4"));
+        }
+    }
+
     /// <summary>UI 18: the numbers, in the game's tooltip (the morocco card, UiArt "tooltip"): "Level 12" and its
     /// percent, a small meter in the light's hue, "4,210 / 6,000 experience", "1,790 to level 13" (by night the
     /// ember's). Shown while the pointer is on the river or the hold key (XpLight.HoldKey, pad LB) is down; redrawn
@@ -307,7 +362,7 @@ public partial class DgRiver : Control
         {
             if (Visible != show) Visible = show;
             if (!show) return;
-            var at = new Vector2(Mathf.Clamp(Mathf.Round(anchor.X - 40), 8, 1920 - 8 - Size.X), Mathf.Clamp(Mathf.Round(anchor.Y - Size.Y - 14), 8, 1080 - Size.Y));
+            var at = new Vector2(Mathf.Clamp(Mathf.Round(anchor.X - 40), 8, 1920 - 8 - Size.X), Mathf.Clamp(Mathf.Round(anchor.Y - Size.Y - 24), 8, 1080 - Size.Y));
             if (Position != at) Position = at;
             string k = $"{l}|{f:0.000}|{day}";
             if (k == key) return;

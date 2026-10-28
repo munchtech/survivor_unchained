@@ -23,6 +23,9 @@ public sealed class XpLight
     public const double WholeUp = 0.12, WholeHold = 0.45, WholeEnd = 1.15;
     /// <summary>The held light coming back up when a gain catches it settling (seconds from 0 to full).</summary>
     public const double Relight = 0.15;
+    /// <summary>A level-up's name over the river (UI 18 judge M2: "EMBER 5 / the ember rises", "LEVEL 13", as the
+    /// owner's approved sheet (c) showed it): in over TitleIn, held to TitleHold, gone at TitleEnd (s).</summary>
+    public const double TitleIn = 0.2, TitleHold = 2.2, TitleEnd = 2.8;
     /// <summary>The front sliding on to a newer fraction while held (per second, exponential).</summary>
     public const double Slide = 7;
 
@@ -60,7 +63,7 @@ public sealed class XpLight
 
     enum Phase { Rest, Run, Hold, Settle }
     Phase phase;
-    double t, target, sinceRun = 99, wholeT = 99, strength, quiet, rest = 1;
+    double t, target, sinceRun = 99, wholeT = 99, titleT = 99, strength, quiet, rest = 1;
     bool pending, known, ember;
     double lastF;
     int lastLv;
@@ -78,6 +81,13 @@ public sealed class XpLight
     static double Mix(double r, double s) => r + (1 - r) * s;
     /// <summary>A level-up's light over all of it, 0..1.</summary>
     public double Whole => wholeT < WholeEnd ? WholeAt(wholeT) : 0;
+    /// <summary>A level-up's name over the river, 0..1 (its fade).</summary>
+    public double Title => titleT < TitleEnd ? TitleAt(titleT) : 0;
+    static double TitleAt(double t)
+    {
+        static double Sm(double u) { u = Math.Clamp(u, 0, 1); return u * u * (3 - 2 * u); }
+        return t < TitleIn ? Sm(t / TitleIn) : t < TitleHold ? 1 : 1 - Sm((t - TitleHold) / (TitleEnd - TitleHold));
+    }
     /// <summary>Anything lit: false only when dark (the shader does nothing).</summary>
     public bool Lit => Tail > 0 || Peak > 0 || Whole > 0;
     /// <summary>At rest: the static resting glow (nothing moves; nothing is sent).</summary>
@@ -106,7 +116,7 @@ public sealed class XpLight
             // the whole sculpture lights; the run starts again from her hair on the next gain
             Rose = true;
             phase = Phase.Rest; strength = 0; pending = false;
-            wholeT = 0; sinceRun = 0; quiet = 0; rest = 1;
+            wholeT = 0; titleT = 0; sinceRun = 0; quiet = 0; rest = 1;
             target = f; Front = f;
         }
         else if (f > lastF + 1e-5) Gain(f);
@@ -119,7 +129,7 @@ public sealed class XpLight
 
     void Settled()
     {
-        phase = Phase.Rest; strength = 0; pending = false; wholeT = 99; t = 0;
+        phase = Phase.Rest; strength = 0; pending = false; wholeT = 99; titleT = 99; t = 0;
         Front = target; quiet = 0; rest = 1;
     }
 
@@ -151,6 +161,7 @@ public sealed class XpLight
         sinceRun += dt;
         quiet += dt;
         if (wholeT < WholeEnd) wholeT += dt;
+        if (titleT < TitleEnd) titleT += dt;
         if (pending && phase == Phase.Rest && sinceRun >= Gap && Whole <= 0) Start();
         switch (phase)
         {

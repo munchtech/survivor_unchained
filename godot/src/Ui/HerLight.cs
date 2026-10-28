@@ -74,12 +74,15 @@ public sealed partial class HerLight : Control
         double now = Time.GetTicksMsec() / 1000.0;
         // the heart: in step with the sound while it beats, its own clock at the same pace otherwise
         bool low = fight && life <= HeartPulse.LowAt && life > 0;
+        // (UI 18 judge M1: the edge follows the fight itself, not the bar under her feet, which the lamp HUDs show only
+        // in the night's fight: by day at 18% there was no edge at all)
+        bool edgeFight = fight;
         if (!On) fight &= bar > 0.001f;
         double period = HeartPulse.Period(life);
         if (HeartPulse.LastSound > lastSync && now - HeartPulse.LastSound < 0.2) { lastSync = HeartPulse.LastSound; clock = now - HeartPulse.LastSound; }
         else { clock += dt; if (clock >= period) clock %= period; }
         float beat = low ? beatPeak ? 1 : HeartPulse.Shape(clock) : 0;
-        float strength = !NoEdge && (On || LifeLamp.Orb != null) && (low || (fight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
+        float strength = !NoEdge && (On || LifeLamp.Orb != null) && (low || (edgeFight && life <= 0)) ? HeartPulse.EdgeStrength(life) : 0;
 
         bool show = fight && at != null;
         Under.Visible = show;
@@ -92,7 +95,7 @@ public sealed partial class HerLight : Control
 
         Send(edgeMat, "strength", strength, ref sStrength);
         Send(edgeMat, "beat", beat, ref sBeat);
-        bool edge = fight && strength > 0.001f;
+        bool edge = edgeFight && strength > 0.001f;
         if (Edge.Visible != edge) Edge.Visible = edge;
 
         float gain = show && On ? HeartPulse.PoolGain(life) * HeartPulse.Flicker(life, now) : 0;

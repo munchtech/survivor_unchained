@@ -167,7 +167,7 @@ public partial class Instrument : Control
         }
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         // (UI 18: the numbers' card, over everything on the instrument)
-        if (River != null) AddChild(River.Card);
+        if (River != null) { AddChild(River.Title); AddChild(River.Card); }
         Keys();
         Lay(Sockets.Length, true);
     }

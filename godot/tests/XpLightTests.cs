@@ -202,6 +202,26 @@ public class XpLightTests
     }
 
     [Fact]
+    public void ALevelUpIsNamedOverTheRiverForAboutTwoSeconds()
+    {
+        var x = Fresh(0.9, 4);
+        Assert.Equal(0, x.Title);
+        x.Feed(0.05, 5, true);
+        Run(x, 0.3);
+        Assert.Equal(1, x.Title, 3);                   // in quickly
+        Run(x, 1.8);
+        Assert.Equal(1, x.Title, 3);                   // held past the light's own moment (2.1 s)
+        Run(x, 0.4);
+        Assert.InRange(x.Title, 0.01, 0.99);           // fading
+        Run(x, 0.4);
+        Assert.Equal(0, x.Title);                      // gone by 2.9 s
+        x.Feed(0.05, 6, true);
+        x.Wake();
+        Assert.Equal(0, x.Title);                      // a zone change clears it
+        Assert.Equal(1, XpLight.Posed(0.1, 0.3, rise: true).Title, 3);
+    }
+
+    [Fact]
     public void ALevelUpLightsAllForItsMoment()
     {
         var x = Fresh(0.9, 4);

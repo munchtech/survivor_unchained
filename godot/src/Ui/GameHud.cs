@@ -637,6 +637,7 @@ public partial class GameHud : CanvasLayer
             boonHave.AddRange(boonWant);
             foreach (var c in irons.Passives.GetChildren()) c.QueueFree();
             foreach (var (id, rank) in boonWant) irons.Passives.AddChild(Passive(Boons.Find(id)!, rank));
+            beadsA = -1;
         }
 
         // The dash's charges round its glass; the draughts left.
@@ -730,6 +731,8 @@ public partial class GameHud : CanvasLayer
     /// <summary>Entering a zone or loading: the experience light at its resting glow, the long quiet's clock from now.</summary>
     public void XpWake() => xpLight.Wake();
 
+    float beadsA = 1;
+
     void XpTick(DgRiver river, double delta)
     {
         bool day = HudPin.Day is bool pd ? pd : !barEmber;
@@ -741,6 +744,16 @@ public partial class GameHud : CanvasLayer
         else if (px is { Length: >= 1 } && px[0] == "dark") shown = XpLight.PosedDark(px.Length > 1 && Num(px[1]) is { } df ? df : 0.5);
         else xpLight.Step(delta);
         river.Light(shown, day, irons.Life.Mat);
+        // a level-up's name over the river (judge M2), held about 2 s; the banner by night stays too (the top edge)
+        int tl = HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel;
+        river.Title.Set((float)shown.Title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
+        // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
+        float ba = 1 - (float)shown.Title;
+        if (ba != beadsA)
+        {
+            beadsA = ba;
+            foreach (var bead in irons.Passives.GetChildren()) if (bead is Control bc) bc.Modulate = Colors.White with { A = ba };
+        }
         // the numbers
         var c = Controls.Instance;
         bool captured = c == null || c.Captured || c.MenuMode;

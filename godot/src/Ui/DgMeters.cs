@@ -130,7 +130,7 @@ public static partial class DgMeters
 
     /// <summary>A bead's size across and how far its middle sits above the crest (round 3: the passives threaded on
     /// the river's crest).</summary>
-    public const float BeadD = 21, BeadLift = 3;
+    public const float BeadD = 27, BeadLift = 3;   // (UI 18 judge P1: 21 -> 27, 1.3x: its glyph and rank unread at 1:1)
 
     /// <summary>A passive (a boon): round 3 (the judge: the pin over the bar was "the only piece outside the
     /// sculpture"), a bead threaded on the river's crest: a dome of the wells' dark river glass in a bronze collar,
@@ -149,7 +149,7 @@ public static partial class DgMeters
         public PassiveStud(string icon, int rank, Color rarity)
         {
             this.icon = icon; this.rank = rank; this.rarity = rarity;
-            CustomMinimumSize = new Vector2(rank >= 0 ? 27 : 23, 28);
+            CustomMinimumSize = new Vector2(rank >= 0 ? BeadD + 8 : BeadD + 2, 28);
             Size = CustomMinimumSize;
             MouseFilter = MouseFilterEnum.Ignore;
             TextureFilter = TextureFilterEnum.LinearWithMipmaps;
@@ -164,26 +164,33 @@ public static partial class DgMeters
 
         public override void _Draw()
         {
-            const float R = BeadD / 2;
-            float gx = GlobalPosition.X + 11.5f;
+            const float R = BeadD / 2, Cx = R + 1;
+            float gx = GlobalPosition.X + Cx;
             float dy = CrestY(gx) - BeadLift - (GlobalPosition.Y + 14);
-            var c = new Vector2(11.5f, 14 + dy);
-            // its shadow on the river, the bronze collar (lit upper left, dark lower right), the dark glass dome
-            DrawTextureRect(Disc, new Rect2(c + new Vector2(1.0f, 2.2f) - Vector2.One * (R + 3), Vector2.One * (2 * R + 6)), false, new Color(0, 0, 0, 0.55f));
-            DrawCircle(c, R, new Color(0.225f, 0.184f, 0.119f), true, -1, true);   // (UI 18: round 3's bronze grade)
-            DrawArc(c, R - 0.8f, Mathf.DegToRad(150), Mathf.DegToRad(300), 24, new Color(0.508f, 0.422f, 0.282f, 0.85f), 1.2f, true);
-            DrawArc(c, R - 0.8f, Mathf.DegToRad(-20), Mathf.DegToRad(130), 24, new Color(0.10f, 0.17f, 0.14f, 0.9f), 1.2f, true);
-            DrawCircle(c, R - 2.4f, new Color(0.02f, 0.045f, 0.05f), true, -1, true);
-            DrawTextureRect(Disc, new Rect2(c - Vector2.One * (R - 2), Vector2.One * (2 * R - 4)), false, rarity with { A = 0.32f });
-            const int gi = 13;
+            var c = new Vector2(Cx, 14 + dy);
+            // (UI 18 judge P1: "their dark discs don't match the bronze rank beads": the collar now the ranks' own
+            // bronze, Engrave's tablet: its dark ground, a lit upper face, a darker lower one and a hair of light on
+            // top, wide enough to read as metal round the glass)
+            DrawTextureRect(Disc, new Rect2(c + new Vector2(1.0f, 2.4f) - Vector2.One * (R + 3.5f), Vector2.One * (2 * R + 7)), false, new Color(0, 0, 0, 0.55f));
+            DrawCircle(c + new Vector2(-0.6f, -0.4f), R + 1.0f, new Color(0, 0, 0, 0.55f), true, -1, true);
+            DrawCircle(c, R, new Color(0.280f, 0.221f, 0.138f), true, -1, true);
+            DrawArc(c, R - 1.9f, 0, Mathf.Tau, 40, new Color(0.384f, 0.303f, 0.196f), 3.0f, true);
+            DrawArc(c, R - 1.9f, Mathf.DegToRad(165), Mathf.DegToRad(375), 32, new Color(0.451f, 0.363f, 0.239f), 3.0f, true);
+            DrawArc(c, R - 0.7f, Mathf.DegToRad(200), Mathf.DegToRad(320), 20, new Color(0.86f, 0.74f, 0.54f, 0.6f), 1.0f, true);
+            // the glass: an inner shadow ring cut into the bronze, then the dark river glass
+            DrawCircle(c, R - 3.4f, new Color(0.06f, 0.045f, 0.03f), true, -1, true);
+            DrawCircle(c, R - 4.2f, new Color(0.02f, 0.045f, 0.05f), true, -1, true);
+            DrawTextureRect(Disc, new Rect2(c - Vector2.One * (R - 3.5f), Vector2.One * (2 * R - 7)), false, rarity with { A = 0.34f });
+            const int gi = 16;
             var (gold, glow) = DgGold.Of(icon, gi);
             var gr = new Rect2(c - Vector2.One * (gi / 2f + DgGold.Pad), Vector2.One * (gi + 2 * DgGold.Pad));
             DrawTextureRect(glow, gr, false, new Color(1f, 0.62f, 0.24f, 0.32f));
             DrawTextureRect(gold, gr, false);
             // the dome's glint and a cool rim of sky low on the glass
-            DrawArc(c, R - 3.6f, Mathf.DegToRad(200), Mathf.DegToRad(250), 10, new Color(0.85f, 0.95f, 1f, 0.45f), 1.1f, true);
-            DrawArc(c, R - 3.0f, Mathf.DegToRad(30), Mathf.DegToRad(120), 14, new Color(0.45f, 0.75f, 0.70f, 0.18f), 1.0f, true);
-            if (rank >= 0) Numeral(this, c + new Vector2(R - 1, R - 3), rank.ToString(), 11, Gold, 3);
+            DrawArc(c, R - 5.4f, Mathf.DegToRad(200), Mathf.DegToRad(250), 10, new Color(0.85f, 0.95f, 1f, 0.45f), 1.1f, true);
+            DrawArc(c, R - 4.8f, Mathf.DegToRad(30), Mathf.DegToRad(120), 14, new Color(0.45f, 0.75f, 0.70f, 0.18f), 1.0f, true);
+            // its rank engraved on a bronze tablet at its lower right, as the seats' ranks are
+            if (rank >= 0) Engrave(this, c + new Vector2(R + 0.5f, R - 3.5f), rank.ToString(), 12, false);
         }
     }
 }
