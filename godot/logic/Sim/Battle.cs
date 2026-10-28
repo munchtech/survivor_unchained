@@ -272,6 +272,8 @@ public sealed partial class Battle
     /// it does not; the survivor grows instead.</summary>
     public bool EmberOn = true;
     public int PendingLevels;
+    /// <summary>A measuring aid (the harness's Hand pair): chests open empty, the build coming only as its twin's came.</summary>
+    public bool ChestsInert;
     /// <summary>Milestone levels whose blessing is still to be chosen (it comes
     /// on top of that level's skill, after it).</summary>
     public readonly List<int> PendingBlessings = new();

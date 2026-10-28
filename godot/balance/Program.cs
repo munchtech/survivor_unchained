@@ -35,6 +35,9 @@ using SurvivorUnchained.Rpg;
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
  *          --hand 0 (every calling's Hand off, to measure them)
+ *          --pair 1 (the Hand measure: each arena twice, Hand off then on, the on run replaying the off run's cards
+ *          at their minutes; --nofall 1 stands her up at full health instead of a fall, --span 30 stops both at that
+ *          minute; one line a pair to --out, dmg/min over the span: tools/scratch/classes/hand_measure.sh)
  *          --wicks none|suggested|plan (default suggested: Light my way), --turn <strand> (that strand first)
  *          --offcalling (with --type both|<road>: each road's skills drafted (policy road:T, --policies ignored) on its
  *          own calling and on each other calling; the report's on-calling table, target <= x1.25)
@@ -120,6 +123,44 @@ string[] Callers() => opt.List("callings", "all") is ["all"] ? ["warden", "reave
 string[] Policies() =>
     opt.List("policies", "greedy").SelectMany(p => p == "paths" ? Paths.All.Select(x => $"path:{x.Id}") : [p]).ToArray();
 
+// The Hand measure (--pair): one arena with the Hand off, then on with the off run's cards replayed at their minutes,
+// both with no falls (--nofall, default 1) over a fixed span (--span, default 30: the horde's half hour). What differs
+// is the Hand and the fight it changes, not the build or the run's length.
+void HandPairs(List<RunSpec> specs, string outPath)
+{
+    bool noFall = opt.Get("nofall", "1") != "0", replay = opt.Get("replay", "1") != "0";
+    double span = opt.Double("span", 30);
+    Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
+    var sw = Stopwatch.StartNew();
+    int done = 0;
+    using var file = new StreamWriter(outPath, append: opt.Has("append"));
+    var gate = new object();
+    object Side(RunResult r, ArenaSim.Fixed f) => new
+    {
+        Dmg = r.DamageBy.Values.Sum(), r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
+        Hand = r.DamageBy.GetValueOrDefault("hand"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
+    };
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        try
+        {
+            var off = new ArenaSim.Fixed { Hand = false, NoFall = noFall, Span = span };
+            var r0 = ArenaSim.Play(spec, off);
+            var on = new ArenaSim.Fixed { Hand = true, NoFall = noFall, Span = span, Replay = replay ? off.Took : null };
+            var r1 = ArenaSim.Play(spec, on);
+            lock (gate)
+            {
+                file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = Side(r0, off), On = Side(r1, on) }));
+                file.Flush();
+                done++;
+                if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");
+            }
+        }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); }
+    });
+    Console.WriteLine($"done {sw.Elapsed:mm\\:ss}");
+}
+
 void Arena()
 {
     var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
@@ -186,6 +227,7 @@ void Arena()
                                 Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", "")));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
+    if (opt.Get("pair", "0") != "0") { HandPairs(specs, outPath); return; }
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");
     var results = new ConcurrentBag<RunResult>();
     var sw = Stopwatch.StartNew();

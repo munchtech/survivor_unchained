@@ -641,6 +641,7 @@ public static class LevelUp
     public static List<ChestItem> OpenChest(Battle b, int count)
     {
         var got = new List<ChestItem>();
+        if (b.ChestsInert) return got;
         var ready = b.Weapons.Find(w => EarnedBranches(b, w.Id).Count > 0);
         if (ready != null)
         {

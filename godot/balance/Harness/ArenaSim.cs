@@ -122,6 +122,25 @@ public static class ArenaSim
     /// <summary>--dark: lamps put out after the board is lit (a Flare's modifiers one at a time on the full board; their points stay unspent).</summary>
     public static List<string> Dark = new();
 
+    /// <summary>A measuring aid for the Hand pair (--pair): this fight's Hand on or off, the draft replayed
+    /// from its twin (the cards it took, at the minutes it took them, so a Hand can't change the build), no
+    /// falls (a fall stands her up at full health: low health still comes, the run's length doesn't change),
+    /// and a fixed span of minutes. Null in every other run: the harness as it always was.</summary>
+    public sealed class Fixed
+    {
+        public bool? Hand;
+        public bool NoFall;
+        /// <summary>Minutes to play, then stop (0: the run's own end).</summary>
+        public double Span;
+        /// <summary>The build to play at its times instead of drafting and opening chests (a twin's Took).</summary>
+        public List<(double T, Action<Battle> Do)>? Replay;
+        /// <summary>Filled: what built her (the cards taken, the chests' gifts), at the battle's time.</summary>
+        public readonly List<(double T, Action<Battle> Do)> Took = new();
+        /// <summary>Filled: falls stood up from, seconds below half health.</summary>
+        public int Falls;
+        public double LowSeconds;
+    }
+
     public static string Card(Offer o) => o.Kind switch
     {
         OfferKind.Weapon => $"w:{o.Id}",
@@ -138,7 +157,7 @@ public static class ArenaSim
 
     /// <summary>Settle every draft owed, the policy's way (banish, reroll,
     /// skip and choose through the same calls the game makes).</summary>
-    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m)
+    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m, List<(double T, Action<Battle> Do)>? took = null)
     {
         int guard = 0;
         while (b.DraftOwed && guard++ < 200)
@@ -162,13 +181,14 @@ public static class ArenaSim
             if (take.Great) r.Greats.Add(take.Id);
             r.Picks.Add((Card(take), b.Time / 60));
             if (take.Kind == OfferKind.Evolve) r.Evolved.Add((take.Branch!, b.Time / 60));
+            took?.Add((b.Time, bb => LevelUp.Choose(bb, take)));
             LevelUp.Choose(b, take);
             r.Cards++;
             if (m != null) m.Drafts++;
         }
     }
 
-    public static RunResult Play(RunSpec spec)
+    public static RunResult Play(RunSpec spec, Fixed? fx = null)
     {
         var a = Callings.Archetype(spec.Calling);
         var j = Journey.Begin(new CreationChoice
@@ -215,7 +235,28 @@ public static class ArenaSim
         var zone = new ArenaRun(host, map, arena);
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
+        if (fx?.Hand is bool handOn) b.HandsOn = handOn;
+        if (fx?.Replay != null) b.ChestsInert = true;
+        else if (fx != null)
+            host.Opened = c =>
+            {
+                foreach (var it in c.Items)
+                {
+                    string id = it.Id;
+                    switch (it.Kind)
+                    {
+                        case ChestItemKind.Evolution:
+                            string branch = b.Weapons.Find(w => w.Id == id)?.Evolution?.Id ?? "";
+                            fx.Took.Add((b.Time, bb => bb.Evolve(id, branch, chest: true))); break;
+                        case ChestItemKind.Rank: fx.Took.Add((b.Time, bb => bb.RankWeapon(id))); break;
+                        case ChestItemKind.Passive: fx.Took.Add((b.Time, bb => bb.AddBoon(id))); break;
+                        case ChestItemKind.Gold: fx.Took.Add((b.Time, bb => { bb.HealPlayer(bb.MaxHp * 0.3, "chest"); bb.GoldGained += 25; })); break;
+                    }
+                }
+            };
         b.Hooks = zone.Hooks;
+        if (fx is { NoFall: true })
+            b.Hooks.OnPlayerDeath = _ => { fx.Falls++; b.Player.Hp = b.MaxHp; b.Player.Iframes = Math.Max(b.Player.Iframes, 2); return true; };
         host.Battle = b;
         zone.Begin(b);
         b.Charges.On = Director;
@@ -235,7 +276,8 @@ public static class ArenaSim
         double t = 0;
         var trace = Environment.GetEnvironmentVariable("ARENA_TRACE") is { } tr && tr.Split('@')[0] == spec.Key ? tr : null;
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
-        while (t < spec.Cap * 60 && p.Alive && host.Result == null)
+        int replayed = 0;
+        while (t < spec.Cap * 60 && p.Alive && host.Result == null && (fx == null || fx.Span <= 0 || t < fx.Span * 60 - 1e-9))
         {
             var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
             if (Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
@@ -279,7 +321,13 @@ public static class ArenaSim
             }
             host.Pass(Dt);
             j.BankArt(b);
-            Drafts(b, pick, rng, r, m);
+            if (fx?.Replay is { } replay)
+            {
+                b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0;
+                while (replayed < replay.Count && replay[replayed].T <= b.Time + 1e-9) replay[replayed++].Do(b);
+            }
+            else Drafts(b, pick, rng, r, m, fx?.Took);
+            if (fx != null && p.Hp < 0.5 * b.MaxHp) fx.LowSeconds += Dt;
             m.LowHp = Math.Min(m.LowHp, p.Hp / b.MaxHp);
             m.ChargePeak = Math.Max(m.ChargePeak, b.Charges.Live);
             if (b.Charges.Live >= 3) m.Overlap += Dt;
