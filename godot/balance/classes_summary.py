@@ -37,12 +37,11 @@ sig = {'bulwark': 'oathblade', 'butcher': 'axe_gyre', 'chainbound': 'iron_palms'
        'moonweaver': 'seeking_motes', 'roadknife': 'knifestorm', 'verge_hunter': 'volley', 'sunderer': 'dawnpulse'}
 home = {'bulwark': 'warden', 'sunderer': 'warden', 'butcher': 'reaver', 'chainbound': 'reaver',
         'kindler': 'arcanist', 'moonweaver': 'arcanist', 'roadknife': 'stalker', 'verge_hunter': 'stalker'}
-# A union (godot/logic/Content/Unions.cs) fuses two skills under a new id: Starfall is Seeking Motes
+# A union (godot/data/content/skills.json, "unions") fuses two skills under a new id: Starfall is Seeking Motes
 # and Moonbrand, so a moonweaver who fuses them stops crediting "seeking_motes". Count unions of the skill.
-_u = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logic', 'Content', 'Unions.cs'), encoding='utf-8').read()
 unions = {}
-for a, b, into in re.findall(r'A = "(\w+)", B = "(\w+)", Into = "(\w+)"', _u):
-    unions.setdefault(a, []).append(into); unions.setdefault(b, []).append(into)
+for _u in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'content', 'skills.json'), encoding='utf-8'))['unions']:
+    unions.setdefault(_u['a'], []).append(_u['into']); unions.setdefault(_u['b'], []).append(_u['into'])
 def sig_dmg(r, s): return r['DamageBy'].get(s, 0) + sum(r['DamageBy'].get(u, 0) for u in unions.get(s, []))
 p = os.path.join(D, 'off.jsonl')
 if os.path.exists(p):
