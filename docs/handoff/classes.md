@@ -1,29 +1,24 @@
-# Classes 14 (28 Oct): gated (roost retuned to 116), tests 1259/0/10; bundle summary with main, then the MR (P2+P3+P4+P5a)
+# Classes 15 starts here: Phase 1 P5b-P8 (P1-P5a are MERGED, integration 2fb912c2, 28 Oct)
 
-Branch `classes-13` (worktree `.claude/worktrees/classes-13`). The owner approved CLASS_IDENTITY_AND_TALENTS.md (all 10 recommendations). Read its §2.2, §3.3, §3.7 and §6.2 first. P1 is merged (integration 3ef34f61); integration 7d05f192 is merged into this branch.
+Start a fresh worktree from integration (classes-13 is removed after the merge). Read CLASS_IDENTITY_AND_TALENTS.md §2.2, §3.3, §3.7, §6.2 (the Phase 1 row) first. The owner approved all 10 recommendations.
 
-## Done this session (all tuned and gated; the numbers are in the commits)
-- **The Hand measure** (60a9d5f7..626ac458): `arena --pair 1 --nofall 1 --span 30`. The Hand-on run replays the off run's cards and chests, so the builds match. Read it as P = dealt(on/off) x taken(off/on); damage dealt alone is capped by the horde. `tools/scratch/classes/hand_measure.sh DLL BOT 48 SEED0 OUT`, then `hand_ratio.py`. About 25 min a bot at 48 seeds. Disjoint 48-seed sets agree within 0.021.
-- **P4 Hands tuned** (4184f71c): warden every 6, stun 0.2, kb 1.5, stones 24, radius 5, rebuke 2; reaver per 0.008; arcanist burn 0.35; stalker seconds 2. Deft: W 1.115 (seeds 1-48 and 101-148), R 1.089, A 1.099, S 1.075 (seeds 1-48). Plain: W 1.094, R 1.077, A 1.079, S 1.048. W is a touch high on deft and S a touch low on plain, both inside the measure's ±0.02. Closed (marginal). The warden's Hand is mostly defensive: the rebuke's push and the heavy blow each give about 1.09.
-- **P3 map day retune** (1644a584, ab57ad32): `MapRun.PackPerSlot 0.9`, `BossPerSlot 0.4` is health added per day slot past three at the map's level (`SkillBook.SlotsAt`); `--maphp P,B` overrides. Tiers 1-4: minutes and boss TTK within ±4% of integration. Tiers 5-6 within 6% (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/out/int56.map.txt`).
-- **P2/P4 Act 1 story bosses** (64dcd1aa): hollow 113, roost 122, dig 131, vault 147.
-- **P5a Turn band** (fd6cca63..a8adb973, the solver's): `--pair turn:<strand>[@skill] --skillrank 4`, `--strands` (harness-only override). All 7 Turns are inside x0.90-1.15 pooled, after tuning Split, Wide, Fire, Holy and Frost in wicks.json. Slices still outside: Split, Wide and Linger at tier 1 (1.18-1.23), Wide on the reaver (1.15). The commit message has the table.
-- **Final gate** (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/fin.out`). Never-pressing: +0.4% against integration, -0.5% against pre-Flare 11 Oct, falls 0.096 to 0.080, cells -0.8 to +2.1%. Pressing: +0.7%, falls 0.024 to 0.024, cells -1.8 to +3.7%. Pressing against its never: -17.4%. Map tiers 1-4 within 4%. Tests: 1227/0/10 (solver, after the boss commit).
+## Merged (Classes 13-14; numbers in the commits)
+- P1 skills to data; P2 access + Act 1 days at 2/3/4 slots (levels 1/4/8); P3 six day slots + map retune (`MapRun.PackPerSlot 0.9`, `BossPerSlot 0.4`); P4 the four Hands (4184f71c); P5a Wicks and the 7 Turns in x0.90-1.15 (a8adb973; tier-1 Split/Wide/Linger 1.18-1.23 and Wide on the reaver 1.15 closed as known).
+- Story bosses: hollow 113, roost 116 (37db3ebe), dig 131, vault 147. Act 1 gate (seeds 1-96 vs integration c2cf3a4b): never +0.6%, pressing +0.6%, cells -3.2 to +3.7%, falls lower. Tests 1259/0/10.
+- Routed by main: the Act 1 DAYS playtest (not simulated; +1 slot and the Hands) is Experience's, in RESUME.
 
-## Confirm gate (Classes 14 successor, 28 Oct; integration c2cf3a4b merged at 8abc6800)
-- fin2 (seeds 1-96, merged tree) read roost pressing +6.5% deft; fresh seeds 97-288 confirmed it (+7.4%), the P5a Turn retune's ~1% shift landing on roost. Redcowl 122 -> 116 (37db3ebe). Final, seeds 1-96 with roost at 116: never +0.6% vs integration (cells -3.2 to +2.7%, falls 0.096->0.077), -1.4% vs pre-Flare; pressing +0.6% (cells -1.5 to +3.7%, falls 0.024->0.022); pressing vs never -18.0%. Roost alone on 1-288: never -0.2%, pressing +1.4%. Tests 1259/0/10.
-- An integration reference on any seeds: run the f22ca2bc `classes13/bal_int` DLL with cwd at a folder holding `git archive <int> godot/data` (DataFiles searches cwd); scripts in coordinator 29e4fcb8 scratch `classes14` (roost.sh, roost2.sh).
+## Next, in order (Phase 1's remaining items; P7/P8 are this handoff's split of the §6.2 row)
+1. **P5b:** Pulse and On-kill Turns at runtime, union lead-ins; full board + wicks at night within x1.25 of an empty board.
+2. **P6:** the warden's 4 planned skills (Sunder, Groundbreaker, Rebuke, Watch Bell; lamp effects already in data) with wicks. Send the VFX list to main (skills VFX lead).
+3. **P7:** wicks on the valley skills she starts with; the type pick at creation.
+4. **P8:** the plain functional board and wick screen behind a flag (looks are UI's, later); the harness taught it; the Act 1 check, then MR.
 
-## Next, in order
-1. Bundle summary sent to main; on approval, MR.
-3. **MR:** "MERGE REQUEST: classes-13@<sha>". Untracked .uid/.import files that integration tracks must be set aside first (see merge_lead.sh).
-4. **Owed to main:** Act 1 DAYS aren't simulated (StorySim runs nights). Act 1 days now have +1 slot (2/3/4 at levels 1/4/8, was 1/2/3) and the Hands. The experience lead should playtest the prologue/Ambush days.
-5. Then P5b (Pulse and On-kill runtime, union lead-ins, full board + wicks at night within x1.25 of empty), P6 (Sunder, Groundbreaker, Rebuke, Watch Bell; send the VFX list to main), P7, P8.
-
-## Measuring (C = `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14`)
-- `map.sh TAG P,B` (PAR=6 env for a shared CPU; about 1 min at par 20), `story.sh TAG STORYHP never|press|both` (x = no override; about 37 + 25 min). The int references are copied into `C/out`. `hand/setj.py k.sub=v` edits hands.json in place.
-- The int harness build (for new references) is in classes13's scratch `bal_int`. It reads the worktree's data at run time.
-- Gotchas: harness runs need NO turn. Never start a script with a trailing `&` in Bash (it survived and doubled a run): use run_in_background. Don't edit data JSON while a batch runs.
+## Measuring
+- Harness: `dotnet build -c Release -o <scratch>/bal balance/Balance.csproj` from godot. `story --fight all --callings all --seeds 96 --policies greedy,random --bot plain,deft --par 20 [--flareuse 0] [--storyhp roost=116]`, then `python tools/classes/act1_match.py REF X --cells` (about 20 + 19 min). Rule: overall within ±3% of integration, no fight x pilot cell past ±6%; confirm a cell near the edge on fresh seeds (`--seeds 192 --seed0 97`) before tuning it.
+- An integration reference: build the integration tree's harness, run it with cwd at a folder holding `git archive <int> godot/data` extracted as `data/` (DataFiles searches the DLL's folder, then cwd).
+- Hand measure: `tools/scratch/classes/hand_measure.sh` + `hand_ratio.py`; Turn measure: `turn_measure.sh` + `turn_ratio.py`. Map: `map --tiers 1,2,3,4 --seeds 8 --par 20` (`--maphp P,B` overrides).
+- Last session's scripts and logs: `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_classes14_29e4fcb8` (story.sh, roost.sh, roost2.sh, fin2.out).
+- Gotchas: harness runs need NO turn. Never launch with a trailing `&` (use run_in_background). Don't edit data JSON while a batch runs; the harness reads it at run time.
 
 # Handoff: classes (session 17: wave 6a passes Act 1 and its judge; merge requested)
 
