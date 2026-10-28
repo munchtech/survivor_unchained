@@ -64,7 +64,9 @@ SHOULDER = (530.0 + PADL, 560.0, 70.0)   # the hot spot on her shoulder (source 
 HAND_LIFT = 0.06    # her hand and forearm a touch brighter than the rest of her bronze (ui17 A: 0.22 read yellow)
 RED_BOUNCE = (0.0, 0.0, 0.0)   # (ui17 A: the orb's red on her is live now, hud_dg_orb.gdshader, scaled to her life)
 STRAND_GAIN = 1.0   # ui17 A: the hair's joined highlights (strand_pass); UI 18: back on with dg5's hair
-HAND_MATCH = 1.0    # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
+PATCH_DIR = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui18_dg_src\hair"
+PATCHES_2X = [("a1", (584, 872, 776, 1080))]   # (UI 18) painted patches over the finished figure: (tag, box at 1080 px)
+HAND_MATCH = 1.0   # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
 
 
 # ui17 A (the judge's polish list, "Bronze: tight highlights on the raised edges ... green patina only in the hollows;
@@ -379,6 +381,26 @@ def main():
     # the right edge: the hair runs on under the bar; feather its last 24 px (1080) so it ends soft until piece 2
     fe = np.clip((cw2 - np.arange(cw2)) / 48.0, 0, 1)[None, :, None]
     oa = oa * fe
+    # (UI 18, the owner: "some strandage is missing" under her ear toward the flask) a painted patch at 2x screen px
+    # over the finished figure: strands down her back hair's dark flank sweeping round into the river over the flask's
+    # loop (procedural sculpted strands, behind the ones there), the knob on the river's top line cut, the flask's
+    # contact shadow. Made by survivorsunchained_inputs/ui18_dg_src/hair/build_patches.py (README there).
+    for tag, (bx0, by0, bx1, by1) in PATCHES_2X:
+        f = os.path.join(PATCH_DIR, f"patch_{tag}.png")
+        if not os.path.exists(f):
+            print(f"(no patch {tag})")
+            continue
+        P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
+        w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
+        ox, oy = int(round(RIGHT_X * 2 - cw2)), 2160 - ch2   # the canvas's top left, 2x screen px (as the river reads it)
+        cx0, cy0 = bx0 * 2 - ox, by0 * 2 - oy
+        sx0, sy0 = max(0, -cx0), max(0, -cy0)
+        ex, ey = min(P.shape[1], cw2 - cx0), min(P.shape[0], ch2 - cy0)
+        sl = np.s_[cy0 + sy0:cy0 + ey, cx0 + sx0:cx0 + ex]
+        Pp, wp = P[sy0:ey, sx0:ex], w[sy0:ey, sx0:ex]
+        pre = orgb[sl] * oa[sl] * (1 - wp) + Pp[..., :3] * Pp[..., 3:] * wp
+        oa[sl] = oa[sl] * (1 - wp) + Pp[..., 3:] * wp
+        orgb[sl] = np.where(oa[sl] > 1e-3, pre / np.maximum(oa[sl], 1e-3), 0)
     out = Image.fromarray((np.clip(np.dstack([orgb, oa]), 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     os.makedirs(OUT, exist_ok=True)
     out.save(os.path.join(OUT, "lamp_cold.png"))

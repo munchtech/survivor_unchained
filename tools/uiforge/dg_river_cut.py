@@ -67,6 +67,19 @@ PATCHES = [("j", (584, 904, 944, 1044)), ("c", (1256, 924, 1456, 1024))]
 SWELLS = [(912, 10.0, 40.0), (984, 8.0, 38.0)]
 SWELL_BASE = 987.0
 SWELL_BOX = (850, 924, 1030, 1024)
+# UI 18 (the owner: "make sure the hair is really perfect"; "a little awkward chaotic on the left side of the flare"):
+# painted patches laid over the finished river (after the bronze and strand passes; their paint is already graded),
+# from survivorsunchained_inputs/ui18_dg_src/hair/build_patches.py: (tag, box at 1080 px), patch_TAG.png (straight
+# RGBA, 2x) and patch_TAG_w.png. a2: the two curls and the hollow before the coal's cup calmed into two long sweeps,
+# the upper rising into the cup's rim (Krea 2 turbo inpaint, seed 9520, denoise 0.42, over a drawn guide).
+HAIR_DIR = "C:/Users/munch/Desktop/survivorsunchained_inputs/ui18_dg_src/hair"
+FINAL_PATCHES = [("a2", (1280, 900, 1536, 1060))]
+# the knob on the top line by her neck (x 652-704) is cut: the river above this line (1080 px) goes (her figure's
+# patch a1 paints the clean top there)
+NUB_CUT = ([640, 655, 668, 690, 700, 712], [952, 965, 971.5, 977.5, 979, 978.5])
+# contact shadows: the seats' rings lie on the river; it darkens just outside each ring, more below and right (away
+# from the light): (strength, falloff px, offset px) at 1080
+SEAT_AO = (0.45, 4.0, (1.0, 2.0))
 
 
 def smooth(e0, e1, x):
@@ -169,6 +182,8 @@ def river():
     line = 2 * np.interp(X[0] / 2, jx, jy)[None, :]
     top = np.maximum(smooth(line - 6, line + 8, Y), smooth(2 * jx[-1] - 20, 2 * jx[-1], X))
     vis = np.where(F > 0.97, 1.0, side * top)
+    nx, ny = NUB_CUT
+    vis = vis * (1 - ((Y / 2 < np.interp(X / 2, nx, ny)) & (X / 2 > 652) & (X / 2 < 704)))
     L[..., 3] *= vis
     L[..., :3] *= vis[..., None]
     for name, (x0, y0, x1, y1) in PATCHES:
@@ -191,7 +206,28 @@ def river():
     # (ui17 A) the bronze pass, as on her figure (2x screen px: 0.86 of her source's)
     col = bronze_pass(np.clip(col, 0, 1), L[..., 3], scale=0.86)
     col = strand_pass(col, L[..., 3], np.ones(col.shape[:2], np.float32), scale=0.86, gain=STRAND_GAIN)
-    img = Image.fromarray((np.dstack([np.clip(col, 0, 1), L[..., 3]]) * 255 + 0.5).astype(np.uint8), "RGBA")
+    al = L[..., 3].copy()
+    for tag, (x0, y0, x1, y1) in FINAL_PATCHES:
+        f = os.path.join(HAIR_DIR, f"patch_{tag}.png")
+        if not os.path.exists(f):
+            print(f"(no patch {tag})")
+            continue
+        P = np.asarray(Image.open(f).convert("RGBA"), np.float32) / 255
+        w = np.asarray(Image.open(f.replace(".png", "_w.png")).convert("L"), np.float32)[..., None] / 255
+        sl = np.s_[y0 * 2 - by0:y1 * 2 - by0, x0 * 2 - bx0:x1 * 2 - bx0]
+        pre = col[sl] * al[sl][..., None] * (1 - w) + P[..., :3] * P[..., 3:] * w
+        al[sl] = al[sl] * (1 - w[..., 0]) + P[..., 3] * w[..., 0]
+        col[sl] = np.where(al[sl][..., None] > 1e-3, pre / np.maximum(al[sl][..., None], 1e-3), 0)
+    # the seats' contact shadows on the river
+    k, wd, (ox, oy) = SEAT_AO
+    Yc, Xc = np.mgrid[:al.shape[0], :al.shape[1]].astype(np.float32)
+    Xs, Ys = (Xc + bx0) / 2, (Yc + by0) / 2
+    sh = np.zeros_like(al)
+    for i in range(6):
+        d = np.hypot(Xs - (SEAT_MID + (i - 2.5) * SEAT_PITCH) - ox, Ys - SEAT_Y - oy) - (SEAT_D / 2 - 1)
+        sh = np.maximum(sh, np.exp(-np.clip(d, 0, None) / wd) * (d > -3))
+    col = col * (1 - k * sh)[..., None]
+    img = Image.fromarray((np.dstack([np.clip(col, 0, 1), al]) * 255 + 0.5).astype(np.uint8), "RGBA")
     return img, (int(bx0 // 2), int(by0 // 2))
 
 
