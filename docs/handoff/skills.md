@@ -1,5 +1,25 @@
 # Handoff: skills look and feel
 
+## Paused here (Combat VFX 2, vfx-1@4b272993, 27 Oct night); next: shoot r5 day/arena/gc, ONE max judge on the re-tint, then the MR
+
+**Done (all on vfx-1, tests 1184/0/8):**
+- Integration 4f4fe6bc merged (457a7c05). 15 colliding untracked .uid files are in coordinator scratch f22ca2bc `vfx2\uid_backup`.
+- Logic: `godot/logic/Sim/TelegraphRead.cs` (Of / Champion; elite+boss blows = Danger, crowd = Amber, raise ring never danger), `tests/TelegraphReadTests.cs` (table + the Ford-Warden's cleave/charge are Boss and Danger) (61cf6e41).
+- Round 2 max judge FAILED (bed brighter than ground = red rug; river rose; raise ring flood). Round 3 (9e0fcfe7, a16367b1) max judge: raise ring, crowd, F7 teach PASS-WITH-NOTES; struck flash PASS-WITH-NOTES unconfirmed (her lightning crit in both sets); red line night ships with notes; DAY (cellophane box) and WATER (opaque red plank) CAN'T SHIP. Ruling: the bed must RE-TINT the ground's own light, one function over land and water.
+- The approach change: `godot/src/Fx/MarkPass.cs` (ea12dea8, 8006813b, a4cfbda5, ea425c9d): a compute pass after the transparent pass (after the water; water.gdshader reads the screen and writes no depth, so no plane could see it). Per pixel: world point from depth, swapped to the water surface under the water line (`Water.Level` from `ZoneView.WaterLevel`); only near the mark's own ground (32x32 height grid) and up-facing; runs the frame's own display chain (Godot 4.5.1 AgX verbatim, sRGB, adjustments, the zone's 3D grade) so the bed = the scarlet whose SEEN value is k 0.82 x the ground's; rims and fill eased to just before scarlet folds to salmon. Lane ends fade; no slam crack on water. Env: `MARK_TUNE=k=..`, `MARK_PASS=0` (old look), `MARK_TIME=1` (GPU ms: 0.041 median). Max 32 marks, then the old decal.
+- Measured r5: rims hue 0-1 sat 0.83-0.92 night, 0.88-1.00 day; bed/ground night 0.76-0.86 (outliers 1.07/1.21), water 0.75-1.08 / 0.82-0.96, day 0.65-0.81 (pre-final k 0.775), arena 0.61-0.69 pre-fix (arena rims now 2x brighter: check it didn't regress; r3 judge loved the arena). Bank dry/wet mostly within 10%.
+- 237a079b: shots log the camera the saved frame was drawn with (a red mark's first frames had measured as bare ground). `TELE_F` env sets mark shot fractions; hits shot at +0/+2/+4/+8 drawn frames, normal (n) and crit (c).
+- 4b272993: crowd amber #ffbc30 / bed #2a1d08 (toward hue 33); raise ring shares that amber, rim core 0.6x, breath +-15% at 0.5 Hz (the fill doesn't breathe). Not yet seen on screen.
+
+**Next:**
+1. Shoot r5 day, arena and gc (crowd mark, raise ring at full fill, a hit with blood) with the final build. **The runner's r5day/r5arena runs made NO frames** (exit 0; logs end `draft rehearsal ran fade=1.00` then `RenderingServer::get_singleton() is null`): its args were guessed. The r3 runs that worked (vfx2\logs\r3fday.log, r3farena.log, r3fgc.log) were made by the round-3 solver, whose exact args aren't recorded; find them (Game.cs `Args.Get`, the arena/encounter start) or diagnose the early quit first. Scripts: coordinator scratch f22ca2bc `vfx2\r5\` (shoot.sh, pace.py with STOP="pace stage Victory" ~10 min, m3.py, agx.py).
+2. ONE max judge (whole-frame gate, 1:1) on: r5pro_teach_red_line_1, r5pro_tele41_4/_11 (Knight), r5pro_tele441_4/_16 (Warden cleave over water), r5pro_tele442_1/_15 (charge across the bank), r5pro_hit41n_1..4 / hit41c_1..4, plus the new day/arena/gc frames. Ask it to check pink on rocks/foes inside the marks (not measured).
+3. Main's ruling (approved): if day or water still fails, cut the red bed to EDGES-ONLY and MR without another loop. Then full test, "MERGE REQUEST: vfx-1@<sha>".
+4. After the MR: study docs/design/SKILL_VFX_REFERENCES.md + `survivorsunchained_inputs\vfx_refs\<id>\sheet.jpg`; write what our skill VFX take from them. Then the Warden's 4 new skills' VFX needs from Classes Phase 1 (via main). Memory flare-is-a-boom-button for Flare looks.
+
+**Known, not ours:** "3 RID leaked" at exit predates MarkPass. Routed to UI via main: F7's "line" word orange (should be scarlet); crit numbers cover the body / land over the hotbar; card ghost text (r3fpro_tele43_5). No flag to strip her lightning crit for hit shots (only --weapon / --quick).
+**Cost this session:** about 1.0M tokens (2 workers ~72k, 3 max judges ~420k, 3 solvers ~590k, runner 48k), $0 API.
+
 ## Combat VFX 1 (vfx-1 worktree, 27 Oct): PAUSED at the coordinator's wind-down; judge round 2 next
 
 **The owner's ask:** "a combat VFX lead (the Knight's salmon red line and white flash)". The coordinator's ruling: red for elite and boss blows only; the crowd's blows stay amber.
