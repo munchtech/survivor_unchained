@@ -18,7 +18,7 @@ import math
 import numpy as np
 
 from clips import idle
-from clips.run import POST, RUN_GRIPS, RUNS, SPRINT_ARMS, WARDEN_CARRY
+from clips.run import POST, REAVER_CARRY, RUN_GRIPS, RUNS, SPRINT_ARMS, WARDEN_CARRY
 from gait import arc_of, run_cycle
 from keyed import build
 
@@ -34,9 +34,12 @@ SPRINT_SWING = (5, -3, 1.25, -3)
 # the sprint's elbow swung round 25 deg further out, the forearm turned in, and the head came in onto her knee (anim 44
 # solver 7c). Animation 56 (the low point): the left arm swings its second axe like the first, so it takes the
 # default swing and 3 out (at the old 5 in its upper arm met her side, 3 mm, in the sprint).
-SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver": (5, -3, 1.0, -3, 0, 9), "run_reaver_axes": (5, -3, 1.0, -3, 10, 9), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
+SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8, -3, 1.25, -3, -5), "run_reaver_town": (5, -3, 1.25, -3, 3), "run_stalker_town": (5, -3, 1.25, -3, 8)}
 # Animation 57: the warden's high carry (run.WARDEN_CARRY) takes its sword arm 3 further out in the sprint (at the run's 29
 # its upper arm went 5 mm into her plate at the forward drive, motion --outfits); the low and belt carries keep the default.
+if REAVER_CARRY == "low":  # Animation 56/57's low point (REAVER_CARRY; "trail" keeps Animation 55's entries above)
+    SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.0, -3, 0, 9)
+    SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.0, -3, 10, 9)
 if WARDEN_CARRY == "high":
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
 
