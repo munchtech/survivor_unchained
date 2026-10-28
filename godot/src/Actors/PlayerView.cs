@@ -864,15 +864,15 @@ public partial class PlayerView : Node3D
         // The staff slid (animation 47) and tilted (animation 48) in her fist by whichever clip plays, eased between them.
         if (idleNode != null && runNode != null)
         {
-            float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), w,
-                own.GripSlide(idleNode.Animation), own.GripSlide(runNode.Animation));
-            float toT = GripSlide.Target(fullOn, own.GripTilt(fullClip), upperOn, own.GripTilt(upperClip), w,
-                own.GripTilt(idleNode.Animation), own.GripTilt(runNode.Animation));
+            float to = GripSlide.Target(fullOn, own.GripSlide(fullClip), upperOn, own.GripSlide(upperClip), wWalk, w,
+                own.GripSlide(idleNode.Animation), own.GripSlide((walkNode ?? idleNode).Animation), own.GripSlide(runNode.Animation));
+            float toT = GripSlide.Target(fullOn, own.GripTilt(fullClip), upperOn, own.GripTilt(upperClip), wWalk, w,
+                own.GripTilt(idleNode.Animation), own.GripTilt((walkNode ?? idleNode).Animation), own.GripTilt(runNode.Animation));
             slide = GripSlide.Ease(slide, to, dt);
             tilt = GripSlide.Ease(tilt, toT, dt);
             view?.Slide("handslot.r", slide, tilt);
-            float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), w,
-                own.GripSlideL(idleNode.Animation), own.GripSlideL(runNode.Animation));
+            float toL = GripSlide.Target(fullOn, own.GripSlideL(fullClip), upperOn, own.GripSlideL(upperClip), wWalk, w,
+                own.GripSlideL(idleNode.Animation), own.GripSlideL((walkNode ?? idleNode).Animation), own.GripSlideL(runNode.Animation));
             slideL = GripSlide.Ease(slideL, toL, dt);
             view?.Slide("handslot.l", slideL);
         }

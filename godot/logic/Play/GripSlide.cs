@@ -13,6 +13,15 @@ public static class GripSlide
     public static float Target(bool fullOn, float fullS, bool upperOn, float upperS, float moveBlend, float idleS, float runS)
         => fullOn ? fullS : upperOn ? upperS : idleS + (runS - idleS) * Math.Clamp(moveBlend, 0f, 1f);
 
+    /// <summary>As above, with the walk between idle and run: idle -> walk by `walkBlend`, then that -> run by `runBlend` (the move graph's order).</summary>
+    public static float Target(bool fullOn, float fullS, bool upperOn, float upperS, float walkBlend, float runBlend, float idleS, float walkS, float runS)
+    {
+        if (fullOn) return fullS;
+        if (upperOn) return upperS;
+        float iw = idleS + (walkS - idleS) * Math.Clamp(walkBlend, 0f, 1f);
+        return iw + (runS - iw) * Math.Clamp(runBlend, 0f, 1f);
+    }
+
     /// <summary>Current eased toward target over dt seconds.</summary>
     public static float Ease(float current, float target, float dt, float rate = 12f)
         => current + (target - current) * (1f - MathF.Exp(-rate * dt));
