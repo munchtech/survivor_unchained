@@ -355,7 +355,7 @@ public static class Firing
             pr.Splash = splash is { } sv && sv != 0 ? AreaOf(b, w, sv) : 0;
             pr.SplitOnHit = w.Int(s => s.SplitOnHit) ?? 0;
             pr.Heal = w.Num(s => s.Heal) ?? 0;
-            pr.Knockback = w.Num(s => s.Knockback) ?? 0;
+            pr.Knockback = b.Pulsing ? 0 : w.Num(s => s.Knockback) ?? 0;
             pr.Chakram = chakram;
             pr.GroundOnHit = w.GroundOf;
             // The Falling Star (a Mark): the cinder's blast leaves the ground burning.
@@ -425,7 +425,8 @@ public static class Firing
         int rings = 1 + (w.Rank >= Content.Weapons.ProjRankA ? 1 : 0) + (w.Rank >= Content.Weapons.ProjRankB ? 1 : 0);
         b.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = w.School, Duration = w.Num(s => s.ExpandTime) ?? 0.35, Rings = rings, Art = w.Art, Rank = w.Rank });
         double dmg = w.Damage;
-        double kb = w.Num(s => s.Knockback) ?? 0;
+        // A Pulse's follow-ups don't throw back: the cast's push would carry the crowd out of the smaller ring.
+        double kb = b.Pulsing ? 0 : w.Num(s => s.Knockback) ?? 0;
         double heal = w.Num(s => s.Heal) ?? 0;
         var novaStatus = StatusWith(b, w);
         bool hitAny = false;

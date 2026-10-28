@@ -168,6 +168,8 @@ public sealed partial class Battle
     public (double X, double Z)? FireFrom;
     /// <summary>A firing that is not a cast (a Pulse's follow-up, an On-kill echo): no burst restarted, no attack pose.</summary>
     public bool Refiring;
+    /// <summary>A Pulse's follow-up is firing (a refiring from her).</summary>
+    public bool Pulsing => Refiring && FireFrom == null;
     /// <summary>The hits being dealt come of an On-kill echo (its own blows, or what it left: projectiles, ground,
     /// strikes carry it as Echo): their kills never echo again.</summary>
     public bool Echoing;
