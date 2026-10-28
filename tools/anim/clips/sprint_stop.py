@@ -41,11 +41,14 @@ if REAVER_CARRY == "low":  # Animation 56/57's low point (REAVER_CARRY; "trail" 
     SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.0, -3, 0, 9)
     SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.0, -3, 10, 9)
 if REAVER_CARRY == "high":  # Animation 58: the back elbow 7 closer (at the default 3 the back swing dropped her
-    # forearm to 29-32 below level, and the high carry's wrist bent 15-19 to the thumb); the arms 3 further out.
-    SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.25, -7, 0, 3)
-    SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.25, -7, 3, 3)
-if WARDEN_CARRY in ("high", "high57"):
+    # forearm to 29-32 below level, and the high carry's wrist bent 15-19 to the thumb); the axe arms 6 further out, the
+    # free one 5 (at 3 the upper arms went 5-7 mm into her side, at 3/5 the free one 1; motion --outfits).
+    SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.25, -7, 5, 6)
+    SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.25, -7, 6, 6)
+if WARDEN_CARRY == "high57":
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
+if WARDEN_CARRY == "high":  # Animation 58: 4 (at 3 its upper arm went 7 mm into her plate)
+    SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 4)
 
 
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
