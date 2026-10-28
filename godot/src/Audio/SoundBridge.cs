@@ -226,9 +226,11 @@ public sealed class SoundBridge
             beatT -= dt;
             if (beatT <= 0)
             {
-                double urgency = 1 - hp / 0.3;
+                double urgency = HeartPulse.Urgency(hp);
                 Sfx.Heartbeat(urgency);
-                beatT = 1.05 - urgency * 0.4;
+                // (the pictures' pulse follows it: the bar under her and the screen's edges)
+                HeartPulse.LastSound = Godot.Time.GetTicksMsec() / 1000.0;
+                beatT = HeartPulse.Period(hp);
             }
         }
         else beatT = 0;
