@@ -1,3 +1,28 @@
+# Paused here (Classes 13, Phase 1 "the Warden, felt", 27 Oct); next: P2+P3 Act 1 retune, then P4 tuning, P5b
+
+Branch `classes-13` (worktree `.claude/worktrees/classes-13`). The owner approved CLASS_IDENTITY_AND_TALENTS.md ("Go with all 10 recommendations"). The coordinator approved the 8-piece plan and three defaults: a forbidden skill lies idle (no save migration until phase 2); heavy = a 0.3 s stun and 2x knockback, or a boss stagger fill; each piece merges once its Act 1 gate passes. Read the design's "For the owner", §1 Warden, §2.1-2.2, §3.3, §3.7 and §6 first.
+
+## The pieces (acceptance; state)
+- **P1 skills to data:** MERGED (integration 3ef34f61). skills.json + SkillsJson.cs; defs and harness runs are byte-identical.
+- **P2 access** (ab9e20f2, 2d71f863): `Weapons.CanCarry/AccessOf`; filters the draft, evolutions, unions, CanLearn/Calling/Carried/Slot, affix rolls, loot. Path gates now run on 48 seeds; the worst-rule bound stays at 12. **Gate NOT passed:** Act 1 never-pressing is -4.6% against integration (cells -3 to -6%) and -7.7% against pre-Flare (integration itself sits at -3.6%). Falls are lower (0.074 against 0.096). Narrower pools make better builds. FIX: raise the story bosses' health about 5% (`script.HealthMul` in Play/Bosses story scripts; try `--storyhp` first), then re-run `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/f22ca2bc-a835-4043-957b-c2ab02ec475e/scratchpad/classes13/gate.sh <build> <tag>`.
+- **P3 six day slots and the type at creation** (0b19a749): `SkillBook.Slots` 2/3/4/5/6; `CreationChoice.Type`, `LampBook.Begin`. StorySim slots no day skills, so Act 1 doesn't see P3. **Maps by day got easier: 8.7 to 7.0 min, boss TTK 45 to 41 s** (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/f22ca2bc-a835-4043-957b-c2ab02ec475e/scratchpad/classes13/out/int.map.txt` against `p23.map.txt`). FIX: map monster and boss health up until each tier is within ±5% of int. Do it after P4, because the Hands act by day too.
+- **P4 the four Hands** (6fcda675, + hands.json reaver cap 8 WIP): numbers in `data/content/hands.json`, sim `logic/Sim/Hands.cs`, `--hand 0`, `Hands.Line` card text, `Ev.Hand`. **Not tuned.** Arena dmg/min, Hand on/off, n=96 per calling, sigma 4-7%:
+  - round 1 (seeds 1-36, plain): W 1.09, R 1.12, A 1.09, S 1.02;
+  - r2 (seeds 101+, cap 8): deft W 1.02, R 1.12, A 1.17, S 0.91; plain W 1.01, R 1.08, A 1.19, S 1.02 (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/f22ca2bc-a835-4043-957b-c2ab02ec475e/scratchpad/classes13/p4b/r2.txt`).
+  - The metric is too noisy: deaths change the run lengths. Next: a lower-variance measure, either fixed-length arenas with no falls or many more seeds via a runner. Paired probes (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/f22ca2bc-a835-4043-957b-c2ab02ec475e/scratchpad/classes13/p4b/pr.py`, builds identical) are precise but can't see dashes or low health. Then trim the arcanist (ground burn 0.5 is the lever) and check the stalker under deft.
+- **P5a WickBook + Turns** (39948853): wicks.json, Wicks.cs, WickBook.cs, Sim/Turns.cs; Split, Chain, Wide, Linger, Fire/Frost/Holy built; `--wicks`, `--turn`. Wicks only on oathblade (wide/linger/holy) and judgement_disc (chain/split/fire). The path-power test probes with `Wicks: false` (the solver's call; re-measure once more skills are wicked). Wide cuts dawn's champion damage 12%.
+- **P5b next:** Pulse and On-kill runtime (in data, inert); union lead-ins; Turn band x0.90-1.15 measured per Turn; full board + wicks at night within x1.25 of empty.
+- **P6:** Sunder, Groundbreaker, Rebuke, Watch Bell (§1 table; their 12 lamp effects in lamps.json become the bespoke strands). Send the VFX list to main when this starts.
+- **P7:** plain board, wick screen and type pick behind a flag (functional; looks are the UI lead's).
+- **P8:** harness identity metric, the acceptance table, the final Act 1 check.
+- Plan: MR P2+P3+P4 as one, once the boss and map retunes pass. That's one retune instead of three.
+
+## Measuring (S = `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/f22ca2bc-a835-4043-957b-c2ab02ec475e/scratchpad/classes13`)
+- References at integration: `out/int_ref.jsonl` (pressing), `out/int_nopress.jsonl` (never; `--flareuse 0`), `out/int.map.*`; pre-Flare `ref/prefl11.jsonl` (seeds 1-32).
+- `gate.sh BUILD TAG [nomap]`: map tiers 1-4 x 8 seeds, then story 96 seeds both ways, then act1_match. About 75 min at par 20.
+- `probe48.sh BUILD OUT`: the path probes. `p4b/arena_hand.sh TAG SEEDS SEED0`: the Hand on/off arenas (about 60 min).
+- Gotchas: harness runs need NO turn (a Haiku runner refused to run without one: say so in its brief). Data JSON is read at run time from the worktree's godot/data, so no rebuild is needed for data-only tunes. Helpers: su-lead-high medium solvers each did one piece in 100-210k.
+
 # Handoff: classes (session 17: wave 6a passes Act 1 and its judge; merge requested)
 
 Written by the sixteenth classes lead (13 October), wound down at the coordinator's request. Branch `classes-11` (worktree `agent-af76b344999b70629`). Last commit: the last line of git log.

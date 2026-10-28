@@ -14,7 +14,7 @@
   },
   "reaver": {
     "per": 0.01,
-    "cap": 10,
+    "cap": 8,
     "fade": 3,
     "gate": 0.1,
     "below": 0.5,
