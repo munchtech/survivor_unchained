@@ -1,6 +1,6 @@
 """UI 17, The Drowned Girl, round 2: the Flare's coal map from a Krea painting of a banked ember.
 
-    python tools/uiforge/dg_coal.py CUT.png [--size 232] [--k 0.98] [--oy 0.20] [--seam 0.5] [--preview P.png]
+    python tools/uiforge/dg_coal.py CUT.png [--size 232] [--k 0.98] [--oy 0.20] [--seam 0.5] [--valley 0.9] [--preview P.png]
 
 Round 3 (the judge: "full lights only the lower cracks"): the painting is seed 9901 of a new prompt whose cracks run
 over the whole lump, top plates included ("a branching network of glowing cracks runs over the WHOLE lump ... fine
@@ -71,6 +71,22 @@ def main():
     seam = cv2.morphologyEx(lum, cv2.MORPH_BLACKHAT, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
     seam = smooth(0.06, 0.22, seam) * (a > 0.9)
     crack = np.maximum(crack, seam_k * seam)
+    # UI 18 (round 3's fixes: "at full the coal's top plates stay mostly dark"; the painting has no fire on its top
+    # slabs, and the black-hat misses their wide gaps and grain): the plates' dark valleys (the Hessian's larger
+    # eigenvalue of their light at 1 and 1.8 px, inside the silhouette, never on its rim) count as cracks at --valley,
+    # so at full every gap and groove top to bottom goes white-gold
+    valley_k = arg(args, "--valley", 0.9)
+    if valley_k > 0:
+        inner = cv2.erode((a > 0.9).astype(np.uint8), np.ones((7, 7), np.uint8)).astype(np.float32)
+        lv = (lo * 1.25).astype(np.float32)
+        def valley(s):
+            ls = cv2.GaussianBlur(lv, (0, 0), s)
+            xx, yy = cv2.Sobel(ls, cv2.CV_32F, 2, 0, ksize=3), cv2.Sobel(ls, cv2.CV_32F, 0, 2, ksize=3)
+            xy = cv2.Sobel(ls, cv2.CV_32F, 1, 1, ksize=3)
+            return np.clip((xx + yy) / 2 + np.sqrt(((xx - yy) / 2) ** 2 + xy ** 2), 0, None) * s * s
+        v = np.maximum(valley(1.0), valley(1.8))
+        v = v / max(float(np.percentile(v[inner > 0], 97)), 1e-6)
+        crack = np.maximum(crack, valley_k * smooth(0.35, 0.9, v) * inner * (lv < 0.35))
     crack = cv2.GaussianBlur(crack.astype(np.float32), (0, 0), 0.5)
     # the plates: their light without the fire's cast (the coolest channel), the cracks dark
     rock = np.clip(lo * 1.25, 0, 1) * (1 - smooth(0.10, 0.5, crack))

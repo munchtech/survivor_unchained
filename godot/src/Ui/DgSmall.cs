@@ -113,7 +113,7 @@ public partial class DgSmall : Control
         {
             var p = c + Vector2.FromAngle(Mathf.DegToRad(PearlDeg(i, m))) * pr;
             DrawCircle(p + new Vector2(0.5f, 0.8f), 4.6f, new Color(0, 0, 0, 0.6f), true, -1, true);
-            DrawCircle(p, 4.1f, new Color(0.36f, 0.27f, 0.15f), true, -1, true);
+            DrawCircle(p, 4.1f, new Color(0.331f, 0.247f, 0.140f), true, -1, true);   // (UI 18: round 3's bronze grade)
             DrawCircle(p, 3.1f, new Color(0.05f, 0.045f, 0.04f), true, -1, true);
             if (i < o.Count)
             {

@@ -78,7 +78,9 @@ void fragment()
 	float heat = below * (0.80 + 0.12 * depth) * flick * (1.0 - full);
 	float front = exp(-pow((y - s) / 0.06, 2.0)) * step(0.001, level) * (1.0 - full);
 	// full: every crack white-gold, top to bottom, breathing slowly (about 3.3 s)
-	heat += full * (1.06 + 0.16 * breath);
+	// (UI 18: a touch hotter, 1.06 -> 1.12, so the cracks' cores read white-gold, not orange; the top slabs' gaps and
+	// grain are cracks in the map now, dg_coal.py --valley)
+	heat += full * (1.12 + 0.16 * breath);
 	// a press: an orange flash, then the cracks cooling from orange through red to dark as it refills
 	heat += flash * 1.0 + cooling * 0.55 * smoothstep(0.35, 0.85, noise(q * 6.0 + vec2(0.0, t * 2.0))) * (1.0 - smoothstep(0.4, 2.0, bt));
 	// (the plates' edges and faces take this heat; the front's edge and the warmth just above it are the cracks'

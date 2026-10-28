@@ -104,16 +104,17 @@ public static partial class DgMeters
         var r = new Rect2(at - new Vector2(w, h) / 2, new Vector2(w, h));
         var sb = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.55f), CornerRadiusTopLeft = 5, CornerRadiusTopRight = 5, CornerRadiusBottomLeft = 5, CornerRadiusBottomRight = 5, AntiAliasing = true };
         ci.DrawStyleBox(sb, r.Grow(1.2f) with { Position = r.Position + new Vector2(-1.0f, -0.6f) });
-        sb.BgColor = new Color(0.30f, 0.24f, 0.15f);
+        // (UI 18: the bronze's fills through round 3's grade, dg_figure_cut.bronze_pass on a flat colour; hot stays polished gold)
+        sb.BgColor = new Color(0.280f, 0.221f, 0.138f);
         ci.DrawStyleBox(sb, r);
-        sb.BgColor = hot ? new Color(0.98f, 0.80f, 0.44f) : new Color(0.66f, 0.54f, 0.36f);
+        sb.BgColor = hot ? new Color(0.98f, 0.80f, 0.44f) : new Color(0.451f, 0.363f, 0.239f);
         ci.DrawStyleBox(sb, new Rect2(r.Position + new Vector2(0.8f, 0.6f), new Vector2(w - 1.6f, h * 0.62f)));
-        sb.BgColor = hot ? new Color(0.80f, 0.60f, 0.30f) : new Color(0.50f, 0.40f, 0.26f);
+        sb.BgColor = hot ? new Color(0.80f, 0.60f, 0.30f) : new Color(0.384f, 0.303f, 0.196f);
         ci.DrawStyleBox(sb, new Rect2(r.Position + new Vector2(0.8f, h * 0.40f), new Vector2(w - 1.6f, h * 0.52f)));
-        ci.DrawLine(r.Position + new Vector2(3, 0.7f), r.Position + new Vector2(w - 3, 0.7f), new Color(1f, 0.92f, 0.72f, 0.7f), 1, true);
+        ci.DrawLine(r.Position + new Vector2(3, 0.7f), r.Position + new Vector2(w - 3, 0.7f), hot ? new Color(1f, 0.92f, 0.72f, 0.7f) : new Color(0.86f, 0.74f, 0.54f, 0.6f), 1, true);
         // the figure cut into it: the lit lower wall, then the cut
         var p = new Vector2(Mathf.Round(at.X - ts.X / 2), Mathf.Round(at.Y + 0.36f * size));
-        ci.DrawString(f, p + new Vector2(0, 1.0f), s, HorizontalAlignment.Left, -1, size, new Color(1f, 0.90f, 0.66f, 0.9f));
+        ci.DrawString(f, p + new Vector2(0, 1.0f), s, HorizontalAlignment.Left, -1, size, hot ? new Color(1f, 0.90f, 0.66f, 0.9f) : new Color(0.80f, 0.68f, 0.48f, 0.85f));
         ci.DrawString(f, p, s, HorizontalAlignment.Left, -1, size, new Color(0.06f, 0.045f, 0.03f, 0.97f));
     }
 
@@ -169,8 +170,8 @@ public static partial class DgMeters
             var c = new Vector2(11.5f, 14 + dy);
             // its shadow on the river, the bronze collar (lit upper left, dark lower right), the dark glass dome
             DrawTextureRect(Disc, new Rect2(c + new Vector2(1.0f, 2.2f) - Vector2.One * (R + 3), Vector2.One * (2 * R + 6)), false, new Color(0, 0, 0, 0.55f));
-            DrawCircle(c, R, new Color(0.24f, 0.20f, 0.13f), true, -1, true);
-            DrawArc(c, R - 0.8f, Mathf.DegToRad(150), Mathf.DegToRad(300), 24, new Color(0.80f, 0.68f, 0.46f, 0.85f), 1.2f, true);
+            DrawCircle(c, R, new Color(0.225f, 0.184f, 0.119f), true, -1, true);   // (UI 18: round 3's bronze grade)
+            DrawArc(c, R - 0.8f, Mathf.DegToRad(150), Mathf.DegToRad(300), 24, new Color(0.508f, 0.422f, 0.282f, 0.85f), 1.2f, true);
             DrawArc(c, R - 0.8f, Mathf.DegToRad(-20), Mathf.DegToRad(130), 24, new Color(0.10f, 0.17f, 0.14f, 0.9f), 1.2f, true);
             DrawCircle(c, R - 2.4f, new Color(0.02f, 0.045f, 0.05f), true, -1, true);
             DrawTextureRect(Disc, new Rect2(c - Vector2.One * (R - 2), Vector2.One * (2 * R - 4)), false, rarity with { A = 0.32f });

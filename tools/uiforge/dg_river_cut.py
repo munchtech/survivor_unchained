@@ -59,11 +59,39 @@ GRADE = dict(value=0.80, sat=0.86, gamma=1.06)
 #   j: her hair's fall into the bar, a clean sculpted top where the circled lock was cut
 #   c: 2-3 crests on the flat run from the dash to the eddy (the judge: "reads as a ladle handle")
 PATCHES = [("j", (584, 904, 944, 1044)), ("c", (1256, 924, 1456, 1024))]
+# UI 18 (round 3's fixes: the crest left of the centre "flat and ruler-straight ... reads as a machined edge", cut there
+# for the old XP line): two low swells rolling right, painted here by lifting the river's own crest band column by
+# column (its highlight and grooves follow the new curve; the lift fades to nothing 18 px below the crest). (cx, h, w),
+# 1080 px: a long rounded back over w, a rounded front over 0.45 w. Krea inpaints were tried (ui18 r3, 12 candidates
+# at 0.40-0.64): they made domed clumps, not its neighbours' long swells. Stays inside SWELL_BOX.
+SWELLS = [(912, 10.0, 40.0), (984, 8.0, 38.0)]
+SWELL_BASE = 987.0
+SWELL_BOX = (850, 924, 1030, 1024)
 
 
 def smooth(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0, 1)
     return t * t * (3 - 2 * t)
+
+
+def swells(L):
+    """SWELLS on the 2x screen layer L (premultiplied RGBA), in place."""
+    x0, y0, x1, y1 = SWELL_BOX
+    sl = np.s_[y0 * 2:y1 * 2, x0 * 2:x1 * 2]
+    C = L[sl].astype(np.float32)
+    H, W = C.shape[:2]
+    Y, X = np.mgrid[:H, :W].astype(np.float32)
+    xs = x0 + (np.arange(W) + 0.5) / 2
+    lift = np.zeros(W, np.float32)
+    for cx, h, w in SWELLS:
+        t = (xs - cx) / w
+        back = np.sin(np.pi / 2 * np.clip(1 + t, 0, 1)) ** 1.5
+        front = np.sqrt(np.clip(1 - (t / 0.45) ** 2, 0, 1))
+        lift = np.maximum(lift, h * np.where(t < 0, back, front) * (t > -1) * (t < 0.45))
+    lift = cv2.GaussianBlur(lift.reshape(1, -1), (0, 0), 3).ravel()
+    fall = np.clip(1 - (y0 + (Y + 0.5) / 2 - (SWELL_BASE - 2)) / 18.0, 0, 1)
+    dy = (lift[None, :] * fall * 2).astype(np.float32)
+    L[sl] = np.clip(cv2.remap(C, X, Y + dy, cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE), 0, 1)
 
 
 def grade(rgb):
@@ -153,6 +181,7 @@ def river():
         pre = np.dstack([P[..., :3] * P[..., 3:], P[..., 3:]])
         sl = np.s_[y0 * 2:y1 * 2, x0 * 2:x1 * 2]
         L[sl] = L[sl] * (1 - w) + pre * w
+    swells(L)
     # crop to its bbox (even, so the 1x position is whole)
     ys, xs = np.nonzero(L[..., 3] > 1 / 255)
     bx0, by0 = (xs.min() // 2) * 2, (ys.min() // 2) * 2
