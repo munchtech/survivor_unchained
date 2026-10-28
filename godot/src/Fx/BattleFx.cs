@@ -890,7 +890,7 @@ public partial class BattleFx : Node3D
     const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
     /// whatever the ring's size), and the raising's.</summary>
-    const float RingCoreM = 0.045f, RaiseCoreM = 0.08f;
+    const float RingCoreM = 0.045f, RaiseCoreM = 0.048f;
     /// <summary>A red bed's own glow at its heart (it rises toward the edges): at 0.06 the bed lit 1.8x the arena's dark
     /// ground, the light alone; at 0.012 the blue night pulled the dry bed to crimson (hue 345): 0.035 between).</summary>
     const float DangerBedGlow = 0.035f;
@@ -913,9 +913,9 @@ public partial class BattleFx : Node3D
         var alb = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
-        // (the crowd's a touch yellower: AgX and its dark bed pulled #ffa020 to hue 24, a rust; the raising's rim read 32 as it was)
-        var hot = danger ? new Color("#ff0612") : style == 2 ? new Color("#ffb22a") : new Color("#ffa020");
-        var bed = danger ? Palette.TeleDangerGround : style == 2 ? new Color("#2a1b07") : Palette.TeleAmberGround;
+        // (the crowd and the raising share one amber, hue ~33 on screen: AgX and the dark bed pulled #ffa020 to a rust at 24; the raising's tail must not go under 28)
+        var hot = danger ? new Color("#ff0612") : new Color("#ffbc30");
+        var bed = danger ? Palette.TeleDangerGround : new Color("#2a1d08");
         // (a red bed's own glow is a breath: at 0.25 through it, with the fill's even body over it, the bed lit 1.25-2.5x
         // brighter than the ground round it and a wide lane read as a red rug, not as light; round 3's judge)
         float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
@@ -1746,7 +1746,8 @@ public partial class BattleFx : Node3D
                 // Telegraphs: steady, a quick flare at the end.
                 m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
-                if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12));
+                // (the raising breathes slowly, +-15% at 0.5 Hz on the mark's own age; the rest keep the fast flicker)
+                if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1);
                 var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });

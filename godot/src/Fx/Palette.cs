@@ -52,7 +52,7 @@ public static class Palette
     public static readonly Color TeleDanger = C("#ff0612"), TeleDangerGround = new("#2c0604");
     /// <summary>The crowd's blows and a raising, in their own textures: a true amber, dim (about 0.4 of the red's light),
     /// over a faint dark bed (TeleBlow added at x2.5 went salmon under AgX).</summary>
-    public static readonly Color TeleAmber = C("#ffa020"), TeleAmberGround = new("#2a1606");
+    public static readonly Color TeleAmber = C("#ffbc30"), TeleAmberGround = new("#2a1d08");
     public static Color Telegraph(TelegraphKind k) => k switch
     {
         TelegraphKind.Ground => TeleGround, TelegraphKind.Safe => TeleSafe, TelegraphKind.Wall => TeleWall, _ => TeleBlow,
