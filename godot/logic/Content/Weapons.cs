@@ -21,7 +21,7 @@ namespace SurvivorUnchained.Content;
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
 
 /// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
-public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack }
+public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll }
 
 /// <summary>A weapon's numbers; unset ones fall back (in an evolution's Set,
 /// to the base).</summary>
@@ -56,6 +56,12 @@ public sealed class WeaponStats
     public double? Trail;
     /// <summary>Seconds a blow stuns what it strikes (not a boss): Groundbreaker's heave.</summary>
     public double? Stun;
+    /// <summary>Reactive (Rebuke): carried, her block chance at rank 1, and more a rank after.</summary>
+    public double? Block, BlockStep;
+    /// <summary>Reactive: how many creatures it strikes beside the blocker (the nearest it, within Radius).</summary>
+    public double? Others;
+    /// <summary>Toll (Watch Bell): the barrier, a share of max health, for each thing drawn; at most DrawMost of them count.</summary>
+    public double? Barrier, DrawMost;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>

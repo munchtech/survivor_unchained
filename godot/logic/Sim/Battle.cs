@@ -1596,6 +1596,7 @@ public sealed partial class Battle
         e.TakenMul = 1;
         e.SunderUntil = e.Sunder = 0;
         e.AirUntil = e.AirMore = 0;
+        e.SlowUntil = e.SlowBy = 0;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
         e.ThawT = 0;

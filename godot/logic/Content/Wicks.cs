@@ -47,6 +47,11 @@ public sealed class TurnDef
     public int HeavyEvery;
     /// <summary>Again: its blow lands again on the same spot Again seconds later, at AgainDamage (0: never).</summary>
     public double Again, AgainDamage = 0.6;
+    /// <summary>Its strike leaves her a barrier of BarrierEach of max health for each creature struck, at most
+    /// BarrierMost a strike (0: none; Shield of Morning).</summary>
+    public double BarrierEach, BarrierMost;
+    /// <summary>Each firing lays this many Stones, and StonesChampion more for each champion it draws (Stone Bell).</summary>
+    public int Stones, StonesChampion;
 }
 
 /// <summary>One alternative a strand suits: any of its behaviors, any of its tags, an explosion; absent, any.</summary>

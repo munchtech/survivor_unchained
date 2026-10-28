@@ -38,6 +38,9 @@ public sealed class WickFx
     /// <summary>Its own heavy count, every this many firings (0: the skill's own); Again: its blow lands again.</summary>
     public int HeavyEvery;
     public double Again, AgainDamage;
+    /// <summary>A barrier for each creature its strike strikes (Shield of Morning); Stones each firing lays (Stone Bell).</summary>
+    public double BarrierEach, BarrierMost;
+    public int Stones, StonesChampion;
 
     public bool TurnLit => Turns.Count > 0;
 }
@@ -113,6 +116,8 @@ public static class Turns
             if (t.OnKill) { fx.OnKill = true; fx.OnKillGap = t.OnKillGap; fx.OnKillDamage = t.OnKillDamage; }
             if (t.HeavyEvery > 0) fx.HeavyEvery = fx.HeavyEvery > 0 ? Math.Min(fx.HeavyEvery, t.HeavyEvery) : t.HeavyEvery;
             if (t.Again > 0) { fx.Again = t.Again; fx.AgainDamage = t.AgainDamage; }
+            if (t.BarrierEach > 0) { fx.BarrierEach = t.BarrierEach; fx.BarrierMost = t.BarrierMost; }
+            if (t.Stones > 0 || t.StonesChampion > 0) { fx.Stones = t.Stones; fx.StonesChampion = t.StonesChampion; }
             if (t.School is { } sc && fx.School == null) { fx.School = sc; fx.Status = t.Status; }
         }
         fx.Damage *= 1 + dmg; fx.Area *= 1 + area; fx.Speed *= 1 + speed; fx.Cooldown *= Math.Max(0.1, 1 + cd);

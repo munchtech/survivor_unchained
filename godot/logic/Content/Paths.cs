@@ -80,7 +80,7 @@ public static class Paths
             Callings = ["arcanist", "reaver"] },
         new() { Id = "dawn", Name = "Dawn's Light", Text = "Holy rings and hallowed ground; the seared burn; light that mends and wards.",
             Lore = "The Order of the Morning Light kept lamps against the dark. One fool of a priest still does.",
-            Weapons = ["dawnpulse", "hallowed_ring", "judgement_disc", "verdant_lance", "oathblade", "hoarfrost", "dawns_judgement"],
+            Weapons = ["dawnpulse", "hallowed_ring", "judgement_disc", "verdant_lance", "oathblade", "hoarfrost", "dawns_judgement", "rebuke", "watch_bell"],
             Passives = ["searing", "ironhide", "vitality", "recovery", "warding", "expanse", "emberblood"],
             Blessings = ["sanctify", "consecration", "kindling"],
             Great = ["iron_vow", "bloodthirst", "from_the_ashes", "hunters_mark", "hold_the_crossing"],

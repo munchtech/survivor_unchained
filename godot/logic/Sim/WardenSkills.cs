@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
 using static SurvivorUnchained.Core.MathX;
 
@@ -62,6 +64,23 @@ public static partial class Firing
         if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, true);
         return true;
     }
+
+    /// <summary>Rebuke never fires on its timer (Firing.Tick passes it by): a block strikes it (Battle.RebukeOnBlock).
+    /// An On-kill echo is a strike centered on the corpse, the three nearest it.</summary>
+    static bool FireReactive(Battle b, WeaponInst w) => b.FireFrom is { } o && b.RebukeStrike(w, o.X, o.Z, null);
+
+    /// <summary>The Watch Bell: a toll when anything is in its reach (loud: 10 m), drawing what isn't a boss to her.</summary>
+    static bool FireToll(Battle b, WeaponInst w)
+    {
+        var p = At(b);
+        double r = b.BellReach(w);
+        if (b.NearestHostile(p.X, p.Z, r) == null) return false;
+        b.Toll(w, p.X, p.Z, r);
+        return true;
+    }
+
+    /// <summary>Oath and Bell's toll, owed by a stagger: rung now, not a cast (no Hand blow), its own timer untouched.</summary>
+    internal static bool TollNow(Battle b, WeaponInst w) => FireToll(b, w);
 
     static void CrackOne(Battle b, WeaponInst w, double x0, double z0, double a, double len)
     {
@@ -131,6 +150,147 @@ public sealed partial class Battle
             s.T = Math.Max(s.T, hold);
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, w.School, dmg, x, z);
+    }
+
+    /* ------------------------------------------------------------ Rebuke -- */
+
+    /// <summary>Counters for measurement and tests: Rebuke's strikes, the bell's tolls, the barrier the bell gave.</summary>
+    public int RebukeStrikes, Tolls;
+    public double BellBarrier;
+    /// <summary>Oath and Bell: a stagger owes the bell a toll (rung on the bell's next tick, never inside a hit).</summary>
+    internal bool BellOwed;
+    double bellOathAt = -99, answeredAt = -99;
+
+    /// <summary>Rebuke carried: her block chance (its Block at rank 1, BlockStep more a rank).</summary>
+    double RebukeBlock() =>
+        WeaponById("rebuke") is { DisabledT: <= 0 } w ? (w.Num(s => s.Block) ?? 0.08) + (w.Num(s => s.BlockStep) ?? 0.01) * (w.Rank - 1) : 0;
+
+    /// <summary>A block (lamp's or the Warding light's): Rebuke strikes the blocker if it stands within reach of her, and
+    /// the three nearest it; a missile's (no blocker near), the three nearest her.</summary>
+    void RebukeOnBlock(Enemy? from)
+    {
+        if (WeaponById("rebuke") is not { DisabledT: <= 0 } w) return;
+        var p = Player;
+        double reach = w.Num(s => s.Range) ?? 6;
+        w.Casts++;
+        if (from is { Alive: true } f && f.State != EnemyState.Dying && Dist(f.X, f.Z, p.X, p.Z) <= reach + f.Radius) RebukeStrike(w, f.X, f.Z, f);
+        else RebukeStrike(w, p.X, p.Z, null);
+    }
+
+    /// <summary>Rebuke's strike: the blocker and the creatures nearest (x, z) within its radius, holy, thrown back from her;
+    /// Shield of Morning leaves her a barrier for each. False when nothing was there to strike.</summary>
+    internal bool RebukeStrike(WeaponInst w, double x, double z, Enemy? blocker)
+    {
+        var p = Player;
+        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 4);
+        int others = (int)(w.Num(s => s.Others) ?? 3);
+        var struck = new List<Enemy>(others + 1);
+        if (blocker != null) struck.Add(blocker);
+        struck.AddRange(HostilesInRadius(x, z, r).Where(e => e != blocker && e.Alive && e.State != EnemyState.Dying)
+            .OrderBy(e => Dist(e.X, e.Z, x, z)).Take(others));
+        if (struck.Count == 0) return false;
+        RebukeStrikes++;
+        Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = w.School, Duration = 0.25, Rings = 1, Art = w.Art, Rank = w.Rank });
+        double kb = w.Num(s => s.Knockback) ?? 0.6;
+        var status = Firing.StatusWith(this, w);
+        foreach (var e in struck)
+        {
+            if (!e.Alive || e.State == EnemyState.Dying) continue;
+            double d = Dist(e.X, e.Z, p.X, p.Z), dd = d < 1e-6 ? 1 : d;
+            HitEnemy(e, w.Damage * RebukeChampionMul(e), w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = status, BossDamage = w.Def.BossDamage });
+        }
+        // Shield of Morning: a barrier for each creature struck.
+        if (w.Wick is { BarrierEach: > 0 } fx) Barrier(MaxHp * Math.Min(fx.BarrierMost > 0 ? fx.BarrierMost : 1, fx.BarrierEach * struck.Count), 6);
+        RebukeMends();
+        return true;
+    }
+
+    /// <summary>Rebukes (the skill's strikes and the wall's answer) on a champion: rebuke.champions (elite or boss) and
+    /// rebuke.strong (twice as hard on an elite, not a boss), multiplied.</summary>
+    double RebukeChampionMul(Enemy e)
+    {
+        double m = e.Elite || e.Boss ? 1 + Lamps.Size("rebuke.champions", "more") : 1;
+        if (e.Elite && !e.Boss && Lamps.Has("rebuke.strong")) m *= Lamps.Full("rebuke.strong", "mul", 2);
+        return m;
+    }
+
+    /// <summary>rebuke.answering: each rebuke (a block's strike, a wall's answer) mends a sliver, at most every half second.</summary>
+    void RebukeMends()
+    {
+        if (!Lamps.Has("rebuke.answering") || Time < answeredAt + Lamps.Full("rebuke.answering", "gap", 0.5)) return;
+        answeredAt = Time;
+        HealPlayer(MaxHp * Lamps.Full("rebuke.answering", "share", 0.01), "rebuke");
+    }
+
+    /* -------------------------------------------------------- Watch Bell -- */
+
+    /// <summary>The bell's reach: its Range (loud: 10 m), grown as an area is.</summary>
+    internal double BellReach(WeaponInst w)
+    {
+        double r = w.Num(s => s.Range) ?? 8;
+        if (SkillRule(w, "loud")) r = Math.Max(r, SkillFull(w, "loud", "reach", 10));
+        return Firing.AreaOf(this, w, r);
+    }
+
+    /// <summary>A toll: everything in reach that isn't a boss is drawn to her (a slide that ends about 1.2 m off; iron: held
+    /// slower a while), everything in reach is struck, and each thing drawn gives her a barrier (bell_and_barrier: more),
+    /// at most DrawMost of them. Stone Bell: Stones, and more for each champion drawn.</summary>
+    internal void Toll(WeaponInst w, double x, double z, double r)
+    {
+        Tolls++;
+        Events.Emit(new Ev.Nova { X = x, Z = z, Radius = r, School = w.School, Duration = 0.35, Rings = 2, Art = w.Art, Rank = w.Rank });
+        bool iron = SkillRule(w, "iron");
+        double slow = iron ? SkillFull(w, "iron", "slow", 0.3) : 0, held = iron ? SkillFull(w, "iron", "seconds", 2.5) : 0;
+        double stop = w.Num(s => s.Reach) ?? 1.2;
+        var status = Firing.StatusWith(this, w);
+        int drawn = 0, champions = 0;
+        foreach (var e in HostilesInRadius(x, z, r))
+        {
+            if (!e.Alive || e.State == EnemyState.Dying) continue;
+            if (!e.Boss)
+            {
+                drawn++;
+                if (e.Elite) champions++;
+                double kx = x - e.X, kz = z - e.Z, kd = Math.Sqrt(kx * kx + kz * kz);
+                // The draw: a slide to her (knockback settles at 9 a second, so v = 9 x the distance), as Drag Them Under hauls.
+                if (kd > 1e-6 && e.Def.Behavior != Behavior.Stationary)
+                {
+                    double pull = Math.Max(0, kd - stop - e.Radius);
+                    e.Kbx = kx / kd * pull * 9;
+                    e.Kbz = kz / kd * pull * 9;
+                }
+                if (iron) { e.SlowUntil = Math.Max(e.SlowUntil, Time + held); e.SlowBy = Math.Max(e.SlowBy, slow); }
+            }
+            double m = e.Elite || e.Boss ? 1 + Lamps.Size("rebuke.champions", "more") : 1;
+            HitEnemy(e, w.Damage * m, w.School, w.Tags, new HitOpts { Weapon = w, Status = status, BossDamage = w.Def.BossDamage });
+        }
+        if (drawn > 0)
+        {
+            double share = SkillRule(w, "barrier") ? SkillFull(w, "barrier", "share", 0.03) : w.Num(s => s.Barrier) ?? 0.02;
+            // A Pulse's tolls are smaller: each one's barrier scaled as its damage is.
+            if (w.Wick is { Pulses: > 1 } pw)
+                foreach (var t in pw.Turns) if (Content.Wicks.Turn(t) is { Pulses: > 1 } pt) share *= pt.Damage;
+            double amount = MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 10));
+            BellBarrier += amount;
+            Barrier(amount, 6);
+        }
+        // Stone Bell: the toll lays stones on the wall (the Hand's wall, Shield Arm or not).
+        if (w.Wick is { } fx && (fx.Stones > 0 || fx.StonesChampion > 0))
+            for (int i = fx.Stones + fx.StonesChampion * champions; i > 0; i--) AddStone(true);
+    }
+
+    /// <summary>Oath and Bell: a stagger (a heavy blow landing) owes the bell a toll, at most every few seconds.</summary>
+    void BellOnStagger()
+    {
+        if (BellOwed || Time < bellOathAt || !Lamps.Has("oath_and_bell") || WeaponById("watch_bell") == null) return;
+        BellOwed = true;
+    }
+
+    /// <summary>The owed toll rung (Firing.Tick, the bell's): if anything is in reach; the gap starts only if it rang.</summary>
+    internal void TollOwed(WeaponInst w)
+    {
+        BellOwed = false;
+        if (Firing.TollNow(this, w)) bellOathAt = Time + Lamps.Full("oath_and_bell", "every", 3);
     }
 
     /// <summary>A heave owed later at the same spot (Aftershock), shown as a strike marked on the ground.</summary>

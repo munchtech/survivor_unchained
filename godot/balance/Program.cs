@@ -191,7 +191,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
     object Side(RunResult r, ArenaSim.Fixed f) => new
     {
         Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
-        Hand = r.DamageBy.GetValueOrDefault("hand"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
+        Hand = r.DamageBy.GetValueOrDefault("hand"), Wall = r.DamageBy.GetValueOrDefault("wall"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
         Alive = r.ByMinute.Count > 0 ? r.ByMinute.Average(x => x.Alive) : 0,
         TtkF = r.ByMinute.Where(x => !double.IsNaN(x.TtkFodder)).Select(x => x.TtkFodder).DefaultIfEmpty(0).Average(),
         TtkE = r.ByMinute.Where(x => !double.IsNaN(x.TtkElite)).Select(x => x.TtkElite).DefaultIfEmpty(0).Average(),

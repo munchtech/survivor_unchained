@@ -27,6 +27,8 @@ public sealed partial class Battle
         double c = l.Full("shield_arm", "block");
         if (Player.StillT > 0.25) c += l.Size("block.still", "add");
         if (from != null && (from.Boss || from.Elite)) c += l.Size("block.champions", "add");
+        // Rebuke carried: she blocks (8%, and 1% more a rank), lamp or none.
+        c += RebukeBlock();
         if (c <= 0) return 0;
         if (l.Has("wall_holds"))
         {
@@ -72,6 +74,8 @@ public sealed partial class Battle
         if (opening > 0) p.SureCritT = Math.Max(p.SureCritT, opening);
         // bulwark.oathblade.shield_and_edge: Oathblade swings at once.
         if (l.Has("oathblade.shield_and_edge") && WeaponById("oathblade") is { } edge) edge.Timer = 0;
+        // Rebuke: the block strikes back.
+        RebukeOnBlock(from);
         AddStone();
     }
 
@@ -95,16 +99,18 @@ public sealed partial class Battle
         int cap = (int)WallArg("stones", 6, Content.Hands.Warden.Stones);
         // Parry without Shield Arm lays stones the wall can't answer (no cap, no reach).
         if (cap <= 0) return;
+        // rebuke.readier: the wall answers sooner (Shield Arm's six: five).
+        if (Lamps.Has("rebuke.readier")) cap = Math.Max(3, (int)Math.Round(cap * Lamps.Full("rebuke.readier", "share", 5.0 / 6)));
         stoneDrop = 0;
-        if (++stones >= cap) { stones = 0; Rebuke(); }
+        if (++stones >= cap) { stones = 0; WallAnswer(); }
         else StonesPeak = Math.Max(StonesPeak, stones);
     }
 
-    /// <summary>bulwark.shield_arm: the rebuke of holy light all around, at six stones.</summary>
-    void Rebuke()
+    /// <summary>bulwark.shield_arm: the wall's answer, a rebuke of holy light all around, at six stones (credited "wall";
+    /// the Rebuke skill's strikes are its own, "rebuke").</summary>
+    void WallAnswer()
     {
         var p = Player;
-        var l = Lamps;
         double r = WallArg("radius", 8, Content.Hands.Warden.Radius) * Math.Sqrt(Stats.Get(Stat.Area));
         double dmg = RebukePower() + bearerStore;
         Rebukes++;
@@ -113,11 +119,12 @@ public sealed partial class Battle
         ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
         {
             double dd = d == 0 ? 1 : d;
-            double m = e.Elite || e.Boss ? 1 + l.Size("rebuke.champions", "more") : 1;
+            double m = RebukeChampionMul(e);
             // A boss takes a share: the wall breaks the crowd; against a lord of the night it mustn't rival the Flare.
             if (e.Boss) m *= WallArg("boss", 1, Content.Hands.Warden.Boss);
-            HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "rebuke" });
+            HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "wall" });
         });
+        RebukeMends();
     }
 
     /// <summary>The rebuke's blow before the build's damage: as hard as the wall is thick (a share of max health), grown by

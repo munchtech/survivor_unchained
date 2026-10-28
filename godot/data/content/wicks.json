@@ -45,7 +45,9 @@
     "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
     "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } },
     "sunder.stroke":            { "name": "Splitting Stroke", "text": "Every 2nd swing is heavy and splits the ground; swings 15% slower.", "heavyEvery": 2, "cooldown": 1.15 },
-    "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 35%, stunning again.", "again": 0.8, "againDamage": 0.35 }
+    "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 35%, stunning again.", "again": 0.8, "againDamage": 0.35 },
+    "rebuke.morning":           { "name": "Shield of Morning", "text": "Each rebuke strike leaves you a barrier of 1% of health for each creature it strikes.", "barrierEach": 0.01, "barrierMost": 0.04 },
+    "watch_bell.stone":         { "name": "Stone Bell", "text": "Each toll lays a stone, and each champion it draws lays one more.", "stones": 1, "stonesChampion": 1 }
   },
 
   // The library's strands: kind, Turn, lead-ins, and which skills it suits. "suits" is a list of alternatives,
@@ -54,10 +56,10 @@
   "strands": {
     "split":  { "kind": "shape", "turn": "split",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] } ] },
     "chain":  { "kind": "shape", "turn": "chain",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] }, { "behaviors": ["chain", "bounce"] } ] },
-    "wide":   { "kind": "shape", "turn": "wide",   "suits": [ { "behaviors": ["slash", "nova", "zone", "crack"] }, { "behaviors": ["aimed"], "splash": true } ] },
+    "wide":   { "kind": "shape", "turn": "wide",   "suits": [ { "behaviors": ["slash", "nova", "zone", "crack", "toll"] }, { "behaviors": ["aimed"], "splash": true } ] },
     "linger": { "kind": "shape", "turn": "linger", "suits": [ { "behaviors": ["aimed", "slash", "nova", "crack"] }, { "splash": true } ] },
-    "pulse":  { "kind": "shape", "turn": "pulse",  "suits": [ { "behaviors": ["nova", "zone", "aimed"] } ] },
-    "onkill": { "kind": "bind",  "turn": "onkill", "suits": [ { "behaviors": ["aimed", "spray", "ring", "nova", "zone", "chain", "storm", "bounce", "beam", "palm", "herd", "chakram", "slash"] } ] },
+    "pulse":  { "kind": "shape", "turn": "pulse",  "suits": [ { "behaviors": ["nova", "zone", "aimed", "toll"] } ] },
+    "onkill": { "kind": "bind",  "turn": "onkill", "suits": [ { "behaviors": ["aimed", "spray", "ring", "nova", "zone", "chain", "storm", "bounce", "beam", "palm", "herd", "chakram", "slash", "reactive"] } ] },
     "fire":   { "kind": "school", "turn": "fire" },
     "frost":  { "kind": "school", "turn": "frost" },
     "holy":   { "kind": "school", "turn": "holy" }
@@ -78,6 +80,16 @@
       "groundbreaker.aftershock": { "kind": "calling", "turn": "groundbreaker.aftershock", "lamps": [
         { "text": "+10% damage", "damage": 0.10 },
         { "text": "+10% crack and heave size", "area": 0.10 },
-        { "text": "8% shorter cooldown", "cooldown": -0.08 } ] } } }
+        { "text": "8% shorter cooldown", "cooldown": -0.08 } ] } } },
+    "rebuke": { "strands": ["fire", "onkill", "rebuke.morning"], "suggested": "rebuke.morning", "own": {
+      "rebuke.morning": { "kind": "calling", "turn": "rebuke.morning", "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% strike size", "area": 0.10 },
+        { "text": "+10% damage to champions", "vsChampion": 0.10 } ] } } },
+    "watch_bell": { "strands": ["wide", "pulse", "watch_bell.stone"], "suggested": "watch_bell.stone", "own": {
+      "watch_bell.stone": { "kind": "calling", "turn": "watch_bell.stone", "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% reach", "area": 0.10 },
+        { "text": "8% shorter time between tolls", "cooldown": -0.08 } ] } } }
   }
 }

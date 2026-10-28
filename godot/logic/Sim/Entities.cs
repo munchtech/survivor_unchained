@@ -132,6 +132,8 @@ public sealed class Enemy : Pooled
     /// <summary>Thrown up (Groundbreaker's upheaval): until this time it can't move or strike (a stun holds it) and
     /// takes AirMore more from her side.</summary>
     public double AirUntil, AirMore;
+    /// <summary>Held back (the Watch Bell's iron): until this time (the battle's clock) it moves SlowBy slower.</summary>
+    public double SlowUntil, SlowBy;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);
