@@ -334,8 +334,19 @@
 		"speed": 0.0,
 		"weapon": ""
 	},
+	"idle_arcanist_wand": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 15 deg, the body turned back 2 deg; head's mean pitch brought to +3 deg",
+		"layer": "full",
+		"length": 5.0,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
+		"speed": 0.0,
+		"weapon": "wand"
+	},
 	"idle_reaver": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"grip_slide": -0.13,
 		"layer": "full",
 		"length": 5.0,
 		"licence": "CC BY 4.0",
@@ -346,6 +357,8 @@
 	},
 	"idle_reaver_axes": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"grip_slide": -0.13,
+		"grip_slide_l": -0.13,
 		"layer": "full",
 		"length": 5.0,
 		"licence": "CC BY 4.0",
@@ -355,6 +368,7 @@
 		"weapon": "axes"
 	},
 	"idle_reaver_break": {
+		"grip_slide": -0.13,
 		"layer": "full",
 		"length": 3.33333325386047,
 		"licence": "own work",
@@ -795,6 +809,7 @@
 		"weapon": "staff"
 	},
 	"stop_reaver_l": {
+		"grip_slide": -0.13,
 		"layer": "full",
 		"length": 0.800000011920929,
 		"licence": "own work",
@@ -803,6 +818,7 @@
 		"weapon": "axe"
 	},
 	"stop_reaver_r": {
+		"grip_slide": -0.13,
 		"layer": "full",
 		"length": 0.800000011920929,
 		"licence": "own work",

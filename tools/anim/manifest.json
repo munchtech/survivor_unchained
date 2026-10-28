@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 113,
- "planned": 74,
+ "made": 114,
+ "planned": 75,
  "clips": [
   {
    "clip": "idle_warden",
@@ -81,6 +81,18 @@
    "licence": "CC BY 4.0",
    "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
    "length": 5.1,
+   "layer": "full"
+  },
+  {
+   "clip": "idle_arcanist_wand",
+   "plays_for": "idle, arcanist with a wand",
+   "status": "made",
+   "fallback": "Idle_Loop",
+   "made_by": "100STYLE HandsInPockets_ID (idle_arcanist's base), arms keyed",
+   "source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 15 deg, the body turned back 2 deg; head's mean pitch brought to +3 deg",
+   "length": 5.0,
    "layer": "full"
   },
   {
