@@ -152,7 +152,7 @@ public static class Enemies
     public static readonly Dictionary<string, EnemyDef> All = new EnemyDef[]
     {
         /* ------------------------------------------------------------ the dead -- */
-        new() { Id = "risen", Name = "Risen", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_minion",
+        new() { Id = "risen", Name = "Risen", Family = Family.Undead, Faction = Faction.Dead, Visual = "risen_shroud",
             Health = 20, Speed = 2.7, Damage = 8, Radius = 0.45, Xp = 2, Resists = Undead, Behavior = Behavior.Chase,
             Note = "The dead of the Low Ford, still marching. They do not hurry. They do not have to." },
         new() { Id = "risen_warrior", Name = "Risen Shieldman", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior",
