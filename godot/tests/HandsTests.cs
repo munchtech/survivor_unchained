@@ -56,13 +56,13 @@ public sealed class HandsTests
         var b = Fight("warden", ("oathblade", 1));
         var w = b.Weapons[0];
         var e = Dummy(b);
-        for (int i = 0; i < 3; i++) { FireOnce(b, w, e); e.Status.Remove(StatusKind.Stun); }
+        for (int i = 0; i < Content.Hands.Warden.Every - 1; i++) { FireOnce(b, w, e); e.Status.Remove(StatusKind.Stun); }
         Assert.Equal(0, b.HandHeavies);
         FireOnce(b, w, e);
         Assert.Equal(1, b.HandHeavies);
         Assert.True(e.Status.Has(StatusKind.Stun));
         Assert.Contains(b.Events.Drain(), x => x is Ev.Hand { Kind: HandKind.Heavy });
-        // The count starts again: the fifth is plain.
+        // The count starts again: the next is plain (Every in hands.json).
         e.Status.Remove(StatusKind.Stun);
         FireOnce(b, w, e);
         Assert.Equal(1, b.HandHeavies);
@@ -75,7 +75,7 @@ public sealed class HandsTests
         var b = Fight("warden", ("oathblade", 1));
         var w = b.Weapons[0];
         var e = Dummy(b, boss: true);
-        for (int i = 0; i < 3; i++) FireOnce(b, w, e);
+        for (int i = 0; i < Content.Hands.Warden.Every - 1; i++) FireOnce(b, w, e);
         double before = e.Stagger;
         FireOnce(b, w, e);
         Assert.True(e.Stagger - before >= Content.Hands.Warden.Stagger * b.Rules.StaggerTaken * 0.99, $"{before} -> {e.Stagger}");
@@ -88,7 +88,7 @@ public sealed class HandsTests
         var b = Fight("warden", ("judgement_disc", 1));
         var w = b.Weapons[0];
         var e = Dummy(b, dx: 4);
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < Content.Hands.Warden.Every; i++)
         {
             e.X = b.Player.X + 4; e.Z = b.Player.Z;
             w.Timer = 0;
@@ -234,7 +234,7 @@ public sealed class HandsTests
     public void The_card_says_what_her_hand_does_and_nothing_where_it_does_nothing()
     {
         var W = Weapons.All;
-        Assert.StartsWith("In a warden's hand: every 4th blow is heavy", Hands.Line("warden", W["oathblade"]));
+        Assert.StartsWith($"In a warden's hand: every {Content.Hands.Warden.Every}th blow is heavy", Hands.Line("warden", W["oathblade"]));
         Assert.Contains("lays a Stone", Hands.Line("warden", W["judgement_disc"]));
         Assert.Contains("heavy", Hands.Line("warden", W["judgement_disc"]));
         Assert.Null(Hands.Line("warden", W["volley"]));

@@ -127,7 +127,7 @@ public class BalanceLab(ITestOutputHelper log)
         }
         // Everything the runs touch read in once, before the threads share it.
         ArenaSim.Play(specs[0] with { Cap = 0.05 });
-        var runs = RunAll(specs, ArenaSim.Play, dir, "arena", log);
+        var runs = RunAll(specs, s => ArenaSim.Play(s), dir, "arena", log);
         Report.Csv(runs, dir);
         sum.AppendLine(Report.Arena(runs));
     }

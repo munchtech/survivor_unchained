@@ -1,14 +1,14 @@
 {
   "about": "The Hands (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2 item 1): each calling's always-on accent on any skill it carries, no lamp lit. Each number is described in logic/Content/Hands.cs; the lamps deepen these, never replace them.",
   "warden": {
-    "every": 4,
-    "stun": 0.3,
-    "knockback": 2,
+    "every": 6,
+    "stun": 0.2,
+    "knockback": 1.5,
     "stagger": 0.1,
-    "stones": 6,
+    "stones": 10,
     "radius": 8,
     "lull": 6,
-    "rebuke": 3,
+    "rebuke": 2,
     "perLevel": 0.08,
     "boss": 0.5
   },
@@ -23,7 +23,7 @@
   "arcanist": {
     "radius": 1,
     "seconds": 2,
-    "burn": 0.5,
+    "burn": 0.4,
     "chill": 1,
     "mark": 1,
     "cap": 12,
@@ -31,7 +31,7 @@
     "markSeconds": 4
   },
   "stalker": {
-    "seconds": 1,
+    "seconds": 2,
     "pierce": 1
   }
 }
