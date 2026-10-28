@@ -49,6 +49,10 @@ public sealed class WeaponInst
     public int Casts, HandBlows;
     /// <summary>The last firing was heavy: its burst shots still to come are too.</summary>
     public bool HeavyCast;
+    /// <summary>Its own heavy count (WeaponStats.HeavyEvery: Sunder's every 4th swing): firings so far, and whether the
+    /// firing now is its own heavy one (only within a cast: a Pulse's follow-up or an echo never is).</summary>
+    public int OwnBlows;
+    public bool OwnHeavy;
     /// <summary>A Pulse Turn's follow-ups still to go, and when.</summary>
     public int PulseLeft;
     public double PulseT;
@@ -131,7 +135,7 @@ public sealed class WeaponInst
 }
 
 /// <summary>How each behaviour turns a weapon into things on the field.</summary>
-public static class Firing
+public static partial class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
@@ -231,10 +235,16 @@ public static class Firing
         b.ArcanistBeforeCast(w);
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
         bool heavy = b.HandBeginCast(w);
+        // Its own count (Sunder's): a firing heavy for either reason is just heavy; its own count also drives its line.
+        int own = HeavyEveryOf(b, w);
+        w.OwnHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
+        heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;
         bool fired = Fire(b, w);
         b.HeavyBy = hb;
+        w.OwnHeavy = false;
+        if (fired && own > 0) w.OwnBlows++;
         b.HandEndCast(w, fired);
         if (fired) w.HeavyCast = heavy;
         if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
@@ -280,6 +290,7 @@ public static class Firing
         WeaponBehavior.Chakram => FireChakram(b, w),
         WeaponBehavior.Slash => FireSlash(b, w),
         WeaponBehavior.Raise => FireRaise(b, w),
+        WeaponBehavior.Crack => FireCrack(b, w),
         _ => false,
     };
 
@@ -653,11 +664,11 @@ public static class Firing
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
         // same rule as her swing, measured from where it fell); none near, and the echo doesn't go off.
         var p = At(b);
-        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) + ReachAdd(b, w);
+        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) * b.SkillStillReach(w) + ReachAdd(b, w);
         var t = b.NearestHostile(p.X, p.Z, reach + 1.2);
         if (t == null) return false;
         double a = Math.Atan2(t.Z - p.Z, t.X - p.X);
-        double arc = w.Num(s => s.Arc) ?? 2.2;
+        double arc = b.SkillArc(w, w.Num(s => s.Arc) ?? 2.2);
         int n = CountOf(b, w, 1);
         for (int i = 0; i < n; i++)
         {
@@ -671,6 +682,8 @@ public static class Firing
             double da = Wrap(Math.Atan2(c.Z - p.Z, c.X - p.X) - a);
             if (Math.Abs(da) <= arc / 2 + 0.3) b.Hooks.OnHitProp?.Invoke(c.Tag, c.Id, w.School, w.Damage, c.X, c.Z);
         }
+        // Its own heavy swing splits the ground ahead (Sunder's line).
+        if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
         // Linger: the swing leaves its ground where the arc's middle fell.
         if (w.Wick?.Ground is { } g)
         {

@@ -89,6 +89,44 @@
       ]
     },
     {
+      "id": "sunder",
+      "name": "Sunder",
+      "school": "physical",
+      "behavior": "slash",
+      "tags": ["melee", "steel", "physical", "area", "heavy"],
+      "access": ["warden"],
+      "findable": true,
+      "bossDamage": 1.5,
+      "art": "slash_heavy",
+      "description": "A slow, huge two-handed swing. Every fourth one is heavy and splits the ground in a line ahead of you.",
+      "base": {
+        "cooldown": 1.6,
+        "damage": 40,
+        "reach": 3,
+        "arc": 3.84,
+        "knockback": 1.3,
+        "projectiles": 1,
+        "beamWidth": 1.2,
+        "heavyEvery": 4,
+        "line": 7
+      },
+      "evolutions": []
+    },
+    {
+      "id": "groundbreaker",
+      "name": "Groundbreaker",
+      "school": "physical",
+      "behavior": "crack",
+      "tags": ["melee", "physical", "area", "heavy"],
+      "access": ["warden"],
+      "findable": true,
+      "bossDamage": 1.6,
+      "art": "slash_quake",
+      "description": "You drive your blade into the ground: a crack runs to the nearest pack and the earth heaves under it, stunning everything there.",
+      "base": { "cooldown": 5, "damage": 60, "range": 10, "radius": 2.5, "knockback": 0.4, "beamWidth": 1.2, "trail": 0.5, "stun": 0.6 },
+      "evolutions": []
+    },
+    {
       "id": "axe_gyre",
       "name": "Axe Gyre",
       "school": "physical",

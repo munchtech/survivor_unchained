@@ -35,6 +35,9 @@ public sealed class WickFx
     /// <summary>On-kill: it fires again from what its own hit kills (Battle.OnKillEcho).</summary>
     public bool OnKill;
     public double OnKillGap, OnKillDamage = 1;
+    /// <summary>Its own heavy count, every this many firings (0: the skill's own); Again: its blow lands again.</summary>
+    public int HeavyEvery;
+    public double Again, AgainDamage;
 
     public bool TurnLit => Turns.Count > 0;
 }
@@ -108,6 +111,8 @@ public static class Turns
             if (t.Ground != null) fx.Ground = t.Ground;
             if (t.Pulses > 1) { fx.Pulses = t.Pulses; fx.PulseGap = t.PulseGap; }
             if (t.OnKill) { fx.OnKill = true; fx.OnKillGap = t.OnKillGap; fx.OnKillDamage = t.OnKillDamage; }
+            if (t.HeavyEvery > 0) fx.HeavyEvery = fx.HeavyEvery > 0 ? Math.Min(fx.HeavyEvery, t.HeavyEvery) : t.HeavyEvery;
+            if (t.Again > 0) { fx.Again = t.Again; fx.AgainDamage = t.AgainDamage; }
             if (t.School is { } sc && fx.School == null) { fx.School = sc; fx.Status = t.Status; }
         }
         fx.Damage *= 1 + dmg; fx.Area *= 1 + area; fx.Speed *= 1 + speed; fx.Cooldown *= Math.Max(0.1, 1 + cd);

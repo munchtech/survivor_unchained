@@ -767,6 +767,7 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
+        if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
         if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
@@ -1594,6 +1595,7 @@ public sealed partial class Battle
         e.LastWeapon = null;
         e.TakenMul = 1;
         e.SunderUntil = e.Sunder = 0;
+        e.AirUntil = e.AirMore = 0;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
@@ -2244,7 +2246,8 @@ public sealed partial class Battle
             {
                 var (was, ech) = (credit, Echoing);
                 credit = s.Credit; Echoing = ech || s.Echo;
-                Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
+                if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
+                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
                 (credit, Echoing) = (was, ech);
             }
         }
@@ -2900,6 +2903,8 @@ sealed class StrikeSpec
     public string? Credit;
     /// <summary>Struck by an On-kill echo: its kills never echo again.</summary>
     public bool Echo;
+    /// <summary>The ground heaves (Battle.Heave: heavy, stunning), not a blast.</summary>
+    public bool Heave;
 
     public StrikeSpec(double x, double z, double r, double dmg, School school, Tag[] tags, double t, WeaponInst? weapon, Side owner, int depth)
     {

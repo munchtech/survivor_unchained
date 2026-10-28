@@ -31,6 +31,9 @@
   // "pulses": it goes off that many times in all, "pulseGap" seconds apart (its damage and area are each pulse's).
   // "onKill": a kill by its own hit fires it once more from the corpse at "onKillDamage", at most once every
   // "onKillGap" seconds; an echo's kills never echo.
+  // "heavyEvery": its own heavy count becomes every that many firings (a skill with a count of its own: Sunder).
+  // "again": its blow lands again on the same spot that many seconds later, at "againDamage" (Groundbreaker's heave).
+  // A calling skill's bespoke Turn is named for its strand ("sunder.stroke").
   "turns": {
     "split":  { "name": "Split",  "text": "Three smaller: three times the projectiles, each 28% damage and 75% size.", "projectiles": 3, "damage": 0.28, "area": 0.75 },
     "chain":  { "name": "Chain",  "text": "It bounces twice more, at 85% damage.", "chains": 2, "bounces": 2, "damage": 0.85 },
@@ -40,7 +43,9 @@
     "onkill": { "name": "On-kill", "text": "It fires again from what it kills, at 30% damage (once every 0.5 s at most).", "onKill": true, "onKillGap": 0.5, "onKillDamage": 0.3 },
     "fire":   { "name": "Fire",   "text": "It becomes fire: it burns, and strikes 10% harder.", "damage": 1.1, "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
     "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
-    "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } }
+    "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } },
+    "sunder.stroke":            { "name": "Splitting Stroke", "text": "Every 2nd swing is heavy and splits the ground; swings 15% slower.", "heavyEvery": 2, "cooldown": 1.15 },
+    "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 60%, stunning again.", "again": 0.8, "againDamage": 0.6 }
   },
 
   // The library's strands: kind, Turn, lead-ins, and which skills it suits. "suits" is a list of alternatives,
@@ -49,8 +54,8 @@
   "strands": {
     "split":  { "kind": "shape", "turn": "split",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] } ] },
     "chain":  { "kind": "shape", "turn": "chain",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] }, { "behaviors": ["chain", "bounce"] } ] },
-    "wide":   { "kind": "shape", "turn": "wide",   "suits": [ { "behaviors": ["slash", "nova", "zone"] }, { "behaviors": ["aimed"], "splash": true } ] },
-    "linger": { "kind": "shape", "turn": "linger", "suits": [ { "behaviors": ["aimed", "slash", "nova"] }, { "splash": true } ] },
+    "wide":   { "kind": "shape", "turn": "wide",   "suits": [ { "behaviors": ["slash", "nova", "zone", "crack"] }, { "behaviors": ["aimed"], "splash": true } ] },
+    "linger": { "kind": "shape", "turn": "linger", "suits": [ { "behaviors": ["aimed", "slash", "nova", "crack"] }, { "splash": true } ] },
     "pulse":  { "kind": "shape", "turn": "pulse",  "suits": [ { "behaviors": ["nova", "zone", "aimed"] } ] },
     "onkill": { "kind": "bind",  "turn": "onkill", "suits": [ { "behaviors": ["aimed", "spray", "ring", "nova", "zone", "chain", "storm", "bounce", "beam", "palm", "herd", "chakram", "slash"] } ] },
     "fire":   { "kind": "school", "turn": "fire" },
@@ -62,6 +67,17 @@
   // skill alone (same fields as a library strand, its lead-ins written out in "lamps").
   "skills": {
     "oathblade":      { "strands": ["wide", "linger", "holy"], "suggested": "wide" },
-    "judgement_disc": { "strands": ["chain", "split", "fire"], "suggested": "chain" }
+    "judgement_disc": { "strands": ["chain", "split", "fire"], "suggested": "chain" },
+    // The warden's calling skills: one bespoke strand ("calling") and two of the library's each (3.3).
+    "sunder": { "strands": ["wide", "holy", "sunder.stroke"], "suggested": "sunder.stroke", "own": {
+      "sunder.stroke": { "kind": "calling", "turn": "sunder.stroke", "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% reach (and the heavy line's)", "area": 0.10 },
+        { "text": "8% less time between swings", "cooldown": -0.08 } ] } } },
+    "groundbreaker": { "strands": ["wide", "linger", "groundbreaker.aftershock"], "suggested": "groundbreaker.aftershock", "own": {
+      "groundbreaker.aftershock": { "kind": "calling", "turn": "groundbreaker.aftershock", "lamps": [
+        { "text": "+10% damage", "damage": 0.10 },
+        { "text": "+10% crack and heave size", "area": 0.10 },
+        { "text": "8% shorter cooldown", "cooldown": -0.08 } ] } } }
   }
 }

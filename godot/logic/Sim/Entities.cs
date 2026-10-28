@@ -129,6 +129,9 @@ public sealed class Enemy : Pooled
     public double TakenMul = 1;
     /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
     public double SunderUntil, Sunder;
+    /// <summary>Thrown up (Groundbreaker's upheaval): until this time it can't move or strike (a stun holds it) and
+    /// takes AirMore more from her side.</summary>
+    public double AirUntil, AirMore;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);

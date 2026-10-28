@@ -20,7 +20,8 @@ namespace SurvivorUnchained.Content;
  * Rank growth (applied by the runtime): +20% damage per rank, +4% area per
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
 
-public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise }
+/// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
+public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack }
 
 /// <summary>A weapon's numbers; unset ones fall back (in an evolution's Set,
 /// to the base).</summary>
@@ -46,6 +47,15 @@ public sealed class WeaponStats
     public double? Crit;
     /// <summary>What a raising weapon calls up (an ally's kind).</summary>
     public string? Raises;
+    /// <summary>Its own count: every this many firings is heavy (the warden's Hand's heavy blow, whatever the Hand
+    /// counts), and a heavy one strikes its Line too (Sunder's). Absent, only the Hand makes it heavy.</summary>
+    public double? HeavyEvery;
+    /// <summary>A heavy firing also strikes a line this long straight ahead, BeamWidth wide, at its full damage.</summary>
+    public double? Line;
+    /// <summary>A crack's path (Crack): the share of its damage what lies along it takes.</summary>
+    public double? Trail;
+    /// <summary>Seconds a blow stuns what it strikes (not a boss): Groundbreaker's heave.</summary>
+    public double? Stun;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
