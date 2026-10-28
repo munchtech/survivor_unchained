@@ -570,7 +570,10 @@ def main():
     ap.add_argument("--arms", help="another arms_local.json (an older mount, to compare)")
     ap.add_argument("--sockets", action="store_true", help="fit art/anim/socket_clearance.json and measure every weapon kind sheathed, per outfit")
     ap.add_argument("--keep", action="store_true", help="with --sockets: measure with the clearance file as it is (no refit, no write)")
+    ap.add_argument("--raw", action="store_true", help="clips as written, not staged (clavhold + armroll) as the game plays them")
     a = ap.parse_args()
+    import staged
+    staged.set_from_argv(["--raw"] if a.raw else [])
     if a.sockets:
         return run_sockets(a)
     t0 = time.time()

@@ -4,6 +4,8 @@ For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Worki
 
 **Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
 
+**Checks measure the packed clips (Animation 57, 28 Oct).** motion.py, audit.py and armscheck.py now stage each of her clips in memory the way build.pack does (clavhold, then armroll, `tools/anim/staged.py`) and measure a held piece along its haft (`keyed.slide_dir`, armscheck); `--raw` gives the old numbers from the clips as written.
+
 ## 000000000000000000000000000. Paused here (Animation 56, 27 Oct, coordinator wind-down); next: fix + ONE max judge on idlesB r1, fix holdB's sprints + ONE max judge on holdB, then MR2
 **Integration merged at 11dffd7f (4f4fe6bc). Integration is now 3ef34f61 (her clips repacked): `git fetch origin`, then SCRATCH (anim55)\tools\merge_int.sh (it uses origin; move untracked clashes aside first).** Her clips here were packed by the solvers (114, incl. idle_arcanist_wand); my own full rebuild timed out under CPU contention (BUILD 124 after 50 min): run the full `build.py` once before the MR.
 - **Item "idles warden-reaver": CLOSED** (max judge round 2, the last; gate YES x3): idle_warden_town PASS (the owner's pommel note answered); idle_reaver PASS-WITH-NOTES (base stance square from the side: left foot 10-12 cm forward, knee 6-8, pelvis 2-3 cm over the axe leg, if ever reopened; closed as known); idle_reaver_axes PASS-WITH-NOTES (mirror broken; its one mark, the left head on her toe at 330, fixed in 8c3d2bf9: left back -30 -> -19, pitch -77.3..-78.2, head ~9 cm further back, legs 102 mm; not re-judged by design).
