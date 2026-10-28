@@ -11,7 +11,7 @@ h = c.h
 from shoulder_psd_post import Rig
 from heroine_neck import _Gl
 
-STILL = ("root", "pelvis", "thigh_l", "thigh_r", "calf_l", "calf_r", "foot_l", "foot_r")
+STILL = ("pelvis", "thigh_l", "thigh_r", "calf_l", "calf_r", "foot_l", "foot_r")
 
 
 def pose_json(path):
@@ -36,7 +36,12 @@ def synth(ddir, odir, glb, frame, log=print):
     spread = max(np.abs(x - S).max() for x in Ss)
     Gf = np.stack([S @ T[n] if n in T else Gs[i] for i, n in enumerate(rig.names)])
     K = Gf @ rig.ibm                                         # per bone skin matrix
-    moved = {n: float(np.linalg.norm(Gf[i][:3, 3] - Gs[i][:3, 3]) * 1000) for i, n in enumerate(rig.names)}
+    wsum = np.zeros(len(rig.names))
+    for s_, (k_, j_, _) in zip(fr.dump["surfs"], fr.mp):
+        if k_ is not None:
+            wsum += 1
+    moved = {n: float(np.linalg.norm(Gf[i][:3, 3] - Gs[i][:3, 3]) * 1000) for i, n in enumerate(rig.names)
+             if "leaf" not in n and n not in ("root", "panel_front", "panel_back") and np.abs(Gs[i][:3, :3]).sum() > 0.5}
     G = _Gl(glb); g = G.g
     mi = [n for n in g["nodes"] if n.get("name") == "Heroine"][0]["mesh"]
     prims = g["meshes"][mi]["primitives"]
