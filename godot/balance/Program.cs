@@ -68,12 +68,12 @@ if (SurvivorUnchained.Rpg.WickBook.ForceTurn is { } ft && !SurvivorUnchained.Con
 SurvivorUnchained.Sim.Battle.FlareRout = double.Parse(opt.Get("rout", "0"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Sim.Battle.FlareReachMul = double.Parse(opt.Get("flarereach", "1"), System.Globalization.CultureInfo.InvariantCulture);
 SurvivorUnchained.Play.Bosses.StoryBoss.Cuts = opt.Get("storycut", "1") != "0";
-// --maphp PACK,BOSS: a map's pack health multiple and its ruler's (MapRun.PackHealth, MapRun.BossHealth).
+// --maphp PACK,BOSS: health added per day slot past three, to a map's packs and its ruler (MapRun.PackPerSlot, BossPerSlot).
 if (opt.Has("maphp"))
 {
     var mh = opt.Get("maphp", "1").Split(',');
-    SurvivorUnchained.Play.Zones.MapRun.PackHealth = double.Parse(mh[0], System.Globalization.CultureInfo.InvariantCulture);
-    if (mh.Length > 1) SurvivorUnchained.Play.Zones.MapRun.BossHealth = double.Parse(mh[1], System.Globalization.CultureInfo.InvariantCulture);
+    SurvivorUnchained.Play.Zones.MapRun.PackPerSlot = double.Parse(mh[0], System.Globalization.CultureInfo.InvariantCulture);
+    if (mh.Length > 1) SurvivorUnchained.Play.Zones.MapRun.BossPerSlot = double.Parse(mh[1], System.Globalization.CultureInfo.InvariantCulture);
 }
 // --storyhp roost=103,vault=130: a story boss's health multiple in place of its script's (by the fight's short name).
 foreach (var kv in opt.List("storyhp", "").Where(x => x.Contains('=')))
