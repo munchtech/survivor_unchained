@@ -40,7 +40,11 @@ SPRINT_SWING_RUN = {"run_warden_town": (5, -3, 0.9, -3), "run_reaver_axes": (-8,
 if REAVER_CARRY == "low":  # Animation 56/57's low point (REAVER_CARRY; "trail" keeps Animation 55's entries above)
     SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.0, -3, 0, 9)
     SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.0, -3, 10, 9)
-if WARDEN_CARRY == "high":
+if REAVER_CARRY == "high":  # Animation 58: the back elbow 7 closer (at the default 3 the back swing dropped her
+    # forearm to 29-32 below level, and the high carry's wrist bent 15-19 to the thumb); the arms 3 further out.
+    SPRINT_SWING_RUN["run_reaver"] = (5, -3, 1.25, -7, 0, 3)
+    SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.25, -7, 3, 3)
+if WARDEN_CARRY in ("high", "high57"):
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
 
 
