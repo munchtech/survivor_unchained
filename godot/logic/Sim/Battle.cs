@@ -296,6 +296,8 @@ public sealed partial class Battle
     public double DamageRaw;
     /// <summary>The same, on bosses alone: the Flare's share of a boss's damage (CLASSES.md §7).</summary>
     public readonly Dictionary<string, double> BossDamageBy = new();
+    /// <summary>The same, on champions (elites, not bosses): a skill's crowd and champion shares (the Turn measure).</summary>
+    public readonly Dictionary<string, double> EliteDamageBy = new();
     /// <summary>What each source truly took off bosses: health lost, and a gate's Break only up to the tenth of
     /// its health the Break rewards (as the Flare's fill counts it). Damage poured into a gate past that
     /// takes nothing, yet BossDamageBy counts it: a full board's poison on a gated boss made the Flare's
@@ -833,6 +835,7 @@ public sealed partial class Battle
         double breakCap = 0.1 * e.MaxHp;
         double took = Math.Max(0, before - Math.Max(0, e.Hp)) + Math.Max(0, Math.Min(e.Overflow, breakCap) - Math.Min(e.Overflow - broke, breakCap));
         FlareOnDealt(e, took, by);
+        if (e.Elite && !e.Boss) EliteDamageBy[by] = EliteDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));
         if (e.Boss)
         {
             BossDamageBy[by] = BossDamageBy.GetValueOrDefault(by) + Math.Min(dmg, Math.Max(0, before));

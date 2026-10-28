@@ -143,6 +143,15 @@ public static class ArenaSim
         /// <summary>Filled: falls stood up from, seconds below half health.</summary>
         public int Falls;
         public double LowSeconds;
+        /// <summary>The Turn pair (--pair turn:ID): this skill carried from the start at SkillRank (added if the
+        /// calling's kit hasn't it, ranked up if it has), its wick lit along WickPath.</summary>
+        public string? Skill;
+        public int SkillRank = 1;
+        public string[]? WickPath;
+        /// <summary>Filled for the Turn pair: the skill's damage, on champions and on bosses; its Turns at work and dark.</summary>
+        public double SkillDmg, SkillElite, SkillBoss;
+        public string[] TurnsOn = [], TurnsDark = [];
+        public Dictionary<string, double>? DamageBy;
     }
 
     public static string Card(Offer o) => o.Kind switch
@@ -240,6 +249,13 @@ public static class ArenaSim
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
+        if (fx?.Skill is { } forced)
+        {
+            if (fx.WickPath != null) b.SetWickPath(forced, fx.WickPath);
+            if (b.Weapons.Find(w => w.Id == forced) is null && b.AddWeapon(forced, fx.SkillRank) is null)
+                throw new InvalidOperationException($"{spec.Key}: can't add {forced}");
+            while (b.Weapons.Find(w => w.Id == forced) is { } fw && fw.Rank < fx.SkillRank) b.RankWeapon(forced);
+        }
         if (fx?.Replay != null) b.ChestsInert = true;
         if (fx is { DamageMore: > 0 }) b.AddBuff("calibration", Stat.Damage, fx.DamageMore, ModKind.More, 1e9, 1);
         else if (fx != null)
@@ -389,6 +405,18 @@ public static class ArenaSim
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;
         r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
+        if (fx?.Skill is { } sk)
+        {
+            fx.DamageBy = r.DamageBy;
+            // The skill, and any union it went into (which carries its Turn).
+            var ids = Unions.All.Where(u => u.A == sk || u.B == sk).Select(u => u.Into).Append(sk).ToHashSet();
+            fx.SkillDmg = ids.Sum(id => b.DamageBy.GetValueOrDefault(id));
+            fx.SkillElite = ids.Sum(id => b.EliteDamageBy.GetValueOrDefault(id));
+            fx.SkillBoss = ids.Sum(id => b.BossDamageBy.GetValueOrDefault(id));
+            var sw = b.Weapons.Find(w => ids.Contains(w.Id));
+            fx.TurnsOn = sw?.Wick?.Turns.ToArray() ?? [];
+            fx.TurnsDark = sw?.Wick?.Dark.ToArray() ?? [];
+        }
         r.DamageRaw = b.DamageRaw;
         r.Build = Describe(b);
         r.Road = LampBook.Now(j.Ch).Type;

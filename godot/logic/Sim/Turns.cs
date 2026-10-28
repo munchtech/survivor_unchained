@@ -118,6 +118,13 @@ public sealed partial class Battle
     /// <summary>Wick lamps lit by the ember tonight, for measurement and tests.</summary>
     public int WickLit;
 
+    /// <summary>A measuring aid (the harness's Turn pair): this skill's wick path in this fight, relit at once.</summary>
+    public void SetWickPath(string skill, string[] path)
+    {
+        WickPaths[skill] = path;
+        foreach (var w in Weapons) if (w.Id == skill) Relight(w, false);
+    }
+
     /// <summary>Light a weapon's wick to its rank (as it comes in, ranks up or evolves). At night each new lamp is
     /// shown (Ev.Wick). A skill with no path keeps what it has (a union's carried Turns).</summary>
     internal void Relight(WeaponInst w, bool show)
