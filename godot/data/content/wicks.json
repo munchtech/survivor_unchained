@@ -36,7 +36,7 @@
     "linger": { "name": "Linger", "text": "It leaves 1.5 m of its own ground for 2 s, burning at 25% of its damage a second.", "ground": { "radius": 1.5, "duration": 2, "dpsPct": 0.25 } },
     "pulse":  { "name": "Pulse",  "text": "It goes off three times, smaller.", "inert": true },
     "onkill": { "name": "On-kill", "text": "It fires again from what it kills.", "inert": true },
-    "fire":   { "name": "Fire",   "text": "It becomes fire: it burns.", "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
+    "fire":   { "name": "Fire",   "text": "It becomes fire: it burns, and strikes 10% harder.", "damage": 1.1, "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
     "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
     "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder).", "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1.5 } }
   },
