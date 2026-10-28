@@ -739,8 +739,11 @@ DAGGERS_HAND_L = (-0.05, -0.33, 0.27)
 # the blade's way.
 # (Animation 56: the blades' line 36-42 deg below level, the right splayed 25-29 deg out, the left 14-19; the elbows 26 and
 # 34; 24-27 mm off her thighs, where the first tries, fists in at her groin's width, put both tips 23-62 mm into them.)
-DAGGERS_IDLE = {"r": {"hand": (-0.05, -0.46, 0.22), "pole": (-0.5, 0.8, -1.0), "blade": (-0.24, -0.766, 0.60)},
-                "l": {"hand": (0.06, -0.44, 0.24), "pole": (0.5, 0.8, -1.0), "blade": (0.22, -0.766, 0.604)}}
+DAGGERS_IDLE = {"r": {"hand": (-0.06, -0.46, 0.22), "pole": (-0.5, 0.8, -1.0), "blade": (-0.315, -0.766, 0.563)},
+                "l": {"hand": (0.06, -0.445, 0.24), "pole": (0.6, 1.8, -1.0), "blade": (0.31, -0.891, 0.332)}}
+# (Animation 57 round 3: the left blade steepened by the ARM: its elbow lifted (pole y 1.8) so the forearm runs 82-86 deg
+# below level, the hand 5 mm nearer straight (elbow 21), the blade 70-74 deg below level, 7-9 deg out (was 58-62, 1-4),
+# 95 mm off the thigh; the right 5 deg more out, 37 mm off.)
 # (Animation 57, from the close-up judge: both blades 44-54 deg below level (were 36-42), turned out <= 16 deg, so the far
 # knife still reads steep on screen; the left fist 2 cm ahead and 2.5 cm out of the right's line, 2 cm higher; the poles
 # lifted so the forearms run steeper than the wrist can cancel.)
@@ -811,6 +814,35 @@ def stalker_low(t, f):
             if k in h and not (h is hr and k == "blade"):
                 h[k] = tuple(Rx @ np.array(h[k], float))
     return {"hand_r": hr, "hand_l": hl, "fingers_r": "grip", "fingers_l": "relaxed"}
+
+
+# Animation 57 round 3 (idle_stalker; replaces the low ready above, which stays for reference): the crossbow RESTED ON HER
+# RIGHT SHOULDER, the model reaver_shoulder. The fist on the grip just in front of the shoulder (the wrist can turn the
+# muzzle back only with the hand this near: any lower or further in and the bow lies through her back), the elbow
+# folded forward, the muzzle up (elev, chest frame) and out/back over the shoulder. The left arm hangs as the other idles
+# hang it (free_left). The solver's wrist limit decides the final line, not the keyed one: see the numbers.
+# (Measured: muzzle 44-46 deg above level, 41-43 out, ~20 cm back of the wrist; 86 mm off her body at the nearest, 305 mm
+# off her head. The elbow is folded ~155, not the 100 asked: a fist at chest height cannot turn the muzzle back.)
+STALKER_REST = {"hand": (-0.06, -0.07, 0.06), "pole": (0.0, -0.8, 3.0), "elev": 40.0, "out": 45.0}
+
+
+def _rest_axes(d):
+    """The bow's muzzle (hand +Y) and top (hand +Z, as upright as the muzzle allows), chest frame."""
+    e, o = math.radians(d["elev"]), math.radians(d["out"])
+    m = np.array([-math.sin(o) * math.cos(e), math.sin(e), -math.cos(o) * math.cos(e)])
+    top = np.array([0.0, 1.0, 0.0]) - m * m[1]
+    return m, top / np.linalg.norm(top)
+
+
+def stalker_shoulder(t, f):
+    """idle_stalker's right arm: STALKER_REST (the left: the free hand, build_one)."""
+    d = STALKER_REST
+    m, top = _rest_axes(d)
+    return {"hand_r": {"arc": arc_of(d["hand"]), "pole": d["pole"], "frame": "chest", "blade": tuple(top),
+                       "knuckles": tuple(m), "twist": 0.5}, "fingers_r": "grip"}
+
+
+stalker_shoulder.free_left = True
 
 
 # The crossbow's top (hand_r +Z) in stalker()'s carry, the chest frame (stalker_top on the heroine, 27 Oct): turned with
@@ -951,7 +983,7 @@ _bases = {}
 SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_reaver_axes": "reaver", "idle_arcanist_staff_town": "arcanist_town",
                "idle_arcanist_wand": "arcanist"}
 # The idles' own arms where IDLES' (which the stops and shows start or end on) differ (animation 56), and their own meta.
-IDLE_ARMS = {"idle_stalker_daggers": stalker_knives, "idle_stalker": stalker_low}
+IDLE_ARMS = {"idle_stalker_daggers": stalker_knives, "idle_stalker": stalker_shoulder}
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
