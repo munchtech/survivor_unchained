@@ -152,6 +152,8 @@ public static class ArenaSim
         public double SkillDmg, SkillElite, SkillBoss;
         public string[] TurnsOn = [], TurnsDark = [];
         public Dictionary<string, double>? DamageBy;
+        /// <summary>The board pair's off run: no wicks in this fight, whatever WickBook.Lights says.</summary>
+        public bool NoWicks;
     }
 
     public static string Card(Offer o) => o.Kind switch
@@ -249,6 +251,7 @@ public static class ArenaSim
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
+        if (fx is { NoWicks: true }) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
         if (fx?.Skill is { } forced)
         {
             if (fx.WickPath != null) b.SetWickPath(forced, fx.WickPath);

@@ -34,8 +34,14 @@ public sealed class TurnDef
     /// <summary>The school's status ("burning", "chilled", "seared": the cards' word for what has it).</summary>
     public StatusPayload? Status;
     public string Statused = "";
-    /// <summary>Defined and plannable, not yet in the fight (Pulse, On-kill: P5b).</summary>
-    public bool Inert;
+    /// <summary>Pulse: it goes off this many times in all, the follow-ups PulseGap seconds apart (each the cast's own
+    /// firing again, at the Turn's damage and area).</summary>
+    public int Pulses = 1;
+    public double PulseGap = 0.3;
+    /// <summary>On-kill: a kill by its own hit fires it once more from the corpse, at OnKillDamage, at most once every
+    /// OnKillGap seconds; that firing's kills never fire it again.</summary>
+    public bool OnKill;
+    public double OnKillGap = 0.5, OnKillDamage = 0.6;
 }
 
 /// <summary>One alternative a strand suits: any of its behaviors, any of its tags, an explosion; absent, any.</summary>
@@ -94,6 +100,14 @@ public static class Wicks
     }
 
     public static void Reload() => file = null;
+
+    /// <summary>A measuring aid (the harness's --strands): this skill's strands for this run, its wick made if it has
+    /// none yet (Light my way then follows the first).</summary>
+    public static void SetStrands(string skill, string[] strands)
+    {
+        if (!F.Skills.TryGetValue(skill, out var w)) F.Skills[skill] = w = new SkillWick { Suggested = strands[0] };
+        w.Strands = strands;
+    }
 
     /// <summary>The skills that have a wick.</summary>
     public static IEnumerable<string> Skills => F.Skills.Keys;

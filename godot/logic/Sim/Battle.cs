@@ -423,6 +423,7 @@ public sealed partial class Battle
         Flow.Update(Player.X, Player.Z);
         if (Combat)
         {
+            RunOnKills();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickAuras(dt);
             TickTriggers(dt);
@@ -895,7 +896,11 @@ public sealed partial class Battle
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
-        if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
+        if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
+        {
+            if (o.Weapon != null) OnKillHit(o.Weapon, e);
+            KillEnemy(e, true, o.Weapon, depth);
+        }
         else ArtOnHit(e);
         return dmg;
     }
@@ -1617,6 +1622,7 @@ public sealed partial class Battle
         pr.Reset();
         pr.Owner = owner; pr.X = x; pr.Z = z; pr.Damage = damage; pr.School = school; pr.Credit = credit;
         if (owner == Side.Player) pr.HeavyId = HeavyBy?.Id;
+        pr.Echo = Echoing;
         return pr;
     }
 
@@ -1640,7 +1646,7 @@ public sealed partial class Battle
         var zn = Zones.Spawn();
         if (zn == null) return null;
         zn.Reset();
-        zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit;
+        zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit; zn.Echo = Echoing;
         ArcanistZoneSpawned(zn);
         return zn;
     }
@@ -1746,7 +1752,7 @@ public sealed partial class Battle
 
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
-        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
+        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing });
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
     }
@@ -2050,10 +2056,11 @@ public sealed partial class Battle
     /// <summary>A projectile strikes; one loosed in a heavy blow lands heavy, splash and all.</summary>
     void ProjectileHit(Projectile pr, Enemy e)
     {
-        var hb = HeavyBy;
+        var (hb, ech) = (HeavyBy, Echoing);
         HeavyBy = pr.HeavyId != null && ReferenceEquals(pr.HeavyId, pr.Weapon) ? WeaponById(pr.Weapon) : null;
+        Echoing = ech || pr.Echo;
         ProjectileStrikes(pr, e);
-        HeavyBy = hb;
+        (HeavyBy, Echoing) = (hb, ech);
     }
 
     void ProjectileStrikes(Projectile pr, Enemy e)
@@ -2171,7 +2178,8 @@ public sealed partial class Battle
             z.TickT -= dt;
             if (z.TickT > 0) continue;
             z.TickT = z.Tick;
-            ZoneTick(z);
+            if (z.Echo) { var ech = Echoing; Echoing = true; ZoneTick(z); Echoing = ech; }
+            else ZoneTick(z);
         }
     }
 
@@ -2234,10 +2242,10 @@ public sealed partial class Battle
             }
             else
             {
-                var was = credit;
-                credit = s.Credit;
+                var (was, ech) = (credit, Echoing);
+                credit = s.Credit; Echoing = ech || s.Echo;
                 Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
-                credit = was;
+                (credit, Echoing) = (was, ech);
             }
         }
     }
@@ -2890,6 +2898,8 @@ sealed class StrikeSpec
     public Side Owner;
     public int Depth;
     public string? Credit;
+    /// <summary>Struck by an On-kill echo: its kills never echo again.</summary>
+    public bool Echo;
 
     public StrikeSpec(double x, double z, double r, double dmg, School school, Tag[] tags, double t, WeaponInst? weapon, Side owner, int depth)
     {

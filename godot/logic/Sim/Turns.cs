@@ -29,6 +29,12 @@ public sealed class WickFx
     public School From;
     public StatusPayload? Status;
     public List<WickStatus> Statuses = new();
+    /// <summary>Pulse: the times it goes off in all, and the gap between.</summary>
+    public int Pulses = 1;
+    public double PulseGap;
+    /// <summary>On-kill: it fires again from what its own hit kills (Battle.OnKillEcho).</summary>
+    public bool OnKill;
+    public double OnKillGap, OnKillDamage = 1;
 
     public bool TurnLit => Turns.Count > 0;
 }
@@ -62,7 +68,6 @@ public static class Turns
     public static bool Works(WeaponInst w, StrandDef s, bool united = false)
     {
         var t = s.TurnDef;
-        if (t.Inert) return false;
         var (b, tags, school, splash) = Natural(w);
         if (!Wicks.Suits(s, b, tags, school, splash)) return false;
         if (united) return true;
@@ -101,6 +106,8 @@ public static class Turns
             fx.Damage *= t.Damage; fx.Area *= t.Area; fx.Cooldown *= t.Cooldown; fx.Projectiles *= t.Projectiles;
             fx.Chains += t.Chains; fx.Bounces += t.Bounces;
             if (t.Ground != null) fx.Ground = t.Ground;
+            if (t.Pulses > 1) { fx.Pulses = t.Pulses; fx.PulseGap = t.PulseGap; }
+            if (t.OnKill) { fx.OnKill = true; fx.OnKillGap = t.OnKillGap; fx.OnKillDamage = t.OnKillDamage; }
             if (t.School is { } sc && fx.School == null) { fx.School = sc; fx.Status = t.Status; }
         }
         fx.Damage *= 1 + dmg; fx.Area *= 1 + area; fx.Speed *= 1 + speed; fx.Cooldown *= Math.Max(0.1, 1 + cd);
@@ -142,7 +149,8 @@ public sealed partial class Battle
         }
     }
 
-    /// <summary>A union keeps each part's lit Turn while its own weapon still suits it; the rest go dark.</summary>
+    /// <summary>A union keeps both parts' lit lamps: every lead-in (the wick's investment is never dropped), and each
+    /// Turn while its own weapon still suits it (Turns.Works); the rest go dark.</summary>
     internal void CarryTurns(WeaponInst into, params WeaponInst?[] parts)
     {
         var carried = new List<(StrandDef, int)>();
@@ -150,9 +158,38 @@ public sealed partial class Battle
         {
             if (p?.Wick == null) continue;
             foreach (var id in p.Wick.Lit)
-                if (Wicks.Lamp(p.Id, id) is { N: Wicks.PerStrand } l) carried.Add(l);
+                if (Wicks.Lamp(p.Id, id) is { } l) carried.Add(l);
         }
         if (carried.Count > 0) into.Wick = Turns.Build(into, carried, united: true);
+    }
+
+    /// <summary>Where the skill now firing fires from, if not from her (an On-kill echo: the corpse). Read by the Fire*
+    /// functions through Firing.At; null, from her.</summary>
+    public (double X, double Z)? FireFrom;
+    /// <summary>A firing that is not a cast (a Pulse's follow-up, an On-kill echo): no burst restarted, no attack pose.</summary>
+    public bool Refiring;
+    /// <summary>The hits being dealt come of an On-kill echo (its own blows, or what it left: projectiles, ground,
+    /// strikes carry it as Echo): their kills never echo again.</summary>
+    public bool Echoing;
+    readonly List<(WeaponInst W, double X, double Z)> onKillQ = new();
+
+    /// <summary>A creature fell to a skill's own hit: an On-kill Turn fires it again from the corpse (next tick, out
+    /// of the hit's own loop), never from an echo's kill, at most once every OnKillGap seconds.</summary>
+    internal void OnKillHit(WeaponInst w, Enemy e)
+    {
+        if (w.Wick is not { OnKill: true } fx || Echoing || Time < w.OnKillT) return;
+        w.OnKillT = Time + fx.OnKillGap;
+        onKillQ.Add((w, e.X, e.Z));
+    }
+
+    /// <summary>The On-kill echoes owed, fired (Battle.Tick, before the skills' own).</summary>
+    void RunOnKills()
+    {
+        if (onKillQ.Count == 0) return;
+        var q = onKillQ.ToArray();
+        onKillQ.Clear();
+        foreach (var (w, x, z) in q)
+            if (Weapons.Contains(w)) Firing.OnKillEcho(this, w, x, z);
     }
 
     /// <summary>A wick's damage against this creature: its school strand's status on it, a champion.</summary>

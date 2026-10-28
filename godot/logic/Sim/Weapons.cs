@@ -49,6 +49,13 @@ public sealed class WeaponInst
     public int Casts, HandBlows;
     /// <summary>The last firing was heavy: its burst shots still to come are too.</summary>
     public bool HeavyCast;
+    /// <summary>A Pulse Turn's follow-ups still to go, and when.</summary>
+    public int PulseLeft;
+    public double PulseT;
+    /// <summary>An On-kill Turn may echo again from this time (its internal gap).</summary>
+    public double OnKillT = double.NegativeInfinity;
+    /// <summary>The strength of the firing now (an On-kill echo's), on all its damage; 1 otherwise.</summary>
+    public double FireMul = 1;
     Tag[]? tags;
     WickFx? wick;
 
@@ -113,7 +120,7 @@ public sealed class WeaponInst
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             if (wick != null) d *= wick.Damage;
-            return d;
+            return d * FireMul;
         }
     }
 
@@ -204,6 +211,21 @@ public static class Firing
                 b.HeavyBy = hb0;
             }
         }
+        // Pulse: the cast goes off again, the same firing, heavy if the cast was (as burst shots are); not a new blow.
+        if (w.PulseLeft > 0)
+        {
+            w.PulseT -= dt;
+            if (w.PulseT <= 0)
+            {
+                w.PulseLeft--;
+                w.PulseT = w.Wick?.PulseGap ?? 0.3;
+                var (hb0, rf0) = (b.HeavyBy, b.Refiring);
+                b.HeavyBy = w.HeavyCast ? w : null;
+                b.Refiring = true;
+                Fire(b, w);
+                (b.HeavyBy, b.Refiring) = (hb0, rf0);
+            }
+        }
         if (w.Timer > 0) return;
         int kills0 = w.Kills;
         b.ArcanistBeforeCast(w);
@@ -215,12 +237,27 @@ public static class Firing
         b.HeavyBy = hb;
         b.HandEndCast(w, fired);
         if (fired) w.HeavyCast = heavy;
+        if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+    }
+
+    /// <summary>Where the skill fires from: her, or the corpse an On-kill echo rises from (Battle.FireFrom).</summary>
+    static (double X, double Z) At(Battle b) => b.FireFrom ?? (b.Player.X, b.Player.Z);
+
+    /// <summary>On-kill: the skill fires once more from a corpse, at the Turn's strength. Not a cast: no Hand blow,
+    /// no heavy, no attack pose on her, no burst restarted; its kills never echo again (Battle.Echoing).</summary>
+    public static bool OnKillEcho(Battle b, WeaponInst w, double x, double z)
+    {
+        var (from, rf, ech, hb, mul) = (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul);
+        b.FireFrom = (x, z); b.Refiring = true; b.Echoing = true; b.HeavyBy = null;
+        w.FireMul = w.Wick?.OnKillDamage ?? 1;
+        try { return Fire(b, w); }
+        finally { (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul) = (from, rf, ech, hb, mul); }
     }
 
     /// <summary>moonweaver.the_echo: the spell fires again.</summary>
@@ -249,10 +286,12 @@ public static class Firing
     static bool FireAimed(Battle b, WeaponInst w)
     {
         // A skill that hunts the strongest is aimed at it from the hand, not only in flight.
-        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? Toughest(b, RangeOf(w)) : b.NearestHostile(b.Player.X, b.Player.Z, RangeOf(w));
+        var o = At(b);
+        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? Toughest(b, RangeOf(w)) : b.NearestHostile(o.X, o.Z, RangeOf(w));
         if (target == null) return false;
         int n = CountOf(b, w);
-        if (w.Flag(s => s.Burst))
+        // (A Pulse's follow-up or an On-kill echo looses its shots at once, leaving the cast's burst as it is.)
+        if (w.Flag(s => s.Burst) && !b.Refiring)
         {
             // A burst still firing (the Echo comes 0.5 s after the cast, a long burst runs past a short wait)
             // is let go at once, at its own strength, not cut short by this one.
@@ -278,7 +317,7 @@ public static class Firing
 
     static void FireAimedOne(Battle b, WeaponInst w, int targetId, double angleOffset = 0)
     {
-        var p = b.Player;
+        var p = At(b);
         Enemy? t = targetId >= 0 ? b.Enemies.Items[targetId] : null;
         if (t == null || !t.Alive || t.State == EnemyState.Dying) t = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (t == null) return;
@@ -290,7 +329,7 @@ public static class Firing
     static Projectile? Launch(Battle b, WeaponInst w, double angle, int? target = null, double? x = null, double? z = null,
         double speedMul = 1, double? life = null, bool chakram = false, bool herd = false)
     {
-        var p = b.Player;
+        var p = At(b);
         double sp = SpeedOf(b, w) * speedMul;
         var pr = b.SpawnProjectile(Side.Player, x ?? p.X + Math.Cos(angle) * 0.5, z ?? p.Z + Math.Sin(angle) * 0.5, DamageFor(w) * w.CastMul, w.School);
         if (pr != null)
@@ -340,14 +379,15 @@ public static class Firing
     static Enemy? Toughest(Battle b, double range)
     {
         Enemy? best = null;
-        foreach (var e in b.HostilesInRadius(b.Player.X, b.Player.Z, range))
+        var o = At(b);
+        foreach (var e in b.HostilesInRadius(o.X, o.Z, range))
             if (best == null || (e.Boss ? 2e6 : e.Elite ? 1e6 : 0) + e.MaxHp > (best.Boss ? 2e6 : best.Elite ? 1e6 : 0) + best.MaxHp) best = e;
         return best;
     }
 
     static bool FireSpray(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var t = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (t == null) return false;
         int n = CountOf(b, w);
@@ -369,7 +409,8 @@ public static class Firing
 
     static bool FireRing(Battle b, WeaponInst w)
     {
-        if (b.NearestHostile(b.Player.X, b.Player.Z, 9) == null) return false;
+        var o = At(b);
+        if (b.NearestHostile(o.X, o.Z, 9) == null) return false;
         int n = CountOf(b, w);
         double rot = b.Time * 1.7;
         for (int i = 0; i < n; i++) Launch(b, w, rot + (double)i / n * Tau);
@@ -378,7 +419,7 @@ public static class Firing
 
     static bool FireNova(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.5) + ReachAdd(b, w);
         if (b.NearestHostile(p.X, p.Z, r + 1) == null) return false;
         int rings = 1 + (w.Rank >= Content.Weapons.ProjRankA ? 1 : 0) + (w.Rank >= Content.Weapons.ProjRankB ? 1 : 0);
@@ -408,7 +449,7 @@ public static class Firing
 
     static bool FireZone(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3);
         double x = p.X, z = p.Z;
         bool atTarget = w.Flag(s => s.AtTarget);
@@ -427,7 +468,7 @@ public static class Firing
         if (zn != null)
         {
             zn.Tick = tick; zn.Tags = w.Tags; zn.Slow = w.Num(s => s.Slow) ?? 0; zn.Status = w.StatusOf;
-            zn.Art = w.Art; zn.Weapon = w.Id; zn.Follow = !atTarget; zn.Armor = w.Evolution?.Id == "sanctified_earth" ? 6 : 0;
+            zn.Art = w.Art; zn.Weapon = w.Id; zn.Follow = !atTarget && b.FireFrom == null; zn.Armor = w.Evolution?.Id == "sanctified_earth" ? 6 : 0;
             zn.BossDamage = w.BossDamage;
         }
         return true;
@@ -435,7 +476,7 @@ public static class Firing
 
     static bool FireChain(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var first = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (first == null) return false;
         int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0) + (w.Wick?.Chains ?? 0);
@@ -512,7 +553,7 @@ public static class Firing
 
     static bool StormAt(Battle b, WeaponInst w, int strikes, double area, double splash, double dmg)
     {
-        var p = b.Player;
+        var p = At(b);
         var targets = b.HostilesInRadius(p.X, p.Z, area * b.Stats.Get(Stat.Area) + 3);
         if (targets.Count == 0) return false;
         targets = b.BoundFirst(w, targets); // chainbound.lightning_rod
@@ -533,7 +574,7 @@ public static class Firing
 
     static bool FireBounce(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var t = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (t == null) return false;
         int n = CountOf(b, w);
@@ -548,7 +589,7 @@ public static class Firing
 
     static bool FireBeam(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var t = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (t == null) return false;
         double a = Math.Atan2(t.Z - p.Z, t.X - p.X);
@@ -564,7 +605,7 @@ public static class Firing
 
     static bool FirePalm(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.9) + ReachAdd(b, w);
         var targets = b.HostilesInRadius(p.X, p.Z, reach + 0.6);
         var far = b.IronReachTargets(w, reach + 0.6); // chainbound.iron_reach: Bound things out of the palm's own reach
@@ -584,7 +625,7 @@ public static class Firing
 
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
-        var p = b.Player;
+        var p = At(b);
         b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank });
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
@@ -608,7 +649,9 @@ public static class Firing
 
     static bool FireSlash(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
+        // same rule as her swing, measured from where it fell); none near, and the echo doesn't go off.
+        var p = At(b);
         double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) + ReachAdd(b, w);
         var t = b.NearestHostile(p.X, p.Z, reach + 1.2);
         if (t == null) return false;
@@ -635,7 +678,7 @@ public static class Firing
             if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
         }
         w.Swing++;
-        p.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
+        if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
         // Oathkeeper: every swing throws a crescent onward.
         if (w.Evolution?.Id == "oathkeeper")
         {
@@ -650,7 +693,7 @@ public static class Firing
 
     static bool FireHerd(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var t = b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (t == null) return false;
         int n = CountOf(b, w);
@@ -678,7 +721,7 @@ public static class Firing
 
     static bool FireChakram(Battle b, WeaponInst w)
     {
-        var p = b.Player;
+        var p = At(b);
         var t = b.NearestHostile(p.X, p.Z, RangeOf(w) + 2);
         if (t == null) return false;
         int n = CountOf(b, w);
