@@ -598,7 +598,7 @@ public partial class GameHud : CanvasLayer
         {
             if (i >= socks.Length) break;
             bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
-            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
+            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve, w.Timer);
         }
         for (; i < socks.Length; i++) socks[i].Empty();
         irons.Lay(b.Weapons.Count, all: ember);
@@ -758,6 +758,8 @@ public partial class GameHud : CanvasLayer
     static Control Passive(BoonDef bd, int rank)
     {
         var col = Style.RarityOf((int)bd.Rarity);
+        // (the Drowned Girl: a small bronze stud, its glyph in gold, DgMeters)
+        if (LifeLamp.Drowned) return DgMeters.Passive(bd.Icon, rank, bd.Max > 1, col);
         var holder = new Control { CustomMinimumSize = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
         var gl = Glyphs.Icon(bd.Icon, 22, col, line: true);
         gl.Position = new Vector2(2, 0);

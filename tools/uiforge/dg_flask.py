@@ -1,14 +1,14 @@
 """UI 17, The Drowned Girl, piece 5: the draught's hair-bound flask from a Krea painting.
 
-    python tools/uiforge/dg_flask.py CUT.png [--h 64] [--hue 7]
+    python tools/uiforge/dg_flask.py CUT.png [--h 56] [--hue 7]
 
-The painting (Krea 2 turbo, seed 9403: a round-bellied flask of luminous scarlet bound by a lock of bronze hair,
-cut with BiRefNet) is cropped to its silhouette and saved at twice the size shown (UiArt halves it), --h px tall
+The painting (Krea 2 turbo; round 2, seed 98xx: a round-bellied flask of luminous scarlet with ONE strand of bronze
+hair curled round it, the judge's "candy stripes" of three strands gone; cut with BiRefNet) is cropped to its silhouette and saved at twice the size shown (UiArt halves it), --h px tall
 shown, as two pictures shaders/hud_dg_flask.gdshader blends by the draught's level:
   flask_full.png   as painted, its liquid turned --hue degrees toward scarlet and lifted, so it reads apart from
                    the life orb's deep garnet;
   flask_empty.png  the liquid gone: the glass dark and cool where it was, its highlights kept.
-The liquid's top and foot (0..1 of the picture's height) go into river_geo.json as "flask"."""
+The liquid's top and foot (0..1 of the picture's height) go into godot/art/ui/dg_meters/meters_geo.json as "flask"."""
 import json
 import os
 import sys
@@ -19,7 +19,7 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-DIR = os.path.join(ROOT, "godot", "art", "ui", "dg_river")
+DIR = os.path.join(ROOT, "godot", "art", "ui", "dg_meters")
 
 
 def smooth(a, b, x):
@@ -30,7 +30,7 @@ def smooth(a, b, x):
 def main():
     args = sys.argv[1:]
     src = args[0]
-    h_shown = int(args[args.index("--h") + 1]) if "--h" in args else 64
+    h_shown = int(args[args.index("--h") + 1]) if "--h" in args else 56
     hue = float(args[args.index("--hue") + 1]) if "--hue" in args else 7
     im = Image.open(src).convert("RGBA")
     bb = im.getchannel("A").point(lambda v: 255 if v > 16 else 0).getbbox()
@@ -58,8 +58,8 @@ def main():
         Image.fromarray((np.dstack([np.clip(c, 0, 1), a]) * 255 + 0.5).astype(np.uint8), "RGBA").save(os.path.join(DIR, name))
     rows = np.where(liq.max(axis=1) > 0.5)[0]
     top, bot = float(rows.min()) / H, float(rows.max() + 1) / H
-    gp = os.path.join(DIR, "river_geo.json")
-    geo = json.load(open(gp, encoding="utf-8"))
+    gp = os.path.join(DIR, "meters_geo.json")
+    geo = json.load(open(gp, encoding="utf-8")) if os.path.exists(gp) else {}
     geo["flask"] = {"w": W / 2, "h": H / 2, "top": round(top, 4), "bot": round(bot, 4)}
     json.dump(geo, open(gp, "w", encoding="utf-8"), indent=1)
     print(f"flask {W // 2}x{H // 2} shown, liquid {top:.3f}..{bot:.3f}")

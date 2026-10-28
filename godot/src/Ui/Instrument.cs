@@ -57,6 +57,8 @@ public partial class Instrument : Control
     /// <summary>The chain's filled links: its rect from the left eye to the lock's left edge (the lock stands at the middle, 32 wide;
     /// the Drowned Girl: the whole thread, which fills along all of it).</summary>
     public static Rect2 ChainFill => LifeLamp.Drowned ? new(EyeL.X, EyeL.Y - 17, EyeR.X - EyeL.X, 38) : new(EyeL.X, EyeL.Y - 17, Mid - 16 - EyeL.X, 38);
+    /// <summary>The Drowned Girl: the key plates' top (the three on one line, 15 px clear of the screen's foot).</summary>
+    public const float DgTagTop = 1049;
     public static Vector2 EyeR => LifeLamp.Drowned ? new(DgRiver.Crest[^1].X, EyeL.Y) : new(2 * Mid - EyeL.X, EyeL.Y);
     /// <summary>HUD A2: the first link's centre from LifeAt: the eye on the life lamp's font (LifeLamp.Eye in
     /// its quad, the quad's foot on LifeLamp.Floor); mirrored on the right.</summary>
@@ -154,10 +156,11 @@ public partial class Instrument : Control
         // (the Drowned Girl: under the small cuffs' feet, and under the eddy's glass on its bronze lip, as the concept has them)
         if (LifeLamp.Drowned)
         {
-            // (piece 5: under the flask's foot, and under the dash's pearls)
-            draughtKey.Place(DraughtAt.X, DraughtAt.Y + 40);
-            dashKey.Place(DashAt.X, DashAt.Y + 40);
-            artKey.Place(ArtAt.X, ArtAt.Y + DgRiver.FlareR + 7);
+            // (round 2: all three plates on one line inside the bar, their tops at DgTagTop, clear of the screen's
+            // edge: R from the flask's foot, SPACE from the dash ring's lower wrap, Q from the eddy's lip)
+            draughtKey.Place(DraughtAt.X, DgTagTop - 2);
+            dashKey.Place(DashAt.X, DgTagTop - 2);
+            artKey.Place(ArtAt.X, DgTagTop + 3);
         }
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         Keys();
@@ -201,16 +204,21 @@ public partial class Instrument : Control
     {
         var defs = System.Linq.Enumerable.ToList(Content.Weapons.All.Values);
         int shown = 0;
+        // (every 7th skill, skipping any whose glyph's family (slash, zone...) is already shown: six different skills)
+        var arts = new HashSet<string>();
+        int pick = 0;
         for (int i = 0; i < Sockets.Length; i++)
         {
             string c = i < codes.Length ? codes[i] : "e";
             if (c.StartsWith("e") || defs.Count == 0) { Sockets[i].Empty(); continue; }
-            var d = defs[(i * 7) % defs.Count];
+            var d = defs[(pick * 7) % defs.Count];
+            for (int tries = 0; tries < defs.Count && !arts.Add(d.Art.Split('_')[0]); tries++) d = defs[(pick * 7 + tries + 1) % defs.Count];
+            pick++;
             bool hot = c.StartsWith("h");
             int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
             // (c3: filled at rank 3 and coming back, a quarter, half or three quarters ready by its place)
             double ready = c.StartsWith("c") ? 0.25 + 0.25 * (i % 3) : 1;
-            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot);
+            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
             shown++;
         }
         Lay(shown, night);
@@ -745,8 +753,12 @@ public partial class Socket : Control
         QueueRedraw();
     }
 
-    public void Show(string id, string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve)
+    /// <summary>secs: the seconds left of its wait, where known (the Drowned Girl shows long waits' seconds).</summary>
+    public void Show(string id, string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve, double secs = -1)
     {
+        int ws = secs >= 0 ? (int)Math.Ceiling(secs) : -1;
+        if (ws != secsShown) { secsShown = ws; dirty = true; }
+        waitSecs = secs;
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
         var newArt = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
@@ -765,6 +777,8 @@ public partial class Socket : Control
     }
 
     bool dirty = true;
+    double waitSecs = -1;
+    int secsShown = -1;
 
     /// <summary>It has evolved: the place swells and burns gold, settling over a second.</summary>
     public void Crown() => crown = 0;
@@ -878,10 +892,12 @@ public partial class Socket : Control
     }
 
     /// <summary>The Drowned Girl (UI 17): the seat as a hair-bound bronze ring in the river (DgRiver.Ring) round a well of
-    /// dark river glass (DgRiver.Well). In it, what the square seats show, read the same way: the skill's inlay (or
-    /// its glyph), brighter when ready; the shade that sweeps off from the top as it readies, cut to the well's round;
-    /// the rank as eight coals along the well's foot; ready to evolve, the ring's inner edge breathing gold (gold
-    /// when evolved). An empty seat is the ring round a darker, empty well.</summary>
+    /// dark river glass (DgRiver.Well), the glass lit faintly in the skill's element. In it the skill's gold inlay
+    /// (DgGold), brighter when ready. Round 2 (the judge): coming back, the well fills from its foot, lit in the
+    /// element under a dark top (DgMeters.Level: no line across it, which read as a strike-through), with a long
+    /// wait's seconds in gold over it; the rank one gold numeral cut in the ring's lower wrap (the eight 3 px coals
+    /// could not be counted); ready to evolve, the ring's inner edge breathing gold (gold when evolved). An empty
+    /// seat is the ring round a darker, empty well.</summary>
     void DrawRing()
     {
         var c = Size / 2;
@@ -893,8 +909,11 @@ public partial class Socket : Control
             DrawTextureRect(well, new Rect2(c - ws / 2, ws), false, filled ? Colors.White : new Color(0.7f, 0.7f, 0.7f));
         }
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
+        bool cooling = filled && ready < 0.98;
         if (filled)
         {
+            // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
+            DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f + new Vector2(0, hr * 0.25f), Vector2.One * hr * 2.3f), false, school with { A = 0.42f });
             float g = Mathf.Min(38, hr * 2 * 0.80f);
             // (piece 5: gold inlay, the line glyph's shape, DgGold; lit and warm-lit under when ready, dull bronze-gold
             // coming back; a faint share of the school's colour in the light under it so neighbours differ)
@@ -919,38 +938,8 @@ public partial class Socket : Control
                 var col2 = ready >= 0.98 ? new Color(1.25f, 1.25f, 1.25f) : Colors.White;
                 DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2.Lerp(new Color(2.2f, 2.0f, 1.7f), (float)flash));
             }
-            // the shade, from the top of the well down to what is still to come back, cut to the round
-            if (ready < 0.98)
-            {
-                float r = hr + 0.5f, yCut = -r + 2 * r * (float)(1 - ready);
-                var pts = new List<Vector2>();
-                float a0 = Mathf.Asin(Mathf.Clamp(yCut / r, -1, 1));
-                // (from the cut's right end round the top to its left end)
-                const int n = 40;
-                for (int k = 0; k <= n; k++)
-                {
-                    float a = a0 + (-Mathf.Pi - 2 * a0) * k / n;
-                    pts.Add(c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r);
-                }
-                if (pts.Count >= 3) DrawColoredPolygon(pts.ToArray(), new Color(0.015f, 0.012f, 0.02f, 0.72f));
-                // (its edge a water line, so where it stands reads at a glance: a hair of cold light across the well)
-                float half = Mathf.Sqrt(Mathf.Max(0, r * r - yCut * yCut)) - 1.5f;
-                if (half > 2) DrawLine(c + new Vector2(-half, yCut), c + new Vector2(half, yCut), new Color(0.80f, 0.92f, 0.88f, 0.55f), 1.3f, true);
-            }
-            // the rank: eight coals along the well's foot, those reached lit
-            for (int i = 0; i < max; i++)
-            {
-                float t = max == 1 ? 0.5f : (float)i / (max - 1);
-                float a = Mathf.DegToRad(90 + 52 - 104 * t);
-                var pc = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (hr - 4.2f);
-                if (i < rank)
-                {
-                    DrawCircle(pc, 2.3f, new Color("#ff8a3a") with { A = 0.22f }, true, -1, true);
-                    DrawCircle(pc, 1.5f, (evolved || ripe ? Style.EmberHi : new Color("#e8702a")) with { A = 0.95f }, true, -1, true);
-                    DrawCircle(pc + new Vector2(-0.3f, -0.5f), 0.7f, new Color("#ffd8a8") with { A = 0.85f }, true, -1, true);
-                }
-                else DrawCircle(pc, 1.1f, new Color(0, 0, 0, 0.5f), true, -1, true);
-            }
+            // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
+            if (cooling) DgMeters.Level(this, c, hr + 0.5f, (float)ready, school);
         }
         if (DgRiver.Ring(Index) is { } ring)
         {
@@ -962,6 +951,21 @@ public partial class Socket : Control
             float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
             DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.Gold with { A = a }, 2, true);
             DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = a * 0.3f }, 3, true);
+        }
+        if (filled)
+        {
+            // a long wait's seconds over the well, gold (the concept's figures); short ones show only the level
+            double total = waitSecs > 0 && ready < 0.98 ? waitSecs / Math.Max(0.02, 1 - ready) : 0;
+            if (cooling && total >= 3.5 && waitSecs >= 1)
+                DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
+            // the rank: one gold numeral cut in the ring's lower wrap (round 2: eight 3 px coals could not be counted)
+            if (rank > 0)
+            {
+                var rc = c + new Vector2(0, hr + (Size.X / 2 - hr) * 0.48f);
+                DrawTextureRect(DgMeters.Disc, new Rect2(rc - new Vector2(9, 8), new Vector2(18, 16)), false, new Color(0.02f, 0.015f, 0.01f, 0.75f));
+                var rcol = evolved || ripe ? Style.GoldHi : DgMeters.Gold;
+                DgMeters.Numeral(this, rc, rank.ToString(), 13, rcol, 3);
+            }
         }
     }
 
@@ -1148,7 +1152,8 @@ public partial class Round : Control
 
         public override void _Draw()
         {
-            if (o.kind == Kind.Dash && o.Form >= 1) { Licks(); return; }
+            // (the Drowned Girl: the ready form is the dash ring's warm well, DgSmall; no flames, no badge)
+            if (o.kind == Kind.Dash && o.Form >= 1) { if (!LifeLamp.Drowned) Licks(); return; }
             if (o.kind != Kind.Draught) return;
             // HUD v2: the count in the glass's lower right (Alegreya Sans 800, 16 px, lining tabular figures), bone,
             // dim with none left; a 1.5 px dark outline and a soft shadow, so it reads on the blood's bright rim.
@@ -1157,7 +1162,7 @@ public partial class Round : Control
             string s = o.Count.ToString();
             var ts = f.GetStringSize(s, HorizontalAlignment.Left, -1, fs);
             // (the Drowned Girl: beside the flask's foot, on the bronze, as the concept has it)
-            var mid = Size / 2 + (LifeLamp.Drowned ? new Vector2(21, 17) : new Vector2(Instrument.SmallR * 0.40f, Instrument.SmallR * 0.42f));
+            var mid = Size / 2 + (LifeLamp.Drowned ? new Vector2(23, 12) : new Vector2(Instrument.SmallR * 0.40f, Instrument.SmallR * 0.42f));
             var at = new Vector2(Mathf.Round(mid.X - ts.X / 2), Mathf.Round(mid.Y + 0.293f * fs));
             DrawStringOutline(f, at + new Vector2(0, 1.5f), s, HorizontalAlignment.Left, -1, fs, 7, new Color(0, 0, 0, 0.22f));
             DrawStringOutline(f, at, s, HorizontalAlignment.Left, -1, fs, 3, new Color(0, 0, 0, 0.62f));
