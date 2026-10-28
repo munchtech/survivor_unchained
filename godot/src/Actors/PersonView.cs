@@ -146,6 +146,13 @@ public partial class PersonView : Node3D, INpcView
         var (turn, at) = GripSlide.Apply(N(seat.Origin), N((seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
             N(s.axis), tilt, metres);
         piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * seat.Basis, new Vector3(at.X, at.Y, at.Z));
+        // SU_SLIDE_DUMP=1: the piece in its hand's space at rest (its seat) and as moved, for the clips' tools to check
+        // keyed.py grip_pose / grip_pose_left against (animation 58).
+        if (OS.HasEnvironment("SU_SLIDE_DUMP") && (tilt != 0f || metres != 0f || pocket != 0f))
+        {
+            static string T(Transform3D t) => $"{t.Basis.X.X:F6} {t.Basis.X.Y:F6} {t.Basis.X.Z:F6} {t.Basis.Y.X:F6} {t.Basis.Y.Y:F6} {t.Basis.Y.Z:F6} {t.Basis.Z.X:F6} {t.Basis.Z.Y:F6} {t.Basis.Z.Z:F6} {t.Origin.X:F6} {t.Origin.Y:F6} {t.Origin.Z:F6}";
+            GD.Print($"SLIDE {slot} tilt {tilt:F3} slide {metres:F4} pocket {pocket:F3} | rest {T(mount.Transform * s.seat)} | now {T(mount.Transform * piece.Transform)}");
+        }
     }
 
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
