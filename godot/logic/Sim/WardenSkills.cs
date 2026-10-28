@@ -59,7 +59,7 @@ public static partial class Firing
             CrackOne(b, w, p.X, p.Z, a + splay, len);
         }
         else CrackOne(b, w, p.X, p.Z, a, len);
-        if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, false);
+        if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, true);
         return true;
     }
 
