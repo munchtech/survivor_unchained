@@ -34,14 +34,14 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_generated": 3868
+   "lod_generated": 3880
   },
-  "total": 3868,
-  "shadowTris": 925,
+  "total": 3880,
+  "shadowTris": 932,
   "errMm": {
    "cut": 4,
    "lod_generated": {
-    "p99": 4.65,
+    "p99": 4.67,
     "max": 9.62
    }
   },
@@ -549,7 +549,7 @@
  },
  "baked": true,
  "bake": {
-  "bytes": 2578196,
+  "bytes": 2578136,
   "nodes": [
    {
     "name": "npc_folk_m",
