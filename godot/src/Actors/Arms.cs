@@ -206,7 +206,7 @@ public static class Arms
     {
         var att = new BoneAttachment3D { BoneName = bone };
         person.Skeleton.AddChild(att);
-        var mount = new Node3D { Name = $"mount:{bone}" };
+        var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
         mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
@@ -246,6 +246,17 @@ public static class Arms
         var m = MountTransform(id, bone, own);
         var (q, at) = WeaponSockets.FistSeat(N(m.Basis.X), N(m.Basis.Y), N(m.Basis.Z), N(m.Origin), pocket.At, pocket.Dir);
         return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(at.X, at.Y, at.Z)) * t;
+    }
+
+    /// <summary>A piece's place inside its mount seated on an explicit pocket (`at`, `dir` in its hand's space): Seat's fist
+    /// seat, for a pocket the piece is only moved onto for a while (animation 58: a left grip tilt's mirrored pocket,
+    /// WeaponSockets.TiltPocketL, PersonView.Slide).</summary>
+    public static Transform3D SeatOn(string id, string bone, bool own, System.Numerics.Vector3 at, System.Numerics.Vector3 dir)
+    {
+        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+        var m = MountTransform(id, bone, own);
+        var (q, a) = WeaponSockets.FistSeat(N(m.Basis.X), N(m.Basis.Y), N(m.Basis.Z), N(m.Origin), at, dir);
+        return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(a.X, a.Y, a.Z)) * PieceTransform(id);
     }
 
     /// <summary>Where the mount sits in its bone's space (Hold's, and
