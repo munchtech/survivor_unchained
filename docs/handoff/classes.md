@@ -1,4 +1,4 @@
-# Paused here (Classes 14, 28 Oct); next: one confirm gate, the bundle summary to main, then the MR (P2+P3+P4+P5a)
+# Classes 14 (28 Oct): gated (roost retuned to 116), tests 1259/0/10; bundle summary with main, then the MR (P2+P3+P4+P5a)
 
 Branch `classes-13` (worktree `.claude/worktrees/classes-13`). The owner approved CLASS_IDENTITY_AND_TALENTS.md (all 10 recommendations). Read its §2.2, §3.3, §3.7 and §6.2 first. P1 is merged (integration 3ef34f61); integration 7d05f192 is merged into this branch.
 
@@ -10,9 +10,12 @@ Branch `classes-13` (worktree `.claude/worktrees/classes-13`). The owner approve
 - **P5a Turn band** (fd6cca63..a8adb973, the solver's): `--pair turn:<strand>[@skill] --skillrank 4`, `--strands` (harness-only override). All 7 Turns are inside x0.90-1.15 pooled, after tuning Split, Wide, Fire, Holy and Frost in wicks.json. Slices still outside: Split, Wide and Linger at tier 1 (1.18-1.23), Wide on the reaver (1.15). The commit message has the table.
 - **Final gate** (`C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/fin.out`). Never-pressing: +0.4% against integration, -0.5% against pre-Flare 11 Oct, falls 0.096 to 0.080, cells -0.8 to +2.1%. Pressing: +0.7%, falls 0.024 to 0.024, cells -1.8 to +3.7%. Pressing against its never: -17.4%. Map tiers 1-4 within 4%. Tests: 1227/0/10 (solver, after the boss commit).
 
+## Confirm gate (Classes 14 successor, 28 Oct; integration c2cf3a4b merged at 8abc6800)
+- fin2 (seeds 1-96, merged tree) read roost pressing +6.5% deft; fresh seeds 97-288 confirmed it (+7.4%), the P5a Turn retune's ~1% shift landing on roost. Redcowl 122 -> 116 (37db3ebe). Final, seeds 1-96 with roost at 116: never +0.6% vs integration (cells -3.2 to +2.7%, falls 0.096->0.077), -1.4% vs pre-Flare; pressing +0.6% (cells -1.5 to +3.7%, falls 0.024->0.022); pressing vs never -18.0%. Roost alone on 1-288: never -0.2%, pressing +1.4%. Tests 1259/0/10.
+- An integration reference on any seeds: run the f22ca2bc `classes13/bal_int` DLL with cwd at a folder holding `git archive <int> godot/data` (DataFiles searches cwd); scripts in coordinator 29e4fcb8 scratch `classes14` (roost.sh, roost2.sh).
+
 ## Next, in order
-1. **Re-run the story gate once.** The Turn solver changed wicks.json while `fin` ran, and the harness reads data at run time. Command: `bash C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/story.sh fin2 x both` (about 65 min, from Bash with run_in_background; the references are in `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/out` and `C:/Users/munch/AppData/Local/Temp/claude/C--Users-munch-Desktop-survivorsunchained/ee2b9848-690d-4b1a-8af0-4c7c5717800a/scratchpad/classes14/ref`). It passes if it is near the numbers above. Then run full `dotnet test` (never alongside a batch).
-2. **Send main the bundle summary for approval:** P2 access, P3 six day slots + map retune, P4 Hands, P5a Wicks/Turns, with the numbers above. Main said no judge is needed on the gate numbers.
+1. Bundle summary sent to main; on approval, MR.
 3. **MR:** "MERGE REQUEST: classes-13@<sha>". Untracked .uid/.import files that integration tracks must be set aside first (see merge_lead.sh).
 4. **Owed to main:** Act 1 DAYS aren't simulated (StorySim runs nights). Act 1 days now have +1 slot (2/3/4 at levels 1/4/8, was 1/2/3) and the Hands. The experience lead should playtest the prologue/Ambush days.
 5. Then P5b (Pulse and On-kill runtime, union lead-ins, full board + wicks at night within x1.25 of empty), P6 (Sunder, Groundbreaker, Rebuke, Watch Bell; send the VFX list to main), P7, P8.
