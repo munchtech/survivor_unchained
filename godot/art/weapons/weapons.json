@@ -7,5 +7,14 @@
   "pistol": false,
   "lean": null,
   "grip": 0.115
+ },
+ "meshy_sword": {
+  "file": "meshy_sword",
+  "length": 0.9607,
+  "kind": "blade1h",
+  "node": null,
+  "pistol": false,
+  "lean": null,
+  "grip": 0.11
  }
 }

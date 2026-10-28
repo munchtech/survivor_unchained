@@ -12,5 +12,19 @@
    "sword"
   ],
   "wrap": "sword"
+ },
+ "meshy_sword": {
+  "arms": "meshy_sword@hand_r",
+  "at": "BladeAtR",
+  "dir": "BladeDirR",
+  "outfit": "warden",
+  "rest": [
+   "idle_warden",
+   76
+  ],
+  "weapon": [
+   "sword"
+  ],
+  "wrap": "sword"
  }
 }
