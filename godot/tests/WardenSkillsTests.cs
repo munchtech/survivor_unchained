@@ -432,14 +432,14 @@ public sealed class WardenSkillsTests
         var es = Dummies(b, Blocker);
         double shield = b.Player.Shield;
         Block(b, es[0]);
-        Assert.Equal(b.MaxHp * 0.04, b.Player.Shield - shield, 6);
+        Assert.Equal(b.MaxHp * 0.02, b.Player.Shield - shield, 6);
         // Two struck, 2%.
         var c = Fight("rebuke", 4, plan: Strand("rebuke.morning"));
         (double, double)[] two = [(2, 0), (2.5, 1)];
         var cs = Dummies(c, two);
         shield = c.Player.Shield;
         Block(c, cs[0]);
-        Assert.Equal(c.MaxHp * 0.02, c.Player.Shield - shield, 6);
+        Assert.Equal(c.MaxHp * 0.01, c.Player.Shield - shield, 6);
     }
 
     [Fact]

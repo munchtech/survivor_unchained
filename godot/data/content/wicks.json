@@ -46,7 +46,7 @@
     "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } },
     "sunder.stroke":            { "name": "Splitting Stroke", "text": "Every 2nd swing is heavy and splits the ground; swings 15% slower.", "heavyEvery": 2, "cooldown": 1.15 },
     "groundbreaker.aftershock": { "name": "Aftershock", "text": "0.8 s later the heave strikes the same spot again at 35%, stunning again.", "again": 0.8, "againDamage": 0.35 },
-    "rebuke.morning":           { "name": "Shield of Morning", "text": "Each rebuke strike leaves you a barrier of 1% of health for each creature it strikes.", "barrierEach": 0.01, "barrierMost": 0.04 },
+    "rebuke.morning":           { "name": "Shield of Morning", "text": "Each rebuke strike leaves you a barrier of 0.5% of health for each creature it strikes.", "barrierEach": 0.005, "barrierMost": 0.02 },
     "watch_bell.stone":         { "name": "Stone Bell", "text": "Each toll lays a stone, and each champion it draws lays one more.", "stones": 1, "stonesChampion": 1 }
   },
 
