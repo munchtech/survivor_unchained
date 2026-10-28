@@ -1635,8 +1635,10 @@ public partial class Sill : Control
     public void Lay(int n)
     {
         this.n = n;
-        Visible = n > 0;
-        if (n <= 0) return;
+        // (the Drowned Girl has no sill: the river is the bar. Hidden here, not only at build, since every relayout
+        // runs Lay; it showed through above the river's crest as a straight line at y 985, UI 18)
+        Visible = n > 0 && !LifeLamp.Drowned;
+        if (!Visible) return;
         full = n > 3 ? 6 : 3;
         art = UiArt.Art($"hud/sill_{full}.png");
         float row = n * Instrument.Sock + (n - 1) * Instrument.SockGap;
