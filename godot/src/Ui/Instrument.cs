@@ -128,11 +128,13 @@ public partial class Instrument : Control
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
         Passives.Position = new Vector2(SocksX, SockY - 34);
         Passives.Size = new Vector2(6 * Sock + 5 * SockGap, 28);
-        // (the Drowned Girl: over the seats, clear above the river's crest)
+        // (the Drowned Girl, round 3: beads threaded on the river's crest over the seats' middle, each at the crest's
+        // height where it falls, DgMeters.Passive)
         if (LifeLamp.Drowned)
         {
             float mid = (DgRiver.Seat(0).X + DgRiver.Seat(5).X) / 2, w = DgRiver.Seat(5).X - DgRiver.Seat(0).X + DgRiver.SeatD;
-            Passives.Position = new Vector2(mid - w / 2, DgRiver.CrestRect.Position.Y - 34);
+            Passives.AddThemeConstantOverride("separation", 2);
+            Passives.Position = new Vector2(mid - w / 2, DgMeters.CrestY(mid) - DgMeters.BeadLift - 14);
             Passives.Size = new Vector2(w, 28);
         }
         AddChild(Passives);
@@ -895,8 +897,8 @@ public partial class Socket : Control
     /// dark river glass (DgRiver.Well), the glass lit faintly in the skill's element. In it the skill's gold inlay
     /// (DgGold), brighter when ready. Round 2 (the judge): coming back, the well fills from its foot, lit in the
     /// element under a dark top (DgMeters.Level: no line across it, which read as a strike-through), with a long
-    /// wait's seconds in gold over it; the rank one gold numeral cut in the ring's lower wrap (the eight 3 px coals
-    /// could not be counted); ready to evolve, the ring's inner edge breathing gold (gold when evolved). An empty
+    /// wait's seconds in gold over it; the rank one numeral engraved on top of the ring (round 3: off the key tags'
+    /// line, where it read as a keybind); ready to evolve, the ring's inner edge breathing gold (gold when evolved). An empty
     /// seat is the ring round a darker, empty well.</summary>
     void DrawRing()
     {
@@ -958,13 +960,12 @@ public partial class Socket : Control
             double total = waitSecs > 0 && ready < 0.98 ? waitSecs / Math.Max(0.02, 1 - ready) : 0;
             if (cooling && total >= 3.5 && waitSecs >= 1)
                 DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
-            // the rank: one gold numeral cut in the ring's lower wrap (round 2: eight 3 px coals could not be counted)
+            // the rank (round 3, the judge: on the key tags' line the digits read as keybinds): engraved in the bronze
+            // on top of the ring's upper wrap, a small dark cut with a lit lower edge (DgMeters.Engrave)
             if (rank > 0)
             {
-                var rc = c + new Vector2(0, hr + (Size.X / 2 - hr) * 0.48f);
-                DrawTextureRect(DgMeters.Disc, new Rect2(rc - new Vector2(9, 8), new Vector2(18, 16)), false, new Color(0.02f, 0.015f, 0.01f, 0.75f));
-                var rcol = evolved || ripe ? Style.GoldHi : DgMeters.Gold;
-                DgMeters.Numeral(this, rc, rank.ToString(), 13, rcol, 3);
+                var rc = c - new Vector2(0, hr + (Size.X / 2 - hr) * 0.5f);
+                DgMeters.Engrave(this, rc, rank.ToString(), 12, evolved || ripe);
             }
         }
     }

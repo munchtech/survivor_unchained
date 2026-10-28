@@ -22,6 +22,9 @@ uniform float burst = -1.0;
 uniform float px = 57.0;
 uniform float k = 0.98;
 uniform vec2 off = vec2(0.0, 0.2);
+/// the coal's top and foot in its own space (-1..1 down its map): where the heat front starts and ends
+uniform float y0 = -0.84;
+uniform float y1 = 0.84;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p)
@@ -49,7 +52,7 @@ void fragment()
 	float d = length(p);
 	float t = TIME;
 	float full = step(0.999, level);
-	float breath = 0.5 + 0.5 * sin(t * 2.4);
+	float breath = 0.5 + 0.5 * sin(t * 1.9);
 	float bt = burst;
 	float flash = bt >= 0.0 ? exp(-bt * 4.5) : 0.0;
 	float cooling = bt >= 0.0 ? smoothstep(0.05, 0.3, bt) * (1.0 - smoothstep(0.7, 2.0, bt)) : 0.0;
@@ -63,34 +66,45 @@ void fragment()
 	float near = onmap ? textureLod(coal, cuv, 4.0).a : 0.0;
 	near = max(near, onmap ? textureLod(coal, cuv, 5.5).a * 0.8 : 0.0);
 
-	// the heat front, rising from the coal's foot with the level, its edge wavering (the coal's own height: q.y)
-	float s = 1.0 - 2.0 * level;
-	float wob = (noise(vec2(q.x * 3.0 + 7.0, t * 0.7)) - 0.5) * 0.14;
-	float y = q.y * 1.15 + wob;
-	float below = smoothstep(s - 0.05, s + 0.14, y);
+	// the heat front, rising from the coal's foot (y1) to its top (y0) with the level, its edge wavering (round 3: lit
+	// cracks below it, a hot leading edge, dark above, so 0.3 and 0.6 read at a glance)
+	float s = mix(y1, y0, clamp(level, 0.0, 1.0));
+	float wob = (noise(vec2(q.x * 3.0 + 7.0, t * 0.7)) - 0.5) * 0.07;
+	float y = q.y + wob;
+	float below = smoothstep(s - 0.03, s + 0.05, y);
 	below = level >= 0.999 ? 1.0 : level <= 0.001 ? 0.0 : below;
-	float depth = clamp((y - s) / 0.8, 0.0, 1.0);
-	float flick = 0.84 + 0.16 * noise(q * 4.0 + vec2(0.0, -t * 0.9));
-	float heat = below * (0.46 + 0.22 * depth) * flick;
-	heat += full * (0.50 + 0.18 * breath);
-	float front = exp(-pow((y - s) / 0.09, 2.0)) * step(0.001, level) * (1.0 - full);
-	heat += front * 0.35;
-	// above it the coal is dark: a few dull embers deep in the fissures
+	float depth = clamp((y - s) / 0.6, 0.0, 1.0);
+	float flick = 0.86 + 0.14 * noise(q * 4.0 + vec2(0.0, -t * 0.9));
+	float heat = below * (0.80 + 0.12 * depth) * flick * (1.0 - full);
+	float front = exp(-pow((y - s) / 0.06, 2.0)) * step(0.001, level) * (1.0 - full);
+	// full: every crack white-gold, top to bottom, breathing slowly (about 3.3 s)
+	heat += full * (1.06 + 0.16 * breath);
+	// a press: an orange flash, then the cracks cooling from orange through red to dark as it refills
+	heat += flash * 1.0 + cooling * 0.55 * smoothstep(0.35, 0.85, noise(q * 6.0 + vec2(0.0, t * 2.0))) * (1.0 - smoothstep(0.4, 2.0, bt));
+	// (the plates' edges and faces take this heat; the front's edge and the warmth just above it are the cracks'
+	// alone, so no line is drawn across the plates)
+	float pheat = heat;
+	heat += front * 0.45;
+	// just above it the cracks warm dull red, fading upward; higher, a few dull embers deep in the fissures
+	heat = max(heat, 0.30 * exp(-max(s - y, 0.0) / 0.10) * step(0.001, level) * (1.0 - full));
 	heat = max(heat, 0.10 * smoothstep(0.5, 0.85, noise(q * 5.0 + vec2(t * 0.15, 3.0))) * smoothstep(0.5, 0.9, crack));
-	heat += flash * 1.3 + cooling * 0.32 * smoothstep(0.4, 0.9, noise(q * 6.0 + vec2(0.0, t * 2.0)));
 
-	// the plates: charcoal and ash; the edges the cracks light; the cracks, deeper = hotter (white cores in the wide)
-	vec3 col = vec3(rock) * vec3(0.36, 0.33, 0.32);
-	float glow = clamp(heat, 0.0, 1.0);
-	col += edge * ramp(heat * 0.62) * 0.75 * glow;
-	float cheat = heat * (0.42 + 0.78 * crack);
-	col = mix(col, ramp(cheat), smoothstep(0.08, 0.45, crack) * smoothstep(0.0, 0.12, heat));
-	col += flash * vec3(1.0, 0.86, 0.66) * 0.75;
+	// the plates: charcoal; warm-lit where the heat is under them; their edges the cracks light; the cracks, deeper =
+	// hotter (white cores in the wide)
+	float glow = clamp(pheat, 0.0, 1.2);
+	vec3 col = vec3(rock) * vec3(0.50, 0.46, 0.44);
+	col += rock * ramp(0.55) * 0.35 * clamp(pheat, 0.0, 1.0);
+	col += edge * ramp(pheat * 0.72) * 0.75 * glow;
+	float cheat = heat * (0.65 + 0.60 * crack);
+	// (the crack's own line, tight: its painted halo is left to the edge light)
+	col = mix(col, ramp(cheat), smoothstep(0.20, 0.55, crack) * smoothstep(0.0, 0.12, heat));
+	col += ramp(cheat * 0.8) * 0.35 * smoothstep(0.06, 0.25, crack) * (1.0 - smoothstep(0.20, 0.55, crack)) * smoothstep(0.0, 0.12, heat);
+	col += flash * vec3(1.0, 0.60, 0.20) * 0.55;
 	// its foot sinks into the cup's shadow
-	col *= 1.0 - 0.55 * smoothstep(0.55, 1.0, (p.y - off.y) / k + 0.15) * (1.0 - flash);
+	col *= 1.0 - 0.45 * smoothstep(0.55, 1.0, (p.y - off.y) / k + 0.15) * (1.0 - flash);
 
 	// the eddy's cup round it: dark weathered bronze, deeper toward the middle, lit by the coal from below
-	float lit = (0.10 + 0.9 * level * level) * (1.0 + full * (0.2 + 0.4 * breath)) + flash * 2.5;
+	float lit = 0.12 + 0.55 * level + full * (0.35 + 0.35 * breath) + flash * 2.0;
 	vec3 cup = mix(vec3(0.020, 0.030, 0.028), vec3(0.075, 0.070, 0.055), smoothstep(0.5, 1.0, d));
 	cup += vec3(1.0, 0.42, 0.10) * near * lit * 0.32 * (0.6 + 0.4 * smoothstep(-0.6, 0.8, p.y));
 	cup *= 1.0 - 0.5 * smoothstep(0.86, 1.0, d);
@@ -100,10 +114,10 @@ void fragment()
 	vec3 hole = mix(cup, col, sil);
 
 	// outside: its light on the eddy's bronze, heaviest on the lip below it; the press's light bursting out
-	float halo = (0.06 + 0.55 * level * level) * (1.0 + full * (0.7 + 0.6 * breath));
+	float halo = 0.05 + 0.32 * level + full * (0.55 + 0.45 * breath);
 	float fall = exp(-max(d - 1.0, 0.0) / (0.28 + 0.10 * full)) * (0.55 + 0.45 * smoothstep(-0.8, 0.9, p.y));
 	vec3 add = vec3(1.0, 0.45, 0.10) * halo * fall * 0.55;
-	add += vec3(1.0, 0.80, 0.55) * flash * 1.5 * exp(-max(d - 1.0, 0.0) / (0.25 + 0.9 * bt));
+	add += vec3(1.0, 0.62, 0.28) * flash * 1.5 * exp(-max(d - 1.0, 0.0) / (0.25 + 0.9 * bt));
 	add *= 1.0 - inside;
 	add *= 1.0 - smoothstep(ext - 0.6, ext, d);
 	COLOR = vec4((hole * inside + add) * tint.rgb * tint.a, inside * tint.a);

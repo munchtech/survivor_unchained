@@ -1,6 +1,13 @@
 """UI 17, The Drowned Girl, round 2: the Flare's coal map from a Krea painting of a banked ember.
 
-    python tools/uiforge/dg_coal.py CUT.png [--size 232] [--k 0.98] [--oy 0.20] [--preview P.png]
+    python tools/uiforge/dg_coal.py CUT.png [--size 232] [--k 0.98] [--oy 0.20] [--seam 0.5] [--preview P.png]
+
+Round 3 (the judge: "full lights only the lower cracks"): the painting is seed 9901 of a new prompt whose cracks run
+over the whole lump, top plates included ("a branching network of glowing cracks runs over the WHOLE lump ... fine
+hairline threads between every plate and three or four wide deep fissures that run from the foot up to the crown",
+no ash bloom); the plates' dark seams count as cracks at --seam (0.5: they go orange-gold at full, not just red); and
+the silhouette's top and foot (y0, y1, in the map's -1..1) go to meters_geo.json, so the heat front climbs the coal
+itself from 0 to 1.
 
 The painting (Krea 2 turbo, seed 9601: "a single banked ember: one irregular lump of hardwood charcoal ... plates of
 very different sizes ... cracks from fine hairline threads to two or three wide deep fissures", cut with BiRefNet) keeps
@@ -42,6 +49,7 @@ def main():
     size = arg(args, "--size", 232, int)
     k = arg(args, "--k", 0.98)
     oy = arg(args, "--oy", 0.20)
+    seam_k = arg(args, "--seam", 0.5)
     im = Image.open(src).convert("RGBA")
     bb = im.getchannel("A").point(lambda v: 255 if v > 24 else 0).getbbox()
     im = im.crop(bb)
@@ -62,7 +70,7 @@ def main():
     lum = (0.3 * R + 0.55 * G + 0.15 * B).astype(np.float32)
     seam = cv2.morphologyEx(lum, cv2.MORPH_BLACKHAT, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
     seam = smooth(0.06, 0.22, seam) * (a > 0.9)
-    crack = np.maximum(crack, 0.32 * seam)
+    crack = np.maximum(crack, seam_k * seam)
     crack = cv2.GaussianBlur(crack.astype(np.float32), (0, 0), 0.5)
     # the plates: their light without the fire's cast (the coolest channel), the cracks dark
     rock = np.clip(lo * 1.25, 0, 1) * (1 - smooth(0.10, 0.5, crack))
@@ -76,7 +84,9 @@ def main():
     Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA").save(dst)
     gp = os.path.join(DIR, "meters_geo.json")
     geo = json.load(open(gp, encoding="utf-8")) if os.path.exists(gp) else {}
-    geo["coal"] = {"k": k, "ox": 0.0, "oy": oy, "aspect": round(h / w, 3), "src": os.path.basename(src)}
+    rows = np.where(a.max(axis=1) > 0.5)[0]
+    y0, y1 = rows.min() / size * 2 - 1, (rows.max() + 1) / size * 2 - 1
+    geo["coal"] = {"k": k, "ox": 0.0, "oy": oy, "y0": round(float(y0), 3), "y1": round(float(y1), 3), "aspect": round(h / w, 3), "src": os.path.basename(src)}
     json.dump(geo, open(gp, "w", encoding="utf-8"), indent=1)
     if "--preview" in args:
         pv = np.concatenate([np.dstack([c] * 3) for c in (rock, crack, edge, a)], axis=1)

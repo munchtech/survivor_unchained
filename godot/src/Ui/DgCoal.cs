@@ -6,12 +6,13 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>
 /// UI 17, The Drowned Girl (--hud drowned): the Flare as a live coal held in the river's eddy, in place of the art's
-/// glass (Vessel.Coal). Round 2: a banked ember of real charcoal (art/ui/dg_meters/coal_map.png, tools/uiforge/dg_coal.py,
-/// from a Krea painting), its own lumpy silhouette sitting low in the eddy's dark cup, under
-/// shaders/hud_dg_coal.gdshader: the heat rises from its foot as the meter fills, the wide fissures going white-hot
-/// at their cores while the hairlines stay red; full, it breathes, throws sparks and lays orange light on the eddy's
-/// bronze ("press Q"); a press (the meter falling from full) flashes it white, bursts embers out of it and lets ash
-/// sink, and it goes dark to refill. Its rect is the eddy's hole and the room its light needs (Ext hole radii each way).
+/// glass (Vessel.Coal). A lump of real charcoal (art/ui/dg_meters/coal_map.png, tools/uiforge/dg_coal.py, from a Krea
+/// painting), its own lumpy silhouette sitting low in the eddy's dark cup, under shaders/hud_dg_coal.gdshader.
+/// Round 3 (the judge: "a dark porthole", "only the lower cracks"): the heat front climbs the coal from its foot to
+/// its top with the meter, the cracks below it orange-gold with a hot leading edge and the dark above, so the amount
+/// reads at a glance; full, every crack white-gold top to bottom, a slow heat breath (3.3 s), 6 to 10 embers rising
+/// and its light on the eddy's bronze (a BOOM button begging to be pressed); a press (the meter falling from full)
+/// flashes it orange, throws streaked embers and lets flakes of ash sink, and it cools to refill. Its rect is the eddy's hole and the room its light needs (Ext hole radii each way).
 /// </summary>
 public partial class DgCoal : ColorRect
 {
@@ -44,6 +45,8 @@ public partial class DgCoal : ColorRect
         mat.SetShaderParameter("px", r);
         mat.SetShaderParameter("k", geo.K);
         mat.SetShaderParameter("off", geo.Off);
+        mat.SetShaderParameter("y0", geo.Y0);
+        mat.SetShaderParameter("y1", geo.Y1);
         Material = mat;
         Color = Colors.White;
         sparks = new DgSparks(r * geo.K, geo.Off * r) { Position = Size / 2 };
@@ -87,11 +90,12 @@ public static class DgMeterGeo
         }
     }
 
-    public static (float K, Vector2 Off) Coal()
+    public static (float K, Vector2 Off, float Y0, float Y1) Coal()
     {
         if (Geo.TryGetValue("coal", out var v) && v.AsGodotDictionary() is { } c)
-            return ((float)c["k"].AsDouble(), new Vector2((float)c["ox"].AsDouble(), (float)c["oy"].AsDouble()));
-        return (0.9f, new Vector2(0, 0.05f));
+            return ((float)c["k"].AsDouble(), new Vector2((float)c["ox"].AsDouble(), (float)c["oy"].AsDouble()),
+                c.TryGetValue("y0", out var a) ? (float)a.AsDouble() : -0.84f, c.TryGetValue("y1", out var b) ? (float)b.AsDouble() : 0.84f);
+        return (0.9f, new Vector2(0, 0.05f), -0.84f, 0.84f);
     }
 
     /// <summary>The flask's size shown and the liquid's top and foot in it (0..1 of its height).</summary>
@@ -103,12 +107,15 @@ public static class DgMeterGeo
     }
 }
 
-/// <summary>The coal's sparks and the press's burst, drawn (no particle system): full, a spark or two a second lifts
-/// off its top (at most 8 alive); a press throws 30 embers out of it under gravity and, a beat later, lets 16 flakes of
-/// ash sink. Sparks and embers add their light; the ash is drawn plain, over them (a child of its own).</summary>
+/// <summary>The coal's embers and the press's burst, drawn (no particle system; one soft disc texture, DgMeters.Disc,
+/// stretched and turned per bit). Round 3 (the judge: "white glitter", "square blocks"): full, embers lift off its
+/// top cracks steadily, 6 to 10 alive (at most 10), small orange-gold motes that sway and dim as they rise; a press
+/// throws 30 orange embers out of it under gravity, each a streak along its flight, hot gold at its head, cooling to
+/// red; a beat later 16 flakes of ash flutter down, thin grey ellipses turning as they sink. Embers add their light;
+/// the ash is drawn plain over them (a child of its own).</summary>
 public partial class DgSparks : Control
 {
-    struct Bit { public Vector2 P, V; public float Age, Life, Size; public int Kind; }
+    struct Bit { public Vector2 P, V; public float Age, Life, Size, Spin; public int Kind; }
     readonly List<Bit> bits = new();
     readonly float r;
     readonly Vector2 mid;
@@ -124,6 +131,7 @@ public partial class DgSparks : Control
         r = coalR;
         this.mid = mid;
         MouseFilter = MouseFilterEnum.Ignore;
+        TextureFilter = TextureFilterEnum.Linear;
         Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
         AddChild(ash = new Ash(this));
         rng.Seed = 7331;
@@ -135,7 +143,7 @@ public partial class DgSparks : Control
         {
             float a = rng.RandfRange(-Mathf.Pi * 0.95f, -Mathf.Pi * 0.05f) + (i % 4 == 0 ? Mathf.Pi * 0.5f * rng.RandfRange(-1, 1) : 0);
             var dir = Vector2.FromAngle(a);
-            bits.Add(new Bit { P = mid + dir * r * rng.RandfRange(0.55f, 1.0f), V = dir * rng.RandfRange(70, 260), Age = -rng.RandfRange(0, 0.14f), Life = rng.RandfRange(0.45f, 0.95f), Size = rng.RandfRange(1.0f, 2.2f), Kind = 1 });
+            bits.Add(new Bit { P = mid + dir * r * rng.RandfRange(0.45f, 0.9f), V = dir * rng.RandfRange(90, 270), Age = -rng.RandfRange(0, 0.12f), Life = rng.RandfRange(0.5f, 1.0f), Size = rng.RandfRange(1.0f, 1.8f), Kind = 1 });
         }
         ashDue = 0.12f;
         ashLeft = 16;
@@ -143,19 +151,19 @@ public partial class DgSparks : Control
 
     public void Tick(float dt)
     {
-        // (reaching full: a puff of sparks, then a steady few)
+        // (reaching full: a puff of embers, then a steady stream: about 6 a second, each 1.1 to 1.7 s, so 6 to 10 alive)
         if (Full && !wasFull) spawn = 5;
         wasFull = Full;
         if (Full)
         {
-            spawn += dt * 3.5f;
+            spawn += dt * 6.2f;
             while (spawn >= 1)
             {
                 spawn -= 1;
                 if (CountKind(0) >= 10) continue;
-                float x = rng.RandfRange(-0.6f, 0.6f);
-                bits.Add(new Bit { P = mid + new Vector2(x * r, -r * (0.55f + 0.35f * (1 - Math.Abs(x)))), V = new Vector2(rng.RandfRange(-18, 18), rng.RandfRange(-85, -45)),
-                    Life = rng.RandfRange(0.8f, 1.4f), Size = rng.RandfRange(1.3f, 2.0f), Kind = 0 });
+                float x = rng.RandfRange(-0.65f, 0.65f);
+                bits.Add(new Bit { P = mid + new Vector2(x * r, -r * (0.45f + 0.30f * (1 - Math.Abs(x)))), V = new Vector2(rng.RandfRange(-12, 12), rng.RandfRange(-62, -34)),
+                    Life = rng.RandfRange(1.1f, 1.7f), Size = rng.RandfRange(1.2f, 1.9f), Spin = rng.RandfRange(0, 6.28f), Kind = 0 });
             }
         }
         else spawn = 0;
@@ -166,8 +174,8 @@ public partial class DgSparks : Control
             {
                 ashLeft--;
                 ashDue += 0.025f;
-                bits.Add(new Bit { P = mid + new Vector2(rng.RandfRange(-0.8f, 0.8f) * r, rng.RandfRange(-1.1f, -0.3f) * r), V = new Vector2(rng.RandfRange(-14, 14), rng.RandfRange(6, 22)),
-                    Life = rng.RandfRange(1.5f, 2.3f), Size = rng.RandfRange(1.8f, 2.8f), Kind = 2 });
+                bits.Add(new Bit { P = mid + new Vector2(rng.RandfRange(-0.8f, 0.8f) * r, rng.RandfRange(-1.2f, -0.4f) * r), V = new Vector2(rng.RandfRange(-14, 14), rng.RandfRange(8, 22)),
+                    Life = rng.RandfRange(1.5f, 2.3f), Size = rng.RandfRange(1.6f, 2.6f), Spin = rng.RandfRange(0, 6.28f), Kind = 2 });
             }
             if (ashLeft == 0) ashDue = -1;
         }
@@ -177,9 +185,9 @@ public partial class DgSparks : Control
             b.Age += dt;
             if (b.Age >= b.Life) { bits.RemoveAt(i); continue; }
             if (b.Age < 0) { bits[i] = b; continue; }  // (not out yet: the burst comes over a beat, not in one ring)
-            if (b.Kind == 1) { b.V += new Vector2(0, 240) * dt; b.V *= 1 - 1.6f * dt; }
-            else if (b.Kind == 0) { b.V.X += Mathf.Sin(b.Age * 9 + b.Size * 13) * 40 * dt; b.V *= 1 - 0.4f * dt; }
-            else { b.V.X = Mathf.Sin(b.Age * 3.1f + b.Size * 7) * 16; }
+            if (b.Kind == 1) { b.V += new Vector2(0, 260) * dt; b.V *= 1 - 1.4f * dt; }
+            else if (b.Kind == 0) { b.V.X += Mathf.Sin(b.Age * 4.2f + b.Spin) * 34 * dt; b.V *= 1 - 0.3f * dt; }
+            else { b.V.X = Mathf.Sin(b.Age * 2.6f + b.Spin) * 18; b.V.Y = Mathf.MoveToward(b.V.Y, 16, 20 * dt); }
             b.P += b.V * dt;
             bits[i] = b;
         }
@@ -190,40 +198,65 @@ public partial class DgSparks : Control
     int drawn;
     int CountKind(int k) { int n = 0; foreach (var b in bits) if (b.Kind == k) n++; return n; }
 
+    /// <summary>The soft disc stretched to len x wid along dir, centred on at.</summary>
+    void Soft(Vector2 at, Vector2 dir, float len, float wid, Color c)
+    {
+        DrawSetTransform(at, dir.Angle(), Vector2.One);
+        DrawTextureRect(DgMeters.Disc, new Rect2(-len / 2, -wid / 2, len, wid), false, c);
+    }
+
     public override void _Draw()
     {
         foreach (var b in bits)
         {
             if (b.Kind == 2 || b.Age < 0) continue;
             float u = b.Age / b.Life;
-            // white-gold, through orange, to a dull red as it dies
-            var col = u < 0.3f ? new Color(1f, 0.92f, 0.62f).Lerp(new Color(1f, 0.62f, 0.2f), u / 0.3f) : new Color(1f, 0.62f, 0.2f).Lerp(new Color(0.7f, 0.15f, 0.03f), (u - 0.3f) / 0.7f);
-            float a = (1 - u * u) * (b.Kind == 1 ? 1 : 0.85f);
-            // a streak along its flight, hot at its head, and a faint glow round the head
-            var tail = b.P - b.V * (b.Kind == 1 ? 0.03f : 0.10f);
-            DrawCircle(b.P, b.Size * (b.Kind == 0 ? 3.2f : 2.0f), col with { A = (b.Kind == 0 ? 0.22f : 0.12f) * a }, true, -1, true);
-            DrawLine(tail, b.P, col with { A = 0.55f * a }, b.Size * (b.Kind == 0 ? 1.1f : 0.8f), true);
-            DrawCircle(b.P, b.Size * 0.75f, new Color(1f, 0.95f, 0.8f, 0.95f * a), true, -1, true);
+            if (b.Kind == 0)
+            {
+                // a rising mote: gold off the cracks, orange, dying red; it flickers and dims as it climbs
+                var col = u < 0.35f ? new Color(1f, 0.80f, 0.42f).Lerp(new Color(1f, 0.52f, 0.14f), u / 0.35f) : new Color(1f, 0.52f, 0.14f).Lerp(new Color(0.75f, 0.16f, 0.03f), (u - 0.35f) / 0.65f);
+                float a = Mathf.Min(1, u * 8) * (1 - u * u) * (0.75f + 0.25f * Mathf.Sin(b.Age * 23 + b.Spin * 5));
+                var dir = b.V.LengthSquared() > 1 ? b.V.Normalized() : Vector2.Up;
+                Soft(b.P, dir, b.Size * 7, b.Size * 7, col with { A = 0.18f * a });
+                Soft(b.P, dir, b.Size * 3.4f, b.Size * 2.2f, col with { A = 0.95f * a });
+            }
+            else
+            {
+                // a thrown ember: a streak along its flight, hot gold at its head, orange, cooling to red
+                var col = u < 0.25f ? new Color(1f, 0.74f, 0.36f).Lerp(new Color(1f, 0.48f, 0.10f), u / 0.25f) : new Color(1f, 0.48f, 0.10f).Lerp(new Color(0.62f, 0.10f, 0.02f), (u - 0.25f) / 0.75f);
+                float a = 1 - u * u;
+                float sp = b.V.Length();
+                var dir = sp > 1 ? b.V / sp : Vector2.Right;
+                float len = Mathf.Clamp(sp * 0.05f, 3, 13);
+                Soft(b.P - dir * len * 0.35f, dir, len * 1.6f, b.Size * 5, col with { A = 0.16f * a });
+                Soft(b.P - dir * len * 0.35f, dir, len, b.Size * 2.0f, col with { A = 0.9f * a });
+                Soft(b.P, dir, b.Size * 2.6f, b.Size * 1.8f, new Color(1f, 0.82f, 0.5f, 0.85f * a * (1 - u)));
+            }
         }
+        DrawSetTransform(Vector2.Zero, 0, Vector2.One);
     }
 
     partial class Ash : Control
     {
         readonly DgSparks o;
-        public Ash(DgSparks o) { this.o = o; MouseFilter = MouseFilterEnum.Ignore; UseParentMaterial = false; Material = new CanvasItemMaterial(); }
+        public Ash(DgSparks o) { this.o = o; MouseFilter = MouseFilterEnum.Ignore; UseParentMaterial = false; Material = new CanvasItemMaterial(); TextureFilter = TextureFilterEnum.Linear; }
 
         public override void _Draw()
         {
             foreach (var b in o.bits)
             {
-                if (b.Kind != 2) continue;
+                if (b.Kind != 2 || b.Age < 0) continue;
                 float u = b.Age / b.Life;
                 float a = Mathf.Min(1, u * 6) * (1 - u);
-                // a flake turning as it sinks: an ellipse's worth of two dots, grey, its lit side warm at first
-                float tw = Mathf.Abs(Mathf.Sin(b.Age * 5 + b.Size * 3));
-                var col = new Color(0.74f, 0.70f, 0.66f).Lerp(new Color(0.95f, 0.55f, 0.25f), Mathf.Max(0, 1 - u * 4) * 0.6f);
-                DrawLine(b.P - new Vector2(b.Size * (0.4f + 0.8f * tw), 0), b.P + new Vector2(b.Size * (0.4f + 0.8f * tw), 0), col with { A = 0.8f * a }, b.Size * 0.9f, true);
+                // a flake turning as it sinks: a thin soft ellipse narrowing and widening as it tumbles, its
+                // underside warm at first (lit by the coal), grey after
+                float tw = Math.Abs(Mathf.Sin(b.Age * 4.2f + b.Spin));
+                var col = new Color(0.72f, 0.69f, 0.65f).Lerp(new Color(0.95f, 0.50f, 0.20f), Mathf.Max(0, 1 - u * 3.5f) * 0.55f);
+                DrawSetTransform(b.P, 0.5f * Mathf.Sin(b.Age * 1.7f + b.Spin * 2), Vector2.One);
+                float h = b.Size * (0.5f + 0.9f * tw);
+                DrawTextureRect(DgMeters.Disc, new Rect2(-b.Size * 1.3f, -h / 2, b.Size * 2.6f, h), false, col with { A = 0.85f * a });
             }
+            DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         }
     }
 }

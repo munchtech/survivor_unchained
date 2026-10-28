@@ -2,8 +2,9 @@
 
     python tools/uiforge/dg_flask.py CUT.png [--h 56] [--hue 7]
 
-The painting (Krea 2 turbo; round 2, seed 98xx: a round-bellied flask of luminous scarlet with ONE strand of bronze
-hair curled round it, the judge's "candy stripes" of three strands gone; cut with BiRefNet) is cropped to its silhouette and saved at twice the size shown (UiArt halves it), --h px tall
+The painting (Krea 2 turbo; round 3, seed 9952: "a small round-bellied glass potion flask ... plain clear glass with no
+decoration ... a bright luminous scarlet cordial ... one single crisp white highlight"; the judge: "one cream swirl
+band is still a stripe. Plain glass, red liquid, one highlight", so the hair strand of round 2 is gone; cut with BiRefNet) is cropped to its silhouette and saved at twice the size shown (UiArt halves it), --h px tall
 shown, as two pictures shaders/hud_dg_flask.gdshader blends by the draught's level:
   flask_full.png   as painted, its liquid turned --hue degrees toward scarlet and lifted, so it reads apart from
                    the life orb's deep garnet;
@@ -44,6 +45,12 @@ def main():
     hh, ss, vv = hsv[..., 0] * 2, hsv[..., 1] / 255, hsv[..., 2] / 255
     red = ((hh < 14) | (hh > 340)).astype(np.float32)
     liq = red * smooth(0.45, 0.75, ss) * smooth(0.15, 0.35, vv) * (a > 0.5)
+    # (round 3: the liquid as one body, its highlights and pale specks inside it included, so the empty glass keeps none)
+    body = cv2.morphologyEx((liq > 0.3).astype(np.uint8), cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
+    ff = body.copy()
+    cv2.floodFill(ff, np.zeros((ff.shape[0] + 2, ff.shape[1] + 2), np.uint8), (0, 0), 1)
+    body = body | (1 - ff)
+    liq = np.maximum(liq, cv2.dilate(body, np.ones((3, 3), np.uint8)).astype(np.float32) * (a > 0.5))
     liq = cv2.GaussianBlur(liq, (0, 0), 0.8)
     # full: the liquid toward scarlet and a little brighter
     hs = hsv.copy()

@@ -606,6 +606,16 @@ public partial class GameHud : CanvasLayer
         boonWant.Clear();
         foreach (var (id, rank) in b.Boons)
             if (rank > 0 && Boons.Find(id) != null) boonWant.Add((id, rank));
+        // (debug --hud-boons N: the shots' passives, the first N boons with ranks, at rank 2, 1, 3 ...)
+        if (PinBoons > 0)
+        {
+            boonWant.Clear();
+            foreach (var id in Boons.Order)
+            {
+                if (boonWant.Count >= PinBoons) break;
+                if (Boons.Find(id) is { Max: > 1 } || boonWant.Count > 0) boonWant.Add((id, 1 + (boonWant.Count * 2 + 1) % 3));
+            }
+        }
         if (!Same(boonWant, boonHave))
         {
             boonHave.Clear();
@@ -684,6 +694,7 @@ public partial class GameHud : CanvasLayer
     readonly List<double> statusLeft = new(), statusShown = new();
     readonly List<Label> statusText = new();
     readonly List<(string Id, int Rank)> boonWant = new(), boonHave = new();
+    static readonly int PinBoons = (int)Args.Num("hud-boons", 0);
     double globeNum = double.NaN;
 
     static bool Same<T>(List<T> a, List<T> b)

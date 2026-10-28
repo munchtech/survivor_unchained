@@ -7,8 +7,8 @@ namespace SurvivorUnchained.Ui;
 /// <summary>
 /// UI 17, The Drowned Girl (--hud drowned), piece 5, round 2: the draught and the dash in the relief's own language, in
 /// place of the small glasses in their iron (Round, when LifeLamp.Drowned).
-/// The draught: a round flask of scarlet with one strand of her bronze hair curled round it (art/ui/dg_meters/
-/// flask_full.png and flask_empty.png, tools/uiforge/dg_flask.py, shaders/hud_dg_flask.gdshader). Scarlet, brighter and
+/// The draught: a round flask of scarlet in plain glass, one highlight (round 3: the strand of hair round it read as
+/// a stripe; art/ui/dg_meters/flask_full.png and flask_empty.png, tools/uiforge/dg_flask.py, shaders/hud_dg_flask.gdshader). Scarlet, brighter and
 /// warmer than the life orb's garnet, so the two never read as one. While one is left it stands full; drunk, it drains
 /// with a slosh (0.25 s) and the next fills it (0.6 s); with none left it stands dark. Its count beside it (Round's
 /// Count2); its key hangs from its foot on the plates' line (Instrument.DgTagTop).
