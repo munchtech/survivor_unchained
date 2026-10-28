@@ -1,0 +1,9 @@
+{
+ "xpLight": {
+  "restTail": 0.30,
+  "restFront": 0.50,
+  "quiet": 90,
+  "settle": 0.8,
+  "darkFade": 2.0
+ }
+}

@@ -764,6 +764,7 @@ public partial class Game : Node, IZoneHost
         hudMode = null;
         screens.Close();
         hud.ShowPlay(true);
+        hud.XpWake();   // (UI 18: the experience light at its resting glow, the quiet clock from now)
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;
@@ -1055,6 +1056,9 @@ public partial class Game : Node, IZoneHost
         }
     }
 
+    /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
+    readonly List<(double X, double Z, double? X1, double? Z1, double R, double Until)> marks = new();
+
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
@@ -1064,7 +1068,10 @@ public partial class Game : Node, IZoneHost
         int crits = 0;
         foreach (var e in evs)
         {
+            if (e is Ev.Telegraph tg && tg.Hostile && tg.Duration > 0.02)
+                marks.Add((tg.X, tg.Z, tg.X1, tg.Z1, tg.Radius, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
+            if (Shots.On("elite")) EliteShot(e);
             Feel(e, ref crits);
             switch (e)
             {
@@ -1113,6 +1120,75 @@ public partial class Game : Node, IZoneHost
     /// stagger, its arrival and what is announced (Shots.Want). --on casts: a run of
     /// frames, fifteen a second, through each creature's marked cast and a second after
     /// it (judging a slam or a call as the player sees it).</summary>
+    /// <summary>--on elite: frames of each elite's or boss's marked blow (early, mid, at the end) and of
+    /// its hit flash (struck, and two frames on), at most one flash a second (judging the red line and
+    /// the struck light as the player sees them).</summary>
+    double crowdTeleShot = -9;
+    /// <summary>Champions whose normal hit (false) and critical (true) have been framed (one of each a champion).</summary>
+    readonly HashSet<(int, bool)> hitShot = new();
+    /// <summary>(--on elite) where in a mark's time its frames fall (env TELE_F "0.05,0.12,..." for a closer look).</summary>
+    static readonly double[] TeleFracs = System.Environment.GetEnvironmentVariable("TELE_F") is { Length: > 0 } tf
+        ? System.Array.ConvertAll(tf.Split(','), x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)) : new[] { 0.12, 0.5, 0.88 };
+    void EliteShot(CombatEvent e)
+    {
+        bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+        switch (e)
+        {
+            case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
+                foreach (var f in TeleFracs) Shots.Want($"tele{t.Id}", t.Duration * f);
+                MarkGeo($"tele{t.Id}", t);
+                break;
+            // (and the crowd's marks, one frame of one at most every 6 s)
+            case Ev.Telegraph t when t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
+                crowdTeleShot = Battle?.Time ?? 0;
+                Shots.Want("crowd", t.Duration * 0.6);
+                MarkGeo("crowd", t);
+                break;
+            // (a champion's first normal hit and first critical, each at 0, 2, 4 and 8 drawn frames on: the hit-stop
+            // holds the clock, so frames by time came out the same picture)
+            case Ev.Hit h when !h.Dot && Big(h.Target) && hitShot.Add((h.Target, h.Crit)):
+                string tag = $"hit{h.Target}{(h.Crit ? "c" : "n")}";
+                foreach (var n in new[] { 0, 2, 4, 8 }) Shots.WantFrames(tag, n);
+                GD.Print($"hitgeo {tag} {h.X:0.###} {h.Z:0.###} {scene?.Fx.GroundAt(h.X, h.Z) ?? 0:0.###} crit {h.Crit}");
+                break;
+        }
+    }
+
+    /// <summary>(--on elite) a mark's ground for measuring its frames: its shape and the ground's height on a grid over it
+    /// and round it (a lane: 17 across at -2..2 half-widths, 9 along; a circle: 17 radii to 2R, 16 bearings).</summary>
+    void MarkGeo(string tag, Ev.Telegraph t)
+    {
+        if (scene == null) return;
+        var fx = scene.Fx;
+        var sb = new System.Text.StringBuilder();
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        if (t.Shape == TelegraphShape.Line)
+        {
+            double x0 = t.X, z0 = t.Z, x1 = t.X1 ?? t.X, z1 = t.Z1 ?? t.Z, w = t.Width ?? 1;
+            double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz)), ax = dx / len, az = dz / len;
+            sb.Append(string.Format(ci, "markgeo {0} line {1:0.###} {2:0.###} {3:0.###} {4:0.###} {5:0.###} dur {6:0.###} h", tag, x0, z0, x1, z1, w, t.Duration));
+            for (int j = 0; j <= 8; j++)
+                for (int k = -8; k <= 8; k++)
+                {
+                    double along = len * j / 8, across = w / 2 * k / 4;
+                    double px = x0 + ax * along - az * across, pz = z0 + az * along + ax * across;
+                    sb.Append(string.Format(ci, " {0:0.###}", fx.GroundAt(px, pz)));
+                }
+        }
+        else
+        {
+            sb.Append(string.Format(ci, "markgeo {0} {1} {2:0.###} {3:0.###} {4:0.###} dur {5:0.###} h", tag, t.Shape.ToString().ToLowerInvariant(), t.X, t.Z, t.Radius, t.Duration));
+            for (int k = 0; k <= 16; k++)
+                for (int a = 0; a < 16; a++)
+                {
+                    double r = t.Radius * k / 8, an = a * Math.Tau / 16;
+                    sb.Append(string.Format(ci, " {0:0.###}", fx.GroundAt(t.X + r * Math.Cos(an), t.Z + r * Math.Sin(an))));
+                }
+        }
+        sb.Append(string.Format(ci, " water {0:0.###}", SurvivorUnchained.View.Water.Level ?? -1000));
+        GD.Print(sb.ToString());
+    }
+
     static void BossShot(CombatEvent e)
     {
         switch (e)
@@ -1245,6 +1321,31 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
+            // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
+            // faded all the time)
+            if (hud.FigureRect is Rect2 fig)
+            {
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
+                bool Behind(Rect2 rect)
+                {
+                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    float gy = at.Y + 1;
+                    bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
+                    if (!behind)
+                        foreach (var e in fb2.Enemies.Living())
+                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
+                    marks.RemoveAll(m => m.Until < playedT);
+                    if (!behind)
+                        foreach (var m in marks)
+                            // (its middle and four points round its edge)
+                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
+                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
+                    return behind;
+                }
+                hud.FigureBehind(Behind(fig));
+                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
+            }
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);

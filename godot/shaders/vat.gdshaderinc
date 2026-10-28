@@ -50,6 +50,7 @@ vec3 dye_hsv(vec3 c) {
 }
 
 varying flat vec4 fx;
+varying flat float fx_crit;
 varying vec3 vat_local;
 // How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
 varying flat float vat_pace;
@@ -83,7 +84,8 @@ void vertex() {
 	NORMAL = normalize(mix(n0, n1, k));
 	vat_local = VERTEX;
 	int w = int(INSTANCE_CUSTOM.w + 0.5);
-	fx = vec4(float(w & 255) / 255.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
+	fx = vec4(float(w & 127) / 127.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
+	fx_crit = float((w >> 7) & 1);
 }
 
 void fragment() {
@@ -140,6 +142,18 @@ void fragment() {
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
 	}
+	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
+	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An
+	// added light lit it as if by day: at night the Barrow Knight went a flat cream cut-out, struck after
+	// struck, and read as a model glitch (Experience 9's judge, 27 October).
+	// (half the old falloff's power: at s^3 a champion's blow was gone before a frame at 1:1 caught it)
+	float struck = pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5);
+	// A critical's is bigger and warmer, for the two or three frames its flash is high: 1.6x the lift and the rim's pop,
+	// and a warm breath that reaches the darks (a grey hood lifted x2.6 of its own paint stayed grey; round 3's judge).
+	float crit_k = 1.0 + 0.6 * fx_crit;
+	// (its own hue only, and warm: a lift toward white, even shaded, read as an untextured clay body; at x2.3
+	// a grey hood under firelight still went white)
+	c = min(c * (1.0 + 1.6 * crit_k * struck * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck, vec3(0.85 + 0.05 * fx_crit));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -157,7 +171,18 @@ void fragment() {
 	// (a full white-hot body bloomed the pale risen into blobs).
 	float hot = fx.x * fx.x;
 	// (At 0.75 across the whole body a pale body lost its paint and read as a ghost.)
-	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.38 + fx.x * (0.1 + rim * rim * 1.1));
+	// The rim-only flare (the crowd's, up to 0.12) as it was. Past it, the lifted paint above and a hot
+	// edge, never a flat wash: from the play camera most of a body is "rim", so rim^2 x 1.1 plus 0.38
+	// over all of it was a flat unlit cream body.
+	float low = min(fx.x, 0.12), high = max(fx.x - 0.12, 0.0) / 0.88;
+	// (the rim's breath gives way as the struck lift comes: at night it alone was a pale wash)
+	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1);
+	// (and a breath of warm light in its own paint: no rim term, which covers the whole body from up here,
+	// and no more, or the night's dark body goes pale)
+	e += vec3(1.0, 0.62, 0.38) * c * struck * 0.25 * crit_k;
+	// (and a pop at its edge, in its own paint: scaled by c, or from up here the rim covers the whole body
+	// and it is the old cream cut-out again)
+	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit);
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

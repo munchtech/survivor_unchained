@@ -245,6 +245,26 @@ public partial class Game
             closeRimGear.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRimGear.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
+        // --body-rim E (Body 20 light test, 27 Oct; the arm judge: "under the close-up's soft frontal light shallow forms barely
+        // read"): a soft rim on her (people, layer 2, as the key; by night her own layer), from behind her on the
+        // key's far side, aimed below her shoulders, so her arms' outline and broad planes read. 0: off, as before.
+        // --body-rim-night E (by night; default the day's), --body-rim-az A (radians off straight behind her, toward the rim's
+        // side), --body-rim-el D (degrees up), --body-rim-spec S, --body-rim-colour R,G,B.
+        if (closeBodyRim == null || !IsInstanceValid(closeBodyRim) || closeBodyRim.GetParent() != scene)
+        {
+            closeBodyRim = new SpotLight3D { LightColor = BodyRimColour, SpotAngle = 30, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = BodyRimSpec, LightEnergy = 0 };
+            scene.AddChild(closeBodyRim);
+        }
+        float wantBody = lit ? (night ? BodyRimNight : BodyRimDay) * day : 0;
+        closeBodyRim.LightEnergy = Mathf.Lerp(closeBodyRim.LightEnergy, wantBody, 1 - Mathf.Exp(-3 * (float)dt));
+        closeBodyRim.Visible = closeBodyRim.LightEnergy > 0.005f;
+        if (closeBodyRim.Visible)
+        {
+            float a = cam.Yaw + Mathf.Pi - BodyRimAz, up = Mathf.DegToRad(BodyRimEl);
+            var arms = pv.GlobalPosition + new Vector3(0, 1.2f, 0);
+            closeBodyRim.GlobalPosition = arms + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
+            closeBodyRim.LookAt(arms);
+        }
     }
 
     void FireOnHer(bool own, SurvivorUnchained.View.PlayerView pv)
@@ -265,7 +285,15 @@ public partial class Game
         fireFill.Visible = true;
     }
 
-    SpotLight3D? closeKey, closeRim, closeRimGear;
+    SpotLight3D? closeKey, closeRim, closeRimGear, closeBodyRim;
+    static float BodyRimDay => Args.Num("body-rim", 0f);
+    static float BodyRimNight => Args.Num("body-rim-night", BodyRimDay);
+    static float BodyRimAz => Args.Num("body-rim-az", 0.9f);
+    static float BodyRimEl => Args.Num("body-rim-el", 15f);
+    static float BodyRimSpec => Args.Num("body-rim-spec", 0.2f);
+    static readonly Color BodyRimColour = Args.Get("body-rim-colour") is string brc && brc.Split(',') is { Length: 3 } bc
+        ? new Color(float.Parse(bc[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bc[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bc[2], System.Globalization.CultureInfo.InvariantCulture))
+        : new Color(1f, 0.93f, 0.84f);
     float skyShown = 1;
     float eyesNight;
     OmniLight3D? fireFill;

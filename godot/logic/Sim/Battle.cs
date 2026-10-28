@@ -1411,10 +1411,14 @@ public sealed partial class Battle
         sum = 0;
     }
 
+    /// <summary>Debug (--hurt-mul X, a shot of her life truly falling): every blow on her times X. 1 in play.</summary>
+    public static double HurtMul = 1;
+
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
+        dmg *= HurtMul;
         if (p.Shield > 0)
         {
             double a = Math.Min(p.Shield, dmg);

@@ -17,6 +17,7 @@ can be exact; Blender gives the light: reflections of the house's warm softbox a
 rim (blender_frames.world), the sun's shadows across the relief, and occlusion in the
 hollows. A height field is all a piece seen straight on needs.
 """
+import json
 import math
 import os
 import sys
@@ -110,6 +111,14 @@ def build(npz, out, samples=128):
     sc = BF.reset()
     BF.world("night")
     BF.suns()
+    # RELIEF_LIGHT (json, optional): the house light as the irons use it (irons.json "light"),
+    # the cool strip low right turned down, so a piece set into an iron shares its light
+    lt = json.loads(os.environ.get("RELIEF_LIGHT") or "{}")
+    if lt:
+        for nd in sc.world.node_tree.nodes:
+            if nd.type == "MATH" and nd.operation == "MULTIPLY" and abs(nd.inputs[1].default_value - 2.5) < 1e-6:
+                nd.inputs[1].default_value *= lt.get("rim_world", 1.0)
+        bpy.data.objects["rim"].data.energy *= lt.get("rim_sun", 1.0)
     BF.camera(W, H)
     me, used = mesh_from(height, alpha)
     add_attr(me, "base", d["base"].astype(np.float32), used)
