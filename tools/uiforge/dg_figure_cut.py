@@ -65,7 +65,8 @@ HAND_LIFT = 0.06    # her hand and forearm a touch brighter than the rest of her
 RED_BOUNCE = (0.0, 0.0, 0.0)   # (ui17 A: the orb's red on her is live now, hud_dg_orb.gdshader, scaled to her life)
 STRAND_GAIN = 1.0   # ui17 A: the hair's joined highlights (strand_pass); UI 18: back on with dg5's hair
 PATCH_DIR = r"C:\Users\munch\Desktop\survivorsunchained_inputs\ui18_dg_src\hair"
-PATCHES_2X = [("a1", (584, 872, 776, 1080))]   # (UI 18) painted patches over the finished figure: (tag, box at 1080 px)
+PATCHES_2X = [("a1", (584, 872, 776, 1080)),   # (UI 18) painted patches over the finished figure: (tag, box at 1080 px)
+              ("a3", (536, 830, 624, 904))]   # (UI 18, the max judge: the crown's fill "hammered and faceted") a3_design.py
 HAND_MATCH = 1.0   # ui17 A (the judge: "yellower than her body"): her hand's hue matched to her neck and shoulder
 
 
