@@ -92,7 +92,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// night's own multipliers (12 to 43 at the first tier) were set against the ember's builds and
     /// their Breaks; a day build meets the four more evenly (at a fifth of the night's, the Pack-Mother
     /// took 173 s and the Barrow Lord 67), so one number serves all four.</summary>
-    public const double BossHealth = 3.5;
+    public static double BossHealth = 3.5;
+    /// <summary>Every pack creature's health over its body's at the map's level (champions' own multiples on
+    /// top). Six day slots by level 20 (CLASS_IDENTITY 3.7) made the day builds stronger than the curve
+    /// was tuned for; the harness sets it with --maphp PACK,BOSS.</summary>
+    public static double PackHealth = 1;
 
     public MapRun(IZoneHost host, MapBuild map, Chart chart) : base(host, map.Meta)
     {
@@ -195,7 +199,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             if (!map.CanStand(px, pz) || B.Collision.Blocked(px, pz, 0.6)) continue;
             var def0 = Enemies.Get(def);
             var style = def0.Family == Family.Undead ? SpawnStyle.Rise : SpawnStyle.Walk;
-            return B.SpawnEnemy(def, px, pz, new Battle.SpawnOpts { Level = Level + levelUp, Elite = elite, Style = style, Home = (home.X, home.Z, Leash), Wake = Wake });
+            var e = B.SpawnEnemy(def, px, pz, new Battle.SpawnOpts { Level = Level + levelUp, Elite = elite, Style = style, Home = (home.X, home.Z, Leash), Wake = Wake });
+            if (e != null && PackHealth != 1) e.MaxHp = e.Hp = e.MaxHp * PackHealth;
+            return e;
         }
         return null;
     }
