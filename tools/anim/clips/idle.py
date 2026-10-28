@@ -821,6 +821,10 @@ def stalker_low(t, f):
 # muzzle back only with the hand this near: any lower or further in and the bow lies through her back), the elbow
 # folded forward, the muzzle up (elev, chest frame) and out/back over the shoulder. The left arm hangs as the other idles
 # hang it (free_left). The solver's wrist limit decides the final line, not the keyed one: see the numbers.
+# NOT SWITCHED ON: the right arm lies 76-80 mm into her chest and breast (motion --outfits: up/fa/br 80, outfits 84-126 mm)
+# in every pose tried (hand 0-10 cm in front of the shoulder, poles forward or out), because the wrist turns the muzzle
+# back only with the forearm folded across her. A shoulder rest needs a design decision (a lifted clavicle and a longer
+# reach, a different grip hold, or a bow carried muzzle-up).
 # (Measured: muzzle 44-46 deg above level, 41-43 out, ~20 cm back of the wrist; 86 mm off her body at the nearest, 305 mm
 # off her head. The elbow is folded ~155, not the 100 asked: a fist at chest height cannot turn the muzzle back.)
 STALKER_REST = {"hand": (-0.06, -0.07, 0.06), "pole": (0.0, -0.8, 3.0), "elev": 40.0, "out": 45.0}
@@ -983,7 +987,7 @@ _bases = {}
 SHARES_BASE = {"idle_stalker_daggers": "stalker", "idle_reaver_axes": "reaver", "idle_arcanist_staff_town": "arcanist_town",
                "idle_arcanist_wand": "arcanist"}
 # The idles' own arms where IDLES' (which the stops and shows start or end on) differ (animation 56), and their own meta.
-IDLE_ARMS = {"idle_stalker_daggers": stalker_knives, "idle_stalker": stalker_shoulder}
+IDLE_ARMS = {"idle_stalker_daggers": stalker_knives, "idle_stalker": stalker_low}  # (stalker_shoulder: not switched on, see its comment)
 
 
 # A captured standing stood up (18 Oct, the owner: the stalker "always crouching like they have to go to the
