@@ -405,7 +405,10 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # wrist keeps the blade within about 69 deg of the forearm (keyed RADIAL 22), so pointing down that steep needs the
 # fist at her chest to keep the tip 0.40 m off the floor ("belt": measured pitch only -27..-33, 2-18 deg at 90), and
 # pointing up that steep needs the forearm about level ahead (the fist at her belt, the elbow bent ~90). Upright, the
-# blade leans ahead of her face (20-30 deg forward, 20-30 out) so from 90 and 30 it doesn't stand over her head.
+# blade leans ahead of her face and out (measured: 74-75 deg up, 14-28 out) so from 90 and 30 it doesn't stand over
+# her head (on screen its line passes 0.15 m from her head's centre at 30, 0.29 at 90); 58+ deg on screen at all eight
+# views, the tip 2.06 m up, 243 mm from her legs, 192 from the shield. Its upper arm 29 out (at 20 and 25 it went
+# 14-30 and 5-16 mm into her plate, motion --outfits) and its forearm turned out (-20, -22) for the heading.
 # "belt" (the judge's in-hold try: fist at the navel, elbow bend ~85, keyed -46 straight ahead): tip 0.51 m (sprint
 # 0.42) but the wrist won't point it down past -33, so it reads 2-18 deg from 90. "low": Animation 56's low point.
 WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high")
