@@ -45,6 +45,8 @@ public sealed class WardenSkillsTests
             e.Status.Remove(StatusKind.Stun);
         }
         Pin(b, es, at);
+        // A second on, by the clock alone: whatever struck her while they rose, Rebuke (and its mend) answers the next blow.
+        b.Time += 1;
         return es;
     }
 
@@ -214,7 +216,7 @@ public sealed class WardenSkillsTests
     static double Taken(Enemy e) => e.MaxHp - e.Hp;
 
     [Fact]
-    public void Rebuke_strikes_the_blocker_and_the_three_nearest_it_on_a_block_credited_rebuke_not_wall()
+    public void Rebuke_strikes_the_striker_and_the_three_nearest_it_on_a_block_credited_rebuke_not_wall()
     {
         var b = Fight("rebuke");
         var es = Dummies(b, Blocker);
@@ -241,6 +243,29 @@ public sealed class WardenSkillsTests
         Block(c, null);
         Assert.Equal(3, cs.Count(Hurt));
         Assert.True(Hurt(cs[0]) && Hurt(cs[2]) && Hurt(cs[3]));
+    }
+
+    [Fact]
+    public void Rebuke_strikes_on_a_blow_that_lands_too_at_most_once_in_its_cooldown()
+    {
+        var b = Fight("rebuke");
+        var es = Dummies(b, Blocker);
+        var w = b.Weapons[0];
+        Assert.Equal(0.5, Firing.CooldownOf(b, w), 6);
+        int strikes = b.RebukeStrikes;
+        b.Player.Iframes = 0;
+        b.HurtPlayer(1, School.Physical, "test", es[0]);
+        Assert.Equal(strikes + 1, b.RebukeStrikes);
+        Assert.True(Hurt(es[0]) && Hurt(es[1]));
+        // Within the gap, landed or blocked: nothing.
+        b.Player.Iframes = 0;
+        b.HurtPlayer(1, School.Physical, "test", es[0]);
+        Block(b, es[0]);
+        Assert.Equal(strikes + 1, b.RebukeStrikes);
+        b.Time += 0.55;
+        b.Player.Iframes = 0;
+        b.HurtPlayer(1, School.Physical, "test", es[0]);
+        Assert.Equal(strikes + 2, b.RebukeStrikes);
     }
 
     [Fact]
@@ -285,7 +310,8 @@ public sealed class WardenSkillsTests
                 Assert.Equal(b.MaxHp * 0.51, b.Player.Hp, 6);
                 Block(b, es[0]);
                 Assert.Equal(b.MaxHp * 0.51, b.Player.Hp, 6);
-                b.Tick(0.6, 0, 0);
+                // Half a second on (the clock alone: a tick would let the dummies' touch reach her, and Rebuke answer it).
+                b.Time += 0.6;
                 double hp = b.Player.Hp;
                 Block(b, es[0]);
                 Assert.Equal(hp + b.MaxHp * 0.01, b.Player.Hp, 6);
@@ -325,8 +351,8 @@ public sealed class WardenSkillsTests
         Assert.Equal(1, b.Tolls);
         Assert.All(es.Take(3), e => Assert.True(Hurt(e)));
         Assert.False(Hurt(es[3]));
-        Assert.Equal(b.MaxHp * 0.02 * 3, b.Player.Shield - shield, 6);
-        Assert.Equal(b.MaxHp * 0.02 * 3, b.BellBarrier, 6);
+        Assert.Equal(b.MaxHp * 0.01 * 3, b.Player.Shield - shield, 6);
+        Assert.Equal(b.MaxHp * 0.01 * 3, b.BellBarrier, 6);
         for (int i = 0; i < 10; i++) b.Tick(0.05, 0, 0);
         foreach (var e in es.Take(3))
             Assert.InRange(System.Math.Sqrt((e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z)), 0, 2.6);
@@ -341,14 +367,40 @@ public sealed class WardenSkillsTests
     }
 
     [Fact]
-    public void The_loud_bell_reaches_10_m_iron_slows_and_bell_and_barrier_gives_3_percent()
+    public void The_loud_bell_reaches_10_m_iron_slows_and_bell_and_barrier_gives_1_5_percent()
     {
         var b = Fight("watch_bell", rules: ["watch_bell.loud", "watch_bell.iron", "watch_bell.barrier"]);
         var es = Dummies(b, Ring);
         FireOnce(b, b.Weapons[0], es, Ring);
         Assert.All(es, e => Assert.True(Hurt(e)));
-        Assert.Equal(b.MaxHp * 0.03 * 4, b.BellBarrier, 6);
+        Assert.Equal(b.MaxHp * 0.015 * 4, b.BellBarrier, 6);
         Assert.All(es, e => { Assert.True(e.SlowUntil > b.Time + 2); Assert.Equal(0.3, e.SlowBy, 6); });
+    }
+
+    [Fact]
+    public void The_bells_barrier_counts_at_most_five_drawn()
+    {
+        (double, double)[] seven = [(3, 0), (0, 3), (-3, 0), (0, -3), (4, 4), (-4, 4), (4, -4)];
+        var b = Fight("watch_bell");
+        var es = Dummies(b, seven);
+        FireOnce(b, b.Weapons[0], es, seven);
+        Assert.All(es, e => Assert.True(Hurt(e)));
+        Assert.Equal(b.MaxHp * 0.01 * 5, b.BellBarrier, 6);
+    }
+
+    [Fact]
+    public void The_walls_answer_doesnt_throw_back_what_the_bell_just_drew()
+    {
+        var b = Fight("watch_bell", 4, plan: Strand("watch_bell.stone"));
+        b.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "shield_arm", Args = new Dictionary<string, double> { ["block"] = 0, ["stones"] = 1, ["radius"] = 12, ["rebuke"] = 0.01, ["per_level"] = 0 } });
+        (double, double)[] at = [(6, 0), (11, 0)];
+        var es = Dummies(b, at);
+        FireOnce(b, b.Weapons[0], es, at);
+        Assert.True(b.Rebukes >= 1);
+        Assert.True(Hurt(es[0]) && Hurt(es[1]));
+        // Drawn: still sliding in to her. Not drawn (beyond the bell): thrown back.
+        Assert.True(es[0].Kbx < 0);
+        Assert.True(es[1].Kbx > 0);
     }
 
     [Fact]

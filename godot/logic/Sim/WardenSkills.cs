@@ -65,7 +65,7 @@ public static partial class Firing
         return true;
     }
 
-    /// <summary>Rebuke never fires on its timer (Firing.Tick passes it by): a block strikes it (Battle.RebukeOnBlock).
+    /// <summary>Rebuke never fires on its timer (Firing.Tick passes it by): a blow that reaches her strikes it (Battle.RebukeOnBlow).
     /// An On-kill echo is a strike centered on the corpse, the three nearest it.</summary>
     static bool FireReactive(Battle b, WeaponInst w) => b.FireFrom is { } o && b.RebukeStrike(w, o.X, o.Z, null);
 
@@ -159,17 +159,21 @@ public sealed partial class Battle
     public double BellBarrier;
     /// <summary>Oath and Bell: a stagger owes the bell a toll (rung on the bell's next tick, never inside a hit).</summary>
     internal bool BellOwed;
-    double bellOathAt = -99, answeredAt = -99;
+    double bellOathAt = -99, answeredAt = -99, rebukeAt = -99;
 
     /// <summary>Rebuke carried: her block chance (its Block at rank 1, BlockStep more a rank).</summary>
     double RebukeBlock() =>
         WeaponById("rebuke") is { DisabledT: <= 0 } w ? (w.Num(s => s.Block) ?? 0.08) + (w.Num(s => s.BlockStep) ?? 0.01) * (w.Rank - 1) : 0;
 
-    /// <summary>A block (lamp's or the Warding light's): Rebuke strikes the blocker if it stands within reach of her, and
-    /// the three nearest it; a missile's (no blocker near), the three nearest her.</summary>
-    void RebukeOnBlock(Enemy? from)
+    /// <summary>A blow that reaches her, blocked (lamp's or the Warding light's) or not: Rebuke strikes the one who struck
+    /// if it stands within reach of her, and the three nearest it; a missile's (no striker near), the three nearest her.
+    /// At most once in its cooldown (0.5 s, shortened as any cooldown is): from blocks alone it struck twice a minute,
+    /// 0.3-0.8% of her night (P6b).</summary>
+    void RebukeOnBlow(Enemy? from)
     {
         if (WeaponById("rebuke") is not { DisabledT: <= 0 } w) return;
+        if (Time < rebukeAt + Firing.CooldownOf(this, w)) return;
+        rebukeAt = Time;
         var p = Player;
         double reach = w.Num(s => s.Range) ?? 6;
         w.Casts++;
@@ -251,6 +255,8 @@ public sealed partial class Battle
             {
                 drawn++;
                 if (e.Elite) champions++;
+                // Drawn: the wall's answer doesn't throw it back for a while (Stone Bell's stones mustn't undo the draw).
+                e.DrawnAt = Time;
                 double kx = x - e.X, kz = z - e.Z, kd = Math.Sqrt(kx * kx + kz * kz);
                 // The draw: a slide to her (knockback settles at 9 a second, so v = 9 x the distance), as Drag Them Under hauls.
                 if (kd > 1e-6 && e.Def.Behavior != Behavior.Stationary)
@@ -266,11 +272,11 @@ public sealed partial class Battle
         }
         if (drawn > 0)
         {
-            double share = SkillRule(w, "barrier") ? SkillFull(w, "barrier", "share", 0.03) : w.Num(s => s.Barrier) ?? 0.02;
+            double share = SkillRule(w, "barrier") ? SkillFull(w, "barrier", "share", 0.015) : w.Num(s => s.Barrier) ?? 0.01;
             // A Pulse's tolls are smaller: each one's barrier scaled as its damage is.
             if (w.Wick is { Pulses: > 1 } pw)
                 foreach (var t in pw.Turns) if (Content.Wicks.Turn(t) is { Pulses: > 1 } pt) share *= pt.Damage;
-            double amount = MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 10));
+            double amount = MaxHp * share * Math.Min(drawn, (int)(w.Num(s => s.DrawMost) ?? 5));
             BellBarrier += amount;
             Barrier(amount, 6);
         }

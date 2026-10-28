@@ -106,15 +106,15 @@ public class BattleTests
     [Fact]
     public void A_crowd_is_dangerous_not_lethal()
     {
-        // One seed is a coin toss; the contract is about the odds.
+        // One seed is a coin toss; the contract is about the odds (75%: 16 seeds, the draft pool is large).
         int alive = 0;
-        for (uint seed = 1; seed <= 8; seed++)
+        for (uint seed = 1; seed <= 16; seed++)
         {
             var b = Arena(seed);
             Simulate(b, 60);
             if (b.Player.Alive) alive++;
         }
-        Assert.True(alive >= 6, $"survived {alive} of 8");
+        Assert.True(alive >= 12, $"survived {alive} of 16");
     }
 
     [Fact]

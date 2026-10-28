@@ -74,8 +74,8 @@ public sealed partial class Battle
         if (opening > 0) p.SureCritT = Math.Max(p.SureCritT, opening);
         // bulwark.oathblade.shield_and_edge: Oathblade swings at once.
         if (l.Has("oathblade.shield_and_edge") && WeaponById("oathblade") is { } edge) edge.Timer = 0;
-        // Rebuke: the block strikes back.
-        RebukeOnBlock(from);
+        // Rebuke: the block strikes back (within its gap).
+        RebukeOnBlow(from);
         AddStone();
     }
 
@@ -83,9 +83,11 @@ public sealed partial class Battle
     /// hit you, and they break on it"). From blocks alone a rebuke came once in three minutes, under 1% of the night's
     /// damage; from every blow, at six stones and 8 m, every 22 s at tier 1 to 12 s at tier 4 and 3.6-7.9% (the owner,
     /// 11 October: "a little more").</summary>
-    void LampsOnBlowLanded()
+    void LampsOnBlowLanded(Enemy? from)
     {
         if (Lamps.Full("shield_arm", "struck") > 0) AddStone();
+        // Rebuke: a blow that reaches her, unblocked, strikes back too (within its gap).
+        RebukeOnBlow(from);
     }
 
     double BearerMend() => Lamps.Has("bearer_of_blows") ? 1 - Lamps.Full("bearer_of_blows", "less", 0.3) : 1;
@@ -122,7 +124,9 @@ public sealed partial class Battle
             double m = RebukeChampionMul(e);
             // A boss takes a share: the wall breaks the crowd; against a lord of the night it mustn't rival the Flare.
             if (e.Boss) m *= WallArg("boss", 1, Content.Hands.Warden.Boss);
-            HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "wall" });
+            // What the bell drew in the last 2 s stays where it was drawn: struck, not thrown back.
+            double kb = Time - e.DrawnAt < 2 ? 0 : 1.2;
+            HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "wall" });
         });
         RebukeMends();
     }

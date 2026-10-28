@@ -201,7 +201,7 @@ public static partial class Firing
     public static void Tick(Battle b, WeaponInst w, double dt)
     {
         if (w.DisabledT > 0) { w.DisabledT -= dt; return; }
-        // Rebuke never fires on its timer: a block strikes it (Battle.RebukeOnBlock).
+        // Rebuke never fires on its timer: a blow that reaches her strikes it (Battle.RebukeOnBlow).
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
         if (w.Behavior == WeaponBehavior.Toll && b.BellOwed) b.TollOwed(w);
