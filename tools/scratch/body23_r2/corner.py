@@ -37,31 +37,22 @@ def _smooth_closed(P, k):
     return np.c_[np.convolve(Q[:, 0], ker, "valid"), np.convolve(Q[:, 1], ker, "valid")]
 
 
-def corner(fr, g, sd, half=120, ss=SSC, outer=True, sm_px=1.5):
-    S, E, W = (c.jscreen(fr, n + "_" + sd) for n in ("upperarm", "lowerarm", "hand"))
-    box = (int(E[0] - half), int(E[1] - half), int(E[0] + half), int(E[1] + half))
-    m, ids = arm_mask(fr, g, sd, box, ss)
-    P = contour(m)
-    if P is None:
-        return None
-    P = (P + 0.5) / ss + [box[0], box[1]]                 # screen px
-    P = _smooth_closed(P, max(1, int(round(sm_px * ss))))
+def metrics(P, S, E, W, ppm, outer=True):
+    """the corner measures of a closed 2D contour P (px) round the joint E, S up the upper arm, W down the forearm"""
     u = (S - E) / np.linalg.norm(S - E); v = (W - E) / np.linalg.norm(W - E)
     o = -(u + v); o /= np.linalg.norm(o)
     if not outer:
         o = -o
-    # the outer side's run: contour points within 75 px of E on o's side of the line through E across the bend
     rel = P - E
     side = rel @ o
     nu = np.array([-u[1], u[0]]); nu = nu if nu @ o > 0 else -nu
     nv = np.array([-v[1], v[0]]); nv = nv if nv @ o > 0 else -nv
     au, av = rel @ u, rel @ v
     du, dv = rel @ nu, rel @ nv
-    # points on the upper arm's outer flank (au in 0..90, du > 0) or the forearm's (av in 0..90, dv > 0), or the corner
-    sel = (((au > -5) & (au < 90) & (du > 4)) | ((av > -5) & (av < 90) & (dv > 4)) | ((side > 0) & (np.linalg.norm(rel, axis=1) < 60)))
+    R = 90 * ppm
+    sel = (((au > -5) & (au < R) & (du > 4)) | ((av > -5) & (av < R) & (dv > 4)) | ((side > 0) & (np.linalg.norm(rel, axis=1) < 60 * ppm)))
     if sel.sum() < 10:
         return None
-    # the longest consecutive run of selected contour points (closed contour)
     idx = np.nonzero(sel)[0]
     n = len(P)
     runs, cur = [], [idx[0]]
@@ -75,17 +66,15 @@ def corner(fr, g, sd, half=120, ss=SSC, outer=True, sm_px=1.5):
         runs[0] = runs[-1] + runs[0]; runs.pop()
     run = max(runs, key=len)
     Q = P[run]
-    # orient: from the upper arm to the forearm
     if (Q[0] - E) @ u < (Q[-1] - E) @ u:
         Q = Q[::-1]
     d = np.diff(Q, axis=0)
     sl = np.linalg.norm(d, axis=1)
     s = np.r_[0, np.cumsum(sl)]
     ang = np.unwrap(np.arctan2(d[:, 1], d[:, 0]))
-    # restrict to the stretch between the upper arm's flank (au >= 25) and the forearm's (av >= 25)
     rq = Q - E
-    i0 = np.nonzero(rq @ u >= 25)[0]; i0 = i0[-1] if len(i0) else 0
-    i1 = np.nonzero(rq @ v >= 25)[0]; i1 = i1[0] if len(i1) else len(Q) - 1
+    i0 = np.nonzero(rq @ u >= 25 * ppm)[0]; i0 = i0[-1] if len(i0) else 0
+    i1 = np.nonzero(rq @ v >= 25 * ppm)[0]; i1 = i1[0] if len(i1) else len(Q) - 1
     if i1 <= i0 + 3:
         return None
     a = ang[i0:i1]; ss_ = s[i0:i1]
@@ -93,28 +82,37 @@ def corner(fr, g, sd, half=120, ss=SSC, outer=True, sm_px=1.5):
     tot = turn[-1]
     if abs(tot) < 1e-3:
         return None
-    fr_ = turn / tot
-    # monotone envelope for the quantiles
-    q = np.maximum.accumulate(np.clip(fr_, 0, 1))
-    s10, s50, s90 = np.interp([0.1, 0.5, 0.9], q + np.arange(len(q)) * 1e-9, ss_)
-    s05 = np.interp(0.05, q + np.arange(len(q)) * 1e-9, ss_)
+    q = np.maximum.accumulate(np.clip(turn / tot, 0, 1)) + np.arange(len(turn)) * 1e-9
+    s05, s10, s50, s90 = np.interp([0.05, 0.1, 0.5, 0.9], q, ss_)
     r_eff = (s90 - s10) / (0.8 * abs(tot))
     apex = Q[i0 + int(np.argmin(np.abs(ss_ - s50)))]
-    # the flat: from the 5% point up the upper arm, the longest stretch straight within 0.6 px
     j5 = i0 + int(np.argmin(np.abs(ss_ - s05)))
     best = 0.0
-    up = Q[:j5 + 1][::-1]                                   # from the corner's start up the arm
+    up = Q[:j5 + 1][::-1]
     for k in range(5, len(up)):
         seg = up[:k + 1]
         cen = seg.mean(0)
         _, _, vt = np.linalg.svd(seg - cen)
-        dev = np.abs((seg - cen) @ vt[1]).max()
-        if dev > 0.6:
+        if np.abs((seg - cen) @ vt[1]).max() > 0.6:
             break
         best = np.linalg.norm(seg[-1] - seg[0])
-    ppm = c.sh.px_per_mm(fr, sd)
     return dict(r_eff=float(r_eff), turn=float(np.degrees(abs(tot))), flat_mm=float(best / ppm), flat_px=float(best),
-                apex=apex, Q=Q, box=box, ppm=float(ppm), s_core=float(s90 - s10))
+                apex=apex, Q=Q, ppm=float(ppm), s_core=float(s90 - s10))
+
+
+def corner(fr, g, sd, half=120, ss=SSC, outer=True, sm_px=1.5):
+    S, E, W = (c.jscreen(fr, n + "_" + sd) for n in ("upperarm", "lowerarm", "hand"))
+    box = (int(E[0] - half), int(E[1] - half), int(E[0] + half), int(E[1] + half))
+    m, ids = arm_mask(fr, g, sd, box, ss)
+    P = contour(m)
+    if P is None:
+        return None
+    P = (P + 0.5) / ss + [box[0], box[1]]
+    P = _smooth_closed(P, max(1, int(round(sm_px * ss))))
+    k = metrics(P, S, E, W, c.sh.px_per_mm(fr, sd), outer)
+    if k:
+        k["box"] = box
+    return k
 
 
 if __name__ == "__main__":
