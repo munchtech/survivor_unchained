@@ -764,6 +764,7 @@ public partial class Game : Node, IZoneHost
         hudMode = null;
         screens.Close();
         hud.ShowPlay(true);
+        hud.XpWake();   // (UI 18: the experience light at its resting glow, the quiet clock from now)
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;

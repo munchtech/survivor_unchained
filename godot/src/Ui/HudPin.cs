@@ -14,7 +14,8 @@ namespace SurvivorUnchained.Ui;
 ///     drawn as by day (her experience) or by night (the ember), whatever the fight is; dash=1.4: the dash's
 ///     charges held (1 held, the next 40% back).
 ///     UI 18, the experience light (--hud drowned): xp=run:F:T the light T seconds after a gain to F from rest,
-///     xp=rise:F:T T seconds after a level-up (F carried over); xptip=hold (the hold key's card, at the run's front) or
+///     xp=rise:F:T T seconds after a level-up (F carried over), xp=rest:F the resting glow at F after its
+///     gain has settled, xp=dark (or dark:F) dark after the long quiet; xptip=hold (the hold key's card, at the run's front) or
 ///     xptip=X:Y (the pointer's card, the pointer at X, Y); xpnum=LEVEL:HAVE:NEED the card's numbers.
 ///   --hud-seq "state;state;..." [--hud-seq-every S]: Shots.cs steps through the states (each one applied over
 ///     --hud-pin) and saves SHOT_hud0.png, SHOT_hud1.png...

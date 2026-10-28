@@ -11,8 +11,8 @@ namespace SurvivorUnchained.Ui;
 /// its 0.615 scale). Drawn under her figure: where she is solid she hides it, so its strands come out of her back
 /// hair. The six seats are hair-bound rings in the current (Socket draws them, Seat), the Flare's glass sits in
 /// the eddy at its right end (Flare), the draught and the dash where the concept has them. Piece 3 (UI 18, the
-/// owner's pick (c)): her experience (by night the ember) shows only when it moves: a cool light runs along her hair
-/// and the river to the fraction, holds and fades (Light, Play/XpLight.cs, shaders/hud_dg_xp.gdshaderinc); its numbers
+/// owner's pick (c)): her experience (by night the ember) lights when it moves: a cool light runs along her hair
+/// and the river to the fraction, holds, and settles to a dim resting glow (dark after a long quiet) (Light, Play/XpLight.cs, shaders/hud_dg_xp.gdshaderinc); its numbers
 /// on a card (Card). The old gold thread (Thread) is no longer drawn.
 /// </summary>
 public partial class DgRiver : Control
@@ -191,14 +191,16 @@ public partial class DgRiver : Control
     public void Light(XpLight x, bool day, ShaderMaterial? fig)
     {
         if (fig != null && fig != figMat) { figMat = fig; XpMasks(fig); Array.Fill(sent, -2); }
-        float front = (float)x.Front, str = (float)x.Strength, whole = (float)x.Whole;
+        float front = (float)x.Front, tail = (float)x.Tail, peak = (float)x.Peak, whole = (float)x.Whole;
         if (Pulse > 0)
         {
             float t = (Time.GetTicksMsec() / 1000f) % 1.8f / 1.2f;
             front = Mathf.Clamp(t, 0, 1);
-            str = Math.Max(str, Pulse * (1 - Mathf.SmoothStep(1.0f, 1.25f, t)));
+            float p = Pulse * (1 - Mathf.SmoothStep(1.0f, 1.25f, t));
+            tail = Math.Max(tail, p); peak = Math.Max(peak, p);
         }
-        bool on = str > 0.001f || whole > 0.001f;
+        // (at rest the glow is static: these are the same every frame, so Send sends nothing)
+        bool on = tail > 0.001f || peak > 0.001f || whole > 0.001f;
         float s = (float)XpLight.FrontS(front, RunS0, RunS1);
         void Send(int i, StringName u, float v)
         {
@@ -211,8 +213,8 @@ public partial class DgRiver : Control
         if (on)
         {
             Send(1, UFront, s);
-            Send(2, UTail, str);
-            Send(3, UPeak, str);
+            Send(2, UTail, tail);
+            Send(3, UPeak, peak);
             Send(4, UWhole, whole);
             if (sent[5] != (day ? 1 : 0))
             {
@@ -228,7 +230,7 @@ public partial class DgRiver : Control
                 }
             }
         }
-        Spark.Show(on && str > 0.001f ? OnCrest(front) : null, str, day);
+        Spark.Show(on && peak > 0.001f ? OnCrest(front) : null, peak, day);
     }
 
     /// <summary>UI 18: the front's glint, a cool point of light where the front meets the crest, with a small bloom

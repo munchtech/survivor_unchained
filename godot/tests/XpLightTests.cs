@@ -22,25 +22,38 @@ public class XpLightTests
 
     static void Run(XpLight x, double sec) { for (double t = 0; t < sec - 1e-9; t += 1 / 60.0) x.Step(Math.Min(1 / 60.0, sec - t)); }
 
+    static readonly XpLight.XpRest Knobs = new(0.3, 0.5, 90, 0.8, 2.0);
+
     [Fact]
-    public void NothingAtRest()
+    public void AtRestTheGlowIsStatic()
     {
         var x = Fresh();
-        Assert.False(x.Lit);
+        Assert.True(x.Lit);
+        Assert.True(x.Resting);
+        double tail = x.Tail, peak = x.Peak, front = x.Front;
         x.Feed(0.2, 3, true);
         Run(x, 3);
-        Assert.False(x.Lit);
         Assert.Equal(0, x.Strength);
+        Assert.Equal(0.2, x.Front, 6);
+        Assert.Equal(x.K.RestTail, x.Tail, 6);
+        Assert.Equal(x.K.RestFront, x.Peak, 6);
+        Assert.Equal((tail, peak, front), (x.Tail, x.Peak, x.Front));   // nothing moves at rest
     }
 
     [Fact]
-    public void FirstFeedIsSilent()
+    public void LoadingShowsTheRestingGlow()
     {
-        var x = new XpLight();
+        var x = new XpLight(Knobs);
         x.Feed(0.7, 9, false);
         Run(x, 0.3);
-        Assert.False(x.Lit);
+        Assert.True(x.Resting);                        // no run: the glow at the fraction
+        Assert.Equal(0, x.Strength);
+        Assert.Equal(0.7, x.Front, 6);
         Assert.False(x.Rose);
+        Run(x, 89);
+        Assert.True(x.Resting);                        // the quiet clock started at the load
+        Run(x, 3);
+        Assert.True(x.Dark);
     }
 
     [Fact]
@@ -55,10 +68,86 @@ public class XpLightTests
         Assert.Equal(0.5, x.Front, 3);                 // at the fraction by 0.6 s
         Run(x, 1.3);
         Assert.Equal(1, x.Strength, 3);                // held ~1.5 s
-        Run(x, 0.5);
-        Assert.InRange(x.Strength, 0.0, 0.99);         // fading
+        Run(x, 0.4);
+        Assert.InRange(x.Strength, 0.01, 0.99);        // settling
+        Assert.InRange(x.Tail, x.K.RestTail + 0.01, 0.99);
         Run(x, 0.6);
-        Assert.False(x.Lit);                           // out by ~2.6 s
+        Assert.True(x.Resting);                        // at rest by ~2.9 s: dim, not dark
+        Assert.Equal(0.5, x.Front, 6);
+        Assert.Equal(x.K.RestTail, x.Tail, 6);
+        Assert.Equal(x.K.RestFront, x.Peak, 6);
+    }
+
+    [Fact]
+    public void DarkAfterTheLongQuietThenStraightBack()
+    {
+        var x = new XpLight(Knobs);
+        x.Feed(0.2, 3, true);
+        Run(x, 5);
+        x.Feed(0.4, 3, true);
+        Run(x, 3);
+        Assert.True(x.Resting);
+        Run(x, 86.5);                                  // 89.5 s since the gain
+        Assert.True(x.Resting);
+        Run(x, 1.0);                                   // 90.5 s: fading, slowly
+        Assert.InRange(x.RestLevel, 0.6, 0.9);
+        Run(x, 1.6);                                   // 92.1 s: dark
+        Assert.True(x.Dark);
+        Assert.False(x.Lit);
+        Assert.Equal(0, x.Tail);
+        Assert.Equal(0, x.Peak);
+        x.Feed(0.45, 3, true);                         // the next gain: the run plays as ever, from her hair
+        Run(x, 0.2);
+        Assert.True(x.Lit);
+        Assert.InRange(x.Front, 0.01, 0.44);
+        Assert.True(x.Strength > 0.9);
+        Run(x, 3);
+        Assert.True(x.Resting);                        // and settles back to the glow
+        Assert.Equal(0.45, x.Front, 6);
+    }
+
+    [Fact]
+    public void ZoneEntryRestsAndRestartsTheQuiet()
+    {
+        var x = new XpLight(Knobs);
+        x.Feed(0.3, 3, true);
+        Run(x, 100);
+        Assert.True(x.Dark);
+        x.Wake();                                      // into a zone
+        Assert.True(x.Resting);
+        Assert.Equal(0.3, x.Front, 6);
+        Run(x, 89);
+        Assert.True(x.Resting);
+        Run(x, 3.1);
+        Assert.True(x.Dark);
+        var y = new XpLight(Knobs);
+        y.Wake();                                      // before the first reading: nothing to show yet, no throw
+        y.Feed(0.6, 2, false);
+        Assert.True(y.Resting);
+    }
+
+    [Fact]
+    public void TheKnobsAreData()
+    {
+        var file = XpLight.XpRest.Parse(SurvivorUnchained.Core.Json.ReadContent("hud.json"));
+        Assert.Equal(XpLight.XpRest.Game, file);       // the game reads hud.json
+        Assert.InRange(file.RestTail, 0.05, 0.6);
+        Assert.InRange(file.RestFront, 0.05, 0.8);
+        Assert.InRange(file.Quiet, 10, 600);
+        var k = XpLight.XpRest.Parse("{\"xpLight\":{\"restTail\":0.2,\"restFront\":0.4,\"quiet\":30,\"settle\":1.5,\"darkFade\":3}}");
+        Assert.Equal(new XpLight.XpRest(0.2, 0.4, 30, 1.5, 3), k);
+        var x = new XpLight(k);
+        x.Feed(0.5, 1, true);
+        Assert.Equal(0.2, x.Tail, 6);
+        Assert.Equal(0.4, x.Peak, 6);
+        Run(x, 31.6);
+        Assert.InRange(x.RestLevel, 0.3, 0.7);
+        // missing knobs, a bad value, bad JSON: the defaults
+        var d = new XpLight.XpRest();
+        Assert.Equal(d with { Quiet = 45 }, XpLight.XpRest.Parse("{\"xpLight\":{\"quiet\":45}}"));
+        Assert.Equal(d, XpLight.XpRest.Parse("{\"xpLight\":{\"restTail\":7}}"));
+        Assert.Equal(d, XpLight.XpRest.Parse("{}"));
+        Assert.Equal(d, XpLight.XpRest.Parse("not json"));
     }
 
     [Fact]
@@ -123,25 +212,28 @@ public class XpLightTests
         Assert.Equal(0, x.Strength);
         Run(x, 1.2);
         Assert.Equal(0, x.Whole);
-        Assert.False(x.Lit);
+        Assert.True(x.Resting);                        // then the glow at what carried over
+        Assert.Equal(0.05, x.Front, 6);
         x.Feed(0.05, 5, true);
         Assert.False(x.Rose);                          // named once
     }
 
     [Fact]
-    public void DayToNightOrALossPutsItOut()
+    public void DayToNightOrALossSettlesWithoutARun()
     {
         var x = Fresh(0.2);
         x.Feed(0.5, 3, true);
         Run(x, 0.3);
         x.Feed(0.6, 7, false);                         // the ember out: her own experience, by day
-        Assert.False(x.Lit);
+        Assert.True(x.Resting);
+        Assert.Equal(0.6, x.Front, 6);
         Assert.False(x.Rose);
         var y = Fresh(0.2, 3);
         y.Feed(0.5, 3, true);
         Run(y, 0.3);
         y.Feed(0.1, 1, true);                          // a new night: the ember from 1
-        Assert.False(y.Lit);
+        Assert.True(y.Resting);
+        Assert.Equal(0.1, y.Front, 6);
     }
 
     [Fact]
@@ -151,6 +243,10 @@ public class XpLightTests
         Assert.Equal(0.7, a.Front, 3);
         Assert.Equal(1, a.Strength, 3);
         Assert.Equal(0, XpLight.Posed(0.7, 3.0).Strength);
+        var r = XpLight.PosedRest(0.3, Knobs);
+        Assert.True(r.Resting);
+        Assert.Equal(0.3, r.Front, 6);
+        Assert.True(XpLight.PosedDark(0.3, Knobs).Dark);
         Assert.Equal(1, XpLight.Posed(0.2, 0.3, rise: true).Whole, 3);
     }
 

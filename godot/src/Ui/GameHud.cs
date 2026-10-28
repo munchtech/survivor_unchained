@@ -727,14 +727,18 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>UI 18, the Drowned Girl's experience: the light's clock, what it shows, and the numbers' card (the pointer on
     /// the river, or the hold key or button down: XpLight.HoldKey, pad LB).</summary>
+    /// <summary>Entering a zone or loading: the experience light at its resting glow, the long quiet's clock from now.</summary>
+    public void XpWake() => xpLight.Wake();
+
     void XpTick(DgRiver river, double delta)
     {
         bool day = HudPin.Day is bool pd ? pd : !barEmber;
         var shown = xpLight;
-        if (HudPin.Xp is { } pose && pose.Split(':') is { Length: 3 } px
-            && double.TryParse(px[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pf)
-            && double.TryParse(px[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pt))
-            shown = XpLight.Posed(pf, pt, px[0] == "rise");
+        static double? Num(string v) => double.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+        var px = HudPin.Xp?.Split(':');
+        if (px is { Length: 3 } && Num(px[1]) is { } pf && Num(px[2]) is { } pt) shown = XpLight.Posed(pf, pt, px[0] == "rise");
+        else if (px is { Length: 2 } && px[0] == "rest" && Num(px[1]) is { } rf) shown = XpLight.PosedRest(rf);
+        else if (px is { Length: >= 1 } && px[0] == "dark") shown = XpLight.PosedDark(px.Length > 1 && Num(px[1]) is { } df ? df : 0.5);
         else xpLight.Step(delta);
         river.Light(shown, day, irons.Life.Mat);
         // the numbers
