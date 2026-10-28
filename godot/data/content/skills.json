@@ -155,7 +155,7 @@
       "bossDamage": 1.5,
       "art": "nova_holy",
       "description": "A bell tolls about you: everything near is drawn in to face you, and each one it draws hardens your barrier.",
-      "base": { "cooldown": 6, "damage": 20, "range": 8, "reach": 1.2, "barrier": 0.02, "drawMost": 10 },
+      "base": { "cooldown": 6, "damage": 12, "range": 8, "reach": 1.2, "barrier": 0.02, "drawMost": 10 },
       "evolutions": []
     },
     {

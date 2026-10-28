@@ -103,6 +103,9 @@ public sealed class RunResult
     public double StandTook, StandSeconds;
     /// <summary>The Bulwark's wall: blocks, rebukes, the most stones held at once.</summary>
     public int Blocks, Rebukes, StonesPeak;
+    /// <summary>The Rebuke skill's strikes, the Watch Bell's tolls, and the barrier the bell gave.</summary>
+    public int RebukeStrikes, Tolls;
+    public double BellBarrier, MaxHpEnd;
     public double FlareFirst = double.NaN, FlareGap = double.NaN, FlareBossShare = double.NaN;
     public Dictionary<string, double> FlareFills = new();
 
@@ -426,6 +429,7 @@ public static class ArenaSim
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
         r.FlareCasts = b.FlareCasts;
         r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
+        r.RebukeStrikes = b.RebukeStrikes; r.Tolls = b.Tolls; r.BellBarrier = b.BellBarrier; r.MaxHpEnd = b.MaxHp;
         r.FlareClutches = b.FlareClutches;
         r.FlareFills = new Dictionary<string, double>(b.FlareFills);
         if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0] / 60;

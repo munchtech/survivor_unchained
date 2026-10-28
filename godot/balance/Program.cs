@@ -182,6 +182,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
     {
         Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.DamageTaken,
         Skill = f.SkillDmg, Elite = f.SkillElite, Boss = f.SkillBoss, f.TurnsOn, f.TurnsDark, By = f.DamageBy, r.Build,
+        r.Blocks, r.RebukeStrikes, r.Tolls, r.BellBarrier, r.MaxHpEnd,
     };
     Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
     var sw = Stopwatch.StartNew();
