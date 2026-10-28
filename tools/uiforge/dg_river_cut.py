@@ -81,12 +81,15 @@ NUB_CUT = ([640, 655, 668, 690, 700, 712], [952, 965, 971.5, 977.5, 979, 978.5])
 # from the light): (strength, falloff px, offset px) at 1080
 SEAT_AO = (0.45, 4.0, (1.0, 2.0))
 # (UI 19, the owner: "the hair in middle/end could be more defined, mostly the end (right side)") a patch laid over the
-# finished river AFTER the seats' shadows (it carries its own, and the dash's and the cup's): from the middle's last swell
-# (x ~1000) to the Flare cup, three top sweeps along the river's top line into the cup's rim and three body bands from
-# behind the dash ring, one thin S across them; sculpted bands that keep the paint under them (procedural, no Krea).
-# Alpha untouched (the top line, the openwork and the crest stay). survivorsunchained_inputs/ui19_dg_src/hair/r_design5.py
+# finished river AFTER the seats' shadows, colour only (alpha, top line, openwork and crest stay). Round 2 (the max judge
+# on round 1's procedural bands, u19R: "six near-equal parallel brass rods ... cables plugged into the cup"; its fallback):
+# the UI 18 paint kept everywhere (the top band's wave, the XP light's broad relief, the seats' gaps), and only the right
+# end, x ~1295-1490, given definition along the paint's OWN curves: a crisp warm highlight on the top strand's crest, the
+# soft lower mass carved into three locks by teal grooves (the lock below each groove catching a warm, broken highlight
+# on its top edge), fine grooves fading in and out inside them, the locks darkened ~35% as they pass under the cup's lip.
+# survivorsunchained_inputs/ui19_dg_src/hair/r2_carve.py (procedural, no Krea)
 HAIR_DIR_19 = "C:/Users/munch/Desktop/survivorsunchained_inputs/ui19_dg_src/hair"
-POST_PATCHES = [("u19R", (980, 940, 1490, 1080))]
+POST_PATCHES = [("u19R2", (1180, 925, 1530, 1080))]
 # (UI 19, the owner: "not sure the small transparent patch on the left is worth it") the see-through spots left of the
 # flask (the slit between the top strands, the pocket behind the flask's neck) and every other see-through pixel inside
 # her hair's outline at x 600-760: a dark under-layer with back strands laid under what is there, in this layer (under
