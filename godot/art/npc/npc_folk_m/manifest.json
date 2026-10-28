@@ -1,0 +1,573 @@
+{
+ "hair": null,
+ "nipples": {
+  "l": [
+   0,
+   0,
+   0
+  ],
+  "r": [
+   0,
+   0,
+   0
+  ],
+  "tips": {
+   "l": 10730,
+   "r": 4078
+  }
+ },
+ "rest": {
+  "before": {
+   "deg": 88.745,
+   "bone": "thumb_03_r"
+  },
+  "after": {
+   "deg": 0.011,
+   "bone": "thumb_04_leaf_l"
+  },
+  "headMoved": 5.28e-16
+ },
+ "name": "npc_folk_m",
+ "sex": "male",
+ "height": 1.796,
+ "ownHeight": 1.796,
+ "lod": {
+  "file": "lod.glb",
+  "tris": {
+   "lod_generated": 3830
+  },
+  "total": 3830,
+  "shadowTris": 905,
+  "errMm": {
+   "cut": 4,
+   "lod_generated": {
+    "p99": 4.73,
+    "max": 10.48
+   }
+  },
+  "dropped": []
+ },
+ "maps": {
+  "generated": {
+   "map": 2048,
+   "normalMap": 2048,
+   "metalnessMap": 2048,
+   "roughnessMap": 2048
+  }
+ },
+ "frame": "glTF / Godot: Y up, metres; bind pose = the heroine's (heroine.glb), the body's own proportions",
+ "skin": {
+  "areolas": "none",
+  "look": true
+ },
+ "skeleton": {
+  "joints": 79,
+  "names": [
+   "root",
+   "pelvis",
+   "spine_01",
+   "spine_02",
+   "spine_03",
+   "neck_01",
+   "Head",
+   "clavicle_l",
+   "upperarm_l",
+   "lowerarm_l",
+   "hand_l",
+   "index_01_l",
+   "index_02_l",
+   "index_03_l",
+   "index_04_leaf_l",
+   "middle_01_l",
+   "middle_02_l",
+   "middle_03_l",
+   "middle_04_leaf_l",
+   "pinky_01_l",
+   "pinky_02_l",
+   "pinky_03_l",
+   "pinky_04_leaf_l",
+   "ring_01_l",
+   "ring_02_l",
+   "ring_03_l",
+   "ring_04_leaf_l",
+   "thumb_01_l",
+   "thumb_02_l",
+   "thumb_03_l",
+   "thumb_04_leaf_l",
+   "clavicle_r",
+   "upperarm_r",
+   "lowerarm_r",
+   "hand_r",
+   "index_01_r",
+   "index_02_r",
+   "index_03_r",
+   "index_04_leaf_r",
+   "middle_01_r",
+   "middle_02_r",
+   "middle_03_r",
+   "middle_04_leaf_r",
+   "pinky_01_r",
+   "pinky_02_r",
+   "pinky_03_r",
+   "pinky_04_leaf_r",
+   "ring_01_r",
+   "ring_02_r",
+   "ring_03_r",
+   "ring_04_leaf_r",
+   "thumb_01_r",
+   "thumb_02_r",
+   "thumb_03_r",
+   "thumb_04_leaf_r",
+   "thigh_l",
+   "calf_l",
+   "foot_l",
+   "ball_l",
+   "ball_leaf_l",
+   "thigh_r",
+   "calf_r",
+   "foot_r",
+   "ball_r",
+   "ball_leaf_r",
+   "upperarm_twist_01_l",
+   "upperarm_twist_01_r",
+   "lowerarm_twist_01_l",
+   "lowerarm_twist_01_r",
+   "lowerarm_twist_02_l",
+   "lowerarm_twist_02_r",
+   "upperarm_share_l",
+   "upperarm_share_r",
+   "lowerarm_share_l",
+   "lowerarm_share_r",
+   "lowerarm_point_l",
+   "lowerarm_point_r",
+   "calf_share_l",
+   "calf_share_r"
+  ]
+ },
+ "body": "body.glb",
+ "pieces": [],
+ "generated": {
+  "dressed": true,
+  "whole": true,
+  "source": "generated/meshy/meshy_folk_m/model.glb (generated), Fix -> generated/game/npc_folk_m_clean.glb, wrap -> catalogue gen_npc_folk_m",
+  "note": "generated mesh -> Fix (cleanup) -> wrap (skeleton fit, weight donor) -> genfix/whole.js: the generated surface itself on the game skeleton, its own head, hair and paint, graded; no base surfaces",
+  "report": {
+   "offsetScale": 1.0073,
+   "wrapGapMm": {
+    "mean": 11.3,
+    "median": 8.6,
+    "p90": 24.1,
+    "p99": 45.9
+   },
+   "wrapGapRegionsMm": {
+    "headNeck": {
+     "n": 2999,
+     "mean": 12.1,
+     "p90": 34.1
+    },
+    "arms": {
+     "n": 3987,
+     "mean": 12.9,
+     "p90": 25.7
+    },
+    "legs": {
+     "n": 4075,
+     "mean": 7.7,
+     "p90": 14.6
+    },
+    "torso": {
+     "n": 2933,
+     "mean": 13.2,
+     "p90": 25.2
+    }
+   },
+   "rigid": 0,
+   "holes": {
+    "edges": 0,
+    "loops": 0,
+    "sizes": []
+   },
+   "weights": {
+    "copied": 100,
+    "far": 5.9,
+    "dotHist": [
+     1,
+     1,
+     1,
+     1,
+     2,
+     2,
+     2,
+     3,
+     7,
+     81
+    ],
+    "smoothed": {
+     "iters": 14,
+     "edgeMm": 15,
+     "bones": 61
+    },
+    "wrist": {}
+   },
+   "deform": {
+    "walk": {
+     "l_shoulder": "p99 68.8/65.9 (1.04x) bad 2.9/4.64% flip 1.24/0%",
+     "l_elbow": "p99 34.8/35.6 (0.98x) bad 0/3.08% flip 0/0%",
+     "l_hip": "p99 33.2/43.9 (0.76x) bad 0.61/2.38% flip 0/0%",
+     "l_knee": "p99 72.9/97.6 (0.75x) bad 14.59/24.24% flip 0.72/4.55%",
+     "r_shoulder": "p99 76.7/76.9 (1.00x) bad 1.89/3.61% flip 2.26/1.03%",
+     "r_elbow": "p99 36.5/33.4 (1.09x) bad 0/2.18% flip 0/0%",
+     "r_hip": "p99 41.4/44.4 (0.93x) bad 0.56/2.44% flip 0/0%",
+     "r_knee": "p99 69.4/85.9 (0.81x) bad 15.11/20% flip 0.35/7%"
+    },
+    "gen": {
+     "l_shoulder": {
+      "p99": 68.8,
+      "max": 130.7,
+      "bad": 2.9,
+      "flip": 1.24,
+      "tris": 241,
+      "worst": {
+       "qf": 1.3068870300854107,
+       "q": 130.7,
+       "l0Mm": 13.6,
+       "l1Mm": 31.4,
+       "at": [
+        0.103,
+        1.51,
+        0
+       ],
+       "a": 5359,
+       "b": 5387
+      }
+     },
+     "l_elbow": {
+      "p99": 34.8,
+      "max": 55.6,
+      "bad": 0,
+      "flip": 0,
+      "tris": 282,
+      "worst": {
+       "qf": 0.555625399637496,
+       "q": 55.6,
+       "l0Mm": 15.1,
+       "l1Mm": 23.5,
+       "at": [
+        0.362,
+        1.183,
+        -0.169
+       ],
+       "a": 10972,
+       "b": 10973
+      }
+     },
+     "l_hip": {
+      "p99": 33.2,
+      "max": 52.8,
+      "bad": 0.61,
+      "flip": 0,
+      "tris": 164,
+      "worst": {
+       "qf": 0.5282451373500714,
+       "q": 52.8,
+       "l0Mm": 24.1,
+       "l1Mm": 11.4,
+       "at": [
+        0.189,
+        0.973,
+        0.002
+       ],
+       "a": 5699,
+       "b": 5697
+      }
+     },
+     "l_knee": {
+      "p99": 72.9,
+      "max": 83.6,
+      "bad": 14.59,
+      "flip": 0.72,
+      "tris": 555,
+      "worst": {
+       "qf": 0.8358987665425246,
+       "q": 83.6,
+       "l0Mm": 9.8,
+       "l1Mm": 18,
+       "at": [
+        0.044,
+        0.506,
+        0.051
+       ],
+       "a": 9285,
+       "b": 9290
+      }
+     },
+     "r_shoulder": {
+      "p99": 76.7,
+      "max": 96.6,
+      "bad": 1.89,
+      "flip": 2.26,
+      "tris": 265,
+      "worst": {
+       "qf": 0.9663145520896033,
+       "q": 96.6,
+       "l0Mm": 12.5,
+       "l1Mm": 24.6,
+       "at": [
+        -0.162,
+        1.479,
+        0.03
+       ],
+       "a": 5309,
+       "b": 5306
+      }
+     },
+     "r_elbow": {
+      "p99": 36.5,
+      "max": 45.5,
+      "bad": 0,
+      "flip": 0,
+      "tris": 288,
+      "worst": {
+       "qf": 0.45474437490086594,
+       "q": 45.5,
+       "l0Mm": 15.6,
+       "l1Mm": 8.5,
+       "at": [
+        -0.376,
+        1.224,
+        -0.017
+       ],
+       "a": 8088,
+       "b": 8082
+      }
+     },
+     "r_hip": {
+      "p99": 41.4,
+      "max": 48.9,
+      "bad": 0.56,
+      "flip": 0,
+      "tris": 177,
+      "worst": {
+       "qf": 0.48860177999214593,
+       "q": 48.9,
+       "l0Mm": 28.4,
+       "l1Mm": 14.5,
+       "at": [
+        -0.235,
+        0.949,
+        0.011
+       ],
+       "a": 14556,
+       "b": 14627
+      }
+     },
+     "r_knee": {
+      "p99": 69.4,
+      "max": 84.7,
+      "bad": 15.11,
+      "flip": 0.35,
+      "tris": 569,
+      "worst": {
+       "qf": 0.8473539446388445,
+       "q": 84.7,
+       "l0Mm": 20.9,
+       "l1Mm": 3.2,
+       "at": [
+        -0.157,
+        0.471,
+        -0.121
+       ],
+       "a": 7570,
+       "b": 7581
+      }
+     }
+    },
+    "base": {
+     "l_shoulder": {
+      "p99": 65.9,
+      "max": 97.7,
+      "bad": 4.64,
+      "flip": 0,
+      "tris": 194,
+      "worst": {
+       "qf": 0.9771106213755343,
+       "q": 97.7,
+       "l0Mm": 15.7,
+       "l1Mm": 31,
+       "at": [
+        0.156,
+        1.438,
+        -0.103
+       ],
+       "a": 5458,
+       "b": 5460
+      }
+     },
+     "l_elbow": {
+      "p99": 35.6,
+      "max": 45.9,
+      "bad": 3.08,
+      "flip": 0,
+      "tris": 227,
+      "worst": {
+       "qf": 0.4588662300457801,
+       "q": 45.9,
+       "l0Mm": 16.1,
+       "l1Mm": 8.7,
+       "at": [
+        0.28,
+        1.208,
+        -0.068
+       ],
+       "a": 7319,
+       "b": 7292
+      }
+     },
+     "l_hip": {
+      "p99": 43.9,
+      "max": 54,
+      "bad": 2.38,
+      "flip": 0,
+      "tris": 42,
+      "worst": {
+       "qf": 0.5396535701584174,
+       "q": 54,
+       "l0Mm": 25,
+       "l1Mm": 11.5,
+       "at": [
+        0.187,
+        0.947,
+        0.004
+       ],
+       "a": 8285,
+       "b": 8286
+      }
+     },
+     "l_knee": {
+      "p99": 97.6,
+      "max": 120.5,
+      "bad": 24.24,
+      "flip": 4.55,
+      "tris": 198,
+      "worst": {
+       "qf": 1.2045495216905984,
+       "q": 120.5,
+       "l0Mm": 23.8,
+       "l1Mm": 52.4,
+       "at": [
+        0.029,
+        0.51,
+        0.037
+       ],
+       "a": 8555,
+       "b": 8545
+      }
+     },
+     "r_shoulder": {
+      "p99": 76.9,
+      "max": 96.3,
+      "bad": 3.61,
+      "flip": 1.03,
+      "tris": 194,
+      "worst": {
+       "qf": 0.9627822670872135,
+       "q": 96.3,
+       "l0Mm": 18.6,
+       "l1Mm": 36.5,
+       "at": [
+        -0.218,
+        1.428,
+        -0.1
+       ],
+       "a": 381,
+       "b": 380
+      }
+     },
+     "r_elbow": {
+      "p99": 33.4,
+      "max": 38.1,
+      "bad": 2.18,
+      "flip": 0,
+      "tris": 229,
+      "worst": {
+       "qf": 0.38115345988417804,
+       "q": 38.1,
+       "l0Mm": 18.9,
+       "l1Mm": 11.7,
+       "at": [
+        -0.366,
+        1.246,
+        -0.039
+       ],
+       "a": 2227,
+       "b": 2241
+      }
+     },
+     "r_hip": {
+      "p99": 44.4,
+      "max": 47.8,
+      "bad": 2.44,
+      "flip": 0,
+      "tris": 41,
+      "worst": {
+       "qf": 0.47846818043324557,
+       "q": 47.8,
+       "l0Mm": 26,
+       "l1Mm": 13.5,
+       "at": [
+        -0.237,
+        0.946,
+        0.004
+       ],
+       "a": 3215,
+       "b": 3216
+      }
+     },
+     "r_knee": {
+      "p99": 85.9,
+      "max": 96.9,
+      "bad": 20,
+      "flip": 7,
+      "tris": 200,
+      "worst": {
+       "qf": 0.9686411921300175,
+       "q": 96.9,
+       "l0Mm": 23.1,
+       "l1Mm": 45.5,
+       "at": [
+        -0.114,
+        0.49,
+        0.042
+       ],
+       "a": 3514,
+       "b": 3509
+      }
+     }
+    }
+   }
+  }
+ },
+ "baked": true,
+ "bake": {
+  "bytes": 2656668,
+  "nodes": [
+   {
+    "name": "npc_folk_m",
+    "surfaces": [
+     "generated"
+    ],
+    "tris": 27998,
+    "morphs": 0
+   }
+  ],
+  "skinDeleted": 0
+ },
+ "tris": {
+  "generated": 27998,
+  "surfaces": {
+   "generated": 27998
+  },
+  "total": 27998,
+  "drawn": 27998
+ }
+}
