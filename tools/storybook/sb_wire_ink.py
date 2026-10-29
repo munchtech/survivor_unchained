@@ -4,10 +4,10 @@ Re-runnable: reads each plate's layers.json and tools/storybook/ink_picks.json (
 drawing plays each state), copies only the used layers (base layers, glows, the picked
 state drawings) to godot/art/storybook/sb00/<plate>/ under clean names (<name>.png for a
 base layer, <state>.png for a state drawing), writes their .import files, and rewrites
-SB00's plates from 56 s on in godot/data/storybook/sb00.json: the placeholder cards
-(or the ink plates of an earlier run) are replaced by the four ink plates, and every plate
-cue keeps its absolute time (moved to whichever new plate is up then). Plates before 56 s,
-the file's own cues and "live" are left as they are.
+SB00's plates in godot/data/storybook/sb00.json: the placeholder cards a wired ink plate
+covers (COVERS; or the ink plates of an earlier run) are replaced by the ink plates, and every
+plate cue keeps its absolute time (moved to whichever new plate is up then). Cards no ink plate
+covers yet, the file's own cues and "live" are left as they are.
 
     python tools/storybook/sb_wire_ink.py
     Godot_console.exe --headless --path godot --import     (after new or changed art)
@@ -37,12 +37,17 @@ SB = os.path.join(ROOT, "godot", "data", "storybook", "sb00.json")
 ART = os.path.join(ROOT, "godot", "art", "storybook", "sb00")
 RES = "res://art/storybook/sb00"
 
-# The plates this replaces (the placeholder cards p7-p10c) and its own earlier output.
-REPLACED = {"p7", "p8", "p9", "p10a", "p10b", "p10c"}
+# The placeholder cards each ink plate replaces: a card goes only once the ink plate that covers its span is wired
+# (a plate function below and its layers.json built). Every ink_ plate of an earlier run is replaced too.
+COVERS = {"p0": {"p0"}, "p1": {"p1", "p2"}, "p2": {"p3"}, "p3": {"p4", "p5"}, "p4": {"p6"},
+          "p5": {"p7", "p8", "p9", "p10a", "p10b", "p10c"}}
+PLATE_ORDER = ["p0", "p1", "p2", "p3", "p3d", "p4", "p5", "p6", "p7", "p7u"]
 PREFIX = "ink_"
 
 # Where the art's own features are (comps units, found in the layer images; they follow the comps).
-P5_FOURTH_LIGHT = (2362, 684)   # round 4 base: the fourth cage (gen 1344,389; ink_layers.P5_CAGES[-1])
+P5_FOURTH_LIGHT = (1916, 585)   # Storybook 4 rc: the fourth light's water, just under its flame (out/ink_layers/p5)
+P3_AT = {"hand": (399, 882), "dead": (1030, 430), "wound": (2780, 560), "stones": (2730, 1070)}   # p3 rc units
+P1_ANVIL = (1652, 746)          # p1 (r6): the anvil, where the hammer sparks fly
 P7_FLASK = (1550, 1490)         # the comps' rings from the flask
 GLARE_FLICKER = {"kind": "flicker", "rate": 0.9, "amount": 0.2, "seed": 4}   # p7's lamp glare (blue_rim breathes with it)
 
@@ -134,34 +139,29 @@ def opacity_keys(points, times, extra=None):
 
 # ---------------------------------------------------------------- plates
 def plate_p5(picks):
+    """The Low Ford (Storybook 4, ink_rc_build): one plane (the re-carved ChatGPT source, the wagon re-cut) + the blue
+    fires (add, flickering). Close on the fourth light midstream with nobody in frame (rings drifting under it), a slow
+    push; from 7.5 s the pull back to the full wide by 14.5 s: the drowned stand in the ditch water. The mist band
+    over the river (z 1.3) gives the pull-back its depth."""
     P = Plate("p5")
+    fx, fy = P5_FOURTH_LIGHT
     layers = []
     for e in P.bases():
-        if e["name"] == "drowned":
-            continue
         L = P.layer(e, e["name"])
-        if e["name"] == "lamps":    # the blue flames breathe: slow, small
-            L["touch"] = [{"kind": "flicker", "rate": 1.3, "amount": 0.16, "seed": 5}]
-        if e["name"] == "far":      # the ford's water: rings under the fourth light
-            fx, fy = P5_FOURTH_LIGHT
-            L["touch"] = [{"kind": "ripple", "centers": [P.S(fx, fy + 18)], "period": 3.2, "speed": 38, "amp": 1.4,
-                           "rings": 3, "gap": 20, "reach": 230, "squash": 0.28, "light": 0.3}]
+        if e["name"] == "land":
+            L["touch"] = [{"kind": "ripple", "centers": [P.S(fx, fy)], "period": 3.6, "speed": 30, "amp": 1.4,
+                           "rings": 3, "gap": 20, "reach": 260, "squash": 0.28, "light": 0.3}]
+        elif e["name"] == "fires":    # the blue flames breathe: slow, small
+            L["touch"] = [{"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 5}]
         layers.append(L)
-    for state, file in picks.items():
-        e = P.entry(file)
-        layers.append(P.layer(e, state))
-    layers.sort(key=lambda L: -L["z"])
     return P, {
         "id": PREFIX + "p5", "at": 56, "until": 71,
         "in": {"kind": "fade", "dur": 1.4, "color": "#000000"},
-        # Open at 1.6 on the ford and the fourth light (1 image px a screen px holds to 1.6), push to 1.75 by 7 s,
-        # hold, then pull back up the road to the wide rest by 14.5 s: the drowned in both ditches.
-        "camera": [P.cam(0, 1880, 700, 1.6, dolly=0.15), P.cam(7.0, 1990, 705, 1.75, dolly=0.15, ease="out"),
-                   P.cam(7.5, 1990, 705, 1.75, dolly=0.15),
-                   P.cam(14.5, 1800, 1000, 1.0, dolly=0, ease="inout")],
+        "camera": [P.cam(0, 1880, 650, 2.2), P.cam(7.0, 1900, 625, 2.45, ease="out"), P.cam(7.5, 1900, 625, 2.45),
+                   P.cam(14.5, 1800, 880, 0.92, ease="inout")],
         "note": "INK: The Low Ford; the drowned (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": layers,
-        "fx": [{"kind": "mist", "rect": [-200, 560, 3600, 260], "z": 3.3, "color": "#8f9fb6", "density": 0.28,
+        "fx": [{"kind": "mist", "rect": P.S(-200, 520) + [4000, 260], "z": 1.3, "color": "#8f9fb6", "density": 0.24,
                 "speed": [9, 0], "scale": 320, "seed": 3}],
         "cues": [],
     }
@@ -525,6 +525,188 @@ def plate_p7u(picks):
     }
 
 
+# ---------------------------------------------------------------- Storybook 4: p0, p1, p2, p4 (ink_r6.py builds them)
+def r6_map(P, e, fn, name):
+    """A reveal map for layer e, the size of its image (small), from fn(canvas_x, canvas_y) in the plate's own units."""
+    w, h = e["size_px"]
+    mw = 256
+    mh = max(2, round(mw * h / w))
+    ys, xs = np.mgrid[0:mh, 0:mw].astype(np.float32)
+    cx = e["pos"][0] + (xs + 0.5) * w / mw * e["scale"]
+    cy = e["pos"][1] + (ys + 0.5) * h / mh * e["scale"]
+    v = (np.clip(fn(cx, cy), 0, 1) * 255 + 0.5).astype(np.uint8)
+    P.used[name + ".png"] = name + ".png"
+    P.made[name + ".png"] = np.dstack([v, v, v, np.full_like(v, 255)])
+    return f"{RES}/{P.pid}/{name}.png"
+
+
+def r6_layers(P):
+    return {e["name"]: e for e in P.bases()}
+
+
+def plate_p0(picks):
+    """The lamp at the post: dusk-blue and unlit; at 0.9 s the flame catches from a spark, its warm light spreads (1-2.2 s)."""
+    P = Plate("p0")
+    E = r6_layers(P)
+    fx_, fy_bot, fy_top = P.meta["features"]["flame"]
+    fy = (fy_bot + fy_top) / 2
+    W, H = P.meta["canvas_units"]
+    dmax = max(np.hypot(x - fx_, (y - fy) * 1.15) for x in (0, W) for y in (0, H))
+    lit = P.layer(E["lit"], "lit", touch=[
+        {"kind": "reveal", "map": r6_map(P, E["lit"], lambda x, y: (np.hypot(x - fx_, (y - fy) * 1.15) / dmax) ** 0.8, "lit_map"),
+         "t0": 1.0, "t1": 2.2, "soft": 0.14},
+        {"kind": "flicker", "rate": 5, "amount": 0.05, "seed": 2}])
+    flame = P.layer(E["flame"], "flame", pivot=P.S(fx_, fy_bot),
+                    keys=[{"t": 0, "scale": 0.06, "opacity": 0}, {"t": 0.88, "scale": 0.06, "opacity": 0},
+                          {"t": 0.9, "scale": 0.1, "opacity": 1}, {"t": 1.2, "scale": 1, "opacity": 1, "ease": "out"}],
+                    touch=[{"kind": "flicker", "rate": 8, "amount": 0.16, "seed": 3}])
+    glow = P.layer(E["glow"], "glow", keys=[{"t": 0, "opacity": 0}, {"t": 0.95, "opacity": 0}, {"t": 1.9, "opacity": 1, "ease": "out"}],
+                   touch=[{"kind": "flicker", "rate": 6, "amount": 0.3, "seed": 1}])
+    return P, {
+        "id": PREFIX + "p0", "at": 0, "until": 2.5,
+        "in": {"kind": "fade", "dur": 0.6, "color": "#000000"},
+        # Static, a tiny push toward the lamp through the light run into Plate 1 (drawn until 4.1 s).
+        "camera": [P.cam(0, 1700, 751, 1.0), P.cam(4.1, 1688, 772, 1.045, ease="linear")],
+        "note": "INK: The lamp at the post (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(E["dark"], "dark"), lit, flame, glow],
+        "fx": [{"kind": "particles", "preset": "sparks", "at": P.S(fx_, fy_bot - 30), "area": [30, 14], "z": 1.0, "rate": 0,
+                "burst": [0.86], "count": 16, "speed": [60, 170], "size": [3, 6], "seed": 5}],
+        "cues": [],
+    }
+
+
+def plate_p1(picks):
+    """The cut and the chain: down from the smiths on the lip to the doorway; the slab slides shut (9.5-11.3 s), the glow goes out."""
+    P = Plate("p1")
+    E = r6_layers(P)
+    f = P.meta["features"]
+    ox0, oy0, ox1, oy1 = f["open"]
+    sx0, sx1, sy0, sy1 = f["slab"]
+    # the slab's leading edge stops just inside the left post; a static scale so it spans the opening (never grows on screen)
+    sw, ow = sx1 - sx0, ox1 - ox0
+    sc = round(max(1.0, (ow + 24) / sw), 3)
+    dx = r((ox0 - 10) - sx0)
+    close0, close1 = 9.5, 11.3
+    slab = P.layer(E["slab"], "slab", pivot=P.S(sx0, sy1),
+                   keys=[{"t": 0, "dx": 0, "scale": sc}, {"t": close0, "dx": 0, "scale": sc},
+                         {"t": close1, "dx": dx, "scale": sc, "ease": "inout"}])
+    out = [{"t": 0, "opacity": 1}, {"t": close1 - 0.6, "opacity": 1}, {"t": close1 + 0.15, "opacity": 0, "ease": "out"}]
+    curve = P.layer(E["curve"], "curve", keys=out)
+    cglow = P.layer(E["curve_glow"], "curve_glow", keys=out, touch=[{"kind": "flicker", "rate": 0.5, "amount": 0.25, "seed": 11}])
+    torches = P.layer(E["torches"], "torches", touch=[{"kind": "flicker", "rate": 7, "amount": 0.3, "seed": 12}])
+    if sc > 1.0:
+        print(f"p1: slab {sw:.0f} wide for a {ow:.0f} opening: scale {sc}")
+    ax, ay = P1_ANVIL
+    cx = (ox0 + ox1) / 2
+    return P, {
+        "id": PREFIX + "p1", "at": 2.5, "until": 15.5,
+        "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
+        # The lip (hold), then down the chain and the torch column to the doorway by 8 s; a slow push while it shuts.
+        "camera": [P.cam(0, 1650, 700, 1.0), P.cam(1.2, 1650, 760, 1.0),
+                   P.cam(8.0, cx, 3170, 1.1, ease="inout"), P.cam(14.2, cx, 3190, 1.15)],
+        "note": "INK: The cut and the chain (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(E["base"], "base"), curve, cglow, slab, torches],
+        "fx": [{"kind": "particles", "preset": "sparks", "at": P.S(ax, ay), "area": [70, 20], "z": 1.0, "rate": 0,
+                "burst": [0.3, 1.1, 1.9, 2.7, 3.5, 4.3, 5.1], "count": 18, "seed": 7}],
+        # the slab shuts on a deep drum beat
+        "cues": [{"at": close1, "do": "sfx", "name": "hit", "gain": 0.8}],
+    }
+
+
+def plate_p2(picks):
+    """Ember: up from the buried door through the threads of light to the town; the threads light upward as the camera rises."""
+    P = Plate("p2")
+    E = r6_layers(P)
+    W, H = P.meta["canvas_units"]
+    dx_, dy_ = P.meta["features"]["door"]
+    up = lambda x, y: 1 - y / H                    # dark (first) at the bottom
+    th = [{"kind": "reveal", "map": r6_map(P, E["threads"], up, "threads_map"), "t0": -1.5, "t1": 8.5, "soft": 0.12},
+          {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]
+    tg = [{"kind": "reveal", "map": r6_map(P, E["threads_glow"], up, "threads_glow_map"), "t0": -1.5, "t1": 8.5, "soft": 0.12},
+          {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]
+    x0 = max(dx_, 3200 / 1.12 / 2 + 40)
+    return P, {
+        "id": PREFIX + "p2", "at": 15.5, "until": 25.5,
+        "in": {"kind": "dissolve", "dur": 1.2},
+        "camera": [P.cam(0, x0, min(dy_, H - 1339 / 1.12 / 2 - 30), 1.12), P.cam(9.0, 1650, 760, 1.0, ease="inout")],
+        "note": "INK: Ember (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(E["base"], "base"), P.layer(E["threads"], "threads", touch=th),
+                   P.layer(E["threads_glow"], "threads_glow", touch=tg),
+                   P.layer(E["door_glow"], "door_glow", touch=[{"kind": "flicker", "rate": 0.45, "amount": 0.3, "seed": 8}]),
+                   P.layer(E["lights"], "lights", touch=[{"kind": "flicker", "rate": 6, "amount": 0.25, "seed": 7}])],
+        "cues": [],
+    }
+
+
+def plate_p3(picks):
+    """The dead get up (Storybook 4, ink_rc_build): the night frieze at 0.7 units a px (its height fits the band at
+    zoom 1). Close on the crack and the rising hand (push), up to the standing dead (3.5 s), across to the spear and
+    the spilled stones (7.5 s); at 11.5 s the light drains (glows only, the sky grays by the grade); at 12.5 s a hard
+    cut to the dawn plate (p3d)."""
+    P = Plate("p3")
+    hx, hy = P3_AT["hand"]
+    wx, wy = P3_AT["wound"]
+    drain = lambda vals: [{"t": t, "opacity": o} for t, o in vals]
+    layers = []
+    for e in P.bases():
+        n = e["name"]
+        L = P.layer(e, n)
+        if n == "dead_light":   # the lamp behind paper, breathing slowly; it goes into the ground at first light
+            L["touch"] = [{"kind": "flicker", "rate": 0.35, "amount": 0.3, "seed": 21}]
+            L["keys"] = drain([(0, 1), (11.5, 1), (12.4, 0.0)])
+        elif n == "ember":      # the crack brightens with the frost's crack (2.0 s); drains with him
+            L["touch"] = [{"kind": "flicker", "rate": 0.6, "amount": 0.16, "seed": 22}]
+            L["keys"] = drain([(0, 0.55), (1.8, 0.55), (2.4, 1), (11.5, 1), (12.4, 0.1)])
+        layers.append(L)
+    return P, {
+        "id": PREFIX + "p3", "at": 25.5, "until": 38.0,
+        "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+        "camera": [P.cam(0, 900, 1000, 1.8), P.cam(3.2, 860, 1010, 2.0, ease="out"),
+                   P.cam(5.2, 1100, 600, 1.55, ease="inout"), P.cam(7.2, 1120, 590, 1.6),
+                   P.cam(9.3, 2420, 680, 1.3, ease="inout"), P.cam(12.5, 2500, 700, 1.38, ease="out")],
+        "grade": [{"t": 0, "exposure": 1, "sat": 1, "tint": "#ffffff"}, {"t": 11.5, "exposure": 1, "sat": 1, "tint": "#ffffff"},
+                  {"t": 12.5, "exposure": 1.1, "sat": 0.8, "tint": "#e6eaf0"}],
+        "note": "INK: The dead get up (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": layers,
+        "fx": [{"kind": "particles", "preset": "motes", "at": P.S(hx - 20, hy + 200), "area": [520, 160], "z": 1, "rate": 3,
+                "size": [4, 8], "color": ["#ffa040e0", "#ff602000"], "seed": 23},
+               {"kind": "particles", "preset": "sparks", "at": P.S(wx, wy), "area": [50, 40], "z": 1, "burst": [7.6],
+                "count": 22, "dir": [0.2, 1], "speed": [40, 140], "gravity": [0, 320], "size": [3, 6], "life": 1.3, "seed": 24}],
+        "cues": [],
+    }
+
+
+def plate_p3d(picks):
+    """First light: a hard cut (wider than the night's last frame) to the dawn plate; the risen lie fallen, the
+    Watchman leans on his spear; the tilt up to the gold band along the hills."""
+    P = Plate("p3d")
+    return P, {
+        "id": PREFIX + "p3d", "at": 38.0, "until": 46.0,
+        "in": {"kind": "cut"},
+        "camera": [P.cam(0, 2160, 960, 1.12), P.cam(1.0, 2160, 950, 1.12),
+                   P.cam(7.5, 2160, 640, 1.12, ease="inout")],
+        "note": "INK: First light (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(e, e["name"]) for e in P.bases()],
+        "cues": [],
+    }
+
+
+def plate_p4(picks):
+    """Keepers and lamps: the pan left to right; the willow (z 0.8) passes faster, the years-pass divider at ~4.5 s."""
+    P = Plate("p4")
+    E = r6_layers(P)
+    return P, {
+        "id": PREFIX + "p4", "at": 46.0, "until": 56.0,
+        "in": {"kind": "dissolve", "dur": 1.0},
+        "camera": [P.cam(0, 1650, 950, 1.05), P.cam(10.0, 4150, 950, 1.05, ease="inout")],
+        "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(E["base"], "base"),
+                   P.layer(E["lamps"], "lamps", touch=[{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]),
+                   P.layer(E["willow"], "willow")],
+        "cues": [],
+    }
+
+
 # ---------------------------------------------------------------- copy + json
 def sha(p):
     return hashlib.sha1(open(p, "rb").read()).hexdigest() if os.path.exists(p) else None
@@ -596,25 +778,34 @@ def fmt(d):
     return "\n".join(out) + "\n"
 
 
+def wired():
+    """(pid, plate function) for every ink plate that is wired: its function here and its layers.json built."""
+    return [(pid, globals()["plate_" + pid]) for pid in PLATE_ORDER
+            if "plate_" + pid in globals() and os.path.exists(os.path.join(LAYERS, pid, "layers.json"))]
+
+
 def main():
     picks = json.load(open(PICKS, encoding="utf-8"))
     sb = json.load(open(SB, encoding="utf-8"))
-    built = [f(picks.get(pid, {})) for pid, f in
-             [("p5", plate_p5), ("p6", plate_p6), ("p7", plate_p7), ("p7u", plate_p7u)]]
+    plates = wired()
+    built = [f(picks.get(pid, {})) for pid, f in plates]
     for P, _ in built:
         copy_art(P)
+    replaced = set().union(*(COVERS.get(pid, set()) for pid, _ in plates))
+    new = [pl for _, pl in built]
+    own = [{k: v for k, v in c.items() if k != "at"} for pl in new for c in pl["cues"]]
 
     keep, old_cues = [], []
     for p in sb["plates"]:
-        if p["id"] in REPLACED or p["id"].startswith(PREFIX):
-            old_cues += [dict(c, at=round(p["at"] + c["at"], 3)) for c in p.get("cues", [])]
+        if p["id"] in replaced or p["id"].startswith(PREFIX):
+            old_cues += [dict(c, at=round(p["at"] + c["at"], 3)) for c in p.get("cues", [])
+                         if {k: v for k, v in c.items() if k != "at"} not in own]     # a plate's own cues come back with it
         else:
             keep.append(p)
     for c in old_cues:
         for match, at in RETIME:
             if all(c.get(k) == v for k, v in match.items()):
                 c["at"] = at
-    new = [pl for _, pl in built]
     for c in old_cues:   # each cue to the newest plate up at its absolute time, at the same absolute time
         host = max((pl for pl in new if pl["at"] <= c["at"] + 1e-6), key=lambda pl: pl["at"])
         host["cues"].append(dict(c, at=round(c["at"] - host["at"], 3)))
@@ -623,10 +814,11 @@ def main():
         for k in ("fx", "cues"):
             if not pl.get(k):
                 pl.pop(k, None)
-    sb["plates"] = keep + new
+    sb["plates"] = sorted(keep + new, key=lambda pl: pl["at"])
     text = fmt(sb)
     json.loads(text)
     open(SB, "w", encoding="utf-8", newline="\n").write(text)
+    print("plates:", ", ".join(f"{pl['id']} {pl['at']}-{pl['until']}" for pl in sb["plates"]))
     print("cues:", ", ".join(f"{pl['id']}+{c['at']}={pl['at'] + c['at']:.1f} {c.get('id') or c.get('name') or c['do']}"
                              for pl in new for c in pl.get("cues", [])))
     print("wrote", os.path.relpath(SB, ROOT))
