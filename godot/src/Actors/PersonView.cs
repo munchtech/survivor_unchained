@@ -429,7 +429,7 @@ public partial class PersonView : Node3D, INpcView
         if (!held.TryGetValue("handslot.l", out var at)) return;
         Node3D host = at;
         foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
-        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.45f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
+        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.46f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
     }
 
     Node3D TorchFist(Node3D torch)
@@ -465,8 +465,10 @@ public partial class PersonView : Node3D, INpcView
                 // A tapered dark wood handle (0.5 m, gripped near its middle) and a charred wrapped head; the flame is the kit's.
                 root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.026f, BottomRadius = 0.017f, Height = 0.5f, Material = wood }, Position = new Vector3(0, 0f, 0) });
                 var char_ = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f };
-                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.034f, Height = 0.08f, Material = char_ }, Position = new Vector3(0, 0.29f, 0) });
-                FlameKit.Add(root, new Vector3(0, 0.33f, 0), FlameKind.Torch, scale: 0.6f, light: false);
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.034f, Height = 0.08f, Material = char_ }, Position = new Vector3(0, 0.29f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                var ember = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f, EmissionEnabled = true, Emission = new Color("#e04810"), EmissionEnergyMultiplier = 0.6f };
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.034f, BottomRadius = 0.036f, Height = 0.012f, Material = ember }, Position = new Vector3(0, 0.328f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                FlameKit.Add(root, new Vector3(0, 0.30f, 0), FlameKind.Torch, scale: 0.5f, light: false);
                 return root;
             }
             case "bucket_water":
