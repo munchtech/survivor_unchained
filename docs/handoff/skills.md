@@ -1,5 +1,63 @@
 # Handoff: skills look and feel
 
+## Combat VFX 4 (vfx-4, 28 Oct night): WAITING ON THE OWNER'S PATTERN PICK; then one judge and the color A|B
+**The owner's notes (via main), in order:**
+- "what I do miss is the hatch patterns"
+- "the old hatch was stylized, a cool design. this new one is just a grid"
+- "it dosn't have to use the old one, just be less boring than a pure grid"
+- A reference sheet of 7 typed lane telegraphs (`survivorsunchained_inputs\vfx4_owner_ref\telegraph_ideas.webp`): "colored by the ability type could be neat"
+- "the half hatch without the cross is pretty nice"
+- The charge-up "cast bar" FUNCTION is a keep; its look is ours to restyle.
+- Likely pick: `vfx4_owner_ref\lava_half_hatch_lean.png`, a molten half hatch.
+
+The coordinator's ruling: THREAT goes on the rims and the front (red for elite and boss; the salmon/scarlet pick applies). TYPE goes on the pattern inside (plus the lane end caps).
+
+**Built** (branch vfx-4, all in `godot/src/Fx/MarkPass.cs`; red marks only, the crowd's amber decals are unchanged):
+- **Patterns inside a red mark, chosen per mark:**
+  - 0 `grid`: tonight's crossed grid.
+  - 1 `hatch`: a carved half hatch. One diagonal family, uneven weight, a wandering spine, pointed at the rims.
+  - 2 `chevron`: points the way the blow runs.
+  - 3 `molten`: leaning bands of molten cells, veins and hot spots, with charred, darker bands between.
+  - 4 `cracks`: cracks along cell edges, frost tint.
+  - 5 `lattice`: a diamond lattice with studs, gold tint.
+- **How they light:**
+  - Each pattern is lit behind the running front; ahead of the front it shows at `hu` (0.3). The charge reads as the pattern catching light, and the front stays the brightest bar.
+  - Off over the still water (`hwat` 0), faded across the bank.
+  - Strokes are never thinner than half a pixel, and detail fades out near 2 px, so nothing shimmers.
+- **Data** (`godot/data/mark_look.json`):
+  - `"look"`: scarlet or salmon. This is the color pick, a one-line change; env `MARK_LOOK` overrides it for shots.
+  - `"patterns"`: the telegraph's own `Ev.Telegraph.Pattern` if it names one (a skill can); else its `School` (Fire molten, Frost cracks, Holy lattice); else its shape (line chevron; circle, cone and ring hatch); else the default, hatch.
+  - `Battle.ScheduleStrike` now sets the School on enemy strike telegraphs.
+  - Pack carries the pattern id in the roof float (roof + 2 x id).
+- **The lane's far end is a spear tip** (`cap` 1; 0 brings back the old soft end).
+- **Pattern tint** (`ht` 0.35): the pattern takes a share of its own color, and its light may pass the red's fold up to 1 + 4 x ht, so molten veins run orange. With `ht=0` it all stays red.
+- For shots, `MARK_TUNE=hs=<id>` forces one pattern on every mark (-1 = each mark's own).
+- Tests: 1275 passed, 0 failed, 10 skipped.
+
+**Candidates sheet (sent to main for the owner):** `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_vfx4\candidates_1to1.jpg`.
+- 1:1 crops of the Knight lane mid-charge, day | night.
+- Rows: OLD, grid, half hatch, chevrons, molten (tint on and off), cracks, lattice.
+- Smaller halves: `candidates_part1_small.jpg` and `candidates_part2_small.jpg`.
+- The shot scripts are in the same folder: shoot.sh (`NAME:LOOK:KIND:MARK_TUNE`), sheet.py, and pace.py for the Prologue's Knight and the Warden over the river.
+
+**My read (not judged):**
+- Molten fits best, but at 1:1 it still reads mostly red. If it's picked, push it toward the reference: bolder veins and hot spots, a hotter tint in the lit bands, and keep the charred bands see-through.
+- Half hatch and chevrons read clean.
+- Cracks read well at night.
+- Lattice is busy by day.
+
+**Next (successor, after the pick):**
+1. Apply the pick in `mark_look.json` "patterns", and tune that pattern if the owner asks.
+2. Shoot the same frames for A (scarlet) and B (salmon):
+   - day and night;
+   - the packed crowd (`crowd`);
+   - the Grave-Caller arena (`gc`);
+   - the Prologue (pace.py): the night Knight lane and the Warden's charge over the river, which is the water case.
+3. ONE xhigh judge on the pattern, round cap 2. It checks the whole-frame gate, readability in a packed fight, the water case, and that the cast bar still reads.
+4. Make the owner's A|B sheet (3-4 frames at 1:1), then send MR READY to main.
+
+Cost so far: lead about 170k, no helpers, $0 API.
+
 ## QUEUED INPUT (28 Oct, from Classes 15 P6, via main): the warden's 4 new skills need VFX
 Sim lands with placeholder art keys (classes-15; MR1 = P5b+P6). All warden-only, holy + steel. Build after MR1 merges.
 1. **Sunder** (greatsword grip): slow heavy 220-deg cleave (300 with Wide Swing). Every 4th swing (3rd with Third Blow, 2nd with its Turn) a heavy overhead splits the ground in a line 7 m long, ~1.2 m wide, ahead of her; Burning Edge = holy fire along the crack. Her greatsword prop + clips are Phase 3; until then it swings whatever she holds.
