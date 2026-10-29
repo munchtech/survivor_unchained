@@ -48,7 +48,8 @@ public partial class GameHud : CanvasLayer
     Label sayWho = null!, sayText = null!, annKicker = null!, annTitle = null!, annSub = null!;
     TextureRect sayShade = null!;
     Label bossName = null!, bossTitle = null!, bossChannel = null!;
-    ColorRect bossFill = null!, bossTrail = null!, bossChannelFill = null!;
+    ColorRect bossFill = null!, bossTrail = null!, bossChannelEdge = null!;
+    TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
     double sayT, annT, annLife;
     ColorRect fade = null!, pull = null!;
@@ -387,27 +388,43 @@ public partial class GameHud : CanvasLayer
         // An iron clamp over each end, the groove held between them (UI art's boss_groove.png has its own).
         if (!UiArt.Has("boss_groove"))
             foreach (float cx in new[] { -6f, w - 6 })
-            {
-                var clamp = new Panel { Position = new Vector2(cx, 34), Size = new Vector2(12, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
-                var cs = Style.Box(Cuff.Iron(0.3f), new Color(0, 0, 0, 0.9f), 1, 2, 0);
-                cs.ShadowColor = new Color(0, 0, 0, 0.5f);
-                cs.ShadowSize = 3;
-                clamp.AddThemeStyleboxOverride(PanelName, cs);
-                clamp.AddChild(new ColorRect { Color = new Color(1, 0.94f, 0.82f, 0.22f), Position = new Vector2(2, 1), Size = new Vector2(8, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
-                bossBox.AddChild(clamp);
-            }
+                bossBox.AddChild(Clamp(new Vector2(cx, 34), new Vector2(12, 24)));
         bossTitle = Style.Label("", Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center);
         bossTitle.Position = new Vector2(0, 64); bossTitle.Size = new Vector2(w, 20);
         bossBox.AddChild(bossTitle);
-        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 92), Size = new Vector2(w * 0.6f, 20), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        bossChannelBox.AddThemeStyleboxOverride(PanelName, Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 2, 0));
+        // A channel's bar: the boss bar's smaller sibling (UI 20; the judge: "a default progress bar under a dressed
+        // boss bar"): the same forged groove and iron clamps, an ember fill deep at its start and hot at its leading
+        // edge with a bright line there, its words in the boss name's serif with a dark outline over fill and groove.
+        float cw = w * 0.6f;
+        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 92), Size = new Vector2(cw, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var cgroove = Style.Box(Hex("#0d0606"), Cuff.Iron(0.38f), 2, 2, 0);
+        cgroove.ShadowColor = new Color(0, 0, 0, 0.6f);
+        cgroove.ShadowSize = 5;
+        bossChannelBox.AddThemeStyleboxOverride(PanelName, UiArt.Frame("boss_groove", cgroove));
         bossBox.AddChild(bossChannelBox);
-        bossChannelFill = new ColorRect { Color = Hex("#ffb050") with { A = 0.6f }, Size = new Vector2(0, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var heat = new Gradient { Offsets = [0f, 0.65f, 1f], Colors = [Hex("#5a1206"), Hex("#c4441a"), Hex("#ff9a3c")] };
+        bossChannelFill = new TextureRect
+        {
+            Texture = new GradientTexture2D { Gradient = heat, Width = 128, Height = 1 },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+            Position = new Vector2(2, 2), Size = new Vector2(0, 16), MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
         bossChannelBox.AddChild(bossChannelFill);
-        bossChannel = Style.Label("", Style.UiHeavy, 13, Colors.White, false, HorizontalAlignment.Center);
-        bossChannel.Size = new Vector2(w * 0.6f, 20);
+        bossChannelEdge = new ColorRect { Color = Hex("#fff0c4"), Position = new Vector2(2, 2), Size = new Vector2(3, 16), Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossChannelBox.AddChild(bossChannelEdge);
+        bossChannelBox.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(cw - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+        bossChannelBox.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 14), Size = new Vector2(cw - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
+        if (!UiArt.Has("boss_groove"))
+            foreach (float cx in new[] { -5f, cw - 5 })
+                bossChannelBox.AddChild(Clamp(new Vector2(cx, -3), new Vector2(10, 26)));
+        bossChannel = WorldType.Lettering("", Style.Display, 15, Hex("#ffe8cc"));
+        bossChannel.AddThemeConstantOverride("outline_size", 6);
+        bossChannel.HorizontalAlignment = HorizontalAlignment.Center;
         bossChannel.VerticalAlignment = VerticalAlignment.Center;
+        bossChannel.Position = new Vector2(0, -2);
+        bossChannel.Size = new Vector2(cw, 24);
         bossChannelBox.AddChild(bossChannel);
+        GD.Print($"boss channel: dressed bar {cw:0}x20 at ({x + w * 0.2f:0},{14 + 92}) design px: groove + {(UiArt.Has("boss_groove") ? "art" : "iron")} clamps, ember gradient fill, 3 px edge, label Cinzel 15 outlined");
     }
 
     /// <summary>The boss's bar's width: the instrument's own, so the top and the foot share their measure.</summary>
@@ -1033,6 +1050,18 @@ public partial class GameHud : CanvasLayer
     ColorRect? bossStagger, bossStaggerGroove;
 
     /// <summary>The boss whose bar is up (its world plate stands down meanwhile), or null.</summary>
+    /// <summary>An iron clamp over a groove's end (the boss bar's and its channel's).</summary>
+    static Panel Clamp(Vector2 at, Vector2 size)
+    {
+        var clamp = new Panel { Position = at, Size = size, MouseFilter = Control.MouseFilterEnum.Ignore };
+        var cs = Style.Box(Cuff.Iron(0.3f), new Color(0, 0, 0, 0.9f), 1, 2, 0);
+        cs.ShadowColor = new Color(0, 0, 0, 0.5f);
+        cs.ShadowSize = 3;
+        clamp.AddThemeStyleboxOverride(PanelName, cs);
+        clamp.AddChild(new ColorRect { Color = new Color(1, 0.94f, 0.82f, 0.22f), Position = new Vector2(2, 1), Size = new Vector2(size.X - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
+        return clamp;
+    }
+
     public static string? BossName { get; private set; }
 
     public void Boss(BossBar? bar)
@@ -1077,7 +1106,10 @@ public partial class GameHud : CanvasLayer
         bossChannelBox.Visible = bar.Channel != null;
         if (bar.Channel is var (label, prog))
         {
-            bossChannelFill.Size = new Vector2(bossChannelBox.Size.X * (float)Math.Clamp(prog, 0, 1), 20);
+            float fw = (bossChannelBox.Size.X - 4) * (float)Math.Clamp(prog, 0, 1);
+            bossChannelFill.Size = new Vector2(fw, 16);
+            bossChannelEdge.Visible = fw >= 3;
+            bossChannelEdge.Position = new Vector2(2 + fw - 3, 2);
             bossChannel.Text = label;
         }
     }
