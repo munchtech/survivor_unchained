@@ -76,6 +76,11 @@ public sealed class NpcDef
     public List<FolkLine>? Said;
     public PersonSpec? Person;
     public Held? Arms;
+    /// <summary>npcs.json "talkIdle": the stand a working idle gives way to while they talk or the survivor is close
+    /// (NPC 18: the smith's hammering showed his back and raised arm as a talk opened), or null to keep their own.</summary>
+    public string? TalkIdle;
+    /// <summary>The stand they talk in: TalkIdle, else the plain Idle for a hammering idle (the old rule), else null (their own).</summary>
+    public string? Stand => TalkIdle is { Length: > 0 } t ? (t == Idle ? null : t) : Idle == "1H_Melee_Attack_Chop" ? "Idle" : null;
 }
 
 public sealed class Speaker { public string Name = "", Title = "", Glyph = ""; }

@@ -49,13 +49,23 @@ public static class Arms
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),  // grip conformed (grip_conform.py --no-anchor); its left fist: fistfit.py daggers --side l
     };
 
-    static Arms() => ArmsData.Merge(All);  // art/weapons/weapons.json: weapons of a known kind as data
+    static Arms() => ArmsData.Merge(All);
+
+    /// <summary>Every weapon glb the table can load (res://assets/weapons and the rows' own res:// files), for prefetch.</summary>
+    public static IEnumerable<string> Files()
+    {
+        var seen = new HashSet<string>();
+        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons") ?? System.Array.Empty<string>())
+            if (w.EndsWith(".glb") && seen.Add($"res://assets/weapons/{w}")) yield return $"res://assets/weapons/{w}";
+        foreach (var s in All.Values)
+            if (s.Build == null && s.File.StartsWith("res://") && seen.Add(s.File) && ResourceLoader.Exists(s.File)) yield return s.File;
+    }  // art/weapons/weapons.json: weapons of a known kind as data
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
     public static Node3D Make(string id)
     {
         var spec = All[id];
-        var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
+        var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>(WeaponsData.ResPath(spec.File)).Instantiate<Node3D>();
         if (spec.Node != null)
         {
             // One weapon of several in the file: the rest go (the meshes

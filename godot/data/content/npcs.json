@@ -1235,6 +1235,7 @@
    ],
    "tint": "#5a4a3a",
    "idle": "1H_Melee_Attack_Chop",
+   "talkIdle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [
@@ -1248,7 +1249,7 @@
     "body": "npc:npc_brannoc"
    },
    "arms": {
-    "right": "mace"
+    "right": "smith_hammer"
    },
    "spot": {
     "x": 11.6,

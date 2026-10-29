@@ -98,7 +98,7 @@ public partial class Game
         {
             if (spec != null) foreach (var f in People.Files(spec)) paths.Add(f);
             foreach (var a in new[] { arms?.Right, arms?.Left, arms?.Forearm })
-                if (a != null && Arms.All.TryGetValue(a, out var w) && w.Build == null) paths.Add($"res://assets/weapons/{w.File}.glb");
+                if (a != null && Arms.All.TryGetValue(a, out var w) && w.Build == null) paths.Add(WeaponsData.ResPath(w.File));
         }
         foreach (var f in files)
             foreach (var c in f.Cast.Values)
