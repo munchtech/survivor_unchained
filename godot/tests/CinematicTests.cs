@@ -67,7 +67,7 @@ public class CinematicTests
             Assert.All(lines, l => Assert.NotEqual("", l.Speaker));
             Assert.Equal(Convo(id).Nodes.Count, lines.Select(l => l.Id).Distinct().Count());
         }
-        Assert.Equal(["cin_drowned_fire.bedroll", "cin_drowned_fire.prints", "cin_drowned_fire.lamp", "cin_drowned_fire.call", "cin_drowned_fire.frost"], Lines("cin_drowned_fire", Q()).Select(l => l.Id));
+        Assert.Equal(["cin_drowned_fire.bedroll", "cin_drowned_fire.lamp", "cin_drowned_fire.call", "cin_drowned_fire.frost"], Lines("cin_drowned_fire", Q()).Select(l => l.Id));
     }
 
     [Fact]

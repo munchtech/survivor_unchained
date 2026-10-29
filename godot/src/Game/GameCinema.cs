@@ -1171,7 +1171,8 @@ public partial class Game
                 case "fire":
                     // "lift": burnt down, its light raised this far over the coals (C01: from just over them the
                     // ring's stones threw long spokes over the camp and hid her shadow on the bedroll).
-                    g.scene!.View.SetFire((int)c.Num("light"), (float)c.Num("flames", 1), (float)c.Num("lift", 0));
+                    // "sway": its light drifting that many metres, so her far shadow flickers on the bedroll.
+                    g.scene!.View.SetFire((int)c.Num("light"), (float)c.Num("flames", 1), (float)c.Num("lift", 0), (float)c.Num("sway", 0));
                     break;
                 case "atmosphere":
                 {
