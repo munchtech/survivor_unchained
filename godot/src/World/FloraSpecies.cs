@@ -139,6 +139,27 @@ public static class FloraSpecies
         return d;
     }
 
+    /// <summary>(Env 22 r1c) A zone's ways across its plazas (flora_species.json "setts_ways": polylines of [x, z]): the
+    /// wear lane the carts and feet leave down a square that has no street's ridge of its own (GroundPaint.MakeNear).</summary>
+    public static List<Vector4> SettsWaysFor(string zone)
+    {
+        var l = new List<Vector4>();
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("setts_ways", out var g)) return l;
+        foreach (var line in g.EnumerateArray())
+        {
+            if (line.ValueKind != JsonValueKind.Array) continue;
+            Vector2? last = null;
+            foreach (var pt in line.EnumerateArray())
+            {
+                var p = new Vector2(pt[0].GetSingle(), pt[1].GetSingle());
+                if (last is Vector2 q) l.Add(new Vector4(q.X, q.Y, p.X, p.Y));
+                last = p;
+            }
+        }
+        return l;
+    }
+
     /// <summary>(E8 later r2) A zone's footpaths for the ground (flora_species.json "ground_paths": polylines of [x, z]),
     /// as segments (x0, z0, x1, z1), twelve at most (terrain.gdshader path_seg).</summary>
     public static List<Vector4> PathsFor(string zone)

@@ -152,7 +152,7 @@ public static class KitLook
         if (sp != null)
             foreach (var (k, v) in sp.Shader)
             {
-                if (k == "broadleaf") continue;
+                if (k == "broadleaf" || k == "leaf_shadow") continue;   // (leaf_shadow: the proxy's, Dressing.cs)
                 if (k == "tint") { m.SetShaderParameter("weather_tint", new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) * look.Shade); continue; }
                 m.SetShaderParameter(k == "sat" ? "weather_sat" : k, v.GetSingle());
             }

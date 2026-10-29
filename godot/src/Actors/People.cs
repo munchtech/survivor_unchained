@@ -2313,6 +2313,41 @@ public static class People
     /// on her skin pulled toward hold_tint (face 46 skin C), so under the night key and the fires she stays on her skin line
     /// while her hair, clothes and the scene keep their warmth. GameCloseUp sets it each frame while its night light is on
     /// her. --skin-hold off: none (as before); --skin-hold K: K of it (pictures).</summary>
+    /// <summary>Her skin's own lift (Rendering 3, judge j2 D3): the skin shader's tone times k (1: as her look set it), her skin
+    /// only, where the Look's lights lifted by night for deep skin lifted her copper hair pale with it. The tone her look set is
+    /// kept on the material (meta) and taken again when her look sets a new one.</summary>
+    /// <summary>Her skin's darkness, 0 (the fairest swatch's luminance, 0.4 linear, or over) to 1 (0.04 or under), from the tone
+    /// her look set on her skin (Rendering 3: the close view's fill by night is the stronger on deep skin).</summary>
+    public static float HerSkinDark(Person p)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return 0;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    var c = (m.HasMeta("su_tone0") ? m.GetMeta("su_tone0").AsColor() : m.GetShaderParameter("tone").AsColor()).SrgbToLinear();
+                    return Mathf.Clamp((0.4f - (0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B)) / 0.36f, 0, 1);
+                }
+        return 0;
+    }
+
+    public static void HerSkinGain(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    var now = m.GetShaderParameter("tone").AsColor();
+                    // (a tone not the one set here last: her look set it again, the new base)
+                    Color b = m.HasMeta("su_tone0") && m.HasMeta("su_tone_set") && m.GetMeta("su_tone_set").AsColor().IsEqualApprox(now) ? m.GetMeta("su_tone0").AsColor() : now;
+                    if (Mathf.IsEqualApprox(k, 1)) { if (m.HasMeta("su_tone0")) { m.SetShaderParameter("tone", b); m.RemoveMeta("su_tone0"); m.RemoveMeta("su_tone_set"); } continue; }
+                    // (tone is sRGB (source_color): k in linear light)
+                    var lin = b.SrgbToLinear(); var t = new Color(lin.R * k, lin.G * k, lin.B * k).LinearToSrgb();
+                    m.SetShaderParameter("tone", t); m.SetMeta("su_tone0", b); m.SetMeta("su_tone_set", t);
+                }
+    }
+
     public static void HerSkinHold(Person p, float k)
     {
         if (p.Body != "heroine" || skinShader2 == null) return;
