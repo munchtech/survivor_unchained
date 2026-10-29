@@ -24,11 +24,7 @@
     "hairColor": "#7a746e",
     "skin": "#e0a47c",
     "figure": 1.2,
-    "dye": {
-     "cloth": "#4f5b6b",
-     "under": "#3a2a2a"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_rook"
    },
    "spot": {
     "x": -11.2,
