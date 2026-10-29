@@ -73,6 +73,10 @@ public sealed class EnemyDef
     /// <summary>View key: which model or creature, and its colouring.</summary>
     public string Visual = "";
     public double? Scale;
+    /// <summary>A rank-and-file kind drawn many at once (the Low Ford's risen), so no two read as clones: each copy's
+    /// pace within +-Spread of Speed (else +-8%), its size within +-Size of Scale (CrowdView, else none), and its
+    /// heading weaving up to Weave degrees off its chase line while it is still far off (Ai, else straight). Sim.Vary.</summary>
+    public double? Spread, Size, Weave;
     public double Health, Speed, Damage, Radius;
     public double? Mass;
     public double Xp;
@@ -152,7 +156,7 @@ public static class Enemies
     public static readonly Dictionary<string, EnemyDef> All = new EnemyDef[]
     {
         /* ------------------------------------------------------------ the dead -- */
-        new() { Id = "risen", Name = "Risen", Family = Family.Undead, Faction = Faction.Dead, Visual = "risen_shroud",
+        new() { Id = "risen", Name = "Risen", Family = Family.Undead, Faction = Faction.Dead, Visual = "risen_shroud", Spread = 0.17, Size = 0.08, Weave = 16,
             Health = 20, Speed = 2.7, Damage = 8, Radius = 0.45, Xp = 2, Resists = Undead, Behavior = Behavior.Chase,
             Note = "The dead of the Low Ford, still marching. They do not hurry. They do not have to." },
         new() { Id = "risen_warrior", Name = "Risen Shieldman", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior",

@@ -76,7 +76,9 @@ public static class Ai
         if (e.State == EnemyState.Rising)
         {
             e.StateT -= dt;
-            if (e.StateT <= 0) { e.State = EnemyState.Active; e.Anim = EnemyAnim.Move; }
+            // (a varied pack's copy stands a moment of its own once up, so a pack does not come on as one: Vary.Delay)
+            if (e.StateT <= 0 && !(b.VaryPacks && e.Def.Weave is > 0 && e.StateT > -Vary.Delay(e.Seed, 1.5))) { e.State = EnemyState.Active; e.Anim = EnemyAnim.Move; }
+            else if (e.StateT <= 0) e.Anim = EnemyAnim.Idle;
             return;
         }
 
@@ -380,6 +382,35 @@ public static class Ai
             }
         }
 
+        // A shambling kind weaves off its line while still far off (Vary.Weave): a pack on the flow field walked single file.
+        if (b.VaryPacks && def.Weave is double wv && wv > 0 && dist > 3.5)
+        {
+            double wa = Vary.Weave(b.Time, e.Seed, wv) * Math.Clamp((dist - 3.5) / 3, 0, 1), wc = Math.Cos(wa), ws = Math.Sin(wa);
+            (wantX, wantZ) = (wantX * wc - wantZ * ws, wantX * ws + wantZ * wc);
+        }
+        // ...and round what the zone asks it to keep clear of (a lamp post, the camp fire's logs) and the small solid
+        // things near (posts, stumps): not walked into and stood in.
+        if (b.VaryPacks && def.Weave is > 0 && dist > 1.5)
+        {
+            double sx = 0, sz = 0;
+            foreach (var (ax, az, ar) in b.Avoid)
+            {
+                var (vx, vz) = Vary.Avoid(e.X, e.Z, wantX, wantZ, ax, az, ar, e.Radius + 0.3);
+                sx += vx; sz += vz;
+            }
+            foreach (var c in b.Collision.Within(e.X, e.Z, 2.5))
+            {
+                if (c.Kind != ColliderKind.Circle || c.R > 0.7 || c.Gap) continue;
+                var (vx, vz) = Vary.Avoid(e.X, e.Z, wantX, wantZ, c.X, c.Z, c.R, e.Radius + 0.35);
+                sx += vx; sz += vz;
+            }
+            if (sx != 0 || sz != 0)
+            {
+                wantX += sx; wantZ += sz;
+                double m = Math.Sqrt(wantX * wantX + wantZ * wantZ);
+                if (m > 1e-6) { wantX /= m; wantZ /= m; }
+            }
+        }
         double reach = e.Radius + tgt.R + 0.15;
         if (dist > reach * 0.9) Move(b, e, wantX, wantZ, speed, dt);
         else { e.Vx *= 0.7; e.Vz *= 0.7; e.Anim = EnemyAnim.Idle; FinishMove(b, e); }

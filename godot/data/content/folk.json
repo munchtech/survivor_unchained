@@ -1,4 +1,9 @@
 {
+ "packages": {
+  "man": "npc_folk_m",
+  "woman": "npc_folk_w",
+  "watch": "npc_watch_m"
+ },
  "looks": [
   {
    "model": "rogue",

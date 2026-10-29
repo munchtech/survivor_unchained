@@ -30,11 +30,14 @@ public static class FlameKit
     /// <summary>A flame of the given kind at <paramref name="localAt"/> (its base) under
     /// <paramref name="parent"/>. Camp is two or three cards out of step; the rest one.
     /// With <paramref name="light"/>, its own short unshadowed light (shadows off, distance
-    /// fade on); a camp fire's one shadowed light stays the caller's.</summary>
-    public static Flame Add(Node3D parent, Vector3 localAt, FlameKind kind, bool cold = false, float scale = 1, bool light = true)
+    /// fade on); a camp fire's one shadowed light stays the caller's.
+    /// <para>With <paramref name="carried"/> (a torch in a hand): faced square to the camera, its body covering what is
+    /// behind it, a smaller hot card of the same flame inside it, and grown to about two and a half times its size from the play camera
+    /// (a lone carried flame read as a pale wisp at chest-up and a few pixels of glint from above, judge r3).</para></summary>
+    public static Flame Add(Node3D parent, Vector3 localAt, FlameKind kind, bool cold = false, float scale = 1, bool light = true, bool carried = false)
     {
         var f = new Flame { Name = kind + "Flame", Position = localAt };
-        f.Build(kind, cold, scale, light);
+        f.Build(kind, cold, scale, light, carried);
         parent.AddChild(f);
         return f;
     }
@@ -80,7 +83,11 @@ public partial class Flame : Node3D
     /// <summary>The flicker factor at time t for a phase: 1 +- about 0.12, smooth (World.FlameFlicker).</summary>
     internal static float Flicker(float t, float ph) => SurvivorUnchained.World.FlameFlicker.At(t, ph);
 
-    internal void Build(FlameKind kind, bool cold, float scale, bool light)
+    /// <summary>A carried flame's numbers (flame_mv): the outer card's and the hot inner card's, and how much both grow
+    /// from the play camera (far_grow, full from 16 m).</summary>
+    internal const float CarriedFarGrow = 2.4f, CarriedCoreW = 0.7f, CarriedCoreH = 0.6f;
+
+    internal void Build(FlameKind kind, bool cold, float scale, bool light, bool carried = false)
     {
         var (h, range, e) = FlameKit.Spec(kind);
         // The card is as wide as the atlas's cell is in the world (the flame fills its cell's width).
@@ -90,11 +97,16 @@ public partial class Flame : Node3D
         var shader = GD.Load<Shader>(FlameShader.Path);
         (Vector3 At, float W, float H, float Ph)[] cards = kind == FlameKind.Camp
             ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.27f, 0, 0.1f), 0.85f, 0.72f, 0.37f), (new(0.25f, 0, -0.08f), 0.9f, 0.8f, 0.71f) }
+            : carried
+            ? new (Vector3, float, float, float)[] { (Vector3.Zero, 1f, 1f, 0f), (Vector3.Zero, CarriedCoreW, CarriedCoreH, 0f) }
             : new (Vector3, float, float, float)[] { (Vector3.Zero, 1f, 1f, 0f) };
+        int n = 0;
         foreach (var (at, cw, ch, ph) in cards)
         {
             var mat = new ShaderMaterial { Shader = shader };
             FlameShader.Setup(mat, kind, cold, Mathf.PosMod(phase + ph, 1f), ph == 0 ? 1f : 0.75f);
+            if (carried) FlameShader.Carried(mat, core: n > 0);
+            n++;
             mats.Add(mat);
             AddChild(new MeshInstance3D
             {
@@ -156,6 +168,45 @@ static class FlameShader
     {
         FlameKind.Candle => 30, FlameKind.Lamp => 28, FlameKind.Torch => 24, FlameKind.Brazier => 22, _ => 20,
     };
+
+    /// <summary>A carried flame's card: square to the camera (tilt 1), grown from far off, its body covering what is behind;
+    /// the inner (core) card drawn over the outer, hot yellow-orange and nearly solid: the brightest thing near him.</summary>
+    /// <summary>--torch-tear S, --torch-tear-k K: the carried flame's near teardrop core (flame_mv tear, tear_k), for pictures.</summary>
+    static readonly float CarriedTear = SurvivorUnchained.Args.Num("torch-tear", 1f), CarriedTearK = SurvivorUnchained.Args.Num("torch-tear-k", 1.6f);
+
+    public static void Carried(ShaderMaterial mat, bool core)
+    {
+        // (r4: past 1 the tonemapper washed it to a pale peach wisp, and its half-covering body went pink over a light
+        // tunic: the outer card about 1 and half covering (fully, its dim edges went brown), the inner card hot and solid; both drawn a
+        // little toward a far camera so his arm's depth doesn't soften them away)
+        mat.SetShaderParameter("tilt", 1f);
+        mat.SetShaderParameter("far_grow", Flame.CarriedFarGrow);
+        mat.SetShaderParameter("warm_sat", 1f);
+        if (core)
+        {
+            mat.RenderPriority = 1;
+            mat.SetShaderParameter("pull", 0.3f);
+            mat.SetShaderParameter("warm_sat", 0.3f);
+            mat.SetShaderParameter("occlude", 1f);
+            mat.SetShaderParameter("body_k", 1.3f);
+            mat.SetShaderParameter("body_pow", 0.6f);
+            mat.SetShaderParameter("core_lo", 0.5f);
+            mat.SetShaderParameter("core_k", 0.9f);
+            // (NPC 18: near the camera a solid hot teardrop inside it, flame_mv tear; the play camera's flame untouched)
+            mat.SetShaderParameter("tear", CarriedTear);
+            mat.SetShaderParameter("tear_k", CarriedTearK);
+        }
+        else
+        {
+            mat.SetShaderParameter("pull", 0.25f);
+            mat.SetShaderParameter("warm_sat", 0.6f);
+            mat.SetShaderParameter("occlude", 0.5f);
+            mat.SetShaderParameter("body_k", 1.0f);
+            mat.SetShaderParameter("body_pow", 1.3f);
+            mat.SetShaderParameter("core_lo", 0.85f);
+            mat.SetShaderParameter("core_k", 0.5f);
+        }
+    }
 
     public static void Setup(ShaderMaterial mat, FlameKind kind, bool cold, float phase, float intensity)
     {

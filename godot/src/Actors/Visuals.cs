@@ -18,7 +18,7 @@ public static class Visuals
     /// played once from the cast's start and through the get-up after it. Aim and Shot: a crossbow's
     /// kneel and aim (CastKind.Aim), and the shot that ends it.</summary>
     public sealed record Clips(string Move, string Idle, string Attack, string Windup, string Die = "Death01", string Rise = "Idle_Loop", string Hit = "Hit_Chest", string? Cast = null,
-        string? Slam = null, string? Aim = null, string? Shot = null);
+        string? Slam = null, string? Aim = null, string? Shot = null, string? Move2 = null);
 
     /// <summary>A kind of creature. Offset: moved in its own space before
     /// scaling (a long beast centred on its collision circle).</summary>
@@ -33,6 +33,8 @@ public static class Visuals
     const string Rally = "Rally";
     /// <summary>A heavy's blow on the ground (FolkClips.Crowd): both fists, or the axe, up overhead and down.</summary>
     const string GroundSlam = "Slam";
+    /// <summary>The lurch reaching with the left hand (the crowd's armed lurch, nothing held): a second gait for a pack.</summary>
+    const string LurchOther = "LurchOther";
     /// <summary>A crossbow's aim (FolkClips.Crowd): down on one knee and the stock to the cheek; and the
     /// shot that ends it, the kick and the rise.</summary>
     static Clips Kneels(Clips c) => c with { Aim = "KneelAim", Shot = "KneelShot" };
@@ -57,8 +59,9 @@ public static class Visuals
             "skeleton_minion" => new(visual, P(Sex.Male, "peasant", hair: "Hair_Buzzed", hairColor: "#5a5448", skin: Rot, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam }),
             // The plain risen: the Marionette package npc_risen_s (its own walk, the lurch).
+            // (a second gait, "move2": the lurch reaching with the other hand, the right one hanging, for a share of them: NPC 17 r3)
             "risen_shroud" => new(visual, new PersonSpec { Sex = Sex.Male, Body = NpcPackage.Prefix + "npc_risen_s" }, null,
-                Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam }),
+                Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam, Move2 = LurchOther }),
             "risen_ally" => new(visual, P(Sex.Female, "peasant", hair: "Hair_Long", hairColor: "#6a665e", skin: Rot, figure: 0.9, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop")),
             "skeleton_warrior" => new(visual, P(Sex.Male, "ranger", pauldron: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#3e4238"),

@@ -9,9 +9,9 @@
    "show": [
     "Mug"
    ],
-   "tint": "#8a5a6a",
+   "tint": "#4f5b6b",
    "scale": 0.95,
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle_B",
    "person": {
     "sex": "female",
     "outfit": [
@@ -25,9 +25,10 @@
     "skin": "#e0a47c",
     "figure": 1.2,
     "dye": {
-     "cloth": "#8a5a6a",
+     "cloth": "#4f5b6b",
      "under": "#3a2a2a"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": -11.2,
@@ -129,7 +130,7 @@
     "Knight_Cape"
    ],
    "tint": "#9aa8c0",
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [
@@ -145,7 +146,8 @@
     "skin": "#e0a47c",
     "dye": {
      "cloth": "#56627e"
-    }
+    },
+    "body": "npc:npc_watch_m"
    },
    "spot": {
     "x": -3.6,
@@ -313,7 +315,8 @@
     "figure": 0.8,
     "dye": {
      "cloth": "#4a5a36"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": 33.5,
@@ -534,7 +537,8 @@
     "hairColor": "#8a6a3a",
     "dye": {
      "cloth": "#d8ccb0"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
     "x": -20.6,
@@ -669,7 +673,8 @@
     "dye": {
      "cloth": "#8a3a34",
      "under": "#2a1a18"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "arms": {
     "right": "dagger_b"
@@ -818,7 +823,8 @@
     "dye": {
      "cloth": "#a0784a",
      "under": "#3a2a1c"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
     "x": 10.4,
@@ -951,7 +957,8 @@
     "dye": {
      "cloth": "#3e4a3a",
      "under": "#1a1e1a"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
     "x": 20.2,
@@ -1017,7 +1024,8 @@
     "dye": {
      "cloth": "#5e7a4a",
      "under": "#2a3222"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "arms": {
     "right": "short_staff"
@@ -1141,11 +1149,12 @@
     "dye": {
      "cloth": "#b8a070",
      "under": "#4a3a2a"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
-    "x": 2.6,
-    "z": 2.8,
+    "x": 1.7,
+    "z": 4.3,
     "facing": 2.5132741228718345
    },
    "barks": [
@@ -1241,7 +1250,8 @@
     "skin": "#946040",
     "dye": {
      "under": "#3a3028"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "arms": {
     "right": "mace"
@@ -1379,7 +1389,8 @@
     "dye": {
      "cloth": "#5a4a7a",
      "under": "#221a2e"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": 28.4,
@@ -1445,7 +1456,8 @@
     "figure": 0.8,
     "dye": {
      "cloth": "#b8bcc4"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "arms": {
     "right": "viking_sword"
@@ -1554,8 +1566,10 @@
     "skin": "#e0a47c",
     "figure": 1.35,
     "dye": {
+     "cloth": "#354431",
      "under": "#1e2a3e"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": -11.2,
@@ -1647,7 +1661,8 @@
     "skin": "#e0a47c",
     "dye": {
      "cloth": "#a02820"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "arms": {
     "right": "crossbow"
@@ -1688,7 +1703,8 @@
     "dye": {
      "cloth": "#7a6a8a",
      "under": "#2e2a34"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
     "x": 12.4,
@@ -1729,7 +1745,8 @@
     "dye": {
      "cloth": "#4a5668",
      "under": "#2a2622"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": 19.0,
