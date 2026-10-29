@@ -455,6 +455,7 @@ public partial class Game
             else if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def)
             {
                 var v = new PersonView(def.Person ?? new PersonSpec(), def.Arms, 0.8 * (def.Scale ?? 1)) { Name = "Cine_" + name };
+                PlayerView.ToCast(v);
                 g.scene!.AddChild(v);
                 people[name] = v;
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
@@ -468,6 +469,7 @@ public partial class Game
                 if (ExtrasShadow) w.Body.BeginShadow();   // (his one shadow, as the extras': a no-op if begun ahead)
                 w.Name = "Cine_" + name;
                 w.Glow = c.Glow;
+                PlayerView.ToCast(w);
                 g.scene!.AddChild(w);
                 bosses[name] = w;
                 people[name] = w.Body;
@@ -486,6 +488,7 @@ public partial class Game
                     var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
                     if (ExtrasShadow) v.BeginShadow();   // (made here, not ahead: its one shadow begun now; a no-op if begun)
                     v.Name = $"Cine_{name}{i}";
+                    PlayerView.ToCast(v);
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
                     people[who] = v;
@@ -583,7 +586,7 @@ public partial class Game
             {
                 if (dbgFill == null || !IsInstanceValid(dbgFill))
                 {
-                    dbgFill = new SpotLight3D { LightColor = new Color(1f, 0.96f, 0.9f), SpotAngle = 14, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.3f, LightEnergy = fe };
+                    dbgFill = new SpotLight3D { LightColor = new Color(1f, 0.96f, 0.9f), SpotAngle = 14, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer, LightSpecular = 0.3f, LightEnergy = fe };
                     g.scene!.AddChild(dbgFill);
                 }
                 var eyes = new Vector3((float)he.X, (float)he.Y, (float)he.Z);
@@ -1381,7 +1384,7 @@ public partial class Game
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
-                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer,
                         LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);

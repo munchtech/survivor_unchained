@@ -298,7 +298,7 @@ public partial class Game
             var l = new SpotLight3D
             {
                 LightColor = c, SpotAngle = angle, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = shadow,
-                LightSize = shadow ? 0.6f : 0, ShadowBlur = 1.5f, LightSpecular = specular, LightCullMask = 2, LightEnergy = 0,
+                LightSize = shadow ? 0.6f : 0, ShadowBlur = 1.5f, LightSpecular = specular, LightCullMask = 2 | PlayerView.CastLayer, LightEnergy = 0,
             };
             scene!.AddChild(l);
             return l;
@@ -453,7 +453,7 @@ public partial class Game
         if (LookBodyRim > 0)
         {
             lookBodyRim ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.84f), 30, false, 0.2f);
-            lookBodyRim.LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer;
+            lookBodyRim.LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer;
             lookBodyRim.SpotAngle = fireSide ? LookNightBodyRimCone : 30;
             Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * (fireSide ? LookNightBodyRimUp : Args.Num("look-body-rim-up", 0.3f)), eyes + Vector3.Down * (fireSide ? LookNightBodyRimAim : 0.45f),
                 LookBodyRim * Mathf.Clamp(p / 0.74f, 0, 1));   // (as judged at zoom 0.45 (p 0.74) and closer; it fades with the rig toward her whole figure)
@@ -485,7 +485,7 @@ public partial class Game
             herFire = new OmniLight3D
             {
                 LightColor = src.LightColor, OmniRange = src.OmniRange, OmniAttenuation = src.OmniAttenuation,
-                ShadowEnabled = src.ShadowEnabled, LightSpecular = src.LightSpecular, LightCullMask = 2,
+                ShadowEnabled = src.ShadowEnabled, LightSpecular = src.LightSpecular, LightCullMask = 2 | PlayerView.CastLayer,
             };
             scene.AddChild(herFire);
         }

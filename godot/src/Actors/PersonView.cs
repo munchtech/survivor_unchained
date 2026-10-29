@@ -524,6 +524,8 @@ public partial class PersonView : Node3D, INpcView
     /// that time first, so it stands where it would have been.</summary>
     VisibleOnScreenNotifier3D? seen;
     FolkShadow.Job? shadowJob;
+    /// <summary>On PlayerView.CastLayer (a boss or cinematic actor): meshes made later (the folk shadow) go there too.</summary>
+    public bool OnCast;
     bool lodHeld;
     double lodHeldFor;
     AnimationMixer.AnimationCallbackModeProcess lodMode;
@@ -578,7 +580,7 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Process(double delta)
     {
-        if (shadowJob is { Done: true } sj) { shadowJob = null; FolkShadow.Finish(person, sj); }
+        if (shadowJob is { Done: true } sj) { shadowJob = null; FolkShadow.Finish(person, sj); if (OnCast) PlayerView.ToCast(this); }
         if (lodHeld) { if (Cinema || Driven) LodResume(); else lodHeldFor += delta; }
         // (made off screen: held from its third frame, once the notifier has had a look)
         else if (seen != null && lodFrames < 3 && ++lodFrames == 3 && !seen.IsOnScreen()) LodHold();

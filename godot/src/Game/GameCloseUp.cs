@@ -201,7 +201,7 @@ public partial class Game
         {
             // (Rendering 1: off her hair (PlayerView.HerHairLayer), which takes its twin, closeKeyHair, in the ember's orange at
             // CloseKeyHair of its light: at 3000K and twice the light (the exposure down) it lifted her copper toward strawberry blonde.)
-            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
+            closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
             // (Rendering 2, judge j1 D3 "the sword tip blazes white, the brightest thing in the frame": its twin on her gear
             // (PlayerView.HerGearLayer) with CloseKeyGearSpec of the sheen: at 0.3 the key's highlight ran up the blade clipped.)
@@ -213,7 +213,7 @@ public partial class Game
         if (closeRim == null || !IsInstanceValid(closeRim) || closeRim.GetParent() != scene)
         {
             // (On her and people, not her hair (PlayerView.HerHairLayer): from behind it lifted her copper crown.)
-            closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = CloseRimSpec, LightEnergy = 0 };
+            closeRim = new SpotLight3D { LightColor = new Color("#a9c4ff"), SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = CloseRimSpec, LightEnergy = 0 };
             scene.AddChild(closeRim);
         }
         // Its twin on her gear (PlayerView.HerGearLayer: weapon, armor, buckles), the same light with the sheen her skin
@@ -303,7 +303,7 @@ public partial class Game
         // A weak cool fill from the lens's side away from the key (by night), so the shade side reads, never black.
         if (closeFill == null || !IsInstanceValid(closeFill) || closeFill.GetParent() != scene)
         {
-            closeFill = new SpotLight3D { LightColor = CloseFillColourNight, SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayers, LightSpecular = 0f, LightEnergy = 0 };
+            closeFill = new SpotLight3D { LightColor = CloseFillColourNight, SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayers, LightSpecular = 0f, LightEnergy = 0 };
             scene.AddChild(closeFill);
         }
         // (Rendering 3, judge j2 D2: CloseFillRatio on fair skin, up by CloseFillDeep of the key on the darkest, People.HerSkinDark:
@@ -364,7 +364,7 @@ public partial class Game
         // side), --body-rim-el D (degrees up), --body-rim-spec S, --body-rim-colour R,G,B.
         if (closeBodyRim == null || !IsInstanceValid(closeBodyRim) || closeBodyRim.GetParent() != scene)
         {
-            closeBodyRim = new SpotLight3D { LightColor = BodyRimColour, SpotAngle = 30, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = BodyRimSpec, LightEnergy = 0 };
+            closeBodyRim = new SpotLight3D { LightColor = BodyRimColour, SpotAngle = 30, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = BodyRimSpec, LightEnergy = 0 };
             scene.AddChild(closeBodyRim);
         }
         float wantBody = lit ? (night ? BodyRimNight : BodyRimDay) * day : 0;

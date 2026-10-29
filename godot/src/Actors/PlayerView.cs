@@ -79,6 +79,15 @@ public partial class PlayerView : Node3D
     static readonly bool GearOwn = Args.Get("close-rim-gear") != "off";
     /// <summary>HerLayer, HerHairLayer and HerGearLayer: every light that lights her on her own layer takes all three.</summary>
     public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
+    /// <summary>The bosses' and cinematic actors' render layer (15): off people's layer (2) so her FolkLight (2 | HerLayers) does not wash them; every other light that lit layer 2 takes this too.</summary>
+    public const uint CastLayer = 1u << 14;
+    /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
+    public static void ToCast(Node n)
+    {
+        if (n is PersonView pv) pv.OnCast = true;
+        if (n is GeometryInstance3D g && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | CastLayer;
+        foreach (var c in n.GetChildren()) ToCast(c);
+    }
     /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
     public bool OwnLayer;
     bool ownShown;
