@@ -1081,6 +1081,7 @@ public partial class Game
                     var skel = v.Person.Skeleton;
                     var turn = skel.GetNodeOrNull<HeadTurn>("HeadTurn");
                     if (turn == null) skel.AddChild(turn = new HeadTurn());
+                    turn.Glide = true;
                     bool letGo = !c.Has("where") || c.Num("amount", 1) <= 0;
                     if (!letGo) turn.Target = V(places.Resolve(c.Get("where")));
                     turn.Want = letGo ? 0 : (float)c.Num("amount", 1);
@@ -1908,6 +1909,8 @@ public partial class Game
             }
             // Her look let go (her eyes ahead, her head's carry eased off) on whoever stays.
             foreach (var name in people.Keys) Life(name)?.Release();
+            // (and a head look's glide back off: play's Watch is set each frame and follows at once)
+            foreach (var (_, v) in people) if (v.Person.Skeleton.GetNodeOrNull<HeadTurn>("HeadTurn") is { } ht) ht.Glide = false;
             // Who stays where it left them (a body in the river) stays, still, until the next one.
             var keep = file.End.Keep ?? new List<string>();
             foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) { if (keep.Contains(name)) g.kept.Add(v); else v.QueueFree(); }
