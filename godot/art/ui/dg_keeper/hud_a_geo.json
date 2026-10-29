@@ -1,0 +1,410 @@
+{
+ "note": "tools/uiforge/dg_keeper_hud.py: HUD A (the keeper). 1080 px screen coords; rects are [x, y, w, h], continuous edges (pixel i spans [i, i+1]); every texture is 2x its rect. Day and night use the same sprites.",
+ "heights": {
+  "left": 237,
+  "middle": 81,
+  "right": 205
+ },
+ "girl": {
+  "texture": "lamp_life/drowned/lamp_cold.png",
+  "mask": "lamp_life/drowned/lamp_mask.png",
+  "rect_unscaled": [
+   294.83,
+   822.0,
+   474.67,
+   258.0
+  ],
+  "rect_unscaled_note": "mock place() rect; lamp_geo.json at is 295.33 (the mock matched the frame at -0.5)",
+  "group_anchor": [
+   295.33,
+   1080.0
+  ],
+  "group_scale": 0.94,
+  "dxg": 0,
+  "rect": [
+   294.86,
+   837.48,
+   446.19,
+   242.52
+  ],
+  "globe": [
+   373.04,
+   967.2,
+   55.836
+  ],
+  "shine_run": "s = x + 0.5 (clamp(y, 840, 1040) - 840) + 1.1 max(y - 975, 0) smoothstep(520, 575, x); front 640 (mock7.py path_s, line 108)",
+  "hair_mask": "dg_river/xp_light.png R = the hair outline (1 - tail) + hair_R6; G ridges (1 - tail) (dg_xp_mask.py)"
+ },
+ "keeper": {
+  "texture": "dg_keeper/keeper.png",
+  "lip": "dg_keeper/keeper_lip.png",
+  "rect": [
+   1254,
+   873,
+   341,
+   207
+  ],
+  "source": "gen ks60_2304_0",
+  "source_rect": [
+   1256.16,
+   875.0,
+   336.00000000000006,
+   224.00000000000003
+  ],
+  "draw": "keeper, then the glass, then keeper_lip over the glass; the glass glow (additive) x (1 - 0.75 lip alpha); then the girl, then the panel"
+ },
+ "panel": {
+  "texture": "dg_panel/panel.png",
+  "rect": [
+   576,
+   988,
+   768,
+   92
+  ],
+  "top_line": [
+   638.0,
+   1282.0,
+   1003.0
+  ],
+  "x": [
+   626.0,
+   1294.0
+  ],
+  "volute_r": 12.0,
+  "volutes": [
+   [
+    638.0,
+    1015.0
+   ],
+   [
+    1282.0,
+    1015.0
+   ]
+  ],
+  "end_contour_left": [
+   [
+    1015.25,
+    628.0
+   ],
+   [
+    1017.25,
+    626.5
+   ],
+   [
+    1019.25,
+    625.0
+   ],
+   [
+    1021.25,
+    623.5
+   ],
+   [
+    1023.25,
+    623.0
+   ],
+   [
+    1025.25,
+    622.5
+   ],
+   [
+    1027.25,
+    622.5
+   ],
+   [
+    1029.25,
+    622.5
+   ],
+   [
+    1031.25,
+    622.5
+   ],
+   [
+    1033.25,
+    622.0
+   ],
+   [
+    1035.25,
+    622.0
+   ],
+   [
+    1037.25,
+    621.5
+   ],
+   [
+    1039.25,
+    620.5
+   ],
+   [
+    1041.25,
+    620.0
+   ],
+   [
+    1043.25,
+    619.5
+   ],
+   [
+    1045.25,
+    618.5
+   ],
+   [
+    1047.25,
+    617.5
+   ],
+   [
+    1049.25,
+    616.5
+   ],
+   [
+    1051.25,
+    616.5
+   ],
+   [
+    1053.25,
+    616.5
+   ],
+   [
+    1055.25,
+    615.5
+   ],
+   [
+    1057.25,
+    616.0
+   ],
+   [
+    1059.25,
+    616.0
+   ],
+   [
+    1061.25,
+    615.5
+   ],
+   [
+    1063.25,
+    615.5
+   ],
+   [
+    1065.25,
+    615.5
+   ],
+   [
+    1067.25,
+    616.0
+   ],
+   [
+    1069.25,
+    616.0
+   ],
+   [
+    1071.25,
+    615.5
+   ],
+   [
+    1073.25,
+    615.0
+   ],
+   [
+    1075.25,
+    617.5
+   ],
+   [
+    1077.25,
+    616.5
+   ],
+   [
+    1079.25,
+    616.0
+   ]
+  ],
+  "end_contour_note": "[y, x] of the left end below the volute; the right end is 1920 - x",
+  "seats": [
+   [
+    733.0,
+    1042.0
+   ],
+   [
+    808.0,
+    1042.0
+   ],
+   [
+    883.0,
+    1042.0
+   ],
+   [
+    1037.0,
+    1042.0
+   ],
+   [
+    1112.0,
+    1042.0
+   ],
+   [
+    1187.0,
+    1042.0
+   ]
+  ],
+  "well_r": 31.5,
+  "seat_r": 35.0,
+  "coin": {
+   "center": [
+    960.0,
+    1042.0
+   ],
+   "r": 37.0,
+   "arch_r": 43.0,
+   "xp_ring": {
+    "r0": 28.675,
+    "r1": 36.445,
+    "mid": 32.56,
+    "fill_from": "12 o'clock clockwise",
+    "core_sigma": 1.9,
+    "day": {
+     "hue": [
+      0.353,
+      0.635,
+      0.839
+     ],
+     "core": [
+      0.812,
+      0.91,
+      1.0
+     ]
+    },
+    "night": {
+     "hue": [
+      0.612,
+      0.494,
+      0.878
+     ],
+     "core": [
+      0.886,
+      0.831,
+      1.0
+     ]
+    },
+    "track_tint": 0.22,
+    "lip": 0.35,
+    "head_glint": [
+     2.6,
+     0.9
+    ],
+    "tick": "live: 1.2 px wide gold (0.95,0.80,0.52) at 12 o'clock over r0-1.5..r1+1.5 (mock7.py medallion, line 632)"
+   },
+   "level_number": {
+    "at": [
+     960.0,
+     1043.0
+    ],
+    "font": "cinzel-700",
+    "size": 23,
+    "anchor": "mm",
+    "stroke": 1,
+    "day": [
+     214,
+     234,
+     255
+    ],
+    "night": [
+     232,
+     222,
+     255
+    ]
+   }
+  },
+  "flask": {
+   "center": [
+    673.0,
+    1033.0
+   ],
+   "scale": 0.94,
+   "count_badge": [
+    688.0,
+    1014.0,
+    9
+   ]
+  },
+  "dash": {
+   "center": [
+    1247.0,
+    1035.0
+   ],
+   "scale": 0.84
+  },
+  "key_tags": {
+   "R": [
+    673.0,
+    1061
+   ],
+   "SPACE": [
+    1247.0,
+    1061
+   ],
+   "Q": [
+    1508.56,
+    1039.28
+   ],
+   "note": "[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: \"Q  READY\""
+  },
+  "rank_chips": [
+   [
+    757.5,
+    1017.5,
+    9
+   ],
+   [
+    832.5,
+    1017.5,
+    9
+   ],
+   [
+    907.5,
+    1017.5,
+    9
+   ],
+   [
+    1061.5,
+    1017.5,
+    9
+   ],
+   [
+    1136.5,
+    1017.5,
+    9
+   ],
+   [
+    1211.5,
+    1017.5,
+    9
+   ]
+  ]
+ },
+ "glass": {
+  "center": [
+   1502.56,
+   964.34
+  ],
+  "r": 37.0,
+  "bezel_outer": 40.6,
+  "lip_y": 987.28,
+  "bowl": [
+   1449.36,
+   1575.36
+  ],
+  "fire": "dg_keeper/fire.png (idle), fire_ready.png (READY)",
+  "constants": {
+   "center_y": "lip_y - 0.62 r (mock7.py 689)",
+   "pad": "2.2 r idle, 3.2 r READY; the window top extends 10 / 30 px more (293-294)",
+   "level": "vis_bot = min(cy + r, lip_y + 1); lvl = vis_bot - charge (vis_bot - (cy - r)); READY cy - r - 6 (313-315)",
+   "idle_fire_uv": "u = (x - cx) / 0.115 + 424, v = clamp((y - lvl) / 0.115 + 330, 0, 767) on fire.png 768^2; x 1.12 (325-327)",
+   "ready_fire_uv": "u = 383.5 + (x - cx) / r 318, v = 383 + (y - cy) / r 318 on fire_ready.png; x 1.25 + 0.04 (329-330)",
+   "ready_heart": "exp(-(d / 0.46 r)^2) (0.70 + 0.30 clamp(1.4 luma(fire))), screen (1.0, 0.95, 0.80) x 0.95 (333-336)",
+   "ready_wash": "screen (1.0, 0.72, 0.30) x 0.55 exp(-(d / 0.80 r)^2) (335)",
+   "radial": "fire x (0.68 + 0.32 (1 - (d/r)^4)) (337)",
+   "glass": "(0.050, 0.036, 0.030) + (0.30, 0.10, 0.02) 0.35 exp(-max(lvl - y, 0) / 9); screen with fire (339-342)",
+   "optics": "x (0.72 + 0.28 (1 - (d/r)^6)); fresnel (0.95,0.80,0.60) 0.20 over d/r 0.82..1; window at (cx - 0.42 r, cy - 0.46 r) size (0.30 r, 0.17 r) 0.35; glint sigma (1.6, 1.2) 0.55 (346-353)",
+   "bezel": "r..r+3.6 bronze (0.36,0.27,0.16) (0.45 + 1.1 lit), lit = clamp(0.55 - 0.315 (dx+dy)/d, 0.1, 1); charge arc amber (1.0,0.62,0.20) clockwise from 12; READY 0.55 bezel + 0.65 (1.0,0.70,0.30); outline r+3.6..r+4.6 0.85 (354-367)",
+   "halo": "exp(-max(d - r, 0) / (r 0.85 READY | 0.22 idle)) (1 - smoothstep(0.72 pad, 0.98 pad, d)); colour (1.0,0.62,0.22) x 0.95 READY, (1.0,0.50,0.12) x (0.10 + 0.2 charge) idle; additive, x (1 - 0.75 lip alpha) (370-375, 694)",
+   "ready_flames": "5 tongues (pos, height) (-0.55,0.55) (-0.25,0.95) (0.02,1.35) (0.28,0.85) (0.55,0.5), 30 px x height, width 6 (0.7 + 0.5 h); 11 embers seed 17 (376-410)",
+   "ready_core_luma": "about 0.92 inside 0.35 r at charge 1 (mock CORE)"
+  }
+ }
+}

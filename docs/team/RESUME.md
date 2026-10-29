@@ -2,6 +2,14 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 29 October: coordinator 61174ebb (restarted all four from 7050fc3c's reports)
+**Merged:** NPC 18 town wiring (npc-16@b4431459, xhigh r4 PASS-WITH-NOTES; torch "carries light" close key, her close-up unchanged); Cinematics 9 MR1+MR2 (cine-8@58428ea66: C02 night = C03's, s11 title without her; C03 s8y CUT; C04 A0/A7/A8b CUT, lamp_out over A8a). Tests 1308/0/10.
+**Live (report to 61174ebb):** Warden 6 (warden-1: shader fixed, neck-down close; main approved scrapping the generated head region -> head kit (face gated by max judge first, grey beard cards, cloth hood) then the cape; two C02 notes routed: flat cyan lantern, unsourced warm wash), NPC 18 (npc-16: the risen's second body, concept judge before Meshy; 13 named NPCs ~390 credits: ask the owner before batching), UI 23 (ui-21: HUD A bookends; old scratch 7050fc3c\ui22 still needed), Storybook 2 (storybook-2, NEW worktree from 58428ea66, own junction; su-lead-max at high; 3-plate ink SB00 sequence test -> owner -> all plates), Cinematics 10 (cine-8: C01 only).
+**Open, unowned:** her face at cinematic close-up (C04 judge: hot waxy skin, braid tab, crown smear) -> a Face lead when a slot frees. Waiting on the Warden model: C02 s7 + his tired stance. Later tries: C04 A0 lamp (prop solved; bank/water) and A8b letter (close).
+**UI 23 MERGED** (ui-21@c0fbd33d: HUD A, the keeper, bookends; max r3 PASS-WITH-NOTES; sheet SENT to the owner: survivorsunchained_inputs\ui23_hud; worktree ui-21 removed; old 7050fc3c\ui22 scratch binned). Routed: the risen read white/untextured at play (-> NPC 18), the Verge day map-edge void (Environment, unowned now). Later: skill glyphs flat beside the bronze (with skill art).
+**Face 48 STARTED** (face-48 from c0fbd33dc, own junction): her in CINEMATIC light (waxy/hot skin, ashen face vs orange ear, hairline cap, braid tab, crown smear, armor hot spots): diagnose rig vs shader vs asset, fix as a cinematic-rig default, one max judge per round, cap 3; no shot JSON edits (Cinematics 10 live on cine-8).
+Worktrees 7/8: armor-7, classes-15, cine-8, npc-16, warden-1, storybook-2, face-48.
+
 ## 29 October, early: coordinator 7050fc3c (took over all areas from 31372078 and ecc5f453)
 **WIND-DOWN DONE (7050fc3c, ~230k): all four leads HANDOFF READY, nothing live, no turns held.** Reports: survivorsunchained_inputs\lead_reports_7050fc3c\ (ui22.md, cine8.md, warden5.md, npc17.md). Restart each as a fresh successor from its handoff top, in its worktree:
 - **UI 23** (ui-21@afe306a6, ui_design.md "START HERE (UI 23)"): BUILD A, the keeper (owner picked; bookends: no gaps, the panel + end caps on top, figures tuck under, nothing across the skills; mock the join as a 1:1 strip for a judge first); max judge item hud23-build; MR.

@@ -20726,10 +20726,16 @@
   "npc": "cin_first_light",
   "entry": [
    {
-    "node": "reeds"
+    "node": "lamp_out"
    }
   ],
   "nodes": {
+   "lamp_out": {
+    "id": "lamp_out",
+    "speaker": "narrator",
+    "text": "On the stones at the water's edge, a lamp lies on its side. It has gone out.",
+    "next": "reeds"
+   },
    "reeds": {
     "id": "reeds",
     "speaker": "narrator",

@@ -13,12 +13,23 @@
 // line that flares as it sloshes, caustic light on the glass's floor; the glass a soft curved sky (no window panes), a
 // cool edge rim and her fingers mirrored low in it; the orb's red on her lips, chin and fingertips, scaled to her life
 // (dark at .18); the ward is rime creeping in from the rim (how far it has crept is the ward), thawing back as it
-// drops; her hand fades with her; and a slow sheen sweeps the bronze once every 10 s (DgRiver's river shader runs the
-// same sweep in screen px, so it travels on from her into the river).
+// drops; her hand fades with her; and a slow sheen sweeps the bronze once every 10 s.
+// UI 23 (HUD A): her locks run down her back to the screen's foot, and her group draws at grp_scale about grp_anchor
+// (LifeLamp's Scale): s screen px are grp_anchor + (scr_at + px - grp_anchor) grp_scale. A slow cool shine runs down
+// her hair (decoration, never the experience: LifeLamp.Shine), as the judged mock's (mock7.py shine_on, path_s).
 shader_type canvas_item;
 render_mode blend_premul_alpha;
-// (UI 18: the experience light on her hair, hud_dg_xp.gdshaderinc; at rest it does nothing)
-#include "res://shaders/hud_dg_xp.gdshaderinc"
+// her hair's shine: art/ui/dg_river/xp_light.png (tools/uiforge/dg_xp_mask.py; R her hair, G its ridges) in her unscaled
+// coordinates; the front in the run coordinate (shine_s), its strength shine_k (0: nothing runs)
+uniform sampler2D hair_mask : hint_default_black, filter_linear;
+uniform vec2 hair_at = vec2(295.0, 822.0);
+uniform vec2 hair_size = vec2(1310.0, 258.0);
+uniform vec2 grp_anchor = vec2(295.33, 1080.0);
+uniform float grp_scale = 1.0;
+uniform float shine_front = -1000.0;
+uniform float shine_k = 0.0;
+uniform vec3 shine_c = vec3(0.80, 0.89, 1.0);   // day sky white; night violet white (0.88, 0.83, 1.0)
+uniform float sheen_on = 1.0;                   // the idle sheen (0: held off for a measured picture)
 
 uniform sampler2D cold : source_color, filter_linear_mipmap;      // her figure, straight alpha
 uniform sampler2D mask : hint_default_black, filter_linear_mipmap; // R over the glass, G held at full in the fade
@@ -64,13 +75,26 @@ float vnoise(vec2 p)
 }
 float fbm(vec2 p) { return 0.55 * vnoise(p) + 0.3 * vnoise(p * 2.07 + 3.7) + 0.15 * vnoise(p * 4.21 + 9.1); }
 // the bronze's idle sheen: a soft diagonal band crossing the HUD left to right, once every 10 s (3.2 s on its way, then
-// still); s in 1080 screen px. (The same in hud_dg_river.gdshader.)
+// still); s in 1080 screen px.
 float sheen(vec2 s, float t)
 {
 	float ph = mod(t + 3.0, 10.0);
 	float x = s.x + 0.45 * (s.y - 950.0);
 	float pos = 180.0 + ph * 480.0;
 	return exp(-pow((x - pos) / 55.0, 2.0)) * (1.0 - smoothstep(2.9, 3.2, ph));
+}
+// the shine's run coordinate (screen px): along her crown, then down her back where her locks fall (mock7.py path_s)
+float shine_s(vec2 s) { return s.x + 0.5 * (clamp(s.y, 840.0, 1040.0) - 840.0) + 1.1 * max(s.y - 975.0, 0.0) * smoothstep(520.0, 575.0, s.x); }
+vec3 shine(vec3 fc, vec2 unscaled)
+{
+	vec2 scr = grp_anchor + (unscaled - grp_anchor) * grp_scale;
+	vec2 M = texture(hair_mask, (unscaled - hair_at) / hair_size).rg;
+	float dd = shine_s(scr) - shine_front;
+	float g = dd > 0.0 ? exp(-pow(dd / 18.0, 2.0)) : exp(-pow(dd / 30.0, 2.0)) + 0.20 * exp(dd / 190.0);
+	float k = clamp(g * M.r, 0.0, 0.9) * shine_k;
+	float lum = dot(fc, vec3(0.2126, 0.7152, 0.0722));
+	k *= 0.45 + 0.55 * max(smoothstep(0.30, 0.85, M.g), smoothstep(0.40, 0.75, lum));
+	return mix(fc, shine_c * clamp(lum * 1.15 + 0.16, 0.0, 0.95), k);
 }
 vec2 swirl(vec2 p, vec2 c, float k, float s2) { vec2 d = p - c; float a = k * exp(-dot(d, d) / s2); return c + mat2(vec2(cos(a), sin(a)), vec2(-sin(a), cos(a))) * d; }
 float level_row(float lv) { float f = level_foot < 0.0 ? orb_c.y + orb_vis : level_foot; return f - lv * (f - (orb_c.y - orb_vis)); }
@@ -99,9 +123,9 @@ void fragment()
 	fc += fc * vec3(1.90, 0.14, 0.05) * ol * smoothstep(0.04, 0.30, flum);
 	fc += fc * vec3(2.8, 0.20, 0.07) * olf * smoothstep(0.03, 0.20, flum);
 	// the idle sheen on her raised edges (her highlights catch it, her hollows do not)
-	fc += fc * vec3(0.55, 0.45, 0.30) * sheen(scr_at + px, TIME) * smoothstep(0.16, 0.45, flum);
-	// (UI 18: a gain's light along her hair, lifted less than the river's; never her face, shoulder or hand: mask R)
-	if (xp_on > 0.5) fc = xp_light(fc, scr_at + px, texture(xp_mask, (scr_at + px - xp_at) / xp_size).r, 0.28);
+	fc += fc * vec3(0.55, 0.45, 0.30) * (sheen(scr_at + px, TIME) * sheen_on) * smoothstep(0.16, 0.45, flum);
+	// (UI 23: the shine down her hair; never her face, shoulder or hand: the mask's R)
+	if (shine_k > 0.001) fc = shine(fc, scr_at + px);
 	// her figure in two layers: under the glass (all but her fingers over it) and over it
 	vec4 back = vec4(fc * a * (1.0 - M.r), a * (1.0 - M.r));
 	vec4 front = vec4(fc * a * M.r, a * M.r);
