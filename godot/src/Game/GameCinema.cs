@@ -2104,6 +2104,8 @@ public partial class Game
                 var bb = b; var tags = enemies.ToDictionary(kv => kv.Value, kv => kv.Key);
                 void Log(double t) { foreach (var (e, n) in tags) GD.Print($"cinema control+{t:0.0}s {n}: alive={e.Alive} state={e.State} hp={e.Hp:0} at=({e.X:0.0},{e.Z:0.0}) her=({bb.Player.X:0.0},{bb.Player.Z:0.0})"); }
                 Log(0);
+                // --afterstills: a picture at the play camera 0.5 s and 2 s after control (the hand-over's first looks).
+                if (Args.Has("afterstills")) { Shots.Want($"{file.Id}_play_1", 0.5); Shots.Want($"{file.Id}_play_2", 2.0); }
                 foreach (var t in new[] { 0.5, 1.0, 2.0 }) g.GetTree().CreateTimer(t).Timeout += () => Log(t);
             }
             g.sound.CineMood = null;

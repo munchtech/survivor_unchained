@@ -1,3 +1,5 @@
+Staged 29 Oct (Cinematics 10): what shipped and why is in shoot/c01.md
+
 # C01, the opening restaged: the empty bedroll
 
 The writer's beat for the next Cinematics lead (Story 13, 29 October 2026). This

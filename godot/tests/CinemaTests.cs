@@ -75,10 +75,10 @@ public class CinemaTests
         var f = CineFile.Load("c01");
         var shortTakes = new CineSchedule(f, new CineContext(), id => 2.0);
         var longTakes = new CineSchedule(f, new CineContext(), id => id.EndsWith(".bedroll") ? 11.0 : 2.0);
-        var s7 = longTakes.Shots.First(s => s.Shot.Id == "5");
+        var s7 = longTakes.Shots.First(s => s.Shot.Id == "1");
         var line = longTakes.Cues.First(c => c.Cue.Str("id") == "cin_drowned_fire.bedroll");
         Assert.Equal(line.T + 11.0 + s7.Shot.Tail, s7.End, 6);
-        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "5").Dur, 6);
+        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "1").Dur, 6);
     }
 
     [Fact]
@@ -121,7 +121,8 @@ public class CinemaTests
         Assert.Equal((ca.Black, ca.Hold), (cb.Black, cb.Hold));
         var end = new CinePlayer(Lay(f));
         end.Advance(end.S.Length);
-        Assert.Equal(1.0, end.Camera(places.Resolve).FollowK, 6);
+        // C01 ends on a held shot (no move): a hard cut to the game's camera, so nothing is blended in.
+        Assert.Equal(end.S.Shots[^1].Shot.Cam?.Move is { Follow: true } ? 1.0 : 0.0, end.Camera(places.Resolve).FollowK, 6);
         Assert.Equal(39.6, CineCamera.Hfov(50), 1);
         Assert.Equal(104.3, CineCamera.Hfov(14), 1);
     }
@@ -227,7 +228,9 @@ public class CinemaTests
                 Assert.True(Math.Abs(x - end.X) + Math.Abs(z - end.Z) < 0.3, $"{f.Id} ({calling}): leaves her at ({x:0.0}, {z:0.0}), but play takes her up at its end mark ({end.X:0.0}, {end.Z:0.0})");
                 Assert.True(CineHandover.Turn(heading, end.Heading) < 35, $"{f.Id} ({calling}): leaves her facing {heading:0.00}, but its end mark faces {end.Heading:0.00}");
                 Assert.True(CineHandover.PlaysLastShot(s), $"{f.Id}: her own body does not take the last shot from its cut (a \"play\" cue at 0)");
-                Assert.True(CineHandover.Blend(s) >= 0.5, $"{f.Id}: the last shot cuts to the game's camera (a follow move of 0.5 s or more, to its end)");
+                // A last shot with no camera move at all is a hold that cuts straight to the game's camera (C01, 29 Oct); a move must blend.
+                if (s.Shots[^1].Shot.Cam?.Move != null)
+                    Assert.True(CineHandover.Blend(s) >= 0.5, $"{f.Id}: the last shot cuts to the game's camera (a follow move of 0.5 s or more, to its end)");
             }
     }
 

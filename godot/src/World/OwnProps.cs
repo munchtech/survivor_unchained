@@ -352,6 +352,7 @@ public static class OwnProps
     static Material Wool => wool ??= new StandardMaterial3D
     {
         ResourceName = "wool", VertexColorUseAsAlbedo = true, Roughness = 0.96f,
+        AlbedoColor = new Color(0.65f, 0.65f, 0.65f),  // 29 Oct: 35% darker, hue kept (it read as a flat pink sheet at the play camera)
         AlbedoTexture = GD.Load<Texture2D>($"{Dir}/wool_tile.png"), NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{Dir}/wool_tile_n.png"),
         NormalScale = 0.45f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
         RimEnabled = true, Rim = 0.25f, RimTint = 0.6f,
