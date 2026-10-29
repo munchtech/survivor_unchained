@@ -74,6 +74,10 @@ public static class WardenLook
                         if (key.StartsWith("hood"))
                         {
                             w.SetShaderParameter("wool_sheen", HoodSheen);
+                            // (r4, the max judge: wool, not satin: matte however soaked; the hem's river band)
+                            w.SetShaderParameter("rough_floor", HoodRoughFloor);
+                            w.SetShaderParameter("spec_cap", HoodSpecCap);
+                            w.SetShaderParameter("hem_band_y", HoodHemBand);
                             if (key == "hood_inner") w.SetShaderParameter("value_mul", HoodInner);
                         }
                         if (key == "hood")
@@ -109,7 +113,10 @@ public static class WardenLook
 
     /// <summary>The garment's wool sheen (Godot's rim: a soft grazing light, no tight specular) and its inside's value
     /// against the outside (Warden 7). WARDEN_WET can still override both on every soaked surface.</summary>
-    public static float HoodSheen = 0.45f, HoodInner = 0.72f;
+    public static float HoodSheen = 0.12f, HoodInner = 0.72f;
+    /// <summary>(r4) The garment's roughness floor and specular cap (wool, no sheen band however soaked) and the bind
+    /// height of the top of the dark wet band at the cape's hem, where it lies in the river.</summary>
+    public static float HoodRoughFloor = 0.92f, HoodSpecCap = 0.1f, HoodHemBand = 0.40f;
 
     /// <summary>The hood's dark inner shell and its frayed fringe (plain materials): the wet wool's low specular and
     /// rough sheen, the fringe's strands alpha-to-coverage (fine fibres at a distance, not square stubs).</summary>
@@ -121,10 +128,13 @@ public static class WardenLook
         m.Roughness = 0.9f;
         if (m.ResourceName == "warden_hood_fringe")
         {
+            // (r4: plain alpha scissor; alpha-to-coverage without MSAA drew the strands as a dithered speckle on the
+            //  water in C03 s2; the cape's hem fringe in the river is gone from the mesh)
             m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-            m.AlphaScissorThreshold = 0.4f;
-            m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverage;
-            m.AlphaAntialiasingEdge = 0.3f;
+            m.AlphaScissorThreshold = 0.45f;
+            m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.Off;
+            m.Roughness = 0.95f;
+            m.MetallicSpecular = 0.08f;
             m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
         }
     }
@@ -236,12 +246,32 @@ public static class WardenLook
         float k = (float)(g <= 0.001 ? 0 : Mathf.Clamp(0.45 + 0.55 * g + Mathf.Sin((float)time * 5) * 0.06 * g, 0, 1.6));
         e.Core.AlbedoColor = new Color(2.2f * k, 3.0f * k, 3.4f * k, 1);
         e.Glow.AlbedoColor = new Color(Cyan.R, Cyan.G, Cyan.B, 0.55f * Mathf.Min(k, 1.2f));
-        float s = e.Glint.GetParent<Node3D>().GlobalTransform.Basis.Scale.X;
-        e.Glint.OmniRange = GlintReach * s;
-        e.Glint.LightEnergy = GlintEnergy * k;
+        var at = e.Glint.GetParent<Node3D>();
+        float s = at.GlobalTransform.Basis.Scale.X;
+        // (Warden 7 lamp solver: at C03 s1's 85 mm close-up the 1.1 cm core drew ~20 px and its glow and glint washed his
+        // face cyan, the brow 155. Held to CorePx on screen at most: the quads shrink with the camera's nearness, the
+        // glint's energy and reach with them; C02's cameras (core 2-6 px) are untouched.)
+        float f = 1;
+        if (at.GetViewport()?.GetCamera3D() is Camera3D cam && cam.Projection == Camera3D.ProjectionType.Perspective)
+        {
+            float d = Mathf.Max(cam.GlobalPosition.DistanceTo(e.Glint.GlobalPosition), 0.01f);
+            float h = at.GetViewport().GetVisibleRect().Size.Y;
+            float px = 0.011f * s * h / (2 * d * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2));
+            f = Mathf.Min(1, CorePx / Mathf.Max(px, 1e-3f));
+        }
+        if (Mathf.Abs(f - eyeF) > 0.01f)
+        {
+            eyeF = f;
+            foreach (var c in at.GetChildren()) if (c is MeshInstance3D mi) mi.Scale = Vector3.One * f;
+        }
+        e.Glint.OmniRange = GlintReach * s * Mathf.Sqrt(f);
+        e.Glint.LightEnergy = GlintEnergy * k * f * f;
         e.Glint.Visible = k > 0;
     }
 
+    static float eyeF = 1;
+    /// <summary>The eye-lights' core at most this many pixels across (WARDEN_EYE_PX), however close the camera.</summary>
+    static readonly float CorePx = EnvF("WARDEN_EYE_PX", 7f);
     public static float GlintReach = 0.12f, GlintEnergy = EnvF("WARDEN_EYE_GLINT", 0.05f);
     /// <summary>The glow's quad (the core's is 0.011): Warden 7 r1, the bloom no wider than 3x the core (was 0.045).</summary>
     static readonly float GlowSize = EnvF("WARDEN_EYE_GLOW", 0.026f);

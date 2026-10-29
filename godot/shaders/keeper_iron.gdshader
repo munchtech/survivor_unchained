@@ -24,6 +24,9 @@ uniform float edge_hi = 0.55;
 uniform float iron_metal = 0.75;
 uniform float iron_rough = 0.5;
 uniform float bevel_rough = 0.16;
+// the worn edges' roughness and the iron's (not the cord's) specular (Warden 7: the sword's guard and pommel read pale at 0.3 / 0.5)
+uniform float edge_rough = 0.3;
+uniform float iron_spec = 0.5;
 // The Watch blade's steel (vertex G < 0.35, watch_blade.py): its flats, its honed edge bevel, its river stain.
 uniform vec3 blade_flat = vec3(0.075, 0.074, 0.072);
 uniform vec3 blade_edge = vec3(0.50, 0.50, 0.49);
@@ -92,7 +95,7 @@ void fragment() {
 	col = mix(col, rust * (0.7 + 0.6 * m.r), r);
 	col = mix(col, silt * (0.8 + 0.4 * m.g), s);
 	float metal = mix(iron_metal, 1.0, edge) * (1.0 - r * 0.85) * (1.0 - s * 0.9);
-	float rough = mix(iron_rough + 0.18 * (m.g - 0.5) + 0.12 * (1.0 - m.b), 0.3, edge);
+	float rough = mix(iron_rough + 0.18 * (m.g - 0.5) + 0.12 * (1.0 - m.b), edge_rough, edge);
 	rough = mix(rough, 0.85, r);
 	rough = mix(rough, 0.92, s);
 	float h = m.b - r * 0.25 * m.r;
@@ -134,7 +137,7 @@ void fragment() {
 		h = m.g * 0.4 + ph * strip * 0.6;
 		bk = bump * 0.6;
 	}
-	float spec = is_cord ? cord_spec : 0.5;
+	float spec = is_cord ? cord_spec : COLOR.g < 0.35 ? 0.5 : iron_spec;
 	float inside = smoothstep(cage.x + 0.002, cage.x - 0.002, max(abs(opos.x), abs(opos.z)))
 		* smoothstep(cage.y + 0.002, cage.y - 0.002, opos.y) * smoothstep(cage.z - 0.002, cage.z + 0.002, opos.y) * soot_k;
 	col = mix(col, vec3(0.012, 0.011, 0.010) * (0.8 + 0.4 * m.g), inside);

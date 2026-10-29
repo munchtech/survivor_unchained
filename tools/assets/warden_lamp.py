@@ -198,6 +198,7 @@ def main():
         bpy.ops.export_scene.gltf(**kw, export_vertex_color='ACTIVE')
     except TypeError:
         bpy.ops.export_scene.gltf(**kw, export_colors=True)
+    fix_colours(path)
     print('LAMP tris', {o.name: tris(o) for o in obs}, 'total', sum(tris(o) for o in obs))
     # A look at it (Workbench, dark iron and the glass dim): for checking the shape before the game.
     if os.environ.get('LAMP_PREVIEW'):
@@ -215,6 +216,26 @@ def main():
         sc.camera = cam
         sc.render.filepath = os.environ['LAMP_PREVIEW']
         bpy.ops.render.render(write_still=True)
+
+
+def fix_colours(path):
+    """Blender 4.5's exporter writes a white COLOR_0 and the real 'Col' layer as COLOR_1; Godot reads only COLOR_0, so
+    keeper_iron saw every vertex white (R convexity 1 = all worn edge, B part-random 1). Point COLOR_0 at the real layer
+    (same fix as watch_blade.py)."""
+    import json, struct
+    d = open(path, 'rb').read()
+    jl = struct.unpack('<I', d[12:16])[0]
+    j = json.loads(d[20:20 + jl])
+    for m in j['meshes']:
+        for p in m['primitives']:
+            a = p['attributes']
+            if 'COLOR_1' in a:
+                a['COLOR_0'] = a.pop('COLOR_1')
+    js = json.dumps(j, separators=(',', ':')).encode()
+    js += b' ' * (-len(js) % 4)
+    rest = d[20 + jl:]
+    out = struct.pack('<4sII', b'glTF', 2, 12 + 8 + len(js) + len(rest)) + struct.pack('<I4s', len(js), b'JSON') + js + rest
+    open(path, 'wb').write(out)
 
 
 if __name__ == '__main__':

@@ -54,13 +54,19 @@ public static class LampIron
             m.SetShaderParameter("edge_hi", 0.85f);
             m.SetShaderParameter("cord_spec", 0.22f);
             m.SetShaderParameter("cord_rough", 0.8f);
-            m.SetShaderParameter("blade_flat", new Vector3(0.40f, 0.40f, 0.39f));
+            // (Warden 7 lamp solver: the flat 204 at s12 at 0.40, target 130-160; the guard and pommel 165-197, target 55-75:
+            // darker iron and worn steel, rougher, specular 0.3 on the fittings)
+            m.SetShaderParameter("blade_flat", new Vector3(1, 1, 0.975f) * SurvivorUnchained.Args.Num("blade-flat", 0.28f));
+            m.SetShaderParameter("iron", new Vector3(0.030f, 0.029f, 0.027f));
+            m.SetShaderParameter("steel", new Vector3(0.16f, 0.157f, 0.152f));
+            m.SetShaderParameter("edge_rough", 0.6f);
+            m.SetShaderParameter("iron_spec", 0.3f);
             m.SetShaderParameter("blade_edge", new Vector3(0.72f, 0.72f, 0.70f));
             m.SetShaderParameter("blade_stain", 0.5f);
             m.SetShaderParameter("blade_rough", 0.52f);
             m.SetShaderParameter("bevel_rough", 0.3f);
             m.SetShaderParameter("iron_metal", 0.45f);
-            m.SetShaderParameter("iron_rough", 0.72f);
+            m.SetShaderParameter("iron_rough", 0.82f);
             m.SetShaderParameter("wet", 0.2f);
         }
         return m;
@@ -120,6 +126,14 @@ public static class LampIron
                     g.SetShaderParameter("frost", SurvivorUnchained.Args.Num("lamp-frost", 0.8f));
                     g.SetShaderParameter("reflect_col", new Vector3(0.13f, 0.17f, 0.24f));
                     g.SetShaderParameter("edge_k", 0.25f);
+                    // (Warden 7 lamp solver: the dome's glass frosted and lit read pale over its eight ribs, a round birdcage from
+                    // above at s11; it is smoked, soot-dark glass under the hood, only a little of the flame in it)
+                    if (name.StartsWith("GlassDome"))
+                    {
+                        g.SetShaderParameter("frost", SurvivorUnchained.Args.Num("lamp-dome-frost", 0f));
+                        g.SetShaderParameter("glow_k", SurvivorUnchained.Args.Num("lamp-dome-glowk", 0.12f));
+                        g.SetShaderParameter("reflect_col", new Vector3(0.07f, 0.09f, 0.12f));
+                    }
                 }
                 mi.MaterialOverride = g;
                 if (warden && System.Environment.GetEnvironmentVariable("WARDEN_LAMP_GLASS") == "0") mi.Visible = false;   // (for pictures)
@@ -158,6 +172,24 @@ public static class LampIron
             im.SetShaderParameter("inner_col", new Vector3(linear.R, linear.G, linear.B));
             im.SetShaderParameter("inner_k", InnerK * lit);
         }
+    }
+
+    /// <summary>WARDEN_LAMP_PROBE: every mesh of a lamp (name, shown, layers, shadow, its material and the glass's lit), its box in
+    /// the world and its distance from the camera (Warden 7: which mesh draws at the play camera).</summary>
+    public static string Dump(Node3D lamp)
+    {
+        var sb = new System.Text.StringBuilder();
+        var cam = lamp.GetViewport()?.GetCamera3D();
+        foreach (var n in lamp.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            var gi = (GeometryInstance3D)n;
+            var mat = gi.MaterialOverride;
+            string mn = mat is ShaderMaterial sm ? System.IO.Path.GetFileName(sm.Shader?.ResourcePath ?? "?") + (sm.Shader?.ResourcePath?.Contains("glass") == true ? " lit " + sm.GetShaderParameter("lit") + " glow_k " + sm.GetShaderParameter("glow_k") + " frost " + sm.GetShaderParameter("frost") : " inner " + sm.GetShaderParameter("inner_k")) : mat?.GetType().Name ?? "none";
+            if (mat == null && gi is MeshInstance3D m0 && m0.Mesh != null) mn = "surf0 " + (m0.GetActiveMaterial(0)?.GetType().Name ?? "none");
+            var bb = gi.GetAabb(); var c = gi.GlobalTransform * (bb.Position + bb.Size / 2);
+            sb.Append('\n').Append($"  {gi.GetPath()} vis {gi.IsVisibleInTree()} layers {gi.Layers:X} shadow {gi.CastShadow} {mn} centre {c} size {gi.GlobalTransform.Basis.Scale.X * bb.Size} cam {(cam != null ? cam.GlobalPosition.DistanceTo(c) : -1):0.00}");
+        }
+        return sb.ToString();
     }
 
     /// <summary>--lamp-iron-inner K: how strongly the Warden's flame lights his lantern's own iron (for pictures).</summary>
@@ -251,6 +283,9 @@ public sealed class LampFire
             Name = "Glow", Mesh = new QuadMesh { Size = Vector2.One * (warden ? 0.15f : 0.17f), Material = glow },
             Position = new Vector3(0, flameY, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
+        // (Warden 7 lamp solver: drawn after the frosted panes round it, at 0.92 alpha they veiled the flame and the lantern
+        // read a flat pale box at s12 with no core; the flame and its glow sort in front of the glass, the iron still hides them)
+        if (warden) foreach (var n in Node.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)n).SortingOffset = 1f;
         if (warden && System.Environment.GetEnvironmentVariable("WARDEN_LAMP_FIRE") == "0") Node.Scale = Vector3.One * 1e-4f;   // (for pictures)
         Look(null, 1, 1);
     }

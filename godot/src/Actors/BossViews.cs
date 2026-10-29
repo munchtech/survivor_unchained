@@ -247,7 +247,7 @@ public partial class WardenView : Node3D, IBossView
         // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
         if (light.LightEnergy > 0 && !LampNoShadow) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
         if (LampProbe && (probeN++ % 90) == 0 && light.IsInsideTree())
-            GD.Print($"LAMPPROBE e {light.LightEnergy:0.00} mask {light.LightCullMask:X} shadow {light.ShadowEnabled} range {light.OmniRange} att {light.OmniAttenuation} at {light.GlobalPosition} lamp {lamp.GlobalPosition} fist {grip.GlobalPosition} scale {grip.GlobalTransform.Basis.Scale.X:0.00} layers {LayersOf(view)} glow {g:0.00} atFlame {atFlame} lit {LampLit} col {flameColor}");
+            GD.Print($"LAMPPROBE e {light.LightEnergy:0.00} mask {light.LightCullMask:X} shadow {light.ShadowEnabled} range {light.OmniRange} att {light.OmniAttenuation} at {light.GlobalPosition} lamp {lamp.GlobalPosition} fist {grip.GlobalPosition} scale {grip.GlobalTransform.Basis.Scale.X:0.00} layers {LayersOf(view)} glow {g:0.00} atFlame {atFlame} lit {LampLit} col {flameColor} cam {GetViewport().GetCamera3D()?.GlobalPosition} fov {GetViewport().GetCamera3D()?.Fov}" + LampIron.Dump(lamp));
         if (atFlame && fire != null) { light.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
         light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
