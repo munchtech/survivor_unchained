@@ -1097,6 +1097,18 @@ public partial class Game
                     turn.Rate = (float)(1 / Math.Max(0.05, over));
                     break;
                 }
+                case "hair":
+                {
+                    // "sway": her hair's swing scaled (HairSway.Amount; 1 as tuned), given back at the end
+                    // (C01 r4: kneeling and turning, the braid swung like a rigid rod).
+                    if (!people.TryGetValue(c.Actor, out var v) || !c.Has("sway")) break;
+                    foreach (var hs in v.Person.Skeleton.FindChildren("*", "", true, false).OfType<HairSway>())
+                    {
+                        if (!swayWas.ContainsKey(hs)) swayWas[hs] = hs.Amount;
+                        hs.Amount = (float)c.Num("sway", 1);
+                    }
+                    break;
+                }
                 case "gaze":
                 {
                     // Her eyes to "look" (iris radii, +x her left, +y down; HerFaceLife, Play/GazeShift): a saccade
@@ -1957,6 +1969,7 @@ public partial class Game
 
         float keyReach = -1;
         readonly HashSet<int> sized = new();
+        readonly Dictionary<HairSway, float> swayWas = new();
 
         // Eye-shader values the cinematic changed: the first original of each, put back at the end.
         readonly Dictionary<(ShaderMaterial, string), Godot.Variant> eyeWas = new();
@@ -1976,6 +1989,8 @@ public partial class Game
             skinSky = 1; skinEar = 1;
             foreach (int i in sized) g.scene?.View.SetSize(i, 0);
             sized.Clear();
+            foreach (var (hs, was) in swayWas) if (IsInstanceValid(hs)) hs.Amount = was;
+            swayWas.Clear();
             foreach (var ((em, ek), was) in eyeWas) if (IsInstanceValid(em)) em.SetShaderParameter(ek, was);
             eyeWas.Clear();
             if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;

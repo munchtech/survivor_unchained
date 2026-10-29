@@ -75,10 +75,10 @@ public class CinemaTests
         var f = CineFile.Load("c01");
         var shortTakes = new CineSchedule(f, new CineContext(), id => 2.0);
         var longTakes = new CineSchedule(f, new CineContext(), id => id.EndsWith(".bedroll") ? 11.0 : 2.0);
-        var s7 = longTakes.Shots.First(s => s.Shot.Id == "2");
+        var s7 = longTakes.Shots.First(s => s.Shot.Id == "5");
         var line = longTakes.Cues.First(c => c.Cue.Str("id") == "cin_drowned_fire.bedroll");
         Assert.Equal(line.T + 11.0 + s7.Shot.Tail, s7.End, 6);
-        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "2").Dur, 6);
+        Assert.Equal(longTakes.Length - shortTakes.Length, s7.Dur - shortTakes.Shots.First(s => s.Shot.Id == "5").Dur, 6);
     }
 
     [Fact]

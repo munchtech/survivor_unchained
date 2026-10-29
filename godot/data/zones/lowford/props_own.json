@@ -62,22 +62,7 @@
   {"preset": "haze_veil", "x": 0.0, "z": -114.85, "y": -0.4},
   {"preset": "beyond_lamp", "x": -1.3, "z": -116.0},
   {"preset": "camp_ground", "x": -10.5, "z": 90.5},
-  {
-   "preset": "bedroll_open",
-   "x": -12.9,
-   "z": 92.4,
-   "rot": -0.9,
-   "hide": [
-    -12.9,
-    92.4,
-    1.4,
-    0.7
-   ],
-   "bare": [
-    1.05,
-    1.5
-   ]
-  },
+  {"preset": "bedroll_open", "x": -12.6, "z": 90.6, "rot": 3.1416, "hide": [-12.6, 90.6, 0.7, 1.2], "bare": [1.05, 1.5]},
   {
    "preset": "log_long",
    "a": [
@@ -106,8 +91,8 @@
    ],
    "r": 0.215
   },
-  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -13.6, "z": 89.15, "rot": 0.5},
-  {"preset": "pack_dull", "x": -12.3, "z": 88.25, "rot": -0.5},
+  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -14.1, "z": 92.6, "rot": 0.9},
+  {"preset": "pack_dull", "x": -13.4, "z": 92.6, "rot": 2.6},
   {
    "preset": "wagon",
    "x": 5,
