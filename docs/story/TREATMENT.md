@@ -198,14 +198,20 @@ the one the Waystation's gate says every dusk without knowing whose it was,
 made small and kept in one family. The call is the valley's; the name is
 hers.
 
-- **C04, the first dawn** (trunk): *"You try to call up your mother's face,
-  and find it is not quite where you left it. Her voice is still there. 'Lamp's
-  lit, Spark. Stay where it reaches.'"*
-- **The first dusk at the gate:** the Watch call the lamps, and she turns her
-  head. *"You have heard that said at a door."*
+- **C04, the first dawn** (trunk): *"You try to call up your mother's voice,
+  and it is not there. Not faint: gone. Her face comes at once: the line
+  between her brows, the thread she bit instead of cutting."* The narrator
+  never says the call: there is nothing to compare her with (reveal A, the
+  owner's pick, 28 October; `NARRATOR_REVEAL_OPTIONS.md`).
+- **The first dusk at the gate:** the Watch call the lamps ("Lamps are lit.
+  Stay where they reach.", the valley's plural), and she turns her head. *"You
+  have heard that said at a door."* The player learns the words from the
+  valley, never the voice from her; the one-lamp version, hers, waits for C43.
 - **The dawns take it.** One line now and then, at the night's end:
-  - day 3, *"Her voice is going the way her face went. You still have the
-    word."*;
+  - day 3, *"Her face is going the way her voice went. The brows first. You
+    still have the word."*;
+  - day 6, *"This morning it takes you a moment to find her word. It is
+    there."* (the journal keeps it: *"Spark. What she called me, at dusk."*);
   - after Act 2's turn, *"Somebody used to call you something at dusk. One
     short word. It was yours."*;
   - and then the line stops coming. The player notices what is gone because
@@ -404,12 +410,12 @@ no player can match the accents.
    checking a bed.
 2. **"Prints in the frost, your own. They come up from the river. None go
    down to it."** She watched her child walk out of the water.
-3. **C04's dawn:** "...not quite where you left it. Her voice is still
-   there." The narrator quotes the mother in the narrator's own voice. Of
-   course she does: it is hers.
+3. **C04's dawn:** the voice is gone ("Not faint: gone."); the face comes
+   whole. The narrator quotes nothing. Of course the voice is not in her
+   memory: it is in her ear.
 4. **Every rise: "You get up. It takes less than it did."** A mother getting
    a child up.
-5. **The dawn lines that take "Spark" away.** She is narrating her child
+5. **The dawn lines that take her face, then "Spark," away.** She is narrating her child
    forgetting her, plainly, with no weight, night after night.
 6. **The silences:** at the water's edge in the prologue; through Rook's
    confession. The only two places in the game the narrator does not speak.
@@ -429,7 +435,7 @@ speaks in the first person, once:
 - "I came up with you. Somebody had to tell you where you were."
 - And, if she asks why she never said: "You'd have sat down in the road and
   waited for me."
-- Her face is exactly where she left it.
+- And with the voice, her face comes back: the brows, the thread she bit.
 
 **The endings each settle the voice.**
 - **A, re-forge, the survivor lies down:** *"You lie down."* Then, for the
@@ -829,7 +835,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 |---|---|---|
 | The waking: no breath, prints up from the river | dread | C01 |
 | "Is it morning?" and the nod (her choice) | grace | C03 |
-| First dawn: breath smoking; "Lamp's lit, Spark." | relief, and the first thing to lose | C04 |
+| First dawn: breath smoking; her voice gone, her face whole | relief, and the first thing lost | C04 |
 | Holloway's coat; Rook's back room | warmth | C04 B |
 | Brannoc's pride: the road he lit, her new boots | dread (the player knows) | the forge |
 | The first night's return: Holloway asleep at the gate, Maeca over him with her crossbow | warmth (re-read: a hunter waiting) | the gate |

@@ -152,7 +152,7 @@ Conversation `sb_stay_where_they_reach`, speaker `watchman`. New: 9 lines, 144 w
 | "Its light... We call it ember." | Ember is the held dead, leaking up | Act 3 (bible §1, rules 1-5) |
 | "Not them. Just the bodies." | One in a great many rises whole. And the light in the risen is other people's | Act 2's turn (*what you are*); Act 3 |
 | "Put one down and it spills out." | The player is burning the dead from the first minute | Act 3; one of the drowned is Nell (Act 1) |
-| "Takes back what it lent. No more than that." | It takes the names, then the faces, and every rising costs a life | **The first dawn already** ("your mother's face... not quite where you left it"); Chid; C41 |
+| "Takes back what it lent. No more than that." | It takes the names, then the faces, and every rising costs a life | **The first dawn already** ("your mother's voice... Not faint: gone."); Chid; C41 |
 | "Keepers at the crossings" | Dead men raised to kill anything near the water | C02-C03 ("Is it morning?") |
 | "Oil, never ember. Nobody remembers why." | Ember feeds the Warden; oil let him sleep | Keegan and the belt-book, Act 1 |
 | "Somebody lit the lamps" | Vonnra, with Brannoc's irons | The fortune (C09); C14 |

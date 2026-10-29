@@ -1,5 +1,12 @@
 # The narrator is her mother: two ways to make it a reveal (Story 12, 28 October 2026)
 
+**DECIDED: A (the owner, 28 October: "story option a for sure - tho some of the
+wording like her face is \"where you left it\" is kinda strange").** Written in on
+29 October (Story 13): `cin_first_light.face`, `rules.json` `dawn.face` (was
+`dawn.voice`), the test, TREATMENT §2 and §3.4, the bible, C04's doc and shoot
+notes, act 3's outline. The shelf image ("where you left it") is gone from the
+first dawn and the stair. The lines as written are below, in place of the drafts.
+
 **The problem (the owner, 28 October):** C04's first dawn says she can't hold her
 mother's FACE but still has her VOICE, and the narrator then speaks the call in her
 own voice ("Lamp's lit, Spark. Stay where it reaches."); the dawns take the voice
@@ -17,16 +24,15 @@ regenerating placeholders. No ElevenLabs cost.
 What the player hears and sees, beat by beat:
 
 1. **C04, the first dawn** (`cin_first_light.face`): *"You try to call up your
-   mother's voice, and it is not there. Not faint: gone, as if someone had taken it
-   out of the room. Her face is exactly where you left it: the line between her
-   brows, the thread she bit instead of cutting."* The narrator never says the call.
+   mother's voice, and it is not there. Not faint: gone. Her face comes at once: the
+   line between her brows, the thread she bit instead of cutting."* The narrator never says the call.
    There is nothing to compare her with.
 2. **Day 3** (`dawn.voice` in rules.json, renamed `dawn.face`): *"Her face is going
    the way her voice went. The brows first. You still have the word."*
 3. **Day 6** (`dawn.word`): unchanged. *"This morning it takes you a moment to find
    her word. It is there."* The journal keeps *"Spark. What she called me, at dusk."*
-4. **The first dusk at the gate:** the Watch call the lamps ("Lamp's lit. Stay where
-   it reaches.") in a Watchman's voice; the storybook's Watchman already says it. The
+4. **The first dusk at the gate:** the Watch call the lamps ("Lamps are lit. Stay where
+   they reach.", the valley's plural; the one-lamp "it" is hers alone and waits for C43) in a Watchman's voice; the storybook's Watchman already says it. The
    player learns the WORDS from the valley, never the voice from her.
 5. **After Act 2's turn** (unchanged): *"Somebody used to call you something at dusk.
    One short word. It was yours."* Then the line stops coming, and the dawns thin
@@ -46,8 +52,7 @@ Why A: the false belief stays whole (players do not ask who a narrator is); the 
 gives the reveal a mechanism that clicks on the re-read (the voice was not gone, it
 was here); losing the FACE is sadder on screen than losing a voice, and it sets the
 stair: by Act 3 she has lost the face, and at the bottom the face is in front of her
-with the narrator's voice coming out of it. Both come back at once, and *"Her face
-is exactly where she left it"* becomes the line it was always meant to be.
+with the narrator's voice coming out of it. Both come back at once, and her face comes back with the voice: the brows, the thread she bit.
 
 Would a player say "what the fuck" out loud: yes, the good kind (my score 8/10,
 against about 5/10 today, where the beat is told). Cost: three line changes (C04's

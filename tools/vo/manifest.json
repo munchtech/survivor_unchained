@@ -23331,13 +23331,13 @@
    "id": "dlg.sella.free_stairs.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.",
+   "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself.",
    "where": "dialogue.json sella/free_stairs#0",
-   "hash": "ffc294ac4cf4",
+   "hash": "ab735b2a353b",
    "segments": [
     {
      "voice": "narrator",
-     "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't."
+     "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself."
     }
    ],
    "direction": {
@@ -23743,13 +23743,13 @@
    "id": "dlg.greymuzzle.ally.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming. They are his answer.",
+   "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming.",
    "where": "dialogue.json greymuzzle/ally#0",
-   "hash": "5ceafef68b6d",
+   "hash": "47b2c546d14c",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming. They are his answer."
+     "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming."
     }
    ],
    "direction": {
@@ -23819,13 +23819,13 @@
    "id": "dlg.greymuzzle.again.2",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away, which from a wolf is as good as thanks.",
+   "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away.",
    "where": "dialogue.json greymuzzle/again#2",
-   "hash": "1fb4e4f9af77",
+   "hash": "d03b79167c9f",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away, which from a wolf is as good as thanks."
+     "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away."
     }
    ],
    "direction": {
@@ -27722,13 +27722,13 @@
    "id": "dlg.cin_first_light.face.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"",
+   "text": "You try to call up your mother's voice, and it is not there. Not faint: gone. Her face comes at once: the line between her brows, the thread she bit instead of cutting.",
    "where": "dialogue.json cin_first_light/face#0",
-   "hash": "e81b06241adf",
+   "hash": "f4a9232a1148",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\""
+     "text": "You try to call up your mother's voice, and it is not there. Not faint: gone. Her face comes at once: the line between her brows, the thread she bit instead of cutting."
     }
    ],
    "direction": {

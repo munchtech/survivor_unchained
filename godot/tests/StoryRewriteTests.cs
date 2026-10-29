@@ -344,14 +344,21 @@ public class StoryRewriteTests
     }
 
     [Fact]
-    public void Her_mothers_word_is_Spark_and_the_dawns_take_it_away()
+    public void Her_mothers_voice_is_gone_at_the_first_dawn_and_the_dawns_take_her_face_then_the_word()
     {
-        Assert.Contains("\"Lamp's lit, Spark. Stay where it reaches.\"", Convo("cin_first_light").Nodes["face"].Text[0].Text);
+        // Reveal A (the owner, 28 October): the first dawn finds the VOICE gone and the FACE whole, and the
+        // narrator never says the call before the bottom of the stair (C43): nothing in Acts 1-2 can be compared with her.
+        var face = Convo("cin_first_light").Nodes["face"].Text[0].Text;
+        Assert.StartsWith("You try to call up your mother's voice, and it is not there.", face);
+        Assert.Contains("the thread she bit instead of cutting", face);
+        foreach (var line in LinesOf("narrator"))
+            Assert.False(line.Contains("Spark") || line.Contains("Lamp's lit"), $"the narrator says the call before C43: {line}");
         // Never "Wick" (players hear John Wick), and no one else uses her word for a joke.
         Assert.DoesNotContain(ContentStrings(), t => Regex.IsMatch(t, @"\bWick\b|Spark-"));
         var s = Q();
         s.World.Day = 2;
         var heard = string.Join(" ", Simulation.AdvanceDay(s.C, () => 0.5).Lines);
+        Assert.Contains("Her face is going the way her voice went.", heard);
         Assert.Contains("You still have the word.", heard);
         // Written down at Chid's asking, in her own hand: the journal keeps what the dawns take.
         var c = Q();

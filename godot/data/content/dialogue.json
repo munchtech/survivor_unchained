@@ -17385,7 +17385,7 @@
    "free_stairs": {
     "id": "free_stairs",
     "speaker": "narrator",
-    "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't.",
+    "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself.",
     "next": "free_door"
    },
    "free_door": {
@@ -17658,7 +17658,7 @@
    "ally": {
     "id": "ally",
     "speaker": "narrator",
-    "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming. They are his answer.",
+    "text": "Greymuzzle lifts his head and howls, once. Four of the strongest get up and come to stand beside you. The old wolf lies back down among the sick. He is not coming.",
     "effects": [
      {
       "set": {
@@ -17753,7 +17753,7 @@
        "fact": "beasts.outcome",
        "eq": "cured"
       },
-      "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away, which from a wolf is as good as thanks."
+      "text": "Greymuzzle is on his feet. So are the others. He looks at you, and then away."
      },
      {
       "text": "Greymuzzle watches you from the rocks. He does not get up."
@@ -20733,7 +20733,7 @@
    "face": {
     "id": "face",
     "speaker": "narrator",
-    "text": "You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"",
+    "text": "You try to call up your mother's voice, and it is not there. Not faint: gone. Her face comes at once: the line between her brows, the thread she bit instead of cutting.",
     "next": "baking"
    },
    "baking": {

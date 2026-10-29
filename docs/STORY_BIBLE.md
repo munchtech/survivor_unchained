@@ -168,10 +168,13 @@ once more (`scene_still_plain`, TREATMENT §3.3).
 - **Her word.** At dusk, when the survivor was small, she put the lamp in the
   window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
   (The Order's evening call, made small and kept in one family; the name is
-  hers.) The first dawn quotes it; the dawns take it away, a piece at a time
-  (day 3, "Her voice is going the way her face went. You still have the
-  word."; Act 2, "Somebody used to call you something at dusk. One short
-  word. It was yours."; then nothing). On day 3, at Chid's asking, the
+  hers.) The narrator never says it before the bottom of the stair (reveal A,
+  28 October): the first dawn finds her voice gone and her face whole ("Not
+  faint: gone."), and the dawns take the face, then the word, a piece at a
+  time (day 3, "Her face is going the way her voice went. The brows first.
+  You still have the word."; day 6, "This morning it takes you a moment to
+  find her word. It is there."; Act 2, "Somebody used to call you something
+  at dusk. One short word. It was yours."; then nothing). On day 3, at Chid's asking, the
   survivor writes it in her journal, so the player can see it in her own hand
   after it means nothing to her.
 - **The kind lie.** On day 1, asked, Rook says: "She went in her sleep, pet. A
@@ -292,8 +295,8 @@ The payoff is real, and we keep it:
 Making her the whole narration would cost more than it earns:
 1. **Her sight is bought, not real** (section 3). The fortune's best clue is
    that she quotes back what Sella sold her. The narrator knows what nobody
-   could sell her: the survivor's own mind ("your mother's face... not quite
-   where you left it"), the Blind, Sella's free night. If Vonnra narrates, either she truly sees, which kills the
+   could sell her: the survivor's own mind (the first dawn: "your mother's
+   voice... Not faint: gone."), the Blind, Sella's free night. If Vonnra narrates, either she truly sees, which kills the
    fortune's clue and the bible's rule, or the narration breaks its own rules.
 2. **The twist would land on day one.** The player meets her the first
    afternoon, and a voice they have heard for an hour is recognised at once.

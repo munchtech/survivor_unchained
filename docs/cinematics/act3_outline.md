@@ -125,8 +125,8 @@ Prays For", is folded into this scene.)
      Nobody's! Nobody's lost! He keeps them ALL."
   5. Then, out of all of it, a voice she knows better than her own, saying her
      name, the way it did when she was small and late in from the yard. Her
-     mother, who died the week before the ford. And for once her face is exactly
-     where she left it. Choices: "Mam?" / (Say nothing. Listen.) / "Let them go."
+     mother, who died the week before the ford. And with the voice, her face
+     comes back: the brows, the thread she bit. Choices: "Mam?" / (Say nothing. Listen.) / "Let them go."
   6. Vonnra, behind her, who hears none of it (only the Morrow's own light can):
      "What is it saying, {name}? ...It has never said anything to me. Two
      thousand years, and it has never once said anything to my family." If the
