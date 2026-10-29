@@ -41,7 +41,8 @@ public static class Atmospheres
         // (Rendering r1, triage judge B1: she was dim in town by night (her ember at 1, Low Ford's 2.2) and the yards off
         // the lamps black (tnight_01's right half p50 8 of 255): a modest ember, 1.7 (her skin p50 at tnight_00 38 to 47),
         // the lift 0.016/0.024/0.05 to 0.024/0.034/0.064 (that right half p50 8 to 12))
-        Ember = 1.7,
+        // (Rendering r2, judge r1 E4: no pool showed at 1.7: 3, a soft pool round her (the pool now 0.75x its reach))
+        Ember = 3.0,
     };
 
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
