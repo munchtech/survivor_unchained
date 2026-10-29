@@ -1,0 +1,1278 @@
+{
+  "id": "c03w",
+  "title": "The Heart Goes Down (Warden test copy)",
+  "script": "docs/cinematics/shoot/c03.md",
+  "conversation": "cin_heart_goes_down",
+  "zone": "lowford",
+  "draft": "Previs pass 1: blocked relative to where he falls (the zone moves w and her there), stand-in clips until Kimodo's kneel_fall, reach_flinch and Grimtunnel's burst, sniff and dive.",
+  "bars": {
+    "in": 0.4,
+    "out": 0.8
+  },
+  "skip": {
+    "from": 1.5,
+    "hold": 0.8
+  },
+  "world": {
+    "rate": 0,
+    "zoneHeld": true
+  },
+  "marks": {
+    "w": [
+      4.0,
+      -42.0,
+      0.0
+    ],
+    "her": [
+      4.0,
+      -38.0,
+      3.1416
+    ]
+  },
+  "cast": {
+    "her": {
+      "kind": "survivor",
+      "mark": "her"
+    },
+    "warden": {
+      "kind": "boss",
+      "mark": "w",
+      "glow": 1.0
+    },
+    "heart": {
+      "kind": "orb",
+      "mark": "w",
+      "color": "#bfe6ff",
+      "size": 0.05,
+      "glow": 0.0
+    }
+  },
+  "shots": [
+    {
+      "id": "1",
+      "type": "MCU",
+      "dur": 2.0,
+      "note": "His head and shoulders as the last blow lands on hood and helm, slowed: the light in his eyes gutters. Cut on the impact.",
+      "cam": {
+        "pos": {
+          "mark": "w",
+          "off": [
+            0.8,
+            1.7,
+            1.5
+          ]
+        },
+        "at": {
+          "actor": "warden",
+          "bone": "head",
+          "off": [
+            0,
+            0.4,
+            0.2
+          ]
+        },
+        "lens": 85.0,
+        "focus": {
+          "actor": "warden",
+          "bone": "head",
+          "off": [
+            0,
+            0.4,
+            0.2
+          ]
+        },
+        "fstop": 2.8
+      },
+      "cues": [
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "key": 1.6,
+          "hemi": 1.3,
+          "env": 1.3,
+          "exposure": 1.7,
+          "keyColor": "#b9c6de",
+          "rim": 1.0
+        },
+        {
+          "do": "grade",
+          "sat": 0.88
+        },
+        {
+          "do": "event",
+          "name": "warden_cine"
+        },
+        {
+          "do": "music",
+          "mood": "silence"
+        },
+        {
+          "do": "anim",
+          "actor": "warden",
+          "clip": "Hit_Head",
+          "from": 0,
+          "speed": 0.3,
+          "blend": 0
+        },
+        {
+          "do": "lit",
+          "light": 12,
+          "on": true
+        },
+        {
+          "do": "lit",
+          "light": 13,
+          "on": true
+        },
+        {
+          "do": "lit",
+          "light": 14,
+          "on": true
+        },
+        {
+          "do": "light",
+          "light": 12,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "do": "light",
+          "light": 13,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "do": "light",
+          "light": 14,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "at": 0.4,
+          "do": "sfx",
+          "name": "hit",
+          "gain": 1.2
+        },
+        {
+          "at": 0.4,
+          "do": "vfx",
+          "kind": "shake",
+          "amount": 0.5
+        },
+        {
+          "at": 0.5,
+          "do": "lamp",
+          "actor": "warden",
+          "glow": 1.5,
+          "over": 0.6
+        },
+        {
+          "do": "light",
+          "light": 12,
+          "level": 4,
+          "color": "#8ac8ff",
+          "at": 0
+        },
+        {
+          "do": "light",
+          "light": 13,
+          "level": 4,
+          "color": "#8ac8ff",
+          "at": 0
+        },
+        {
+          "do": "light",
+          "light": 14,
+          "level": 4,
+          "color": "#8ac8ff",
+          "at": 0
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "type": "WS",
+      "dur": 4.0,
+      "note": "Wide and low at the water from the east: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water. His lamp is the light on him; the moon only edges him.",
+      "cam": {
+        "pos": {
+          "mark": "w",
+          "off": [
+            7.5,
+            1.0,
+            2.2
+          ]
+        },
+        "at": {
+          "mark": "w",
+          "off": [
+            0.0,
+            1.9,
+            1.2
+          ]
+        },
+        "lens": 30
+      },
+      "cues": [
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "key": 0.45,
+          "hemi": 0.18,
+          "env": 0.2,
+          "exposure": 1.0,
+          "keyColor": "#c4cad6",
+          "rim": 0.7,
+          "hemiSky": "#403c78",
+          "azimuth": 195
+        },
+        {
+          "do": "grade",
+          "sat": 0.88,
+          "moonSat": 0.03,
+          "moonDrop": 0.8,
+          "shade": "#2e2452",
+          "shadeK": 0.7,
+          "moonTop": 0.62,
+          "moonWidth": 0.15
+        },
+        {
+          "do": "event",
+          "name": "warden_cine"
+        },
+        {
+          "do": "music",
+          "mood": "silence"
+        },
+        {
+          "do": "lit",
+          "light": 12,
+          "on": true
+        },
+        {
+          "do": "lit",
+          "light": 13,
+          "on": true
+        },
+        {
+          "do": "lit",
+          "light": 14,
+          "on": true
+        },
+        {
+          "do": "light",
+          "light": 12,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "do": "light",
+          "light": 13,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "do": "light",
+          "light": 14,
+          "level": 0.8,
+          "color": "#8ac8ff"
+        },
+        {
+          "do": "lamp",
+          "actor": "warden",
+          "glow": 1.2,
+          "flame": 0.5,
+          "halo": 0.8,
+          "flameColor": "#ffb45a"
+        },
+        {
+          "do": "anim",
+          "actor": "warden",
+          "clip": "folk/m_kneel_lamp",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.6
+        },
+        {
+          "at": 0.6,
+          "do": "sfx",
+          "name": "kneel_water",
+          "gain": 0.8
+        },
+        {
+          "at": 1.4,
+          "do": "hold",
+          "actor": "warden",
+          "slot": "handslot.r",
+          "piece": null
+        },
+        {
+          "at": 1.4,
+          "do": "sfx",
+          "name": "sink",
+          "gain": 0.7
+        },
+        {
+          "at": 1.7,
+          "do": "line",
+          "id": "cin_heart_goes_down.morning"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "type": "WS",
+      "dur": 4.0,
+      "fit": [
+        "cin_heart_goes_down.morning"
+      ],
+      "note": "Wide, low, from the west: his kneeling profile against the moonlit water, the lamp held up before his face, its light the only light on him. He looks at the lamp, not at her. W4, in a tired man's voice.",
+      "cam": {
+        "pos": {
+          "mark": "w",
+          "off": [
+            -6.5,
+            1.1,
+            1.4
+          ]
+        },
+        "at": {
+          "mark": "w",
+          "off": [
+            0.2,
+            2.65,
+            0.2
+          ]
+        },
+        "lens": 36
+      },
+      "cues": [
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "azimuth": 15
+        },
+        {
+          "at": 1.4,
+          "do": "line",
+          "id": "cin_heart_goes_down.morning"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "type": "INSERT",
+      "dur": 2.5,
+      "note": "The fist lowers, and the lamp goes into the river. The flame hisses out in a puff of steam. Dark.",
+      "cam": {
+        "pos": {
+          "actor": "warden",
+          "bone": "hand_l",
+          "off": [
+            1.6,
+            -0.6,
+            1.4
+          ]
+        },
+        "at": {
+          "actor": "warden",
+          "bone": "hand_l",
+          "off": [
+            0,
+            -0.55,
+            0
+          ],
+          "track": true
+        },
+        "lens": 45
+      },
+      "cues": [
+        {
+          "at": 0.0,
+          "do": "anim",
+          "actor": "warden",
+          "clip": "folk/m_lamp_down",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.3
+        },
+        {
+          "at": 1.9,
+          "do": "lamp",
+          "actor": "warden",
+          "lit": false,
+          "glow": 0.0,
+          "over": 0.6
+        },
+        {
+          "at": 1.1,
+          "do": "sfx",
+          "name": "lamp_out",
+          "gain": 1.0
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "type": "LS",
+      "dur": 5.8,
+      "note": "Low at the water from the west, the moon behind him: the fist lowers and the lamp goes under, glowing in the river beside him; then he folds forward into the water and is still. A beat. The water over his back lightens from beneath.",
+      "cam": {
+        "pos": {
+          "mark": "w",
+          "off": [
+            -6.0,
+            0.9,
+            3.4
+          ]
+        },
+        "at": {
+          "mark": "w",
+          "off": [
+            0.3,
+            1.75,
+            0.2
+          ]
+        },
+        "lens": 32
+      },
+      "cues": [
+        {
+          "do": "rig",
+          "name": "skin",
+          "from": {
+            "lens": [
+              2.5,
+              1.5,
+              -2.5
+            ]
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "chest"
+          },
+          "color": "#ffd8b0",
+          "energy": 3.2,
+          "angle": 32,
+          "range": 6
+        },
+        {
+          "do": "skin",
+          "sky": 0.3,
+          "ear": 0.4
+        },
+        {
+          "at": "end-0.6",
+          "do": "title",
+          "title": "The Ford-Warden falls",
+          "kind": "boon",
+          "seconds": 2.6
+        },
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "azimuth": 10
+        },
+        {
+          "at": 0.0,
+          "do": "anim",
+          "actor": "warden",
+          "clip": "folk/m_lamp_down",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.3
+        },
+        {
+          "at": 1.1,
+          "do": "sfx",
+          "name": "lamp_out",
+          "gain": 0.6
+        },
+        {
+          "at": 1.1,
+          "do": "lamp",
+          "actor": "warden",
+          "glow": 0.45,
+          "flame": 0.25,
+          "halo": 0.5,
+          "over": 0.5
+        },
+        {
+          "at": 2.3,
+          "do": "anim",
+          "actor": "warden",
+          "clip": "folk/m_fold_forward",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.3
+        },
+        {
+          "at": 3.2,
+          "do": "sfx",
+          "name": "water_close",
+          "gain": 0.4
+        },
+        {
+          "at": 3.6,
+          "do": "lamp",
+          "actor": "warden",
+          "glow": 0.0,
+          "over": 1.0
+        },
+        {
+          "at": 4.4,
+          "do": "place",
+          "actor": "heart",
+          "where": {
+            "mark": "w",
+            "off": [
+              0,
+              0,
+              2.0
+            ],
+            "y": -1.25
+          }
+        },
+        {
+          "at": 4.4,
+          "do": "lamp",
+          "actor": "heart",
+          "glow": 0.4,
+          "over": 1.2
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "type": "MLS",
+      "dur": 3.6,
+      "note": "Low and wide from the east: the heart lies on his back over his chest, then lifts off it, a fist of cold light, turning, water running off it, its light on the wet cloak. No line: its hum, and the river.",
+      "cam": {
+        "pos": {
+          "mark": "w",
+          "off": [
+            4.4,
+            0.45,
+            1.0
+          ]
+        },
+        "at": {
+          "actor": "heart",
+          "track": true
+        },
+        "lens": 90,
+        "focus": {
+          "actor": "heart"
+        },
+        "fstop": 2.0,
+        "move": {
+          "push": 0.4,
+          "ease": "slow"
+        }
+      },
+      "cues": [
+        {
+          "do": "skin",
+          "sky": 0.3,
+          "ear": 0.4
+        },
+        {
+          "do": "anim",
+          "actor": "warden",
+          "clip": "folk/m_fold_forward",
+          "from": 3.5,
+          "speed": 1,
+          "blend": 0.0
+        },
+        {
+          "do": "lamp",
+          "actor": "warden",
+          "glow": 0.0
+        },
+        {
+          "do": "sfx",
+          "name": "water_close",
+          "gain": 0.4
+        },
+        {
+          "at": 0.3,
+          "do": "title",
+          "title": "The Ford-Warden falls",
+          "kind": "boon",
+          "seconds": 2.6
+        },
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "azimuth": 200
+        },
+        {
+          "do": "hold",
+          "actor": "her",
+          "slot": "handslot.r",
+          "piece": null
+        },
+        {
+          "do": "music",
+          "mood": "mystery",
+          "intensity": 0.5,
+          "over": 2.5
+        },
+        {
+          "do": "place",
+          "actor": "heart",
+          "where": {
+            "mark": "w",
+            "off": [
+              0,
+              0,
+              2.0
+            ],
+            "y": -0.75
+          }
+        },
+        {
+          "at": 0.3,
+          "do": "move",
+          "actor": "heart",
+          "to": {
+            "mark": "w",
+            "off": [
+              0,
+              0,
+              2.0
+            ],
+            "y": -0.35
+          },
+          "dur": 3.2
+        },
+        {
+          "do": "lamp",
+          "actor": "heart",
+          "glow": 3.0,
+          "over": 1.2
+        },
+        {
+          "do": "sfx",
+          "name": "heart_hum",
+          "gain": 0.8
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "type": "MCU",
+      "dur": 8.0,
+      "note": "Side-on, close: the heart drifts in to her palm and she looks down at it, its blue on her face. Then the mud bursts below frame: the heart is yanked down out of her hand and out of frame, its light now from below. She starts, eyes wide, and looks down at him. G1 off-screen; two sniffs.",
+      "cam": {
+        "pos": {
+          "mark": "her",
+          "off": [
+            2.36,
+            1.75,
+            -0.54
+          ]
+        },
+        "at": {
+          "mark": "her",
+          "off": [
+            0.0,
+            1.5,
+            -0.18
+          ]
+        },
+        "lens": 50,
+        "focus": {
+          "actor": "heart"
+        },
+        "fstop": 5.6
+      },
+      "cues": [
+        {
+          "do": "rig",
+          "name": "skin",
+          "from": {
+            "lens": [
+              0.95,
+              0.55,
+              -0.95
+            ]
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#ffd8b0",
+          "energy": 0.6,
+          "angle": 32,
+          "range": 6
+        },
+        {
+          "do": "atmosphere",
+          "preset": "now",
+          "azimuth": 160,
+          "key": 0.7,
+          "hemi": 0.75,
+          "rim": 0.05
+        },
+        {
+          "do": "skin",
+          "sky": 0.3,
+          "ear": 0.4
+        },
+        {
+          "do": "hold",
+          "actor": "her",
+          "slot": "all",
+          "piece": null
+        },
+        {
+          "do": "place",
+          "actor": "her",
+          "mark": "her",
+          "heading": 2.18
+        },
+        {
+          "do": "music",
+          "mood": "mystery",
+          "intensity": 0.75,
+          "over": 3.0
+        },
+        {
+          "do": "anim",
+          "clip": "her/cup_hands",
+          "from": 0.6,
+          "speed": 0.45,
+          "blend": 0.3
+        },
+        {
+          "do": "gaze",
+          "look": [
+            0,
+            0.6
+          ],
+          "wander": 0.02
+        },
+        {
+          "do": "face",
+          "keys": {
+            "eyes_wide": 0.3,
+            "mouth_open": 0.12,
+            "brows_sad": 0.15
+          },
+          "over": 1.0
+        },
+        {
+          "do": "place",
+          "actor": "heart",
+          "where": {
+            "mark": "her",
+            "off": [
+              0.15,
+              1.5,
+              -1.25
+            ]
+          }
+        },
+        {
+          "do": "lamp",
+          "actor": "heart",
+          "glow": 2.2,
+          "over": 0.6
+        },
+        {
+          "do": "move",
+          "actor": "heart",
+          "to": {
+            "mark": "her",
+            "off": [
+              0.0,
+              1.29,
+              -0.5
+            ]
+          },
+          "dur": 1.6
+        },
+        {
+          "do": "rig",
+          "name": "spill",
+          "from": {
+            "actor": "heart"
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "hand_l",
+            "off": [
+              0,
+              0,
+              -0.05
+            ]
+          },
+          "color": "#6fa8ff",
+          "energy": 7.0,
+          "angle": 35,
+          "range": 3
+        },
+        {
+          "do": "sfx",
+          "name": "heart_hum",
+          "gain": 1.0
+        },
+        {
+          "at": 0.6,
+          "do": "head",
+          "actor": "her",
+          "where": {
+            "mark": "her",
+            "off": [
+              0.0,
+              1.29,
+              -0.5
+            ]
+          },
+          "amount": 1.0,
+          "over": 1.0
+        },
+        {
+          "do": "rig",
+          "name": "chin",
+          "from": {
+            "actor": "heart"
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#4f8cff",
+          "energy": 1.0,
+          "angle": 40,
+          "range": 2.5
+        },
+        {
+          "at": 3.2,
+          "do": "event",
+          "name": "grim_up"
+        },
+        {
+          "at": 3.2,
+          "do": "sfx",
+          "name": "burst",
+          "gain": 1.0
+        },
+        {
+          "at": 3.2,
+          "do": "vfx",
+          "kind": "shake",
+          "amount": 0.45
+        },
+        {
+          "at": 3.25,
+          "do": "move",
+          "actor": "heart",
+          "to": {
+            "mark": "her",
+            "off": [
+              1.4,
+              -0.6,
+              -1.6
+            ]
+          },
+          "dur": 0.2
+        },
+        {
+          "at": 3.25,
+          "do": "face",
+          "keys": {
+            "eyes_wide": 0.7,
+            "mouth_open": 0.22,
+            "brows_sad": 0.0
+          },
+          "over": 0.12
+        },
+        {
+          "at": 3.25,
+          "do": "lids",
+          "value": 1,
+          "over": 0.06
+        },
+        {
+          "at": 3.43,
+          "do": "lids",
+          "value": null
+        },
+        {
+          "at": 3.3000000000000003,
+          "do": "head",
+          "actor": "her",
+          "where": {
+            "mark": "her",
+            "off": [
+              0.55,
+              0.3,
+              -0.85
+            ]
+          },
+          "amount": 1.0,
+          "over": 0.3
+        },
+        {
+          "at": 3.3000000000000003,
+          "do": "music",
+          "mood": "silence"
+        },
+        {
+          "at": 3.7,
+          "do": "line",
+          "id": "cin_heart_goes_down.nobodys"
+        },
+        {
+          "at": 7.1,
+          "do": "sfx",
+          "name": "sniff",
+          "gain": 0.8
+        },
+        {
+          "at": 7.6000000000000005,
+          "do": "sfx",
+          "name": "sniff",
+          "gain": 0.8
+        },
+        {
+          "at": 3.25,
+          "do": "lamp",
+          "actor": "heart",
+          "glow": 0.6,
+          "over": 0.3
+        },
+        {
+          "at": 3.25,
+          "do": "rig",
+          "name": "spill",
+          "from": {
+            "actor": "heart"
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#4f8cff",
+          "energy": 0.4,
+          "angle": 40,
+          "range": 3
+        },
+        {
+          "at": 3.25,
+          "do": "rig",
+          "name": "chin",
+          "from": {
+            "actor": "heart"
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#4f8cff",
+          "energy": 0.0,
+          "angle": 40,
+          "range": 3
+        },
+        {
+          "at": 3.25,
+          "do": "rig",
+          "name": "skin",
+          "from": {
+            "lens": [
+              0.95,
+              0.55,
+              -0.95
+            ]
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#ffd8b0",
+          "energy": 0.9,
+          "angle": 32,
+          "range": 6
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "type": "ELS",
+      "dur": 16.0,
+      "note": "Behind her, low: the end of G3; Grimtunnel turns away and dives head first, still clutching the heart; the mud closes, its light shows going down and is gone. The camera rises and pulls back high over the north bank, far east of the ford: her small in it, the road's lamps ember-blue. Silence; then a groan from under everything; the river shivers; every lamp dips and comes back; the sky's lowest edge has gone rose and grey.",
+      "cam": {
+        "pos": {
+          "abs": [
+            16.7,
+            4.8,
+            -34.2
+          ]
+        },
+        "at": {
+          "abs": [
+            1.3,
+            -0.3,
+            -35.5
+          ]
+        },
+        "lens": 28,
+        "move": {
+          "start": 0.0,
+          "end": 9.0,
+          "pos": {
+            "abs": [
+              30.0,
+              8.5,
+              -34.0
+            ]
+          },
+          "at": {
+            "abs": [
+              -4.0,
+              5.0,
+              -31.0
+            ]
+          },
+          "lens": 24,
+          "ease": "out"
+        }
+      },
+      "cues": [
+        {
+          "do": "spawn",
+          "actor": "grim",
+          "def": "grimtunnel",
+          "where": {
+            "mark": "her",
+            "off": [
+              1.0,
+              0,
+              -0.5
+            ]
+          },
+          "style": "burrow",
+          "tag": "grim",
+          "neutral": true,
+          "sink": 0.55
+        },
+        {
+          "at": 0.3,
+          "do": "line",
+          "id": "cin_heart_goes_down.downstairs"
+        },
+        {
+          "at": "after:cin_heart_goes_down.downstairs+0.4",
+          "do": "line",
+          "id": "cin_heart_goes_down.grateful"
+        },
+        {
+          "do": "gaze",
+          "look": [
+            0,
+            0.9
+          ]
+        },
+        {
+          "do": "atmosphere",
+          "preset": "dawn",
+          "from": "now",
+          "k1": 0.35,
+          "over": 10.0
+        },
+        {
+          "at": 11.5,
+          "do": "sfx",
+          "name": "groan",
+          "gain": 1.2
+        },
+        {
+          "at": 11.5,
+          "do": "vfx",
+          "kind": "shake",
+          "amount": 0.25
+        },
+        {
+          "at": 12.6,
+          "do": "light",
+          "light": 12,
+          "from": 0.8,
+          "level": 0.12,
+          "over": 0.25
+        },
+        {
+          "at": 12.6,
+          "do": "light",
+          "light": 13,
+          "from": 0.8,
+          "level": 0.12,
+          "over": 0.25
+        },
+        {
+          "at": 12.6,
+          "do": "light",
+          "light": 14,
+          "from": 0.8,
+          "level": 0.12,
+          "over": 0.25
+        },
+        {
+          "at": 13.2,
+          "do": "light",
+          "light": 12,
+          "from": 0.12,
+          "level": 0.8,
+          "over": 0.6
+        },
+        {
+          "at": 13.2,
+          "do": "light",
+          "light": 13,
+          "from": 0.12,
+          "level": 0.8,
+          "over": 0.6
+        },
+        {
+          "at": 13.2,
+          "do": "light",
+          "light": 14,
+          "from": 0.12,
+          "level": 0.8,
+          "over": 0.6
+        },
+        {
+          "at": 13.6,
+          "do": "music",
+          "mood": "night",
+          "intensity": 0.25,
+          "over": 1.4
+        },
+        {
+          "do": "rig",
+          "name": "skin",
+          "from": {
+            "lens": [
+              1.75,
+              1.0,
+              -1.75
+            ]
+          },
+          "aim": {
+            "actor": "her",
+            "bone": "head"
+          },
+          "color": "#ffd8b0",
+          "energy": 1.7,
+          "angle": 32,
+          "range": 6
+        },
+        {
+          "do": "anim",
+          "actor": "grim",
+          "clip": "hug",
+          "where": {
+            "mark": "her",
+            "off": [
+              3.0,
+              0,
+              -2.5
+            ]
+          }
+        },
+        {
+          "do": "move",
+          "actor": "heart",
+          "to": {
+            "mark": "her",
+            "off": [
+              1.0,
+              0.78,
+              -0.62
+            ]
+          },
+          "dur": 0.05
+        },
+        {
+          "at": 10.3,
+          "do": "event",
+          "name": "grim_down"
+        },
+        {
+          "at": 10.3,
+          "do": "sfx",
+          "name": "roots",
+          "gain": 1.0
+        },
+        {
+          "at": 10.3,
+          "do": "move",
+          "actor": "heart",
+          "to": {
+            "mark": "her",
+            "off": [
+              1.0,
+              0,
+              -0.5
+            ],
+            "y": -2.2
+          },
+          "dur": 0.9
+        },
+        {
+          "at": 10.3,
+          "do": "lamp",
+          "actor": "heart",
+          "glow": 0.0,
+          "over": 1.3
+        },
+        {
+          "at": 11.9,
+          "do": "hide",
+          "actor": "heart"
+        },
+        {
+          "at": 11.9,
+          "do": "event",
+          "name": "grim_gone"
+        },
+        {
+          "do": "hold",
+          "actor": "her",
+          "slot": "all",
+          "piece": "@own"
+        },
+        {
+          "do": "anim",
+          "actor": "her",
+          "clip": "@idle",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.4
+        },
+        {
+          "do": "anim",
+          "actor": "her",
+          "clip": "Idle_Shield_Loop",
+          "from": 0,
+          "speed": 1,
+          "blend": 0.4,
+          "when": {
+            "calling": [
+              "warden"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "end": {
+    "her": "her",
+    "camera": "follow",
+    "keep": [
+      "warden"
+    ],
+    "next": "c04a"
+  }
+}

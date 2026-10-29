@@ -422,6 +422,14 @@ uniform float fold = 1.0;
 // (the most one lamp's sheen gives, in linear light: 0.2 took the c02 s8 cheek from 877-4176 clipped pixels to 0-74, the
 // Look by day and night and the town close-up unchanged (face 30 cine; 0.3 left 252, 0.12 dulled her cheek 8 L))
 uniform float spec_cap = 0.2;
+// Face 48 round 4 (GameCinemaHer, People.HerCineSpec): in a cinematic her key's, side light's and moon's sheen comes from
+// specular-only twins in the source's own colour; those lights carry light_specular 0.31 (SPECULAR_AMOUNT 0.62) as a tag
+// and, while cine_spec_split is on, put no sheen on her skin (their diffuse as before). 0 (everywhere outside a
+// cinematic): no light is tagged, as before.
+uniform float cine_spec_split = 0.0;
+// (and the kicker, tagged light_specular 2 (SPECULAR_AMOUNT 4): its sheen held under cine_kick_cap, not spec_cap, so the
+// edge it draws carries its blue; skin's albedo greys a blue light's diffuse to white)
+uniform float cine_kick_cap = 0.3;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
@@ -852,7 +860,7 @@ void light() {
 	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * lc * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
-	if (s_ndl > 0.0) {
+	if (s_ndl > 0.0 && !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004)) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
@@ -877,7 +885,7 @@ void light() {
 		spec = mix(spec, spec * ALBEDO / max(alum, 1e-3), deep_tint * dk) * mix(1.0, deep_spec, dk);
 		float sl = max(max(spec.r, spec.g), spec.b);
 		// (gold leaf's glint let through: held under her skin's cap, the gilt read as dull olive, never gold)
-		float cap = mix(spec_cap, metal_cap, METALLIC);
+		float cap = mix(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 4.0) < 0.01 ? cine_kick_cap : spec_cap, metal_cap, METALLIC);
 		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
 	}

@@ -56,9 +56,25 @@ CFG = {
                     'range': {'a': [-0.08, 0.08], 'hair': [-0.1, 0.1]},
                     # the risen's bare skin (mask 0) per copy: a value multiplier and a faint hue (Oklab degrees: gray-blue,
                     # green-gray, bruise-brown; never red), so a horde is not one clay body (NpcDyePick.SkinTint)
-                    'skin': {'value': [0.70, 1.0], 'chroma': 0.03, 'hues': [250, 145, 70]},
+                    'skin': {'value': [0.35, 1.0], 'chroma': 0.03, 'hues': [250, 145, 70]},   # (floor 0.35: NPC 18 r3, not bone-white at night)
                     'palette': {'a': ['#564b3a', '#5f5c55', '#4e4230', '#4f5446', '#66625a', '#3e3528', '#6e6656'],
                                 'hair': ['#352c23', '#2a241e', '#3a3028', '#4a4a46', '#1e1c1a', '#50463a']}},
+    # (NPC 18: the plain risen's second body, the drowned woman, graded in Marionette risenDrowned: green-gray skin L32,
+    # wet slate shift L19, near-black hair; subtle per-copy dyes: the shift in slates and umbers, the hair near-black to
+    # dark brown; her hair over the chest keeps its paint (hair is a head channel only); mud and the face's paint kept)
+    # (r2, after the play-camera judge: skin L33, the shift lifted about 0.05 in value (anchors and palette with it), the
+    # skin's per-copy value floor 0.9 (0.75 sank her to one dark blob out of firelight; she stays darker than the shroud man))
+    # (r3, after the close-up judge: her skin regraded off green to a faint mauve (Lab about 34/+2/-0.5; skin anchors
+    # moved onto it), the per-copy skin hues mauve/violet instead of green/blue)
+    'npc_risen_w': {'anchors': [['#4f4c4f', '0', 'skin'], ['#595657', '0', 'skin'], ['#8e948c', '0'], ['#3a3b3c', 'a'], ['#46484d', 'a'],
+                                ['#303235', 'a'], ['#3a3027', '0'], ['#141415', 'hair'], ['#1f1e1d', 'hair']],
+                    'xlim': {'a': [-0.3, 0.3]}, 'ylim': {'a': [0.45, 1.42]}, 'hair_drop': 0.1,
+                    'zero_boxes': [[-0.1, 1.40, 0.0, 0.1, 1.64, 0.5]], 'scale': 0.04,
+                    'skin_out': [[-0.2, 0.58, -0.5, 0.2, 1.2, 0.5]],
+                    'range': {'a': [-0.06, 0.06], 'hair': [-0.06, 0.06]},
+                    'skin': {'value': [0.9, 1.0], 'chroma': 0.02, 'hues': [340, 290]},   # (r3: mauve and violet, never green)
+                    'palette': {'a': ['#3a3b3c', '#403d38', '#373a3e', '#43423c', '#383735', '#3d4047'],
+                                'hair': ['#161616', '#1c1916', '#211b16', '#141518', '#26201a']}},
 }
 
 
@@ -196,6 +212,15 @@ def build(name, report=False, out=None):
     w = np.array([1.0, 1.6, 1.6], np.float32) * cfg.get('ab_weight', 1.0) ** np.array([0, 1, 1])
     d = (((L[:, :, None, :] - ac[None, None]) * w) ** 2).sum(-1)
     near = np.argmin(d, -1)
+    # ('skin_out': boxes [x0, y0, z0, x1, y1, z1] in the bind pose where the skin anchors don't count: inside a skirt whose
+    # tide marks and mud read the skin's own grey (npc_risen_w r3), each texel takes its nearest cloth or kept anchor)
+    if cfg.get('skin_out'):
+        Xb = X; inb = np.zeros(L.shape[:2], bool)
+        for x0, y0, z0, x1, y1, z1 in cfg['skin_out']:
+            inb |= (Xb[..., 0] >= x0) & (Xb[..., 0] <= x1) & (Xb[..., 1] >= y0) & (Xb[..., 1] <= y1) & (Xb[..., 2] >= z0) & (Xb[..., 2] <= z1)
+        sk_anc = np.array([len(x) > 2 and x[2] == 'skin' for x in anc])
+        d2 = d.copy(); d2[..., sk_anc] = np.inf
+        near = np.where(inb, np.argmin(d2, -1), near)
     lbl = ach[near].astype(np.int32); skin = prot[near]
     neck = bones['neck_01'][1]; y = X[..., 1]
     head = y > neck + cfg.get('head_drop', 0.0)

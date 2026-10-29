@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
@@ -19,7 +20,7 @@ public partial class WardenView : Node3D, IBossView
 {
     readonly PersonView view;
     readonly OmniLight3D light;
-    readonly Node3D lamp, flame, grip;
+    readonly Node3D lamp, grip;
     readonly List<StandardMaterial3D> eyes = new(), skin = new();
     string pose = "";
     double heading, time, flash;
@@ -33,21 +34,8 @@ public partial class WardenView : Node3D, IBossView
     public float HaloLevel { get => haloLevel; set { haloLevel = value; Tint(); } }
     float flameLevel = 1, haloLevel = 1;
     Color? flameColor;
-    StandardMaterial3D? coreMat, haloMat;
-    static readonly Color CoreBase = new(1.4f, 2.4f, 3.2f), HaloBase = new(0.55f, 0.8f, 1f, 0.6f);
-    void Tint()
-    {
-        if (coreMat == null || haloMat == null) return;
-        var c = CoreBase;
-        if (flameColor is Color fc && Mathf.Max(fc.R, Mathf.Max(fc.G, fc.B)) > 1e-4f)
-        {
-            var l = fc.SrgbToLinear();
-            c = new Color(l.R, l.G, l.B) * (3.2f / Mathf.Max(l.R, Mathf.Max(l.G, l.B)));
-        }
-        coreMat.AlbedoColor = new Color(c.R * flameLevel, c.G * flameLevel, c.B * flameLevel);
-        var h = flameColor is Color hc ? new Color(hc.R, hc.G, hc.B, HaloBase.A) : HaloBase;
-        haloMat.AlbedoColor = new Color(h.R, h.G, h.B, h.A * haloLevel);
-    }
+    LampFire? fire;
+    void Tint() => fire?.Look(flameColor, flameLevel, haloLevel);
     /// <summary>Where his lamp hangs (for framing a cinematic on it).</summary>
     public Vector3 LampAt => lamp.GlobalPosition;
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
@@ -61,11 +49,15 @@ public partial class WardenView : Node3D, IBossView
     public WardenView()
     {
         Name = "FordWarden";
-        view = new PersonView(new PersonSpec
+        // His own baked package (art/npc/ford_warden); the Quaternius townsman only if the package is missing.
+        bool package = NpcPackage.Read("ford_warden") != null;
+        if (!package) GD.Print("WardenView: no ford_warden package, using the old townsman");
+        var spec = package ? new PersonSpec { Sex = Sex.Male, Body = "npc:ford_warden" } : new PersonSpec
         {
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#6a6660", Skin = "#8e9680",
             Dye = new Dye { Cloth = "#3a3e44" },
-        }, new Held { Right = "zweihander" }, 0.8 * Size)
+        };
+        view = new PersonView(spec, new Held { Right = "watch_blade" }, 0.8 * Size)
         { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop" };
         AddChild(view);
         foreach (var mi in view.Person.Meshes)
@@ -82,6 +74,8 @@ public partial class WardenView : Node3D, IBossView
         // white, and read as a white cowl round the face C02 holds in close-up. Until he
         // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
         // brighter paint, so all of it comes out dark with the river.
+        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); if (System.Environment.GetEnvironmentVariable("WARDEN_POSEDUMP") is { Length: > 0 } pd) view.Person.Skeleton.AddChild(new PoseDump(pd, view.Person.Anim)); }
+        else
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
@@ -92,35 +86,56 @@ public partial class WardenView : Node3D, IBossView
         view.Person.Skeleton.AddChild(at);
         grip = new Node3D { Position = new Vector3(0, 0.075f, 0) };
         at.AddChild(grip);
-        lamp = LampIron.Make(Bail);
+        lamp = LampIron.MakeWarden(Bail);
         AddChild(lamp);
-        flame = new Node3D { Position = new Vector3(0, LampIron.FlameY, 0) };
-        lamp.AddChild(flame);
-        flame.AddChild(new MeshInstance3D
-        {
-            Mesh = new SphereMesh { Radius = 0.026f, Height = 0.075f, Material = coreMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = CoreBase } },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-        });
-        flame.AddChild(new MeshInstance3D
-        {
-            Mesh = new QuadMesh { Size = Vector2.One * 0.3f },
-            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
-            MaterialOverride = new StandardMaterial3D
-            {
-                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-                AlbedoTexture = new GradientTexture2D
-                {
-                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.15f), new Color(1, 1, 1, 0)], Offsets = [0, 0.25f, 1] },
-                    Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
-                },
-                AlbedoColor = new Color(0.55f, 0.8f, 1f, 0.6f),
-            },
-        });
-        haloMat = (StandardMaterial3D)((MeshInstance3D)flame.GetChild(1)).MaterialOverride;
-        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false };
+        // The flame (LampIron.Fire: the kit's cold flame and a soft glow; the glass lit by it).
+        fire = LampIron.Fire(lamp);
+        Tint();
+        // LightSize: soft shadows (the cage's bars throw broad soft stripes, not hard lines, from the flame).
+        // (it leaves its own lantern out: a few cm from the flame it burned the bars white; the iron's flame light is the shader's)
+        // (Warden 7 r1, "it lights nothing near it": at range 16 and attenuation 0.9 it lit her and the forest 5 m off nearly
+        // as much as his dark wet wool at arm's length, +2 to +6 on his fist, sleeve and hood. Now a lamp's falloff, inverse
+        // square over 6 m at four times the energy: about 9x the light within a metre, a quarter of it at 5 m.)
+        light = new OmniLight3D { LightColor = LampBlue, OmniRange = EnvF("WARDEN_LAMP_RANGE", 6), OmniAttenuation = EnvF("WARDEN_LAMP_ATT", 2),
+            LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f, LightVolumetricFogEnergy = EnvF("WARDEN_LAMP_FOG", 1) };
+        light.LightCullMask &= ~LampIron.OwnLayer;
         AddChild(light);
+        // (Warden 7 lamp solver: the blade a hand from the light took it whole, its flat 247 at s12, 47 with the light off;
+        // the blade is on its own layer out of this light, lit by a weaker unshadowed twin at the same place: no cage
+        // stripe across it either)
+        light.LightCullMask &= ~LampIron.SwordLayer;
+        swordLight = new OmniLight3D { LightColor = LampBlue, OmniRange = light.OmniRange, OmniAttenuation = light.OmniAttenuation, LightEnergy = 0,
+            ShadowEnabled = false, LightCullMask = LampIron.SwordLayer, LightVolumetricFogEnergy = 0 };
+        AddChild(swordLight);
     }
+    readonly OmniLight3D swordLight;
+    static readonly float SwordK = EnvF("WARDEN_SWORD_LAMP", 0.08f);
+    /// <summary>The lantern's turn on its bail (radians): the sides' middle straps off the flame's line at the cameras.</summary>
+    static readonly float LampYaw = EnvF("WARDEN_LAMP_YAW", 0.45f);
+
+    static readonly Color EyeBlue = new("#7ac8ff");
+    static readonly Color LampBlue = new("#8ac8ff");
+
+    /// <summary>Two small glowing points in his hood, on the head bone at the manifest's head.eyes sockets
+    /// (Head-bone local, metres). Unshaded, so Light() drives their albedo too: eyes off is really off.</summary>
+    void EyeLights()
+    {
+        // (WARDEN_EYES=0: no eye-lights, for judging his face by itself; Warden 6 face gate)
+        if (System.Environment.GetEnvironmentVariable("WARDEN_EYES") == "0") return;
+        Vector3 l = new(0.0352f, 0.0833f, 0.1582f), r = new(-0.0352f, 0.0832f, 0.1593f);
+        var d = Json.ParseString(FileAccess.GetFileAsString($"{NpcPackage.Dir("ford_warden")}/manifest.json")).AsGodotDictionary();
+        if (d.TryGetValue("head", out var hv) && hv.VariantType == Godot.Variant.Type.Dictionary
+            && hv.AsGodotDictionary().TryGetValue("eyes", out var ev) && ev.VariantType == Godot.Variant.Type.Dictionary)
+        {
+            var e = ev.AsGodotDictionary();
+            static Vector3 P(Godot.Variant a) { var x = a.AsGodotArray(); return new Vector3((float)x[0], (float)x[1], (float)x[2]); }
+            if (e.TryGetValue("l", out var lv) && e.TryGetValue("r", out var rv)) { l = P(lv); r = P(rv); }
+        }
+        // (WardenLook: a white-hot core going to cyan, a soft glow, one tiny cold light on brow, cheekbones and beard)
+        eyeLook = WardenLook.Eyes(view.Person.Skeleton, l, r);
+    }
+
+    (StandardMaterial3D Core, StandardMaterial3D Glow, OmniLight3D Glint)? eyeLook;
 
     public void SetPose(string p)
     {
@@ -162,9 +177,10 @@ public partial class WardenView : Node3D, IBossView
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
         Hang();
-        Light(g, (float)y);
+        Light(g, (float)y, false);
         lamp.Visible = pose != "dead" || g > 0.01;
-        flame.Visible = LampLit && g > 0.01;
+        fire!.Lit(LampLit && g > 0.01);
+        FaceLamp(LampLit ? Math.Min(g, 1) : 0);
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,
@@ -174,9 +190,39 @@ public partial class WardenView : Node3D, IBossView
         time += dt;
         Visible = true;
         Hang();
-        Light(Glow, view.GlobalPosition.Y);
+        Light(Glow, view.GlobalPosition.Y, true);
         lamp.Visible = true;
-        flame.Visible = LampLit && Glow > 0.01;
+        fire!.Lit(LampLit && Glow > 0.01);
+        FaceLamp(LampLit ? Math.Min(Glow, 1) : 0);
+    }
+
+    float faceLamp = -1;
+
+    /// <summary>His face's lamp fill (warden_face.gdshader lamp_on) follows his lamp: out in the river, the face goes dark.</summary>
+    void FaceLamp(double on)
+    {
+        float k = (float)Math.Round(on, 2);
+        if (k == faceLamp) return;
+        faceLamp = k;
+        foreach (var mi in view.Person.Meshes)
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial f && f.ResourceName.StartsWith("warden_face")) f.SetShaderParameter("lamp_on", k);
+    }
+
+    /// <summary>WARDEN_LAMP_LIGHT=0: the lamp's light off, the flame still burning (measuring the light's pool on the water).</summary>
+    static readonly bool LampLightOff = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_LIGHT") == "0";
+    /// <summary>WARDEN_LAMP_PROBE=1: the lamp light's state in the log (energy, mask, shadow, where it and the fist are).</summary>
+    static readonly bool LampProbe = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_PROBE") == "1";
+    int probeN;
+    // (Warden 7 lamp solver, for measuring: the light's energy x K, its attenuation and range, its shadow off)
+    static float EnvF(string n, float d) => float.TryParse(System.Environment.GetEnvironmentVariable(n), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : d;
+    static readonly float LampK = 4 * EnvF("WARDEN_LAMP_K", 1);
+    static readonly bool LampNoShadow = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_SHADOW") == "0";
+    static string LayersOf(Node n)
+    {
+        var set = new HashSet<uint>();
+        foreach (var c in n.FindChildren("*", "GeometryInstance3D", true, false)) set.Add(((GeometryInstance3D)c).Layers);
+        return string.Join(",", System.Linq.Enumerable.Select(set, x => x.ToString("X")));
     }
 
     /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
@@ -187,20 +233,37 @@ public partial class WardenView : Node3D, IBossView
     {
         // As big as it was in his hand (the body is scaled up to a giant's).
         float s = grip.GlobalTransform.Basis.Scale.X;
-        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y).Scaled(Vector3.One * s),
+        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y + LampYaw).Scaled(Vector3.One * s),
             grip.GlobalPosition - new Vector3(0, Bail * s, 0));
     }
 
-    void Light(double g, float ground)
+    /// <summary>The eyes and the lamp's light; atFlame (a cinematic): the light burns at the flame itself, inside the
+    /// cage, so the bars throw their shadows over him and whatever he holds it to.</summary>
+    void Light(double g, float ground, bool atFlame)
     {
-        foreach (var m in eyes) m.EmissionEnergyMultiplier = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
+        if (eyeLook is { } el) WardenLook.Glow(el, g, time);
+        foreach (var m in eyes)
+        {
+            float k = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5) * WardenLook.eyeF;   // (close cameras: dimmed with the eye-light quads)
+            m.EmissionEnergyMultiplier = k;
+            // (the unshaded eye lights show their albedo, so it follows the glow: dark at 0)
+            if (m.ShadingMode == BaseMaterial3D.ShadingModeEnum.Unshaded) { float b = Mathf.Clamp(k / 3.6f, 0, 1.5f); m.AlbedoColor = new Color(EyeBlue.R * b, EyeBlue.G * b, EyeBlue.B * b); }
+        }
         // The light is the lamp in his fist, hung a little out from the body.
-        double i = LampLit ? g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
-        light.LightEnergy = (float)(i / Math.PI);
+        double i = LampLit && !LampLightOff ? g * (8 + Math.Sin(time * 3.1) * 1.1 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
+        light.LightEnergy = (float)(i / Math.PI) * LampK;
+        // (its hue the flame's: C03 sets the flame warm, and his fist and hood took a blue light from a gold flame)
+        var lc = flameColor is Color fc && fc.R > fc.B ? fc.Lerp(Colors.White, 0.15f) : LampBlue;
+        if (light.LightColor != lc) light.LightColor = lc;
         // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
-        if (light.LightEnergy > 0) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
+        if (light.LightEnergy > 0 && !LampNoShadow) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
+        if (LampProbe && (probeN++ % 90) == 0 && light.IsInsideTree())
+            GD.Print($"LAMPPROBE e {light.LightEnergy:0.00} mask {light.LightCullMask:X} shadow {light.ShadowEnabled} range {light.OmniRange} att {light.OmniAttenuation} at {light.GlobalPosition} lamp {lamp.GlobalPosition} fist {grip.GlobalPosition} scale {grip.GlobalTransform.Basis.Scale.X:0.00} layers {LayersOf(view)} glow {g:0.00} atFlame {atFlame} lit {LampLit} col {flameColor} cam {GetViewport().GetCamera3D()?.GlobalPosition} fov {GetViewport().GetCamera3D()?.Fov}" + LampIron.Dump(lamp));
+        swordLight.LightEnergy = light.LightEnergy * SwordK;
+        if (swordLight.LightColor != lc) swordLight.LightColor = lc;
+        if (atFlame && fire != null) { light.GlobalPosition = swordLight.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
-        light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
+        light.GlobalPosition = swordLight.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
         // (its streak on the water in the flame's hue, not the light's blue: C03 s2)
         if (light.IsInsideTree()) Water.StreakTint(light, flameColor);
     }
@@ -210,47 +273,6 @@ public partial class WardenView : Node3D, IBossView
     void IBossView.Dispose() => QueueFree();
 
     public override void _ExitTree() => ShadowLamp.Withdraw(light);
-}
-
-/// <summary>
-/// A keeper's lamp-iron: black iron, an open cage so the flame shows, hung by a
-/// ring at the top. The Warden carries one, and the same pattern burns in the
-/// toll tower's window (C04) and stands on Vonnra's table (C09), so the eye can
-/// tie them together before anyone says so. The flame is the caller's.
-/// </summary>
-public static class LampIron
-{
-    /// <summary>Where the flame sits, from the ring at the top (the origin).</summary>
-    public const float FlameY = -0.15f;
-    /// <summary>The underside of the base: set it here to stand the lamp on a sill.</summary>
-    public const float FootY = -0.23f;
-    static StandardMaterial3D? iron;
-
-    /// <summary>The lamp-iron; with a bail, an iron loop up from its ring that long, to hang it by.</summary>
-    public static Node3D Make(float bail = 0)
-    {
-        iron ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
-        var lamp = new Node3D { Name = "LampIron" };
-        void Iron(Mesh m, Vector3 at)
-        {
-            m.SurfaceSetMaterial(0, iron);
-            lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at });
-        }
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
-        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
-        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
-            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
-        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
-        if (bail > 0)
-        {
-            // Two thin rods from the ring's sides up to a hook where the fist closes.
-            foreach (int side in new[] { -1, 1 })
-                Iron(new BoxMesh { Size = new Vector3(0.007f, bail, 0.007f) }, new Vector3(side * 0.02f, bail / 2 + 0.02f, 0));
-            Iron(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Vector3(0, bail + 0.02f, 0));
-        }
-        return lamp;
-    }
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
@@ -640,4 +662,114 @@ public partial class PieceView : Node3D, IOrb
     public double Light { set { } }
     public void Face(double yaw) => Rotation = new Vector3(0, (float)yaw, 0);
     void IOrb.Dispose() => QueueFree();
+}
+
+/// <summary>WARDEN_POSEDUMP=PATH (Warden 6): his skeleton's pose, written for tools/assets/warden_motion.py, which skins
+/// the package's glbs on it and measures each piece's stretch and poke-through. (It replaced the in-game HoodCheck,
+/// whose numbers were edge ratios on sub-millimetre edges and points tested against the skeleton's rest, not the bind.)
+/// PATH.jsonl: a header (bones, parents, global rests, each skinned surface's bind names and poses), then one line per
+/// drawn frame (frame, cinematic clip playing, every bone's global pose, rows of a 3x4). WARDEN_POSECLIPS=A,B,...
+/// first plays each named clip (matched by name or suffix in his player's libraries) through at 30 samples a second,
+/// one sample per two frames so his twist and share bones (HerJoints) follow, before the cinematic goes on.</summary>
+public partial class PoseDump : Node
+{
+    readonly string path;
+    readonly AnimationPlayer anim;
+    Skeleton3D skel = null!;
+    System.IO.StreamWriter? w;
+    readonly List<(string Clip, double T)> queue = new();
+    int qi = -1, phase;
+    string prevAnim = "";
+
+    public PoseDump(string path, AnimationPlayer anim) { this.path = path; this.anim = anim; }
+
+    static string M(Transform3D x)
+    {
+        var b = x.Basis; var o = x.Origin;
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        string f(float v) => v.ToString("0.######", c);
+        return $"[{f(b.Column0.X)},{f(b.Column1.X)},{f(b.Column2.X)},{f(o.X)},{f(b.Column0.Y)},{f(b.Column1.Y)},{f(b.Column2.Y)},{f(o.Y)},{f(b.Column0.Z)},{f(b.Column1.Z)},{f(b.Column2.Z)},{f(o.Z)}]";
+    }
+
+    public override void _Ready()
+    {
+        skel = GetParent<Skeleton3D>();
+        string file = path.EndsWith(".jsonl") ? path : path + ".jsonl";
+        if (System.IO.File.Exists(file)) file = file[..^6] + $"_{GetInstanceId()}.jsonl";   // (a second Warden)
+        w = new System.IO.StreamWriter(file);
+        int n = skel.GetBoneCount();
+        var sb = new System.Text.StringBuilder("{\"bones\":[");
+        sb.Append(string.Join(",", Enumerable.Range(0, n).Select(i => $"\"{skel.GetBoneName(i)}\"")));
+        sb.Append("],\"parent\":[").Append(string.Join(",", Enumerable.Range(0, n).Select(skel.GetBoneParent)));
+        sb.Append("],\"rest\":[").Append(string.Join(",", Enumerable.Range(0, n).Select(i => M(skel.GetBoneGlobalRest(i)))));
+        sb.Append("],\"skeletonXf\":").Append(M(skel.GlobalTransform)).Append(",\"skins\":[");
+        bool first = true;
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
+        {
+            if (mi.Skin == null || mi.Mesh == null) continue;
+            var mats = Enumerable.Range(0, mi.Mesh.GetSurfaceCount()).Select(s => mi.Mesh.SurfaceGetMaterial(s)?.ResourceName ?? "");
+            sb.Append(first ? "" : ",").Append($"{{\"mesh\":\"{mi.Name}\",\"mats\":[{string.Join(",", mats.Select(x => $"\"{x}\""))}],\"xf\":{M(mi.Transform)},\"names\":[");
+            sb.Append(string.Join(",", Enumerable.Range(0, mi.Skin.GetBindCount()).Select(i => $"\"{(mi.Skin.GetBindName(i).ToString() is { Length: > 0 } bn ? bn : skel.GetBoneName(mi.Skin.GetBindBone(i)))}\"")));
+            sb.Append("],\"binds\":[").Append(string.Join(",", Enumerable.Range(0, mi.Skin.GetBindCount()).Select(i => M(mi.Skin.GetBindPose(i))))).Append("]}");
+            first = false;
+        }
+        w.WriteLine(sb.Append("]}").ToString());
+    }
+
+    bool looked;
+
+    void Look()
+    {
+        looked = true;
+        if (System.Environment.GetEnvironmentVariable("WARDEN_POSECLIPS") is { Length: > 0 } cl)
+        {
+            var all = anim.GetAnimationList();
+            foreach (var want in cl.Split(','))
+            {
+                string? name = all.FirstOrDefault(a => a == want) ?? all.FirstOrDefault(a => a.EndsWith("/" + want)) ?? all.FirstOrDefault(a => a.EndsWith(want)) ?? all.FirstOrDefault(a => a == want.Replace("_Loop", ""));   // (the game library drops _Loop)
+                if (name == null) { GD.Print($"posedump: no clip {want} in {all.Length}: {string.Join(" ", all.Take(400))}"); continue; }
+                double len = anim.GetAnimation(name).Length;
+                for (double t = 0; t <= len + 1e-6; t += 1.0 / 30) queue.Add((name, t));
+            }
+            qi = queue.Count > 0 ? 0 : -1;
+            GD.Print($"posedump: {queue.Count} clip samples");
+        }
+    }
+
+    void Line(string clip, double t)
+    {
+        int n = skel.GetBoneCount();
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"{{\"frame\":{Engine.GetFramesDrawn()},\"clip\":\"{clip}\",\"t\":{t.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)},\"anim\":\"{anim.CurrentAnimation}\",\"pose\":[");
+        sb.Append(string.Join(",", Enumerable.Range(0, n).Select(i => M(skel.GetBoneGlobalPose(i))))).Append("]}");
+        w?.WriteLine(sb.ToString());
+        if (Engine.GetFramesDrawn() % 30 == 0) w?.Flush();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (!looked) Look();
+        if (qi >= 0)
+        {
+            var (c, t) = queue[qi];
+            if (phase == 0)
+            {
+                if (anim.CurrentAnimation != c) anim.Play(c, 0);
+                anim.Pause();
+                anim.Seek(t, true);
+                phase = 1;
+            }
+            else if (phase == 1) phase = 2;   // (his twist and share bones follow on the frame after)
+            else
+            {
+                Line(c, t);
+                phase = 0;
+                if (++qi >= queue.Count) { qi = -1; anim.Play(); GD.Print("posedump: clips done"); }
+            }
+            return;
+        }
+        Line("", anim.CurrentAnimationPosition);
+    }
+
+    public override void _ExitTree() { w?.Flush(); w?.Dispose(); w = null; }
 }

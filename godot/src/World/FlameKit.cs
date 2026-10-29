@@ -54,6 +54,9 @@ public partial class Flame : Node3D
     bool lit = true;
     readonly System.Collections.Generic.List<ShaderMaterial> mats = new();
 
+    /// <summary>One of the card shader's parameters, on every card (a lamp's own look: LampIron.Fire).</summary>
+    public void SetCard(string param, Variant value) { foreach (var m in mats) m.SetShaderParameter(param, value); }
+
     /// <summary>Its light's energy before the flicker.</summary>
     public float Energy { get => energy; set => energy = value; }
 

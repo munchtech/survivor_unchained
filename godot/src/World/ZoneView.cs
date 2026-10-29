@@ -147,7 +147,7 @@ public partial class ZoneView : Node3D
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
             TownFire(fat, (float)f.Size, f.Light, fire, fx);   // (E9d r2: a cook fire's smoke; a brazier's fire unshadowed; ZoneView.Town)
-            if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~Campfire.CoalLayer;
+            if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~(Campfire.CoalLayer | Campfire.RingLayer);
             // The web game marks a fire's flame with a glowing ball; here the
             // fire has flames of its own, and the ball would only bloom white.
             if (f.Light >= 0 && f.Light < meta.Lights.Count)
@@ -185,6 +185,16 @@ public partial class ZoneView : Node3D
     {
         foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~(PlayerView.HerLayers | Brush.MaskLayer) : l.LightCullMask | PlayerView.HerLayers;
     }
+
+    /// <summary>The zone's lights kept off `bits` (a cinematic's her key, GameCinemaHer: people's layer, hers alone there, and her
+    /// hair's and gear's), or given back.</summary>
+    public void Unlit(uint bits, bool off)
+    {
+        // (given back as each light had them: a light without one of them before does not gain it)
+        if (off) { unlitHad.Clear(); foreach (var l in lights) { unlitHad.Add(l.LightCullMask & bits); l.LightCullMask &= ~bits; } }
+        else for (int i = 0; i < lights.Count && i < unlitHad.Count; i++) lights[i].LightCullMask |= unlitHad[i];
+    }
+    readonly List<uint> unlitHad = new();
 
     /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>
     public OmniLight3D? NearestLit(Vector3 at, float within)
@@ -277,10 +287,15 @@ public partial class ZoneView : Node3D
 
     /// <summary>How far a fire's light has sunk toward its coals (SetFire).</summary>
     readonly Dictionary<int, float> lightDrop = new();
+    /// <summary>How far a burnt-down fire's light drifts about its place (SetFire's sway; 0 for every other light).</summary>
+    readonly Dictionary<int, float> lightSway = new();
 
     /// <summary>A fire's flames scaled (0: embers only); its embers and smoke stay.</summary>
-    public void SetFire(int light, float flames)
+    public void SetFire(int light, float flames, float lift = 0, float sway = 0)
     {
+        // "sway": metres the burnt-down fire's light drifts about its place (slow, like coals breathing), so a
+        // shadow it throws far off visibly moves (C01 s2: her shadow on the bedroll stood dead still).
+        lightSway[light] = sway;
         foreach (var (l, fire) in fires)
         {
             if (l != light || fire.GetNodeOrNull<Node3D>("Flames") is not Node3D f) continue;
@@ -293,7 +308,7 @@ public partial class ZoneView : Node3D
             if (light >= 0 && light < lights.Count)
             {
                 var at = specs[light].At;
-                lightDrop[light] = at.Y - Mathf.Lerp(fire.Position.Y + 0.18f, at.Y, Mathf.Clamp(flames, 0, 1));
+                lightDrop[light] = Mathf.Max(0, at.Y - Mathf.Lerp(fire.Position.Y + 0.18f + lift, at.Y, Mathf.Clamp(flames, 0, 1)));
                 lights[light].Position = at + Vector3.Down * lightDrop[light];
             }
         }
@@ -844,8 +859,12 @@ public partial class ZoneView : Node3D
             float ft = t * rate;
             float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
             lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
-            // Energy only, never position (look bible 10: the light bobbed 4 mm and the shadows swam). --fire-trace: the fire's light per frame.
+            // Energy only, never position (look bible 10: the light bobbed 4 mm and the shadows swam), unless a
+            // cinematic asks a burnt-down fire to sway (SetFire). --fire-trace: the fire's light per frame.
             lights[i].Position = l.At + Vector3.Down * lightDrop.GetValueOrDefault(i);
+            if (lightSway.GetValueOrDefault(i) is float sw && sw > 0)
+                lights[i].Position += sw * new Vector3(Mathf.Sin(t * 2.3f + ph) * 0.6f + Mathf.Sin(t * 5.9f + ph * 1.3f) * 0.4f,
+                    Mathf.Sin(t * 3.7f + ph * 0.7f) * 0.3f, Mathf.Cos(t * 1.9f + ph) * 0.6f + Mathf.Sin(t * 4.7f + ph * 2.1f) * 0.4f);
             if (FireTrace && t >= 6 && t < 11 && fires.Exists(fr => fr.Light == i)) GD.Print($"FIRETRACE {Engine.GetProcessFrames()} {t:0.0000} {lights[i].LightEnergy:0.0000} {lights[i].Position.Y:0.0000}");
         }
     }

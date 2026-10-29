@@ -130,4 +130,25 @@ public class CrowdVaryTests
         Assert.Equal(0.35, FolkSpacing.Lag(0), 9);
         Assert.Equal(0.8, FolkSpacing.Lag(1), 9);
     }
+    /// <summary>NPC 18: the plain risen's second body (the drowned woman) on two copies in five, the same copy always
+    /// the same body, apart from its mirrored gait and its mud; no other kind changes; her package is on disk.</summary>
+    [Fact]
+    public void ThePlainRisenWearsTheDrownedWomanOnTwoInFive()
+    {
+        var r = new Random(18);
+        var seeds = Enumerable.Range(0, 5000).Select(_ => r.NextDouble()).ToList();
+        Assert.All(seeds.Take(50), s => Assert.Equal(Vary.Body("risen_shroud", s), Vary.Body("risen_shroud", s)));
+        var hers = seeds.Where(s => Vary.Body("risen_shroud", s) == "risen_shroud_w").ToList();
+        Assert.InRange(hers.Count / (double)seeds.Count, 0.37, 0.43);
+        Assert.All(seeds, s => Assert.Contains(Vary.Body("risen_shroud", s), new[] { "risen_shroud", "risen_shroud_w" }));
+        // (her own hash: the mirrored lurch and the mud fall on her as on him)
+        Assert.InRange(hers.Count(s => Vary.Second(s, 0.45)) / (double)hers.Count, 0.40, 0.50);
+        Assert.InRange(hers.Count(s => Vary.Coat(s, 0.35, 0.3).Mud) / (double)hers.Count, 0.25, 0.35);
+        foreach (var v in new[] { "skeleton_minion", "risen_ally", "risen_shroud_w", "wolf" }) Assert.All(seeds.Take(200), s => Assert.Equal(v, Vary.Body(v, s)));
+        // her package, as the crowd loads it (Visuals.cs risen_shroud_w)
+        var d = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        while (d != null && !System.IO.File.Exists(System.IO.Path.Combine(d.FullName, "project.godot"))) d = d.Parent;
+        Assert.NotNull(d);
+        foreach (var f in new[] { "body.glb", "lod.glb", "manifest.json" }) Assert.True(System.IO.File.Exists(System.IO.Path.Combine(d!.FullName, "art", "npc", "npc_risen_w", f)), f);
+    }
 }

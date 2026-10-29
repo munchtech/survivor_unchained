@@ -39,6 +39,16 @@ public static class Vary
     public static (double Value, bool Mud) Coat(double seed, double lo, double mudShare) =>
         (lo + (1 - lo) * Hash(seed, 0x5A9), Hash(seed, 0x2E3) < mudShare);
 
+    /// <summary>A kind's second bodies: the visual a share of its copies wear instead (NPC 18: the plain risen's drowned
+    /// woman, so a pack isn't one man cloned). Looks only: the kind's balance and hitbox are its own.</summary>
+    public static readonly System.Collections.Generic.IReadOnlyDictionary<string, (string Visual, double Share)> Bodies =
+        new System.Collections.Generic.Dictionary<string, (string, double)> { ["risen_shroud"] = ("risen_shroud_w", 0.4) };
+
+    /// <summary>The visual a copy wears: its kind's, or for a share of them (from its seed, everywhere it spawns) the
+    /// kind's second body.</summary>
+    public static string Body(string visual, double seed) =>
+        Bodies.TryGetValue(visual, out var alt) && Hash(seed, 0x6B1) < alt.Share ? alt.Visual : visual;
+
     /// <summary>Whether a copy walks its kind's second gait (the mirror reach), share of them.</summary>
     public static bool Second(double seed, double share) => Hash(seed, 0x4C7) < share;
 

@@ -35,6 +35,8 @@ public static class Arms
         ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35, Kind: WeaponKind.Blade1H),  // grip conformed (grip_conform.py --seat --round): its anchor_grip seats it; Seated, and fistfit viking_sword passes 13/13 (391f685c, grip_conform --cylinder)
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35, Kind: WeaponKind.Blade1H),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
+        // The Ford-Warden's old Watch blade (tools/assets/watch_blade.py, concept A): straight, corroded, the zweihander's size; a broad blade (Warden 7), its fist a little down the two-hand grip, clear of the guard.
+        ["watch_blade"] = new("", 1.6f, 0.19f, Build: LampIron.WatchBlade, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
         ["viking_axe"] = new("viking_axe", 0.7702f, 0.15f, Roll: Mathf.Pi, Lean: 35, Kind: WeaponKind.Axe, Seated: true),  // haft conformed to her one-handed fist (anim-40: tapered haft, an oval wrap 34.7 x 21.7 mm over the fist, anchor_grip on the haft's line); seated on BladeAtR (PocketR Axe), Length keeps the old scale; fistfit axe
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
@@ -49,13 +51,23 @@ public static class Arms
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30, Kind: WeaponKind.Dagger, Seated: true),  // grip conformed (grip_conform.py --no-anchor); its left fist: fistfit.py daggers --side l
     };
 
-    static Arms() => ArmsData.Merge(All);  // art/weapons/weapons.json: weapons of a known kind as data
+    static Arms() => ArmsData.Merge(All);
+
+    /// <summary>Every weapon glb the table can load (res://assets/weapons and the rows' own res:// files), for prefetch.</summary>
+    public static IEnumerable<string> Files()
+    {
+        var seen = new HashSet<string>();
+        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons") ?? System.Array.Empty<string>())
+            if (w.EndsWith(".glb") && seen.Add($"res://assets/weapons/{w}")) yield return $"res://assets/weapons/{w}";
+        foreach (var s in All.Values)
+            if (s.Build == null && s.File.StartsWith("res://") && seen.Add(s.File) && ResourceLoader.Exists(s.File)) yield return s.File;
+    }  // art/weapons/weapons.json: weapons of a known kind as data
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
     public static Node3D Make(string id)
     {
         var spec = All[id];
-        var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
+        var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>(WeaponsData.ResPath(spec.File)).Instantiate<Node3D>();
         if (spec.Node != null)
         {
             // One weapon of several in the file: the rest go (the meshes
