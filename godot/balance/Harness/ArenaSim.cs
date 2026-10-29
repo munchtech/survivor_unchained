@@ -157,6 +157,9 @@ public static class ArenaSim
         public Dictionary<string, double>? DamageBy;
         /// <summary>The board pair's off run: no wicks in this fight, whatever WickBook.Lights says.</summary>
         public bool NoWicks;
+        /// <summary>The board pair's ablation (--nowick, --noturn): these skills light no wick; these light their wick
+        /// without its Turn (the Turn's slot goes to the next lead-in, as the Turn pair's off run).</summary>
+        public string[] NoWick = [], NoTurn = [];
     }
 
     public static string Card(Offer o) => o.Kind switch
@@ -255,6 +258,9 @@ public static class ArenaSim
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
         if (fx is { NoWicks: true }) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
+        foreach (var nw in fx?.NoWick ?? []) { b.WickPaths.Remove(nw); foreach (var w in b.Weapons) if (w.Id == nw) w.Wick = null; }
+        foreach (var nw in fx?.NoTurn ?? [])
+            if (b.WickPaths.TryGetValue(nw, out var wp)) b.SetWickPath(nw, wp.Where(id => !SurvivorUnchained.Content.Wicks.IsTurn(nw, id)).ToArray());
         if (fx?.Skill is { } forced)
         {
             if (fx.WickPath != null) b.SetWickPath(forced, fx.WickPath);
