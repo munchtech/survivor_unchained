@@ -87,6 +87,8 @@ SETS = {
     "gate": (NIGHT + ["--spots-clear", "--spots", "0,-100;10,-102;0,-107"], 3),
     # (Env 22 r1c: road B's spot alone, for switch tests)
     "fordb": (NIGHT + ["--spots-clear", "--spots", "9,40"], 1),
+    # (Env 22 r1e: the wood road alone, frame 04 of ford)
+    "fordr": (NIGHT + ["--spots-clear", "--spots", "-2,-72"], 1),
     "gatedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "0,-100"], 1),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }

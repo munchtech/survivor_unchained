@@ -192,6 +192,15 @@ uniform float setts_turn = 1.0;
 uniform float setts_lf = 1.0;
 uniform float mud_pool = 1.0;
 uniform float close_bump = 2.2;
+// (Env 22 r1e, judge: the wood road by night one violet value, no focal point; the work is the ground) a forest road
+// by night: road_night lifts the packed made surface (its albedo times 1 + it, the crown most, the ruts least, in 3-5 m
+// patches); verge_litter darkens the leaf litter and wet soil beside it (out to the mask's blur at verge_mip, about
+// 2^verge_mip x 0.13 m) and, litter_wood of it, under every crown (the sky bake), mottled: dark wet soil, paler drifts
+// of dry leaves. By night only. 0, 0: as before.
+uniform float road_night = 0.0;
+uniform float verge_litter = 0.0;
+uniform float verge_mip = 5.0;
+uniform float litter_wood = 0.5;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -754,6 +763,21 @@ void fragment() {
 		rough = mix(rough, 0.88, fr);
 		albedo *= 1.0 + night_val * ((nC.g - 0.5) * 1.2 + (nM.r - 0.5) * 0.8) * nt;
 		n_w = normalize(mix(n_w, n_geo, fr * 0.3));
+	}
+
+	// (Env 22 r1e) The forest road by night: the packed road lighter than its verges' litter.
+	if (road_night + verge_litter > 0.0 && night > 0.001) {
+		float on_rd = smoothstep(0.3, 0.7, pm.r) * (1.0 - w_setts);
+		float rutk = smoothstep(0.08, 0.45, rut);
+		albedo *= 1.0 + road_night * night * on_rd * (1.0 - 0.3 * rutk) * (0.75 + 0.5 * nM.r) * (1.0 + 0.4 * cen);
+		float near_rd = textureLod(paint_mask, zuv, verge_mip).r;
+		float off_rd = (1.0 - smoothstep(0.12, 0.45, pm.r)) * (1.0 - w_setts);
+		float band = smoothstep(0.015, 0.1, near_rd);
+		float wood = 1.0 - smoothstep(0.35, 0.85, ex4.r);
+		float lit = max(band, wood * litter_wood) * off_rd;
+		float wetp = smoothstep(0.45, 0.7, nM.g * 0.6 + nF.r * 0.4);
+		float dryl = smoothstep(0.58, 0.8, nF.b * 0.7 + nM.b * 0.3);
+		albedo *= 1.0 - clamp(verge_litter * night * lit * (0.7 + 0.55 * wetp - 0.55 * dryl), 0.0, 0.85);
 	}
 
 	// Blight: dead ground veined with sick light.

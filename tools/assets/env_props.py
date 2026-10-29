@@ -4013,13 +4013,221 @@ def camp_ground(p):
     return parts
 
 
+# ------------------------------------------------- forest floor (Env 22 r1e) --
+# (Env 22 r1e, judge: the wood road by night one violet value, nothing at its verges) a forest road's verge kit:
+# a fallen trunk (broken top, a root plate torn up with its soil), a scatter of fallen branches, surface roots for
+# a tree's foot, and a waymarker stone. All lie low (no shadow casters: env_props.json "no_shadow").
+
+def _aim(d, at):
+    """The matrix taking local y to direction d (unit), at point at."""
+    d = d.normalized()
+    x = Vector((0, 1, 0)).cross(d) if abs(d.y) < 0.95 else Vector((1, 0, 0))
+    x.normalize()
+    z = x.cross(d).normalized()
+    return T(*at) @ basis(x, d, z)
+
+
+def _stick(L, r0, r1, rng, segs=6, rings=3, lump=0.12):
+    """A tapered lumpy stick along local y from 0 to L."""
+    prof = [(r0 + (r1 - r0) * k / rings, L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=True)
+    sd = int(rng(0, 99))
+    for v in bm.verts:
+        k = 1 + lump * hnoise(v.co * 9.0, sd)
+        v.co.x *= k
+        v.co.z *= k
+    return bm
+
+
+def _bent(parts, rng, at, d, L, r0, r1, tint, sag=0.0, bend=0.25, segs=6):
+    """A stick in two pieces with a kink: from at along d, the second half turned by up to `bend` rad about up."""
+    d1 = d.normalized()
+    a = rng(-bend, bend)
+    d2 = Vector((d1.x * math.cos(a) - d1.z * math.sin(a), d1.y - sag, d1.x * math.sin(a) + d1.z * math.cos(a))).normalized()
+    rm = r0 + (r1 - r0) * 0.5
+    parts.append(Part(_stick(L * 0.5 + rm, r0, rm, rng, segs), 'bark', tint * rng(0.85, 1.1), _aim(d1, at), smooth=True, jitter=0.0, cyl=r0))
+    mid = Vector(at) + d1 * (L * 0.5)
+    parts.append(Part(_stick(L * 0.5, rm, r1, rng, segs), 'bark', tint * rng(0.85, 1.1), _aim(d2, mid), smooth=True, jitter=0.0, cyl=rm))
+    return mid + d2 * (L * 0.5), d2
+
+
+def fallen(p):
+    """A fallen trunk: a long bark tube lying along game x (top toward -x), lumpy and tapering, its top snapped off in
+    splinters (pale wood), its foot's root plate torn up on edge (a ragged disc of soil and roots), sunk into the litter,
+    moss along its upper side; two broken limbs."""
+    rng = Rng(p['seed'])
+    L, r = p['len'], p['r']
+    bark, wood, soil = hexlin(p['bark']), hexlin(p['cut']), hexlin(p['soil'])
+    moss = MOSS_DARK.lerp(MOSS_SAGE, 0.35)
+    sink = p.get('sink', 0.25) * r
+    seed = p['seed']
+    parts = []
+    segs, rings = 14, max(10, int(L / 0.25))
+    prof = [(r * (1.0 - 0.32 * k / rings), -L / 2 + L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=False)
+    for v in bm.verts:
+        a = math.atan2(v.co.z, v.co.x)
+        k = (1 + 0.07 * hnoise(v.co * 3.5, seed) + 0.03 * math.sin(a * 5 + v.co.y * 2 + seed)) * (1 + 0.06 * math.cos(2 * a + seed))
+        k *= 1 + 0.07 * hnoise(Vector((0.3, v.co.y * 0.9, 0.7)), seed + 3)
+        # the foot flares into the root plate
+        k *= 1 + 0.7 * math.exp(-(v.co.y + L / 2) / (0.35 * r / 0.3))
+        v.co.x *= k
+        v.co.z *= k
+        v.co.z += 0.06 * math.sin(math.pi * v.co.y / L * 1.3 + seed)
+    turn = T(0, r * 0.85 - sink, 0) @ R('Z', math.pi / 2)   # local y -> -x (the top), local x -> +y (up)
+    # moss along the top: a face's tint by its height (local x up), ragged along the length
+    mk = Vector((moss.x / bark.x, moss.y / bark.y, moss.z / bark.z)) * 1.6
+    bp = Part(bm, 'bark', bark, turn, smooth=True, jitter=0.0, cyl=r)
+    bp.ftint = lambda c: mk if c.x > r * (0.62 + 0.3 * hnoise(Vector((0.1, c.y * 1.3, 0.4)), seed + 9)) else Vector((1, 1, 1))
+    # the foot's end: kept open under the plate; the top snapped: splinters round the rim, pale wood
+    top = [v for v in bm.verts if abs(v.co.y - L / 2) < 1e-4]
+    top.sort(key=lambda v: math.atan2(v.co.z, v.co.x))
+    foot = [v for v in bm.verts if abs(v.co.y + L / 2) < 1e-4]
+    rf = max(Vector((v.co.x, 0, v.co.z)).length for v in foot)
+    sb = bmesh.new()
+    rim = [sb.verts.new(v.co.copy()) for v in top]
+    rt = max(Vector((v.co.x, 0, v.co.z)).length for v in top)
+    mids = []
+    for i, v in enumerate(top):
+        a = math.atan2(v.co.z, v.co.x)
+        mids.append(sb.verts.new((math.cos(a) * rt * 0.55, L / 2 + rt * rng(0.1, 1.4) * (1.6 if i % 4 == 0 else 0.6), math.sin(a) * rt * 0.55)))
+    cen = sb.verts.new((0, L / 2 + rt * 0.5, 0))
+    n = len(rim)
+    for i in range(n):
+        j = (i + 1) % n
+        sb.faces.new((rim[i], rim[j], mids[j], mids[i]))
+        sb.faces.new((mids[i], mids[j], cen))
+    sb.normal_update()
+    for f in sb.faces:
+        if f.normal.dot(f.calc_center_median() - Vector((0, L / 2 - rt, 0))) < 0:
+            f.normal_flip()
+    parts.append(bp)
+    parts.append(Part(sb, 'wood', wood * 0.75, turn, smooth=False, jitter=0.0))
+    # the root plate: a ragged disc of soil on edge at the foot, half in the ground
+    Rp = r * p.get('plate', 2.4)
+    nr = 16
+    pb = bmesh.new()
+    th = 0.16 * Rp
+    fr, bk = [], []
+    for i in range(nr):
+        a = 2 * math.pi * i / nr
+        rr = Rp * (0.75 + 0.35 * rng() + 0.12 * math.sin(3 * a + seed))
+        fr.append(pb.verts.new((math.cos(a) * rr, -L / 2 - th * 0.6, math.sin(a) * rr)))
+        bk.append(pb.verts.new((math.cos(a) * rr * 0.8, -L / 2 + th * 0.5, math.sin(a) * rr * 0.8)))
+    c0 = pb.verts.new((0, -L / 2 - th * 1.3, 0))
+    for i in range(nr):
+        j = (i + 1) % nr
+        pb.faces.new((fr[j], fr[i], c0))
+        pb.faces.new((fr[i], fr[j], bk[j], bk[i]))
+    pb.normal_update()
+    for f in pb.faces:
+        if f.normal.dot(f.calc_center_median() - Vector((0, -L / 2, 0))) < 0:
+            f.normal_flip()
+    for v in pb.verts:
+        v.co += Vector((rng(-1, 1), rng(-0.4, 0.4), rng(-1, 1))) * 0.06 * Rp
+    parts.append(Part(pb, 'soil', soil, turn, smooth=True, jitter=0.0))
+    # roots out of the plate's face and rim, snapped short
+    nroots = p.get('roots', 9)
+    for i in range(nroots):
+        a = 2 * math.pi * (i + rng(-0.3, 0.3)) / nroots
+        d = Vector((math.cos(a), -rng(0.15, 0.6), math.sin(a)))
+        at = Vector((math.cos(a) * rf * 0.6, -L / 2 - th * 0.4, math.sin(a) * rf * 0.6))
+        sub = []
+        _bent(sub, rng, at, d, Rp * rng(0.8, 1.35), r * rng(0.16, 0.28), r * 0.04, bark * 0.8, bend=0.5)
+        for s in sub:
+            s.at = turn @ s.at
+        parts += sub
+    # two broken limbs along it
+    for (fy, fa) in ((0.15, 0.9), (0.32, -1.1)):
+        at = Vector((math.cos(fa) * r * 0.75, L * fy, math.sin(fa) * r * 0.75))
+        d = Vector((math.cos(fa), 0.6, math.sin(fa)))
+        sub = []
+        _bent(sub, rng, at, d, r * rng(2.0, 3.5), r * 0.22, r * 0.07, bark * 0.9, bend=0.3)
+        for s in sub:
+            s.at = turn @ s.at
+        parts += sub
+    return parts
+
+
+def branches(p):
+    """Fallen branches on the forest floor: n crooked sticks, each forking once or twice, lying in a w x d spread
+    about the origin (their long axes along game x, give or take)."""
+    rng = Rng(p['seed'])
+    bark = hexlin(p['bark'])
+    w, dp = p['w'], p['d']
+    parts = []
+    for i in range(p.get('n', 5)):
+        L = rng(*p.get('len', (0.8, 2.2)))
+        r0 = rng(*p.get('r', (0.025, 0.06)))
+        a = rng(-0.6, 0.6) + (math.pi if rng() < 0.5 else 0)
+        d = Vector((math.cos(a), -0.02, math.sin(a)))
+        at = Vector((rng(-w / 2, w / 2) - d.x * L / 2, r0 * 0.8, rng(-dp / 2, dp / 2) - d.z * L / 2))
+        _bent(parts, rng, at, d, L, r0, r0 * 0.35, bark, bend=0.35, segs=5)
+        for k in range(2 if rng() < 0.6 else 1):
+            fat = at + d * (L * rng(0.35, 0.8) * 0.95)
+            fa = a + rng(0.45, 0.9) * (1 if rng() < 0.5 else -1)
+            _bent(parts, rng, fat, Vector((math.cos(fa), 0.0, math.sin(fa))), L * rng(0.25, 0.5), r0 * 0.5, r0 * 0.15, bark, bend=0.3, segs=4)
+    return parts
+
+
+def roots(p):
+    """Surface roots at a tree's foot: n roots out from a trunk of radius rt, each running out of the soil by the
+    trunk and diving back in, tapering, some forking; placed on a tree's foot (the trunk stands in the middle)."""
+    rng = Rng(p['seed'])
+    bark = hexlin(p['bark'])
+    rt = p['rt']
+    parts = []
+    n = p.get('n', 6)
+    for i in range(n):
+        a = 2 * math.pi * (i + rng(-0.3, 0.3)) / n
+        L = rng(*p.get('len', (0.9, 1.8)))
+        r0 = rng(*p.get('r', (0.07, 0.13)))
+        at = Vector((math.cos(a) * rt * 0.75, r0 * 0.2, math.sin(a) * rt * 0.75))
+        d = Vector((math.cos(a), -0.12, math.sin(a)))
+        _bent(parts, rng, at, d, L, r0, r0 * 0.2, bark, sag=0.05, bend=0.45, segs=6)
+        if rng() < 0.5:
+            fat = at + d * (L * 0.4)
+            fa = a + rng(0.4, 0.8) * (1 if rng() < 0.5 else -1)
+            _bent(parts, rng, fat, Vector((math.cos(fa), -0.15, math.sin(fa))), L * 0.5, r0 * 0.5, r0 * 0.12, bark, bend=0.4, segs=5)
+    return parts
+
+
+def waystone(p):
+    """A waymarker by a road: a rough standing stone, tapered and leaning, a cross cut in its road face (+z), sunk in
+    a low mound with fallen chips round its foot; mossed (env_props.json "dress")."""
+    rng = Rng(p['seed'])
+    stone, soil = hexlin(p['stone']), hexlin(p['soil'])
+    h, w, t = p['h'], p['w'], p['t']
+    parts = []
+    bm = stone_block(w, h, t, rng, bevel=0.04, chip=0.8, jag=0.025, top_cuts=2)
+    for v in bm.verts:
+        f = (v.co.y + h / 2) / h
+        v.co.x *= 1.0 - 0.28 * f
+        v.co.z *= 1.0 - 0.2 * f
+        if v.co.y > h * 0.35:
+            v.co.y += 0.06 * hnoise(v.co * 6, p['seed']) - 0.08 * max(0.0, v.co.x / w)
+    lean = R('Z', p.get('roll', 0.1)) @ R('X', p.get('lean', -0.08))
+    at = bedded(bm, lean @ T(0, h / 2, 0), p.get('sink', 0.12))
+    parts.append(Part(bm, 'stone', stone, at, cap='stone', jitter=0.0))
+    for (sx, sy) in ((0.05, h * 0.32), (w * 0.42, 0.05)):
+        parts.append(Part(box(sx, sy, 0.02, 0.005), 'stone', stone * 0.35, at @ T(0, h * 0.18, t / 2 - 0.005), cap='stone', jitter=0.0))
+    for i in range(p.get('chips', 5)):
+        a = rng(0, 2 * math.pi)
+        s = rng(0.08, 0.18)
+        cb = chunk(s, rng)
+        parts.append(Part(cb, 'stone', stone * rng(0.75, 1.0), bedded(cb, T(math.cos(a) * rng(w * 0.6, w * 1.1), 0, math.sin(a) * rng(t * 0.8, w)) @ R('Y', rng(0, 3)), s * 0.3), cap='stone', jitter=0.0))
+    parts += mound(w * 0.7, t * 1.5 + 0.2, 0.06, p['seed'], soil, sag=0.2, moss=0.9, old=p.get('mound'))
+    return parts
+
+
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
          'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier,
          'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle,
-         'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground}
+         'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground,
+         'fallen': fallen, 'branches': branches, 'roots': roots, 'waystone': waystone}
 
 
 # ---------------------------------------------------------------- build --
