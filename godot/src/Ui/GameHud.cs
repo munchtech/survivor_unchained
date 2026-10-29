@@ -127,6 +127,8 @@ public partial class GameHud : CanvasLayer
         // Her irons, by day and by night, at peace and in a fight: the keystone stays where it is.
         irons = new Instrument();
         play.AddChild(irons);
+        // (--no-foot, shots only: the world with the rest of the HUD but not the foot, a backdrop for HUD mockups)
+        if (Args.Has("no-foot")) irons.Visible = false;
         // (the low-life edge pulse: over the world, under the HUD)
         play.AddChild(her.Edge);
         play.MoveChild(her.Edge, 0);
