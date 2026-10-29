@@ -6,8 +6,10 @@ namespace SurvivorUnchained.View;
 /// Her face alive when nothing else is moving it: she blinks, every two to
 /// six seconds, now and then twice (a lid falls fast and lifts slower), and
 /// her eyes move as eyes do, in quick jumps from one place to look at to the
-/// next (a saccade, a twentieth of a second), resting a moment or a few
-/// between, a little apart round where she is looking, often as she blinks.
+/// next (a saccade, longer the further it goes, Play/GazeShift), resting a moment or a few
+/// between, a little apart round where she is looking, often as she blinks. A
+/// cinematic's big look turns her head after her eyes (GazeCarry) and her lids ride
+/// on her eyes.
 /// Her lids are her head's blink shapes (on her lashes too); her eyes are
 /// slid by their shader's gaze (shaders/heroine_eye.gdshader). Added under
 /// her skeleton.
@@ -28,13 +30,59 @@ public partial class HerFaceLife : Node
     /// <summary>Her eyes jump to where she is looking now (a cinematic's saccade), not at their next rest.</summary>
     public void Snap() => nextLook = t;
 
+    /// <summary>Her eyes and head as she looks (Play/GazeShift): saccades by the main sequence, the head carrying a big
+    /// look and the eyes rolling back as it comes, her lids riding on her eyes.</summary>
+    readonly SurvivorUnchained.Play.GazeShift gaze = new();
+    GazeCarry? carry;
+    /// <summary>A cinematic's look waiting for its saccade: a glide's time, the head's share, a blink forced or stopped.</summary>
+    double pendOver;
+    float? pendHead;
+    bool? pendBlink;
+    /// <summary>The look the head was last sent for (a new Look sends it again).</summary>
+    Vector2 planned;
+    double glideEnd;
+
+    /// <summary>A cinematic's gaze cue: where she looks (null: where she was), how far her eyes wander round it, how far
+    /// they turn in her head before the head takes the rest (reach, radii), the head's share of the look (null: none for
+    /// a small shift, 0.6 for a big one), a glide's time (over &gt; 0) instead of a jump, a blink forced or stopped. Snap:
+    /// now (else at her next natural saccade); cut: set at once, the shot having just cut (no slide seen across it).</summary>
+    public void Gaze(Vector2? look, float? wander, bool snap, double over, float? reach, float? head, bool? blink, bool cut)
+    {
+        if (look is Vector2 l) Look = l;
+        if (wander is float w) Wander = w;
+        gaze.Reach = reach ?? SurvivorUnchained.Play.GazeShift.DefaultReach;
+        pendOver = over; pendHead = head; pendBlink = blink;
+        if (cut)
+        {
+            var h = SurvivorUnchained.Play.GazeShift.HeadFor(N(Look), gaze.Head, float.MaxValue, head, gaze.Reach, HeadOwned());
+            gaze.Set(N(Look), h);
+            planned = Look;
+            pendOver = 0; pendHead = null; pendBlink = null;
+            nextLook = t + rng.RandfRange(0.8f, 2.5f);
+        }
+        else if (snap) Snap();
+    }
+
+    /// <summary>The cinematic over: her look back ahead and her head let go, eased.</summary>
+    public void Release()
+    {
+        Look = Vector2.Zero;
+        gaze.Reach = SurvivorUnchained.Play.GazeShift.DefaultReach;
+        gaze.HeadTo(t, System.Numerics.Vector2.Zero);
+        pendOver = 0; pendHead = null; pendBlink = null;
+        Snap();
+    }
+
+    static System.Numerics.Vector2 N(Vector2 v) => new(v.X, v.Y);
+
+    /// <summary>A scripted head look (HeadTurn with a point and a want) owns her head: her eyes then turn alone.</summary>
+    bool HeadOwned() => GetParent()?.GetNodeOrNull<HeadTurn>("HeadTurn") is { Want: > 0, Target: not null };
+
     readonly RandomNumberGenerator rng = new();
     readonly System.Collections.Generic.List<(MeshInstance3D Mesh, int L, int R)> lids = new();
     ShaderMaterial? eyes;
     double t, nextBlink, blinkAt = -1, nextLook;
     bool twice, second;
-    Vector2 from, to, gaze;
-    double lookAt = -1;
 
     public HerFaceLife() { Name = "HerFaceLife"; }
 
@@ -352,32 +400,45 @@ public partial class HerFaceLife : Node
                 nextBlink = t + (twice ? 0.08 : rng.RandfRange(2.0f, 6.0f));
             }
         }
-        // (from her lids' rest to shut; --rest-lid X tries another rest)
+        // A saccade: a jump to somewhere near where she is looking (a new look exactly there, the head sent after
+        // it; a big jump of her eyes in her head with a blink), or a cinematic's glide.
+        bool owned = HeadOwned();
+        if (t >= nextLook && (t >= glideEnd || Look != planned))
+        {
+            bool fresh = Look != planned;
+            var to = fresh ? Look : Look + new Vector2(rng.RandfRange(-1f, 1f) * Wander, rng.RandfRange(-0.6f, 0.6f) * Wander);
+            System.Numerics.Vector2? head = fresh
+                ? SurvivorUnchained.Play.GazeShift.HeadFor(N(Look), gaze.Head, (N(Look) - gaze.Net).Length(), pendHead, gaze.Reach, owned)
+                : null;
+            float jump = gaze.Move(t, N(to), fresh ? pendOver : 0, head);
+            if (SurvivorUnchained.Play.GazeShift.BlinkOn(jump, fresh ? pendBlink : null, Lids != null) && blinkAt < 0)
+            {
+                blinkAt = t;
+                twice = false;
+                second = false;
+            }
+            // (a glide runs out before her eyes wander from it, or a blink moves them)
+            if (fresh) glideEnd = t + pendOver;
+            nextLook = t + (fresh ? pendOver : 0) + (rng.Randf() < 0.3f ? rng.RandfRange(0.25f, 0.6f) : rng.RandfRange(0.8f, 3.0f));
+            if (fresh) { planned = Look; pendOver = 0; pendHead = null; pendBlink = null; }
+        }
+        // (a scripted head look owns her head: her own carry let go, eased)
+        if (owned) gaze.HeadTo(t, System.Numerics.Vector2.Zero);
+        gaze.Step(t);
+        var eye = new Vector2(gaze.Eye.X, gaze.Eye.Y);
+        if (gaze.Head != System.Numerics.Vector2.Zero || carry != null) Carry(gaze.Head);
+        // (from her lids' rest to shut, riding on her eyes' turn up and down; --rest-lid X tries another rest)
         float rest = Args.Has("rest-lid") ? Args.Num("rest-lid", 0) : Rest;
-        shut = rest + (1 - rest) * shut;
+        shut = SurvivorUnchained.Play.GazeShift.Lid(rest, shut, eye.Y);
         foreach (var (mi, l, r) in lids)
         {
             if (l >= 0) mi.SetBlendShapeValue(l, shut);
             if (r >= 0) mi.SetBlendShapeValue(r, shut);
         }
-        // A saccade: a quick jump to somewhere near where she is looking.
-        if (t >= nextLook)
-        {
-            from = gaze;
-            to = Look + new Vector2(rng.RandfRange(-1f, 1f) * Wander, rng.RandfRange(-0.6f, 0.6f) * Wander);
-            lookAt = t;
-            nextLook = t + (rng.Randf() < 0.3f ? rng.RandfRange(0.25f, 0.6f) : rng.RandfRange(0.8f, 3.0f));
-        }
-        if (lookAt >= 0)
-        {
-            float k = Mathf.Clamp((float)((t - lookAt) / 0.05), 0, 1);
-            gaze = from.Lerp(to, Ease(k));
-            if (k >= 1) lookAt = -1;
-        }
         if (eyes != null)
         {
-            eyes.SetShaderParameter(GazeA, gaze);
-            eyes.SetShaderParameter(GazeB, gaze);
+            eyes.SetShaderParameter(GazeA, eye);
+            eyes.SetShaderParameter(GazeB, eye);
             if (cycle != null)
             {
                 float every = Args.Num("every", 1), first = Args.Num("seconds", 3);
@@ -387,6 +448,22 @@ public partial class HerFaceLife : Node
                 if (cycle[i] is Color c) { eyes.SetShaderParameter("iris_colour", c); eyes.SetShaderParameter("ring_colour", c); eyes.SetShaderParameter("tint", Colors.White); }
             }
         }
+    }
+
+    /// <summary>The head's carry given to her skeleton's GazeCarry (made the first time there is any), kept after
+    /// every other modifier on it, a scripted head look's included, so it lays its turn on top.</summary>
+    void Carry(System.Numerics.Vector2 h)
+    {
+        if (GetParent() is not Skeleton3D sk) return;
+        if (carry == null || !IsInstanceValid(carry))
+        {
+            if (h == System.Numerics.Vector2.Zero) { carry = null; return; }
+            sk.AddChild(carry = new GazeCarry());
+        }
+        for (int i = carry.GetIndex() + 1; i < sk.GetChildCount(); i++)
+            if (sk.GetChild(i) is SkeletonModifier3D) { sk.MoveChild(carry, -1); break; }
+        carry.Yaw = h.X * SurvivorUnchained.Play.GazeShift.DegPerRadius;
+        carry.Pitch = h.Y * SurvivorUnchained.Play.GazeShift.DegPerRadius;
     }
 
     // (Names made once, not a new one every frame for the collector.)
