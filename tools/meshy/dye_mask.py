@@ -56,9 +56,20 @@ CFG = {
                     'range': {'a': [-0.08, 0.08], 'hair': [-0.1, 0.1]},
                     # the risen's bare skin (mask 0) per copy: a value multiplier and a faint hue (Oklab degrees: gray-blue,
                     # green-gray, bruise-brown; never red), so a horde is not one clay body (NpcDyePick.SkinTint)
-                    'skin': {'value': [0.70, 1.0], 'chroma': 0.03, 'hues': [250, 145, 70]},
+                    'skin': {'value': [0.35, 1.0], 'chroma': 0.03, 'hues': [250, 145, 70]},   # (floor 0.35: NPC 18 r3, not bone-white at night)
                     'palette': {'a': ['#564b3a', '#5f5c55', '#4e4230', '#4f5446', '#66625a', '#3e3528', '#6e6656'],
                                 'hair': ['#352c23', '#2a241e', '#3a3028', '#4a4a46', '#1e1c1a', '#50463a']}},
+    # (NPC 18: the plain risen's second body, the drowned woman, graded in Marionette risenDrowned: green-gray skin L32,
+    # wet slate shift L19, near-black hair; subtle per-copy dyes: the shift in slates and umbers, the hair near-black to
+    # dark brown; her hair over the chest keeps its paint (hair is a head channel only); mud and the face's paint kept)
+    'npc_risen_w': {'anchors': [['#464d47', '0', 'skin'], ['#56605a', '0', 'skin'], ['#8e948c', '0'], ['#2d2e2f', 'a'], ['#393b40', 'a'],
+                                ['#232528', 'a'], ['#3a3027', '0'], ['#141415', 'hair'], ['#1f1e1d', 'hair']],
+                    'xlim': {'a': [-0.3, 0.3]}, 'ylim': {'a': [0.45, 1.42]}, 'hair_drop': 0.1,
+                    'zero_boxes': [[-0.1, 1.40, 0.0, 0.1, 1.64, 0.5]], 'scale': 0.04,
+                    'range': {'a': [-0.06, 0.06], 'hair': [-0.06, 0.06]},
+                    'skin': {'value': [0.75, 1.0], 'chroma': 0.02, 'hues': [145, 250]},
+                    'palette': {'a': ['#2d2e2f', '#33302b', '#2a2d31', '#36352f', '#2b2a28', '#30333a'],
+                                'hair': ['#161616', '#1c1916', '#211b16', '#141518', '#26201a']}},
 }
 
 

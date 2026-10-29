@@ -62,6 +62,10 @@ public static class Visuals
             // (a second gait, "move2": the lurch reaching with the other hand, the right one hanging, for a share of them: NPC 17 r3)
             "risen_shroud" => new(visual, new PersonSpec { Sex = Sex.Male, Body = NpcPackage.Prefix + "npc_risen_s" }, null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam, Move2 = LurchOther }),
+            // Its second body, the drowned woman (npc_risen_w), worn by a share of the plain risen (Sim.Vary.Body): her own
+            // package, the same clips (the lurch and its mirror).
+            "risen_shroud_w" => new(visual, new PersonSpec { Sex = Sex.Female, Body = NpcPackage.Prefix + "npc_risen_w" }, null,
+                Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop") with { Slam = GroundSlam, Move2 = LurchOther }),
             "risen_ally" => new(visual, P(Sex.Female, "peasant", hair: "Hair_Long", hairColor: "#6a665e", skin: Rot, figure: 0.9, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop")),
             "skeleton_warrior" => new(visual, P(Sex.Male, "ranger", pauldron: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#3e4238"),
