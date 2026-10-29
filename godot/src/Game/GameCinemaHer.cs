@@ -20,7 +20,7 @@ namespace SurvivorUnchained.Play;
 /// (HerKey: key, fill, rim, twins, exposure matched; the moon, the zone's fires and any flame near her held to it on her alone).
 /// --cine-her off: none of it (before frames). --cine-her-key off: round 1 (no key, the cap on).
 /// --cine-her-off layers,hair,gear,spec,cap,night,eyes,guard,key,moon,fire,near: those parts off.
-/// --cine-her-on hold,grade,lift,sky: parts kept off by default (Face 48 measured them worse or no better), for pictures.
+/// --cine-her-on hold,grade,lift,sky,spec2,kick,shadehue: parts kept off by default (Face 48 measured them worse or no better; spec2, kick, shadehue are round 4 and the final judge held them back), for pictures.
 /// --cine-her-cap K: the cap as K of the close view's key (exposure counted). --cine-her-hair-back S: a light from
 /// behind or steeply above her keeps S of itself on her hair.
 public partial class Game
@@ -34,7 +34,7 @@ public partial class Game
         /// the close view's highlight grade moved her face little and re-grades the whole frame).</summary>
         /// (and "lift", the rigs raised to the close key: flatter, p85-p15 19 to 13 on C02 s4; "sky", her skin off the sky's light
         /// by night: under 1 L either way, the ambient is not what carries her face there)
-        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky" };
+        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue" };
         static readonly bool HerKeyArg = Args.Get("cine-her-key") != "off";
         static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
         // Her key's numbers (Face 48 round 2): --cine-her-key-gain, --cine-her-fill, --cine-her-rim, --cine-her-moon: the close
