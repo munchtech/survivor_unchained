@@ -54,3 +54,9 @@ placed by `ink_r3.py init`; the shipped candidate's whole is `_work/p5/S_drowned
 | ink round 3 | `_work/p5/r3_raw_right_d70_s11.png` | broad-ditch img2img, denoise 0.7, seed 11, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 2c664332cd93a891 |
 | ink round 3 | `_work/p5/r3_raw_right_d70_s23.png` | broad-ditch img2img, denoise 0.7, seed 23, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 9f35f2ba70cb036d |
 | ink round 3 | `_work/p5/r3_raw_right_d70_s47.png` | broad-ditch img2img, denoise 0.7, seed 47, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 5866542461dd831f |
+
+## Round 5g (Storybook 4, 29 Oct 2026): ChatGPT figure sources for p5
+- `p5_A1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G1: cropped 1536x816, Lanczos 2048x1088, Krea 2 turbo img2img 0.35/0.45/0.55, `ink_jobs/r5g_p5.json` -> `out/ink_r5g/g1A1_*`).
+- `p5_A2.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G1, as A1 -> `out/ink_r5g/g1A2_*`).
+- `p5_B1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (not used in round 5g).
+- `p5_C1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G2: BiRefNet cut, outlines re-inked as solid shared-ink silhouettes and stood in the ditches of Krea plate `ink_r5/p5r5bw_s11` emptied by inpaint, `ink_r5g.py` -> `out/ink_r5g/g2_*`).

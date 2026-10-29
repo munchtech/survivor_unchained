@@ -23,7 +23,7 @@ BAND = 1339 / 1800
 
 # p5 staging for the camera sheet: (t, x, y, zoom) in the posted plate's px (3600 wide = canvas units).
 # Per pick the ford/fourth-light point is set in P5_FORD (posted px); default the comps' (1880, 700).
-P5_FORD = {"p5r5c_s47_nc": (1795, 560), "p5r5a_s202_nc": (1300, 700)}
+P5_FORD = {"g1A2_d45_s202_nc": (1900, 440), "g2_empty_s7_k3": (1755, 560), "p5r5bw_s11_nc": (1755, 560), "p5r5c_s47_nc": (1795, 560), "p5r5a_s202_nc": (1300, 700)}
 
 
 def font(sz):
@@ -61,8 +61,8 @@ def post_one(src, dst, w=3600, light="warm"):
     ink_post.save(ink_post.post(ink_post.upscale(Image.open(src), w), light=light), dst)
 
 
-def post_p5():
-    names = sorted(f[:-4] for f in os.listdir(R5) if f.startswith("p5r5") and f.endswith(".png") and "_post" not in f)
+def post_p5(prefix="p5r5", exclude="p5r5b", sheet_name="p5r5_sheet_half.jpg"):
+    names = sorted(f[:-4] for f in os.listdir(R5) if f.startswith(prefix) and f.endswith(".png") and not (exclude and f.startswith(exclude)))
     os.makedirs(os.path.join(R5, "posted"), exist_ok=True)
     tiles = []
     for n in names:
@@ -70,7 +70,7 @@ def post_p5():
         post_one(os.path.join(R5, n + ".png"), dst)
         tiles.append((n, Image.open(dst).resize((900, 475), Image.LANCZOS)))
     for f in sorted(os.listdir(os.path.join(R5, "posted"))):   # the night-toned + cold-light posts (ink_r5.py night)
-        if f.endswith("_nc.png"):
+        if f.endswith("_nc.png") and f.startswith(prefix) and not (exclude and f.startswith(exclude)):
             tiles.append((f[:-4] + "  (night tone + cold light)", Image.open(os.path.join(R5, "posted", f)).resize((900, 475), Image.LANCZOS)))
     cols = 3
     rows = (len(tiles) + cols - 1) // cols
@@ -80,9 +80,25 @@ def post_p5():
         x, y = 10 + (i % cols) * 910, 10 + (i // cols) * 505
         sheet.paste(t, (x, y))
         d.text((x, y + 478), n, fill="#e0e0e0", font=font(22))
-    p = os.path.join(R5, "p5r5_sheet_half.jpg")
+    p = os.path.join(R5, sheet_name)
     sheet.save(p, quality=90)
     print(p)
+
+
+def sheet_of(files, dst, cols=3, tw=900):
+    """A labelled half-size contact sheet of posted pictures (label = file name)."""
+    ims = [Image.open(f).convert("RGB") for f in files]
+    th = max(round(tw * im.height / im.width) for im in ims)
+    rows = (len(ims) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * (tw + 10) + 10, rows * (th + 30) + 10), "#202020")
+    d = ImageDraw.Draw(sheet)
+    for i, (f, im) in enumerate(zip(files, ims)):
+        x, y = 10 + (i % cols) * (tw + 10), 10 + (i // cols) * (th + 30)
+        t = im.resize((tw, round(tw * im.height / im.width)), Image.LANCZOS)
+        sheet.paste(t, (x, y))
+        d.text((x, y + t.height + 3), os.path.basename(f)[:-4], fill="#e0e0e0", font=font(22))
+    sheet.save(dst, quality=90)
+    print(dst)
 
 
 def frame(img, x, y, zoom, label=None):
@@ -250,6 +266,10 @@ if __name__ == "__main__":
         p7u_prep()
     elif a == "post_p5":
         post_p5()
+    elif a == "post_p5b":     # round 5b: the night + cold posts only
+        names = sorted(f[:-4] for f in os.listdir(R5) if f.startswith(("p5r5bw", "p5r5bk")) and f.endswith(".png"))
+        post_night(names)
+        sheet_of([os.path.join(R5, "posted", n + "_nc.png") for n in names], os.path.join(R5, "p5r5b_sheet_half.jpg"))
     elif a == "campath":
         campath(sys.argv[2:])
     elif a == "night":
