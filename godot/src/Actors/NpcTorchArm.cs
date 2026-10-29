@@ -29,7 +29,7 @@ public partial class NpcTorchArm : SkeletonModifier3D
     /// <summary>The directions the arm is laid along, in the chest's frame (up, right, forward): the upper arm, the
     /// forearm, and the fist's fingers.</summary>
     public static (Vector3 Upper, Vector3 Fore, Vector3 Fist) Lay(Vector3 u, Vector3 r, Vector3 f) =>
-        ((-u * 1.0f + f * 0.2f - r * 0.32f).Normalized(), (f * 0.8f + u * 0.1f - r * 0.45f).Normalized(), (f * 0.8f + u * 0.38f - r * 0.3f).Normalized());
+        ((-u * 1.0f + f * 0.2f - r * 0.32f).Normalized(), (f * 0.8f - u * 0.4f - r * 0.5f).Normalized(), (f * 0.8f + u * 0.38f - r * 0.3f).Normalized());
 
     public override void _ProcessModificationWithDelta(double delta)
     {

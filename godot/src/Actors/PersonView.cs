@@ -429,7 +429,7 @@ public partial class PersonView : Node3D, INpcView
         if (!held.TryGetValue("handslot.l", out var at)) return;
         Node3D host = at;
         foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
-        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.5f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
+        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.45f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
     }
 
     Node3D TorchFist(Node3D torch)
@@ -457,14 +457,16 @@ public partial class PersonView : Node3D, INpcView
     static Node3D? Carried(string piece)
     {
         var root = new Node3D();
-        var wood = new StandardMaterial3D { AlbedoColor = new Color("#4a3424"), Roughness = 0.9f };
+        var wood = new StandardMaterial3D { AlbedoColor = new Color("#3a2a1e"), Roughness = 0.9f };
         switch (piece)
         {
             case "torch_lit":
             {
-                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.025f, Height = 0.55f, Material = wood }, Position = new Vector3(0, 0.12f, 0) });
-                var flame = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(3f, 1.4f, 0.35f) };
-                root.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.06f, Height = 0.18f, Material = flame }, Position = new Vector3(0, 0.44f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                // A tapered dark wood handle (0.5 m, gripped near its middle) and a charred wrapped head; the flame is the kit's.
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.026f, BottomRadius = 0.017f, Height = 0.5f, Material = wood }, Position = new Vector3(0, 0f, 0) });
+                var char_ = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f };
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.034f, Height = 0.08f, Material = char_ }, Position = new Vector3(0, 0.29f, 0) });
+                FlameKit.Add(root, new Vector3(0, 0.33f, 0), FlameKind.Torch, scale: 0.6f, light: false);
                 return root;
             }
             case "bucket_water":
