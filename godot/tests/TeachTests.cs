@@ -272,10 +272,10 @@ public class TeachTests
         Assert.Null(t.Update(11.2, 11.2, Busy.None, Here));
         Assert.Null(t.Current);
         // (and from the end of another callout too)
-        var next = Arrow("lock") with { Quiet = 4, Patience = 30 };
+        var next = Arrow("card") with { Quiet = 4, Patience = 30 };
         t.Offer(next, 11.1);
         Assert.Null(t.Update(13, 13, Busy.None, Here));
-        Assert.Equal("lock", t.Update(15.2, 15.2, Busy.None, Here)?.Id);
+        Assert.Equal("card", t.Update(15.2, 15.2, Busy.None, Here)?.Id);
     }
 
     [Fact]

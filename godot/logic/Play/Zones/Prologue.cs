@@ -442,7 +442,7 @@ public sealed class Prologue : ZoneRuntime
         // 4 s clear of anything else (Experience 9: no crowd gate; the Rising stays crowded after the 2nd rise, so
         // v6 never asked it until the Road; the arrow sits on the HUD, off the fight). Dropped unseen ("passed") once the Ambush begins.
         if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road)
-            G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The lock", "The ember's level tonight. It springs open each time the ember rises.", Aim.At("lock"))
+            G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The ember's count", $"Hold {Key("experience")} to see the ember's level, and how far it is to the next.", Aim.At("card"))
                 { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
