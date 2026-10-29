@@ -38,8 +38,9 @@ folded; the letter and the background item to C04 A; no data change).
 (the editor's scores 5-8; P1 Rook gives the word day one, `rook.mother_word`;
 P2 the letter keeps "Come home by the Low Ford.", journal entry `home.letter`;
 P3 the kill and the count split, C20 grin only, C20b the count). P1 and P2 are
-DRAFTED IN THE DATA on the branch head (with the dropped-lamp plant
-`cin_first_light.lamp_out`, line level, no gate) and are NOT in MR1. On the
+DRAFTED IN THE DATA on the branch head and are NOT in MR1. The dropped-lamp
+plant (`lamp_out`, text in `c04_first_light.md`) waits for Cinematics 8 to add
+prop, node and cue together (`CinemaTests` fails a node without its cue). On the
 owner's yes: commit stands, MR2; write P1 into the bible §1 (one sentence) and
 P2 into §3.3's plants; write P3 into TREATMENT §4.5 step 7 ("Tolley's lips move,
 and stop"), §4.6 (Maeca's "...He counted me." to C22) and §7's two Act 2 rows,
@@ -47,8 +48,8 @@ then have the editor read §4.5-4.6 once. On a no: `git revert` the P1/P2 commit
 (the test change in `StoryRewriteTests` line 380 goes with it).
 **Routed, unowned (tell main if not yet routed):** the toll (`TOLL_SPEC.md`) has
 no data presence beyond `Journey.Day.RiseAgain`; the drowned woman lifting a
-dead lamp at the ford isn't staged in `Prologue.cs`; the C04 A lamp prop and
-`lamp_out` cue (Cinematics); the C04 A letter insert with the legible line.
+dead lamp at the ford isn't staged in `Prologue.cs`; the C04 A lamp prop +
+`lamp_out` node + cue (Cinematics 8); the C04 A letter insert with the legible line.
 
 The editor: agent `a16f8f7e8fda254d8` (budget raised to 260k; near it: spawn a
 fresh one from `docs/handoff/story_editor.md` with the scoreboard pasted in).

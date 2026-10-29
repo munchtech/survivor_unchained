@@ -68,10 +68,11 @@ with the Tolley fix above.
 
 ## Done without a gate (line level, on the branch)
 
-The dropped-lamp plant the treatment lists as "on the trunk" wasn't in the data:
-`cin_first_light.lamp_out`, the dawn's first line, *"On the stones at the
-water's edge, a lamp lies on its side. It has gone out."* (Cinematics adds the
-prop and the cue to c04a.json.) The narrator's figures that didn't resolve are
+The dropped-lamp plant the treatment lists as "on the trunk" isn't in the data:
+the line is written, *"On the stones at the water's edge, a lamp lies on its
+side. It has gone out."*, the dawn's first line, and waits in `c04_first_light.md`
+for Cinematics 8 to add prop, node and cue together (a node without its cue fails
+the cinema test). The narrator's figures that didn't resolve are
 plain now (greymuzzle, Sella's stairs, Pell's door). Routed, not mine: the toll
 ("It takes less than it did", `TOLL_SPEC.md`) is the one canon twist with no
 data presence at all (only the rise line in `Journey.Day.cs`); the drowned woman

@@ -2474,31 +2474,54 @@
    "status": "todo"
   },
   {
-   "id": "ply.rook.mother2.0",
+   "id": "dlg.rook.mother_word.0",
+   "kind": "dialogue",
+   "voice": "rook",
+   "text": "She'd sit at my back window at dusk, the week she was here, and say it to the road. \"Lamp's lit, Spark. Stay where it reaches.\" (She picks the cup up again.) I took it for a prayer.",
+   "where": "dialogue.json rook/mother_word#0",
+   "hash": "ff7b257431e3",
+   "segments": [
+    {
+     "voice": "rook",
+     "text": "She'd sit at my back window at dusk, the week she was here, and say it to the road. \"Lamp's lit, Spark. Stay where it reaches.\""
+    },
+    {
+     "voice": "narrator",
+     "text": "She picks the cup up again."
+    },
+    {
+     "voice": "rook",
+     "text": "I took it for a prayer."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.rook.mother_word.0",
    "kind": "choice",
    "voice": "survivor",
    "text": "Where is she?",
-   "where": "dialogue.json rook/mother2 choice 0",
+   "where": "dialogue.json rook/mother_word choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "d2831ce9abdb",
    "status": "skip"
   },
   {
-   "id": "ply.rook.mother2.1",
+   "id": "ply.rook.mother_word.1",
    "kind": "choice",
    "voice": "survivor",
    "text": "A week. I was a week on the road.",
-   "where": "dialogue.json rook/mother2 choice 1",
+   "where": "dialogue.json rook/mother_word choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "1266a0e5aa7d",
    "status": "skip"
   },
   {
-   "id": "ply.rook.mother2.2",
+   "id": "ply.rook.mother_word.2",
    "kind": "choice",
    "voice": "survivor",
    "text": "(Say nothing.)",
-   "where": "dialogue.json rook/mother2 choice 2",
+   "where": "dialogue.json rook/mother_word choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "929dd54c8a8d",
    "status": "skip"
@@ -23757,7 +23780,7 @@
     "intent": "the Pack's answer",
     "pace": "slow",
     "vol": "quiet",
-    "note": "'He is not coming.' on its own. 'They are his answer.' plain."
+    "note": "'He is not coming.' on its own, plain."
    },
    "status": "todo"
   },
@@ -27733,10 +27756,10 @@
    ],
    "direction": {
     "emo": "plain",
-    "intent": "the mother's face",
+    "intent": "the voice that is gone, the face that is whole",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Plain and slow; the strangeness is in the words.",
+    "note": "The voice is the thing missing and the face is whole. Said as plainly as every other line, no weight, then silence.",
     "time_note": "the cut then holds three seconds of silence",
     "time": [
      4.6,

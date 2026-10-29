@@ -857,6 +857,11 @@
    "mother2": {
     "id": "mother2",
     "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Chid brought her down and saw to her. I sat with her, after.",
+    "next": "mother_word"
+   },
+   "mother_word": {
+    "id": "mother_word",
+    "text": "She'd sit at my back window at dusk, the week she was here, and say it to the road. \"Lamp's lit, Spark. Stay where it reaches.\" (She picks the cup up again.) I took it for a prayer.",
     "choices": [
      {
       "text": "Where is she?",
@@ -901,6 +906,13 @@
        "id": "home",
        "status": "active",
        "entry": "rook"
+      }
+     },
+     {
+      "quest": {
+       "id": "home",
+       "status": "active",
+       "entry": "letter"
       }
      }
     ],

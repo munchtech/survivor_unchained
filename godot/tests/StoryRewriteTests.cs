@@ -377,7 +377,7 @@ public class StoryRewriteTests
         foreach (var id in new[] { "blind_morning", "told_true" })
             Assert.DoesNotContain(Convo("maeca").Nodes[id].Text, v => v.Text.Contains("three days", StringComparison.OrdinalIgnoreCase));
         // §2: the survivor's answer is one the lie allows.
-        var answers = Convo("rook").Nodes["mother2"].Choices!.SelectMany(c => c.Text.Select(v => v.Text)).ToList();
+        var answers = Convo("rook").Nodes["mother_word"].Choices!.SelectMany(c => c.Text.Select(v => v.Text)).ToList();
         Assert.Contains("A week. I was a week on the road.", answers);
         Assert.DoesNotContain(answers, a => a.Contains("a day short"));
         // §9: the narrator's tic, cut; the hammer and Chid's quiet are kept.
