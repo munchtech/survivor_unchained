@@ -182,9 +182,9 @@ public class XpLightTests
         x.Feed(0.35, 4, true);  // a gain 0.2 s later: no run yet
         Run(x, 0.1);
         Assert.Equal(0, x.Strength);
-        Run(x, 1.0);            // the gap is past and the whole is done: the waiting run starts from her hair
+        Run(x, 1.0);            // the gap is past and the whole is done: the waiting run starts (UI 23: on the ring, from where it stood)
         Assert.True(x.Strength > 0);
-        Assert.True(x.Front < 0.35);
+        Assert.InRange(x.Front, 0.3, 0.35 + 1e-9);
     }
 
     [Fact]
