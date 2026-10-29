@@ -416,12 +416,12 @@ public partial class CrowdView : Node3D
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
         // A varied pack's copy (the Low Ford's risen): its own skin value (0.35 to 1: NPC 18 r3, not a crowd of bone-white
-        // bodies at night; the drowned woman, painted darker, 0.7 to 1) and, for about a third, a coat of river mud: a
+        // bodies at night; the drowned woman, painted darker, 0.9 to 1: lower sank her to one dark blob out of firelight) and, for about a third, a coat of river mud: a
         // little browner all over and dark patches over the legs and hem (vat.gdshaderinc's mud, flagged by a negative red
         // in the tint: a uniform tint alone read as no mud at all).
         if (battle?.VaryPacks == true && e.Def.Weave is > 0)
         {
-            var (val, mud) = Vary.Coat(e.Seed, Vary.Body(e.Def.Visual, e.Seed) == e.Def.Visual ? 0.35 : 0.7, 0.3);
+            var (val, mud) = Vary.Coat(e.Seed, Vary.Body(e.Def.Visual, e.Seed) == e.Def.Visual ? 0.35 : 0.9, 0.3);
             tint *= new Color((float)val, (float)val, (float)val);
             if (mud) { tint *= new Color(0.9f, 0.84f, 0.76f); tint.R = -tint.R; }
         }

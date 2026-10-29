@@ -62,13 +62,15 @@ CFG = {
     # (NPC 18: the plain risen's second body, the drowned woman, graded in Marionette risenDrowned: green-gray skin L32,
     # wet slate shift L19, near-black hair; subtle per-copy dyes: the shift in slates and umbers, the hair near-black to
     # dark brown; her hair over the chest keeps its paint (hair is a head channel only); mud and the face's paint kept)
-    'npc_risen_w': {'anchors': [['#464d47', '0', 'skin'], ['#56605a', '0', 'skin'], ['#8e948c', '0'], ['#2d2e2f', 'a'], ['#393b40', 'a'],
-                                ['#232528', 'a'], ['#3a3027', '0'], ['#141415', 'hair'], ['#1f1e1d', 'hair']],
+    # (r2, after the play-camera judge: skin L33, the shift lifted about 0.05 in value (anchors and palette with it), the
+    # skin's per-copy value floor 0.9 (0.75 sank her to one dark blob out of firelight; she stays darker than the shroud man))
+    'npc_risen_w': {'anchors': [['#4a514b', '0', 'skin'], ['#56605a', '0', 'skin'], ['#8e948c', '0'], ['#3a3b3c', 'a'], ['#46484d', 'a'],
+                                ['#303235', 'a'], ['#3a3027', '0'], ['#141415', 'hair'], ['#1f1e1d', 'hair']],
                     'xlim': {'a': [-0.3, 0.3]}, 'ylim': {'a': [0.45, 1.42]}, 'hair_drop': 0.1,
                     'zero_boxes': [[-0.1, 1.40, 0.0, 0.1, 1.64, 0.5]], 'scale': 0.04,
                     'range': {'a': [-0.06, 0.06], 'hair': [-0.06, 0.06]},
-                    'skin': {'value': [0.75, 1.0], 'chroma': 0.02, 'hues': [145, 250]},
-                    'palette': {'a': ['#2d2e2f', '#33302b', '#2a2d31', '#36352f', '#2b2a28', '#30333a'],
+                    'skin': {'value': [0.9, 1.0], 'chroma': 0.02, 'hues': [145, 250]},
+                    'palette': {'a': ['#3a3b3c', '#403d38', '#373a3e', '#43423c', '#383735', '#3d4047'],
                                 'hair': ['#161616', '#1c1916', '#211b16', '#141518', '#26201a']}},
 }
 

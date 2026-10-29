@@ -10,7 +10,8 @@ namespace SurvivorUnchained.Play;
 /// --npc NAME[:walk][:swap]: a Marionette package (NpcPackage, art/npc/NAME) stood in the place, for pictures. Beside
 /// her, a step and a half to the camera's right, facing the camera (idle), or walking a small circle there (walk);
 /// swap: in her place instead and she hidden, so the close-up (--close C --idle-after S) frames it as it frames her
-/// (walk with swap: walking on the spot, three-quarters to the camera).
+/// (walk with swap: walking on the spot, three-quarters to the camera). side: a full-body side view instead of chest's
+/// close-up (its own camera 4 m off its flank at hip height, fov 30: knees, hem and feet in frame, for a stride check).
 /// </summary>
 public partial class Game
 {
@@ -141,18 +142,18 @@ public partial class Game
             v.TorchLight();
         }
         GD.Print($"npc shot: {name} plays {idle}");
-        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest")));
+        AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest") || parts.Contains("side"), parts.Contains("side")));
     }
 
     sealed partial class NpcShotDriver : Node
     {
         readonly Game game;
         readonly PersonView v;
-        readonly bool walk, swap, chest;
+        readonly bool walk, swap, chest, side;
         double t;
         Camera3D? chestCam, playCam;
 
-        public NpcShotDriver(Game game, PersonView v, bool walk, bool swap, bool chest = false) { this.game = game; this.v = v; this.walk = walk; this.swap = swap || chest; this.chest = chest; }
+        public NpcShotDriver(Game game, PersonView v, bool walk, bool swap, bool chest = false, bool side = false) { this.game = game; this.v = v; this.walk = walk; this.swap = swap || chest; this.chest = chest; this.side = side; }
 
         public override void _Process(double delta)
         {
@@ -199,9 +200,17 @@ public partial class Game
                     chestCam = new Camera3D { Fov = 30, KeepAspect = Camera3D.KeepAspectEnum.Height, Near = 0.05f, Far = 1400 };
                     game.scene.AddChild(chestCam);
                     chestCam.MakeCurrent();
-                    GD.Print("npc shot: chest camera at 1.4 m, fov 30");
+                    GD.Print(side ? "npc shot: side camera at 4 m, hip height, fov 30" : "npc shot: chest camera at 1.4 m, fov 30");
                 }
-                if (nh is { } hp)
+                if (nh is { } hs && side)
+                {
+                    // (off its flank: the facing turned a quarter, the camera and its aim at hip height)
+                    var hip = hs - new Vector3(0, 0.72f, 0);
+                    var f = new Vector3((float)Math.Sin(heading), 0, (float)Math.Cos(heading)).Rotated(Vector3.Up, Mathf.DegToRad(90f));
+                    chestCam.GlobalPosition = hip + f * 4f;
+                    chestCam.LookAt(hip, Vector3.Up);
+                }
+                else if (nh is { } hp)
                 {
                     var f = new Vector3((float)Math.Sin(heading), 0, (float)Math.Cos(heading)).Rotated(Vector3.Up, Mathf.DegToRad(15f));
                     chestCam.GlobalPosition = hp + f * 1.4f + new Vector3(0, 0.0f, 0);
