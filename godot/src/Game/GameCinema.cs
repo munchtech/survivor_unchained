@@ -1391,7 +1391,7 @@ public partial class Game
                 {
                     // A shot's own light on the cast, as a film crew sets one (face 30: dead eyes
                     // with no light into the sockets, an unlit crown): a soft spot on the people's
-                    // layer only, no shadow, from "from" ({"lens": [right, up, back]} in the
+                    // layer only, no shadow ("shadow": true casts one, "size" its source in metres: C02 s8's hard lantern), from "from" ({"lens": [right, up, back]} in the
                     // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
                     string name = c.Str("name") ?? "rig";
@@ -1406,7 +1406,7 @@ public partial class Game
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
-                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer,
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = c.Bool("shadow"), LightSize = (float)c.Num("size", 0), LightCullMask = 2 | PlayerView.CastLayer,
                         LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
@@ -1426,10 +1426,12 @@ public partial class Game
                     skinSky = (float)c.Num("sky", skinSky);
                     skinEar = (float)c.Num("ear", skinEar);
                     // ("fill", "fillColor", "scale": her rig's fill and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
-                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale"))
+                    // ("off": "key,moon": her rig's parts off for this shot, as --cine-her-off)
+                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off"))
                     {
                         herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herScaleShot = (float)c.Num("scale", 0);
                         herFillCol = c.Str("fillColor") is string hfc ? new Color(hfc) : null;
+                        herOffShot = c.Str("off") is string ho ? ho.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet() : null;
                     }
                     if (people.TryGetValue("her", out var hs)) { SurvivorUnchained.View.People.HerSkyShare(hs.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, skinEar); }
                     break;

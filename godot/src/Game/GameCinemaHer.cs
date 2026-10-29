@@ -36,7 +36,7 @@ public partial class Game
         /// by night: under 1 L either way, the ambient is not what carries her face there)
         static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue" };
         static readonly bool HerKeyArg = Args.Get("cine-her-key") != "off";
-        static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
+        static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && herOffNow?.Contains(p) != true && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
         // Her key's numbers (Face 48 round 2): --cine-her-key-gain, --cine-her-fill, --cine-her-rim, --cine-her-moon: the close
         // view's key, fill, rim and the moon on her, each times this (1: as the close view, exposure matched); --cine-her-fire F: the
         // nearest zone fire's share on her, as CloseFireShare; --cine-her-near-light N: any other light near her face (a flame,
@@ -73,6 +73,10 @@ public partial class Game
         // "skin" cue's "fill" (the fill's energy times F), "fillColor" (hex) and "scale" (the face-scale cap in px per 10 cm),
         // for the shot that sets them only; other shots keep the defaults above.
         float herFillK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
+        // ("off": the parts this shot turns off, as --cine-her-off names them: C02 s4/s8, the moon and his lantern lit by the
+        // shot's own rigs, the close rig's key, fill and rim off so it does not re-aim them)
+        HashSet<string>? herOffShot;
+        static HashSet<string>? herOffNow;
         bool HerKnobs => herKnobShot >= 0 && player.Shot.Index == herKnobShot;
         float HerScaleNow => HerKnobs && herScaleShot > 0 ? herScaleShot : HerScale;
         static float HerSkinC => Args.Num("cine-her-skin-c", 0.87f);
@@ -218,6 +222,7 @@ public partial class Game
         /// <summary>Each frame, after the rigs are placed: the twins, the cap, her night treatment.</summary>
         void HerLight()
         {
+            herOffNow = HerKnobs ? herOffShot : null;
             PersonView? her = people.TryGetValue("her", out var hv) && IsInstanceValid(hv) && hv.IsVisibleInTree() ? hv : null;
             // (her eyes as the close view finds them, People.EyesOf: the cue's "eyes" is her head bone and 7 cm up the world, off her face when she lies down)
             Vector3? eyes = her != null ? People.EyesOf(her.Person) : null;
@@ -833,7 +838,7 @@ public partial class Game
             herKey = herKeyHair = herKeyGear = herFill = herRim = herRimGear = herSide = herSideHair = herRimHair = herEye = herBody = null; herMoon = null; herFire = null;
             if (herSkyShown != 1 && people.TryGetValue("her", out var hs) && IsInstanceValid(hs)) People.HerSkyShare(hs.Person, 1);
             herSkyShown = 1;
-            herKnobShot = -1; herFillK = 1; herScaleShot = 0; herFillCol = null;
+            herKnobShot = -1; herFillK = 1; herScaleShot = 0; herFillCol = null; herOffShot = herOffNow = null;
             foreach (var gi in herMoved)
                 if (IsInstanceValid(gi)) gi.Layers = (gi.Layers & ~(PlayerView.HerHairLayer | PlayerView.HerGearLayer)) | 2u;
             herMoved.Clear();
