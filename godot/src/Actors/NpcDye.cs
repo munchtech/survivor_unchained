@@ -7,10 +7,11 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// Per-copy colours for a Marionette package NPC, so a crowd of one package is not clones (art/npc/NAME/dye.json and
-/// dye.png, by tools/meshy/dye_mask.py: R the main cloth "a", G the second cloth "b", B hair and beard).
+/// dye.png, by tools/meshy/dye_mask.py: R the main cloth "a", G the second cloth "b", B hair and beard, A the head cloth
+/// "coif"; where all are 0, bare skin, which a package with a "skin" entry (the risen) tints per copy).
 /// One material per package (shaders/npc_dye.gdshader, the importer's StandardMaterial3D with a dye in its albedo), each
 /// copy's colours instance uniforms on its full and lod meshes. From the spec: Dye.Cloth the "a" channel, Dye.Under "b",
-/// HairColor hair; a null one is picked from the package's palette, per copy (Args "seed" plus a running count, so a shot
+/// HairColor hair, the coif always from the palette; a null one is picked from the package's palette, per copy (Args "seed" plus a running count, so a shot
 /// repeats). With no Dye at all, the copy's height is also jittered by the package's "scale" (Person.Jitter). Every
 /// target is held to its channel's Oklab lightness range. A package with no dye.json is drawn as before.
 /// --npc-dye off: the dye material with no dye (the parity check); --npc-dye none: the importer's own material.
@@ -20,14 +21,16 @@ public static class NpcDye
     sealed class Def
     {
         public Texture2D Mask = null!;
-        public readonly (double R, double G, double B)?[] Base = new (double, double, double)?[3];
-        public readonly (double Lo, double Hi)?[] Range = new (double, double)?[3];
-        public readonly string[][] Palette = { System.Array.Empty<string>(), System.Array.Empty<string>(), System.Array.Empty<string>() };
+        public readonly (double R, double G, double B)?[] Base = new (double, double, double)?[4];
+        public readonly (double Lo, double Hi)?[] Range = new (double, double)?[4];
+        public readonly string[][] Palette = { System.Array.Empty<string>(), System.Array.Empty<string>(), System.Array.Empty<string>(), System.Array.Empty<string>() };
         public double Scale;
+        // bare-skin tint (the risen): value range, chroma, Oklab hues
+        public (double Lo, double Hi, double Chroma, double[] Hues)? Skin;
     }
 
-    static readonly string[] Keys = { "a", "b", "hair" };
-    static readonly string[] Uniforms = { "dye_a", "dye_b", "dye_h" };
+    static readonly string[] Keys = { "a", "b", "hair", "coif" };
+    static readonly string[] Uniforms = { "dye_a", "dye_b", "dye_h", "dye_c" };
     static readonly Dictionary<string, Def?> defs = new();
     static readonly Dictionary<string, ShaderMaterial?> mats = new();
     static readonly Dictionary<string, Shader> shaders = new();
@@ -60,21 +63,31 @@ public static class NpcDye
             return;
         }
         bool off = Args.Get("npc-dye") == "off";
-        string?[] asked = { spec.Dye?.Cloth, spec.Dye?.Under, spec.HairColor };
-        var cols = new Color[3];
-        for (int c = 0; c < 3; c++)
+        string?[] asked = { spec.Dye?.Cloth, spec.Dye?.Under, spec.HairColor, null };
+        var cols = new Color[4];
+        for (int c = 0; c < 4; c++)
         {
             if (off || def.Base[c] == null) { cols[c] = new Color(0, 0, 0, 0); continue; }
             var pal = def.Palette[c];
             var want = NpcDyePick.Hex(asked[c]) ?? (pal.Length > 0 ? NpcDyePick.Hex(pal[NpcDyePick.Pick(seed, copy, c, pal.Length)]) : null);
             if (want is not { } t) { cols[c] = new Color(0, 0, 0, 0); continue; }
             if (def.Range[c] is { } r) t = NpcDyePick.ClampL(t, r.Lo, r.Hi);
+            t = NpcDyePick.CapChroma(t);
             // (a Color instance uniform is taken as sRGB and made linear on its way in: so handed over as sRGB)
             cols[c] = new Color((float)t.R, (float)t.G, (float)t.B, 1).LinearToSrgb();
         }
+        var skin = new Color(1, 1, 1, 0);
+        if (!off && def.Skin is { } sk)
+        {
+            var t = NpcDyePick.SkinTint(seed, copy, sk.Lo, sk.Hi, sk.Chroma, sk.Hues);
+            skin = new Color((float)t.R, (float)t.G, (float)t.B, 1).LinearToSrgb();
+        }
         foreach (var mi in meshes)
-            for (int c = 0; c < 3; c++) mi.SetInstanceShaderParameter(Uniforms[c], cols[c]);
-        if (Args.Has("npc-dye-log")) GD.Print($"npc dye: {pkg} copy {copy}: a {cols[0].ToHtml()} b {cols[1].ToHtml()} hair {cols[2].ToHtml()} on {meshes.Count} meshes");
+        {
+            for (int c = 0; c < 4; c++) mi.SetInstanceShaderParameter(Uniforms[c], cols[c]);
+            mi.SetInstanceShaderParameter("dye_s", skin);
+        }
+        if (Args.Has("npc-dye-log")) GD.Print($"npc dye: {pkg} copy {copy}: a {cols[0].ToHtml()} b {cols[1].ToHtml()} hair {cols[2].ToHtml()} coif {cols[3].ToHtml()} skin {skin.ToHtml()} on {meshes.Count} meshes");
         if (spec.Dye == null && !off) p.Jitter = (float)NpcDyePick.Scale(seed, copy, def.Scale);
     }
 
@@ -91,7 +104,10 @@ public static class NpcDye
         var bases = j["base"].AsGodotDictionary();
         var ranges = j.TryGetValue("range", out var rg) ? rg.AsGodotDictionary() : new Godot.Collections.Dictionary();
         var pals = j.TryGetValue("palette", out var pl) ? pl.AsGodotDictionary() : new Godot.Collections.Dictionary();
-        for (int c = 0; c < 3; c++)
+        if (j.TryGetValue("skin", out var skv) && skv.AsGodotDictionary() is { } skd && skd.TryGetValue("value", out var vv) && vv.AsGodotArray() is { Count: 2 } va)
+            d.Skin = ((double)va[0], (double)va[1], skd.TryGetValue("chroma", out var ch) ? (double)ch : 0,
+                skd.TryGetValue("hues", out var hu) ? hu.AsGodotArray().Select(h => (double)h).ToArray() : System.Array.Empty<double>());
+        for (int c = 0; c < 4; c++)
         {
             if (bases.TryGetValue(Keys[c], out var b)) d.Base[c] = NpcDyePick.Hex((string)b);
             if (ranges.TryGetValue(Keys[c], out var r) && r.AsGodotArray() is { Count: 2 } ra) d.Range[c] = ((double)ra[0], (double)ra[1]);
@@ -160,8 +176,9 @@ public static class NpcDye
         m.SetShaderParameter("uv1_scale", src.Uv1Scale);
         m.SetShaderParameter("uv1_offset", src.Uv1Offset);
         m.SetShaderParameter("dye_mask", def.Mask);
-        var lum = new Vector3();
-        for (int c = 0; c < 3; c++) lum[c] = def.Base[c] is { } b ? (float)NpcDyePick.Lum(b) : 1f;
+        var lum = new Vector4();
+        for (int c = 0; c < 4; c++) lum[c] = def.Base[c] is { } b ? (float)NpcDyePick.Lum(b) : 1f;
+        m.SetShaderParameter("dye_max_chroma", (float)NpcDyePick.MaxChroma);
         m.SetShaderParameter("dye_base_lum", lum);
         // (its render priority and next pass as the source's, should it have them)
         m.RenderPriority = src.RenderPriority;

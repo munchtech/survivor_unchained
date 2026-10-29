@@ -28,30 +28,34 @@ N = 1024
 CFG = {
     'npc_folk_m': {'anchors': [['#62533b', 'a'], ['#564732', 'a'], ['#322014', 'b'], ['#4a3c34', 'hair'], ['#463524', 'hair'], ['#624732', 'hair'],
                                ['#c0927c', '0', 'skin'], ['#85604c', '0', 'skin'], ['#a17865', '0', 'skin']],
-                   'ylim': {'a': [0.6, 9], 'b': [0.45, 0.9]}, 'hair_max': 0.1,
+                   'ylim': {'a': [0.6, 9], 'b': [0.45, 0.9]}, 'hair_max': 0.1, 'light_guard': 14,
                    'range': {'a': [-0.12, 0.1], 'b': [-0.08, 0.12], 'hair': [-0.2, 0.2]},
-                   'palette': {'a': ['#5f513a', '#6b3a2a', '#3e4f63', '#6a6236', '#4e3b2a', '#77736a', '#7a4a32', '#4b5a3e', '#8a7d62'],
+                   'palette': {'a': ['#5f513a', '#6b3a2a', '#3e4f63', '#5a5a4a', '#4e3b2a', '#77736a', '#5c3230', '#4b5a3e', '#8a7d62'],
                                'b': ['#312012', '#3a2a1e', '#2e2c2a', '#2f3540', '#3b3a26', '#4a2e1e', '#4a4741'],
-                               'hair': ['#1e1a18', '#2b211b', '#3a2a20', '#5a4030', '#6e3a24', '#7a6048', '#5a5550', '#7d7872']}},
-    'npc_folk_w': {'anchors': [['#560b09', 'a'], ['#d6cfbc', '0'], ['#b4a78e', 'b'], ['#190d0c', 'hair'], ['#544c44', '0'], ['#4f351b', '0'],
+                               'hair': ['#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a4030', '#6e3a24', '#7d7872']}},
+    'npc_folk_w': {'anchors': [['#560b09', 'a'], ['#d6cfbc', 'coif'], ['#b4a78e', 'b'], ['#190d0c', 'hair'], ['#544c44', '0'], ['#4f351b', '0'],
                                ['#dfa681', '0', 'skin'], ['#ba8169', '0', 'skin']],
-                   'ylim': {'b': [1.1, 9]},
-                   'range': {'a': [0.08, 0.28], 'b': [-0.1, 0.12], 'hair': [0.0, 0.25]},
-                   'palette': {'a': ['#570b08', '#6e1a14', '#2f4466', '#8a6a26', '#5a3a24', '#33452e', '#7a3a20', '#6e6a62', '#4e2a3a'],
+                   'ylim': {'b': [1.1, 9]}, 'coif_from': ['b'],
+                   'range': {'a': [0.08, 0.28], 'b': [-0.1, 0.12], 'hair': [0.0, 0.25], 'coif': [-0.12, 0.03]},
+                   'palette': {'a': ['#570b08', '#5f3330', '#2f4466', '#8a6a26', '#5a3a24', '#33452e', '#7a3a20', '#6e6a62', '#4e2a3a'],
                                'b': ['#b9ab8f', '#c9bfa8', '#ddd6c6', '#cdb779', '#9fb0be', '#c79a88', '#b0aca2', '#a8ad8e'],
-                               'hair': ['#0e0d0c', '#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a2e1c']}},
+                               'hair': ['#0e0d0c', '#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a2e1c', '#6a6662'],
+                               'coif': ['#d6cfbc', '#d9cdb2', '#cbbd9e', '#c2b6a0', '#b3a793', '#cfc8b8']}},
     'npc_watch_m': {'anchors': [['#1c3650', 'a'], ['#3b4e63', 'a'], ['#665b3e', 'b'], ['#817f7f', 'hair'], ['#6a6866', 'hair'], ['#5f5a58', 'hair'],
                                 ['#3e291f', '0'], ['#2c2926', '0'], ['#c28f7d', '0', 'skin']], 'head_cloth': ['a'],
                     'ylim': {'b': [1.0, 9]},
                     'range': {'a': [-0.06, 0.1], 'b': [-0.12, 0.08], 'hair': [-0.2, 0.2]},
                     'palette': {'a': ['#30455c', '#2a3a52', '#3b5068', '#46576a', '#283447', '#3d4a58'],
                                 'b': ['#685c3f', '#5a4a34', '#55554c', '#4b5a3e', '#6b4a32', '#706650', '#4a4036'],
-                                'hair': ['#65605d', '#7d7872', '#9a9690', '#4a4440', '#3a302a', '#b0aca6']}},
+                                'hair': ['#2b211b', '#3a302a', '#4a3426', '#1e1a18', '#5a4030', '#4a4440', '#8a8680']}},
     'npc_risen_s': {'anchors': [['#65665d', '0', 'skin'], ['#565654', '0', 'skin'], ['#7d715e', 'a'], ['#3e3323', 'a'], ['#4f4434', 'a'],
                                 ['#655846', 'a'], ['#2f271c', 'hair'], ['#a49580', '0']],
                     'xlim': {'a': [-0.3, 0.3]}, 'ylim': {'a': [0.45, 1.42]}, 'hair_drop': 0.1,
                     'zero_boxes': [[-0.1, 1.40, 0.0, 0.1, 1.64, 0.5]], 'scale': 0.05,
                     'range': {'a': [-0.08, 0.08], 'hair': [-0.1, 0.1]},
+                    # the risen's bare skin (mask 0) per copy: a value multiplier and a faint hue (Oklab degrees: gray-blue,
+                    # green-gray, bruise-brown; never red), so a horde is not one clay body (NpcDyePick.SkinTint)
+                    'skin': {'value': [0.70, 1.0], 'chroma': 0.03, 'hues': [250, 145, 70]},
                     'palette': {'a': ['#564b3a', '#5f5c55', '#4e4230', '#4f5446', '#66625a', '#3e3528', '#6e6656'],
                                 'hair': ['#352c23', '#2a241e', '#3a3028', '#4a4a46', '#1e1c1a', '#50463a']}},
 }
@@ -162,7 +166,7 @@ def build(name, report=False, out=None):
             print(f'  k{i} {rgb2hex(rgb)} share {m.mean():.3f} y {ycov[m].mean():.2f} [{np.percentile(ycov[m], 5):.2f}..{np.percentile(ycov[m], 95):.2f}]')
     if not cfg.get('anchors'):
         return
-    names = ['0', 'a', 'b', 'hair']
+    names = ['0', 'a', 'b', 'hair', 'coif']; K = len(names)
     anc = cfg['anchors']; ac = lab(np.stack([hex2rgb(x[0]) for x in anc])); ach = np.array([names.index(x[1]) for x in anc])
     prot = np.array([bool(p) for p in [len(x) > 2 and x[2] == 'skin' for x in anc]])
     w = np.array([1.0, 1.6, 1.6], np.float32) * cfg.get('ab_weight', 1.0) ** np.array([0, 1, 1])
@@ -173,8 +177,22 @@ def build(name, report=False, out=None):
     head = y > neck + cfg.get('head_drop', 0.0)
     hairzone = (y > neck + cfg.get('hair_drop', -0.05)) & (y < neck + cfg.get('hair_max', 9.0)) & (np.abs(X[..., 0]) < cfg.get('hair_x', 0.16))
     hc = cfg.get('head_cloth', [])
+    # a cloth texel far lighter than any of its anchors is another material (folk_m's cream undershirt at the shirt
+    # opening): kept as painted, and never closed back into the cloth
+    lightL = L[..., 0]; light = np.zeros_like(cov)
+    for c in (1, 2):
+        if (ach == c).any():
+            lc = (lbl == c) & (lightL > ac[ach == c][:, 0].max() + cfg.get('light_guard', 20.0)); light |= lc
+    lbl[light] = 0
+    # the head cloth (folk_w's coif): its own anchors, plus a cloth's anchor inside the head; labelled after the cleanup
+    # (from a 5x5 majority of its own), so the cleanup of the other channels runs as it did without it
+    coifraw = (lbl == 4) & head
+    for c in cfg.get('coif_from', []):
+        coifraw |= (lbl == names.index(c)) & head
+    lbl[lbl == 4] = 0
     def limits():
         lbl[(lbl == 3) & ~hairzone] = 0
+        lbl[(lbl == 4) & ~head] = 0
         for c in (1, 2):
             if names[c] not in hc: lbl[(lbl == c) & head] = 0
         for c, (x0, x1) in cfg.get('xlim', {}).items():
@@ -196,41 +214,59 @@ def build(name, report=False, out=None):
     area = np.bincount(isl.ravel(), minlength=nI)
     for i in np.nonzero((area > 0) & (area < cfg.get('island', 300)))[0]:
         if i == 0: continue
-        m = isl == i; cnt = np.bincount(lbl[m], minlength=4)
+        m = isl == i; cnt = np.bincount(lbl[m], minlength=K)
         if cnt.max() > 0.7 * m.sum(): lbl[m] = cnt.argmax()
     # pinholes and scratches inside a cloth (a fleck of paint nearer another anchor) closed into it, never in the head or hands
     for c in (1, 2):
         m = (lbl == c).astype(np.uint8)
         closed = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))).astype(bool)
-        lbl[closed & (lbl == 0) & cov & ~head & ~hands] = c
+        lbl[closed & (lbl == 0) & cov & ~head & ~hands & ~light & ~skin] = c   # (never over skin-anchored paint: the cream undershirt)
+    # specks of kept paint inside a cloth (up to 'speck' texels, outside the head and hands): into the cloth around them,
+    # since the inward feather would grow each into a soft blot
+    z = ((lbl == 0) & cov & ~head & ~hands).astype(np.uint8)
+    nz, cc, st, _ = cv2.connectedComponentsWithStats(z, connectivity=4)
+    small = st[:, cv2.CC_STAT_AREA] <= cfg.get('speck', 24); small[0] = False
+    sm = small[cc] & z.astype(bool)
+    if sm.any():
+        nb = np.stack([cv2.boxFilter((lbl == c).astype(np.float32), -1, (5, 5), normalize=False) for c in (1, 2)], -1)
+        pick = np.argmax(nb, -1) + 1; ok = sm & (nb.max(-1) > 0)
+        lbl[ok] = pick[ok]
+    if coifraw.any():
+        maj = cv2.boxFilter((coifraw & cov).astype(np.float32), -1, (5, 5)) > 0.5
+        lbl[maj & head & cov & (lbl == 0) & ~skin] = 4
     # keep-outs after cleanup too: they are absolute
     limits()
     for b in cfg.get('zero_boxes', []):   # [x0,y0,z0,x1,y1,z1] bind-pose boxes forced 0
         lo, hi = np.array(b[:3]), np.array(b[3:])
         lbl[np.all((X >= lo) & (X <= hi), -1) & cov] = 0
-    hard0 = cov & (lbl == 0)
-    M = np.zeros((N, N, 3), np.float32)
-    for c in range(3):
-        m = (lbl == c + 1).astype(np.float32)
-        m = cv2.GaussianBlur(m, (0, 0), 0.7)
-        m[hard0] = 0; m[lbl == c + 1] = np.maximum(m[lbl == c + 1], 0.0)
-        M[..., c] = m
-    # the soft edge may only spread onto cloth-of-another-channel and the dyed side: protected texels exactly 0
+    # protected texels (skin, face margin, hands, kept paint) are exactly 0: the face margin first
     face = cv2.dilate((skin & head & cov).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & (lbl != 3)
-    lbl[face] = 0; hard0 = cov & (lbl == 0)
-    for c in range(3): M[..., c][face] = 0
-    zero = hard0 & (skin | hands | face | head & (lbl == 0))
-    M[zero] = 0
+    lbl[face] = 0; lbl[~cov] = 0
+    hard0 = cov & (lbl == 0)
+    # soft edges, feathered inward only: between two dyed channels a cross-fade (blurred one-hots, normalised), and
+    # towards kept paint a 2-3 texel ramp on the dyed side (distance to the nearest kept texel), so no dye ever lands
+    # outside its region and no edge is a hard 1-texel step (a hard step reads as blocks once filtered and mipped)
+    oh = np.stack([(lbl == c + 1).astype(np.float32) for c in range(K - 1)], -1)
+    oh = np.stack([cv2.GaussianBlur(oh[..., c], (0, 0), 1.0) for c in range(K - 1)], -1)
+    dyed = cov & (lbl > 0)
+    oh = np.where(dyed[..., None], oh / np.maximum(oh.sum(-1, keepdims=True), 1e-6), 0)
+    d0 = cv2.distanceTransform((~hard0).astype(np.uint8), cv2.DIST_L2, 5)
+    t = np.clip(d0 / cfg.get('feather', 2.5), 0, 1); ramp = t * t * (3 - 2 * t)
+    M = (oh * ramp[..., None]).astype(np.float32)
+    M[hard0] = 0
     # gutters: the nearest covered value (so mips and bilinear never pull a gutter's 0 into cloth)
     g = M.copy(); have = cov.copy()
     for _ in range(12):
         dil = cv2.dilate(g, np.ones((3, 3), np.uint8)); hv = cv2.dilate(have.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool)
         new = hv & ~have; g[new] = dil[new]; have = hv
+    # (and softened where two islands' fills meet, so a coarse mip of a gutter is no hard seam either)
+    g = cv2.GaussianBlur(g, (0, 0), 1.5)
     M = np.where(cov[..., None], M, g)
     # measured base: each channel's linear mean over its solid texels (full-res albedo)
     lin = s2l(a1)
     base, rng = {}, {}
-    for c, key in enumerate(['a', 'b', 'hair']):
+    keys = ['a', 'b', 'hair', 'coif']
+    for c, key in enumerate(keys):
         m = (M[..., c] > 0.9) & cov
         if m.sum() < 50: continue
         mean = lin[m].mean(0); base[key] = rgb2hex(l2s(mean))
@@ -238,20 +274,23 @@ def build(name, report=False, out=None):
         rng[key] = [round(max(0.0, Lb + lo), 3), round(min(1.0, Lb + hi), 3)]
     pkg = os.path.join(ROOT, 'godot', 'art', 'npc', name)
     png = np.clip(np.round(M * 255), 0, 255).astype(np.uint8)
-    cv2.imwrite(os.path.join(pkg, 'dye.png'), cv2.cvtColor(png, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(os.path.join(pkg, 'dye.png'), cv2.cvtColor(png, cv2.COLOR_RGBA2BGRA))   # A = head cloth (coif)
     js = {'mask': 'dye.png', 'base': base, 'range': rng,
           'palette': {k: v for k, v in cfg['palette'].items() if k in base}, 'scale': cfg.get('scale', 0.04)}
+    if 'skin' in cfg: js['skin'] = cfg['skin']
     txt = re.sub(r'\[\s+([^\[\]{}]*?)\s+\]', lambda m: '[' + re.sub(r'\s*\n\s*', ' ', m.group(1)) + ']', json.dumps(js, indent=1))
     open(os.path.join(pkg, 'dye.json'), 'w').write(txt + '\n')
     tot = cov.sum()
-    share = {k: round(float((M[..., c][cov] > 0.5).sum() / tot), 3) for c, k in enumerate(['a', 'b', 'hair'])}
+    share = {k: round(float((M[..., c][cov] > 0.5).sum() / tot), 3) for c, k in enumerate(keys)}
     skin_hit = float(M[face & cov].max()) if (face & cov).any() else 0.0
     hand_hit = float(M[hands & cov].max()) if (hands & cov).any() and not cfg.get('hands_keep') else 0.0
     face = head & cov & ~((lbl == 3)); face_hit = float(M[face][:, :2].max()) if face.any() else 0.0
     print(f'{name}: share of covered atlas {share}; base {base}; range {rng}; max on face skin {skin_hit:.3f} ({int((face & cov).sum())} texels), hands {hand_hit:.3f} ({int((hands & cov).sum())} texels)')
+    sk = skin & cov & ~(lbl > 0)
+    print(f'  max on skin-anchored kept texels {float(M[sk].max()) if sk.any() else 0:.3f} ({int(sk.sum())}); skin-anchored texels dyed (closed into cloth) {int((skin & cov & (lbl > 0)).sum())}; light-guarded {int(light.sum())}; soft (0.02..0.98) share of dyed {float(((M.max(-1) > 0.02) & (M.max(-1) < 0.98) & cov).sum() / max(1, (M.max(-1) > 0.02).sum())):.3f}')
     if out:
-        tint = a1.copy(); col = np.array([[1, 0.1, 0.1], [0.1, 1, 0.1], [0.2, 0.4, 1]], np.float32)
-        for c in range(3): tint = tint * (1 - 0.65 * M[..., c:c + 1]) + 0.65 * M[..., c:c + 1] * col[c]
+        tint = a1.copy(); col = np.array([[1, 0.1, 0.1], [0.1, 1, 0.1], [0.2, 0.4, 1], [1, 0.9, 0.1]], np.float32)
+        for c in range(4): tint = tint * (1 - 0.65 * M[..., c:c + 1]) + 0.65 * M[..., c:c + 1] * col[c]
         sheet = np.hstack([a1, tint]); sheet = cv2.resize(sheet, (N, N // 2), interpolation=cv2.INTER_AREA)
         v3 = np.hstack([splat(X, cov, a1), splat(X, cov, tint)])
         cv2.imwrite(os.path.join(out, f'{name}_view.jpg'), cv2.cvtColor((v3 * 255).astype(np.uint8), cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 88])

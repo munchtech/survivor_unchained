@@ -3,21 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cn1m308qtkyst"
-path.bptc="res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.bptc.ctex"
-path.astc="res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.astc.ctex"
+path="res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://art/npc/npc_watch_m/dye.png"
-dest_files=["res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.bptc.ctex", "res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.astc.ctex"]
+dest_files=["res://.godot/imported/dye.png-727bce8c03ef2bc74de86aed2b5c4d4f.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0

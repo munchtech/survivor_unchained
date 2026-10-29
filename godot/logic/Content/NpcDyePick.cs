@@ -68,6 +68,38 @@ public static class NpcDyePick
                 C(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s));
     }
 
+    /// <summary>The cap on a dyed colour's Oklab chroma (the shader's dye_max_chroma): period dyes, never candy or neon.
+    /// About HSV S 0.45 at the lightness of a mid cloth; a deep madder keeps its depth, a light chartreuse cannot happen.</summary>
+    public const double MaxChroma = 0.09;
+
+    /// <summary>A colour with its Oklab chroma held to at most cmax (lightness and hue kept), as the shader's dye_cap.</summary>
+    public static (double R, double G, double B) CapChroma((double R, double G, double B) c, double cmax = MaxChroma)
+    {
+        var o = ToOklab(c);
+        double ch = System.Math.Sqrt(o.A * o.A + o.B * o.B);
+        return ch <= cmax ? c : FromOklab((o.L, o.A * cmax / ch, o.B * cmax / ch));
+    }
+
+    public static double Chroma((double R, double G, double B) c) { var o = ToOklab(c); return System.Math.Sqrt(o.A * o.A + o.B * o.B); }
+
+    /// <summary>The shader's gain on a texel's luminance over its region's mean: as is to 1.5, then easing towards 3.</summary>
+    public static double Gain(double g) => g <= 1.5 ? g : 1.5 + (g - 1.5) / (1 + (g - 1.5) / 1.5);
+
+    /// <summary>A risen copy's bare-skin multiplier (linear RGB, max channel at most 1): a value in [vLo, vHi] and a faint
+    /// hue (chroma about <paramref name="chroma"/>, at one of <paramref name="hues"/> in Oklab degrees, jittered by up to
+    /// 12), so corpses differ in pallor and rot without a red. The neutral multiplier is (1, 1, 1).</summary>
+    public static (double R, double G, double B) SkinTint(int seed, int copy, double vLo, double vHi, double chroma, double[] hues)
+    {
+        double v = vLo + (vHi - vLo) * Unit(seed, copy, 31);
+        if (hues.Length == 0 || chroma <= 0) return (v, v, v);
+        double h = hues[System.Math.Min(hues.Length - 1, (int)(Unit(seed, copy, 32) * hues.Length))] + (Unit(seed, copy, 33) * 2 - 1) * 12;
+        double c = chroma * (0.5 + 0.5 * Unit(seed, copy, 34)), r = h * System.Math.PI / 180;
+        var t = FromOklab((0.75, c * System.Math.Cos(r), c * System.Math.Sin(r)));
+        double k = v / Lum(t), mx = System.Math.Max(t.R, System.Math.Max(t.G, t.B)) * k;
+        if (mx > 1) k /= mx;
+        return (t.R * k, t.G * k, t.B * k);
+    }
+
     /// <summary>A target colour with its Oklab lightness held to [lo, hi] (hue and chroma kept).</summary>
     public static (double R, double G, double B) ClampL((double R, double G, double B) c, double lo, double hi)
     {
