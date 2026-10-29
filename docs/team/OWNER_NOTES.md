@@ -3,7 +3,7 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 29 October 2026 (coordinator 7050fc3c)
-- **UI (HUD middle/right, "Ember Keeper" sheet):** "decent but i'm not sure, def don't have them extend into each other, they will cleanly end.  a separate crisp lined midle backdrop for the buttons is better than what is there in this setup.  i'm not sold on the flare because it needs to be visible even tho that looks great" -> NOT a pick; UI 22 revises (side figures end cleanly, a separate crisp-lined button panel, a Flare that reads at a glance; keeper kept if possible) and resends.
+- **UI (HUD middle/right, "Ember Keeper" sheet):** "decent but i'm not sure, def don't have them extend into each other, they will cleanly end.  a separate crisp lined midle backdrop for the buttons is better than what is there in this setup.  i'm not sold on the flare because it needs to be visible even tho that looks great" -> NOT a pick; UI 22 revises (side figures end cleanly, a separate crisp-lined button panel, a Flare that reads at a glance; keeper kept if possible) and resends. Then: "i'm not 100% sold on the keeper" -> the sheet shows A (keeper, revised) and B (no figure: a crisp, loud Flare socket) on the same new middle.
 - **Story:** the writer and editor resolve things between themselves; main hears only owner decisions, canon proposals, blockers, MR/HANDOFF READY.
 
 ## 28 October 2026, night (coordinator ecc5f453)
