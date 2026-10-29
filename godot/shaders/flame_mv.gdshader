@@ -38,6 +38,9 @@ uniform float core_lo = 0.86;
 uniform float pull = 0.0;
 // A cold flame's core pulled from blue-white toward blue (0..1), so the tonemapper doesn't clip it to pure white.
 uniform float core_blue = 0.0;
+// The cold ramp paled toward blue-white all through (0..1; the Warden's lamp: concept A's pale flame, and saturated
+// blue went purple-pink in the tonemapper).
+uniform float cold_pale = 0.0;
 // How much the flame's body covers what is behind it (0: purely added light, as a lamp's; the blend is premultiplied, so 0
 // is exactly the old additive look). A big flame's middle hides the log behind it rather than letting its edge show through.
 uniform float occlude = 0.0;
@@ -118,6 +121,7 @@ vec3 ramp(float h) {
 	vec3 w0 = mix(vec3(0.3, 0.02, 0.003), vec3(0.4, 0.012, 0.0), warm_sat), w1 = mix(vec3(0.9, 0.16, 0.01), vec3(0.95, 0.09, 0.003), warm_sat);
 	vec3 w2 = mix(vec3(1.0, 0.42, 0.05), vec3(1.0, 0.3, 0.015), warm_sat), w3 = mix(vec3(1.0, 0.7, 0.32), vec3(1.0, 0.62, 0.16), warm_sat);
 	vec3 c0 = vec3(0.02, 0.05, 0.35), c1 = vec3(0.07, 0.2, 1.0), c2 = vec3(0.35, 0.55, 1.0), c3 = vec3(0.78, 0.88, 1.0);
+	c0 = mix(c0, vec3(0.12, 0.2, 0.42), cold_pale); c1 = mix(c1, vec3(0.32, 0.52, 0.95), cold_pale); c2 = mix(c2, vec3(0.58, 0.76, 1.0), cold_pale); c3 = mix(c3, vec3(0.88, 0.94, 1.0), cold_pale);
 	vec3 a = mix(w0, c0, cold), b = mix(w1, c1, cold), c = mix(w2, c2, cold), d = mix(w3, c3, cold);
 	vec3 col = mix(a, b, smoothstep(0.0, 0.35, h));
 	col = mix(col, c, smoothstep(0.35, 0.7, h));

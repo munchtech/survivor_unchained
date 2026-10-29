@@ -1465,6 +1465,9 @@ public partial class Game
                         iron.Position = new Vector3(0, -LampIron.FlameY * ls, 0);
                         iron.RotationDegrees = new Vector3(0, (float)c.Num("turn", 0), 0);
                         root.AddChild(iron);
+                        // Its glass catches the flame's light.
+                        var gl = col.SrgbToLinear();
+                        LampIron.Glass(iron, gl / Mathf.Max(gl.R, Mathf.Max(gl.G, Mathf.Max(gl.B, 1e-4f))), 0.8f);
                     }
                     var lin = col.SrgbToLinear() * energy;
                     fire.AddChild(new MeshInstance3D

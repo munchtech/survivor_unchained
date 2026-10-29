@@ -32,6 +32,8 @@ public sealed class FollowCamera
     /// way toward it, never more than four and a half metres. Followed on her alone, the boss stood under the
     /// HUD's bar at the screen's foot for a fight's length.</summary>
     public Vector3? Toward;
+    /// <summary>The share of the way the look leans toward it, and its most metres (a giant boss: the Ford-Warden).</summary>
+    public float TowardShare = 0.33f, TowardMax = 4.5f;
     float towardX, towardZ;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
@@ -197,7 +199,7 @@ public sealed class FollowCamera
         if (Toward is Vector3 tw)
         {
             float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
-            if (dl > 0.01f) { float k = Mathf.Min(dl * 0.33f, 4.5f) / dl; wx = dx * k; wz = dz * k; }
+            if (dl > 0.01f) { float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k; }
         }
         towardX = Damp(towardX, wx, 1.5f, dt);
         towardZ = Damp(towardZ, wz, 1.5f, dt);

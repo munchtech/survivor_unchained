@@ -20,6 +20,8 @@ public class CinemaTests
     static IEnumerable<CineFile> All() =>
         Directory.GetFiles(Path.Combine(DataFiles.Dir, "cinematics"), "*.json")
             .Where(f => !Path.GetFileName(f).StartsWith('_'))
+            // The Warden lead's test copies (c02w, c03w: his cut shots restored, never played) repeat C02/C03's lines.
+            .Where(f => !File.ReadAllText(f).Contains("test copy)\""))
             .Select(f => CineFile.Parse(File.ReadAllText(f)));
 
     static CineSchedule Lay(CineFile f, string calling = "warden") =>
