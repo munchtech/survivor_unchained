@@ -19,11 +19,38 @@
   },
   "shots": [
     {
+      "id": "1",
+      "type": "MCU",
+      "dur": 2.0,
+      "note": "His head and shoulders as the last blow lands on hood and helm, slowed: the light in his eyes gutters. Cut on the impact. 85 mm from his right front at his chin's height (Warden 7's restage, Cinematics 11): his face three-quarter in the hood's opening, lit from below by the lamp on his far side; the beard kept in the hood's shadow, the lamp fist below frame; his head's roll damped.",
+      "cam": {"pos": {"actor": "warden", "bone": "head", "off": [1.25, -0.05, 2.85]}, "at": {"actor": "warden", "bone": "head", "off": [0.05, 0.07, 0.35]}, "lens": 85.0, "focus": {"actor": "warden", "bone": "head", "off": [0.05, 0.07, 0.35]}, "fstop": 2.8},
+      "cues": [
+        {"do": "atmosphere", "preset": "now", "key": 1.6, "hemi": 1.3, "env": 1.3, "exposure": 1.7, "keyColor": "#b9c6de", "rim": 1.0},
+        {"do": "grade", "sat": 0.88},
+        {"do": "event", "name": "warden_cine"},
+        {"do": "music", "mood": "silence"},
+        {"do": "anim", "actor": "warden", "clip": "Hit_Head", "from": 0, "speed": 0.3, "blend": 0},
+        {"do": "lit", "light": 12, "on": true},
+        {"do": "lit", "light": 13, "on": true},
+        {"do": "lit", "light": 14, "on": true},
+        {"do": "light", "light": 12, "level": 0.8, "color": "#8ac8ff"},
+        {"do": "light", "light": 13, "level": 0.8, "color": "#8ac8ff"},
+        {"do": "light", "light": 14, "level": 0.8, "color": "#8ac8ff"},
+        {"at": 0.4, "do": "sfx", "name": "hit", "gain": 1.2},
+        {"at": 0.4, "do": "vfx", "kind": "shake", "amount": 0.5},
+        {"at": 0.5, "do": "lamp", "actor": "warden", "glow": 1.5, "over": 0.6},
+        {"do": "light", "light": 12, "level": 4, "color": "#8ac8ff", "at": 0},
+        {"do": "light", "light": 13, "level": 4, "color": "#8ac8ff", "at": 0},
+        {"do": "light", "light": 14, "level": 4, "color": "#8ac8ff", "at": 0},
+        {"do": "head", "actor": "warden", "where": {"actor": "warden", "bone": "head", "off": [0, 0.0, 4.0]}, "amount": 0.6, "over": 0.1}
+      ]
+    },
+    {
       "id": "2",
       "type": "WS",
       "dur": 4.0,
-      "note": "Wide and low at the water from the east: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water. His lamp is the light on him; the moon only edges him.",
-      "cam": {"pos": {"mark": "w", "off": [7.5, 1.0, 2.2]}, "at": {"mark": "w", "off": [0.0, 1.9, 1.2]}, "lens": 30},
+      "note": "Wide and low at the water from the east: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water. His lamp is the light on him; the moon only edges him. The camera 30 degrees toward his front of the old east axis and 0.5 m higher, so his lamp clears his face on the line (Cinematics 11).",
+      "cam": {"pos": {"mark": "w", "off": [6.0, 1.5, 5.82]}, "at": {"mark": "w", "off": [0.0, 1.9, 1.2]}, "lens": 30},
       "cues": [
         {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#6e5a66", "note": "C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
         {"do": "atmosphere", "preset": "now", "key": 0.45, "hemi": 0.18, "env": 0.2, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0.7, "hemiSky": "#403c78", "azimuth": 195},
@@ -36,12 +63,29 @@
         {"do": "light", "light": 12, "level": 0.8, "color": "#8ac8ff"},
         {"do": "light", "light": 13, "level": 0.8, "color": "#8ac8ff"},
         {"do": "light", "light": 14, "level": 0.8, "color": "#8ac8ff"},
-        {"do": "lamp", "actor": "warden", "glow": 1.2, "flame": 0.5, "halo": 0.8, "flameColor": "#ffb45a"},
+        {"do": "lamp", "actor": "warden", "glow": 1.2, "flame": 0.5, "halo": 0.8},
         {"do": "anim", "actor": "warden", "clip": "folk/m_kneel_lamp", "from": 0, "speed": 1, "blend": 0.6},
         {"at": 0.6, "do": "sfx", "name": "kneel_water", "gain": 0.8},
         {"at": 1.4, "do": "hold", "actor": "warden", "slot": "handslot.r", "piece": null},
         {"at": 1.4, "do": "sfx", "name": "sink", "gain": 0.7},
         {"at": 1.7, "do": "line", "id": "cin_heart_goes_down.morning"}
+      ]
+    },
+    {
+      "still": 0.6,
+      "id": "3b",
+      "type": "MCU",
+      "dur": 1.9,
+      "note": "On her, 50 mm, her three-quarter: his lamp's cold light rakes her from the side (cheated west of where he holds it): she looks up at him, and nods, once, slowly. Yes. The gaze held; the heart still on his back, unlit, until s6 (Face 48's restore, Cinematics 11).",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.85, -0.05, -1.25]}, "at": {"actor": "her", "bone": "eyes", "off": [0, 0.03, 0]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cues": [
+        {"do": "atmosphere", "preset": "now", "skySat": 0.6},
+        {"do": "rig", "name": "lamp", "energy": 2.0, "color": "#8ac8ff", "angle": 35, "from": {"actor": "her", "bone": "eyes", "off": [-0.75, 0.05, -0.45]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "moon", "energy": 1.0, "color": "#9fb8ff", "angle": 28, "from": {"actor": "her", "bone": "eyes", "off": [-0.8, 0.9, 0.6]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
+        {"do": "rig", "name": "bounce", "energy": 0.1, "color": "#ffa757", "angle": 50, "from": {"actor": "her", "bone": "eyes", "off": [0.8, -0.15, -0.14]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.06, 0]}},
+        {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
+        {"do": "gaze", "look": [0, -0.4]},
+        {"at": 0.9, "do": "anim", "clip": "her/nod", "from": 0, "speed": 1, "blend": 0.2}
       ]
     },
     {
