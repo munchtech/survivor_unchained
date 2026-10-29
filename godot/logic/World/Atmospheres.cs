@@ -192,7 +192,10 @@ public static class Atmospheres
         // (Rendering r1, triage judge C3: the shade read warm brown: the paint shade #403878 at 0.45 to a sky blue #34589a at 0.55;
         // a cast shadow on the square's cobbles OKLab hue 282 to 266, chroma 2.05 to 2.14; the sunlit stone unchanged, h 60 C 3.1.
         // (The fill's colour, #a9a9e5 to #8cacec, moved neither.) The brown that remains is the mud decals round the props.)
-        Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade with { PaintShadow = "#34589a", PaintShadowK = 0.55 }, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
+        // (Rendering r2, judge r1 C3, "unchanged": it did apply, but the paint grade's shade weight fades out from OKLab L 0.12 to
+        // 0.45 (Atmosphere.Paint), and the square's shade sits at L 0.32-0.37, so 0.55 gave a weight of 0.08-0.19: chroma 0.7 to
+        // 2.5. 1.6: the shade a cool slate (L 32-37 kept, C 2.0-4.6, h 262-274); the sunlit stone L 45 h 60 C 2.8 to 2.65.)
+        Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade with { PaintShadow = "#34589a", PaintShadowK = 1.6 }, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
     };
 
     /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the
