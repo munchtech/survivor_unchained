@@ -67,7 +67,15 @@ HOOD_HOLD = 1.0                  # the hood above the neck held to its built (fo
 BEND = 1.5                       # wool's bending stiffness
 FRAMES = 60
 SELF_COLLIDE = os.environ.get("HOOD_SELF", "0") == "1"   # (on, the capelet crumples: 28 Oct w8)
-POSE_DEG = 40.0                  # the upper arms lowered from the bind pose for the drape (then unposed)
+SHOULDER_RIG = os.environ.get("HOOD_SHOULDER", "1") == "1"   # r3: the capelet's shoulders weighted to the torso
+ARM_MAX = float(os.environ.get("HOOD_ARM_MAX", "0.3"))      # the upper arm's most, at the outer fall
+SH_ARM = (0.21, 0.36)            # |x - X0| over which the upper arm comes in (the shoulder joint at 0.17-0.18)
+SH_ARM_Y = (1.46, 1.34)          # and only below the shoulder's top (glTF y, eased in downward)
+CLAV_MAX = 0.6                   # the clavicle's most at the shoulder (the rest spine_03)
+SH_CLAV = (0.04, 0.16)
+NECK_MAX = 0.4                   # the collar's top at the throat follows the neck a little
+SH_BLEND = (0.0, 0.06)           # the rig replaces the donors' weights from the centre line out (all of the capelet)
+POSE_DEG = 40.0                 # the upper arms lowered from the bind pose for the drape (then unposed)
 # the face opening, front view (x from X0, y), the left half from the top centre round to the bottom centre
 OPENING = [(0.000, 1.703), (0.022, 1.701), (0.040, 1.695), (0.051, 1.686), (0.058, 1.674), (0.062, 1.660),
            (0.064, 1.640), (0.065, 1.615), (0.067, 1.590), (0.070, 1.565), (0.072, 1.545), (0.068, 1.528),
@@ -1155,6 +1163,34 @@ def hood_weights(Vb, adj, donors, names, nb, band=None):
     wh = smoothstep(1.535, 1.590, y)
     A *= (1 - wh)[:, None]
     A[:, head] += wh
+    if SHOULDER_RIG:
+        # (r3: the capelet over the shoulders on the torso, not the arm. The nearest-donor weights gave the shoulder's
+        #  cloth a quarter upper arm all the way up over the deltoid's top, so a raised arm (C02 s7, the lamp lifted)
+        #  swung the cloth over the shoulder up with it into a second hood. Wet heavy wool lies on the shoulder and the
+        #  arm comes up from under it: spine_03 at the centre, the clavicle taking over toward the shoulder, the upper
+        #  arm only at the outer fall below the shoulder's top, at most ARM_MAX.)
+        g = b2g(Vb)
+        u = np.abs(g[:, 0] - X0)
+        sl = np.where(g[:, 0] > X0, 1, -1)
+        cl_, cr_ = names.index("clavicle_l"), names.index("clavicle_r")
+        ul_, ur_ = names.index("upperarm_l"), names.index("upperarm_r")
+        sp_, nk_ = names.index("spine_03"), names.index("neck_01")
+        lx = 1 if b2g(P)[(J[:, 0] == cl_) & (W[:, 0] > 0.3), 0].mean() > X0 else -1
+        arm = ARM_MAX * smoothstep(SH_ARM[0], SH_ARM[1], u) * smoothstep(SH_ARM_Y[0], SH_ARM_Y[1], y)
+        clv = (1 - arm) * CLAV_MAX * smoothstep(SH_CLAV[0], SH_CLAV[1], u)
+        nck = (1 - arm - clv) * NECK_MAX * smoothstep(1.47, 1.53, y) * (1 - smoothstep(0.05, 0.10, u))
+        T = np.zeros_like(A)
+        rows = np.arange(len(Vb))
+        side_l = sl == lx
+        T[rows, np.where(side_l, ul_, ur_)] += arm
+        T[rows, np.where(side_l, cl_, cr_)] += clv
+        T[rows, nk_] += nck
+        torso = 1 - arm - clv - nck
+        low = 0.5 * smoothstep(1.32, 1.20, y)          # (the hem's front and back below spine_03 share spine_02)
+        T[rows, sp_] += torso * (1 - low)
+        T[rows, names.index("spine_02")] += torso * low
+        s = smoothstep(SH_BLEND[0], SH_BLEND[1], u) * (1 - wh)
+        A = A * (1 - s)[:, None] + T * s[:, None]
     fixed = y > 1.60
     for _ in range(8):
         S = np.array([A[a].mean(0) if len(a) else A[i] for i, a in enumerate(adj)])

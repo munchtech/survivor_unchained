@@ -38,6 +38,18 @@ uniform float eye_dark : hint_range(0.2, 1.0) = 0.6;
 uniform float skin_spec = 0.35;
 uniform float wet_spec = 0.45;
 uniform float eye_spec = 0.7;
+// his lamp, under the hood (Warden 6 r3): the hood shades the face from the sky, so at his closest camera (C03 s1) the
+// face went black. The lamp he carries lights it from below and in front: a fill toward the camera and down, wrapped
+// so the nose, cheekbone fronts, lower lids and brow underside take it and the forehead (facing up) does not, and the
+// wet eyes catch it as a small hard highlight. Emitted, so the hood's shadow does not take it out.
+uniform vec3 lamp_colour : source_color = vec3(0.62, 0.80, 1.0);
+uniform float lamp_on : hint_range(0.0, 1.0) = 1.0;      // BossViews: his lamp lit (0 when it is out)
+uniform float lamp_fill : hint_range(0.0, 8.0) = 4.0;
+uniform float lamp_down : hint_range(0.0, 2.0) = 0.9;      // how far below the view line the lamp sits
+uniform float lamp_power : hint_range(0.5, 8.0) = 3.0;     // the falloff across the face (higher: only what faces it)
+uniform float lamp_glint : hint_range(0.0, 8.0) = 4.0;     // the eyes' highlight
+uniform float lamp_glint_power = 80.0;
+uniform float lamp_wet_glint : hint_range(0.0, 4.0) = 0.3; // the wet skin's (nose tip, cheekbones, lids) small sheen
 
 const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
 
@@ -65,6 +77,19 @@ void fragment() {
 	SPECULAR = mix(mix(skin_spec, wet_spec, wet), eye_spec, eye);
 	METALLIC = 0.0;
 	if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+	if (lamp_fill > 0.0 || lamp_glint > 0.0) {
+		vec3 down = normalize((VIEW_MATRIX * vec4(0.0, -1.0, 0.0, 0.0)).xyz);
+		vec3 L = normalize(VIEW + lamp_down * down);
+		vec3 n = NORMAL;
+		if (has_normal) {
+			vec3 t = texture(normal_tex, UV).rgb * 2.0 - 1.0;
+			n = normalize(TANGENT * t.x + BINORMAL * t.y + NORMAL * t.z);
+		}
+		float w = pow(clamp(dot(n, L), 0.0, 1.0), lamp_power);
+		vec3 h = normalize(L + VIEW);
+		float g = pow(clamp(dot(n, h), 0.0, 1.0), lamp_glint_power);
+		EMISSION = lamp_on * lamp_colour * (a * lamp_fill * w + g * (lamp_glint * eye + lamp_wet_glint * wet * (1.0 - eye)));
+	}
 	if (debug_view > 0.5) {
 		vec3 dc = debug_view > 1.5 ? vec3(d.a) : vec3(d.r * 2.0 - 0.5, d.g, d.b);
 		ALBEDO = vec3(0.0); EMISSION = dc * 0.6; ROUGHNESS = 1.0; SPECULAR = 0.0;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
@@ -73,7 +74,7 @@ public partial class WardenView : Node3D, IBossView
         // white, and read as a white cowl round the face C02 holds in close-up. Until he
         // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
         // brighter paint, so all of it comes out dark with the river.
-        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); if (System.Environment.GetEnvironmentVariable("WARDEN_HOODCHECK") == "1") view.Person.Skeleton.AddChild(new HoodCheck()); }
+        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); if (System.Environment.GetEnvironmentVariable("WARDEN_POSEDUMP") is { Length: > 0 } pd) view.Person.Skeleton.AddChild(new PoseDump(pd, view.Person.Anim)); }
         else
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
@@ -161,6 +162,7 @@ public partial class WardenView : Node3D, IBossView
         Light(g, (float)y, false);
         lamp.Visible = pose != "dead" || g > 0.01;
         fire!.Lit(LampLit && g > 0.01);
+        FaceLamp(LampLit ? Math.Min(g, 1) : 0);
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,
@@ -173,6 +175,20 @@ public partial class WardenView : Node3D, IBossView
         Light(Glow, view.GlobalPosition.Y, true);
         lamp.Visible = true;
         fire!.Lit(LampLit && Glow > 0.01);
+        FaceLamp(LampLit ? Math.Min(Glow, 1) : 0);
+    }
+
+    float faceLamp = -1;
+
+    /// <summary>His face's lamp fill (warden_face.gdshader lamp_on) follows his lamp: out in the river, the face goes dark.</summary>
+    void FaceLamp(double on)
+    {
+        float k = (float)Math.Round(on, 2);
+        if (k == faceLamp) return;
+        faceLamp = k;
+        foreach (var mi in view.Person.Meshes)
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial f && f.ResourceName.StartsWith("warden_face")) f.SetShaderParameter("lamp_on", k);
     }
 
     /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
@@ -607,210 +623,112 @@ public partial class PieceView : Node3D, IOrb
     void IOrb.Dispose() => QueueFree();
 }
 
-/// <summary>WARDEN_HOODCHECK=1 (Warden 6 hood): his hood and capelet (armor/hood.glb, the "warden_hood_wool" surface)
-/// measured in whatever he plays, every 0.2 s on the CPU from the skeleton's pose: each edge's stretch against its rest,
-/// and his body and head points that sit inside the cloth at rest but come out through it (more than 2 mm past the
-/// outer surface at the nearest cloth point). Printed as "hoodcheck" lines, and a summary when he leaves.</summary>
-public partial class HoodCheck : Node
+/// <summary>WARDEN_POSEDUMP=PATH (Warden 6): his skeleton's pose, written for tools/assets/warden_motion.py, which skins
+/// the package's glbs on it and measures each piece's stretch and poke-through. (It replaced the in-game HoodCheck,
+/// whose numbers were edge ratios on sub-millimetre edges and points tested against the skeleton's rest, not the bind.)
+/// PATH.jsonl: a header (bones, parents, global rests, each skinned surface's bind names and poses), then one line per
+/// drawn frame (frame, cinematic clip playing, every bone's global pose, rows of a 3x4). WARDEN_POSECLIPS=A,B,...
+/// first plays each named clip (matched by name or suffix in his player's libraries) through at 30 samples a second,
+/// one sample per two frames so his twist and share bones (HerJoints) follow, before the cinematic goes on.</summary>
+public partial class PoseDump : Node
 {
-    sealed class Skinned
-    {
-        public Vector3[] P = Array.Empty<Vector3>(), N = Array.Empty<Vector3>();
-        public int[] B = Array.Empty<int>(), Idx = Array.Empty<int>();
-        public float[] W = Array.Empty<float>();
-        public int K;
-        public int[] BindBone = Array.Empty<int>();
-        public Transform3D[] Bind = Array.Empty<Transform3D>();
-        public string[] BoneName = Array.Empty<string>();
-    }
-
+    readonly string path;
+    readonly AnimationPlayer anim;
     Skeleton3D skel = null!;
-    Skinned? hood;
-    readonly List<Skinned> body = new();
-    readonly List<(int Mesh, int V)> inside = new();
-    int[] edges = Array.Empty<int>();
-    float[] restLen = Array.Empty<float>();
-    double t, tick;
-    int samples, worstCount;
-    float worstStretch, worstDepth;
-    string worstWhere = "";
-    readonly List<float> stretchAll = new(), med = new();
+    System.IO.StreamWriter? w;
+    readonly List<(string Clip, double T)> queue = new();
+    int qi = -1, phase;
+    string prevAnim = "";
 
-    static Skinned? Read(MeshInstance3D mi, int s, Skeleton3D skel)
-    {
-        var a = mi.Mesh.SurfaceGetArrays(s);
-        if (a[(int)Mesh.ArrayType.Bones].VariantType == Godot.Variant.Type.Nil || mi.Skin == null) return null;
-        var o = new Skinned { P = a[(int)Mesh.ArrayType.Vertex].AsVector3Array(), N = a[(int)Mesh.ArrayType.Normal].AsVector3Array() };
-        var bones = a[(int)Mesh.ArrayType.Bones];
-        o.B = bones.VariantType == Godot.Variant.Type.PackedInt32Array ? bones.AsInt32Array() : Array.ConvertAll(bones.AsFloat32Array(), f => (int)f);
-        o.W = a[(int)Mesh.ArrayType.Weights].AsFloat32Array();
-        o.Idx = a[(int)Mesh.ArrayType.Index].AsInt32Array();
-        o.K = o.B.Length / Math.Max(o.P.Length, 1);
-        int n = mi.Skin.GetBindCount();
-        o.BindBone = new int[n];
-        o.Bind = new Transform3D[n];
-        o.BoneName = new string[n];
-        for (int i = 0; i < n; i++)
-        {
-            string bn = mi.Skin.GetBindName(i);
-            o.BindBone[i] = bn != "" ? skel.FindBone(bn) : mi.Skin.GetBindBone(i);
-            o.Bind[i] = mi.Skin.GetBindPose(i);
-            o.BoneName[i] = o.BindBone[i] >= 0 ? skel.GetBoneName(o.BindBone[i]) : "?";
-        }
-        return o;
-    }
+    public PoseDump(string path, AnimationPlayer anim) { this.path = path; this.anim = anim; }
 
-    Transform3D[] Mats(Skinned m, bool rest)
+    static string M(Transform3D x)
     {
-        var r = new Transform3D[m.Bind.Length];
-        for (int i = 0; i < r.Length; i++)
-            r[i] = (m.BindBone[i] < 0 ? Transform3D.Identity : rest ? skel.GetBoneGlobalRest(m.BindBone[i]) : skel.GetBoneGlobalPose(m.BindBone[i])) * m.Bind[i];
-        return r;
-    }
-
-    static (Vector3 P, Vector3 N) At(Skinned m, Transform3D[] M, int v)
-    {
-        Vector3 p = Vector3.Zero, n = Vector3.Zero;
-        for (int k = 0; k < m.K; k++)
-        {
-            float w = m.W[v * m.K + k];
-            if (w <= 0) continue;
-            var x = M[m.B[v * m.K + k]];
-            p += w * (x * m.P[v]);
-            n += w * (x.Basis * m.N[v]);
-        }
-        return (p, n.Normalized());
+        var b = x.Basis; var o = x.Origin;
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        string f(float v) => v.ToString("0.######", c);
+        return $"[{f(b.Column0.X)},{f(b.Column1.X)},{f(b.Column2.X)},{f(o.X)},{f(b.Column0.Y)},{f(b.Column1.Y)},{f(b.Column2.Y)},{f(o.Y)},{f(b.Column0.Z)},{f(b.Column1.Z)},{f(b.Column2.Z)},{f(o.Z)}]";
     }
 
     public override void _Ready()
     {
         skel = GetParent<Skeleton3D>();
-        foreach (var c in skel.GetChildren())
+        string file = path.EndsWith(".jsonl") ? path : path + ".jsonl";
+        if (System.IO.File.Exists(file)) file = file[..^6] + $"_{GetInstanceId()}.jsonl";   // (a second Warden)
+        w = new System.IO.StreamWriter(file);
+        int n = skel.GetBoneCount();
+        var sb = new System.Text.StringBuilder("{\"bones\":[");
+        sb.Append(string.Join(",", Enumerable.Range(0, n).Select(i => $"\"{skel.GetBoneName(i)}\"")));
+        sb.Append("],\"parent\":[").Append(string.Join(",", Enumerable.Range(0, n).Select(skel.GetBoneParent)));
+        sb.Append("],\"rest\":[").Append(string.Join(",", Enumerable.Range(0, n).Select(i => M(skel.GetBoneGlobalRest(i)))));
+        sb.Append("],\"skeletonXf\":").Append(M(skel.GlobalTransform)).Append(",\"skins\":[");
+        bool first = true;
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
-            if (c is not MeshInstance3D mi || mi.Mesh == null || mi.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly) continue;
-            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
-            {
-                string mat = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName ?? "";
-                if (mat == "warden_hood_wool" && mi.VisibilityRangeBegin <= 0) hood ??= Read(mi, s, skel);
-                else if (mat is "generated" or "warden_face" or "warden_patch" && mi.Name.ToString() != "lod" && Read(mi, s, skel) is { } b) body.Add(b);
-            }
+            if (mi.Skin == null || mi.Mesh == null) continue;
+            var mats = Enumerable.Range(0, mi.Mesh.GetSurfaceCount()).Select(s => mi.Mesh.SurfaceGetMaterial(s)?.ResourceName ?? "");
+            sb.Append(first ? "" : ",").Append($"{{\"mesh\":\"{mi.Name}\",\"mats\":[{string.Join(",", mats.Select(x => $"\"{x}\""))}],\"xf\":{M(mi.Transform)},\"names\":[");
+            sb.Append(string.Join(",", Enumerable.Range(0, mi.Skin.GetBindCount()).Select(i => $"\"{(mi.Skin.GetBindName(i).ToString() is { Length: > 0 } bn ? bn : skel.GetBoneName(mi.Skin.GetBindBone(i)))}\"")));
+            sb.Append("],\"binds\":[").Append(string.Join(",", Enumerable.Range(0, mi.Skin.GetBindCount()).Select(i => M(mi.Skin.GetBindPose(i))))).Append("]}");
+            first = false;
         }
-        if (hood == null) { GD.Print("hoodcheck: no hood surface"); QueueFree(); return; }
-        var seen = new HashSet<long>();
-        var el = new List<int>();
-        for (int i = 0; i + 2 < hood.Idx.Length; i += 3)
-            for (int e = 0; e < 3; e++)
-            {
-                int a = hood.Idx[i + e], b = hood.Idx[i + (e + 1) % 3];
-                long key = (long)Math.Min(a, b) << 32 | (uint)Math.Max(a, b);
-                if (seen.Add(key)) { el.Add(a); el.Add(b); }
-            }
-        edges = el.ToArray();
-        // (the rest is the mesh's own bind-space vertices: the skeleton's rest under a retargeted clip set is not the
-        //  glTF bind, so skinning by GetBoneGlobalRest threw every rest length off and read a constant 12-18x stretch)
-        var hp = (Vector3[])hood.P.Clone();
-        var hn = (Vector3[])hood.N.Clone();
-        restLen = new float[edges.Length / 2];
-        for (int i = 0; i < restLen.Length; i++) restLen[i] = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]);
-        var grid = Grid(hp);
-        for (int m = 0; m < body.Count; m++)
-        {
-            for (int v = 0; v < body[m].P.Length; v += 2)
-            {
-                var p = body[m].P[v];
-                int h = Nearest(grid, hp, p, 0.06f);
-                if (h >= 0 && (p - hp[h]).Dot(hn[h]) < -0.002f) inside.Add((m, v));
-            }
-        }
-        GD.Print($"hoodcheck: hood {hp.Length} verts, {restLen.Length} edges; {inside.Count} body points under the cloth at rest");
+        w.WriteLine(sb.Append("]}").ToString());
     }
 
-    static Dictionary<(int, int, int), List<int>> Grid(Vector3[] p)
+    bool looked;
+
+    void Look()
     {
-        var g = new Dictionary<(int, int, int), List<int>>();
-        for (int i = 0; i < p.Length; i++)
+        looked = true;
+        if (System.Environment.GetEnvironmentVariable("WARDEN_POSECLIPS") is { Length: > 0 } cl)
         {
-            var k = ((int)Mathf.Floor(p[i].X / 0.03f), (int)Mathf.Floor(p[i].Y / 0.03f), (int)Mathf.Floor(p[i].Z / 0.03f));
-            if (!g.TryGetValue(k, out var l)) g[k] = l = new List<int>();
-            l.Add(i);
+            var all = anim.GetAnimationList();
+            foreach (var want in cl.Split(','))
+            {
+                string? name = all.FirstOrDefault(a => a == want) ?? all.FirstOrDefault(a => a.EndsWith("/" + want)) ?? all.FirstOrDefault(a => a.EndsWith(want));
+                if (name == null) { GD.Print($"posedump: no clip {want} in {all.Length}: {string.Join(" ", all.Take(400))}"); continue; }
+                double len = anim.GetAnimation(name).Length;
+                for (double t = 0; t <= len + 1e-6; t += 1.0 / 30) queue.Add((name, t));
+            }
+            qi = queue.Count > 0 ? 0 : -1;
+            GD.Print($"posedump: {queue.Count} clip samples");
         }
-        return g;
     }
 
-    static int Nearest(Dictionary<(int, int, int), List<int>> g, Vector3[] hp, Vector3 p, float reach)
+    void Line(string clip, double t)
     {
-        int best = -1;
-        float bd = reach * reach;
-        int cx = (int)Mathf.Floor(p.X / 0.03f), cy = (int)Mathf.Floor(p.Y / 0.03f), cz = (int)Mathf.Floor(p.Z / 0.03f);
-        for (int x = -2; x <= 2; x++)
-            for (int y = -2; y <= 2; y++)
-                for (int z = -2; z <= 2; z++)
-                    if (g.TryGetValue((cx + x, cy + y, cz + z), out var l))
-                        foreach (int i in l)
-                        {
-                            float d = hp[i].DistanceSquaredTo(p);
-                            if (d < bd) { bd = d; best = i; }
-                        }
-        return best;
+        int n = skel.GetBoneCount();
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"{{\"frame\":{Engine.GetFramesDrawn()},\"clip\":\"{clip}\",\"t\":{t.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)},\"anim\":\"{anim.CurrentAnimation}\",\"pose\":[");
+        sb.Append(string.Join(",", Enumerable.Range(0, n).Select(i => M(skel.GetBoneGlobalPose(i))))).Append("]}");
+        w?.WriteLine(sb.ToString());
+        if (Engine.GetFramesDrawn() % 30 == 0) w?.Flush();
     }
 
     public override void _Process(double delta)
     {
-        t += delta;
-        if ((tick -= delta) > 0 || hood == null) return;
-        tick = 0.2;
-        samples++;
-        var hm = Mats(hood, false);
-        var hp = new Vector3[hood.P.Length];
-        var hn = new Vector3[hood.P.Length];
-        for (int v = 0; v < hp.Length; v++) (hp[v], hn[v]) = At(hood, hm, v);
-        float smax = 0;
-        for (int i = 0; i < restLen.Length; i++)
+        if (!looked) Look();
+        if (qi >= 0)
         {
-            float r = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]) / Math.Max(restLen[i], 1e-5f);
-            smax = Math.Max(smax, r);
-            if ((i & 7) == 0) stretchAll.Add(r);
-            if ((i & 63) == 0) med.Add(r);
+            var (c, t) = queue[qi];
+            if (phase == 0)
+            {
+                if (anim.CurrentAnimation != c) anim.Play(c, 0);
+                anim.Pause();
+                anim.Seek(t, true);
+                phase = 1;
+            }
+            else if (phase == 1) phase = 2;   // (his twist and share bones follow on the frame after)
+            else
+            {
+                Line(c, t);
+                phase = 0;
+                if (++qi >= queue.Count) { qi = -1; anim.Play(); GD.Print("posedump: clips done"); }
+            }
+            return;
         }
-        med.Sort();
-        float median = med.Count > 0 ? med[med.Count / 2] : 0;
-        med.Clear();
-        var grid = Grid(hp);
-        var bms = new Transform3D[body.Count][];
-        for (int m = 0; m < body.Count; m++) bms[m] = Mats(body[m], false);
-        int count = 0;
-        float depth = 0;
-        var where = new Dictionary<string, int>();
-        foreach (var (m, v) in inside)
-        {
-            var b = body[m];
-            var p = At(b, bms[m], v).P;
-            int h = Nearest(grid, hp, p, 0.06f);
-            if (h < 0) continue;
-            float d = (p - hp[h]).Dot(hn[h]);
-            if (d <= 0.002f) continue;
-            count++;
-            depth = Math.Max(depth, d);
-            int kb = 0;
-            for (int k = 1; k < b.K; k++) if (b.W[v * b.K + k] > b.W[v * b.K + kb]) kb = k;
-            string bn = b.BoneName[b.B[v * b.K + kb]];
-            where[bn] = where.GetValueOrDefault(bn) + 1;
-        }
-        worstStretch = Math.Max(worstStretch, smax);
-        var top = new List<KeyValuePair<string, int>>(where);
-        top.Sort((x, y) => y.Value.CompareTo(x.Value));
-        string w = string.Join(",", top.GetRange(0, Math.Min(3, top.Count)));
-        if (count > worstCount) { worstCount = count; worstWhere = w; }
-        worstDepth = Math.Max(worstDepth, depth);
-        GD.Print($"hoodcheck t={t:F1} stretch_max={smax:F3} median={median:F3} poke={count} depth_mm={depth * 1000:F1} {w}");
+        Line("", anim.CurrentAnimationPosition);
     }
 
-    public override void _ExitTree()
-    {
-        if (hood == null) return;
-        stretchAll.Sort();
-        float p99 = stretchAll.Count > 0 ? stretchAll[(int)(stretchAll.Count * 0.99)] : 0;
-        float p01 = stretchAll.Count > 0 ? stretchAll[(int)(stretchAll.Count * 0.01)] : 0;
-        GD.Print($"hoodcheck SUMMARY samples={samples} stretch_max={worstStretch:F3} stretch_p99={p99:F3} squash_p01={p01:F3} poke_max={worstCount} ({worstWhere}) depth_max_mm={worstDepth * 1000:F1} under_at_rest={inside.Count}");
-    }
+    public override void _ExitTree() { w?.Flush(); w?.Dispose(); w = null; }
 }
