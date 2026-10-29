@@ -6,7 +6,8 @@ iron. This map says, per texel, what each bit of him is made of. It is made from
     leg) and where (height, front/back, distance from the leg's bone line, along the arm);
   * the atlas colour at that texel (hue, saturation, value) and its local contrast (the quilting's grid);
   * the atlas's metal channel (buckles).
-Rules (classify()), then a majority filter per chart so specks don't flip class, then dilated gutters.
+Rules (classify()), then a majority filter per chart so specks don't flip class, wool holes in the quilting filled
+by a 3D vote (fill3d()), then dilated gutters.
 
 Channels (2048, RGBA8; imported lossless, alpha untouched):
   R  class * 32 + puff (0..31): the class index (the shader texelFetches it and blends the 4 neighbours' params);
@@ -319,6 +320,32 @@ def majority(cls, have, k=7):
     return np.where(have, out, cls)
 
 
+def fill3d(cls, f, cell=0.05, frac=0.5):
+    """Warden 6 r3: the quilting's pale cells (cooler, paler paint) fell to wool in UV-space rules and drew as pale blue
+    blotches on the gambeson. Any wool texel whose 3D neighbourhood (cell m, trilinear-blurred voxels) is mostly
+    quilting becomes quilting."""
+    have = f["have"]; P = f["P"][have]; c = cls[have]
+    lo = P.min(0) - cell; idx = (P - lo) / cell
+    i0 = np.floor(idx).astype(int); fr = idx - i0
+    shape = tuple(i0.max(0) + 3)
+    q = np.zeros(shape); n = np.zeros(shape)
+    corners = [(dx, dy, dz) for dx in (0, 1) for dy in (0, 1) for dz in (0, 1)]
+    ws = []
+    for dx, dy, dz in corners:
+        w = (fr[:, 0] if dx else 1 - fr[:, 0]) * (fr[:, 1] if dy else 1 - fr[:, 1]) * (fr[:, 2] if dz else 1 - fr[:, 2])
+        ws.append(w)
+        np.add.at(q, (i0[:, 0] + dx, i0[:, 1] + dy, i0[:, 2] + dz), w * (c == QUILT))
+        np.add.at(n, (i0[:, 0] + dx, i0[:, 1] + dy, i0[:, 2] + dz), w * ((c == QUILT) | (c == WOOL)))
+    q = ndimage.uniform_filter(q, 3); n = ndimage.uniform_filter(n, 3)
+    r = q / np.maximum(n, 1e-6)
+    v = sum(w * r[i0[:, 0] + dx, i0[:, 1] + dy, i0[:, 2] + dz] for w, (dx, dy, dz) in zip(ws, corners))
+    flip = (c == WOOL) & (v > frac)
+    c[flip] = QUILT
+    out = cls.copy(); out[have] = c
+    print(f"fill3d: {flip.sum()} wool texels to quilting ({flip.sum() / max((c == QUILT).sum(), 1):.1%} of the quilting)")
+    return out
+
+
 def dilate(cls, have):
     _, (iy, ix) = ndimage.distance_transform_edt(~have, return_indices=True)
     return cls[iy, ix]
@@ -333,6 +360,7 @@ def main():
     f = features(a.pkg, a.size)
     cls, dbg = classify(f)
     cls = majority(cls, f["have"])
+    cls = fill3d(cls, f)
     cls = dilate(cls, f["have"])
     out = np.zeros((a.size, a.size, 4), np.uint8)
     d, puff = detail(f, cls)
