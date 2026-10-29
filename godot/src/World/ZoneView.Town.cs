@@ -194,6 +194,8 @@ public partial class ZoneView
             if (Lamps.Holder(kind) is not Node3D holder || Lamps.Of(kind) is not Lamps.Info info) continue;
             holder.Transform = new Transform3D(new Basis(Vector3.Up, rot + F("turn", 0)), at);
             lightRoot.AddChild(holder);
+            // (no new shadow casters: the town's shadow draws sit near the 1,200 cap; a 0.6 m lantern's moon shadow is lost anyway)
+            foreach (var g in holder.FindChildren("*", "GeometryInstance3D", true, false)) ((GeometryInstance3D)g).CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             var flameAt = holder.Transform * info.Flame;
             var color = e.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : new Color(LampColor);
             var spec = new ZoneData.LightSpec(flameAt + Vector3.Up * 0.1f, color, F("energy", 1.2f) * Mathf.Pi, F("range", 5f), 0, true);
