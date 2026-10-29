@@ -482,3 +482,4 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 ## 28 October 2026: Animation, grip tilt (to coordinator ee2b9848)
 - **APPROVED (the owner): "after MR2, the next Animation lead builds the grip-tilt capability and rebuilds the reaver/axes and warden carries on it."** Why: her fitted fist holds a haft at 52 deg to the forearm and the wrist caps at 72, so steep carries need a cocked wrist (the "posed salute"). Fix: a grip_tilt of about 30 deg in run clips, per-weapon tilted fist fits, one gait line, and a C# tilt pocket for the left hand; then fresh judges. Estimate 400-600k. Also: the measurers now read packed clips (armroll turned the wrist about 17 deg; the reaver axe measured 56 deg and rendered 9).
+- **Warden to the boss bar (29 Oct):** "Warden: go all the way to the boss bar now (~1.5-2M more tokens, two judge rounds)." Chosen over shipping him as a cinematics placeholder after hood, lamp and cape.
