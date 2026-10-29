@@ -91,6 +91,8 @@ public sealed class Prologue : ZoneRuntime
     readonly XZ wardenHome;
     /// <summary>Metres east of his fight's home where he lies asleep, clear of the causeway.</summary>
     public const double SleepEast = 5.5;
+    /// <summary>Metres he lies below the waterline asleep (his chest and face just break the surface).</summary>
+    public const double SleepSink = 0.3;
     (double X, double Z, double Facing) wardenPos;
     readonly WardenAI ai = new();
     IBossView wardenView = null!;
@@ -1575,6 +1577,8 @@ public sealed class Prologue : ZoneRuntime
         if (wardenInCine) { wardenView.Hide(); return; }
         if (warden is { Alive: true } && warden.State != EnemyState.Dying) wardenPos = (warden.X, warden.Z, Math.PI / 2 - warden.Facing);
         double wy = Math.Max(G.Look.HeightAt(wardenPos.X, wardenPos.Z), waterY - 0.25);
+        // Asleep he lies half under the ford's water, not on top of it (Env 22's triage: he lay ON the water).
+        if (ai.Mode == "sleep") wy -= SleepSink;
         wardenView.Glow = Math.Clamp(0.3 + LitCount * 0.25, 0, 1);
         wardenView.Update(warden is { Alive: true } ? warden : null, wardenPos.X, wy, wardenPos.Z, wardenPos.Facing, dt);
         if (ai.Mode == "dead")
