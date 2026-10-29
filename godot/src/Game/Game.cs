@@ -1265,7 +1265,10 @@ public partial class Game : Node, IZoneHost
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
                 ? new Vector3((float)be.X, 0, (float)be.Z) : null;
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
-            if (cam.Toward == null && zone is Prologue pz && pz.BossInFrame is { } pw) cam.Toward = new Vector3((float)pw.X, 0, (float)pw.Z);
+            // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
+            var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
+            if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : (0.33f, 4.5f);
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             UpdateCloseUp(dt);
