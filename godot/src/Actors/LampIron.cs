@@ -45,15 +45,22 @@ public static class LampIron
             m.SetShaderParameter("rust_k", 0.6f);
             m.SetShaderParameter("wear", 1.15f);
             // (its leather grip: a warm dark brown, not the lamp's cord)
-            m.SetShaderParameter("cord", new Vector3(0.062f, 0.040f, 0.026f));
             // (Warden 7 r3, the vertex colours read at last: the grip dull dark leather, the guard and pommel dark iron worn
             // at the edges only, the blade a mid steel with a bright honed edge, its stain faint)
+            m.SetShaderParameter("cord", new Vector3(0.036f, 0.024f, 0.016f));
+            m.SetShaderParameter("cord_pitch", 0.024f);
+            m.SetShaderParameter("cord_groove", 0.3f);
+            m.SetShaderParameter("edge_lo", 0.5f);
+            m.SetShaderParameter("edge_hi", 0.85f);
             m.SetShaderParameter("cord_spec", 0.22f);
             m.SetShaderParameter("cord_rough", 0.8f);
             m.SetShaderParameter("blade_flat", new Vector3(0.40f, 0.40f, 0.39f));
             m.SetShaderParameter("blade_edge", new Vector3(0.72f, 0.72f, 0.70f));
             m.SetShaderParameter("blade_stain", 0.5f);
-            m.SetShaderParameter("blade_rough", 0.36f);
+            m.SetShaderParameter("blade_rough", 0.52f);
+            m.SetShaderParameter("bevel_rough", 0.3f);
+            m.SetShaderParameter("iron_metal", 0.45f);
+            m.SetShaderParameter("iron_rough", 0.72f);
             m.SetShaderParameter("wet", 0.2f);
         }
         return m;
@@ -162,7 +169,15 @@ public static class LampIron
     public static Node3D WatchBlade()
     {
         var model = GD.Load<PackedScene>("res://art/weapons/watch_blade.glb").Instantiate<Node3D>();
-        blade ??= IronMat(true);
+        if (blade == null)
+        {
+            blade = IronMat(true);
+            // (a look test's overrides: WARDEN_BLADE="blade_rough=0.3;debug_view=1")
+            if (System.Environment.GetEnvironmentVariable("WARDEN_BLADE") is { Length: > 0 } ov)
+                foreach (var kv in ov.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                        blade.SetShaderParameter(k.Trim(), f);
+        }
         foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false)) ((MeshInstance3D)n).MaterialOverride = blade;
         return model;
     }

@@ -17,6 +17,13 @@ uniform vec3 rust = vec3(0.13, 0.055, 0.026);
 uniform vec3 silt = vec3(0.075, 0.072, 0.058);
 uniform vec3 cord = vec3(0.045, 0.034, 0.026);
 uniform float wear = 1.0;
+// where the convexity (vertex R, 0..1 from flat to sharp) starts and finishes wearing to steel
+uniform float edge_lo = 0.18;
+uniform float edge_hi = 0.55;
+// the plain iron's metal and roughness (the sword's fittings: rougher and less metal, so they don't mirror the fog pale)
+uniform float iron_metal = 0.75;
+uniform float iron_rough = 0.5;
+uniform float bevel_rough = 0.16;
 // The Watch blade's steel (vertex G < 0.35, watch_blade.py): its flats, its honed edge bevel, its river stain.
 uniform vec3 blade_flat = vec3(0.075, 0.074, 0.072);
 uniform vec3 blade_edge = vec3(0.50, 0.50, 0.49);
@@ -25,6 +32,9 @@ uniform float blade_rough = 0.38;
 // the grip's leather: its specular (dull: leather at 0.5 read as a pale tube under the sky) and roughness
 uniform float cord_spec = 0.5;
 uniform float cord_rough = 0.78;
+// the grip's spiral wrap: its pitch (model units; 0 for none) and the groove's shade
+uniform float cord_pitch = 0.0;
+uniform float cord_groove = 1.0;
 uniform float rust_k = 0.55;
 uniform float silt_k = 0.6;
 // Model height below which silt gathers (it fades in over silt_fade).
@@ -44,6 +54,9 @@ uniform float inner_k = 0.0;
 uniform vec3 inner_col = vec3(0.42, 0.66, 1.0);
 uniform vec3 flame_o = vec3(0.0, -0.168, 0.0);
 uniform float inner_r = 0.08;
+// 1: the regions in flat colour (LampIron.WatchBlade, env WARDEN_BLADE="debug_view=1"): bevel red, flat green, fuller blue,
+// grip yellow, iron fittings white
+uniform float debug_view = 0.0;
 
 varying vec3 opos;
 varying vec3 onrm;
@@ -68,7 +81,7 @@ void fragment() {
 	float cav = clamp((0.5 - COLOR.r) * 2.0, 0.0, 1.0);
 	bool is_cord = COLOR.g > 0.75;
 	// Worn edges: the convex rim, broken up by grain.
-	float edge = smoothstep(0.18, 0.55, conv + (m.g - 0.5) * 0.35) * wear;
+	float edge = smoothstep(edge_lo, edge_hi, conv + (m.g - 0.5) * 0.35) * wear;
 	// Rust: big blotches, pulled into creases and along streaks.
 	float r = smoothstep(0.58, 0.8, m2.r + cav * 0.3 + m.a * 0.12 + (m.r - 0.5) * 0.25) * rust_k;
 	float low = smoothstep(silt_top, silt_top - silt_fade, opos.y);
@@ -78,8 +91,8 @@ void fragment() {
 	col = mix(col, steel * (0.75 + 0.5 * m.g), edge * (1.0 - r));
 	col = mix(col, rust * (0.7 + 0.6 * m.r), r);
 	col = mix(col, silt * (0.8 + 0.4 * m.g), s);
-	float metal = mix(0.75, 1.0, edge) * (1.0 - r * 0.85) * (1.0 - s * 0.9);
-	float rough = mix(0.5 + 0.18 * (m.g - 0.5) + 0.12 * (1.0 - m.b), 0.3, edge);
+	float metal = mix(iron_metal, 1.0, edge) * (1.0 - r * 0.85) * (1.0 - s * 0.9);
+	float rough = mix(iron_rough + 0.18 * (m.g - 0.5) + 0.12 * (1.0 - m.b), 0.3, edge);
 	rough = mix(rough, 0.85, r);
 	rough = mix(rough, 0.92, s);
 	float h = m.b - r * 0.25 * m.r;
@@ -103,18 +116,22 @@ void fragment() {
 		// the crest of the edge brightest; pits a little dark in the flats and fuller, none on the honed bevel
 		col = mix(col, blade_edge * 1.25, bev * smoothstep(0.75, 0.95, COLOR.r));
 		col *= mix(1.0, 0.7, pit * (1.0 - bev));
-		metal = mix(mix(1.0 - stain * 0.15, 0.95, ful), 1.0, bev);
-		rough = mix(mix(blade_rough + 0.06 * (m.g - 0.5) + 0.08 * stain, blade_rough + 0.12, ful), 0.16 + 0.05 * fine.g, bev);
+		metal = mix(mix(0.85 - stain * 0.15, 0.8, ful), 1.0, bev);
+		rough = mix(mix(blade_rough + 0.06 * (m.g - 0.5) + 0.08 * stain, blade_rough + 0.12, ful), bevel_rough + 0.05 * fine.g, bev);
 		rough = mix(rough, 0.6, pit * (1.0 - bev));
 		h = mix(m2.b * 0.3 - pit * 0.5, fine.g * 0.15, bev);
 		bk = bump * mix(0.8, 0.3, bev);
 	}
 	if (is_cord) {
 		// The grip's cord: dark leather-brown, dull, its own grain.
-		col = cord * (0.75 + 0.5 * m.g);
+		// (Warden 7 r3: the lapped spiral drawn from the grip's own frame, watch_blade.py's grip(): pitch 2.4 cm round y;
+		// at the game's cameras the 1 mm laps were lost and the grip read as a plain tube)
+		float ph = fract(opos.y / cord_pitch + atan(opos.z / 0.86, opos.x) / 6.28318);
+		float strip = smoothstep(0.0, 0.2, ph) * (1.0 - smoothstep(0.86, 0.96, ph));
+		col = cord * (0.75 + 0.5 * m.g) * mix(cord_groove, 1.0, strip) * (0.85 + 0.25 * ph);
 		metal = 0.0;
 		rough = cord_rough + 0.1 * m.g;
-		h = m.g;
+		h = m.g * 0.4 + ph * strip * 0.6;
 		bk = bump * 0.6;
 	}
 	float spec = is_cord ? cord_spec : 0.5;
@@ -145,4 +162,9 @@ void fragment() {
 	METALLIC = metal;
 	ROUGHNESS = clamp(rough, 0.05, 1.0);
 	SPECULAR = spec;
+	if (debug_view > 0.5) {
+		vec3 dc = is_cord ? vec3(1.0, 0.85, 0.0) : COLOR.g < 0.1 ? vec3(1.0, 0.0, 0.0) : COLOR.g < 0.2 ? vec3(0.0, 1.0, 0.0)
+			: COLOR.g < 0.35 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
+		ALBEDO = vec3(0.0); EMISSION = dc * 0.5; ROUGHNESS = 1.0; SPECULAR = 0.0; METALLIC = 0.0;
+	}
 }

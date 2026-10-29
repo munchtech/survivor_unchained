@@ -81,7 +81,7 @@ uniform float edge_wear = 0.9;
 // (Warden 7 r3 judge: the gauntlets and forearm plates read as pale grey cloth, the lamp arm's iron as glossy vinyl and
 // the rust as orange glitter: the iron's value down, its worn edges only the sharpest and a darker steel, rougher, the
 // rust soft low-frequency patches)
-uniform float iron_value = 0.6;
+uniform float iron_value = 0.45;
 uniform float iron_rough = 0.74;
 uniform float edge_from = 0.86;
 uniform float edge_value = 0.085;
