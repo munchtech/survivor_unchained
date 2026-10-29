@@ -32,7 +32,7 @@ public partial class PersonView : Node3D, INpcView
         person = People.Build(spec);
         person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
-        person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
+        person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04) * person.Jitter;
         AddChild(person.Root);
         // (a Marionette package's own walk, when its manifest names one: the risen's lurch)
         if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
@@ -195,6 +195,7 @@ public partial class PersonView : Node3D, INpcView
     void PlayLoop(double blend)
     {
         var name = People.Clip(person, walking ? loopClip : loop, emptyHanded, emptyHanded ? "" : null);
+        bool fresh = person.Anim.CurrentAnimation != name;
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
         // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
@@ -204,6 +205,13 @@ public partial class PersonView : Node3D, INpcView
             PhaseKey = null;
             var len = person.Anim.CurrentAnimationLength;
             if (len > 0.5) person.Anim.Seek(TownStands.Phase(key) * len, true);
+        }
+        // A package copy's stand and walk start at its own place in the loop (NpcDye: Person.Phase), so a row of one
+        // package never moves in step.
+        else if (fresh && person.Phase >= 0 && person.Own == null)
+        {
+            var len = person.Anim.CurrentAnimationLength;
+            if (len > 0.5) person.Anim.Seek((person.Phase + (walking ? 0.37 : 0)) % 1.0 * len, true);
         }
     }
 
@@ -253,7 +261,11 @@ public partial class PersonView : Node3D, INpcView
         Native(name);
         holding = hold;
         actLeft = hold ? double.MaxValue : anim.Length / Mathf.Max(0.05, speed) - 0.2;
+        bent = !hold && person.Own == null && FolkSpacing.BendsOver(clip);
     }
+    // A townsperson's stoop (work at a stall, the well's bucket) is never walked in: Locomotion cuts it the moment
+    // they move off (Play.FolkSpacing.BendsOver).
+    bool bent;
 
     /// <summary>A clip played out and held at its end at once (a body lying where it fell).</summary>
     public void Pose(string clip)
@@ -330,6 +342,7 @@ public partial class PersonView : Node3D, INpcView
         string want = speed < 0.3 ? "" : natural > 0 || speed >= 2.6 ? RunClip : WalkClip;
         bool was = walking;
         walking = want != "";
+        if (walking && bent && actLeft > 0) { bent = false; actLeft = 0; was = false; }
         if (walking)
         {
             // A townsperson's own walk, at the rate that keeps their feet planted.
@@ -393,6 +406,12 @@ public partial class PersonView : Node3D, INpcView
         if (piece == null) return;
         var bone = BoneOf(slot);
         if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece; return; }
+        // A package's left fist round a lit torch, the arm brought up to carry it (NpcTorchArm), the torch kept upright.
+        if (piece == "torch_lit" && person.Package != null && slot == "handslot.l" && Carried(piece) is Node3D torch)
+        {
+            held[slot] = TorchFist(torch);
+            return;
+        }
         // The kits' small things (a torch, a bucket) as simple stand-ins
         // until the KayKit packs come over.
         if (Carried(piece) is Node3D thing)
@@ -404,17 +423,85 @@ public partial class PersonView : Node3D, INpcView
         }
     }
 
+    /// <summary>A light of its own in the held torch's flame (a shot's; Folk lights its walkers' torches itself).</summary>
+    public void TorchLight()
+    {
+        if (!held.TryGetValue("handslot.l", out var at)) return;
+        Node3D host = at;
+        foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
+        // (at the flame itself, short and soft: a light above the head flattened his face to plaster at chest-up, judge r2)
+        host.AddChild(new OmniLight3D { Position = new Vector3(0, TorchFlameY, 0), LightColor = new Color("#ffa050"), LightEnergy = 1.1f, OmniRange = 3.5f, ShadowEnabled = true });
+    }
+
+    /// <summary>A lit light this person carries (a held torch's, TorchLight or a walker's own): the first visible light under a
+    /// held thing with energy, or null. The close-up (Game.UpdateCloseUp) lets it be the key on whoever it frames.</summary>
+    public OmniLight3D? CarriedLight()
+    {
+        foreach (var at in held.Values)
+            if (IsInstanceValid(at) && at.IsInsideTree() && Lit(at) is { } l) return l;
+        return null;
+        static OmniLight3D? Lit(Node n)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                if (c is OmniLight3D o && o.IsVisibleInTree() && o.LightEnergy > 0.05f) return o;
+                if (c is Node3D d && !d.Visible) continue;
+                if (Lit(c) is { } f) return f;
+            }
+            return null;
+        }
+    }
+
+    /// <summary>The held torch's flame above its grip (the flame kit's card from 0.31, 0.30 tall at 0.62, a carried flame).</summary>
+    public const float TorchFlameY = 0.40f;
+
+    /// <summary>Where the flame of a torch held in a slot is in the world (Folk's patrol light follows it), or null.</summary>
+    public (double X, double Y, double Z)? HeldAt(string slot)
+    {
+        if (!held.TryGetValue(slot, out var at) || !IsInstanceValid(at) || !at.IsInsideTree()) return null;
+        Node3D host = at;
+        foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
+        var p = host.GlobalTransform * new Vector3(0, TorchFlameY, 0);
+        return (p.X, p.Y, p.Z);
+    }
+
+    Node3D TorchFist(Node3D torch)
+    {
+        var sk = person.Skeleton;
+        if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
+        {
+            var arm = new NpcTorchArm();
+            sk.AddChild(arm);
+            // (before HerJoints, so the twist and share bones follow the raised arm)
+            if (sk.GetNodeOrNull("HerJoints") is Node hj) sk.MoveChild(arm, hj.GetIndex());
+        }
+        if (sk.GetNodeOrNull<NpcHands>("NpcHands") is { } hands) hands.FistL = true;
+        var at = new BoneAttachment3D { BoneName = "hand_l" };
+        sk.AddChild(at);
+        // (the fist's pocket: three quarters of the way to the middle knuckle, a little to the palm's side)
+        int mid = sk.FindBone("middle_01_l");
+        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
+        var grip = new UprightNode { Size = person.Root.Scale.X, Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f) };
+        at.AddChild(grip);
+        grip.AddChild(torch);
+        return at;
+    }
+
     static Node3D? Carried(string piece)
     {
         var root = new Node3D();
-        var wood = new StandardMaterial3D { AlbedoColor = new Color("#4a3424"), Roughness = 0.9f };
+        var wood = new StandardMaterial3D { AlbedoColor = new Color("#3a2a1e"), Roughness = 0.9f };
         switch (piece)
         {
             case "torch_lit":
             {
-                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.025f, Height = 0.55f, Material = wood }, Position = new Vector3(0, 0.12f, 0) });
-                var flame = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(3f, 1.4f, 0.35f) };
-                root.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.06f, Height = 0.18f, Material = flame }, Position = new Vector3(0, 0.44f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                // A tapered dark wood handle (0.5 m, gripped near its middle) and a charred wrapped head; the flame is the kit's.
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.026f, BottomRadius = 0.017f, Height = 0.5f, Material = wood }, Position = new Vector3(0, 0f, 0) });
+                var char_ = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f };
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.021f, BottomRadius = 0.035f, Height = 0.12f, Material = char_ }, Position = new Vector3(0, 0.30f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                var ember = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f, EmissionEnabled = true, Emission = new Color("#8a2a08"), EmissionEnergyMultiplier = 0.35f };
+                root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.0205f, BottomRadius = 0.025f, Height = 0.035f, Material = ember }, Position = new Vector3(0, 0.3425f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+                FlameKit.Add(root, new Vector3(0, 0.31f, 0), FlameKind.Torch, scale: 0.62f, light: false, carried: true);
                 return root;
             }
             case "bucket_water":

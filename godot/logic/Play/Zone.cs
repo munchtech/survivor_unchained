@@ -176,6 +176,8 @@ public interface IZoneLook
     INpcView WalkerLater(PersonSpec spec, double scale) => Walker(spec, scale);
     /// <summary>A light that goes where something carries it (a torch).</summary>
     void MoveLight(int light, double x, double y, double z);
+    /// <summary>A light's shadows on or off (a carried torch's, near).</summary>
+    void SetShadow(int light, bool on) { }
     /// <summary>The ground's height.</summary>
     double HeightAt(double x, double z);
     /// <summary>After dark or not (night-only pieces, moths, smoke).</summary>
@@ -236,6 +238,8 @@ public interface INpcView
     void Locomotion(double speed) { }
     /// <summary>Something in a hand ('handslot.r'): a kit piece, or nothing.</summary>
     void Hold(string slot, string? pack, string? piece) { }
+    /// <summary>Where what a hand holds burns (a torch's flame), in the world, or null.</summary>
+    (double X, double Y, double Z)? HeldAt(string slot) => null;
     void Dispose();
 }
 

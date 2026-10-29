@@ -424,6 +424,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public int AddLight(double x, double y, double z, string color, double intensity, double distance, double flicker = 0.12, double glowSize = 0.08, string glowColor = "#ffb35a") =>
         View.AddLight(new Vector3((float)x, (float)y, (float)z), new Color(color), (float)intensity, (float)distance, (float)flicker, (float)glowSize, new Color(glowColor));
 
+    public void SetShadow(int light, bool on) => View.SetShadow(light, on);
     public void MoveLight(int light, double x, double y, double z) => View.MoveLight(light, new Vector3((float)x, (float)y, (float)z));
 
     public INpcView Person(NpcDef def, Spot spot)
@@ -440,6 +441,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public INpcView Walker(PersonSpec spec, double scale)
     {
         Folk.ChurnEvery = Args.Num("folk-churn", 0);
+        Folk.WatchStart = Args.Get("folk-watch-at");
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var v = new PersonView(spec, null, scale);
         long t1 = System.Diagnostics.Stopwatch.GetTimestamp();

@@ -17,6 +17,7 @@ public partial class Game
     /// <summary>
     /// --npc-crowd N[:name1,name2,...]: N Marionette packages (default: every folder of art/npc with a manifest) scattered
     /// 3-14 m from her in front of the camera, seeded; half idle at random headings, half walking circles of 2-4 m (perf).
+    /// --npc-row [M]: instead a row of them standing across the view facing the camera (each copy dyed its own: NpcDye).
     /// </summary>
     void NpcCrowd()
     {
@@ -68,6 +69,17 @@ public partial class Game
                     double d = 3 + 11 * rng.NextDouble(), a = fa + (rng.NextDouble() - 0.5) * 2.1;
                     double cx = pl.X + Math.Sin(a) * d, cz = pl.Z + Math.Cos(a) * d;
                     bool walk = i % 2 == 1;
+                    // (--npc-row [M]: all standing in a row across the view, M m apart (default 1.1), 4 m beyond her,
+                    // facing the camera, turned --npc-row-turn degrees (toward the light): a sheet of one package's copies, NpcDye)
+                    if (Args.Has("npc-row"))
+                    {
+                        double sp = Args.Num("npc-row", 1.1f); if (sp <= 0.1) sp = 1.1;
+                        double off = (i - (views.Count - 1) / 2.0) * sp;
+                        cx = pl.X + f.X * 4 + f.Z * off; cz = pl.Z + f.Z * 4 - f.X * off;
+                        walk = false;
+                        at[i] = new[] { cx, cz, Math.Atan2(-f.X, -f.Z) + Args.Num("npc-row-turn", 0) * Math.PI / 180, 0, 0 };
+                        continue;
+                    }
                     at[i] = new[] { cx, cz, walk ? 2 + 2 * rng.NextDouble() : rng.NextDouble() * Math.PI * 2, rng.NextDouble() * Math.PI * 2, walk ? 1 : 0 };
                     if (walk) views[i].Locomotion(1.3);
                 }
@@ -122,6 +134,12 @@ public partial class Game
         var v = new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
         scene.AddChild(v);
         v.Loop(idle);
+        // (the Watch at night is the patrol's: a lit torch in the left fist, its warm light on the face, as Folk makes him)
+        if (name == "watch" && Args.Get("time") == "night")
+        {
+            v.Hold("handslot.l", "dungeon", "torch_lit");
+            v.TorchLight();
+        }
         GD.Print($"npc shot: {name} plays {idle}");
         AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest")));
     }
@@ -141,6 +159,7 @@ public partial class Game
             t += delta;
             if (game.scene == null || game.Battle?.Player is not { } pl || GetViewport().GetCamera3D() is not Camera3D cam) return;
             if (swap && game.scene.Player is { } her) her.Visible = false;
+            if (swap) game.CloseStandIn = v;
             if (chest) game.scene.Voices.Bare = true;
             if (chest && chestCam == null) playCam = cam;
             if (chest && playCam != null) cam = playCam;
