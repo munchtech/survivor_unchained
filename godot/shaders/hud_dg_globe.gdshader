@@ -126,9 +126,12 @@ void fragment()
 		arc = ready ? 1.0 : arc;
 		vec3 amber = vec3(1.0, 0.62, 0.20) * (0.75 + 0.35 * (ready ? exp(-pow((tb - 0.5) / 0.3, 2.0)) : exp(-pow(abs(tb - 0.5) / 0.7, 4.0))));   // (UI 23: the lit core fills the 3.6 px ring, was a ~2 px peak)
 		bezc = bezc * 0.42 * (1.0 - arc) + amber * 1.1 * arc;
-		// UI 23: a bright head on each arm's tip while charging (the XP ring's glint look): ~1.0 luma over the last ~6 deg, falling into the arm
-		float hd = exp(-pow(max(aa - a_lo, 0.0) * (r + 1.8) / 4.5, 2.0)) * exp(-pow(min(aa - a_lo, 0.0) * (r + 1.8) / 1.5, 2.0)) * arc * (ready ? 0.0 : 1.0) * step(0.01, charge);
-		bezc = mix(bezc, vec3(1.0, 0.92, 0.70), hd * 0.85);
+		// UI 23: each arm's head while charging uses the XP ring's head recipe: a white core ~6 px long (luma 250+) with a soft ~3 px halo
+		float hs = (aa - a_lo) * (r + 1.8) - 3.0, hon = (ready ? 0.0 : 1.0) * step(0.01, charge) * step(aa, a_hi + 0.02);
+		float hcore = clamp(3.5 - abs(hs), 0.0, 1.0) * arc * hon;
+		float hhalo = exp(-max(abs(hs) - 3.0, 0.0) / 1.6) * exp(-pow(abs(tb - 0.5) / 0.7, 4.0)) * hon;
+		bezc = mix(bezc, vec3(1.0), hcore);
+		bezc += vec3(1.0, 0.85, 0.55) * hhalo * 0.45 * (1.0 - hcore);
 		bezc = mix(bezc, bezc * 0.55 + vec3(1.0, 0.70, 0.30) * 0.65, rd);
 		bezc += vec3(1.0, 0.6, 0.25) * flash * 0.6;
 		float outline = clamp(rb + 1.0 - d + 0.5, 0.0, 1.0) * (1.0 - clamp(rb - d + 0.5, 0.0, 1.0));
