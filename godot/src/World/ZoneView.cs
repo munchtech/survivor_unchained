@@ -190,8 +190,11 @@ public partial class ZoneView : Node3D
     /// hair's and gear's), or given back.</summary>
     public void Unlit(uint bits, bool off)
     {
-        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~bits : l.LightCullMask | bits;
+        // (given back as each light had them: a light without one of them before does not gain it)
+        if (off) { unlitHad.Clear(); foreach (var l in lights) { unlitHad.Add(l.LightCullMask & bits); l.LightCullMask &= ~bits; } }
+        else for (int i = 0; i < lights.Count && i < unlitHad.Count; i++) lights[i].LightCullMask |= unlitHad[i];
     }
+    readonly List<uint> unlitHad = new();
 
     /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>
     public OmniLight3D? NearestLit(Vector3 at, float within)
