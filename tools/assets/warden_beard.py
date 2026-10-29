@@ -124,7 +124,7 @@ FINE = dict(off=0.0012, width=(0.005, 0.009), cols=WISP + LOOSE, narrow=0.7, sha
             alpha=(0.45, 0.8))
 LOD1 = dict(every={"inner": 3, "mid": 2, "outer": 2}, K=8, wide=1.7)   # beard.lod1: a share of each layer's guides, wider, fewer points
 SHADOW = dict(every=2, K=6, wide=2.0)        # beard.shadow: every second inner-layer guide
-COLOUR = "#6b675f"                # (r4: #7a7871 read white under the moon on the solid mass) the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
+COLOUR = "#5a5650"                # (r4: #7a7871 read white under the moon on the solid mass) the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head"]
 
 
@@ -670,7 +670,7 @@ STRAYS = dict(n=10, off=0.030, width=(0.004, 0.007), cols=WISP, narrow=0.6, shad
 LOD1_MASS = dict(n=4, K=7)
 # (the hair shader's uniforms for the beard (NpcPackage.Uniforms): no ash or lift (they cool and lighten a pale grey: blue-
 # white under the moon), less light through it (a wet mass, not a backlit halo), darker wet roots)
-HAIR_UNIFORMS = {"*": {"ash": 0.0, "lift": 0.0, "through": 0.2, "roots": 0.7}, "hair_mass": {"shine": 0.4}}
+HAIR_UNIFORMS = {"*": {"ash": 0.0, "lift": 0.0, "through": 0.1, "roots": 0.7}, "hair_mass": {"shine": 0.25}}
 SHADOW_MASS = dict(n=4, K=6)
 
 

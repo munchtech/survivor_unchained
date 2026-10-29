@@ -204,7 +204,8 @@ public static class NpcPackage
         // beard.glb, hair cards by tools/assets/warden_beard.py). A mesh named NAME.lod1 is its gameplay model and
         // NAME.shadow its shadow caster, switched as the body's are (BakedLod's 18 m on a baked package, HerLod's
         // pairing on the others).
-        if (m.HairFile != null && Scene($"{Dir(name)}/{m.HairFile}") is { } hs)
+        // (WARDEN_BEARD_HIDE=1: no hair on a package, for a beard's mask by difference: Warden 6 r4's value numbers)
+        if (m.HairFile != null && System.Environment.GetEnvironmentVariable("WARDEN_BEARD_HIDE") != "1" && Scene($"{Dir(name)}/{m.HairFile}") is { } hs)
         {
             var scene = hs.Instantiate<Node3D>();
             var from = scene.FindChildren("*", "Skeleton3D", true, false).OfType<Skeleton3D>().FirstOrDefault();

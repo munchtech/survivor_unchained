@@ -1,17 +1,17 @@
 {
  "hair": {
   "file": "beard.glb",
-  "colour": "#6b675f",
+  "colour": "#5a5650",
   "style": "beard",
   "uniforms": {
    "*": {
     "ash": 0.0,
     "lift": 0.0,
-    "through": 0.2,
+    "through": 0.1,
     "roots": 0.7
    },
    "hair_mass": {
-    "shine": 0.4
+    "shine": 0.25
    }
   },
   "source": "tools/assets/warden_beard.py (r4 hybrid: wet-lock mass on heroine_hair.py's drape, a card fringe)",
