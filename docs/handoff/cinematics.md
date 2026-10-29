@@ -1,5 +1,24 @@
 # Cinematics: handoff
 
+## MR READY: Cinematics 7 (28 Oct): face motion to a minimum (C01's eye darts), DONE
+**Owner:** "the opening cinematic when here eyes dart is comically not good"; then "keep our cutscenes face movements to a minimum ... we can't express the movements fluidly enough at the moment for face stuff". Rule from now on: hold her gaze and expression through a shot (set at the cut), let the head, the body or the cut carry looks, and use no eye darts or face-key morphs mid-shot. Where a beat needs her face to act, frame it wider or from behind.
+**Judges (max, item "C01 eye darts", 3 rounds, all used):** r1 s3/s8 PASS, s10 FAIL (head pop); r2 (face-minimum) s3, s8 and C03 s8 PASS, s10 FAIL medium (braid fold, a leftover pose on the cut, a one-frame whip); r3 s10 PASS. Frames and strips are in the scratch folder `...ecc5f453.../scratchpad/cine7/` (j1..j4). The owner sheet is `survivorsunchained_inputs\cine7\cine7_before_after_half.jpg`.
+**Code (the game can now):**
+- `HeadTurn.Glide`: a head cue's new aim glides there (smoothstep at its `over`) instead of popping when the head is already turned. A head cue at a cut is taken at once and re-hangs her hair (`HairSway.Settle`). Glide is cinematics only and switches off at Finish.
+- `Play/GazeShift` + `GazeCarry` (11 tests): saccades timed by size (25 deg per iris radius, measured), a gaze cue `over` glide, a look set at once at a cut, the upper lids following vertical gaze a little, and a blink with a jump of 0.4+ radii (`blink` true/false). Head carry and reach clamp happen only when a cue gives `head`; it's inert otherwise.
+- A cinematic's end restores her play wander (0.13); C01 left it at 0.02.
+**Face/eye cues per shot (removed / kept):**
+- C01 s1 (black): kept lids shut and gaze [0.15,0.3].
+- C01 s3: gaze set while shut to [0.35,0.05] (was [0.9,0.05]); the lids open over 0.35 s at 2.0 s (kept); removed eyes_wide 0.1 / 0 morphs.
+- C01 s8: gaze held at [0,0.3] (removed the 0.7 s drop to 0.9); brows_sad 0.25 set at the cut (removed the 1.2 s morph to 0.4 and the 2.5 s change); kept only mouth_open 0.05 over 1.2 s with the exhale.
+- C01 s10: gaze [0,0.05] from the cut (removed the 0.05 s dart from [0,0.8]); startle face set at the cut (was a 0.15 s morph); opens mid-turn (head aim [-11.02,0.65,89.03]), finishes the turn over 0.2 s from 0.03 s; dur 0.4 (was 0.35).
+- C01 s12: expression set at the cut (was a 0.3 s morph); removed the arcanist smile flick (1.95 s) and its reset.
+- C03 s8: face (eyes_wide 0.3, mouth_open 0.12, brows_sad 0.15) set at the cut (was a 1.0 s morph); removed the snatch's startle morph (eyes_wide 0.7, mouth_open 0.22 in 0.12 s); kept the startle blink and gaze [0,0.6]; the head's dip at 3.3 s now glides.
+- C03 s12: gaze [0,0.9] kept (from behind).
+- C02, C04a, C04b: no face cues; added a first-shot `gaze wander 0.04` so her eyes don't flick in close-ups.
+**Open (owner/next cinematics):** C03 s8's look down "at Grimtunnel" now passes on motion, but r2's judge says the face can't carry the beat (she bows a notch lower, the frame fills with hair). Its restage: cut at the yank (about 3.27 s) to a high-angle over-the-shoulder shot past her empty hand as the glow is pulled under, Grimtunnel in shadow, her fingers closing, no dip. That's one new shot and one judge, about 100k. **Routed to Face:** waxy flat skin, grey-mauve lids, near-black sclera at C01 s3, the moulded hair shell and braid card gaps (s10), a hard face edge under C01 s8's frontal key. Body: an armpit crease at s10's rise (already in the shipped build). Later: C01 s10's rise has a spring in its first frame (the clip; ease the hips' peak).
+**Scratch:** shoot/jedit/sheet/crops tools and edit scripts are in `scratchpad/cine7`, backed up to `survivorsunchained_inputs\scratch_cine7`.
+
 ## MR READY: Cinematics 6 (21 Oct): C03 done, four shots ship; next: merge, then STOP until the boss Warden / new Grimtunnel
 **State:** C03 round 3 (the last) applied, judged and closed by two confirmations. Ships: **s2, s6, s8, s12** (31.6 s; `docs/cinematics/shoot/c03.md` "As shot" lists each shot, the cuts and what restores them). Judges: r3 `a25ec932` (2/12: s2, s12 end), confirmation `a93b6ca3` (s2, s6, s8, s12 SHIP; s9 CUT twice: placeholder Grimtunnel), final `a2cb8db1` (s8 with the snatch folded in SHIP x4, s12 end SHIP, s12 opening SHIP with a 4-degree nudge, applied: `c6r3p_c03_s12_1`). Frames `godot/.shots/c6r3*`. Edit scripts `tools/scratch/cine5/ed_r3a.py`..`ed_r3p.py` (apply with `jedit.py`; scratch `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\c4134bd3-ebec-4f59-ad97-c6010364bcd4\scratchpad\cine6`, texts backed up to `survivorsunchained_inputs\scratch_cine6`).
 **Shots after r3a were taken `--stale-ok`:** integration's npc_guard commits (896878c6, 02d0ed88) weren't merged; C03 shows no guard.
