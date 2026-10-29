@@ -85,4 +85,39 @@ public class DaySlotsTests
         }
         finally { Directory.Delete(dir, true); }
     }
+
+    static CharacterData MakeWith(string calling, string type, string weapon)
+    {
+        var a = Callings.Archetype(calling);
+        return Character.Create(new CreationChoice
+        {
+            Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = weapon, Ability = a.Abilities[0], Type = type,
+        }, seed: 7);
+    }
+
+    [Fact]
+    public void Every_start_carries_two_skills_by_day_at_level_one()
+    {
+        var bad = new System.Collections.Generic.List<string>();
+        foreach (var a in Callings.Archetypes.Values)
+            foreach (var road in Lamps.RoadsOf(a.Id))
+                foreach (var w in a.Weapons)
+                {
+                    var ch = MakeWith(a.Id, road.Id, w);
+                    var got = SkillBook.Carried(ch).Select(c => c.Id).ToList();
+                    if (ch.Skills.Count != 1 || got.Count != 1) bad.Add($"{a.Id}/{road.Id}/{w}: skills [{string.Join(",", ch.Skills)}] carried [{string.Join(",", got)}]");
+                }
+        Assert.True(bad.Count == 0, string.Join(" | ", bad));
+    }
+
+    [Theory]
+    [InlineData("warden", "bulwark", "worn_oathblade", "rebuke")]
+    [InlineData("warden", "bulwark", "judgement_disc_item", "oathblade")]
+    [InlineData("reaver", "butcher", "gyre_axes", "cleaver")]
+    [InlineData("warden", "sunderer", "worn_oathblade", "sunder")]
+    [InlineData("reaver", "butcher", "butchers_cleaver", "axe_gyre")]
+    public void Second_skill_is_the_types_first_calling_skill(string calling, string type, string weapon, string expect)
+    {
+        Assert.Equal(expect, MakeWith(calling, type, weapon).Skills.Single());
+    }
 }

@@ -608,6 +608,7 @@ public static class Character
         ArtBook.HoldKin(ch);
         LampBook.Begin(ch, c.Type);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
+        LearnFirstCalling(ch, a, c.WeaponItem);
         foreach (var id in bg.Items)
         {
             var it = Inventory.Make(ch, id);
@@ -617,6 +618,25 @@ public static class Character
         }
         Inventory.AddToPack(ch, Inventory.Make(ch, "health_draught", qty: 2));
         return ch;
+    }
+
+    /// <summary>The second day skill at level 1 (CLASS_IDENTITY_AND_TALENTS.md §3.7): her type's first
+    /// calling skill that she can carry and does not already hold as her grip; else her archetype's
+    /// other starting weapon's skill. Creation only: old saves are untouched.</summary>
+    static void LearnFirstCalling(CharacterData ch, Archetype a, string? gripItem)
+    {
+        static string? SkillOf(string? item) => item != null && Items.All.ContainsKey(item) ? Items.Get(item).Weapon?.Id : null;
+        string? grip = SkillOf(gripItem);
+        var road = Content.Lamps.Roads.GetValueOrDefault(ch.Lamps?.Now.Type ?? "");
+        var pick = (road?.Skills ?? []).FirstOrDefault(id => id != grip && Content.Weapons.All.ContainsKey(id) && SkillBook.Carries(ch, id));
+        pick ??= a.Weapons.Select(SkillOf).FirstOrDefault(id => id != null && id != grip && Content.Weapons.All.ContainsKey(id) && SkillBook.Carries(ch, id));
+        if (pick == null) return;
+        if (!ch.Discovered.Contains(pick)) ch.Discovered.Add(pick);
+        if (!SkillBook.Learn(ch, pick) && !SkillBook.Knows(ch, pick))
+        {
+            ch.Skills.Add(pick);
+            if (ch.Slotted.Count < SkillBook.Slots(ch)) ch.Slotted.Add(pick);
+        }
     }
 
     static string ToBase36(long v)
