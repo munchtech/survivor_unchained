@@ -46,20 +46,25 @@ PRESETS = {
     # play camera, looking down, sees them, spaced round it)
     # (lf5c, the lf0 triage: "grey block-like boulders", FAR: rebuilt from planes (sculpt_frac), not pushed noise: a cracked block,
     # a tilted slab, a half-sunk water-worn one, a chipped angular one; each about the old one's size)
+    # (e22r1a, the Env 22 triage: boulder_b "a pillow/loaf with a seam" from the play camera: the zone squashes rocks and boulders
+    # to 0.6 of their height (flora.bin), so near-level crown faces and a strata notch read as a soft loaf: now steeper crown
+    # faces (fup 0.3-0.6), deeper cuts, a small crown, sunk 0.35, and two tilted beds (a layered step) instead of the notch)
     'boulder': dict(lods=(2200, 700, 220), shadow=True, variants=[
         dict(method='frac', seed=1101, ax=(1.6, 1.3, 1.15), cz=0.75, fn=11, ftop=5, fup=(0.55, 0.85), fd=(0.74, 0.94), fk=0.08, chips=6, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.06, split_d=0.15, lump=0.025, fcrown=0.84, amp=0.012, freq=0.8, fine=0.006, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1113, ax=(1.7, 1.4, 0.95), cz=0.6, fn=10, ftop=4, fup=(0.75, 0.92), fd=(0.8, 0.95), fk=0.07, chips=5, chip_d=(0.06, 0.12), ledges=2, ledge_d=(0.12, 0.2), strata=4, strata_d=0.035, lean=8, lump=0.05, amp=0.01, freq=0.8, fine=0.006, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1113, ax=(1.7, 1.4, 1.3), cz=0.6, sink=0.35, fn=12, ftop=5, fup=(0.3, 0.6), fcrown=0.9, fd=(0.66, 0.86), fk=0.05, round=1.15, chips=7, chip_d=(0.06, 0.12), beds=2, bed_d=0.09, bed_tilt=0.55, lean=8, lump=0.03, amp=0.01, freq=0.8, fine=0.006, foot=-0.45, cut=-0.3),
         dict(method='frac', seed=1127, ax=(1.6, 1.35, 1.15), cz=0.6, sink=0.15, fn=9, ftop=4, fup=(0.5, 0.8), fd=(0.76, 0.92), fk=0.1, round=1.02, ledges=1, chips=4, chip_d=(0.06, 0.12), lump=0.06, amp=0.015, freq=0.9, fine=0.006, foot=-0.45, cut=-0.3),
         dict(method='frac', seed=1131, ax=(1.5, 1.4, 1.15), cz=0.75, fn=9, ftop=4, fup=(0.45, 0.85), fd=(0.72, 0.95), fk=0.06, chips=7, chip_d=(0.06, 0.15), ledges=2, splits=1, split_w=0.05, split_d=0.13, lump=0.06, amp=0.01, freq=0.9, fine=0.006, foot=-0.45, cut=-0.3),
     ]),
     # field rock: angular, broken faces with soft bevels, lichened in the shader (the kit's 'rock': scale ~0.6, squashed)
     # (lf5c, the lf0 triage on the boulders and field rocks: "grey block-like": now broken from planes (sculpt_frac): an angular
     # chunk, a tilted slab standing out of the ground, a low half-sunk one with a ledge, one cracked in two, a chipped one)
+    # (e22r1a: fieldrock_b (strata seam) and fieldrock_d (split: a "hot cross bun" crease) read as round buns: rebuilt as
+    # boulder_b, no splits or seams, beds instead, sunk 0.3)
     'fieldrock': dict(lods=(1600, 500, 160), shadow=True, variants=[
         dict(method='frac', seed=1201, ax=(1.6, 1.35, 1.2), cz=0.58, side_z=(0.05, 0.5), fn=13, ftop=4, fup=(0.5, 0.85), fd=(0.7, 0.93), fk=0.05, chips=7, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.05, split_d=0.12, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1211, ax=(1.75, 1.0, 1.2), cz=0.48, side_z=(0.05, 0.5), fn=12, ftop=3, fup=(0.6, 0.85), fd=(0.8, 0.94), fk=0.05, chips=5, chip_d=(0.05, 0.12), strata=5, strata_d=0.03, lean=16, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1211, ax=(1.75, 1.1, 1.35), cz=0.48, side_z=(0.05, 0.5), sink=0.3, fn=13, ftop=4, fup=(0.35, 0.65), fcrown=0.9, fd=(0.64, 0.86), fk=0.05, round=1.15, chips=7, chip_d=(0.05, 0.12), beds=2, bed_d=0.09, bed_tilt=0.55, lean=12, lump=0.03, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
         dict(method='frac', seed=1223, ax=(1.6, 1.45, 1.05), cz=0.38, side_z=(0.05, 0.5), sink=0.1, fn=13, ftop=5, fup=(0.65, 0.9), fd=(0.7, 0.93), fk=0.06, chips=6, chip_d=(0.06, 0.13), ledges=2, lump=0.06, amp=0.012, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
-        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.1), cz=0.58, side_z=(0.05, 0.5), fn=14, ftop=5, fup=(0.5, 0.85), fd=(0.7, 0.94), fk=0.05, chips=6, chip_d=(0.05, 0.12), splits=1, split_w=0.11, split_d=0.32, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.3), cz=0.58, side_z=(0.05, 0.5), sink=0.3, fn=14, ftop=5, fup=(0.35, 0.65), fcrown=0.9, fd=(0.64, 0.86), fk=0.05, round=1.15, chips=7, chip_d=(0.05, 0.12), beds=4, bed_d=0.06, lump=0.03, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
         dict(method='frac', seed=1229, ax=(1.55, 1.45, 1.15), cz=0.58, side_z=(0.05, 0.5), fn=15, ftop=5, fup=(0.45, 0.85), fd=(0.72, 0.93), fk=0.045, chips=9, chip_d=(0.05, 0.14), ledges=1, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
     ]),
     # cliff / outcrop chunk: blocky, stratified in layers (each its own inset, a joint between), stacks (scale ~5: 17 m)
@@ -437,6 +442,23 @@ def sculpt_frac(prm):
         notch = smooth(0.1, 0.0, fr) + smooth(0.9, 1.0, fr)
         side = np.clip(1 - np.abs(D[:, 2]) * 1.4, 0, 1)                  # (on its sides, not its crown)
         P -= D * (prm.get('strata_d', 0.03) * notch * side)[:, None]
+    # (e22r1a, the triage's "pillow/loaf with a seam": a strata notch reads as one seam round a soft body) beds: 'beds' layers
+    # each set back on its sides further than the one under it (by a random share of 'bed_d' of its mean radius), so each bed's top shows as a
+    # ledge (moss and litter catch on it) and its outline steps: a layered stone, its bedding tilted 'bed_tilt' and wavy
+    if prm.get('beds'):
+        L = prm['beds']
+        rb = np.random.default_rng(prm['seed'] + 3)
+        sb = np.maximum.accumulate(np.cumsum(rb.uniform(-0.25, 1.0, L + 3))) * prm.get('bed_d', 0.08) * float(np.mean(ax))   # (upper beds back more: steps up its sides)
+        sb[:2] = 0.0
+        tb = rb.uniform(0, 2 * math.pi)
+        bn = np.array([math.cos(tb) * prm.get('bed_tilt', 0.15), math.sin(tb) * prm.get('bed_tilt', 0.15), 1.0])
+        bn /= np.linalg.norm(bn)
+        h = ((P @ bn) + ax[2]) / (2 * ax[2]) * L + 0.25 * fbm3(P, 0.5, prm['seed'] + 4, 2)
+        kb = np.clip(np.floor(h).astype(int) + 1, 0, L + 1)
+        fb = h - np.floor(h)
+        bw = prm.get('bed_w', 0.12)                                             # (how sharp the step: its share of a bed)
+        s = sb[kb] + (sb[kb + 1] - sb[kb]) * smooth(1 - bw, 1.0, fb)
+        P[:, :2] *= (1 - s / float(np.mean(ax)))[:, None]                # (taken in about its middle: the whole bed, crown and all)
     if prm.get('lean'):
         a = math.radians(prm['lean']) * rng.choice([-1, 1])
         b = rng.uniform(0, 2 * math.pi)

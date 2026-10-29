@@ -436,7 +436,9 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
                     mz = 0.5 + 0.55 * hnoise(co * 4.2, 23) + 0.35 * hnoise(co * 11.0, 29)
                     m = GRIME['moss'] * smooth01(0.42, 0.58, mz) * min(1.0, (up - 0.78) * 6.0)
                     lt = lt.lerp(MOSS * (0.85 + 0.3 * hnoise(co * 5.0, 31)), m)
-            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground and not upf else 1.0)
+            # (e22r1a: earth that runs out into the ground ('soil_clean') takes no contact shade at its foot: a dark ring)
+            soil_out = OLD.get('soil_clean') and kind_of_face[poly.index] == 'soil'
+            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground and not upf and not soil_out else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
             s *= 1.0 + 0.4 * min(0.0, max(conv[vi], -0.5)) * 0.6
@@ -1349,14 +1351,14 @@ def sblock(parts, size, at, tint, rng, **kw):
     parts.append(Part(stone_block(*size, rng, **kw), 'stone', tint * (1 + rng(-0.07, 0.07)), at, cap='stone', jitter=0.0))
 
 
-def lay_course(xa, xb, bl, rng, half_first, forced=()):
-    """One course's joints from xa to xb: blocks about bl long (0.75-1.2x), the first a half (running bond)
+def lay_course(xa, xb, bl, rng, half_first, forced=(), var=(0.75, 1.2)):
+    """One course's joints from xa to xb: blocks about bl long ('var' times it: 0.75-1.2x), the first a half (running bond)
     when half_first, joints forced at the given x (an opening's edges); no sliver under 0.28 bl."""
     xs = [xa]
     x = xa
     first = True
     while x < xb - 1e-6:
-        n = bl * (rng(0.45, 0.6) if (first and half_first) else rng(0.75, 1.2))
+        n = bl * (rng(0.45, 0.6) if (first and half_first) else rng(*var))
         first = False
         nx = min(xb, x + n)
         for f in forced:
@@ -1669,6 +1671,17 @@ def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cel
         tf = tuft(rng, Vector((cx + x, y - 0.015, cz + z)), rng(0.14, 0.3), n=int(rng(5, 8)))
         tf.tint = Vector(old.get('tuft', (0.3, 0.42, 0.16))) * rng(0.8, 1.2)
         out.append(tf)
+    nf = old.get('fringe', 0)
+    for i in range(nf):
+        # (e22r1a, the Env 22 triage: the mound's edge hard against the turf) a fringe of grass round its foot, standing
+        # over the line where its earth meets the ground, so the turf runs up onto it
+        an = 2 * math.pi * (i + rng(-0.4, 0.4)) / nf
+        rr = rng(0.86, 1.06)
+        x, z = math.cos(an) * a * rr, math.sin(an) * b * rr
+        y = max(0.0, mound_y(x, z, a, b, h, seed, sag, pw=pw))
+        tf = tuft(rng, Vector((cx + x, y - 0.02, cz + z)), rng(0.12, 0.26), n=int(rng(6, 10)))
+        tf.tint = Vector(old.get('fringe_tint', old.get('tuft', (0.3, 0.42, 0.16)))) * rng(0.75, 1.2)
+        out.append(tf)
     nl = old.get('leaves', 0)
     if nl:
         pts = []
@@ -1926,10 +1939,10 @@ def rubble(p):
     cx = p.get('x0', -L / 2) + L / 2
     a, b = L * 0.42, Wd * 0.42
     def hy(x, z):
-        return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07))
+        return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07, pw=p.get('pw', 0.55)))
     def fn(uu, vv):
         x, z = cx + (uu - 0.5) * 2 * a * 1.15, (vv - 0.5) * 2 * b * 1.15
-        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.16), z)
+        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.16, pw=p.get('pw', 0.55)), z)
     weed = Vector((0.62, 0.86, 0.42))
     def ft(c):
         r = math.sqrt(((c.x - cx) / a) ** 2 + (c.z / b) ** 2)
@@ -1965,6 +1978,16 @@ def rubble(p):
         bm = gravel(s, rng)
         m = bedded(bm, T(x, 0, z) @ R('Y', rng(0, 6.28)) @ R('X', rng(-0.4, 0.4)), s * 0.3 - hy(x, z))
         parts.append(Part(bm, 'stone', stone * rng(0.66, 0.9), m, cap='stone', jitter=0.0))
+    nf = p.get('fringe', 0)
+    for i in range(nf):
+        # (e22r1a, the Env 22 triage: a dark ring round the heap at the Watch-post) grass standing over its foot, where its
+        # spoil runs out into the ground, so soil and grass meet the rubble
+        an = 2 * math.pi * (i + rng(-0.4, 0.4)) / nf
+        rr = rng(0.8, 1.08)
+        x, z = cx + math.cos(an) * a * rr, math.sin(an) * b * rr
+        tf = tuft(rng, Vector((x, hy(x, z) - 0.02, z)), rng(0.14, 0.3) * u, n=int(rng(6, 10)))
+        tf.tint = Vector(p.get('fringe_tint', (0.5, 0.62, 0.28))) * rng(0.75, 1.2)
+        parts.append(tf)
     return parts
 
 
@@ -2272,7 +2295,9 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
         frame = basis(along, up, down)  # local x along the ridge, y off the slope, z down it
         # the underlay: a dark deck under the slabs (what a slipped slab shows)
         parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06 - Vector((0, sag, 0)))) @ frame, cap='stone', jitter=0.0))
-        course = 0.56
+        # (e22r1a, the Env 22 triage: "an even grid of slabs, like wall texture" from the play camera) 'course' the courses'
+        # depth and 'bl_var' the slabs' spread of width: bigger, unequal slates, so fewer, uneven joints
+        course = ro.get('course', 0.56)
         nk = int(run / course + 0.999)
         # (lf6d) old: courses of unequal depth (the quarry's beds), slabs of unequal width, so no grid shows
         cvar = ro.get('course_var', 0.0)
@@ -2283,7 +2308,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
             s0 = s_at[k]
             course = cds[k]
             lift = 0.035  # each course rides on the one below at its tail
-            xs = lay_course(-ln / 2, ln / 2, ro.get('bl', 0.82), rng, k % 2 == 1)
+            xs = lay_course(-ln / 2, ln / 2, ro.get('bl', 0.82), rng, k % 2 == 1, var=tuple(ro.get('bl_var', (0.75, 1.2))))
             t = (s0 + course / 2) / run
             for a, b in zip(xs, xs[1:]):
                 xm = (a + b) / 2
@@ -2298,6 +2323,11 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 if ro.get('cluster'):
                     # weathering in drifts across the slabs (wet, darker; dry, paler), not slab by slab
                     tn = tn * (1 + ro['cluster'] * hnoise(Vector((xm * 0.8, 0, s0 * 1.1 + sx * 5.3)), 63))
+                if ro.get('streak'):
+                    # (e22r1a) rain streaks: dark bands down the slope, the same along it (by the slab's place across the roof),
+                    # stronger toward the eave where the run-off gathers
+                    sk = smooth01(0.5, 0.85, 0.5 + 0.55 * hnoise(Vector((xm * 1.9, 0, sx * 7.7)), 73))
+                    tn = tn * (1 - ro['streak'] * sk * (0.55 + 0.45 * t))
                 if rng() < p_lichen:
                     tn = tn.lerp(Vector((0.86, 0.85, 0.74)), rng(0.3, 0.6))  # pale lichen
                 tn = tn.lerp(moss * rng(0.85, 1.1), min(1.0, m * 0.9))

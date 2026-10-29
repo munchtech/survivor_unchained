@@ -119,6 +119,14 @@ uniform float amb_occl = 1.0;
 // (lf5c) leaf litter caught on its ledges and level faces (what faces up, in its hollows and inner corners: the baked
 // cavity and occlusion), in scattered spots, litter_color; 0 none
 uniform float litter = 0.0;
+// (e22r1a, the Env 22 triage: a boulder sat on the ground with no contact) the foot's skirt: earth and grass climbing its
+// foot to foot_soil_h m (over the copy's own origin, its line ragged by the sheet), foot_soil of it; earth with patches of
+// grass (foot_grass of them) so soil and turf meet the stone, not a clean cut; 0 none
+uniform float foot_soil = 0.0;
+uniform float foot_soil_h = 0.3;
+uniform float foot_grass = 0.5;
+uniform vec4 foot_soil_color : source_color = vec4(0.23, 0.18, 0.13, 1.0);
+uniform vec4 foot_grass_color : source_color = vec4(0.22, 0.27, 0.13, 1.0);
 uniform vec4 litter_color : source_color = vec4(0.36, 0.22, 0.11, 1.0);
 // (a pebble under a crown darkens as the ground's litter does there: GroundPaint's exposure (R the open sky), sky_dark of it; Dressing sets it)
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
@@ -1033,6 +1041,12 @@ void fragment() {
 			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
 			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
 			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
+		}
+		if (foot_soil > 0.0) {
+			float fl = texture(stone_tex, wp.xz / (tile * 0.61) + vec2(0.43, 0.19)).a;
+			float fs = 1.0 - smoothstep(0.35 * foot_soil_h, foot_soil_h, v_foot + 0.6 * foot_soil_h * (fl - 0.5) + 0.3 * foot_soil_h * (st.a - 0.5));
+			float gz = smoothstep(1.0 - foot_grass - 0.08, 1.0 - foot_grass + 0.08, texture(stone_tex, wp.zx / (tile * 0.29) + vec2(0.17, 0.71)).a);
+			col = mix(col, mix(foot_soil_color.rgb, foot_grass_color.rgb, gz) * (0.8 + 0.4 * st.r), foot_soil * fs * (1.0 - wet));
 		}
 		col *= mix(1.0, wet_dark, wet);
 		float damp = top_damp * smoothstep(0.0, 0.25, flora_light.x) * (1.0 - wet) * mix(0.55, 1.0, smoothstep(0.3, 0.7, st.a + 0.25 * COLOR.g));
