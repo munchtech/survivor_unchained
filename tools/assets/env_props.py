@@ -4002,6 +4002,14 @@ def camp_ground(p):
         x, z, r = sp_[:3]
         t = stone * rng(0.75, 1.15)
         parts.append(Part(pebble(r, rng, *sp_[3:5]), 'stone', Vector((t.x, t.y * rng(0.97, 1.03), t.z * rng(0.94, 1.04))), T(x, r * 0.12, z) @ R('Y', rng(0, 6.28)), smooth=True, jitter=0.0))
+    # (Env 22 r2) the same kit for a yard or an apron (gate_apron): straw spills [x, z, rx, rz, n], and any of the
+    # fire's own (kindling, twigs, ash, brands) left out.
+    for (x, z, rx, rz, n) in p.get('straw', []):
+        straw_spill(parts, Vector((x, 0.0, z)), rx, rz, int(n), rng, hexlin(p['straw_tint']) if 'straw_tint' in p else None)
+    if 'kindling' not in p:
+        for (x, z, a, L) in p.get('twigs', []):
+            parts.append(Part(stick(L, rng(0.012, 0.022), rng, 4), 'bark', bark * rng(0.7, 1.0), T(x, 0.015, z) @ R('Y', a), jitter=0.0))
+        return parts
     kx, kz, ka = p['kindling']
     at = T(kx, 0, kz) @ R('Y', ka)
     for i in range(7):

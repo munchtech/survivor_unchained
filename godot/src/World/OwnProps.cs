@@ -37,7 +37,7 @@ public static class OwnProps
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
         Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null,
-        List<Vector3>? Clear = null);
+        List<Vector3>? Clear = null, List<(Vector2 At, float Ra, float Rb, float Turn)>? Puddles = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -126,7 +126,13 @@ public static class OwnProps
             // clear: [x, z, r] where the kit's small props (props/*) go (E9d: the web game's wares on the stalls our own stalls carry)
             var clear = new List<Vector3>();
             if (r.TryGetProperty("clear", out var cl)) foreach (var c in cl.EnumerateArray()) clear.Add(new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()));
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear);
+            // (Env 22 r2) puddles: [x, z, ra, rb, degrees] a standing puddle the ground's paint lays there (GroundPaint, its A
+            // mask: the wet rim, the sky's broken mirror), an ellipse ra by rb metres turned so many degrees (the gate's apron).
+            var pud = new List<(Vector2 At, float Ra, float Rb, float Turn)>();
+            if (r.TryGetProperty("puddles", out var pd))
+                foreach (var q in pd.EnumerateArray())
+                    pud.Add((new Vector2(q[0].GetSingle(), q[1].GetSingle()), q[2].GetSingle(), q[3].GetSingle(), q.GetArrayLength() > 4 ? Mathf.DegToRad(q[4].GetSingle()) : 0));
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear, pud);
         }
         zones[zone] = z;
         return z;

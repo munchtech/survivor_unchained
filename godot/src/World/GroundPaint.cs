@@ -320,6 +320,9 @@ public sealed class GroundPaint
             }
         }
 
+        // (Env 22 r2) the zone's own puddles (props_own.json "puddles"), where a place wants standing water.
+        if (OwnProps.For(z.Id)?.Puddles is { } own)
+            foreach (var (at, ra, rb, turn) in own) Pool(at, new Vector2(Mathf.Cos(turn), Mathf.Sin(turn)), ra, rb);
         var mask = new byte[mr * mr * 4];
         var core = new float[mr * mr];
         var verge = new float[mr * mr];

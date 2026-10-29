@@ -97,11 +97,13 @@ public partial class WorldScene : Node3D, IZoneLook
 
     public double HeightAt(double x, double z) => Data.HeightAt((float)x, (float)z);
 
-    readonly Vector4[] wadeFeet = new Vector4[8];
+    readonly Vector4[] wadeFeet = new Vector4[4];
     readonly List<(double D2, Vector4 F)> wadeNear = new();
 
-    /// <summary>Who stands in the still water (env 22): her and the nearest seven of the living within 30 m of her, each
-    /// as (x, z, how deep: 0 at 1 cm, 1 by 25 cm, how fast), for the water's rings at their feet (Water.Wade).</summary>
+    /// <summary>Who stands in the still water (env 22): her and the nearest three of the living within 30 m of her whose
+    /// body is up (standing, fighting: not rising, surfacing, burrowed, under, sunk by a cinematic, or dying), each as
+    /// (x, z, how deep: 0 at 1 cm, 1 by 25 cm, how fast), for the water's rings at their feet (Water.Wade). (r2 judge:
+    /// rings with no figure in them, a drowned still under the surface.)</summary>
     void Wading(Battle b, double hx, double hz, float y)
     {
         if (SurvivorUnchained.View.Water.Level is not float wl) return;
@@ -113,7 +115,7 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var (ex, ez) = Drawn.Of(e);
             double d2 = (ex - hx) * (ex - hx) + (ez - hz) * (ez - hz);
-            if (d2 > 900) continue;
+            if (d2 > 900 || !Upright(e)) continue;
             float ey = (float)HeightAt(ex, ez);
             if (wl - ey <= 0.01f) continue;
             wadeNear.Add((d2, new Vector4((float)ex, (float)ez, Deep(wl - ey), (float)Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz))));
@@ -121,6 +123,13 @@ public partial class WorldScene : Node3D, IZoneLook
         wadeNear.Sort((a, c) => a.D2.CompareTo(c.D2));
         foreach (var (_, f) in wadeNear) { if (n == wadeFeet.Length) break; wadeFeet[n++] = f; }
         SurvivorUnchained.View.Water.Wade(wadeFeet.AsSpan(0, n));
+    }
+
+    static bool Upright(Enemy e)
+    {
+        if (e.State is EnemyState.Rising or EnemyState.Surfacing or EnemyState.Burrowed or EnemyState.Dying or EnemyState.Dead) return false;
+        if (e.State == EnemyState.Active && CrowdView.Under?.Invoke(e) == true) return false;
+        return CrowdView.Staged?.Invoke(e) is not { } st || st.Sink < 0.3;
     }
 
     /// <summary>The fight (or walk) here, and the survivor in it.</summary>

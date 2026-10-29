@@ -111,7 +111,7 @@ public static class Ground
                  ("rut_soft", "ground-rut-soft", 0f), ("rut_blur", "ground-rut-blur", 0.3f), ("road_rime", "ground-road-rime", 1f), ("crown_grass", "ground-crown-grass", 0.45f), ("pud_night", "ground-pud-night", 0f), ("pud_mud", "ground-pud-mud", 0f), ("pud_sheen", "ground-pud-sheen", 0f),
                  ("foot_damp", "ground-foot-damp", 0f), ("foot_w", "ground-foot-w", 0.6f),
                  ("camp_scorch", "ground-camp-scorch", 0f), ("scorch_r", "ground-scorch-r", 1f), ("trample", "ground-trample", 0f), ("path_hw", "ground-path-hw", 0.2f), ("path_lift", "ground-path-lift", 0f),
-                 ("road_night", "ground-road-night", 0f), ("verge_litter", "ground-verge-litter", 0f), ("verge_mip", "ground-verge-mip", 5f), ("litter_wood", "ground-litter-wood", 0.5f) })
+                 ("mud_night_floor", "setts-mud-night-floor", 0.75f), ("mud_night_wet", "setts-mud-night-wet", 1f), ("road_night", "ground-road-night", 0f), ("verge_litter", "ground-verge-litter", 0f), ("verge_mip", "ground-verge-mip", 5f), ("litter_wood", "ground-litter-wood", 0.5f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, zg.TryGetValue(u, out var zv) ? zv : sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
         // (E8 later r2) the zone's footpaths (flora_species.json "ground_paths": polylines of [x, z]), as segments
         var segs = FloraSpecies.PathsFor(z.Id);

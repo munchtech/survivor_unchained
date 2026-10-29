@@ -128,7 +128,12 @@
   {"_doc": "Env 22 r1c (triage judge: the gate's apron large, flat and empty): a handcart left by the west tower, barrels and a crate by the east one, off the way", "preset": "handcart", "x": -6.2, "z": -104.2, "rot": 1.25},
   {"preset": "barrel", "x": 6.4, "z": -105.9, "rot": 0.4},
   {"preset": "barrel", "x": 7.25, "z": -105.2, "rot": 1.9, "scale": 0.92},
-  {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8}
+  {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8},
+  {"_doc": "Env 22 r2 (judge r1: the apron still empty): loose cobbles, straw off the carts, twigs (gate_apron, camp_ground's kit; no shadow); the puddle is \"puddles\"", "preset": "gate_apron", "x": 0.0, "z": -103.5}
+ ],
+ "puddles": [[1.5, -103.1, 0.95, 0.55, 18], [-2.3, -101.6, 0.5, 0.32, -30]],
+ "night_lamps": [
+  {"_": "(Env 22 r2, judge r1: the gate's apron cool and empty, the passage floor a black void) a lantern set down inside the arch by the east jamb: its light down the passage floor and out over the apron", "holder": "lantern_standing", "on": [1.35, -109.5, 0.0], "local": [0.0, 0.0, 0.0], "turn": 0.5, "color": "#ffb468", "energy": 1.6, "range": 11.0, "att": 0.75, "spec": 0.25}
  ],
  "lamps": {
   "glow-1-0": {
@@ -147,8 +152,9 @@
    "day": 0.15
   },
   "glow-10-0": {
-   "color": "#ffa040",
-   "energy": 1.0,
+   "_": "(Env 22 r2, judge r1: Road B's low lantern (its flame 1.4 m up, the others' 2 m) pooled red-orange on the leaf litter, hotter than the rest) paler and a little softer",
+   "color": "#ffb878",
+   "energy": 0.8,
    "day": 0.15
   },
   "glow-11-0": {

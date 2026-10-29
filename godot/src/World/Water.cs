@@ -34,19 +34,25 @@ public static class Water
         PushTints();
     }
 
-    static readonly Vector4[] wade = new Vector4[8];
+    static readonly Vector4[] wade = new Vector4[4];
     static int waded;
 
-    /// <summary>Who stands in the water this frame (env 22, the ford's "wading rings"): up to eight feet as (x, z, how deep
-    /// 0-1, how fast m/s); the shader rings the surface round each (water.gdshader's wade_at). Pass none to clear.</summary>
+    /// <summary>Who stands in the water this frame (env 22, the ford's "wading rings"): up to four feet as (x, z, how deep
+    /// 0-1, how fast m/s), packed from the first; the shader rings the surface round each (water.gdshader's wade_at), and
+    /// skips its loop outside their bounds (wade_box). Pass none to clear.</summary>
     public static void Wade(ReadOnlySpan<Vector4> feet)
     {
         int n = Math.Min(feet.Length, wade.Length);
         if (n == 0 && waded == 0) return;
-        for (int i = 0; i < wade.Length; i++) wade[i] = i < n ? feet[i] : Vector4.Zero;
+        var box = new Vector4(1e9f, 1e9f, -1e9f, -1e9f);
+        for (int i = 0; i < wade.Length; i++)
+        {
+            wade[i] = i < n ? feet[i] : Vector4.Zero;
+            if (i < n) box = new Vector4(Math.Min(box.X, feet[i].X), Math.Min(box.Y, feet[i].Y), Math.Max(box.Z, feet[i].X), Math.Max(box.W, feet[i].Y));
+        }
         waded = n;
         foreach (var r in mats)
-            if (r.GetRef().Obj is ShaderMaterial m) m.SetShaderParameter("wade_at", wade);
+            if (r.GetRef().Obj is ShaderMaterial m) { m.SetShaderParameter("wade_at", wade); m.SetShaderParameter("wade_box", box); }
     }
 
     static void PushTints()

@@ -179,9 +179,11 @@ uniform float wake_foam = 0.5;
 // near_diffuse: how much a near light (a lamp, her ember) lights the body itself, as against glinting on it (1: as
 // before; under it the pool on the water is its broken glints, not a pale lit sheet).
 uniform float near_diffuse = 1.0;
-// The wading rings (Water.Wade): up to eight feet (x, z, how deep 0-1, how fast m/s); wade_amt how strong, wade_reach
-// (m) how far they spread, wade_len (m) the rings' spacing, wade_foam the froth collar at the legs.
-uniform vec4 wade_at[8];
+// The wading rings (Water.Wade): up to four feet, packed from the first (x, z, how deep 0-1, how fast m/s); wade_box their
+// bounds (min x, min z, max x, max z; the loop is skipped outside it, grown by the rings' reach); wade_amt how strong,
+// wade_reach (m) how far they spread, wade_len (m) the rings' spacing, wade_foam the froth collar at the legs.
+uniform vec4 wade_at[4];
+uniform vec4 wade_box = vec4(1e9, 1e9, -1e9, -1e9);
 uniform float wade_amt = 0.0;
 uniform float wade_reach = 0.8;
 uniform float wade_len = 0.3;
@@ -266,13 +268,14 @@ void fragment() {
 	vec2 wg = vec2(0.0);
 	rshade = 0.0;
 	float collar = 0.0;
-	if (wade_amt > 0.0 || wade_foam > 0.0) {
-		for (int i = 0; i < 8; i++) {
+	float wreach = wade_reach * 3.0 + 0.3;
+	if ((wade_amt > 0.0 || wade_foam > 0.0) && all(greaterThan(wv.xz, wade_box.xy - wreach)) && all(lessThan(wv.xz, wade_box.zw + wreach))) {
+		for (int i = 0; i < 4; i++) {
 			vec4 f = wade_at[i];
-			if (f.z <= 0.0) continue;
+			if (f.z <= 0.0) break;
 			vec2 dv = wv.xz - f.xy;
 			float d = length(dv);
-			if (d > wade_reach * 3.0 + 0.3) continue;
+			if (d > wreach) continue;
 			float r0 = 0.24;
 			float env = f.z * (1.0 + 0.6 * clamp(f.w / 3.0, 0.0, 1.0)) * smoothstep(r0 - 0.08, r0 + 0.06, d) * exp(-max(d - r0, 0.0) / wade_reach);
 			// (never a target: the rings' phase and strength wander round the foot with the noise, so they break into arcs)
