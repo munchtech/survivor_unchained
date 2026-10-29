@@ -20617,12 +20617,6 @@
     "id": "bedroll",
     "speaker": "narrator",
     "text": "Your bedroll has not been slept in.",
-    "next": "prints"
-   },
-   "prints": {
-    "id": "prints",
-    "speaker": "narrator",
-    "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
     "next": "lamp"
    },
    "lamp": {

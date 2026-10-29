@@ -254,19 +254,34 @@ def uv_cyl(p, rng, uvl):
             l[uvl].uv = (u0 + (u1 - u0) * min(max(uu, 0.004), 0.996), v0 + (v1 - v0) * min(max(vv, 0.004), 0.996))
 
 
+TILES = {'tile': 0.5, 'wool': 0.4}  # tiling cloth regions (their own sheet and material, not the atlas): metres a tile
+
+
 def uv_part(p, rng):
     """Box-project the part's faces into its region, in its own frame (grain along local y),
     each island placed at a random spot in the region (shrunk only if it is bigger)."""
     bm = p.bm
     uvl = bm.loops.layers.uv.verify()
-    if p.region == 'tile':
+    if p.region in TILES:
         # (E9d) cloth on its own tiling sheet (canvas_tile.png, 0.5 m a tile): box-projected in metres, no atlas
+        # (C01 set) or the bedroll's wool (wool_tile.png, 0.4 m a tile)
+        m = TILES[p.region]
+        if p.cyl:
+            # (C01 set) round a tube (a roll): unwrapped about its axis (local y), the weave at its true size all round
+            for f in bm.faces:
+                ac = math.atan2(f.calc_center_median().z, f.calc_center_median().x)
+                for l in f.loops:
+                    c = l.vert.co
+                    a = math.atan2(c.z, c.x)
+                    a += 2 * math.pi * round((ac - a) / (2 * math.pi))
+                    l[uvl].uv = (a * p.cyl / m, c.y / m)
+            return
         for f in bm.faces:
             ax = max(range(3), key=lambda i: abs(f.normal[i]))
             for l in f.loops:
                 c = l.vert.co
                 a, b = (c.x, c.z) if ax == 1 else (c.z, c.y) if ax == 0 else (c.x, c.y)
-                l[uvl].uv = (a / 0.5, b / 0.5)
+                l[uvl].uv = (a / m, b / m)
         return
     if p.cyl:
         uv_cyl(p, rng, uvl)
@@ -496,7 +511,7 @@ def finish(name, parts, mat, seed):
     kinds = [info[i][1] for i in pidx]
     bake_colours(me, tints, kinds, vmods=[info[i][4] for i in pidx])
     me.materials.append(mat)
-    for kind_, mname in (('tile', 'cloth'), ('glow', 'glow')):
+    for kind_, mname in (('tile', 'cloth'), ('wool', 'wool'), ('glow', 'glow')):
         # (E9d) the cloth's faces take a material of their own (main() splits them off as <name>_cloth); (E8 later) so
         # do a near prop's lit panes (<name>_glow: OwnProps' unshaded glow), not the far castle's (its one far mesh)
         if kind_ not in kinds or (kind_ == 'glow' and GRIME.get('far')):
@@ -685,76 +700,169 @@ def roll_parts(p, L, r, at, rng, blanket, band, strap, sag=0.0):
     return out
 
 
+def thick(bm, t, rim=0.45, segs=3):
+    """(C01 set) A cloth surface given its thickness (offset down its normals) and its rims rolled soft (the
+    edges between its top and its sides bevelled round, rim x t), so it reads as wool, not a razor-thin sheet."""
+    bm.normal_update()
+    bmesh.ops.solidify(bm, geom=bm.faces[:], thickness=t)
+    bm.normal_update()
+    sharp = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle(0.0) > 1.0]
+    if sharp and rim > 0:
+        bmesh.ops.bevel(bm, geom=sharp, offset=t * rim, segments=segs, affect='EDGES', profile=0.5, clamp_overlap=True)
+    bm.normal_update()
+    return bm
+
+
+def wool_roll(L, r, at, tint, seed):
+    """(C01 set) A roll of wool along local x: a soft lumpy tube (wool tile) with spiral ends (the atlas's roll ends)."""
+    out = []
+    segs, rings = 18, 8
+    prof = [(r * (1 + 0.04 * math.sin(k * 1.9 + seed)), -L / 2 + L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=False)
+    for v in bm.verts:
+        k = 1 + 0.035 * hnoise(v.co * 7, seed)
+        v.co.x *= k
+        v.co.z *= k
+    turn = R('Z', -math.pi / 2)
+    out.append(Part(bm, 'wool', tint, at @ turn, smooth=True, jitter=0.0, cyl=r))
+    for sgn in (-1, 1):
+        endc = lathe([(r * 0.985, 0.0), (r * 0.5, 0.006), (0.0, 0.008)], segs, cap0=False, cap1=False)
+        out.append(Part(endc, 'rollend', tint * 0.9, at @ turn @ T(0, sgn * L / 2, 0) @ (R('X', math.pi) if sgn < 0 else Matrix.Identity(4)),
+                        cap='rollend', smooth=True, jitter=0.0, capr=r, capto=0.14))
+    return out
+
+
 def bedroll_open(p):
-    rng = Rng(p['seed'])
+    """(C01 set, judge: "a rubber doormat and a towel: chunky embossed weave, flat stamped blanket, razor edges")
+    A traveller's bedroll unrolled for the night, dry, nobody in it: an oiled groundsheet with a real hem, a thick
+    fulled-wool blanket over it (its own tiling wool, the weave at its true size) with soft rolled edges, its head
+    end turned back, two woven bands across its foot; the head end of the roll still rolled (a pillow), its ties loose."""
     L, W = p['len'], p['wide']
     parts = []
     blanket, band, sheet, pillow, strap = (hexlin(p[k]) for k in ('blanket', 'band', 'sheet', 'pillow', 'strap'))
+    seed = p['seed']
+    rr = p.get('roll_r', 0.1)
+    zr = -L / 2 + rr  # the head roll's axis
+    # The groundsheet: oiled canvas (the stalls' linen tile, dark), 5 mm thick, a rolled hem, its foot corners
+    # lifting a little, running into the bottom of the head roll.
+    SL0, SL1 = L / 2 + 0.1, zr
+    SW = W + 0.12
 
-    # The groundsheet: oiled canvas, edges curling up a little.
     def gs(u, v):
-        x, z = (u - 0.5) * (W + 0.1), (v - 0.5) * (L + 0.28)
-        e = max(abs(u - 0.5), abs(v - 0.5)) * 2
-        y = 0.008 + 0.012 * max(0.0, e - 0.85) / 0.15 + 0.004 * hnoise((x * 3, 0, z * 3), p['seed'])
+        x = (u - 0.5) * SW
+        z = SL0 + (SL1 - SL0) * v
+        e = abs(u - 0.5) * 2
+        corner = max(0.0, e - 0.8) / 0.2 * max(0.0, 1 - v * 1.6)
+        y = 0.006 + 0.012 * corner ** 2 + 0.003 * hnoise((x * 3, 0, z * 3), seed)
         return (x, y, z)
-    parts.append(Part(grid(6, 14, gs, skirt=0.012), 'canvas', sheet, smooth=True, jitter=0.0))
-
-    # The blanket: foot (v = 0, +z) to head (v = 1, -z); the head end turned down along a slanted line.
-    fold_v = 0.62
-    rf = 0.022
-
-    def fold_at(u):
-        return fold_v + 0.08 * (u - 0.5)
+    parts.append(Part(thick(grid(10, 24, gs), 0.005, rim=0.5, segs=2), 'tile', sheet, smooth=True, jitter=0.0))
+    # The blanket: from its foot (+z) to its head end, turned back (a slanted fold) so the sheet shows below the
+    # roll. Thick (1.4 cm), soft: a slow rumple, the middle a touch lower, the long edges settling onto the sheet.
+    t = p.get('thick', 0.014)
+    BL0 = L / 2 + 0.02
+    BL = BL0 - (zr + rr * 0.6)
+    fold_v, rf = 0.6, 0.03
 
     def bl(u, v):
         x = (u - 0.5) * W
-        rump = 0.02 * hnoise((x * 4, 0, v * 7), p['seed']) + 0.012 * math.sin(v * 17 + u * 5) * (0.5 + 0.5 * math.sin(u * 9 + 1))
-        # the body's hollow: a little lower down the middle of the lower half, raised edges
-        hollow = -0.006 * math.exp(-((u - 0.5) / 0.22) ** 2) + 0.004 * (abs(u - 0.5) * 2) ** 3
-        # edges draped down to the sheet
-        drape = -0.02 * max(0.0, abs(u - 0.5) * 2 - 0.86) / 0.14
-        base = 0.03 + rump + hollow + drape
-        vf = fold_at(u)
+        # slow lumps, and two or three soft folds running down its length where it settled (wool's weight)
+        rump = 0.012 * hnoise((x * 3, 0, v * 5), seed) + 0.006 * math.sin(v * 9 + u * 4) * (0.5 + 0.5 * math.sin(u * 7 + 1))
+        hollow = -0.005 * math.exp(-((u - 0.5) / 0.25) ** 2)
+        e = abs(u - 0.5) * 2
+        drape = -0.012 * smooth01(0.82, 1.0, e)
+        base = 0.016 + t + max(-t * 0.4, rump + hollow + drape)
+        vf = fold_v + 0.1 * (u - 0.5)
         if v <= vf:
-            z = (0.5 - v) * L
-            return (x, base, z)
-        d = (v - vf) * L
-        zf = (0.5 - vf) * L
+            return (x, base, BL0 - v * BL)
+        d = (v - vf) * BL
+        zf = BL0 - vf * BL
         if d < math.pi * rf:
             th = d / rf
-            return (x, base + rf - rf * math.cos(th), zf - rf * math.sin(th) * 0.9)
+            return (x, base + rf - rf * math.cos(th), zf - rf * math.sin(th))
         back = d - math.pi * rf
-        return (x, base + 2 * rf + 0.006 * hnoise((x * 5, 1, back * 9), p['seed'] + 3), zf + back)
-    nu, nv = 8, 22
-    bmb = grid(nu, nv, bl)
-    # The flap's faces turned over (its top is the blanket's underside): both sides drawn there.
-    flap = [f for f in bmb.faces if sum(1 for v in f.verts if v.co.y > 0.03 + 1.2 * rf) >= 2]
-    dup = bmesh.ops.duplicate(bmb, geom=flap)
-    bmesh.ops.reverse_faces(bmb, faces=[g for g in dup['geom'] if isinstance(g, bmesh.types.BMFace)])
-    for g in dup['geom']:
-        if isinstance(g, bmesh.types.BMVert):
-            g.co.y += 0.003
-    parts.append(Part(bmb, 'cloth', blanket, smooth=True, jitter=0.0))
-    # A woven band across the blanket near its foot, and one on the flap (the head end's band, turned).
-    for vb in (0.08, 0.94):
-        def bandf(u, v, vb=vb):
-            q = bl(u, vb + (v - 0.5) * 0.045)
-            return (q[0], q[1] + 0.0025, q[2])
-        bb = grid(nu, 1, bandf)
-        if vb > 0.5:
-            bmesh.ops.reverse_faces(bb, faces=bb.faces[:])
-        parts.append(Part(bb, 'cloth', band, smooth=True, jitter=0.0))
-    # The pillow: a rolled cloak across the head of the sheet.
-    pr = 0.085
-    parts += roll_parts(p, W * 0.78, pr, T(0, pr * 0.8, -(L / 2) - 0.02) @ S(1, 0.72, 1), rng, pillow, pillow * 1.1, strap)
-    # Two straps lying loose by the head, curving.
-    for k, (x0, z0, a) in enumerate(((W / 2 + 0.12, -L / 2 + 0.25, 0.4), (W / 2 + 0.05, -L / 2 + 0.55, -0.3))):
+        return (x, base + 2 * rf + 0.004 * hnoise((x * 5, 1, back * 9), seed + 3), zf + back * 0.97)
+    bp = Part(thick(grid(16, 44, bl), t, rim=0.48, segs=3), 'wool', blanket, smooth=True, jitter=0.0)
+
+    # Two woven bands across its foot: the dye in the vertex colours (smooth across faces), not a strip laid on it.
+    def bands(tint, q):
+        k = 0.0
+        for zc, w in ((BL0 - 0.1, 0.035), (BL0 - 0.155, 0.012)):
+            k = max(k, 1 - smooth01(w * 0.5, w * 0.5 + 0.006, abs(q.z - zc)))
+        return tint.lerp(band, k)
+    bp.vmod = bands
+    parts.append(bp)
+    # The head end still rolled (a pillow), its ties loose on the sheet.
+    parts += wool_roll(SW * 0.98, rr, T(0, rr * 0.92, zr) @ S(1, 0.9, 1), pillow, seed + 7)
+    for k, (x0, a) in enumerate(((-W * 0.28, 0.25), (W * 0.3, -0.35))):
         pts = []
-        for i in range(7):
-            t = i / 6
-            pts.append((x0 + 0.08 * math.sin(t * 3 + k), 0.004 + 0.006 * math.sin(t * 7), z0 + (t - 0.5) * 0.55))
-        parts.append(Part(ribbon(pts, 0.032, 0.006), 'leather', strap, R('Y', a) @ T(0, 0, 0)))
-        parts.append(Part(box(0.05, 0.012, 0.045), 'iron', hexlin('#ffffff'), R('Y', a) @ T(pts[0][0], 0.008, pts[0][2])))
+        for i in range(9):
+            q = i / 8
+            ang = q * 2.2
+            if ang < 1.5:
+                # round the roll's top and down its front
+                pts.append((x0, rr * 0.92 + (rr + 0.005) * math.cos(ang), zr + (rr + 0.005) * math.sin(ang)))
+            else:
+                s_ = (ang - 1.5) / 0.7
+                pts.append((x0 + 0.05 * s_ * math.sin(a * 3), 0.026, zr + rr + 0.02 + 0.2 * s_))
+        parts.append(Part(ribbon(pts, 0.028, 0.005), 'leather', strap))
+        parts.append(Part(box(0.034, 0.008, 0.03), 'iron', hexlin('#8a8478'), T(pts[-1][0], 0.03, pts[-1][2])))
+    return parts
+
+
+def saddlebags(p):
+    """(C01 set: a stock crate and a treasure chest were the camp's brightest things) A rider's saddlebags set down
+    by the fire: two stiff leather bags on a wide yoke, one sat up leaning back, one lying on its back; flaps
+    buckled, the yoke slack on the ground between them. Dull, oiled, scuffed: night-dark."""
+    W_, H_, D_ = p.get('w', 0.34), p.get('h', 0.3), p.get('d', 0.13)
+    leather, flap, strap = hexlin(p['leather']), hexlin(p['flap']), hexlin(p['strap'])
+    iron = hexlin(p.get('iron', '#8a8478'))
+    parts = []
+
+    def bag(at, seed):
+        # the body: a rounded box, lumpy with what is in it (a squashed lathe, as the pack's)
+        prof = [(0.8, 0.0), (0.97, 0.03), (1.0, 0.1), (1.0, 0.7), (0.96, 0.92), (0.88, 1.0)]
+        bm = lathe([(r_ * W_ / 2, y_ * H_) for r_, y_ in prof], 16, cap0=True, cap1=True)
+        for v in bm.verts:
+            v.co.z *= D_ / W_ * (1.05 + 0.15 * math.sin(math.pi * min(1.0, v.co.y / H_)))
+            k = 1 + 0.04 * hnoise(v.co * 9, seed)
+            v.co.x *= k
+            v.co.z *= k
+            v.co.y = max(v.co.y, 0.0)
+        out = [Part(bm, 'leather', leather, at, smooth=True, jitter=0.03)]
+
+        # the flap over the top and two thirds down the front
+        def fl(u, v):
+            x = (u - 0.5) * W_
+            if v < 0.35:
+                q = v / 0.35
+                z = -D_ * 0.55 + q * D_ * 1.1
+                y = H_ + 0.006 + 0.012 * math.sin(q * math.pi)
+            else:
+                q = (v - 0.35) / 0.65
+                z = D_ * 0.58 + 0.006 * q
+                y = H_ - q * H_ * 0.62
+            return (x * (1 - 0.12 * max(0.0, v - 0.8) / 0.2), y + 0.003 * hnoise((x * 9, y, z), seed + 2), z)
+        out.append(Part(thick(grid(6, 10, fl), 0.005, rim=0.5, segs=2), 'leather', flap, at, smooth=True, jitter=0.0))
+        for sx in (-1, 1):
+            x = sx * W_ * 0.26
+            out.append(Part(box(0.026, H_ * 0.42, 0.006, 0.002), 'leather', strap, at @ T(x, H_ * 0.47, D_ * 0.6 + 0.008)))
+            out.append(Part(box(0.034, 0.03, 0.008, 0.002), 'iron', iron, at @ T(x, H_ * 0.3, D_ * 0.6 + 0.012)))
+        return out
+    a_at = T(-W_ * 0.62, 0, 0.02) @ R('Y', 0.12) @ R('X', -0.22)
+    b_at = T(W_ * 0.55, D_ * 0.62, 0.12) @ R('Y', -0.25) @ R('X', -math.pi / 2)
+    parts += bag(a_at, p['seed'])
+    parts += bag(b_at, p['seed'] + 3)
+    # the yoke: a wide strap from the top of one to the top of the other, slack on the ground between
+    ta = a_at @ Vector((0, H_, -D_ * 0.2))
+    tb = b_at @ Vector((0, H_, -D_ * 0.2))
+    pts = []
+    for i in range(9):
+        q = i / 8
+        x = ta.x + (tb.x - ta.x) * q
+        z = ta.z + (tb.z - ta.z) * q - 0.12 * math.sin(q * math.pi)
+        y = max(0.006, (ta.y * (1 - q) + tb.y * q) - 0.4 * math.sin(q * math.pi))
+        pts.append((x, y, z))
+    parts.append(Part(ribbon(pts, 0.12, 0.005), 'leather', leather * 0.9, smooth=True, jitter=0.0))
     return parts
 
 
@@ -4236,7 +4344,7 @@ def waystone(p):
     return parts
 
 
-KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
+KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'saddlebags': saddlebags, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
@@ -4371,7 +4479,7 @@ def main():
         if SHADOW:
             meta['tris_shadow'] = tris(obs[-1])
         for o in obs[1:]:
-            if o.name.endswith(('_cloth', '_glow')):
+            if o.name.endswith(('_cloth', '_wool', '_glow')):
                 meta['tris_' + o.name.rsplit('_', 1)[1]] = tris(o)
         if p.get('no_shadow'):
             meta['no_shadow'] = True  # (E8 later) OwnProps casts no shadow from it (cheap dressing, backdrops)
@@ -4395,6 +4503,9 @@ def main():
             wm = bpy.data.materials.get('water') or bpy.data.materials.new('water')
             obs.append(trough_water_mesh(name + '_water', wm, p))
         bb = [B2G @ Vector(c) for c in ob.bound_box]
+        if p.get('box_all'):
+            # (C01 set) the box of all its meshes (the bedroll is mostly its wool, split off; its main mesh is the ties)
+            bb = [B2G @ (o.matrix_world @ Vector(c)) for o in obs if not o.name.endswith(('_shadow', '_LOD1')) for c in o.bound_box]
         meta['box'] = [round(min(v[i] for v in bb), 3) for i in range(3)] + [round(max(v[i] for v in bb), 3) for i in range(3)]
         if p.get('runs'):
             # (E8 later r2) the grime runs' shape for OwnProps' runs material: where they hang from (the crenels, m), how

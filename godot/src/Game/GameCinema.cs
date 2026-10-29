@@ -50,7 +50,7 @@ public partial class Game
         // before anything on screen changes), and the zone does without.
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
         // Straight after a storybook (SB00 into C01): its bars, full, are this one's from the first frame.
-        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes));
+        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes), b.Combat);
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); cineId = id; }
@@ -270,7 +270,7 @@ public partial class Game
     }
     /// <summary>A cinematic ended into the next (end.next): its bars and the camera
     /// it saved, taken over by the next one if the zone starts it on the cut.</summary>
-    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved);
+    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved, bool Combat);
     Chain? chained;
     (double X, double Z) carry;
     double carryT;
@@ -365,6 +365,10 @@ public partial class Game
         readonly bool seen;
         readonly Ctx ctx;
         (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) saved;
+        /// <summary>Whether her weapons fired before it: they hold for the whole cinematic (a blade swinging
+        /// itself in a staged shot, or killing a risen before play is handed back, is not the scene), and
+        /// fire again from control.</summary>
+        bool combatWas;
         CameraAttributesPractical dof = new();
         double skipHeld;
         int stillShot = -1, stillK, camShot = -1;
@@ -399,8 +403,9 @@ public partial class Game
             places = new CinePlaces(file, (x, z) => g.scene!.HeightAt(x, z), ActorAt);
             seen = Settings.Current.SeenCinematics.Contains(file.Id);
             var cam = g.camera;
-            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; }
-            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); }
+            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; combatWas = ch.Combat; }
+            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); combatWas = b.Combat; }
+            b.Combat = false;
             cam.Near = 0.04f;
             g.controls.Captured = true;
             g.hud.ShowPlay(false);
@@ -1092,6 +1097,18 @@ public partial class Game
                     turn.Rate = (float)(1 / Math.Max(0.05, over));
                     break;
                 }
+                case "hair":
+                {
+                    // "sway": her hair's swing scaled (HairSway.Amount; 1 as tuned), given back at the end
+                    // (C01 r4: kneeling and turning, the braid swung like a rigid rod).
+                    if (!people.TryGetValue(c.Actor, out var v) || !c.Has("sway")) break;
+                    foreach (var hs in v.Person.Skeleton.FindChildren("*", "", true, false).OfType<HairSway>())
+                    {
+                        if (!swayWas.ContainsKey(hs)) swayWas[hs] = hs.Amount;
+                        hs.Amount = (float)c.Num("sway", 1);
+                    }
+                    break;
+                }
                 case "gaze":
                 {
                     // Her eyes to "look" (iris radii, +x her left, +y down; HerFaceLife, Play/GazeShift): a saccade
@@ -1169,7 +1186,10 @@ public partial class Game
                     g.scene!.View.SetLit((int)c.Num("light"), c.Bool("on", true));
                     break;
                 case "fire":
-                    g.scene!.View.SetFire((int)c.Num("light"), (float)c.Num("flames", 1));
+                    // "lift": burnt down, its light raised this far over the coals (C01: from just over them the
+                    // ring's stones threw long spokes over the camp and hid her shadow on the bedroll).
+                    // "sway": its light drifting that many metres, so her far shadow flickers on the bedroll.
+                    g.scene!.View.SetFire((int)c.Num("light"), (float)c.Num("flames", 1), (float)c.Num("lift", 0), (float)c.Num("sway", 0));
                     break;
                 case "atmosphere":
                 {
@@ -1296,7 +1316,7 @@ public partial class Game
                         // Dark and wet against the frost: sorted over it, and glossy enough to take the moon.
                         var d = new Decal
                         {
-                            TextureAlbedo = Footprint(i % 2 == 0), TextureOrm = WetOrm(), Size = new Vector3(0.15f, 1.2f, 0.34f),
+                            TextureAlbedo = Footprint(i % 2 == 0), TextureNormal = PrintNormal(i % 2 == 0), TextureOrm = WetOrm(), Size = new Vector3(0.17f, 1.2f, 0.38f),
                             Position = new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z) + 0.1f, (float)p.Z),
                             Rotation = new Vector3(0, yaw + Mathf.Pi, 0), AlbedoMix = (float)c.Num("dark", 0.85), CullMask = 1, SortingOffset = 1,
                         };
@@ -1307,7 +1327,7 @@ public partial class Game
                         var t = new Decal
                         {
                             TextureAlbedo = Trampled(), Size = new Vector3(0.34f, 1.2f, 0.62f),
-                            Position = d.Position, Rotation = d.Rotation, AlbedoMix = 0.55f, CullMask = 1, SortingOffset = 0.5f,
+                            Position = d.Position, Rotation = d.Rotation, AlbedoMix = (float)c.Num("trample", 0.55), CullMask = 1, SortingOffset = 0.5f,
                         };
                         g.scene.AddChild(t);
                         prints.Add(t);
@@ -1800,23 +1820,72 @@ public partial class Game
         readonly List<Decal> frost = new();
         static readonly Dictionary<bool, ImageTexture> printTex = new();
 
-        /// <summary>A boot's print, dark and wet: a sole and a heel, soft at the edges.</summary>
+        static readonly Dictionary<bool, ImageTexture> printNrm = new();
+
+        /// <summary>A boot pressed into soft ground (0 flat, below 0 the dent, above 0 the mud
+        /// pushed up round it), on the decal's 64 x 192 grid, toe at the top: an outsole with
+        /// a waist, the heel block apart, tread bars across both. Firelight raking across the
+        /// dents and rims is what makes a print read on dark earth (C01 s4: a flat dark sole
+        /// over dark earth never read).</summary>
+        static float PrintHeight(bool left, float u, float v, out float inside, out float rim)
+        {
+            float lean = left ? -0.06f : 0.06f;
+            float uu = u - lean * (1 - v) * 1.6f;
+            // The forefoot an egg (broad at the ball, rounded at the toe), the heel a squat oval
+            // apart from it: the waist never touches.
+            float fv = (v - 0.34f) / 0.29f, fw = 0.74f * (1 - 0.18f * Mathf.Clamp(fv, 0, 1));
+            float fore = 1 - Mathf.Sqrt(uu * uu / (fw * fw) + fv * fv);
+            float hv = (v - 0.83f) / 0.12f;
+            float heel = 1 - Mathf.Pow(Mathf.Pow(Mathf.Abs(u) / 0.6f, 3) + Mathf.Pow(Mathf.Abs(hv), 3), 1 / 3f);
+            float r = Mathf.Max(fore, heel);
+            inside = Mathf.Clamp(r / 0.14f, 0, 1);
+            inside = inside * inside * (3 - 2 * inside);
+            // Lugs: a faint chevron in the floor of the dent.
+            float tread = 0.5f + 0.5f * Mathf.Sin(v * 70f + Mathf.Abs(uu) * 9f);
+            rim = Mathf.Clamp((r + 0.3f) / 0.3f, 0, 1) * Mathf.Clamp(1 - (r + 0.3f) / 0.3f + 1, 0, 1);
+            rim = Mathf.Clamp(rim - inside, 0, 1);
+            rim = Mathf.Sin(rim * Mathf.Pi * 0.5f);
+            rim *= Mathf.Clamp(Mathf.Min(v / 0.06f, (1 - v) / 0.04f), 0, 1);
+            return -inside * (0.88f + 0.12f * tread) + rim * 0.3f;
+        }
+
+        /// <summary>A boot's print, dark and wet in the dent, the pushed-up mud lighter round it.</summary>
         static ImageTexture Footprint(bool left)
         {
             if (printTex.TryGetValue(left, out var t)) return t;
-            const int W = 32, H = 96;
+            const int W = 64, H = 192;
             var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
             for (int y = 0; y < H; y++)
                 for (int x = 0; x < W; x++)
                 {
                     float u = (x + 0.5f) / W * 2 - 1, v = (y + 0.5f) / H;
-                    // The sole (toe end at the top, turned a little in), then a gap, then the heel.
-                    float sole = 1 - ((u - (left ? -0.08f : 0.08f) * (1 - v)) * (u - (left ? -0.08f : 0.08f) * (1 - v)) / 0.8f + (v - 0.3f) * (v - 0.3f) / 0.075f);
-                    float heel = 1 - (u * u / 0.62f + (v - 0.8f) * (v - 0.8f) / 0.018f);
-                    float a = Mathf.Clamp(Mathf.Max(sole, heel) * 3, 0, 1);
-                    img.SetPixel(x, y, new Color(0.03f, 0.035f, 0.04f, a * 0.85f));
+                    PrintHeight(left, u, v, out var inside, out var rim);
+                    // Wet earth, darker but not black: the dent's shading comes from its relief.
+                    var wet = new Color(0.05f, 0.04f, 0.033f);
+                    var mud = new Color(0.15f, 0.115f, 0.09f);
+                    float a = Mathf.Max(inside * 0.7f, rim * 0.22f);
+                    img.SetPixel(x, y, (inside >= rim ? wet : mud) with { A = a });
                 }
             return printTex[left] = ImageTexture.CreateFromImage(img);
+        }
+
+        /// <summary>The print's relief as a normal map (from PrintHeight's slopes).</summary>
+        static ImageTexture PrintNormal(bool left)
+        {
+            if (printNrm.TryGetValue(left, out var t)) return t;
+            const int W = 64, H = 192;
+            var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
+            float Hh(int x, int y) => PrintHeight(left, (Mathf.Clamp(x, 0, W - 1) + 0.5f) / W * 2 - 1, (Mathf.Clamp(y, 0, H - 1) + 0.5f) / H, out _, out _);
+            const float k = 6f;
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    float dx = (Hh(x + 1, y) - Hh(x - 1, y)) * k, dy = (Hh(x, y + 1) - Hh(x, y - 1)) * k * (H / (float)W) / 3f;
+                    var n = new Vector3(-dx, dy, 1).Normalized();
+                    img.SetPixel(x, y, new Color(n.X * 0.5f + 0.5f, n.Y * 0.5f + 0.5f, n.Z * 0.5f + 0.5f, 1));
+                }
+            img.GenerateMipmaps();
+            return printNrm[left] = ImageTexture.CreateFromImage(img);
         }
 
         static ImageTexture? trampled;
@@ -1900,6 +1969,7 @@ public partial class Game
 
         float keyReach = -1;
         readonly HashSet<int> sized = new();
+        readonly Dictionary<HairSway, float> swayWas = new();
 
         // Eye-shader values the cinematic changed: the first original of each, put back at the end.
         readonly Dictionary<(ShaderMaterial, string), Godot.Variant> eyeWas = new();
@@ -1919,6 +1989,8 @@ public partial class Game
             skinSky = 1; skinEar = 1;
             foreach (int i in sized) g.scene?.View.SetSize(i, 0);
             sized.Clear();
+            foreach (var (sw, was) in swayWas) if (IsInstanceValid(sw)) sw.Amount = was;
+            swayWas.Clear();
             foreach (var ((em, ek), was) in eyeWas) if (IsInstanceValid(em)) em.SetShaderParameter(ek, was);
             eyeWas.Clear();
             if (keyReach > 0) g.air.Key.DirectionalShadowMaxDistance = keyReach;
@@ -1997,7 +2069,7 @@ public partial class Game
             {
                 // On into the next on the cut: the zone starts it from done; if it
                 // does not, play is handed back here as usual.
-                g.chained = new Chain(bars, saved);
+                g.chained = new Chain(bars, saved, combatWas);
                 Seen();
                 done?.Invoke();
                 if (g.chained != null) { g.chained = null; Restore(); }
@@ -2025,6 +2097,17 @@ public partial class Game
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
             b.WorldRate = 1; b.WorldRateT = 0;
+            b.Combat = combatWas;
+            if (Args.Has("shot"))
+            {
+                // Shoot runs: every staged enemy's state at control and for 2 s after (is anything killed on the first frames?).
+                var bb = b; var tags = enemies.ToDictionary(kv => kv.Value, kv => kv.Key);
+                void Log(double t) { foreach (var (e, n) in tags) GD.Print($"cinema control+{t:0.0}s {n}: alive={e.Alive} state={e.State} hp={e.Hp:0} at=({e.X:0.0},{e.Z:0.0}) her=({bb.Player.X:0.0},{bb.Player.Z:0.0})"); }
+                Log(0);
+                // --afterstills: a picture at the play camera 0.5 s and 2 s after control (the hand-over's first looks).
+                if (Args.Has("afterstills")) { Shots.Want($"{file.Id}_play_1", 0.5); Shots.Want($"{file.Id}_play_2", 2.0); }
+                foreach (var t in new[] { 0.5, 1.0, 2.0 }) g.GetTree().CreateTimer(t).Timeout += () => Log(t);
+            }
             g.sound.CineMood = null;
             g.controls.Captured = false;
             g.controls.ClearLatches();
