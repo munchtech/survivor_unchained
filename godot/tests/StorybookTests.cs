@@ -337,4 +337,70 @@ public class StorybookTests
         }
         Assert.Equal(asWritten.Length - 1.0, after.Length, 9);
     }
+
+    static StoryTimeline Blacks() => new(StoryFile.Parse("""
+        { "id": "x", "conversation": "c", "end": 20,
+          "plates": [
+            { "id": "a", "at": 0, "until": 5, "in": { "kind": "fade", "dur": 1 } },
+            { "id": "b", "at": 4, "until": 9, "in": { "kind": "dissolve", "dur": 1 }, "out": { "kind": "fade", "dur": 1 } },
+            { "id": "c", "at": 9, "until": 12, "in": { "kind": "cut" }, "out": { "kind": "fade", "dur": 2, "color": "#ffffff" } },
+            { "id": "d", "at": 14, "until": 18, "out": { "kind": "fade", "dur": 2 } }
+          ] }
+        """));
+
+    [Fact]
+    public void The_screen_goes_black_at_gaps_fades_out_to_black_and_the_end()
+    {
+        var l = Blacks();
+        // b fades to black at 9 with nothing over it (c cuts in on the black).
+        Assert.Equal(9, l.BlackAfter(2), 9);
+        // c fades to white: not black; the gap from 12 is.
+        Assert.Equal(12, l.BlackAfter(9), 9);
+        Assert.Equal(18, l.BlackAfter(12), 9);
+        Assert.Equal(20, l.BlackAfter(18), 9);
+        Assert.True(double.IsPositiveInfinity(l.BlackAfter(20)));
+    }
+
+    [Fact]
+    public void A_subtitle_is_gone_by_the_black()
+    {
+        var l = Blacks();
+        Assert.Equal(3, l.SubtitleFor(1, 3), 9);
+        Assert.Equal(1.5, l.SubtitleFor(7.5, 4), 9);
+        Assert.Equal(2, l.SubtitleFor(16, 6), 9);
+        // Set in a black gap, it reads over the black until the next black (the end here).
+        Assert.Equal(4, l.SubtitleFor(13, 4), 9);
+    }
+
+    [Fact]
+    public void Sb00_s_last_lines_are_gone_before_its_end_black()
+    {
+        var f = StoryFile.Load("sb00");
+        var l = new StoryTimeline(f);
+        var last = f.Plates[^1];
+        foreach (var c in l.Cues.Where(c => c.Cue.Do is "line" or "say"))
+            Assert.True(c.T + l.SubtitleFor(c.T, 30) <= last.Until + 1e-9, $"line at {c.T} runs past {last.Until}");
+    }
+
+    [Fact]
+    public void The_scripted_skip_is_due_from_its_moment()
+    {
+        Assert.False(StoryTimeline.SkipDue(100, null));
+        Assert.False(StoryTimeline.SkipDue(4.99, 5));
+        Assert.True(StoryTimeline.SkipDue(5, 5));
+        Assert.True(StoryTimeline.SkipDue(5.02, 5));
+    }
+
+    [Fact]
+    public void C01_s_opening_silence_loses_the_load_but_keeps_its_drops()
+    {
+        var shot = CineFile.Load("c01").Shots[0];
+        Assert.Equal(1.0, StoryTimeline.CutSeam(shot, 1.0, 1.3), 9);
+        Assert.Equal(1.5, shot.Durs![0].Dur, 9);
+        shot = CineFile.Load("c01").Shots[0];
+        Assert.Equal(1.2, StoryTimeline.CutSeam(shot, 2.5, 1.3), 9);
+        Assert.Equal(1.3, shot.Durs![0].Dur, 9);
+        // As written (skipped: no sb00.ended), untouched.
+        Assert.Equal(3.5, shot.Dur, 9);
+    }
 }

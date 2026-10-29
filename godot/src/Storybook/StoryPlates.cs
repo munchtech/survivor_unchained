@@ -50,7 +50,20 @@ public static class StoryArt
     public static void Preload(StoryPlate p)
     {
         foreach (var path in Paths(p).Distinct())
-            if (ResourceLoader.Exists(path)) ResourceLoader.LoadThreadedRequest(path, "", true);
+            if (ResourceLoader.Exists(path) && requested.Add(path)) ResourceLoader.LoadThreadedRequest(path, "", true);
+    }
+
+    /// <summary>Threaded loads asked for and not yet taken (the loader holds each until it is taken).</summary>
+    static readonly HashSet<string> requested = new();
+
+    /// <summary>A storybook over: every load still held (a plate loaded ahead and never drawn: a skip,
+    /// --sb-from) taken and let go.</summary>
+    public static void Release()
+    {
+        foreach (var path in requested)
+            if (ResourceLoader.LoadThreadedGetStatus(path) is ResourceLoader.ThreadLoadStatus.InProgress or ResourceLoader.ThreadLoadStatus.Loaded)
+                (ResourceLoader.LoadThreadedGet(path) as IDisposable)?.Dispose();
+        requested.Clear();
     }
 
     /// <summary>A texture, taken from its threaded load if one was asked for (it waits for it if
@@ -59,7 +72,7 @@ public static class StoryArt
     {
         if (!ResourceLoader.Exists(path)) { GD.PushWarning($"storybook: no {path}"); return null; }
         var st = ResourceLoader.LoadThreadedGetStatus(path);
-        if (st is ResourceLoader.ThreadLoadStatus.InProgress or ResourceLoader.ThreadLoadStatus.Loaded)
+        if (requested.Remove(path) && st is ResourceLoader.ThreadLoadStatus.InProgress or ResourceLoader.ThreadLoadStatus.Loaded)
             return ResourceLoader.LoadThreadedGet(path) as Texture2D;
         return GD.Load<Texture2D>(path);
     }

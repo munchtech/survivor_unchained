@@ -84,8 +84,8 @@ Presets (every number above overrides): `smoke` (soft puffs, rising slowly, spre
 
 | do | parameters | |
 |---|---|---|
-| `line` | id, tag, linger 0.7 | `<conversation>.<id>` (an id with a dot is a full id from another conversation) through CineLines and the VoiceOver: its take when there is one, else silent for the reading pace; its subtitle for that long. `tag` labels that line only; untagged lines are unlabelled roman; a sung line is italic |
-| `say` | text, speaker, sung, italic, dur | a subtitle with no take |
+| `line` | id, tag, linger 0.7 | `<conversation>.<id>` (an id with a dot is a full id from another conversation) through CineLines and the VoiceOver: its take when there is one, else silent for the reading pace; its subtitle for that long, but never past the screen's next black (the end black, a gap between plates, or a plate's `out` fade to black with nothing over it): it is gone by then. `tag` labels that line only; untagged lines are unlabelled roman; a sung line is italic |
+| `say` | text, speaker, sung, italic, dur | a subtitle with no take (cut at the next black, as a line's) |
 | `sfx` | name, gain 1, pan 0 | the game's named cinematic sounds (`Sfx.Cine`) |
 | `sound` | file, id, gain dB, pan, fade s, loop | a sound file on its own player (panned on its own small bus) |
 | `stop` | id, fade 0.3 | |
@@ -94,15 +94,15 @@ Presets (every number above overrides): `smoke` (soft puffs, rising slowly, spre
 
 The bars are CinemaBars at 2.39:1, fully in from the first frame.
 
-**Skip.** Hold interact or pause (the CinemaBars ring): from `skip.from` (1.5 s) on a first view, at once once seen. The profile flag is the storybook's id in `Settings.SeenCinematics` (`seen.sb00`), set when it first starts. A skip cuts to black, fades every sound over 0.15 s (and drops the synth's tails) and ends as skipped.
+**Skip.** Hold interact or pause (the CinemaBars ring): from `skip.from` (1.5 s) on a first view, at once once seen. The profile flag is the storybook's id in `Settings.SeenCinematics` (`seen.sb00`), set when it first starts. A skip cuts to black, fades every sound over 0.15 s (and drops the synth's tails) and ends as skipped. `--sb-skip-at S` does the same skip at storybook time S (the hold's own path, the first-view rule aside), for scripted checks.
 
 ## Running it
 
 SB00 is not live (`"live": false`) until its painted plates are in: a new journey goes straight to C01, and `--storybook sb00` still plays it alone. The rest of this section describes it once live.
 
-In the game, SB00 opens a new journey when `godot/data/storybook/sb00.json` exists: creation confirmed, its last frame holds 0.5 s and fades to black over 0.8 s with the title music; SB00 plays from black (nothing 3D is drawn under it); at its end the zone is entered under the black and C01 takes the bars already in. Played to its end, it sets the journey fact `sb00.ended`, and C01's shot 1 (by its `durs` and a `when` on the cue) loses `water_close` and is 2.5 s, its drops timed from its end (first drop 1.2 s in); the rest of C01 is as written. Skipped, C01 plays exactly as written. `--nocine` goes without it; a quick start goes without it unless `--cines` (then it plays first, over black). Without the file everything plays as before.
+In the game, SB00 opens a new journey when `godot/data/storybook/sb00.json` exists: creation confirmed, its last frame holds 0.5 s and fades to black over 0.8 s with the title music; SB00 plays from black (nothing 3D is drawn under it); at its end the zone is entered under the black and C01 takes the bars already in; the frames the zone takes to stand up are already silence, so C01's shot 1 loses that long of its opening silence (at most 1.2 s, down to 1.3 s: its drops stay), and the log says so (`storybook: the zone stood up in ...`). Played to its end, it sets the journey fact `sb00.ended`, and C01's shot 1 (by its `durs` and a `when` on the cue) loses `water_close` and is 2.5 s (less the load, above), its drops timed from its end (first drop 1.2 s in); the rest of C01 is as written. Skipped, C01 plays exactly as written. `--nocine` goes without it; a quick start goes without it unless `--cines` (then it plays first, over black). Without the file everything plays as before.
 
-For pictures and checks (Windows; `G` = `C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe`; `dotnet build` first, the shoot doesn't rebuild C#; new art needs `"$G" --headless --path godot --import`):
+For pictures and checks (Windows; `--resolution` holds for runs with `--sb-shots` or `--write-movie`, as for `--shot` and `--perf`, whatever the saved Fullscreen setting; `G` = `C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe`; `dotnet build` first, the shoot doesn't rebuild C#; new art needs `"$G" --headless --path godot --import`):
 
 ```sh
 # play one alone over black and quit at its end
@@ -111,7 +111,11 @@ For pictures and checks (Windows; `G` = `C:/Users/munch/Desktop/Godot_v4.5.1-sta
 "$G" --path godot --resolution 1920x1080 --fixed-fps 30 -- --storybook test_plates --sb-shots 0.8,5.5,8.9 --sb-from 0
 # a capture with sound for the cut's judge (Movie Maker: fixed 30 fps, the picture and the mix written together)
 "$G" --path godot --resolution 1920x1080 --write-movie C:/temp/sb00.avi --fixed-fps 30 -- --storybook sb00
-ffmpeg -i C:/temp/sb00.avi -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k C:/temp/sb00.mp4
+# the C01 seam and the skip, scripted (once SB00 is live; a quick start into the prologue; the log prints wall times at SB00's end and C01's start)
+"$G" --path godot --resolution 1280x720 -- --quick --cines --sb-from 80 --perf
+"$G" --path godot --resolution 1280x720 -- --quick --cines --sb-from 20 --sb-skip-at 25
+# ffmpeg is not on PATH: use imageio_ffmpeg's copy (FF=$(python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"))
+"$FF" -i C:/temp/sb00.avi -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k C:/temp/sb00.mp4
 ```
 
 The storybook keeps its own clock (the frame's delta) and every shader animates from it, so with a fixed frame rate the same second gives the same frame. New art: `python tools/storybook/make_test_plates.py` shows how `.import` files are written for storybook art (VRAM compressed, BPTC high quality, mipmaps); use its `write_import` for real plates.
