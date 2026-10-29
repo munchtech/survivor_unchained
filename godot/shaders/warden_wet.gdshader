@@ -20,6 +20,10 @@ uniform bool has_normal = true;
 uniform bool has_mr = true;
 uniform bool has_id = false;
 uniform float iron = 0.0;
+// (Warden 7, the garment: its inside drawn as the same wool, a touch darker; wool's grazing sheen, no plastic spec)
+uniform float value_mul = 1.0;
+uniform float wool_sheen = 0.0;
+uniform float wool_sheen_tint = 0.35;
 uniform float debug_view = 0.0; // 1: the classes in flat colours (WARDEN_WET="debug_view=1")
 // the classes (consts: Godot has no defaults on uniform arrays): 0 wool, 1 tabard, 2 quilting, 3 leather, 4 iron, 5 badge, 6 head
 // colour (sRGB) the atlas's hue is pulled to (its light and dark kept), how far, then a value scale
@@ -171,7 +175,10 @@ void fragment() {
 		rough = mix(rough, 0.9, d.r);
 		spec = mix(spec, 0.3, d.r);
 		w = mix(w, band_color, band);
+		w *= value_mul;
 		ALBEDO = w;
+		RIM = wool_sheen * wc[0];
+		RIM_TINT = wool_sheen_tint;
 		METALLIC = cmetal * (1.0 - grime);
 		ROUGHNESS = rough;
 		SPECULAR = spec;

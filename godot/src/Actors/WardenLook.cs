@@ -35,9 +35,11 @@ public static class WardenLook
             for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
             {
                 if (m.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src) continue;
-                if (src.ResourceName is "warden_hood_inner" or "warden_hood_fringe") { HoodTrim(src); continue; }
+                // (Warden 7: the garment's inside is its wool too, textured, on this shader a touch darker; an untextured
+                //  inside (the Warden 6 hood) stays the plain dark trim)
+                if (src.ResourceName == "warden_hood_fringe" || (src.ResourceName == "warden_hood_inner" && src.AlbedoTexture == null)) { HoodTrim(src); continue; }
                 string key = src.ResourceName switch { "generated" => "generated", "warden_head" or "warden_head_lod" => "head", "skin" => "iron",
-                    "warden_face" => "face", "warden_face_lod" => "face_lod", "warden_hood_wool" => "hood", _ => "" };
+                    "warden_face" => "face", "warden_face_lod" => "face_lod", "warden_hood_wool" => "hood", "warden_hood_inner" => "hood_inner", _ => "" };
                 if (key == "") continue;
                 if (key.StartsWith("face") && !made.ContainsKey(key))
                 {
@@ -61,12 +63,17 @@ public static class WardenLook
                         w.SetShaderParameter("mr_tex", src.RoughnessTexture);
                         w.SetShaderParameter("has_mr", src.RoughnessTexture != null);
                         // (the hood: no data map, the body's is not in its UVs)
-                        if ((key == "head" ? head : key == "hood" ? null : body) is { } d) w.SetShaderParameter("data_tex", d);
-                        if ((key == "hood" ? hoodId : key == "generated" ? id : null) is { } idm)
+                        if ((key == "head" ? head : key.StartsWith("hood") ? null : body) is { } d) w.SetShaderParameter("data_tex", d);
+                        if ((key.StartsWith("hood") ? hoodId : key == "generated" ? id : null) is { } idm)
                         {
                             w.SetShaderParameter("id_near", idm);
                             w.SetShaderParameter("id_lin", idm);
                             w.SetShaderParameter("has_id", true);
+                        }
+                        if (key.StartsWith("hood"))
+                        {
+                            w.SetShaderParameter("wool_sheen", HoodSheen);
+                            if (key == "hood_inner") w.SetShaderParameter("value_mul", HoodInner);
                         }
                         if (key == "hood")
                         {
@@ -98,6 +105,10 @@ public static class WardenLook
             GlintReach = float.Parse(gr, System.Globalization.CultureInfo.InvariantCulture);
         }
     }
+
+    /// <summary>The garment's wool sheen (Godot's rim: a soft grazing light, no tight specular) and its inside's value
+    /// against the outside (Warden 7). WARDEN_WET can still override both on every soaked surface.</summary>
+    public static float HoodSheen = 0.45f, HoodInner = 0.72f;
 
     /// <summary>The hood's dark inner shell and its frayed fringe (plain materials): the wet wool's low specular and
     /// rough sheen, the fringe's strands alpha-to-coverage (fine fibres at a distance, not square stubs).</summary>

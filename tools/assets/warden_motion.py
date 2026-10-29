@@ -47,6 +47,9 @@ def load_piece(path):
         I = g.acc(sk["inverseBindMatrices"]).reshape(-1, 4, 4).transpose(0, 2, 1) if "inverseBindMatrices" in sk else np.tile(np.eye(4), (len(names), 1, 1))
         for n, M in zip(names, I):
             ibm.setdefault(n, M)
+    # (the piece's own hierarchy, by name: a bone the body lacks (a cape chain) rides its nearest ancestor, as
+    #  NpcPackage.Rebind binds it in the game)
+    par = {j["nodes"][c].get("name", f"n{c}"): n.get("name", f"n{i}") for i, n in enumerate(j["nodes"]) for c in n.get("children", [])}
     for ni, node in enumerate(j["nodes"]):
         if "mesh" not in node or "skin" not in node:
             continue
@@ -61,7 +64,7 @@ def load_piece(path):
             J = g.acc(a["JOINTS_0"]).astype(np.int64)
             W = g.acc(a["WEIGHTS_0"]).astype(float)
             W /= W.sum(1, keepdims=True) + 1e-12
-            out.append(dict(mesh=node.get("name", ""), mat=mat, P=P, F=F, J=J, W=W, names=names))
+            out.append(dict(mesh=node.get("name", ""), mat=mat, P=P, F=F, J=J, W=W, names=names, par=par))
     return out, ibm
 
 
@@ -86,9 +89,18 @@ class Skinner:
     def binds_for(self, prim, ibm):
         """The bind per joint of a primitive: the dumped skin listing its material (Godot's binds), else the glb's."""
         sk = next((s for s in self.skins if prim["mat"] in s["mats"]), None)
+        if sk and len(sk["names"]) == len(prim["names"]):   # (Godot's binds, joint by joint: after a Rebind two joints may share a name)
+            return np.array([m34(b) for b in sk["binds"]]), np.array([self.bi.get(n, 0) for n in sk["names"]]), True
         gb = {n: m34(b) for n, b in zip(sk["names"], sk["binds"])} if sk else {}
-        B = np.array([gb.get(n, ibm.get(n, np.eye(4))) for n in prim["names"]])
-        bone = np.array([self.bi.get(n, 0) for n in prim["names"]])
+        par = prim.get("par", {})
+
+        def anc(n):
+            while n not in self.bi and n in par:
+                n = par[n]
+            return n
+        names = [n if n in self.bi else anc(n) for n in prim["names"]]
+        B = np.array([gb.get(n, ibm.get(n, np.eye(4))) for n in names])
+        bone = np.array([self.bi.get(n, 0) for n in names])
         return B, bone, sk is not None
 
     @staticmethod
