@@ -81,11 +81,16 @@ public partial class DgPanel : Control
     /// <summary>The key chips' tops (R and SPACE: [middle x, top y]).</summary>
     public static readonly Vector2 KeyR = V(A(Part("panel", "key_tags"), "R"), new Vector2(673, 1061));
     public static readonly Vector2 KeySpace = V(A(Part("panel", "key_tags"), "SPACE"), new Vector2(1247, 1061));
-    /// <summary>For the right group (the keeper, the next piece): its Q chip, its rect and the Flare's glass.</summary>
+    /// <summary>The right group (the keeper, DgKeeper; the Flare, DgGlobe): its Q chip, its rect and the Flare's glass.</summary>
     public static readonly Vector2 KeyQ = V(A(Part("panel", "key_tags"), "Q"), new Vector2(1508.56f, 1039.28f));
     public static readonly Rect2 KeeperRect = A(Part("keeper"), "rect") is { Length: 4 } k ? new Rect2(k[0], k[1], k[2], k[3]) : new Rect2(1254, 873, 341, 207);
     public static readonly Vector2 GlassAt = V(A(Part("glass"), "center"), new Vector2(1502.56f, 964.34f));
     public static readonly float GlassR = F(Part("glass"), "r", 37);
+    /// <summary>The bowl's lip line (the glass's span seen above it is what the charge fills) and the bezel's outer
+    /// radius with its 1 px outline (the Flare's callout ring).</summary>
+    public static readonly float GlassLipY = F(Part("glass"), "lip_y", 987.28f), GlassOuterR = F(Part("glass"), "bezel_outer", 40.6f) + 1;
+    /// <summary>The right group's top on the screen (the keeper's hood: 1080 - the geo's right height).</summary>
+    public static readonly float KeeperTop = 1080 - F(Part("heights"), "right", 205);
     /// <summary>The left and right groups draw at GroupScale about their outer bottom corners (the girl's: GirlAnchor;
     /// the keeper's: the screen's mirror of it).</summary>
     public static readonly float GroupScale = F(Part("girl"), "group_scale", 0.94f);

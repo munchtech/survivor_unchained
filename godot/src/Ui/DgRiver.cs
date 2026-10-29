@@ -28,9 +28,6 @@ public static class DgRiver
     /// <summary>The i-th well's radius (the hole in its ring), from the geo.</summary>
     public static float Hole(int i) => Geo.TryGetValue("seats", out var s) && s.AsGodotArray() is { } a && i >= 0 && i < a.Count
         && a[i].AsGodotDictionary().TryGetValue("hole", out var h) ? (float)h.AsDouble() : 0;
-    /// <summary>The old eddy's glass: its middle and radius (the Flare's coal, DgCoal, until the keeper's glass).</summary>
-    public static Vector2 FlareAt => Geo.TryGetValue("flare", out var v) ? V(v) : Vector2.Zero;
-    public static float FlareR => Geo.TryGetValue("flare", out var v) && v.AsGodotArray() is { Count: 3 } a ? (float)a[2].AsDouble() : 57;
 
     /// <summary>The ring (seat i) and its well.</summary>
     public static Texture2D? Ring(int i) => UiArt.Art($"{Dir}/ring_{i % 6}.png");

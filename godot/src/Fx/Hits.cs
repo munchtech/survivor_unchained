@@ -185,28 +185,28 @@ public partial class Hits : Node3D
 
     /// <summary>The Drowned Girl's HUD top at screen x (1080 px): her figure's head over its span, her hair's river
     /// 880 to the first seat, 955 across the seats, 915 at the eddy; null where nothing of the HUD stands.</summary>
-    public static float? HudTop(float x, float figL, float figR, float figTop, float seatL, float seatR, float eddyL, float eddyR)
+    public static float? HudTop(float x, float figL, float figR, float figTop, float seatL, float seatR, float keepL, float keepR, float keepTop = 875)
     {
         if (x >= figL && x <= figR) return Mathf.Min(818, figTop);
         if (x > figR && x < seatL) return 880;
         if (x >= seatL && x <= seatR) return 955;
-        if (x > seatR && x < eddyL) return 955;
-        if (x >= eddyL && x <= eddyR) return 915;
+        if (x > seatR && x < keepL) return 955;
+        if (x >= keepL && x <= keepR) return keepTop;
         return null;
     }
 
     /// <summary>The highest (smallest y) HUD top over a span of screen x, both in 1080 design px, sampled at its ends,
-    /// its middle and every 40 px between, with the live HUD (her figure's fade rect, the seats, the flare's eddy);
+    /// its middle and every 40 px between, with the live HUD (her figure's fade rect, the seats, the keeper);
     /// null where no part of the HUD stands under the span or the HUD isn't up. Shared by numbers and barks.</summary>
     public static float? HudTopOver(float x0, float x1)
     {
         if (SurvivorUnchained.Ui.LifeLamp.Live?.FadeRect is not Rect2 f) return null;
         float seatL = SurvivorUnchained.Ui.DgPanel.Rect.Position.X, seatR = SurvivorUnchained.Ui.DgPanel.Rect.End.X;
-        var fl = SurvivorUnchained.Ui.DgRiver.FlareAt; float fr = SurvivorUnchained.Ui.DgRiver.FlareR;
+        var kr = SurvivorUnchained.Ui.DgPanel.KeeperRect; float kt = SurvivorUnchained.Ui.DgPanel.KeeperTop;
         float? top = null;
         int n = Mathf.Max(2, Mathf.CeilToInt((x1 - x0) / 40f));
         for (int i = 0; i <= n; i++)
-            if (HudTop(x0 + (x1 - x0) * i / n, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, fl.X - fr, fl.X + fr) is float t) top = top is float o ? Mathf.Min(o, t) : t;
+            if (HudTop(x0 + (x1 - x0) * i / n, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, kr.Position.X, kr.End.X, kt) is float t) top = top is float o ? Mathf.Min(o, t) : t;
         return top;
     }
 

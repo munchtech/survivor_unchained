@@ -1169,6 +1169,8 @@ public partial class GameHud : CanvasLayer
     public Rect2? FigureRect => irons.Life.FadeRect;
     public void FigureBehind(bool behind) => irons.Life.Behind = behind;
     public void RiverBehind(bool behind) => irons.Panel.Behind = behind;
+    /// <summary>Something is behind the keeper (UI 23): he fades as her figure does.</summary>
+    public void KeeperBehind(bool behind) => irons.Keeper.Behind = behind;
 
     public void Follow(Vector2? at)
     {
@@ -1457,10 +1459,10 @@ public partial class GameHud : CanvasLayer
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false);
         her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha);
-        // The art readied: its coal swells once and settles.
+        // The art readied: the globe's heart and halo swell once and settle.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
-        art.Scale = Vector2.One * (1 + 0.05f * (float)(artPing * artPing));
+        art.Ping = (float)(artPing * artPing);
         if (pullT >= 0)
         {
             pullT += delta;

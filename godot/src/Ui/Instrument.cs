@@ -12,8 +12,8 @@ namespace SurvivorUnchained.Ui;
 /// life orb to her lips (LifeLamp), her hair down her back to the screen's foot, a slow shine running down it; in the
 /// middle its own plate (DgPanel): the flask [R] (Round, DgSmall), three seats (Socket), the level coin with the
 /// experience ring (by night the ember; DgPanel.Ring, XpLight), three seats, the dash [SPACE]; at the right the keeper
-/// holds the Flare (Vessel, DgCoal: the next piece; until then the coal stands where the old eddy was). The left and
-/// right groups draw at DgPanel.GroupScale about their outer bottom corners. Every place comes from the art's geo
+/// (DgKeeper) bows over the bowl that holds the Flare [Q] (Vessel, DgGlobe: a dark glass globe filling with fire). Her
+/// group draws at DgPanel.GroupScale about its outer bottom corner; the keeper's rect is final. Every place comes from the art's geo
 /// (art/ui/dg_keeper/hud_a_geo.json, art/ui/lamp_life/drowned).
 /// </summary>
 public partial class Instrument : Control
@@ -26,8 +26,8 @@ public partial class Instrument : Control
     /// <summary>The key tags' height.</summary>
     public const float TagH = 16;
 
-    /// <summary>The Flare's coal (the old eddy's place, until the keeper), the flask's and the dash's middles (DgPanel).</summary>
-    public static Vector2 ArtAt => DgRiver.FlareAt;
+    /// <summary>The Flare's glass (in the keeper's bowl), the flask's and the dash's middles (DgPanel).</summary>
+    public static Vector2 ArtAt => DgPanel.GlassAt;
     public static Vector2 DraughtAt => DgPanel.FlaskAt;
     public static Vector2 DashAt => DgPanel.DashAt;
     /// <summary>The coin's experience ring: what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
@@ -48,6 +48,8 @@ public partial class Instrument : Control
     }
 
     public readonly LifeLamp Life;
+    /// <summary>The keeper, bowed over the Flare's bowl (the right group's figure).</summary>
+    public readonly DgKeeper Keeper;
     public readonly Vessel Art;
     public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
     public readonly Round Draught, Dash;
@@ -57,7 +59,7 @@ public partial class Instrument : Control
     /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives, Statuses;
     public readonly Label ArtWord, ArtNote;
-    readonly KeyTag draughtKey = new(Act.Draught) { Chip = true }, dashKey = new(Act.Dash) { Chip = true }, artKey = new(Act.Flare, true);
+    readonly KeyTag draughtKey = new(Act.Draught) { Chip = true }, dashKey = new(Act.Dash) { Chip = true }, artKey = new(Act.Flare) { Chip = true };
 
     public Instrument()
     {
@@ -70,7 +72,9 @@ public partial class Instrument : Control
         Life = new LifeLamp();
         Life.Group(DgPanel.GirlAnchor, DgPanel.GroupScale);
         AddChild(Life);
-        // (the right group, the keeper, goes here: under the plate, at DgPanel.GroupScale about DgPanel.KeeperAnchor)
+        // (the right group's figure, the keeper: under the plate, at his geo rect)
+        Keeper = new DgKeeper();
+        AddChild(Keeper);
         Draught = new Round(Round.Kind.Draught);
         Draught.Place(DgPanel.FlaskAt, DgPanel.FlaskScale);
         Panel = new DgPanel(Draught);
@@ -78,6 +82,7 @@ public partial class Instrument : Control
         AddChild(Panel.XpRing);
         Art = new Vessel { Position = ArtAt - Vessel.Half };
         AddChild(Art);
+        Keeper.Globe = Art.Globe;
         for (int i = 0; i < Sockets.Length; i++)
         {
             Sockets[i] = new Socket { Index = i };
@@ -109,17 +114,20 @@ public partial class Instrument : Control
         ArtNote.Position = new Vector2(ArtAt.X - 200, LegacyTop - 50);
         ArtNote.Size = new Vector2(400, 18);
         AddChild(ArtNote);
-        // (UI 23: R and SPACE on small dark chips at the geo's places under the flask and the dash; Q, the keeper's,
-        // stays where the old eddy hung it until the right group places it at DgPanel.KeyQ)
+        // (UI 23: R, SPACE and Q on small dark chips at the geo's places under the flask, the dash and the keeper's
+        // bowl; Q lit "Q  READY" when the Flare is full)
         draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y);
         dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y);
-        artKey.Place(ArtAt.X, 1049 + 3);
+        artKey.Place(DgPanel.KeyQ.X, DgPanel.KeyQ.Y);
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
         AddChild(Panel.Numbers);
         // (the level's title and the numbers' card, over everything on the instrument)
         AddChild(Panel.Title); AddChild(Panel.Card);
         Keys();
     }
+
+    /// <summary>The Q chip lit "Q  READY" while the Flare is full (a change redraws it once).</summary>
+    public override void _Process(double delta) => artKey.Lit = Art.Level >= 0.999f;
 
     /// <summary>Where the statuses and the art's word stood in the iron HUD (its life cuff's middle and its cuffs'
     /// top), kept so they show where they always have until the UI lead places them on the Drowned Girl.</summary>
@@ -156,7 +164,7 @@ public partial class Instrument : Control
     {
         Color For(bool kept) => kept ? Colors.White : dim;
         bool chain = keep == "chain";
-        Life.Modulate = For(false);
+        Life.Modulate = Keeper.Modulate = For(false);
         Panel.Modulate = For(false);
         // (the chain's callout: the coin's ring and its number kept, the light looping round it)
         Panel.XpRing.Modulate = Panel.Numbers.Modulate = For(chain);
@@ -195,27 +203,27 @@ public partial class Instrument : Control
     }
 }
 
-/// <summary>The Flare (the Drowned Girl, piece 4): no glass, no iron, no glyph: the live coal in the river's eddy
-/// (DgCoal), its charge the coal's heat. (The class keeps the iron HUD's name: GameHud and the callouts address the
-/// Flare as the instrument's Art vessel.)</summary>
+/// <summary>The Flare (UI 23, HUD A): the dark glass globe in the keeper's bowl, filling with fire as it charges
+/// (DgGlobe). (The class keeps the iron HUD's name: GameHud and the callouts address the Flare as the instrument's Art
+/// vessel.) Its box is the glass's bezel round DgPanel.GlassAt; the globe's quad reaches past it for its light.</summary>
 public partial class Vessel : Control
 {
-    /// <summary>Half the Flare's box (the coal stands at its middle).</summary>
-    public static readonly Vector2 Half = new(Instrument.R + Instrument.Band + 14, Instrument.R + Instrument.Band + 14);
+    /// <summary>Half the Flare's box (the glass and its bezel; the glass at its middle).</summary>
+    public static readonly Vector2 Half = Vector2.One * Mathf.Ceil(DgPanel.GlassOuterR);
     /// <summary>The draught's count's ink: bone.</summary>
     public static readonly Color Bone = new("#f2e8d6");
-    /// <summary>The Flare's charge (0..1): the coal's heat.</summary>
-    public float Level;
-    readonly DgCoal coal;
+    /// <summary>The Flare's charge (0..1): the fire's level in the glass; the ready swell (1 on reaching full).</summary>
+    public float Level, Ping;
+    public readonly DgGlobe Globe;
 
     public Vessel()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         Size = Half * 2;
         PivotOffset = Half;
-        coal = new DgCoal();
-        coal.Position = Half - coal.Size / 2;
-        AddChild(coal);
+        Globe = new DgGlobe();
+        Globe.Position = DgGlobe.Quad.Position - (DgPanel.GlassAt - Half);
+        AddChild(Globe);
     }
 
     /// <summary>Alegreya Sans 800 with lining tabular figures (lnum, tnum): numbers that hold still as they change.</summary>
@@ -230,7 +238,7 @@ public partial class Vessel : Control
     };
     static FontVariation? figures;
 
-    public override void _Process(double delta) => coal.Level = Level;
+    public override void _Process(double delta) { Globe.Level = Level; Globe.Ping = Ping; }
     /// <summary>The blood's motion, HUD v2 (shaders/hud_vessel.gdshader, modes 0 and 1). It eases the level as
     /// drawn (a blow takes it down in about 0.1 s, healing fills it in about 0.4) and rocks the surface on a
     /// change (a damped slosh, settled in 0.8 s). For her life it also runs the hurt film down the glass (0.6 s),
@@ -652,6 +660,15 @@ public partial class KeyTag : Control
     /// <summary>UI 23 (mock7.py text_layer chip()): a small dark chip, 16 tall, radius 3, a 1 px bronze rim, the key in
     /// Alegreya Sans 800 16 tracked 0.6, bone; Place puts its top at y.</summary>
     public bool Chip;
+    bool lit;
+    /// <summary>UI 23 (the Flare's Q): lit, the chip reads "Q  READY", amber on a dark ember ground with a gold rim
+    /// (mock7.py chip(lit)). A change redraws it once.</summary>
+    public bool Lit
+    {
+        get => lit;
+        set { if (value == lit) return; lit = value; Fit(); }
+    }
+    string Shown => lit && padName == null && text != "" ? text + "  READY" : text;
 
     public KeyTag(Act act, bool ring = false)
     {
@@ -666,7 +683,26 @@ public partial class KeyTag : Control
     /// runs from; the art cuff's tag at y itself).</summary>
     /// (The art cuff's tag 3 higher, so its link runs up into a hole drilled in the band's foot, as the small
     /// cuffs' do: KeyTag draws that hole, since cuff.png is the life cuff's too, which hangs no tag.)
-    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (Chip ? 0 : ring ? -3 : 2)); }
+    public void Place(float x, float y)
+    {
+        cx = x; cy = y;
+        // (a chip on whole px, its box and its text placed about the true middle in _Draw: the mock's round(cx - w / 2))
+        Position = Chip ? new Vector2(Mathf.Floor(x - Size.X / 2), Mathf.Round(y)) : new Vector2(x - Size.X / 2, y + (ring ? -3 : 2));
+    }
+
+    float ChipTextW(string s)
+    {
+        float tw = 0;
+        foreach (char ch in s) tw += Style.UiHeavy.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, 16).X + 0.6f;
+        return tw - 0.6f;
+    }
+
+    void Fit()
+    {
+        if (Chip) Size = new Vector2(Math.Max(Math.Max(52, w), Mathf.Ceil(Math.Max(18, ChipTextW(Shown) + 9)) + 4), Instrument.TagH);
+        Place(cx, cy);
+        QueueRedraw();
+    }
 
     public void Refresh()
     {
@@ -694,8 +730,7 @@ public partial class KeyTag : Control
             if (t.Length > 4) w = Math.Max(w, TextWidth() + 10);
         }
         Size = new Vector2(Math.Max(52, w), Instrument.TagH);
-        Place(cx, cy);
-        QueueRedraw();
+        Fit();
     }
 
     float Track => text == "SPACE" ? 60 / 1000f * 14 : 0;
@@ -713,19 +748,23 @@ public partial class KeyTag : Control
         if (Chip && padName == null && text != "")
         {
             var cf = Style.UiHeavy;
-            float tw = 0;
-            foreach (char ch in text) tw += cf.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, 16).X + 0.6f;
-            tw -= 0.6f;
-            float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(Size.X / 2 - cw / 2);
-            var box = new StyleBoxFlat { BgColor = new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f), BorderColor = new Color(138 / 255f, 108 / 255f, 70 / 255f), AntiAliasing = true };
+            string label = Shown;
+            float tw = ChipTextW(label);
+            // (about the true middle: Place put the chip on whole px)
+            float mid = cx - Position.X;
+            float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(mid - cw / 2);
+            var box = lit
+                ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
+                : new StyleBoxFlat { BgColor = new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f), BorderColor = new Color(138 / 255f, 108 / 255f, 70 / 255f), AntiAliasing = true };
             box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
             DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
-            float tx = Size.X / 2 - tw / 2;
+            float tx = mid - tw / 2;
             float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(16) - cf.GetDescent(16)) / 2;
-            foreach (char ch in text)
+            var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : new Color(240 / 255f, 230 / 255f, 208 / 255f);
+            foreach (char ch in label)
             {
                 string s = ch.ToString();
-                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, 16, new Color(240 / 255f, 230 / 255f, 208 / 255f));
+                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, 16, ink);
                 tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, 16).X + 0.6f;
             }
             return;

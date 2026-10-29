@@ -486,7 +486,7 @@ public partial class Game
         if (pts.Count > worldOn)
             radii.Add(c.Target.Hud switch
             {
-                "art" => DgRiver.FlareR,
+                "art" => DgPanel.GlassOuterR,
                 "dash" => DgSmall.DashR,
                 "draught" => DgSmall.FlaskR,
                 "chain" or "chain_fill" => DgPanel.RingR1,
