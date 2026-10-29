@@ -152,7 +152,7 @@ Prays For", is folded into this scene.)
   the camera on faces and hands. The names are sound, not subtitles, except for
   "Da" and her own name, which are subtitled, unattributed. Music: none at all
   until her mother's voice; then one held note.
-- **Variants.** Who is on the stair (Vonnra, Chid, Brannoc, Keegan, a lover); the
+- **Variants.** Who is on the stair (Vonnra, Chid, Brannoc, Keegan); the
   heart's cage or the names; what she says to her mother.
 - **Key lines.** Grimtunnel: "He keeps them ALL." / "It isn't grateful. ...Why
   isn't it grateful?" Vonnra: "I wanted it to be morning."

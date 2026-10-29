@@ -1,3 +1,9 @@
+# RETIRED (28 October 2026): the love scenes, B
+
+The owner removed the love-scene options and the romance routes (OWNER_NOTES, 28 October). Sella stays who she is and likes the survivor; her free night is now the night she sits with you (`sella.free_door`, `free_what`, `free_sit`). Maeca's Blind is the watch night (`watch_only`, `blind_dark`, the gray lights). Nothing below is in the game. Kept as the history of B.
+
+---
+
 # The love scenes: B, the lovers' own lines
 
 The owner chose B on 6 October: at a love scene the narrator (under twist A,

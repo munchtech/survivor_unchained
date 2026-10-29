@@ -358,7 +358,7 @@ Ranges in brackets.
 2. **Aldo's Cleaver** · Drover's Chopper (Sound) · *Home:* the caravan wreck; the Kerchiefs · *Act 1*
    - Kills while you are below half health mend [2–3]% of your health. +[15–25]% bleed damage.
    - *Lore:* "He did the camp's cooking. His wife is at Low Kiln and will want it for the pot."
-3. **Maeca's Last Arrow** · Watch Crossbow, Storied (Volley) · *Home:* Maeca, if she is the survivor's lover · *Act 2*
+3. **Maeca's Last Arrow** · Watch Crossbow, Storied (Volley) · *Home:* Maeca, if the survivor kept her fire · *Act 2*
    - Volley's first bolt each volley is a sure critical against beasts and the marked; marked enemies take [15–25]% more from your projectiles.
    - *Lore (Maeca):* "Kept it since the cave mouths. Never found the right wolf. Turns out there isn't one."
 4. **What It Could Not Burn** · Pale Harvest (Heartwrought, Reaving Arc) · *Home:* the Centurion of the Stair · *Act 3*
