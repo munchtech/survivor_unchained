@@ -116,15 +116,22 @@ public static class Atmospheres
         // shadows (0.9 to 0.6: the shade takes 40% of the moon); a violet fill (hemisphere #33508c to #463c8a at 4.0) and the
         // grade's moon step on the shade only (MoonTop 0.44, hue 280): the shade violet, the moonlit grass and the needles keep
         // their teal-green, the lamps' and fires' pockets warm. Frame median luma 26-30 to 33-45 of 255.)
-        KeyColor = "#80b6f2", KeyIntensity = 2.6,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
+        // (Rendering r1, triage judge B4: a lifted, saturated violet-blue wash, not darkness: play p50 38-47, p95/p50 1.7-2.0,
+        // pools 0.32-0.41. The fill alone (hemisphere 4.0 to 1.5) moved p50 by 2: the moonlit ground is the frame's median, so
+        // the moon 2.6 to 1.7 (its colour and angle kept) and the exposure 1.95 to 1.3, with the warm lights held or raised:
+        // her ember 2.2 to 8 (twice its old light at the new exposure), the camp fire 16 to 52 (zone.json). The shade from
+        // violet to a teal-blue: the fill #463c8a to #34507e at 1.6, the moon step's hue 280 to 240 and chroma 0.16 to 0.10,
+        // the paint shade #4a2f78 to #2c4870; the darkest 30%'s OKLab hue 277-289 to 249-252, chroma 4.4-5.1 to 2.4-3.1.
+        // Play frames: p50 22-29, p95/p50 2.4-3.1, pools 0.53-0.65 (lfplay_02's level-up flash: p50 45, her flare scales with the ember).)
+        KeyColor = "#80b6f2", KeyIntensity = 1.7,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
         // (E4f, judge E4 r3: at 20 degrees the trees' shadows lay across the camp and road as a fence of long straight bars; up
         // to 28. Measured at the camp: x0.73 (sin 20 / sin 28) left the moonlit ground 1.6-2.5 OKLab L brighter (p85, p95); x0.55
         // holds it (35.5 / 45.4 against 35.4 / 46.0). The frame's median still rises 1.6 L*: the shadows are shorter, the point)
         KeyElevation = 48, KeyAzimuth = 250, ShadowStrength = 0.8,   // (Low Ford r3, judge r2: the lit ground and the shade barely parted: 0.6 to 0.68; lf5p, judge lf4: the wood road's dapple still murky, 0.8)
-        HemiSky = "#463c8a", HemiGround = "#1e1a14", HemiIntensity = 4.0, EnvIntensity = 1.2,
-        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 280, MoonSat = 0.16, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#4a2f78", PaintShadowK = 0.75 },
-        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
+        HemiSky = "#34507e", HemiGround = "#1e1a14", HemiIntensity = 1.6, EnvIntensity = 0.6,
+        FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.3, Rim = "#9fc0ff", RimStrength = 0.75,
+        Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 240, MoonSat = 0.10, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#2c4870", PaintShadowK = 0.75 },
+        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 8.0,
         CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
         // (Low Ford r3, judge r2: the moon's glitter a noisy white blob round her, every warm pool's grass lime)
         RiverMoon = 1, GrassLampOchre = 0.7,
