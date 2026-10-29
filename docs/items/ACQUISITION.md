@@ -150,7 +150,7 @@ Hand-placed finds are exploration's reward (Elden Ring's lesson, `RESEARCH.md`
 
 Rewards should be the person's own thing, with lore in their voice:
 - **Maeca**: a bow she has kept since Ashford (cured or allied wolves);
-  "Maeca's Last Arrow" (Storied; only if she becomes the survivor's lover).
+  "Maeca's Last Arrow" (Storied; only if the survivor kept her fire at the Blind three nights (`maeca.heard_heart`)).
 - **Wenna**: the Blightward Mask (exists) for the cure; tinctures after.
 - **Holloway**: the bounty, and a Watch officer's cloak if the road is safe.
 - **Brannoc**: a commissioned piece (`CRAFTING.md` §3) once he trusts you; the
@@ -185,7 +185,7 @@ reason to replay, and it makes every outcome pay something.
 | `pell.fate` | ran | **Varrow Silver** (ring) when he returns in Act 2 |
 | `nell.told` | gone or risen | **Brannoc's Twelfth Iron** (relic, Act 2: he breaks eleven and keeps the last for you) |
 | `nell.told` | lie | Brannoc's service ends; **the Kiln Ford** becomes an arena (Act 2) with its own Warden's drops |
-| `maeca.lover` | – | Maeca's Last Arrow (Storied, Act 2) |
+| `maeca.heard_heart` | – | Maeca's Last Arrow (Storied, Act 2) |
 | `keegan` | comes north | **Chapter Four** (relic) |
 
 ## 7. Bad luck, duplicates and target farming

@@ -53,7 +53,7 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   light goes: her breath smokes; as the dark comes and the ember wakes, the
   survivor's stops smoking. Keegan watches it stop. She asks.
 - **Chapter four** (Keegan reads it; this is the handbook's own text, older
-  than she is, and it sounds it; the romance's private reading, `keegan.ch4_read`,
+  than she is, and it sounds it; her private reading, `keegan.ch4_read`,
   uses the same words): "Of the Unchained, and Their Return to the Dark. One. The
   Unchained is the likeness of the one who died, and walks in their shoes, and
   knows their friends. The knight shall not be deceived by this. Two. Its breath
@@ -265,11 +265,7 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
 - **Does.** Everything Act 2 decided stands at the north gate at night: who holds
   it, who fights beside whom, who is missing. A night arena with the town behind
   it; its cinematic is the line forming and the line after.
-- **The eve.** The night before is one night, and only one, with one of the
-  open romances, or alone, or on the wall (`romance.eve`, `docs/romance/`). Not a
-  cinematic: the cut-away holds its one object (section "Love scenes" in the
-  README). Whoever she did not choose has one line for her in the morning, and
-  none of them is cruel.
+- **The eve.** The night before is one night, alone or on the wall with whoever stands there. Not a cinematic.
 - **Variants.** The roll of who is there (Holloway, Keegan, Maeca and the Pack,
   Redcowl's people or Rav's, Brannoc with a hammer, Harlan's money in the
   Kerchiefs' new boots, the freed from Silverstair).

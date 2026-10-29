@@ -88,9 +88,6 @@ def plan(files: list[str], man: list[dict], voice: str | None = None) -> dict:
         if voice and segs[part]["voice"] != voice:
             refused.append((f, f"{lid} part {part} is {segs[part]['voice']}'s, not {voice}'s"))
             continue
-        if E.behind_door(line, segs[part]["voice"]):
-            refused.append((f, E.DOOR_WHY))  # the narrator stops at the door: never imported
-            continue
         newest[(lid, part)] = f  # the latest of several copies wins
     matched = [{"line": lid, "part": part, "file": f, "voice": by_id[lid]["segments"][part]["voice"],
                 "text": by_id[lid]["segments"][part]["text"]} for (lid, part), f in newest.items()]
@@ -101,7 +98,7 @@ def plan(files: list[str], man: list[dict], voice: str | None = None) -> dict:
             if l.get("status") == "skip":
                 continue
             for i, s in enumerate(l["segments"]):
-                if s["voice"] == voice and (l["id"], i) not in have and not E.behind_door(l, voice):
+                if s["voice"] == voice and (l["id"], i) not in have:
                     missing.append(f"{l['id']}.p{i}" if len(l["segments"]) > 1 else l["id"])
     return {"matched": matched, "refused": refused, "missing": missing}
 
@@ -194,7 +191,7 @@ def main(argv):
         src = final_path(m["line"], m["part"], len(by_id[m["line"]]["segments"]))
         for lid, i, n in same.get((seg["voice"], seg.get("acted", seg["text"])), []):
             dst = final_path(lid, i, n)
-            if (lid, i) != (m["line"], m["part"]) and not os.path.exists(dst) and not E.behind_door(by_id[lid], seg["voice"]):
+            if (lid, i) != (m["line"], m["part"]) and not os.path.exists(dst):
                 shutil.copyfile(src, dst)
                 kept.append({**m, "line": lid, "part": i, "copy": True})
     for m, faults, said in wrong:

@@ -2,6 +2,13 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 29 October 2026 (coordinator 7050fc3c)
+- **UI (HUD revision r3: today | A keeper bust | B Flare chalice):** "A, the keeper." -> UI 22 builds A (keeper re-surfaced to the girl's polish; the button panel may gain character within the crisp-edge rule). Then: "bridge the gaps though, have them properly bookend the skills" -> no gaps; the girl and keeper frame the panel ends like bookends (touch, no overlap). Then: "with the skills strata on top if they overlap" -> where they meet, the panel layers over the figure.
+- **VFX (danger telegraph color):** "B salmon." (chevrons, flat ends, crisp edges; fire tint stays off).
+- **UI (HUD middle/right, "Ember Keeper" sheet):** "decent but i'm not sure, def don't have them extend into each other, they will cleanly end.  a separate crisp lined midle backdrop for the buttons is better than what is there in this setup.  i'm not sold on the flare because it needs to be visible even tho that looks great" -> NOT a pick; UI 22 revises (side figures end cleanly, a separate crisp-lined button panel, a Flare that reads at a glance; keeper kept if possible) and resends. Then: "i'm not 100% sold on the keeper" -> the sheet shows A (keeper, revised) and B (no figure: a crisp, loud Flare socket) on the same new middle. Then: "does her hand seem unnaturally large? i love her and her pose but that is rough" -> yes (checked at 1:1): the girl's globe hand is fixed in the same revision (about 80-85%, natural cradle), pose and globe kept.
+- **Story canon (WTF pass, story13_canon_proposals.md):** "Yes to P1, P2 and P3." (Rook gives the call on day one; the letter keeps "Come home by the Low Ford."; the Act 2 kill and the count split.)
+- **Story:** the writer and editor resolve things between themselves; main hears only owner decisions, canon proposals, blockers, MR/HANDOFF READY.
+
 ## 28 October 2026, night (coordinator ecc5f453)
 - **Story (STANDING): no romances.** "lets go ahead and remove the love scene options and relationships - though sella for example won't change the way she is - she does like us." Love scenes (B, 6 Oct) RETIRED. Affection and loyalty stay; romance routes go.
 - **Story: the narrator-mother reveal.** "its a \"big reveal\" that the narrator's voice is our mothers - but in the opening cinematic it says we remember her voice but not her face - maybe it should be the other way around? so that the voice is an actual reveal - or we need better moments." Bar: "\"what the fuck\" kinda twists both good and bad". Story 12 (writer on Fable xhigh, Haiku xhigh editor, owner's choice) brings 2 options for the reveal first.
