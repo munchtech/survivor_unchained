@@ -213,14 +213,42 @@ def weave(a, b, period, twill):
 # per class: (weave period m or 0, twill, weave amp, fine noise (cell m, amp), broad noise (cell m, amp))
 DETAIL = {WOOL: (0.0065, True, 1.0, (0.0016, 0.35), (0.03, 0.6)),
           TABARD: (0.005, False, 0.8, (0.0016, 0.25), (0.04, 0.5)),
-          QUILT: (0.005, False, 0.5, (0.0016, 0.2), (0.022, 1.0)),   # (the broad noise is the puffs' sag and creasing)
+          QUILT: (0.0085, False, 1.0, (0.003, 0.35), (0.05, 0.3)),   # coarse wet linen (+ quilt_cells(): the padding)
           LEATHER: (0.0, False, 0.0, (0.0022, 0.6), (0.015, 0.5)),
           IRON: (0.0, False, 0.0, (0.004, 0.25), (0.012, 0.6)),      # hammered dents
           BADGE: (0.005, False, 0.6, (0.0016, 0.2), (0.04, 0.3)),
           HEAD: (0.0, False, 0.0, (0.002, 0.0), (0.03, 0.0))}
 
 
-def height(P, N, c):
+# the gambeson's padding (Warden 6 r2: the sculpt's even square waffle read as a puffer sleeve): channels quilted down
+# the body and along the arms, thread-thin stitch lines between, each channel's loft lumpy along it and its own, the
+# padding flattened at the elbow's bend with creases across it
+QUILT_W = 0.034                    # channel width (m), at the reference radius (a whole number of channels round)
+QUILT_PUFF, QUILT_STITCH, QUILT_BEND = 3.0, 0.6, 1.2
+
+
+def quilt_cells(P, ax, ctr, rref, bend):
+    """The padding's height: P points; ax the channel's axis, ctr a point on it, rref the reference radius (per point);
+    bend 0..1 (the elbow). Channels run along ax, spaced round it by angle (the seam where the angle wraps)."""
+    up = np.where(np.abs(ax[:, 1:2]) < 0.9, [[0.0, 0.0, -1.0]], [[0.0, 0.0, -1.0]])
+    up = up - ax * (up * ax).sum(1, keepdims=True)
+    u = up / np.linalg.norm(up, axis=1, keepdims=True)    # (the seam behind: the back, the inner arm)
+    v = np.cross(ax, u)
+    d = P - ctr
+    th = np.arctan2((d * v).sum(1), (d * u).sum(1))       # 0 at the back, +-pi in front
+    n = np.round(2 * np.pi * rref / QUILT_W)
+    c = (th + np.pi) / (2 * np.pi) * n                    # channel coordinate (whole channels round)
+    ch = np.floor(c); fr = c - ch
+    along = (d * ax).sum(1)
+    hsh = ((ch.astype(np.int64) * 2654435761 + (rref * 1000).astype(np.int64) * 97) % 1000) / 1000.0
+    lump = 0.75 + 0.35 * vnoise3(np.c_[along / 0.045, ch * 1.7, hsh * 9], 1.0, 43)
+    loft = np.sin(np.pi * np.clip(fr, 0, 1)) ** 0.7 * (0.8 + 0.4 * hsh) * lump
+    stitch = 1 - np.clip(np.minimum(fr, 1 - fr) * QUILT_W / 0.0012, 0, 1)
+    crease = np.sin(along / 0.011 + 3 * vnoise3(P, 0.03, 41)) * bend
+    return QUILT_PUFF * loft * (1 - 0.7 * bend) - QUILT_STITCH * stitch + QUILT_BEND * crease
+
+
+def height(P, N, c, q=None):
     """Each point's detail height for its class (bind pose, metres in, unitless out); the weave is triplanar on the
     world planes (in the bind pose his cloth hangs along y, so the warp follows gravity)."""
     h = np.zeros(len(P), np.float32)
@@ -237,6 +265,8 @@ def height(P, N, c):
                         + ww[:, 2] * weave(p[:, 0], p[:, 1], per, tw))
         v += fine[1] * vnoise3(p, fine[0], 11)
         v += broad[1] * vnoise3(p, broad[0], 12) + 0.5 * broad[1] * vnoise3(p, broad[0] * 0.43, 13)
+        if k == QUILT and q is not None:
+            v += quilt_cells(p, q[0][m], q[1][m], q[2][m], q[3][m])
         h[m] = v
     return h
 
@@ -251,9 +281,21 @@ def detail(f, cls, eps=0.0004):
     t /= np.maximum(np.linalg.norm(t, axis=1, keepdims=True), 1e-9)
     b = np.cross(N, t) * np.where(T[:, 3:4] < 0, -1, 1)
     c = cls[have]
+    # the quilting's channels: down the body round its centre line, or along the arm's bone round it
+    arm = f["arm"][have]; jp = f["jpos"]
+    pel = jp.get("pelvis", jp.get("Pelvis", np.zeros(3)))
+    ax = np.tile([0.0, 1.0, 0.0], (len(P), 1)); ctr = np.tile([0.0, 0.0, pel[2]], (len(P), 1))
+    rref = np.full(len(P), 0.2)
+    for side, sg in (("l", 1), ("r", -1)):
+        s = (np.sign(P[:, 0]) == sg) & (arm > 0)
+        for a0, a1, sel in (("upperarm", "lowerarm", arm <= 1), ("lowerarm", "hand", arm > 1)):
+            d = jp[f"{a1}_{side}"] - jp[f"{a0}_{side}"]
+            ax[s & sel] = d / np.linalg.norm(d); ctr[s & sel] = jp[f"{a0}_{side}"]; rref[s & sel] = 0.06
+    bend = np.clip(1 - np.abs(arm - 1.0) / 0.22, 0, 1) * (arm > 0)
+    q = (ax, ctr, rref, bend)
     out = np.zeros(have.shape + (2,), np.float32)
-    dx = (height(P + eps * t, N, c) - height(P - eps * t, N, c)) / (2 * eps)
-    dy = (height(P + eps * b, N, c) - height(P - eps * b, N, c)) / (2 * eps)
+    dx = (height(P + eps * t, N, c, q) - height(P - eps * t, N, c, q)) / (2 * eps)
+    dy = (height(P + eps * b, N, c, q) - height(P - eps * b, N, c, q)) / (2 * eps)
     # (slopes of a unit-amplitude pattern over ~mm are ~1000/m: brought to ~0.5 at the weave; the shader's per-class
     #  strength sets how much shows)
     k = 0.0009

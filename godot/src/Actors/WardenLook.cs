@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -9,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class WardenLook
 {
-    static Shader? shader;
+    static Shader? shader, faceShader;
 
     /// <summary>His surfaces, by their source material's name, drawn soaked (the data maps: tools/assets/warden_wet_maps.py).</summary>
     public static void Wet(People.Person person, string dir)
@@ -19,6 +20,9 @@ public static class WardenLook
         var head = ResourceLoader.Exists($"{dir}/wet_head.png") ? GD.Load<Texture2D>($"{dir}/wet_head.png") : null;
         // the body's material ID map (tools/assets/warden_id_map.py): wool, tabard, quilting, leather, iron, badge, head
         var id = ResourceLoader.Exists($"{dir}/id_generated.png") ? GD.Load<Texture2D>($"{dir}/id_generated.png") : null;
+        // his Face Forge head's data map (tools/assets/warden_face_maps.py: de-light, wet, creases, hair zones)
+        var faceData = ResourceLoader.Exists($"{dir}/face_data.png") ? GD.Load<Texture2D>($"{dir}/face_data.png") : null;
+        faceShader ??= GD.Load<Shader>("res://shaders/warden_face.gdshader");
         var made = new System.Collections.Generic.Dictionary<string, ShaderMaterial>();
         foreach (var mi in person.Skeleton.GetChildren())
         {
@@ -26,8 +30,19 @@ public static class WardenLook
             for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
             {
                 if (m.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src) continue;
-                string key = src.ResourceName switch { "generated" => "generated", "warden_head" or "warden_head_lod" => "head", "skin" => "iron", _ => "" };
+                string key = src.ResourceName switch { "generated" => "generated", "warden_head" or "warden_head_lod" => "head", "skin" => "iron",
+                    "warden_face" => "face", "warden_face_lod" => "face_lod", _ => "" };
                 if (key == "") continue;
+                if (key.StartsWith("face") && !made.ContainsKey(key))
+                {
+                    // the face: its own shader (shaders/warden_face.gdshader); the LOD's own texture has no data map
+                    var f = new ShaderMaterial { Shader = faceShader, ResourceName = "warden_" + key };
+                    f.SetShaderParameter("albedo_tex", src.AlbedoTexture);
+                    f.SetShaderParameter("normal_tex", src.NormalTexture);
+                    f.SetShaderParameter("has_normal", src.NormalTexture != null);
+                    if (key == "face" && faceData != null) { f.SetShaderParameter("face_data", faceData); f.SetShaderParameter("has_data", true); }
+                    made[key] = f;
+                }
                 if (!made.TryGetValue(key, out var w))
                 {
                     w = new ShaderMaterial { Shader = shader, ResourceName = "warden_wet_" + key };
@@ -57,12 +72,76 @@ public static class WardenLook
         if (System.Environment.GetEnvironmentVariable("WARDEN_WET") is { Length: > 0 } ov)
             foreach (var kv in ov.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
                 if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
-                    foreach (var (key, w) in made) if (key != "iron") w.SetShaderParameter(k.Trim(), f);
+                    foreach (var (key, w) in made) if (key != "iron" && !key.StartsWith("face")) w.SetShaderParameter(k.Trim(), f);
+        // (and the face's: WARDEN_FACE="face_value=0.5;delight=1")
+        if (System.Environment.GetEnvironmentVariable("WARDEN_FACE") is { Length: > 0 } fo)
+            foreach (var kv in fo.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    foreach (var (key, w) in made) if (key.StartsWith("face")) w.SetShaderParameter(k.Trim(), f);
+        if (System.Environment.GetEnvironmentVariable("WARDEN_LIGHTS") is { Length: > 0 } lq) LightProbe(person, lq);
         if (System.Environment.GetEnvironmentVariable("WARDEN_GLINT") is { Length: > 0 } gl && gl.Split(',') is [var ge, var gr])
         {
             GlintEnergy = float.Parse(ge, System.Globalization.CultureInfo.InvariantCulture);
             GlintReach = float.Parse(gr, System.Globalization.CultureInfo.InvariantCulture);
         }
+    }
+
+    /// <summary>A lighting probe (WARDEN_LIGHTS="dump" and/or "off=a,b"): every half second, every light that reaches his
+    /// head (directional; omni within range; spot within range and cone), its path, type, colour, energy, range, cull mask
+    /// and the script that owns it, printed as "wlight" lines when the set changes; "off=": lights whose path contains
+    /// any of the words have his layers taken out of their cull mask (an A/B of one light on him; others keep it).</summary>
+    static void LightProbe(People.Person person, string q)
+    {
+        bool dump = q.Contains("dump");
+        var off = q.Split(';').Where(x => x.StartsWith("off=")).SelectMany(x => x[4..].Split(',', System.StringSplitOptions.RemoveEmptyEntries)).ToArray();
+        var tree = (SceneTree)Engine.GetMainLoop();
+        var skel = person.Skeleton;
+        ulong next = 0; string last = "";
+        tree.ProcessFrame += () =>
+        {
+            if (!GodotObject.IsInstanceValid(skel) || !skel.IsInsideTree()) return;
+            int hb = skel.FindBone("Head") >= 0 ? skel.FindBone("Head") : skel.FindBone("head");
+            var head = skel.GlobalTransform * skel.GetBoneGlobalPose(hb).Origin;
+            uint layers = 0;
+            foreach (var c in skel.GetChildren()) if (c is VisualInstance3D vi && vi.IsVisibleInTree()) layers |= vi.Layers;
+            var lines = new System.Collections.Generic.List<string>();
+            foreach (var n in tree.Root.FindChildren("*", "Light3D", true, false))
+            {
+                var l = (Light3D)n;
+                string path = l.GetPath();
+                if (off.Length > 0 && off.Any(o => path.Contains(o)) && layers != 0) l.LightCullMask &= ~layers;   // (off him only)
+                if (!dump || !l.IsVisibleInTree() || l.LightEnergy <= 0) continue;
+                float dist = l.GlobalPosition.DistanceTo(head);
+                string kind, reach;
+                if (l is DirectionalLight3D) { kind = "dir"; reach = "-"; }
+                else if (l is OmniLight3D o)
+                {
+                    if (dist > o.OmniRange) continue;
+                    kind = "omni"; reach = $"range={o.OmniRange:0.##} att={o.OmniAttenuation:0.##} dist={dist:0.00}";
+                }
+                else if (l is SpotLight3D sp)
+                {
+                    float ang = Mathf.RadToDeg((-sp.GlobalTransform.Basis.Z).Normalized().AngleTo((head - sp.GlobalPosition).Normalized()));
+                    if (dist > sp.SpotRange || ang > sp.SpotAngle) continue;
+                    kind = "spot"; reach = $"range={sp.SpotRange:0.##} att={sp.SpotAttenuation:0.##} cone={sp.SpotAngle:0.#} off_axis={ang:0.#} dist={dist:0.00}";
+                }
+                else continue;
+                // the owner: the nearest node up the tree with a C# class of its own
+                Node? ow = l; while (ow != null && ow.GetType().Namespace == "Godot") ow = ow.GetParent();
+                var c = l.LightColor;
+                lines.Add($"{kind} {path} col=({c.R:0.00},{c.G:0.00},{c.B:0.00}) energy={l.LightEnergy:0.###} spec={l.LightSpecular:0.##} {reach} " +
+                    $"cull={l.LightCullMask:X} hits_him={(l.LightCullMask & layers) != 0} shadow={l.ShadowEnabled} owner={ow?.GetType().Name ?? "-"}");
+            }
+            if (!dump) return;
+            ulong now = Time.GetTicksMsec();
+            if (now < next) return;
+            next = now + 500;
+            string sig = string.Join("|", lines.Select(x => System.Text.RegularExpressions.Regex.Replace(x, @"energy=\S+|dist=\S+|off_axis=\S+", "")));
+            if (sig == last) return;
+            last = sig;
+            GD.Print($"wlight t={now} head=({head.X:0.00},{head.Y:0.00},{head.Z:0.00}) layers={layers:X} n={lines.Count}");
+            foreach (var x in lines) GD.Print("wlight   " + x);
+        };
     }
 
     static readonly Color Cyan = new(0.35f, 0.82f, 1f);

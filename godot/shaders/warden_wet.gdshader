@@ -23,14 +23,15 @@ uniform float iron = 0.0;
 uniform float debug_view = 0.0; // 1: the classes in flat colours (WARDEN_WET="debug_view=1")
 // the classes (consts: Godot has no defaults on uniform arrays): 0 wool, 1 tabard, 2 quilting, 3 leather, 4 iron, 5 badge, 6 head
 // colour (sRGB) the atlas's hue is pulled to (its light and dark kept), how far, then a value scale
-const vec3 cls_color[7] = { vec3(0.13, 0.145, 0.19), vec3(0.08, 0.20, 0.33), vec3(0.11, 0.095, 0.085), vec3(0.24, 0.13, 0.07),
-	vec3(0.30, 0.30, 0.32), vec3(0.42, 0.38, 0.30), vec3(0.5, 0.45, 0.4) };
-const float cls_colmix[7] = { 0.8, 0.85, 0.85, 0.25, 0.85, 0.5, 0.0 };
-const float cls_value[7] = { 0.55, 1.1, 0.35, 0.85, 1.0, 0.4, 0.85 };
-const float cls_rough[7] = { 0.88, 0.8, 0.75, 0.6, 0.42, 0.7, 0.7 };
-const float cls_metal[7] = { 0.0, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0 };
-const float cls_spec[7] = { 0.15, 0.2, 0.2, 0.35, 0.5, 0.2, 0.2 };
-const float cls_detail[7] = { 0.7, 0.55, 0.45, 0.35, 0.3, 0.3, 0.0 };   // the baked detail normal's strength
+// (r2, Warden 6 judge: the quilting a darker, greyer wet linen, matte; the iron's reflection neutral, not brass)
+const vec3 cls_color[7] = { vec3(0.13, 0.145, 0.19), vec3(0.08, 0.20, 0.33), vec3(0.095, 0.092, 0.088), vec3(0.24, 0.13, 0.07),
+	vec3(0.30, 0.30, 0.305), vec3(0.42, 0.38, 0.30), vec3(0.5, 0.45, 0.4) };
+const float cls_colmix[7] = { 0.8, 0.85, 0.95, 0.25, 1.0, 0.5, 0.0 };
+const float cls_value[7] = { 0.55, 1.1, 0.3, 0.85, 1.0, 0.4, 0.85 };
+const float cls_rough[7] = { 0.88, 0.8, 0.9, 0.6, 0.42, 0.7, 0.7 };
+const float cls_metal[7] = { 0.0, 0.0, 0.0, 0.0, 0.75, 0.0, 0.0 };
+const float cls_spec[7] = { 0.15, 0.2, 0.1, 0.35, 0.5, 0.2, 0.2 };
+const float cls_detail[7] = { 0.7, 0.55, 1.0, 0.35, 0.3, 0.3, 0.0 };   // the baked detail normal's strength
 const float cls_wet[7] = { 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.0 };       // how much the soak shows
 uniform float rough_var = 0.35;  // the atlas roughness's variation kept around the class's
 // wet: the base pass everywhere (judged r2: wet_dark 0.9, wet_spec 0.15; its wet_rough 1.2 is now the classes'
@@ -47,6 +48,14 @@ uniform float soak_rough = 0.72; // the soaked cloth's roughness scale
 uniform float soak_spec = 0.32;  // the soaked cloth's specular
 uniform float puff_lo = 0.4;     // the quilting's atlas normal per cell, x puff_lo .. puff_hi
 uniform float puff_hi = 1.6;
+uniform float quilt_flat = 0.7;     // how far the quilting's paint is flattened to its blur
+uniform float quilt_atlas = 0.15;    // the sculpt's square waffle in the atlas normal, kept on the quilting (the baked channels lead)
+uniform float quilt_rough_min = 0.8; // wet linen stays matte (no tight highlight even soaked)
+// the iron's grime: dark against its blurred surroundings in the atlas (the crevices), dull and black-brown
+uniform vec3 grime_color : source_color = vec3(0.035, 0.03, 0.026);
+uniform float grime_amount : hint_range(0.0, 1.0) = 0.85;
+uniform float grime_from = 0.05;
+uniform float grime_to = 0.35;
 uniform float beard_dark : hint_range(0.2, 1.0) = 0.62;  // the beard on top of the wet pass
 uniform float beard_rough = 0.32;
 // shadow in the hood
@@ -122,17 +131,28 @@ void fragment() {
 		}
 		// the class's colour: the atlas's light and dark, its hue pulled to the class's
 		float la = dot(a, LUM);
-		vec3 b = mix(a, ccol * (la / max(dot(ccol, LUM), 1e-4)), cmix) * cval;
+		float la_b = max(dot(textureLod(albedo_tex, UV, 3.0).rgb, LUM), 1e-4);
+		// (the quilting: its pale paint blotches flattened toward their surroundings, wet linen is even)
+		float la_q = mix(la, max(dot(textureLod(albedo_tex, UV, 5.0).rgb, LUM), 1e-4), quilt_flat * wc[2]);
+		vec3 b = mix(a * (la_q / max(la, 1e-4)), ccol * (la_q / max(dot(ccol, LUM), 1e-4)), cmix) * cval;
 		// the soak by height: through below the thigh, damp toward the shoulders
 		float hy = idl.g * 2.0;
 		float soak = has_id ? mix(soak_floor, 1.0, 1.0 - smoothstep(soak_lo, soak_hi, hy)) * cwet : 0.0;
 		// wet: darker, a touch richer, the pale paint compressed
 		vec3 w = b * wet_dark * mix(1.0, soak_dark, soak);
-		w = max(mix(vec3(dot(w, LUM)), w, mix(1.0, wet_sat, soak)), vec3(0.0));
+		w = max(mix(vec3(dot(w, LUM)), w, mix(1.0, wet_sat, soak * (1.0 - wc[4]))), vec3(0.0));
 		w = w / (1.0 + white_knee * w);
 		float rough = clamp(crough + (mr.g - 0.6) * rough_var, 0.3, 0.97);
 		rough = clamp(mix(rough, rough * soak_rough, soak), 0.3, 0.95);
 		float spec = mix(max(cspec, wet_spec), max(cspec, soak_spec), soak);
+		// the quilting: matte however soaked
+		rough = mix(rough, max(rough, quilt_rough_min), wc[2]);
+		spec = mix(spec, cspec, wc[2]);
+		// the iron's crevices: grime (dark in the atlas against its blurred surroundings), dull, not metal
+		float grime = smoothstep(grime_from, grime_to, (la_b - la) / la_b) * wc[4] * grime_amount;
+		w = mix(w, grime_color, grime);
+		rough = mix(rough, 0.92, grime);
+		spec = mix(spec, 0.2, grime);
 		// the beard: darker again, ropey wet sheen
 		w *= mix(1.0, beard_dark, d.b);
 		rough = mix(rough, beard_rough, d.b);
@@ -149,13 +169,13 @@ void fragment() {
 		spec = mix(spec, 0.3, d.r);
 		w = mix(w, band_color, band);
 		ALBEDO = w;
-		METALLIC = cmetal;
+		METALLIC = cmetal * (1.0 - grime);
 		ROUGHNESS = rough;
 		SPECULAR = spec;
 		// the atlas's normal (the quilting's puffs each their own height) + the class's baked weave/grain/dents
 		vec2 nxy = vec2(0.0);
 		if (has_normal) nxy = texture(normal_tex, UV).rg * 2.0 - 1.0;
-		nxy *= mix(1.0, mix(puff_lo, puff_hi, puff), wc[2]);
+		nxy *= mix(1.0, mix(puff_lo, puff_hi, puff) * quilt_atlas, wc[2]);
 		nxy += (idl.ba * 2.0 - 1.0) * cdet;
 		vec3 n = normalize(vec3(nxy, 1.0));
 		NORMAL_MAP = n * 0.5 + 0.5;
