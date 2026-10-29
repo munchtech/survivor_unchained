@@ -102,10 +102,20 @@ P7U_BG = ("Underwater at night, looking up from below the surface of a black riv
           "ink, the rippling pale underside of the surface far above. No bubbles.")
 
 PLATES = {
-    "p5": dict(src="ink_r4/p5_base.png", r="r4_p5", target=3600, rest=(1800, 1000),
-               cams=[(1880, 700, 2.2, .15), (2000, 690, 2.5, .15), (1880, 700, 1.6, .15), (1800, 1000, 1.0, 0)],
-               layers=[("sky", 12), ("far", 3.5), ("road", 1.4)],      # round 4: the big trees stand on the near banks: road's
-               state_layer=None, glows=[("lamps", 3.5, "8ac8ff"), ("glare4", 3.5, "8ac8ff")]),     # the drowned baked into road
+    # Storybook 4 (sb00-p3p5-build): p5 and p3 are the re-carved ChatGPT sources (ink_recarve.py), fixed locally
+    # (ink_rc_fix.py) and cut by ink_rc_build.py, not by masks/fills/build here (rc=True). gen = the fixed gen-px
+    # picture; upp = canvas units per posted px; rest = the camera that sees the plate as painted.
+    # p5: one plane (the drowned stand continuously from the near ditches to the far banks: any cut crosses them);
+    # the depth comes from the mist and snow fx; glows: the blue fires (add, diff of lit - dimmed).
+    "p5": dict(rc=True, r="rc", gen="ink_rc/fix/p5wagon_d55_s11.png", target=3600, upp=1.0, rest=(1850, 760),
+               night_k=0.7, light="cold", fire_box=(700, 200, 1360, 560), layers=[("land", 1.0)], glows=[("fires", 1.0, None)]),
+    # p3: night (base with the ember drained + two add glows: the standing dead's inner light, the ember in the soil
+    # and the spilled stones) and its dawn, a separate plate after a hard cut (p3d).
+    "p3": dict(rc=True, r="rc", gen="ink_rc/fix/p3dead_d65_s11.png", target=5400, upp=0.7, rest=(1890, 696),
+               light="warm", layers=[("field", 1.0)], glows=[("dead_light", 1.0, None), ("ember", 1.0, None)],
+               dead_box=(500, 30, 820, 760), keep_warm=[(1150, 330, 1290, 480)]),    # gen px: his body; the lamp + shield
+    "p3d": dict(rc=True, r="rc", gen="ink_rc/fix/dawn_i65_s23.png", target=5400, upp=0.8, rest=(2160, 796),
+                light="warm", layers=[("dawn", 1.0)], glows=[]),
     "p6": dict(src="ink_r2/p6_s47.png", r="r2", target=3800, rest=(2600, 1055),
                cams=[(1650, 1050, 1.0, 0), (3550, 1060, 1.25, 0)],
                layers=[("sky", 10), ("far", 3.0), ("near", 1.0)],
@@ -192,6 +202,19 @@ if P7T_SEED:
     PLATES["p7"] = dict(src=f"ink_r4_p7/p7t_s{P7T_SEED}.png", r="r4_p7", target=2560, rest=P7T_REST, cams=P7T_CAMS,
                         layers=[("water", 1.2), ("lamp", 1.1), ("traveler", 0.95)], state_layer=("traveler", 0.95),
                         glows=[("lamp_glare", 1.1, None), ("reflection_blue", 1.2, None)], light="cold", carved=True)
+
+# Storybook 4 (ink_r6.py builds these): SB00 p0, p1, p2, p4 from the round-6 picks. crop: the parchment border (l, t, r, b
+# gen px, to a multiple of 16); target: image px = canvas units; rest: the canvas point the plate is painted from.
+PLATES.update({
+    "p0": dict(src="ink_r6/p0_s47.png", r6=True, crop=None, target=3400, rest=(1700, 751),
+               cams=[(1700, 751, 1.0, 0), (1690, 770, 1.035, 0)], layers=[("dark", 1.0)], state_layer=None, glows=[]),
+    "p1": dict(src="ink_r6/p1_s202.png", r6=True, crop=(80, 56, 80, 56), target=3300, rest=(1650, 1938),
+               cams=[(1650, 700, 1.0, 0), (1650, 2500, 1.07, 0), (1650, 3150, 1.1, 0)], layers=[("base", 1.0)], state_layer=None, glows=[]),
+    "p2": dict(src="ink_r6/p2_s202.png", r6=True, crop=(54, 56, 74, 56), target=3300, rest=(1650, 1781),
+               cams=[(1430, 2960, 1.12, 0), (1650, 760, 1.0, 0)], layers=[("base", 1.0)], state_layer=None, glows=[]),
+    "p4": dict(src="ink_r6/p4_s23.png", r6=True, crop=None, target=5800, rest=(2900, 950),
+               cams=[(1650, 950, 1.05, 0), (4150, 950, 1.05, 0)], layers=[("base", 1.0), ("willow", 0.8)], state_layer=None, glows=[]),
+})
 
 
 def wd(plate, *a):
@@ -579,6 +602,10 @@ if __name__ == "__main__":
     stage = sys.argv[1]
     plates = sys.argv[2:] or list(PLATES)
     for p in plates:
+        if PLATES[p].get("r6"):         # Storybook 4's plates: their own stages (ink_r6.py: prep, sam, fills, build)
+            import ink_r6
+            {"masks": ink_r6.prep, "fills": ink_r6.run_fills, "build": ink_r6.build}.get(stage, lambda _: None)(p)
+            continue
         if stage == "masks":
             make_masks(p)
         elif stage == "fills":
