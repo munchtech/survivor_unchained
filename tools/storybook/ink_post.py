@@ -19,6 +19,7 @@ import sys
 
 import numpy as np
 from PIL import Image, ImageFilter
+from scipy import ndimage as nd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAPER = os.path.join(HERE, "out", "paper_Paper005.jpg")   # ambientCG Paper005 4K Color, CC0 (ink_provenance.md)
@@ -30,7 +31,7 @@ INKS = {  # the shared inks, the same list for every plate
 }
 PAL = np.array([[int(h[i:i + 2], 16) for i in (0, 2, 4)] for h in INKS.values()], np.float32) / 255
 MIX = 0.78
-GRAIN, BLOTCH = 0.13, 0.05          # fibre and blotch strength (multiplicative)
+GRAIN, BLOTCH = 0.12, 0.03          # fibre and blotch strength (multiplicative)
 WEAR = 1.15                         # fibre z-score above which paper shows through solid ink
 BLACK = PAL[0] * 0.92               # the black point: no pixel darker
 LIGHT = np.array([0.925, 0.875, 0.775], np.float32)  # the parchment light: no pixel lighter
@@ -73,9 +74,9 @@ def paper():
     global _paper
     if _paper is None:
         L = np.asarray(Image.open(PAPER).convert("L")).astype(np.float32)
-        lo = np.asarray(Image.fromarray(L).filter(ImageFilter.GaussianBlur(10))).astype(np.float32)
+        lo = nd.gaussian_filter(L, 10, mode="wrap")
         fib = L - lo
-        blo = lo - np.asarray(Image.fromarray(lo).filter(ImageFilter.GaussianBlur(120))).astype(np.float32)
+        blo = lo - nd.gaussian_filter(lo, 120, mode="wrap")
         _paper = (fib / fib.std(), blo / blo.std())
     return _paper
 

@@ -82,7 +82,7 @@ def glow(P, mask_gen, kind):
     sig = {"lamps": (5, 22, 70), "fire_glow": (8, 35, 110), "reflection_blue": (5, 18, 50), "lamp_warped": (20, 60, 160)}[kind]
     g = sum(nd.gaussian_filter(m, a * s) * wt for a, wt in zip(sig, (1, 2.5, 5)))
     g = g / max(1e-6, np.percentile(g[m > 0.5], 90)) if (m > 0.5).any() else g
-    peak = {"lamps": 0.85, "fire_glow": 0.6, "reflection_blue": 0.8, "lamp_warped": 0.55}[kind]
+    peak = {"lamps": 0.85, "fire_glow": 0.6, "reflection_blue": 0.8, "lamp_warped": 0.3}[kind]
     return np.clip(g * peak, 0, 1)
 
 
