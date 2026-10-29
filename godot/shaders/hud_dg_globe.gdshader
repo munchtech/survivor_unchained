@@ -1,7 +1,7 @@
 // UI 23, HUD A (the keeper): the Flare, a dark glass globe in the keeper's bowl that fills with fire as it charges
 // (DgGlobe). A port of the mock's ember_glass() (ui23 R6 mock7.py 289-423; every constant in
 // art/ui/dg_keeper/hud_a_geo.json "glass"): smoky dark glass, a wall of painted flame (fire.png) risen to the charge's
-// level of the span seen above the bowl's lip, an amber arc on the bronze bezel clockwise from 12; READY (full): a
+// level of the span seen above the bowl's lip, two amber arms on the bronze bezel rising from the bowl's lips; READY (full): a
 // white-gold heart in an orb of fire (fire_ready.png), the bezel lit, five tongues of flame over the top, round embers
 // rising, a halo on the air. Then the bowl's front lip (keeper_lip.png, the keeper's rect) over the glass's foot, the
 // globe's light on the air x (1 - 0.75 lip alpha), as the baker composed it (tools/uiforge/dg_keeper_check.py).
@@ -119,9 +119,12 @@ void fragment()
 		float tb = clamp((d - r) / (rb - r), 0.0, 1.0);
 		float lit = clamp(0.55 - 0.315 * (dx + dy) / (d + 1e-3), 0.1, 1.0);
 		vec3 bezc = vec3(0.36, 0.27, 0.16) * (0.45 + 1.1 * lit) + vec3(0.9, 0.75, 0.5) * exp(-pow((tb - 0.45) / 0.22, 2.0)) * lit * 0.35;
-		float an = fract(atan(dx, -dy) / TAU + 1.0);
-		float arc = clamp((charge - an) * TAU * r + 0.5, 0.0, 1.0) * step(0.01, charge);
-		vec3 amber = vec3(1.0, 0.62, 0.20) * (0.75 + 0.35 * exp(-pow((tb - 0.5) / 0.3, 2.0)));
+		// UI 23: two arms rise from the bowl's lips at +-130 deg (from 12, clockwise) and meet at 12 as it fills; the lit core 3.5 px
+		float sa = atan(dx, -dy);
+		float aa = abs(sa), a_hi = radians(130.0), a_lo = a_hi * (1.0 - clamp(charge, 0.0, 1.0));
+		float arc = clamp((aa - a_lo) * (r + 1.8) + 0.5, 0.0, 1.0) * clamp((a_hi - aa) * (r + 1.8) + 0.5, 0.0, 1.0) * step(0.01, charge);
+		arc = ready ? 1.0 : arc;
+		vec3 amber = vec3(1.0, 0.62, 0.20) * (0.75 + 0.35 * (ready ? exp(-pow((tb - 0.5) / 0.3, 2.0)) : exp(-pow(abs(tb - 0.5) / 0.7, 4.0))));   // (UI 23: the lit core fills the 3.6 px ring, was a ~2 px peak)
 		bezc = bezc * 0.42 * (1.0 - arc) + amber * 1.1 * arc;
 		bezc = mix(bezc, bezc * 0.55 + vec3(1.0, 0.70, 0.30) * 0.65, rd);
 		bezc += vec3(1.0, 0.6, 0.25) * flash * 0.6;

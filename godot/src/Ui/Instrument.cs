@@ -99,6 +99,7 @@ public partial class Instrument : Control
         float mid = (DgPanel.Seat(0).X + DgPanel.Seat(5).X) / 2, w = DgPanel.Seat(5).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
         Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
         Passives.Size = new Vector2(w, 28);
+        Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
         Statuses = Style.H(10);
         Statuses.Alignment = BoxContainer.AlignmentMode.Center;

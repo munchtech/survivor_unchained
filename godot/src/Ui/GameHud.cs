@@ -229,6 +229,16 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A 1 px dark rim round the type, over its drop shadow: corner words that stand on the world
     /// with no box read on the brightest ground (UI note 8).</summary>
+    /// <summary>Rimmed, plus (UI 23) a soft dark drop shadow: the italic objective line vanished over white horde models.</summary>
+    static Label Shadowed(Label l)
+    {
+        Rimmed(l);
+        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.55f));
+        l.AddThemeConstantOverride("shadow_offset_x", 1);
+        l.AddThemeConstantOverride("shadow_offset_y", 2);   // (1.5 px asked; the theme constant is whole px)
+        return l;
+    }
+    static Label ShadowIf(bool on, Label l) => on ? Shadowed(l) : Rimmed(l);
     static Label Rimmed(Label l)
     {
         l.AddThemeConstantOverride("outline_size", 2);
@@ -920,14 +930,14 @@ public partial class GameHud : CanvasLayer
                 if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
                     var font = s.Optional ? Style.TextItalic : Style.Ui;
-                    row = Style.H(5, Rimmed(Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
-                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Rimmed(Style.Label(after, font, 16, col)));
+                    row = Style.H(5, ShadowIf(s.Optional, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
+                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(ShadowIf(s.Optional, Style.Label(after, font, 16, col)));
                     row.AddChild(mark);
                 }
                 else
                 {
                     // The objectives stand on the world like the tally: rimmed, so a dim italic line never ghosts over a tree.
-                    var l = Rimmed(Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
+                    var l = ShadowIf(s.Optional, Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
                     l.CustomMinimumSize = new Vector2(370, 0);
                     row = Style.H(7, l, mark);
                 }
