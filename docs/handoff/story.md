@@ -3,59 +3,62 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (29 October, Story 13, branch `story-wtf`): list done, MR1 sent, one page at the owner's gate
+## Now (29 October, Story 13, branch `story-wtf`): list DONE, MR1 + MR2 sent
 
 The owner's 28 October direction (romances out, the reveal, the WTF pass) and
-his 28 October notes (reveal A with "where you left it" reworded; the C01
-empty-bedroll opening) are all done or at his gate. Writer = Fable (xhigh); the
-editor is a Haiku `su-lead-max` at xhigh that the writer keeps alive across the
-pass and talks to directly (the owner: "the writer and editor may talk to each
-other"); main hears only owner decisions, canon proposals, blockers, MR/HANDOFF.
+his notes (reveal A with "where you left it" reworded; the C01 empty-bedroll
+opening) are done. Writer = Fable (xhigh); the editor is a Haiku `su-lead-max`
+at xhigh the writer keeps alive across a pass and talks to directly (the owner:
+"the writer and editor may talk to each other"); main hears only owner
+decisions, canon proposals, blockers, MR/HANDOFF.
 
 **1. Romances out: DONE** (data 1dddf45e; follow-through a52d452c: tests, the
 door machinery out of `tools/vo`, `love_b.json` -> `late_nights.json`, 39 gone
-locks removed and 13 rewrites re-locked, bible §11 "Affection, not romance",
+locks removed, 13 rewrites re-locked, bible section 11 "Affection, not romance",
 `LOVE_SCENES.md` retired to `docs/story/notes/history_love_scenes_b.md`).
 **2. Reveal A: DONE** (60bcf83e). C04 `cin_first_light.face`: *"You try to call
 up your mother's voice, and it is not there. Not faint: gone. Her face comes at
 once: the line between her brows, the thread she bit instead of cutting."*;
 `rules.json` `dawn.face` (was `dawn.voice`): *"Her face is going the way her
 voice went. The brows first. You still have the word."*; the narrator never says
-the call before C43 (`StoryRewriteTests.Her_mothers_voice_is_gone...`); the
-docs follow (TREATMENT §2, §3.4; bible; C04 doc + shoot; act 3 outline;
-`NARRATOR_REVEAL_OPTIONS.md` marked DECIDED). The editor's sweep of narrator
-figures that don't resolve: greymuzzle.ally/again, sella.free_stairs, the Pell
-rule. Kept on purpose: maeca.watch_only's frost line, sella.stairs' "Coins,
-then your hand" (she leads a client to a paid room; up there is sleep). No
-re-records: every narrator take is a placeholder; the stale C04 take is owed to
-the next placeholder batch (GPU, `tools/vo/placeholders.py`).
+the call before C43 (`StoryRewriteTests.Her_mothers_voice_is_gone...`); docs
+follow (TREATMENT section 2 and 3.4; bible; C04 doc + shoot; act 3 outline;
+`NARRATOR_REVEAL_OPTIONS.md` DECIDED). The editor's sweep of narrator figures
+that don't resolve: greymuzzle.ally/again, sella.free_stairs, the Pell rule.
+Kept on purpose: maeca.watch_only's frost line; sella.stairs "Coins, then your
+hand" (a client led to a paid room; up there is sleep). No re-records: every
+narrator take is a placeholder; the stale C04 take is owed to the next
+placeholder batch (GPU, `tools/vo/placeholders.py`).
+**3. The WTF pass: DONE, the owner said yes to all three** ("Yes to P1, P2 and
+P3."; the page: `docs/story/notes/story13_canon_proposals.md`). P1 in data:
+`rook.mother_word` (Rook gives the words and the name day one; mother2's choices
+moved to it). P2 in data: journal `home.letter` ("Come home by the Low Ford.").
+P3 in TREATMENT: section 4.5 step 7 (nobody says a number; "Tolley's lips move,
+and stop"), section 7's Act 2 rows, section 0's Maeca line (C22). Bible section
+1 and 3.3 carry P1 and P2. Act 2 is not in the data; the next writer builds C20
+and C20b from the treatment as now written.
 **4. The C01 opening: DONE as a beat** (1fcf97d0): `docs/cinematics/c01_opening_beat.md`
 for Cinematics 8 (bedroll, shadow, prints, rising, play; shots 2-3 out, 4-6
 folded; the letter and the background item to C04 A; no data change).
-**MR1 READY story-wtf@1fcf97d0** sent to main (tests 1285/0/10).
+**MRs:** MR1 at 1fcf97d0 (items 1, 2, 4); MR2 at the branch head (P1, P2, P3,
+the page, this handoff). Tests 1285/0/10 on both.
 
-**3. The WTF pass: the page is written,** `docs/story/notes/story13_canon_proposals.md`
-(the editor's scores 5-8; P1 Rook gives the word day one, `rook.mother_word`;
-P2 the letter keeps "Come home by the Low Ford.", journal entry `home.letter`;
-P3 the kill and the count split, C20 grin only, C20b the count). P1 and P2 are
-DRAFTED IN THE DATA on the branch head and are NOT in MR1. The dropped-lamp
-plant (`lamp_out`, text in `c04_first_light.md`) waits for Cinematics 8 to add
-prop, node and cue together (`CinemaTests` fails a node without its cue). On the
-owner's yes: commit stands, MR2; write P1 into the bible §1 (one sentence) and
-P2 into §3.3's plants; write P3 into TREATMENT §4.5 step 7 ("Tolley's lips move,
-and stop"), §4.6 (Maeca's "...He counted me." to C22) and §7's two Act 2 rows,
-then have the editor read §4.5-4.6 once. On a no: `git revert` the P1/P2 commit
-(the test change in `StoryRewriteTests` line 380 goes with it).
-**Routed, unowned (tell main if not yet routed):** the toll (`TOLL_SPEC.md`) has
-no data presence beyond `Journey.Day.RiseAgain`; the drowned woman lifting a
-dead lamp at the ford isn't staged in `Prologue.cs`; the C04 A lamp prop +
-`lamp_out` node + cue (Cinematics 8); the C04 A letter insert with the legible line.
+**Owed elsewhere (routed to main, 29 October):** the toll (`TOLL_SPEC.md`) has no
+data presence beyond `Journey.Day.RiseAgain`: a combat/story-code slot; the
+drowned woman lifting a dead lamp at the ford isn't staged in `Prologue.cs`;
+Cinematics 8: the C04 A letter insert with its legible line, the lamp prop +
+`cin_first_light.lamp_out` node + cue together (text in `c04_first_light.md`;
+`CinemaTests` fails a node without its cue), C04 A7 holds on her face.
 
-The editor: agent `a16f8f7e8fda254d8` (budget raised to 260k; near it: spawn a
-fresh one from `docs/handoff/story_editor.md` with the scoreboard pasted in).
-Scratch: coordinator scratchpad `story13\` (`canon_edit.py`, the P1/P2/lamp
-data edit, re-runnable only against 1fcf97d0); backed up to
-`survivorsunchained_inputs\scratch_story13\` at handoff.
+**Next for a writer, when a slot opens:** Act 2's data from TREATMENT sections
+3.2, 3.3, 4 (C20, C20b, C22, C32) and Act 3's stair (C41-C43) with reveal A's
+first-person lines; "Up the street, nobody is baking." and the morning news pool
+once the toll is built. Read TREATMENT section 0 first: it overrules the rest.
+
+The editor: agent `a16f8f7e8fda254d8` (near its 260k budget: spawn a fresh one
+from `docs/handoff/story_editor.md` with the scoreboard from the canon page).
+Scratch (`canon_edit.py`, `on_yes.py`) backed up to
+`survivorsunchained_inputs\scratch_story13\`; the scratchpad subfolder cleared.
 
 ## Earlier (19 October, the storybook writer, branch `story-lore`): DONE, merged
 

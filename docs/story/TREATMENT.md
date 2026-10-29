@@ -40,7 +40,7 @@ anything below, in this section too. Each has its own page for the detail.
   climbs into her knife on purpose. After the kill, risen at his gate on the
   fourth dusk, he counts to ninety-two (C20b); his daybook ends "92." with no
   name, and "Sorry." (C22). Maeca's "He never counted me." becomes "...He
-  counted me."
+  counted me." (said at his table, C22, not at the hole: P3, 29 October).
 - **The toll: "It takes less than it did"** (`TWIST_WTF.md` option 1; the
   build, `TOLL_SPEC.md`). The survivor's first rising cost the twenty-six
   Vonnra drowned. Every rising since costs one life in the valley: someone
@@ -203,6 +203,11 @@ hers.
   between her brows, the thread she bit instead of cutting."* The narrator
   never says the call: there is nothing to compare her with (reveal A, the
   owner's pick, 28 October; `NARRATOR_REVEAL_OPTIONS.md`).
+- **Day one, Rook's bar** (`rook.mother_word`; P1, 29 October): right after "She
+  went in her sleep, pet", Rook gives the words and the name: *"She'd sit at my
+  back window at dusk, the week she was here, and say it to the road. 'Lamp's
+  lit, Spark. Stay where it reaches.' I took it for a prayer."* Every player
+  holds them from here; no lamp and no river bank in her line.
 - **The first dusk at the gate:** the Watch call the lamps ("Lamps are lit.
   Stay where they reach.", the valley's plural), and she turns her head. *"You
   have heard that said at a door."* The player learns the words from the
@@ -296,8 +301,8 @@ Brannoc's, and it has been paid.
 she was failing she came down to the Waystation to be near the ford road, and
 took Rook's back room. Her hands were bad, so Rook wrote her last letter for
 her: *Come home by the Low Ford. I'll be at the water with a lamp, so you'll
-see me.* (That is the letter in the survivor's coat in C01, its ink run to
-blue water.) Rook, paid by Vonnra to report the road, reported that a
+see me.* (That is the letter in the survivor's coat, its ink run to blue water; one
+line still reads, *Come home by the Low Ford.*: P2, 29 October.) Rook, paid by Vonnra to report the road, reported that a
 traveller was expected on it, and Vonnra paid her double. Every evening the
 mother went down to the north bank with a lamp. On the seventh she went down
 to the water's edge, and the Warden took her. She is the twenty-sixth line in
@@ -312,7 +317,10 @@ lamp toward her face the way the Warden lifts his. She did not strike.
 prologue's path, just before C02.
 
 **The plants, all on the trunk, each innocent:**
-- C01: the letter whose ink has run.
+- C04 A: the letter whose ink has run, one line still legible: *Come home by
+  the Low Ford.* (journal `home.letter`; the hand stays unseen until C32; P2,
+  29 October. Until Cinematics 8 restages C01, its shot 6 keeps the letter as an
+  object with no word legible; after, the letter is seen only at C04 A.)
 - The prologue: the drowned woman at the water's edge, who lifts a lamp
   instead of her hands. The narrator says nothing.
 - C04, the dawn crossing: *"On the stones at the water's edge, a lamp
@@ -647,8 +655,10 @@ It is Ashford, exactly, and the player knows it.
 6. **The cut.** One stroke of her knife through the rope at the post. The
    camera does not cut away. The rope runs. He does not cry out. The lamp at
    his belt goes down the dark, very small, and goes out.
-7. **The silence.** No music. She puts the knife away. To nobody, flat:
-   **"Ninety-two."**
+7. **The silence.** No music. She puts the knife away. Nobody says a number.
+   Tolley's lips move, and stop. The count waits four dusks for the gate
+   (C20b), where the risen Holloway says it and the player does the sum (P3,
+   29 October).
 
 Only then do the choices come.
 
@@ -856,9 +866,9 @@ as only Nell did. He stops. It is a gift, not a wound.
 |---|---|---|
 | The farm goes; Holloway goes down drunk and shaking | dread, then pride | C20 |
 | The hole, played; the count; Tam's Pa swearing; his laugh | **elation** | C20 |
-| "Count's right." The knife. "Ninety-two." | **HOLY SHIT** | C20 |
-| The Pack walks away from her; Tolley counts ten | silence | C20 |
-| Holloway at the gate at dusk; she lays him down | devastation, unflinching | C20b |
+| "Count's right." The knife. No number. | **HOLY SHIT** | C20 |
+| The Pack walks away from her; Tolley's lips move, and stop | silence | C20 |
+| Holloway at the gate at dusk counts to ninety-two, Maeca at the well looking at her hands; the sum is the player's; she lays him down | **the click, then devastation** | C20b |
 | His table: "No." to Sallow; "Sorry." in ink | grief | C22 |
 | Chapter four: Keegan doesn't want to be right | dread | C21 |
 | Harlan exposed (now a twist) | betrayal | C24 |
