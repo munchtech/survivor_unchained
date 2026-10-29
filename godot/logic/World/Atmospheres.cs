@@ -28,13 +28,15 @@ public static class Atmospheres
     public static readonly AtmospherePreset NightTown = Night with
     {
         Sky = Night.Sky with { Glow = "#2c4470" },
-        KeyColor = "#9fb6e6", KeyIntensity = 1.35, KeyElevation = 48, ShadowStrength = 0.55,
-        HemiSky = "#2c3e62", HemiGround = "#1a150f", HemiIntensity = 0.58, EnvIntensity = 0.4,
+        // (E9d r2: the moon and the fill raised (key 1.35, hemi 0.58 #2c3e62, env 0.4, lift 0.01/0.018/0.035, contrast 1.22):
+        // away from the lamps the grass and the yards sank to black, p50 under 1 of 255; a moonlit blue-violet now)
+        KeyColor = "#a4b8ec", KeyIntensity = 1.8, KeyElevation = 48, ShadowStrength = 0.55,
+        HemiSky = "#3a4a7c", HemiGround = "#1e1812", HemiIntensity = 0.82, EnvIntensity = 0.52,
         FogColor = "#0b121c", FogDensity = 0.011, Exposure = 1.32, Rim = "#86a4e8", RimStrength = 0.42,
         Grade = NightGrade with
         {
-            Lift = [0.01, 0.018, 0.035], ShadowTint = "#2a4a66", HighlightTint = "#ffa34e", TintStrength = 0.3,
-            Saturation = 0.98, Vibrance = 0.16, Contrast = 1.22, Toe = 0.5,
+            Lift = [0.016, 0.024, 0.05], ShadowTint = "#2e4470", HighlightTint = "#ffa34e", TintStrength = 0.3,
+            Saturation = 1.0, Vibrance = 0.2, Contrast = 1.16, Toe = 0.5,
         },
     };
 
@@ -93,7 +95,7 @@ public static class Atmospheres
     /// one grade on her and the world: her shaded skin's chroma 7.9 to 8.3, lit skin 9.7 to 9.8, the neck's shade hue 21-22 both ways.)</summary>
     public static readonly GradeSettings CloseNightPaint = PlayNightGrade with
     {
-        PaintVib = 0.7, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015,
+        PaintVib = 0.7, PaintHi = 0.7, PaintShadow = "#22305a", PaintShadowK = 0.8, PaintLift = 0.015, PaintShadowSkin = 1,
         MoonSat = 0.085,   // (G1 r3: the play night's 0.14 is the camp grass's; the close view keeps the 0.085 she was judged under)
     };   // contrast 1.13 (round 3b: 1.08 left the pools at 0.46-0.53)
 
@@ -109,15 +111,25 @@ public static class Atmospheres
     /// water sat at p50 31 under its beacon's pool: 2.4-2.7 now, pools 0.61-0.65).</summary>
     public static readonly AtmospherePreset LowFordNight = Night with
     {
-        KeyColor = "#90b6ff", KeyIntensity = 4.9 * 0.55,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
+        // (Low Ford r1, triage judge: outside her pool near-black navy, one hue, the trunks' shadows huge black bars. The moon
+        // 28 to 48 degrees (a shadow 1.9 to 0.9 times its caster's height) at 2.6, not 2.7 (its sun-facing ground held), lighter
+        // shadows (0.9 to 0.6: the shade takes 40% of the moon); a violet fill (hemisphere #33508c to #463c8a at 4.0) and the
+        // grade's moon step on the shade only (MoonTop 0.44, hue 280): the shade violet, the moonlit grass and the needles keep
+        // their teal-green, the lamps' and fires' pockets warm. Frame median luma 26-30 to 33-45 of 255.)
+        KeyColor = "#80b6f2", KeyIntensity = 2.6,   // (G1 r2: #a9c4ff at 6.5 bleached the moonlit grass grey-white, frost; G1 r3: 5.8 to 4.9, the camp ground's median L -0.5)
         // (E4f, judge E4 r3: at 20 degrees the trees' shadows lay across the camp and road as a fence of long straight bars; up
         // to 28. Measured at the camp: x0.73 (sin 20 / sin 28) left the moonlit ground 1.6-2.5 OKLab L brighter (p85, p95); x0.55
         // holds it (35.5 / 45.4 against 35.4 / 46.0). The frame's median still rises 1.6 L*: the shadows are shorter, the point)
-        KeyElevation = 28, KeyAzimuth = 250, ShadowStrength = 0.9,
-        HemiSky = "#33508c", HemiGround = "#1e1a14", HemiIntensity = 2.6, EnvIntensity = 1.2,
+        KeyElevation = 48, KeyAzimuth = 250, ShadowStrength = 0.8,   // (Low Ford r3, judge r2: the lit ground and the shade barely parted: 0.6 to 0.68; lf5p, judge lf4: the wood road's dapple still murky, 0.8)
+        HemiSky = "#463c8a", HemiGround = "#1e1a14", HemiIntensity = 4.0, EnvIntensity = 1.2,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.95, Rim = "#9fc0ff", RimStrength = 0.75,
-        Grade = PlayNightGrade, Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
+        Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 280, MoonSat = 0.16, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#4a2f78", PaintShadowK = 0.75 },
+        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 2.2,
         CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
+        // (Low Ford r3, judge r2: the moon's glitter a noisy white blob round her, every warm pool's grass lime)
+        RiverMoon = 1, GrassLampOchre = 0.7,
+        // (Low Ford lf5p, judge lf4: the night bushes too saturated; her pool tipped the meadow ground olive-chartreuse)
+        BushNightSat = 0.4, GroundEmberOchre = 0.6,
         Frost = 1,
     };
 
@@ -207,12 +219,15 @@ public static class Atmospheres
             MoonTop = Lerp(a.Grade.MoonTop, b.Grade.MoonTop, t), MoonWidth = Lerp(a.Grade.MoonWidth, b.Grade.MoonWidth, t),
             PaintVib = Lerp(a.Grade.PaintVib, b.Grade.PaintVib, t), PaintHi = Lerp(a.Grade.PaintHi, b.Grade.PaintHi, t),
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
-            PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
+            PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
+            PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
+            RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
+            BushNightSat = Lerp(a.BushNightSat, b.BushNightSat, t), GroundEmberOchre = Lerp(a.GroundEmberOchre, b.GroundEmberOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
         };
 

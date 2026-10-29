@@ -186,7 +186,7 @@ public static class Ai
             e.RangedT -= dt;
             // The charge director says when (Charges.cs): in a spike, a charger whose own clock is
             // most of the way round goes with the rest; refused, it walks on and asks again.
-            if (e.RangedT <= (b.Charges.Eager ? lunge.Cooldown * 0.4 : 0) && dist < lunge.Range && dist > 2
+            if (e.RangedT <= (b.Charges.Eager ? lunge.Cooldown * 0.4 : 0) && dist < lunge.Range && dist > e.LungeMin
                 && b.Collision.Raycast(e.X, e.Z, tgt.X, tgt.Z, 0.3) == null && b.Charges.MayStart(b, e))
             {
                 e.ChainLeft = def.Chain;

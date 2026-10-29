@@ -9,6 +9,31 @@ namespace SurvivorUnchained.Tests;
 public class WeaponSocketsTests
 {
     [Theory]
+    [InlineData("back", false)]
+    [InlineData("hip_blade", true)]
+    [InlineData("hip_loop", true)]
+    [InlineData("hip_belt", true)]
+    [InlineData("belt_back", true)]
+    [InlineData("sling", false)]
+    [InlineData("back_diag", false)]
+    [InlineData("back_staff", false)]
+    [InlineData(null, false)]
+    public void OnlyWaistSocketsAreAtTheWaist(string? socket, bool waist) => Assert.Equal(waist, WeaponSockets.AtWaist(socket));
+
+    [Fact]
+    public void EverySocketIsClassified()
+    {
+        foreach (var s in WeaponSockets.All) Assert.Equal(s is "hip_blade" or "hip_loop" or "hip_belt" or "belt_back", WeaponSockets.AtWaist(s));
+    }
+
+    [Fact]
+    public void WaistAndBackThroughTheKind()
+    {
+        Assert.True(WeaponSockets.AtWaist(WeaponSockets.SocketOf(WeaponKind.Blade1H)));
+        Assert.False(WeaponSockets.AtWaist(WeaponSockets.SocketOf(WeaponKind.Shield)));
+    }
+
+    [Theory]
     [InlineData(WeaponKind.Shield, "back")]
     [InlineData(WeaponKind.Blade1H, "hip_blade")]
     [InlineData(WeaponKind.Blunt, "hip_loop")]

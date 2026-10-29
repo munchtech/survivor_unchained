@@ -1,0 +1,64 @@
+idle   -0.115,1.06,-0.18,12,-24   R out  7.0.. 8.5 skin   0.0@y+0.61 pelvis f20 outfit   3.7@y+0.62 pelvis hand 170 | gapS min   7.2 med   7.9 max   8.3 gapO min  -3.7 med  -2.6
+idle   -0.115,1.06,-0.18,12,-28   R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f26 outfit   7.9@y+0.62 pelvis hand 168 | gapS min   3.6 med   4.6 max   5.2 gapO min  -7.9 med  -6.9
+idle   -0.115,1.06,-0.19,12,-24   R out  7.0.. 8.5 skin   0.0@y+0.61 pelvis f26 outfit  -4.6@y+0.62 pelvis hand 175 | gapS min  15.6 med  16.4 max  16.8 gapO min   4.6 med   5.7
+idle   -0.115,1.06,-0.19,12,-28   R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f26 outfit  -0.7@y+0.63 pelvis hand 174 | gapS min  11.9 med  12.8 max  13.3 gapO min   0.7 med   1.8
+idle   -0.115,1.075,-0.18,12,-24  R out  7.0.. 8.5 skin   0.0@y+0.60 pelvis f26 outfit  -3.0@y+0.61 pelvis hand 174 | gapS min  14.5 med  15.1 max  15.4 gapO min   3.0 med   3.8
+idle   -0.115,1.075,-0.18,12,-28  R out  7.5.. 8.9 skin   0.0@y+0.61 pelvis f20 outfit   0.1@y+0.62 pelvis hand 172 | gapS min  11.3 med  12.0 max  12.5 gapO min  -0.1 med   1.0
+idle   -0.115,1.075,-0.19,12,-24  R out  7.0.. 8.5 skin   0.0@y+0.61 pelvis f26 outfit -12.1@y+0.62 pelvis hand 179 | gapS min  22.8 med  23.5 max  23.8 gapO min  12.1 med  13.2
+idle   -0.115,1.075,-0.19,12,-28  R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f26 outfit  -8.0@y+0.62 pelvis hand 178 | gapS min  19.5 med  20.3 max  20.7 gapO min   8.0 med   9.1
+idle   -0.125,1.06,-0.18,12,-24   R out  7.0.. 8.5 skin   0.0@y+0.62 pelvis f26 outfit   0.3@y+0.62 pelvis hand 161 | gapS min  10.4 med  11.2 max  11.7 gapO min  -0.3 med   0.8
+idle   -0.125,1.06,-0.18,12,-28   R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f20 outfit   4.3@y+0.64 pelvis hand 160 | gapS min   6.6 med   7.5 max   8.0 gapO min  -4.3 med  -3.2
+idle   -0.125,1.06,-0.19,12,-24   R out  7.0.. 8.5 skin   0.0@y+0.62 pelvis f20 outfit  -8.0@y+0.62 pelvis hand 167 | gapS min  18.7 med  19.4 max  19.8 gapO min   8.0 med   9.0
+idle   -0.125,1.06,-0.19,12,-28   R out  7.5.. 8.9 skin   0.0@y+0.63 pelvis f26 outfit  -3.6@y+0.64 pelvis hand 166 | gapS min  14.7 med  15.6 max  16.2 gapO min   3.6 med   4.8
+idle   -0.125,1.075,-0.18,12,-24  R out  7.0.. 8.5 skin   0.0@y+0.61 pelvis f20 outfit  -6.6@y+0.61 pelvis hand 166 | gapS min  17.3 med  18.0 max  18.5 gapO min   6.6 med   7.4
+idle   -0.125,1.075,-0.18,12,-28  R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f26 outfit  -3.0@y+0.62 pelvis hand 164 | gapS min  14.1 med  15.1 max  15.5 gapO min   3.0 med   4.1
+idle   -0.125,1.075,-0.19,12,-24  R out  7.0.. 8.5 skin   0.0@y+0.61 pelvis f20 outfit -14.8@y+0.62 pelvis hand 171 | gapS min  25.5 med  26.3 max  26.7 gapO min  14.8 med  15.6
+idle   -0.125,1.075,-0.19,12,-28  R out  7.5.. 8.9 skin   0.0@y+0.62 pelvis f26 outfit -11.2@y+0.63 pelvis hand 170 | gapS min  22.1 med  23.1 max  23.7 gapO min  11.2 med  11.8
+walk   -0.115,1.06,-0.18,12,-24   R out 10.0..14.0 skin   4.9@y+0.64 lowerarm_twist_01_r f28 outfit  12.4@y+0.62 pelvis hand  51 | gapS min   1.2 med   6.6 max  13.0 gapO min -12.4 med  -4.6
+walk   -0.115,1.06,-0.18,12,-28   R out  9.9..14.2 skin   4.4@y+0.64 lowerarm_twist_01_r f28 outfit  15.4@y+0.64 pelvis hand  57 | gapS min  -3.4 med   2.8 max   9.8 gapO min -16.8 med  -8.7
+walk   -0.115,1.06,-0.19,12,-24   R out 10.0..14.0 skin   5.1@y+0.64 lowerarm_twist_01_r f28 outfit   8.2@y+0.63 lowerarm_twist_01_r hand  58 | gapS min  10.0 med  15.2 max  21.6 gapO min  -3.7 med   3.8
+walk   -0.115,1.06,-0.19,12,-28   R out  9.9..14.2 skin   6.3@y+0.64 lowerarm_twist_01_r f28 outfit   9.0@y+0.63 lowerarm_twist_01_r hand  64 | gapS min   5.1 med  11.1 max  18.4 gapO min  -8.5 med  -0.6
+walk   -0.115,1.075,-0.18,12,-24  R out 10.0..14.0 skin   6.0@y+0.64 lowerarm_twist_01_r f28 outfit   8.3@y+0.59 lowerarm_twist_01_r hand  58 | gapS min   8.5 med  13.3 max  18.7 gapO min  -4.7 med   1.9
+walk   -0.115,1.075,-0.18,12,-28  R out  9.9..14.2 skin   6.4@y+0.64 lowerarm_twist_01_r f28 outfit   9.0@y+0.62 pelvis hand  64 | gapS min   4.4 med   9.4 max  16.0 gapO min  -9.0 med  -2.2
+walk   -0.115,1.075,-0.19,12,-24  R out 10.0..14.0 skin   5.5@y+0.64 lowerarm_twist_01_r f28 outfit   7.9@y+0.64 lowerarm_twist_01_r hand  65 | gapS min  17.1 med  21.8 max  27.3 gapO min   3.7 med  10.5
+walk   -0.115,1.075,-0.19,12,-28  R out  9.9..14.2 skin   6.8@y+0.64 lowerarm_twist_01_r f28 outfit   8.1@y+0.60 lowerarm_twist_01_r hand  71 | gapS min  12.8 med  17.9 max  24.6 gapO min  -0.5 med   6.4
+walk   -0.125,1.06,-0.18,12,-24   R out 10.0..14.0 skin  14.4@y+0.64 lowerarm_twist_01_r f28 outfit  10.2@y+0.64 pelvis hand  46 | gapS min   3.0 med   9.8 max  17.8 gapO min -10.2 med  -1.4
+walk   -0.125,1.06,-0.18,12,-28   R out  9.9..14.2 skin  14.0@y+0.62 lowerarm_twist_01_r f28 outfit  15.4@y+0.64 pelvis hand  51 | gapS min  -2.1 med   5.8 max  14.5 gapO min -15.4 med  -5.2
+walk   -0.125,1.06,-0.19,12,-24   R out 10.0..14.0 skin  15.1@y+0.64 lowerarm_twist_01_r f28 outfit   8.7@y+0.64 lowerarm_twist_01_r hand  53 | gapS min  11.6 med  18.1 max  25.8 gapO min  -1.7 med   7.3
+walk   -0.125,1.06,-0.19,12,-28   R out  9.9..14.2 skin  16.3@y+0.64 lowerarm_twist_01_r f28 outfit   8.4@y+0.59 lowerarm_twist_02_r hand  59 | gapS min   6.4 med  13.9 max  22.3 gapO min  -7.0 med   2.6
+walk   -0.125,1.075,-0.18,12,-24  R out 10.0..14.0 skin  16.0@y+0.64 lowerarm_twist_01_r f28 outfit   9.6@y+0.64 lowerarm_twist_01_r hand  53 | gapS min   9.9 med  16.3 max  23.0 gapO min  -2.1 med   5.2
+walk   -0.125,1.075,-0.18,12,-28  R out  9.9..14.2 skin  16.0@y+0.64 lowerarm_twist_01_r f28 outfit   9.0@y+0.65 lowerarm_twist_01_r hand  60 | gapS min   5.7 med  12.8 max  20.4 gapO min  -6.8 med   1.4
+walk   -0.125,1.075,-0.19,12,-24  R out 10.0..14.0 skin  15.5@y+0.64 lowerarm_twist_01_r f28 outfit   9.3@y+0.64 lowerarm_twist_01_r hand  61 | gapS min  18.6 med  24.6 max  31.1 gapO min   6.0 med  13.5
+walk   -0.125,1.075,-0.19,12,-28  R out  9.9..14.2 skin  16.5@y+0.64 lowerarm_twist_01_r f28 outfit   9.3@y+0.64 lowerarm_twist_01_r hand  67 | gapS min  14.3 med  20.8 max  28.3 gapO min   1.0 med   9.5
+run    -0.115,1.06,-0.18,12,-24   R out  6.8.. 9.6 skin   0.0@y+0.61 pelvis f0 outfit   4.9@y+0.62 pelvis hand 364 | gapS min   6.8 med   8.6 max  14.9 gapO min  -4.9 med  -2.1
+run    -0.115,1.06,-0.18,12,-28   R out  6.3.. 9.4 skin   0.0@y+0.62 pelvis f0 outfit   8.5@y+0.63 pelvis hand 361 | gapS min   3.2 med   4.9 max  11.8 gapO min  -8.5 med  -6.2
+run    -0.115,1.06,-0.19,12,-24   R out  6.8.. 9.6 skin   0.0@y+0.03 foot_r f0 outfit  -3.1@y+0.01 foot_r hand 373 | gapS min  15.4 med  17.1 max  22.7 gapO min   4.1 med   6.8
+run    -0.115,1.06,-0.19,12,-28   R out  6.3.. 9.4 skin   0.0@y+0.62 pelvis f0 outfit   0.6@y+0.64 pelvis hand 370 | gapS min  11.5 med  13.0 max  19.7 gapO min  -0.6 med   2.2
+run    -0.115,1.075,-0.18,12,-24  R out  6.8.. 9.6 skin   0.0@y+0.59 pelvis f0 outfit  -2.6@y+0.61 pelvis hand 358 | gapS min  14.0 med  15.2 max  20.4 gapO min   2.6 med   4.3
+run    -0.115,1.075,-0.18,12,-28  R out  6.3.. 9.4 skin   0.0@y+0.61 pelvis f0 outfit   0.8@y+0.61 pelvis hand 356 | gapS min  10.7 med  12.0 max  17.9 gapO min  -0.8 med   1.2
+run    -0.115,1.075,-0.19,12,-24  R out  6.8.. 9.6 skin   0.0@y+0.02 calf_r f0 outfit  -6.7@y+0.01 foot_r hand 367 | gapS min  22.4 med  23.7 max  28.3 gapO min  11.1 med  13.1
+run    -0.115,1.075,-0.19,12,-28  R out  6.3.. 9.4 skin   0.0@y+0.61 pelvis f0 outfit  -6.9@y+0.62 pelvis hand 365 | gapS min  19.1 med  20.2 max  25.6 gapO min   6.9 med   9.1
+run    -0.125,1.06,-0.18,12,-24   R out  6.8.. 9.6 skin   0.0@y+0.61 pelvis f0 outfit   1.4@y+0.62 pelvis hand 362 | gapS min   9.5 med  12.4 max  19.8 gapO min  -1.4 med   1.7
+run    -0.125,1.06,-0.18,12,-28   R out  6.3.. 9.4 skin   0.0@y+0.64 pelvis f2 outfit   5.7@y+0.64 pelvis hand 359 | gapS min   5.8 med   8.5 max  17.0 gapO min  -5.7 med  -2.5
+run    -0.125,1.06,-0.19,12,-24   R out  6.8.. 9.6 skin   0.0@y+0.61 pelvis f18 outfit  -7.2@y+0.62 pelvis hand 371 | gapS min  17.9 med  20.5 max  27.6 gapO min   7.2 med   9.8
+run    -0.125,1.06,-0.19,12,-28   R out  6.3.. 9.4 skin   0.0@y+0.62 pelvis f0 outfit  -2.6@y+0.64 pelvis hand 368 | gapS min  13.9 med  16.5 max  24.6 gapO min   2.6 med   5.6
+run    -0.125,1.075,-0.18,12,-24  R out  6.8.. 9.6 skin   0.0@y+0.60 pelvis f0 outfit  -5.7@y+0.62 pelvis hand 356 | gapS min  16.6 med  18.9 max  25.4 gapO min   5.7 med   8.0
+run    -0.125,1.075,-0.18,12,-28  R out  6.3.. 9.4 skin   0.0@y+0.62 pelvis f2 outfit  -1.6@y+0.62 pelvis hand 354 | gapS min  13.1 med  15.5 max  23.1 gapO min   1.6 med   4.3
+run    -0.125,1.075,-0.19,12,-24  R out  6.8.. 9.6 skin   0.0@y+0.60 pelvis f0 outfit -13.9@y+0.62 pelvis hand 365 | gapS min  24.8 med  26.9 max  33.2 gapO min  13.9 med  16.3
+run    -0.125,1.075,-0.19,12,-28  R out  6.3.. 9.4 skin   0.0@y+0.62 pelvis f2 outfit  -9.8@y+0.62 pelvis hand 363 | gapS min  21.3 med  23.7 max  30.5 gapO min   9.8 med  12.8
+sprint -0.115,1.06,-0.18,12,-24   R out  6.4.. 9.5 skin   7.0@y+0.11 foot_r f0 outfit  16.3@y+0.09 foot_r hand 377 | gapS min   6.6 med   8.8 max  15.5 gapO min  -5.6 med  -1.9
+sprint -0.115,1.06,-0.18,12,-28   R out  5.8.. 9.3 skin   4.9@y+0.12 calf_r f0 outfit  12.8@y+0.11 calf_r hand 374 | gapS min   2.8 med   5.0 max  12.4 gapO min  -9.2 med  -6.1
+sprint -0.115,1.06,-0.19,12,-24   R out  6.4.. 9.5 skin   6.9@y+0.12 foot_r f0 outfit  15.7@y+0.09 foot_r hand 386 | gapS min  15.2 med  17.4 max  23.3 gapO min   3.6 med   6.6
+sprint -0.115,1.06,-0.19,12,-28   R out  5.8.. 9.3 skin   3.0@y+0.13 calf_r f0 outfit  12.3@y+0.12 calf_r hand 384 | gapS min  11.2 med  13.2 max  20.3 gapO min  -1.2 med   2.0
+sprint -0.115,1.075,-0.18,12,-24  R out  6.4.. 9.5 skin   2.8@y+0.09 foot_r f0 outfit  14.6@y+0.09 foot_r hand 371 | gapS min  13.7 med  15.5 max  20.9 gapO min   2.2 med   4.4
+sprint -0.115,1.075,-0.18,12,-28  R out  5.8.. 9.3 skin   0.0@y+0.12 calf_r f0 outfit   9.2@y+0.10 calf_r hand 369 | gapS min  10.3 med  12.2 max  18.1 gapO min  -1.2 med   0.8
+sprint -0.115,1.075,-0.19,12,-24  R out  6.4.. 9.5 skin   3.7@y+0.10 foot_r f0 outfit  14.0@y+0.09 foot_r hand 380 | gapS min  22.0 med  23.9 max  28.8 gapO min  10.5 med  12.9
+sprint -0.115,1.075,-0.19,12,-28  R out  5.8.. 9.3 skin   0.0@y+0.12 calf_r f0 outfit   7.2@y+0.12 calf_r hand 378 | gapS min  18.8 med  20.2 max  25.8 gapO min   6.3 med   8.8
+sprint -0.125,1.06,-0.18,12,-24   R out  6.4.. 9.5 skin   0.0@y+0.11 foot_r f0 outfit   9.8@y+0.11 foot_r hand 375 | gapS min   9.1 med  12.8 max  20.4 gapO min  -1.9 med   1.9
+sprint -0.125,1.06,-0.18,12,-28   R out  5.8.. 9.3 skin   0.0@y+0.12 calf_r f0 outfit   6.1@y+0.64 pelvis hand 372 | gapS min   5.4 med   8.9 max  17.6 gapO min  -6.1 med  -2.4
+sprint -0.125,1.06,-0.19,12,-24   R out  6.4.. 9.5 skin   0.0@y+0.12 foot_r f0 outfit   9.5@y+0.10 foot_r hand 384 | gapS min  17.5 med  20.8 max  28.3 gapO min   7.1 med  10.1
+sprint -0.125,1.06,-0.19,12,-28   R out  5.8.. 9.3 skin   0.0@y+0.14 calf_r f0 outfit   3.7@y+0.14 calf_r hand 382 | gapS min  13.5 med  16.9 max  25.2 gapO min   2.2 med   5.9
+sprint -0.125,1.075,-0.18,12,-24  R out  6.4.. 9.5 skin   0.0@y+0.10 foot_r f0 outfit   5.6@y+0.09 foot_r hand 369 | gapS min  16.2 med  19.2 max  25.9 gapO min   5.5 med   8.3
+sprint -0.125,1.075,-0.18,12,-28  R out  5.8.. 9.3 skin   0.0@y+0.12 calf_r f0 outfit   0.2@y+0.10 calf_r hand 367 | gapS min  12.7 med  15.9 max  23.6 gapO min   1.2 med   4.4
+sprint -0.125,1.075,-0.19,12,-24  R out  6.4.. 9.5 skin   0.0@y+0.10 foot_r f0 outfit   4.7@y+0.09 foot_r hand 378 | gapS min  24.4 med  27.2 max  33.9 gapO min  13.6 med  16.2
+sprint -0.125,1.075,-0.19,12,-28  R out  5.8.. 9.3 skin   0.0@y+0.12 calf_r f0 outfit  -1.7@y+0.12 calf_r hand 376 | gapS min  21.0 med  23.8 max  30.8 gapO min   9.5 med  12.7

@@ -32,7 +32,7 @@ public partial class SheetScreen : Overlay
         ("might", "Might", "+2.5% damage and +4 health a point"),
         ("finesse", "Finesse", "+2% damage thrown or shot, +0.6% critical chance, +1% speed a point"),
         ("wits", "Wits", "+1% weapon speed, +2% area and ember a point"),
-        ("resolve", "Resolve", "+3 health, +0.5 armour, +0.08 regeneration a point"),
+        ("resolve", "Resolve", "+3 health, +0.5 armor, +0.08 regeneration a point"),
     };
     public static readonly Dictionary<string, string> Know = new() { ["beastlore"] = "Beastlore", ["arcana"] = "Arcana", ["underworld"] = "The Underworld", ["faith"] = "The Faith" };
     static readonly Dictionary<ConditionId, string> Cond = new()

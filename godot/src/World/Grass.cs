@@ -103,15 +103,17 @@ public static class Grass
         card.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         float step = cell * F("cell", 1.15f);
         int n = (int)(radius * 2 / step);
-        var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = card, InstanceCount = n * n };
         var rng = new RandomNumberGenerator { Seed = 7 };
-        int i = 0;
+        // (E9c2) none inside a closed house (its floor is there, and the cutaway shows it)
+        var spots = new System.Collections.Generic.List<Vector3>(n * n);
         for (int j = 0; j < n; j++)
             for (int q = 0; q < n; q++)
             {
                 float x = centre.X - radius + (q + rng.Randf()) * step, zz = centre.Y - radius + (j + rng.Randf()) * step;
-                mm.SetInstanceTransform(i++, new Transform3D(Basis.Identity, new Vector3(x, 0, zz)));
+                if (!OwnWalls.InsideAny(z, x, zz, -0.05f)) spots.Add(new Vector3(x, 0, zz));
             }
+        var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = card, InstanceCount = spots.Count };
+        for (int i = 0; i < spots.Count; i++) mm.SetInstanceTransform(i, new Transform3D(Basis.Identity, spots[i]));
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/grass_own.gdshader") };
         Meadow(mat, z, centre, radius);
         mat.SetShaderParameter("atlas", GD.Load<Texture2D>($"res://art/world/flora/{k.GetProperty("atlas").GetString()}_atlas.png"));

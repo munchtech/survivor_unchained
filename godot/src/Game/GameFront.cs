@@ -87,14 +87,16 @@ public partial class Game
         figureKey = d.LookKey;
         figureBody = d.BodyKey;
         figure = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
-        // (her chin up to her portraits' level gaze: HerPose.ChinUp)
-        if (figure.Person.Pose is HerPose hp) hp.ChinUp = 12f;
+        // (her chin: HerPose.ChinUp. 12 was set for the guard idle, whose head hung 17.8 deg face-down; the town idle
+        // she loops here carries it level (+0.5 deg) on its own, and 12 would tip her face 11.5 deg up past the lens)
+        if (figure.Person.Pose is HerPose hp) hp.ChinUp = 0f;
         scene!.AddChild(figure);
         // (where the camera looks: she stands in the middle of the screen, between creation's two
         // panels, the fire behind her at her right hand, in view between her and the choices)
         float x = Fire.X + 0.95f, z = Fire.Y + 1.0f;
         figure.Place(x, scene.HeightAt(x, z), z, FigureHeading + figTurnNow, true);
-        figure.Loop(lo.Arms.Idle, 0);
+        figure.Loop(guardIdle = lo.Arms.Idle, 0);
+        onLook = false;
         if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
     }
 
@@ -120,13 +122,43 @@ public partial class Game
     }
 
     /// <summary>The figure's weapon and shield shown or put away (away on creation's look screen).</summary>
-    public void FigureArms(bool shown) => figure?.ShowHeld(shown);
+    public void FigureArms(bool shown)
+    {
+        if (figure == null) return;
+        // (the Look shows her town idle, sheathed: the guard idle's forward lean sank her head between her shoulders;
+        // a flourish still playing finishes first, then the loop takes over, her pieces already away and out of sight)
+        bool look = !shown && figure.Person.Own is { } own && own.Has($"idle_{figure.Person.Calling}_town");
+        if (look != onLook)
+        {
+            onLook = look;
+            figure.Sheathe(look);
+            figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
+            // (her arms nearer her body on the Look, eased with the crossfade: HerPose.LookArms. Measured on the town
+            // idle, Body 5, 24 October 2026: upper arms 10.7 and 13.3 deg from her chest's line (were 20.8 and 43.6),
+            // every skin gap 24 mm or more. Her left hand stays on her hip as the idle shaped it (roll 0): rolled out 8
+            // it hung 6 cm off her hip against open ground at turn 40, and judge 10 preferred it back on the hip.
+            // LookRollL/FanL/CurlL/ThumbL stay as try flags.)
+            if (figure.Person.Pose is HerPose hp)
+            {
+                hp.LookOn = look;
+                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 0f; hp.LookFanL = 0f; hp.LookCurlL = 0f; hp.LookThumbL = 0f; }
+            }
+        }
+        figure.ShowHeld(shown);
+    }
+
+    string guardIdle = "";
+    bool onLook;
+    /// <summary>--look-pan M: the Look's framing pan (metres) tried at another value.</summary>
+    static readonly float LookPan = Args.Has("look-pan") ? Args.Num("look-pan", 0.04f) : 0.04f;
 
     /// <summary>Framed for a step or a part of the look: so near, turned so far.</summary>
     public void FrameFigure(float zoom, float turn = 0)
     {
-        figZoom = Mathf.Clamp(zoom, 0, 1);
-        figTurn = turn;
+        // --fig-zoom Z, --fig-turn DEG: creation's figure framed and turned so, whatever the screen asks (pictures of her
+        // whole stance on the look, its pieces put away).
+        figZoom = Mathf.Clamp(Args.Has("fig-zoom") ? Args.Num("fig-zoom", 0f) : zoom, 0, 1);
+        figTurn = Args.Has("fig-turn") ? Mathf.DegToRad((float)Args.Num("fig-turn", 0f)) : turn;
     }
 
     /// <summary>Each frame of creation: the figure turned toward where she is asked to
@@ -148,6 +180,11 @@ public partial class Game
         var dir = new Vector3(fullPos.X - eyes.X, 0, fullPos.Z - eyes.Z).Normalized();
         // Head and shoulders, then her face: the look a little under the eyes, the lens longer.
         Vector3 bustLook = eyes + new Vector3(0, -0.16f, 0), faceLook = eyes + new Vector3(0, -0.05f, 0);
+        // On the Look, the bust framing panned so she stands LookPan metres right of its middle (about 38 px at the
+        // 0.45 framing): her town idle's right forearm ran under creation's left panel. Faded with her turn (none
+        // with her back to the camera) and with the Look's ease (HerPose.LookWeight); her face framing keeps none.
+        if (figure.Person.Pose is HerPose lp && lp.LookWeight > 0)
+            bustLook -= (-dir).Cross(Vector3.Up).Normalized() * LookPan * lp.LookWeight * Mathf.Max(0, Mathf.Cos(figTurnNow));
         Vector3 bustPos = bustLook + dir * 1.75f + new Vector3(0, 0.08f, 0), facePos = faceLook + dir * 1.3f + new Vector3(0, 0.02f, 0);
         float z = figZoom;
         Vector3 pos, look;
@@ -178,7 +215,8 @@ public partial class Game
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
     }
 
-    SpotLight3D? fillLight, edgeLight, rimLight, bounceLight;
+    SpotLight3D? fillLight, edgeLight, rimLight, bounceLight, lookBodyRim;
+    static float LookBodyRim => Args.Num("look-body-rim", 2.5f);   // (Body 20 light judge, max: ADOPT at the Look: her body no longer muddy and darker than her face; --look-body-rim 0 = before)
     // --key-aim Y: the key's aim over her eyes (metres; -0.05 as before face 34), --key-falloff E (see the key).
     // --key-body S: the key's share on its broad cone (bodyKey; 1: all of it, as before face 34).
     // (Face 34: the key's own cone 4.5 degrees (about 18 cm at her), its edge falloff 1.5, aimed 2 cm under her eyes, a quarter
@@ -195,6 +233,12 @@ public partial class Game
     float ambientBase = -1;
     Vector2 bounceAt = new(1.3f, 1.0f);
     Vector2? keyAt;
+    // (Body 5, judge 10: the broad cone from high over the lens, 0.55 m aside and 3.0 m up, a "butterfly" light that gives
+    // her yoke and collarbones form; the face's own cone stays where it was and her face reads unchanged. --body-key-at
+    // SIDE,UP tries another; --body-key-at off puts it back on the face key's position)
+    static readonly Vector2? BodyKeyAt = Args.Get("body-key-at") is string bk
+        ? (bk.Split(',') is [var bx, var by] ? new Vector2(float.Parse(bx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(by, System.Globalization.CultureInfo.InvariantCulture)) : null)
+        : new Vector2(0.55f, 3.0f);
     static readonly bool LookReflOff = Args.Get("look-refl") == "off";
     float[]? rig;
     OmniLight3D? herFire, fireSrc;
@@ -340,7 +384,10 @@ public partial class Game
         // (the whole figure's 0.15 on the broad cone, as before)
         var keyPos = eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y;
         Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain);
-        if (bodyKey != null) Aim(bodyKey, keyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
+        // (--body-key-at SIDE,UP: the broad cone alone from elsewhere, the face's own cone left where it is: a steeper,
+        // wider body light rakes her collarbones, which the key's lens-near angle lit flat (pictures, Body 5))
+        var bodyPos = BodyKeyAt is { } bka ? eyes + dir * 1.9f - camLeft * bka.X + Vector3.Up * bka.Y : keyPos;
+        if (bodyKey != null) Aim(bodyKey, bodyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
         Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
         // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
         // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
@@ -348,6 +395,16 @@ public partial class Game
         Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * edgeUp, eyes + Vector3.Down * 0.1f, rig[2] * p);
         Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
         if (bounceLight != null) Aim(bounceLight, eyes + dir * bounceAt.X + Vector3.Down * bounceAt.Y, eyes + Vector3.Down * 0.14f, bounce * p);
+        // --look-body-rim E (Body 20 light test, 27 Oct): a soft rim on her skin from behind, on the rim's side, at her upper
+        // arms' height, so her arms' outline and broad planes read (0: off, as before 27 Oct). --look-body-rim-side S (m to her
+        // left of the lens's line; negative: the other side), --look-body-rim-up U (m from her eyes).
+        if (LookBodyRim > 0)
+        {
+            lookBodyRim ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.84f), 30, false, 0.2f);
+            lookBodyRim.LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer;
+            Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * Args.Num("look-body-rim-up", 0.3f), eyes + Vector3.Down * 0.45f,
+                LookBodyRim * Mathf.Clamp(p / 0.74f, 0, 1));   // (as judged at zoom 0.45 (p 0.74) and closer; it fades with the rig toward her whole figure)
+        }
         // The sky's own light (the moon) off her from head and shoulders in: the
         // portrait's lights are hers there. Left on, it was a fourth light, cold
         // and flat across her face, and its reflection a white blob as big as her
@@ -392,8 +449,8 @@ public partial class Game
     {
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
-        foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, herFire }) l?.QueueFree();
-        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = null;
+        foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim, herFire }) l?.QueueFree();
+        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
         Campfire.ClearNear(0);
@@ -453,6 +510,8 @@ public partial class Game
         if (Args.Get("hair") is string hs) draft.HairStyle = hs;
         // --hair-colour ID: pictures of her with that hair (and brows) colour.
         if (Args.Get("hair-colour") is string hc) draft.Hair = hc;
+        // --hair-highlight HEX|default: her hair's highlights (Game.HighlightArg).
+        if (Game.HighlightArg() is string hl) draft.HairHighlight = Args.Get("hair-highlight") is "default" or "auto" ? Lore.HighlightAuto : hl;
         // --preset ID: one of her faces to start from (its sliders and painting); --skin ID, --eyes ID
         if (Args.Get("preset") is string ps && Loadouts.HeroKit(draft.Sex)?.Faces.FirstOrDefault(f => f.Id == ps) is { } pf)
         {

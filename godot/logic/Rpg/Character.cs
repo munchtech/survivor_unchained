@@ -21,7 +21,7 @@ public sealed class ItemInstance
     public List<AffixRoll> Affixes = new();
     /// <summary>Given name for storied items ("Maeca's Last Arrow").</summary>
     public string? Name;
-    /// <summary>Dye zones of the pieces it wears (outfit_materials.json "zone": metal, trim, leather, cloth, or thread) -> "#rrggbb" (sRGB). Null: as made.</summary>
+    /// <summary>Dye zones of the pieces it wears (outfit_materials.json "zone": metal, trim, leather, cloth, or thread) -> "#rrggbb" (sRGB), optionally with ":metal" or ":paint" (Wear.DyeFinish; metal-zone dyes: light neutrals stay metal, colours paint the enamel, gold needs ":metal"). Null: as made.</summary>
     public Dictionary<string, string>? Dye;
     /// <summary>Where it came from, one line per owner.</summary>
     public List<string>? History;
@@ -110,6 +110,9 @@ public sealed class CharacterData
     public bool? Headgear;
     /// <summary>Look: a dyed cloak (or none), skin, hair.</summary>
     public string? Cloak, Skin, Hair;
+    /// <summary>Her hair's highlights, a second colour on some of her locks (World.Lore.HighlightColor): null off,
+    /// "auto" her hair colour's own, or a highlight's id.</summary>
+    public string? HairHighlight;
     /// <summary>The body: a man or a woman, their hair's cut, a beard, a woman's figure.</summary>
     public Sex? Sex;
     public string? HairStyle;
@@ -178,7 +181,9 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle;
+    /// <summary>The type: one of the calling's roads (data/content/lamps.json); empty or foreign walks the default.</summary>
+    public string Type = "";
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle, HairHighlight;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -220,7 +225,9 @@ public static class Inventory
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
             int n = Math.Min(3, it.Rarity);
-            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique).ToList();
+            // A skill worn that the survivor's calling may not carry rolls something else.
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique
+                && (a.Grants == null || ch == null || Content.Weapons.CanCarry(ch.Archetype, a.Grants))).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
@@ -589,6 +596,7 @@ public static class Character
             Id = $"hero-{ToBase36(s)}", Name = string.IsNullOrWhiteSpace(c.Name) ? "Nameless" : c.Name.Trim(),
             Archetype = c.Archetype, Background = c.Background, Model = c.Model ?? a.Model, Palette = c.Palette,
             Headgear = c.Headgear ?? true, Cloak = c.Cloak, Skin = c.Skin, Hair = c.Hair, Sex = c.Sex, HairStyle = c.HairStyle,
+            HairHighlight = string.IsNullOrEmpty(c.HairHighlight) || c.HairHighlight == "off" ? null : c.HairHighlight,
             Beard = c.Beard, BeardStyle = c.BeardStyle, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,
@@ -598,6 +606,7 @@ public static class Character
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
         ArtBook.HoldKin(ch);
+        LampBook.Begin(ch, c.Type);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         foreach (var id in bg.Items)
         {
@@ -712,14 +721,15 @@ public static class Character
             }
             // Skills the gear grants, while there is room for them.
             foreach (var ar in it.Affixes)
-                if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
+                if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
                     kit.Weapons.Add((g, 1 + ar.Tier / 2));
             // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
             // twice is the finer of the two (design 20.3).
             if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
                 && (kit.Marks.ContainsKey(mk.Id) || kit.Marks.Count < Crafting.Rules.Mark.Worn))
                 kit.Marks[mk.Id] = Math.Max(kit.Marks.GetValueOrDefault(mk.Id), Items.MarkStrength(mk.Tier));
-            if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
+            // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
+            if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
                 int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);

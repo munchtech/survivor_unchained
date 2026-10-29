@@ -205,6 +205,8 @@ public partial class WardenView : Node3D, IBossView
         if (atFlame && fire != null) { light.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
         light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
+        // (its streak on the water in the flame's hue, not the light's blue: C03 s2)
+        if (light.IsInsideTree()) Water.StreakTint(light, flameColor);
     }
 
     // Explicit, so they do not shadow Godot's own Hide() and Dispose().

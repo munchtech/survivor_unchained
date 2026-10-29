@@ -10,7 +10,8 @@
     "the stones between the outer two, one braided path), 'dry' none where the bed is over the water + dry m, 'step_var' each step's stray (0.35: 0.65-1.35 of 'step'),",
     "'clear' m the least gap between two stones' rims (about 0.35 m a unit of scale from the middle) (CAUSEWAY_STATS=1 prints each stone).",
     "'stagger' each row starts that share of a step after the one before (0.5: the rows alternate, a zigzag, one path), 'drift_shared' the",
-    "share of the drift the whole path's (its rows weave together)."
+    "share of the drift the whole path's (its rows weave together).",
+    "C03 env fix: 'tilt' [lo, hi] deg each stone leans, 'low' a share standing only 'low_above' [lo, hi] m proud (r2: sunk 10-14 cm under, a stone seen through the water: none a pale sliver at the surface, none under the foam's depth); heights 7-28 cm, sizes 1:2.5, so no ruler row from a camera at the water."
   ],
   "causeways": [
     {
@@ -27,17 +28,17 @@
         0.62
       ],
       "step": 2.0,
-      "jitter": 0.12,
+      "jitter": 0.3,
       "skip": 0.08,
       "scale": [
-        0.7,
-        1.25
+        0.6,
+        1.5
       ],
       "species": "stepping",
       "top": 0.75,
       "above": [
-        0.12,
-        0.22
+        0.07,
+        0.28
       ],
       "drop": [
         "rock"
@@ -54,7 +55,33 @@
       "step_var": 0.15,
       "clear": 0.2,
       "stagger": 0.5,
-      "drift_shared": 0.7
+      "drift_shared": 0.7,
+      "tilt": [
+        5,
+        15
+      ],
+      "low": 0.1,
+      "low_above": [
+        -0.14,
+        -0.1
+      ]
     }
-  ]
+  ],
+  "grass": {"_doc_lf5p": "lf5p (judge lf4 #9, #7): a dry straw-tipped second kind in patches (dry_share), a value spread (val_spread); by dawn the lows' cool tint mostly gone (day_cool) and the sun warmer on the blades (sun_body .86 to .78 blue)", "_doc": "lf3b (judge lf2 #4, the clumps one stamp on an even grid): Low Ford's meadow as the shared one, its clumps in clusters with ground between, a wider size spread, varied lean, trodden bare patches (grass_own.gdshader cluster..trod; the same instances and draws)",
+    "kinds": {"meadow": {"atlas": "grass_meadow", "olive": ["#171a0d", "#2a3018", "#3e4622", "#545d2d", "#6c763b"], "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"], "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.015, "card": [0.62, 0.55], "cell": 0.8, "yaw": 35, "drift": [0.46, 0.54], "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.02, 1.0, 0.95], "sun_body": [1.12, 1.0, 0.78], "size_var": 0.4, "dry_share": 0.2, "val_spread": 0.16, "day_cool": 0.3, "day_warm": [1.14, 1.0, 0.76], "cluster": 0.28, "cluster_cell": 1.3, "cluster_gap": 0.0, "fine": 0.75, "big_share": 0.12, "small_share": 0.22, "tilt_var": 0.5, "trod": 0.85, "trod_share": 0.12}}}},
+  "ground": {"_doc": "lf3b (judge lf2 #3, the ruts straight near-black trenches beside a pale kerb): terrain.gdshader values over Ground.cs's defaults for this zone: shallower, lighter ruts, eased edges, broken along; the centre strip barely lifted",
+    "rut_dark": 0.8, "crown_lift": 0.03, "rut_depth": 0.01, "rut_soft": 0.8, "rut_blur": 0.3, "road_rime": 0.3,
+    "_doc_lf4v": "lf4 V: the pale kerb was the centre strip's grass layer (wd cut 45%), the trench the ruts beside it; crown_grass .15 keeps the strip earth; pud_night .7: rut puddles dark and muddy by night, not sky-white",
+    "crown_grass": 0.15, "pud_night": 0.7,
+    "_doc_lf5p": "lf5p (judge lf4 #1, #2: the puddles black holes; the wood road murky): the night puddle wet mud (pud_mud), the sky kept in a rim band inside its edge (pud_sheen); bare earth a notch lighter by night (night_dew .35 to .2)",
+    "pud_mud": 1.0, "pud_sheen": 0.45, "night_dew": 0.2,
+    "_doc_e8r2": "E8 later r2 (judge e21f1 #1: the drums stood in a band of rust, the setts' mud warm and lost stone by stone, ending dead at the grass): no setts mud here; the foot of what stands damp instead (terrain.gdshader foot_damp, out to foot_w m, onto the earth too)",
+    "setts_mud": 0.0, "foot_damp": 1.0, "foot_w": 0.27,
+    "_doc_e8r2_camp": "E8 later r2 (judge e21f1 #4): a burnt disc round the camp fire 1.6 times its ring (camp_scorch, scorch_r m) flecked with ash, the earth between it and the logs trodden lighter (trample), the footpaths (ground_paths) path_hw m to their edge and path_lift lighter",
+    "camp_scorch": 1.0, "scorch_r": 1.5, "trample": 0.2, "path_hw": 0.3, "path_lift": 0.3},
+  "_doc_e8r3": "E8 later r3 (judge e21r2): the foot damp narrower (foot_w .27: 20-35 px at the gate), the scorch out past the ring (scorch_r 1.5: at 1 it hid under the stones and ash), the paths wider (path_hw .3)",
+  "_doc_ground_paths": "E8 later r2: Low Ford's footpaths, polylines of [x, z] (terrain.gdshader path_seg via FloraSpecies.PathsFor; tools/assets/lowford_camp_paint.py wears the same lines into splat.png so no grass grows on them): the camp east to the road by the post lantern (round the long log's south end), south-west past the bedroll, north between the logs into the wood",
+  "ground_paths": [[[-9.3, 91.9], [-7.6, 92.4], [-5.6, 92.6], [-3.9, 92.9], [-2.6, 93.1]],
+                   [[-11.2, 91.4], [-11.9, 93.2], [-12.6, 94.6], [-13.9, 96.6], [-14.6, 98.8]],
+                   [[-9.7, 88.0], [-9.9, 86.4], [-11.2, 84.0], [-11.9, 81.6]]]
 }

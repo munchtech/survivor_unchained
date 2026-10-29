@@ -91,6 +91,30 @@ survivor={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+house_fade_ids={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+house_fade_ids2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+house_fade={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+house_fade2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+house_cut={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+house_cut2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 sky_time={
 "type": "float",
 "value": 0.0
@@ -111,6 +135,14 @@ crowd_rim={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+town_lit={
+"type": "float",
+"value": 0.0
+}
+town_bakery={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 key_dir={
 "type": "vec4",
 "value": Vector4(0, 1, 0, 0)
@@ -119,9 +151,21 @@ water_air={
 "type": "vec4",
 "value": Vector4(1, 1, 1, 0)
 }
+flora_lamp={
+"type": "float",
+"value": 0.0
+}
+flora_night={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 view_from={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
+}
+canopy_fade={
+"type": "vec4",
+"value": Vector4(6, 1.5, 1, 1)
 }
 water_level={
 "type": "vec4",

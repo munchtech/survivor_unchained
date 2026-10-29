@@ -1,0 +1,32 @@
+walk   -0.10,1.075,-0.185,12.5,-26 R out 10.4..14.6 skin   0.0@pelvis outfit   4.6@pelvis hand  73 | gapS min   6.9 med  12.1 max  18.1 gapO min  -4.6 med  -0.7
+walk   -0.10,1.075,-0.185,12.5,-30 R out 10.4..14.8 skin   0.0@pelvis outfit   8.7@pelvis hand  78 | gapS min   2.6 med   8.7 max  15.1 gapO min  -8.7 med  -4.4
+walk   -0.10,1.075,-0.195,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit  -3.3@lowerarm_twist_01_r hand  79 | gapS min  15.0 med  20.9 max  27.2 gapO min   3.5 med   7.8
+walk   -0.10,1.075,-0.195,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   1.0@pelvis hand  85 | gapS min  10.5 med  17.1 max  23.9 gapO min  -1.0 med   3.8
+walk   -0.10,1.09,-0.185,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit  -1.7@lowerarm_twist_01_r hand  79 | gapS min  14.9 med  19.6 max  24.0 gapO min   3.2 med   6.6
+walk   -0.10,1.09,-0.185,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   0.5@pelvis hand  86 | gapS min  11.0 med  16.4 max  22.2 gapO min  -0.5 med   3.7
+walk   -0.10,1.09,-0.195,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit  -3.7@lowerarm_twist_01_r hand  86 | gapS min  22.8 med  28.3 max  33.1 gapO min  11.3 med  14.7
+walk   -0.10,1.09,-0.195,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit  -2.2@lowerarm_twist_01_r hand  93 | gapS min  18.8 med  24.9 max  31.0 gapO min   6.8 med  11.5
+walk   -0.107,1.075,-0.185,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit   4.2@lowerarm_twist_01_r hand  69 | gapS min   8.8 med  13.3 max  19.6 gapO min  -3.9 med   1.9
+walk   -0.107,1.075,-0.185,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   8.1@pelvis hand  74 | gapS min   4.8 med   9.7 max  16.4 gapO min  -8.1 med  -2.4
+walk   -0.107,1.075,-0.195,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit   3.7@lowerarm_twist_01_r hand  75 | gapS min  16.9 med  21.9 max  28.4 gapO min   4.8 med  10.1
+walk   -0.107,1.075,-0.195,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   4.7@lowerarm_twist_01_r hand  81 | gapS min  12.3 med  17.8 max  25.1 gapO min   0.3 med   5.8
+walk   -0.107,1.09,-0.185,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit   5.3@lowerarm_twist_01_r hand  75 | gapS min  16.6 med  20.5 max  25.6 gapO min   3.9 med   8.6
+walk   -0.107,1.09,-0.185,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   6.1@lowerarm_twist_01_r hand  82 | gapS min  12.7 med  17.1 max  23.5 gapO min  -0.2 med   5.5
+walk   -0.107,1.09,-0.195,12.5,-26 R out 10.4..14.6 skin   0.0@lowerarm_twist_01_r outfit   3.3@lowerarm_twist_01_r hand  83 | gapS min  24.5 med  29.0 max  34.5 gapO min  12.4 med  16.9
+walk   -0.107,1.09,-0.195,12.5,-30 R out 10.4..14.8 skin   0.0@lowerarm_twist_01_r outfit   4.8@lowerarm_twist_01_r hand  89 | gapS min  20.7 med  25.7 max  32.1 gapO min   8.6 med  13.4
+sprint -0.10,1.075,-0.185,12.5,-26 R out  6.6..10.0 skin  13.1@calf_r outfit  14.2@foot_r hand 378 | gapS min  14.0 med  14.9 max  16.8 gapO min   0.1 med   2.9
+sprint -0.10,1.075,-0.185,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit   9.2@calf_r hand 376 | gapS min  10.6 med  11.2 max  13.2 gapO min  -3.4 med  -0.9
+sprint -0.10,1.075,-0.195,12.5,-26 R out  6.6..10.0 skin  11.5@calf_r outfit  13.5@calf_r hand 387 | gapS min  22.6 med  23.6 max  25.1 gapO min   8.6 med  10.9
+sprint -0.10,1.075,-0.195,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit   4.5@calf_r hand 385 | gapS min  19.2 med  19.6 max  21.6 gapO min   5.3 med   7.4
+sprint -0.10,1.09,-0.185,12.5,-26 R out  6.6..10.0 skin   7.8@calf_r outfit  13.5@foot_r hand 373 | gapS min  21.3 med  21.9 max  23.2 gapO min   7.4 med   9.8
+sprint -0.10,1.09,-0.185,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit   1.8@calf_r hand 371 | gapS min  18.7 med  19.0 max  20.4 gapO min   5.0 med   6.9
+sprint -0.10,1.09,-0.195,12.5,-26 R out  6.6..10.0 skin   5.6@calf_r outfit  13.3@calf_r hand 382 | gapS min  30.0 med  30.4 max  31.5 gapO min  16.1 med  17.6
+sprint -0.10,1.09,-0.195,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit  -4.2@calf_r hand 380 | gapS min  26.9 med  27.3 max  28.7 gapO min  13.1 med  15.1
+sprint -0.107,1.075,-0.185,12.5,-26 R out  6.6..10.0 skin   6.4@calf_r outfit  13.7@foot_r hand 376 | gapS min  14.9 med  16.3 max  19.2 gapO min   0.9 med   5.1
+sprint -0.107,1.075,-0.185,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit   5.0@calf_r hand 374 | gapS min  11.4 med  12.3 max  16.3 gapO min  -2.5 med   0.8
+sprint -0.107,1.075,-0.195,12.5,-26 R out  6.6..10.0 skin   5.4@calf_r outfit  13.9@calf_r hand 385 | gapS min  23.4 med  24.8 max  27.5 gapO min   9.4 med  13.3
+sprint -0.107,1.075,-0.195,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit  -0.6@calf_r hand 383 | gapS min  19.9 med  20.9 max  24.0 gapO min   6.1 med   9.3
+sprint -0.107,1.09,-0.185,12.5,-26 R out  6.6..10.0 skin   1.6@calf_r outfit  11.0@calf_r hand 371 | gapS min  22.2 med  23.3 max  25.4 gapO min   8.5 med  11.8
+sprint -0.107,1.09,-0.185,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit  -2.8@calf_r hand 369 | gapS min  19.4 med  20.1 max  22.9 gapO min   6.0 med   8.0
+sprint -0.107,1.09,-0.195,12.5,-26 R out  6.6..10.0 skin   0.0@calf_r outfit   9.5@calf_r hand 380 | gapS min  30.9 med  31.7 max  33.8 gapO min  16.9 med  20.2
+sprint -0.107,1.09,-0.195,12.5,-30 R out  6.0.. 9.7 skin   0.0@calf_r outfit  -8.4@calf_r hand 378 | gapS min  27.7 med  28.6 max  30.8 gapO min  14.1 med  16.7

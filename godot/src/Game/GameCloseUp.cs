@@ -27,15 +27,77 @@ public partial class Game
         cam.SnapClose();
         hud.Calm(false, 0);
         z.KeepClear = null;
+        roomTops.Clear();
         cam.Room = (a, b) =>
         {
             if (Battle?.Collision is not { } col) return 1;
             float dx = b.X - a.X, dz = b.Z - a.Z, len = Mathf.Sqrt(dx * dx + dz * dz);
             if (len < 0.01f) return 1;
-            // (a wall's face with a hand's room before it)
-            return col.Raycast(a.X, a.Z, b.X, b.Z, 0.25) is { } hit ? Mathf.Max(0, (float)hit.T * len - 0.35f) / len : 1;
+            // (a wall's face with a hand's room before it; a post seen past, a cart passed over: CameraRoom)
+            var hit = col.Raycast(a.X, a.Z, b.X, b.Z, 0.25, true, (c, t) => CameraRoom.Blocks(c, t, a.Y, b.Y, RoomTop(c)));
+            if (CamLog) cam.RoomHit = hit is { } h0 ? $"{h0.Collider.Id}:{h0.Collider.Kind}@{h0.Collider.X:F1},{h0.Collider.Z:F1}_r{h0.Collider.R:F2}_T{h0.T:F2}_top{RoomTop(h0.Collider):F2}" : null;
+            return hit is { } h ? Mathf.Max(0, (float)h.T * len - 0.35f) / len : 1;
         };
         cam.Ground = (x, zz) => (float)(scene?.HeightAt(x, zz) ?? 0);
+    }
+
+    static readonly bool CamLog = Args.Has("camlog");
+    readonly System.Collections.Generic.Dictionary<int, float?> roomTops = new();
+
+    /// <summary>The top (world y) of what is drawn standing on a collider's footprint, looked up once (the renderer's
+    /// own cull of the box over it: meshes and each copy of a multimesh there, not the ground, the grass or the
+    /// living); null where nothing is drawn there.</summary>
+    float? RoomTop(SurvivorUnchained.Sim.Collider c)
+    {
+        if (roomTops.TryGetValue(c.Id, out var known)) return known;
+        float? top = null;
+        var world = camera.GetWorld3D();
+        if (world != null)
+        {
+            // (the footprint, a little inside its edge, so a neighbor's wall touching it is not counted)
+            float ex = (float)c.R + 0.3f, inset = 0.1f;
+            float cx = (float)c.X, cz = (float)c.Z;
+            float gy = (float)(scene?.HeightAt(c.X, c.Z) ?? 0);
+            var box = new Aabb(new Vector3(cx - ex, gy - 4, cz - ex), new Vector3(2 * ex, 44, 2 * ex));
+            bool Over(Aabb a)
+            {
+                if (a.Size.Y < 0.5f || a.Size.X > 40 || a.Size.Z > 40) return false;
+                if (c.Kind == SurvivorUnchained.Sim.ColliderKind.Circle)
+                {
+                    float qx = Mathf.Clamp(cx, a.Position.X, a.End.X), qz = Mathf.Clamp(cz, a.Position.Z, a.End.Z);
+                    float r = (float)c.R - inset;
+                    return (qx - cx) * (qx - cx) + (qz - cz) * (qz - cz) < r * r;
+                }
+                // (a box: the drawn thing's middle within it, a quarter metre's slack, in the box's own frame)
+                float cos = Mathf.Cos(-(float)c.Rot), sin = Mathf.Sin(-(float)c.Rot);
+                var m = a.GetCenter();
+                float lx = (m.X - cx) * cos - (m.Z - cz) * sin, lz = (m.X - cx) * sin + (m.Z - cz) * cos;
+                return Mathf.Abs(lx) < (float)c.Hw + 0.25f && Mathf.Abs(lz) < (float)c.Hd + 0.25f;
+            }
+            foreach (ulong id in RenderingServer.InstancesCullAabb(box, world.Scenario))
+            {
+                if (GodotObject.InstanceFromId(id) is not GeometryInstance3D g || !g.IsVisibleInTree() || g.GetParent() is Skeleton3D) continue;
+                if (g is MultiMeshInstance3D mmi && mmi.Multimesh is { Mesh: { } mesh } mm)
+                {
+                    var local = mesh.GetAabb();
+                    if (local.Size.Y < 0.5f) continue;
+                    var gt = mmi.GlobalTransform;
+                    int n = mm.VisibleInstanceCount >= 0 ? mm.VisibleInstanceCount : mm.InstanceCount;
+                    for (int i = 0; i < n; i++)
+                    {
+                        var a = gt * mm.GetInstanceTransform(i) * local;
+                        if (Over(a)) top = Mathf.Max(top ?? float.MinValue, a.End.Y);
+                    }
+                }
+                else if (g is MeshInstance3D mi && mi.Mesh != null)
+                {
+                    var a = mi.GlobalTransform * mi.GetAabb();
+                    if (Over(a)) top = Mathf.Max(top ?? float.MinValue, a.End.Y);
+                }
+            }
+        }
+        roomTops[c.Id] = top;
+        return top;
     }
 
     /// <summary>Each frame of play.</summary>
@@ -88,6 +150,7 @@ public partial class Game
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
             if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
+            if (scene?.Player is { } pv2 && eyesNight != 0) { eyesNight = 0; SurvivorUnchained.View.People.HerEyesNight(pv2.Person, 0); SurvivorUnchained.View.People.HerSkinHold(pv2.Person, 0); }
             if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false;
             return;
         }
@@ -158,6 +221,9 @@ public partial class Game
         // her breast, lit by the sky alone; at 0.45 the pocket between her cups by the gore read as a dent (dent d2).)
         float skyBody = CloseSkyBody < 0 ? -1 : lit && !night ? Mathf.Lerp(1, CloseSkyBody, day) : 1;
         if (sky != 1 || skyShown != 1) { skyShown = sky; SurvivorUnchained.View.People.HerSkyShare(pv.Person, sky, sky == 1 ? -1 : skyBody); }
+        // (her eyes by night, under the night key: the lids' shade eased and the iris lifted, People.HerEyesNight)
+        float en = lit && night ? day : 0;
+        if (en != 0 || eyesNight != 0) { eyesNight = en; SurvivorUnchained.View.People.HerEyesNight(pv.Person, en); SurvivorUnchained.View.People.HerSkinHold(pv.Person, en); }
         air.SetViewExposure(lit && night ? Mathf.Lerp(1, CloseExposureNight, day) : 1);
         air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
@@ -179,6 +245,26 @@ public partial class Game
             closeRimGear.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeRimGear.LookAt(chest + new Vector3(0, 0.15f, 0));
         }
+        // --body-rim E (Body 20 light test, 27 Oct; the arm judge: "under the close-up's soft frontal light shallow forms barely
+        // read"): a soft rim on her (people, layer 2, as the key; by night her own layer), from behind her on the
+        // key's far side, aimed below her shoulders, so her arms' outline and broad planes read. 0: off, as before.
+        // --body-rim-night E (by night; default the day's), --body-rim-az A (radians off straight behind her, toward the rim's
+        // side), --body-rim-el D (degrees up), --body-rim-spec S, --body-rim-colour R,G,B.
+        if (closeBodyRim == null || !IsInstanceValid(closeBodyRim) || closeBodyRim.GetParent() != scene)
+        {
+            closeBodyRim = new SpotLight3D { LightColor = BodyRimColour, SpotAngle = 30, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = BodyRimSpec, LightEnergy = 0 };
+            scene.AddChild(closeBodyRim);
+        }
+        float wantBody = lit ? (night ? BodyRimNight : BodyRimDay) * day : 0;
+        closeBodyRim.LightEnergy = Mathf.Lerp(closeBodyRim.LightEnergy, wantBody, 1 - Mathf.Exp(-3 * (float)dt));
+        closeBodyRim.Visible = closeBodyRim.LightEnergy > 0.005f;
+        if (closeBodyRim.Visible)
+        {
+            float a = cam.Yaw + Mathf.Pi - BodyRimAz, up = Mathf.DegToRad(BodyRimEl);
+            var arms = pv.GlobalPosition + new Vector3(0, 1.2f, 0);
+            closeBodyRim.GlobalPosition = arms + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
+            closeBodyRim.LookAt(arms);
+        }
     }
 
     void FireOnHer(bool own, SurvivorUnchained.View.PlayerView pv)
@@ -199,8 +285,17 @@ public partial class Game
         fireFill.Visible = true;
     }
 
-    SpotLight3D? closeKey, closeRim, closeRimGear;
+    SpotLight3D? closeKey, closeRim, closeRimGear, closeBodyRim;
+    static float BodyRimDay => Args.Num("body-rim", 0f);
+    static float BodyRimNight => Args.Num("body-rim-night", BodyRimDay);
+    static float BodyRimAz => Args.Num("body-rim-az", 0.9f);
+    static float BodyRimEl => Args.Num("body-rim-el", 15f);
+    static float BodyRimSpec => Args.Num("body-rim-spec", 0.2f);
+    static readonly Color BodyRimColour = Args.Get("body-rim-colour") is string brc && brc.Split(',') is { Length: 3 } bc
+        ? new Color(float.Parse(bc[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bc[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(bc[2], System.Globalization.CultureInfo.InvariantCulture))
+        : new Color(1f, 0.93f, 0.84f);
     float skyShown = 1;
+    float eyesNight;
     OmniLight3D? fireFill;
     // --close-fire K: the camp fire's share on her in the close view by night (1: all of it, as play; judge 3 found it
     // filled her shadow side almost to her lit side). Art style round 2 (20 Oct): 0.75, rim 3, night key 2.2, under the paint grade.

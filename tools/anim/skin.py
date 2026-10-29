@@ -7,8 +7,20 @@ motion can be measured against her actual mesh rather than capsules.
     for f in range(clip.frames):
         v = body.posed(clip, f)                # [V, 3] skeleton space, jiggle on
 
-The skinning is Godot's: linear blend, four weights a vertex, each bone's
-matrix its posed global over its rest global (her bind pose is her rest).
+The skinning is Godot's: linear blend, every weight a vertex carries (four,
+or eight on her body of record), each bone's matrix its posed global over its
+rest global (her bind pose is her rest).
+
+Her body of record's rig (the shoulder helpers delt/trap/pec/lat in her
+skeleton; Body.game_rig, SKIN_GAME=1/0 forces it) is posed with the game's
+whole stack, checked against Godot's --pose-dump (Body 13 b2, 26 Oct: 100
+bones within 0.3 mm, shapes within 0.003, skin within 0.35 mm): HerShrug,
+HerRaise's breast lift, HerScap, HerJoints' twists (the roll unwrapped frame
+to frame), HerShoulder; the shoulder shapes incl. shoulder_lvl80; her Head's
+rest scale and its file's own bind (heroine_headscale.py). Older bodies keep
+the posing their baselines were counted with. Pose it on its own skeleton
+dump (tools_scenes/anim_skeleton.gd): bones the skeleton lacks lose their
+weight (a warning says how much).
 Her springs (HerJiggle.cs) are run here as there, frame by frame in the
 world, so a breast swings into an arm's way as it does in the game; the
 warden's plate holds them (Amount 0.55, no squash), as People.HerOutfit sets.
@@ -29,6 +41,7 @@ from pathlib import Path
 import numpy as np
 
 from rig import DATA, REPO, Skeleton, qfrom_matrix, qmatrix, qnorm
+import staged
 
 # (ANIM_PEOPLE, ANIM_SKELETONS, ANIM_OUT: another body, skeleton dump or
 # clip library to measure, a "before" kept aside say.)
@@ -88,6 +101,20 @@ class Gltf:
         return out
 
 
+def _psd():
+    import sys
+    sys.path.insert(0, str(REPO / "tools" / "assets"))
+    import shoulder_psd_post
+    return shoulder_psd_post
+
+
+def _psd_names():
+    if os.environ.get("PSD_OFF"):      # (a baseline without them: --psd-off as the game reads it)
+        return []
+    # (every slot psd_weights keys, as Play/ShoulderPsd.Shapes: the sampled shapes and the level slot shoulder_lvl80)
+    return [n + "_" + s for n in _psd().psd_weights(0.0, 0.0) for s in "lr"]
+
+
 def _trs(n):
     m = np.eye(4)
     if "matrix" in n:
@@ -112,6 +139,7 @@ class Jiggle:
         self.amount = amount
         self.squash = squash
         self.state = {}
+        self.keep_scale = False   # (the scale the layers before set kept: Body.frames turns it on for the game rig)
         self.bones = [(sk.index[b], k, d, r, s) for b, k, d, r, s in self.MASSES if b in sk.index]
 
     def reset(self):
@@ -168,8 +196,12 @@ class Jiggle:
             k = 1 + np.clip((np.linalg.norm(to) - np.linalg.norm(frm)) / max(reach, 1e-4), -1, 1) * stretch * self.squash
             side = 1 / np.sqrt(max(k, 0.5))
             # Godot sets the local rotation and scale: the scale is in the
-            # bone's own frame, so the global is the turned rotation scaled.
-            G[j][:3, :3] = rot @ np.diag([side, k, side])
+            # bone's own frame, so the global is the turned rotation scaled
+            # (times the scale the layers before it set: HerRaise's stretch).
+            sc = np.array([side, k, side])
+            if self.keep_scale:
+                sc = sc * np.linalg.norm(pose[:3, :3], axis=0)
+            G[j][:3, :3] = rot @ np.diag(sc)
 
 
 # ---------------------------------------------------------------- bodies --
@@ -234,6 +266,15 @@ class Body:
         grot, gpos = sk.rest_globals()
         self.rest = self._mats(grot[0], gpos[0])
         self.rest_inv = np.linalg.inv(self.rest)
+        # each joint's rest scale as its file sets it (her Head: 1.07, heroine_headscale.py, its bind left unscaled, so
+        # Godot draws all skinned to it that much larger); the game rig's globals carry it (globals)
+        self.rest_scale = {}
+        # (the game rig: a joint whose file binds it off its rest (her Head: heroine_headscale.py) skinned with that
+        # file's own bind, as Godot skins each mesh with its skin's binds; each such bind a virtual bone after the
+        # skeleton's: Jv indexes skin_mats)
+        self.game = helpers and self.game_rig()
+        self.vbind = []
+        Jv = []
         P, W, Jn, T, piece, kind = [], [], [], [], [], []
         CP, CN = {}, {}
         base = 0
@@ -264,6 +305,10 @@ class Body:
                 if "lowerarm_twist_01_l" in names:
                     self.split_here = False
                 remap = np.array([sk.index.get(nm, -1) for nm in names])
+                for j in skin["joints"]:
+                    sc = nodes[j].get("scale")
+                    if sc and nodes[j]["name"] in sk.index and np.abs(np.asarray(sc, float) - 1).max() > 1e-6:
+                        self.rest_scale[sk.index[nodes[j]["name"]]] = np.asarray(sc, float)
                 ibm = g.accessor(skin["inverseBindMatrices"]).reshape(-1, 4, 4).transpose(0, 2, 1)
                 # Bind pose against her rest: world_j @ ibm_j should be identity.
                 for k, j in enumerate(skin["joints"][:3]):
@@ -277,16 +322,35 @@ class Body:
                     # Her corrective shapes as built: morph targets, by name.
                     names_t = mesh.get("extras", {}).get("targetNames", [])
                     tgs = pr.get("targets", [])
-                    for cn in hp.corrective_names():
+                    for cn in hp.corrective_names() + _psd_names():
                         k = names_t.index(cn) if cn in names_t else -1
                         tg = tgs[k] if 0 <= k < len(tgs) else {}
                         for key, into in (("POSITION", CP), ("NORMAL", CN)):
                             into.setdefault(cn, []).append(g.accessor(tg[key]).astype(float) if key in tg else np.zeros_like(p))
-                    jj = remap[g.accessor(a["JOINTS_0"]).astype(int)]
-                    ww = g.accessor(a["WEIGHTS_0"]).astype(float)
+                    # every weight set the point carries (her body of record: 8, JOINTS_1/WEIGHTS_1; Godot 4.5 imports all)
+                    jj = np.concatenate([remap[g.accessor(a[f"JOINTS_{q}"]).astype(int)] for q in range(4) if f"JOINTS_{q}" in a], 1)
+                    ww = np.concatenate([g.accessor(a[f"WEIGHTS_{q}"]).astype(float) for q in range(4) if f"JOINTS_{q}" in a], 1)
+                    lost = np.where(jj < 0, ww, 0).sum()
+                    if lost > 1e-6 * len(p):
+                        import sys
+                        miss = sorted({names[k] for k in np.unique(g.accessor(a["JOINTS_0"]).astype(int)) if remap[k] < 0})
+                        print(f"skin: {path.name} {n['name']}: {lost / max(ww.sum(), 1e-9):.2%} of its weight on bones the skeleton lacks "
+                              f"(dropped: {' '.join(miss) or 'in a later set'}); pose it on its own skeleton dump", file=sys.stderr)
                     ww = np.where(jj < 0, 0, ww)
                     ww = ww / np.maximum(ww.sum(1, keepdims=True), 1e-9)
                     jj = np.where(jj < 0, 0, jj)
+                    jv = jj.copy()
+                    if self.game:
+                        raw = np.concatenate([g.accessor(a[f"JOINTS_{q}"]).astype(int) for q in range(4) if f"JOINTS_{q}" in a], 1)
+                        for k in np.unique(raw):
+                            j = remap[k]
+                            if j >= 0 and np.abs(ibm[k] - self.rest_inv[j]).max() > 1e-4:
+                                hit = [v for v, (b, m) in enumerate(self.vbind) if b == j and np.abs(m - ibm[k]).max() < 1e-7]
+                                if not hit:
+                                    self.vbind.append((j, ibm[k]))
+                                    hit = [len(self.vbind) - 1]
+                                jv[raw == k] = len(sk.names) + hit[0]
+                    Jv.append(jv)
                     idx = g.accessor(pr["indices"]).reshape(-1, 3).astype(np.int64) if "indices" in pr else np.arange(len(p)).reshape(-1, 3)
                     P.append(p)
                     W.append(ww)
@@ -296,8 +360,14 @@ class Body:
                     kind += [tag] * len(p)
                     base += len(p)
         self.P = np.concatenate(P)
+        # (pieces with fewer weight sets padded with empty ones: four a point unless a piece carries eight)
+        nw = max(w.shape[1] for w in W)
+        W = [np.pad(w, ((0, 0), (0, nw - w.shape[1]))) for w in W]
+        Jn = [np.pad(j, ((0, 0), (0, nw - j.shape[1]))) for j in Jn]
+        Jv = [np.pad(j, ((0, 0), (0, nw - j.shape[1]))) for j in Jv]
         self.W = np.concatenate(W)
         self.J = np.concatenate(Jn)
+        self.Jv = np.concatenate(Jv)   # (J with the game rig's off-rest binds as their virtual bones: what skin_mats indexes)
         self.T = np.concatenate(T)
         self.piece = np.array(piece)
         self.kind = np.array(kind)
@@ -306,12 +376,12 @@ class Body:
         if self.split_here:
             import helpers as hp
             dense = np.zeros((len(self.P), len(sk.names)))
-            for k in range(4):
+            for k in range(self.J.shape[1]):
                 np.add.at(dense, (np.arange(len(self.P)), self.J[:, k]), self.W[:, k])
             heads = {n: self.rest[j][:3, 3] for n, j in sk.index.items()}
             dense = hp.split(dense, self.P, sk.index, heads, front=(0.0, 0.0, 1.0))
             order = np.argsort(-dense, axis=1)[:, :4]
-            self.J = order
+            self.J = self.Jv = order
             self.W = np.take_along_axis(dense, order, 1)
             self.W = self.W / np.maximum(self.W.sum(1, keepdims=True), 1e-12)
             # Her corrective shapes made here as the build makes them (her
@@ -334,7 +404,7 @@ class Body:
         parts = ["trunk", "arm_l", "arm_r", "leg_l", "leg_r"]
         bone_part = np.array([parts.index(part_of(n)) for n in sk.names])
         share = np.zeros((len(self.P), len(parts)))
-        for k in range(4):
+        for k in range(self.J.shape[1]):
             np.add.at(share, (np.arange(len(self.P)), bone_part[self.J[:, k]]), self.W[:, k])
         self.parts = parts
         self.part = share.argmax(1)
@@ -378,6 +448,8 @@ class Body:
     def clip(self, name, folder=None):
         folder = Path(folder) if folder else OUT / ("clips" if self.label == "her" else "hero")
         d = json.loads((folder / f"{name}.json").read_text())
+        if self.label == "her" and staged.want():
+            d = staged.staged_json(d)   # the clip as the game plays it (tools/anim/staged.py; --raw: as written)
         sk = self.sk
         n = len(d["tracks"][0]["keys"])
         rot = np.tile(sk.rest_rot, (n, 1, 1)).astype(float)
@@ -393,19 +465,42 @@ class Body:
                 pos[:, j] = k
         return Clip(d["name"], d["fps"], rot, pos, d.get("loop", False), d.get("meta", {}))
 
-    def globals(self, clip: Clip, f):
+    def game_rig(self):
+        """Her body of record's rig (the shoulder helpers, SPEC "shoulder", in her skeleton): posed with the game's
+        whole stack (HerRaise's breast lift, the twist roll unwrapped frame to frame, HerShoulder). Bodies before it
+        keep the posing their baselines were counted with. SKIN_GAME=1/0 (env) forces it on or off."""
+        import helpers as hp
+        v = os.environ.get("SKIN_GAME")
+        return (v == "1") if v in ("0", "1") else any(hp.has_shoulder(self.sk.index, s) for s in "lr")
+
+    def globals(self, clip: Clip, f, state=None, dt=None):
         """Bone globals [J, 4, 4] of frame f (no springs; her helpers driven
-        as the game drives them)."""
+        as the game drives them). `state` (a dict kept from frame to frame,
+        {} at the first) and `dt`: the game rig's twist roll unwrapped as the
+        game does (frames passes them)."""
         rot = clip.rot[f]
+        pos = clip.pos[f]
         scale = shift = None
+        game = self.helpers and self.game_rig()
         if self.helpers:
             import helpers as hp
             scale = np.ones((len(self.sk.names), 3))
             shift = np.zeros((len(self.sk.names), 3))
-            rot = hp.drive(self.sk, rot.copy(), scale, shift)
-        grot, gpos = self.sk.fk(rot[None], clip.pos[f][None])
+            rot = hp.drive(self.sk, rot.copy(), scale, shift, state if game else None, dt, panels=False)
+            if game:
+                # HerRaise's pull on her breasts (after HerShrug, before the springs), at the worn top's squash
+                pos = pos.copy()
+                hp.raise_breasts(self.sk, rot, pos, scale, self.jiggle.squash if self.jiggle else 1.0)
+        grot, gpos = self.sk.fk(rot[None], pos[None])
         # (A bone's own scale and shift reach only itself: the helpers have no children.)
-        return self._mats(grot[0], gpos[0], scale, shift)
+        G = self._mats(grot[0], gpos[0], scale, shift)
+        if game:
+            for j, sc in self.rest_scale.items():
+                # (a bone's pose scale is its rest's unless a layer sets it; applied to itself: Head is a leaf)
+                G[j, :3, :3] = G[j, :3, :3] * sc
+            import helpers as hp
+            hp.drive_shoulder(self.sk, G)   # HerShoulder: last, from the pose every layer above has made
+        return G
 
     def world(self, clip: Clip, f):
         """Where the skeleton stands in the world at frame f: scaled as the
@@ -423,11 +518,13 @@ class Body:
         out = []
         if self.jiggle:
             self.jiggle.reset()
+            self.jiggle.keep_scale = self.helpers and self.game_rig()
         passes = 2 if (clip.loop and settle) else 1
+        st = {}   # (the twist roll's unwrap, carried through both passes as the game plays on)
         for p in range(passes):
             keep = p == passes - 1
             for f in range(clip.frames):
-                G = self.globals(clip, f)
+                G = self.globals(clip, f, st, 1 / clip.fps)
                 if self.jiggle:
                     self.jiggle.apply(G, self.world(clip, f + p * (clip.frames - 1)), 1 / clip.fps)
                 if keep:
@@ -435,7 +532,12 @@ class Body:
         return out
 
     def skin_mats(self, G):
-        return G @ self.rest_inv
+        """Skinning matrices, indexed by Jv: each bone's posed global over its bind (its rest; then the game rig's
+        off-rest binds, vbind)."""
+        S = G @ self.rest_inv
+        if self.vbind:
+            S = np.concatenate([S, np.stack([G[j] @ m for j, m in self.vbind])])
+        return S
 
     def shape_weights(self, G):
         """Her corrective shapes' weights for globals G: each keyed on its
@@ -452,7 +554,11 @@ class Body:
                 a, b = G[self.sk.parent[j]][:3, :3], G[j][:3, :3]
                 a, b = a / np.linalg.norm(a, axis=0), b / np.linalg.norm(b, axis=0)
                 rot[j] = qnorm(qfrom_matrix(a.T @ b))
-        return {k: w for k, w in hp.corrective_weights(self.sk, rot).items() if k in self.corr and w > 0}
+        out = {k: w for k, w in hp.corrective_weights(self.sk, rot).items() if k in self.corr and w > 0}
+        # her shoulder pose-space shapes (tools/assets/shoulder_psd_post.py), from the arms' directions as HerRaise sets them
+        if any(k.startswith("shoulder_") for k in self.corr):
+            out.update({k: w for k, w in _psd().weights_from_globals(G, self.sk.index, self.rest).items() if k in self.corr and w > 0})
+        return out
 
     def rest_points(self, G, idx=None):
         """Her points at rest with her corrective shapes in, as set for G."""
@@ -474,12 +580,12 @@ class Body:
         """Posed points [V, 3] (or only `idx`) for globals G (her corrective
         shapes in, as the game sets them)."""
         S = self.skin_mats(G)
-        J = self.J if idx is None else self.J[idx]
+        J = self.Jv if idx is None else self.Jv[idx]
         W = self.W if idx is None else self.W[idx]
         P = self.rest_points(G, idx)
         Ph = np.concatenate([P, np.ones((len(P), 1))], 1)
         out = np.zeros((len(P), 3))
-        for k in range(4):
+        for k in range(J.shape[1]):
             M = S[J[:, k]]
             out += W[:, k:k + 1] * np.einsum("nij,nj->ni", M[:, :3, :], Ph)
         return out

@@ -47,8 +47,11 @@ public static class SkillBook
 
     public static bool Knows(CharacterData ch, string id) => ch.Skills.Contains(id);
 
-    /// <summary>Seen burning in an arena, and not yet learned.</summary>
-    public static bool CanLearn(CharacterData ch, string id) => Weapons.All.TryGetValue(id, out var w) && w.Findable && ch.Discovered.Contains(id) && !Knows(ch, id);
+    /// <summary>The survivor's calling may carry it (Weapons.CanCarry: a kindred skill is two callings').</summary>
+    public static bool Carries(CharacterData ch, string id) => Weapons.CanCarry(ch.Archetype, id);
+
+    /// <summary>Seen burning in an arena, not yet learned, and the calling's to carry.</summary>
+    public static bool CanLearn(CharacterData ch, string id) => Weapons.All.TryGetValue(id, out var w) && w.Findable && ch.Discovered.Contains(id) && !Knows(ch, id) && Carries(ch, id);
 
     public static bool Learn(CharacterData ch, string id)
     {
@@ -59,25 +62,29 @@ public static class SkillBook
         return true;
     }
 
-    /// <summary>How many learned skills can be carried by day: one, two from the
-    /// fourth level, three from the eighth.</summary>
-    public static int Slots(CharacterData ch) => 1 + (ch.Level >= 4 ? 1 : 0) + (ch.Level >= 8 ? 1 : 0);
+    /// <summary>How many learned skills can be carried by day: two from the start (her grip and her
+    /// type's first), three from the fourth level, four from the eighth, five from the fourteenth and
+    /// six from the twentieth, so a map build has room (CLASS_IDENTITY_AND_TALENTS.md §3.7).</summary>
+    public static int Slots(CharacterData ch) => SlotsAt(ch.Level);
+    public static int SlotsAt(int level) => level >= 20 ? 6 : level >= 14 ? 5 : level >= 8 ? 4 : level >= 4 ? 3 : 2;
 
     /// <summary>A learned skill's rank by day: it grows with the survivor.</summary>
     public static int Rank(CharacterData ch) => Math.Min(Weapons.MaxRank, 1 + (ch.Level - 1) / 3);
 
     public static bool Slot(CharacterData ch, string id)
     {
-        if (!Knows(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;
+        if (!Knows(ch, id) || !Carries(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;
         ch.Slotted.Add(id);
         return true;
     }
 
     public static void Unslot(CharacterData ch, string id) => ch.Slotted.Remove(id);
 
-    /// <summary>What is carried by day and can be used: slotted, measured up to, within the slots.</summary>
+    /// <summary>What is carried by day and can be used: slotted, measured up to, the
+    /// calling's to carry (one that is not lies idle, as one not measured up to
+    /// does: an old save keeps it, unused), within the slots.</summary>
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
-        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
+        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
 
     /// <summary>The skills attuned for the night: those carried by day (and
     /// measured up to). In an arena the ember offers them in its first drafts,

@@ -52,7 +52,9 @@ public static class Wear
     /// other visual slots it covers, equipped or not (a suit hides what it covers). A fill never hides an equipped piece
     /// (loot the player put on must show): a fill whose covers reach a slot an equipped piece shows in is dropped, and
     /// its own slot is filled by the first calling in FallbackOrder whose piece for that slot covers that slot only, or
-    /// left empty with a note. A piece the index does not know is left off, with a note why.</summary>
+    /// left empty with a note. A calling row displaced by an equipped piece puts its `under` pieces on in its place (the
+    /// arcanist's leotard top leaves the warden's bottom and belt), each in its own slot unless that is equipped or hidden.
+    /// A piece the index does not know is left off, with a note why.</summary>
     public static Dictionary<string, string> Look(IReadOnlyDictionary<string, string> worn, string calling, ArmorIndex ix, List<string>? notes = null, IReadOnlyCollection<string>? hide = null)
     {
         // (`hide`: visual slots left empty, no equipped piece and no fill: her show-helm toggle off leaves "head" bare)
@@ -86,6 +88,19 @@ public static class Wear
             if (fb != null) { r[slot] = fb.Id; notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece; {slot} filled with '{fb.Id}'"); }
             else notes?.Add($"wear: {calling}'s '{id}' would hide an equipped piece, and no calling has a {slot} that covers only {slot}; {slot} left empty");
         }
+        // (a calling row displaced by an equipped piece leaves its `under` pieces in its place)
+        foreach (var (slot, id) in ix.Calling(calling))
+        {
+            if (slot == Ink || ix.Find(id) is not { Under: { Count: > 0 } under }) continue;
+            if (!(eq.ContainsKey(slot) || hidden.Contains(slot))) continue;
+            foreach (var u in under)
+            {
+                if (ix.Find(u) is not { } ur) { notes?.Add($"wear: {calling}'s '{id}' lists unknown under piece '{u}'; skipped"); continue; }
+                if (eq.ContainsKey(ur.Slot) || hidden.Contains(ur.Slot) || Hid(ur.Slot)) continue;
+                r[ur.Slot] = u;
+                notes?.Add($"wear: {calling}'s '{id}' is displaced; '{u}' worn under it");
+            }
+        }
         // (and what the fills kept hide, of the other fills)
         foreach (var (slot, id) in r.ToList())
         {
@@ -118,6 +133,49 @@ public static class Wear
             foreach (var p in wear) if (group.Contains(SlotOf(p))) r[SlotOf(p)] = p;
         }
         return r;
+    }
+
+    /// <summary>Splits a dye string: "#rrggbb", "#rrggbb:metal" or "#rrggbb:paint" (suffix case-insensitive, whitespace trimmed).
+    /// An explicit suffix wins. With none, Metal is true only for a near-neutral light colour (HSV saturation under 0.15 and
+    /// value at least 0.5: silver, steel, pewter); every other colour is paint. Gold, bronze and brass dyes must carry ":metal"
+    /// (a hue can't tell gold from yellow paint). Hex comes back without the suffix.</summary>
+    public static (string Hex, bool Metal) DyeFinish(string dye)
+    {
+        var parts = dye.Split(':', 2);
+        var hex = parts[0].Trim();
+        if (parts.Length == 2)
+        {
+            var sfx = parts[1].Trim();
+            if (sfx.Equals("metal", StringComparison.OrdinalIgnoreCase)) return (hex, true);
+            if (sfx.Equals("paint", StringComparison.OrdinalIgnoreCase)) return (hex, false);
+        }
+        var h = hex.TrimStart('#');
+        if (h.Length < 6 || !int.TryParse(h.AsSpan(0, 6), System.Globalization.NumberStyles.HexNumber, null, out var v)) return (hex, false);
+        double r = (v >> 16 & 255) / 255.0, g = (v >> 8 & 255) / 255.0, b = (v & 255) / 255.0;
+        double mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b));
+        double sat = mx <= 0 ? 0 : (mx - mn) / mx;
+        return (hex, sat < 0.15 && mx >= 0.5);
+    }
+
+    /// <summary>The darker bronze her trim takes under a gold plate dye (Body 18 judge 1: #8a5c30 read as flat tarnished brown; warmer toward copper and ~10% lighter. A trial hex can replace it: env GOLD_TRIM, read in HerWear).</summary>
+    public const string GoldTrimBronze = "#9c6434:metal";
+
+    /// <summary>Why: a gold metal dye on the "metal" zone makes the plate the same colour as the gold trim (trim zone: gold, claspgold,
+    /// wiregold, bronze, rivetbronze), which swallows the trim. When the "metal" entry is a metal dye whose colour is gold or brass
+    /// (HSV hue 25-65 deg, saturation at least 0.3, value at least 0.45) and the dict has no "trim" entry, returns a copy with
+    /// "trim" set to GoldTrimBronze. An explicit "trim" dye always wins. Any other dye comes back as the same instance.</summary>
+    public static IReadOnlyDictionary<string, string> TrimUnderGold(IReadOnlyDictionary<string, string> dye)
+    {
+        if (dye.ContainsKey("trim") || !dye.TryGetValue("metal", out var m)) return dye;
+        var (hex, metal) = DyeFinish(m);
+        var h = hex.TrimStart('#');
+        if (!metal || h.Length < 6 || !int.TryParse(h.AsSpan(0, 6), System.Globalization.NumberStyles.HexNumber, null, out var v)) return dye;
+        double r = (v >> 16 & 255) / 255.0, g = (v >> 8 & 255) / 255.0, b = (v & 255) / 255.0;
+        double mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b)), d = mx - mn;
+        if (d <= 0 || d / mx < 0.3 || mx < 0.45) return dye;
+        double hue = mx == r ? 60 * (((g - b) / d + 6) % 6) : mx == g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+        if (hue < 25 || hue > 65) return dye;
+        return new Dictionary<string, string>(dye) { ["trim"] = GoldTrimBronze };
     }
 
     /// <summary>Piece id -> dye zone -> "#rrggbb", from the equipped items that wear pieces and carry a dye (ItemInstance.Dye).</summary>

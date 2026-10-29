@@ -84,8 +84,8 @@ public static class StorySim
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[spec.Seed % a.Weapons.Count], Ability = a.Abilities[0],
+            Type = spec.Type,
         }, (uint)spec.Seed);
-        if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
         // --flare stand: carry the road's Stand (its lamp lit past the empty board; a measuring aid).
         if (Flare == "stand")
         {

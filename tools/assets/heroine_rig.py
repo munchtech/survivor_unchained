@@ -34,12 +34,14 @@ def _active(o):
     bpy.context.view_layer.objects.active = o
 
 
-def add_bones(arm):
+def add_bones(arm, chain=False):
     """The helper bones, if the armature lacks them: twist bones along their
     parents in their parents' frames; share bones at their joints in the
-    lower bone's frame turned about its line onto the joint's hinge."""
+    lower bone's frame turned about its line onto the joint's hinge. The
+    upper arm's twist chain (helpers SPEC "twist_chain") only with `chain`
+    (hers, explicitly: never the hero's or an NPC's)."""
     have = {b.name for b in arm.data.bones}
-    want = [(h, n) for h in hp.SPEC["helpers"] for n in hp.each(h["name"])]
+    want = [(h, n) for h in hp.SPEC["helpers"] if chain or not h.get("chain") for n in hp.each(h["name"])]
     panels = [p for p in hp.SPEC.get("panels", []) if p["parent"] in have]
     if all(n in have for _, n in want) and all(p["name"] in have for p in panels):
         return 0
@@ -296,10 +298,17 @@ def _game_skeleton(arm):
         if not os.path.exists(path):
             continue
         sk = Skeleton.load(path)
-        if set(sk.names) != names:
+        if set(sk.names) != names and not names <= set(sk.names):
             continue
+        # A dump holding MORE bones than the armature (the 100-bone game dump vs a 90-bone export)
+        # is kept whole (its parents and rest turns need the extra bones); only the armature's
+        # bones are position-checked and re-seated, and the extras get zero weight in the callers.
         _, gpos = sk.rest_globals()
-        heads = _to_game([(arm.matrix_world @ arm.data.bones[n].head_local)[:] for n in sk.names])
+        have = [j for j, n in enumerate(sk.names) if n in names]
+        heads = np.zeros_like(gpos[0])
+        heads[have] = _to_game([(arm.matrix_world @ arm.data.bones[sk.names[j]].head_local)[:] for j in have])
+        gpos = gpos.copy()
+        gpos[0][[j for j in range(len(sk.names)) if j not in set(have)]] = 0
         err = np.abs(gpos[0] - heads).max()
         if err < 0.002:
             return sk
@@ -313,8 +322,14 @@ def _game_skeleton(arm):
             grot, _ = sk.rest_globals()
             from rig import qinv, qrot
             pos = sk.rest_pos.copy()
+            hs = set(have)
             for j, p in enumerate(sk.parent):
-                pos[j] = heads[j] if p < 0 else qrot(qinv(grot[0, p]), heads[j] - heads[p])
+                if j not in hs:
+                    continue
+                if p < 0:
+                    pos[j] = heads[j]
+                elif p in hs:
+                    pos[j] = qrot(qinv(grot[0, p]), heads[j] - heads[p])
             sk.rest_pos = pos
             moved = [sk.names[j] for j in np.where(dev >= 0.002)[0]]
             print(f"RIG correctives: {f} was {err * 1000:.1f} mm off this armature; rest re-seated on its heads "
@@ -412,7 +427,7 @@ def _sampler_moves(arm, sampler):
         return {}
     _, _, Pb, Wb = sampler
     order = [b.name for b in arm.data.bones]
-    W = Wb[:, [order.index(n) for n in sk.names]]
+    W = np.stack([Wb[:, order.index(n)] if n in order else np.zeros(len(Wb)) for n in sk.names], 1)
     top = np.argsort(-W, axis=1)[:, :4]
     keep = np.zeros_like(W)
     rows = np.arange(len(W))[:, None]
@@ -500,7 +515,7 @@ def share_keys(objs):
                 o.shape_key_add(name=n, from_mix=False)
 
 
-def apply(arm, meshes, skin=None, body=None):
+def apply(arm, meshes, skin=None, body=None, chain=False):
     # On: judged at 1:1 in motion (animation judges 9-11) and shipped in her
     # body and outfits since 11 October, so a build without them would
     # quietly drop them. --no-helpers after the build's "--" leaves them out
@@ -508,7 +523,7 @@ def apply(arm, meshes, skin=None, body=None):
     if "--no-helpers" in sys.argv:
         print("RIG helpers: off (--no-helpers)")
         return
-    made = add_bones(arm)
+    made = add_bones(arm, chain)
     # (her skin's split, read once, for the pieces she wears to share as it)
     sampler = skin_sampler(arm, body) if (skin is not None and body is not None) else None
     total = 0

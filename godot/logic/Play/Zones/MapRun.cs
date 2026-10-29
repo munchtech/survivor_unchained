@@ -93,6 +93,13 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     /// their Breaks; a day build meets the four more evenly (at a fifth of the night's, the Pack-Mother
     /// took 173 s and the Barrow Lord 67), so one number serves all four.</summary>
     public const double BossHealth = 3.5;
+    /// <summary>The day curve was tuned for three day skills; six day slots by level 20 (CLASS_IDENTITY 3.7)
+    /// and the Hands made day builds stronger. So each slot past three at the map's level adds PackPerSlot
+    /// to every pack creature's health (champions' own multiples on top) and BossPerSlot to the ruler's.
+    /// Measured (classes 14, tiers 1-6 x 8 seeds against integration 3ef34f61's three-slot curve): 0.9 and 0.4 put
+    /// every tier's minutes, pack gap and ruler TTK within 5% (tiers 5-6 within 6%). The harness sets them with --maphp PACK,BOSS.</summary>
+    public static double PackPerSlot = 0.9, BossPerSlot = 0.4;
+    static double DayMul(double per, int level) => 1 + per * Math.Max(0, SkillBook.SlotsAt(level) - 3);
 
     public MapRun(IZoneHost host, MapBuild map, Chart chart) : base(host, map.Meta)
     {
@@ -195,7 +202,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             if (!map.CanStand(px, pz) || B.Collision.Blocked(px, pz, 0.6)) continue;
             var def0 = Enemies.Get(def);
             var style = def0.Family == Family.Undead ? SpawnStyle.Rise : SpawnStyle.Walk;
-            return B.SpawnEnemy(def, px, pz, new Battle.SpawnOpts { Level = Level + levelUp, Elite = elite, Style = style, Home = (home.X, home.Z, Leash), Wake = Wake });
+            var e = B.SpawnEnemy(def, px, pz, new Battle.SpawnOpts { Level = Level + levelUp, Elite = elite, Style = style, Home = (home.X, home.Z, Leash), Wake = Wake });
+            if (e != null && PackPerSlot != 0) e.MaxHp = e.Hp = e.MaxHp * DayMul(PackPerSlot, Level);
+            return e;
         }
         return null;
     }
@@ -435,7 +444,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         boss = e;
         e.Boss = true;
         e.Named = new Named { Title = people.BossName };
-        double mul = BossHealth * (again ? 0.5 : 1);
+        double mul = BossHealth * DayMul(BossPerSlot, Level) * (again ? 0.5 : 1);
         e.MaxHp = e.Hp = e.MaxHp * mul;
         // Its blows as its people's champion's, not the night's ruler's third more: a day build carries
         // none of the ember's mending, and her bites took a level-ten warden from full in eight seconds.

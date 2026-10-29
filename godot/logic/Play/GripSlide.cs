@@ -9,13 +9,43 @@ namespace SurvivorUnchained.Play;
 /// for the slide and the tilt), and where the piece then sits in its mount.</summary>
 public static class GripSlide
 {
+    /// <summary>Name prefix of a held piece's mount node (Arms.Hold) and what PersonView.Slide looks for. Must survive ValidNodeName unchanged.</summary>
+    public const string MountPrefix = "mount_";
+
+    /// <summary>Godot's node-name rule: each of . : @ / " % becomes '_' (silently, so a name using them never matches a later lookup).</summary>
+    public static string ValidNodeName(string name)
+    {
+        var c = name.ToCharArray();
+        for (int i = 0; i < c.Length; i++) if (".:@/\"%".IndexOf(c[i]) >= 0) c[i] = '_';
+        return new string(c);
+    }
+
     /// <summary>The slide wanted now: a whole-body one-shot's, else an upper-body one's, else the idle/run pair's by the move blend.</summary>
     public static float Target(bool fullOn, float fullS, bool upperOn, float upperS, float moveBlend, float idleS, float runS)
         => fullOn ? fullS : upperOn ? upperS : idleS + (runS - idleS) * Math.Clamp(moveBlend, 0f, 1f);
 
+    /// <summary>As above, with the walk between idle and run: idle -> walk by `walkBlend`, then that -> run by `runBlend` (the move graph's order).</summary>
+    public static float Target(bool fullOn, float fullS, bool upperOn, float upperS, float walkBlend, float runBlend, float idleS, float walkS, float runS)
+    {
+        if (fullOn) return fullS;
+        if (upperOn) return upperS;
+        float iw = idleS + (walkS - idleS) * Math.Clamp(walkBlend, 0f, 1f);
+        return iw + (runS - iw) * Math.Clamp(runBlend, 0f, 1f);
+    }
+
     /// <summary>Current eased toward target over dt seconds.</summary>
     public static float Ease(float current, float target, float dt, float rate = 12f)
         => current + (target - current) * (1f - MathF.Exp(-rate * dt));
+
+    /// <summary>A seat part way between two (animation 58: the second axe eased from its plain mount onto the left tilt's
+    /// pocket by `w`, 0 the first, 1 the second): the origin lerped, the turn slerped.</summary>
+    public static (Quaternion Turn, Vector3 At) Blend(Quaternion a, Vector3 aAt, Quaternion b, Vector3 bAt, float w)
+    {
+        w = Math.Clamp(w, 0f, 1f);
+        if (w == 0f) return (a, aAt);
+        if (w == 1f) return (b, bAt);
+        return (Quaternion.Normalize(Quaternion.Slerp(a, b, w)), Vector3.Lerp(aAt, bAt, w));
+    }
 
     /// <summary>A seated piece moved by a clip's grip, in its mount's space: turned `tiltDeg` about `axis` (the hand's
     /// palm normal, hand +X) through `pivot` (the fist's fitted pocket, where the seat lays the piece's grip point),

@@ -20,6 +20,8 @@ public sealed class ArmorHold
 public sealed class ArmorPiece
 {
     [JsonPropertyName("id")] public string Id { get; set; } = "";
+    /// <summary>Pieces worn in this calling row's place when an equipped piece displaces it (a leotard that also clothes her groin: the arcanist's top): each fills its own visual slot unless that slot is equipped, hidden by an equipped piece's covers, or hidden by `hide`.</summary>
+    [JsonPropertyName("under")] public List<string>? Under { get; set; }
     /// <summary>The calling's outfit it was cut from (null for a new piece).</summary>
     [JsonPropertyName("outfit")] public string? Outfit { get; set; }
     [JsonPropertyName("slot")] public string Slot { get; set; } = "";

@@ -20,6 +20,8 @@ origin facing +Z, her left at +X, up +Y; metres and degrees):
                       left straight, the forearm rolled so the thumb side
                       faces as near this way as it can (a carried weapon),
                "frame": "char" | "chest" (which space blade/knuckles/pos use),
+               "flex": with "thumb", degrees the wrist bends the fingers toward
+                      the palm (a hanging hand laid in to her thigh),
                "ext": degrees the wrist may bend back (a hand on the ground
                       under her weight; default EXT)}
     foot_l/r  {"pos": (x, y, z) the ankle (y 0 = flat on the ground),
@@ -509,6 +511,10 @@ class Rig:
                 target = pos_t
             else:
                 target = gpos[ha]
+            if "nudge" in spec:
+                # The wrist moved by a vector in the key's own frame (char or chest; Animation 57: run.low_point's
+                # fist higher up the haft, the key's hand laid back down the piece's line).
+                target = np.asarray(target, float) + qrot(frame, np.asarray(spec["nudge"], float))
             if "shift" in spec:
                 # The wrist moved in her space after the key is placed (solve_frames' grip slide: the fist lower
                 # on the shaft, the piece where the key put it).
@@ -593,6 +599,9 @@ class Rig:
                     if np.linalg.norm(zp) < 1e-6 or np.linalg.norm(tp) < 1e-6:
                         return cur
                     ang = math.degrees(math.atan2(float(np.dot(np.cross(zp, tp), fa_)), float(np.dot(zp, tp))))
+                    if spec.get("flex"):
+                        # The fingers bent toward the palm at the wrist (deg), about the hand's thumb-side axis.
+                        return qmul(qmul(qaxis(fa_, ang), cur), qaxis([0, 0, 1.0], float(spec["flex"])))
                     return qmul(qaxis(fa_, ang), cur)
                 want = _want_grip(qmul(qmul(d_la, self.grest[ha]), lq) if lq is not None else qmul(d_la, self.grest[ha]))
                 return qmul(want, qinv(lq)) if lq is not None else want
@@ -1096,13 +1105,16 @@ def spread_axis(rig, j):
     return np.cross([0, 1.0, 0], rig.finger_axis[j])
 
 
-def wrap_of(weapon, tilt=0.0):
+def wrap_of(weapon, tilt=0.0, tilt_l=0.0):
     """Each fist's fitted wrap (WRAP) for a clip that holds `weapon` (as grip_of): her right hand's, and her left's
     where the clip holds a piece there on a fitted left pocket (WeaponSockets.PocketL, its own WRAP: WRAP_LEFT):
     "daggers", a pair. A right-hand-only piece
     ("axe", "sword", "staff") keeps "r" only; "axes" would take "l" with "axe" once WRAP["axe"] and a left pocket exist.
     `tilt` (degrees, a clip's "grip_tilt", animation 48): the right fist's wrap fitted on the piece turned that far in it
-    (WRAP_TILT[weapon][tilt], fistfit.py --grip-tilt); a tilt without one fitted is an error."""
+    (WRAP_TILT[weapon][tilt], fistfit.py --grip-tilt); a tilt without one fitted is an error. `tilt_l` (a clip's
+    "grip_tilt_l", animation 58): the left fist's, the left's own tilted fit where it has one (WRAP_LEFT's name), else the
+    right's tilted fit, laid mirrored as every left hand is (the piece is seated on the right's pocket mirrored for it:
+    left_pocket, WeaponSockets.TiltPocketL)."""
     main = {"axes": "axe"}.get((weapon or "").split("+")[0], (weapon or "").split("+")[0])
     if main not in WRAP:
         return {}
@@ -1113,7 +1125,18 @@ def wrap_of(weapon, tilt=0.0):
         if key is None or abs(key - tilt) > 0.05:
             raise KeyError(f"wrap_of: no fist fitted for {main} at grip_tilt {tilt} (WRAP_TILT; fistfit.py {main} --fit --grip-tilt {tilt})")
         out["r"] = fitted[key]
+    if tilt_l:
+        out["l"] = _tilted(WRAP_LEFT[main] if WRAP_LEFT.get(main) in WRAP_TILT else main, tilt_l)
     return out
+
+
+def _tilted(name, tilt):
+    """WRAP_TILT[name] at `tilt` (within 0.05 deg), else a KeyError naming the fit to run."""
+    fitted = WRAP_TILT.get(name, {})
+    key = min(fitted, key=lambda k: abs(k - tilt), default=None)
+    if key is None or abs(key - tilt) > 0.05:
+        raise KeyError(f"wrap_of: no fist fitted for {name} at grip tilt {tilt} (WRAP_TILT; fistfit.py {name} --fit --grip-tilt {tilt})")
+    return fitted[key]
 
 
 # A clip's "grip_tilt" (degrees, animation 48): the piece turned in her right fist about the palm's normal (hand_r +X)
@@ -1127,10 +1150,26 @@ def wrap_of(weapon, tilt=0.0):
 # frame: the best seat's fist, not yet the pass (7 of its checks: the outer pads 1.7-4.9 mm off the shaft, the little
 # finger 166 deg round with its tip 4.3 mm short, 0.9 mm of a pad into it; the square grip's old trouble, the little
 # finger's reach, as 18 October found square across the fingers).
+# 28 October (animation 58): the axe and the one-handed blade at 30 (the owner's call: the haft at ~82 deg to the forearm
+# with the wrist at rest, was 52, so a steep carry needs no cocked wrist), fistfit <axe|sword> --fit --grip-tilt 30 on
+# idle_reaver's / idle_warden's frame, seat kept (BladeAtR): the best seat's fist, not the pass. The axe (4 checks): the
+# middle finger's last pad 1.6 mm off the haft, the little finger's tip 5.3 mm past its far side, 0.8 mm of the hand into
+# it, the thumb 0.7 mm into the forefinger. The sword (6): the forefinger's and little finger's middle pads 1.6 and 2.1 mm
+# off, the ring finger's 2.7, the ring and little fingertips 3.6 and 7.4 mm past the grip's far side, the thumb 1.1 mm into
+# the forefinger. Both wrap the shaft with no pad deep in it. "axes" (the pair's right fist) takes the axe's (wrap_of), and
+# a "grip_tilt_l" lays the same fist mirrored on her left (the piece on the mirrored pocket: left_pocket).
 WRAP_TILT = {"staff": {20.0: {"bends": {"index": (77.9, 60.1, 60.1), "middle": (68.4, 81.1, 45.2), "ring": (69.2, 73.5, 55.1),
                                         "pinky": (41.6, 94.7, 27.7), "thumb": (-14.08, 16.52, 84.32)},
                               "spreads": {"index": -9.6, "middle": -1.2, "ring": 9.1, "pinky": 5.8},
-                              "oppose": 0.53, "thumb_roll": -43.88, "thumb_in": -13.01}}}
+                              "oppose": 0.53, "thumb_roll": -43.88, "thumb_in": -13.01}},
+             "axe": {30.0: {"bends": {"index": (65.2, 77.8, 27.1), "middle": (65.4, 70.3, 60.3), "ring": (61.2, 60.5, 60.1),
+                                      "pinky": (57.9, 42.2, 60.2), "thumb": (17.18, 12.84, 56.82)},
+                            "spreads": {"index": -8.2, "middle": -1.8, "ring": 4.3, "pinky": 17.1},
+                            "oppose": 0.38, "thumb_roll": 42.99}},
+             "sword": {30.0: {"bends": {"index": (70.7, 58.2, 60.2), "middle": (64.5, 65.4, 60.5), "ring": (62.4, 55.0, 60.2),
+                                        "pinky": (57.2, 40.6, 60.5), "thumb": (7.3, 59.52, -10.21)},
+                              "spreads": {"index": -18.2, "middle": -5.7, "ring": -1.4, "pinky": 8.8},
+                              "oppose": 0.01, "thumb_roll": 30.07}}}
 
 
 # The weapons whose left fist is fitted too (wrap_of): a pair held one in each hand, the left fist its own WRAP (fitted on
@@ -1170,6 +1209,87 @@ def slide_dir(weapon, tilt=0.0):
     v = _socket_vec(name)
     v = v / np.linalg.norm(v)
     return qrot(qaxis([1.0, 0, 0], tilt), v) if tilt else v
+
+
+def slide_dir_left(weapon, tilt=0.0):
+    """The way a piece slides in her LEFT fist for a clip's "grip_slide_l" (animation 55): the plain mount's shaft in
+    hand_l's space (the mount is not mirrored: Arms.MountTransform leans it the same, so it runs along the same line as the
+    right's BladeDirR). Only the axe pair has one; None for any other weapon. With a "grip_tilt_l" (degrees, animation
+    58) the piece is seated on the left tilt's pocket (left_pocket) and turned there: its line turned `tilt` about
+    tilt_axis_l."""
+    if (weapon or "").split("+")[0] != "axes":
+        return None
+    if tilt:
+        return _axis_matrix(tilt_axis_l(), tilt) @ left_pocket(weapon)[1]
+    return _socket_vec("BladeDirR") / np.linalg.norm(_socket_vec("BladeDirR"))
+
+
+# The LEFT fist's grip tilt (a clip's "grip_tilt_l", degrees, animation 58): the piece in her left fist turned about the
+# palm's normal through the left pocket, the right's tilt's mirror image (the same + turns the head away from her
+# fingers). The pocket is the fitted left one where there is one (WeaponSockets.PocketL: the dagger's), else the right's
+# mirrored (WeaponSockets.TiltPocketL): the second axe, which otherwise rides the plain mount (its grip on the mount's
+# origin, PLAIN_AT, 2.5 cm off the BACK of her hand: hand_l +X is her left palm's side and the mount is not mirrored,
+# 6.8 cm from the mirrored pocket), is seated on it for the tilt, and her left fist closes on it in the right's tilted fist
+# laid mirrored (wrap_of). The game eases the seat over as the tilt eases in (PersonView.Slide). The turn's axis: hand_r
+# +X through the mirror, reversed (a mirror reverses a turn's sense: M R(a, t) M^T = R(-M a, t)), WeaponSockets.TiltAxisL.
+PLAIN_AT = np.array([-0.025, 0.075, 0.0])   # Arms.MountTransform's hand origin; the anchored axe's grip sits on it
+_mirror = []
+
+
+def mirror_rl():
+    """hand_r's space to hand_l's (WeaponSockets.MirrorRL rows, a reflection): a right point or line laid in the left."""
+    if not _mirror:
+        import re
+        from rig import REPO
+        src = (REPO / "godot" / "logic" / "Play" / "WeaponSockets.cs").read_text(encoding="utf-8")
+        m = re.search(r"MirrorRL\s*=\s*\{([^}]*)\}", src)
+        _mirror.append(np.array([[float(v.strip().rstrip("f")) for v in r.split(",")]
+                                 for r in re.findall(r"new\(([^)]*)\)", m.group(1))]))
+    return _mirror[0]
+
+
+def tilt_axis_l():
+    """The left tilt's axis in hand_l space (WeaponSockets.TiltAxisL)."""
+    a = -mirror_rl() @ np.array([1.0, 0, 0])
+    return a / np.linalg.norm(a)
+
+
+def left_pocket(weapon):
+    """(At, Dir) of the left tilt's pocket in hand_l space (WeaponSockets.TiltPocketL): the fitted left pocket for the
+    daggers (DaggerLeftAt / DaggerLeftDir through the mirror), else the right's (slide_at, slide_dir) mirrored. None for a
+    weapon without a pocket."""
+    main = (weapon or "").split("+")[0]
+    M = mirror_rl()
+    if main == "daggers":
+        at, d = _socket_vec("DaggerLeftAt"), _socket_vec("DaggerLeftDir")
+    else:
+        at, d = slide_at(weapon), slide_dir(weapon)
+        if at is None:
+            return None
+    d = M @ d
+    return M @ at, d / np.linalg.norm(d)
+
+
+def grip_pose_left(weapon, slide=0.0, tilt=0.0):
+    """(R 3x3, t 3): the piece in her LEFT fist (its points in hand_l space as the game seats it at rest: arms_local's
+    @hand_l) moved as a clip's left grip moves it (PersonView.Slide): with a "grip_tilt_l" seated on the left pocket (a
+    piece on the plain mount moved there as Arms.SeatOn does: its grip PLAIN_AT onto the pocket, the least turn of its
+    line onto the pocket's), turned `tilt` about tilt_axis_l through the pocket, slid `slide` along the turned line;
+    without, slid along the plain mount's line (slide_dir_left). V' = V @ R.T + t."""
+    if not tilt:
+        d = slide_dir_left(weapon)
+        return np.eye(3), (slide * d if (slide and d is not None) else np.zeros(3))
+    at, d = left_pocket(weapon)
+    if (weapon or "").split("+")[0] == "daggers":
+        R0, t0 = np.eye(3), np.zeros(3)
+    else:
+        d0 = _socket_vec("BladeDirR") / np.linalg.norm(_socket_vec("BladeDirR"))   # the plain mount's line
+        ax = np.cross(d0, d)
+        sn, cs = np.linalg.norm(ax), float(d0 @ d)
+        R0 = np.eye(3) if sn < 1e-9 else _axis_matrix(ax / sn, np.degrees(np.arctan2(sn, cs)))
+        t0 = at - R0 @ PLAIN_AT
+    Rt = _axis_matrix(tilt_axis_l(), tilt)
+    return Rt @ R0, Rt @ (t0 - at) + at + slide * (Rt @ d)
 
 
 def slide_at(weapon):
@@ -1685,11 +1805,12 @@ def _one_frame(rig: Rig, keys, base=None):
 GRIP = {"sword": 35.0, "axe": 43.95, "daggers": 30.0, "wand": 35.0, "staff": 18.0}
 
 
-def grip_of(weapon, tilt=0.0):
+def grip_of(weapon, tilt=0.0, tilt_l=0.0):
     """Each fist's lean for a clip that holds `weapon` (its meta's "weapon":
     "sword+shield", "axe", "axes", "daggers", "wand", "staff", "crossbow"). `tilt`: the clip's "grip_tilt" (degrees,
     animation 48): the piece turned that far in her right fist away from her fingers, so the right hand leans that much
-    less to aim it where the keys say."""
+    less to aim it where the keys say. `tilt_l` (the clip's "grip_tilt_l", animation 58): the same for her left fist (the
+    lean's turn about hand +X is already the mirror image on the left: Rig.solve)."""
     if not weapon:
         return {}
     main = weapon.split("+")[0]
@@ -1701,10 +1822,13 @@ def grip_of(weapon, tilt=0.0):
         out = {"r": GRIP[main]} if main in GRIP else {}
     if tilt and "r" in out:
         out["r"] = out["r"] - tilt
+    if tilt_l and "l" in out:
+        out["l"] = out["l"] - tilt_l
     return out
 
 
-def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, slide=0.0, tilt=0.0):
+def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, slide=0.0, tilt=0.0, slide_l=0.0,
+                 tilt_l=0.0):
     """_solve_frames, with the clip's grip slide (`slide`, metres; its meta's "grip_slide"; animation 47): the piece in
     her right fist sits `slide` further along its shaft toward the tip (the game moves it so, PersonView.Slide), so
     every frame whose hand_r is aimed by a "blade" has its wrist moved back down the shaft by as much (a "shift" in
@@ -1716,22 +1840,28 @@ def solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", 
     piece tips with it. 0 solves as before (bit-identical).
     `tilt` (degrees; the meta's "grip_tilt", animation 48): the piece turned in her right fist about the palm's normal
     (grip_of leans the hand that much less, wrap_of closes it in the fist fitted for the tilt, the slide runs along the
-    turned shaft). 0: as before."""
+    turned shaft). 0: as before.
+    `slide_l` (metres; the meta's "grip_slide_l", animation 55): the same for the piece in her LEFT fist (the second axe
+    of a pair), which has no fitted pocket, so no tilt: it sits on the plain mount, whose shaft runs along BladeDirR in
+    hand_l's space unmirrored (Arms.MountTransform), and the slide goes along it.
+    `tilt_l` (degrees; the meta's "grip_tilt_l", animation 58): the piece in her LEFT fist seated on the left pocket and
+    turned there, the right's tilt's mirror image (grip_of, wrap_of, slide_dir_left, grip_pose_left). 0: as before."""
     d = slide_dir(weapon, tilt) if slide else None
-    if d is None:
-        return _solve_frames(rig, poses, bases, loop, sigma, weapon, pin_first, pin_path, tilt)
-    aimed = [isinstance(p.get("hand_r"), dict) and "blade" in p["hand_r"] for p in poses]
-    ha = rig.I["hand_r"]
+    dl = slide_dir_left(weapon, tilt_l) if slide_l else None
+    if d is None and dl is None:
+        return _solve_frames(rig, poses, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
+    sides = [(s, dd, sl) for s, dd, sl in (("hand_r", d, slide), ("hand_l", dl, slide_l)) if dd is not None]
+    aimed = [{h: isinstance(p.get(h), dict) and "blade" in p[h] for h, _d, _s in sides} for p in poses]
     shifted = poses
     for _ in range(3):
-        rot, pos = _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt)
+        rot, pos = _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
         g, _p = rig.sk.fk(rot, pos)
-        shifted = [dict(p, hand_r=dict(p["hand_r"], shift=tuple(-slide * qrot(g[fr, ha], d)))) if aimed[fr] else p
+        shifted = [dict(p, **{h: dict(p[h], shift=tuple(-sl * qrot(g[fr, rig.I[h]], dd))) for h, dd, sl in sides if aimed[fr][h]})
                    for fr, p in enumerate(poses)]
-    return _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt)
+    return _solve_frames(rig, shifted, bases, loop, sigma, weapon, pin_first, pin_path, tilt, tilt_l)
 
 
-def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, tilt=0.0):
+def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="", pin_first=0, pin_path=None, tilt=0.0, tilt_l=0.0):
     """Every frame's pose solved, where each elbow goes settled over the
     whole clip first: solved frame by frame (the pole's way, swung round
     where a keyed wrist needs it), then smoothed in time, so an elbow eases
@@ -1744,8 +1874,8 @@ def _solve_frames(rig: Rig, poses, bases=None, loop=False, sigma=2.0, weapon="",
     may be a dict {side: frames} to ease only those sides; `pin_path`
     {side: n} lays that side's frames 1..n-1 on one path from frame 0's
     elbow to frame n's smoothed one, ignoring the frames between."""
-    rig.grip = grip_of(weapon, tilt) if rig.grips else {}
-    rig.wrap = wrap_of(weapon, tilt) if rig.grips else {}
+    rig.grip = grip_of(weapon, tilt, tilt_l) if rig.grips else {}
+    rig.wrap = wrap_of(weapon, tilt, tilt_l) if rig.grips else {}
     n = len(poses)
     J = len(rig.sk)
     rot = np.empty((n, J, 4))
@@ -1857,7 +1987,8 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
     fist by as much (OwnClips.GripSlide, PersonView.Slide). Absent or 0: as before.
     A "grip_tilt" (degrees; animation 48) turns the piece in her right fist about the palm's normal (solve_frames;
     OwnClips.GripTilt). The measuring tools (armscheck.py, held checks) move the piece by both (grip_pose)."""
-    rig.grip = grip_of((meta or {}).get("weapon"), float((meta or {}).get("grip_tilt", 0.0))) if rig.grips else {}
+    rig.grip = grip_of((meta or {}).get("weapon"), float((meta or {}).get("grip_tilt", 0.0)),
+                       float((meta or {}).get("grip_tilt_l", 0.0))) if rig.grips else {}
     keys = _one_frame(rig, keys, base)
     track = Track(keys)
     frames = track.frames
@@ -1868,7 +1999,8 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
     rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path,
-                            slide=float((meta or {}).get("grip_slide", 0.0)), tilt=float((meta or {}).get("grip_tilt", 0.0)))
+                            slide=float((meta or {}).get("grip_slide", 0.0)), tilt=float((meta or {}).get("grip_tilt", 0.0)),
+                            slide_l=float((meta or {}).get("grip_slide_l", 0.0)), tilt_l=float((meta or {}).get("grip_tilt_l", 0.0)))
     m ={"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)

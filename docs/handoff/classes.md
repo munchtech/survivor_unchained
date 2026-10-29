@@ -1,3 +1,25 @@
+# Classes 15 starts here: Phase 1 P5b-P8 (P1-P5a are MERGED, integration 2fb912c2, 28 Oct)
+
+Start a fresh worktree from integration (classes-13 is removed after the merge). Read CLASS_IDENTITY_AND_TALENTS.md §2.2, §3.3, §3.7, §6.2 (the Phase 1 row) first. The owner approved all 10 recommendations.
+
+## Merged (Classes 13-14; numbers in the commits)
+- P1 skills to data; P2 access + Act 1 days at 2/3/4 slots (levels 1/4/8); P3 six day slots + map retune (`MapRun.PackPerSlot 0.9`, `BossPerSlot 0.4`); P4 the four Hands (4184f71c); P5a Wicks and the 7 Turns in x0.90-1.15 (a8adb973; tier-1 Split/Wide/Linger 1.18-1.23 and Wide on the reaver 1.15 closed as known).
+- Story bosses: hollow 113, roost 116 (37db3ebe), dig 131, vault 147. Act 1 gate (seeds 1-96 vs integration c2cf3a4b): never +0.6%, pressing +0.6%, cells -3.2 to +3.7%, falls lower. Tests 1259/0/10.
+- Routed by main: the Act 1 DAYS playtest (not simulated; +1 slot and the Hands) is Experience's, in RESUME.
+
+## Next, in order (Phase 1's remaining items; P7/P8 are this handoff's split of the §6.2 row)
+1. **P5b:** Pulse and On-kill Turns at runtime, union lead-ins; full board + wicks at night within x1.25 of an empty board.
+2. **P6:** the warden's 4 planned skills (Sunder, Groundbreaker, Rebuke, Watch Bell; lamp effects already in data) with wicks. Send the VFX list to main (skills VFX lead).
+3. **P7:** wicks on the valley skills she starts with; the type pick at creation.
+4. **P8:** the plain functional board and wick screen behind a flag (looks are UI's, later); the harness taught it; the Act 1 check, then MR.
+
+## Measuring
+- Harness: `dotnet build -c Release -o <scratch>/bal balance/Balance.csproj` from godot. `story --fight all --callings all --seeds 96 --policies greedy,random --bot plain,deft --par 20 [--flareuse 0] [--storyhp roost=116]`, then `python tools/classes/act1_match.py REF X --cells` (about 20 + 19 min). Rule: overall within ±3% of integration, no fight x pilot cell past ±6%; confirm a cell near the edge on fresh seeds (`--seeds 192 --seed0 97`) before tuning it.
+- An integration reference: build the integration tree's harness, run it with cwd at a folder holding `git archive <int> godot/data` extracted as `data/` (DataFiles searches the DLL's folder, then cwd).
+- Hand measure: `tools/scratch/classes/hand_measure.sh` + `hand_ratio.py`; Turn measure: `turn_measure.sh` + `turn_ratio.py`. Map: `map --tiers 1,2,3,4 --seeds 8 --par 20` (`--maphp P,B` overrides).
+- Last session's scripts and logs: `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_classes14_29e4fcb8` (story.sh, roost.sh, roost2.sh, fin2.out).
+- Gotchas: harness runs need NO turn. Never launch with a trailing `&` (use run_in_background). Don't edit data JSON while a batch runs; the harness reads it at run time.
+
 # Handoff: classes (session 17: wave 6a passes Act 1 and its judge; merge requested)
 
 Written by the sixteenth classes lead (13 October), wound down at the coordinator's request. Branch `classes-11` (worktree `agent-af76b344999b70629`). Last commit: the last line of git log.

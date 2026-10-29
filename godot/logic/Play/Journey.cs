@@ -157,6 +157,8 @@ public sealed partial class Journey
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
             ArtRank = kit.ArtRank, Facets = kit.Facets,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
+            // Each skill's wick, as planned by day (Light my way where she planned none).
+            Wicks = combat ? WickBook.Paths(Ch) : null,
             // Story fights are short: the Flare starts at half (CLASSES.md §3.2). Nights and maps (arena runs) start at a fifth.
             FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : combat && arena ? Battle.FlareStartNight : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
@@ -487,6 +489,7 @@ public sealed partial class Journey
         {
             var wd = Content.Weapons.All[skill];
             if (SkillBook.Knows(Ch, skill)) { Warn($"You already know {wd.Name}"); return; }
+            if (!SkillBook.Carries(Ch, skill)) { Warn($"{wd.Name} is not a {Callings.Archetype(Ch.Archetype).Name}'s to carry"); return; }
             if (!SkillBook.Learn(Ch, skill)) { Warn($"The words mean nothing yet: {wd.Name} has to be seen burning in an arena first"); return; }
             OnAnnounce(new Announcement(wd.Name, SkillBook.Meets(Ch, skill) ? "Learned for the day. Carry it from your skills (K)" : $"Learned, but it asks {SkillBook.Need} {SkillBook.Attribute(skill)} of you", "boon", 3.6, "A new skill"));
         }

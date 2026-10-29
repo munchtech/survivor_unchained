@@ -34,12 +34,24 @@ public sealed record Aim
     /// <summary>With Open: points that must be on the screen and in the open too (the Knight's head and
     /// chest, so the one the line names can be read; none: it waits).</summary>
     public Func<IReadOnlyList<(double X, double Y, double Z)>>? Seen { get; init; }
+    /// <summary>With Safe: things ringed beside the point, with no arrow of their own (the Knight himself,
+    /// while the arrow lands on his lane where she stands). Those on the screen are ringed; while there are
+    /// any, the point itself is left bare (the arrow lands on it, no ring). None: the point is ringed.</summary>
+    public Func<IReadOnlyList<(double X, double Y, double Z)>>? Ring { get; init; }
+    /// <summary>How big a Ring thing is ringed, in metres from its middle.</summary>
+    public double RingRadius { get; init; } = 0.9;
     /// <summary>Each of the world's points is ringed only where it stands well inside the screen (clear
     /// of its edges and the HUD); the rest get an arrowhead on the screen's edge. It waits until one does.
     /// (The three lamps never stand on one screen at the play camera: 1,300 px apart.)</summary>
     public bool Each { get; init; }
     /// <summary>How big a thing in the world is ringed, in metres from its middle (about a man's half-width).</summary>
     public double Radius { get; init; } = 0.55;
+    /// <summary>Its marks in cold blue, not ember (things that glow cold: the Warden's lamps).</summary>
+    public bool Cold { get; init; }
+    /// <summary>Where its words would rather stand, as fractions of the screen (none: toward the middle).</summary>
+    public (double X, double Y)? WordsNear { get; init; }
+    /// <summary>The words keep off the big figures on the screen (a boss, an elite).</summary>
+    public bool ShunBig { get; init; }
 
     public static Aim At(string hud) => new() { Hud = hud };
     public static Aim In(Func<IReadOnlyList<(double X, double Y, double Z)>> world) => new() { World = world };
@@ -57,9 +69,21 @@ public sealed record Callout(string Id, CalloutKind Kind, string Title, string L
     public double Gap { get; init; } = Teacher.Gap;
     /// <summary>It does not wait for a hint (held under it): F2 follows F1 before the ember can rise.</summary>
     public bool OverHint { get; init; }
+    /// <summary>The line's word marked in ember (none: the title's).</summary>
+    public string? Mark { get; init; }
+    /// <summary>The marked word's colour as hex (none: ember amber); a danger word is scarlet.</summary>
+    public string? MarkInk { get; init; }
     /// <summary>A freeze on a passing thing in the world (a red line, an ember stone, an enemy): it does
     /// not wait for a hint or an interact prompt, which are held under it and come back after.</summary>
-    public bool Transient => Kind == CalloutKind.Freeze && Target.World != null;
+    public bool Urgent { get; init; }
+    /// <summary>A lesson that keeps its distance (au1 item 14): it comes only once this many game seconds
+    /// have passed with nothing else on the screen (another callout, a narrated line, a tip, a banner, a
+    /// cinematic, a panel). 0: it waits only for a clear screen.</summary>
+    public double Quiet { get; init; }
+    /// <summary>Whether its moment still holds, asked while it waits (none: as long as it is asked). False: it
+    /// is let go unseen ("passed"), as one whose target is gone (the tally's calm ends when the ditch rises).</summary>
+    public Func<bool>? Still { get; init; }
+    public bool Transient => Kind == CalloutKind.Freeze && (Target.World != null || Urgent);
 }
 
 /// <summary>Where a callout's target is now: on screen, not yet (a draft without the card), or gone.</summary>
@@ -164,7 +188,18 @@ public sealed class Teacher
 
     /// <summary>What of the screen's business holds back a callout that isn't a panel (a transient
     /// freeze goes over a hint).</summary>
-    static Busy Blocking(Callout c, Busy busy) => c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
+    static Busy Blocking(Callout c, Busy busy)
+    {
+        // (one that teaches the interact prompt points at it: the prompt is its target, never in its way)
+        // (nor one on the corner map: the prompt stands by the one in reach, far from it)
+        if (c.Target.Hud is "prompt" or "minimap") busy &= ~Busy.Prompt;
+        return c.Transient ? busy & ~(Busy.Hint | Busy.Prompt) : c.OverHint ? busy & ~Busy.Hint : busy;
+    }
+
+    /// <summary>What counts as something else on the screen, for a lesson's quiet (Callout.Quiet).</summary>
+    const Busy Loud = Busy.Cinematic | Busy.Transit | Busy.Fall | Busy.Overlay | Busy.Draft | Busy.Banner | Busy.Say | Busy.Hint;
+    /// <summary>When something else was last on the screen (game seconds).</summary>
+    double loudAt = double.NegativeInfinity;
 
     static readonly (Busy B, string Name)[] Names =
     [
@@ -187,6 +222,7 @@ public sealed class Teacher
             var block = Blocking(c, busy);
             foreach (var (b, n) in Names) if ((block & b) != 0) why.Add(n);
             if (now - pauseEnd < c.Gap) why.Add("gap");
+            if (c.Quiet > 0 && now - loudAt < c.Quiet) why.Add("quiet");
         }
         if (c.After is string a && !memory.Seen(a) && !Lapsed(a, now)) why.Add("prereq");
         if (p == Presence.NotYet) why.Add("notyet");
@@ -201,6 +237,8 @@ public sealed class Teacher
         lastNow = now;
         // A draft is a pause: the gap runs from its end.
         if ((busy & Busy.Draft) != 0) pauseEnd = now;
+        // (a lesson's quiet runs from the end of whatever else was up, a callout included)
+        if ((busy & Loud) != 0 || Current != null) loudAt = now;
         if (Current is { } cur)
         {
             switch (cur.Kind)
@@ -226,13 +264,13 @@ public sealed class Teacher
             var e = queue[i];
             var c = e.C;
             if (memory.Seen(c.Id)) { queue.RemoveAt(i--); continue; }
-            var p = where(c);
+            var p = c.Still?.Invoke() == false ? Presence.Gone : where(c);
             if (p == Presence.Gone || now - e.At > c.Patience)
             {
                 queue.RemoveAt(i--);
                 dropped[c.Id] = now;
                 LogWaited = string.Join(",", e.Waited);
-                Log?.Invoke("dropped", c, p == Presence.Gone ? "gone" : "waited");
+                Log?.Invoke("dropped", c, p == Presence.Gone ? (c.Still?.Invoke() == false ? "passed" : "gone") : "waited");
                 continue;
             }
             var why = Why(c, now, busy, p);

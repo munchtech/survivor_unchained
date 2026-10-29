@@ -208,7 +208,7 @@ public static class Arms
     {
         var att = new BoneAttachment3D { BoneName = bone };
         person.Skeleton.AddChild(att);
-        var mount = new Node3D { Name = $"mount:{bone}" };
+        var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
         mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
@@ -250,6 +250,17 @@ public static class Arms
         return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(at.X, at.Y, at.Z)) * t;
     }
 
+    /// <summary>A piece's place inside its mount seated on an explicit pocket (`at`, `dir` in its hand's space): Seat's fist
+    /// seat, for a pocket the piece is only moved onto for a while (animation 58: a left grip tilt's mirrored pocket,
+    /// WeaponSockets.TiltPocketL, PersonView.Slide).</summary>
+    public static Transform3D SeatOn(string id, string bone, bool own, System.Numerics.Vector3 at, System.Numerics.Vector3 dir)
+    {
+        static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+        var m = MountTransform(id, bone, own);
+        var (q, a) = WeaponSockets.FistSeat(N(m.Basis.X), N(m.Basis.Y), N(m.Basis.Z), N(m.Origin), at, dir);
+        return new Transform3D(new Basis(new Quaternion(q.X, q.Y, q.Z, q.W)), new Vector3(a.X, a.Y, a.Z)) * PieceTransform(id);
+    }
+
     /// <summary>Where the mount sits in its bone's space (Hold's, and
     /// tools_scenes/ArmsDump.cs's, so the two cannot drift). `own`: her
     /// or the hero, who hold the diagonal grip their clips are keyed to.</summary>
@@ -284,7 +295,11 @@ public static class Arms
     /// way; MirrorEdge: the edge is mirrored instead (Thick flipped), so a pair (gyre's axes) rides as true mirror images
     /// (the piece symmetric through its flat, it looks the same).
     /// Sheathed() turns the row into the bone's space.</summary>
-    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false);
+    /// Hang (Body 16): a piece hung from her belt (a scabbard, an axe in its loop) is turned about this belt point (skeleton
+    /// space at rest, mirrored as At is) as a hung weight (View/SheathSway, Play/SheathHang) instead of riding the bone
+    /// rigidly; null: it rides rigidly (strapped across her back, tucked in the belt).
+    /// Frog (Body 17): a hafted piece hangs in a leather frog (Made.Frog, MakeSheathed).
+    sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false, Vector3? Hang = null, bool Frog = false);
 
     static readonly Dictionary<string, Socket> Sockets = new()
     {
@@ -294,14 +309,30 @@ public static class Arms
         [WeaponSockets.Back] = new("spine_03", new(0.002f, 1.219f, -0.204f), new(0.006f, 1, -0.001f), new(-0.001f, -0.001f, -1), new(0, 0, -1)),
         // One-handed blade: left hip, in the scabbard (MakeSheathed), hilt forward and up, blade down and back about
         // 30 degrees off vertical, flat to her side (thickness out).
-        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true),
+        // Hung from its sheath point (Body 16) in walk and idle; RIGID, riding the pelvis, in the clips where her hand
+        // holds the hilt (Body 17, 27 Oct: run_warden_town and sprint_warden_town, SheathHang.HiltHeld), where hung
+        // it swung into that hand (10.0 / 11.6 mm; tools/scratch/body16/hang.py), eased over 0.2 s at the cuts.
+        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true,
+            Hang: new(0.21f, 1.20f, 0.10f)),
         // Blunt and axe: the hip loop behind her right hip (left hand: mirrored, MirrorEdge, so gyre's two ride as mirror
         // images), at about 5 o'clock (12 her front): the head on the belt (the haft's top 1.06 m up, 22 cm out from her
         // axis), the haft down along the back of her thigh, its foot leaning 20 deg out and 10 deg to her side so the thigh
         // clears it as it swings back in the run, the blade straight back. `At` is the axe's sheath point near the haft's
         // foot. (Animation 44, solver idle 2, 20 October: her hands had rested on the heads at her side; now the nearest
         // hand is 20 cm off a head in the town idle and 39 cm in the run and sprint, 0 mm into her: socktry.py.)
-        [WeaponSockets.HipLoop] = new("pelvis", new(-0.289f, 0.542f, -0.305f), new(0.319f, 0.925f, 0.205f), new(0.945f, -0.326f, 0), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true),
+        // Hung from the head on the belt (the haft's top, 1.06 m up and 22 cm out; Body 16).
+        // (Body 17, 27 October: the judge read the haft "propped out" 20-25 deg from plumb front and back: now 11 deg out
+        // and 14 back at rest, 9-13 out in the walk (was 17-21), the head 4.5 cm farther out and 6 cm farther back so her
+        // right forearm (walk) and kicked-back foot (sprint) still clear it: 0 mm into her skin and outfit in every reaver
+        // town clip, both hands (the walk's forearm 9 mm off the head, the sprint's boot 7 mm off the foot), the nearest
+        // hand 80 mm (tools/scratch/body17/axe/row.py). The head now hangs off her belt in a leather frog (Made.Frog).)
+        // (Body 17, 27 October, judge: in the side walk the head hung 8-10 cm behind her buttock, unattached: the top now
+        // 3 cm higher, 5.5 cm in and 6 cm forward, leaning 12.5 deg out and 30 back at rest, so in the walk the poll rides
+        // 3-9 mm off her outfit (8.8 cm before), 0 mm into her skin and outfit in every reaver town clip, both hands (the
+        // walk's forearm 1.2 mm off the head, the sprint's calf 0.6 mm off the foot); walk splay 10-15 deg (the sprint's
+        // heel wants the foot that far out). The frog's strap on the head's outer face: tools/scratch/body17/axe/row2.py.)
+        [WeaponSockets.HipLoop] = new("pelvis", new(-0.206f, 0.614f, -0.465f), new(0.189f, 0.850f, 0.491f), new(0.971f, -0.236f, 0.035f), new(-0.5f, 0, -0.866f), Mirrors: true, MirrorEdge: true,
+            Hang: new(-0.10f, 1.09f, -0.19f), Frog: true),
         // Wand: tucked in the belt behind her right hip at about 5 o'clock, the grip at the leotard's hip line (1.08 m),
         // the crystal down and back about 30 deg (animation 44, solver idle 2: crystal up, it stood beside her breast and
         // her forearm passed through it in the run).
@@ -343,13 +374,17 @@ public static class Arms
 
     static Facts Info(string id)
     {
-        if (!facts.TryGetValue(id, out var m))
+        // (locked: her cinematic double is made on a worker thread, Game.DoubleAhead)
+        lock (facts)
         {
-            var w = Make(id);
-            facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
-            w.Free();
+            if (!facts.TryGetValue(id, out var m))
+            {
+                var w = Make(id);
+                facts[id] = m = new Facts((int)w.GetMeta("kind"), (Vector3)w.GetMeta("sheath"), (float)w.GetMeta("tip"));
+                w.Free();
+            }
+            return m;
         }
-        return m;
     }
 
     /// <summary>The bones' rest poses in skeleton space (heroine, tools/anim/data/heroine_skeleton.json): the
@@ -378,6 +413,18 @@ public static class Arms
         return (k.Bone, RestOf(k.Bone).AffineInverse() * new Transform3D(basis, at));
     }
 
+    /// <summary>The belt point a hung piece turns about, in the socket bone's space (pushed out by the outfit as the
+    /// mount is), or null if it rides rigidly or has no socket.</summary>
+    public static Vector3? HangPoint(string id, bool left = false, string? outfit = null)
+    {
+        if (WeaponSockets.SocketOf(KindOf(id)) is not { } name || Sockets[name].Hang is not { } p) return null;
+        var k = Sockets[name];
+        var normal = k.Normal;
+        if (left && k.Mirrors) { p.X = -p.X; normal.X = -normal.X; }
+        if (outfit != null) p += normal * Clearance.Metres(outfit, name);
+        return RestOf(k.Bone).AffineInverse() * p;
+    }
+
     /// <summary>The socket a piece rides in and the way out of her body there, in the socket bone's space (what
     /// tools_scenes/ArmsDump.cs writes for armscheck.py --sockets), or null if it stays in her hand.</summary>
     public static (string Socket, Vector3 Normal)? SocketFacing(string id, bool left = false)
@@ -403,14 +450,16 @@ public static class Arms
         var mount = new Node3D { Name = $"sheathed:{bone}" };
         att.AddChild(mount);
         mount.Transform = at;
-        mount.AddChild(MakeSheathed(id));
+        mount.AddChild(MakeSheathed(id, left));
+        if (HangPoint(id, left, calling ?? "") is { } pivot)
+            SheathSway.Attach(skeleton, mount, bone, pivot, hilt: WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade);
         return mount;
     }
 
     /// <summary>A piece as it rides sheathed, in its mount's space, its sheath point (anchor_sheath, else the grip) at
     /// the origin: the weapon, and for a one-handed blade its scabbard from the guard round the blade to a thumb past
     /// its tip (WeaponSockets.BladeLength; also what ArmsDump writes).</summary>
-    public static Node3D MakeSheathed(string id)
+    public static Node3D MakeSheathed(string id, bool left = false)
     {
         var root = new Node3D { Name = "sheathed" };
         var info = Info(id);
@@ -425,11 +474,92 @@ public static class Arms
             sc.Position = new Vector3(0, info.Sheath.Y + guard, 0);
             root.AddChild(sc);
         }
+        if (WeaponSockets.SocketOf(KindOf(id)) is { } sock && Sockets[sock].Frog && Sheathed(id, left) is { } mount && SocketFacing(id, left) is { } face)
+        {
+            // Toward her belt in the piece's space: the way into her body there, across the haft.
+            var inward = mount.At.Basis.Inverse() * -face.Normal;
+            inward = new Vector3(inward.X, 0, inward.Z).Normalized();
+            var (top, half, poll, cheek) = HaftOf(id, w, inward);
+            var frog = Made.Frog(half.X, half.Y, inward, poll, cheek);
+            frog.Position = top;
+            root.AddChild(frog);
+        }
         var off = PieceTransform(id) * info.Sheath - PieceTransform(id).Origin;
         if (off != Vector3.Zero)
             foreach (var c in root.GetChildren())
                 if (c is Node3D n) n.Position -= off;
         return root;
+    }
+
+    static readonly Dictionary<(string, bool), (Vector3, Vector2, float, float)> hafts = new();
+
+    /// <summary>Where a hafted piece's head begins, in its sheathed root's space (Body 17, for the frog): the haft's axis at
+    /// the head's foot, the haft's half-widths across X and Z just under it, and how far the head stands off the axis over
+    /// its first 12 cm along X toward `inward` (unit, XZ; the poll, facing her) and along Z away from it (its outer cheek). Read from the piece's own surface (its vertices and points 1 cm
+    /// apart along its edges: a haft is often one long quad). The haft's axis and radius are read at the grip (the
+    /// piece's origin, +-4 cm, wider if the grip has no vertices there); going up, the head begins at the lowest point
+    /// standing off the axis by more than 1.5 haft radii + 5 mm but within 10 cm of it (a beard hanging lower and farther
+    /// out, as the viking axe's, is not the head's foot: the band sits beside it, under the eye). None (a plain club):
+    /// 12 cm under the top.</summary>
+    static (Vector3 Top, Vector2 Half, float Poll, float Cheek) HaftOf(string id, Node3D piece, Vector3 inward)
+    {
+        lock (hafts)
+        {
+            var key = (id, inward.Z > 0);
+            if (hafts.TryGetValue(key, out var hit)) return hit;
+            var q = new List<Vector3>();
+            void Walk(Node n, Transform3D at)
+            {
+                foreach (var c in n.GetChildren())
+                {
+                    var t = c is Node3D c3 ? at * c3.Transform : at;
+                    if (c is MeshInstance3D mi && mi.Mesh != null)
+                        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                        {
+                            var a = mi.Mesh.SurfaceGetArrays(s);
+                            var v = a[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                            foreach (var p in v) q.Add(t * p);
+                            if (a[(int)Mesh.ArrayType.Index].VariantType == Variant.Type.Nil) continue;
+                            var idx = a[(int)Mesh.ArrayType.Index].AsInt32Array();
+                            for (int i = 0; i + 2 < idx.Length; i += 3)
+                                for (int e = 0; e < 3; e++)
+                                {
+                                    Vector3 p0 = t * v[idx[i + e]], p1 = t * v[idx[i + (e + 1) % 3]];
+                                    int m = (int)(p0.DistanceTo(p1) / 0.01f);
+                                    for (int j = 1; j < m; j++) q.Add(p0.Lerp(p1, (float)j / m));
+                                }
+                        }
+                    Walk(c, t);
+                }
+            }
+            Walk(piece, piece.Transform);
+            var g = piece.Transform.Origin;
+            float tip = float.MinValue;
+            foreach (var p in q) tip = MathF.Max(tip, p.Y);
+            float x0 = 0, x1 = 0, z0 = 0, z1 = 0;
+            for (float win = 0.04f; win < 1f; win *= 2)
+            {
+                (x0, x1, z0, z1) = (float.MaxValue, float.MinValue, float.MaxValue, float.MinValue);
+                int n = 0;
+                foreach (var p in q)
+                    if (MathF.Abs(p.Y - g.Y) < win) { n++; x0 = MathF.Min(x0, p.X); x1 = MathF.Max(x1, p.X); z0 = MathF.Min(z0, p.Z); z1 = MathF.Max(z1, p.Z); }
+                if (n >= 8) break;
+            }
+            float cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, r = MathF.Max(x1 - x0, z1 - z0) / 2, rim = 1.5f * r + 0.005f;
+            float D(Vector3 p) => MathF.Sqrt((p.X - cx) * (p.X - cx) + (p.Z - cz) * (p.Z - cz));
+            float top = tip - 0.12f;
+            bool found = false;
+            foreach (var p in q)
+                if (p.Y > g.Y + 0.10f && D(p) > rim && D(p) < 0.10f && (!found || p.Y < top)) { top = p.Y; found = true; }
+            float u = 0, w = 0, poll = 0, cheek = 0, fx = inward.X < 0 ? -1 : 1, oz = inward.Z > 0 ? -1 : 1;
+            foreach (var p in q)
+            {
+                if (p.Y >= top - 0.06f && p.Y <= top - 0.003f && D(p) <= rim) { u = MathF.Max(u, MathF.Abs(p.X - cx)); w = MathF.Max(w, MathF.Abs(p.Z - cz)); }
+                if (p.Y >= top && p.Y <= top + 0.12f && D(p) < 0.12f) { poll = MathF.Max(poll, (p.X - cx) * fx); cheek = MathF.Max(cheek, (p.Z - cz) * oz); }
+            }
+            if (u == 0) (u, w) = (r, r);
+            return hafts[key] = (new Vector3(cx, top, cz), new Vector2(u, w), poll, cheek);
+        }
     }
 
     static readonly Dictionary<ArrayMesh, ArrayMesh> Uncharmed = new();

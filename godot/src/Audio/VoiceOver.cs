@@ -34,7 +34,7 @@ public partial class VoiceOver : Node
     public VoTake? Current { get; private set; }
     public string? CurrentId { get; private set; }
 
-    public VoiceOver() { Instance = this; Name = "VoiceOver"; }
+    public VoiceOver() { VoiceLines.Enabled = VoiceLines.FromArg(Args.Get("vo")); Instance = this; Name = "VoiceOver"; }
 
     public override void _Ready()
     {
@@ -125,7 +125,11 @@ public partial class VoiceOver : Node
 
     VoTake? Start(string id, VoTake? take, VoTake? name = null)
     {
-        if (take == null || Stream(take) is not { } s) return null;
+        if (take == null) return null;
+        // Voice-over off (the default; --vo on): the take is still returned so
+        // captions and beat lengths keep the clip's length, but nothing plays.
+        if (!VoiceLines.Enabled) return take;
+        if (Stream(take) is not { } s) return null;
         line.Stream = s;
         line.StreamPaused = false;
         nameAt = null;
@@ -211,6 +215,7 @@ public partial class VoiceOver : Node
         if (takes.Count == 0) return 0;
         var mine = takes.Where(t => who != null && (t.Id.StartsWith($"bark.{who}.") || t.Take.Voice == who || t.Take.Sex == who)).ToList();
         var (_, take) = (mine.Count > 0 ? mine : takes)[rng.Next(mine.Count > 0 ? mine.Count : takes.Count)];
+        if (!VoiceLines.Enabled) return take.Sec;
         if (Stream(take) is not { } s) return 0;
         barks.RemoveAll(b => !IsInstanceValid(b));
         // A crowd speaks one at a time.

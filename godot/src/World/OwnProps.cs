@@ -29,17 +29,28 @@ public static class OwnProps
 
     public sealed record Hide(Vector2 At, float R, float MaxH);
     public sealed record Place(string Preset, Vector2 At, float Rot, float Scale, float Y, Vector3? A, Vector3? B, float R, Hide? Hide, Vector2? Bare);
-    public sealed record Lamp(Color? Color, float Energy, float Range, float Att);
+    /// <summary>(Day: lf5p, its light's share when it is not night: the Low Ford lamps' pools showed in the dawn's daylight; 1 as before.)</summary>
+    public sealed record Lamp(Color? Color, float Energy, float Range, float Att, float Day = 1, float Spec = -1);
     public sealed record Nudge(Vector2 At, Vector2 By, float Turn);
     /// <summary>A KayKit piece's own stand-ins (one per copy, by the landmark's number: Preset is the one chosen),
     /// whether the made piece stays under them (Over), and their scale in the piece's frame (a tree of ours).</summary>
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
-        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null);
+        Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null,
+        List<Vector3>? Clear = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
     static readonly Dictionary<string, Vector2> axes = new();
+    /// <summary>(E8 r2) A preset's own LOD1 distance (props.json "lod_m": the gate's towers and gatehouse, so the play
+    /// camera, about 30 m off, sees their joints and bevels, not the decimated LOD1's smooth facets).</summary>
+    static readonly Dictionary<string, float> lods = new();
+    /// <summary>(E8 later) Presets that cast no shadow (props.json "no_shadow": the camp's ground dressing, what the
+    /// open gate shows beyond it).</summary>
+    static readonly HashSet<string> unshadowed = new();
+    /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
+    /// material on the faces their vertex alpha flags.</summary>
+    static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
     static OrmMaterial3D? mat;
 
     /// <summary>A zone's own-props data, or null if it has none.</summary>
@@ -75,7 +86,7 @@ public static class OwnProps
                 foreach (var l in ls.EnumerateObject())
                 {
                     float F(string n, float d) => l.Value.TryGetProperty(n, out var v) ? v.GetSingle() : d;
-                    lamps[l.Name] = new Lamp(l.Value.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
+                    lamps[l.Name] = new Lamp(l.Value.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0), F("day", 1), F("spec", -1));
                 }
             var nudges = new List<Nudge>();
             if (r.TryGetProperty("nudge", out var nu))
@@ -112,7 +123,10 @@ public static class OwnProps
                 float F(string n, float d) => ll.TryGetProperty(n, out var v) ? v.GetSingle() : d;
                 litLight = new Lamp(ll.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : null, F("energy", 1), F("range", 0), F("att", 0));
             }
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight);
+            // clear: [x, z, r] where the kit's small props (props/*) go (E9d: the web game's wares on the stalls our own stalls carry)
+            var clear = new List<Vector3>();
+            if (r.TryGetProperty("clear", out var cl)) foreach (var c in cl.EnumerateArray()) clear.Add(new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()));
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear);
         }
         zones[zone] = z;
         return z;
@@ -133,6 +147,14 @@ public static class OwnProps
         var n = e.Preset.StartsWith("flora:") ? Dressing.OwnTree(e.Preset[6..]) : Piece(e.Preset);
         if (n != null && e.Scale != 1f) n.Scale = Vector3.One * e.Scale;
         return n;
+    }
+
+    /// <summary>Whether a kit piece at a place is cleared away (props_own.json "clear": only the small props, props/*).</summary>
+    public static bool Cleared(Zone z, string id, Vector3 at)
+    {
+        if (z.Clear is not { Count: > 0 } cl || !id.StartsWith("props/")) return false;
+        foreach (var c in cl) if (new Vector2(at.X - c.X, at.Z - c.Y).Length() < c.Z) return true;
+        return false;
     }
 
     /// <summary>The preset standing in for a kit piece at a place, or null to keep the kit's.</summary>
@@ -168,6 +190,11 @@ public static class OwnProps
                     var lo = new Vector3(b[0].GetSingle(), b[1].GetSingle(), b[2].GetSingle());
                     boxes[p.Name] = new Aabb(lo, new Vector3(b[3].GetSingle(), b[4].GetSingle(), b[5].GetSingle()) - lo);
                     if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
+                    if (p.Value.TryGetProperty("lod_m", out var lm)) lods[p.Name] = lm.GetSingle();
+                    if (p.Value.TryGetProperty("no_shadow", out var ns) && ns.GetBoolean()) unshadowed.Add(p.Name);
+                    if (p.Value.TryGetProperty("runs", out var rn))
+                        runs[p.Name] = (rn.GetProperty("top").GetSingle(), rn.GetProperty("drop").GetSingle(), rn.GetProperty("len").GetSingle(),
+                            rn.GetProperty("k").GetSingle(), rn.GetProperty("ring").GetBoolean());
                 }
             }
         }
@@ -203,23 +230,162 @@ public static class OwnProps
         }
     }
 
+    static ShaderMaterial? veil;
+    static Color veilCol = new(0.37f, 0.33f, 0.41f);
+    /// <summary>(E8 later r2) The air sheet's colour: the sky's horizon (Atmosphere, on every change of light).</summary>
+    public static void SkyHaze(Color horizon) { veilCol = horizon; veil?.SetShaderParameter("haze_col", horizon); }
+    /// <summary>(E8 later r2) "haze_veil" (props_own.json "place"): a 6 x 6.5 m sheet of air facing +z, its foot on the
+    /// ground (shaders/haze_veil.gdshader; --haze-veil its share, 0.048), no shadow.</summary>
+    static Node3D Veil()
+    {
+        veil ??= new ShaderMaterial { ResourceName = "haze_veil", Shader = GD.Load<Shader>("res://shaders/haze_veil.gdshader") };
+        veil.SetShaderParameter("haze_col", veilCol);
+        veil.SetShaderParameter("amount", SurvivorUnchained.Args.Num("haze-veil", 0.048f));
+        var root = new Node3D { Name = "own_haze_veil" };
+        root.AddChild(new MeshInstance3D
+        {
+            Name = "haze_veil", Mesh = new QuadMesh { Size = new Vector2(6f, 6.5f) }, MaterialOverride = veil,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Position = new Vector3(0, 2.75f, 0),
+        });
+        return root;
+    }
+
+    static ShaderMaterial? runsMat;
+    /// <summary>(E8 later r2) The prop material plus grime runs and a damp foot per pixel (shaders/props_runs.gdshader).</summary>
+    static Material RunsMat
+    {
+        get
+        {
+            if (runsMat != null) return runsMat;
+            runsMat = new ShaderMaterial { ResourceName = "own_props_runs", Shader = GD.Load<Shader>("res://shaders/props_runs.gdshader") };
+            runsMat.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            runsMat.SetShaderParameter("normal_tex", GD.Load<Texture2D>($"{Dir}/props_normal.png"));
+            runsMat.SetShaderParameter("orm_tex", GD.Load<Texture2D>($"{Dir}/props_orm.png"));
+            runsMat.SetShaderParameter("normal_scale", SurvivorUnchained.Args.Num("props-normal", 1f));
+            runsMat.SetShaderParameter("moss_k", SurvivorUnchained.Args.Num("props-moss-foot", 1f));
+            return runsMat;
+        }
+    }
+
+    static ShaderMaterial? glow;
+    /// <summary>(E8 later) Lit panes: the vertex colour times --props-glow (2), unshaded (the zone's fog still on them).</summary>
+    static Material Glow
+    {
+        get
+        {
+            if (glow != null) return glow;
+            glow = new ShaderMaterial { ResourceName = "own_glow", Shader = new Shader { Code = "shader_type spatial; render_mode unshaded; uniform float energy = 2.0; void fragment() { ALBEDO = COLOR.rgb * energy; }" } };
+            glow.SetShaderParameter("energy", SurvivorUnchained.Args.Num("props-glow", 2f));
+            return glow;
+        }
+    }
+
+    static ShaderMaterial? far;
+    static bool farShown = true;
+    /// <summary>(E8 r2) Whether the far castle draws (Atmosphere.Set: only under a night sky).</summary>
+    public static void FarShown(bool on) { farShown = on; far?.SetShaderParameter("shown", on ? 1f : 0f); }
+    /// <summary>(E8) The far castle's (C01 s8a, 265 m off): the props atlas times the vertex colours, the zone's fog
+    /// off and its own haze in its place (Godot's fog at that range left a flat fog-coloured shape, its windows gone),
+    /// the lit windows (vertex alpha 0) glowing their own colour (shaders/far_castle.gdshader).</summary>
+    public static Material Far
+    {
+        get
+        {
+            if (far != null) return far;
+            far = new ShaderMaterial { ResourceName = "far_castle", Shader = GD.Load<Shader>("res://shaders/far_castle.gdshader") };
+            far.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{Dir}/props_albedo.jpg"));
+            far.SetShaderParameter("shown", farShown ? 1f : 0f);
+            return far;
+        }
+    }
+
+    static StandardMaterial3D? paper;
+    /// <summary>(E9d) The notices' sheet (tools/assets/env_notice_paper.py), times the vertex colours.</summary>
+    static Material Paper => paper ??= new StandardMaterial3D
+    {
+        ResourceName = "notice_paper", VertexColorUseAsAlbedo = true, Roughness = 0.95f,
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/notice_paper.png"), TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+    };
+
+    static StandardMaterial3D? water;
+    /// <summary>(E9d r3) A trough's water (env_props.py trough_water_mesh, UVs in metres): a grey-blue sky value, glossy, in
+    /// broad soft ripples (a smooth noise as its normal map, about 25 cm across); the canvas weave read as woven mesh.</summary>
+    static Material Water => water ??= new StandardMaterial3D
+    {
+        ResourceName = "trough_water", AlbedoColor = new Color("#485a68"), Roughness = 0.14f, MetallicSpecular = 0.45f,
+        NormalEnabled = true, NormalScale = 0.55f,
+        NormalTexture = new NoiseTexture2D
+        {
+            Width = 256, Height = 256, Seamless = true, AsNormalMap = true, BumpStrength = 3f,
+            Noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Simplex, Frequency = 0.012f, FractalOctaves = 2, Seed = 5 },
+        },
+        Uv1Scale = new Vector3(1.2f, 1.2f, 1f),
+        TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+    };
+
+    static StandardMaterial3D? cloth;
+    /// <summary>(E9d) The stalls' canvas (tools/assets/env_canvas_tile.py: a tiling linen weave, 0.5 m a tile), times the
+    /// vertex colours (the dye, stripes, fading and soiling env_props.py bakes).</summary>
+    static Material Cloth => cloth ??= new StandardMaterial3D
+    {
+        ResourceName = "stall_canvas", VertexColorUseAsAlbedo = true, Roughness = 0.93f,
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/canvas_tile.png"), NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{Dir}/canvas_tile_n.png"),
+        NormalScale = 0.6f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+        // (light through the canvas from above: its underside not black at the close camera)
+        BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
+    };
+
+    /// <summary>--props-skip a,b,...: presets left out (the kit's piece keeps its place), for bisecting.</summary>
+    static readonly HashSet<string> Skip = new((SurvivorUnchained.Args.Get("props-skip") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries));
+
     /// <summary>A preset's node (its LOD0 and LOD1 by distance, shadows on), or null if it was never built.</summary>
     public static Node3D? Piece(string preset)
     {
+        if (preset == "haze_veil") return Veil();
         var path = $"{Dir}/{preset}.glb";
-        if (!ResourceLoader.Exists(path)) return null;
+        if (!ResourceLoader.Exists(path) || Skip.Contains(preset)) return null;
         var root = GD.Load<PackedScene>(path).Instantiate<Node3D>();
         root.Name = "own_" + preset;
         bool hasLod = false;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false)) if (n.Name.ToString().EndsWith("_LOD1")) hasLod = true;
+        // (E9d) clutter under half a metre casts no shadow (the shadow-draw budget)
+        bool small = Box(preset) is Aabb bx && bx.Size.Y < 0.5f || unshadowed.Contains(preset);
+        float lodFrom = lods.TryGetValue(preset, out var lm) && !SurvivorUnchained.Args.Has("props-lod") ? lm : Lod1From;
+        // (E8) a preset with a shadow proxy (<preset>_shadow, a few boxes): the proxy alone casts its shadow
+        bool proxy = false;
+        foreach (var n in root.FindChildren("*_shadow", "MeshInstance3D", true, false)) proxy = true;
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D m || m.Mesh == null) continue;
+            if (m.Name.ToString().EndsWith("_shadow")) { m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly; continue; }
+            // (E8) the far castle: its own material (the atlas, its own haze, its lit windows), no shadow, no LOD
+            if (m.Name.ToString().EndsWith("_far"))
+            {
+                m.MaterialOverride = Far; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                GD.Print($"(E8) far {m.Name}: cast_shadow {m.CastShadow}, one draw ({m.Mesh.GetSurfaceCount()} surface)");
+                continue;
+            }
+            // (E9d) the notices: their own paper sheet (notice_paper.png), no shadow, no LOD (a few hundred triangles)
+            if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
+            // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
+            if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            // (E8 later) a near prop's lit panes (a window, a lantern's glass): their colour as it is, unshaded, in the fog
+            if (m.Name.ToString().EndsWith("_glow")) { m.MaterialOverride = Glow; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
+            if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             m.MaterialOverride = Material;
-            m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
+            if (!Plain && runs.TryGetValue(preset, out var rs) && !SurvivorUnchained.Args.Has("props-no-runs"))
+            {
+                m.MaterialOverride = RunsMat;
+                m.SetInstanceShaderParameter("run_top", rs.Top);
+                m.SetInstanceShaderParameter("run_drop", rs.Drop);
+                m.SetInstanceShaderParameter("run_len", rs.Len);
+                m.SetInstanceShaderParameter("run_k", rs.K);
+                m.SetInstanceShaderParameter("run_ring", rs.Ring ? 1f : 0f);
+            }
+            m.CastShadow = small || proxy ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On;
             if (!hasLod) continue;
-            if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = Lod1From;
-            else m.VisibilityRangeEnd = Lod1From;
+            if (m.Name.ToString().EndsWith("_LOD1")) m.VisibilityRangeBegin = lodFrom;
+            else m.VisibilityRangeEnd = lodFrom;
         }
         return root;
     }

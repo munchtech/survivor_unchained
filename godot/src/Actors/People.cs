@@ -18,7 +18,7 @@ public static class People
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
         Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
         IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null,
-        string? FaceShape = null, float? Freckles = null);
+        string? FaceShape = null, float? Freckles = null, Color? Highlight = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -89,10 +89,18 @@ public static class People
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         return new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
-            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape);
+            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape, Highlight: C(spec.HairHighlight));
     }
 
+    /// <summary>Held while a person is made (WalkerView makes townsfolk on a worker thread; the caches here are shared).</summary>
+    public static readonly object BuildLock = new();
+
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
+    {
+        lock (BuildLock) return BuildLocked(spec);
+    }
+
+    static Person BuildLocked(SurvivorUnchained.World.PersonSpec spec)
     {
         var look = LookOf(spec);
         var body = spec.Body;
@@ -129,7 +137,7 @@ public static class People
         if (her)
         {
             var hairStyle = HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0];
-            if (hairHider == null) HerHair(p, hairStyle, look.HairColor ?? HerHairColour);
+            if (hairHider == null) HerHair(p, hairStyle, look.HairColor ?? HerHairColour, look.Highlight);
             else { p.HairStyle = hairStyle; GD.Print($"her wear: hair hidden by {hairHider}"); }
             HerScalp(p, look.HairColor ?? HerHairColour);
             HerFaceKey(p, look.FaceShape);
@@ -225,7 +233,9 @@ public static class People
     /// <summary>The clip a person plays for one the game names: a survivor's
     /// own where they have it ("her/...", "him/..."), the library's otherwise. `sheathed`: her town stand and run
     /// (Play/Sheath.Names: the held kind's own, then the calling's, then the armed ones).</summary>
-    public static string Clip(Person p, string name, bool sheathed = false)
+    /// <summary>`kind`: the kind held, if not the person's own ("" for empty hands: creation's look, its pieces put
+    /// away, plays the calling's town stand, not the stand made around a hilt and a shield).</summary>
+    public static string Clip(Person p, string name, bool sheathed = false, string? kind = null)
     {
         // One of the kit's own asked for by name ("folk/m_rise_stiff": the Warden in a cinematic).
         if (name.StartsWith(FolkClips.Prefix) && p.Anim.HasAnimation(name)) return name;
@@ -239,7 +249,7 @@ public static class People
         }
         // (One of their own asked for by its own name.)
         if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
-        return own.For(p.Calling, p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
+        return own.For(p.Calling, kind ?? p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -360,10 +370,19 @@ public static class People
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        // Her clavicle lift as an arm rises above level (the hands kept), before the shapes and twists read the arm.
+        skel.AddChild(new HerShrug());
+        // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
+        skel.AddChild(new HerRaise());
+        // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
+        skel.AddChild(new HerScap());
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
         // Her twist and share bones, from the pose every layer above has made.
         skel.AddChild(new HerJoints());
+        // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
+        // bones (the delt is twist_02's child; shoulder_rig_post.py).
+        skel.AddChild(new HerShoulder());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -512,7 +531,7 @@ public static class People
                 // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
                 if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
                 else EyeColour(e, look.Eyes, look.EyeRing);
-                if (who != "hero") HerEyes(e, look.FaceShape);
+                if (who != "hero") HerEyes(e, look.FaceShape, look.Skin);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
@@ -613,7 +632,7 @@ public static class People
     /// <summary>One of her hairstyles on her head, dyed: its paint is grey,
     /// light to dark, and takes the colour as it is. The one she had is
     /// taken off first.</summary>
-    public static void HerHair(Person p, string style, Color colour)
+    public static void HerHair(Person p, string style, Color colour, Color? highlight = null)
     {
         foreach (var old in p.Hair) { p.Meshes.Remove(old); old.QueueFree(); }
         p.Hair.Clear();
@@ -634,7 +653,7 @@ public static class People
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                 {
-                    var hm = Hair(src, colour);
+                    var hm = Hair(src, colour, highlight, style);
                     // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
                     if (style == "pixie" && hm is ShaderMaterial sm)
                         foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
@@ -683,41 +702,89 @@ public static class People
     /// than a brown iris, they read as cataracts); the whites ivory, lit from below, the upper lid's shadow at
     /// its visible margin, a wet line on the lower lid. Per face (looks.json faces): the iris's size, the pupil,
     /// how light the whites stand, and where the lid covers the iris.</summary>
-    static void HerEyes(ShaderMaterial e, string? face)
+    /// <summary>Her pupils over each face's own (looks.json's "pupil"), face 38 r3.</summary>
+    public const float PupilOpen = 1.35f;
+
+    static void HerEyes(ShaderMaterial e, string? face, Color? skin = null)
     {
         var f = SurvivorUnchained.World.Lore.Her.Faces.FirstOrDefault(x => x.Id == (face is { Length: > 0 } ? face : "own"));
         e.SetShaderParameter("iris_r", f is { Iris: > 0 } ? (float)f.Iris : 0.117f);
-        e.SetShaderParameter("pupil", f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f);
+        // (face 38 r3, judge j2b: the pupils opened a third (the Look's read 0.19 of the iris, tight and hard; ~0.27
+        // softer and more alive, and turned it stays a pupil, not a slit))
+        e.SetShaderParameter("pupil", Mathf.Min(PupilOpen * (f is { Pupil: > 0 } ? (float)f.Pupil : 0.28f), 0.4f));
         bool dyed = e.GetShaderParameter("recolour").AsSingle() > 0f;
         e.SetShaderParameter("limbal", dyed ? 0.32f : 0.42f);
         e.SetShaderParameter("limbal_from", 0.85f);
         e.SetShaderParameter("iris_contrast", 0.45f);
         e.SetShaderParameter("ring_to", 0.35f);
         e.SetShaderParameter("ring_light", 0.8f);
-        e.SetShaderParameter("iris_light", 1.3f);
+        e.SetShaderParameter("iris_light", 1.0f);
         // (the catchlight a soft window over the pupil's upper edge, 11 to 1 o'clock as in the portraits, about a
         // sixth of the iris's radius across; a small hard dot at 10 to 11 read as a render, judge j2)
-        e.SetShaderParameter("catch_size", 2.8f);
-        e.SetShaderParameter("catchlight", 0.8f);
-        e.SetShaderParameter("catch_soft", 1.0f);
-        e.SetShaderParameter("catch_window", 1.0f);
-        e.SetShaderParameter("catch_at", new Vector2(0.06f, -0.32f));
+        e.SetShaderParameter("catch_size", 1.6f);
+        e.SetShaderParameter("catchlight", 0.45f);
+        e.SetShaderParameter("catch_soft", 1.8f);
+        e.SetShaderParameter("catch_window", 0.2f);
+        e.SetShaderParameter("catch_at", new Vector2(-0.2f, -0.28f));
         e.SetShaderParameter("catch_colour", new Vector3(0.9f, 0.95f, 1.08f));
-        e.SetShaderParameter("catch_dim", 0.8f);
-        e.SetShaderParameter("pupil_dark", 0.020f);
+        e.SetShaderParameter("catch_dim", 0.4f);
+        // (face 38: at the Look the 2.8-wide square window, full white over the pupil, read glassy: smaller, softer,
+        // rounder, the cornea a little less wet, the iris a little less saturated (D))
+        e.SetShaderParameter("wet", 0.3f);
+        e.SetShaderParameter("iris_sat", 1.1f);
+        // (face 38 r2, judge j1: at the Look the iris darker (L 0.47 to ~0.40) and its green back (C ~0.05); the
+        // catchlight rounder, at 10 to 11 o'clock over the pupil's edge; the pupil's reflection (navy, L 0.28) cut;
+        // turned 40 the parallax's slope capped and halved (the pupil a sliver, the far iris streaked))
+        e.SetShaderParameter("pupil_wet", 0.2f);
+        e.SetShaderParameter("depth", 0.06f);
+        e.SetShaderParameter("par_max", 1.2f);
+        // (small on screen, the town close-up's ~7 px iris: iris and white had gone one grey (iris Oklab C 0.02, L
+        // above the white's), its catchlight a 2 px blob at L 0.8; the white kept, the iris its own green and
+        // darker than the white, the catchlight dimmed and shrunk)
+        e.SetShaderParameter("far_white", 0.45f);
+        e.SetShaderParameter("far_sat", 1.0f);
+        e.SetShaderParameter("far_iris", 0.15f);
+        e.SetShaderParameter("catch_far", 0.35f);
+        e.SetShaderParameter("catch_far_size", 0.4f);
+        e.SetShaderParameter("pupil_dark", 0.010f);
+        // (face 38 r3: turned 40 the near eye's pupil read a cat's slit (3x8 px) and its catchlight went out: the
+        // iris and pupil seen through the cornea's lens, foreshortened less than the ball; the catchlight round on
+        // screen and held near the pupil; the eye's size on screen from its footprint's short side, so turning
+        // her does not count as distance)
+        e.SetShaderParameter("cornea_round", 0.7f);
+        e.SetShaderParameter("catch_round", 1f);
+        e.SetShaderParameter("catch_drift", 0.12f);
+        e.SetShaderParameter("far_iso", 1f);
         var w = f is { Whites: > 0 } ? (float)f.Whites : 1f;
+        // (deeper skin, its whites a little lower and warmer: at full white they glowed against it, face 38;
+        // `deep` 0 at her fair skin's lightness (Oklab L ~0.75 and over), 1 at a deep one's)
+        float deep = skin is Color sk ? Mathf.Clamp((0.75f - Oklch(sk).L) / 0.3f, 0f, 1f) : 0f;
+        // (the lowering and warming done in the shader, `skin_deep`: deep_white 1 = (0.58, 0.50, 0.40) at deep)
         e.SetShaderParameter("white_tint", new Vector3(0.74f, 0.68f, 0.58f) * w);
-        e.SetShaderParameter("white_grad", 0.22f);
+        e.SetShaderParameter("skin_deep", deep);
+        // (deep: the whites lowered half as far (they sat on the iris at the Look), the iris darkened with them; face 39,
+        // judge j3b: at the Look turned they read a little stark, 0.5 to 1.25 of the way, about a tenth lower and warmer)
+        e.SetShaderParameter("deep_white", 1.25f);
+        e.SetShaderParameter("deep_iris", 0.3f);
+        e.SetShaderParameter("white_grad", 0.35f);
         e.SetShaderParameter("corner_pink", 0.3f);
         // (the lid's shadow from where the face's lid covers its iris: its margin a twentieth of a radius above
         // where it shows, so no unshadowed sliver, and none hidden above it under the lashes)
         float cover = f is { Cover: > 0 } ? (float)f.Cover : 0.2f;
-        e.SetShaderParameter("lid_shadow", 0.5f);
+        e.SetShaderParameter("lid_shadow", 0.7f);
         e.SetShaderParameter("lid_y", 2f * cover - 1.05f);
         e.SetShaderParameter("lid_fade", 0.8f);
         e.SetShaderParameter("low_wet", 1.5f);
         e.SetShaderParameter("low_y", 0.95f);
         e.SetShaderParameter("low_lift", 0.12f);
+        // (face 39, judge j3b: by night (HerEyesNight, the close view's night key) the lids' and corners' shade on
+        // the eye eased 0.6 of itself and the iris lifted 1.8x, held to 0.9 of its colour and warmed to olive: the
+        // fair night close-up's iris read 14-22 of 255, one near-black disc with the pupil, now ~34; deep skin's
+        // eyes left as dark as its face; face 44, judge b1: 1.8 read lit from inside at the night close-up, 1.5 a natural green)
+        e.SetShaderParameter("night_lid", 0.6f);
+        e.SetShaderParameter("night_iris", 1.5f);
+        e.SetShaderParameter("night_sat", 0.9f);
+        e.SetShaderParameter("night_warm", 1f);
         // (--eye-set "iris_r=0.13,pupil=0.24": a developer's switch, her eyes' uniforms tried without a build)
         if (SurvivorUnchained.Args.Get("eye-set") is string es)
             foreach (var kv in es.Split(','))
@@ -741,7 +808,7 @@ public static class People
     /// how much of the dye's colour it takes. (--brows soften,sat tries others.)</summary>
     static readonly (float Soften, float Sat) HerBrows = SurvivorUnchained.Args.Get("brows") is string bw && bw.Split(',') is [var bs, var bt]
         ? (float.Parse(bs, System.Globalization.CultureInfo.InvariantCulture), float.Parse(bt, System.Globalization.CultureInfo.InvariantCulture))
-        : (0.07f, 0.7f);
+        : (0.07f, 1.2f);   // (face 39 dye: the red hairs' only, BrowRed)
 
     /// <summary>Her brows' dye kept in a warm hue band (Oklab degrees; face 33, round 3): the most a
     /// copper's (or any darker hair's) dye may lean to yellow, the most a blonde's, and the least chroma it
@@ -781,9 +848,45 @@ public static class People
     /// warm band and its chroma kept (face 33, round 3: a darkened yellow is olive, and the game's teal night
     /// grade took a copper's brows to olive-brown and a blonde's to khaki; a blonde's brows are golden, a
     /// copper's auburn). A near-black's or a grey's left as it was: they have no hue to keep.</summary>
+    // (face 39: 0.42 to 0.38, with HerBrows' colour 0.7 to 1.2: the owner's "dark brown, thick and felt-textured
+    // against the copper, read as drawn on"; now a shade or two under her copper, its own warmth kept. --brow-dark tries others)
+    static readonly float BrowDark = SurvivorUnchained.Args.Num("brow-dark", 0.38f);
+
+    /// <summary>The least Oklab chroma a brow dye with little colour of its own takes on deep skin (face 39 dye2;
+    /// --brow-deep-warm tries others).</summary>
+    static Shader? paintMulShader;
+
+    static readonly float BrowDeepWarm = SurvivorUnchained.Args.Num("brow-deep-warm", 0.07f);
+
+    /// <summary>How far a hair's brows take the red settings (face 39's: sat 1.2, BrowDark 0.38, dye_gamma 0.9,
+    /// hair_lo 0.2) over the old ones (0.7, 0.42, 0.5, 0.08): all for a red (hue 25 degrees or less, saturation
+    /// 0.65 or more: copper, auburn, strawberry, chestnut), none for a blonde (hue 35 or more) or a hair
+    /// with little colour (saturation under 0.3: black, grey, platinum), blended between. (Judge j1, face 39:
+    /// the red settings turned a blonde's brows ginger and a black's warmer.)</summary>
+    // (face 39 dye2: saturation 0.58 to 0.65, not 0.3 to 0.5: brown, #5e3e28 (hue 24, saturation 0.57), took the red
+    // settings and its brows read crimson-brown, #601203 against a hair of hue 21; copper 0.70, auburn 0.77,
+    // strawberry 0.68, chestnut 0.74 stay whole)
+    /// <summary>A red hair's brows on fair skin (HerPaint, face 40 b3): its dye's chroma and lightness times these,
+    /// its hue plus the third (degrees, toward auburn).</summary>
+    /// <summary>How deep a skin takes her brows as the multiply (heroine_paint_mul.gdshader; --brow-mul-at tries others).</summary>
+    static readonly float BrowMulAt = SurvivorUnchained.Args.Num("brow-mul-at", 0.5f);
+    static readonly Vector3 BrowCopper = new(0.8f, 1.0f, -10f);
+    /// <summary>Her brow cores on deep skin per hair (face 41, judge j2): hue in degrees, saturation, and value as a
+    /// share of the skin's own sRGB value round it (heroine_paint.gdshaderinc's target_mode).</summary>
+    static readonly (Vector3 Black, Vector3 Brown, Vector3 Copper, Vector3 Blonde) BrowTargets =
+        (new(25f, 0.3f, 0.40f), new(35f, 0.5f, 0.44f), new(24f, 0.55f, 0.48f), new(32f, 0.3f, 0.56f));
+    public static float BrowRed(Color b) => (1f - Mathf.SmoothStep(25f, 35f, b.H * 360f)) * Mathf.SmoothStep(0.58f, 0.65f, b.S);
+
+    /// <summary>How blonde a hair is (hue 35 degrees or more, its colour kept, light: honey, fair): its brows lighter
+    /// and less saturated than the old settings gave (BrowDark 0.42 to 0.3, sat 0.7 to 0.6). The old settings left
+    /// fair's brow strokes at 0.57 of the hair's brightness but more saturated than the hair (0.68 to 0.54), an
+    /// orange-gold; the judge's target is a dark blonde, no more saturated than the hair (about #8a7550).</summary>
+    public static float BrowBlonde(Color b) => Mathf.SmoothStep(25f, 35f, b.H * 360f) * Mathf.SmoothStep(0.3f, 0.45f, b.S) * Mathf.SmoothStep(0.35f, 0.5f, b.Luminance);
+
     static Color BrowDye(Color b)
     {
-        var dye = b.Darkened(0.42f + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
+        float dark = SurvivorUnchained.Args.Get("brow-dark") != null ? BrowDark : Mathf.Lerp(Mathf.Lerp(0.42f, 0.3f, BrowBlonde(b)), BrowDark, BrowRed(b));
+        var dye = b.Darkened(dark + 0.1f * b.Luminance).Lerp(new Color("#7a5434"), 0.2f + 0.4f * b.Luminance);
         var (hL, hC, _) = Oklch(b);
         // (round 4: a fair grey or platinum hair's brows a soft grey-brown, not the warm lerp's tan)
         float wg = Mathf.SmoothStep(0.5f, 0.6f, hL) * (1f - Mathf.SmoothStep(0.02f, 0.05f, hC));
@@ -828,14 +931,47 @@ public static class People
                 // (Own's brows.png on another face dyed that face's lid crease, a copper second brow under its own)
                 if (brow is Color b && ResourceLoader.Exists(brows))
                 {
-                    var m = new ShaderMaterial { Shader = paintShader };
+                    var tone = skin.GetShaderParameter("tone").AsColor();
+                    float deep = 1f - Mathf.SmoothStep(0.4f, 0.6f, 0.2126f * tone.R + 0.7152f * tone.G + 0.0722f * tone.B);
+                    // (face 40 r2: on deep skin a multiply over her lit skin (heroine_paint_mul.gdshader): as a lit pass of
+                    // their own they took only the night's blue, every stroke's core blue-black. Chosen before any parameter:
+                    // a shader set after them dropped them)
+                    var m = new ShaderMaterial { Shader = deep >= BrowMulAt ? (paintMulShader ??= GD.Load<Shader>("res://shaders/heroine_paint_mul.gdshader")) : paintShader };
                     m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
                     m.SetShaderParameter("dyed", true);
                     // (darker than her hair and a little warmer, as brows are: the fairer
                     // her hair the more, so a platinum blonde has ash-brown brows, not grey)
                     // (face 32: warmer the fairer, as a blonde's brows are a golden brown: the dye's own yellow,
                     // darkened, read olive; red hair's read crimson)
-                    m.SetShaderParameter("dye", BrowDye(b));
+                    // (face 39 dye2: on deep skin (her tone multiplier's luminance under 0.6: Deep's 0.34, Fair's 1.0) a brow
+                    // dye with little colour of its own a warm dark brown: a black's, near neutral, mixed in ratio with
+                    // her red-brown skin, drew blue-grey strokes, #1e171c, hue 320)
+                    var dye = BrowDye(b);
+                    if (deep > 0f)
+                    {
+                        var (dL, dC, dH) = Oklch(dye);
+                        float plain = deep * (1f - Mathf.SmoothStep(0.03f, 0.06f, Oklch(b).C));
+                        dye = FromOklch(dL, Mathf.Lerp(dC, Mathf.Max(dC, BrowDeepWarm), plain), Mathf.Lerp(dH, 45f, plain));
+                    }
+                    // (face 40 b3, the judge: a copper's brows on fair skin read like marker (#783d1b, saturation 0.77): its
+                    // dye's chroma down and darker, its hue toward auburn, as grown brows. Env BROWCOP "chroma,light,hue" in a
+                    // shot: tried without a build)
+                    float fairRed = (1f - deep) * BrowRed(b);
+                    if (fairRed > 0f)
+                    {
+                        var (cc, cl, ch) = (BrowCopper.X, BrowCopper.Y, BrowCopper.Z);
+                        if (Args.Has("shot") && System.Environment.GetEnvironmentVariable("BROWCOP") is { Length: > 0 } bc
+                            && bc.Split(',') is [var a0, var a1, var a2])
+                        {
+                            var ci = System.Globalization.CultureInfo.InvariantCulture;
+                            (cc, cl, ch) = (float.Parse(a0, ci), float.Parse(a1, ci), float.Parse(a2, ci));
+                        }
+                        var (rL, rC, rH) = Oklch(dye);
+                        dye = FromOklch(rL * Mathf.Lerp(1f, cl, fairRed), rC * Mathf.Lerp(1f, cc, fairRed), rH + ch * fairRed);
+                    }
+                    m.SetShaderParameter("dye", dye);
+                    // (face 41, judge j2 fix 3: a copper's brows on fair skin a touch thinner, so the close-up by day reads auburn, not a dark band)
+                    if (fairRed > 0f) m.SetShaderParameter("strength", Mathf.Lerp(1f, 0.87f, fairRed));
                     // (her face's own paint, not the skin's as it stands: as she is made it is laid after this, Skin)
                     m.SetShaderParameter("skin_paint", (Variant?)HeadPaint(p.FaceShape) ?? skin.GetShaderParameter("paint"));
                     m.SetShaderParameter("skin_tone", skin.GetShaderParameter("tone"));
@@ -843,8 +979,71 @@ public static class People
                     // (face 33: as much of the dye's colour as the hair has little of its own: a red's 0.7 (more read
                     // crimson), a blonde's past its whole colour, since every grade's blue-grey toe took her brows to ash and
                     // olive; a near-black's 0.85, warmed in the shader instead)
-                    m.SetShaderParameter("dye_sat", HerBrows.Sat / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance)));
+                    float red = SurvivorUnchained.Args.Get("brows") != null ? 1f : BrowRed(b);
+                    float sat = Mathf.Lerp(Mathf.Lerp(0.7f, 0.6f, BrowBlonde(b)), HerBrows.Sat, red) / 0.7f * Mathf.Lerp(0.85f, Mathf.Clamp(1.95f - 1.6f * b.S, 0.85f, 1.2f), Mathf.SmoothStep(0.12f, 0.3f, b.Luminance));
+                    // (face 39 dye2: on deep skin a red's or brown's brows held darker took the held dye's whole colour and
+                    // more (dye_sat_held 1.6, dye_sat to 1.7): pure red-black, #440600 copper's; held at 0.7 and 0.8 a dark
+                    // auburn-brown, #34150d. A blonde's there kept a grey-mauve haze at dye_fair_sat 0.85: 1.2 and hair_lo 0.2, a warm brown)
+                    m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, Mathf.Min(sat, 0.8f), deep));
+                    m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 0.7f, deep));
+                    m.SetShaderParameter("dye_fair_sat", Mathf.Lerp(0.85f, 1.2f, deep));
                     m.SetShaderParameter("rough", 0.8f);
+                    // (face 39: each hair's own darkness counted as it is (gamma 0.5 to 0.9), the darkest less past the
+                    // core (0.5 to 0.25), and the faint texels between strokes left skin (from 0.08 to 0.2): the half-dark
+                    // texels filled the strokes into one felt block)
+                    m.SetShaderParameter("dye_gamma", Mathf.Lerp(0.5f, 0.9f, red));
+                    m.SetShaderParameter("dye_deep", 0.25f);
+                    // (face 39 dye2: on deep skin the faint texels left skin too, a blonde's grey-mauve haze over its strokes)
+                    m.SetShaderParameter("hair_lo", Mathf.Lerp(Mathf.Lerp(0.08f, 0.2f, red), 0.2f, deep));
+                    m.SetShaderParameter("hair_hi", Mathf.Lerp(0.7f, 0.5f, deep));
+                    // (face 40, the judge: on deep skin her brows sat near the skin's value and she read browless at the
+                    // Look (brow/skin 0.65-0.86 in screen value): the dye held to a smaller share of her skin's lightness,
+                    // black's least, a blonde's most (r2: 0.25 to 0.34 of her lit skin under the multiply, was 0.75 for all, which held every dye alike), each
+                    // hair's darkness counted fuller (gamma 0.6, hair_hi 0.5: about a quarter more of each stroke shown):
+                    // about half the skin's value. Held that dark, less colour went mauve-blue under the grade (dye_sat 0.7,
+                    // held 0.7, floor 0.012: #161215, hue 310) and a yellower held warm grey: dye_sat 0.9, held 1.2, warm 0.07)
+                    // (face 40 b3: a blonde's at most 0.29, was 0.34: with each brow's darkening evened (heroine_paint.gdshaderinc's
+                    // mul_side) a blonde's lighter brow went past 0.6 of the skin beside it)
+                    if (deep > 0f)
+                    {
+                        float room = Mathf.Lerp(0.25f, 0.29f, Mathf.Clamp((Oklch(b).L - 0.27f) / 0.52f, 0f, 1f));
+                        m.SetShaderParameter("dye_room", Mathf.Lerp(0.75f, room, deep));
+                        m.SetShaderParameter("dye_gamma", Mathf.Lerp(Mathf.Lerp(0.5f, 0.9f, red), 0.6f, deep));
+                        m.SetShaderParameter("dye_sat", Mathf.Lerp(sat, 0.9f, deep));
+                        m.SetShaderParameter("dye_sat_held", Mathf.Lerp(1.6f, 1.2f, deep));
+                        // (face 40 r2: the hue her brows take her lit skin toward (heroine_paint_mul.gdshader's deep_tint, linear),
+                        // found against the Look's night grade, which takes a neutral or cool dark to mauve and her skin's own warm
+                        // light a warm one to red: a near-neutral warm for black, a yellow-brown for a brown or blonde, an orange-
+                        // brown for a copper)
+                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+                        var tint = new Vector3(1f, 0.95f, 0.55f).Lerp(new Vector3(1f, 0.85f, 0.4f), wc).Lerp(new Vector3(1f, 0.75f, 0.4f), wr);
+                        m.SetShaderParameter("deep_tint", tint);
+                    }
+                    // (face 41, judge j2: every hair one faint red-brown at ~0.55 of the skin, black's auburn. Each hair's brow
+                    // core now a target (hue 0-1, saturation, value over the skin's own): black near-neutral and darkest,
+                    // brown dark brown, copper auburn, blonde a lighter taupe; the multiply is it over her painted skin)
+                    if (deep >= BrowMulAt)
+                    {
+                        float wc = Mathf.SmoothStep(0.02f, 0.06f, Oklch(b).C), wr = BrowRed(b);
+                        float wb = BrowBlonde(b);
+                        var tg = BrowTargets.Black.Lerp(BrowTargets.Brown, wc).Lerp(BrowTargets.Copper, wr).Lerp(BrowTargets.Blonde, wb);
+                        m.SetShaderParameter("target_mode", 1f);
+                        // (the value as seen: deep skin's toe and grade crush a brow's darkness, so it is held 0.07 lighter there)
+                        m.SetShaderParameter("brow_target", new Vector3(tg.X / 360f, tg.Y, tg.Z + 0.07f * deep));
+                        m.SetShaderParameter("mul_side_a", 1f);
+                        m.SetShaderParameter("mul_side_b", 1f);
+                    }
+                    // (--brow-set "dye_gamma=0.8,dye_deep=0.3": a developer's switch, the brow dye's uniforms tried without a build)
+                    if (SurvivorUnchained.Args.Get("brow-set") is string bs)
+                        foreach (var kv in bs.Split(','))
+                            if (kv.Split('=') is [var k, var v])
+                            {
+                                var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                                    System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                                if (xs.Any(float.IsNaN)) continue;
+                                if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                                else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
+                            }
                     Then(m);
                 }
                 // The paint drawn in her skin (heroine_skin.gdshader's face_paint), so it takes her skin's
@@ -891,14 +1090,14 @@ public static class People
         if (p.Body != "heroine") return;
         var colour = look.HairColor ?? HerHairColour;
         var style = HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0];
-        if (style != p.HairStyle) HerHair(p, style, colour);
+        if (style != p.HairStyle) HerHair(p, style, colour, look.Highlight);
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m)
                 {
                     if (m.Shader == hairShader || m.Shader == hairSoftShader || Coverage.On && m.Shader == Coverage.Hair || HairDraw.IsHair(m.Shader))
-                        foreach (var pass in HairDraw.Passes(m)) pass.SetShaderParameter("colour", colour);
+                        foreach (var pass in HairDraw.Passes(m)) { pass.SetShaderParameter("colour", colour); Highlight(pass, look.Highlight, p.HairStyle); }
                     else if (m.ResourceName == "brows") Coverage.Colour(m, colour.Darkened(0.45f));
                     else if (m.Shader == skinShader2)
                     {
@@ -910,13 +1109,16 @@ public static class People
                         m.SetShaderParameter("key_tone", KeyTone(look));
                         m.SetShaderParameter("sky_tone", SkyTone(look));
                         m.SetShaderParameter("edge_tone", EdgeTone(look));
+                        m.SetShaderParameter("neck_pull", NeckPull(look));
                         m.SetShaderParameter("freckle_amount", HerFreckles(look));
                         HerShade(m, look);
+                        HerZones(m, look, null);
+                        SkinSet(m, m.ResourceName);
                     }
                     else if (m.Shader == eyeShader)
                     {
                         EyeColour(m, look.Eyes, look.EyeRing);
-                        HerEyes(m, look.FaceShape);
+                        HerEyes(m, look.FaceShape, look.Skin);
                     }
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
@@ -938,7 +1140,7 @@ public static class People
     /// not his stubble's 0.85, as what stayed of her head's pale paint greyed it) and its hue ahead of its dark
     /// (scalp_lead, see heroine_skin.gdshader): face 32, 20 October, her hairline's grey band at the Look. (env SCALP
     /// "dark=0.3,sat=1,max=1,lead=1" in a shot: tried without a build.)</summary>
-    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f;
+    public static float ScalpMax = 1f, ScalpLead = 1f, ScalpHue = 1f, ScalpFollow = 1f, ScalpDarkMin = 0.8f;
     public static Color ScalpColour(Color hair)
     {
         float dark = 0.3f, sat = 1.0f;
@@ -948,7 +1150,7 @@ public static class People
                 var t = kv.Split('=');
                 if (t.Length != 2) continue;
                 float v = float.Parse(t[1], System.Globalization.CultureInfo.InvariantCulture);
-                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v;
+                if (t[0] == "dark") dark = v; else if (t[0] == "sat") sat = v; else if (t[0] == "max") ScalpMax = v; else if (t[0] == "lead") ScalpLead = v; else if (t[0] == "hue") ScalpHue = v; else if (t[0] == "follow") ScalpFollow = v; else if (t[0] == "darkmin") ScalpDarkMin = v;
             }
         var c = hair.Darkened(dark);
         c = Color.FromHsv(c.H, Mathf.Min(1f, c.S * sat), c.V);
@@ -989,6 +1191,11 @@ public static class People
                 m.SetShaderParameter("scalp_max", ScalpMax);
                 m.SetShaderParameter("scalp_lead", ScalpLead);
                 m.SetShaderParameter("scalp_hue", ScalpHue);
+                // (face 40 b3: under a dark hair her skin's own colour at the hairline taken to the hair's: black's rust band on deep skin)
+                // (and its dark there whole, not held lighter on deep skin (scalp_dark_min 0.4): her skin's own red-brown under it)
+                float dk = 1f - Mathf.SmoothStep(0.15f, 0.35f, hair.Luminance);
+                m.SetShaderParameter("scalp_follow", ScalpFollow * dk);
+                m.SetShaderParameter("scalp_dark_min", Mathf.Lerp(0.4f, ScalpDarkMin, dk));
                 set++;
             }
         if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
@@ -1143,12 +1350,14 @@ public static class People
     }
 
     static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
+    // (--hair-atlas PATH: her hair's strands atlas from a file, tried before a build)
+    static Texture2D? hairAtlas;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    internal static Material Hair(BaseMaterial3D src, Color colour)
+    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1162,12 +1371,51 @@ public static class People
         if (soft || src.ResourceName == "hair" && HairDraw.Blended) m = HairDraw.WithErase(m);
         foreach (var pass in HairDraw.Passes(m))
         {
-            pass.SetShaderParameter("strands", src.AlbedoTexture);
+            pass.SetShaderParameter("strands", src.AlbedoTexture?.ResourcePath.EndsWith("hair_strands.png") == true ? (hairAtlas ??= TryFile("hair-atlas")) ?? src.AlbedoTexture : src.AlbedoTexture);
             pass.SetShaderParameter("colour", colour);
             pass.SetShaderParameter("cap", src.ResourceName == "hair_cap");
             pass.SetShaderParameter("tie", src.ResourceName == "hair_tie");
+            Highlight(pass, highlight, style);
+            HairSet(pass, src.ResourceName);
         }
         return m;
+    }
+
+    /// <summary>Her hair's highlights (heroine_hair.gdshaderinc's highlight): a second colour on some of her
+    /// locks, in the hair's own colour, or none.</summary>
+    static void Highlight(ShaderMaterial pass, Color? highlight, string? style = null)
+    {
+        pass.SetShaderParameter("highlights", highlight is null ? 0f : 1f);
+        if (highlight is not Color h) return;
+        pass.SetShaderParameter("highlight", h);
+        // (face 40, the judge: pixie's and ponytail's locks are shorter and lie closer, so half the braid's share, or
+        // they read as tiger stripes; a swatch's own share and strength from looks.json: platinum twice the locks,
+        // honey half as strong again)
+        var sw = SurvivorUnchained.World.Lore.HairHighlights.FirstOrDefault(x => x.Color.Length > 0 && new Color(x.Color).IsEqualApprox(h));
+        pass.SetShaderParameter("hl_locks", Mathf.Min(HighlightLocks * (style is "pixie" or "ponytail" ? 0.5f : 1f) * (sw?.Share ?? 1f), 0.95f));
+        pass.SetShaderParameter("hl_strength", sw?.Strength ?? 1f);
+    }
+
+    /// <summary>The share of the locks in her highlights' panels that take them, on the braid (heroine_hair.gdshaderinc's hl_locks).</summary>
+    const float HighlightLocks = 0.45f;
+
+    /// <summary>--hair-set "hair:shine=0.3;*:wrap=0.2": a developer's switch, her hair's uniforms tried without a build,
+    /// by part (hair, hair_cap, hair_fine, hair_tie; "*" for every part); a/b/c is a vec3.</summary>
+    static void HairSet(Material pass, string part)
+    {
+        if (SurvivorUnchained.Args.Get("hair-set") is not string hs || pass is not ShaderMaterial sm) return;
+        foreach (var one in hs.Split(';'))
+            if (one.Split(':') is [var who, var kvs] && (who == "*" || who == part))
+                foreach (var kv in kvs.Split(','))
+                    if (kv.Split('=') is [var k, var v])
+                    {
+                        var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
+                        if (xs.Any(float.IsNaN)) continue;
+                        if (xs.Length == 4) sm.SetShaderParameter(k.Trim(), new Vector4(xs[0], xs[1], xs[2], xs[3]));
+                        else if (xs.Length == 3) sm.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                        else if (xs.Length == 1) sm.SetShaderParameter(k.Trim(), xs[0]);
+                    }
     }
 
     /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a file
@@ -1204,6 +1452,7 @@ public static class People
         }
         // Her skin under the outfit's fitted pieces is drawn tucked in: each
         // outfit marks it in one channel of her vertex colours.
+        WornShape(p, "reaver", set == "reaver");
         int ch = System.Array.IndexOf(OutfitChannels, set);
         foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
             if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) TuckSkin(mi, ch);
@@ -1213,7 +1462,7 @@ public static class People
         HerLod.For(p)?.Merge(laid);
     }
 
-    static Shader? furShader, sheerShader, outfitShader, metalShader;
+    static Shader? furShader, sheerShader, outfitShader, metalShader, satinShader;
     static Godot.Collections.Dictionary? outfitTable, metalFinishes;
     static Texture2D? metalDetail;
 
@@ -1238,7 +1487,10 @@ public static class People
             // (metal: the same shader with metal's own light and reflection, one shared scratch-and-pit
             // detail and its key's finish; the look bible's armor-metal page)
             if (kind == 1) metalShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_metal.gdshader");
-            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : outfitShader };
+            // (a satin with a sheen, the arcanist's opera gloves: satin's own light, its sheen along the arm, armor 16)
+            bool sheen = kind == 5 && entry.ContainsKey("sheen");
+            if (sheen) satinShader ??= GD.Load<Shader>("res://shaders/heroine_outfit_satin.gdshader");
+            var m = new ShaderMaterial { Shader = kind == 1 ? metalShader : sheen ? satinShader : outfitShader };
             m.SetShaderParameter("kind", kind);
             // (its dye zone, from the table: HerWear.DyeMesh sets the dye on the surfaces of the zone a piece is dyed in)
             m.SetMeta("zone", entry.TryGetValue("zone", out var zn) ? (string)zn : "none");
@@ -1249,13 +1501,16 @@ public static class People
                 m.SetShaderParameter("metal_detail", metalDetail);
                 m.SetShaderParameter("has_detail", metalDetail != null);
                 metalFinishes ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/metal_finishes.json")).AsGodotDictionary();
-                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin == "blued") m.SetShaderParameter("finish", 1);
+                // (blued steel 1; enamel 2, blue enamel chipped to bright steel: body 16, the Warden's navy as paint)
+                if (metalFinishes.TryGetValue(key, out var fin) && (string)fin is "blued" or "enamel") m.SetShaderParameter("finish", (string)fin == "enamel" ? 2 : 1);
+                // (dye_paint keys: bare as built, but a dye paints them like enamel: HerWear.DyeMesh)
+                if (metalFinishes.TryGetValue("dye_paint", out var dp) && dp.AsGodotArray().Contains(key)) { m.SetMeta("finish0", 0); m.SetMeta("dye_paint", true); }
                 // (pieces of this key with a finish of their own, matched in the shader by the piece
                 // number heroine_outfits.py bakes into each piece: the key's pieces are one mesh)
                 if (metalFinishes.TryGetValue("pieces", out var pcs) && pcs.AsGodotDictionary().TryGetValue(key, out var byKey))
                 {
                     string set = mi.Name.ToString().Split('_')[0];
-                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids;
+                    var ids = new Vector4(-1, -1, -1, -1); var pr = ids; var pg = ids; var pb = ids; var prr = ids; var prb = ids; var pf = ids; var ps = ids; var pfm = ids; var pmu = ids;
                     int n = 0;
                     foreach (var (pn, pv) in byKey.AsGodotDictionary())
                     {
@@ -1265,11 +1520,25 @@ public static class People
                         ids[n] = PieceNumber(name[(set.Length + 1)..]);
                         if (o.TryGetValue("metal_rough", out var r)) pr[n] = (float)r;
                         if (o.TryGetValue("metal_env_graze", out var g)) pg[n] = (float)g;
+                        if (o.TryGetValue("metal_blot", out var bl)) pb[n] = (float)bl;
+                        if (o.TryGetValue("metal_rim_rough", out var rr)) prr[n] = (float)rr;
+                        if (o.TryGetValue("metal_rim_bright", out var rb)) prb[n] = (float)rb;
+                        if (o.TryGetValue("metal_fine", out var fi)) pf[n] = (float)fi;
+                        if (o.TryGetValue("metal_rim_steel", out var rs)) ps[n] = (float)rs;
+                        if (o.TryGetValue("metal_form", out var fm)) pfm[n] = (float)fm;
+                        if (o.TryGetValue("metal_spec_mute", out var mu)) pmu[n] = (float)mu;
                         n++;
                     }
                     m.SetShaderParameter("piece_id", ids);
                     m.SetShaderParameter("piece_rough", pr);
                     m.SetShaderParameter("piece_graze", pg);
+                    m.SetShaderParameter("piece_blot", pb);
+                    m.SetShaderParameter("piece_rim_rough", prr);
+                    m.SetShaderParameter("piece_rim_bright", prb);
+                    m.SetShaderParameter("piece_fine", pf);
+                    m.SetShaderParameter("piece_rim_steel", ps);
+                    m.SetShaderParameter("piece_form", pfm);
+                    m.SetShaderParameter("piece_spec_mute", pmu);
                 }
             }
             m.SetShaderParameter("albedo", src.AlbedoTexture);
@@ -1281,13 +1550,104 @@ public static class People
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
             // (a metal key's own satin roughness, where its row names one: blacksteel, the etched tier's blackened ground at 0.3)
             if (kind == 1 && entry.ContainsKey("roughness")) m.SetShaderParameter("metal_rough", (float)entry["roughness"]);
+            // (a leather's roughness floor, where its row names one: the arcanist bodysuit's plumleather, armor 14)
+            if (kind == 0 && entry.ContainsKey("rough_floor")) m.SetShaderParameter("leather_rough_floor", (float)entry["rough_floor"]);
+            if (kind == 0 && entry.ContainsKey("rough_var")) m.SetShaderParameter("leather_rough_var", (float)entry["rough_var"]);
+            if (kind == 0 && entry.ContainsKey("clearcoat")) m.SetShaderParameter("leather_clearcoat", (float)entry["clearcoat"]);
+            if (kind == 0 && entry.ContainsKey("clearcoat_rough")) m.SetShaderParameter("leather_clearcoat_rough", (float)entry["clearcoat_rough"]);
+            // (her plate's reflection at the Look, under its rig only (look_rig), armor 16: the key's softbox and a dim dome;
+            // LOOK_METAL_ENV=env,key,dome tries others)
+            if (kind == 1)
+            {
+                // (N4: env,key,dome,mute,gold: a soft box, the rig's lamps muted on the plate, the gold's share)
+                // (N5, OJ2: the key 3.5 to 5.0 and the dome 0.45 to 0.6, the muted plate read dark slate; the gold 1.6 to 1.3, now glossier)
+                var le = (System.Environment.GetEnvironmentVariable("LOOK_METAL_ENV") ?? "1.6,5.0,0.6,0.75,1.3").Split(',');
+                float L(int i) => float.Parse(le[i], System.Globalization.CultureInfo.InvariantCulture);
+                m.SetShaderParameter("look_metal_env", L(0)); m.SetShaderParameter("look_metal_key", L(1)); m.SetShaderParameter("look_metal_dome", L(2));
+                if (le.Length > 3) m.SetShaderParameter("look_metal_mute", L(3));
+                if (le.Length > 4) m.SetShaderParameter("look_gold_key", L(4));
+            }
+            // (a satin's sheen, where its row names one: the arcanist's opera gloves, armor 16)
+            if (kind == 5 && entry.ContainsKey("sheen")) m.SetShaderParameter("satin_sheen", (float)entry["sheen"]);
+            if (kind == 5 && entry.ContainsKey("axis")) m.SetShaderParameter("satin_axis", (int)entry["axis"]);
+            if (kind == 5 && entry.ContainsKey("along")) m.SetShaderParameter("satin_along", (float)entry["along"]);
+            if (kind == 5 && entry.ContainsKey("across")) m.SetShaderParameter("satin_across", (float)entry["across"]);
+            if (kind == 5 && entry.ContainsKey("body")) m.SetShaderParameter("satin_body", (float)entry["body"]);
+            if (kind == 5 && entry.ContainsKey("turn")) m.SetShaderParameter("satin_turn", (float)entry["turn"]);
+            if (kind == 5 && entry.ContainsKey("cap")) m.SetShaderParameter("satin_spec_cap", (float)entry["cap"]);
+            // (its wrinkles: soft ruching at the wrist, creases inside the elbow, long diagonal folds; their way round
+            // the arm written into its UV2, which a satin never reads otherwise, armor 16 N4)
+            if (kind == 5 && entry.ContainsKey("wrinkle") && mi.Mesh is ArrayMesh am
+                && SatinAround(am, s, (float)entry["wrinkle_top"], (float)entry["wrinkle_wrist"]))
+            {
+                m.SetShaderParameter("satin_wrinkle", (float)entry["wrinkle"]);
+                m.SetShaderParameter("satin_top_v", (float)entry["wrinkle_top"]);
+                m.SetShaderParameter("satin_wrist_v", (float)entry["wrinkle_wrist"]);
+                m.SetShaderParameter("satin_uv_per_m", (float)entry["repeats"]);
+            }
             if (entry.ContainsKey("pull")) m.SetShaderParameter("view_pull", (float)entry["pull"]);
             if (System.Environment.GetEnvironmentVariable("GOLD_GLOSS") is string gg && float.TryParse(gg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ggv)) m.SetShaderParameter("gold_gloss", ggv);   // (a trial knob)
             if (System.Environment.GetEnvironmentVariable("GOLD_FLOOR") is string gf && float.TryParse(gf, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var gfv)) m.SetShaderParameter("gold_floor", gfv);
             if (System.Environment.GetEnvironmentVariable("GOLD_ROUGH") is string gr && float.TryParse(gr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var grv)) m.SetShaderParameter("gold_rough", grv);
+            // (METAL_TRY=name=value;...: a metal key's float uniforms for one run, a trial knob, body 16)
+            if (kind == 1 && System.Environment.GetEnvironmentVariable("METAL_TRY") is string mt)
+                foreach (var kv in mt.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Split('=', 2)).Where(x => x.Length == 2))
+                    if (kv[1].Split(',') is { Length: 3 } c3) m.SetShaderParameter(kv[0].Trim(), new Color(float.Parse(c3[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(c3[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(c3[2], System.Globalization.CultureInfo.InvariantCulture)));
+                    else if (float.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var mtv)) m.SetShaderParameter(kv[0].Trim(), mtv);
             if (System.Environment.GetEnvironmentVariable("OUTFIT_DEBUG_VIEW") is string dv && int.TryParse(dv, out var dvv)) m.SetShaderParameter("debug_view", dvv);   // (a check: 4 = the gold mask flat magenta)
             mi.SetSurfaceOverrideMaterial(s, m);
         }
+    }
+
+    /// <summary>A glove's way round its arm (armor 16 N4, the satin's wrinkles): each vertex's angle about its forearm's
+    /// axis (0 toward her front, the inside of the elbow), written into the surface's UV2 as (cos, sin) so it blends
+    /// smoothly all the way round. Each arm (the sign of x) on its own: its axis the forearm's long way (between the
+    /// wrist's and the top's UV v), mirrored, so the right glove's folds mirror the left's. False if it can't take it.</summary>
+    static bool SatinAround(ArrayMesh mesh, int s, float topV, float wristV)
+    {
+        var arr = mesh.SurfaceGetArrays(s);
+        if (arr[(int)Mesh.ArrayType.TexUV2].VariantType == Variant.Type.Nil) return false;
+        var P = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var U = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+        var format = mesh.SurfaceGetFormat(s);
+        if ((format & Mesh.ArrayFormat.FlagCompressAttributes) != 0) { GD.PushWarning("SatinAround: compressed attributes"); return false; }
+        var U2 = new Vector2[P.Length];
+        foreach (int side in new[] { 1, -1 })
+        {
+            bool Fore(int i) => Mathf.Sign(P[i].X) == side && U[i].Y < topV - 0.5f && U[i].Y > wristV + 0.5f;
+            var c = Vector3.Zero; int n = 0;
+            for (int i = 0; i < P.Length; i++) if (Fore(i)) { c += P[i]; n++; }
+            if (n < 20) continue;
+            c /= n;
+            // (its long way: the covariance's first axis, by power iteration)
+            var cx = Vector3.Zero; var cy = Vector3.Zero; var cz = Vector3.Zero;
+            for (int i = 0; i < P.Length; i++)
+                if (Fore(i)) { var d = P[i] - c; cx += d * d.X; cy += d * d.Y; cz += d * d.Z; }
+            var ax = new Vector3(side, -1, 0).Normalized();
+            for (int it = 0; it < 32; it++) ax = (cx * ax.X + cy * ax.Y + cz * ax.Z).Normalized();
+            if (ax.X * side < 0) ax = -ax;                     // (toward the hand)
+            var f = (Vector3.Back - ax * ax.Z).Normalized();   // (her front, +z, square to it)
+            var b = ax.Cross(f);
+            for (int i = 0; i < P.Length; i++)
+            {
+                if (Mathf.Sign(P[i].X) != side) continue;
+                var d = P[i] - c; d -= ax * d.Dot(ax);
+                float a = Mathf.Atan2(d.Dot(b), d.Dot(f));
+                U2[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            }
+        }
+        int vc = P.Length;
+        uint stride = RenderingServer.MeshSurfaceGetFormatAttributeStride((RenderingServer.ArrayFormat)format, vc);
+        uint off = RenderingServer.MeshSurfaceGetFormatOffset((RenderingServer.ArrayFormat)format, vc, (int)Mesh.ArrayType.TexUV2);
+        var attr = RenderingServer.MeshGetSurface(mesh.GetRid(), s)["attribute_data"].AsByteArray();
+        if (attr.Length < stride * vc) return false;
+        for (int i = 0; i < vc; i++)
+        {
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off), 4), U2[i].X);
+            System.BitConverter.TryWriteBytes(new System.Span<byte>(attr, (int)(i * stride + off + 4), 4), U2[i].Y);
+        }
+        mesh.SurfaceUpdateAttributeRegion(s, 0, attr);
+        return true;
     }
 
     /// <summary>A piece's own number, as heroine_outfits.py bakes it into its vertex
@@ -1302,6 +1662,18 @@ public static class People
         }
         return ((~c) % 1000) / 1000f;
     }
+
+    /// <summary>The reaver's pelt (armor 16, judge J5: "plush felt, not a pelt"): its shells and knobs.</summary>
+    public static int PeltShells = 30;
+    public static readonly Dictionary<string, float> Pelt = new()
+    {
+        ["fur_length"] = 0.03f, ["density"] = 260f, ["droop"] = 0.25f, ["comb"] = 0.9f,
+        ["root_dark"] = 0.3f, ["tip_light"] = 1.35f, ["backlight"] = 0.3f,
+        ["tuft"] = 0.075f, ["guard"] = 0.22f, ["under_len"] = 0.5f, ["frost"] = 0.12f,
+        // (N4, OJ1: the pile 22 mm as before, the fringe up to 30 mm in uneven locks and lighter, the spine darker)
+        ["body_len"] = 0.73f, ["fringe_w"] = 0.024f, ["fringe_light"] = 1.4f, ["spine_dark"] = 0.72f,
+        ["hem_vary"] = 0.55f, ["hem_scale"] = 9f,
+    };
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
     /// shells (shaders/fur_shell.gdshader), each further out, keeping only
@@ -1329,12 +1701,19 @@ public static class People
             bool down = src.ResourceName == "down";
             furShader ??= GD.Load<Shader>("res://shaders/fur_shell.gdshader");
             ShaderMaterial? first = null, last = null;
-            for (int i = 0; i <= shells; i++)
+            // (fur proper is a pelt, armor 16: longer, in tufts, combed; a few more shells for its length)
+            int n = down ? shells : PeltShells;
+            for (int i = 0; i <= n; i++)
             {
                 var m = new ShaderMaterial { Shader = furShader };
                 m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
                 m.SetShaderParameter("tint", src.AlbedoColor);
-                m.SetShaderParameter("layer", (float)i / shells);
+                m.SetShaderParameter("layer", (float)i / n);
+                if (!down)
+                {
+                    m.SetShaderParameter("pelt", 1.0f);
+                    foreach (var (k, v) in Pelt) m.SetShaderParameter(k, v);
+                }
                 if (down)
                 {
                     m.SetShaderParameter("fur_length", 0.009f);
@@ -1372,6 +1751,15 @@ public static class People
         string n = mi.Name.ToString();
         if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
         return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
+    }
+
+    /// <summary>Her body's worn shape (heroine.glb's morph worn_KEY, tools/assets/worn_reaver_post.py): 1 while the
+    /// garment it belongs to is worn, else 0. worn_reaver: under the reaver's top her breasts' undersides a little
+    /// heavier, a soft roll under its lower edge (armor 15 w1).</summary>
+    internal static void WornShape(Person p, string key, bool on)
+    {
+        foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Mesh != null && mi.FindBlendShapeByName("worn_" + key) is int i and >= 0) mi.SetBlendShapeValue(i, on ? 1f : 0f);
     }
 
     internal static bool IsSkin(Material? m) => m is ShaderMaterial sm && skinShader2 != null && sm.Shader == skinShader2;
@@ -1414,13 +1802,16 @@ public static class People
             m.SetShaderParameter("key_tone", KeyTone(look));
             m.SetShaderParameter("sky_tone", SkyTone(look));
             m.SetShaderParameter("edge_tone", EdgeTone(look));
+            m.SetShaderParameter("neck_pull", NeckPull(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
-        if (src.NormalTexture != null)
+        // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
+        var reliefTry = src.ResourceName == "skin_graft" ? TryFile("relief-map") : null;
+        if ((reliefTry ?? src.NormalTexture) is Texture2D reliefTex)
         {
-            m.SetShaderParameter("relief", src.NormalTexture);
+            m.SetShaderParameter("relief", reliefTex);
             m.SetShaderParameter("has_relief", true);
         }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
@@ -1469,6 +1860,8 @@ public static class People
         }
         // (her skin warmer in the sky's light than in the lamps': HerAmbientTint)
         if (who == "heroine") HerShade(m, look);
+        // (her face's skin zones, colour and sheen, her pores' coarse layer and the broad sheen lobe: HerZones)
+        if (who == "heroine") HerZones(m, look, src.ResourceName == "skin_head");
         // Her freckles, a layer over her face, neck, shoulders and upper chest
         // (tools/assets/heroine_freckles.py), as many as her face starts with.
         if (who == "heroine" && FreckleFile(src.ResourceName) is string fp)
@@ -1494,20 +1887,35 @@ public static class People
         }
         // (--skin-set "skin_head:ao_light=0;skin_graft:shine=0.36": a developer's switch, a part's skin uniforms
         // tried without a build; a part "*" for every part)
+        SkinSet(m, src.ResourceName);
+        return m;
+    }
+
+    /// <summary>--skin-set "part:k=v,k=a/b/c;...": a part's skin uniforms tried without a build ("*" every part); applied
+    /// in Skin() and again after her look's own tones and shade (HerShade), so it wins over them.</summary>
+    static void SkinSet(ShaderMaterial m, string name)
+    {
         if (SurvivorUnchained.Args.Get("skin-set") is string ss)
             foreach (var part in ss.Split(';'))
-                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == src.ResourceName))
+                if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == name))
                     foreach (var kv in kvs.Split(','))
                         if (kv.Split('=') is [var k, var v])
                         {
+                            // (a picture file (.png/.jpg, a path without a colon, relative to godot/): a texture uniform, e.g.
+                            // paint=.shots/flat.png to take a layer out (face 41: flat paint, a neutral normal for pores/relief))
+                            if (v.EndsWith(".png") || v.EndsWith(".jpg"))
+                            {
+                                if (Image.LoadFromFile(v) is { } img) { img.GenerateMipmaps(); m.SetShaderParameter(k.Trim(), ImageTexture.CreateFromImage(img)); }
+                                continue;
+                            }
                             // (a/b/c: a vec3)
                             var xs = v.Split('/').Select(t => float.TryParse(t, System.Globalization.NumberStyles.Float,
                                 System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : float.NaN).ToArray();
                             if (xs.Any(float.IsNaN)) continue;
                             if (xs.Length == 3) m.SetShaderParameter(k.Trim(), new Vector3(xs[0], xs[1], xs[2]));
+                            else if (xs.Length == 2) m.SetShaderParameter(k.Trim(), new Vector2(xs[0], xs[1]));
                             else if (xs.Length == 1) m.SetShaderParameter(k.Trim(), xs[0]);
                         }
-        return m;
     }
 
     /// <summary>A Marionette NPC's skin (NpcPackage): the game's skin shader (heroine_skin.gdshader: pores, light under
@@ -1530,6 +1938,10 @@ public static class People
         }
         m.SetShaderParameter("shine", woman ? 0.38f : HisSkin.Shine);
         m.SetShaderParameter("scatter", HerScatter);
+        // Light from all round comes out of skin redder (HerAmbientTint). Without it the town sky's blue on a package
+        // NPC's reddish skin read magenta on the shaded cheek (the generated guard, judge r4: shade hue 22-28 deg
+        // against the paint's 41-50; with it 37-43, warm tan; Marionette lead 12 solver I2, 21 Oct 2026).
+        m.SetShaderParameter("ambient_tint", HerAmbientTint);
         return m;
     }
 
@@ -1609,9 +2021,142 @@ public static class People
         m.SetShaderParameter("shade_thin", (float)SurvivorUnchained.Args.Num("shade-thin", 0.15f));
     }
 
+    /// <summary>Her skin's surface, zone by zone (max judge b1, face 44, 26 October 2026: fair read as smooth matte vinyl,
+    /// deep as flat clay, one hue forehead to chin, no pores at the Look). The skin shader's zone_* (her face's colour
+    /// zones and gloss zones, tools/assets/heroine_skin_zones.py: a redder nose, cheeks, ears and lip line, a yellower
+    /// forehead, faint cool under her eyes and at her jaw, pinker lids; an oilier T-zone, softer cheeks, wet lips), sheen2
+    /// (a second, broad sheen lobe) and peel / pore_rough (her pores' coarse layer, so her highlight breaks up at the
+    /// Look's zoom). Her colour zones scaled by her skin's lightness: on deep skin a subtler, browner flush. head: her
+    /// head's own material (the zone maps laid on it); null: a material already made (HerRestyle), its maps kept.
+    /// (--skin-zones off: none of it, as before, for judging it; --skin-set overrides any of it.)</summary>
+    static void HerZones(ShaderMaterial m, Look look, bool? head)
+    {
+        // (face 46 skin C, the night skin-line hold's lamp (HerSkinHold): an amber, a redder one on deep skin; its gain
+        // keeps her lightness (on deep the night grade's toe took 0.025 Oklab L off her face at the lamps' own luminance))
+        m.SetShaderParameter("hold_tint", HoldTint.Fair.Lerp(HoldTint.Deep, deep0(look)));
+        m.SetShaderParameter("hold_gain", Mathf.Lerp(HoldGain.Fair, HoldGain.Deep, deep0(look)));
+        m.SetShaderParameter("hold_chroma", 0f);
+        if (SkinZonesOff) return;
+        if (head == true)
+        {
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_skin_zones.png"))
+                m.SetShaderParameter("skin_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_skin_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_sheen_zones.png"))
+                m.SetShaderParameter("sheen_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_sheen_zones.png"));
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_pore_zones.png"))
+                m.SetShaderParameter("pore_zones", GD.Load<Texture2D>("res://art/people/head_tex/heroine_pore_zones.png"));
+        }
+        float deep = deep0(look);
+        m.SetShaderParameter("zone_colour", Mathf.Lerp(ZoneColour.Fair, ZoneColour.Deep, deep));
+        m.SetShaderParameter("zone_flush", ZoneFlush.Fair.Lerp(ZoneFlush.Deep, deep));
+        m.SetShaderParameter("zone_yellow", ZoneYellow.Fair.Lerp(ZoneYellow.Deep, deep));
+        m.SetShaderParameter("zone_cool", ZoneCool.Fair.Lerp(ZoneCool.Deep, deep));
+        m.SetShaderParameter("zone_lids", ZoneLids.Fair.Lerp(ZoneLids.Deep, deep));
+        m.SetShaderParameter("zone_rough", 1f);
+        m.SetShaderParameter("zone_rough_base", ZoneRough.Base);
+        // (r2: deep skin's T-zone glosses a third as much, its lamps' sheen ZoneDeepSpec of HerShade's: it read oily)
+        m.SetShaderParameter("zone_rough_t", Mathf.Lerp(ZoneRough.T, ZoneRough.Base - (ZoneRough.Base - ZoneRough.T) * 0.35f, deep));
+        m.SetShaderParameter("deep_spec", (float)SurvivorUnchained.Args.Num("deep-spec", 0.6f) * Mathf.Lerp(1f, ZoneDeepSpec, deep));
+        m.SetShaderParameter("zone_rough_cheek", ZoneRough.Cheek);
+        m.SetShaderParameter("zone_rough_lip", ZoneRough.Lip);
+        m.SetShaderParameter("zone_rough_body", ZoneRough.Body);
+        m.SetShaderParameter("zone_lip_shine", Mathf.Lerp(ZoneRough.LipShine, ZoneLipShineDeep, deep));
+        m.SetShaderParameter("lip_core", head != false ? 1f : 0f);   // (her body: no pore_zones read)
+        m.SetShaderParameter("freckle_keep", FreckleKeep);
+        m.SetShaderParameter("freckle_gain", FreckleGain);
+        m.SetShaderParameter("skin_chroma", Mathf.Lerp(0f, DeepChroma, deep));
+        // (deep skin's sheen already shows strongly against its darker diffuse: the broad lobe less there, or it reads oily)
+        m.SetShaderParameter("sheen2", Sheen2.Amount * Mathf.Lerp(1f, Sheen2.Deep, deep));
+        m.SetShaderParameter("sheen2_rough", Sheen2.Rough);
+        m.SetShaderParameter("sheen2_base", Sheen2.Base);
+        if (head != null && ResourceLoader.Exists("res://art/people/skin_peel.png"))
+            m.SetShaderParameter("peel_map", GD.Load<Texture2D>("res://art/people/skin_peel.png"));
+        // (r2: the coarse layer only where pores show (pore_zones), its slopes mostly on her sheen, eased out with distance;
+        // none on her body. Off by default (face 45, judge a2: on deep at the Look's turn 40 they glint on the sheen like
+        // glitter, and on fair they don't show at 1:1); --skin-pores on: the r2 layer, for the later list's rework)
+        bool pores = SkinPoresOn;
+        m.SetShaderParameter("peel", pores ? (head == false ? Peel.Body : Mathf.Lerp(Peel.Head, Peel.Deep, deep)) : 0f);
+        m.SetShaderParameter("peel_scale", Peel.Scale);
+        m.SetShaderParameter("pore_rough", pores && head != false ? Peel.Rough : 0f);
+        m.SetShaderParameter("pore_mask", head != false ? 1f : 0f);
+        m.SetShaderParameter("peel_diffuse", Peel.Diffuse);
+        m.SetShaderParameter("peel_fade", Peel.Fade);
+    }
+
+    /// <summary>Her skin's darkness for her zones and hold: 0 at her own fair paint, 1 at the Deep swatch's lightness.</summary>
+    static float deep0(Look look)
+    {
+        var t = HerTone(look);
+        float lum = 0.2126f * t.R * t.R + 0.7152f * t.G * t.G + 0.0722f * t.B * t.B;   // (about linear)
+        return Mathf.Clamp((0.55f - lum) / (0.55f - 0.06f), 0f, 1f);
+    }
+
+    // (tuned at the town night close-up, face 46: fair forehead/cheek/nose/neck/shoulder hue 50-53/52/44/47/50, deep 52/47/47/52/52,
+    // her skin line 48.5; Oklab L within 0.01)
+    static readonly (Vector3 Fair, Vector3 Deep) HoldTint = (new(1f, 0.67f, 0.25f), new(1f, 0.6f, 0.22f));
+    static readonly (float Fair, float Deep) HoldGain = (1.1f, 1.35f);
+
+    static readonly bool SkinPoresOn = SurvivorUnchained.Args.Get("skin-pores") == "on";
+    static readonly float ZoneDeepSpec = 0.8f;
+    static readonly float ZoneLipShineDeep = 0.5f;
+    static readonly float FreckleKeep = 1f;
+    // (her freckles' step held within 10% of before's: town day cheeks -8.0 before, -6.4 without the gain; the Look -10.8)
+    static readonly float FreckleGain = 1.12f;
+    static readonly float DeepChroma = 0.2f;   // (linear; her diffuse's Oklab chroma about 8% more after the grade)
+
+    static readonly bool SkinZonesOff = SurvivorUnchained.Args.Get("skin-zones") == "off";
+    static readonly (float Fair, float Deep) ZoneColour = (0.85f, 0.7f);
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneFlush = (new(1.14f, 0.68f, 0.46f), new(1.04f, 0.84f, 0.78f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneYellow = (new(0.985f, 1f, 0.93f), new(1f, 1f, 1f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneCool = (new(0.94f, 0.97f, 1.03f), new(0.96f, 0.98f, 1.0f));
+    static readonly (Vector3 Fair, Vector3 Deep) ZoneLids = (new(0.96f, 0.84f, 0.86f), new(0.94f, 0.88f, 0.88f));
+    static readonly (float Base, float T, float Cheek, float Lip, float Body, float LipShine) ZoneRough = (0.5f, 0.4f, 0.55f, 0.3f, 0.5f, 0.6f);
+    static readonly (float Amount, float Rough, float Base, float Deep) Sheen2 = (0.6f, 0.75f, 0.4f, 0.25f);
+    // (r2: Head its slopes' strength on fair skin, Deep on deep (its sheen shows them more); Scale 0.4, its bumps 0.83 of
+    // round 1's (half, 0.667, fell under a pixel at the Look's zoom 1 and showed nothing); Diffuse: her diffuse light sees
+    // that much of its slopes (light under the skin blurs its own shading); Fade: eased out from 0.5 to 0.87 mm a pixel (the
+    // shader's peel_mm): the Look's zoom 1 is about 0.35 (all of it), its zoom 0.55 about 0.6 (some), the town's close view
+    // about 0.95 (none, her roughness's variation only))
+    static readonly (float Head, float Deep, float Body, float Scale, float Rough, float Diffuse, Vector2 Fade) Peel = (1.2f, 0.9f, 0f, 0.4f, 0.15f, 0.25f, new(0.5f, 0.87f));
+
+    /// <summary>Skin A1's tone refit (face 44, 26 October 2026; --tone-a1 off: before, for judging it): the Deep swatch read
+    /// brick red (the Look by night her lit face Oklab hue ~40, the town close-up's chest 29-33, against her albedo's 51),
+    /// so it takes a fit of its own toward umber (HerToneFit's "deep": less red, a little less chroma) and the brown
+    /// swatch's ambient tint (the sky's light through her came out red); and her face, paler and pinker than her chest on
+    /// both tones, takes a trim of its own per swatch (FaceSwatch, on face_tone and face_world).
+    /// (--deep-fit R,G,B and --face-swatch R,G,B: others, linear, for judging them.)</summary>
+    static readonly bool ToneA1 = SurvivorUnchained.Args.Get("tone-a1") != "off";
+
+    static Vector3 ArgVec(string name, Vector3 v) => SurvivorUnchained.Args.Get(name) is string a && a.Split(',') is [var r, var g, var b]
+        ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b, System.Globalization.CultureInfo.InvariantCulture))
+        : v;
+
+    static readonly Vector3 DeepFit = ArgVec("deep-fit", new(0.86f, 1.24f, 0.90f));
+
+    static readonly Dictionary<string, Vector3> HerFaceSwatch = new()
+    {
+        ["fair"] = ArgVec("face-swatch-fair", new(1f, 1f, 1f)), ["deep"] = ArgVec("face-swatch", new(1.02f, 0.93f, 1f)),
+    };
+
+    /// <summary>Her deep swatch's neck at the Look, drawn toward her face's colour (the skin shader's neck_pull: rgb a
+    /// colour her albedo's is mixed toward, linear, a how far; face 47, 27 October 2026). By night the neck under her jaw
+    /// read olive-grey (Oklab h 64, C .029) under a fire-lit red-brown face (h 47): deep's toned albedo there was 16-27 deg
+    /// yellower than her face's, which takes face_tone and FaceSwatch where her neck takes neither. With it, turn 40: under
+    /// her jaw h 44.5 C .057, lower neck 46.2 .081, jaw 48.1 (cheek 47.3); turn 0 neck 45.8 .071; L +.007-.010. Deep only and under the rig only
+    /// (fair, play and the town as before). (--deep-neck off: before; --deep-neck R,G,B,A: another, for judging it.)</summary>
+    static readonly Vector4 DeepNeck = SurvivorUnchained.Args.Get("deep-neck") is string dn
+        ? dn == "off" ? Vector4.Zero : dn.Split(',') is [var r, var g, var b, var w]
+            ? new(float.Parse(r, System.Globalization.CultureInfo.InvariantCulture), float.Parse(g, System.Globalization.CultureInfo.InvariantCulture), float.Parse(b, System.Globalization.CultureInfo.InvariantCulture), float.Parse(w, System.Globalization.CultureInfo.InvariantCulture))
+            : Vector4.Zero
+        : new(2.231f, 0.636f, 0.014f, 0.55f);   // (Oklab h 60, C .085 at L .37, luminance 0.93; fitted at the Look by night)
+
+    static Vector4 NeckPull(Look look) => ToneA1 && HerSkinId(look) == "deep" && DeepNeck.W > 0f ? DeepNeck : new(1f, 1f, 1f, 0f);
+
+    static Vector3 FaceSwatch(Look look) => ToneA1 && HerFaceSwatch.TryGetValue(HerSkinId(look), out var v) ? v : Vector3.One;
+
     static Vector3 HerAmbient(Look look)
     {
-        var a = HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
+        var a = ToneA1 && HerSkinId(look) == "deep" ? HerAmbientTints["brown"] : HerAmbientTints.TryGetValue(HerSkinId(look), out var t) ? t : HerAmbientTint;
         return a / BodyTone(look);
     }
 
@@ -1720,7 +2265,7 @@ public static class People
     /// key with the soft fill showing her paint without HerBodyTone; under the fire, the moon and the sun alone her head kept
     /// HerBodyTone's blue, pale blue-white over a warm firelit body in the Look's whole frame (judge rj1v, 12 October 2026).
     /// Outside the rig her head takes her body's treatment and her face this (the shader's look_rig, HerLookRig).</summary>
-    static Vector3 FaceWorld(Look look) => HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+    static Vector3 FaceWorld(Look look) => (HerFaceToneUntrimmed.TryGetValue(FaceId(look), out var t) ? t : Vector3.One) * FaceSwatch(look);
 
     /// <summary>How much of the Look's portrait rig lights her, on every part of her skin (the skin shader's look_rig: 1 her
     /// head's tones as fitted under the rig, 0 her body's treatment and her face's FaceWorld, as in play). GameFront sets it
@@ -1748,6 +2293,32 @@ public static class People
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
     }
 
+    /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased
+    /// and the iris lifted (HerEyes' night_*), so under the night key her irises read a dark olive, not black.
+    /// GameCloseUp sets it each frame while its night light is on her.</summary>
+    public static void HerEyesNight(Person p, float k)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader) m.SetShaderParameter("night_ease", k);
+    }
+
+    /// <summary>Her skin's night skin-line hold (heroine_skin.gdshader's skin_hold, 0 by day to 1): each warm lamp's colour
+    /// on her skin pulled toward hold_tint (face 46 skin C), so under the night key and the fires she stays on her skin line
+    /// while her hair, clothes and the scene keep their warmth. GameCloseUp sets it each frame while its night light is on
+    /// her. --skin-hold off: none (as before); --skin-hold K: K of it (pictures).</summary>
+    public static void HerSkinHold(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        k *= SkinHold;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2) m.SetShaderParameter("skin_hold", k);
+    }
+
+    static readonly float SkinHold = SurvivorUnchained.Args.Get("skin-hold") == "off" ? 0f : (float)SurvivorUnchained.Args.Num("skin-hold", 1f);
+
     /// <summary>Her ears' warm shade (ear_tint) and the light through her (backlight) taken k of the way from none to as built (1), for a cinematic's own light
     /// (C03, judge r1: a warm ear against a cool face under the moon); 1 gives it back.</summary>
     public static void HerEarWarmth(Person p, float k)
@@ -1774,6 +2345,7 @@ public static class People
     static Vector3 FaceTone(Look look)
     {
         var f = (ToneTrim ? HerFaceTone : HerFaceToneUntrimmed).TryGetValue(FaceId(look), out var t) ? t : Vector3.One;
+        f *= FaceSwatch(look);
         return ToneTrim && HerBodyTone.TryGetValue(FaceId(look), out var b) ? f * Pow(b, 1 - BodyK) : f;
     }
 
@@ -1898,7 +2470,7 @@ public static class People
     {
         var t = SkinTone(look);
         string id = HerSkinId(look);
-        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : Vector3.One;
+        var f = HerToneFit.TryGetValue(id, out var fit) ? fit : ToneA1 && id == "deep" ? DeepFit : Vector3.One;
         f *= BodyTone(look);
         var l = t.SrgbToLinear();
         return new Color(l.R * f.X, l.G * f.Y, l.B * f.Z).LinearToSrgb();

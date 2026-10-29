@@ -1,0 +1,1477 @@
+{
+  "skills": [
+    {
+      "id": "oathblade",
+      "name": "Oathblade",
+      "school": "physical",
+      "behavior": "slash",
+      "tags": ["melee", "steel", "physical", "area"],
+      "findable": true,
+      "bossDamage": 1.8,
+      "art": "slash_steel",
+      "description": "Your blade swings on its own at whatever is nearest, cutting everything in a wide arc in front of you.",
+      "base": { "cooldown": 1.05, "damage": 22.81, "reach": 2.8, "arc": 2.3, "knockback": 0.9, "projectiles": 1 },
+      "evolutions": [
+        {
+          "id": "oathkeeper",
+          "name": "Oathkeeper",
+          "catalysts": ["ironhide"],
+          "description": "Every swing throws a crescent of holy light that carries on through the crowd.",
+          "addTags": ["holy", "projectile"],
+          "art": "slash_holy",
+          "mods": { "damage": 1.12, "cooldown": 0.85, "area": 1.2 }
+        },
+        {
+          "id": "graveedge",
+          "name": "Grave-Edge",
+          "catalysts": ["serration"],
+          "description": "The edge drinks: every cut bleeds, and anything bleeding below a sixth of its life is simply finished.",
+          "art": "slash_blood",
+          "mods": { "damage": 1.91, "cooldown": 0.9 },
+          "set": { "status": { "kind": "bleed", "chance": 1, "power": 0.35, "duration": 3 } },
+          "triggers": [
+            {
+              "on": "hit",
+              "when": { "targetStatus": "bleed", "weapon": "oathblade", "hpBelow": 0.16666666666666666 },
+              "effects": [{ "do": "execute", "threshold": 0.16666666666666666 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cleaver",
+      "name": "Butcher's Cleaver",
+      "school": "physical",
+      "behavior": "slash",
+      "tags": ["melee", "steel", "physical", "area"],
+      "access": ["warden", "reaver"],
+      "findable": true,
+      "bossDamage": 1.3,
+      "art": "slash_heavy",
+      "description": "A heavy, wide chop that sweeps the whole front of you. Opens wounds.",
+      "base": {
+        "cooldown": 1.45,
+        "damage": 38.26,
+        "reach": 2.5,
+        "arc": 3.4,
+        "knockback": 1.3,
+        "projectiles": 1,
+        "status": { "kind": "bleed", "chance": 0.35, "power": 0.3, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "whirlwind",
+          "name": "Whirlwind",
+          "catalysts": ["fleetfoot", "ferocity"],
+          "description": "The chop becomes a full turn: everything around you, every time.",
+          "art": "slash_spin",
+          "mods": { "damage": 1.15, "cooldown": 0.8 },
+          "set": { "arc": 6.283 }
+        },
+        {
+          "id": "bonesplitter",
+          "name": "Bonesplitter",
+          "catalysts": ["might"],
+          "description": "Each chop sends a shockwave ahead of it that staggers what it reaches; anything frozen it strikes below half its life shatters.",
+          "addTags": ["explosion"],
+          "art": "slash_quake",
+          "mods": { "damage": 1.61, "area": 1.25 },
+          "set": { "knockback": 2.2 },
+          "triggers": [
+            {
+              "on": "hit",
+              "when": { "targetStatus": "frozen", "weapon": "cleaver", "hpBelow": 0.5 },
+              "effects": [{ "do": "execute", "threshold": 0.5 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "axe_gyre",
+      "name": "Axe Gyre",
+      "school": "physical",
+      "behavior": "orbit",
+      "tags": ["orbit", "melee", "steel", "physical", "area"],
+      "findable": true,
+      "growth": 0.17,
+      "bossDamage": 1.4,
+      "art": "axe",
+      "description": "Axes circle you, shredding all who close in.",
+      "base": {
+        "cooldown": 4.6,
+        "damage": 11.96,
+        "radius": 0.5,
+        "duration": 3.2,
+        "orbitRadius": 2.1,
+        "orbitSpeed": 4.2,
+        "projectiles": 3
+      },
+      "evolutions": [
+        {
+          "id": "gyrestorm",
+          "name": "Gyrestorm",
+          "catalysts": ["ferocity"],
+          "description": "Become the storm of blades: more axes, spinning faster, never stopping.",
+          "art": "axe_storm",
+          "mods": { "damage": 1.69, "duration": 1.8, "projectiles": 3 },
+          "set": { "orbitSpeed": 5.2 }
+        },
+        {
+          "id": "reavers_wheel",
+          "name": "Reaver's Wheel",
+          "catalysts": ["serration"],
+          "description": "The axes bite and stay bitten: every cut bleeds, and a bleeding thing they kill flings an axe on at the next.",
+          "art": "axe_blood",
+          "mods": { "damage": 3.33 },
+          "set": { "orbitRadius": 2.8, "status": { "kind": "bleed", "chance": 1, "power": 0.35, "duration": 3 } },
+          "triggers": [
+            {
+              "on": "kill",
+              "icd": 0.12,
+              "when": { "targetStatus": "bleed", "weapon": "axe_gyre" },
+              "effects": [
+                {
+                  "do": "missiles",
+                  "count": 1,
+                  "damage": 0.8,
+                  "basis": "weapon",
+                  "school": "physical",
+                  "speed": 10,
+                  "art": "axe"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iron_palms",
+      "name": "Iron Palms",
+      "school": "physical",
+      "behavior": "palm",
+      "tags": ["melee", "physical", "area"],
+      "access": ["warden", "reaver"],
+      "findable": true,
+      "growth": 0.18,
+      "bossDamage": 1.15,
+      "art": "palm",
+      "description": "A flurry of open-handed strikes at whatever is closest, each a short cone that hits everything in it.",
+      "base": { "cooldown": 0.95, "damage": 10.08, "reach": 2.95, "arc": 1.25, "knockback": 0.35, "projectiles": 3 },
+      "evolutions": [
+        {
+          "id": "temple_breaker",
+          "name": "Temple Breaker",
+          "catalysts": ["evasion"],
+          "description": "Every palm lands like the temple bell.",
+          "art": "palm_temple",
+          "mods": { "damage": 2.71, "area": 1.2 },
+          "set": { "knockback": 0.9 }
+        },
+        {
+          "id": "thunder_palm",
+          "name": "Thunder Palm",
+          "catalysts": ["haste", "conduit"],
+          "description": "The palms carry the storm into whatever they strike.",
+          "school": "storm",
+          "addTags": ["storm"],
+          "art": "palm_storm",
+          "mods": { "damage": 2.6 },
+          "set": { "status": { "kind": "shock", "chance": 0.6, "power": 1, "duration": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "reaving_arc",
+      "name": "Reaving Arc",
+      "school": "shadow",
+      "behavior": "nova",
+      "tags": ["nova", "area", "melee", "shadow"],
+      "findable": true,
+      "growth": 0.26,
+      "bossDamage": 2.9,
+      "art": "nova_blood",
+      "description": "A sweeping graveblade that carves health out of the wound it makes.",
+      "base": { "cooldown": 2.4, "damage": 40.29, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
+      "evolutions": [
+        {
+          "id": "rend_and_mend",
+          "name": "Rend and Mend",
+          "catalysts": ["recovery", "vitality"],
+          "description": "The blade drinks deeper than any wound can hold.",
+          "art": "nova_rend",
+          "mods": { "damage": 2.66, "area": 1.15 },
+          "set": { "heal": 6 }
+        },
+        {
+          "id": "harrowing",
+          "name": "The Harrowing",
+          "catalysts": ["expanse", "kinship"],
+          "description": "What the arc kills gets up again, briefly, on your side.",
+          "addTags": ["summon"],
+          "art": "nova_harrow",
+          "mods": { "damage": 2.3 },
+          "triggers": [
+            {
+              "on": "kill",
+              "chance": 0.3,
+              "when": { "weapon": "reaving_arc" },
+              "effects": [{ "do": "raise", "kind": "ghoul", "duration": 8, "max": 8 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "volley",
+      "name": "Volley",
+      "school": "physical",
+      "behavior": "spray",
+      "tags": ["projectile", "ranged", "physical"],
+      "findable": true,
+      "growth": 0.28,
+      "bossDamage": 1.4,
+      "art": "arrow",
+      "description": "A widening spread of hunting arrows loosed at the nearest foe.",
+      "base": {
+        "cooldown": 1.54,
+        "damage": 20.03,
+        "speed": 10.5,
+        "pierce": 2,
+        "range": 15.5,
+        "radius": 0.2,
+        "life": 1.7,
+        "spread": 0.16,
+        "projectiles": 3
+      },
+      "evolutions": [
+        {
+          "id": "arrowfall",
+          "name": "Arrowfall",
+          "catalysts": ["velocity"],
+          "description": "The sky darkens with arrows: each volley also rains down on the thickest part of the crowd.",
+          "art": "arrow_rain",
+          "mods": { "damage": 1.02, "projectiles": 2 },
+          "set": { "strikes": 6, "stormRadius": 5 }
+        },
+        {
+          "id": "predators_volley",
+          "name": "Predator's Volley",
+          "catalysts": ["precision"],
+          "description": "Arrows fly straight to the marked, and every one leaves its own mark.",
+          "art": "arrow_mark",
+          "mods": { "damage": 1.8 },
+          "set": { "homing": 3, "status": { "kind": "mark", "chance": 0.35, "power": 1, "duration": 4 }, "seek": "marked" }
+        }
+      ]
+    },
+    {
+      "id": "knifestorm",
+      "name": "Knifestorm",
+      "school": "physical",
+      "behavior": "ring",
+      "tags": ["projectile", "thrown", "steel", "physical"],
+      "findable": true,
+      "growth": 0.34,
+      "bossDamage": 2.9,
+      "art": "dagger",
+      "description": "A whirling ring of thrown steel in every direction.",
+      "base": {
+        "cooldown": 1.43,
+        "damage": 32.68,
+        "speed": 8.65,
+        "pierce": 1,
+        "radius": 0.2,
+        "life": 0.9,
+        "projectiles": 6,
+        "status": { "kind": "bleed", "chance": 0.15, "power": 0.3, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "steel_flurry",
+          "name": "Steel Flurry",
+          "catalysts": ["fleetfoot"],
+          "description": "The steel never stops moving: twice the knives, twice as often.",
+          "art": "dagger_flurry",
+          "mods": { "damage": 1.06, "cooldown": 0.65, "projectiles": 4 }
+        },
+        {
+          "id": "thousand_cuts",
+          "name": "A Thousand Cuts",
+          "catalysts": ["serration"],
+          "description": "Every knife opens a wound, and wounds on the same body deepen, up to five.",
+          "art": "dagger_blood",
+          "mods": { "damage": 1.13, "projectiles": 2 },
+          "set": { "status": { "kind": "bleed", "chance": 1, "power": 0.4, "duration": 3.5, "stack": true } }
+        }
+      ]
+    },
+    {
+      "id": "gale_chakram",
+      "name": "Gale Chakram",
+      "school": "physical",
+      "behavior": "chakram",
+      "tags": ["projectile", "thrown", "steel", "physical"],
+      "access": ["stalker", "warden"],
+      "findable": true,
+      "bossDamage": 1.4,
+      "art": "chakram",
+      "description": "A bladed ring thrown out on the wind. It cuts everything on the way out, and on the way back.",
+      "base": { "cooldown": 1.7, "damage": 14.06, "speed": 9.5, "range": 8.25, "radius": 0.3, "life": 2.6, "projectiles": 1 },
+      "evolutions": [
+        {
+          "id": "razorgale",
+          "name": "Razorgale",
+          "catalysts": ["serration"],
+          "description": "The ring splits the wind in two and comes back sharper.",
+          "art": "chakram_razor",
+          "mods": { "damage": 1.98, "projectiles": 1 },
+          "set": { "status": { "kind": "bleed", "chance": 0.5, "power": 0.3, "duration": 3 } }
+        },
+        {
+          "id": "hailwheel",
+          "name": "Hailwheel",
+          "catalysts": ["chilling"],
+          "description": "A spinning edge through a hailstorm comes back cold.",
+          "school": "frost",
+          "addTags": ["frost"],
+          "art": "chakram_hail",
+          "mods": { "damage": 3.84, "projectiles": 1 },
+          "set": { "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } }
+        }
+      ]
+    },
+    {
+      "id": "judgement_disc",
+      "name": "Judgement Disc",
+      "school": "holy",
+      "behavior": "bounce",
+      "tags": ["projectile", "thrown", "bounce", "holy"],
+      "access": ["stalker", "warden"],
+      "findable": true,
+      "growth": 0.24,
+      "bossDamage": 1.9,
+      "art": "disc",
+      "description": "A hurled shield that ricochets between enemies.",
+      "base": {
+        "cooldown": 2.3,
+        "damage": 13.36,
+        "speed": 9.8,
+        "range": 15,
+        "radius": 0.28,
+        "life": 3,
+        "bounces": 5,
+        "knockback": 0.3,
+        "projectiles": 1
+      },
+      "evolutions": [
+        {
+          "id": "reckoning",
+          "name": "Reckoning",
+          "catalysts": ["fortune", "precision"],
+          "description": "Judgement finds every last one of them: endless ricochets that grow heavier with each.",
+          "art": "disc_reckon",
+          "mods": { "damage": 1.28, "bounces": 6 }
+        },
+        {
+          "id": "aegis_wheel",
+          "name": "Aegis Wheel",
+          "catalysts": ["ironhide", "vitality"],
+          "description": "The shield wards you as it flies: every ricochet adds a barrier of a hundredth of your health, up to a fifth.",
+          "art": "disc_aegis",
+          "mods": { "damage": 1.72, "projectiles": 1 },
+          "triggers": [
+            {
+              "on": "hit",
+              "when": { "weapon": "judgement_disc" },
+              "effects": [{ "do": "barrier", "fraction": 0.01, "cap": 0.2 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "firepot",
+      "name": "Firepot",
+      "school": "fire",
+      "behavior": "aimed",
+      "tags": ["projectile", "thrown", "fire", "explosion"],
+      "access": ["arcanist", "stalker"],
+      "findable": true,
+      "bossDamage": 1.3,
+      "art": "firepot",
+      "description": "A Kerchief's trick: a pot of blasting ember thrown at the biggest thing in reach. It bursts, and the ground burns where it broke.",
+      "base": {
+        "cooldown": 1.9,
+        "damage": 19.54,
+        "speed": 8.2,
+        "pierce": 0,
+        "range": 12.5,
+        "radius": 0.3,
+        "life": 1.7,
+        "splash": 2,
+        "projectiles": 1,
+        "status": { "kind": "burn", "chance": 0.6, "power": 0.25, "duration": 3 },
+        "groundOnHit": { "radius": 1.5, "duration": 2.5, "dpsPct": 0.25 },
+        "seek": "elite"
+      },
+      "evolutions": [
+        {
+          "id": "powder_keg",
+          "name": "Powder Keg",
+          "catalysts": ["might"],
+          "description": "Two kegs at a throw, each blast wider and heavier, throwing the crowd apart.",
+          "art": "firepot",
+          "mods": { "damage": 1.52, "area": 1.4, "projectiles": 1 },
+          "set": { "knockback": 1.4 }
+        },
+        {
+          "id": "wildfire",
+          "name": "Wildfire",
+          "catalysts": ["emberblood", "perennial"],
+          "description": "The fire will not stay where it fell: the burning ground is wider and lasts longer, and what dies burning in it spreads it.",
+          "art": "firepot",
+          "mods": { "damage": 1.04, "cooldown": 0.85 },
+          "set": { "groundOnHit": { "radius": 2.3, "duration": 4.5, "dpsPct": 0.35 } },
+          "triggers": [
+            {
+              "on": "kill",
+              "chance": 0.35,
+              "icd": 0.15,
+              "when": { "targetStatus": "burn", "weapon": "firepot" },
+              "effects": [
+                {
+                  "do": "zone",
+                  "radius": 1.5,
+                  "duration": 3,
+                  "dps": 0.35,
+                  "basis": "weapon",
+                  "school": "fire",
+                  "art": "cinder",
+                  "status": { "kind": "burn", "chance": 0.6, "power": 0.25, "duration": 3 }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seeking_motes",
+      "name": "Seeking Motes",
+      "school": "arcane",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "arcane"],
+      "findable": true,
+      "growth": 0.36,
+      "bossDamage": 1.1,
+      "art": "mote",
+      "description": "A rapid volley of small seeking motes that curve through the crowd on their own.",
+      "base": {
+        "cooldown": 0.93,
+        "damage": 5.42,
+        "speed": 8.4,
+        "pierce": 2,
+        "range": 14,
+        "radius": 0.18,
+        "life": 2.2,
+        "homing": 5.5,
+        "projectiles": 3,
+        "burst": true
+      },
+      "evolutions": [
+        {
+          "id": "mote_cascade",
+          "name": "Fen Lights",
+          "catalysts": ["duplicity"],
+          "description": "The motes multiply like the lights over the fen that lead travelers off the road, and each one splits in two when it strikes.",
+          "art": "mote_cascade",
+          "mods": { "damage": 1.06, "projectiles": 3 },
+          "set": { "splitOnHit": 2 }
+        },
+        {
+          "id": "starseeker",
+          "name": "Starseeker",
+          "catalysts": ["precision"],
+          "description": "Motes hunt the strongest thing on the field, and one in four strikes true.",
+          "art": "mote_star",
+          "mods": { "damage": 1.73, "cooldown": 0.85 },
+          "set": { "homing": 9, "seek": "strongest", "crit": 0.25 }
+        }
+      ]
+    },
+    {
+      "id": "moonbrand",
+      "name": "Moonbrand",
+      "school": "arcane",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "arcane"],
+      "findable": true,
+      "growth": 0.26,
+      "art": "moon",
+      "description": "Moonlit flame that tracks its prey and leaves it marked.",
+      "base": {
+        "cooldown": 1.32,
+        "damage": 78.71,
+        "speed": 7.3,
+        "pierce": 0,
+        "range": 14,
+        "radius": 0.24,
+        "life": 2.6,
+        "homing": 4,
+        "projectiles": 1,
+        "status": { "kind": "mark", "chance": 0.25, "power": 1, "duration": 4 }
+      },
+      "evolutions": [
+        {
+          "id": "moonfall",
+          "name": "Moonfall",
+          "catalysts": ["greed", "expanse"],
+          "description": "Moons fall wherever the enemy gathers.",
+          "behavior": "storm",
+          "art": "moonfall",
+          "mods": { "damage": 0.51 },
+          "set": { "splash": 1.5, "strikes": 5, "stormRadius": 5.75 }
+        },
+        {
+          "id": "lunar_brand",
+          "name": "Lunar Brand",
+          "catalysts": ["fortune"],
+          "description": "Every moon marks, and a marked thing that dies throws the mark to two of its neighbors.",
+          "art": "moon_brand",
+          "mods": { "damage": 1.63, "projectiles": 1 },
+          "set": { "status": { "kind": "mark", "chance": 1, "power": 1, "duration": 6 } },
+          "triggers": [
+            {
+              "on": "kill",
+              "icd": 0.05,
+              "when": { "targetStatus": "mark" },
+              "effects": [{ "do": "spread", "kind": "mark", "radius": 4, "count": 2 }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cinderfall",
+      "name": "Cinderfall",
+      "school": "fire",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "fire", "explosion"],
+      "findable": true,
+      "bossDamage": 1.3,
+      "art": "cinder",
+      "description": "A slow, heavy cinder that bursts on impact and sets what it touches alight.",
+      "base": {
+        "cooldown": 1.75,
+        "damage": 29.3,
+        "speed": 8.6,
+        "pierce": 0,
+        "range": 15,
+        "radius": 0.28,
+        "life": 2.4,
+        "splash": 1.8,
+        "projectiles": 1,
+        "status": { "kind": "burn", "chance": 0.5, "power": 0.25, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "fallen_star",
+          "name": "Fallen Star",
+          "catalysts": ["expanse"],
+          "description": "The cinder becomes a falling star: a huge blast that leaves the ground burning.",
+          "art": "star",
+          "mods": { "damage": 0.89, "area": 1.45 },
+          "set": { "groundOnHit": { "radius": 2.2, "duration": 3, "dpsPct": 0.25 } }
+        },
+        {
+          "id": "living_flame",
+          "name": "Living Flame",
+          "catalysts": ["perennial", "emberblood"],
+          "description": "Cinders burst into three seeking flames that hunt on after the blast.",
+          "art": "living_flame",
+          "mods": { "damage": 1.49, "cooldown": 0.85 },
+          "set": { "homing": 4, "splitOnHit": 3 }
+        }
+      ]
+    },
+    {
+      "id": "rimeshard",
+      "name": "Rimeshard",
+      "school": "frost",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "frost"],
+      "findable": true,
+      "growth": 0.28,
+      "bossDamage": 1.1,
+      "art": "shard",
+      "description": "Bitter cold that pierces and chills. Enough chill and a thing freezes solid.",
+      "base": {
+        "cooldown": 1.2,
+        "damage": 55.55,
+        "speed": 9.1,
+        "pierce": 2,
+        "range": 14.5,
+        "radius": 0.22,
+        "life": 2.2,
+        "projectiles": 1,
+        "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 }
+      },
+      "evolutions": [
+        {
+          "id": "deepwinter",
+          "name": "Deepwinter",
+          "catalysts": ["haste"],
+          "description": "Winter takes the field: every shard bursts into a ring of smaller shards where it strikes.",
+          "art": "shard_deep",
+          "mods": { "damage": 0.58, "cooldown": 0.8, "projectiles": 1 },
+          "set": { "splitOnHit": 4 }
+        },
+        {
+          "id": "glacier_spear",
+          "name": "Ford Ice",
+          "catalysts": ["velocity"],
+          "description": "A lance of black ice off the ford in midwinter, that runs the length of the field and freezes all it passes.",
+          "art": "spear_ice",
+          "mods": { "damage": 1.09, "speed": 1.4, "pierce": 20 },
+          "set": { "radius": 0.5, "status": { "kind": "chill", "chance": 1, "power": 3, "duration": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "hoarfrost",
+      "name": "Hoarfrost",
+      "school": "frost",
+      "behavior": "nova",
+      "tags": ["nova", "area", "spell", "frost"],
+      "findable": true,
+      "bossDamage": 2.6,
+      "art": "nova_frost",
+      "description": "A breath of killing cold rolls out from you, chilling everything it reaches. Twice, and a thing freezes.",
+      "base": {
+        "cooldown": 2.5,
+        "damage": 40,
+        "radius": 3.4,
+        "knockback": 0.25,
+        "expandTime": 0.4,
+        "status": { "kind": "chill", "chance": 1, "power": 2, "duration": 2.5 }
+      },
+      "evolutions": [
+        {
+          "id": "winter_ward",
+          "name": "Winter Ward",
+          "catalysts": ["warding"],
+          "description": "Each breath of cold wraps you in rime: a barrier of a fiftieth of your health for everything it chills, up to a quarter.",
+          "art": "nova_frost",
+          "mods": { "damage": 2.52, "area": 1.15 },
+          "triggers": [
+            {
+              "on": "hit",
+              "when": { "weapon": "hoarfrost" },
+              "effects": [{ "do": "barrier", "fraction": 0.02, "cap": 0.25 }]
+            }
+          ]
+        },
+        {
+          "id": "absolute_zero",
+          "name": "Absolute Zero",
+          "catalysts": ["chilling"],
+          "description": "The cold goes all the way down: whatever it reaches freezes solid.",
+          "art": "nova_frost",
+          "mods": { "damage": 4.4, "cooldown": 1.15 },
+          "set": { "status": { "kind": "chill", "chance": 1, "power": 5, "duration": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "arcweb",
+      "name": "Arcweb",
+      "school": "storm",
+      "behavior": "chain",
+      "tags": ["chain", "spell", "storm"],
+      "access": ["reaver", "arcanist"],
+      "findable": true,
+      "growth": 0.4,
+      "bossDamage": 2,
+      "art": "arc",
+      "description": "Lightning that leaps from foe to foe.",
+      "base": {
+        "cooldown": 1.65,
+        "damage": 20.3,
+        "range": 11,
+        "chains": 5,
+        "chainRange": 6.25,
+        "status": { "kind": "shock", "chance": 0.5, "power": 1, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "skybreak",
+          "name": "Skybreak",
+          "catalysts": ["precision", "conduit"],
+          "description": "The sky answers every call: each leap also brings a bolt straight down.",
+          "addTags": ["storm"],
+          "art": "arc_sky",
+          "mods": { "damage": 1.26, "chains": 2 },
+          "triggers": [
+            {
+              "on": "hit",
+              "when": { "weapon": "arcweb" },
+              "effects": [
+                {
+                  "do": "strike",
+                  "count": 1,
+                  "radius": 1.2,
+                  "damage": 0.45,
+                  "basis": "hit",
+                  "school": "storm",
+                  "area": 0.6
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tempest_coil",
+          "name": "Tempest Coil",
+          "catalysts": ["expanse"],
+          "description": "The lightning forks at every leap. A crowd becomes a web.",
+          "art": "arc_fork",
+          "mods": { "damage": 3.05 },
+          "set": { "fork": true }
+        }
+      ]
+    },
+    {
+      "id": "thunderhead",
+      "name": "Thunderhead",
+      "school": "storm",
+      "behavior": "storm",
+      "tags": ["storm", "area", "spell"],
+      "findable": true,
+      "bossDamage": 2.4,
+      "art": "storm_bolt",
+      "description": "A cloud follows you and breaks: lightning falls among whatever crowds you.",
+      "base": {
+        "cooldown": 2.2,
+        "damage": 14.43,
+        "splash": 1.5,
+        "strikes": 3,
+        "stormRadius": 6.5,
+        "status": { "kind": "shock", "chance": 0.5, "power": 1, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "eye_of_the_storm",
+          "name": "Split Oak",
+          "catalysts": ["conduit"],
+          "description": "The storm that splits the oaks on the hill: more bolts, and faster, and each that finds a shocked thing leaps on to two more.",
+          "art": "storm_eye",
+          "mods": { "damage": 1.43, "cooldown": 0.75, "strikes": 2 },
+          "triggers": [
+            {
+              "on": "hit",
+              "icd": 0.05,
+              "when": { "targetStatus": "shock", "weapon": "thunderhead" },
+              "effects": [{ "do": "chain", "count": 2, "range": 5, "damage": 0.5, "basis": "hit", "school": "storm" }]
+            }
+          ]
+        },
+        {
+          "id": "thunderclap",
+          "name": "Thunderclap",
+          "catalysts": ["might"],
+          "description": "Fewer bolts, and each one a thunderclap: a wide blast that leaves what it strikes reeling.",
+          "art": "storm_clap",
+          "mods": { "damage": 3.73, "area": 1.6 },
+          "set": { "strikes": 2, "status": { "kind": "stun", "chance": 0.6, "power": 1, "duration": 0.8 } }
+        }
+      ]
+    },
+    {
+      "id": "umbral_bolt",
+      "name": "Umbral Bolt",
+      "school": "shadow",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "shadow"],
+      "access": ["reaver", "arcanist"],
+      "findable": true,
+      "growth": 0.26,
+      "art": "umbral",
+      "description": "Bolts of shadow that tear straight through ranks.",
+      "base": {
+        "cooldown": 1.1,
+        "damage": 45.87,
+        "speed": 9.1,
+        "pierce": 2,
+        "range": 14.5,
+        "radius": 0.22,
+        "life": 2.4,
+        "projectiles": 1
+      },
+      "evolutions": [
+        {
+          "id": "ruin_bolt",
+          "name": "Ruin Bolt",
+          "catalysts": ["might"],
+          "description": "Ruin that nothing can stop: the bolt passes through everything and leaves a wound behind it.",
+          "art": "ruin",
+          "mods": { "damage": 1.35, "speed": 1.2, "pierce": 20 },
+          "set": { "status": { "kind": "bleed", "chance": 1, "power": 0.4, "duration": 3 } }
+        },
+        {
+          "id": "soul_siphon",
+          "name": "Soul Siphon",
+          "catalysts": ["recovery"],
+          "description": "Each bolt drinks a little of whatever it passes through and gives it to you.",
+          "art": "siphon",
+          "mods": { "damage": 2.45, "projectiles": 1 },
+          "set": { "heal": 0.6 }
+        }
+      ]
+    },
+    {
+      "id": "grave_tether",
+      "name": "Grave Tether",
+      "school": "shadow",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "shadow", "heal"],
+      "findable": true,
+      "growth": 0.26,
+      "art": "tether",
+      "description": "A coil of dark magic that wounds the living and knits your own flesh back together.",
+      "base": {
+        "cooldown": 1.6,
+        "damage": 68.31,
+        "speed": 9.5,
+        "pierce": 2,
+        "range": 15,
+        "radius": 0.24,
+        "life": 2.4,
+        "heal": 1.5,
+        "projectiles": 1
+      },
+      "evolutions": [
+        {
+          "id": "tether_of_anguish",
+          "name": "Tether of Anguish",
+          "catalysts": ["wisdom", "recovery"],
+          "description": "The tether takes more, and gives more back.",
+          "art": "tether2",
+          "mods": { "damage": 2.35, "projectiles": 1 },
+          "set": { "heal": 3 }
+        },
+        {
+          "id": "deathcoil",
+          "name": "Deathcoil",
+          "catalysts": ["duplicity"],
+          "description": "Each coil leaves the struck marked for the grave: they take more from everything.",
+          "art": "tether_mark",
+          "mods": { "damage": 2.25 },
+          "set": { "status": { "kind": "mark", "chance": 1, "power": 1, "duration": 4 } }
+        }
+      ]
+    },
+    {
+      "id": "gravecall",
+      "name": "Gravecall",
+      "school": "shadow",
+      "behavior": "raise",
+      "tags": ["summon", "spell", "shadow"],
+      "findable": true,
+      "bossDamage": 1.6,
+      "art": "risen",
+      "description": "The dead you walk among get up for you: risen servants that hunt beside you a while.",
+      "base": { "cooldown": 3.2, "damage": 68.73, "duration": 14, "projectiles": 2, "raises": "ghoul_ally" },
+      "evolutions": [
+        {
+          "id": "barrow_legion",
+          "name": "Barrow Legion",
+          "catalysts": ["kinship"],
+          "description": "The barrows empty for you: twice as many risen, and they do not lie down again.",
+          "art": "risen",
+          "mods": { "damage": 1.82, "duration": 4, "projectiles": 2 }
+        },
+        {
+          "id": "bone_knights",
+          "name": "Bone Knights",
+          "catalysts": ["ironhide", "vitality"],
+          "description": "Fewer and greater: knights in barrow-iron get up for you, each worth three of the others.",
+          "art": "risen",
+          "mods": { "damage": 2.38, "duration": 1.5 },
+          "set": { "projectiles": 1, "raises": "knight_ally" }
+        }
+      ]
+    },
+    {
+      "id": "dawnpulse",
+      "name": "Dawnpulse",
+      "school": "holy",
+      "behavior": "nova",
+      "tags": ["nova", "area", "spell", "holy"],
+      "access": ["warden", "arcanist"],
+      "findable": true,
+      "growth": 0.16,
+      "bossDamage": 2.8,
+      "art": "nova_holy",
+      "description": "A ring of Light erupts outward from you, throwing back what it touches. The dead hate it.",
+      "base": {
+        "cooldown": 2.6,
+        "damage": 11.02,
+        "radius": 3.75,
+        "knockback": 0.65,
+        "expandTime": 0.35,
+        "status": { "kind": "sear", "chance": 1, "power": 1, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "circle_of_dawn",
+          "name": "Circle of Dawn",
+          "catalysts": ["vitality", "recovery"],
+          "description": "Each dawn mends you as it burns them.",
+          "art": "nova_dawn",
+          "mods": { "damage": 2.05, "area": 1.2 },
+          "set": { "heal": 4 }
+        },
+        {
+          "id": "sunbreak",
+          "name": "Sunbreak",
+          "catalysts": ["might"],
+          "description": "The pulse leaves a ring of daylight on the ground that goes on burning.",
+          "art": "nova_sun",
+          "mods": { "damage": 2.26 },
+          "set": { "groundOnHit": { "radius": 3.5, "duration": 2.5, "dpsPct": 0.3 } }
+        }
+      ]
+    },
+    {
+      "id": "hallowed_ring",
+      "name": "Hallowed Ground",
+      "school": "holy",
+      "behavior": "zone",
+      "tags": ["zone", "area", "aura", "holy"],
+      "access": ["warden", "arcanist"],
+      "findable": true,
+      "growth": 0.16,
+      "bossDamage": 2.5,
+      "art": "zone_holy",
+      "description": "Hallows the ground beneath your feet. Whatever stands in it burns.",
+      "base": {
+        "cooldown": 3.95,
+        "damage": 3.82,
+        "radius": 3,
+        "duration": 4,
+        "tickRate": 0.5,
+        "status": { "kind": "sear", "chance": 0.4, "power": 1, "duration": 2 }
+      },
+      "evolutions": [
+        {
+          "id": "sanctified_earth",
+          "name": "Sanctified Earth",
+          "catalysts": ["ironhide", "warding"],
+          "description": "Sacred ground that shelters as it burns: stand in it and blows glance off you.",
+          "art": "zone_sanct",
+          "mods": { "damage": 1.41, "area": 1.25, "duration": 1.3 }
+        },
+        {
+          "id": "pyre_of_faith",
+          "name": "Pyre of Faith",
+          "catalysts": ["searing", "emberblood"],
+          "description": "The ground catches fire as well as light. Everything in it burns twice.",
+          "school": "fire",
+          "addTags": ["fire"],
+          "art": "zone_pyre",
+          "mods": { "damage": 5.42 },
+          "set": { "status": { "kind": "burn", "chance": 0.6, "power": 0.3, "duration": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "blightfield",
+      "name": "Blightfield",
+      "school": "shadow",
+      "behavior": "zone",
+      "tags": ["zone", "area", "dot", "shadow"],
+      "access": ["reaver", "stalker"],
+      "findable": true,
+      "growth": 0.18,
+      "bossDamage": 2.5,
+      "art": "zone_blight",
+      "description": "Corrupts the ground under the nearest crowd; anything standing in it rots.",
+      "base": {
+        "cooldown": 4.3,
+        "damage": 7.02,
+        "radius": 3.25,
+        "duration": 4.5,
+        "tickRate": 0.45,
+        "atTarget": true,
+        "status": { "kind": "poison", "chance": 0.6, "power": 0.2, "duration": 4 }
+      },
+      "evolutions": [
+        {
+          "id": "blighted_earth",
+          "name": "Blighted Earth",
+          "catalysts": ["chilling", "venom"],
+          "description": "The blight spreads wider and lasts longer, and holds fast whatever stands in it.",
+          "art": "zone_blight2",
+          "mods": { "damage": 1.5, "area": 1.3, "duration": 1.3 },
+          "set": { "slow": 0.5 }
+        },
+        {
+          "id": "plaguebloom",
+          "name": "Plaguebloom",
+          "catalysts": ["perennial"],
+          "description": "Whatever dies in the blight bursts: its poison leaps to those near it, and the blight goes on where it fell.",
+          "art": "zone_plague",
+          "mods": { "damage": 2.73 },
+          "triggers": [
+            {
+              "on": "kill",
+              "icd": 0.2,
+              "when": { "weapon": "blightfield" },
+              "effects": [
+                { "do": "spread", "kind": "poison", "radius": 3, "count": 3, "stacks": 2 },
+                {
+                  "do": "zone",
+                  "radius": 1.8,
+                  "duration": 3,
+                  "dps": 0.5,
+                  "basis": "weapon",
+                  "school": "shadow",
+                  "art": "zone_blight",
+                  "status": { "kind": "poison", "chance": 0.6, "power": 0.2, "duration": 4 }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thornbloom",
+      "name": "Thornbloom",
+      "school": "nature",
+      "behavior": "zone",
+      "tags": ["zone", "area", "nature"],
+      "access": ["arcanist", "stalker"],
+      "findable": true,
+      "growth": 0.18,
+      "bossDamage": 2.5,
+      "art": "zone_thorn",
+      "description": "Brambles burst up under the nearest crowd, tearing at everything caught and holding it slow.",
+      "base": {
+        "cooldown": 3.8,
+        "damage": 8.69,
+        "radius": 2.3,
+        "duration": 4,
+        "tickRate": 0.5,
+        "slow": 0.55,
+        "atTarget": true
+      },
+      "evolutions": [
+        {
+          "id": "everbloom",
+          "name": "Everbloom",
+          "catalysts": ["thorns", "venom"],
+          "description": "The brambles flower, and the flowers have thorns too.",
+          "art": "zone_bloom",
+          "mods": { "damage": 2, "area": 1.3, "duration": 1.3 },
+          "set": { "status": { "kind": "poison", "chance": 0.5, "power": 0.2, "duration": 4 } }
+        },
+        {
+          "id": "strangleroot",
+          "name": "Strangleroot",
+          "catalysts": ["chilling"],
+          "description": "The roots do not let go: what they hold is held still.",
+          "art": "zone_root",
+          "mods": { "damage": 2.98 },
+          "set": { "slow": 0.15, "status": { "kind": "stun", "chance": 0.25, "power": 1, "duration": 1 } }
+        }
+      ]
+    },
+    {
+      "id": "verdant_lance",
+      "name": "Verdant Lance",
+      "school": "nature",
+      "behavior": "beam",
+      "tags": ["beam", "spell", "nature"],
+      "findable": true,
+      "bossDamage": 2.45,
+      "art": "beam_green",
+      "description": "A lance of green fire that burns everything standing in its path.",
+      "base": {
+        "cooldown": 1.43,
+        "damage": 28.61,
+        "range": 15.5,
+        "duration": 0.35,
+        "beamWidth": 0.65,
+        "status": { "kind": "poison", "chance": 0.3, "power": 0.15, "duration": 3 }
+      },
+      "evolutions": [
+        {
+          "id": "verdant_gaze",
+          "name": "Verdant Gaze",
+          "catalysts": ["evasion", "venom"],
+          "description": "The gaze widens until the world is a line of green fire.",
+          "art": "beam_gaze",
+          "mods": { "damage": 2.82, "area": 1.8 }
+        },
+        {
+          "id": "sunlance",
+          "name": "Sunlance",
+          "catalysts": ["searing"],
+          "description": "The lance turns gold, and holy, and sears the dead to ash.",
+          "school": "holy",
+          "addTags": ["holy"],
+          "art": "beam_sun",
+          "mods": { "damage": 0.82 },
+          "set": { "status": { "kind": "sear", "chance": 1, "power": 1, "duration": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "spirit_herd",
+      "name": "Spirit Herd",
+      "school": "nature",
+      "behavior": "herd",
+      "tags": ["summon", "nature", "area"],
+      "access": ["reaver", "stalker"],
+      "findable": true,
+      "bossDamage": 2.4,
+      "art": "herd",
+      "description": "Spirit beasts stampede from behind you toward the nearest foe, trampling everything in the way.",
+      "base": {
+        "cooldown": 2.6,
+        "damage": 20.62,
+        "speed": 8.25,
+        "pierce": 99,
+        "range": 15.5,
+        "radius": 0.4,
+        "life": 1.8,
+        "knockback": 0.55,
+        "projectiles": 2
+      },
+      "evolutions": [
+        {
+          "id": "great_herd",
+          "name": "The Great Herd",
+          "catalysts": ["perennial", "kinship"],
+          "description": "The herd does not end. It only thins.",
+          "art": "herd_great",
+          "mods": { "damage": 1.73, "duration": 1.3, "projectiles": 3 }
+        },
+        {
+          "id": "wild_hunt",
+          "name": "The Wild Hunt",
+          "catalysts": ["fleetfoot"],
+          "description": "The herd runs in green fire, and each beast goes up in it where it strikes.",
+          "addTags": ["explosion"],
+          "art": "herd_hunt",
+          "mods": { "damage": 1.49 },
+          "set": { "splash": 1.9 }
+        }
+      ]
+    },
+    {
+      "id": "frostfire_comet",
+      "name": "Frostfire Comet",
+      "school": "fire",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "fire", "frost", "explosion"],
+      "bossDamage": 1.6,
+      "art": "frostfire",
+      "description": "Fire and frost in one falling star: it bursts, freezes what it does not burn, and the frozen it finds explode.",
+      "base": {
+        "cooldown": 1.5,
+        "damage": 47.9,
+        "speed": 9,
+        "pierce": 0,
+        "range": 16,
+        "radius": 0.5,
+        "life": 2.4,
+        "splash": 2.8,
+        "projectiles": 1,
+        "status": { "kind": "chill", "chance": 1, "power": 2.5, "duration": 3 },
+        "groundOnHit": { "radius": 2.4, "duration": 3, "dpsPct": 0.3 }
+      },
+      "triggers": [
+        {
+          "on": "hit",
+          "icd": 0.1,
+          "when": { "targetStatus": "frozen", "weapon": "frostfire_comet" },
+          "effects": [{ "do": "explode", "radius": 2.4, "damage": 1, "basis": "hit", "school": "fire" }]
+        }
+      ]
+    },
+    {
+      "id": "the_tempest",
+      "name": "The Tempest",
+      "school": "storm",
+      "behavior": "storm",
+      "tags": ["storm", "area", "spell", "chain"],
+      "bossDamage": 2.2,
+      "art": "storm_eye",
+      "description": "The storm and its lightning are one: bolts fall on the crowd and leap from every shocked thing they strike.",
+      "base": {
+        "cooldown": 1.6,
+        "damage": 31.6,
+        "splash": 1.8,
+        "strikes": 6,
+        "stormRadius": 7,
+        "status": { "kind": "shock", "chance": 1, "power": 1, "duration": 3 }
+      },
+      "triggers": [
+        {
+          "on": "hit",
+          "icd": 0.05,
+          "when": { "targetStatus": "shock", "weapon": "the_tempest" },
+          "effects": [{ "do": "chain", "count": 3, "range": 6, "damage": 0.5, "basis": "hit", "school": "storm" }]
+        }
+      ]
+    },
+    {
+      "id": "rotwood",
+      "name": "Rotwood",
+      "school": "nature",
+      "behavior": "zone",
+      "tags": ["zone", "area", "dot", "nature", "shadow"],
+      "bossDamage": 2.4,
+      "art": "zone_rot",
+      "description": "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it.",
+      "base": {
+        "cooldown": 3.6,
+        "damage": 18.6,
+        "radius": 4.2,
+        "duration": 6,
+        "tickRate": 0.4,
+        "slow": 0.45,
+        "atTarget": true,
+        "status": { "kind": "poison", "chance": 0.8, "power": 0.25, "duration": 4 }
+      },
+      "triggers": [
+        {
+          "on": "kill",
+          "icd": 0.1,
+          "when": { "weapon": "rotwood" },
+          "effects": [{ "do": "spread", "kind": "poison", "radius": 3, "count": 3, "stacks": 2 }]
+        }
+      ]
+    },
+    {
+      "id": "butchers_wheel",
+      "name": "Butcher's Wheel",
+      "school": "physical",
+      "behavior": "orbit",
+      "tags": ["orbit", "melee", "steel", "physical", "area"],
+      "bossDamage": 2.4,
+      "art": "axe_blood",
+      "description": "The axes become cleavers and never stop turning: every cut a wound, and wounds that deepen.",
+      "base": {
+        "cooldown": 3.8,
+        "damage": 43.6,
+        "radius": 0.75,
+        "duration": 5,
+        "orbitRadius": 2.9,
+        "orbitSpeed": 4.8,
+        "projectiles": 4,
+        "status": { "kind": "bleed", "chance": 1, "power": 0.4, "duration": 3, "stack": true }
+      }
+    },
+    {
+      "id": "hail_of_steel",
+      "name": "Hail of Steel",
+      "school": "physical",
+      "behavior": "ring",
+      "tags": ["projectile", "thrown", "ranged", "steel", "physical"],
+      "bossDamage": 2.2,
+      "art": "dagger_flurry",
+      "description": "Arrows and knives together, in every direction at once, opening wounds.",
+      "base": {
+        "cooldown": 1.2,
+        "damage": 125.4,
+        "speed": 10,
+        "pierce": 3,
+        "radius": 0.22,
+        "life": 1.2,
+        "projectiles": 12,
+        "status": { "kind": "bleed", "chance": 0.4, "power": 0.3, "duration": 3 }
+      }
+    },
+    {
+      "id": "dawns_judgement",
+      "name": "Dawn's Judgement",
+      "school": "holy",
+      "behavior": "bounce",
+      "tags": ["projectile", "thrown", "bounce", "nova", "holy"],
+      "bossDamage": 2.2,
+      "art": "disc_reckon",
+      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike.",
+      "base": {
+        "cooldown": 1.8,
+        "damage": 15,
+        "speed": 10.5,
+        "range": 16,
+        "radius": 0.32,
+        "life": 3.5,
+        "bounces": 9,
+        "knockback": 0.3,
+        "projectiles": 2,
+        "status": { "kind": "sear", "chance": 1, "power": 1, "duration": 3 }
+      },
+      "triggers": [
+        {
+          "on": "hit",
+          "icd": 0.15,
+          "when": { "weapon": "dawns_judgement" },
+          "effects": [{ "do": "nova", "radius": 2.2, "damage": 0.35, "basis": "hit", "school": "holy", "knockback": 0.4 }]
+        }
+      ]
+    },
+    {
+      "id": "barrow_host",
+      "name": "The Barrow Host",
+      "school": "shadow",
+      "behavior": "raise",
+      "tags": ["summon", "spell", "shadow", "nature"],
+      "bossDamage": 1.6,
+      "art": "risen",
+      "description": "The barrows send their knights, and the herd runs with them: a host that does not lie down.",
+      "base": { "cooldown": 3, "damage": 187.9, "duration": 40, "projectiles": 3, "raises": "knight_ally" }
+    },
+    {
+      "id": "soul_lantern",
+      "name": "Soul Lantern",
+      "school": "shadow",
+      "behavior": "aimed",
+      "tags": ["projectile", "spell", "shadow", "heal"],
+      "bossDamage": 1.2,
+      "art": "siphon",
+      "description": "Shadow that passes through everything, marks it for the grave, and brings a little of it back to you.",
+      "base": {
+        "cooldown": 1,
+        "damage": 72.2,
+        "speed": 10,
+        "pierce": 6,
+        "range": 16,
+        "radius": 0.3,
+        "life": 2.4,
+        "homing": 3,
+        "heal": 1,
+        "projectiles": 2,
+        "status": { "kind": "mark", "chance": 1, "power": 1, "duration": 4 }
+      }
+    },
+    {
+      "id": "starfall",
+      "name": "Starfall",
+      "school": "arcane",
+      "behavior": "storm",
+      "tags": ["spell", "arcane", "area", "projectile"],
+      "bossDamage": 1.5,
+      "art": "moonfall",
+      "description": "Moons fall among them and break into motes that hunt the strongest.",
+      "base": {
+        "cooldown": 1.5,
+        "damage": 35.2,
+        "splash": 1.7,
+        "strikes": 5,
+        "stormRadius": 6.5,
+        "status": { "kind": "mark", "chance": 0.5, "power": 1, "duration": 4 }
+      },
+      "triggers": [
+        {
+          "on": "hit",
+          "icd": 0.06,
+          "when": { "weapon": "starfall" },
+          "effects": [
+            {
+              "do": "missiles",
+              "count": 2,
+              "damage": 0.35,
+              "basis": "hit",
+              "school": "arcane",
+              "seek": "strongest",
+              "speed": 10,
+              "art": "mote"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unions": [
+    {
+      "id": "frostfire_comet",
+      "name": "Frostfire Comet",
+      "a": "cinderfall",
+      "b": "rimeshard",
+      "into": "frostfire_comet",
+      "description": "Fire and frost in one falling star: it bursts, freezes what it does not burn, and the frozen it finds explode."
+    },
+    {
+      "id": "the_tempest",
+      "name": "The Tempest",
+      "a": "arcweb",
+      "b": "thunderhead",
+      "into": "the_tempest",
+      "description": "The storm and its lightning are one: bolts fall on the crowd and leap from every shocked thing they strike."
+    },
+    {
+      "id": "rotwood",
+      "name": "Rotwood",
+      "a": "blightfield",
+      "b": "thornbloom",
+      "into": "rotwood",
+      "description": "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it."
+    },
+    {
+      "id": "butchers_wheel",
+      "name": "Butcher's Wheel",
+      "a": "axe_gyre",
+      "b": "cleaver",
+      "into": "butchers_wheel",
+      "description": "The axes become cleavers and never stop turning: every cut a wound, and wounds that deepen."
+    },
+    {
+      "id": "hail_of_steel",
+      "name": "Hail of Steel",
+      "a": "volley",
+      "b": "knifestorm",
+      "into": "hail_of_steel",
+      "description": "Arrows and knives together, in every direction at once, opening wounds."
+    },
+    {
+      "id": "dawns_judgement",
+      "name": "Dawn's Judgement",
+      "a": "dawnpulse",
+      "b": "judgement_disc",
+      "into": "dawns_judgement",
+      "description": "Two shields of morning that ricochet through the crowd, and break into light wherever they strike."
+    },
+    {
+      "id": "barrow_host",
+      "name": "The Barrow Host",
+      "a": "gravecall",
+      "b": "spirit_herd",
+      "into": "barrow_host",
+      "description": "The barrows send their knights, and the herd runs with them: a host that does not lie down."
+    },
+    {
+      "id": "soul_lantern",
+      "name": "Soul Lantern",
+      "a": "umbral_bolt",
+      "b": "grave_tether",
+      "into": "soul_lantern",
+      "description": "Shadow that passes through everything, marks it for the grave, and brings a little of it back to you."
+    },
+    {
+      "id": "starfall",
+      "name": "Starfall",
+      "a": "seeking_motes",
+      "b": "moonbrand",
+      "into": "starfall",
+      "description": "Moons fall among them and break into motes that hunt the strongest."
+    }
+  ]
+}

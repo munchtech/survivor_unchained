@@ -60,11 +60,39 @@ public class PrologueTests
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
         Assert.True(s.B.Enemies.Living().Count() > 6);
         Assert.Equal("move", s.Host.CurrentHint?.Id ?? "move");
-        // The first rise of the ember brings a great blessing before its card.
+        // The first rise of the ember brings its first card alone; the great blessing comes on its own
+        // panel later (au1 item 2).
         s.B.GainEmber(s.B.EmberNext);
         Run(s, 0.1);
-        Assert.True(LevelUp.GreatNext(s.B));
+        Assert.False(LevelUp.GreatNext(s.B));
+        Assert.True(s.B.DraftOwed);
         Assert.NotNull(s.Host.DraftTip);
+    }
+
+    [Fact]
+    public void The_wagon_is_quiet_until_its_line_is_read_then_a_volley_asks_for_the_dash()
+    {
+        var s = Make();
+        Run(s, 112);
+        Assert.Equal(Prologue.Stage.Road, s.Zone.Now);
+        var cart = s.Meta.Place("LOWFORD", "cart");
+        Stand(s, cart.X, cart.Z + 5);
+        Run(s, 0.1);
+        Assert.Equal(Prologue.Stage.Ambush, s.Zone.Now);
+        // The Road's beat (au i15): coins spilled from the wagon, and the ditch still quiet.
+        Assert.True(s.B.Pickups.Living().Count(k => k.Kind == PickupKind.Gold) >= 3);
+        Run(s, 1);
+        Assert.Contains(s.Host.Said, l => l.StartsWith("A wagon on its side"));
+        Assert.False(s.Zone.Sprung);
+        // The ditch rises once its line is read.
+        Run(s, 5);
+        Assert.True(s.Zone.Sprung);
+        Assert.True(s.B.Enemies.Living().Count(e => e.Def.Id == "risen_archer") >= 3);
+        // Their first volley in the air at her asks for the dash, briefly (never late, after it lands).
+        Run(s, 4);
+        var dash = s.Host.Asked.FirstOrDefault(c => c.Id == "dash");
+        Assert.NotNull(dash);
+        Assert.True(dash!.Patience < 1);
     }
 
     [Fact]
@@ -77,7 +105,8 @@ public class PrologueTests
         Stand(s, cart.X, cart.Z + 5);
         Run(s, 0.1);
         Assert.Equal(Prologue.Stage.Ambush, s.Zone.Now);
-        Run(s, 49);
+        // (the wagon's line read, the ditch risen, and 48 s of the fight)
+        Run(s, 56);
         Assert.Equal(Prologue.Stage.Road2, s.Zone.Now);
         var post = s.Meta.Place("LOWFORD", "post");
         Stand(s, post.X - 6, post.Z + 4);

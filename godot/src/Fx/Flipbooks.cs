@@ -48,6 +48,38 @@ public partial class Flipbooks : Node3D
 
     public Flipbooks() { Name = "Flipbooks"; }
 
+    // Every atlas read ahead on the loader's threads as the first fight's effects stand up, and the
+    // shader readied with a first material: read on its first use, the first level-up's blast held
+    // its frame 30-90 ms (MR4, the hub at 12 s). Kept for the game's life (38 MB on disk, 21 atlases).
+    static Shader? shader;
+    static readonly Dictionary<string, Texture2D?> atlases = new();
+    static readonly HashSet<string> asked = new();
+
+    static string AtlasPath(string name) => $"res://art/fx/fb/{name}.png";
+
+    public override void _Ready()
+    {
+        if (shader != null) return;
+        shader = GD.Load<Shader>("res://shaders/flipbook.gdshader");
+        // (the shader's first material made here, off the fight: making it is the costly part)
+        _ = new ShaderMaterial { Shader = shader };
+        foreach (var f in DirAccess.GetFilesAt("res://art/fx/fb"))
+        {
+            if (!f.EndsWith(".json")) continue;
+            var path = AtlasPath(f[..^5]);
+            if (ResourceLoader.Exists(path) && ResourceLoader.LoadThreadedRequest(path) == Error.Ok) asked.Add(path);
+        }
+    }
+
+    static Texture2D? Atlas(string name)
+    {
+        if (atlases.TryGetValue(name, out var t)) return t;
+        var path = AtlasPath(name);
+        // (asked ahead: taken from the loader, waited for if it is not in yet)
+        t = asked.Remove(path) ? ResourceLoader.LoadThreadedGet(path) as Texture2D : GD.Load<Texture2D>(path);
+        return atlases[name] = t;
+    }
+
     public static bool Has(string name) => FileAccess.FileExists($"res://art/fx/fb/{name}.json");
 
     Book? Of(string name)
@@ -56,8 +88,8 @@ public partial class Flipbooks : Node3D
         if (!Has(name)) { books[name] = null; return null; }
         var meta = Core.Json.Parse<Dictionary<string, object>>(FileAccess.GetFileAsString($"res://art/fx/fb/{name}.json"));
         int grid = System.Convert.ToInt32(meta["grid"].ToString()), frames = System.Convert.ToInt32(meta["frames"].ToString());
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flipbook.gdshader") };
-        mat.SetShaderParameter("atlas", GD.Load<Texture2D>($"res://art/fx/fb/{name}.png"));
+        var mat = new ShaderMaterial { Shader = shader ??= GD.Load<Shader>("res://shaders/flipbook.gdshader") };
+        mat.SetShaderParameter("atlas", Atlas(name));
         mat.SetShaderParameter("grid", grid);
         mat.SetShaderParameter("frames", frames);
         var (add, soft) = Looks.TryGetValue(name, out var l) ? l : (0.7f, 0.5f);

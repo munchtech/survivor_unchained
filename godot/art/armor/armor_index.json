@@ -1,192 +1,235 @@
 [
- {
-  "id": "mar_her_bracers",
-  "outfit": null,
-  "slot": "bracers",
-  "layer": 2,
-  "covers": [
-   "bracers"
-  ],
-  "meshes": [
-   "mar_her_bracers.bracers.rivetbronze",
-   "mar_her_bracers.bracers.steel"
-  ],
-  "tuck": "armor_tuck/mar_her_bracers.bin",
-  "tuck_count": 166,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "mar_her_bracers",
+    "outfit": null,
+    "slot": "bracers",
+    "layer": 2,
+    "covers": [
+      "bracers"
+    ],
+    "meshes": [
+      "mar_her_bracers.bracers.rivetbronze",
+      "mar_her_bracers.bracers.steel"
+    ],
+    "tuck": "armor_tuck/mar_her_bracers.bin",
+    "tuck_count": 102,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/mar_her_bracers.gltf",
+    "tier": 2,
+    "rigid": true,
+    "source": "mesh"
   },
-  "file": "res://art/armor/mar_her_bracers.gltf",
-  "tier": 2,
-  "rigid": true,
-  "source": "mesh"
- },
- {
-  "id": "mar_her_cuirass",
-  "outfit": null,
-  "slot": "top",
-  "layer": 1,
-  "covers": [
-   "top"
-  ],
-  "meshes": [
-   "mar_her_cuirass.top.rivetbronze",
-   "mar_her_cuirass.top.steel"
-  ],
-  "tuck": "armor_tuck/mar_her_cuirass.bin",
-  "tuck_count": 517,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "mar_her_cuirass",
+    "outfit": null,
+    "slot": "top",
+    "layer": 1,
+    "covers": [
+      "top"
+    ],
+    "meshes": [
+      "mar_her_cuirass.top.rivetbronze",
+      "mar_her_cuirass.top.steel"
+    ],
+    "tuck": "armor_tuck/mar_her_cuirass.bin",
+    "tuck_count": 562,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/mar_her_cuirass.gltf",
+    "tier": 2,
+    "rigid": true,
+    "source": "mesh"
   },
-  "file": "res://art/armor/mar_her_cuirass.gltf",
-  "tier": 2,
-  "rigid": true,
-  "source": "mesh"
- },
- {
-  "id": "mar_her_pauldrons",
-  "outfit": null,
-  "slot": "pauldrons",
-  "layer": 3,
-  "covers": [
-   "pauldrons"
-  ],
-  "meshes": [
-   "mar_her_pauldrons.pauldrons.rivetbronze",
-   "mar_her_pauldrons.pauldrons.steel"
-  ],
-  "tuck": "armor_tuck/mar_her_pauldrons.bin",
-  "tuck_count": 3,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "mar_her_pauldrons",
+    "outfit": null,
+    "slot": "pauldrons",
+    "layer": 3,
+    "covers": [
+      "pauldrons"
+    ],
+    "meshes": [
+      "mar_her_pauldrons.pauldrons.rivetbronze",
+      "mar_her_pauldrons.pauldrons.steel"
+    ],
+    "tuck": "armor_tuck/mar_her_pauldrons.bin",
+    "tuck_count": 0,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/mar_her_pauldrons.gltf",
+    "tier": 2,
+    "rigid": true,
+    "source": "mesh"
   },
-  "file": "res://art/armor/mar_her_pauldrons.gltf",
-  "tier": 2,
-  "rigid": true,
-  "source": "mesh"
- },
- {
-  "id": "plate_pauldrons_plain",
-  "outfit": null,
-  "slot": "pauldrons",
-  "layer": 3,
-  "covers": [
-   "pauldrons"
-  ],
-  "meshes": [
-   "plate_pauldrons_plain.pauldrons.darkleather",
-   "plate_pauldrons_plain.pauldrons.steel"
-  ],
-  "tuck": "armor_tuck/plate_pauldrons_plain.bin",
-  "tuck_count": 599,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "file": "res://art/armor/plate_pauldrons_plain.gltf",
-  "tier": 1,
-  "cover_grow": [
-   0.02,
-   0.025
-  ]
- },
- {
-  "id": "plate_pauldrons_warden",
-  "outfit": null,
-  "slot": "pauldrons",
-  "layer": 3,
-  "covers": [
-   "pauldrons"
-  ],
-  "meshes": [
-   "plate_pauldrons_warden.pauldrons.darkleather",
-   "plate_pauldrons_warden.pauldrons.gold",
-   "plate_pauldrons_warden.pauldrons.steel"
-  ],
-  "tuck": "armor_tuck/plate_pauldrons_warden.bin",
-  "tuck_count": 599,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "file": "res://art/armor/plate_pauldrons_warden.gltf",
-  "tier": 1,
-  "cover_grow": [
-   0.02,
-   0.025
-  ],
-  "base": "plate_pauldrons_plain",
-  "replaces": "warden.pauldrons"
- },
- {
-  "id": "plate_top_etched",
-  "outfit": null,
-  "slot": "top",
-  "layer": 1,
-  "covers": [
-   "top"
-  ],
-  "meshes": [
-   "plate_top_etched.top.blacksteel",
-   "plate_top_etched.top.darkleather",
-   "plate_top_etched.top.steel"
-  ],
-  "tuck": "armor_tuck/plate_top_etched.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "plate_cuirass_plain",
+    "outfit": null,
+    "slot": "top",
+    "layer": 1,
+    "covers": [
+      "top"
+    ],
+    "meshes": [
+      "plate_cuirass_plain.top.darkleather",
+      "plate_cuirass_plain.top.steel"
+    ],
+    "tuck": "armor_tuck/plate_cuirass_plain.bin",
+    "tuck_count": 2005,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 1.0,
+      "squash": 0
+    },
+    "file": "res://art/armor/plate_cuirass_plain.gltf",
+    "tier": 1,
+    "rigid": true
   },
-  "file": "res://art/armor/plate_top_etched.gltf",
-  "tier": 2,
-  "base": "plate_top_plain"
- },
- {
-  "id": "plate_top_gilded",
-  "outfit": null,
-  "slot": "top",
-  "layer": 1,
-  "covers": [
-   "top"
-  ],
-  "meshes": [
-   "plate_top_gilded.top.darkleather",
-   "plate_top_gilded.top.gem_sapphire",
-   "plate_top_gilded.top.gold",
-   "plate_top_gilded.top.steel"
-  ],
-  "tuck": "armor_tuck/plate_top_gilded.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "plate_gstring_plain",
+    "outfit": null,
+    "slot": "bottom",
+    "layer": 1,
+    "covers": [
+      "bottom",
+      "belt",
+      "skirt"
+    ],
+    "meshes": [
+      "plate_gstring_plain.bottom.darkleather",
+      "plate_gstring_plain.bottom.steel"
+    ],
+    "tuck": "armor_tuck/plate_gstring_plain.bin",
+    "tuck_count": 291,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "file": "res://art/armor/plate_gstring_plain.gltf",
+    "tier": 1
   },
-  "file": "res://art/armor/plate_top_gilded.gltf",
-  "tier": 3,
-  "base": "plate_top_plain"
- },
- {
-  "id": "plate_top_plain",
-  "outfit": null,
-  "slot": "top",
-  "layer": 1,
-  "covers": [
-   "top"
-  ],
-  "meshes": [
-   "plate_top_plain.top.darkleather",
-   "plate_top_plain.top.steel"
-  ],
-  "tuck": "armor_tuck/plate_top_plain.bin",
-  "tuck_count": 869,
-  "body_hash": "c9b93823bdccabaa102a16a15a8c8048f668a163",
-  "hold": {
-   "amount": 0.55,
-   "squash": 0
+  {
+    "id": "plate_pauldrons_plain",
+    "outfit": null,
+    "slot": "pauldrons",
+    "layer": 3,
+    "covers": [
+      "pauldrons"
+    ],
+    "meshes": [
+      "plate_pauldrons_plain.pauldrons.darkleather",
+      "plate_pauldrons_plain.pauldrons.steel"
+    ],
+    "tuck": "armor_tuck/plate_pauldrons_plain.bin",
+    "tuck_count": 1560,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "file": "res://art/armor/plate_pauldrons_plain.gltf",
+    "tier": 1,
+    "cover_grow": [
+      0.02,
+      0.025
+    ]
   },
-  "file": "res://art/armor/plate_top_plain.gltf",
-  "tier": 1
- }
+  {
+    "id": "plate_pauldrons_warden",
+    "outfit": null,
+    "slot": "pauldrons",
+    "layer": 3,
+    "covers": [
+      "pauldrons"
+    ],
+    "meshes": [
+      "plate_pauldrons_warden.pauldrons.darkleather",
+      "plate_pauldrons_warden.pauldrons.gold",
+      "plate_pauldrons_warden.pauldrons.steel"
+    ],
+    "tuck": "armor_tuck/plate_pauldrons_warden.bin",
+    "tuck_count": 1560,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "file": "res://art/armor/plate_pauldrons_warden.gltf",
+    "tier": 1,
+    "cover_grow": [
+      0.02,
+      0.025
+    ],
+    "base": "plate_pauldrons_plain",
+    "replaces": "warden.pauldrons"
+  },
+  {
+    "id": "plate_top_etched",
+    "outfit": null,
+    "slot": "top",
+    "layer": 1,
+    "covers": [
+      "top"
+    ],
+    "meshes": [
+      "plate_top_etched.top.blacksteel",
+      "plate_top_etched.top.darkleather",
+      "plate_top_etched.top.steel"
+    ],
+    "tuck": "armor_tuck/plate_top_etched.bin",
+    "tuck_count": 910,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/plate_top_etched.gltf",
+    "tier": 2,
+    "base": "plate_top_plain"
+  },
+  {
+    "id": "plate_top_gilded",
+    "outfit": null,
+    "slot": "top",
+    "layer": 1,
+    "covers": [
+      "top"
+    ],
+    "meshes": [
+      "plate_top_gilded.top.darkleather",
+      "plate_top_gilded.top.gem_sapphire",
+      "plate_top_gilded.top.gold",
+      "plate_top_gilded.top.steel"
+    ],
+    "tuck": "armor_tuck/plate_top_gilded.bin",
+    "tuck_count": 910,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/plate_top_gilded.gltf",
+    "tier": 3,
+    "base": "plate_top_plain"
+  },
+  {
+    "id": "plate_top_plain",
+    "outfit": null,
+    "slot": "top",
+    "layer": 1,
+    "covers": [
+      "top"
+    ],
+    "meshes": [
+      "plate_top_plain.top.darkleather",
+      "plate_top_plain.top.steel"
+    ],
+    "tuck": "armor_tuck/plate_top_plain.bin",
+    "tuck_count": 910,
+    "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+    "hold": {
+      "amount": 0.55,
+      "squash": 0
+    },
+    "file": "res://art/armor/plate_top_plain.gltf",
+    "tier": 1
+  }
 ]

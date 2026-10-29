@@ -366,6 +366,17 @@ public partial class Backdrop : Control
     public float Strength = 0.88f;
     static Shader? blur;
 
+    /// <summary>Its shader and painted layers read ahead (UiArt.Warm): read as the first draft of a fight
+    /// opened, they held that frame ~20 ms (MR4).</summary>
+    public static void Warm()
+    {
+        blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
+        _ = new ShaderMaterial { Shader = blur };
+        UiArt.Art("page/vellum.png");
+        UiArt.Tex("page/backdrop_edges.png", false);
+        UiArt.Art("page/backdrop_grain.png");
+    }
+
     public Backdrop(Action? onClick = null, float strength = 0.88f, bool page = false)
     {
         Strength = strength;

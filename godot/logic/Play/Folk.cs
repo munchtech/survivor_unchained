@@ -89,7 +89,9 @@ public sealed class Folk
     readonly Random rng;
     List<Walker> walkers = new();
     readonly Dictionary<string, List<FolkNode>> adj = new();
-    double spawnT, barkT = 4;
+    double spawnT, barkT = 4, churnT;
+    /// <summary>--folk-churn S (a measuring switch): every S seconds the furthest adult goes home (0: never).</summary>
+    public static double ChurnEvery;
     readonly List<string> said = new();
     bool started;
     int nextId = 1;
@@ -164,13 +166,13 @@ public sealed class Folk
         };
     }
 
-    Walker Make(FolkRole role, FolkNode at, FolkLook? look = null)
+    Walker Make(FolkRole role, FolkNode at, bool later, FolkLook? look = null)
     {
         var l = look ?? (role == FolkRole.Child ? Pick(Lore.ChildLooks) : role == FolkRole.Watch ? Lore.WatchLook : Pick(Lore.FolkLooks));
         var person = Person(role, l, rng);
         var w = new Walker
         {
-            Id = nextId++, View = o.Look.Walker(person, 0.8 * (l.Scale ?? 1)), Role = role, Woman = person.Sex == Sex.Female,
+            Id = nextId++, View = later ? o.Look.WalkerLater(person, 0.8 * (l.Scale ?? 1)) : o.Look.Walker(person, 0.8 * (l.Scale ?? 1)), Role = role, Woman = person.Sex == Sex.Female,
             X = at.X + Rnd(-0.6, 0.6), Z = at.Z + Rnd(-0.6, 0.6), At = at,
             Speed = role == FolkRole.Child ? Rnd(3.3, 3.9) : role == FolkRole.Watch ? 1.25 : Rnd(1.35, 1.8),
             BarkT = Rnd(8, 30), Heading = rng.NextDouble() * Math.PI * 2,
@@ -346,17 +348,17 @@ public sealed class Folk
             at = Pick(pool.Count > 0 ? pool : o.Nodes);
             if (role == FolkRole.Child) at = Pick(o.Nodes.Where(n => n.Square).ToList());
         }
-        var w = Make(role, at);
+        var w = Make(role, at, !scatter);
         if (role == FolkRole.Watch) w.Round = Math.Max(0, Array.IndexOf(o.Round, at.Id));
         if (role == FolkRole.Child)
         {
-            var friend = Make(FolkRole.Child, at);
+            var friend = Make(FolkRole.Child, at, !scatter);
             friend.Lead = w; friend.Side = 0;
             friend.X += 1.5;
         }
         else if (role == FolkRole.Adult && rng.NextDouble() < 0.3)
         {
-            var friend = Make(FolkRole.Adult, at);
+            var friend = Make(FolkRole.Adult, at, !scatter);
             friend.Lead = w; friend.Side = rng.NextDouble() < 0.5 ? -1 : 1;
             friend.Speed = w.Speed;
         }
@@ -429,6 +431,12 @@ public sealed class Folk
                 if (w.State != "inside") GoHome(w);
                 else w.Gone = true;
             }
+        }
+        // (--folk-churn S, for measuring: every S seconds the furthest adult goes home, so one comes out to take their place)
+        if (started && ChurnEvery > 0 && (churnT -= dt) <= 0)
+        {
+            churnT = ChurnEvery;
+            if (Leaders(FolkRole.Adult).OrderByDescending(a => Dist(a.X, a.Z, px, pz)).FirstOrDefault() is { } cw) { cw.Leaving = true; if (cw.State != "inside") GoHome(cw); else cw.Gone = true; }
         }
         started = true;
         barkT -= dt;

@@ -58,7 +58,196 @@ public partial class Game
         finally { chained = null; }
         if (scene != null) scene.Fx.HideLoot = true;
         handoffId = id;
+        // (its double taken: the next one's made now)
+        doubleCheck = 0;
         return true;
+    }
+
+    /* Her double built ahead (s5). A cinematic's "survivor" is her figure made new: 250-450 ms and some 240 MB on
+     * the main thread as each began (C02, C03, C04 A). One is made on a worker thread while play goes on (as
+     * WalkerView makes the townsfolk), held off the tree, and the next cinematic takes it if she still looks as
+     * she did (her look and arms: DoubleKey); if not, it is made there as before. Only in a place with cinematics. */
+    System.Threading.Tasks.Task<PersonView>? doubleAhead;
+    string? doubleKey, doubleSeen;
+    double doubleCheck;
+    readonly List<System.Threading.Tasks.Task<PersonView>> doublesDropped = new();
+    static readonly JsonSerializerOptions DoubleJson = new() { IncludeFields = true };
+
+    static string DoubleKey(Loadout lo) =>
+        JsonSerializer.Serialize(lo.Person, DoubleJson) + "|" + lo.Arms.Right + "|" + lo.Arms.Left + "|" + lo.Arms.Forearm;
+
+    static Dictionary<string, List<CineFile>>? cineZones;
+    string? castAheadZone;
+
+    static Dictionary<string, List<CineFile>> CineZones()
+    {
+        var z = new Dictionary<string, List<CineFile>>();
+        foreach (var f in DirAccess.GetFilesAt("res://data/cinematics"))
+            if (f.EndsWith(".json") && !f.StartsWith("_"))
+                try { var cf = CineFile.Load(f[..^5]); (z.TryGetValue(cf.Zone, out var l) ? l : z[cf.Zone] = new()).Add(cf); } catch (Exception) { }
+        return z;
+    }
+
+    /// <summary>The files the people a place's cinematics cast are made from (its named folk, its crowds, what they
+    /// hold), loaded on a worker as the place is entered and held while it plays: C02's drowned were loaded from
+    /// disk on the main thread as it began, some 650 ms.</summary>
+    void CastAhead(List<CineFile> files)
+    {
+        var paths = new HashSet<string>();
+        void Add(PersonSpec? spec, Held? arms)
+        {
+            if (spec != null) foreach (var f in People.Files(spec)) paths.Add(f);
+            foreach (var a in new[] { arms?.Right, arms?.Left, arms?.Forearm })
+                if (a != null && Arms.All.TryGetValue(a, out var w) && w.Build == null) paths.Add($"res://assets/weapons/{w.File}.glb");
+        }
+        foreach (var f in files)
+            foreach (var c in f.Cast.Values)
+            {
+                if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def) Add(def.Person ?? new PersonSpec(), def.Arms);
+                else if (c.Kind == "extras")
+                    foreach (var v in c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"]) { var sp = Visuals.Of(v); Add(sp.Person ?? new PersonSpec(), sp.Arms); }
+            }
+        Prefetch.CastAhead(paths);
+        // (and the figures themselves, s6: C02's Warden and twelve drowned were made on the main thread as it began,
+        // 140 ms; each cinematic's boss and extras made on a worker, one file after another, held off the tree)
+        if (Args.Get("cast-ahead") == "off") return;
+        foreach (var f in files)
+        {
+            var specs = new List<(string Key, CineCast C, int I)>();
+            foreach (var (name, c) in f.Cast)
+                if (c.Kind == "boss") specs.Add((name, c, -1));
+                else if (c.Kind == "extras" && c.At != null) for (int i = 0; i < c.At.Count; i++) specs.Add((name, c, i));
+            if (specs.Count == 0) continue;
+            var before = castChain;
+            castChain = System.Threading.Tasks.Task.Run(() =>
+            {
+                try { before?.Wait(); } catch (Exception) { }
+                var made = new Dictionary<string, Node3D>();
+                foreach (var (name, c, i) in specs)
+                {
+                    if (i < 0) { var wv = new WardenView(); if (ExtrasShadow) wv.Body.BeginShadow(); made[name] = wv; continue; }
+                    var visuals = c.Visual is { Count: > 0 } vs ? vs : ["skeleton_minion"];
+                    var spec = Visuals.Of(visuals[i % visuals.Count]);
+                    var pv = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) pv.BeginShadow();
+                    made[$"{name}.{i}"] = pv;
+                }
+                return made;
+            });
+            castAhead[f.Id] = castChain;
+        }
+    }
+
+    /// <summary>(--lampdbg) Who draws: each group's (the node under the zone's world) geometry in the camera's view, and
+    /// its shadow casters in each shadowing lamp's reach, as "group main N lampcasters M" (diagnostics only).</summary>
+    static IEnumerable<string> Census(Game g)
+    {
+        var cam = g.camera!;
+        var planes = cam.GetFrustum();
+        var lamps = g.GetTree().Root.FindChildren("*", "OmniLight3D", true, false).OfType<OmniLight3D>()
+            .Where(l => l.IsVisibleInTree() && l.ShadowEnabled).ToList();
+        var tally = new SortedDictionary<string, (int Main, int Cast)>();
+        var perLamp = new Dictionary<OmniLight3D, int>();
+        foreach (var n in g.GetTree().Root.FindChildren("*", "GeometryInstance3D", true, false))
+        {
+            var gi = (GeometryInstance3D)n;
+            if (!gi.IsVisibleInTree()) continue;
+            var box = gi.GlobalTransform * gi.GetAabb();
+            bool seen = planes.All(pl => { var c = box.GetCenter(); var e = box.Size / 2;
+                return pl.DistanceTo(c) <= Math.Abs(pl.Normal.X) * e.X + Math.Abs(pl.Normal.Y) * e.Y + Math.Abs(pl.Normal.Z) * e.Z; });
+            int cast = 0;
+            if (gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.Off)
+                foreach (var l in lamps)
+                    if (l.GlobalPosition.Clamp(box.Position, box.End).DistanceTo(l.GlobalPosition) <= l.OmniRange) { cast++; perLamp[l] = perLamp.GetValueOrDefault(l) + 1; }
+            var path = gi.GetPath().ToString().Split('/');
+            int w = Array.FindIndex(path, x => x.StartsWith("World_"));
+            string key = w < 0 || w + 1 >= path.Length ? (path.Length > 3 ? path[3] : gi.Name.ToString())
+                : path[w + 1].StartsWith("Zone_") && w + 2 < path.Length ? $"{path[w + 1]}/{path[w + 2]}" : path[w + 1];
+            if (key.StartsWith("Cine_drowned")) key = "Cine_drowned*";
+            var t = tally.GetValueOrDefault(key);
+            tally[key] = (t.Main + (seen && gi.CastShadow != GeometryInstance3D.ShadowCastingSetting.ShadowsOnly ? 1 : 0), t.Cast + cast);
+        }
+        yield return $"lamps shadowing {lamps.Count}: " + string.Join(", ", lamps.Select(l => l.GetParent().Name + "/" + l.Name + " " + perLamp.GetValueOrDefault(l)));
+        foreach (var (key, (m, c)) in tally.OrderByDescending(kv => kv.Value.Cast + kv.Value.Main)) if (m + c > 0) yield return $"{key} main {m} lampcasters {c}";
+    }
+
+    /// <summary>(E10) A crowd of extras (C02's twelve drowned) and a cinematic's boss (its Warden) cast as one shadow a
+    /// figure (FolkShadow, as the town's folk do): the same geometry on the same bones, so the same shadow, in each
+    /// lamp's six faces and each cascade for one draw instead of each mesh's. Their shape keys never change after they
+    /// are made (no face is played on them), and nothing in a cinematic re-dresses them. Not her: her face and her
+    /// fitting move her shape keys. --extras-shadow off: each mesh casts (to compare).</summary>
+    static readonly bool ExtrasShadow = Args.Get("extras-shadow") != "off";
+
+    /// <summary>The cast made ahead for each cinematic file (by its id), and the chain they are made on (one at a time).</summary>
+    readonly Dictionary<string, System.Threading.Tasks.Task<Dictionary<string, Node3D>>> castAhead = new();
+    System.Threading.Tasks.Task<Dictionary<string, Node3D>>? castChain;
+
+    /// <summary>A cinematic's cast made ahead (waited for, if still being made), taken: what it does not use is freed.</summary>
+    Dictionary<string, Node3D>? TakeCast(string fileId)
+    {
+        if (!castAhead.Remove(fileId, out var t)) return null;
+        try { return t.Result; }
+        catch (Exception e) { GD.PushWarning($"cinema: the cast made ahead failed ({e.Message})"); return null; }
+    }
+
+    /// <summary>What was made ahead and not taken, freed (the place left, or the game).</summary>
+    void DropCast()
+    {
+        foreach (var t in castAhead.Values)
+        {
+            try { t.Wait(10000); } catch (Exception) { }
+            if (t.IsCompletedSuccessfully) foreach (var n in t.Result.Values) if (IsInstanceValid(n) && !n.IsInsideTree()) n.Free();
+        }
+        castAhead.Clear();
+        castChain = null;
+    }
+
+    /// <summary>Each frame (a look a second): her double made ahead if there is none for her as she is.</summary>
+    void DoubleAhead(double dt)
+    {
+        for (int i = doublesDropped.Count - 1; i >= 0; i--)
+            if (doublesDropped[i].IsCompleted)
+            {
+                if (doublesDropped[i].IsCompletedSuccessfully) doublesDropped[i].Result.Free();
+                doublesDropped.RemoveAt(i);
+            }
+        if ((doubleCheck -= dt) > 0 || Journey == null || scene?.Battle == null || Args.Has("no-double-ahead")) return;
+        doubleCheck = 1;
+        if (!(cineZones ??= CineZones()).TryGetValue(scene.Data.Id, out var here)) return;
+        if (castAheadZone != scene.Data.Id) { DropCast(); castAheadZone = scene.Data.Id; CastAhead(here); }
+        if (doubleAhead is { IsCompleted: false }) return;
+        if (HerWear.Dressing) return;
+        var lo = Loadouts.Of(Journey.Ch);
+        var key = DoubleKey(lo);
+        if (doubleAhead != null && key == doubleKey) return;
+        // (her look as it was a second ago too: not between swaps)
+        bool settled = key == doubleSeen;
+        doubleSeen = key;
+        if (!settled) { doubleCheck = 0.5; return; }
+        if (doubleAhead != null) doublesDropped.Add(doubleAhead);
+        doubleKey = key;
+        var spec = lo.Person;
+        var held = new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm };
+        doubleAhead = System.Threading.Tasks.Task.Run(() => new PersonView(spec, held, 0.8) { Name = "CineSurvivor" });
+    }
+
+    /// <summary>The game goes: her double made ahead, never added, goes with it (no leak reported at exit).</summary>
+    public override void _ExitTree()
+    {
+        if (doubleAhead is { } t) { try { t.Wait(5000); } catch (Exception) { } if (t.IsCompletedSuccessfully) t.Result.Free(); doubleAhead = null; }
+        foreach (var d in doublesDropped) { try { d.Wait(5000); } catch (Exception) { } if (d.IsCompletedSuccessfully) d.Result.Free(); }
+        doublesDropped.Clear();
+        DropCast();
+    }
+
+    /// <summary>Her double made ahead, if it is of her as she is (waited for, if it is still being made); else null.</summary>
+    PersonView? TakeDouble(Loadout lo)
+    {
+        if (doubleAhead is not { } t || t.IsFaulted || t.IsCanceled || doubleKey != DoubleKey(lo)) return null;
+        doubleAhead = null;
+        doubleKey = null;
+        try { return t.Result; }
+        catch (Exception e) { GD.PushWarning($"cinema: her double made ahead failed ({e.Message})"); return null; }
     }
 
     public bool CanCinematic(string id) =>
@@ -92,6 +281,13 @@ public partial class Game
     (double X, double Z) PlayMove()
     {
         if (cineWalk is { } w) return w;
+        // --stroll M: a constant move at M m/s of ground speed along the --facing heading (0 = +Z; the move is (sin, cos) of it), for gait shots.
+        if (Args.Has("stroll") && Battle is { } sb)
+        {
+            double top = Math.Max(0.1, sb.Stats.Get(Stat.MoveSpeed) * sb.Player.SlowF), k = Math.Min(1.5, Args.Num("stroll", 1) / top);
+            double f = Args.Num("facing", 0) * Math.PI / 180;
+            return (Math.Sin(f) * k, Math.Cos(f) * k);
+        }
         if (controls.Captured) return (0, 0);
         double x = controls.MoveX, z = controls.MoveZ;
         if (x * x + z * z > 0.01) carryT = 0;
@@ -213,25 +409,47 @@ public partial class Game
             g.scene!.CameraHeld = true;
             if (g.scene.Player != null) g.scene.Player.Hidden = true;
             b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
-            foreach (var (name, c) in file.Cast) Cast(name, c);
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            double Ms() => (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            made = g.TakeCast(file.Id);
+            double tTake = Ms(), tWorst = 0; string worst = "";
+            foreach (var (name, c) in file.Cast) { double a = Ms(); Cast(name, c); if (Ms() - a > tWorst) { tWorst = Ms() - a; worst = name; } }
+            double tCast = Ms();
+            if (made != null) foreach (var n in made.Values) if (!n.IsInsideTree()) n.QueueFree();
+            made = null;
+            SunAhead();
+            double tSun = Ms();
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
             Dispatch(player.Advance(0));
+            if (Perf.On) GD.Print($"perf cine begin {file.Id}: ctor-to-take {tTake:0.0} cast {tCast - tTake:0.0} (worst {worst} {tWorst:0.0}) sun {tSun - tCast:0.0} dispatch {Ms() - tSun:0.0} ms");
         }
 
         /* --------------------------------------------------------- the cast -- */
+
+        /// <summary>This file's cast made ahead on a worker (Game.CastAhead), while the cast is being stood up.</summary>
+        Dictionary<string, Node3D>? made;
+        Node3D? Made(string key) => made != null && made.Remove(key, out var n) ? n : null;
 
         void Cast(string name, CineCast c)
         {
             if (c.Kind == "survivor")
             {
                 var lo = Loadouts.Of(g.Journey.Ch);
-                var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
+                // (made ahead on a worker while play went on, if she still looks so: Game.DoubleAhead)
+                var v = g.TakeDouble(lo)
+                    ?? new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
                 // The townsfolk's clips too (sitting on the floor, arms folded): made on the
                 // same skeleton, they stand in until her own cinematic motion comes.
                 if (FolkClips.Library() is { } folk && !v.Person.Anim.HasAnimationLibrary("folk")) v.Person.Anim.AddAnimationLibrary("folk", folk);
                 g.scene!.AddChild(v);
                 people[name] = v;
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
+                // In a safe place (the same rule as play's close-up) she goes sheathed, as play does.
+                if (g.zone is { Combat: false } && v.Person.Own is { } own && Sheath.HasTown(v.Person.Calling, v.Person.Kind, own.Has))
+                {
+                    v.Sheathed = true;
+                    v.Sheathe(true);
+                }
                 v.Cue(lo.Arms.Idle, 0, 1, 0);
             }
             else if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def)
@@ -246,7 +464,10 @@ public partial class Game
             {
                 // The cinematic's own Warden: the zone's waits hidden, and the
                 // fight's takes his place where this one is left.
-                var w = new WardenView { Name = "Cine_" + name, Glow = c.Glow };
+                var w = Made(name) as WardenView ?? new WardenView();
+                if (ExtrasShadow) w.Body.BeginShadow();   // (his one shadow, as the extras': a no-op if begun ahead)
+                w.Name = "Cine_" + name;
+                w.Glow = c.Glow;
                 g.scene!.AddChild(w);
                 bosses[name] = w;
                 people[name] = w.Body;
@@ -262,7 +483,9 @@ public partial class Game
                 for (int i = 0; i < c.At.Count; i++)
                 {
                     var spec = Visuals.Of(visuals[i % visuals.Count]);
-                    var v = new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale) { Name = $"Cine_{name}{i}" };
+                    var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
+                    if (ExtrasShadow) v.BeginShadow();   // (made here, not ahead: its one shadow begun now; a no-op if begun)
+                    v.Name = $"Cine_{name}{i}";
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
                     people[who] = v;
@@ -383,6 +606,9 @@ public partial class Game
         readonly HashSet<Node3D> bossHidden = new();
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
+        readonly Dictionary<ShaderMaterial, float> waterFoam = new();
+        bool stonesSet;
+        readonly Dictionary<ShaderMaterial, float> stoneEdge = new();
 
         /// <summary>Each rig light where its shot puts it: off the lens, or on its place, aimed at its mark.</summary>
         void PlaceRigs()
@@ -473,6 +699,11 @@ public partial class Game
                 stillK++;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
                 if (Args.Has("mouth-cam")) GD.Print($"STILL {file.Id}_s{shot.Id}_{stillK}");
+                if (Args.Has("lampdbg") && g.camera != null)
+                {
+                    foreach (var ln in SurvivorUnchained.View.ShadowLamp.Describe(g.camera)) GD.Print($"lampdbg {file.Id} s{shot.Id} {ln}");
+                    foreach (var ln in Census(g)) GD.Print($"census {file.Id} s{shot.Id} {ln}");
+                }
                 // --cinebones: where the cast's bones are at each still, for framing shots on them.
                 if (Args.Has("cinebones"))
                     foreach (var name in people.Keys)
@@ -640,6 +871,7 @@ public partial class Game
             p.X = at.X; p.Z = at.Z; p.Facing = her.Rotation.Y; p.Vx = p.Vz = 0;
             pv.Face(her.Rotation.Y, new Vector3(at.X, (float)g.scene.HeightAt(at.X, at.Z), at.Z));
             pv.Hidden = false;
+            pv.Still = true;
             her.Visible = false;
             moves.RemoveAll(mv => mv.Actor == "her");
         }
@@ -667,8 +899,11 @@ public partial class Game
         {
             foreach (var tc in cues)
             {
+                long q0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 try { Do(tc, skipping); }
                 catch (Exception e) { GD.PushWarning($"cinema {file.Id} shot {tc.Shot.Shot.Id}: {tc.Cue.Do} failed: {e.Message}"); }
+                double qms = (System.Diagnostics.Stopwatch.GetTimestamp() - q0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                if (Perf.On && qms > 2) GD.Print($"perf cue {file.Id} {tc.Cue.Do} {tc.Cue.Actor} {qms:0.0} ms");
             }
         }
 
@@ -798,7 +1033,18 @@ public partial class Game
                     // An exact place ("abs") is gone to through the air or the water; anything else along the ground.
                     bool free = orbs.ContainsKey(c.Actor) || (toEl.ValueKind == JsonValueKind.Object && toEl.TryGetProperty("abs", out _));
                     moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading, free));
-                    if (c.Str("clip") is string mc && n is PersonView v) v.Cue(mc, 0, c.Num("speed", 1), 0.25);
+                    if (c.Str("clip") is string mc && n is PersonView v)
+                    {
+                        double pace = c.Num("speed", 1);
+                        // Her own walk keeps its feet to the ground: the clip's metres a second against the ground covered.
+                        var resolved = People.Clip(v.Person, mc, v.Sheathed);
+                        if (v.Person.Own is { } own && own.Owns(resolved) && own.Speed(resolved[own.Prefix.Length..]) is float sp && sp > 0)
+                        {
+                            double dist = new Vector2(dest.X - from.X, dest.Z - from.Z).Length(), dur = Math.Max(0.01, c.Num("dur", 1));
+                            pace = Math.Clamp(dist / dur / (sp * v.Person.Root.Scale.X), 0.5, 1.6);
+                        }
+                        v.Cue(mc, 0, pace, 0.25);
+                    }
                     break;
                 }
                 case "look":
@@ -894,24 +1140,10 @@ public partial class Game
                     break;
                 case "atmosphere":
                 {
-                    // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
-                    // cinematic and finished in the next); a skip lands on k1. "from": "now"
-                    // blends from the air as it is (a scene's own night back into play's).
-                    // "play": the zone's own air for the time it is (the hand-back into play's look).
-                    var to = Tuned(c.Str("preset") switch
-                    {
-                        "now" => g.air.Current,
-                        "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
-                        var n => Atmospheres.ByName(n == "play" ? "night" : n!),
-                    }, c);
+                    var (to, fromAir) = AirOf(c);
                     double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
-                    if (c.Str("from") is string fromName)
+                    if (fromAir is { } from)
                     {
-                        var from = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
-                        // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
-                        // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
-                        // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
-                        if (c.Str("preset") == "play") @from = @from with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
@@ -956,7 +1188,7 @@ public partial class Game
                     switch (c.Str("kind"))
                     {
                         case "shake": g.cam.AddTrauma((float)c.Num("amount", 0.4)); break;
-                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9) }); break;
+                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9), Plain = c.Has("plain") && c.Get("plain").ValueKind == System.Text.Json.JsonValueKind.True }); break;
                         case "burst": b.Events.Emit(new Ev.Explosion { X = at.X, Z = at.Z, Radius = c.Num("radius", 1.2), School = Enum.Parse<School>(c.Str("school") ?? "physical", true), Power = c.Num("power", 0.5) }); break;
                     }
                     break;
@@ -1165,6 +1397,9 @@ public partial class Game
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                         MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(lin.R, lin.G, lin.B), DisableFog = clear },
                     });
+                    // "soft": the halo fades with no rim (a gaussian, not the cone's ramp: a far lamp's glow
+                    // in the air, not a small moon); "ontop": it is drawn over what stands before the lamp
+                    // (the keep it burns on), as the eye sees a light's glare spill over its own stones.
                     fire.AddChild(new MeshInstance3D
                     {
                         Mesh = new QuadMesh { Size = Vector2.One * size * (float)c.Num("spread", 9) },
@@ -1173,7 +1408,8 @@ public partial class Game
                         {
                             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
                             BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-                            AlbedoTexture = Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
+                            AlbedoTexture = c.Bool("soft") ? SoftHalo() : Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
+                            NoDepthTest = c.Bool("ontop"),
                         },
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
@@ -1297,20 +1533,63 @@ public partial class Game
                     }
                     break;
                 }
+                case "haze":
+                {
+                    // The far haze (Atmosphere.Haze): "begin"/"end" m, "curve", "amount" (0-1), "sky" (0-1, the sky's colour
+                    // in it); "off" back to play's fog. Finish takes it off.
+                    g.air.Haze = c.Bool("off") ? null : ((float)c.Num("begin", 40), (float)c.Num("end", 160), (float)c.Num("curve", 1), (float)c.Num("amount", 0.8), (float)c.Num("sky", 1), c.Str("color") is string hc ? new Color(hc) : null);
+                    break;
+                }
                 case "water":
                 {
                     // The river's light, all of it, scaled for this cinematic ("level" 1 as built; 0.4 about
                     // a stop and a third down: the ford's water was the brightest broad thing at night),
                     // faded over "over"; put back as built when the cinematic ends.
+                    // ("foam": the foam's amount, a share of as built, held from this shot on: C03 s8's close stone
+                    // ringed too white beside her face; put back as built when the cinematic ends too)
                     float wto = (float)c.Num("level", 1);
+                    bool hasLevel = c.Has("level");
                     foreach (var wmi in g.scene!.View.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
                     {
                         if (wmi.MaterialOverride is not ShaderMaterial wsm || wsm.Shader?.ResourcePath.EndsWith("water.gdshader") != true) continue;
                         waters.Add(wsm);
+                        if (c.Has("foam"))
+                        {
+                            if (!waterFoam.ContainsKey(wsm)) waterFoam[wsm] = wsm.GetShaderParameter("foam_amt").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("foam_amt") : 1f;
+                            wsm.SetShaderParameter("foam_amt", waterFoam[wsm] * (float)c.Num("foam", 1));
+                        }
+                        // ("streak": the lamps' streaks on the water, a share, held from this shot on: C03 s8's far lamp
+                        // laid a cyan column beside the heart in the heart's own colour; 1 back as built, as is the end)
+                        if (c.Has("streak")) wsm.SetShaderParameter("streak_shot", (float)c.Num("streak", 1));
+                        // ("mirror_cap": the brightest the grazing mirror shows a thing (linear, its brightest channel), for this
+                        // shot on: C03 s8's far ford lamp mirrored as a cyan column beside the heart; MIRROR_CAP=v tries a value)
+                        if (c.Has("mirror_cap")) wsm.SetShaderParameter("mirror_cap", System.Environment.GetEnvironmentVariable("MIRROR_CAP") is { } mcs && c.Num("mirror_cap", 100) < 100 ? float.Parse(mcs, System.Globalization.CultureInfo.InvariantCulture) : (float)c.Num("mirror_cap", 100));
+                        if (!hasLevel) continue;
                         float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => wsm.SetShaderParameter("level", Mathf.Lerp(wfrom, wto, (float)k))));
                         else wsm.SetShaderParameter("level", wto);
                     }
+                    break;
+                }
+                case "stones":
+                {
+                    // The stepping stones' damp tops for this shot on ("top": their light, a share; 1 as built): C03 s8's near
+                    // stone crown, out of focus beside her, the palest broad thing after her. Put back as the cinematic ends.
+                    stonesSet = true;
+                    // (STONE_TOP=v tries a value over the cue's, numbers first)
+                    float top = System.Environment.GetEnvironmentVariable("STONE_TOP") is { } stt && float.TryParse(stt, System.Globalization.CultureInfo.InvariantCulture, out var stv) && c.Num("top", 1) < 1 ? stv : (float)c.Num("top", 1);
+                    var sset = c.Bool("all") ? KitLook.Rocks : KitLook.Stepping;
+                    // ("edge": their worn rims' light, a share of as built: s8's out-of-focus stone rim read as a pale crown)
+                    if (c.Has("edge"))
+                        foreach (var sm in sset)
+                        {
+                            if (!IsInstanceValid(sm)) continue;
+                            if (!stoneEdge.ContainsKey(sm)) stoneEdge[sm] = (float)sm.GetShaderParameter("edge_light");
+                            sm.SetShaderParameter("edge_light", stoneEdge[sm] * (float)c.Num("edge", 1));
+                            (sm.NextPass as ShaderMaterial)?.SetShaderParameter("edge_light", stoneEdge[sm] * (float)c.Num("edge", 1));
+                        }
+                    foreach (var sm in sset) if (IsInstanceValid(sm)) { sm.SetShaderParameter("top_level", top); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("top_level", top); }
+                    if (System.Environment.GetEnvironmentVariable("CAUSEWAY_STATS") != null) GD.Print($"STONES cue: top {top} on {sset.Count} materials");
                     break;
                 }
                 case "grade":
@@ -1353,6 +1632,53 @@ public partial class Game
         /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
         /// "hemi", "env", "exposure", "fog" and "rim" scale the preset's own; "azimuth" and "elevation" (degrees)
         /// move the moon or sun for the shot; "keyColor", "fogColor", "hemiSky", "hemiGround" and "rimColor" replace its colours.</summary>
+        /// <summary>An "atmosphere" cue's air, where it goes and where from (null: set at once), as the cue reads now.</summary>
+        (AtmospherePreset To, AtmospherePreset? From) AirOf(CineCue c)
+        {
+            // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
+            // cinematic and finished in the next); a skip lands on k1. "from": "now"
+            // blends from the air as it is (a scene's own night back into play's).
+            // "play": the zone's own air for the time it is (the hand-back into play's look).
+            var to = Tuned(c.Str("preset") switch
+            {
+                "now" => g.air.Current,
+                "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
+                // "playdawn": the zone's own dawn, the air play will take up at a dawn hand-back
+                // (C04 A: the dawn comes up under its lines, not a night with stars; play-1).
+                "playdawn" when g.zone != null => g.zone.AtmosphereFor(TimeOfDay.Dawn),
+                var n => Atmospheres.ByName(n == "play" ? "night" : n!),
+            }, c);
+            if (c.Str("from") is not string fromName) return (to, null);
+            var src = fromName == "now" ? g.air.Current : Atmospheres.ByName(fromName);
+            // The hand-back (E1): play's key direction is taken on the cue's first frame, the cut into the
+            // hand-back shot, and only the light's strength and colour blend. Blended, the moon swung 122
+            // degrees over C01's 3.2 s, its shadows wheeling round her (the 18 October "jarring spin").
+            if (c.Str("preset") is "play" or "playdawn") src = src with { KeyAzimuth = to.KeyAzimuth, KeyElevation = to.KeyElevation };
+            return (to, src);
+        }
+
+        /// <summary>The frost's thaw baked ahead, on a worker, for each sun this cinematic and the one it runs on into
+        /// set as their atmosphere cues begin (GroundPaint.SunAhead): C04 A's dawn baked it on the main thread as it
+        /// came up, 2.4 s.</summary>
+        void SunAhead()
+        {
+            var files = new List<CineFile> { file };
+            if (file.End.Next is string next) try { files.Add(CineFile.Load(next)); } catch (Exception) { }
+            foreach (var f in files)
+                foreach (var shot in f.Shots)
+                    foreach (var c in shot.Cues)
+                    {
+                        if (c.Do != "atmosphere") continue;
+                        var (to, src) = AirOf(c);
+                        double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
+                        AtmospherePreset[] airs = src is not { } fr ? [to] : c.Num("over") > 0
+                            ? new[] { Atmospheres.Blend(fr, to, k0), Atmospheres.Blend(fr, to, k1) }
+                            : [k1 >= 1 ? to : Atmospheres.Blend(fr, to, k1)];
+                        foreach (var p in airs)
+                            if (Atmosphere.ThawSun(p) is Vector3 dir) GroundPaint.SunAhead(dir);
+                    }
+        }
+
         static AtmospherePreset Tuned(AtmospherePreset p, CineCue c) => p with
         {
             KeyIntensity = p.KeyIntensity * c.Num("key", 1), HemiIntensity = p.HemiIntensity * c.Num("hemi", 1),
@@ -1379,6 +1705,25 @@ public partial class Game
         }
 
         /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
+        static ImageTexture? softHalo;
+        /// <summary>A halo with no rim: a narrow bright core in a wide gaussian, both windowed to reach
+        /// nothing at the edge with no slope left (E8 s8a: the cone's ramp read as a small moon).</summary>
+        static ImageTexture SoftHalo()
+        {
+            if (softHalo != null) return softHalo;
+            const int N = 128;
+            var img = Image.CreateEmpty(N, N, true, Image.Format.Rgba8);
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float dx = (x + 0.5f) / N * 2 - 1, dy = (y + 0.5f) / N * 2 - 1, r2 = dx * dx + dy * dy;
+                    float win = r2 >= 1 ? 0 : (1 - r2) * (1 - r2);
+                    float a = (0.3f * Mathf.Exp(-r2 * 40f) + 0.7f * Mathf.Exp(-r2 * 5f)) * win;
+                    img.SetPixel(x, y, new Color(1, 1, 1, a));
+                }
+            img.GenerateMipmaps();
+            return softHalo = ImageTexture.CreateFromImage(img);
+        }
         static GradientTexture2D Halo() => halo ??= new GradientTexture2D
         {
             Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.25f), new Color(1, 1, 1, 0)], Offsets = [0, 0.18f, 1] },
@@ -1512,6 +1857,7 @@ public partial class Game
         {
             g.cineSat = null;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
+            if (g.air.Haze != null) g.air.Haze = null;
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
             { SurvivorUnchained.View.People.HerSkyShare(hs.Person, 1); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, 1); }
             skinSky = 1; skinEar = 1;
@@ -1524,6 +1870,7 @@ public partial class Game
             // faces, and still walking if she was (docs/cinematics/README.md, 5a).
             var p = b.Player;
             var pv = g.scene!.Player;
+            pv.Still = false;
             if (handed)
             {
                 // Her own body already: what she was doing carries on, easing out.
@@ -1565,8 +1912,14 @@ public partial class Game
             rigs.Clear();
             foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
-            foreach (var wsm in waters) wsm.SetShaderParameter("level", 1f);
+            foreach (var wsm in waters) { wsm.SetShaderParameter("level", 1f); wsm.SetShaderParameter("streak_shot", 1f); wsm.SetShaderParameter("mirror_cap", 100f); }
+            foreach (var (wsm, wf) in waterFoam) wsm.SetShaderParameter("foam_amt", wf);
             waters.Clear();
+            waterFoam.Clear();
+            if (stonesSet) foreach (var sm in KitLook.Rocks) if (IsInstanceValid(sm)) { sm.SetShaderParameter("top_level", 1f); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("top_level", 1f); }
+            foreach (var (sm, se) in stoneEdge) if (IsInstanceValid(sm)) { sm.SetShaderParameter("edge_light", se); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("edge_light", se); }
+            stoneEdge.Clear();
+            stonesSet = false;
             // Her prints stay: they are in the frost whether it played or not.
             // The decals' frost goes as play takes over (under a second): the ground's own frost, by exposure, carries it
             // from here (judge 1, E3 fix 3: the decals were the brightest ground in the hand-back's frame).

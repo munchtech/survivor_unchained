@@ -52,7 +52,9 @@ public sealed class Greymuzzle : StoryBoss, IBound
     // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
     // 13 October: 107 -> 100, its pre-Flare health: the Flare now cuts a story boss's floors, and a fight with the Flare
     // timed is ~8% shorter than the tuned length (bankers ~14%) while one without it timed stays near it (+4%; judge 6).
-    public override double HealthMul(int tier) => 100;
+    // 28 October (classes 14): 100 -> 113. Access (P2: narrower pools, better builds) and the four Hands (P4) made Act 1
+    // ~12% shorter; at 113 never-pressing is within 3% of integration and of pre-Flare 11 Oct, falls lower (96 seeds, both pilots).
+    public override double HealthMul(int tier) => 113;
     // His teeth are in his marked moves and not a brawl (Stalk), so each must mean it: a lunge about a third of
     // her calling's own health, the hamstring's lunge after it given time to be walked out of lamed.
     public override double Teeth => 0.38;

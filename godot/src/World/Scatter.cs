@@ -172,6 +172,11 @@ public static class Scatter
         var paint = GroundPaint.Of(z);
         var expo = paint.Exposure.GetImage();
         int ew = expo.GetWidth(), eh = expo.GetHeight();
+        // (E9e r2: twigs and needles on the setts read as black hairline cracks at the close camera: none there. Near's A
+        // is the distance into the setts, 0 off them.)
+        var nearImg = paint.Near.GetImage();
+        bool OnSetts(float x, float zz) =>
+            nearImg.GetPixel(Math.Clamp((int)((x + z.Half) / z.Size * ew), 0, ew - 1), Math.Clamp((int)((zz + z.Half) / z.Size * eh), 0, eh - 1)).A > 0.01f;
         float half = z.Half, lim = half - 2f;
         // The open sky over a point (1 in the open, 0 under a crown).
         float Sky(float x, float zz) =>
@@ -180,6 +185,8 @@ public static class Scatter
         bool Ok(float x, float zz)
         {
             if (Math.Abs(x) > lim || Math.Abs(zz) > lim || z.Meta.WaterAt(x, zz)) return false;
+            // (E9c2) nothing inside a closed house (the cutaway shows its floor)
+            if (OwnWalls.InsideAny(z, x, zz, -0.05f)) return false;
             foreach (var f in z.Meta.Fires)
                 if ((x - f.X) * (x - f.X) + (zz - f.Z) * (zz - f.Z) < 1.6f * 1.6f) return false;
             return true;
@@ -303,7 +310,7 @@ public static class Scatter
                     for (int i = 0; i < many; i++)
                     {
                         float lx = cx + U(-0.45f, 0.45f), lz = cz + U(-0.45f, 0.45f);
-                        if (!Ok(lx, lz)) continue;
+                        if (!Ok(lx, lz) || OnSetts(lx, lz)) continue;
                         if (pine) Put(needle, lx, lz, U(0.07f, 0.12f), 0, 0.15f, Plant(new(0.13f, 0.08f, 0.04f), new(0.17f, 0.11f, 0.05f), U(0.6f, 1f)), 0.004f);
                         else Put(leaf, lx, lz, U(0.06f, 0.10f), 0, 0.2f, Plant(new(0.12f, 0.085f, 0.045f), new(0.16f, 0.12f, 0.06f), U(0.6f, 1f)), 0.005f);
                     }
@@ -312,7 +319,7 @@ public static class Scatter
                 {
                     float an = U(0, Mathf.Tau), rr = U(0.6f, 3f);
                     float lx = tx + Mathf.Cos(an) * rr, lz = tz + Mathf.Sin(an) * rr;
-                    if (Ok(lx, lz)) Put(twig, lx, lz, U(0.2f, 0.5f), 0, 0.2f, Plant(new(0.07f, 0.055f, 0.04f), new(0.08f, 0.06f, 0.045f), U(0.7f, 1.1f)), 0.005f);
+                    if (Ok(lx, lz) && !OnSetts(lx, lz)) Put(twig, lx, lz, U(0.2f, 0.5f), 0, 0.2f, Plant(new(0.07f, 0.055f, 0.04f), new(0.08f, 0.06f, 0.045f), U(0.7f, 1.1f)), 0.005f);
                 }
             }
         }
@@ -330,9 +337,9 @@ public static class Scatter
                 if (!Ok(lx, lz)) continue;
                 double u = rng.NextDouble();
                 if (u < 0.35) Put(pebbles[rng.Next(4)], lx, lz, U(0.02f, 0.05f), 0.3f, 0.4f, Grey(), 0);
-                else if (u < 0.55) Put(twig, lx, lz, U(0.12f, 0.4f), 0, 0.2f, Plant(new(0.07f, 0.055f, 0.04f), new(0.09f, 0.07f, 0.05f), U(0.7f, 1.1f)), 0.005f);
+                else if (u < 0.55) { if (!OnSetts(lx, lz)) Put(twig, lx, lz, U(0.12f, 0.4f), 0, 0.2f, Plant(new(0.07f, 0.055f, 0.04f), new(0.09f, 0.07f, 0.05f), U(0.7f, 1.1f)), 0.005f); }
                 else if (u < 0.7) Put(pebbles[rng.Next(4)], lx, lz, U(0.025f, 0.05f), 0.2f, 0.5f, Plant(new(0.16f, 0.11f, 0.07f), new(0.2f, 0.15f, 0.09f), U(0.6f, 1f)), 0, 0.45f);   // a wood chip
-                else Put(needle, lx, lz, U(0.07f, 0.12f), 0, 0.15f, Plant(new(0.13f, 0.08f, 0.04f), new(0.17f, 0.11f, 0.05f), U(0.6f, 1f)), 0.004f);
+                else if (!OnSetts(lx, lz)) Put(needle, lx, lz, U(0.07f, 0.12f), 0, 0.15f, Plant(new(0.13f, 0.08f, 0.04f), new(0.17f, 0.11f, 0.05f), U(0.6f, 1f)), 0.004f);
             }
         }
 

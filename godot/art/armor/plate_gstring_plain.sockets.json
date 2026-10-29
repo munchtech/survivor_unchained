@@ -1,0 +1,162 @@
+{
+ "id": "plate_gstring_plain",
+ "slot": "bottom",
+ "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
+ "space": "glTF / Godot: Y up, metres, her bind pose",
+ "sockets": {
+  "ring_l": {
+   "point": [
+    0.03608,
+    1.00449,
+    0.09511
+   ],
+   "normal": [
+    0.25744,
+    -0.3876,
+    0.88515
+   ],
+   "up": [
+    0.10825,
+    0.92183,
+    0.37218
+   ],
+   "weights": [
+    [
+     "pelvis",
+     0.6009
+    ],
+    [
+     "thigh_l",
+     0.279
+    ],
+    [
+     "thigh_r",
+     0.0867
+    ],
+    [
+     "spine_01",
+     0.0335
+    ]
+   ]
+  },
+  "ring_r": {
+   "point": [
+    -0.0367,
+    1.00377,
+    0.09564
+   ],
+   "normal": [
+    -0.27645,
+    -0.45437,
+    0.84683
+   ],
+   "up": [
+    -0.14101,
+    0.89081,
+    0.43194
+   ],
+   "weights": [
+    [
+     "pelvis",
+     0.5874
+    ],
+    [
+     "thigh_r",
+     0.3137
+    ],
+    [
+     "thigh_l",
+     0.0698
+    ],
+    [
+     "spine_01",
+     0.0291
+    ]
+   ]
+  },
+  "front": {
+   "point": [
+    -9e-05,
+    0.97084,
+    0.08648
+   ],
+   "normal": [
+    0.00093,
+    -0.43127,
+    0.90222
+   ],
+   "up": [
+    0.00044,
+    0.90222,
+    0.43127
+   ],
+   "weights": [
+    [
+     "pelvis",
+     0.5375
+    ],
+    [
+     "thigh_r",
+     0.2365
+    ],
+    [
+     "thigh_l",
+     0.2127
+    ],
+    [
+     "spine_01",
+     0.0132
+    ]
+   ]
+  },
+  "y_back": {
+   "point": [
+    0.00031,
+    1.06158,
+    -0.11518
+   ],
+   "normal": [
+    0.10401,
+    0.01735,
+    -0.99442
+   ],
+   "up": [
+    -0.0018,
+    0.99985,
+    0.01726
+   ],
+   "weights": [
+    [
+     "pelvis",
+     0.9048
+    ],
+    [
+     "thigh_r",
+     0.0431
+    ],
+    [
+     "thigh_l",
+     0.0312
+    ],
+    [
+     "glute_r",
+     0.0209
+    ]
+   ]
+  }
+ },
+ "rims": {},
+ "fixings": [],
+ "adorn": [],
+ "uv_surface": {
+  "mesh": "plate_gstring_plain.bottom.darkleather",
+  "layer": "UVMap (TEXCOORD_0)",
+  "units": "metres x the material's repeats (outfit_materials.json), one projection along the cup's facing"
+ },
+ "trim_uv": {
+  "layer": "trim (TEXCOORD_2)",
+  "atlas": "res://art/armor/trim_strip.png",
+  "on": [],
+  "band": "rolled_edge"
+ }
+}

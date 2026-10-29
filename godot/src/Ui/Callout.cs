@@ -13,6 +13,10 @@ public sealed record CalloutLook(string Title, string Line, CalloutKind Kind, Ac
 {
     /// <summary>The thing has its own heading (a draft panel, a banner shown again): the title is not said twice.</summary>
     public bool Headed { get; init; }
+    /// <summary>The word marked in ember (none: the title's, Subject).</summary>
+    public string? Mark { get; init; }
+    /// <summary>The marked word's colour as hex (none: ember amber).</summary>
+    public string? MarkInk { get; init; }
 }
 
 /// <summary>Where a callout points this frame, on the HUD's 1920 by 1080: points (a HUD part, a thing
@@ -35,6 +39,21 @@ public sealed record CalloutAim(IReadOnlyList<Vector2> Points, IReadOnlyList<Rec
     public float AreaGrow { get; init; } = 12;
     /// <summary>The arrow stops at this height, short of the thing (the chain, under the six places).</summary>
     public float? StopY { get; init; }
+    /// <summary>The marks in cold blue, not ember: things that glow cold themselves (the Warden's lamps).</summary>
+    public bool Cold { get; init; }
+    /// <summary>Where the words would rather stand (the canvas's px; none: toward the middle).</summary>
+    public Vector2? WordsNear { get; init; }
+    /// <summary>Figures the words must not cover (a boss), besides her.</summary>
+    public IReadOnlyList<Rect2>? Shun { get; init; }
+    /// <summary>Extra pools (x, y, radius px) for the things the lesson names but does not ring: the
+    /// caster of a telegraph (the Knight of the red line), so it is not dimmed to a ghost.</summary>
+    public IReadOnlyList<Vector3>? Pools { get; init; }
+    /// <summary>Discs (x, y, radius) kept wholly undimmed and unblurred, as she is (a caster's body).</summary>
+    public IReadOnlyList<Vector3>? Crisp { get; init; }
+    /// <summary>Points (by index) that are ringed but never get an arrow (the Knight, beside his lane).</summary>
+    public IReadOnlyList<int>? NoArrow { get; init; }
+    /// <summary>A point (by index) with no ring: the arrow lands on it bare (the lane under her).</summary>
+    public int Bare { get; init; } = -1;
 }
 
 /// <summary>The drawing of a callout, as the game drives it (the UI design pass restyles behind it).</summary>
@@ -68,6 +87,15 @@ public interface ICalloutView
 public partial class Callout : Control, ICalloutView
 {
     const float Canvas = 1920, CanvasH = 1080;
+    /// <summary>Half the opening at a HUD part ring's foot, design px (the key plate's half width and a margin).</summary>
+    const float PartGap = 30;
+    static readonly HashSet<Vector2I> gapLogged = new();
+    /// <summary>Once per ring: where its foot opens (for the log, so the gap can be checked without a shot).</summary>
+    static void LogGap(Vector2 c, float r, float gap)
+    {
+        if (!gapLogged.Add(new Vector2I((int)c.X, (int)c.Y))) return;
+        GD.Print($"callout: part ring at ({c.X:0},{c.Y:0}) r {r:0.0}: gap {Mathf.RadToDeg(Mathf.Pi / 2 - gap):0.0}..{Mathf.RadToDeg(Mathf.Pi / 2 + gap):0.0} deg (bottom 90), x {c.X - r * Mathf.Sin(gap):0}..{c.X + r * Mathf.Sin(gap):0}");
+    }
     static readonly Color Bone = new("#f2e8d4"), LineInk = new("#e8dfcd"), FootInk = new("#cbbd9f"),
         Iron = new(0.055f, 0.04f, 0.035f, 0.94f), Deep = new("#a8380f"), Hot = new("#ff9a40"), White = new("#ffe6a8"),
         Mark = new("#ffa04a"), Warm = new(1f, 0.74f, 0.46f);
@@ -120,6 +148,14 @@ public partial class Callout : Control, ICalloutView
         AddChild(ink);
         Modulate = Colors.Transparent;
     }
+
+    /// <summary>--dim-diag with --shot: the freeze's dim held off for a frame of the same moment undimmed
+    /// (set by GameTeach; the two frames differ by the dim alone).</summary>
+    public static bool DimHeld;
+    /// <summary>--dim-diag: the flat dim before UI 16 for a frame of the same moment (before/after).</summary>
+    public static bool DimOld;
+    /// <summary>After dark (set by the game when it shows a freeze): the dim keeps the night's dark readable.</summary>
+    public bool Night;
 
     public void Show(CalloutLook l)
     {
@@ -246,8 +282,11 @@ public partial class Callout : Control, ICalloutView
             }
         }
         // A row too wide for the measure breaks into rows of about equal width (never one word left alone).
-        rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Balance(r, W, maxW)).ToList();
-        string? subject = Subject(text, look.Title);
+        // (UI 20: a too-wide row of several sentences breaks at its sentences first, so no sentence's first word is
+        // left hanging at a row's end: "Three lamps guard the Warden. While / they burn...")
+        rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Regex.Split(r, @"(?<=[.!?])\s+(?=[A-Z])").Where(p => p.Length > 0)
+            .SelectMany(p => W(p) <= maxW ? [p] : Balance(p, W, maxW))).ToList();
+        string? subject = look.Mark ?? Subject(text, look.Title);
         bool marked = false;
         var list = new List<Control>();
         foreach (var r in rows)
@@ -260,7 +299,7 @@ public partial class Callout : Control, ICalloutView
                 string bb = seg.Replace("[", "[lb]");
                 if (!marked && subject != null && Regex.Match(bb, $@"\b{Regex.Escape(subject)}\b", RegexOptions.IgnoreCase) is { Success: true } m)
                 {
-                    bb = bb[..m.Index] + $"[color={Mark.ToHtml(false)}]" + m.Value + "[/color]" + bb[(m.Index + m.Length)..];
+                    bb = bb[..m.Index] + $"[color={(look.MarkInk != null ? new Color(look.MarkInk) : Mark).ToHtml(false)}]" + m.Value + "[/color]" + bb[(m.Index + m.Length)..];
                     marked = true;
                 }
                 box.AddChild(Text(bb, W(seg), size, maxW));
@@ -362,22 +401,9 @@ public partial class Callout : Control, ICalloutView
         return c;
     }
 
-    /// <summary>A key as a callout draws it, the same for every key it names (Space, R, E): a dark cap,
-    /// 26 px at the least, a warm edge, the key's name in bone.</summary>
-    static Control KeyCap(string text, float k)
-    {
-        var p = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(26, 26) * k, SizeFlagsVertical = SizeFlags.ShrinkCenter };
-        var s = new StyleBoxFlat { BgColor = new Color(0.05f, 0.04f, 0.035f, 0.85f), BorderColor = Hot with { A = 0.6f } };
-        s.SetBorderWidthAll(2);
-        s.SetCornerRadiusAll(4);
-        s.ContentMarginLeft = s.ContentMarginRight = 7 * k;
-        s.ContentMarginTop = s.ContentMarginBottom = 1;
-        p.AddThemeStyleboxOverride("panel", s);
-        var l = Style.Label(text, Style.UiBold, (int)Math.Round(15 * k), Bone, false, HorizontalAlignment.Center, false);
-        l.VerticalAlignment = VerticalAlignment.Center;
-        p.AddChild(l);
-        return p;
-    }
+    /// <summary>A key as a callout draws it, the same for every key it names (Space, R, E): the shared keycap
+    /// the tips use too (Style.KeyCap).</summary>
+    static Control KeyCap(string text, float k) => Style.KeyCap(text, k);
 
     static Control Pad(Control c, int side)
     {
@@ -431,7 +457,7 @@ public partial class Callout : Control, ICalloutView
         for (int i = 0; i < aim.Points.Count && i < 3; i++)
         {
             float r = aim.Radii is { } rr && i < rr.Count ? rr[i] : 30;
-            float ring = r + 9;
+            float ring = i == aim.Bare ? 4 : r + 9;
             list.Add((aim.Points[i], ring, new Rect2(aim.Points[i] - Vector2.One * ring, Vector2.One * ring * 2), true));
         }
         if (aim.Points.Count == 0)
@@ -447,6 +473,17 @@ public partial class Callout : Control, ICalloutView
 
     /// <summary>Whether the mark at i is a thing in the world (it stands in a pool of light).</summary>
     bool InWorld(int i) => i >= aim.HudPoints && i < Math.Min(3, aim.Points.Count);
+    /// <summary>Whether a mark rings a part of the HUD. It is drawn in the same ember as every other mark (UI 20:
+    /// cream rings read as a second, foreign colour); it doesn't read as the part's own "ready" glow because it is
+    /// iron-backed, sits outside the part and opens at its foot over the key plate, which the HUD's glow never does.</summary>
+    bool OnHud(Vector2 at)
+    {
+        for (int i = 0; i < aim.HudPoints && i < aim.Points.Count; i++) if (aim.Points[i] == at) return true;
+        return false;
+    }
+
+    /// <summary>Whether the mark at this place is the bare one (no ring: the arrow lands on it).</summary>
+    bool IsBare(Vector2 at) => aim.Bare >= 0 && aim.Bare < aim.Points.Count && aim.Points[aim.Bare] == at;
 
     Vector2 Primary() => aim.Points.Count > 0 ? aim.Points[0] : aim.Areas.Count > 0 ? aim.Areas[0].GetCenter() : new Vector2(960, 540);
 
@@ -467,6 +504,8 @@ public partial class Callout : Control, ICalloutView
         // Her figure and her health bar, and a good margin: never words, never an arrow.
         Rect2? her = aim.Her?.Grow(HerMargin);
         if (her is Rect2 h0) keep.Add(h0);
+        if (aim.Shun is { } shun) foreach (var r in shun) keep.Add(r.Grow(24));
+        var near = aim.WordsNear ?? new Vector2(960, 470);
         var aimed = Aimed(marks);
         float best = float.MaxValue;
         var at = new Vector2(960, 400);
@@ -478,12 +517,14 @@ public partial class Callout : Control, ICalloutView
                 bool clear = true;
                 foreach (var k in keep) if (k.Intersects(box)) { clear = false; break; }
                 if (!clear) continue;
-                float cost = 0.1f * Math.Abs(x - 960) + 0.05f * Math.Abs(y - 470);
+                float cost = aim.WordsNear != null ? 0.12f * Math.Abs(x - near.X) + 0.12f * Math.Abs(y - near.Y) : 0.1f * Math.Abs(x - 960) + 0.05f * Math.Abs(y - 470);
                 for (int i = 0; i < marks.Count; i++)
                 {
                     float d = Apart(box, marks[i].Box);
                     cost += (i == 0 ? 1.4f : 0.7f) * Math.Abs(d - 120) + (d < 56 ? 400 : 0);
                 }
+                // (the test below only adds: a place already no better than the best is passed by)
+                if (cost >= best) continue;
                 if (her is Rect2 hr)
                     foreach (var i in aimed)
                         if (!ClearWay(new Rect2(x - hw + 14, y - hh + 10, s.X, s.Y), marks[i], hr)) cost += 900;
@@ -521,6 +562,7 @@ public partial class Callout : Control, ICalloutView
         for (int i = 0; i < marks.Count; i++)
         {
             if (!InWorld(i)) { list.Add(i); continue; }
+            if (aim.NoArrow?.Contains(i) == true) continue;
             float d = marks[i].C.DistanceTo(wordsAt);
             if (d < nd) { nd = d; nearest = i; }
         }
@@ -537,22 +579,27 @@ public partial class Callout : Control, ICalloutView
             float bend = Bend(A, B);
             return Ink.Bezier(A, A + DA * bend + Bow, B - DB * bend + Bow, B, t, steps);
         }
+
+        /// <summary>Path's points into buf (steps + 1 long), none allocated; how many (0: too short).</summary>
+        public int PathInto(Span<Vector2> buf, float t, int steps)
+        {
+            float bend = Bend(A, B);
+            return Ink.BezierInto(buf, A, A + DA * bend + Bow, B - DB * bend + Bow, B, t, steps);
+        }
     }
 
     /// <summary>Where an arrow may leave the words: 16 px out of their foot or head (under or over the
     /// thing), out of a corner, or, last, out of a side (inline with the words: it reads as a bullet).</summary>
-    static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward)
+    static List<(Vector2 P, Vector2 D, float Cost)> Starts(Rect2 box, Vector2 toward, List<(Vector2 P, Vector2 D, float Cost)> list)
     {
+        list.Clear();
         var c = box.GetCenter();
         float inset = Math.Min(28, box.Size.X * 0.2f);
         float x = Mathf.Clamp(toward.X, box.Position.X + inset, box.End.X - inset);
         var o = box.Grow(Out);
-        var list = new List<(Vector2, Vector2, float)>
-        {
-            (new Vector2(x, o.End.Y), Vector2.Down, 0), (new Vector2(x, o.Position.Y), Vector2.Up, 0),
-            (new Vector2(o.Position.X, c.Y), Vector2.Left, 220), (new Vector2(o.End.X, c.Y), Vector2.Right, 220),
-        };
-        foreach (var (cx, cy) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        list.Add((new Vector2(x, o.End.Y), Vector2.Down, 0)); list.Add((new Vector2(x, o.Position.Y), Vector2.Up, 0));
+        list.Add((new Vector2(o.Position.X, c.Y), Vector2.Left, 220)); list.Add((new Vector2(o.End.X, c.Y), Vector2.Right, 220));
+        foreach (var (cx, cy) in Corners)
         {
             var d = new Vector2(cx * 0.6f, cy * 0.8f);
             var corner = new Vector2(cx < 0 ? box.Position.X : box.End.X, cy < 0 ? box.Position.Y : box.End.Y);
@@ -563,9 +610,15 @@ public partial class Callout : Control, ICalloutView
 
     /// <summary>Where an arrow may land on a mark, from a, and which way: on a ring's near edge (or short of
     /// it, StopY); on an area's near edges, at their middle or toward a corner (a bracket).</summary>
-    List<(Vector2 B, Vector2 DB, float Cost)> Lands((Vector2 C, float R, Rect2 Box, bool Round) m, Vector2 a)
+    static readonly (int, int)[] Corners = { (-1, -1), (1, -1), (1, 1), (-1, 1) };
+    static readonly (float, float)[] Along = { (0.5f, 0f), (0.15f, 50f), (0.85f, 50f) };
+    // (BestWay's lists, kept: it runs thousands of times as a callout is placed, never inside itself)
+    readonly List<(Vector2 P, Vector2 D, float Cost)> startsBuf = new(8);
+    readonly List<(Vector2 B, Vector2 DB, float Cost)> landsBuf = new(8);
+
+    List<(Vector2 B, Vector2 DB, float Cost)> Lands((Vector2 C, float R, Rect2 Box, bool Round) m, Vector2 a, List<(Vector2 B, Vector2 DB, float Cost)> list)
     {
-        var list = new List<(Vector2, Vector2, float)>();
+        list.Clear();
         if (m.Round)
         {
             if (aim.StopY is float sy && a.Y < sy) { list.Add((new Vector2(m.C.X, sy), Vector2.Down, 0)); return list; }
@@ -576,12 +629,22 @@ public partial class Callout : Control, ICalloutView
         var r = m.Box.Grow(4);
         // (a card's leaves stand over its frame: the point stops clear of them)
         float lift = Panel ? 13 : 0;
-        foreach (var (f, cost) in new[] { (0.5f, 0f), (0.15f, 50f), (0.85f, 50f) })
+        // (Experience 10: a small box, a skill's seat, is landed on at its middle only: toward a corner the arrow
+        // read as pointing at the bracket's corner, not the seat)
+        foreach (var (f, cost) in Along)
         {
+            if (f != 0.5f && r.Size.X < 160) continue;
             float x = Mathf.Lerp(r.Position.X, r.End.X, f);
             if (a.Y < r.Position.Y) list.Add((new Vector2(x, r.Position.Y - lift), Vector2.Down, cost));
             if (a.Y > r.End.Y) list.Add((new Vector2(x, r.End.Y), Vector2.Up, cost));
         }
+        // (a wide box with the start over it: also straight down from the start, plumb (teach judge r2: a near-vertical
+        // arrow that leans 7 px reads as a mistake))
+        if (r.Size.X >= 160 && a.Y < r.Position.Y && a.X > r.Position.X + 40 && a.X < r.End.X - 40)
+            list.Add((new Vector2(a.X, r.Position.Y - lift), Vector2.Down, 0));
+        // (a small box with the start above or below it is landed on from there only: from the side the arrow
+        // read as pointing at the seat beside it)
+        if (r.Size.X < 160 && (a.Y < r.Position.Y || a.Y > r.End.Y)) return list;
         float y = Mathf.Clamp(a.Y, r.Position.Y + 12, r.End.Y - 12);
         if (a.X < r.Position.X) list.Add((new Vector2(r.Position.X, y), Vector2.Right, 120));
         if (a.X > r.End.X) list.Add((new Vector2(r.End.X, y), Vector2.Left, 120));
@@ -593,10 +656,11 @@ public partial class Callout : Control, ICalloutView
     /// thing it lands on, nothing counts (an ember at her feet is still pointed at).</summary>
     float Cost(Way w, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 words, Rect2? her, IReadOnlyList<Rect2>? avoid, int samples)
     {
-        var pts = w.Path(1, samples);
-        if (pts.Count < 2) return float.MaxValue;
+        Span<Vector2> pts = stackalloc Vector2[samples + 1];
+        int n = w.PathInto(pts, 1, samples);
+        if (n < 2) return float.MaxValue;
         float len = 0;
-        for (int i = 1; i < pts.Count; i++) len += pts[i].DistanceTo(pts[i - 1]);
+        for (int i = 1; i < n; i++) len += pts[i].DistanceTo(pts[i - 1]);
         float cost = len + w.Bow.Length() * 0.6f;
         var to = (w.B - w.A).Normalized();
         if (w.DA.Dot(to) < -0.1f) cost += 500;
@@ -608,21 +672,21 @@ public partial class Callout : Control, ICalloutView
         // way into a mark she stands at may graze it rather than hook round.
         Rect2? core = her?.Grow(12 - HerMargin);
         bool herHit = false, marginHit = false, wordsHit = false, edgeHit = false;
-        var hits = avoid != null ? new bool[avoid.Count] : null;
-        for (int i = 1; i < pts.Count; i++)
+        Span<bool> hits = avoid != null ? stackalloc bool[avoid.Count] : default;
+        for (int i = 1; i < n; i++)
         {
             var q = pts[i];
             if (near.HasPoint(q)) continue;
             if (her is Rect2 h && h.HasPoint(q)) { if (core is Rect2 hc && hc.HasPoint(q)) herHit = true; else marginHit = true; }
             if (i > 1 && wordsIn.HasPoint(q)) wordsHit = true;
             if (q.X < 16 || q.X > Canvas - 16 || q.Y < 16 || q.Y > CanvasH - 16) edgeHit = true;
-            if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits![k] && avoid[k].HasPoint(q)) hits[k] = true;
+            if (avoid != null) for (int k = 0; k < avoid.Count; k++) if (!hits[k] && avoid[k].HasPoint(q)) hits[k] = true;
         }
         if (herHit) cost += 4000;
         else if (marginHit) cost += 700;
         if (wordsHit) cost += 2500;
         if (edgeHit) cost += 2000;
-        if (hits != null) foreach (var hb in hits) if (hb) cost += 700;
+        foreach (var hb in hits) if (hb) cost += 700;
         return cost;
     }
 
@@ -631,12 +695,12 @@ public partial class Callout : Control, ICalloutView
         IReadOnlyList<Rect2>? avoid, (int, int, int)? was, bool bowed = true, int samples = 24)
     {
         (Way, int, int, int, float) best = (default, -1, -1, -1, float.MaxValue);
-        var starts = Starts(words, m.C);
+        var starts = Starts(words, m.C, startsBuf);
         float[] bows = bowed ? [0, 0.22f, -0.22f, 0.42f, -0.42f] : [0];
         for (int si = 0; si < starts.Count; si++)
         {
             var (a, da, sc) = starts[si];
-            var lands = Lands(m, a);
+            var lands = Lands(m, a, landsBuf);
             for (int li = 0; li < lands.Count; li++)
             {
                 var (b, db, lc) = lands[li];
@@ -657,8 +721,26 @@ public partial class Callout : Control, ICalloutView
     }
 
     /// <summary>Whether the words at box have a way to a mark that keeps off her (the placing's test: no bows, few samples).</summary>
-    bool ClearWay(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 her) =>
-        BestWay(box, m, her, null, null, false, 12).Cost < 2500;
+    /// (BestWay's loop, no bows, stopped at the first way under the bar: the same answer as its best's)
+    bool ClearWay(Rect2 box, (Vector2 C, float R, Rect2 Box, bool Round) m, Rect2 her)
+    {
+        var starts = Starts(box, m.C, startsBuf);
+        for (int si = 0; si < starts.Count; si++)
+        {
+            var (a, da, sc) = starts[si];
+            var lands = Lands(m, a, landsBuf);
+            for (int li = 0; li < lands.Count; li++)
+            {
+                var (b, db, lc) = lands[li];
+                if (a.DistanceTo(b) < 24) continue;
+                var nrm = (b - a).Normalized().Orthogonal();
+                float len = a.DistanceTo(b);
+                var w = new Way(a, da, b, db, nrm * 0f * len);
+                if (Cost(w, m, box, her, null, 12) + sc + lc < 2500) return true;
+            }
+        }
+        return false;
+    }
 
     /// <summary>How far an arrow's ends hold their way before it bends.</summary>
     static float Bend(Vector2 a, Vector2 b) => Math.Min(0.5f * a.DistanceTo(b), 160);
@@ -694,12 +776,15 @@ public partial class Callout : Control, ICalloutView
     {
         if (look == null || column == null) return;
         age += delta;
-        if (gone >= 0) { gone += delta; if (gone > 0.3) { QueueFree(); return; } }
+        // (a freeze's card goes in 0.12 s: the world is moving again under it, and a slower fade left its
+        // words ghosting over the walls while the strike it warned of played out)
+        double outT = Freeze ? 0.12 : 0.3;
+        if (gone >= 0) { gone += delta; if (gone > outT) { QueueFree(); return; } }
         var s = Size2;
         column.Size = s;
         column.Position = wordsAt - s / 2;
         // It burns in: the glow first, the words up through it by Legible, the title hot and cooling to bone.
-        float out_ = gone >= 0 ? 1 - Smooth(gone / 0.3) : 1;
+        float out_ = gone >= 0 ? 1 - Smooth((float)(gone / outT)) : 1;
         Modulate = Colors.White with { A = out_ };
         column.Modulate = Colors.White with { A = Smooth(age / ICalloutView.Legible) };
         if (title != null) title.Modulate = Warm.Lerp(Colors.White, Smooth((age - 0.1) / 0.6));
@@ -722,6 +807,8 @@ public partial class Callout : Control, ICalloutView
         else smoke.Visible = false;
         // The world drains, darkens and softens, but for a soft round pool on each thing in the world
         // (its own colour, no more light than it had); a HUD part has no pool (the HUD keeps it undimmed).
+        if (Freeze) dim.Visible = !DimHeld;
+        if (Freeze) { dimMat.SetShaderParameter("old_dim", DimOld ? 1 : 0); dimMat.SetShaderParameter("night", Night ? 1f : 0f); }
         if (dim.Visible)
         {
             var lights = new Vector4[6];
@@ -735,12 +822,24 @@ public partial class Callout : Control, ICalloutView
             {
                 if (!InWorld(i)) continue;
                 var m = marks[i];
-                lights[n++] = new Vector4(m.C.X, m.C.Y, m.R * 1.5f + 46, 0.7f);
+                lights[n++] = new Vector4(m.C.X, m.C.Y, i == aim.Bare ? 90 : m.R * 1.5f + 46, 0.7f);
             }
+            if (aim.Pools != null)
+                foreach (var pl in aim.Pools)
+                    if (n < 6) lights[n++] = new Vector4(pl.X, pl.Y, pl.Z, 0.7f);
+            var crisp = new Vector4[4];
+            int cn = 0;
+            if (aim.Crisp != null)
+                foreach (var cr in aim.Crisp)
+                    if (cn < 4) crisp[cn++] = new Vector4(cr.X, cr.Y, cr.Z, 0);
+            dimMat.SetShaderParameter("crisp", crisp);
+            dimMat.SetShaderParameter("crisp_n", cn);
             dimMat.SetShaderParameter("lights", lights);
             dimMat.SetShaderParameter("count", n);
             dimMat.SetShaderParameter("canvas", new Vector2(Canvas, CanvasH));
             dimMat.SetShaderParameter("amount", Smooth(age / 0.26) * out_);
+            if (OS.GetCmdlineUserArgs().Contains("--dim-diag") && age > 0.6 && age < 1.3)
+                GD.Print($"dimdiag age={age:0.00} words={new Rect2(wordsAt - Size2 / 2, Size2)} lights={string.Join(";", lights.Take(n).Select(l => $"{l.X:0},{l.Y:0},{l.Z:0}"))}");
         }
         glow.QueueRedraw();
         ink.QueueRedraw();
@@ -755,6 +854,12 @@ public partial class Callout : Control, ICalloutView
     partial class Ink : Control
     {
         readonly Callout c;
+        // (a cold callout's ink: the lamps glow ice blue, so their marks do too, round 2 judge)
+        static readonly Color ColdDeep = new("#1f4f86"), ColdHot = new("#7cc4ff"), ColdWhite = new("#e4f4ff");
+        Color Deep => c.aim.Cold ? ColdDeep : Callout.Deep;
+        Color Hot => c.aim.Cold ? ColdHot : Callout.Hot;
+        Color White => c.aim.Cold ? ColdWhite : Callout.White;
+        Color Ember => c.aim.Cold ? ColdHot : Style.Ember;
         readonly bool glow;
         public Ink(Callout c, bool glow) { this.c = c; this.glow = glow; MouseFilter = MouseFilterEnum.Ignore; }
 
@@ -773,7 +878,7 @@ public partial class Callout : Control, ICalloutView
             {
                 var marks = c.Marks();
                 for (int i = 0; i < marks.Count; i++)
-                    if (!c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow);
+                    if (i != c.aim.Bare && !c.ways.Any(x => x.M.C == marks[i].C)) Mark(marks[i], k, strike, breathe, glow, c.OnHud(marks[i].C));
             }
             if (c.aim.Edges is { } edges) foreach (var (at, d) in edges) Chevron(at, d, k, breathe, reach, glow);
             foreach (var (way, m) in c.Arrows())
@@ -792,11 +897,11 @@ public partial class Callout : Control, ICalloutView
                     Soft(pts, 30 * k, 40 * k, u =>
                     {
                         float hb = bead is >= 0 and <= 1 ? Mathf.Exp(-Mathf.Pow((u - bead) / 0.08f, 2)) : 0;
-                        return Style.Ember with { A = 0.12f + 0.2f * u + 0.22f * hb };
+                        return Ember with { A = 0.12f + 0.2f * u + 0.22f * hb };
                     }, r);
                     float bloom = (64 + 14 * strike) * k;
-                    DrawTextureRect(Bloom(), new Rect2(tip - Vector2.One * bloom / 2, Vector2.One * bloom), false, Style.Ember with { A = 0.42f + 0.3f * strike });
-                    if (reach >= 1) Mark(m, k, strike, breathe, true);
+                    DrawTextureRect(Bloom(), new Rect2(tip - Vector2.One * bloom / 2, Vector2.One * bloom), false, Ember with { A = 0.42f + 0.3f * strike });
+                    if (reach >= 1 && !c.IsBare(m.C)) Mark(m, k, strike, breathe, true, c.OnHud(m.C));
                     continue;
                 }
                 // The iron, then the heat inside it, cooler at the words, hottest at the point.
@@ -811,7 +916,7 @@ public partial class Callout : Control, ICalloutView
                 Link(pts[0], da, k);
                 float drawn = (tip - pts[0]).Length();
                 if (drawn > 14) Head(tip, dir, k * Mathf.Clamp(drawn / 80f, 0.45f, 1f));
-                if (reach >= 1) Mark(m, k, strike, breathe, false);
+                if (reach >= 1 && !c.IsBare(m.C)) Mark(m, k, strike, breathe, false, c.OnHud(m.C));
             }
         }
 
@@ -826,6 +931,19 @@ public partial class Callout : Control, ICalloutView
                 list.Add(v * v * v * p0 + 3 * v * v * s * p1 + 3 * v * s * s * p2 + s * s * s * p3);
             }
             return list;
+        }
+
+        /// <summary>Bezier's points into buf (steps + 1 long), the same sums, nothing allocated (the
+        /// placing tries thousands of ways a callout: s6, 350 ms of lists); how many were written.</summary>
+        public static int BezierInto(Span<Vector2> buf, Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t, int steps)
+        {
+            if (p0.DistanceTo(p3) < 8 || t <= 0) return 0;
+            for (int i = 0; i <= steps; i++)
+            {
+                float s = t * i / steps, v = 1 - s;
+                buf[i] = v * v * v * p0 + 3 * v * v * s * p1 + 3 * v * s * s * p2 + s * s * s * p3;
+            }
+            return steps + 1;
         }
 
         /// <summary>A stroke along the points, w0 wide at the start, w1 at the end (u runs 0 to r
@@ -933,7 +1051,7 @@ public partial class Callout : Control, ICalloutView
             float R = EdgeRing * k;
             if (light)
             {
-                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 34 * k, Vector2.One * 68 * k), false, Style.Ember with { A = (0.18f + 0.1f * breathe) * reach });
+                DrawTextureRect(Bloom(), new Rect2(at - Vector2.One * 34 * k, Vector2.One * 68 * k), false, Ember with { A = (0.18f + 0.1f * breathe) * reach });
                 return;
             }
             var n = new Vector2(-dir.Y, dir.X);
@@ -978,21 +1096,27 @@ public partial class Callout : Control, ICalloutView
 
         /// <summary>The mark where it lands: a ring round a point, brackets at an area's corners;
         /// it strikes bright and a size larger, and settles.</summary>
-        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light)
+        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light, bool part = false)
         {
             float grow = 7 * strike * strike;
             if (m.Round)
             {
                 float rr = m.R + grow + 1.5f * breathe;
+                // A ring round a HUD part opens at its foot, 30 px either side of the bottom, so the key
+                // plate under the part (SPACE, R, Q...) shows clean instead of struck through.
+                float gap = part ? Mathf.Asin(Math.Min(0.95f, PartGap * k / rr)) : 0;
+                float a0 = Mathf.Pi / 2 + gap, a1 = Mathf.Pi / 2 + Mathf.Tau - gap;
+                int segs = Math.Max(8, (int)(64 * (a1 - a0) / Mathf.Tau));
+                if (part) LogGap(m.C, rr, gap);
                 if (light)
                 {
-                    var ring = new List<Vector2>(65);
-                    for (int i = 0; i <= 64; i++) ring.Add(m.C + Vector2.FromAngle(i * Mathf.Tau / 64) * rr);
-                    Soft(ring, 26 * k, 26 * k, _ => Style.Ember with { A = 0.3f + 0.35f * strike }, 1);
+                    var ring = new List<Vector2>(segs + 1);
+                    for (int i = 0; i <= segs; i++) ring.Add(m.C + Vector2.FromAngle(a0 + i * (a1 - a0) / segs) * rr);
+                    Soft(ring, 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1);
                     return;
                 }
-                DrawArc(m.C, rr, 0, Mathf.Tau, 64, Iron, 7f * k, true);
-                DrawArc(m.C, rr, 0, Mathf.Tau, 64, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
+                DrawArc(m.C, rr, a0, a1, segs, Iron, 7f * k, true);
+                DrawArc(m.C, rr, a0, a1, segs, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
                 return;
             }
             var b = m.Box.Grow(grow);
@@ -1000,7 +1124,7 @@ public partial class Callout : Control, ICalloutView
             foreach (var (corner, sx, sy) in new[] { (b.Position, 1, 1), (new Vector2(b.End.X, b.Position.Y), -1, 1), (b.End, -1, -1), (new Vector2(b.Position.X, b.End.Y), 1, -1) })
             {
                 var p = new[] { corner + new Vector2(sx * arm, 0), corner, corner + new Vector2(0, sy * arm) };
-                if (light) { Soft([.. p], 26 * k, 26 * k, _ => Style.Ember with { A = 0.3f + 0.35f * strike }, 1); continue; }
+                if (light) { Soft([.. p], 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1); continue; }
                 DrawPolyline(p, Iron, 7f * k, true);
                 DrawPolyline(p, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
             }
@@ -1042,7 +1166,11 @@ public partial class Callout : Control, ICalloutView
             uniform vec4 lights[6];
             uniform int count = 0;
             uniform int soft_first = 0;
+            uniform vec4 crisp[4];
+            uniform int crisp_n = 0;
             uniform float amount = 0.0;
+            uniform int old_dim = 0;
+            uniform float night = 0.0;
             uniform vec2 canvas = vec2(1920.0, 1080.0);
             void fragment() {
                 vec2 p = UV * canvas;
@@ -1059,8 +1187,15 @@ public partial class Callout : Control, ICalloutView
                     lit = max(lit, l);
                     warm = max(warm, l * lights[i].w);
                 }
+                // (a caster's body: wholly lit, edge eased over its outer fifth; no dim, no blur)
+                float body = 0.0;
+                for (int j = 0; j < 4; j++) {
+                    if (j >= crisp_n) { break; }
+                    float dj = length(p - crisp[j].xy);
+                    body = max(body, 1.0 - smoothstep(0.8 * crisp[j].z, crisp[j].z, dj));
+                }
                 vec3 c = texture(screen, SCREEN_UV).rgb;
-                float k = amount * (1.0 - lit);
+                float k = amount * (1.0 - max(lit, body));
                 vec3 src = c;
                 if (k > 0.001) {
                     // (about 3 px at 1080p: a 5 by 5 gaussian, 1.5 px apart)
@@ -1077,12 +1212,20 @@ public partial class Callout : Control, ICalloutView
                     src = mix(c, acc / wsum, k);
                 }
                 float y = dot(src, vec3(0.299, 0.587, 0.114));
-                // (about 30% darker, half drained: the night still reads, the thing taught stands out)
-                vec3 ash = mix(vec3(y), src, 0.5) * 0.72;
+                // Half drained, and darkened by the hour and the pixel's own light. By day the lit ground loses
+                // about 30% (round 2 judge: 45% sank it to the shadows' level, a dusk), its shade less; by night (a flat 28% cut sank it to near black: the bolts' archers in
+                // the dash lesson barely read) the dark keeps nearly all it has and the lit about 80%: the drain,
+                // the softening and the warm pools set the taught apart instead.
+                float day_keep = mix(0.92, 0.70, smoothstep(0.03, 0.25, y));
+                float night_keep = mix(0.95, 0.8, smoothstep(0.05, 0.35, y));
+                float keep = old_dim == 1 ? 0.72 : mix(day_keep, night_keep, night);
+                vec3 ash = mix(vec3(y), src, 0.5) * keep;
                 vec2 q = UV - 0.5;
-                ash *= 1.0 - 0.15 * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
+                ash *= 1.0 - (old_dim == 1 ? 0.15 : mix(0.15, 0.06, night)) * smoothstep(0.3, 0.8, length(q * vec2(1.0, 0.72)));
                 // (a thing's pool is lit warm, as by the ember: never a cold white patch)
                 vec3 col = mix(c, ash, k) * mix(vec3(1.0), vec3(1.06, 0.95, 0.78), warm * amount);
+                // (the pools a touch brighter than the ground was, by day: so they still stand off the lighter world)
+                col *= 1.0 + 0.15 * lit * amount * (1.0 - night) * (old_dim == 1 ? 0.0 : 1.0);
                 COLOR = vec4(col, 1.0);
             }
             """,

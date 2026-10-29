@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -73,6 +73,9 @@ public partial class Game : Node, IZoneHost
 
     public override void _Ready()
     {
+        // Data through Godot's file access from the first frame: skills.json and items.json are read
+        // on first use, which can come before any zone loads, and only res:// reads inside an export.
+        ZoneData.UseGodotFiles();
         // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
         SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.
@@ -127,7 +130,7 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
@@ -159,6 +162,13 @@ public partial class Game : Node, IZoneHost
         return face;
     }
 
+    /// <summary>--hair-highlight HEX|default (pictures of her hair's highlights): a colour, or her --hair-colour's own
+    /// (World.Lore.DefaultHighlight), as a "#rrggbb"; null without it.</summary>
+    // (Its presence also forces highlights on while they are parked: World.Lore.ForceHighlights.)
+    public static string? HighlightArg() => Args.Get("hair-highlight") is string hl && (SurvivorUnchained.World.Lore.ForceHighlights = true)
+        ? hl is "default" or "auto" ? SurvivorUnchained.World.Lore.HighlightColor(Args.Get("hair-colour"), SurvivorUnchained.World.Lore.HighlightAuto) : hl
+        : null;
+
     /// <summary>--preset's own skin, when no --skin is given (as the Look's Choose gives it).</summary>
     static string? QuickSkin() => Args.Get("preset") is string ps ? Loadouts.HeroKit(Sex.Female)?.Faces.FirstOrDefault(f => f.Id == ps)?.Skin : null;
 
@@ -183,6 +193,8 @@ public partial class Game : Node, IZoneHost
             // --preset ID [--eyes ID]: one of her faces (pictures of a face in play, by day and by torch).
             FaceShape = Args.Get("preset"), Eyes = Args.Get("eyes"),
             Face = QuickFace(),
+            // --hair-highlight HEX|default: her locks' highlights (default: her --hair-colour's own)
+            HairHighlight = HighlightArg(),
         });
         // --art ID[:FACET+FACET]: that art in hand, learned and (with facets) mastered.
         if (Args.Get("art") is string art)
@@ -347,17 +359,25 @@ public partial class Game : Node, IZoneHost
         // --npc NAME: a Marionette package stood beside her (pictures: GameNpcShot).
         NpcShot();
         NpcCrowd();
+        PropShot();
         hud.Fade(0, 0.5);
         // --travel ZONE@S[,ZONE@S...]: on to each ZONE S seconds in (measuring
         // later, warm builds: what a place costs to enter once the session has
         // begun, and to enter again).
+        foreach (var hop in Args.Get("prepare")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => Prepare(onTo));
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
         // --cine ID: that cinematic played here at once (pictures of it, its previs),
         // and on into the one it runs on into (its end.next), as the zone plays them.
+        // --cine-at T: it begins T seconds in, from play (perf: a start's cost seen apart from the load's).
         if (Args.Get("cine") is string cid && cine == null)
-            Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+        {
+            void Play() => Cinematic(cid, () => { if (chained != null && SurvivorUnchained.Cinema.CineFile.Load(cid).End.Next is string next) Cinematic(next); });
+            if (Args.Has("cine-at")) Wait(Args.Num("cine-at", 10), Play); else Play();
+        }
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
@@ -612,6 +632,21 @@ public partial class Game : Node, IZoneHost
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
+        else if (ahead != null && aheadId == id)
+        {
+            // Built ahead (Prepare): whatever is left done now.
+            Perf.Lap("ahead", true);
+            ahead.Finish();
+            scene = aheadScene!;
+            ahead = null; aheadId = null; aheadScene = null;
+            GroundPaint.Of(scene.Data);
+            Perf.Lap("built ahead: the rest");
+            AddChild(scene);
+            // (what was decoded and loaded for it held till its people are stood up too: EnterZone)
+            releaseAhead = true;
+            Perf.Lap("built ahead: added");
+            goto Built;
+        }
         else { currentMap = null; data = new ZoneData(id); }
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
@@ -619,6 +654,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
+        Built:
         // (a story night let go stands still until its result: StoryNight.StandDown)
         scene.Move = () => zone is StoryNight { Over: true } ? (0, 0) : auto?.Move ?? PlayMove();
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
@@ -645,6 +681,57 @@ public partial class Game : Node, IZoneHost
         return scene;
     }
 
+    /// <summary>The hold on what was decoded and loaded ahead of the place let go once it is entered.</summary>
+    bool releaseAhead;
+
+    /// <summary>A place being built ahead of the journey to it (Prepare), and its id.</summary>
+    Slices? ahead;
+    string? aheadId;
+    WorldScene? aheadScene;
+
+    /// <summary>The place `id` built ahead, a few milliseconds a frame while this one plays (the Prologue asks as
+    /// C04 A begins): its data, the ground's paint and the map's drawing worked out on a worker thread, its textures
+    /// decoded on workers, then its pieces stood up off the tree (Slices). Travel waits behind the black for what
+    /// is left; Stage adds it. Nothing of it shows, or reaches the place still shown, till then.</summary>
+    public void Prepare(string id)
+    {
+        if (aheadId == id || scene?.Data.Id == id || id is "arena" or "map") return;
+        aheadId = id;
+        aheadScene = null;
+        ahead = new Slices(BuildAhead(id));
+    }
+
+    IEnumerable<object?> BuildAhead(string id)
+    {
+        // (the zone's own-props and flora tables read here first: the worker only finds them)
+        OwnProps.For(id);
+        yield return null;
+        var load = System.Threading.Tasks.Task.Run(() => new ZoneData(id));
+        yield return load;
+        var data = load.Result;
+        // The flora's sizes the ground's paint reads, looked up here, where their files load.
+        foreach (var g in data.Flora) { Dressing.BoundsOf(g.Piece); yield return null; }
+        yield return System.Threading.Tasks.Task.Run(() => { GroundPaint.Ready(data); MapScreen.DrawAhead(data); });
+        foreach (var s in Prefetch.Ahead(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: true)) yield return s;
+        if (!Args.Has("ahead-main")) yield return Prefetch.PeopleAhead(Journey != null ? Loadouts.Of(Journey.Ch).Person : null);
+        var view = new ZoneView(data);
+        // (its pieces stood up on a worker thread: off the tree, nodes and resources may be made on any thread; the
+        // main thread only flushes their rendering commands, a little a frame)
+        if (Args.Has("ahead-main")) foreach (var s in view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)) yield return s;
+        else yield return System.Threading.Tasks.Task.Run(() => Slices.Paced(view.Build(new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z), ahead: true)));
+        aheadScene = new WorldScene(data, cam, view);
+    }
+
+    /// <summary>Each frame: the place being built ahead goes on (a little while this one plays, more behind the black).</summary>
+    void PumpAhead()
+    {
+        if (ahead == null || ahead.Done) return;
+        System.Threading.Interlocked.Increment(ref Slices.Frame);
+        Slices.PacedMs = inTransit ? 1000 : (float)Args.Num("ahead-pace", 0);
+        if (ahead.Step(inTransit ? 40 : 4) && Perf.On)
+            GD.Print($"perf ahead {aheadId}: built in {ahead.Frames} frames, main thread {ahead.MainMs:0} ms, at most {ahead.MaxMs:0.0} ms a frame, longest step {ahead.LongestMs:0.0} ms ({ahead.Longest})");
+    }
+
     public void EnterZone(string id, string? from, Arrival? at = null)
     {
         // The title's stage is the prologue's place: begun there, it is kept.
@@ -666,6 +753,7 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
         Perf.Lap("play: the crowd's kinds made ready (bakes)");
+        if (releaseAhead) { releaseAhead = false; Prefetch.ReleaseAhead(); }
         // --perf: how long the place took to stand up (the frame it happens in holds that long).
         if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
@@ -676,6 +764,7 @@ public partial class Game : Node, IZoneHost
         hudMode = null;
         screens.Close();
         hud.ShowPlay(true);
+        hud.XpWake();   // (UI 18: the experience light at its resting glow, the quiet clock from now)
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;
@@ -700,6 +789,7 @@ public partial class Game : Node, IZoneHost
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
+        RehearseDraft(b);
     }
 
     void HookBattle(Battle b)
@@ -736,18 +826,36 @@ public partial class Game : Node, IZoneHost
         controls.Captured = true;
         if (pull) { hud.Pull(1.1, caption, sub); Sfx.Stinger("pull"); }
         else hud.Fade(1, 0.8, caption, sub);
-        Wait(pull ? 1.15 : 0.85, () =>
+        Wait(pull ? 1.15 : 0.85, () => WhenBuilt(to, () =>
         {
             EnterZone(to, from, at);
             Save("travel");
-            Wait(caption != null ? 1.4 : 0.2, () =>
+            // (the hold counts in real time, and the new place's first drawings can eat it: the black lifts
+            // only once the frames come smooth again, so no hitch shows through the fade-in)
+            Wait(caption != null ? 1.4 : 0.2, () => WhenSmooth(() =>
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
                 controls.ClearLatches();
                 inTransit = false;
-            });
-        });
+            }));
+        }));
+    }
+
+    /// <summary>Once two frames in a row have come in under 40 ms (a new place's first drawings done), or after 2 s.</summary>
+    void WhenSmooth(Action fn, int calm = 0, double waited = 0)
+    {
+        double dt = GetProcessDeltaTime();
+        calm = dt < 0.04 ? calm + 1 : 0;
+        if (calm >= 2 || waited > 2) fn();
+        else Wait(0, () => WhenSmooth(fn, calm, waited + dt));
+    }
+
+    /// <summary>Once the place being built ahead is (behind the black: PumpAhead goes faster then), or at once.</summary>
+    void WhenBuilt(string id, Action fn)
+    {
+        if (ahead == null || aheadId != id || ahead.Done) fn();
+        else Wait(0, () => WhenBuilt(id, fn));
     }
 
     /// <summary>Later, in real time (a fade, the fall).</summary>
@@ -786,7 +894,12 @@ public partial class Game : Node, IZoneHost
     public void Say(string text, string? who = null, double seconds = 4)
     {
         var take = voice.Narrate(text);
-        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+        // (no voice: up long enough to read, 17 characters a second)
+        double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : Math.Max(seconds, text.Length / 17.0);
+        // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
+        if (Args.Has("pace")) GD.Print($"pace say t={Battle?.Time ?? 0:0.0} up={up:0.0} hp={Battle?.Player.Hp ?? 0:0}/{Battle?.MaxHp ?? 0:0} text={(text.Length > 60 ? text[..60] : text)}");
+        if (Args.Has("pace") && Args.Has("shot")) Shots.Want($"say_{Battle?.Time ?? 0:000}", 1.2);
+        hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
@@ -794,6 +907,7 @@ public partial class Game : Node, IZoneHost
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
+        if (Args.Has("pace")) GD.Print($"pace announce t={Battle?.Time ?? 0:0.0} title={a.Title} line={a.Sub}");
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
     }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -801,13 +915,23 @@ public partial class Game : Node, IZoneHost
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
-    public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
+    public void SetHint(Hint? hint)
+    {
+        // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
+        if (hint != null && hint.Id != CurrentHint?.Id && (Args.Has("shot") || Args.Has("pace")))
+        {
+            GD.Print($"tip {hint.Id} t={Battle?.Time ?? 0:0.0} keys={string.Join("+", hint.Keys)} text={hint.Text}");
+            // (its picture is asked for by the HUD once the tip is drawn at full strength: GameHud.Update)
+        }
+        hud.Hint(CurrentHint = hint);
+    }
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
     // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
-    public void AnnounceZone() { if (zone != null && !Args.Has("cine")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
+    // (--noannounce: no zone banner, for gait shots in its first 4 s)
+    public void AnnounceZone() { if (zone != null && !Args.Has("cine") && !Args.Has("noannounce")) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
 
     public void Revived(double x, double z)
     {
@@ -878,6 +1002,7 @@ public partial class Game : Node, IZoneHost
             if (d < it.R && d < bd) { bd = d; best = it; }
         }
         near = best;
+        // (the talk lesson L4 is cut, MR5 judge: the prompt "E Talk Tam" is the lesson)
         var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
         if (view != promptShown) hud.Prompt(promptShown = view);
     }
@@ -931,6 +1056,9 @@ public partial class Game : Node, IZoneHost
         }
     }
 
+    /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
+    readonly List<(double X, double Z, double? X1, double? Z1, double R, double Until)> marks = new();
+
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
@@ -940,7 +1068,10 @@ public partial class Game : Node, IZoneHost
         int crits = 0;
         foreach (var e in evs)
         {
+            if (e is Ev.Telegraph tg && tg.Hostile && tg.Duration > 0.02)
+                marks.Add((tg.X, tg.Z, tg.X1, tg.Z1, tg.Radius, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
+            if (Shots.On("elite")) EliteShot(e);
             Feel(e, ref crits);
             switch (e)
             {
@@ -989,6 +1120,75 @@ public partial class Game : Node, IZoneHost
     /// stagger, its arrival and what is announced (Shots.Want). --on casts: a run of
     /// frames, fifteen a second, through each creature's marked cast and a second after
     /// it (judging a slam or a call as the player sees it).</summary>
+    /// <summary>--on elite: frames of each elite's or boss's marked blow (early, mid, at the end) and of
+    /// its hit flash (struck, and two frames on), at most one flash a second (judging the red line and
+    /// the struck light as the player sees them).</summary>
+    double crowdTeleShot = -9;
+    /// <summary>Champions whose normal hit (false) and critical (true) have been framed (one of each a champion).</summary>
+    readonly HashSet<(int, bool)> hitShot = new();
+    /// <summary>(--on elite) where in a mark's time its frames fall (env TELE_F "0.05,0.12,..." for a closer look).</summary>
+    static readonly double[] TeleFracs = System.Environment.GetEnvironmentVariable("TELE_F") is { Length: > 0 } tf
+        ? System.Array.ConvertAll(tf.Split(','), x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)) : new[] { 0.12, 0.5, 0.88 };
+    void EliteShot(CombatEvent e)
+    {
+        bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+        switch (e)
+        {
+            case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
+                foreach (var f in TeleFracs) Shots.Want($"tele{t.Id}", t.Duration * f);
+                MarkGeo($"tele{t.Id}", t);
+                break;
+            // (and the crowd's marks, one frame of one at most every 6 s)
+            case Ev.Telegraph t when t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
+                crowdTeleShot = Battle?.Time ?? 0;
+                Shots.Want("crowd", t.Duration * 0.6);
+                MarkGeo("crowd", t);
+                break;
+            // (a champion's first normal hit and first critical, each at 0, 2, 4 and 8 drawn frames on: the hit-stop
+            // holds the clock, so frames by time came out the same picture)
+            case Ev.Hit h when !h.Dot && Big(h.Target) && hitShot.Add((h.Target, h.Crit)):
+                string tag = $"hit{h.Target}{(h.Crit ? "c" : "n")}";
+                foreach (var n in new[] { 0, 2, 4, 8 }) Shots.WantFrames(tag, n);
+                GD.Print($"hitgeo {tag} {h.X:0.###} {h.Z:0.###} {scene?.Fx.GroundAt(h.X, h.Z) ?? 0:0.###} crit {h.Crit}");
+                break;
+        }
+    }
+
+    /// <summary>(--on elite) a mark's ground for measuring its frames: its shape and the ground's height on a grid over it
+    /// and round it (a lane: 17 across at -2..2 half-widths, 9 along; a circle: 17 radii to 2R, 16 bearings).</summary>
+    void MarkGeo(string tag, Ev.Telegraph t)
+    {
+        if (scene == null) return;
+        var fx = scene.Fx;
+        var sb = new System.Text.StringBuilder();
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        if (t.Shape == TelegraphShape.Line)
+        {
+            double x0 = t.X, z0 = t.Z, x1 = t.X1 ?? t.X, z1 = t.Z1 ?? t.Z, w = t.Width ?? 1;
+            double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz)), ax = dx / len, az = dz / len;
+            sb.Append(string.Format(ci, "markgeo {0} line {1:0.###} {2:0.###} {3:0.###} {4:0.###} {5:0.###} dur {6:0.###} h", tag, x0, z0, x1, z1, w, t.Duration));
+            for (int j = 0; j <= 8; j++)
+                for (int k = -8; k <= 8; k++)
+                {
+                    double along = len * j / 8, across = w / 2 * k / 4;
+                    double px = x0 + ax * along - az * across, pz = z0 + az * along + ax * across;
+                    sb.Append(string.Format(ci, " {0:0.###}", fx.GroundAt(px, pz)));
+                }
+        }
+        else
+        {
+            sb.Append(string.Format(ci, "markgeo {0} {1} {2:0.###} {3:0.###} {4:0.###} dur {5:0.###} h", tag, t.Shape.ToString().ToLowerInvariant(), t.X, t.Z, t.Radius, t.Duration));
+            for (int k = 0; k <= 16; k++)
+                for (int a = 0; a < 16; a++)
+                {
+                    double r = t.Radius * k / 8, an = a * Math.Tau / 16;
+                    sb.Append(string.Format(ci, " {0:0.###}", fx.GroundAt(t.X + r * Math.Cos(an), t.Z + r * Math.Sin(an))));
+                }
+        }
+        sb.Append(string.Format(ci, " water {0:0.###}", SurvivorUnchained.View.Water.Level ?? -1000));
+        GD.Print(sb.ToString());
+    }
+
     static void BossShot(CombatEvent e)
     {
         switch (e)
@@ -1014,6 +1214,7 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
+        PumpAhead();
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
@@ -1097,11 +1298,14 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        DoubleAhead(dt);
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.
         if (GetViewport().GetCamera3D() is { } seen)
         {
             RenderingServer.GlobalShaderParameterSet(ViewFromName, new Vector4(seen.GlobalPosition.X, seen.GlobalPosition.Y, seen.GlobalPosition.Z, 1));
+            // (the canopy fade, our trees over her faded whole: the play camera's only, E3 au1-5)
+            KitLook.CanopyView(Mode == "play" && !InCinematic && !showing);
             // (--see-debug: what stands in the window, listed once the place has settled)
             if (KitLook.SeeDebug && !seeListed && scene.Time > 2.5)
             {
@@ -1117,6 +1321,31 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
+            // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
+            // faded all the time)
+            if (hud.FigureRect is Rect2 fig)
+            {
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
+                bool Behind(Rect2 rect)
+                {
+                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    float gy = at.Y + 1;
+                    bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
+                    if (!behind)
+                        foreach (var e in fb2.Enemies.Living())
+                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
+                    marks.RemoveAll(m => m.Until < playedT);
+                    if (!behind)
+                        foreach (var m in marks)
+                            // (its middle and four points round its edge)
+                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
+                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
+                    return behind;
+                }
+                hud.FigureBehind(Behind(fig));
+                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
+            }
             if (near != null)
             {
                 var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);
@@ -1139,6 +1368,8 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        // The header's time of day as the zone has it now (a story's dawn turns without the clock).
+        if (zone != null) hud.ZoneInfo(zone.Name, zone.Region, World.Day, zone.TimeOf(World));
         Perf.Begin(Perf.Part.Draft);
         UpdateChest();
         UpdateDraft(dt);
@@ -1276,7 +1507,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone;
     int toastI;
 
     /// <summary>One of each kind of notice (--toasts), in the words the game uses.</summary>
@@ -1566,7 +1797,8 @@ public partial class Game : Node, IZoneHost
                 wb.Events.Emit(new Ev.Bark { X = x + 2, Z = z - 1, Text = t, Speaker = "The Ford-Warden" });
             wb.Events.Emit(new Ev.Bark { X = x - 1.5, Z = z - 0.5, Text = "Something moves in the reeds." });
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
-            wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
+            // (and a blow the Warden blocks, beside his line: combat's floater, kept off it, UI note 1)
+            wb.Events.Emit(new Ev.Hit { X = x + 2, Z = z - 1, Blocked = true, Target = 0, MaxHp = 1, School = School.Physical });
         }
         // --nohud: the world alone, for pictures of what a screen lies over.
         if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
@@ -1578,6 +1810,13 @@ public partial class Game : Node, IZoneHost
         {
             tipDone = true;
             SetHint(new Hint("sample", "Elites", "Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it.", [KeyLabel("dash")]));
+        }
+        // --freeze-test T: a teaching freeze on her and the dash at T seconds (pictures of the freeze's dim
+        // wherever the run is: by day in the hub, by night in a story fight); with --teach-reset.
+        if (Args.Has("freeze-test") && !freezeTestDone && Battle != null && Journey.Playtime >= Args.Num("freeze-test", 3))
+        {
+            freezeTestDone = true;
+            Teach(new Play.Callout("freeze_test", Play.CalloutKind.Freeze, "Dash", "Roll through the bolts; nothing touches you mid-roll.", new Play.Aim { Hud = "dash", HerSeen = true }, "dash"));
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
@@ -1786,7 +2025,7 @@ public partial class Game : Node, IZoneHost
             var flipped = flips.Split(',').ToHashSet();
             double every = Args.Num("perf-flip-every", 1);
             var clock = System.Diagnostics.Stopwatch.StartNew();
-            bool outNow = false, wasOut = false, pinesOut = false, broadOut = false, rocksOut = false;
+            bool outNow = false, wasOut = false, peopleOut = false, pinesOut = false, broadOut = false, rocksOut = false;
             List<Node3D>? pines = null, broad = null, rocks = null;
             string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
             string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
@@ -1810,10 +2049,21 @@ public partial class Game : Node, IZoneHost
                 if (flipped.Contains("interp")) SurvivorUnchained.View.Interp.On = on;
                 wasOut = outNow;
                 if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                // anim: every animation mixer but hers stopped (their skeletons then stand still, unposed); people:
+                // every skinned figure but her hidden (MR4: what the town's folk cost, posing and drawing)
+                if ((flipped.Contains("anim") || flipped.Contains("people")) && outNow != peopleOut)
+                {
+                    peopleOut = outNow;
+                    foreach (var n in GetTree().Root.FindChildren("*", "AnimationMixer", true, false))
+                        if (flipped.Contains("anim") && (scene.Player == null || !scene.Player.IsAncestorOf(n))) ((AnimationMixer)n).Active = on;
+                    foreach (var n in GetTree().Root.FindChildren("*", "Skeleton3D", true, false))
+                        if (flipped.Contains("people") && (scene.Player == null || !scene.Player.IsAncestorOf(n)) && n.GetParent() is Node3D pn) pn.Visible = on;
+                }
                 if (flipped.Contains("furshadow") && scene.Player != null)
                     foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
                         ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
                 if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("hud")) hud.Visible = on;
                 if (flipped.Contains("brush")) Brush.Paused = !on;
                 if (flipped.Contains("fx")) scene.Fx.Visible = on;
                 if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;

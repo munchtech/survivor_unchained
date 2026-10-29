@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Godot;
@@ -112,6 +112,95 @@ public static class Prefetch
         if (img.LoadKtxFromBuffer(bytes) == Error.Ok && !img.IsEmpty()) return img;
         img.Dispose();
         return null;
+    }
+
+    /// <summary>A place's textures decoded ahead of it (Game.Prepare), in steps: the headers read and the files
+    /// transcoded on workers while the frames go on, each made a texture on the main thread a step at a time, and
+    /// held (apart from a build's own) until the place is added (ReleaseAhead).</summary>
+    public static IEnumerable<object?> Ahead(ZoneData z, PersonSpec? her, bool folk)
+    {
+        var scenes = new List<string>(Dressing.Files(z)) { $"{z.Dir}/landmarks.glb" };
+        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
+            if (w.EndsWith(".glb")) scenes.Add($"res://assets/weapons/{w}");
+        if (her != null) scenes.AddRange(People.Files(her));
+        if (folk) scenes.AddRange(Wardrobe());
+        var unread = new List<string>();
+        foreach (var s in scenes) if (!ktxOf.ContainsKey(s) && !unread.Contains(s)) unread.Add(s);
+        var read = new ConcurrentDictionary<string, string[]>();
+        yield return Task.Run(() => Parallel.ForEach(unread, s => read[s] = KtxOf(s)));
+        foreach (var (s, t) in read) ktxOf[s] = t;
+        var want = new List<string>();
+        var seen = new HashSet<string>();
+        foreach (var s in scenes)
+            foreach (var t in ktxOf[s])
+                if (seen.Add(t) && !ResourceLoader.HasCached(t)) want.Add(t);
+        var done = new ConcurrentQueue<(string Path, Image? Img)>();
+        var work = Task.Run(() => Parallel.ForEach(want, p => done.Enqueue((p, Read(p)))));
+        int taken = 0;
+        while (taken < want.Count)
+        {
+            if (!done.TryDequeue(out var d))
+            {
+                if (work.IsFaulted) work.GetAwaiter().GetResult();
+                yield return Task.Delay(1);
+                continue;
+            }
+            taken++;
+            if (d.Img == null) continue;
+            if (!ResourceLoader.HasCached(d.Path))
+            {
+                var tex = ImageTexture.CreateFromImage(d.Img);
+                tex.TakeOverPath(d.Path);
+                heldAhead.Add(tex);
+            }
+            d.Img.Dispose();
+            yield return "a texture made";
+        }
+    }
+
+    static readonly List<ImageTexture> heldAhead = new();
+    static readonly List<Resource> scenesAhead = new();
+
+    /// <summary>The people's scene files a place's folk and the survivor are built from (her figure, the townsfolk's
+    /// wardrobe, the arms they may carry), loaded on a worker thread ahead of the place and held with its textures:
+    /// the folk stood up as it is entered find them loaded.</summary>
+    public static System.Threading.Tasks.Task PeopleAhead(PersonSpec? her)
+    {
+        var files = new List<string>(Wardrobe());
+        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
+            if (w.EndsWith(".glb")) files.Add($"res://assets/weapons/{w}");
+        if (her != null) files.AddRange(People.Files(her));
+        return System.Threading.Tasks.Task.Run(() =>
+        {
+            var got = new List<Resource>();
+            foreach (var f in files)
+                if (ResourceLoader.Exists(f) && ResourceLoader.Load(f) is Resource r) got.Add(r);
+            lock (scenesAhead) scenesAhead.AddRange(got);
+        });
+    }
+
+    static List<Resource> castHeld = new();
+
+    /// <summary>The files a place's cinematics cast their people from, loaded on a worker thread and held (Game.CastAhead;
+    /// the place's before let go).</summary>
+    public static void CastAhead(IEnumerable<string> paths)
+    {
+        var files = new List<string>(paths);
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            var got = new List<Resource>();
+            foreach (var f in files)
+                if (ResourceLoader.Exists(f) && ResourceLoader.Load(f) is Resource r) got.Add(r);
+            castHeld = got;
+        });
+    }
+
+    /// <summary>The hold on a place's textures decoded ahead let go (it is added: what it uses, it keeps).</summary>
+    public static void ReleaseAhead()
+    {
+        foreach (var t in heldAhead) t.Dispose();
+        heldAhead.Clear();
+        lock (scenesAhead) scenesAhead.Clear();
     }
 
     /// <summary>Our hold on what was decoded let go: the scenes built from it

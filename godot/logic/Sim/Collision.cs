@@ -235,7 +235,9 @@ public sealed class CollisionWorld
     }
 
     /// <summary>First solid collider along a segment (projectiles, charges, sight).</summary>
-    public RayHit? Raycast(double x0, double z0, double x1, double z1, double r = 0, bool solidOnly = true)
+    /// <param name="blocks">(optional) whether a collider overlapped at a fraction t of the way blocks (the close view's room
+    /// ray: a post it sees past, a cart it passes over).</param>
+    public RayHit? Raycast(double x0, double z0, double x1, double z1, double r = 0, bool solidOnly = true, Func<Collider, double, bool>? blocks = null)
     {
         double len = Math.Sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0));
         if (len < 1e-6) return null;
@@ -247,7 +249,7 @@ public sealed class CollisionWorld
             foreach (var c in Near(x, z, r + 0.5, scratch))
             {
                 if (c.PlayerOnly || (solidOnly && c.Soft)) continue;
-                if (Overlaps(c, x, z, r)) return new RayHit(t, c);
+                if (Overlaps(c, x, z, r) && (blocks == null || blocks(c, t))) return new RayHit(t, c);
             }
         }
         return null;

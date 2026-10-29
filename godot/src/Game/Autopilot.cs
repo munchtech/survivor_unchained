@@ -18,13 +18,16 @@ namespace SurvivorUnchained.Play;
 /// </summary>
 public sealed class Autopilot
 {
+    /// <summary>--no-drink: the autopilot never drinks a draught (a shot of her life falling).</summary>
+    static readonly bool noDrink = Args.Has("no-drink");
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
-    /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
+    /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player. (In the Prologue
+    /// it walks the road until the Ambush springs, then stands.)</summary>
     public bool Idle;
     /// <summary>Walk down the screen, toward the camera (--auto toward): her face to it.</summary>
     public bool Toward;
@@ -33,6 +36,10 @@ public sealed class Autopilot
     public bool Across;
     /// <summary>Walk up the screen, away from the camera (--auto away): her back and hair to it.</summary>
     public bool Away;
+    /// <summary>In a town, walk to the nearest one who can be talked to and stand there, never pressing
+    /// (--auto talk): pictures of the talk prompt and its lesson (au1 item 14).</summary>
+    public bool Talk;
+    double talkT;
     public (double X, double Z) Move { get; private set; }
     public readonly List<string> Log = new();
     string lastStage = "";
@@ -92,7 +99,10 @@ public sealed class Autopilot
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
         if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
-        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle) return;
+        // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
+        // the worst player in its first real fight, MR5 item 11)
+        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && !(z is Zones.Prologue { Sprung: false })) return;
+        if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);
     }
@@ -168,8 +178,16 @@ public sealed class Autopilot
                 tx = f.X + Math.Cos(orbit) * 9; tz = f.Z + 10 + Math.Sin(orbit) * 5;
                 break;
             }
-            case "Victory" or "Dawn":
+            case "Victory":
                 break;
+            case "Dawn":
+            {
+                // The night is over: up the road to the Waystation, as the objective says (a run went on standing
+                // at the top of the road for good, and never reached Act 1).
+                var gt = Place("gate");
+                tx = gt.X; tz = gt.Z - 8;
+                break;
+            }
             default:
             {
                 // Down the road.
@@ -193,7 +211,7 @@ public sealed class Autopilot
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
         if (near >= 3 && abilityT <= 0 && !g.HoldFlare) { Press(Act.Flare); abilityT = 2; }
-        if (p.Hp < b.MaxHp * 0.35 && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+        if (p.Hp < b.MaxHp * 0.35 && !noDrink && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
     /// <summary>Out in a fight with no script: circle a patch of ground, keep
@@ -253,7 +271,7 @@ public sealed class Autopilot
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
         if (close >= 3 && abilityT <= 0 && !g.HoldFlare) { Press(Act.Flare); abilityT = 1.5; }
-        if (p.Hp < b.MaxHp * 0.33 && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+        if (p.Hp < b.MaxHp * 0.33 && !noDrink && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
     }
 
     (double X, double Z)? knightGround;
@@ -284,6 +302,19 @@ public sealed class Autopilot
     }
 
     /// <summary>Go that way; wedged on something, sidestep for a moment.</summary>
+    void WalkUp(double dt, Battle b, ZoneRuntime z)
+    {
+        var p = b.Player;
+        // (a few seconds' look round first: the town's first lesson, the map, comes with her standing)
+        if ((talkT += dt) < 8) return;
+        var to = z.Interactables.Where(i => i.Id.StartsWith("talk:") && (i.When == null || i.When()))
+            .OrderBy(i => (i.X - p.X) * (i.X - p.X) + (i.Z - p.Z) * (i.Z - p.Z)).FirstOrDefault();
+        if (to == null) return;
+        double dx = to.X - p.X, dz = to.Z - p.Z;
+        if (Math.Sqrt(dx * dx + dz * dz) < Math.Min(1.6, to.R * 0.6)) return;
+        Steer(dt, dx, dz, p, to.X, to.Z);
+    }
+
     void Steer(double dt, double mx, double mz, PlayerState p, double tx, double tz)
     {
         stuckT += dt;

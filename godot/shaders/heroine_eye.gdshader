@@ -109,6 +109,53 @@ uniform float low_lift = 0.0;
 // pixel covering 2^far_from of its paint's texels to 2^far_to.
 uniform float far_from = 4.0;
 uniform float far_to = 6.0;
+// (the catchlight dimmed as the eye gets small on screen: at the town close-up her iris is ~7 px and the full window,
+// spread by the glow, washed the whole iris a pale icy grey, the owner's "glassy eyes"; face 38. 0 = as before)
+uniform float catch_far = 0.0;
+// (small on screen, face 38: how much of the white is taken to the iris's darkness (1 as before: at the close-up
+// it left iris and white one grey, Oklab C 0.02, L within 0.03 of each other); the iris's chroma raised and its
+// light lowered, so it reads its own colour, darker than the white; the catchlight shrunk)
+uniform float far_white = 1.0;
+uniform float far_sat = 0.0;
+// (the iris's chroma at any size: below 1 less saturated)
+uniform float iris_sat = 1.0;
+uniform float far_iris = 0.0;
+uniform float catch_far_size = 0.0;
+// (face 38 r2: the parallax's view slope capped (turned 40 the iris smeared into streaks and the pupil to a sliver;
+// 4 = the old floor); the cornea's sheen and sky over the pupil (navy over the black); the skin's depth, 0 to 1
+// (set from her skin), with how much it lowers and warms the whites and darkens the iris)
+uniform float par_max = 4.0;
+uniform float pupil_wet = 1.0;
+uniform float skin_deep = 0.0;
+uniform float deep_white = 1.0;
+uniform float deep_iris = 0.0;
+// (face 38 r3: the iris seen through the cornea, as a real eye's is: turned away, its pattern and pupil
+// foreshortened far less than the white round it (the cornea's lens), so a pupil read as a cat's slit at 40
+// degrees. `cornea_round` 0 as before; 1 the pupil round on screen at any angle (its outline kept as it is);
+// measured by the eye's own UV footprint on screen, so it also squares the paint's UV stretch (~4%) head-on.
+// `catch_round`: the catchlight round on screen (1) rather than drawn on the ball (0); `catch_drift` how far it
+// slides with the view (0.3 as before); `far_iso` the eye's size on screen taken from its footprint's short side
+// (1), not its long one (0, as before: turned, the eye counted as far off and its catchlight was put out))
+uniform float cornea_round = 0.0;
+uniform float catch_round = 0.0;
+uniform float catch_drift = 0.3;
+uniform float far_iso = 0.0;
+// (developer's view: 1 the iris's regions as laid on the ball (red pupil, blue to half, green to its edge); 2 as seen)
+uniform float dbg = 0.0;
+// By night (People.HerEyesNight, the game's night close-up: 0 by day, 1 at night), her lids' and corners'
+// shade on the eye eased by `night_lid` of itself: under the key's low, warm light the shade took the iris to
+// near black (fair cun r3: iris 10-30 of 255, one dark disc with the pupil) and the far eye's outer white to a
+// hard black wedge at the lash line.
+uniform float night_ease = 0.0;
+uniform float night_lid = 0.5;
+// (and her iris lifted by night: green under the fire's orange read near black beside its whites even unshaded,
+// iris 22 of 255 to the whites' 66, where by day it is about half the white)
+uniform float night_iris = 1.0;
+// (its colour held by night to `night_sat` of itself, so lifted it reads a dark olive, not a lit green; and none of
+// it on deep skin, whose eyes stay as dark as its face by night: lifted they glowed out of its shadow side)
+uniform float night_sat = 1.0;
+// (warmed toward olive by `night_warm`: the night grade's blue took a lifted green to teal)
+uniform float night_warm = 0.0;
 
 varying float under_lid;
 varying float corner;
@@ -134,10 +181,22 @@ void fragment() {
 	vec3 tu = normalize(TANGENT - n * dot(TANGENT, n));
 	vec3 tv = normalize(BINORMAL - n * dot(BINORMAL, n) - tu * dot(BINORMAL, tu));
 	vec3 v = normalize(vec3(dot(VIEW, tu), dot(VIEW, -tv), dot(VIEW, n)));
-	vec2 shift = v.xy / max(v.z, 0.25) * depth * iris_r * (1.0 - r * r) * in_iris;
+	vec2 tv2 = v.xy / max(v.z, 0.25);
+	tv2 /= max(1.0, length(tv2) / par_max);
+	vec2 shift = tv2 * depth * iris_r * (1.0 - r * r) * in_iris;
 	vec2 uv = UV - shift;
 	// (the pupil opened or closed: the iris's paint stretched about its middle)
 	vec2 dd = (uv - c) / iris_r;
+	// (the eye's UV footprint on screen: `ax` the UV direction squeezed most, `asq` how much (1 round))
+	vec2 ux = dFdx(UV), uy = dFdy(UV);
+	float jxx = ux.x * ux.x + uy.x * uy.x, jxy = ux.x * ux.y + uy.x * uy.y, jyy = ux.y * ux.y + uy.y * uy.y;
+	float jh = 0.5 * (jxx + jyy), jd = sqrt(max(0.25 * (jxx - jyy) * (jxx - jyy) + jxy * jxy, 0.0));
+	float jmax = jh + jd, jmin = max(jh - jd, 1e-12);
+	vec2 ax = abs(jxy) > 1e-12 ? normalize(vec2(jmax - jyy, jxy)) : (jxx >= jyy ? vec2(1.0, 0.0) : vec2(0.0, 1.0));
+	float asq = sqrt(jmin / max(jmax, 1e-12));
+	// (the pattern within the outline drawn out along it, fully at the middle, none at the edge)
+	float st = mix(pow(max(asq, 0.15), cornea_round), 1.0, min(dot(dd, dd), 1.0));
+	dd += ax * dot(dd, ax) * (st - 1.0);
 	float rr = length(dd);
 	float t = clamp((rr - pupil) / (1.0 - pupil), 0.0, 1.0);
 	float src = mix(0.28, 1.0, t);
@@ -163,9 +222,22 @@ void fragment() {
 	// (the collarette's light: the paint inside `ring` (as laid, `src`) against the rest)
 	if (ring_light != 1.0) ir *= mix(ring_light, 1.0, smoothstep(ring - 0.1, ring + 0.12, src));
 	ir *= iris_light;
+	vec2 tx = UV * vec2(textureSize(eye, 0));
+	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+	lod = mix(lod, 0.5 * log2(jmin * dot(vec2(textureSize(eye, 0)), vec2(textureSize(eye, 0))) * 0.5), far_iso);
+	float far = smoothstep(far_from, far_to, lod);
+	if (far_sat > 0.0 || far_iris > 0.0 || iris_sat != 1.0) {
+		float fl = dot(ir, vec3(0.2126, 0.7152, 0.0722));
+		ir = max(vec3(fl) + (ir - vec3(fl)) * (iris_sat + far_sat * far), vec3(0.0)) * (1.0 - far_iris * far);
+	}
+	ir *= 1.0 - deep_iris * skin_deep;
+	float nk = night_ease * (1.0 - skin_deep);
+	ir *= mix(1.0, night_iris, nk) * mix(vec3(1.0), vec3(1.0, 0.92, 0.6), night_warm * nk);
+	ir = max(mix(vec3(dot(ir, vec3(0.2126, 0.7152, 0.0722))), ir, mix(1.0, night_sat, nk)), vec3(0.0));
 	// (the pupil laid after the iris's tint, so its darkness is its own on a painted iris too; its edge a
 	// little soft, as a lens's is)
-	vec3 irt = mix(vec3(pupil_dark), ir * tint, smoothstep(pupil - 0.02, pupil + 0.015, rr));
+	float pup_in = (1.0 - smoothstep(pupil - 0.02, pupil + 0.015, rr)) * in_iris;
+	vec3 irt = mix(vec3(pupil_dark), ir * tint, 1.0 - pup_in / max(in_iris, 1e-4));
 	vec3 col = mix(texture(eye, UV).rgb, irt, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.
 	col *= 1.0 - limbal * smoothstep(limbal_from, 0.98, r) * (1.0 - smoothstep(1.0, 1.1, r));
@@ -173,30 +245,31 @@ void fragment() {
 	float white = 1.0 - in_iris;
 	vec2 d0 = (UV - c0) / iris_r;
 	float lit_below = 1.0 - 0.23 * white_grad + white_grad * smoothstep(-0.05, 0.5, d0.y);
-	col = mix(col, col * white_tint * lit_below, white);
+	col = mix(col, col * white_tint * mix(vec3(1.0), vec3(0.784, 0.735, 0.69), skin_deep * deep_white) * lit_below, white);
 	// (pinker toward the corners, where the white is thinner over the blood)
 	col = mix(col, col * vec3(1.0, 0.8, 0.78), corner * white * corner_pink);
-	float shade = (1.0 - lids * under_lid) * (1.0 - 0.5 * corner);
+	float ease = 1.0 - nk * night_lid;
+	float shade = (1.0 - lids * ease * under_lid) * (1.0 - 0.5 * ease * corner);
 	// (the upper lid's own shadow along its margin, on white and iris alike;
 	// held to the eyeball, so the iris moves under it as she looks about)
 	float margin = lid_y + 0.25 * d0.x * d0.x;
-	shade *= 1.0 - lid_shadow * (1.0 - smoothstep(margin, margin + lid_fade, d0.y));
+	shade *= 1.0 - lid_shadow * ease * (1.0 - smoothstep(margin, margin + lid_fade, d0.y));
 	// Small on screen (the game's camera, her eye a pixel or two), the eye
 	// read as one dark mark, as an eye at a distance does (lashes and the
 	// shadow of the lid over it), not a white fleck: the white darkened
 	// toward the iris's own darkness, the more the smaller (by how many of
 	// the paint's texels a pixel covers).
-	vec2 tx = UV * vec2(textureSize(eye, 0));
-	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
-	float far = smoothstep(far_from, far_to, lod);
-	col = mix(col, ir * tint * 0.6, far * white);
+	col = mix(col, ir * tint * 0.6, far * white * far_white);
 	// (the tear film pooled along the lower lid: a thin brighter wet line, in its light and its sheen)
 	float lw = low_y + 0.2 * d0.x * d0.x;
 	float wet_line = smoothstep(lw - 0.12, lw - 0.03, d0.y) * (1.0 - smoothstep(lw - 0.03, lw + 0.04, d0.y));
-	vec2 at_c = catch_at + v.xy * vec2(0.3, -0.3);
-	vec2 dc = abs((d - at_c) * vec2(1.0, 1.25));
+	vec2 at_c = catch_at + v.xy * vec2(catch_drift, -catch_drift);
+	vec2 dq = d - at_c;
+	dq += ax * dot(dq, ax) * (mix(1.0, asq, catch_round) - 1.0);
+	vec2 dc = abs(dq * vec2(1.0, 1.25));
 	float cr = mix(length(dc), pow(pow(dc.x, 4.0) + pow(dc.y, 4.0), 0.25), catch_window);
-	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * catch_size, (0.06 + 0.025 * catch_soft) * catch_size, cr);
+	float cs = catch_size * (1.0 - catch_far_size * far);
+	float glint = 1.0 - smoothstep((0.06 - 0.025 * catch_soft) * cs, (0.06 + 0.025 * catch_soft) * cs, cr);
 	glint *= in_iris * (1.0 - under_lid * 0.7);
 	ALBEDO = col * shade * (1.0 - 0.35 * far) * (1.0 + low_lift * wet_line) * (1.0 - catch_dim * glint);
 	ALPHA = texture(eye, UV).a;
@@ -204,14 +277,20 @@ void fragment() {
 	// Wet: a sharp highlight off the cornea's dome over the iris (no brighter:
 	// the portrait's broad key light made it a second blob).
 	ROUGHNESS = wet_rough;
-	sheen = wet * mix(1.0, 0.55, under_lid);
+	sheen = wet * mix(1.0, 0.55, under_lid) * mix(1.0, pupil_wet, pup_in);
 	sheen *= 1.0 + low_wet * wet_line;
-	SPECULAR = sky_wet * mix(1.0, 0.55, under_lid);
+	SPECULAR = sky_wet * mix(1.0, 0.55, under_lid) * mix(1.0, pupil_wet, pup_in);
 	vec2 slope = r < 1.0 ? -2.0 * dome * d : vec2(0.0);
 	NORMAL_MAP = normalize(vec3(-slope.x, slope.y, 1.0 / 0.35)) * 0.5 + 0.5;
 	NORMAL_MAP_DEPTH = 1.0;
 	SSS_STRENGTH = 0.2 * white;
-	EMISSION = catch_colour * glint * catchlight;
+	EMISSION = catch_colour * glint * catchlight * (1.0 - catch_far * far);
+	if (dbg > 2.5) { ALBEDO = vec3(0.0); EMISSION = vec3(asq, abs(ax.x) * asq, abs(ax.y) * asq) * 0.3 * in_iris; }
+	else if (dbg > 0.0) {
+		vec2 q = dbg > 1.5 ? dd : d;
+		ALBEDO = vec3(0.0);
+		float lq = length(q); EMISSION = (lq < pupil ? vec3(1.0, 0.0, 0.0) : lq < 0.5 ? vec3(0.0, 0.0, 1.0) : lq < 1.0 ? vec3(0.0, 1.0, 0.0) : vec3(0.0)) * 0.25;
+	}
 }
 
 float schlick(float u) {

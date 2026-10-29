@@ -18,6 +18,7 @@ and return to the idle's own arms.
 from __future__ import annotations
 
 import math
+import os
 
 import numpy as np
 
@@ -184,24 +185,48 @@ def arcanist_show(rig):
                           phase=lambda f: f / (clip.frames - 1))
 
 
+# (reaver_show keeps the shoulder carry it was judged with, idle.reaver_shoulder; her idle now hangs the axe.)
+def _reaver_over():
+    """reaver_show's overhead swing as the owner saw it on 21 Oct (soul.py before d2eb0c5c): the wheel up with the
+    fist over her brow. Built with REAVER_SHOW_OVER=1 (same clip name) while the owner picks overhead or lowered."""
+    return [
+        (16, over("reaver_shoulder", spine=(-14, -4, 0),
+                  hand_r={"arc": arc_of((-0.26, 0.06, 0.22)), "pole": (-0.9, -0.2, -0.2), "frame": "chest",
+                          "blade": _n(-0.5, 0.2, 0.85), "twist": 0.5}), "auto"),
+        (24, over("reaver_shoulder", spine=(-6, -10, 0), head=(0, -10, 0),
+                  hand_r={"arc": arc_of((-0.10, 0.36, 0.04)), "pole": (-0.8, 0.4, -0.2), "frame": "chest",
+                          "blade": _n(-0.1, 0.4, -0.9), "twist": 0.5}), "auto"),
+    ]
+
+
 def reaver_show(rig):
     """The axe swung down off her shoulder, round in a wheel overhead and
     slammed back onto it; her chin up and a grin's worth of swagger."""
     base = idle.base_of(rig, "reaver")
     keys = [
-        (0, over("reaver"), "auto"),
-        (8, over("reaver", spine=(-10, 6, 0),
+        (0, over("reaver_shoulder"), "auto"),
+        (8, over("reaver_shoulder", spine=(-10, 6, 0),
                  hand_r={"arc": arc_of((-0.30, -0.32, 0.10)), "pole": (-0.5, -0.8, 0.0), "frame": "chest",
                          "blade": _n(-0.6, -0.7, 0.3), "twist": 0.5}), "fast"),
-        (16, over("reaver", spine=(-14, -4, 0),
-                  hand_r={"arc": arc_of((-0.26, 0.06, 0.22)), "pole": (-0.9, -0.2, -0.2), "frame": "chest",
-                          "blade": _n(-0.5, 0.2, 0.85), "twist": 0.5}), "auto"),
-        (24, over("reaver", spine=(-6, -10, 0), head=(0, -10, 0),
-                  hand_r={"arc": arc_of((-0.10, 0.36, 0.04)), "pole": (-0.8, 0.4, -0.2), "frame": "chest",
-                          "blade": _n(-0.1, 0.4, -0.9), "twist": 0.5}), "auto"),
-        (30, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
-        (60, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
-        (72, over("reaver"), "ease"),
+    ] + (_reaver_over() if os.environ.get("REAVER_SHOW_OVER") == "1" else [
+        # Up before her chest, the haft through upright with the fist still low (armor 18 r2: upright with the fist
+        # at her brow put the head out of the close view's top at the peak), then laid back over her shoulder.
+        (13, over("reaver_shoulder", spine=(-12, 0, 0),
+                  hand_r={"arc": arc_of((-0.26, -0.22, 0.26)), "pole": (-0.8, -0.5, -0.2), "frame": "chest",
+                          "blade": _n(-0.42, 0.62, 0.66), "twist": 0.5}), "auto"),
+        (17, over("reaver_shoulder", spine=(-14, -4, 0),
+                  hand_r={"arc": arc_of((-0.22, -0.15, 0.24)), "pole": (-0.9, -0.3, -0.2), "frame": "chest",
+                          "blade": _n(-0.2, 0.92, -0.3), "twist": 0.5}), "auto"),
+        (21, over("reaver_shoulder", spine=(-10, -8, 0), head=(0, -6, 0),
+                  hand_r={"arc": arc_of((-0.17, 0.08, 0.18)), "pole": (-0.9, -0.15, 0.3), "frame": "chest",
+                          "blade": _n(-0.08, 0.4, -0.91), "twist": 0.5}), "auto"),
+        (24, over("reaver_shoulder", spine=(-6, -10, 0), head=(0, -10, 0),
+                  hand_r={"arc": arc_of((-0.13, 0.23, 0.12)), "pole": (-0.85, -0.05, 0.5), "frame": "chest",
+                          "blade": _n(-0.1, 0.45, -0.88), "twist": 0.5}), "auto"),
+    ]) + [
+        (30, over("reaver_shoulder", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -16, -4)), "ease"),
+        (60, over("reaver_shoulder", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
+        (72, over("reaver_shoulder"), "ease"),
     ]
     return build("reaver_show", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
 
@@ -446,11 +471,12 @@ def reaver_break(rig):
         (18, over("reaver", head=(14, 4, 0)), "auto"),
         (26, over("reaver", head=(0, -14, -14)), "auto"),
         (32, over("reaver", head=(-10, 0, 0)), "ease"),
-        # The axe off her shoulder and twirled in the fist, over and back, twice.
-        (40, over("reaver", hand_r=spin(-75)), "auto"),
-        (45, over("reaver", hand_r=spin(70)), "auto"),
-        (50, over("reaver", hand_r=spin(-70)), "auto"),
-        (55, over("reaver", hand_r=spin(70)), "auto"),
+        # The axe off her shoulder and twirled in the fist, over and back, twice. (27 Oct: +-64-68, not +-70-75: with the
+        # fist higher on the haft the wrist turned 30-32 deg in a frame at the turns, past the audit's 30.)
+        (40, over("reaver", hand_r=spin(-68)), "auto"),
+        (45, over("reaver", hand_r=spin(64)), "auto"),
+        (50, over("reaver", hand_r=spin(-64)), "auto"),
+        (55, over("reaver", hand_r=spin(64)), "auto"),
         (60, over("reaver", hand_r=spin(-40)), "auto"),
         (64, over("reaver", hand_r=spin(10)), "auto"),
         (70, over("reaver", hips={"rot": (6, 0, 3)}), "ease"),
@@ -461,7 +487,7 @@ def reaver_break(rig):
                   fingers_l="spread"), "auto"),
         (100, over("reaver"), "ease"),
     ]
-    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
+    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe", **idle.axe_grip()})
 
 
 def _vpath(pts, fr):
@@ -728,9 +754,16 @@ KNEE_AIM = [(57, 0.0), (67, 1.0), (97, 1.0), (104, 0.0)]
 STALKER_LIFT_L = (0.05, 0.05, 0.0)
 
 
+# The relaxed hand closing a little as it comes down off her hair.
+SOFT = {**FINGER_PRESETS["relaxed"], "curl": 0.2}
+
+
 def catch_breath(rig):
     """Hands down onto her knees, the back heaving with three hard breaths,
     then up, a hand pushing the hair back.
+
+    Played with both hands empty only (logic/Play/FreeHand.cs, armor 18 r2): a shield swung across her head and
+    throat, and any held piece went through her thigh on the knee, so the hands are relaxed, not gripping.
 
     Hands and head are placed from the body's own knees and head (hers are
     narrower and lower than the hero's)."""
@@ -747,14 +780,24 @@ def catch_breath(rig):
             "foot_l": {"pos": (0.16, 0, 0.06), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.17, 0, -0.04), "rot": (-12, 0, 0)},
             "hand_l": {"pos": (0.12 + kx, 0.56, 0.24), "pole": (0.9, 0.2, -0.3), "knuckles": (0.2, -0.6, 0.75)},
             "hand_r": {"pos": (-0.13 - kx, 0.55, 0.22), "pole": (-0.9, 0.2, -0.3), "knuckles": (-0.2, -0.6, 0.75)},
-            "fingers_l": "relaxed", "fingers_r": "grip",
+            "fingers_l": "relaxed", "fingers_r": "relaxed",
         }
-    upright = body(stance(0.05), spine=(0, 2, 0), head=(-6, -6, 4),
-                   hand_l={"pos": (0.10, 1.66 + hy, 0.06 + hz), "pole": (1.0, 0.3, -0.2), "knuckles": (0.0, 0.4, -0.9)},
-                   hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
+    # The hair pushed back along the side of her head, not over the top: the
+    # wrist at her jaw, the fingers up into the hair at her brow and hairline and swept
+    # back over her ear, the elbow forward and down (over the top the upper
+    # arm went 27 degrees above level, the armpit opened to the camera). Armor 18 r2 (judge RJ1): the sweep starts
+    # at her brow, not the corner of her eye; her head tips into the hand; the push ends with the fingers at the side
+    # of her head above the ear, not behind it (the elbow 10-15 deg more open: no pinch inside it).
+    hand_r = arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5))
+    temple = body(stance(0.05), spine=(0, 3, 0), neck=(0, 0, -3), head=(3, 2, -8),
+                  hand_l={"pos": (0.135, 1.556 + hy, 0.11 + hz), "pole": (0.5, -0.8, 0.5), "knuckles": (0.0, 0.97, 0.25)},
+                  hand_r=hand_r, fingers_l="relaxed", fingers_r="relaxed")
+    upright = body(stance(0.05), spine=(0, 2, 0), neck=(0, 0, -3), head=(-2, -8, -7),
+                   hand_l={"pos": (0.124, 1.582 + hy, 0.09 + hz), "pole": (0.5, -0.85, 0.4), "knuckles": (0.3, 0.75, -0.6)},
+                   hand_r=hand_r, fingers_l="relaxed", fingers_r="relaxed")
     keys = [
         (0, body(stance(0.06), spine=(0, 8, 0), hand_l=arm((-0.02, -0.34, 0.12), (0.6, -0.4, -0.5)),
-                 hand_r=arm((0.02, -0.34, 0.12), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+                 hand_r=arm((0.02, -0.34, 0.12), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="relaxed"), "auto"),
         (12, bent(1), "auto"),
         (24, bent(-0.6), "auto"),
         (36, bent(1), "auto"),
@@ -766,14 +809,22 @@ def catch_breath(rig):
         # not in a flick at the top).
         (86, body(stance(0.05), spine=(0, 6, 0), head=(-4, 0, 2),
                   hand_l={"pos": (0.13, 1.30 + hy, 0.22 + hz), "pole": (0.9, -0.2, -0.3), "knuckles": (0.05, 0.9, 0.35)},
-                  hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
-        (98, upright, "ease"),
-        # Down again round the front of her, not back through her shoulder.
-        (110, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 2),
-                   hand_l={"pos": (0.16, 1.24 + hy, 0.20 + hz), "pole": (0.9, -0.3, -0.3), "knuckles": (0.1, 0.55, 0.8)},
-                   hand_r=arm((0.02, -0.37, 0.08), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+                  hand_r=hand_r, fingers_l="relaxed", fingers_r="relaxed"), "auto"),
+        (93, temple, "auto"),
+        (99, upright, "ease"),
+        # Off her hair: the elbow drops toward her ribs first, the hand trailing by her jaw, then down round the
+        # front of her (clear of her breast), the fingers softening closed.
+        (103, body(stance(0.05), spine=(0, 3, 0), neck=(0, 0, -1), head=(-3, -5, -3),
+                   hand_l={"pos": (0.165, 1.47 + hy, 0.14 + hz), "pole": (0.15, -1.0, 0.05), "knuckles": (-0.05, 0.85, 0.5)},
+                   hand_r=hand_r, fingers_l="relaxed", fingers_r="relaxed"), "auto"),
+        (108, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 1),
+                   hand_l={"pos": (0.165, 1.31 + hy, 0.22 + hz), "pole": (0.45, -0.9, -0.1), "knuckles": (0.05, 0.25, 0.97)},
+                   hand_r=hand_r, fingers_l=SOFT, fingers_r="relaxed"), "auto"),
+        (113, body(stance(0.05), spine=(0, 2, 0), head=(-2, -1, 1),
+                   hand_l={"pos": (0.16, 1.20 + hy, 0.17 + hz), "pole": (0.6, -0.6, -0.4), "knuckles": (0.1, -0.35, 0.93)},
+                   hand_r=hand_r, fingers_l=SOFT, fingers_r="relaxed"), "auto"),
         (124, body(stance(0.05), hand_l=arm((-0.02, -0.38, 0.06), (0.6, -0.4, -0.5)),
-                   hand_r=arm((0.02, -0.38, 0.06), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "ease"),
+                   hand_r=arm((0.02, -0.38, 0.06), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="relaxed"), "ease"),
     ]
     return build("catch_breath", rig, keys, meta={"layer": "full"})
 

@@ -25,6 +25,7 @@
       "note": "Wide and low at the water from the east: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water. His lamp is the light on him; the moon only edges him.",
       "cam": {"pos": {"mark": "w", "off": [7.5, 1.0, 2.2]}, "at": {"mark": "w", "off": [0.0, 1.9, 1.2]}, "lens": 30},
       "cues": [
+        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#6e5a66", "note": "C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
         {"do": "atmosphere", "preset": "now", "key": 0.45, "hemi": 0.18, "env": 0.2, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0.7, "hemiSky": "#403c78", "azimuth": 195},
         {"do": "grade", "sat": 0.88, "moonSat": 0.03, "moonDrop": 0.8, "shade": "#2e2452", "shadeK": 0.7, "moonTop": 0.62, "moonWidth": 0.15},
         {"do": "event", "name": "warden_cine"},
@@ -70,7 +71,7 @@
       "dur": 8.0,
       "note": "Side-on, close: the heart drifts in to her palm and she looks down at it, its blue on her face. Then the mud bursts below frame: the heart is yanked down out of her hand and out of frame, its light now from below. She starts, eyes wide, and looks down at him. G1 off-screen; two sniffs.",
       "cam": {"pos": {"mark": "her", "off": [2.36, 1.75, -0.54]}, "at": {"mark": "her", "off": [0.0, 1.5, -0.18]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 5.6},
-      "cues": [
+      "cues": [{"do": "water", "foam": 0, "streak": 0, "mirror_cap": 0.03}, {"do": "stones", "top": 0.45, "edge": 0, "all": true},
         {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.6, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 160, "key": 0.7, "hemi": 0.75, "rim": 0.05},
         {"do": "skin", "sky": 0.3, "ear": 0.4},
@@ -111,7 +112,7 @@
       "dur": 16.0,
       "note": "Behind her, low: the end of G3; Grimtunnel turns away and dives head first, still clutching the heart; the mud closes, its light shows going down and is gone. The camera rises and pulls back high over the north bank, far east of the ford: her small in it, the road's lamps ember-blue. Silence; then a groan from under everything; the river shivers; every lamp dips and comes back; the sky's lowest edge has gone rose and grey.",
       "cam": {"pos": {"abs": [16.7, 4.8, -34.2]}, "at": {"abs": [1.3, -0.3, -35.5]}, "lens": 28, "move": {"start": 0.0, "end": 9.0, "pos": {"abs": [30.0, 8.5, -34.0]}, "at": {"abs": [-4.0, 5.0, -31.0]}, "lens": 24, "ease": "out"}},
-      "cues": [
+      "cues": [{"do": "water", "foam": 1, "streak": 1, "mirror_cap": 100}, {"do": "stones", "top": 1, "edge": 1, "all": true},{"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#9a7680"},
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
         {"at": 0.3, "do": "line", "id": "cin_heart_goes_down.downstairs"},
         {"at": "after:cin_heart_goes_down.downstairs+0.4", "do": "line", "id": "cin_heart_goes_down.grateful"},

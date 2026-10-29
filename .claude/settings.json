@@ -1,7 +1,18 @@
 {
-  "subagentPromptCacheTtl": "1h",
   "autoCompactWindow": 400000,
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/munch/Desktop/survivorsunchained/tools/hooks/spawn_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "*",

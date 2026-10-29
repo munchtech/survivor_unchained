@@ -161,6 +161,12 @@ def clips(rig, want):
         name = f"try_walk_{style}"
         if any(name in w for w in want):
             out.append(walk_loop(name, rig, style))
+    for w in want:
+        if w.startswith("try_walk_") and w[9:] not in TRY:
+            if w[9:] in cuts():
+                out.append(walk_loop(w, rig, w[9:]))
+            else:
+                print(f"walks: no 100STYLE style {w[9:]!r}, skipped")
     for name, fn in (("walk_tired", walk_tired), ("walk_uphill", walk_uphill), ("wade", wade)):
         if (want and any(w in name for w in want)) or (not want and name in JUDGED):
             out.append(fn(rig))

@@ -122,6 +122,7 @@
  "flares": [
   {
    "id": "the_long_cut",
+   "icon": "slash",
    "name": "The Long Cut",
    "calling": "warden",
    "road": "sunderer",
@@ -163,6 +164,7 @@
   },
   {
    "id": "dawn_in_the_steel",
+   "icon": "sword",
    "name": "Dawn in the Steel",
    "calling": "warden",
    "road": "sunderer",
@@ -182,6 +184,7 @@
   },
   {
    "id": "bell_of_the_morning",
+   "icon": "shield",
    "name": "Bell of the Morning",
    "calling": "warden",
    "road": "bulwark",
@@ -217,6 +220,7 @@
   },
   {
    "id": "sixty_on_the_wall",
+   "icon": "aegis",
    "name": "Sixty on the Wall",
    "calling": "warden",
    "road": "bulwark",
@@ -237,6 +241,7 @@
   },
   {
    "id": "the_butchers_bill",
+   "icon": "cleaver",
    "name": "The Butcher's Bill",
    "calling": "reaver",
    "road": "butcher",
@@ -280,6 +285,7 @@
   },
   {
    "id": "butchers_hour",
+   "icon": "hourglass",
    "name": "Butcher's Hour",
    "calling": "reaver",
    "road": "butcher",
@@ -318,6 +324,7 @@
   },
   {
    "id": "drag_them_under",
+   "icon": "chain",
    "name": "Drag Them Under",
    "calling": "reaver",
    "road": "chainbound",
@@ -365,6 +372,7 @@
   },
   {
    "id": "storm_on_the_chain",
+   "icon": "bolt",
    "name": "Storm on the Chain",
    "calling": "reaver",
    "road": "chainbound",
@@ -384,6 +392,7 @@
   },
   {
    "id": "burns_twice",
+   "icon": "embers",
    "name": "Burns Twice",
    "calling": "arcanist",
    "road": "kindler",
@@ -428,6 +437,7 @@
   },
   {
    "id": "hard_winter",
+   "icon": "frost",
    "name": "Hard Winter",
    "calling": "arcanist",
    "road": "kindler",
@@ -447,6 +457,7 @@
   },
   {
    "id": "the_branding",
+   "icon": "mark",
    "name": "The Branding",
    "calling": "arcanist",
    "road": "moonweaver",
@@ -496,6 +507,7 @@
   },
   {
    "id": "the_drowned_moon",
+   "icon": "moon",
    "name": "The Drowned Moon",
    "calling": "arcanist",
    "road": "moonweaver",
@@ -515,6 +527,7 @@
   },
   {
    "id": "the_roads_toll",
+   "icon": "dagger",
    "name": "The Road's Toll",
    "calling": "stalker",
    "road": "roadknife",
@@ -553,6 +566,7 @@
   },
   {
    "id": "through_and_through",
+   "icon": "dash",
    "name": "Through and Through",
    "calling": "stalker",
    "road": "roadknife",
@@ -571,6 +585,7 @@
   },
   {
    "id": "one_arrow",
+   "icon": "arrow",
    "name": "One Arrow",
    "calling": "stalker",
    "road": "verge_hunter",
@@ -617,6 +632,7 @@
   },
   {
    "id": "pinning_rain",
+   "icon": "bow",
    "name": "Pinning Rain",
    "calling": "stalker",
    "road": "verge_hunter",

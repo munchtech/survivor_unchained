@@ -37,6 +37,13 @@ SETS = {
     # shingles (stacks at 7.2,31.5 and 17.2,32.5), her 8 m north of them (the town wall stands south of them); at dawn the north street, its buildings in frame)
     "townroofs": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "12,24"], 1),
     "townroofsdawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "0,-26"], 1),
+    # (E9c: a house between her and the play camera, which looks north: behind house 14 (1.5 m north of its north wall),
+    # under house 17's north eave (against its wall), and in the 5 m lane between house 30 and the east town wall's house 7
+    # (nothing should fade there). x="--house-fade-hold 0.5" holds every fade at half, for the mid-fade frames)
+    "townbehind": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
+    "townbehinddawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
+    # (E9d: the town by night: the square, the north street, and the square's trees at the close view: lamps, lit windows, smoke)
+    "townnight": (["--zone", "waystation", "--time", "night", "--auto", "idle", "--spots", "3,3;0,-26;-7,-7,1,0"], 3),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)
     "road": (NIGHT + ["--spots-clear", "--spots", "-2,-72;3,64"], 2),
@@ -69,6 +76,14 @@ SETS = {
     "post": (NIGHT + ["--spots-clear", "--spots", "18,32;15.5,29.5"], 2),
     "postdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "19.1,31.6"], 1),  # (E7b r3: in the dawn beam through the gap between the back wall and the east pillar (at 15, 31.5 she stood in the back wall's shadow, near-black); r2: the sunlit verge, the south stub's warm top)
     "barrow": (NIGHT + ["--spots-clear", "--spots", "-16,5;-22.5,2"], 2),
+    # (Low Ford r1, env17 solver A: her under the camp's post lantern (light 1 at -2.5, 94), and at the crypt door's light)
+    "lfher": (NIGHT + ["--spots-clear", "--spots", "-2.5,93.0;-1.5,94.2;-21.5,2.5"], 3),
+    # (Low Ford r1: the play path, her fighting at night from the Rising clearing, the autopilot playing: no spots, the living on)
+    "lfplay": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "play"], 3),
+    # (E8: the Waystation's gate and walls north of the ford at the play camera, her short of the Exit (exitZ -104): on the
+    # road before the gate, and by the east tower and wall run; one dawn)
+    "gate": (NIGHT + ["--spots-clear", "--spots", "0,-100;10,-102"], 2),
+    "gatedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "0,-100"], 1),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }
 rnd, variants, sets = sys.argv[1], sys.argv[2].split(","), sys.argv[3].split(",")

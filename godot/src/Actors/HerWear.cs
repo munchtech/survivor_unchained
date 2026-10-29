@@ -101,16 +101,32 @@ public static class HerWear
     /// its stitch thread; fur and sheer (zone cloth) take the dye on their tint, keeping its luma.</summary>
     internal static void DyeMesh(MeshInstance3D mi, IReadOnlyDictionary<string, string> dye)
     {
+        // (a gold plate dye would swallow the gold trim: Wear.TrimUnderGold darkens the trim to bronze; env GOLD_TRIM="#rrggbb:metal" tries another)
+        dye = Wear.TrimUnderGold(dye);
+        if (dye.TryGetValue("trim", out var gt) && gt == Wear.GoldTrimBronze && System.Environment.GetEnvironmentVariable("GOLD_TRIM") is { Length: > 0 } trial)
+            dye = new Dictionary<string, string>(dye) { ["trim"] = trial };
         for (int s = 0; s < mi.GetSurfaceOverrideMaterialCount(); s++)
         {
             if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !m.HasMeta("zone")) continue;
             var zone = (string)m.GetMeta("zone");
             bool outfit = m.HasMeta("kind");
-            if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(th));
-            if (!dye.TryGetValue(zone, out var hex)) continue;
-            var c = new Color(hex);
+            if (outfit && (int)m.GetMeta("kind") == 0 && dye.TryGetValue("thread", out var th)) m.SetShaderParameter("thread", new Color(Wear.DyeFinish(th).Hex));
+            if (!dye.TryGetValue(zone, out var hex))
+            {
+                // (no dye in this zone: back to the built finish)
+                if (outfit && (int)m.GetMeta("kind") == 1 && m.HasMeta("finish0")) m.SetShaderParameter("finish", (int)m.GetMeta("finish0"));
+                continue;
+            }
+            var (dyeHex, isMetal) = Wear.DyeFinish(hex);
+            var c = new Color(dyeHex);
             if (outfit)
             {
+                // enamel and dye_paint metal (meta finish0 = the built finish): a metal dye gives dyed metal (finish 3: brushed, no oxide); a colour dye paints it (finish 2)
+                if ((int)m.GetMeta("kind") == 1)
+                {
+                    if (!m.HasMeta("finish0") && m.GetShaderParameter("finish").AsInt32() == 2) m.SetMeta("finish0", 2);
+                    if (m.HasMeta("finish0")) m.SetShaderParameter("finish", isMetal ? 3 : 2);
+                }
                 m.SetShaderParameter("dye", c);
                 m.SetShaderParameter("dye_amount", 1.0f);
                 continue;
@@ -134,6 +150,8 @@ public static class HerWear
     {
         // (--tuck-weights 0: laid pieces keep their own bone weights; pictures that tell a weights mark from a lay mark)
         if (Args.Get("tuck-weights") == "0") GarmentTuck.Weights = false;
+        // (her worn shape under the reaver's top: People.WornShape)
+        People.WornShape(p, "reaver", look.TryGetValue("top", out var wornTop) && wornTop == "reaver.top");
         var steps = ApplySteps(p, calling, look, dyes).GetEnumerator();
         if (Live)
         {
@@ -148,7 +166,10 @@ public static class HerWear
     /// <summary>True while a live swap makes her new figure (WorldScene.SetLoadout): Apply then leaves the garment tuck's
     /// work, and what follows it, to Pump over the next frames (the lay on a worker), and Busy says when she is dressed.
     /// Her first figure, and every other, is dressed at once.</summary>
-    public static bool Live;
+    /// (Per thread: her cinematic double, made on a worker meanwhile, is dressed at once: Game.DoubleAhead.)
+    [System.ThreadStatic] public static bool Live;
+    /// <summary>A live swap's dressing still going on (Game.DoubleAhead waits for it: the caches here are shared).</summary>
+    public static bool Dressing => pending.Count > 0;
     /// <summary>The main thread's share of a frame Pump may spend on dressing her (a step started runs to its end).</summary>
     const double PumpBudgetMs = 6;
     static readonly Dictionary<People.Person, Pending> pending = new();
@@ -198,14 +219,19 @@ public static class HerWear
     /// <summary>Each frame (the main thread): the figures being dressed go on.</summary>
     public static void Pump()
     {
-        if (pending.Count == 0) return;
-        foreach (var (p, job) in pending.ToList())
+        // (not while a figure is made on a worker, Game.DoubleAhead: the next frame)
+        if (pending.Count == 0 || !System.Threading.Monitor.TryEnter(People.BuildLock)) return;
+        try
         {
-            job.Step(PumpBudgetMs);
-            if (!job.Done) continue;
-            pending.Remove(p);
-            GD.Print($"her wear: live swap dressed over {job.Frames} frames, main thread {job.MainMs:F1} ms (at most {job.MaxMs:F1} ms a frame)");
+            foreach (var (p, job) in pending.ToList())
+            {
+                job.Step(PumpBudgetMs);
+                if (!job.Done) continue;
+                pending.Remove(p);
+                GD.Print($"her wear: live swap dressed over {job.Frames} frames, main thread {job.MainMs:F1} ms (at most {job.MaxMs:F1} ms a frame)");
+            }
         }
+        finally { System.Threading.Monitor.Exit(People.BuildLock); }
     }
 
     static IEnumerable<System.Threading.Tasks.Task?> ApplySteps(People.Person p, string calling, IReadOnlyDictionary<string, string> look, IReadOnlyDictionary<string, Dictionary<string, string>>? dyes)

@@ -129,6 +129,9 @@ public static class LevelUp
         return o;
     }
 
+    /// <summary>The blessings that bring something to fight for her (BuildTags counts them as summons).</summary>
+    static readonly string[] SummonSources = ["spirit_companion", "grave_call", "soul_harvest"];
+
     public static HashSet<Tag> BuildTags(Battle b)
     {
         var o = new HashSet<Tag>();
@@ -175,7 +178,8 @@ public static class LevelUp
     public static List<Evolution> EarnedBranches(Battle b, string weaponId)
     {
         var w = b.Weapons.Find(x => x.Id == weaponId);
-        if (w == null || w.Evolution != null || w.Rank < Content.Weapons.MaxRank) return new();
+        // An evolution is carried by whoever may carry its skill.
+        if (w == null || w.Evolution != null || w.Rank < Content.Weapons.MaxRank || !Content.Weapons.CanCarry(b.Calling, w.Id)) return new();
         return w.Def.Evolutions.Where(evo => evo.Catalysts.Any(c => Holds(b, c))).ToList();
     }
 
@@ -188,6 +192,10 @@ public static class LevelUp
 
     /// <summary>Passive skills held (blessings are not passives).</summary>
     public static int PassivesHeld(Battle b) => b.Boons.Count(kv => kv.Value > 0 && Boons.Find(kv.Key)?.Kind == BoonKind.Passive);
+
+    /// <summary>A skill's description, and the line her calling's Hand adds to it (Content/Hands.Line) when it bends it.</summary>
+    public static string WithHand(Battle b, WeaponDef d) =>
+        Battle.Hands && Content.Hands.Line(b.Calling, d) is { } line ? $"{d.Description} {line}" : d.Description;
 
     static string Names(IEnumerable<string> ids)
     {
@@ -287,16 +295,18 @@ public static class LevelUp
         if (GreatNext(b))
         {
             var pool = new List<Cand>();
-            foreach (var id in Boons.Great.Concat(b.Flare != null ? Boons.FlareGreat : []))
+            foreach (var id in Boons.Great.Concat(b.Flare != null && !b.FlareGreatsHeld ? Boons.FlareGreat : []))
             {
                 var d = Boons.All[id];
                 int r = b.Boons.GetValueOrDefault(id);
                 if (r >= d.Max || b.BannedCards.Contains(id) || (d.Calling != null && d.Calling != b.Calling)) continue;
+                // (a blessing for what fights for her, offered before anything does, is a dead pick: au1 judge)
+                if (r == 0 && d.Tags.Contains(Tag.Summon) && !tags.Contains(Tag.Summon) && !SummonSources.Contains(id)) continue;
                 bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
                 string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
                 var o = new Offer { Kind = OfferKind.Boon, Id = id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true, Great = true };
                 bool suits = OnPath(id, p => p.Great);
-                if (d.Calling != null) o.Why.Add("Your calling's own");
+                if (d.Calling != null) o.Why.Add("Suits your calling");
                 else if (suits) o.Why.Add("Suits your path");
                 pool.Add(new Cand { O = o, W = (deeper ? 3 : 1) * (suits || d.Calling != null ? 1.5 : 1) * Again(o) });
             }
@@ -417,18 +427,20 @@ public static class LevelUp
             double want = b.Weapons.Count < 2 ? 2.4 : b.Weapons.Count < 4 ? 1.4 : 0.8;
             foreach (var id in Content.Weapons.Pool)
             {
-                if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id)) continue;
+                // Kindred skills are two callings' only (docs/design/CLASS_IDENTITY_AND_TALENTS.md section 2.1).
+                if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id) || !Content.Weapons.CanCarry(b.Calling, id)) continue;
                 var d = Content.Weapons.All[id];
-                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
+                // The card says what her Hand does to it (the tooltip is the truth).
+                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = WithHand(b, d), Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
                 double lean = 1;
                 if (mine != null) { lean *= PathLean; o.Path = mine.Id; o.Why.Add($"On your path: {mine.Name}"); }
-                // A slight lean toward the calling's own style; anyone can take anything.
+                // A slight lean toward the calling's own style, among what it may carry.
                 if (b.CallingPaths.Any(p => Paths.Find(p)?.Weapons.Contains(id) == true) || (b.Favours.Count > 0 && d.Tags.Any(b.Favours.Contains)))
                 {
                     lean *= CallingLean;
-                    if (mine == null) o.Why.Add("Your calling's");
+                    if (mine == null) o.Why.Add("Suits your calling");
                 }
                 lean = RoadLeaned(b, id, lean, o);
                 w *= lean;
@@ -597,7 +609,8 @@ public static class LevelUp
 
     /// <summary>The unions whose two halves are carried, both evolved.</summary>
     public static IEnumerable<UnionDef> ReadyUnions(Battle b) =>
-        Unions.All.Where(u => b.Weapons.Any(w => w.Id == u.A && w.Evolution != null) && b.Weapons.Any(w => w.Id == u.B && w.Evolution != null));
+        // A union is for the callings both its halves allow (Weapons.CanCarry intersects them).
+        Unions.All.Where(u => Content.Weapons.CanCarry(b.Calling, u.Id) && b.Weapons.Any(w => w.Id == u.A && w.Evolution != null) && b.Weapons.Any(w => w.Id == u.B && w.Evolution != null));
 
     static bool IsCatalyst(Offer o, WeaponInst w) => o.Kind == OfferKind.Boon && !o.Blessing && w.Def.Evolutions.Any(e => e.Catalysts.Contains(o.Id));
 
@@ -628,6 +641,7 @@ public static class LevelUp
     public static List<ChestItem> OpenChest(Battle b, int count)
     {
         var got = new List<ChestItem>();
+        if (b.ChestsInert) return got;
         var ready = b.Weapons.Find(w => EarnedBranches(b, w.Id).Count > 0);
         if (ready != null)
         {

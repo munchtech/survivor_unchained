@@ -31,6 +31,11 @@ public static class WeaponSockets
         _ => null,
     };
 
+    /// <summary>Whether a socket sits at her waist (hip blade, hip loop, hip belt, belt back) rather than on her back or slung.
+    /// Creation's Look step keeps waist pieces sheathed and shown (her town stand's hands rest on them) and hides back ones,
+    /// which would cover her hair when the Look turns her to show a braid. Null (no socket) is not at the waist.</summary>
+    public static bool AtWaist(string? socket) => socket is HipBlade or HipLoop or HipBelt or BeltBack;
+
     /// <summary>A kind from a tag: the glTF node extra "kind", or a name suffix ("longsword.blade1h", "kind=axe2h", "_staff");
     /// anything unknown is None.</summary>
     public static WeaponKind Parse(string? tag)
@@ -190,6 +195,19 @@ public static class WeaponSockets
         WeaponKind.Dagger => (ToLeft(DaggerLeftAt), Vector3.Normalize(ToLeft(DaggerLeftDir))),
         _ => null,
     };
+
+    /// <summary>The pocket a clip's LEFT grip tilt (meta "grip_tilt_l", animation 58) turns the piece in her left fist about
+    /// (hand_l space): the fitted left pocket where there is one (PocketL), else the right's mirrored (ToLeft of PocketR):
+    /// her left fist then closes on the piece in the right's tilted fist laid mirrored (keyed.py wrap_of), so a piece that
+    /// otherwise keeps the plain mount (the reaver's second axe) is seated on this pocket while the clip tilts it
+    /// (PersonView.Slide eases it over by the clip's tilt weight). None for a kind without a right pocket, or a pistol grip.</summary>
+    public static (Vector3 At, Vector3 Dir)? TiltPocketL(WeaponKind kind) =>
+        PocketL(kind) ?? (kind != WeaponKind.Crossbow && PocketR(kind) is { } p ? (ToLeft(p.At), Vector3.Normalize(ToLeft(p.Dir))) : null);
+
+    /// <summary>The palm's normal a left tilt turns about (hand_l space): hand_r's +X through the mirror, reversed, since a
+    /// mirror reverses a turn's sense (M R(a, t) M^T = R(-M a, t)): the same + tilt turns the left piece as the right's
+    /// mirror image (its head away from her fingers). keyed.py TILT_AXIS_L is the same.</summary>
+    public static Vector3 TiltAxisL => Vector3.Normalize(-ToLeft(Vector3.UnitX));
 
     /// <summary>The fitted pocket of a fist by its bone (hand_r: PocketR, hand_l: PocketL), else none.</summary>
     public static (Vector3 At, Vector3 Dir)? Pocket(WeaponKind kind, string bone) => bone switch

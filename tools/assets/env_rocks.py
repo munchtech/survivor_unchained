@@ -44,19 +44,23 @@ PRESETS = {
     # (E5c, judge r2: the soft-faceted ones read as smooth grey domes: each now broken by 'fract' (2-3) real fracture planes,
     # flat faces 'fdepth' of its radius in, their rims a hard 'fk' m bevel the bake lights; set facing up-and-out 'fup' so the
     # play camera, looking down, sees them, spaced round it)
+    # (lf5c, the lf0 triage: "grey block-like boulders", FAR: rebuilt from planes (sculpt_frac), not pushed noise: a cracked block,
+    # a tilted slab, a half-sunk water-worn one, a chipped angular one; each about the old one's size)
     'boulder': dict(lods=(2200, 700, 220), shadow=True, variants=[
-        dict(seed=101, ax=(1.6, 1.3, 1.2), cz=0.8, planes=4, k=0.35, tilt=0.6, amp=0.07, freq=1.1, fine=0.012, foot=-0.45, cut=-0.3, fract=3, fk=0.05, fdepth=(0.74, 0.84), fup=(0.25, 0.7)),
-        dict(seed=113, ax=(1.5, 1.45, 1.05), cz=0.75, planes=5, k=0.3, tilt=0.7, amp=0.08, freq=1.3, fine=0.012, foot=-0.45, cut=-0.3, fract=2, fk=0.05, fdepth=(0.7, 0.8), fup=(0.3, 0.75)),
-        dict(seed=127, ax=(1.7, 1.2, 1.25), cz=0.85, planes=3, k=0.4, tilt=0.5, amp=0.06, freq=0.9, fine=0.01, foot=-0.45, cut=-0.3, fract=3, fk=0.045, fdepth=(0.72, 0.82), fup=(0.2, 0.65)),
-        dict(seed=131, ax=(1.45, 1.35, 1.15), cz=0.7, planes=6, k=0.28, tilt=0.8, amp=0.09, freq=1.5, fine=0.012, foot=-0.45, cut=-0.3, fract=3, fk=0.055, fdepth=(0.74, 0.84), fup=(0.3, 0.75)),
+        dict(method='frac', seed=1101, ax=(1.6, 1.3, 1.15), cz=0.75, fn=11, ftop=5, fup=(0.55, 0.85), fd=(0.74, 0.94), fk=0.08, chips=6, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.06, split_d=0.15, lump=0.025, fcrown=0.84, amp=0.012, freq=0.8, fine=0.006, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1113, ax=(1.7, 1.4, 0.95), cz=0.6, fn=10, ftop=4, fup=(0.75, 0.92), fd=(0.8, 0.95), fk=0.07, chips=5, chip_d=(0.06, 0.12), ledges=2, ledge_d=(0.12, 0.2), strata=4, strata_d=0.035, lean=8, lump=0.05, amp=0.01, freq=0.8, fine=0.006, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1127, ax=(1.6, 1.35, 1.15), cz=0.6, sink=0.15, fn=9, ftop=4, fup=(0.5, 0.8), fd=(0.76, 0.92), fk=0.1, round=1.02, ledges=1, chips=4, chip_d=(0.06, 0.12), lump=0.06, amp=0.015, freq=0.9, fine=0.006, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1131, ax=(1.5, 1.4, 1.15), cz=0.75, fn=9, ftop=4, fup=(0.45, 0.85), fd=(0.72, 0.95), fk=0.06, chips=7, chip_d=(0.06, 0.15), ledges=2, splits=1, split_w=0.05, split_d=0.13, lump=0.06, amp=0.01, freq=0.9, fine=0.006, foot=-0.45, cut=-0.3),
     ]),
     # field rock: angular, broken faces with soft bevels, lichened in the shader (the kit's 'rock': scale ~0.6, squashed)
+    # (lf5c, the lf0 triage on the boulders and field rocks: "grey block-like": now broken from planes (sculpt_frac): an angular
+    # chunk, a tilted slab standing out of the ground, a low half-sunk one with a ledge, one cracked in two, a chipped one)
     'fieldrock': dict(lods=(1600, 500, 160), shadow=True, variants=[
-        dict(seed=201, ax=(1.6, 1.35, 1.25), cz=0.75, planes=9, k=0.07, tilt=1.0, amp=0.05, freq=1.6, fine=0.014, foot=-0.45, cut=-0.3),
-        dict(seed=211, ax=(1.7, 1.2, 1.2), cz=0.8, planes=8, k=0.06, tilt=1.0, amp=0.05, freq=1.8, fine=0.014, foot=-0.45, cut=-0.3),
-        dict(seed=223, ax=(1.5, 1.4, 1.3), cz=0.7, planes=11, k=0.08, tilt=1.0, amp=0.04, freq=1.4, fine=0.012, foot=-0.45, cut=-0.3),
-        dict(seed=227, ax=(1.65, 1.3, 1.1), cz=0.85, planes=7, k=0.05, tilt=0.9, amp=0.06, freq=2.0, fine=0.016, foot=-0.45, cut=-0.3),
-        dict(seed=229, ax=(1.55, 1.45, 1.2), cz=0.75, planes=10, k=0.07, tilt=1.0, amp=0.05, freq=1.6, fine=0.014, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1201, ax=(1.6, 1.35, 1.2), cz=0.58, side_z=(0.05, 0.5), fn=13, ftop=4, fup=(0.5, 0.85), fd=(0.7, 0.93), fk=0.05, chips=7, chip_d=(0.06, 0.14), ledges=1, splits=1, split_w=0.05, split_d=0.12, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1211, ax=(1.75, 1.0, 1.2), cz=0.48, side_z=(0.05, 0.5), fn=12, ftop=3, fup=(0.6, 0.85), fd=(0.8, 0.94), fk=0.05, chips=5, chip_d=(0.05, 0.12), strata=5, strata_d=0.03, lean=16, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1223, ax=(1.6, 1.45, 1.05), cz=0.38, side_z=(0.05, 0.5), sink=0.1, fn=13, ftop=5, fup=(0.65, 0.9), fd=(0.7, 0.93), fk=0.06, chips=6, chip_d=(0.06, 0.13), ledges=2, lump=0.06, amp=0.012, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1227, ax=(1.65, 1.3, 1.1), cz=0.58, side_z=(0.05, 0.5), fn=14, ftop=5, fup=(0.5, 0.85), fd=(0.7, 0.94), fk=0.05, chips=6, chip_d=(0.05, 0.12), splits=1, split_w=0.11, split_d=0.32, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
+        dict(method='frac', seed=1229, ax=(1.55, 1.45, 1.15), cz=0.58, side_z=(0.05, 0.5), fn=15, ftop=5, fup=(0.45, 0.85), fd=(0.72, 0.93), fk=0.045, chips=9, chip_d=(0.05, 0.14), ledges=1, lump=0.06, amp=0.01, freq=1.0, fine=0.007, foot=-0.45, cut=-0.3),
     ]),
     # cliff / outcrop chunk: blocky, stratified in layers (each its own inset, a joint between), stacks (scale ~5: 17 m)
     'cliff': dict(lods=(6000, 1800, 500), shadow=True, variants=[
@@ -71,16 +75,22 @@ PRESETS = {
     'pebbles': dict(lods=(600, 200, 200), shadow=False, variants=[
         dict(seed=401, n=(1, 2, 2)), dict(seed=409, n=(1, 1, 2)), dict(seed=419, n=(1, 2, 3)), dict(seed=421, n=(1, 1, 1)),
     ]),
-    # ford stepping stone (E5b, judge r1): a rounded slab, its outline 'sides' (5-7) soft vertical cuts round an ellipse of
-    # L:W 1.2-1.8, its crown pressed flat ('dome' m of fall to the rim, <= 3 cm), worn round its rim, a deep body sunk in the
-    # bed (real size, m; top at 0.75; the causeway's 'scale' sizes its footprint)
+    # ford stepping stone (C03 env fix; was E5b's rounded slab, which from a camera at the water read as a row of hockey
+    # pucks: vertical sides, flat pale tops): now a river stone, its crown a dome (an ellipsoid's top, no pressed top) at
+    # about 0.75 m, 'sides' (5-7) soft cuts leaning back ('side_lean') round an ellipse of L:W 1.2-1.8 for its outline
+    # from over it, two soft 'planes' and one fracture breaking a side off the dome, its body deeper than its crown
+    # ('az_lo') and taken in a little under its widest ('waist': the river's undercut, shown where it stands tall);
+    # its sizes and tilts, and how proud it stands, Dressing's (the causeway's data)
+    # (lf5c, lf4: the stepping stones read as brown loaves, smooth domes with pale foam rings: now river stones broken from planes
+    # (sculpt_frac): a low faceted crown (three near-level faces, no flat lid, no dome), sides leaning back ('side_z'), worn
+    # rims 3 cm, chips off its edges, one in three cracked or stepped; the crown at about 0.75 m as before (Dressing's 'top')
     'stepping': dict(lods=(1200, 400, 140), shadow=False, variants=[
-        dict(seed=501, ax=(0.5, 0.38, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.2, fine=0.006, top=0.75, dome=0.022, foot=0.0, cut=0.25),
-        dict(seed=503, ax=(0.52, 0.32, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=2.0, fine=0.006, top=0.75, dome=0.026, foot=0.0, cut=0.25),
-        dict(seed=509, ax=(0.54, 0.31, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.4, fine=0.006, top=0.75, dome=0.018, foot=0.0, cut=0.25),
-        dict(seed=521, ax=(0.46, 0.37, 0.6), cz=0.4, sides=5, k=0.04, amp=0.05, freq=1.9, fine=0.006, top=0.75, dome=0.024, foot=0.0, cut=0.25),
-        dict(seed=523, ax=(0.5, 0.35, 0.6), cz=0.4, sides=7, k=0.03, amp=0.04, freq=2.3, fine=0.006, top=0.75, dome=0.02, foot=0.0, cut=0.25),
-        dict(seed=541, ax=(0.52, 0.4, 0.6), cz=0.4, sides=6, k=0.035, amp=0.04, freq=2.1, fine=0.006, top=0.75, dome=0.025, foot=0.0, cut=0.25),
+        dict(method='frac', seed=1501, ax=(0.604, 0.416, 0.25), az_lo=0.6, cz=0.52, fn=9, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1503, ax=(0.632, 0.357, 0.22), az_lo=0.6, cz=0.52, fn=8, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), splits=1, split_w=0.025, split_d=0.05, lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1509, ax=(0.651, 0.34, 0.27), az_lo=0.6, cz=0.52, fn=10, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), ledges=1, ledge_d=(0.12, 0.2), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1537, ax=(0.558, 0.408, 0.24), az_lo=0.6, cz=0.52, fn=8, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1523, ax=(0.604, 0.383, 0.26), az_lo=0.6, cz=0.52, fn=10, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), splits=1, split_w=0.025, split_d=0.05, lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
+        dict(method='frac', seed=1541, ax=(0.632, 0.442, 0.23), az_lo=0.6, cz=0.52, fn=9, ftop=3, fup=(0.78, 0.92), fcrown=0.9, side_z=(0.1, 0.4), fd=(0.8, 0.92), fk=0.03, round=1.05, chips=5, chip_d=(0.04, 0.09), ledges=1, ledge_d=(0.12, 0.2), lump=0.04, amp=0.012, freq=1.5, fine=0.004, foot=-0.2, cut=0.05),
     ]),
 }
 
@@ -171,6 +181,16 @@ def tex():
     hgt = 0.55 * body + 0.2 * grain + 0.035 * smooth(0.55, 0.85, pits) - 0.22 * crack   # (E5b: pits faint: at 0.12 their lit rims read as a crazed net)
     # colour: dark to light by the body and grain, warm and cool patches, the cracks dark
     v = np.clip(0.15 + 0.85 * (0.65 * body + 0.35 * grain - 0.1), 0, 1)
+    # (lf5c: 'contrast' spreads the value about its middle (the lf4 sheet's p5-p95 luma was .29-.45: one flat grey-brown from
+    # the play camera); 'speck' a granite's light and dark grains (feldspar, mica: a sparkle of value at 1:1, not a smooth wash);
+    # 'blotch' broad dark weathered patches (where water sat: a value break across a face))
+    v = np.clip(0.5 + float(sd.get('contrast', 1.0)) * (v - 0.5), 0, 1)
+    if sd.get('speck'):
+        sp = fbm(N, rng, ((160, 0.6), (320, 0.4)))
+        v = np.clip(v + float(sd['speck']) * (smooth(0.62, 0.72, sp) - 0.7 * smooth(0.36, 0.28, sp)), 0, 1)
+    if sd.get('blotch'):
+        bl = fbm(N, rng, ((5, 0.6), (11, 0.4)))
+        v = v * (1 - float(sd['blotch']) * smooth(0.55, 0.75, bl))
     seg = v * (len(pal) - 1)
     i0 = np.clip(seg.astype(int), 0, len(pal) - 2)
     t = (seg - i0)[..., None]
@@ -185,6 +205,12 @@ def tex():
     nrm /= np.linalg.norm(nrm, axis=2, keepdims=True)
     nrm = nrm * 0.5 + 0.5
     p = pt.paint(col, nrm, pt.preset('rock', sd.get('paint', {})))
+    # (lf5c: 'post_contrast' the painted sheet's value spread about its mean, after the brush (which evens it): the value
+    # the play camera sees is the 5-50 cm patches, a 5 m boulder ~250 px across, so its range lives there, not in grains)
+    if sd.get('post_contrast'):
+        lum = p.mean(2, keepdims=True)
+        m = float(lum.mean())
+        p = np.clip(p * (m + float(sd['post_contrast']) * (lum - m)) / np.maximum(lum, 1e-3), 0, 1)
     # the moss's breakup (alpha): soft clumps, so moss grows in patches, not as a flat coat
     moss = smooth(0.3, 0.75, fbm(N, rng, ((6, 0.5), (14, 0.3), (40, 0.2))))
     os.makedirs(OUT, exist_ok=True)
@@ -236,7 +262,9 @@ def sculpt(prm):
     rng = np.random.default_rng(prm['seed'])
     D, F = icosphere(7)
     ax = np.array(prm['ax'])
-    re = 1 / np.sqrt(((D / ax) ** 2).sum(1))
+    # ('az_lo': the ellipsoid's half height under its middle, if not ax z: a body deeper than its crown)
+    axd = np.where(D[:, 2:3] < 0, np.array([ax[0], ax[1], prm.get('az_lo', ax[2])]), ax)
+    re = 1 / np.sqrt(((D / axd) ** 2).sum(1))
     R = [re]
     for _ in range(prm.get('planes', 0)):
         n = rng.normal(size=3)
@@ -253,7 +281,9 @@ def sculpt(prm):
         ns = prm['sides']
         for j in range(ns):
             th = 2 * math.pi * (j + rng.uniform(-0.22, 0.22)) / ns
-            n = np.array([math.cos(th), math.sin(th), rng.uniform(-0.08, 0.08)])
+            # ('side_lean': the cuts lean back that far (normal's z), a shoulder's facets, not a wall; else near vertical)
+            lean = prm.get('side_lean')
+            n = np.array([math.cos(th), math.sin(th), rng.uniform(*lean) if lean else rng.uniform(-0.08, 0.08)])
             n /= np.linalg.norm(n)
             rn = 1 / math.sqrt(((n / ax) ** 2).sum())
             dist = rn * rng.uniform(0.8, 0.88)
@@ -294,15 +324,128 @@ def sculpt(prm):
         fr = h - li
         inset = insets[np.clip(li, 0, L + 2)] + 0.05 * (smooth(0.12, 0.0, fr) + smooth(0.88, 1.0, fr))
         P[:, :2] *= (1 - inset)[:, None]
+    if prm.get('waist'):
+        # (a waist under its widest: the river's undercut at the waterline, 'waist' of its width taken in 'waist_h' m down)
+        wz = smooth(0.0, prm.get('waist_h', 0.18), -P[:, 2])
+        P[:, :2] *= (1 - prm['waist'] * wz)[:, None]
     P[:, 2] += prm['cz']
     if 'top' in prm:
         # a worn flat top: the stone's crown pressed to 'top' (soft rim, E5c: a 3-4 cm bevel, 'rim_k'), dished by a few mm
         k = prm.get('rim_k', 0.035)
         z = P[:, 2]
         # (a low crown: the pressed height falls 'dome' m from its middle to its rim)
-        tz = prm['top'] - prm.get('dome', 0.0) * np.clip((P[:, 0] / ax[0]) ** 2 + (P[:, 1] / ax[1]) ** 2, 0, 1.2)
+        # ('peak' (x, y): the crown's high point off its middle, as a share of its half sizes: a lopsided dome)
+        pk = prm.get('peak', (0.0, 0.0))
+        tz = prm['top'] - prm.get('dome', 0.0) * np.clip(((P[:, 0] - pk[0] * ax[0]) / ax[0]) ** 2 + ((P[:, 1] - pk[1] * ax[1]) / ax[1]) ** 2, 0, 1.6)
         P[:, 2] = -k * np.log(np.exp(-z / k) + np.exp(-tz / k)) + 0.004 * fbm3(P, 3.0, prm['seed'] + 3, 2)
     k = 0.08
+    z = P[:, 2]
+    P[:, 2] = k * np.log(np.exp(z / k) + np.exp(prm['foot'] / k))
+    return P, F
+
+
+def sculpt_frac(prm):
+    """(lf5c) A broken stone: one dense mesh (V, F), z up, its foot's ground at z = 0, cut from planes, not pushed by noise.
+
+    The lf0 triage: the noise-pushed ellipsoids read as "grey block-like boulders" (soft domes, or rounded cubes) from the
+    play camera. Here the body is a convex block of 'fn' fracture planes (each its support's 'fd' share in: a broken
+    face), 'ftop' of them leaning up-and-out (normals 'fup' z: the faces the camera looks down on, set round it so they
+    catch the moon in turn), the rest round its sides; their meeting edges worn only 'fk' m (crisp-but-worn rims the bake
+    lights); then 'chips' small planes taking an edge off ('chip_d' its radius deep: a broken outline, not a box);
+    'splits' grooves through it (a joint, 'split_w' m wide, 'split_d' deep, fading along it: a cracked boulder), 'strata'
+    shallow bands (sandstone's bedding: value lines on its sides), a little 'amp' wave (no face dead flat) and 'fine'.
+    'sink' lowers it into the ground (a half-sunk stone, its foot under the grass), 'lean' tilts it (deg).
+    """
+    rng = np.random.default_rng(prm['seed'])
+    D, F = icosphere(7)
+    ax = np.array(prm['ax'], np.float64)
+    # ('az_lo': its body's half depth under its middle, if not ax z: a stone deeper than its crown)
+    axd = np.where(D[:, 2:3] < 0, np.array([ax[0], ax[1], prm.get('az_lo', ax[2])]), ax)
+    re = 1 / np.sqrt(((D / axd) ** 2).sum(1))
+
+    def support(n):
+        return math.sqrt(((ax * n) ** 2).sum())
+
+    def plane(n, d):
+        dn = D @ n
+        return np.where(dn > 1e-3, d / np.maximum(dn, 1e-3), 1e3)
+
+    R = [re * prm.get('round', 1.08)]
+    nt, ns = prm['ftop'], prm['fn'] - prm['ftop']
+    a0 = rng.uniform(0, 2 * math.pi)
+    for j in range(nt):
+        th = a0 + 2 * math.pi * (j + rng.uniform(-0.25, 0.25)) / max(nt, 1)
+        up = rng.uniform(*prm['fup']) if j else rng.uniform(0.9, 0.98)   # (one near-level crown face, 'fcrown' in: a broad top, not a peak)
+        n = np.array([math.cos(th) * math.sqrt(1 - up * up), math.sin(th) * math.sqrt(1 - up * up), up])
+        R.append(plane(n, support(n) * (rng.uniform(*prm['fd']) if j else prm.get('fcrown', 0.8))))
+    a1 = rng.uniform(0, 2 * math.pi)
+    for j in range(ns):
+        th = a1 + 2 * math.pi * (j + rng.uniform(-0.3, 0.3)) / max(ns, 1)
+        z = rng.uniform(*prm.get('side_z', (-0.25, 0.3)))
+        n = np.array([math.cos(th) * math.sqrt(1 - z * z), math.sin(th) * math.sqrt(1 - z * z), z])
+        R.append(plane(n, support(n) * rng.uniform(*prm['fd'])))
+    r = softmin(np.stack(R, 1), prm['fk'])
+    # chips: small planes taking an edge or a corner off (where the body is most convex: its corners stand furthest out)
+    for _ in range(prm.get('chips', 0)):
+        far = r / re
+        cand = np.argsort(-far + 0.15 * rng.random(len(far)))[:400]
+        i = cand[rng.integers(len(cand))]
+        q = D[i] * r[i]
+        n = D[i] + rng.normal(size=3) * 0.3
+        if rng.random() < 0.6:
+            n[2] = abs(n[2]) * 0.8 + 0.1
+        n /= np.linalg.norm(n)
+        d = max(q @ n - rng.uniform(*prm['chip_d']) * float(np.mean(ax)), 0.5 * r[i])
+        r = softmin(np.stack([r, plane(n, d)], 1), prm['fk'] * 0.7)
+    # ledges: a step taken out of its crown's edge (where it is over the plane 'n1' and past the side plane 'n2': a notch, its
+    # floor a ledge that holds moss and litter, its riser a lit or shaded wall; not a convex gem)
+    for _ in range(prm.get('ledges', 0)):
+        th = rng.uniform(0, 2 * math.pi)
+        hz = np.array([math.cos(th), math.sin(th), 0.0])
+        n1 = np.array([0.0, 0.0, 1.0]) + hz * rng.uniform(-0.15, 0.25)
+        n1 /= np.linalg.norm(n1)
+        top = float((D * r[:, None] @ n1).max())
+        d1 = top - rng.uniform(*prm.get('ledge_d', (0.15, 0.3))) * ax[2] * 2
+        n2 = hz + np.array([0, 0, rng.uniform(-0.1, 0.2)])
+        n2 /= np.linalg.norm(n2)
+        side = float((D * r[:, None] @ n2).max())
+        d2 = side * rng.uniform(0.3, 0.6)
+        t = np.maximum(plane(n1, d1), plane(n2, d2))
+        r = softmin(np.stack([r, t], 1), prm['fk'] * 0.8)
+    # lumps: the faces bent a little (a broad noise on the radius), so its outline is not a polygon's
+    if prm.get('lump'):
+        r *= 1 + prm['lump'] * fbm3(D, prm.get('lump_f', 0.8), prm['seed'] + 5, 2)
+    P = D * r[:, None]
+    # a little wave over every face (none dead flat), and the fine grain
+    P += D * (prm['amp'] * float(np.mean(ax)) * fbm3(P, prm['freq'], prm['seed'], 3))[:, None]
+    P += D * (prm['fine'] * fbm3(P, 5.0, prm['seed'] + 1, 3))[:, None]
+    # splits: a joint through the stone (a near-vertical plane near its middle), a V groove fading along its length
+    for s in range(prm.get('splits', 0)):
+        th = rng.uniform(0, math.pi)
+        n = np.array([math.cos(th), math.sin(th), rng.uniform(-0.35, 0.35)])
+        n /= np.linalg.norm(n)
+        c = np.array([rng.uniform(-0.25, 0.25) * ax[0], rng.uniform(-0.25, 0.25) * ax[1], 0.0])
+        sd = (P - c) @ n
+        w = prm['split_w'] * (1 + 0.5 * fbm3(P, 1.2, prm['seed'] + 10 + s, 2))
+        along = smooth(0.15, 0.55, 0.5 + fbm3(P, 0.45, prm['seed'] + 20 + s, 2))   # (it fades in and out)
+        g = np.exp(-(sd / np.maximum(w, 0.01)) ** 2) * along
+        P -= D * (prm['split_d'] * g)[:, None]
+    if prm.get('strata'):
+        L = prm['strata']
+        h = (P[:, 2] + ax[2]) / (2 * ax[2]) * L + 0.3 * fbm3(P, 0.6, prm['seed'] + 2, 2)
+        fr = h - np.floor(h)
+        notch = smooth(0.1, 0.0, fr) + smooth(0.9, 1.0, fr)
+        side = np.clip(1 - np.abs(D[:, 2]) * 1.4, 0, 1)                  # (on its sides, not its crown)
+        P -= D * (prm.get('strata_d', 0.03) * notch * side)[:, None]
+    if prm.get('lean'):
+        a = math.radians(prm['lean']) * rng.choice([-1, 1])
+        b = rng.uniform(0, 2 * math.pi)
+        k = np.array([math.cos(b), math.sin(b), 0.0])
+        K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+        Rm = np.eye(3) + math.sin(a) * K + (1 - math.cos(a)) * K @ K
+        P = P @ Rm.T
+    P[:, 2] += prm['cz'] - prm.get('sink', 0.0)
+    k = 0.06
     z = P[:, 2]
     P[:, 2] = k * np.log(np.exp(z / k) + np.exp(prm['foot'] / k))
     return P, F
@@ -436,7 +579,7 @@ def mesh(only=None):
             if name == 'pebbles':
                 V, F, U = pebble_cluster(prm)
             else:
-                (V, F), U = sculpt(prm), None
+                (V, F), U = (sculpt_frac(prm) if prm.get('method') == 'frac' else sculpt(prm)), None
             if U is None:
                 U = np.tile([0.5, 0.5], (len(V), 1))
             C, N = bake(V, F)
@@ -451,11 +594,11 @@ def mesh(only=None):
             if name == 'stepping':
                 up = N[:, 2] > 0.9
                 zt = V[up, 2]
-                band = V[(V[:, 2] > prm['top'] - 0.15) & (V[:, 2] < prm['top'] - 0.1)][:, :2]
+                band = V[(V[:, 2] > prm.get('top', 0.75) - 0.15) & (V[:, 2] < prm.get('top', 0.75) - 0.1)][:, :2]
                 c = band - band.mean(0)
                 ev = np.linalg.eigh(np.cov(c.T))[1]
                 ext = np.ptp(c @ ev, 0)
-                print(f'  stepping {vi}: sides {prm["sides"]}, dome {zt.max() - np.percentile(zt, 3):.3f} m, footprint {ext.max():.2f} x {ext.min():.2f} m, L:W {ext.max() / ext.min():.2f}')
+                print(f'  stepping {vi}: sides {prm.get("sides", prm.get("fn"))}, dome {zt.max() - np.percentile(zt, 3):.3f} m, footprint {ext.max():.2f} x {ext.min():.2f} m, L:W {ext.max() / ext.min():.2f}')
             print(f'  {name} {vi}: {len(F)} dense tris, size {np.ptp(V, 0).round(2)}, edge>0.5 {np.mean(C[:, 0] > 0.5):.2f} cavity>0.5 {np.mean(C[:, 1] > 0.5):.2f} broad>0.5 {np.mean(C[:, 2] > 0.5):.2f}')
         tris = []
         names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if pre['shadow'] else [])

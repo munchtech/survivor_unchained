@@ -90,6 +90,8 @@ public enum FlareKind { Strike, Stand }
 public sealed class FlareDef
 {
     public string Id = "", Name = "", Calling = "", Road = "", Text = "";
+    /// <summary>Its own line glyph (data/content/glyphs.json's key): what the HUD's Q vessel wears, never the calling's badge.</summary>
+    public string Icon = "";
     public FlareKind Kind;
     /// <summary>A Strike: how long it holds the controls (1.2 s at most). A Stand: how long it holds.</summary>
     public double Length;

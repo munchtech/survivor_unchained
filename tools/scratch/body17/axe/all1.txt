@@ -1,0 +1,36 @@
+row -0.130,1.06,-0.245,11,-16: pivot [-0.13, 1.06, -0.245] shaft [0.184, 0.945, 0.271] at [-0.233, 0.531, -0.397] thick [0.979, -0.2, 0.032]
+row -0.120,1.06,-0.235,11,-18: pivot [-0.12, 1.06, -0.235] shaft [0.182, 0.935, 0.304] at [-0.222, 0.536, -0.405] thick [0.979, -0.201, 0.034]
+row -0.125,1.045,-0.225,11,-17: pivot [-0.125, 1.045, -0.225] shaft [0.183, 0.94, 0.287] at [-0.227, 0.518, -0.386] thick [0.979, -0.2, 0.033]
+row -0.125,1.06,-0.225,10.5,-19: pivot [-0.125, 1.06, -0.225] shaft [0.173, 0.931, 0.321] at [-0.222, 0.538, -0.405] thick [0.98, -0.194, 0.037]
+idle   -0.130,1.06,-0.245,11,-16    R out   5.1..  6.8 fore  -15.2.. -14.9 skin   0.0 (f0) outfit -67.4 (f26) hand  204 mm | skin@ y+0.58 pelvis f42 -74.2 outfit@ y+0.64 pelvis
+idle   -0.130,1.06,-0.245,11,-16    L out  15.1.. 16.8 fore  -18.0.. -17.3 skin   0.0 (f0) outfit -66.2 (f96) hand  192 mm | skin@ y+0.59 pelvis f96 -72.4 outfit@ y+0.64 pelvis
+idle   -0.120,1.06,-0.235,11,-18    R out   5.3..  7.0 fore  -17.2.. -16.9 skin   0.0 (f0) outfit -54.1 (f26) hand  202 mm | skin@ y+0.61 pelvis f26 -61.4 outfit@ y+0.64 pelvis
+idle   -0.120,1.06,-0.235,11,-18    L out  14.9.. 16.6 fore  -20.0.. -19.3 skin   0.0 (f0) outfit -51.5 (f96) hand  185 mm | skin@ y+0.61 pelvis f96 -59.7 outfit@ y+0.63 pelvis
+idle   -0.125,1.045,-0.225,11,-17   R out   5.2..  6.9 fore  -16.2.. -15.9 skin   0.0 (f0) outfit -41.5 (f26) hand  189 mm | skin@ y+0.61 pelvis f26 -48.8 outfit@ y+0.64 pelvis
+idle   -0.125,1.045,-0.225,11,-17   L out  15.0.. 16.7 fore  -19.0.. -18.3 skin   0.0 (f0) outfit -40.8 (f96) hand  173 mm | skin@ y+0.61 pelvis f96 -46.9 outfit@ y+0.64 pelvis
+idle   -0.125,1.06,-0.225,10.5,-19  R out   4.9..  6.6 fore  -18.2.. -18.0 skin   0.0 (f0) outfit -44.8 (f26) hand  191 mm | skin@ y+0.61 pelvis f26 -53.2 outfit@ y+0.63 pelvis
+idle   -0.125,1.06,-0.225,10.5,-19  L out  14.3.. 16.0 fore  -20.9.. -20.3 skin   0.0 (f0) outfit -42.8 (f96) hand  172 mm | skin@ y+0.61 pelvis f96 -51.3 outfit@ y+0.63 pelvis
+walk   -0.130,1.06,-0.245,11,-16    R out   9.2.. 12.7 fore  -16.9.. -15.0 skin   0.0 (f0) outfit -10.1 (f28) hand   85 mm | skin@ y+0.65 lowerarm_twist_01_r f28 -16.9 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.130,1.06,-0.245,11,-16    L out   9.3.. 12.9 fore  -16.8.. -15.7 skin   0.0 (f0) outfit -34.5 (f6) hand  101 mm | skin@ y+0.64 lowerarm_twist_01_l f6 -41.2 outfit@ y+0.64 lowerarm_twist_01_l
+walk   -0.120,1.06,-0.235,11,-18    R out   9.1.. 12.8 fore  -18.9.. -17.0 skin   0.0 (f0) outfit  -5.8 (f28) hand   83 mm | skin@ y+0.64 lowerarm_twist_01_r f28 -12.2 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.120,1.06,-0.235,11,-18    L out   9.2.. 12.9 fore  -18.8.. -17.7 skin   0.0 (f0) outfit -33.1 (f6) hand   99 mm | skin@ y+0.64 lowerarm_twist_01_l f6 -38.7 outfit@ y+0.64 lowerarm_twist_01_l
+walk   -0.125,1.045,-0.225,11,-17   R out   9.1.. 12.7 fore  -17.9.. -16.0 skin   0.0 (f0) outfit   6.5 (f28) hand   66 mm | skin@ y+0.64 lowerarm_twist_01_r f28 -0.5 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.125,1.045,-0.225,11,-17   L out   9.2.. 12.9 fore  -17.8.. -16.7 skin   0.0 (f0) outfit -21.9 (f6) hand   82 mm | skin@ y+0.64 lowerarm_twist_01_l f6 -28.5 outfit@ y+0.64 lowerarm_twist_01_l
+walk   -0.125,1.06,-0.225,10.5,-19  R out   8.6.. 12.3 fore  -19.9.. -18.0 skin   0.0 (f0) outfit   6.3 (f28) hand   75 mm | skin@ y+0.64 lowerarm_twist_01_r f28 -0.0 outfit@ y+0.64 lowerarm_twist_01_r
+walk   -0.125,1.06,-0.225,10.5,-19  L out   8.6.. 12.4 fore  -19.8.. -18.7 skin   0.0 (f0) outfit -21.6 (f6) hand   90 mm | skin@ y+0.64 lowerarm_twist_01_l f6 -27.3 outfit@ y+0.64 lowerarm_twist_01_l
+run    -0.130,1.06,-0.245,11,-16    R out   6.8..  9.1 fore  -21.7.. -21.3 skin   0.0 (f0) outfit  -4.4 (f0) hand  425 mm | skin@ y+0.03 foot_r f0 -15.9 outfit@ y+0.03 foot_r
+run    -0.130,1.06,-0.245,11,-16    L out  13.4.. 15.5 fore  -20.0.. -19.3 skin   0.0 (f0) outfit -46.5 (f6) hand  424 mm | skin@ y+0.33 thigh_l f6 -64.9 outfit@ y+0.27 thigh_l
+run    -0.120,1.06,-0.235,11,-18    R out   6.6..  9.0 fore  -23.6.. -23.3 skin   0.0 (f0) outfit   4.1 (f0) hand  417 mm | skin@ y+0.03 foot_r f0 -6.9 outfit@ y+0.04 foot_r
+run    -0.120,1.06,-0.235,11,-18    L out  13.6.. 15.8 fore  -22.1.. -21.3 skin   0.0 (f0) outfit -47.5 (f6) hand  416 mm | skin@ y+0.33 thigh_l f6 -58.0 outfit@ y+0.25 thigh_l
+run    -0.125,1.045,-0.225,11,-17   R out   6.7..  9.1 fore  -22.6.. -22.3 skin   0.0 (f0) outfit   4.2 (f0) hand  413 mm | skin@ y+0.09 calf_r f0 -8.8 outfit@ y+0.04 foot_r
+run    -0.125,1.045,-0.225,11,-17   L out  13.5.. 15.7 fore  -21.0.. -20.3 skin   0.0 (f0) outfit -32.0 (f6) hand  410 mm | skin@ y+0.37 thigh_l f6 -45.5 outfit@ y+0.28 thigh_l
+run    -0.125,1.06,-0.225,10.5,-19  R out   5.9..  8.4 fore  -24.5.. -24.2 skin   0.0 (f0) outfit   2.5 (f0) hand  406 mm | skin@ y+0.03 foot_r f0 -8.0 outfit@ y+0.04 foot_r
+run    -0.125,1.06,-0.225,10.5,-19  L out  13.2.. 15.5 fore  -23.1.. -22.4 skin   0.0 (f0) outfit -42.5 (f14) hand  404 mm | skin@ y+0.58 pelvis f6 -52.1 outfit@ y+0.64 pelvis
+sprint -0.130,1.06,-0.245,11,-16    R out   6.3..  8.9 fore  -24.4.. -24.0 skin   3.8 (f0) outfit  13.3 (f0) hand  438 mm | skin@ y+0.12 foot_r f0 +3.8 outfit@ y+0.13 foot_r
+sprint -0.130,1.06,-0.245,11,-16    L out  14.1.. 16.4 fore  -22.8.. -22.0 skin   0.0 (f0) outfit -32.0 (f6) hand  441 mm | skin@ y+0.36 thigh_l f6 -48.5 outfit@ y+0.28 thigh_l
+sprint -0.120,1.06,-0.235,11,-18    R out   6.1..  8.8 fore  -26.3.. -26.0 skin  12.6 (f0) outfit  15.6 (f0) hand  430 mm | skin@ y+0.12 foot_r f0 +12.6 outfit@ y+0.13 foot_r
+sprint -0.120,1.06,-0.235,11,-18    L out  14.3.. 16.8 fore  -24.8.. -24.1 skin   0.0 (f0) outfit -23.8 (f6) hand  432 mm | skin@ y+0.36 thigh_l f6 -41.0 outfit@ y+0.28 thigh_l
+sprint -0.125,1.045,-0.225,11,-17   R out   6.2..  8.8 fore  -25.3.. -25.0 skin  10.9 (f0) outfit  18.5 (f0) hand  426 mm | skin@ y+0.12 foot_r f0 +10.9 outfit@ y+0.14 foot_r
+sprint -0.125,1.045,-0.225,11,-17   L out  14.2.. 16.6 fore  -23.8.. -23.1 skin   0.0 (f0) outfit -25.3 (f6) hand  426 mm | skin@ y+0.37 thigh_l f6 -29.8 outfit@ y+0.26 thigh_l
+sprint -0.125,1.06,-0.225,10.5,-19  R out   5.4..  8.2 fore  -27.2.. -27.0 skin  11.2 (f0) outfit  15.7 (f0) hand  419 mm | skin@ y+0.12 foot_r f0 +11.2 outfit@ y+0.14 foot_r
+sprint -0.125,1.06,-0.225,10.5,-19  L out  13.9.. 16.4 fore  -25.9.. -25.1 skin   0.0 (f0) outfit -28.8 (f6) hand  420 mm | skin@ y+0.37 thigh_l f6 -39.7 outfit@ y+0.27 thigh_l

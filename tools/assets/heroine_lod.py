@@ -321,6 +321,14 @@ def slot_join(items, tag=""):
     one mesh a material was before slots (heroine_outfits.py, armor lead 1): each slot mesh's pieces (extras "pieces":
     [their place in the material's join, their triangles]) cut out, each piece's own run of vertices, and laid back
     in the join's order. Without "pieces", the meshes end to end in their "rank"."""
+    # gltf_compact drops an all-zero second weight set per mesh: a slot without it joins with zeros (Body 15)
+    for k1 in ("JOINTS_1", "WEIGHTS_1"):
+        have = [a for _, a, _ in items if k1 in a]
+        if have:
+            for _, a, _ in items:
+                if k1 not in a:
+                    ref = have[0][k1]
+                    a[k1] = (np.zeros((len(a["POSITION"][0]),) + ref[0].shape[1:], ref[0].dtype), ref[1])
     keys = list(items[0][1])
     assert all(set(a) == set(keys) for _, a, _ in items), f"{tag}: its slots' meshes carry different attributes"
     for k in keys:
@@ -475,6 +483,8 @@ def lod(folder, outfit):
         J.append(attrs["JOINTS_0"][0][used].astype(np.uint16))
         ww, norm = attrs["WEIGHTS_0"]
         ww = ww[used].astype(np.float32) / ({np.dtype(np.uint8): 255.0, np.dtype(np.uint16): 65535.0}.get(ww.dtype, 1.0) if norm else 1.0)
+        # (her body carries 8 weights since Body 6 S2b: the shadow keeps the largest 4 (JOINTS_0), made whole again)
+        ww = ww / np.maximum(ww.sum(1, keepdims=True), 1e-9)
         W.append(ww)
         T.append(inv.reshape(-1, 3) + base)
         base += len(used)

@@ -50,7 +50,8 @@
   {
    "id": "fair",
    "name": "Fair",
-   "color": ""
+   "color": "",
+   "highlight": "platinum"
   },
   {
    "id": "rose",
@@ -70,7 +71,8 @@
   {
    "id": "brown",
    "name": "Brown",
-   "color": "#ba7f5e"
+   "color": "#ba7f5e",
+   "highlight": "honey"
   },
   {
    "id": "deep",
@@ -82,12 +84,14 @@
   {
    "id": "as_is",
    "name": "As it grew",
-   "color": ""
+   "color": "",
+   "highlight": "honey"
   },
   {
    "id": "black",
    "name": "Black",
-   "color": "#2a2422"
+   "color": "#2a2422",
+   "highlight": "copper"
   },
   {
    "id": "brown",
@@ -97,22 +101,26 @@
   {
    "id": "chestnut",
    "name": "Chestnut",
-   "color": "#6a3a1c"
+   "color": "#6a3a1c",
+   "highlight": "honey"
   },
   {
    "id": "auburn",
    "name": "Auburn",
-   "color": "#8e3e20"
+   "color": "#8e3e20",
+   "highlight": "honey"
   },
   {
    "id": "strawberry",
    "name": "Strawberry",
-   "color": "#b8643a"
+   "color": "#b8643a",
+   "highlight": "gold"
   },
   {
    "id": "honey",
    "name": "Honey",
-   "color": "#b08848"
+   "color": "#b08848",
+   "highlight": "platinum"
   },
   {
    "id": "fair",
@@ -122,13 +130,23 @@
   {
    "id": "platinum",
    "name": "Platinum",
-   "color": "#d8d0c0"
+   "color": "#d8d0c0",
+   "highlight": "honey"
   },
   {
    "id": "grey",
    "name": "Gray",
-   "color": "#a8a4a0"
+   "color": "#a8a4a0",
+   "highlight": "platinum"
   }
+ ],
+ "hairHighlights": [
+  {"id": "copper", "name": "Copper", "color": "#9c5a2e"},
+  {"id": "auburn", "name": "Auburn", "color": "#8a2c18"},
+  {"id": "honey", "name": "Honey", "color": "#b4884a", "strength": 3},
+  {"id": "gold", "name": "Gold", "color": "#d6b46c"},
+  {"id": "platinum", "name": "Platinum", "color": "#f4f3ef", "share": 2},
+  {"id": "ash", "name": "Ash", "color": "#9a9894"}
  ],
  "hairStyles": {
   "male": [

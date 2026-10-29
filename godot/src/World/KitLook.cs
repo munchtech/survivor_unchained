@@ -35,7 +35,7 @@ public static class KitLook
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownRim, ownLeaf, ownLeafRim, ownRock, ownRockRim, ownWall, ownWallRim, ownRoof, ownRoofRim;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownLeaf, ownRock, ownRockRim, ownWall, ownRoof;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -172,11 +172,11 @@ public static class KitLook
         m.SetShaderParameter("leaves", foliage);
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
+        // (our own trees have none: the canopy fade, the whole tree faded, in its own pass; E3 au1-5)
+        if (mine) { Canopy(); cache[key] = m; return m; }
         solidRim ??= Rim(solid);
         twoSidedRim ??= Rim(twoSided);
-        ownRim ??= Rim(own);
-        ownLeafRim ??= Rim(ownLeaf);
-        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : m.Shader == own ? ownRim : m.Shader == ownLeaf ? ownLeafRim : twoSidedRim };
+        var rim = new ShaderMaterial { Shader = m.Shader == solid ? solidRim : twoSidedRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];
@@ -187,13 +187,53 @@ public static class KitLook
         return m;
     }
 
+    static bool canopySet;
+    /// <summary>The canopy fade's values in force (global canopy_fade), for --canopy-log's mirror.</summary>
+    public static Vector4 CanopyFade => canopyArg ?? (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"];
+    static Vector4? canopyArg;
+    static bool? canopyOn;
+    public static bool CanopyPlaying => canopyOn == true && CanopyFade.W > 0;
+
+    /// <summary>The canopy fade on only in the play camera's view (Game, each frame): off in a cinematic or a held showcase
+    /// view, where the trees are framed whole. Set only when it changes.</summary>
+    public static void CanopyView(bool play)
+    {
+        if (canopyOn == play) return;
+        canopyOn = play;
+        var v = CanopyFade;
+        if (!play) v.W = 0;
+        RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
+    }
+
+    /// <summary>The canopy fade's tunables (kit.gdshader OWN_FOLIAGE, global canopy_fade; project.godot holds the defaults):
+    /// --canopy R,E,G (the fight radius on the screen at her distance, m; the ease, m; the ghost, the share cut) or
+    /// --canopy off. Set once.</summary>
+    static void Canopy()
+    {
+        if (canopySet) return;
+        canopySet = true;
+        var arg = SurvivorUnchained.Args.Get("canopy");
+        if (arg == null) return;
+        var v = (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"];
+        if (arg == "off") v.W = 0;
+        else
+        {
+            var p = arg.Split(',');
+            for (int i = 0; i < p.Length && i < 3; i++)
+                if (float.TryParse(p[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) v[i] = f;
+        }
+        canopyArg = v;
+        RenderingServer.GlobalShaderParameterSet("canopy_fade", v);
+    }
+
     /// <summary>Our own town walls (kit.gdshader's OWN_WALL, OwnWalls): the trim sheet, each house's plaster and
     /// timber tint by its copy's custom data (godot/data/house_look.json: the palettes and the weathering), grime
-    /// from the house's ground up, stains under the sills; drawn with the see-through window's rim like the rest.</summary>
+    /// from the house's ground up, stains under the sills; faded whole where it stands between her and the camera (HouseFade; E9c), never windowed.</summary>
     static ShaderMaterial Wall()
     {
-        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL") };
-        ownWallRim ??= Rim(ownWall);
+        ownWall ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_WALL")
+            // (E9c2) drawn both sides: its back faces are the cutaway's cap (kit.gdshader discards them elsewhere in the camera's view)
+            .Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         const string dir = "res://art/world/house";
         var m = new ShaderMaterial { Shader = ownWall };
         m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/house_albedo.jpg"));
@@ -205,7 +245,7 @@ public static class KitLook
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
         if (groundTex != null) { m.SetShaderParameter("ground_h", groundTex); m.SetShaderParameter("ground_rect", groundRect); }
-        m.NextPass = RimOf(m, ownWallRim);
+        // (no rim pass: the house in the way fades whole, HouseFade; E9c)
         walls.Add(m);
         return m;
     }
@@ -276,11 +316,10 @@ public static class KitLook
 
     /// <summary>Our own roofs (kit.gdshader's OWN_ROOF, OwnWalls; E9b2): the roof sheet, each house's roof tint and
     /// timber tint by its copy's custom data (godot/data/house_look.json), each tile varied again, soot round the
-    /// chimneys, moss on the north slopes, each roof's own sag; drawn with the see-through window's rim.</summary>
+    /// chimneys, moss on the north slopes, each roof's own sag; faded with its house (HouseFade; E9c).</summary>
     static ShaderMaterial Roof()
     {
         ownRoof ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_ROOF") };
-        ownRoofRim ??= Rim(ownRoof);
         const string dir = "res://art/world/house";
         var m = new ShaderMaterial { Shader = ownRoof };
         m.SetShaderParameter("albedo_tex", GD.Load<Texture2D>($"{dir}/roof_albedo.jpg"));
@@ -292,12 +331,18 @@ public static class KitLook
         m.SetShaderParameter("wind", 0f);
         HouseLook(m);
         m.SetShaderParameter("chimneys", chimneys);
-        m.NextPass = RimOf(m, ownRoofRim);
+        if (SurvivorUnchained.Args.Has("roof-debug")) m.SetShaderParameter("roof_debug", 1f);
+        // (no rim pass: the house fade, as the walls)
         roofs.Add(m);
         return m;
     }
 
     static Texture2D? stoneTex, stoneNor;
+
+    /// <summary>The stepping stones' materials (a species with a damp top), for a cinematic's "stones" cue.</summary>
+    public static readonly HashSet<ShaderMaterial> Stepping = new();
+    /// <summary>Every own-stone material (the boulders too), for the "stones" cue's "all".</summary>
+    public static readonly HashSet<ShaderMaterial> Rocks = new();
 
     /// <summary>Our own stone (kit.gdshader's OWN_ROCK): the sheet and parameters of flora_species.json's "stone", its
     /// species' "shader" over them; drawn with the see-through window's rim like the rest.</summary>
@@ -326,8 +371,14 @@ public static class KitLook
         if (FloraSpecies.ByMaterial(s.ResourceName) is { } sp)
         {
             foreach (var (k, v) in sp.Shader) Set(k, v);
+            // (a stone look tried without editing the data: STONE_SET="key=v;key=v", numbers, on the stepping stones)
+            if (sp.Shader.ContainsKey("top_damp")) Stepping.Add(m);
+            if (sp.Shader.ContainsKey("top_damp") && System.Environment.GetEnvironmentVariable("STONE_SET") is { } ss)
+                foreach (var kv in ss.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    m.SetShaderParameter(kv.Split('=')[0], float.Parse(kv.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture));
             if (sp.Packed) m.SetShaderParameter("packed", true);
         }
+        Rocks.Add(m);
         var rim = new ShaderMaterial { Shader = ownRockRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {

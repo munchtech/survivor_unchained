@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -68,7 +68,7 @@ public static class Ground
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
         // The paint reconciled with the roads, and the road, wet and puddle mask (GroundPaint.cs).
-        var paint = GroundPaint.Of(z);
+        var paint = GroundPaint.Ahead(z);
         var splat = ImageTexture.CreateFromImage(WithMips(paint.Splat));
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", splat);
@@ -90,7 +90,8 @@ public static class Ground
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
         mat.SetShaderParameter("edge_k", SurvivorUnchained.Args.Num("ground-edge-k", 1.6f));
         mat.SetShaderParameter("macro_amt", SurvivorUnchained.Args.Num("ground-macro", 1.0f));
-        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", 0.018f));
+        var zg = FloraSpecies.GroundFor(z.Id);
+        mat.SetShaderParameter("rut_depth", SurvivorUnchained.Args.Num("ground-rut-depth", zg.TryGetValue("rut_depth", out var zrd) ? zrd : 0.018f));
         mat.SetShaderParameter("wet_amt", SurvivorUnchained.Args.Num("ground-wet", 1.0f));
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
         mat.SetShaderParameter("expo_tex", paint.Exposure);
@@ -105,8 +106,17 @@ public static class Ground
             ("gutter_w", "setts-gutter", 0.4f), ("lane_lift", "setts-lane", 0.32f), ("edge_drop", "setts-edge-drop", 0.6f), ("weeds", "setts-weeds", 1f),
             ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
             ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
-            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.45f), ("mud_spec", "setts-mud-spec", 0.1f), ("mud_paint", "setts-mud-paint", 0f), ("mud_ao", "setts-mud-ao", 0.8f) })
-            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
+            ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.45f), ("mud_spec", "setts-mud-spec", 0.1f), ("mud_paint", "setts-mud-paint", 0f), ("mud_ao", "setts-mud-ao", 0.8f), ("mud_warm", "setts-mud-warm", 1f),
+                 ("setts_kerb", "setts-kerb", 1f), ("kerb_in", "setts-kerb-in", 0.28f), ("kerb_w", "setts-kerb-w", 0.3f), ("setts_turn", "setts-turn", 1f), ("setts_lf", "setts-lf", 1f), ("mud_pool", "setts-mud-pool", 1f), ("close_bump", "setts-close-bump", 2.2f),
+                 ("rut_soft", "ground-rut-soft", 0f), ("rut_blur", "ground-rut-blur", 0.3f), ("road_rime", "ground-road-rime", 1f), ("crown_grass", "ground-crown-grass", 0.45f), ("pud_night", "ground-pud-night", 0f), ("pud_mud", "ground-pud-mud", 0f), ("pud_sheen", "ground-pud-sheen", 0f),
+                 ("foot_damp", "ground-foot-damp", 0f), ("foot_w", "ground-foot-w", 0.6f),
+                 ("camp_scorch", "ground-camp-scorch", 0f), ("scorch_r", "ground-scorch-r", 1f), ("trample", "ground-trample", 0f), ("path_hw", "ground-path-hw", 0.2f), ("path_lift", "ground-path-lift", 0f) })
+            mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, zg.TryGetValue(u, out var zv) ? zv : sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
+        // (E8 later r2) the zone's footpaths (flora_species.json "ground_paths": polylines of [x, z]), as segments
+        var segs = FloraSpecies.PathsFor(z.Id);
+        int nseg = segs.Count;
+        if (nseg > 0) { while (segs.Count < 12) segs.Add(Vector4.Zero); mat.SetShaderParameter("path_seg", segs.ToArray()); }
+        mat.SetShaderParameter("path_n", nseg);
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
         mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));

@@ -136,7 +136,8 @@ public static class Loadouts
             Hair = her ? HerHair(ch.HairStyle) : hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             BeardStyle = kit is { Beards.Count: > 0 } ? (kit.Beards.Any(b => b.Id == ch.BeardStyle) ? ch.BeardStyle : kit.Beards[0].Id) : null,
-            HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,
+            HairColor = string.IsNullOrEmpty(hair) ? null : hair,
+            HairHighlight = her ? Lore.ShownHighlight(ch.Hair, ch.HairHighlight) : null, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,
             // A hero's face, eyes and paint are their body's own.
             Face = kit != null && ch.Face is { Count: > 0 } face ? new Dictionary<string, double>(face) : null,
             Eyes = eyes != null && eyes.Color != "" ? eyes.Color : null,

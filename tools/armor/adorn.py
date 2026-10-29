@@ -46,6 +46,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "tools", "assets"))
 sys.path.insert(0, HERE)
 import heroine_lod as hl  # noqa: E402
+from carry_targets import closest  # noqa: E402
 import piece_lod as pl  # noqa: E402
 
 ART = os.path.join(ROOT, "godot", "art", "armor")
@@ -58,6 +59,11 @@ GEMS = {"gem_garnet": ((70, 6, 16), (205, 32, 48)), "gem_amethyst": ((52, 14, 78
 ETCH_SKY, ETCH_CONV = 0.28, 0.1      # (the film's sky (x the plate's) and convexity: dark, rough, hollow)
 GROOVE_SKY, GROOVE_CONV = 0.12, 0.04
 FILM = 0.00025                       # (m over the plate: the etch film and the grooves)
+# (m: where the plate under it is itself under her tucked skin (the shell's own check reports that), an adornment is
+# held to within the plate's own thickness of its outer face: a trim's foot is sunk 0.2 mm into it, and a 4 mm band's
+# edge cuts the chord of a rolled edge's curve by a few tenths more)
+SHELL_TOL = 0.0008
+FOOT_R = 0.005                       # (m: an adornment vertex's foot, the deepest shell point within this of it)
 GILT_TOL = 0.0001                    # (m: the nearest-skin measure's own noise between a gilt vertex and its steel, 0.25 mm apart)
 SUNK = 0.0002                        # (m: a trim's foot and a mesh's base into the plate, so no hairline shows)
 
@@ -978,6 +984,10 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
                 sd = sd + tk[j]
             out_ = np.where(d[:, :1] < 0.03, np.median(sd, 1)[:, None], 1.0)[:, 0]
             return (out_, (d, j)) if back else out_
+        # (the shell posed: every new vertex's foot on it, its nearest shell point)
+        bq = pose(base_full)
+        bqt = cKDTree(bq)
+        sall = signed(bq, tucked=True) if tk is not None else None
         for m, sel, src, *tmk in new_by_mesh:
             sd = signed(pose(m, sel))
             if tmk and tmk[0].any() and tk is not None:
@@ -1011,6 +1021,25 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
                             "at", np.round(src[g][bad_][:4], 4).tolist())
                 sd[g] = sd[g] - np.minimum(ss, 0.0)
                 gilt_tucked += int((ss < 0).sum())
+            if tk is not None:
+                # (the shell's own standard for all of it, as the gilt's: a trim, a film or an element on the plate is
+                # through only if it lies under her tucked skin AND deeper in her than the shell at its foot, both
+                # measured on its own nearest skin; where the plate itself lies under her (tucked by the shell's own rule, or
+                # not: the shell's check is its own), what rides on it is no worse than the plate)
+                q_ = pose(m, sel)
+                # (its foot: the deepest in her of the shell's points within FOOT_R of it, the plate under a band or a
+                # rivet rather than the rolled edge beside it standing proud)
+                dk, ik = bqt.query(q_, k=16, distance_upper_bound=FOOT_R)
+                ik = np.where(np.isfinite(dk), ik, bqt.query(q_)[1][:, None])
+                foot = np.take_along_axis(ik, np.argmin(sall[ik], 1)[:, None], 1)[:, 0]
+                sv, nv = signed(q_, tucked=True, back=True)
+                sf = signed(bq[foot], tucked=True, near=nv)
+                # (and the closest place on the shell's faces: its plates are coarse, their points far apart)
+                _, cf, cb = closest(q_, bq, np.asarray(base_full["tris"]).reshape(-1, 3), k=24)
+                cp_ = (bq[np.asarray(base_full["tris"]).reshape(-1, 3)[cf]] * cb[:, :, None]).sum(1)
+                sf = np.minimum(sf, signed(cp_, tucked=True, near=nv))
+                sd = np.maximum(sd, sv - np.minimum(sf, 0.0) + np.where(sf < 0, SHELL_TOL, GILT_TOL))
+                r["held_to_shell"] = r.get("held_to_shell", 0) + int((sf < 0).sum())
             clear.append(sd)
         cl = np.concatenate(clear) if clear else np.zeros(0)
         r["new_vertices"] = int(len(cl))
@@ -1018,7 +1047,6 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
         r["min_clear_mm"] = round(float(cl.min() * 1000), 2) if len(cl) else None
         r["gilt_on_tucked_steel"] = gilt_tucked
         sh = z[f"{pn}__shell"]
-        bq = pose(base_full)
         dd, _ = cKDTree(bq).query(sh)
         r["skinning_check_mm"] = round(float(np.percentile(dd, 99) * 1000), 3)
         out[pn] = r

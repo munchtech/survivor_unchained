@@ -52,6 +52,7 @@
  "oldleather": {
   "kind": "leather",
   "repeats": 4,
+  "rough_floor": 0.75,
   "zone": "leather"
  },
  "velvet": {
@@ -76,6 +77,10 @@
  },
  "plumleather": {
   "kind": "leather",
+  "rough_floor": 0.5,
+  "rough_var": 0.85,
+  "clearcoat": 0.05,
+  "clearcoat_rough": 0.45,
   "repeats": 3,
   "zone": "leather"
  },
@@ -107,6 +112,16 @@
  "glovesatin": {
   "kind": "satin",
   "repeats": 40,
+  "sheen": 0.75,
+  "axis": 2,
+  "along": 0.75,
+  "across": 0.34,
+  "body": 0.64,
+  "turn": 0.78,
+  "cap": 1.35,
+  "wrinkle": 1.0,
+  "wrinkle_top": 1.0,
+  "wrinkle_wrist": -9.0,
   "zone": "cloth"
  },
  "glovepipe": {
@@ -215,5 +230,23 @@
   ],
   "roughness": 0.3,
   "zone": "metal"
+ },
+ "hide": {
+  "kind": "leather",
+  "repeats": 3,
+  "rough_floor": 0.75,
+  "zone": "leather"
+ },
+ "rawhide": {
+  "kind": "leather",
+  "repeats": 3,
+  "rough_floor": 0.85,
+  "zone": "leather"
+ },
+ "burnished": {
+  "kind": "leather",
+  "repeats": 4,
+  "rough_floor": 0.6,
+  "zone": "leather"
  }
 }

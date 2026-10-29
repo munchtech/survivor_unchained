@@ -86,12 +86,13 @@ public sealed partial class Battle
 
     double BearerMend() => Lamps.Has("bearer_of_blows") ? 1 - Lamps.Full("bearer_of_blows", "less", 0.3) : 1;
 
-    /// <summary>A stone laid (a blow taken or blocked, or a parry); at six the wall answers.</summary>
-    void AddStone()
+    /// <summary>A stone laid (a blow taken or blocked, or a parry; or the warden's Hand, `hand`); at six the wall answers.</summary>
+    void AddStone(bool hand = false)
     {
-        if (!Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
+        if (!hand && !Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
         stoneLull = 0;
-        int cap = (int)Lamps.Full("shield_arm", "stones", 6);
+        // Unlit Shield Arm, the warden's Hand's wall answers on its own numbers (and a Parry's stones join it); with no Hand, none does.
+        int cap = (int)WallArg("stones", 6, Content.Hands.Warden.Stones);
         // Parry without Shield Arm lays stones the wall can't answer (no cap, no reach).
         if (cap <= 0) return;
         stoneDrop = 0;
@@ -104,7 +105,7 @@ public sealed partial class Battle
     {
         var p = Player;
         var l = Lamps;
-        double r = l.Full("shield_arm", "radius", 8) * Math.Sqrt(Stats.Get(Stat.Area));
+        double r = WallArg("radius", 8, Content.Hands.Warden.Radius) * Math.Sqrt(Stats.Get(Stat.Area));
         double dmg = RebukePower() + bearerStore;
         Rebukes++;
         bearerStore = 0;
@@ -114,7 +115,7 @@ public sealed partial class Battle
             double dd = d == 0 ? 1 : d;
             double m = e.Elite || e.Boss ? 1 + l.Size("rebuke.champions", "more") : 1;
             // A boss takes a share: the wall breaks the crowd; against a lord of the night it mustn't rival the Flare.
-            if (e.Boss) m *= l.Full("shield_arm", "boss", 1);
+            if (e.Boss) m *= WallArg("boss", 1, Content.Hands.Warden.Boss);
             HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = 1.2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "rebuke" });
         });
     }
@@ -124,7 +125,7 @@ public sealed partial class Battle
     public double RebukePower()
     {
         int level = EmberOn ? EmberLevel : Level;
-        return MaxHp * Lamps.Full("shield_arm", "rebuke", 10) * (1 + Lamps.Full("shield_arm", "per_level", 0.08) * Math.Max(0, level - 1));
+        return MaxHp * WallArg("rebuke", 10, Content.Hands.Warden.Rebuke) * (1 + WallArg("per_level", 0.08, Content.Hands.Warden.PerLevel) * Math.Max(0, level - 1));
     }
 
     /// <summary>The lull is in the fight: no blow taken or blocked and no hostile within 3 m for `lull` seconds, then stones
@@ -133,7 +134,7 @@ public sealed partial class Battle
     {
         if (stones == 0) return;
         if (Lamps.Has("mortar")) return;
-        double lull = Lamps.Full("shield_arm", "lull", 6);
+        double lull = WallArg("lull", 6, Content.Hands.Warden.Lull);
         bool near = false;
         ForEachHostileInRadius(Player.X, Player.Z, 3, (e, d) => near = true);
         if (near) stoneLull = 0; else stoneLull += dt;

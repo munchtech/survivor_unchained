@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Godot;
@@ -28,21 +28,61 @@ public sealed class GroundPaint
     /// quarter metre: R the open sky (0 under a crown, by a wall and under its eaves; 1 in the open; blurred about a
     /// metre), G the sun on the ground for the thaw (0 in the shade of a crown or a wall at the key's angle; baked by
     /// SunAt), B the lie of the land over 10-40 m (0.5 level; up to 1 in a damp low, down to 0 on a dry rise).</summary>
-    public readonly ImageTexture Exposure;
+    public ImageTexture Exposure => exposure ??= ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
+    ImageTexture? exposure;
+    byte[] exposurePx;
+    /// <summary>The sun the exposure was baked for (SunAt; null: none yet).</summary>
+    Vector3? baked;
 
     static readonly ConditionalWeakTable<ZoneData, GroundPaint> Made = new();
     static GroundPaint? latest;
     static Vector3? sun;
 
-    public static GroundPaint Of(ZoneData z) => latest = Made.GetValue(z, k => new GroundPaint(k));
+    public static GroundPaint Of(ZoneData z)
+    {
+        var p = latest = Made.GetValue(z, k => new GroundPaint(k));
+        // Made ahead (Ready), the sun may have moved since: baked again for it, as it would have been made now.
+        if (sun is Vector3 s && p.baked != s) { Perf.Lap("ground paint: (before)"); p.BakeSun(s); Perf.Lap("ground paint: baked again for the sun"); }
+        return p;
+    }
+
+    /// <summary>The paint worked out ahead of its place being built, on a worker thread (Game.Prepare): it is the
+    /// latest only once its place is built (Of). Its textures are made on the main thread as they are first asked for.</summary>
+    public static void Ready(ZoneData z) => Made.GetValue(z, k => new GroundPaint(k));
+
+    /// <summary>The zone's paint, without making it the latest (a place built ahead: Of makes it so once it is added).</summary>
+    public static GroundPaint Ahead(ZoneData z) => Made.GetValue(z, k => new GroundPaint(k));
 
     /// <summary>The thaw's sun (toward the light): the latest zone's sun on the ground is baked for it.</summary>
     public static void SunAt(Vector3 dir)
     {
         if (dir.Y < 0.05f || sun is Vector3 was && was.AngleTo(dir) < 0.02f) return;
         sun = dir;
-        latest?.BakeSun(dir);
+        if (latest == null) return;
+        // Baked ahead for this sun (SunAhead): taken (waited for, if it is not done: no longer than baking it here).
+        int k = latest.sunsAhead.FindIndex(a => a.Dir.AngleTo(dir) < 1e-4f);
+        if (k >= 0)
+        {
+            var px = latest.sunsAhead[k].Px.Result;
+            latest.sunsAhead.RemoveAt(k);
+            latest.TakeSun(dir, px);
+            return;
+        }
+        latest.BakeSun(dir);
     }
+
+    /// <summary>The thaw's sun baked ahead for the latest zone on a worker thread (a cinematic about to bring up a
+    /// dawn: Game.Cine.SunAhead), so SunAt only takes it. Its result is the same as SunAt baking it then.</summary>
+    public static void SunAhead(Vector3 dir)
+    {
+        if (latest is not { } p || dir.Y < 0.05f || p.baked is Vector3 b && b.AngleTo(dir) < 1e-4f
+            || p.sunsAhead.Exists(a => a.Dir.AngleTo(dir) < 1e-4f)) return;
+        // (a few at most: a cinematic's suns; the oldest let go)
+        if (p.sunsAhead.Count >= 4) p.sunsAhead.RemoveAt(0);
+        p.sunsAhead.Add((dir, System.Threading.Tasks.Task.Run(() => p.SunPx(dir))));
+    }
+
+    readonly List<(Vector3 Dir, System.Threading.Tasks.Task<byte[]> Px)> sunsAhead = new();
 
     // Tunable from the command line for sweeps (SurvivorUnchained.Args).
     internal static readonly float RoadHalf = Args.Num("road-half", 1.55f);      // the made surface, half its width
@@ -52,7 +92,7 @@ public sealed class GroundPaint
     internal static readonly float RutCore = Args.Num("road-rut-core", 0.16f);    // half the core's width
     internal static readonly float RutFeather = Args.Num("road-rut-feather", 0.15f);
     internal static readonly float ClearingSoft = Args.Num("clearing-soft", 2.2f);  // a clearing's dirt edge blurred over this (m)
-    internal static readonly float PoolEvery = Args.Num("pool-every", 80f);   // open setts: one puddle in this many square metres
+    internal static readonly float PoolEvery = Args.Num("pool-every", 0f);   // open setts: one puddle in this many square metres (0: none)
     internal static readonly bool PoolsOn = !Args.Has("no-pools");
     internal static float RutW => RutCore + RutFeather * 0.5f;                       // a rut's half width, to its shoulder's middle
 
@@ -266,8 +306,9 @@ public sealed class GroundPaint
                     }
                 }
             }
-            // The open setts: about one in 50 square metres of them.
-            int many = (int)(size * size / PoolEvery);
+            // The open setts: one in PoolEvery square metres of them. (E9e r3: off by default: a round pool in the open square
+            // with nothing over it read as a stain or a manhole; the mud pools gather at what stands instead.)
+            int many = PoolEvery > 0f ? (int)(size * size / PoolEvery) : 0;
             for (int k = 0; k < many; k++)
             {
                 float x = PU(-half, half), zz = PU(-half, half);
@@ -409,8 +450,9 @@ public sealed class GroundPaint
         for (int j = 0; j < er; j++)
             for (int i = 0; i < er; i++)
                 lie[j * er + i] = (byte)(Mathf.Clamp(0.5f + Sample(lows, n, st, half, -half + (i + 0.5f) * et, -half + (j + 0.5f) * et) / (3f * sd), 0, 1) * 255);
-        Exposure = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(null)));
-        Near = ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, MakeNear(z, px, sr)));
+        // (Near first: it lays the setts' course direction, which the exposure's A carries.)
+        nearPx = MakeNear(z, px, sr);
+        exposurePx = Pack(null);
         if (sun is Vector3 sdir) BakeSun(sdir);
         // --ground-dump DIR: both as PNGs, to check them by eye.
         if (Args.Get("ground-dump") is { } dumpDir)
@@ -426,7 +468,9 @@ public sealed class GroundPaint
     /// to a wall or a building's base (0-2 m), for the gutters and the weeds in the joints; G to anything standing (walls,
     /// the well, stalls, fences, posts), for the grime; B the setts' wear lane (1 down the middle of a street or the
     /// square's ways, about 1.5 m wide).</summary>
-    public readonly ImageTexture Near;
+    public ImageTexture Near => near ??= ImageTexture.CreateFromImage(Image.CreateFromData(er, er, false, Image.Format.Rgba8, nearPx));
+    ImageTexture? near;
+    readonly byte[] nearPx;
 
     byte[] MakeNear(ZoneData z, byte[] sp, int sr)
     {
@@ -488,8 +532,32 @@ public sealed class GroundPaint
             for (int k = 0; k < lane.Length; k++)
                 lane[k] = (1f - Mathf.SmoothStep(0.45f, 1.0f, mx[k] - dd[k])) * Mathf.SmoothStep(1.0f, 2.0f, dd[k]);
             lane = Blur(lane, sr, Math.Max(1, (int)(0.3f / smt)));
+            // The courses' direction (E9e r2: courses run across a street, so the east road's must turn): the structure
+            // tensor of the distance's gradient over about 3 m. Across a street that gradient points from kerb to kerb, so
+            // where it lies mostly along z (an east-west street) the courses run north-south. 0 courses along x, 1 along z.
+            var jxx = new float[sr * sr];
+            var jzz = new float[sr * sr];
+            for (int j = 1; j < sr - 1; j++)
+                for (int i = 1; i < sr - 1; i++)
+                {
+                    int k = j * sr + i;
+                    if (dd[k] == 0) continue;
+                    float gx = (dd[k + 1] - dd[k - 1]) / (2 * smt), gz = (dd[k + sr] - dd[k - sr]) / (2 * smt);
+                    jxx[k] = gx * gx; jzz[k] = gz * gz;
+                }
+            int rb = Math.Max(1, (int)(1.5f / smt));
+            jxx = Blur(Blur(jxx, sr, rb), sr, rb);
+            jzz = Blur(Blur(jzz, sr, rb), sr, rb);
+            dirS = new float[sr * sr];
+            for (int k = 0; k < dirS.Length; k++) dirS[k] = jzz[k] / (jxx[k] + jzz[k] + 1e-6f);
+            // (The distance off the splat's texels stair-stepped the kerb: centred on the texel's edge, blurred twice over
+            // a texel, and read bilinearly below, its contours run smooth.)
+            distS = new float[sr * sr];
+            for (int k = 0; k < dd.Length; k++) distS[k] = dd[k] > 0 ? dd[k] - 0.5f * smt : -0.5f * smt;
+            distS = Blur(Blur(distS, sr, 1), sr, 1);
         }
         var o8 = new byte[er * er * 4];
+        courseDir = new byte[er * er];
         for (int j = 0; j < er; j++)
             for (int i = 0; i < er; i++)
             {
@@ -503,13 +571,26 @@ public sealed class GroundPaint
                     l = lane[sj * sr + si];
                 }
                 o8[k * 4 + 2] = (byte)(Mathf.Clamp(l, 0, 1) * 255);
-                o8[k * 4 + 3] = 255;
+                // A: the distance into the setts from their edge (0-2 m; the shader's edge band and kerb read it).
+                float din = 0, dir = 0;
+                if (any)
+                {
+                    float fx = Math.Clamp((i + 0.5f) * et / smt - 0.5f, 0, sr - 1.001f), fz = Math.Clamp((j + 0.5f) * et / smt - 0.5f, 0, sr - 1.001f);
+                    int si = (int)fx, sj = (int)fz;
+                    float ax = fx - si, az = fz - sj;
+                    float Bi(float[] a) => (a[sj * sr + si] * (1 - ax) + a[sj * sr + si + 1] * ax) * (1 - az) + (a[(sj + 1) * sr + si] * (1 - ax) + a[(sj + 1) * sr + si + 1] * ax) * az;
+                    din = Bi(distS); dir = Bi(dirS);
+                }
+                o8[k * 4 + 3] = (byte)(Mathf.Clamp(din / 2f, 0, 1) * 255);
+                courseDir[k] = (byte)(Mathf.Clamp(dir, 0, 1) * 255);
             }
         return o8;
     }
 
     readonly int er;
     readonly float et, half;
+    byte[] courseDir = Array.Empty<byte>();
+    float[] dirS = Array.Empty<float>(), distS = Array.Empty<float>();
     readonly float[] skyBlur = Array.Empty<float>();
     readonly byte[] lie = Array.Empty<byte>();
     readonly List<(Vector2 C, float R, float Lo, float Hi, float K)> shelters = new();
@@ -519,7 +600,17 @@ public sealed class GroundPaint
 
     /// <summary>The sun on the ground for a key toward `dir`: a crown shades the ground where the ray to the sun
     /// passes through it (a capsule from the crown along the shadow), a wall where it passes under its top.</summary>
-    void BakeSun(Vector3 dir)
+    void BakeSun(Vector3 dir) => TakeSun(dir, SunPx(dir));
+
+    void TakeSun(Vector3 dir, byte[] px)
+    {
+        baked = dir;
+        exposurePx = px;
+        exposure?.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, exposurePx));
+    }
+
+    /// <summary>The exposure with the sun toward `dir` (reads only what the constructor made: any thread).</summary>
+    byte[] SunPx(Vector3 dir)
     {
         var lit = new float[er * er];
         Array.Fill(lit, 1f);
@@ -541,7 +632,7 @@ public sealed class GroundPaint
                 }
         }
         lit = Blur(Blur(lit, er, 1), er, 1);
-        Exposure.Update(Image.CreateFromData(er, er, false, Image.Format.Rgba8, Pack(lit)));
+        return Pack(lit);
     }
 
     byte[] Pack(float[]? lit)
@@ -552,7 +643,7 @@ public sealed class GroundPaint
             ex[k * 4] = (byte)(Mathf.Clamp(skyBlur[k], 0, 1) * 255);
             ex[k * 4 + 1] = lit == null ? (byte)255 : (byte)(Mathf.Clamp(lit[k], 0, 1) * 255);
             ex[k * 4 + 2] = lie[k];
-            ex[k * 4 + 3] = 255;
+            ex[k * 4 + 3] = courseDir.Length == er * er ? courseDir[k] : (byte)0;   // the setts' course direction (MakeNear)
         }
         return ex;
     }

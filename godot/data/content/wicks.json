@@ -1,0 +1,65 @@
+{
+  // The Wicks (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.3): every skill's own small tree, 12 lamps in three
+  // strands of four, the fourth a Turn. Read by Content/Wicks.cs; WickBook plans them, Sim/Turns.cs fights them.
+  // A strand's lamps are "<strand>.1" to "<strand>.3" (lead-ins) and "<strand>.4" (its Turn).
+
+  // The lead-ins every library strand of a kind shares. Increases add: two +10% damage lamps are +20%.
+  // "area" with "projectileSpeed": a projectile skill takes the speed instead of the area.
+  // School lead-ins act on the strand's Turn's status: "statusChance" is the chance a hit applies it,
+  // "vsStatus" more damage to what has it, "statusDuration" more of its time.
+  "leadIns": {
+    "shape": [
+      { "text": "+10% damage", "damage": 0.10 },
+      { "text": "+10% area (projectiles: +15% speed)", "area": 0.10, "projectileSpeed": 0.15 },
+      { "text": "8% shorter cooldown", "cooldown": -0.08 }
+    ],
+    "school": [
+      { "text": "15% chance to {status}", "statusChance": 0.15 },
+      { "text": "+10% damage to {statused} enemies", "vsStatus": 0.10 },
+      { "text": "{Status} lasts 15% longer", "statusDuration": 0.15 }
+    ],
+    "bind": [
+      { "text": "+10% damage", "damage": 0.10 },
+      { "text": "+10% damage to champions", "vsChampion": 0.10 },
+      { "text": "8% shorter cooldown", "cooldown": -0.08 }
+    ]
+  },
+
+  // The Turns, built once (Sim/Turns.cs). Multipliers: projectiles, damage, area, cooldown. Counts add: chains,
+  // bounces. "ground": what it leaves where it strikes (its school's ground). "school": it becomes that school,
+  // and "status" is that school's status (what its lead-ins and a converted status give). "inert": in the data
+  // and the planner, but not yet in the fight (P5b).
+  "turns": {
+    "split":  { "name": "Split",  "text": "Three smaller: three times the projectiles, each 28% damage and 75% size.", "projectiles": 3, "damage": 0.28, "area": 0.75 },
+    "chain":  { "name": "Chain",  "text": "It bounces twice more, at 85% damage.", "chains": 2, "bounces": 2, "damage": 0.85 },
+    "wide":   { "name": "Wide",   "text": "Bigger and slower: 20% larger, 30% longer cooldown, 15% less damage.", "area": 1.2, "cooldown": 1.3, "damage": 0.85 },
+    "linger": { "name": "Linger", "text": "It leaves 1.5 m of its own ground for 2 s, burning at 25% of its damage a second.", "ground": { "radius": 1.5, "duration": 2, "dpsPct": 0.25 } },
+    "pulse":  { "name": "Pulse",  "text": "It goes off three times, smaller.", "inert": true },
+    "onkill": { "name": "On-kill", "text": "It fires again from what it kills.", "inert": true },
+    "fire":   { "name": "Fire",   "text": "It becomes fire: it burns, and strikes 10% harder.", "damage": 1.1, "school": "fire", "statused": "burning", "status": { "kind": "burn", "chance": 1, "power": 0.8, "duration": 3 } },
+    "frost":  { "name": "Frost",  "text": "It becomes frost: it chills, and strikes 10% harder.", "damage": 1.1, "school": "frost", "statused": "chilled", "status": { "kind": "chill", "chance": 1, "power": 1, "duration": 2.5 } },
+    "holy":   { "name": "Holy",   "text": "It becomes holy: it sears (dazzled for a moment; holy strikes it harder), and strikes 10% harder.", "damage": 1.1, "school": "holy", "statused": "seared", "status": { "kind": "sear", "chance": 1, "power": 0.5, "duration": 1 } }
+  },
+
+  // The library's strands: kind, Turn, lead-ins, and which skills it suits. "suits" is a list of alternatives,
+  // each matching on behavior (any listed), tags (any listed) and "splash" (an explosion); absent, everything.
+  // A school strand never suits a skill already of its school.
+  "strands": {
+    "split":  { "kind": "shape", "turn": "split",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] } ] },
+    "chain":  { "kind": "shape", "turn": "chain",  "suits": [ { "tags": ["projectile"], "behaviors": ["aimed", "spray", "ring", "bounce", "chakram"] }, { "behaviors": ["chain", "bounce"] } ] },
+    "wide":   { "kind": "shape", "turn": "wide",   "suits": [ { "behaviors": ["slash", "nova", "zone"] }, { "behaviors": ["aimed"], "splash": true } ] },
+    "linger": { "kind": "shape", "turn": "linger", "suits": [ { "behaviors": ["aimed", "slash", "nova"] }, { "splash": true } ] },
+    "pulse":  { "kind": "shape", "turn": "pulse",  "suits": [ { "behaviors": ["nova", "zone", "aimed"] } ] },
+    "onkill": { "kind": "bind",  "turn": "onkill" },
+    "fire":   { "kind": "school", "turn": "fire" },
+    "frost":  { "kind": "school", "turn": "frost" },
+    "holy":   { "kind": "school", "turn": "holy" }
+  },
+
+  // Each skill's three strands and the one Light my way follows first. "own" defines a bespoke strand for this
+  // skill alone (same fields as a library strand, its lead-ins written out in "lamps").
+  "skills": {
+    "oathblade":      { "strands": ["wide", "linger", "holy"], "suggested": "wide" },
+    "judgement_disc": { "strands": ["chain", "split", "fire"], "suggested": "chain" }
+  }
+}

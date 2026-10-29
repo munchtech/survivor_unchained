@@ -95,6 +95,20 @@ public partial class CreateScreen
         }
         v.AddChild(Kit.Head("Hair color"));
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => { d.Section = LookHair; d.Hair = id; }, Bead.Kind.Hair, OwnHair().ToHtml(false)));
+        // (highlights: a second colour on some of her locks, off by default; on, her hair colour's own until one is
+        // picked (copper on black, honey on brown, platinum on blonde: Lore.DefaultHighlight))
+        // (parked, face 40: the row hidden while Lore.ShowHighlights is off; a saved highlight loads but shows off)
+        if ((Lore.ShowHighlights || Lore.ForceHighlights) && Lore.HairHighlights.Count > 0)
+        {
+            bool on = d.HairHighlight != "";
+            v.AddChild(Kit.Head("Highlights"));
+            v.AddChild(Cycle(on ? "Highlights on" : "No highlights", on ? 1 : 0, 2, i => Set(() => { d.Section = LookHair; d.HairHighlight = i == 1 ? Lore.HighlightAuto : ""; }), "cycle:highlight"));
+            if (on)
+            {
+                var shown = d.HairHighlight == Lore.HighlightAuto ? Lore.DefaultHighlight(d.Hair) : d.HairHighlight;
+                v.AddChild(Beads(Lore.HairHighlights, shown, id => { d.Section = LookHair; d.HairHighlight = id; }, Bead.Kind.Hair, "", ":highlight"));
+            }
+        }
         if (k.Eyes.Count > 1)
         {
             v.AddChild(Kit.Head("Eyes"));
@@ -198,7 +212,7 @@ public partial class CreateScreen
     /// one chosen ringed in gold. More than a line holds is laid as two even rows, the second centred under
     /// the first. The name under them is the focused bead's, else the chosen one's. Skin carries no name
     /// anywhere (the owner: no name that could read as race) and is laid light to deep.</summary>
-    Control Beads(List<LookChoice> list, string now, Action<string> set, Bead.Kind kind, string own)
+    Control Beads(List<LookChoice> list, string now, Action<string> set, Bead.Kind kind, string own, string tag = "")
     {
         Color Of(LookChoice c) => c.Color != "" ? new Color(c.Color) : own != "" ? new Color(own) : new Color("#6b8a3a");
         bool named = kind != Bead.Kind.Skin;
@@ -225,7 +239,7 @@ public partial class CreateScreen
             if (named) b.TooltipText = c.Name;
             void Take() => Set(() => set(id));
             Nav.Loud(Nav.Rounded(b, 21));
-            Nav.Mark(b, $"bead:{kind}:{id}", Take, focus: named ? () => caption.Text = c.Name : null, blur: named ? () => { if (IsInstanceValid(caption)) caption.Text = chosen; } : null);
+            Nav.Mark(b, $"bead:{kind}{tag}:{id}", Take, focus: named ? () => caption.Text = c.Name : null, blur: named ? () => { if (IsInstanceValid(caption)) caption.Text = chosen; } : null);
             b.Pressed += Take;
             line!.AddChild(b);
         }

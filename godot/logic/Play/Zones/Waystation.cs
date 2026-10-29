@@ -508,6 +508,10 @@ public sealed class Waystation : ZoneRuntime
             if (Dark != nightNow) { nightNow = Dark; SetNight(nightNow); }
         }
         Marks(dt);
+        // The corner map (au1 item 14: never taught), once she is in the town and the screen has been
+        // clear 4 s (C04 B and its words over): what its marks are, and the key for the whole map.
+        G.Teach(new Callout("minimap", CalloutKind.Arrow, "The map", $"Who has news for you, and the ways out. {G.KeyLabel("map")}: the whole map.", Aim.At("minimap"))
+            { Quiet = 4, Mark = "map", Patience = 1e9 });
         plates.Clear();
         foreach (var (id, a) in Actors)
         {
@@ -550,7 +554,7 @@ public sealed class Waystation : ZoneRuntime
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["folk"] = folk.Count, ["lanes"] = folk.Validate(), ["night"] = nightNow,
+        ["folk"] = folk.Count, ["lanes"] = string.Join("|", folk.Validate()), ["night"] = nightNow,
     };
 
     public override void Dispose()

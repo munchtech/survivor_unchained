@@ -1903,7 +1903,7 @@
    "amount": 0.9
   },
   "moss": 0,
-  "count": 15
+  "count": 14
  },
  {
   "kind": "mushroom",
@@ -1987,7 +1987,7 @@
    "amount": 0.9
   },
   "moss": 0,
-  "count": 11
+  "count": 10
  },
  {
   "kind": "dead",
@@ -3679,21 +3679,7 @@
    "amount": 0.9
   },
   "moss": 0,
-  "count": 12
- },
- {
-  "kind": "bush",
-  "piece": "Bush_Common",
-  "sx": 1.0393466963622866,
-  "sy": 1.0393466963622866,
-  "wind": 0.6,
-  "leaves": {
-   "a": "#3c5a2a",
-   "b": "#52682e",
-   "amount": 0.9
-  },
-  "moss": 0,
-  "count": 14
+  "count": 8
  },
  {
   "kind": "bush",
@@ -3708,6 +3694,20 @@
   },
   "moss": 0,
   "count": 13
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "wind": 0.6,
+  "leaves": {
+   "a": "#3c5a2a",
+   "b": "#52682e",
+   "amount": 0.9
+  },
+  "moss": 0,
+  "count": 9
  },
  {
   "kind": "rock",
@@ -3751,7 +3751,7 @@
    "amount": 0.9
   },
   "moss": 0,
-  "count": 6
+  "count": 5
  },
  {
   "kind": "rock",
@@ -5821,7 +5821,7 @@
   "wind": 0.35,
   "leaves": null,
   "moss": 0,
-  "count": 4
+  "count": 3
  },
  {
   "kind": "boulder",
@@ -6841,7 +6841,7 @@
    "amount": 0.85
   },
   "moss": 0,
-  "count": 2
+  "count": 1
  },
  {
   "kind": "dead",
@@ -7583,7 +7583,7 @@
   "wind": 0.25,
   "leaves": null,
   "moss": 0,
-  "count": 26
+  "count": 25
  },
  {
   "kind": "fern",
@@ -11758,5 +11758,99 @@
   "leaves": null,
   "moss": 0.25,
   "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.5,
+  "count": 11
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "wind": 0.5,
+  "leaves": null,
+  "moss": 0,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.5,
+  "count": 9
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "wind": 0.45,
+  "leaves": null,
+  "moss": 0,
+  "count": 8
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "wind": 0.6,
+  "leaves": {
+   "a": "#3c5a2a",
+   "b": "#52682e",
+   "amount": 0.9
+  },
+  "moss": 0,
+  "count": 15
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.5,
+  "count": 7
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.6,
+  "count": 9
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.6,
+  "count": 7
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "wind": 0,
+  "leaves": null,
+  "moss": 0.6,
+  "count": 8
  }
 ]

@@ -75,12 +75,20 @@ public static class Lamps
 
     /// <summary>The glass: unshaded, the flame's tint faint inside it, a fresnel edge (shaders/lamp_glass).</summary>
     /// <summary>--lamp-glass K, --lamp-glass-a A: the lit glass's brightness and cover, for pictures.</summary>
-    static readonly float GlassK = SurvivorUnchained.Args.Num("lamp-glass", 2.2f), GlassA = SurvivorUnchained.Args.Num("lamp-glass-a", 0.45f);
+    static readonly float GlassK = SurvivorUnchained.Args.Num("lamp-glass", 1.0f), GlassA = SurvivorUnchained.Args.Num("lamp-glass-a", 0.3f);
+    /// <summary>(Low Ford r1: 2.2 and 0.45 to 1.0 and 0.3: the post lantern's lit glass, seen through two panes from above, was a
+    /// pale box round its flame. The town's wall glass keeps the old: ZoneView.Town's WallGlassOf.)</summary>
+    public const float OldGlassK = 2.2f, OldGlassA = 0.45f;
     /// <summary>--lamp-glass-warm HEX, --lamp-glass-cold HEX: the lit glass's tint, for pictures (AgX greys a pale tint: saturated).</summary>
     static readonly string GlassWarm = SurvivorUnchained.Args.Get("lamp-glass-warm") ?? "#ff8a30", GlassCold = SurvivorUnchained.Args.Get("lamp-glass-cold") ?? "#3d70ff";
-    /// <summary>--ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
-    static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.04f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
+    /// <summary>(Low Ford r3, judge r2: the ford irons read unlit, cold white: 0.04 to 0.2, the glass lit blue round its flame)
+    /// --ford-glass K, --ford-glass-a A, --ford-edge K, --ford-edge-a A: the ford irons' cold glass brightness and cover (its face under the flame), for pictures.</summary>
+    static readonly float FordGlassK = SurvivorUnchained.Args.Num("ford-glass", 0.2f), FordGlassA = SurvivorUnchained.Args.Num("ford-glass-a", 0.3f),
         FordEdge = SurvivorUnchained.Args.Num("ford-edge", 0.2f), FordEdgeA = SurvivorUnchained.Args.Num("ford-edge-a", 0.3f);
+    /// <summary>--lamp-edge K, --lamp-edge-a A: the warm glass's fresnel edge brightness and cover, for pictures.</summary>
+    static readonly float WarmEdge = SurvivorUnchained.Args.Num("lamp-edge", 0.1f), WarmEdgeA = SurvivorUnchained.Args.Num("lamp-edge-a", 0.2f);
+    /// <summary>The lit glass's material (warm or cold), for a lamp made in code (ZoneView.Town's wall lanterns).</summary>
+    public static ShaderMaterial GlassOf(bool isCold) => Glass(isCold);
     static ShaderMaterial Glass(bool isCold)
     {
         ref var slot = ref isCold ? ref cold : ref warm;
@@ -90,6 +98,10 @@ public static class Lamps
         m.SetShaderParameter("glow_strength", isCold ? FordGlassK : 0.24f * GlassK);
         m.SetShaderParameter("lit_alpha", isCold ? FordGlassA : GlassA);
         if (isCold) { m.SetShaderParameter("edge_k", FordEdge); m.SetShaderParameter("edge_alpha", FordEdgeA); }
+        // (Low Ford r1) the warm glass's fresnel edge as the town's wall lanterns have it (ZoneView.Town's WallGlassOf): from the
+        // play camera the post lantern shows two panes at a slant over its whole cage, and at the shader's 0.35/0.45 that edge
+        // made the cage a pale box round a flame too small to find
+        else { m.SetShaderParameter("edge_k", WarmEdge); m.SetShaderParameter("edge_alpha", WarmEdgeA); }
         // Drawn before the flames (theirs 1): the flame shows through its glass, not dimmed behind it.
         m.RenderPriority = -1;
         slot = m;
@@ -97,7 +109,7 @@ public static class Lamps
     }
 
     /// <summary>--lamp-inner K: how strongly a lamp's flame lights its own iron from inside (shaders/lamp_inner), for pictures.</summary>
-    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-inner", 6f);
+    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-inner", 2f);   // (Low Ford r1: 6 to 2, the cage's floor lit pale under the flame)
     /// <summary>--ford-inner K: the same for the ford irons' cold flame, for pictures.</summary>
     static readonly float FordInnerK = SurvivorUnchained.Args.Num("ford-inner", 2f);
     /// <summary>The holder's iron lit from inside by its flame at <paramref name="flame"/> (world, the flame's middle):
@@ -132,7 +144,7 @@ public static class Lamps
     static bool IsGlass(MeshInstance3D m)
     {
         for (int i = 0; m.Mesh != null && i < m.Mesh.GetSurfaceCount(); i++)
-            if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial s && (s == warm || s == cold)) return true;
+            if (m.GetSurfaceOverrideMaterial(i) is ShaderMaterial s && (s == warm || s == cold || s.Shader == warm?.Shader)) return true;   // (or a copy of it: ZoneView.Town's wall glass)
         return false;
     }
 }

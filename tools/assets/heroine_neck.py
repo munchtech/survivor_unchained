@@ -241,7 +241,7 @@ def field():
                 body=z["body"].astype(float), head=z["head"].astype(float))
 
 
-def match_pieces(path, field, hair=False):
+def match_pieces(path, field, hair=False, only=None):
     """A piece or hair file (glb or gltf) given the graft's change (match_graft's field) where her graft was the
     skin it took its weights from: an outfit's points took the nearest point of her body (heroine_rig's sampler,
     her head not in it), hair's the nearest of her head or body within 2 cm, fading out by 5 (heroine_hair rig).
@@ -283,6 +283,9 @@ def match_pieces(path, field, hair=False):
         meshes = {n["mesh"] for n in g["nodes"] if n.get("skin") == si and "mesh" in n}
         done = set()
         for mi in meshes:
+            # (only: a test on the mesh's name; the cuirass grafts its leather (straps, band), never its rigid plate)
+            if only is not None and not only(g["meshes"][mi].get("name", "")):
+                continue
             for p in g["meshes"][mi]["primitives"]:
                 at = p["attributes"]
                 if "JOINTS_0" not in at or "JOINTS_1" in at or at["WEIGHTS_0"] in done:

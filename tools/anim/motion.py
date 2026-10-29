@@ -8,7 +8,9 @@ For every frame of a clip (her springs running, as in the game), it measures:
   breasts, her legs, her head, the other arm), on her skin, and with each
   outfit's thickness laid on (an arm in a bracer against a plate cup meets
   it sooner). Depths are in millimetres; the armpit, where skin is meant to
-  fold, is kept apart;
+  fold, is kept apart; and **near**: the closest the forearm and hand come
+  to her, or to each outfit (mm, the worst frame; + clear, - into it; none
+  within 8 cm: >80), so a hand meant to rest close beside her is seen to;
 - **volume**: how much of the flesh round each elbow, wrist and knee is kept
   as it bends and turns (the region from 8 cm up the bone above to 8 cm
   down the one below, as a share of its volume at rest). Linear skinning
@@ -44,6 +46,7 @@ from rig import qinv, qmul, qrot  # noqa: E402
 import skin  # noqa: E402
 from skin import OUT, Body, Gltf  # noqa: E402
 import audit  # noqa: E402
+import staged  # noqa: E402
 
 OUTFITS = ("warden", "arcanist", "reaver", "ranger")
 
@@ -491,6 +494,8 @@ def summarise(m: Measure, res, outfits):
             where = {}
             breast = 0.0
             frames_bad = 0
+            # The closest the forearm and hand come to her (or the outfit's surface), mm: + clear, - into it.
+            near_min = np.inf
             for f, (dist, hit, brst, near) in enumerate(res[tag][s]):
                 ok = np.isfinite(dist)
                 if not ok.any():
@@ -512,6 +517,9 @@ def summarise(m: Measure, res, outfits):
                             where[zn] = (f, parts[hit[i]] if hit[i] >= 0 else "-", bool(brst[i]))
                         if zi > 0 and dz > 0.005:
                             bad = True
+                ml = ok & (zone >= 2)
+                if ml.any():
+                    near_min = min(near_min, float(-d[ml].max()))
                 mb = ok & brst
                 if mb.any():
                     breast = max(breast, float(d[mb].max()))
@@ -519,6 +527,7 @@ def summarise(m: Measure, res, outfits):
             out[f"contact_{s}_{cov_name}"] = {k: round(1000 * max(v, 0), 1) for k, v in worst.items()}
             out[f"contact_{s}_{cov_name}"]["breast"] = round(1000 * max(breast, 0), 1)
             out[f"contact_{s}_{cov_name}"]["frames"] = frames_bad
+            out[f"contact_{s}_{cov_name}"]["near"] = round(1000 * near_min, 1) if np.isfinite(near_min) else None
             out[f"contact_{s}_{cov_name}"]["at"] = where
     out["volume"] = {k: round(100 * min(v), 1) for k, v in res["volume"].items()}
     w = res["wrist"]
@@ -540,6 +549,7 @@ def clip_names(folder, want):
 
 def main(argv):
     global CLIP_FOLDER
+    argv = staged.set_from_argv(argv)   # --raw: the clips as written, not as the game plays them
     if "--folder" in argv:
         i = argv.index("--folder")
         CLIP_FOLDER = Path(argv[i + 1])
@@ -556,8 +566,10 @@ def main(argv):
         mw = None
         folder = OUT / "hero"
     else:
-        m = Measure(Body.heroine(jiggle=True), outfits)
-        mw = Measure(Body.heroine(outfit=None, jiggle=True), ()) if outfits else None
+        # (Animation 52, Body 14's call: posed with her helper bones driven, as the game does; without them an elbow
+        # bent past ~60 read 26-36 volume where the game keeps 79-87.)
+        m = Measure(Body.heroine(jiggle=True, helpers=True), outfits)
+        mw = Measure(Body.heroine(outfit=None, jiggle=True, helpers=True), ()) if outfits else None
         if mw is not None:
             mw.b.jiggle.amount, mw.b.jiggle.squash = 0.55, 0.0
             mw.cover = m.cover
@@ -581,7 +593,8 @@ def line(n, s, outfits):
     c = []
     for side in "lr":
         k = s[f"contact_{side}_skin"]
-        c.append(f"{side}: up {k['upper']:4.0f} fa {k['forearm']:4.0f} hd {k['hand']:4.0f} br {k['breast']:4.0f} pit {k['armpit']:3.0f}")
+        nr = "  >80" if k.get("near") is None else f"{k['near']:5.0f}"
+        c.append(f"{side}: up {k['upper']:4.0f} fa {k['forearm']:4.0f} hd {k['hand']:4.0f} br {k['breast']:4.0f} pit {k['armpit']:3.0f} near {nr}")
         for o in outfits:
             ko = s[f"contact_{side}_{o}"]
             c.append(f"{o[:3]} {max(ko['upper'], ko['forearm'], ko['hand']):3.0f}")

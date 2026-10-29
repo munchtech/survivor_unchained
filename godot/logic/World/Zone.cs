@@ -101,6 +101,10 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public string PaintShadow { get; init; } = "";
     public double PaintShadowK { get; init; }
     public double PaintLift { get; init; }
+    /// <summary>How much of skin's hues (Oklab h 15-90, C over 0.012) the painted shadow spares (0: none; Face 44, skin A0). Laid on
+    /// her shaded skin, the blue lerp passed through red and violet on the way: deep skin's shade side went from h 40-55 to
+    /// 20-43, brick-red and purple patches with hard edges where her shade crossed its L and C thresholds.</summary>
+    public double PaintShadowSkin { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
 }
@@ -124,6 +128,14 @@ public sealed record AtmospherePreset(
     public double RiverLight { get; init; } = 1;
     public double RiverSky { get; init; } = 1;
     public double RiverBend { get; init; } = 1;
+    /// <summary>(Low Ford r3) How far the river's moon glint is the water look's moonlight (moon_*: rougher, sparse, a soft column, tinted; the water shader's water_air.w); 0 as built.</summary>
+    public double RiverMoon { get; init; } = 0;
+    /// <summary>(Low Ford r3) How far a warm lamp's or fire's light on our own grass turns toward ochre, its lime taken out (grass_own.gdshader's flora_lamp); 0 as built.</summary>
+    public double GrassLampOchre { get; init; } = 0;
+    /// <summary>(Low Ford lf5p) Our broadleaf bushes' and alders' leaves by night pulled this share toward their own grey (kit.gdshader's flora_night.x); 0 as built.</summary>
+    public double BushNightSat { get; init; } = 0;
+    /// <summary>(Low Ford lf5p) How far the meadow ground in her ember's pool turns from green to straw, so her warm light reads ochre on it, not chartreuse (terrain.gdshader's flora_night.y; her own lighting untouched); 0 as built.</summary>
+    public double GroundEmberOchre { get; init; } = 0;
     /// <summary>Hoar frost on the ground's exposed tops in play (0: none; 1: a night's full frost; look bible 1f),
     /// and how much of it the sun has thawed where it falls (0: none; 1: all of it, leaving it in the shade).</summary>
     public double Frost { get; init; }
@@ -169,7 +181,58 @@ public sealed class ZoneMeta
     public WaterMaskDef? WaterMask;
     public int LandmarkMeshes;
 
-    public static ZoneMeta Load(string id) => Json.Parse<ZoneMeta>(DataFiles.Text($"zones/{id}/zone.json"));
+    public static ZoneMeta Load(string id)
+    {
+        var z = Json.Parse<ZoneMeta>(DataFiles.Text($"zones/{id}/zone.json"));
+        AddPropColliders(z, id);
+        return z;
+    }
+
+    /// <summary>Box colliders for the placed props in zones/{id}/props_own.json: each "place" entry with
+    /// "col": [cx, cz, hw, hd] (metres, in the preset's own frame, before its rotation and scale).</summary>
+    public static void AddPropColliders(ZoneMeta z, string id)
+    {
+        string text;
+        try { text = DataFiles.Text($"zones/{id}/props_own.json"); }
+        catch { return; }
+        if (string.IsNullOrWhiteSpace(text)) return;  // a zone with no props_own.json (the verge) reads as empty
+        using var doc = JsonDocument.Parse(text);
+        if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
+        int nextId = 0;
+        foreach (var c in z.Colliders) nextId = Math.Max(nextId, c.Id + 1);
+        foreach (var e in place.EnumerateArray())
+        {
+            var c = PropCollider(e);
+            if (c == null) continue;
+            c.Id = nextId++;
+            z.Colliders.Add(c);
+        }
+    }
+
+    /// <summary>One "place" entry as a box collider (Id left 0), or null without a "col". Godot's
+    /// Basis(Up, rot) sends local x to world (cos, -sin) and local z to (sin, cos); the box's own x axis
+    /// runs along (cos Rot, sin Rot), so its Rot is -rot.</summary>
+    public static ColliderDef? PropCollider(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty("col", out var col)
+            || col.ValueKind != JsonValueKind.Array || col.GetArrayLength() < 4) return null;
+        double cx = col[0].GetDouble(), cz = col[1].GetDouble(), hw = col[2].GetDouble(), hd = col[3].GetDouble();
+        double x = e.TryGetProperty("x", out var px) ? px.GetDouble() : 0;
+        double zz = e.TryGetProperty("z", out var pz) ? pz.GetDouble() : 0;
+        double rot = e.TryGetProperty("rot", out var pr) ? pr.GetDouble() : 0;
+        double s = e.TryGetProperty("scale", out var ps) ? ps.GetDouble() : 1;
+        double cos = Math.Cos(rot), sin = Math.Sin(rot);
+        hw *= s; hd *= s;
+        return new ColliderDef
+        {
+            Kind = ColliderKind.Box,
+            X = x + (cx * cos + cz * sin) * s,
+            Z = zz + (-cx * sin + cz * cos) * s,
+            Hw = hw, Hd = hd, Rot = -rot,
+            R = Math.Sqrt(hw * hw + hd * hd),
+            Tag = "prop",
+        };
+    }
 
     /// <summary>A named place: Places[table][name] as a point.</summary>
     public XZ Place(string table, string name)

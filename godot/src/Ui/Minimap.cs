@@ -76,8 +76,19 @@ public partial class Minimap : Control
     public override void _Process(double delta)
     {
         dim = Mathf.MoveToward(dim, running ? 1 : 0.45f, (float)delta * 2);
-        bezel.QueueRedraw();
+        // The bezel is redrawn only when the clock or its dimming changes, or while the day's ember breathes by
+        // the clock (MR4, the HUD's redraws were 3.4 ms a frame).
+        bool breathing = clock is double c && DayClock.At(c) != TimeOfDay.Night;
+        if (breathing || !bezelDrawn || clock != drawnClock || dim != drawnDim)
+        {
+            bezelDrawn = true; drawnClock = clock; drawnDim = dim;
+            bezel.QueueRedraw();
+        }
     }
+
+    bool bezelDrawn;
+    double? drawnClock;
+    float drawnDim;
 
     /// <summary>The disc's iron (minimap/bezel.png when UI art has made it, else drawn as the cuffs are),
     /// north marked on it, and, where the day's clock runs, the day's path over its top as the sun's is
@@ -179,6 +190,7 @@ public partial class Minimap : Control
         seenNow = "";
         mat.SetShaderParameter("drawing", drawing);
         mat.SetShaderParameter("span", Span / extent);
+        GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
 
     /// <summary>Where the survivor is and what is known, a few times a second.</summary>
@@ -197,7 +209,10 @@ public partial class Minimap : Control
         mat.SetShaderParameter(CentreName, new Vector2((float)(px / extent + 0.5), (float)(pz / extent + 0.5)));
         mat.SetShaderParameter(DimName, night ? 0.62f : 0.95f);
         you.Rotation = (float)(Math.PI - facing);
-        foreach (var c in marks.GetChildren()) c.QueueFree();
+        // The marks are kept and reused, not freed and built anew each time (MR4, the HUD's redraws were
+        // 3.4 ms a frame): one pool per look (kind and size; the people's dots), shown in order, the rest hidden.
+        var used = new List<Control>();
+        pooledUsed.Clear();
         float r = Diameter / 2, scale = Diameter / Span;
         foreach (var m in list)
         {
@@ -208,12 +223,34 @@ public partial class Minimap : Control
             // Off the disc, what is sought waits on the rim, pointing the way.
             if (off) at = at.Normalized() * (r - 12);
             // People are many in a town: a dot each; what is sought keeps its sign.
-            var icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : Mark(m.Kind, off ? 15 : 18);
+            var key = m.Kind == MarkKind.Person ? (MarkKind.Person, 0) : (m.Kind, off ? 15 : 18);
+            if (!pool.TryGetValue(key, out var spare)) pool[key] = spare = new List<Control>();
+            pooledUsed.TryGetValue(key, out int taken);
+            pooledUsed[key] = taken + 1;
+            Control icon;
+            if (taken < spare.Count) icon = spare[taken];
+            else
+            {
+                icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : Mark(m.Kind, key.Item2);
+                spare.Add(icon);
+                marks.AddChild(icon);
+            }
             icon.Position = new Vector2(r, r) + at - icon.CustomMinimumSize / 2;
-            if (off) icon.Modulate = Colors.White with { A = 0.85f };
-            marks.AddChild(icon);
+            icon.Modulate = off ? Colors.White with { A = 0.85f } : Colors.White;
+            icon.Visible = true;
+            used.Add(icon);
         }
+        // Draw order is the list's, as when each was built in turn.
+        for (int i = 0; i < used.Count; i++)
+            if (marks.GetChild(i) != used[i]) marks.MoveChild(used[i], i);
+        var keep = new HashSet<Control>(used);
+        foreach (var c in shownMarks) if (!keep.Contains(c)) c.Visible = false;
+        shownMarks = used;
     }
+
+    readonly Dictionary<(MarkKind, int), List<Control>> pool = new();
+    readonly Dictionary<(MarkKind, int), int> pooledUsed = new();
+    List<Control> shownMarks = new();
 
     /// <summary>A map mark's look: painted (icons/map/KIND.png) or its glyph in its ink.</summary>
     public static Control Mark(MarkKind kind, int size)
@@ -269,7 +306,19 @@ public partial class Minimap : Control
             float s = texture(seen, uv).r;
             // Unwalked ground is blank parchment, as on the big map; beyond the zone's edge, darker.
             col = mix(col, paper * 0.97, 1.0 - smoothstep(0.2, 0.7, s));
-            if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) col = paper * 0.55;
+            // Beyond the drawing's edge, darker paper; the edge itself never shows (UI 20: a dead-straight line where the
+            // drawing stopped): the drawing fades into the paper over ~28 screen px, the line wandering +-6 px along
+            // its length, then the paper darkens slowly away from it.
+            float px = max(fwidth(uv.x), fwidth(uv.y));
+            float e = min(min(uv.x, uv.y), min(1.0 - uv.x, 1.0 - uv.y)) / max(px, 1e-6);
+            vec2 q = uv / max(px, 1e-6) / 40.0;
+            vec2 i0 = floor(q), f0 = fract(q);
+            f0 = f0 * f0 * (3.0 - 2.0 * f0);
+            float h00 = fract(sin(dot(i0, vec2(127.1, 311.7))) * 43758.5453), h10 = fract(sin(dot(i0 + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+            float h01 = fract(sin(dot(i0 + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453), h11 = fract(sin(dot(i0 + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+            e += (mix(mix(h00, h10, f0.x), mix(h01, h11, f0.x), f0.y) - 0.5) * 12.0;
+            vec3 beyond = mix(paper * 0.97, paper * 0.6, smoothstep(0.0, 70.0, -e));
+            col = mix(beyond, col, smoothstep(-4.0, 28.0, e));
             col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r)) * dim;
             COLOR = vec4(col, 1.0 - smoothstep(0.965, 1.0, r));
         }

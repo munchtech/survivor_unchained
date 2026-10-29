@@ -82,6 +82,8 @@ public sealed class Enemy : Pooled
     public bool Scripted;
     public EnemyState State = EnemyState.Active;
     public double StateT, AttackT, RangedT, RaiseT;
+    /// <summary>The nearest a lunger may begin its run from (2 m; the zone lowers it for the Barrow Knight's first red line).</summary>
+    public double LungeMin = 2;
     /// <summary>-1 the player, otherwise an enemy id; -2 none.</summary>
     public int Target = -1;
     public double RetargetT;
@@ -152,6 +154,8 @@ public sealed class Enemy : Pooled
     /// <summary>A boss's stagger bar (0..1), filled by what would lock a lesser creature;
     /// held while staggered, and resisting it for a while after.</summary>
     public double Stagger, StaggeredT, StaggerResistT;
+    /// <summary>The firing (skill slot and cast) that last laid a warden Hand's Stone on it: one a firing.</summary>
+    public long HandStoneKey;
     /// <summary>Quickened by its own kind's aura (pace and blows), and warded (less taken), for a while.</summary>
     public double HasteT, Haste = 1, WardT, Ward;
     /// <summary>The verbs' own clocks, what it is casting and where, the runs left in a
@@ -206,6 +210,8 @@ public sealed class Projectile : Pooled
     public double DirX, DirZ = 1;
     /// <summary>What its damage is credited to when no weapon threw it (a blessing's missiles).</summary>
     public string? Credit;
+    /// <summary>Loosed in a heavy blow (the warden's Hand): the id of the skill whose blow it is.</summary>
+    public string? HeavyId;
 
     public Projectile(int id) { Id = id; }
 
@@ -216,7 +222,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>

@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 101,
- "planned": 73,
+ "made": 114,
+ "planned": 75,
  "clips": [
   {
    "clip": "idle_warden",
@@ -48,6 +48,18 @@
    "layer": "full"
   },
   {
+   "clip": "idle_reaver_axes",
+   "plays_for": "idle, reaver with two axes",
+   "status": "made",
+   "fallback": "Idle_Loop",
+   "made_by": "100STYLE Angry_ID (idle_reaver's base), arms keyed",
+   "source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+   "length": 5.0,
+   "layer": "full"
+  },
+  {
    "clip": "idle_stalker",
    "plays_for": "idle, stalker",
    "status": "made",
@@ -69,6 +81,18 @@
    "licence": "CC BY 4.0",
    "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 19 deg, the body turned back 10 deg",
    "length": 5.1,
+   "layer": "full"
+  },
+  {
+   "clip": "idle_arcanist_wand",
+   "plays_for": "idle, arcanist with a wand",
+   "status": "made",
+   "fallback": "Idle_Loop",
+   "made_by": "100STYLE HandsInPockets_ID (idle_arcanist's base), arms keyed",
+   "source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; stood up: hips raised and carried over her feet, knees to 15 deg, the body turned back 2 deg; head's mean pitch brought to +3 deg",
+   "length": 5.0,
    "layer": "full"
   },
   {
@@ -979,7 +1003,7 @@
    "made_by": "",
    "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 12 deg, carried 5 cm, knees 23/5 deg, the free foot +0.0 cm in, a settle of 10%); shoulders let down 5/5 deg; head's mean tilt -0.2 deg taken to 40%",
    "length": 5.0,
    "layer": "full"
   },
@@ -991,7 +1015,7 @@
    "made_by": "",
    "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 5 deg, carried 5 cm, knees 15/5 deg, a settle of 20%); head's mean tilt -0.2 deg taken to 40%",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 12 deg, carried 5 cm, knees 23/5 deg, the free foot +0.0 cm in, a settle of 10%); shoulders let down 5/5 deg; head's mean tilt -0.2 deg taken to 40%",
    "length": 5.0,
    "layer": "full"
   },
@@ -1003,7 +1027,7 @@
    "made_by": "",
    "source": "100STYLE Proud_ID frames 843-1143 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 7 deg, carried 7 cm, knees 5/10 deg, a settle of 30%); head's mean tilt -0.3 deg taken to 40%",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 7 deg, carried 7 cm, knees 5/16 deg, the free foot +2.7 cm in, a settle of 30%); head's mean tilt -0.3 deg taken to 40%",
    "length": 5.0,
    "layer": "full"
   },
@@ -1015,7 +1039,7 @@
    "made_by": "",
    "source": "100STYLE HandsInPockets_ID frames 611-923 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 5 deg, carried 5 cm, knees 9/17 deg, a settle of 40%); a slow look 28 deg to her right and back; head's mean tilt -1.8 deg taken to 40%",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the left leg (hips 11 deg, carried 5 cm, knees 5/22 deg, the free foot -6.0 cm in, a settle of 10%); a slow look 28 deg to her right and back; shoulders let down 7/8 deg; head's mean tilt -1.8 deg taken to 40%",
    "length": 5.2,
    "layer": "full"
   },
@@ -1027,7 +1051,7 @@
    "made_by": "",
    "source": "100STYLE WiggleHips_ID frames 1458-1778 (60 fps)",
    "licence": "CC BY 4.0",
-   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+   "changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred; her weight on the right leg (hips 4 deg, carried 0 cm, knees 22/5 deg, the free foot -6.0 cm in, a settle of 0%); shoulders let down 4/4 deg",
    "length": 5.333,
    "layer": "full"
   },
@@ -1200,6 +1224,114 @@
    "layer": "full"
   },
   {
+   "clip": "walk_arcanist",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.333,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_arcanist_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py)",
+   "length": 1.333,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_arcanist_wand",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.333,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_reaver",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.433,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_reaver_axes",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.433,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_reaver_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py)",
+   "length": 1.433,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_stalker",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.467,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_stalker_daggers",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.467,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_stalker_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py)",
+   "length": 1.467,
+   "layer": "full"
+  },
+  {
    "clip": "walk_tired",
    "plays_for": "(not in the plan)",
    "status": "made",
@@ -1221,6 +1353,30 @@
    "licence": "CC BY 4.0",
    "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
    "length": 1.4,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_warden",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py); the weapon arms keyed to an armed carriage (tools/anim/clips/walk_armed.py)",
+   "length": 1.333,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_warden_town",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, looped from the left heel strike, retimed, stance feet laid flat and held, stance knee capped, the arms re-made, the calling's carriage laid over (tools/anim/clips/walk_town.py)",
+   "length": 1.333,
    "layer": "full"
   }
  ]

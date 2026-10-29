@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Godot;
+using N = System.Numerics;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.View;
 
@@ -13,7 +15,11 @@ namespace SurvivorUnchained.View;
 ///   the skin turns as the radius rolls over the ulna, never wrung at the
 ///   elbow or the wrist;
 /// - the shoulder's twist bone half undoes the upper arm's turn about its
-///   length, where the deltoid is held by the shoulder girdle;
+///   length, where the deltoid is held by the shoulder girdle; on her (Body 5
+///   A2: a side with upperarm_twist_02) a chain of four carries the turn
+///   evenly down the humerus, the shoulder's share takes 0.30 of it, and the
+///   roll is unwrapped frame to frame (Play/ArmTwist; rig_helpers.json
+///   "twist_chain"); a body without the chain drives as before;
 /// - each share bone (shoulder, elbow, knee) takes half its joint's bend and,
 ///   at the elbow and knee, pushes the flesh out across the bend as a bent
 ///   tube is pushed (its own Z), so a joint bends round a corner and keeps its
@@ -39,6 +45,8 @@ public partial class HerJoints : SkeletonModifier3D
         public Quaternion Own;      // a share's turn about its line, from the bone it shares
         public float Push, From, To; // a point's push out across the bend (metres), eased in over these degrees
         public float Squeeze, SqueezeX, SqueezeFrom; // a point's width drawn in along its X toward SqueezeX (metres), eased in from SqueezeFrom to To
+        public bool Hinge;          // a share's half-bend is about its own hinge (spec "hinge"; Play/ElbowHinge)
+        public float RollK;         // a share's part of the upper arm's roll, in a chained arm (twist_chain "roll")
     }
 
     sealed class Side
@@ -46,6 +54,12 @@ public partial class HerJoints : SkeletonModifier3D
         public int Forearm = -1, Hand = -1;
         public Quaternion ForearmRest, HandRest;
         public Vector3 Axis, Thumb0;
+        // The upper arm's twist chain (twist_chain): on only where the side has its gate bone.
+        public bool Chain;
+        public int Upper = -1;
+        public Quaternion UpperRest;
+        public float UnwrapMax = 270f;
+        public float LastRoll = float.NaN;   // last frame's unwrapped roll (degrees)
         public readonly List<Helper> Helpers = new();
         public readonly List<Corrective> Correctives = new();
     }
@@ -58,6 +72,8 @@ public partial class HerJoints : SkeletonModifier3D
         public required string Name;
         public required int Bone;
         public required float From, To;
+        public bool Flex;                    // (Body 19) keyed on the flexion (Play/ElbowPsd), not the whole swing
+        public float[]? Keys;                // an in-between [lo, at, hi] (Play/ElbowPsd.Weight)
         public readonly List<(MeshInstance3D Mesh, int Shape)> On = new();
     }
 
@@ -72,6 +88,15 @@ public partial class HerJoints : SkeletonModifier3D
         public readonly int[][] Chains = new int[2][];   // each thigh up to (not with) the pelvis
         public readonly Vector3[] Rest0 = new Vector3[2]; // each thigh's line at rest, her rest axes
         public double Last = double.NaN;                  // last frame's turn (degrees), for its fall
+        public Core.PanelSwing.FoldLaw? Fold;             // the lower half's fold (its mesh's blend shapes), if any
+        public string[] FoldShapes = System.Array.Empty<string>();
+        public readonly Core.PanelSwing.FoldState FoldState = new();
+        public readonly List<(MeshInstance3D Mi, int[] Idx)> FoldOn = new();
+        public string[] SideShapes = System.Array.Empty<string>();   // (Body 18) its halves over each thigh lifted
+        public double SideFrom, SideTo;
+        public readonly List<(MeshInstance3D Mi, int[] Idx)> SideOn = new();
+        public Core.PanelSwing.SprintLaw? Sprint;          // (Body 18 r4) the sprint law, if any
+        public readonly Core.PanelSwing.SprintState SprintState = new();
     }
 
     Skeleton3D? found;
@@ -85,6 +110,21 @@ public partial class HerJoints : SkeletonModifier3D
     void Rescan(Skeleton3D sk)
     {
         rescan = false;
+        // (a panel's fold shapes on whatever mesh carries them: the Reaver's outfit)
+        foreach (var p in panels)
+        {
+            p.FoldOn.Clear();
+            p.SideOn.Clear();
+            if (p.Fold == null) continue;
+            foreach (var n in sk.GetChildren())
+                if (n is MeshInstance3D mi && mi.Mesh != null && !mi.IsQueuedForDeletion())
+                {
+                    var idx = System.Array.ConvertAll(p.FoldShapes, nm => mi.FindBlendShapeByName(nm));
+                    if (System.Array.Exists(idx, i => i >= 0)) p.FoldOn.Add((mi, idx));
+                    var sdx = System.Array.ConvertAll(p.SideShapes, nm => mi.FindBlendShapeByName(nm));
+                    if (System.Array.Exists(sdx, i => i >= 0)) p.SideOn.Add((mi, sdx));
+                }
+        }
         foreach (var side in sides)
             foreach (var c in side.Correctives)
             {
@@ -135,6 +175,22 @@ public partial class HerJoints : SkeletonModifier3D
             one.HandRest = handRest.Basis.GetRotationQuaternion();
             one.Axis = handRest.Origin.Normalized();
             one.Thumb0 = one.HandRest * Vector3.Back;
+            // Her upper arm's twist chain (helpers SPEC "twist_chain"), where this side has it.
+            var amounts = new Dictionary<string, float>();
+            var rolls = new Dictionary<string, float>();
+            if (s.ContainsKey("twist_chain"))
+            {
+                var tc = s["twist_chain"].AsGodotDictionary();
+                one.Upper = sk.FindBone(((string)tc["roll_bone"]).Replace("{s}", side));
+                one.Chain = one.Upper >= 0 && sk.FindBone(((string)tc["gate"]).Replace("{s}", side)) >= 0;
+                if (one.Chain)
+                {
+                    one.UpperRest = sk.GetBoneRest(one.Upper).Basis.GetRotationQuaternion();
+                    one.UnwrapMax = (float)(double)tc["unwrap_max"];
+                    foreach (var (k, v) in tc["amounts"].AsGodotDictionary()) amounts[((string)k).Replace("{s}", side)] = (float)(double)v;
+                    foreach (var (k, v) in tc["roll"].AsGodotDictionary()) rolls[((string)k).Replace("{s}", side)] = (float)(double)v;
+                }
+            }
             var byName = new Dictionary<string, Godot.Collections.Dictionary>();
             foreach (var hv in s["helpers"].AsGodotArray())
                 byName[(string)hv.AsGodotDictionary()["name"]] = hv.AsGodotDictionary();
@@ -143,12 +199,16 @@ public partial class HerJoints : SkeletonModifier3D
                 var h = hv.AsGodotDictionary();
                 // A point is its share's twin: it bends and swells as the share does.
                 var sh = h.ContainsKey("share") ? byName[(string)h["share"]] : h;
-                int bone = sk.FindBone(((string)h["name"]).Replace("{s}", side));
+                string hname = ((string)h["name"]).Replace("{s}", side);
+                int bone = sk.FindBone(hname);
                 int src = sk.FindBone(((string)h["bone"]).Replace("{s}", side));
                 if (bone < 0 || src < 0) continue;
                 var helper = new Helper
                 {
-                    Kind = (string)h["kind"], Bone = bone, Source = src, Amount = (float)(double)h["amount"],
+                    Kind = (string)h["kind"], Bone = bone, Source = src,
+                    Amount = amounts.TryGetValue(hname, out var ca) ? ca : (float)(double)h["amount"],
+                    RollK = rolls.TryGetValue(hname, out var rk) ? rk : 0f,
+                    Hinge = h.ContainsKey("hinge") && (bool)h["hinge"],
                     Bulge = sh.ContainsKey("bulge") ? (float)(double)sh["bulge"] : 0f,
                     BulgeMax = sh.ContainsKey("bulge_max") ? (float)(double)sh["bulge_max"] : 1f,
                     Pivot = sh.ContainsKey("pivot") ? (float)(double)sh["pivot"] : 0f,
@@ -170,10 +230,14 @@ public partial class HerJoints : SkeletonModifier3D
                     var c = cv.AsGodotDictionary();
                     int bone = sk.FindBone(((string)c["bone"]).Replace("{s}", side));
                     if (bone < 0) continue;
+                    var keys = c.ContainsKey("keys") ? c["keys"].AsGodotArray() : null;
                     one.Correctives.Add(new Corrective
                     {
                         Name = ((string)c["name"]).Replace("{s}", side), Bone = bone,
-                        From = (float)(double)c["from"], To = (float)(double)c["to"],
+                        From = c.ContainsKey("from") ? (float)(double)c["from"] : 0f,
+                        To = c.ContainsKey("to") ? (float)(double)c["to"] : 1f,
+                        Flex = c.ContainsKey("on") && (string)c["on"] == "flex",
+                        Keys = keys == null ? null : new[] { (float)(double)keys[0], (float)(double)keys[1], (float)(double)keys[2] },
                     });
                 }
             sides.Add(one);
@@ -194,8 +258,34 @@ public partial class HerJoints : SkeletonModifier3D
                     Bone = bone, ParentRest = gp, Rest = sk.GetBoneRest(bone).Basis.GetRotationQuaternion(),
                     Axis = (gp.Inverse() * new Vector3(-1, 0, 0)).Normalized(),
                     Law = new Core.PanelSwing.Law((double)p["amount"], (double)p["soft"], (double)p["spread_from"], (double)p["spread_to"], (double)p["spread_damp"],
-                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450),
+                        p.ContainsKey("fall_tau") ? (double)p["fall_tau"] : 0.04, p.ContainsKey("fall_rate") ? (double)p["fall_rate"] : 450,
+                        p.ContainsKey("drop") ? (double)p["drop"] : 0, p.ContainsKey("drop_from") ? (double)p["drop_from"] : 45),
                 };
+                if (p.ContainsKey("sprint"))
+                {
+                    var sd = p["sprint"].AsGodotDictionary();
+                    var am = sd["amp"].AsGodotArray();
+                    var rg = sd["range"].AsGodotArray();
+                    one.Sprint = new Core.PanelSwing.SprintLaw((double)am[0], (double)am[1], (double)rg[0], (double)rg[1], (double)sd["decay"],
+                        (double)sd["amount"], (double)sd["fall_tau"], (double)sd["fall_rate"], (double)sd["hz"], (double)sd["zeta"]);
+                }
+                if (p.ContainsKey("fold"))
+                {
+                    var f = p["fold"].AsGodotDictionary();
+                    var c = f["contact"].AsGodotArray();
+                    one.Fold = new Core.PanelSwing.FoldLaw((double)f["step"], (double)f["neg"], (double)f["hz"], (double)f["zeta"], (double)f["rest"],
+                        (double)c[0], (double)c[1], (int)f["substeps"]);
+                    var sh = f["shapes"].AsGodotArray();
+                    one.FoldShapes = new[] { (string)sh[0], (string)sh[1], (string)sh[2] };
+                    if (f.ContainsKey("side"))
+                    {
+                        var sd = f["side"].AsGodotDictionary();
+                        var ss = sd["shapes"].AsGodotArray();
+                        var sw = sd["swing"].AsGodotArray();
+                        one.SideShapes = new[] { (string)ss[0], (string)ss[1] };
+                        one.SideFrom = (double)sw[0]; one.SideTo = (double)sw[1];
+                    }
+                }
                 foreach (var (t, i) in new[] { (tl, 0), (tr, 1) })
                 {
                     var chain = new List<int>();
@@ -220,6 +310,9 @@ public partial class HerJoints : SkeletonModifier3D
         return (d * t.Inverse(), t, deg);
     }
 
+    static N.Quaternion Nq(Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+    static Quaternion Gq(N.Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
@@ -241,6 +334,13 @@ public partial class HerJoints : SkeletonModifier3D
             var t = hand * Vector3.Back;
             t -= a * t.Dot(a);
             float turn = t0.LengthSquared() > 1e-12f && t.LengthSquared() > 1e-12f ? Mathf.Atan2(t0.Cross(t).Dot(a), t0.Dot(t)) : 0f;
+            // The upper arm's roll, once, unwrapped from the last frame's (a chained arm only).
+            float roll = 0f;
+            if (side.Chain)
+            {
+                roll = ArmTwist.Unwrap(side.LastRoll, ArmTwist.Roll(Nq(side.UpperRest), Nq(sk.GetBonePoseRotation(side.Upper))), side.UnwrapMax);
+                side.LastRoll = roll;
+            }
             foreach (var h in side.Helpers)
             {
                 switch (h.Kind)
@@ -250,6 +350,11 @@ public partial class HerJoints : SkeletonModifier3D
                         break;
                     case "counter_twist":
                     {
+                        if (side.Chain && h.Source == side.Upper)
+                        {
+                            sk.SetBonePoseRotation(h.Bone, Gq(ArmTwist.Counter(roll, h.Amount)));
+                            break;
+                        }
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (_, _, deg) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         sk.SetBonePoseRotation(h.Bone, new Quaternion(Vector3.Up, Mathf.DegToRad(-deg * h.Amount)));
@@ -261,6 +366,10 @@ public partial class HerJoints : SkeletonModifier3D
                         var rest = sk.GetBoneRest(h.Source).Basis.GetRotationQuaternion();
                         var (bend, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(h.Source));
                         var turned = (rest * Quaternion.Identity.Slerp(bend, h.Amount) * h.Own).Normalized();
+                        if (h.Hinge)
+                            turned = Gq(ElbowHinge.Share(Nq(rest), Nq(sk.GetBonePoseRotation(h.Source)), h.Amount, Nq(h.Own)));
+                        if (side.Chain && h.RollK != 0f)
+                            turned = Gq(ArmTwist.Share(Nq(rest), Nq(sk.GetBonePoseRotation(h.Source)), h.Amount, Nq(h.Own), roll, h.RollK));
                         sk.SetBonePoseRotation(h.Bone, turned);
                         if (h.Bulge > 0 || h.Push > 0 || h.Squeeze > 0)
                         {
@@ -306,10 +415,20 @@ public partial class HerJoints : SkeletonModifier3D
             foreach (var c in side.Correctives)
             {
                 var rest = sk.GetBoneRest(c.Bone).Basis.GetRotationQuaternion();
-                var (swing2, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(c.Bone));
-                float deg = Mathf.RadToDeg(2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(swing2.W))));
-                float v = Mathf.Clamp((deg - c.From) / (c.To - c.From), 0f, 1f);
-                float w = v * v * (3 - 2 * v);
+                float deg;
+                if (c.Flex) deg = ElbowPsd.Flexion(Nq(rest), Nq(sk.GetBonePoseRotation(c.Bone)));
+                else
+                {
+                    var (swing2, _, _) = TwistY(rest.Inverse() * sk.GetBonePoseRotation(c.Bone));
+                    deg = Mathf.RadToDeg(2 * Mathf.Acos(Mathf.Min(1f, Mathf.Abs(swing2.W))));
+                }
+                float w;
+                if (c.Keys != null) w = ElbowPsd.Weight(c.Keys[0], c.Keys[1], c.Keys[2], deg);
+                else
+                {
+                    float v = Mathf.Clamp((deg - c.From) / (c.To - c.From), 0f, 1f);
+                    w = v * v * (3 - 2 * v);
+                }
                 foreach (var (mi, i) in c.On)
                     if (IsInstanceValid(mi)) mi.SetBlendShapeValue(i, w);
             }
@@ -330,9 +449,42 @@ public partial class HerJoints : SkeletonModifier3D
                 if (i == 0) { fl = sw; al = sp; } else { fr = sw; ar = sp; }
             }
             // (up with the thigh at once, down as a loose flap falls: Core/PanelSwing.Fall)
-            p.Last = Core.PanelSwing.Fall(p.Law, p.Last, Core.PanelSwing.Turn(p.Law, fl, fr, al, ar), delta);
+            // (Body 18 r4: in a sprint the law blends to its sprint numbers: Core/PanelSwing.Sprint)
+            var pl = p.Law;
+            double g = 0;
+            if (p.Sprint is { } spr)
+            {
+                g = Core.PanelSwing.Sprint(spr, p.SprintState, Core.PanelSwing.Lead(pl, fl, fr), delta);
+                pl = Core.PanelSwing.Blend(pl, spr, g);
+            }
+            double law = Core.PanelSwing.Turn(pl, fl, fr, al, ar);
+            p.Last = Core.PanelSwing.Fall(pl, p.Last, law, delta);
             float deg = (float)p.Last;
             sk.SetBonePoseRotation(p.Bone, (new Quaternion(p.Axis, Mathf.DegToRad(deg)) * p.Rest).Normalized());
+            // (the lower half: a pendulum lying on the leading thigh, its fold as the mesh's shapes: Core/PanelSwing.Fold)
+            if (p.Fold is { } fold0 && p.FoldOn.Count > 0)
+            {
+                var fold = p.Sprint is { } spr2 ? Core.PanelSwing.Blend(fold0, spr2, g) : fold0;
+                var (wa, wb, wn) = Core.PanelSwing.FoldWeights(fold, Core.PanelSwing.Fold(fold, p.FoldState, law, pl.Amount, p.Last, delta));
+                foreach (var (mi, idx) in p.FoldOn)
+                    if (IsInstanceValid(mi))
+                    {
+                        if (idx[0] >= 0) mi.SetBlendShapeValue(idx[0], (float)wa);
+                        if (idx[1] >= 0) mi.SetBlendShapeValue(idx[1], (float)wb);
+                        if (idx[2] >= 0) mi.SetBlendShapeValue(idx[2], (float)wn);
+                    }
+            }
+            // (Body 18: the half over each thigh lifted as that thigh swings forward: Core/PanelSwing.SideWeights)
+            if (p.SideOn.Count > 0)
+            {
+                var (sl, sr) = Core.PanelSwing.SideWeights(fl, fr, p.SideFrom, p.SideTo);
+                foreach (var (mi, idx) in p.SideOn)
+                    if (IsInstanceValid(mi))
+                    {
+                        if (idx[0] >= 0) mi.SetBlendShapeValue(idx[0], (float)sl);
+                        if (idx[1] >= 0) mi.SetBlendShapeValue(idx[1], (float)sr);
+                    }
+            }
         }
     }
 }

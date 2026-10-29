@@ -18,8 +18,8 @@ import time
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 BLENDER = os.environ.get("BLENDER", r"C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe")
 # (the outfit build's source scene, copied out of the 181eef02 session's Temp scratchpad (outfits\hs) on 18 Oct;
-# its 10 images are all packed, so it resolves wherever it lies. docs/handoff/outfits.md names the copy. SRC overrides.)
-SRC = os.environ.get("SRC", r"C:\Users\munch\Desktop\survivorsunchained_inputs\armor_src\heroine_built.blend")
+# its 10 images are all packed, so it resolves wherever it lies. docs/handoff/outfits.md names the copy. SRC overrides. Armor 18 g3, 22 Oct: the arm-root graft blend, the body now installed.)
+SRC = os.environ.get("SRC", r"C:\Users\munch\Desktop\survivorsunchained_inputs\armor_src\heroine_built_armroot.blend")
 GUARD = ["godot/art/outfit", "godot/art/people/heroine.glb", "godot/art/people/heroine_outfit_warden.gltf",
          "godot/art/people/heroine_outfit_arcanist.gltf", "godot/art/people/heroine_outfit_ranger.gltf",
          "godot/art/people/heroine_outfit_reaver.gltf", "godot/art/people/outfit_tex", "tools/assets/heroine_neck_graft.npz"]
@@ -41,11 +41,31 @@ def adorn(pid, post=False):
     return r.returncode == 0
 
 
+FAN_METALS = ("steel", "blacksteel", "gold")      # (rigid plate meshes; not leather, rivets, gems or the shadow proxy)
+
+
+def fan_fill(pid, gltf=None):
+    """Fill the export's triangle fans (n-gon plates) with rings, on every plate mesh and LOD of the piece (fan_fill.py).
+    Idempotent: a filled fan has no sliver fan left, so running it again finds nothing."""
+    gltf = gltf or os.path.join(ROOT, "godot", "art", "armor", pid + ".gltf")
+    meshes = [m["name"] for m in json.load(open(gltf, encoding="utf-8"))["meshes"]]
+    ok = True
+    for name in meshes:
+        if name.rsplit(".", 1)[-1] not in FAN_METALS:
+            continue
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "armor", "fan_fill.py"), gltf, name],
+                           cwd=ROOT, capture_output=True, text=True)
+        out = [l for l in r.stdout.splitlines() if not l.startswith(("  pole", "written"))]
+        print("FANFILL " + (out[-1] if out else name) + ("" if r.returncode == 0 else " FAILED: " + r.stderr.strip()[-200:]))
+        ok = ok and r.returncode == 0
+    return ok
+
+
 def build(pid, src):
     pj = os.path.join(ROOT, "godot", "art", "armor", "src", pid, "piece.json")
     piece = json.load(open(pj, encoding="utf-8"))
     if piece.get("base"):
-        return adorn(pid)       # (no Blender: the base's built shell, copied)
+        return adorn(pid) and fan_fill(pid)       # (no Blender: the base's built shell, copied)
     scratch = os.path.join(ROOT, ".shots", "armor2", "build", pid)
     os.makedirs(scratch, exist_ok=True)
     before = dirty(GUARD)
@@ -72,6 +92,8 @@ def build(pid, src):
         ok = r2.returncode == 0
         if ok and any(not (a["kind"] == "row" and a.get("mesh", "rivet") == "rivet") for a in piece.get("adorn", [])):
             ok = adorn(pid, post=True)
+        if ok:
+            ok = fan_fill(pid)      # (last: after the LODs and the adorn meshes are in the file)
         # (imported as the outfits are: Godot's own LODs off, ours are in the file)
         imp = gl_ + ".import"
         if not os.path.exists(imp):

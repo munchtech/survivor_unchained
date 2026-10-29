@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Core;
@@ -84,6 +84,9 @@ public interface IZoneHost
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
+    /// <summary>The place a journey will soon go to, built ahead of it while this one plays (a host that builds
+    /// nothing does nothing).</summary>
+    void Prepare(string zone) { }
     /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
     /// Waystation; a host without a page goes straight back.</summary>
     void MapOver(Zones.MapResult r, bool alive) =>
@@ -110,6 +113,15 @@ public interface IZoneHost
     void Teach(Callout c) { }
     /// <summary>Whether a callout was seen on this profile (what follows it can be asked for at once).</summary>
     bool Taught(string id) => false;
+    /// <summary>Whether a callout waits in the line, asked but not yet shown (its moment can be held for it).</summary>
+    bool TeachWaiting(string id) => false;
+    /// <summary>The callout on the screen now (none: none is up).</summary>
+    Callout? Teaching => null;
+    /// <summary>A narrated line is on the screen now (a zone's next line waits for it, so none is cut off).</summary>
+    bool Saying => false;
+    /// <summary>Whether a figure standing here, foot to head (`up` metres), is in the open from the camera
+    /// (nothing tall between): a freeze on it can be read (F7 waits for the Knight in the open).</summary>
+    bool OpenGround(double x, double z, double up) => true;
     /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
     void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>
@@ -159,6 +171,9 @@ public interface IZoneLook
     INpcView Person(NpcDef def, Spot spot);
     /// <summary>Someone from the town, made up (Folk): a person as a spec.</summary>
     INpcView Walker(PersonSpec spec, double scale);
+    /// <summary>The same, come out into a town already running (a door, a gate): it may stand up over the next few
+    /// frames, its calls kept till it does (the screen does not wait for it).</summary>
+    INpcView WalkerLater(PersonSpec spec, double scale) => Walker(spec, scale);
     /// <summary>A light that goes where something carries it (a torch).</summary>
     void MoveLight(int light, double x, double y, double z);
     /// <summary>The ground's height.</summary>
@@ -246,6 +261,11 @@ public sealed class NpcActor
     public Action<string>? Spoken;
     string pose;
     double barkT;
+    /// <summary>Its own clock, and when it last said each line (au1 item 17: a guard's one line came round
+    /// every 30-60 s, four times in five minutes): a line isn't said again for LineRest seconds.</summary>
+    double age;
+    readonly Dictionary<string, double> lastLine = new();
+    public const double LineRest = 300;
 
     public NpcActor(NpcDef def, IZoneLook look, Random rng, Spot? at = null)
     {
@@ -277,6 +297,7 @@ public sealed class NpcActor
 
     public void Update(double dt, double px, double pz)
     {
+        age += dt;
         if (Hidden) { view.Place(X, 0, Z, Heading, false); return; }
         double y = look.HeightAt(X, Z) + (pose == "Sit_Chair_Idle" ? 0.05 : 0);
         double d = Math.Sqrt((px - X) * (px - X) + (pz - Z) * (pz - Z));
@@ -306,7 +327,12 @@ public sealed class NpcActor
                 look.Bark(first, X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
                 Spoken?.Invoke(first);
             }
-            else if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+            else if (pool.Where(l => !lastLine.TryGetValue(l, out var at) || age - at >= LineRest).ToList() is { Count: > 0 } fresh)
+            {
+                var line = fresh[rng.Next(fresh.Count)];
+                lastLine[line] = age;
+                look.Bark(line, X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+            }
         }
     }
 

@@ -1,5 +1,77 @@
 # Handoff: skills look and feel
 
+## QUEUED INPUT (28 Oct, from Classes 15 P6, via main): the warden's 4 new skills need VFX
+Sim lands with placeholder art keys (classes-15; MR1 = P5b+P6). All warden-only, holy + steel. Build after MR1 merges.
+1. **Sunder** (greatsword grip): slow heavy 220-deg cleave (300 with Wide Swing). Every 4th swing (3rd with Third Blow, 2nd with its Turn) a heavy overhead splits the ground in a line 7 m long, ~1.2 m wide, ahead of her; Burning Edge = holy fire along the crack. Her greatsword prop + clips are Phase 3; until then it swings whatever she holds.
+2. **Groundbreaker:** every 5 s a crack races from her to the densest pack within 10 m (14 with Fault Line); the end heaves ~2.5 m round, 0.6 s stun. Twin Cracks = two cracks splayed 30 deg; Upheaval = lesser things popped airborne 0.8 s; Turn "Aftershock" = the same spot heaves again 0.8 s later.
+3. **Rebuke** (reactive, no cast): each block strikes the blocker + 3 nearest with holy light, shield to targets. Turn "Shield of Morning" = a barrier glint to her per creature struck.
+4. **Watch Bell:** every 6 s a bell toll rings 8 m round (10 with Loud Bell); everything drawn in to her for 2 s (draw-in streaks), she gains barrier (shimmer) per creature. Iron Bell slows what's drawn. Turn "Stone Bell" lays wall stones as it tolls.
+**Generic Turn looks (parameters on each skill's look, not new art per Turn):** Pulse = fires 3x at 85% size, 0.3 s apart; On-kill = fires again from a corpse at 30% damage; school Turns recolor (fire/frost/holy); Wide/Linger exist (P5a). Turn names are placeholders for the story lead.
+Owner standards apply: every press visible; Flare "BOOM" scale is for Flares, not these (keep these readable under a Flare).
+
+## MR READY (Combat VFX 3, vfx-1, 28 Oct): the red line re-tint (MarkPass) ships; after the merge, the next lead starts at step 2 below
+
+**Judged and done (all on vfx-1, tests 1191/0/10):**
+- **The shot args (the r5 runs that made no frames):** not a code bug. The runs had dropped the lab spawn: elite shots need `--lab --auto on --horde 1:barrow_knight --dist 7 --spread 2 <look> --on elite`; the grave caller `--horde "1:grave_caller!,4:legionary,8:risen"`; the Prologue's Warden over the river via `pace.py` (STOP="pace stage Victory", `--on elite,boss`). Scripts with the working args: `survivorsunchained_inputs\scratch_vfx3\` (r5.sh, fb.sh, pace.py, m3.py).
+- **Max judge r1 (A = re-tint, B = edges-only, one round):** SHIP A everywhere. Day ("ground stained scarlet, not cellophane"), water, teach, Knight, arena, hits, crowd, raise ring PASS-WITH-NOTES. B rejected (it kinks at the bank too; its night Knight lane fails the gate). One FAIL (close): the Warden's charge lane folding at the river bank + pink grass tips. `MARK_TUNE bed=0` still gives B for comparison (f44f6a0e).
+- **Bank fix (bc43ef3b, a medium solver):** the "crease" was the shore foam re-tinted at its own value: the bed now takes a blurred value (8 px tile pre-pass, mode 0) within ~0.25 m of the water line; height-test slack scaled by the grid's bend (zero on flat ground); a soft fade on steep faces (0.9-1.4 m/m of the height grid); partly-gated grass tips pushed to scarlet. **Xhigh judge r2: SHIP** (01-06 gate YES; no regression on water or land). GPU 0.069 ms (was 0.041).
+- Earlier (VFX 2): `godot/logic/Sim/TelegraphRead.cs` (elite+boss blows = Danger, crowd = Amber), the MarkPass compute pass after the transparent pass (AgX display chain, bed = scarlet at 0.82x the ground's SEEN value, water via `Water.Level`), crowd/raise amber #ffbc30, raise ring breath. Env: `MARK_TUNE`, `MARK_PASS=0`, `MARK_TIME=1`.
+
+**Later list (judges' PASS-WITH-NOTES, only what shows at 1:1):** fill front reads as a seam on day/dark dirt (02, 03, 08, 09 of r1: make it a bright bar 1.5-2x the rim with a short glow, filled part a step brighter); rims weak in full sun (scale with the ground's brightness); lane end inside a house fades as a smudge (cap it); raise ring's taupe interior (drop its re-tint or lift to warm amber); Knight hit flash/blood barely reads on his pale body; a pale stone part under a lane end gets a red cap (treat rocks like the grass tips); arena frames are near-black ground (not ours: env/lighting).
+
+**Next:**
+1. Main merges vfx-1 (only MarkPass.cs since integration 3ef34f61; no art). Remove the junction first when merging in this worktree (README).
+2. (After the merge) study docs/design/SKILL_VFX_REFERENCES.md + `survivorsunchained_inputs\vfx_refs\<id>\sheet.jpg`; write what our skill VFX take from them.
+3. The Warden's 4 new skills' VFX needs from Classes Phase 1 (via main). Memory flare-is-a-boom-button for Flare looks.
+4. The later list above, one judge round, when there's a slot.
+
+**Known, not ours:** "3 RID leaked" at exit. Routed to UI: F7's "line" word orange; crit numbers over the hotbar; card ghost text. No flag to strip her lightning crit for hit shots.
+**Cost this session:** max judge ~149k, xhigh judge ~59k, medium solver ~172k, lead ~120k; $0 API. 15 colliding .uid files from VFX 2 are in coordinator scratch f22ca2bc `vfx2\uid_backup`.
+
+## Combat VFX 1 (vfx-1 worktree, 27 Oct): PAUSED at the coordinator's wind-down; judge round 2 next
+
+**The owner's ask:** "a combat VFX lead (the Knight's salmon red line and white flash)". The coordinator's ruling: red for elite and boss blows only; the crowd's blows stay amber.
+
+**Causes found:**
+- **The Knight's line was never red.** Every hostile blow used `Palette.TeleBlow`, amber #ff9a1a. Elites were scaled to x0.28 and drawn as an additive emissive decal at energy 2.5. The AgX tonemapper folds that bright orange to salmon, and adding light over lit dirt turns pink.
+- **The white flash** was `vat.gdshaderinc`'s struck term: hot^4 x0.38 plus rim^2 x1.1, a flat warm-white wash. From the play camera most of a body counts as "rim", so it became a flat cream cut-out, held through hit-stop.
+- **The Grave-Caller's raise ring** (Ai.cs, Ring with Inner 0) drew as a filled 7 m salmon disc.
+- **The Ford-Warden's cleave and charge marks** (Prologue.cs, about lines 787 and 795) never set `Boss`, so they drew in the crowd's amber.
+
+**Built** (branch vfx-1, commits 748f462d, c336a847, 6cf7e3c7, 23461218, 312e8a4b):
+- **The danger mark** (`BattleFx.cs`: `Ground`, `DangerOf`, `FillStyle`/`FillTexture`, `BedOrm`, `OverLane`; `Palette.TeleDanger`, `TeleAmber`): a scarlet edge pre-skewed for AgX over a near-solid old-blood bed, with its own hot running fill, NormalFade 0.6, crisp ring rims sized in metres, and an over-copy in the same shape.
+- **Crowd blows and the raise ring:** dim true amber with a faint bed.
+- **The struck flash:** a champion lifts its own paint, warm, with a rim pop scaled by the paint. The crowd's rim-only path is unchanged.
+- **A dev switch:** `--on elite` frames each elite or boss mark (`tele<id>`), its hits (`hit<id>`) and one crowd mark every 6 s (`crowd`) (`Game.EliteShot`).
+
+**Judge state:**
+- Round 1 (xhigh) FAILED the line (it read coral/rose) and the other marks (the Warden's salmon, the Grave-Caller ring too loud). The flash got PASS-WITH-NOTES: the glitch is gone, but the crit lift was too weak.
+- The round 2 build is measured but NOT judged:
+  - Night Knight bed (119-154, 32-44, 35-46), saturation 0.75, hue 358-359.
+  - Day bed brick (115, 48, 44), saturation 0.6.
+  - Raise ring rim (203, 146, 78), hue 32.
+  - Under AgX no red reaches (235+, <50, <40); the solver's offline curve gives (213, 73, 48) at 1.0.
+- **Open:** the Warden's lane over the RIVER still reads rose (hue 347-355). Water writes no depth, so the decal lands on the riverbed under the water and the over-copy never fires. That needs a water-aware over-copy (a solver item).
+
+**Next:**
+1. Run the logic tests. Prologue.cs changed and they haven't been run.
+2. ONE xhigh judge, round 2 of 3, on the r2 frames in `godot/.shots/`: `r2pro_teach_red_line_1`, `r2pro_tele32_3`/`_15`, `r2arena_tele0_2`, `r2day_tele0_4`/`_6`/`_8`, hits `r2pro_hit32_1..3` and `r2arena_hit0_1..3`, raise `r2pro_tele29_1..3`, Warden `r2pro_tele301_30` and `r2pro_tele302_10`/`_40`, crowd `r2gc_crowd_1`.
+   - The judge's first brief and its verdict's levers are in this page's history.
+   - The shoot scripts (`shoot.sh`, `pace.py`, `sheet.py`) are in coordinator scratch 7ccc6e14 `vfx1\` (and `vfx1\r2\measure.py`).
+3. Fix the river case if the judge wants it.
+4. Full test, then the MR.
+
+**Asides from round 1 for other owners:**
+- Crit numbers land over the hotbar (whoever owns the numbers).
+- F7's "line" word is amber while the line is red (UI).
+- No blood flecks on the Knight in the prologue (undead?).
+
+**Later (coordinator):** the owner's 9 skill-VFX reference videos are downloaded (owner OK) to `C:\Users\munch\Desktop\survivorsunchained_inputs\vfx_refs\<id>\`: video.mp4, title.txt, 14 evenly spaced stills and sheet.jpg each. Scene detection found almost no cuts, so the stills aren't picked at effect moments. Study them after the MR.
+
+**Worktree notes:**
+- `public/assets` has the main checkout's 811 untracked asset files COPIED in, and the import was done.
+- `git status` shows reimport noise on `.import` files. It isn't ours; never `git add` it.
+
 For the next skills lead. Read in this order:
 
 1. `docs/team/README.md` (the bar, how we work, heavy work takes turns).

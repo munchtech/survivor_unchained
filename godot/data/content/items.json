@@ -1,5 +1,21 @@
 {
  "items": {
+  "meshy_sword": {
+   "id": "meshy_sword",
+   "name": "Meshy Arming Sword",
+   "kind": "weapon",
+   "rarity": 0,
+   "icon": "sword",
+   "value": 20,
+   "description": "Swings itself at whatever is nearest, in a wide arc.",
+   "weapon": {
+    "id": "oathblade",
+    "rank": 1
+   },
+   "art": "meshy_sword",
+   "artKind": "blade1h",
+   "lore": "A plain arming sword, fullered blade and leather grip (Meshy proof)."
+  },
   "oathbrand": {
    "id": "oathbrand",
    "name": "Oathbrand",
@@ -2464,6 +2480,46 @@
    "description": "Lamed Pauldrons: a plain forged pauldrons piece, worn over her own.",
    "wear": [
     "plate_pauldrons_plain"
+   ]
+  },
+  "forged_cuirass": {
+   "id": "forged_cuirass",
+   "name": "Forged Cuirass",
+   "kind": "body",
+   "rarity": 1,
+   "icon": "armor_heavy",
+   "value": 50,
+   "description": "+4 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 4,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_cuirass_plain"
+   ]
+  },
+  "forged_gstring": {
+   "id": "forged_gstring",
+   "name": "Forged G-string",
+   "kind": "legs",
+   "rarity": 1,
+   "icon": "armor_light",
+   "value": 30,
+   "description": "+1 armor.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 1,
+     "source": "item"
+    }
+   ],
+   "wear": [
+    "plate_gstring_plain"
    ]
   }
  },

@@ -255,4 +255,54 @@ public class TeachTests
         t.Update(2, 2, Busy.None, Here);
         Assert.Equal(["a queued say,tip", "a shown banner,say"], log);
     }
+
+    [Fact]
+    public void ALessonKeepsItsQuiet()
+    {
+        // (au1 item 14) a lesson comes only once the screen has been clear its quiet: 4 s after a line ends.
+        var t = new Teacher(new TeachMemory());
+        var lesson = Arrow("tally") with { Quiet = 4, Patience = 30 };
+        t.Offer(lesson, 0, Busy.Say);
+        Assert.Null(t.Update(0, 0, Busy.Say, Here));
+        Assert.Null(t.Update(3, 3, Busy.Say, Here));
+        // (the line ended at 3: not at 5, at 7)
+        Assert.Null(t.Update(5, 5, Busy.None, Here));
+        Assert.Equal("tally", t.Update(7.1, 7.1, Busy.None, Here)?.Id);
+        // (its 4 s up, the arrow ends on the step at 11.2)
+        Assert.Null(t.Update(11.2, 11.2, Busy.None, Here));
+        Assert.Null(t.Current);
+        // (and from the end of another callout too)
+        var next = Arrow("card") with { Quiet = 4, Patience = 30 };
+        t.Offer(next, 11.1);
+        Assert.Null(t.Update(13, 13, Busy.None, Here));
+        Assert.Equal("card", t.Update(15.2, 15.2, Busy.None, Here)?.Id);
+    }
+
+    [Fact]
+    public void ThePromptsLessonPointsAtThePrompt()
+    {
+        // (a callout on the interact prompt isn't held back by the prompt; any other is)
+        var t = new Teacher(new TeachMemory());
+        t.Offer(new Callout("talk", CalloutKind.Arrow, "Talk", "A line.", Aim.At("prompt")), 0);
+        t.Offer(Arrow("other"), 0);
+        Assert.Equal("talk", t.Update(0, 0, Busy.Prompt, Here)?.Id);
+        t.Close("time", 4);
+        Assert.Null(t.Update(5, 5, Busy.Prompt, Here));
+    }
+
+    [Fact]
+    public void ALessonWhoseCalmEndsIsLetGo()
+    {
+        // (the tally's calm ends when the ditch rises: it is let go unseen, never shown in the fight)
+        var t = new Teacher(new TeachMemory());
+        bool calm = true;
+        var log = new List<string>();
+        t.Log = (what, c, how) => log.Add($"{what} {how}");
+        t.Offer(Arrow("tally") with { Quiet = 4, Patience = 30, Still = () => calm }, 0, Busy.Say);
+        Assert.Null(t.Update(1, 1, Busy.Say, Here));
+        calm = false;
+        Assert.Null(t.Update(6, 6, Busy.None, Here));
+        Assert.False(t.Queued("tally"));
+        Assert.Contains("dropped passed", log);
+    }
 }

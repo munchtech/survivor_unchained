@@ -34,9 +34,31 @@ public partial class PersonView : Node3D, INpcView
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
+        // (a Marionette package's own walk, when its manifest names one: the risen's lurch)
+        if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
         if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
         if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
+    }
+
+    /// <summary>A held piece's long axis in its bone's frame (toward its far end from the bone), zero if the slot holds
+    /// none (HerArmHold swings it along its arc).</summary>
+    public Vector3 PieceAxis(string slot)
+    {
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || mount.GetParent() is not Node3D att || !mount.IsInsideTree()) return Vector3.Zero;
+        var toBone = att.GlobalTransform.AffineInverse();
+        Vector3 best = Vector3.Zero;
+        foreach (var n in mount.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (n is not MeshInstance3D mi) continue;
+            var box = mi.GetAabb();
+            for (int c = 0; c < 8; c++)
+            {
+                var p = toBone * (mi.GlobalTransform * box.GetEndpoint(c));
+                if (p.LengthSquared() > best.LengthSquared()) best = p;
+            }
+        }
+        return best.LengthSquared() > 1e-8f ? best.Normalized() : Vector3.Zero;
     }
 
     /// <summary>The weapon (Arms id) in each slot.</summary>
@@ -49,65 +71,107 @@ public partial class PersonView : Node3D, INpcView
     public void Sheathe(bool on)
     {
         if (person.Own == null) return;
-        foreach (var (slot, id) in pieces)
-        {
-            if (!held.TryGetValue(slot, out var old)) continue;
-            Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
-            if (now == null) continue;
-            (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
-            held[slot] = now;
-        }
+        foreach (var (slot, id) in pieces) Swap(slot, id, on);
     }
+
+    // One piece to its sheathed mount (on) or back into its hand; false if it has none or is already there.
+    bool Swap(string slot, string id, bool on)
+    {
+        if (!held.TryGetValue(slot, out var old)) return false;
+        if (on && IsInstanceValid(old) && old.Name.ToString().StartsWith("sheathed:")) return false;
+        Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
+        if (now == null) return false;
+        (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();
+        held[slot] = now;
+        return true;
+    }
+    readonly System.Collections.Generic.HashSet<string> lookSheathed = new();
 
     // The seat each held piece had in its hand mount (Slide's base), and the point and axis its tilt turns it about
     // (the fist's fitted pocket and the palm's normal, in the mount's space; none for a piece without a pocket): re-read
     // when the mount is a new one (Sheathe swaps the mount node), so a sheath transform never gets cached.
-    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Transform3D seat, Vector3? pivot, Vector3 axis)> seats = new();
+    // A left piece without a fitted left pocket (the second axe) also keeps the seat a left tilt moves it onto (onPocket:
+    // WeaponSockets.TiltPocketL, animation 58).
+    readonly System.Collections.Generic.Dictionary<string, (Node3D piece, Transform3D seat, Vector3? pivot, Vector3 axis, Transform3D? onPocket)> seats = new();
 
     /// <summary>The piece in a hand slot sits this far along its own shaft (metres) from its seat, so the fist grips
     /// lower on it (animation 47: the arcanist's combat idle), turned `tilt` degrees in the fist about the palm's normal
-    /// through the fitted pocket first (animation 48; a piece without a pocket only slides). Does nothing while the
-    /// piece is sheathed.</summary>
-    public void Slide(string slot, float metres, float tilt = 0f)
+    /// through the fitted pocket first (animation 48; a piece without a pocket only slides). The left fist (animation 58)
+    /// turns about the mirrored normal (WeaponSockets.TiltAxisL) through its pocket (TiltPocketL): a piece with no fitted
+    /// left pocket (the second axe) is eased from its plain mount onto the right's mirrored pocket by `pocket` (0..1, the
+    /// clips' "grip_tilt_l" weight, eased as the tilt is). Does nothing while the piece is sheathed.</summary>
+    public void Slide(string slot, float metres, float tilt = 0f, float pocket = 0f)
     {
-        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith("mount:")) return;
+        if (!held.TryGetValue(slot, out var mount) || !IsInstanceValid(mount) || !mount.Name.ToString().StartsWith(GripSlide.MountPrefix)) return;
         if (mount.GetChildCount() == 0 || mount.GetChild(0) is not Node3D piece) return;
         if (!seats.TryGetValue(slot, out var s) || s.piece != piece)
         {
             Vector3? pivot = null;
             var axis = Vector3.Right;
+            Transform3D? onPocket = null;
             if (pieces.TryGetValue(slot, out var id) && Arms.All.TryGetValue(id, out var spec))
             {
                 var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
-                if (WeaponSockets.Pocket(kind, BoneOf(slot)) is { } pocket)
+                var bone = BoneOf(slot);
+                var pk = WeaponSockets.Pocket(kind, bone);
+                var handAxis = Vector3.Right;
+                if (bone == "hand_l" && !spec.Pistol)
+                {
+                    var al = WeaponSockets.TiltAxisL;
+                    handAxis = new Vector3(al.X, al.Y, al.Z);
+                    if (pk == null && WeaponSockets.TiltPocketL(kind) is { } tp)
+                    {
+                        pk = tp;
+                        onPocket = Arms.SeatOn(id, bone, person.Own != null, tp.At, tp.Dir);
+                    }
+                }
+                if (pk is { } pocketAt)
                 {
                     var inv = mount.Transform.AffineInverse();
-                    pivot = inv * new Vector3(pocket.At.X, pocket.At.Y, pocket.At.Z);
-                    axis = (inv.Basis * Vector3.Right).Normalized();
+                    pivot = inv * new Vector3(pocketAt.At.X, pocketAt.At.Y, pocketAt.At.Z);
+                    axis = (inv.Basis * handAxis).Normalized();
                 }
             }
-            seats[slot] = s = (piece, piece.Transform, pivot, axis);
+            seats[slot] = s = (piece, piece.Transform, pivot, axis, onPocket);
         }
         if (s.pivot == null) tilt = 0f;
         static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
-        var (turn, at) = GripSlide.Apply(N(s.seat.Origin), N((s.seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
+        static System.Numerics.Quaternion Q(Basis b) { var q = b.GetRotationQuaternion(); return new(q.X, q.Y, q.Z, q.W); }
+        var seat = s.seat;
+        if (s.onPocket is { } op && pocket != 0f)
+        {
+            var (bq, ba) = GripSlide.Blend(Q(seat.Basis), N(seat.Origin), Q(op.Basis), N(op.Origin), pocket);
+            seat = new Transform3D(new Basis(new Quaternion(bq.X, bq.Y, bq.Z, bq.W)) * Basis.FromScale(seat.Basis.Scale), new Vector3(ba.X, ba.Y, ba.Z));
+        }
+        var (turn, at) = GripSlide.Apply(N(seat.Origin), N((seat.Basis * Vector3.Up).Normalized()), N(s.pivot ?? Vector3.Zero),
             N(s.axis), tilt, metres);
-        piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * s.seat.Basis, new Vector3(at.X, at.Y, at.Z));
+        piece.Transform = new Transform3D(new Basis(new Quaternion(turn.X, turn.Y, turn.Z, turn.W)) * seat.Basis, new Vector3(at.X, at.Y, at.Z));
+        // SU_SLIDE_DUMP=1: the piece in its hand's space at rest (its seat) and as moved, for the clips' tools to check
+        // keyed.py grip_pose / grip_pose_left against (animation 58).
+        if (OS.HasEnvironment("SU_SLIDE_DUMP") && (tilt != 0f || metres != 0f || pocket != 0f))
+        {
+            static string T(Transform3D t) => $"{t.Basis.X.X:F6} {t.Basis.X.Y:F6} {t.Basis.X.Z:F6} {t.Basis.Y.X:F6} {t.Basis.Y.Y:F6} {t.Basis.Y.Z:F6} {t.Basis.Z.X:F6} {t.Basis.Z.Y:F6} {t.Basis.Z.Z:F6} {t.Origin.X:F6} {t.Origin.Y:F6} {t.Origin.Z:F6}";
+            GD.Print($"SLIDE {slot} tilt {tilt:F3} slide {metres:F4} pocket {pocket:F3} | rest {T(mount.Transform * s.seat)} | now {T(mount.Transform * piece.Transform)}");
+        }
     }
 
     // Her grip (slide, tilt) while this view plays her clips itself (not Driven: the pack's doll, a cinematic, a
     // figure in town), eased as PlayerView eases it.
-    float ownSlide, ownTilt;
+    float ownSlide, ownTilt, ownSlideL, ownTiltL, ownPocketL;
 
     void OwnGrip(double delta, bool snap = false)
     {
         if (Driven || person.Own is not { } own || !held.ContainsKey("handslot.r")) return;
         var clip = person.Anim.CurrentAnimation.ToString();
-        float s = own.GripSlide(clip), t = own.GripTilt(clip);
-        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0) return;
+        float s = own.GripSlide(clip), t = own.GripTilt(clip), sl = own.GripSlideL(clip), tl = own.GripTiltL(clip), pl = tl != 0 ? 1 : 0;
+        if (s == 0 && t == 0 && ownSlide == 0 && ownTilt == 0 && sl == 0 && ownSlideL == 0 && tl == 0 && ownTiltL == 0 && ownPocketL == 0) return;
         ownSlide = snap ? s : GripSlide.Ease(ownSlide, s, (float)delta);
         ownTilt = snap ? t : GripSlide.Ease(ownTilt, t, (float)delta);
+        ownSlideL = snap ? sl : GripSlide.Ease(ownSlideL, sl, (float)delta);
+        ownTiltL = snap ? tl : GripSlide.Ease(ownTiltL, tl, (float)delta);
+        ownPocketL = snap ? pl : GripSlide.Ease(ownPocketL, pl, (float)delta);
         Slide("handslot.r", ownSlide, ownTilt);
+        Slide("handslot.l", ownSlideL, ownTiltL, ownPocketL);
     }
 
     public People.Person Person => person;
@@ -130,7 +194,7 @@ public partial class PersonView : Node3D, INpcView
 
     void PlayLoop(double blend)
     {
-        var name = People.Clip(person, walking ? loopClip : loop);
+        var name = People.Clip(person, walking ? loopClip : loop, emptyHanded, emptyHanded ? "" : null);
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
         // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
@@ -208,11 +272,14 @@ public partial class PersonView : Node3D, INpcView
     /// clock, moved only by Advance, so the performance keeps to the timeline.</summary>
     public bool Cinema { get; private set; }
 
+    /// <summary>Her double in a safe cinematic: her pieces at their sockets and every clip cued her town one.</summary>
+    public bool Sheathed { get; set; }
+
     /// <summary>A clip from a moment in it, at a speed (0 holds that frame), blended in.</summary>
     public void Cue(string clip, double from, double speed, double blend)
     {
         Cinema = true;
-        var name = People.Clip(person, clip);
+        var name = People.Clip(person, clip, Sheathed);
         if (!person.Anim.HasAnimation(name)) { GD.PushWarning($"cinema: no clip {clip}"); return; }
         // A gesture (a nod, an exhale) is laid over what plays, not played in its place.
         if (person.Own is { } own && own.Owns(name) && own.Gesture(name[own.Prefix.Length..]) && person.Gestures is { } g)
@@ -290,11 +357,34 @@ public partial class PersonView : Node3D, INpcView
         return null;
     }
 
-    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).</summary>
+    /// <summary>What the hands hold shown or not (creation's look screen: her face and hair, nothing in front of them).
+    /// With them put away her hands are empty, so she stands as she does in a safe place with nothing in them (her
+    /// calling's town stand: relaxed arms, open hands), not in the stand made around a hilt and a shield, whose
+    /// clenched fists and held-out arms read as nobody stands (the owner, 26 October 2026, on this camp). Hers at the Look:
+    /// pieces that ride at her waist are sheathed and shown (her town stand's hands rest on them: the Warden's fist on her
+    /// sword's grip), pieces that ride on her back stay hidden so nothing covers her hair.</summary>
     public void ShowHeld(bool shown)
     {
-        foreach (var m in held.Values) if (IsInstanceValid(m)) m.Visible = shown;
+        if (person.Own != null)
+        {
+            if (!shown)
+            {
+                foreach (var (slot, id) in pieces)
+                    if (WeaponSockets.AtWaist(WeaponSockets.SocketOf(Arms.KindOf(id))) && Swap(slot, id, true)) lookSheathed.Add(slot);
+            }
+            else
+            {
+                foreach (var slot in lookSheathed) if (pieces.TryGetValue(slot, out var id)) Swap(slot, id, false);
+                lookSheathed.Clear();
+            }
+        }
+        foreach (var (slot, m) in held)
+            if (IsInstanceValid(m)) m.Visible = shown || (person.Own != null && !shown && lookSheathed.Contains(slot));
+        if (emptyHanded == !shown) return;
+        emptyHanded = !shown;
+        if (!walking && actLeft <= 0 && !holding) PlayLoop(0.4);
     }
+    bool emptyHanded;
 
     public void Hold(string slot, string? pack, string? piece)
     {
@@ -340,6 +430,54 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Ready() => Settle();
 
+    /* ------------------------------------------------- a townsperson's LOD -- */
+
+    /// <summary>On screen (with room round it for its shadow, cast long at dusk): while it isn't, its clip is held
+    /// still (no mixing, no skeleton to lay) and the time kept, and when it comes back the clip is moved on by
+    /// that time first, so it stands where it would have been.</summary>
+    VisibleOnScreenNotifier3D? seen;
+    FolkShadow.Job? shadowJob;
+    bool lodHeld;
+    double lodHeldFor;
+    AnimationMixer.AnimationCallbackModeProcess lodMode;
+    static readonly bool LodOff = Args.Get("folk-lod") == "off";
+
+    /// <summary>The town's people (walkers and those who stand): its clip held off screen, and its shadow one draw
+    /// (FolkShadow). Not for her, nor anyone a cinematic plays.</summary>
+    public void Lod()
+    {
+        BeginShadow();
+        if (LodOff || seen != null) return;
+        // (6 m round: the shadow of a person at the edge of the frame reaches in from about 4 m out with the sun low)
+        seen = new VisibleOnScreenNotifier3D { Aabb = new Aabb(new Vector3(-6, -1, -6), new Vector3(12, 5, 12)) };
+        seen.ScreenExited += LodHold;
+        seen.ScreenEntered += LodResume;
+        AddChild(seen);
+    }
+
+    /// <summary>Its one shadow begun (FolkShadow), here or on the worker that made it (WalkerView).</summary>
+    public void BeginShadow() { if (!shadowBegun) { shadowBegun = true; shadowJob = FolkShadow.Begin(person); } }
+    bool shadowBegun;
+
+    void LodHold()
+    {
+        if (Cinema || Driven || lodHeld) return;
+        lodHeld = true;
+        lodHeldFor = 0;
+        lodMode = person.Anim.CallbackModeProcess;
+        person.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+    }
+    int lodFrames;
+
+    void LodResume()
+    {
+        if (!lodHeld) return;
+        lodHeld = false;
+        if (Cinema) return;   // (a cinematic took it while away: its clock plays it now)
+        person.Anim.CallbackModeProcess = lodMode;
+        if (person.Anim.IsPlaying()) person.Anim.Advance(lodHeldFor);
+    }
+
     /// <summary>Posed now, as it will be drawn. A figure added in the middle of a frame showed its
     /// bind pose (a T) for that frame, and her corrective layer eased in from nothing: the pack's
     /// doll did both on every refresh.</summary>
@@ -353,6 +491,10 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Process(double delta)
     {
+        if (shadowJob is { Done: true } sj) { shadowJob = null; FolkShadow.Finish(person, sj); }
+        if (lodHeld) { if (Cinema || Driven) LodResume(); else lodHeldFor += delta; }
+        // (made off screen: held from its third frame, once the notifier has had a look)
+        else if (seen != null && lodFrames < 3 && ++lodFrames == 3 && !seen.IsOnScreen()) LodHold();
         if (person.Pose is HerPose hp && !Driven)
         {
             float k = 1 - Mathf.Exp(-12 * (float)delta);

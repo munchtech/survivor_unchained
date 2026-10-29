@@ -277,6 +277,28 @@ public static class Style
         return H(8, s, said);
     }
 
+    /// <summary>The keycap the words teach with, one look for the tips and the callouts (UI note 4, 26 Oct:
+    /// the tip's chip was too dark to read on the dark world): a warm umber cap clearly lighter than the
+    /// ground (#5c4832, luminance 0.071 against the night's ~0.007), an ember rim with a deeper lower lip,
+    /// the key's name in bone (#f2e8d4 on the cap: 7.1:1). k scales it (26 px tall at 1).</summary>
+    public static Control KeyCap(string text, float k = 1)
+    {
+        var p = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(26, 26) * k, SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        var s = new StyleBoxFlat { BgColor = KeyCapFill, BorderColor = new Color("#ff9a40") with { A = 0.75f }, CornerDetail = 4 };
+        s.SetBorderWidthAll(2);
+        s.BorderWidthBottom = 3;
+        s.SetCornerRadiusAll(4);
+        s.ContentMarginLeft = s.ContentMarginRight = 7 * k;
+        s.ContentMarginTop = s.ContentMarginBottom = 1;
+        p.AddThemeStyleboxOverride("panel", s);
+        var l = Label(text, UiBold, (int)Math.Round(15 * k), KeyCapInk, false, HorizontalAlignment.Center, false);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        p.AddChild(l);
+        return p;
+    }
+
+    public static readonly Color KeyCapFill = new("#5c4832"), KeyCapInk = new("#f2e8d4");
+
     /// <summary>A key, as a keycap.</summary>
     public static Control Key(string text)
     {

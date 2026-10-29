@@ -89,6 +89,19 @@ public static class FloraSpecies
     public static JsonElement Stone => stone ??= Load(Path).GetProperty("stone").Clone();
     static JsonElement? stone;
 
+    /// <summary>flora_species.json "stands": how a dense stand of a kind (a zone's edge wall, a tree on every cell of its
+    /// grid) is thinned into clumps and given its sizes (Dressing.Stands); none: as placed.</summary>
+    public static JsonElement? Stands
+    {
+        get
+        {
+            if (!standsRead) { standsRead = true; stands = Load(Path).TryGetProperty("stands", out var v) ? v.Clone() : null; }
+            return stands;
+        }
+    }
+    static JsonElement? stands;
+    static bool standsRead;
+
     /// <summary>A zone's causeways (its flora_species.json "causeways"; none if it has none): stepping stones laid by Dressing.</summary>
     public static JsonElement[] CausewaysFor(string zone)
     {
@@ -112,6 +125,39 @@ public static class FloraSpecies
             if (zg.TryGetProperty("kinds", out var zk) && zk.TryGetProperty(use, out var k)) return k.Clone();
         }
         return root.GetProperty("kinds").GetProperty(use).Clone();
+    }
+
+    /// <summary>(lf3b) A zone's own ground paint values (its flora_species.json "ground": terrain.gdshader uniform names to
+    /// numbers, over Ground.cs's defaults; a --ground-* switch still wins); none if it has none.</summary>
+    public static Dictionary<string, float> GroundFor(string zone)
+    {
+        var d = new Dictionary<string, float>();
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("ground", out var g)) return d;
+        foreach (var kv in g.EnumerateObject())
+            if (kv.Value.ValueKind == JsonValueKind.Number) d[kv.Name] = kv.Value.GetSingle();
+        return d;
+    }
+
+    /// <summary>(E8 later r2) A zone's footpaths for the ground (flora_species.json "ground_paths": polylines of [x, z]),
+    /// as segments (x0, z0, x1, z1), twelve at most (terrain.gdshader path_seg).</summary>
+    public static List<Vector4> PathsFor(string zone)
+    {
+        var l = new List<Vector4>();
+        var zp = $"res://data/zones/{zone}/flora_species.json";
+        if (zone == "" || !FileAccess.FileExists(zp) || !Load(zp).TryGetProperty("ground_paths", out var g)) return l;
+        foreach (var line in g.EnumerateArray())
+        {
+            if (line.ValueKind != JsonValueKind.Array) continue;
+            Vector2? last = null;
+            foreach (var pt in line.EnumerateArray())
+            {
+                var p = new Vector2(pt[0].GetSingle(), pt[1].GetSingle());
+                if (last is Vector2 q && l.Count < 12) l.Add(new Vector4(q.X, q.Y, p.X, p.Y));
+                last = p;
+            }
+        }
+        return l;
     }
 
     /// <summary>A species by its name ("stepping").</summary>

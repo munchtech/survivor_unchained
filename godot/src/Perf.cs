@@ -91,19 +91,30 @@ public partial class Perf : Node
     /// <summary>First in every frame's process callbacks: where the main thread's own work begins.</summary>
     sealed partial class Start : Node
     {
-        public override void _Ready() { ProcessPriority = int.MinValue; ProcessMode = ProcessModeEnum.Always; }
-        public override void _Process(double delta) => frameFrom = Stopwatch.GetTimestamp();
+        public override void _Ready() { ProcessPriority = int.MinValue; ProcessPhysicsPriority = int.MinValue; ProcessMode = ProcessModeEnum.Always; }
+        public override void _Process(double delta) { frameFrom = Stopwatch.GetTimestamp(); physThis = physFrom; physFrom = 0; }
+        // (the first physics callback of the frame: where its physics steps begin, if any ran)
+        public override void _PhysicsProcess(double delta) { if (physFrom == 0) physFrom = Stopwatch.GetTimestamp(); }
     }
+
+    // The frame's wall clock cut where the engine's own steps meet (MR4, the hub's unaccounted ~5 ms): physics
+    // first, then the process callbacks (main), the rest of the process step (the message queue, deferred calls,
+    // skeletons), the renderer's draw (frame_pre_draw to frame_post_draw) and what follows it (the swap, input).
+    static long physFrom, physThis, preDraw, postDraw, lastEnd, deferAt;
+    // (a deferred call queued last in the frame: the message queue's work queued before it, skeletons' poses among it, ends there)
+    static readonly Callable Deferred = Callable.From(() => deferAt = Stopwatch.GetTimestamp());
 
     struct Frame
     {
-        public double T, Ms, Main, Physics, RenderCpu, Setup, Gpu;
+        public double T, Ms, Main, Physics, Proc, Nav, RenderCpu, Setup, Gpu, Tail, Queue, Draw, After, PhysW;
         public long Alloc, MainAlloc, Primitives;
         public int Draws, Objects, ShadowDraws, ShadowObjects, CanvasDraws, Pipelines, Gen0, Gen1, Gen2;
     }
 
     string name = "";
     double warm, span, window, t, nextWindow;
+    /// <summary>(--perf: the recording's clock, as its frames CSV gives it, for logs from other threads)</summary>
+    public static double Now;
     long last;
     long lastAlloc, lastMainAlloc;
     int lastGen0, lastGen1, lastGen2;
@@ -125,11 +136,23 @@ public partial class Perf : Node
 
     /// <summary>--perf-allocs: the runtime's allocation samples (one every
     /// 100 KB or so, named by the type that crossed the line) counted by type
-    /// over the recording, to find what the garbage is made of.</summary>
+    /// and by thread (the main thread or another) over the recording, to find
+    /// what the garbage is made of; and each collection, as the runtime tells
+    /// it (the generation, why, how long the threads took to stop and the
+    /// collection itself, what was kept, how much was found through the old
+    /// objects' cards), to find what makes a young collection slow.</summary>
     sealed class AllocSamples : System.Diagnostics.Tracing.EventListener
     {
         public volatile bool Counting;
         public readonly System.Collections.Concurrent.ConcurrentDictionary<string, long> Bytes = new();
+        public readonly System.Collections.Concurrent.ConcurrentQueue<string> Gcs = new();
+        /// <summary>The main thread's OS id (allocations on it are named "main", the rest "other").</summary>
+        public long MainOs;
+        DateTime suspendFrom, gcFrom;
+        double suspendMs, gcAt;
+        int depth, reason, type;
+        string heap = "", condemn = "";
+        readonly long[] marked = new long[9];
 
         protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource source)
         {
@@ -137,22 +160,60 @@ public partial class Perf : Node
                 EnableEvents(source, System.Diagnostics.Tracing.EventLevel.Verbose, (System.Diagnostics.Tracing.EventKeywords)0x1);
         }
 
+        object? P(System.Diagnostics.Tracing.EventWrittenEventArgs e, string n)
+        {
+            int i = e.PayloadNames!.IndexOf(n);
+            return i >= 0 ? e.Payload![i] : null;
+        }
+        long L(System.Diagnostics.Tracing.EventWrittenEventArgs e, string n) => P(e, n) is { } v ? Convert.ToInt64(v) : -1;
+
         protected override void OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs e)
         {
-            if (!Counting || e.EventName is not ("GCAllocationTick_V4" or "GCAllocationTick_V3") || e.PayloadNames == null || e.Payload == null) return;
-            int ti = e.PayloadNames.IndexOf("TypeName"), ai = e.PayloadNames.IndexOf("AllocationAmount64");
-            if (ti < 0) return;
-            long amount = ai >= 0 ? Convert.ToInt64(e.Payload[ai]) : 100_000;
-            Bytes.AddOrUpdate((string)e.Payload[ti]!, amount, (_, v) => v + amount);
+            if (!Counting || e.PayloadNames == null || e.Payload == null) return;
+            switch (e.EventName)
+            {
+                case "GCAllocationTick_V4" or "GCAllocationTick_V3":
+                {
+                    if (P(e, "TypeName") is not string tn) return;
+                    long amount = L(e, "AllocationAmount64") is var a and >= 0 ? a : 100_000;
+                    string key = (e.OSThreadId == MainOs ? "main  " : "other ") + tn;
+                    Bytes.AddOrUpdate(key, amount, (_, v) => v + amount);
+                    break;
+                }
+                case "GCSuspendEEBegin_V1": suspendFrom = e.TimeStamp; gcAt = Now; break;
+                case "GCSuspendEEEnd_V1": suspendMs = (e.TimeStamp - suspendFrom).TotalMilliseconds; break;
+                case "GCStart_V2" or "GCStart_V1":
+                    gcFrom = e.TimeStamp; depth = (int)L(e, "Depth"); reason = (int)L(e, "Reason"); type = (int)L(e, "Type");
+                    Array.Clear(marked); heap = condemn = ""; break;
+                case "GCMarkWithType":
+                {
+                    long t = L(e, "Type"), b = L(e, "Bytes");
+                    if (t >= 0 && t < marked.Length) marked[t] += b;
+                    break;
+                }
+                case "GCGlobalHeapHistory_V2" or "GCGlobalHeapHistory_V3" or "GCGlobalHeapHistory_V4":
+                    condemn = $"condemn 0x{L(e, "CondemnReasons0"):x}/0x{L(e, "CondemnReasons1"):x} mech 0x{L(e, "GlobalMechanisms"):x}"; break;
+                case "GCHeapStats_V2" or "GCHeapStats_V1":
+                    heap = $"kept g0 {L(e, "TotalPromotedSize0") / 1024}K g1 {L(e, "TotalPromotedSize1") / 1024}K, sizes g0 {L(e, "GenerationSize0") >> 20}M g1 {L(e, "GenerationSize1") >> 20}M g2 {L(e, "GenerationSize2") >> 20}M loh {L(e, "GenerationSize3") >> 20}M, handles {L(e, "GCHandleCount")} pinned {L(e, "PinnedObjectCount")}"; break;
+                case "GCRestartEEEnd_V1":
+                    // marked by root: 0 stacks, 1 finalizer queue, 2 handles, 3 older generations (the cards), 6 dependent handles
+                    Gcs.Enqueue($"perf gc at {gcAt:0.00}s: gen {depth} reason {reason} type {type}, suspend {suspendMs:0.0} ms, gc {(e.TimeStamp - gcFrom).TotalMilliseconds:0.0} ms, total {(e.TimeStamp - suspendFrom).TotalMilliseconds:0.0} ms; " +
+                                $"marked from stacks {marked[0] / 1024}K handles {marked[2] / 1024}K cards {marked[3] / 1024}K dep {marked[6] / 1024}K fq {marked[1] / 1024}K; {heap}; {condemn}");
+                    break;
+            }
         }
     }
 
     AllocSamples? allocs;
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
 
     public override void _Ready()
     {
         if (!On) { SetProcess(false); return; }
-        if (Args.Has("perf-allocs")) allocs = new AllocSamples();
+        // The runtime the game is hosted on, and its collector's settings as it read them (which runtimeconfig was honoured).
+        GD.Print($"perf runtime {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, server gc {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, gc config: " +
+                 string.Join(" ", GC.GetConfigurationVariables().OrderBy(kv => kv.Key).Select(kv => $"{kv.Key}={kv.Value}")));
+        if (Args.Has("perf-allocs")) allocs = new AllocSamples { MainOs = OperatingSystem.IsWindows() ? GetCurrentThreadId() : -1 };
         name = Args.Get("perf") is { } n && n != "1" ? n : "perf";
         warm = Args.Num("perf-warm", 8);
         span = Args.Num("perf-for", 30);
@@ -162,6 +223,8 @@ public partial class Perf : Node
         ProcessPriority = int.MaxValue;
         // (Process order is by priority across the tree, wherever the node sits.)
         AddChild(new Start());
+        RenderingServer.FramePreDraw += () => preDraw = Stopwatch.GetTimestamp();
+        RenderingServer.FramePostDraw += () => postDraw = Stopwatch.GetTimestamp();
         if (!Args.Has("perf-vsync"))
         {
             DisplayServer.WindowSetVsyncMode(DisplayServer.VSyncMode.Disabled);
@@ -183,8 +246,18 @@ public partial class Perf : Node
     {
         long now = Stopwatch.GetTimestamp();
         double ms = (now - last) * TickMs, main = (now - frameFrom) * TickMs;
+        bool cut = lastEnd > 0 && preDraw > lastEnd && postDraw >= preDraw && frameFrom >= postDraw;
+        long physAt = physThis > postDraw ? physThis : frameFrom;
+        double tail = cut ? (preDraw - lastEnd) * TickMs : 0, draw = cut ? (postDraw - preDraw) * TickMs : 0,
+            after = cut ? (physAt - postDraw) * TickMs : 0, physW = cut ? (frameFrom - physAt) * TickMs : 0;
+        double queue = cut && deferAt > lastEnd && deferAt <= preDraw ? (deferAt - lastEnd) * TickMs : 0;
+        lastEnd = now;
+        Deferred.CallDeferred();
+        drawMark = now;
+        if (Args.Has("perf-draws") && t >= nextHook) { nextHook = t + 5; HookDraws(); }
         last = now;
         t += delta;
+        Now = t;
         // How long from launch to the first frame drawn (the engine's clock starts with the process).
         if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();
@@ -216,6 +289,10 @@ public partial class Perf : Node
         {
             T = t, Ms = ms, Main = main,
             Physics = Performance.GetMonitor(Performance.Monitor.TimePhysicsProcess) * 1000,
+            // (the engine's process step and navigation: Godot keeps these as the worst frame of each second, not this frame)
+            Proc = Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000,
+            Tail = tail, Queue = queue, Draw = draw, After = after, PhysW = physW,
+            Nav = Performance.GetMonitor(Performance.Monitor.TimeNavigationProcess) * 1000,
             RenderCpu = RenderingServer.ViewportGetMeasuredRenderTimeCpu(vp),
             Setup = RenderingServer.GetFrameSetupTimeCpu(),
             Gpu = RenderingServer.ViewportGetMeasuredRenderTimeGpu(vp),
@@ -341,21 +418,50 @@ public partial class Perf : Node
         return string.Create(CultureInfo.InvariantCulture,
             $"{1000 / mean:0} fps, {mean:0.00}ms (p50 {ms[ms.Count / 2]:0.00}, 1% {Worst(ms, 0.01):0.0}, 0.1% {Worst(ms, 0.001):0.0}, max {ms[^1]:0.0}) " +
             $"main {w.Average(x => x.Main):0.00}ms ({each}) render {w.Average(x => x.RenderCpu + x.Setup):0.00}ms gpu {w.Average(x => x.Gpu):0.00}ms " +
+            $"cut: physics {w.Average(x => x.PhysW):0.00} tail {w.Average(x => x.Tail):0.00} (queue {w.Average(x => x.Queue):0.00}) draw {w.Average(x => x.Draw):0.00} after {w.Average(x => x.After):0.00} " +
+            $"worst/s: proc {w.Average(x => x.Proc):0.00} phys {w.Average(x => x.Physics):0.00} nav {w.Average(x => x.Nav):0.00} " +
             $"draws {w.Average(x => x.Draws):0}+{w.Average(x => x.ShadowDraws):0}sh+{w.Average(x => x.CanvasDraws):0}ui " +
             $"alloc {w.Average(x => x.Alloc) / 1024:0.0}KB/f (main {w.Average(x => x.MainAlloc) / 1024:0.0}) gc {w.Sum(x => x.Gen0)}/{w.Sum(x => x.Gen1)}/{w.Sum(x => x.Gen2)} pipes {w.Sum(x => x.Pipelines)}");
+    }
+
+    // --perf-draws (MR4): each canvas item's own _Draw, timed from the draw signal before it in the message
+    // queue (the HUD's redraws ran 3.4 ms a frame there), the costliest printed at the end.
+    readonly Dictionary<string, double> drawMs = new();
+    readonly HashSet<ulong> drawHooked = new();
+    static long drawMark;
+    double nextHook;
+
+    void HookDraws()
+    {
+        foreach (var n in GetTree().Root.FindChildren("*", "CanvasItem", true, false))
+        {
+            if (!drawHooked.Add(n.GetInstanceId())) continue;
+            var ci = (CanvasItem)n;
+            string key = $"{ci.GetParent()?.Name}/{ci.Name} ({ci.GetType().Name})";
+            ci.Draw += () =>
+            {
+                long now = Stopwatch.GetTimestamp();
+                if (recording && drawMark > 0) drawMs[key] = drawMs.GetValueOrDefault(key) + (now - drawMark) * TickMs;
+                drawMark = now;
+            };
+        }
     }
 
     void Finish()
     {
         SetProcess(false);
+        if (drawMs.Count > 0)
+            foreach (var (dk, dv) in drawMs.OrderByDescending(kv => kv.Value).Take(25))
+                GD.Print($"perf draws {dv / Math.Max(1, frames.Count):0.000} ms/frame {dk}");
         live = false;
         if (allocs != null)
         {
             allocs.Counting = false;
             long all = allocs.Bytes.Values.Sum();
             GD.Print($"perf {name} allocated (sampled), {all / 1048576.0:0.0} MB over the recording, by type:");
-            foreach (var (type, bytes) in allocs.Bytes.OrderByDescending(kv => kv.Value).Take(30))
+            foreach (var (type, bytes) in allocs.Bytes.OrderByDescending(kv => kv.Value).Take(40))
                 GD.Print($"perf alloc {bytes / 1024,8} KB {100.0 * bytes / Math.Max(1, all),5:0.0}%  {type}");
+            foreach (var g in allocs.Gcs) GD.Print(g);
             allocs.Dispose();
         }
         // The last young collection: what it kept, what the heap holds by generation, and how long it held the game.
@@ -433,14 +539,14 @@ public partial class Perf : Node
         j.Append("}\n");
         using (var f = FileAccess.Open($"{dir}/{name}.json", FileAccess.ModeFlags.Write)) f?.StoreString(j.ToString());
 
-        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines");
+        var c = new StringBuilder("t,ms,main,physics_max,render_cpu,setup,gpu,draws,objects,primitives,shadow_draws,shadow_objects,canvas_draws,alloc,main_alloc,gen0,gen1,gen2,pipelines,tail,queue,draw,after,phys_wall");
         foreach (var p in PartNames) c.Append(',').Append(p);
         foreach (var e in extraNames) c.Append(',').Append(e);
         c.Append('\n');
         for (int fi = 0; fi < frames.Count; fi++)
         {
             var x = frames[fi];
-            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines}"));
+            c.Append(string.Create(inv, $"{x.T:0.000},{x.Ms:0.000},{x.Main:0.000},{x.Physics:0.000},{x.RenderCpu:0.000},{x.Setup:0.000},{x.Gpu:0.000},{x.Draws},{x.Objects},{x.Primitives},{x.ShadowDraws},{x.ShadowObjects},{x.CanvasDraws},{x.Alloc},{x.MainAlloc},{x.Gen0},{x.Gen1},{x.Gen2},{x.Pipelines},{x.Tail:0.000},{x.Queue:0.000},{x.Draw:0.000},{x.After:0.000},{x.PhysW:0.000}"));
             for (int i = 0; i < Parts; i++) c.Append(',').Append(parts[fi * Parts + i].ToString("0.###", inv));
             for (int i = 0; i < k; i++) c.Append(',').Append(extras[fi * k + i].ToString("0.##", inv));
             c.Append('\n');

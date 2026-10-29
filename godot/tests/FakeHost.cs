@@ -35,7 +35,10 @@ sealed class FakeHost : IZoneHost
     }
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) => Said.Add(text);
+    public void Say(string text, string? who = null, double seconds = 4) { Said.Add(text); sayLeft = seconds; }
+    double sayLeft;
+    /// <summary>A line is up for its seconds, as on the screen (the Prologue's road words wait for it).</summary>
+    public bool Saying => sayLeft > 0;
     public void Toast(Toast t) => Toasts.Add(t);
     public void Announce(Announcement a) => Announced.Add(a);
     public void Talk(string npc) => Talked.Add(npc);
@@ -51,6 +54,9 @@ sealed class FakeHost : IZoneHost
     public void SetBoss(BossBar? bar) => Boss = bar;
     public void SetObjectives(List<Tracked> list) => Tracked = list;
     public void SetHint(Hint? hint) => CurrentHint = hint;
+    /// <summary>The callouts asked for, in order (each frame its moment holds).</summary>
+    public readonly List<Callout> Asked = new();
+    public void Teach(Callout c) => Asked.Add(c);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => Air = p;
     public bool Captured;
     public (double X, double Y, double Z)? Held;
@@ -77,6 +83,7 @@ sealed class FakeHost : IZoneHost
     /// <summary>Run what was put off, as time passes.</summary>
     public void Pass(double dt)
     {
+        sayLeft -= dt;
         for (int i = 0; i < later.Count; i++) later[i] = (later[i].T - dt, later[i].Fn);
         var due = later.Where(l => l.T <= 0).ToList();
         later.RemoveAll(l => l.T <= 0);

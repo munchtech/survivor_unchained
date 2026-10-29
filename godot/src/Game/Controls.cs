@@ -20,6 +20,9 @@ public enum Act
     Answer,
     /// <summary>The book's Journal or Map opened wide over the world, or folded back into its panel.</summary>
     Expand,
+    /// <summary>Held in play (the Drowned Girl HUD): her level and experience (by night the ember) on the river's card,
+    /// readable without a mouse (UI 18, XpLight).</summary>
+    Experience,
 }
 
 /// <summary>
@@ -45,10 +48,10 @@ public partial class Controls : Node
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
-        [Act.Expand] = ["KeyZ"],
+        [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs
@@ -65,6 +68,8 @@ public partial class Controls : Node
         [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
         // (the right stick's click is the skip in play; in the book it opens a page wide)
         [Act.Expand] = [JoyButton.RightStick],
+        // (UI 18: held in play, the level's card; LB turns the book's pages only in a menu)
+        [Act.Experience] = [JoyButton.LeftShoulder],
     };
 
     /// <summary>In a menu one button means its menu meaning first: A is
@@ -201,10 +206,22 @@ public partial class Controls : Node
         if (what == NotificationApplicationFocusOut) down.Clear();
     }
 
+    // (The pads plugged in, asked of the engine once a frame: each ask is a new tracked Godot array, and Held asks per
+    // binding, many times a frame; they outlived the young collection.)
+    static int[] pads = System.Array.Empty<int>();
+    static ulong padsFrame = ulong.MaxValue;
+    static int[] Pads()
+    {
+        ulong f = Engine.GetProcessFrames();
+        if (f != padsFrame) { padsFrame = f; var a = Input.GetConnectedJoypads(); pads = a.Count == pads.Length ? Fill(a, pads) : Fill(a, new int[a.Count]); }
+        return pads;
+        static int[] Fill(Godot.Collections.Array<int> a, int[] into) { for (int k = 0; k < into.Length; k++) into[k] = a[k]; return into; }
+    }
+
     public bool Held(Act a)
     {
         foreach (var c in Bindings[a]) if (down.Contains(c)) return true;
-        if (Pad.TryGetValue(a, out var bs)) foreach (var b in bs) foreach (var dev in Input.GetConnectedJoypads()) if (Input.IsJoyButtonPressed(dev, b)) return true;
+        if (Pad.TryGetValue(a, out var bs)) foreach (var b in bs) foreach (var dev in Pads()) if (Input.IsJoyButtonPressed(dev, b)) return true;
         return false;
     }
 
@@ -231,7 +248,7 @@ public partial class Controls : Node
     void MenuPoll(double dt)
     {
         Act? stick = null, dpad = null;
-        foreach (var dev in Input.GetConnectedJoypads())
+        foreach (var dev in Pads())
         {
             float ax = Input.GetJoyAxis(dev, JoyAxis.LeftX), ay = Input.GetJoyAxis(dev, JoyAxis.LeftY);
             if (Mathf.Max(Mathf.Abs(ax), Mathf.Abs(ay)) > 0.55f) stick = Mathf.Abs(ax) > Mathf.Abs(ay) ? (ax > 0 ? Act.Right : Act.Left) : (ay > 0 ? Act.Down : Act.Up);
@@ -264,7 +281,7 @@ public partial class Controls : Node
         if (Held(Act.Right)) x += 1;
         if (Held(Act.Up)) z -= 1;
         if (Held(Act.Down)) z += 1;
-        foreach (var dev in Input.GetConnectedJoypads())
+        foreach (var dev in Pads())
         {
             float ax = Input.GetJoyAxis(dev, JoyAxis.LeftX), az = Input.GetJoyAxis(dev, JoyAxis.LeftY);
             float m = Mathf.Sqrt(ax * ax + az * az);
@@ -281,7 +298,7 @@ public partial class Controls : Node
         MoveX = Captured ? 0 : x;
         MoveZ = Captured ? 0 : z;
         var look = Vector2.Zero;
-        foreach (var dev in Input.GetConnectedJoypads())
+        foreach (var dev in Pads())
         {
             var r = new Vector2(Input.GetJoyAxis(dev, JoyAxis.RightX), Input.GetJoyAxis(dev, JoyAxis.RightY));
             float m = r.Length();

@@ -71,7 +71,7 @@ public class SkillTests
     public void Slots_and_ranks_grow_with_the_survivor_and_the_calling_teaches_its_own()
     {
         var j = Make("stalker");
-        Assert.Equal(1, SkillBook.Slots(j.Ch));
+        Assert.Equal(2, SkillBook.Slots(j.Ch));
         Assert.Equal(1, SkillBook.Rank(j.Ch));
         foreach (var id in new[] { "volley", "knifestorm", "rimeshard" }) j.Ch.Discovered.Add(id);
         while (j.Ch.Level < 3) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
@@ -81,7 +81,7 @@ public class SkillTests
         Assert.True(SkillBook.Knows(j.Ch, taught!));
         Assert.Contains(Weapons.All[taught!].Tags, Callings.Archetype("stalker").Favours.Contains);
         while (j.Ch.Level < 8) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
-        Assert.Equal(3, SkillBook.Slots(j.Ch));
+        Assert.Equal(4, SkillBook.Slots(j.Ch));
         Assert.Equal(3, SkillBook.Rank(j.Ch));
     }
 

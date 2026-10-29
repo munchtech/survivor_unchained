@@ -53,6 +53,8 @@ uniform int debug_view = 0;
 // the preset's amount and thaw (Atmosphere: x amount, y thaw), the rime's value, and how far down the heights it reaches.
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
 global uniform vec4 ground_frost;
+// (x the moon's share of the key, y a low warm sun's: Atmosphere.cs.)
+global uniform vec4 flora_light;
 // E6: the river (Water.cs): the water's height (x; w 1 when the zone has one), and its bed and bank (water.json "look"
 // "bed": x pebbles 0-1, y silt 0-1, z m above the water the bank is wet, w how dark it is), the silt's colour.
 global uniform vec4 water_level;
@@ -74,10 +76,54 @@ uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_black;
 // The ruts: the albedo at a full rut's core (GroundPaint gives G 0.42-1, so plus or minus 40%); the crown between them lighter.
 uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
+// (lf3b, judge lf2 #3: Low Ford's ruts read as straight near-black trenches beside a pale kerb) rut_soft: the ruts' darkness
+// taken from the mask blurred over about rut_blur m (their edges eased out into the road and the grass), and broken along
+// them by a 2-3 m field down to (1 - rut_soft * 0.55) in places; 0: as before
+uniform float rut_soft = 0.0;
+uniform float rut_blur = 0.3;
+// (lf3b) how much the rime follows the road's shape (on the crown and the ruts' shoulders, off the ruts): 1 as judge 2
+// asked in town; by Low Ford's moon it drew the crown as a pale kerb between two black trenches
+uniform float road_rime = 1.0;
+// (lf4 V, judge lf2 #3: the pale "kerb" between Low Ford's ruts was this strip's grass layer, its earth cut by
+// 45%: a grey-green band 1.5x the road's value by night) crown_grass: how much of the centre strip's dirt goes to grass
+uniform float crown_grass = 0.45;
+// (lf4 V: a rut puddle at Low Ford's post mirrored the sky as a pale blue-white blob) pud_night: the sky in standing
+// water cut by this share while the night's frost is out (and its albedo kept muddy); 0: as before, dawn and day unchanged
+uniform float pud_night = 0.0;
+// (lf5p, judge lf4 #1: by night Low Ford's rut puddles read as black holes) pud_mud: the night's standing water's albedo
+// lifted from pud_dark toward pud_mud_k (about the wet rim's value: wet mud, never a hole) by this share while the frost is
+// out; pud_sheen: the sky kept in a band just inside the water's edge (a faint rim catching the moon's sky) though
+// pud_night cuts it in the middle. 0, 0: as before.
+uniform float pud_mud = 0.0;
+uniform float pud_mud_k = 0.62;
+uniform float pud_sheen = 0.0;
+// (lf5p, judge lf4 #5) the meadow in her ember's pool (the global survivor's xz, flora_night.y of the way by night) turned
+// from green toward straw within ember_r m, so her warm light reads ochre on it, not olive-chartreuse; her light untouched.
+global uniform vec4 survivor;
+global uniform vec4 flora_night;
+uniform float ember_r = 7.0;
 // The setts: grime near what stands (0.6-1 m), the gutter's width at a wall's base, the wear lane's lift, the share of
 // edge stones dropped, the weeds in the joints by the walls.
 uniform float grime = 0.08;
 uniform float gutter_w = 0.4;
+// (E8 later r2, Low Ford: flora_species.json "ground") foot_damp: the ground at the foot of what stands damp, not mud
+// (the gate's drums stood in a band of rust: the setts' mud, warm and lost stone by stone, ending dead at the grass):
+// darker (about 0.75 of the stone on screen) and cooler, smoother so the moon gives it a sheen, out to foot_w m,
+// feathered by noise and carried onto the earth as darker soil; the margin's warm tint neutral. 0 (the default, the
+// town): none of it.
+uniform float foot_damp = 0.0;
+uniform float foot_w = 0.6;
+// (E8 later r2, Low Ford's camp: flora_species.json "ground" and "ground_paths") camp_scorch: a burnt disc round each
+// fire (warm_at) out to scorch_r m, soft-edged, flecked with pale ash; trample: the earth between the fire and the logs
+// lighter (worn); path_seg: footpaths (segments x0, z0, x1, z1, path_n of them) path_hw m to their edge, path_lift
+// lighter. All 0 by default (the town): none of it.
+uniform float camp_scorch = 0.0;
+uniform float scorch_r = 1.0;
+uniform float trample = 0.0;
+uniform vec4 path_seg[12];
+uniform int path_n = 0;
+uniform float path_hw = 0.2;
+uniform float path_lift = 0.0;
 // The setts' shoulders lit less (judge 1, E3 fix 6: the bevel rims read as mosaic; halve their highlight).
 uniform float setts_bump = 0.32;
 uniform float night_dew = 0.35;
@@ -120,10 +166,26 @@ uniform float mud_sat = 1.45;
 // (E9a: how far the mud lifts the occlusion of the joints it fills, 0-1.)
 uniform float mud_ao = 0.8;
 // ... and its specular (the sky's sheen greyed the dark mud).
-uniform float mud_spec = 0.1;
+uniform float mud_spec = 0.2;   // (r2 0.1: the wet gloss)
+uniform float mud_wet_dark = 0.18;
+uniform float mud_wet_rough = 0.34;
+// (E9e: the mud's hue pulled off the shade's blue, 0-1.)
+uniform float mud_warm = 1.0;
 // Style r2 (--setts-paint): the street's mud painted, an opaque matte darker browner earth (a calm sheet, no grain), flat,
 // moss along its edges. 0 is the mud as it was.
 uniform float mud_paint = 0.0;
+// E9e r2. setts_kerb: the setts end on a kerb (kerb_in to kerb_in + kerb_w metres in from their edge: two courses of
+// long stones laid along it) with broken setts outside it, dirt and grass where they are gone (0: the old ragged band).
+// setts_turn: the courses turn to run across each street (GroundPaint's course direction in the exposure's A; 0 off).
+// setts_lf: the 2-6 m tone layer (value, a slight hue). mud_pool: soft wet pools of mud 0.5-2 m by what stands.
+// close_bump: the setts' relief at the close camera (x setts_bump).
+uniform float setts_kerb = 1.0;
+uniform float kerb_in = 0.28;
+uniform float kerb_w = 0.3;
+uniform float setts_turn = 1.0;
+uniform float setts_lf = 1.0;
+uniform float mud_pool = 1.0;
+uniform float close_bump = 2.2;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -214,6 +276,7 @@ void fragment() {
 	sp.b *= 1.0 - heal * 0.85;
 	vec3 n_geo = normalize(w_nrm);
 	vec3 p_dx = dFdx(w_pos), p_dy = dFdy(w_pos);
+	float footg = max(length(p_dx), length(p_dy));   // metres a pixel
 
 	// How much of each material the paint asks for: its own ramps (about a
 	// metre), nudged by noise, never stepped.
@@ -225,8 +288,33 @@ void fragment() {
 	// stones dropped or sunk, dirt filling where they went, and the paint's own edge pushed in and out.
 	float sd_in = nr.a * 2.0 + (nM.g - 0.5) * 0.7 + (nF.r - 0.5) * 0.5;
 	float s_band = (1.0 - smoothstep(0.3, 1.15, sd_in)) * step(0.02, sp.g);   // (0.5-1 m: judge 1, E3 fix 5)
-	ws = clamp(ws + (nF.g - 0.5) * 0.6 * s_band, 0.0, 1.0);
-	wd = max(wd, s_band * ws * 0.9);
+	// (E9e r2, fix 4: the setts dissolved into the grass. Now they end: a kerb, then 20-50 cm of broken setts with dirt and
+	// grass where stones are gone, then the verge. Not at a wall's foot, where the gutter takes the edge.)
+	float sd = nr.a * 2.0;
+	float sdw = sd + (nM.g - 0.5) * 0.1 + (nF.g - 0.5) * 0.03;
+	float by_wall = smoothstep(0.6, 1.2, nr.r * 2.0) * setts_kerb;
+	float in_st = step(0.004, sd) * step(0.02, sp.g);
+	float kerb = step(kerb_in, sdw) * step(sdw, kerb_in + kerb_w) * by_wall * in_st;
+	float k_band = (1.0 - smoothstep(0.0, kerb_in, sdw)) * in_st * by_wall;
+	s_band = mix(s_band * (1.0 - setts_kerb), k_band, by_wall);
+	ws = mix(clamp(ws + (nF.g - 0.5) * 0.6 * s_band, 0.0, 1.0), in_st, by_wall);
+	wd = max(wd, s_band * mix(ws * 0.9, 0.75, by_wall));
+	// The seams: the kerb's two joint lines, and where the courses turn (a joint along the turn, so no stone is cut).
+	float seam = 0.0, c_turn = 0.0, k_turn = 0.0;
+	if (sp.g > 0.02) {
+		vec2 tx = vec2(0.25 / zone_size, 0.0);
+		vec2 gs = vec2(texture(near_tex, zuv + tx.xy).a - texture(near_tex, zuv - tx.xy).a, texture(near_tex, zuv + tx.yx).a - texture(near_tex, zuv - tx.yx).a) * 2.0 / 0.5;
+		vec2 gd = vec2(texture(expo_tex, zuv + tx.xy).a - texture(expo_tex, zuv - tx.xy).a, texture(expo_tex, zuv + tx.yx).a - texture(expo_tex, zuv - tx.yx).a) / 0.5;
+		float lg = max(length(gs), 0.3);
+		float dk = min(abs(sdw - kerb_in), abs(sdw - kerb_in - kerb_w)) / lg;
+		seam = (1.0 - smoothstep(0.004, 0.009, dk)) * by_wall * in_st;
+		c_turn = step(0.5, ex4.a) * setts_turn;
+		float dt = abs(ex4.a - 0.5) / max(length(gd), 0.02);
+		seam = max(seam, (1.0 - smoothstep(0.004, 0.009, dt)) * setts_turn * in_st * (1.0 - kerb));
+		// The kerb's courses along the edge: across the distance's own gradient.
+		k_turn = step(abs(gs.y), abs(gs.x));
+	}
+	float s_turn = mix(c_turn, k_turn, kerb);
 	float wb = clamp((sp.b - 0.5) * edge_k + 0.5 + (nM.r - 0.5) * 0.4, 0.0, 1.0) * step(0.02, sp.b);
 	float wm = clamp((sp.a - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.3, 0.0, 1.0) * step(0.02, sp.a);
 	// The meadow's bare patches (1-3 m, in loose drifts): trodden earth through the grass, as the grass leaves them.
@@ -237,7 +325,7 @@ void fragment() {
 	float hdp = h_depth + 0.22 * clamp(bare * (1.0 - bare) * 4.0, 0.0, 1.0);
 	// The road's centre strip: sparse grass between the ruts.
 	float cen = smoothstep(0.84, 0.96, pm.r);
-	wd *= 1.0 - cen * 0.45;
+	wd *= 1.0 - cen * crown_grass;
 	// (Where trodden earth meets grass the heights decide less, so the edge ramps instead of cutting on the maps' grain.)
 	float wedge = clamp(max(wd * (1.0 - wd), wm * (1.0 - wm)) * 4.0, 0.0, 1.0) * (1.0 - step(0.02, sp.g));
 	hdp += verge_soft * wedge;
@@ -301,7 +389,16 @@ void fragment() {
 		vec2 uv = g_uv(k, w_pos, n_geo, p_dx, p_dy, tbn, dx, dy);
 		T[s] = tbn;
 		float ly = float(k);
-		if (k == SETTS) { uv = st_uv; ly = st_ly; }
+		if (k == SETTS) {
+			// (E9e r2: turned 90 degrees where the courses run north-south; the kerb's stones twice as long.)
+			vec2 kq = vec2(mix(1.0, 0.5, kerb), 1.0);
+			if (s_turn > 0.5) {
+				uv = vec2(w.y, -w.x) * g_scale[SETTS] * kq; dx = vec2(dx.y, -dx.x) * kq; dy = vec2(dy.y, -dy.x) * kq;
+				vec3 t2 = normalize(vec3(0.0, 0.0, 1.0) - n_geo * n_geo.z);
+				tbn = mat3(t2, cross(n_geo, t2), n_geo); T[s] = tbn;
+			} else { uv = st_uv * kq; dx *= kq; dy *= kq; }
+			ly = floor(hash12(floor(uv) + 17.0 + 31.0 * s_turn + 57.0 * kerb) * 2.999);
+		}
 		vec4 a0, n0, h0;
 		fetch3(k, k == SETTS ? uv : uv + off_a, ly, dx, dy, a0, n0, h0);
 		float drop = 0.0;
@@ -309,7 +406,14 @@ void fragment() {
 			// (The setts' normal carries each stone's own random in B: env_ground.py.)
 			float sid = n0.b;
 			st_sid = sid;
-			vec2 nxy = (n0.rg * 2.0 - 1.0) * setts_bump;
+			// (E9e r2: more relief at the close camera, under about 8 mm a pixel, where the stones' crowns and arrises must read.)
+			float foot = footg;
+			vec2 nxy = (n0.rg * 2.0 - 1.0) * setts_bump * mix(1.0, close_bump, 1.0 - smoothstep(0.004, 0.009, foot));
+			nxy *= 1.0 - seam;
+			if (seam > 0.0) {
+				a0.rgb = mix(a0.rgb, vec3(0.074, 0.062, 0.044), seam);
+				h0 = mix(h0, vec4(0.82, 0.95, 0.08, 1.0), seam);
+			}
 			n0.rg = nxy * 0.5 + 0.5;
 			n0.b = sqrt(max(1.0 - dot(nxy, nxy), 0.0)) * 0.5 + 0.5;
 			drop = step(sid, 0.1 + edge_drop * s_band) * s_band;
@@ -383,12 +487,20 @@ void fragment() {
 	// By night the bare soil between the tufts dark, the thick clumps lighter (judge 2, E3 fix 4: the moonlit meadow read as felt).
 	albedo *= mix(1.0, mix(0.8, 1.06, tuft), nt);
 	// Setts: the world's own tone over the tile, so no two copies match.
-	albedo *= 1.0 + (nF.r - 0.5) * 0.22 * w_setts;
+	// (E9e r2, fix 1: that was a 0.9 m blotch, tone noise at the stones' own scale. Now a 2-6 m layer, +-10% in value with a
+	// slight warm-cool drift; the stones' own tones within 10% of their course's.)
+	float lf = nM.r * 0.55 + nM.g * 0.3 + nF.r * 0.15;
+	albedo *= mix(1.0 + (nF.r - 0.5) * 0.22 * w_setts, 1.0 + (lf - 0.5) * 0.5 * w_setts, setts_lf);
+	albedo *= mix(vec3(1.0), mix(vec3(1.02, 1.0, 0.965), vec3(0.985, 1.0, 1.025), smoothstep(0.3, 0.7, nM.a)), w_setts * setts_lf);
+	// Darker and warmer at the margins: along the walls and under the eaves.
+	float margin = (1.0 - smoothstep(0.4, 1.8, nr.r * 2.0)) * w_setts * setts_lf;
+	albedo *= mix(vec3(1.0), mix(vec3(0.9, 0.86, 0.8), vec3(0.87), step(0.001, foot_damp)), margin);
 	// Grime within 0.6-1 m of what stands (a trace now: the mud below carries it); a wear lane down the ways; weeds and
 	// moss in the joints by the walls.
 	float near_any = 1.0 - smoothstep(0.6, 1.0, nr.g * 2.0 + (nF.b - 0.5) * 0.3);
 	albedo *= 1.0 - grime * near_any * w_setts;
 	albedo *= 1.0 + lane_lift * nr.b * w_setts * (1.0 - near_any);
+	rough -= 0.08 * nr.b * w_setts * (1.0 - near_any) * setts_lf;
 	// The street's mud (judge 3, E3 F: grime as mud, not darker stone). The tile's height: joints about 0.1, a stone's
 	// edge 0.3, its top 0.6-0.95. Near what stands the mud's level rises, ragged, so the joints widen and fill and the
 	// stones' edges (their low side first, by their tilt) are buried; some stones sunk (lower, darker, more buried), a
@@ -407,8 +519,20 @@ void fragment() {
 	float lost = max(step(st_sid, 0.1 + 0.2 * mud_g * mud_g) * step(0.3, mud_g), step(st_sid, 0.35) * step(0.5, collar));
 	float sunk = max(step(st_sid, 0.1 + 0.4 * mud_g) * step(0.1, mud_g), step(st_sid, 0.6) * step(0.3, collar)) * (1.0 - lost);
 	float lvl = 0.2 + mud_g * mud_g * (0.2 + (rgm - 0.5) * 0.24) + mud_g * 0.06 + sunk * 0.18 + collar * (0.5 + (rg4.a - 0.5) * 0.3);
-	float hfw = fwidth(hgt) * 0.5;
+	float hfw = fwidth(hgt) * mix(0.5, 1.5, mud_pool);
 	float mud_c = max(1.0 - smoothstep(lvl - 0.04 - hfw, lvl + 0.03 + hfw, hgt), lost) * step(0.001, mud_g + collar);
+	// (E9e r2: at the play camera the joints are under a pixel, so their mud came through as dots where two met: the
+	// joints' share of mud laid as a film instead, continuous, by how far the mud reaches.)
+	mud_c = max(mud_c, smoothstep(0.05, 0.5, mud_g + collar) * 0.3 * smoothstep(0.006, 0.02, footg) * mud_pool);
+	// The pools (fix 2): soft-edged, 0.5-2 m, where the mud gathers (the well, posts, stalls, a wall's foot, the broken
+	// edge), wet and smooth enough to hold the sky; only the tallest tops break their rims.
+	// (E9e r3, fix 2-3: round pools read as stains or manholes, a smooth blob at the kerb: the outline lobed by 1-2 m and
+	// 0.6 m noise, warped; the broken edge no longer gathers a pool of its own.)
+	vec4 lb4 = texture(noise_tex, w * 0.75 + (rg4.ga - 0.5) * 0.35 + 0.19);
+	float pool_f = mud_g * 0.85 + collar * 0.6 + (nM.b - 0.5) * 0.75 + (nF.r - 0.5) * 0.3 + (lb4.r - 0.5) * 0.5 + (rg4.b - 0.5) * 0.2;
+	float pool = smoothstep(0.7, 0.88, pool_f) * w_setts * mud_pool;
+	float pool_c = pool * (1.0 - smoothstep(0.62, 0.78, hgt) * (1.0 - smoothstep(0.35, 0.8, pool)));
+	mud_c = max(mud_c, pool_c);
 	// (E3 G: mud, not dark stone: about 30% under the stones' value, hue about 30 degrees and well over the stones'
 	// saturation (the town's grade greys the setts' own warmth by a third); wetter and darker in the joints and at the
 	// collar, a paler dried crust where it rides over a stone. sRGB about 0.26, 0.185, 0.11.)
@@ -417,23 +541,80 @@ void fragment() {
 	// blue, pushed through mud_sat 1.5, clamped to zero, so the blue shade lit nothing of it but the sky's sheen. Lighter,
 	// with blue left in it (sat 1.45 over a base whose blue survives it), and its occlusion lifted where it fills a joint:
 	// dark wet earth, with value and hue. Shaded p10/mean 15/20 -> 20/25 at towndawn; lit by day 0.77 of the stone, was 0.65.)
-	vec3 mud_col = mix(vec3(0.071, 0.048, 0.025), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
+	// (E9e r2, fix 2: the mud read ochre by day, its saturation pushed and the grade's vibrance on top. Dark umber now, lit
+	// sRGB about 75, 60, 45 at saturation under 40%: a less saturated base, mud_sat 1, and the warm bias only in shade.)
+	vec3 mud_col = mix(mix(vec3(0.071, 0.048, 0.025), vec3(0.048, 0.035, 0.023), mud_pool), vec3(0.047, 0.029, 0.011), mud_paint) * mud_tone * mix(1.04, 0.86, max(mdep, collar * 0.6)) * (0.85 + 0.3 * rgm) * mv;
 	// (A grain of its own at 5-20 cm: a flat sheet read as a decal. Not the tile's, whose stones showed through.)
 	vec2 mgr = texture(noise_tex, w * 5.3 + 0.17).rg;
-	mud_col *= mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.93 + 0.1 * mgr.r, mud_paint);
-	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mud_sat), 0.0);
+	// (E9d: towndawn's lit mud by the stalls read speckled: the grain calmer, more so with the pools on)
+	mud_col *= mix(mix(0.78 + 0.3 * mgr.r + 0.14 * mgr.g, 0.88 + 0.16 * mgr.r + 0.06 * mgr.g, mud_pool), 0.93 + 0.1 * mgr.r, mud_paint);
+	mud_col = max(mix(vec3(dot(mud_col, vec3(0.2126, 0.7152, 0.0722))), mud_col, mix(mud_sat, 1.0, mud_pool)), 0.0);
+	// (E9e: at dawn the shaded mud still read as a blue-black hole, p10 23-25 RGB 27,29,46: the sky's blue is all the
+	// shade has, and the mud's base gave it nothing redder to light. Its blue down, red and green up, and a little lift, so
+	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
+	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(1.62, 1.36, 0.9), mud_pool),   // (E9d: was 2.1, 1.8, 0.75: mustard under the dawn sun; r2 was 1.95, 1.48, 0.86: rust-orange under the lamps; a darker wet umber)
+		 mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
 	albedo *= 1.0 - 0.14 * sunk * w_setts;
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
 	// A film of mud over the tops that poke through the collar.
-	albedo = mix(albedo, albedo * vec3(0.92, 0.85, 0.74), collar * (1.0 - mud_c) * 0.6);
+	albedo = mix(albedo, albedo * mix(vec3(0.92, 0.85, 0.74), vec3(0.9, 0.86, 0.8), mud_pool), collar * (1.0 - mud_c) * 0.6);
 	albedo = mix(albedo, mud_col, mud_c);
 	rough = mix(rough, mix(mix(0.85, 0.65, mdep * collar), 0.97, mud_paint), mud_c);
+	// (Wet mud at the rim, a film of standing water in the middle, broken by scum: dark pits read as burn marks, so the
+	// pool's value is the mud's and its wet read is the sky in it.)
+	float pool_w = smoothstep(0.45, 0.9, pool) * smoothstep(0.25, 0.75, nF.g * 0.7 + rg4.a * 0.3);
+	// (At the close camera's grazing look the film held the whole pale sky, a white sheet: there it is wet mud.)
+	float pool_far = smoothstep(0.004, 0.012, footg);
+	pool_w *= mix(0.35, 1.0, pool_far);
+	float pool_ndv = smoothstep(0.15, 0.75, clamp(dot(n_geo, normalize(CAMERA_POSITION_WORLD - w_pos)), 0.0, 1.0));
+	// (E9e r3: the sky the grazing look loses comes back as the mud's own warmth, a wet sheen tinted by its albedo.)
+	albedo = mix(albedo, mud_col * mix(1.15, 0.95, pool_w) * mix(vec3(1.5, 1.4, 1.2), vec3(1.2, 1.05, 0.9), pool_ndv), pool_c);
+	rough = mix(rough, mix(0.45, 0.2, pool_w) + (1.0 - pool_ndv) * 0.15, pool_c);
+	n_w = normalize(mix(n_w, n_geo, pool_c));
+	float pool_s = pool_c * w_setts;
+	// (E9e r3, fix 1: at a grazing look the film held the pale sky, white as frost or ash: 0.9 is F0 0.13, six times
+	// water's. Now near water's F0 looking down and a tenth of it at grazing, where Godot scales the Fresnel rim by
+	// 50 F0: wet mud with a sheen, never a mirror.)
+	float pool_spec = mix(0.1, mix(0.2, 0.28, pool_w), pool_ndv);
 	n_w = normalize(mix(n_w, n_geo, mud_c * mix(0.85, 1.0, mud_paint)));
 	hgt = mix(hgt, min(hgt, lvl * 0.8), mud_c);
 	ao = mix(ao, 1.0, mud_c * mud_ao * (1.0 - mud_paint));
 	float dbg_mud_c = step(0.5, mud_c) * w_setts;
 	float mud_s = mud_c * w_setts;
+	// (E9d r2) the mud wet: darker and glossier than the setts (under the lamps it read as dry rust)
+	albedo *= 1.0 - mud_wet_dark * mud_s * (1.0 - mud_paint);
+	rough = mix(rough, mud_wet_rough, mud_s * (1.0 - mud_paint));
+	if (foot_damp > 0.0) {
+		float fdn = nr.g * 2.0 + (nF.b - 0.5) * 0.4 + (rg4.g - 0.5) * 0.35 + (nM.a - 0.5) * 0.25;
+		float fd = (1.0 - smoothstep(foot_w * 0.25, foot_w, fdn)) * foot_damp;
+		albedo *= mix(vec3(1.0), mix(vec3(0.62, 0.64, 0.72), vec3(0.54, 0.67, 0.97), w_setts), fd);
+		rough = mix(rough, mix(rough * 0.85, 0.42, w_setts), fd);
+	}
+	if (camp_scorch + trample > 0.0) {
+		for (int i = 0; i < 4; i++) {
+			if (warm_at[i].z <= 0.0) continue;
+			float dn = length(w - warm_at[i].xy) + (nF.r - 0.5) * 0.3 + (nM.b - 0.5) * 0.25;
+			float sc = (1.0 - smoothstep(scorch_r * 0.55, scorch_r * 1.15, dn)) * camp_scorch;
+			albedo = mix(albedo, vec3(0.040, 0.032, 0.026) * (0.75 + 0.5 * nF.g), sc * 0.75);
+			float fl = smoothstep(0.70, 0.80, texture(noise_tex, w * 2.3 + 0.29).r * 0.6 + nF.a * 0.4) * sc;
+			albedo = mix(albedo, vec3(0.22, 0.21, 0.20), fl * 0.65);
+			rough = mix(rough, 0.95, sc);
+			float tr = smoothstep(scorch_r * 0.95, scorch_r * 1.4, dn) * (1.0 - smoothstep(2.6, 3.4, dn)) * trample;
+			albedo *= 1.0 + tr * (0.7 + 0.6 * nM.g);
+		}
+	}
+	if (path_n > 0) {
+		float pd = 1e3;
+		for (int i = 0; i < 12; i++) {
+			if (i >= path_n) break;
+			vec2 a0 = path_seg[i].xy, ab = path_seg[i].zw - a0;
+			float t = clamp(dot(w - a0, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+			pd = min(pd, length(w - a0 - ab * t));
+		}
+		float hw = path_hw * (1.0 + 0.35 * (texture(noise_tex, w * 0.35 + 0.61).g - 0.5) * 2.0);
+		albedo *= 1.0 + (1.0 - smoothstep(hw * 0.5, hw * 1.1, pd + (nF.b - 0.5) * 0.07)) * path_lift;
+	}
 	float dbg_collar = step(0.5, collar);
 	float joint = w_setts * (1.0 - smoothstep(0.14, 0.26, hgt));
 	// Moss in the shaded joints, in patches, out of the wear lane.
@@ -473,6 +654,13 @@ void fragment() {
 	// darkness wandering; the crown between them a little lighter. (The dip in the normal kept slight: at a low
 	// sun one wall lit and one dark read as a thin line, not a track.)
 	float rut_w = rut * w_soft;
+	if (rut_soft > 0.0 && w_soft > 0.0 && pm.r > 0.05) {
+		float e = rut_blur / zone_size;
+		float rb = (textureLod(paint_mask, zuv + vec2(e, 0.0), 0.0).g + textureLod(paint_mask, zuv - vec2(e, 0.0), 0.0).g
+			+ textureLod(paint_mask, zuv + vec2(0.0, e), 0.0).g + textureLod(paint_mask, zuv - vec2(0.0, e), 0.0).g) * 0.25;
+		float rn = texture(noise_tex, w * 0.4 + 0.37).g;
+		rut_w = mix(rut, 0.5 * rut + 0.5 * rb, rut_soft) * (1.0 - rut_soft * 0.55 * smoothstep(0.42, 0.68, rn)) * w_soft;
+	}
 	albedo *= mix(1.0, rut_dark, rut_w);
 	albedo *= 1.0 - rut_sun * rut_w * ex4.g;
 	albedo *= 1.0 + crown_lift * smoothstep(0.82, 0.95, pm.r) * w_soft;
@@ -494,11 +682,15 @@ void fragment() {
 	albedo *= 1.0 - pud_rim * prim;
 	rough = mix(rough, 0.6, prim * 0.5);
 	// (Standing water: dark, and smooth enough to hold the sky; judge 1, E3 fix 7.)
-	albedo = mix(albedo, albedo * pud_dark, pud);
+	float pn = pud_night * ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
+	albedo = mix(albedo, albedo * mix(pud_dark, pud_mud_k, clamp(pud_mud * pn / max(pud_night, 1e-4), 0.0, 1.0)), pud);
 	// The sky in it broken (judge 2): none under a crown or the eaves, less in the shade, broken by ripples and scum.
 	float brk = smoothstep(0.25, 0.75, nF.g * 0.6 + nF.b * 0.4);
 	float mirror = mirror_amt * mix(mirror_rut, 1.0, max(w_setts, 1.0 - step(0.05, rut))) * smoothstep(0.35, 0.9, ex4.r) * mix(0.45, 1.0, ex4.g) * mix(0.15, 1.0, brk);
-	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud);
+	// (lf5p: the sky kept in a 0.1-0.3 m band inside the edge, the middle muddy)
+	float p_rim = pud_sheen > 0.0 ? smoothstep(0.61, 0.7, pf) * (1.0 - smoothstep(0.68, 0.95, pf)) * (0.6 + 0.4 * brk) : 0.0;
+	mirror *= 1.0 - pn * (1.0 - pud_sheen * p_rim);
+	rough = mix(rough, mix(0.32, 0.03, brk * step(0.01, mirror)), pud * (1.0 - pn * 0.6));
 	n_w = normalize(mix(n_w, normalize(n_geo + vec3(nF.a - 0.5, 0.0, rag - 0.5) * 0.15), pud));
 
 	// Dew by night (judge 1, E3 fix 10 and 3: the moonlit road read as snow): bare earth and stone darker while the
@@ -526,7 +718,7 @@ void fragment() {
 		// Its verges: no lift at the made edge (the pale verge strips), the rime there no crisper than the road's.
 		float vb = smoothstep(0.02, 0.3, pm.r) + verge * 0.6;
 		float ridge = smoothstep(0.04, 0.25, rut) * (1.0 - smoothstep(0.3, 0.65, rut));
-		top = mix(top, 0.5 + cen * 0.25 + ridge * 0.35 - rut * 0.45 + (hgt - hb) * 0.5, rd);
+		top = mix(top, 0.5 + (cen * 0.25 + ridge * 0.35 - rut * 0.45) * road_rime + (hgt - hb) * 0.5, rd);
 		// By night the frost on the tufts, not the bare soil between.
 		top += (tuft - 0.5) * 0.5 * nt;
 		// At dawn only the tops: the threshold raised with the thaw (judge 1, E3 fix 2: no pale blotches in the shade).
@@ -609,6 +801,12 @@ void fragment() {
 		rough = mix(rough, 0.6, bk_wet);
 	}
 
+	if (flora_night.y > 0.0 && survivor.w > 0.5 && w_meadow > 0.0) {
+		float ek = flora_night.y * w_meadow * (1.0 - smoothstep(ember_r * 0.35, ember_r, length(w - survivor.xz)));
+		float el = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+		vec3 straw = vec3(1.0, 0.8, 0.52);
+		albedo = mix(albedo, straw * (el / dot(straw, vec3(0.2126, 0.7152, 0.0722))), ek);
+	}
 	ALBEDO = albedo;
 	if (debug_view == 1) ALBEDO = pm.rgb;
 	if (debug_view == 2) ALBEDO = sp.rgb;
@@ -643,15 +841,22 @@ void fragment() {
 		// 26 the setts' mud (E3 G).
 		if (debug_view == 26) m = dbg_mud_c;
 		if (debug_view == 27) m = dbg_collar;
+		// 28 the mud pools, 29 the courses turned, 30 the kerb, 31 the seams (E9e r2).
+		if (debug_view == 28) m = pool_s;
+		if (debug_view == 29) m = s_turn * w_setts;
+		if (debug_view == 30) m = kerb * w_setts;
+		if (debug_view == 31) m = seam * w_setts;
 		ALBEDO = vec3(0.0);
 		EMISSION = vec3(step(0.5, m) * 50.0);
+		// 32 (E9e r3): the old puddles red, the mud pools green, the setts' mud blue.
+		if (debug_view == 32) { float d_p = step(0.5, pud), d_q = step(0.5, pool_s) * (1.0 - d_p); EMISSION = vec3(d_p, d_q, step(0.5, dbg_mud_c) * (1.0 - d_p) * (1.0 - d_q) * 0.5) * 4.0; }
 	}
 	ROUGHNESS = clamp(mix(rough, 1.0, night * (1.0 - pud) * 0.6), 0.04, 1.0);
 	AO = mix(1.0, ao, 0.85);
 	AO_LIGHT_AFFECT = 0.25;
 	// By night the ground's sheen at the close camera's grazing angle read as snow on the road and pale smears at the
 	// tufts' feet (judge 1, E3 fix 10): the moonlit ground kept matte, the puddles still holding the sky.
-	SPECULAR = dbg_on ? 0.0 : mix(mix(mix(0.35, mud_spec, mud_s), night_spec, night), mirror, pud);
+	SPECULAR = dbg_on ? 0.0 : mix(mix(mix(mix(0.35, mud_spec, mud_s), pool_spec, pool_s), night_spec, night), mirror, pud);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 
 	// The Flare's drain, web, frost and scars (flare_world.gdshaderinc).

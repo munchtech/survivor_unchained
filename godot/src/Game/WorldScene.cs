@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
@@ -67,16 +67,18 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Where she is drawn this frame (on the ground; Interp).</summary>
     public Vector3 HerDrawn { get; private set; }
 
-    public WorldScene(ZoneData data, FollowCamera cam)
+    public WorldScene(ZoneData data, FollowCamera cam) : this(data, cam, new ZoneView(data, new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z))) { }
+
+    /// <summary>Round a zone already stood up (built ahead: Game.Prepare).</summary>
+    public WorldScene(ZoneData data, FollowCamera cam, ZoneView view)
     {
         Data = data;
         this.cam = cam;
         Name = $"World_{data.Id}";
-        var start = new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z);
-        View = new ZoneView(data, start);
+        View = view;
         AddChild(View);
         AddChild(Crowd);
-        Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam };
+        Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam, Lines = Voices };
         Fx.OnDamageFlash = v => damageFlash = Math.Max(damageFlash, v);
         AddChild(Fx);
         AddChild(Voices);
@@ -323,6 +325,7 @@ public partial class WorldScene : Node3D, IZoneLook
             flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
+            SurvivorUnchained.View.HouseFade.Her = new Vector4((float)hx, y + 1.1f, (float)hz, 1);
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)hx, (float)hz);
             View.FollowGrass(at);
@@ -392,12 +395,27 @@ public partial class WorldScene : Node3D, IZoneLook
         v.Position = new Vector3((float)spot.X, (float)HeightAt(spot.X, spot.Z), (float)spot.Z);
         v.Rotation = new Vector3(0, (float)spot.Facing, 0);
         AddChild(v);
+        v.Lod();
         return v;
     }
 
     public INpcView Walker(PersonSpec spec, double scale)
     {
+        Folk.ChurnEvery = Args.Num("folk-churn", 0);
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var v = new PersonView(spec, null, scale);
+        long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        AddChild(v);
+        long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+        v.Lod();
+        if (Perf.On) GD.Print($"perf walker: made {(t1 - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, in the tree {(t2 - t1) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms, its shadow begun {(System.Diagnostics.Stopwatch.GetTimestamp() - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:0.0} ms");
+        return v;
+    }
+
+    public INpcView WalkerLater(PersonSpec spec, double scale)
+    {
+        if (Args.Get("walker-later") == "off") return Walker(spec, scale);
+        var v = new WalkerView(spec, scale);
         AddChild(v);
         return v;
     }

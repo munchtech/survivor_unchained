@@ -56,6 +56,15 @@ public sealed class VoIndex
 
 public static class VoiceLines
 {
+    /// <summary>Whether the recorded voices sound at all. OFF by default: the
+    /// placeholder voice-over is out of the way while testing (the owner,
+    /// 26 Oct); `--vo on` turns it back on. Takes, captions and timings are
+    /// unchanged when off; only the audio is not played.</summary>
+    public static bool Enabled { get; set; }
+
+    /// <summary>The `--vo` switch's value to the setting: only "on" turns it on.</summary>
+    public static bool FromArg(string? vo) => vo == "on";
+
     /// <summary>The first 12 hex digits of the text's SHA-1 (tools/vo/lines.py text_hash).</summary>
     public static string Hash(string text)
     {

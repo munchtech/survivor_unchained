@@ -54,7 +54,9 @@ public sealed class GrimtunnelStory : StoryBoss, IBound
     // measured to the other Flares' share of a boss, every calling is within 3% of the pre-Flare length (Act 1, 96 seeds, both pilots).
     // 13 October: 114 -> 109, its pre-Flare health: the Flare now cuts a story boss's floors, and a fight with the Flare
     // timed is ~8% shorter than the tuned length (bankers ~14%) while one without it timed stays near it (+4%; judge 6).
-    public override double HealthMul(int tier) => 109;
+    // 28 October (classes 14): 109 -> 131. Access (P2: narrower pools, better builds) and the four Hands (P4) made Act 1
+    // ~12% shorter; at 131 never-pressing is within 3% of integration and of pre-Flare 11 Oct, falls lower (96 seeds, both pilots).
+    public override double HealthMul(int tier) => 131;
     /// <summary>His teeth are in his marked moves; his burst up (×2) about a third of her health at a story
     /// night's build.</summary>
     public override double Teeth => 0.2;

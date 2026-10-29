@@ -59,9 +59,11 @@ public sealed class FollowCamera
     /// <summary>The ground's height at a point (a near, low view never goes under a rise).</summary>
     public System.Func<float, float, float>? Ground;
     /// <summary>The close view's two framings (pitch in degrees, distance and the height on her it looks at, in
-    /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.</summary>
+    /// metres): her whole figure filling the frame, and her from the hips up. --close-mid / --close-near P,D,H.
+    /// The nearest looks 3 degrees down from about her eye height (the owner, 22 Oct: at 9 degrees it looked down on
+    /// her crown and her hair read as a helmet).</summary>
     public static readonly (float Pitch, float Distance, float Height) CloseMid = Frame("close-mid", (15, 4.2f, 1.0f)),
-        CloseNear = Frame("close-near", (9, 1.95f, 1.6f));
+        CloseNear = Frame("close-near", (3, 1.95f, 1.6f));
     float closeNow, orbitNow, room = 1;
     /// <summary>How near the close view is now (eased).</summary>
     public float CloseShown => closeNow;
@@ -113,6 +115,10 @@ public sealed class FollowCamera
     Vector3 look;
     bool initialised;
     float lastDt;
+    static readonly bool CamLog = Args.Has("camlog");
+    float logFree = 1;
+    /// <summary>(--camlog: a line a frame of the near view's closeness, room, lens and distance) what its room ray last hit.</summary>
+    public string? RoomHit;
 
     public FollowCamera(Camera3D camera) { Camera = camera; }
 
@@ -229,15 +235,16 @@ public sealed class FollowCamera
         float cp = Mathf.Cos(pitch), sp = Mathf.Sin(pitch);
         float yaw = Yaw + orbitNow * (1 - k);
         var aim = look + new Vector3(0, Mathf.Lerp(c.Height, frame.Height, k) - 0.8f + AimLift, 0);
-        // A near view comes in front of a wall, never through it (eased, so a post going by is no jolt).
+        // A near view comes in front of a wall, never through it (gliding: CameraRoom; a post or a cart is no wall).
         if (closeNow > 0.02f && Room != null)
         {
             float cd = c.Distance * LensStep();
             var want = new Vector3(aim.X + Mathf.Sin(yaw) * cp * cd, aim.Y + sp * cd, aim.Z + Mathf.Cos(yaw) * cp * cd);
             float free = Mathf.Clamp(Room(aim, want), 0, 1);
+            logFree = free;
             // (no nearer than a metre and a half: inside that a wall wins and the view stays on her)
             free = Mathf.Max(free, Mathf.Min(1, 1.5f / cd));
-            room = Mathf.Lerp(room, free, 1 - Mathf.Exp((free < room ? -14f : -2.5f) * (float)lastDt));
+            room = SurvivorUnchained.Play.CameraRoom.Step(room, free, lastDt);
         }
         else room = 1;
         float d = Reach() * (1 - FlarePush);
@@ -252,6 +259,7 @@ public sealed class FollowCamera
         var jolt = joltT < 1.2f ? joltAxis * joltAmt * 0.55f * Mathf.Exp(-joltT * 7) * Mathf.Sin(joltT * Mathf.Tau * 13) : Vector3.Zero;
         var at = pos + lean + jolt + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
         var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f;
+        if (CamLog) GD.Print($"CAMLOG t={shakeT:F3} close={closeNow:F3} room={room:F3} free={logFree:F3} hit={RoomHit ?? "-"} fov={Camera.Fov:F2} d={d:F3} pos={at.X:F2},{at.Y:F2},{at.Z:F2} aim={aim.X:F2},{aim.Y:F2},{aim.Z:F2}");
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);
     }

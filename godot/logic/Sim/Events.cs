@@ -38,6 +38,9 @@ public static class Ev
         public bool ByFlare;
     }
 
+    /// <summary>A calling's Hand at work (HandKind); Target is the creature it touched, -1 for none.</summary>
+    public sealed class Hand : CombatEvent { public HandKind Kind; public double X, Z; public int Target = -1; }
+
     /// <summary>Burst: the killing blow was far more than it had left (the body
     /// comes apart); Dx, Dz: which way it was going; Scale: its size.</summary>
     public sealed class Kill : CombatEvent
@@ -60,7 +63,7 @@ public static class Ev
     public sealed class PlayerHeal : CombatEvent { public double Amount; }
     public sealed class PlayerDeath : CombatEvent { public double X, Z; public string Killer = ""; public int KillerId; }
     public sealed class Status : CombatEvent { public int Target; public StatusKind Kind; public double X, Z; }
-    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; public string? Art; public int Rank; }
+    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; public string? Art; public int Rank; /** A flat ring on the ground only, no standing blast (a cinematic's ember going into the ground). */ public bool Plain; }
     public sealed class Explosion : CombatEvent { public double X, Z, Radius; public School School; public double Power; public string? Art; public int Rank; }
     public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; public string? Art; public int Rank; }
     public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; public string? Art; public int Rank; }
@@ -90,6 +93,10 @@ public static class Ev
     public sealed class LevelUp : CombatEvent { public int Level; }
     /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
     public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
+
+    /// <summary>A wick lamp lit at night as the ember ranks the skill (Sim/Turns.cs); Turn: the lamp is its Turn.</summary>
+    public sealed class Wick : CombatEvent { public string Skill = "", Lamp = ""; public bool Turn; }
+
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>A telegraphed blow slipped at the last moment (Battle.PerfectDodge).</summary>
@@ -127,6 +134,10 @@ public static class Ev
     public sealed class Break : CombatEvent { public double X, Z, Amount; public int Enemy; }
     public sealed class Sound : CombatEvent { public string Id = ""; public double? X, Z, Volume; }
 }
+
+/// <summary>What a calling's Hand did (Sim/Hands.cs), for the view to show: a heavy blow landed, a Stone laid,
+/// Frenzy gained, ground left, a projectile loosed with the extra pierce, a blow struck true, a mark passed.</summary>
+public enum HandKind { Heavy, Stone, Frenzy, Ground, Pierce, True, Mark }
 
 public sealed class EventStream
 {

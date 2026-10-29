@@ -50,12 +50,22 @@ public sealed class OwnClips
     /// <summary>One of these clips by the full name an animation player knows it by.</summary>
     public bool Owns(string name) => name.StartsWith(Prefix);
 
+    // (Each clip's value, read from the meta once: asked several times a frame (her grip, her layers), every read
+    // made new Godot wrappers (the clip's dictionary, the value, its key) that outlived the young collection.)
+    readonly Dictionary<(string, string), Variant> metaRead = new();
+
     Variant Meta(string clip, string key)
     {
         Library();
-        if (meta == null || !meta.ContainsKey(clip)) return default;
-        var m = meta[clip].AsGodotDictionary();
-        return m.ContainsKey(key) ? m[key] : default;
+        if (meta == null) return default;
+        if (metaRead.TryGetValue((clip, key), out var known)) return known;
+        Variant v = default;
+        if (meta.ContainsKey(clip))
+        {
+            var m = meta[clip].AsGodotDictionary();
+            if (m.ContainsKey(key)) v = m[key];
+        }
+        return metaRead[(clip, key)] = v;
     }
 
     /// <summary>How fast a loop carries them, in metres a second of their own
@@ -71,6 +81,15 @@ public sealed class OwnClips
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
 
+    /// <summary>The same for the piece in her LEFT hand (meta "grip_slide_l", animation 55: the second axe of the reaver's pair
+    /// hangs from a fist gripped higher up its haft); 0 for none. Takes the clip with or without this library's prefix.</summary>
+    public float GripSlideL(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_slide_l");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
     /// <summary>How far the piece in her right hand is turned in her fist about the palm's normal while the clip plays,
     /// in degrees, + its head away from her fingers (meta "grip_tilt", animation 48: keyed.py grip_of); 0 for none.
     /// Takes the clip with or without this library's prefix.</summary>
@@ -78,6 +97,16 @@ public sealed class OwnClips
     {
         if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
         var v = Meta(clip, "grip_tilt");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
+    /// <summary>The same for the piece in her LEFT hand (meta "grip_tilt_l", animation 58: the second axe turned in her left
+    /// fist about its palm's normal, the right's mirror image; WeaponSockets.TiltPocketL); 0 for none. Takes the clip with
+    /// or without this library's prefix.</summary>
+    public float GripTiltL(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_tilt_l");
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
 
@@ -100,6 +129,9 @@ public sealed class OwnClips
         "Pistol_Idle", "Spell_Simple_Idle_Loop", "Idle_Shield_Loop",
     };
 
+    // (The names a walk goes by in the game's data; "Walk_Formal_Loop" is a cinematic's.)
+    static readonly HashSet<string> Walks = new() { "Walk_Loop", "Walk", "Walking_A", "Walking_B", "Walking_C", "Walk_Formal_Loop" };
+
     static readonly HashSet<string> Moving = new()
     {
         "Walk_Loop", "Walk", "Walking_A", "Walking_B", "Walking_C", "Jog_Fwd_Loop", "Jog_Fwd", "Running_A", "Running_B", "Sprint_Loop", "Sprint",
@@ -113,6 +145,8 @@ public sealed class OwnClips
         if (Library() == null) return null;
         string? want = null;
         if (Idles.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("idle", calling, kind, sheathed));
+        else if (Walks.Contains(game) && Walk(calling, kind, sheathed) is string walk) return walk;
+        else if (Walks.Contains(game) && game == "Walk_Formal_Loop") return null;
         else if (Moving.Contains(game)) want = First(SurvivorUnchained.Play.Sheath.Names("run", calling, kind, sheathed));
         else
             want = game switch
@@ -139,6 +173,13 @@ public sealed class OwnClips
                 _ => null,
             };
         return want != null && Has(want) ? Prefix + want : null;
+    }
+
+    /// <summary>Her walk for this calling and state (animation 51), prefixed, or null when she has none (the staff's town state).</summary>
+    public string? Walk(string calling, string kind, bool sheathed)
+    {
+        foreach (var n in SurvivorUnchained.Play.Sheath.WalkNames(calling, kind, sheathed, Has)) if (Has(n)) return Prefix + n;
+        return null;
     }
 
     string First(params string[] names)

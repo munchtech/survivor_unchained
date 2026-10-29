@@ -49,6 +49,8 @@ public sealed class RunResult
     public List<double> HeraldTtk = new();
     public List<Minute> ByMinute = new();
     public Dictionary<string, double> DamageBy = new();
+    /// <summary>Her damage uncapped by the creatures' health (Battle.DamageRaw).</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public double DamageRaw;
     public Dictionary<string, int> Offered = new(), Taken = new();
     /// <summary>Evolutions, with the minute each came.</summary>
     public List<(string Id, double At)> Evolved = new();
@@ -122,6 +124,36 @@ public static class ArenaSim
     /// <summary>--dark: lamps put out after the board is lit (a Flare's modifiers one at a time on the full board; their points stay unspent).</summary>
     public static List<string> Dark = new();
 
+    /// <summary>A measuring aid for the Hand pair (--pair): this fight's Hand on or off, the draft replayed
+    /// from its twin (the cards it took, at the minutes it took them, so a Hand can't change the build), no
+    /// falls (a fall stands her up at full health: low health still comes, the run's length doesn't change),
+    /// and a fixed span of minutes. Null in every other run: the harness as it always was.</summary>
+    public sealed class Fixed
+    {
+        public bool? Hand;
+        public bool NoFall;
+        /// <summary>A calibration: all her damage More by this (0: none), to read a metric's answer to a known x.</summary>
+        public double DamageMore;
+        /// <summary>Minutes to play, then stop (0: the run's own end).</summary>
+        public double Span;
+        /// <summary>The build to play at its times instead of drafting and opening chests (a twin's Took).</summary>
+        public List<(double T, Action<Battle> Do)>? Replay;
+        /// <summary>Filled: what built her (the cards taken, the chests' gifts), at the battle's time.</summary>
+        public readonly List<(double T, Action<Battle> Do)> Took = new();
+        /// <summary>Filled: falls stood up from, seconds below half health.</summary>
+        public int Falls;
+        public double LowSeconds;
+        /// <summary>The Turn pair (--pair turn:ID): this skill carried from the start at SkillRank (added if the
+        /// calling's kit hasn't it, ranked up if it has), its wick lit along WickPath.</summary>
+        public string? Skill;
+        public int SkillRank = 1;
+        public string[]? WickPath;
+        /// <summary>Filled for the Turn pair: the skill's damage, on champions and on bosses; its Turns at work and dark.</summary>
+        public double SkillDmg, SkillElite, SkillBoss;
+        public string[] TurnsOn = [], TurnsDark = [];
+        public Dictionary<string, double>? DamageBy;
+    }
+
     public static string Card(Offer o) => o.Kind switch
     {
         OfferKind.Weapon => $"w:{o.Id}",
@@ -138,7 +170,7 @@ public static class ArenaSim
 
     /// <summary>Settle every draft owed, the policy's way (banish, reroll,
     /// skip and choose through the same calls the game makes).</summary>
-    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m)
+    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m, List<(double T, Action<Battle> Do)>? took = null)
     {
         int guard = 0;
         while (b.DraftOwed && guard++ < 200)
@@ -162,26 +194,28 @@ public static class ArenaSim
             if (take.Great) r.Greats.Add(take.Id);
             r.Picks.Add((Card(take), b.Time / 60));
             if (take.Kind == OfferKind.Evolve) r.Evolved.Add((take.Branch!, b.Time / 60));
+            took?.Add((b.Time, bb => LevelUp.Choose(bb, take)));
             LevelUp.Choose(b, take);
             r.Cards++;
             if (m != null) m.Drafts++;
         }
     }
 
-    public static RunResult Play(RunSpec spec)
+    public static RunResult Play(RunSpec spec, Fixed? fx = null)
     {
         var a = Callings.Archetype(spec.Calling);
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = a.Weapons[Math.Min(spec.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(spec.Art, a.Abilities.Count - 1)],
+            // The type (road), picked at creation as a player picks it (docs/design/CLASSES.md section 2).
+            Type = spec.Type,
         }, (uint)spec.Seed);
         // A survivor further on: the levels, and the points put into the calling's own.
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
-        // The type (road) and the lamps lit (docs/design/CLASSES.md section 2).
-        if (spec.Type != "") LampBook.SetType(j.Ch, spec.Type);
+        // The lamps lit.
         if (spec.Lamps == "full")
         {
             foreach (var id in Lamps.StoryFights) j.World.Facts[$"arena.{id}"] = "won";
@@ -214,7 +248,36 @@ public static class ArenaSim
         var zone = new ArenaRun(host, map, arena);
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
+        if (fx?.Hand is bool handOn) b.HandsOn = handOn;
+        if (fx?.Skill is { } forced)
+        {
+            if (fx.WickPath != null) b.SetWickPath(forced, fx.WickPath);
+            if (b.Weapons.Find(w => w.Id == forced) is null && b.AddWeapon(forced, fx.SkillRank) is null)
+                throw new InvalidOperationException($"{spec.Key}: can't add {forced}");
+            while (b.Weapons.Find(w => w.Id == forced) is { } fw && fw.Rank < fx.SkillRank) b.RankWeapon(forced);
+        }
+        if (fx?.Replay != null) b.ChestsInert = true;
+        if (fx is { DamageMore: > 0 }) b.AddBuff("calibration", Stat.Damage, fx.DamageMore, ModKind.More, 1e9, 1);
+        else if (fx != null)
+            host.Opened = c =>
+            {
+                foreach (var it in c.Items)
+                {
+                    string id = it.Id;
+                    switch (it.Kind)
+                    {
+                        case ChestItemKind.Evolution:
+                            string branch = b.Weapons.Find(w => w.Id == id)?.Evolution?.Id ?? "";
+                            fx.Took.Add((b.Time, bb => bb.Evolve(id, branch, chest: true))); break;
+                        case ChestItemKind.Rank: fx.Took.Add((b.Time, bb => bb.RankWeapon(id))); break;
+                        case ChestItemKind.Passive: fx.Took.Add((b.Time, bb => bb.AddBoon(id))); break;
+                        case ChestItemKind.Gold: fx.Took.Add((b.Time, bb => { bb.HealPlayer(bb.MaxHp * 0.3, "chest"); bb.GoldGained += 25; })); break;
+                    }
+                }
+            };
         b.Hooks = zone.Hooks;
+        if (fx is { NoFall: true })
+            b.Hooks.OnPlayerDeath = _ => { fx.Falls++; b.Player.Hp = b.MaxHp; b.Player.Iframes = Math.Max(b.Player.Iframes, 2); return true; };
         host.Battle = b;
         zone.Begin(b);
         b.Charges.On = Director;
@@ -234,7 +297,8 @@ public static class ArenaSim
         double t = 0;
         var trace = Environment.GetEnvironmentVariable("ARENA_TRACE") is { } tr && tr.Split('@')[0] == spec.Key ? tr : null;
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
-        while (t < spec.Cap * 60 && p.Alive && host.Result == null)
+        int replayed = 0;
+        while (t < spec.Cap * 60 && p.Alive && host.Result == null && (fx == null || fx.Span <= 0 || t < fx.Span * 60 - 1e-9))
         {
             var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
             if (Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
@@ -278,7 +342,13 @@ public static class ArenaSim
             }
             host.Pass(Dt);
             j.BankArt(b);
-            Drafts(b, pick, rng, r, m);
+            if (fx?.Replay is { } replay)
+            {
+                b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0;
+                while (replayed < replay.Count && replay[replayed].T <= b.Time + 1e-9) replay[replayed++].Do(b);
+            }
+            else Drafts(b, pick, rng, r, m, fx?.Took);
+            if (fx != null && p.Hp < 0.5 * b.MaxHp) fx.LowSeconds += Dt;
             m.LowHp = Math.Min(m.LowHp, p.Hp / b.MaxHp);
             m.ChargePeak = Math.Max(m.ChargePeak, b.Charges.Live);
             if (b.Charges.Live >= 3) m.Overlap += Dt;
@@ -335,6 +405,19 @@ public static class ArenaSim
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;
         r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
+        if (fx?.Skill is { } sk)
+        {
+            fx.DamageBy = r.DamageBy;
+            // The skill, and any union it went into (which carries its Turn).
+            var ids = Unions.All.Where(u => u.A == sk || u.B == sk).Select(u => u.Into).Append(sk).ToHashSet();
+            fx.SkillDmg = ids.Sum(id => b.DamageBy.GetValueOrDefault(id));
+            fx.SkillElite = ids.Sum(id => b.EliteDamageBy.GetValueOrDefault(id));
+            fx.SkillBoss = ids.Sum(id => b.BossDamageBy.GetValueOrDefault(id));
+            var sw = b.Weapons.Find(w => ids.Contains(w.Id));
+            fx.TurnsOn = sw?.Wick?.Turns.ToArray() ?? [];
+            fx.TurnsDark = sw?.Wick?.Dark.ToArray() ?? [];
+        }
+        r.DamageRaw = b.DamageRaw;
         r.Build = Describe(b);
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;

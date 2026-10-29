@@ -73,6 +73,32 @@ uniform vec3 sun_tip = vec3(1.0);
 uniform vec3 sun_body = vec3(1.0);
 // (each clump's card size within +-size_var of its own, half white noise and half a 3 m field, so a dense drift is not stamped)
 uniform float size_var = 0.3;
+// (lf3b, judge lf2 #4: the clumps read as one stamp on an even grid) 0 each: as before. cluster: how far each clump is
+// drawn toward the heart of its own cluster (one a cluster_cell m square, its heart jittered), so they stand in tufts of
+// three to six with ground between; cluster_gap thins the clumps out toward a cluster's rim; big_share/small_share the
+// share of clumps 1.3-1.65x and 0.5-0.78x; tilt_var each clump's lean within +-tilt_var of tilt; trod: bare trodden
+// patches (a 7-8 m field, about trod_share of the ground), their rims thin and short.
+uniform float cluster = 0.0;
+uniform float cluster_cell = 1.6;
+uniform float cluster_gap = 0.0;
+uniform float big_share = 0.0;
+uniform float small_share = 0.0;
+uniform float tilt_var = 0.0;
+uniform float trod = 0.0;
+uniform float trod_share = 0.12;
+// (lf3b r2: a lattice of clusters read as a new grid of tufts) fine: a 1.5-2 m noise field thins the drift in places
+// (to 1 - fine), so the tufts gather unevenly, with no cell to repeat
+uniform float fine = 0.0;
+// (Low Ford lf5p, judge lf4 #9: one tuft at one value everywhere; #7: by dawn the tufts' teal ignored the warm key)
+// dry_share of the clumps (in patches, a field of a few metres) a second kind, dry and straw-tipped (dry_tint over the
+// green); val_spread: each clump's and each patch's value plus or minus this; day_cool: the share of the lows' cool tint
+// kept by day and dawn (by night whole). 0, 0, 1: as before.
+uniform float dry_share = 0.0;
+uniform vec3 dry_tint = vec3(1.35, 1.1, 0.62);
+uniform float val_spread = 0.0;
+uniform float day_cool = 1.0;
+// ...and the blades by day and dawn times day_warm (by night untouched); 1: as before.
+uniform vec3 day_warm = vec3(1.0);
 
 float hue_of(vec3 c) {
 	float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), d = mx - mn;
@@ -98,6 +124,14 @@ void vertex() {
 	vec3 root = MODEL_MATRIX[3].xyz;
 	vec3 off = VERTEX - root;
 	vec2 wp = root.xz + span * round((centre - root.xz) / span);
+	float cl_r = 0.0;
+	if (cluster > 0.0) {
+		vec2 cc = (floor(wp / cluster_cell) + 0.5) * cluster_cell;
+		cc += (vec2(gh(cc * 1.37 + 3.1), gh(cc * 2.11 + 7.7)) - 0.5) * cluster_cell * 0.7;
+		vec2 dv = cc - wp;
+		cl_r = length(dv) / cluster_cell;
+		wp += dv * cluster * (0.55 + 0.45 * gh(wp * 4.9 + 2.0));
+	}
 	float edge = 1.0 - smoothstep(span * 0.36, span * 0.5, length(wp - centre));
 	float h1 = gh(wp * 7.1), h3 = gh(wp * 3.3 + 11.0), h4 = gh(wp * 5.7 + 4.0), h5 = gh(wp * 9.3 + 2.0), h6 = gh(wp * 4.1 + 7.0);
 	vec2 zuv = (wp + zone_size * 0.5) / zone_size;
@@ -124,12 +158,28 @@ void vertex() {
 	float leafy = smoothstep(0.42, 0.78, nL.g * 0.7 + nM.a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
-	float keep = step(h3, dens * density * edge);
+	float tr = 0.0;
+	if (trod > 0.0) {
+		float tn = texture(noise_tex, wp * 0.13 + 0.53).r * 0.7 + nF.a * 0.3;
+		tr = smoothstep(0.66 - trod_share * 0.9, 0.74 - trod_share * 0.9, tn) * trod;
+	}
+	if (cluster > 0.0) dens *= 1.0 - cluster_gap * smoothstep(0.32, 0.62, cl_r);
+	if (fine > 0.0) {
+		vec4 nf2 = texture(noise_tex, wp * 0.53 + 0.21);
+		dens *= 1.0 - fine * smoothstep(0.62, 0.38, nf2.r * 0.65 + nf2.g * 0.35);
+	}
+	float keep = step(h3, dens * density * edge * (1.0 - tr));
 	// (a fire's pit bare, the camp round it thinning out to `clear` times its radius; a prop's patch (OwnProps "bare")
 	// thins out to its own w times its radius)
 	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * (bare_at[i].w > 0.0 ? bare_at[i].w : clear), length(wp - bare_at[i].xy)));
 	// Size: smaller at a drift's edge, each clump its own.
 	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
+	{
+		float hb = gh(wp * 6.9 + 13.0);
+		sz *= hb < big_share ? mix(1.3, 1.65, hb / max(big_share, 1e-4)) : (hb > 1.0 - small_share ? mix(0.78, 0.5, (hb - 1.0 + small_share) / max(small_share, 1e-4)) : 1.0);
+		sz *= 1.0 - 0.45 * tr;
+		if (cluster > 0.0) sz *= mix(1.0, 1.18 - 0.5 * cl_r, cluster);
+	}
 	// Facing the camera (its forward, flattened), turned up to `yaw` off it; half of them mirrored.
 	vec3 fwd = -INV_VIEW_MATRIX[2].xyz;
 	vec2 f = normalize(-fwd.xz + vec2(1e-4, 0.0));
@@ -141,7 +191,7 @@ void vertex() {
 	v_t = t;
 	float asp = 0.75 + 0.5 * gh(wp * 8.7 + 3.0);
 	vec3 p = vec3(r.x, 0.0, r.y) * off.x * card.x * sz * asp + vec3(0.0, off.y * card.y * sz / asp, 0.0);
-	p.xz -= f * off.y * card.y * sz * tilt;
+	p.xz -= f * off.y * card.y * sz * tilt * (1.0 + tilt_var * (2.0 * gh(wp * 5.3 + 9.0) - 1.0));
 	// (its foot a hair behind, toward the camera's far side, so it stands in the ground, not on it)
 	p.xz -= f * 0.03 * sz;
 	// Wind: a slow travelling swell and gusts; the survivor parts it.
@@ -171,7 +221,12 @@ void vertex() {
 	vec4 ex4 = textureLod(expo_tex, zuv, 0.0);
 	float low = ex4.b * 2.0 - 1.0;
 	float lush = clamp(smoothstep(-0.1, 0.5, low + (nM.r - 0.5) * 0.4), 0.0, 1.0);
-	v_tint = mix(warm, cool, lush) * tone * (0.8 + 0.3 * gh(wp * 3.9 + 8.0));
+	v_tint = mix(warm, cool, lush * mix(day_cool, 1.0, flora_light.x)) * tone * (0.8 + 0.3 * gh(wp * 3.9 + 8.0));
+	if (dry_share > 0.0) {
+		float dk = step(gh(wp * 8.3 + 17.0), dry_share * (0.4 + 1.2 * smoothstep(0.35, 0.7, nM.b * 0.6 + nC.r * 0.4)));
+		v_tint *= mix(vec3(1.0), dry_tint, dk);
+	}
+	v_tint *= 1.0 + val_spread * ((gh(wp * 2.9 + 21.0) * 2.0 - 1.0) * 0.6 + (nM.g - 0.5) * 2.0 * 0.6);
 	v_frost = 0.0;
 	if (ground_frost.x > 0.001) {
 		v_frost = ground_frost.x * ex4.r * (1.0 - ground_frost.y * ex4.g * 0.92) * (0.6 + 0.4 * h1);
@@ -193,6 +248,7 @@ void fragment() {
 	float hl = hue_of(sqrt(max(gb * key, vec3(0.0))));
 	gb = max(hue_turn(gb, radians(clamp(hue_floor - hl, 0.0, 60.0) * flora_light.y)), vec3(0.0));
 	gb *= mix(vec3(1.0), night_tint, flora_light.x);
+	gb *= mix(day_warm, vec3(1.0), flora_light.x);
 	// (a flower's pale head no brighter than the moonlit road: dimmed by night)
 	gb *= 1.0 - 0.5 * flora_light.x * smoothstep(0.2, 0.4, dot(tx.rgb, vec3(0.2126, 0.7152, 0.0722)));
 	float fr = v_frost * smoothstep(mix(1.0, 0.35, v_frost), 1.0, t);
@@ -221,6 +277,11 @@ void fragment() {
 
 // The key's light on the blades as the built-in gives it (Burley, and the back light through them), its sunlit upper
 // part warmed by sun_tip (the key alone, by day and dawn; never the moon or a lamp).
+// (Low Ford r3, judge r2: under every lamp, fire and her ember the blades went lime: green times a warm light is yellow-green)
+// A warm near light's share on the blades turned toward ochre, its lightness kept: flora_lamp of the way (the air's
+// GrassLampOchre; 0 as built), by how warm the light is (red over blue); the moon and the sun untouched.
+global uniform float flora_lamp;
+uniform vec3 lamp_ochre = vec3(1.0, 0.74, 0.40);
 void light() {
 	float cnl = max(dot(NORMAL, LIGHT), 0.0);
 	float cnv = max(dot(NORMAL, VIEW), 1e-3);
@@ -230,5 +291,14 @@ void light() {
 	float d = fl * fv * cnl;
 	vec3 lc = LIGHT_COLOR * ATTENUATION;
 	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
-	DIFFUSE_LIGHT += lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	vec3 add = lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	if (!LIGHT_IS_DIRECTIONAL && flora_lamp > 0.0) {
+		float warmth = clamp((lc.r - lc.b) / max(lc.r, 1e-4) * 2.0, 0.0, 1.0);
+		vec3 lum = vec3(0.2126, 0.7152, 0.0722);
+		vec3 a = max(ALBEDO, vec3(0.02));
+		vec3 lit = a * add;
+		vec3 och = lamp_ochre * (dot(lit, lum) / dot(lamp_ochre, lum));
+		add = mix(lit, och, flora_lamp * warmth) / a;
+	}
+	DIFFUSE_LIGHT += add;
 }
