@@ -617,8 +617,11 @@ public partial class Callout : Control, ICalloutView
         var r = m.Box.Grow(4);
         // (a card's leaves stand over its frame: the point stops clear of them)
         float lift = Panel ? 13 : 0;
+        // (Experience 10: a small box, a skill's seat, is landed on at its middle only: toward a corner the arrow
+        // read as pointing at the bracket's corner, not the seat)
         foreach (var (f, cost) in Along)
         {
+            if (f != 0.5f && r.Size.X < 160) continue;
             float x = Mathf.Lerp(r.Position.X, r.End.X, f);
             if (a.Y < r.Position.Y) list.Add((new Vector2(x, r.Position.Y - lift), Vector2.Down, cost));
             if (a.Y > r.End.Y) list.Add((new Vector2(x, r.End.Y), Vector2.Up, cost));
