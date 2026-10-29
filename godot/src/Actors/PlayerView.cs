@@ -34,6 +34,11 @@ public partial class PlayerView : Node3D
     readonly AnimationNodeAnimation upper, full;
     readonly AnimationNodeAnimation? idleNode, runNode;
     public readonly OmniLight3D Light;
+    /// <summary>Her carried light on people (Rendering 2, judge r1 D1): <see cref="Light"/> lights the ground round her and
+    /// not people, and this one, higher and softer, lights her and the folk near her. From a hand over her head the pool's
+    /// light was twelve times the ground's on her crown and shoulders and clipped her copper hair cream-white; from higher up
+    /// she takes about a third of it and the dead and the foes in her pool about what the pool gave them.</summary>
+    public readonly OmniLight3D FolkLight;
     /// <summary>The survivor in glass: reflections and echoes left behind.</summary>
     public readonly Reflections Reflections;
     readonly List<GeometryInstance3D> skin = new();
@@ -239,8 +244,10 @@ public partial class PlayerView : Node3D
             tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         }
         person.Root.AddChild(tree);
-        Light = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-color") ?? "#ffd0a0"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
+        Light = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-color") ?? "#ffa868"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
         AddChild(Light);
+        FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
+        AddChild(FolkLight);
         Reflections = new Reflections(lo);
         AddChild(Reflections);
         Gather(this);
@@ -262,6 +269,8 @@ public partial class PlayerView : Node3D
         // for the frame before its first update, and she flashed pale.
         Light.LightEnergy = old.Light.LightEnergy;
         Light.OmniRange = old.Light.OmniRange;
+        FolkLight.LightEnergy = old.FolkLight.LightEnergy;
+        FolkLight.OmniRange = old.FolkLight.OmniRange;
         time = old.time;
         flare = old.flare;
         tree.Advance(0);
@@ -729,14 +738,28 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers : 0xFFFFFu;
+        // (the close view by night keeps its own: her lamp off her and off people, as before)
+        FolkLight.Visible = !LampOffHer && FolkK > 0;
+        FolkLight.LightEnergy = Light.LightEnergy * FolkK;
+        FolkLight.OmniRange = Light.OmniRange * FolkRange;
+        FolkLight.OmniAttenuation = FolkAtt;
+        // Her weapon and shield are the world's (layer 1), so the pool lit them: at the pool's hip height her shield's face
+        // went white. Off the pool and onto people's layer while the folk light lights her (looked over twice a second, a new
+        // weapon or a sheathed one included); back on the world's for the close view's own relayering (Relayer).
+        if (FolkK > 0 && !OwnLayer && !LampOffHer) { if ((offPoolT -= dt) <= 0) { offPoolT = 0.5; OffPool(this, offPool, Reflections); } }
+        else if (offPool.Count > 0)
+        {
+            foreach (var g in offPool) if (IsInstanceValid(g) && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | 1u;
+            offPool.Clear();
+        }
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
-        Light.Position = new Vector3(0, 2.4f, 0.4f);
+        Light.Position = new Vector3(0, EmberH, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
@@ -754,6 +777,20 @@ public partial class PlayerView : Node3D
                 case BaseMaterial3D bm when bm.Metallic >= 0.5f: return true;
             }
         return false;
+    }
+
+    readonly List<GeometryInstance3D> offPool = new();
+    double offPoolT;
+
+    /// <summary>Her meshes on the world's layer alone (her weapon, her shield) moved to people's, off her ember's pool light.</summary>
+    static void OffPool(Node n, List<GeometryInstance3D> moved, Node skip)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c == skip) continue;
+            if (c is GeometryInstance3D g && g.Layers == 1u) { g.Layers = 2u; moved.Add(g); }
+            OffPool(c, moved, skip);
+        }
     }
 
     static void Relayer(Node n, bool own, List<MeshInstance3D> hair)
@@ -923,8 +960,16 @@ public partial class PlayerView : Node3D
     /// another): from play's camera her face then shows eyes and a mouth, not the crown of her hair.</summary>
     // --ember-att A, --ember-range K, --ember-color C: her carried light's falloff, reach and colour (E1 pictures). Round 3c:
     // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
+    // Rendering r2 (judge r1 D1, a pale cream disc larger than the camp fire's): 2500K #ffa868, falloff 2, 0.75x the reach,
+    // and from shoulder height (1.7, --ember-h) now that the folk light, not the pool, lights her: a tight pool, the fire's the larger.
     static readonly float EmberFlareCap = SurvivorUnchained.Args.Num("ember-flare-cap", 2.2f);
-    static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 1.8f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 1f);
+    static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 2f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 0.75f);
+    // --ember-folk K (0: one light on all, as before), --ember-folk-h/-z/-range/-att/-color: the folk light (FolkLight).
+    static readonly float FolkK = SurvivorUnchained.Args.Num("ember-folk", 5f), FolkH = SurvivorUnchained.Args.Num("ember-folk-h", 4.5f),
+        FolkZ = SurvivorUnchained.Args.Num("ember-folk-z", 0.6f), FolkRange = SurvivorUnchained.Args.Num("ember-folk-range", 1.3f),
+        FolkAtt = SurvivorUnchained.Args.Num("ember-folk-att", 2f);
+    // --ember-h H: the pool light's height over her feet; --ember-k K: her ember's gain times K (sweeps of any preset).
+    static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
     bool held;

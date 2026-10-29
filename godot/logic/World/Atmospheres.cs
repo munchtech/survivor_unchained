@@ -135,7 +135,9 @@ public static class Atmospheres
         HemiSky = "#34507e", HemiGround = "#1e1a14", HemiIntensity = 1.6, EnvIntensity = 0.6,
         FogColor = "#16223a", FogDensity = 0.008, Exposure = 1.3, Rim = "#9fc0ff", RimStrength = 0.75,
         Grade = PlayNightGrade with { MoonDrop = 0.5, MoonHue = 240, MoonSat = 0.10, MoonTop = 0.44, MoonWidth = 0.15, PaintVib = 0.55, PaintShadow = "#2c4870", PaintShadowK = 0.75 },
-        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 8.0,
+        // (Rendering r2, judge r1 D1: at 8 she read as a figure carrying a floodlight, her pool larger than the camp fire's and
+        // her crown clipped white: 3.5, with the pool off her and people (PlayerView.FolkLight lights them), 2500K, 0.75x its reach)
+        Haze = 0.006, Mist = 0.18, MistColor = "#2c3a50", Ember = 3.5,
         CrowdRim = 0.2, RiverLight = 0.55, RiverSky = 0.45, RiverBend = 0.5,
         // (Low Ford r3, judge r2: the moon's glitter a noisy white blob round her, every warm pool's grass lime)
         RiverMoon = 1, GrassLampOchre = 0.7,
