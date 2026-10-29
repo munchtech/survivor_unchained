@@ -1,5 +1,29 @@
 # Handoff: UI design lead
 
+## HANDED OFF (UI 21, 28 Oct night, owner's wind-down): HUD middle and right redesign, mockup stage. Branch ui-21 (worktree .claude/worktrees/ui-21, junction godot/assets to its OWN public/assets, integration 13030ffe merged)
+**The owner (verbatim):** "yuou know i'm still not sold on the hud. i love the drowned girl and globe, I love the slow shining down the hair. but the middle and right don't quite do it. its clunky / not symmetrical. I think we can minimize the middle row to free up some screen space, with a different approach to the exp, its not practical, and some sort of symetry to the other side, with the 2 main side areas slightly scaled down (very slightly)". KEEP the girl, hand+globe, the hair shine (now decoration, not XP). Don't touch the crown's grooves (owner call open).
+**Order:** (a) mockups -> one xhigh design judge -> owner sheet (half + full, 3 lines each, + a night frame of the top pick; all mockups on the SAME frame and scale) -> STOP for the owner's pick; (b) build the pick (uiforge art, Krea allowed + provenance, code/data, teach rings refit (GameTeach/DgSmall), perf), max judge 1:1 day+night play camera, MR.
+**SCR** = C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\31372078-9b47-4080-9299-fc72cee61250\scratchpad\ui21 (KEEP until the build is done; then back up to survivorsunchained_inputs\scratch_ui21 and recycle). Briefs: brief_common.md, judge_mock.md. Backdrops SCR\out\: day bd21vx_hud1.png (no foot: new `--no-foot` shots flag, commit 4edba0fb), night bd21nx_hud0.png; today's HUD laid on the same backdrops: today_day.png, today_night.png (today.py). Shoot scripts: direct.py, bd.sh.
+**Round 1 (3 designers) + xhigh judge:** ranked C > A > B, all gate NO, one revision each before the owner. Hybrid advised: C's layout + keeper, plus B's hair running under the strip (shine spans the HUD) and B's numbered key tags. B dropped (its right side reads as today's swirl + glass made bigger). Judge crops SCR\jv\.
+**Round 2 (revisions; UNJUDGED; NOT shown to the owner yet):**
+- **C2, the judge's pick:** SCR\C2\mock_C_day.png, mock_C_night.png, mock_C_bottom.png, mock_C_night_bottom.png.
+  1. Right: the Ember Keeper, a hooded bronze mourner in the girl's own ribbon-strand sculpt, bowing over a bowl of live coals = the Flare [Q] (flames grow with charge).
+  2. Middle: one slim strip (74 px tall vs ~109 today, 580 px wide): flask, 3 seats, the level medallion on x 960, 3 seats, dash; her hair and the keeper's hem meet at the medallion.
+  3. XP: the level number always shown in the medallion, a light ring filling clockwise from a 12 o'clock tick, blue by day, violet by night.
+  Numbers: left 237 / middle 74 / right 227 px from the bottom (today 258 / ~109 / 155); seats 58 px; keeper luma = girl's (1.001). Open: the left run under the seats is the keeper's hem mirrored (stand-in); the flames a fairly even row; a round shoulder form reads as a clasp. Provenance C2\notes_C2.txt (Krea 2 turbo i2i, seed 9903 idx 1, denoise 0.65, guide C2\work\guide_k.png).
+- **A2, the alternate ("the twin"):** SCR\A2\mock_A_day.png, mock_A_night.png, mock_A_bottom.png.
+  1. Right: the girl's bronze twin, mirrored, head bowed, eyes closed over a dark glass globe holding the Flare ember [Q] ("one sister holds the life, the other keeps the fire").
+  2. Middle: one slim strip where their hair meets (78 px tall vs 109): flask [R], six seats, dash [SPACE].
+  3. XP: a lit channel under the seats fills left to right from a small level plate at its left end; the level-up title rises above the strip's center.
+  Numbers: left 237 / middle 78 / right 236. Open: the twin in the picture is the girl's art mirrored and bent 30 deg (a stretched swirl on her crown), no Krea pass yet. The Krea batch DID run after the reviser stopped: candidates in SCR\A2\work\gen\ (twins tw_b30_*, tw_c32_*, seeds 3101-3113; braids rope_3201_*, plait_3211_*; prompts.json).
+**Next steps (exact):**
+1. A2: pick the best Krea twin (half-size contact sheet of SCR\A2\work\gen\tw_*), then in SCR\A2\work: `python mock2.py gen\<pick>.png <b30|c32> gen\rope_3201_0.png both`.
+2. ONE xhigh judge (`Item: hud21-mock-judge`, round 2 of 3) on C2 + A2 (day frames + bottoms, the top pick's night), gate first; fix only what blocks showing the owner.
+3. Owner sheet: today | C2 | A2 on the same day backdrop, half + full size, 3 lines each (above), + the top pick's night frame. Send to the coordinator. STOP for the pick.
+4. Then the build (order (b)). Designers' plans, summarized: the new figure sprite at 2x + a geo json, a band.png strip replacing river.png, river_geo.json rewritten (seat pitch ~62-68, seat_d 58-60), DgCoal moved into the bowl/glass, a radial level-ring shader (C) or a fill rail (A), LevelTitle re-anchored above the medallion, hud_dg_xp lights her hair only, both side groups at 0.94 about their outer bottom corners.
+**Cost so far:** lead ~110k; designers A/B/C 211k + 205k + 208k; judge 76k; revisers C2 207k, A2 211k; $0 API; Krea GPU ~30 min.
+**Routed:** the Verge's day play camera near the start shows a black void past the map edge (a top-left wedge) in many frames (Environment).
+
 ## DONE (UI 20, 28 Oct): fixed list closed, MR ui-20 (worktree .claude/worktrees/ui-20; remove after the merge)
 **Fixed list:** all 8 old notes (crit numbers over the hotbar, F7 "line" amber, blocked floater vs bark, Night at dawn, Q orb bull icon, dark key chip, rarity row, counters over planks) CLOSED at 1:1 by an xhigh triage judge (fixed earlier by UI 11/16/17).
 **Built and judged (xhigh r1 PASS x6, r2 PASS x3, every frame gate YES):**
