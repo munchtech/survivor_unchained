@@ -2,6 +2,11 @@
 
 **The game's first image.** Priority 1 · Prologue · about 48 s · skippable
 
+> **Restage pending (29 October, the writer's beat for Cinematics 8):** the opening is
+> restaged as `c01_opening_beat.md` (empty bedroll, her shadow, the prints, her rising),
+> replacing shots 2-3 below and folding 4-6; the letter moves to C04 part A. This page is
+> updated by Cinematics when the restage is built.
+
 ## What it does
 
 Creation stands her by a high fire, dry, in the clothes she chose. A cut to

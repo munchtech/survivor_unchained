@@ -315,7 +315,7 @@ public class BreadcrumbTests
     {
         var s = Q("hunter");
         s.Ch.Gold = 20;
-        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her", "where you come from");
+        Talk(Convo("sella"), s.C, "how much", "only want to sleep", "Yes", "where you come from");
         Assert.True(s.World.Fact("sella.heard_past").Truthy);
         Assert.True(s.World.Fact("sella.past_sold").Truthy);
         s.World.Facts["beasts.outcome"] = "cured";
@@ -327,7 +327,7 @@ public class BreadcrumbTests
         var f = Q("hunter");
         f.Ch.Gold = 20;
         f.World.Facts["sella.free"] = true;
-        Talk(Convo("sella"), f.C, "how much", "15 gold, then", "kiss her", "where you come from");
+        Talk(Convo("sella"), f.C, "how much", "only want to sleep", "Yes", "where you come from");
         Assert.True(f.World.Fact("sella.heard_past").Truthy);
         Assert.False(f.World.Fact("sella.past_sold").Truthy);
         f.World.Facts["beasts.outcome"] = "cured";
