@@ -102,7 +102,7 @@ PLATES = {
     "p5": dict(src="ink_r3/p5_s707.png", r="r3", target=3600, rest=(1800, 1000),
                cams=[(1880, 700, 2.2, .15), (2000, 690, 2.5, .15), (1880, 700, 1.6, .15), (1800, 1000, 1.0, 0)],
                layers=[("sky", 12), ("far", 3.5), ("trees", 2.2), ("road", 1.4)],
-               state_layer=("drowned", 1.15), glows=[("lamps", 3.5, "8ac8ff")]),
+               state_layer=None, glows=[("lamps", 3.5, "8ac8ff")]),     # round 3: the drowned baked into road
     "p6": dict(src="ink_r2/p6_s47.png", r="r2", target=3800, rest=(2600, 1055),
                cams=[(1650, 1050, 1.0, 0), (3550, 1060, 1.25, 0)],
                layers=[("sky", 10), ("far", 3.0), ("near", 1.0)],
@@ -154,9 +154,13 @@ P7_HEAD2 = P7.replace("leaning over the water, the face entirely hidden inside t
                       "the hood's edge washed in pale blue light, the face entirely hidden inside the deep hood, the body still "
                       "kneeling over the water,")
 # p6 walk2: walk1's pick placed far down by the water as an unlit silhouette (canvas units: feet centre, scale vs walk1)
-P7_HEAD_ROUND = 2       # which head_up candidates the build cuts (2: ink_r2 retry; 0: none)
-P7_RIM = False          # True: ship traveler_blue_rim.png (add) instead of a head_up state
-P6_WALK2 = dict(feet=(3500, 1358), scale=0.55, fill="navy", fill_k=0.35, rim="slate", rim_side=(1.0, -0.2))
+# p5 round 3 (ink_r3.py): the drowned baked into the road layer from this candidate's whole (_work/p5/S_drowned_r3_<tag>.png)
+P5_DROWNED_R3 = "d60_s11"
+P7_HEAD_ROUND = 0       # which head_up candidates the build cuts (2: ink_r2 retry; 0: none)
+P7_RIM = True           # True: ship traveler_blue_rim.png (add) instead of a head_up state
+# round 3: from the stand pick, scaled to round 2's walk2 height (walk1 s47's 534 px x 0.55)
+P6_WALK2 = dict(feet=(3500, 1358), src="stand", height_px=294, dome=False, fill="navy", fill_k=0.35, rim="slate",
+                rim_side=(1.0, -0.2))
 
 
 def wd(plate, *a):

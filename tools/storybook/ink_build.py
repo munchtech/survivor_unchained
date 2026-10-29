@@ -32,6 +32,10 @@ class Plate:
         self._up = {}
         _, self.mg = L.fill_jobs(plate)
         self.M = {n: L.load_mask(L.wd(plate, f"M_{n}.png")) for n, _ in self.P["layers"]}
+        self.whole = "pick"
+        if plate == "p5":       # round 3: the drowned baked into the road layer (ink_r3.py); the road owns their figures
+            self.whole = L.wd(plate, f"S_drowned_r3_{L.P5_DROWNED_R3}.png")
+            self.M["road"] = self.M["road"] | L.load_mask(L.wd(plate, f"r3_fig_{L.P5_DROWNED_R3}.png"))
 
     def src(self, name):
         if name not in self._up:
@@ -147,17 +151,21 @@ def to_im(a):
 
 
 def walk2(P, st_layers):
-    """p6 walk2 from the walk1 pick: the same figure far down by the water, an unlit navy silhouette with a faint
-    cool rim on the river side (no firelight), posted with the paper at its place."""
-    pk = json.load(open(os.path.join(L.HERE, "ink_picks.json"), encoding="utf-8"))["p6"]["walk1"]
-    seed = int(pk.rsplit("_s", 1)[1].split(".")[0])
-    w1 = [d for d in st_layers if d["state"] == "walk1" and d["seed"] == seed][0]
+    """p6 walk2 from the stand pick (round 3: one figure throughout): the same figure far down by the water, an unlit
+    navy silhouette with a faint cool rim on the river side (no firelight), posted with the paper at its place."""
     cfg = L.P6_WALK2
+    pk = json.load(open(os.path.join(L.HERE, "ink_picks.json"), encoding="utf-8"))["p6"]["stand"]
+    seed = int(pk.rsplit("_s", 1)[1].split(".")[0])
+    w1 = [d for d in st_layers if d["state"] == cfg["src"] and d["seed"] == seed][0]
     a = w1["rgba"][..., 3]
     h, w = a.shape
-    nw, nh = max(1, round(w * cfg["scale"])), max(1, round(h * cfg["scale"]))
+    ys, _ = np.nonzero(a > 0.5)
+    k = cfg["height_px"] / (ys.max() - ys.min() + 1)
+    nw, nh = max(1, round(w * k)), max(1, round(h * k))
     a = np.clip(np.asarray(Image.fromarray(a.astype(np.float32)).resize((nw, nh), Image.LANCZOS)), 0, 1)
     a = np.pad(a, 6)
+    if not cfg["dome"]:
+        return _walk2_finish(P, cfg, w1, a)
     # walk1's cut is flat on top (its hood ran past the state box): round the hood back on
     ys, xs = np.nonzero(a > 0.5)
     top = ys.min()
@@ -170,6 +178,10 @@ def walk2(P, st_layers):
     a = np.pad(a, ((pad_top, 0), (0, 0)))
     dome = np.pad(nd.gaussian_filter(np.asarray(dome, np.float32) / 255, 0.8), ((pad_top, 0), (0, 0)))
     a = np.maximum(a, dome)
+    return _walk2_finish(P, cfg, w1, a)
+
+
+def _walk2_finish(P, cfg, w1, a):
     ys, xs = np.nonzero(a > 0.5)
     fx, fy = cfg["feet"]
     x0 = round(fx / P.upp - (xs.min() + xs.max()) / 2)
@@ -248,7 +260,7 @@ def build(plate):
     os.makedirs(out, exist_ok=True)
     names = [n for n, _ in P.P["layers"]]
     zs = dict(P.P["layers"])
-    srcs = {"p5": {"sky": "sky", "far": "far", "trees": "clean", "road": "clean"},
+    srcs = {"p5": {"sky": "sky", "far": "far", "trees": "clean", "road": P.whole},
             "p6": {"sky": "sky", "far": "far", "near": "clean"},
             "p7": {"far_water": "bg", "water": "bg", "lamp": "pick", "traveler": "pick"},
             "p7u": {"under": "bg", "bubbles": "pick"}}[plate]
@@ -267,6 +279,8 @@ def build(plate):
         # the part a layer owns is the clean drawing itself; fills only where it runs under nearer layers
         own = up_alpha(soft(P.M[n], 1.5), P.TW, P.TH)[..., None]
         base = P.src("clean" if plate in ("p5", "p6") else "pick")
+        if plate == "p5" and n == "road":
+            base = P.src(P.whole)
         rgb = base * own + P.src(srcs[n]) * (1 - own)
         rgba, x0, y0 = P.cutout(rgb, alpha, opaque)
         ly = dict(name=n, z=zs[n], blend="mix", rgba=rgba, x0=x0, y0=y0, state=None)
@@ -279,16 +293,11 @@ def build(plate):
     # states
     states = []
     sl = P.P["state_layer"]
-    if plate == "p5":
-        for s in L.P5_SEEDS:      # round 2: per-ditch slot inpaint, SAM cut (ink_r2.py)
-            st = L.wd(plate, f"st_drowned_s{s}.png")
-            fig = L.load_mask(L.wd(plate, f"st_drowned_s{s}_fig.png"))
-            states.append(("drowned", s, st, soft(fig)))
-    elif plate == "p6":
+    if plate == "p6":
         person = L.load_mask(os.path.join(L.WORK, "p6_sam_person.png"))
         states.append(("sit", 0, "pick", soft(nd.binary_dilation(person, iterations=1))))
         for k in L.P6_STATES:
-            if k == "walk2":      # round 2: derived from the walk1 pick below, not generated
+            if k in ("walk1", "walk2"):      # round 3: both from the stand pick below, not generated
                 continue
             reg = L.load_mask(L.wd(plate, f"state_{k}.png"))
             for s in L.SEEDS:
@@ -311,7 +320,11 @@ def build(plate):
             continue
         rgba, x0, y0 = P.cutout(P.src(src), a)
         st_layers.append(dict(name=sl[0], z=sl[1], blend="mix", rgba=rgba, x0=x0, y0=y0, state=k, seed=s))
-    if plate == "p6":
+    if plate == "p6":       # round 3: walk1 = the stand pick as drawn (fire-lit), walk2 = it unlit by the water
+        pk = json.load(open(os.path.join(L.HERE, "ink_picks.json"), encoding="utf-8"))["p6"]["stand"]
+        seed = int(pk.rsplit("_s", 1)[1].split(".")[0])
+        stand = [d for d in st_layers if d["state"] == "stand" and d["seed"] == seed][0]
+        st_layers.append(dict(stand, state="walk1", seed=None))
         st_layers.append(walk2(P, st_layers))
     if plate == "p7" and L.P7_RIM:
         st_layers.append(blue_rim(P, layers))
@@ -334,13 +347,13 @@ def build(plate):
                         pos=[round(ly["x0"] * P.upp, 1), round(ly["y0"] * P.upp, 1)], scale=round(P.upp, 5),
                         size_px=[ly["rgba"].shape[1], ly["rgba"].shape[0]]))
     # ---- checks
-    ref = IP.post(P.src("pick"), light=P.P.get("light", "warm"))
+    ref = IP.post(P.src(P.whole), light=P.P.get("light", "warm"))      # p5: the new whole (clean + ghost fix + drowned)
     IP.save(ref, os.path.join(out, "_posted_whole.png"))
     comp = np.zeros_like(ref)
     for ly in layers:
         over(comp, ly["rgba"], ly["x0"], ly["y0"])
     excl = np.zeros((P.h, P.w), bool)
-    for f in ("remove.png", "ghost_fix.png"):      # ghost_fix: round 2's deliberate refill (ink_r2 p5clean)
+    for f in (() if plate == "p5" else ("remove.png", "ghost_fix.png")):      # p5's whole already holds its refills
         if os.path.exists(L.wd(plate, f)):
             excl |= nd.binary_dilation(L.load_mask(L.wd(plate, f)), iterations=4)
     keep = up_alpha((~excl).astype(np.float32), P.TW, P.TH) > 0.99
@@ -431,6 +444,4 @@ def build(plate):
         S.paste(r, (0, y))
         y += r.height + 6
     S.save(os.path.join(L.OUT, f"sheet_{plate}.jpg"), quality=88)
-    if plate == "p5":
-        drowned_sheet(P, base_rest, gl, st_layers)
     print(plate, json.dumps(checks))
