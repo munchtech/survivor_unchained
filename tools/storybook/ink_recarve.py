@@ -167,7 +167,7 @@ def campath(p5, p3):
     import ink_r5 as R
     R.R5 = OUT
     img = Image.open(os.path.join(OUT, "posted", p5 + ".png")).convert("RGB")
-    fx, fy = R.P5_FORD.get(p5, (1830, 560))
+    fx, fy = {"p5R1_f1_d40_s47_nc": (1910, 610)}.get(p5, R.P5_FORD.get(p5, (1830, 560)))
     keys = [(0.0, fx, fy + 40, 2.2, "open: water, cages, the fourth light"), (7.0, fx, fy + 60, 1.5, "end of the slow push"),
             (10.5, (fx + 1800) / 2, (fy + 1000) / 2 + 30, 1.2, "pulling back up the road"), (14.5, 1800, 950, 1.0, "the full wide")]
     sheets = []

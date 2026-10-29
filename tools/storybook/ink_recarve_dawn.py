@@ -43,15 +43,15 @@ def mask(shape):
 
 
 def hill_line(rgb):
-    """Per column, the first row (below 4% height) where the blurred luminance drops under 60% of the sky's."""
-    L = nd.gaussian_filter(rgb.mean(-1), 4)
+    """Per column, the top of the dark hill band: the first row (from 15% height) where the heavily blurred
+    luminance drops under 0.125; median-smoothed across x so the risen heads in the sky don't pull it up."""
+    L = nd.gaussian_filter(rgb.mean(-1), 12)
     H, W = L.shape
-    sky = np.median(L[: int(H * 0.08)])
-    below = L < sky * 0.6
-    below[: int(H * 0.04)] = False
-    y = np.where(below.any(0), below.argmax(0), int(H * 0.3))
-    y = np.clip(y, int(H * 0.08), int(H * 0.5))
-    return nd.median_filter(y, 61).astype(np.float32)
+    below = L < 0.125
+    below[: int(H * 0.15)] = False
+    y = np.where(below.any(0), below.argmax(0), int(H * 0.28))
+    y = np.clip(y, int(H * 0.18), int(H * 0.42))
+    return nd.uniform_filter1d(nd.median_filter(y, 301).astype(np.float32), 151)
 
 
 def regrade(rgb):
@@ -67,15 +67,46 @@ def regrade(rgb):
     # field: lifted and cooled to a gray morning
     gray = out.mean(-1, keepdims=True)
     field = 0.55 * out + 0.45 * gray
-    field = np.clip(field * 1.3 + 0.03, 0, 1) * np.array([0.97, 1.0, 1.04])
+    field = np.clip(field, 0, 1) ** 0.62 * np.array([0.96, 0.99, 1.03])
     # sky: gray, lighter toward the hills, a gold band just above them
     t = np.clip(1 - (hy[None] - yy) / np.maximum(hy[None], 1), 0, 1)[..., None]   # 0 at the top, 1 at the hill line
     skyc = np.clip(gray * 0.6 + 0.30 + 0.18 * t, 0, 1) * np.array([0.95, 0.97, 1.0])
-    band = np.exp(-((hy[None] - yy) / 28.0) ** 2)[..., None] * (yy <= hy[None] + 4)[..., None]
+    band = np.exp(-((hy[None] - yy) / 48.0) ** 2)[..., None] * (yy <= hy[None] + 4)[..., None]
     gold = np.array([0.90, 0.70, 0.38])
-    skyc = skyc * (1 - 0.75 * band) + gold * (0.55 + 0.45 * gray) * 0.75 * band
+    skyc = skyc * (1 - 0.9 * band) + gold * (0.75 + 0.35 * gray) * 0.9 * band
     s = sky[..., None]
     return np.clip(field * (1 - s) + skyc * s, 0, 1)
+
+
+def fig_mask(src, shape):
+    """Tight figure masks: SAM 'person' on the night plate (dilated), kept inside REGIONS' upper boxes, plus a
+    ground ellipse per region where the fallen will lie."""
+    import ink_comfy as C
+    sp = os.path.join(D, "_sam_person.png")
+    if not os.path.exists(sp):
+        C.sam(src, "person", sp, threshold=0.3)
+    sam = np.asarray(Image.open(sp).convert("L").resize((shape[1], shape[0]))) > 127
+    box = np.zeros(shape[:2], bool)
+    for (x0, y0, x1, y1), _ in REGIONS:
+        box[y0:y1, x0:x1] = True
+    m = nd.binary_dilation(sam & box, iterations=28)
+    g = Image.new("L", (shape[1], shape[0]), 0)
+    d = ImageDraw.Draw(g)
+    for cx, cy, rx, ry in GROUND:
+        d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=255)
+    return m | (np.asarray(g) > 127)
+
+
+GROUND = [(680, 770, 380, 95), (1640, 785, 360, 85)]   # gen px: where the two fallen lie
+
+
+def soft_back(init, fill, mask, feather=24):
+    """The fill inside the mask, blended over `feather` px just inside its edge; outside the mask the init exactly."""
+    a = np.asarray(Image.open(init).convert("RGB")).astype(np.float32)
+    b = np.asarray(Image.open(fill).convert("RGB").resize((a.shape[1], a.shape[0]), Image.LANCZOS)).astype(np.float32)
+    m = np.asarray(Image.open(mask).convert("L")) > 127
+    w = np.clip(nd.distance_transform_edt(m) / feather, 0, 1)
+    return Image.fromarray((a * (1 - w[..., None]) + b * w[..., None] + 0.5).astype(np.uint8))
 
 
 def dawn(name):
@@ -85,29 +116,39 @@ def dawn(name):
     os.makedirs(D, exist_ok=True)
     src = os.path.join(RC.OUT, name + ".png")
     night = np.asarray(Image.open(src).convert("RGB")).astype(np.float32) / 255
-    m = mask(night.shape)
-    mp = os.path.join(D, "_mask.png")
+    H, W = night.shape[:2]
+    base = os.path.join(D, f"{name}_base.png")                 # the whole plate regraded, pixel-registered
+    Image.fromarray((regrade(night) * 255 + 0.5).astype(np.uint8)).save(base)
+    m = mask(night.shape)          # the region boxes (SAM 'person' finds only the standing dead here)
+    # above the hill line only the night figures' own dark silhouettes (sky and the gold band stay the base's)
+    hy = hill_line(night)
+    yy = np.arange(H)[:, None]
+    dark = nd.binary_dilation(nd.gaussian_filter(night.mean(-1), 4) < 0.13, iterations=22)
+    m &= (yy >= hy[None] + 18) | dark
+    m = nd.binary_opening(m, iterations=3)
+    mp = os.path.join(D, "_mask4.png")
     Image.fromarray((m * 255).astype(np.uint8)).save(mp)
     prompt = (RC.R2["prefix"] + " " + INPAINT + " " + RC.R2["style"]).strip()
     rp = (RC.R2["prefix"] + " " + REGRADE + " " + RC.R2["style"]).strip()
-    H, W = night.shape[:2]
-    posted = []
+    posted = [os.path.join(RC.OUT, "posted", name + ".png")]
+    p = os.path.join(D, "posted_" + os.path.basename(base))
+    R.post_one(base, p, w=5400)
+    posted.append(p)
     for s in SEEDS:
-        fig = os.path.join(D, f"{name}_fig_{s}.png")
-        if not os.path.exists(fig):
-            raw = os.path.join(D, f"_raw_{s}.png")
-            C.krea(prompt, W, H, s, raw, init=src, denoise=1.0, mask=mp)
-            IL.composite_back(src, raw, mp).save(fig)
-        f = np.asarray(Image.open(fig).convert("RGB")).astype(np.float32) / 255
-        n = os.path.join(D, f"{name}_dawn_{s}_n.png")
-        Image.fromarray((regrade(f) * 255 + 0.5).astype(np.uint8)).save(n)
-        k = os.path.join(D, f"{name}_dawn_{s}_k.png")
-        if not os.path.exists(k):
-            C.krea(rp, W, H, s, k, init=n, denoise=0.30)
-        for g in (n, k):
+        n = os.path.join(D, f"{name}_dawn4_{s}_n.png")
+        if not os.path.exists(n):
+            raw = os.path.join(D, f"_raw4_{s}.png")
+            C.krea(prompt, W, H, s, raw, init=base, denoise=1.0, mask=mp)
+            soft_back(base, raw, mp).save(n)
+        outs = [n]
+        if s == SEEDS[0]:
+            k = os.path.join(D, f"{name}_dawn4_{s}_k25.png")
+            if not os.path.exists(k):
+                C.krea(rp, W, H, s, k, init=n, denoise=0.25)
+            outs.append(k)
+        for g in outs:
             p = os.path.join(D, "posted_" + os.path.basename(g))
             R.post_one(g, p, w=5400)
             posted.append(p)
         print(s, flush=True)
-    R.sheet_of([os.path.join(RC.OUT, "posted", name + ".png")] + posted, os.path.join(RC.OUT, f"{name}_dawn_sheet_half.jpg"),
-               cols=3, tw=900)
+    R.sheet_of(posted, os.path.join(RC.OUT, f"{name}_dawn4_sheet_half.jpg"), cols=3, tw=900)
