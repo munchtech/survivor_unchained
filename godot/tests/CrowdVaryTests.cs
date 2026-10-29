@@ -77,6 +77,16 @@ public class CrowdVaryTests
     }
 
     [Fact]
+    public void SomeoneWhereSheArrivesIsMovedOutToHerRoom()
+    {
+        // (a townswoman 0.3 m from her spawn takes the whole move: out to 1.5 m, along the line from her)
+        var (mx, mz) = FolkSpacing.Apart(0.3, 0, 0, 0, 1, 1, 0, FolkSpacing.HerRoom);
+        Assert.Equal(FolkSpacing.HerRoom, 0.3 + mx, 9); Assert.Equal(0, mz, 9);
+        Assert.Equal((0.0, 0.0), FolkSpacing.Apart(1.6, 0, 0, 0, 1, 1, 0, FolkSpacing.HerRoom));
+        Assert.True(FolkSpacing.HerRoom >= 1.5);
+    }
+
+    [Fact]
     public void ThreeWalkersSqueezedTogetherSettleAtTheGap()
     {
         // (three on one lane in lockstep, a hand's breadth apart, as the judge saw them: a few frames of Apart)

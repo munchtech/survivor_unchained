@@ -101,6 +101,8 @@ public sealed class Folk
     public readonly List<(double X, double Z)> Fixed = new();
     readonly List<string> said = new();
     bool started;
+    bool herKnown;
+    double herX, herZ;
     int nextId = 1;
 
     public Folk(Options opts, Random rng)
@@ -476,6 +478,19 @@ public sealed class Folk
             if (Leaders(FolkRole.Adult).OrderByDescending(a => Dist(a.X, a.Z, px, pz)).FirstOrDefault() is { } cw) { cw.Leaving = true; if (cw.State != "inside") GoHome(cw); else cw.Gone = true; }
         }
         started = true;
+        // Where she arrives (the first frame, a spot, a door: a jump of over 2 m), nobody already standing in her: moved out to
+        // FolkSpacing.HerRoom at once (the step-aside below is a soft push that takes a second or two; a shot taken on arrival
+        // caught a townswoman fused into her hip).
+        if (!herKnown || Dist(px, pz, herX, herZ) > 2)
+            foreach (var w in walkers)
+            {
+                if (w.State == "inside" || w.Gone) continue;
+                double tie = w.Id * 2.399;
+                var (mx, mz) = FolkSpacing.Apart(w.X, w.Z, px, pz, 1, Math.Cos(tie), Math.Sin(tie), FolkSpacing.HerRoom);
+                w.X += mx; w.Z += mz;
+                o.Col.Resolve(ref w.X, ref w.Z, 0.32);
+            }
+        herKnown = true; herX = px; herZ = pz;
         barkT -= dt;
         foreach (var w in walkers.ToList()) Step(w, dt, px, pz);
     }

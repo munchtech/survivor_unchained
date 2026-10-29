@@ -36,7 +36,7 @@ CFG = {
                                'hair': ['#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a4030', '#6e3a24', '#7d7872']}},
     'npc_folk_w': {'anchors': [['#560b09', 'a'], ['#d6cfbc', 'coif'], ['#b4a78e', 'b'], ['#190d0c', 'hair'], ['#544c44', '0'], ['#4f351b', '0'],
                                ['#dfa681', '0', 'skin'], ['#ba8169', '0', 'skin']],
-                   'ylim': {'b': [1.1, 9]}, 'coif_from': ['b'],
+                   'ylim': {'b': [1.1, 9]}, 'coif_from': ['b'], 'light_after': True, 'light_min': 6,
                    'range': {'a': [0.08, 0.28], 'b': [-0.1, 0.12], 'hair': [0.0, 0.25], 'coif': [-0.12, 0.03]},
                    'palette': {'a': ['#570b08', '#5f3330', '#2f4466', '#8a6a26', '#5a3a24', '#33452e', '#7a3a20', '#6e6a62', '#4e2a3a'],
                                'b': ['#b9ab8f', '#c9bfa8', '#ddd6c6', '#cdb779', '#9fb0be', '#c79a88', '#b0aca2', '#a8ad8e'],
@@ -159,10 +159,17 @@ def tidy(m, cov, k=40):
     its threshold (a collar at neck height), texel-scale noise in the bind-pose points scatters lone texels to the
     wrong side, and each becomes a hole through the cloth; components of up to k texels flip to their surround."""
     m = m & cov
+    k3 = np.ones((3, 3), np.uint8)
     for v in (True, False):
         src = (m if v else (~m & cov)).astype(np.uint8)
         n, cc, st, _ = cv2.connectedComponentsWithStats(src, connectivity=4)
         sm = st[:, 4] <= k; sm[0] = False
+        # only a speck beside the other side flips: a whole small UV island lying on one side of the cut (an atlas chip
+        # of shoulder sleeve, all of it below the neck) has only gutter round it, and flipped it showed undyed (Harlan's
+        # sleeve diamond, judge r3)
+        other = (~m & cov) if v else m
+        touch = cv2.dilate(other.astype(np.uint8), k3).astype(bool) & src.astype(bool)
+        sm &= np.bincount(cc[touch], minlength=n) > 0
         m = np.where(sm[cc] & src.astype(bool), not v, m)
     return m.astype(bool)
 
@@ -283,6 +290,17 @@ def build(name, report=False, out=None):
     print(f'  {name}: enclosed hole texels filled {holes}')
     # keep-outs after cleanup too: they are absolute
     limits()
+    # light-guarded paint bigger than a speck stays as painted whatever the cleanup closed over it: the 5x5 mode and the
+    # island majority pulled folk_w's white shawl fringe at the knot into the bodice, and dyed it lit lime (judge r3)
+    # ('light_after': the guard taken again on the cleaned labels, for paint whose raw nearest anchor was another and that
+    # the cleanup closed into a dark cloth: folk_w's fringe sits nearer the gray and brown kept anchors)
+    if cfg.get('light_after'):
+        for c in (1, 2):
+            if (ach == c).any():
+                light = light | ((lbl == c) & (lightL > ac[ach == c][:, 0].max() + cfg.get('light_guard', 20.0)))
+    nl, cl, sl_, _ = cv2.connectedComponentsWithStats((light & cov).astype(np.uint8), connectivity=8)
+    big = sl_[:, 4] > cfg.get('light_min', cfg.get('speck', 24)); big[0] = False
+    lbl[big[cl] & (lbl == 1) | big[cl] & (lbl == 2)] = 0
     for b in cfg.get('zero_boxes', []):   # [x0,y0,z0,x1,y1,z1] bind-pose boxes forced 0
         lo, hi = np.array(b[:3]), np.array(b[3:])
         lbl[np.all((X >= lo) & (X <= hi), -1) & cov] = 0

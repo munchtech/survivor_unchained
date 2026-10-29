@@ -19,6 +19,9 @@ public static class FolkSpacing
     public const double Look = 2.2;
     /// <summary>Nobody this close (m) when a stoop starts.</summary>
     public const double Clear = 1.0;
+    /// <summary>Nobody stands nearer her than this (m) where she arrives (the zone's start, a spot, a door): someone
+    /// already there is moved out at once, not left in her hip until the soft step-aside walks them off.</summary>
+    public const double HerRoom = 1.5;
 
     /// <summary>The clips that bend a townsperson over (never walked in, never started crowded).</summary>
     public static bool BendsOver(string clip) => clip is "Interact" or "PickUp" or "PickUp_Table";
@@ -27,14 +30,14 @@ public static class FolkSpacing
     /// they walk (the walker steps round the worker), 1 the other way round, half each otherwise.</summary>
     public static double Share(bool meBusy, bool themBusy) => meBusy == themBusy ? 0.5 : meBusy ? 0 : 1;
 
-    /// <summary>The move (x, z) that takes me out to Gap from someone at (ox, oz), my share of it; zero if far enough.
+    /// <summary>The move (x, z) that takes me out to Gap (or `gap`) from someone at (ox, oz), my share of it; zero if far enough.
     /// Coincident centres part along `tieX`, `tieZ` (a unit vector of the walker's own).</summary>
-    public static (double X, double Z) Apart(double x, double z, double ox, double oz, double share, double tieX = 1, double tieZ = 0)
+    public static (double X, double Z) Apart(double x, double z, double ox, double oz, double share, double tieX = 1, double tieZ = 0, double gap = Gap)
     {
         double dx = x - ox, dz = z - oz, d = Math.Sqrt(dx * dx + dz * dz);
-        if (d >= Gap || share <= 0) return (0, 0);
-        if (d < 1e-6) return (tieX * Gap * share, tieZ * Gap * share);
-        double k = (Gap - d) * share / d;
+        if (d >= gap || share <= 0) return (0, 0);
+        if (d < 1e-6) return (tieX * gap * share, tieZ * gap * share);
+        double k = (gap - d) * share / d;
         return (dx * k, dz * k);
     }
 

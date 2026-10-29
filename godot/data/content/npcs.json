@@ -1153,8 +1153,8 @@
     "body": "npc:npc_folk_m"
    },
    "spot": {
-    "x": 2.6,
-    "z": 2.8,
+    "x": 1.7,
+    "z": 4.3,
     "facing": 2.5132741228718345
    },
    "barks": [
@@ -1566,6 +1566,7 @@
     "skin": "#e0a47c",
     "figure": 1.35,
     "dye": {
+     "cloth": "#354431",
      "under": "#1e2a3e"
     },
     "body": "npc:npc_folk_w"

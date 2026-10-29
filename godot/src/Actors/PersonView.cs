@@ -433,7 +433,7 @@ public partial class PersonView : Node3D, INpcView
         host.AddChild(new OmniLight3D { Position = new Vector3(0, TorchFlameY, 0), LightColor = new Color("#ffa050"), LightEnergy = 1.1f, OmniRange = 3.5f, ShadowEnabled = true });
     }
 
-    /// <summary>The held torch's flame above its grip (the flame kit's card from 0.31, 0.26 tall at 0.55).</summary>
+    /// <summary>The held torch's flame above its grip (the flame kit's card from 0.31, 0.30 tall at 0.62, a carried flame).</summary>
     public const float TorchFlameY = 0.40f;
 
     /// <summary>Where the flame of a torch held in a slot is in the world (Folk's patrol light follows it), or null.</summary>
@@ -482,7 +482,7 @@ public partial class PersonView : Node3D, INpcView
                 root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.021f, BottomRadius = 0.035f, Height = 0.12f, Material = char_ }, Position = new Vector3(0, 0.30f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
                 var ember = new StandardMaterial3D { AlbedoColor = new Color("#1c1612"), Roughness = 1f, EmissionEnabled = true, Emission = new Color("#8a2a08"), EmissionEnergyMultiplier = 0.35f };
                 root.AddChild(new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 0.0205f, BottomRadius = 0.025f, Height = 0.035f, Material = ember }, Position = new Vector3(0, 0.3425f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-                FlameKit.Add(root, new Vector3(0, 0.31f, 0), FlameKind.Torch, scale: 0.55f, light: false);
+                FlameKit.Add(root, new Vector3(0, 0.31f, 0), FlameKind.Torch, scale: 0.62f, light: false, carried: true);
                 return root;
             }
             case "bucket_water":

@@ -45,12 +45,16 @@ uniform float occlude = 0.0;
 // (0: the old ramp; 1: the camp fire's, so the tonemapper doesn't wash its body to peach and cream).
 uniform float body_pow = 1.6;
 uniform float warm_sat = 0.0;
+// A carried flame (a torch in a hand) grows toward this many times its size from far off (full from 16 m): at the play camera
+// its few pixels otherwise read as a glint, not a flame (FlameKit, carried).
+uniform float far_grow = 1.0;
 
 void vertex() {
 	vec3 to_cam = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
 	vec3 up = normalize(mix(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[1].xyz, tilt));
 	vec3 right = normalize(cross(up, to_cam));
 	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), 1.0);
+	s.xy *= mix(1.0, far_grow, smoothstep(6.0, 16.0, length(to_cam)));
 	// Drawn a little toward the camera from far off (`pull` m, none within 6 m): a lamp's flame then clears its
 	// cage's top bar and hood, which from the play camera's height stand just in front of it.
 	vec3 o = MODEL_MATRIX[3].xyz + normalize(to_cam) * pull * smoothstep(6.0, 12.0, length(to_cam));
