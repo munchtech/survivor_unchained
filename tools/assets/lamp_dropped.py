@@ -42,10 +42,12 @@ def materials():
     # tallow over the wood's first band: a greasy off-white, yellowed, with soot specks
     x0, x1 = int(0.375 * T), int(0.5 * T)
     n = L.noise((T, x1 - x0), 611, 4, 6)
-    c = np.stack([0.2 + 0.04 * n, 0.175 + 0.035 * n, 0.115 + 0.025 * n], -1)
-    specks = (L.noise((T, x1 - x0), 612, 3, 40) > 0.72)[..., None]
-    col[:, x0:x1] = np.where(specks, c * 0.35, c)
-    rough[:, x0:x1] = 0.45 + 0.1 * n
+    # (round 2: the r1 tallow read as a white spool by day; yellowed, grimy, smoke-browned toward the top)
+    vv = (np.arange(T)[:, None] + 0.5) / T
+    c = np.stack([0.105 + 0.03 * n, 0.083 + 0.024 * n, 0.045 + 0.014 * n], -1) * (1 - 0.45 * vv[..., None] ** 2)
+    specks = (L.noise((T, x1 - x0), 612, 3, 40) > 0.66)[..., None]
+    col[:, x0:x1] = np.where(specks, c * 0.3, c)
+    rough[:, x0:x1] = 0.55 + 0.1 * n
     metal[:, x0:x1] = 0
     # Seen at an arm's length by day (C04 A0), env_lamps' night iron read as one black: a hand lamp's iron instead,
     # worn dark grey-brown, rust blooming in patches (orange-brown where it is thick), and wet: low roughness on the
@@ -53,13 +55,18 @@ def materials():
     i1 = int(0.25 * T)
     n1 = L.noise((T, i1), 621, 5, 4)
     n2 = L.noise((T, i1), 622, 4, 18)
-    rust = np.clip((L.noise((T, i1), 623, 4, 7) - 0.48) * 3.2, 0, 1) * (0.55 + 0.45 * n2)
-    v = 0.085 + 0.035 * (n1 - 0.5) + 0.02 * (n2 - 0.5)
+    # (round 2: blackened by its own smoke, dull; the r1 grey-brown read as a navy plastic frame in cold light)
+    rust = np.clip((L.noise((T, i1), 623, 4, 7) - 0.66) * 3.0, 0, 1) * (0.4 + 0.4 * n2)
+    v = 0.038 + 0.016 * (n1 - 0.5) + 0.012 * (n2 - 0.5)
     iron = np.stack([v, v * 0.93, v * 0.86], -1)
     rc = np.stack([0.19 + 0.05 * n2, 0.085 + 0.025 * n2, 0.035 + 0.012 * n2], -1)
     col[:, :i1] = np.maximum(iron * (1 - rust[..., None]) + rc * rust[..., None], 0.045)
-    rough[:, :i1] = np.clip(0.3 + 0.14 * n2 + 0.32 * rust, 0.2, 0.85)
-    metal[:, :i1] = 0.55 * (1 - rust) + 0.05
+    rough[:, :i1] = np.clip(0.52 + 0.16 * n2 + 0.2 * rust, 0.35, 0.9)
+    metal[:, :i1] = 0.35 * (1 - rust) + 0.05
+    # the pitch band: the wick, the cup's char: dead black
+    p0, p1 = int(0.25 * T), int(0.375 * T)
+    col[:, p0:p1] = 0.018 + 0.008 * L.noise((T, p1 - p0), 631, 3, 8)[..., None]
+    rough[:, p0:p1] = 0.85
     a = L.image('lamp_dropped_albedo', col, False)
     mr = L.image('lamp_dropped_mr', np.stack([np.ones_like(rough), rough, metal], -1), True)
     m = bpy.data.materials.new('lamp_dropped_atlas')
@@ -79,13 +86,13 @@ def materials():
     v = (np.arange(G)[:, None] + 0.5) / G
     u = (np.arange(G)[None, :] + 0.5) / G
     runs = L.noise((G, G), 613, 3, 3)
-    soot = np.clip((v - 0.45) / 0.55, 0, 1) ** 1.4 * (0.6 + 0.6 * runs) + 0.12 * L.noise((G, G), 614, 4, 8)
+    soot = np.clip((v - 0.3) / 0.45, 0, 1) ** 1.1 * (0.75 + 0.6 * runs) + 0.18 * L.noise((G, G), 614, 4, 8)
     soot = np.clip(soot, 0, 1)
     rgba = np.zeros((G, G, 4), np.float32)
-    clear = np.array([0.30, 0.32, 0.27])
+    clear = np.array([0.22, 0.24, 0.19])
     for k in range(3):
-        rgba[..., k] = clear[k] * (1 - soot) + 0.02 * soot
-    rgba[..., 3] = 0.24 + 0.66 * soot    # clear enough to see the candle, present enough that the star in it reads
+        rgba[..., k] = clear[k] * (1 - soot) + 0.01 * soot
+    rgba[..., 3] = 0.3 + 0.68 * soot    # clear enough to see the candle, present enough that the star in it reads
     gi = bpy.data.images.new('lamp_dropped_glass_soot', G, G, alpha=True)
     px = rgba.copy()
     px[..., :3] = np.where(px[..., :3] <= 0.0031308, px[..., :3] * 12.92, 1.055 * np.power(px[..., :3], 1 / 2.4) - 0.055)
@@ -188,24 +195,43 @@ def lamp_parts():
     parts.pop(glass[1])
     paneframe = L.T(0, y_base, 0) @ L.R('Y', math.pi / 2) @ L.T(0, 0, g)
     pieces, gone = shards(pw, H)
+    ground = [gone] + [pieces[k] for k in (1, 3, 6)]
+    # (round 2) the pane is out: only two jagged teeth left in the frame (the wedges' outer thirds)
+    rem = []
+    for k in (0, 4):
+        pg = pieces[k]
+        c0 = pg[0]
+        rem.append([pg[1] + (c0 - pg[1]) * 0.28] + pg[1:] + [pg[-1] + (c0 - pg[-1]) * 0.42])
+    pieces = rem
     for k, pts in enumerate(pieces):
         tilt = L.R('Z', rnd.uniform(-0.02, 0.02)) @ L.R('X', rnd.uniform(-0.05, 0.05)) @ L.R('Y', rnd.uniform(-0.05, 0.05))
         parts.append(L.Part(shard_bm(pts), 'shard', paneframe @ L.T(0, 0, rnd.uniform(-0.0012, 0.0012)) @ tilt))
-    # the candle: a tallow stub in the cup, burnt down to a hollow, its wick black and bent
+    # the candle: a tallow stub in the cup, burnt low and guttered (an uneven rim, a drip down one side), its crater
+    # charred, the wick a thick black hook (round 2: r1's clean cylinder read as a white spool)
     cup_top = y_base + 0.11 * W
     cr = 0.11 * W
-    parts.append(L.Part(L.lathe([(cr, 0), (cr * 1.02, 0.25 * W), (cr * 0.98, 0.33 * W), (cr * 0.7, 0.3 * W), (0, 0.28 * W)], 12),
-                        'wax', L.T(0, cup_top - 0.02 * W, 0)))
+    cb = L.lathe([(cr, 0), (cr * 1.03, 0.12 * W), (cr * 0.99, 0.2 * W), (cr * 0.62, 0.17 * W), (0, 0.15 * W)], 14)
+    for v in cb.verts:
+        a = math.atan2(v.co.z, v.co.x)
+        if v.co.y > 0.1 * W:
+            v.co.y += 0.05 * W * (math.sin(3 * a + 0.7) * 0.5 + math.sin(5 * a) * 0.3)
+        v.co.x *= 1 + 0.06 * math.sin(4 * a + 1.3); v.co.z *= 1 + 0.06 * math.sin(4 * a + 1.3)
+    parts.append(L.Part(cb, 'wax', L.T(0, cup_top - 0.02 * W, 0)))
     parts[-1].smooth = True
-    parts.append(L.Part(L.lathe([(cr * 0.72, 0), (cr * 0.5, 0.012 * W), (0, 0.018 * W)], 12), 'pitch',
-                        L.T(0, cup_top - 0.02 * W + 0.285 * W, 0)))
-    wick = L.rod((0, cup_top + 0.27 * W, 0), (0.012 * W, cup_top + 0.36 * W, 0.02 * W), 0.012 * W, segs=4, region='pitch')
+    drip = L.lathe([(0.03 * W, 0), (0.034 * W, 0.08 * W), (0.022 * W, 0.15 * W), (0, 0.17 * W)], 6)
+    parts.append(L.Part(drip, 'wax', L.T(cr * 0.96, cup_top + 0.02 * W, 0) @ L.R('X', math.pi)))
+    parts[-1].smooth = True
+    parts.append(L.Part(L.lathe([(cr * 0.66, 0), (cr * 0.45, 0.01 * W), (0, 0.014 * W)], 12), 'pitch',
+                        L.T(0, cup_top - 0.02 * W + 0.155 * W, 0)))
+    wick = L.rod((0, cup_top + 0.13 * W, 0), (0.01 * W, cup_top + 0.24 * W, 0.006 * W), 0.026 * W, segs=5, region='pitch')
     parts.append(wick)
+    parts.append(L.rod((0.01 * W, cup_top + 0.24 * W, 0.006 * W), (0.05 * W, cup_top + 0.27 * W, 0.02 * W), 0.022 * W,
+                       segs=5, region='pitch'))
     # wax run sideways when it fell lit: a flat tongue on the lower pane's inside (local +z goes down), toward the cap
     tongue = L.lathe([(0.0, 0), (0.045 * W, 0.0015), (0.035 * W, 0.004), (0, 0.005)], 7)
     for v in tongue.verts:
         v.co.x *= 1.0 + 0.3 * math.sin(v.co.z * 900 + 1.0)
-    bmesh.ops.scale(tongue, vec=(0.8, 1.0, 2.2), verts=tongue.verts)
+    bmesh.ops.scale(tongue, vec=(1.3, 1.4, 3.2), verts=tongue.verts)
     parts.append(L.Part(tongue, 'wax', L.T(0, cup_top + 0.12 * W, g - 0.004) @ L.R('X', -math.pi / 2) @ L.R('Y', 0.3)))
     # the ring on the cap to hang it by (rounder than lamp_iron's)
     rr = 0.14 * W
@@ -227,7 +253,7 @@ def lamp_parts():
         for sx in (-1, 1):
             parts.append(L.Part(L.lathe([(0.018 * W, 0), (0.014 * W, 0.01 * W), (0, 0.014 * W)], 6), 'iron',
                                 rot @ L.T(sx * (0.5 * W - p / 2), 0.62 * H, 0.5 * W + 0.018 * W) @ L.R('X', math.pi / 2)))
-    return parts, gone, g, pw, y_base
+    return parts, ground, g, pw, y_base
 
 
 def build(parts, atlas_mat, glass_mat):
@@ -266,7 +292,7 @@ def build(parts, atlas_mat, glass_mat):
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     atlas_mat, glass_mat = materials()
-    parts, gone, g, pw, y_base = lamp_parts()
+    parts, ground, g, pw, y_base = lamp_parts()
     # Lay it down (game frame): local x -> +z (the starred pane toward the camera), local y -> -x (cap toward -X),
     # local z -> -y (down); then roll it a few degrees about its axis and turn it a touch.
     lay = Matrix(((0, -1, 0, 0), (0, 0, -1, 0), (1, 0, 0, 0), (0, 0, 0, 1)))
@@ -282,33 +308,37 @@ def main():
     cx = sum(c.x for c in low) / len(low)
     cy = sum(c.y for c in low) / len(low)
     me.transform(Matrix.Translation((-cx, -cy, -zmin)))
-    # the missing shard on the stones beside it, toward the camera and the cap, flat, a hair up
-    c0 = sum(gone, Vector((0, 0))) / len(gone)
-    gone = [c0 + (q - c0) * 0.55 for q in gone]
-    gone.insert(2, (gone[1] + gone[2]) * 0.5 + (gone[1] - gone[2]).orthogonal().normalized() * 0.004)
-    sb = shard_bm(gone)
-    uvl = sb.loops.layers.uv.verify()
-    for f in sb.faces:
-        for l in f.loops:
-            l[uvl].uv = (0.5 + l.vert.co.x / W, l.vert.co.y / H)
-    c = sum(gone, Vector((0, 0))) / len(gone)
-    at = L.T(-0.03, 0.002, 0.095) @ L.R('Y', 0.9) @ L.R('Z', 0.12) @ L.R('X', -math.pi / 2 + 0.06) @ L.T(-c.x, -c.y, 0)
-    sb.transform(L.G2B @ at)
-    sm = bpy.data.meshes.new('tmp')
-    sb.to_mesh(sm)
-    sb.free()
+    # the pane's shards on the stones beside it (round 2: four, sprayed out from the open side), flat, a hair up
+    spots = [(-0.03, 0.095, 0.9, 0.55), (0.05, 0.13, 2.2, 0.45), (0.12, 0.075, -0.6, 0.4), (-0.09, 0.16, 1.4, 0.35)]
     bm = bmesh.new()
     bm.from_mesh(me)
-    n0 = len(bm.faces)
-    bm.from_mesh(sm)
-    bm.faces.ensure_lookup_table()
-    for f in bm.faces[n0:]:
-        f.material_index = 1
-        f.smooth = False
+    for gone, (gx, gz, gr, sc) in zip(ground, spots):
+        c0 = sum(gone, Vector((0, 0))) / len(gone)
+        gone = [c0 + (q - c0) * sc for q in gone]
+        if len(gone) > 2:
+            gone.insert(2, (gone[1] + gone[2]) * 0.5 + (gone[1] - gone[2]).orthogonal().normalized() * 0.003)
+        sb = shard_bm(gone)
+        uvl = sb.loops.layers.uv.verify()
+        for f in sb.faces:
+            for l in f.loops:
+                l[uvl].uv = (0.5 + l.vert.co.x / W, l.vert.co.y / H)
+        c = sum(gone, Vector((0, 0))) / len(gone)
+        at = (L.T(gx, 0.002, gz) @ L.R('Y', gr) @ L.R('Z', rnd.uniform(-0.12, 0.12))
+              @ L.R('X', -math.pi / 2 + rnd.uniform(0.03, 0.09)) @ L.T(-c.x, -c.y, 0))
+        sb.transform(L.G2B @ at)
+        sm = bpy.data.meshes.new('tmp')
+        sb.to_mesh(sm)
+        sb.free()
+        n0 = len(bm.faces)
+        bm.from_mesh(sm)
+        bm.faces.ensure_lookup_table()
+        for f in bm.faces[n0:]:
+            f.material_index = 1
+            f.smooth = False
+        bpy.data.meshes.remove(sm)
     bmesh.ops.triangulate(bm, faces=bm.faces[:])
     bm.to_mesh(me)
     bm.free()
-    bpy.data.meshes.remove(sm)
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
