@@ -1135,6 +1135,25 @@ public partial class Game
                     tweens.Add(new Tween(t0, t0 + over, k => life.Lids = Mathf.Lerp(from, to, (float)k)));
                     break;
                 }
+                case "fingers":
+                {
+                    // Her fingers curl toward the palm (HerPose.CineCurlL/R, degrees): "side" l, r or both, eased by
+                    // smoothstep from where they are to "curl" over "over" s. Visual only: dropped on a skip, and put
+                    // back to 0 when the cinematic ends.
+                    if (skipping || !people.TryGetValue(c.Actor, out var fv) || fv.Person.Pose is not { } hp) break;
+                    string side = c.Str("side") ?? "both";
+                    float to = (float)c.Num("curl", 0);
+                    bool left = side != "r", right = side != "l";
+                    float fromL = hp.CineCurlL, fromR = hp.CineCurlR;
+                    tweens.Add(new Tween(t0, t0 + over, k =>
+                    {
+                        if (!IsInstanceValid(hp)) return;
+                        float e = Mathf.SmoothStep(0, 1, (float)k);
+                        if (left) hp.CineCurlL = Mathf.Lerp(fromL, to, e);
+                        if (right) hp.CineCurlR = Mathf.Lerp(fromR, to, e);
+                    }));
+                    break;
+                }
                 case "light":
                 {
                     int i = (int)c.Num("light");
@@ -1913,6 +1932,7 @@ public partial class Game
             }
             // Her look let go (her eyes ahead, her head's carry eased off) on whoever stays.
             foreach (var name in people.Keys) Life(name)?.Release();
+            foreach (var (_, pv2) in people) if (pv2.Person.Pose is { } hp && IsInstanceValid(hp)) hp.CineCurlL = hp.CineCurlR = 0;
             // (and a head look's glide back off: play's Watch is set each frame and follows at once)
             foreach (var (_, v) in people) if (v.Person.Skeleton.GetNodeOrNull<HeadTurn>("HeadTurn") is { } ht) ht.Glide = false;
             // Who stays where it left them (a body in the river) stays, still, until the next one.

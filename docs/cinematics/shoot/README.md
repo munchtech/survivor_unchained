@@ -82,7 +82,8 @@ places, and each one has a timeline the game plays. The chain:
     piece, null, or `@own`), `prop` (`@weapon` set down `where`).
   - The survivor's face: `face` (`keys` of her expression shapes, `over`),
     `gaze` (`look` [x,y], `wander`), `lids` (`value`, or null to let her
-    blink again), `wet`.
+    blink again), `wet`, `fingers` (`side` l, r or both, `curl` degrees toward
+    the palm, `over`; eased, her hands only, put back at the end).
   - Light and air: `light` (`light`, `intensity`, `color`, `over`), `lit`,
     `fire` (the campfire's size), `atmosphere`.
   - Effects and the world: `vfx`, `prints` (wet bootprints `from` `to`,
