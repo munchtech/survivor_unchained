@@ -910,7 +910,7 @@ def fringe_map(w=1024, h=256, seed=11):
         s = np.clip(1 - d / (wd * (0.4 + 0.6 * taper)), 0, 1) * (yy < L)
         a = np.maximum(a, s)
         lit = np.maximum(lit, s * yy / L)
-    rgb = np.array(FRINGE_RGB)[None, None, :] * (0.85 + 0.30 * lit[..., None])
+    rgb = np.array(FRINGE_RGB)[None, None, :] * (0.80 + 0.85 * lit[..., None] ** 0.8)   # (r4: worn lighter fibre at the tips)
     img = np.concatenate([np.clip(rgb, 0, 1), np.clip(a, 0, 1)[..., None]], -1)
     return Image.fromarray((img * 255 + 0.5).astype(np.uint8), "RGBA")
 
@@ -1069,6 +1069,9 @@ def add_roll(ob, rd):
     bm.free()
 
 
+FRINGE_MIN_Y = -1.0   # (Warden 7 r4) no hem strands below this height (glTF y): the cape's hem lies in the river
+
+
 def fringe(lo, rd=None, seed=11):
     """Frayed strands along the boundary: the hem's (2.6 cm, off the cloth and a little down) and, with the rolled
     edge, the opening's (1.4 cm, from the roll's outer underside, hanging); continuous strips (shared verts, the
@@ -1109,6 +1112,8 @@ def fringe(lo, rd=None, seed=11):
             UV += [(u, 1.0), (u, 0.0)]
         for c in range(len(idx) - 1):
             a = k0 + 2 * c
+            if P[idx[c], 1] < FRINGE_MIN_Y and P[idx[c + 1], 1] < FRINGE_MIN_Y:
+                continue
             F.append((a, a + 2, a + 3, a + 1))
     bm.free()
     ob = mk("fringe", g2b(np.array(V)), F)

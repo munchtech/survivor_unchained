@@ -25,6 +25,13 @@ uniform float iron = 0.0;
 uniform float value_mul = 1.0;
 uniform float wool_sheen = 0.0;
 uniform float wool_sheen_tint = 0.35;
+// (Warden 7 r4, the garment's keys only: wool, not satin, however soaked: a roughness floor, a specular cap, and the
+//  cape's hem darker where it lies in the river, a ragged band up from the hem by the bind height; off by default)
+uniform float rough_floor = 0.0;
+uniform float spec_cap = 1.0;
+uniform float hem_band_y = -1.0;     // bind height (m): the band's top
+uniform float hem_band_w = 0.03;     // its ragged soft edge
+uniform float hem_band_dark = 0.5;   // the colour kept in the band
 uniform float debug_view = 0.0; // 1: the classes in flat colours (WARDEN_WET="debug_view=1")
 // the classes (consts: Godot has no defaults on uniform arrays): 0 wool, 1 tabard, 2 quilting, 3 leather, 4 iron, 5 badge, 6 head
 // colour (sRGB) the atlas's hue is pulled to (its light and dark kept), how far, then a value scale
@@ -249,6 +256,11 @@ void fragment() {
 		rough = mix(rough, 0.9, d.r * (1.0 - 0.7 * wc[3]));
 		spec = mix(spec, 0.3, d.r * (1.0 - wc[3]));
 		w = mix(w, band_color, band);
+		// (the garment: the river's dark wet band at the cape's hem; wool's matte floor)
+		float hband = (1.0 - smoothstep(hem_band_y - hem_band_w, hem_band_y + hem_band_w, hy + (vnoise(UV * 90.0) - 0.5) * hem_band_w * 2.0)) * step(0.0, hem_band_y);
+		w *= mix(1.0, hem_band_dark, hband);
+		rough = max(rough, rough_floor);
+		spec = min(spec, spec_cap);
 		w *= value_mul;
 		ALBEDO = w;
 		RIM = wool_sheen * wc[0];

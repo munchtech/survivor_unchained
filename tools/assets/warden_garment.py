@@ -75,13 +75,21 @@ BIND_POSE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "warden_gar
 RELAX_FRAMES = 45
 C_G2B = np.array([[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1.0]])   # glTF -> Blender
 PROFILE = [   # the hood's rings (warden_hood's, the crown lifted and set back into a soft peak)
-    (1.880, 0.000, -0.105, 0.000, 0.000),
-    (1.872, 0.026, -0.092, 0.034, 0.022),
-    (1.856, 0.052, -0.072, 0.080, 0.050),
-    (1.830, 0.082, -0.046, 0.126, 0.086),
-    (1.798, 0.106, -0.024, 0.160, 0.116),
-    (1.760, 0.123, -0.010, 0.180, 0.134),
+    # (r4, the max judge: concept A's soft peak: the apex ~5 cm above r3's dome, narrowing to a soft point set back
+    #  over the crown and tipping back; the brow's rings as r3's)
+    (1.930, 0.000, -0.142, 0.000, 0.000),
+    (1.918, 0.014, -0.136, 0.016, 0.012),
+    (1.900, 0.030, -0.122, 0.038, 0.028),
+    (1.876, 0.050, -0.100, 0.068, 0.050),
+    (1.848, 0.074, -0.072, 0.106, 0.080),
+    (1.816, 0.096, -0.044, 0.142, 0.106),
+    (1.782, 0.114, -0.022, 0.168, 0.126),
+    (1.745, 0.127, -0.008, 0.182, 0.137),
 ] + WH.PROFILE[6:]
+PEAK_HOLD = (0.55, 1.84, 1.90)   # (r4) the peak's own soft goal (wool's felted point keeps its shape), from y to y
+HEM_SPREAD = (0.95, 0.40, 0.80, 0.33)   # (r4) the cape's hem spread on the water: x widened by 1 + this, unfolded by
+#                                         this (fold depth eased to its mean), from y 0.80 to the hem's 0.33
+CORR_PITCH = (25, 65)            # (r4) capelet_bend's pitch range (deg; was 40-80: at C02 s7's bend it was half on)
 
 
 def log(*a):
@@ -430,6 +438,7 @@ def opening_pins(ob, lab, Ob):
     d = np.array([t.find(p)[2] for p in V])
     w = 1 - smoothstep(0.015, 0.045, d)
     w = np.maximum(w, CROWN_HOLD * smoothstep(1.62, 1.72, V[:, 1]))
+    w = np.maximum(w, PEAK_HOLD[0] * smoothstep(PEAK_HOLD[1], PEAK_HOLD[2], V[:, 1]))
     w[lab >= 3] = 0
     return w
 
@@ -757,6 +766,7 @@ def wool_maps(bk, crest, hgt, s_uv, size):
     wander = (vnoise2((size, size), size // 24, 3) - 0.5) * 0.10
     wet = np.clip(smoothstep(1.42, 1.22, H + wander) * 0.6 + smoothstep(1.05, 0.40, H + wander) * 0.4, 0, 1)
     mott = vnoise2((size, size), size // 40, 5) * 0.6 + vnoise2((size, size), size // 140, 6) * 0.4
+    mott8 = (vnoise2((size, size), size // 60, 12) * 0.65 + vnoise2((size, size), size // 220, 13) * 0.35 - 0.5) * 2.0
     fuzz = blur(np.random.default_rng(9).random((size, size)).astype(np.float32), 0.7)
     up = lambda a: np.asarray(Image.fromarray(a.astype(np.float32)).resize((size, size), Image.BILINEAR), np.float32)
     ao = blur(np.clip(up(bk["ao"]), 0, 1), 1.2)
@@ -770,20 +780,21 @@ def wool_maps(bk, crest, hgt, s_uv, size):
     col = base[None, None, :] * k[..., None]
     col = col * (1 + wet[..., None] * np.array([-0.06, 0.04, -0.02]) * (mott[..., None] > 0.45))
     srgb = np.where(col <= 0.0031308, col * 12.92, 1.055 * np.power(np.clip(col, 0, None), 1 / 2.4) - 0.055)
+    srgb = srgb + (mott8 * 8.0 / 255.0)[..., None]   # (r4: the felted mottling, +-8/255 in the albedo)
     albedo = Image.fromarray((np.clip(srgb, 0, 1) * 255 + 0.5).astype(np.uint8))
     log(f"wool albedo: linear luminance mean {float((col @ np.array([0.2126, 0.7152, 0.0722])).mean()):.4f}; ridges {float((ridge > 0.5).mean()) * 100:.0f}% of texels")
-    rough = np.clip(0.66 - 0.08 * wet + 0.05 * (mott - 0.5) + 0.04 * (fuzz - 0.5) + 0.06 * ridge, 0.3, 1.0)
+    rough = np.clip(0.93 - 0.03 * wet + 0.05 * (mott - 0.5) + 0.04 * (fuzz - 0.5) + 0.06 * ridge, 0.3, 1.0)
     mr = np.zeros((size, size, 3), np.uint8)
     mr[..., 1] = (rough * 255 + 0.5).astype(np.uint8)
     mr_img = Image.fromarray(mr).resize((size // 2, size // 2), Image.LANCZOS)
-    P = 0.0011
+    P = 0.0024   # (r4: a coarse 2/2 twill, 5.5 texels a thread at 4096: r3's 1.1 mm aliased away by the close-up)
     i, j = np.floor(um / P), np.floor(vm / P)
     fu, fv = um / P - i, vm / P - j
     upw = ((i + j) % 4) < 2
     h = np.where(upw, np.sin(np.pi * fu) ** 0.7, np.sin(np.pi * fv) ** 0.7) * 0.6 + 0.4 * blur(fuzz, 1.5)
     h = blur(h.astype(np.float32), 0.6) * (1 - 0.5 * wet)
     gy, gx = np.gradient(h)
-    nd = np.stack([-gx * 1.4, gy * 1.4], -1)
+    nd = np.stack([-gx * 2.6, gy * 2.6], -1)
     nb = bk["normal"] * 2 - 1
     n = np.stack([nb[..., 0] + nd[..., 0], nb[..., 1] + nd[..., 1], nb[..., 2]], -1)
     n /= np.linalg.norm(n, axis=-1, keepdims=True) + 1e-8
@@ -1280,6 +1291,32 @@ def top4(A):
     return Jo.astype(np.uint16), Wo.astype(np.float32)
 
 
+def spread_hem(Vo, lab):
+    """(r4, the max judge) The cape's hem spread where it meets the water: below HEM_SPREAD's top its x widened about
+    the cape's centre and its folds eased toward their mean depth (the cloth unfolding as it lies out), to the hem.
+    Vo: Blender (z up), the bound pose; lab: each vertex's panel."""
+    k, k_un, y0, y1 = HEM_SPREAD
+    V = np.array(Vo, float)
+    c = lab == 5
+    if not c.any():
+        return V
+    mid = c & (V[:, 2] > 0.85) & (V[:, 2] < 1.05)
+    xc = np.median(V[mid, 0]) if mid.any() else np.median(V[c, 0])
+    s = smoothstep(y0, y1, V[:, 2]) * c
+    s = s ** 1.3
+    # (the fold depth about a smooth mean back-line, per height band)
+    yb = np.round(V[:, 2] / 0.03)
+    mean_y = np.zeros(len(V))
+    for b in np.unique(yb[c & (s > 0)]):
+        sel = c & (yb == b)
+        mean_y[sel] = np.median(V[sel, 1])
+    V[:, 0] = xc + (V[:, 0] - xc) * (1 + k * s)
+    V[:, 1] = np.where(s > 0, V[:, 1] + (mean_y - V[:, 1]) * k_un * s, V[:, 1])
+    w = V[c & (V[:, 2] < y1 + 0.06), 0]
+    log(f"cape hem spread: hem width {((w.max() - w.min()) * 100 if len(w) else 0):.0f} cm (x {xc:.3f})")
+    return V
+
+
 def tris_of(ob):
     return sum(len(p.vertices) - 2 for p in ob.data.polygons)
 
@@ -1537,6 +1574,7 @@ def main():
         pose_game(bindp)
     # ---- 5. thickness, rim, fringe; the maps ----
     rd, rd1 = WH.roll_data(lo, 8), WH.roll_data(lod1, 5)
+    WH.FRINGE_MIN_Y = 0.48   # (r4: no strands on the cape's hem where it lies in the river)
     fr = WH.fringe(lo, rd)
     slots = [bpy.data.materials.new(n) for n in ("slot_wool", "slot_inner", "slot_fringe")]
     for o in (lo, lod1, shadow, fr):
@@ -1573,6 +1611,7 @@ def main():
         J, W = Jh[nn], Wh[nn]
         dl = delta_h[nn] if node != "hood.shadow" else None   # (r3: the bend on LOD1 too)
         c = corner_arrays(o)
+        Vo = spread_hem(Vo, labh[nn])
         P_rest, M = unpose(Vo, J, W, mats_all)    # (the A frame: the mantle cut and the ID map)
         if bindp == "drape":
             P_bind = P_rest
@@ -1607,7 +1646,7 @@ def main():
         mp = os.path.join(pkg, "manifest.json")
         m = json.load(open(mp))
         m["pieces"] = [{"id": "hood", "slot": "cloak", "file": "armor/hood.glb", "springs": springs,
-                        "correctives": [{"shape": "capelet_bend", "bone": "spine_03", "axis": "pitch", "from": 40, "to": 80}]}]
+                        "correctives": [{"shape": "capelet_bend", "bone": "spine_03", "axis": "pitch", "from": CORR_PITCH[0], "to": CORR_PITCH[1]}]}]
         m["hood"] = {"source": "tools/assets/warden_garment.py (sewn-pattern cloth: hood, gusset, capelet, cape; Warden 7)",
                      "materials": [MAT_WOOL, MAT_INNER, MAT_FRINGE], "tris": info["hood.wool"]["tris"], "lodTris": info["hood.lod1.wool"]["tris"],
                      "shadowTris": info["hood.shadow"]["tris"], "bones": info["hood.wool"]["bones"], "maps": TEX, "mantleCut": cut}
