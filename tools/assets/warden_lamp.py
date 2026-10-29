@@ -115,12 +115,51 @@ def trim_parts():
     return parts
 
 
+HOOD_PROFILE = [(0.0000, 0.0680), (0.0035, 0.0680), (0.0040, 0.0640), (0.0075, 0.0595), (0.0170, 0.0480),
+                (0.0290, 0.0300), (0.0400, 0.0185), (0.0470, 0.0135), (DOME_H, COLLAR_R)]   # (rise above TOP, half-width)
+
+
+def hood_ring(j, t=0.0):
+    h, w = HOOD_PROFILE[j]
+    return h, w + t
+
+
+def hood_pt(k, v, out=0.0):
+    """A point up corner k (0..3) at v 0..1 along the profile from the eave's lip (index 3) to the collar."""
+    n = len(HOOD_PROFILE) - 4
+    f = v * n
+    i = min(int(f), n - 1)
+    fr = f - i
+    h0, w0 = HOOD_PROFILE[3 + i]
+    h1, w1 = HOOD_PROFILE[4 + i]
+    h, w = h0 + (h1 - h0) * fr, w0 + (w1 - w0) * fr + out
+    a = math.pi / 4 + k * math.pi / 2
+    r = w * math.sqrt(2)
+    return (r * math.cos(a), TOP + h, r * math.sin(a))
+
+
+def hood():
+    bm = bmesh.new()
+    rings = []
+    for h, w in HOOD_PROFILE:
+        rings.append([bm.verts.new((sx * w, TOP + h, sz * w)) for sx, sz in ((1, 1), (-1, 1), (-1, -1), (1, -1))])
+    for j in range(len(rings) - 1):
+        for i in range(4):
+            bm.faces.new((rings[j][i], rings[j][(i + 1) % 4], rings[j + 1][(i + 1) % 4], rings[j + 1][i]))
+    bm.faces.new(rings[-1])
+    bm.faces.new(rings[0][::-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    return bm
+
+
 def cap_parts():
     parts = []
-    # Eight ribs over the dome: the corners and the sides' middles.
-    for u in (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5):
-        pts = [dome_pt(u, j / 14, 0.0022) for j in range(15)]
-        parts.append((tube(pts, 0.0026 if u == int(u) else 0.0021, 4, False), T(0, 0, 0)))
+    # A solid iron hood (Warden 7: the glass dome with eight ribs read a birdcage from above): four flat faces, ogee
+    # in profile, a drip lip at the eaves, a bevelled rib up each corner.
+    parts.append((hood(), T(0, 0, 0)))
+    for k in range(4):
+        pts = [hood_pt(k, j / 12, 0.0016) for j in range(13)]
+        parts.append((tube(pts, 0.0028, 4, False), T(0, 0, 0)))
     yc = TOP + DOME_H
     parts.append((lathe([(COLLAR_R + 0.0025, yc - 0.003), (COLLAR_R + 0.003, yc), (COLLAR_R + 0.0025, yc + 0.003),
                          (0.009, yc + 0.0045), (0.0065, yc + 0.0075), (0.0078, yc + 0.0105), (0.0078, yc + 0.0125),
@@ -187,7 +226,7 @@ def main():
     glass = bpy.data.materials.new('keeper_glass')
     glass.diffuse_color = (0.3, 0.32, 0.3, 0.3)
     obs = [build('Cage', cage_parts(), iron), build('Trim', trim_parts(), iron), build('Cap', cap_parts(), iron), build('Bail', bail_parts(), iron),
-           build('Glass', glass_parts(), glass, colour=False), build('GlassDome', dome_glass(), glass, colour=False)]
+           build('Glass', glass_parts(), glass, colour=False)]
     bpy.ops.object.select_all(action='DESELECT')
     for o in obs:
         o.select_set(True)
