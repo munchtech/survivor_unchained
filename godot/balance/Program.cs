@@ -123,6 +123,7 @@ switch (cmd)
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
     case "story": Story(); break;
+    case "verge-day": VergeDay(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
     case "suggest": SuggestPath(); break;
@@ -372,6 +373,37 @@ void Place()
 }
 
 /* The story's nights: each fight with its stages and boss, by each pair of hands and draft. */
+/* Act 1's days: the Verge's day packs (Verge.cs) against a calling at L1 day 1, L4 day 2, L8 day 4 (the story's pace),
+ * with what she has learned by then (--learned 0,2,4 a stage), in three setups: old (1/2/3 slots, Hands off), new
+ * (2/3/4, Hands on), nohand (new slots, Hands off). --stages 1:1:0,4:2:2,8:4:4 (level:day:learned)
+ * --packs wolves,boars,footpads,lamplings,elitewolves --setups old,new,nohand --seeds N --waves N (packs a fight) --bot plain|deft --out PATH */
+void VergeDay()
+{
+    var stages = opt.List("stages", "1:1:0,4:2:2,8:4:4").Select(x => x.Split(':').Select(int.Parse).ToArray()).ToArray();
+    var packs = opt.List("packs", "wolves,boars,footpads,lamplings,elitewolves");
+    var setups = opt.List("setups", "old,new,nohand");
+    int seeds = opt.Int("seeds", 12), seed0 = opt.Int("seed0", 1);
+    bool deft = opt.Get("bot", "plain") == "deft";
+    VergeDaySim.Waves = opt.Int("waves", 3);
+    var specs = new List<VergeDaySpec>();
+    foreach (var c in Callers())
+        foreach (var st in stages)
+            foreach (var pk in packs)
+                foreach (var su in setups)
+                    for (int s = 0; s < seeds; s++)
+                        specs.Add(new VergeDaySpec(seed0 + s, c, st[0], st[1], pk, su, st[2], deft));
+    Console.WriteLine($"{specs.Count} day fights");
+    var results = new ConcurrentBag<VergeDayResult>();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        try { foreach (var r in VergeDaySim.Play(spec)) results.Add(r); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e.Message}"); }
+    });
+    var md = VergeDaySim.Report(results.ToList());
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "verge_day.md"), md);
+    Console.WriteLine(md);
+}
+
 void Story()
 {
     // (Only the fights whose nights are written; the rest still run as a table's night.)
