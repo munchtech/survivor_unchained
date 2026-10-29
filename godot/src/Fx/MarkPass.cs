@@ -60,6 +60,9 @@ public partial class MarkPass : CompositorEffect
         // the pattern's tint by the blow's school (mark_look.json "tints"; tt forces one for shots, -1 each mark's own):
         // 0 the threat's red, 1 fire, 2 frost, 3 holy (TintIds)
         ["tt"] = -1f,
+        // the chevrons cut into the bed (cd darker; by day a red light over the red bed barely shows): dark ahead of the
+        // running front, lit behind it (the cast bar reads as the chevrons catching light)
+        ["cd"] = 0.45f,
     };
 
     /// <summary>The red line's colour, the owner's pick (godot/data/mark_look.json "look"; env MARK_LOOK overrides): a
@@ -163,7 +166,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -615,7 +618,13 @@ public partial class MarkPass : CompositorEffect
                 float lit = mix(T_HU, 1.0, filled);
                 if (pp == 0) pl = pgrid(l) * T_HL;
                 else if (pp == 1) pl = phatch(l, din) * T_HL * 1.25;
-                else if (pp == 2) pl = pchev(ac, al, hh, kind != 0) * T_HL * 1.4;
+                else if (pp == 2) {
+                    // (cut: dark ahead of the front, lit behind it, never both: the light added over a darkened bed
+                    // eases back up to the fold and the two cancelled)
+                    float cv = pchev(ac, al, hh, kind != 0);
+                    pl = cv * T_HL * 1.4 * (T_CD > 0.0 ? filled / max(lit, 1e-3) : 1.0);
+                    pd = cv * T_CD * (1.0 - filled);
+                }
                 else if (pp == 3) { vec2 lv = plava(l, filled); pl = lv.x * T_HL * 1.5; pd = lv.y * T_LD; }
                 else if (pp == 4) pl = pcrack(l) * T_HL * 1.4 * (1.0 + 0.6 * exp(-abs(dm) / 0.4));
                 else pl = plattice(l) * T_HL * 1.2;
@@ -750,13 +759,14 @@ public partial class MarkPass : CompositorEffect
             float gv = max(g.r, max(g.g, g.b));
             // by the water's line: the tiles' mean, not the pixel (shore foam, a wet band: no crease in the bed)
             if (pc.water_on > 0.5 && dz > 1e-7) gv = mix(gv, vtile(p), 1.0 - smoothstep(T_SB0, T_SB1, abs(yt - pc.water_y)));
-            float want = pc.k * gv * (1.0 - pdark);
+            // (the darkening after the fold's cap: by day the bed sits at the fold, and a darkening before it was lost)
+            float want = pc.k * gv;
             int lo = 0, hi = NT - 1;
             while (hi - lo > 1) { int mid = (lo + hi) / 2; if (tv[mid] <= want) lo = mid; else hi = mid; }
             float r;
             if (want <= tv[0]) r = exp2(LO) * want / max(tv[0], 1e-6);
             else r = exp2(LO + (float(lo) + clamp((want - tv[lo]) / max(tv[hi] - tv[lo], 1e-6), 0.0, 1.0)) * ST);
-            r = min(r / max(pc.expo, 1e-6), rf);
+            r = min(r / max(pc.expo, 1e-6), rf) * (1.0 - pdark);
             vec3 base = mix(col.rgb, r * vec3(1.0, pc.tg, pc.tb), clamp(tint, 0.0, 1.0));
             // a part-tinted tuft: the scarlet at the mix's own value (bright in, bright scarlet out; never pink)
             if (rs > 0.0) base = mix(base, min(max(base.r, max(base.g, base.b)), rf) * vec3(1.0, pc.tg, pc.tb), rs);
