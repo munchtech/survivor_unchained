@@ -21,6 +21,10 @@ uniform float wear = 1.0;
 uniform vec3 blade_flat = vec3(0.075, 0.074, 0.072);
 uniform vec3 blade_edge = vec3(0.50, 0.50, 0.49);
 uniform float blade_stain = 0.7;
+uniform float blade_rough = 0.38;
+// the grip's leather: its specular (dull: leather at 0.5 read as a pale tube under the sky) and roughness
+uniform float cord_spec = 0.5;
+uniform float cord_rough = 0.78;
 uniform float rust_k = 0.55;
 uniform float silt_k = 0.6;
 // Model height below which silt gathers (it fades in over silt_fade).
@@ -87,30 +91,33 @@ void fragment() {
 		vec4 fine = tri(p * 3.3 + 1.7, w);
 		float bev = 1.0 - smoothstep(0.08, 0.12, COLOR.g);
 		float ful = smoothstep(0.18, 0.22, COLOR.g);
-		float stain = smoothstep(0.45, 0.75, m2.r * 0.7 + m.a * 0.45 + (m.r - 0.5) * 0.3) * blade_stain;
-		float pit = smoothstep(0.62, 0.8, fine.b) * smoothstep(0.35, 0.65, m2.g + 0.2);
-		vec3 flat_col = blade_flat * (0.75 + 0.5 * m.g) * (0.85 + 0.3 * m2.g);
-		flat_col = mix(flat_col, rust * (0.55 + 0.5 * m.r), stain * 0.75);
-		vec3 ful_col = mix(blade_flat * 0.5 * (0.8 + 0.4 * m.g), rust * 0.6, 0.35 * stain + 0.25);
-		vec3 bev_col = blade_edge * (0.82 + 0.3 * fine.g) * (0.92 + 0.08 * m.a);
+		// (Warden 7 r3: the stain soft, low-frequency and low-contrast, a faint warm dulling, never a band; the pits
+		// small and few; the flats a mid steel that catches the light, the honed bevel the brightest thing on him)
+		float stain = smoothstep(0.35, 0.85, m2.r * 0.8 + m2.a * 0.3 + (m2.g - 0.5) * 0.3) * blade_stain;
+		float pit = smoothstep(0.7, 0.85, fine.b) * smoothstep(0.45, 0.7, m2.g + 0.1);
+		vec3 flat_col = blade_flat * (0.9 + 0.2 * m.g) * (0.94 + 0.12 * m2.g);
+		flat_col = mix(flat_col, flat_col * vec3(0.92, 0.86, 0.8), stain);
+		vec3 ful_col = blade_flat * 0.72 * (0.9 + 0.2 * m.g) * mix(vec3(1.0), vec3(0.9, 0.84, 0.78), stain);
+		vec3 bev_col = blade_edge * (0.9 + 0.15 * fine.g);
 		col = mix(mix(flat_col, ful_col, ful), bev_col, bev);
-		// the crest of the edge brightest; pits dark in the flats and fuller, fewer on the honed bevel
-		col = mix(col, blade_edge * 1.2, bev * smoothstep(0.75, 0.95, COLOR.r));
-		col *= mix(1.0, 0.35, pit * (1.0 - 0.7 * bev));
-		metal = mix(mix(0.92 * (1.0 - stain * 0.6), 0.7, ful), 1.0, bev);
-		rough = mix(mix(0.38 + 0.15 * m.g + 0.25 * stain, 0.62, ful), 0.2 + 0.08 * fine.g, bev);
-		rough = mix(rough, 0.85, pit * (1.0 - bev));
-		h = mix(m.b * 0.6 - pit * 0.8 - stain * 0.2, fine.g * 0.3, bev);
-		bk = bump * mix(1.2, 0.4, bev);
+		// the crest of the edge brightest; pits a little dark in the flats and fuller, none on the honed bevel
+		col = mix(col, blade_edge * 1.25, bev * smoothstep(0.75, 0.95, COLOR.r));
+		col *= mix(1.0, 0.7, pit * (1.0 - bev));
+		metal = mix(mix(1.0 - stain * 0.15, 0.95, ful), 1.0, bev);
+		rough = mix(mix(blade_rough + 0.06 * (m.g - 0.5) + 0.08 * stain, blade_rough + 0.12, ful), 0.16 + 0.05 * fine.g, bev);
+		rough = mix(rough, 0.6, pit * (1.0 - bev));
+		h = mix(m2.b * 0.3 - pit * 0.5, fine.g * 0.15, bev);
+		bk = bump * mix(0.8, 0.3, bev);
 	}
 	if (is_cord) {
 		// The grip's cord: dark leather-brown, dull, its own grain.
 		col = cord * (0.75 + 0.5 * m.g);
 		metal = 0.0;
-		rough = 0.78 + 0.1 * m.g;
+		rough = cord_rough + 0.1 * m.g;
 		h = m.g;
 		bk = bump * 0.6;
 	}
+	float spec = is_cord ? cord_spec : 0.5;
 	float inside = smoothstep(cage.x + 0.002, cage.x - 0.002, max(abs(opos.x), abs(opos.z)))
 		* smoothstep(cage.y + 0.002, cage.y - 0.002, opos.y) * smoothstep(cage.z - 0.002, cage.z + 0.002, opos.y) * soot_k;
 	col = mix(col, vec3(0.012, 0.011, 0.010) * (0.8 + 0.4 * m.g), inside);
@@ -137,5 +144,5 @@ void fragment() {
 	}
 	METALLIC = metal;
 	ROUGHNESS = clamp(rough, 0.05, 1.0);
-	SPECULAR = 0.5;
+	SPECULAR = spec;
 }

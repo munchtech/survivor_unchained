@@ -6,8 +6,7 @@ baked in, so in a night shot the face read as a lit photo pasted on. This map gi
   R  de-light: the factor that takes the portrait's low-frequency shading out. The texture's luminance, low-passed over
      the surface, is fitted as a + c.n (an ambient term and one directional light along c); R = (mean / fit)^DELIGHT,
      stored /2 (0..2).
-  G  wet sheen, 0..0.8: lower lids, lips, nose tip and nostrils; half that on the brow ridge, nose bridge and
-     cheekbones (and the convex rest of the face a little);
+  G  wet sheen, 0..0.8: a thin line on the lower lids' rims, and the lips (Warden 7 r3: nothing else);
      0.8..1: the eyes (glassy).
   B  creases: concavity (the sockets' rims, nasolabial folds, the lids' fold, under the brow), 0..1.
   A  hair zones: scalp (the buzz cut) and beard/stubble, where the texture's dark specks are made the beard's grey.
@@ -188,12 +187,10 @@ def main():
     curv = smooth(A, np.einsum("ij,ij->i", P - smooth(A, P, 4), Ns), 2)
     cs_ = np.percentile(np.abs(curv), 95)
     convex = np.clip(curv / cs_, 0, 1); concave = np.clip(-curv / cs_, 0, 1)
-    wet = np.clip(np.maximum.reduce([brow, nose, cheek * 0.9, lids, lips]) * (0.7 + 0.3 * convex) + 0.25 * convex, 0, 1) * front
-    # (Warden 7 judge: the sheen halved on the brow, cheekbones and nose bridge; the lids, lips, nose tip and nostrils
-    #  keep theirs)
-    bridge = nose * smoothstep(-0.8, -0.55, y)
-    keep = np.maximum.reduce([lids, lips, nose * (1 - smoothstep(-0.8, -0.55, y))])
-    wet *= 1 - 0.5 * np.clip(np.maximum.reduce([brow, cheek, bridge]) * (1 - keep), 0, 1)
+    # (Warden 7 r3 judge: the face read as glossy black rubber with white dots on the nose: the wet sheen only a thin
+    #  line on the lower lids' rims and the lips now; the brow, nose, cheekbones and the convex rest are matte skin)
+    rim = smoothstep(0.16, 0.19, eye_d) * (1 - smoothstep(0.22, 0.26, eye_d)) * (1 - smoothstep(-0.08, 0.0, y))
+    wet = np.clip(np.maximum(rim, lips * 0.85), 0, 1) * front
     G = 0.8 * wet * (1 - eyes) + eyes
     crease = np.clip(concave * 1.4, 0, 1) * (1 - eyes)
     # hair zones: the scalp (above the brow, round the back, the temples) and the beard (below the nose line, the jaw, the

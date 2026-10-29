@@ -271,7 +271,27 @@ def main():
         bpy.ops.export_scene.gltf(**kw, export_vertex_color='ACTIVE')
     except TypeError:
         bpy.ops.export_scene.gltf(**kw, export_colors=True)
+    fix_colours(os.path.join(OUT, 'watch_blade.glb'))
     print('BLADE tris', sum(len(p.vertices) - 2 for p in me.polygons))
+
+
+def fix_colours(path):
+    """Blender 4.5's exporter writes a white COLOR_0 and the 'Col' layer as COLOR_1, and Godot reads only COLOR_0, so the
+    shader saw every vertex white (all 'grip', all 'sharp edge'). Point COLOR_0 at the real layer and drop the white one."""
+    import json, struct
+    d = open(path, 'rb').read()
+    jl = struct.unpack('<I', d[12:16])[0]
+    j = json.loads(d[20:20 + jl])
+    for m in j['meshes']:
+        for p in m['primitives']:
+            a = p['attributes']
+            if 'COLOR_1' in a:
+                a['COLOR_0'] = a.pop('COLOR_1')
+    js = json.dumps(j, separators=(',', ':')).encode()
+    js += b' ' * (-len(js) % 4)
+    rest = d[20 + jl:]
+    out = struct.pack('<4sII', b'glTF', 2, 12 + 8 + len(js) + len(rest)) + struct.pack('<I4s', len(js), b'JSON') + js + rest
+    open(path, 'wb').write(out)
 
 
 main()

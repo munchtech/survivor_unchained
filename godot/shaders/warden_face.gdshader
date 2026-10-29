@@ -15,7 +15,8 @@ uniform bool has_normal = true;
 uniform bool has_data = false;
 uniform float debug_view = 0.0;   // 1: the data map (R de-light, G wet/eyes, B creases) as flat colour; 2: A hair zones
 // the grade: cold pale grey, low
-uniform float face_value : hint_range(0.0, 2.0) = 0.25;
+// (Warden 7 r3 judge: at 0.25 the face read as black rubber at C03 s1: skin value, not a near-black)
+uniform float face_value : hint_range(0.0, 2.0) = 0.5;
 uniform float face_sat : hint_range(0.0, 1.0) = 0.45;
 uniform vec3 face_tint : source_color = vec3(0.88, 0.93, 1.0);
 uniform float white_knee : hint_range(0.0, 8.0) = 2.5;    // pale paint compressed: c / (1 + k c)
@@ -28,14 +29,15 @@ uniform float speck_amount : hint_range(0.0, 1.0) = 1.0;
 uniform float hair_grey = 1.25;
 uniform float hair_cover : hint_range(0.0, 1.0) = 0.65; // the hair zones evened to their grey (dense stubble blurs dark too)    // the grey, against the blurred surroundings' luminance
 // wet
-uniform float skin_rough = 0.55;
-uniform float wet_rough = 0.3;
-uniform float crease_rough = 0.5;
+// (Warden 7 r3 judge: matte skin, 0.55 or more everywhere but the thin wet line on the lids and lips)
+uniform float skin_rough = 0.64;
+uniform float wet_rough = 0.38;
+uniform float crease_rough = 0.7;
 uniform float eye_rough = 0.05;
 uniform float wet_dark : hint_range(0.5, 1.0) = 0.85;
 uniform float crease_dark : hint_range(0.3, 1.0) = 0.75;
 uniform float eye_dark : hint_range(0.2, 1.0) = 0.6;
-uniform float skin_spec = 0.35;
+uniform float skin_spec = 0.26;
 uniform float wet_spec = 0.45;
 uniform float eye_spec = 0.7;
 // his lamp, under the hood (Warden 6 r3): the hood shades the face from the sky, so at his closest camera (C03 s1) the
@@ -53,7 +55,7 @@ uniform float lamp_glint : hint_range(0.0, 8.0) = 0.0;     // the eyes' highligh
 uniform float lamp_glint_power = 80.0;
 uniform float lamp_wet_glint : hint_range(0.0, 4.0) = 0.0; // the wet skin's (nose tip, cheekbones, lids) small sheen
 // the normal map's wrinkles and creases (Warden 7 judge: at full strength they read as bark in C03 s1)
-uniform float normal_strength : hint_range(0.0, 1.0) = 0.72;
+uniform float normal_strength : hint_range(0.0, 1.0) = 0.43;   // (r3: a further 40% down)
 
 const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
 

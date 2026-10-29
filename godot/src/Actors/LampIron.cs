@@ -46,6 +46,15 @@ public static class LampIron
             m.SetShaderParameter("wear", 1.15f);
             // (its leather grip: a warm dark brown, not the lamp's cord)
             m.SetShaderParameter("cord", new Vector3(0.062f, 0.040f, 0.026f));
+            // (Warden 7 r3, the vertex colours read at last: the grip dull dark leather, the guard and pommel dark iron worn
+            // at the edges only, the blade a mid steel with a bright honed edge, its stain faint)
+            m.SetShaderParameter("cord_spec", 0.22f);
+            m.SetShaderParameter("cord_rough", 0.8f);
+            m.SetShaderParameter("blade_flat", new Vector3(0.40f, 0.40f, 0.39f));
+            m.SetShaderParameter("blade_edge", new Vector3(0.72f, 0.72f, 0.70f));
+            m.SetShaderParameter("blade_stain", 0.5f);
+            m.SetShaderParameter("blade_rough", 0.36f);
+            m.SetShaderParameter("wet", 0.2f);
         }
         return m;
     }

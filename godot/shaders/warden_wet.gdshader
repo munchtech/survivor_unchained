@@ -78,6 +78,18 @@ uniform float beard_drip_dark = 0.6; // the data map's B on the body: the beard'
 uniform vec3 rust_deep : source_color = vec3(0.24, 0.11, 0.05);
 uniform float rust_amount : hint_range(0.0, 1.0) = 0.8;
 uniform float edge_wear = 0.9;
+// (Warden 7 r3 judge: the gauntlets and forearm plates read as pale grey cloth, the lamp arm's iron as glossy vinyl and
+// the rust as orange glitter: the iron's value down, its worn edges only the sharpest and a darker steel, rougher, the
+// rust soft low-frequency patches)
+uniform float iron_value = 0.6;
+uniform float iron_rough = 0.74;
+uniform float edge_from = 0.86;
+uniform float edge_value = 0.085;
+uniform float rust_pit = 0.12;
+// (Warden 7 r3 judge: a satin band down the tabard's front edges: the atlas's pale trim strips there. The tabard's paint
+// held to its blurred surroundings' value, so a strip can't stand out)
+uniform float tabard_trim_cap = 1.12;
+uniform float tabard_trim_mip = 4.5;
 uniform float pit_amount = 0.5;
 uniform float streak_amount = 0.7;
 // the iron's grime: dark against its blurred surroundings in the atlas (the crevices), dull and black-brown
@@ -167,6 +179,8 @@ void fragment() {
 		// (the quilting: its pale paint blotches flattened toward their surroundings, wet linen is even)
 		float la_q = mix(la, max(dot(textureLod(albedo_tex, UV, 5.0).rgb, LUM), 1e-4), quilt_flat * wc[2]);
 		la_q *= mix(1.0, mix(1.0 - quilt_groove, 1.0, sqrt(clamp(puff, 0.0, 1.0))), wc[2]);
+		float la_t = max(dot(textureLod(albedo_tex, UV, tabard_trim_mip).rgb, LUM), 1e-4);
+		la_q = mix(la_q, min(la_q, la_t * tabard_trim_cap), wc[1]);
 		vec3 b = mix(a * (la_q / max(la, 1e-4)), ccol * (la_q / max(dot(ccol, LUM), 1e-4)), cmix) * cval;
 		b *= mix(1.0, tabard_value * (0.78 + 0.4 * fade), wc[1]);
 		// the soak by height: through below the thigh, damp toward the shoulders
@@ -200,19 +214,20 @@ void fragment() {
 		float pit = smoothstep(0.55, 0.8, vnoise(UV * 1600.0)) * smoothstep(0.35, 0.75, vnoise(UV * 220.0 + 3.0));
 		float rpatch = vnoise(UV * 140.0 + 11.0);
 		float recess = max(smoothstep(0.52, 0.28, cvx), smoothstep(grime_from, grime_to * 0.8, (la_b - la) / la_b));
-		float bloom = smoothstep(0.55, 0.8, rpatch) * smoothstep(0.4, 0.7, vnoise(UV * 45.0 + 5.0)); // oxide patches
-		float rust = clamp(recess * (0.6 + 0.4 * rpatch) + bloom * 0.7 + pit * 0.5, 0.0, 1.0) * rust_amount * wc[4];
-		float edge = smoothstep(0.72, 0.95, cvx) * edge_wear * wc[4] * (1.0 - rust);
+		float rlow = vnoise(UV * 38.0 + 11.0);
+		float bloom = smoothstep(0.55, 0.85, rlow) * smoothstep(0.35, 0.7, vnoise(UV * 17.0 + 5.0)); // oxide patches, soft
+		float rust = clamp(recess * (0.6 + 0.4 * rlow) + bloom * 0.6 + pit * rust_pit, 0.0, 1.0) * rust_amount * wc[4];
+		float edge = smoothstep(edge_from, 0.98, cvx) * edge_wear * wc[4] * (1.0 - rust);
 		float stre = smoothstep(0.6, 0.82, dx.y) * streak_amount * wc[4];
-		w = mix(w, w * (0.75 + 0.5 * rpatch), wc[4]);
+		w = mix(w, w * (0.75 + 0.5 * rpatch) * iron_value, wc[4]);
 		w *= mix(1.0, 0.6, pit * pit_amount * wc[4]);
-		w = mix(w, rust_deep * (0.6 + 0.8 * vnoise(UV * 600.0)), rust);
-		w = mix(w, vec3(0.16, 0.16, 0.165), edge);
+		w = mix(w, rust_deep * (0.7 + 0.4 * rlow), rust);
+		w = mix(w, vec3(edge_value, edge_value, edge_value * 1.03), edge);
 		w *= mix(1.0, 0.7, stre);
-		rough = mix(rough, 0.62 + (rpatch - 0.5) * 0.4, wc[4]);
+		rough = mix(rough, iron_rough + (rpatch - 0.5) * 0.25, wc[4]);
 		rough = mix(rough, 0.9, max(rust, pit * pit_amount * wc[4]));
-		rough = mix(rough, 0.42, edge);
-		rough = mix(rough, 0.22, stre);
+		rough = mix(rough, 0.5, edge);
+		rough = mix(rough, 0.4, stre);
 		float rmetal = 1.0 - rust;
 		// the iron's crevices: grime (dark in the atlas against its blurred surroundings), dull, not metal
 		float grime = smoothstep(grime_from, grime_to, (la_b - la) / la_b) * wc[4] * grime_amount;
