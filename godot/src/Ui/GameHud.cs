@@ -424,7 +424,7 @@ public partial class GameHud : CanvasLayer
         bossChannel.Position = new Vector2(0, -2);
         bossChannel.Size = new Vector2(cw, 24);
         bossChannelBox.AddChild(bossChannel);
-        GD.Print($"boss channel: dressed bar {cw:0}x20 at ({x + w * 0.2f:0},{14 + 92}) design px: groove + {(UiArt.Has("boss_groove") ? "art" : "iron")} clamps, ember gradient fill, 3 px edge, label Cinzel 15 outlined");
+        GD.Print($"boss channel: dressed bar {cw:0}x20 at ({x + w * 0.2f:0},{14 + 97}) design px: groove + {(UiArt.Has("boss_groove") ? "art" : "iron")} clamps, ember gradient fill, 3 px edge, label Cinzel 15 outlined");
     }
 
     /// <summary>The boss's bar's width: the instrument's own, so the top and the foot share their measure.</summary>
