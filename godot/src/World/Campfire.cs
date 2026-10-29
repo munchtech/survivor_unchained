@@ -13,6 +13,13 @@ public static class Campfire
     /// <summary>The render layer the coals are drawn on (layer 10), kept out
     /// of the fire's own lights.</summary>
     public const uint CoalLayer = 1 << 9;
+    /// <summary>(C01 set) The ring's stones and the ash bed (layer 15), also kept out of the fire's own light: a light
+    /// lifted a third of a metre over the coals (C01's burnt-down fire) stood a hand off their tops and blew them out
+    /// white ("bulbs"; the bed a white glare). They take the coals' low glow instead (<see cref="RingGlow"/>), so
+    /// only the stones' inner faces and the ash nearest the coals are lit, warm, and their tops stay dark.</summary>
+    public const uint RingLayer = 1u << 14;
+    /// <summary>--campfire-ring K: the coals' glow on the ring's inner faces and the ash bed (for pictures).</summary>
+    static readonly float RingK = SurvivorUnchained.Args.Num("campfire-ring", 0.9f);
 
     // The embers' and smoke's looks, shared by every fire, so a close camera can keep them off the space in front of it.
     static StandardMaterial3D? emberLook, smokeLook;
@@ -142,7 +149,10 @@ public static class Campfire
             float inward = Mathf.Clamp(-(b.N[i].X * p.X + b.N[i].Z * p.Z) / Mathf.Max(0.01f, new Vector2(p.X, p.Z).Length()), 0, 1);
             float near = 1 - Mathf.SmoothStep(0.45f, 0.75f, new Vector2(p.X, p.Z).Length());
             float soot = Mathf.Clamp(inward * 0.85f + near * 0.5f, 0, 1) * 0.82f;
-            col[i] = new Color(1 - soot, 1 - soot * 0.97f, 1 - soot * 0.95f);
+            // (C01 set) the whole stone weathered dark (a fire ring's stones are smoked through): the moon finds
+            // only a dull grey on their tops; the inner faces, sooted, take the coals' glow
+            float dark = 0.5f * (1 - soot);
+            col[i] = new Color(dark + 0.04f, dark + 0.035f, dark + 0.03f);
         }
         for (int i = 0; i < b.P.Count; i++) b.P[i] *= size;
         var arr = new Godot.Collections.Array();
@@ -159,8 +169,19 @@ public static class Campfire
         st.GenerateTangents();
         var mat = (StandardMaterial3D)Made.Surface("rock_boulder_dry", 0.7f, "#8c867c").Duplicate();
         mat.VertexColorUseAsAlbedo = true;
-        return new MeshInstance3D { Name = "Stones", Mesh = st.Commit(), MaterialOverride = mat };
+        var stones = new MeshInstance3D { Name = "Stones", Mesh = st.Commit(), MaterialOverride = mat, Layers = RingLayer };
+        stones.AddChild(RingGlow(size));
+        return stones;
     }
+
+    /// <summary>(C01 set) The coals' glow on what sits round them (RingLayer): low in the middle, so it reaches the
+    /// stones' inner faces and the ash, not their tops (a hand over the middle, it comes from below them).</summary>
+    static OmniLight3D RingGlow(float size) => new()
+    {
+        Name = "RingGlow", Position = new Vector3(0, 0.08f * size, 0), LightColor = new Color(1f, 0.42f, 0.12f),
+        LightEnergy = RingK, OmniRange = 1.05f * size, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f,
+        LightCullMask = RingLayer,
+    };
 
     /// <summary>A field stone: a sphere of 24 by 14, pushed out and in by
     /// slow noise for its shape and quicker noise for its knobs, its
@@ -234,7 +255,8 @@ public static class Campfire
             var mi = new MeshInstance3D { Name = name, Mesh = src.Mesh, MaterialOverride = mat };
             // The bed takes the fire's light too (on the coals' layer its pale ash showed moonlit blue
             // under the flames); it casts no shadow.
-            if (name == "Bed") mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            // (C01 set) and it is out of that light (RingLayer): lifted over it, the light made a white glare of the ash.
+            if (name == "Bed") { mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; mi.Layers = RingLayer; }
             // The logs read dark with their cracks glowing, washed warm by the flames in the shader
             // (floodlit by the light over the flames they were orange cobs).
             else { mi.Layers = CoalLayer; mat?.SetShaderParameter("wash_k", WashK); }

@@ -345,6 +345,18 @@ public static class OwnProps
         BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
     };
 
+    static StandardMaterial3D? wool;
+    /// <summary>(C01 set) A bedroll's blanket: fulled wool on its own tiling sheet (tools/assets/env_wool_tile.py, 0.4 m a
+    /// tile; the atlas's cloth tile, fitted to a 1.75 m blanket, showed its weave 4x too coarse), times the vertex colours
+    /// (its dye and bands, the baked occlusion). Matte, a little sheen at grazing light (the nap).</summary>
+    static Material Wool => wool ??= new StandardMaterial3D
+    {
+        ResourceName = "wool", VertexColorUseAsAlbedo = true, Roughness = 0.96f,
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/wool_tile.png"), NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{Dir}/wool_tile_n.png"),
+        NormalScale = 0.45f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+        RimEnabled = true, Rim = 0.25f, RimTint = 0.6f,
+    };
+
     /// <summary>--props-skip a,b,...: presets left out (the kit's piece keeps its place), for bisecting.</summary>
     static readonly HashSet<string> Skip = new((SurvivorUnchained.Args.Get("props-skip") ?? "").Split(',', System.StringSplitOptions.RemoveEmptyEntries));
 
@@ -379,6 +391,7 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            if (m.Name.ToString().EndsWith("_wool")) { m.MaterialOverride = Wool; m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On; continue; }
             // (E8 later) a near prop's lit panes (a window, a lantern's glass): their colour as it is, unshaded, in the fog
             if (m.Name.ToString().EndsWith("_glow")) { m.MaterialOverride = Glow; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }

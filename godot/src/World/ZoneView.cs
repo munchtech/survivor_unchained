@@ -147,7 +147,7 @@ public partial class ZoneView : Node3D
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
             TownFire(fat, (float)f.Size, f.Light, fire, fx);   // (E9d r2: a cook fire's smoke; a brazier's fire unshadowed; ZoneView.Town)
-            if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~Campfire.CoalLayer;
+            if (f.Light >= 0 && f.Light < lights.Count) lights[f.Light].LightCullMask &= ~(Campfire.CoalLayer | Campfire.RingLayer);
             // The web game marks a fire's flame with a glowing ball; here the
             // fire has flames of its own, and the ball would only bloom white.
             if (f.Light >= 0 && f.Light < meta.Lights.Count)

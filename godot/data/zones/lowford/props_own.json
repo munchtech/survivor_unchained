@@ -106,13 +106,8 @@
    ],
    "r": 0.215
   },
-  {
-   "preset": "crate",
-   "x": -13.7,
-   "z": 89.1,
-   "rot": 0.35,
-   "scale": 0.72
-  },
+  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -13.6, "z": 89.15, "rot": 0.5},
+  {"preset": "pack_dull", "x": -12.3, "z": 88.25, "rot": -0.5},
   {
    "preset": "wagon",
    "x": 5,
@@ -131,6 +126,7 @@
   {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8},
   {"_doc": "Env 22 r2 (judge r1: the apron still empty): loose cobbles, straw off the carts, twigs (gate_apron, camp_ground's kit; no shadow); the puddle is \"puddles\"", "preset": "gate_apron", "x": 0.0, "z": -103.5}
  ],
+ "clear": [[-12.1, 88.3, 0.5]],
  "puddles": [[1.5, -103.1, 0.95, 0.55, 18], [-2.3, -101.6, 0.5, 0.32, -30]],
  "night_lamps": [
   {"_": "(Env 22 r2, judge r1: the gate's apron cool and empty, the passage floor a black void) a lantern set down inside the arch by the east jamb: its light down the passage floor and out over the apron", "holder": "lantern_standing", "on": [1.35, -109.3, 0.0], "local": [0.0, 0.0, 0.0], "turn": 0.5, "color": "#ffb468", "energy": 3.2, "range": 14.0, "att": 0.7, "spec": 0.25}
