@@ -1,0 +1,28 @@
+UI 22 reviser 3 (R6): the judge's fix pass on A and B (2D mockup). Rebuild (in R6):
+  python hair_guide.py 2.2 690          (hair_comp.png, hair_guide.png: lamp_cold.png's own hair, sphere inpainted, squeezed
+                                         toward her back line x(1..2.2) with depth so the strands fall down her back, cut to an outline)
+  python b_guide6.py                    (b_guide6.png: clay-relief hair locks round an orb (512,450) r215, the R4 fire texture)
+  python keeper_guide6.py               (keeper_guide6.png: R4 ks55_9924_1 graded onto the girl, hood/mantle smoothed to broad
+                                         planes, HER down-the-back locks (hair_comp x600..746, y200..516) mirrored x1.6 on its back)
+  GPU turn: python gen6.py 1            (6 jobs x n=2; BiRefNet cuts)
+  python girl6.py hg42_6011_0           (-> girl_R6.png, hair_R6.png (tail hair mask for the shine), tail_R6.png)
+  python mock6.py day|night 0.5 A A ; python mock6.py day 1.0 Aready A   (same with B B / Bready B)
+     -> mock_{A,B}_{day,night}[_bottom].png, mock_{A,B}_ready.png (x 1240..1920, y 760..1080). Numbers print as GAPS/CORE/HEIGHTS/TONES.
+All Krea: krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1, tools/uiforge/krea.py i2i_many, n=2; prompts,
+seeds, denoise, guide in gen/prov.json (hg42/hg52/kk55/kk65/cb65/cb75 entries).
+USED
+  Her hair: i2i "hg42" seed 6011 #0, denoise 0.42, guide hair_guide.png (art x357..949, y0..512, x2). Blended into girl_R5.png
+    only in the tail (x > ~590 art, y > ~225), toned by the overlap (gain .987/1.072/.967). Face, hand (R5), globe, crown untouched.
+  Keeper: i2i "kk65" seed 6022 #0, denoise 0.65, guide keeper_guide6.png. In the mock: two bilateral passes (18, 6) off the
+    painterly mottle, L quantile-mapped onto the girl, a/b about her mean, p90 gain to the girl's (x0.82 at night). K_S 0.28,
+    top 205 from the bottom. Bowl measured on kk65_6022_0: centre 875, rim 452, 655..1095 (canvas px).
+  Chalice (B): i2i "cb75" seed 6032 #0, denoise 0.75, guide b_guide6.png. Painted orb (561,380) r~227 replaced by the drawn
+    ember glass r 52 on screen (K_S 0.230); in front of it: the painting's bronze (Lab chroma > 15) below y 540 or within 22 px
+    of the rim (the band across its foot, the locks over its shoulders). Foot bottom at y 1088 (8 px off the edge). Tone: L
+    quantiles + a/b onto the girl, p90 = 0.95 x hers (x0.82 at night).
+  Girl moved 36 px left (DXG -36). Plate x 626..1294 (symmetric about 960), ends = a volute r 12 (a curled lock tip) with the
+    side tucked 6.5 px under it, a spiral inlay in each; the inlay line now 0.75 px sigma, brighter gold, verdigris kept off it.
+  READY: a white-gold heart (sigma 0.46 r, modulated by the fire texture) + a gold wash (0.80 r), halo 0.95 strength, falloff
+    0.85 r, windowed inside a 3.2 r pad.
+NOT USED: hg42_6011_1, hg52_6012_0/1 (more mottle), kk55_6021_0/1 (kk55_1 = second choice, smoother hood, thinner hair),
+  kk65_6022_1, cb65_6031_0/1 (a knot of locks across the glass), cb75_6032_1 (sculpted faces on the locks).
