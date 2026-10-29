@@ -1091,8 +1091,8 @@ public partial class Game
                 case "gaze":
                 {
                     // Her eyes to "look" (iris radii, +x her left, +y down; HerFaceLife, Play/GazeShift): a saccade
-                    // timed by its size, or a glide over "over" s; past "reach" (0.5) her head carries the rest, and a
-                    // share of a big look ("head", 0..1; none for a shift under 0.3, else 0.6); "blink" forces or stops
+                    // timed by its size, or a glide over "over" s. The head is carried only when the cue asks ("head", its
+                    // share 0..1, the eyes then held to "reach", 0.5, the head taking the rest); "blink" forces or stops
                     // the blink a big jump brings; "snap": false waits for her next saccade. At a shot's first frame
                     // (the shot just cut) the look is set at once, no slide across the cut.
                     if (Life(c.Actor) is not { } life) break;

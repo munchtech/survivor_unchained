@@ -20,7 +20,8 @@ public partial class HerFaceLife : Node
     /// down): a cinematic or a conversation can turn her eyes.</summary>
     public Vector2 Look;
     /// <summary>How far her eyes wander round it.</summary>
-    public float Wander = 0.13f;
+    public float Wander = PlayWander;
+    const float PlayWander = 0.13f, NoReach = 2f;
     /// <summary>Her lids held (1 shut, 0 open at rest) by a cinematic, or null: she blinks on her own.</summary>
     public float? Lids;
     /// <summary>Where her upper lids rest when open (0 wide to 1 shut): her face's own (Lore's faces, People.HerFaceKey).
@@ -43,14 +44,17 @@ public partial class HerFaceLife : Node
     double glideEnd;
 
     /// <summary>A cinematic's gaze cue: where she looks (null: where she was), how far her eyes wander round it, how far
-    /// they turn in her head before the head takes the rest (reach, radii), the head's share of the look (null: none for
-    /// a small shift, 0.6 for a big one), a glide's time (over &gt; 0) instead of a jump, a blink forced or stopped. Snap:
+    /// they turn in her head before the head takes the rest (reach, radii), the head's share of the look (null: none, and
+    /// no reach either: the head is carried only when a cue asks), a glide's time (over &gt; 0) instead of a jump, a blink forced or stopped. Snap:
     /// now (else at her next natural saccade); cut: set at once, the shot having just cut (no slide seen across it).</summary>
     public void Gaze(Vector2? look, float? wander, bool snap, double over, float? reach, float? head, bool? blink, bool cut)
     {
         if (look is Vector2 l) Look = l;
         if (wander is float w) Wander = w;
-        gaze.Reach = reach ?? SurvivorUnchained.Play.GazeShift.DefaultReach;
+        // (inert unless asked, the owner 28 Oct: "keep our cutscenes face movements to a minimum": with no "head" the
+        // head is never carried and the eyes aren't held to a reach, as before; "head" (and "reach") opt in)
+        if (head is null) { head = 0; gaze.Reach = reach ?? NoReach; }
+        else gaze.Reach = reach ?? SurvivorUnchained.Play.GazeShift.DefaultReach;
         pendOver = over; pendHead = head; pendBlink = blink;
         if (cut)
         {
@@ -67,6 +71,7 @@ public partial class HerFaceLife : Node
     public void Release()
     {
         Look = Vector2.Zero;
+        Wander = PlayWander;   // (a cinematic's held wander, 0.02, left her eyes dead in play after it)
         gaze.Reach = SurvivorUnchained.Play.GazeShift.DefaultReach;
         gaze.HeadTo(t, System.Numerics.Vector2.Zero);
         pendOver = 0; pendHead = null; pendBlink = null;
