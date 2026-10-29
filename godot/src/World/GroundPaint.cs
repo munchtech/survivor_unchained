@@ -583,7 +583,7 @@ public sealed class GroundPaint
                             float t = Math.Clamp((w - a).Dot(ab) / Math.Max(ab.LengthSquared(), 1e-4f), 0, 1);
                             d = Math.Min(d, (w - a - ab * t).Length());
                         }
-                        lane[k] = Math.Max(lane[k], 1f - Mathf.SmoothStep(0.6f, 1.5f, d));
+                        lane[k] = Math.Max(lane[k], 1f - Mathf.SmoothStep(0.25f, 1.4f, d));   // (half at 0.8 m: the ruts, terrain setts_ruts)
                     }
             // (The distance off the splat's texels stair-stepped the kerb: centred on the texel's edge, blurred twice over
             // a texel, and read bilinearly below, its contours run smooth.)

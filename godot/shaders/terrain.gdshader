@@ -183,6 +183,9 @@ uniform float setts_kerb = 1.0;
 // (Env 22 r1c, the triage judge: the Watch-post's floor pristine) setts_wild: a ruin's floor, grass and moss in its joints
 // in the open too, in patches, thicker toward its edge and out of the wear lane (0: a kept street's).
 uniform float setts_wild = 0.0;
+// (Env 22 r1c, the gate's apron) setts_ruts: two worn wheel tracks along a way's lane (the near map's B at half, GroundPaint's
+// setts_ways: about 0.8 m either side of the way), darker, damper and smoother, broken along (0: none; the town's ridge lanes).
+uniform float setts_ruts = 0.0;
 uniform float kerb_in = 0.28;
 uniform float kerb_w = 0.3;
 uniform float setts_turn = 1.0;
@@ -633,9 +636,16 @@ void fragment() {
 	// (Out to 0.9 m: the gutter takes the wall's first 0.3-0.5 m, so the weeds live in the joints at its lip.)
 	float wsel = smoothstep(0.5, 0.62, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.75, 1.0, nr.r * 2.0));
 	albedo = mix(albedo, vec3(0.085, 0.11, 0.045) * (0.8 + 0.4 * nF.a), joint * wsel * weeds);
+	if (setts_ruts > 0.0) {
+		float rb = (1.0 - smoothstep(0.08, 0.2, abs(nr.b - 0.5) + (nF.g - 0.5) * 0.08)) * w_setts * setts_ruts;
+		rb *= smoothstep(0.3, 0.55, texture(noise_tex, w * 0.21 + 0.13).r * 0.7 + nF.b * 0.3);
+		albedo *= 1.0 - 0.32 * rb;
+		rough = mix(rough, 0.55, rb * 0.6);
+	}
 	if (setts_wild > 0.0) {
-		float wild = joint * setts_wild * smoothstep(0.44, 0.64, rgm * 0.45 + nM.g * 0.3 + nF.a * 0.25 + (1.0 - smoothstep(0.3, 2.2, sd)) * 0.3) * (1.0 - nr.b * 0.85);
-		albedo = mix(albedo, vec3(0.06, 0.09, 0.03) * (0.7 + 0.6 * nF.a), wild * 0.9);
+		float jw = w_setts * (1.0 - smoothstep(0.2, 0.36, hgt));
+		float wild = jw * setts_wild * smoothstep(0.36, 0.56, rgm * 0.45 + nM.g * 0.3 + nF.a * 0.25 + (1.0 - smoothstep(0.3, 2.2, sd)) * 0.3) * (1.0 - nr.b * 0.85);
+		albedo = mix(albedo, vec3(0.11, 0.15, 0.05) * (0.7 + 0.6 * nF.a), wild * 0.9);
 		rough = mix(rough, 0.95, wild);
 	}
 

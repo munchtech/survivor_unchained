@@ -161,8 +161,8 @@
    "energy": 1.0,
    "day": 0.15
   },
-  "glow-7-0": {"color": "#ffd090", "energy": 0.75, "att": 1.0, "spec": 0.1, "day": 0.06},
-  "glow-8-0": {"color": "#ffd090", "energy": 0.75, "att": 1.0, "spec": 0.1, "day": 0.06}
+  "glow-7-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06},
+  "glow-8-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06}
  },
  "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
  "kits": {
