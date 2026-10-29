@@ -284,12 +284,59 @@ def plate_p6(picks):
         return x + xs.min() * e["scale"], x + (xs.max() + 1) * e["scale"]
 
     def own_filled(e):
-        """The drawing at its own place with no see-through inside its outline (same fill as before)."""
-        a = np.array(Image.open(os.path.join(LAYERS, "p6", e["file"])).convert("RGBA"))
-        al = a[..., 3]
-        al[(al > 0) & nd.binary_erosion(al > 127, iterations=2)] = 255
-        P.made["walk2.png"] = a
-        return a
+        """walk2 at its own place as a crisp solid ink silhouette in the plate's hand (traveler_walk2.png itself is
+        untouched): inside alpha > 127 the colour is near.png's deep ink (median of its darkest 5% opaque pixels)
+        with 15% of the drawing's own luminance detail kept, clamped to ink + 12; the alpha edge hardened (127,
+        1 px antialias); a thin cold rim (the lamp points' blue, 60%, fading over 3 px) on the left edge and hood top."""
+        a = np.array(Image.open(os.path.join(LAYERS, "p6", e["file"])).convert("RGBA")).astype(np.float32)
+        near = np.asarray(Image.open(os.path.join(LAYERS, "p6", "near.png")).convert("RGBA")).astype(np.float32)
+        op = near[near[..., 3] > 250][:, :3]
+        lum = op.mean(1)
+        ink = np.median(op[lum <= np.quantile(lum, 0.05)], 0)
+        rr, gg, bb = near[..., 0], near[..., 1], near[..., 2]
+        pts = near[(bb > 170) & (bb > rr + 40) & (near[..., 3] > 200)][:, :3]
+        rim = np.median(pts, 0)
+        m = a[..., 3] > 127
+        L = a[..., :3].mean(-1)
+        detail = L - np.median(L[m])
+        col = ink[None, None, :] + 0.15 * detail[..., None]
+        col = np.clip(col, ink - 12, ink + 12)
+        # alpha: hard at 127, 1 px antialias (a one-pixel blur of the mask, kept to the edge band)
+        soft = nd.gaussian_filter(m.astype(np.float32), 0.5)
+        al = np.clip((soft - 0.25) / 0.5, 0, 1)
+        # rim: run length inside the mask from the left, and from the top within the hood (top quarter)
+        ys, xs = np.nonzero(m)
+        y0, y1 = ys.min(), ys.max() + 1
+        w = np.zeros(m.shape, np.float32)
+        run = np.zeros(m.shape[0], int)
+        for x in range(m.shape[1]):
+            run = np.where(m[:, x], run + 1, 0)
+            w[:, x] = np.maximum(w[:, x], np.where((run >= 1) & (run <= 3), 1 - (run - 1) / 3.0, 0) * np.where(run > 0, 1, 0))
+        # a pixel counts only if the run began at the left edge of the silhouette (leftmost in its row)
+        lead = np.zeros(m.shape, bool)
+        for y in range(m.shape[0]):
+            xr = np.nonzero(m[y])[0]
+            if len(xr):
+                lead[y, xr.min():xr.min() + 3] = True
+        w = np.where(lead, w, 0)
+        hood = np.zeros(m.shape, np.float32)
+        run = np.zeros(m.shape[1], int)
+        for y in range(m.shape[0]):
+            run = np.where(m[y], run + 1, 0)
+            if y0 <= y < y0 + (y1 - y0) // 4:
+                hood[y] = np.where((run >= 1) & (run <= 3), 1 - (run - 1) / 3.0, 0)
+        top_ok = np.zeros(m.shape, bool)
+        for x in range(m.shape[1]):
+            yr = np.nonzero(m[:, x])[0]
+            if len(yr):
+                top_ok[yr.min():yr.min() + 3, x] = True
+        hood = np.where(top_ok, hood, 0)
+        k = (0.6 * np.maximum(w, hood))[..., None]
+        col = col * (1 - k) + rim[None, None, :] * k
+        out = np.dstack([np.clip(col, 0, 255), al * 255]).astype(np.uint8)
+        P.made["walk2.png"] = out
+        print(f"p6 walk2: ink {tuple(int(v) for v in ink)}, rim {tuple(int(v) for v in rim)}")
+        return out
 
     sit_end, stand_fade = 4.0, 0.4
     e_stand, e_w2 = P.entry(picks["stand"]), P.entry(picks["walk2"])
