@@ -50,7 +50,7 @@ public partial class Game
         // before anything on screen changes), and the zone does without.
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
         // Straight after a storybook (SB00 into C01): its bars, full, are this one's from the first frame.
-        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes));
+        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes), b.Combat);
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); cineId = id; }
@@ -270,7 +270,7 @@ public partial class Game
     }
     /// <summary>A cinematic ended into the next (end.next): its bars and the camera
     /// it saved, taken over by the next one if the zone starts it on the cut.</summary>
-    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved);
+    sealed record Chain(CinemaBars Bars, (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) Saved, bool Combat);
     Chain? chained;
     (double X, double Z) carry;
     double carryT;
@@ -365,6 +365,10 @@ public partial class Game
         readonly bool seen;
         readonly Ctx ctx;
         (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) saved;
+        /// <summary>Whether her weapons fired before it: they hold for the whole cinematic (a blade swinging
+        /// itself in a staged shot, or killing a risen before play is handed back, is not the scene), and
+        /// fire again from control.</summary>
+        bool combatWas;
         CameraAttributesPractical dof = new();
         double skipHeld;
         int stillShot = -1, stillK, camShot = -1;
@@ -399,8 +403,9 @@ public partial class Game
             places = new CinePlaces(file, (x, z) => g.scene!.HeightAt(x, z), ActorAt);
             seen = Settings.Current.SeenCinematics.Contains(file.Id);
             var cam = g.camera;
-            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; }
-            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); }
+            if (g.chained is { } ch) { bars = ch.Bars; saved = ch.Saved; combatWas = ch.Combat; }
+            else { bars = new(); g.AddChild(bars); saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes); combatWas = b.Combat; }
+            b.Combat = false;
             cam.Near = 0.04f;
             g.controls.Captured = true;
             g.hud.ShowPlay(false);
@@ -2049,7 +2054,7 @@ public partial class Game
             {
                 // On into the next on the cut: the zone starts it from done; if it
                 // does not, play is handed back here as usual.
-                g.chained = new Chain(bars, saved);
+                g.chained = new Chain(bars, saved, combatWas);
                 Seen();
                 done?.Invoke();
                 if (g.chained != null) { g.chained = null; Restore(); }
@@ -2077,6 +2082,15 @@ public partial class Game
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
             b.WorldRate = 1; b.WorldRateT = 0;
+            b.Combat = combatWas;
+            if (Args.Has("shot"))
+            {
+                // Shoot runs: every staged enemy's state at control and for 2 s after (is anything killed on the first frames?).
+                var bb = b; var tags = enemies.ToDictionary(kv => kv.Value, kv => kv.Key);
+                void Log(double t) { foreach (var (e, n) in tags) GD.Print($"cinema control+{t:0.0}s {n}: alive={e.Alive} state={e.State} hp={e.Hp:0} at=({e.X:0.0},{e.Z:0.0}) her=({bb.Player.X:0.0},{bb.Player.Z:0.0})"); }
+                Log(0);
+                foreach (var t in new[] { 0.5, 1.0, 2.0 }) g.GetTree().CreateTimer(t).Timeout += () => Log(t);
+            }
             g.sound.CineMood = null;
             g.controls.Captured = false;
             g.controls.ClearLatches();
