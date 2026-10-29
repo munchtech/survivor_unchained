@@ -17,6 +17,8 @@ public static class WardenLook
         shader ??= GD.Load<Shader>("res://shaders/warden_wet.gdshader");
         var body = ResourceLoader.Exists($"{dir}/wet_generated.png") ? GD.Load<Texture2D>($"{dir}/wet_generated.png") : null;
         var head = ResourceLoader.Exists($"{dir}/wet_head.png") ? GD.Load<Texture2D>($"{dir}/wet_head.png") : null;
+        // the body's material ID map (tools/assets/warden_id_map.py): wool, tabard, quilting, leather, iron, badge, head
+        var id = ResourceLoader.Exists($"{dir}/id_generated.png") ? GD.Load<Texture2D>($"{dir}/id_generated.png") : null;
         var made = new System.Collections.Generic.Dictionary<string, ShaderMaterial>();
         foreach (var mi in person.Skeleton.GetChildren())
         {
@@ -38,13 +40,20 @@ public static class WardenLook
                         w.SetShaderParameter("mr_tex", src.RoughnessTexture);
                         w.SetShaderParameter("has_mr", src.RoughnessTexture != null);
                         if ((key == "head" ? head : body) is { } d) w.SetShaderParameter("data_tex", d);
+                        if (key == "generated" && id != null)
+                        {
+                            w.SetShaderParameter("id_near", id);
+                            w.SetShaderParameter("id_lin", id);
+                            w.SetShaderParameter("has_id", true);
+                        }
                     }
                     made[key] = w;
                 }
                 m.SetSurfaceOverrideMaterial(s, w);
             }
         }
-        // (a look test's overrides: WARDEN_WET="wet_dark=0.5;wet_spec=0.3", on every soaked surface but the iron)
+        // (a look test's overrides: WARDEN_WET="wet_dark=0.5;soak_dark=0.7", on every soaked surface but the iron; the
+        //  judged r2 values are the shader's defaults)
         if (System.Environment.GetEnvironmentVariable("WARDEN_WET") is { Length: > 0 } ov)
             foreach (var kv in ov.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
                 if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
