@@ -67,6 +67,13 @@ WOOL = (0.13, 0.145, 0.19)       # sRGB (the shader pulls the hue to its wool cl
 ALB_GAIN = float(os.environ.get("GARMENT_GAIN", "2.3"))   # the albedo's level (r1 measured in the C02 s7 / C03 s1 frames)
 PANELS = ("hood_l", "hood_r", "gusset", "cape_l", "cape_r", "cape")   # (cape_l/r: the capelet's halves)
 CAPE_COLS, CAPE_LINKS = 4, 5
+# (r3) the bind: the game's own idle (BossViews.PoseDump, Idle_Shield), not the glb's wide A. Every frame the game draws
+# sits 40-50 deg off the A at the spine, neck and clavicles (the body's own skin stretches 1.7x at the throat and 2.7x
+# at the shoulders from the A to any idle), so a garment bound at the A measured 1.4-2.2x stretch standing still. The
+# drape is skinned into the idle, relaxed there by the cloth sim (rest lengths and angles the drape's), and bound there.
+BIND_POSE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "warden_garment_pose.json")
+RELAX_FRAMES = 45
+C_G2B = np.array([[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1.0]])   # glTF -> Blender
 PROFILE = [   # the hood's rings (warden_hood's, the crown lifted and set back into a soft peak)
     (1.880, 0.000, -0.105, 0.000, 0.000),
     (1.872, 0.026, -0.092, 0.034, 0.022),
@@ -663,9 +670,11 @@ def tear(ob, seed=7):
         # one coordinate along the hem: the angle round the body (capelet) or across (cape), in metres
         u = np.arctan2(C[idx, 0] - X0, C[idx, 2]) * scale if k == 3 else C[idx, 0]
         depth = 0.008 + 0.022 * vnoise1(u + 5, 0.06, seed + k) ** 1.5 + 0.008 * vnoise1(u + 5, 0.017, seed + k + 1)
+        if k == 3:   # (r3, concept A: shorter at the front, the back left long)
+            depth = depth + 0.050 * np.clip(np.cos(u / scale), 0, 1) ** 2
         rng = np.random.default_rng(seed + k)
-        for c in u.min() + (u.max() - u.min()) * np.sort(rng.random(9 if k == 3 else 7)):
-            w, dp = rng.uniform(0.03, 0.06), rng.uniform(0.04, 0.10) * deep
+        for c in u.min() + (u.max() - u.min()) * np.sort(rng.random(13 if k == 3 else 7)):
+            w, dp = rng.uniform(0.025, 0.055), rng.uniform(0.05, 0.13 if k == 3 else 0.10) * deep
             depth = np.maximum(depth, dp * np.clip(1 - np.abs(u - c) / (w / 2), 0, None) ** 1.3)
         gone[idx[d < depth * deep]] = True
     bm.faces.ensure_lookup_table()
@@ -811,6 +820,21 @@ def chain_bones(Vg, lab, names):
     return out
 
 
+def smooth_along(A, adj, fixed, iters, a=0.5):
+    """Weights eased along the cloth (vectorised neighbour means), the fixed rows held."""
+    deg = np.array([len(x) for x in adj])
+    K = max(int(deg.max()), 1)
+    nbr = np.full((len(adj), K), -1, np.int64)
+    for i, x in enumerate(adj):
+        nbr[i, :len(x)] = x
+    m = (nbr >= 0)[..., None]
+    nbr = np.where(nbr >= 0, nbr, 0)
+    for _ in range(iters):
+        S = (A[nbr] * m).sum(1) / np.maximum(deg, 1)[:, None]
+        A = np.where(fixed[:, None] | (deg == 0)[:, None], A, (1 - a) * A + a * S)
+    return A
+
+
 def garment_weights(Vg, lab, adj, donors, names, chains, open_pts):
     """Per vertex: (joint indices into names + chain bones, weights). The crown and rim to Head; under the rim to
     neck_01 then spine_03; the capelet's yoke to spine_03 and the clavicles (a share of the upper arm at its outer
@@ -830,6 +854,8 @@ def garment_weights(Vg, lab, adj, donors, names, chains, open_pts):
     t.balance()
     dop = np.array([t.find(p)[2] for p in Vg])
     hood = lab <= 2
+    if donors is not None:   # (r3: donors = the body's weights near each vertex, dense over names)
+        return body_garment_weights(Vg, lab, adj, donors, names, chains, A, ix, allnames, dop)
     # hood: Head over the rim (within 3 cm of the opening) and the crown, easing to neck_01 and spine_03 below
     # (r2: wider blends, the head's turn spread over the hood's lower half: r1's 4 cm bands stretched 2-3x at the throat)
     wh = np.maximum(1 - smoothstep(0.02, 0.10, dop), smoothstep(1.50, 1.65, y))
@@ -882,6 +908,65 @@ def garment_weights(Vg, lab, adj, donors, names, chains, open_pts):
     Jo = np.argsort(-A, 1)[:, :4]
     Wo = np.take_along_axis(A, Jo, 1)
     Wo /= Wo.sum(1, keepdims=True)
+    return Jo.astype(np.uint16), Wo.astype(np.float32), allnames
+
+
+SKIP_BONES = ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb")
+SMOOTH_ITERS = 80
+
+
+def body_garment_weights(Vg, lab, adj, Ad, names, chains, A, ix, allnames, dop):
+    """r3: the hood and capelet on the body's own weights (the body's skin is the one deformation known good in the
+    game's poses; the r1-r2 hand-drawn neck_01 and clavicle bands stretched 2-7x from the idle to the zombie walk, where
+    the body itself stretches 1.3-1.4x), the forearms and hands left out; the hood's rim and crown to Head; the
+    capelet's free hem to its hem bones; the cape to its chains; all eased along the cloth further than the body's own
+    (SMOOTH_ITERS: the cloth spreads what the skin does in a band)."""
+    y = Vg[:, 1]
+    hood = lab <= 2
+    cap = (lab == 3) | (lab == 4)
+    near = lab < 5
+    D = Ad.copy()
+    for n in names:
+        if any(k in n for k in SKIP_BONES):
+            D[:, names.index(n)] = 0
+    D /= D.sum(1, keepdims=True) + 1e-12
+    A[near, :len(names)] = D[near]
+    head = ix["Head"]
+    wh = np.maximum(1 - smoothstep(0.02, 0.08, dop), smoothstep(1.56, 1.68, y)) * hood
+    A *= (1 - wh)[:, None]
+    A[:, head] += wh
+    hem = smoothstep(1.36, 1.27, y) * cap
+    ang = np.arctan2(Vg[:, 0] - X0, Vg[:, 2])
+    sec = {"b": np.cos(np.clip(np.abs(np.abs(ang) - np.pi), 0, np.pi / 2)) ** 2 * (np.abs(ang) > np.pi / 2),
+           "l": np.clip(np.sin(ang), 0, 1) ** 2, "r": np.clip(-np.sin(ang), 0, 1) ** 2}
+    tot = sum(sec.values()) + 1e-9
+    for key, s_ in sec.items():
+        w = hem * 0.6 * s_ / tot * (1.0 if key == "b" else (Vg[:, 2] < 0.12))
+        A[:, :len(names)] *= (1 - w)[:, None]
+        A[:, ix[f"capelet_{key}_0"]] += w
+    cape = lab == 5
+    cols = sorted({int(c["bone"].split("_")[1]) for c in chains if c["bone"].startswith("cape_")})
+    cx = np.array([np.mean([c["head"][0] for c in chains if c["bone"].startswith(f"cape_{k}_")]) for k in cols])
+    Lk = (CAPE_TOP - CAPE_HEM) / CAPE_LINKS
+    f = np.clip((CAPE_TOP - y) / Lk, 0, CAPE_LINKS - 1e-3)
+    i0 = np.floor(f).astype(int)
+    fr = f - i0
+    i1 = np.minimum(i0 + 1, CAPE_LINKS - 1)
+    fr = np.where(i0 == CAPE_LINKS - 1, 0, fr)
+    xc = np.clip(np.interp(Vg[:, 0], cx, np.arange(len(cx))), 0, len(cx) - 1 - 1e-3)
+    c0 = np.floor(xc).astype(int)
+    cf = xc - c0
+    A[cape] = 0
+    for cc, wc in ((c0, 1 - cf), (c0 + 1, cf)):
+        for ii, wi in ((i0, 1 - fr), (i1, fr)):
+            for r in np.nonzero(cape)[0]:
+                A[r, ix[f"cape_{cc[r]}_{ii[r]}"]] += wc[r] * wi[r]
+    A = smooth_along(A, adj, (hood & (wh > 0.999)) | cape, SMOOTH_ITERS)
+    A /= A.sum(1, keepdims=True) + 1e-12
+    Jo = np.argsort(-A, 1)[:, :4]
+    Wo = np.take_along_axis(A, Jo, 1)
+    Wo /= Wo.sum(1, keepdims=True)
+    log(f"weights: the body's under the hood and capelet, {SMOOTH_ITERS} smoothing passes")
     return Jo.astype(np.uint16), Wo.astype(np.float32), allnames
 
 
@@ -1057,7 +1142,7 @@ def prims_of(c, J, W, P_bind, N_corner, mat_ids, delta=None):
     return out
 
 
-def write_piece(pkg, path, parts, maps, chains):
+def write_piece(pkg, path, parts, maps, chains, Mg=None):
     """armor/hood.glb: body.glb's skeleton (plus the chain bones under their parents) and skin, the garment's meshes
     (capelet_bend a morph target on the full mesh) and materials (the inside the same wool: the wet shader darkens it)."""
     g = Glb(os.path.join(pkg, "body.glb"))
@@ -1083,6 +1168,8 @@ def write_piece(pkg, path, parts, maps, chains):
         by[c["bone"]] = ni
         sk["joints"].append(ni)
         ibm.append(np.linalg.inv(Gc).T)   # (glTF: column-major)
+    if Mg is not None:   # (r3: bound at the game's pose: inverse bind = the A's inverse bind x the pose's posed-from-A, inverted)
+        ibm = [(np.asarray(b).T @ np.linalg.inv(m)).T for b, m in zip(ibm, Mg)]
     sk["inverseBindMatrices"] = g.add_acc(np.array(ibm, np.float32).reshape(-1, 16), "MAT4", target=None)
     j["materials"], j["textures"], j["images"], j["samplers"] = [], [], [], []
     j["meshes"] = []
@@ -1126,6 +1213,71 @@ def write_piece(pkg, path, parts, maps, chains):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     g.save(path)
     log(f"wrote {path} ({os.path.getsize(path) / 1e6:.1f} MB)")
+
+
+def pose_game(path):
+    """The armature set to the game's pose: each bone's skin matrix (global pose x bind, glTF frame) from the pose file,
+    parents first (Blender's armature space = the glTF skeleton's, Y up turned Z up)."""
+    d = json.load(open(path))["skin"]
+    arm = armature()
+    bpy.context.view_layer.update()
+    Ci = np.linalg.inv(C_G2B)
+    for pb in sorted(arm.pose.bones, key=lambda b: len(b.parent_recursive)):
+        if pb.name not in d:
+            continue
+        Sg = np.eye(4)
+        Sg[:3] = np.array(d[pb.name]).reshape(3, 4)
+        pb.matrix = mathutils.Matrix((C_G2B @ Sg @ Ci).tolist()) @ pb.bone.matrix_local
+        bpy.context.view_layer.update()
+    log(f"bind pose: the game's ({os.path.basename(path)}, {len(d)} bones)")
+
+
+def spine_pitch():
+    """spine_03's forward pitch off its rest (deg), as PieceSprings reads it (the bone's Y axis, against the root)."""
+    arm = armature()
+    pb = arm.pose.bones["spine_03"]
+    y0 = b2g(np.array([np.array(pb.bone.matrix_local.col[1][:3])]))[0]
+    y1 = b2g(np.array([np.array(pb.matrix.col[1][:3])]))[0]
+    a0, a1 = math.atan2(y0[2], y0[1]), math.atan2(y1[2], y1[1])
+    return math.degrees(a1 - a0)
+
+
+def blend_mats(J, W, mats):
+    return np.einsum("nk,nkij->nij", W.astype(float), mats[J.astype(int)])
+
+
+def donor_weights(Vb, donors, nb, k=8):
+    """Per vertex (Blender, the drape pose): the body's weights near it (k nearest, by 1/d), all its bones (the game's
+    pose has its share and twist bones too): to carry the drape into the game's pose following the body."""
+    P, J, W = donors
+    t = KDTree(len(P))
+    for i, p in enumerate(P):
+        t.insert(p, i)
+    t.balance()
+    A = np.zeros((len(Vb), nb))
+    dist = np.zeros(len(Vb))
+    for i, v in enumerate(Vb):
+        nn = t.find_n(v, k)
+        dist[i] = nn[0][2]
+        for co, j, d in nn:
+            w = 1.0 / max(d, 0.004)
+            for q in range(4):
+                if W[j, q] > 0:
+                    A[i, J[j, q]] += w * W[j, q]
+    return A / (A.sum(1, keepdims=True) + 1e-12), dist
+
+
+def dense(J, W, nb):
+    A = np.zeros((len(J), nb))
+    np.add.at(A, (np.repeat(np.arange(len(J)), J.shape[1]), J.ravel().astype(int)), W.ravel())
+    return A
+
+
+def top4(A):
+    Jo = np.argsort(-A, 1)[:, :4]
+    Wo = np.take_along_axis(A, Jo, 1)
+    Wo /= Wo.sum(1, keepdims=True) + 1e-12
+    return Jo.astype(np.uint16), Wo.astype(np.float32)
 
 
 def tris_of(ob):
@@ -1246,26 +1398,85 @@ def main():
         WH.preview_mat(ob)
         sheet(work, "drape", VIEWS)
         return
-    # ---- 4. tear, budget, maps ----
+    # ---- 4. tear ----
     cape_clear(ob, Vb_body, Fb)
     tear(ob)
     hi = ob
     hi.name = "garment_hi"
+    # ---- the weights, designed on the drape (the fine mesh; carried to each reduced one later) ----
+    names = body["names"]
+    mats_d = skin_mats(names)
+    Vh = b2g(verts(hi))          # (the drape: the weights' and masks' frame)
+    labh = panel_of_verts(hi)
+    chains = chain_bones(Vh, labh, names)
+    Pd = verts(hi)
+    Ad, dd = donor_weights(Pd, body_posed_donors(body, mats_d), len(names))
+    Jh, Wh, allnames = garment_weights(Vh, labh, adjacency(hi), None if opt.get("weights") == "r2" else Ad, names, chains, open_pts)
+    bindp = opt.get("bind", BIND_POSE)
+    if bindp != "drape":
+        # ---- r3: carried into the game's idle on the final weights, relaxed there, bound there ----
+        mats_dall = chain_mats(chains, mats_d, names)
+        Jp, Wp = Jh, Wh
+        pins = opening_pins(hi, labh, open_pts)
+        pins = np.where(labh == 5, 1 - smoothstep(0.004, 0.030, CAPE_TOP - Vh[:, 1]), pins)
+        for o in cols + [col_env]:
+            bpy.data.objects.remove(o)
+        pose_game(bindp)
+        Vg2, Vb_body, Fb = posed_body(bobs)
+        cols = collider_obs(Vg2, Fb)
+        mats_g = skin_mats(names)
+        rel = chain_mats(chains, mats_g, names) @ np.linalg.inv(mats_dall)
+        Mp = blend_mats(Jp, Wp, rel)
+        Pg = np.einsum("nij,nj->ni", Mp[:, :3, :3], Pd) + Mp[:, :3, 3]
+        hi.shape_key_clear()
+        hi.shape_key_add(name="Basis").data.foreach_set("co", Pg.ravel())
+        hi.shape_key_add(name="flat").data.foreach_set("co", Pd.ravel())
+        set_verts(hi, Pg)
+        diag(hi, labh, [cols[0]], "skinned into the game's idle")
+        rf = int(opt.get("relax", RELAX_FRAMES))
+        if opt.get("relax-all") != "1":
+            # (the cape alone relaxed: it hangs again from its attach line once spine_03's 18 deg idle pitch tilted it
+            #  out 34 cm off the calves; the hood and capelet held as skinned (a free relax drew the left capelet in
+            #  18 cm: the drape's rest angles against the idle's lowered arms, WIP)
+            pins = np.where(labh < 5, 1.0, pins)
+        P = cloth(hi, pins, rf, BEND, [cols[0], cols[1]], sew=False) if rf > 0 else Pg
+        hi.shape_key_clear()
+        set_verts(hi, P)
+        diag(hi, labh, [cols[0]], "relaxed in the game's idle")
+        # the chain bones laid on the relaxed cape, written in the rest frame (they ride spine_03)
+        Ms = np.linalg.inv(C_G2B) @ mats_g[names.index("spine_03")] @ C_G2B
+        Msi = np.linalg.inv(Ms)
+        Vgg = b2g(P)
+        cidx = np.nonzero(labh == 5)[0]
+        tc = KDTree(len(cidx))
+        for q, i in enumerate(cidx):
+            tc.insert(Vh[i], q)
+        tc.balance()
+
+        def relay(pt):
+            nn_ = [cidx[q] for _, q, _ in tc.find_n(pt, 12)]
+            g_ = Vgg[nn_].mean(0) + (np.array(pt) - Vh[nn_].mean(0))
+            return (Msi @ np.append(g_, 1.0))[:3].round(4).tolist()
+        for c_ in chains:
+            if c_["bone"].startswith("cape_"):
+                c_["head"], c_["tail"] = relay(c_["head"]), relay(c_["tail"])
+        log(f"spine_03 pitch in the bind pose: {spine_pitch():.1f} deg")
+    mats = skin_mats(names)
+    mats_all = chain_mats(chains, mats, names)
+    # the bind: the pose the garment is in now (the game's idle; with --bind drape the glb's A, unposed, as r1-r2 did)
+    if bindp == "drape":
+        Ph_bind, _ = unpose(verts(hi), Jh, Wh, mats_all)
+        Mg_all = np.tile(np.eye(4), (len(mats_all), 1, 1))
+    else:
+        Ph_bind = b2g(verts(hi))
+        Mg_all = np.linalg.inv(C_G2B)[None] @ mats_all @ C_G2B[None]     # posed-from-A per joint, glTF
+    Mb_bind = C_G2B[None] @ Mg_all @ np.linalg.inv(C_G2B)[None]           # the same, Blender
+    # ---- budget, maps ----
     lo = decimated(hi, LO_TRIS, "garment_lo")
     bk = bake_lo(hi, lo, TEX, [lo] + bobs)
     crest = bake_crest(hi, lo, TEX // 2)
     lod1 = decimated(lo, LOD_TRIS, "garment_lod1")
     shadow = decimated(lo, SHADOW_TRIS, "garment_shadow")
-    # ---- the bind: weights on the fine mesh, carried to each reduced one ----
-    names = body["names"]
-    mats = skin_mats(names)
-    donors = body_posed_donors(body, mats)
-    Vh = b2g(verts(hi))
-    labh = panel_of_verts(hi)
-    chains = chain_bones(Vh, labh, names)
-    Jh, Wh, allnames = garment_weights(Vh, labh, adjacency(hi), donors, names, chains, open_pts)
-    mats_all = chain_mats(chains, mats, names)
-    Ph_bind, _ = unpose(verts(hi), Jh, Wh, mats_all)
     # ---- 7. the corrective: the bent pose ----
     # (the arms as draped, then the spine bent: r1's bent sim ran with the arms back at the bind's wide A, the capelet
     #  tented over them into a dome and the cape caught on the arm)
@@ -1273,10 +1484,16 @@ def main():
     for pb in arm0.pose.bones:
         pb.matrix_basis = mathutils.Matrix.Identity(4)
     bpy.context.view_layer.update()
-    pose_arms(WH.POSE_DEG)
-    pose_spine(80.0)
+    if bindp == "drape":
+        pose_arms(WH.POSE_DEG)
+        pose_spine(80.0)
+    else:
+        pose_game(bindp)
+        p0_ = spine_pitch()
+        pose_spine(80.0 - p0_)
+        log(f"bent from the bind pose's {p0_:.1f} deg to {spine_pitch():.1f} deg")
     Vbent, _, Fbent = posed_body(bobs)
-    mats_b = chain_mats(chains, skin_mats(names), names)
+    mats_b = chain_mats(chains, skin_mats(names), names) @ np.linalg.inv(Mb_bind)   # (from the bind)
     Mb = np.einsum("nk,nkij->nij", Wh.astype(float), mats_b[Jh.astype(int)])
     Pb_start = np.einsum("nij,nj->ni", Mb[:, :3, :3], g2b(Ph_bind)) + Mb[:, :3, 3]
     for o in cols:
@@ -1314,7 +1531,10 @@ def main():
     arm = armature()
     for pb in arm.pose.bones:
         pb.matrix_basis = mathutils.Matrix.Identity(4)
-    pose_arms(WH.POSE_DEG)
+    if bindp == "drape":
+        pose_arms(WH.POSE_DEG)
+    else:
+        pose_game(bindp)
     # ---- 5. thickness, rim, fringe; the maps ----
     rd, rd1 = WH.roll_data(lo, 8), WH.roll_data(lod1, 5)
     fr = WH.fringe(lo, rd)
@@ -1351,19 +1571,23 @@ def main():
         # bones: Head on the capelet, cape chains on the fringe; stretch p99 2-5 in the motion check)
         nn = match_fine(o, Vo, Vh_b, Nh_b, grp_h)
         J, W = Jh[nn], Wh[nn]
-        dl = delta_h[nn] if node == "hood.wool" else None
+        dl = delta_h[nn] if node != "hood.shadow" else None   # (r3: the bend on LOD1 too)
         c = corner_arrays(o)
-        P_bind, M = unpose(Vo, J, W, mats_all)
-        Ml = M[c["lv"]]
-        n = np.einsum("nji,nj->ni", Ml[:, :3, :3], c["cn"])
+        P_rest, M = unpose(Vo, J, W, mats_all)    # (the A frame: the mantle cut and the ID map)
+        if bindp == "drape":
+            P_bind = P_rest
+            n = np.einsum("nji,nj->ni", M[c["lv"]][:, :3, :3], c["cn"])
+        else:
+            P_bind = b2g(Vo)
+            n = np.array(c["cn"], float)
         n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
         prims = prims_of(c, J, W, P_bind, b2g(n), ids, dl)
         parts.append((node, {(MAT_WOOL, MAT_INNER, MAT_FRINGE)[m]: a for m, a in prims.items()}))
         info[node] = {"tris": int(sum(len(a["idx"]) // 3 for a in prims.values())),
                       "bones": sorted({allnames[x] for x in np.unique(J[W > 0.01])})}
         if node == "hood.wool":
-            HP = P_bind
-            wp = prims[0]
+            HP = P_rest
+            wp = prims_of(c, J, W, P_rest, b2g(n), (0,))[0]
             # (the mantle cut under the hood and capelet only: the cape hangs clear of the robe, and swings)
             lab_lo = labh[nn]
             tri = c["lv"][c["tl"][c["tm"] < 2]]
@@ -1374,7 +1598,7 @@ def main():
     for k_ in ("color", "normal", "mr", "fringe"):
         maps[k_].save(os.path.join(work, f"map_{k_}.png"))
     out_pkg = pkg if opt.get("write-body") == "1" else work
-    write_piece(src, os.path.join(out_pkg, "armor", "hood.glb"), parts, maps, chains)
+    write_piece(src, os.path.join(out_pkg, "armor", "hood.glb"), parts, maps, chains, Mg_all)
     WH.hood_id_map(wp["pos"], wp["uv"], wp["idx"]).save(os.path.join(out_pkg, "armor", "hood_id.png"))
     # the mantle cut: under the hood and capelet only (the cape hangs clear of the robe)
     cut = cut_mantle(src, out_pkg, HP, HFw)
