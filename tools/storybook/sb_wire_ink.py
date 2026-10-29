@@ -24,6 +24,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage as nd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -41,7 +42,7 @@ REPLACED = {"p7", "p8", "p9", "p10a", "p10b", "p10c"}
 PREFIX = "ink_"
 
 # Where the art's own features are (comps units, found in the layer images; they follow the comps).
-P5_FOURTH_LIGHT = (2354, 800)   # lamps.png: the dim midstream light right of the three cages (the comps' 2380, 805)
+P5_FOURTH_LIGHT = (2362, 684)   # round 4 base: the fourth cage (gen 1344,389; ink_layers.P5_CAGES[-1])
 P7_FLASK = (1550, 1490)         # the comps' rings from the flask
 GLARE_FLICKER = {"kind": "flicker", "rate": 0.9, "amount": 0.2, "seed": 4}   # p7's lamp glare (blue_rim breathes with it)
 
@@ -77,6 +78,7 @@ class Plate:
         rest = self.meta["rest"]
         self.shift = (1600 - rest[0], 900 - rest[1])
         self.used = {}  # clean name -> source file
+        self.made = {}  # clean name -> RGBA uint8 array made here (written instead of copied)
 
     def S(self, x, y):
         return [r(x + self.shift[0]), r(y + self.shift[1])]
@@ -192,10 +194,35 @@ def plate_p6(picks):
         same = [feet(o) for o in P.meta["layers"] if o.get("state") == state]
         return tuple(np.mean(same, axis=0)) if same else feet(e)
 
+    def same_outline(e2, e1):
+        """walk2 (the unlit drawing by the water) on the lit drawing's exact outline, fully opaque: walk1's
+        own alpha at walk1's own pixels, filled with walk2's colours (figure box onto figure box), shown at
+        walk2's box (the same feet and height). -> the entry to wire instead of e2."""
+        a1 = np.asarray(Image.open(os.path.join(LAYERS, "p6", e1["file"])).convert("RGBA"))
+        a2 = np.asarray(Image.open(os.path.join(LAYERS, "p6", e2["file"])).convert("RGBA"))
+
+        def fig(a):
+            ys, xs = np.nonzero(a[..., 3] > 127)
+            return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+        f1, f2 = fig(a1), fig(a2)
+        crop = Image.fromarray(a2[f2[1]:f2[3], f2[0]:f2[2], :3]).resize((f1[2] - f1[0], f1[3] - f1[1]), Image.BICUBIC)
+        inner = a2[..., 3] > 250
+        rgb = np.broadcast_to(np.median(a2[..., :3][inner], 0).astype(np.uint8), a1.shape[:2] + (3,)).copy()
+        rgb[f1[1]:f1[3], f1[0]:f1[2]] = np.asarray(crop)
+        al = a1[..., 3].copy()
+        al[(al > 0) & (nd.binary_erosion(al > 127, iterations=2))] = 255      # no see-through inside the outline
+        x2, y2, w2, h2 = P.box(e2)
+        sc = e2["scale"] * (f2[3] - f2[1]) / (f1[3] - f1[1])                 # figure height onto figure height
+        foot = (x2 + (f2[0] + f2[2]) / 2 * e2["scale"], y2 + f2[3] * e2["scale"])
+        pos = (foot[0] - (f1[0] + f1[2]) / 2 * sc - P.shift[0], foot[1] - f1[3] * sc - P.shift[1])
+        P.made["walk2.png"] = np.dstack([rgb, al])
+        return dict(e2, pos=[round(pos[0], 2), round(pos[1], 2)], scale=round(sc, 6), size_px=[a1.shape[1], a1.shape[0]])
+
     sit_end, stand_fade = 4.0, 0.4
     depart, arrive = 4.8, 10.0          # the slide; p6 is up to 10.5 s (p7 dissolves in over it to 11.1)
     acc, dec = 0.7, 1.0                 # eased start and stop of the slide
-    x1, x2 = 0.4, 1.5                   # crossfades: stand -> walk1, walk1 -> walk2
+    x1, x2 = 0.4, 0.5                   # crossfades: stand -> walk1, walk1 -> walk2 (walk2 over walk1, same outline)
+    lit_by = 5.9                        # walk1 -> walk2 done by here (76.9 s): never a see-through figure held
     bob_amp, bob_step = 5.0, 0.5        # canvas units at stand's height; seconds a step
 
     # The roles in order; a drawing picked for two roles plays both (no crossfade between them).
@@ -263,7 +290,7 @@ def plate_p6(picks):
     leave = next((t for t in np.arange(depart, arrive, 0.02)
                   if np.hypot(path(t)[0] - fx, path(t)[1] - path(t)[2] / 2 - fy) > ring), depart)
     lit_from = depart + (x1 if any(n[0] == "walk1" for _, _, n in roles) else 0)
-    leave = float(min(max(leave, lit_from + 0.2), arrive - x2 - 0.3))
+    leave = float(min(max(leave, lit_from + 0.2), arrive - x2 - 0.3, lit_by - x2))
 
     # Crossfade windows into each role after the first.
     win = []
@@ -273,6 +300,8 @@ def plate_p6(picks):
 
     for i, (st, file, names) in enumerate(roles):
         e = P.entry(file)
+        if st == "walk2" and i > 0:
+            e = same_outline(e, P.entry(roles[i - 1][1]))
         L = P.layer(e, st)
         if i == 0:
             pts = [(0, 0.0), (sit_end, 0.0), (sit_end + stand_fade / 2, 1.0)]
@@ -281,10 +310,10 @@ def plate_p6(picks):
             pts = [(0, 0.0), (a_, 0.0), (b_, 1.0)]
         if i + 1 < len(roles):
             end_on = win[i][1]
-            pts += [(end_on, 1.0), (end_on + 0.1, 0.0)]
+            pts += [(end_on, 1.0), (end_on + 0.02, 0.0)]
         fxo, fyo, h = feet(e)
         L["pivot"] = [r(fxo), r(fyo)]
-        times = [p[0] for p in pts] + [t for t in grid if t >= pts[1][0] - 1e-6 and (i + 1 == len(roles) or t <= pts[-1][0] + 1e-6)]
+        times = [p[0] for p in pts] + [t for t in grid if t >= pts[1][0] - 1e-6 and (i + 1 == len(roles) or t <= pts[-2][0] + 1e-6)]
         L["keys"] = opacity_keys(pts, times, lambda t: (lambda q: {"dx": r(q[0] - fxo), "dy": r(q[1] - fyo),
                                                                   "scale": r(q[2] / h, 4)})(path(t)))
         layers.append(L)
@@ -309,7 +338,80 @@ def plate_p6(picks):
     }
 
 
+def p7t_point(what, frac=None):
+    """p7 round 4: a SAM mask's centre (or its top at frac of its height) in p7's canvas units (unshifted)."""
+    import ink_layers as IL
+    m = np.asarray(Image.open(os.path.join(IL.WORK, f"p7t_s{IL.P7T_SEED}_{what}.png")).convert("L")) > 127
+    ys, xs = np.nonzero(m)
+    u = 3200 / m.shape[1]
+    y = ys.mean() if frac is None else ys.min() + frac * (ys.max() - ys.min())
+    return xs.mean() * u, y * u, (xs.min() * u, ys.min() * u, xs.max() * u, ys.max() * u)
+
+
+def plate_p7_tall(picks):
+    """p7 round 4: one tall drawing the camera tilts through (ink_layers P7T_*). Close on the hood and the flask in
+    the water; blue slides into the reflection (0.6-2.5 s); the rim on the hood by 2.5 s (84.0); the tilt up until the
+    cage and its holder's hand sit inside the 2.39 band; at 5.5 s the tip down into the water (p7u)."""
+    P = Plate("p7")
+    fx, fy, _ = p7t_point("flask")
+    hx, hy, hbox = p7t_point("person")
+    cx, cy, cbox = p7t_point("cage")
+    _, _, obox = p7t_point("holder")
+    layers = []
+    for e in P.bases():
+        n = e["name"]
+        L = P.layer(e, n)
+        if n == "water":
+            L["touch"] = [{"kind": "water", "amp": 1.2, "freq": 1.2, "scale": 40},
+                          {"kind": "ripple", "centers": [P.S(fx, fy + 30)], "period": 2.6, "speed": 55, "amp": 2,
+                           "rings": 3, "gap": 24, "reach": 320, "squash": 0.3, "light": 0.22}]
+        elif n == "lamp":
+            x, y, w, h = P.box(e)
+            L["pivot"] = [r(x + w / 2), r(y)]
+            L["keys"] = [{"t": 0, "dy": 0}, {"t": 2.0, "dy": -6, "ease": "inout"}, {"t": 4.0, "dy": 4, "ease": "inout"},
+                         {"t": 6.0, "dy": -2, "ease": "inout"}]
+        elif n == "lamp_glare":
+            L["touch"] = [dict(GLARE_FLICKER)]
+            L["keys"] = [{"t": 0, "dy": 0}, {"t": 2.0, "dy": -6, "ease": "inout"}, {"t": 4.0, "dy": 4, "ease": "inout"},
+                         {"t": 6.0, "dy": -2, "ease": "inout"}]
+        elif n == "reflection_blue":
+            # The cage's light slides into the reflection from the river side (right) and settles as drawn.
+            L["touch"] = [{"kind": "water", "amp": 2.0, "freq": 1.1, "scale": 50}, dict(GLARE_FLICKER, amount=0.1)]
+            L["keys"] = [{"t": 0, "dx": 320, "opacity": 0}, {"t": 0.6, "dx": 320, "opacity": 0},
+                         {"t": 2.5, "dx": 0, "opacity": 1, "ease": "out"}]
+        layers.append(L)
+    for state, f in picks.items():
+        e = P.entry(f)
+        if state != "blue_rim":
+            continue
+        L = P.layer(e, state)
+        L["keys"] = [{"t": 0, "opacity": 0}, {"t": 1.7, "opacity": 0}, {"t": 2.5, "opacity": 1, "ease": "out"}]
+        L["touch"] = [dict(GLARE_FLICKER, amount=0.12)]
+        i = next((i for i, l in enumerate(layers) if l["id"] == "traveler"), len(layers) - 1)
+        layers.insert(i + 1, L)
+    # Camera (unshifted canvas units). The band shows 3200/zoom x 1339/zoom units.
+    import ink_layers as IL
+    open_x, open_y, open_z = IL.P7T_KEYS["open"]
+    up_x, up_y, up_z = IL.P7T_KEYS["up"]
+    tip_x, tip_y, tip_z = IL.P7T_KEYS["tip"]
+    mid_x, mid_y, mid_z = IL.P7T_KEYS["mid"]
+    return P, {
+        "id": PREFIX + "p7", "at": 81.5, "until": 87.5,
+        "in": {"kind": "dissolve", "dur": 0.6},
+        "camera": [P.cam(0, open_x, open_y + 40, open_z), P.cam(0.8, open_x, open_y, open_z, ease="out"),
+                   P.cam(2.8, mid_x, mid_y, mid_z, ease="inout"),
+                   P.cam(4.7, up_x, up_y, up_z, ease="inout"), P.cam(5.5, up_x, up_y - 15, up_z),
+                   P.cam(6.0, tip_x, tip_y, tip_z, ease="in")],
+        "note": "INK: The water (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": layers,
+        "cues": [],
+    }
+
+
 def plate_p7(picks):
+    import ink_layers as IL
+    if IL.PLATES["p7"].get("carved"):
+        return plate_p7_tall(picks)
     P = Plate("p7")
     layers = []
     head = 2.5
@@ -397,7 +499,15 @@ def copy_art(P):
     changed = 0
     for clean, src in P.used.items():
         s, d = os.path.join(LAYERS, P.pid, src), os.path.join(dst_dir, clean)
-        if sha(s) != sha(d):
+        if clean in P.made:
+            tmp = d + ".tmp.png"
+            Image.fromarray(P.made[clean], "RGBA").save(tmp)
+            if sha(tmp) != sha(d):
+                os.replace(tmp, d)
+                changed += 1
+            else:
+                os.remove(tmp)
+        elif sha(s) != sha(d):
             shutil.copyfile(s, d)
             changed += 1
         write_import(d)

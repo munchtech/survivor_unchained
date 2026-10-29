@@ -36,6 +36,8 @@ class Plate:
         if plate == "p5":       # round 3: the drowned baked into the road layer (ink_r3.py); the road owns their figures
             self.whole = L.wd(plate, f"S_drowned_r3_{L.P5_DROWNED_R3}.png")
             self.M["road"] = self.M["road"] | L.load_mask(L.wd(plate, f"r3_fig_{L.P5_DROWNED_R3}.png"))
+        if plate == "p6" and os.path.exists(L.wd(plate, "S_whole.png")):    # round 4 (ink_r4p6.py): the pick with the new river
+            self.whole = L.wd(plate, "S_whole.png")
 
     def src(self, name):
         if name not in self._up:
@@ -83,6 +85,15 @@ def glow(P, mask_gen, kind):
         plume = np.exp(-((X - cx) / (55 * s)) ** 2) * np.clip((cy + 40 * s - Y) / (cy + 40 * s), 0, 1) ** 0.35 * (Y < cy + 40 * s)
         g = g / g.max() + 0.85 * plume
         return np.clip(g, 0, 1) * 0.95
+    if kind == "glare4":         # p5 round 4: a faint glare above the fourth light, hiding whoever holds it (not a halo)
+        ys, xs = np.nonzero(m > 0.5)
+        cy, cx, top = ys.mean(), xs.mean(), ys.min()
+        Y, X = np.mgrid[0:P.TH, 0:P.TW]
+        g = np.exp(-((X - cx) / (60 * s)) ** 2 - ((Y - (top - 70 * s)) / (95 * s)) ** 2) * (Y < cy)
+        return np.clip(g * 0.32, 0, 1)
+    if kind == "lamps" and L.PLATES["p5"]["r"] == "r4_p5":    # round 4: the fire only, tight, no soft halo over the cages
+        g = nd.gaussian_filter(m, 2 * s) + 0.5 * nd.gaussian_filter(m, 6 * s)
+        return np.clip(g / max(1e-6, np.percentile(g[m > 0.5], 90)) * 0.22, 0, 1)
     sig = {"lamps": (6, 30, 90), "fire_glow": (8, 35, 110), "reflection_blue": (5, 18, 50), "lamp_warped": (20, 60, 160)}[kind]
     g = sum(nd.gaussian_filter(m, a * s) * wt for a, wt in zip(sig, (1, 2.5, 5)))
     g = g / max(1e-6, np.percentile(g[m > 0.5], 90)) if (m > 0.5).any() else g
@@ -138,6 +149,38 @@ def render(P, layers, cam, W=1920, H=1080, mode="rgb"):
             else:
                 bad = bad * (1 - a[..., 0])
     return out, bad
+
+
+def straight_runs(lab):
+    """Longest exactly horizontal or vertical run of a label map's boundary (px)."""
+    best = 0
+    for b in (lab[1:] != lab[:-1], (lab[:, 1:] != lab[:, :-1]).T):
+        for row in b:
+            if row.any():
+                d = np.diff(np.concatenate([[0], row.astype(np.int8), [0]]))
+                st, en = np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]
+                best = max(best, int((en - st).max()))
+    return best
+
+
+def straight_edge(P, layers, cam, W=1920, H=1080):
+    """Round 4 (r2 brief): the key frame's topmost-layer map at 1920x1080 inside the 2.39 band; its longest straight
+    boundary run in screen px (a layer ending in a straight edge where the camera shows it). Frame edges excluded."""
+    R = P.P["rest"]
+    sy, sx = np.mgrid[0:H:2, 0:W:2].astype(np.float32)
+    u = (sx + 0.5 - W / 2) / (W / 2)
+    v = (sy + 0.5 - H / 2) / (H / 2) / L.BAND
+    lab = np.zeros(sx.shape, np.int8)
+    for i, ly in enumerate(layers):
+        cxp, cyp = L.lens_point(R, cam, ly["z"], 0, 0)
+        ex, _ = L.lens_point(R, cam, ly["z"], 1, 0)
+        _, ey = L.lens_point(R, cam, ly["z"], 0, 1)
+        px = (cxp + u * (ex - cxp)) / P.upp - ly["x0"]
+        py = (cyp + v * (ey - cyp)) / P.upp - ly["y0"]
+        a = nd.map_coordinates(ly["rgba"][..., 3], [py, px], order=1, mode="constant", cval=0)
+        lab[a > 0.5] = i
+    inside = np.abs(v[:, 0]) <= 1
+    return 2 * straight_runs(lab[inside][2:-2, 2:-2])
 
 
 def label(im, text, xy=(6, 4)):
@@ -230,6 +273,31 @@ def blue_rim(P, layers):
     return dict(name="traveler", z=tr["z"], blend="add", rgba=rgba, x0=tr["x0"] + x0, y0=tr["y0"] + y0, state="blue_rim", seed=None)
 
 
+def unlit(P):
+    """p7 (carved): the pick with its accent strokes in the reflection and on the hood's rim knocked down to the
+    navy ink; the carved add layers (reflection_blue, blue_rim) put them back. -> path (gen px)."""
+    path = L.wd(P.p, "S_unlit.png")
+    m = L.load_mask(L.wd(P.p, "glow_reflection_blue.png")) | L.load_mask(L.wd(P.p, "rim_blue.png"))
+    k = soft(nd.binary_dilation(m, iterations=1), 0.7)[..., None]
+    navy = IP.PAL[list(IP.INKS).index("navy")]
+    to_im(P.pick * (1 - k) + navy * k).save(path)
+    return path
+
+
+def carved(P, mask_gen, name, z, kind, state=None):
+    """A carved add layer cut from the drawing's own strokes: 'diff' = the posted pick minus the posted unlit plate
+    (base + it = the drawing); 'lift' = a third of the strokes' own posted colour (the glare's flicker)."""
+    if not hasattr(P, "_lit"):
+        P._lit = IP.post(P.src("pick"), light=P.P.get("light", "warm"))
+        P._unl = IP.post(P.src(L.wd(P.p, "S_unlit.png")), light=P.P.get("light", "warm"))
+    m = up_alpha(soft(nd.binary_dilation(mask_gen, iterations=1), 0.6), P.TW, P.TH)
+    col = np.clip(P._lit - P._unl, 0, 1) if kind == "diff" else P._lit * 0.33
+    ys, xs = np.nonzero(m > 0.02)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    a = np.clip(m[y0:y1, x0:x1] * 1.25, 0, 1)
+    return dict(name=name, z=z, blend="add", rgba=np.dstack([col[y0:y1, x0:x1], a]), x0=x0, y0=y0, state=state, seed=None)
+
+
 def drowned_sheet(P, base_rest, gl, st_layers):
     """One row per seed: the plate's lower half at rest with that seed's drowned (~1600 wide), + its cut's figure count."""
     rows = []
@@ -265,10 +333,14 @@ def build(plate):
             "p7": {"far_water": "bg", "water": "bg", "lamp": "pick", "traveler": "pick"},
             "p7u": {"under": "bg", "bubbles": "pick"}}[plate]
     layers, files = [], []
+    cv = P.P.get("carved", False)
+    if cv:
+        srcs = {"water": "bg", "lamp": "bg", "traveler": "bg"}
+        unl = unlit(P)
     for i, n in enumerate(names):
         opaque = i == 0
         e = P.ext(i)
-        if plate == "p7" and n == "lamp":          # the chain fades out above the cage: the glare holds it
+        if plate == "p7" and n == "lamp" and not cv:          # the chain fades out above the cage: the glare holds it
             m = e.astype(np.float32)
             wid = m.sum(1)
             top = int(np.argmax(wid > 0.4 * wid.max()))
@@ -281,6 +353,8 @@ def build(plate):
         base = P.src("clean" if plate in ("p5", "p6") else "pick")
         if plate == "p5" and n == "road":
             base = P.src(P.whole)
+        if cv and n in ("water", "traveler"):       # the carved blue goes on as add layers
+            base = P.src(unl)
         rgb = base * own + P.src(srcs[n]) * (1 - own)
         rgba, x0, y0 = P.cutout(rgb, alpha, opaque)
         ly = dict(name=n, z=zs[n], blend="mix", rgba=rgba, x0=x0, y0=y0, state=None)
@@ -295,6 +369,8 @@ def build(plate):
     sl = P.P["state_layer"]
     if plate == "p6":
         person = L.load_mask(os.path.join(L.WORK, "p6_sam_person.png"))
+        if os.path.exists(L.wd(plate, "letter.png")):      # round 4: the letter left the clean plate; the sitter keeps it
+            person = person | L.load_mask(L.wd(plate, "letter.png"))
         states.append(("sit", 0, "pick", soft(nd.binary_dilation(person, iterations=1))))
         for k in L.P6_STATES:
             if k in ("walk1", "walk2"):      # round 3: both from the stand pick below, not generated
@@ -303,7 +379,7 @@ def build(plate):
             for s in L.SEEDS:
                 fig = L.load_mask(L.wd(plate, f"st_{k}_s{s}_person.png")) & reg
                 states.append((k, s, L.wd(plate, f"st_{k}_s{s}.png"), soft(fig)))
-    elif plate == "p7":
+    elif plate == "p7" and not cv:
         head = L.load_mask(L.wd(plate, "state_head_up.png"))
         trav = P.M["traveler"]
         if L.P7_HEAD_ROUND == 2:      # round 2 retry (ink_r2.py p7head)
@@ -326,12 +402,17 @@ def build(plate):
         stand = [d for d in st_layers if d["state"] == "stand" and d["seed"] == seed][0]
         st_layers.append(dict(stand, state="walk1", seed=None))
         st_layers.append(walk2(P, st_layers))
-    if plate == "p7" and L.P7_RIM:
+    if plate == "p7" and cv:
+        st_layers.append(carved(P, L.load_mask(L.wd(plate, "rim_blue.png")), "traveler", sl[1], "diff", "blue_rim"))
+    elif plate == "p7" and L.P7_RIM:
         st_layers.append(blue_rim(P, layers))
     # glows
     gl = []
     for gname, gz, col in P.P["glows"]:
         m = L.load_mask(L.wd(plate, f"glow_{gname}.png"))
+        if col is None:     # carved from the drawing
+            gl.append(carved(P, m, gname, gz, "lift" if gname == "lamp_glare" else "diff"))
+            continue
         g = glow(P, m, gname)
         ys, xs = np.nonzero(g > 0.004)
         x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
@@ -352,12 +433,17 @@ def build(plate):
     comp = np.zeros_like(ref)
     for ly in layers:
         over(comp, ly["rgba"], ly["x0"], ly["y0"])
+    dcomp = comp.copy()
+    if cv:      # the carved blue belongs to the drawing at rest
+        for ly in gl + st_layers:
+            if ly["name"] == "reflection_blue" or ly["state"] == "blue_rim":
+                over(dcomp, ly["rgba"], ly["x0"], ly["y0"], add=True)
     excl = np.zeros((P.h, P.w), bool)
-    for f in (() if plate == "p5" else ("remove.png", "ghost_fix.png")):      # p5's whole already holds its refills
+    for f in (() if plate == "p5" else ("remove.png", "ghost_fix.png", "letter.png")):      # p5's whole already holds its refills
         if os.path.exists(L.wd(plate, f)):
             excl |= nd.binary_dilation(L.load_mask(L.wd(plate, f)), iterations=4)
     keep = up_alpha((~excl).astype(np.float32), P.TW, P.TH) > 0.99
-    diff = np.abs(comp - ref).mean(-1)[keep] * 255
+    diff = np.abs(dcomp - ref).mean(-1)[keep] * 255
     checks = {"mean_abs_diff_255": round(float(diff.mean()), 3), "p99_abs_diff_255": round(float(np.percentile(diff, 99)), 2),
               "compared_fraction": round(float(keep.mean()), 3), "keys": []}
     base_rest = comp.copy()
@@ -378,7 +464,8 @@ def build(plate):
         band = np.abs((np.arange(270) + 0.5 - 135) / 135) <= L.BAND
         rgb, _ = render(P, allv, cam, 640, 360)
         key_renders.append((cam, rgb))
-        checks["keys"].append({"cam": cam, "min_edge_clearance_units": round(min(wins)), "unfilled_px_fraction": round(float((bad[band] > 0.5).mean()), 5)})
+        checks["keys"].append({"cam": cam, "min_edge_clearance_units": round(min(wins)), "unfilled_px_fraction": round(float((bad[band] > 0.5).mean()), 5),
+                               "longest_straight_layer_edge_px": straight_edge(P, layers, cam)})
     lay_json = dict(plate=plate, title=L.COMPS[plate]["title"], source=P.P["src"], canvas_units=L.COMPS[plate]["size"],
                     image_px=[P.TW, P.TH], units_per_px=round(P.upp, 5), rest=P.P["rest"],
                     lens_note="pos/scale in comps canvas units, painted as seen from 'rest'; wiring into sb00.json shifts pos and camera keys by (1600,900)-rest",

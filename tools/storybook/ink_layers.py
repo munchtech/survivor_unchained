@@ -30,7 +30,7 @@ import ink_post  # noqa: E402
 
 OUT = os.path.join(HERE, "out", "ink_layers")
 WORK = os.path.join(OUT, "_work")
-JOBS = {k: json.load(open(os.path.join(HERE, "ink_jobs", k + ".json"), encoding="utf-8")) for k in ("r2", "r3")}
+JOBS = {k: json.load(open(os.path.join(HERE, "ink_jobs", k + ".json"), encoding="utf-8")) for k in ("r2", "r3", "r4_p5", "r4_p7")}
 COMPS = {p["id"]: p for p in json.load(open(os.path.join(HERE, "comps", "sb00_comps.json"), encoding="utf-8"))["plates"]}
 SCREEN = (1920, 1080)
 BAND = 1339 / 1800            # the 2.39:1 bars crop the 16:9 frame
@@ -66,6 +66,9 @@ P5_FAR = (
     "stand three crude open cages of black iron bars on short black iron posts burning with a cold pale blue flame; in the middle of the "
     "river a fourth pale blue flame hangs in the empty air. No trees in front, no cart, nobody. Snow carved in dim moonlit blue-gray. "
     "The picture is mostly black.")
+# round 4 (ink_r4p5.py): p5 in p6's hand: the base is job p5c50 of r4_p5 (its prompt already has the ditches empty); every
+# p5 fill uses r4_p5's style (p6's), no r3 prefix
+P5_CLEAN_R4 = job("r4_p5", "p5c50")[1]
 SKY_NIGHT = ("An empty pitch-black starless winter night sky, almost solid black ink with a few faint blue-black horizontal gouge "
              "lines, no light, no moon, no trees, nothing else.")
 
@@ -99,10 +102,10 @@ P7U_BG = ("Underwater at night, looking up from below the surface of a black riv
           "ink, the rippling pale underside of the surface far above. No bubbles.")
 
 PLATES = {
-    "p5": dict(src="ink_r3/p5_s707.png", r="r3", target=3600, rest=(1800, 1000),
+    "p5": dict(src="ink_r4/p5_base.png", r="r4_p5", target=3600, rest=(1800, 1000),
                cams=[(1880, 700, 2.2, .15), (2000, 690, 2.5, .15), (1880, 700, 1.6, .15), (1800, 1000, 1.0, 0)],
-               layers=[("sky", 12), ("far", 3.5), ("trees", 2.2), ("road", 1.4)],
-               state_layer=None, glows=[("lamps", 3.5, "8ac8ff")]),     # round 3: the drowned baked into road
+               layers=[("sky", 12), ("far", 3.5), ("road", 1.4)],      # round 4: the big trees stand on the near banks: road's
+               state_layer=None, glows=[("lamps", 3.5, "8ac8ff"), ("glare4", 3.5, "8ac8ff")]),     # the drowned baked into road
     "p6": dict(src="ink_r2/p6_s47.png", r="r2", target=3800, rest=(2600, 1055),
                cams=[(1650, 1050, 1.0, 0), (3550, 1060, 1.25, 0)],
                layers=[("sky", 10), ("far", 3.0), ("near", 1.0)],
@@ -111,7 +114,7 @@ PLATES = {
                cams=[(1450, 1750, 1.3, 0), (1450, 1700, 1.3, 0), (1500, 1150, 1.15, 0)],
                layers=[("far_water", 3.0), ("water", 1.2), ("lamp", 1.1), ("traveler", 0.95)],
                state_layer=("traveler", 0.95), glows=[("lamp_glare", 1.1, "8ac8ff"), ("reflection_blue", 1.2, "8ac8ff")]),
-    "p7u": dict(src="ink_r3/p7u_s47.png", r="r3", target=1920, rest=(1600, 900),
+    "p7u": dict(src="ink_r4_p7/p7u4_s47.png", r="r4_p7", target=1920, rest=(1600, 900),
                 cams=[(1600, 900, 1.0, 0)],
                 layers=[("under", 1.0), ("bubbles", 0.9)], state_layer=None, glows=[("lamp_warped", 1.0, "8ac8ff")],
                 light="cold"),     # ink_post's cold light step: the lights go cage blue / snow, never parchment
@@ -155,7 +158,7 @@ P7_HEAD2 = P7.replace("leaning over the water, the face entirely hidden inside t
                       "kneeling over the water,")
 # p6 walk2: walk1's pick placed far down by the water as an unlit silhouette (canvas units: feet centre, scale vs walk1)
 # p5 round 3 (ink_r3.py): the drowned baked into the road layer from this candidate's whole (_work/p5/S_drowned_r3_<tag>.png)
-P5_DROWNED_R3 = "d60_s11"
+P5_DROWNED_R3 = "d75_s47"      # round 4: on the r4 base (ink_r4p5.py)
 P7_HEAD_ROUND = 0       # which head_up candidates the build cuts (2: ink_r2 retry; 0: none)
 P7_RIM = True           # True: ship traveler_blue_rim.png (add) instead of a head_up state
 # round 3: from the stand pick, scaled to round 2's walk2 height (walk1 s47's 534 px x 0.55)
@@ -170,6 +173,25 @@ P6_WALK2 = dict(feet=(4201, 1461), src="stand", height_px=250, dome=False, fill=
 # fill behind it (fill job far2), so neither layer has a straight edge there
 P6_FOOT = [(1150, 307), (1186, 319), (1230, 333), (1265, 346), (1290, 362), (1312, 382), (1328, 400), (1342, 418),
            (1354, 434), (1368, 448), (1382, 457), (1398, 466)]
+
+
+# ---------------------------------------------------------------- round 4 (ink_r4_p7.py): p7 as one tall drawing
+# The sequence judge r1: p7 "not composed". One tall drawing (1152x1536) the camera tilts through: the kneeling hooded
+# traveler dipping the flask at the bottom, the cage of cold blue fire level with the hood, its holder's sleeve and hand
+# above dissolving into carved glare. Its blue is carved: the reflection, the hood's rim and the glare's flicker are add
+# layers cut from the drawing's own accent strokes (the base layers carry them knocked down to the dark inks), never a
+# soft glow. None: the round-2 plate above.
+P7T_SEED = 202
+P7T_REST = (1600, 2000)
+P7T_CAMS = [(1780, 2800, 1.2, 0), (1700, 1900, 1.08, 0), (1600, 1190, 1.01, 0), (1700, 2400, 1.3, 0)]
+P7T_KEYS = {"open": (1780, 2800, 1.2), "mid": (1700, 1900, 1.08), "up": (1600, 1190, 1.01), "tip": (1700, 2400, 1.3)}
+P7T_BG = ("Night. Black river water seen close from its edge, carved in long horizontal gouge lines, the far bank a black band "
+          "at the top, a few cold blue carved glints. No figure, no cage, no fire, no hand, nothing else.")
+if P7T_SEED:
+    COMPS["p7"] = dict(COMPS["p7"], size=[3200, 4267])
+    PLATES["p7"] = dict(src=f"ink_r4_p7/p7t_s{P7T_SEED}.png", r="r4_p7", target=2560, rest=P7T_REST, cams=P7T_CAMS,
+                        layers=[("water", 1.2), ("lamp", 1.1), ("traveler", 0.95)], state_layer=("traveler", 0.95),
+                        glows=[("lamp_glare", 1.1, None), ("reflection_blue", 1.2, None)], light="cold", carved=True)
 
 
 def wd(plate, *a):
@@ -221,6 +243,13 @@ def margins(plate):
 
 
 # ---------------------------------------------------------------- masks
+def accent(img):
+    """The cage-blue accent strokes of a drawing (light and clearly blue), 0..1 soft."""
+    r, g, b = img[..., 0], img[..., 1], img[..., 2]
+    lum = img @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    return (b > r + 0.10) & (lum > 0.33)
+
+
 def clean_comps(m, min_px):
     lab, n = nd.label(m)
     if n == 0:
@@ -256,6 +285,61 @@ def poly_mask(shape, pts):
     return np.asarray(im) > 127
 
 
+# p5 round 4: the layer cuts follow drawn edges. A guide polyline (gen px) per cut; edge_path snaps it to the strongest
+# luminance edges within +-band px (a min-cost path, at most dy px per column), so no cut runs straight through texture
+P5_NEAR_BANK = [(0, 445), (330, 452), (560, 470), (690, 462), (800, 458), (1000, 450), (1035, 470), (1045, 530), (1070, 556),
+                (1250, 552), (1450, 556), (1530, 525), (1700, 505), (2048, 492)]     # far above, road below (the wagon is road)
+P5_HORIZON = [(0, 250), (500, 255), (800, 262), (1100, 270), (1400, 262), (1700, 250), (2048, 245)]   # sky above the far bank
+P5_CAGES = [(763, 398), (1092, 410), (1200, 410), (1344, 389)]     # gen px: the three baskets' and the fourth cage's centres
+P5_TREE_DEPTH = 100          # MoGe: the near-bank trees stand out of the sky / far (sky 70-90, river < 70, trees 100-140)
+
+
+def edge_path(img, guide, band=30, dy=5):
+    """y per column: the min-cost left-to-right path near the guide (cost: minus the vertical luminance edge)."""
+    H, W = img.shape[:2]
+    lum = nd.gaussian_filter(img @ np.array([0.2126, 0.7152, 0.0722], np.float32), 1.2)
+    g = np.abs(nd.sobel(lum, 0)) + 0.5 * np.abs(nd.sobel(lum, 1))
+    gx, gy = np.array(guide, np.float32).T
+    yg = np.interp(np.arange(W), gx, gy)
+    off = np.arange(-band, band + 1)
+    ys = np.clip(np.round(yg[None] + off[:, None]).astype(int), 0, H - 1)       # (2band+1, W)
+    cost = -g[ys, np.arange(W)[None]] + 0.002 * off[:, None] ** 2
+    acc = cost[:, 0].copy()
+    back = np.zeros(cost.shape, np.int16)
+    n = len(off)
+    for x in range(1, W):
+        best = np.full(n, np.inf)
+        arg = np.zeros(n, np.int16)
+        for d in range(-dy, dy + 1):
+            src = np.clip(np.arange(n) - d, 0, n - 1)
+            c = acc[src] + 0.01 * abs(d)
+            better = c < best
+            best[better], arg[better] = c[better], src[better]
+        acc = best + cost[:, x]
+        back[:, x] = arg
+    i = int(acc.argmin())
+    path = np.zeros(W, int)
+    for x in range(W - 1, -1, -1):
+        path[x] = ys[i, x]
+        i = back[i, x]
+    return path
+
+
+def p5_r4_masks(img, d):
+    H, W = img.shape[:2]
+    yy = np.arange(H)[:, None]
+    near = edge_path(img, P5_NEAR_BANK)
+    hor = edge_path(img, P5_HORIZON, band=25, dy=3)
+    below = yy > near[None]
+    tree = (d >= P5_TREE_DEPTH) & ~below & (yy < near[None] + 1)
+    tree = nd.binary_dilation(clean_comps(nd.binary_opening(tree, iterations=1), 3000), iterations=3)   # tight: the sky shows
+                                                                                                         # between the branches
+    road = below | tree
+    sky = (yy < hor[None]) & ~road
+    far = ~(sky | road)
+    return {"sky": sky, "far": far, "road": road}
+
+
 def make_masks(plate):
     """Writes M_<layer>.png (a partition, back to front), remove.png (figures cut from the clean plate),
     state_region.png / state masks, glow sources. Uses _work/<plate>_depth.png and SAM masks."""
@@ -265,7 +349,21 @@ def make_masks(plate):
     lum = img @ np.array([0.2126, 0.7152, 0.0722], np.float32)
     yy = np.arange(H)[:, None] / H * np.ones((1, W))
     M = {}
-    if plate == "p5":
+    if plate == "p5" and PLATES["p5"]["r"] == "r4_p5":
+        d = np.asarray(Image.open(w("depth.png")).convert("L")).astype(np.float32)
+        M = p5_r4_masks(img, d)
+        save_mask(np.zeros((H, W), bool), wd(plate, "remove.png"))          # nobody in the base: its ditches are empty
+        # the fire: the bright px of the four cages (P5_CAGES), the cage bars dark between them; the last is the fourth light
+        Y, X = np.mgrid[0:H, 0:W]
+        flame = np.zeros((H, W), bool)
+        for i, (cx, cy) in enumerate(P5_CAGES):
+            near_c = (((X - cx) / 48.0) ** 2 + ((Y - cy) / np.where(Y < cy, 85.0, 40.0)) ** 2) <= 1
+            f = near_c & (lum > 0.5)
+            flame |= f
+            if i == len(P5_CAGES) - 1:
+                save_mask(f, wd(plate, "glow_glare4.png"))
+        save_mask(flame, wd(plate, "glow_lamps.png"))
+    elif plate == "p5":
         d = np.asarray(Image.open(w("depth.png")).convert("L")).astype(np.float32)
         cart = load_mask(w("sam_wooden_cart.png"))
         tree = load_mask(w("t_tree.png"))
@@ -322,6 +420,29 @@ def make_masks(plate):
             if k == "stand":
                 m |= nd.binary_dilation(person, iterations=8)
             save_mask(m, wd(plate, f"state_{k}.png"))
+    elif plate == "p7" and PLATES["p7"].get("carved"):
+        t = lambda k: load_mask(os.path.join(WORK, f"p7t_s{P7T_SEED}_{k}.png"))
+        person = t("person") | t("flask")
+        hand = t("hand") & nd.binary_dilation(person, iterations=40)       # the flask hand goes with the traveler
+        trav = nd.binary_fill_holes(nd.binary_closing(person | hand, iterations=2))
+        cage = t("cage") & ~trav
+        holder = (t("holder") | t("sleeve")) & ~trav
+        lamp = nd.binary_closing(cage | holder, iterations=3) & ~trav
+        water = ~(lamp | trav)
+        M = {"water": water, "lamp": lamp, "traveler": trav}
+        save_mask(nd.binary_dilation(lamp | trav, iterations=6), wd(plate, "objects_far.png"))
+        acc = accent(img)
+        ys, xs = np.nonzero(cage)
+        cy0, cy1, cx0, cx1 = ys.min(), ys.max(), xs.min(), xs.max()
+        cw = cx1 - cx0
+        xx = np.arange(W)[None] * np.ones((H, 1))
+        col = (xx > cx0 - 0.9 * cw) & (xx < cx1 + 0.9 * cw)
+        refl = acc & water & col & (yy * H > cy1 + 0.02 * H)
+        save_mask(clean_comps(refl, 6), wd(plate, "glow_reflection_blue.png"))
+        near_lamp = nd.binary_dilation(lamp, iterations=int(0.12 * W)) & (yy * H < cy1 + 0.01 * H)
+        save_mask(acc & near_lamp & ~trav, wd(plate, "glow_lamp_glare.png"))
+        edge = trav & (nd.distance_transform_edt(trav) <= 0.035 * W)
+        save_mask(acc & edge & (yy * H < cy1 + 0.04 * H), wd(plate, "rim_blue.png"))
     elif plate == "p7":
         far = load_mask(w("sam_sky.png"))
         lamp = load_mask(w("sam_hanging_iron_lantern.png"))
@@ -361,14 +482,16 @@ def fill_jobs(plate):
     jobs = []
     names = [n for n, _ in P["layers"]]
     if plate == "p5":
-        jobs.append(("clean", src, wd(plate, "remove.png"), full("r3", P5_CLEAN), None))
-        jobs.append(("far", "@clean", ("under", "far", mg[1]), full("r3", P5_FAR), None))
-        jobs.append(("sky", "@far", ("ring", "sky", mg[0]), full("r3", SKY_NIGHT), None))
+        jobs.append(("clean", src, wd(plate, "remove.png"), full("r4_p5", P5_CLEAN_R4), None))
+        jobs.append(("far", "@clean", ("under", "far", mg[1]), full("r4_p5", P5_FAR), None))
+        jobs.append(("sky", "@far", ("ring", "sky", mg[0]), full("r4_p5", SKY_NIGHT), None))
     elif plate == "p6":
         jobs.append(("clean", src, wd(plate, "remove.png"), full("r2", P6_CLEAN), None))
         jobs.append(("far", "@clean", ("under", "far", mg[1]), full("r2", P6_FAR), None))
         jobs.append(("sky", "@far", ("ring", "sky", mg[0]), full("r2", SKY_DUSK), None))
         jobs.append(("far2", "@far", wd(plate, "fillmask_far_foot.png"), full("r2", P6_FAR), None))   # round 4: behind the foot
+    elif plate == "p7" and P.get("carved"):
+        jobs.append(("bg", src, wd(plate, "objects_far.png"), full("r4_p7", P7T_BG), None))
     elif plate == "p7":
         jobs.append(("bg", src, wd(plate, "objects_far.png"), full("r2", P7_BG), None))
     elif plate == "p7u":
@@ -422,6 +545,8 @@ def state_jobs(plate):
         return [("drowned", wd(plate, "S_clean.png"), wd(plate, "state_region.png"), full("r3", P5_DROWNED), 0.92)]
     if plate == "p6":
         return [(k, wd(plate, "S_clean.png"), wd(plate, f"state_{k}.png"), full("r2", p), 1.0) for k, p in P6_STATES.items()]
+    if plate == "p7" and PLATES["p7"].get("carved"):
+        return []
     if plate == "p7":
         return [("head_up", src, wd(plate, "state_head_up.png"), full("r2", P7_HEAD), 0.9)]
     return []
