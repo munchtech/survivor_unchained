@@ -773,6 +773,8 @@ public partial class PlayerView : Node3D
     /// <summary>True when any of a mesh's surfaces is metal: her outfit's metal keys (People.OutfitMaterials, meta "kind" 1,
     /// heroine_outfit_metal.gdshader), or a plain material at metallic 0.5 or more. Only these take the moon rim's gear twin:
     /// with all her gear on it her leather (bandeau, bracers, belt) read as lavender chrome by night (judge J2, face 36).</summary>
+    /// <summary>Metal (her weapon, armor, buckles): what goes on HerGearLayer (GameCinemaHer too).</summary>
+    internal static bool IsMetalPart(GeometryInstance3D g) => IsMetal(g);
     static bool IsMetal(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D m || m.Mesh == null) return false;

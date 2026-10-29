@@ -334,9 +334,10 @@ public partial class Game
         if (en != 0 || eyesNight != 0) { eyesNight = en; SurvivorUnchained.View.People.HerEyesNight(pv.Person, en); SurvivorUnchained.View.People.HerSkinHold(pv.Person, en); }
         // (Rendering 1: at dawn and dusk (Atmosphere.TownLit) the close view stops down CloseExposureDusk: the low sun left her face waxy at 185-189.)
         air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1, day) : 1);
-        air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
+        // (Face 48: in a cinematic its own light on her owns the highlight grade and the skin guard, GameCinemaHer.)
+        if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
         // (Rendering 2: the grade's skin guard (Atmosphere.SkinGuard) by night, dawn and dusk, where warm keys turned deep skin copper.)
-        air.SetViewSkinGuard(lit && (night || SurvivorUnchained.View.Atmosphere.TownLit > 0.5f) ? day : 0);
+        if (!InCinematic) air.SetViewSkinGuard(lit && (night || SurvivorUnchained.View.Atmosphere.TownLit > 0.5f) ? day : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
         closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
