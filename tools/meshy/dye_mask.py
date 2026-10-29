@@ -26,11 +26,12 @@ N = 1024
 # zeroed above neck_y + head_drop; hair only above neck_y + hair_drop, so a beard counts), hands (radius about the
 # hand bones, zeroed), the channel ranges (Oklab L) and the palettes.
 CFG = {
+    # (greens are dull moss, Oklab chroma about 0.03 and darker than the shirt: a brighter green read lime in day sun)
     'npc_folk_m': {'anchors': [['#62533b', 'a'], ['#564732', 'a'], ['#322014', 'b'], ['#4a3c34', 'hair'], ['#463524', 'hair'], ['#624732', 'hair'],
                                ['#c0927c', '0', 'skin'], ['#85604c', '0', 'skin'], ['#a17865', '0', 'skin']],
                    'ylim': {'a': [0.6, 9], 'b': [0.45, 0.9]}, 'hair_max': 0.1, 'light_guard': 14,
                    'range': {'a': [-0.12, 0.1], 'b': [-0.08, 0.12], 'hair': [-0.2, 0.2]},
-                   'palette': {'a': ['#5f513a', '#6b3a2a', '#3e4f63', '#5a5a4a', '#4e3b2a', '#77736a', '#5c3230', '#4b5a3e', '#8a7d62'],
+                   'palette': {'a': ['#5f513a', '#6b3a2a', '#3e4f63', '#5a5a4a', '#4e3b2a', '#77736a', '#5c3230', '#4a4d3a', '#8a7d62'],
                                'b': ['#312012', '#3a2a1e', '#2e2c2a', '#2f3540', '#3b3a26', '#4a2e1e', '#4a4741'],
                                'hair': ['#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a4030', '#6e3a24', '#7d7872']}},
     'npc_folk_w': {'anchors': [['#560b09', 'a'], ['#d6cfbc', 'coif'], ['#b4a78e', 'b'], ['#190d0c', 'hair'], ['#544c44', '0'], ['#4f351b', '0'],
@@ -46,7 +47,7 @@ CFG = {
                     'ylim': {'b': [1.0, 9]},
                     'range': {'a': [-0.06, 0.1], 'b': [-0.12, 0.08], 'hair': [-0.2, 0.2]},
                     'palette': {'a': ['#30455c', '#2a3a52', '#3b5068', '#46576a', '#283447', '#3d4a58'],
-                                'b': ['#685c3f', '#5a4a34', '#55554c', '#4b5a3e', '#6b4a32', '#706650', '#4a4036'],
+                                'b': ['#685c3f', '#5a4a34', '#55554c', '#4a4d3a', '#6b4a32', '#706650', '#4a4036'],
                                 'hair': ['#2b211b', '#3a302a', '#4a3426', '#1e1a18', '#5a4030', '#4a4440', '#8a8680']}},
     'npc_risen_s': {'anchors': [['#65665d', '0', 'skin'], ['#565654', '0', 'skin'], ['#7d715e', 'a'], ['#3e3323', 'a'], ['#4f4434', 'a'],
                                 ['#655846', 'a'], ['#2f271c', 'hair'], ['#a49580', '0']],
@@ -120,7 +121,10 @@ def raster(P, UV, I):
     v0, v1, v2 = B - A, C - A, q - A
     d = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]; d = np.where(np.abs(d) < 1e-12, 1e-12, d)
     w1 = (v2[:, 0] * v1[:, 1] - v1[:, 0] * v2[:, 1]) / d; w2 = (v0[:, 0] * v2[:, 1] - v2[:, 0] * v0[:, 1]) / d
-    w1, w2 = np.clip(w1, 0, 1), np.clip(w2, 0, 1); w0 = np.clip(1 - w1 - w2, 0, 1)
+    # (a texel centre just outside its triangle: clamped and renormalised, so the point stays on the triangle; the
+    # weights clamped without renormalising summed to up to 2 and threw edge texels metres off the body)
+    w0 = np.clip(1 - w1 - w2, 0, 1); w1, w2 = np.clip(w1, 0, 1), np.clip(w2, 0, 1)
+    ws = np.maximum(w0 + w1 + w2, 1e-9); w0, w1, w2 = w0 / ws, w1 / ws, w2 / ws
     X = np.zeros((N, N, 3), np.float32)
     X[ys, xs] = w0[:, None] * P[I[t, 0]] + w1[:, None] * P[I[t, 1]] + w2[:, None] * P[I[t, 2]]
     return tri, X
@@ -150,6 +154,19 @@ def mode5(lbl, cov, k):
     return np.where(cov, out, lbl)
 
 
+def tidy(m, cov, k=40):
+    """A bind-pose keep-out (head, hands, a limit) without specks: where a cut runs along a surface lying flat at
+    its threshold (a collar at neck height), texel-scale noise in the bind-pose points scatters lone texels to the
+    wrong side, and each becomes a hole through the cloth; components of up to k texels flip to their surround."""
+    m = m & cov
+    for v in (True, False):
+        src = (m if v else (~m & cov)).astype(np.uint8)
+        n, cc, st, _ = cv2.connectedComponentsWithStats(src, connectivity=4)
+        sm = st[:, 4] <= k; sm[0] = False
+        m = np.where(sm[cc] & src.astype(bool), not v, m)
+    return m.astype(bool)
+
+
 def build(name, report=False, out=None):
     cfg = CFG[name]
     alb, P, UV, I, bones = load(name)
@@ -175,8 +192,13 @@ def build(name, report=False, out=None):
     lbl = ach[near].astype(np.int32); skin = prot[near]
     neck = bones['neck_01'][1]; y = X[..., 1]
     head = y > neck + cfg.get('head_drop', 0.0)
+    head = tidy(head, cov)
     hairzone = (y > neck + cfg.get('hair_drop', -0.05)) & (y < neck + cfg.get('hair_max', 9.0)) & (np.abs(X[..., 0]) < cfg.get('hair_x', 0.16))
-    hc = cfg.get('head_cloth', [])
+    hairzone = tidy(hairzone, cov); hc = cfg.get('head_cloth', [])
+    lim = {}
+    for c, (x0, x1) in cfg.get('xlim', {}).items(): lim[c] = (X[..., 0] < x0) | (X[..., 0] > x1)
+    for c, (y0, y1) in cfg.get('ylim', {}).items(): lim[c] = lim.get(c, False) | (y < y0) | (y > y1)
+    lim = {c: tidy(m, cov) for c, m in lim.items()}
     # a cloth texel far lighter than any of its anchors is another material (folk_m's cream undershirt at the shirt
     # opening): kept as painted, and never closed back into the cloth
     lightL = L[..., 0]; light = np.zeros_like(cov)
@@ -195,10 +217,8 @@ def build(name, report=False, out=None):
         lbl[(lbl == 4) & ~head] = 0
         for c in (1, 2):
             if names[c] not in hc: lbl[(lbl == c) & head] = 0
-        for c, (x0, x1) in cfg.get('xlim', {}).items():
-            ci = names.index(c); lbl[(lbl == ci) & ((X[..., 0] < x0) | (X[..., 0] > x1))] = 0
-        for c, (y0, y1) in cfg.get('ylim', {}).items():
-            ci = names.index(c); lbl[(lbl == ci) & ((y < y0) | (y > y1))] = 0
+        for c, m in lim.items():
+            lbl[(lbl == names.index(c)) & m] = 0
         if not cfg.get('hands_keep'):
             lbl[hands] = 0
     lbl[(lbl == 3) & ~hairzone] = 0
@@ -206,6 +226,7 @@ def build(name, report=False, out=None):
     for sd in ('l', 'r'):   # past the wrist (along the forearm) and near the hand: the hand, never its cuff
         h, e = bones['hand_' + sd], bones['lowerarm_' + sd]; ax = (h - e) / np.linalg.norm(h - e)
         hands |= (((X - h) @ ax) > cfg.get('wrist', 0.0)) & (np.linalg.norm(X - h, axis=-1) < 0.25)
+    hands = tidy(hands, cov)
     limits()
     lbl[~cov] = 0
     lbl = mode5(lbl, cov, 4); lbl[~cov] = 0
@@ -234,6 +255,32 @@ def build(name, report=False, out=None):
     if coifraw.any():
         maj = cv2.boxFilter((coifraw & cov).astype(np.float32), -1, (5, 5)) > 0.5
         lbl[maj & head & cov & (lbl == 0) & ~skin] = 4
+    # enclosed holes: a component of texels outside channel c (kept paint, or a fleck nearer another channel's anchor),
+    # up to 'hole' texels, whose covered rim is (nearly) all c, joins c: the generator's dirt flecks and stitch dashes
+    # inside a shirt or shawl are paint, not another material, and undyed they show the base colour through every dye.
+    # Never the hands, the face margin, the light-guarded undershirt, or a skin patch bigger than a fleck (a neckline)
+    facez = cv2.dilate((skin & head & cov).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+    k3 = np.ones((3, 3), np.uint8); holes = {}
+    for c in range(1, K):
+        if not (lbl == c).any(): continue
+        n, cc, st, _ = cv2.connectedComponentsWithStats(((lbl != c) & cov).astype(np.uint8), connectivity=4)
+        filled = 0
+        for i in np.nonzero(st[:, 4] <= cfg.get('hole', 600))[0]:
+            if i == 0: continue
+            x, y0, w_, h_, a = st[i]; xa, ya = max(0, x - 1), max(0, y0 - 1); sl = (slice(ya, y0 + h_ + 1), slice(xa, x + w_ + 1))
+            sub = cc[sl] == i
+            ring = cv2.dilate(sub.astype(np.uint8), k3).astype(bool) & ~sub; rc = ring & cov[sl]
+            # (a fleck at an island's edge has half a rim: the seam's gutter is no evidence either way)
+            if rc.sum() < 0.3 * ring.sum() or (lbl[sl][rc] == c).mean() < 0.85: continue
+            # another channel's patch is filled only as a fleck: a bigger one is a strap or a patch sewn on
+            if (lbl[sl][sub] > 0).mean() > 0.5 and a > cfg.get('fleck', 40): continue
+            if (hands[sl][sub].any() or light[sl][sub].any() or (c != 3 and facez[sl][sub].any())
+                    or (c in (1, 2) and names[c] not in hc and head[sl][sub].any())
+                    or (a > cfg.get('skin_speck', 40) and skin[sl][sub].mean() > 0.5)):
+                continue
+            lbl[sl][sub] = c; filled += int(a)
+        holes[names[c]] = filled
+    print(f'  {name}: enclosed hole texels filled {holes}')
     # keep-outs after cleanup too: they are absolute
     limits()
     for b in cfg.get('zero_boxes', []):   # [x0,y0,z0,x1,y1,z1] bind-pose boxes forced 0
