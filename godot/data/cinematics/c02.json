@@ -101,7 +101,7 @@
       "dur": 3.6,
       "fit": ["cin_none_cross.lie_down"],
       "tail": 1.4,
-      "note": "ECU, forehead to chin. His lamp's glass comes down into the lower-left foreground, soft, blooming at the frame's edge; its light lands on her low from frame left at chin height and becomes her key, shoulders dropping to dark. Her eyes lift to it once and hold. W2, very quietly, off, half a second after the light lands.",
+      "note": "ECU, forehead to chin. His own lantern stands in the lower-left corner, cut by the frame: dark glass warm round a flame below the edge, a cold blue bloom past it; its light lands on her low from frame left at chin height and becomes her key, shoulders dropping to dark. Her eyes lift to it once and hold. W2, very quietly, off, half a second after the light lands.",
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.346, 0.035, -1.096]}, "at": {"actor": "her", "bone": "eyes", "off": [0.0, -0.035, 0.0]}, "lens": 95, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 5.6},
       "cues": [
         {"do": "skin", "fill": 1.2, "fillColor": "#ffe8b8", "scale": 460},
@@ -113,11 +113,12 @@
         {"at": 1.1, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
         {"at": "after:cin_none_cross.lie_down+0.62", "do": "lids", "value": null},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.099, -0.034, -0.653]}, "color": "#bcd0ee", "size": 0.004, "energy": 2.0, "spread": 40, "halo": 0.8, "light": 0, "soft": true},
         {"at": 0.25, "do": "rig", "name": "lampkey", "energy": 1.0, "over": 0.4, "color": "#ffdcb8", "angle": 35, "range": 1.6, "falloff": 1.2, "from": {"actor": "her", "bone": "eyes", "off": [0.3, -0.09, -0.46]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}},
         {"do": "gaze", "look": [0.0, 0.55], "wander": 0.0},
         {"at": 0.45, "do": "gaze", "look": [-0.15, 0.1], "over": 0.35, "wander": 0.03},
-        {"at": 1.1, "do": "line", "id": "cin_none_cross.lie_down"}
+        {"at": 1.1, "do": "line", "id": "cin_none_cross.lie_down"},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [0.042, -0.078, -0.385]}, "color": "#ffc890", "size": 0.006, "energy": 1.5, "spread": 30, "halo": 0.3, "light": 0, "soft": true, "lantern": 1, "iron": "warden", "turn": 20, "glass": 0.3},
+        {"do": "glow", "name": "heldcold", "where": {"actor": "her", "bone": "eyes", "off": [-0.061, -0.046, -0.614]}, "color": "#8fb0e0", "size": 0.001, "energy": 0.2, "spread": 300, "halo": 0.18, "light": 0, "soft": true}
       ]
     },
     {
@@ -126,8 +127,8 @@
       "dur": 4.5,
       "fit": ["cin_none_cross.none"],
       "tail": 0.6,
-      "note": "Low near the water on the near bank, a step back, the whole ford: W3. He towers over the post and the gibbet, set right of the frame's middle so the title falls clear of his face; blade low in shadow, the moon on his hood. The posts' flames lean to him at once: he is drinking them. The drowned lift their heads. Title: THE FORD-WARDEN / Keeper of the Low Crossing.",
-      "cam": {"pos": [2.0, -0.35, -25.2], "at": {"abs": [0.6, 0.3, -33.3]}, "lens": 24},
+      "note": "Low near the water on the near bank, a step back, the whole ford: W3. He towers over the post and the gibbet, standing tall right of the frame's middle, the title in the lower third over the water; blade low at his side, the moon on his hood. The posts' flames lean to him at once: he is drinking them. The drowned lift their heads. Title: THE FORD-WARDEN / Keeper of the Low Crossing.",
+      "cam": {"pos": [2.0, 0.45, -27.0], "at": {"abs": [1.0, 1.62, -33.3]}, "lens": 18},
       "cues": [
         {"do": "grade", "moonSat": 0.03, "moonDrop": 0.8, "shade": "#2e2452", "shadeK": 0.7},
         {"do": "rig", "name": "back", "energy": 0},
@@ -136,8 +137,8 @@
         {"do": "lamp", "actor": "warden", "glow": 1.0},
         {"do": "hide", "actor": "warden", "hidden": false},
         {"do": "glow", "name": "held", "remove": true},
-        {"do": "anim", "actor": "warden", "clip": "Sword_Idle", "blend": 0},
-        {"do": "rig", "name": "legrim", "energy": 0.8, "color": "#9fb8ff", "angle": 30, "from": {"abs": [3.6, -0.6, -34.0]}, "aim": {"actor": "warden", "bone": "foot_l", "off": [-0.4, 0.5, 0]}},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_idle_armed", "blend": 0},
+        {"do": "rig", "name": "legrim", "energy": 0.35, "color": "#9fb8ff", "angle": 30, "from": {"abs": [3.6, -0.6, -34.0]}, "aim": {"actor": "warden", "bone": "foot_l", "off": [-0.4, 0.5, 0]}},
         {"do": "rig", "name": "hoodrim", "energy": 2.0, "color": "#9fb8ff", "angle": 14, "range": 9, "from": {"abs": [5.5, 4.6, -37.5]}, "aim": {"actor": "warden", "bone": "head", "off": [0, 0.1, 0]}},
         {"do": "glow", "name": "postfill", "where": {"abs": [-1.0, 1.2, -32.2]}, "color": "#a8b8d8", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 1.2, "range": 3},
         {"at": 0.3, "do": "look", "actor": "drowned", "where": [2.5, 1.5, -31.0], "over": 0.45, "stagger": 0.07},
@@ -148,7 +149,7 @@
         {"at": 0.2, "do": "line", "id": "cin_none_cross.none"},
         {"at": 0.2, "do": "music", "mood": "boss", "intensity": 1.0},
         {"at": 0.2, "do": "sfx", "name": "frost_crack", "gain": 0.9},
-        {"at": 1.6, "do": "title", "title": "The Ford-Warden", "sub": "Keeper of the Low Crossing", "kind": "danger", "seconds": 3.2},
+        {"at": 1.6, "do": "title", "title": "The Ford-Warden", "sub": "Keeper of the Low Crossing", "kind": "danger", "seconds": 3.2, "place": "lower"},
         {"at": 0.4, "do": "globe", "light": 4, "level": 0.02, "over": 0.5},
         {"at": 1.4, "do": "globe", "light": 4, "level": 0.04, "over": 1.2},
         {"at": 0.4, "do": "globe", "light": 5, "level": 0.02, "over": 0.5},

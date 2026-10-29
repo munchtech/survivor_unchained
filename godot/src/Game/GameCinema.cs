@@ -1252,7 +1252,7 @@ public partial class Game
                     break;
                 }
                 case "title":
-                    g.hud.Announce(new Announcement(c.Str("title") ?? "", c.Str("sub"), c.Str("kind") ?? "danger", c.Num("seconds", 3.4)));
+                    g.hud.Announce(new Announcement(c.Str("title") ?? "", c.Str("sub"), c.Str("kind") ?? "danger", c.Num("seconds", 3.4)), c.Str("place"));
                     break;
                 case "event":
                     g.zone?.CineEvent(c.Str("name") ?? "");
@@ -1465,15 +1465,18 @@ public partial class Game
                     // tower's window lamp): the place is the flame's, the iron is built round it.
                     if (c.Has("lantern"))
                     {
+                        // "iron": "warden": the Ford-Warden's own lantern (his lamp brought into a close-up's
+                        // foreground), not the sill lamp; "tilt" leans it toward the lens (degrees).
                         float ls = (float)c.Num("lantern", 2);
-                        var iron = LampIron.Make();
+                        var iron = c.Str("iron") == "warden" ? LampIron.MakeWarden() : LampIron.Make();
                         iron.Scale = Vector3.One * ls;
-                        iron.Position = new Vector3(0, -LampIron.FlameY * ls, 0);
-                        iron.RotationDegrees = new Vector3(0, (float)c.Num("turn", 0), 0);
+                        iron.Position = new Vector3(0, -LampIron.FlameOf(iron) * ls, 0);
+                        iron.RotationDegrees = new Vector3((float)c.Num("tilt", 0), (float)c.Num("turn", 0), 0);
                         root.AddChild(iron);
-                        // Its glass catches the flame's light.
+                        // Its glass catches the flame's light ("glass": how much, 0.8 by default; lower, dark
+                        // glass lit round the flame rather than a lit pale box).
                         var gl = col.SrgbToLinear();
-                        LampIron.Glass(iron, gl / Mathf.Max(gl.R, Mathf.Max(gl.G, Mathf.Max(gl.B, 1e-4f))), 0.8f);
+                        LampIron.Glass(iron, gl / Mathf.Max(gl.R, Mathf.Max(gl.G, Mathf.Max(gl.B, 1e-4f))), (float)c.Num("glass", 0.8));
                     }
                     var lin = col.SrgbToLinear() * energy;
                     fire.AddChild(new MeshInstance3D
