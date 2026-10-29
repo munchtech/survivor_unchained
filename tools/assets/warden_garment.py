@@ -831,8 +831,9 @@ def garment_weights(Vg, lab, adj, donors, names, chains, open_pts):
     dop = np.array([t.find(p)[2] for p in Vg])
     hood = lab <= 2
     # hood: Head over the rim (within 3 cm of the opening) and the crown, easing to neck_01 and spine_03 below
-    wh = np.maximum(1 - smoothstep(0.03, 0.07, dop), smoothstep(1.515, 1.585, y))
-    wn = (1 - wh) * smoothstep(1.47, 1.53, y + 0.2 * np.clip(Vg[:, 2], 0, None))
+    # (r2: wider blends, the head's turn spread over the hood's lower half: r1's 4 cm bands stretched 2-3x at the throat)
+    wh = np.maximum(1 - smoothstep(0.02, 0.10, dop), smoothstep(1.50, 1.65, y))
+    wn = (1 - wh) * smoothstep(1.42, 1.53, y + 0.2 * np.clip(Vg[:, 2], 0, None))
     ws = 1 - wh - wn
     A[hood, ix["Head"]] += wh[hood]
     A[hood, ix["neck_01"]] += wn[hood]
@@ -874,7 +875,7 @@ def garment_weights(Vg, lab, adj, donors, names, chains, open_pts):
                 A[r, ix[f"cape_{cc[r]}_{ii[r]}"]] += wc[r] * wi[r]
     # smoothed along the cloth (the rim held at Head)
     fixed = hood & (wh > 0.999)
-    for _ in range(10):
+    for _ in range(20):
         S = np.array([A[a].mean(0) if len(a) else A[i] for i, a in enumerate(adj)])
         A = np.where(fixed[:, None], A, 0.5 * A + 0.5 * S)
     A /= A.sum(1, keepdims=True) + 1e-12
@@ -900,6 +901,45 @@ def unpose(Vb, J, W, mats):
     M = np.einsum("nk,nkij->nij", W.astype(float), mats[J.astype(int)])
     Mi = np.linalg.inv(M)
     return b2g(np.einsum("nij,nj->ni", Mi[:, :3, :3], Vb) + Mi[:, :3, 3]), M
+
+
+def match_fine(o, Vo, Vh, Nh, grp_h, k=16):
+    """Per vertex of a reduced mesh: the fine vertex its weights come from: of the same part (its faces' panel; the
+    fringe's faces (material 2) any part), facing the same way or opposite (the inner shell), nearest."""
+    me = o.data
+    pa = me.attributes.get("panel")
+    gv = np.full(len(Vo), -1)
+    if pa is not None:
+        for f in me.polygons:
+            if f.material_index == 2:
+                continue
+            g = (0, 0, 0, 1, 1, 2)[min(max(pa.data[f.index].value, 0), 5)]
+            for v in f.vertices:
+                gv[v] = g if gv[v] < 0 else min(gv[v], g)
+    No = np.zeros(len(Vo) * 3)
+    me.vertices.foreach_get("normal", No)
+    No = No.reshape(-1, 3)
+    t = KDTree(len(Vh))
+    for i, p in enumerate(Vh):
+        t.insert(p, i)
+    t.balance()
+    out = np.zeros(len(Vo), np.int64)
+    miss = 0
+    for i, p in enumerate(Vo):
+        c = t.find_n(p, k)
+        best, bs = None, 1e9
+        for _, j, d in c:
+            if gv[i] >= 0 and grp_h[j] != gv[i]:
+                continue
+            sc = d + 0.03 * (1 - abs(float(np.dot(No[i], Nh[j]))))
+            if sc < bs:
+                best, bs = j, sc
+        if best is None:
+            miss += 1
+            best = c[0][1]
+        out[i] = best
+    log(f"{o.name}: weights from the fine mesh, {miss} vertices with no same-part match in {k}")
+    return out
 
 
 def transfer(src_V, src_vals, dst_V):
@@ -1227,6 +1267,13 @@ def main():
     mats_all = chain_mats(chains, mats, names)
     Ph_bind, _ = unpose(verts(hi), Jh, Wh, mats_all)
     # ---- 7. the corrective: the bent pose ----
+    # (the arms as draped, then the spine bent: r1's bent sim ran with the arms back at the bind's wide A, the capelet
+    #  tented over them into a dome and the cape caught on the arm)
+    arm0 = armature()
+    for pb in arm0.pose.bones:
+        pb.matrix_basis = mathutils.Matrix.Identity(4)
+    bpy.context.view_layer.update()
+    pose_arms(WH.POSE_DEG)
     pose_spine(80.0)
     Vbent, _, Fbent = posed_body(bobs)
     mats_b = chain_mats(chains, skin_mats(names), names)
@@ -1293,16 +1340,18 @@ def main():
     # ---- skinned, unposed, written ----
     parts, info = [], {}
     Vh_b = verts(hi)
+    Nh_b = np.zeros(len(Vh_b) * 3)
+    hi.data.vertices.foreach_get("normal", Nh_b)
+    Nh_b = Nh_b.reshape(-1, 3)
+    grp_h = np.array([0, 0, 0, 1, 1, 2])[np.clip(labh, 0, 5)]
     for node, o, ids in (("hood.wool", lo, (0, 1, 2)), ("hood.lod1.wool", lod1, (0, 1)), ("hood.shadow", shadow, (0,))):
         Vo = verts(o)
-        # weights by the nearest fine vertex (no blending of indices)
-        t = KDTree(len(Vh_b))
-        for i, p in enumerate(Vh_b):
-            t.insert(p, i)
-        t.balance()
-        nn = np.array([t.find(p)[1] for p in Vo])
+        # weights by the nearest fine vertex of the same part (hood / capelet / cape; the fringe any) whose surface
+        # faces the same way (r1: the plain nearest gave an inner-shell or a touching fold's vertex the other layer's
+        # bones: Head on the capelet, cape chains on the fringe; stretch p99 2-5 in the motion check)
+        nn = match_fine(o, Vo, Vh_b, Nh_b, grp_h)
         J, W = Jh[nn], Wh[nn]
-        dl = transfer(Vh_b, delta_h, Vo) if node == "hood.wool" else None
+        dl = delta_h[nn] if node == "hood.wool" else None
         c = corner_arrays(o)
         P_bind, M = unpose(Vo, J, W, mats_all)
         Ml = M[c["lv"]]

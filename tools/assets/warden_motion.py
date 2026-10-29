@@ -197,6 +197,13 @@ def main():
                     V = Skinner.skin(p, w["B"], w["bone"], pose)
                     r = np.linalg.norm(V[E[:, 0]] - V[E[:, 1]], axis=1) / w["L0"]
                     a["s99"].append(np.percentile(r, 99))
+                    if a.get("sb") is None or np.percentile(r, 99) >= max(a["s99"]):
+                        # (where the stretch is: p99 per edge's heaviest bone, and the stretched edges' bind heights)
+                        tb = w["top"][E[:, 0]]
+                        a["sb"] = {str(b): round(float(np.percentile(r[tb == b], 99)), 2) for b in np.unique(tb) if (tb == b).sum() > 30}
+                        hi_ = r > 1.3
+                        a["sy"] = np.round(np.percentile(p["P"][E[hi_, 0], 1], [10, 50, 90]), 3).tolist() if hi_.any() else []
+                        a["sn"] = int(hi_.sum())
                     if r.max() > a["smax"]:
                         a["smax"], a["wmax"] = float(r.max()), str(w["top"][E[np.argmax(r), 0]])
                     d, _ = poke(V, BV, BF, tree)
@@ -207,6 +214,9 @@ def main():
                         for t_ in w["top"][new]:
                             reg[t_] = reg.get(t_, 0) + 1
                         a["worst"] = (c, float(d.max()), f["frame"], dict(sorted(reg.items(), key=lambda x: -x[1])[:5]), int((new & ~(w["d0"] > POKE)).sum()))
+                        a["py"] = np.round(np.percentile(p["P"][new, 1], [10, 50, 90]), 3).tolist() if new.any() else []
+                        a["pz"] = np.round(np.percentile(p["P"][new, 2], [10, 50, 90]), 3).tolist() if new.any() else []
+                        a["pd"] = np.round(np.percentile(d[new] * 1000, [50, 90]), 1).tolist() if new.any() else []
                     if obj and f["frame"] == obj[0]:
                         write_obj(os.path.join(obj[1], f"{os.path.basename(w['fname'])}_{p['mat']}_{f['frame']}.obj"), V, p["F"])
             for w, a in zip(work, acc):
@@ -215,6 +225,8 @@ def main():
                                                "poke": {"count": wo[0], "notAtBind": wo[4], "maxMm": round(wo[1] * 1000, 1), "frame": wo[2], "by": wo[3]}}
                 print(f"[motion] {w['key']:38s} {gname:30s} n={len(fr):4d} stretch p99 {c['stretchP99']:.3f} max {c['stretchMax']:.3f} ({a['wmax']}) "
                       f"poke {wo[0]} (+{wo[4]} vs bind) max {c['poke']['maxMm']} mm @f{wo[2]} {wo[3]}", flush=True)
+                if os.environ.get("MOTION_WHERE"):
+                    print(f"[where] {w['key']:38s} {gname:24s} stretch by bone {a.get('sb')} >1.3: {a.get('sn')} edges at bind y {a.get('sy')}; poke bind y {a.get('py')} z {a.get('pz')} depth p50/p90 {a.get('pd')} mm", flush=True)
     out = opt("--out")
     if out:
         json.dump(report, open(out, "w"), indent=1)
