@@ -114,7 +114,7 @@ PLATES = {
                cams=[(1450, 1750, 1.3, 0), (1450, 1700, 1.3, 0), (1500, 1150, 1.15, 0)],
                layers=[("far_water", 3.0), ("water", 1.2), ("lamp", 1.1), ("traveler", 0.95)],
                state_layer=("traveler", 0.95), glows=[("lamp_glare", 1.1, "8ac8ff"), ("reflection_blue", 1.2, "8ac8ff")]),
-    "p7u": dict(src="ink_r4_p7/p7u4_s47.png", r="r4_p7", target=1920, rest=(1600, 900),
+    "p7u": dict(src="ink_r5/p7u6_s505.png", r="r4_p7", target=1920, rest=(1600, 900),
                 cams=[(1600, 900, 1.0, 0)],
                 layers=[("under", 1.0), ("bubbles", 0.9)], state_layer=None, glows=[("lamp_warped", 1.0, "8ac8ff")],
                 light="cold"),     # ink_post's cold light step: the lights go cage blue / snow, never parchment

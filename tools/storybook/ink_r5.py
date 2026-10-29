@@ -23,7 +23,7 @@ BAND = 1339 / 1800
 
 # p5 staging for the camera sheet: (t, x, y, zoom) in the posted plate's px (3600 wide = canvas units).
 # Per pick the ford/fourth-light point is set in P5_FORD (posted px); default the comps' (1880, 700).
-P5_FORD = {}
+P5_FORD = {"p5r5c_s47_nc": (1795, 560), "p5r5a_s202_nc": (1300, 700)}
 
 
 def font(sz):
@@ -69,6 +69,9 @@ def post_p5():
         dst = os.path.join(R5, "posted", n + ".png")
         post_one(os.path.join(R5, n + ".png"), dst)
         tiles.append((n, Image.open(dst).resize((900, 475), Image.LANCZOS)))
+    for f in sorted(os.listdir(os.path.join(R5, "posted"))):   # the night-toned + cold-light posts (ink_r5.py night)
+        if f.endswith("_nc.png"):
+            tiles.append((f[:-4] + "  (night tone + cold light)", Image.open(os.path.join(R5, "posted", f)).resize((900, 475), Image.LANCZOS)))
     cols = 3
     rows = (len(tiles) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * 900 + (cols + 1) * 10, rows * 505 + 10), "#202020")
@@ -214,6 +217,33 @@ def p7_sim(times):
         print(p, (round(X), round(Y), round(Z, 2)))
 
 
+def night(src, dst, k=0.5, reach=70):
+    """The night tone step before the post: everything sinks to k of its light except pools round the blue fires
+    (saturated blue or blue-white cores, blurred out to ~reach gen px), so snow posts as dim blue-gray, not parchment."""
+    im = np.asarray(Image.open(src).convert("RGB")).astype(np.float32) / 255
+    l = im.mean(-1)
+    fire = ((im[..., 2] - im[..., 0] > 0.10) & (l > 0.5)) | (l > 0.93)
+    fire = nd.binary_opening(fire, iterations=1)
+    pool = nd.gaussian_filter(nd.binary_dilation(fire, iterations=6).astype(np.float32), reach)
+    pool = np.clip(pool / max(1e-6, np.quantile(pool[fire], 0.5) if fire.any() else 1), 0, 1)
+    g = k + (1 - k) * pool
+    out = im * g[..., None]
+    Image.fromarray((out.clip(0, 1) * 255 + 0.5).astype(np.uint8)).save(dst)
+
+
+def post_night(names, k=0.7, light="cold", tag="nc"):
+    """Night tone + ink_post's cold light step (p7u's): lights go snow / cage blue / ice, never parchment or rose."""
+    os.makedirs(os.path.join(R5, "posted"), exist_ok=True)
+    for n in names:
+        tmp = os.path.join(R5, "_night_" + n + ".png")
+        night(os.path.join(R5, n + ".png"), tmp, k)
+        dst = os.path.join(R5, "posted", f"{n}_{tag}.png")
+        if os.path.exists(dst):
+            os.remove(dst)
+        post_one(tmp, dst, light=light)
+        print(n + "_" + tag)
+
+
 if __name__ == "__main__":
     a = sys.argv[1]
     if a == "p7u_prep":
@@ -222,6 +252,8 @@ if __name__ == "__main__":
         post_p5()
     elif a == "campath":
         campath(sys.argv[2:])
+    elif a == "night":
+        post_night(sys.argv[2:])
     elif a == "p7_water":
         p7_water()
     elif a == "p7_sim":
