@@ -238,6 +238,10 @@ public struct ProcCtx
 
 public sealed partial class Battle
 {
+    /// <summary>Copies of a many-at-once kind vary their pace (EnemyDef.Spread) and weave (EnemyDef.Weave) here: set by a
+    /// story zone that shows a pack close (the Low Ford, NPC 17). Off, every kind keeps the old +-8% and its straight
+    /// line, so the arenas' seeded fights and their balance are as they were.</summary>
+    public bool VaryPacks;
     public double Time;
     public readonly Rng Rng;
     public readonly EventStream Events = new();
@@ -1561,7 +1565,7 @@ public sealed partial class Battle
         e.Damage = def.Damage * sc.Damage;
         e.Faction = o.Faction ?? def.Faction;
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
-        e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
+        e.Speed = def.Speed * Vary.Pace(Rng.Next(), VaryPacks ? def.Spread ?? 0.08 : 0.08) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
         e.Boss = def.Boss || o.Boss;
         e.Scripted = false;

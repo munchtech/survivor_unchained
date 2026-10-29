@@ -250,6 +250,9 @@ public static class People
             // library, the library's idle.
             if (FolkClips.ArmedName(name) != null && (p.Kit || p.Package != null))
                 return FolkClips.Armed(p.Woman, name) ?? Resolve("Idle");
+            // (the crossed arms break on the generated packages, their full sleeves a rigid bar with no hands: their
+            // weight-shift stand instead, NPC 17)
+            if (p.Package != null && name is "Idle_FoldArms_Loop" or "Idle_FoldArms") name = "Idle";
             return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         }
         // (One of their own asked for by its own name.)

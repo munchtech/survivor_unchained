@@ -1505,6 +1505,8 @@ public sealed class Prologue : ZoneRuntime
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        // (the ford's risen come close and many: each its own pace and weave, not a file of clones, NPC 17)
+        b.VaryPacks = true;
         wardenView = G.Look.BossView("ford_warden");
         wardenView.SetPose("sleep");
         core = G.Look.Orb("#bfe6ff", 0.42);
@@ -1630,6 +1632,7 @@ public sealed class Prologue : ZoneRuntime
 
     public override Dictionary<string, object?> Debug() => new()
     {
+        ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
         ["wardenMode"] = ai.Mode, ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
     };

@@ -554,7 +554,7 @@ public sealed class Waystation : ZoneRuntime
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["folk"] = folk.Count, ["lanes"] = string.Join("|", folk.Validate()), ["night"] = nightNow,
+        ["folk"] = folk.Count, ["out"] = folk.Spacing(), ["lanes"] = string.Join("|", folk.Validate()), ["night"] = nightNow,
     };
 
     public override void Dispose()

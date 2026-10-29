@@ -261,7 +261,11 @@ public partial class PersonView : Node3D, INpcView
         Native(name);
         holding = hold;
         actLeft = hold ? double.MaxValue : anim.Length / Mathf.Max(0.05, speed) - 0.2;
+        bent = !hold && person.Own == null && FolkSpacing.BendsOver(clip);
     }
+    // A townsperson's stoop (work at a stall, the well's bucket) is never walked in: Locomotion cuts it the moment
+    // they move off (Play.FolkSpacing.BendsOver).
+    bool bent;
 
     /// <summary>A clip played out and held at its end at once (a body lying where it fell).</summary>
     public void Pose(string clip)
@@ -338,6 +342,7 @@ public partial class PersonView : Node3D, INpcView
         string want = speed < 0.3 ? "" : natural > 0 || speed >= 2.6 ? RunClip : WalkClip;
         bool was = walking;
         walking = want != "";
+        if (walking && bent && actLeft > 0) { bent = false; actLeft = 0; was = false; }
         if (walking)
         {
             // A townsperson's own walk, at the rate that keeps their feet planted.
@@ -401,6 +406,12 @@ public partial class PersonView : Node3D, INpcView
         if (piece == null) return;
         var bone = BoneOf(slot);
         if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece; return; }
+        // A package's left fist round a lit torch, the arm brought up to carry it (NpcTorchArm), the torch kept upright.
+        if (piece == "torch_lit" && person.Package != null && slot == "handslot.l" && Carried(piece) is Node3D torch)
+        {
+            held[slot] = TorchFist(torch);
+            return;
+        }
         // The kits' small things (a torch, a bucket) as simple stand-ins
         // until the KayKit packs come over.
         if (Carried(piece) is Node3D thing)
@@ -410,6 +421,37 @@ public partial class PersonView : Node3D, INpcView
             at.AddChild(thing);
             held[slot] = at;
         }
+    }
+
+    /// <summary>A light of its own in the held torch's flame (a shot's; Folk lights its walkers' torches itself).</summary>
+    public void TorchLight()
+    {
+        if (!held.TryGetValue("handslot.l", out var at)) return;
+        Node3D host = at;
+        foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
+        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.5f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
+    }
+
+    Node3D TorchFist(Node3D torch)
+    {
+        var sk = person.Skeleton;
+        if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
+        {
+            var arm = new NpcTorchArm();
+            sk.AddChild(arm);
+            // (before HerJoints, so the twist and share bones follow the raised arm)
+            if (sk.GetNodeOrNull("HerJoints") is Node hj) sk.MoveChild(arm, hj.GetIndex());
+        }
+        if (sk.GetNodeOrNull<NpcHands>("NpcHands") is { } hands) hands.FistL = true;
+        var at = new BoneAttachment3D { BoneName = "hand_l" };
+        sk.AddChild(at);
+        // (the fist's pocket: three quarters of the way to the middle knuckle, a little to the palm's side)
+        int mid = sk.FindBone("middle_01_l");
+        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
+        var grip = new UprightNode { Size = person.Root.Scale.X, Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f) };
+        at.AddChild(grip);
+        grip.AddChild(torch);
+        return at;
     }
 
     static Node3D? Carried(string piece)

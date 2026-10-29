@@ -380,6 +380,12 @@ public static class Ai
             }
         }
 
+        // A shambling kind weaves off its line while still far off (Vary.Weave): a pack on the flow field walked single file.
+        if (b.VaryPacks && def.Weave is double wv && wv > 0 && dist > 3.5)
+        {
+            double wa = Vary.Weave(b.Time, e.Seed, wv) * Math.Clamp((dist - 3.5) / 3, 0, 1), wc = Math.Cos(wa), ws = Math.Sin(wa);
+            (wantX, wantZ) = (wantX * wc - wantZ * ws, wantX * ws + wantZ * wc);
+        }
         double reach = e.Radius + tgt.R + 0.15;
         if (dist > reach * 0.9) Move(b, e, wantX, wantZ, speed, dt);
         else { e.Vx *= 0.7; e.Vz *= 0.7; e.Anim = EnemyAnim.Idle; FinishMove(b, e); }

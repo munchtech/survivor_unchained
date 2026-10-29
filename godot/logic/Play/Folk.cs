@@ -53,6 +53,8 @@ public sealed class Folk
         public bool Leaving, Gone, Shown = true;
         public Walker? Lead;
         public int Side = 1;
+        /// <summary>A companion's place behind its lead's shoulder (m): FolkSpacing.Lag.</summary>
+        public double Lag;
         public string? Carry;
         public double BarkT;
         public int Torch = -1;
@@ -136,6 +138,18 @@ public sealed class Folk
     }
 
     /// <summary>For tools: where everyone is and what they are doing.</summary>
+    /// <summary>For the log: how many are out and shown, the least distance between two of them (m), and where the
+    /// Watch is (and whether his torch is lit).</summary>
+    public string Spacing()
+    {
+        var out_ = walkers.Where(w => w.Shown && w.State != "inside" && !w.Gone).ToList();
+        double least = double.PositiveInfinity;
+        for (int i = 0; i < out_.Count; i++)
+            for (int j = i + 1; j < out_.Count; j++) least = Math.Min(least, Dist(out_[i].X, out_[i].Z, out_[j].X, out_[j].Z));
+        var wt = out_.FirstOrDefault(w => w.Role == FolkRole.Watch);
+        return $"{out_.Count}/{walkers.Count} gap {(double.IsInfinity(least) ? "-" : least.ToString("0.00"))} watch {(wt == null ? "-" : $"{wt.X:0},{wt.Z:0}{(wt.Torch >= 0 ? " torch" : "")}")}";
+    }
+
     public IEnumerable<(double X, double Z, FolkRole Role, string State, bool Shown)> Debug() =>
         walkers.Select(w => (w.X, w.Z, w.Role, w.State, w.Shown));
 
@@ -269,7 +283,8 @@ public sealed class Folk
             if (n != null) Send(w, n);
             return;
         }
-        double Weight(FolkNode n) => n == w.At ? 0 : n.Kind switch
+        // (a place someone else is already making for is taken less: walkers did not all converge on one stall)
+        double Weight(FolkNode n) => n == w.At ? 0 : (walkers.Any(m => m != w && m.Lead == null && m.Dest == n) ? 0.15 : 1) * n.Kind switch
         {
             FolkKind.Stall => dark ? 0 : 3,
             FolkKind.Well => dark ? 0.2 : 1.6,
@@ -303,10 +318,12 @@ public sealed class Folk
                 break;
             case FolkKind.Stall:
                 w.State = "busy"; w.T = Rnd(6, 13);
-                if (w.Role == FolkRole.Adult) w.View.Act("Interact", 0.8);
+                if (w.Role == FolkRole.Adult && !Crowded(w)) w.View.Act("Interact", 0.8);
                 return;
             case FolkKind.Well:
                 w.State = "busy"; w.T = Rnd(4.5, 7);
+                // (no stoop for the bucket with someone at your elbow: they wait their turn, standing)
+                if (Crowded(w)) { w.T = Rnd(2, 4); return; }
                 w.View.Act("PickUp", 0.7);
                 w.BucketT = 1.4;
                 return;
@@ -327,6 +344,9 @@ public sealed class Folk
     }
 
     /// <summary>In through a door (for a while, or for good), with whoever walks with you.</summary>
+    /// <summary>Anyone out within FolkSpacing.Clear of this walker (a stoop waits).</summary>
+    bool Crowded(Walker w) => walkers.Any(m => m != w && m.Shown && m.State != "inside" && !m.Gone && Dist(m.X, m.Z, w.X, w.Z) < FolkSpacing.Clear);
+
     void HideGroup(Walker w, bool forGood)
     {
         foreach (var f in walkers.Where(m => m == w || m.Lead == w).ToList())
@@ -363,11 +383,13 @@ public sealed class Folk
             friend.Lead = w; friend.Side = 0;
             friend.X += 1.5;
         }
-        else if (role == FolkRole.Adult && rng.NextDouble() < 0.3)
+        else if (role == FolkRole.Adult && rng.NextDouble() < 0.18)
         {
+            // (a companion half a step behind the shoulder, never a matched pair in step: FolkSpacing.Lag)
             var friend = Make(FolkRole.Adult, at, !scatter);
             friend.Lead = w; friend.Side = rng.NextDouble() < 0.5 ? -1 : 1;
             friend.Speed = w.Speed;
+            friend.Lag = FolkSpacing.Lag(rng.NextDouble());
         }
         Errand(w);
         if (scatter && w.Path.Count > 1)
@@ -487,7 +509,7 @@ public sealed class Folk
             }
             else
             {
-                tx = lead.X + Math.Cos(lh) * 0.95 * w.Side; tz = lead.Z - Math.Sin(lh) * 0.95 * w.Side;
+                tx = lead.X + Math.Cos(lh) * 0.95 * w.Side - Math.Sin(lh) * w.Lag; tz = lead.Z - Math.Sin(lh) * 0.95 * w.Side - Math.Cos(lh) * w.Lag;
                 speed = lead.Speed * 1.15;
             }
             if (lead.State == "busy") face = Math.Atan2(lead.X - w.X, lead.Z - w.Z);
@@ -506,7 +528,7 @@ public sealed class Folk
             if (friend != null && w.At.Kind != FolkKind.Stall && w.At.Kind != FolkKind.Well) face = Math.Atan2(friend.X - w.X, friend.Z - w.Z);
             if (w.T <= 0)
             {
-                if (w.At.Kind == FolkKind.Stall && rng.NextDouble() < 0.4 && w.Role == FolkRole.Adult) { w.T = Rnd(3, 6); v.Act("Interact", 0.8); }
+                if (w.At.Kind == FolkKind.Stall && rng.NextDouble() < 0.4 && w.Role == FolkRole.Adult && !Crowded(w)) { w.T = Rnd(3, 6); v.Act("Interact", 0.8); }
                 else if (w.Leaving) GoHome(w);
                 else Errand(w);
             }
@@ -533,6 +555,19 @@ public sealed class Folk
         double wantV = w.State == "busy" && lead == null ? 0 : Math.Min(speed, dist * (lead != null ? 1.8 : 3));
         if (lead != null && dist < 0.25) wantV = 0;
         double ax = dist > 1e-3 ? dx / dist * wantV : 0, az = dist > 1e-3 ? dz / dist * wantV : 0;
+        if (wantV > 0.2)
+        {
+            // Someone on my line ahead: round them, and not at their heels at their pace (FolkSpacing.Ahead).
+            double hx = ax / wantV, hz = az / wantV, sx = 0, sz = 0, cap = double.PositiveInfinity;
+            foreach (var other in walkers)
+            {
+                if (other == w || !other.Shown || other.State == "inside" || other == lead || other.Lead == w) continue;
+                var (ox, oz, oc) = FolkSpacing.Ahead(w.X, w.Z, hx, hz, other.X, other.Z, other.Vx, other.Vz);
+                sx += ox; sz += oz; cap = Math.Min(cap, oc);
+            }
+            if (cap < wantV) { ax *= cap / wantV; az *= cap / wantV; wantV = cap; }
+            ax += sx * wantV; az += sz * wantV;
+        }
         if (wantV > 0.2)
         {
             // Something solid just ahead: turn along it, the same way each
@@ -567,13 +602,23 @@ public sealed class Folk
         }
         foreach (var other in walkers)
         {
-            if (other == w || other.State == "inside" || other == lead || other.Lead == w) continue;
+            // (one at work holds their ground: those walking go round them, FolkSpacing.Share)
+            if (other == w || other.State == "inside" || other == lead || other.Lead == w || (w.State == "busy" && lead == null)) continue;
             double ox = w.X - other.X, oz = w.Z - other.Z, od = Math.Sqrt(ox * ox + oz * oz);
-            if (od < 0.85 && od > 1e-3) { ax += ox / od * (0.85 - od) * 4; az += oz / od * (0.85 - od) * 4; }
+            const double Soft = FolkSpacing.Gap + 0.35;
+            if (od < Soft && od > 1e-3) { ax += ox / od * (Soft - od) * 4; az += oz / od * (Soft - od) * 4; }
         }
         double k = Math.Min(1, dt * 6);
         w.Vx += (ax - w.Vx) * k; w.Vz += (az - w.Vz) * k;
         w.X += w.Vx * dt; w.Z += w.Vz * dt;
+        // Never closer than FolkSpacing.Gap to anyone out: the walker steps round a worker, two walkers part evenly.
+        foreach (var other in walkers)
+        {
+            if (other == w || !other.Shown || other.State == "inside" || other.Gone) continue;
+            double tie = w.Id * 2.399;
+            var (mx, mz) = FolkSpacing.Apart(w.X, w.Z, other.X, other.Z, FolkSpacing.Share(w.State == "busy" && lead == null, other.State == "busy" && other.Lead == null), Math.Cos(tie), Math.Sin(tie));
+            w.X += mx; w.Z += mz;
+        }
         o.Col.Resolve(ref w.X, ref w.Z, 0.32);
         double sp = Math.Sqrt(w.Vx * w.Vx + w.Vz * w.Vz);
         v.Locomotion(sp);

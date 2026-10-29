@@ -260,7 +260,7 @@ public partial class CrowdView : Node3D
                         var (st, sg) = TintOf(e);
                         string sr = g.LastRole ?? (g.Death ??= DeathOf(asset, e));
                         statues[key] = new Statue(key, e.Id, e.Def.Visual, sr, g.LastRole != null ? g.LastT : 0, (float)ex, (float)ez, (float)g.Facing,
-                            (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), st, sg);
+                            (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), st, sg);
                     }
                     return;
                 }
@@ -332,7 +332,7 @@ public partial class CrowdView : Node3D
                     // time times pace would leap to a new pose at every change of speed.
                     // A walk whose pace is known keeps its feet on the ground at any size and speed.
                     role = "move";
-                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
                     g.Phase += dt * (asset.Pace > 0
                         ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
                         : Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
@@ -352,7 +352,8 @@ public partial class CrowdView : Node3D
         }
         // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
         // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
-        float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+        // (each copy of a many-at-once kind its own size: EnemyDef.Size, Sim.Vary)
+        float sc = (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual);
         // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
         // the dirt whole.)
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
@@ -446,7 +447,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
+        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 

@@ -11,7 +11,7 @@
    ],
    "tint": "#4f5b6b",
    "scale": 0.95,
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle_Talking_Loop",
    "person": {
     "sex": "female",
     "outfit": [
@@ -130,7 +130,7 @@
     "Knight_Cape"
    ],
    "tint": "#9aa8c0",
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [

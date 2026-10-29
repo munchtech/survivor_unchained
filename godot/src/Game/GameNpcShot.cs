@@ -134,6 +134,12 @@ public partial class Game
         var v = new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
         scene.AddChild(v);
         v.Loop(idle);
+        // (the Watch at night is the patrol's: a lit torch in the left fist, its warm light on the face, as Folk makes him)
+        if (name == "watch" && Args.Get("time") == "night")
+        {
+            v.Hold("handslot.l", "dungeon", "torch_lit");
+            v.TorchLight();
+        }
         GD.Print($"npc shot: {name} plays {idle}");
         AddChild(new NpcShotDriver(this, v, parts.Contains("walk"), parts.Contains("swap"), parts.Contains("chest")));
     }
