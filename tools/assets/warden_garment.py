@@ -60,8 +60,8 @@ FRAMES = 70
 YOKE_FRAMES, YOKE_HOLD, YOKE_Y = 20, 0.6, (1.33, 1.42)   # the capelet's first frames: its yoke held softly
 BEND = 2.2                       # wool's bending stiffness (the hood and capelet hold some body)
 CROWN_HOLD = 0.30                # the crown's soft goal to its arranged shape (a deep hood keeps its volume)
-LO_TRIS = 6400                   # the outer surface's budget (x2 with the inside, + rim and fringe: ~15k)
-LOD_TRIS, SHADOW_TRIS = 2000, 1000
+LO_TRIS = 6000                   # the outer surface's budget (x2 with the inside, + rim and fringe: ~15k)
+LOD_TRIS, SHADOW_TRIS = 1500, 1000
 TEX = 4096
 WOOL = (0.13, 0.145, 0.19)       # sRGB (the shader pulls the hue to its wool class; the map carries light and dark)
 ALB_GAIN = float(os.environ.get("GARMENT_GAIN", "2.3"))   # the albedo's level (r1 measured in the C02 s7 / C03 s1 frames)
@@ -600,6 +600,38 @@ def drop_specks(ob, min_faces=40):
     bm.free()
 
 
+def cape_clear(ob, Vb_body, Fb, gap=0.034, ylim=0.85, iters=3):
+    """The cape's lower part held >= gap off the body at rest (behind the calves and the robe: the judge's 3 cm): points
+    nearer moved straight away from their nearest body point, the move diffused along the cape (decaying)."""
+    bvh = BVHTree.FromPolygons([tuple(v) for v in Vb_body], [tuple(f) for f in Fb])
+    lab = panel_of_verts(ob)
+    adj = adjacency(ob)
+    V = verts(ob)
+    sel = (lab == 5) & (b2g(V)[:, 1] < ylim)
+    nseed = 0
+    for _ in range(iters):
+        D = np.zeros_like(V)
+        seed = np.zeros(len(V), bool)
+        for i in np.nonzero(sel)[0]:
+            h = bvh.find_nearest(Vector(V[i]), gap)
+            if h[0] is not None and h[3] < gap:
+                d = V[i] - np.array(h[0])
+                n = np.linalg.norm(d)
+                d = d / n if n > 1e-6 else np.array(h[1])
+                D[i] = d * (gap - h[3])
+                seed[i] = True
+        nseed = max(nseed, int(seed.sum()))
+        if not seed.any():
+            break
+        for _ in range(8):
+            Dn = np.array([D[a].mean(0) if len(a) else D[i] for i, a in enumerate(adj)])
+            mag, magn = np.linalg.norm(D, axis=1), np.linalg.norm(Dn, axis=1)
+            D = np.where(((lab == 5) & ~seed & (magn * 0.9 > mag))[:, None], Dn * 0.9, D)
+        V = V + D
+    set_verts(ob, V)
+    log(f"cape held {gap * 100:.1f} cm off the body below {ylim} m: {nseed} points moved")
+
+
 # ================= 4. tear, budget, maps =================
 def tear(ob, seed=7):
     """The capelet's hem and the cape's hem torn: faces within a ragged depth of the hem go (a wavering 1-3 cm line
@@ -720,8 +752,9 @@ def wool_maps(bk, crest, hgt, s_uv, size):
     up = lambda a: np.asarray(Image.fromarray(a.astype(np.float32)).resize((size, size), Image.BILINEAR), np.float32)
     ao = blur(np.clip(up(bk["ao"]), 0, 1), 1.2)
     cr = blur(up(crest), 2.0)
-    c0 = np.median(cr)
-    ridge = smoothstep(c0 + 0.010, c0 + 0.060, cr)
+    isl = cr > 0.2   # (the islands: the gutters bake 0)
+    c0 = np.median(cr[isl]) if isl.any() else np.median(cr)
+    ridge = smoothstep(c0 + 0.015, c0 + 0.070, cr) * isl
     lin = lambda c: np.where(np.asarray(c) <= 0.04045, np.asarray(c) / 12.92, ((np.asarray(c) + 0.055) / 1.055) ** 2.4)
     base = lin(np.array(WOOL))
     k = (0.86 + 0.28 * mott + 0.10 * (fuzz - 0.5)) * (1 - 0.22 * wet) * (0.45 + 0.55 * ao) * (1 + 0.55 * ridge * (1 - 0.6 * wet)) * ALB_GAIN
@@ -1174,6 +1207,7 @@ def main():
         sheet(work, "drape", VIEWS)
         return
     # ---- 4. tear, budget, maps ----
+    cape_clear(ob, Vb_body, Fb)
     tear(ob)
     hi = ob
     hi.name = "garment_hi"
@@ -1216,6 +1250,16 @@ def main():
     delta_h = (Pb_bind - Ph_bind) * bend_mask[:, None]
     log(f"capelet_bend: max {np.linalg.norm(delta_h, axis=1).max() * 100:.1f} cm, mean over the mask {np.linalg.norm(delta_h, axis=1)[bend_mask > 0.5].mean() * 100:.1f} cm")
     np.savez(os.path.join(work, "bend.npz"), start=b2g(Pb_start), bent=b2g(Pb), mask=bend_mask)
+    # (a look at the bent drape, the body bent: no dome over the shoulders)
+    bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+    for o in (hi, lo, lod1, shadow):
+        o.hide_render = True
+    set_verts(hb, Pb)
+    WH.preview_mat(hb)
+    sheet(work, "bend", {"side": ([2.4, 1.45, 0.2], [X0, 1.15, 0.0], 45), "high": ([1.3, 2.7, 1.5], [X0, 1.25, -0.05], 40),
+                         "back": ([0.8, 2.2, -1.8], [X0, 1.2, -0.1], 40)})
+    for o in (lo, lod1, shadow):
+        o.hide_render = False
     # (back to the drape pose for the renders)
     bpy.data.objects.remove(hb)
     for o in cols_b:
@@ -1310,6 +1354,9 @@ def main():
             h = bvh.find_nearest(Vector(p), 0.5)
             dd.append(h[3] if h[0] is not None else 0.5)
     clr = {"p1": round(float(np.percentile(dd, 1)) * 100, 2), "min": round(float(np.min(dd)) * 100, 2)} if dd else {}
+    if dd:
+        cl = [b2g(p[None])[0] for p in cv if b2g(p[None])[0][1] < 0.75]
+        clr["minAt"] = [round(float(x), 3) for x in cl[int(np.argmin(dd))]]
     log("cape clearance below 0.75 m (cm):", clr)
     json.dump({"numbers": res, "piece": info, "mantleCut": cut, "springs": springs, "capeClearanceCm": clr},
               open(os.path.join(work, "numbers.json"), "w"), indent=1)

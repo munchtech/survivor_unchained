@@ -180,7 +180,363 @@
   {
    "id": "hood",
    "slot": "cloak",
-   "file": "armor/hood.glb"
+   "file": "armor/hood.glb",
+   "springs": [
+    {
+     "bone": "cape_0_0",
+     "parent": "spine_03",
+     "head": [
+      -0.1034,
+      1.28,
+      -0.2218
+     ],
+     "tail": [
+      -0.1034,
+      1.1,
+      -0.2374
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_0_1",
+     "parent": "cape_0_0",
+     "head": [
+      -0.1034,
+      1.1,
+      -0.2374
+     ],
+     "tail": [
+      -0.1034,
+      0.92,
+      -0.257
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_0_2",
+     "parent": "cape_0_1",
+     "head": [
+      -0.1034,
+      0.92,
+      -0.257
+     ],
+     "tail": [
+      -0.1034,
+      0.74,
+      -0.2785
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_0_3",
+     "parent": "cape_0_2",
+     "head": [
+      -0.1034,
+      0.74,
+      -0.2785
+     ],
+     "tail": [
+      -0.1034,
+      0.56,
+      -0.3088
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_0_4",
+     "parent": "cape_0_3",
+     "head": [
+      -0.1034,
+      0.56,
+      -0.3088
+     ],
+     "tail": [
+      -0.1034,
+      0.38,
+      -0.3237
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_1_0",
+     "parent": "spine_03",
+     "head": [
+      -0.018,
+      1.28,
+      -0.2288
+     ],
+     "tail": [
+      -0.018,
+      1.1,
+      -0.2457
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_1_1",
+     "parent": "cape_1_0",
+     "head": [
+      -0.018,
+      1.1,
+      -0.2457
+     ],
+     "tail": [
+      -0.018,
+      0.92,
+      -0.2632
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_1_2",
+     "parent": "cape_1_1",
+     "head": [
+      -0.018,
+      0.92,
+      -0.2632
+     ],
+     "tail": [
+      -0.018,
+      0.74,
+      -0.2811
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_1_3",
+     "parent": "cape_1_2",
+     "head": [
+      -0.018,
+      0.74,
+      -0.2811
+     ],
+     "tail": [
+      -0.018,
+      0.56,
+      -0.2979
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_1_4",
+     "parent": "cape_1_3",
+     "head": [
+      -0.018,
+      0.56,
+      -0.2979
+     ],
+     "tail": [
+      -0.018,
+      0.38,
+      -0.3085
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_2_0",
+     "parent": "spine_03",
+     "head": [
+      0.0674,
+      1.28,
+      -0.2304
+     ],
+     "tail": [
+      0.0674,
+      1.1,
+      -0.2489
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_2_1",
+     "parent": "cape_2_0",
+     "head": [
+      0.0674,
+      1.1,
+      -0.2489
+     ],
+     "tail": [
+      0.0674,
+      0.92,
+      -0.2645
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_2_2",
+     "parent": "cape_2_1",
+     "head": [
+      0.0674,
+      0.92,
+      -0.2645
+     ],
+     "tail": [
+      0.0674,
+      0.74,
+      -0.2809
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_2_3",
+     "parent": "cape_2_2",
+     "head": [
+      0.0674,
+      0.74,
+      -0.2809
+     ],
+     "tail": [
+      0.0674,
+      0.56,
+      -0.3008
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_2_4",
+     "parent": "cape_2_3",
+     "head": [
+      0.0674,
+      0.56,
+      -0.3008
+     ],
+     "tail": [
+      0.0674,
+      0.38,
+      -0.3256
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_3_0",
+     "parent": "spine_03",
+     "head": [
+      0.1529,
+      1.28,
+      -0.2216
+     ],
+     "tail": [
+      0.1529,
+      1.1,
+      -0.2362
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_3_1",
+     "parent": "cape_3_0",
+     "head": [
+      0.1529,
+      1.1,
+      -0.2362
+     ],
+     "tail": [
+      0.1529,
+      0.92,
+      -0.254
+     ],
+     "radius": 0.045
+    },
+    {
+     "bone": "cape_3_2",
+     "parent": "cape_3_1",
+     "head": [
+      0.1529,
+      0.92,
+      -0.254
+     ],
+     "tail": [
+      0.1529,
+      0.74,
+      -0.2775
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_3_3",
+     "parent": "cape_3_2",
+     "head": [
+      0.1529,
+      0.74,
+      -0.2775
+     ],
+     "tail": [
+      0.1529,
+      0.56,
+      -0.3111
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "cape_3_4",
+     "parent": "cape_3_3",
+     "head": [
+      0.1529,
+      0.56,
+      -0.3111
+     ],
+     "tail": [
+      0.1529,
+      0.38,
+      -0.328
+     ],
+     "radius": 0.06
+    },
+    {
+     "bone": "capelet_b_0",
+     "parent": "spine_03",
+     "head": [
+      0.0117,
+      1.3898,
+      -0.187
+     ],
+     "tail": [
+      0.0245,
+      1.2359,
+      -0.226
+     ],
+     "radius": 0.05
+    },
+    {
+     "bone": "capelet_l_0",
+     "parent": "clavicle_l",
+     "head": [
+      0.2782,
+      1.3892,
+      -0.0441
+     ],
+     "tail": [
+      0.2773,
+      1.2429,
+      -0.0823
+     ],
+     "radius": 0.05
+    },
+    {
+     "bone": "capelet_r_0",
+     "parent": "clavicle_r",
+     "head": [
+      -0.244,
+      1.39,
+      -0.0448
+     ],
+     "tail": [
+      -0.2409,
+      1.253,
+      -0.0629
+     ],
+     "radius": 0.05
+    }
+   ],
+   "correctives": [
+    {
+     "shape": "capelet_bend",
+     "bone": "spine_03",
+     "axis": "pitch",
+     "from": 40,
+     "to": 80
+    }
+   ]
   }
  ],
  "generated": {
@@ -654,35 +1010,52 @@
   }
  },
  "hood": {
-  "source": "tools/assets/warden_hood.py (cloth drape over the posed body, Warden 6)",
+  "source": "tools/assets/warden_garment.py (sewn-pattern cloth: hood, gusset, capelet, cape; Warden 7)",
   "materials": [
    "warden_hood_wool",
    "warden_hood_inner",
    "warden_hood_fringe"
   ],
-  "tris": 10328,
-  "lodTris": 3064,
-  "shadowTris": 600,
+  "tris": 15376,
+  "lodTris": 4198,
+  "shadowTris": 999,
   "bones": [
    "Head",
+   "cape_0_0",
+   "cape_0_1",
+   "cape_0_2",
+   "cape_0_3",
+   "cape_0_4",
+   "cape_1_0",
+   "cape_1_1",
+   "cape_1_2",
+   "cape_1_3",
+   "cape_1_4",
+   "cape_2_0",
+   "cape_2_1",
+   "cape_2_2",
+   "cape_2_3",
+   "cape_2_4",
+   "cape_3_0",
+   "cape_3_1",
+   "cape_3_2",
+   "cape_3_3",
+   "cape_3_4",
+   "capelet_b_0",
+   "capelet_l_0",
+   "capelet_r_0",
    "clavicle_l",
    "clavicle_r",
    "neck_01",
-   "spine_01",
-   "spine_02",
    "spine_03",
    "upperarm_l",
-   "upperarm_r",
-   "upperarm_share_l",
-   "upperarm_share_r",
-   "upperarm_twist_01_l",
-   "upperarm_twist_01_r"
+   "upperarm_r"
   ],
   "maps": 4096,
   "mantleCut": {
-   "body.glb:body:generated": 3006,
-   "body.glb:body:warden_patch": 309,
-   "lod.glb:lod:generated": 175
+   "body.glb:body:generated": 1806,
+   "body.glb:body:warden_patch": 434,
+   "lod.glb:lod:generated": 131
   }
  }
 }
