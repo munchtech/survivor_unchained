@@ -26,6 +26,7 @@ import sys
 import time
 
 import numpy as np
+from scipy.spatial import cKDTree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -34,14 +35,16 @@ import warden_beard as wb  # noqa: E402
 from warden_beard import (DENSE, LOOSE, LOCK, WISP, X0, HH, smoothstep, log)  # noqa: E402
 
 ATLAS_URI = "../../people/head_tex/hair_strands.png"
-ROOT_DARK, ROOT_RAMP = 0.35, 0.40     # each card's depth (vertex r) at its root, of its own, easing up over this share of it
+ROOT_DARK, ROOT_RAMP = 0.05, 0.045     # each card's depth (vertex r) at its root, of its own, easing up over this many METRES of it (r7: 0.35 over 40% of its length left the roots at 77 against the jaw's 26)
+HUG = dict(cap=0.0038, s0=0.035, s1=0.075, y0=1.530, y1=1.555, near=0.030)   # r7: locks rooted above the jaw line (y0-y1): their centre line within `cap` of the skin for `s0` of its length, easing to its own standoff by `s1`
+ROOT_MAX_Y = 1.640                      # r7: no root higher (the lower eyelid is about 1.655: 1.5 cm clear under it)
 COL_W = 1.0 / 16                       # one atlas column's width in u
 STRAND_M = 0.016                       # metres of card width per column (her cards' 12-20 mm: her strands' fineness)
 
 # lock layers (warden_beard.lock_lines' cfg) and each lock's bundle of cards
 LAYERS = [
     dict(name="inner", spacing=0.020, off=0.0080, width=(0.034, 0.046), depth=(0.012, 0.016), clump=0.15, jit=0.030, wave=0.0015,
-         cards=5, cw=(0.0075, 0.012), cols=DENSE, narrow=0.45, shade=(0.30, 0.48), turn=0.35, lf=(0.86, 1.02), tip_fade=0.80),
+         cards=3, cw=(0.0090, 0.014), cols=DENSE, narrow=0.45, shade=(0.30, 0.48), turn=0.35, lf=(0.86, 1.02), tip_fade=0.80),
     dict(name="mid", spacing=0.022, off=0.0135, width=(0.028, 0.038), depth=(0.010, 0.013), clump=0.40, jit=0.055, wave=0.0025,
          cards=4, cw=(0.0060, 0.010), cols=DENSE + LOOSE, narrow=0.60, shade=(0.55, 0.78), turn=0.45, lf=(0.80, 1.03), tip_fade=0.75),
     dict(name="outer", spacing=0.024, off=0.0190, width=(0.018, 0.026), depth=(0.008, 0.011), clump=0.62, jit=0.085, wave=0.0035,
@@ -143,7 +146,8 @@ def ribbons(P, N, Sd, cw, cols, narrow, shade, alpha_fn, rng, root_w=0.6):
     g_ = rng.random(S)
     a = alpha_fn(f)[None].repeat(S, 0) if callable(alpha_fn) else np.ones((S, K))
     Cc = np.zeros((S, 3, K, 4))
-    Cc[..., 0] = r[:, None, None] * (ROOT_DARK + (1 - ROOT_DARK) * smoothstep(0.0, ROOT_RAMP, f))[None, None, :]   # (r6b: roots dark, near the jaw's value)
+    arcm = np.c_[np.zeros((S, 1)), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)]                      # (metres from the root)
+    Cc[..., 0] = r[:, None, None] * (ROOT_DARK + (1 - ROOT_DARK) * smoothstep(0.0, ROOT_RAMP, arcm))[:, None, :]   # (r7: roots dark over their first 4.5 cm)
     Cc[..., 1] = g_[:, None, None]
     Cc[..., 3] = a[:, None, :]
     base = (np.arange(S) * 3 * K)[:, None]
@@ -162,6 +166,32 @@ def ribbons(P, N, Sd, cw, cols, narrow, shade, alpha_fn, rng, root_w=0.6):
     arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)]
     return dict(pos=Vf, nrm=Nf, uv=UV.reshape(-1, 2), col=Cc.reshape(-1, 4), tan=tan, idx=F, at=at,
                 arc=np.repeat(arc[:, None], 3, 1).ravel(), S=S)
+
+
+def hug(pk, C, cap=None, s0=None, s1=None):
+    """r7: lines (glTF, S x K x 3) rooted above the jaw line pulled in along the skin's normal to within HUG['cap'] of it
+    for their first HUG['s0'] metres, easing back to their own standoff by HUG['s1']. Only where the skin is near."""
+    from scipy.ndimage import gaussian_filter1d
+    cap = HUG["cap"] if cap is None else cap
+    fm = pk.drape_face
+    tree = cKDTree(pk.drape_pts[fm])
+    pts, nrm = pk.drape_pts[fm], pk.drape_nrm[fm]
+    S, K, _ = C.shape
+    flat = C.reshape(-1, 3)
+    _, i = tree.query(flat, k=6)
+    q = pts[i].mean(1)
+    n = nrm[i].mean(1)
+    n /= np.linalg.norm(n, axis=1)[:, None] + 1e-12
+    h = ((flat - q) * n).sum(1).reshape(S, K)
+    near = np.linalg.norm(flat - q, axis=1).reshape(S, K) < HUG["near"]
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(C, axis=1), axis=2), 1)]
+    wroot = smoothstep(HUG["y0"], HUG["y1"], C[:, 0, 1])[:, None]
+    b = smoothstep(s0 or HUG["s0"], s1 or HUG["s1"], arc)
+    h2 = np.where(h > cap, cap + (h - cap) * b, h)                    # (never pushed into the skin: only brought in)
+    mv = (h - h2) * wroot * near
+    out = C - n.reshape(S, K, 3) * mv[:, :, None]
+    out[:, 0] = C[:, 0]
+    return out
 
 
 def tip_alpha(start):
@@ -270,8 +300,16 @@ def main():
     edge = wb.card_part(pk, [wb.card_set(Pe, wb.FINE, rng, wb.FINE["K"], alpha=wb.FINE["alpha"], edge=True)])
     rep["cards"]["edge"] = len(ep)
 
+    _rp = wb.root_points                                    # r7: no root above ROOT_MAX_Y (clear of the eyes)
+    def root_points(pk_, rng_, spacing, region):
+        p, n, bl = _rp(pk_, rng_, spacing, region)
+        k = p[:, 1] < ROOT_MAX_Y
+        return p[k], n[k], bl[k]
+    wb.root_points = root_points
+
     # the moustache
     Cm, wm, dm = wb.lock_lines(pk, "moustache", MOUSTACHE, rng)
+    Cm = hug(pk, Cm, cap=0.0034, s0=0.055, s1=0.095)   # (over the mouth to its corners: falls down it, close)
     Cm, _ = wb.hood_clear(pk, Cm, wm, dm, most=1.0)
     full.append(bundles(pk, Cm, wm, dm, MOUSTACHE, rng))
     lod.append(bundles(pk, Cm[::2], wm[::2], dm[::2], MOUSTACHE, lrng, n=1, wide=2.2))
@@ -280,6 +318,7 @@ def main():
     inner = None
     for L_ in LAYERS:
         C, w, d = wb.lock_lines(pk, "beard", L_, rng)
+        C = hug(pk, C)
         C, kp = wb.hood_clear(pk, C, w, d)
         C, w, d = C[kp], w[kp], d[kp]
         full.append(bundles(pk, C, w, d, L_, rng))
