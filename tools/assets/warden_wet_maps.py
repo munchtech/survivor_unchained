@@ -10,7 +10,7 @@ that, per surface, in the surface's own UVs (1024, RGBA, gutters dilated):
   A  face (head only): the pale skin above that line (brow, eyes, cheekbones, nose).
 
   python tools/assets/warden_wet_maps.py [PKG_DIR] [--size 1024] [--tide 0.42]
-Writes PKG_DIR/wet_generated.png and PKG_DIR/wet_head.png. Run after warden_head.py and glb_orient.py.
+Writes PKG_DIR/wet_generated.png and (a TRELLIS-head package only) PKG_DIR/wet_head.png.
 """
 import argparse, io, json, os, struct
 import numpy as np
@@ -138,12 +138,16 @@ def main():
     ap.add_argument("--wobble", type=float, default=0.035)
     a = ap.parse_args()
     g = Glb(os.path.join(a.pkg, "body.glb"))
-    parts = {m: g.prim(m) for m in ("generated", "warden_head", "skin")}
+    # (Warden 5: the as-generated Meshy package has no grafted warden_head or base skin; the body map is made alone and
+    #  wet_head.png is not written, so the beard/face channels stay zero)
+    parts = {m: q for m in ("generated", "warden_head", "skin") if (q := g.prim(m)) is not None}
     V, F, o = [], [], 0
     for p in parts.values():
         V.append(p["POSITION"].astype(float)); F.append(p["idx"] + o); o += len(p["POSITION"])
     scene = trimesh.Trimesh(np.vstack(V), np.vstack(F), process=False)
     for mat, out in (("generated", "wet_generated.png"), ("warden_head", "wet_head.png")):
+        if mat not in parts:
+            continue
         p = parts[mat]
         P = p["POSITION"].astype(float)
         N = p["NORMAL"].astype(float)

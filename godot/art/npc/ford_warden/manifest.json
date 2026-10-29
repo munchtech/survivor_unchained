@@ -1,109 +1,58 @@
 {
+ "hair": null,
  "nipples": {
   "l": [
-   3.76,
-   0.1,
-   3.55
+   8.77,
+   1.41,
+   3.64
   ],
   "r": [
-   3.76,
-   0.1,
-   3.55
+   8.77,
+   1.41,
+   3.64
   ],
   "tips": {
-   "l": 8500,
-   "r": 1828
+   "l": 8482,
+   "r": 1810
   }
  },
  "rest": {
   "before": {
-   "deg": 80.882,
+   "deg": 84.789,
    "bone": "hand_r"
   },
   "after": {
    "deg": 0.011,
    "bone": "thumb_04_leaf_l"
   },
-  "headMoved": 5.06e-16
+  "headMoved": 4.51e-16
  },
  "name": "ford_warden",
  "sex": "male",
- "height": 1.7944,
- "ownHeight": 1.7944,
+ "height": 1.8072,
+ "ownHeight": 1.8072,
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_body": 491,
-   "lod_generated": 8476,
-   "lod_hair": 2072
+   "lod_generated": 7246
   },
-  "total": 11039,
-  "shadowTris": 2166,
-  "shadowHair": 415,
+  "total": 7246,
+  "shadowTris": 1347,
   "errMm": {
-   "cut": 7,
-   "lod_body.skin": {
-    "p99": 14.51,
-    "max": 19.84
-   },
-   "lod_body.skin_head": {
-    "p99": 7.65,
-    "max": 9.48
-   },
-   "lod_body.eyes": {
-    "p99": 5.65,
-    "max": 6.23
-   },
+   "cut": 5,
    "lod_generated": {
-    "p99": 9.87,
-    "max": 31.62
-   },
-   "lod_hair.hair_cap": {
-    "p99": 9.12,
-    "max": 10.87
-   },
-   "lod_hair": "cards whole"
+    "p99": 7.11,
+    "max": 23.92
+   }
   },
-  "movedMm": {
-   "lod_body.skin": 10.5,
-   "lod_body.skin_head": 10.5,
-   "lod_generated": 10.5,
-   "lod_hair.hair_cap": 9.99
-  },
-  "dropped": [],
-  "cards": {
-   "kept": 500,
-   "of": 1429,
-   "tris": 1924
-  }
+  "dropped": []
  },
  "maps": {
-  "skin": {
-   "map": 1024,
-   "normalMap": 1024
-  },
-  "skin_head": {
-   "map": 2048,
-   "normalMap": 2048
-  },
-  "eyes": {
-   "map": 1024,
-   "specularIntensityMap": 256,
-   "clearcoatMap": 256,
-   "clearcoatNormalMap": 512
-  },
-  "teeth": {
-   "map": 1024,
-   "roughnessMap": 1024
-  },
-  "tongue": {
-   "map": 1024
-  },
   "generated": {
-   "map": 2048,
-   "normalMap": 2048,
-   "metalnessMap": 2048,
-   "roughnessMap": 2048
+   "map": 4096,
+   "normalMap": 4096,
+   "metalnessMap": 4096,
+   "roughnessMap": 4096
   }
  },
  "frame": "glTF / Godot: Y up, metres; bind pose = the heroine's (heroine.glb), the body's own proportions",
@@ -199,758 +148,441 @@
  "pieces": [],
  "generated": {
   "dressed": true,
-  "source": "generated/warden/ford_warden_s11.glb (TRELLIS.2), Fix -> generated/game/ford_warden_a_clean.glb, wrap -> catalogue gen_ford_warden_a",
-  "portrait": {
-   "image": "generated/refine_gmvizqv8m9na.png",
-   "source": "Krea 2 Turbo img2img (refine, denoise 0.5, seed 21) of the concept generated/ford_warden_front.png face crop (638,42,438)",
-   "prompt": "close-up head portrait photo of an ancient drowned undead old man, a very tall gaunt watchman with a grey-white waterlogged face, sunken cheeks and a long grey-white beard, in a deep hood, straight front view, looking at the camera, the same face, age painted in: lines beside the mouth, crow's feet, forehead lines, skin in natural zones, natural pores, flat even soft frontal studio light, no harsh shadows, plain light gray background, highly detailed realistic skin, sharp focus"
-  },
-  "note": "concept -> TRELLIS.2 -> Fix (cleanup) -> dress (genfix: the base's head, hands and hair; the generated clothes carried to the rig's rest, cut at the collar and cuffs, weighted) -> dressPackage",
-  "trim": {
-   "ford_warden_a": {
-    "before": 21942,
-    "after": 7203
-   },
-   "ford_warden_aHead": {
-    "before": 4814,
-    "after": 4812
-   }
-  },
-  "dress": {
-   "offsetScale": 1.0017,
+  "whole": true,
+  "source": "generated/meshy/meshy_warden5_a/model.glb (generated), Fix -> generated/game/ford_warden_clean.glb, wrap -> catalogue gen_ford_warden",
+  "note": "generated mesh -> Fix (cleanup) -> wrap (skeleton fit, weight donor) -> genfix/whole.js: the generated surface itself on the game skeleton, its own head, hair and paint, graded; no base surfaces",
+  "report": {
+   "offsetScale": 0.9921,
    "wrapGapMm": {
-    "mean": 17.5,
-    "median": 13.4,
-    "p90": 38.3,
-    "p99": 67.6
+    "mean": 17.9,
+    "median": 13.9,
+    "p90": 39.4,
+    "p99": 72.6
    },
    "wrapGapRegionsMm": {
     "headNeck": {
-     "n": 1556,
-     "mean": 22,
-     "p90": 50.2
+     "n": 6285,
+     "mean": 22.4,
+     "p90": 48.5
     },
     "arms": {
-     "n": 5222,
-     "mean": 19.6,
-     "p90": 39.1
+     "n": 10915,
+     "mean": 16.4,
+     "p90": 33.8
     },
     "legs": {
-     "n": 6544,
-     "mean": 15.2,
-     "p90": 35.6
+     "n": 11025,
+     "mean": 16.6,
+     "p90": 38.1
     },
     "torso": {
-     "n": 3922,
-     "mean": 16.6,
-     "p90": 34.9
+     "n": 6655,
+     "mean": 18.4,
+     "p90": 40.4
     }
    },
-   "rigid": 4,
-   "skinRef": [
-    112,
-    107,
-    103
-   ],
-   "neckline": {
-    "areaCm2": 92,
-    "looseCm2": 106,
-    "on": false
-   },
-   "collarInner": 61,
-   "collarSlivers": 29,
-   "collarSkin": 667,
-   "hairFlood": {
-    "lab": [
-     8.6,
-     1.8,
-     1.4
-    ],
-    "cut": 3538,
-    "flat": {
-     "points": 1090,
-     "ring": 778,
-     "offMm": 9.8
-    }
-   },
-   "smoothCut": {
-    "mask": true,
-    "maskFlip": false,
-    "maskAgree": 0.938,
-    "split": {
-     "tris": 0,
-     "refined": 0,
-     "paths": 0,
-     "closed": 0,
-     "edge": {
-      "meanMm": 0,
-      "p90Mm": 0,
-      "lenCm": 0,
-      "points": 0
-     }
-    }
-   },
-   "islandsDropped": 1,
-   "cuts": {
-    "collar": {
-     "endMm": 0,
-     "edgeMm": [
-      0,
-      10
-     ]
-    },
-    "cuff_l": {
-     "endMm": 196,
-     "edgeMm": [
-      160,
-      204
-     ],
-     "planeMm": 196,
-     "planeCut": 10
-    },
-    "cuff_r": {
-     "endMm": 197,
-     "edgeMm": [
-      161,
-      215
-     ],
-     "planeMm": 197,
-     "planeCut": 10
-    }
-   },
-   "cuffMetal": {
-    "cuff_l": "-253:0 -248:0 -243:0 -238:0 -233:0 -228:0 -223:0 -218:0 -213:0 -208:0 -203:0 -198:0 -193:0 -188:0 -183:0 -178:0 -173:0 -168:0 -163:0 -158:0 -153:0 -148:0 -143:0 -138:0 -133:0 -128:0 -123:0 -118:0 -113:0 -108:0 -103:0 -98:16 -93:30 -88:14 -83:11 -78:21 -73:30 -68:23 -63:45 -58:36 -53:26 -48:39 -43:45 -38:51 -33:37 -28:36 -23:66 -18:61 -13:39 -8:53 -3:78 2:33 7:62 12:68 17:57 22:61 27:29 32:44 37:39 42:60 47:56 52:72 57:92 62:91 67:- 72:88 77:75 82:56 87:56 92:63 97:0 102:40 107:57 112:50 117:57 122:80 127:17 132:- 137:75 142:17 147:80 152:40 157:50 162:50 167:63 172:75 177:33 182:50 187:50 192:50 197:55",
-    "cuff_r": "-252:0 -247:0 -242:0 -237:0 -232:0 -227:0 -222:0 -217:0 -212:0 -207:0 -202:0 -197:0 -192:0 -187:0 -182:0 -177:0 -172:0 -167:0 -162:0 -157:0 -152:0 -147:0 -142:0 -137:0 -132:0 -127:0 -122:0 -117:0 -112:0 -107:0 -102:0 -97:0 -92:18 -87:9 -82:14 -77:15 -72:41 -67:30 -62:27 -57:22 -52:32 -47:26 -42:44 -37:39 -32:55 -27:47 -22:54 -17:52 -12:76 -7:52 -2:28 3:24 8:47 13:56 18:40 23:42 28:56 33:33 38:76 43:81 48:84 53:57 58:50 63:82 68:90 73:83 78:100 83:- 88:64 93:29 98:33 103:67 108:50 113:57 118:57 123:50 128:40 133:71 138:50 143:27 148:29 153:38 158:57 163:80 168:22 173:50 178:50 183:33 188:56 193:20 198:80"
-   },
-   "profile": {
-    "collar": "0 refs, last undefined, tops 0 0 0 0 0 0 5 5 0 0 0 0 0 0 0 0",
-    "cuff_l": "3 refs, last metal",
-    "cuff_r": "3 refs, last colour 1"
-   },
-   "tidy": {
-    "teeth": 68,
-    "slivers": 3,
-    "parts": 27,
-    "moved": 172,
-    "maxMoveMm": 4,
-    "loops": 12
-   },
-   "fold": {
-    "fins": 0,
-    "folded": {
-     "before": 0,
-     "after": 0
-    },
-    "moved": 0,
-    "maxMoveMm": 0,
-    "meanMoveMm": 0
-   },
-   "fair": {
-    "wavinessDeg": {
-     "before": {
-      "median": 9.06,
-      "p90": 17.63,
-      "faces": 54
-     },
-     "after": {
-      "median": 7.4,
-      "p90": 16.18,
-      "faces": 54
-     }
-    },
-    "metal": 908,
-    "pinned": {
-     "rim": 31,
-     "crease": 101,
-     "border": 417
-    },
-    "free": 168,
-    "moved": 78,
-    "maxMoveMm": 4,
-    "meanMoveMm": 2.15,
-    "borderMm": 4,
-    "normalMm": -0.364
-   },
-   "genTris": 32168,
-   "genCut": 4835,
-   "base": {
-    "ford_warden_a": 7246,
-    "ford_warden_aHead": 4814
-   },
-   "beside": {
-    "wallMm": "200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200",
-    "dropped": 0
-   },
-   "tucked": 343,
-   "poked": 13,
-   "bare": 34,
-   "handGirth": {
-    "build": 0.1605,
-    "ref": 0.1447,
-    "factor": 1.164,
-    "points": 3878
+   "rigid": 0,
+   "holes": {
+    "edges": 0,
+    "loops": 0,
+    "sizes": []
    },
    "weights": {
-    "copied": 45.1,
-    "far": 17.5,
+    "copied": 100,
+    "far": 18.1,
     "dotHist": [
-     27,
-     5,
+     4,
      3,
      3,
-     3,
-     16,
      3,
      4,
      6,
-     30
+     6,
+     7,
+     11,
+     53
     ],
-    "inpaint": {
-     "unknown": 7284,
-     "bones": 63,
-     "itMean": 32,
-     "itMax": 90
-    },
     "smoothed": {
-     "iters": 1,
-     "edgeMm": 25.9,
-     "bones": 63
+     "iters": 12,
+     "edgeMm": 12.4,
+     "bones": 60
     },
-    "wrist": {
-     "l": {
-      "to": "lowerarm_twist_02_l",
-      "points": 700,
-      "handWeightMoved": 235
+    "wrist": {}
+   },
+   "deform": {
+    "walk": {
+     "l_shoulder": "p99 58.9/67.1 (0.88x) bad 4.92/7.83% flip 0/0%",
+     "l_elbow": "p99 40.8/37.1 (1.10x) bad 1.15/2.68% flip 0/0%",
+     "l_hip": "p99 32.5/28.4 (1.14x) bad 0/0% flip 0/0%",
+     "l_knee": "p99 153.5/82.5 (1.86x) bad 9.98/15% flip 0.98/6.67%",
+     "r_shoulder": "p99 95.7/80.7 (1.19x) bad 2.35/6.02% flip 0.94/0.6%",
+     "r_elbow": "p99 38.9/34.1 (1.14x) bad 1.02/2.24% flip 0/0%",
+     "r_hip": "p99 42.5/39.5 (1.08x) bad 1.78/0% flip 0/0%",
+     "r_knee": "p99 123.5/75.6 (1.63x) bad 8.68/16.67% flip 0.68/5%"
+    },
+    "gen": {
+     "l_shoulder": {
+      "p99": 58.9,
+      "max": 114.7,
+      "bad": 4.92,
+      "flip": 0,
+      "tris": 447,
+      "worst": {
+       "qf": 1.1470523948376936,
+       "q": 114.7,
+       "l0Mm": 11.8,
+       "l1Mm": 25.2,
+       "at": [
+        0.163,
+        1.505,
+        0.014
+       ],
+       "a": 22510,
+       "b": 22493
+      }
      },
-     "r": {
-      "to": "lowerarm_twist_02_r",
-      "points": 661,
-      "handWeightMoved": 232.4
+     "l_elbow": {
+      "p99": 40.8,
+      "max": 58.7,
+      "bad": 1.15,
+      "flip": 0,
+      "tris": 608,
+      "worst": {
+       "qf": 0.5866917394489969,
+       "q": 58.7,
+       "l0Mm": 8,
+       "l1Mm": 3.3,
+       "at": [
+        0.371,
+        1.28,
+        -0.03
+       ],
+       "a": 34983,
+       "b": 34985
+      }
+     },
+     "l_hip": {
+      "p99": 32.5,
+      "max": 43.5,
+      "bad": 0,
+      "flip": 0,
+      "tris": 646,
+      "worst": {
+       "qf": 0.43495633621572827,
+       "q": 43.5,
+       "l0Mm": 14.9,
+       "l1Mm": 21.4,
+       "at": [
+        0.168,
+        0.885,
+        -0.159
+       ],
+       "a": 47079,
+       "b": 47080
+      }
+     },
+     "l_knee": {
+      "p99": 153.5,
+      "max": 278.2,
+      "bad": 9.98,
+      "flip": 0.98,
+      "tris": 1332,
+      "worst": {
+       "qf": 2.781916860610096,
+       "q": 278.2,
+       "l0Mm": 8.7,
+       "l1Mm": 32.9,
+       "at": [
+        0.174,
+        0.433,
+        0.04
+       ],
+       "a": 51246,
+       "b": 51247
+      }
+     },
+     "r_shoulder": {
+      "p99": 95.7,
+      "max": 157.3,
+      "bad": 2.35,
+      "flip": 0.94,
+      "tris": 426,
+      "worst": {
+       "qf": 1.5731419482253886,
+       "q": 157.3,
+       "l0Mm": 11.7,
+       "l1Mm": 30.1,
+       "at": [
+        -0.15,
+        1.512,
+        -0.002
+       ],
+       "a": 16783,
+       "b": 16777
+      }
+     },
+     "r_elbow": {
+      "p99": 38.9,
+      "max": 61.6,
+      "bad": 1.02,
+      "flip": 0,
+      "tris": 586,
+      "worst": {
+       "qf": 0.6158658959201861,
+       "q": 61.6,
+       "l0Mm": 12.3,
+       "l1Mm": 4.7,
+       "at": [
+        -0.339,
+        1.227,
+        -0.014
+       ],
+       "a": 34374,
+       "b": 34321
+      }
+     },
+     "r_hip": {
+      "p99": 42.5,
+      "max": 55,
+      "bad": 1.78,
+      "flip": 0,
+      "tris": 505,
+      "worst": {
+       "qf": 0.5503049369825634,
+       "q": 55,
+       "l0Mm": 7.3,
+       "l1Mm": 11.3,
+       "at": [
+        -0.145,
+        0.877,
+        -0.151
+       ],
+       "a": 3563,
+       "b": 3480
+      }
+     },
+     "r_knee": {
+      "p99": 123.5,
+      "max": 309.2,
+      "bad": 8.68,
+      "flip": 0.68,
+      "tris": 1474,
+      "worst": {
+       "qf": 3.091960032532124,
+       "q": 309.2,
+       "l0Mm": 5.2,
+       "l1Mm": 21.1,
+       "at": [
+        -0.129,
+        0.428,
+        0.048
+       ],
+       "a": 46649,
+       "b": 46609
+      }
      }
     },
-    "capFlare": {
-     "points": 2,
-     "maxMm": 29,
-     "bind": "rigid"
-    },
-    "plates": {
-     "metal": 818,
-     "restricted": 719,
-     "soft": 627,
-     "halfMm": "0 0 0 0 0 0 18 0 1 9 0 0 0 0",
-     "caps": "upperarm_l 0, lowerarm_l 0, calf_l 0, upperarm_r 0, lowerarm_r 2, calf_r 1"
-    }
-   },
-   "liner": {
-    "sectors": "46/64",
-    "bridged": 1,
-    "shards": 36,
-    "paintCut": 8,
-    "ringOffMm": 50,
-    "ringMm": 72,
-    "neckMm": 85,
-    "neckOffMm": 7,
-    "rimMm": [
-     -49,
-     -30,
-     7
-    ],
-    "tris": 264,
-    "gapMm": [
-     1,
-     17,
-     55
-    ],
-    "baseDropped": 45,
-    "uv": [
-     0.6117,
-     0.7131
-    ],
-    "darkL": 11
-   },
-   "roundPlates": {
-    "moved": 1638,
-    "maxDeg": 28.3
-   },
-   "capSnap": {
-    "points": 3740,
-    "moved": 0,
-    "maxMm": 8,
-    "p95Mm": 5
-   },
-   "capFade": {
-    "points": 3740,
-    "edge": 901,
-    "meanBefore": 0.677,
-    "meanAfter": 0.498,
-    "widthMm": 15
-   },
-   "hair": {
-    "style": "crop",
-    "meshes": 4,
-    "tris": 12001,
-    "errMm": 5,
-    "of": [
-     "hair",
-     "hair_cap",
-     "hair_fine",
-     "hair_fine"
-    ]
-   },
-   "soften": {
-    "islands": 3934,
-    "keep": 0.3,
-    "radius": 20,
-    "metalKeep": 0,
-    "metalRadius": 6,
-    "broadTiltDeg": [
-     8.7,
-     2.4
-    ]
-   },
-   "palette": {
-    "views": [
-     {
-      "figure": [
-       1248,
-       1478
-      ],
-      "head": 25941,
-      "hands": 470,
-      "kept": 547072
+    "base": {
+     "l_shoulder": {
+      "p99": 67.1,
+      "max": 77.2,
+      "bad": 7.83,
+      "flip": 0,
+      "tris": 166,
+      "worst": {
+       "qf": 0.7717496202167009,
+       "q": 77.2,
+       "l0Mm": 16.6,
+       "l1Mm": 29.5,
+       "at": [
+        0.216,
+        1.457,
+        -0.087
+       ],
+       "a": 5457,
+       "b": 5446
+      }
      },
-     {
-      "figure": [
-       1217,
-       1479
-      ],
-      "head": 25371,
-      "hands": 1018,
-      "kept": 549718
-     }
-    ],
-    "sampled": 20.5,
-    "local": {
-     "samples": 350440,
-     "moved": 486933
-    },
-    "regions": [
-     {
-      "region": "metal",
-      "share": 0.06,
-      "seen": 45343,
-      "before": {
-       "lab": [
-        26,
+     "l_elbow": {
+      "p99": 37.1,
+      "max": 48,
+      "bad": 2.68,
+      "flip": 0,
+      "tris": 224,
+      "worst": {
+       "qf": 0.48001567856473126,
+       "q": 48,
+       "l0Mm": 17,
+       "l1Mm": 8.9,
+       "at": [
+        0.333,
+        1.21,
+        -0.061
+       ],
+       "a": 7319,
+       "b": 7292
+      }
+     },
+     "l_hip": {
+      "p99": 28.4,
+      "max": 33.8,
+      "bad": 0,
+      "flip": 0,
+      "tris": 37,
+      "worst": {
+       "qf": 0.33812680770661285,
+       "q": 33.8,
+       "l0Mm": 24.7,
+       "l1Mm": 33.1,
+       "at": [
+        0.173,
+        0.891,
+        -0.15
+       ],
+       "a": 8232,
+       "b": 8223
+      }
+     },
+     "l_knee": {
+      "p99": 82.5,
+      "max": 86.6,
+      "bad": 15,
+      "flip": 6.67,
+      "tris": 60,
+      "worst": {
+       "qf": 0.8661068281456059,
+       "q": 86.6,
+       "l0Mm": 15.4,
+       "l1Mm": 2.1,
+       "at": [
+        0.22,
+        0.456,
+        -0.125
+       ],
+       "a": 8618,
+       "b": 8586
+      }
+     },
+     "r_shoulder": {
+      "p99": 80.7,
+      "max": 102,
+      "bad": 6.02,
+      "flip": 0.6,
+      "tris": 166,
+      "worst": {
+       "qf": 1.0202599501674632,
+       "q": 102,
+       "l0Mm": 19.8,
+       "l1Mm": 40,
+       "at": [
+        -0.215,
+        1.433,
+        -0.085
+       ],
+       "a": 393,
+       "b": 394
+      }
+     },
+     "r_elbow": {
+      "p99": 34.1,
+      "max": 42.2,
+      "bad": 2.24,
+      "flip": 0,
+      "tris": 223,
+      "worst": {
+       "qf": 0.42189952399730457,
+       "q": 42.2,
+       "l0Mm": 19.1,
+       "l1Mm": 11,
+       "at": [
+        -0.34,
+        1.244,
+        -0.034
+       ],
+       "a": 2227,
+       "b": 2241
+      }
+     },
+     "r_hip": {
+      "p99": 39.5,
+      "max": 40,
+      "bad": 0,
+      "flip": 0,
+      "tris": 37,
+      "worst": {
+       "qf": 0.399790197743186,
+       "q": 40,
+       "l0Mm": 27.1,
+       "l1Mm": 16.2,
+       "at": [
+        -0.213,
         0.9,
-        1
+        0.003
        ],
-       "metal": 0.74,
-       "rough": 0.47
-      },
-      "target": [
-       55,
-       1.4,
-       3.4
-      ],
-      "after": {
-       "lab": [
-        54.1,
-        1.3,
-        3.3
-       ],
-       "metal": 0.66,
-       "rough": 0.52
+       "a": 3222,
+       "b": 3215
       }
      },
-     {
-      "region": "c0",
-      "share": 0.27,
-      "seen": 76391,
-      "before": {
-       "lab": [
-        6.8,
-        1.6,
-        1.6
+     "r_knee": {
+      "p99": 75.6,
+      "max": 82.9,
+      "bad": 16.67,
+      "flip": 5,
+      "tris": 60,
+      "worst": {
+       "qf": 0.8286437612625187,
+       "q": 82.9,
+       "l0Mm": 17,
+       "l1Mm": 2.9,
+       "at": [
+        -0.194,
+        0.472,
+        -0.12
        ],
-       "metal": 0,
-       "rough": 0.83
-      },
-      "target": [
-       25,
-       1.9,
-       -1.7
-      ],
-      "after": {
-       "lab": [
-        25.2,
-        1.9,
-        -1.3
-       ],
-       "metal": 0,
-       "rough": 0.86
-      }
-     },
-     {
-      "region": "c1",
-      "share": 0.13,
-      "seen": 0.25,
-      "before": {
-       "lab": [
-        19.5,
-        3.3,
-        -8.2
-       ],
-       "metal": 0,
-       "rough": 0.84
-      },
-      "target": [
-       32.7,
-       0.1,
-       -13.2
-      ],
-      "concept": [
-       32.7,
-       -0.4,
-       -9.4
-      ],
-      "after": {
-       "lab": [
-        32.7,
-        0.1,
-        -13.1
-       ],
-       "metal": 0,
-       "rough": 0.85
-      }
-     },
-     {
-      "region": "c2",
-      "share": 0.03,
-      "seen": 17525,
-      "before": {
-       "lab": [
-        44.1,
-        0.8,
-        2.2
-       ],
-       "metal": 0.03,
-       "rough": 0.49
-      },
-      "target": [
-       49.3,
-       1,
-       4.3
-      ],
-      "after": {
-       "lab": [
-        49.4,
-        1,
-        4.6
-       ],
-       "metal": 0.01,
-       "rough": 0.81
-      }
-     },
-     {
-      "region": "c3",
-      "share": 0.13,
-      "seen": 68874,
-      "before": {
-       "lab": [
-        13.4,
-        3.3,
-        5.2
-       ],
-       "metal": 0.01,
-       "rough": 0.68
-      },
-      "target": [
-       31.5,
-       3.9,
-       6.3
-      ],
-      "after": {
-       "lab": [
-        31.3,
-        3.8,
-        6.2
-       ],
-       "metal": 0,
-       "rough": 0.82
-      }
-     },
-     {
-      "region": "c4",
-      "share": 0.18,
-      "seen": 25437,
-      "before": {
-       "lab": [
-        18.7,
-        1.5,
-        0.3
-       ],
-       "metal": 0.04,
-       "rough": 0.76
-      },
-      "target": [
-       32.3,
-       0.3,
-       -0.3
-      ],
-      "after": {
-       "lab": [
-        32.4,
-        0.5,
-        0.1
-       ],
-       "metal": 0,
-       "rough": 0.82
-      }
-     },
-     {
-      "region": "c5",
-      "share": 0.19,
-      "seen": 113278,
-      "before": {
-       "lab": [
-        28.2,
-        0.9,
-        3.9
-       ],
-       "metal": 0.04,
-       "rough": 0.75
-      },
-      "target": [
-       38.8,
-       1.6,
-       6
-      ],
-      "after": {
-       "lab": [
-        38.8,
-        1.5,
-        6.1
-       ],
-       "metal": 0.01,
-       "rough": 0.82
+       "a": 3526,
+       "b": 3533
       }
      }
-    ],
-    "sigma": 1.8
-   },
-   "forge": {
-    "metal": 0.024,
-    "interiorPx": 24117,
-    "normal": {
-     "tiltDeg": [
-      8.67,
-      2
-     ],
-     "fieldDeg": [
-      5.88,
-      1.19
-     ],
-     "featureShare": 0.02
-    },
-    "albedo": {
-     "midSpread": [
-      0.0474,
-      0.0279
-     ]
-    },
-    "border": {
-     "texels": 3588
-    },
-    "rough": {
-     "mean": [
-      0.499,
-      0.592
-     ],
-     "spread": [
-      0.016,
-      0.027
-     ]
-    },
-    "seam": {
-     "texels": 137881
     }
-   },
-   "patches": [
-    {
-     "why": "hair",
-     "texels": 347529,
-     "colour": [
-      89,
-      86,
-      91
-     ]
-    }
-   ],
-   "lacing": {
-    "found": false,
-    "frontTexels": 62754,
-    "yMm": [
-     360,
-     1480
-    ],
-    "darkBands": 2
-   },
-   "borders": {
-    "texMm": 1.825,
-    "flecks": 156,
-    "fleckTexels": 449,
-    "borderEdges": 403,
-    "skin": {
-     "reach": 30,
-     "marked": 24532,
-     "byMask": 64,
-     "colourSkinAfter": 15277,
-     "filled": 19057,
-     "left": 5475,
-     "aBefore": 1.6,
-     "aAfter": 1.4,
-     "aGarment": 1.4
-    },
-    "hemTexels": 22,
-    "lineTexels": 8042,
-    "band": 9
-   },
-   "hairFromConcept": {
-    "hex": "#4e4c57",
-    "lab": [
-     32.8,
-     3.1,
-     -6.2
-    ],
-    "grey": 0.03,
-    "n": 5489,
-    "dye": "#64616f"
    }
   }
  },
  "baked": true,
  "bake": {
-  "bytes": 14837904,
+  "bytes": 9053940,
   "nodes": [
    {
-    "name": "ford_warden_a",
+    "name": "ford_warden",
     "surfaces": [
-     "skin",
-     "skin_head",
      "generated"
     ],
-    "tris": 39627,
-    "morphs": 0
-   },
-   {
-    "name": "ford_warden_aHead",
-    "surfaces": [
-     "skin",
-     "skin_head"
-    ],
-    "tris": 4812,
-    "morphs": 28
-   },
-   {
-    "name": "ford_warden_aEyes",
-    "surfaces": [
-     "eyes"
-    ],
-    "tris": 544,
-    "morphs": 0
-   },
-   {
-    "name": "ford_warden_aTeeth",
-    "surfaces": [
-     "teeth"
-    ],
-    "tris": 1780,
-    "morphs": 28
-   },
-   {
-    "name": "ford_warden_aTongue",
-    "surfaces": [
-     "tongue"
-    ],
-    "tris": 448,
-    "morphs": 28
-   },
-   {
-    "name": "hair",
-    "surfaces": [
-     "hair",
-     "hair_cap",
-     "hair_fine"
-    ],
-    "tris": 12001,
+    "tris": 69890,
     "morphs": 0
    }
   ],
   "skinDeleted": 0
  },
  "tris": {
-  "generated": 32168,
-  "hair": 12001,
+  "generated": 69890,
   "surfaces": {
-   "skin": 3815,
-   "generated": 32424,
-   "warden_head": 27996
+   "generated": 69890
   },
-  "total": 59212,
-  "drawn": 59212,
-  "budget": null,
-  "note": "LOD0 surfaces before the head graft, plus warden_head; skin trimmed at the neck"
- },
- "decimate": {
-  "hair": {
-   "errMm": 5,
-   "share": 10000
-  }
+  "total": 69890,
+  "drawn": 69890
  },
  "head": {
-  "source": "model_s5.glb (TRELLIS.2 hooded bust), grafted by tools/assets/warden_head.py",
-  "placedBy": "ford_warden_a_detail.glb",
-  "material": "warden_head",
-  "tris": 27996,
-  "lodTris": 2994,
-  "shadowTris": 2070,
-  "maps": 4096,
-  "bones": [
-   "Head",
-   "clavicle_l",
-   "clavicle_r",
-   "neck_01",
-   "spine_03",
-   "upperarm_l",
-   "upperarm_r",
-   "upperarm_share_l",
-   "upperarm_share_r",
-   "upperarm_twist_01_l",
-   "upperarm_twist_01_r"
-  ],
-  "dropped": [
-   "eyes",
-   "hair",
-   "hair_cap",
-   "hair_fine",
-   "skin_head",
-   "teeth",
-   "tongue"
-  ],
-  "faceRig": false,
   "eyes": {
-   "r": [
-    -0.0352,
-    0.0832,
-    0.1593
-   ],
    "l": [
-    0.0352,
-    0.0833,
-    0.1582
-   ]
-  },
-  "eyesFrame": "Head bone local, metres (glTF/Godot)"
+    0.0319,
+    0.0169,
+    0.1362
+   ],
+   "r": [
+    -0.0331,
+    0.017,
+    0.135
+   ],
+   "note": "Warden 5 b1: Head-bone local (m), on the two painted lid strokes in the hood (bind y 1.631, x +4.9/-1.6 cm about the face midline x 1.65 cm, 6.5 cm apart), 4 mm proud of the face"
+  }
  }
 }
