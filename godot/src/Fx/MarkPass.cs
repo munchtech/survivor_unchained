@@ -63,6 +63,10 @@ public partial class MarkPass : CompositorEffect
         // the chevrons cut into the bed (cd darker; by day a red light over the red bed barely shows): dark ahead of the
         // running front, lit behind it (the cast bar reads as the chevrons catching light)
         ["cd"] = 0.45f,
+        // the chevrons' period along the blow (cp m), their arms' slope (cs), stroke half width (cw m); the bed's
+        // opacity over the ground (bo, 1 the whole re-tint; the rims and the front stay whole); the cast line rides
+        // the pattern's light, so it may pass the red's fold (a pale line by day)
+        ["cp"] = 0.55f, ["cs"] = 1.5f, ["cw"] = 0.06f, ["bo"] = 1f,
     };
 
     /// <summary>The red line's colour, the owner's pick (godot/data/mark_look.json "look"; env MARK_LOOK overrides): a
@@ -105,7 +109,7 @@ public partial class MarkPass : CompositorEffect
                 if (root.TryGetProperty("patterns", out var pats))
                     foreach (var kv in pats.EnumerateObject())
                         if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.String) patternBy[kv.Name] = kv.Value.GetString()!;
-                if (root.TryGetProperty("tints", out var tints))
+                if (!(root.TryGetProperty("tinted", out var tdn) && tdn.ValueKind == System.Text.Json.JsonValueKind.False) && root.TryGetProperty("tints", out var tints))
                     foreach (var kv in tints.EnumerateObject())
                         if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.String) tintBy[kv.Name] = kv.Value.GetString()!;
                 if (root.TryGetProperty("looks", out var looks) && looks.TryGetProperty(Look, out var set))
@@ -166,7 +170,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -502,13 +506,14 @@ public partial class MarkPass : CompositorEffect
             return stroke(dd, w) * (0.82 + 0.18 * vn(sp * 9.0 + k)) * near(P);
         }
         // 2 chevrons pointing the way the blow runs, evenly set and still (the fill lights them as it runs over them)
+        // (T_CP the period along the blow, T_CS the arms' slope: 1.5 an apex near 67 deg, an arrow on a diagonal lane;
+        // T_CW the stroke's half width across it, m, thinning toward the rims)
         float pchev(float ac, float al, float hh, bool disc) {
-            const float P = 0.42;
-            float t = disc ? abs(fract(ac / 0.7) - 0.5) * 0.7 : abs(ac);
-            float v = al + t * 0.75;
-            float k = floor(v / P + 0.5), dd = v - k * P;
-            float w = 0.05 * (disc ? 1.0 : mix(1.0, 0.35, clamp(t / max(hh, 0.01), 0.0, 1.0)));
-            return stroke(dd, w) * near(P);
+            float t = disc ? abs(fract(ac / 0.9) - 0.5) * 0.9 : abs(ac);
+            float v = al + t * T_CS;
+            float k = floor(v / T_CP + 0.5), dd = (v - k * T_CP) / sqrt(1.0 + T_CS * T_CS);
+            float w = T_CW * (disc ? 1.0 : mix(1.0, 0.5, clamp(t / max(hh, 0.01), 0.0, 1.0)));
+            return stroke(dd, w) * near(T_CP);
         }
         // 3 molten: a half hatch of wide leaning bands; the lit bands molten ember rock (dark crusts, bright veins
         // between them, hot spots), the bands between charred stone with faint seams (the bed darker there).
@@ -561,7 +566,7 @@ public partial class MarkPass : CompositorEffect
             int code = int(floor(e.w * 0.5 + 0.01));
             pid = T_HS >= -0.5 ? int(T_HS + 0.5) + (code / 8) * 8 : code;
             int pp = pid % 8;
-            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm, filled = 1.0, rcore;
+            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm, filled = 1.0, rcore, fln = 0.0;
             float ac, al, dm, hh = 0.0;
             if (kind == 0) {
                 // a lane: rims along its sides at 0.9 of its half width; its start soft (under the foe), its far end
@@ -586,7 +591,9 @@ public partial class MarkPass : CompositorEffect
                 ac = l.x; al = l.y; hh = 0.86 * hx; dm = (e.x >= 0.0 ? -hz + e.x : hz) - l.y;
                 if (e.x >= 0.0) {
                     filled = smoothstep(-0.03, 0.03, dm);
-                    f = max(fillf(dm), T_FL * stroke(dm, T_FW)) * clamp((-d - 0.04 * hx) / max(0.04 * hx, 0.02), 0.0, 1.0) * smoothstep(0.0, 0.15, l.y + hz);
+                    float fm = clamp((-d - 0.04 * hx) / max(0.04 * hx, 0.02), 0.0, 1.0) * smoothstep(0.0, 0.15, l.y + hz);
+                    f = fillf(dm) * fm;
+                    fln = T_FL * stroke(dm, T_FW) * fm;
                 }
             } else {
                 float R = hx, r = length(l);
@@ -606,7 +613,7 @@ public partial class MarkPass : CompositorEffect
                 sm = smoothstep(-0.33 * R, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 wh = fout * 2.0 * T_EW;
-                if (e.x >= 0.0 && kind == 1) { f = max(fillf(e.x * 0.97 - r), T_FL * stroke(e.x * 0.97 - r, T_FW)); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
+                if (e.x >= 0.0 && kind == 1) { f = fillf(e.x * 0.97 - r); fln = T_FL * stroke(e.x * 0.97 - r, T_FW) * step(-0.05, -d); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
                 float rf = e.x >= 0.0 && kind == 1 ? e.x * 0.97 : rc;
                 ac = (atan(l.x, l.y) + 3.14159) * max(rf, 0.3); al = r; dm = rf - r;
             }
@@ -635,10 +642,10 @@ public partial class MarkPass : CompositorEffect
             float kin = din - rcore;
             pd = max(pd, T_KG * smoothstep(0.0, max(0.5 * gpx, 0.004), kin) * (1.0 - smoothstep(T_KW, T_KW + max(gpx, 0.004), kin)) * ends);
             // (the rims' cores over the bed's scarlet, not the ground's own colour: a rim added over grey went salmon)
-            cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends, ca);
+            cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends * T_BO, ca);
             cover = max(cover, min(f * 4.0, 1.0) * (1.0 - pc.bed));
             light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
-            pl *= s.z * pc.le;
+            pl = pl * s.z * pc.le + fln * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
         void main() {

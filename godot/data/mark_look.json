@@ -1,9 +1,14 @@
 {
- "_doc": "The red line (MarkPass: an elite's or a boss's blow on the ground). \"look\" is its colour, the owner's pick (one line): each look is a set of MarkPass.Tune numbers over its defaults (\"scarlet\" = the defaults; salmon = the old amber-over-dirt look before 27 Oct, matched on screen: bed tint (1, tg, tb) and rims (1, hg, hb) in linear light, the fold (fs saturation, fh hue in degrees) opened for a warmer red, k the bed's value against the ground's). Env MARK_LOOK=<name> overrides it for shots; MARK_TUNE still overrides single numbers (hs=<id> forces every mark's pattern). \"patterns\": the pattern inside a red mark (the owner, 28 Oct: \"chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges\": chevrons on every red mark; the others stay as named choices) (grid, hatch, chevron, molten, cracks, lattice): a telegraph that names its own (Ev.Telegraph.Pattern, a skill's) keeps it; else by the blow's school (Fire, Frost, Storm, Nature, Arcane, Holy, Shadow); else by its shape (line, circle, cone, ring); else default. The threat stays on the rims and the running front (red); the pattern carries the type by its tint (\"tints\": a school's red, fire, frost or holy; ht its share).",
+ "_doc": "The red line (MarkPass: an elite's or a boss's blow on the ground). \"look\" is its colour, the owner's pick (one line): each look is a set of MarkPass.Tune numbers over its defaults (\"scarlet\" = the defaults with a lighter bed (bo), a deeper chevron cut (cd) and brighter lit chevrons (hl), so they read by day; salmon = the old amber-over-dirt look before 27 Oct, matched on screen: bed tint (1, tg, tb) and rims (1, hg, hb) in linear light, the fold (fs saturation, fh hue in degrees) opened for a warmer red, k the bed's value against the ground's). Env MARK_LOOK=<name> overrides it for shots; MARK_TUNE still overrides single numbers (hs=<id> forces every mark's pattern). \"patterns\": the pattern inside a red mark (the owner, 28 Oct: \"chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges\": chevrons on every red mark; the others stay as named choices) (grid, hatch, chevron, molten, cracks, lattice): a telegraph that names its own (Ev.Telegraph.Pattern, a skill's) keeps it; else by the blow's school (Fire, Frost, Storm, Nature, Arcane, Holy, Shadow); else by its shape (line, circle, cone, ring); else default. The threat stays on the rims and the running front (red); the pattern may carry the type by its tint (\"tints\": a school's red, fire, frost or holy; ht its share), a switch: \"tinted\" false keeps every chevron in the threat's red (off until the owner sees it).",
  "look": "scarlet",
  "looks": {
-  "scarlet": {},
-  "salmon": { "tg": 0.2,
+  "scarlet": {
+   "bo": 0.82,
+   "cd": 0.72,
+   "hl": 0.5
+  },
+  "salmon": {
+   "tg": 0.2,
    "tb": 0.11,
    "hg": 0.25,
    "hb": 0.13,
@@ -15,6 +20,7 @@
  "patterns": {
   "default": "chevron"
  },
+ "tinted": false,
  "tints": {
   "Fire": "fire",
   "Frost": "frost",
