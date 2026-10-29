@@ -28,6 +28,7 @@
       "note": "Behind her as she comes down to the water's edge and stops: the near post at frame left, the ford's stones going out into mist, the two far posts. In the river to the right a lamp burns low over the water, and beyond it the drowned stand in their rows.",
       "cam": {"pos": [3.4, 1.5, -25.4], "at": {"abs": [3.6, -0.95, -44.0]}, "lens": 28},
       "cues": [
+        {"do": "gaze", "wander": 0.04},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.45, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0},
         {"do": "mist", "name": "river", "where": {"abs": [7.0, -0.8, -41.0]}, "size": [26, 2.2, 18], "density": 0.75, "color": "#8494aa", "falloff": 2.0},
         {"do": "glow", "name": "back", "where": {"abs": [11.5, 0.6, -50.0]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 9.0, "range": 16},
