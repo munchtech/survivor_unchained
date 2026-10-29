@@ -429,7 +429,21 @@ public partial class PersonView : Node3D, INpcView
         if (!held.TryGetValue("handslot.l", out var at)) return;
         Node3D host = at;
         foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
-        host.AddChild(new OmniLight3D { Position = new Vector3(0, 0.48f, 0), LightColor = new Color("#ffa050"), LightEnergy = 2.2f, OmniRange = 6f, ShadowEnabled = true });
+        // (at the flame itself, short and soft: a light above the head flattened his face to plaster at chest-up, judge r2)
+        host.AddChild(new OmniLight3D { Position = new Vector3(0, TorchFlameY, 0), LightColor = new Color("#ffa050"), LightEnergy = 1.1f, OmniRange = 3.5f, ShadowEnabled = true });
+    }
+
+    /// <summary>The held torch's flame above its grip (the flame kit's card from 0.31, 0.26 tall at 0.55).</summary>
+    public const float TorchFlameY = 0.40f;
+
+    /// <summary>Where the flame of a torch held in a slot is in the world (Folk's patrol light follows it), or null.</summary>
+    public (double X, double Y, double Z)? HeldAt(string slot)
+    {
+        if (!held.TryGetValue(slot, out var at) || !IsInstanceValid(at) || !at.IsInsideTree()) return null;
+        Node3D host = at;
+        foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
+        var p = host.GlobalTransform * new Vector3(0, TorchFlameY, 0);
+        return (p.X, p.Y, p.Z);
     }
 
     Node3D TorchFist(Node3D torch)

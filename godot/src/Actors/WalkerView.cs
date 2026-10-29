@@ -77,6 +77,8 @@ public partial class WalkerView : Node3D, INpcView
         if (inner != null) inner.Hold(slot, pack, piece); else holds.Add((slot, pack, piece));
     }
 
+    public (double X, double Y, double Z)? HeldAt(string slot) => inner?.HeldAt(slot);
+
     void INpcView.Dispose()
     {
         // (made still on the worker: freed when it is done)

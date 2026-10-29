@@ -241,6 +241,10 @@ public partial class CrowdView : Node3D
         g.Walking = speed > (g.Walking ? 0.2 : 0.45);
         switch (e.State)
         {
+            // (risen, a varied pack's copy stands its own moment before it comes on: Ai, Vary.Delay)
+            case EnemyState.Rising when e.AnimT >= RiseTime && asset.Clips.ContainsKey("idle"):
+                role = "idle"; t = time + e.Seed * 9;
+                break;
             case EnemyState.Rising:
                 role = "rise";
                 t = e.AnimT * (asset.Duration("rise") / RiseTime);
@@ -331,7 +335,8 @@ public partial class CrowdView : Node3D
                     // Its own walk clock, run faster or slower with its pace:
                     // time times pace would leap to a new pose at every change of speed.
                     // A walk whose pace is known keeps its feet on the ground at any size and speed.
-                    role = "move";
+                    // (a share of a varied pack walks its kind's second gait, the other hand reaching: Vary.Second)
+                    role = battle?.VaryPacks == true && asset.Clips.ContainsKey("move2") && Vary.Second(e.Seed, 0.45) ? "move2" : "move";
                     double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
                     g.Phase += dt * (asset.Pace > 0
                         ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
@@ -408,6 +413,14 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
+        // A varied pack's copy (the Low Ford's risen): its own skin value (0.55 to 1) and, for about a third, a coat of
+        // river mud, darker and browner (Vary.Coat; the crowd's one tint is all a copy has).
+        if (battle?.VaryPacks == true && e.Def.Weave is > 0)
+        {
+            var (val, mud) = Vary.Coat(e.Seed, 0.55, 0.3);
+            tint *= new Color((float)val, (float)val, (float)val);
+            if (mud) tint *= new Color(0.62f, 0.54f, 0.44f);
+        }
         return (tint, glow);
     }
 

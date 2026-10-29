@@ -234,6 +234,8 @@ public sealed class Waystation : ZoneRuntime
             },
             Round = ["gS", "s2", "sqSW", "sqNW", "n1", "n2", "n1", "board", "e1", "e2", "gE", "e2", "e1", "sqSE", "s2", "s1"],
         }, G.Rng);
+        // (the town's standing people: walkers keep their distance from them too, NPC 17 r3)
+        foreach (var a in Actors.Values.Concat(guards).Concat(keepers)) folk.Fixed.Add((a.X, a.Z));
     }
 
     void MakeInteractables()

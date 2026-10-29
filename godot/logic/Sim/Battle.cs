@@ -242,6 +242,9 @@ public sealed partial class Battle
     /// story zone that shows a pack close (the Low Ford, NPC 17). Off, every kind keeps the old +-8% and its straight
     /// line, so the arenas' seeded fights and their balance are as they were.</summary>
     public bool VaryPacks;
+    /// <summary>Things the varied packs steer round (x, z, radius), beyond their colliders: a camp fire's ring of logs, a
+    /// lamp post (VaryPacks only; set by the zone).</summary>
+    public readonly List<(double X, double Z, double R)> Avoid = new();
     public double Time;
     public readonly Rng Rng;
     public readonly EventStream Events = new();
@@ -1578,6 +1581,14 @@ public sealed partial class Battle
         e.RetargetT = Rng.Next() * 0.5;
         e.Slot = Rng.Next() * Tau;
         e.Seed = Rng.Next();
+        // A varied pack's copy stands off where it was asked to, within a pace and a half (no grid; no new draws).
+        if (VaryPacks && def.Weave is > 0)
+        {
+            var (jx, jz) = Vary.Jitter(e.Seed, 1.4);
+            double nx = x + jx, nz = z + jz;
+            Collision.Resolve(ref nx, ref nz, e.Radius);
+            e.X = nx; e.Z = nz;
+        }
         e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
         e.Status.Clear();
         e.Flash = 0;

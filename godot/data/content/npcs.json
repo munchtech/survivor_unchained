@@ -11,7 +11,7 @@
    ],
    "tint": "#4f5b6b",
    "scale": 0.95,
-   "idle": "Idle_Talking_Loop",
+   "idle": "Idle_B",
    "person": {
     "sex": "female",
     "outfit": [

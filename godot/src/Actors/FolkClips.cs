@@ -80,6 +80,7 @@ public static class FolkClips
     public static string? Crowd(bool woman, bool armed, string game) => game switch
     {
         "Zombie_Walk_Fwd_Loop" or "Zombie_Walk_Fwd" or "Walking_D_Skeletons" => Named(woman, armed ? "lurch_armed" : "lurch"),
+        "LurchOther" => Named(woman, "lurch_armed"),
         "Rally" => Named(woman, armed ? "rally_armed" : "rally"),
         "Slam" => Named(woman, armed ? "slam_armed" : "slam"),
         "KneelAim" => Named(woman, "kneel_aim"),

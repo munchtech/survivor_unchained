@@ -57,4 +57,26 @@ public static class FolkSpacing
     /// <summary>How far (m) behind its lead's shoulder a companion walks, from a draw in [0, 1): 0.35 to 0.8, so two
     /// walking together are never a matched pair in step.</summary>
     public static double Lag(double r) => 0.35 + Math.Clamp(r, 0, 1) * 0.45;
+
+    /// <summary>How far apart two who stop to talk stand, facing each other (m).</summary>
+    public const double Talk = 1.1;
+
+    /// <summary>Where a companion stands to talk while its lead stops: Talk from the lead along (sx, sz) (a unit vector
+    /// across the camera's line when there is one, so the two stand side by side in the frame, never one behind the
+    /// other), on its own side (-1 or 1).</summary>
+    public static (double X, double Z) PairSpot(double lx, double lz, double sx, double sz, int side) =>
+        (lx + sx * Talk * (side < 0 ? -1 : 1), lz + sz * Talk * (side < 0 ? -1 : 1));
+
+    /// <summary>Two standing near one line of sight read as one figure with two heads (judge r2): the sideways move (x, z)
+    /// that takes me out to Gap across the view (dx, dz: a unit vector, the camera's look) from someone standing at
+    /// (ox, oz) within 4 m in depth, my share of it; zero if already clear. `tie` picks the side when exactly in line.</summary>
+    public static (double X, double Z) Beside(double x, double z, double ox, double oz, double dx, double dz, double share, double tie = 1)
+    {
+        double rx = x - ox, rz = z - oz;
+        double along = rx * dx + rz * dz, side = rx * -dz + rz * dx;
+        if (Math.Abs(along) >= 4 || Math.Abs(side) >= Gap || share <= 0) return (0, 0);
+        double s = Math.Abs(side) < 1e-6 ? (tie < 0 ? -1 : 1) : Math.Sign(side);
+        double push = (Gap - Math.Abs(side)) * share * s;
+        return (-dz * push, dx * push);
+    }
 }

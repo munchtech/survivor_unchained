@@ -1507,6 +1507,9 @@ public sealed class Prologue : ZoneRuntime
         base.Begin(b);
         // (the ford's risen come close and many: each its own pace and weave, not a file of clones, NPC 17)
         b.VaryPacks = true;
+        // (and they steer round the camp: the fire and its ring of logs, not walked through or stood on, judge r2)
+        var fireAt = L("fire");
+        b.Avoid.Add((fireAt.X, fireAt.Z, 2.4));
         wardenView = G.Look.BossView("ford_warden");
         wardenView.SetPose("sleep");
         core = G.Look.Orb("#bfe6ff", 0.42);
