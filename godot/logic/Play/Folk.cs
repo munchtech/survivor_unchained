@@ -147,6 +147,13 @@ public sealed class Folk
     /// children are small, with a child's larger head and no figure.</summary>
     public static PersonSpec Person(FolkRole role, FolkLook l, Random rng)
     {
+        if (Lore.PackageFolk && role != FolkRole.Child)
+        {
+            var pk = Lore.FolkPackages!;
+            if (role == FolkRole.Watch) return new PersonSpec { Sex = Sex.Male, Body = "npc:" + pk["watch"] };
+            bool woman = rng.NextDouble() < 0.5;
+            return new PersonSpec { Sex = woman ? Sex.Female : Sex.Male, Body = "npc:" + pk[woman ? "woman" : "man"] };
+        }
         bool child = role == FolkRole.Child;
         var sex = rng.NextDouble() < (role == FolkRole.Watch ? 0.3 : 0.5) ? Sex.Female : Sex.Male;
         bool hood = role == FolkRole.Watch || (!child && l.Model == "rogue_hooded");
@@ -416,7 +423,7 @@ public sealed class Folk
         walkers = walkers.Where(w => { if (w.Gone) { Remove(w); return false; } return true; }).ToList();
         // Keep the numbers to the hour.
         List<Walker> Leaders(FolkRole r) => walkers.Where(w => w.Role == r && w.Lead == null && !w.Leaving).ToList();
-        var want = new Dictionary<FolkRole, int> { [FolkRole.Adult] = plan.Adults, [FolkRole.Child] = plan.Children > 0 ? 1 : 0, [FolkRole.Watch] = plan.Watch ? 1 : 0 };
+        var want = new Dictionary<FolkRole, int> { [FolkRole.Adult] = plan.Adults, [FolkRole.Child] = plan.Children > 0 && !Lore.PackageFolk ? 1 : 0, [FolkRole.Watch] = plan.Watch ? 1 : 0 };
         spawnT -= dt;
         foreach (var role in new[] { FolkRole.Adult, FolkRole.Child, FolkRole.Watch })
         {

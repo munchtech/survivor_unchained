@@ -1511,7 +1511,7 @@ public sealed class Prologue : ZoneRuntime
         core.Visible = false;
         // The dead watchman at the post, where he fell: the fall played out and held.
         var man = L("watchman");
-        watchman = G.Look.Fallen(new PersonSpec
+        watchman = G.Look.Fallen(Lore.PackageFolk ? new PersonSpec { Sex = Sex.Male, Body = "npc:" + (Lore.FolkPackages!.GetValueOrDefault("watch") ?? "npc_watch_m") } : new PersonSpec
         {
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#4a3a2a", Skin = "#c8b0a0",
             Dye = new Dye { Cloth = "#4a5064" },
