@@ -57,6 +57,12 @@ public partial class PlayerView : Node3D
     /// <summary>True: her carried light lights the ground round her but not her (the close view by night, where
     /// from over her head it filled her face flat; E1 round 3).</summary>
     public bool LampOffHer;
+    /// <summary>The folk light's share (1: as built). Rendering 3 (judge j2 D4/D5): GameCloseUp ducks it inside a town lamp's
+    /// reach by night (her ember stacked on the lantern ran her body near-white) and takes it off in the close view by night.</summary>
+    public float FolkScale = 1;
+    /// <summary>The pool light's share (1: as built): ducked with the folk light inside a town lamp's reach by night (the
+    /// lantern's wall and ground blown under both, judge j2 D4).</summary>
+    public float PoolScale = 1;
     /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
     /// camp's fire, which stood behind the lens and filled her face flat from the front, can be kept off her alone (E1 judge 3).</summary>
     public const uint HerLayer = 1u << 10;
@@ -738,14 +744,14 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
         Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers : 0xFFFFFu;
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
-        FolkLight.LightEnergy = Light.LightEnergy * FolkK;
+        FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;
         FolkLight.OmniRange = Light.OmniRange * FolkRange;
         FolkLight.OmniAttenuation = FolkAtt;
         // Her weapon and shield are the world's (layer 1), so the pool lit them: at the pool's hip height her shield's face
@@ -803,13 +809,100 @@ public partial class PlayerView : Node3D
                     : GearOwn && own && (g.Layers & 2u) != 0 && IsMetal(g) ? HerGearLayer : HerLayer;
                 // (her weapon is the world's (layer 1), not people's: it keeps that and takes her gear's layer too, so her own
                 // lamps (the night key, the moon rim's gear twin) reach it; without them it was flat black by night, judge J1)
-                if (GearOwn && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
-                    g.Layers = own ? g.Layers | HerGearLayer : g.Layers & ~HerGearLayer;
+                // Rendering 3 (judge j2 C1/D1, "the shield face and the upper blade as bright as her face"): in the close view they
+                // leave the world's layer for hers alone (HerGearLayer), out of the close view's ground spot and the world's fire at
+                // full, lit as she is (the key, its fill, the fire's share on her, the moon rim's gear twin); and the blade takes
+                // its close-view finish (WeaponClose). --close-weapon-world: on the world's layer too, as round 2.
+                if (GearOwn && own && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
+                {
+                    g.Layers = WeaponWorld ? g.Layers | HerGearLayer : (g.Layers & ~1u) | HerGearLayer;
+                    if (!WeaponWorld) g.SetMeta(WorldMeta, true);
+                    WeaponClose(g, true);
+                }
+                else if (GearOwn && g.HasMeta(WorldMeta) && (g.Layers & 2u) == 0)
+                {
+                    if (!own) { g.Layers = (g.Layers & ~HerGearLayer) | 1u; g.RemoveMeta(WorldMeta); WeaponClose(g, false); }
+                }
+                else if (GearOwn && (g.Layers & 1u) != 0 && (g.Layers & 2u) == 0)
+                { g.Layers = own ? g.Layers | HerGearLayer : g.Layers & ~HerGearLayer; if (!own) WeaponClose(g, false); }
                 else if (own && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | mine;
                 else if (!own && (g.Layers & HerLayers) != 0) g.Layers = (g.Layers & ~HerLayers) | 2u;
             }
             Relayer(c, own, hair);
         }
+    }
+
+    static readonly StringName WorldMeta = "su_close_world", CloseMatMeta = "su_close_mat";
+    static readonly bool WeaponWorld = Args.Has("close-weapon-world");
+    // --close-weapon-rough R (0: as built): the close view's roughness floor on her weapon and shield; --close-weapon-sheen K:
+    // (Rendering 3: the floor is off by default. At the judge's 0.35 the blade's polished face spread the sky's bright horizon
+    // into a broad band, the upper blade's p99.9 233 of 255 against 198 without, lfclose_00.)
+    // the metal's sheen there, its albedo's share (a metal reflects its albedo: the sky's, the moon's and the lamps' sheen alike)
+    // (Rendering 3, judge j2 D1: 0.35 and 50%, the blade's pink-white glint).
+    static readonly float WeaponRough = Args.Num("close-weapon-rough", 0f), WeaponSky = Args.Num("close-weapon-sheen", 0.5f);
+
+    static readonly Dictionary<(ulong, int, float, float, int, float), ImageTexture> remade = new();
+    /// <summary>A texture made again (once, kept): channel ch (0-3 r,g,b,a; 4 grey: all three) at least lo and times k,
+    /// and channel ch2 (-1 none) times k2.</summary>
+    static ImageTexture Remade(Texture2D t, int ch, float lo, float k, int ch2, float k2)
+    {
+        var key = (t.GetRid().Id, ch, lo, k, ch2, k2);
+        if (remade.TryGetValue(key, out var done)) return done;
+        var im = t.GetImage();
+        if (im.IsCompressed()) im.Decompress();
+        im.Convert(Image.Format.Rgba8);
+        var px = im.GetData();
+        static void Do(byte[] px, int c, float lo, float k)
+        {
+            if (c < 0) return;
+            for (int i = 0; i < px.Length; i += 4)
+                for (int j = c == 4 ? 0 : c; j <= (c == 4 ? 2 : c); j++)
+                    px[i + j] = (byte)Mathf.Clamp(Mathf.RoundToInt(Mathf.Max(px[i + j] / 255f, lo) * k * 255), 0, 255);
+        }
+        Do(px, ch, lo, k);
+        if (ch2 != ch) Do(px, ch2, 0, k2);
+        else if (ch2 >= 0) Do(px, ch2, 0, k2);
+        var o = Image.CreateFromData(im.GetWidth(), im.GetHeight(), false, Image.Format.Rgba8, px);
+        o.GenerateMipmaps();
+        return remade[key] = ImageTexture.CreateFromImage(o);
+    }
+
+    /// <summary>Her weapon's and shield's close-view finish (on) or as built (off): each plain material (StandardMaterial3D)
+    /// a copy with its roughness at least WeaponRough and its metal's sheen at WeaponSky (its albedo).</summary>
+    static void WeaponClose(GeometryInstance3D g, bool on)
+    {
+        if (g is not MeshInstance3D m || m.Mesh == null) return;
+        if (!on)
+        {
+            if (!m.HasMeta(CloseMatMeta)) return;
+            for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++) m.SetSurfaceOverrideMaterial(s, null);
+            m.RemoveMeta(CloseMatMeta);
+            return;
+        }
+        if (m.HasMeta(CloseMatMeta) || (WeaponRough <= 0 && WeaponSky >= 1)) return;
+        for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
+        {
+            if (m.GetSurfaceOverrideMaterial(s) != null || m.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D bm) continue;
+            var c = (BaseMaterial3D)bm.Duplicate();
+            if (WeaponRough > 0 && c.Roughness < WeaponRough && c.RoughnessTexture == null) c.Roughness = WeaponRough;
+            // The roughness texture made again (an ORM's channel), at least WeaponRough of the material's scale (texture x Roughness).
+            if (c.RoughnessTexture is Texture2D rtx && WeaponRough > 0 && c.Roughness > 0)
+            {
+                var nt = Remade(rtx, (int)c.RoughnessTextureChannel, Mathf.Min(1, WeaponRough / c.Roughness), 1, -1, 1);
+                if (c.AOTexture == rtx) c.AOTexture = nt;   // (the same ORM: its occlusion channel as it was)
+                c.RoughnessTexture = nt;
+            }
+            // The metal's sheen (sky, moon and lamps alike): a metal's reflection is its albedo, so its albedo times WeaponSky.
+            if (WeaponSky < 1 && c.Metallic > 0)
+            {
+                float k = Mathf.Lerp(1, WeaponSky, c.Metallic);
+                var lin = c.AlbedoColor.SrgbToLinear();
+                c.AlbedoColor = new Color(lin.R * k, lin.G * k, lin.B * k, lin.A).LinearToSrgb();
+            }
+            if (Args.Has("camlog")) GD.Print($"weaponclose {m.Name} s{s} metal={bm.Metallic:F2} rough={bm.Roughness:F2} rtex={bm.RoughnessTexture != null} ao={bm.AOEnabled} aoSame={bm.AOTexture == bm.RoughnessTexture}");
+            m.SetSurfaceOverrideMaterial(s, c);
+        }
+        m.SetMeta(CloseMatMeta, true);
     }
 
     /// <summary>When nothing is near: a breath caught after a long run, and
