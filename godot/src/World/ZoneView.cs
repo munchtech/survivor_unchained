@@ -176,6 +176,7 @@ public partial class ZoneView : Node3D
             moths.Add((m, p));
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
+        NightLamps();   // (Env 22 r1f: props_own.json's night lamps, ZoneView.Town; after the zone's own lights, each its own new light)
         SetNight(false);
     }
 
@@ -514,6 +515,13 @@ public partial class ZoneView : Node3D
         foreach (var c in g.GetChildren()) if (c is GeometryInstance3D m) m.Visible = false;
         var f = FlameKit.Add(g, Vector3.Zero, kind, cold, scale, light: false);
         f.Transform = InLandmarks(g).AffineInverse() * new Transform3D(Basis.Identity, at);
+        WireFlame(f, light, at, kind, cold, scale, holder);
+    }
+
+    /// <summary>A lamp's flame cards tuned for the play camera, driving its zone light, its holder lit from inside and
+    /// lit with the light (LampFlame; ZoneView.Town's night lamps).</summary>
+    void WireFlame(Flame f, int light, Vector3 at, FlameKind kind, bool cold, float scale, Node3D holder)
+    {
         // In a cage the burner is a hand behind the flame: the kit's soft edge (0.15 m) faded it to nothing.
         foreach (var c in f.FindChildren("*", "MeshInstance3D", true, false))
             if (c is MeshInstance3D card && card.Mesh?.SurfaceGetMaterial(0) is ShaderMaterial fm)

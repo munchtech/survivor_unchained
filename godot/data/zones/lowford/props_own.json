@@ -24,6 +24,9 @@
   [-17.0, 0.0, 0, 0, -79.4]
  ],
  "flora_move": [
+  [-40.27, -74.45, 37.47, -12.05],
+  [32.38, -69.06, -34.58, -23.44],
+  [28.18, -77.12, -31.58, 10.62],
   [6.05, -14.93, 2.20, -1.00],
   [6.14, -19.97, 1.76, 0.57],
   [-3.73, 63.18, -3.00, -0.60],
@@ -47,6 +50,13 @@
   "kk-halloween-lantern_standing-0"
  ],
  "place": [
+  {"_doc": "Env 22 r1e (judge: the wood road by night one violet value, nothing at its verges): the wood road's verge kit at the moonlit gap (flora_move: three alders from deep in the wood to the road's west edge, their shadows across it north and south of the gap)", "preset": "fallen_trunk", "x": 6.0, "z": -79.0, "rot": 0.6},
+  {"preset": "waystone", "x": -1.5, "z": -76.0, "rot": 0.9},
+  {"preset": "branches_a", "x": -4.6, "z": -78.8, "rot": 0.3},
+  {"preset": "branches_b", "x": 4.9, "z": -66.5, "rot": 2.1},
+  {"preset": "roots_a", "x": -5.9, "z": -76.66, "rot": 0.6},
+  {"preset": "roots_a", "x": -3.4, "z": -66.5, "rot": 2.4, "scale": 0.9},
+  {"preset": "branches_b", "x": 3.6, "z": 84.5, "rot": 0.7},
   {"preset": "castle", "x": 3.0, "z": -650.0, "y": 0.2, "scale": 0.6},
   {"preset": "beyond_house", "x": 2.6, "z": -117.8},
   {"preset": "haze_veil", "x": 0.0, "z": -114.85, "y": -0.4},
@@ -114,7 +124,16 @@
     2.6,
     1.9
    ]
-  }
+  },
+  {"_doc": "Env 22 r1c (triage judge: the gate's apron large, flat and empty): a handcart left by the west tower, barrels and a crate by the east one, off the way", "preset": "handcart", "x": -6.2, "z": -104.2, "rot": 1.25},
+  {"preset": "barrel", "x": 6.4, "z": -105.9, "rot": 0.4},
+  {"preset": "barrel", "x": 7.25, "z": -105.2, "rot": 1.9, "scale": 0.92},
+  {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8},
+  {"_doc": "Env 22 r2 (judge r1: the apron still empty): loose cobbles, straw off the carts, twigs (gate_apron, camp_ground's kit; no shadow); the puddle is \"puddles\"", "preset": "gate_apron", "x": 0.0, "z": -103.5}
+ ],
+ "puddles": [[1.5, -103.1, 0.95, 0.55, 18], [-2.3, -101.6, 0.5, 0.32, -30]],
+ "night_lamps": [
+  {"_": "(Env 22 r2, judge r1: the gate's apron cool and empty, the passage floor a black void) a lantern set down inside the arch by the east jamb: its light down the passage floor and out over the apron", "holder": "lantern_standing", "on": [1.35, -109.3, 0.0], "local": [0.0, 0.0, 0.0], "turn": 0.5, "color": "#ffb468", "energy": 3.2, "range": 14.0, "att": 0.7, "spec": 0.25}
  ],
  "lamps": {
   "glow-1-0": {
@@ -134,8 +153,9 @@
    "day": 0.15
   },
   "glow-10-0": {
-   "color": "#ffa040",
-   "energy": 1.0,
+   "_": "(Env 22 r2, judge r1: Road B's low lantern (its flame 1.4 m up, the others' 2 m) pooled red-orange on the leaf litter, hotter than the rest) paler and a little softer",
+   "color": "#ffb878",
+   "energy": 0.8,
    "day": 0.15
   },
   "glow-11-0": {
@@ -158,8 +178,8 @@
    "energy": 1.0,
    "day": 0.15
   },
-  "glow-7-0": {"color": "#ffe0a4", "energy": 0.45, "att": 1.2, "spec": 0.1, "day": 0.06},
-  "glow-8-0": {"color": "#ffe0a4", "energy": 0.45, "att": 1.2, "spec": 0.1, "day": 0.06}
+  "glow-7-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06},
+  "glow-8-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06}
  },
  "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
  "kits": {
