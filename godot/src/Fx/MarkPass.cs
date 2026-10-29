@@ -40,10 +40,34 @@ public partial class MarkPass : CompositorEffect
         ["s0"] = 0.9f, ["s1"] = 1.4f, ["sb0"] = 0.08f, ["sb1"] = 0.25f, ["tol"] = 0.6f,
         // a part-gated pixel (a grass tuft's tips) pushed to the scarlet at its own value, never pink: from rs0 to rs1 of tint
         ["rs0"] = 0.1f, ["rs1"] = 0.45f,
+        // (baked:) the hatch inside the mark (the owner, 28 Oct: "what I do miss is the hatch patterns"): two diagonal line
+        // families in the mark's own metres (hx 1 crossed, 0 one family), period hp m, half width hw m (never under half a
+        // pixel: thinner lines lose their light instead of shimmering), light hl x the rims'; hu of it ahead of the running
+        // fill (the filled part a step brighter); over the still water hwat of it (the river: the hatch read as a net)
+        ["hl"] = 0.35f, ["hp"] = 0.16f, ["hw"] = 0.014f, ["hu"] = 0.6f, ["hwat"] = 0f, ["hx"] = 1f,
     };
+
+    /// <summary>The red line's colour, the owner's pick (godot/data/mark_look.json "look"; env MARK_LOOK overrides): a
+    /// named set of Tune numbers ("scarlet" the defaults above, "salmon" the old amber-over-dirt look).</summary>
+    public static string Look { get; private set; } = "scarlet";
 
     static MarkPass()
     {
+        try
+        {
+            const string path = "res://data/mark_look.json";
+            if (FileAccess.FileExists(path))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(FileAccess.GetFileAsString(path));
+                var root = doc.RootElement;
+                Look = System.Environment.GetEnvironmentVariable("MARK_LOOK") is { Length: > 0 } env ? env
+                    : root.TryGetProperty("look", out var l) ? l.GetString() ?? Look : Look;
+                if (root.TryGetProperty("looks", out var looks) && looks.TryGetProperty(Look, out var set))
+                    foreach (var kv in set.EnumerateObject())
+                        if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.Number) Tune[kv.Name] = kv.Value.GetSingle();
+            }
+        }
+        catch (Exception e) { GD.PushWarning("MarkPass look: " + e.Message); }
         if (System.Environment.GetEnvironmentVariable("MARK_TUNE") is not { Length: > 0 } s) return;
         foreach (var kv in s.Split(','))
             if (kv.Split('=') is [var k, var v] && float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)) Tune[k.Trim()] = f;
@@ -96,7 +120,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -178,7 +202,7 @@ public partial class MarkPass : CompositorEffect
             T["front"], T["tail"], T["body"], T["fill"],
             bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
             T["le"], T["fs"], T["fh"], T["knee"],
-            T["bed"], 1, 0, 0,
+            T["bed"], 1, 2f / (size.Y * Mathf.Max(Mathf.Abs(proj.Y.Y), 1e-4f)), 0,
         };
         // (the tiles: each 8 x 8 px's mean seen value, a first dispatch of the same shader, mode 0)
         var ts = new Vector2I((size.X + 7) / 8, (size.Y + 7) / 8);
@@ -258,7 +282,7 @@ public partial class MarkPass : CompositorEffect
             float front; float tail; float body; float fill_e;
             float bri; float con; float sat; float flags;
             float le; float fs; float fh; float knee;
-            float bed; float pad0; float pad1; float pad2;
+            float bed; float pad0; float pxang; float pad2;
         } pc;
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth;
@@ -364,11 +388,27 @@ public partial class MarkPass : CompositorEffect
             return lead * max(dm > 0.0 ? t * t : 1.0, dm > 0.0 ? pc.body : 0.0);
         }
 
+        // The pixel's footprint on the ground (m) and the hatch's share here (the still water's), set per pixel and mark.
+        float gpx = 0.01, ghw = 1.0;
+        // One family of hatch lines across t (m): period T_HP, half width T_HW antialiased over a pixel; a line thinner
+        // than half a pixel is drawn half a pixel wide at its light's share (no shimmer), and the hatch fades out where
+        // its period nears a few pixels (no moire far off).
+        float hline(float t) {
+            float dd = abs(fract(t / T_HP + 0.5) - 0.5) * T_HP, w = max(T_HW, 0.5 * gpx);
+            return clamp((w + 0.5 * gpx - dd) / max(gpx, 1e-4), 0.0, 1.0) * (T_HW / w);
+        }
+        // The hatch at l (m, the mark's own axes), 0..1: diagonal to them, crossed or not.
+        float hatch(vec2 l) {
+            float a = hline((l.x + l.y) * 0.70711);
+            if (T_HX > 0.5) a = max(a, hline((l.x - l.y) * 0.70711));
+            return a * (1.0 - smoothstep(T_HP * 0.2, T_HP * 0.4, gpx)) * ghw;
+        }
+
         // One mark at local point l (m): out cover (the bed's re-tint), light (its own, x the energy)
         void shape(int i, vec2 l, out float cover, out float light) {
             vec4 a = mk.m[i * 4], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
             int kind = int(a.w + 0.5);
-            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm;
+            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm, filled = 1.0;
             if (kind == 0) {
                 // a lane: rims along its sides at 0.9 of its half width, soft ends (no cap line: a lane, not a box)
                 float sc = hx;
@@ -385,6 +425,7 @@ public partial class MarkPass : CompositorEffect
                 wh = glw * 1.5;
                 if (e.x >= 0.0) {
                     float dm = (-hz + e.x) - l.y;
+                    filled = smoothstep(-0.03, 0.03, dm);
                     f = fillf(dm) * clamp((0.86 * hx - abs(l.x)) / max(0.04 * hx, 0.02), 0.0, 1.0) * smoothstep(0.0, 0.15, l.y + hz);
                 }
             } else {
@@ -404,12 +445,14 @@ public partial class MarkPass : CompositorEffect
                 sm = smoothstep(-0.33 * R, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 wh = fout * 2.0;
-                if (e.x >= 0.0 && kind == 1) f = fillf(e.x * 0.97 - r);
+                if (e.x >= 0.0 && kind == 1) { f = fillf(e.x * 0.97 - r); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
             }
+            // the hatch: inside the rims (clear of their glow), a step brighter where the fill has run
+            float hat = d < 0.0 ? hatch(l) * smoothstep(0.03, 0.1, -d) * ends * mix(T_HU, 1.0, filled) : 0.0;
             // (the rims' cores over the bed's scarlet, not the ground's own colour: a rim added over grey went salmon)
             cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends, ca);
             cover = max(cover, min(f * 4.0, 1.0) * (1.0 - pc.bed));
-            light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
+            light = max(max(edge, inner * ends), hat * T_HL) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
         void main() {
@@ -460,6 +503,8 @@ public partial class MarkPass : CompositorEffect
                 vec3 nv = texture(nrm, uv).xyz * 2.0 - 1.0;
                 up = (mt.cam * vec4(nv, 0.0)).y / max(length(nv), 1e-4);
             }
+            // (the footprint: the pixel's angle at its distance, stretched by the ground's slant to the eye)
+            gpx = length(wp - eye) * pc.pxang / sqrt(max(-ray.y, 0.25));
             float tint = 0.0;
             float light = 0.0;
             float rs = 0.0;
@@ -472,6 +517,7 @@ public partial class MarkPass : CompositorEffect
                 vec2 l = vec2(dot(d, ax.xy), dot(d, ax.zw));
                 bool inbox = abs(l.x) <= s.x && abs(l.y) <= s.y;
                 float gh = 0.0, bank = 1.0, slack = 0.0, hgt = 1.0;
+                ghw = 1.0;
                 if (inbox) {
                     // one height reference for the bank and the water: the ground's heights, never under the still water
                     int sl_ = int(e.z + 0.5);
@@ -483,6 +529,7 @@ public partial class MarkPass : CompositorEffect
                     slack = min(T_TOL * bend, 0.4);
                     // a bank steeper than s0..s1 shows no bed (no fold down its face), the water past its foot does
                     float under = pc.water_on > 0.5 ? smoothstep(0.02, 0.3, pc.water_y - g) : 0.0;
+                    ghw = pc.water_on > 0.5 ? mix(1.0, T_HWAT, smoothstep(-0.05, 0.12, pc.water_y - g)) : 1.0;
                     bank = 1.0 - smoothstep(T_S0, T_S1, sl) * (1.0 - under);
                 }
                 if (inbox && gh < pc.roof) {
