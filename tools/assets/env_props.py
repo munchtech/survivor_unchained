@@ -266,6 +266,16 @@ def uv_part(p, rng):
         # (E9d) cloth on its own tiling sheet (canvas_tile.png, 0.5 m a tile): box-projected in metres, no atlas
         # (C01 set) or the bedroll's wool (wool_tile.png, 0.4 m a tile)
         m = TILES[p.region]
+        if p.cyl:
+            # (C01 set) round a tube (a roll): unwrapped about its axis (local y), the weave at its true size all round
+            for f in bm.faces:
+                ac = math.atan2(f.calc_center_median().z, f.calc_center_median().x)
+                for l in f.loops:
+                    c = l.vert.co
+                    a = math.atan2(c.z, c.x)
+                    a += 2 * math.pi * round((ac - a) / (2 * math.pi))
+                    l[uvl].uv = (a * p.cyl / m, c.y / m)
+            return
         for f in bm.faces:
             ax = max(range(3), key=lambda i: abs(f.normal[i]))
             for l in f.loops:
@@ -714,7 +724,7 @@ def wool_roll(L, r, at, tint, seed):
         v.co.x *= k
         v.co.z *= k
     turn = R('Z', -math.pi / 2)
-    out.append(Part(bm, 'wool', tint, at @ turn, smooth=True, jitter=0.0))
+    out.append(Part(bm, 'wool', tint, at @ turn, smooth=True, jitter=0.0, cyl=r))
     for sgn in (-1, 1):
         endc = lathe([(r * 0.985, 0.0), (r * 0.5, 0.006), (0.0, 0.008)], segs, cap0=False, cap1=False)
         out.append(Part(endc, 'rollend', tint * 0.9, at @ turn @ T(0, sgn * L / 2, 0) @ (R('X', math.pi) if sgn < 0 else Matrix.Identity(4)),
@@ -755,11 +765,12 @@ def bedroll_open(p):
 
     def bl(u, v):
         x = (u - 0.5) * W
-        rump = 0.012 * hnoise((x * 3, 0, v * 5), seed) + 0.006 * math.sin(v * 11 + u * 4) * (0.5 + 0.5 * math.sin(u * 7 + 1))
+        # slow lumps, and two or three soft folds running down its length where it settled (wool's weight)
+        rump = 0.012 * hnoise((x * 3, 0, v * 5), seed) + 0.006 * math.sin(v * 9 + u * 4) * (0.5 + 0.5 * math.sin(u * 7 + 1))
         hollow = -0.005 * math.exp(-((u - 0.5) / 0.25) ** 2)
         e = abs(u - 0.5) * 2
         drape = -0.012 * smooth01(0.82, 1.0, e)
-        base = 0.011 + t + max(-t * 0.6, rump + hollow + drape)
+        base = 0.016 + t + max(-t * 0.4, rump + hollow + drape)
         vf = fold_v + 0.1 * (u - 0.5)
         if v <= vf:
             return (x, base, BL0 - v * BL)

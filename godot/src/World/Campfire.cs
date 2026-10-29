@@ -19,7 +19,7 @@ public static class Campfire
     /// only the stones' inner faces and the ash nearest the coals are lit, warm, and their tops stay dark.</summary>
     public const uint RingLayer = 1u << 14;
     /// <summary>--campfire-ring K: the coals' glow on the ring's inner faces and the ash bed (for pictures).</summary>
-    static readonly float RingK = SurvivorUnchained.Args.Num("campfire-ring", 0.9f);
+    static readonly float RingK = SurvivorUnchained.Args.Num("campfire-ring", 1.6f);
 
     // The embers' and smoke's looks, shared by every fire, so a close camera can keep them off the space in front of it.
     static StandardMaterial3D? emberLook, smokeLook;
@@ -151,7 +151,7 @@ public static class Campfire
             float soot = Mathf.Clamp(inward * 0.85f + near * 0.5f, 0, 1) * 0.82f;
             // (C01 set) the whole stone weathered dark (a fire ring's stones are smoked through): the moon finds
             // only a dull grey on their tops; the inner faces, sooted, take the coals' glow
-            float dark = 0.5f * (1 - soot);
+            float dark = 0.72f * (1 - soot * 0.8f);
             col[i] = new Color(dark + 0.04f, dark + 0.035f, dark + 0.03f);
         }
         for (int i = 0; i < b.P.Count; i++) b.P[i] *= size;

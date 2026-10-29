@@ -40,13 +40,13 @@ def main():
     cols = np.tile(pnoise(rng, 50)[:1, :], (N, 1))
     warp = 0.5 + 0.5 * np.cos(2 * np.pi * (x / per - 0.5) + 0.0)
     weft = 0.5 + 0.5 * np.cos(2 * np.pi * (y / per - 0.5))
-    yarn = over * warp * (1 + 0.3 * cols) + (1 - over) * weft * (1 + 0.3 * rows)
+    yarn = over * warp * (1 + 0.12 * cols) + (1 - over) * weft * (1 + 0.12 * rows)
     # the nap: a felted fuzz over the weave, softening it (fulled wool), and a few pills
     nap = pnoise(rng, 90) * 0.5 + pnoise(rng, 160) * 0.5
     pills = np.clip(pnoise(rng, 70) - 2.1, 0, None)
     h = 0.55 * yarn + 0.3 * (nap * 0.5 + 0.5) + 0.6 * pills
     mott = pnoise(rng, 5) * 0.6 + pnoise(rng, 14) * 0.4
-    tone = 0.86 + 0.03 * (over * cols + (1 - over) * rows) + 0.035 * mott + 0.04 * (yarn - 0.5) + 0.02 * nap + 0.03 * pills
+    tone = 0.86 + 0.008 * (over * cols + (1 - over) * rows) + 0.035 * mott + 0.04 * (yarn - 0.5) + 0.02 * nap + 0.03 * pills
     alb = np.stack([tone * 1.0, tone * 0.98, tone * 0.955], -1)
     Image.fromarray((np.clip(alb, 0, 1) * 255).astype(np.uint8)).save(OUT / "wool_tile.png")
     dx = (np.roll(h, -1, 1) - np.roll(h, 1, 1)) * 0.5
