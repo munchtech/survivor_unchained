@@ -1250,13 +1250,27 @@ public partial class Game
                 }
                 case "prop":
                 {
-                    // A thing set down for the scene: her weapon leaning on the log.
+                    // A thing set down for the scene: her weapon leaning on the log (an Arms "piece"), or any
+                    // GLB/scene by "scene": "res://..." (the letter, the dropped lamp), on the world's layer 1.
                     var arms = Loadouts.Of(g.Journey.Ch).Arms;
                     string? piece = c.Str("piece") switch { "@weapon" => arms.Right ?? arms.Left, "@shield" => arms.Forearm, var s => s };
-                    string name = c.Str("name") ?? piece ?? "prop";
+                    string? scenePath = c.Str("scene");
+                    string name = c.Str("name") ?? piece ?? scenePath ?? "prop";
                     if (props.Remove(name, out var old)) old.QueueFree();
-                    if (piece == null || !Arms.All.ContainsKey(piece) || c.Bool("remove")) break;
-                    var node = Arms.Make(piece);
+                    if (c.Bool("remove")) break;
+                    Node3D node;
+                    if (scenePath != null)
+                    {
+                        if (GD.Load<PackedScene>(scenePath) is not PackedScene ps || ps.Instantiate() is not Node3D sn)
+                        {
+                            GD.PushWarning($"cinema prop: no scene at {scenePath}");
+                            break;
+                        }
+                        node = sn;
+                        WorldLayer(node);
+                    }
+                    else if (piece == null || !Arms.All.ContainsKey(piece)) break;
+                    else node = Arms.Make(piece);
                     var at = places.Resolve(c.Get("where"));
                     node.Position = V(at);
                     var r = c.Get("rot");
@@ -1657,6 +1671,13 @@ public partial class Game
         }
 
         readonly Dictionary<string, Node3D> props = new();
+
+        /// <summary>A "prop" cue's scene on the world's visual layer 1 (the zone's light, decals and shadows), all through.</summary>
+        static void WorldLayer(Node n)
+        {
+            if (n is VisualInstance3D vi) vi.Layers = 1;
+            foreach (var ch in n.GetChildren()) WorldLayer(ch);
+        }
         static GradientTexture2D? halo;
 
         /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
