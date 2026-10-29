@@ -1,8 +1,18 @@
 {
- "_doc": "The red line's colour (MarkPass, an elite's or a boss's blow on the ground): the owner's pick is \"look\" (one line). Each look is a set of MarkPass.Tune numbers over its defaults (\"scarlet\" = the defaults). salmon = the old amber-over-dirt look (before 27 Oct) matched on screen: bed tint (1, tg, tb) and rims (1, hg, hb) in linear light, the fold (fs the saturation, fh the hue in degrees) opened for a warmer red, k the bed's value against the ground's. Env MARK_LOOK=<name> overrides for shots; MARK_TUNE still overrides single numbers.",
+ "_doc": "The red line (MarkPass: an elite's or a boss's blow on the ground). \"look\" is its colour, the owner's pick (one line): each look is a set of MarkPass.Tune numbers over its defaults (\"scarlet\" = the defaults; salmon = the old amber-over-dirt look before 27 Oct, matched on screen: bed tint (1, tg, tb) and rims (1, hg, hb) in linear light, the fold (fs saturation, fh hue in degrees) opened for a warmer red, k the bed's value against the ground's). Env MARK_LOOK=<name> overrides it for shots; MARK_TUNE still overrides single numbers (hs=<id> forces every mark's pattern). \"patterns\": the pattern inside a red mark (grid, hatch, chevron, molten, cracks, lattice): a telegraph that names its own (Ev.Telegraph.Pattern, a skill's) keeps it; else by the blow's school (Fire, Frost, Storm, Nature, Arcane, Holy, Shadow); else by its shape (line, circle, cone, ring); else default. The threat stays on the rims and the running front (red); the pattern carries the type, tinted by ht.",
  "look": "scarlet",
  "looks": {
   "scarlet": {},
   "salmon": { "tg": 0.2, "tb": 0.11, "hg": 0.25, "hb": 0.13, "fs": 0.45, "fh": 20, "k": 0.9 }
+ },
+ "patterns": {
+  "default": "hatch",
+  "line": "chevron",
+  "circle": "hatch",
+  "cone": "hatch",
+  "ring": "hatch",
+  "Fire": "molten",
+  "Frost": "cracks",
+  "Holy": "lattice"
  }
 }
