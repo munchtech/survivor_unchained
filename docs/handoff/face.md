@@ -41,7 +41,7 @@ Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES
     - The braid tie reads as a striped white-blue band.
     - Strap trims are wavy and doubled (C01 s8, C02 s8): outfits.
     - A cup notch at C01 s3: outfits.
-- Scratch: coordinator pad `face48\` (briefs s1-s4, j1-j3, folk, braid; shoot.py, measure.py and measure4.py; testcopies c96/c97/c98; frames r1-r5).
+- Scratch backed up to `survivorsunchained_inputs\scratch_61174ebbace48\` (briefs, shoot.py, measure.py and measure4.py, testcopies, r3 and r5 after frames, the owner sheet sources). The pad `face48\` (1.8 GB of runs) is left for the sweep: Recycle Bin failed non-interactively. Owner sheet (judge-passed r3 frames): `survivorsunchained_inputsace48_owner\cine_her_AB_half.jpg`.
 - **Spend:**
   - Solvers: 185k, 200k, 198k, 198k (light) and 101k (braid).
   - Workers: 61k and 47k.
