@@ -41,7 +41,7 @@
         {"do": "light", "light": 12, "level": 0.3, "color": "#8ac8ff", "at": 0},
         {"do": "light", "light": 13, "level": 0.3, "color": "#8ac8ff", "at": 0},
         {"do": "light", "light": 14, "level": 0.3, "color": "#8ac8ff", "at": 0},
-        {"do": "lamp", "actor": "warden", "glow": 1.0, "lit": false},
+        {"do": "lamp", "actor": "warden", "glow": 1.0, "lit": false, "glint": 0},
         {"do": "head", "actor": "warden", "where": {"actor": "warden", "bone": "head", "off": [0, 0.0, 4.0]}, "amount": 0.6, "over": 0.1},
         {"at": 0.4, "do": "head", "actor": "warden", "where": {"actor": "warden", "bone": "head", "off": [0.5, 1.2, 3.5]}, "amount": 0.7, "over": 0.06},
         {"at": 0.4, "do": "lamp", "actor": "warden", "glow": 2.4, "over": 0.08},
@@ -68,6 +68,7 @@
       "fit": ["cin_heart_goes_down.morning"],
       "tail": 1.3,
       "cues": [
+        {"do": "lamp", "actor": "warden", "glint": 1},
         {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#6e5a66", "note": "C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
         {"do": "atmosphere", "preset": "now", "key": 0.12, "hemi": 0.08, "env": 0.1, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0.9, "hemiSky": "#403c78", "azimuth": 195},
         {"do": "grade", "sat": 0.88, "moonSat": 0.03, "moonDrop": 0.8, "shade": "#2e2452", "shadeK": 0.7, "moonTop": 0.62, "moonWidth": 0.15},

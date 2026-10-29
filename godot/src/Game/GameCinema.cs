@@ -985,6 +985,8 @@ public partial class Game
                         if (c.Has("flame")) w.FlameLevel = (float)c.Num("flame");
                         if (c.Str("flameColor") is string fch) w.FlameColor = new Color(fch);
                         if (c.Has("halo")) w.HaloLevel = (float)c.Num("halo");
+                        // "glint": the eye-lights' face glint (WardenLook.EyeGlint) x this; 0 leaves only the eyes' own glow (C03 s1's ECU).
+                        if (c.Has("glint")) SurvivorUnchained.View.WardenLook.GlintScale = (float)c.Num("glint");
                         if (!c.Has("glow")) break;
                         double from = w.Glow, to = c.Num("glow");
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => w.Glow = from + (to - from) * k));
@@ -2004,6 +2006,7 @@ public partial class Game
         public void Finish()
         {
             g.cineSat = null;
+            SurvivorUnchained.View.WardenLook.GlintScale = 1;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
             if (g.air.Haze != null) g.air.Haze = null;
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
