@@ -33,6 +33,7 @@ public static class NpcDye
     static readonly Dictionary<string, Shader> shaders = new();
     static string? code;
     static int copies;
+    static readonly HashSet<string> told = new();
 
     /// <summary>Called under People.BuildLock (the count and caches are shared with WalkerView's worker thread).</summary>
     public static void Apply(People.Person p, string pkg, SurvivorUnchained.World.PersonSpec spec)
@@ -40,20 +41,24 @@ public static class NpcDye
         int seed = int.TryParse(Args.Get("seed"), out var s) ? s : 0;
         int copy = copies++;
         p.Phase = (float)NpcDyePick.Phase(seed, copy);
-        if (Args.Get("npc-dye") == "none" || Read(pkg) is not { } def) return;
+        if (Args.Get("npc-dye") == "none" || Read(pkg) is not { } def) { if (Args.Has("npc-dye-log")) GD.Print($"npc dye: {pkg} copy {copy}: none"); return; }
         var meshes = p.Meshes.Concat(p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(m => m.Name == "lod")).Distinct().ToList();
         ShaderMaterial? mat = null;
         foreach (var mi in meshes)
             for (int i = 0; i < mi.Mesh.GetSurfaceCount(); i++)
             {
-                if (mi.Mesh.SurfaceGetMaterial(i) is not StandardMaterial3D src || src.ResourceName != "generated") continue;
+                // (the lod's surface is drawn with the body's material already, NpcPackage.BakedLod: that one is the source)
                 var cur = mi.GetSurfaceOverrideMaterial(i);
-                if (cur != null && cur != src) continue;
+                if ((cur ?? mi.Mesh.SurfaceGetMaterial(i)) is not StandardMaterial3D src || src.ResourceName != "generated") continue;
                 mat ??= Material(pkg, src, def);
                 if (mat == null) return;
                 mi.SetSurfaceOverrideMaterial(i, mat);
             }
-        if (mat == null) return;
+        if (mat == null)
+        {
+            if (told.Add(pkg)) GD.PushWarning($"npc dye: {pkg} has no \"generated\" surface to dye ({string.Join(", ", meshes.SelectMany(m => Enumerable.Range(0, m.Mesh.GetSurfaceCount()).Select(i => $"{m.Name}:{m.Mesh.SurfaceGetMaterial(i)?.GetType().Name}:{m.Mesh.SurfaceGetMaterial(i)?.ResourceName}/{m.GetSurfaceOverrideMaterial(i)?.GetType().Name}")))})");
+            return;
+        }
         bool off = Args.Get("npc-dye") == "off";
         string?[] asked = { spec.Dye?.Cloth, spec.Dye?.Under, spec.HairColor };
         var cols = new Color[3];
@@ -64,10 +69,12 @@ public static class NpcDye
             var want = NpcDyePick.Hex(asked[c]) ?? (pal.Length > 0 ? NpcDyePick.Hex(pal[NpcDyePick.Pick(seed, copy, c, pal.Length)]) : null);
             if (want is not { } t) { cols[c] = new Color(0, 0, 0, 0); continue; }
             if (def.Range[c] is { } r) t = NpcDyePick.ClampL(t, r.Lo, r.Hi);
-            cols[c] = new Color((float)t.R, (float)t.G, (float)t.B, 1);
+            // (a Color instance uniform is taken as sRGB and made linear on its way in: so handed over as sRGB)
+            cols[c] = new Color((float)t.R, (float)t.G, (float)t.B, 1).LinearToSrgb();
         }
         foreach (var mi in meshes)
             for (int c = 0; c < 3; c++) mi.SetInstanceShaderParameter(Uniforms[c], cols[c]);
+        if (Args.Has("npc-dye-log")) GD.Print($"npc dye: {pkg} copy {copy}: a {cols[0].ToHtml()} b {cols[1].ToHtml()} hair {cols[2].ToHtml()} on {meshes.Count} meshes");
         if (spec.Dye == null && !off) p.Jitter = (float)NpcDyePick.Scale(seed, copy, def.Scale);
     }
 

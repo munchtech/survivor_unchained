@@ -26,9 +26,9 @@ N = 1024
 # zeroed above neck_y + head_drop; hair only above neck_y + hair_drop, so a beard counts), hands (radius about the
 # hand bones, zeroed), the channel ranges (Oklab L) and the palettes.
 CFG = {
-    'npc_folk_m': {'anchors': [['#62533b', 'a'], ['#564732', 'a'], ['#322014', 'b'], ['#4a3c34', 'hair'], ['#463524', 'hair'],
+    'npc_folk_m': {'anchors': [['#62533b', 'a'], ['#564732', 'a'], ['#322014', 'b'], ['#4a3c34', 'hair'], ['#463524', 'hair'], ['#624732', 'hair'],
                                ['#c0927c', '0', 'skin'], ['#85604c', '0', 'skin'], ['#a17865', '0', 'skin']],
-                   'ylim': {'a': [0.6, 9], 'b': [0.45, 0.9]}, 'hair_max': 0.17,
+                   'ylim': {'a': [0.6, 9], 'b': [0.45, 0.9]}, 'hair_max': 0.1,
                    'range': {'a': [-0.12, 0.1], 'b': [-0.08, 0.12], 'hair': [-0.2, 0.2]},
                    'palette': {'a': ['#5f513a', '#6b3a2a', '#3e4f63', '#6a6236', '#4e3b2a', '#77736a', '#7a4a32', '#4b5a3e', '#8a7d62'],
                                'b': ['#312012', '#3a2a1e', '#2e2c2a', '#2f3540', '#3b3a26', '#4a2e1e', '#4a4741'],
@@ -36,7 +36,7 @@ CFG = {
     'npc_folk_w': {'anchors': [['#560b09', 'a'], ['#d6cfbc', '0'], ['#b4a78e', 'b'], ['#190d0c', 'hair'], ['#544c44', '0'], ['#4f351b', '0'],
                                ['#dfa681', '0', 'skin'], ['#ba8169', '0', 'skin']],
                    'ylim': {'b': [1.1, 9]},
-                   'range': {'a': [0.0, 0.25], 'b': [-0.1, 0.12], 'hair': [0.0, 0.25]},
+                   'range': {'a': [0.08, 0.28], 'b': [-0.1, 0.12], 'hair': [0.0, 0.25]},
                    'palette': {'a': ['#570b08', '#6e1a14', '#2f4466', '#8a6a26', '#5a3a24', '#33452e', '#7a3a20', '#6e6a62', '#4e2a3a'],
                                'b': ['#b9ab8f', '#c9bfa8', '#ddd6c6', '#cdb779', '#9fb0be', '#c79a88', '#b0aca2', '#a8ad8e'],
                                'hair': ['#0e0d0c', '#1e1a18', '#2b211b', '#3a2a20', '#4a3426', '#5a2e1c']}},
@@ -198,6 +198,11 @@ def build(name, report=False, out=None):
         if i == 0: continue
         m = isl == i; cnt = np.bincount(lbl[m], minlength=4)
         if cnt.max() > 0.7 * m.sum(): lbl[m] = cnt.argmax()
+    # pinholes and scratches inside a cloth (a fleck of paint nearer another anchor) closed into it, never in the head or hands
+    for c in (1, 2):
+        m = (lbl == c).astype(np.uint8)
+        closed = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))).astype(bool)
+        lbl[closed & (lbl == 0) & cov & ~head & ~hands] = c
     # keep-outs after cleanup too: they are absolute
     limits()
     for b in cfg.get('zero_boxes', []):   # [x0,y0,z0,x1,y1,z1] bind-pose boxes forced 0
