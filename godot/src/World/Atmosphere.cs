@@ -75,7 +75,7 @@ public partial class Atmosphere : Node3D
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
         if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
         ViewHighlightsNeutral = k;
-        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current));
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
@@ -101,7 +101,7 @@ public partial class Atmosphere : Node3D
     public void SetCineGrade(Func<GradeSettings, GradeSettings>? f)
     {
         CineGrade = f;
-        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current));
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
@@ -311,7 +311,7 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) { var lut = GradeLut(Cine(ViewGrade(Own(p))), Mute, SkinGuardFor(p)); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
+        if (grade) { var lut = GradeLut(Cine(ViewGrade(Own(p))), Mute, SkinGuardFor(p), ViewShadeHue); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
@@ -331,10 +331,10 @@ public partial class Atmosphere : Node3D
     /// <summary>The web game's grade (render/grade.ts) as a lookup table:
     /// sRGB in (what Godot hands its colour correction after tone mapping),
     /// sRGB out.</summary>
-    public static ImageTexture3D GradeLut(GradeSettings g, float mute, float skinGuard = 0)
+    public static ImageTexture3D GradeLut(GradeSettings g, float mute, float skinGuard = 0, float shadeHue = 0)
     {
         if (Try?.Mute is float tm) mute = tm;
-        var key = $"{SurvivorUnchained.Core.Json.Write(g)}|{mute}|{skinGuard}";
+        var key = $"{SurvivorUnchained.Core.Json.Write(g)}|{mute}|{skinGuard}|{shadeHue}";
         if (luts.TryGetValue(key, out var hit)) return hit;
         static Vector3 Hex(string h) { var c = new Color(h); return new Vector3(c.R, c.G, c.B); }
         var lift = new Vector3((float)g.Lift[0], (float)g.Lift[1], (float)g.Lift[2]);
@@ -390,6 +390,7 @@ public partial class Atmosphere : Node3D
                     if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     if (paint.On) outLin = paint.Apply(outLin);
                     if (skinGuard > 0) outLin = SkinGuard(outLin, skinGuard);
+                    if (shadeHue > 0) outLin = ShadeHue(outLin, shadeHue);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
@@ -428,6 +429,31 @@ public partial class Atmosphere : Node3D
         float ch = o.Y * (1 - SkinGuardCut * k * w), h = Mathf.DegToRad(o.Z);
         return FromOklab(o.X, ch * Mathf.Cos(h), ch * Mathf.Sin(h)).Clamp(Vector3.Zero, Vector3.One);
     }
+    /// <summary>Face 48 round 4: her shade's hue floor in a cinematic (GameCinemaHer, SetViewShadeHue). The night grade's shadow
+    /// tint took her shade's Oklab hue to 37-39 (pink-grey; with the grade off, 43-45), and no light on her moved it. In the skin
+    /// band (hue ShadeHueFrom to ShadeHueFloor, chroma 0.02 up, lightness 0.2-0.8) the hue is lifted toward ShadeHueFloor, none
+    /// below ShadeHueFrom (her lips, red cloth): her shade reads skin, not lilac. 0 (everywhere but a close cinematic
+    /// shot of her by night): as before. --cine-her-shade-hue FROM,FLOOR.</summary>
+    static readonly float[] ShadeHueAt = Floats("cine-her-shade-hue", 24f, 44f);
+    static Vector3 ShadeHue(Vector3 c, float k)
+    {
+        var o = Oklab(c);
+        float from = ShadeHueAt[0], floor = ShadeHueAt[1];
+        if (o.Z <= from || o.Z >= floor) return c;
+        float w = k * Smooth(from, from + 6, o.Z) * Smooth(0.015f, 0.03f, o.Y) * Smooth(0.2f, 0.3f, o.X) * (1 - Smooth(0.75f, 0.85f, o.X));
+        if (w <= 0) return c;
+        float h = Mathf.DegToRad(Mathf.Lerp(o.Z, floor, w));
+        return FromOklab(o.X, o.Y * Mathf.Cos(h), o.Y * Mathf.Sin(h)).Clamp(Vector3.Zero, Vector3.One);
+    }
+    public float ViewShadeHue { get; private set; }
+    public void SetViewShadeHue(float k)
+    {
+        k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
+        if (Mathf.IsEqualApprox(k, ViewShadeHue)) return;
+        ViewShadeHue = k;
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue);
+        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+    }
     /// <summary>The skin guard's share for this air (0 to 1): the Look's (Atmospheres.Front) whole, else the close view's (SetViewSkinGuard).</summary>
     float SkinGuardFor(AtmospherePreset p) => SkinGuardOff ? 0 : ReferenceEquals(p, Atmospheres.Front) ? 1 : ViewSkinGuard;
     static readonly bool SkinGuardOff = SurvivorUnchained.Args.Has("skin-guard-off");
@@ -438,7 +464,7 @@ public partial class Atmosphere : Node3D
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
         if (Mathf.IsEqualApprox(k, ViewSkinGuard)) return;
         ViewSkinGuard = k;
-        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current));
+        var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
 

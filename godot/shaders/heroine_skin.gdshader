@@ -427,6 +427,9 @@ uniform float spec_cap = 0.2;
 // and, while cine_spec_split is on, put no sheen on her skin (their diffuse as before). 0 (everywhere outside a
 // cinematic): no light is tagged, as before.
 uniform float cine_spec_split = 0.0;
+// (and the kicker, tagged light_specular 2 (SPECULAR_AMOUNT 4): its sheen held under cine_kick_cap, not spec_cap, so the
+// edge it draws carries its blue; skin's albedo greys a blue light's diffuse to white)
+uniform float cine_kick_cap = 0.3;
 // (and a metal's: the gilt's leaf, half metal; at 1.5 its full-metal glint clipped to a lemon-yellow spot on her right
 // cheek at the Look, face 32 r2: a gold sheen under 0.8)
 uniform float metal_cap = 0.8;
@@ -882,7 +885,7 @@ void light() {
 		spec = mix(spec, spec * ALBEDO / max(alum, 1e-3), deep_tint * dk) * mix(1.0, deep_spec, dk);
 		float sl = max(max(spec.r, spec.g), spec.b);
 		// (gold leaf's glint let through: held under her skin's cap, the gilt read as dull olive, never gold)
-		float cap = mix(spec_cap, metal_cap, METALLIC);
+		float cap = mix(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 4.0) < 0.01 ? cine_kick_cap : spec_cap, metal_cap, METALLIC);
 		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
 	}

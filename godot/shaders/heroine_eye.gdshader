@@ -151,7 +151,7 @@ uniform float night_lid = 0.5;
 // A catchlight light (Face 48 round 3, GameCinemaHer's HerEye): a light whose specular is 15.5 (SPECULAR_AMOUNT 31)
 // lights the cornea's sheen only, at `eye_light_rough` and times `eye_light_gain`, and nothing of the eye's diffuse:
 // faint enough not to light her skin, it puts a small crisp window in each open eye from just above the lens.
-uniform float eye_light_rough = 0.3;
+uniform float eye_light_rough = 0.18;
 uniform float eye_light_gain = 1500.0;
 // (round 4: while cine_spec_split is on, a light tagged light_specular 0.31 (SPECULAR_AMOUNT 0.62) puts no sheen on the eye:
 // its sheen comes from its twin in the source's own colour; 0 outside cinematics, as before)
