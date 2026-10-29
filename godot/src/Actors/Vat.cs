@@ -645,6 +645,9 @@ public static class Vat
         if (mat is ShaderMaterial sm)
         {
             s.Tex = sm.GetShaderParameter("albedo_tex").As<Texture2D>();
+            // (a Marionette package's dye material (npc_dye.gdshader) names it texture_albedo: read as null, every package
+            // body in a crowd baked white, the Low Ford's "bone-white" risen (NPC 18))
+            if (s.Tex == null && sm.GetShaderParameter("texture_albedo").As<Texture2D>() is { } ta) s.Tex = ta;
             s.Albedo = sm.GetShaderParameter("albedo").AsColor();
             s.Roughness = sm.GetShaderParameter("roughness").AsSingle();
             // Metal where a texture says so is detail a crowd figure cannot show: matte.
@@ -935,7 +938,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 15;
+    const int Version = 16;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();
