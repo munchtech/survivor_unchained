@@ -122,8 +122,8 @@ MOUSTACHE = dict(spacing=0.0040, off=0.0030, width=(0.010, 0.016), cols=LOCK + D
                  length=(0.060, 0.095))
 FINE = dict(off=0.0012, width=(0.005, 0.009), cols=WISP + LOOSE, narrow=0.7, shade=(0.75, 0.95), K=5, length=(0.014, 0.030),
             alpha=(0.45, 0.8))
-LOD1 = dict(every=3, K=7, wide=2.0)          # beard.lod1: every third mid-layer guide, wider, fewer points
-SHADOW = dict(every=4, K=5, wide=2.2)        # beard.shadow: every fourth inner-layer guide
+LOD1 = dict(every={"inner": 3, "mid": 2, "outer": 2}, K=8, wide=1.7)   # beard.lod1: a share of each layer's guides, wider, fewer points
+SHADOW = dict(every=2, K=6, wide=2.0)        # beard.shadow: every second inner-layer guide
 COLOUR = "#7a7871"                # the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head"]
 
@@ -456,8 +456,9 @@ def weights(pk, at_g, arc):
     Wd /= Wd.sum(1)[:, None]
     y = at_g[:, 1]
     # (Head on the face and just under the chin; easing to its tip share down the chest)
-    h = np.clip(1 - (1.545 - y) / 0.17, 0.0, 1.0) * 0.88 + 0.12
-    h = np.where(y > 1.545, 1.0, h)
+    # (r1: 1 to 0.12 over 17 cm read 1.44x stretch p99 and splayed cards in C03 s1's head turn; now a longer ramp
+    # through the neck, smoothed, and a smaller share at the tip)
+    h = smoothstep(1.33, 1.535, y) * 0.94 + 0.06
     W = Wd * (1 - h)[:, None]
     W[:, bi["Head"]] += h
     order = np.argsort(-W, axis=1)[:, :4]
@@ -646,6 +647,7 @@ def main():
     work = a.work or os.path.join(a.pkg, "..", "_beard_work")
     os.makedirs(work, exist_ok=True)
     rng = np.random.default_rng(a.seed)
+    lrng = np.random.default_rng(a.seed + 1)   # (the LOD's and shadow's own draws: the full mesh unchanged by them)
     t0 = time.time()
     pk = Package(a.pkg, rng)
     sets, lod_sets, shadow_sets, report = [], [], [], {"layers": {}}
@@ -657,7 +659,7 @@ def main():
     Pm = trim(Pm, mlen)
     collider(pk, face_only=False)
     sets.append(card_set(Pm, MOUSTACHE, rng, MOUSTACHE["K"]))
-    lod_sets.append(card_set(Pm[::3], MOUSTACHE, rng, 5, wide=1.8))
+    lod_sets.append(card_set(Pm[::3], MOUSTACHE, lrng, 5, wide=1.8))
     report["layers"]["moustache"] = len(mp)
 
     # the beard's layers
@@ -673,10 +675,9 @@ def main():
         Pb = keep_front(pk, Pb, off * 0.9)
         collider(pk, face_only=False)
         sets.append(card_set(Pb, L_, rng, L_["K"]))
-        if L_["name"] == "mid":
-            lod_sets.append(card_set(Pb[::LOD1["every"]], L_, rng, LOD1["K"], wide=LOD1["wide"]))
+        lod_sets.append(card_set(Pb[::LOD1["every"][L_["name"]]], L_, lrng, LOD1["K"], wide=LOD1["wide"]))
         if L_["name"] == "inner":
-            shadow_sets.append(card_set(Pb[::SHADOW["every"]], L_, rng, SHADOW["K"], wide=SHADOW["wide"]))
+            shadow_sets.append(card_set(Pb[::SHADOW["every"]], L_, lrng, SHADOW["K"], wide=SHADOW["wide"]))
         report["layers"][L_["name"]] = len(bp)
 
     # the soft edge: short fine cards lying on the skin at the line
@@ -729,9 +730,16 @@ def to_height(P, tip, most):
 
 
 def trim(P, length):
-    """Each guide cut to its own length (the drape ran them all at the longest), K points kept along what is left."""
+    """Each guide cut to its own length (the drape ran them all at the longest), K points kept along what is left; and
+    cut where it first rises 5 mm over its root (r2: 228 card points flung up over his face and hood, to y 1.92)."""
     S, K, _ = P.shape
     arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)]
+    length = np.array(length, float).copy()
+    for s in range(S):
+        up = np.nonzero(P[s, 1:, 2] > P[s, 0, 2] + 0.005)[0]
+        if len(up):
+            length[s] = min(length[s], arc[s, up[0]])
+    length = np.maximum(length, 0.008)
     out = np.zeros_like(P)
     for s in range(S):
         t = np.linspace(0, min(length[s], arc[s, -1]), K)

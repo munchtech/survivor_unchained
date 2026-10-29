@@ -4,15 +4,15 @@
   "colour": "#7a7871",
   "style": "beard",
   "source": "tools/assets/warden_beard.py (hair cards on heroine_hair.py's drape and cards)",
-  "tris": 10256,
-  "lodTris": 672,
-  "shadowTris": 256,
+  "tris": 10192,
+  "lodTris": 2200,
+  "shadowTris": 660,
   "guides": {
    "moustache": 44,
-   "inner": 63,
-   "mid": 54,
-   "outer": 47,
-   "edge": 61
+   "inner": 66,
+   "mid": 51,
+   "outer": 44,
+   "edge": 66
   }
  },
  "nipples": {
