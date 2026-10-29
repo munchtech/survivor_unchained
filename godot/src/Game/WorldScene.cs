@@ -104,9 +104,11 @@ public partial class WorldScene : Node3D, IZoneLook
     /// body is up (standing, fighting: not rising, surfacing, burrowed, under, sunk by a cinematic, or dying), each as
     /// (x, z, how deep: 0 at 1 cm, 1 by 25 cm, how fast), for the water's rings at their feet (Water.Wade). (r2 judge:
     /// rings with no figure in them, a drowned still under the surface.)</summary>
+    static readonly bool WadeOff = SurvivorUnchained.Args.Has("wade-off");
     void Wading(Battle b, double hx, double hz, float y)
     {
-        if (SurvivorUnchained.View.Water.Level is not float wl) return;
+        // (--wade-off: no wading rings, for the ring loop's cost as an A/B)
+        if (SurvivorUnchained.View.Water.Level is not float wl || WadeOff) return;
         static float Deep(float d) => Mathf.SmoothStep(0.01f, 0.25f, d);
         int n = 0;
         if (wl - y > 0.01f) wadeFeet[n++] = new Vector4((float)hx, (float)hz, Deep(wl - y), (float)Math.Sqrt(b.Player.Vx * b.Player.Vx + b.Player.Vz * b.Player.Vz));
