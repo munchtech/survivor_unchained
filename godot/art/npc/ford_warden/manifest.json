@@ -1,5 +1,20 @@
 {
- "hair": null,
+ "hair": {
+  "file": "beard.glb",
+  "colour": "#7a7871",
+  "style": "beard",
+  "source": "tools/assets/warden_beard.py (hair cards on heroine_hair.py's drape and cards)",
+  "tris": 10256,
+  "lodTris": 672,
+  "shadowTris": 256,
+  "guides": {
+   "moustache": 44,
+   "inner": 63,
+   "mid": 54,
+   "outer": 47,
+   "edge": 61
+  }
+ },
  "nipples": {
   "l": [
    8.77,
