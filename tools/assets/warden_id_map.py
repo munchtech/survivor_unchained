@@ -213,7 +213,7 @@ def weave(a, b, period, twill):
 # per class: (weave period m or 0, twill, weave amp, fine noise (cell m, amp), broad noise (cell m, amp))
 DETAIL = {WOOL: (0.0065, True, 1.0, (0.0016, 0.35), (0.03, 0.6)),
           TABARD: (0.005, False, 0.8, (0.0016, 0.25), (0.04, 0.5)),
-          QUILT: (0.005, False, 0.5, (0.0016, 0.2), (0.022, 1.6)),   # (the broad noise is the puffs' sag and creasing)
+          QUILT: (0.005, False, 0.5, (0.0016, 0.2), (0.022, 1.0)),   # (the broad noise is the puffs' sag and creasing)
           LEATHER: (0.0, False, 0.0, (0.0022, 0.6), (0.015, 0.5)),
           IRON: (0.0, False, 0.0, (0.004, 0.25), (0.012, 0.6)),      # hammered dents
           BADGE: (0.005, False, 0.6, (0.0016, 0.2), (0.04, 0.3)),

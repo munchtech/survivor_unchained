@@ -25,12 +25,12 @@ uniform float debug_view = 0.0; // 1: the classes in flat colours (WARDEN_WET="d
 // colour (sRGB) the atlas's hue is pulled to (its light and dark kept), how far, then a value scale
 const vec3 cls_color[7] = { vec3(0.13, 0.145, 0.19), vec3(0.08, 0.20, 0.33), vec3(0.11, 0.095, 0.085), vec3(0.24, 0.13, 0.07),
 	vec3(0.30, 0.30, 0.32), vec3(0.42, 0.38, 0.30), vec3(0.5, 0.45, 0.4) };
-const float cls_colmix[7] = { 0.8, 0.85, 0.75, 0.25, 0.85, 0.5, 0.0 };
-const float cls_value[7] = { 0.65, 1.1, 0.42, 0.85, 1.0, 0.4, 0.85 };
+const float cls_colmix[7] = { 0.8, 0.85, 0.85, 0.25, 0.85, 0.5, 0.0 };
+const float cls_value[7] = { 0.55, 1.1, 0.35, 0.85, 1.0, 0.4, 0.85 };
 const float cls_rough[7] = { 0.88, 0.8, 0.75, 0.6, 0.42, 0.7, 0.7 };
 const float cls_metal[7] = { 0.0, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0 };
 const float cls_spec[7] = { 0.15, 0.2, 0.2, 0.35, 0.5, 0.2, 0.2 };
-const float cls_detail[7] = { 0.7, 0.55, 0.6, 0.35, 0.3, 0.3, 0.0 };   // the baked detail normal's strength
+const float cls_detail[7] = { 0.7, 0.55, 0.45, 0.35, 0.3, 0.3, 0.0 };   // the baked detail normal's strength
 const float cls_wet[7] = { 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.0 };       // how much the soak shows
 uniform float rough_var = 0.35;  // the atlas roughness's variation kept around the class's
 // wet: the base pass everywhere (judged r2: wet_dark 0.9, wet_spec 0.15; its wet_rough 1.2 is now the classes'
