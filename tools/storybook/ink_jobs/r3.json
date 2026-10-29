@@ -1,0 +1,30 @@
+{
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p5",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    23,
+    303,
+    707,
+    808
+   ],
+   "prompt": "Medieval winter night, deep dark, a black starless sky, looking down a snowy rutted dirt road to a river ford. In the middle distance the road runs into the black river: a line of flat stepping stones across the shallows, ice along both edges. On the near bank of the ford stand three of them, each a crude open cage of black iron bars on top of a short black iron post, a medieval fire basket with no glass, no lantern, no street lamp, burning with a cold pale blue flame, their blue light glittering on the water as short carved strokes. In the middle of the river a fourth pale blue flame hangs in the empty air just above the water, nothing visible holding it, rings carved on the water beneath it. Bare black winter trees on both sides frame the road. On the road in the middle ground a broken wooden cart lies on its side, one wheel in the air. In the ditches on both sides of the road stand many drowned dead: barefoot peasants in ragged soaked medieval tunics and shifts, no hats, long wet hair hanging with river weed, gaunt, standing still with slack arms, every face turned toward the road, irregular spacing, varied heights and stances, some turned, some half in shadow. Snow on the banks carved in dim moonlit blue-gray, only bright near the blue flames. The picture is mostly black. The only color is the cold pale blue of the iron fire baskets; everything else is black and deep blue-black ink and pale snow."
+  },
+  {
+   "name": "p7u",
+   "w": 1920,
+   "h": 1088,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "Underwater at night, looking up from below the surface of a black river: black-green murky water, streams of bubbles rushing up in carved white strokes, and far above, through the rippling underside of the surface, a warped cold pale blue light. Nothing else. The only color is the cold pale blue light; everything else is black and deep green-black ink."
+  }
+ ]
+}
