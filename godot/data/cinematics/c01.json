@@ -9,7 +9,8 @@
   "world": {"rate": 0, "zoneHeld": true},
   "marks": {
     "fire": [-10.5, 90.5],
-    "lie": [-11.24, 91.08, 2.305],
+    "lie": [-11.44, 90.55, 1.695],
+    "kneel": [-11.24, 91.08, 2.305],
     "seat": [-8.5, 90.75, -1.5708],
     "seat_nw": [-8.5, 90.75, -2.356],
     "stand": [-8.95, 90.55, -1.75],
@@ -68,16 +69,16 @@
     {
       "id": "2",
       "type": "MS",
-      "dur": 4.0,
+      "dur": 5.0,
       "still": 2.0,
-      "note": "The bedroll: dry, its blanket folded, nobody slept in it; the edge of her shadow across it, flickering with the coals.",
-      "cam": {"pos": [-14.2, 1.3, 91.2], "at": [-12.6, 0.05, 92.5], "lens": 45, "focus": 2.0, "fstop": 4.0},
+      "note": "The bedroll, from about a metre up off its foot: dry, its blanket folded back, nobody slept in it; the shadow of her head and shoulder across it, stirring with the coals. Then the camera drifts along the shadow to what casts it: her, a dark shape against the embers.",
+      "cam": {"pos": [-15.2, 1.75, 92.33], "at": [-12.85, 0.35, 92.75], "lens": 40, "focus": 2.75, "fstop": 5.6, "move": {"at": [-11.75, 0.3, 91.0], "focus": 3.8, "start": 2.4, "end": "end", "ease": "inout"}},
       "fit": ["cin_drowned_fire.bedroll"],
       "tail": 0.6,
       "cues": [
-        {"do": "atmosphere", "preset": "night", "key": 0.12, "hemi": 0.15, "env": 0.15, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
+        {"do": "atmosphere", "preset": "night", "key": 0.22, "hemi": 0.15, "env": 0.15, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.85, "color": "#ff7430", "rate": 0.45, "size": 0.15},
-        {"do": "fire", "light": 0, "flames": 0.0, "lift": 0.37},
+        {"do": "fire", "light": 0, "flames": 0.0, "lift": 0.37, "sway": 0.05},
         {"do": "grade", "sat": 0.8},
         {"at": 1.0, "do": "line", "id": "cin_drowned_fire.bedroll"}
       ]
@@ -88,15 +89,15 @@
       "dur": 4.5,
       "still": 3.0,
       "note": "She gets up: from behind her against the embers, up on the elbow, the hand down at the coals' edge, onto her knees. No face.",
-      "cam": {"pos": [-12.7, 0.55, 92.4], "at": {"actor": "her", "bone": "chest", "off": [0, 0.05, 0], "track": true}, "lens": 35, "focus": {"actor": "her", "bone": "head", "track": true}, "fstop": 2.8},
+      "cam": {"pos": [-12.92, 1.15, 91.87], "at": {"actor": "her", "bone": "chest", "off": [0, 0.05, 0], "track": true}, "lens": 35, "focus": {"actor": "her", "bone": "head", "track": true}, "fstop": 2.8},
       "cues": [
-        {"do": "atmosphere", "preset": "night", "key": 0.12, "hemi": 0.15, "env": 0.15, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
+        {"do": "atmosphere", "preset": "night", "key": 0.22, "hemi": 0.15, "env": 0.15, "exposure": 0.92, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.85, "color": "#ff7430", "rate": 0.45, "size": 0.15},
-        {"do": "fire", "light": 0, "flames": 0.0, "lift": 0.37},
+        {"do": "fire", "light": 0, "flames": 0.0, "lift": 0.37, "sway": 0.05},
         {"do": "grade", "sat": 0.8},
-        {"do": "anim", "clip": "her/lie_side_wake", "from": 3.4, "speed": 1.1, "blend": 0},
-        {"at": 1.35, "do": "anim", "clip": "her/sit_back_heels", "from": 0.3, "speed": 1.15, "blend": 0.25},
-        {"at": 0.4, "do": "sfx", "name": "cloth_water", "gain": 0.3}
+        {"at": 0.4, "do": "sfx", "name": "cloth_water", "gain": 0.3},
+        {"do": "anim", "clip": "her/sit_back_heels", "from": 0.0, "speed": 1.1, "blend": 0},
+        {"at": 2.6, "do": "head", "where": [-9.6, 0.4, 90.3], "amount": 1.0, "over": 1.0}
       ]
     },
     {
@@ -105,16 +106,16 @@
       "dur": 4.0,
       "still": 2.2,
       "note": "From behind her left shoulder, kneeling at the coals, her head lifting north toward the road and the dark: she breathes out, long, and nothing shows. No line; no face.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.3, 0.12, 0.8]}, "at": {"actor": "her", "bone": "eyes", "off": [0.0, -0.05, -1.5]}, "lens": 40, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.45, -0.25, 1.7]}, "at": {"actor": "her", "bone": "eyes", "off": [-0.25, 0.1, -1.5]}, "lens": 40, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 8.0},
       "fit": [],
       "tail": 0.7,
       "cues": [
-        {"do": "place", "mark": "lie"},
+        {"do": "place", "mark": "kneel"},
         {"do": "anim", "clip": "her/reach_coals", "from": 2.0, "speed": 1.0, "blend": 0},
-        {"at": 0.0, "do": "head", "where": [-11.6, 1.0, 80.0], "over": 1.2},
+        {"at": 0.0, "do": "head", "where": [-10.95, 3.0, 80.0], "over": 1.2},
         {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.3},
         {"do": "grade", "sat": 0.72},
-        {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.1575, "env": 0.1575, "exposure": 0.69, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
+        {"do": "atmosphere", "preset": "night", "key": 0.3, "hemi": 0.1575, "env": 0.1575, "exposure": 0.69, "fog": 1.5, "fogColor": "#0a1018", "rim": 0.6},
         {"do": "light", "light": 0, "level": 0.12, "color": "#ffb47c", "rate": 0.45},
         {"do": "rig", "name": "key", "energy": 0.8, "color": "#ffc79a", "angle": 20, "from": {"actor": "her", "bone": "eyes", "off": [-0.6, -0.38, -0.3]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "fill", "energy": 0.25, "color": "#dcd4cc", "angle": 25, "from": {"actor": "her", "bone": "eyes", "off": [0.6, 0.35, -0.6]}, "aim": {"actor": "her", "bone": "eyes"}},
@@ -125,7 +126,8 @@
         {"do": "face", "keys": {"brows_sad": 0.25}, "over": 0},
         {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.05}, "over": 1.2},
         {"at": 1.2, "do": "sfx", "name": "breath_out", "gain": 1.3},
-        {"at": 1.2, "do": "anim", "clip": "her/exhale", "from": 0, "speed": 1, "blend": 0.2}
+        {"at": 1.2, "do": "anim", "clip": "her/exhale", "from": 0, "speed": 1, "blend": 0.2},
+        {"do": "glow", "name": "tower", "where": {"abs": [3.0, 134.6, -649.8]}, "color": "#ffc870", "size": 1.3, "spread": 28, "halo": 0.12, "soft": true, "ontop": true, "clear": true}
       ]
     },
     {
@@ -140,15 +142,15 @@
       "cues": [
         {"do": "grade", "sat": 1},
         {"do": "atmosphere", "preset": "night", "key": 0.4, "hemi": 0.45, "env": 0.225, "exposure": 0.782, "fog": 1.5, "fogColor": "#141a24", "rim": 0.6},
-        {"do": "light", "light": 4, "level": 0.55, "color": "#6e9bff"},
+        {"do": "light", "light": 4, "level": 0.3, "color": "#6e9bff"},
         {"do": "globe", "light": 4, "level": 0.0, "color": "#6e9bff"},
-        {"do": "glow", "name": "ford4", "where": [0.028, 3.279, -32.901], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
-        {"do": "light", "light": 5, "level": 0.55, "color": "#6e9bff"},
+        {"do": "glow", "name": "ford4", "where": [0.028, 3.279, -32.901], "color": "#7aa2ff", "size": 0.09, "energy": 2.5, "spread": 18, "halo": 0.35, "clear": true},
+        {"do": "light", "light": 5, "level": 0.3, "color": "#6e9bff"},
         {"do": "globe", "light": 5, "level": 0.0, "color": "#6e9bff"},
-        {"do": "glow", "name": "ford5", "where": [-9.586, 3.24, -49.039], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
-        {"do": "light", "light": 6, "level": 0.55, "color": "#6e9bff"},
+        {"do": "glow", "name": "ford5", "where": [-9.586, 3.24, -49.039], "color": "#7aa2ff", "size": 0.09, "energy": 2.5, "spread": 18, "halo": 0.35, "clear": true},
+        {"do": "light", "light": 6, "level": 0.3, "color": "#6e9bff"},
         {"do": "globe", "light": 6, "level": 0.0, "color": "#6e9bff"},
-        {"do": "glow", "name": "ford6", "where": [9.624, 3.645, -49.033], "color": "#7aa2ff", "size": 0.09, "energy": 6, "spread": 18, "halo": 0.6, "clear": true},
+        {"do": "glow", "name": "ford6", "where": [9.624, 3.645, -49.033], "color": "#7aa2ff", "size": 0.09, "energy": 2.5, "spread": 18, "halo": 0.35, "clear": true},
         {"do": "glow", "name": "tower", "where": {"abs": [3.0, 134.6, -649.8]}, "color": "#ffc870", "size": 0.86, "spread": 28, "halo": 0.06, "soft": true, "ontop": true, "light": 10, "range": 14, "spec": 0.2, "clear": true},
         {"do": "mist", "name": "ford", "where": [0.0, -1.05, -44.0], "size": [80, 1.4, 30], "density": 0.3, "color": "#5a6e8c", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
         {"do": "lit", "light": 7, "on": false},
@@ -167,7 +169,7 @@
       "dur": 0.4,
       "still": 0.3,
       "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
-      "cam": {"pos": {"abs": [-11.0, 0.98, 93.0]}, "at": {"abs": [-11.25, 0.9, 91.0]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
+      "cam": {"pos": {"abs": [-11.0, 0.98, 93.0]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.1, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
       "cues": [
         {"do": "glow", "name": "ford4", "remove": true},
         {"do": "glow", "name": "ford5", "remove": true},
@@ -198,8 +200,8 @@
       "type": "MLS",
       "dur": 3.5,
       "still": 1.2,
-      "note": "From in front of her, the one crane of the scene: up and round behind her into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
-      "cam": {"pos": [-11.5, 1.55, 86.8], "at": {"actor": "her", "bone": "chest", "off": [0, 0.2, 0], "track": true}, "lens": 35, "move": {"path": [[-9.9, 1.6, 87.03], [-7.87, 2.3, 88.11], [-5.59, 5.0, 90.84], [-5.71, 10.0, 96.69], [-11.5, 19.9, 102.4]], "start": 0, "end": "end", "ease": "inout", "follow": true, "followFrom": 0.5}},
+      "note": "From behind her right shoulder, the one crane of the scene: up and round into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
+      "cam": {"pos": [-12.6, 1.6, 93.3], "at": {"actor": "her", "bone": "chest", "off": [0, 0.2, 0], "track": true}, "lens": 35, "move": {"path": [[-12.5, 2.4, 94.4], [-12.2, 5.2, 96.6], [-11.8, 10.4, 99.5], [-11.5, 19.9, 102.4]], "start": 0, "end": "end", "ease": "inout", "follow": true, "followFrom": 0.5}},
       "cues": [
         {"do": "mist", "name": "west", "where": [-21.5, 0, 90.0], "size": [17, 0.5, 30], "density": 0.14, "color": "#7f8ea4", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
         {"do": "mist", "name": "north", "where": [-8.0, 0, 76.0], "size": [30, 0.5, 20], "density": 0.14, "color": "#7f8ea4", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
