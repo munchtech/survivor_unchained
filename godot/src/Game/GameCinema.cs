@@ -1370,18 +1370,23 @@ public partial class Game
                     // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
                     string name = c.Str("name") ?? "rig";
-                    if (rigs.Remove(name, out var was)) was.L.QueueFree();
+                    // ("fade": true: from the light's energy now to "energy" over "over", 0 included: C03 s8y, the heart's
+                    // blue from below dying as it goes under, not cut off)
+                    float e0 = 0;
+                    if (rigs.Remove(name, out var was)) { e0 = was.L.LightEnergy; was.L.QueueFree(); }
                     float e = (float)c.Num("energy", 0.3);
-                    if (e <= 0) break;
+                    bool fade = c.Bool("fade") && over > 0 && !skipping;
+                    if (!fade) e0 = 0;
+                    if (e <= 0 && !(fade && e0 > 0)) break;
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
                         SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
-                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e, SpotRange = (float)c.Num("range", 5),
+                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
                     rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
-                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = e * (float)k; }));
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = Mathf.Lerp(e0, e, (float)k); }));
                     PlaceRigs();
                     break;
                 }
