@@ -16,7 +16,8 @@ namespace SurvivorUnchained.Play;
 /// does not lift her crown) and a gear twin at the close view's low sheen; the rigs on her face are held to the close
 /// view's key on it (their ratios and directions kept); and by night, close, her eyes, skin hold, skin guard and the
 /// close view's highlight grade come on. No shot is tuned by hand.
-/// --cine-her off: none of it (before frames). --cine-her-off layers,hair,gear,spec,cap,night: those parts off.
+/// --cine-her off: none of it (before frames). --cine-her-off layers,hair,gear,spec,cap,night,eyes,guard: those parts off.
+/// --cine-her-on hold,grade,lift,sky: parts kept off by default (Face 48 measured them worse or no better), for pictures.
 /// --cine-her-cap K: the cap as K of the close view's key (exposure counted). --cine-her-hair-back S: a light from
 /// behind or steeply above her keeps S of itself on her hair.
 public partial class Game
@@ -25,8 +26,16 @@ public partial class Game
     {
         static readonly bool HerOn = Args.Get("cine-her") != "off";
         static readonly HashSet<string> HerOff = (Args.Get("cine-her-off") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
-        static bool HerPart(string p) => HerOn && !HerOff.Contains(p);
+        static readonly HashSet<string> HerOnToo = (Args.Get("cine-her-on") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
+        /// <summary>Parts off unless --cine-her-on names them (Face 48 diag: the skin hold turned rig-lit skin lemon, hue 57 to 68;
+        /// the close view's highlight grade moved her face little and re-grades the whole frame).</summary>
+        /// (and "lift", the rigs raised to the close key: flatter, p85-p15 19 to 13 on C02 s4; "sky", her skin off the sky's light
+        /// by night: under 1 L either way, the ambient is not what carries her face there)
+        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky" };
+        static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p));
         static float HerCap => Args.Num("cine-her-cap", 1f);
+        static float HerLift => Args.Num("cine-her-lift", 2.5f);
+        static float HerSky => Args.Num("cine-her-sky", 0.4f);
         static float HerHairBack => Args.Num("cine-her-hair-back", 0.35f);
         static float HerSkinSpec => Args.Num("cine-her-spec", 0.3f);
         static readonly bool HerLog = Args.Has("camlog");
@@ -74,10 +83,11 @@ public partial class Game
             var d = p - l.GlobalPosition; float dist = Mathf.Max(d.Length(), 0.0001f);
             float nd = dist / Mathf.Max(l.SpotRange, 0.001f); nd *= nd; nd *= nd; nd = Mathf.Max(1 - nd, 0); nd *= nd;
             float att = nd * Mathf.Pow(dist, -l.SpotAttenuation);
-            float cos = (-l.GlobalBasis.Z).Normalized().Dot(d / dist), cut = Mathf.Cos(Mathf.DegToRad(l.SpotAngle));
-            if (cos <= cut) return 0;
-            float rim = Mathf.Max(0.0001f, (1 - cos) / (1 - cut));
-            return energy * att * (1 - Mathf.Pow(rim, l.SpotAngleAttenuation)) * Lum(l.LightColor);
+            // (the cone taken as reaching her face if its edge comes within a head's width of the point: a narrow rig aimed
+            // at her cheek or brow lights her face though her eyes sit outside it)
+            float ang = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp((-l.GlobalBasis.Z).Normalized().Dot(d / dist), -1, 1)));
+            if (ang > l.SpotAngle + Mathf.RadToDeg(Mathf.Atan2(0.12f, dist))) return 0;
+            return energy * att * Lum(l.LightColor);
         }
 
         /// <summary>The close view's key on her face by night, as the rigs are measured (its key at 2.6 m, on axis, and its fill),
@@ -96,7 +106,8 @@ public partial class Game
         void HerLight()
         {
             PersonView? her = people.TryGetValue("her", out var hv) && IsInstanceValid(hv) && hv.IsVisibleInTree() ? hv : null;
-            Vector3? eyes = her != null && ActorAt("her", "eyes") is V3 ey ? V(ey) : null;
+            // (her eyes as the close view finds them, People.EyesOf: the cue's "eyes" is her head bone and 7 cm up the world, off her face when she lies down)
+            Vector3? eyes = her != null ? People.EyesOf(her.Person) : null;
             if (her != null && HerOn) HerLayers(her);
             // (the rigs on her face, measured where her eyes are, and held to the close view's key)
             float sum = 0;
@@ -107,7 +118,7 @@ public partial class Game
                 on[r] = f; sum += f;
             }
             float cap = 1;
-            if (HerPart("cap") && her != null && sum > 0.001f) cap = Mathf.Min(1, HerCap * CloseKeyOnFace() / sum);
+            if (HerPart("cap") && her != null && sum > 0.001f) cap = Mathf.Min(HerPart("lift") ? HerLift : 1, HerCap * CloseKeyOnFace() / sum);
             herCapShown = cap;
             bool night = g.scene?.View.Night == true;
             foreach (var r in rigs.Values)
@@ -152,8 +163,10 @@ public partial class Game
                 nk = Mathf.Clamp((4 - g.camera.GlobalPosition.DistanceTo(ne)) / 2, 0, 1);
             if (her != null && (nk != 0 || herNightShown != 0))
             {
-                People.HerEyesNight(her.Person, nk); People.HerSkinHold(her.Person, nk);
-                g.air.SetViewSkinGuard(nk); g.air.SetViewHighlights(nk);
+                People.HerEyesNight(her.Person, HerPart("eyes") ? nk : 0); People.HerSkinHold(her.Person, HerPart("hold") ? nk : 0);
+                g.air.SetViewSkinGuard(HerPart("guard") ? nk : 0); g.air.SetViewHighlights(HerPart("grade") ? nk : 0);
+                // (her skin's share of the sky's light by night, close, while a rig keys her: a shot's own "skin" cue rules)
+                if (skinSky == 1) People.HerSkyShare(her.Person, HerPart("sky") && sum > 0.001f ? Mathf.Lerp(1, HerSky, nk) : 1);
             }
             herNightShown = nk;
             if (HerLog && eyes is Vector3 le && Shots.Clock - herLogAt >= 0.1)
@@ -181,7 +194,7 @@ public partial class Game
             herMoved.Clear();
             if (herNightShown != 0)
             {
-                if (people.TryGetValue("her", out var hv) && IsInstanceValid(hv)) { People.HerEyesNight(hv.Person, 0); People.HerSkinHold(hv.Person, 0); }
+                if (people.TryGetValue("her", out var hv) && IsInstanceValid(hv)) { People.HerEyesNight(hv.Person, 0); People.HerSkinHold(hv.Person, 0); People.HerSkyShare(hv.Person, 1); }
                 g.air.SetViewSkinGuard(0); g.air.SetViewHighlights(0);
                 herNightShown = 0;
             }
