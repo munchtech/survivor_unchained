@@ -34,14 +34,14 @@
  "lod": {
   "file": "lod.glb",
   "tris": {
-   "lod_generated": 3798
+   "lod_generated": 3828
   },
-  "total": 3798,
-  "shadowTris": 897,
+  "total": 3828,
+  "shadowTris": 903,
   "errMm": {
    "cut": 5,
    "lod_generated": {
-    "p99": 8.19,
+    "p99": 7.44,
     "max": 20.39
    }
   },
@@ -192,22 +192,25 @@
     "l": 509,
     "r": 0,
     "edgeHeld": 144,
-    "meanMm": 3.5,
-    "maxMm": 11.07,
+    "meanMm": 0,
+    "maxMm": 0,
     "opts": {
      "r": 0.16,
      "grow": 1,
-     "relax": 4,
+     "relax": 0,
      "k": 0.5,
      "mu": -0.53,
-     "clav": 0.4,
+     "clav": 0.7,
      "feather": 3,
-     "chest": 0.5
+     "rigid": {
+      "spine_03": 0.6,
+      "clavicle": 0.4
+     }
     }
    },
    "weights": {
     "copied": 100,
-    "far": 8.5,
+    "far": 8.4,
     "dotHist": [
      9,
      2,
@@ -222,14 +225,14 @@
     ],
     "smoothed": {
      "iters": 10,
-     "edgeMm": 17.7,
+     "edgeMm": 17.8,
      "bones": 60
     },
     "wrist": {}
    },
    "cape": {
-    "points": 2842,
-    "moved": 172.8,
+    "points": 2845,
+    "moved": 173.2,
     "full": 62,
     "opts": {
      "off": [
@@ -250,9 +253,13 @@
    "plate": {
     "points": 1110,
     "meanPool": 0.5,
-    "clav": 0.4,
-    "chest": 0.5,
-    "chestBone": 4
+    "clav": 0.7,
+    "chest": 0,
+    "chestBone": 4,
+    "rigid": {
+     "spine_03": 0.6,
+     "clavicle": 0.4
+    }
    },
    "grade": {
     "refs": {
@@ -298,18 +305,18 @@
       "L": 60.5
      },
      "shirt": {
-      "texels": 361813,
+      "texels": 291735,
       "srgb": [
-       35,
-       55,
-       76
+       24,
+       47,
+       72
       ],
       "linear": [
-       0.035,
-       0.052,
-       0.079
+       0.018,
+       0.038,
+       0.071
       ],
-      "L": 22.3
+      "L": 18.8
      },
      "apron": {
       "texels": 341923,
@@ -343,7 +350,7 @@
     "sides": {
      "before": {
       "clothBack": {
-       "texels": 1178561,
+       "texels": 1178555,
        "srgb": [
         41,
         53,
@@ -357,7 +364,7 @@
        ]
       },
       "clothFront": {
-       "texels": 1181764,
+       "texels": 1181770,
        "srgb": [
         42,
         53,
@@ -401,31 +408,31 @@
      },
      "after": {
       "clothBack": {
-       "texels": 1178561,
+       "texels": 1178555,
        "srgb": [
-        38,
-        49,
-        63
+        35,
+        44,
+        56
        ],
-       "value": 0.197,
+       "value": 0.176,
        "lab": [
-        20.1,
-        -0.7,
-        -10.3
+        17.6,
+        -0.3,
+        -9.1
        ]
       },
       "clothFront": {
-       "texels": 1181764,
+       "texels": 1181770,
        "srgb": [
-        40,
-        49,
-        62
+        37,
+        45,
+        56
        ],
-       "value": 0.198,
+       "value": 0.18,
        "lab": [
-        20.2,
-        -0.4,
-        -9.4
+        18.1,
+        -0.1,
+        -8.1
        ]
       },
       "skinBack": {
@@ -470,16 +477,19 @@
     },
     "redPct": {
      "before": 19.33,
-     "after": 19.37
+     "after": 19.38
     },
     "tone": [
      {
-      "texels": 509153
+      "texels": 525362
+     },
+     {
+      "texels": 85024
      }
     ],
     "seamsAcross": {
-     "texels": 62943,
-     "voxels": 57942
+     "texels": 62941,
+     "voxels": 57787
     },
     "seams": {
      "texels": 0,
@@ -487,6 +497,12 @@
      "normals": 59238,
      "bandPx": 6,
      "band": 525641
+    },
+    "metal": {
+     "texels": 74310,
+     "grime": 7636,
+     "wear": 19039,
+     "edgeMm": 19.14
     },
     "after": {
      "skin": {
@@ -504,46 +520,46 @@
       "L": 60.3
      },
      "shirt": {
-      "texels": 361813,
+      "texels": 291735,
       "srgb": [
-       33,
-       52,
-       73
+       17,
+       39,
+       61
       ],
       "linear": [
-       0.032,
-       0.046,
-       0.071
+       0.009,
+       0.022,
+       0.048
       ],
-      "L": 21.1
+      "L": 14.9
      },
      "apron": {
       "texels": 341923,
       "srgb": [
-       35,
-       44,
-       56
+       31,
+       38,
+       49
       ],
       "linear": [
-       0.027,
-       0.03,
-       0.049
+       0.022,
+       0.021,
+       0.035
       ],
-      "L": 17.6
+      "L": 14.9
      },
      "breeches": {
       "texels": 73267,
       "srgb": [
-       71,
-       62,
-       55
+       63,
+       51,
+       42
       ],
       "linear": [
-       0.068,
-       0.051,
-       0.051
+       0.059,
+       0.034,
+       0.027
       ],
-      "L": 26.8
+      "L": 22.3
      }
     },
     "flush": {
@@ -553,7 +569,7 @@
    },
    "deform": {
     "walk": {
-     "l_shoulder": "p99 72/63 (1.14x) bad 6.64/3.7% flip 1.18/0.53%",
+     "l_shoulder": "p99 89.3/63 (1.42x) bad 6.7/3.7% flip 3.11/0.53%",
      "l_elbow": "p99 193.4/27.4 (7.06x) bad 17.58/0.49% flip 11.81/0%",
      "l_hip": "p99 34/46.2 (0.74x) bad 0.82/2.5% flip 0/0%",
      "l_knee": "p99 75.4/100.3 (0.75x) bad 9.82/21.92% flip 0.36/4.11%",
@@ -564,23 +580,23 @@
     },
     "gen": {
      "l_shoulder": {
-      "p99": 72,
-      "max": 193.2,
-      "bad": 6.64,
-      "flip": 1.18,
-      "tris": 422,
+      "p99": 89.3,
+      "max": 238,
+      "bad": 6.7,
+      "flip": 3.11,
+      "tris": 418,
       "worst": {
-       "qf": 1.9315728256564468,
-       "q": 193.2,
-       "l0Mm": 3.8,
-       "l1Mm": 11.1,
+       "qf": 2.379905717389516,
+       "q": 238,
+       "l0Mm": 6,
+       "l1Mm": 20.2,
        "at": [
-        0.22,
-        1.447,
-        -0.12
+        0.23,
+        1.445,
+        -0.108
        ],
-       "a": 10484,
-       "b": 10473
+       "a": 14391,
+       "b": 14380
       }
      },
      "l_elbow": {
@@ -891,7 +907,7 @@
  },
  "baked": true,
  "bake": {
-  "bytes": 2593196,
+  "bytes": 2612572,
   "nodes": [
    {
     "name": "npc_holloway",

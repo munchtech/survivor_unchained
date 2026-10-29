@@ -10,6 +10,11 @@ A region is boxes [x0, y0, x1, y1] on a uvpass.py render (its <prefix>_uv.png), 
   fleck   dark flecks on cloth: texels under `L` (or under the local median by `dL`) are inpainted from round them.
   lift    a dark mark (a nostril smudge reading as a ring or a scab): texels under the local median (`win`) by `dL`
           move `amount` of the way to it.
+  fleck   with `above`: light flecks instead (skin-coloured paint on a dark collar): texels over `above` L* inpainted.
+  flat    (tex "normal") a normal-map line (a sharp fold reading as a scar under a low lamp): the normal map pulled
+          `amount` of the way to its own blur (`sigma` texels, per UV island: no blur across a seam), renormalised,
+          feathered over `feather` texels at the region's edge (flat: true: toward a flat normal instead). Any op takes "tex": "normal" (the normal map) or "mr" (the
+          metal-roughness map: 'lift' there evens out glossy specks, a cloth's low-roughness fuzz shining under a lamp).
 spec: {"ops": [{"op": "border", "uv": "<prefix>_uv.png", "boxes": [[...]], ...}, ...]}; a report of texels per op."""
 import json, sys
 import numpy as np, cv2
@@ -48,9 +53,14 @@ def lab_L(img): return cv2.cvtColor(img[:, :, :3], cv2.COLOR_BGR2LAB)[:, :, 0].a
 
 def run(glb, out, spec):
     G = Glb(glb); J = G.J; tex = J['materials'][0]['pbrMetallicRoughness']['baseColorTexture']['index']; ii = J['textures'][tex]['source']
-    img = G.image(ii); size = img.shape[0]; rep = []
+    nti = J['materials'][0].get('normalTexture', {}).get('index'); ni = J['textures'][nti]['source'] if nti is not None else None
+    imgs = {'color': G.image(ii)}; size = imgs['color'].shape[0]; rep = []
+    if ni is not None: imgs['normal'] = G.image(ni)
+    mti = J['materials'][0]['pbrMetallicRoughness'].get('metallicRoughnessTexture', {}).get('index'); mi = J['textures'][mti]['source'] if mti is not None else None
+    if mi is not None and mi not in (ii, ni): imgs['mr'] = G.image(mi)
     global ISL; ISL = islands(G, size)
     for op in spec['ops']:
+        tk = op.get('tex', 'color'); img = imgs[tk]
         R = region(op, size); L = lab_L(img); kind = op['op']; n = 0
         if kind == 'border':
             D = L < op.get('dark', 30); s = op.get('smooth', 2); g = op.get('grow', 3)
@@ -71,15 +81,31 @@ def run(glb, out, spec):
             ch = R & (L > Lm + op.get('dL', 6)); img[ch] = med[ch]; n = int(ch.sum())
         elif kind == 'fleck':
             w = op.get('win', 15); Lm = lab_L(cv2.medianBlur(img, w))
-            ch = R & ((L < op['L']) if 'L' in op else (L < Lm - op.get('dL', 15)))
+            ch = R & ((L > op['above']) if 'above' in op else (L < op['L']) if 'L' in op else (L < Lm - op.get('dL', 15)))
             ch = cv2.dilate(ch.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0; ch &= R
             img = cv2.inpaint(img, ch.astype(np.uint8) * 255, op.get('radius', 4), cv2.INPAINT_TELEA); n = int(ch.sum())
         elif kind == 'lift':
             w = op.get('win', 21); med = cv2.medianBlur(img, w); Lm = lab_L(med)
             ch = R & (L < Lm - op.get('dL', 6)); a = op.get('amount', 0.7)
             img[ch] = (img[ch].astype(np.float32) * (1 - a) + med[ch].astype(np.float32) * a).round().astype(np.uint8); n = int(ch.sum())
-        rep.append({'op': kind, 'region': int(R.sum()), 'changed': n})
-    G.set_image(ii, img); G.save(out); return rep
+        elif kind == 'flat':
+            sg = op.get('sigma', 6); a = op.get('amount', 0.85); fe = op.get('feather', 4)
+            Nv = img[:, :, :3].astype(np.float32) / 127.5 - 1; out_n = Nv.copy()
+            wt = np.clip(cv2.distanceTransform(R.astype(np.uint8), cv2.DIST_L2, 5) / max(1, fe), 0, 1) * a
+            if op.get('flat'): out_n[:] = (1.0, 0.0, 0.0)   # (BGR: z up, a flat tangent normal: a fringe the island's own blur would keep)
+            else:
+              for iid in np.unique(ISL[R]):
+                if iid == 0: continue
+                isl = (ISL == iid); c = isl.astype(np.float32); den = cv2.GaussianBlur(c, (0, 0), sg)
+                for j in range(3): out_n[:, :, j] = np.where(isl & R, cv2.GaussianBlur(Nv[:, :, j] * c, (0, 0), sg) / np.maximum(den, 1e-4), out_n[:, :, j])
+            M = Nv * (1 - wt[:, :, None]) + out_n * wt[:, :, None]; M /= np.linalg.norm(M, axis=2, keepdims=True) + 1e-6
+            ch = R & (ISL > 0); img = img.copy(); img[:, :, :3][ch] = np.clip((M[ch] + 1) * 127.5, 0, 255).round().astype(np.uint8); n = int(ch.sum())
+        imgs[tk] = img
+        rep.append({'op': kind, 'tex': tk, 'region': int(R.sum()), 'changed': n})
+    G.set_image(ii, imgs['color'])
+    if ni is not None and any(o.get('tex') == 'normal' for o in spec['ops']): G.set_image(ni, imgs['normal'])
+    if 'mr' in imgs and any(o.get('tex') == 'mr' for o in spec['ops']): G.set_image(mi, imgs['mr'])
+    G.save(out); return rep
 
 if __name__ == '__main__':
     print(json.dumps(run(sys.argv[1], sys.argv[2], json.load(open(sys.argv[3]))), indent=1))
