@@ -261,7 +261,7 @@ def build(plate):
     names = [n for n, _ in P.P["layers"]]
     zs = dict(P.P["layers"])
     srcs = {"p5": {"sky": "sky", "far": "far", "trees": "clean", "road": P.whole},
-            "p6": {"sky": "sky", "far": "far", "near": "clean"},
+            "p6": {"sky": "sky", "far": "far2", "near": "clean"},
             "p7": {"far_water": "bg", "water": "bg", "lamp": "pick", "traveler": "pick"},
             "p7u": {"under": "bg", "bubbles": "pick"}}[plate]
     layers, files = [], []

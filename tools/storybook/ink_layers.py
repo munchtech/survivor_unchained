@@ -159,8 +159,17 @@ P5_DROWNED_R3 = "d60_s11"
 P7_HEAD_ROUND = 0       # which head_up candidates the build cuts (2: ink_r2 retry; 0: none)
 P7_RIM = True           # True: ship traveler_blue_rim.png (add) instead of a head_up state
 # round 3: from the stand pick, scaled to round 2's walk2 height (walk1 s47's 534 px x 0.55)
-P6_WALK2 = dict(feet=(3500, 1358), src="stand", height_px=294, dome=False, fill="navy", fill_k=0.35, rim="slate",
+# round 4: feet on the stepping stone at the water's edge, so the whole figure stands against the pale river at the last
+# key (camera 3550/1060 x1.25) and still 0.5 s before it; 0.85 of round 3's height (294 px)
+P6_WALK2 = dict(feet=(4201, 1461), src="stand", height_px=250, dome=False, fill="navy", fill_k=0.35, rim="slate",
                 rim_side=(1.0, -0.2))
+
+
+# p6 round 4: the big hill's foot right of the far mask's straight cut at 0.515 W goes to near, under a drawn
+# contour (gen px) from the hill's top line past the tree's trunk base down to the river; the far layer gets a
+# fill behind it (fill job far2), so neither layer has a straight edge there
+P6_FOOT = [(1150, 307), (1186, 319), (1230, 333), (1265, 346), (1290, 362), (1312, 382), (1328, 400), (1342, 418),
+           (1354, 434), (1368, 448), (1382, 457), (1398, 466)]
 
 
 def wd(plate, *a):
@@ -288,8 +297,19 @@ def make_masks(plate):
         for x in range(x0, W):
             far[:top[x], x] = True
         far &= ~sky
+        # round 4: the hill's foot below P6_FOOT (a smooth contour with a small drawn wobble) is near's
+        cx, cy = np.array(P6_FOOT, np.float32).T
+        xs_ = np.arange(W)
+        line = np.interp(xs_, cx, cy, left=-1, right=H + 1)
+        rng = np.random.default_rng(6)
+        wob = nd.gaussian_filter1d(rng.normal(0, 1, W), 6)
+        line = line + 2.5 * wob / (np.abs(wob).max() + 1e-6)
+        line[(xs_ < cx[0]) | (xs_ > cx[-1])] = H + 1
+        foot = far & (np.arange(H)[:, None] > line[None])
+        far &= ~foot
         near = ~(sky | far)
         M = {"sky": sky, "far": far, "near": near}
+        save_mask(nd.binary_dilation(foot, iterations=14) & ~sky, wd(plate, "fillmask_far_foot.png"))   # far2's fill
         save_mask(nd.binary_dilation(person, iterations=6), wd(plate, "remove.png"))
         fire = (img[..., 0] > 0.7) & (img[..., 2] < 0.45) & (img[..., 1] > 0.25) & (np.arange(W)[None] < 0.35 * W)
         save_mask(fire, wd(plate, "glow_fire_glow.png"))
@@ -348,6 +368,7 @@ def fill_jobs(plate):
         jobs.append(("clean", src, wd(plate, "remove.png"), full("r2", P6_CLEAN), None))
         jobs.append(("far", "@clean", ("under", "far", mg[1]), full("r2", P6_FAR), None))
         jobs.append(("sky", "@far", ("ring", "sky", mg[0]), full("r2", SKY_DUSK), None))
+        jobs.append(("far2", "@far", wd(plate, "fillmask_far_foot.png"), full("r2", P6_FAR), None))   # round 4: behind the foot
     elif plate == "p7":
         jobs.append(("bg", src, wd(plate, "objects_far.png"), full("r2", P7_BG), None))
     elif plate == "p7u":
