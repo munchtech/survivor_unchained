@@ -15,7 +15,7 @@ namespace SurvivorUnchained.View;
 public partial class Pendant : Node3D
 {
     public static readonly Vector3 Hang = new(0, 1.335f, 0.182f), Collar = new(0, 1.455f, 0.112f);
-    const float Spring = 30, Damping = 4, MaxTilt = 25 * Mathf.Pi / 180, LampScale = 0.42f, Drop = 0.09f, G = 9.8f;
+    const float Spring = 30, Damping = 4, MaxTilt = 25 * Mathf.Pi / 180, LampScale = 0.35f, Drop = 0.09f, G = 9.8f;
     static StandardMaterial3D? chainMat;
     Vector2 tilt, spin;       // world-horizontal tilt (rad) of the lantern's bottom, and its rate
     Vector3 lastAt, lastV;
@@ -25,7 +25,7 @@ public partial class Pendant : Node3D
     public Pendant()
     {
         Name = "Pendant";
-        lamp = LampIron.Make();
+        lamp = LampIron.MakeWarden();
         lamp.Scale = Vector3.One * LampScale;
         lamp.Position = new Vector3(0, -Drop, 0);
         AddChild(lamp);

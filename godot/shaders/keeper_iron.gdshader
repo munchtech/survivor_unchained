@@ -29,6 +29,13 @@ uniform float wet = 0.35;
 // the flame's own light falls closest, so the inside never burns white. 0 for anything that isn't the lamp.
 uniform float soot_k = 0.0;
 uniform vec3 cage = vec3(0.0655, -0.0625, -0.2055);
+// The lamp's own flame lighting its iron (LampIron.MakeWarden; the Warden's light leaves the lamp out, so the
+// bars a few cm from it never burn white): model units, a soft Gaussian reach, the side facing the flame and the
+// worn bevels brightest. 0 for anything that isn't a lit lamp (the sill lamp, the blade).
+uniform float inner_k = 0.0;
+uniform vec3 inner_col = vec3(0.42, 0.66, 1.0);
+uniform vec3 flame_o = vec3(0.0, -0.168, 0.0);
+uniform float inner_r = 0.08;
 
 varying vec3 opos;
 varying vec3 onrm;
@@ -93,6 +100,14 @@ void fragment() {
 	vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
 	NORMAL = normalize(abs(det) * NORMAL - bk * 0.0015 * grad);
 	ALBEDO = col;
+	if (inner_k > 0.0) {
+		vec3 dl = flame_o - opos;
+		float dd = length(dl);
+		float ndl = dot(normalize(onrm), dl / max(dd, 1e-4));
+		float fall = exp(-dd * dd / (inner_r * inner_r));
+		float face = 0.06 + smoothstep(-0.1, 0.9, ndl);
+		EMISSION = inner_col * inner_k * fall * face * (0.5 + 1.4 * edge) * (1.0 - 0.85 * inside) * (1.0 - 0.6 * r) * (0.75 + 0.5 * m.g);
+	}
 	METALLIC = metal;
 	ROUGHNESS = clamp(rough, 0.05, 1.0);
 	SPECULAR = 0.5;

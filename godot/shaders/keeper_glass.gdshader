@@ -17,6 +17,10 @@ uniform float spot_r = 0.045;
 uniform float edge_k = 0.5;
 uniform vec3 sheen = vec3(0.16, 0.19, 0.23);
 uniform float sheen_k = 0.12;
+// dark (the Warden's lantern, LampIron.MakeWarden): smoked glass that shows the night's reflections and the
+// flame's glow round it and little else, never a pale pane. 0 the sill lamp's glass as it was.
+uniform float dark = 0.0;
+uniform vec3 reflect_col = vec3(0.30, 0.40, 0.55);
 
 varying vec3 opos;
 
@@ -41,6 +45,18 @@ void fragment() {
 	float edge = max(smoothstep(0.08, 0.0, min(UV.x, 1.0 - UV.x)), smoothstep(0.06, 0.0, min(UV.y, 1.0 - UV.y)));
 	float light = lit * glow_k * (0.25 + 1.6 * spot) * (0.35 + 0.9 * grime) * (1.0 - 0.75 * soot) + lit * edge_k * glow_k * edge;
 	float f = pow(1.0 - clamp(abs(dot(NORMAL, VIEW)), 0.0, 1.0), 3.0);
-	ALBEDO = glow * light + sheen * f * sheen_k + vec3(0.025, 0.024, 0.02) * grime;
-	ALPHA = clamp(0.05 + 0.22 * grime + 0.5 * soot + 0.2 * f + 0.6 * clamp(light, 0.0, 0.5), 0.0, 0.85);
+	vec3 alb = glow * light + sheen * f * sheen_k + vec3(0.025, 0.024, 0.02) * grime;
+	float a = clamp(0.05 + 0.22 * grime + 0.5 * soot + 0.2 * f + 0.6 * clamp(light, 0.0, 0.5), 0.0, 0.85);
+	if (dark > 0.0) {
+		// The night in it: the sky's reflection, a soft band where the reflected ray looks up, broken by the grime.
+		vec3 rv = reflect(-VIEW, NORMAL);
+		float sky = smoothstep(0.1, 0.9, (INV_VIEW_MATRIX * vec4(rv, 0.0)).y);
+		float refl = (0.04 + 0.6 * f) * (0.35 + 0.65 * sky) * (1.0 - 0.5 * grime);
+		vec3 dk = glow * light + reflect_col * refl + vec3(0.012, 0.012, 0.011) * grime;
+		float da = clamp(0.10 + 0.16 * grime + 0.35 * soot + 0.35 * refl + 0.5 * clamp(light, 0.0, 0.45), 0.0, 0.8);
+		alb = mix(alb, dk, dark);
+		a = mix(a, da, dark);
+	}
+	ALBEDO = alb;
+	ALPHA = a;
 }

@@ -18,7 +18,12 @@ public static class LampIron
     public const float FootY = -0.23f;
     /// <summary>The wick's top, where the flame stands.</summary>
     public const float WickY = -0.1815f;
+    /// <summary>The Warden's lantern (tools/assets/warden_lamp.py, concept A): the flame's middle, the wick's top and the
+    /// feet, from its ring; and its cage (inner half-width, the rim under the dome, the base plate's top).</summary>
+    public const float WardenFlameY = -0.166f, WardenWickY = -0.2085f, WardenFootY = -0.282f;
+    static readonly Vector3 WardenCage = new(0.0505f, -0.078f, -0.258f);
     const string Scene = "res://art/props/keeper_lamp/keeper_lamp.glb";
+    const string WardenScene = "res://art/props/keeper_lamp/warden_lamp.glb";
     const string Masks = "res://art/props/keeper_lamp/iron_masks.png";
     static ShaderMaterial? iron, blade;
     static Shader? glassShader;
@@ -44,11 +49,33 @@ public static class LampIron
     }
 
     /// <summary>The lamp-iron; with a bail, the link through its ring that long, to hang it by.</summary>
-    public static Node3D Make(float bail = 0)
+    public static Node3D Make(float bail = 0) => Build(Scene, bail, false);
+
+    /// <summary>The Ford-Warden's lantern (concept A: tall, a ribbed dome, dark glass), its own iron so its flame can
+    /// light it (LampFire); with a bail, hung as Make's. His chest pendant is the same, small and unlit.</summary>
+    public static Node3D MakeWarden(float bail = 0) => Build(WardenScene, bail, true);
+
+    /// <summary>The flame's middle in this lamp's own frame (the Warden's or the sill lamp's).</summary>
+    public static float FlameOf(Node3D lamp) => lamp.HasMeta("flame_y") ? (float)lamp.GetMeta("flame_y") : FlameY;
+
+    static Node3D Build(string scene, float bail, bool warden)
     {
-        if (!ResourceLoader.Exists(Scene)) { GD.PushWarning("LampIron: no keeper_lamp.glb, the primitive lamp"); return Primitive(bail); }
+        if (!ResourceLoader.Exists(scene)) { GD.PushWarning($"LampIron: no {scene}, the primitive lamp"); return Primitive(bail); }
         var lamp = new Node3D { Name = "LampIron" };
-        var model = GD.Load<PackedScene>(Scene).Instantiate<Node3D>();
+        var model = GD.Load<PackedScene>(scene).Instantiate<Node3D>();
+        ShaderMaterial ironMat = Iron;
+        if (warden)
+        {
+            lamp.SetMeta("flame_y", WardenFlameY);
+            lamp.SetMeta("wick_y", WardenWickY);
+            ironMat = Sooty(IronMat(false));
+            ironMat.SetShaderParameter("cage", WardenCage);
+            ironMat.SetShaderParameter("silt_top", -0.236f);
+            ironMat.SetShaderParameter("silt_fade", 0.04f);
+            ironMat.SetShaderParameter("flame_o", new Vector3(0, WardenFlameY, 0));
+            ironMat.SetShaderParameter("tile", 11f);
+            lamp.SetMeta("iron", ironMat);
+        }
         lamp.AddChild(model);
         glassShader ??= GD.Load<Shader>("res://shaders/keeper_glass.gdshader");
         foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false))
@@ -60,12 +87,21 @@ public static class LampIron
                 var g = new ShaderMaterial { Shader = glassShader };
                 g.SetShaderParameter("masks", GD.Load<Texture2D>(Masks));
                 g.SetShaderParameter("lit", 0f);
+                if (warden)
+                {
+                    g.SetShaderParameter("dark", 1f);
+                    g.SetShaderParameter("flame_at", new Vector3(0, WardenFlameY, 0));
+                    g.SetShaderParameter("spot_r", 0.03f);
+                    g.SetShaderParameter("glow_k", 0.16f);
+                    g.SetShaderParameter("edge_k", 0.25f);
+                }
                 mi.MaterialOverride = g;
+                if (lamp.HasMeta("glass")) { lamp.SetMeta("glass2", g); continue; }
                 mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
                 lamp.SetMeta("glass", g);
                 continue;
             }
-            mi.MaterialOverride = Iron;
+            mi.MaterialOverride = ironMat;
             if (name.StartsWith("Cage")) continue;
             mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             if (name.StartsWith("Bail"))
@@ -81,10 +117,24 @@ public static class LampIron
     /// <summary>The glass's light: the flame's colour (linear) and how lit (0 dark glass).</summary>
     public static void Glass(Node3D lamp, Color linear, float lit)
     {
-        if (!lamp.HasMeta("glass") || lamp.GetMeta("glass").Obj is not ShaderMaterial g) return;
-        g.SetShaderParameter("glow", new Vector3(linear.R, linear.G, linear.B));
-        g.SetShaderParameter("lit", lit);
+        foreach (var key in new[] { "glass", "glass2" })
+        {
+            if (!lamp.HasMeta(key) || lamp.GetMeta(key).Obj is not ShaderMaterial g) continue;
+            g.SetShaderParameter("glow", new Vector3(linear.R, linear.G, linear.B));
+            g.SetShaderParameter("lit", lit);
+        }
+        // The Warden's lantern: its flame lights its own iron (keeper_iron inner_k), out with it.
+        if (lamp.HasMeta("iron") && lamp.GetMeta("iron").Obj is ShaderMaterial im)
+        {
+            im.SetShaderParameter("inner_col", new Vector3(linear.R, linear.G, linear.B));
+            im.SetShaderParameter("inner_k", InnerK * lit);
+        }
     }
+
+    /// <summary>--lamp-iron-inner K: how strongly the Warden's flame lights his lantern's own iron (for pictures).</summary>
+    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-iron-inner", 0.5f);
+    /// <summary>The layer a lit lantern's meshes go on, so its own light can leave it out (ZoneView.LampLayer).</summary>
+    public const uint OwnLayer = 1u << 11;
 
     /// <summary>The Warden's flame in a lamp made here: the flame kit's cold flame on the wick (no light of
     /// its own: the caller's light is the lamp's) and a soft glow round it.</summary>
@@ -129,6 +179,9 @@ public sealed class LampFire
     readonly ShaderMaterial glow;
     static readonly Color Cold = new(0.32f, 0.58f, 1f);
     bool lastLit = true;
+    readonly float flameY;
+    /// <summary>--warden-flame S: the Warden's flame's size (the kit's lamp card is 0.16 at 1), for pictures.</summary>
+    static readonly float FlameScale = SurvivorUnchained.Args.Num("warden-flame", 0.56f);
     Color col = Cold;
     float level = 1;
 
@@ -138,14 +191,22 @@ public sealed class LampFire
         Node = new Node3D { Name = "Fire" };
         lamp.AddChild(Node);
         // The kit's lamp card is 0.16 tall at scale 1; this flame stands about 0.07 of the lamp's measure.
-        flame = FlameKit.Add(Node, new Vector3(0, LampIron.WickY - 0.0025f, 0), FlameKind.Lamp, cold: true, scale: 0.46f, light: false);
+        bool warden = lamp.HasMeta("flame_y");
+        flameY = LampIron.FlameOf(lamp);
+        float wick = lamp.HasMeta("wick_y") ? (float)lamp.GetMeta("wick_y") : LampIron.WickY;
+        // (the Warden's lantern: a taller flame, a bright point at the play camera; its meshes on their own layer, so the
+        // light at the flame leaves them out and their iron is lit by the shader instead, never white a few cm from it)
+        flame = FlameKit.Add(Node, new Vector3(0, wick - 0.0025f, 0), FlameKind.Lamp, cold: true, scale: warden ? FlameScale : 0.46f, light: false);
+        if (warden)
+            foreach (var n in lamp.FindChildren("*", "GeometryInstance3D", true, false))
+                if (n is GeometryInstance3D gi && !Node.IsAncestorOf(gi)) gi.Layers = LampIron.OwnLayer;
         // Its soft edge against what is behind it, tight: the cage's far bars are a few cm behind it.
         flame.SetCard("soft", 0.015f);
         glow = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_glow.gdshader") };
         Node.AddChild(new MeshInstance3D
         {
-            Name = "Glow", Mesh = new QuadMesh { Size = Vector2.One * 0.17f, Material = glow },
-            Position = new Vector3(0, LampIron.FlameY, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Name = "Glow", Mesh = new QuadMesh { Size = Vector2.One * (warden ? 0.22f : 0.17f), Material = glow },
+            Position = new Vector3(0, flameY, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
         Look(null, 1, 1);
     }
@@ -184,5 +245,5 @@ public sealed class LampFire
     }
 
     /// <summary>Where the flame burns, in the world.</summary>
-    public Vector3 At => lamp.ToGlobal(new Vector3(0, LampIron.FlameY, 0));
+    public Vector3 At => lamp.ToGlobal(new Vector3(0, flameY, 0));
 }

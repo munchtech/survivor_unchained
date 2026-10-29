@@ -330,4 +330,5 @@ def main():
     print('LAMP tris', {o.name: tris(o) for o in obs}, 'total', sum(tris(o) for o in obs))
 
 
-main()
+if __name__ == '__main__':
+    main()
