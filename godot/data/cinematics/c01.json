@@ -154,7 +154,7 @@
     {
       "id": "10",
       "type": "MCU",
-      "dur": 0.45,
+      "dur": 0.4,
       "still": 0.3,
       "note": "From the fire's side: her head turns hard toward the sound, screen left, as the risen was. On her feet in one movement.",
       "cam": {"pos": {"abs": [-11.6, 0.98, 91.245]}, "at": {"abs": [-9.744, 1.0, 90.863]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes", "track": true}, "fstop": 2.8},
