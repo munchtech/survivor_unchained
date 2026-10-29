@@ -114,7 +114,11 @@
     2.6,
     1.9
    ]
-  }
+  },
+  {"_doc": "Env 22 r1c (triage judge: the gate's apron large, flat and empty): a handcart left by the west tower, barrels and a crate by the east one, off the way", "preset": "handcart", "x": -6.2, "z": -104.2, "rot": 1.25},
+  {"preset": "barrel", "x": 6.4, "z": -105.9, "rot": 0.4},
+  {"preset": "barrel", "x": 7.25, "z": -105.2, "rot": 1.9, "scale": 0.92},
+  {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8}
  ],
  "lamps": {
   "glow-1-0": {
@@ -157,8 +161,8 @@
    "energy": 1.0,
    "day": 0.15
   },
-  "glow-7-0": {"color": "#ffe0a4", "energy": 0.45, "att": 1.2, "spec": 0.1, "day": 0.06},
-  "glow-8-0": {"color": "#ffe0a4", "energy": 0.45, "att": 1.2, "spec": 0.1, "day": 0.06}
+  "glow-7-0": {"color": "#ffd090", "energy": 0.75, "att": 1.0, "spec": 0.1, "day": 0.06},
+  "glow-8-0": {"color": "#ffd090", "energy": 0.75, "att": 1.0, "spec": 0.1, "day": 0.06}
  },
  "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
  "kits": {

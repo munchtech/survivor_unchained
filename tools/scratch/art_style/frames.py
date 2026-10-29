@@ -82,7 +82,9 @@ SETS = {
     "lfplay": (["--zone", "lowford", "--facts", "prologue.woke=true", "--auto", "play"], 3),
     # (E8: the Waystation's gate and walls north of the ford at the play camera, her short of the Exit (exitZ -104): on the
     # road before the gate, and by the east tower and wall run; one dawn)
-    "gate": (NIGHT + ["--spots-clear", "--spots", "0,-100;10,-102"], 2),
+    "gate": (NIGHT + ["--spots-clear", "--spots", "0,-100;10,-102;0,-107"], 3),
+    # (Env 22 r1c: road B's spot alone, for switch tests)
+    "fordb": (NIGHT + ["--spots-clear", "--spots", "9,40"], 1),
     "gatedawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "0,-100"], 1),
     "barrowdawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-17,4.5"], 1),
 }

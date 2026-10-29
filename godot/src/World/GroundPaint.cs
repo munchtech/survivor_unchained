@@ -553,6 +553,38 @@ public sealed class GroundPaint
             jzz = Blur(Blur(jzz, sr, rb), sr, rb);
             dirS = new float[sr * sr];
             for (int k = 0; k < dirS.Length; k++) dirS[k] = jzz[k] / (jxx[k] + jzz[k] + 1e-6f);
+            // (Env 22 r1c, the triage judge: diagonal seams across the Watch-post's floor and the gate's apron) in a square
+            // the distance's ridge is its diagonals: the wear lane ran corner to corner and the courses turned along them, a
+            // mitred X across the floor. A plaza (flora_species.json "ground" setts_plaza: paving whose half-width somewhere
+            // within twice that many metres is over it; 0, the town's default: none) keeps one course direction and no
+            // ridge lane; a street keeps both.
+            float plaza = Args.Num("setts-plaza", FloraSpecies.GroundFor(z.Id).TryGetValue("setts_plaza", out var pz) ? pz : 0f);
+            if (plaza > 0)
+            {
+                var wide = Dilate(dd, sr, Math.Max(1, (int)(2f * plaza / smt)));
+                var pf = new float[sr * sr];
+                for (int k = 0; k < pf.Length; k++) pf[k] = Mathf.SmoothStep(plaza, plaza * 1.4f, wide[k]);
+                pf = Blur(pf, sr, Math.Max(1, (int)(1f / smt)));
+                for (int k = 0; k < pf.Length; k++) { dirS[k] *= 1f - pf[k]; lane[k] *= 1f - pf[k]; }
+            }
+            // (and its ways, flora_species.json "setts_ways": a worn lane 2-3 m wide down each, where the ridge lane went)
+            var ways = FloraSpecies.SettsWaysFor(z.Id);
+            if (ways.Count > 0)
+                for (int j = 0; j < sr; j++)
+                    for (int i = 0; i < sr; i++)
+                    {
+                        int k = j * sr + i;
+                        if (dd[k] == 0) continue;
+                        var w = new Vector2(-half + (i + 0.5f) * smt, -half + (j + 0.5f) * smt);
+                        float d = 1e9f;
+                        foreach (var sg in ways)
+                        {
+                            Vector2 a = new(sg.X, sg.Y), ab = new Vector2(sg.Z, sg.W) - a;
+                            float t = Math.Clamp((w - a).Dot(ab) / Math.Max(ab.LengthSquared(), 1e-4f), 0, 1);
+                            d = Math.Min(d, (w - a - ab * t).Length());
+                        }
+                        lane[k] = Math.Max(lane[k], 1f - Mathf.SmoothStep(0.6f, 1.5f, d));
+                    }
             // (The distance off the splat's texels stair-stepped the kerb: centred on the texel's edge, blurred twice over
             // a texel, and read bilinearly below, its contours run smooth.)
             distS = new float[sr * sr];

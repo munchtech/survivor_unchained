@@ -180,6 +180,9 @@ uniform float mud_paint = 0.0;
 // setts_lf: the 2-6 m tone layer (value, a slight hue). mud_pool: soft wet pools of mud 0.5-2 m by what stands.
 // close_bump: the setts' relief at the close camera (x setts_bump).
 uniform float setts_kerb = 1.0;
+// (Env 22 r1c, the triage judge: the Watch-post's floor pristine) setts_wild: a ruin's floor, grass and moss in its joints
+// in the open too, in patches, thicker toward its edge and out of the wear lane (0: a kept street's).
+uniform float setts_wild = 0.0;
 uniform float kerb_in = 0.28;
 uniform float kerb_w = 0.3;
 uniform float setts_turn = 1.0;
@@ -630,6 +633,11 @@ void fragment() {
 	// (Out to 0.9 m: the gutter takes the wall's first 0.3-0.5 m, so the weeds live in the joints at its lip.)
 	float wsel = smoothstep(0.5, 0.62, texture(noise_tex, w * 0.9 + 0.2).g) * (1.0 - smoothstep(0.75, 1.0, nr.r * 2.0));
 	albedo = mix(albedo, vec3(0.085, 0.11, 0.045) * (0.8 + 0.4 * nF.a), joint * wsel * weeds);
+	if (setts_wild > 0.0) {
+		float wild = joint * setts_wild * smoothstep(0.44, 0.64, rgm * 0.45 + nM.g * 0.3 + nF.a * 0.25 + (1.0 - smoothstep(0.3, 2.2, sd)) * 0.3) * (1.0 - nr.b * 0.85);
+		albedo = mix(albedo, vec3(0.06, 0.09, 0.03) * (0.7 + 0.6 * nF.a), wild * 0.9);
+		rough = mix(rough, 0.95, wild);
+	}
 
 	// The road: its made surface packed a little smoother; the ruts darker,
 	// wetter, smoother, dipped through the normal.

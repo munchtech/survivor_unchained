@@ -19,9 +19,9 @@
   },
   "species": {
     "spruce": {"pieces": ["spruce_a", "spruce_b", "spruce_c"], "packed": false, "kind": "pine", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
-               "shader": {"hue_floor": 108, "crown_lo": 0.8, "crown_hi": 8.8, "crown_r": 2.0, "crown_keep": 0.55, "stump_top": 1, "near_dim": 0.5, "lean": 10, "lean_h": 8.8, "stretch_lo": 0.8, "stretch_hi": 1.2, "leader_from": 6.0, "leader_lo": 0.55, "leader_hi": 1.6, "jit_hue": 13, "jit_lo": 0.72, "jit_hi": 1.08, "old_share": 0.14, "old_amt": 0.45, "core_night": 0.7, "night_fill": 0.17, "lamp_gain": 0.6, "lamp_green": 0.2, "tip_lift": 0.6, "tip_night_sat": 0.32, "tip_night_dim": 0.3}},
+               "shader": {"leaf_shadow": [1, 0.28, 0.12, 0.72, 0.3], "hue_floor": 108, "crown_lo": 0.8, "crown_hi": 8.8, "crown_r": 2.0, "crown_keep": 0.55, "stump_top": 1, "near_dim": 0.5, "lean": 10, "lean_h": 8.8, "stretch_lo": 0.8, "stretch_hi": 1.2, "leader_from": 6.0, "leader_lo": 0.55, "leader_hi": 1.6, "jit_hue": 13, "jit_lo": 0.72, "jit_hi": 1.08, "old_share": 0.14, "old_amt": 0.45, "core_night": 0.7, "night_fill": 0.17, "lamp_gain": 0.6, "lamp_green": 0.2, "tip_lift": 0.6, "tip_night_sat": 0.32, "tip_night_dim": 0.3}},
     "alder": {"pieces": ["alder_a", "alder_b", "alder_c"], "packed": false, "kind": "broadleaf", "lod": [44, 100], "cell": 24, "shadow": true, "wind": null,
-              "shader": {"broadleaf": 1, "flutter": 2.2, "crown_lo": 2.6, "crown_hi": 7.9, "crown_r": 2.3, "crown_keep": 0.6, "stump_top": 1, "hue_floor": 98, "core": 0.3, "sun_lift": 1.0, "night_hue": 10, "night_value": 0.9}},
+              "shader": {"broadleaf": 1, "leaf_shadow": [0, 0.6, 0.12, 0.66, 0.4], "flutter": 2.2, "crown_lo": 2.6, "crown_hi": 7.9, "crown_r": 2.3, "crown_keep": 0.6, "stump_top": 1, "hue_floor": 98, "core": 0.3, "sun_lift": 1.0, "night_hue": 10, "night_value": 0.9}},
     "snag": {"pieces": ["snag_a", "snag_b", "snag_c"], "packed": true, "kind": "dead", "lod": [44, 100], "cell": 24, "shadow": true, "wind": 0.2,
              "shader": {"tint": [0.74, 0.74, 0.72], "crown_lo": 3.0, "crown_hi": 12.5, "crown_r": 1.0, "crown_keep": 0.7, "stump_top": 1, "sat": 0.7}},
     "bush": {"pieces": ["hazel_a", "hazel_b", "elder_a", "elder_b"], "packed": true, "kind": "bush", "lod": [70], "end": 90, "cell": 64, "shadow": true, "wind": 0.5,
