@@ -98,8 +98,8 @@
       "type": "MLS",
       "dur": 3.5,
       "still": 1.2,
-      "note": "Held from her left rear, 55 degrees, at shoulder height, 32 mm: she stands on the right third, her head and braid against the camp ahead, the firelight's edge on the ground in front of her and the frost glinting blue beyond it at frame left, where she looks; the fire beyond her a rim on shoulder, braid and blade. The frost line plays and the risen rise beyond the light. Bars out; then a hard cut to the game's camera. Control (Cinematics 11 r3 A).",
-      "cam": {"pos": [-14.02, 1.45, 92.54], "at": [-8.98, 0.8, 87.68], "lens": 32},
+      "note": "Held from her left rear, 55 degrees, at shoulder height, 32 mm: she stands on the right third, her head and braid against the camp ahead, the firelight's edge on the ground in front of her and the frost glinting blue beyond it at frame left, where she looks; the fire beyond her a rim on shoulder, braid and blade. The frost line plays and the risen rise beyond the light. Bars out; then a hard cut to the game's camera. Control (Cinematics 11 r3 A; r4: camera and aim 15 cm higher, the skirt covering more).",
+      "cam": {"pos": [-14.02, 1.6, 92.54], "at": [-8.98, 0.95, 87.68], "lens": 32},
       "cues": [
         {"do": "frost", "where": [-11.0, 84.0], "size": 14, "clear": {"mark": "fire"}, "radius": 4.2, "amount": 0.36},
         {"do": "mist", "name": "west", "where": [-21.5, 0, 90.0], "size": [17, 0.5, 30], "density": 0.14, "color": "#7f8ea4", "falloff": 3.0, "grain": 0.2, "sink": 0.1},
