@@ -97,6 +97,43 @@ public partial class WorldScene : Node3D, IZoneLook
 
     public double HeightAt(double x, double z) => Data.HeightAt((float)x, (float)z);
 
+    readonly Vector4[] wadeFeet = new Vector4[4];
+    readonly List<(double D2, Vector4 F)> wadeNear = new();
+
+    /// <summary>Who stands in the still water (env 22): her and the nearest three of the living within 30 m of her whose
+    /// body is up (standing, fighting: not rising, surfacing, burrowed, under, sunk by a cinematic, or dying), each as
+    /// (x, z, how deep: 0 at 1 cm, 1 by 25 cm, how fast), for the water's rings at their feet (Water.Wade). (r2 judge:
+    /// rings with no figure in them, a drowned still under the surface.)</summary>
+    static readonly bool WadeOff = SurvivorUnchained.Args.Has("wade-off");
+    void Wading(Battle b, double hx, double hz, float y)
+    {
+        // (--wade-off: no wading rings, for the ring loop's cost as an A/B)
+        if (SurvivorUnchained.View.Water.Level is not float wl || WadeOff) return;
+        static float Deep(float d) => Mathf.SmoothStep(0.01f, 0.25f, d);
+        int n = 0;
+        if (wl - y > 0.01f) wadeFeet[n++] = new Vector4((float)hx, (float)hz, Deep(wl - y), (float)Math.Sqrt(b.Player.Vx * b.Player.Vx + b.Player.Vz * b.Player.Vz));
+        wadeNear.Clear();
+        foreach (var e in b.Enemies.Living())
+        {
+            var (ex, ez) = Drawn.Of(e);
+            double d2 = (ex - hx) * (ex - hx) + (ez - hz) * (ez - hz);
+            if (d2 > 900 || !Upright(e)) continue;
+            float ey = (float)HeightAt(ex, ez);
+            if (wl - ey <= 0.01f) continue;
+            wadeNear.Add((d2, new Vector4((float)ex, (float)ez, Deep(wl - ey), (float)Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz))));
+        }
+        wadeNear.Sort((a, c) => a.D2.CompareTo(c.D2));
+        foreach (var (_, f) in wadeNear) { if (n == wadeFeet.Length) break; wadeFeet[n++] = f; }
+        SurvivorUnchained.View.Water.Wade(wadeFeet.AsSpan(0, n));
+    }
+
+    static bool Upright(Enemy e)
+    {
+        if (e.State is EnemyState.Rising or EnemyState.Surfacing or EnemyState.Burrowed or EnemyState.Dying or EnemyState.Dead) return false;
+        if (e.State == EnemyState.Active && CrowdView.Under?.Invoke(e) == true) return false;
+        return CrowdView.Staged?.Invoke(e) is not { } st || st.Sink < 0.3;
+    }
+
     /// <summary>The fight (or walk) here, and the survivor in it.</summary>
     public Battle StartBattle(Battle b, Loadout lo)
     {
@@ -326,6 +363,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             SurvivorUnchained.View.HouseFade.Her = new Vector4((float)hx, y + 1.1f, (float)hz, 1);
+            Wading(b, hx, hz, y);
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)hx, (float)hz);
             View.FollowGrass(at);

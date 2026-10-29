@@ -20,6 +20,7 @@ public sealed class Autopilot
 {
     /// <summary>--no-drink: the autopilot never drinks a draught (a shot of her life falling).</summary>
     static readonly bool noDrink = Args.Has("no-drink");
+    static readonly bool spots = Args.Has("spots");
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
@@ -100,8 +101,8 @@ public sealed class Autopilot
         if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
         // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
-        // the worst player in its first real fight, MR5 item 11)
-        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && !(z is Zones.Prologue { Sprung: false })) return;
+        // the worst player in its first real fight, MR5 item 11); under --spots (pictures of fixed places) it stands where it is set down)
+        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);

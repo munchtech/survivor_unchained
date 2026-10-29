@@ -526,9 +526,25 @@ public static class Dressing
             var jit = new Basis(Vector3.Up, h1 * Mathf.Tau).Scaled(new Vector3(0.85f + 0.3f * h2, 0.7f + 0.6f * h3, 0.85f + 0.3f * h2));
             shAt.Add(t * new Transform3D(jit, Vector3.Zero));
         }
+        // (Env 22 r1c, the triage judge: the crowns' shadows many-sided, straight-edged, block-shaped) a crown's proxy cast
+        // through a leaf mask (leaf_shadow.gdshader; the species' shader "leaf_shadow": [mode, lobe m, hole, eat]), so its
+        // outline is lobed and ragged. The same draws: a discard in the shadow pass.
+        ShaderMaterial? leafSh = null;
+        if (sp.Shader.TryGetValue("leaf_shadow", out var ls) && ls.ValueKind == System.Text.Json.JsonValueKind.Array && SurvivorUnchained.Args.Num("leaf-shadow", 1f) > 0)
+        {
+            var a = new List<float>();
+            foreach (var v in ls.EnumerateArray()) a.Add(v.GetSingle());
+            leafSh = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/leaf_shadow.gdshader") };
+            leafSh.SetShaderParameter("mode", (int)a[0]);
+            if (a.Count > 1) leafSh.SetShaderParameter("lobe", a[1]);
+            if (a.Count > 2) leafSh.SetShaderParameter("hole", a[2]);
+            if (a.Count > 3) leafSh.SetShaderParameter("eat", a[3]);
+            if (a.Count > 4) leafSh.SetShaderParameter("rim_from", a[4]);
+        }
         foreach (var ((cx, cz), idx) in Cells(shAt, 2 * cell))
         {
             var sh = Mmi(proxy, $"shadow_{cx}_{cz}", idx, shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            if (leafSh != null) sh.MaterialOverride = leafSh;
             root.AddChild(sh);
         }
     }

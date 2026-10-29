@@ -162,7 +162,35 @@ uniform float moon_vary = 0.0;
 // bank_depth m (the banks, the stones' feet), murkier past deep; 0: as before.
 uniform float bank_tint = 0.0;
 uniform float bank_depth = 0.6;
+// (env 22, judge: the night ford "a flat milky sheet: no ripples, no flow, no depth, actors with no wake rings")
+// band_amt: drifting bands of murk down the flow (band_size m across, 3x that along), the bed hidden under them and seen
+// between, so the water has depth and visibly moves; 0: none.
+uniform float band_amt = 0.0;
+uniform float band_size = 9.0;
+// flow_lines: thin scum lines drawn out down the flow, drifting with it (their spacing ~flow_line_size m across); 0: none.
+uniform float flow_lines = 0.0;
+uniform float flow_line_size = 2.5;
+// ripple_shade: the ripples' facets lighten and darken the surface (the dark sky's gradient in them), so the flow reads
+// away from any light; ripple_sheen: the sky's colour added on the lit facets. 0: none.
+uniform float ripple_shade = 0.0;
+uniform float ripple_sheen = 0.0;
+// wake_foam: how much foam a wake carries (was a fixed 0.5; held under 0.9).
+uniform float wake_foam = 0.5;
+// near_diffuse: how much a near light (a lamp, her ember) lights the body itself, as against glinting on it (1: as
+// before; under it the pool on the water is its broken glints, not a pale lit sheet).
+uniform float near_diffuse = 1.0;
+// The wading rings (Water.Wade): up to four feet, packed from the first (x, z, how deep 0-1, how fast m/s); wade_box their
+// bounds (min x, min z, max x, max z; the loop is skipped outside it, grown by the rings' reach); wade_amt how strong,
+// wade_reach (m) how far they spread, wade_len (m) the rings' spacing, wade_foam the froth collar at the legs.
+uniform vec4 wade_at[4];
+uniform vec4 wade_box = vec4(1e9, 1e9, -1e9, -1e9);
+uniform float wade_amt = 0.0;
+uniform float wade_reach = 0.8;
+uniform float wade_len = 0.3;
+uniform float wade_foam = 0.0;
 varying float fleck;
+// (the ripples' shade, -1 to 1, for the near lights' pool: see ripple_shade)
+varying float rshade;
 
 varying vec3 w_pos;
 // The glints' strength (the fragment's SPECULAR, which light() can't read).
@@ -236,6 +264,30 @@ void fragment() {
 	vec2 chop = (gc.ba - 0.5) / 6.0 * tm;
 	float bend = ripple_bend * water_air.z;
 	vec2 g = swell * 0.3 + chop * 0.03;
+	// The wading rings: concentric ripples running out from each foot (a slope along the radius), and the froth collar.
+	vec2 wg = vec2(0.0);
+	rshade = 0.0;
+	float collar = 0.0;
+	float wreach = wade_reach * 3.0 + 0.3;
+	if ((wade_amt > 0.0 || wade_foam > 0.0) && all(greaterThan(wv.xz, wade_box.xy - wreach)) && all(lessThan(wv.xz, wade_box.zw + wreach))) {
+		for (int i = 0; i < 4; i++) {
+			vec4 f = wade_at[i];
+			if (f.z <= 0.0) break;
+			vec2 dv = wv.xz - f.xy;
+			float d = length(dv);
+			if (d > wreach) continue;
+			float r0 = 0.24;
+			float env = f.z * (1.0 + 0.6 * clamp(f.w / 3.0, 0.0, 1.0)) * smoothstep(r0 - 0.08, r0 + 0.06, d) * exp(-max(d - r0, 0.0) / wade_reach);
+			// (never a target: the rings' phase and strength wander round the foot with the noise, so they break into arcs)
+			vec2 nd = dv / max(d, 1e-3);
+			float wob = texture(noise_tex, nd * 0.09 + f.xy * 0.13 + vec2(t * 0.02, 0.0)).g;
+			float ph = (d - r0) * 6.2832 / wade_len - t * 4.5 + wob * 5.0;
+			wg += nd * cos(ph) * env * smoothstep(0.2, 0.6, wob + 0.25 * env);
+			collar = max(collar, f.z * (1.0 - smoothstep(r0 * 0.6, r0 + 0.16, d)));
+		}
+		wg *= wade_amt;
+		g += wg * 0.25;
+	}
 	vec3 n_w = normalize(vec3(-g.x * bend, 1.0, -g.y * bend));
 	NORMAL = normalize((VIEW_MATRIX * vec4(n_w, 0.0)).xyz);
 	vec2 gg = (swell * 0.3 + chop * 0.1) * bend * glint_bend;
@@ -259,9 +311,21 @@ void fragment() {
 	if (bed.z > VERTEX.z) { bent = SCREEN_UV; bed = bed_s; }
 	float path = max(VERTEX.z - bed.z, 0.0);
 
+	// The flow's frame: down it (fp.x) and across (fp.y).
+	vec2 fdir = stream ? vec2(0.0, 1.0) : normalize(flow + vec2(1e-5));
+	vec2 fside = vec2(-fdir.y, fdir.x);
+	vec2 fp = vec2(dot(wv.xz, fdir), dot(wv.xz, fside));
+	float fspeed = length(flow);
+	// The drifting bands (band_amt): murk carried down the flow, the bed lost under it and clear between.
+	float murk_k = 0.0;
+	if (band_amt > 0.0) {
+		vec2 bp = vec2((fp.x - t * fspeed * 0.7) / (band_size * 5.0), fp.y / band_size);
+		float bnd = texture(noise_tex, bp + vec2(0.23, 0.61)).r * 0.7 + texture(noise_tex, bp * 2.3 + vec2(0.57, 0.13)).b * 0.3;
+		murk_k = band_amt * smoothstep(0.44, 0.6, bnd);
+	}
 	// Light through the water: per channel, the shallow tint deepening with the path.
 	vec3 tint = shallow / max(max(shallow.r, max(shallow.g, shallow.b)), 1e-3);
-	vec3 ext = (1.0 + 1.6 * (1.0 - tint)) / max(clarity, 0.05);
+	vec3 ext = (1.0 + 1.6 * (1.0 - tint)) / max(clarity, 0.05) * (1.0 + 6.0 * murk_k);
 	vec3 trans = exp(-path * ext);
 	float sh = stream ? 1.0 - smoothstep(0.0, 0.55, UV2.x) : 0.0;
 	vec3 under = texture(screen_tex, bent).rgb;
@@ -278,15 +342,12 @@ void fragment() {
 	float in_k = smoothstep(0.0, shore * (0.55 + 0.45 * texture(noise_tex, wv.xz * 0.07 + 0.11).g), wd);
 	vec3 body = mix(color, murk, smoothstep(0.3, deep, wd));
 	if (bank_tint > 0.0) body = mix(body, mix(color, shallow * 0.55, 0.5), bank_tint * (1.0 - smoothstep(0.05, bank_depth, wd)) * (0.7 + 0.3 * texture(noise_tex, wv.xz * 0.05 + 0.4).b));
+	body *= 1.0 - 0.45 * murk_k;
 	fleck = texture(noise_tex, wv.xz * 0.11 + vec2(0.31, 0.63) - flow * t * 0.04).g;
 	body = mix(body, shallow * 0.6, sh * 0.5);
 	float opaque = 1.0 - dot(trans, vec3(0.3333));
 
 	// Foam: where something breaks the surface (the depth difference), torn by the flow.
-	vec2 fdir = stream ? vec2(0.0, 1.0) : normalize(flow + vec2(1e-5));
-	vec2 fside = vec2(-fdir.y, fdir.x);
-	vec2 fp = vec2(dot(wv.xz, fdir), dot(wv.xz, fside));
-	float fspeed = length(flow);
 	// (two broad octaves only: a finer third read as pixel snow by night at the play camera, judge E6 r1)
 	float fn = texture(noise_tex, vec2(fp.x - t * fspeed, fp.y * 2.2) * 0.11).g * 0.6 + texture(noise_tex, vec2(fp.x * 1.3 - t * fspeed * 1.3, fp.y * 2.6) * 0.16 + 0.5).a * 0.4;
 	// (its edge widened by the depth's own change across a pixel, capped, so a stone's foot rings as soft froth, not
@@ -352,9 +413,21 @@ void fragment() {
 			wk += hit * fade;
 		}
 		wk = clamp(wk / 1.5, 0.0, 1.0) * smoothstep(0.15, 0.6, tear + wk * 0.25);
+		// (env 22: combed into streaks down the flow, so a trail reads as froth drawn out by the current, not a pale blot)
+		wk *= mix(0.45, 1.0, smoothstep(0.35, 0.7, texture(noise_tex, vec2((fp.x - t * fspeed) * 0.35, fp.y * 3.0) + 0.43).b));
 	}
 	bow *= smoothstep(0.4, 0.75, fn + 0.15);
-	float foam = clamp(max(max(ring, bow * 0.45), wk * 0.5) * foam_amt, 0.0, 1.0);
+	// The scum lines (flow_lines): the noise's mid contour drawn out along the flow, thin, broken, drifting with it.
+	float lines = 0.0;
+	if (flow_lines > 0.0) {
+		vec2 lp = vec2((fp.x - t * fspeed) / (flow_line_size * 14.0), fp.y / (flow_line_size * 4.0));
+		float ln = texture(noise_tex, lp + vec2(0.71, 0.29)).b;
+		float lw = fwidth(ln) * 1.2 + 0.012;
+		lines = (1.0 - smoothstep(lw * 0.5, lw * 1.5, abs(ln - 0.5))) * smoothstep(0.35, 0.75, tear) * smoothstep(0.1, 0.4, wd);
+		lines *= flow_lines;
+	}
+	collar *= wade_foam * smoothstep(0.3, 0.7, fn + 0.2);
+	float foam = clamp(max(max(max(ring, bow * 0.45), min(wk * wake_foam, 0.9)), max(collar, lines)) * foam_amt, 0.0, 1.0);
 
 	// The shore's wet lip: the bed darkens as the water takes it, under the sheen's own fade.
 	// (E6c, judge r2: everything the water does to the bed fades in by in_k with what it adds. The night's dark line along
@@ -368,6 +441,16 @@ void fragment() {
 
 	ALBEDO = (mix(body * opaque * in_k, foam_color * 0.55, foam * 0.8)) * lv;
 	EMISSION = seen * (1.0 - fres * in_k) * (1.0 - foam * 0.8) * lv_bed + (skyr * (1.0 - foam) + sick + foam_color * foam * 0.05) * lv;
+	if (ripple_shade > 0.0 || ripple_sheen > 0.0) {
+		// (the swell's slope (and the rings') toward the camera: facets tipped to it show the sky low behind her, brighter)
+		vec2 cdir = normalize((INV_VIEW_MATRIX[3].xyz - wv).xz + vec2(1e-5));
+		vec2 sg = (ga.rg - 0.5) * 0.6 + (gb.rg - 0.5) * 0.4 + (gc.ba - 0.5) * 0.25 + wg * 0.2;
+		float shade = clamp(dot(sg, cdir) * 7.0, -1.0, 1.0) * in_k * (1.0 - foam);
+		rshade = shade;
+		ALBEDO *= 1.0 + ripple_shade * shade;
+		EMISSION *= 1.0 + ripple_shade * shade;
+		EMISSION += sky * water_air.y * ripple_sheen * max(shade, 0.0) * lv;
+	}
 	ROUGHNESS = mix(gloss, 0.7, foam);
 	// Water's 2% straight on (Godot's dielectric F0 is 0.08 x SPECULAR), none where it thins to nothing at the shore.
 	SPECULAR = 0.25 * in_k * (1.0 - foam) * level;
@@ -388,7 +471,7 @@ void fragment() {
 
 	if (debug_view > 0) {
 		if (debug_view == 7) { SPECULAR = 0.0; spec_k = 0.0; } else if (debug_view == 8) { ALBEDO = vec3(0.0); EMISSION = vec3(0.0); } else if (debug_view == 9) { ALBEDO = vec3(1.0); EMISSION = vec3(0.0); SPECULAR = 0.0; spec_k = 0.0; } else {
-		float m = debug_view == 1 ? foam : debug_view == 2 ? wd : debug_view == 6 ? in_k : wk;
+		float m = debug_view == 1 ? foam : debug_view == 2 ? wd : debug_view == 6 ? in_k : debug_view == 10 ? murk_k * 0.25 : wk;
 		ALBEDO = vec3(0.0);
 		SPECULAR = 0.0;
 		spec_k = 0.0;
@@ -401,7 +484,7 @@ void fragment() {
 // rippled normal), its brightest channel held under glint_cap so a warm lamp's glint stays warm.
 void light() {
 	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
-	DIFFUSE_LIGHT += ndl * ATTENUATION * LIGHT_COLOR / PI * (debug_view == 9 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
+	DIFFUSE_LIGHT += ndl * ATTENUATION * LIGHT_COLOR / PI * (debug_view == 9 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0) * (LIGHT_IS_DIRECTIONAL ? 1.0 : near_diffuse);
 	vec3 h = normalize(VIEW + LIGHT);
 	// (a near light glints on the steeper facets, broader: E6c, judge r2, her ember's glint was lost behind the post)
 	// (glint_bend 0: as the moon's; E6c: 3 spread the pylons' lamps into sparkle clumps and still never showed her ember)
@@ -480,5 +563,5 @@ void light() {
 	float sk = LIGHT_IS_DIRECTIONAL ? mix(1.0, clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0), mw) : clamp(SPECULAR_AMOUNT * 2.0, 0.0, 1.0);
 	float gcap = LIGHT_IS_DIRECTIONAL ? mix(glint_cap, moon_cap, mw) : glint_cap * mix(1.0, glint_high, cam_hi * streak_tame) * lamp_cap;
 	SPECULAR_LIGHT += c * min(1.0, gcap / max(m, 1e-4)) * sk * (debug_view == 8 && LIGHT_IS_DIRECTIONAL ? 0.0 : 1.0);
-	if (!LIGHT_IS_DIRECTIONAL && lamp_pool > 0.0) SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * lamp_pool * clamp(spec_k * 4.0, 0.0, 1.0) * water_air.x;
+	if (!LIGHT_IS_DIRECTIONAL && lamp_pool > 0.0) SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * lamp_pool * clamp(spec_k * 4.0, 0.0, 1.0) * water_air.x * (1.0 + 1.5 * ripple_shade * rshade);
 }
