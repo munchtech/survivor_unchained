@@ -201,7 +201,7 @@ public partial class Hits : Node3D
     public static float? HudTopOver(float x0, float x1)
     {
         if (SurvivorUnchained.Ui.LifeLamp.Live?.FadeRect is not Rect2 f) return null;
-        float seatL = SurvivorUnchained.Ui.DgRiver.Seat(0).X - SurvivorUnchained.Ui.DgRiver.SeatD / 2, seatR = SurvivorUnchained.Ui.DgRiver.Seat(5).X + SurvivorUnchained.Ui.DgRiver.SeatD / 2;
+        float seatL = SurvivorUnchained.Ui.DgPanel.Rect.Position.X, seatR = SurvivorUnchained.Ui.DgPanel.Rect.End.X;
         var fl = SurvivorUnchained.Ui.DgRiver.FlareAt; float fr = SurvivorUnchained.Ui.DgRiver.FlareR;
         float? top = null;
         int n = Mathf.Max(2, Mathf.CeilToInt((x1 - x0) / 40f));

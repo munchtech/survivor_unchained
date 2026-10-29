@@ -8,13 +8,13 @@ namespace SurvivorUnchained.Ui;
 /// <summary>
 /// The instrument along the foot (the owner, 5 October: "the bottom skill bar and health globes and
 /// stuff need to be incredible, its a keystone of that kind of game"; "one composed group, not loose
-/// pieces"): the Drowned Girl (UI 16-18, the owner's pick, 27 October; the game's HUD since UI 18). At the
-/// bar's left end her bronze figure lifts the life orb to her lips (LifeLamp); her hair runs out of it to the
-/// right as a river (DgRiver), the bar itself: the six places of what fires by itself are hair-bound bronze
-/// rings in its current (Socket), the draught a hair-bound flask and the dash a small ring with its pearls
-/// beside them (Round, DgSmall), the Flare a live coal in the river's eddy at the right end (Vessel, DgCoal).
-/// The experience (by night the ember) is a light running on the river's crest (XpLight, DgRiver.Light). Every
-/// place comes from the art's geo (art/ui/dg_river, art/ui/lamp_life/drowned).
+/// pieces"): HUD A, "the keeper" (UI 23, the owner's pick). At the left the Drowned Girl's bronze figure lifts the
+/// life orb to her lips (LifeLamp), her hair down her back to the screen's foot, a slow shine running down it; in the
+/// middle its own plate (DgPanel): the flask [R] (Round, DgSmall), three seats (Socket), the level coin with the
+/// experience ring (by night the ember; DgPanel.Ring, XpLight), three seats, the dash [SPACE]; at the right the keeper
+/// holds the Flare (Vessel, DgCoal: the next piece; until then the coal stands where the old eddy was). The left and
+/// right groups draw at DgPanel.GroupScale about their outer bottom corners. Every place comes from the art's geo
+/// (art/ui/dg_keeper/hud_a_geo.json, art/ui/lamp_life/drowned).
 /// </summary>
 public partial class Instrument : Control
 {
@@ -26,64 +26,73 @@ public partial class Instrument : Control
     /// <summary>The key tags' height.</summary>
     public const float TagH = 16;
 
-    /// <summary>The Flare's coal in the eddy, the draught and the dash where the river's geo puts them (DgRiver).</summary>
+    /// <summary>The Flare's coal (the old eddy's place, until the keeper), the flask's and the dash's middles (DgPanel).</summary>
     public static Vector2 ArtAt => DgRiver.FlareAt;
-    public static Vector2 DraughtAt => DgRiver.DraughtAt;
-    public static Vector2 DashAt => DgRiver.DashAt;
-    /// <summary>The river's crest's ends, at its middle height: what "chain" brackets in a callout.</summary>
-    public static Vector2 EyeL => new(DgRiver.Crest[0].X, DgRiver.CrestRect.GetCenter().Y);
-    public static Vector2 EyeR => new(DgRiver.Crest[^1].X, EyeL.Y);
-    /// <summary>The river's run along its crest, where the experience light runs on a gain (UI 18; the teach
-    /// target "chain_fill").</summary>
-    public static Rect2 ChainFill => new(EyeL.X, EyeL.Y - 17, EyeR.X - EyeL.X, 38);
-    /// <summary>The key plates' top (the three on one line, 15 px clear of the screen's foot).</summary>
-    public const float DgTagTop = 1049;
-    /// <summary>All of it on the screen, from her head to the screen's foot.</summary>
-    public static Rect2 Bounds => new(LifeLamp.At.X, LifeLamp.At.Y, DgRiver.At.X + DgRiver.ArtSize.X - LifeLamp.At.X, 1080 - LifeLamp.At.Y);
+    public static Vector2 DraughtAt => DgPanel.FlaskAt;
+    public static Vector2 DashAt => DgPanel.DashAt;
+    /// <summary>The coin's experience ring: what "chain" and "chain_fill" bracket in a callout (UI 23; it was the
+    /// river's crest).</summary>
+    public static Rect2 ChainFill => DgPanel.RingRect;
+    /// <summary>The key chips' top (R and SPACE, from the geo).</summary>
+    public static float DgTagTop => DgPanel.KeyR.Y;
+    /// <summary>All of it on the screen, from her head to the screen's foot, her left edge to the keeper's right.</summary>
+    public static Rect2 Bounds
+    {
+        get
+        {
+            float s = DgPanel.GroupScale;
+            var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s;
+            float right = Math.Max(DgPanel.Rect.End.X, DgPanel.KeeperRect.End.X);
+            return new Rect2(tl, new Vector2(right - tl.X, 1080 - tl.Y));
+        }
+    }
 
     public readonly LifeLamp Life;
     public readonly Vessel Art;
     public readonly Socket[] Sockets = new Socket[Content.Weapons.MaxWeapons];
     public readonly Round Draught, Dash;
-    /// <summary>Her hair's river, the bar.</summary>
-    public readonly DgRiver River;
-    /// <summary>The passives' beads on the river's crest; what is on her (burning, shielded); the art's state in a
-    /// word over the art.</summary>
+    /// <summary>The plate in the middle (the bar).</summary>
+    public readonly DgPanel Panel;
+    /// <summary>The passives' beads over the plate's top line, over the seats' middle; what is on her (burning,
+    /// shielded); the art's state in a word over the art.</summary>
     public readonly HBoxContainer Passives, Statuses;
     public readonly Label ArtWord, ArtNote;
-    readonly KeyTag draughtKey = new(Act.Draught), dashKey = new(Act.Dash), artKey = new(Act.Flare, true);
+    readonly KeyTag draughtKey = new(Act.Draught) { Chip = true }, dashKey = new(Act.Dash) { Chip = true }, artKey = new(Act.Flare, true);
 
     public Instrument()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         Position = Vector2.Zero;
         Size = new Vector2(1920, 1080);
-        // (draw order: the river under her figure, so its strands come out of her hair; the experience light's
-        // glint, additive, over the river and under the seats; her figure; the coal, the rings, the flask and the
-        // dash; the beads; the key tags; the level's title and the numbers' card over everything)
-        River = new DgRiver();
-        AddChild(River);
-        AddChild(River.Spark);
-        Life = new LifeLamp { Position = LifeLamp.At };
+        // (draw order, UI 23: the figures (her; the keeper, the next piece), then the plate over her hair's tail where
+        // they meet, then what is live on it: the coin's ring, the seats, the flask and the dash, the beads, the key
+        // chips, the numbers; the level's title and the numbers' card over everything)
+        Life = new LifeLamp();
+        Life.Group(DgPanel.GirlAnchor, DgPanel.GroupScale);
         AddChild(Life);
+        // (the right group, the keeper, goes here: under the plate, at DgPanel.GroupScale about DgPanel.KeeperAnchor)
+        Draught = new Round(Round.Kind.Draught);
+        Draught.Place(DgPanel.FlaskAt, DgPanel.FlaskScale);
+        Panel = new DgPanel(Draught);
+        AddChild(Panel);
+        AddChild(Panel.XpRing);
         Art = new Vessel { Position = ArtAt - Vessel.Half };
         AddChild(Art);
         for (int i = 0; i < Sockets.Length; i++)
         {
             Sockets[i] = new Socket { Index = i };
-            Sockets[i].Position = DgRiver.Seat(i) - Sockets[i].Size / 2;
+            Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
             AddChild(Sockets[i]);
         }
-        Draught = new Round(Round.Kind.Draught) { Position = DraughtAt - Round.Half };
         AddChild(Draught);
-        Dash = new Round(Round.Kind.Dash) { Position = DashAt - Round.Half };
+        Dash = new Round(Round.Kind.Dash);
+        Dash.Place(DgPanel.DashAt, DgPanel.DashScale);
         AddChild(Dash);
-        // (round 3: beads threaded on the river's crest over the seats' middle, each at the crest's height where it
-        // falls, DgMeters.Passive)
+        // (UI 23: the beads in a row over the plate's top line, over the seats' middle)
         Passives = Style.H(2);
         Passives.Alignment = BoxContainer.AlignmentMode.Center;
-        float mid = (DgRiver.Seat(0).X + DgRiver.Seat(5).X) / 2, w = DgRiver.Seat(5).X - DgRiver.Seat(0).X + DgRiver.SeatD;
-        Passives.Position = new Vector2(mid - w / 2, DgMeters.CrestY(mid) - DgMeters.BeadLift - 14);
+        float mid = (DgPanel.Seat(0).X + DgPanel.Seat(5).X) / 2, w = DgPanel.Seat(5).X - DgPanel.Seat(0).X + 2 * DgPanel.SeatR;
+        Passives.Position = new Vector2(mid - w / 2, DgPanel.TopY - DgMeters.BeadLift - 28 - 6);
         Passives.Size = new Vector2(w, 28);
         AddChild(Passives);
         Statuses = Style.H(10);
@@ -100,14 +109,15 @@ public partial class Instrument : Control
         ArtNote.Position = new Vector2(ArtAt.X - 200, LegacyTop - 50);
         ArtNote.Size = new Vector2(400, 18);
         AddChild(ArtNote);
-        // (round 2: all three plates on one line inside the bar, their tops at DgTagTop, clear of the screen's edge:
-        // R from the flask's foot, SPACE from the dash ring's lower wrap, Q from the eddy's lip)
-        draughtKey.Place(DraughtAt.X, DgTagTop - 2);
-        dashKey.Place(DashAt.X, DgTagTop - 2);
-        artKey.Place(ArtAt.X, DgTagTop + 3);
+        // (UI 23: R and SPACE on small dark chips at the geo's places under the flask and the dash; Q, the keeper's,
+        // stays where the old eddy hung it until the right group places it at DgPanel.KeyQ)
+        draughtKey.Place(DgPanel.KeyR.X, DgPanel.KeyR.Y);
+        dashKey.Place(DgPanel.KeySpace.X, DgPanel.KeySpace.Y);
+        artKey.Place(ArtAt.X, 1049 + 3);
         AddChild(draughtKey); AddChild(dashKey); AddChild(artKey);
-        // (UI 18: the level's title and the numbers' card, over everything on the instrument)
-        AddChild(River.Title); AddChild(River.Card);
+        AddChild(Panel.Numbers);
+        // (the level's title and the numbers' card, over everything on the instrument)
+        AddChild(Panel.Title); AddChild(Panel.Card);
         Keys();
     }
 
@@ -115,7 +125,7 @@ public partial class Instrument : Control
     /// top), kept so they show where they always have until the UI lead places them on the Drowned Girl.</summary>
     const float LegacyLifeX = 960 - Reach, LegacyTop = 1080 - 30 - 2 * (R + Band);
 
-    /// <summary>By day (her experience on the river) or by night (the ember): the bronze takes the day's or the
+    /// <summary>By day (her experience) or by night (the ember): the bronze takes the day's or the
     /// night's light (Cuff.Day); a change redraws everything in the instrument once.</summary>
     public void DayNight(bool ember)
     {
@@ -145,13 +155,14 @@ public partial class Instrument : Control
     public void Spot(string? keep, Color dim, float slots, float pulse)
     {
         Color For(bool kept) => kept ? Colors.White : dim;
+        bool chain = keep == "chain";
         Life.Modulate = For(false);
-        River.Modulate = For(false);
-        River.Pulse = pulse;
+        Panel.Modulate = For(false);
+        // (the chain's callout: the coin's ring and its number kept, the light looping round it)
+        Panel.XpRing.Modulate = Panel.Numbers.Modulate = For(chain);
+        Panel.Pulse = pulse;
         Art.Modulate = artKey.Modulate = For(keep == "art");
-        // (the chain's callout: what stands over the river fades with the six places, so the arrow's point reads
-        // as the river's)
-        float over = keep == "chain" ? slots : 1;
+        float over = chain ? slots : 1;
         Dash.Modulate = dashKey.Modulate = For(keep == "dash") with { A = over };
         Draught.Modulate = draughtKey.Modulate = For(keep == "draught") with { A = over };
         Statuses.Modulate = For(false);
@@ -348,7 +359,7 @@ public partial class Vessel : Control
 /// bronze, her bar under her feet, the key tags and the minimap's bezel still take their light from here).</summary>
 public partial class Cuff : Control
 {
-    /// <summary>By day (her experience on the river) or by night (the ember): the irons' light, dulled by night so
+    /// <summary>By day (her experience) or by night (the ember): the irons' light, dulled by night so
     /// the heat is what the eye finds, brightened steel by day. Instrument.DayNight flips it and redraws the
     /// instrument.</summary>
     public static bool Day;
@@ -388,13 +399,15 @@ public partial class Cuff : Control
     public static Color Iron(float light) => new Color(0.16f, 0.145f, 0.13f).Lerp(new Color(0.62f, 0.58f, 0.53f), Mathf.Clamp(light, 0, 1) * 0.75f);
 }
 
-/// <summary>One of the six places for what fires by itself: a hair-bound bronze ring in the river round a well
-/// of dark river glass (DrawRing): its skill's gold inlay, the well filling as it readies, a flash as it fires,
-/// its rank engraved on the ring. Ready to evolve, the ring's inner edge breathes gold; evolved, it is rimmed in
-/// gold. Empty, it is the ring round a darker, empty well.</summary>
+/// <summary>One of the six places for what fires by itself: a well of dark river glass in the plate's baked bezel
+/// (DrawRing, UI 23): its skill's gold inlay, the well filling as it readies, a flash as it fires, its rank on a
+/// small chip. Ready to evolve, the well's edge breathes gold; evolved, it is rimmed in gold. Empty, a darker, empty
+/// well.</summary>
 public partial class Socket : Control
 {
     public string Id = "";
+    /// <summary>Its box across (the old ring's; it draws within DgPanel.SeatR of its middle and its rank chip).</summary>
+    public const float SeatD = 78;
     /// <summary>Its place in the row: which ring and well it wears (DgRiver).</summary>
     public int Index;
     Texture2D? art;
@@ -407,7 +420,7 @@ public partial class Socket : Control
     public Socket()
     {
         MouseFilter = MouseFilterEnum.Ignore;
-        Size = new Vector2(DgRiver.SeatD, DgRiver.SeatD);
+        Size = new Vector2(SeatD, SeatD);
         PivotOffset = Size / 2;
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
     }
@@ -511,7 +524,8 @@ public partial class Socket : Control
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
             if (cooling) DgMeters.Level(this, c, hr + 0.5f, (float)ready, school);
         }
-        if (DgRiver.Ring(Index) is { } ring)
+        // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
+        if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)
         {
             var rs = ring.GetSize();
             DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false);
@@ -528,13 +542,9 @@ public partial class Socket : Control
             double total = waitSecs > 0 && ready < 0.98 ? waitSecs / Math.Max(0.02, 1 - ready) : 0;
             if (cooling && total >= 3.5 && waitSecs >= 1)
                 DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
-            // the rank (round 3, the judge: on the key tags' line the digits read as keybinds): engraved in the bronze
-            // on top of the ring's upper wrap, a small dark cut with a lit lower edge (DgMeters.Engrave)
-            if (rank > 0)
-            {
-                var rc = c - new Vector2(0, hr + (Size.X / 2 - hr) * 0.5f);
-                DgMeters.Engrave(this, rc, rank.ToString(), 12, evolved || ripe);
-            }
+            // the rank (UI 23): a small dark chip at half past one over the bezel (DgPanel.Marks.Chip), gold-rimmed
+            // when it can evolve or has
+            if (rank > 0) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, rank.ToString(), evolved || ripe);
         }
     }
 }
@@ -557,6 +567,14 @@ public partial class Round : Control
     public float Form = -1;
     /// <summary>The calling's art's glyph (the iron HUD's ready badge; DgSmall shows no badge).</summary>
     public Texture2D? FormGlyph;
+
+    /// <summary>UI 23: drawn at scale s with the flask's (or the dash ring's) middle at mid (DgPanel's geo).</summary>
+    public void Place(Vector2 mid, float s)
+    {
+        PivotOffset = Half + new Vector2(0, kind == Kind.Draught ? DgSmall.FlaskDy : DgSmall.DashDy);
+        Scale = new Vector2(s, s);
+        Position = mid - PivotOffset;
+    }
 
     public Round(Kind kind)
     {
@@ -599,7 +617,8 @@ public partial class Round : Control
 
         public override void _Draw()
         {
-            if (o.kind != Kind.Draught) return;
+            return;   // (UI 23: the count is on its badge, DgPanel.Marks)
+#pragma warning disable CS0162
             // the count beside the flask's foot, on the bronze, as the concept has it (Alegreya Sans 800, 16 px,
             // lining tabular figures), bone, dim with none left; a dark outline and a soft shadow
             var f = Vessel.Figures;
@@ -630,6 +649,9 @@ public partial class KeyTag : Control
     static StyleBoxFlat? plate;
 
     readonly bool ring;
+    /// <summary>UI 23 (mock7.py text_layer chip()): a small dark chip, 16 tall, radius 3, a 1 px bronze rim, the key in
+    /// Alegreya Sans 800 16 tracked 0.6, bone; Place puts its top at y.</summary>
+    public bool Chip;
 
     public KeyTag(Act act, bool ring = false)
     {
@@ -644,7 +666,7 @@ public partial class KeyTag : Control
     /// runs from; the art cuff's tag at y itself).</summary>
     /// (The art cuff's tag 3 higher, so its link runs up into a hole drilled in the band's foot, as the small
     /// cuffs' do: KeyTag draws that hole, since cuff.png is the life cuff's too, which hangs no tag.)
-    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (ring ? -3 : 2)); }
+    public void Place(float x, float y) { cx = x; cy = y; Position = new Vector2(x - Size.X / 2, y + (Chip ? 0 : ring ? -3 : 2)); }
 
     public void Refresh()
     {
@@ -688,6 +710,26 @@ public partial class KeyTag : Control
 
     public override void _Draw()
     {
+        if (Chip && padName == null && text != "")
+        {
+            var cf = Style.UiHeavy;
+            float tw = 0;
+            foreach (char ch in text) tw += cf.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, 16).X + 0.6f;
+            tw -= 0.6f;
+            float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(Size.X / 2 - cw / 2);
+            var box = new StyleBoxFlat { BgColor = new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f), BorderColor = new Color(138 / 255f, 108 / 255f, 70 / 255f), AntiAliasing = true };
+            box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
+            DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
+            float tx = Size.X / 2 - tw / 2;
+            float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(16) - cf.GetDescent(16)) / 2;
+            foreach (char ch in text)
+            {
+                string s = ch.ToString();
+                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, 16, new Color(240 / 255f, 230 / 255f, 208 / 255f));
+                tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, 16).X + 0.6f;
+            }
+            return;
+        }
         float x0 = (Size.X - w) / 2;
         var tag = UiArt.Art($"hud/tag_{(int)w}.png");
         // (HUD v2: the art's plate at image (3, 8), its ear and the link it hangs by above it, cut at the band;

@@ -118,15 +118,9 @@ public static partial class DgMeters
         ci.DrawString(f, p, s, HorizontalAlignment.Left, -1, size, new Color(0.06f, 0.045f, 0.03f, 0.97f));
     }
 
-    /// <summary>The crest's height at x (DgRiver.Crest, by the nearest two points).</summary>
-    public static float CrestY(float x)
-    {
-        var c = DgRiver.Crest;
-        if (x <= c[0].X) return c[0].Y;
-        for (int i = 1; i < c.Length; i++)
-            if (x <= c[i].X) return Mathf.Lerp(c[i - 1].Y, c[i].Y, (x - c[i - 1].X) / Math.Max(0.01f, c[i].X - c[i - 1].X));
-        return c[^1].Y;
-    }
+    /// <summary>The line the beads sit on at x (UI 23: a straight row 20 px over the plate's top line; it was the
+    /// river's crest).</summary>
+    public static float CrestY(float x) => DgPanel.TopY - 20;
 
     /// <summary>A bead's size across and how far its middle sits above the crest (round 3: the passives threaded on
     /// the river's crest).</summary>

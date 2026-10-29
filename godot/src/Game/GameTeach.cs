@@ -104,7 +104,7 @@ public partial class Game
         {
             case null: break;
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
-            case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
+            case "chain": areas.Add(Instrument.ChainFill); break;
             // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
             // (the run of the bar, bracketed at its two ends: her hair to the Flare's cup. Experience 10 tried a bare point
             // on the crest instead; the teach judge (r1, r2) failed it: "a player can't tell what 'this' is")
@@ -487,10 +487,10 @@ public partial class Game
             radii.Add(c.Target.Hud switch
             {
                 "art" => DgRiver.FlareR,
-                "dash" => DgSmall.RingD / 2,
-                "draught" => Math.Max(DgSmall.FlaskSize.X, DgSmall.FlaskSize.Y) / 2,
-                "chain" or "chain_fill" => 22,
-                _ => DgRiver.SeatD / 2,
+                "dash" => DgSmall.DashR,
+                "draught" => DgSmall.FlaskR,
+                "chain" or "chain_fill" => DgPanel.RingR1,
+                _ => DgPanel.SeatR,
             });
         int bare = -1;
         List<int>? noArrow = null;

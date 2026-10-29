@@ -271,25 +271,27 @@ public class XpLightTests
     }
 
     [Fact]
-    public void FractionToPosition()
+    public void ARunSweepsTheRingFromWhereItStood()
     {
-        // the run coordinate: level along the river (y >= 980), leaning with her hair above
-        Assert.Equal(1000 - 425, XpLight.S(1000, 1000), 6);
-        Assert.Equal(600 - 500, XpLight.S(600, 820), 6);
-        Assert.Equal(52, XpLight.FrontS(0, 52, 1158), 6);
-        Assert.Equal(1158, XpLight.FrontS(1, 52, 1158), 6);
-        Assert.Equal(1158, XpLight.FrontS(1.4, 52, 1158), 6);
-        Assert.Equal(605, XpLight.FrontS(0.5, 52, 1158), 6);
-        var crest = new (double, double)[] { (708, 978), (1000, 984), (1432, 982) };
-        Assert.Null(XpLight.OnCrest(crest, 100));      // on her hair: no crest point
-        var p = XpLight.OnCrest(crest, XpLight.S(1000, 984));
-        Assert.NotNull(p);
-        Assert.Equal(1000, p!.Value.X, 3);
-        Assert.Null(XpLight.OnCrest(crest, 5000));
-        // monotonic: a larger fraction never lands further left
-        double lastX = 0;
-        for (double f = 0; f <= 1.0001; f += 0.05)
-            if (XpLight.OnCrest(crest, XpLight.FrontS(f, 52, 1158)) is { } q) { Assert.True(q.X >= lastX); lastX = q.X; }
+        // UI 23: the coin's ring never empties to refill: a gain sweeps it on from the fraction it showed
+        var x = Fresh(0.2);
+        Run(x, 0.1);
+        Assert.Equal(0.2, x.Front, 6);
+        x.Feed(0.5, 3, true);
+        double last = x.Front;
+        for (int i = 0; i < 40; i++)
+        {
+            Run(x, 1 / 60.0);
+            Assert.InRange(x.Front, 0.2 - 1e-9, 0.5 + 1e-9);
+            Assert.True(x.Front >= last - 1e-9);
+            last = x.Front;
+        }
+        Assert.Equal(0.5, x.Front, 3);
+        var k = XpLight.RingLook.Parse("{\"xpRing\":{\"titleGap\":12,\"shineTravel\":4,\"shinePeriod\":2}}");
+        Assert.Equal(12, k.TitleGap);
+        Assert.Equal(4, k.ShinePeriod);                 // never shorter than its travel
+        Assert.Equal(new XpLight.RingLook(), XpLight.RingLook.Parse("not json"));
+        Assert.Equal(XpLight.RingLook.Game, XpLight.RingLook.Parse(SurvivorUnchained.Core.Json.ReadContent("hud.json")));
     }
 
     [Fact]

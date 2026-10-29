@@ -83,7 +83,7 @@ public partial class GameHud : CanvasLayer
     // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
     float barShown, barWant;
     /// <summary>UI 18, the Drowned Girl: her experience (by night the ember) shows only when it moves (XpLight, drawn by
-    /// DgRiver.Light); its numbers on the river's card. xpHave and xpNeed: this level's count and its need.</summary>
+    /// DgPanel.Light, the coin's ring); its numbers on the coin's card. xpHave and xpNeed: this level's count and its need.</summary>
     XpLight xpLight = new();
     double xpHave, xpNeed;
     bool xpLast;
@@ -719,7 +719,7 @@ public partial class GameHud : CanvasLayer
 
     float beadsA = 1;
 
-    void XpTick(DgRiver river, double delta)
+    void XpTick(DgPanel river, double delta)
     {
         bool day = HudPin.Day is bool pd ? pd : !barEmber;
         var shown = xpLight;
@@ -729,9 +729,9 @@ public partial class GameHud : CanvasLayer
         else if (px is { Length: 2 } && px[0] == "rest" && Num(px[1]) is { } rf) shown = XpLight.PosedRest(rf);
         else if (px is { Length: >= 1 } && px[0] == "dark") shown = XpLight.PosedDark(px.Length > 1 && Num(px[1]) is { } df ? df : 0.5);
         else xpLight.Step(delta);
-        river.Light(shown, day, irons.Life.Mat);
-        // a level-up's name over the river (judge M2), held about 2 s; the banner by night stays too (the top edge)
-        int tl = HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel;
+        int tl = HudPin.Level ?? (HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel);
+        river.Light(shown, day, tl);
+        // a level-up's name over the coin (judge M2), held about 2 s; the banner by night stays too (the top edge)
         river.Title.Set((float)shown.Title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
         // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
         float ba = 1 - (float)shown.Title;
@@ -744,7 +744,7 @@ public partial class GameHud : CanvasLayer
         var c = Controls.Instance;
         bool captured = c == null || c.Captured || c.MenuMode;
         var mouse = irons.GetLocalMousePosition();
-        bool hover = DgRiver.OnRiver(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
+        bool hover = DgPanel.OnCoin(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
         bool held = c != null && c.Held(Act.Experience) || TeachCard;
         if (TeachCard) captured = false;
         float f = barWant;
@@ -759,7 +759,7 @@ public partial class GameHud : CanvasLayer
         }
         // (pictures: the card only where a pin asks for it, whatever the pointer is over)
         bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
-        var anchor = held ? (DgRiver.OnCrest(f) ?? DgRiver.Crest[0]) : mouse;
+        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
         river.Card.Set(show, anchor, XpLight.Lines(!day, lv, have, need, xpLast && day), f, day);
     }
 
@@ -1168,7 +1168,7 @@ public partial class GameHud : CanvasLayer
     /// or the survivor stands behind it, and she fades (and the river, RiverBehind).</summary>
     public Rect2? FigureRect => irons.Life.FadeRect;
     public void FigureBehind(bool behind) => irons.Life.Behind = behind;
-    public void RiverBehind(bool behind) => irons.River.Behind = behind;
+    public void RiverBehind(bool behind) => irons.Panel.Behind = behind;
 
     public void Follow(Vector2? at)
     {
@@ -1312,7 +1312,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>True while a tutorial callout needs the river's numbers card up, as if the hold key were down.</summary>
     public bool TeachCard { get; set; }
     /// <summary>The river's numbers card, while it shows.</summary>
-    public Rect2? XpCardArea => irons.River.Card.Visible ? irons.River.Card.GetGlobalRect() : null;
+    public Rect2? XpCardArea => irons.Panel.Card.Visible ? irons.Panel.Card.GetGlobalRect() : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
@@ -1430,7 +1430,7 @@ public partial class GameHud : CanvasLayer
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         irons.DayNight(barEmber);
-        XpTick(irons.River, delta);
+        XpTick(irons.Panel, delta);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;
