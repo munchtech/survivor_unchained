@@ -68,7 +68,7 @@
     {
       "id": "8",
       "type": "MCU",
-      "dur": 8.0,
+      "dur": 3.27,
       "note": "Side-on, close: the heart drifts in to her palm and she looks down at it, its blue on her face. Then the mud bursts below frame: the heart is yanked down out of her hand and out of frame, its light now from below. She starts, eyes wide, and looks down at him. G1 off-screen; two sniffs.",
       "cam": {"pos": {"mark": "her", "off": [2.36, 1.75, -0.54]}, "at": {"mark": "her", "off": [0.0, 1.5, -0.18]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 5.6},
       "cues": [
@@ -95,16 +95,31 @@
         {"at": 3.2, "do": "vfx", "kind": "shake", "amount": 0.45},
         {"at": 3.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [1.4, -0.6, -1.6]}, "dur": 0.2},
         {"at": 3.25, "do": "lids", "value": 1, "over": 0.06},
-        {"at": 3.43, "do": "lids", "value": null},
-        {"at": 3.3000000000000003, "do": "head", "actor": "her", "where": {"mark": "her", "off": [0.55, 0.3, -0.85]}, "amount": 1.0, "over": 0.3},
-        {"at": 3.3000000000000003, "do": "music", "mood": "silence"},
-        {"at": 3.7, "do": "line", "id": "cin_heart_goes_down.nobodys"},
-        {"at": 7.1, "do": "sfx", "name": "sniff", "gain": 0.8},
-        {"at": 7.6000000000000005, "do": "sfx", "name": "sniff", "gain": 0.8},
         {"at": 3.25, "do": "lamp", "actor": "heart", "glow": 0.6, "over": 0.3},
         {"at": 3.25, "do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.4, "angle": 40, "range": 3},
         {"at": 3.25, "do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.0, "angle": 40, "range": 3},
         {"at": 3.25, "do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.9, "angle": 32, "range": 6}
+      ]
+    },
+    {
+      "id": "8y",
+      "type": "OTS",
+      "dur": 4.73,
+      "note": "High over her right shoulder, looking down past her open hands at the water: the glow is pulled under and goes out below the surface. Grimtunnel is only the dark in the water. Her head does not move; only her fingers close on nothing.",
+      "cam": {"pos": {"abs": [3.99, 1.97, -37.41]}, "at": {"abs": [4.71, 0.6, -38.37]}, "lens": 35, "focus": {"actor": "her", "bone": "hand_l"}, "fstop": 4.0},
+      "cues": [
+        {"do": "place", "actor": "heart", "where": {"mark": "her", "off": [0.0, 1.22, -0.5]}},
+        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.74, -0.5, -0.51]}, "dur": 0.35},
+        {"do": "lamp", "actor": "heart", "glow": 0.0, "over": 1.1},
+        {"do": "rig", "name": "skin", "from": {"lens": [0.6, 0.6, -0.5]}, "aim": {"actor": "her", "bone": "hand_l"}, "color": "#ffd8b0", "energy": 0.5, "angle": 32, "range": 6},
+        {"do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "hand_l"}, "color": "#4f8cff", "energy": 2.0, "angle": 50, "range": 3},
+        {"at": 0.4, "do": "rig", "name": "spill", "energy": 0},
+        {"at": 0.55, "do": "fingers", "side": "both", "curl": 50, "over": 1.0},
+        {"at": 0.16, "do": "lids", "value": null},
+        {"at": 0.03, "do": "music", "mood": "silence"},
+        {"at": 0.43, "do": "line", "id": "cin_heart_goes_down.nobodys"},
+        {"at": 3.83, "do": "sfx", "name": "sniff", "gain": 0.8},
+        {"at": 4.33, "do": "sfx", "name": "sniff", "gain": 0.8}
       ]
     },
     {
