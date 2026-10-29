@@ -259,6 +259,7 @@ public partial class Game
     static float LookNightBodyRimCone => Args.Num("look-night-body-rim-cone", 12f);   // (its cone's half angle by night: at 30 it reached her far cheek)
     // --look-night-deep-stop S: by night the Look's lights up S stops on the darkest skin (Rendering 2).
     static float LookNightDeepStop => Args.Num("look-night-deep-stop", 0.5f);
+    static readonly bool DeepOnLights = Args.Has("look-night-deep-lights");
     /// <summary>A skin swatch's darkness, 0 (fair, the lightest) to 1 (the darkest), from its colour's luminance.</summary>
     static float SkinDark(string? id)
     {
@@ -420,6 +421,10 @@ public partial class Game
         // Rendering 2 (judge j1 C, lookNdeep_00 "her face slightly dim, +0.5 stop"): by night the rig's lights on her up to
         // LookNightDeepStop stops on the darkest skin, in step with the swatch's darkness (0 on fair).
         float deepUp = fireSide ? Mathf.Pow(2, LookNightDeepStop * SkinDark(draft?.Skin)) : 1;
+        // (Rendering 3, judge j2 D3, lookNdeep_00 "the hair is pale peach": on her skin alone (People.HerSkinGain), not the lights,
+        // which lifted her copper hair with it. --look-night-deep-lights: on the rig's lights, as round 2.)
+        if (figure?.Person is { } herSkin) People.HerSkinGain(herSkin, DeepOnLights ? 1 : deepUp);
+        float deepLit = DeepOnLights ? deepUp : 1;
         if (CamLog && Shots.Clock - facePxAt < 0.001) GD.Print($"lookrig fireSide={fireSide} night={scene?.View.Night} p={p:F2} front={ReferenceEquals(air.Current, Atmospheres.Front)}");
         if (fireSide)
         {
@@ -429,13 +434,13 @@ public partial class Game
         else if (lookNightShown) { keyLight.LightColor = keyBaseC; bodyKey!.LightColor = keyBaseC * BodyWarm; fillLight.LightColor = fillC; }
         lookNightShown = fireSide;
         var keyPos = eyes + dir * 1.9f - camLeft * kAt.X + Vector3.Up * kAt.Y;
-        Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain * (fireSide ? LookNightKeyGain : 1) * deepUp);
+        Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain * (fireSide ? LookNightKeyGain : 1) * deepLit);
         // (--body-key-at SIDE,UP: the broad cone alone from elsewhere, the face's own cone left where it is: a steeper,
         // wider body light rakes her collarbones, which the key's lens-near angle lit flat (pictures, Body 5))
         var bodyPos = BodyKeyAt is { } bka ? eyes + dir * 1.9f - camLeft * bka.X + Vector3.Up * bka.Y : keyPos;
         if (fireSide && BodyKeyAt is { } bkn) bodyPos = eyes + dir * 1.9f - camLeft * (-Mathf.Abs(bkn.X)) + Vector3.Up * bkn.Y;
-        if (bodyKey != null) Aim(bodyKey, bodyPos, eyes + Vector3.Down * 0.05f, (0.15f + rig[0] * p * KeyBody) * deepUp);
-        Aim(fillLight, eyes + dir * 1.8f + camLeft * (fireSide ? -LookNightFillSide : 1.1f), eyes + Vector3.Down * 0.08f, rig[1] * p * (fireSide ? LookNightFillGain : 1) * deepUp);
+        if (bodyKey != null) Aim(bodyKey, bodyPos, eyes + Vector3.Down * 0.05f, (0.15f + rig[0] * p * KeyBody) * deepLit);
+        Aim(fillLight, eyes + dir * 1.8f + camLeft * (fireSide ? -LookNightFillSide : 1.1f), eyes + Vector3.Down * 0.08f, rig[1] * p * (fireSide ? LookNightFillGain : 1) * deepLit);
         // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
         // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
         float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 1.3f;
@@ -500,7 +505,7 @@ public partial class Game
         foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim, herFire }) l?.QueueFree();
         keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
-        if (figure?.Person is { } herRig) People.HerLookRig(herRig, 0);
+        if (figure?.Person is { } herRig) { People.HerLookRig(herRig, 0); People.HerSkinGain(herRig, 1); }
         Campfire.ClearNear(0);
         herFire = null;
         if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
