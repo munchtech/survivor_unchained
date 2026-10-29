@@ -48,7 +48,7 @@ uniform float warm_sat = 0.0;
 // A carried flame (a torch in a hand) grows toward this many times its size from far off (full from 16 m): at the play camera
 // its few pixels otherwise read as a glint, not a flame (FlameKit, carried).
 uniform float far_grow = 1.0;
-// A carried flame's inner card, near the camera only (full within 4 m, none from 10 m, so the play camera's flame is as it was):
+// A carried flame's inner card, at a chest-up only (full within 2.5 m, none from 4 m: the play camera's flame and a walker's behind her are as they were):
 // a solid teardrop of hot, saturated yellow-orange under the simulated heat, so at chest-up the flame has a glowing core, not a
 // pale wisp (NPC 18). `tear` its share, `tear_k` its brightness (linear, before exposure).
 uniform float tear = 0.0;
@@ -143,7 +143,7 @@ void fragment() {
 	behind.xyz /= behind.w;
 	float fade = clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
 	float alpha = occlude * smoothstep(0.08, 0.45, h);
-	float tn = tear * (1.0 - smoothstep(4.0, 10.0, cam_d));
+	float tn = tear * (1.0 - smoothstep(2.5, 4.0, cam_d));
 	if (tn > 0.0) {
 		// The core follows the flame: its heat blurred (a coarse mip of the same frames), so it is one solid, rounded body that
 		// moves with the tongue, held inside a teardrop (widest a quarter of the way up, gone by 0.85) so it never fills the card.
