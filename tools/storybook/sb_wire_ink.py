@@ -167,6 +167,101 @@ def plate_p5(picks):
     }
 
 
+def story_curve(ts, vs, es):
+    """The player's StoryCurve (godot/logic/Storybook/StoryMotion.cs), replicated: Hermite with rest tangents."""
+    n = len(ts)
+
+    def chord(i):
+        return 0.0 if ts[i + 1] - ts[i] < 1e-9 else (vs[i + 1] - vs[i]) / (ts[i + 1] - ts[i])
+
+    def hold(i):
+        return es[i + 1] == "hold"
+
+    def tangent(i):
+        start, end = i == 0 or hold(i - 1), i == n - 1 or hold(i)
+        if start and end:
+            return 0.0
+        before = es[i] if i > 0 else None
+        after = es[i + 1] if i < n - 1 else None
+        if start:
+            return chord(i) if after in ("linear", "out", "stop") else 0.0
+        if end:
+            return chord(i - 1) if before in ("linear", "in") else 0.0
+        if before in ("inout", "out", "stop") or after in ("inout", "in"):
+            return 0.0
+        d0, d1 = chord(i - 1), chord(i)
+        if d0 * d1 <= 0:
+            return 0.0
+        c = (vs[i + 1] - vs[i - 1]) / (ts[i + 1] - ts[i - 1])
+        lim = 3 * min(abs(d0), abs(d1))
+        return max(-lim, min(lim, c))
+    m = [tangent(i) for i in range(n)]
+
+    def at(t):
+        if t <= ts[0]:
+            return vs[0]
+        if t >= ts[-1]:
+            return vs[-1]
+        i = 0
+        while i < n - 2 and t >= ts[i + 1]:
+            i += 1
+        if hold(i):
+            return vs[i]
+        h = ts[i + 1] - ts[i]
+        s = (t - ts[i]) / h
+        s2, s3 = s * s, s * s * s
+        return ((2 * s3 - 3 * s2 + 1) * vs[i] + (s3 - 2 * s2 + s) * h * m[i]
+                + (-2 * s3 + 3 * s2) * vs[i + 1] + (s3 - s2) * h * m[i + 1])
+    return at
+
+
+def check_p6_camera(P, keys, stand_span, walk_span, margin=60, min_window=0.8, end=10.5):
+    """From the real camera keys and the player's curve: the visible x range every 0.02 s (canvas 3200x1800,
+    view 3200/zoom wide; both figures sit at z 1, so no parallax). Asserts the stand is visible only before T,
+    walk2 only after, an empty window (neither within `margin`) >= min_window, and nothing past the plate edges.
+    -> T, the middle of the empty window."""
+    ts = [k["t"] for k in keys]
+    es = [k.get("ease") for k in keys]
+    fx, fy = (story_curve(ts, [k[c] for k in keys], es) for c in ("x", "y"))
+    fz = story_curve(ts, [np.log(k["zoom"]) for k in keys], es)
+    grid = np.arange(0, end + 1e-9, 0.02)
+    empty, vis = [], []
+    for t in grid:
+        z = float(np.exp(fz(t)))
+        x0, x1 = fx(t) - 1600 / z, fx(t) + 1600 / z
+        vis.append((t, x0, x1, fy(t) - 900 / z, fy(t) + 900 / z, z))
+        empty.append(x0 > stand_span[1] + margin and x1 < walk_span[0] - margin)
+    runs, i = [], 0
+    while i < len(grid):
+        if empty[i]:
+            j = i
+            while j + 1 < len(grid) and empty[j + 1]:
+                j += 1
+            runs.append((grid[i], grid[j]))
+            i = j + 1
+        else:
+            i += 1
+    assert runs, "p6: no moment with neither figure in frame"
+    w0, w1 = max(runs, key=lambda r_: r_[1] - r_[0])
+    assert w1 - w0 >= min_window, f"p6: empty window only {w1 - w0:.2f} s"
+    T = round((w0 + w1) / 2, 2)
+    for t, x0, x1, y0, y1, z in vis:
+        sees_stand = x1 > stand_span[0] and x0 < stand_span[1]
+        sees_walk = x1 > walk_span[0] and x0 < walk_span[1]
+        assert not (sees_stand and t >= T), f"p6: stand in frame at {t:.2f} s after the swap"
+        assert not (sees_walk and t < T), f"p6: walk2 in frame at {t:.2f} s before the swap"
+    # Plate edges (shifted units): the near plate spans the whole picture; y by the plate height.
+    lo_x, hi_x = 0 + P.shift[0] + 0, 5000 + P.shift[0]
+    lo_y, hi_y = 0 + P.shift[1], 1900 + P.shift[1]
+    ok = {"x": min(v[1] for v in vis) - lo_x, "x2": hi_x - max(v[2] for v in vis),
+          "y": min(v[3] for v in vis) - lo_y, "y2": hi_y - max(v[4] for v in vis)}
+    print(f"p6 camera: stand x {stand_span[0]:.0f}..{stand_span[1]:.0f}, walk2 x {walk_span[0]:.0f}..{walk_span[1]:.0f}; "
+          f"empty window {w0:.2f}..{w1:.2f} s ({w1 - w0:.2f} s), swap T = {T:.2f} s; "
+          f"edge clearance units {{{', '.join(f'{k}: {v:.0f}' for k, v in ok.items())}}}")
+    assert min(ok.values()) >= -1, f"p6: the camera shows past the plate edge: {ok}"
+    return T
+
+
 def plate_p6(picks):
     P = Plate("p6")
     layers = []
@@ -178,157 +273,52 @@ def plate_p6(picks):
     fire = next(e for e in P.bases() if e["name"] == "fire_glow")
     fx, fy = P.bright_center(fire)
 
-    # The traveler, one figure as a shadow puppet: sit -> stand (crossfaded by 4.4 s), then the figure slides
-    # right along one path (stand's feet -> walk1's place -> walk2's place by the water), its height following
-    # the drawings' heights (it shrinks with distance), with a small step bob. The drawings only crossfade:
-    # stand -> walk1 as the slide starts (none when they are the same drawing), walk1 -> walk2 (lit to the
-    # unlit silhouette) over 1.5 s as it leaves the fire's ring. No alternating drawings.
-    def feet(e):
-        x, y, w, h = P.box(e)
-        return (x + w / 2, y + h, h)
+    # The traveler: nothing moves or fades on screen. She sits, stands up at the fire (the small in-place crossfade),
+    # and the camera pans right along the road (pushing in) and leaves the standing figure behind out of frame;
+    # while NEITHER figure is in frame the drawing swaps (instant step) to the unlit one already standing at the
+    # water's edge, and the pan brings that one into frame.
+    def span_x(e, a):
+        """Canvas x span (shifted units) of a layer's figure (alpha > 127)."""
+        xs = np.nonzero((a[..., 3] > 127).any(0))[0]
+        x, _, _, _ = P.box(e)
+        return x + xs.min() * e["scale"], x + (xs.max() + 1) * e["scale"]
 
-    def place(state, file):
-        e = P.entry(file)
-        if e.get("state") == state:
-            return feet(e)
-        same = [feet(o) for o in P.meta["layers"] if o.get("state") == state]
-        return tuple(np.mean(same, axis=0)) if same else feet(e)
-
-    def same_outline(e2, e1):
-        """walk2 (the unlit drawing by the water) on the lit drawing's exact outline, fully opaque: walk1's
-        own alpha at walk1's own pixels, filled with walk2's colours (figure box onto figure box), shown at
-        walk2's box (the same feet and height). -> the entry to wire instead of e2."""
-        a1 = np.asarray(Image.open(os.path.join(LAYERS, "p6", e1["file"])).convert("RGBA"))
-        a2 = np.asarray(Image.open(os.path.join(LAYERS, "p6", e2["file"])).convert("RGBA"))
-
-        def fig(a):
-            ys, xs = np.nonzero(a[..., 3] > 127)
-            return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-        f1, f2 = fig(a1), fig(a2)
-        crop = Image.fromarray(a2[f2[1]:f2[3], f2[0]:f2[2], :3]).resize((f1[2] - f1[0], f1[3] - f1[1]), Image.BICUBIC)
-        inner = a2[..., 3] > 250
-        rgb = np.broadcast_to(np.median(a2[..., :3][inner], 0).astype(np.uint8), a1.shape[:2] + (3,)).copy()
-        rgb[f1[1]:f1[3], f1[0]:f1[2]] = np.asarray(crop)
-        al = a1[..., 3].copy()
-        al[(al > 0) & (nd.binary_erosion(al > 127, iterations=2))] = 255      # no see-through inside the outline
-        x2, y2, w2, h2 = P.box(e2)
-        sc = e2["scale"] * (f2[3] - f2[1]) / (f1[3] - f1[1])                 # figure height onto figure height
-        foot = (x2 + (f2[0] + f2[2]) / 2 * e2["scale"], y2 + f2[3] * e2["scale"])
-        pos = (foot[0] - (f1[0] + f1[2]) / 2 * sc - P.shift[0], foot[1] - f1[3] * sc - P.shift[1])
-        P.made["walk2.png"] = np.dstack([rgb, al])
-        return dict(e2, pos=[round(pos[0], 2), round(pos[1], 2)], scale=round(sc, 6), size_px=[a1.shape[1], a1.shape[0]])
+    def own_filled(e):
+        """The drawing at its own place with no see-through inside its outline (same fill as before)."""
+        a = np.array(Image.open(os.path.join(LAYERS, "p6", e["file"])).convert("RGBA"))
+        al = a[..., 3]
+        al[(al > 0) & nd.binary_erosion(al > 127, iterations=2)] = 255
+        P.made["walk2.png"] = a
+        return a
 
     sit_end, stand_fade = 4.0, 0.4
-    depart, arrive = 4.8, 10.0          # the slide; p6 is up to 10.5 s (p7 dissolves in over it to 11.1)
-    acc, dec = 0.7, 1.0                 # eased start and stop of the slide
-    x1, x2 = 0.4, 0.5                   # crossfades: stand -> walk1, walk1 -> walk2 (walk2 over walk1, same outline)
-    lit_by = 5.9                        # walk1 -> walk2 done by here (76.9 s): never a see-through figure held
-    bob_amp, bob_step = 5.0, 0.5        # canvas units at stand's height; seconds a step
+    e_stand, e_w2 = P.entry(picks["stand"]), P.entry(picks["walk2"])
+    a_stand = np.asarray(Image.open(os.path.join(LAYERS, "p6", e_stand["file"])).convert("RGBA"))
+    a_w2 = own_filled(e_w2)
+    sx, wx = span_x(e_stand, a_stand), span_x(e_w2, a_w2)
 
-    # The roles in order; a drawing picked for two roles plays both (no crossfade between them).
-    roles = []
-    for st in ("stand", "walk1", "walk2"):
-        if st in picks:
-            if roles and roles[-1][1] == picks[st]:
-                roles[-1][2].append(st)
-            else:
-                roles.append((st, picks[st], [st]))
-    way = [place(st, f) for st, f, _ in roles]
-    if len(way) == 3 and not (way[0][0] < way[1][0] < way[2][0]):
-        way.pop(1)                      # a walk1 place off the way to the water: straight there
-    if len(way) == 1 and "walk2" in picks and roles[-1][1] == picks.get("stand"):
-        way.append(place("walk2", picks["walk2"]))
-    seg = [float(np.hypot(b_[0] - a_[0], b_[1] - a_[1])) for a_, b_ in zip(way, way[1:])]
-    total = sum(seg) or 1.0
-    cum = [0.0]
-    for d in seg:
-        cum.append(cum[-1] + d)
+    # The camera (unshifted comps units as P.cam takes them): hold, then an eased push-in pan to the water.
+    cam_keys = [P.cam(0, 1650, 1000, 1.0), P.cam(4.6, 1650, 1000, 1.0),
+                P.cam(7.55, 2760, 1055, 1.3), P.cam(10.5, 3650, 1060, 1.3, ease="inout")]
+    T = check_p6_camera(P, cam_keys, sx, wx)
 
-    def at_dist(s, i):
-        return pw(list(zip(cum, [w[i] for w in way])), s)
-
-    # Distance along the path: a trapezoid speed (ease in over acc, out over dec).
-    vmax = total / (arrive - depart - (acc + dec) / 2)
-
-    def dist(t):
-        if t <= depart:
-            return 0.0
-        if t >= arrive:
-            return total
-        u = t - depart
-        if u < acc:
-            return vmax * u * u / (2 * acc)
-        mid = arrive - depart - dec
-        if u <= mid:
-            return vmax * (acc / 2 + (u - acc))
-        v = arrive - t
-        return total - vmax * v * v / (2 * dec)
-
-    nsteps = max(1, round((arrive - depart) / bob_step))
-    cad = (arrive - depart) / nsteps
-
-    def bob(t):
-        if t <= depart or t >= arrive:
-            return 0.0
-        u = (t - depart) / cad
-        env = min(1.0, u, (arrive - t) / cad)      # in over the first step, out over the last
-        return -bob_amp * env * (0.5 - 0.5 * np.cos(2 * np.pi * u))
-
-    def path(t):
-        s = dist(t)
-        h = at_dist(s, 2)
-        return at_dist(s, 0), at_dist(s, 1) + bob(t) * h / way[0][2], h
-
-    # Leaving the fire's ring: the figure's middle passes where the glow is down to 5% of its heart.
-    gim = np.asarray(Image.open(os.path.join(LAYERS, "p6", fire["file"])).convert("RGBA")).astype(np.float32)
-    glum = gim[..., :3].mean(-1) * gim[..., 3] / 255
-    gx, gy, _, _ = P.box(fire)
-    yy, xx = np.indices(glum.shape)
-    rd = np.hypot(gx + xx * fire["scale"] - fx, gy + yy * fire["scale"] - fy)
-    heart = glum[rd < 100].mean()
-    ring = next((R for R in range(100, 3000, 20) if glum[(rd >= R) & (rd < R + 40)].mean() < 0.05 * heart), 1000)
-    leave = next((t for t in np.arange(depart, arrive, 0.02)
-                  if np.hypot(path(t)[0] - fx, path(t)[1] - path(t)[2] / 2 - fy) > ring), depart)
-    lit_from = depart + (x1 if any(n[0] == "walk1" for _, _, n in roles) else 0)
-    leave = float(min(max(leave, lit_from + 0.2), arrive - x2 - 0.3, lit_by - x2))
-
-    # Crossfade windows into each role after the first.
-    win = []
-    for st, f, names in roles[1:]:
-        win.append((depart, depart + x1) if names[0] == "walk1" else (leave, leave + x2))
-    grid = list(np.arange(depart, arrive + 1e-6, cad / 4))
-
-    for i, (st, file, names) in enumerate(roles):
-        e = P.entry(file)
-        if st == "walk2" and i > 0:
-            e = same_outline(e, P.entry(roles[i - 1][1]))
-        L = P.layer(e, st)
-        if i == 0:
-            pts = [(0, 0.0), (sit_end, 0.0), (sit_end + stand_fade / 2, 1.0)]
-        else:
-            a_, b_ = win[i - 1]
-            pts = [(0, 0.0), (a_, 0.0), (b_, 1.0)]
-        if i + 1 < len(roles):
-            end_on = win[i][1]
-            pts += [(end_on, 1.0), (end_on + 0.02, 0.0)]
-        fxo, fyo, h = feet(e)
-        L["pivot"] = [r(fxo), r(fyo)]
-        times = [p[0] for p in pts] + [t for t in grid if t >= pts[1][0] - 1e-6 and (i + 1 == len(roles) or t <= pts[-2][0] + 1e-6)]
-        L["keys"] = opacity_keys(pts, times, lambda t: (lambda q: {"dx": r(q[0] - fxo), "dy": r(q[1] - fyo),
-                                                                  "scale": r(q[2] / h, 4)})(path(t)))
-        layers.append(L)
+    L = P.layer(e_stand, "stand")
+    pts = [(0, 0.0), (sit_end, 0.0), (sit_end + stand_fade / 2, 1.0), (T, 1.0), (T + 0.02, 0.0)]
+    L["keys"] = opacity_keys(pts, [p[0] for p in pts])
+    layers.append(L)
+    L = P.layer(e_w2, "walk2")
+    pts = [(0, 0.0), (T, 0.0), (T + 0.02, 1.0)]
+    L["keys"] = opacity_keys(pts, [p[0] for p in pts])
+    layers.append(L)
     if "sit" in picks:
         L = P.layer(P.entry(picks["sit"]), "sit")
         pts = [(0, 1.0), (sit_end + stand_fade / 2, 1.0), (sit_end + stand_fade, 0.0)]
         L["keys"] = opacity_keys(pts, [p[0] for p in pts])
-        layers.insert(len(layers) - len(roles), L)
-    print(f"p6: path {total:.0f} units, {nsteps} steps of {cad:.2f} s, fire ring {ring} units, "
-          f"walk1 -> walk2 from {leave:.2f} s, roles {[n for _, _, n in roles]}")
+        layers.insert(len(layers) - 2, L)
     return P, {
         "id": PREFIX + "p6", "at": 71, "until": 81.5,
         "in": {"kind": "dissolve", "dur": 1.0},
-        "camera": [P.cam(0, 1650, 1050, 1.0), P.cam(4.6, 1650, 1050, 1.0),
-                   P.cam(10.5, 3550, 1060, 1.25, ease="inout")],
+        "camera": cam_keys,
         "note": "INK: The traveler (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": layers,
         "fx": [{"kind": "particles", "preset": "sparks", "at": [r(fx), r(fy - 60)], "area": [110, 40], "z": 1.0,
