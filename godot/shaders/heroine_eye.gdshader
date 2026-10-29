@@ -148,6 +148,11 @@ uniform float dbg = 0.0;
 // hard black wedge at the lash line.
 uniform float night_ease = 0.0;
 uniform float night_lid = 0.5;
+// A catchlight light (Face 48 round 3, GameCinemaHer's HerEye): a light whose specular is 15.5 (SPECULAR_AMOUNT 31)
+// lights the cornea's sheen only, at `eye_light_rough` and times `eye_light_gain`, and nothing of the eye's diffuse:
+// faint enough not to light her skin, it puts a small crisp window in each open eye from just above the lens.
+uniform float eye_light_rough = 0.3;
+uniform float eye_light_gain = 1500.0;
 // (and her iris lifted by night: green under the fire's orange read near black beside its whites even unshaded,
 // iris 22 of 255 to the whites' 66, where by day it is about half the white)
 uniform float night_iris = 1.0;
@@ -161,6 +166,8 @@ varying float under_lid;
 varying float corner;
 // The cornea's reflectance for the lights on her (fragment() to light()).
 varying float sheen;
+// (the cornea, for the catchlight light: the iris and a little round it)
+varying float cornea;
 
 void vertex() {
 	// (the eyeball's own normal: up under the upper lid, out to the side at the corners)
@@ -174,6 +181,7 @@ void fragment() {
 	vec2 d = (UV - c) / iris_r;
 	float r = length(d);
 	float in_iris = 1.0 - smoothstep(0.97, 1.02, r);
+	cornea = 1.0 - smoothstep(1.0, 1.2, r);
 	// The view, in the paint's own directions, for the iris seen through the
 	// cornea (its directions made square to the eye's surface: a ball's
 	// tangents from a flat projection of it lean).
@@ -309,15 +317,17 @@ void light() {
 	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
 	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
-	DIFFUSE_LIGHT += LIGHT_COLOR * (c_ndl * burley / PI) * ATTENUATION;
+	bool eye_only = abs(SPECULAR_AMOUNT - 31.0) < 0.3 || abs(SPECULAR_AMOUNT - 15.5) < 0.15;
+	if (!eye_only) DIFFUSE_LIGHT += LIGHT_COLOR * (c_ndl * burley / PI) * ATTENUATION;
 	if (c_ndl > 0.0) {
-		float a = ROUGHNESS * ROUGHNESS;
+		float rough = eye_only ? eye_light_rough : ROUGHNESS;
+		float a = rough * rough;
 		float da = c_ndh * a;
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
 		float d_ggx = k * k / PI;
 		float v_ggx = 0.5 / mix(2.0 * c_ndl * c_ndv, c_ndl + c_ndv, a);
 		float f0 = 0.16 * sheen * sheen;
 		float f = f0 + (clamp(f0 * 50.0, 0.0, 1.0) - f0) * schlick(c_ldh);
-		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * (eye_only ? eye_light_gain * cornea : SPECULAR_AMOUNT);
 	}
 }
