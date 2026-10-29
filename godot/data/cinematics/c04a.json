@@ -23,7 +23,7 @@
       "type": "CU",
       "dur": 4.0,
       "note": "Low on the north bank's gravel at the water's edge, along the shore toward the ford, 45 mm: the lamp lies on its side in the lower third, gone out, a pane gone and its glass on the stones; the ford's stones and the far bank beyond. She is not in frame. The lamp_out line.",
-      "cam": {"pos": {"abs": [4.25, -0.44, -51.35]}, "at": {"abs": [-5.539, -1.919, -49.941]}, "lens": 45, "focus": {"abs": [2.4, -0.88, -50.95]}, "fstop": 5.6, "move": {"start": 0, "end": "end", "push": 0.12, "ease": "inout"}},
+      "cam": {"pos": {"abs": [4.25, -0.44, -51.35]}, "at": {"abs": [-5.539, -1.919, -48.2]}, "lens": 45, "focus": {"abs": [2.4, -0.88, -50.95]}, "fstop": 5.6, "move": {"start": 0, "end": "end", "push": 0.12, "ease": "inout"}},
       "fit": ["cin_first_light.lamp_out"],
       "tail": 0.6,
       "cues": [
@@ -32,7 +32,7 @@
         {"do": "music", "mood": "night", "intensity": 0.2},
         {"do": "place", "mark": "road", "heading": 3.1416},
         {"do": "anim", "clip": "@idle", "blend": 0},
-        {"do": "prop", "name": "lamp", "scene": "res://art/props/lamp_dropped/lamp_dropped.glb", "where": [2.4, 0.0, -50.95], "rot": [0, 122.2, 0]},
+        {"do": "prop", "name": "lamp", "scene": "res://art/world/wooden_lantern_01.glb", "where": [2.4, 0.04, -50.95], "rot": [0, 122.2, 90], "scale": 0.5},
         {"at": 0.4, "do": "line", "id": "cin_first_light.lamp_out"}
       ]
     },
