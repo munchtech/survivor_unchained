@@ -100,7 +100,18 @@ public partial class WardenView : Node3D, IBossView
             LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f, LightVolumetricFogEnergy = EnvF("WARDEN_LAMP_FOG", 1) };
         light.LightCullMask &= ~LampIron.OwnLayer;
         AddChild(light);
+        // (Warden 7 lamp solver: the blade a hand from the light took it whole, its flat 247 at s12, 47 with the light off;
+        // the blade is on its own layer out of this light, lit by a weaker unshadowed twin at the same place: no cage
+        // stripe across it either)
+        light.LightCullMask &= ~LampIron.SwordLayer;
+        swordLight = new OmniLight3D { LightColor = LampBlue, OmniRange = light.OmniRange, OmniAttenuation = light.OmniAttenuation, LightEnergy = 0,
+            ShadowEnabled = false, LightCullMask = LampIron.SwordLayer, LightVolumetricFogEnergy = 0 };
+        AddChild(swordLight);
     }
+    readonly OmniLight3D swordLight;
+    static readonly float SwordK = EnvF("WARDEN_SWORD_LAMP", 0.08f);
+    /// <summary>The lantern's turn on its bail (radians): the sides' middle straps off the flame's line at the cameras.</summary>
+    static readonly float LampYaw = EnvF("WARDEN_LAMP_YAW", 0.45f);
 
     static readonly Color EyeBlue = new("#7ac8ff");
     static readonly Color LampBlue = new("#8ac8ff");
@@ -222,7 +233,7 @@ public partial class WardenView : Node3D, IBossView
     {
         // As big as it was in his hand (the body is scaled up to a giant's).
         float s = grip.GlobalTransform.Basis.Scale.X;
-        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y).Scaled(Vector3.One * s),
+        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y + LampYaw).Scaled(Vector3.One * s),
             grip.GlobalPosition - new Vector3(0, Bail * s, 0));
     }
 
@@ -233,7 +244,7 @@ public partial class WardenView : Node3D, IBossView
         if (eyeLook is { } el) WardenLook.Glow(el, g, time);
         foreach (var m in eyes)
         {
-            float k = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
+            float k = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5) * WardenLook.eyeF;   // (close cameras: dimmed with the eye-light quads)
             m.EmissionEnergyMultiplier = k;
             // (the unshaded eye lights show their albedo, so it follows the glow: dark at 0)
             if (m.ShadingMode == BaseMaterial3D.ShadingModeEnum.Unshaded) { float b = Mathf.Clamp(k / 3.6f, 0, 1.5f); m.AlbedoColor = new Color(EyeBlue.R * b, EyeBlue.G * b, EyeBlue.B * b); }
@@ -248,9 +259,11 @@ public partial class WardenView : Node3D, IBossView
         if (light.LightEnergy > 0 && !LampNoShadow) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
         if (LampProbe && (probeN++ % 90) == 0 && light.IsInsideTree())
             GD.Print($"LAMPPROBE e {light.LightEnergy:0.00} mask {light.LightCullMask:X} shadow {light.ShadowEnabled} range {light.OmniRange} att {light.OmniAttenuation} at {light.GlobalPosition} lamp {lamp.GlobalPosition} fist {grip.GlobalPosition} scale {grip.GlobalTransform.Basis.Scale.X:0.00} layers {LayersOf(view)} glow {g:0.00} atFlame {atFlame} lit {LampLit} col {flameColor} cam {GetViewport().GetCamera3D()?.GlobalPosition} fov {GetViewport().GetCamera3D()?.Fov}" + LampIron.Dump(lamp));
-        if (atFlame && fire != null) { light.GlobalPosition = fire.At; return; }
+        swordLight.LightEnergy = light.LightEnergy * SwordK;
+        if (swordLight.LightColor != lc) swordLight.LightColor = lc;
+        if (atFlame && fire != null) { light.GlobalPosition = swordLight.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
-        light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
+        light.GlobalPosition = swordLight.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
         // (its streak on the water in the flame's hue, not the light's blue: C03 s2)
         if (light.IsInsideTree()) Water.StreakTint(light, flameColor);
     }

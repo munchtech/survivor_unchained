@@ -269,7 +269,8 @@ public static class WardenLook
         e.Glint.Visible = k > 0;
     }
 
-    static float eyeF = 1;
+    /// <summary>The eye-lights' close-camera scale (1 at C02's cameras; BossViews dims the eyes' own emission by it).</summary>
+    public static float eyeF = 1;
     /// <summary>The eye-lights' core at most this many pixels across (WARDEN_EYE_PX), however close the camera.</summary>
     static readonly float CorePx = EnvF("WARDEN_EYE_PX", 7f);
     public static float GlintReach = 0.12f, GlintEnergy = EnvF("WARDEN_EYE_GLINT", 0.05f);

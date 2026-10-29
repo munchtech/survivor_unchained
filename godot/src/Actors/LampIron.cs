@@ -196,6 +196,8 @@ public static class LampIron
     static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-iron-inner", 0.3f);
     /// <summary>The layer a lit lantern's meshes go on, so its own light can leave it out (ZoneView.LampLayer).</summary>
     public const uint OwnLayer = 1u << 11;
+    /// <summary>The Watch blade's layer, alone, so the Warden's lamp light can leave it to a weaker twin (BossViews).</summary>
+    public const uint SwordLayer = 1u << 15;
 
     /// <summary>The Warden's flame in a lamp made here: the flame kit's cold flame on the wick (no light of
     /// its own: the caller's light is the lamp's) and a soft glow round it.</summary>
@@ -214,7 +216,7 @@ public static class LampIron
                     if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
                         blade.SetShaderParameter(k.Trim(), f);
         }
-        foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false)) ((MeshInstance3D)n).MaterialOverride = blade;
+        foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false)) { ((MeshInstance3D)n).MaterialOverride = blade; ((MeshInstance3D)n).Layers = SwordLayer; }
         return model;
     }
 
@@ -251,13 +253,13 @@ public sealed class LampFire
     readonly float flameY, boost;
     /// <summary>--warden-flame-k K: the Warden's flame's brightness over the kit's (a bright point at the play camera).</summary>
     static readonly float ColdPale = SurvivorUnchained.Args.Num("warden-flame-pale", 0.4f);
-    static readonly float FlameBoost = SurvivorUnchained.Args.Num("warden-flame-k", 1.2f);
+    static readonly float FlameBoost = SurvivorUnchained.Args.Num("warden-flame-k", 1.6f);
     /// <summary>--warden-flame S: the Warden's flame's size (the kit's lamp card is 0.16 at 1), for pictures.</summary>
     static readonly float FlameScale = SurvivorUnchained.Args.Num("warden-flame", 0.72f);
     Color col = Cold;
     float level = 1;
     /// <summary>--warden-halo K: the soft glow's strength round the flame (Warden 7 r1: 0.32 to 0.5, a halo 2-3x the flame's width).</summary>
-    static readonly float HaloK = SurvivorUnchained.Args.Num("warden-halo", 0.5f);
+    static readonly float HaloK = SurvivorUnchained.Args.Num("warden-halo", 0.85f);
 
     internal LampFire(Node3D lamp)
     {
