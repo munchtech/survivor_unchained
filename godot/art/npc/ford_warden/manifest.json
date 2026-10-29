@@ -24,25 +24,26 @@
     "roots": 0.0
    }
   },
-  "source": "tools/assets/warden_beard.py (r5: wet-lock mass on heroine_hair.py's drape, braids with cord bands, river weed, a waved card fringe)",
-  "tris": 13267,
-  "massTris": 7895,
-  "cardTris": 4192,
-  "lodTris": 1752,
-  "shadowTris": 1728,
+  "source": "tools/assets/warden_beard_strands.py (r6: layered strand cards on her atlas and shader, dark core ribbons, braids with cord bands, river weed)",
+  "tris": 21044,
+  "cardTris": 16880,
+  "solidTris": 2116,
+  "lodTris": 2732,
+  "shadowTris": 1908,
   "locks": {
-   "moustache": 17,
-   "inner": 27,
-   "outer": 31
+   "moustache": 16,
+   "inner": 33,
+   "mid": 38,
+   "outer": 30
   },
   "cards": {
-   "edge": 58,
-   "outline": 41,
-   "fringe": 45,
-   "strays": 16
+   "edge": 57,
+   "inner": 165,
+   "mid": 152,
+   "outer": 90
   },
   "braids": 3,
-  "weed": 17
+  "weed": 16
  },
  "nipples": {
   "l": [
