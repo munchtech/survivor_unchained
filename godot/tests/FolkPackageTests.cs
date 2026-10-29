@@ -35,7 +35,10 @@ public class FolkPackageTests
         var all = Lore.Npcs.Values.Concat(Lore.Outsiders.Values).ToList();
         Assert.Equal(16, all.Count);
         Assert.All(all, d => Assert.StartsWith("npc:npc_", d.Person?.Body ?? ""));
-        Assert.Equal("npc:npc_watch_m", Lore.Npcs["holloway"].Person!.Body);
+        Assert.Equal("npc:npc_holloway", Lore.Npcs["holloway"].Person!.Body);   // (NPC 18: his own package)
+        Assert.Null(Lore.Npcs["holloway"].Person!.Dye);   // (a named NPC keeps his own paint)
+        Assert.Equal("npc:npc_brannoc", Lore.Npcs["brannoc"].Person!.Body);
+        Assert.Null(Lore.Npcs["brannoc"].Person!.Dye);
         Lore.KitFolk = true;
         try
         {

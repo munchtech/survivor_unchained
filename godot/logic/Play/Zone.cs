@@ -270,6 +270,9 @@ public sealed class NpcActor
     double age;
     readonly Dictionary<string, double> lastLine = new();
     public const double LineRest = 300;
+    /// <summary>A working idle stops for its talk stand inside NearStand m of her, and goes back to work past NearWork.</summary>
+    public const double NearStand = 3.5, NearWork = 4.5;
+    bool wasTalking;
 
     public NpcActor(NpcDef def, IZoneLook look, Random rng, Spot? at = null)
     {
@@ -313,11 +316,18 @@ public sealed class NpcActor
             want = toPlayer;
             if (Seated) want = Facing + Math.Clamp(Math.Atan2(Math.Sin(toPlayer - Facing), Math.Cos(toPlayer - Facing)), -0.7, 0.7);
         }
+        // A working idle (the smith's hammering) gives way to their talk stand (Def.Stand) while they talk or she is
+        // close (NearStand m in, back to work past NearWork), facing her: a talk never opens on his back and raised arm.
+        if (Def.Stand is string stand && !Seated)
+        {
+            bool near = Talking || d < (pose == stand + ":talk" ? NearWork : NearStand);
+            if (near && pose == Def.Idle) { view.Loop(stand, Talking ? 0.15 : 0.3); pose = stand + ":talk"; }
+            else if (!near && pose == stand + ":talk") { view.Loop(Def.Idle, 0.4, Def.Idle == "1H_Melee_Attack_Chop" ? 0.55 : 1); pose = Def.Idle; }
+            if (Talking && !wasTalking) Heading = want;
+        }
+        wasTalking = Talking;
         Heading = MathX.DampAngle(Heading, want, 4, dt);
         view.Place(X, y, Z, Heading, true);
-        // A hammering smith stops to talk.
-        if (Talking && pose == "1H_Melee_Attack_Chop") { view.Loop("Idle", 0.3); pose = "Idle:talk"; }
-        if (!Talking && pose == "Idle:talk") { view.Loop(Def.Idle, 0.4, 0.55); pose = Def.Idle; }
         // Things said to nobody.
         barkT -= dt;
         if (barkT <= 0 && !Talking && d < 9 && d > 2.5)

@@ -20,6 +20,10 @@ public static class WeaponsData
         _ => 0,
     };
 
+    /// <summary>A weapon's file as a resource path: a row's own "res://..." path (our own props under art/, NPC 18's smith
+    /// hammer), else the name of a glb in res://assets/weapons.</summary>
+    public static string ResPath(string file) => file.StartsWith("res://", StringComparison.Ordinal) ? file : $"res://assets/weapons/{file}.glb";
+
     /// <summary>Adds each row to the table unless its id is already there (a C# row wins); returns how many were added.</summary>
     public static int Merge<T>(IDictionary<string, T> table, IEnumerable<WeaponRow> rows, Func<WeaponRow, T> make)
     {

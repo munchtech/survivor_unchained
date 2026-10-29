@@ -144,10 +144,7 @@
     "hairColor": "#4a4038",
     "beard": true,
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#56627e"
-    },
-    "body": "npc:npc_watch_m"
+    "body": "npc:npc_holloway"
    },
    "spot": {
     "x": -3.6,
@@ -1238,6 +1235,7 @@
    ],
    "tint": "#5a4a3a",
    "idle": "1H_Melee_Attack_Chop",
+   "talkIdle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [
@@ -1248,13 +1246,10 @@
     "hairColor": "#2a2422",
     "beard": true,
     "skin": "#946040",
-    "dye": {
-     "under": "#3a3028"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_brannoc"
    },
    "arms": {
-    "right": "mace"
+    "right": "smith_hammer"
    },
    "spot": {
     "x": 11.6,
