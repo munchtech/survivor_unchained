@@ -206,7 +206,8 @@ void HandPairs(List<RunSpec> specs, string outPath)
             {
                 var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = true };
                 var b0 = ArenaSim.Play(spec with { Lamps = "empty" }, boff);
-                var bon = new ArenaSim.Fixed { NoFall = noFall, Span = span, Replay = replay ? boff.Took : null, NoWicks = nul };
+                // --boardwicks 0: the on run's lamps without its wicks (which half of the board's P is the wicks').
+                var bon = new ArenaSim.Fixed { NoFall = noFall, Span = span, Replay = replay ? boff.Took : null, NoWicks = nul || opt.Get("boardwicks", "1") == "0" };
                 var b1 = ArenaSim.Play(spec with { Lamps = nul ? "empty" : "full" }, bon);
                 lock (gate)
                 {
