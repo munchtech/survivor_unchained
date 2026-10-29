@@ -12,7 +12,8 @@ by a 3D vote (fill3d()), then dilated gutters.
 Channels (2048, RGBA8; imported lossless, alpha untouched):
   R  class * 32 + puff (0..31): the class index (the shader texelFetches it and blends the 4 neighbours' params);
      the low bits (0..1): on the quilting, the padding's loft (0 in a stitch line, 1 on a channel's top: the shader
-     shades the grooves); elsewhere a free smooth noise (no shader reads it)
+     shades the grooves); on the tabard its fade (sun and river, 1 most faded); on the iron its convexity (0.5 flat,
+     1 a convex edge: wear; 0 a recess); elsewhere a free smooth noise
   G  bind height (y / 2 m): the wet gradient (soaked from the hem to the thigh, drier toward the shoulders)
   B,A  a detail normal (tangent-space x, y; 0.5 = flat): each class's 3D height (wool twill, tabard plain weave,
      quilting weave + sag and creasing noise, leather grain, iron dents), baked from the bind pose triplanar on the
@@ -28,13 +29,15 @@ Classes:
 
   python tools/assets/warden_wet_maps.py [PKG_DIR]     (first: its occlusion finds the face deep in the hood)
   python tools/assets/warden_id_map.py [PKG_DIR] [--size 2048] [--debug OUT_DIR]
-Writes PKG_DIR/id_generated.png (+ a class-colour picture in --debug OUT_DIR).
+Writes PKG_DIR/id_generated.png (+ a class-colour picture in --debug OUT_DIR), and fills wet_generated.png's B and A
+(body_extras(): the beard's drip, wet streaks; so run it after warden_wet_maps.py).
 Re-run after any change to body.glb's geometry or UVs (it reads only body.glb's "generated" surface).
 """
 import argparse, os, sys
 import numpy as np
 from PIL import Image
-from scipy import ndimage
+from scipy import ndimage, sparse
+from scipy.spatial import cKDTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from warden_wet_maps import Glb  # noqa: E402
@@ -87,6 +90,27 @@ def raster_fields(uv, idx, vals, size):
     return out, have
 
 
+def curvature(P, N, idx, rings=3):
+    """Per-vertex convexity (m): the vertex against its welded neighbours' smoothed mean, along the smoothed normal;
+    + on convex edges (the iron's worn rims), - in recesses. The unwrap splits vertices at its seams: welded first."""
+    _, wid = np.unique(np.round(P / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    wid = wid.ravel(); nw = wid.max() + 1
+    e = wid[np.r_[idx[:, [0, 1]], idx[:, [1, 2]], idx[:, [2, 0]]]]
+    A = sparse.coo_matrix((np.ones(len(e) * 2), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), (nw, nw)).tocsr()
+    A.data[:] = 1.0
+    deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)[:, None]
+    cnt = np.bincount(wid, minlength=nw)[:, None].astype(float)
+    Pw = np.zeros((nw, 3)); np.add.at(Pw, wid, P); Pw /= cnt
+    Nw = np.zeros((nw, 3)); np.add.at(Nw, wid, N); Nw /= np.maximum(np.linalg.norm(Nw, axis=1, keepdims=True), 1e-9)
+    S = Pw.copy()
+    for _ in range(rings):
+        S = 0.5 * S + 0.5 * (A @ S) / deg
+    c = np.einsum("ij,ij->i", Pw - S, Nw)
+    for _ in range(1):
+        c = 0.5 * c + 0.5 * (A @ c[:, None]).ravel() / deg.ravel()
+    return c[wid]
+
+
 def seg_dist(P, a, b):
     """Distance from points to segment a-b and the parameter along it (0 at a, 1 at b)."""
     d = b - a
@@ -130,14 +154,15 @@ def features(pkg, size):
         arm[s] = np.where(dl < du, 1 + tl, tu)
         legr[s] = seg_dist(P[s], jpos[f"calf_{side}"], jpos[f"foot_{side}"])[0]
     arm *= (grp[:, 1] + grp[:, 2]) > 0.3  # (only on the arms: the legs sit near the forearm's line too)
-    vals = np.c_[P, N, grp, arm, legr, p["TANGENT"]].astype(np.float32)
+    curv = curvature(P, N, p["idx"])
+    vals = np.c_[P, N, grp, arm, legr, p["TANGENT"], curv].astype(np.float32)
     F, have = raster_fields(p["TEXCOORD_0"].astype(float), p["idx"], vals, size)
     pb = p["mat"]["pbrMetallicRoughness"]
     alb = np.asarray(g.image(pb["baseColorTexture"]["index"]).resize((size, size), Image.BOX), np.float32) / 255
     mr = np.asarray(g.image(pb["metallicRoughnessTexture"]["index"]).resize((size, size), Image.BOX), np.float32) / 255
     wet = os.path.join(pkg, "wet_generated.png")  # (warden_wet_maps.py's occlusion, same UVs: run that first)
     occ = np.asarray(Image.open(wet).convert("RGBA").resize((size, size), Image.BILINEAR), np.float32)[..., 1] / 255 if os.path.exists(wet) else np.zeros((size, size), np.float32)
-    return dict(occ=occ, P=F[..., 0:3], N=F[..., 3:6], grp=F[..., 6:12], arm=F[..., 12], legr=F[..., 13], T=F[..., 14:18], have=have,
+    return dict(occ=occ, P=F[..., 0:3], N=F[..., 3:6], grp=F[..., 6:12], arm=F[..., 12], legr=F[..., 13], T=F[..., 14:18], curv=F[..., 18], have=have,
                 alb=alb, metal=mr[..., 2], jpos=jpos)
 
 
@@ -226,10 +251,12 @@ DETAIL = {WOOL: (0.0065, True, 1.0, (0.0016, 0.35), (0.03, 0.6)),
 # the body and along the arms, thread-thin stitch lines between, each channel's loft lumpy along it and its own, the
 # padding flattened at the elbow's bend with creases across it
 QUILT_W = 0.034                    # channel width (m), at the reference radius (a whole number of channels round)
-QUILT_PUFF, QUILT_STITCH, QUILT_BEND = 3.0, 0.6, 1.2
+# (Warden 7 judge: it still read as a puffer jacket: the loft halved, the channels' widths uneven, worn flat in
+#  patches and pressed flat under the straps and the belt)
+QUILT_PUFF, QUILT_STITCH, QUILT_BEND = 1.5, 0.45, 1.0
 
 
-def quilt_cells(P, ax, ctr, rref, bend, shade=False):
+def quilt_cells(P, ax, ctr, rref, bend, press=None, shade=False):
     """The padding's height: P points; ax the channel's axis, ctr a point on it, rref the reference radius (per point);
     bend 0..1 (the elbow). Channels run along ax, spaced round it by angle (the seam where the angle wraps)."""
     up = np.where(np.abs(ax[:, 1:2]) < 0.9, [[0.0, 0.0, -1.0]], [[0.0, 0.0, -1.0]])
@@ -240,11 +267,18 @@ def quilt_cells(P, ax, ctr, rref, bend, shade=False):
     th = np.arctan2((d * v).sum(1), (d * u).sum(1))       # 0 at the back, +-pi in front
     n = np.round(2 * np.pi * rref / QUILT_W)
     c = (th + np.pi) / (2 * np.pi) * n                    # channel coordinate (whole channels round)
-    ch = np.floor(c); fr = c - ch
     along = (d * ax).sum(1)
+    # uneven widths: the channel coordinate warped by a slow noise of itself (monotone: slope < 1), wandering along
+    c = c + 0.38 * vnoise3(np.c_[c / 2.1, along / 0.35, rref * 7], 1.0, 52)
+    ch = np.floor(c); fr = c - ch
     hsh = ((ch.astype(np.int64) * 2654435761 + (rref * 1000).astype(np.int64) * 97) % 1000) / 1000.0
     lump = 0.75 + 0.35 * vnoise3(np.c_[along / 0.045, ch * 1.7, hsh * 9], 1.0, 43)
     loft = np.sin(np.pi * np.clip(fr, 0, 1)) ** 0.7 * (0.8 + 0.4 * hsh) * lump
+    # worn flat in patches (the padding compacted where it rubs), and pressed under the straps and belt
+    worn = np.clip((vnoise3(P, 0.08, 53) + 0.45 * vnoise3(P, 0.03, 54) - 0.1) / 0.5, 0, 1)
+    loft = loft * (1 - 0.75 * worn)
+    if press is not None:
+        loft = loft * (1 - 0.85 * press)
     stitch = 1 - np.clip(np.minimum(fr, 1 - fr) * QUILT_W / 0.0012, 0, 1)
     crease = np.sin(along / 0.011 + 3 * vnoise3(P, 0.03, 41)) * bend
     if shade:  # the padding's loft for the shader's groove shade: 0 down in the stitch line, 1 on the loft's top
@@ -270,7 +304,7 @@ def height(P, N, c, q=None):
         v += fine[1] * vnoise3(p, fine[0], 11)
         v += broad[1] * vnoise3(p, broad[0], 12) + 0.5 * broad[1] * vnoise3(p, broad[0] * 0.43, 13)
         if k == QUILT and q is not None:
-            v += quilt_cells(p, q[0][m], q[1][m], q[2][m], q[3][m])
+            v += quilt_cells(p, q[0][m], q[1][m], q[2][m], q[3][m], q[4][m])
         h[m] = v
     return h
 
@@ -296,7 +330,13 @@ def detail(f, cls, eps=0.0004):
             d = jp[f"{a1}_{side}"] - jp[f"{a0}_{side}"]
             ax[s & sel] = d / np.linalg.norm(d); ctr[s & sel] = jp[f"{a0}_{side}"]; rref[s & sel] = 0.06
     bend = np.clip(1 - np.abs(arm - 1.0) / 0.22, 0, 1) * (arm > 0)
-    q = (ax, ctr, rref, bend)
+    # the straps' and belt's press on the padding: near any leather in 3D
+    lp = f["P"][have][c == LEATHER]
+    press = np.zeros(len(P))
+    if len(lp):
+        dd, _ = cKDTree(lp[::3]).query(P[c == QUILT], distance_upper_bound=0.08)
+        press[c == QUILT] = np.clip((0.05 - np.minimum(dd, 0.08)) / 0.035, 0, 1)
+    q = (ax, ctr, rref, bend, press)
     out = np.zeros(have.shape + (2,), np.float32)
     dx = (height(P + eps * t, N, c, q) - height(P - eps * t, N, c, q)) / (2 * eps)
     dy = (height(P + eps * b, N, c, q) - height(P - eps * b, N, c, q)) / (2 * eps)
@@ -308,7 +348,18 @@ def detail(f, cls, eps=0.0004):
     pv = np.clip(0.5 + 0.5 * vnoise3(P, 0.035, 21) + 0.25 * vnoise3(P, 0.012, 22), 0, 1)
     m = c == QUILT  # (Warden 6 r3: on the quilting, the padding's loft: the shader shades its stitch grooves)
     if m.any():
-        pv[m] = quilt_cells(P[m], ax[m], ctr[m], rref[m], bend[m], shade=True)
+        pv[m] = quilt_cells(P[m], ax[m], ctr[m], rref[m], bend[m], press[m], shade=True)
+    # (Warden 7) the tabard: a broad fade (sun and river, uneven: 1 most faded); the iron: its convexity (0.5 flat,
+    #  1 a worn convex edge, 0 a recess), from the mesh's curvature over the iron's own spread
+    m = c == TABARD
+    if m.any():
+        fd = 0.5 + 0.45 * vnoise3(P[m], 0.16, 61) + 0.3 * vnoise3(P[m], 0.055, 62) + 0.12 * vnoise3(P[m], 0.018, 63)
+        pv[m] = np.clip(fd, 0, 1)
+    m = c == IRON
+    if m.any():
+        cv = f["curv"][have][m]
+        sc = max(np.percentile(np.abs(cv), 90), 1e-6)
+        pv[m] = np.clip(0.5 + 0.5 * cv / sc, 0, 1)
     puff[have] = pv
     return out, puff
 
@@ -346,6 +397,39 @@ def fill3d(cls, f, cell=0.05, frac=0.5):
     return out
 
 
+def body_extras(pkg, f, cls, size):
+    """Warden 7: the body's wet_generated.png B and A (zero from warden_wet_maps.py: they were the old TRELLIS head's
+    beard and face), per texel at this map's size, R and G kept (resampled):
+      B  the beard's drip: where his beard's tips (beard.glb, same bind) touch the tabard, and the run below them
+      A  wet streaks: thin vertical runs (3D noise stretched along y, 0.5 = none), the iron's and the cloth's"""
+    have = f["have"]; P = f["P"][have]
+    B = np.zeros(len(P), np.float32)
+    bg = os.path.join(pkg, "beard.glb")
+    if os.path.exists(bg):
+        g = Glb(bg)
+        bp = g.acc(g.j["meshes"][0]["primitives"][0]["attributes"]["POSITION"]).astype(float)
+        tips = bp[bp[:, 1] < bp[:, 1].min() + 0.1]
+        dd, k = cKDTree(tips).query(P, distance_upper_bound=0.3)
+        near = np.clip((0.06 - np.minimum(dd, 0.3)) / 0.04, 0, 1)
+        # the run below: under the tips' footprint (x, z near), down 0.16 m, ragged
+        lo = tips[:, 1].min()
+        dxz, _ = cKDTree(tips[:, [0, 2]]).query(P[:, [0, 2]], distance_upper_bound=0.3)
+        under = np.clip((0.05 - np.minimum(dxz, 0.3)) / 0.03, 0, 1) * np.clip(1 - (lo - P[:, 1]) / 0.16, 0, 1) * (P[:, 1] < lo + 0.02)
+        under *= np.clip(0.6 + 0.8 * vnoise3(np.c_[P[:, 0] / 0.012, P[:, 1] / 0.2, P[:, 2] / 0.012], 1.0, 72), 0, 1)
+        B = np.clip(np.maximum(near, under), 0, 1).astype(np.float32)
+    A = np.clip(0.5 + 0.9 * vnoise3(np.c_[P[:, 0] / 0.007, P[:, 1] / 0.14, P[:, 2] / 0.007], 1.0, 71)
+                + 0.3 * vnoise3(P, 0.05, 73), 0, 1).astype(np.float32)
+    ext = np.zeros(have.shape + (2,), np.float32); ext[have] = np.c_[B, A]
+    ext = dilate(ext, have)
+    wp = os.path.join(pkg, "wet_generated.png")
+    w = Image.open(wp).convert("RGBA")
+    rg = np.asarray(w.resize((size, size), Image.BILINEAR) if w.size != (size, size) else w, np.uint8)[..., :2]
+    out = np.zeros((size, size, 4), np.uint8); out[..., :2] = rg
+    out[..., 2:4] = np.clip(np.round(ext * 255), 0, 255).astype(np.uint8)
+    Image.fromarray(out, "RGBA").save(wp)
+    print(f"wet_generated.png: B beard drip {(B > 0.5).mean():.4f} of texels, A streaks mean {A.mean():.2f} ({size})")
+
+
 def dilate(cls, have):
     _, (iy, ix) = ndimage.distance_transform_edt(~have, return_indices=True)
     return cls[iy, ix]
@@ -371,6 +455,7 @@ def main():
     out[..., 1] = np.clip(np.round(hgt / 2.0 * 255), 0, 255).astype(np.uint8)
     out[..., 2:4] = np.clip(np.round((d * 0.5 + 0.5) * 255), 0, 255).astype(np.uint8)
     Image.fromarray(out, "RGBA").save(os.path.join(a.pkg, "id_generated.png"))
+    body_extras(a.pkg, f, cls, a.size)
     cov = f["have"]
     print("id_generated.png:", ", ".join(f"{n} {((cls == i) & cov).sum() / cov.sum():.3f}" for i, n in enumerate(NAMES)))
     if a.debug:

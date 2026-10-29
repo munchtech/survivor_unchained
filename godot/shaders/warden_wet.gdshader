@@ -5,7 +5,8 @@
 // dark kept, its hue pulled to the class's), value, roughness, metal, specular and weave strength; the classes are
 // blended over the 4 nearest texels so their edges don't step. Wetness is by height: soaked dark from the hem to the
 // thigh, drier toward the shoulders. On top, the data map (tools/assets/warden_wet_maps.py: R silt, G occlusion,
-// B beard, A face): a ragged silt tide line at the shins, the hood's inside dark, the face deep in it.
+// B the beard's drip, A wet streaks: warden_id_map.py's body_extras(); the old TRELLIS head's beard and face are gone):
+// a ragged silt tide line at the shins, the hood's inside dark, the beard's drip on the tabard, wet runs on the iron.
 // iron = 1: the base's bare fingers inside his gauntlet drawn as the gauntlet's black river-grown iron.
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque;
@@ -31,10 +32,12 @@ uniform float debug_view = 0.0; // 1: the classes in flat colours (WARDEN_WET="d
 const vec3 cls_color[7] = { vec3(0.13, 0.145, 0.19), vec3(0.08, 0.20, 0.33), vec3(0.095, 0.092, 0.088), vec3(0.24, 0.13, 0.07),
 	vec3(0.30, 0.30, 0.305), vec3(0.42, 0.38, 0.30), vec3(0.5, 0.45, 0.4) };
 const float cls_colmix[7] = { 0.8, 0.85, 0.95, 0.25, 1.0, 0.5, 0.0 };
-const float cls_value[7] = { 0.55, 1.1, 0.3, 0.85, 1.0, 0.4, 0.85 };
-const float cls_rough[7] = { 0.88, 0.8, 0.9, 0.6, 0.42, 0.7, 0.7 };
-const float cls_metal[7] = { 0.0, 0.0, 0.0, 0.0, 0.75, 0.0, 0.0 };
-const float cls_spec[7] = { 0.15, 0.2, 0.1, 0.35, 0.5, 0.2, 0.2 };
+const float cls_value[7] = { 0.55, 1.1, 0.24, 0.85, 0.8, 0.4, 0.85 };
+const float cls_rough[7] = { 0.88, 0.88, 0.92, 0.6, 0.5, 0.7, 0.7 };
+const float cls_metal[7] = { 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.0 };
+const float cls_spec[7] = { 0.15, 0.12, 0.08, 0.35, 0.5, 0.2, 0.2 };
+// (Warden 7 judge: the tabard read as satin, the quilting as a puffer: both matte however soaked, their wet only darker)
+const float cls_matte[7] = { 0.0, 1.0, 1.0, 0.0, 0.0, 0.6, 0.0 };
 const float cls_detail[7] = { 0.7, 0.55, 1.0, 0.35, 0.3, 0.3, 0.0 };   // the baked detail normal's strength
 const float cls_wet[7] = { 1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 0.0 };       // how much the soak shows
 uniform float rough_var = 0.35;  // the atlas roughness's variation kept around the class's
@@ -54,18 +57,35 @@ uniform float soak_spec = 0.32;  // the soaked cloth's specular
 // the atlas at the source; the ID map's channels lead): the ID map's low bits are its padding's loft (0 in a stitch line)
 uniform float quilt_flat = 0.0;      // how far the quilting's paint is flattened to its blur (the atlas is evened now)
 uniform float quilt_atlas = 0.0;     // the sculpt's waffle in the atlas normal, kept on the quilting
-uniform float quilt_groove = 0.5;    // the stitch grooves' shade (the loft's bottom x 1 - this)
+uniform float quilt_groove = 0.35;   // the stitch grooves' shade (the loft's bottom x 1 - this)
 uniform float quilt_detail = 1.4;    // the baked channels + linen weave's strength on the quilting
-uniform float quilt_rough_min = 0.8; // wet linen stays matte (no tight highlight even soaked)
+uniform float quilt_rough_min = 0.86; // wet linen and the tabard stay matte (no tight highlight even soaked)
+// the tabard (Warden 7 judge): a faded blue, sun- and river-faded unevenly (the ID map's low bits on it: its fade), the
+// lower third wet-dark to a ragged line, mud and silt at the hem, a darker wet run where the beard's tips touch it
+uniform vec3 tabard_deep : source_color = vec3(0.17, 0.26, 0.46);
+uniform vec3 tabard_faded : source_color = vec3(0.37, 0.41, 0.47);
+uniform float tabard_value = 0.95;
+uniform float tabard_wet_lo = 0.58;  // bind height (m): wet-dark below
+uniform float tabard_wet_hi = 0.74;
+uniform float tabard_wet_dark = 0.55;
+uniform float tabard_hem = 0.47;     // mud and silt below this, to the hem (~0.34 m)
+uniform vec3 mud_color : source_color = vec3(0.17, 0.145, 0.11);
+uniform bool body_data = false;     // WardenLook: the body's data map (its B, A: the beard's drip, wet streaks)
+uniform float face_dark : hint_range(0.0, 1.0) = 0.22;   // (no data map: the hood's old darkening, kept)
+uniform float beard_drip_dark = 0.6; // the data map's B on the body: the beard's drip
+// the iron (Warden 7 judge: too clean): rough patches, pits, rust in the recesses (the ID map's convexity, the atlas's
+// crevices), its convex edges worn bright, wet runs down it (the data map's A)
+uniform vec3 rust_deep : source_color = vec3(0.24, 0.11, 0.05);
+uniform float rust_amount : hint_range(0.0, 1.0) = 0.8;
+uniform float edge_wear = 0.9;
+uniform float pit_amount = 0.5;
+uniform float streak_amount = 0.7;
 // the iron's grime: dark against its blurred surroundings in the atlas (the crevices), dull and black-brown
 uniform vec3 grime_color : source_color = vec3(0.035, 0.03, 0.026);
 uniform float grime_amount : hint_range(0.0, 1.0) = 0.85;
 uniform float grime_from = 0.05;
 uniform float grime_to = 0.35;
-uniform float beard_dark : hint_range(0.2, 1.0) = 0.62;  // the beard on top of the wet pass
-uniform float beard_rough = 0.32;
 // shadow in the hood
-uniform float face_dark : hint_range(0.0, 1.0) = 0.22;   // the face's base colour kept, deep in the hood
 uniform float occ_dark : hint_range(0.0, 1.0) = 0.45;    // at full occlusion (the hood's inside)
 uniform float occ_from = 0.8;
 uniform float occ_to = 1.0;
@@ -100,6 +120,7 @@ void fragment() {
 		vec3 a = texture(albedo_tex, UV).rgb;
 		vec4 mr = has_mr ? texture(mr_tex, UV) : vec4(1.0, 0.8, 0.0, 1.0);
 		vec4 d = texture(data_tex, UV);
+		vec2 dx = body_data ? d.ba : vec2(0.0, 0.5); // the body's beard drip and wet streaks
 		// the class weights: the 4 nearest ID texels, bilinear
 		float wc[7] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 		float puff = 0.5;
@@ -125,8 +146,13 @@ void fragment() {
 		}
 		vec3 ccol = vec3(0.0);
 		float cmix = 0.0, cval = 0.0, crough = 0.0, cmetal = 0.0, cspec = 0.0, cdet = 0.0, cwet = 0.0;
+		// (the tabard's own colour by its fade; the iron's convexity: 0.5 where it is not iron)
+		float fade = smoothstep(0.2, 0.85, puff);
+		vec3 tab = mix(tabard_deep, tabard_faded, fade);
+		float cmatte = 0.0;
 		for (int c = 0; c < 7; c++) {
-			ccol += wc[c] * pow(cls_color[c], vec3(2.2));
+			ccol += wc[c] * (c == 1 ? tab : pow(cls_color[c], vec3(2.2)));
+			cmatte += wc[c] * cls_matte[c];
 			cmix += wc[c] * cls_colmix[c];
 			cval += wc[c] * cls_value[c];
 			crough += wc[c] * cls_rough[c];
@@ -142,6 +168,7 @@ void fragment() {
 		float la_q = mix(la, max(dot(textureLod(albedo_tex, UV, 5.0).rgb, LUM), 1e-4), quilt_flat * wc[2]);
 		la_q *= mix(1.0, mix(1.0 - quilt_groove, 1.0, sqrt(clamp(puff, 0.0, 1.0))), wc[2]);
 		vec3 b = mix(a * (la_q / max(la, 1e-4)), ccol * (la_q / max(dot(ccol, LUM), 1e-4)), cmix) * cval;
+		b *= mix(1.0, tabard_value * (0.78 + 0.4 * fade), wc[1]);
 		// the soak by height: through below the thigh, damp toward the shoulders
 		float hy = idl.g * 2.0;
 		float soak = has_id ? mix(soak_floor, 1.0, 1.0 - smoothstep(soak_lo, soak_hi, hy)) * cwet : 0.0;
@@ -152,34 +179,66 @@ void fragment() {
 		float rough = clamp(crough + (mr.g - 0.6) * rough_var, 0.3, 0.97);
 		rough = clamp(mix(rough, rough * soak_rough, soak), 0.3, 0.95);
 		float spec = mix(max(cspec, wet_spec), max(cspec, soak_spec), soak);
-		// the quilting: matte however soaked
-		rough = mix(rough, max(rough, quilt_rough_min), wc[2]);
-		spec = mix(spec, cspec, wc[2]);
+		// the quilting and the tabard: matte however soaked
+		rough = mix(rough, max(rough, quilt_rough_min), cmatte);
+		spec = mix(spec, cspec, cmatte);
+		// the tabard: its lower third wet-dark to a ragged line, the hem's mud and silt, the beard's drip
+		float rag = (dx.y - 0.5) * 0.12 + (puff - 0.5) * 0.1;
+		float twet = (1.0 - smoothstep(tabard_wet_lo, tabard_wet_hi, hy + rag)) * wc[1];
+		w *= mix(1.0, tabard_wet_dark, twet);
+		rough = mix(rough, rough - 0.06, twet);
+		float hem = (1.0 - smoothstep(tabard_hem - 0.08, tabard_hem, hy + rag * 0.8)) * wc[1];
+		hem *= 0.55 + 0.45 * smoothstep(0.3, 0.7, dx.y);
+		w = mix(w, mud_color * (0.7 + 0.5 * puff), hem * 0.85);
+		rough = mix(rough, 0.93, hem);
+		float drip = dx.x * (1.0 - wc[4]);
+		w *= mix(1.0, beard_drip_dark, drip);
+		rough = mix(rough, min(rough, 0.72), drip);
+		spec = mix(spec, max(spec, 0.22), drip);
+		// the iron: rough patches, pits, rust in the recesses, worn convex edges, wet runs
+		float cvx = mix(0.5, puff, wc[4]);
+		float pit = smoothstep(0.55, 0.8, vnoise(UV * 1600.0)) * smoothstep(0.35, 0.75, vnoise(UV * 220.0 + 3.0));
+		float rpatch = vnoise(UV * 140.0 + 11.0);
+		float recess = max(smoothstep(0.52, 0.28, cvx), smoothstep(grime_from, grime_to * 0.8, (la_b - la) / la_b));
+		float bloom = smoothstep(0.55, 0.8, rpatch) * smoothstep(0.4, 0.7, vnoise(UV * 45.0 + 5.0)); // oxide patches
+		float rust = clamp(recess * (0.6 + 0.4 * rpatch) + bloom * 0.7 + pit * 0.5, 0.0, 1.0) * rust_amount * wc[4];
+		float edge = smoothstep(0.72, 0.95, cvx) * edge_wear * wc[4] * (1.0 - rust);
+		float stre = smoothstep(0.6, 0.82, dx.y) * streak_amount * wc[4];
+		w = mix(w, w * (0.75 + 0.5 * rpatch), wc[4]);
+		w *= mix(1.0, 0.6, pit * pit_amount * wc[4]);
+		w = mix(w, rust_deep * (0.6 + 0.8 * vnoise(UV * 600.0)), rust);
+		w = mix(w, vec3(0.16, 0.16, 0.165), edge);
+		w *= mix(1.0, 0.7, stre);
+		rough = mix(rough, 0.62 + (rpatch - 0.5) * 0.4, wc[4]);
+		rough = mix(rough, 0.9, max(rust, pit * pit_amount * wc[4]));
+		rough = mix(rough, 0.42, edge);
+		rough = mix(rough, 0.22, stre);
+		float rmetal = 1.0 - rust;
 		// the iron's crevices: grime (dark in the atlas against its blurred surroundings), dull, not metal
 		float grime = smoothstep(grime_from, grime_to, (la_b - la) / la_b) * wc[4] * grime_amount;
 		w = mix(w, grime_color, grime);
 		rough = mix(rough, 0.92, grime);
 		spec = mix(spec, 0.2, grime);
-		// the beard: darker again, ropey wet sheen
-		w *= mix(1.0, beard_dark, d.b);
-		rough = mix(rough, beard_rough, d.b);
-		// deep in the hood: the face mostly lost, the hood's inside dark
+		// deep in the hood: the hood's inside dark (and without a data map, the default texture's alpha 1 through the
+		//  old face term: the hood's judged look, kept)
 		float occ = smoothstep(occ_from, occ_to, d.g);
-		w *= mix(1.0, occ_dark, occ) * mix(1.0, face_dark, d.a);
-		spec *= mix(1.0, 0.35, max(occ, d.a));
+		float legacy = body_data ? 0.0 : d.a;
+		w *= mix(1.0, occ_dark, occ) * mix(1.0, face_dark, legacy);
+		spec *= mix(1.0, 0.35, max(occ, legacy));
 		// the silt: below the tide line the cloth dries dull and pale with river mud, the line itself a dark band
-		float silt = d.r * silt_amount;
+		// (the boots: the mud patchy on them, the leather kept wet under it)
+		float silt = d.r * silt_amount * (1.0 - wc[3] * (0.75 - 0.55 * smoothstep(0.35, 0.7, dx.y)));
 		float band = clamp(d.r * (1.0 - d.r) * 4.0, 0.0, 1.0);
 		band = band * band * band_amount;
 		w = mix(w, mix(vec3(dot(w, LUM)), w, 0.5) * 0.6 + silt_color * 0.4, silt);
-		rough = mix(rough, 0.9, d.r);
-		spec = mix(spec, 0.3, d.r);
+		rough = mix(rough, 0.9, d.r * (1.0 - 0.7 * wc[3]));
+		spec = mix(spec, 0.3, d.r * (1.0 - wc[3]));
 		w = mix(w, band_color, band);
 		w *= value_mul;
 		ALBEDO = w;
 		RIM = wool_sheen * wc[0];
 		RIM_TINT = wool_sheen_tint;
-		METALLIC = cmetal * (1.0 - grime);
+		METALLIC = cmetal * (1.0 - grime) * rmetal;
 		ROUGHNESS = rough;
 		SPECULAR = spec;
 		// the atlas's normal (the quilting's puffs each their own height) + the class's baked weave/grain/dents

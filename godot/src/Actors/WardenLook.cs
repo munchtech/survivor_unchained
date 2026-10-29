@@ -64,6 +64,7 @@ public static class WardenLook
                         w.SetShaderParameter("has_mr", src.RoughnessTexture != null);
                         // (the hood: no data map, the body's is not in its UVs)
                         if ((key == "head" ? head : key.StartsWith("hood") ? null : body) is { } d) w.SetShaderParameter("data_tex", d);
+                        if (key == "generated" && body != null) w.SetShaderParameter("body_data", true);
                         if ((key.StartsWith("hood") ? hoodId : key == "generated" ? id : null) is { } idm)
                         {
                             w.SetShaderParameter("id_near", idm);

@@ -47,9 +47,13 @@ uniform float lamp_on : hint_range(0.0, 1.0) = 1.0;      // BossViews: his lamp 
 uniform float lamp_fill : hint_range(0.0, 8.0) = 4.0;
 uniform float lamp_down : hint_range(0.0, 2.0) = 0.9;      // how far below the view line the lamp sits
 uniform float lamp_power : hint_range(0.5, 8.0) = 3.0;     // the falloff across the face (higher: only what faces it)
-uniform float lamp_glint : hint_range(0.0, 8.0) = 4.0;     // the eyes' highlight
+// (Warden 7 judge: the lamp's fill carries no specular: its glints made chalky spots in the sockets in C02 s5; the
+//  glint terms stay, off)
+uniform float lamp_glint : hint_range(0.0, 8.0) = 0.0;     // the eyes' highlight
 uniform float lamp_glint_power = 80.0;
-uniform float lamp_wet_glint : hint_range(0.0, 4.0) = 0.3; // the wet skin's (nose tip, cheekbones, lids) small sheen
+uniform float lamp_wet_glint : hint_range(0.0, 4.0) = 0.0; // the wet skin's (nose tip, cheekbones, lids) small sheen
+// the normal map's wrinkles and creases (Warden 7 judge: at full strength they read as bark in C03 s1)
+uniform float normal_strength : hint_range(0.0, 1.0) = 0.72;
 
 const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
 
@@ -76,19 +80,21 @@ void fragment() {
 	ROUGHNESS = mix(rough, eye_rough, eye);
 	SPECULAR = mix(mix(skin_spec, wet_spec, wet), eye_spec, eye);
 	METALLIC = 0.0;
-	if (has_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;
+	if (has_normal) { NORMAL_MAP = texture(normal_tex, UV).rgb; NORMAL_MAP_DEPTH = normal_strength; }
 	if (lamp_fill > 0.0 || lamp_glint > 0.0) {
 		vec3 down = normalize((VIEW_MATRIX * vec4(0.0, -1.0, 0.0, 0.0)).xyz);
 		vec3 L = normalize(VIEW + lamp_down * down);
 		vec3 n = NORMAL;
 		if (has_normal) {
 			vec3 t = texture(normal_tex, UV).rgb * 2.0 - 1.0;
+			t.xy *= normal_strength;
 			n = normalize(TANGENT * t.x + BINORMAL * t.y + NORMAL * t.z);
 		}
 		float w = pow(clamp(dot(n, L), 0.0, 1.0), lamp_power);
 		vec3 h = normalize(L + VIEW);
 		float g = pow(clamp(dot(n, h), 0.0, 1.0), lamp_glint_power);
 		EMISSION = lamp_on * lamp_colour * (a * lamp_fill * w + g * (lamp_glint * eye + lamp_wet_glint * wet * (1.0 - eye)));
+		// (the fill is diffuse only: the sky's specular is not doubled where the lamp lights the face)
 	}
 	if (debug_view > 0.5) {
 		vec3 dc = debug_view > 1.5 ? vec3(d.a) : vec3(d.r * 2.0 - 0.5, d.g, d.b);
