@@ -79,10 +79,10 @@ def glow(P, mask_gen, kind):
         plume = np.exp(-((X - cx) / (55 * s)) ** 2) * np.clip((cy + 40 * s - Y) / (cy + 40 * s), 0, 1) ** 0.35 * (Y < cy + 40 * s)
         g = g / g.max() + 0.85 * plume
         return np.clip(g, 0, 1) * 0.95
-    sig = {"lamps": (5, 22, 70), "fire_glow": (8, 35, 110), "reflection_blue": (5, 18, 50), "lamp_warped": (20, 60, 160)}[kind]
+    sig = {"lamps": (6, 30, 90), "fire_glow": (8, 35, 110), "reflection_blue": (5, 18, 50), "lamp_warped": (20, 60, 160)}[kind]
     g = sum(nd.gaussian_filter(m, a * s) * wt for a, wt in zip(sig, (1, 2.5, 5)))
     g = g / max(1e-6, np.percentile(g[m > 0.5], 90)) if (m > 0.5).any() else g
-    peak = {"lamps": 0.85, "fire_glow": 0.6, "reflection_blue": 0.8, "lamp_warped": 0.3}[kind]
+    peak = {"lamps": 0.4, "fire_glow": 0.6, "reflection_blue": 0.6, "lamp_warped": 0.3}[kind]
     return np.clip(g * peak, 0, 1)
 
 
@@ -168,7 +168,11 @@ def build(plate):
             alpha = soft(e) * ramp
         else:
             alpha = soft(e)
-        rgba, x0, y0 = P.cutout(P.src(srcs[n]), alpha, opaque)
+        # the part a layer owns is the clean drawing itself; fills only where it runs under nearer layers
+        own = up_alpha(soft(P.M[n], 1.5), P.TW, P.TH)[..., None]
+        base = P.src("clean" if plate in ("p5", "p6") else "pick")
+        rgb = base * own + P.src(srcs[n]) * (1 - own)
+        rgba, x0, y0 = P.cutout(rgb, alpha, opaque)
         ly = dict(name=n, z=zs[n], blend="mix", rgba=rgba, x0=x0, y0=y0, state=None)
         if opaque:
             if plate in ("p5", "p6"):
@@ -203,6 +207,9 @@ def build(plate):
             states.append(("head_up", s, L.wd(plate, f"st_head_up_s{s}.png"), soft(a)))
     st_layers = []
     for k, s, src, a in states:
+        if a.max() < 0.5:
+            print(plate, "state", k, s, "empty cut: no figure found, skipped")
+            continue
         rgba, x0, y0 = P.cutout(P.src(src), a)
         st_layers.append(dict(name=sl[0], z=sl[1], blend="mix", rgba=rgba, x0=x0, y0=y0, state=k, seed=s))
     # glows

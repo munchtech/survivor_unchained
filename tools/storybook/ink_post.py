@@ -51,6 +51,8 @@ def _oklab(rgb):
 
 
 PAL_LAB = _oklab(PAL)
+# the plate-specific inks (dusk rose, river green-black) must win clearly: a night sky is not green
+BIAS = np.array([{"rose": 0.04, "green": 0.08}.get(k, 0.0) if k in ("rose", "green") else 0.0 for k in INKS], np.float32)
 
 
 def quantize(rgb):
@@ -58,10 +60,10 @@ def quantize(rgb):
     h, w, _ = rgb.shape
     flat = rgb.reshape(-1, 3)
     idx = np.empty(len(flat), np.uint8)
-    wgt = np.array([1.25, 1.0, 1.0], np.float32)
+    wgt = np.array([1.25, 1.8, 1.8], np.float32)   # hue counts: blue-gray snow never goes rose
     for s in range(0, len(flat), 1 << 20):
         lab = _oklab(flat[s:s + (1 << 20)])
-        d = (((lab[:, None, :] - PAL_LAB[None]) * wgt) ** 2).sum(-1)
+        d = (((lab[:, None, :] - PAL_LAB[None]) * wgt) ** 2).sum(-1) + BIAS ** 2
         idx[s:s + (1 << 20)] = d.argmin(-1)
     return idx.reshape(h, w)
 
