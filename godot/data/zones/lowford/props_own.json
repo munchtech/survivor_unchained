@@ -119,7 +119,8 @@
  "lamps": {
   "glow-1-0": {
    "color": "#ffa040",
-   "energy": 1.4,
+   "energy": 0.42,
+   "range": 3.2,
    "day": 0.15
   },
   "glow-2-0": {
