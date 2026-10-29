@@ -35,9 +35,13 @@ public static class Atmospheres
         FogColor = "#0b121c", FogDensity = 0.011, Exposure = 1.32, Rim = "#86a4e8", RimStrength = 0.42,
         Grade = NightGrade with
         {
-            Lift = [0.016, 0.024, 0.05], ShadowTint = "#2e4470", HighlightTint = "#ffa34e", TintStrength = 0.3,
+            Lift = [0.024, 0.034, 0.064], ShadowTint = "#2e4470", HighlightTint = "#ffa34e", TintStrength = 0.3,
             Saturation = 1.0, Vibrance = 0.2, Contrast = 1.16, Toe = 0.5,
         },
+        // (Rendering r1, triage judge B1: she was dim in town by night (her ember at 1, Low Ford's 2.2) and the yards off
+        // the lamps black (tnight_01's right half p50 8 of 255): a modest ember, 1.7 (her skin p50 at tnight_00 38 to 47),
+        // the lift 0.016/0.024/0.05 to 0.024/0.034/0.064 (that right half p50 8 to 12))
+        Ember = 1.7,
     };
 
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
@@ -182,7 +186,10 @@ public static class Atmospheres
         KeyColor = "#ffd8a0", KeyIntensity = 6.6, KeyElevation = 28, KeyAzimuth = 330, ShadowStrength = 0.95,
         HemiSky = "#a9a9e5", HemiGround = "#605245",   // (G1 r2: the sky 10% up, shaded grass murky olive; the bounce at half its saturation, #6a4e34 took the mud amber)
         HemiIntensity = 0.7, EnvIntensity = 0.55,
-        Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
+        // (Rendering r1, triage judge C3: the shade read warm brown: the paint shade #403878 at 0.45 to a sky blue #34589a at 0.55;
+        // a cast shadow on the square's cobbles OKLab hue 282 to 266, chroma 2.05 to 2.14; the sunlit stone unchanged, h 60 C 3.1.
+        // (The fill's colour, #a9a9e5 to #8cacec, moved neither.) The brown that remains is the mud decals round the props.)
+        Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade with { PaintShadow = "#34589a", PaintShadowK = 0.55 }, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
     };
 
     /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the
