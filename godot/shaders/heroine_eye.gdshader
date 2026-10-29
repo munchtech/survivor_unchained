@@ -153,6 +153,9 @@ uniform float night_lid = 0.5;
 // faint enough not to light her skin, it puts a small crisp window in each open eye from just above the lens.
 uniform float eye_light_rough = 0.3;
 uniform float eye_light_gain = 1500.0;
+// (round 4: while cine_spec_split is on, a light tagged light_specular 0.31 (SPECULAR_AMOUNT 0.62) puts no sheen on the eye:
+// its sheen comes from its twin in the source's own colour; 0 outside cinematics, as before)
+uniform float cine_spec_split = 0.0;
 // (and her iris lifted by night: green under the fire's orange read near black beside its whites even unshaded,
 // iris 22 of 255 to the whites' 66, where by day it is about half the white)
 uniform float night_iris = 1.0;
@@ -319,7 +322,7 @@ void light() {
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	bool eye_only = abs(SPECULAR_AMOUNT - 31.0) < 0.3 || abs(SPECULAR_AMOUNT - 15.5) < 0.15;
 	if (!eye_only) DIFFUSE_LIGHT += LIGHT_COLOR * (c_ndl * burley / PI) * ATTENUATION;
-	if (c_ndl > 0.0) {
+	if (c_ndl > 0.0 && !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004)) {
 		float rough = eye_only ? eye_light_rough : ROUGHNESS;
 		float a = rough * rough;
 		float da = c_ndh * a;

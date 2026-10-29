@@ -2311,6 +2311,28 @@ public static class People
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
     }
 
+    /// <summary>Face 48 round 4: her skin's and eyes' cine_spec_split (1 in a cinematic while GameCinemaHer's sheen twins are
+    /// on: a light tagged light_specular 0.31 lights them with no sheen; 0: as before, everywhere else).</summary>
+    public static void HerCineSpec(Person p, float on)
+    {
+        if (p.Body != "heroine") return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (eyeShader != null && m.Shader == eyeShader)))
+                    m.SetShaderParameter("cine_spec_split", on);
+    }
+
+    /// <summary>Her gaze (heroine_eye.gdshader's gaze_a and gaze_b averaged: in irises' radii, +x to her left, +y down).</summary>
+    public static Vector2 HerGaze(Person p)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return Vector2.Zero;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader)
+                    return (m.GetShaderParameter("gaze_a").AsVector2() + m.GetShaderParameter("gaze_b").AsVector2()) * 0.5f;
+        return Vector2.Zero;
+    }
+
     /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased
     /// and the iris lifted (HerEyes' night_*), so under the night key her irises read a dark olive, not black.
     /// GameCloseUp sets it each frame while its night light is on her.</summary>

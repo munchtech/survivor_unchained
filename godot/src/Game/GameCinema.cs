@@ -1126,7 +1126,7 @@ public partial class Game
                             if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath == "res://shaders/heroine_eye.gdshader")
                             {
                                 foreach (var key in new[] { "catchlight", "catch_size" })
-                                    if (c.Get(key).ValueKind == JsonValueKind.Number) SetEye(m, key, (float)c.Num(key));
+                                    if (c.Get(key).ValueKind == JsonValueKind.Number) SetEye(m, key, key == "catchlight" && c.Actor == "her" ? HerCatchFloor((float)c.Num(key)) : (float)c.Num(key));   // (Face 48 r4: its floor in a cinematic)
                                 var at = c.Get("catch_at");
                                 if (at.ValueKind == JsonValueKind.Array) SetEye(m, "catch_at", new Vector2((float)at[0].GetDouble(), (float)at[1].GetDouble()));
                             }
