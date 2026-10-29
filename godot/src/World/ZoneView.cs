@@ -243,6 +243,9 @@ public partial class ZoneView : Node3D
         return i;
     }
 
+    /// <summary>A light's shadows on or off (the night Watch's torch).</summary>
+    public void SetShadow(int light, bool on) { if (light >= 0 && light < lights.Count) lights[light].ShadowEnabled = on; }
+
     /// <summary>A light that goes where something carries it.</summary>
     public void MoveLight(int light, Vector3 at)
     {

@@ -45,6 +45,9 @@ SETS = {
     "townbehind": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
     "townbehinddawn": (["--zone", "waystation", "--time", "dawn", "--auto", "idle", "--spots", "-17,6.5;16,-16.4;37.5,8"], 3),
     # (E9d: the town by night: the square, the north street, and the square's trees at the close view: lamps, lit windows, smoke)
+    # the night Watch's round with its lit torch (NPC 17 r3): he starts at n1 and walks the north lane to n2 and back
+    # (x = 0, z -12.5 to -23.5) while she stands by it (spots from t=10 s, every 6 s)
+    "townpatrol": (["--zone", "waystation", "--time", "night", "--auto", "idle", "--folk-watch-at", "n1", "--spots", "2.5,-19;-2.5,-16"], 2),
     "townnight": (["--zone", "waystation", "--time", "night", "--auto", "idle", "--spots", "3,3;0,-26;-7,-7,1,0"], 3),
     "forddawn": (["--zone", "lowford", "--facts", "prologue.woke=true,prologue.done=true", "--auto", "idle", "--spots-clear", "--spots", "-9.0,90.0"], 1),
     # (env lead 9, E4: the wood road by night and by dawn, the living held off: the trees both sides)

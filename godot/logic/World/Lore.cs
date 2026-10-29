@@ -207,6 +207,7 @@ public static class Lore
     {
         public List<FolkLook> Looks = new(), Children = new();
         public FolkLook Watch = new();
+        public Dictionary<string, string>? Packages;
         public List<FolkLine> Lines = new();
     }
 
@@ -225,7 +226,23 @@ public static class Lore
     static Dictionary<string, List<Concern>>? concerns;
 
     public static Dictionary<string, QuestDef> Quests => quests ??= Json.Parse<Dictionary<string, QuestDef>>(Json.ReadContent("quests.json"));
-    static NpcFile N => npcs ??= Json.Parse<NpcFile>(Json.ReadContent("npcs.json"));
+    static NpcFile N => npcs ??= LoadNpcs();
+    static NpcFile LoadNpcs()
+    {
+        var f = Json.Parse<NpcFile>(Json.ReadContent("npcs.json"));
+        // --folk-kit: the named people keep the kit bodies too.
+        if (kitFolk)
+            foreach (var d in f.Npcs.Values.Concat(f.Outsiders.Values))
+                if (d.Person?.Body is { } b && b.StartsWith("npc:")) d.Person.Body = null;
+        return f;
+    }
+    static bool kitFolk;
+    /// <summary>--folk-kit (set once at game start by the game): today's kit people everywhere, for A/B.</summary>
+    public static bool KitFolk { get => kitFolk; set { if (kitFolk != value) { kitFolk = value; npcs = null; } } }
+    /// <summary>Marionette packages for the town's people ("man", "woman", "watch"), or null.</summary>
+    public static Dictionary<string, string>? FolkPackages => F.Packages;
+    /// <summary>The town's people are built from packages (and there are no children).</summary>
+    public static bool PackageFolk => FolkPackages != null && !kitFolk;
     public static Dictionary<string, NpcDef> Npcs => N.Npcs;
     public static Dictionary<string, NpcDef> Outsiders => N.Outsiders;
     public static Dictionary<string, Speaker> Speakers => N.Speakers;
