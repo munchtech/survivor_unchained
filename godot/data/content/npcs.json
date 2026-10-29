@@ -1245,10 +1245,7 @@
     "hairColor": "#2a2422",
     "beard": true,
     "skin": "#946040",
-    "dye": {
-     "under": "#3a3028"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_brannoc"
    },
    "arms": {
     "right": "mace"

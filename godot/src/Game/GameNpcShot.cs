@@ -12,6 +12,7 @@ namespace SurvivorUnchained.Play;
 /// swap: in her place instead and she hidden, so the close-up (--close C --idle-after S) frames it as it frames her
 /// (walk with swap: walking on the spot, three-quarters to the camera). side: a full-body side view instead of chest's
 /// close-up (its own camera 4 m off its flank at hip height, fov 30: knees, hem and feet in frame, for a stride check).
+/// still: plays Idle in place of its own idle (a working idle that turns it off the chest camera).
 /// </summary>
 public partial class Game
 {
@@ -132,6 +133,8 @@ public partial class Game
             var m = NpcPackage.Read(name);
             spec = new PersonSpec { Sex = m?.Sex == "female" ? Rpg.Sex.Female : Rpg.Sex.Male, Body = NpcPackage.Prefix + name };
         }
+        // still: the plain Idle instead of its own (a smith's hammering turns him off the chest camera; his face in talk)
+        if (parts.Contains("still")) idle = "Idle";
         var v = new PersonView(spec, arms, 0.8 * scale) { Name = "ShotNpc" };
         scene.AddChild(v);
         v.Loop(idle);
