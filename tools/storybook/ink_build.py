@@ -61,7 +61,7 @@ class Plate:
             ys, xs = np.nonzero(a > 0.004)
             x0, y0 = max(0, xs.min() - 4), max(0, ys.min() - 4)
             x1, y1 = min(self.TW, xs.max() + 5), min(self.TH, ys.max() + 5)
-        rgb = IP.post(rgb_full[y0:y1, x0:x1], offset=(x0, y0))
+        rgb = IP.post(rgb_full[y0:y1, x0:x1], offset=(x0, y0), light=self.P.get("light", "warm"))
         al = a[y0:y1, x0:x1]
         al = np.where(al < 0.004, 0, al)
         return np.dstack([rgb, al]), x0, y0
@@ -146,6 +146,102 @@ def to_im(a):
     return Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
 
 
+def walk2(P, st_layers):
+    """p6 walk2 from the walk1 pick: the same figure far down by the water, an unlit navy silhouette with a faint
+    cool rim on the river side (no firelight), posted with the paper at its place."""
+    pk = json.load(open(os.path.join(L.HERE, "ink_picks.json"), encoding="utf-8"))["p6"]["walk1"]
+    seed = int(pk.rsplit("_s", 1)[1].split(".")[0])
+    w1 = [d for d in st_layers if d["state"] == "walk1" and d["seed"] == seed][0]
+    cfg = L.P6_WALK2
+    a = w1["rgba"][..., 3]
+    h, w = a.shape
+    nw, nh = max(1, round(w * cfg["scale"])), max(1, round(h * cfg["scale"]))
+    a = np.clip(np.asarray(Image.fromarray(a.astype(np.float32)).resize((nw, nh), Image.LANCZOS)), 0, 1)
+    a = np.pad(a, 6)
+    # walk1's cut is flat on top (its hood ran past the state box): round the hood back on
+    ys, xs = np.nonzero(a > 0.5)
+    top = ys.min()
+    row = np.nonzero(a[top + 3] > 0.5)[0]
+    cx, span = (row.min() + row.max()) / 2, row.max() - row.min()
+    dome = Image.new("L", (a.shape[1], a.shape[0]), 0)
+    rw, rh = 0.36 * span, 0.30 * span
+    ImageDraw.Draw(dome).ellipse([cx - rw, top + 4 - rh, cx + rw, top + 4 + rh], fill=255)
+    pad_top = max(0, int(rh) - top + 2)
+    a = np.pad(a, ((pad_top, 0), (0, 0)))
+    dome = np.pad(nd.gaussian_filter(np.asarray(dome, np.float32) / 255, 0.8), ((pad_top, 0), (0, 0)))
+    a = np.maximum(a, dome)
+    ys, xs = np.nonzero(a > 0.5)
+    fx, fy = cfg["feet"]
+    x0 = round(fx / P.upp - (xs.min() + xs.max()) / 2)
+    y0 = round(fy / P.upp - ys.max())
+    # the rim: the alpha's edge facing the river side, a few px wide, soft
+    sm = nd.gaussian_filter(a, 1.5)
+    gy, gx = np.gradient(sm)
+    dx, dy = cfg["rim_side"]
+    face = np.clip(-(gx * dx + gy * dy) / (np.hypot(gx, gy) + 1e-6), 0, 1)
+    inside = nd.distance_transform_edt(a > 0.5)
+    rim = np.clip(1 - inside / 3.5, 0, 1) * (a > 0.5) * nd.maximum_filter(face, 5) * 0.55
+    rim = nd.gaussian_filter(rim, 0.7)
+    fill = IP.PAL[list(IP.INKS).index(cfg["fill"])] * cfg["fill_k"] + IP.PAL[0] * (1 - cfg["fill_k"])   # near-black navy
+    rc = IP.PAL[list(IP.INKS).index(cfg["rim"])]
+    rgb = fill * (1 - rim[..., None]) + rc * rim[..., None]
+    rgb = IP.post(np.ascontiguousarray(rgb.astype(np.float32)), offset=(x0, y0), light=P.P.get("light", "warm"))
+    a = np.where(a < 0.004, 0, a)
+    return dict(name=w1["name"], z=w1["z"], blend="mix", rgba=np.dstack([rgb, a]), x0=x0, y0=y0, state="walk2", seed=None)
+
+
+def blue_rim(P, layers):
+    """p7: an add-blend pale cage-blue rim along the traveler's hood and shoulder edge facing the lamp (15-30 px, soft);
+    the player fades it in at 2.5 s."""
+    tr = [d for d in layers if d["name"] == "traveler"][0]
+    a = tr["rgba"][..., 3]
+    s = P.TW / 1536
+    lamp = L.load_mask(os.path.join(L.WORK, "p7_sam_hanging_iron_lantern.png"))
+    ly, lx = [v.mean() * P.TW / P.w for v in np.nonzero(lamp & (np.arange(P.h)[:, None] > 0.15 * P.h))]
+    H, W = a.shape
+    Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
+    vx, vy = lx - (X + tr["x0"]), ly - (Y + tr["y0"])
+    n = np.hypot(vx, vy) + 1e-6
+    sm = nd.gaussian_filter(a, 4 * s)
+    gy, gx = np.gradient(sm)
+    face = np.clip((-(gx * vx + gy * vy) / n) / (np.hypot(gx, gy) + 1e-6), 0, 1) ** 1.2
+    face = nd.gaussian_filter(nd.maximum_filter(face, int(9 * s)), 3 * s)
+    inside = nd.distance_transform_edt(a > 0.5)
+    band = np.clip(1 - inside / (20 * s), 0, 1) ** 1.6 * (a > 0.5)
+    yy = (Y + tr["y0"]) / P.TH
+    upper = np.clip((0.56 - yy) / 0.08, 0, 1)            # the hood and shoulders, fading out down the back
+    g = nd.gaussian_filter(band * face * upper, 2.5 * s) * 0.85
+    ys, xs = np.nonzero(g > 0.004)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    c = np.array([0x8a, 0xc8, 0xff], np.float32) / 255
+    rgba = np.dstack([np.broadcast_to(c, (y1 - y0, x1 - x0, 3)), np.clip(g[y0:y1, x0:x1], 0, 1)])
+    return dict(name="traveler", z=tr["z"], blend="add", rgba=rgba, x0=tr["x0"] + x0, y0=tr["y0"] + y0, state="blue_rim", seed=None)
+
+
+def drowned_sheet(P, base_rest, gl, st_layers):
+    """One row per seed: the plate's lower half at rest with that seed's drowned (~1600 wide), + its cut's figure count."""
+    rows = []
+    for d in st_layers:
+        if d["state"] != "drowned":
+            continue
+        bg = base_rest.copy()
+        for g in gl:
+            over(bg, g["rgba"], g["x0"], g["y0"], add=True)
+        over(bg, d["rgba"], d["x0"], d["y0"])
+        im = to_im(bg[P.TH // 2:]).resize((1600, round((P.TH - P.TH // 2) * 1600 / P.TW)), Image.LANCZOS)
+        fig = L.load_mask(L.wd(P.p, f"st_drowned_s{d['seed']}_fig.png"))
+        lab, n = nd.label(fig)
+        cnt = int((nd.sum(fig, lab, range(1, n + 1)) >= 150).sum()) if n else 0
+        label(im, f"drowned seed {d['seed']}   cut components {cnt}")
+        rows.append(im)
+    S = Image.new("RGB", (1600, sum(r.height + 4 for r in rows)), (20, 20, 20))
+    y = 0
+    for r in rows:
+        S.paste(r, (0, y))
+        y += r.height + 4
+    S.save(os.path.join(L.OUT, "sheet_p5_drowned.jpg"), quality=88)
+
+
 def build(plate):
     P = Plate(plate)
     out = os.path.join(L.OUT, plate)
@@ -184,16 +280,16 @@ def build(plate):
     states = []
     sl = P.P["state_layer"]
     if plate == "p5":
-        reg = L.load_mask(L.wd(plate, "state_region.png"))
-        for s in L.SEEDS:
+        for s in L.P5_SEEDS:      # round 2: per-ditch slot inpaint, SAM cut (ink_r2.py)
             st = L.wd(plate, f"st_drowned_s{s}.png")
-            d = np.asarray(Image.open(L.wd(plate, f"st_drowned_s{s}_depth.png")).convert("L")).astype(np.float32)
-            fig = L.figures_by_depth(d, 0.40, ~nd.binary_dilation(reg, iterations=6)) & nd.binary_dilation(reg, iterations=6)
+            fig = L.load_mask(L.wd(plate, f"st_drowned_s{s}_fig.png"))
             states.append(("drowned", s, st, soft(fig)))
     elif plate == "p6":
         person = L.load_mask(os.path.join(L.WORK, "p6_sam_person.png"))
         states.append(("sit", 0, "pick", soft(nd.binary_dilation(person, iterations=1))))
         for k in L.P6_STATES:
+            if k == "walk2":      # round 2: derived from the walk1 pick below, not generated
+                continue
             reg = L.load_mask(L.wd(plate, f"state_{k}.png"))
             for s in L.SEEDS:
                 fig = L.load_mask(L.wd(plate, f"st_{k}_s{s}_person.png")) & reg
@@ -201,10 +297,13 @@ def build(plate):
     elif plate == "p7":
         head = L.load_mask(L.wd(plate, "state_head_up.png"))
         trav = P.M["traveler"]
-        for s in L.SEEDS:
-            fig = L.load_mask(L.wd(plate, f"st_head_up_s{s}_person.png"))
+        if L.P7_HEAD_ROUND == 2:      # round 2 retry (ink_r2.py p7head)
+            head = L.load_mask(L.wd(plate, "state_head_up2.png"))
+        for s in (L.SEEDS if L.P7_HEAD_ROUND else ()):
+            t = "head_up2" if L.P7_HEAD_ROUND == 2 else "head_up"
+            fig = L.load_mask(L.wd(plate, f"st_{t}_s{s}_person.png"))
             a = np.where(head, fig | (trav & ~L.load_mask(os.path.join(L.WORK, "p7_sam_person.png"))), trav)
-            states.append(("head_up", s, L.wd(plate, f"st_head_up_s{s}.png"), soft(a)))
+            states.append(("head_up", s, L.wd(plate, f"st_{t}_s{s}.png"), soft(a)))
     st_layers = []
     for k, s, src, a in states:
         if a.max() < 0.5:
@@ -212,6 +311,10 @@ def build(plate):
             continue
         rgba, x0, y0 = P.cutout(P.src(src), a)
         st_layers.append(dict(name=sl[0], z=sl[1], blend="mix", rgba=rgba, x0=x0, y0=y0, state=k, seed=s))
+    if plate == "p6":
+        st_layers.append(walk2(P, st_layers))
+    if plate == "p7" and L.P7_RIM:
+        st_layers.append(blue_rim(P, layers))
     # glows
     gl = []
     for gname, gz, col in P.P["glows"]:
@@ -231,13 +334,13 @@ def build(plate):
                         pos=[round(ly["x0"] * P.upp, 1), round(ly["y0"] * P.upp, 1)], scale=round(P.upp, 5),
                         size_px=[ly["rgba"].shape[1], ly["rgba"].shape[0]]))
     # ---- checks
-    ref = IP.post(P.src("pick"))
+    ref = IP.post(P.src("pick"), light=P.P.get("light", "warm"))
     IP.save(ref, os.path.join(out, "_posted_whole.png"))
     comp = np.zeros_like(ref)
     for ly in layers:
         over(comp, ly["rgba"], ly["x0"], ly["y0"])
     excl = np.zeros((P.h, P.w), bool)
-    for f in ("remove.png",):
+    for f in ("remove.png", "ghost_fix.png"):      # ghost_fix: round 2's deliberate refill (ink_r2 p5clean)
         if os.path.exists(L.wd(plate, f)):
             excl |= nd.binary_dilation(L.load_mask(L.wd(plate, f)), iterations=4)
     keep = up_alpha((~excl).astype(np.float32), P.TW, P.TH) > 0.99
@@ -245,7 +348,7 @@ def build(plate):
     checks = {"mean_abs_diff_255": round(float(diff.mean()), 3), "p99_abs_diff_255": round(float(np.percentile(diff, 99)), 2),
               "compared_fraction": round(float(keep.mean()), 3), "keys": []}
     base_rest = comp.copy()
-    default = [x for x in st_layers if x["seed"] == L.SEEDS[0] or x["state"] in ("sit",)][:1]
+    default = [x for x in st_layers if x["seed"] == (L.P5_SEEDS if plate == "p5" else L.SEEDS)[0] or x["state"] in ("sit",)][:1]
     allv = sorted(layers + ([d for d in st_layers if d["state"] in ("sit",)] or default) + gl, key=lambda d: -d["z"])
     for g in gl:
         over(comp, g["rgba"], g["x0"], g["y0"], add=True)
@@ -317,7 +420,7 @@ def build(plate):
                 bg = base_rest.copy()
                 for g in gl:
                     over(bg, g["rgba"], g["x0"], g["y0"], add=True)
-                over(bg, d["rgba"], d["x0"], d["y0"])
+                over(bg, d["rgba"], d["x0"], d["y0"], add=d["blend"] == "add")
                 im = to_im(bg[y0:y1, x0:x1]).resize((cwid, ch), Image.LANCZOS)
                 label(im, f"{k} seed {d['seed']}" if d["seed"] else k)
                 sr.paste(im, (j * (cwid + 4), 0))
@@ -328,4 +431,6 @@ def build(plate):
         S.paste(r, (0, y))
         y += r.height + 6
     S.save(os.path.join(L.OUT, f"sheet_{plate}.jpg"), quality=88)
+    if plate == "p5":
+        drowned_sheet(P, base_rest, gl, st_layers)
     print(plate, json.dumps(checks))

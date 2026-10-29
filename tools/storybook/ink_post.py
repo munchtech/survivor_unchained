@@ -38,6 +38,11 @@ LIGHT = np.array([0.925, 0.875, 0.775], np.float32)  # the parchment light: no p
 LUM = np.array([0.2126, 0.7152, 0.0722], np.float32)
 LUM_MAX = float(LIGHT @ LUM)        # lights capped by lightness (the cage blue keeps its hue)
 TINT = np.array([1.0, 0.985, 0.95], np.float32)
+# per-plate light step (the plate config's "light"): "cold" turns the warm lights (parchment, gold, ember, rose) into
+# the cage blue / snow blue-gray by the drawing's lightness, the brightest core a pale blue-white, never warm
+COLD_LIGHT = np.array([0.86, 0.92, 0.97], np.float32)     # the cold plate's cap (pale blue-white)
+COLD_TINT = np.array([0.97, 0.99, 1.0], np.float32)
+COLD_COOL = np.array([0.78, 0.93, 1.08], np.float32)      # the 22% drawing mix: lightness carried on a cool hue
 
 
 def _oklab(rgb):
@@ -98,24 +103,45 @@ def upscale(img, w, h=None):
     return np.asarray(img.convert("RGB").resize((w, h), Image.LANCZOS)).astype(np.float32) / 255
 
 
-def post(rgb, offset=(0, 0)):
+def _cold(idx, rgb):
+    """The cold light step: warm-ink pixels -> snow / cage / ice by the drawing's lightness; the drawing mix cooled."""
+    q = PAL[idx]
+    names = list(INKS)
+    warm = np.isin(idx, [names.index(k) for k in ("parchment", "gold", "ember", "rose")])
+    l = rgb @ LUM
+    ice = COLD_LIGHT
+    to = np.where((l > 0.78)[..., None], ice, np.where((l > 0.45)[..., None], PAL[names.index("cage")], PAL[names.index("snow")]))
+    q = np.where(warm[..., None], to, q)
+    cool = np.where((warm | (l > 0.35))[..., None], np.clip(l[..., None] * COLD_COOL, 0, 1), rgb)   # the dark water keeps its green
+    return q, cool
+
+
+def post(rgb, offset=(0, 0), light="warm"):
     """rgb: float HxWx3 already at the target scale. offset: where its top-left sits in the
-    plate's posted image (px), so a plate's layers share the paper. Returns float HxWx3."""
+    plate's posted image (px), so a plate's layers share the paper. light: the plate's light step
+    ("warm" default, "cold" for p7u). Returns float HxWx3."""
     h, w, _ = rgb.shape
     idx = quantize(rgb)
     idx = np.asarray(Image.fromarray(idx).filter(ImageFilter.ModeFilter(3)))
-    q = PAL[idx]
-    mix = MIX * q + (1 - MIX) * rgb
+    cold = light == "cold"
+    if cold:
+        q, drawing = _cold(idx, rgb)
+    else:
+        q, drawing = PAL[idx], rgb
+    mix = MIX * q + (1 - MIX) * drawing
+    cap = COLD_LIGHT if cold else LIGHT
     fib_t, blo_t = paper()
     fib = _sample(fib_t, offset[0], offset[1], h, w)
     blo = _sample(blo_t, offset[0], offset[1], h, w)
     out = mix * (1 + GRAIN * np.clip(fib, -3, 3)[..., None] + BLOTCH * np.clip(blo, -3, 3)[..., None])
     ink = (mix.mean(-1) < 0.2)
     wear = (ink & (fib + 0.5 * blo > WEAR))[..., None]
-    out = np.where(wear, out * 0.6 + LIGHT * 0.12, out)
-    out = out * TINT + 0.008
+    out = np.where(wear, out * 0.6 + cap * 0.12, out)
+    out = out * (COLD_TINT if cold else TINT) + 0.008
     lum = out @ LUM
-    out = out * np.minimum(1, LUM_MAX / np.maximum(lum, 1e-6))[..., None]
+    out = out * np.minimum(1, float(cap @ LUM) / np.maximum(lum, 1e-6))[..., None]
+    if cold:
+        out = np.minimum(out, cap)
     return np.clip(np.maximum(out, BLACK), 0, 1)
 
 

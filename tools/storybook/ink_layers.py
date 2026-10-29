@@ -113,8 +113,50 @@ PLATES = {
                state_layer=("traveler", 0.95), glows=[("lamp_glare", 1.1, "8ac8ff"), ("reflection_blue", 1.2, "8ac8ff")]),
     "p7u": dict(src="ink_r3/p7u_s47.png", r="r3", target=1920, rest=(1600, 900),
                 cams=[(1600, 900, 1.0, 0)],
-                layers=[("under", 1.0), ("bubbles", 0.9)], state_layer=None, glows=[("lamp_warped", 1.0, "8ac8ff")]),
+                layers=[("under", 1.0), ("bubbles", 0.9)], state_layer=None, glows=[("lamp_warped", 1.0, "8ac8ff")],
+                light="cold"),     # ink_post's cold light step: the lights go cage blue / snow, never parchment
 }
+
+# ---------------------------------------------------------------- round 2 (ink_r2.py)
+# p5 drowned: figures generated as a frieze (P5_FRIEZE, one per seed), SAM-cut, placed one per figure slot (gen px):
+# (centre x, foot y, height); near ones bigger, irregular spacing, where the pick's figures stood
+P5_SEEDS = (11, 23, 47, 202, 303, 505)
+P5_DROWNED_DENOISE = 0.68      # img2img over a painted silhouette init (ink_r2.sketch), kept inside the slots
+P5_DITCHES = {"left": (0, 400, 768, 1088), "right": (1088, 400, 2048, 1088)}
+P5_SLOTS = {
+    "left": [(140, 992, 300), (262, 905, 238), (358, 862, 214), (492, 968, 372), (598, 692, 188), (532, 606, 138),
+             (474, 550, 98), (616, 566, 90)],
+    "right": [(1196, 675, 138), (1296, 742, 206), (1385, 694, 128), (1452, 852, 246), (1560, 962, 312), (1702, 930, 286),
+              (1640, 720, 150), (1918, 1042, 300), (1918, 524, 72)],
+}
+P5_DROWNED_LOCAL = (
+    "Night, a flooded roadside ditch of black water beside a snowy rutted road, carved snow banks and frosted reeds. Standing in the "
+    "ditch: drowned corpses standing upright in the flooded ditch, water to the shins; soaked torn shifts and tunics clinging to thin "
+    "bodies; bare heads, long wet hair plastered flat and hanging over the face in strands, river weed; pale dead faces and hands "
+    "catching the moonlight; arms hanging slack; heads tilted, every face turned toward the road; motionless. No hoods, no hats, no "
+    "coats, no cloaks.")
+P5_FRIEZE = (
+    "Night, cold moonlight. Seven drowned dead stand far apart in a row, widely spaced with wide black gaps between them, each "
+    "figure full length from head to shins, against a flat solid black background, standing in black water to the shins. Grim "
+    "drowned corpses standing upright, every one different: gaunt and thin, soaked torn ragged shifts and tunics hanging in shreds "
+    "and clinging to their bodies; bare heads, long wet hair plastered flat and hanging over the face in strands, river weed; "
+    "pale dead faces with dark hollow eyes and slack mouths, pale dead hands catching the moonlight; arms hanging slack; heads "
+    "tilted and drooping at odd angles, all turned to the left; varied heights, one stooped, one leaning; motionless. Cold blue-gray "
+    "moonlight, no warm color. No hoods, no hats, no coats, no cloaks.")
+P5_FRIEZE_SIZE = (1920, 1088)
+P5_WATER = 0.10          # the bottom of each figure fades into the ditch water (fraction of its height)
+P5_CLEAN_LOCAL = ("Night, a snowy roadside bank beside a rutted dirt road, a narrow flooded ditch of black water with frosted reeds, "
+                  "snow carved in dim moonlit blue-gray. Empty: nobody, no figures, no people.")
+P5_GHOST_BOX = (1100, 500, 1365, 790)      # gen px: the right ditch's far ghosts (canvas x 1930-2400, y 880-1390)
+# p7 head_up retry: generous hood/head/shoulder/back mask plus room toward the lamp
+P7_HEAD2 = P7.replace("leaning over the water, the face entirely hidden inside the deep hood,",
+                      "the hooded head raised high and turned up toward the hanging blue lamp at the upper right, looking up at it, "
+                      "the hood's edge washed in pale blue light, the face entirely hidden inside the deep hood, the body still "
+                      "kneeling over the water,")
+# p6 walk2: walk1's pick placed far down by the water as an unlit silhouette (canvas units: feet centre, scale vs walk1)
+P7_HEAD_ROUND = 2       # which head_up candidates the build cuts (2: ink_r2 retry; 0: none)
+P7_RIM = False          # True: ship traveler_blue_rim.png (add) instead of a head_up state
+P6_WALK2 = dict(feet=(3500, 1358), scale=0.55, fill="navy", fill_k=0.35, rim="slate", rim_side=(1.0, -0.2))
 
 
 def wd(plate, *a):
