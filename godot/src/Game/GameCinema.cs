@@ -1989,7 +1989,7 @@ public partial class Game
             skinSky = 1; skinEar = 1;
             foreach (int i in sized) g.scene?.View.SetSize(i, 0);
             sized.Clear();
-            foreach (var (hs, was) in swayWas) if (IsInstanceValid(hs)) hs.Amount = was;
+            foreach (var (sw, was) in swayWas) if (IsInstanceValid(sw)) sw.Amount = was;
             swayWas.Clear();
             foreach (var ((em, ek), was) in eyeWas) if (IsInstanceValid(em)) em.SetShaderParameter(ek, was);
             eyeWas.Clear();
