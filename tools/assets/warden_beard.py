@@ -111,7 +111,7 @@ LIPS = (0.0255, 1.5755, 1.5945)   # no roots on the lips: |dx| under this, betwe
 CHIN_FLOOR = 1.528                # no roots under this at the front (inside the hood's opening's bottom, 1.512-1.528)
 MUSTACHE = (0.027, 1.5945)        # the upper lip: |dx| under this, above the lips
 TIP_Y = (1.075, 1.20)             # the tips: at the centre (the belt, at about 1.03-1.05), and at the sides
-LANE = ([0.95, 1.15, 1.35, 1.47, 1.55], [0.52, 0.56, 0.72, 0.9, 1.0])   # the beard's width (of its roots') by height
+LANE = ([0.95, 1.15, 1.35, 1.47, 1.55], [0.48, 0.52, 0.67, 0.86, 1.0])   # the beard's width (of its roots') by height (r5: 0.52-0.9 at r4, the mass 10-15% smaller)
 LAYERS = [
     # name, root spacing, held off, card width, columns, narrowing, shade (depth), points, clump pull, tip jitter
     dict(name="inner", spacing=0.019, off=0.0045, width=(0.036, 0.046), cols=DENSE, narrow=0.45, shade=(0.40, 0.55), K=13, clump=0.15, jit=0.03),
@@ -120,11 +120,11 @@ LAYERS = [
 ]
 MOUSTACHE = dict(spacing=0.0040, off=0.0030, width=(0.010, 0.016), cols=LOCK + DENSE[:3], narrow=0.80, shade=(0.62, 0.95), K=9,
                  length=(0.060, 0.095))
-FINE = dict(off=0.0012, width=(0.005, 0.009), cols=WISP + LOOSE, narrow=0.7, shade=(0.75, 0.95), K=5, length=(0.014, 0.030),
+FINE = dict(off=0.0012, width=(0.005, 0.009), cols=WISP + LOOSE, narrow=0.7, shade=(0.45, 0.65), K=5, length=(0.014, 0.030),
             alpha=(0.45, 0.8))
 LOD1 = dict(every={"inner": 3, "mid": 2, "outer": 2}, K=8, wide=1.7)   # beard.lod1: a share of each layer's guides, wider, fewer points
 SHADOW = dict(every=2, K=6, wide=2.0)        # beard.shadow: every second inner-layer guide
-COLOUR = "#5a5650"                # (r4: #7a7871 read white under the moon on the solid mass) the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
+COLOUR = "#4f4c47"                # (r4: #7a7871 read white under the moon on the solid mass) the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head"]
 
 
@@ -199,7 +199,11 @@ class Package:
         self.hood = None
         if os.path.exists(hood_path):
             _, hp = prims(hood_path)
-            self.hood = next((v for (m, mat), v in hp.items() if mat == "warden_hood_wool" and "lod1" not in m and "shadow" not in m), None)
+            # (r5: the whole hood, its wool, inner face and fringe: the collar's rim and the capelet's tatters are not wool)
+            hv = [v for (m, mat), v in hp.items() if "lod1" not in m and "shadow" not in m]
+            if hv:
+                o_ = np.cumsum([0] + [len(v["P"]) for v in hv])
+                self.hood = dict(P=np.concatenate([v["P"] for v in hv]), F=np.concatenate([v["F"] + o for v, o in zip(hv, o_[:-1])]))
         # the face's collider for the drape (heroine_hair's COLLIDE): dense points over the head and neck
         fp, fn, _ = sample_surface(self.face["P"], self.face["F"], 0.0016, rng)
         self.face_pts, self.face_nrm = fp, fn
@@ -229,6 +233,7 @@ class Package:
         self.drape_nrm = np.vstack([fn, an[~drop]])
         self.drape_face = np.r_[np.ones(len(fp), bool), np.zeros((~drop).sum(), bool)]
         self.front = self.front_map()
+        self.hood_grid = self.grid_front(self.hood["P"], self.hood["F"]) if self.hood is not None else None
         # the body's spine-chain weights (the donor where the beard lies on him)
         bp, bj, bw = [], [], []
         for (m, mat), d in self.body.items():
@@ -264,6 +269,25 @@ class Package:
         Z = ndimage.grey_dilation(Z, size=(3, 3))   # (a little past the folds' crests)
         return dict(xs=xs, ys=ys, Z=Z)
 
+    def grid_front(self, V, F, step=0.003):
+        """The frontmost z of a mesh seen from the front, by (x, y) cell (nan where it is not), over the beard's reach."""
+        P, _, _ = sample_surface(V, F, step / 3.0, np.random.default_rng(6))
+        xs, ys = X0 - 0.27, 0.95
+        ix = np.floor((P[:, 0] - xs) / step).astype(int)
+        iy = np.floor((P[:, 1] - ys) / step).astype(int)
+        nx, ny = int(0.54 / step) + 1, int(0.75 / step) + 1
+        ok = (ix >= 0) & (ix < nx) & (iy >= 0) & (iy < ny)
+        Z = np.full((ny, nx), -np.inf)
+        np.maximum.at(Z, (iy[ok], ix[ok]), P[ok, 2])
+        return dict(x0=xs, y0=ys, step=step, Z=Z)
+
+    def hood_cover(self, Q):
+        """How far (m) the hood's front stands in front of each point (glTF) at its (x, y); -inf where no hood."""
+        g = self.hood_grid
+        ix = np.clip(np.floor((Q[:, 0] - g["x0"]) / g["step"]).astype(int), 0, g["Z"].shape[1] - 1)
+        iy = np.clip(np.floor((Q[:, 1] - g["y0"]) / g["step"]).astype(int), 0, g["Z"].shape[0] - 1)
+        return g["Z"][iy, ix] - Q[:, 2]
+
     def front_z(self, x, y):
         f = self.front
         ix = np.clip((x - f["xs"][0]) / (f["xs"][1] - f["xs"][0]), 0, len(f["xs"]) - 1.001)
@@ -292,6 +316,11 @@ def root_points(pk, rng, spacing, region):
     ok &= ~((adx < 0.05) & (pts[:, 1] < CHIN_FLOOR))
     # (the under-jaw: not deep under the chin towards the throat inside the hood)
     ok &= ~((pts[:, 1] < 1.545) & (pts[:, 2] < 0.035) & (adx < 0.06))
+    # (r5: none where the hood's collar is in front of the skin, seen from the front (under the chin, the jaw's
+    # underside): their locks came out through the collar from behind; the sides under the hood's side walls kept)
+    if pk.hood is not None and region != "edge":
+        cov = pk.hood_cover(pts)
+        ok &= ~((cov > -0.004) & (adx < 0.066) & (pts[:, 1] < 1.565))
     mous = (adx < MUSTACHE[0]) & (pts[:, 1] >= MUSTACHE[1])
     if region == "moustache":
         ok &= mous & (below > 0.0015)
@@ -339,7 +368,7 @@ def comb_dirs(pts, nrm, region, rng):
     return d / np.linalg.norm(d, axis=1)[:, None]
 
 
-def keep_front(pk, Pb, off, below_y=1.545, lane=None, roots_x=None, comb=0.0):
+def keep_front(pk, Pb, off, below_y=1.545, lane=None, roots_x=None, comb=0.0, clr=1.0):
     """Points (Blender frame) below the chin held `off` in front of the front surface, and combed in to the lane."""
     S, K, _ = Pb.shape
     flat = Pb.reshape(-1, 3)
@@ -357,7 +386,7 @@ def keep_front(pk, Pb, off, below_y=1.545, lane=None, roots_x=None, comb=0.0):
     a_, b_ = SIDE_WALL - 0.012, SIDE_WALL + 0.012
     soft = np.where(adx > a_, a_ + (b_ - a_) * np.tanh((adx - a_) / (b_ - a_)), adx)
     flat[:, 0] = X0 + np.sign(flat[:, 0] - X0) * (adx + (soft - adx) * hi)
-    zf = pk.front_z(flat[:, 0], y) + np.repeat(off if np.ndim(off) else np.full(S, off), K)
+    zf = pk.front_z(flat[:, 0], y) + np.repeat(off if np.ndim(off) else np.full(S, off), K) + clear(y) * clr
     zg = -flat[:, 1]
     # (eased in over the last 15 mm above the line: no kink at the chin)
     ease = smoothstep(below_y + 0.015, below_y, y)
@@ -471,7 +500,9 @@ def weights(pk, at_g, arc):
     # (Head on the face and just under the chin; easing to its tip share down the chest)
     # (r1: 1 to 0.12 over 17 cm read 1.44x stretch p99 and splayed cards in C03 s1's head turn; now a longer ramp
     # through the neck, smoothed, and a smaller share at the tip)
-    h = smoothstep(1.33, 1.535, y) * 0.94 + 0.06
+    # (r5: Head 0.64 at y 1.45 swung the beard 4-5 cm into his chest when he looked down (44 mm poke): now Head on the
+    # face and the chin, the throat between, the chest's own below 1.45)
+    h = np.interp(y, HEAD_RAMP[0], HEAD_RAMP[1])
     W = Wd * (1 - h)[:, None]
     W[:, bi["Head"]] += h
     order = np.argsort(-W, axis=1)[:, :4]
@@ -520,7 +551,7 @@ def write(pk, path, parts):
     drop = [i for i, n in enumerate(j["nodes"]) if n.get("name", "").startswith("ford_warden") and n.get("name") != "ford_warden"]
     g.drop_nodes(drop)
     j["meshes"] = []
-    j["images"] = [{"uri": ATLAS_URI, "name": "hair_strands"}, {"uri": MASS_TEX, "name": "beard_mass"}]
+    j["images"] = [{"uri": CARDS_TEX, "name": "beard_cards"}, {"uri": MASS_TEX, "name": "beard_mass"}]
     j["samplers"] = [{"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071},
                      {"magFilter": 9729, "minFilter": 9987, "wrapS": 10497, "wrapT": 33071}]
     j["textures"] = [{"source": 0, "sampler": 0}, {"source": 1, "sampler": 1}]
@@ -531,6 +562,10 @@ def write(pk, path, parts):
          "doubleSided": True},
         {"name": "hair_mass", "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicFactor": 0.0, "roughnessFactor": 0.6},
          "doubleSided": False},
+        {"name": "hair_tie", "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicFactor": 0.0, "roughnessFactor": 0.8},
+         "doubleSided": False},
+        {"name": "hair_weed", "pbrMetallicRoughness": {"baseColorTexture": {"index": 0}, "metallicFactor": 0.0, "roughnessFactor": 0.6},
+         "alphaMode": "MASK", "alphaCutoff": 0.4, "doubleSided": True},
     ]
     arm = j["scenes"][0]["nodes"][0]
     body_node = next(i for i, n in enumerate(j["nodes"]) if n.get("name") == "ford_warden")
@@ -658,19 +693,41 @@ def measure(pk, mesh):
 MASS_TEX = "beard_mass.png"         # the mass's strands (beside beard.glb): the atlas's strands packed solid, tileable across
 MASS_LAYERS = [
     # roots' spacing, centre held off, width and depth at the root (m), sides, colour depth (r), clump share, tip jitter
-    dict(name="inner", spacing=0.024, off=0.0085, width=(0.050, 0.068), depth=(0.011, 0.015), n=5, shade=(0.40, 0.55), clump=0.20, jit=0.035, tip=2.4),
-    dict(name="outer", spacing=0.027, off=0.0185, width=(0.024, 0.036), depth=(0.010, 0.014), n=6, shade=(0.70, 0.92), clump=0.45, jit=0.08, tip=1.7),
+    # (r5: widths and depths 0.87 of r4's (the judge: shrink the mass 10-15%); the inner layer darker (the gaps between
+    # the outer locks show it: 35-45/255 asked); the outer locks waved)
+    dict(name="inner", spacing=0.024, off=0.0085, width=(0.044, 0.059), depth=(0.0096, 0.013), n=5, shade=(0.22, 0.34), clump=0.20, jit=0.035, tip=2.4, wave=0.0015),
+    dict(name="outer", spacing=0.027, off=0.0170, width=(0.021, 0.031), depth=(0.0087, 0.012), n=5, shade=(0.62, 0.92), clump=0.50, jit=0.08, tip=1.7, wave=0.0030),
 ]
 MASS_MOUSTACHE = dict(spacing=0.0072, off=0.0048, width=(0.014, 0.020), depth=(0.0065, 0.0085), n=5, shade=(0.70, 0.95),
                       length=(0.055, 0.085))
 MASS_UV = 0.10                      # metres of a lock's girth per width of the mass texture
 MASS_NORMAL = 0.75                  # the tube's own normal's share (the rest the mass's outward normal: lit as one mass)
-FRINGE = dict(spacing=0.034, off=0.0265, width=(0.009, 0.015), cols=LOCK + WISP + LOOSE[:2], narrow=0.9, shade=(0.85, 1.0), K=11, clump=0.35, jit=0.09)
-STRAYS = dict(n=10, off=0.030, width=(0.004, 0.007), cols=WISP, narrow=0.6, shade=(0.9, 1.0), K=9)
+# (r5: more, thinner cards, longer than the mass at the bottom (strands hanging past its points) and on its outline (the
+# silhouette broken into strands); waved)
+FRINGE = dict(spacing=0.021, off=0.0265, width=(0.0055, 0.010), cols=LOCK + WISP + LOOSE[:2], narrow=0.85, shade=(0.72, 1.0), K=9, clump=0.40, jit=0.09,
+              past=(0.015, 0.075), wave=0.0035)
+OUTLINE = dict(spacing=0.019, off=0.0255, width=(0.0045, 0.008), cols=WISP + LOOSE[:2], narrow=0.75, shade=(0.62, 0.95), K=9, min_dx=0.048, wave=0.004)
+STRAYS = dict(n=16, off=0.030, width=(0.003, 0.0055), cols=WISP, narrow=0.6, shade=(0.8, 1.0), K=9)
+CARDS_TEX = "beard_cards.png"       # (r5: the strand atlas waved, beside beard.glb: the judge asked a wave in the card textures)
+# the mass's clearance off his front (chest, the hood's collar and capelet) by height (r5: the judge, 2-3 cm, for the
+# head's nod: on the skin above the chin, 12 mm at the collar's top)
+CLEAR = ([1.40, 1.47, 1.53, 1.565], [0.024, 0.022, 0.012, 0.0])
+HEAD_RAMP = ([1.40, 1.45, 1.50, 1.535], [0.03, 0.10, 0.40, 1.0])   # Head's share of the skin by height (the rest the chest's)
+# the braids (x at the top and the bottom from the centre line, the braid's y from and to, half-width, one twist's length,
+# the loose tuft below its last band): two at the beard's outer thirds, a thinner third left of the middle (concept A)
+BRAIDS = [dict(x=(0.040, 0.030), y=(1.425, 1.165), R=0.0085, pitch=0.030, tuft=0.050, shade=(0.70, 0.92)),
+          dict(x=(-0.046, -0.035), y=(1.415, 1.190), R=0.0085, pitch=0.030, tuft=0.045, shade=(0.66, 0.88)),
+          dict(x=(-0.009, -0.014), y=(1.360, 1.210), R=0.0060, pitch=0.022, tuft=0.035, shade=(0.62, 0.86))]
+BRAID_SIDES, BRAID_RINGS = 4, 4     # each strand's sides, rings per twist
+# river weed caught in it: thin, stringy, dark olive cards (their own material, hair_weed, dyed by the manifest)
+WEED = dict(clusters=6, per=(2, 4), off=0.003, width=(0.0030, 0.0060), cols=WISP + LOOSE[3:], narrow=0.45, shade=(0.75, 1.0), K=12,
+            length=(0.09, 0.26), wave=0.004)
+WEED_COLOUR = [0.15, 0.18, 0.08]
 LOD1_MASS = dict(n=4, K=7)
 # (the hair shader's uniforms for the beard (NpcPackage.Uniforms): no ash or lift (they cool and lighten a pale grey: blue-
 # white under the moon), less light through it (a wet mass, not a backlit halo), darker wet roots)
-HAIR_UNIFORMS = {"*": {"ash": 0.0, "lift": 0.0, "through": 0.1, "roots": 0.7}, "hair_mass": {"shine": 0.25}}
+HAIR_UNIFORMS = {"*": {"ash": 0.0, "lift": 0.0, "through": 0.1, "roots": 0.85}, "hair_mass": {"shine": 0.35},
+                 "hair_weed": {"colour": WEED_COLOUR, "shine": 0.3, "variation": 0.5, "roots": 0.0}}
 SHADOW_MASS = dict(n=4, K=6)
 
 
@@ -686,18 +743,67 @@ def mass_texture(path, seed=7, W=1024, H=2048):
     for c in DENSE + LOOSE:
         im = Image.fromarray((a[:rows, c * cw:(c + 1) * cw] * 255).astype(np.uint8)).resize((cw, H), Image.LANCZOS)
         cols.append(np.asarray(im).astype(np.float32) / 255)
-    r = np.full((H, W), 0.18, np.float32)
+    r = np.full((H, W), 0.10, np.float32)
     g = np.full((H, W), 0.5, np.float32)
     for L in range(10):
         strip = np.concatenate([cols[i][:, ::(1 if rng.random() < 0.5 else -1)] for i in rng.integers(0, len(cols), W // cw)], 1)
         strip = np.roll(strip, int(rng.integers(0, W)), 1)
-        sh = 0.40 + 0.60 * L / 9
+        strip = wave_tex(strip, rng, amp=10.0, wrap=True)
+        sh = 0.30 + 0.70 * L / 9
         al = strip[..., 3]
         r = r * (1 - al) + strip[..., 0] * sh * al
         g = g * (1 - al) + strip[..., 1] * al
     out = np.dstack([r, g, np.zeros_like(r), np.ones_like(r)])
     Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8)).save(path)
     log(f"mass texture {path}: r mean {r.mean():.2f}")
+
+
+def wave_tex(a, rng, amp=12.0, wrap=False, periods=(4.5, 9.0)):
+    """An image's rows shifted sideways by two sines down its height (strands waved), `amp` pixels; wrapped across."""
+    from scipy import ndimage
+    H, W = a.shape[:2]
+    y = np.arange(H)[:, None]
+    p1, p2 = rng.uniform(*periods), rng.uniform(periods[1], periods[1] * 2.2)
+    sh = amp * (0.75 * np.sin(2 * np.pi * y / H * p1 + rng.uniform(0, 6.28)) + 0.25 * np.sin(2 * np.pi * y / H * p2 + rng.uniform(0, 6.28)))
+    xx = (np.arange(W)[None, :] - sh) % W if wrap else np.clip(np.arange(W)[None, :] - sh, 0, W - 1)
+    yy = np.broadcast_to(y, xx.shape)
+    chans = [ndimage.map_coordinates(a[..., c], [yy, xx], order=1, mode="grid-wrap" if wrap else "nearest") for c in range(a.shape[2])]
+    return np.stack(chans, -1).astype(a.dtype)
+
+
+def card_texture(path, seed=5):
+    """The strand atlas waved column by column (each card's strip its own wave: wet hair's slow S, not ruler lines)."""
+    rng = np.random.default_rng(seed)
+    a = np.asarray(Image.open(ATLAS).convert("RGBA")).astype(np.float32)
+    cw = a.shape[1] // 16
+    out = a.copy()
+    for c in range(16):
+        blk = a[:, c * cw:(c + 1) * cw]
+        # (the column's edges kept clear: shifted with a clamp, its alpha faded in 6 px at each side)
+        w = wave_tex(blk, rng, amp=0.055 * cw)
+        e = np.minimum(np.arange(cw), cw - 1 - np.arange(cw)) / 6.0
+        w[..., 3] *= np.clip(e, 0, 1)[None]
+        out[:, c * cw:(c + 1) * cw] = w
+    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(path)
+    log(f"card texture {path}")
+
+
+def clear(y):
+    return np.interp(y, CLEAR[0], CLEAR[1])
+
+
+def wave_lines(C, amp, rng, axes=(0, 2), lam=(0.045, 0.08), start=(0.06, 0.30)):
+    """Lines (S x K x 3) waved sideways and in depth by a sine along their length (`amp` m, growing from the root)."""
+    S, K, _ = C.shape
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(C, axis=1), axis=2), 1)]
+    f = arc / np.maximum(arc[:, -1:], 1e-6)
+    L = rng.uniform(*lam, S)[:, None]
+    ph = rng.uniform(0, 6.28, S)[:, None]
+    a = amp * rng.uniform(0.6, 1.3, S)[:, None] * smoothstep(start[0], start[1], f)
+    out = C.copy()
+    out[:, :, axes[0]] += a * np.sin(2 * np.pi * arc / L + ph)
+    out[:, :, axes[1]] += 0.45 * a * np.sin(2 * np.pi * arc / (L * 1.3) + ph * 1.7)
+    return out
 
 
 def smooth_lines(P, it=6, keep_root=2):
@@ -745,7 +851,7 @@ def outward(pk, C):
     return n / (np.linalg.norm(n, axis=2)[:, :, None] + 1e-12)
 
 
-def tubes(pk, C, width, depth, n_sides, K, shade, rng, tip_pow=1.7):
+def tubes(pk, C, width, depth, n_sides, K, shade, rng, tip_pow=1.7, root_w=0.82):
     """Tapered wet locks round centre lines (glTF, S x K0 x 3, resampled to K): an ellipse `width` across and `depth`
     deep (S each) at the root, lying flat on him, narrowing to a point; u round the lock (the seam behind it), v root
     to tip; vertex colour r depth, g lock number, a 1. Returns a part dict (pos, nrm, uv, col, tan, idx, at, arc)."""
@@ -760,7 +866,7 @@ def tubes(pk, C, width, depth, n_sides, K, shade, rng, tip_pow=1.7):
     side /= np.linalg.norm(side, axis=2)[:, :, None] + 1e-12
     out = np.cross(side, t)
     f = np.linspace(0, 1, K)
-    prof = (1 - f ** tip_pow) ** 0.85 * (0.82 + 0.18 * smoothstep(0.0, 0.12, f))      # (pointed, a touch narrower at the root)
+    prof = (1 - f ** tip_pow) ** 0.85 * (root_w + (1 - root_w) * smoothstep(0.0, 0.15, f))   # (pointed, narrower at the root)
     dprof = prof * (0.45 + 0.55 * smoothstep(0.0, 0.15, f))                             # (flat on the skin at the root)
     hw = width[:, None] * prof[None] / 2
     hd = depth[:, None] * dprof[None] / 2
@@ -824,7 +930,7 @@ def skin_part(pk, d):
     return d
 
 
-def cut_lines(pk, C, rise=0.004, ahead=0.055):
+def cut_lines(pk, C, rise=0.004, ahead=0.080):
     """Each line (glTF) cut where it first climbs `rise` over the lowest it has been (the drape flung a few up and
     forward), or stands more than `ahead` in front of his front below the chin; K points kept along what is left."""
     S, K, _ = C.shape
@@ -882,7 +988,9 @@ def lock_lines(pk, region, cfg, rng):
         Pb = keep_front(pk, Pb, off * 0.9)
     C = cut_lines(pk, b2g(Pb))
     C = smooth_lines(C, it=8, keep_root=2)
-    need = depth[:, None] * 0.5 * np.ones(C.shape[1])[None] + 0.002
+    need = depth[:, None] * 0.5 * np.ones(C.shape[1])[None] + 0.002 + clear(C[:, :, 1])
+    if cfg.get("wave"):
+        C = wave_lines(C, cfg["wave"], rng)
     C = push_out(pk, C, need)
     return C, width, depth
 
@@ -948,15 +1056,192 @@ def card_part(pk, cs):
     return p
 
 
+# ================= r5: braids, cord bands, river weed =================
+def surface_grid(P, F, step=0.003, spacing=0.0015):
+    """The frontmost z of a mesh (glTF) by (x, y) cell, holes filled from the nearest cell, eased; for laying the braids
+    and the weed on the mass."""
+    from scipy import ndimage
+    Q, _, _ = sample_surface(P, F, spacing, np.random.default_rng(8))
+    x0, y0 = X0 - 0.15, 0.95
+    nx, ny = int(0.30 / step) + 1, int(0.65 / step) + 1
+    ix = np.floor((Q[:, 0] - x0) / step).astype(int)
+    iy = np.floor((Q[:, 1] - y0) / step).astype(int)
+    ok = (ix >= 0) & (ix < nx) & (iy >= 0) & (iy < ny)
+    Z = np.full((ny, nx), -np.inf)
+    np.maximum.at(Z, (iy[ok], ix[ok]), Q[ok, 2])
+    have = np.isfinite(Z)
+    Zf = ndimage.grey_closing(np.where(have, Z, -1.0), size=(3, 3))
+    Zf = np.where(have, Z, np.where(Zf > -1.0, Zf, np.nan))
+    have = np.isfinite(Zf)
+    idx = ndimage.distance_transform_edt(~have, return_distances=False, return_indices=True)
+    Zf = ndimage.gaussian_filter(Zf[tuple(idx)], 1.2)
+    return dict(x0=x0, y0=y0, step=step, Z=Zf, have=ndimage.binary_dilation(have, iterations=2))
+
+
+def grid_z(g, x, y):
+    ix = np.clip((x - g["x0"]) / g["step"], 0, g["Z"].shape[1] - 1.001)
+    iy = np.clip((y - g["y0"]) / g["step"], 0, g["Z"].shape[0] - 1.001)
+    a, b = ix.astype(int), iy.astype(int)
+    fx, fy = ix - a, iy - b
+    Z = g["Z"]
+    return Z[b, a] * (1 - fx) * (1 - fy) + Z[b, a + 1] * fx * (1 - fy) + Z[b + 1, a] * (1 - fx) * fy + Z[b + 1, a + 1] * fx * fy
+
+
+def frames(C):
+    """Tangent, side and outward (toward +z, glTF front) along lines (S x K x 3)."""
+    t = np.gradient(C, axis=1)
+    t /= np.linalg.norm(t, axis=2)[..., None] + 1e-12
+    side = np.cross(t, np.array([0.0, 0.0, 1.0]))
+    side /= np.linalg.norm(side, axis=2)[..., None] + 1e-12
+    out = np.cross(side, t)
+    return t, side, out
+
+
+def braid_lines(pk, grid, b, rng):
+    """A braid's centre line on the mass's front (glTF), its three strands round it (S=3 x K x 3), and its bands' arcs.
+    The strands weave as a three-strand plait (side to side with the twist, over and under at twice it), drawn in from
+    nothing at its top (it grows out of the mass under its first band) and loose below its last band (the tuft)."""
+    (xa, xb), (ya, yb), R, pitch, tuft = b["x"], b["y"], b["R"], b["pitch"], b["tuft"]
+    yend = yb - tuft
+    n = int((ya - yend) * 1.1 / pitch * BRAID_RINGS) + 2
+    s = np.linspace(0, 1, n)
+    y = ya + (yend - ya) * s
+    u = np.clip((ya - y) / (ya - yb), 0, 1)
+    x = X0 + xa + (xb - xa) * u + 0.004 * np.sin(u * 3.0 + rng.uniform(0, 6))
+    zm = grid_z(grid, x, y)
+    zf = pk.front_z(x, y) + clear(y) + R
+    from scipy.ndimage import gaussian_filter1d
+    z = gaussian_filter1d(np.maximum(zm + 0.55 * R, zf), 2.0, mode="nearest")
+    C = np.c_[x, y, z][None]
+    t, side, out = frames(C)
+    arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(C[0], axis=0), axis=1))]
+    L_b = np.interp(yb, y[::-1], arc[::-1])           # the braid's length to its last band
+    ph = 2 * np.pi * arc / pitch + rng.uniform(0, 6.28)
+    grow_in = smoothstep(0.0, 0.035, arc)              # (from nothing at its top)
+    loose = np.clip((arc - L_b) / max(arc[-1] - L_b, 1e-6), 0, 1)
+    ph = np.where(arc > L_b, 2 * np.pi * L_b / pitch + ph[0], ph)   # (no more twist in the tuft)
+    S = []
+    for k in range(3):
+        q = ph + 2 * np.pi * k / 3
+        a_ = 0.52 * R * np.sin(q) * grow_in * (1 + 1.2 * loose)
+        c_ = 0.30 * R * np.sin(2 * q) * grow_in * (1 + 0.5 * loose)
+        S.append(C[0] + side[0] * a_[:, None] + out[0] * c_[:, None] + np.array([0.0, 0.0, 0.0]))
+    bands = [0.018, 0.018 + (L_b - 0.018) * 0.5, L_b]
+    return C[0], np.array(S), bands, arc
+
+
+def band_mesh(C, arc, at_arc, Rw, Rd, length=0.0075, n=8):
+    """A cord band round a braid at arc length `at_arc`: a short swollen ring (glTF), as a tubes() part (material tie)."""
+    i = np.searchsorted(arc, at_arc)
+    i = int(np.clip(i, 1, len(C) - 2))
+    t, side, out = frames(C[None])
+    c, t, side, out = C[i], t[0, i], side[0, i], out[0, i]
+    hs = np.array([-0.5, -0.17, 0.17, 0.5]) * length
+    sc = np.array([0.90, 1.07, 1.07, 0.90])
+    th = 2 * np.pi * np.arange(n + 1) / n
+    V, N, UV = [], [], []
+    for h, k in zip(hs, sc):
+        for j, a in enumerate(th):
+            d = side * np.cos(a) * Rw * k + out * np.sin(a) * Rd * k
+            V.append(c + t * h + d)
+            nn = side * np.cos(a) / Rw + out * np.sin(a) / Rd
+            N.append(nn / np.linalg.norm(nn))
+            UV.append((j / n, (h / length) + 0.5))
+    V, N = np.array(V), np.array(N)
+    q = []
+    for r in range(3):
+        for j in range(n):
+            a_ = r * (n + 1) + j
+            q.append((a_, a_ + 1, a_ + n + 2, a_ + n + 1))
+    q = np.array(q)
+    tri = np.vstack([q[:, [0, 2, 1]], q[:, [0, 3, 2]]])
+    fn = np.cross(V[tri[:, 1]] - V[tri[:, 0]], V[tri[:, 2]] - V[tri[:, 0]])
+    flip = (fn * N[tri[:, 0]]).sum(1) < 0
+    tri[flip] = tri[flip][:, [0, 2, 1]]
+    T = np.cross(N, t)
+    T /= np.linalg.norm(T, axis=1)[:, None] + 1e-12
+    col = np.c_[np.full(len(V), 0.6), np.full(len(V), 0.5), np.zeros(len(V)), np.ones(len(V))]
+    return dict(pos=V, nrm=N, uv=np.array(UV), col=col, tan=np.c_[T, np.ones(len(V))].astype(np.float32), idx=tri,
+                at=np.repeat(c[None], len(V), 0), arc=np.zeros(len(V)), S=1)
+
+
+def braids(pk, grid, rng, lrng):
+    """The braids' strands (mass parts), their cord bands (tie part), and each braid as one tube for the LOD and shadow."""
+    strands, ties, lod = [], [], []
+    for b in BRAIDS:
+        C, S3, bands, arc = braid_lines(pk, grid, b, rng)
+        R = b["R"]
+        K = len(C)
+        w = np.full(3, 1.02 * R)
+        d = np.full(3, 0.86 * R)
+        strands.append(tubes(pk, S3, w, d, BRAID_SIDES, K, b["shade"], rng, tip_pow=7.0))
+        for a_ in bands:
+            ties.append(band_mesh(C, arc, a_, 1.20 * R, 0.98 * R))
+        lod.append(tubes(pk, C[None], np.array([2.1 * R]), np.array([1.6 * R]), 4, 9, b["shade"], lrng, tip_pow=5.0))
+    return cat_parts(strands), cat_parts(ties), cat_parts(lod)
+
+
+def weed_lines(pk, grid, rng):
+    """River weed caught in the beard (Blender frame, for cards): clusters of thin strands from the mass's upper front,
+    falling over it, wandering and waved."""
+    cfg = WEED
+    out = []
+    K = 24
+    for c in range(cfg["clusters"]):
+        y0 = rng.uniform(1.36, 1.53)
+        half = 0.07 * np.interp(y0, LANE[0], LANE[1])
+        x0 = X0 + rng.uniform(-half, half)
+        for k in range(int(rng.integers(cfg["per"][0], cfg["per"][1] + 1))):
+            L = rng.uniform(*cfg["length"])
+            st = np.linspace(0, L, K)
+            xs = x0 + rng.normal(0, 0.005) + np.cumsum(rng.normal(0, 0.0012, K)) + rng.normal(0, 0.012) * (st / L) ** 1.5
+            ys = y0 + rng.normal(0, 0.006) - st * 0.97
+            out.append(np.c_[xs, ys, np.zeros(K)])
+    P = np.array(out)
+    S = len(P)
+    P = wave_lines(P, cfg["wave"], rng, axes=(0, 2), lam=(0.03, 0.06), start=(0.0, 0.15))
+    zm = grid_z(grid, P[..., 0].ravel(), P[..., 1].ravel()).reshape(S, K)
+    zf = (pk.front_z(P[..., 0].ravel(), P[..., 1].ravel()).reshape(S, K) + clear(P[..., 1]) + 0.004)
+    from scipy.ndimage import gaussian_filter1d
+    P[..., 2] = gaussian_filter1d(np.maximum(zm, zf) + 0.0065, 1.5, axis=1, mode="nearest") + P[..., 2]
+    return g2b(P)
+
+
 # ================= main =================
-def tubes_by_length(pk, C, w, d, n, shade, rng, Ks=((0.16, 7), (0.30, 10), (9.0, 13)), tip_pow=1.7):
+def hood_clear(pk, C, w, d, margin=0.003, most=0.035):
+    """Locks (glTF centre lines, widths, depths) held in front of the hood's collar: each ring's sides and front checked
+    against the hood's front seen from the front; the line moved forward by what is behind it (smoothed), a lock that
+    would need more than `most` dropped (rooted too far under the collar). Returns lines and the locks kept."""
+    if pk.hood is None:
+        return C, np.ones(len(C), bool)
+    t, _, _ = frames(C)
+    out = outward(pk, C)                         # (as tubes() lays its rings)
+    side = np.cross(t, out)
+    side /= np.linalg.norm(side, axis=2)[..., None] + 1e-12
+    out = np.cross(side, t)
+    need = np.zeros(C.shape[:2])
+    prof = np.interp(np.linspace(0, 1, C.shape[1]), [0, 0.15], [0.55, 1.0])[None, :, None]   # (tubes()' root_w)
+    for sx, so in ((1, 0), (-1, 0), (0.7, 0.7), (-0.7, 0.7), (0, 1), (0.7, -0.7), (-0.7, -0.7), (0, -1)):
+        Q = C + side * (sx * w[:, None, None] * prof / 2) + out * (so * d[:, None, None] / 2)
+        cov = pk.hood_cover(Q.reshape(-1, 3)).reshape(C.shape[:2])
+        need = np.maximum(need, np.where(np.isfinite(cov), cov + margin, 0.0))
+    need = np.maximum(need, 0) * (C[:, :, 1] < 1.565)
+    from scipy.ndimage import maximum_filter1d, gaussian_filter1d
+    need = gaussian_filter1d(maximum_filter1d(need, 5, axis=1), 1.5, axis=1)
+    keep = need.max(1) <= most
+    C = C.copy()
+    C[:, :, 2] += need
+    return C, keep
+
+
+def tubes_by_length(pk, C, w, d, n, shade, rng, Ks=((0.16, 6), (0.30, 9), (9.0, 11)), tip_pow=1.7):
     """tubes() with as many rings as a lock is long (short locks fewer)."""
     L = np.linalg.norm(np.diff(C, axis=1), axis=2).sum(1)
     out, lo = [], 0.0
     for hi, K in Ks:
         m = (L >= lo) & (L < hi)
         if m.any():
-            out.append(tubes(pk, C[m], w[m], d[m], n, K, shade, rng, tip_pow))
+            out.append(tubes(pk, C[m], w[m], d[m], n, K, shade, rng, tip_pow, root_w=0.55))
         lo = hi
     return cat_parts(out)
 
@@ -989,28 +1274,50 @@ def main():
 
     # the mass: the moustache's locks, then the beard's inner and outer locks
     Cm, wm, dm = lock_lines(pk, "moustache", MASS_MOUSTACHE, rng)
+    Cm, _ = hood_clear(pk, Cm, wm, dm, most=1.0)
     mass.append(tubes(pk, Cm, wm, dm, MASS_MOUSTACHE["n"], 8, MASS_MOUSTACHE["shade"], rng, tip_pow=1.4))
     lod_mass.append(tubes(pk, Cm[::2], wm[::2] * 1.3, dm[::2], LOD1_MASS["n"], 5, MASS_MOUSTACHE["shade"], lrng, tip_pow=1.4))
     report["locks"]["moustache"] = len(Cm)
     for L_ in MASS_LAYERS:
         C, w, d = lock_lines(pk, "beard", L_, rng)
+        C, kp = hood_clear(pk, C, w, d)
+        report.setdefault("droppedUnderCollar", {})[L_["name"]] = int((~kp).sum())
+        C, w, d = C[kp], w[kp], d[kp]
         mass.append(tubes_by_length(pk, C, w, d, L_["n"], L_["shade"], rng, tip_pow=L_["tip"]))
         lod_mass.append(tubes(pk, C[::2], w[::2] * 1.35, d[::2], LOD1_MASS["n"], LOD1_MASS["K"], L_["shade"], lrng))
         sel = slice(None) if L_["name"] == "inner" else slice(None, None, 2)
         shadow_mass.append(tubes(pk, C[sel], w[sel], d[sel], SHADOW_MASS["n"], SHADOW_MASS["K"], L_["shade"], lrng))
         report["locks"][L_["name"]] = len(C)
 
+    # the braids and their cord bands on the mass's front
+    mP0 = np.concatenate([p["pos"] for p in mass]); mF0 = np.concatenate([p["idx"] + o for p, o in zip(mass, np.cumsum([0] + [len(p["pos"]) for p in mass])[:-1])])
+    grid = surface_grid(mP0, mF0)
+    br, ties, br_lod = braids(pk, grid, rng, lrng)
+    report["braids"] = len(BRAIDS)
     # the fringe: fewer, finer cards over the mass's outside (the mass in the drape's collider), and a few strays
     strands_collider(pk, mass)
     fp, fn, _ = root_points(pk, rng, FRINGE["spacing"], "beard")
     adx = np.abs(fp[:, 0] - X0)
     tip = np.interp(adx, [0, 0.03, 0.06, 0.09], [TIP_Y[0], TIP_Y[0] + 0.02, TIP_Y[0] + 0.07, TIP_Y[1]])
-    tip = tip + rng.normal(0, FRINGE["jit"], len(fp))
+    tip = tip + rng.normal(0, FRINGE["jit"], len(fp)) - rng.uniform(*FRINGE["past"], len(fp))   # (past the mass's points)
+    tip = np.maximum(tip, 1.0)
     length = (fp[:, 1] - tip) + 0.10 + 0.08 * smoothstep(0.03, 0.08, adx)
     fcfg = dict(FRINGE, off=0.0035, front=FRINGE["off"])
     Pf, _ = grow(pk, fp, fn, "beard", fcfg, rng, length.max())
     Pf = trim(Pf, to_height(Pf, tip, length))
     Pf = clump(Pf, FRINGE["clump"], max(3, len(Pf) // 3), rng, start=0.4)
+    Pf = wave_lines(Pf, FRINGE["wave"], rng, axes=(0, 1))
+    # (the outline: thin cards rooted on the beard's outer sides, its silhouette broken into strands)
+    op, on_, _ = root_points(pk, rng, OUTLINE["spacing"], "beard")
+    keep = np.abs(op[:, 0] - X0) > OUTLINE["min_dx"]
+    op, on_ = op[keep], on_[keep]
+    oadx = np.abs(op[:, 0] - X0)
+    otip = np.interp(oadx, [0, 0.03, 0.06, 0.09], [TIP_Y[0], TIP_Y[0] + 0.02, TIP_Y[0] + 0.07, TIP_Y[1]]) + rng.normal(0, 0.06, len(op)) - 0.02
+    olen = (op[:, 1] - otip) + 0.10 + 0.08 * smoothstep(0.03, 0.08, oadx)
+    Po, _ = grow(pk, op, on_, "beard", dict(OUTLINE, off=0.0035, front=OUTLINE["off"]), rng, olen.max())
+    Po = trim(Po, to_height(Po, otip, olen))
+    Po = wave_lines(Po, OUTLINE["wave"], rng, axes=(0, 1))
+    report["cards"]["outline"] = len(op)
     # (the cards' collider the mass itself and the face: their normals the mass's, and onto() holds them to it; on
     # his body's two-sided cloth the normals cancelled and threw 10 of 25 cards' edges wide)
     mP = np.concatenate([p["pos"] for p in mass]); mN = np.concatenate([p["nrm"] for p in mass])
@@ -1018,6 +1325,7 @@ def main():
     HH.update(COLLIDE_P=cP, COLLIDE_N=cN, COLLIDE=cKDTree(cP), COLLIDE_HEAD=np.r_[np.zeros(len(mP), bool), pk.face_pts[:, 1] > 1.555],
               NECK=np.zeros(len(cP), bool))
     cards.append(card_set(Pf, dict(FRINGE, off=0.003), rng, FRINGE["K"]))
+    cards.append(card_set(Po, dict(OUTLINE, off=0.003), rng, OUTLINE["K"]))
     report["cards"]["fringe"] = len(fp)
     # (strays: a few fine strands lifted off the mass, wandering a little)
     si = rng.choice(len(Pf), min(STRAYS["n"], len(Pf)), replace=False)
@@ -1030,11 +1338,16 @@ def main():
     cards.append(card_set(Ps, dict(STRAYS, off=0.003), rng, STRAYS["K"]))
     report["cards"]["strays"] = len(si)
 
-    mass_p = skin_part(pk, cat_parts(mass))
+    # (the weed: over the mass and the cards, its own material)
+    weed_p = card_part(pk, [card_set(weed_lines(pk, grid, rng), WEED, rng, WEED["K"])])
+    report["weed"] = int(weed_p["pos"].shape[0] // (3 * WEED["K"]))
+    mass_p = skin_part(pk, cat_parts(mass + [br]))
     card_p = card_part(pk, cards)
-    lod_p = skin_part(pk, cat_parts(lod_mass))
-    sh_p = skin_part(pk, cat_parts(shadow_mass))
-    report.update(massTris=int(len(mass_p["idx"])), cardTris=int(len(card_p["idx"])), tris=int(len(mass_p["idx"]) + len(card_p["idx"])),
+    tie_p = skin_part(pk, ties)
+    lod_p = skin_part(pk, cat_parts(lod_mass + [br_lod]))
+    sh_p = skin_part(pk, cat_parts(shadow_mass + [br_lod]))
+    report.update(massTris=int(len(mass_p["idx"])), cardTris=int(len(card_p["idx"])), tieTris=int(len(tie_p["idx"])), weedTris=int(len(weed_p["idx"])),
+                  tris=int(len(mass_p["idx"]) + len(card_p["idx"]) + len(tie_p["idx"]) + len(weed_p["idx"])),
                   lodTris=int(len(lod_p["idx"])), shadowTris=int(len(sh_p["idx"])),
                   restMass=measure(pk, mass_p), restCards=measure(pk, card_p), colour=COLOUR, seconds=round(time.time() - t0, 1))
     log(json.dumps(report))
@@ -1049,14 +1362,15 @@ def main():
     if a.no_write:
         return
     mass_texture(os.path.join(a.pkg, MASS_TEX))
+    card_texture(os.path.join(a.pkg, CARDS_TEX))
     sh = dict(pos=sh_p["pos"], nrm=sh_p["nrm"], J=sh_p["J"], W=sh_p["W"], idx=sh_p["idx"])
-    write(pk, os.path.join(a.pkg, "beard.glb"), [("beard", [(mass_p, 2), (card_p, 0)]), ("beard.lod1", [(lod_p, 2)]), ("beard.shadow", [(sh, 1)])])
+    write(pk, os.path.join(a.pkg, "beard.glb"), [("beard", [(mass_p, 2), (card_p, 0), (tie_p, 3), (weed_p, 4)]), ("beard.lod1", [(lod_p, 2)]), ("beard.shadow", [(sh, 1)])])
     man_path = os.path.join(a.pkg, "manifest.json")
     man = json.load(open(man_path, encoding="utf-8"))
     man["hair"] = {"file": "beard.glb", "colour": COLOUR, "style": "beard", "uniforms": HAIR_UNIFORMS,
-                   "source": "tools/assets/warden_beard.py (r4 hybrid: wet-lock mass on heroine_hair.py's drape, a card fringe)",
+                   "source": "tools/assets/warden_beard.py (r5: wet-lock mass on heroine_hair.py's drape, braids with cord bands, river weed, a waved card fringe)",
                    "tris": report["tris"], "massTris": report["massTris"], "cardTris": report["cardTris"], "lodTris": report["lodTris"],
-                   "shadowTris": report["shadowTris"], "locks": report["locks"], "cards": report["cards"]}
+                   "shadowTris": report["shadowTris"], "locks": report["locks"], "cards": report["cards"], "braids": report["braids"], "weed": report["weed"]}
     with open(man_path, "w", encoding="utf-8") as fh:
         json.dump(man, fh, indent=1)
     log("manifest hair set")
