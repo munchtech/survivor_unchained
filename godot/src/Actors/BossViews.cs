@@ -92,8 +92,10 @@ public partial class WardenView : Node3D, IBossView
         fire = LampIron.Fire(lamp);
         Tint();
         // LightSize: soft shadows (the cage's bars throw broad soft stripes, not hard lines, from the flame).
-        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f };
+        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 0.9f, LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f };
         // (it leaves its own lantern out: a few cm from the flame it burned the bars white; the iron's flame light is the shader's)
+        // (Warden 7: attenuation 1.3 to 0.9 and energy 5 to 8: less on his beard at arm's length, a
+        // wider soft pool on the river round his feet from the play camera)
         light.LightCullMask &= ~LampIron.OwnLayer;
         AddChild(light);
     }
@@ -221,7 +223,7 @@ public partial class WardenView : Node3D, IBossView
             if (m.ShadingMode == BaseMaterial3D.ShadingModeEnum.Unshaded) { float b = Mathf.Clamp(k / 3.6f, 0, 1.5f); m.AlbedoColor = new Color(EyeBlue.R * b, EyeBlue.G * b, EyeBlue.B * b); }
         }
         // The light is the lamp in his fist, hung a little out from the body.
-        double i = LampLit && !LampLightOff ? g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
+        double i = LampLit && !LampLightOff ? g * (8 + Math.Sin(time * 3.1) * 1.1 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
         light.LightEnergy = (float)(i / Math.PI);
         // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
         if (light.LightEnergy > 0) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);

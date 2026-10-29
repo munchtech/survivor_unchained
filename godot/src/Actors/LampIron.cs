@@ -74,6 +74,11 @@ public static class LampIron
             ironMat.SetShaderParameter("silt_fade", 0.04f);
             ironMat.SetShaderParameter("flame_o", new Vector3(0, WardenFlameY, 0));
             ironMat.SetShaderParameter("tile", 11f);
+            // (Warden 7: its bars and small parts are all bevel to the convexity mask, so at the sill lamp's wear the whole
+            // cage read worn steel and mirrored the night sky pale: a little bright wear on the edges only, a darker steel)
+            ironMat.SetShaderParameter("wear", SurvivorUnchained.Args.Num("lamp-wear", 0.4f));
+            ironMat.SetShaderParameter("steel", new Vector3(1, 0.98f, 0.95f) * SurvivorUnchained.Args.Num("lamp-steel", 0.17f));
+            ironMat.SetShaderParameter("iron", new Vector3(1, 0.95f, 0.88f) * SurvivorUnchained.Args.Num("lamp-ironk", 0.04f));
             lamp.SetMeta("iron", ironMat);
         }
         lamp.AddChild(model);
@@ -91,11 +96,13 @@ public static class LampIron
                 {
                     g.SetShaderParameter("dark", 1f);
                     g.SetShaderParameter("flame_at", new Vector3(0, WardenFlameY, 0));
-                    g.SetShaderParameter("spot_r", 0.03f);
-                    g.SetShaderParameter("glow_k", 0.16f);
+                    g.SetShaderParameter("spot_r", 0.026f);
+                    g.SetShaderParameter("glow_k", 0.12f);
+                    g.SetShaderParameter("reflect_col", new Vector3(0.13f, 0.17f, 0.24f));
                     g.SetShaderParameter("edge_k", 0.25f);
                 }
                 mi.MaterialOverride = g;
+                if (warden && System.Environment.GetEnvironmentVariable("WARDEN_LAMP_GLASS") == "0") mi.Visible = false;   // (for pictures)
                 if (lamp.HasMeta("glass")) { lamp.SetMeta("glass2", g); continue; }
                 mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
                 lamp.SetMeta("glass", g);
@@ -132,7 +139,7 @@ public static class LampIron
     }
 
     /// <summary>--lamp-iron-inner K: how strongly the Warden's flame lights his lantern's own iron (for pictures).</summary>
-    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-iron-inner", 0.5f);
+    static readonly float InnerK = SurvivorUnchained.Args.Num("lamp-iron-inner", 0.3f);
     /// <summary>The layer a lit lantern's meshes go on, so its own light can leave it out (ZoneView.LampLayer).</summary>
     public const uint OwnLayer = 1u << 11;
 
@@ -179,9 +186,12 @@ public sealed class LampFire
     readonly ShaderMaterial glow;
     static readonly Color Cold = new(0.32f, 0.58f, 1f);
     bool lastLit = true;
-    readonly float flameY;
+    readonly float flameY, boost;
+    /// <summary>--warden-flame-k K: the Warden's flame's brightness over the kit's (a bright point at the play camera).</summary>
+    static readonly float ColdPale = SurvivorUnchained.Args.Num("warden-flame-pale", 0.4f);
+    static readonly float FlameBoost = SurvivorUnchained.Args.Num("warden-flame-k", 1.2f);
     /// <summary>--warden-flame S: the Warden's flame's size (the kit's lamp card is 0.16 at 1), for pictures.</summary>
-    static readonly float FlameScale = SurvivorUnchained.Args.Num("warden-flame", 0.56f);
+    static readonly float FlameScale = SurvivorUnchained.Args.Num("warden-flame", 0.72f);
     Color col = Cold;
     float level = 1;
 
@@ -193,6 +203,7 @@ public sealed class LampFire
         // The kit's lamp card is 0.16 tall at scale 1; this flame stands about 0.07 of the lamp's measure.
         bool warden = lamp.HasMeta("flame_y");
         flameY = LampIron.FlameOf(lamp);
+        boost = warden ? FlameBoost : 1f;
         float wick = lamp.HasMeta("wick_y") ? (float)lamp.GetMeta("wick_y") : LampIron.WickY;
         // (the Warden's lantern: a taller flame, a bright point at the play camera; its meshes on their own layer, so the
         // light at the flame leaves them out and their iron is lit by the shader instead, never white a few cm from it)
@@ -205,9 +216,10 @@ public sealed class LampFire
         glow = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/lamp_glow.gdshader") };
         Node.AddChild(new MeshInstance3D
         {
-            Name = "Glow", Mesh = new QuadMesh { Size = Vector2.One * (warden ? 0.22f : 0.17f), Material = glow },
+            Name = "Glow", Mesh = new QuadMesh { Size = Vector2.One * (warden ? 0.15f : 0.17f), Material = glow },
             Position = new Vector3(0, flameY, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         });
+        if (warden && System.Environment.GetEnvironmentVariable("WARDEN_LAMP_FIRE") == "0") Node.Scale = Vector3.One * 1e-4f;   // (for pictures)
         Look(null, 1, 1);
     }
 
@@ -217,12 +229,13 @@ public sealed class LampFire
     {
         bool warm = hue is Color h && h.R > h.B;
         flame.SetCard("cold", warm ? 0f : 1f);
-        flame.SetCard("cold_pale", warm ? 0f : 1f);
+        // (the Warden's: paled less, so its edge stays blue and its clipped heart doesn't turn cream under the night grade)
+        flame.SetCard("cold_pale", warm ? 0f : boost > 1 ? ColdPale : 1f);
         // Its white-hot heart pulled a little toward blue: the night grade warms what clips, and the core read cream.
-        flame.SetCard("core_blue", warm ? 0f : 0.45f);
+        flame.SetCard("core_blue", warm ? 0f : boost > 1 ? 1f : 0.45f);
         // The cinematics' levels were set for the old 3.2-linear egg (C02's night 0.28): 0.28 is the kit's flame a little under its own (its core clipped and the night grade warmed it).
         float k = Mathf.Clamp(0.45f + 0.35f * flameLevel / 0.28f, 0.3f, 1.1f);
-        flame.SetCard("intensity", k);
+        flame.SetCard("intensity", k * boost);
         col = Cold;
         if (hue is Color c && Mathf.Max(c.R, Mathf.Max(c.G, c.B)) > 1e-4f)
         {
