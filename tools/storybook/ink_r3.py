@@ -6,6 +6,7 @@
                                                           #      (default: denoise 0.5/0.6/0.7 x seeds 11/23/47), cached
     python tools/storybook/ink_r3.py sheet                # CPU: sheet_p5_r3.jpg (one row per candidate) + 1:1 crops
     python tools/storybook/ink_r3.py crop TAG [TAG]       # CPU: 1920x1080 crop at the wide key for these candidates
+    python tools/storybook/ink_r3.py seams [TAG ...]      # CPU: straight-edge scan of the drowned-vs-clean matte + every key
 Ship one: set ink_layers.P5_DROWNED_R3 = "<tag>" (e.g. "d60_s23") and run `ink_layers.py build p5`.
 Candidate tag: d<denoise*100>_s<seed>; its whole is _work/p5/S_drowned_r3_<tag>.png (gen px).
 """
@@ -265,6 +266,78 @@ def soft_mask(m, s=6.0):
     return np.clip(nd.gaussian_filter(m.astype(np.float32), s) * 1.6 - 0.3, 0, 1) * nd.binary_dilation(m, iterations=2)
 
 
+FEATHER = 44        # gen px: the ditch masks ramp 0 -> 1 inward over this (round 5: the old soft_mask cut its tail at ~0.33)
+GROUND_IN, GROUND_RAMP = 12, 48
+NEAR = 30                            # gen px: how far Krea's ground reaches past its figures     # gen px: where Krea's ground (not its figures) starts inside a ditch mask, its ramp
+TONE_BAND = 110     # gen px past the feather: Krea's ground tone eased back to the clean plate's near the mask edge
+
+
+def smooth(t):
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def edge_feather(m):
+    """Round 5 (seam fix): (alpha, tone weight) of a ditch mask. alpha rises from exactly 0 on the mask's edge (the
+    rectangles' straight sides) to 1 FEATHER px inside; the tone weight is 1 out to the feather, 0 by TONE_BAND further in."""
+    e = nd.distance_transform_edt(m)
+    return smooth(e / FEATHER).astype(np.float32), (1 - smooth((e - FEATHER) / TONE_BAND)).astype(np.float32)
+
+
+def tone_match(small, clean, exclude, w):
+    """Krea's low frequencies pulled to the clean plate's by weight w (its ink detail kept): the local mean offset taken
+    over the ground only (not the figures: much darker than the plate, or the init's figure mask), sigma 14."""
+    dl = (small - clean) @ LUM
+    g = ((dl > -0.22) & ~exclude).astype(np.float32)
+    den = nd.gaussian_filter(g, 14)
+    off = np.stack([nd.gaussian_filter((small[..., i] - clean[..., i]) * g, 14) for i in range(3)], -1) / np.maximum(den, 1e-3)[..., None]
+    off *= np.clip(den / 0.15, 0, 1)[..., None]
+    return np.clip(small - off * w[..., None], 0, 1).astype(np.float32)
+
+
+def seam_runs(img, T=6.0, MIN=40, matte=False, comp=None, plate=None):
+    """Straight hard edges in an image (or a difference matte): a same-signed step > T/255 (any sign on a matte) between neighbouring px
+    (2 px apart) that runs >= MIN px down one column (+-1 px) or along one row. On a matte (matte=True) only steps that
+    leave the untouched plate count (one side under 2/255: a composite's edge, not Krea's own strokes); given the
+    composite and the plate (luminance 0-1), only where the composite shows the step, half again over the plate's own.
+    Returns (count, longest, [(dir, x, y, len)])."""
+    a = img @ LUM * 255 if img.ndim == 3 else img * 255
+    out = []
+    for d, arr in (("v", a), ("h", a.T)):
+        s = arr[:, 2:] - arr[:, :-2]
+        zero = np.minimum(np.abs(arr[:, 2:]), np.abs(arr[:, :-2])) < 2 if matte else True
+        if comp is not None:
+            ca, pa = (q * 255 if d == "v" else q.T * 255 for q in (comp, plate))
+            cs, ps = np.abs(ca[:, 2:] - ca[:, :-2]), np.abs(pa[:, 2:] - pa[:, :-2])
+            zero = zero & (cs > T) & (cs > 1.5 * ps)
+        for sign in ((0,) if matte else (1, -1)):                      # a matte's edge: |step| (its sign follows the content)
+            b = nd.maximum_filter(((np.abs(s) if matte else sign * s) > T) & zero, size=(1, 3))
+            # vertical runs per column
+            pad = np.concatenate([np.zeros((1, b.shape[1]), np.int8), b.astype(np.int8), np.zeros((1, b.shape[1]), np.int8)])
+            dd = np.diff(pad, axis=0)
+            for x in range(b.shape[1]):
+                st, en = np.nonzero(dd[:, x] == 1)[0], np.nonzero(dd[:, x] == -1)[0]
+                for y0, y1 in zip(st, en):
+                    if y1 - y0 >= MIN:
+                        out.append((d, x + 1, int(y0), int(y1 - y0)) if d == "v" else (d, int(y0), x + 1, int(y1 - y0)))
+    # neighbouring columns of one edge count once
+    out.sort(key=lambda r: -r[3])
+    kept = []
+    for r in out:
+        if not any(k[0] == r[0] and abs(k[1] - r[1]) <= 3 and abs(k[2] - r[2]) <= 3 + k[3] for k in kept):
+            kept.append(r)
+    return len(kept), (kept[0][3] if kept else 0), kept[:12]
+
+
+def seam_check(t):
+    """The drowned-vs-clean difference matte of candidate t, scanned for straight edges (round 5)."""
+    clean = np.asarray(Image.open(L.wd("p5", "S_clean.png")).convert("RGB")).astype(np.float32) / 255
+    img = np.asarray(Image.open(L.wd("p5", f"S_drowned_r3_{t}.png")).convert("RGB")).astype(np.float32) / 255
+    n, best, runs = seam_runs((img - clean) @ LUM, matte=True)
+    print(f"seam check {t}: difference matte straight edges >= 40 px: {n}, longest {best}", runs[:6])
+    return n, best
+
+
 def gen(cands):
     import ink_comfy as C
     import ink_gen
@@ -296,23 +369,41 @@ def gen(cands):
                         "made": time.strftime("%Y-%m-%d %H:%M")}
                 json.dump(side, open(raw[:-4] + ".json", "w", encoding="utf-8"), indent=1)
             small = np.asarray(Image.open(raw).convert("RGB").resize((x1 - x0, y1 - y0), Image.LANCZOS)).astype(np.float32) / 255
-            m = soft_mask(L.load_mask(L.wd("p5", f"r3_mask_{k}.png")))[y0:y1, x0:x1]
+            mk = L.load_mask(L.wd("p5", f"r3_mask_{k}.png"))
+            m = soft_mask(mk)[y0:y1, x0:x1]
             small = recolor(small, init[y0:y1, x0:x1], m)
+            m, tw = (a[y0:y1, x0:x1] for a in edge_feather(mk))                  # round 5: feathered from the mask's edge
+            e = nd.distance_transform_edt(mk)[y0:y1, x0:x1]
+            raw_small = small
             # the figures as Krea drew them (not only the init's): where it differs from the clean plate, in solid pieces
             d = nd.gaussian_filter(np.abs((small - clean[y0:y1, x0:x1]) @ LUM), 2.0) > 0.2
             d = nd.binary_fill_holes(nd.binary_closing(d, iterations=4)) & (m > 0.3)
             d = L.clean_comps(nd.binary_opening(d, iterations=2), 300)
             fig[y0:y1, x0:x1] |= nd.binary_dilation(d, iterations=3)
-            drawn[k] = (small, m)
+            # the tone match after the figure search (which keeps round 4's figure/road-layer masks)
+            drawn[k] = (tone_match(raw_small, clean[y0:y1, x0:x1], init_fig[y0:y1, x0:x1], tw), e)
         # what the road layer carries: its own ground and every figure (the trees/far layers stay the clean plate)
         L.save_mask(fig, L.wd("p5", f"r3_fig_{t}.png"))
         keep = np.clip(np.maximum(road, nd.gaussian_filter(fig.astype(np.float32), 1.5)), 0, 1)
         for k, (x0, y0, x1, y1) in boxes.items():
-            small, m = drawn[k]
-            m = m * keep[y0:y1, x0:x1]
+            small, e = drawn[k]
+            # round 5: near the mask's edge only the figures come from Krea (their own drawn contours, cut softly where
+            # one crosses the edge); Krea's ground fades in from GROUND_IN px inside over GROUND_RAMP, the plate's outside it
+            # the figures: the found pieces, and wherever Krea's (tone-matched) drawing is darker than the plate on average
+            # (a dark figure over the plate's snow stripes matches the dark stripes half the time, so the piece search
+            # misses it; the darkness doesn't)
+            dark = nd.gaussian_filter((clean[y0:y1, x0:x1] - small) @ LUM, 3.0)
+            # Krea's ground only around its figures (their shins' water, reflections): far from any, the plate's own, so
+            # the hand-over follows the figures' contours instead of the mask's straight sides
+            fk = fig[y0:y1, x0:x1]
+            near = nd.gaussian_filter(nd.binary_dilation(fk, iterations=NEAR).astype(np.float32), NEAR / 2.5)
+            a_f = np.maximum(nd.gaussian_filter(fk.astype(np.float32), 1.5) * smooth(e / FEATHER),
+                             smooth((dark - 0.03) / 0.07) * smooth(e / FEATHER) * near)
+            m = np.maximum(smooth((e - GROUND_IN) / GROUND_RAMP) * near * keep[y0:y1, x0:x1], a_f)
             out[y0:y1, x0:x1] = out[y0:y1, x0:x1] * (1 - m[..., None]) + small * m[..., None]
         Image.fromarray((out * 255 + 0.5).astype(np.uint8)).save(dst)
         print("drowned r3", t, f"{time.time() - t0:.0f}s", flush=True)
+        seam_check(t)
 
 
 def posted(t, P=None):
@@ -344,6 +435,28 @@ def crop(t, P=None):
     im.save(p)
     print(p)
     return P
+
+
+def key_seams(t, P=None):
+    """Round 5: the candidate's posted whole vs the clean plate's, framed at each of the plate's camera keys (1920x1080
+    inside the 2.39 band, as the player sees it), the difference scanned for straight edges >= 40 screen px."""
+    import shutil
+    cp = L.wd("p5", "S_drowned_r3_cleanref.png")
+    shutil.copy(L.wd("p5", "S_clean.png"), cp)
+    a, P = posted(t, P)
+    b, _ = posted("cleanref", P)
+    os.remove(cp)
+    bar = round(1080 * (1 - L.BAND) / 2)
+    res = []
+    for X, Y, zoom, _ in P.P["cams"]:
+        hw, hh = 1600 / zoom / P.upp, 900 / zoom / P.upp
+        box = (round(X / P.upp - hw), round(Y / P.upp - hh), round(X / P.upp + hw), round(Y / P.upp + hh))
+        fr = [np.asarray(Image.fromarray((q * 255 + 0.5).astype(np.uint8)).crop(box).resize((1920, 1080), Image.LANCZOS))
+              .astype(np.float32)[bar + 2:1080 - bar - 2, 2:-2] / 255 for q in (a, b)]
+        n, best, runs = seam_runs((fr[0] - fr[1]) @ LUM, matte=True)
+        res.append((zoom, n, best))
+        print(f"key seams {t} cam {X},{Y} zoom {zoom}: straight edges >= 40 px: {n}, longest {best}", runs[:4])
+    return res
 
 
 def sheet(cands):
@@ -380,6 +493,11 @@ if __name__ == "__main__":
         build_init()
     elif a == "gen":
         gen(cands_from(sys.argv[2:]))
+    elif a == "seams":                                   # round 5: the straight-edge scan (gen matte + every key)
+        P = None
+        for t in sys.argv[2:] or [L.P5_DROWNED_R3]:
+            seam_check(t)
+            key_seams(t, P)
     elif a == "sheet":
         sheet(cands_from(sys.argv[2:]))
     elif a == "crop":
