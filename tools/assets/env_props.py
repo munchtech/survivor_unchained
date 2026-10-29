@@ -2590,7 +2590,9 @@ def stall(p):
             ax = (x + hx) / (2 * hx)
             az = (z - zb) / (zf - zb)
             dip = math.sin(math.pi * ax) * math.sin(math.pi * az) ** 0.7
-            base = base * (1.0 + p['sag_shade'] * (0.35 - dip))
+            # (Env 22 r1f, judge: stall_cloth's rails read as a pale piped rim round its awning) rail_lift: how much lighter
+            # over the rails than the flat sheet (0.35 as before)
+            base = base * (1.0 + p['sag_shade'] * (p.get('rail_lift', 0.35) - dip))
         # soiled toward the low edges, tide marks in blotches, a dark rain line along the back
         low = smooth01(0.3, 1.0, (z - zf + 0.3) / 0.5) * 0.25 + smooth01(hx - 0.1, hx + 0.16, abs(x)) * 0.22
         blot = smooth01(0.35, 0.62, hnoise(Vector((x * 4.1, 1.3, z * 4.1)), p['seed'] + 9)) * 0.14
@@ -2955,6 +2957,12 @@ def trough(p):
         parts.append(Part(box(0.04, 0.36, 0.006), 'iron', hexlin('#ffffff'), T(sx * L * 0.2, 0.3, Wd / 2 + 0.003), jitter=0.0))
     # (E9d r3) the water: its own mesh and material (trough_water_mesh; OwnProps' glossy rippled water), not the canvas
     # region (its weave read as woven mesh at the close camera)
+    # (Env 22 r1f, judge: the water a pale slab with no edge) the boards' inner faces dark and wet for 6 cm over the water
+    wet = wood * 0.3
+    for sz in (-1, 1):
+        parts.append(Part(box(0.06, L - 2 * t - 0.004, 0.004, 0.001), 'wood', wet, T(0, H - 0.06, sz * (Wd / 2 - t - 0.002)) @ R('Z', math.pi / 2), jitter=0.0))
+    for sx in (-1, 1):
+        parts.append(Part(box(Wd - 2 * t - 0.004, 0.06, 0.004, 0.001), 'wood', wet, T(sx * (L / 2 - t - 0.002), H - 0.06, 0) @ R('Y', math.pi / 2), jitter=0.0))
     bk = lathe([(0.12, 0.0), (0.15, 0.3)], 12, cap0=True, cap1=False)
     parts.append(Part(bk, 'wood', wood * 0.85, T(L / 2 + 0.3, 0, 0.25), smooth=False))
     parts.append(Part(torus(0.15, 0.008, 12, 4), 'iron', hexlin('#ffffff'), T(L / 2 + 0.3, 0.25, 0.25), smooth=True, jitter=0.0))

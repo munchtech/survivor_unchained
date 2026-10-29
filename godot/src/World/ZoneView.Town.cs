@@ -156,7 +156,59 @@ public partial class ZoneView
         // round its foot (e9d3 townnight); unshadowed, the setts under it take the fire's glow like the ember-lit ground under a brazier)
         unshadowed.Add(light);
         lights[light].ShadowEnabled = false;
+        // (Env 22 r1f, judge: each brazier lit only a 1.5 m pool on the setts by night) a warm 3-4 m pool: a flatter falloff
+        // (the data's 1.7 to BrazierAtt) and a little more energy, its flicker as before (the data's 0.25); the crowns' glint less
+        lights[light].OmniAttenuation = BrazierAtt;
+        lights[light].OmniRange = BrazierRange;
+        lights[light].LightSpecular = 0.35f;
+        specs[light] = specs[light] with { Intensity = specs[light].Intensity * BrazierEnergy };
         if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"BRAZIER at {at} light {light}: {n} pieces of its fire unshadowed, its light unshadowed");
+    }
+
+    /// <summary>--brazier-att A, --brazier-range M, --brazier-energy K: a brazier's pool by night (Env 22 r1f; the data's
+    /// 1.7 falloff over 13 m at 8.8).</summary>
+    static readonly float BrazierAtt = SurvivorUnchained.Args.Num("brazier-att", 0.85f), BrazierRange = SurvivorUnchained.Args.Num("brazier-range", 9f),
+        BrazierEnergy = SurvivorUnchained.Args.Num("brazier-energy", 1.2f);
+
+    /// <summary>(Env 22 r1f) props_own.json "night_lamps": lamps of the zone's own set where the night left a dead zone (the
+    /// town's north lane: a lantern on the handcart). Each entry: holder (lamps.json's kind, lantern_standing), on [x, z,
+    /// rot] (the piece it stands on: its place and turn), local [x, y, z] (in that piece's frame, y over the ground), turn
+    /// (its own extra turn), color, energy (Godot's), range, att, spec, scale (its flame). Each its own new zone light,
+    /// unshadowed, lit with the town and cold by day like the other lamps (dayLamps); --night-lamps-off: none.</summary>
+    void NightLamps()
+    {
+        var path = $"res://data/zones/{Data.Id}/props_own.json";
+        if (SurvivorUnchained.Args.Has("night-lamps-off") || !FileAccess.FileExists(path)) return;
+        using var doc = System.Text.Json.JsonDocument.Parse(FileAccess.GetFileAsString(path));
+        if (!doc.RootElement.TryGetProperty("night_lamps", out var arr)) return;
+        foreach (var e in arr.EnumerateArray())
+        {
+            float F(string n, float d) => e.TryGetProperty(n, out var v) ? v.GetSingle() : d;
+            var on = e.GetProperty("on");
+            var lo = e.GetProperty("local");
+            float rot = on[2].GetSingle();
+            var off = new Basis(Vector3.Up, rot) * new Vector3(lo[0].GetSingle(), 0, lo[2].GetSingle());
+            float x = on[0].GetSingle() + off.X, z = on[1].GetSingle() + off.Z;
+            var at = new Vector3(x, Data.HeightAt(x, z) + lo[1].GetSingle(), z);
+            string kind = e.TryGetProperty("holder", out var hk) ? hk.GetString()! : "lantern_standing";
+            if (Lamps.Holder(kind) is not Node3D holder || Lamps.Of(kind) is not Lamps.Info info) continue;
+            holder.Transform = new Transform3D(new Basis(Vector3.Up, rot + F("turn", 0)), at);
+            lightRoot.AddChild(holder);
+            var flameAt = holder.Transform * info.Flame;
+            var color = e.TryGetProperty("color", out var c) ? new Color(c.GetString()!) : new Color(LampColor);
+            var spec = new ZoneData.LightSpec(flameAt + Vector3.Up * 0.1f, color, F("energy", 1.2f) * Mathf.Pi, F("range", 5f), 0, true);
+            int li = lights.Count;
+            specs.Add(spec);
+            MakeLight(spec);
+            lights[li].OmniAttenuation = F("att", LampAtt);
+            lights[li].LightSpecular = F("spec", 0.3f);
+            unshadowed.Add(li);
+            float scale = F("scale", HolderLampScale);
+            var f = FlameKit.Add(holder, info.Flame, FlameKind.Lamp, false, scale, light: false);
+            WireFlame(f, li, flameAt, FlameKind.Lamp, false, scale, holder);
+            SetLit(li, true);
+            if (SurvivorUnchained.Args.Has("lamp-debug")) GD.Print($"NIGHT LAMP {kind} at {at} light {li}");
+        }
     }
 
     /// <summary>--wall-lamp-iron K: the kit's pale trim metal on the wall lanterns darkened to blackened iron (it read

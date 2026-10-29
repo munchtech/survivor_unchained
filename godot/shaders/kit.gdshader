@@ -357,6 +357,11 @@ uniform float old_tile = 0.16;     // (E9b6 r4) the share of tiles old and dark:
 uniform float tile_tilt = 0.09;    // each tile's normal turned +-this (a tile bedded a few degrees off its neighbours)
 uniform float trough_dirt = 0.45;   // dirt streaks running down the slope (narrow, broken), this much darker
 uniform float moss_any = 0.5;     // moss in patches on every slope's lower courses (not only the north ones)
+// (Env 22 r1f, judge: the clay roof read clean salmon) soot along the ridge (the smoke's lee: the top 0.2-0.8 m of each
+// slope, patchy) and moss along the eaves (the lowest course or two, in broken patches); 0: as before
+uniform float ridge_soot = 0.0;
+uniform float eave_moss = 0.0;
+varying float v_lx;
 varying vec3 v_wn;
 varying float v_rh;
 varying float v_lz;
@@ -510,6 +515,7 @@ void vertex() {
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_rh = VERTEX.y;
 	v_lz = VERTEX.z;
+	v_lx = abs(VERTEX.x);   // (Env 22 r1f) from the ridge (env_roof.py: the ridge along z at x = 0)
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 #endif
@@ -880,6 +886,12 @@ void fragment() {
 				col = mix(col, lc * dot(col, LW) * 1.15 * (0.85 + 0.25 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
 			}
 		}
+		if (cover) {
+			// (Env 22 r1f) the ridge's soot: the top of each slope darker, patchy, browner-grey
+			float rsn = wall_noise(vec2(v_lz * 1.9 + v_wall.b * 7.0, v_lx * 2.2));
+			float rs = ridge_soot * (1.0 - smoothstep(0.15 + 0.35 * rsn, 0.55 + 0.6 * rsn, v_lx)) * (0.55 + 0.45 * rsn);
+			col = mix(col, vec3(dot(col, LW)) * vec3(0.92, 0.9, 0.88), rs * 0.6) * (1.0 - rs);
+		}
 		float rough = ax.g;
 		if (cover) {
 			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses
@@ -889,6 +901,8 @@ void fragment() {
 			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
 			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
 			m += moss_any * hm * smoothstep(0.6, 0.72, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
+			// (Env 22 r1f) the eaves' moss: the lowest course or two, broken along the eave
+			m += eave_moss * hm * (1.0 - smoothstep(0.15 + 0.35 * mn, 0.7 + 0.4 * mn, v_rh)) * smoothstep(0.38, 0.6, mn);
 			m = clamp(m, 0.0, 0.85);
 			col = mix(col, roof_moss_color.rgb * (0.55 + 0.4 * mn), m);   // (E9b6 r4: darker, it read chartreuse in the sun)
 			rough = mix(rough, 1.0, m);

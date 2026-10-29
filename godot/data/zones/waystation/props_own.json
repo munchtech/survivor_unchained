@@ -1,5 +1,5 @@
 {
- "_doc": "Our own props in this zone. walls (E9b1; OwnWalls.cs): pieces maps a KayKit village piece of props.json to our presets (tools/assets/env_house.json, art/world/house) as treatments: a house takes the list of its treatment (houses: \"<h>\": [plaster tint 0-5, treatment 0 plain / 1 crosses / 2 braces], written by tools/godot/house_ids.py so neighbors differ), each copy one of that list by its place; an empty list drops the kit piece (its window glass, door frame or door is in our wall piece). Roofs (E9b2; tools/assets/env_roof.py): the roof bodies, spires and chimneys named in \"by_roof\" take the list of their house's roof covering (houses' third number: 0 clay pantiles, 1 oak shingles; the fourth its tint), the gable fronts the list of its treatment like the walls. (E9d) place: the square's own stalls, notice board and the market's clutter (env_props.json), the web game's stalls and board hidden; clear: [x, z, r] where the kit's wares and stock at the stalls go. (E9d r2) col: [cx, cz, hw, hd], a place's box collider in its preset's frame (ZoneMeta.AddPropColliders); braziers: ours over the web game's stand.",
+ "_doc": "Our own props in this zone. walls (E9b1; OwnWalls.cs): pieces maps a KayKit village piece of props.json to our presets (tools/assets/env_house.json, art/world/house) as treatments: a house takes the list of its treatment (houses: \"<h>\": [plaster tint 0-5, treatment 0 plain / 1 crosses / 2 braces], written by tools/godot/house_ids.py so neighbors differ), each copy one of that list by its place; an empty list drops the kit piece (its window glass, door frame or door is in our wall piece). Roofs (E9b2; tools/assets/env_roof.py): the roof bodies, spires and chimneys named in \"by_roof\" take the list of their house's roof covering (houses' third number: 0 clay pantiles, 1 oak shingles; the fourth its tint), the gable fronts the list of its treatment like the walls. (E9d) place: the square's own stalls, notice board and the market's clutter (env_props.json), the web game's stalls and board hidden; clear: [x, z, r] where the kit's wares and stock at the stalls go. (E9d r2) col: [cx, cz, hw, hd], a place's box collider in its preset's frame (ZoneMeta.AddPropColliders); braziers: ours over the web game's stand. (Env 22 r1f) night_lamps: lamps of the zone's own where the night left a dead zone (ZoneView.Town.NightLamps): holder (lamps.json kind), on [x, z, rot] (the piece it stands on), local [x, y, z] in that piece's frame (y over the ground), turn, color, energy, range, att, spec, scale; each its own unshadowed light, cold by day.",
  "place": [
   {
    "preset": "stall_produce",
@@ -1151,5 +1151,27 @@
    "village/Roof_Tower_RoundTiles",
    "village/Prop_Chimney"
   ]
- }
+ },
+ "night_lamps": [
+  {
+   "_": "(Env 22 r1f) the north lane by night was a black void east of the square's last house: a lantern left on the handcart's bed",
+   "holder": "lantern_standing",
+   "on": [
+    6.2,
+    -21.0,
+    0.6
+   ],
+   "local": [
+    0.05,
+    0.56,
+    -0.6
+   ],
+   "turn": 0.4,
+   "color": "#ffb468",
+   "energy": 1.3,
+   "range": 6.5,
+   "att": 1.0,
+   "spec": 0.3
+  }
+ ]
 }

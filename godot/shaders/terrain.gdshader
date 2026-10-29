@@ -191,6 +191,10 @@ uniform float kerb_w = 0.3;
 uniform float setts_turn = 1.0;
 uniform float setts_lf = 1.0;
 uniform float mud_pool = 1.0;
+// (Env 22 r1f, judges: the town's mud patches round the props read as blocky dark blotches, stair-stepped stone by stone
+// at night) mud_soft: the mud's rim broken mid-stone by continuous fine noise (0.1-0.3 m), so a whole stone no longer goes
+// under at the patch's edge; inside the rim the stones go under as before. 0: as before.
+uniform float mud_soft = 1.0;
 uniform float close_bump = 2.2;
 // (Env 22 r1e, judge: the wood road by night one violet value, no focal point; the work is the ground) a forest road
 // by night: road_night lifts the packed made surface (its albedo times 1 + it, the crown most, the ruts least, in 3-5 m
@@ -536,6 +540,10 @@ void fragment() {
 	float lvl = 0.2 + mud_g * mud_g * (0.2 + (rgm - 0.5) * 0.24) + mud_g * 0.06 + sunk * 0.18 + collar * (0.5 + (rg4.a - 0.5) * 0.3);
 	float hfw = fwidth(hgt) * mix(0.5, 1.5, mud_pool);
 	float mud_c = max(1.0 - smoothstep(lvl - 0.04 - hfw, lvl + 0.03 + hfw, hgt), lost) * step(0.001, mud_g + collar);
+	// (Env 22 r1f, mud_soft) the rim: how deep in the mud's reach, broken by fine noise across the stones (not by them)
+	float mfine = texture(noise_tex, w * 5.3 + 0.71).r * 0.55 + texture(noise_tex, w * 11.0 + 0.29).g * 0.45;
+	float mrim = smoothstep(0.2, 0.62, mud_g + collar * 0.8 + (mfine - 0.5) * 0.6 + (rg4.g - 0.5) * 0.2);
+	mud_c *= mix(1.0, mrim, mud_soft);
 	// (E9e r2: at the play camera the joints are under a pixel, so their mud came through as dots where two met: the
 	// joints' share of mud laid as a film instead, continuous, by how far the mud reaches.)
 	mud_c = max(mud_c, smoothstep(0.05, 0.5, mud_g + collar) * 0.3 * smoothstep(0.006, 0.02, footg) * mud_pool);
@@ -569,7 +577,7 @@ void fragment() {
 	// in shade it stays earth, a brown-violet under the stones' blue-grey, and in sun a browner wet clay.)
 	mud_col *= mix(vec3(1.0), mix(vec3(1.55, 1.5, 0.95), vec3(1.62, 1.36, 0.9), mud_pool),   // (E9d: was 2.1, 1.8, 0.75: mustard under the dawn sun; r2 was 1.95, 1.48, 0.86: rust-orange under the lamps; a darker wet umber)
 		 mud_warm * mix(1.0, mix(0.3, 1.0, max(flora_light.x, flora_light.y)), mud_pool));
-	albedo *= 1.0 - 0.14 * sunk * w_setts;
+	albedo *= 1.0 - 0.14 * sunk * w_setts * mix(1.0, mrim, mud_soft);
 	// Worn tops by the well and the stalls: a little lighter.
 	albedo *= 1.0 + 0.07 * mud_g * (1.0 - sunk) * smoothstep(0.55, 0.8, hgt);
 	// A film of mud over the tops that poke through the collar.

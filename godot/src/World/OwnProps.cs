@@ -308,11 +308,15 @@ public static class OwnProps
     };
 
     static StandardMaterial3D? water;
+    /// <summary>(Env 22 r1f, judge: the trough read as a pale ice-blue slab at the town camera) murky dark water, the sky in it
+    /// only at grazing angles (the Fresnel of a low specular): --trough-water #hex, --trough-spec K.</summary>
+    static readonly string TroughWaterCol = SurvivorUnchained.Args.Get("trough-water") ?? "#1c211c";
+    static readonly float TroughWaterSpec = SurvivorUnchained.Args.Num("trough-spec", 0.3f);
     /// <summary>(E9d r3) A trough's water (env_props.py trough_water_mesh, UVs in metres): a grey-blue sky value, glossy, in
     /// broad soft ripples (a smooth noise as its normal map, about 25 cm across); the canvas weave read as woven mesh.</summary>
     static Material Water => water ??= new StandardMaterial3D
     {
-        ResourceName = "trough_water", AlbedoColor = new Color("#485a68"), Roughness = 0.14f, MetallicSpecular = 0.45f,
+        ResourceName = "trough_water", AlbedoColor = new Color(TroughWaterCol), Roughness = 0.1f, MetallicSpecular = TroughWaterSpec,
         NormalEnabled = true, NormalScale = 0.55f,
         NormalTexture = new NoiseTexture2D
         {
