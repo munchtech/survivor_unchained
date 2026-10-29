@@ -1135,7 +1135,9 @@ def hood_weights(Vb, adj, donors, names, nb, band=None):
     """Per vertex (Blender frame, drape pose): the body's weights near it (6 nearest, by 1/d), minus the forearms and
     hands; the hood above the jaw to Head (eased in over 1.535-1.590), smoothed, the 4 largest kept."""
     P, J, W = donors
-    no = {names.index(n) for n in names if any(k in n for k in ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb"))}
+    # (r2: and the arms' share and twist helpers: the game drives them its own way, and the capelet weighted to them
+    #  ballooned off the shoulder in play, hundreds of times its rest length)
+    no = {names.index(n) for n in names if any(k in n for k in ("lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "share", "twist"))}
     t = KDTree(len(P))
     for i, p in enumerate(P):
         t.insert(p, i)
