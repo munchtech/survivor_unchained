@@ -15,7 +15,7 @@ uniform bool has_normal = true;
 uniform bool has_data = false;
 uniform float debug_view = 0.0;   // 1: the data map (R de-light, G wet/eyes, B creases) as flat colour; 2: A hair zones
 // the grade: cold pale grey, low
-uniform float face_value : hint_range(0.0, 2.0) = 0.3;
+uniform float face_value : hint_range(0.0, 2.0) = 0.25;
 uniform float face_sat : hint_range(0.0, 1.0) = 0.45;
 uniform vec3 face_tint : source_color = vec3(0.88, 0.93, 1.0);
 uniform float white_knee : hint_range(0.0, 8.0) = 2.5;    // pale paint compressed: c / (1 + k c)
@@ -25,7 +25,8 @@ uniform float speck_mip = 4.0;
 uniform float speck_from = 0.05;
 uniform float speck_to = 0.3;
 uniform float speck_amount : hint_range(0.0, 1.0) = 1.0;
-uniform float hair_grey = 1.1;    // the grey, against the blurred surroundings' luminance
+uniform float hair_grey = 1.25;
+uniform float hair_cover : hint_range(0.0, 1.0) = 0.65; // the hair zones evened to their grey (dense stubble blurs dark too)    // the grey, against the blurred surroundings' luminance
 // wet
 uniform float skin_rough = 0.55;
 uniform float wet_rough = 0.3;
@@ -35,7 +36,7 @@ uniform float wet_dark : hint_range(0.5, 1.0) = 0.85;
 uniform float crease_dark : hint_range(0.3, 1.0) = 0.75;
 uniform float eye_dark : hint_range(0.2, 1.0) = 0.6;
 uniform float skin_spec = 0.35;
-uniform float wet_spec = 0.55;
+uniform float wet_spec = 0.45;
 uniform float eye_spec = 0.7;
 
 const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
@@ -50,7 +51,7 @@ void fragment() {
 	vec3 ab = textureLod(albedo_tex, UV, speck_mip).rgb;
 	float l = dot(a, LUM), lb = max(dot(ab, LUM), 1e-4);
 	float speck = smoothstep(speck_from, speck_to, (lb - l) / lb) * d.a * speck_amount;
-	a = mix(a, vec3(lb * hair_grey), speck);
+	a = mix(a, vec3(lb * hair_grey), max(speck, d.a * hair_cover));
 	// de-light, then the cold grade
 	a *= mix(1.0, d.r * 2.0, delight * (has_data ? 1.0 : 0.0));
 	float la = dot(a, LUM);
