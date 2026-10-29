@@ -685,7 +685,7 @@ public partial class PoseDump : Node
             var all = anim.GetAnimationList();
             foreach (var want in cl.Split(','))
             {
-                string? name = all.FirstOrDefault(a => a == want) ?? all.FirstOrDefault(a => a.EndsWith("/" + want)) ?? all.FirstOrDefault(a => a.EndsWith(want));
+                string? name = all.FirstOrDefault(a => a == want) ?? all.FirstOrDefault(a => a.EndsWith("/" + want)) ?? all.FirstOrDefault(a => a.EndsWith(want)) ?? all.FirstOrDefault(a => a == want.Replace("_Loop", ""));   // (the game library drops _Loop)
                 if (name == null) { GD.Print($"posedump: no clip {want} in {all.Length}: {string.Join(" ", all.Take(400))}"); continue; }
                 double len = anim.GetAnimation(name).Length;
                 for (double t = 0; t <= len + 1e-6; t += 1.0 / 30) queue.Add((name, t));
