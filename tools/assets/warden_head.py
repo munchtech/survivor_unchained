@@ -930,4 +930,5 @@ def main():
     log("done:", pkg_out, "bones", m["head"]["bones"])
 
 
-main()
+if __name__ == "__main__":  # (warden_face.py imports the glb and bake helpers)
+    main()

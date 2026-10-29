@@ -101,6 +101,8 @@ public partial class WardenView : Node3D, IBossView
     /// (Head-bone local, metres). Unshaded, so Light() drives their albedo too: eyes off is really off.</summary>
     void EyeLights()
     {
+        // (WARDEN_EYES=0: no eye-lights, for judging his face by itself; Warden 6 face gate)
+        if (System.Environment.GetEnvironmentVariable("WARDEN_EYES") == "0") return;
         Vector3 l = new(0.0352f, 0.0833f, 0.1582f), r = new(-0.0352f, 0.0832f, 0.1593f);
         var d = Json.ParseString(FileAccess.GetFileAsString($"{NpcPackage.Dir("ford_warden")}/manifest.json")).AsGodotDictionary();
         if (d.TryGetValue("head", out var hv) && hv.VariantType == Godot.Variant.Type.Dictionary

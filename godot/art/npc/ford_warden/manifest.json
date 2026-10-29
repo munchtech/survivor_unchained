@@ -565,24 +565,55 @@
  "tris": {
   "generated": 69890,
   "surfaces": {
-   "generated": 69890
+   "generated": 53551,
+   "warden_face": 17998,
+   "warden_patch": 2555
   },
-  "total": 69890,
-  "drawn": 69890
+  "total": 74104,
+  "drawn": 74104,
+  "note": "generated after the head cut, plus the Face Forge head and the patches"
  },
  "head": {
+  "source": "warden6_head_c.glb (Marionette Face Forge buildHeadAlone: Pixal3D bust from a Krea portrait), grafted by tools/assets/warden_face.py",
+  "material": "warden_face",
+  "patchMaterial": "warden_patch",
+  "tris": 17998,
+  "lodTris": 2498,
+  "shadowTris": 600,
+  "maps": 4096,
+  "bones": [
+   "Head",
+   "clavicle_l",
+   "clavicle_r",
+   "neck_01",
+   "spine_03",
+   "upperarm_share_l",
+   "upperarm_share_r",
+   "upperarm_twist_01_l",
+   "upperarm_twist_01_r"
+  ],
+  "dropped": {
+   "hood": 13906,
+   "ropeBeard": 2433
+  },
+  "ipd": 0.064,
+  "chinY": 1.545,
   "eyes": {
    "l": [
-    0.0319,
-    0.0169,
-    0.1362
+    0.0353,
+    0.043,
+    0.1493
    ],
    "r": [
-    -0.0331,
-    0.017,
-    0.135
-   ],
-   "note": "Warden 5 b1: Head-bone local (m), on the two painted lid strokes in the hood (bind y 1.631, x +4.9/-1.6 cm about the face midline x 1.65 cm, 6.5 cm apart), 4 mm proud of the face"
+    -0.0287,
+    0.043,
+    0.1491
+   ]
+  },
+  "eyesFrame": "Head bone local, metres (glTF/Godot): the iris centres, 4 mm proud",
+  "collarGapMm": {
+   "p50": 34.7,
+   "max": 87.8
   }
  }
 }
