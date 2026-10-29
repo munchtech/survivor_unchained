@@ -483,6 +483,9 @@ public sealed class GroundPaint
             if (c.Soft) continue;
             bool box = c.Kind == ColliderKind.Box;
             if (!box && c.R < 0.25) continue;
+            // (e22r1a, the Env 22 triage: a dark ring round the Watch-post's rubble) a heap (props_own.json no_gutter) is not
+            // a thing standing: no damp foot or collar round it; its own spoil runs out into the soil and grass
+            if (box && OwnProps.For(z.Id)?.NoGutter is { } ng && ng.Exists(g => Math.Abs(g.X - c.X) < 0.5 && Math.Abs(g.Y - c.Z) < 0.5)) continue;
             bool wall = box && Math.Max(c.Hw, c.Hd) >= 2.0 && Math.Min(c.Hw, c.Hd) >= 0.25;
             float rr = (float)(box ? Math.Sqrt(c.Hw * c.Hw + c.Hd * c.Hd) : c.R) + 2.1f;
             int i0 = Math.Max(0, (int)(((float)c.X - rr + half) / et)), i1 = Math.Min(er - 1, (int)(((float)c.X + rr + half) / et));
