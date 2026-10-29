@@ -138,11 +138,12 @@ public static class NpcPackage
         }
 
         // A baked package is one mesh already (clothes and hair in it, the covered skin deleted, Godot's import LODs on it):
-        // no pieces, no LOD pairing, no merge, no hide, no hair file.
+        // no LOD pairing, no merge, no hide, no hair file. Its pieces, when the manifest lists any, are laid on it as on
+        // any package (the Ford-Warden's hood and capelet, armor/hood.glb, Warden 6): the body's own cut is the hide.
         var laid = new List<MeshInstance3D>();
         var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
-        foreach (var piece in m.Baked ? new List<Piece>() : m.Pieces)
+        foreach (var piece in m.Pieces)
         {
             if (Scene($"{Dir(name)}/{piece.File}") is not { } ps) continue;
             var scene = ps.Instantiate<Node3D>();

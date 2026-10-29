@@ -73,7 +73,7 @@ public partial class WardenView : Node3D, IBossView
         // white, and read as a white cowl round the face C02 holds in close-up. Until he
         // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
         // brighter paint, so all of it comes out dark with the river.
-        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); }
+        if (package) { WardenLook.Wet(view.Person, NpcPackage.Dir("ford_warden")); EyeLights(); Pendant.Attach(view.Person.Skeleton, "spine_03", "Spine_03"); if (System.Environment.GetEnvironmentVariable("WARDEN_HOODCHECK") == "1") view.Person.Skeleton.AddChild(new HoodCheck()); }
         else
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
@@ -605,4 +605,209 @@ public partial class PieceView : Node3D, IOrb
     public double Light { set { } }
     public void Face(double yaw) => Rotation = new Vector3(0, (float)yaw, 0);
     void IOrb.Dispose() => QueueFree();
+}
+
+/// <summary>WARDEN_HOODCHECK=1 (Warden 6 hood): his hood and capelet (armor/hood.glb, the "warden_hood_wool" surface)
+/// measured in whatever he plays, every 0.2 s on the CPU from the skeleton's pose: each edge's stretch against its rest,
+/// and his body and head points that sit inside the cloth at rest but come out through it (more than 2 mm past the
+/// outer surface at the nearest cloth point). Printed as "hoodcheck" lines, and a summary when he leaves.</summary>
+public partial class HoodCheck : Node
+{
+    sealed class Skinned
+    {
+        public Vector3[] P = Array.Empty<Vector3>(), N = Array.Empty<Vector3>();
+        public int[] B = Array.Empty<int>(), Idx = Array.Empty<int>();
+        public float[] W = Array.Empty<float>();
+        public int K;
+        public int[] BindBone = Array.Empty<int>();
+        public Transform3D[] Bind = Array.Empty<Transform3D>();
+        public string[] BoneName = Array.Empty<string>();
+    }
+
+    Skeleton3D skel = null!;
+    Skinned? hood;
+    readonly List<Skinned> body = new();
+    readonly List<(int Mesh, int V)> inside = new();
+    int[] edges = Array.Empty<int>();
+    float[] restLen = Array.Empty<float>();
+    double t, tick;
+    int samples, worstCount;
+    float worstStretch, worstDepth;
+    string worstWhere = "";
+    readonly List<float> stretchAll = new();
+
+    static Skinned? Read(MeshInstance3D mi, int s, Skeleton3D skel)
+    {
+        var a = mi.Mesh.SurfaceGetArrays(s);
+        if (a[(int)Mesh.ArrayType.Bones].VariantType == Godot.Variant.Type.Nil || mi.Skin == null) return null;
+        var o = new Skinned { P = a[(int)Mesh.ArrayType.Vertex].AsVector3Array(), N = a[(int)Mesh.ArrayType.Normal].AsVector3Array() };
+        var bones = a[(int)Mesh.ArrayType.Bones];
+        o.B = bones.VariantType == Godot.Variant.Type.PackedInt32Array ? bones.AsInt32Array() : Array.ConvertAll(bones.AsFloat32Array(), f => (int)f);
+        o.W = a[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+        o.Idx = a[(int)Mesh.ArrayType.Index].AsInt32Array();
+        o.K = o.B.Length / Math.Max(o.P.Length, 1);
+        int n = mi.Skin.GetBindCount();
+        o.BindBone = new int[n];
+        o.Bind = new Transform3D[n];
+        o.BoneName = new string[n];
+        for (int i = 0; i < n; i++)
+        {
+            string bn = mi.Skin.GetBindName(i);
+            o.BindBone[i] = bn != "" ? skel.FindBone(bn) : mi.Skin.GetBindBone(i);
+            o.Bind[i] = mi.Skin.GetBindPose(i);
+            o.BoneName[i] = o.BindBone[i] >= 0 ? skel.GetBoneName(o.BindBone[i]) : "?";
+        }
+        return o;
+    }
+
+    Transform3D[] Mats(Skinned m, bool rest)
+    {
+        var r = new Transform3D[m.Bind.Length];
+        for (int i = 0; i < r.Length; i++)
+            r[i] = (m.BindBone[i] < 0 ? Transform3D.Identity : rest ? skel.GetBoneGlobalRest(m.BindBone[i]) : skel.GetBoneGlobalPose(m.BindBone[i])) * m.Bind[i];
+        return r;
+    }
+
+    static (Vector3 P, Vector3 N) At(Skinned m, Transform3D[] M, int v)
+    {
+        Vector3 p = Vector3.Zero, n = Vector3.Zero;
+        for (int k = 0; k < m.K; k++)
+        {
+            float w = m.W[v * m.K + k];
+            if (w <= 0) continue;
+            var x = M[m.B[v * m.K + k]];
+            p += w * (x * m.P[v]);
+            n += w * (x.Basis * m.N[v]);
+        }
+        return (p, n.Normalized());
+    }
+
+    public override void _Ready()
+    {
+        skel = GetParent<Skeleton3D>();
+        foreach (var c in skel.GetChildren())
+        {
+            if (c is not MeshInstance3D mi || mi.Mesh == null || mi.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly) continue;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                string mat = mi.Mesh.SurfaceGetMaterial(s)?.ResourceName ?? "";
+                if (mat == "warden_hood_wool" && mi.VisibilityRangeBegin <= 0) hood ??= Read(mi, s, skel);
+                else if (mat is "generated" or "warden_face" or "warden_patch" && mi.Name.ToString() != "lod" && Read(mi, s, skel) is { } b) body.Add(b);
+            }
+        }
+        if (hood == null) { GD.Print("hoodcheck: no hood surface"); QueueFree(); return; }
+        var seen = new HashSet<long>();
+        var el = new List<int>();
+        for (int i = 0; i + 2 < hood.Idx.Length; i += 3)
+            for (int e = 0; e < 3; e++)
+            {
+                int a = hood.Idx[i + e], b = hood.Idx[i + (e + 1) % 3];
+                long key = (long)Math.Min(a, b) << 32 | (uint)Math.Max(a, b);
+                if (seen.Add(key)) { el.Add(a); el.Add(b); }
+            }
+        edges = el.ToArray();
+        var hm = Mats(hood, true);
+        var hp = new Vector3[hood.P.Length];
+        var hn = new Vector3[hood.P.Length];
+        for (int v = 0; v < hp.Length; v++) (hp[v], hn[v]) = At(hood, hm, v);
+        restLen = new float[edges.Length / 2];
+        for (int i = 0; i < restLen.Length; i++) restLen[i] = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]);
+        var grid = Grid(hp);
+        for (int m = 0; m < body.Count; m++)
+        {
+            var bm = Mats(body[m], true);
+            for (int v = 0; v < body[m].P.Length; v += 2)
+            {
+                var p = At(body[m], bm, v).P;
+                int h = Nearest(grid, hp, p, 0.06f);
+                if (h >= 0 && (p - hp[h]).Dot(hn[h]) < -0.002f) inside.Add((m, v));
+            }
+        }
+        GD.Print($"hoodcheck: hood {hp.Length} verts, {restLen.Length} edges; {inside.Count} body points under the cloth at rest");
+    }
+
+    static Dictionary<(int, int, int), List<int>> Grid(Vector3[] p)
+    {
+        var g = new Dictionary<(int, int, int), List<int>>();
+        for (int i = 0; i < p.Length; i++)
+        {
+            var k = ((int)Mathf.Floor(p[i].X / 0.03f), (int)Mathf.Floor(p[i].Y / 0.03f), (int)Mathf.Floor(p[i].Z / 0.03f));
+            if (!g.TryGetValue(k, out var l)) g[k] = l = new List<int>();
+            l.Add(i);
+        }
+        return g;
+    }
+
+    static int Nearest(Dictionary<(int, int, int), List<int>> g, Vector3[] hp, Vector3 p, float reach)
+    {
+        int best = -1;
+        float bd = reach * reach;
+        int cx = (int)Mathf.Floor(p.X / 0.03f), cy = (int)Mathf.Floor(p.Y / 0.03f), cz = (int)Mathf.Floor(p.Z / 0.03f);
+        for (int x = -2; x <= 2; x++)
+            for (int y = -2; y <= 2; y++)
+                for (int z = -2; z <= 2; z++)
+                    if (g.TryGetValue((cx + x, cy + y, cz + z), out var l))
+                        foreach (int i in l)
+                        {
+                            float d = hp[i].DistanceSquaredTo(p);
+                            if (d < bd) { bd = d; best = i; }
+                        }
+        return best;
+    }
+
+    public override void _Process(double delta)
+    {
+        t += delta;
+        if ((tick -= delta) > 0 || hood == null) return;
+        tick = 0.2;
+        samples++;
+        var hm = Mats(hood, false);
+        var hp = new Vector3[hood.P.Length];
+        var hn = new Vector3[hood.P.Length];
+        for (int v = 0; v < hp.Length; v++) (hp[v], hn[v]) = At(hood, hm, v);
+        float smax = 0;
+        for (int i = 0; i < restLen.Length; i++)
+        {
+            float r = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]) / Math.Max(restLen[i], 1e-5f);
+            smax = Math.Max(smax, r);
+            if ((i & 7) == 0) stretchAll.Add(r);
+        }
+        var grid = Grid(hp);
+        var bms = new Transform3D[body.Count][];
+        for (int m = 0; m < body.Count; m++) bms[m] = Mats(body[m], false);
+        int count = 0;
+        float depth = 0;
+        var where = new Dictionary<string, int>();
+        foreach (var (m, v) in inside)
+        {
+            var b = body[m];
+            var p = At(b, bms[m], v).P;
+            int h = Nearest(grid, hp, p, 0.06f);
+            if (h < 0) continue;
+            float d = (p - hp[h]).Dot(hn[h]);
+            if (d <= 0.002f) continue;
+            count++;
+            depth = Math.Max(depth, d);
+            int kb = 0;
+            for (int k = 1; k < b.K; k++) if (b.W[v * b.K + k] > b.W[v * b.K + kb]) kb = k;
+            string bn = b.BoneName[b.B[v * b.K + kb]];
+            where[bn] = where.GetValueOrDefault(bn) + 1;
+        }
+        worstStretch = Math.Max(worstStretch, smax);
+        var top = new List<KeyValuePair<string, int>>(where);
+        top.Sort((x, y) => y.Value.CompareTo(x.Value));
+        string w = string.Join(",", top.GetRange(0, Math.Min(3, top.Count)));
+        if (count > worstCount) { worstCount = count; worstWhere = w; }
+        worstDepth = Math.Max(worstDepth, depth);
+        GD.Print($"hoodcheck t={t:F1} stretch_max={smax:F3} poke={count} depth_mm={depth * 1000:F1} {w}");
+    }
+
+    public override void _ExitTree()
+    {
+        if (hood == null) return;
+        stretchAll.Sort();
+        float p99 = stretchAll.Count > 0 ? stretchAll[(int)(stretchAll.Count * 0.99)] : 0;
+        float p01 = stretchAll.Count > 0 ? stretchAll[(int)(stretchAll.Count * 0.01)] : 0;
+        GD.Print($"hoodcheck SUMMARY samples={samples} stretch_max={worstStretch:F3} stretch_p99={p99:F3} squash_p01={p01:F3} poke_max={worstCount} ({worstWhere}) depth_max_mm={worstDepth * 1000:F1} under_at_rest={inside.Count}");
+    }
 }

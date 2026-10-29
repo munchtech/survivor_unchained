@@ -145,7 +145,13 @@
   ]
  },
  "body": "body.glb",
- "pieces": [],
+ "pieces": [
+  {
+   "id": "hood",
+   "slot": "cloak",
+   "file": "armor/hood.glb"
+  }
+ ],
  "generated": {
   "dressed": true,
   "whole": true,
@@ -614,6 +620,38 @@
   "collarGapMm": {
    "p50": 34.7,
    "max": 87.8
+  }
+ },
+ "hood": {
+  "source": "tools/assets/warden_hood.py (cloth drape over the posed body, Warden 6)",
+  "materials": [
+   "warden_hood_wool",
+   "warden_hood_inner",
+   "warden_hood_fringe"
+  ],
+  "tris": 10328,
+  "lodTris": 3064,
+  "shadowTris": 600,
+  "bones": [
+   "Head",
+   "clavicle_l",
+   "clavicle_r",
+   "neck_01",
+   "spine_01",
+   "spine_02",
+   "spine_03",
+   "upperarm_l",
+   "upperarm_r",
+   "upperarm_share_l",
+   "upperarm_share_r",
+   "upperarm_twist_01_l",
+   "upperarm_twist_01_r"
+  ],
+  "maps": 4096,
+  "mantleCut": {
+   "body.glb:body:generated": 3006,
+   "body.glb:body:warden_patch": 309,
+   "lod.glb:lod:generated": 175
   }
  }
 }
