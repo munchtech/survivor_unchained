@@ -727,7 +727,9 @@ public partial class PlayerView : Node3D
         flare = Mathf.Max(0, flare - dt * 0.8);
         double flicker = Mathf.Sin((float)(time * 7.3)) * 0.25 + Mathf.Sin((float)(time * 17.1)) * 0.15 + (hp < 0.35 ? Mathf.Sin((float)(time * 31)) * 0.6 : 0);
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
-        Light.LightEnergy = (float)((LightBase * (0.7 + 0.3 * hp) + flicker + flare * 20) / Mathf.Pi) * lamp * Atmosphere.EmberGain;
+        // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
+        // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
@@ -921,6 +923,7 @@ public partial class PlayerView : Node3D
     /// another): from play's camera her face then shows eyes and a mouth, not the crown of her hair.</summary>
     // --ember-att A, --ember-range K, --ember-color C: her carried light's falloff, reach and colour (E1 pictures). Round 3c:
     // pale gold (#ffb070 was) and a steeper falloff, so the moon's shadows inside her pool stay dark, not rust streaks.
+    static readonly float EmberFlareCap = SurvivorUnchained.Args.Num("ember-flare-cap", 2.2f);
     static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 1.8f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
