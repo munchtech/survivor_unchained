@@ -1,6 +1,6 @@
 // The Ford-Warden soaked (BossViews.WardenView, WardenLook.Wet): his baked package's own textures, drawn as distinct
 // real materials, wet. His Meshy body is one atlas with one material, so what each texel is made of comes from his ID
-// map (tools/assets/warden_id_map.py -> id_generated.png: R class*32 + quilting puff, G bind height, BA a detail
+// map (tools/assets/warden_id_map.py -> id_generated.png: R class*32 + the quilting's loft, G bind height, BA a detail
 // normal): wool, tabard, quilting, leather, iron, badge, head. Each class has its own colour (the atlas's light and
 // dark kept, its hue pulled to the class's), value, roughness, metal, specular and weave strength; the classes are
 // blended over the 4 nearest texels so their edges don't step. Wetness is by height: soaked dark from the hem to the
@@ -46,10 +46,12 @@ uniform float soak_floor = 0.15; // the shoulders' dampness
 uniform float soak_dark = 0.6;   // the soaked cloth's colour kept
 uniform float soak_rough = 0.72; // the soaked cloth's roughness scale
 uniform float soak_spec = 0.32;  // the soaked cloth's specular
-uniform float puff_lo = 0.4;     // the quilting's atlas normal per cell, x puff_lo .. puff_hi
-uniform float puff_hi = 1.6;
-uniform float quilt_flat = 0.7;     // how far the quilting's paint is flattened to its blur
-uniform float quilt_atlas = 0.15;    // the sculpt's square waffle in the atlas normal, kept on the quilting (the baked channels lead)
+// the quilting (Warden 6 r3: the sculpt's square waffle smoothed out of the mesh and its pale paint blotches evened in
+// the atlas at the source; the ID map's channels lead): the ID map's low bits are its padding's loft (0 in a stitch line)
+uniform float quilt_flat = 0.0;      // how far the quilting's paint is flattened to its blur (the atlas is evened now)
+uniform float quilt_atlas = 0.0;     // the sculpt's waffle in the atlas normal, kept on the quilting
+uniform float quilt_groove = 0.5;    // the stitch grooves' shade (the loft's bottom x 1 - this)
+uniform float quilt_detail = 1.4;    // the baked channels + linen weave's strength on the quilting
 uniform float quilt_rough_min = 0.8; // wet linen stays matte (no tight highlight even soaked)
 // the iron's grime: dark against its blurred surroundings in the atlas (the crevices), dull and black-brown
 uniform vec3 grime_color : source_color = vec3(0.035, 0.03, 0.026);
@@ -134,6 +136,7 @@ void fragment() {
 		float la_b = max(dot(textureLod(albedo_tex, UV, 3.0).rgb, LUM), 1e-4);
 		// (the quilting: its pale paint blotches flattened toward their surroundings, wet linen is even)
 		float la_q = mix(la, max(dot(textureLod(albedo_tex, UV, 5.0).rgb, LUM), 1e-4), quilt_flat * wc[2]);
+		la_q *= mix(1.0, mix(1.0 - quilt_groove, 1.0, sqrt(clamp(puff, 0.0, 1.0))), wc[2]);
 		vec3 b = mix(a * (la_q / max(la, 1e-4)), ccol * (la_q / max(dot(ccol, LUM), 1e-4)), cmix) * cval;
 		// the soak by height: through below the thigh, damp toward the shoulders
 		float hy = idl.g * 2.0;
@@ -175,8 +178,8 @@ void fragment() {
 		// the atlas's normal (the quilting's puffs each their own height) + the class's baked weave/grain/dents
 		vec2 nxy = vec2(0.0);
 		if (has_normal) nxy = texture(normal_tex, UV).rg * 2.0 - 1.0;
-		nxy *= mix(1.0, mix(puff_lo, puff_hi, puff) * quilt_atlas, wc[2]);
-		nxy += (idl.ba * 2.0 - 1.0) * cdet;
+		nxy *= mix(1.0, quilt_atlas, wc[2]);
+		nxy += (idl.ba * 2.0 - 1.0) * cdet * mix(1.0, quilt_detail, wc[2]);
 		vec3 n = normalize(vec3(nxy, 1.0));
 		NORMAL_MAP = n * 0.5 + 0.5;
 		if (debug_view > 0.5) {

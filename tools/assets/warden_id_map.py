@@ -10,7 +10,8 @@ Rules (classify()), then a majority filter per chart so specks don't flip class,
 
 Channels (2048, RGBA8; imported lossless, alpha untouched):
   R  class * 32 + puff (0..31): the class index (the shader texelFetches it and blends the 4 neighbours' params);
-     the low bits vary the quilting's atlas normal per cell (x 0.4-1.6) so its grid isn't one perfect emboss
+     the low bits (0..1): on the quilting, the padding's loft (0 in a stitch line, 1 on a channel's top: the shader
+     shades the grooves); elsewhere a free smooth noise (no shader reads it)
   G  bind height (y / 2 m): the wet gradient (soaked from the hem to the thigh, drier toward the shoulders)
   B,A  a detail normal (tangent-space x, y; 0.5 = flat): each class's 3D height (wool twill, tabard plain weave,
      quilting weave + sag and creasing noise, leather grain, iron dents), baked from the bind pose triplanar on the
@@ -227,7 +228,7 @@ QUILT_W = 0.034                    # channel width (m), at the reference radius 
 QUILT_PUFF, QUILT_STITCH, QUILT_BEND = 3.0, 0.6, 1.2
 
 
-def quilt_cells(P, ax, ctr, rref, bend):
+def quilt_cells(P, ax, ctr, rref, bend, shade=False):
     """The padding's height: P points; ax the channel's axis, ctr a point on it, rref the reference radius (per point);
     bend 0..1 (the elbow). Channels run along ax, spaced round it by angle (the seam where the angle wraps)."""
     up = np.where(np.abs(ax[:, 1:2]) < 0.9, [[0.0, 0.0, -1.0]], [[0.0, 0.0, -1.0]])
@@ -245,6 +246,8 @@ def quilt_cells(P, ax, ctr, rref, bend):
     loft = np.sin(np.pi * np.clip(fr, 0, 1)) ** 0.7 * (0.8 + 0.4 * hsh) * lump
     stitch = 1 - np.clip(np.minimum(fr, 1 - fr) * QUILT_W / 0.0012, 0, 1)
     crease = np.sin(along / 0.011 + 3 * vnoise3(P, 0.03, 41)) * bend
+    if shade:  # the padding's loft for the shader's groove shade: 0 down in the stitch line, 1 on the loft's top
+        return np.clip(loft * (1 - 0.6 * bend) / 1.1, 0, 1) * (1 - stitch)
     return QUILT_PUFF * loft * (1 - 0.7 * bend) - QUILT_STITCH * stitch + QUILT_BEND * crease
 
 
@@ -300,8 +303,12 @@ def detail(f, cls, eps=0.0004):
     #  strength sets how much shows)
     k = 0.0009
     out[have] = np.clip(np.c_[-dx * k, -dy * k], -1, 1)
-    puff = np.zeros(have.shape, np.float32)  # the quilting's puffs, each cell its own height (the atlas normal x 0.4-1.6)
-    puff[have] = np.clip(0.5 + 0.5 * vnoise3(P, 0.035, 21) + 0.25 * vnoise3(P, 0.012, 22), 0, 1)
+    puff = np.zeros(have.shape, np.float32)  # the low bits: 0..1, read on the quilting only (other classes: a free noise)
+    pv = np.clip(0.5 + 0.5 * vnoise3(P, 0.035, 21) + 0.25 * vnoise3(P, 0.012, 22), 0, 1)
+    m = c == QUILT  # (Warden 6 r3: on the quilting, the padding's loft: the shader shades its stitch grooves)
+    if m.any():
+        pv[m] = quilt_cells(P[m], ax[m], ctr[m], rref[m], bend[m], shade=True)
+    puff[have] = pv
     return out, puff
 
 

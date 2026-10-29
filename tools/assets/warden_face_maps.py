@@ -190,9 +190,15 @@ def main():
     wet = np.clip(np.maximum.reduce([brow, nose, cheek * 0.9, lids, lips]) * (0.7 + 0.3 * convex) + 0.25 * convex, 0, 1) * front
     G = 0.8 * wet * (1 - eyes) + eyes
     crease = np.clip(concave * 1.4, 0, 1) * (1 - eyes)
-    # hair zones: the scalp (above the brow, round the back) and the beard (below the nose line, the jaw, the neck)
-    scalp = np.maximum(smoothstep(0.75, 1.0, y), (1 - smoothstep(-0.9, -0.5, z)) * smoothstep(-0.6, -0.2, y))
-    beard = np.maximum((1 - smoothstep(-1.15, -0.95, y)) * (1 - lips * 0.9), smoothstep(0.95, 1.15, ax) * (1 - smoothstep(-0.6, -0.2, y)))
+    # hair zones: the scalp (above the brow, round the back, the temples) and the beard (below the nose line, the jaw, the
+    # neck, and up the cheek sides to a beard line under the cheekbone: Warden 6 r3, the jaw's and cheeks' dark specks
+    # read as scab or mould where the old zone, starting below the nose line, missed them)
+    scalp = np.maximum.reduce([smoothstep(0.75, 1.0, y), (1 - smoothstep(-0.9, -0.5, z)) * smoothstep(-0.6, -0.2, y),
+                               smoothstep(0.85, 1.0, ax) * smoothstep(-0.1, 0.25, y)])
+    line = -1.0 + 0.55 * smoothstep(0.35, 1.0, ax)    # the beard line: the mouth's corner up to the sideburn
+    cheeks = (1 - smoothstep(line - 0.12, line + 0.12, y)) * smoothstep(0.28, 0.42, ax)
+    sides = smoothstep(0.8, 1.0, ax) * (1 - smoothstep(-0.1, 0.25, y))   # the sideburns, into the scalp's temples
+    beard = np.maximum.reduce([(1 - smoothstep(-1.15, -0.95, y)), cheeks, sides]) * (1 - lips * 0.9) * (1 - nose)
     hair = np.clip(np.maximum(scalp, beard), 0, 1) * (1 - eyes)
     # de-light: low-passed luminance fitted as a + c.n over the skin (not the eyes, the hair zones, the lips)
     low = smooth(A, lum, LOWPASS)
