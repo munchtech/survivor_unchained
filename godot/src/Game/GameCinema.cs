@@ -826,10 +826,12 @@ public partial class Game
             cam.GlobalTransform = new Transform3D(basis, pos);
             cam.KeepAspect = Camera3D.KeepAspectEnum.Width;
             cam.Fov = hfov;
+            // (her face held to the game's close-up scale at most: the lens widened about its aim, GameCinemaHer.HerScaleCap)
+            double lensMm = HerScaleCap(pose.Lens);
             if (pose.Focus is double f && pose.FollowK < 0.5)
             {
                 // Depth of field from the lens: sharp across what f-number and distance allow, soft beyond.
-                double mm = pose.Lens, n = pose.Fstop, coc = 0.03;
+                double mm = lensMm, n = pose.Fstop, coc = 0.03;
                 double h = mm * mm / (n * coc) / 1000;
                 double near = h * f / (h + f), far = h > f ? h * f / (h - f) : 1e4;
                 dof.DofBlurNearEnabled = true;

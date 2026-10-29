@@ -59,6 +59,28 @@ public partial class Game
         static float HerSky => Args.Num("cine-her-sky", 0.4f);
         static float HerHairBack => Args.Num("cine-her-hair-back", 0.35f);
         static float HerSkinSpec => Args.Num("cine-her-spec", 0.3f);
+        // Face 48 round 3 (the judge's light): --cine-her-scale off|PX: her face held to PX per 10 cm at 1080p at most in a
+        // cinematic (300: pupils about 190 px apart; the lens widened about its aim). Her key from the strongest light at her
+        // head (rigs, lamps, glows, fires, the moon; each by its light at her eyes, more as it comes from where she faces),
+        // its colour on her skin limited (--cine-her-skin-c: a warm source's chroma at C of the close key's; --cine-her-skin-cool:
+        // a cool one's at this Oklab chroma), her hair and gear in its own colour; --cine-her-side R, --cine-her-side-min M: a
+        // second source at M or more of the first kept as a side light on the face's other half at R of the key; the rim narrow
+        // (--cine-her-rim-az, radians off straight behind) with its hair twin (--cine-her-rim-hair); --cine-her-eye E: a sheen-only
+        // light just above the lens for her catchlights; --cine-her-body B: her key on her shoulders and chest at B.
+        // --cine-her-off src,side,rim2,eye,body,scale: each back to round 2.
+        static float HerScale => Args.Get("cine-her-scale") == "off" ? 0 : Args.Num("cine-her-scale", 300f);
+        static float HerSkinC => Args.Num("cine-her-skin-c", 0.87f);
+        static float HerSkinCool => Args.Num("cine-her-skin-cool", 0.025f);
+        static float HerSideGain => Args.Num("cine-her-side", 0.42f);
+        static float HerSideMin => Args.Num("cine-her-side-min", 0.4f);
+        static float HerFillSide => Args.Num("cine-her-fill-side", 0.6f);
+        static float HerRimAz => Args.Num("cine-her-rim-az", 0.25f);
+        static float HerRim2 => Args.Num("cine-her-rim2", 0.6f);
+        static float HerRimHair => Args.Num("cine-her-rim-hair", 0.5f);
+        static float HerEye => Args.Num("cine-her-eye", 0.004f);
+        static float HerEyeEl => Args.Num("cine-her-eye-el", 7f);
+        static float HerBodyGain => Args.Num("cine-her-body", 0.6f);
+        static Color HerFillColour => ArgColour("cine-her-fill-colour", new Color(0.86f, 0.91f, 1f));
         static readonly bool HerLog = Args.Has("camlog");
         static readonly bool HerLights = Args.Has("cine-her-lights");
         int herLightsShot = -1;
@@ -82,6 +104,9 @@ public partial class Game
         readonly List<GeometryInstance3D> herMoved = new();
         float herNightShown, herCapShown = 1, herK, herSkyShown = 1;
         SpotLight3D? herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear;
+        SpotLight3D? herSide, herSideHair, herRimHair, herEye, herBody;
+        readonly HashSet<int> herClampLogged = new();
+        string herSrc2 = "-";
         DirectionalLight3D? herMoon;
         OmniLight3D? herFire;
         /// <summary>The other lights near her face (a lantern, a flame, a fire's glow: not the zone's), each off her for its twin.</summary>
@@ -257,7 +282,7 @@ public partial class Game
                 herLogAt = Shots.Clock;
                 var c = g.camera.UnprojectPosition(le); var rr = g.camera.UnprojectPosition(le + g.camera.GlobalBasis.X * 0.1f);
                 GD.Print($"facepx t={Shots.Clock:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1}");
-                GD.Print($"cineher t={Shots.Clock:F2} shot={player.Shot.Shot.Id} local={player.Local:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1} rigs={sum:F3} close={CloseKeyOnFace():F3} cap={cap:F2} k={k:F2} key={(herKey?.LightEnergy ?? 0):F2} fill={(herFill?.LightEnergy ?? 0):F2} rim={(herRim?.LightEnergy ?? 0):F2} moon={(herMoon?.Visible == true ? herMoon.LightEnergy : -1):F3} fire={(herFire?.Visible == true ? herFire.LightEnergy : -1):F2} keyAt={(herKey?.Visible == true && eyes is Vector3 qe ? SpotAt(herKey, herKey.LightEnergy, qe) : 0):F3} fireAt={(herFire?.Visible == true && eyes is Vector3 qf ? OmniAt(herFire, herFire.LightEnergy, qf) : 0):F3} sky={herSkyShown:F2} src={herSrc} exp={g.air.Env.TonemapExposure:F3} night={night} nk={nk:F2} lens={g.camera.GlobalPosition.DistanceTo(le):F2} "
+                GD.Print($"cineher t={Shots.Clock:F2} shot={player.Shot.Shot.Id} local={player.Local:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1} rigs={sum:F3} close={CloseKeyOnFace():F3} cap={cap:F2} k={k:F2} key={(herKey?.LightEnergy ?? 0):F2} fill={(herFill?.LightEnergy ?? 0):F2} rim={(herRim?.LightEnergy ?? 0):F2} moon={(herMoon?.Visible == true ? herMoon.LightEnergy : -1):F3} fire={(herFire?.Visible == true ? herFire.LightEnergy : -1):F2} keyAt={(herKey?.Visible == true && eyes is Vector3 qe ? SpotAt(herKey, herKey.LightEnergy, qe) : 0):F3} fireAt={(herFire?.Visible == true && eyes is Vector3 qf ? OmniAt(herFire, herFire.LightEnergy, qf) : 0):F3} sky={herSkyShown:F2} src={herSrc} src2={herSrc2} side={(herSide?.Visible == true ? herSide.LightEnergy : 0):F2} exp={g.air.Env.TonemapExposure:F3} night={night} nk={nk:F2} lens={g.camera.GlobalPosition.DistanceTo(le):F2} "
                     + string.Join(" ", rigs.Select(kv => $"{kv.Key}={on.GetValueOrDefault(kv.Value):F3}")));
             }
         }
@@ -288,6 +313,55 @@ public partial class Game
             return near * facing;
         }
 
+        /// <summary>The face-scale cap (Face 48 round 3): with her eyes in frame and her face toward the lens, a lens that puts her
+        /// face past HerScale px per 10 cm at 1080p is widened (about its aim, the frame's middle) until it does not. Returns the
+        /// lens in mm (36 mm film) after it; logs each shot's first clamp.</summary>
+        double HerScaleCap(double lensMm)
+        {
+            if (!HerPart("scale") || HerScale <= 0 || !people.TryGetValue("her", out var hv) || !IsInstanceValid(hv) || !hv.IsVisibleInTree()) return lensMm;
+            var cam = g.camera; var eyes = People.EyesOf(hv.Person);
+            if (cam.IsPositionBehind(eyes)) return lensMm;
+            var vp = g.GetViewport().GetVisibleRect().Size; var c = cam.UnprojectPosition(eyes);
+            if (c.X < 0 || c.X > vp.X || c.Y < 0 || c.Y > vp.Y) return lensMm;
+            if (HerHead(hv).fwd.Dot((cam.GlobalPosition - eyes).Normalized()) < -0.3f) return lensMm;
+            float px = (cam.UnprojectPosition(eyes + cam.GlobalBasis.X * 0.1f) - c).Length() * 1080f / Mathf.Max(vp.Y, 1);
+            if (px <= HerScale) return lensMm;
+            float t0 = Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2), t1 = t0 * px / HerScale;
+            cam.Fov = Mathf.RadToDeg(2 * Mathf.Atan(t1));
+            if (herClampLogged.Add(player.Shot.Index))
+                GD.Print($"cine-her: shot {player.Shot.Shot.Id} lens clamp {18 / t0:F0} mm -> {18 / t1:F0} mm (face {px:F0} -> {HerScale:F0} px per 10 cm)");
+            return 18 / t1;
+        }
+
+        static Vector3 Ok(Color c)
+        {
+            var l = c.SrgbToLinear();
+            float L = Mathf.Pow(Mathf.Max(0.4122214708f * l.R + 0.5363325363f * l.G + 0.0514459929f * l.B, 0), 1 / 3f);
+            float M = Mathf.Pow(Mathf.Max(0.2119034982f * l.R + 0.6806995451f * l.G + 0.1073969566f * l.B, 0), 1 / 3f);
+            float S = Mathf.Pow(Mathf.Max(0.0883024619f * l.R + 0.2817188376f * l.G + 0.6299787005f * l.B, 0), 1 / 3f);
+            return new Vector3(0.2104542553f * L + 0.7936177850f * M - 0.0040720468f * S, 1.9779984951f * L - 2.4285922050f * M + 0.4505937099f * S, 0.0259040371f * L + 0.7827717662f * M - 0.8086757660f * S);
+        }
+
+        /// <summary>An Oklab colour as a light's: brightest channel 1.</summary>
+        static Color FromOk(Vector3 o)
+        {
+            float l = o.X + 0.3963377774f * o.Y + 0.2158037573f * o.Z, m = o.X - 0.1055613458f * o.Y - 0.0638541728f * o.Z, s = o.X - 0.0894841775f * o.Y - 1.2914855480f * o.Z;
+            l = l * l * l; m = m * m * m; s = s * s * s;
+            float r = Mathf.Max(4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s, 0), gg = Mathf.Max(-1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s, 0), b = Mathf.Max(-0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s, 0);
+            float mx = Mathf.Max(Mathf.Max(r, gg), Mathf.Max(b, 1e-4f));
+            return new Color(r / mx, gg / mx, b / mx).LinearToSrgb();
+        }
+
+        /// <summary>A source's colour as her skin takes it (Face 48 round 3): a warm source (Oklab hue 35-115) at HerSkinC of the
+        /// close key's chroma at most, any other (blue, violet, red) at HerSkinCool: her skin stays skin under a blue lamp.</summary>
+        static Color SkinSafe(Color c)
+        {
+            var o = Ok(c); float C = new Vector2(o.Y, o.Z).Length(), h = Mathf.PosMod(Mathf.RadToDeg(Mathf.Atan2(o.Z, o.Y)), 360);
+            var k = Ok(CloseKeyColourNight); float cmax = h >= 35 && h <= 115 ? new Vector2(k.Y, k.Z).Length() * HerSkinC : HerSkinCool;
+            float f = C > cmax ? cmax / C : 1;
+            return FromOk(new Vector3(0.9f, o.Y * f, o.Z * f));
+        }
+
         static SpotLight3D HerSpot(Node at, string name, uint mask, float spec, float angle)
         {
             var l = new SpotLight3D { Name = name, SpotAngle = angle, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = mask, LightSpecular = spec, LightEnergy = 0, Visible = false };
@@ -309,7 +383,7 @@ public partial class Game
             if (her == null || eyesAt is not Vector3 e || k <= 0.001f || g.scene == null)
             {
                 HerZoneBack(); HerNearBack();
-                foreach (var l in new[] { herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear }) if (l != null && IsInstanceValid(l)) l.Visible = false;
+                foreach (var l in new[] { herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear, herSide, herSideHair, herRimHair, herEye, herBody }) if (l != null && IsInstanceValid(l)) l.Visible = false;
                 HerMoonBack();
                 if (herSkyShown != 1 && her != null && skinSky == 1) People.HerSkyShare(her.Person, 1);
                 herSkyShown = 1; herSrc = "-";
@@ -340,9 +414,44 @@ public partial class Game
             var lamp = night ? scene.View.NearestLit(e, CloseKeySrcRange) : null;
             var src = lamp != null ? lamp.GlobalPosition - e : g.air.Key.GlobalTransform.Basis.Z;
             herSrc = lamp != null ? lamp.Name : night ? "moon" : "sun";
+            // (the close view's exposure against this frame's: her lights scaled by it, so her face lands where the close view's does)
+            var pre = night ? Atmospheres.Night : Atmospheres.Day;
+            float closeExp = (float)pre.Exposure * g.air.ExposureScale * (night ? CloseExposureNight : Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1);
+            float m = closeExp / Mathf.Max(g.air.Env.TonemapExposure, 0.01f);
+            if (HerPart("near")) HerNearFind(scene, e, m); else HerNearBack();
+            // Round 3: the key from the strongest light at her head (by its light at her eyes, the more as it comes from
+            // where she faces), its colour hers; a second at HerSideMin of it or more kept as a side light.
+            bool srcDir = lamp == null; Color srcColour = lamp?.LightColor ?? g.air.Key.LightColor;
+            Vector3? src2 = null; Color src2Colour = default; herSrc2 = "-";
+            if (HerPart("src"))
+            {
+                var cands = new List<(Vector3 dir, bool sun, Color c, float w, string name)>();
+                void Add(Vector3 to, bool sun, Color c, float at, string name)
+                {
+                    if (at <= 0.003f || to.LengthSquared() < 1e-6f) return;
+                    var d = to.Normalized(); cands.Add((sun ? d : to, sun, c, at * (0.3f + 0.7f * Mathf.Max(0, fwd.Dot(d))), name));
+                }
+                foreach (var (name, r) in rigs) Add(r.L.GlobalPosition - e, false, r.L.LightColor, SpotAt(r.L, r.E, e), "rig:" + name);
+                if (lamp != null) Add(lamp.GlobalPosition - e, false, lamp.LightColor, OmniAt(lamp, lamp.LightEnergy, e), "lamp:" + lamp.Name);
+                foreach (var (o, _, _) in herNear) if (IsInstanceValid(o)) Add(o.GlobalPosition - e, false, o.LightColor, OmniAt(o, o.LightEnergy, e), "near:" + o.Name);
+                if (g.air.Key.Visible) Add(g.air.Key.GlobalTransform.Basis.Z, true, g.air.Key.LightColor, g.air.Key.LightEnergy * Lum(g.air.Key.LightColor), night ? "moon" : "sun");
+                cands.Sort((p, q) => q.w.CompareTo(p.w));
+                if (cands.Count > 0)
+                {
+                    var c0 = cands[0]; src = c0.dir; srcDir = c0.sun; srcColour = c0.c; herSrc = $"{c0.name}:{c0.w:F3}";
+                    if (HerPart("side"))
+                        foreach (var c1 in cands.Skip(1))
+                        {
+                            if (c1.w < HerSideMin * c0.w) break;
+                            var d0 = c0.dir - U * U.Dot(c0.dir); var d1 = c1.dir - U * U.Dot(c1.dir);
+                            if (Mathf.Abs(W(Az(d1) - Az(d0))) < Mathf.DegToRad(45)) continue;
+                            src2 = c1.dir; src2Colour = c1.c; herSrc2 = $"{c1.name}:{c1.w:F3}"; break;
+                        }
+                }
+            }
             var sp = src - U * U.Dot(src);
             float a = sp.LengthSquared() > 1e-4f ? Az(sp) : lens;
-            if (lamp == null) a = lens + Mathf.Clamp(W(a - lens), -Mathf.DegToRad(CloseKeySunHold), Mathf.DegToRad(CloseKeySunHold));
+            if (srcDir) a = lens + Mathf.Clamp(W(a - lens), -Mathf.DegToRad(CloseKeySunHold), Mathf.DegToRad(CloseKeySunHold));
             a = face + Mathf.Clamp(W(a - face), -hold, hold);
             if (g.IsTown && (night || Atmosphere.TownLit > 0.5f) && CloseKeyTownOff is { } to)
             {
@@ -355,10 +464,6 @@ public partial class Game
                 a = lens + (fd < 0 ? -1 : 1) * Mathf.Clamp(Mathf.Abs(W(a - lens)), Mathf.DegToRad(wo.X), Mathf.DegToRad(wo.Y));
                 a = face + Mathf.Clamp(W(a - face), -hold, hold);
             }
-            // (the close view's exposure against this frame's: her lights scaled by it, so her face lands where the close view's does)
-            var pre = night ? Atmospheres.Night : Atmospheres.Day;
-            float closeExp = (float)pre.Exposure * g.air.ExposureScale * (night ? CloseExposureNight : Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1);
-            float m = closeExp / Mathf.Max(g.air.Env.TonemapExposure, 0.01f);
             void Place(SpotLight3D l, float az, float up, float dist, Vector3 at)
             {
                 l.GlobalPosition = at + Dir(az, up) * dist;
@@ -366,28 +471,78 @@ public partial class Game
                 l.LookAt(at, Mathf.Abs(to.Dot(U)) > 0.98f ? Z0 : U);
             }
             float up0 = Mathf.DegToRad(night ? CloseKeyElNight : CloseKeyElDay);
-            herKey.LightColor = night ? CloseKeyColourNight : CloseKeyColourDay;
-            herKey.LightEnergy = (night ? CloseKeyNight : CloseKey) * m * HerKeyGain * k;
+            bool own = HerPart("src");
+            var refColour = night ? CloseKeyColourNight : CloseKeyColourDay;
+            herKey.LightColor = own ? SkinSafe(srcColour) : refColour;
+            herKey.LightEnergy = (night ? CloseKeyNight : CloseKey) * m * HerKeyGain * k * (own ? Lum(refColour) / Mathf.Max(Lum(herKey.LightColor), 0.05f) : 1);
             herKey.Visible = herKey.LightEnergy > 0.005f;
             herKey.ShadowEnabled = night && CloseKeyShadow; herKey.LightSize = 0.15f;
             Place(herKey, a, up0, 2.6f, center);
-            herKeyHair!.LightColor = night ? CloseKeyHairColour : herKey.LightColor;
-            herKeyHair.LightEnergy = herKey.LightEnergy * (night ? CloseKeyHair : 1); herKeyHair.Visible = herKey.Visible;
+            // (her hair and gear in the source's own colour, as bright as the key's would be)
+            var trueColour = own ? FromOk(Ok(srcColour)) : herKey.LightColor;
+            float trueE = own ? herKey.LightEnergy * Mathf.Min(Lum(herKey.LightColor) / Mathf.Max(Lum(trueColour), 0.02f), 3) : herKey.LightEnergy;
+            herKeyHair!.LightColor = own ? trueColour : night ? CloseKeyHairColour : herKey.LightColor;
+            herKeyHair.LightEnergy = (own ? trueE : herKey.LightEnergy) * (night ? CloseKeyHair : 1); herKeyHair.Visible = herKey.Visible;
             if (night && CloseKeyHairEl >= 0) Place(herKeyHair, a, Mathf.DegToRad(CloseKeyHairEl), 2.6f, center);
             else herKeyHair.GlobalTransform = herKey.GlobalTransform;
-            herKeyGear!.LightColor = herKey.LightColor; herKeyGear.LightEnergy = herKey.LightEnergy; herKeyGear.Visible = herKey.Visible;
+            herKeyGear!.LightColor = trueColour; herKeyGear.LightEnergy = trueE; herKeyGear.Visible = herKey.Visible;
             herKeyGear.LightSpecular = night ? CloseKeyGearSpec : 0.3f; herKeyGear.GlobalTransform = herKey.GlobalTransform;
             // (by night the cool fill on the lens's far side from the key, raised on deep skin, People.HerSkinDark)
             float fillRatio = CloseFillRatio + CloseFillDeep * People.HerSkinDark(her.Person);
-            herFill!.LightColor = CloseFillColourNight;
-            herFill.LightEnergy = night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * m * HerFillGain * k : 0;
+            herFill!.LightColor = own ? HerFillColour : CloseFillColourNight;
+            herFill.LightEnergy = night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * m * HerFillGain * k * (src2 != null ? HerFillSide : 1) : 0;
             herFill.Visible = herFill.LightEnergy > 0.005f;
             float side = W(a - lens) >= 0 ? -1 : 1;
             Place(herFill, lens + side * Mathf.DegToRad(35), Mathf.DegToRad(10), 2.6f, center);
             herRim!.LightColor = new Color("#a9c4ff");
-            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k : 0;
+            bool rim2 = HerPart("rim2");
+            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k * (rim2 ? HerRim2 : 1) : 0;
             herRim.Visible = herRim.LightEnergy > 0.005f;
-            Place(herRim, lens + Mathf.Pi - CloseRimAz, Mathf.DegToRad(CloseRimEl), 2.4f, center + U * 0.15f);
+            // (round 3: the rim from nearer straight behind, so it is a line on her far jaw, ear and hair, not a band)
+            float rimAz = rim2 ? HerRimAz * (W(face - lens) < 0 ? -1 : 1) : CloseRimAz;
+            Place(herRim, lens + Mathf.Pi - rimAz, Mathf.DegToRad(CloseRimEl), 2.4f, center + U * 0.15f);
+            herRimHair ??= HerSpot(scene, "HerRim_hair", PlayerView.HerHairLayer, CloseRimSpec, 26);
+            herRimHair.LightColor = herRim.LightColor; herRimHair.LightEnergy = rim2 ? herRim.LightEnergy * HerRimHair : 0;
+            herRimHair.Visible = herRimHair.LightEnergy > 0.005f; herRimHair.GlobalTransform = herRim.GlobalTransform;
+            // A second source (C01 s3: the moon beside her ember) on the face's other half, at HerSideGain of the key.
+            herSide ??= HerSpot(scene, "HerSide", 2u | PlayerView.HerLayer, 0.3f, 24);
+            herSideHair ??= HerSpot(scene, "HerSide_hair", PlayerView.HerHairLayer | PlayerView.HerGearLayer, 0.3f, 24);
+            if (src2 is Vector3 && night)
+            {
+                herSide.LightColor = SkinSafe(src2Colour);
+                herSide.LightEnergy = herKey.LightEnergy * HerSideGain * Lum(herKey.LightColor) / Mathf.Max(Lum(herSide.LightColor), 0.05f);
+                float sa = face - (W(a - face) >= 0 ? 1 : -1) * Mathf.DegToRad(75);
+                Place(herSide, sa, Mathf.DegToRad(20), 2.6f, center);
+                herSideHair.LightColor = FromOk(Ok(src2Colour));
+                herSideHair.LightEnergy = herSide.LightEnergy * Mathf.Min(Lum(herSide.LightColor) / Mathf.Max(Lum(herSideHair.LightColor), 0.02f), 3) * CloseKeyHair;
+                herSideHair.GlobalTransform = herSide.GlobalTransform;
+            }
+            else herSide.LightEnergy = herSideHair.LightEnergy = 0;
+            herSide.Visible = herSide.LightEnergy > 0.005f; herSideHair.Visible = herSideHair.LightEnergy > 0.005f;
+            // Her catchlights: a light just above the lens, too faint to light her skin, its sheen whole on her wet eyes.
+            herEye ??= HerSpot(scene, "HerEye", 2u | PlayerView.HerLayer, 16, 4);
+            if (HerPart("eye") && HerEye > 0)
+            {
+                var toCam = g.camera.GlobalPosition - e; float cd = toCam.Length();
+                var camUp = g.camera.GlobalBasis.Y; var dir = toCam / Mathf.Max(cd, 1e-3f);
+                var upPerp = (camUp - dir * dir.Dot(camUp)).Normalized(); float el = Mathf.DegToRad(HerEyeEl);
+                herEye.GlobalPosition = e + (dir * Mathf.Cos(el) + upPerp * Mathf.Sin(el)) * cd;
+                herEye.LookAt(e, camUp);
+                herEye.SpotRange = cd + 2; herEye.LightEnergy = HerEye * k; herEye.LightSpecular = 16;
+                herEye.Visible = herEye.LightEnergy > 0.00005f;
+            }
+            else herEye.Visible = false;
+            // Her key on her shoulders and chest (C01 s3: a lit face over grey-lilac skin): its colour from its side at HerBodyGain.
+            herBody ??= HerSpot(scene, "HerBody", 2u | PlayerView.HerLayer, 0.3f, 14);
+            if (HerPart("body") && HerBodyGain > 0)
+            {
+                var chest = center - U * 0.3f - fwd * 0.03f;
+                herBody.LightColor = herKey.LightColor; herBody.SpotAngleAttenuation = 2;
+                herBody.LightEnergy = herKey.LightEnergy * HerBodyGain;
+                Place(herBody, a, up0 * 0.5f, 2.6f, chest);
+                herBody.Visible = herBody.LightEnergy > 0.005f;
+            }
+            else herBody.Visible = false;
             herRimGear!.LightColor = herRim.LightColor; herRimGear.LightEnergy = herRim.LightEnergy * CloseRimGearGain;
             herRimGear.Visible = herRim.Visible && herRimGear.LightEnergy > 0.005f;
             Place(herRimGear, lens + Mathf.Pi - CloseRimGearAz, Mathf.DegToRad(CloseRimEl), 2.4f, center + U * 0.15f);
@@ -431,40 +586,6 @@ public partial class Game
                 else herFire.Visible = false;
             }
             else HerZoneBack();
-            // Every other light near her face (C02 s8: a cold flame 0.3 m off her cheek was as strong on it as her key) held the
-            // same way: off her layers, its twin on them at HerNearGain of it, exposure matched. Found once a shot.
-            if (HerPart("near"))
-            {
-                // (looked for at each shot's start and every half second: a flame lit or carried in mid-shot)
-                if (herNearShot != player.Shot.Index || Shots.Clock - herNearAt >= 0.5)
-                {
-                    if (herNearShot != player.Shot.Index) HerNearBack();
-                    herNearShot = player.Shot.Index; herNearAt = Shots.Clock;
-                    void Find(Node n)
-                    {
-                        foreach (var c in n.GetChildren())
-                        {
-                            if (c is OmniLight3D o && o != herFire && o.IsVisibleInTree() && (o.LightCullMask & 2u) != 0 && OmniAt(o, o.LightEnergy, e) > 0.01f)
-                            {
-                                uint bits = o.LightCullMask & (2u | PlayerView.HerLayers);
-                                var t = new OmniLight3D { Name = "HerNear_" + o.Name, ShadowEnabled = false, LightCullMask = bits };
-                                o.LightCullMask &= ~bits;
-                                scene.AddChild(t);
-                                herNear.Add((o, t, bits));
-                            }
-                            Find(c);
-                        }
-                    }
-                    Find(scene);
-                }
-                foreach (var (o, t, _) in herNear)
-                {
-                    if (!IsInstanceValid(o) || !IsInstanceValid(t)) continue;
-                    t.GlobalPosition = o.GlobalPosition; t.LightColor = o.LightColor; t.OmniRange = o.OmniRange; t.OmniAttenuation = o.OmniAttenuation;
-                    t.LightSpecular = o.LightSpecular; t.LightEnergy = o.LightEnergy * m * HerNearGain; t.Visible = o.IsVisibleInTree();
-                }
-            }
-            else HerNearBack();
             // Her skin's share of the sky's light, held to the close view's (its exposure and its hemi and env against the shot's).
             if (skinSky == 1)
             {
@@ -472,6 +593,40 @@ public partial class Game
                 float hold0 = Mathf.Min(1, m * (float)((pre.HemiIntensity + pre.EnvIntensity) / Math.Max(amb, 1e-3))) * HerSkyHold * (night ? 1 : CloseSkyDay);
                 herSkyShown = Mathf.Lerp(1, Mathf.Clamp(hold0, 0, 1), k);
                 People.HerSkyShare(her.Person, herSkyShown);
+            }
+        }
+
+        /// <summary>Every other light near her face (C02 s8: a cold flame 0.3 m off her cheek was as strong on it as her key)
+        /// held as her key is: off her layers, its twin on them at HerNearGain of it, exposure matched. Looked for at each
+        /// shot's start and every half second (a flame lit or carried in mid-shot).</summary>
+        void HerNearFind(Node3D scene, Vector3 e, float m)
+        {
+            if (herNearShot != player.Shot.Index || Shots.Clock - herNearAt >= 0.5)
+            {
+                if (herNearShot != player.Shot.Index) HerNearBack();
+                herNearShot = player.Shot.Index; herNearAt = Shots.Clock;
+                void Find(Node n)
+                {
+                    foreach (var c in n.GetChildren())
+                    {
+                        if (c is OmniLight3D o && o != herFire && o.IsVisibleInTree() && (o.LightCullMask & 2u) != 0 && OmniAt(o, o.LightEnergy, e) > 0.01f)
+                        {
+                            uint bits = o.LightCullMask & (2u | PlayerView.HerLayers);
+                            var t = new OmniLight3D { Name = "HerNear_" + o.Name, ShadowEnabled = false, LightCullMask = bits };
+                            o.LightCullMask &= ~bits;
+                            scene.AddChild(t);
+                            herNear.Add((o, t, bits));
+                        }
+                        Find(c);
+                    }
+                }
+                Find(scene);
+            }
+            foreach (var (o, t, _) in herNear)
+            {
+                if (!IsInstanceValid(o) || !IsInstanceValid(t)) continue;
+                t.GlobalPosition = o.GlobalPosition; t.LightColor = o.LightColor; t.OmniRange = o.OmniRange; t.OmniAttenuation = o.OmniAttenuation;
+                t.LightSpecular = o.LightSpecular; t.LightEnergy = o.LightEnergy * m * HerNearGain; t.Visible = o.IsVisibleInTree();
             }
         }
 
@@ -506,8 +661,8 @@ public partial class Game
         void HerLightEnd()
         {
             HerMoonBack(); HerZoneBack(); HerNearBack();
-            foreach (var l in new Light3D?[] { herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear, herMoon, herFire }) if (l != null && IsInstanceValid(l)) l.QueueFree();
-            herKey = herKeyHair = herKeyGear = herFill = herRim = herRimGear = null; herMoon = null; herFire = null;
+            foreach (var l in new Light3D?[] { herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear, herSide, herSideHair, herRimHair, herEye, herBody, herMoon, herFire }) if (l != null && IsInstanceValid(l)) l.QueueFree();
+            herKey = herKeyHair = herKeyGear = herFill = herRim = herRimGear = herSide = herSideHair = herRimHair = herEye = herBody = null; herMoon = null; herFire = null;
             if (herSkyShown != 1 && people.TryGetValue("her", out var hs) && IsInstanceValid(hs)) People.HerSkyShare(hs.Person, 1);
             herSkyShown = 1;
             foreach (var gi in herMoved)
