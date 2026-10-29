@@ -1,6 +1,39 @@
 # The Ford-Warden: boss-tier model rebuild (handoff)
 
 ## Start here / Paused here; next:
+**MR READY (29 Oct, Warden lead 7, hard stop at max r2 by the coordinator's call; warden-1@HEAD, tests 1326/0/10).** r2 (max, judge ac6e92cc): all 6 gate NO, but the model moved. s12 (play camera) model CLOSE; what fails there is mostly water contact. Parts: lamp object CLOSE, lamp light MEDIUM, sword CLOSE (was FAR), face CLOSE (MEDIUM at C03 s1), eye-lights PASS, tabard CLOSE, quilting CLOSE, hood/capelet/cape MEDIUM (wool fixed; silhouette: s7 dome, s2 cone, cape narrower than A), iron MEDIUM, **beard FAR (twice: regenerate, don't patch)**. Finger plates CUT (judge: not needed at these cameras). Cost: about 2.9M tokens (solvers about 2.5M over 18 spawns, judges about 225k, lead about 175k), 0 Meshy, 0 API.
+- **Built this session:**
+  - **Garment** `tools/assets/warden_garment.py` (a sewn-pattern cloth sim: hood sides plus the gusset, the capelet and A's cape; `--drape <blend>` reuses a drape; drape `scratch_warden7\garment\r4a\drape.blend`). Bound at the game idle (`tools/assets/warden_garment_pose.json`). 15.4k/4.1k/1.0k tris.
+  - **Springs and correctives capability** for any baked package piece: `godot/src/Actors/PieceSprings.cs` and `godot/logic/Play/ClothChains.cs`. The manifest's `springs` and `correctives` add the bones at load, run chain sim with body capsules, and reset on cuts. Switches: `--springs off`, `PIECE_SPRINGS_DBG=1`. Tests: ClothChainsTests.
+  - **Lantern** `tools/assets/warden_lamp.py` -> `art/props/keeper_lamp/warden_lamp.glb`: straps and a solid iron hood, plus `LampIron.MakeWarden`. The light is inverse square over 6 m. The sword sits on its own layer (`LampIron.SwordLayer` 16) with a dim twin light. Switches: `WARDEN_LAMP_*`, `WARDEN_SWORD_LAMP`, `WARDEN_EYE_PX`.
+  - **Sword** `watch_blade.py` (broad longsword).
+  - **Beard** `tools/assets/warden_beard_strands.py`: her atlas and shader, 18.2k tris.
+  - **Materials** in `warden_wet`, `warden_face` and `keeper_iron` (sword regions, `debug_view=1`).
+- **Found:** Blender 4.5's glTF export writes an all-white COLOR_0 (the real colours land in COLOR_1). `fix_colours()` in watch_blade.py and warden_lamp.py repoints it. Check any Blender-exported prop that reads vertex colour.
+- **Next, if reopened:**
+  1. **Beard:** regenerate the groom with 3-4x the cards, narrower and clumped, with curl. Values run dark root, then grey, then pale tip, with AO at the jaw, plus a spring chain. Stop-gap: mid value -30% and roots to the jaw's value (65 vs 26 at s7 now).
+  2. **Lamp fist** reads as a white glove (s5): take the holding gauntlet off the lamp light, or give it a wet knuckle at roughness about 0.5.
+  3. **Capelet dome at s7.** The corrective is at full weight there (the r2 worker's pitch table: root 82-85 in s7, so the dome comes from the shape or the hood chain, not the driver).
+  4. **Iron cuffs and gauntlets:** darker metal, roughness 0.5-0.65.
+  5. **Tabard** under the lamp: roughness 0.95, spec 0.2.
+  6. **Sword flat at s12:** about 115.
+  7. **Face at C03 s1:** remove the specks, add forehead hood occlusion.
+  8. **Pendant** chain.
+  9. **Hood at s2:** a cone; the cape is narrower than A's.
+  10. **Lamp:** clearer panes, and one cold-blue flame across shots.
+- **Routes (main, to other areas):**
+  - **Cinematics:**
+    - C03 s2: the lamp hides his face on "Is it morning?"; restage 20-30 deg to his front.
+    - C02 s7: a more frontal angle (it hides the dome); the lamp at her face height; the gallows post off her head.
+    - C02 s5: a moon rim off the navy sky.
+    - C02 s11: the pillar off his sword arm; frame him at 65% or more of the height.
+    - C03 s1: restaged in our test copy c03w (78fea4d14: 85 mm, 3/4 below); port it, reduce the head roll, and raise the camera to chin height.
+    - c03's warm flame cue vs A's cold blue: pick one.
+  - **Animation:** the s11 bow-legged title squat (want: tall, tired, sword point in the water).
+  - **Water:** contact rings, wake and a wet band at his waterline (s12, s2); the lamp pool on the water surface (s12).
+  - **Env:** s2 boulders read as blobs; s12 terracotta pillar out of palette; s5 pillar on his hip; s7 the drowned crowd reads as dolls.
+  - Older routes, still open: c02 s12 water ring; s11 lunge and no lamp on the title.
+- **Frames:** the r2 judged set is `godot/.shots/w7j2_*` (r1: `w7j1_*`). Shoot scripts are backed up in `survivorsunchained_inputs\scratch_warden7\` (shoot.py, import.sh, runs_j2.json; garment blg.sh, motion2.sh, hoodlum.py; lamp m.py, diff.py; material2 sword.py, lum.py).
 **HANDED OFF (29 Oct, Warden lead 6, at ~240k). Assembled model judged r2 (max): MEDIUM; the HOOD is far behind -> REMAKE (scrap rule); the rest is tuning. Meshy: still 30 of 120 spent (none this session). Item rounds used: warden6-body 2 of 3, warden6-hood 2, warden6-beard 2, warden6-face 1, warden6-material 1.**
 - **Decisions (coordinator):** keep the Meshy body; generated head region SCRAPPED and rebuilt as a head kit (face + hood/capelet + beard); keep the quilting; beard = cards via heroine_hair.py tooling, now a HYBRID (sculpted lock mass + card fringe + mustache). Order: material -> head kit -> cape -> props/paint; knees only if a frame shows them.
 - **Package `godot/art/npc/ford_warden/` now:** body.glb (Meshy, mantle + head region cut index-only; gambeson waffle Taubin-smoothed), `warden_face` head (Face Forge, Marionette `generated/game/warden6_head_c.glb`; graft `tools/assets/warden_face.py`), `armor/hood.glb` (piece `hood`, `tools/assets/warden_hood.py --src scratch hood/pkg_pre`, reuses `hood2/r1/drape.npz`), `beard.glb` (manifest `hair` block, `tools/assets/warden_beard.py`, materials `hair_mass` + `hair`). Maps: `id_generated.png` (`warden_id_map.py`; R class*32+loft, G height, BA detail normal), `face_data.png` (`warden_face_maps.py`), `armor/hood_id.png`, wet_generated.png. Re-run after geometry changes: `warden_wet_maps.py` then `warden_id_map.py`, then import.
