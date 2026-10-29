@@ -1425,6 +1425,12 @@ public partial class Game
                     // "ear": her ears' warm shade, 1 as built (a warm ear against her cheek once the key is the rig).
                     skinSky = (float)c.Num("sky", skinSky);
                     skinEar = (float)c.Num("ear", skinEar);
+                    // ("fill", "fillColor", "scale": her rig's fill and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
+                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale"))
+                    {
+                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herScaleShot = (float)c.Num("scale", 0);
+                        herFillCol = c.Str("fillColor") is string hfc ? new Color(hfc) : null;
+                    }
                     if (people.TryGetValue("her", out var hs)) { SurvivorUnchained.View.People.HerSkyShare(hs.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, skinEar); }
                     break;
                 }
