@@ -279,7 +279,7 @@ public partial class ZoneView : Node3D
     readonly Dictionary<int, float> lightDrop = new();
 
     /// <summary>A fire's flames scaled (0: embers only); its embers and smoke stay.</summary>
-    public void SetFire(int light, float flames)
+    public void SetFire(int light, float flames, float lift = 0)
     {
         foreach (var (l, fire) in fires)
         {
@@ -293,7 +293,7 @@ public partial class ZoneView : Node3D
             if (light >= 0 && light < lights.Count)
             {
                 var at = specs[light].At;
-                lightDrop[light] = at.Y - Mathf.Lerp(fire.Position.Y + 0.18f, at.Y, Mathf.Clamp(flames, 0, 1));
+                lightDrop[light] = Mathf.Max(0, at.Y - Mathf.Lerp(fire.Position.Y + 0.18f + lift, at.Y, Mathf.Clamp(flames, 0, 1)));
                 lights[light].Position = at + Vector3.Down * lightDrop[light];
             }
         }
