@@ -87,7 +87,7 @@ def textures():
             scale = 3.05
         canvas = np.zeros((H * 1, W * 1), np.float32)
         big = np.zeros((step * 3 * SS, W * SS), np.float32)
-        fade_at = text.index('Ford') + 2 if legible else -1      # its 'r' faded to a ghost (round 2)
+        fade_at = -1                              # unfaded (cine9 r3)
         bigf = np.zeros_like(big)
         base = int(step * 1.6 * SS)          # base line in the strip
         x = (left + (0 if li != len(LINES) - 1 else 980) + rnd.uniform(-6, 10)) * SS

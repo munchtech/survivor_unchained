@@ -96,7 +96,7 @@
       "type": "INS",
       "dur": 3.0,
       "note": "Insert, silent: the letter she carried, open on the road where it fell, run by the river; one line, in the band the fold kept dry, still reads: Come home by the Low Ford. No hands.",
-      "cam": {"pos": [0.0, 0.47, -54.33], "at": [0.0, 0.0, -54.6], "lens": 50, "focus": [0.0, 0.0, -54.6], "fstop": 5.6, "move": {"start": 0, "end": "end", "push": 0.025, "ease": "inout"}},
+      "cam": {"pos": [-0.022, 0.26, -54.577], "at": [-0.022, 0.0, -54.592], "lens": 60, "focus": [-0.022, 0.0, -54.592], "fstop": 5.6, "move": {"start": 0, "end": "end", "push": 0.025, "ease": "inout"}},
       "cues": [
         {"do": "prop", "name": "letter", "scene": "res://art/props/letter/letter_open.glb", "where": [0.0, 0.008, -54.6], "rot": [-84, 0, 0]},
         {"do": "music", "mood": "silence"},
