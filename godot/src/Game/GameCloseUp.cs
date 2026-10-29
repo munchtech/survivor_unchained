@@ -175,6 +175,9 @@ public partial class Game
         pv.LampOffHer = lit && night && day > 0.5f && CloseLampOffHer;
         pv.FolkScale = FolkScaleFor(pv, night, lit ? day : 0, out float nearLamp);
         pv.PoolScale = Mathf.Lerp(1, PoolNearLamp, nearLamp);
+        // (and in the town's close view by night, CloseTownPool: from her hand her pool lit the stall's awning beside her as
+        // bright as her face, tnight_02; the town's lamps light its ground)
+        if (night && IsTown && lit) pv.PoolScale *= Mathf.Lerp(1, CloseTownPool, day);
         // By night the camp's fire stood behind the lens and lit both her cheeks alike: it is kept off her (her own
         // layer), and a share of it, from where it burns and flickering as it does, stays on her as her warm fill.
         bool own = pv.LampOffHer && CloseFireShare < 1;
@@ -558,6 +561,8 @@ public partial class Game
     static float FolkNearReach => Args.Num("folk-near-reach", 3f);
     // --pool-near-lamp K: her pool light there (1: as round 2; 0.1: tnight_01 blown 14.5% -> 1.4%, the lantern lights the ground there).
     static float PoolNearLamp => Args.Num("pool-near-lamp", 0.1f);
+    // --close-town-pool K: her pool light in the town's close view by night (Rendering 3; 1: as round 2).
+    static float CloseTownPool => Args.Num("close-town-pool", 0.25f);
     /// <summary>Her folk light's share (PlayerView.FolkScale): ducked to FolkNearLamp within FolkNearReach of a town lamp by night (judge
     /// j2 D4: her ember stacked on the lantern ran her body near-white), eased over the outer half of the reach; off in the close
     /// view by night (closeDay, judge j2 D5: the close rig lights her).</summary>
