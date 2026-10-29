@@ -1,7 +1,8 @@
 # Handoff: skills look and feel
 
-## Combat VFX 5 (vfx-4, 29 Oct): WAITING ON THE OWNER'S COLOR PICK (scarlet | salmon); then set it, full test, MR
+## Combat VFX 5 (vfx-4, 29 Oct): MR READY. Chevrons, and the owner picked B SALMON
 **The owner picked chevrons (verbatim):** "agreed, chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges".
+**Then the color (verbatim):** "B salmon." It is set in mark_look.json (`"look": "salmon"`). The fire tint stays off.
 
 **Built** (all in `godot/src/Fx/MarkPass.cs` and `godot/data/mark_look.json`; red marks only):
 - Chevrons are on every red mark (`"patterns"` default chevron). The other patterns stay as named choices.
@@ -17,7 +18,7 @@
 - Round 1 (xhigh): salmon PASS; scarlet FAIL by day, close.
 - Round 2 (xhigh, the last round): salmon PASS, every frame gate YES. Scarlet PASS on every frame except f14, a late Warden disc on the bank that is cut by a straight chord with no rim.
 
-**Closed as known, routed to a later projection item** (pre-existing; not this item):
+**Later list: telegraph projection** (pre-existing, routed by main 29 Oct; one item for the next VFX slot):
 - The f14 chord: the height gate (g0/g1) on a sloped bank.
 - The mark paints corpses and debris on the ground.
 - A lane appears to jog where it crosses a roofless building's wall.
@@ -25,10 +26,7 @@
 
 **Owner sheet (SENT via main):** `C:\Users\munch\Desktop\survivorsunchained_inputs\vfx5\telegraph_color_scarlet_vs_salmon.jpg`.
 
-**Next:**
-1. Set `"look"` to the pick (and `"tinted"` if the owner wants the tint).
-2. Full test (`dotnet test` in godot).
-3. MR READY to main.
+**Next:** merge (main). Then the queued input below (the warden's 4 new skills), and the projection later list above.
 
 The shot scripts (shoot.sh `NAME:LOOK:KIND:MARK_TUNE`, pace.py, jsheet.py, red.py, owner_sheet.py) are backed up in `survivorsunchained_inputs\scratch_vfx5`.
 
