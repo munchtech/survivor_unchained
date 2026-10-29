@@ -5,60 +5,76 @@ using Godot;
 namespace SurvivorUnchained.Ui;
 
 /// <summary>
-/// UI 17, The Drowned Girl (the game's HUD): the Flare as a live coal held in the river's eddy, in place of the art's
-/// glass (Vessel.Coal). A lump of real charcoal (art/ui/dg_meters/coal_map.png, tools/uiforge/dg_coal.py, from a Krea
-/// painting), its own lumpy silhouette sitting low in the eddy's dark cup, under shaders/hud_dg_coal.gdshader.
-/// Round 3 (the judge: "a dark porthole", "only the lower cracks"): the heat front climbs the coal from its foot to
-/// its top with the meter, the cracks below it orange-gold with a hot leading edge and the dark above, so the amount
-/// reads at a glance; full, every crack white-gold top to bottom, a slow heat breath (3.3 s), 6 to 10 embers rising
-/// and its light on the eddy's bronze (a BOOM button begging to be pressed); a press (the meter falling from full)
-/// flashes it orange, throws streaked embers and lets flakes of ash sink, and it cools to refill. Its rect is the eddy's hole and the room its light needs (Ext hole radii each way).
+/// UI 23, HUD A (the keeper): the Flare, a dark glass globe in the keeper's bowl that fills with fire as it charges
+/// (shaders/hud_dg_globe.gdshader, the mock's ember_glass(); every constant in art/ui/dg_keeper/hud_a_geo.json
+/// "glass"). One quad from the READY halo's reach above the glass to the screen's foot, the bowl's front lip
+/// (keeper_lip.png) drawn in it over the glass's foot. Full (READY): a white-gold heart, the bezel lit, flames over
+/// the top, embers climbing, a slow heat breath; a press (the meter falling from full) flashes it orange, throws
+/// streaked embers and lets flakes of ash sink (DgSparks), and the glass cools from dull red as it refills. Its
+/// uniforms are set only when they change; the shader's own time runs the fire.
 /// </summary>
-public partial class DgCoal : ColorRect
+public partial class DgGlobe : ColorRect
 {
-    public const float Ext = 2.6f;
-    static readonly StringName ULevel = "level", UBurst = "burst";
+    static readonly StringName UCharge = "charge", UBurst = "burst", UPing = "ping", UFigA = "fig_a", ULipTint = "lip_tint", ULive = "live";
     readonly ShaderMaterial mat;
     readonly DgSparks sparks;
-    /// <summary>The meter, 0 to 1 (the art's level).</summary>
-    public float Level;
-    float shown = -1, burst = -1, held;
+    /// <summary>The meter, 0 to 1; the ready swell (1 on reaching full, easing to 0); the keeper's fade and dimming
+    /// (the lip fades with him).</summary>
+    public float Level, Ping, FigA = 1;
+    public Color LipTint = Colors.White;
+    float shown = -1, burst = -1, held, sPing = -1, sFig = -1, sLive = -1;
+    Color sTint = new(-1, -1, -1);
     static readonly float Hold = Args.Num("coal-burst-hold", -1f);
+    /// <summary>The quad on the screen: the READY halo's reach (3.2 r) round the glass, 30 px more above (its flames
+    /// and embers), down to the screen's foot (the lip).</summary>
+    public static Rect2 Quad
+    {
+        get
+        {
+            var c = DgPanel.GlassAt; float r = DgPanel.GlassR;
+            float x0 = Mathf.Floor(c.X - 3.2f * r), x1 = Mathf.Ceil(c.X + 3.2f * r), y0 = Mathf.Floor(c.Y - 3.2f * r - 30);
+            return new Rect2(x0, y0, x1 - x0, 1080 - y0);
+        }
+    }
 
-    public DgCoal()
+    public DgGlobe()
     {
         MouseFilter = MouseFilterEnum.Ignore;
         ProcessMode = ProcessModeEnum.Always;
-        float r = DgRiver.FlareR;
-        Size = Vector2.One * 2 * r * Ext;
-        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_coal.gdshader") };
-        var geo = DgMeterGeo.Coal();
-        if (UiArt.Tex("dg_meters/coal_map.png") is { } map && map.GetImage() is { } img)
-        {
-            // (with its mips: the shader reads a coarse one for the coal's light round it)
-            if (img.IsCompressed()) img.Decompress();
-            if (!img.HasMipmaps()) img.GenerateMipmaps();
-            mat.SetShaderParameter("coal", ImageTexture.CreateFromImage(img));
-        }
-        else GD.PushError("DgCoal: dg_meters/coal_map.png did not load: the coal draws blank");
-        mat.SetShaderParameter("ext", Ext);
-        mat.SetShaderParameter("px", r);
-        mat.SetShaderParameter("k", geo.K);
-        mat.SetShaderParameter("off", geo.Off);
-        mat.SetShaderParameter("y0", geo.Y0);
-        mat.SetShaderParameter("y1", geo.Y1);
+        var q = Quad;
+        Size = q.Size;
+        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_globe.gdshader") };
+        // (the fire with its mips: 8.7 texels a screen px)
+        foreach (var (u, f) in new[] { ("fire", "fire.png"), ("fire_ready", "fire_ready.png") })
+            if (UiArt.Tex("dg_keeper/" + f, false) is { } t && t.GetImage() is { } img)
+            {
+                if (img.IsCompressed()) img.Decompress();
+                if (!img.HasMipmaps()) img.GenerateMipmaps();
+                mat.SetShaderParameter(u, ImageTexture.CreateFromImage(img));
+            }
+            else GD.PushError($"DgGlobe: dg_keeper/{f} did not load: the Flare draws without its fire");
+        if (UiArt.Tex("dg_keeper/keeper_lip.png", false) is { } lip) mat.SetShaderParameter("lip", lip);
+        else GD.PushError("DgGlobe: dg_keeper/keeper_lip.png did not load: the bowl's lip is missing");
+        var k = DgPanel.KeeperRect;
+        mat.SetShaderParameter("q_at", q.Position);
+        mat.SetShaderParameter("q_size", q.Size);
+        mat.SetShaderParameter("c", DgPanel.GlassAt);
+        mat.SetShaderParameter("r", DgPanel.GlassR);
+        mat.SetShaderParameter("lip_y", DgPanel.GlassLipY);
+        mat.SetShaderParameter("krect", new Vector4(k.Position.X, k.Position.Y, k.Size.X, k.Size.Y));
         Material = mat;
         Color = Colors.White;
-        sparks = new DgSparks(r * geo.K, geo.Off * r) { Position = Size / 2 };
+        sparks = new DgSparks(DgPanel.GlassR, Vector2.Zero) { Position = DgPanel.GlassAt - q.Position };
         AddChild(sparks);
     }
 
     public override void _Process(double delta)
     {
+        using var _ = new Perf.Span(Perf.Part.Hud);
         float dt = Math.Min((float)delta, 0.1f);
         // a press: the meter drops from full (held full for a moment first, so a pin or a load does not count)
         if (held > 0.2f && Level < shown - 0.3f) { burst = 0; sparks.Burst(); }
-        held = Level >= 0.98f ? held + dt : 0;
+        held = Level >= 0.999f ? held + dt : 0;
         // (--coal-burst-hold S, for the shots: a press's look held S seconds after it, sparks and all)
         float sdt = dt;
         if (burst >= 0)
@@ -68,14 +84,62 @@ public partial class DgCoal : ColorRect
             if (burst > 2.4f) burst = -1;
             mat.SetShaderParameter(UBurst, burst);
         }
-        if (Level != shown) { shown = Level; mat.SetShaderParameter(ULevel, Level); }
-        sparks.Full = Level >= 0.999f;
+        if (Level != shown) { shown = Level; mat.SetShaderParameter(UCharge, Level); }
+        if (Ping != sPing) { sPing = Ping; mat.SetShaderParameter(UPing, Ping); }
+        if (FigA != sFig) { sFig = FigA; mat.SetShaderParameter(UFigA, FigA); }
+        if (LipTint != sTint) { sTint = LipTint; mat.SetShaderParameter(ULipTint, LipTint); }
+        // (a pinned shine is the judged mock's still frame: the fire held still too)
+        float live = HudPin.Shine != null ? 0 : 1;
+        if (live != sLive) { sLive = live; mat.SetShaderParameter(ULive, live); }
+        // (the climbing embers are the shader's; DgSparks throws the press's embers and ash)
+        sparks.Full = false;
         if (sdt > 0 || burst < 0) sparks.Tick(sdt > 0 ? sdt : dt);
     }
 }
 
-/// <summary>The coal's placement in the eddy's hole (art/ui/dg_meters/meters_geo.json "coal", written by
-/// tools/uiforge/dg_coal.py): its map's half size and its middle's offset, in the hole's radii.</summary>
+/// <summary>UI 23, HUD A: the keeper, the hooded bronze mourner bowed over the bowl that holds the Flare
+/// (art/ui/dg_keeper/keeper.png, 2x, at the geo's final screen rect: no group scale on top). Under the plate; the same
+/// sprite by day and night. When the survivor, an elite or a marked attack is behind him (Game, as for her figure), he
+/// fades as her figure does (LifeLamp's FadeTo and times); the glass stays, the bowl's lip fades with him (DgGlobe).</summary>
+public partial class DgKeeper : Control
+{
+    readonly Texture2D? tex;
+    /// <summary>Something is behind him (Game sets it each frame).</summary>
+    public bool Behind;
+    /// <summary>His figure's alpha now (1, or down to LifeLamp.FadeTo).</summary>
+    public float FigA { get; private set; } = 1;
+    float clearFor = 9;
+    public DgGlobe? Globe;
+
+    public DgKeeper()
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        TextureFilter = TextureFilterEnum.Linear;
+        var k = DgPanel.KeeperRect;
+        Position = k.Position;
+        Size = k.Size;
+        tex = UiArt.Tex("dg_keeper/keeper.png", false);
+        if (tex == null) GD.PushError("DgKeeper: dg_keeper/keeper.png did not load: the keeper is missing");
+    }
+
+    public override void _Draw()
+    {
+        if (tex != null) DrawTextureRect(tex, new Rect2(Vector2.Zero, Size), false);
+    }
+
+    public override void _Process(double delta)
+    {
+        float dt = Math.Min((float)delta, 0.1f);
+        clearFor = Behind ? 0 : clearFor + dt;
+        bool dim = clearFor < LifeLamp.FadeHold;
+        float to = dim ? LifeLamp.FadeTo : 1;
+        float a = Mathf.MoveToward(FigA, to, dt * (1 - LifeLamp.FadeTo) / (dim ? LifeLamp.FadeTime : LifeLamp.FadeBack));
+        if (a != FigA) { FigA = a; SelfModulate = new Color(1, 1, 1, a); }
+        if (Globe != null) { Globe.FigA = FigA; Globe.LipTint = Modulate; }
+    }
+}
+
+/// <summary>The meters' geo (art/ui/dg_meters/meters_geo.json): the flask's size and liquid span.</summary>
 public static class DgMeterGeo
 {
     static Godot.Collections.Dictionary? geo;
@@ -88,14 +152,6 @@ public static class DgMeterGeo
             geo = FileAccess.FileExists(path) && Json.ParseString(FileAccess.GetFileAsString(path)).AsGodotDictionary() is { } d ? d : new();
             return geo;
         }
-    }
-
-    public static (float K, Vector2 Off, float Y0, float Y1) Coal()
-    {
-        if (Geo.TryGetValue("coal", out var v) && v.AsGodotDictionary() is { } c)
-            return ((float)c["k"].AsDouble(), new Vector2((float)c["ox"].AsDouble(), (float)c["oy"].AsDouble()),
-                c.TryGetValue("y0", out var a) ? (float)a.AsDouble() : -0.84f, c.TryGetValue("y1", out var b) ? (float)b.AsDouble() : 0.84f);
-        return (0.9f, new Vector2(0, 0.05f), -0.84f, 0.84f);
     }
 
     /// <summary>The flask's size shown and the liquid's top and foot in it (0..1 of its height).</summary>

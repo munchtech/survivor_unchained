@@ -5,5 +5,13 @@
   "quiet": 90,
   "settle": 0.8,
   "darkFade": 2.0
+ },
+ "xpRing": {
+  "titleGap": 8,
+  "gainBoost": 0.6,
+  "shineFrom": 430,
+  "shineTo": 1000,
+  "shineTravel": 6,
+  "shinePeriod": 14
  }
 }

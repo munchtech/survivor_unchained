@@ -4,17 +4,14 @@ using System.Collections.Generic;
 namespace SurvivorUnchained.Play;
 
 /// <summary>
-/// UI 18, the Drowned Girl's experience (the owner's pick (c)). A gain runs a cool light along her hair
-/// and the river from her hair (0) to the meter's fraction (the eddy = full) in Run seconds, holds it there Hold
-/// seconds, and settles in Settle to a dim resting glow (the owner: "its nice to know where our exp is"): the lit
-/// strands faint, the front a soft glow, nothing moving. After Quiet seconds with no gain it goes dark in DarkFade;
-/// the next gain runs as ever. Entering a zone or loading (Wake, and the first Feed) shows the resting glow and
-/// starts the quiet clock. Gains batch: a new run starts at most once every Gap seconds; while gains keep coming the
-/// held light stays up and its front slides forward, so in a fight it reads as a meter. A level-up lights all of her
-/// hair and the river for its moment (Whole), and the run starts again from her hair on the next gain. By day it is
-/// her experience, by night the ember; a change of either (or a loss: a death's toll, a new night) settles it at rest
-/// on the new fraction without a run. The resting knobs are data (data/content/hud.json "xpLight", XpRest). Pure:
-/// DgRiver draws what it says (Tail, Peak, Whole), sending the shader only what changed.
+/// The experience (by night the ember) on the level coin's ring (UI 23, HUD A, the owner's pick "the keeper"; UI 18
+/// ran it along her hair and the river). The ring always shows the fraction (Front). A gain runs the ring's light from
+/// where it stood to the new fraction in Run seconds, brighter (Strength), holds Hold seconds, and settles in Settle.
+/// Gains batch: a new run starts at most once every Gap seconds; while gains keep coming the held light stays up and its
+/// front slides forward. A level-up lights the whole ring for its moment (Whole) and names the level over the coin
+/// (Title). By day it is her experience, by night the ember; a change of either (or a loss) settles it on the new
+/// fraction without a run. The resting knobs are data (data/content/hud.json "xpLight", XpRest; the ring's look
+/// "xpRing", RingLook). Pure: DgPanel.Light draws what it says, sending the shader only what changed.
 /// </summary>
 public sealed class XpLight
 {
@@ -34,7 +31,7 @@ public sealed class XpLight
     /// dark (seconds).</summary>
     public sealed record XpRest(double RestTail = 0.30, double RestFront = 0.50, double Quiet = 90, double Settle = 0.8, double DarkFade = 2.0)
     {
-        sealed class HudFile { public XpRest? XpLight { get; set; } }
+        internal sealed class HudFile { public XpRest? XpLight { get; set; } public RingLook? XpRing { get; set; } }
         /// <summary>Read from JSON (hud.json's shape); the defaults where a knob is missing, out of range, or the JSON is bad.</summary>
         public static XpRest Parse(string json)
         {
@@ -55,6 +52,35 @@ public sealed class XpLight
         {
             try { return Parse(SurvivorUnchained.Core.Json.ReadContent("hud.json")); }
             catch (Exception) { return new XpRest(); }
+        }
+    }
+
+    /// <summary>UI 23 (HUD A): the coin's ring and her hair's shine (data/content/hud.json "xpRing"): the level's title
+    /// baseline TitleGap px over the coin's arch (its subline's by night); a gain's run lifts the ring's light by
+    /// GainBoost; the shine runs down her hair (the run coordinate, 1080 px) from ShineFrom to ShineTo in ShineTravel
+    /// seconds, once every ShinePeriod. The ring's colours and width are the art's (hud_a_geo.json).</summary>
+    public sealed record RingLook(double TitleGap = 8, double GainBoost = 0.6, double ShineFrom = 430, double ShineTo = 1000,
+        double ShineTravel = 6, double ShinePeriod = 14)
+    {
+        public static RingLook Parse(string json)
+        {
+            try
+            {
+                var r = SurvivorUnchained.Core.Json.Parse<XpRest.HudFile>(json).XpRing ?? new RingLook();
+                var d = new RingLook();
+                static double Ok(double v, double or, double lo, double hi) => double.IsFinite(v) && v >= lo && v <= hi ? v : or;
+                double travel = Ok(r.ShineTravel, d.ShineTravel, 0.5, 60);
+                return new RingLook(Ok(r.TitleGap, d.TitleGap, -40, 80), Ok(r.GainBoost, d.GainBoost, 0, 3), Ok(r.ShineFrom, d.ShineFrom, 0, 1920),
+                    Ok(r.ShineTo, d.ShineTo, 0, 2400), travel, Math.Max(travel, Ok(r.ShinePeriod, d.ShinePeriod, 0.5, 600)));
+            }
+            catch (Exception) { return new RingLook(); }
+        }
+        public static RingLook Game => game ??= Load();
+        static RingLook? game;
+        static RingLook Load()
+        {
+            try { return Parse(SurvivorUnchained.Core.Json.ReadContent("hud.json")); }
+            catch (Exception) { return new RingLook(); }
         }
     }
 
@@ -147,10 +173,13 @@ public sealed class XpLight
         }
     }
 
+    /// <summary>A run sweeps the ring from where it stood (UI 23: the coin's ring, not her hair: it never empties to
+    /// refill).</summary>
     void Start()
     {
-        phase = Phase.Run; t = 0; sinceRun = 0; pending = false; Front = 0;
+        phase = Phase.Run; t = 0; sinceRun = 0; pending = false; from = Math.Min(Front, target);
     }
+    double from;
 
     /// <summary>The run's front at u (0..1 of Run): quick out of her hair, easing into the hold.</summary>
     public static double Ease(double u) { u = Math.Clamp(u, 0, 1); return 1 - (1 - u) * (1 - u) * (1 - u); }
@@ -174,7 +203,7 @@ public sealed class XpLight
             case Phase.Run:
                 t += dt;
                 strength = Math.Min(1, strength + dt / 0.08);
-                Front = target * Ease(t / Run);
+                Front = from + (target - from) * Ease(t / Run);
                 if (t >= Run) { phase = Phase.Hold; t = 0; Front = target; }
                 break;
             case Phase.Hold:
@@ -215,35 +244,6 @@ public sealed class XpLight
     {
         var k = knobs ?? XpRest.Game;
         return Posed(f, 6 + k.Quiet + k.DarkFade + 1, false, k);
-    }
-
-    /* ---- where the run lies on the screen (1080 px) ---- */
-
-    /// <summary>The run coordinate of a screen point: the light sweeps the bar left to right, leaning with her hair
-    /// where it falls (y 830-980), level along the river below.</summary>
-    public static double S(double x, double y) => x - 500 + 0.5 * (Math.Clamp(y, 830, 980) - 830);
-
-    /// <summary>The front's s for fraction f of the run (s0 her hair, s1 the eddy).</summary>
-    public static double FrontS(double f, double s0, double s1) => s0 + Math.Clamp(f, 0, 1) * (s1 - s0);
-
-    /// <summary>The point on the river's crest (left to right) where the run coordinate is s, or null where s lies
-    /// before the crest begins (the front is on her hair) or past its end.</summary>
-    public static (double X, double Y)? OnCrest(IReadOnlyList<(double X, double Y)> crest, double s)
-    {
-        if (crest.Count < 2) return null;
-        double prev = S(crest[0].X, crest[0].Y);
-        if (s < prev) return null;
-        for (int i = 1; i < crest.Count; i++)
-        {
-            double cur = S(crest[i].X, crest[i].Y);
-            if (s <= cur)
-            {
-                double k = cur - prev > 1e-9 ? (s - prev) / (cur - prev) : 0;
-                return (crest[i - 1].X + k * (crest[i].X - crest[i - 1].X), crest[i - 1].Y + k * (crest[i].Y - crest[i - 1].Y));
-            }
-            prev = cur;
-        }
-        return null;
     }
 
     /* ---- the numbers ---- */

@@ -83,7 +83,7 @@ public partial class GameHud : CanvasLayer
     // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
     float barShown, barWant;
     /// <summary>UI 18, the Drowned Girl: her experience (by night the ember) shows only when it moves (XpLight, drawn by
-    /// DgRiver.Light); its numbers on the river's card. xpHave and xpNeed: this level's count and its need.</summary>
+    /// DgPanel.Light, the coin's ring); its numbers on the coin's card. xpHave and xpNeed: this level's count and its need.</summary>
     XpLight xpLight = new();
     double xpHave, xpNeed;
     bool xpLast;
@@ -127,6 +127,8 @@ public partial class GameHud : CanvasLayer
         // Her irons, by day and by night, at peace and in a fight: the keystone stays where it is.
         irons = new Instrument();
         play.AddChild(irons);
+        // (--no-foot, shots only: the world with the rest of the HUD but not the foot, a backdrop for HUD mockups)
+        if (Args.Has("no-foot")) irons.Visible = false;
         // (the low-life edge pulse: over the world, under the HUD)
         play.AddChild(her.Edge);
         play.MoveChild(her.Edge, 0);
@@ -227,6 +229,16 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A 1 px dark rim round the type, over its drop shadow: corner words that stand on the world
     /// with no box read on the brightest ground (UI note 8).</summary>
+    /// <summary>Rimmed, plus (UI 23) a soft dark drop shadow: the italic objective line vanished over white horde models.</summary>
+    static Label Shadowed(Label l)
+    {
+        Rimmed(l);
+        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.55f));
+        l.AddThemeConstantOverride("shadow_offset_x", 1);
+        l.AddThemeConstantOverride("shadow_offset_y", 2);   // (1.5 px asked; the theme constant is whole px)
+        return l;
+    }
+    static Label ShadowIf(bool on, Label l) => on ? Shadowed(l) : Rimmed(l);
     static Label Rimmed(Label l)
     {
         l.AddThemeConstantOverride("outline_size", 2);
@@ -717,7 +729,7 @@ public partial class GameHud : CanvasLayer
 
     float beadsA = 1;
 
-    void XpTick(DgRiver river, double delta)
+    void XpTick(DgPanel river, double delta)
     {
         bool day = HudPin.Day is bool pd ? pd : !barEmber;
         var shown = xpLight;
@@ -727,9 +739,9 @@ public partial class GameHud : CanvasLayer
         else if (px is { Length: 2 } && px[0] == "rest" && Num(px[1]) is { } rf) shown = XpLight.PosedRest(rf);
         else if (px is { Length: >= 1 } && px[0] == "dark") shown = XpLight.PosedDark(px.Length > 1 && Num(px[1]) is { } df ? df : 0.5);
         else xpLight.Step(delta);
-        river.Light(shown, day, irons.Life.Mat);
-        // a level-up's name over the river (judge M2), held about 2 s; the banner by night stays too (the top edge)
-        int tl = HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel;
+        int tl = HudPin.Level ?? (HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel);
+        river.Light(shown, day, tl);
+        // a level-up's name over the coin (judge M2), held about 2 s; the banner by night stays too (the top edge)
         river.Title.Set((float)shown.Title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
         // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
         float ba = 1 - (float)shown.Title;
@@ -742,7 +754,7 @@ public partial class GameHud : CanvasLayer
         var c = Controls.Instance;
         bool captured = c == null || c.Captured || c.MenuMode;
         var mouse = irons.GetLocalMousePosition();
-        bool hover = DgRiver.OnRiver(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
+        bool hover = DgPanel.OnCoin(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
         bool held = c != null && c.Held(Act.Experience) || TeachCard;
         if (TeachCard) captured = false;
         float f = barWant;
@@ -757,7 +769,7 @@ public partial class GameHud : CanvasLayer
         }
         // (pictures: the card only where a pin asks for it, whatever the pointer is over)
         bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
-        var anchor = held ? (DgRiver.OnCrest(f) ?? DgRiver.Crest[0]) : mouse;
+        var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
         river.Card.Set(show, anchor, XpLight.Lines(!day, lv, have, need, xpLast && day), f, day);
     }
 
@@ -918,14 +930,14 @@ public partial class GameHud : CanvasLayer
                 if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
                     var font = s.Optional ? Style.TextItalic : Style.Ui;
-                    row = Style.H(5, Rimmed(Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
-                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(Rimmed(Style.Label(after, font, 16, col)));
+                    row = Style.H(5, ShadowIf(s.Optional, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
+                    if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(ShadowIf(s.Optional, Style.Label(after, font, 16, col)));
                     row.AddChild(mark);
                 }
                 else
                 {
                     // The objectives stand on the world like the tally: rimmed, so a dim italic line never ghosts over a tree.
-                    var l = Rimmed(Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
+                    var l = ShadowIf(s.Optional, Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
                     l.CustomMinimumSize = new Vector2(370, 0);
                     row = Style.H(7, l, mark);
                 }
@@ -1166,7 +1178,9 @@ public partial class GameHud : CanvasLayer
     /// or the survivor stands behind it, and she fades (and the river, RiverBehind).</summary>
     public Rect2? FigureRect => irons.Life.FadeRect;
     public void FigureBehind(bool behind) => irons.Life.Behind = behind;
-    public void RiverBehind(bool behind) => irons.River.Behind = behind;
+    public void RiverBehind(bool behind) => irons.Panel.Behind = behind;
+    /// <summary>Something is behind the keeper (UI 23): he fades as her figure does.</summary>
+    public void KeeperBehind(bool behind) => irons.Keeper.Behind = behind;
 
     public void Follow(Vector2? at)
     {
@@ -1310,7 +1324,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>True while a tutorial callout needs the river's numbers card up, as if the hold key were down.</summary>
     public bool TeachCard { get; set; }
     /// <summary>The river's numbers card, while it shows.</summary>
-    public Rect2? XpCardArea => irons.River.Card.Visible ? irons.River.Card.GetGlobalRect() : null;
+    public Rect2? XpCardArea => irons.Panel.Card.Visible ? irons.Panel.Card.GetGlobalRect() : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
@@ -1428,7 +1442,7 @@ public partial class GameHud : CanvasLayer
         // and it drains back to what carried over.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         irons.DayNight(barEmber);
-        XpTick(irons.River, delta);
+        XpTick(irons.Panel, delta);
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;
@@ -1455,10 +1469,10 @@ public partial class GameHud : CanvasLayer
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false);
         her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha);
-        // The art readied: its coal swells once and settles.
+        // The art readied: the globe's heart and halo swell once and settle.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
-        art.Scale = Vector2.One * (1 + 0.05f * (float)(artPing * artPing));
+        art.Ping = (float)(artPing * artPing);
         if (pullT >= 0)
         {
             pullT += delta;

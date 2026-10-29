@@ -23,6 +23,9 @@ namespace SurvivorUnchained.Ui;
 public static class HudPin
 {
     public static float? Life, Shield, Ember, LockHeat, Art, Dash;
+    /// <summary>UI 23: her hair's shine held at this front (screen run px, the idle sheen off); the coin's level.</summary>
+    public static float? Shine;
+    public static int? Level;
     public static int? Draught;
     public static bool? Behind, Day;
     public static string[]? Seats;
@@ -40,7 +43,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
-        Xp = XpTip = null; XpNum = null;
+        Xp = XpTip = null; XpNum = null; Shine = null; Level = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -64,6 +67,8 @@ public static class HudPin
                 case "day": Day = F() > 0.5f; break;
                 case "dash": Dash = float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var ds) ? Math.Max(0, ds) : 0; break;
                 case "xp": Xp = kv[1]; break;
+                case "shine": Shine = float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var sh) ? sh : null; break;
+                case "level": Level = int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var lv) ? lv : null; break;
                 case "xptip": XpTip = kv[1]; break;
                 case "xpnum": XpNum = Array.ConvertAll(kv[1].Split(':'), v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0); break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
