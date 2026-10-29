@@ -22,7 +22,6 @@ uniform float whole = 0.0;
 uniform vec3 hue = vec3(0.353, 0.635, 0.839);
 uniform vec3 core = vec3(0.812, 0.91, 1.0);
 const vec3 TICK = vec3(0.95, 0.80, 0.52);
-const float TAU = 6.28318530718;
 
 void fragment()
 {
