@@ -14,8 +14,8 @@ namespace SurvivorUnchained.View;
 public partial class HeadTurn : SkeletonModifier3D
 {
     /// <summary>The point looked at (world space); null lets the head go. A new point while the head is already
-    /// looking is not jumped to: the aim travels from where it was to the new point at Rate, fast in and slow out
-    /// (Play/GazeShift.Skewed), as a head turns (C01 s10: a re-aim over 0.14 s at full weight popped the head from
+    /// looking is not jumped to: the aim travels from where it was to the new point at Rate, eased in and out
+    /// (Play/GazeShift.Smooth: fast-in put most of a whip in one frame, Cinematics 7 r2), as a head turns (C01 s10: a re-aim over 0.14 s at full weight popped the head from
     /// bowed to profile in one frame, judge Cinematics 7 r1).</summary>
     public Vector3? Target
     {
@@ -36,7 +36,7 @@ public partial class HeadTurn : SkeletonModifier3D
     float travel = 1;
 
     /// <summary>Where the head is aimed now: on its way from the last point to the target, or the target.</summary>
-    Vector3 Aim() => target is not Vector3 t ? from : travel >= 1 ? t : from.Lerp(t, SurvivorUnchained.Play.GazeShift.Skewed(travel));
+    Vector3 Aim() => target is not Vector3 t ? from : travel >= 1 ? t : from.Lerp(t, SurvivorUnchained.Play.GazeShift.Smooth(travel));
     /// <summary>How much of the look is wanted (0 to 1), and how fast it comes (per second).</summary>
     public float Want, Rate = 2;
     /// <summary>How far the head turns from where the body has it, at most (degrees).</summary>

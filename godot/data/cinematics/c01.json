@@ -173,10 +173,10 @@
         {"do": "light", "light": 0, "level": 0.12, "color": "#ffad70", "rate": 0.45},
         {"do": "rig", "name": "key", "energy": 0.9, "color": "#ffbd85", "angle": 24, "from": {"actor": "her", "bone": "eyes", "off": [-0.75, -0.4, -0.25]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.03, 0]}},
         {"do": "rig", "name": "fill", "energy": 0.15, "color": "#9fb8ff", "angle": 25, "from": {"actor": "her", "bone": "eyes", "off": [0.6, 0.35, -0.6]}, "aim": {"actor": "her", "bone": "eyes"}},
-        {"do": "head", "where": [-10.3, 0.15, 90.65], "amount": 0.9, "over": 0.02},
+        {"do": "head", "where": [-11.02, 0.65, 89.03], "amount": 1.0, "over": 0},
         {"do": "gaze", "look": [0, 0.05], "wander": 0.02},
         {"do": "world", "rate": 0},
-        {"at": 0.06, "do": "head", "where": [-11.74, 1.15, 87.4], "amount": 1.0, "over": 0.16},
+        {"at": 0.03, "do": "head", "where": [-11.74, 1.15, 87.4], "amount": 1.0, "over": 0.2},
         {"do": "face", "keys": {"eyes_wide": 0.35, "brows_sad": 0, "brows_angry": 0.25, "mouth_open": 0}, "over": 0},
         {"at": 0.15, "do": "anim", "clip": "her/kneel_to_stand_snap", "from": 0.25, "speed": 0.6, "blend": 0.1},
         {"at": 0.28, "do": "look", "where": [-10.35, 0, 87.98], "over": 0.45}

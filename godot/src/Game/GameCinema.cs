@@ -1081,7 +1081,11 @@ public partial class Game
                     var skel = v.Person.Skeleton;
                     var turn = skel.GetNodeOrNull<HeadTurn>("HeadTurn");
                     if (turn == null) skel.AddChild(turn = new HeadTurn());
-                    turn.Glide = true;
+                    // (mid-shot a new aim glides there; at a cut it is taken at once, and her hair hung afresh for the
+                    // new pose: a glide across the cut showed the last shot's head for a frame, C01 s10, Cinematics 7 r2)
+                    bool headCut = skipping || tc.T - tc.Shot.Start < 1e-6;
+                    turn.Glide = !headCut;
+                    if (headCut) foreach (var hs in skel.FindChildren("*", "", true, false).OfType<HairSway>()) hs.Settle();
                     bool letGo = !c.Has("where") || c.Num("amount", 1) <= 0;
                     if (!letGo) turn.Target = V(places.Resolve(c.Get("where")));
                     turn.Want = letGo ? 0 : (float)c.Num("amount", 1);
