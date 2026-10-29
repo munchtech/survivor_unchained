@@ -282,7 +282,10 @@ public partial class Callout : Control, ICalloutView
             }
         }
         // A row too wide for the measure breaks into rows of about equal width (never one word left alone).
-        rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Balance(r, W, maxW)).ToList();
+        // (UI 20: a too-wide row of several sentences breaks at its sentences first, so no sentence's first word is
+        // left hanging at a row's end: "Three lamps guard the Warden. While / they burn...")
+        rows = rows.SelectMany(r => W(r) <= maxW ? [r] : Regex.Split(r, @"(?<=[.!?])\s+(?=[A-Z])").Where(p => p.Length > 0)
+            .SelectMany(p => W(p) <= maxW ? [p] : Balance(p, W, maxW))).ToList();
         string? subject = look.Mark ?? Subject(text, look.Title);
         bool marked = false;
         var list = new List<Control>();

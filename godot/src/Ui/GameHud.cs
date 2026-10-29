@@ -396,7 +396,7 @@ public partial class GameHud : CanvasLayer
         // boss bar"): the same forged groove and iron clamps, an ember fill deep at its start and hot at its leading
         // edge with a bright line there, its words in the boss name's serif with a dark outline over fill and groove.
         float cw = w * 0.6f;
-        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 92), Size = new Vector2(cw, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 97), Size = new Vector2(cw, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
         var cgroove = Style.Box(Hex("#0d0606"), Cuff.Iron(0.38f), 2, 2, 0);
         cgroove.ShadowColor = new Color(0, 0, 0, 0.6f);
         cgroove.ShadowSize = 5;
@@ -1015,6 +1015,8 @@ public partial class GameHud : CanvasLayer
     /// <summary>The top-right block on the screen (the minimap over the place's name and the objectives), while
     /// it shows: the name plates over people's heads give way under it.</summary>
     public static Rect2? Header { get; private set; }
+    /// <summary>The notice stack on the left (design px), while it holds a notice: barks keep clear of it (UI 20).</summary>
+    public static Rect2? Toasts { get; private set; }
 
     /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
     public static float TopClear { get; private set; } = 118;
@@ -1401,6 +1403,7 @@ public partial class GameHud : CanvasLayer
         if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
         if (corner.IsVisibleInTree()) header = header is Rect2 h0 ? h0.Merge(corner.GetGlobalRect()) : corner.GetGlobalRect();
         Header = header;
+        Toasts = toasts.GetChildCount() > 0 && toasts.IsVisibleInTree() ? toasts.GetGlobalRect() : null;
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Notice n) continue;

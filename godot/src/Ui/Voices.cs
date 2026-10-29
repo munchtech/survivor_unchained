@@ -334,6 +334,8 @@ public partial class Voices : Node3D
         foreach (var f in floaters) placed.Add(f.R);
         // (and the top-right block, the minimap over the place and the objectives: a bark never stands in it)
         if (Ui.GameHud.Header is Rect2 hdr) { float sx = GetViewport().GetVisibleRect().Size.X / 1920f; placed.Add(new Rect2(hdr.Position * sx, hdr.Size * sx).Grow(6)); }
+        // (and the notice stack on the left: a bark stacked on "A lamp goes out" read as a pile of text, UI 20)
+        if (Ui.GameHud.Toasts is Rect2 tst) { float sx = GetViewport().GetVisibleRect().Size.X / 1920f; placed.Add(new Rect2(tst.Position * sx, tst.Size * sx).Grow(10)); }
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
         var barkRects = new List<Rect2>();
         foreach (var b in barks)
