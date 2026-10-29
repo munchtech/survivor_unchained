@@ -37,6 +37,7 @@ public partial class Voices : Node3D
         public float? Pick;
         /// <summary>Its shot under a live tip was asked for (--shot only).</summary>
         public bool Shot;
+        public bool HudLogged;
     }
     static int barkTipShots;
 
@@ -331,6 +332,8 @@ public partial class Voices : Node3D
         }
         // (and combat's floaters: a line said while a "blocked" stands is lifted clear of it)
         foreach (var f in floaters) placed.Add(f.R);
+        // (and the top-right block, the minimap over the place and the objectives: a bark never stands in it)
+        if (Ui.GameHud.Header is Rect2 hdr) { float sx = GetViewport().GetVisibleRect().Size.X / 1920f; placed.Add(new Rect2(hdr.Position * sx, hdr.Size * sx).Grow(6)); }
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
         var barkRects = new List<Rect2>();
         foreach (var b in barks)
@@ -366,7 +369,21 @@ public partial class Voices : Node3D
             // clear, else (the one it took last time if still clear, so it never flips) the nearest spot just
             // above or below something in the way.
             float vpH2 = GetViewport().GetVisibleRect().Size.Y, lo = Math.Max(8, floor);
-            bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= vpH2 - 8 && !placed.Any(p => p.Intersects(r)); }
+            // Never over the Drowned Girl: the box's bottom 8 px above the HUD's highest top across its whole width
+            // (UI 20: a boss behind the HUD's foot barked onto the hair's river). This wins over the natural spot
+            // and over the tip's floor; the clear-of-others pass below keeps to it too.
+            float hk = vpH2 / 1080f, low = vpH2 - 8;
+            if (Hits.HudTopOver(at.X / hk, (at.X + size.X) / hk) is float hudTop)
+            {
+                low = Math.Min(low, hudTop * hk - 8);
+                if (at.Y + size.Y > low)
+                {
+                    if (!b.HudLogged) { b.HudLogged = true; GD.Print($"bark: '{b.Text}' x {at.X:0}-{at.X + size.X:0} lifted from y {at.Y:0} (bottom {at.Y + size.Y:0}) to {low - size.Y:0} (bottom {low:0}), HUD top {hudTop * hk:0}"); }
+                    at.Y = low - size.Y;
+                    lo = Math.Min(lo, at.Y);
+                }
+            }
+            bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= low + 0.5f && !placed.Any(p => p.Intersects(r)); }
             float pick = at.Y;
             if (!Clear(pick))
             {
