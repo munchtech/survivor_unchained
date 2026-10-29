@@ -84,6 +84,9 @@ public static class Ev
         public double? ByX, ByZ;
         /// <summary>The people whose mark it is (a rally's ring in its colour, a call, a slam).</summary>
         public Faction? Faction;
+        /// <summary>The pattern inside a red mark, by name (MarkPass.PatternIds: a skill may name its own), and the blow's
+        /// school (its pattern by school, godot/data/mark_look.json); none: by its shape.</summary>
+        public string? Pattern; public School? School;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }
