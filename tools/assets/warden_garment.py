@@ -57,6 +57,7 @@ CAPE_CLEAR = (0.016, 0.036)      # off the body at the top and the hem (the calv
 FLUTE_K, FLUTE_AMP = 13, 0.030   # the capelet's laid-in folds round the shoulders, their depth at the hem
 NECK_K, NECK_AMP = 9, 0.011      # the hood's folds bunched at the neck
 FRAMES = 70
+YOKE_FRAMES, YOKE_HOLD, YOKE_Y = 20, 0.6, (1.33, 1.42)   # the capelet's first frames: its yoke held softly
 BEND = 2.2                       # wool's bending stiffness (the hood and capelet hold some body)
 CROWN_HOLD = 0.30                # the crown's soft goal to its arranged shape (a deep hood keeps its volume)
 LO_TRIS = 6400                   # the outer surface's budget (x2 with the inside, + rim and fringe: ~15k)
@@ -119,6 +120,55 @@ def collider_obs(Vg, F):
         ob.collision.damping = 0.5
         out.append(ob)
     return out
+
+
+def envelope_col(Vg, F, y0=1.22, y1=1.55, n=144):
+    """The body's radial outer envelope over the capelet's and the hood's neck heights as a collider (d5: the cloth
+    fell into the crevasse between the fur mantle's collar and the neck, on his right deepest, and through under the
+    arm): per height (1 cm) and angle (2.5 deg) the outermost body point round the vertical axis, a max over the
+    neighbouring sectors, smoothed in height; a ring mesh, normals out. The mantle is cut under the garment after, so
+    resting on the envelope reads as resting on the mantle."""
+    P = np.concatenate([Vg, Vg[F].mean(1)])
+    ys = np.arange(y0, y1 + 1e-6, 0.01)
+    th = np.arange(n) / n * 2 * np.pi
+    t = np.arctan2(P[:, 0] - X0, P[:, 2] + 0.02) % (2 * np.pi)
+    r = np.hypot(P[:, 0] - X0, P[:, 2] + 0.02)
+    k = (t / (2 * np.pi) * n).astype(int) % n
+    R = np.zeros((len(ys), n))
+    for i, y in enumerate(ys):
+        m = np.abs(P[:, 1] - y) < 0.008
+        np.maximum.at(R[i], k[m], r[m])
+    R = np.maximum(np.maximum(R, np.roll(R, 1, 1)), np.roll(R, -1, 1))
+    R = np.maximum(R, np.maximum(np.roll(R, 2, 1), np.roll(R, -2, 1)))
+    R[1:-1] = np.maximum(R[1:-1], 0.5 * (R[:-2] + R[2:]))
+    V = np.array([[X0 + R[i, j] * np.sin(th[j]), ys[i], -0.02 + R[i, j] * np.cos(th[j])] for i in range(len(ys)) for j in range(n)])
+    Fq = []
+    for i in range(len(ys) - 1):
+        for j in range(n):
+            a_, b_ = i * n + j, i * n + (j + 1) % n
+            Fq.append((a_, a_ + n, b_ + n, b_))
+    ob = mk("col_env", g2b(V), Fq)
+    ob.data.update()
+    # (normals out: flipped if the first face points in)
+    ob.data.calc_loop_triangles()
+    f0 = ob.data.polygons[0]
+    c0 = b2g(np.array([f0.center[:]]))[0]
+    n0 = b2g(np.array([f0.normal[:]]))[0]
+    if np.dot(n0[[0, 2]], c0[[0, 2]] - np.array([X0, -0.02])) < 0:
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+        bm.to_mesh(ob.data)
+        bm.free()
+        ob.data.update()
+    ob.hide_render = True
+    ob.modifiers.new("collide", "COLLISION")
+    ob.collision.thickness_outer = 0.006
+    ob.collision.thickness_inner = 0.02
+    ob.collision.cloth_friction = 6.0
+    ob.collision.damping = 0.5
+    log(f"envelope collider: {len(ys)} rings x {n}, radius {R.min():.3f}-{R.max():.3f}")
+    return ob
 
 
 # ================= 1. the arrangement =================
@@ -375,6 +425,119 @@ def opening_pins(ob, lab, Ob):
     w = np.maximum(w, CROWN_HOLD * smoothstep(1.62, 1.72, V[:, 1]))
     w[lab >= 3] = 0
     return w
+
+
+def diag(ob, lab, cols, tag):
+    """Per panel: points inside the body / within 5 mm of it, within 4 mm of the cape collider; edge strain vs the flat."""
+    V = verts(ob)
+    if ob.data.shape_keys and "Basis" in ob.data.shape_keys.key_blocks:
+        V = np.zeros(len(ob.data.vertices) * 3)
+        ob.data.shape_keys.key_blocks["Basis"].data.foreach_get("co", V)
+        V = V.reshape(-1, 3)
+    bvh = WH.eval_mesh_bvh([cols[0]])[0]
+    bvc = WH.eval_mesh_bvh([cols[1]])[0] if len(cols) > 1 else None
+    E = np.array([e.vertices[:] for e in ob.data.edges])
+    fl = None
+    if ob.data.shape_keys and "flat" in ob.data.shape_keys.key_blocks:
+        fl = np.zeros(len(ob.data.vertices) * 3)
+        ob.data.shape_keys.key_blocks["flat"].data.foreach_get("co", fl)
+        fl = fl.reshape(-1, 3)
+    out = {}
+    for k in range(5):
+        idx = np.nonzero(lab == k)[0]
+        ins = near = nc = 0
+        for i in idx:
+            h = bvh.find_nearest(Vector(V[i]), 0.05)
+            if h[0] is not None:
+                d = np.dot(V[i] - np.array(h[0]), np.array(h[1]))
+                ins += d < 0
+                near += 0 <= d < 0.005
+            if bvc is not None:
+                h = bvc.find_nearest(Vector(V[i]), 0.004)
+                nc += h[0] is not None
+        r = {"in": int(ins), "near5mm": int(near), "nearCape": int(nc)}
+        if fl is not None:
+            sel = (lab[E[:, 0]] == k) & (lab[E[:, 1]] == k)
+            L3 = np.linalg.norm(V[E[sel, 0]] - V[E[sel, 1]], axis=1)
+            Lf = np.linalg.norm(fl[E[sel, 0]] - fl[E[sel, 1]], axis=1)
+            q = L3 / (Lf + 1e-9)
+            r["strain"] = [round(float(np.percentile(q, x)), 3) for x in (1, 50, 99)]
+        if k != 2:
+            dep = radial_depth(V, lab, bvh, (lab == k) & (b2g(V)[:, 1] < 1.60))[idx]
+            dep = dep[~np.isnan(dep)]
+            r["radial_in"] = int((dep < 0).sum())
+            r["radial_lt5mm"] = int((dep < 0.005).sum())
+        if len(idx):
+            g = b2g(V[idx])
+            r["x"] = [round(float(g[:, 0].min()), 3), round(float(g[:, 0].max()), 3)]
+        out[PANELS[k]] = r
+    log(f"diag {tag}:", json.dumps(out))
+
+
+def radial_depth(V, lab, bvh, sel):
+    """Per selected point (Blender coords): how far it sits outside the body's OUTERMOST surface along the horizontal
+    ray from the body's axis through it (negative = inside or under it: trapped). A ray cast from outside inward, so
+    inner surfaces (the mantle's underside, the torso under the arm) don't count."""
+    out = np.full(len(V), np.nan)
+    G = b2g(V)
+    for i in np.nonzero(sel)[0]:
+        g = G[i]
+        d = np.array([g[0] - X0, 0.0, g[2] + 0.02])
+        r = np.linalg.norm(d)
+        if r < 1e-4:
+            continue
+        d /= r
+        o = g2b(np.array([[X0, g[1], -0.02] + d * 0.8]))[0]
+        dirb = g2b(-d[None])[0]
+        h = bvh.ray_cast(Vector(o), Vector(dirb), 0.8)
+        if h[0] is None:
+            out[i] = 1.0
+            continue
+        rh = 0.8 - h[3]
+        out[i] = r - rh
+    return out
+
+
+def radial_push(V, sel, bvh, adj, gap, spread=10):
+    """Selected points (Blender coords) under the body's outermost surface or nearer than gap (radial_depth) moved
+    out radially; the move diffused to the selected neighbours (decaying 0.9 a ring: the folds kept, no smoothing of
+    positions, no spikes from a nearest normal in the beard). Returns the new points and the seed count."""
+    dep = radial_depth(V, None, bvh, sel)
+    G = b2g(V)
+    seed = sel & (dep < gap)
+    D = np.zeros_like(G)
+    for i in np.nonzero(seed)[0]:
+        d = np.array([G[i, 0] - X0, 0.0, G[i, 2] + 0.02])
+        D[i] = d / np.linalg.norm(d) * (gap - dep[i])
+    for _ in range(spread):
+        Dn = np.array([D[a].mean(0) if len(a) else D[i] for i, a in enumerate(adj)])
+        mag, magn = np.linalg.norm(D, axis=1), np.linalg.norm(Dn, axis=1)
+        D = np.where((sel & ~seed & (magn * 0.9 > mag))[:, None], Dn * 0.9, D)
+    return g2b(G + D), int(seed.sum()), float(np.linalg.norm(D, axis=1).max())
+
+
+def clear_capelet(ob, lab, cols, gap=0.010):
+    """The capelet's points pushed radially clear of the posed body (radial_push); the Basis key set."""
+    kb = ob.data.shape_keys.key_blocks["Basis"]
+    V = np.zeros(len(ob.data.vertices) * 3)
+    kb.data.foreach_get("co", V)
+    V = V.reshape(-1, 3)
+    bvh = WH.eval_mesh_bvh([cols[0]])[0]
+    V, n, mx = radial_push(V, (lab == 3) | (lab == 4), bvh, adjacency(ob), gap)
+    kb.data.foreach_set("co", V.ravel())
+    set_verts(ob, V)
+    log(f"capelet cleared radially: {n} seeds, max push {mx * 1000:.1f} mm")
+
+
+def clear_arrangement(sh, col, gap=0.010):
+    """The hood/capelet arrangement below the face opening pushed radially clear of the body (replaces warden_hood's
+    push_clear here: its nearest-normal push and global smoothing made the throat's shards and the chest's pinches)."""
+    bvh = WH.eval_mesh_bvh([col])[0]
+    V = verts(sh)
+    sel = b2g(V)[:, 1] < 1.530
+    V, n, mx = radial_push(V, sel, bvh, adjacency(sh), gap, spread=14)
+    set_verts(sh, V)
+    log(f"arrangement cleared radially: {n} seeds, max push {mx * 1000:.1f} mm")
 
 
 def weld(ob, pairs):
@@ -916,11 +1079,12 @@ def main():
     pose_arms(WH.POSE_DEG)
     Vg, Vb_body, Fb = posed_body(bobs)
     cols = collider_obs(Vg, Fb)
+    col_env = envelope_col(Vg, Fb)
     # ---- 1. the arrangement ----
     cape = cape_arrangement(Vg)
     push_clear(cape, [cols[0], cols[1]], gap=0.012, iters=4)
     sh = hood_arrangement(np.concatenate([Vg, b2g(verts(cape)) + np.array([0, 0, -0.012])]))
-    push_clear(sh, [cols[0]], gap=0.008, iters=4)
+    clear_arrangement(sh, cols[0], gap=0.010)
     bm = bmesh.new()
     bm.from_mesh(sh.data)
     open_pts = np.array([b2g(np.array([v.co[:]]))[0] for v in bm.verts if v.is_boundary and v.co.z > HEM_Y + 0.05])
@@ -935,50 +1099,75 @@ def main():
     setup_render()
     for o in bobs:
         o.hide_render = False
+    diag(ob, lab, [cols[0]], "arrangement")
     if stage == "arrange":
         WH.preview_mat(ob)
         sheet(work, "arr", VIEWS)
         return
-    # ---- 3a. the cape ----
-    V0 = b2g(verts(ob))
-    pins = np.where(lab != 5, 1.0, 1 - smoothstep(0.004, 0.030, CAPE_TOP - V0[:, 1]))
-    P = cloth(ob, pins, frames, 1.6, cols, sew=False)
-    ob.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", P.ravel())
-    set_verts(ob, P)
-    # the cape as the capelet's collider
-    capeV = b2g(P)[lab == 5]
-    log(f"cape draped: hem y {capeV[:, 1].min():.3f}, z {capeV[:, 2].min():.3f}..{capeV[:, 2].max():.3f}")
-    me = ob.data
-    Fc = [p.vertices[:] for p in me.polygons if lab[p.vertices[0]] == 5]
-    idmap = -np.ones(len(lab), np.int64)
-    idmap[lab == 5] = np.arange((lab == 5).sum())
-    col_cape = mk("col_cape", P[lab == 5], [tuple(idmap[list(f)]) for f in Fc])
-    col_cape.hide_render = True
-    col_cape.modifiers.new("collide", "COLLISION")
-    col_cape.collision.thickness_outer = 0.005
-    col_cape.collision.thickness_inner = 0.004
-    col_cape.collision.cloth_friction = 6.0
-    if stage == "cape":
-        WH.preview_mat(ob)
-        sheet(work, "cape", VIEWS)
-        return
-    # ---- 3b. the hood and capelet over it ----
-    pins = opening_pins(ob, lab, open_pts)
-    pins[lab == 5] = 1.0
-    # the sewing springs: a loose edge between each seam pair (coincident, rest length 0)
-    bm = bmesh.new()
-    bm.from_mesh(ob.data)
-    bm.verts.ensure_lookup_table()
-    for a_, b_ in pairs:
-        bm.edges.new((bm.verts[a_], bm.verts[b_]))
-    bm.to_mesh(ob.data)
-    bm.free()
-    P = cloth(ob, pins, frames, BEND, [cols[0], col_cape], sew=True)
-    ob.shape_key_clear()
-    set_verts(ob, P)
-    weld(ob, pairs)
-    for p in ob.data.polygons:
-        p.use_smooth = True
+    if opt.get("drape"):   # (the drape from an earlier run: the later stages iterated without the sims)
+        with bpy.data.libraries.load(opt["drape"]) as (src_, dst_):
+            dst_.meshes = ["garment_drape"]
+        old_me = ob.data
+        ob.shape_key_clear()
+        ob.data = dst_.meshes[0]
+        bpy.data.meshes.remove(old_me)
+        log(f"the drape loaded from {opt['drape']}: {len(ob.data.vertices)} verts")
+    else:
+        # ---- 3a. the cape ----
+        V0 = b2g(verts(ob))
+        pins = np.where(lab != 5, 1.0, 1 - smoothstep(0.004, 0.030, CAPE_TOP - V0[:, 1]))
+        P = cloth(ob, pins, frames, 1.6, cols, sew=False)
+        ob.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", P.ravel())
+        set_verts(ob, P)
+        # the cape as the capelet's collider
+        capeV = b2g(P)[lab == 5]
+        log(f"cape draped: hem y {capeV[:, 1].min():.3f}, z {capeV[:, 2].min():.3f}..{capeV[:, 2].max():.3f}")
+        me = ob.data
+        Fc = [p.vertices[:] for p in me.polygons if lab[p.vertices[0]] == 5]
+        idmap = -np.ones(len(lab), np.int64)
+        idmap[lab == 5] = np.arange((lab == 5).sum())
+        col_cape = mk("col_cape", P[lab == 5], [tuple(idmap[list(f)]) for f in Fc])
+        col_cape.hide_render = True
+        col_cape.modifiers.new("collide", "COLLISION")
+        col_cape.collision.thickness_outer = 0.005
+        col_cape.collision.thickness_inner = 0.004
+        col_cape.collision.cloth_friction = 6.0
+        if stage == "cape":
+            WH.preview_mat(ob)
+            sheet(work, "cape", VIEWS)
+            return
+        # ---- 3b. the hood and capelet over it ----
+        diag(ob, lab, [cols[0], col_cape], "before clear")
+        clear_capelet(ob, lab, [cols[0], col_cape])
+        diag(ob, lab, [cols[0], col_cape], "after clear")
+        pins = opening_pins(ob, lab, open_pts)
+        pins[lab == 5] = 1.0
+        # the sewing springs: a loose edge between each seam pair (coincident, rest length 0)
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        bm.verts.ensure_lookup_table()
+        for a_, b_ in pairs:
+            bm.edges.new((bm.verts[a_], bm.verts[b_]))
+        bm.to_mesh(ob.data)
+        bm.free()
+        # (phase 1: the capelet's yoke held softly on the shoulders while the seams pull shut; phase 2 free)
+        Vy = b2g(verts(ob))
+        yoke = np.where((lab == 3) | (lab == 4), YOKE_HOLD * smoothstep(YOKE_Y[0], YOKE_Y[1], Vy[:, 1]), 0.0)
+        P = cloth(ob, np.maximum(pins, yoke), YOKE_FRAMES, BEND, [cols[0], col_env, col_cape], sew=True)
+        ob.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", P.ravel())
+        set_verts(ob, P)
+        diag(ob, lab, [cols[0], col_cape], "after yoke phase")
+        P = cloth(ob, pins, frames, BEND, [cols[0], col_env, col_cape], sew=True)
+        ob.data.shape_keys.key_blocks["Basis"].data.foreach_set("co", P.ravel())
+        set_verts(ob, P)
+        diag(ob, lab, [cols[0], col_cape], "after drape")
+        ob.shape_key_clear()
+        set_verts(ob, P)
+        weld(ob, pairs)
+        for p in ob.data.polygons:
+            p.use_smooth = True
+        ob.data.name = "garment_drape"
+        bpy.data.libraries.write(os.path.join(work, "drape.blend"), {ob.data}, fake_user=True)
     np.savez(os.path.join(work, "drape.npz"), V=verts(ob))
     if stage == "drape":
         WH.preview_mat(ob)
