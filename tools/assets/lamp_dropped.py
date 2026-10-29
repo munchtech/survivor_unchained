@@ -47,10 +47,19 @@ def materials():
     col[:, x0:x1] = np.where(specks, c * 0.35, c)
     rough[:, x0:x1] = 0.45 + 0.1 * n
     metal[:, x0:x1] = 0
-    # wet: the iron's roughness down by a third, darker by a touch (still >= 0.04 linear)
+    # Seen at an arm's length by day (C04 A0), env_lamps' night iron read as one black: a hand lamp's iron instead,
+    # worn dark grey-brown, rust blooming in patches (orange-brown where it is thick), and wet: low roughness on the
+    # bare iron, so the low sun finds its edges; less metallic, so its colour reads under a grey sky.
     i1 = int(0.25 * T)
-    rough[:, :i1] *= 0.66
-    col[:, :i1] = np.maximum(col[:, :i1] * 0.92, 0.04)
+    n1 = L.noise((T, i1), 621, 5, 4)
+    n2 = L.noise((T, i1), 622, 4, 18)
+    rust = np.clip((L.noise((T, i1), 623, 4, 7) - 0.48) * 3.2, 0, 1) * (0.55 + 0.45 * n2)
+    v = 0.085 + 0.035 * (n1 - 0.5) + 0.02 * (n2 - 0.5)
+    iron = np.stack([v, v * 0.93, v * 0.86], -1)
+    rc = np.stack([0.19 + 0.05 * n2, 0.085 + 0.025 * n2, 0.035 + 0.012 * n2], -1)
+    col[:, :i1] = np.maximum(iron * (1 - rust[..., None]) + rc * rust[..., None], 0.045)
+    rough[:, :i1] = np.clip(0.3 + 0.14 * n2 + 0.32 * rust, 0.2, 0.85)
+    metal[:, :i1] = 0.55 * (1 - rust) + 0.05
     a = L.image('lamp_dropped_albedo', col, False)
     mr = L.image('lamp_dropped_mr', np.stack([np.ones_like(rough), rough, metal], -1), True)
     m = bpy.data.materials.new('lamp_dropped_atlas')
@@ -76,7 +85,7 @@ def materials():
     clear = np.array([0.30, 0.32, 0.27])
     for k in range(3):
         rgba[..., k] = clear[k] * (1 - soot) + 0.02 * soot
-    rgba[..., 3] = 0.16 + 0.7 * soot
+    rgba[..., 3] = 0.24 + 0.66 * soot    # clear enough to see the candle, present enough that the star in it reads
     gi = bpy.data.images.new('lamp_dropped_glass_soot', G, G, alpha=True)
     px = rgba.copy()
     px[..., :3] = np.where(px[..., :3] <= 0.0031308, px[..., :3] * 12.92, 1.055 * np.power(px[..., :3], 1 / 2.4) - 0.055)
