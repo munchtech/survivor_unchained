@@ -1168,8 +1168,27 @@
    ],
    "turn": 0.4,
    "color": "#ffb468",
-   "energy": 1.3,
-   "range": 6.5,
+   "energy": 1.5,
+   "range": 8.0,
+   "att": 0.9,
+   "spec": 0.3
+  },
+  {
+   "_": "(Env 22 r1f) the house east of the north lane: its blank west wall dark by night; a lantern set down at its foot washes the plaster",
+   "holder": "lantern_standing",
+   "on": [
+    13.15,
+    -31.0,
+    1.2
+   ],
+   "local": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "color": "#ffb468",
+   "energy": 1.1,
+   "range": 6.0,
    "att": 1.0,
    "spec": 0.3
   }

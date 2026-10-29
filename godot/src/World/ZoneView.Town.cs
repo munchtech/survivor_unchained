@@ -167,8 +167,8 @@ public partial class ZoneView
 
     /// <summary>--brazier-att A, --brazier-range M, --brazier-energy K: a brazier's pool by night (Env 22 r1f; the data's
     /// 1.7 falloff over 13 m at 8.8).</summary>
-    static readonly float BrazierAtt = SurvivorUnchained.Args.Num("brazier-att", 0.85f), BrazierRange = SurvivorUnchained.Args.Num("brazier-range", 9f),
-        BrazierEnergy = SurvivorUnchained.Args.Num("brazier-energy", 1.2f);
+    static readonly float BrazierAtt = SurvivorUnchained.Args.Num("brazier-att", 0.7f), BrazierRange = SurvivorUnchained.Args.Num("brazier-range", 9f),
+        BrazierEnergy = SurvivorUnchained.Args.Num("brazier-energy", 1.45f);
 
     /// <summary>(Env 22 r1f) props_own.json "night_lamps": lamps of the zone's own set where the night left a dead zone (the
     /// town's north lane: a lantern on the handcart). Each entry: holder (lamps.json's kind, lantern_standing), on [x, z,

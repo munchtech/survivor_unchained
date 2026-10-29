@@ -360,6 +360,7 @@ uniform float moss_any = 0.5;     // moss in patches on every slope's lower cour
 // (Env 22 r1f, judge: the clay roof read clean salmon) soot along the ridge (the smoke's lee: the top 0.2-0.8 m of each
 // slope, patchy) and moss along the eaves (the lowest course or two, in broken patches); 0: as before
 uniform float ridge_soot = 0.0;
+uniform float clay_sat = 1.0;
 uniform float eave_moss = 0.0;
 varying float v_lx;
 varying vec3 v_wn;
@@ -819,6 +820,8 @@ void fragment() {
 		else if (ax.r > 0.25) tint = timber_tints[ti % 3];
 		vec3 col = c.rgb * tint;
 		bool cover = COLOR.b > 0.5 && ax.r > 0.6;
+		// (Env 22 r1f) the clay's saturation (the sheet's painted tiles read salmon under the warm key: 1 as before)
+		if (ax.r > 0.9) col = mix(vec3(dot(col, LW)), col, clay_sat);
 		if (cover) {
 			// each tile again its own value and warmth: its id on the sheet (32 steps), its run's hash, its roof's
 			float th = wall_hash(vec2(floor(ax.b * 32.0), COLOR.g * 131.0 + v_wall.b * 17.0));

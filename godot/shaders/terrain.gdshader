@@ -542,8 +542,11 @@ void fragment() {
 	float mud_c = max(1.0 - smoothstep(lvl - 0.04 - hfw, lvl + 0.03 + hfw, hgt), lost) * step(0.001, mud_g + collar);
 	// (Env 22 r1f, mud_soft) the rim: how deep in the mud's reach, broken by fine noise across the stones (not by them)
 	float mfine = texture(noise_tex, w * 5.3 + 0.71).r * 0.55 + texture(noise_tex, w * 11.0 + 0.29).g * 0.45;
-	float mrim = smoothstep(0.2, 0.62, mud_g + collar * 0.8 + (mfine - 0.5) * 0.6 + (rg4.g - 0.5) * 0.2);
-	mud_c *= mix(1.0, mrim, mud_soft);
+	float me = mud_g + collar * 0.8 + (mfine - 0.5) * 0.6 + (rg4.g - 0.5) * 0.2;
+	float mrim = smoothstep(0.5, 0.85, me);
+	// (the stones go under one by one only well inside; the band outside it a thin film of mud whose edge is the noise's,
+	// the stones showing through it: r1g's 0.85 film from 0.12 spread a black sheet twice the patch's size)
+	mud_c = mix(mud_c, max(mud_c * mrim, smoothstep(0.34, 0.72, me) * 0.55 * step(0.001, mud_g + collar)), mud_soft);
 	// (E9e r2: at the play camera the joints are under a pixel, so their mud came through as dots where two met: the
 	// joints' share of mud laid as a film instead, continuous, by how far the mud reaches.)
 	mud_c = max(mud_c, smoothstep(0.05, 0.5, mud_g + collar) * 0.3 * smoothstep(0.006, 0.02, footg) * mud_pool);
@@ -553,8 +556,9 @@ void fragment() {
 	// 0.6 m noise, warped; the broken edge no longer gathers a pool of its own.)
 	vec4 lb4 = texture(noise_tex, w * 0.75 + (rg4.ga - 0.5) * 0.35 + 0.19);
 	float pool_f = mud_g * 0.85 + collar * 0.6 + (nM.b - 0.5) * 0.75 + (nF.r - 0.5) * 0.3 + (lb4.r - 0.5) * 0.5 + (rg4.b - 0.5) * 0.2;
-	float pool = smoothstep(0.7, 0.88, pool_f) * w_setts * mud_pool;
-	float pool_c = pool * (1.0 - smoothstep(0.62, 0.78, hgt) * (1.0 - smoothstep(0.35, 0.8, pool)));
+	float pool = smoothstep(0.7, 0.88, pool_f + (mfine - 0.5) * 0.1 * mud_soft) * w_setts * mud_pool;
+	// (Env 22 r1f, mud_soft: the tallest tops broke the pool's rim stone by stone, a stair-stepped edge; less so now)
+	float pool_c = pool * (1.0 - smoothstep(0.62, 0.78, hgt) * (1.0 - smoothstep(0.35, 0.8, pool)) * mix(1.0, 0.3, mud_soft));
 	mud_c = max(mud_c, pool_c);
 	// (E3 G: mud, not dark stone: about 30% under the stones' value, hue about 30 degrees and well over the stones'
 	// saturation (the town's grade greys the setts' own warmth by a third); wetter and darker in the joints and at the
