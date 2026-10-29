@@ -34,6 +34,7 @@ import warden_beard as wb  # noqa: E402
 from warden_beard import (DENSE, LOOSE, LOCK, WISP, X0, HH, smoothstep, log)  # noqa: E402
 
 ATLAS_URI = "../../people/head_tex/hair_strands.png"
+ROOT_DARK, ROOT_RAMP = 0.35, 0.40     # each card's depth (vertex r) at its root, of its own, easing up over this share of it
 COL_W = 1.0 / 16                       # one atlas column's width in u
 STRAND_M = 0.016                       # metres of card width per column (her cards' 12-20 mm: her strands' fineness)
 
@@ -142,7 +143,7 @@ def ribbons(P, N, Sd, cw, cols, narrow, shade, alpha_fn, rng, root_w=0.6):
     g_ = rng.random(S)
     a = alpha_fn(f)[None].repeat(S, 0) if callable(alpha_fn) else np.ones((S, K))
     Cc = np.zeros((S, 3, K, 4))
-    Cc[..., 0] = r[:, None, None]
+    Cc[..., 0] = r[:, None, None] * (ROOT_DARK + (1 - ROOT_DARK) * smoothstep(0.0, ROOT_RAMP, f))[None, None, :]   # (r6b: roots dark, near the jaw's value)
     Cc[..., 1] = g_[:, None, None]
     Cc[..., 3] = a[:, None, :]
     base = (np.arange(S) * 3 * K)[:, None]

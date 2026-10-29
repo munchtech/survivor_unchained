@@ -25,25 +25,25 @@
    }
   },
   "source": "tools/assets/warden_beard_strands.py (r6: layered strand cards on her atlas and shader, dark core ribbons, braids with cord bands, river weed)",
-  "tris": 21044,
-  "cardTris": 16880,
-  "solidTris": 2116,
-  "lodTris": 2732,
-  "shadowTris": 1908,
+  "tris": 22292,
+  "cardTris": 17960,
+  "solidTris": 2308,
+  "lodTris": 3084,
+  "shadowTris": 2232,
   "locks": {
    "moustache": 16,
-   "inner": 33,
-   "mid": 38,
-   "outer": 30
+   "inner": 40,
+   "mid": 36,
+   "outer": 34
   },
   "cards": {
-   "edge": 57,
-   "inner": 165,
-   "mid": 152,
-   "outer": 90
+   "edge": 50,
+   "inner": 200,
+   "mid": 144,
+   "outer": 102
   },
   "braids": 3,
-  "weed": 16
+  "weed": 18
  },
  "nipples": {
   "l": [
