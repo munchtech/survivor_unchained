@@ -91,8 +91,8 @@
    ],
    "r": 0.215
   },
-  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -14.1, "z": 92.6, "rot": 0.9},
-  {"preset": "pack_dull", "x": -13.4, "z": 92.6, "rot": 2.6},
+  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -15.0, "z": 93.1, "rot": 0.9},
+  {"preset": "pack_dull", "x": -14.3, "z": 93.7, "rot": 2.6},
   {
    "preset": "wagon",
    "x": 5,
