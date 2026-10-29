@@ -1135,6 +1135,25 @@ public partial class Game
                     tweens.Add(new Tween(t0, t0 + over, k => life.Lids = Mathf.Lerp(from, to, (float)k)));
                     break;
                 }
+                case "fingers":
+                {
+                    // Her fingers curl toward the palm (HerPose.CineCurlL/R, degrees): "side" l, r or both, eased by
+                    // smoothstep from where they are to "curl" over "over" s. Visual only: dropped on a skip, and put
+                    // back to 0 when the cinematic ends.
+                    if (skipping || !people.TryGetValue(c.Actor, out var fv) || fv.Person.Pose is not { } hp) break;
+                    string side = c.Str("side") ?? "both";
+                    float to = (float)c.Num("curl", 0);
+                    bool left = side != "r", right = side != "l";
+                    float fromL = hp.CineCurlL, fromR = hp.CineCurlR;
+                    tweens.Add(new Tween(t0, t0 + over, k =>
+                    {
+                        if (!IsInstanceValid(hp)) return;
+                        float e = Mathf.SmoothStep(0, 1, (float)k);
+                        if (left) hp.CineCurlL = Mathf.Lerp(fromL, to, e);
+                        if (right) hp.CineCurlR = Mathf.Lerp(fromR, to, e);
+                    }));
+                    break;
+                }
                 case "light":
                 {
                     int i = (int)c.Num("light");
@@ -1231,13 +1250,27 @@ public partial class Game
                 }
                 case "prop":
                 {
-                    // A thing set down for the scene: her weapon leaning on the log.
+                    // A thing set down for the scene: her weapon leaning on the log (an Arms "piece"), or any
+                    // GLB/scene by "scene": "res://..." (the letter, the dropped lamp), on the world's layer 1.
                     var arms = Loadouts.Of(g.Journey.Ch).Arms;
                     string? piece = c.Str("piece") switch { "@weapon" => arms.Right ?? arms.Left, "@shield" => arms.Forearm, var s => s };
-                    string name = c.Str("name") ?? piece ?? "prop";
+                    string? scenePath = c.Str("scene");
+                    string name = c.Str("name") ?? piece ?? scenePath ?? "prop";
                     if (props.Remove(name, out var old)) old.QueueFree();
-                    if (piece == null || !Arms.All.ContainsKey(piece) || c.Bool("remove")) break;
-                    var node = Arms.Make(piece);
+                    if (c.Bool("remove")) break;
+                    Node3D node;
+                    if (scenePath != null)
+                    {
+                        if (GD.Load<PackedScene>(scenePath) is not PackedScene ps || ps.Instantiate() is not Node3D sn)
+                        {
+                            GD.PushWarning($"cinema prop: no scene at {scenePath}");
+                            break;
+                        }
+                        node = sn;
+                        WorldLayer(node);
+                    }
+                    else if (piece == null || !Arms.All.ContainsKey(piece)) break;
+                    else node = Arms.Make(piece);
                     var at = places.Resolve(c.Get("where"));
                     node.Position = V(at);
                     var r = c.Get("rot");
@@ -1337,18 +1370,23 @@ public partial class Game
                     // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
                     string name = c.Str("name") ?? "rig";
-                    if (rigs.Remove(name, out var was)) was.L.QueueFree();
+                    // ("fade": true: from the light's energy now to "energy" over "over", 0 included: C03 s8y, the heart's
+                    // blue from below dying as it goes under, not cut off)
+                    float e0 = 0;
+                    if (rigs.Remove(name, out var was)) { e0 = was.L.LightEnergy; was.L.QueueFree(); }
                     float e = (float)c.Num("energy", 0.3);
-                    if (e <= 0) break;
+                    bool fade = c.Bool("fade") && over > 0 && !skipping;
+                    if (!fade) e0 = 0;
+                    if (e <= 0 && !(fade && e0 > 0)) break;
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
                         SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
-                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? 0 : e, SpotRange = (float)c.Num("range", 5),
+                        LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
                     rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
-                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = e * (float)k; }));
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = Mathf.Lerp(e0, e, (float)k); }));
                     PlaceRigs();
                     break;
                 }
@@ -1638,6 +1676,13 @@ public partial class Game
         }
 
         readonly Dictionary<string, Node3D> props = new();
+
+        /// <summary>A "prop" cue's scene on the world's visual layer 1 (the zone's light, decals and shadows), all through.</summary>
+        static void WorldLayer(Node n)
+        {
+            if (n is VisualInstance3D vi) vi.Layers = 1;
+            foreach (var ch in n.GetChildren()) WorldLayer(ch);
+        }
         static GradientTexture2D? halo;
 
         /// <summary>A preset as a scene lights it (its night darker than play's, a close-up's own exposure): "key",
@@ -1913,6 +1958,7 @@ public partial class Game
             }
             // Her look let go (her eyes ahead, her head's carry eased off) on whoever stays.
             foreach (var name in people.Keys) Life(name)?.Release();
+            foreach (var (_, pv2) in people) if (pv2.Person.Pose is { } hp && IsInstanceValid(hp)) hp.CineCurlL = hp.CineCurlR = 0;
             // (and a head look's glide back off: play's Watch is set each frame and follows at once)
             foreach (var (_, v) in people) if (v.Person.Skeleton.GetNodeOrNull<HeadTurn>("HeadTurn") is { } ht) ht.Glide = false;
             // Who stays where it left them (a body in the river) stays, still, until the next one.

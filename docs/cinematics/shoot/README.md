@@ -79,10 +79,12 @@ places, and each one has a timeline the game plays. The chain:
     dead), `sfx` (`name`, optional `where`, `gain`, `pan`).
   - People: `place`, `anim` (`clip`, `from`, `speed`, `loop`, `hold`,
     `blend`), `move` (`to`, `dur`, `clip`), `look` (`where`), `hold` (a hand's
-    piece, null, or `@own`), `prop` (`@weapon` set down `where`).
+    piece, null, or `@own`), `prop` (`@weapon` set down `where`; or any GLB/scene by
+    `"scene": "res://..."`, with `name`, `where`, `rot` [x,y,z], `scale`, on the world's layer 1; `"remove": true` by `name`).
   - The survivor's face: `face` (`keys` of her expression shapes, `over`),
     `gaze` (`look` [x,y], `wander`), `lids` (`value`, or null to let her
-    blink again), `wet`.
+    blink again), `wet`, `fingers` (`side` l, r or both, `curl` degrees toward
+    the palm, `over`; eased, her hands only, put back at the end).
   - Light and air: `light` (`light`, `intensity`, `color`, `over`), `lit`,
     `fire` (the campfire's size), `atmosphere`.
   - Effects and the world: `vfx`, `prints` (wet bootprints `from` `to`,
