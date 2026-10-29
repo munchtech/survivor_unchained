@@ -1,0 +1,35 @@
+{
+ "_note": "Storybook 4 round 5, p7u: the warped lamp redrawn as p7's round woven iron-strap basket seen from below (inpaint over p7u4_s47 with the cage painted out: ink_r5.py p7u_prep).",
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p7u5",
+   "w": 1920,
+   "h": 1088,
+   "seeds": [
+    11,
+    47,
+    202,
+    505
+   ],
+   "prompt": "Underwater at night, looking up from below the surface of a black river: black and deep green-black murky water carved in woodcut gouge lines. High above, the rippling underside of the surface catches a cold pale blue light, carved as broken curved strokes; in the middle of that light, seen through the water, the dark warped silhouette of a small round basket woven of flat black iron straps, like a round wicker basket made of iron bands, seen from directly below through the water: its round woven bottom toward us, the straps crossing in a loose weave, bent and wavering with the ripples, bright cold blue-white fire glowing through the gaps between the straps. No square bars, no box, no cube. Streams of small round bubbles rush up, each bubble a clean simple carved pale ring or dot, many sizes, black water between them. Nothing else. The only color is the cold pale blue light; everything else is black and deep green-black ink.",
+   "init": "out/ink_r5/_p7u_init.png",
+   "mask": "out/ink_r5/_p7u_mask.png",
+   "denoise": 1.0
+  },
+  {
+   "name": "p7u5d",
+   "w": 1920,
+   "h": 1088,
+   "seeds": [
+    11,
+    47
+   ],
+   "prompt": "Underwater at night, looking up from below the surface of a black river: black and deep green-black murky water carved in woodcut gouge lines. High above, the rippling underside of the surface catches a cold pale blue light, carved as broken curved strokes; in the middle of that light, seen through the water, the dark warped silhouette of a small round basket woven of flat black iron straps, like a round wicker basket made of iron bands, seen from directly below through the water: its round woven bottom toward us, the straps crossing in a loose weave, bent and wavering with the ripples, bright cold blue-white fire glowing through the gaps between the straps. No square bars, no box, no cube. Streams of small round bubbles rush up, each bubble a clean simple carved pale ring or dot, many sizes, black water between them. Nothing else. The only color is the cold pale blue light; everything else is black and deep green-black ink.",
+   "init": "out/ink_r5/_p7u_init.png",
+   "mask": "out/ink_r5/_p7u_mask.png",
+   "denoise": 0.9
+  }
+ ]
+}
