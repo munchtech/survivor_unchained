@@ -93,6 +93,7 @@
       "cam": {"pos": [-6.34, 0.7, -25.05], "at": {"abs": [5.16, 2.18, -39.05]}, "lens": 24},
       "cues": [
         {"do": "place", "actor": "her", "where": [1.5, -31.83], "heading": 3.1416},
+        {"do": "hide", "actor": "her"},
         {"do": "rig", "name": "rows", "energy": 0},
         {"do": "rig", "name": "legrim", "energy": 0.5},
         {"do": "mist", "name": "river", "where": {"abs": [7.0, -0.8, -41.0]}, "size": [26, 2.2, 18], "density": 0.75, "color": "#8494aa", "falloff": 2.0},
@@ -118,6 +119,7 @@
       "note": "He sets his guard. Pull back and up into the follow camera. Bars out; the boss bar and the lamps' tip come up. Control.",
       "cam": {"pos": [2.2, 1.8, -27.2], "at": {"abs": [3.0, 1.6, -33.6]}, "lens": 35, "move": {"pos": [2.5, 9.0, -20.0], "ease": "inout", "follow": true}},
       "cues": [
+        {"do": "hide", "actor": "her", "hidden": false},
         {"do": "atmosphere", "preset": "play", "from": "now", "over": 2.0},
         {"do": "mist", "name": "river", "density": 0, "over": 2.0},
         {"do": "water", "level": 1, "over": 2.0},
