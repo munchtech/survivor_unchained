@@ -27,7 +27,7 @@ him to run with her, or leaves them be.
 - **Pays:** Maeca's advice to each calling (`maeca.say_calling`: "Don't raise it
   in the Hollow", "Leave the big blade", "Fire's the one thing they all
   remember", "Quiet feet") and to everyone (`maeca.speak`: "no wolf blood on
-  you, none since you last slept... don't run"); and, for her lover, Maeca's
+  you, none since you last slept... don't run"); and, after a night at Maeca's fire, Maeca's
   story of the cave (`maeca.blind_morning`): the old wolf lay across a cave mouth
   to keep her alive. He smells Maeca on the survivor, and his tail moves once.
 
@@ -39,7 +39,7 @@ him to run with her, or leaves them be.
   conversation's.
 - Reads: calling; `knows beastlore`, `knows hint.greymuzzle`, `hasTag wolf_fang`
   (the kneel's lock); `knows hint.roost` or `caravan/roost_found` (the
-  alliance's lock); `maeca.lover`; `met maeca` (shot 13).
+  alliance's lock); `maeca.blind_nights`; `met maeca` (shot 13).
 - Sets: as the conversation does (`greymuzzle`, `hollow.peace`,
   `promise.pack`, `pack.allied`, the trait, the journal lines).
 
@@ -78,7 +78,7 @@ him to run with her, or leaves them be.
 | 5 | MS | 50 | Static, frontal on her | *Kneel:* she disarms (see Calling) and kneels on one knee, then lowers the other, side-on to him, eyes down, and holds out an empty hand, palm up, low. | 5.0 |
 | 6 | 2S | 65 | Static, profile, ground level | He comes to her. Stops a nose from her hand. Smells it. | 3.5 |
 | 7 | CU | 85 | Static, over his shoulder onto her face | He lifts his head to her face, close, and breathes her in. His lip lifts off his teeth: not a snarl, a flinch. She does not move. | 3.5 |
-| 8 | ECU | 100 | Static | His muzzle at her jaw; the lip goes down again. His ears, which were flat, come up. (Maeca's lover: he moves to her collar and stays there longer than anywhere else, and his tail, out of focus behind, moves once.) | 3.0 |
+| 8 | ECU | 100 | Static | His muzzle at her jaw; the lip goes down again. His ears, which were flat, come up. (After a night at Maeca's fire: he moves to her collar and stays there longer than anywhere else, and his tail, out of focus behind, moves once.) | 3.0 |
 | 9 | LS | 35 | Static, from the rocks above, looking down | He turns and walks into the Hollow; she rises and follows him into the shadow. | 4.5 |
 | 10 | MS | 50 | Slow track along the sick wolves at their height | The sick ones: milky eyes, black gums. One of them sees her and tries to stand, and cannot, and lies down again. | 5.0 |
 | 11 | MCU | 85 | Static, past her onto him | Greymuzzle looks east, toward the stream, then back at her, and waits. **Choice 2** in the lower bar; hold. | 3.5 + choice |
@@ -155,7 +155,7 @@ as much as he has.
 None. The cinematic is wordless: `VOICES.md` says Greymuzzle never speaks and
 that everything he says is the narrator watching what he does, and in a
 cinematic the camera is that narrator. The conversation's narration
-(`greymuzzle.first`; `greymuzzle.show`, with its variant for Maeca's lover;
+(`greymuzzle.first`; `greymuzzle.show`, with its variant for a night at Maeca's fire;
 `greymuzzle.ally`) stays in the data, for the conversation as text when the
 cinematic is skipped or switched off; the cinematic plays it as picture, beat for
 beat. The choices come up in the lower bar, read, not voiced.

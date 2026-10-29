@@ -12,7 +12,7 @@
    "report": "Chid carried a woman up from the ford before light yesterday, and buried her himself. Nobody's claimed her."
   },
   {
-   "id": "dawn.voice",
+   "id": "dawn.face",
    "once": true,
    "when": {
     "day": {
@@ -20,7 +20,7 @@
     }
    },
    "effect": [],
-   "report": "Her voice is going the way her face went. You still have the word."
+   "report": "Her face is going the way her voice went. The brows first. You still have the word."
   },
   {
    "id": "dawn.word",
@@ -1272,7 +1272,7 @@
     "eq": "taken"
    },
    "effect": [],
-   "report": "Pell Varrow's door stood open at first light, the lock not forced. His bed had been slept in. There was a red thread caught on the hinge, and a cart went out of the east gate before cockcrow. Vonnra's lamp was lit in the toll tower all night; nobody has asked her what went through."
+   "report": "Pell Varrow's door stood open at first light, the lock not forced. His bed had been slept in. There was a red thread caught on the hinge, and a cart went out of the east gate before cockcrow. Vonnra's lamp was lit in the toll tower all night; nobody has asked her what went by."
   },
   {
    "id": "pell.ran",

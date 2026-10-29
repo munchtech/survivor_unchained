@@ -122,8 +122,7 @@ hours.** By night an Unchained is the river's: cold as stone, the heart slow
 (it can stop for a count of seven and start again), and the breath does not
 show in the cold, though it can be heard. At dawn, as the ember goes back into
 the ground, the warmth comes into them all at once, like a lamp turned up: the
-heart quick, the breath smoking (C04). Every lover notices it in their own
-trade's words, and none of them knows what it means until Act 2. Each Unchained is a piece of the
+heart quick, the breath smoking (C04). Everyone who sleeps near the survivor notices it in their own trade's words (Sella's hand on a cold chest, Maeca's back against yours, Rav's ear at your back), and none of them knows what it means until Act 2. Each Unchained is a piece of the
 Morrow walking about, a link coming loose. The title means both things: the
 survivor is unchained from death, and through people like them the Morrow is
 coming unchained.
@@ -169,10 +168,13 @@ once more (`scene_still_plain`, TREATMENT §3.3).
 - **Her word.** At dusk, when the survivor was small, she put the lamp in the
   window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
   (The Order's evening call, made small and kept in one family; the name is
-  hers.) The first dawn quotes it; the dawns take it away, a piece at a time
-  (day 3, "Her voice is going the way her face went. You still have the
-  word."; Act 2, "Somebody used to call you something at dusk. One short
-  word. It was yours."; then nothing). On day 3, at Chid's asking, the
+  hers.) The narrator never says it before the bottom of the stair (reveal A,
+  28 October): the first dawn finds her voice gone and her face whole ("Not
+  faint: gone."), and the dawns take the face, then the word, a piece at a
+  time (day 3, "Her face is going the way her voice went. The brows first.
+  You still have the word."; day 6, "This morning it takes you a moment to
+  find her word. It is there."; Act 2, "Somebody used to call you something
+  at dusk. One short word. It was yours."; then nothing). On day 3, at Chid's asking, the
   survivor writes it in her journal, so the player can see it in her own hand
   after it means nothing to her.
 - **The kind lie.** On day 1, asked, Rook says: "She went in her sleep, pet. A
@@ -293,9 +295,8 @@ The payoff is real, and we keep it:
 Making her the whole narration would cost more than it earns:
 1. **Her sight is bought, not real** (section 3). The fortune's best clue is
    that she quotes back what Sella sold her. The narrator knows what nobody
-   could sell her: the survivor's own mind ("your mother's face... not quite
-   where you left it"), Maeca's lips against your chest, the Blind, Sella's
-   free night. If Vonnra narrates, either she truly sees, which kills the
+   could sell her: the survivor's own mind (the first dawn: "your mother's
+   voice... Not faint: gone."), the Blind, Sella's free night. If Vonnra narrates, either she truly sees, which kills the
    fortune's clue and the bible's rule, or the narration breaks its own rules.
 2. **The twist would land on day one.** The player meets her the first
    afternoon, and a voice they have heard for an hour is recognised at once.
@@ -353,7 +354,7 @@ What we do instead (C01, the prologue's captions, C09):
 | Dame Keegan Orme | Comic, probationary | The last true knight of the Argent Vigil; chapter four of her handbook is about the survivor | Act 2 |
 | Ysolde Marrow, the Wayfinder | A cartographer of arenas | Sells the names of those who come back to the Vigil's Lord-Exchequer, to keep her brother Edric (Unchained since the barrow) fed in his cages | Act 2 |
 | Lord-Exchequer Orrin Sallow | "A gentleman in the north who likes silver ink" | Has turned the Vigil from killing Unchained to buying them, as soldiers who rise every night, for a war in the south | Act 2 |
-| Sella | The blue room's professional | Sells what is said upstairs; Vonnra outbids everyone | Act 1 (the fortune quotes your pillow talk) |
+| Sella | The blue room's professional | Sells what is said upstairs; Vonnra outbids everyone | Act 1 (the fortune quotes what you told her in the blue room) |
 | Mother Rook | Knows everything | Paid by Vonnra for news of the ford road (double for you); her mother brought Chid bread | Act 1 (the money), Act 3 (the bread) |
 | Grimtunnel | A thieving Boss | A believer, carrying a god its heart | Act 3 |
 | Snib | Self-appointed foreman | Exactly what he looks like. Survives everything. | Always |
@@ -426,7 +427,7 @@ None of them says it.
   walks him home and buys his drink with his own money. *Secret:* she left her
   post at the cave mouths and went down the shaft after the boy she was sleeping
   with, Gale (settled 11 October: the one name Holloway's roll stops on,
-  "Gale. ...Gale.", and the lover's "a lad I'd been fond of"; Act 2's daybook
+  "Gale. ...Gale.", and her "a lad I'd been fond of"; Act 2's daybook
   can show it without a word); she was on the ladder, the next hand up, number ninety-two, with her
   face in the shaft-head lamp, when the lid came down. Three days below: she
   finished the wounded before they could rise; on the third day she followed the
@@ -526,8 +527,7 @@ None of them says it.
   sent Coyle's wagons off the road was her clerk; she let it happen, because a
   ruined Coyle sells no more ember to the Dig, and then she sent Jessop through
   the sealed door to learn whether a living man could pass. Her far sight is
-  old lore and bought talk (Rook, Sella, Pell): the fortune quotes what the
-  survivor said in Sella's bed. She believes her twenty-six made the survivor,
+  old lore and bought talk (Rook, Sella, Pell): the fortune quotes what the survivor told Sella in the blue room. She believes her twenty-six made the survivor,
   and never learns Chid's part; from line twenty-eight her ledger is the toll,
   each of the survivor's risings and the life it cost, in her hand (C41).
   Her grandmother's coin, square, stamped VII, is
@@ -541,11 +541,9 @@ None of them says it.
   is "Of the Unchained, and Their Return to the Dark". She has started to see
   the signs in the survivor and is very much hoping she is wrong. *Ends:* steps
   aside and comes north, and re-founds the Vigil as what it was meant to be;
-  stands at the gate and dies there; spares the survivor and is disgraced; the
-  survivor's lover, as a tragedy, if Act 2 opens that route.
+  stands at the gate and dies there; spares the survivor and is disgraced.
 - **Sella.** *Face:* the blue room's frank, funny professional. *Secret:* she
-  sells what is said upstairs, and Vonnra outbids everyone for it. A lover with
-  a motive, though not a cruel one: she would sell Vonnra a lie for you, if
+  sells what is said upstairs, and Vonnra outbids everyone for it. A friend with a motive, though not a cruel one: she would sell Vonnra a lie for you, if
   asked and paid. *Ends:* gets her house in the south with a door that locks
   from the inside; flees south on a toll cart after lying for you, drowns at
   the Kiln Ford, and rises: the second Unchained.
@@ -598,7 +596,7 @@ has the reasoning.)
 | Vonnra | Pride: she is the last of a line that kept the Legion's keys, and she cannot bear to be the one in whose time the chain broke. | "I am not angry. I am arranging." Her first feeling is for her arrangement. Act 3. |
 | Rook | She knew. Not all of it, but she watched the carters go down the south road and not come back, and took double for the survivor and asked nothing, because the Last Lamp was failing and she would not be the woman who lost Ashe's inn. Her Act 2 turn is a woman deciding she can no longer pretend, not one learning. | "Don't look like that, pet." Act 2. |
 | Holloway | He saw what he was afraid of. The lamp was in his eyes, and he had the time it takes to breathe in, and he chose the four hundred; but he was also afraid, and the dead were what fear sees. Then he saw her face, and has known for ten years. | The roll at night: who each man left behind ("Abbot. Two bairns."). |
-| Maeca | Below the lid she finished the wounded before they could rise, and the last of them was the boy she had gone down for. She has never decided whether she keeps Holloway alive or keeps him. | Her romance's "I've lain with my ear to a lot of things to see if they'd live." Never said. |
+| Maeca | Below the lid she finished the wounded before they could rise, and the last of them was the boy she had gone down for. She has never decided whether she keeps Holloway alive or keeps him. | Her watch night's "I've lain with my ear to a lot of things to see if they'd live." Never said. |
 | Wenna | In the fever year there was not enough bitterroot, and she chose who got it; she was right about most, and wrong about Harlan's sister, whom she passed over for a man she liked better. She has never named the fever year's dead because one of the names is a decision. | Act 2's breakthrough, when she has to choose again. |
 | Harlan | He likes being the man who brings salt to the valley; the B.E. paid for the new sign over Coyle Trading; he has never once thought of the pipe-lads. | The sign. Act 2. |
 | Pell | He did not go up to Ashford after the Fall for his sister's books out of love; he went for her savings, and has counted ever since because counting is the only grief he can do. | Act 2, if asked the right way. |
@@ -839,7 +837,7 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   Somebody barred it. I know who."
 - `sallow.rider`: a rider from the north, an hour in the Watch House; the
   letter face down (`holloway.letter`). Act 2: his answer, "No."
-- `maeca.blind_morning` (romance): the Pack saved her after Ashford.
+- `maeca.blind_morning` (the first watch night): the Pack saved her after Ashford.
 - `maeca.cb_burned_roost`: "I was at Ashford." `maeca.kerchiefs`: "Fed some
   of them, once. Buried more."
 - `wenna.fever`: the fever year came the year after Ashford "went into the
@@ -1133,8 +1131,7 @@ the silver lamps. Every night. And every night I know someone else's mother."
 **12. The war at the gate.** Sallow's people come south for the Unchained: the
 survivor, Chid, the freed. Who holds the north gate is everything Act 2
 decided (Holloway, Keegan, Maeca and the Pack, Redcowl's people or Rav's,
-Brannoc). The night before is the eve (`romance.eve`, section 11): one night,
-with one of the open romances, or alone, or on the wall. Afterwards Vonnra opens her cellar to the survivor: six sigil-keys,
+Brannoc). The night before is the eve: one night, alone, or on the wall with whoever stands there (no romance: section 11). Afterwards Vonnra opens her cellar to the survivor: six sigil-keys,
 kept by her family, and the one from the bones' hand makes seven. "Come down
 with me."
 
@@ -1268,7 +1265,7 @@ tallow candle; in C it lights itself.
 | Pell | Saves the town by arithmetic; hangs; dies in Redcowl's cage; gone | `caravan.pell`, `pell.fate`, Act 2 choice |
 | The Kerchiefs | Broken (Redcowl dead and Rav stays a doctor); the army under Redcowl; the army under Rav | `redcowl`, `be.crates`, `rav` regard |
 | The Watch | Holloway dies at the gate; hands the survivor over; confesses; hanged | Holloway's regard, `holloway.post_told`, `holloway.lied_to`, the boots |
-| Maeca | Leaves with the Pack; takes the Watch; dies at the edge; the survivor's | `maeca.lover`, the Pack, the boots |
+| Maeca | Leaves with the Pack; takes the Watch; dies at the edge | `maeca.blind_nights`, the Pack |
 | Brannoc | Breaks the irons and makes the heart's cage; forges them and learns too late | `nell.told` |
 | Wenna | Saves the Penhales; dies in the bad air; outlives everyone to spite them | the mask, the breakthrough's width |
 | Tam and the Penhales | Farm lost or spared; Pa alive or dead | `dig.pump`, `be.crates`, `tam.pa_in`, `tam.tock` |
@@ -1525,90 +1522,63 @@ each one's exact writer and reader.
 | `harlan.told_dig` | `harlan.be_dig` | Act 2 beat 5 (he has been told once already) |
 | `dig.pump`, `tam.pa_in`, `tam.farm`, `beasts.outcome` | the Beast Problem | Act 2 beat 1 |
 | `caravan.pell`, `redcowl`, `roost.cleared` | the Missing Caravan | Act 2 beats 1, 4, 6, 7 |
-| `maeca.lover`, `sella.free` | the romances | Act 2 and the epilogue |
+| `maeca.blind_nights`, `sella.free` | the watch nights and the free night | Act 2 and the epilogue |
 | `risen_once` (trait) | a death | Act 2 beat 2 |
 
-## 11. Romance
+## 11. Affection, not romance
 
-All adults, all consenting; romance carries the intrigue.
+The owner removed every romance route and love scene on 28 October 2026
+("remove the love scene options and relationships - though sella for example
+won't change the way she is - she does like us"). Affection and loyalty stay;
+no route leads to a bed, and no fact says "lover". The history of the cut
+scenes is `docs/story/notes/history_love_scenes_b.md` and `docs/romance/`.
 
-- **Sella** (paid; open from the first night). *How:* "How much for the
-  night?", fifteen gold, any survivor. *Reveals:* after `rook`, `sella.buyers`:
-  she sells what is said upstairs, Vonnra above all; in the morning she may
-  ask where the survivor comes from (`sella.past`), and the fortune then quotes
-  it. *Costs:* gold; what you say upstairs reaches Vonnra. *Reacts:*
-  `sella.say_maeca` (when Maeca is your lover), `sella.say_woman`. *Off the
-  clock:* after three paid nights and enough warmth, one night she will not
-  take the money (`sella.free`, `sella.free_night`), and in the morning warns
-  you not to tell her anything you would not want Vonnra to hear. Fact:
-  `sella.free`. *Act 2:* pay her to lie to Vonnra; she pays for it.
-- **Maeca** (earned). *How:* her respect at 30 or more and her affection at 10
-  or more, the Pack's trouble settled (cured or allied), at night in the
-  tavern: she asks you out to the Hunters' Blind (`maeca.invite`); after
-  that, `maeca.hub` offers the Blind on any night while it lasts. *Reveals:*
-  `maeca.blind_morning`, the first time: the Pack saved her after Ashford.
-  *Costs:* everything, if Greymuzzle dies (`maeca.gone` names it); she will
-  meet, in Act 2, the woman under the lid, and her hand is the one that pulls you up.
-  Fact: `maeca.lover`.
-- **Keegan** (teased, not opened). `keegan.dinner`: chapter eleven,
-  fraternisation, read four times. An Act 2 route, and a tragedy if it is
-  followed: chapter four is about you.
-- **Act 2 routes:** Rav (wry, drunk, grieving his brother; if he takes the hat,
-  the route goes with him to the Roost); Ysolde (after Edric, if he is freed;
-  never while she is selling you).
+- **Sella** is exactly who she was: the blue room's professional ("Talk's
+  free. The rest isn't."), who sells what is said upstairs, Vonnra above all.
+  The survivor never buys her: "How much for the night?" leads to the room and
+  the sleep (`sella.rest_night`: "You've paid fifteen gold to sleep."), the
+  climb (`stairs`, `stairs_say`), the dark (`rest_dark`: "Somebody ought to
+  watch you.") and the morning, where she feels the cold in you
+  (`sella.felt_cold`, sold on as `sella.cold_sold` while she still sells you)
+  and may hear where you come from (`sella.past`, `sella.past_sold`). After
+  three paid sleeps and enough warmth she gives the one thing she never sells:
+  a night off the clock in which she sits with you (`free`, `free_stairs`,
+  `free_door`, `free_what`, `free_sit`: the green door in the south, and
+  "Don't tell me anything up here you'd not want Vonnra to hear"). Fact:
+  `sella.free` (she has stopped selling you). She likes the survivor; nobody
+  says so.
+- **Maeca** asks the survivor out to the Hunters' Blind once the Pack's
+  trouble is settled (`maeca.invite`; then the hub on any night). Every night
+  there is a watch night (`watch_only`): the survivor keeps the fire, she keeps
+  the dark, and after midnight she sits down with her back against theirs.
+  Night 1's gray light is the Pack after Ashford ("Don't make it a story.");
+  night 2 is her feet, two toes short, and "Holloway doesn't know that";
+  night 3 is her question across the fire ("What were you?", `told_true`,
+  `maeca.heard_past`) and the heart she counted through her back
+  (`blind3_morning`, `maeca.heard_heart`). Fact: `maeca.blind_nights`.
+  Greymuzzle smells her fire on you (`greymuzzle.show`); Sella reads more into
+  her humming than there is (`sella.say_maeca`).
+- **Keegan**'s supper on the wall (`keegan.supper`, "a meal taken in company
+  for the purposes of morale") is friendship: the bread, Saint Wend's, the
+  letters, the handbook read aloud, and chapter four closed. No hand.
+- **Rav**'s back room is his surgery (`rav.back_room`): he examines you, finds
+  you cold and nothing wrong, and sends you home. No kiss.
 
-**The romance drafts** (`docs/romance/`) are adopted, with the fixes in
-round three of the cinematics edit: the Act 1 beats of Sella (the stairs and
-their last place to stop, the paid night of sleep, the bolt, the free night's
-trust gate), Maeca (the walk, watch-only, the refusal with wolf blood on you,
-her feet, her question, the heart counted at dawn), Keegan (the supper on the
-wall) and Rav (the back room; "came back") are in the data; the Act 2 and 3
-beats, all five routes, Ysolde's only in Act 2, are for the Act 2 writer.
-What every lover notices is **the body's hours** (section 1): cold as the river
-all night, warm by breakfast; the heart a bear's in January by night and a
-hare's at dawn. Sella says it first ("Rook's got a word for that. It's not a
-nice word."); nobody names it before Act 2. What the survivor tells Sella of
-their past reaches Vonnra only while Sella is still selling them
-(`sella.past_sold`, set before the free night); the fortune reads that, not
-`sella.heard_past`. Rav's "never says no to a drink" is spent once, at his
-morning after (`rav.sober`). Love scenes are not cinematics: each cut-away
-holds one object instead (Sella's bolt going home; Maeca's boots side by side
-outside the hides; Keegan's armour laid out in order; two cups at Rav's, one
-full; Ysolde's spectacles folded on the twelfth drawing).
+What everyone who sleeps near the survivor notices is **the body's hours**
+(section 1): cold as the river all night, warm by breakfast; the heart a
+bear's in January by night and a hare's at dawn. Sella says it first ("Rook's
+got a word for that. It's not a nice word."); nobody names it before Act 2.
+What the survivor tells Sella of their past reaches Vonnra only while Sella is
+still selling them (`sella.past_sold`, set before her free night); the fortune
+reads that, not `sella.heard_past`.
 
-### Intimate scenes: fade to black
+### Intimate scenes: none
 
-**The base game is not explicit** (the legal lead, `docs/legal/LEGAL_BRIEF.md`
-issue 6). Explicit sex would make it Adult Only on Steam: hidden by default,
-a slower review, and the payment processors' rules. Every intimate scene is
-written in full before and after, and the moment itself fades: close and
-sensual, ending before the act. That cut-away is the scene, for everyone.
-- No explicit slot or placeholder ships in the game's data, and nothing is
-  keyed to `settings.intimacy`. `StoryLint` fails if one lands.
-- The three Act 1 slots were removed on 4 October.
-- If explicit scenes are ever wanted, it is the owner's decision with the
-  lawyer: a separate Adult Only DLC with its own survey, so the base game
-  stays in the normal store.
-- **A love scene earns nothing in a fight** (the owner, 4 October; Australia's
-  R18+). The condition `warmed` stays as a record that the night happened
-  ("Warmed: last night is still with you" in the book), with no bonus. The
-  notices keep their words without numbers. Affection and trust still move,
-  because that is the relationship. Never give a love scene a mechanical
-  reward.
-
-The planned scenes, kept as notes (the beat sheets are in
-`docs/romance/scenes/`). None of this is game data:
-
-| Scene | Node | Who, where, tone |
-|---|---|---|
-| 1 | `sella.night` | Sella and the survivor, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, tenderness at the edges and quickly put away; ends with her asleep across you and the sun up. |
-| 2 | `maeca.blind` | Maeca and the survivor, the Hunters' Blind in the Verge at night; wordless, wary, careful hands that become sure ones, frost outside, the Pack far off. |
-| 3 | `sella.free_night` | Sella and the survivor, the blue room, not for money for the first time; slower and less sure than her working nights, the patter dropping away; a door she bolts herself. |
-| 4 | `keegan.night` (Act 2) | Keegan and the survivor, a roadside chapel on the north road, the armour coming off a buckle at a time. |
-| 5 | `rav.night` (Act 2) | Rav and the survivor, the back room of the Crooked Flagon after closing; funny until his fingers find the survivor's wrist. |
-| 6 | `wayfinder.night` (Act 2) | Ysolde and the survivor, her rooms over the map table; she draws them after. |
-
-When the Act 2 scenes are written, write the cut-away and nothing past it.
+There are no intimate scenes in the game (28 October). The base game was
+never explicit (`docs/legal/LEGAL_BRIEF.md` issue 6) and is now not even
+suggestive: nothing is keyed to `settings.intimacy`, `StoryLint` still fails
+any explicit slot, and the condition `warmed` has no source (it stays in the
+enum, unused). The Act 2 scene notes in `docs/romance/scenes/` are history.
 
 ## 12. Facts the story keeps
 
@@ -1616,7 +1586,7 @@ Act 1 (first pass): `promise.pack`, `promise.broken` (the Greymuzzle promise);
 `wolf.blood` (Maeca's rule, washed at dawn); `bounty.stopped` (Holloway's
 change of heart); `tam.pa_in`, `tam.farm` = `emptied`; `stream.clear` (the
 stream healed, whatever the Pack's ending); `player.pardoned` (the strongbox
-forgiven for Pell's ledger); `maeca.lover`; per-person flags `cb:<event>` (a
+forgiven for Pell's ledger); `maeca.blind_nights`; per-person flags `cb:<event>` (a
 deed quoted back) and `say:<key>` (a remark made once). History events:
 `farm_saved`, `broke_promise`, `bribed_snib`. Second pass: `aldo.buried`,
 `caravan.bodies` (each set a day after its death, for the next morning's

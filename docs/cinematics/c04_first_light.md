@@ -12,7 +12,7 @@ her, down her body into the ground the way the river ran off her when she woke.
 And then, for the first time all night, her breath smokes in the cold: she
 breathes again just to see it. The cold reaches her. She is thirsty, and the
 flask on her wrist smells of the river, and she drinks it anyway. She reaches for
-her mother's face, and it is not quite where she left it.
+her mother's voice, and it is gone; her face comes at once.
 
 **Part B, the Waystation.** The gate, the chimneys, someone baking. People stop
 and look. A guard says to his mate what guards say. High in the toll tower a lamp
@@ -154,7 +154,7 @@ Conversation `cin_first_light`.
 | VO id | Shot | Speaker | Line | Note |
 |---|---|---|---|---|
 | `cin_first_light.back` | A4 | `narrator` | *The sun clears the trees, and the ember goes back into the ground.* | As weather. "Back" is the only weighted word, and only a little. |
-| `cin_first_light.face` | A7 | `narrator` | *You try to call up your mother's face, and find it is not quite where you left it.* | The prologue's own line. The most important line in the opening. No weight on it at all. Then silence. |
+| `cin_first_light.face` | A7 | `narrator` | *You try to call up your mother's voice, and it is not there. Not faint: gone. Her face comes at once: the line between her brows, the thread she bit instead of cutting.* | The prologue's own line. The most important line in the opening. No weight on it at all. Then silence. Reveal A (the owner, 28 October): the voice is what is lost, the face is whole. The shot holds on HER face, listening for something and not finding it: no ear, no head tilt. The take is a stale placeholder; regenerate it in the next placeholder batch. |
 | `cin_first_light.baking` | B1 | `narrator` | *Somewhere up the street, someone is baking.* | Said as plainly as every line of the night: the warmth is in the words and in the morning round them (a door, a cart, birds), never in his voice (`VOICES.md`, the narrator). The camera can't smell; the narrator can. |
 | `cin_first_light.dawn` | B2 | `guard` | Dawn arrivals. We don't get many that live. | Flat, to his mate, a thing said every week. (The guard bark in `npcs.json` says the same.) |
 

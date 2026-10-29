@@ -171,7 +171,7 @@ public class CinematicTests
         Assert.Contains("his lip lifts off his teeth", p!.Text);
         Assert.DoesNotContain("tail moves", p.Text);
         var m = Q();
-        m.World.Facts["maeca.lover"] = true;
+        m.World.Facts["maeca.blind_nights"] = 1;
         Assert.Contains("his tail moves, once", Talk(Convo("greymuzzle"), m.C, "kneel")!.Text);
     }
 
@@ -260,7 +260,6 @@ public class CinematicTests
         Talk(Convo("keegan"), s.C, "ford-warden");
         var k = s.World.Npc("keegan");
         Talk(Convo("keegan"), s.C, "ashe");
-        Talk(Convo("keegan"), s.C, "dinner");
         s.World.Time = TimeOfDay.Night;
         var supper = Greet(Convo("keegan"), s.C).Choices.Single(c => c.Text.Contains("Have you eaten"));
         Assert.True(supper.Enabled, $"respect {k.Respect}, affection {k.Affection}");
@@ -306,25 +305,20 @@ public class CinematicTests
     }
 
     [Fact]
-    public void Every_survivor_is_cold_by_night_and_Sella_says_so_by_the_third_morning()
+    public void Every_survivor_is_cold_by_night_and_Sella_says_so_the_first_morning()
     {
         // The body's hours (STORY_BIBLE section 1): cold as the river all night, warm
         // by breakfast. Every survivor is Unchained from the ford, died since or not.
         var s = Q("hunter");
         s.Ch.Gold = 60;
-        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her", "until next time");
-        Assert.False(s.World.Fact("sella.felt_cold").Truthy);
-        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her", "until next time");
-        Assert.False(s.World.Fact("sella.felt_cold").Truthy);
-        Assert.True(s.World.Npc("sella").Flag("say:cold_bath").Truthy);
         var r = new DialogueRunner(Convo("sella"), s.C);
         var p = r.Start();
         while (p!.Choices.Count == 0) p = r.Advance();
         p = r.Choose(p.Choices.First(c => c.Text.Contains("how much", StringComparison.OrdinalIgnoreCase)).Index).Next;
         while (p!.Choices.Count == 0) p = r.Advance();
-        p = r.Choose(p.Choices.First(c => c.Text.Contains("15 gold, then")).Index).Next;
+        p = r.Choose(p.Choices.First(c => c.Text.Contains("only want to sleep")).Index).Next;
         while (p!.Choices.Count == 0) p = r.Advance();
-        p = r.Choose(p.Choices.First(c => c.Text.Contains("kiss her", StringComparison.OrdinalIgnoreCase)).Index).Next;
+        p = r.Choose(p.Choices.First(c => c.Text.Contains("Yes")).Index).Next;
         while (p!.Choices.Count == 0) p = r.Advance();
         Assert.Contains("cold as the river all night", p.Text);
         Assert.Contains("warm as toast", p.Text);

@@ -68,7 +68,7 @@ public class StoryRewriteTests
     public void Maeca_is_just_Maeca()
     {
         // The owner: "she is just Maeca"; "the barefoot thing is a little silly". Her feet stay hers, at
-        // the Blind: bare on the ground at the fire, held in the dark (notes 02 section 6.2); never her
+        // the Blind: bare on the ground at the fire (notes 02 section 6.2); never her
         // name, never a grievance, and never the word in her lines again (it crept back into three once).
         Assert.DoesNotContain(ContentStrings(), t => t.Contains("Barefoot"));
         Assert.DoesNotContain(Convo("maeca").Nodes.Values.SelectMany(n => n.Text), v => v.Text.Contains("barefoot"));
@@ -344,14 +344,21 @@ public class StoryRewriteTests
     }
 
     [Fact]
-    public void Her_mothers_word_is_Spark_and_the_dawns_take_it_away()
+    public void Her_mothers_voice_is_gone_at_the_first_dawn_and_the_dawns_take_her_face_then_the_word()
     {
-        Assert.Contains("\"Lamp's lit, Spark. Stay where it reaches.\"", Convo("cin_first_light").Nodes["face"].Text[0].Text);
+        // Reveal A (the owner, 28 October): the first dawn finds the VOICE gone and the FACE whole, and the
+        // narrator never says the call before the bottom of the stair (C43): nothing in Acts 1-2 can be compared with her.
+        var face = Convo("cin_first_light").Nodes["face"].Text[0].Text;
+        Assert.StartsWith("You try to call up your mother's voice, and it is not there.", face);
+        Assert.Contains("the thread she bit instead of cutting", face);
+        foreach (var line in LinesOf("narrator"))
+            Assert.False(line.Contains("Spark") || line.Contains("Lamp's lit"), $"the narrator says the call before C43: {line}");
         // Never "Wick" (players hear John Wick), and no one else uses her word for a joke.
         Assert.DoesNotContain(ContentStrings(), t => Regex.IsMatch(t, @"\bWick\b|Spark-"));
         var s = Q();
         s.World.Day = 2;
         var heard = string.Join(" ", Simulation.AdvanceDay(s.C, () => 0.5).Lines);
+        Assert.Contains("Her face is going the way her voice went.", heard);
         Assert.Contains("You still have the word.", heard);
         // Written down at Chid's asking, in her own hand: the journal keeps what the dawns take.
         var c = Q();
@@ -389,7 +396,7 @@ public class StoryRewriteTests
         Assert.Contains(knock, t => t.EndsWith("...Sit down. I'll tell you who."));
         Assert.Contains(knock, t => t.StartsWith("Dead. Climbing. Under the last of ours") && t.Contains("Gray, all of them. Not a sound out of them. Four hundred behind me"));
         // §6.2: the boots thinned.
-        Assert.DoesNotContain(Convo("maeca").Nodes["blind"].Text, v => v.Text.Contains("boots"));
+        Assert.DoesNotContain(Convo("maeca").Nodes["blind_dark"].Text, v => v.Text.Contains("boots"));
         Assert.Contains(Simulation.DailyRules, r => r.Id == "kerchief.raid" && r.Report!.Contains("took his mule"));
         // Rook's "you can tell Chid what to cut", kept: once she has stood at the plain marker.
         var s = Q();
@@ -452,72 +459,5 @@ public class StoryRewriteTests
         a2.World.Facts["mother.cut"] = "mam";
         a2.World.Facts["mother.carved"] = true;
         Assert.DoesNotContain(Simulation.AdvanceDay(a2.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
-    }
-
-    /// <summary>Love scenes B (the owner, 6 October; docs/story/LOVE_SCENES.md): the narrator stops at the
-    /// door. Behind it only the lovers speak, in the dark and in the mornings after: no narrated node and no
-    /// narrator's aside (a capitalized parenthesis). The bolt is the one exception: she hears it from the
-    /// stairs (free_bolt, and the same sentence opening free_sleep_bed), and then she is silent. The
-    /// exception is that sentence word for word (tools/vo/elevenlabs.py BOLT), not the two nodes.</summary>
-    [Fact]
-    public void The_narrator_stops_at_the_door()
-    {
-        var door = new Dictionary<string, string[]>
-        {
-            ["sella"] = new[] { "stairs_room", "stairs_rules", "stop_paid", "rest_night_paid", "rest_bed", "rest_dark",
-                "rest_morning", "night", "morning", "free_night", "free_morning", "past", "sleeptalk", "door", "door_years",
-                "door_south", "free_door", "free_want", "free_stop", "free_sit", "free_sleep", "free_sleep_bed",
-                "free_bolt", "free_m_downstairs", "free_m_who", "free_m_kiss" },
-            ["maeca"] = new[] { "blind", "blind_dark", "blind2_feet", "blind2_let", "told_true", "told_little",
-                "blind3_morning", "blind3_m_no" },
-        };
-        const string Bolt = "Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to "
-            + "it, and then it goes home, with a sound like the last coin put down on a counter.";
-        var bolt = Convo("sella").Nodes["free_bolt"];
-        Assert.Equal("narrator", bolt.Speaker);
-        Assert.Equal(Bolt + " \"...There.\"", bolt.Text.Single().Text);
-        var aside = new Regex(@"\(\s*([^a-z\s)][^()]*)\)"); // lines.py: any parenthesis not opening lower-case
-        foreach (var (conv, ids) in door)
-            foreach (var id in ids)
-            {
-                var n = Convo(conv).Nodes[id];
-                if (id == "free_bolt") continue;
-                Assert.True(n.Speaker is null || n.Speaker == conv, $"{conv}.{id} is narrated behind the door");
-                foreach (var v in n.Text)
-                    foreach (Match m in aside.Matches(v.Text))
-                        Assert.True(id == "free_sleep_bed" && m.Value == "(" + Bolt + ")",
-                            $"{conv}.{id}: the narrator's aside {m.Value} is behind the door");
-            }
-        // Falling asleep, the bolt is the one aside, and it is there.
-        Assert.All(Convo("sella").Nodes["free_sleep_bed"].Text,
-            v => Assert.Equal(new[] { "(" + Bolt + ")" }, aside.Matches(v.Text).Select(m => m.Value)));
-        // The list is by hand, so walk the scenes from where the door opens: a node added behind it later
-        // can't go unchecked. Only the gray light at the Blind is reached and stays outside.
-        foreach (var (conv, roots) in new[] { ("sella", new[] { "stairs_room", "free_door", "rest_bed" }), ("maeca", new[] { "blind" }) })
-        {
-            var nodes = Convo(conv).Nodes;
-            var seen = new HashSet<string>();
-            var todo = new Stack<string>(roots);
-            while (todo.Count > 0)
-            {
-                var id = todo.Pop();
-                if (!seen.Add(id)) continue;
-                var n = nodes[id];
-                if (n.Next != null) todo.Push(n.Next);
-                foreach (var c in n.Choices ?? new())
-                    if (c.Goto != null) todo.Push(c.Goto);
-            }
-            seen.Remove("blind_morning");
-            Assert.Equal(door[conv].OrderBy(x => x), seen.OrderBy(x => x));
-            // And the ways in from outside are exactly these: a new one fails until its side is decided.
-            var ways = nodes.Where(kv => !door[conv].Contains(kv.Key))
-                .SelectMany(kv => (kv.Value.Choices ?? new()).Select(c => c.Goto).Append(kv.Value.Next)
-                    .Where(t => t != null && door[conv].Contains(t)).Select(t => kv.Key + ">" + t))
-                .Distinct().OrderBy(x => x);
-            Assert.Equal(conv == "sella" ? new[] { "free_stairs>free_door", "rest_night>rest_bed", "stairs_say>stairs_room" }
-                : new[] { "blind_ask>blind" }, ways);
-        }
-        // The mornings at the Blind open outside, in the frost: the plant for the rope stays the narrator's.
-        Assert.Contains("one hand on the crossbow and the other on you", Convo("maeca").Nodes["blind_morning"].Text.Last().Text);
     }
 }
