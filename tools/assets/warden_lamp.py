@@ -3,15 +3,16 @@
     blender -b -P tools/assets/warden_lamp.py
 
 Concept A (warden_concepts/pick/A_fist.png): a tall narrow black-iron cage, about 2:1, under a ribbed
-arched dome with a collar, a finial and the ring it hangs by. Square corner posts, two thin square bars a
-side, three riveted flat bands (a rim under the dome, one at the flame's foot, one at the base), a hinged
+arched dome with a collar, a finial and the ring it hangs by. Angle-iron corners, one flat strap down
+each side's middle, four riveted flat bands (a rim under the dome, one over the flame, one at its foot, one at the base), a hinged
 door post and latch, a stepped base on four ball feet, a small oil font with its wick, dark glass behind
 the bars and in the dome. A chain link through the ring for the fist (LampIron shows it when hung).
 The helpers (box, lathe, tube, rivet, build) and the iron masks are lamp_iron.py's: the sill lamp
 (keeper_lamp.glb) is unchanged.
 
 Out: godot/art/props/keeper_lamp/warden_lamp.glb, nodes
-  Cage       the iron that throws the bars' shadows (posts, bars, bands, rivets, hinge, base, font)
+  Cage       the iron that throws the straps' shadows (corners, straps, bands, rivets)
+  Trim       the rim's lip, the hinge and latch, the base and font (no shadow: the flame lights up and down past them)
   Cap        the dome's ribs, collar, finial and ring (no shadow: the flame's light reaches up past it)
   Bail       the link the fist closes on
   Glass      the four panes (UV: u across, v down each pane)
@@ -36,9 +37,11 @@ TOP = -0.078           # the rim under the dome
 BASE = -0.258          # the base plate's top
 DOME_H = 0.050
 COLLAR_R = 0.0125
-BAR_X = 0.0195
-BAR = 0.0044
-BANDS = ((TOP - 0.0045, 0.011), (-0.2245, 0.0085), (BASE + 0.0055, 0.011))   # (centre y, height)
+# (Warden 7 r1 judge: the thin square bars read as a round birdcage at the play camera. Concept A's flat riveted
+# straps instead: angle-iron corners, one broad flat strap down each side's middle, four riveted bands.)
+STRAP_W, STRAP_T = 0.0092, 0.0026      # the side's middle strap
+ANGLE_W, ANGLE_T = 0.0125, 0.0026      # each leaf of a corner's angle iron
+BANDS = ((TOP - 0.0045, 0.011), (-0.140, 0.0085), (-0.2245, 0.0085), (BASE + 0.0055, 0.011))   # (centre y, height)
 WICK = -0.2085
 FOOT = -0.282
 
@@ -63,19 +66,32 @@ def dome_pt(u, v, out=0.0):
 
 def cage_parts():
     parts = []
-    c = HALF - POST / 2
+    H, yc = TOP - BASE, (TOP + BASE) / 2
     for sx in (-1, 1):
         for sz in (-1, 1):
-            parts.append((box(POST, TOP - BASE, POST, 0.0016), T(sx * c, (TOP + BASE) / 2, sz * c)))
+            # The corner's angle iron: two flat leaves on the outer faces, a thin core where they meet.
+            parts.append((box(ANGLE_W, H, ANGLE_T, 0.0008), T(sx * (HALF - ANGLE_W / 2), yc, sz * (HALF - ANGLE_T / 2))))
+            parts.append((box(ANGLE_T, H, ANGLE_W, 0.0008), T(sx * (HALF - ANGLE_T / 2), yc, sz * (HALF - ANGLE_W / 2))))
+            parts.append((box(0.0045, H, 0.0045, 0.0006), T(sx * (HALF - 0.0035), yc, sz * (HALF - 0.0035))))
     for k in range(4):
         side = RY(k * math.pi / 2)
-        for bx in (-BAR_X, BAR_X):
-            parts.append((box(BAR, TOP - BASE, BAR, 0.0007, 1), side @ T(bx, (TOP + BASE) / 2, HALF - 0.0032)))
+        # The side's middle strap, flat to the glass, under the bands.
+        parts.append((box(STRAP_W, H, STRAP_T, 0.0008), side @ T(0, yc, HALF - STRAP_T / 2)))
         for y, h in BANDS:
-            th = 0.0030
+            th = 0.0032
             parts.append((box(2 * HALF + 2 * th, h, th, 0.0010), side @ T(0, y, HALF + th / 2)))
-            for x in (-HALF + POST / 2, -BAR_X, BAR_X, HALF - POST / 2):
-                parts.append((rivet(0.0021 if abs(x) < 0.04 else 0.0024), side @ T(x, y, HALF + th) @ RX(math.pi / 2)))
+            for x in (-HALF + ANGLE_W / 2, 0.0, HALF - ANGLE_W / 2):
+                parts.append((rivet(0.0026 if x == 0.0 else 0.0024), side @ T(x, y, HALF + th) @ RX(math.pi / 2)))
+        # The strap's own rivets between the bands (where it is riveted to the frame).
+        for y in ((TOP - 0.0045 + -0.140) / 2, (-0.140 + -0.2245) / 2):
+            parts.append((rivet(0.0021), side @ T(0, y, HALF) @ RX(math.pi / 2)))
+    return parts
+
+
+def trim_parts():
+    """The lamp's solid iron above and below the flame and its small fittings: no shadow (Warden 7 r1: the rim's lip
+    and the base plate in the flame's light threw cones that kept his fist, his hood and the pool on the river dark)."""
+    parts = []
     # The rim's lip, proud of the top band, that the dome sits in.
     parts.append((box(2 * HALF + 0.011, 0.0035, 2 * HALF + 0.011, 0.0012), T(0, TOP + 0.0005, 0)))
     # The door: two hinge knuckles on the front-left post, a latch on the front-right.
@@ -170,7 +186,7 @@ def main():
     iron.diffuse_color = (0.04, 0.038, 0.035, 1)
     glass = bpy.data.materials.new('keeper_glass')
     glass.diffuse_color = (0.3, 0.32, 0.3, 0.3)
-    obs = [build('Cage', cage_parts(), iron), build('Cap', cap_parts(), iron), build('Bail', bail_parts(), iron),
+    obs = [build('Cage', cage_parts(), iron), build('Trim', trim_parts(), iron), build('Cap', cap_parts(), iron), build('Bail', bail_parts(), iron),
            build('Glass', glass_parts(), glass, colour=False), build('GlassDome', dome_glass(), glass, colour=False)]
     bpy.ops.object.select_all(action='DESELECT')
     for o in obs:

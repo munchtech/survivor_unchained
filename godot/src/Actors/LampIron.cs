@@ -114,15 +114,19 @@ public static class LampIron
                 {
                     g.SetShaderParameter("dark", 1f);
                     g.SetShaderParameter("flame_at", new Vector3(0, WardenFlameY, 0));
-                    g.SetShaderParameter("spot_r", 0.026f);
-                    g.SetShaderParameter("glow_k", 0.12f);
+                    // (Warden 7 r1: the panes lit round the flame, a halo two or three flames wide; at 0.026 and 0.12 the lamp read a dark box)
+                    g.SetShaderParameter("spot_r", SurvivorUnchained.Args.Num("lamp-spot", 0.045f));
+                    g.SetShaderParameter("glow_k", SurvivorUnchained.Args.Num("lamp-glowk", 0.3f));
+                    g.SetShaderParameter("frost", SurvivorUnchained.Args.Num("lamp-frost", 0.8f));
                     g.SetShaderParameter("reflect_col", new Vector3(0.13f, 0.17f, 0.24f));
                     g.SetShaderParameter("edge_k", 0.25f);
                 }
                 mi.MaterialOverride = g;
                 if (warden && System.Environment.GetEnvironmentVariable("WARDEN_LAMP_GLASS") == "0") mi.Visible = false;   // (for pictures)
-                if (lamp.HasMeta("glass")) { lamp.SetMeta("glass2", g); continue; }
+                // (every pane and the dome's glass: no shadow. The dome's glass threw one, so his own lamp's light never
+                // reached the fist it hangs from or the hood over it: Warden 7 r1 "it lights nothing near it")
                 mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                if (lamp.HasMeta("glass")) { lamp.SetMeta("glass2", g); continue; }
                 lamp.SetMeta("glass", g);
                 continue;
             }
@@ -220,6 +224,8 @@ public sealed class LampFire
     static readonly float FlameScale = SurvivorUnchained.Args.Num("warden-flame", 0.72f);
     Color col = Cold;
     float level = 1;
+    /// <summary>--warden-halo K: the soft glow's strength round the flame (Warden 7 r1: 0.32 to 0.5, a halo 2-3x the flame's width).</summary>
+    static readonly float HaloK = SurvivorUnchained.Args.Num("warden-halo", 0.5f);
 
     internal LampFire(Node3D lamp)
     {
@@ -270,7 +276,7 @@ public sealed class LampFire
         }
         level = k;
         glow.SetShaderParameter("color", new Vector3(col.R, col.G, col.B));
-        glow.SetShaderParameter("strength", 0.32f * halo * k);
+        glow.SetShaderParameter("strength", HaloK * halo * k);
         LampIron.Glass(lamp, col, lastLit ? k : 0);
     }
 

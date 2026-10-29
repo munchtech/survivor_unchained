@@ -217,7 +217,7 @@ public static class WardenLook
             // (a hair back in the socket, so the brow and the lids frame them)
             var q = p + toBone * new Vector3(0, 0, -0.004f);
             at.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One * 0.011f, Material = core }, Position = q, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-            at.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One * 0.045f, Material = glow }, Position = q + toBone * new Vector3(0, 0, 0.002f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+            at.AddChild(new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One * GlowSize, Material = glow }, Position = q + toBone * new Vector3(0, 0, 0.002f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         // the glint: between and in front of the eyes, a few centimetres' reach (scaled with him in Shine)
         var glint = new OmniLight3D
@@ -242,7 +242,10 @@ public static class WardenLook
         e.Glint.Visible = k > 0;
     }
 
-    public static float GlintReach = 0.12f, GlintEnergy = 0.12f;
+    public static float GlintReach = 0.12f, GlintEnergy = EnvF("WARDEN_EYE_GLINT", 0.05f);
+    /// <summary>The glow's quad (the core's is 0.011): Warden 7 r1, the bloom no wider than 3x the core (was 0.045).</summary>
+    static readonly float GlowSize = EnvF("WARDEN_EYE_GLOW", 0.026f);
+    static float EnvF(string n, float d) => float.TryParse(System.Environment.GetEnvironmentVariable(n), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : d;
 
     static GradientTexture2D Radial(Color a, Color b, Color c) => new()
     {

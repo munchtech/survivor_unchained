@@ -92,15 +92,18 @@ public partial class WardenView : Node3D, IBossView
         fire = LampIron.Fire(lamp);
         Tint();
         // LightSize: soft shadows (the cage's bars throw broad soft stripes, not hard lines, from the flame).
-        light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 0.9f, LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f };
         // (it leaves its own lantern out: a few cm from the flame it burned the bars white; the iron's flame light is the shader's)
-        // (Warden 7: attenuation 1.3 to 0.9 and energy 5 to 8: less on his beard at arm's length, a
-        // wider soft pool on the river round his feet from the play camera)
+        // (Warden 7 r1, "it lights nothing near it": at range 16 and attenuation 0.9 it lit her and the forest 5 m off nearly
+        // as much as his dark wet wool at arm's length, +2 to +6 on his fist, sleeve and hood. Now a lamp's falloff, inverse
+        // square over 6 m at four times the energy: about 9x the light within a metre, a quarter of it at 5 m.)
+        light = new OmniLight3D { LightColor = LampBlue, OmniRange = EnvF("WARDEN_LAMP_RANGE", 6), OmniAttenuation = EnvF("WARDEN_LAMP_ATT", 2),
+            LightEnergy = 0, ShadowEnabled = false, LightSize = 0.012f, LightVolumetricFogEnergy = EnvF("WARDEN_LAMP_FOG", 1) };
         light.LightCullMask &= ~LampIron.OwnLayer;
         AddChild(light);
     }
 
     static readonly Color EyeBlue = new("#7ac8ff");
+    static readonly Color LampBlue = new("#8ac8ff");
 
     /// <summary>Two small glowing points in his hood, on the head bone at the manifest's head.eyes sockets
     /// (Head-bone local, metres). Unshaded, so Light() drives their albedo too: eyes off is really off.</summary>
@@ -197,6 +200,19 @@ public partial class WardenView : Node3D, IBossView
 
     /// <summary>WARDEN_LAMP_LIGHT=0: the lamp's light off, the flame still burning (measuring the light's pool on the water).</summary>
     static readonly bool LampLightOff = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_LIGHT") == "0";
+    /// <summary>WARDEN_LAMP_PROBE=1: the lamp light's state in the log (energy, mask, shadow, where it and the fist are).</summary>
+    static readonly bool LampProbe = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_PROBE") == "1";
+    int probeN;
+    // (Warden 7 lamp solver, for measuring: the light's energy x K, its attenuation and range, its shadow off)
+    static float EnvF(string n, float d) => float.TryParse(System.Environment.GetEnvironmentVariable(n), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : d;
+    static readonly float LampK = 4 * EnvF("WARDEN_LAMP_K", 1);
+    static readonly bool LampNoShadow = System.Environment.GetEnvironmentVariable("WARDEN_LAMP_SHADOW") == "0";
+    static string LayersOf(Node n)
+    {
+        var set = new HashSet<uint>();
+        foreach (var c in n.FindChildren("*", "GeometryInstance3D", true, false)) set.Add(((GeometryInstance3D)c).Layers);
+        return string.Join(",", System.Linq.Enumerable.Select(set, x => x.ToString("X")));
+    }
 
     /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
     const float Bail = 0.07f;
@@ -224,9 +240,14 @@ public partial class WardenView : Node3D, IBossView
         }
         // The light is the lamp in his fist, hung a little out from the body.
         double i = LampLit && !LampLightOff ? g * (8 + Math.Sin(time * 3.1) * 1.1 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
-        light.LightEnergy = (float)(i / Math.PI);
+        light.LightEnergy = (float)(i / Math.PI) * LampK;
+        // (its hue the flame's: C03 sets the flame warm, and his fist and hood took a blue light from a gold flame)
+        var lc = flameColor is Color fc && fc.R > fc.B ? fc.Lerp(Colors.White, 0.15f) : LampBlue;
+        if (light.LightColor != lc) light.LightColor = lc;
         // The one shadowed positional light of the scene, ahead of any lamp (ShadowLamp).
-        if (light.LightEnergy > 0) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
+        if (light.LightEnergy > 0 && !LampNoShadow) ShadowLamp.Offer(light, 1); else ShadowLamp.Withdraw(light);
+        if (LampProbe && (probeN++ % 90) == 0 && light.IsInsideTree())
+            GD.Print($"LAMPPROBE e {light.LightEnergy:0.00} mask {light.LightCullMask:X} shadow {light.ShadowEnabled} range {light.OmniRange} att {light.OmniAttenuation} at {light.GlobalPosition} lamp {lamp.GlobalPosition} fist {grip.GlobalPosition} scale {grip.GlobalTransform.Basis.Scale.X:0.00} layers {LayersOf(view)} glow {g:0.00} atFlame {atFlame} lit {LampLit} col {flameColor}");
         if (atFlame && fire != null) { light.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
         light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);

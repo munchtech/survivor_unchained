@@ -20,6 +20,9 @@ uniform float sheen_k = 0.12;
 // dark (the Warden's lantern, LampIron.MakeWarden): smoked glass that shows the night's reflections and the
 // flame's glow round it and little else, never a pale pane. 0 the sill lamp's glass as it was.
 uniform float dark = 0.0;
+// Frost (the Warden's lantern, Warden 7 r1): lit, the panes veil the far side's straps (seen through, they made a
+// birdcage of the lamp at the play camera) and glow evenly from within, as concept A's do. 0 for clear glass.
+uniform float frost = 0.0;
 uniform vec3 reflect_col = vec3(0.30, 0.40, 0.55);
 
 varying vec3 opos;
@@ -56,6 +59,11 @@ void fragment() {
 		float da = clamp(0.10 + 0.16 * grime + 0.35 * soot + 0.35 * refl + 0.5 * clamp(light, 0.0, 0.45), 0.0, 0.8);
 		alb = mix(alb, dk, dark);
 		a = mix(a, da, dark);
+	}
+	if (frost > 0.0) {
+		float fr = frost * lit * (1.0 - 0.6 * soot);
+		alb += glow * glow_k * fr * (0.6 + 0.4 * grime);
+		a = clamp(a + fr * 0.55, 0.0, 0.92);
 	}
 	ALBEDO = alb;
 	ALPHA = a;
