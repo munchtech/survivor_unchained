@@ -144,10 +144,7 @@
     "hairColor": "#4a4038",
     "beard": true,
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#56627e"
-    },
-    "body": "npc:npc_watch_m"
+    "body": "npc:npc_holloway"
    },
    "spot": {
     "x": -3.6,
