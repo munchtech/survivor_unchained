@@ -315,6 +315,10 @@ void fragment() {
 	ALPHA = IN_SHADOW_PASS ? step(0.5, cover) : cover;
 #elif defined(CORE)
 	ALPHA = cover;
+#ifdef ROPE_CORE
+	// (the cap's ropes only: the rest of it stays blended alone, heroine_hair_rope_core.gdshader)
+	ALPHA = cap ? cover * step(0.5, COLOR.b) : 0.0;
+#endif
 #ifdef CORE_A2C
 	// (under MSAA, the cut's edge spread over the samples over a pixel round
 	// a2c_cut: alpha to coverage, heroine_hair_core_a2c.gdshader; cut first a

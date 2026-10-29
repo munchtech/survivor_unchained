@@ -50,7 +50,7 @@ public static class HairDraw
     /// (0.5 cancels the smoothing's -0.5 on strands thinner than a pixel). 0 by default.</summary>
     public static readonly float Bias = SurvivorUnchained.Args.Num("hair-bias", 0f);
 
-    static Shader? blend, core, coreA2c, over, cards, hairErase, cardsErase;
+    static Shader? blend, core, coreA2c, over, cards, hairErase, cardsErase, ropeCore;
 
     // (each core made, to swap its shader as MSAA comes and goes: Msaa)
     static readonly List<WeakRef> cores = new();
@@ -123,8 +123,20 @@ public static class HairDraw
         }
     }
 
+    /// <summary>Her cap's material (blended: heroine_hair_soft) with a braid's ropes drawn solid
+    /// before it (heroine_hair_rope_core), their depth and motion written, in every way of drawing
+    /// her hair. Blended alone, a rope wrote no depth, and the loose cards in and behind it, blended
+    /// after it, were drawn over it: the braid a see-through net in firelight (Face 48, C01 s10).</summary>
+    public static ShaderMaterial RopeCore(ShaderMaterial cap)
+    {
+        ropeCore ??= GD.Load<Shader>("res://shaders/heroine_hair_rope_core.gdshader");
+        var c = new ShaderMaterial { Shader = ropeCore, NextPass = cap };
+        c.SetShaderParameter("core_cut", 0.5f);
+        return c;
+    }
+
     /// <summary>Whether a shader is one of these ways of drawing her hair.</summary>
-    public static bool IsHair(Shader? s) => s != null && (s == blend || IsCore(s) || s == over);
+    public static bool IsHair(Shader? s) => s != null && (s == blend || IsCore(s) || s == over || s == ropeCore);
 
     /// <summary>A material and each pass after it (each takes the same parameters).</summary>
     public static IEnumerable<ShaderMaterial> Passes(ShaderMaterial m)
