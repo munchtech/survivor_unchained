@@ -28,7 +28,7 @@ public partial class MarkPass : CompositorEffect
         ["hg"] = 0.0f, ["hb"] = 0.015f, // the rims' (#ff0612)
         ["glow"] = 0.0f,   // a breath of light through the bed's heart (the rise toward the rims stays)
         ["g0"] = 0.14f, ["g1"] = 0.4f, // over the mark's ground: full to g0 m, none past g1
-        ["front"] = 0.2f, ["tail"] = 0.4f, ["body"] = 0.1f, ["fill"] = 0.35f,
+        ["front"] = 0.04f, ["tail"] = 0.4f, ["body"] = 0.1f, ["fill"] = 0.35f,
         ["roof"] = 2.6f,
         ["le"] = 0.6f,     // the rims' and the heart's light (x the mark's energy)
         ["fs"] = 0.88f, ["fh"] = 5f, // the red's fold: no light past where the seen scarlet's saturation drops under fs or its hue passes fh
@@ -40,10 +40,84 @@ public partial class MarkPass : CompositorEffect
         ["s0"] = 0.9f, ["s1"] = 1.4f, ["sb0"] = 0.08f, ["sb1"] = 0.25f, ["tol"] = 0.6f,
         // a part-gated pixel (a grass tuft's tips) pushed to the scarlet at its own value, never pink: from rs0 to rs1 of tint
         ["rs0"] = 0.1f, ["rs1"] = 0.45f,
+        // (baked:) the hatch inside the mark (the owner, 28 Oct: "what I do miss is the hatch patterns"): two diagonal line
+        // families in the mark's own metres (hx 1 crossed, 0 one family), period hp m, half width hw m (never under half a
+        // pixel: thinner lines lose their light instead of shimmering), light hl x the rims'; hu of it ahead of the running
+        // fill (the filled part a step brighter); over the still water hwat of it (the river: the hatch read as a net)
+        ["hl"] = 0.35f, ["hp"] = 0.16f, ["hw"] = 0.014f, ["hu"] = 0.3f, ["hwat"] = 0f, ["hx"] = 1f,
+        // every mark's pattern forced (hs, for shots; -1 each mark's own): 0 the crossed grid, 1 the half hatch, 2 chevrons,
+        // 3 molten, 4 cracks, 5 lattice (PatternIds)
+        ["hs"] = -1f,
+        // the lane's far end (the owner, 28 Oct: "a flat line end not the arrow"): cap 2 flat (the rims squared across
+        // it), 1 a spear tip, 0 the old soft end; the molten pattern's charred bands this much darker (ld); a pattern's
+        // own colour, its share of its light (ht: 0 all in the threat's red)
+        ["cap"] = 2f, ["ld"] = 1f, ["ht"] = 0.35f,
+        // clear edges and a clear cast line (the owner, 28 Oct: "clear cast line and edges"): the rims' soft glow outward
+        // (eg, of the core's light; 0.5 the old haze) and the bed's bleed past them (ew x the glow's width; 1 the old);
+        // a keyline, the bed darkened by kg over kw m just inside the rims' cores (the rim stands off the bed by day);
+        // the running front a hard line fw m half wide at fl of the fill's light over its soft lead (front above)
+        ["eg"] = 0.15f, ["ew"] = 0.35f, ["kg"] = 0.35f, ["kw"] = 0.035f, ["fl"] = 1f, ["fw"] = 0.018f,
+        // the pattern's tint by the blow's school (mark_look.json "tints"; tt forces one for shots, -1 each mark's own):
+        // 0 the threat's red, 1 fire, 2 frost, 3 holy (TintIds)
+        ["tt"] = -1f,
+        // the chevrons cut into the bed (cd darker; by day a red light over the red bed barely shows): dark ahead of the
+        // running front, lit behind it (the cast bar reads as the chevrons catching light)
+        ["cd"] = 0.45f,
+        // the chevrons' period along the blow (cp m), their arms' slope (cs), stroke half width (cw m); the bed's
+        // opacity over the ground (bo, 1 the whole re-tint; the rims and the front stay whole); the cast line rides
+        // the pattern's light, so it may pass the red's fold (a pale line by day)
+        ["cp"] = 0.55f, ["cs"] = 1.5f, ["cw"] = 0.06f, ["bo"] = 1f,
     };
+
+    /// <summary>The red line's colour, the owner's pick (godot/data/mark_look.json "look"; env MARK_LOOK overrides): a
+    /// named set of Tune numbers ("scarlet" the defaults above, "salmon" the old amber-over-dirt look).</summary>
+    public static string Look { get; private set; } = "scarlet";
+
+    /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
+    public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice" };
+    /// <summary>mark_look.json "patterns": a telegraph's pattern by its school's name, else by its shape's (line, circle,
+    /// cone, ring), else "default".</summary>
+    static readonly Dictionary<string, string> patternBy = new(StringComparer.OrdinalIgnoreCase) { ["default"] = "chevron" };
+
+    /// <summary>The pattern's tints by the blow's school (mark_look.json "tints"; the ids are the shader's pcol).</summary>
+    public static readonly string[] TintIds = { "red", "fire", "frost", "holy" };
+    static readonly Dictionary<string, string> tintBy = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>A red mark's pattern code: its pattern (the telegraph's own, a skill names one; else its school's, else its
+    /// shape's) plus 8 x its tint (by its school; 0 the threat's red).</summary>
+    public static int PatternOf(string? own, string? school, string shape)
+    {
+        string? name = own is { Length: > 0 } ? own
+            : school is { Length: > 0 } && patternBy.TryGetValue(school, out var bs) ? bs
+            : patternBy.TryGetValue(shape, out var bh) ? bh : patternBy["default"];
+        int i = Array.IndexOf(PatternIds, name);
+        int t = school is { Length: > 0 } && tintBy.TryGetValue(school, out var tn) ? Math.Max(Array.IndexOf(TintIds, tn), 0) : 0;
+        return (i >= 0 ? i : 2) + 8 * t;
+    }
 
     static MarkPass()
     {
+        try
+        {
+            const string path = "res://data/mark_look.json";
+            if (FileAccess.FileExists(path))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(FileAccess.GetFileAsString(path));
+                var root = doc.RootElement;
+                Look = System.Environment.GetEnvironmentVariable("MARK_LOOK") is { Length: > 0 } env ? env
+                    : root.TryGetProperty("look", out var l) ? l.GetString() ?? Look : Look;
+                if (root.TryGetProperty("patterns", out var pats))
+                    foreach (var kv in pats.EnumerateObject())
+                        if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.String) patternBy[kv.Name] = kv.Value.GetString()!;
+                if (!(root.TryGetProperty("tinted", out var tdn) && tdn.ValueKind == System.Text.Json.JsonValueKind.False) && root.TryGetProperty("tints", out var tints))
+                    foreach (var kv in tints.EnumerateObject())
+                        if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.String) tintBy[kv.Name] = kv.Value.GetString()!;
+                if (root.TryGetProperty("looks", out var looks) && looks.TryGetProperty(Look, out var set))
+                    foreach (var kv in set.EnumerateObject())
+                        if (kv.Value.ValueKind == System.Text.Json.JsonValueKind.Number) Tune[kv.Name] = kv.Value.GetSingle();
+            }
+        }
+        catch (Exception e) { GD.PushWarning("MarkPass look: " + e.Message); }
         if (System.Environment.GetEnvironmentVariable("MARK_TUNE") is not { Length: > 0 } s) return;
         foreach (var kv in s.Split(','))
             if (kv.Split('=') is [var k, var v] && float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var f)) Tune[k.Trim()] = f;
@@ -96,7 +170,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -178,7 +252,7 @@ public partial class MarkPass : CompositorEffect
             T["front"], T["tail"], T["body"], T["fill"],
             bri, con, sat, (agx ? 1 : 0) + (bcs ? 2 : 0) + (lutOn ? 4 : 0),
             T["le"], T["fs"], T["fh"], T["knee"],
-            T["bed"], 1, 0, 0,
+            T["bed"], 1, 2f / (size.Y * Mathf.Max(Mathf.Abs(proj.Y.Y), 1e-4f)), 0,
         };
         // (the tiles: each 8 x 8 px's mean seen value, a first dispatch of the same shader, mode 0)
         var ts = new Vector2I((size.X + 7) / 8, (size.Y + 7) / 8);
@@ -238,13 +312,13 @@ public partial class MarkPass : CompositorEffect
     /// the plane; its half sizes (x, z), its light's energy now, its bed's strength; its fill (a lane's filled length
     /// from its start, a disc's filled radius; -1 none), a cone's half arc or a band's inner radius, its heights' slot,
     /// whether a roof over it takes it.</summary>
-    public static void Pack(float[] a, int i, Vector3 c, int shape, Vector3 ax, Vector3 az, float hx, float hz, float energy, float bed, float fill, float p1, int slot, bool roof)
+    public static void Pack(float[] a, int i, Vector3 c, int shape, Vector3 ax, Vector3 az, float hx, float hz, float energy, float bed, float fill, float p1, int slot, bool roof, int pattern = 1)
     {
         int o = i * MarkFloats;
         a[o] = c.X; a[o + 1] = c.Y; a[o + 2] = c.Z; a[o + 3] = shape;
         a[o + 4] = ax.X; a[o + 5] = ax.Z; a[o + 6] = az.X; a[o + 7] = az.Z;
         a[o + 8] = hx; a[o + 9] = hz; a[o + 10] = energy; a[o + 11] = bed;
-        a[o + 12] = fill; a[o + 13] = p1; a[o + 14] = slot; a[o + 15] = roof ? 1 : 0;
+        a[o + 12] = fill; a[o + 13] = p1; a[o + 14] = slot; a[o + 15] = (roof ? 1 : 0) + 2 * pattern;
     }
 
     const string Src = """
@@ -258,7 +332,7 @@ public partial class MarkPass : CompositorEffect
             float front; float tail; float body; float fill_e;
             float bri; float con; float sat; float flags;
             float le; float fs; float fh; float knee;
-            float bed; float pad0; float pad1; float pad2;
+            float bed; float pad0; float pxang; float pad2;
         } pc;
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth;
@@ -364,32 +438,167 @@ public partial class MarkPass : CompositorEffect
             return lead * max(dm > 0.0 ? t * t : 1.0, dm > 0.0 ? pc.body : 0.0);
         }
 
-        // One mark at local point l (m): out cover (the bed's re-tint), light (its own, x the energy)
-        void shape(int i, vec2 l, out float cover, out float light) {
+        // The pixel's footprint on the ground (m) and the hatch's share here (the still water's), set per pixel and mark.
+        float gpx = 0.01, ghw = 1.0;
+        // One family of hatch lines across t (m): period T_HP, half width T_HW antialiased over a pixel; a line thinner
+        // than half a pixel is drawn half a pixel wide at its light's share (no shimmer), and the hatch fades out where
+        // its period nears a few pixels (no moire far off).
+        float hline(float t) {
+            float dd = abs(fract(t / T_HP + 0.5) - 0.5) * T_HP, w = max(T_HW, 0.5 * gpx);
+            return clamp((w + 0.5 * gpx - dd) / max(gpx, 1e-4), 0.0, 1.0) * (T_HW / w);
+        }
+        // The hatch at l (m, the mark's own axes), 0..1: diagonal to them, crossed or not.
+        float hatch(vec2 l) {
+            float a = hline((l.x + l.y) * 0.70711);
+            if (T_HX > 0.5) a = max(a, hline((l.x - l.y) * 0.70711));
+            return a * (1.0 - smoothstep(T_HP * 0.2, T_HP * 0.4, gpx)) * ghw;
+        }
+
+        // The patterns inside a red mark (each mark names one: BattleFx, from the telegraph, its school or its shape;
+        // mark_look.json). In the blow's own frame: ac across it (m; a disc's arc at its front), al along the way it runs
+        // (m; a disc's radius), dm behind the running front (m, < 0 ahead of it), hh the inside's half width (a lane's),
+        // din how far inside the rims (m), l the mark's own point (m).
+        float h1(float n) { return fract(sin(n * 127.1 + 311.7) * 43758.5453); }
+        vec2 h2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+        float vn(float x) { float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }
+        float vn2(vec2 p) {
+            vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+            float a = h2(i).x, b = h2(i + vec2(1.0, 0.0)).x, c = h2(i + vec2(0.0, 1.0)).x, d = h2(i + vec2(1.0, 1.0)).x;
+            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        // cells (p in cells): x the distance to the nearest seed, y the edge (second minus first), z the cell's own hash
+        vec3 cells(vec2 p) {
+            vec2 i = floor(p), f = fract(p);
+            float d1 = 8.0, d2 = 8.0, id = 0.0;
+            for (int y = -1; y <= 1; y++)
+                for (int x = -1; x <= 1; x++) {
+                    vec2 g = vec2(x, y), o = h2(i + g) * 0.8 + 0.1, r = g + o - f;
+                    float dd = dot(r, r);
+                    if (dd < d1) { d2 = d1; d1 = dd; id = h2(i + g + 7.0).x; } else if (dd < d2) d2 = dd;
+                }
+            d1 = sqrt(d1); d2 = sqrt(d2);
+            return vec3(d1, d2 - d1, id);
+        }
+        // a stroke's coverage at dd m from its spine, half width w m: antialiased over a pixel, never under half a
+        // pixel wide (a thinner one gives up its light instead of shimmering)
+        float stroke(float dd, float w) {
+            float ww = max(w, 0.5 * gpx);
+            return clamp((ww + 0.5 * gpx - abs(dd)) / max(gpx, 1e-4), 0.0, 1.0) * (w / max(ww, 1e-5));
+        }
+        // a detail of size sz m faded out where it nears two pixels (no shimmer far off)
+        float near(float sz) { return 1.0 - smoothstep(sz * 0.25, sz * 0.5, gpx); }
+
+        // 0 the plain crossed grid
+        float pgrid(vec2 l) {
+            float a = hline((l.x + l.y) * 0.70711);
+            if (T_HX > 0.5) a = max(a, hline((l.x - l.y) * 0.70711));
+            return a * near(T_HP);
+        }
+        // 1 the half hatch, carved: one family of diagonal strokes, each with its own weight that swells and thins
+        // along it and a spine that wanders a little; pointed where they run into the rims
+        float phatch(vec2 l, float din) {
+            const float P = 0.24;
+            float t = (l.x + l.y) * 0.70711, sp = (l.y - l.x) * 0.70711;
+            float k = floor(t / P + 0.5);
+            float wob = (vn(sp * 3.0 + k * 5.7) - 0.5) * 0.022;
+            float dd = t - k * P + wob;
+            float w = 0.034 * (0.7 + 0.45 * h1(k)) * (0.75 + 0.5 * vn(sp * 2.2 + k * 11.3)) * smoothstep(0.0, 0.3, din);
+            return stroke(dd, w) * (0.82 + 0.18 * vn(sp * 9.0 + k)) * near(P);
+        }
+        // 2 chevrons pointing the way the blow runs, evenly set and still (the fill lights them as it runs over them)
+        // (T_CP the period along the blow, T_CS the arms' slope: 1.5 an apex near 67 deg, an arrow on a diagonal lane;
+        // T_CW the stroke's half width across it, m, thinning toward the rims)
+        float pchev(float ac, float al, float hh, bool disc) {
+            float t = disc ? abs(fract(ac / 0.9) - 0.5) * 0.9 : abs(ac);
+            float v = al + t * T_CS;
+            float k = floor(v / T_CP + 0.5), dd = (v - k * T_CP) / sqrt(1.0 + T_CS * T_CS);
+            float w = T_CW * (disc ? 1.0 : mix(1.0, 0.5, clamp(t / max(hh, 0.01), 0.0, 1.0)));
+            return stroke(dd, w) * near(T_CP);
+        }
+        // 3 molten: a half hatch of wide leaning bands; the lit bands molten ember rock (dark crusts, bright veins
+        // between them, hot spots), the bands between charred stone with faint seams (the bed darker there).
+        // out: x its light, y the bed's darkening
+        vec2 plava(vec2 l, float hotk) {
+            const float P = 0.62, CS = 0.16;
+            float t = (l.x + l.y) * 0.70711, sp = (l.y - l.x) * 0.70711;
+            float jag = (vn(sp * 6.0) - 0.5) * 0.05 + (vn(sp * 17.0 + 3.0) - 0.5) * 0.02;
+            float u = fract((t + jag) / P);
+            float dB = min(u, 1.0 - u) - 0.25;
+            float band = clamp(0.5 + dB * P / max(gpx, 1e-4), 0.0, 1.0);
+            vec3 c = cells(l / CS);
+            float vein = 1.0 - smoothstep(0.03, 0.14, c.y), seam = 1.0 - smoothstep(0.02, 0.07, c.y);
+            float nd = near(CS);
+            float hot = smoothstep(0.55, 0.85, vn2(l * 2.3 + 11.0));
+            float crust = 0.22 + 0.22 * c.z;
+            float molten = mix(0.7, max(crust, vein * 1.5) * (1.0 + hot * 0.9 * hotk), nd);
+            float charred = 0.13 * seam * nd;
+            return vec2(mix(charred, molten, band), (1.0 - band) * 0.45);
+        }
+        // 4 cracks: a network of thin bright cracks, a finer one between them
+        float pcrack(vec2 l) {
+            vec3 a = cells(l / 0.42), b = cells(l / 0.17 + 5.3);
+            float c1 = stroke(a.y * 0.42 * 0.5, 0.012), c2 = stroke(b.y * 0.17 * 0.5, 0.007) * 0.45 * step(0.45, vn2(l * 1.7));
+            return max(c1 * near(0.42), c2 * near(0.17));
+        }
+        // 5 lattice: a diamond lattice of fine lines with a bright stud at each crossing
+        float plattice(vec2 l) {
+            const float P = 0.3;
+            float t1 = (l.x + l.y) * 0.70711, t2 = (l.x - l.y) * 0.70711;
+            float d1 = t1 - floor(t1 / P + 0.5) * P, d2 = t2 - floor(t2 / P + 0.5) * P;
+            float ln = max(stroke(d1, 0.009), stroke(d2, 0.009));
+            float stud = stroke(length(vec2(d1, d2)), 0.03) * 1.3;
+            return max(ln * 0.8, stud) * near(P);
+        }
+        // the pattern's own colour (linear), its share set by T_HT: the threat's hue stays the rims' and the front's
+        // (code: the pattern + 8 x the tint; the tint by the blow's school, T_TT forced; with none, molten, cracks and
+        // lattice keep their own fire, frost and gold)
+        vec3 pcol(int code) {
+            int id = code % 8, t = T_TT >= -0.5 ? int(T_TT + 0.5) : code / 8;
+            if (t == 0) t = id == 3 ? 1 : id == 4 ? 2 : id == 5 ? 3 : 0;
+            return t == 1 ? vec3(1.0, 0.32, 0.05) : t == 2 ? vec3(0.45, 0.75, 1.0) : t == 3 ? vec3(1.0, 0.6, 0.18) : vec3(1.0, pc.hg, pc.hb);
+        }
+
+        // One mark at local point l (m): out cover (the bed's re-tint), light (its own, x the energy), its pattern's
+        // light (pl), the bed's darkening under it (pd) and the pattern's id
+        void shape(int i, vec2 l, out float cover, out float light, out float pl, out float pd, out int pid) {
             vec4 a = mk.m[i * 4], s = mk.m[i * 4 + 2], e = mk.m[i * 4 + 3];
             int kind = int(a.w + 0.5);
-            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm;
+            int code = int(floor(e.w * 0.5 + 0.01));
+            pid = T_HS >= -0.5 ? int(T_HS + 0.5) + (code / 8) * 8 : code;
+            int pp = pid % 8;
+            float hx = s.x, hz = s.y, d, inner, edge, ends = 1.0, wh, f = 0.0, ca, sm, filled = 1.0, rcore, fln = 0.0;
+            float ac, al, dm, hh = 0.0;
             if (kind == 0) {
-                // a lane: rims along its sides at 0.9 of its half width, soft ends (no cap line: a lane, not a box)
-                float sc = hx;
-                d = abs(l.x) - 0.9 * hx;
+                // a lane: rims along its sides at 0.9 of its half width; its start soft (under the foe), its far end
+                // flat (T_CAP 2: a rim squared across it; 1 a spear tip, the rims meeting in a point; 0 the old soft end)
+                float sc = hx, w = 0.9 * hx;
+                d = abs(l.x) - w;
+                float tipL = min(w * 1.1, hz * 0.5), ya = hz - 0.04, ys = ya - tipL;
+                if (T_CAP > 1.5) d = max(d, l.y - (hz - 0.06));
+                else if (T_CAP > 0.5) d = max(d, ((l.y - ys) / tipL + abs(l.x) / w - 1.0) / sqrt(1.0 / (tipL * tipL) + 1.0 / (w * w)));
                 float core = max(0.012 * sc, 0.008), soft = max(0.014 * sc, 0.008), glw = max(0.05 * sc, 0.03);
-                edge = rim(d, core, soft, glw, 0.5);
+                soft = min(soft, max(0.6 * gpx, 0.004));
+                rcore = core;
+                edge = rim(d, core, soft, glw, T_EG);
                 ca = clamp(1.0 - max(abs(d) - core, 0.0) / soft, 0.0, 1.0);
                 sm = smoothstep(-0.35 * hx, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
-                float fe = hz - abs(l.y);
-                ends = smoothstep(0.0, 0.45, fe);
-                edge *= smoothstep(0.0, 0.3, fe);
-                ca *= smoothstep(0.0, 0.3, fe);
-                wh = glw * 1.5;
+                float fs = hz + l.y, fe = T_CAP > 0.5 ? 1.0 : smoothstep(0.0, 0.45, hz - l.y);
+                ends = smoothstep(0.0, 0.45, fs) * fe;
+                float ee = smoothstep(0.0, 0.3, fs) * (T_CAP > 0.5 ? 1.0 : smoothstep(0.0, 0.3, hz - l.y));
+                edge *= ee; ca *= ee;
+                wh = glw * 1.5 * T_EW;
+                ac = l.x; al = l.y; hh = 0.86 * hx; dm = (e.x >= 0.0 ? -hz + e.x : hz) - l.y;
                 if (e.x >= 0.0) {
-                    float dm = (-hz + e.x) - l.y;
-                    f = fillf(dm) * clamp((0.86 * hx - abs(l.x)) / max(0.04 * hx, 0.02), 0.0, 1.0) * smoothstep(0.0, 0.15, l.y + hz);
+                    filled = smoothstep(-0.03, 0.03, dm);
+                    float fm = clamp((-d - 0.04 * hx) / max(0.04 * hx, 0.02), 0.0, 1.0) * smoothstep(0.0, 0.15, l.y + hz);
+                    f = fillf(dm) * fm;
+                    fln = T_FL * stroke(dm, T_FW) * fm;
                 }
             } else {
                 float R = hx, r = length(l);
-                float core = clamp(0.045, 0.004 * R, 0.06 * R), soft = core * 0.6 + 0.003 * R;
+                float core = clamp(0.045, 0.004 * R, 0.06 * R), soft = min(core * 0.6 + 0.003 * R, max(0.6 * gpx, 0.004));
+                rcore = core;
                 float fin = core * 4.0 + 0.01 * R, fout = core * 1.2 + 0.004 * R;
                 float rc = 0.93 * R;
                 if (kind == 1) d = r - rc;
@@ -399,17 +608,44 @@ public partial class MarkPass : CompositorEffect
                 } else d = max(r - rc, e.y - r);
                 float rm = clamp(1.0 - max(abs(d) - core, 0.0) / soft, 0.0, 1.0);
                 ca = rm * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
-                float fall = d < 0.0 ? 0.35 * exp(d / fin) : 0.25 * exp(-d / fout);
+                float fall = d < 0.0 ? 0.7 * T_EG * exp(d / fin) : 0.5 * T_EG * exp(-d / fout);
                 edge = max(rm, fall) * clamp((0.995 * R - r) / (0.01 * R), 0.0, 1.0);
                 sm = smoothstep(-0.33 * R, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
-                wh = fout * 2.0;
-                if (e.x >= 0.0 && kind == 1) f = fillf(e.x * 0.97 - r);
+                wh = fout * 2.0 * T_EW;
+                if (e.x >= 0.0 && kind == 1) { f = fillf(e.x * 0.97 - r); fln = T_FL * stroke(e.x * 0.97 - r, T_FW) * step(-0.05, -d); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
+                float rf = e.x >= 0.0 && kind == 1 ? e.x * 0.97 : rc;
+                ac = (atan(l.x, l.y) + 3.14159) * max(rf, 0.3); al = r; dm = rf - r;
             }
+            // the pattern: inside the rims (clear of their glow), lit where the fill has run, T_HU of it ahead (the charge
+            // reads as the pattern catching light), T_HWAT of it over the still water (ghw)
+            float din = -d, inside = smoothstep(0.03, 0.1, din) * ends;
+            pl = 0.0; pd = 0.0;
+            if (din > 0.0) {
+                float lit = mix(T_HU, 1.0, filled);
+                if (pp == 0) pl = pgrid(l) * T_HL;
+                else if (pp == 1) pl = phatch(l, din) * T_HL * 1.25;
+                else if (pp == 2) {
+                    // (cut: dark ahead of the front, lit behind it, never both: the light added over a darkened bed
+                    // eases back up to the fold and the two cancelled)
+                    float cv = pchev(ac, al, hh, kind != 0);
+                    pl = cv * T_HL * 1.4 * (T_CD > 0.0 ? filled / max(lit, 1e-3) : 1.0);
+                    pd = cv * T_CD * (1.0 - filled);
+                }
+                else if (pp == 3) { vec2 lv = plava(l, filled); pl = lv.x * T_HL * 1.5; pd = lv.y * T_LD; }
+                else if (pp == 4) pl = pcrack(l) * T_HL * 1.4 * (1.0 + 0.6 * exp(-abs(dm) / 0.4));
+                else pl = plattice(l) * T_HL * 1.2;
+                pl *= inside * lit * ghw;
+                pd *= inside * ghw;
+            }
+            // the keyline: the bed a step darker just inside the rims' cores, so the rim stands clear of the bed by day
+            float kin = din - rcore;
+            pd = max(pd, T_KG * smoothstep(0.0, max(0.5 * gpx, 0.004), kin) * (1.0 - smoothstep(T_KW, T_KW + max(gpx, 0.004), kin)) * ends);
             // (the rims' cores over the bed's scarlet, not the ground's own colour: a rim added over grey went salmon)
-            cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends, ca);
+            cover = max((d < 0.0 ? max(pc.bed, sm) : exp(-d / wh)) * ends * T_BO, ca);
             cover = max(cover, min(f * 4.0, 1.0) * (1.0 - pc.bed));
             light = max(edge, inner * ends) * s.z * pc.le + f * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
+            pl = pl * s.z * pc.le + fln * pc.fill_e * (s.z > 0.0 ? 1.0 : 0.0);
         }
 
         void main() {
@@ -460,7 +696,9 @@ public partial class MarkPass : CompositorEffect
                 vec3 nv = texture(nrm, uv).xyz * 2.0 - 1.0;
                 up = (mt.cam * vec4(nv, 0.0)).y / max(length(nv), 1e-4);
             }
-            float tint = 0.0;
+            // (the footprint: the pixel's angle at its distance, stretched by the ground's slant to the eye)
+            gpx = length(wp - eye) * pc.pxang / sqrt(max(-ray.y, 0.25));
+            float tint = 0.0, plight = 0.0, pdark = 0.0; vec3 ptint = vec3(0.0);
             float light = 0.0;
             float rs = 0.0;
             int n = int(pc.n);
@@ -472,6 +710,7 @@ public partial class MarkPass : CompositorEffect
                 vec2 l = vec2(dot(d, ax.xy), dot(d, ax.zw));
                 bool inbox = abs(l.x) <= s.x && abs(l.y) <= s.y;
                 float gh = 0.0, bank = 1.0, slack = 0.0, hgt = 1.0;
+                ghw = 1.0;
                 if (inbox) {
                     // one height reference for the bank and the water: the ground's heights, never under the still water
                     int sl_ = int(e.z + 0.5);
@@ -483,6 +722,7 @@ public partial class MarkPass : CompositorEffect
                     slack = min(T_TOL * bend, 0.4);
                     // a bank steeper than s0..s1 shows no bed (no fold down its face), the water past its foot does
                     float under = pc.water_on > 0.5 ? smoothstep(0.02, 0.3, pc.water_y - g) : 0.0;
+                    ghw = pc.water_on > 0.5 ? mix(1.0, T_HWAT, smoothstep(-0.05, 0.12, pc.water_y - g)) : 1.0;
                     bank = 1.0 - smoothstep(T_S0, T_S1, sl) * (1.0 - under);
                 }
                 if (inbox && gh < pc.roof) {
@@ -491,7 +731,7 @@ public partial class MarkPass : CompositorEffect
                     hgt = (1.0 - smoothstep(pc.g0 + slack, pc.g1 + slack, gh)) * (1.0 - smoothstep(0.15 + slack, 0.4 + 2.0 * slack, -gh));
                     gate = hgt * mix(1.0, smoothstep(0.3, 0.6, up), smoothstep(0.04 + slack, 0.12 + 2.0 * slack, gh));
                     gate *= bank;
-                } else if (e.w > 0.5 && ray.y < -1e-4 && up > 0.5) {
+                } else if (mod(e.w, 2.0) > 0.5 && ray.y < -1e-4 && up > 0.5) {
                     // a roof or a canopy over it: the mark where the ground under it would be seen
                     vec3 g = eye + ray * ((a.y - eye.y) / ray.y);
                     if (dot(g - eye, ray) - dot(wp - eye, ray) < pc.roof) continue;
@@ -502,16 +742,20 @@ public partial class MarkPass : CompositorEffect
                 } else continue;
                 if (gate <= 0.0) continue;
                 float c, li;
-                shape(i, l, c, li);
+                float pl_, pd_; int pid_;
+                shape(i, l, c, li, pl_, pd_, pid_);
                 float tc = c * gate * s.w;
                 if (tc > tint) {
+                    pdark = pd_ * gate;
                     tint = tc;
                     // (where only the height test holds it back, a tuft's tips: re-saturated below)
                     rs = smoothstep(T_RS0, T_RS1, tc) * (1.0 - smoothstep(0.85, 1.0, hgt)) * bank;
                 }
                 light += li * gate;
+                plight += pl_ * gate;
+                ptint += pcol(pid_) * pl_ * gate;
             }
-            if (tint <= 0.0 && light <= 0.0) return;
+            if (tint <= 0.0 && light <= 0.0 && plight <= 0.0) return;
             vec4 col = imageLoad(colour, p);
             // the fold: the last step that is still scarlet (the steps below it are)
             int fi = 0;
@@ -522,24 +766,34 @@ public partial class MarkPass : CompositorEffect
             float gv = max(g.r, max(g.g, g.b));
             // by the water's line: the tiles' mean, not the pixel (shore foam, a wet band: no crease in the bed)
             if (pc.water_on > 0.5 && dz > 1e-7) gv = mix(gv, vtile(p), 1.0 - smoothstep(T_SB0, T_SB1, abs(yt - pc.water_y)));
+            // (the darkening after the fold's cap: by day the bed sits at the fold, and a darkening before it was lost)
             float want = pc.k * gv;
             int lo = 0, hi = NT - 1;
             while (hi - lo > 1) { int mid = (lo + hi) / 2; if (tv[mid] <= want) lo = mid; else hi = mid; }
             float r;
             if (want <= tv[0]) r = exp2(LO) * want / max(tv[0], 1e-6);
             else r = exp2(LO + (float(lo) + clamp((want - tv[lo]) / max(tv[hi] - tv[lo], 1e-6), 0.0, 1.0)) * ST);
-            r = min(r / max(pc.expo, 1e-6), rf);
+            r = min(r / max(pc.expo, 1e-6), rf) * (1.0 - pdark);
             vec3 base = mix(col.rgb, r * vec3(1.0, pc.tg, pc.tb), clamp(tint, 0.0, 1.0));
             // a part-tinted tuft: the scarlet at the mix's own value (bright in, bright scarlet out; never pink)
             if (rs > 0.0) base = mix(base, min(max(base.r, max(base.g, base.b)), rf) * vec3(1.0, pc.tg, pc.tb), rs);
             // the light on it: eased into the fold, never past it (AgX turns a red past it salmon, then white)
+            // the pattern's own light over the rims': in its own colour (T_HT of it), and with it allowed past the red's
+            // fold (to 1 + 4 T_HT of it: a molten vein runs hot, orange to yellow; with no tint it stays red)
+            vec3 lc = vec3(1.0, pc.hg, pc.hb), pcl = plight > 0.0 ? mix(lc, ptint / plight, T_HT) : lc;
+            float pa = 0.0;
+            if (plight > 0.0) {
+                float pf = rf * (1.0 + 4.0 * T_HT), a = pc.knee * pf, x = base.r + plight;
+                float y = x <= a ? x : a + (pf - a) * (1.0 - exp(-(x - a) / max(pf - a, 1e-6)));
+                pa = max(y - base.r, 0.0);
+            }
             float add = light;
             if (add > 0.0) {
                 float a = pc.knee * rf, x = base.r + add;
                 float y = x <= a ? x : a + (rf - a) * (1.0 - exp(-(x - a) / max(rf - a, 1e-6)));
                 add = max(y - base.r, 0.0);
             }
-            col.rgb = base + add * vec3(1.0, pc.hg, pc.hb);
+            col.rgb = base + add * lc + pa * pcl;
             imageStore(colour, p, col);
         }
         """;

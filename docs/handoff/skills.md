@@ -1,5 +1,35 @@
 # Handoff: skills look and feel
 
+## Combat VFX 5 (vfx-4, 29 Oct): MR READY. Chevrons, and the owner picked B SALMON
+**The owner picked chevrons (verbatim):** "agreed, chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges".
+**Then the color (verbatim):** "B salmon." It is set in mark_look.json (`"look": "salmon"`). The fire tint stays off.
+
+**Built** (all in `godot/src/Fx/MarkPass.cs` and `godot/data/mark_look.json`; red marks only):
+- Chevrons are on every red mark (`"patterns"` default chevron). The other patterns stay as named choices.
+- The chevrons are cut dark into the bed ahead of the running front and lit behind it (`cd`). The bed's darkening is applied after the fold's cap; before it, by day, it was lost.
+- Chevron shape: period `cp` 0.55 m, slope `cs` 1.5 (an apex near 67 deg), half width `cw` 0.06 m.
+- The lane's far end is flat (`cap` 2).
+- Clear rims: less outer glow (`eg`) and less bleed (`ew`), plus a keyline just inside them (`kg`, `kw`).
+- The cast line is a hard line at the running front (`fl`, `fw`, `front` 0.04). It rides the pattern's light, so by day it can pass the red's fold as a pale line.
+- Scarlet's look (`looks.scarlet`): `bo` 0.82 (bed opacity), `cd` 0.72, `hl` 0.5. Salmon keeps the defaults.
+- School tint (`"tints"`, shader `pcol` code = pattern + 8 x tint): OFF behind `"tinted": false`. The judge would leave it off; it's on the owner's sheet as an option. `MARK_TUNE=tt=1` forces it for shots.
+
+**Judged:**
+- Round 1 (xhigh): salmon PASS; scarlet FAIL by day, close.
+- Round 2 (xhigh, the last round): salmon PASS, every frame gate YES. Scarlet PASS on every frame except f14, a late Warden disc on the bank that is cut by a straight chord with no rim.
+
+**Later list: telegraph projection** (pre-existing, routed by main 29 Oct; one item for the next VFX slot):
+- The f14 chord: the height gate (g0/g1) on a sloped bank.
+- The mark paints corpses and debris on the ground.
+- A lane appears to jog where it crosses a roofless building's wall.
+- A faint dark lane outlives the red for a moment after the hit. It seems to be BattleFx's own Danger decal bed fading out; unconfirmed.
+
+**Owner sheet (SENT via main):** `C:\Users\munch\Desktop\survivorsunchained_inputs\vfx5\telegraph_color_scarlet_vs_salmon.jpg`.
+
+**Next:** merge (main). Then the queued input below (the warden's 4 new skills), and the projection later list above.
+
+The shot scripts (shoot.sh `NAME:LOOK:KIND:MARK_TUNE`, pace.py, jsheet.py, red.py, owner_sheet.py) are backed up in `survivorsunchained_inputs\scratch_vfx5`.
+
 ## QUEUED INPUT (28 Oct, from Classes 15 P6, via main): the warden's 4 new skills need VFX
 Sim lands with placeholder art keys (classes-15; MR1 = P5b+P6). All warden-only, holy + steel. Build after MR1 merges.
 1. **Sunder** (greatsword grip): slow heavy 220-deg cleave (300 with Wide Swing). Every 4th swing (3rd with Third Blow, 2nd with its Turn) a heavy overhead splits the ground in a line 7 m long, ~1.2 m wide, ahead of her; Burning Edge = holy fire along the crack. Her greatsword prop + clips are Phase 3; until then it swings whatever she holds.

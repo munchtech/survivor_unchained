@@ -19,7 +19,7 @@ woman of about sixty).
 
 **Locked for recording (11 October):** the narrator's prologue lines and C01 to C04, Vonnra's far voice in the prologue, the Warden's, Grimtunnel's, the dead Watchman's and the gate guard's prologue lines, and Rook's and Brannoc's Act 1 lines (with the narrator's parts inside them). Each is marked **LOCKED FOR RECORDING** in its packet (`tools/vo/locked.json`; `python tools/vo/lock.py --list`). The rest of the narrator, Vonnra and Brannoc stays on hold. A locked line whose words change later shows **HOLD** again until the story lead re-locks it.
 
-**Locked for recording (11 October, later): the love scenes, B, after their judge.** Sella's blue room whole (the stairs up, the dark nights, the stop and the paid sleep, the mornings) and Maeca's Blind whole (the walk, the fire, under the hides, both gray lights, the heart), with the narrator's one line behind the door: the bolt, heard from the stairs (`dlg.sella.free_bolt.0.p0`, one take that also serves `free_sleep_bed`). Nothing else of the narrator's behind the door is ever recorded: `tools/vo/elevenlabs.py` holds any narrator part there for good, locked or not (`BOLT`, `behind_door`).
+**28 October: the love scenes and the romance routes are removed (the owner).** Sella's blue room keeps the stairs, the paid sleep and its mornings; her free night is now the night she sits with you (`free_door`, `free_what`, `free_sit`, `free_m_who`). Maeca's Blind keeps the walk, the fire, the watch nights (`watch_only`, `blind_dark`) and the gray lights. The nodes `sella.stairs_room`, `stairs_rules`, `night`, `morning`, `stop_paid`, `rest_night_paid`, `free_night`, `free_bolt`, `free_sleep`, `free_sleep_bed`, `free_want`, `free_stop`, `free_morning`, `free_m_downstairs`, `free_m_kiss`, `maeca.blind`, `blind2_feet`, `blind2_let`, `watch_morning`, `say_sella*`, `keegan.dinner`, `supper_hand` and `rav.back_room_kiss` are gone; any take saved for them is unused. The door rule (the narrator never recorded behind the door) is retired with them.
 
 ---
 
@@ -45,8 +45,8 @@ The importer would have refused those, so they are listed here too.
 
 | Take saved as | Rename to | Why |
 |---|---|---|
-| `dlg.sella.night.1.p1.wav` ("Don't,") | `dlg.sella.night.0.p1.wav` | The cold-bath night is the first variant now; the old packet had the old order. |
-| `dlg.sella.free_night.1.p1.wav` ("You told me anyway,") | `dlg.sella.free_night.0.p1.wav` | As above. |
+| `dlg.sella.night.1.p1.wav` ("Don't,") | `dlg.sella.night.0.p1.wav` | The cold-bath night is the first variant now; the old packet had the old order. (removed 28 October) |
+| `dlg.sella.free_night.1.p1.wav` ("You told me anyway,") | `dlg.sella.free_night.0.p1.wav` | As above. (removed 28 October) |
 
 ### New barks (missing from the old packet)
 
@@ -63,7 +63,7 @@ he's paying" stays, and now plants that someone else pays for his drink.
 
 ### The love scenes (B)
 
-The narrator stops at the blue room's door, and the room is Sella's alone:
+**Removed 28 October; history only.** The narrator stops at the blue room's door, and the room is Sella's alone:
 the nights on a dark screen, the mornings lit. Every line below is a new take
 (the old "Don't," and "You told me anyway," inside the narration fold into
 `night.0` and `free_night.0`; the narrator's asides in the mornings became her
