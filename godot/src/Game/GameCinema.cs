@@ -337,7 +337,7 @@ public partial class Game
         if (scene != null) scene.Fx.HideLoot = cine != null; // hidden across a chain, shown at the hand-back
     }
 
-    sealed class Cine
+    sealed partial class Cine
     {
         readonly Game g;
         readonly CineFile file;
@@ -460,6 +460,7 @@ public partial class Game
             else if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def)
             {
                 var v = new PersonView(def.Person ?? new PersonSpec(), def.Arms, 0.8 * (def.Scale ?? 1)) { Name = "Cine_" + name };
+                PlayerView.ToCast(v);
                 g.scene!.AddChild(v);
                 people[name] = v;
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
@@ -473,6 +474,7 @@ public partial class Game
                 if (ExtrasShadow) w.Body.BeginShadow();   // (his one shadow, as the extras': a no-op if begun ahead)
                 w.Name = "Cine_" + name;
                 w.Glow = c.Glow;
+                PlayerView.ToCast(w);
                 g.scene!.AddChild(w);
                 bosses[name] = w;
                 people[name] = w.Body;
@@ -491,6 +493,7 @@ public partial class Game
                     var v = Made($"{name}.{i}") as PersonView ?? new PersonView(spec.Person ?? new PersonSpec(), spec.Arms, 0.8 * spec.Scale);
                     if (ExtrasShadow) v.BeginShadow();   // (made here, not ahead: its one shadow begun now; a no-op if begun)
                     v.Name = $"Cine_{name}{i}";
+                    PlayerView.ToCast(v);
                     g.scene!.AddChild(v);
                     string who = $"{name}.{i}";
                     people[who] = v;
@@ -588,7 +591,7 @@ public partial class Game
             {
                 if (dbgFill == null || !IsInstanceValid(dbgFill))
                 {
-                    dbgFill = new SpotLight3D { LightColor = new Color(1f, 0.96f, 0.9f), SpotAngle = 14, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2, LightSpecular = 0.3f, LightEnergy = fe };
+                    dbgFill = new SpotLight3D { LightColor = new Color(1f, 0.96f, 0.9f), SpotAngle = 14, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer, LightSpecular = 0.3f, LightEnergy = fe };
                     g.scene!.AddChild(dbgFill);
                 }
                 var eyes = new Vector3((float)he.X, (float)he.Y, (float)he.Z);
@@ -599,7 +602,6 @@ public partial class Game
         }
         SpotLight3D? dbgFill;
 
-        sealed record Rig(SpotLight3D L, JsonElement From, JsonElement Aim, int Shot);
         readonly Dictionary<string, Rig> rigs = new();
         /// <summary>A zone lamp's glowing piece a "globe" cue dimmed: what it wore before (put back at the end), its own copy, its colour.</summary>
         sealed record Globe(MeshInstance3D M, int S, Material? Was, ShaderMaterial Dim, Vector3 Base) { public float Level = 1; public Vector3? Tint; }
@@ -621,7 +623,7 @@ public partial class Game
             int shot = player.Shot.Index;
             foreach (var (name, r) in rigs.ToList())
             {
-                if (r.Shot >= 0 && r.Shot != shot) { r.L.QueueFree(); rigs.Remove(name); continue; }
+                if (r.Shot >= 0 && r.Shot != shot) { r.Free(); rigs.Remove(name); continue; }
                 var aim = r.Aim.ValueKind == JsonValueKind.Undefined ? (ActorAt("her", "eyes") is V3 he ? V(he) : g.camera.GlobalPosition) : V(places.Resolve(r.Aim));
                 Vector3 at;
                 if (r.From.ValueKind == JsonValueKind.Object && r.From.TryGetProperty("lens", out var lens))
@@ -685,6 +687,7 @@ public partial class Game
                 foreach (var (hq, hat, hr) in globeHalos)
                     if (GodotObject.IsInstanceValid(hq)) hq.GlobalPosition = hat + (hcam.GlobalPosition - hat).Normalized() * hr;
             PlaceRigs();
+            HerLight();
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hsk))
             { SurvivorUnchained.View.People.HerSkyShare(hsk.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hsk.Person, skinEar); }
             // No ember or smoke between a close lens and her (C01 s10: a drifting ember was a soft
@@ -828,10 +831,12 @@ public partial class Game
             cam.GlobalTransform = new Transform3D(basis, pos);
             cam.KeepAspect = Camera3D.KeepAspectEnum.Width;
             cam.Fov = hfov;
+            // (her face held to the game's close-up scale at most: the lens widened about its aim, GameCinemaHer.HerScaleCap)
+            double lensMm = HerScaleCap(pose.Lens);
             if (pose.Focus is double f && pose.FollowK < 0.5)
             {
                 // Depth of field from the lens: sharp across what f-number and distance allow, soft beyond.
-                double mm = pose.Lens, n = pose.Fstop, coc = 0.03;
+                double mm = lensMm, n = pose.Fstop, coc = 0.03;
                 double h = mm * mm / (n * coc) / 1000;
                 double near = h * f / (h + f), far = h > f ? h * f / (h - f) : 1e4;
                 dof.DofBlurNearEnabled = true;
@@ -1138,7 +1143,7 @@ public partial class Game
                             if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader?.ResourcePath == "res://shaders/heroine_eye.gdshader")
                             {
                                 foreach (var key in new[] { "catchlight", "catch_size" })
-                                    if (c.Get(key).ValueKind == JsonValueKind.Number) SetEye(m, key, (float)c.Num(key));
+                                    if (c.Get(key).ValueKind == JsonValueKind.Number) SetEye(m, key, key == "catchlight" && c.Actor == "her" ? HerCatchFloor((float)c.Num(key)) : (float)c.Num(key));   // (Face 48 r4: its floor in a cinematic)
                                 var at = c.Get("catch_at");
                                 if (at.ValueKind == JsonValueKind.Array) SetEye(m, "catch_at", new Vector2((float)at[0].GetDouble(), (float)at[1].GetDouble()));
                             }
@@ -1393,7 +1398,7 @@ public partial class Game
                     // ("fade": true: from the light's energy now to "energy" over "over", 0 included: C03 s8y, the heart's
                     // blue from below dying as it goes under, not cut off)
                     float e0 = 0;
-                    if (rigs.Remove(name, out var was)) { e0 = was.L.LightEnergy; was.L.QueueFree(); }
+                    if (rigs.Remove(name, out var was)) { e0 = was.E; was.Free(); }
                     float e = (float)c.Num("energy", 0.3);
                     bool fade = c.Bool("fade") && over > 0 && !skipping;
                     if (!fade) e0 = 0;
@@ -1401,13 +1406,16 @@ public partial class Game
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
-                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2,
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer,
                         LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
-                    rigs[name] = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index);
-                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { if (IsInstanceValid(l)) l.LightEnergy = Mathf.Lerp(e0, e, (float)k); }));
+                    var rig = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index, l.LightEnergy);
+                    rigs[name] = rig;
+                    // (its authored energy: HerLight sets the light's own from it each frame, Face 48)
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { rig.E = Mathf.Lerp(e0, e, (float)k); }));
                     PlaceRigs();
+                    HerLight();
                     break;
                 }
                 case "skin":
@@ -2041,8 +2049,9 @@ public partial class Game
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();
             props.Clear();
-            foreach (var r in rigs.Values) r.L.QueueFree();
+            foreach (var r in rigs.Values) r.Free();
             rigs.Clear();
+            HerLightEnd();
             foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
             foreach (var wsm in waters) { wsm.SetShaderParameter("level", 1f); wsm.SetShaderParameter("streak_shot", 1f); wsm.SetShaderParameter("mirror_cap", 100f); }

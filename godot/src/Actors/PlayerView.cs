@@ -79,6 +79,15 @@ public partial class PlayerView : Node3D
     static readonly bool GearOwn = Args.Get("close-rim-gear") != "off";
     /// <summary>HerLayer, HerHairLayer and HerGearLayer: every light that lights her on her own layer takes all three.</summary>
     public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
+    /// <summary>The bosses' and cinematic actors' render layer (15): off people's layer (2) so her FolkLight (2 | HerLayers) does not wash them; every other light that lit layer 2 takes this too.</summary>
+    public const uint CastLayer = 1u << 14;
+    /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
+    public static void ToCast(Node n)
+    {
+        if (n is PersonView pv) pv.OnCast = true;
+        if (n is GeometryInstance3D g && (g.Layers & 2u) != 0) g.Layers = (g.Layers & ~2u) | CastLayer;
+        foreach (var c in n.GetChildren()) ToCast(c);
+    }
     /// <summary>True: her meshes on HerLayer, not on layer 2 (GameCloseUp, the close view by night).</summary>
     public bool OwnLayer;
     bool ownShown;
@@ -773,6 +782,8 @@ public partial class PlayerView : Node3D
     /// <summary>True when any of a mesh's surfaces is metal: her outfit's metal keys (People.OutfitMaterials, meta "kind" 1,
     /// heroine_outfit_metal.gdshader), or a plain material at metallic 0.5 or more. Only these take the moon rim's gear twin:
     /// with all her gear on it her leather (bandeau, bracers, belt) read as lavender chrome by night (judge J2, face 36).</summary>
+    /// <summary>Metal (her weapon, armor, buckles): what goes on HerGearLayer (GameCinemaHer too).</summary>
+    internal static bool IsMetalPart(GeometryInstance3D g) => IsMetal(g);
     static bool IsMetal(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D m || m.Mesh == null) return false;
