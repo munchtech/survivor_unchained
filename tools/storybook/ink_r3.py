@@ -38,13 +38,22 @@ DENOISE = (0.5, 0.6, 0.7)
 SEEDS = (11, 23, 47)
 SCALE = 2
 
-PROMPT = ("Grim woodcut of the drowned dead risen from the river like ghosts: dead men and women standing upright in the "
-          "flooded ditches along the road, water to the shins; heads hanging forward and tilted; long lank black wet hair "
-          "hanging down over their faces like curtains, in strands with river weed, only a sliver of a corpse-white face "
-          "showing; thin corpse-white arms hanging limp, pale dead hands; soaked dark rags of torn linen shifts and wool tunics "
-          "hanging in shreds from thin bodies; barefoot, bare shins in the black water. Motionless, waiting, every face turned "
-          "toward the road. Medieval winter night, deep dark, snowy banks, frosted reeds, bare black trees. No hoods, no hats, "
-          "no beards. The picture is mostly black.")
+PROMPT_R3 = ("Grim woodcut of the drowned dead risen from the river like ghosts: dead men and women standing upright in the "
+             "flooded ditches along the road, water to the shins; heads hanging forward and tilted; long lank black wet hair "
+             "hanging down over their faces like curtains, in strands with river weed, only a sliver of a corpse-white face "
+             "showing; thin corpse-white arms hanging limp, pale dead hands; soaked dark rags of torn linen shifts and wool tunics "
+             "hanging in shreds from thin bodies; barefoot, bare shins in the black water. Motionless, waiting, every face turned "
+             "toward the road. Medieval winter night, deep dark, snowy banks, frosted reeds, bare black trees. No hoods, no hats, "
+             "no beards. The picture is mostly black.")
+# round 4 (r2 brief): the judge read round 3 as "a procession of nuns": no robes, no belts, no folded hands, no matching poses
+PROMPT = ("Grim woodcut of the drowned dead risen from the river: corpses standing in a flooded ditch at night, water to the "
+          "shins, each one different, crowded unevenly, some close together, some alone, tall and short, some turned away, one "
+          "leaning. Waterlogged rags of torn shirts and shifts clinging to thin dead bodies, hanging in strips, water running "
+          "off the hems; bare heads, long hair plastered flat with river weed hanging over the faces, heads hung forward and "
+          "tilted; arms hanging slack at their sides, pale dead hands; one or two pale hollow-eyed dead faces glimpsed between "
+          "the wet hair. Lit only by cold pale blue light from the ford, rims of cold blue on wet hair and shoulders. No robes, "
+          "no hoods, no belts or ropes, no folded hands, no hats, no beards, not a procession. Winter night, snowy banks, "
+          "frosted reeds. Everything else is black and deep blue-black ink.")
 
 
 def tag(dn, s):
@@ -262,7 +271,7 @@ def gen(cands):
     init = np.asarray(Image.open(L.wd("p5", "r3_init.png")).convert("RGB")).astype(np.float32) / 255
     clean = np.asarray(Image.open(L.wd("p5", "S_clean.png")).convert("RGB")).astype(np.float32) / 255
     boxes = json.load(open(L.wd("p5", "r3_boxes.json")))
-    prompt = L.full("r3", PROMPT)
+    prompt = L.full(L.PLATES["p5"]["r"], PROMPT)
     road = nd.gaussian_filter(L.load_mask(L.wd("p5", "M_road.png")).astype(np.float32), 1.5)
     init_fig = L.load_mask(L.wd("p5", "r3_fig.png"))
     for dn, s in cands:
