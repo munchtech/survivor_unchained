@@ -105,6 +105,20 @@ public sealed class StoryTimeline
     /// black or a plate's fade out to black.</summary>
     public double SubtitleFor(double at, double seconds) => Math.Max(0, Math.Min(seconds, BlackAfter(at) - at));
 
+    /// <summary>How long a subtitle set at `at` for `seconds` takes to fade out: a quarter second, or,
+    /// when it is still up as a plate fades to black, from that fade's start to its own end (it goes
+    /// down with the picture, never bright over the black).</summary>
+    public double SubtitleFade(double at, double seconds, double fade = 0.25)
+    {
+        double shown = SubtitleFor(at, seconds), black = BlackAfter(at), end = at + shown;
+        if (shown <= 0) return 0;
+        foreach (var s in Spans)
+            if (Math.Abs(s.Until - black) < 1e-6 && s.Plate.Out is { Dur: > 0 } o && DarkColour(o.Color)
+                && end > s.Until - o.Dur)
+                return Math.Max(Math.Min(fade, shown), end - Math.Max(at, s.Until - o.Dur));
+        return Math.Min(fade, shown);
+    }
+
     /// <summary>A fade's colour reads as black (unset: black).</summary>
     static bool DarkColour(string? hex)
     {

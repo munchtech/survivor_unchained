@@ -228,15 +228,18 @@ public partial class StoryPlayer : Node
                     if (l.Raw == "") break;
                     var take = host.Voice?.Say(l.VoId, l.Raw);
                     // Labelled only where the file tags it; the sung line in italics.
-                    // Gone by the time the picture is black (the end, a plate's fade out to black).
-                    Say(l.Text, c.Str("tag"), Line.SubtitleFor(tc.T, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7)), l.Sung, l.Sung);
+                    // Gone by the time the picture is black (the end, a plate's fade out to black); into a
+                    // plate's fade to black it fades out with the picture.
+                    double secs = (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7);
+                    Say(l.Text, c.Str("tag"), Line.SubtitleFor(tc.T, secs), l.Sung, l.Sung, Line.SubtitleFade(tc.T, secs));
                     break;
                 }
                 case "say":
                 {
                     var text = c.Str("text") ?? "";
                     bool sung = c.Bool("sung");
-                    Say(text, c.Str("speaker"), Line.SubtitleFor(tc.T, c.Num("dur", CineLines.Reading(text))), sung, sung || c.Bool("italic"));
+                    double secs = c.Num("dur", CineLines.Reading(text));
+                    Say(text, c.Str("speaker"), Line.SubtitleFor(tc.T, secs), sung, sung || c.Bool("italic"), Line.SubtitleFade(tc.T, secs));
                     break;
                 }
                 case "sfx":
@@ -282,9 +285,9 @@ public partial class StoryPlayer : Node
     }
 
     /// <summary>A subtitle, if any of it is left before the black (none: not shown at all).</summary>
-    void Say(string text, string? who, double seconds, bool sung, bool italics)
+    void Say(string text, string? who, double seconds, bool sung, bool italics, double fade)
     {
-        if (seconds > 0.05) Bars.Say(text, who, seconds, sung, italics: italics);
+        if (seconds > 0.05) Bars.Say(text, who, seconds, sung, italics: italics, fade: fade);
     }
 
     /// <summary>A sound file on its own player (its own small bus when it is panned), through the storybook's muffle.</summary>

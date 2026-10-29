@@ -375,6 +375,59 @@ public class StorybookTests
     }
 
     [Fact]
+    public void A_subtitle_fades_with_the_picture_into_a_fade_to_black()
+    {
+        var l = Blacks();
+        // b fades to black over 8-9: a line up until 9 goes down from 8 with it.
+        Assert.Equal(1.0, l.SubtitleFade(7, 4), 9);
+        Assert.Equal(1.0, l.SubtitleFade(7.5, 4), 9);
+        Assert.Equal(0.5, l.SubtitleFade(8.5, 4), 9);
+        // One that ends before the fade starts: the quarter second.
+        Assert.Equal(0.25, l.SubtitleFade(1, 3), 9);
+        // Into the end black (no fade of its own): the quarter second.
+        Assert.Equal(0.25, l.SubtitleFade(18.5, 10), 9);
+        // d fades to black over 16-18: ending inside it at 17 still goes down from 16.
+        Assert.Equal(1.0, l.SubtitleFade(15, 2), 9);
+    }
+
+    [Fact]
+    public void Sb00_s_sung_line_fades_with_its_last_plate()
+    {
+        var f = StoryFile.Load("sb00");
+        var l = new StoryTimeline(f);
+        var last = f.Plates[^1];
+        double dur = last.Out!.Dur;
+        foreach (var c in l.Cues.Where(c => c.Cue.Do is "line" or "say"))
+        {
+            double shown = l.SubtitleFor(c.T, 30);
+            if (c.T + shown > last.Until - dur + 1e-6)
+                Assert.True(l.SubtitleFade(c.T, 30) >= c.T + shown - Math.Max(c.T, last.Until - dur) - 1e-9);
+        }
+    }
+
+    static double Chars(string s) => s.Length * 10.0;
+
+    [Fact]
+    public void A_long_subtitle_breaks_at_a_sentence_end_never_one_word_alone()
+    {
+        var t = "Now the drowned stand along the ford road, waiting. And something in the water is singing.";
+        Assert.Equal("Now the drowned stand along the ford road, waiting.\nAnd something in the water is singing.",
+            CineLines.Break(t, Chars, 600));
+        // It fits: as it is; the script's '/' wins.
+        Assert.Equal("Short line.", CineLines.Break("Short line.", Chars, 600));
+        Assert.Equal("One two / three four five six", CineLines.Break("One two / three four five six", Chars, 100));
+        // No sentence end: the most balanced word break.
+        Assert.Equal("aaaa bbbb cccc\ndddd eeee ffff", CineLines.Break("aaaa bbbb cccc dddd eeee ffff", Chars, 200));
+        // A sentence end that would leave a short line loses to balance.
+        Assert.Equal("Yes. Then the\nlong road home", CineLines.Break("Yes. Then the long road home", Chars, 160));
+        foreach (var line in new[] { t, "a b c d e f g h i j k l m n o p q r s t u v w x y z" })
+        {
+            var parts = CineLines.Break(line, Chars, 300).Split('\n');
+            Assert.All(parts, p => Assert.Contains(' ', p));
+        }
+    }
+
+    [Fact]
     public void Sb00_s_last_lines_are_gone_before_its_end_black()
     {
         var f = StoryFile.Load("sb00");
