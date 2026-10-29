@@ -10,7 +10,7 @@
   "world": {"rate": 0, "zoneHeld": true},
   "marks": {
     "bank": [1.0, -49.0, 3.1416],
-    "road": [0.5, -58.0, 3.1416],
+    "road": [0.5, -58.4, 3.1416],
     "shallows": [2.0, -41.0, 1.5708],
     "top": [0.3, -71.0, 3.1416]
   },
@@ -18,6 +18,24 @@
     "her": {"kind": "survivor", "mark": "bank"}
   },
   "shots": [
+    {
+      "id": "A0",
+      "type": "CU",
+      "dur": 4.0,
+      "note": "Low (0.22 m) on the north bank's stones at the water's edge, from the north-east, 70 mm: the lamp lies on its side, gone out, the river behind it. She is not in frame. The lamp_out line.",
+      "cam": {"pos": [5.95, 0.22, -51.15], "at": [5.0, 0.08, -50.2], "lens": 70, "focus": [5.0, 0.08, -50.2], "fstop": 2.8, "move": {"start": 0, "end": "end", "push": 0.08, "ease": "inout"}},
+      "fit": ["cin_first_light.lamp_out"],
+      "tail": 0.6,
+      "cues": [
+        {"do": "event", "name": "ford_clear"},
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
+        {"do": "music", "mood": "night", "intensity": 0.2},
+        {"do": "place", "mark": "road", "heading": 3.1416},
+        {"do": "anim", "clip": "@idle", "blend": 0},
+        {"do": "prop", "name": "lamp", "scene": "res://art/props/lamp_dropped/lamp_dropped.glb", "where": [5.0, 0.0, -50.2], "rot": [0, 180, 0]},
+        {"at": 0.4, "do": "line", "id": "cin_first_light.lamp_out"}
+      ]
+    },
     {
       "id": "A1s",
       "type": "MS",
@@ -27,7 +45,6 @@
       "cam": {"pos": {"abs": [4.4, 0.95, -38.4]}, "at": {"actor": "her", "bone": "chest", "off": [0, 0.15, 0]}, "lens": 35},
       "cues": [
         {"do": "gaze", "wander": 0.04},
-        {"do": "event", "name": "ford_clear"},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
         {"do": "place", "mark": "shallows", "heading": 0.0},
@@ -44,7 +61,6 @@
       "fit": ["cin_first_light.back"],
       "tail": 0.4,
       "cues": [
-        {"do": "event", "name": "ford_clear", "when": {"facts": ["!prologue.dawn_south"]}},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "atmosphere", "preset": "dawn", "exposure": 0.78, "hemi": 0.3, "env": 0.3},
         {"do": "globe", "light": 4, "level": 0.25},
@@ -75,13 +91,36 @@
       ]
     },
     {
+      "id": "A8b",
+      "type": "INS",
+      "dur": 3.0,
+      "note": "Insert, silent: the letter she carried, open on the road's stones in the dawn, run to blue by the river; one line still reads: Come home by the Low Ford. No hands.",
+      "cam": {"pos": [0.0, 0.35, -54.29], "at": [0.0, 0.0, -54.6], "lens": 50, "focus": [0.0, 0.0, -54.6], "fstop": 2.8, "move": {"start": 0, "end": "end", "push": 0.03, "ease": "inout"}},
+      "cues": [
+        {"do": "prop", "name": "letter", "scene": "res://art/props/letter/letter_open.glb", "where": [0.0, 0.012, -54.6], "rot": [-90, 0, 0]},
+        {"do": "music", "mood": "silence"}
+      ]
+    },
+    {
+      "id": "A7",
+      "type": "MCU",
+      "dur": 6.5,
+      "note": "A 3/4 front head-and-shoulders from her right (the sun's side), 65 mm at 2 m, the river behind, a very slow push (0.05 m): she is still, her eyes held ahead in the middle distance, off the lens, listening for something that is not there. The face line, then silence. No ear, no tilt, no face keys.",
+      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.9, -0.05, -1.85]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 65, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.05, "ease": "linear"}},
+      "fit": ["cin_first_light.face"],
+      "tail": 2.0,
+      "cues": [
+        {"do": "prop", "name": "letter", "remove": true},
+        {"do": "gaze", "look": [0.0, 0.05], "wander": 0.0},
+        {"at": 0.6, "do": "line", "id": "cin_first_light.face"}
+      ]
+    },
+    {
       "id": "A8",
       "type": "LS",
       "dur": 5.5,
-      "note": "Over her right shoulder at shoulder height, looking north up the hill: the road and the open gate are the subject. The face line; she sets off up the road into the light early in it (her own body), and over the last 3 s the camera cranes up over her into the game's view. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
-      "cam": {"pos": {"mark": "road", "off": [1.2, 1.65, 3.6]}, "at": [1.0, 4.0, -110.0], "lens": 32, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
-      "fit": ["cin_first_light.face"],
-      "tail": 4.5,
+      "note": "Over her right shoulder at shoulder height, looking north up the hill: the road and the open gate are the subject. She sets off up the road into the light (her own body), and over the last 3 s the camera cranes up over her into the game's view. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
+      "cam": {"pos": {"mark": "road", "off": [1.2, 1.65, 4.0]}, "at": [1.0, 4.0, -110.0], "lens": 32, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
       "cues": [
         {"at": 0.0, "do": "play"},
         {"at": "end", "do": "event", "name": "douse"},
@@ -89,9 +128,7 @@
         {"at": "end-3.0", "do": "mist", "name": "road2", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road3", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road4", "density": 0, "over": 2.6},
-        {"at": "after:cin_first_light.back+0.3", "do": "music", "mood": "silence"},
-        {"at": "after:cin_first_light.back+0.8", "do": "line", "id": "cin_first_light.face"},
-        {"at": "end-12.0", "do": "move", "to": "top", "dur": 12.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"at": 0.3, "do": "move", "to": "top", "dur": 12.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": "end-3.0", "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0}
       ]
     }
