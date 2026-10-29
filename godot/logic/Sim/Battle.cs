@@ -1748,7 +1748,7 @@ public sealed partial class Battle
     {
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
-        if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
+        if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
 
     /// <summary>A blow the enemy side has marked on the ground: where, what shape,
