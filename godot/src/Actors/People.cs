@@ -107,6 +107,8 @@ public static class People
         // A person Marionette made, from its package (art/npc/NAME): no code of its own.
         if (NpcPackage.NameOf(body) is string pkg && NpcPackage.Build(pkg) is Person made)
         {
+            // (its own colours, height and place in its loops, per copy: NpcDye)
+            NpcDye.Apply(made, pkg, spec);
             return made;
         }
         // The woman survivor is the heroine (tools/assets/build_heroine.py),
@@ -195,6 +197,9 @@ public static class People
         public required Skeleton3D Skeleton;
         public required AnimationPlayer Anim;
         public readonly List<MeshInstance3D> Meshes = new();
+        /// <summary>A package copy's height factor (NpcDye, random mode; PersonView scales by it) and where in its
+        /// loops it starts (0..1; -1: at their start).</summary>
+        public float Jitter = 1f, Phase = -1f;
         /// <summary>Which body: "" for the kit's, "heroine" for hers (her
         /// own idle and carriage).</summary>
         public string Body = "";

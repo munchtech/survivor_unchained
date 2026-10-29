@@ -17,6 +17,7 @@ public partial class Game
     /// <summary>
     /// --npc-crowd N[:name1,name2,...]: N Marionette packages (default: every folder of art/npc with a manifest) scattered
     /// 3-14 m from her in front of the camera, seeded; half idle at random headings, half walking circles of 2-4 m (perf).
+    /// --npc-row [M]: instead a row of them standing across the view facing the camera (each copy dyed its own: NpcDye).
     /// </summary>
     void NpcCrowd()
     {
@@ -68,6 +69,17 @@ public partial class Game
                     double d = 3 + 11 * rng.NextDouble(), a = fa + (rng.NextDouble() - 0.5) * 2.1;
                     double cx = pl.X + Math.Sin(a) * d, cz = pl.Z + Math.Cos(a) * d;
                     bool walk = i % 2 == 1;
+                    // (--npc-row [M]: all standing in a row across the view, M m apart (default 1.1), 4 m beyond her,
+                    // facing the camera: a sheet of one package's copies side by side, NpcDye)
+                    if (Args.Has("npc-row"))
+                    {
+                        double sp = Args.Num("npc-row", 1.1f); if (sp <= 0.1) sp = 1.1;
+                        double off = (i - (views.Count - 1) / 2.0) * sp;
+                        cx = pl.X + f.X * 4 + f.Z * off; cz = pl.Z + f.Z * 4 - f.X * off;
+                        walk = false;
+                        at[i] = new[] { cx, cz, Math.Atan2(-f.X, -f.Z), 0, 0 };
+                        continue;
+                    }
                     at[i] = new[] { cx, cz, walk ? 2 + 2 * rng.NextDouble() : rng.NextDouble() * Math.PI * 2, rng.NextDouble() * Math.PI * 2, walk ? 1 : 0 };
                     if (walk) views[i].Locomotion(1.3);
                 }

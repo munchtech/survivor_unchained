@@ -32,7 +32,7 @@ public partial class PersonView : Node3D, INpcView
         person = People.Build(spec);
         person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
-        person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
+        person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04) * person.Jitter;
         AddChild(person.Root);
         // (a Marionette package's own walk, when its manifest names one: the risen's lurch)
         if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
@@ -195,6 +195,7 @@ public partial class PersonView : Node3D, INpcView
     void PlayLoop(double blend)
     {
         var name = People.Clip(person, walking ? loopClip : loop, emptyHanded, emptyHanded ? "" : null);
+        bool fresh = person.Anim.CurrentAnimation != name;
         person.Anim.Play(name, blend, (float)loopSpeed);
         Native(name);
         // A townsperson's first stand starts somewhere of its own in the loop (Play.TownStands.Phase), so the town
@@ -204,6 +205,13 @@ public partial class PersonView : Node3D, INpcView
             PhaseKey = null;
             var len = person.Anim.CurrentAnimationLength;
             if (len > 0.5) person.Anim.Seek(TownStands.Phase(key) * len, true);
+        }
+        // A package copy's stand and walk start at its own place in the loop (NpcDye: Person.Phase), so a row of one
+        // package never moves in step.
+        else if (fresh && person.Phase >= 0 && person.Own == null)
+        {
+            var len = person.Anim.CurrentAnimationLength;
+            if (len > 0.5) person.Anim.Seek((person.Phase + (walking ? 0.37 : 0)) % 1.0 * len, true);
         }
     }
 
