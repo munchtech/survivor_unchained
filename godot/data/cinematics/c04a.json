@@ -26,6 +26,7 @@
       "note": "Still south, looting the ford: an MS of her from the front 3/4 (south-east), at her eye line, standing in the shallows; she turns her head toward the light starting in the east.",
       "cam": {"pos": {"abs": [4.4, 0.95, -38.4]}, "at": {"actor": "her", "bone": "chest", "off": [0, 0.15, 0]}, "lens": 35},
       "cues": [
+        {"do": "gaze", "wander": 0.04},
         {"do": "event", "name": "ford_clear"},
         {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2},
         {"do": "music", "mood": "night", "intensity": 0.2},
