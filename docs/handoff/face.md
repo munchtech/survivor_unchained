@@ -2,6 +2,52 @@
 
 Read `docs/team/README.md` ("Working lean", "Safety"), `RESUME.md`, `OWNER_NOTES.md` (the face's order and bar; "Neck length"), this page, then `docs/team/face.md`. Read by section (grep, then line ranges). Hand off at about 300k.
 
+## Face 48 (29 Oct): HER IN CINEMATIC LIGHT, MR READY (face-48); round cap used, final judge FAIL close (staging), rig KEPT
+**What the game can now do (`godot/src/Game/GameCinemaHer.cs`, cinematics only):** when a shot frames her face close (eyes in frame, face >= 90 px per 10 cm or lens within 3 m), the close-up camera's own rig runs on her from the cinematic camera. That means a key from the strongest light at her head (its colour limited on her skin, true on hair and gear), a side light for a second source, a cool fill, a rim plus a hair rim, hair and gear twins at the close view's sheen, a body key, a catchlight light aimed by gaze, a painted catchlight floor of 0.45, eyes-night and the skin guard. Her face light is held to a band, exposure-matched. Shot rigs keep 0.2 on her (catchlights whole). **Face-scale cap:** the lens widens so her face is at most 300 px per 10 cm, and the change is logged. Switches: `--cine-her off` (before), `--cine-her-off <parts>`, `--cine-her-on spec2,kick,shadehue` (built in r4, judged WORSE, off by default), `--cine-her-lights` / `--camlog` logs.
+- **Diagnosis:** the shots lit her weakly (35-84% of the close key), cool and frontal, with the moon and ambient at exposure 1.3-1.5 carrying her face flat. That is light, not her asset.
+- Before -> r3:
+  - C03 s3b: neck vs face hue gap +46 -> +1, lid hue 247 -> 42.
+  - C02 s4: cheek hue 15 -> 48, lids 287 -> 51.
+- **Judges (max, 3 rounds):**
+  - r2: FAIL medium. Keep the rig.
+  - r3: FAIL close. C02 s4 and s8 gate YES.
+  - r4: FAIL close. The r4 sheen twins, kicker and grade hue lift were WORSE (white cut-out lines, a sallow shade, ginger hair), so they are off by default. aim, catchfloor, front and cap2 were KEPT.
+  - Shipped = r3 plus the KEEP parts (r5 frames: C02 lit 72-73, about 3 L under r3, toward the judge's cap of 75; not re-judged).
+- **Also in this MR:**
+  - **Braid net fixed (0a6cf61c0):** draw order. The plaits are now drawn solid with depth first (`heroine_hair_rope_core.gdshader`); `--rope-core off` restores the old order.
+  - **FolkLight off bosses and cinematic cast (b0340c1cc):** a new `PlayerView.CastLayer` (bit 14). The Warden's warm wash at C02 s12 is gone (R-B +6.8 -> -17), and her night play is unchanged.
+- **Shared files touched:**
+  - GameCloseUp.cs: the CastLayer on its lights, and the grade and skin guard skipped while a cinematic runs.
+  - heroine_skin.gdshader and heroine_eye.gdshader: the `cine_spec_split` tag (0 outside cinematics) and the cornea-only eye light.
+  - heroine_hair.gdshaderinc: a 4-line block used only by the rope core.
+  - Also People.cs, PersonView.cs, PlayerView.cs, GameCinema.cs, GameFront.cs, WorldScene.cs, Atmosphere.cs, ZoneView.cs and HairDraw.cs.
+  - Tests 1308/0/10.
+- **For Cinematics (re-shoot):**
+  - Stage her close like C02 s4 and s8: a 3/4 turn, head and shoulders, the key 50-75 deg off the lens on her near side, a dark textured background, the face no more than about 550 px tall.
+  - C01 s3: fill the black foreground void and ease the 90-degree roll.
+  - C01 s8: turn her 3/4 to the fire with the glow in frame, or backlight her.
+  - C03 s3b: bring the heart into frame or let it rake her from the side, 3/4.
+  - C02 s4: dim the white plank top-left by at least 1.5 stops.
+- **Later list:**
+  - LIGHT:
+    - A soft cool diffuse rim on her true silhouette.
+    - A sheen cap that scales the sheen rather than clamping it, so it keeps the source's colour.
+    - A real 2-4 px cornea catchlight (none measured yet).
+    - Shade hue set in the skin material, never in the grade.
+    - The cap applied to world light (C03 s3b lit 79).
+    - The scene's own colour reaching her as fill.
+  - ASSET:
+    - A white hair fleck above the far ear (C02 s4/s8, shows at 1:1).
+    - The braid tie reads as a striped white-blue band.
+    - Strap trims are wavy and doubled (C01 s8, C02 s8): outfits.
+    - A cup notch at C01 s3: outfits.
+- Scratch: coordinator pad `face48\` (briefs s1-s4, j1-j3, folk, braid; shoot.py, measure.py and measure4.py; testcopies c96/c97/c98; frames r1-r5).
+- **Spend:**
+  - Solvers: 185k, 200k, 198k, 198k (light) and 101k (braid).
+  - Workers: 61k and 47k.
+  - Judges: 128k, 135k and 113k.
+  - About 1.37M in all; API $0.
+
 ## Face 47 (27 Oct): DEEP LOOK NECK MR READY (face-47); Face's list DONE
 
 **The deep Look-by-night face/neck gap (Face 46's routed close fail) is fixed: fa2c3739.** Cause: not the night rig. Deep takes the fair-fitted tone stack (HerBodyTone/KeyTone/SoftTone), and outside her face's paint deep's toned albedo sat 16-27 deg yellower than her cheek (`--skin-set *:dbg_gate=12`: cheek h 48, jaw 64, neck 70-75), by day too; the key then lit the neck under her jaw olive-grey. Rig colour, ambient, rim, refl, edge_head and shade_w trials moved nothing. Fix: heroine_skin.gdshader `neck_pull` (rgb target, a amount; luminance kept) / `neck_pull_y` (1.6-1.645 model y on her head; her body up the neck by the freckle map's blue), under the Look rig only (`rig_w`), deep only: `People.DeepNeck` / `NeckPull(look)` = (2.231, .636, .014, .55). Fair, town and play are untouched by construction. Switch `--deep-neck off` (before) or `R,G,B,A`. Debug `dbg_gate=19` (height, face paint, neck mask).
