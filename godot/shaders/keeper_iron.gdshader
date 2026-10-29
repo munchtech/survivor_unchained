@@ -17,6 +17,10 @@ uniform vec3 rust = vec3(0.13, 0.055, 0.026);
 uniform vec3 silt = vec3(0.075, 0.072, 0.058);
 uniform vec3 cord = vec3(0.045, 0.034, 0.026);
 uniform float wear = 1.0;
+// The Watch blade's steel (vertex G < 0.35, watch_blade.py): its flats, its honed edge bevel, its river stain.
+uniform vec3 blade_flat = vec3(0.075, 0.074, 0.072);
+uniform vec3 blade_edge = vec3(0.50, 0.50, 0.49);
+uniform float blade_stain = 0.7;
 uniform float rust_k = 0.55;
 uniform float silt_k = 0.6;
 // Model height below which silt gathers (it fades in over silt_fade).
@@ -76,6 +80,29 @@ void fragment() {
 	rough = mix(rough, 0.92, s);
 	float h = m.b - r * 0.25 * m.r;
 	float bk = bump * (1.0 - edge * 0.6);
+	if (COLOR.g < 0.35) {
+		// The Watch blade's steel (watch_blade.py tags its regions in G: 0.05 the edge bevel, 0.15 the flats,
+		// 0.25 the fuller): old steel out of the river, dark and stained on the flats, darker in the fuller,
+		// pitted, the edge bevel honed back to bright steel along its length (the honing's grain runs down it).
+		vec4 fine = tri(p * 3.3 + 1.7, w);
+		float bev = 1.0 - smoothstep(0.08, 0.12, COLOR.g);
+		float ful = smoothstep(0.18, 0.22, COLOR.g);
+		float stain = smoothstep(0.45, 0.75, m2.r * 0.7 + m.a * 0.45 + (m.r - 0.5) * 0.3) * blade_stain;
+		float pit = smoothstep(0.62, 0.8, fine.b) * smoothstep(0.35, 0.65, m2.g + 0.2);
+		vec3 flat_col = blade_flat * (0.75 + 0.5 * m.g) * (0.85 + 0.3 * m2.g);
+		flat_col = mix(flat_col, rust * (0.55 + 0.5 * m.r), stain * 0.75);
+		vec3 ful_col = mix(blade_flat * 0.5 * (0.8 + 0.4 * m.g), rust * 0.6, 0.35 * stain + 0.25);
+		vec3 bev_col = blade_edge * (0.82 + 0.3 * fine.g) * (0.92 + 0.08 * m.a);
+		col = mix(mix(flat_col, ful_col, ful), bev_col, bev);
+		// the crest of the edge brightest; pits dark in the flats and fuller, fewer on the honed bevel
+		col = mix(col, blade_edge * 1.2, bev * smoothstep(0.75, 0.95, COLOR.r));
+		col *= mix(1.0, 0.35, pit * (1.0 - 0.7 * bev));
+		metal = mix(mix(0.92 * (1.0 - stain * 0.6), 0.7, ful), 1.0, bev);
+		rough = mix(mix(0.38 + 0.15 * m.g + 0.25 * stain, 0.62, ful), 0.2 + 0.08 * fine.g, bev);
+		rough = mix(rough, 0.85, pit * (1.0 - bev));
+		h = mix(m.b * 0.6 - pit * 0.8 - stain * 0.2, fine.g * 0.3, bev);
+		bk = bump * mix(1.2, 0.4, bev);
+	}
 	if (is_cord) {
 		// The grip's cord: dark leather-brown, dull, its own grain.
 		col = cord * (0.75 + 0.5 * m.g);

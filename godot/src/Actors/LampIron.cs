@@ -44,6 +44,8 @@ public static class LampIron
             m.SetShaderParameter("tile", 6f);
             m.SetShaderParameter("rust_k", 0.6f);
             m.SetShaderParameter("wear", 1.15f);
+            // (its leather grip: a warm dark brown, not the lamp's cord)
+            m.SetShaderParameter("cord", new Vector3(0.062f, 0.040f, 0.026f));
         }
         return m;
     }
