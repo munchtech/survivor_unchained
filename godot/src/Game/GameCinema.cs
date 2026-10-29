@@ -1081,6 +1081,11 @@ public partial class Game
                     var skel = v.Person.Skeleton;
                     var turn = skel.GetNodeOrNull<HeadTurn>("HeadTurn");
                     if (turn == null) skel.AddChild(turn = new HeadTurn());
+                    // (mid-shot a new aim glides there; at a cut it is taken at once, and her hair hung afresh for the
+                    // new pose: a glide across the cut showed the last shot's head for a frame, C01 s10, Cinematics 7 r2)
+                    bool headCut = skipping || tc.T - tc.Shot.Start < 1e-6;
+                    turn.Glide = !headCut;
+                    if (headCut) foreach (var hs in skel.FindChildren("*", "", true, false).OfType<HairSway>()) hs.Settle();
                     bool letGo = !c.Has("where") || c.Num("amount", 1) <= 0;
                     if (!letGo) turn.Target = V(places.Resolve(c.Get("where")));
                     turn.Want = letGo ? 0 : (float)c.Num("amount", 1);
@@ -1089,11 +1094,20 @@ public partial class Game
                 }
                 case "gaze":
                 {
+                    // Her eyes to "look" (iris radii, +x her left, +y down; HerFaceLife, Play/GazeShift): a saccade
+                    // timed by its size, or a glide over "over" s. The head is carried only when the cue asks ("head", its
+                    // share 0..1, the eyes then held to "reach", 0.5, the head taking the rest); "blink" forces or stops
+                    // the blink a big jump brings; "snap": false waits for her next saccade. At a shot's first frame
+                    // (the shot just cut) the look is set at once, no slide across the cut.
                     if (Life(c.Actor) is not { } life) break;
                     var look = c.Get("look");
-                    if (look.ValueKind == JsonValueKind.Array) life.Look = new Vector2((float)look[0].GetDouble(), (float)look[1].GetDouble());
-                    if (c.Has("wander")) life.Wander = (float)c.Num("wander");
-                    if (c.Bool("snap", true)) life.Snap();
+                    Vector2? to = look.ValueKind == JsonValueKind.Array ? new Vector2((float)look[0].GetDouble(), (float)look[1].GetDouble()) : null;
+                    float? wander = c.Has("wander") ? (float)c.Num("wander") : null;
+                    float? reach = c.Get("reach").ValueKind == JsonValueKind.Number ? (float)c.Num("reach") : null;
+                    float? head = c.Get("head").ValueKind == JsonValueKind.Number ? (float)c.Num("head") : null;
+                    bool? blink = c.Get("blink").ValueKind is JsonValueKind.True or JsonValueKind.False ? c.Bool("blink") : null;
+                    bool cut = skipping || tc.T - tc.Shot.Start < 1e-6;
+                    life.Gaze(to, wander, c.Bool("snap", true), over, reach, head, blink, cut);
                     break;
                 }
                 case "eyes":
@@ -1897,6 +1911,10 @@ public partial class Game
                 p.Vx = moving > 0 ? herVel.X : 0; p.Vz = moving > 0 ? herVel.Z : 0;
                 pv?.Face((float)heading, new Vector3((float)x, (float)g.scene.HeightAt(x, z), (float)z), moving);
             }
+            // Her look let go (her eyes ahead, her head's carry eased off) on whoever stays.
+            foreach (var name in people.Keys) Life(name)?.Release();
+            // (and a head look's glide back off: play's Watch is set each frame and follows at once)
+            foreach (var (_, v) in people) if (v.Person.Skeleton.GetNodeOrNull<HeadTurn>("HeadTurn") is { } ht) ht.Glide = false;
             // Who stays where it left them (a body in the river) stays, still, until the next one.
             var keep = file.End.Keep ?? new List<string>();
             foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) { if (keep.Contains(name)) g.kept.Add(v); else v.QueueFree(); }
