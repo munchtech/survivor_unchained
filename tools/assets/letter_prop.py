@@ -32,6 +32,7 @@ BLENDER = r'C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe'
 TW, TH = 2048, 1436            # texture, px (20 x 14 cm)
 SW, SH = 0.20, 0.14            # sheet, m
 LEGIBLE = 'Come home by the Low Ford.'
+PEBBLE = False                 # round 2: the pebble on the corner read as a burnt hole in the shot; off
 LINES = [
     'My dearest, the river is high again and the',
     'lower fields are lost to it as far as the mill.',
@@ -86,6 +87,8 @@ def textures():
             scale = 3.05
         canvas = np.zeros((H * 1, W * 1), np.float32)
         big = np.zeros((step * 3 * SS, W * SS), np.float32)
+        fade_at = -1                              # unfaded (cine9 r3)
+        bigf = np.zeros_like(big)
         base = int(step * 1.6 * SS)          # base line in the strip
         x = (left + (0 if li != len(LINES) - 1 else 980) + rnd.uniform(-6, 10)) * SS
         if li == 0:
@@ -110,11 +113,11 @@ def textures():
                 for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
                     d = math.hypot(x1 - x0, y1 - y0) + 1e-6
                     down = max(0.0, (y1 - y0) / d)
-                    wpx = (1.7 + 1.7 * down ** 1.5) * SS * (1.1 if legible else 1.0)
-                    cv2.line(big, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), 1.0,
+                    wpx = (1.7 + 1.7 * down ** 1.5) * SS
+                    cv2.line(bigf if ci == fade_at else big, (int(x0 * 16), int(y0 * 16)), (int(x1 * 16), int(y1 * 16)), 1.0,
                              max(1, int(round(wpx))), cv2.LINE_AA, shift=4)
             x += g['w'] * s * rnd.uniform(0.97, 1.02)
-        strip = cv2.resize(big, (W, step * 3), interpolation=cv2.INTER_AREA)
+        strip = cv2.resize(big + 0.3 * bigf, (W, step * 3), interpolation=cv2.INTER_AREA)
         y0 = int(top + li * step + rnd.uniform(-4, 4) - step * 1.6 + step * 0.55)
         a, b = max(0, y0), min(H, y0 + step * 3)
         canvas[a:b] = strip[a - y0:b - y0]
@@ -147,33 +150,36 @@ def textures():
     keep_n = noise(30, 71, 4)
     for i, (m, legible, cy) in enumerate(density):
         if legible:
-            core = cv2.GaussianBlur(m, (0, 0), 0.7)
-            feather = cv2.GaussianBlur(m, (0, 0), 2.6)
-            bloom = cv2.GaussianBlur(m, (0, 0), 7.0)
-            thin = 0.86 + 0.14 * noise(12, 90 + i, 2)
-            run = cv2.filter2D(feather, -1, np.exp(-np.arange(40, dtype=np.float32) / 12.0)[:, None] / 12.0, anchor=(0, 0))
-            d = np.clip(0.95 * core * thin + 0.38 * feather + 0.22 * bloom + 0.12 * run, 0, 1)
+            # the band the fold kept dry: feathered 1-2 px, a faint bleed below
+            core = cv2.GaussianBlur(m, (0, 0), 0.75)
+            feather = cv2.GaussianBlur(m, (0, 0), 2.0)
+            thin = 0.85 + 0.15 * noise(12, 90 + i, 2)
+            run = cv2.filter2D(feather, -1, np.exp(-np.arange(24, dtype=np.float32) / 7.0)[:, None] / 7.0, anchor=(0, 0))
+            d = np.clip(0.92 * core * thin + 0.3 * feather + 0.1 * run, 0, 1)
         else:
-            amt = 1.0
-            wx = (noise(70, 200 + i, 3) - 0.5) * 70 * amt
-            wy = (noise(70, 300 + i, 3) - 0.5) * 46 * amt
+            wx = (noise(90, 200 + i, 3) - 0.5) * 16
+            wy = (noise(90, 300 + i, 3) - 0.5) * 10
             mw = cv2.remap(m, xx + wx, yy + wy, cv2.INTER_LINEAR)
-            # the strokes' cores eaten in patches, what's left soft
-            keep = np.clip((keep_n - 0.5) * 3.2 - 0.25, 0, 1) * (0.5 + 0.5 * noise(14, 400 + i, 2))
-            core = cv2.GaussianBlur(mw, (0, 0), 2.2) * keep
-            b1 = cv2.GaussianBlur(mw, (0, 0), 7.0)
-            b2 = cv2.GaussianBlur(mw, (0, 0), 18.0)
-            # dragged down the sheet as it ran (a one-sided streak, a little askew)
-            L = 170
-            ker = np.zeros((L, 9), np.float32)
-            for r in range(L):
-                ker[r, 4 + int(round(r * 0.06)) % 5 - 2] = math.exp(-r / 60.0)
-            ker /= ker.sum()
-            streak = cv2.filter2D(cv2.GaussianBlur(mw, (0, 0), 3.0), -1, ker, anchor=(4, 0))
-            streak = cv2.GaussianBlur(streak, (0, 0), 2.0) * (0.6 + 0.8 * noise(60, 500 + i, 2))
-            b1 = cv2.GaussianBlur(mw, (0, 0), 11.0)
-            d = 0.3 * core + 0.75 * b1 + 1.1 * b2 + 0.8 * streak
-            d = np.clip(d, 0, 0.6) * (0.8 + 0.2 * soaked)
+            # what the water left of the words: fragments, a word part here and there, the rest lifted off
+            frag = np.clip((noise(110, 600 + i, 3) - 0.56) * 4.0, 0, 1) * np.clip((noise(16, 650 + i, 2) - 0.2) * 2.5, 0, 1)
+            core = cv2.GaussianBlur(mw, (0, 0), 1.3) * frag * 0.7
+            halo = cv2.GaussianBlur(mw, (0, 0), 3.2)
+            # the ink running down the page: rivulets (tall thin blobs), each ending in a darker tide-line front
+            src = cv2.GaussianBlur(mw, (0, 0), 1.5)
+            Lr = 300
+            ker = (np.exp(-np.arange(Lr, dtype=np.float32) / 110.0))[:, None]
+            ker /= ker.sum() / 6.0
+            run = cv2.filter2D(src, -1, ker, anchor=(0, 0), borderType=cv2.BORDER_CONSTANT)
+            vr = np.random.default_rng(700 + i).random((H // 90 + 2, W // 13 + 2)).astype(np.float32)
+            riv = cv2.resize(vr, ((W // 13 + 2) * 13, (H // 90 + 2) * 90), interpolation=cv2.INTER_CUBIC)[:H, :W]
+            riv = np.clip((riv - 0.58) * 2.8, 0, 1)
+            run = run * riv * (0.5 + soaked) * (1 - island)
+            m_run = (run > 0.06).astype(np.uint8)
+            m_run = cv2.morphologyEx(m_run, cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
+            below = np.zeros_like(m_run); below[:-3] = m_run[3:]
+            front = cv2.GaussianBlur(((m_run == 1) & (below == 0)).astype(np.float32), (0, 0), 1.2)
+            d = 0.62 * core + 0.12 * halo + 0.22 * np.clip(run, 0, 1) * m_run + 0.42 * front
+            d = np.clip(d, 0, 0.75)
         ink = np.maximum(ink, d) + 0.25 * np.minimum(ink, d)
     ink = np.clip(ink, 0, 1)
     # the ink the water carried, left along the tide lines
@@ -186,7 +192,7 @@ def textures():
     dhy = np.abs(yy - cy - 1.5 * np.sin(xx / 310.0))
     crease = np.maximum(np.exp(-(dvx / 2.2) ** 2), np.exp(-(dhy / 2.0) ** 2))
     worn = np.maximum(np.exp(-(dvx / 9.0) ** 2), np.exp(-(dhy / 8.0) ** 2)) * (0.5 + 0.5 * noise(20, 77, 2))
-    ink = ink * (1 - 0.55 * worn)
+    ink = ink * (1 - 0.35 * worn)
 
     # ---------------------------------------------------------------- the paper --
     paper = np.array([234, 226, 204], np.float32) / 255.0
@@ -209,7 +215,7 @@ def textures():
     stain = np.array([0.95, 0.91, 0.82], np.float32)
     col *= (1 - soaked[..., None] * (1 - stain) * (0.7 + 0.3 * noise(120, 15, 3))[..., None])
     rimc = np.array([0.66, 0.55, 0.40], np.float32)
-    col *= (1 - np.clip(rim, 0, 1)[..., None] * (1 - rimc) * 0.55)
+    col *= (1 - np.clip(rim, 0, 1)[..., None] * (1 - rimc) * 0.4)
     for _ in range(60):
         fx, fy, fr = rng.uniform(0, W), rng.uniform(0, H), rng.uniform(2, 9)
         dd = np.sqrt((xx - fx) ** 2 + (yy - fy) ** 2)
@@ -219,8 +225,8 @@ def textures():
     edge = np.minimum(np.minimum(xx, W - 1 - xx), np.minimum(yy, H - 1 - yy))
     e = np.clip(1 - edge / 70.0, 0, 1) ** 2 * (0.5 + 0.7 * noise(30, 16, 3))
     col *= (1 - 0.22 * e)[..., None]
-    col *= (1 - 0.22 * crease * (0.6 + 0.4 * noise(10, 17, 2)))[..., None]
-    col *= (1 - 0.06 * worn)[..., None]
+    col *= (1 - 0.05 * crease * (0.6 + 0.4 * noise(10, 17, 2)))[..., None]
+    col *= (1 - 0.07 * worn)[..., None]
     # iron gall washed out: pale blue-grey, a touch browner where it lay thick
     inkc = np.array([0.36, 0.42, 0.52], np.float32)
     inkd = np.array([0.30, 0.31, 0.36], np.float32)
@@ -228,12 +234,14 @@ def textures():
     ic = inkc * (1 - thick) + inkd * thick
     a = np.clip(ink * 0.9, 0, 0.92)[..., None]
     col = col * (1 - a) + col * ic * a / np.maximum(paper, 0.1)
+    lum = (col @ np.array([0.2126, 0.7152, 0.0722], np.float32))[..., None]
+    col = (lum + 0.75 * (col - lum)) * 0.76
     col = np.clip(col, 0, 1)
 
     # ---------------------------------------------------------------- normal and roughness --
     h = (1.4 * (noise(380, 21, 3) - 0.5) * (0.4 + 0.9 * soaked)       # cockle where it was wet
          + 0.12 * (noise(6, 22, 2) - 0.5) + 0.04 * laid + 0.25 * fib
-         - 0.9 * crease - 0.25 * np.clip(rim, 0, 1))
+         - 0.5 * worn - 0.25 * np.clip(rim, 0, 1))
     h = cv2.GaussianBlur(h.astype(np.float32), (0, 0), 0.8)
     gx = cv2.Sobel(h, cv2.CV_32F, 1, 0, ksize=3) / 8.0
     gy = cv2.Sobel(h, cv2.CV_32F, 0, 1, ksize=3) / 8.0
@@ -245,6 +253,12 @@ def textures():
     mr = np.stack([np.ones_like(rough), np.clip(rough, 0, 1), np.zeros_like(rough)], -1)
 
     os.makedirs(TEXDIR, exist_ok=True)
+    pr = np.random.default_rng(55)
+    pn = cv2.resize(pr.random((9, 9)).astype(np.float32), (128, 128), interpolation=cv2.INTER_CUBIC)
+    pf = cv2.resize(pr.random((40, 40)).astype(np.float32), (128, 128), interpolation=cv2.INTER_LINEAR)
+    pc = np.array([0.40, 0.37, 0.33], np.float32) * (0.75 + 0.3 * pn + 0.12 * pf)[..., None]
+    pc = np.where((pf > 0.86)[..., None], pc * 0.6, pc)
+    Image.fromarray((np.clip(pc, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(TEXDIR, 'letter_pebble.png'))
     Image.fromarray((col * 255 + 0.5).astype(np.uint8)).save(os.path.join(TEXDIR, 'letter_albedo.png'))
     Image.fromarray((nrm * 255 + 0.5).astype(np.uint8)).save(os.path.join(TEXDIR, 'letter_normal.png'))
     Image.fromarray((mr * 255 + 0.5).astype(np.uint8)).save(os.path.join(TEXDIR, 'letter_mr.png'))
@@ -259,7 +273,7 @@ def blender_build():
     from mathutils import Matrix, Vector
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    NX, NY = 40, 28                    # even: the creases fall on grid lines (x = 0, y = 0)
+    NX, NY = 100, 70                    # even: the creases fall on grid lines (x = 0, y = 0)
     hx, hy = SW / 2, SH / 2
 
     def lerp_noise(x, y, seed):
@@ -270,20 +284,15 @@ def blender_build():
         return s
 
     def z_of(x, y):
+        # (round 2: r1's tent and curl draped like cloth.) Flat panels meeting at shallow creases (about 7 degrees
+        # each), the paper cockled in small bumps where it dried, one corner lifted a few mm.
         u, v = x / hx, y / hy                          # -1..1
-        # the vertical crease: a tent, its panels slightly bowed
-        z = 0.009 * (1 - abs(u)) ** 1.25
-        # the horizontal crease: a valley on the left half, a ridge on the right (folded through the doubled sheet),
-        # pinched to nothing at the vertical crease
-        side = -1.0 if u < 0 else 1.0
-        z += side * 0.0035 * min(1.0, abs(u) / 0.35) * (1 - abs(v)) ** 1.4
-        # curl: the lower right corner and the upper left edge lift as they dried
-        r = max(0.0, (u - 0.55)) * max(0.0, (-v - 0.3))
-        z += 0.06 * r ** 1.6
-        z += 0.0045 * max(0.0, (-u - 0.7) / 0.3) ** 2 * (0.6 + 0.4 * max(0.0, v))
-        # cockle
-        z += 0.0006 * lerp_noise(x * 10, y * 10, 1.3)
-        return z
+        z = 0.0062 * (1 - abs(u))                      # the vertical crease: a ridge, 2 x 3.5 degrees
+        side = -1.0 if u < 0 else 1.0                  # the horizontal: a valley on the left half, a ridge on the right
+        z += side * 0.0021 * min(1.0, abs(u) / 0.12) * (1 - abs(v))
+        z += 0.0035 * max(0.0, (u - 0.72) / 0.28) ** 2 * max(0.0, (-v - 0.55) / 0.45) ** 1.5 * 4.0
+        z += 0.0007 * lerp_noise(x * 5, y * 5, 1.3)          # (low and irregular: a fine sine grid read as hatching)
+        return max(z, 0.0)
 
     bm = bmesh.new()
     uvl = bm.loops.layers.uv.new('UVMap')
@@ -344,9 +353,39 @@ def blender_build():
     nt.links.new(sep.outputs['Blue'], bsdf.inputs['Metallic'])
     me.materials.append(m)
 
+    # a pebble on the upper-left corner (round 2): a flattened, lumpy river stone, grey-brown
+    pb = bmesh.new()
+    bmesh.ops.create_icosphere(pb, subdivisions=3, radius=0.0115)
+    for v in pb.verts:
+        d = v.co.normalized()
+        v.co = Vector((v.co.x * 1.15, v.co.y * 0.85, v.co.z * 0.55)) * (1 + 0.07 * lerp_noise(d.x * 3, d.y * 3 + d.z, 2.2))
+    pu = pb.loops.layers.uv.new('UVMap')
+    for f in pb.faces:
+        for l in f.loops:
+            d = l.vert.co.normalized()
+            l[pu].uv = (0.5 + 0.5 * d.x, 0.5 + 0.5 * d.y)
+    pz = z_of(-0.083, 0.055)
+    pb.transform(Matrix.Translation((-0.083, 0.055, pz + 0.0045)) @ Matrix.Rotation(0.5, 4, 'Z'))
+    pm = bpy.data.meshes.new('pebble')
+    pb.to_mesh(pm)
+    pb.free()
+    for p in pm.polygons:
+        p.use_smooth = True
+    pm.transform(Matrix.Rotation(math.radians(90), 4, 'X'))
+    po = bpy.data.objects.new('letter_pebble', pm)
+    bpy.context.scene.collection.objects.link(po)
+    st = bpy.data.materials.new('letter_pebble')
+    st.use_nodes = True
+    sb_ = st.node_tree.nodes['Principled BSDF']
+    ts = st.node_tree.nodes.new('ShaderNodeTexImage'); ts.image = img('letter_pebble', 'letter_pebble.png', True)
+    st.node_tree.links.new(ts.outputs['Color'], sb_.inputs['Base Color'])
+    sb_.inputs['Roughness'].default_value = 0.78
+    pm.materials.append(st)
+
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
     ob.select_set(True)
+    po.select_set(PEBBLE)
     bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True, export_yup=True,
                               export_image_format='AUTO', export_materials='EXPORT', export_tangents=True)
     tris = sum(len(p.vertices) - 2 for p in me.polygons)

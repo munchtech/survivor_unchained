@@ -1351,7 +1351,8 @@ public partial class Game : Node, IZoneHost
                     return behind;
                 }
                 hud.FigureBehind(Behind(fig));
-                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
+                hud.RiverBehind(Behind(Ui.DgPanel.BandRect));
+                hud.KeeperBehind(Behind(Ui.DgPanel.KeeperRect));
             }
             if (near != null)
             {

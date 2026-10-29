@@ -118,19 +118,13 @@ public static partial class DgMeters
         ci.DrawString(f, p, s, HorizontalAlignment.Left, -1, size, new Color(0.06f, 0.045f, 0.03f, 0.97f));
     }
 
-    /// <summary>The crest's height at x (DgRiver.Crest, by the nearest two points).</summary>
-    public static float CrestY(float x)
-    {
-        var c = DgRiver.Crest;
-        if (x <= c[0].X) return c[0].Y;
-        for (int i = 1; i < c.Length; i++)
-            if (x <= c[i].X) return Mathf.Lerp(c[i - 1].Y, c[i].Y, (x - c[i - 1].X) / Math.Max(0.01f, c[i].X - c[i - 1].X));
-        return c[^1].Y;
-    }
+    /// <summary>The line the beads sit on at x (UI 23: a straight row 20 px over the plate's top line; it was the
+    /// river's crest).</summary>
+    public static float CrestY(float x) => DgPanel.TopY - 20;
 
     /// <summary>A bead's size across and how far its middle sits above the crest (round 3: the passives threaded on
     /// the river's crest).</summary>
-    public const float BeadD = 27, BeadLift = 3;   // (UI 18 judge P1: 21 -> 27, 1.3x: its glyph and rank unread at 1:1)
+    public const float BeadD = 27, BeadLift = -5;   // (UI 23: a stud sunk 8 px into the frame, was 3 over)   // (UI 18 judge P1: 21 -> 27, 1.3x: its glyph and rank unread at 1:1)
 
     /// <summary>A passive (a boon): round 3 (the judge: the pin over the bar was "the only piece outside the
     /// sculpture"), a bead threaded on the river's crest: a dome of the wells' dark river glass in a bronze collar,
@@ -172,6 +166,7 @@ public static partial class DgMeters
             // bronze, Engrave's tablet: its dark ground, a lit upper face, a darker lower one and a hair of light on
             // top, wide enough to read as metal round the glass)
             DrawTextureRect(Disc, new Rect2(c + new Vector2(1.0f, 2.4f) - Vector2.One * (R + 3.5f), Vector2.One * (2 * R + 7)), false, new Color(0, 0, 0, 0.55f));
+            DrawArc(c, R + 1.6f, 0, Mathf.Pi, 24, new Color(0, 0, 0, 0.6f), 1.0f, true);   // (UI 23: the contact line round its lower half)
             DrawCircle(c + new Vector2(-0.6f, -0.4f), R + 1.0f, new Color(0, 0, 0, 0.55f), true, -1, true);
             DrawCircle(c, R, new Color(0.280f, 0.221f, 0.138f), true, -1, true);
             DrawArc(c, R - 1.9f, 0, Mathf.Tau, 40, new Color(0.384f, 0.303f, 0.196f), 3.0f, true);
@@ -190,7 +185,7 @@ public static partial class DgMeters
             DrawArc(c, R - 5.4f, Mathf.DegToRad(200), Mathf.DegToRad(250), 10, new Color(0.85f, 0.95f, 1f, 0.45f), 1.1f, true);
             DrawArc(c, R - 4.8f, Mathf.DegToRad(30), Mathf.DegToRad(120), 14, new Color(0.45f, 0.75f, 0.70f, 0.18f), 1.0f, true);
             // its rank engraved on a bronze tablet at its lower right, as the seats' ranks are
-            if (rank >= 0) Engrave(this, c + new Vector2(R + 0.5f, R - 3.5f), rank.ToString(), 12, false);
+            if (rank >= 0) Engrave(this, c + new Vector2(R + 0.5f, R - 3.5f), rank.ToString(), 14, false);
         }
     }
 }
