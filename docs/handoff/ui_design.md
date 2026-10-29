@@ -1,5 +1,20 @@
 # Handoff: UI design lead
 
+## DONE (UI 20, 28 Oct): fixed list closed, MR ui-20 (worktree .claude/worktrees/ui-20; remove after the merge)
+**Fixed list:** all 8 old notes (crit numbers over the hotbar, F7 "line" amber, blocked floater vs bark, Night at dawn, Q orb bull icon, dark key chip, rarity row, counters over planks) CLOSED at 1:1 by an xhigh triage judge (fixed earlier by UI 11/16/17).
+**Built and judged (xhigh r1 PASS x6, r2 PASS x3, every frame gate YES):**
+- Crit/tally numbers placed at their real on-screen size (they were placed as an empty 60 px box, then grew to 80-98): `Hits.AboveHud` sizes the box from the label at its depth, `Hits.HudTopOver(x0,x1)` samples the HUD top across a width, `Hits.Reclear` on every restyle.
+- Teach rings around HUD parts (dash/flask/coal) open ~30 px either side of bottom over the key plates and are ember like every other mark (Callout.cs `Mark(..., part)`).
+- Barks: lifted 8 px above the HUD across their width, kept out of the top-right block (`GameHud.Header`) and the notice stack (`GameHud.Toasts`) (Voices.cs).
+- Minimap: the drawing fades into the parchment over ~28 px with a wandering edge (Minimap.cs shader; no straight edge).
+- Notices over ~560 px wrap into balanced lines (WorldType.cs Notice).
+- Boss channel bar dressed as the boss bar's sibling: groove + iron clamps, ember gradient, 3 px leading edge, Cinzel 15 outlined; 5 px lower (GameHud.cs).
+- Callout rows break at sentences before balancing (no hanging first word).
+**Open owner call:** the crown's grooves. Sheet (judge: fair mockup; judge prefers grooves): survivorsunchained_inputs/ui20_crown/.
+**Routed:** Experience: "The lamp shatters!" bark + "A lamp goes out" notice say one event twice; the "BREAK HIS SPELL" tip may outlive the channel. Env: the Waystation roof renders as a black slab behind the LEVEL 4 card. Camera/arena: the Warden casts from behind the HUD's bottom-left.
+**Later list (optional, judges' notes):** merge callout target rings that overlap >30% (teach_dash); channel groove 20 px vs boss groove 14 px (kept: the channel is urgent); boss bar's flat grey shielded fill reads a little like a slider; damage numbers share the orb readout's white serif.
+**Frames:** ui-20 godot/.shots u20t_/u20v_/u20w_ (before/after). **Scratch (backed up):** survivorsunchained_inputs/scratch_31372078/ui20 (play.py, direct.py, run*.sh, briefs, crown/). **Cost:** lead ~190k, judges 94k + 94k + 50k, coder (medium) 85k; $0 API.
+
 ## DONE (UI 19, 28 Oct): The Drowned Girl's hair polish, branch ui-19 (worktree .claude/worktrees/ui18-mr; remove after the merge)
 **The owner's note:** "not sure the small transparent patch on the left is worth it, and the hair in middle/end could be more defined, mostly the end (right side)". The owner confirmed the patch as the two see-through spots left of and behind the draught flask, and said to close both.
 **Done:** all of it goes through `tools/uiforge/dg_river_cut.py` (UNDER_PATCHES u19L, POST_PATCHES u19R3; sources in survivorsunchained_inputs/ui19_dg_src/hair/, all procedural, no Krea) into `godot/art/ui/dg_river/river.png`, and the XP masks are re-baked.
