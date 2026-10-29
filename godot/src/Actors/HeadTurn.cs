@@ -13,8 +13,30 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class HeadTurn : SkeletonModifier3D
 {
-    /// <summary>The point looked at (world space); null lets the head go.</summary>
-    public Vector3? Target;
+    /// <summary>The point looked at (world space); null lets the head go. A new point while the head is already
+    /// looking is not jumped to: the aim travels from where it was to the new point at Rate, eased in and out
+    /// (Play/GazeShift.Smooth: fast-in put most of a whip in one frame, Cinematics 7 r2), as a head turns (C01 s10: a re-aim over 0.14 s at full weight popped the head from
+    /// bowed to profile in one frame, judge Cinematics 7 r1).</summary>
+    public Vector3? Target
+    {
+        get => target;
+        set
+        {
+            if (Glide && value is Vector3 v && target is Vector3 was && weight > 0.001f && v.DistanceSquaredTo(was) > 1e-8f)
+            { from = Aim(); travel = 0; }
+            else if (value is null || weight <= 0.001f) travel = 1;
+            target = value;
+        }
+    }
+    /// <summary>A new Target travels (a cinematic's head cue); off, it is taken at once (play's Watch, set each
+    /// frame to a moving camera, follows it as before).</summary>
+    public bool Glide;
+    Vector3? target;
+    Vector3 from;
+    float travel = 1;
+
+    /// <summary>Where the head is aimed now: on its way from the last point to the target, or the target.</summary>
+    Vector3 Aim() => target is not Vector3 t ? from : travel >= 1 ? t : from.Lerp(t, SurvivorUnchained.Play.GazeShift.Smooth(travel));
     /// <summary>How much of the look is wanted (0 to 1), and how fast it comes (per second).</summary>
     public float Want, Rate = 2;
     /// <summary>How far the head turns from where the body has it, at most (degrees).</summary>
@@ -50,8 +72,9 @@ public partial class HeadTurn : SkeletonModifier3D
             }
         }
         weight = Mathf.MoveToward(weight, Want, (float)delta * Rate);
-        if (weight <= 0.001f || Target is not Vector3 target) return;
-        var local = sk.GlobalTransform.AffineInverse() * target;
+        if (travel < 1) travel = Mathf.Min(1, travel + (float)delta * Rate);
+        if (weight <= 0.001f || Target is null) return;
+        var local = sk.GlobalTransform.AffineInverse() * Aim();
         // Lying down the head keeps its roll with the body (C01 s3: her face on its side on the ground,
         // tipped toward the coals): it is levelled only as far as the body under it stands upright.
         float level = spine >= 0 ? Mathf.SmoothStep(0.35f, 0.7f, (sk.GetBoneGlobalPose(spine).Basis.Orthonormalized() * spineUp).Dot(Vector3.Up)) : 1;

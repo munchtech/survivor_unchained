@@ -31,6 +31,7 @@
       "note": "Crane down from 12 m to 1.8 m just inside the south gate, looking north up the road: roofs, a dozen chimneys smoking straight up, the square, the well; right, on the skyline, the toll tower, and in its upper window, very small, a lamp still burning, pale in daylight (the roofs take it as the crane comes down). She walks in under the camera and on up the road. N7. Title: CHAPTER ONE / The Waystation.",
       "cam": {"pos": [0.0, 12.0, 38.0], "at": [10.0, 5.0, -8.0], "lens": 24, "move": {"pos": [0.0, 1.8, 36.0], "at": [6.0, 4.0, -8.0], "ease": "slow"}},
       "cues": [
+        {"do": "gaze", "wander": 0.04},
         {"do": "event", "name": "rook_cine"},
         {"do": "anim", "actor": "rook", "clip": "Idle_FoldArms_Loop", "blend": 0},
         {"do": "glow", "name": "towerlamp", "where": {"mark": "lamp", "y": 7.12}, "lantern": 1.8, "turn": 30, "color": "#ffd9a0", "size": 0.035, "energy": 2.4, "spread": 7, "halo": 0.35},

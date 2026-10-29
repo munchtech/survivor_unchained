@@ -3,6 +3,8 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 28 October 2026, night (coordinator ecc5f453)
+- **Story (STANDING): no romances.** "lets go ahead and remove the love scene options and relationships - though sella for example won't change the way she is - she does like us." Love scenes (B, 6 Oct) RETIRED. Affection and loyalty stay; romance routes go.
+- **Story: the narrator-mother reveal.** "its a \"big reveal\" that the narrator's voice is our mothers - but in the opening cinematic it says we remember her voice but not her face - maybe it should be the other way around? so that the voice is an actual reveal - or we need better moments." Bar: "\"what the fuck\" kinda twists both good and bad". Story 12 (writer on Fable xhigh, Haiku xhigh editor, owner's choice) brings 2 options for the reveal first.
 - **Crown (HUD): CLOSED, grooved stays.** "i see literally no difference" (1:1 and 3x). Nothing to build.
 - **Storybook: ink/woodcut PICKED.** "the storybook picture is great that style would be fine" (storybook_style_test\sb_ink_pick.png). Storybook 2: 3-plate sequence test, then SB00. Waits for a slot.
 - **Cinematics:** "the opening cinematic when here eyes dart is comically not good". Routed to Cinematics 7 (C01 gaze cues; a gaze capability for all cinematics).
