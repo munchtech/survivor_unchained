@@ -109,8 +109,10 @@ For pictures and checks (Windows; `--resolution` holds for runs with `--sb-shots
 "$G" --path godot --resolution 1920x1080 -- --storybook sb00
 # frames at those seconds (godot/.shots/sb_<id>_<t>.png, full resolution), quitting after the last; start late with --sb-from
 "$G" --path godot --resolution 1920x1080 --fixed-fps 30 -- --storybook test_plates --sb-shots 0.8,5.5,8.9 --sb-from 0
-# a capture with sound for the cut's judge (Movie Maker: fixed 30 fps, the picture and the mix written together)
-"$G" --path godot --resolution 1920x1080 --write-movie C:/temp/sb00.avi --fixed-fps 30 -- --storybook sb00
+# a capture with sound for the cut's judge (Movie Maker: fixed 30 fps, the picture and the mix written together);
+# --vo on: voice-over is off by default (26 Oct), and without it no take plays (the subtitles still show)
+"$G" --path godot --resolution 1920x1080 --write-movie C:/temp/sb00.avi --fixed-fps 30 -- --storybook sb00 --vo on
+# Storybook 3's ink section in one go (wire, build, import, 14 frames, the 56-89.5 s capture, the sheet): bash tools/storybook/sb3_shoot.sh <round>
 # the C01 seam and the skip, scripted (once SB00 is live; a quick start into the prologue; the log prints wall times at SB00's end and C01's start)
 "$G" --path godot --resolution 1280x720 -- --quick --cines --sb-from 80 --perf
 "$G" --path godot --resolution 1280x720 -- --quick --cines --sb-from 20 --sb-skip-at 25
