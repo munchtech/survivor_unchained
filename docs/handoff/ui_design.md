@@ -13,7 +13,7 @@
 **Open owner call:** the crown's grooves. Sheet (judge: fair mockup; judge prefers grooves): survivorsunchained_inputs/ui20_crown/.
 **Routed:** Experience: "The lamp shatters!" bark + "A lamp goes out" notice say one event twice; the "BREAK HIS SPELL" tip may outlive the channel. Env: the Waystation roof renders as a black slab behind the LEVEL 4 card. Camera/arena: the Warden casts from behind the HUD's bottom-left.
 **Later list (optional, judges' notes):** merge callout target rings that overlap >30% (teach_dash); channel groove 20 px vs boss groove 14 px (kept: the channel is urgent); boss bar's flat grey shielded fill reads a little like a slider; damage numbers share the orb readout's white serif.
-**Frames:** ui-20 godot/.shots u20t_/u20v_/u20w_ (before/after). **Scratch:** coordinator 31372078 scratchpad ui20 (play.py, direct.py, run*.sh, briefs, crown/). **Cost:** lead ~190k, judges 94k + 94k + 50k, coder (medium) 85k; $0 API.
+**Frames:** ui-20 godot/.shots u20t_/u20v_/u20w_ (before/after). **Scratch (backed up):** survivorsunchained_inputs/scratch_31372078/ui20 (play.py, direct.py, run*.sh, briefs, crown/). **Cost:** lead ~190k, judges 94k + 94k + 50k, coder (medium) 85k; $0 API.
 
 ## DONE (UI 19, 28 Oct): The Drowned Girl's hair polish, branch ui-19 (worktree .claude/worktrees/ui18-mr; remove after the merge)
 **The owner's note:** "not sure the small transparent patch on the left is worth it, and the hair in middle/end could be more defined, mostly the end (right side)". The owner confirmed the patch as the two see-through spots left of and behind the draught flask, and said to close both.
