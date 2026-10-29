@@ -186,6 +186,13 @@ public partial class ZoneView : Node3D
         foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~(PlayerView.HerLayers | Brush.MaskLayer) : l.LightCullMask | PlayerView.HerLayers;
     }
 
+    /// <summary>The zone's lights kept off `bits` (a cinematic's her key, GameCinemaHer: people's layer, hers alone there, and her
+    /// hair's and gear's), or given back.</summary>
+    public void Unlit(uint bits, bool off)
+    {
+        foreach (var l in lights) l.LightCullMask = off ? l.LightCullMask & ~bits : l.LightCullMask | bits;
+    }
+
     /// <summary>The lit light nearest `at` within `within` metres (a fire by her), or null.</summary>
     public OmniLight3D? NearestLit(Vector3 at, float within)
     {
