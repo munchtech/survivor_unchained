@@ -69,7 +69,7 @@
       "id": "8",
       "type": "MCU",
       "dur": 3.27,
-      "note": "Side-on, close: the heart drifts in to her palm and she looks down at it, its blue on her face. Then the mud bursts below frame: the heart is yanked down out of her hand and out of frame, its light now from below. She starts, eyes wide, and looks down at him. G1 off-screen; two sniffs.",
+      "note": "Side-on, close: the heart drifts in to her palm and she looks down at it, its blue on her face. Then the mud bursts below frame: the heart is yanked down out of her hand and out of frame, its light now from below. Cut on the burst (3.27 s) straight to s12, where G1, the sniffs and the dive play (8y, the empty hands, was cut 29 Oct: judged FAIL medium).",
       "cam": {"pos": {"mark": "her", "off": [2.36, 1.75, -0.54]}, "at": {"mark": "her", "off": [0.0, 1.5, -0.18]}, "lens": 50, "focus": {"actor": "heart"}, "fstop": 5.6},
       "cues": [
         {"do": "water", "foam": 0, "streak": 0, "mirror_cap": 0.03},
@@ -102,30 +102,6 @@
       ]
     },
     {
-      "id": "8y",
-      "type": "CU",
-      "dur": 4.73,
-      "note": "From her front-right, close on her cupped hands, her bowed face above them: the heart is ripped down out of her palms and out of frame, its blue light now from below, dying as it goes under the water; her hands stay open and empty, and her fingers close a little on nothing. Grimtunnel and the Warden are never in frame.",
-      "cam": {"pos": {"abs": [4.95, 0.1, -39.2]}, "at": {"abs": [4.0, 0.05, -38.4]}, "lens": 32, "focus": {"actor": "her", "bone": "hand_l"}, "fstop": 2.8},
-      "cues": [
-        {"do": "anim", "clip": "her/cup_hands", "from": 2.07, "speed": -0.08, "blend": 0},
-        {"do": "place", "actor": "heart", "where": {"mark": "her", "off": [0.0, 1.22, -0.5]}},
-        {"do": "lamp", "actor": "heart", "glow": 2.2, "over": 0.1},
-        {"at": 0.12, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.62, -0.05, -0.3]}, "dur": 0.22},
-        {"at": 0.45, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.72, -0.3, -0.38]}, "dur": 1.2},
-        {"at": 0.5, "do": "lamp", "actor": "heart", "glow": 0.0, "over": 1.3},
-        {"do": "rig", "name": "skin", "from": {"lens": [0.6, 0.6, -0.5]}, "aim": {"actor": "her", "bone": "hand_l"}, "color": "#ffd8b0", "energy": 1.0, "angle": 32, "range": 6},
-        {"do": "rig", "name": "spill", "energy": 5.0, "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "hand_l"}, "color": "#4f8cff", "angle": 50, "range": 3},
-        {"at": 0.4, "do": "rig", "name": "spill", "energy": 0, "over": 1.3, "fade": true, "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "hand_l"}, "color": "#4f8cff", "angle": 50, "range": 3},
-        {"at": 0.16, "do": "lids", "value": null},
-        {"at": 2.1, "do": "fingers", "side": "both", "curl": 32, "over": 1.7},
-        {"at": 0.03, "do": "music", "mood": "silence"},
-        {"at": 0.43, "do": "line", "id": "cin_heart_goes_down.nobodys"},
-        {"at": 3.83, "do": "sfx", "name": "sniff", "gain": 0.8},
-        {"at": 4.33, "do": "sfx", "name": "sniff", "gain": 0.8}
-      ]
-    },
-    {
       "id": "12",
       "type": "ELS",
       "dur": 16.0,
@@ -136,7 +112,10 @@
         {"do": "stones", "top": 1, "edge": 1, "all": true},
         {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#9a7680"},
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
-        {"at": 0.3, "do": "line", "id": "cin_heart_goes_down.downstairs"},
+        {"at": 0.1, "do": "sfx", "name": "sniff", "gain": 0.8},
+        {"at": 0.55, "do": "sfx", "name": "sniff", "gain": 0.8},
+        {"at": 0.3, "do": "line", "id": "cin_heart_goes_down.nobodys"},
+        {"at": "after:cin_heart_goes_down.nobodys+0.3", "do": "line", "id": "cin_heart_goes_down.downstairs"},
         {"at": "after:cin_heart_goes_down.downstairs+0.4", "do": "line", "id": "cin_heart_goes_down.grateful"},
         {"do": "gaze", "look": [0, 0.9]},
         {"do": "atmosphere", "preset": "dawn", "from": "now", "k1": 0.35, "over": 10.0},
