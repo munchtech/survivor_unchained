@@ -5,6 +5,18 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 10 (exp-10 lead, 28 Oct): fixed list DONE, MR READY
+
+**State:** all five items closed; exp-10 merged with integration 47c99dae; the full test run is the last check before the MR.
+- **1. Act 1 DAYS playtest:** a new headless measure, `dotnet run -c Release -- verge-day --seeds 12 --stages 1:1:0,4:2:2,4:2:3,8:4:4 [--bot deft] [--callings ..]` in godot/balance (Harness/VergeDaySim.cs, 9b5fadbf; ~30 s). It runs the Verge's day packs at Verge.Level() in three setups: OLD (1/2/3 slots, no Hands), NEW, and NEW without the Hands. Result: days play 0-15% faster, and HP lost per pack drops from ~7% to ~4%. Packs were already trivial before the change (lamplings 0%, 3-5 s kills from L4). Sent to main for Classes 15: the Axe Gyre reaver can't survive day 1; the L1 calling skill was never granted (Classes 15 granted it on classes-15@e7417546, in its MR1); the stalker's Hand never fires by day (P8). Main logged "Verge days have no stakes" as a later item. **Owed after Classes 15 MR1 lands:** one verge-day re-run (main asks). Tables: scratch `exp10\s1\verge_day*.md`.
+- **Prologue Ambush:** an idle player loses 35% (212 to 138), inside 25-40%. The normal pilot loses 6%.
+- **2. "Ember fills this":** keeps its box on the bar's run (her hair to the Flare cup). A bare point on the crest failed two xhigh judges ("can't tell what 'this' is"), and judge r2 picked the box (GATE YES). The arrow now drops plumb onto a wide box (Callout.Lands).
+- **3. The lock lesson** is now "The ember's count / Hold Alt to see the ember's level, and how far it is to the next." Target "card": GameHud.TeachCard holds the numbers card up while the callout shows, bracketed via XpCardArea; EmberLockArea is gone. Judge r1 PASS.
+- **4. Callout rings** fit the Drowned Girl: Flare = DgRiver.FlareR; dash = DgSmall.RingD/2 at DashMid; flask = half its height at DraughtMid; default seat = SeatD/2. Judge r1 PASS on sizes. Small boxes (a seat) are landed on at the top middle only (r2 fix, checked at 1:1). **With UI 20 (main relayed):** the rings cross the SPACE/R/Q key plates, the rings' colour, an optional crest trace.
+- **5. Zoom pop:** already fixed by 2719e93c and judged SHIP (Experience 8); closed.
+- **Scratch:** `exp10\` in coordinator 31372078's scratchpad (pace5.py for exp-10, briefs, logs amb1, v1-v4), backed up to `survivorsunchained_inputs\scratch_exp10\`. Frames: `godot/.shots/v1-v4_teach_*`.
+- **Cost:** worker 44k, runner 40k, solver 122k, judges 56k + 49k; API $0.
+
 ## Experience 9 (play-1 lead, 27 Oct): MR5 fix round done, re-judged; MR5 READY
 
 **State:** the MR5 fix round (12 items) built, the xhigh re-judge (aebd7397) gave A and B SHIP WITH FIXES (small); its three fixes built (df36280d); a full run v8 on the final code. This was i15's and i14's last round: anything later is a new list.

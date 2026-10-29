@@ -349,7 +349,8 @@ def pelvis_hand(rig, base, arms, side, pos, pole, fingers, knuckles=None, blade=
         d = dict(arms(t, f))
         dp = qmul(g[f, pel], qinv(grest[pel]))
         ic = qinv(qmul(g[f, s3], qinv(grest[s3])))
-        W = p[f, pel] + qrot(dp, np.array(pos) - prest[pel])
+        # (`pos` may be a function of the loop time, t -> the wrist at rest: a hand kept on a waist that bends under it.)
+        W = p[f, pel] + qrot(dp, np.array(pos(t) if callable(pos) else pos) - prest[pel])
         h = {"arc": arc_of(qrot(ic, W - p[f, ua])), "pole": pole, "frame": "chest", "twist": twist}
         for k, v in (("knuckles", knuckles), ("blade", blade), ("thumb", thumb)):
             if v is not None:

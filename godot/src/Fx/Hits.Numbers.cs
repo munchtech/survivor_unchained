@@ -77,6 +77,7 @@ public partial class Hits
             t.Crit |= crit;
             t.Heavy |= maxHp > 0 && t.Sum > maxHp * 0.2;
             Restyle(i, t);
+            Reclear(i);
             // Kept up while it grows, and nudged so the eye sees it climb.
             var (l, _) = numbers[i];
             numbers[i] = (l, Mathf.Min(numbers[i].T, 0.25f));
@@ -135,6 +136,7 @@ public partial class Hits
             tallyOf[i] = w.Target;
             labelOfTarget[w.Target] = i;
             Restyle(i, t);
+            Reclear(i);
             shown++;
             live++;
             young.Add(numbers[i].Label.GlobalPosition);

@@ -190,6 +190,7 @@ public partial class Minimap : Control
         seenNow = "";
         mat.SetShaderParameter("drawing", drawing);
         mat.SetShaderParameter("span", Span / extent);
+        GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
 
     /// <summary>Where the survivor is and what is known, a few times a second.</summary>
@@ -305,7 +306,19 @@ public partial class Minimap : Control
             float s = texture(seen, uv).r;
             // Unwalked ground is blank parchment, as on the big map; beyond the zone's edge, darker.
             col = mix(col, paper * 0.97, 1.0 - smoothstep(0.2, 0.7, s));
-            if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) col = paper * 0.55;
+            // Beyond the drawing's edge, darker paper; the edge itself never shows (UI 20: a dead-straight line where the
+            // drawing stopped): the drawing fades into the paper over ~28 screen px, the line wandering +-6 px along
+            // its length, then the paper darkens slowly away from it.
+            float px = max(fwidth(uv.x), fwidth(uv.y));
+            float e = min(min(uv.x, uv.y), min(1.0 - uv.x, 1.0 - uv.y)) / max(px, 1e-6);
+            vec2 q = uv / max(px, 1e-6) / 40.0;
+            vec2 i0 = floor(q), f0 = fract(q);
+            f0 = f0 * f0 * (3.0 - 2.0 * f0);
+            float h00 = fract(sin(dot(i0, vec2(127.1, 311.7))) * 43758.5453), h10 = fract(sin(dot(i0 + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+            float h01 = fract(sin(dot(i0 + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453), h11 = fract(sin(dot(i0 + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+            e += (mix(mix(h00, h10, f0.x), mix(h01, h11, f0.x), f0.y) - 0.5) * 12.0;
+            vec3 beyond = mix(paper * 0.97, paper * 0.6, smoothstep(0.0, 70.0, -e));
+            col = mix(beyond, col, smoothstep(-4.0, 28.0, e));
             col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r)) * dim;
             COLOR = vec4(col, 1.0 - smoothstep(0.965, 1.0, r));
         }

@@ -24,6 +24,7 @@ from clips.mocap import idle_loop
 from gait import arc_of
 from rig import Clip
 from clips import town_idle
+from keyed import FINGER_PRESETS
 
 
 def layered(name, rig, base: Clip, over, meta=None) -> Clip:
@@ -889,9 +890,37 @@ _NONE = lambda t, f: {}
 # away. Its out now follows the sway, and as that hip leans out under it (the wrist on the hip) the fingers lay in to
 # the thigh at the wrist (flex, up to 3.3 deg): each fitted per frame to the skirt, then to a 4-harmonic loop. The
 # hand and forearm 0.3-6.9 mm off the warden outfit all through, the hand 2.7-4.9 mm at the far sway. Scratch anim52/wh.)
-WARDEN_TOWN = town_idle.hang_arms(r=dict(
+_WARDEN_TOWN_R = lambda: dict(
     out=town_idle.loop_wave(0.1833, (0.0016, 0.0005), (-0.0064, 0.0104), (-0.0001, 0.0004), (0.0008, -0.0007)),
-    flex=town_idle.loop_wave(0.78, (0.07, -0.27), (0.55, -1.11), (-0.24, -0.21), (-0.61, -0.53)), elbow=30.0))
+    flex=town_idle.loop_wave(0.78, (0.07, -0.27), (0.55, -1.11), (-0.24, -0.21), (-0.61, -0.53)), elbow=30.0)
+WARDEN_TOWN = town_idle.hang_arms(r=_WARDEN_TOWN_R())
+# (Animation 58, the owner on the town close-up, the bent left elbow "clunky"; Body's restage spec: the bend was shown
+# side-on, the elbow pointing straight back with the forearm forward to the pommel, flexed 110-127.) A switch,
+# WARDEN_TOWN_ARM (env var of that name): "side" is Animation 55's palm on the pommel exactly (rest_on_pommel, POST);
+# "back" her left hand off the pommel onto her side, the elbow out and back (the spec: 20-30 deg behind her side,
+# flexed 85-100, the wrist near straight), the hand riding her pelvis frame by frame (town_idle.on_hip), the sway and
+# the right arm untouched.
+WARDEN_TOWN_ARM = os.environ.get("WARDEN_TOWN_ARM", "side")
+# "back" (Animation 58, WIP, not the default): the hand on her WAIST, not the hip, because the sheathed sword fills her
+# left hip's side (x 0.21-0.28 m, 0.96-1.27 m up, the guard and grip forward of the side seam): a hand on the iliac
+# crest meets the hilt (0-2 mm) or, pushed in, sinks 20-40 mm into the plate. Fitted (scratch anim58/elbow, tS): every
+# outfit 2-19 mm clear, bare 13-19 mm (the plate's thickness), the sword 7 mm, elbow 26-40 deg behind her side,
+# flexion 96-114; open: the wrist reaches its radial limit (23 of 22) and extends 25-54.
+_WH_K, _WH_B = town_idle._hand((-0.05, -0.6, 0.8), (-0.95, -0.25, 0.0))
+WARDEN_HIP_L = dict(pos=(0.207, 1.235, -0.03), pole=town_idle._pole(28.0), knuckles=_WH_K, blade=_WH_B, curl=0.04)
+WARDEN_TOWN_BACK = town_idle.hang_arms(town_idle.on_hip(WARDEN_HIP_L, _NONE), r=_WARDEN_TOWN_R())
+# "fist" (Animation 58 round 2, not the default until a judge): a loose fist on her WAIST above the sword's guard (the
+# guard runs fore and aft across her left side at 1.10-1.12 m, 0.195-0.223 m out; the grip and pommel forward of the
+# seam above it), the knuckles in and down on the waist, the back of the hand out. The wrist's out follows the waist
+# under it as the sway bends her (fitted per frame to the warden plate, then a 3-harmonic loop). Measured (scratch
+# anim58/elbow, h4): elbow 25-26 deg behind her side, flexion 99-119 (the waist is as far as the wrist can reach above
+# the guard), the fist 0.3-1.8 mm off the reaver and warden outfits, 13 mm off her bare waist, 26 mm off the sword;
+# the wrist extended 25-44 (of 65), radial up to 16 (of 22).
+_WF_K, _WF_B = town_idle._hand((-0.79, -0.43, 0.42), (0.403, -0.827, -0.383))
+_WF_X = town_idle.loop_wave(0.25217, (0.00032, 0.00016), (-0.00035, 0.00125), (-0.00035, 0.00011))
+WARDEN_FIST_L = dict(pos=lambda t: (_WF_X(t), 1.2654, -0.03), pole=town_idle._pole(28.0), knuckles=_WF_K, blade=_WF_B,
+                     fingers=dict(FINGER_PRESETS["fist"], curl=0.8, thumb=0.6))
+WARDEN_TOWN_FIST = town_idle.hang_arms(town_idle.on_hip(WARDEN_FIST_L, _NONE), r=_WARDEN_TOWN_R())
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
@@ -971,7 +1000,7 @@ IDLES = {
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     "idle_arcanist_wand": ("Strutting", arcanist_wand, "wand"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
-    "idle_warden_town": ("WiggleHips", WARDEN_TOWN, ""),
+    "idle_warden_town": ("WiggleHips", {"side": WARDEN_TOWN, "back": WARDEN_TOWN_BACK, "fist": WARDEN_TOWN_FIST}[WARDEN_TOWN_ARM], ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
     # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
     "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
@@ -1259,7 +1288,7 @@ def _warden_grip(rig, clip):
     return rest_on_pommel(rig, clip)
 
 
-POST = {"idle_warden_town": _warden_grip}
+POST = {"idle_warden_town": _warden_grip} if WARDEN_TOWN_ARM == "side" else {}
 
 
 def build_one(rig, name):
