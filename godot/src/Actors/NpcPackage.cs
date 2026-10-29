@@ -15,7 +15,9 @@ namespace SurvivorUnchained.View;
 /// meshes switched at the play camera as hers are (HerLod), the skin each piece lists dropped once and kept for the
 /// session, her twist and share bones driven (HerJoints), and the library's and the townsfolk's clips on the shared
 /// skeleton. A bone the body lacks (panel_front, breast_*, glute_* on a man) that a piece is skinned to is bound to
-/// its nearest ancestor the body has, at the piece's own rest, rather than to the root.
+/// its nearest ancestor the body has, at the piece's own rest, rather than to the root; unless the piece's manifest entry
+/// lists it in "springs" (a cape's chains, a hem's bones): then it is added to the body's skeleton and swung, and the
+/// piece's "correctives" driven (PieceSprings).
 /// hide: triangle indices into the body mesh's "skin" surface (glTF primitive order), or a string naming a file in
 /// the package (".json": such an array; else the tuck-record format of art/armor/armor_tuck: int32 count, then
 /// int32 x, y, z in glTF metres x 1e5 and a float, of bind positions: a triangle is dropped when all three corners
@@ -25,7 +27,7 @@ public static class NpcPackage
 {
     public const string Prefix = "npc:";
 
-    public sealed record Piece(string Id, string Slot, string File, Variant Hide);
+    public sealed record Piece(string Id, string Slot, string File, Variant Hide, Variant Springs = default, Variant Correctives = default);
     public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
@@ -41,7 +43,7 @@ public static class NpcPackage
     public static Manifest? Read(string name)
     {
         if (manifests.TryGetValue(name, out var have)) return have;
-        var file = $"{Dir(name)}/manifest.json";
+        var file = Overlay(name) is string ov && System.IO.File.Exists($"{ov}/manifest.json") ? $"{ov}/manifest.json" : $"{Dir(name)}/manifest.json";
         Manifest? m = null;
         if (!FileAccess.FileExists(file)) GD.PushWarning($"npc: no package {name} ({file})");
         else
@@ -53,7 +55,8 @@ public static class NpcPackage
                 {
                     var p = e.AsGodotDictionary();
                     pieces.Add(new Piece((string)p["id"], p.TryGetValue("slot", out var s) ? (string)s : "",
-                        p.TryGetValue("file", out var f) ? (string)f : $"armor/{(string)p["id"]}.glb", p.TryGetValue("hide", out var h) ? h : default));
+                        p.TryGetValue("file", out var f) ? (string)f : $"armor/{(string)p["id"]}.glb", p.TryGetValue("hide", out var h) ? h : default,
+                        p.TryGetValue("springs", out var sp) ? sp : default, p.TryGetValue("correctives", out var cr) ? cr : default));
                 }
             // (--npc-wear a,b,...: a shot's package wears only those of its pieces)
             if (Args.Get("npc-wear") is string only && only != "1")
@@ -105,9 +108,29 @@ public static class NpcPackage
         }
     }
 
+    /// <summary>--npc-overlay NAME=DIR (a test's package overlay, outside the project: its manifest.json and any piece
+    /// file it has are read from DIR, the glb loaded at run time; everything else from the package): null if none.</summary>
+    static string? Overlay(string name) =>
+        Args.Get("npc-overlay") is string o && o.Split('=', 2) is { Length: 2 } kv && kv[0] == name ? kv[1].Replace('\\', '/') : null;
+
     static PackedScene? Scene(string file)
     {
         if (scenes.TryGetValue(file, out var ps)) return ps;
+        if (file.StartsWith("res://art/npc/") && file["res://art/npc/".Length..].Split('/', 2) is { Length: 2 } nf && Overlay(nf[0]) is string ov
+            && System.IO.File.Exists($"{ov}/{nf[1]}"))
+        {
+            var doc = new GltfDocument();
+            var state = new GltfState();
+            if (doc.AppendFromFile($"{ov}/{nf[1]}", state) == Error.Ok && doc.GenerateScene(state) is Node gen)
+            {
+                var packed = new PackedScene();
+                packed.Pack(gen);
+                gen.Free();
+                GD.Print($"npc: {file} from the overlay {ov}");
+                return scenes[file] = packed;
+            }
+            GD.PushWarning($"npc: overlay {ov}/{nf[1]} did not load");
+        }
         if (!ResourceLoader.Exists(file)) { GD.PushWarning($"npc: {file} is not there (or not imported: Godot --headless --import)"); return null; }
         return scenes[file] = GD.Load<PackedScene>(file);
     }
@@ -144,6 +167,7 @@ public static class NpcPackage
         var laid = new List<MeshInstance3D>();
         var lodPairs = new List<(MeshInstance3D Full, MeshInstance3D Lod)>();
         var lodShadows = new List<(MeshInstance3D Shadow, MeshInstance3D Like)>();
+        var springing = new List<(string Id, List<PieceSprings.Link> Links, List<PieceSprings.Corrective> Correctives, List<MeshInstance3D> Meshes, Transform3D PkgToSkel)>();
         foreach (var piece in m.Pieces)
         {
             if (Scene($"{Dir(name)}/{piece.File}") is not { } ps) continue;
@@ -154,6 +178,14 @@ public static class NpcPackage
             var full = new Dictionary<string, MeshInstance3D>();   // by material
             var lods = new Dictionary<string, MeshInstance3D>();
             MeshInstance3D? shadow = null;
+            // (its spring bones the body lacks, added to the body's skeleton first, so its skin binds to them: PieceSprings)
+            var springs = PieceSprings.ReadSprings(piece.Springs);
+            var correctives = PieceSprings.ReadCorrectives(piece.Correctives);
+            var pkgToSkel = Transform3D.Identity;
+            for (Node? n = from; n != null && n != scene; n = n.GetParent()) if (n is Node3D n3) pkgToSkel = n3.Transform * pkgToSkel;
+            pkgToSkel = pkgToSkel.AffineInverse();
+            if (springs.Count > 0 && !PieceSprings.Off) PieceSprings.AddBones(skel, from, springs, pkgToSkel, $"{name}/{piece.Id}");
+            if (springs.Count > 0 || correctives.Count > 0) springing.Add((piece.Id, springs, correctives, meshes, pkgToSkel));
             foreach (var mi in meshes)
             {
                 var (part, mat) = MeshPart(mi.Name.ToString(), piece.Id, piece.Slot);
@@ -267,6 +299,8 @@ public static class NpcPackage
         skel.AddChild(new HerJoints());
         skel.AddChild(new NpcHeadLevel()); // package NPCs only: head kept level under the heroine's clips
         skel.AddChild(new NpcHands()); // package NPCs only: a loose resting curl over the clips' straight, fanned fingers
+        // Each piece's spring bones swung and its corrective shapes driven, last, over the finished pose (PieceSprings).
+        foreach (var sp in springing) PieceSprings.Attach(person, $"{name}/{sp.Id}", name, sp.Links, sp.Correctives, sp.Meshes, sp.PkgToSkel);
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", People.Clips());
