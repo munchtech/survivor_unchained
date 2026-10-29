@@ -3,48 +3,58 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (28 October, Story 12, branch `story-wtf`): item 1 half done, item 2 at the owner's gate
+## Now (29 October, Story 13, branch `story-wtf`): list done, MR1 sent, one page at the owner's gate
 
-The owner (28 Oct, verbatim in the coordinator's `story_brief.md`): remove the love
-scenes and romances (Sella stays who she is; she likes us), make the narrator-mother
-reveal actually reveal, then the WTF pass. Writer = Fable (xhigh); the editor is a
-Haiku `su-lead-max` at xhigh that the writer spawns (it sends notes, never rewrites).
-**Spawn guard:** this writer's brief lacked `Spawning: allowed`, so no helper could
-be spawned; the successor's brief must carry that line (or main sends it).
+The owner's 28 October direction (romances out, the reveal, the WTF pass) and
+his 28 October notes (reveal A with "where you left it" reworded; the C01
+empty-bedroll opening) are all done or at his gate. Writer = Fable (xhigh); the
+editor is a Haiku `su-lead-max` at xhigh that the writer keeps alive across the
+pass and talks to directly (the owner: "the writer and editor may talk to each
+other"); main hears only owner decisions, canon proposals, blockers, MR/HANDOFF.
 
-**1. Romances out, DATA DONE (1dddf45e), follow-through NOT done.**
-`godot/data/content/dialogue.json`: 26 nodes removed, 29 rewritten (the list is in
-the commit and in `docs/story/notes/story12_item1_followthrough.md`). Sella keeps the
-blue room, her trade and the paid sleep (`rest_night` -> `stairs` -> `stairs_say` ->
-`rest_bed` -> `rest_dark` -> `rest_morning`); her free night is now the night she
-sits with you (`free_door` -> `free_sit`, new `free_what`, `free_m_who`); Maeca's
-Blind is the watch night (`watch_only` -> `blind_dark`, nights 1-3 by the fire,
-`maeca.blind_nights` replaces `maeca.lover` everywhere, incl. greymuzzle); the
-triangle `say_sella*` is gone; Keegan's `dinner`/`supper_hand` and Rav's
-`back_room_kiss` are gone. **Tests are RED until the follow-through lands:**
-`docs/story/notes/story12_item1_followthrough.md` is the exact spec (tests, the door
-machinery in `tools/vo/elevenlabs.py`, `import_takes.py`, `tests/test_door.py`,
-direction prune + `love_b.json` rename, locks prune/re-lock, RERECORD, cast.json,
-TREATMENT, the bible's §11 (replacement text included), cinematics docs, items docs,
-LOVE_SCENES.md retired to `docs/story/notes/history_love_scenes_b.md`). Give it to
-one `su-worker` (Sonnet, medium), review the diff, run `dotnet test`, commit.
+**1. Romances out: DONE** (data 1dddf45e; follow-through a52d452c: tests, the
+door machinery out of `tools/vo`, `love_b.json` -> `late_nights.json`, 39 gone
+locks removed and 13 rewrites re-locked, bible §11 "Affection, not romance",
+`LOVE_SCENES.md` retired to `docs/story/notes/history_love_scenes_b.md`).
+**2. Reveal A: DONE** (60bcf83e). C04 `cin_first_light.face`: *"You try to call
+up your mother's voice, and it is not there. Not faint: gone. Her face comes at
+once: the line between her brows, the thread she bit instead of cutting."*;
+`rules.json` `dawn.face` (was `dawn.voice`): *"Her face is going the way her
+voice went. The brows first. You still have the word."*; the narrator never says
+the call before C43 (`StoryRewriteTests.Her_mothers_voice_is_gone...`); the
+docs follow (TREATMENT §2, §3.4; bible; C04 doc + shoot; act 3 outline;
+`NARRATOR_REVEAL_OPTIONS.md` marked DECIDED). The editor's sweep of narrator
+figures that don't resolve: greymuzzle.ally/again, sella.free_stairs, the Pell
+rule. Kept on purpose: maeca.watch_only's frost line, sella.stairs' "Coins,
+then your hand" (she leads a client to a paid room; up there is sleep). No
+re-records: every narrator take is a placeholder; the stale C04 take is owed to
+the next placeholder batch (GPU, `tools/vo/placeholders.py`).
+**4. The C01 opening: DONE as a beat** (1fcf97d0): `docs/cinematics/c01_opening_beat.md`
+for Cinematics 8 (bedroll, shadow, prints, rising, play; shots 2-3 out, 4-6
+folded; the letter and the background item to C04 A; no data change).
+**MR1 READY story-wtf@1fcf97d0** sent to main (tests 1285/0/10).
 
-**2. The reveal: options page written,** `docs/story/NARRATOR_REVEAL_OPTIONS.md`
-(A, the flip, recommended; B, a false voice). Nothing of the narrator is recorded
-(placeholders only; the C04 face take is already stale), so the change costs no
-re-record. On the owner's pick: edit `cin_first_light.face`, `rules.json`
-`dawn.voice`, `StoryRewriteTests.Her_mothers_word_is_Spark_and_the_dawns_take_it_away`,
-TREATMENT §2 and §3.4 plants 3 and 6; re-lock; one note to Cinematics (C04 A7).
+**3. The WTF pass: the page is written,** `docs/story/notes/story13_canon_proposals.md`
+(the editor's scores 5-8; P1 Rook gives the word day one, `rook.mother_word`;
+P2 the letter keeps "Come home by the Low Ford.", journal entry `home.letter`;
+P3 the kill and the count split, C20 grin only, C20b the count). P1 and P2 are
+DRAFTED IN THE DATA on the branch head (with the dropped-lamp plant
+`cin_first_light.lamp_out`, line level, no gate) and are NOT in MR1. On the
+owner's yes: commit stands, MR2; write P1 into the bible §1 (one sentence) and
+P2 into §3.3's plants; write P3 into TREATMENT §4.5 step 7 ("Tolley's lips move,
+and stop"), §4.6 (Maeca's "...He counted me." to C22) and §7's two Act 2 rows,
+then have the editor read §4.5-4.6 once. On a no: `git revert` the P1/P2 commit
+(the test change in `StoryRewriteTests` line 380 goes with it).
+**Routed, unowned (tell main if not yet routed):** the toll (`TOLL_SPEC.md`) has
+no data presence beyond `Journey.Day.RiseAgain`; the drowned woman lifting a
+dead lamp at the ford isn't staged in `Prologue.cs`; the C04 A lamp prop and
+`lamp_out` cue (Cinematics); the C04 A letter insert with the legible line.
 
-**3. The WTF pass: not started.** Plan: the editor scores eight beats (You did this;
-Ninety-two; the woman with the lamp; the voice; It takes less than it did; Not yet;
-Count's right; the act endings) on "would a player say WTF out loud", I sharpen the
-low scorers at the line level, and bring at most three canon proposals as one page
-via main. Read TWIST_WTF §1, TWIST_OPTIONS §A-B, TREATMENT §3 and §7 by section.
-
-Scratch for this session: coordinator scratchpad `story12\` (dump.py prints every
-conversation to `out\<conv>.txt`, `--full` for whole texts; `item1_edit.py` is the
-data edit, re-runnable only against ddf7c6ee).
+The editor: agent `a16f8f7e8fda254d8` (budget raised to 260k; near it: spawn a
+fresh one from `docs/handoff/story_editor.md` with the scoreboard pasted in).
+Scratch: coordinator scratchpad `story13\` (`canon_edit.py`, the P1/P2/lamp
+data edit, re-runnable only against 1fcf97d0); backed up to
+`survivorsunchained_inputs\scratch_story13\` at handoff.
 
 ## Earlier (19 October, the storybook writer, branch `story-lore`): DONE, merged
 
