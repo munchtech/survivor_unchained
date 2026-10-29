@@ -23,6 +23,11 @@ public static class WardenLook
         // his Face Forge head's data map (tools/assets/warden_face_maps.py: de-light, wet, creases, hair zones)
         var faceData = ResourceLoader.Exists($"{dir}/face_data.png") ? GD.Load<Texture2D>($"{dir}/face_data.png") : null;
         faceShader ??= GD.Load<Shader>("res://shaders/warden_face.gdshader");
+        // his hood and capelet (armor/hood.glb, tools/assets/warden_hood.py): the wool on this shader as the body's wool
+        // (class 0) by its own ID map (all wool, its bind height for the soak), so it matches the body's wool under the
+        // same light; laid as a piece it was a plain StandardMaterial3D (specular 0.5, the import's defaults): pale glossy
+        // blue-grey in the moonlight beside the body's dark wet wool (Warden 6 hood r2)
+        var hoodId = ResourceLoader.Exists($"{dir}/armor/hood_id.png") ? GD.Load<Texture2D>($"{dir}/armor/hood_id.png") : null;
         var made = new System.Collections.Generic.Dictionary<string, ShaderMaterial>();
         foreach (var mi in person.Skeleton.GetChildren())
         {
@@ -30,8 +35,9 @@ public static class WardenLook
             for (int s = 0; s < m.Mesh.GetSurfaceCount(); s++)
             {
                 if (m.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src) continue;
+                if (src.ResourceName is "warden_hood_inner" or "warden_hood_fringe") { HoodTrim(src); continue; }
                 string key = src.ResourceName switch { "generated" => "generated", "warden_head" or "warden_head_lod" => "head", "skin" => "iron",
-                    "warden_face" => "face", "warden_face_lod" => "face_lod", _ => "" };
+                    "warden_face" => "face", "warden_face_lod" => "face_lod", "warden_hood_wool" => "hood", _ => "" };
                 if (key == "") continue;
                 if (key.StartsWith("face") && !made.ContainsKey(key))
                 {
@@ -54,12 +60,19 @@ public static class WardenLook
                         w.SetShaderParameter("has_normal", src.NormalTexture != null);
                         w.SetShaderParameter("mr_tex", src.RoughnessTexture);
                         w.SetShaderParameter("has_mr", src.RoughnessTexture != null);
-                        if ((key == "head" ? head : body) is { } d) w.SetShaderParameter("data_tex", d);
-                        if (key == "generated" && id != null)
+                        // (the hood: no data map, the body's is not in its UVs)
+                        if ((key == "head" ? head : key == "hood" ? null : body) is { } d) w.SetShaderParameter("data_tex", d);
+                        if ((key == "hood" ? hoodId : key == "generated" ? id : null) is { } idm)
                         {
-                            w.SetShaderParameter("id_near", id);
-                            w.SetShaderParameter("id_lin", id);
+                            w.SetShaderParameter("id_near", idm);
+                            w.SetShaderParameter("id_lin", idm);
                             w.SetShaderParameter("has_id", true);
+                        }
+                        if (key == "hood")
+                        {
+                            if (System.Environment.GetEnvironmentVariable("WARDEN_HOODCHECK") == "1")
+                                GD.Print($"hoodlook: src {src.GetType().Name} albedo={src.AlbedoTexture?.GetWidth() ?? 0} normal={src.NormalTexture?.GetWidth() ?? 0} " +
+                                    $"rough_tex={src.RoughnessTexture?.GetWidth() ?? 0} rough={src.Roughness} spec={src.MetallicSpecular} metal={src.Metallic} id={hoodId != null}");
                         }
                     }
                     made[key] = w;
@@ -83,6 +96,24 @@ public static class WardenLook
         {
             GlintEnergy = float.Parse(ge, System.Globalization.CultureInfo.InvariantCulture);
             GlintReach = float.Parse(gr, System.Globalization.CultureInfo.InvariantCulture);
+        }
+    }
+
+    /// <summary>The hood's dark inner shell and its frayed fringe (plain materials): the wet wool's low specular and
+    /// rough sheen, the fringe's strands alpha-to-coverage (fine fibres at a distance, not square stubs).</summary>
+    static void HoodTrim(BaseMaterial3D m)
+    {
+        if (m.HasMeta("hood_trim")) return;
+        m.SetMeta("hood_trim", true);
+        m.MetallicSpecular = 0.15f;
+        m.Roughness = 0.9f;
+        if (m.ResourceName == "warden_hood_fringe")
+        {
+            m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+            m.AlphaScissorThreshold = 0.4f;
+            m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverage;
+            m.AlphaAntialiasingEdge = 0.3f;
+            m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
         }
     }
 

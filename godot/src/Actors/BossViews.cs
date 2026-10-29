@@ -634,7 +634,7 @@ public partial class HoodCheck : Node
     int samples, worstCount;
     float worstStretch, worstDepth;
     string worstWhere = "";
-    readonly List<float> stretchAll = new();
+    readonly List<float> stretchAll = new(), med = new();
 
     static Skinned? Read(MeshInstance3D mi, int s, Skeleton3D skel)
     {
@@ -706,19 +706,18 @@ public partial class HoodCheck : Node
                 if (seen.Add(key)) { el.Add(a); el.Add(b); }
             }
         edges = el.ToArray();
-        var hm = Mats(hood, true);
-        var hp = new Vector3[hood.P.Length];
-        var hn = new Vector3[hood.P.Length];
-        for (int v = 0; v < hp.Length; v++) (hp[v], hn[v]) = At(hood, hm, v);
+        // (the rest is the mesh's own bind-space vertices: the skeleton's rest under a retargeted clip set is not the
+        //  glTF bind, so skinning by GetBoneGlobalRest threw every rest length off and read a constant 12-18x stretch)
+        var hp = (Vector3[])hood.P.Clone();
+        var hn = (Vector3[])hood.N.Clone();
         restLen = new float[edges.Length / 2];
         for (int i = 0; i < restLen.Length; i++) restLen[i] = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]);
         var grid = Grid(hp);
         for (int m = 0; m < body.Count; m++)
         {
-            var bm = Mats(body[m], true);
             for (int v = 0; v < body[m].P.Length; v += 2)
             {
-                var p = At(body[m], bm, v).P;
+                var p = body[m].P[v];
                 int h = Nearest(grid, hp, p, 0.06f);
                 if (h >= 0 && (p - hp[h]).Dot(hn[h]) < -0.002f) inside.Add((m, v));
             }
@@ -771,7 +770,11 @@ public partial class HoodCheck : Node
             float r = hp[edges[2 * i]].DistanceTo(hp[edges[2 * i + 1]]) / Math.Max(restLen[i], 1e-5f);
             smax = Math.Max(smax, r);
             if ((i & 7) == 0) stretchAll.Add(r);
+            if ((i & 63) == 0) med.Add(r);
         }
+        med.Sort();
+        float median = med.Count > 0 ? med[med.Count / 2] : 0;
+        med.Clear();
         var grid = Grid(hp);
         var bms = new Transform3D[body.Count][];
         for (int m = 0; m < body.Count; m++) bms[m] = Mats(body[m], false);
@@ -799,7 +802,7 @@ public partial class HoodCheck : Node
         string w = string.Join(",", top.GetRange(0, Math.Min(3, top.Count)));
         if (count > worstCount) { worstCount = count; worstWhere = w; }
         worstDepth = Math.Max(worstDepth, depth);
-        GD.Print($"hoodcheck t={t:F1} stretch_max={smax:F3} poke={count} depth_mm={depth * 1000:F1} {w}");
+        GD.Print($"hoodcheck t={t:F1} stretch_max={smax:F3} median={median:F3} poke={count} depth_mm={depth * 1000:F1} {w}");
     }
 
     public override void _ExitTree()

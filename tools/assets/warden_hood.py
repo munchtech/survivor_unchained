@@ -80,6 +80,12 @@ TEX = 4096
 WOOL = (0.13, 0.145, 0.19)       # sRGB
 MAT_WOOL, MAT_INNER, MAT_FRINGE = "warden_hood_wool", "warden_hood_inner", "warden_hood_fringe"
 THICK = 0.0045
+FOLD_DEPTH = 0.022               # the hood's main folds, ridge to centre (r1's 0.018 sine read as a smooth shell)
+BACK_TEAR_MAX = 0.032            # the back's tears stop short of the cape's attach line
+BAND_ABOVE = 0.065               # the attach line: this far above the straight hem, on the back (grain metres)
+FRINGE_RGB = (0.085, 0.095, 0.13)  # sRGB: the shaded wool's colour (the fringe is a plain material, not the wet shader)
+ALB_GAIN = 1.87                  # the albedo to the body's wool atlas level
+ROLL = (0.0065, 0.0050)          # the opening's rolled edge: half-thickness across the cloth, half-width in its plane
 
 
 def log(*a):
@@ -317,9 +323,12 @@ def shell():
 
 
 def hood_folds(ob, seed=21):
-    """The hood's own folds (it keeps its shape; only the capelet is draped): soft vertical folds down the back and the
-    sides that deepen toward the neck, a few ripples gathered behind the brim, a slow lumpiness, the peak slumped a
-    little to one side. Displaced along the normal."""
+    """The hood's own folds (it keeps its shape; only the capelet is draped), heavy wet wool (r2: the r1 folds read as
+    a smooth shell): 7 deep vertical folds falling from the crown round the back and sides, sharp valleys and round
+    ridges, deepening toward the neck, with a few shallower ones between; the brim's own sag (its lip drooping a few
+    mm, a crease across the top ~4 cm behind the edge); a roll where the hood meets the capelet (the hood's base piled
+    on the shoulders, a valley under it), back and sides only (the throat stays clean for the beard); a slow lumpiness,
+    the peak slumped a little to one side. Displaced along the normal."""
     rng = np.random.default_rng(seed)
     bm = bmesh.new()
     bm.from_mesh(ob.data)
@@ -329,29 +338,67 @@ def hood_folds(ob, seed=21):
     for i, p in enumerate(edge):
         t.insert(p, i)
     t.balance()
-    ph = rng.uniform(0, 2 * np.pi, 4)
+    ph = rng.uniform(0, 2 * np.pi, 6)
+    down = Vector(g2b(np.array([[0, -1.0, 0]]))[0])
     for v in bm.verts:
         p = b2g(np.array([v.co]))[0]
         y = p[1]
-        if y < 1.50:
+        if y < 1.46:
             continue
         th = math.atan2(p[0] - X0, p[2] - prof(y)[1])
-        back = smoothstep(-0.5, 0.3, -math.cos(th))
-        # vertical folds: 9 round the head, wandering with height, sharp valleys and round ridges
-        s1 = math.sin(9 * th + 2.2 * math.sin(7 * y + ph[0]) + ph[1])
-        f1 = (abs(s1) ** 0.6 * (1 if s1 > 0 else -1.6)) * 0.018 * smoothstep(1.84, 1.62, y) * (0.35 + 0.65 * back)
-        s2 = math.sin(5 * th + ph[2] + 3.0 * y)
-        f2 = s2 * 0.010 * smoothstep(1.86, 1.70, y)
+        back = smoothstep(-0.6, 0.2, -math.cos(th))
+        side = 1 - abs(math.cos(th))
         de = t.find(p)[2]
-        front_top = smoothstep(0.2, 0.7, math.cos(th)) * smoothstep(1.62, 1.68, y)
-        f3 = math.sin(2 * math.pi * de / 0.024 + ph[3]) * 0.006 * math.exp(-de / 0.05) * front_top
-        f4 = 0.007 * math.sin(3 * th + 11 * y + ph[0]) * math.sin(2 * th - 7 * y + ph[2])
-        w = smoothstep(1.50, 1.56, y)
-        v.co = v.co + v.normal * (f1 + f2 + f3 + f4) * w
+        # the main folds: 7 round the head (fewer at the front), wandering with height; from the crown down
+        x1 = 7 * th + 1.6 * math.sin(6 * y + ph[0]) + ph[1]
+        f1 = (2 * abs(math.cos(x1 / 2)) ** 0.8 - 1) * FOLD_DEPTH * smoothstep(1.865, 1.70, y) * (0.25 + 0.75 * back)
+        # shallower folds between them
+        s2 = math.sin(12 * th + ph[2] + 4.0 * y)
+        f2 = (abs(s2) ** 0.7 * (1 if s2 > 0 else -1.5)) * 0.007 * smoothstep(1.84, 1.66, y) * (0.3 + 0.7 * side)
+        # the brim's sag: a crease across the top behind the lip, the lip itself dropped a little
+        front_top = smoothstep(0.15, 0.65, math.cos(th)) * smoothstep(1.62, 1.69, y)
+        f3 = -0.009 * math.exp(-((de - 0.042) / 0.013) ** 2) * front_top + 0.004 * math.exp(-((de - 0.075) / 0.02) ** 2) * front_top
+        sag = 0.005 * math.exp(-de / 0.03) * front_top * smoothstep(0.5, 0.95, math.cos(th))
+        # the roll where the hood meets the capelet: a ridge at ~1.555, a valley under it at ~1.52 (back and sides)
+        f5 = (0.013 * math.exp(-((y - 1.556) / 0.016) ** 2) - 0.010 * math.exp(-((y - 1.522) / 0.012) ** 2)) *             smoothstep(-0.2, 0.35, -math.cos(th)) * (0.7 + 0.3 * math.sin(5 * th + ph[3]))
+        f4 = 0.006 * math.sin(3 * th + 11 * y + ph[0]) * math.sin(2 * th - 7 * y + ph[2])
+        w = smoothstep(1.50, 1.56, y) * smoothstep(0.0, 0.035, de)
+        v.co = v.co + v.normal * ((f1 + f2 + f4) * w + f3 * smoothstep(1.50, 1.56, y) + f5) + down * sag
         v.co.x += 0.012 * smoothstep(1.79, 1.86, y)
     bm.to_mesh(ob.data)
     bm.free()
     log("hood folds laid")
+
+
+def smooth_throat(ob, col, iters=40):
+    """The front of the throat under the chin (the drape crumples it where the hood's ring meets the capelet's tent):
+    relaxed (Taubin, no shrink), the opening's edge held, then pushed clear of the body. A long beard will cover it."""
+    V = b2g(verts(ob))
+    th = np.arctan2(V[:, 0] - X0, V[:, 2] + 0.02)
+    w = smoothstep(0.25, 0.75, np.cos(th)) * smoothstep(1.40, 1.45, V[:, 1]) * (1 - smoothstep(1.535, 1.56, V[:, 1]))
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bnd = np.array([v.is_boundary for v in bm.verts])
+    bm.free()
+    w[bnd] = 0
+    adj = adjacency(ob)
+    P = verts(ob)
+    for it in range(iters):
+        for lam in (0.55, -0.57):
+            S = np.array([P[a].mean(0) if len(a) else P[i] for i, a in enumerate(adj)])
+            P = P + (lam * w)[:, None] * (S - P)
+    bvh = eval_mesh_bvh(col)[0]
+    moved = 0
+    for i in np.nonzero(w > 0.01)[0]:
+        hit = bvh.find_nearest(Vector(P[i]), 0.04)
+        if hit[0] is None:
+            continue
+        d = np.dot(P[i] - np.array(hit[0]), np.array(hit[1]))
+        if d < 0.008:
+            P[i] = np.array(hit[0]) + np.array(hit[1]) * 0.008
+            moved += 1
+    set_verts(ob, P)
+    log(f"throat relaxed: {(w > 0.5).sum()} verts, {moved} pushed clear")
 
 
 def clean(ob):
@@ -684,6 +731,11 @@ def tear_hem(ob, seed=7):
     for c in t.min() + span * np.sort(rng.random(9)):
         w, dp = rng.uniform(0.03, 0.06), rng.uniform(0.04, 0.10)
         depth = np.maximum(depth, dp * np.clip(1 - np.abs(t - c) / (w / 2), 0, None) ** 1.3)
+    # (the back: the tears held short of the long cape's attach line, BAND_ABOVE over the straight hem)
+    C = np.array([b2g(np.array([p.center]))[0] for p in me.polygons])
+    bw = smoothstep(-0.03, -0.09, C[:, 2] + 0.03)
+    depth = depth * (1 - bw) + np.minimum(depth, BACK_TEAR_MAX) * bw
+    HEM["bins"], HEM["v"] = {int(b): float(x) for b, x in zip(bins, hem)}, None
     near_hem = fv > 0.30   # (the capelet only: the hood's opening is far above)
     gone = near_hem & (fv > hem - depth)
     bm = bmesh.new()
@@ -792,13 +844,17 @@ def wool_maps(bk, size):
     ao = blur(ao, 1.2)
     lin = lambda c: np.where(np.asarray(c) <= 0.04045, np.asarray(c) / 12.92, ((np.asarray(c) + 0.055) / 1.055) ** 2.4)
     base = lin(np.array(WOOL))
-    k = (0.86 + 0.28 * mott + 0.10 * (fuzz - 0.5)) * (1 - 0.42 * wet) * (0.50 + 0.50 * ao)
+    # (r2: in game the wool is drawn by shaders/warden_wet.gdshader as the body's wool, class 0, which soaks it by
+    #  height and pulls its hue: the map carries the felt's light and dark at the body's wool atlas level, linear
+    #  luminance ~0.022 (the body's wool over the shoulders: mean 0.023, median 0.019), no soak of its own)
+    k = (0.86 + 0.28 * mott + 0.10 * (fuzz - 0.5)) * (1 - 0.10 * wet) * (0.50 + 0.50 * ao) * ALB_GAIN
     col = base[None, None, :] * k[..., None]
     # a faint greenish river stain in the soaked hem (the river's silt), and the dry top a touch greyer (felted fibres)
     col = col * (1 + wet[..., None] * np.array([-0.06, 0.04, -0.02]) * (mott[..., None] > 0.45))
     srgb = np.where(col <= 0.0031308, col * 12.92, 1.055 * np.power(np.clip(col, 0, None), 1 / 2.4) - 0.055)
     albedo = Image.fromarray((np.clip(srgb, 0, 1) * 255 + 0.5).astype(np.uint8))
-    rough = np.clip(0.88 - 0.30 * wet + 0.05 * (mott - 0.5) + 0.04 * (fuzz - 0.5), 0.4, 1.0)
+    log(f"wool albedo: linear luminance mean {float((col @ np.array([0.2126, 0.7152, 0.0722])).mean()):.4f}")
+    rough = np.clip(0.62 - 0.08 * wet + 0.05 * (mott - 0.5) + 0.04 * (fuzz - 0.5), 0.3, 1.0)   # (the shader's variation round class 0's)
     mr = np.zeros((size, size, 3), np.uint8)
     mr[..., 1] = (rough * 255 + 0.5).astype(np.uint8)
     mr_img = Image.fromarray(mr).resize((size // 2, size // 2), Image.LANCZOS)
@@ -830,13 +886,15 @@ def fringe_map(w=1024, h=256, seed=11):
     a = np.zeros((h, w), np.float32)
     lit = np.zeros((h, w), np.float32)
     yy = np.arange(h)[:, None] / h
-    root = np.clip(1 - yy / 0.22, 0, 1) ** 0.6 * np.ones((1, w))
-    a = np.maximum(a, root * (0.75 + 0.25 * rng.random((1, w))))
+    # (r2: a thin felted root that frays straight away, in clumps, so the strip's edge never reads as a band of stubs)
+    clump = np.clip(vnoise1(np.arange(w, dtype=float), 40.0, seed) * 1.6 - 0.3, 0, 1)[None, :]
+    root = np.clip(1 - yy / (0.05 + 0.08 * clump), 0, 1) ** 0.8
+    a = np.maximum(a, root * (0.55 + 0.45 * clump))
     xs = np.arange(w)[None, :]
-    for _ in range(170):
+    for _ in range(260):
         x0 = rng.uniform(0, w)
-        L = rng.uniform(0.25, 0.75) if rng.random() > 0.1 else rng.uniform(0.75, 0.98)
-        wd = rng.uniform(1.5, 4.0)
+        L = rng.uniform(0.2, 0.7) if rng.random() > 0.12 else rng.uniform(0.7, 0.98)
+        wd = rng.uniform(1.2, 3.0)
         bend = rng.uniform(-30, 30)
         cx = x0 + bend * yy ** 2 + 3 * np.sin(yy * rng.uniform(6, 14) + rng.uniform(0, 6))
         d = np.abs(((xs - cx) + w / 2) % w - w / 2)
@@ -844,7 +902,7 @@ def fringe_map(w=1024, h=256, seed=11):
         s = np.clip(1 - d / (wd * (0.4 + 0.6 * taper)), 0, 1) * (yy < L)
         a = np.maximum(a, s)
         lit = np.maximum(lit, s * yy / L)
-    rgb = np.array(WOOL)[None, None, :] * (0.75 + 0.35 * lit[..., None])
+    rgb = np.array(FRINGE_RGB)[None, None, :] * (0.85 + 0.30 * lit[..., None])
     img = np.concatenate([np.clip(rgb, 0, 1), np.clip(a, 0, 1)[..., None]], -1)
     return Image.fromarray((img * 255 + 0.5).astype(np.uint8), "RGBA")
 
@@ -863,44 +921,196 @@ def thicken(lo):
     log(f"thickened: {sum(len(p.vertices) - 2 for p in lo.data.polygons)} tris")
 
 
-def fringe(lo, src):
-    """Strips along the outer boundary of src (the opening and the hem), in the cloth's plane, away from the cloth:
-    hem 2.6 cm, opening 1.1 cm; u along the edge (10 cm a repeat), v across."""
-    bm = bmesh.new()
-    bm.from_mesh(src.data)
-    bm.normal_update()
-    V, F, UV = [], [], []
-    for e in bm.edges:
-        if not e.is_boundary:
+HEAD_C = np.array([0.0204, 1.68, 0.0])   # (glTF) inside the head: the cloth's outward side faces away from it
+
+
+def boundary_loops(bm, pred):
+    """The boundary's closed loops (bmesh verts, the edges between them, True), each walked by turning round its vertex
+    through the faces to the next boundary edge (right at a bow-tie vertex); kept where pred(verts) holds."""
+    def nxt(v, e):
+        ce, cf = e, e.link_faces[0]
+        for _ in range(64):
+            oe = next((x for x in cf.edges if x is not ce and v in x.verts), None)
+            if oe is None:
+                return None
+            if oe.is_boundary:
+                return oe
+            cf = next((f for f in oe.link_faces if f is not cf), None)
+            if cf is None:
+                return None
+            ce = oe
+        return None
+    used, loops = set(), []
+    for e0 in bm.edges:
+        if not e0.is_boundary or e0 in used:
             continue
-        f = e.link_faces[0]
-        a, b = e.verts
-        mid = (a.co + b.co) / 2
-        t = (b.co - a.co)
-        out = t.cross(f.normal).normalized()
-        if out.dot(mid - f.calc_center_median()) < 0:
-            out = -out
-        y = b2g(np.array([mid]))[0][1]
-        L = 0.011 if y > HEM_Y + 0.12 else 0.026
-        out = (out * 0.75 + Vector(g2b(np.array([[0, -1.0, 0]]))[0]) * (0.25 if L > 0.02 else 0.0)).normalized()
-        k = len(V)
-        rng_l = 0.8 + 0.4 * ((hash((round(mid.x, 3), round(mid.y, 3))) % 1000) / 1000)
-        for p in (a.co, b.co):
-            V.append(p - f.normal * 0.0005)
-            V.append(p + out * L * rng_l - f.normal * 0.002)
-        ua = (a.co.x * 7.3 + a.co.y * 5.1 + a.co.z * 6.7)
-        ub = ua + t.length / 0.10
-        UV += [(ua, 1.0), (ua, 0.0), (ub, 1.0), (ub, 0.0)]   # (texture v 0 at the edge: image top = UV 1)
-        F.append((k, k + 2, k + 3, k + 1))
+        seq, es = [e0.verts[0]], [e0]
+        used.add(e0)
+        v, e = e0.verts[1], e0
+        closed = False
+        for _ in range(100000):
+            if v is seq[0]:
+                closed = True
+                break
+            seq.append(v)
+            e = nxt(v, e)
+            if e is None or e in used:
+                break
+            used.add(e)
+            es.append(e)
+            v = e.other_vert(v)
+        if len(seq) >= 4 and pred(seq):
+            loops.append((seq, es, closed))
+    return loops
+
+
+def edge_frames(seq, es, closed):
+    """Per loop vertex (glTF): position, the cloth's outward normal, the tangent, the in-plane direction off the cloth,
+    the arc length."""
+    P = np.array([b2g(np.array([v.co]))[0] for v in seq])
+    N = np.array([b2g(np.array([v.normal]))[0] for v in seq])
+    if np.mean(np.sum(N * (P - HEAD_C), 1)) < 0:
+        N = -N
+    n = len(P)
+    nxt = np.roll(P, -1, 0) if closed else np.vstack([P[1:], P[-1:] * 2 - P[-2:-1]])
+    prv = np.roll(P, 1, 0) if closed else np.vstack([P[:1] * 2 - P[1:2], P[:-1]])
+    T = nxt - prv
+    T /= np.linalg.norm(T, axis=1, keepdims=True) + 1e-12
+    B = np.cross(T, N)
+    B /= np.linalg.norm(B, axis=1, keepdims=True) + 1e-12
+    # off the cloth: away from the faces the loop bounds
+    FC = np.zeros((n, 3))
+    for i in range(n):
+        fs = []
+        if closed or i > 0:
+            fs.append(es[i - 1].link_faces[0])
+        if i < len(es):
+            fs.append(es[i].link_faces[0])
+        FC[i] = np.mean([b2g(np.array([f.calc_center_median()]))[0] for f in fs], 0)
+    flip = np.sum(B * (P - FC), 1) < 0
+    B[flip] *= -1
+    B = B - N * np.sum(B * N, 1, keepdims=True)
+    B /= np.linalg.norm(B, axis=1, keepdims=True) + 1e-12
+    seg = np.linalg.norm(np.diff(P, axis=0), axis=1)
+    S = np.concatenate([[0], np.cumsum(seg)])
+    return P, N, T, B, S
+
+
+def roll_data(ob, K=8, seed=3):
+    """The face opening's rolled edge (r2: the r1 edge read as a thin blocky frame): a soft thick lumpy roll of wool
+    round the opening, about 13 mm thick and 10 mm across, wrapping the cut edge, its texture the brim's own (each
+    quad's UVs from the face its edge bounds, stepping into the island). Built from the outer surface (before the
+    thickness); laid on with add_roll() after it."""
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bm.normal_update()
+    uvl = bm.loops.layers.uv.active
+    loops = boundary_loops(bm, lambda q: np.mean([v.co.z for v in q]) > HEM_Y + 0.12)
+    loops.sort(key=lambda L: -len(L[0]))
+    seq, es, closed = loops[0]
+    P, N, T, B, S = edge_frames(seq, es, closed)
+    lump = 1 + 0.24 * (2 * vnoise1(S, 0.05, seed) - 1) + 0.08 * (2 * vnoise1(S, 0.015, seed + 1) - 1)
+    if not closed:   # (a break in the decimated edge: the roll tapers to nothing at its ends, no stumps)
+        lump = lump * np.maximum(smoothstep(0, 0.04, S) * smoothstep(0, 0.04, S[-1] - S), 0.05)
+    rn, rb = ROLL[0] * lump, ROLL[1] * lump
+    # (wrapping the cut edge, most of it over the cloth: the opening's outline stays where the spec puts it)
+    Cc = P - B * (rb * 0.4)[:, None] - N * (THICK * 0.5 - 0.0015)
+    ang = np.arange(K) / K * 2 * np.pi
+    R = Cc[:, None, :] + N[:, None, :] * (rn[:, None, None] * np.cos(ang)[None, :, None]) + B[:, None, :] * (rb[:, None, None] * np.sin(ang)[None, :, None])
+    perim = 2 * np.pi * np.sqrt((rn ** 2 + rb ** 2) / 2)
+    scale = GRAIN[0]
+    quads = []   # (ring i, ring j, uv rows for i and j: K+1 each)
+    m = len(seq)
+    for i in range(m if closed else m - 1):
+        j = (i + 1) % m
+        f = es[i].link_faces[0]
+        luv = {l.vert: np.array(l[uvl].uv[:]) for l in f.loops}
+        ua, ub = luv[seq[i]], luv[seq[j]]
+        fc = np.mean([np.array(l[uvl].uv[:]) for l in f.loops], 0)
+        d = fc - (ua + ub) / 2
+        d /= np.linalg.norm(d) + 1e-12
+        steps = np.arange(K + 1) / K
+        quads.append((i, j, ua[None] + d[None] * (steps * perim[i] * scale)[:, None], ub[None] + d[None] * (steps * perim[j] * scale)[:, None]))
     bm.free()
-    ob = mk("fringe", V, F)
+    log(f"rolled edge: {m} rings x {K}, thickness {2 * rn.min() * 1000:.0f}-{2 * rn.max() * 1000:.0f} mm, closed {closed}")
+    return dict(R=R, C=Cc, N=N, B=B, S=S, rn=rn, rb=rb, quads=quads, K=K, closed=closed)
+
+
+def add_roll(ob, rd):
+    """The rolled edge onto ob (material 0, smooth, outward)."""
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    uvl = bm.loops.layers.uv.active
+    K = rd["K"]
+    R = g2b(rd["R"].reshape(-1, 3)).reshape(rd["R"].shape)
+    C = g2b(rd["C"])
+    vs = [[bm.verts.new(Vector(R[i, k])) for k in range(K)] for i in range(len(R))]
+    bm.verts.ensure_lookup_table()
+    for i, j, uvi, uvj in rd["quads"]:
+        for k in range(K):
+            k1 = (k + 1) % K
+            f = bm.faces.new((vs[i][k], vs[j][k], vs[j][k1], vs[i][k1]))
+            f.material_index = 0
+            f.smooth = True
+            for l, uv in zip(f.loops, (uvi[k], uvj[k], uvj[k + 1], uvi[k + 1])):
+                l[uvl].uv = Vector(uv)
+            f.normal_update()
+            if f.normal.dot(f.calc_center_median() - Vector(C[i])) < 0:
+                f.normal_flip()
+    bm.to_mesh(ob.data)
+    bm.free()
+
+
+def fringe(lo, rd=None, seed=11):
+    """Frayed strands along the boundary: the hem's (2.6 cm, off the cloth and a little down) and, with the rolled
+    edge, the opening's (1.4 cm, from the roll's outer underside, hanging); continuous strips (shared verts, the
+    length wandering smoothly along the edge: r1's per-edge lengths stepped into square stubs); u along the edge
+    (10 cm a repeat), v across."""
+    bm = bmesh.new()
+    bm.from_mesh(lo.data)
+    bm.normal_update()
+    down = np.array([0, -1.0, 0])
+    V, F, UV = [], [], []
+    loops = boundary_loops(bm, lambda q: True)
+    big = max((len(L[0]) for L in loops if np.mean([v.co.z for v in L[0]]) > HEM_Y + 0.12), default=0)
+    for k_loop, (seq, es, closed) in enumerate(loops):
+        if len(seq) < 4:
+            continue
+        P, N, T, B, S = edge_frames(seq, es, closed)
+        if P[:, 1].mean() > HEM_Y + 0.12:
+            if rd is None or len(seq) != big:
+                continue
+            # (from the roll: its outer underside)
+            P = rd["C"] + rd["B"] * rd["rb"][:, None] * 0.85 - rd["N"] * rd["rn"][:, None] * 0.25
+            N, B, S, closed = rd["N"], rd["B"], rd["S"], rd["closed"]
+            L = 0.014 * (0.65 + 0.7 * vnoise1(S, 0.06, seed + k_loop))
+            out = B * 0.55 + down[None] * 0.45
+        else:
+            L = 0.026 * (0.7 + 0.6 * vnoise1(S, 0.08, seed + k_loop))
+            out = B * 0.75 + down[None] * 0.25
+            P = P - N * 0.0005
+        out /= np.linalg.norm(out, axis=1, keepdims=True) + 1e-12
+        n = len(P)
+        idx = list(range(n)) + ([0] if closed else [])
+        total = S[-1] + (np.linalg.norm(P[0] - P[-1]) if closed else 0)
+        k0 = len(V)
+        for c, i in enumerate(idx):
+            u = (S[i] if c < n else total) / 0.10
+            V.append(P[i])
+            V.append(P[i] + out[i] * L[i] - N[i] * 0.0015)
+            UV += [(u, 1.0), (u, 0.0)]
+        for c in range(len(idx) - 1):
+            a = k0 + 2 * c
+            F.append((a, a + 2, a + 3, a + 1))
+    bm.free()
+    ob = mk("fringe", g2b(np.array(V)), F)
     uvl = ob.data.uv_layers.new(name="UVMap")
     lu = np.zeros((len(ob.data.loops), 2))
     for p in ob.data.polygons:
         for li in p.loop_indices:
             lu[li] = UV[ob.data.loops[li].vertex_index]
     uvl.data.foreach_set("uv", lu.astype(np.float32).ravel())
-    log(f"fringe: {len(F)} strips")
+    log(f"fringe: {len(F)} strips over {len(loops)} edge loops")
     return ob
 
 
@@ -921,7 +1131,7 @@ def body_posed_donors(body, mats):
     return np.concatenate(P), np.concatenate(J), np.concatenate(W)
 
 
-def hood_weights(Vb, adj, donors, names, nb):
+def hood_weights(Vb, adj, donors, names, nb, band=None):
     """Per vertex (Blender frame, drape pose): the body's weights near it (6 nearest, by 1/d), minus the forearms and
     hands; the hood above the jaw to Head (eased in over 1.535-1.590), smoothed, the 4 largest kept."""
     P, J, W = donors
@@ -947,6 +1157,18 @@ def hood_weights(Vb, adj, donors, names, nb):
     for _ in range(8):
         S = np.array([A[a].mean(0) if len(a) else A[i] for i, a in enumerate(adj)])
         A = np.where(fixed[:, None], A, 0.5 * A + 0.5 * S)
+    if band is not None and band.max() > 0:
+        # the back's band over the hem (the long cape's attach line, Warden 6): spine_03 at the centre, the clavicle
+        # of each side taking up to half toward the shoulders, so the cape hangs from the upper back, not the arms
+        sp, cl, cr = names.index("spine_03"), names.index("clavicle_l"), names.index("clavicle_r")
+        x = b2g(Vb)[:, 0] - X0
+        mk_ = (J[:, 0] == cl) & (W[:, 0] > 0.3)
+        lx = np.mean(b2g(P)[mk_, 0]) - X0 if mk_.any() else 1.0
+        sw = 0.5 * smoothstep(0.05, 0.20, np.abs(x))
+        Tg = np.zeros_like(A)
+        Tg[:, sp] = 1 - sw
+        Tg[np.arange(len(x)), np.where(np.sign(x) == np.sign(lx), cl, cr)] += sw
+        A = A * (1 - band)[:, None] + Tg * band[:, None]
     Jo = np.argsort(-A, 1)[:, :4]
     Wo = np.take_along_axis(A, Jo, 1)
     Wo /= Wo.sum(1, keepdims=True)
@@ -1059,6 +1281,7 @@ def write_piece(pkg, path, parts):
 
 MAPS = {}
 GRAIN = (1.0, 0.0)
+HEM = {}
 
 
 # ================= 8. the mantle under the capelet =================
@@ -1340,17 +1563,109 @@ def preview_textured(ob):
         ob.data.materials.append(m)
 
 
-def to_bind(ob, donors, names, mats):
-    """An object's weights (drape pose) and its positions and corner normals at the bind (glTF frame)."""
+def vert_grain(ob, n_base):
+    """Per vertex (the cloth's own, < n_base, materials 0/1): the grain's (u signed by island, v) in metres; NaN else."""
+    me = ob.data
+    uv = loop_uv(ob)
+    u, v, left = uv_metres(uv)
+    t = np.where(left, -u, u)
+    G = np.full((len(me.vertices), 2), np.nan)
+    lv = np.zeros(len(me.loops), np.int64)
+    me.loops.foreach_get("vertex_index", lv)
+    for p in me.polygons:
+        if p.material_index > 1:
+            continue
+        for li in p.loop_indices:
+            vi = lv[li]
+            if vi < n_base and np.isnan(G[vi, 0]):
+                G[vi] = (t[li], v[li])
+    return G
+
+
+def band_of(ob, n_base):
+    """The cape band's weight per vertex (the back, from BAND_ABOVE + 2 cm over the straight hem down to it) and the
+    attach line's vertices (within 6 mm of BAND_ABOVE over the straight hem, the back)."""
+    G = vert_grain(ob, n_base)
+    Vg = b2g(verts(ob))
+    bw = smoothstep(-0.03, -0.09, Vg[:, 2] + 0.03)
+    bins = HEM.get("bins", {})
+    hv = np.array([max(bins.get(int(round(t / 0.01)) + d, 0) for d in (-1, 0, 1)) if not np.isnan(t) else 0 for t in G[:, 0]])
+    v = np.nan_to_num(G[:, 1], nan=-1)
+    band = bw * smoothstep(hv - BAND_ABOVE - 0.045, hv - BAND_ABOVE - 0.015, v) * (v > 0.3)
+    line = (bw > 0.5) & (np.abs(v - (hv - BAND_ABOVE)) < 0.006) & (v > 0.3)
+    return band, line
+
+
+def to_bind(ob, donors, names, mats, n_base=None):
+    """An object's weights (drape pose) and its positions and corner normals at the bind (glTF frame). Vertices past
+    n_base (the rolled edge and the fringe) take the weights of the nearest cloth vertex, so they never part from it."""
     Vb = verts(ob)
-    J, W, used = hood_weights(Vb, adjacency(ob), donors, names, len(names))
+    nbv = len(Vb) if n_base is None else n_base
+    band, line = band_of(ob, nbv)
+    J, W, used = hood_weights(Vb, adjacency(ob), donors, names, len(names), band)
+    if nbv < len(Vb):
+        t = KDTree(nbv)
+        for i in range(nbv):
+            t.insert(Vb[i], i)
+        t.balance()
+        for i in range(nbv, len(Vb)):
+            j = t.find(Vb[i])[1]
+            J[i], W[i] = J[j], W[j]
     c = corner_arrays(ob)
     P_bind, _ = unpose(Vb, np.tile([0, 0, 1.0], (len(Vb), 1)), J, W, mats)
     M = np.einsum("nk,nkij->nij", W.astype(float), mats[J.astype(int)])
     Ml = M[c["lv"]]
     n = np.einsum("nji,nj->ni", Ml[:, :3, :3], c["cn"])
     n /= np.linalg.norm(n, axis=1, keepdims=True) + 1e-12
-    return c, J, W, P_bind, b2g(n), used
+    att = {}
+    if line.any():
+        L = P_bind[line]
+        top = {}
+        for jj, ww in zip(J[line], W[line]):
+            for k in range(4):
+                if ww[k] > 0.05:
+                    top[names[jj[k]]] = top.get(names[jj[k]], 0) + float(ww[k])
+        att = {"verts": int(line.sum()), "yMin": round(float(L[:, 1].min()), 3), "yMax": round(float(L[:, 1].max()), 3),
+               "yCentre": round(float(L[np.argmin(np.abs(L[:, 0] - X0)), 1]), 3), "zCentre": round(float(L[np.argmin(np.abs(L[:, 0] - X0)), 2]), 3),
+               "xSpan": [round(float(L[:, 0].min()), 3), round(float(L[:, 0].max()), 3)],
+               "weights": {k: round(v / line.sum(), 2) for k, v in sorted(top.items(), key=lambda x: -x[1])[:4]}}
+    return c, J, W, P_bind, b2g(n), used, att
+
+
+def hood_id_map(pos, uv, idx, size=1024):
+    """armor/hood_id.png in the wool's UVs, warden_id_map.py's format for shaders/warden_wet.gdshader: R class*32 +
+    puff (all wool: 0), G bind height / 2 m (the soak by height), B/A the detail normal (flat: the wool's own normal
+    map carries the twill). Rasterized, then grown into the gutters."""
+    from scipy import ndimage
+    H = np.full((size, size), np.nan, np.float32)
+    T = idx.reshape(-1, 3)
+    for tri in T:
+        q = uv[tri] * size - 0.5
+        y = pos[tri, 1]
+        x0, y0 = np.floor(q.min(0)).astype(int)
+        x1, y1 = np.ceil(q.max(0)).astype(int)
+        x0, y0, x1, y1 = max(x0, 0), max(y0, 0), min(x1, size - 1), min(y1, size - 1)
+        if x1 < x0 or y1 < y0:
+            continue
+        gy, gx = np.mgrid[y0:y1 + 1, x0:x1 + 1]
+        a, b_, c = q
+        den = (b_[1] - c[1]) * (a[0] - c[0]) + (c[0] - b_[0]) * (a[1] - c[1])
+        if abs(den) < 1e-12:
+            continue
+        l1 = ((b_[1] - c[1]) * (gx - c[0]) + (c[0] - b_[0]) * (gy - c[1])) / den
+        l2 = ((c[1] - a[1]) * (gx - c[0]) + (a[0] - c[0]) * (gy - c[1])) / den
+        l3 = 1 - l1 - l2
+        ins = (l1 >= -0.02) & (l2 >= -0.02) & (l3 >= -0.02)
+        H[gy[ins], gx[ins]] = (l1 * y[0] + l2 * y[1] + l3 * y[2])[ins]
+    hole = np.isnan(H)
+    near = ndimage.distance_transform_edt(hole, return_distances=False, return_indices=True)
+    H = H[near[0], near[1]]
+    img = np.zeros((size, size, 4), np.uint8)
+    img[..., 1] = np.clip(H / 2.0 * 255 + 0.5, 0, 255).astype(np.uint8)
+    img[..., 2] = 128
+    img[..., 3] = 128
+    log(f"hood ID map: {size}, height {np.nanmin(H):.2f}-{np.nanmax(H):.2f} m, {(~hole).mean() * 100:.0f}% covered")
+    return Image.fromarray(img, "RGBA")
 
 
 def main():
@@ -1394,6 +1709,7 @@ def main():
             renders(work, "drape")
             log(f"done in {time.time() - t0:.0f} s")
             return
+    smooth_throat(sh, bobs)
     # ---- the tear, the budget, the maps ----
     tear_hem(sh)
     for p in sh.data.polygons:
@@ -1406,7 +1722,8 @@ def main():
         MAPS[k].save(os.path.join(work, f"map_{k}.png"))
     lod1 = decimated(lo, LOD_TRIS // 2, "hood_lod1")
     shadow = decimated(lo, SHADOW_TRIS, "hood_shadow")
-    fr = fringe(lo, lo)
+    rd, rd1 = roll_data(lo, 8), roll_data(lod1, 5)
+    fr = fringe(lo, rd)
     slots = [bpy.data.materials.new(n) for n in ("slot_wool", "slot_inner", "slot_fringe")]
     for ob in (lo, lod1, shadow, fr):
         ob.data.materials.clear()
@@ -1416,6 +1733,9 @@ def main():
             p.material_index = 0
     thicken(lo)
     thicken(lod1)
+    n_base = {"hood.wool": len(lo.data.vertices), "hood.lod1.wool": len(lod1.data.vertices)}
+    add_roll(lo, rd)
+    add_roll(lod1, rd1)
     for p in fr.data.polygons:
         p.material_index = 2
     select_only(fr, lo)
@@ -1429,31 +1749,40 @@ def main():
     mats = skin_mats(names)
     donors = body_posed_donors(body, mats)
     parts, info = [], {}
+    attach = {}
     for node, ob, ids in (("hood.wool", lo, (0, 1, 2)), ("hood.lod1.wool", lod1, (0, 1)), ("hood.shadow", shadow, (0,))):
-        c, J, W, P_bind, Nc, used = to_bind(ob, donors, names, mats)
+        c, J, W, P_bind, Nc, used, att = to_bind(ob, donors, names, mats, n_base.get(node))
+        if node == "hood.wool":
+            attach = att
+            log("attach line", json.dumps(att))
         prims = prims_of(c, J, W, P_bind, Nc, ids)
         parts.append((node, {(MAT_WOOL, MAT_INNER, MAT_FRINGE)[m]: a for m, a in prims.items()}))
         info[node] = {"tris": int(sum(len(a["idx"]) // 3 for a in prims.values())), "bones": used}
         if node == "hood.wool":
             HP, HF = P_bind, c["lv"][c["tl"]]
             HFw = c["lv"][c["tl"][c["tm"] < 2]]
+            wp = prims[0]
     log("piece", json.dumps(info))
-    write_piece(pkg, os.path.join(pkg, "armor", "hood.glb"), parts)
-    cut = cut_mantle(src, pkg, HP, HFw)
-    # ---- manifest ----
-    mp = os.path.join(pkg, "manifest.json")
-    m = json.load(open(mp))
-    m["pieces"] = [{"id": "hood", "slot": "cloak", "file": "armor/hood.glb"}]
-    m["hood"] = {"source": "tools/assets/warden_hood.py (cloth drape over the posed body, Warden 6)", "materials": [MAT_WOOL, MAT_INNER, MAT_FRINGE],
-                 "tris": info["hood.wool"]["tris"], "lodTris": info["hood.lod1.wool"]["tris"], "shadowTris": info["hood.shadow"]["tris"],
-                 "bones": info["hood.wool"]["bones"], "maps": TEX, "mantleCut": cut}
-    json.dump(m, open(mp, "w"), indent=1)
+    write_piece(src, os.path.join(pkg, "armor", "hood.glb"), parts)
+    hood_id_map(wp["pos"], wp["uv"], wp["idx"]).save(os.path.join(pkg, "armor", "hood_id.png"))
+    # (the mantle cut and the manifest are the body's and the package's: r2 writes them to --work only, unless
+    #  --write-body 1; three solvers share the package)
+    body_out = pkg if opt.get("write-body") == "1" else work
+    cut = cut_mantle(src, body_out, HP, HFw)
+    if body_out == pkg:
+        mp = os.path.join(pkg, "manifest.json")
+        m = json.load(open(mp))
+        m["pieces"] = [{"id": "hood", "slot": "cloak", "file": "armor/hood.glb"}]
+        m["hood"] = {"source": "tools/assets/warden_hood.py (cloth drape over the posed body, Warden 6)", "materials": [MAT_WOOL, MAT_INNER, MAT_FRINGE],
+                     "tris": info["hood.wool"]["tris"], "lodTris": info["hood.lod1.wool"]["tris"], "shadowTris": info["hood.shadow"]["tris"],
+                     "bones": info["hood.wool"]["bones"], "maps": TEX, "mantleCut": cut}
+        json.dump(m, open(mp, "w"), indent=1)
     # ---- numbers and renders (the drape pose) ----
     preview_textured(lo)
     for o in (lod1, shadow):
         o.hide_render = True
     res = face_numbers(bobs, [lo])
-    json.dump({"numbers": res, "piece": info, "mantleCut": cut}, open(os.path.join(work, "numbers.json"), "w"), indent=1)
+    json.dump({"numbers": res, "piece": info, "mantleCut": cut, "attach": attach}, open(os.path.join(work, "numbers.json"), "w"), indent=1)
     renders(work, "hood")
     log(f"done in {time.time() - t0:.0f} s")
 
