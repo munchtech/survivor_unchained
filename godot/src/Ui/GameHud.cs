@@ -726,7 +726,8 @@ public partial class GameHud : CanvasLayer
         bool captured = c == null || c.Captured || c.MenuMode;
         var mouse = irons.GetLocalMousePosition();
         bool hover = DgRiver.OnRiver(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
-        bool held = c != null && c.Held(Act.Experience);
+        bool held = c != null && c.Held(Act.Experience) || TeachCard;
+        if (TeachCard) captured = false;
         float f = barWant;
         int lv = barLevel;
         double have = xpHave, need = xpNeed;
@@ -1272,10 +1273,10 @@ public partial class GameHud : CanvasLayer
     /// <summary>The tally: the night's clock, and the slain and gold under it (in town, only the gold shows: none).</summary>
     public Rect2? TallyArea => killsChip.IsVisibleInTree() && tallyGold.GetParent() is Control gold
         ? killsChip.GetGlobalRect().Merge(gold.GetGlobalRect()).Merge(tallyTime.GetGlobalRect() is var tt && tallyTime.IsVisibleInTree() ? new Rect2(tt.End.X - tallyTime.GetMinimumSize().X, tt.Position.Y, tallyTime.GetMinimumSize().X, tt.Size.Y) : gold.GetGlobalRect()) : null;
-    /// <summary>The iron HUD's lock at the chain's middle, the ember's level stamped on it: the Drowned Girl has no
-    /// level knot (UI 18: the level shows on the river's title and card), so never on the screen (the teach target
-    /// "lock" stays NotYet).</summary>
-    public Rect2? EmberLockArea => null;
+    /// <summary>True while a tutorial callout needs the river's numbers card up, as if the hold key were down.</summary>
+    public bool TeachCard { get; set; }
+    /// <summary>The river's numbers card, while it shows.</summary>
+    public Rect2? XpCardArea => irons.River.Card.Visible ? irons.River.Card.GetGlobalRect() : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>

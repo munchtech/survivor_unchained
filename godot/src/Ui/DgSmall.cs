@@ -27,6 +27,12 @@ public partial class DgSmall : Control
     const int RingOf = 2;
     /// <summary>The flask's middle above the draught's place.</summary>
     public const float FlaskDy = -6;
+    /// <summary>The flask's drawn size.</summary>
+    public static Vector2 FlaskSize => DgMeterGeo.Flask().Size;
+    /// <summary>Where the dash ring is drawn (HUD px): the round's middle, DashDy below it.</summary>
+    public static Vector2 DashMid => Instrument.DashAt + new Vector2(0, DashDy);
+    /// <summary>Where the flask is drawn (HUD px): the round's middle, FlaskDy above it.</summary>
+    public static Vector2 DraughtMid => Instrument.DraughtAt + new Vector2(0, FlaskDy);
     /// <summary>The dash's glass light (it has no element): the river's cold green.</summary>
     static readonly Color Glass = new(0.55f, 0.85f, 0.80f);
     readonly Round o;

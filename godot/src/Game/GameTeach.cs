@@ -106,16 +106,19 @@ public partial class Game
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
             case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
             // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
-            case "chain_fill": areas.Add(Instrument.ChainFill); break;
-            case "dash": pts.Add(Instrument.DashAt); break;
-            case "draught": pts.Add(Instrument.DraughtAt); break;
+            // (Experience 10: a bare point on the crest's middle, the arrow on it, no box: the box spanned the whole river
+            // under the Drowned Girl; the light looping along the crest while the callout is up shows the run)
+            case "chain_fill": pts.Add(DgRiver.OnCrest(0.5f) ?? Instrument.ChainFill.GetCenter()); break;
+            case "dash": pts.Add(DgSmall.DashMid); break;
+            case "draught": pts.Add(DgSmall.DraughtMid); break;
             case "art": pts.Add(Instrument.ArtAt); break;
             case "banner": if (hud.BannerUp) areas.Add(hud.BannerArea); break;
             // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
             case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
             case "minimap": if (hud.MinimapArea is Rect2 ma) areas.Add(ma); break;
             case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
-            case "lock": if (hud.EmberLockArea is Rect2 la) areas.Add(la); break;
+            // (the numbers card: held up by UpdateTeach while this callout is the one showing; no area on the first frame)
+            case "card": hud.TeachCard = true; if (hud.XpCardArea is Rect2 xa) areas.Add(xa); break;
             case "cards":
                 if (hud.DraftShown is { } dp && dp.CardAreas().ToList() is { Count: > 0 } all)
                     areas.Add(all.Select(x => x.Rect).Aggregate((a, b) => a.Merge(b)));
@@ -317,7 +320,7 @@ public partial class Game
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
         // (a HUD part that comes and goes: here while it shows)
         if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
-            || t.Hud == "tally" && hud.TallyArea == null || t.Hud == "lock" && hud.EmberLockArea == null) return Presence.NotYet;
+            || t.Hud == "tally" && hud.TallyArea == null) return Presence.NotYet;
         // (a freeze on her own state: never the moment a roof hides her)
         if (t.HerSeen && Battle?.Player is { } pl && scene != null && !InOpen((pl.X, scene.HeightAt(pl.X, pl.Z) + 1.3, pl.Z), true)) return Presence.NotYet;
         if (t.World != null)
@@ -343,6 +346,7 @@ public partial class Game
         var now = t.Update(teachClock, RealNow, TeachBusy(), Where);
         if (was != null && t.Current != was) TeachDown(was);
         if (now != null) TeachUp(now);
+        hud.TeachCard = t.Current?.Target.Hud == "card";
         AimCallout();
         // (--teach-diag with --shot: each freeze's frame first with the ember halos held out, to measure them by)
         // (the callout's own frame a few frames after, halos back: the two differ by the halos alone)
@@ -458,6 +462,7 @@ public partial class Game
         if (Args.Has("shot") && c.Kind == CalloutKind.Freeze) { Shots.Want("teach_" + c.Id + "_after1", 0.6); Shots.Want("teach_" + c.Id + "_after2", 1.6); }
         calloutShown?.TakeDown();
         calloutShown = null;
+        hud.TeachCard = false;
         hud.HoldTip = false;
         hud.HoldBanner = false;
         hud.Spotlight(null, false, false);
@@ -481,14 +486,13 @@ public partial class Game
         if (pts.Count > worldOn)
             radii.Add(c.Target.Hud switch
             {
-                "art" => Instrument.R + Instrument.Band,
-                // (a lit dash's ring stands outside its flames and badge, round 3 judge)
-                "dash" when hud.DashLit => Instrument.SmallR + Instrument.SmallBand + 18,
-                "dash" or "draught" => Instrument.SmallR + Instrument.SmallBand,
+                "art" => DgRiver.FlareR,
+                "dash" => DgSmall.RingD / 2,
+                "draught" => Math.Max(DgSmall.FlaskSize.X, DgSmall.FlaskSize.Y) / 2,
                 "chain" or "chain_fill" => 22,
-                _ => Instrument.Sock / 2 + 4,
+                _ => DgRiver.SeatD / 2,
             });
-        int bare = -1;
+        int bare = c.Target.Hud == "chain_fill" ? 0 : -1;
         List<int>? noArrow = null;
         if (c.Target.World != null)
             foreach (var w in c.Target.World())
