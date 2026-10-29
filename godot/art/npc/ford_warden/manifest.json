@@ -1,18 +1,34 @@
 {
  "hair": {
   "file": "beard.glb",
-  "colour": "#7a7871",
+  "colour": "#6b675f",
   "style": "beard",
-  "source": "tools/assets/warden_beard.py (hair cards on heroine_hair.py's drape and cards)",
-  "tris": 10192,
-  "lodTris": 2200,
-  "shadowTris": 660,
-  "guides": {
-   "moustache": 44,
-   "inner": 66,
-   "mid": 51,
-   "outer": 44,
-   "edge": 66
+  "uniforms": {
+   "*": {
+    "ash": 0.0,
+    "lift": 0.0,
+    "through": 0.2,
+    "roots": 0.7
+   },
+   "hair_mass": {
+    "shine": 0.4
+   }
+  },
+  "source": "tools/assets/warden_beard.py (r4 hybrid: wet-lock mass on heroine_hair.py's drape, a card fringe)",
+  "tris": 12800,
+  "massTris": 10600,
+  "cardTris": 2200,
+  "lodTris": 2204,
+  "shadowTris": 2412,
+  "locks": {
+   "moustache": 16,
+   "inner": 44,
+   "outer": 45
+  },
+  "cards": {
+   "edge": 55,
+   "fringe": 25,
+   "strays": 10
   }
  },
  "nipples": {

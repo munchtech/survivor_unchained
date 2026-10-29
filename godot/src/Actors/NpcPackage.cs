@@ -26,7 +26,7 @@ public static class NpcPackage
     public const string Prefix = "npc:";
 
     public sealed record Piece(string Id, string Slot, string File, Variant Hide);
-    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0);
+    public sealed record Manifest(string Name, string Sex, double Height, int Joints, List<Piece> Pieces, string? HairFile = null, Color? HairColour = null, bool Baked = false, string? LodFile = null, string? Walk = null, float ArmsIn = 0, float ArmsWrist = 0, Godot.Collections.Dictionary? HairUniforms = null);
 
     static readonly Dictionary<string, Manifest?> manifests = new();
     static readonly Dictionary<string, PackedScene> scenes = new();
@@ -62,18 +62,19 @@ public static class NpcPackage
                 pieces.RemoveAll(p => !keep.Contains(p.Id));
             }
             // (its hair: one of her styles carried onto its head, hair/STYLE.glb, and the colour it is dyed; a crop is painted on its head)
-            string? hairFile = null; Color? hairColour = null;
+            string? hairFile = null; Color? hairColour = null; Godot.Collections.Dictionary? hairUniforms = null;
             if (d.TryGetValue("hair", out var hv) && hv.VariantType == Variant.Type.Dictionary)
             {
                 var h = hv.AsGodotDictionary();
                 if (h.TryGetValue("file", out var hf) && hf.VariantType == Variant.Type.String) hairFile = (string)hf;
                 if (h.TryGetValue("colour", out var hc) && hc.VariantType == Variant.Type.String) hairColour = new Color((string)hc);
+                if (h.TryGetValue("uniforms", out var hu) && hu.VariantType == Variant.Type.Dictionary) hairUniforms = hu.AsGodotDictionary();
             }
             m = new Manifest(d.TryGetValue("name", out var n) ? (string)n : name, d.TryGetValue("sex", out var sx) ? (string)sx : "male",
                 d.TryGetValue("height", out var ht) ? (double)ht : 0, d.TryGetValue("joints", out var j) ? (int)j : 0, pieces, hairFile, hairColour, d.TryGetValue("baked", out var bk) && bk.VariantType == Variant.Type.Bool && (bool)bk,
                 d.TryGetValue("lod", out var lv) && lv.VariantType == Variant.Type.Dictionary && lv.AsGodotDictionary().TryGetValue("file", out var lf) && lf.VariantType == Variant.Type.String ? (string)lf : null,
                 // (its walk: "lurch", the crowd's undead lurch (NpcWalks); none, the townsfolk's walk)
-                d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null);
+                d.TryGetValue("walk", out var wv) && wv.VariantType == Variant.Type.String ? (string)wv : null, HairUniforms: hairUniforms);
             // (its arm set over the shared clips: "arms": {"in": DEG, "wrist": SHARE}, World.NpcArmSet; a shot's --npc-arms IN,WRIST overrides)
             if (d.TryGetValue("arms", out var av) && av.VariantType == Variant.Type.Dictionary)
             {
@@ -226,7 +227,7 @@ public static class NpcPackage
                 }
                 for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                     if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
-                        mi.SetSurfaceOverrideMaterial(s, People.Hair(src, m.HairColour ?? People.HisHairColour));
+                        mi.SetSurfaceOverrideMaterial(s, Uniforms(People.Hair(src, m.HairColour ?? People.HisHairColour), src.ResourceName, m.HairUniforms));
                 person.Hair.Add(mi);
                 if (isLod) { hairLod = mi; continue; }
                 person.Meshes.Add(mi);
@@ -339,6 +340,26 @@ public static class NpcPackage
             else if (mode == "auto") { mi.VisibilityRangeBegin = 18; mi.VisibilityRangeBeginMargin = 1; }
         }
         scene.Free();
+    }
+
+    /// <summary>A package's hair uniforms (the manifest's hair "uniforms": {"*": {NAME: value}, MATERIAL: {...}}, a
+    /// value a number or [x, y, z]) set on its hair's every pass, "*" first, then its material's own (Warden 6 r4: the
+    /// Ford-Warden's beard, its mass "hair_mass" and cards "hair", greyed out of the moonlight's blue-white).</summary>
+    static Material Uniforms(Material mat, string part, Godot.Collections.Dictionary? u)
+    {
+        if (u == null || mat is not ShaderMaterial sm) return mat;
+        foreach (var who in new[] { "*", part })
+        {
+            if (!u.TryGetValue(who, out var set) || set.VariantType != Variant.Type.Dictionary) continue;
+            foreach (var pass in HairDraw.Passes(sm))
+                foreach (var (k, v) in set.AsGodotDictionary())
+                {
+                    if (v.VariantType is Variant.Type.Float or Variant.Type.Int) pass.SetShaderParameter((string)k, (float)v);
+                    else if (v.VariantType == Variant.Type.Array && v.AsGodotArray() is { Count: 3 } a)
+                        pass.SetShaderParameter((string)k, new Vector3((float)a[0], (float)a[1], (float)a[2]));
+                }
+        }
+        return mat;
     }
 
     /// <summary>A piece's skin as the body's skeleton has it: each bind to a bone the body lacks moved to that bone's

@@ -124,7 +124,7 @@ FINE = dict(off=0.0012, width=(0.005, 0.009), cols=WISP + LOOSE, narrow=0.7, sha
             alpha=(0.45, 0.8))
 LOD1 = dict(every={"inner": 3, "mid": 2, "outer": 2}, K=8, wide=1.7)   # beard.lod1: a share of each layer's guides, wider, fewer points
 SHADOW = dict(every=2, K=6, wide=2.0)        # beard.shadow: every second inner-layer guide
-COLOUR = "#7a7871"                # the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
+COLOUR = "#6b675f"                # (r4: #7a7871 read white under the moon on the solid mass) the dye: old river-wet grey (concept A: neutral grey, a touch warm; darker wet roots by the shader)
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head"]
 
 
@@ -351,10 +351,12 @@ def keep_front(pk, Pb, off, below_y=1.545, lane=None, roots_x=None, comb=0.0):
         w = comb * smoothstep(below_y, below_y - 0.06, y)
         flat[:, 0] += (want - flat[:, 0]) * w
     # (over the face, the sides held in under the hood's side wall: a guide rooted there lies on the cheek)
-    hi = y > 1.50
-    lim = X0 + np.sign(flat[:, 0] - X0) * SIDE_WALL
-    over = hi & (np.abs(flat[:, 0] - X0) > SIDE_WALL)
-    flat[over, 0] = lim[over]
+    # (r4: a soft limit, not a clamp: the clamp folded lifted points flat onto the wall, the zigzag side cards of r3)
+    hi = smoothstep(1.47, 1.51, y)
+    adx = np.abs(flat[:, 0] - X0)
+    a_, b_ = SIDE_WALL - 0.012, SIDE_WALL + 0.012
+    soft = np.where(adx > a_, a_ + (b_ - a_) * np.tanh((adx - a_) / (b_ - a_)), adx)
+    flat[:, 0] = X0 + np.sign(flat[:, 0] - X0) * (adx + (soft - adx) * hi)
     zf = pk.front_z(flat[:, 0], y) + np.repeat(off if np.ndim(off) else np.full(S, off), K)
     zg = -flat[:, 1]
     # (eased in over the last 15 mm above the line: no kink at the chin)
@@ -373,19 +375,21 @@ def grow(pk, pts, nrm, region, cfg, rng, length, tip_y=None):
     off = cfg["off"] * (0.85 + 0.3 * rng.random(len(pts)))
     rx = pts[:, 0]
     K = 24 if region == "beard" else 12
+    # (r4: the fringe's cards lie on the mass (in the collider), held off his front by the mass's depth, "front")
+    fo = off if "front" not in cfg else cfg["front"] * (0.9 + 0.2 * rng.random(len(pts)))
 
     def extra(P, step):
         if region == "beard":
-            P[:] = keep_front(pk, P, off, roots_x=rx, comb=0.04)
+            P[:] = keep_front(pk, P, fo, roots_x=rx, comb=0.04)
         else:
-            P[:] = keep_front(pk, P, off, below_y=-1.0)
+            P[:] = keep_front(pk, P, fo, below_y=-1.0)
 
     collider(pk, face_only=True)
     P = HH["drape"](starts, db, length, points=K, offset=off, stiff_root=0.02 if region != "beard" else 0.03,
                     steps=140 if region == "beard" else 90, gravity=1.0, extra=extra)
     if region == "beard":
-        P = keep_front(pk, P, off, roots_x=rx, comb=0.0)
-    return P, off
+        P = keep_front(pk, P, fo, roots_x=rx, comb=0.0)
+    return P, fo
 
 
 def clump(P, share, n_clumps, rng, start=0.25):
@@ -419,6 +423,15 @@ def card_set(P, cfg, rng, K, wide=1.0, shade=None, alpha=None, edge=False):
     HH["RNG"] = rng
     c = HH["cards"](Q, width, cfg["cols"], cfg["off"], root=np.full(S, 0.6 if not edge else 0.9), narrow=cfg["narrow"], floor=0.001, edge_in=False)
     nv = 3 * K
+    # (r4: a card whose edge points were thrown off its guide (onto() over a fold) folded to its middle: r4c drew one
+    # as a 6 cm plane hanging off the beard)
+    V4 = c["V"].reshape(S, 3, K, 3)
+    span = np.linalg.norm(V4[:, 2] - V4[:, 0], axis=2)
+    bad = span.max(1) > 2.0 * width + 0.004
+    if bad.any():
+        V4[bad, 0] = V4[bad, 1]
+        V4[bad, 2] = V4[bad, 1]
+        log(f"card_set: {int(bad.sum())} of {S} cards thrown wide, folded flat")
     lo, hi = shade if shade is not None else cfg["shade"]
     r = np.repeat(rng.uniform(lo, hi, S), nv)
     a = np.repeat(rng.uniform(*alpha, S) if alpha is not None else np.ones(S), nv)
@@ -500,34 +513,39 @@ def tangents(V, N, F, at, S_list):
 
 # ================= 6. write =================
 def write(pk, path, parts):
-    """beard.glb: body.glb's skeleton and skin, its meshes replaced by the beard's (parts: [(node, prim dict, mat)])."""
+    """beard.glb: body.glb's skeleton and skin, its meshes replaced by the beard's (parts: [(node, [(prim dict, mat)])];
+    materials 0 "hair" (the strand atlas's cards), 1 "beard_shadow" (opaque), 2 "hair_mass" (the locks, beard_mass.png))."""
     g = Glb(os.path.join(pk.pkg, "body.glb"))
     j = g.j
     drop = [i for i, n in enumerate(j["nodes"]) if n.get("name", "").startswith("ford_warden") and n.get("name") != "ford_warden"]
     g.drop_nodes(drop)
-    j["materials"], j["textures"], j["images"], j["samplers"] = [], [], [], []
     j["meshes"] = []
-    j["images"] = [{"uri": ATLAS_URI, "name": "hair_strands"}]
-    j["samplers"] = [{"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071}]
-    j["textures"] = [{"source": 0, "sampler": 0}]
+    j["images"] = [{"uri": ATLAS_URI, "name": "hair_strands"}, {"uri": MASS_TEX, "name": "beard_mass"}]
+    j["samplers"] = [{"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071},
+                     {"magFilter": 9729, "minFilter": 9987, "wrapS": 10497, "wrapT": 33071}]
+    j["textures"] = [{"source": 0, "sampler": 0}, {"source": 1, "sampler": 1}]
     j["materials"] = [
         {"name": "hair", "pbrMetallicRoughness": {"baseColorTexture": {"index": 0}, "metallicFactor": 0.0, "roughnessFactor": 0.6},
          "alphaMode": "MASK", "alphaCutoff": 0.4, "doubleSided": True},
         {"name": "beard_shadow", "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.2, 0.2, 1.0], "metallicFactor": 0.0, "roughnessFactor": 1.0},
          "doubleSided": True},
+        {"name": "hair_mass", "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicFactor": 0.0, "roughnessFactor": 0.6},
+         "doubleSided": False},
     ]
     arm = j["scenes"][0]["nodes"][0]
     body_node = next(i for i, n in enumerate(j["nodes"]) if n.get("name") == "ford_warden")
-    for k, (node_name, d, mat) in enumerate(parts):
-        a = {"POSITION": g.add_acc(d["pos"].astype(np.float32), "VEC3", minmax=True), "NORMAL": g.add_acc(d["nrm"].astype(np.float32), "VEC3"),
-             "JOINTS_0": g.add_acc(d["J"], "VEC4"), "WEIGHTS_0": g.add_acc(d["W"], "VEC4")}
-        if "uv" in d:
-            a["TANGENT"] = g.add_acc(d["tan"], "VEC4")
-            a["TEXCOORD_0"] = g.add_acc(d["uv"].astype(np.float32), "VEC2")
-            a["TEXCOORD_1"] = g.add_acc(np.zeros((len(d["pos"]), 2), np.float32), "VEC2")   # (no chain: it swings by its skin)
-            a["COLOR_0"] = g.add_acc(d["col"].astype(np.float32), "VEC4")
-        mesh = {"name": node_name, "primitives": [{"attributes": a, "indices": g.add_acc(d["idx"].astype(np.uint32).ravel(), "SCALAR", target=34963),
-                                                    "material": mat, "mode": 4}]}
+    for k, (node_name, prims_) in enumerate(parts):
+        mesh = {"name": node_name, "primitives": []}
+        for d, mat in prims_:
+            a = {"POSITION": g.add_acc(d["pos"].astype(np.float32), "VEC3", minmax=True), "NORMAL": g.add_acc(d["nrm"].astype(np.float32), "VEC3"),
+                 "JOINTS_0": g.add_acc(d["J"], "VEC4"), "WEIGHTS_0": g.add_acc(d["W"], "VEC4")}
+            if "uv" in d and mat != 1:
+                a["TANGENT"] = g.add_acc(d["tan"].astype(np.float32), "VEC4")
+                a["TEXCOORD_0"] = g.add_acc(d["uv"].astype(np.float32), "VEC2")
+                a["TEXCOORD_1"] = g.add_acc(np.zeros((len(d["pos"]), 2), np.float32), "VEC2")   # (no chain: it swings by its skin)
+                a["COLOR_0"] = g.add_acc(d["col"].astype(np.float32), "VEC4")
+            mesh["primitives"].append({"attributes": a, "indices": g.add_acc(d["idx"].astype(np.uint32).ravel(), "SCALAR", target=34963),
+                                       "material": mat, "mode": 4})
         j["meshes"].append(mesh)
         if k == 0:
             j["nodes"][body_node] = {"name": node_name, "mesh": 0, "skin": 0}
@@ -636,13 +654,320 @@ def measure(pk, mesh):
     return out
 
 
+# ================= r4: the sculpted mass (wet locks as tapered tubes) =================
+MASS_TEX = "beard_mass.png"         # the mass's strands (beside beard.glb): the atlas's strands packed solid, tileable across
+MASS_LAYERS = [
+    # roots' spacing, centre held off, width and depth at the root (m), sides, colour depth (r), clump share, tip jitter
+    dict(name="inner", spacing=0.024, off=0.0085, width=(0.050, 0.068), depth=(0.011, 0.015), n=5, shade=(0.40, 0.55), clump=0.20, jit=0.035, tip=2.4),
+    dict(name="outer", spacing=0.027, off=0.0185, width=(0.024, 0.036), depth=(0.010, 0.014), n=6, shade=(0.70, 0.92), clump=0.45, jit=0.08, tip=1.7),
+]
+MASS_MOUSTACHE = dict(spacing=0.0072, off=0.0048, width=(0.014, 0.020), depth=(0.0065, 0.0085), n=5, shade=(0.70, 0.95),
+                      length=(0.055, 0.085))
+MASS_UV = 0.10                      # metres of a lock's girth per width of the mass texture
+MASS_NORMAL = 0.75                  # the tube's own normal's share (the rest the mass's outward normal: lit as one mass)
+FRINGE = dict(spacing=0.034, off=0.0265, width=(0.009, 0.015), cols=LOCK + WISP + LOOSE[:2], narrow=0.9, shade=(0.85, 1.0), K=11, clump=0.35, jit=0.09)
+STRAYS = dict(n=10, off=0.030, width=(0.004, 0.007), cols=WISP, narrow=0.6, shade=(0.9, 1.0), K=9)
+LOD1_MASS = dict(n=4, K=7)
+# (the hair shader's uniforms for the beard (NpcPackage.Uniforms): no ash or lift (they cool and lighten a pale grey: blue-
+# white under the moon), less light through it (a wet mass, not a backlit halo), darker wet roots)
+HAIR_UNIFORMS = {"*": {"ash": 0.0, "lift": 0.0, "through": 0.2, "roots": 0.7}, "hair_mass": {"shine": 0.4}}
+SHADOW_MASS = dict(n=4, K=6)
+
+
+def mass_texture(path, seed=7, W=1024, H=2048):
+    """The mass's strands: the atlas's dense and loose columns layered ten deep over a dark ground, deeper layers
+    darker, every layer wrapped across (tileable in u); r the strands' light, g their number, alpha 1 (a solid lock:
+    the hair shader's hashed alpha keeps it whole)."""
+    rng = np.random.default_rng(seed)
+    a = np.asarray(Image.open(ATLAS).convert("RGBA")).astype(np.float32) / 255
+    cw = a.shape[1] // 16
+    rows = int(a.shape[0] * 0.82)            # (the atlas's tips thin out in its last rows: the strands' length, not their ends)
+    cols = []
+    for c in DENSE + LOOSE:
+        im = Image.fromarray((a[:rows, c * cw:(c + 1) * cw] * 255).astype(np.uint8)).resize((cw, H), Image.LANCZOS)
+        cols.append(np.asarray(im).astype(np.float32) / 255)
+    r = np.full((H, W), 0.18, np.float32)
+    g = np.full((H, W), 0.5, np.float32)
+    for L in range(10):
+        strip = np.concatenate([cols[i][:, ::(1 if rng.random() < 0.5 else -1)] for i in rng.integers(0, len(cols), W // cw)], 1)
+        strip = np.roll(strip, int(rng.integers(0, W)), 1)
+        sh = 0.40 + 0.60 * L / 9
+        al = strip[..., 3]
+        r = r * (1 - al) + strip[..., 0] * sh * al
+        g = g * (1 - al) + strip[..., 1] * al
+    out = np.dstack([r, g, np.zeros_like(r), np.ones_like(r)])
+    Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8)).save(path)
+    log(f"mass texture {path}: r mean {r.mean():.2f}")
+
+
+def smooth_lines(P, it=6, keep_root=2):
+    """Each line's points relaxed toward their neighbours' mean (kinks out), the root's first points kept."""
+    P = P.copy()
+    for _ in range(it):
+        P[:, keep_root:-1] = 0.5 * P[:, keep_root:-1] + 0.25 * (P[:, keep_root - 1:-2] + P[:, keep_root + 1:])
+    return P
+
+
+def push_out(pk, C, need, root_keep=0.06):
+    """Each lock's centre line (glTF, S x K x 3) moved off him along his surface's normal where it is nearer than
+    `need` (S x K: its half-depth and a clearance) to the drape's surfaces (face, body, the hood's capelet), except
+    within its first `root_keep` of its length (it grows from the skin there)."""
+    tree = cKDTree(pk.drape_pts)
+    S, K, _ = C.shape
+    f = np.linspace(0, 1, K)[None].repeat(S, 0)
+    for _ in range(4):
+        flat = C.reshape(-1, 3)
+        _, i = tree.query(flat, k=6)
+        q = pk.drape_pts[i].mean(1)
+        n = pk.drape_nrm[i].mean(1)
+        n /= np.linalg.norm(n, axis=1)[:, None] + 1e-12
+        sd = ((flat - q) * n).sum(1).reshape(S, K)
+        mv = np.maximum(need - sd, 0) * smoothstep(root_keep * 0.5, root_keep, f)
+        C = C + (n.reshape(S, K, 3) * mv[:, :, None])
+        C[:, 2:] = smooth_lines(C, it=2, keep_root=2)[:, 2:]
+    return C
+
+
+def outward(pk, C):
+    """The mass's outward way at each centre-line point (glTF): his surfaces' normals, the head's middle over the face."""
+    S, K, _ = C.shape
+    flat = C.reshape(-1, 3)
+    tree = cKDTree(pk.drape_pts)
+    _, i = tree.query(flat, k=10)
+    n = pk.drape_nrm[i].mean(1)
+    rad = flat - CENTRE_G
+    rad /= np.linalg.norm(rad, axis=1)[:, None] + 1e-12
+    hd = (pk.drape_face[i] & (pk.drape_pts[i][:, :, 1] > 1.555)).mean(1)[:, None]
+    n = n * (1 - hd) + rad * hd
+    n = n.reshape(S, K, 3)
+    for _ in range(4):
+        n[:, 1:-1] = (n[:, :-2] + 2 * n[:, 1:-1] + n[:, 2:]) / 4
+    return n / (np.linalg.norm(n, axis=2)[:, :, None] + 1e-12)
+
+
+def tubes(pk, C, width, depth, n_sides, K, shade, rng, tip_pow=1.7):
+    """Tapered wet locks round centre lines (glTF, S x K0 x 3, resampled to K): an ellipse `width` across and `depth`
+    deep (S each) at the root, lying flat on him, narrowing to a point; u round the lock (the seam behind it), v root
+    to tip; vertex colour r depth, g lock number, a 1. Returns a part dict (pos, nrm, uv, col, tan, idx, at, arc)."""
+    Cb = HH["resample"](C, K)
+    S = len(Cb)
+    t = np.zeros_like(Cb)
+    t[:, 1:-1] = Cb[:, 2:] - Cb[:, :-2]
+    t[:, 0], t[:, -1] = Cb[:, 1] - Cb[:, 0], Cb[:, -1] - Cb[:, -2]
+    t /= np.linalg.norm(t, axis=2)[:, :, None] + 1e-12
+    out = outward(pk, Cb)
+    side = np.cross(t, out)
+    side /= np.linalg.norm(side, axis=2)[:, :, None] + 1e-12
+    out = np.cross(side, t)
+    f = np.linspace(0, 1, K)
+    prof = (1 - f ** tip_pow) ** 0.85 * (0.82 + 0.18 * smoothstep(0.0, 0.12, f))      # (pointed, a touch narrower at the root)
+    dprof = prof * (0.45 + 0.55 * smoothstep(0.0, 0.15, f))                             # (flat on the skin at the root)
+    hw = width[:, None] * prof[None] / 2
+    hd = depth[:, None] * dprof[None] / 2
+    th = -np.pi / 2 + 2 * np.pi * np.arange(n_sides + 1) / n_sides
+    ct, st = np.cos(th), np.sin(th)
+    V = Cb[:, :, None] + side[:, :, None] * (hw[:, :, None, None] * ct[None, None, :, None]) + out[:, :, None] * (hd[:, :, None, None] * st[None, None, :, None])
+    nt = side[:, :, None] * (ct[None, None, :, None] / np.maximum(hw, 1e-4)[:, :, None, None]) + out[:, :, None] * (st[None, None, :, None] / np.maximum(hd, 1e-4)[:, :, None, None])
+    nt /= np.linalg.norm(nt, axis=3)[..., None] + 1e-12
+    N = MASS_NORMAL * nt + (1 - MASS_NORMAL) * out[:, :, None]
+    N /= np.linalg.norm(N, axis=3)[..., None] + 1e-12
+    T = -side[:, :, None] * st[None, None, :, None] + out[:, :, None] * ct[None, None, :, None]   # (round the lock)
+    T = T - N * (T * N).sum(3)[..., None]
+    T /= np.linalg.norm(T, axis=3)[..., None] + 1e-12
+    w = np.sign((np.cross(N, T) * t[:, :, None]).sum(3))
+    w[w == 0] = 1
+    girth = np.pi * (width + depth) / 2
+    u0 = rng.random(S)
+    U = u0[:, None, None] + (np.arange(n_sides + 1) / n_sides)[None, None, :] * (girth / MASS_UV)[:, None, None]
+    U = np.broadcast_to(U, (S, K, n_sides + 1))
+    Vv = np.broadcast_to(f[None, :, None], (S, K, n_sides + 1))
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(Cb, axis=1), axis=2), 1)]
+    nv = K * (n_sides + 1)
+    r = np.repeat(rng.uniform(*shade, S), nv)
+    g_ = np.repeat(rng.random(S), nv)
+    col = np.c_[r, g_, np.zeros(len(r)), np.ones(len(r))]
+    base = (np.arange(S) * nv)[:, None, None]
+    k = np.arange(K - 1)[None, :, None]
+    j = np.arange(n_sides)[None, None, :]
+    a_ = base + k * (n_sides + 1) + j
+    b_ = a_ + 1
+    c_ = a_ + (n_sides + 1) + 1
+    d_ = a_ + (n_sides + 1)
+    q = np.stack([a_, b_, c_, d_], -1).reshape(-1, 4)
+    tri = np.vstack([q[:, [0, 2, 1]], q[:, [0, 3, 2]]])
+    Vf = V.reshape(-1, 3)
+    ar = np.linalg.norm(np.cross(Vf[tri[:, 1]] - Vf[tri[:, 0]], Vf[tri[:, 2]] - Vf[tri[:, 0]]), axis=1)
+    tri = tri[ar > 1e-12]                       # (the tip's: its last ring is a point)
+    fn = np.cross(Vf[tri[:, 1]] - Vf[tri[:, 0]], Vf[tri[:, 2]] - Vf[tri[:, 0]])
+    Nf = N.reshape(-1, 3)
+    flip = (fn * Nf[tri[:, 0]]).sum(1) < 0      # (wound outward)
+    tri[flip] = tri[flip][:, [0, 2, 1]]
+    at = np.broadcast_to(Cb[:, :, None], V.shape).reshape(-1, 3)
+    return dict(pos=Vf, nrm=Nf, uv=np.c_[U.ravel(), Vv.ravel()], col=col, tan=np.c_[T.reshape(-1, 3), w.ravel()].astype(np.float32),
+                idx=tri, at=at, arc=np.broadcast_to(arc[:, :, None], (S, K, n_sides + 1)).ravel().copy(), S=S)
+
+
+def cat_parts(ps):
+    out = {k: np.concatenate([p[k] for p in ps]) for k in ("pos", "nrm", "uv", "col", "tan", "at", "arc")}
+    idx, o = [], 0
+    for p in ps:
+        idx.append(p["idx"] + o)
+        o += len(p["pos"])
+    out["idx"] = np.concatenate(idx)
+    return out
+
+
+def skin_part(pk, d):
+    J, W = weights(pk, d["at"], d["arc"])
+    d = dict(d)
+    d["J"], d["W"] = J, W
+    return d
+
+
+def cut_lines(pk, C, rise=0.004, ahead=0.055):
+    """Each line (glTF) cut where it first climbs `rise` over the lowest it has been (the drape flung a few up and
+    forward), or stands more than `ahead` in front of his front below the chin; K points kept along what is left."""
+    S, K, _ = C.shape
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(C, axis=1), axis=2), 1)]
+    y = C[:, :, 1]
+    lo = np.minimum.accumulate(y, axis=1)
+    bad = (y > lo + rise)
+    fz = pk.front_z(C[:, :, 0].ravel(), y.ravel()).reshape(S, K)
+    bad |= (y < 1.50) & (C[:, :, 2] - fz > ahead)
+    length = arc[:, -1].copy()
+    for s_ in range(S):
+        b = np.nonzero(bad[s_])[0]
+        if len(b):
+            length[s_] = arc[s_, max(b[0] - 1, 1)]
+    out = np.zeros_like(C)
+    for s_ in range(S):
+        t = np.linspace(0, length[s_], K)
+        for c in range(3):
+            out[s_, :, c] = np.interp(t, arc[s_], C[s_, :, c])
+    return out
+
+
+def lock_lines(pk, region, cfg, rng):
+    """A layer's locks' centre lines (glTF): roots, the drape (heroine_hair.drape on the package's collider, held in
+    front of him and combed to the lane), cut to their tips' heights, gathered a little in wet clumps, smoothed, and
+    held off him by half their depth. Returns lines, widths, depths."""
+    bp, bn, below = root_points(pk, rng, cfg["spacing"], region)
+    S = len(bp)
+    width = rng.uniform(*cfg["width"], S)
+    depth = rng.uniform(*cfg["depth"], S)
+    adx = np.abs(bp[:, 0] - X0)
+    if region == "moustache":
+        # (r4: laid, not draped: down and a little out over the upper lip, then falling past the mouth's corners into
+        # the beard; the drape threw a corner lock out sideways past his cheek)
+        length = rng.uniform(*cfg["length"], S) * (1 + 0.35 * smoothstep(0.0, MOUSTACHE_CORNER, adx))
+        sg = np.sign(bp[:, 0] - X0) + (bp[:, 0] == X0)
+        K = 12
+        s = np.linspace(0, 1, K)[None, :] * length[:, None]
+        out_ = 0.004 + 0.010 * smoothstep(0.0, 0.02, s)                       # (off the lip: over it, not on it)
+        lat = sg[:, None] * (0.10 + 0.55 * adx / MUSTACHE[0])[:, None] * np.minimum(s, 0.03 + 0.02 * rng.random(S)[:, None])
+        C = np.zeros((S, K, 3))
+        C[:, :, 0] = bp[:, None, 0] + lat
+        C[:, :, 1] = bp[:, None, 1] - s
+        C[:, :, 2] = bp[:, None, 2] + out_ - 0.15 * np.maximum(s - 0.03, 0)   # (forward over the lip, then back down the chin)
+        C = push_out(pk, C, depth[:, None] * 0.5 + 0.0015, root_keep=0.15)
+        C = smooth_lines(C, it=3, keep_root=2)
+        return C, width, depth
+    else:
+        tip = np.interp(adx, [0, 0.03, 0.06, 0.09], [TIP_Y[0], TIP_Y[0] + 0.02, TIP_Y[0] + 0.07, TIP_Y[1]])
+        tip = tip + rng.normal(0, cfg["jit"], S) * np.array([0.55, 1.0])[(rng.random(S) < 0.6).astype(int)]
+        length = (bp[:, 1] - tip) + 0.10 + 0.08 * smoothstep(0.03, 0.08, adx) + 0.04 * (bp[:, 2] < 0.09)
+        Pb, off = grow(pk, bp, bn, "beard", cfg, rng, length.max())
+        Pb = trim(Pb, to_height(Pb, tip, length))
+        Pb = clump(Pb, cfg["clump"], max(3, S // 2), rng, start=0.45)
+        Pb = keep_front(pk, Pb, off * 0.9)
+    C = cut_lines(pk, b2g(Pb))
+    C = smooth_lines(C, it=8, keep_root=2)
+    need = depth[:, None] * 0.5 * np.ones(C.shape[1])[None] + 0.002
+    C = push_out(pk, C, need)
+    return C, width, depth
+
+
+def strands_collider(pk, parts):
+    """The drape's collider with the mass's surface added (the fringe's guides lie on the mass, not inside it)."""
+    P = np.concatenate([p["pos"] for p in parts])
+    N = np.concatenate([p["nrm"] for p in parts])
+    k = np.random.default_rng(3).random(len(P)) < 0.6
+    pk.drape_pts = np.vstack([pk.drape_pts, P[k]])
+    pk.drape_nrm = np.vstack([pk.drape_nrm, N[k]])
+    pk.drape_face = np.r_[pk.drape_face, np.zeros(k.sum(), bool)]
+
+
+def preview(pk, parts, path, views=("front", "side", "q"), box=(1.0, 1.72), crop=None):
+    """A quick look (dense surface points z-buffered, lit by their normals): him grey, the mass and cards in their tints.
+    `crop` (x0, x1, y0, y1, glTF metres, front view only) for a close look."""
+    L = np.array([0.35, 0.55, 0.75]); L /= np.linalg.norm(L)
+    tm = pk.all_tm
+    keep = (tm.triangles_center[:, 1] > box[0] - 0.02) & (tm.triangles_center[:, 1] < box[1] + 0.05)
+    rng = np.random.default_rng(2)
+    H_ = 900
+    res = (box[1] - box[0]) / H_
+    layers = [(tm.vertices, tm.faces[keep], (0.42, 0.40, 0.38), None)] + [(p["pos"], p["idx"], p["tint"], p["nrm"]) for p in parts]
+    samples = []
+    for V, F, col, N in layers:
+        P, Nf, k = sample_surface(V, F, res * 0.55, rng)
+        if N is not None:
+            Nf = N[F[k]].mean(1)
+            Nf /= np.linalg.norm(Nf, axis=1)[:, None] + 1e-12
+        samples.append((P, Nf, np.asarray(col)))
+    ims = []
+    for view in views:
+        ang = {"front": 0.0, "side": -np.pi / 2, "q": -np.pi / 4}[view]
+        Rm = np.array([[np.cos(ang), 0, np.sin(ang)], [0, 1, 0], [-np.sin(ang), 0, np.cos(ang)]])
+        W_ = 600
+        img = np.zeros((H_, W_, 3)) + 0.05
+        zb = np.full((H_, W_), -9.0)
+        for P, Nf, col in samples:
+            X = (P - np.array([X0, 0, 0])) @ Rm.T
+            Nr = Nf @ Rm.T
+            lit = 0.2 + 0.8 * np.clip(Nr @ L, 0, 1) if True else None
+            ix = (X[:, 0] / res + W_ / 2).astype(int)
+            iy = (H_ - 1 - (X[:, 1] - box[0]) / res).astype(int)
+            ok = (ix >= 0) & (ix < W_) & (iy >= 0) & (iy < H_)
+            ix, iy, z, c = ix[ok], iy[ok], X[ok, 2], lit[ok][:, None] * col[None]
+            o = np.argsort(z)
+            ix, iy, z, c = ix[o], iy[o], z[o], c[o]
+            better = z > zb[iy, ix]
+            zb[iy[better], ix[better]] = z[better]
+            img[iy[better], ix[better]] = c[better]
+        ims.append(Image.fromarray((np.clip(img, 0, 1) ** (1 / 1.3) * 255).astype(np.uint8)))
+    out = Image.new("RGB", (sum(i.width for i in ims), ims[0].height))
+    x = 0
+    for i in ims:
+        out.paste(i, (x, 0)); x += i.width
+    out.save(path)
+
+
+def card_part(pk, cs):
+    p = part(pk, cs)
+    p["arc"] = merge(cs)["arc"]
+    return p
+
+
 # ================= main =================
+def tubes_by_length(pk, C, w, d, n, shade, rng, Ks=((0.16, 7), (0.30, 10), (9.0, 13)), tip_pow=1.7):
+    """tubes() with as many rings as a lock is long (short locks fewer)."""
+    L = np.linalg.norm(np.diff(C, axis=1), axis=2).sum(1)
+    out, lo = [], 0.0
+    for hi, K in Ks:
+        m = (L >= lo) & (L < hi)
+        if m.any():
+            out.append(tubes(pk, C[m], w[m], d[m], n, K, shade, rng, tip_pow))
+        lo = hi
+    return cat_parts(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pkg")
     ap.add_argument("--work", default=None)
     ap.add_argument("--seed", type=int, default=29)
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--no-preview", action="store_true")
     a = ap.parse_args()
     work = a.work or os.path.join(a.pkg, "..", "_beard_work")
     os.makedirs(work, exist_ok=True)
@@ -650,62 +975,88 @@ def main():
     lrng = np.random.default_rng(a.seed + 1)   # (the LOD's and shadow's own draws: the full mesh unchanged by them)
     t0 = time.time()
     pk = Package(a.pkg, rng)
-    sets, lod_sets, shadow_sets, report = [], [], [], {"layers": {}}
+    report = {"locks": {}, "cards": {}}
+    mass, lod_mass, shadow_mass, cards = [], [], [], []
 
-    # the moustache
-    mp, mn, _ = root_points(pk, rng, MOUSTACHE["spacing"], "moustache")
-    mlen = rng.uniform(*MOUSTACHE["length"], len(mp)) * (1 + 0.25 * smoothstep(0.0, MOUSTACHE_CORNER, np.abs(mp[:, 0] - X0)))
-    Pm, _ = grow(pk, mp, mn, "moustache", MOUSTACHE, rng, mlen.max())
-    Pm = trim(Pm, mlen)
-    collider(pk, face_only=False)
-    sets.append(card_set(Pm, MOUSTACHE, rng, MOUSTACHE["K"]))
-    lod_sets.append(card_set(Pm[::3], MOUSTACHE, lrng, 5, wide=1.8))
-    report["layers"]["moustache"] = len(mp)
-
-    # the beard's layers
-    for L_ in LAYERS:
-        bp, bn, below = root_points(pk, rng, L_["spacing"], "beard")
-        adx = np.abs(bp[:, 0] - X0)
-        tip = np.interp(adx, [0, 0.03, 0.06, 0.09], [TIP_Y[0], TIP_Y[0] + 0.02, TIP_Y[0] + 0.07, TIP_Y[1]])
-        tip = tip + rng.normal(0, L_["jit"], len(bp)) * np.array([0.55, 1.0])[(rng.random(len(bp)) < 0.6).astype(int)]
-        length = (bp[:, 1] - tip) + 0.10 + 0.08 * smoothstep(0.03, 0.08, adx) + 0.04 * (bp[:, 2] < 0.09)
-        Pb, off = grow(pk, bp, bn, "beard", L_, rng, length.max())
-        Pb = trim(Pb, to_height(Pb, tip, length))
-        Pb = clump(Pb, L_["clump"], max(4, len(Pb) // 3), rng)
-        Pb = keep_front(pk, Pb, off * 0.9)
-        collider(pk, face_only=False)
-        sets.append(card_set(Pb, L_, rng, L_["K"]))
-        lod_sets.append(card_set(Pb[::LOD1["every"][L_["name"]]], L_, lrng, LOD1["K"], wide=LOD1["wide"]))
-        if L_["name"] == "inner":
-            shadow_sets.append(card_set(Pb[::SHADOW["every"]], L_, lrng, SHADOW["K"], wide=SHADOW["wide"]))
-        report["layers"][L_["name"]] = len(bp)
-
-    # the soft edge: short fine cards lying on the skin at the line
-    ep, en, _ = root_points(pk, rng, 0.0068, "edge")
+    # the soft edge first (on the bare skin): short fine cards lying on it at the line
+    ep, en, _ = root_points(pk, rng, 0.0078, "edge")
     elen = rng.uniform(*FINE["length"], len(ep))
     Pe, _ = grow(pk, ep, en, "edge", FINE, rng, elen.max())
     Pe = trim(Pe, elen)
     collider(pk, face_only=False)
-    sets.append(card_set(Pe, FINE, rng, FINE["K"], alpha=FINE["alpha"], edge=True))
-    report["layers"]["edge"] = len(ep)
+    cards.append(card_set(Pe, FINE, rng, FINE["K"], alpha=FINE["alpha"], edge=True))
+    report["cards"]["edge"] = len(ep)
 
-    full, lod, shadow = part(pk, sets), part(pk, lod_sets), part(pk, shadow_sets)
-    report.update(tris=int(len(full["idx"])), lodTris=int(len(lod["idx"])), shadowTris=int(len(shadow["idx"])),
-                  rest=measure(pk, full), colour=COLOUR, seconds=round(time.time() - t0, 1))
+    # the mass: the moustache's locks, then the beard's inner and outer locks
+    Cm, wm, dm = lock_lines(pk, "moustache", MASS_MOUSTACHE, rng)
+    mass.append(tubes(pk, Cm, wm, dm, MASS_MOUSTACHE["n"], 8, MASS_MOUSTACHE["shade"], rng, tip_pow=1.4))
+    lod_mass.append(tubes(pk, Cm[::2], wm[::2] * 1.3, dm[::2], LOD1_MASS["n"], 5, MASS_MOUSTACHE["shade"], lrng, tip_pow=1.4))
+    report["locks"]["moustache"] = len(Cm)
+    for L_ in MASS_LAYERS:
+        C, w, d = lock_lines(pk, "beard", L_, rng)
+        mass.append(tubes_by_length(pk, C, w, d, L_["n"], L_["shade"], rng, tip_pow=L_["tip"]))
+        lod_mass.append(tubes(pk, C[::2], w[::2] * 1.35, d[::2], LOD1_MASS["n"], LOD1_MASS["K"], L_["shade"], lrng))
+        sel = slice(None) if L_["name"] == "inner" else slice(None, None, 2)
+        shadow_mass.append(tubes(pk, C[sel], w[sel], d[sel], SHADOW_MASS["n"], SHADOW_MASS["K"], L_["shade"], lrng))
+        report["locks"][L_["name"]] = len(C)
+
+    # the fringe: fewer, finer cards over the mass's outside (the mass in the drape's collider), and a few strays
+    strands_collider(pk, mass)
+    fp, fn, _ = root_points(pk, rng, FRINGE["spacing"], "beard")
+    adx = np.abs(fp[:, 0] - X0)
+    tip = np.interp(adx, [0, 0.03, 0.06, 0.09], [TIP_Y[0], TIP_Y[0] + 0.02, TIP_Y[0] + 0.07, TIP_Y[1]])
+    tip = tip + rng.normal(0, FRINGE["jit"], len(fp))
+    length = (fp[:, 1] - tip) + 0.10 + 0.08 * smoothstep(0.03, 0.08, adx)
+    fcfg = dict(FRINGE, off=0.0035, front=FRINGE["off"])
+    Pf, _ = grow(pk, fp, fn, "beard", fcfg, rng, length.max())
+    Pf = trim(Pf, to_height(Pf, tip, length))
+    Pf = clump(Pf, FRINGE["clump"], max(3, len(Pf) // 3), rng, start=0.4)
+    # (the cards' collider the mass itself and the face: their normals the mass's, and onto() holds them to it; on
+    # his body's two-sided cloth the normals cancelled and threw 10 of 25 cards' edges wide)
+    mP = np.concatenate([p["pos"] for p in mass]); mN = np.concatenate([p["nrm"] for p in mass])
+    cP, cN = g2b(np.vstack([mP, pk.face_pts])), g2b(np.vstack([mN, pk.face_nrm]))
+    HH.update(COLLIDE_P=cP, COLLIDE_N=cN, COLLIDE=cKDTree(cP), COLLIDE_HEAD=np.r_[np.zeros(len(mP), bool), pk.face_pts[:, 1] > 1.555],
+              NECK=np.zeros(len(cP), bool))
+    cards.append(card_set(Pf, dict(FRINGE, off=0.003), rng, FRINGE["K"]))
+    report["cards"]["fringe"] = len(fp)
+    # (strays: a few fine strands lifted off the mass, wandering a little)
+    si = rng.choice(len(Pf), min(STRAYS["n"], len(Pf)), replace=False)
+    Ps = Pf[si].copy()
+    S_, K_ = Ps.shape[:2]
+    f = np.linspace(0, 1, K_)[None, :, None]
+    wob = rng.normal(0, 1, (S_, 1, 3)) * np.array([0.012, 0.006, 0.0])
+    Ps = Ps + wob * np.sin(f * np.pi * rng.uniform(1, 2.5, (S_, 1, 1))) * smoothstep(0.1, 0.4, f)
+    Ps[:, :, 1] -= 0.006 * smoothstep(0.1, 0.5, f[..., 0])     # (Blender -y: forward, off the mass)
+    cards.append(card_set(Ps, dict(STRAYS, off=0.003), rng, STRAYS["K"]))
+    report["cards"]["strays"] = len(si)
+
+    mass_p = skin_part(pk, cat_parts(mass))
+    card_p = card_part(pk, cards)
+    lod_p = skin_part(pk, cat_parts(lod_mass))
+    sh_p = skin_part(pk, cat_parts(shadow_mass))
+    report.update(massTris=int(len(mass_p["idx"])), cardTris=int(len(card_p["idx"])), tris=int(len(mass_p["idx"]) + len(card_p["idx"])),
+                  lodTris=int(len(lod_p["idx"])), shadowTris=int(len(sh_p["idx"])),
+                  restMass=measure(pk, mass_p), restCards=measure(pk, card_p), colour=COLOUR, seconds=round(time.time() - t0, 1))
     log(json.dumps(report))
-    splat(pk, full, os.path.join(work, "beard_front.png"), "front")
-    splat(pk, full, os.path.join(work, "beard_side.png"), "side")
-    splat(pk, lod, os.path.join(work, "beard_lod1_front.png"), "front")
     json.dump(report, open(os.path.join(work, "beard_report.json"), "w"), indent=1)
-    np.savez(os.path.join(work, "beard_full.npz"), **{k: v for k, v in full.items()})
+    np.savez(os.path.join(work, "beard_mass.npz"), **{k: v for k, v in mass_p.items() if isinstance(v, np.ndarray)})
+    if not a.no_preview:
+        mass_p["tint"], card_p["tint"] = (0.75, 0.62, 0.45), (0.55, 0.75, 0.95)
+        lod_p["tint"] = (0.62, 0.60, 0.55)
+        preview(pk, [mass_p, card_p], os.path.join(work, "beard_preview.png"))
+        preview(pk, [lod_p], os.path.join(work, "beard_lod1_preview.png"), views=("front", "q"))
+        log(f"previews {time.time() - t0:.0f} s")
     if a.no_write:
         return
-    sh = dict(pos=shadow["pos"], nrm=shadow["nrm"], J=shadow["J"], W=shadow["W"], idx=shadow["idx"])
-    write(pk, os.path.join(a.pkg, "beard.glb"), [("beard", full, 0), ("beard.lod1", lod, 0), ("beard.shadow", sh, 1)])
+    mass_texture(os.path.join(a.pkg, MASS_TEX))
+    sh = dict(pos=sh_p["pos"], nrm=sh_p["nrm"], J=sh_p["J"], W=sh_p["W"], idx=sh_p["idx"])
+    write(pk, os.path.join(a.pkg, "beard.glb"), [("beard", [(mass_p, 2), (card_p, 0)]), ("beard.lod1", [(lod_p, 2)]), ("beard.shadow", [(sh, 1)])])
     man_path = os.path.join(a.pkg, "manifest.json")
     man = json.load(open(man_path, encoding="utf-8"))
-    man["hair"] = {"file": "beard.glb", "colour": COLOUR, "style": "beard", "source": "tools/assets/warden_beard.py (hair cards on heroine_hair.py's drape and cards)",
-                   "tris": report["tris"], "lodTris": report["lodTris"], "shadowTris": report["shadowTris"], "guides": report["layers"]}
+    man["hair"] = {"file": "beard.glb", "colour": COLOUR, "style": "beard", "uniforms": HAIR_UNIFORMS,
+                   "source": "tools/assets/warden_beard.py (r4 hybrid: wet-lock mass on heroine_hair.py's drape, a card fringe)",
+                   "tris": report["tris"], "massTris": report["massTris"], "cardTris": report["cardTris"], "lodTris": report["lodTris"],
+                   "shadowTris": report["shadowTris"], "locks": report["locks"], "cards": report["cards"]}
     with open(man_path, "w", encoding="utf-8") as fh:
         json.dump(man, fh, indent=1)
     log("manifest hair set")
