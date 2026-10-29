@@ -469,6 +469,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public IBossView BossView(string kind)
     {
         var v = new WardenView();
+        PlayerView.ToCast(v);
         AddChild(v);
         return v;
     }

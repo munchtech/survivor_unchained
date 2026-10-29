@@ -661,7 +661,7 @@ public static class People
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                 {
-                    var hm = Hair(src, colour, highlight, style);
+                    var hm = Hair(src, colour, highlight, style, src.ResourceName == "hair_cap" && HasRopes(mi.Mesh, s));
                     // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
                     if (style == "pixie" && hm is ShaderMaterial sm)
                         foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
@@ -1357,6 +1357,14 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
+    /// <summary>Whether a hair surface has a braid's ropes (vertex blue 0.5 or more on the cap: tools/assets/heroine_hair.py, mat 1).</summary>
+    static bool HasRopes(Mesh mesh, int surface)
+    {
+        if (mesh.SurfaceGetArrays(surface)[(int)Mesh.ArrayType.Color].AsColorArray() is not { Length: > 0 } c) return false;
+        foreach (var k in c) if (k.B >= 0.5f) return true;
+        return false;
+    }
+
     static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
     // (--hair-atlas PATH: her hair's strands atlas from a file, tried before a build)
     static Texture2D? hairAtlas;
@@ -1365,7 +1373,7 @@ public static class People
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null)
+    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null, bool ropes = false)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1377,6 +1385,8 @@ public static class People
             ?? new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? (HairDraw.Blended ? 2 : 1) : 0 };
         // (--hair-erase: FSR 2's reactive mask erased under the blended ones: HairDraw)
         if (soft || src.ResourceName == "hair" && HairDraw.Blended) m = HairDraw.WithErase(m);
+        // (a braid's ropes on the cap drawn solid under it, their depth written: HairDraw.RopeCore; --rope-core off: as before)
+        if (ropes && src.ResourceName == "hair_cap" && Args.Get("rope-core") != "off") m = HairDraw.RopeCore(m);
         foreach (var pass in HairDraw.Passes(m))
         {
             pass.SetShaderParameter("strands", src.AlbedoTexture?.ResourcePath.EndsWith("hair_strands.png") == true ? (hairAtlas ??= TryFile("hair-atlas")) ?? src.AlbedoTexture : src.AlbedoTexture);
@@ -2299,6 +2309,28 @@ public static class People
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
+    }
+
+    /// <summary>Face 48 round 4: her skin's and eyes' cine_spec_split (1 in a cinematic while GameCinemaHer's sheen twins are
+    /// on: a light tagged light_specular 0.31 lights them with no sheen; 0: as before, everywhere else).</summary>
+    public static void HerCineSpec(Person p, float on)
+    {
+        if (p.Body != "heroine") return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (eyeShader != null && m.Shader == eyeShader)))
+                    m.SetShaderParameter("cine_spec_split", on);
+    }
+
+    /// <summary>Her gaze (heroine_eye.gdshader's gaze_a and gaze_b averaged: in irises' radii, +x to her left, +y down).</summary>
+    public static Vector2 HerGaze(Person p)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return Vector2.Zero;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader)
+                    return (m.GetShaderParameter("gaze_a").AsVector2() + m.GetShaderParameter("gaze_b").AsVector2()) * 0.5f;
+        return Vector2.Zero;
     }
 
     /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased

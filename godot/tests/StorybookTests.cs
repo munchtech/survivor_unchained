@@ -308,7 +308,7 @@ public class StorybookTests
     /* --------------------------------------------------- C01 after SB00 -- */
 
     [Fact]
-    public void After_sb00_c01_drops_its_drowning_and_starts_on_a_shorter_silence()
+    public void After_sb00_c01_drops_its_drowning()
     {
         var f = CineFile.Load("c01");
         CineSchedule Lay(bool ended)
@@ -319,22 +319,17 @@ public class StorybookTests
         }
         var asWritten = Lay(false);
         var after = Lay(true);
-        Assert.Equal(3.5, asWritten.Shots[0].Dur);
-        Assert.Equal(2.5, after.Shots[0].Dur);
+        // 29 Oct: C01 opens on black with the bedroll line at 1.2 s; the shot is the same length either way
+        // (the line's take sets it), and only the water is left out after SB00.
+        Assert.Equal(1.2 + 3.0 + 0.3, asWritten.Shots[0].Dur, 6);
+        Assert.Equal(asWritten.Shots[0].Dur, after.Shots[0].Dur, 6);
         bool Water(CineSchedule s) => s.Cues.Any(c => c.Cue.Do == "sfx" && c.Cue.Str("name") == "water_close");
         Assert.True(Water(asWritten));
         Assert.False(Water(after));
-        // The drops and the owl keep their places from the shot's end; nothing is heard in its first second.
-        var drops = after.Cues.Where(c => c.Shot.Index == 0 && c.Cue.Do == "sfx").Select(c => c.T).ToList();
-        Assert.Equal(new[] { 1.2, 1.95, 2.1 }, drops.Select(d => Math.Round(d, 6)));
-        Assert.Equal(new[] { 2.2, 2.95, 3.1 }, asWritten.Cues.Where(c => c.Shot.Index == 0 && c.Cue.Do == "sfx" && c.Cue.Str("name") != "water_close").Select(c => Math.Round(c.T, 6)));
-        // The rest of C01 is as written, a second sooner.
-        Assert.Equal(asWritten.Shots.Count, after.Shots.Count);
-        for (int i = 1; i < after.Shots.Count; i++)
-        {
-            Assert.Equal(asWritten.Shots[i].Dur, after.Shots[i].Dur, 9);
-            Assert.Equal(asWritten.Shots[i].Start - 1.0, after.Shots[i].Start, 9);
-        }
-        Assert.Equal(asWritten.Length - 1.0, after.Length, 9);
+        // The drops and the owl keep their places from the shot's end.
+        var end = after.Shots[0].Dur;
+        var drops = after.Cues.Where(c => c.Shot.Index == 0 && c.Cue.Do == "sfx").Select(c => Math.Round(c.T, 6));
+        Assert.Equal(new[] { end - 1.3, end - 0.55, end - 0.4 }.Select(d => Math.Round(d, 6)), drops);
+        Assert.Equal(asWritten.Length, after.Length, 9);
     }
 }
