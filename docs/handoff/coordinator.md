@@ -33,6 +33,8 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 - **`isolation: "worktree"` branches from `main`, which is a stub (the initial commit only).** A worker spawned that way must first `git reset --hard <integration commit>` in its new worktree: say so in its brief.
 - **Settings that save tokens:** a 400k auto-compact backstop in `.claude/settings.json`; the cache TTL is per agent type (26 Oct): `experimental: cacheTtl: 1h` in the su-lead-high and su-lead-sonnet agent files, the 5m default for the rest.
 
+- **A `su-lead-max` LEAD needs "Spawning: allowed" as its brief's first line (29 Oct).** The spawn guard reads only the first brief, so without that line it can't start helpers, and a later message can't unlock it (Storybook 2 stopped on this). Judges and solvers don't need it.
+
 ## The owner
 - Pronouns: they/them unless the owner says otherwise. Some leads wrote "he"; don't repeat it.
 - Short, plain updates: what changed, what's next, and any decision that's theirs. Pictures over descriptions.
