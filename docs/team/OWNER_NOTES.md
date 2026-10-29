@@ -2,6 +2,11 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 28 October 2026, night (coordinator ecc5f453)
+- **Crown (HUD): CLOSED, grooved stays.** "i see literally no difference" (1:1 and 3x). Nothing to build.
+- **Storybook: ink/woodcut PICKED.** "the storybook picture is great that style would be fine" (storybook_style_test\sb_ink_pick.png). Storybook 2: 3-plate sequence test, then SB00. Waits for a slot.
+- **Cinematics:** "the opening cinematic when here eyes dart is comically not good". Routed to Cinematics 7 (C01 gaze cues; a gaze capability for all cinematics).
+
 ## 27 October 2026, afternoon (coordinator f22ca2bc)
 - **Her elbow bend (HIGH, always seen):** "that bend still just dosn't look feminine OR athletic - it just looks clunky like quaternus model or whatever". Crop: `survivorsunchained_inputs\owner_frames_27oct\elbow_bend.png` (warden kit, town, right arm bent ~90 deg, bracer). Body 14's hinge fix (8d5b104c) was the rig side; what's left is shape: a uniform tube upper arm, a hard V at the inner crease, no biceps belly, no elbow point, no forearm taper. Routed: Body 19 (armor-7), shape corrective + arm shape, owner sees the bare A|B before the outfit chain.
 - **Armpit too (same session):** "armpit problems there too, and elbow". Second crop (not saved to disk): front 3/4, warden kit in town, right arm down and slightly forward with the elbow bent: the arm joins the chest like a tube plugged into the torso, the front armpit is flat with no pec-to-arm fold, the deltoid is weak and the shoulder narrow and pinched, and the inner elbow is again a hard V. Added to Body 19.
