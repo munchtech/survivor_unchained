@@ -635,6 +635,13 @@ public partial class Callout : Control, ICalloutView
             if (a.Y < r.Position.Y) list.Add((new Vector2(x, r.Position.Y - lift), Vector2.Down, cost));
             if (a.Y > r.End.Y) list.Add((new Vector2(x, r.End.Y), Vector2.Up, cost));
         }
+        // (a wide box with the start over it: also straight down from the start, plumb (teach judge r2: a near-vertical
+        // arrow that leans 7 px reads as a mistake))
+        if (r.Size.X >= 160 && a.Y < r.Position.Y && a.X > r.Position.X + 40 && a.X < r.End.X - 40)
+            list.Add((new Vector2(a.X, r.Position.Y - lift), Vector2.Down, 0));
+        // (a small box with the start above or below it is landed on from there only: from the side the arrow
+        // read as pointing at the seat beside it)
+        if (r.Size.X < 160 && (a.Y < r.Position.Y || a.Y > r.End.Y)) return list;
         float y = Mathf.Clamp(a.Y, r.Position.Y + 12, r.End.Y - 12);
         if (a.X < r.Position.X) list.Add((new Vector2(r.Position.X, y), Vector2.Right, 120));
         if (a.X > r.End.X) list.Add((new Vector2(r.End.X, y), Vector2.Left, 120));
