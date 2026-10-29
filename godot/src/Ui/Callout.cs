@@ -87,7 +87,15 @@ public interface ICalloutView
 public partial class Callout : Control, ICalloutView
 {
     const float Canvas = 1920, CanvasH = 1080;
-    static readonly Color PaleGlow = new("#dfe6ee");
+    /// <summary>Half the opening at a HUD part ring's foot, design px (the key plate's half width and a margin).</summary>
+    const float PartGap = 30;
+    static readonly HashSet<Vector2I> gapLogged = new();
+    /// <summary>Once per ring: where its foot opens (for the log, so the gap can be checked without a shot).</summary>
+    static void LogGap(Vector2 c, float r, float gap)
+    {
+        if (!gapLogged.Add(new Vector2I((int)c.X, (int)c.Y))) return;
+        GD.Print($"callout: part ring at ({c.X:0},{c.Y:0}) r {r:0.0}: gap {Mathf.RadToDeg(Mathf.Pi / 2 - gap):0.0}..{Mathf.RadToDeg(Mathf.Pi / 2 + gap):0.0} deg (bottom 90), x {c.X - r * Mathf.Sin(gap):0}..{c.X + r * Mathf.Sin(gap):0}");
+    }
     static readonly Color Bone = new("#f2e8d4"), LineInk = new("#e8dfcd"), FootInk = new("#cbbd9f"),
         Iron = new(0.055f, 0.04f, 0.035f, 0.94f), Deep = new("#a8380f"), Hot = new("#ff9a40"), White = new("#ffe6a8"),
         Mark = new("#ffa04a"), Warm = new(1f, 0.74f, 0.46f);
@@ -462,8 +470,9 @@ public partial class Callout : Control, ICalloutView
 
     /// <summary>Whether the mark at i is a thing in the world (it stands in a pool of light).</summary>
     bool InWorld(int i) => i >= aim.HudPoints && i < Math.Min(3, aim.Points.Count);
-    /// <summary>Whether a mark rings a part of the HUD: it is drawn pale, not in ember, so it never reads as the
-    /// HUD's own "ready" glow (the dash's form, round 2 judge).</summary>
+    /// <summary>Whether a mark rings a part of the HUD. It is drawn in the same ember as every other mark (UI 20:
+    /// cream rings read as a second, foreign colour); it doesn't read as the part's own "ready" glow because it is
+    /// iron-backed, sits outside the part and opens at its foot over the key plate, which the HUD's glow never does.</summary>
     bool OnHud(Vector2 at)
     {
         for (int i = 0; i < aim.HudPoints && i < aim.Points.Count; i++) if (aim.Points[i] == at) return true;
@@ -1077,21 +1086,27 @@ public partial class Callout : Control, ICalloutView
 
         /// <summary>The mark where it lands: a ring round a point, brackets at an area's corners;
         /// it strikes bright and a size larger, and settles.</summary>
-        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light, bool pale = false)
+        void Mark((Vector2 C, float R, Rect2 Box, bool Round) m, float k, float strike, float breathe, bool light, bool part = false)
         {
             float grow = 7 * strike * strike;
             if (m.Round)
             {
                 float rr = m.R + grow + 1.5f * breathe;
+                // A ring round a HUD part opens at its foot, 30 px either side of the bottom, so the key
+                // plate under the part (SPACE, R, Q...) shows clean instead of struck through.
+                float gap = part ? Mathf.Asin(Math.Min(0.95f, PartGap * k / rr)) : 0;
+                float a0 = Mathf.Pi / 2 + gap, a1 = Mathf.Pi / 2 + Mathf.Tau - gap;
+                int segs = Math.Max(8, (int)(64 * (a1 - a0) / Mathf.Tau));
+                if (part) LogGap(m.C, rr, gap);
                 if (light)
                 {
-                    var ring = new List<Vector2>(65);
-                    for (int i = 0; i <= 64; i++) ring.Add(m.C + Vector2.FromAngle(i * Mathf.Tau / 64) * rr);
-                    Soft(ring, 26 * k, 26 * k, _ => (pale ? PaleGlow : Ember) with { A = (pale ? 0.22f : 0.3f) + 0.35f * strike }, 1);
+                    var ring = new List<Vector2>(segs + 1);
+                    for (int i = 0; i <= segs; i++) ring.Add(m.C + Vector2.FromAngle(a0 + i * (a1 - a0) / segs) * rr);
+                    Soft(ring, 26 * k, 26 * k, _ => Ember with { A = 0.3f + 0.35f * strike }, 1);
                     return;
                 }
-                DrawArc(m.C, rr, 0, Mathf.Tau, 64, Iron, 7f * k, true);
-                DrawArc(m.C, rr, 0, Mathf.Tau, 64, (pale ? Bone : Hot.Lerp(White, 0.25f + 0.6f * strike)) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
+                DrawArc(m.C, rr, a0, a1, segs, Iron, 7f * k, true);
+                DrawArc(m.C, rr, a0, a1, segs, Hot.Lerp(White, 0.25f + 0.6f * strike) with { A = 0.85f + 0.15f * breathe }, 2.6f * k, true);
                 return;
             }
             var b = m.Box.Grow(grow);
