@@ -16,6 +16,8 @@ public partial class Game
     static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
+    /// <summary>One standing in her place in the close view (the shot harness's --npc NAME:swap), framed as she is.</summary>
+    internal SurvivorUnchained.View.PersonView? CloseStandIn;
 
     /// <summary>A new place: the close view back to play's distance at once (--close C: set, where it is safe).</summary>
     void CloseUpBegin(ZoneRuntime z)
@@ -170,6 +172,12 @@ public partial class Game
         // (--spots holds the close view where play would not: lit as play lights it there.)
         bool night = scene.View.Night == true, lit = (!held || spotClose != null) && near > 0.05f;
         float day = Mathf.Clamp((near - 0.3f) / 0.4f, 0, 1);
+        // NPC 18 (judge r3, the Watch at chest-up by night: "the key is brighter than his own torch and blows his face out"):
+        // whoever the close view frames carrying a lit light (PersonView.CarriedLight) is keyed by it. The rig's key, its
+        // twins and the fill come down to CloseUp.CarriedShare, warmed toward the light's colour, from its side and height.
+        var framed = CloseStandIn is { } si && IsInstanceValid(si) && si.IsVisibleInTree() ? si : null;
+        var carried = night && framed?.CarriedLight() is { } cl ? cl : null;
+        float share = (float)CloseUp.CarriedShare(night, carried != null), warmTo = (float)CloseUp.CarriedKeyWarm;
         if (lit) pv.LampScale = Mathf.Lerp(1, night ? CloseLampByNight : CloseLampByDay, day);
         else if (closeDrives) pv.LampScale = 1;
         pv.LampOffHer = lit && night && day > 0.5f && CloseLampOffHer;
@@ -215,12 +223,12 @@ public partial class Game
             closeRimGear = new SpotLight3D { LightColor = closeRim.LightColor, SpotAngle = 26, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerGearLayer, LightSpecular = CloseRimGearSpec, LightEnergy = 0 };
             scene.AddChild(closeRimGear);
         }
-        closeKey.LightColor = night ? CloseKeyColourNight : CloseKeyColourDay;
-        float want = lit ? (night ? CloseKeyNight : CloseKey) * day : 0;
+        closeKey.LightColor = night ? carried != null ? CloseKeyColourNight.Lerp(carried.LightColor, warmTo) : CloseKeyColourNight : CloseKeyColourDay;
+        float want = lit ? (night ? CloseKeyNight : CloseKey) * day * share : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
         closeKey.ShadowEnabled = night && CloseKeyShadow; closeKey.LightSize = 0.15f;
-        closeKeyHair!.LightColor = night ? CloseKeyHairColour : closeKey.LightColor;
+        closeKeyHair!.LightColor = night ? carried != null ? CloseKeyHairColour.Lerp(carried.LightColor, warmTo) : CloseKeyHairColour : closeKey.LightColor;
         closeKeyHair.LightEnergy = closeKey.LightEnergy * (night ? CloseKeyHair : 1);
         closeKeyHair.Visible = closeKey.Visible;
         closeKeyGear!.LightColor = closeKey.LightColor; closeKeyGear.LightEnergy = closeKey.LightEnergy; closeKeyGear.Visible = closeKey.Visible;
@@ -268,11 +276,18 @@ public partial class Game
                     a = face + Mathf.Clamp(d, -hold, hold);
                 }
             }
+            // (NPC 18: a carried light keys from where it is, its height held level to 40 degrees, CloseUp.CarriedAim)
+            if (carried != null)
+            {
+                var td = carried.GlobalPosition - (framed!.GlobalPosition + new Vector3(0, 1.55f, 0));
+                var (ca, ce) = CloseUp.CarriedAim(td.X, td.Y, td.Z);
+                a = (float)ca; up = (float)ce;
+            }
             closeKey.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.6f;
             closeKey.LookAt(chest);
             closeKeyHair!.GlobalTransform = closeKey.GlobalTransform;
             // (Rendering 3: her hair's twin stays at CloseKeyHairEl, as the key stood before: from 30 up it lifted her copper crown.)
-            if (night && CloseKeyHairEl >= 0)
+            if (night && CloseKeyHairEl >= 0 && carried == null)
             {
                 float hu = Mathf.DegToRad(CloseKeyHairEl);
                 closeKeyHair.GlobalPosition = chest + new Vector3(Mathf.Sin(a) * Mathf.Cos(hu), Mathf.Sin(hu), Mathf.Cos(a) * Mathf.Cos(hu)) * 2.6f;
@@ -294,7 +309,7 @@ public partial class Game
         // (Rendering 3, judge j2 D2: CloseFillRatio on fair skin, up by CloseFillDeep of the key on the darkest, People.HerSkinDark:
         // with the key 50-60 degrees off the lens deep skin's shade side went to 8-16 of 255, near silhouette)
         float fillRatio = CloseFillRatio + CloseFillDeep * SurvivorUnchained.View.People.HerSkinDark(pv.Person);
-        float wantFill = lit && night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * day : 0;
+        float wantFill = lit && night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * day * share : 0;
         closeFill.LightEnergy = Mathf.Lerp(closeFill.LightEnergy, wantFill, 1 - Mathf.Exp(-3 * (float)dt));
         closeFill.Visible = closeFill.LightEnergy > 0.005f;
         if (closeFill.Visible)

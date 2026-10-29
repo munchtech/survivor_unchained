@@ -159,6 +159,7 @@ public partial class Game
             t += delta;
             if (game.scene == null || game.Battle?.Player is not { } pl || GetViewport().GetCamera3D() is not Camera3D cam) return;
             if (swap && game.scene.Player is { } her) her.Visible = false;
+            if (swap) game.CloseStandIn = v;
             if (chest) game.scene.Voices.Bare = true;
             if (chest && chestCam == null) playCam = cam;
             if (chest && playCam != null) cam = playCam;

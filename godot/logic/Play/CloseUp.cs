@@ -123,4 +123,22 @@ public sealed class CloseUp
         }
         return false;
     }
+
+    /// <summary>By night, someone the close view frames carrying a lit light (a torch) is keyed by it: the close key, its hair
+    /// and gear twins and the fill come down to CarriedKeyShare (the rig's key at full was brighter than his torch and blew his
+    /// face out, NPC 18), warmed CarriedKeyWarm of the way to the torch's colour, from the torch's side and height.</summary>
+    public const double CarriedKeyShare = 0.35, CarriedKeyWarm = 0.6;
+    /// <summary>The carried key's height held within these degrees: a torch at his chest keys from level, never from under his chin.</summary>
+    public const double CarriedElMin = 0, CarriedElMax = 40;
+
+    /// <summary>The close key's (and fill's) share: CarriedKeyShare by night with a lit light carried, else 1.</summary>
+    public static double CarriedShare(bool night, bool carries) => night && carries ? CarriedKeyShare : 1;
+
+    /// <summary>Where the key stands for a carried light at (dx, dy, dz) from the framed chest: its bearing (atan2(x, z), as the
+    /// rig's) and its height in radians, held within CarriedElMin..CarriedElMax degrees.</summary>
+    public static (double Az, double El) CarriedAim(double dx, double dy, double dz)
+    {
+        double el = Math.Atan2(dy, Math.Sqrt(dx * dx + dz * dz)), lo = CarriedElMin * Math.PI / 180, hi = CarriedElMax * Math.PI / 180;
+        return (Math.Atan2(dx, dz), Math.Clamp(el, lo, hi));
+    }
 }

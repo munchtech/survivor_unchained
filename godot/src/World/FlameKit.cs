@@ -171,6 +171,9 @@ static class FlameShader
 
     /// <summary>A carried flame's card: square to the camera (tilt 1), grown from far off, its body covering what is behind;
     /// the inner (core) card drawn over the outer, hot yellow-orange and nearly solid: the brightest thing near him.</summary>
+    /// <summary>--torch-tear S, --torch-tear-k K: the carried flame's near teardrop core (flame_mv tear, tear_k), for pictures.</summary>
+    static readonly float CarriedTear = SurvivorUnchained.Args.Num("torch-tear", 1f), CarriedTearK = SurvivorUnchained.Args.Num("torch-tear-k", 1.6f);
+
     public static void Carried(ShaderMaterial mat, bool core)
     {
         // (r4: past 1 the tonemapper washed it to a pale peach wisp, and its half-covering body went pink over a light
@@ -189,6 +192,9 @@ static class FlameShader
             mat.SetShaderParameter("body_pow", 0.6f);
             mat.SetShaderParameter("core_lo", 0.5f);
             mat.SetShaderParameter("core_k", 0.9f);
+            // (NPC 18: near the camera a solid hot teardrop inside it, flame_mv tear; the play camera's flame untouched)
+            mat.SetShaderParameter("tear", CarriedTear);
+            mat.SetShaderParameter("tear_k", CarriedTearK);
         }
         else
         {

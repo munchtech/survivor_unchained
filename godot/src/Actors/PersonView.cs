@@ -433,6 +433,25 @@ public partial class PersonView : Node3D, INpcView
         host.AddChild(new OmniLight3D { Position = new Vector3(0, TorchFlameY, 0), LightColor = new Color("#ffa050"), LightEnergy = 1.1f, OmniRange = 3.5f, ShadowEnabled = true });
     }
 
+    /// <summary>A lit light this person carries (a held torch's, TorchLight or a walker's own): the first visible light under a
+    /// held thing with energy, or null. The close-up (Game.UpdateCloseUp) lets it be the key on whoever it frames.</summary>
+    public OmniLight3D? CarriedLight()
+    {
+        foreach (var at in held.Values)
+            if (IsInstanceValid(at) && at.IsInsideTree() && Lit(at) is { } l) return l;
+        return null;
+        static OmniLight3D? Lit(Node n)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                if (c is OmniLight3D o && o.IsVisibleInTree() && o.LightEnergy > 0.05f) return o;
+                if (c is Node3D d && !d.Visible) continue;
+                if (Lit(c) is { } f) return f;
+            }
+            return null;
+        }
+    }
+
     /// <summary>The held torch's flame above its grip (the flame kit's card from 0.31, 0.30 tall at 0.62, a carried flame).</summary>
     public const float TorchFlameY = 0.40f;
 
