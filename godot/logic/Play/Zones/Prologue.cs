@@ -83,10 +83,14 @@ public sealed class Prologue : ZoneRuntime
     readonly bool[] litPylons;
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
+    /// <summary>The Ford-Warden while the boss fight runs (the play camera keeps him in frame with her).</summary>
+    public Enemy? BossInFrame => Now == Stage.Boss && warden is { Alive: true } w && w.State != EnemyState.Dying ? w : null;
     bool wardenGone, chestOpened, finished, coreShown, doused;
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
     readonly XZ wardenHome;
+    /// <summary>Metres east of his fight's home where he lies asleep, clear of the causeway.</summary>
+    public const double SleepEast = 5.5;
     (double X, double Z, double Facing) wardenPos;
     readonly WardenAI ai = new();
     IBossView wardenView = null!;
@@ -115,7 +119,9 @@ public sealed class Prologue : ZoneRuntime
         checkpoint = new XZ(camp.X + 1.5, camp.Z - 1.5);
         var ford = L("ford");
         wardenHome = new XZ(ford.X + 1, ford.Z - 2);
-        wardenPos = (wardenHome.X, wardenHome.Z, 0);
+        // Lying where he fell before the fight: in the water east of the causeway, never across its stepping
+        // stones (they run x -2.7..2.7 through the ford; at the fight's home the stones came up through his legs).
+        wardenPos = (wardenHome.X + SleepEast, wardenHome.Z, 0);
         Hooks = new BattleHooks
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
