@@ -242,6 +242,24 @@ public partial class Game
     static readonly bool LookReflOff = Args.Get("look-refl") == "off";
     float[]? rig;
     OmniLight3D? herFire, fireSrc;
+    Color keyBaseC = new(1f, 0.93f, 0.86f);
+    bool lookNightShown;
+    // The Look by night, its fire side (Rendering 1): --look-night-rig 0 (off: the day's rig), --look-night-key-at SIDE,UP (m; SIDE
+    // negative is the fire's side), --look-night-key-gain G, --look-night-key-colour R,G,B, --look-night-fill-side S (m to the side
+    // away from the fire), --look-night-fill-gain G, --look-night-fill-colour R,G,B.
+    static readonly bool LookNightRig = Args.Num("look-night-rig", 1) != 0;
+    static readonly Vector2 LookNightKeyAt = Args.Get("look-night-key-at") is string lnk && lnk.Split(',') is [var lx, var ly]
+        ? new Vector2(float.Parse(lx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(ly, System.Globalization.CultureInfo.InvariantCulture)) : new Vector2(-1.0f, 1.0f);
+    static float LookNightKeyGain => Args.Num("look-night-key-gain", 1.4f);
+    static float LookNightFillSide => Args.Num("look-night-fill-side", 1.1f);
+    // --look-night-body-rim-up U, --look-night-body-rim-aim A: by night the body rim lower (m from her eyes) and aimed lower, off her
+    // far cheek, which it lit to the fire side's level (cheeks 1.2:1 with it, 3.0:1 without).
+    static float LookNightBodyRimUp => Args.Num("look-night-body-rim-up", -0.4f);
+    static float LookNightBodyRimAim => Args.Num("look-night-body-rim-aim", 0.75f);
+    static float LookNightBodyRimCone => Args.Num("look-night-body-rim-cone", 12f);   // (its cone's half angle by night: at 30 it reached her far cheek)
+    static float LookNightFillGain => Args.Num("look-night-fill-gain", 0.3f);
+    static readonly Color LookNightKeyColour = ArgColour("look-night-key-colour", new Color(1f, 0.88f, 0.74f));
+    static readonly Color LookNightFillColour = ArgColour("look-night-fill-colour", new Color(0.86f, 0.92f, 1f));
     uint fireMask;
 
     /// <summary>
@@ -261,6 +279,7 @@ public partial class Game
         float p = Smooth((z - 0.15f) / 0.45f);
         // (her head's tones fitted under this rig, as much as it lights her: People.HerLookRig)
         if (figure?.Person is { } herRig) People.HerLookRig(herRig, p);
+        if (CamLog && figure?.Person is { } herPx) FacePx(herPx);
         float k = 1 - Mathf.Exp(-4f * (float)dt);
         var camLeft = dir.Cross(Vector3.Up).Normalized();
         SpotLight3D Spot(Color c, float angle, bool shadow, float specular)
@@ -291,6 +310,7 @@ public partial class Game
             // (--key-colour R,G,B: its colour, for judging it (pictures))
             if (Args.Get("key-colour") is string kcs && kcs.Split(',') is { Length: 3 } kp)
                 keyC = new Color(float.Parse(kp[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kp[2], System.Globalization.CultureInfo.InvariantCulture));
+            keyBaseC = white ? Colors.White : keyC;
             keyLight = Spot(white ? Colors.White : keyC, KeyCone, true, 0.3f);
             keyLight.LightSize = 0.3f;
             // (--key-spec X: its highlight's strength, for judging it (pictures))
@@ -382,13 +402,27 @@ public partial class Game
                 keyAt = new Vector2(float.Parse(kx, System.Globalization.CultureInfo.InvariantCulture), float.Parse(ky, System.Globalization.CultureInfo.InvariantCulture));
         }
         // (the whole figure's 0.15 on the broad cone, as before)
-        var keyPos = eyes + dir * 1.9f - camLeft * keyAt.Value.X + Vector3.Up * keyAt.Value.Y;
-        Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain);
+        // Rendering 1 (judge j0 B3, lookN/lookNdeep: "soft frontal fill, no fire side", though the panel says "by the fire"): by
+        // night the key moves to the fire's side (+camLeft), warmer, and the fill to the other side, cooler and weaker, so her
+        // face has a fire side at about 2.5-3:1. By day (lookD passed) the rig is as it was. --look-night-rig 0: the day's rig by night.
+        bool fireSide = LookNightRig && scene?.View.Night == true && !white && !old;
+        var kAt = fireSide ? LookNightKeyAt : keyAt.Value;
+        if (CamLog && Shots.Clock - facePxAt < 0.001) GD.Print($"lookrig fireSide={fireSide} night={scene?.View.Night} p={p:F2} front={ReferenceEquals(air.Current, Atmospheres.Front)}");
+        if (fireSide)
+        {
+            keyLight.LightColor = LookNightKeyColour; bodyKey!.LightColor = keyBaseC * BodyWarm;   // (her body in the day's colour: warmed, deep skin went rust)
+            fillLight.LightColor = LookNightFillColour;
+        }
+        else if (lookNightShown) { keyLight.LightColor = keyBaseC; bodyKey!.LightColor = keyBaseC * BodyWarm; fillLight.LightColor = fillC; }
+        lookNightShown = fireSide;
+        var keyPos = eyes + dir * 1.9f - camLeft * kAt.X + Vector3.Up * kAt.Y;
+        Aim(keyLight, keyPos, eyes + Vector3.Up * KeyAim, rig[0] * p * (1 - KeyBody) * KeyFaceGain * (fireSide ? LookNightKeyGain : 1));
         // (--body-key-at SIDE,UP: the broad cone alone from elsewhere, the face's own cone left where it is: a steeper,
         // wider body light rakes her collarbones, which the key's lens-near angle lit flat (pictures, Body 5))
         var bodyPos = BodyKeyAt is { } bka ? eyes + dir * 1.9f - camLeft * bka.X + Vector3.Up * bka.Y : keyPos;
+        if (fireSide && BodyKeyAt is { } bkn) bodyPos = eyes + dir * 1.9f - camLeft * (-Mathf.Abs(bkn.X)) + Vector3.Up * bkn.Y;
         if (bodyKey != null) Aim(bodyKey, bodyPos, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p * KeyBody);
-        Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
+        Aim(fillLight, eyes + dir * 1.8f + camLeft * (fireSide ? -LookNightFillSide : 1.1f), eyes + Vector3.Down * 0.08f, rig[1] * p * (fireSide ? LookNightFillGain : 1));
         // (1.3 m over her eyes: at 0.35 it grazed her jaw's silhouette, a warm line along it and orange under Sunborn's
         // jaw, judge j6; --edge-up U: another height, for judging it (pictures))
         float edgeUp = Args.Get("edge-up") is string eu ? float.Parse(eu, System.Globalization.CultureInfo.InvariantCulture) : 1.3f;
@@ -402,7 +436,8 @@ public partial class Game
         {
             lookBodyRim ??= Spot(white ? Colors.White : new Color(1f, 0.93f, 0.84f), 30, false, 0.2f);
             lookBodyRim.LightCullMask = 2 | SurvivorUnchained.View.PlayerView.HerLayer;
-            Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * Args.Num("look-body-rim-up", 0.3f), eyes + Vector3.Down * 0.45f,
+            lookBodyRim.SpotAngle = fireSide ? LookNightBodyRimCone : 30;
+            Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * (fireSide ? LookNightBodyRimUp : Args.Num("look-body-rim-up", 0.3f)), eyes + Vector3.Down * (fireSide ? LookNightBodyRimAim : 0.45f),
                 LookBodyRim * Mathf.Clamp(p / 0.74f, 0, 1));   // (as judged at zoom 0.45 (p 0.74) and closer; it fades with the rig toward her whole figure)
         }
         // The sky's own light (the moon) off her from head and shoulders in: the
