@@ -106,7 +106,9 @@ public partial class Game
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
             case "chain": areas.Add(new Rect2(Instrument.EyeL.X, Instrument.EyeL.Y - 17, Instrument.EyeR.X - Instrument.EyeL.X, 38)); break;
             // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
-            case "chain_fill": areas.Add(Instrument.ChainFill); break;
+            // (Experience 10: a bare point on the crest's middle, the arrow on it, no box: the box spanned the whole river
+            // under the Drowned Girl; the light looping along the crest while the callout is up shows the run)
+            case "chain_fill": pts.Add(DgRiver.OnCrest(0.5f) ?? Instrument.ChainFill.GetCenter()); break;
             case "dash": pts.Add(DgSmall.DashMid); break;
             case "draught": pts.Add(DgSmall.DraughtMid); break;
             case "art": pts.Add(Instrument.ArtAt); break;
@@ -490,7 +492,7 @@ public partial class Game
                 "chain" or "chain_fill" => 22,
                 _ => DgRiver.SeatD / 2,
             });
-        int bare = -1;
+        int bare = c.Target.Hud == "chain_fill" ? 0 : -1;
         List<int>? noArrow = null;
         if (c.Target.World != null)
             foreach (var w in c.Target.World())
