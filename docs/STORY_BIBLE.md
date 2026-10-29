@@ -145,7 +145,7 @@ paid in a ring (it hangs on the nail behind Rook's bar, among the keys). Her
 hands were bad, so Chid wrote her last letter for her, and chose its words
 (canon "Not yet"; see Chid, §5): *Come home by the Low Ford. I'll be at the
 water with a lamp, so you'll see me.* Rook took it to the carrier. That is the
-letter in the survivor's coat in C01, its ink run to blue water. Rook, paid by
+letter in the survivor's coat, its ink run to blue water; one line still reads, "Come home by the Low Ford." (P2, 29 October). Rook, paid by
 Vonnra to report the road, reported that a traveller was expected on it;
 Vonnra paid her double, and kept the irons lit all that week for the
 traveller she had been told to expect. Every evening the mother went down to
@@ -168,7 +168,10 @@ once more (`scene_still_plain`, TREATMENT §3.3).
 - **Her word.** At dusk, when the survivor was small, she put the lamp in the
   window and called from the door: "Lamp's lit, Spark. Stay where it reaches."
   (The Order's evening call, made small and kept in one family; the name is
-  hers.) The narrator never says it before the bottom of the stair (reveal A,
+  hers.) In her last week, in Rook's back room, she said it to the road from
+  the back window every dusk; Rook heard it and took it for a prayer
+  (`rook.mother_word`, day one; P1, 29 October), so every player holds the
+  words and the name before the stair, and the stair's shock is the voice. The narrator never says it before the bottom of the stair (reveal A,
   28 October): the first dawn finds her voice gone and her face whole ("Not
   faint: gone."), and the dawns take the face, then the word, a piece at a
   time (day 3, "Her face is going the way her voice went. The brows first.
