@@ -50,6 +50,16 @@ P3_AT = {"hand": (399, 882), "dead": (1030, 430), "wound": (2780, 560), "stones"
 P1_ANVIL = (1652, 746)          # p1 (r6): the anvil, where the hammer sparks fly
 P7_FLASK = (1550, 1490)         # the comps' rings from the flask
 GLARE_FLICKER = {"kind": "flicker", "rate": 0.9, "amount": 0.2, "seed": 4}   # p7's lamp glare (blue_rim breathes with it)
+# Storybook 5, solver AB (tools/storybook/ink_sb5_ab.py writes them): built file -> (patched file, entry overrides)
+SB5_AB = {
+    "p0": {f + ".png": (f + "_sb5.png", {}) for f in ("dark", "lit", "glow", "flame")},
+    "p2": {f + ".png": (f + "_sb5.png", {}) for f in ("base", "threads", "threads_glow", "door_glow")},
+    "p6": {"near.png": ("near_sb5.png", {})},
+    "p7": {"water.png": ("water_sb5.png", {})},
+    "p7u": {"bubbles.png": ("bubbles_sb5.png", {"pos": [0, 700], "scale": 1.0, "size_px": [3200, 1100]})},
+}
+P6_LAMP_REFL = dict(file="lamp_refl_sb5.png", far_px=(860, 735), size_px=(300, 140))   # on the far layer's grid (z 3)
+P7U_BUBBLE_COLUMN = (1480, 1100)    # p7u: where the bubble column rises (units, the traveler's way in)
 
 # Plate cues the ink staging moved (absolute seconds; matched by what they do, applied every run).
 RETIME = [
@@ -82,6 +92,11 @@ class Plate:
         self.meta = json.load(open(os.path.join(LAYERS, pid, "layers.json"), encoding="utf-8"))
         rest = self.meta["rest"]
         self.shift = (1600 - rest[0], 900 - rest[1])
+        for e in self.meta["layers"]:     # Storybook 5 (solver AB): patched copies beside the built layers
+            alt = SB5_AB.get(pid, {}).get(e["file"])
+            if alt and os.path.exists(os.path.join(LAYERS, pid, alt[0])):
+                e["file"] = alt[0]
+                e.update(alt[1])
         self.used = {}  # clean name -> source file
         self.made = {}  # clean name -> RGBA uint8 array made here (written instead of copied)
 
@@ -262,6 +277,53 @@ def check_p6_camera(P, keys, stand_span, walk_span, margin=60, min_window=0.8, e
     return T
 
 
+SB5_P6_SIT = False      # Storybook 5: the seated drawing is no longer shown
+
+
+def p6_lamp_refl(P, cam_keys, end=10.5, soft=0.02):
+    """The far bank lamps' reflections on the lamps' own layer (far, z 3), drawn over near; a reveal map shows each
+    pixel only from when the near layer under it is river water for good (the near hill hides it before)."""
+    src = os.path.join(LAYERS, "p6", P6_LAMP_REFL["file"])
+    if not os.path.exists(src):
+        return None
+    far = next(e for e in P.meta["layers"] if e["name"] == "far")
+    near = next(e for e in P.meta["layers"] if e["name"] == "near")
+    sc = far["scale"]
+    u0, v0 = P6_LAMP_REFL["far_px"]
+    w, h = P6_LAMP_REFL["size_px"]
+    e = {"file": P6_LAMP_REFL["file"], "name": "lamp_refl", "z": far["z"], "blend": "mix",
+         "pos": [far["pos"][0] + u0 * sc, far["pos"][1] + v0 * sc], "scale": sc, "size_px": [w, h]}
+    river = np.asarray(Image.open(os.path.join(LAYERS, "_work", "p6_sam_river.png")).convert("L")
+                       .resize(tuple(near["size_px"]), Image.NEAREST)) > 127
+    ts = [k["t"] for k in cam_keys]
+    es = [k.get("ease") for k in cam_keys]
+    fX, fY = (story_curve(ts, [k[c] for k in cam_keys], es) for c in ("x", "y"))
+    fZ = story_curve(ts, [np.log(k["zoom"]) for k in cam_keys], es)
+    V, U = np.mgrid[0:h, 0:w].astype(np.float32)
+    cx = e["pos"][0] + P.shift[0] + (U + 0.5) * sc          # shifted canvas units on the far layer
+    cy = e["pos"][1] + P.shift[1] + (V + 0.5) * sc
+    z = far["z"]
+    t_w = np.zeros((h, w), np.float32)
+    for t in np.arange(0, end + 1e-9, 0.02):
+        X, Y = fX(t), fY(t)
+        dx, dy = cx - 1600 - (X - 1600) / z, cy - 900 - (Y - 900) / z      # from the screen centre (units)
+        nx = ((1600 + (X - 1600) + dx - near["pos"][0] - P.shift[0]) / near["scale"]).astype(int)
+        ny = ((900 + (Y - 900) + dy - near["pos"][1] - P.shift[1]) / near["scale"]).astype(int)
+        ok = (nx >= 0) & (ny >= 0) & (nx < river.shape[1]) & (ny < river.shape[0])
+        wet = np.zeros((h, w), bool)
+        wet[ok] = river[ny[ok], nx[ok]]
+        t_w = np.where(~wet, t + 0.02, t_w)          # the last time it was not over the water (+ a step)
+    p = np.clip(t_w / end, 0, 1)
+    v = np.where(t_w > end, 1.0, np.clip(p * (1 + soft) - soft, 0, 1))
+    m = (v * 255 + 0.5).astype(np.uint8)
+    P.used["lamp_refl_map.png"] = "lamp_refl_map.png"
+    P.made["lamp_refl_map.png"] = np.dstack([m, m, m, np.full_like(m, 255)])
+    a = np.asarray(Image.open(src))[..., 3] > 20
+    print(f"p6 lamp_refl: shows from {t_w[a].min():.2f}..{t_w[a].max():.2f} s plate time ({(t_w[a] > end).mean():.0%} never)")
+    return P.layer(e, "lamp_refl", touch=[{"kind": "reveal", "map": f"{RES}/p6/lamp_refl_map.png", "t0": 0, "t1": end,
+                                            "soft": soft}, {"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 13}])
+
+
 def plate_p6(picks):
     P = Plate("p6")
     layers = []
@@ -309,7 +371,7 @@ def plate_p6(picks):
         y0, y1 = ys.min(), ys.max() + 1
         w = np.zeros(m.shape, np.float32)
         run = np.zeros(m.shape[0], int)
-        for x in range(m.shape[1]):
+        for x in range(m.shape[1] - 1, -1, -1):           # Storybook 5: runs from the right (the water side)
             run = np.where(m[:, x], run + 1, 0)
             w[:, x] = np.maximum(w[:, x], np.where((run >= 1) & (run <= 3), 1 - (run - 1) / 3.0, 0) * np.where(run > 0, 1, 0))
         # a pixel counts only if the run began at the left edge of the silhouette (leftmost in its row)
@@ -317,7 +379,7 @@ def plate_p6(picks):
         for y in range(m.shape[0]):
             xr = np.nonzero(m[y])[0]
             if len(xr):
-                lead[y, xr.min():xr.min() + 3] = True
+                lead[y, xr.max() - 2:xr.max() + 1] = True        # Storybook 5: the right edge, facing the water
         w = np.where(lead, w, 0)
         hood = np.zeros(m.shape, np.float32)
         run = np.zeros(m.shape[1], int)
@@ -331,7 +393,8 @@ def plate_p6(picks):
             if len(yr):
                 top_ok[yr.min():yr.min() + 3, x] = True
         hood = np.where(top_ok, hood, 0)
-        k = (0.6 * np.maximum(w, hood))[..., None]
+        k = (0.9 * np.maximum(w, hood))[..., None]       # Storybook 5: 0.6 did not show at 1:1 (judge r1)
+        rim = rim + 0.3 * (255 - rim)                     # a paler cold rim against the pale river
         col = col * (1 - k) + rim[None, None, :] * k
         out = np.dstack([np.clip(col, 0, 255), al * 255]).astype(np.uint8)
         P.made["walk2.png"] = out
@@ -349,15 +412,20 @@ def plate_p6(picks):
                 P.cam(7.55, 2760, 1055, 1.3), P.cam(10.5, 3650, 1060, 1.3, ease="inout")]
     T = check_p6_camera(P, cam_keys, sx, wx)
 
+    # Storybook 5: one drawing for the whole fire beat (judge r1: the sit -> stand swap showed on screen): the standing
+    # traveler (her flask pays off in p7) from the first frame, until the off-screen swap to walk2
     L = P.layer(e_stand, "stand")
-    pts = [(0, 0.0), (sit_end, 0.0), (sit_end + stand_fade / 2, 1.0), (T, 1.0), (T + 0.02, 0.0)]
+    pts = [(0, 1.0), (T, 1.0), (T + 0.02, 0.0)]
     L["keys"] = opacity_keys(pts, [p[0] for p in pts])
     layers.append(L)
     L = P.layer(e_w2, "walk2")
     pts = [(0, 0.0), (T, 0.0), (T + 0.02, 1.0)]
     L["keys"] = opacity_keys(pts, [p[0] for p in pts])
     layers.append(L)
-    if "sit" in picks:
+    refl = p6_lamp_refl(P, cam_keys)
+    if refl:
+        layers.insert(next(i for i, l in enumerate(layers) if l["id"] == "near") + 1, refl)
+    if "sit" in picks and SB5_P6_SIT:
         L = P.layer(P.entry(picks["sit"]), "sit")
         pts = [(0, 1.0), (sit_end + stand_fade / 2, 1.0), (sit_end + stand_fade, 0.0)]
         L["keys"] = opacity_keys(pts, [p[0] for p in pts])
@@ -519,7 +587,7 @@ def plate_p7u(picks):
         "camera": [P.cam(0, 1600, 760, 1.06), P.cam(1.2, 1600, 880, 1.04, ease="out")],
         "note": "INK: Underwater (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": layers,
-        "fx": [{"kind": "particles", "preset": "bubbles", "at": [1650, 1450], "area": [1300, 300], "z": 0.85,
+        "fx": [{"kind": "particles", "preset": "bubbles", "at": list(P7U_BUBBLE_COLUMN), "area": [160, 120], "z": 0.85,
                 "rate": 7, "speed": [70, 130], "size": [4, 10], "seed": 9}],
         "cues": [],
     }
