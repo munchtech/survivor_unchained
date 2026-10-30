@@ -663,9 +663,9 @@
     "right": "dagger_b"
    },
    "spot": {
-    "x": -11.4,
-    "z": -7.6,
-    "facing": 1.5707963267948966
+    "x": -6.5,
+    "z": -7.45,
+    "facing": 0.8
    },
    "barks": [
     "I'm a doctor. Don't make me prove it.",
@@ -1355,9 +1355,9 @@
     "body": "npc:npc_vonnra"
    },
    "spot": {
-    "x": 28.4,
-    "z": -4.4,
-    "facing": -1.5707963267948966
+    "x": 29.6,
+    "z": -1.55,
+    "facing": -1.0
    },
    "barks": [
     "The toll is the toll.",
@@ -1422,9 +1422,9 @@
     "right": "viking_sword"
    },
    "spot": {
-    "x": 0,
-    "z": -33,
-    "facing": 0
+    "x": 5.6,
+    "z": -31.2,
+    "facing": -1.2
    },
    "barks": [
     "None pass north. Not yet.",
@@ -1527,9 +1527,9 @@
     "body": "npc:npc_sella"
    },
    "spot": {
-    "x": -11.2,
-    "z": 7.9,
-    "facing": 0.9
+    "x": -8.8,
+    "z": 13.0,
+    "facing": 1.2
    },
    "barks": [
     "Buy a girl a drink? No? Buy yourself one, then. You look like you need it.",

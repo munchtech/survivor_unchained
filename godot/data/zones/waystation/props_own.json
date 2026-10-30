@@ -56,6 +56,13 @@
    ]
   },
   {
+   "_": "rav's seat (NPC 20 staging): the physician's chair by the herb stall's sunny east end, in the open",
+   "preset": "chair",
+   "x": -6.5,
+   "z": -7.45,
+   "rot": 0.8
+  },
+  {
    "preset": "stall_pots",
    "x": 10,
    "z": -6,
