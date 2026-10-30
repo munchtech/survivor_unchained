@@ -986,7 +986,7 @@
    ],
    "tint": "#5e7a4a",
    "scale": 0.9,
-   "idle": "Idle_Armed",
+   "idle": "Idle",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1000,9 +1000,6 @@
     "skin": "#e0a47c",
     "figure": 0.6,
     "body": "npc:npc_wenna"
-   },
-   "arms": {
-    "right": "short_staff"
    },
    "spot": {
     "x": -23.6,
