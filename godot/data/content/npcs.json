@@ -660,11 +660,7 @@
     "beard": true,
     "hairColor": "#5a4a3a",
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#8a3a34",
-     "under": "#2a1a18"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_rav"
    },
    "arms": {
     "right": "dagger_b"
