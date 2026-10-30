@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 29 October 2026, evening (coordinator afafb81e)
+- **SB00 storybook (Storybook 5 cut):** "it still looks bad at the point I mentioned before with the pan across to the lake bit. but we can work on it more later, its a good start". So p6 (71-81.5 s, fire to water) still fails for the owner after the no-walk restage. Next storybook lead: rethink that beat (not a third patch of the pan: a hard cut or a different plate). `live` stays false.
+
 ## 29 October 2026 (coordinator 7050fc3c)
 - **UI (HUD revision r3: today | A keeper bust | B Flare chalice):** "A, the keeper." -> UI 22 builds A (keeper re-surfaced to the girl's polish; the button panel may gain character within the crisp-edge rule). Then: "bridge the gaps though, have them properly bookend the skills" -> no gaps; the girl and keeper frame the panel ends like bookends (touch, no overlap). Then: "with the skills strata on top if they overlap" -> where they meet, the panel layers over the figure.
 - **VFX (danger telegraph color):** "B salmon." (chevrons, flat ends, crisp edges; fire tint stays off).
