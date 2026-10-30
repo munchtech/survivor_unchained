@@ -810,11 +810,7 @@
     "hairColor": "#5e3e28",
     "beard": true,
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#a0784a",
-     "under": "#3a2a1c"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_harlan"
    },
    "spot": {
     "x": 10.4,
