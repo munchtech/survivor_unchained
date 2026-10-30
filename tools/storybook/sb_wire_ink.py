@@ -791,7 +791,11 @@ def plate_p1d(picks):
         u = i / 6
         gk.append({"t": r(t0 + u * P1D_SLIDE, 3), "opacity": r(0.3 + 0.7 * (1 - prog(u)) ** 1.3, 3)})
     slide = [{"t": 0, "dx": r(dx0)}, {"t": r(t0, 3), "dx": r(dx0)}, {"t": hit, "dx": 0, "ease": "in"}]
+    # SB5 r14: the sliding slab read lighter than its own shut state; a darkened copy (RGB x 0.82, alpha kept)
+    sl = np.asarray(Image.open(os.path.join(LAYERS, "p1d", E["slab"]["file"])).convert("RGBA")).copy()
+    sl[..., :3] = (sl[..., :3].astype(np.float32) * 0.82).astype(np.uint8)
     slab = P.layer(E["slab"], "slab", keys=slide)
+    P.made["slab.png"] = sl
     rim = P.layer(E["rim"], "rim", keys=merge_keys(sorted([dict(s) for s in slide] + [dict(g) for g in gk], key=lambda k: k["t"])))
     gold = P.layer(E["gold"], "gold", keys=gk, touch=[{"kind": "flicker", "rate": 0.5, "amount": 0.12, "seed": 11}])
     lgold = P.layer(E["lintel_gold"], "lintel_gold", keys=[dict(g) for g in gk],
@@ -820,9 +824,12 @@ def plate_p1d(picks):
             P.cam(r(hit + 0.067, 3), kx, ky + 4, r(kz, 4), ease="linear"),
             P.cam(r(hit + 0.133, 3), ax, ay, r(az, 4), ease="linear"),
             P.cam(C[0], C[1], C[2], C[3], ease="linear")]
+    # SB5 r14: the shut gate holds on to 16.5 s (abs), the same slow push going on, so p2's dissolve starts under it
+    hx_, hy_, hz_ = lerp(round(16.5 - P1D_AT, 3))
+    keys.append(P.cam(round(16.5 - P1D_AT, 3), hx_, hy_, r(hz_, 4), ease="linear"))
     check_p1d(P, [k for k in keys if k["t"] >= A[0] - 1e-6], f["lintel_top"])
     return P, {
-        "id": PREFIX + "p1d", "at": P1D_AT, "until": 15.5,
+        "id": PREFIX + "p1d", "at": P1D_AT, "until": 16.5,
         "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
         "camera": keys,
         "note": "INK: The door shut (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
@@ -863,19 +870,22 @@ def plate_p2(picks):
     W, H = P.meta["canvas_units"]
     dx_, dy_ = P.meta["features"]["door"]
     up = lambda x, y: 1 - y / H                    # dark (first) at the bottom
-    th = [{"kind": "reveal", "map": r6_map(P, E["threads"], up, "threads_map"), "t0": -1.5, "t1": 8.5, "soft": 0.12},
+    th = [{"kind": "reveal", "map": r6_map(P, E["threads"], up, "threads_map"), "t0": -2.5, "t1": 7.5, "soft": 0.12},
           {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]
-    tg = [{"kind": "reveal", "map": r6_map(P, E["threads_glow"], up, "threads_glow_map"), "t0": -1.5, "t1": 8.5, "soft": 0.12},
+    tg = [{"kind": "reveal", "map": r6_map(P, E["threads_glow"], up, "threads_glow_map"), "t0": -2.5, "t1": 7.5, "soft": 0.12},
           {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]
     x0 = max(dx_, 3200 / 1.12 / 2 + 40)
+    c0 = (x0, min(dy_, H - 1339 / 1.12 / 2 - 30)); c1 = (1650, 760); sm = 3 * (5.5 / 9) ** 2 - 2 * (5.5 / 9) ** 3
+    old21 = (c0[0] + (c1[0] - c0[0]) * sm, c0[1] + (c1[1] - c0[1]) * sm + 150)
     return P, {
-        "id": PREFIX + "p2", "at": 15.5, "until": 25.5,
-        "in": {"kind": "dissolve", "dur": 1.2},
-        "camera": [P.cam(0, x0, min(dy_, H - 1339 / 1.12 / 2 - 30), 1.12), P.cam(9.0, 1650, 760, 1.0, ease="inout")],
+        "id": PREFIX + "p2", "at": 16.5, "until": 25.5,
+        "in": {"kind": "dissolve", "dur": 1.0},
+        # SB5 r14: p2 opens at 16.5 (the shut gate runs on under it) already on the gold veins: the old camera's
+        # 21.0 s framing (smoothstep 0.664 of the way from the door) moved 150 px down; no deep door in frame
+        "camera": [P.cam(0, *old21, 1.04), P.cam(9.0, 1650, 760, 1.0, ease="inout")],
         "note": "INK: Ember (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(E["base"], "base")] + p2_branches(P) + [P.layer(E["threads"], "threads", touch=th),
                    P.layer(E["threads_glow"], "threads_glow", touch=tg),
-                   P.layer(E["door_glow"], "door_glow", touch=[{"kind": "flicker", "rate": 0.45, "amount": 0.3, "seed": 8}]),
                    P.layer(E["lights"], "lights", keys=P2_LIGHTS_KEYS,
                            touch=[{"kind": "flicker", "rate": 6, "amount": 0.25, "seed": 7}])],
         "cues": [],
@@ -883,7 +893,7 @@ def plate_p2(picks):
 
 
 # round 3 (solver B): the town's lights come up as the light from below reaches the road (plate s)
-P2_LIGHTS_KEYS = [{"t": 0, "opacity": 0.6}, {"t": 6.8, "opacity": 0.6}, {"t": 8.3, "opacity": 1.0, "ease": "inout"}]
+P2_LIGHTS_KEYS = [{"t": 0, "opacity": 0.6}, {"t": 5.8, "opacity": 0.6}, {"t": 7.3, "opacity": 1.0, "ease": "inout"}]
 
 
 def p2_branches(P):
@@ -896,7 +906,7 @@ def p2_branches(P):
          "size_px": B["size_px"]}
     yb, yh = B["y_bottom"], B["y_hearth"]
     m = r6_map(P, e, lambda x, y: (yb - y) / (yb - yh), "branches_map")
-    return [P.layer(e, "branches", touch=[{"kind": "reveal", "map": m, "t0": 3.3, "t1": 8.0, "soft": 0.15},
+    return [P.layer(e, "branches", touch=[{"kind": "reveal", "map": m, "t0": 2.3, "t1": 7.0, "soft": 0.15},
                                           {"kind": "flicker", "rate": 0.6, "amount": 0.2, "seed": 6}])]
 
 
@@ -922,7 +932,7 @@ def plate_p3(picks):
         layers.append(L)
     return P, {
         "id": PREFIX + "p3", "at": 25.5, "until": 38.0,
-        "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+        "in": {"kind": "cut"},   # SB5 r14: was a 1.4 s ink dissolve that left the risen at half strength over the town
         # Storybook 5: the night is shown at no more than ~1.2x its own carving (frame px per gen px = 0.933 x zoom, so
         # zoom <= 1.285; the old 1.8 open read as an enlargement). Opens on the staged wide: the crack + the dead hand
         # and the standing dead whole (the canvas's left edge sets the zoom, 1.22: x from 19), a slow push to 7.2 s,

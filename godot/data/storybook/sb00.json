@@ -29,7 +29,7 @@
     {
       "id": "ink_p1d",
       "at": 2.5,
-      "until": 15.5,
+      "until": 16.5,
       "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
       "camera": [
         {"t": 0, "x": 1600, "y": 667.3, "zoom": 0.972},
@@ -38,7 +38,8 @@
         {"t": 11.333, "x": 1553.6, "y": 809.3, "zoom": 1.006, "ease": "linear"},
         {"t": 11.367, "x": 1553.6, "y": 823.3, "zoom": 1.006, "ease": "linear"},
         {"t": 11.433, "x": 1552.5, "y": 819.1, "zoom": 1.0068, "ease": "linear"},
-        {"t": 13.0, "x": 1540, "y": 817, "zoom": 1.016, "ease": "linear"}
+        {"t": 13.0, "x": 1540, "y": 817, "zoom": 1.016, "ease": "linear"},
+        {"t": 14.0, "x": 1532, "y": 815.7, "zoom": 1.0219, "ease": "linear"}
       ],
       "note": "INK: The door shut (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
       "layers": [
@@ -59,31 +60,30 @@
         {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.25, "over": 4.0},
         {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"},
         {"at": 8.8, "do": "line", "id": "chained"},
-        {"at": 11.3, "do": "sfx", "name": "hit", "gain": 0.8}
+        {"at": 11.3, "do": "sfx", "name": "hit", "gain": 0.8},
+        {"at": 13.8, "do": "line", "id": "ember"}
       ]
     },
     {
       "id": "ink_p2",
-      "at": 15.5,
+      "at": 16.5,
       "until": 25.5,
-      "in": {"kind": "dissolve", "dur": 1.2},
-      "camera": [{"t": 0, "x": 1418.6, "y": 2053.2, "zoom": 1.12}, {"t": 9.0, "x": 1600, "y": -121, "zoom": 1.0, "ease": "inout"}],
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [{"t": 0, "x": 1539, "y": 759.7, "zoom": 1.04}, {"t": 9.0, "x": 1600, "y": -121, "zoom": 1.0, "ease": "inout"}],
       "note": "INK: Ember (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
       "layers": [
         {"id": "base", "image": "res://art/storybook/sb00/p2/base.png", "pos": [-50, -881], "scale": 1.0, "z": 1.0},
-        {"id": "branches", "image": "res://art/storybook/sb00/p2/branches.png", "pos": [50, -61], "scale": 1.0, "z": 1.0, "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/branches_map.png", "t0": 3.3, "t1": 8.0, "soft": 0.15}, {"kind": "flicker", "rate": 0.6, "amount": 0.2, "seed": 6}]},
-        {"id": "threads", "image": "res://art/storybook/sb00/p2/threads.png", "pos": [104, 287], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_map.png", "t0": -1.5, "t1": 8.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
-        {"id": "threads_glow", "image": "res://art/storybook/sb00/p2/threads_glow.png", "pos": [25, 226], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_glow_map.png", "t0": -1.5, "t1": 8.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
-        {"id": "door_glow", "image": "res://art/storybook/sb00/p2/door_glow.png", "pos": [487, 1559], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 0.45, "amount": 0.3, "seed": 8}]},
-        {"id": "lights", "image": "res://art/storybook/sb00/p2/lights.png", "pos": [-50, -591], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 0.6}, {"t": 6.8, "opacity": 0.6}, {"t": 8.3, "opacity": 1.0, "ease": "inout"}], "touch": [{"kind": "flicker", "rate": 6, "amount": 0.25, "seed": 7}]}
-      ],
-      "cues": [{"at": 0.8, "do": "line", "id": "ember"}]
+        {"id": "branches", "image": "res://art/storybook/sb00/p2/branches.png", "pos": [50, -61], "scale": 1.0, "z": 1.0, "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/branches_map.png", "t0": 2.3, "t1": 7.0, "soft": 0.15}, {"kind": "flicker", "rate": 0.6, "amount": 0.2, "seed": 6}]},
+        {"id": "threads", "image": "res://art/storybook/sb00/p2/threads.png", "pos": [104, 287], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_map.png", "t0": -2.5, "t1": 7.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
+        {"id": "threads_glow", "image": "res://art/storybook/sb00/p2/threads_glow.png", "pos": [25, 226], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_glow_map.png", "t0": -2.5, "t1": 7.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
+        {"id": "lights", "image": "res://art/storybook/sb00/p2/lights.png", "pos": [-50, -591], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 0.6}, {"t": 5.8, "opacity": 0.6}, {"t": 7.3, "opacity": 1.0, "ease": "inout"}], "touch": [{"kind": "flicker", "rate": 6, "amount": 0.25, "seed": 7}]}
+      ]
     },
     {
       "id": "ink_p3",
       "at": 25.5,
       "until": 38.0,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
+      "in": {"kind": "cut"},
       "camera": [
         {"t": 0, "x": 978, "y": 864, "zoom": 1.27},
         {"t": 3.3, "x": 968, "y": 859, "zoom": 1.28, "ease": "inout"},
@@ -178,7 +178,7 @@
         {"id": "sky", "image": "res://art/storybook/sb00/p6/sky.png", "pos": [-1000, -155], "scale": 1.31579, "z": 10},
         {"id": "far", "image": "res://art/storybook/sb00/p6/far.png", "pos": [857.9, -155], "scale": 1.31579, "z": 3.0},
         {"id": "near", "image": "res://art/storybook/sb00/p6/near.png", "pos": [-1000, -155], "scale": 1.31579, "z": 1.0},
-        {"id": "lamp_refl", "image": "res://art/storybook/sb00/p6/lamp_refl.png", "pos": [1963.2, 772.6], "scale": 1.31579, "z": 3.0, "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p6/lamp_refl_map.png", "t0": 0, "t1": 10.5, "soft": 0.02}, {"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 13}]},
+        {"id": "lamp_refl", "image": "res://art/storybook/sb00/p6/lamp_refl.png", "pos": [1963.2, 772.6], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0.0, "dx": -633.33, "dy": -36.67}, {"t": 0.1, "dx": -633.33, "dy": -36.67}, {"t": 0.2, "dx": -633.33, "dy": -36.67}, {"t": 0.3, "dx": -633.33, "dy": -36.67}, {"t": 0.4, "dx": -633.33, "dy": -36.67}, {"t": 0.5, "dx": -633.33, "dy": -36.67}, {"t": 0.6, "dx": -633.33, "dy": -36.67}, {"t": 0.7, "dx": -633.33, "dy": -36.67}, {"t": 0.8, "dx": -633.33, "dy": -36.67}, {"t": 0.9, "dx": -633.33, "dy": -36.67}, {"t": 1.0, "dx": -633.33, "dy": -36.67}, {"t": 1.1, "dx": -633.33, "dy": -36.67}, {"t": 1.2, "dx": -633.33, "dy": -36.67}, {"t": 1.3, "dx": -633.33, "dy": -36.67}, {"t": 1.4, "dx": -633.33, "dy": -36.67}, {"t": 1.5, "dx": -633.33, "dy": -36.67}, {"t": 1.6, "dx": -633.33, "dy": -36.67}, {"t": 1.7, "dx": -633.33, "dy": -36.67}, {"t": 1.8, "dx": -633.33, "dy": -36.67}, {"t": 1.9, "dx": -633.33, "dy": -36.67}, {"t": 2.0, "dx": -633.33, "dy": -36.67}, {"t": 2.1, "dx": -633.33, "dy": -36.67}, {"t": 2.2, "dx": -633.33, "dy": -36.67}, {"t": 2.3, "dx": -633.33, "dy": -36.67}, {"t": 2.4, "dx": -633.33, "dy": -36.67}, {"t": 2.5, "dx": -633.33, "dy": -36.67}, {"t": 2.6, "dx": -633.33, "dy": -36.67}, {"t": 2.7, "dx": -633.33, "dy": -36.67}, {"t": 2.8, "dx": -633.33, "dy": -36.67}, {"t": 2.9, "dx": -633.33, "dy": -36.67}, {"t": 3.0, "dx": -633.33, "dy": -36.67}, {"t": 3.1, "dx": -633.33, "dy": -36.67}, {"t": 3.2, "dx": -633.33, "dy": -36.67}, {"t": 3.3, "dx": -633.33, "dy": -36.67}, {"t": 3.4, "dx": -633.33, "dy": -36.67}, {"t": 3.5, "dx": -633.33, "dy": -36.67}, {"t": 3.6, "dx": -633.33, "dy": -36.67}, {"t": 3.7, "dx": -633.33, "dy": -36.67}, {"t": 3.8, "dx": -633.33, "dy": -36.67}, {"t": 3.9, "dx": -633.33, "dy": -36.67}, {"t": 4.0, "dx": -633.33, "dy": -36.67}, {"t": 4.1, "dx": -633.33, "dy": -36.67}, {"t": 4.2, "dx": -633.33, "dy": -36.67}, {"t": 4.3, "dx": -633.33, "dy": -36.67}, {"t": 4.4, "dx": -633.33, "dy": -36.67}, {"t": 4.5, "dx": -633.33, "dy": -36.67}, {"t": 4.6, "dx": -633.33, "dy": -36.67}, {"t": 4.7, "dx": -630.84, "dy": -36.54}, {"t": 4.8, "dx": -623.59, "dy": -36.18}, {"t": 4.9, "dx": -611.93, "dy": -35.61}, {"t": 5.0, "dx": -596.21, "dy": -34.83}, {"t": 5.1, "dx": -576.76, "dy": -33.86}, {"t": 5.2, "dx": -553.95, "dy": -32.73}, {"t": 5.3, "dx": -528.11, "dy": -31.45}, {"t": 5.4, "dx": -499.59, "dy": -30.04}, {"t": 5.5, "dx": -468.73, "dy": -28.51}, {"t": 5.6, "dx": -435.88, "dy": -26.88}, {"t": 5.7, "dx": -401.39, "dy": -25.17}, {"t": 5.8, "dx": -365.61, "dy": -23.4}, {"t": 5.9, "dx": -328.87, "dy": -21.58}, {"t": 6.0, "dx": -291.53, "dy": -19.73}, {"t": 6.1, "dx": -253.93, "dy": -17.87}, {"t": 6.2, "dx": -216.41, "dy": -16.01}, {"t": 6.3, "dx": -179.33, "dy": -14.17}, {"t": 6.4, "dx": -143.02, "dy": -12.37}, {"t": 6.5, "dx": -107.84, "dy": -10.63}, {"t": 6.6, "dx": -74.13, "dy": -8.96}, {"t": 6.7, "dx": -42.24, "dy": -7.38}, {"t": 6.8, "dx": -12.51, "dy": -5.9}, {"t": 6.9, "dx": 14.72, "dy": -4.56}, {"t": 7.0, "dx": 39.09, "dy": -3.35}, {"t": 7.1, "dx": 60.26, "dy": -2.3}, {"t": 7.2, "dx": 77.89, "dy": -1.43}, {"t": 7.3, "dx": 91.62, "dy": -0.75}, {"t": 7.4, "dx": 101.12, "dy": -0.27}, {"t": 7.5, "dx": 106.04, "dy": -0.03}, {"t": 7.6, "dx": 107.17, "dy": 0}, {"t": 7.7, "dx": 111.11, "dy": 0.02}, {"t": 7.8, "dx": 118.73, "dy": 0.07}, {"t": 7.9, "dx": 129.74, "dy": 0.13}, {"t": 8.0, "dx": 143.87, "dy": 0.21}, {"t": 8.1, "dx": 160.85, "dy": 0.3}, {"t": 8.2, "dx": 180.39, "dy": 0.41}, {"t": 8.3, "dx": 202.22, "dy": 0.54}, {"t": 8.4, "dx": 226.06, "dy": 0.67}, {"t": 8.5, "dx": 251.63, "dy": 0.81}, {"t": 8.6, "dx": 278.66, "dy": 0.97}, {"t": 8.7, "dx": 306.87, "dy": 1.12}, {"t": 8.8, "dx": 335.98, "dy": 1.29}, {"t": 8.9, "dx": 365.71, "dy": 1.46}, {"t": 9.0, "dx": 395.79, "dy": 1.62}, {"t": 9.1, "dx": 425.94, "dy": 1.79}, {"t": 9.2, "dx": 455.88, "dy": 1.96}, {"t": 9.3, "dx": 485.34, "dy": 2.13}, {"t": 9.4, "dx": 514.03, "dy": 2.29}, {"t": 9.5, "dx": 541.68, "dy": 2.44}, {"t": 9.6, "dx": 568.02, "dy": 2.59}, {"t": 9.7, "dx": 592.76, "dy": 2.73}, {"t": 9.8, "dx": 615.63, "dy": 2.86}, {"t": 9.9, "dx": 636.35, "dy": 2.98}, {"t": 10.0, "dx": 654.64, "dy": 3.08}, {"t": 10.1, "dx": 670.23, "dy": 3.17}, {"t": 10.2, "dx": 682.84, "dy": 3.24}, {"t": 10.3, "dx": 692.19, "dy": 3.29}, {"t": 10.4, "dx": 698, "dy": 3.32}, {"t": 10.5, "dx": 700, "dy": 3.33}], "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p6/lamp_refl_map.png", "t0": 0, "t1": 10.5, "soft": 0.02}, {"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 13}]},
         {"id": "fire_glow", "image": "res://art/storybook/sb00/p6/fire_glow.png", "pos": [-1000, -155], "scale": 1.31579, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 5, "amount": 0.22, "seed": 2}]},
         {"id": "stand", "image": "res://art/storybook/sb00/p6/stand.png", "pos": [50, 560.8], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0, "opacity": 1}, {"t": 7.6, "opacity": 1}, {"t": 7.62, "opacity": 0}]},
         {"id": "walk2", "image": "res://art/storybook/sb00/p6/walk2.png", "pos": [3117.1, 966.1], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0, "opacity": 0}, {"t": 7.6, "opacity": 0}, {"t": 7.62, "opacity": 1}]}
