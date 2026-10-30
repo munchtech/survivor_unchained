@@ -688,8 +688,10 @@ def plate_p3d(picks):
     return P, {
         "id": PREFIX + "p3d", "at": 38.0, "until": 46.0,
         "in": {"kind": "cut"},
-        "camera": [P.cam(0, 2160, 960, 1.12), P.cam(1.0, 2160, 950, 1.12),
-                   P.cam(7.5, 2160, 640, 1.12, ease="inout")],
+        # dawn2 plate (ink_dawn2.py): the Watchman's head (~107 units) under the bars' top from the cut, both dead
+        # whole (the face-down one's feet ~1420; zoom 0.97 fits the band); a slow push and tilt up to the gold band.
+        "camera": [P.cam(0, 2160, 745, 0.97), P.cam(1.0, 2160, 740, 0.97),
+                   P.cam(7.5, 2160, 650, 1.05, ease="inout")],
         "note": "INK: First light (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(e, e["name"]) for e in P.bases()],
         "cues": [],
@@ -698,14 +700,17 @@ def plate_p3d(picks):
 
 def plate_p4(picks):
     """Keepers and lamps: the pan left to right; the willow (z 0.8) passes faster, the years-pass divider at ~4.5 s.
-    The pan rises a little (y 800 -> 740, zoom 1.0) so the Watchman on the ladder (head top ~150 units), his jug and
+    The pan rises a little (y 760 -> 680, zoom 1.0) so the Watchman on the ladder (head top ~150 units), his jug and
     the post lamp sit under the bars' top with headroom from ~4.5 s to the end."""
     P = Plate("p4")
     E = r6_layers(P)
+    nowisp = os.path.join(LAYERS, "p4", "_base_nowisp.png")   # ink_p4_wisp.py: the smoke over the lamp painted out
+    if os.path.exists(nowisp):
+        P.made["base.png"] = np.asarray(Image.open(nowisp).convert("RGBA"))
     return P, {
         "id": PREFIX + "p4", "at": 46.0, "until": 56.0,
         "in": {"kind": "dissolve", "dur": 1.0},
-        "camera": [P.cam(0, 1700, 800, 1.0), P.cam(10.0, 4100, 740, 1.0, ease="inout")],
+        "camera": [P.cam(0, 1700, 760, 1.0), P.cam(10.0, 4100, 680, 1.0, ease="inout")],
         "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(E["base"], "base"),
                    P.layer(E["lamps"], "lamps", touch=[{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]),

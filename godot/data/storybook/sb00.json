@@ -78,10 +78,11 @@
       "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
       "camera": [
         {"t": 0, "x": 610, "y": 1204, "zoom": 1.8},
-        {"t": 3.2, "x": 570, "y": 1214, "zoom": 2.0, "ease": "out"},
-        {"t": 5.2, "x": 810, "y": 804, "zoom": 1.55, "ease": "inout"},
-        {"t": 7.2, "x": 830, "y": 794, "zoom": 1.6},
-        {"t": 9.3, "x": 2130, "y": 884, "zoom": 1.3, "ease": "inout"},
+        {"t": 0.8, "x": 600, "y": 1194, "zoom": 1.8},
+        {"t": 3.3, "x": 1040, "y": 864, "zoom": 1.22, "ease": "inout"},
+        {"t": 5.2, "x": 1050, "y": 859, "zoom": 1.24},
+        {"t": 7.2, "x": 1070, "y": 844, "zoom": 1.3, "ease": "in"},
+        {"t": 9.3, "x": 2130, "y": 884, "zoom": 1.3, "ease": "out"},
         {"t": 12.5, "x": 2210, "y": 904, "zoom": 1.38, "ease": "out"}
       ],
       "grade": [
@@ -112,9 +113,9 @@
       "until": 46.0,
       "in": {"kind": "cut"},
       "camera": [
-        {"t": 0, "x": 1600, "y": 1064, "zoom": 1.12},
-        {"t": 1.0, "x": 1600, "y": 1054, "zoom": 1.12},
-        {"t": 7.5, "x": 1600, "y": 744, "zoom": 1.12, "ease": "inout"}
+        {"t": 0, "x": 1600, "y": 849, "zoom": 0.97},
+        {"t": 1.0, "x": 1600, "y": 844, "zoom": 0.97},
+        {"t": 7.5, "x": 1600, "y": 754, "zoom": 1.05, "ease": "inout"}
       ],
       "note": "INK: First light (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
       "layers": [{"id": "dawn", "image": "res://art/storybook/sb00/p3d/dawn.png", "pos": [-560, 104], "scale": 0.8, "z": 1.0}]
@@ -124,7 +125,7 @@
       "at": 46.0,
       "until": 56.0,
       "in": {"kind": "dissolve", "dur": 1.0},
-      "camera": [{"t": 0, "x": 350, "y": 900, "zoom": 1.05}, {"t": 10.0, "x": 2850, "y": 900, "zoom": 1.05, "ease": "inout"}],
+      "camera": [{"t": 0, "x": 400, "y": 710, "zoom": 1.0}, {"t": 10.0, "x": 2800, "y": 630, "zoom": 1.0, "ease": "inout"}],
       "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
       "layers": [
         {"id": "base", "image": "res://art/storybook/sb00/p4/base.png", "pos": [-1300, -50], "scale": 1.0, "z": 1.0},
