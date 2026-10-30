@@ -58,8 +58,8 @@ public class StorybookTests
         Assert.Equal("sb_stay_where_they_reach", f.Conversation);
         var want = new (string Id, double At, double Until)[]
         {
-            ("p0", 0, 2.5), ("p1", 2.5, 11), ("p2", 11, 15.5), ("p3", 15.5, 25.5), ("p4", 25.5, 37), ("p5", 37, 46),
-            ("p6", 46, 56), ("ink_p5", 56, 71), ("ink_p6", 71, 81.5), ("ink_p7", 81.5, 87.5), ("ink_p7u", 87, 89.5),
+            ("ink_p0", 0, 2.5), ("ink_p1", 2.5, 15.5), ("ink_p2", 15.5, 25.5), ("ink_p3", 25.5, 38), ("ink_p3d", 38, 46),
+            ("ink_p4", 46, 56), ("ink_p5", 56, 71), ("ink_p6", 71, 81.5), ("ink_p7", 81.5, 87.5), ("ink_p7u", 87, 89.5),
         };
         Assert.Equal(want.Select(w => w.Id), f.Plates.Select(p => p.Id));
         foreach (var (p, w) in f.Plates.Zip(want)) { Assert.Equal(w.At, p.At); Assert.Equal(w.Until, p.Until); }
@@ -75,9 +75,9 @@ public class StorybookTests
         Assert.True(lines[^1].T >= 78);
         var ctx = Make("hunter", "Wren", 1).C;
         Assert.True(CineLines.Find("cin_none_cross.call", ctx).Sung);
-        // Each of the nine is said while its plate is up (the cards one a plate; the ink plates from 56 s
-        // carry the old cards' lines at their times: winter and waiting in the ford, lamps by the fire).
-        var host = new[] { "p1", "p2", "p3", "p4", "p5", "p6", "ink_p5", "ink_p5", "ink_p6" };
+        // Each of the nine is said while its plate is up (the ink plates carry the old cards' lines at their times:
+        // legion and chained in the cut, dawn under the dead, winter and waiting in the ford, lamps by the fire).
+        var host = new[] { "ink_p1", "ink_p1", "ink_p2", "ink_p3", "ink_p3", "ink_p4", "ink_p5", "ink_p5", "ink_p6" };
         for (int i = 0; i < 9; i++)
         {
             var p = f.Plates.Single(q => q.Id == host[i]);
