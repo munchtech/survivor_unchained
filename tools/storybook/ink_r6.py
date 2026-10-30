@@ -367,8 +367,8 @@ def build(plate):
         cur = T.posted(T.S("curve2"))
         nos = img(T.S("noslab"))
         op = box(c.shape, *P1_OPEN)
-        opi = nd.binary_erosion(op, iterations=2)
-        nos[opi] = IP.BLACK                       # the empty doorway: black
+        x0, y0, x1, y1 = P1_OPEN                  # the empty doorway: black, a little past the box at the sides (r7a: a
+        nos[y0 + 2:y1 - 2, x0 - 4:x1 + 8] = IP.BLACK   # pale sliver of the old shell stayed at the right post)
         base = T.posted(Image.fromarray((nos * 255 + 0.5).astype(np.uint8)))
         add("base", full1(base))
         add("curve", cut(cur, T.up(op, 1.5)))

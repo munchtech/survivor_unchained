@@ -582,10 +582,11 @@ def plate_p1(picks):
     f = P.meta["features"]
     ox0, oy0, ox1, oy1 = f["open"]
     sx0, sx1, sy0, sy1 = f["slab"]
-    # the slab's leading edge stops just inside the left post; a static scale so it spans the opening (never grows on screen)
+    # the slab comes to rest centred on the opening; a static 1.15 (never grows on screen) so it nearly spans it,
+    # the last of the glow a line either side before it goes out (r7a: 1.32 to span it all read as a giant stone)
     sw, ow = sx1 - sx0, ox1 - ox0
-    sc = round(max(1.0, (ow + 24) / sw), 3)
-    dx = r((ox0 - 10) - sx0)
+    sc = 1.15
+    dx = r((ox0 + ox1) / 2 - (sx0 + sc * sw / 2))
     close0, close1 = 9.5, 11.3
     slab = P.layer(E["slab"], "slab", pivot=P.S(sx0, sy1),
                    keys=[{"t": 0, "dx": 0, "scale": sc}, {"t": close0, "dx": 0, "scale": sc},
@@ -603,7 +604,7 @@ def plate_p1(picks):
         "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
         # The lip (hold), then down the chain and the torch column to the doorway by 8 s; a slow push while it shuts.
         "camera": [P.cam(0, 1650, 700, 1.0), P.cam(1.2, 1650, 760, 1.0),
-                   P.cam(8.0, cx, 3170, 1.1, ease="inout"), P.cam(14.2, cx, 3190, 1.15)],
+                   P.cam(8.0, cx, 3080, 1.0, ease="inout"), P.cam(14.2, cx, 3100, 1.04)],
         "note": "INK: The cut and the chain (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(E["base"], "base"), curve, cglow, slab, torches],
         "fx": [{"kind": "particles", "preset": "sparks", "at": P.S(ax, ay), "area": [70, 20], "z": 1.0, "rate": 0,
