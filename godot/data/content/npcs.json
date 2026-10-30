@@ -940,11 +940,7 @@
     "hair": "Hair_SimpleParted",
     "hairColor": "#1a1410",
     "beard": false,
-    "dye": {
-     "cloth": "#3e4a3a",
-     "under": "#1a1e1a"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_pell"
    },
    "spot": {
     "x": 20.2,
