@@ -265,7 +265,7 @@ public static class WardenLook
             foreach (var c in at.GetChildren()) if (c is MeshInstance3D mi) mi.Scale = Vector3.One * f;
         }
         e.Glint.OmniRange = GlintReach * s * Mathf.Sqrt(f);
-        e.Glint.LightEnergy = GlintEnergy * k * f * f;
+        e.Glint.LightEnergy = GlintEnergy * GlintScale * k * f * f;
         e.Glint.Visible = k > 0;
     }
 
@@ -273,6 +273,8 @@ public static class WardenLook
     public static float eyeF = 1;
     /// <summary>The eye-lights' core at most this many pixels across (WARDEN_EYE_PX), however close the camera.</summary>
     static readonly float CorePx = EnvF("WARDEN_EYE_PX", 7f);
+    /// <summary>A cinematic's scale on the glint (the `lamp` cue's "glint"; 1 outside cinematics).</summary>
+    public static float GlintScale = 1;
     public static float GlintReach = 0.12f, GlintEnergy = EnvF("WARDEN_EYE_GLINT", 0.05f);
     /// <summary>The glow's quad (the core's is 0.011): Warden 7 r1, the bloom no wider than 3x the core (was 0.045).</summary>
     static readonly float GlowSize = EnvF("WARDEN_EYE_GLOW", 0.026f);

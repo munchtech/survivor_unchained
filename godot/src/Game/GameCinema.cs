@@ -985,6 +985,8 @@ public partial class Game
                         if (c.Has("flame")) w.FlameLevel = (float)c.Num("flame");
                         if (c.Str("flameColor") is string fch) w.FlameColor = new Color(fch);
                         if (c.Has("halo")) w.HaloLevel = (float)c.Num("halo");
+                        // "glint": the eye-lights' face glint (WardenLook.EyeGlint) x this; 0 leaves only the eyes' own glow (C03 s1's ECU).
+                        if (c.Has("glint")) SurvivorUnchained.View.WardenLook.GlintScale = (float)c.Num("glint");
                         if (!c.Has("glow")) break;
                         double from = w.Glow, to = c.Num("glow");
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => w.Glow = from + (to - from) * k));
@@ -1252,7 +1254,7 @@ public partial class Game
                     break;
                 }
                 case "title":
-                    g.hud.Announce(new Announcement(c.Str("title") ?? "", c.Str("sub"), c.Str("kind") ?? "danger", c.Num("seconds", 3.4)));
+                    g.hud.Announce(new Announcement(c.Str("title") ?? "", c.Str("sub"), c.Str("kind") ?? "danger", c.Num("seconds", 3.4)), c.Str("place"));
                     break;
                 case "event":
                     g.zone?.CineEvent(c.Str("name") ?? "");
@@ -1391,7 +1393,7 @@ public partial class Game
                 {
                     // A shot's own light on the cast, as a film crew sets one (face 30: dead eyes
                     // with no light into the sockets, an unlit crown): a soft spot on the people's
-                    // layer only, no shadow, from "from" ({"lens": [right, up, back]} in the
+                    // layer only, no shadow ("shadow": true casts one, "size" its source in metres: C02 s8's hard lantern), from "from" ({"lens": [right, up, back]} in the
                     // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
                     string name = c.Str("name") ?? "rig";
@@ -1406,7 +1408,7 @@ public partial class Game
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
-                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = false, LightCullMask = 2 | PlayerView.CastLayer,
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = c.Bool("shadow"), LightSize = (float)c.Num("size", 0), LightCullMask = 2 | PlayerView.CastLayer,
                         LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
@@ -1425,6 +1427,14 @@ public partial class Game
                     // "ear": her ears' warm shade, 1 as built (a warm ear against her cheek once the key is the rig).
                     skinSky = (float)c.Num("sky", skinSky);
                     skinEar = (float)c.Num("ear", skinEar);
+                    // ("fill", "fillColor", "scale": her rig's fill and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
+                    // ("off": "key,moon": her rig's parts off for this shot, as --cine-her-off)
+                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off"))
+                    {
+                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herScaleShot = (float)c.Num("scale", 0);
+                        herFillCol = c.Str("fillColor") is string hfc ? new Color(hfc) : null;
+                        herOffShot = c.Str("off") is string ho ? ho.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet() : null;
+                    }
                     if (people.TryGetValue("her", out var hs)) { SurvivorUnchained.View.People.HerSkyShare(hs.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, skinEar); }
                     break;
                 }
@@ -1459,15 +1469,18 @@ public partial class Game
                     // tower's window lamp): the place is the flame's, the iron is built round it.
                     if (c.Has("lantern"))
                     {
+                        // "iron": "warden": the Ford-Warden's own lantern (his lamp brought into a close-up's
+                        // foreground), not the sill lamp; "tilt" leans it toward the lens (degrees).
                         float ls = (float)c.Num("lantern", 2);
-                        var iron = LampIron.Make();
+                        var iron = c.Str("iron") == "warden" ? LampIron.MakeWarden() : LampIron.Make();
                         iron.Scale = Vector3.One * ls;
-                        iron.Position = new Vector3(0, -LampIron.FlameY * ls, 0);
-                        iron.RotationDegrees = new Vector3(0, (float)c.Num("turn", 0), 0);
+                        iron.Position = new Vector3(0, -LampIron.FlameOf(iron) * ls, 0);
+                        iron.RotationDegrees = new Vector3((float)c.Num("tilt", 0), (float)c.Num("turn", 0), 0);
                         root.AddChild(iron);
-                        // Its glass catches the flame's light.
+                        // Its glass catches the flame's light ("glass": how much, 0.8 by default; lower, dark
+                        // glass lit round the flame rather than a lit pale box).
                         var gl = col.SrgbToLinear();
-                        LampIron.Glass(iron, gl / Mathf.Max(gl.R, Mathf.Max(gl.G, Mathf.Max(gl.B, 1e-4f))), 0.8f);
+                        LampIron.Glass(iron, gl / Mathf.Max(gl.R, Mathf.Max(gl.G, Mathf.Max(gl.B, 1e-4f))), (float)c.Num("glass", 0.8));
                     }
                     var lin = col.SrgbToLinear() * energy;
                     fire.AddChild(new MeshInstance3D
@@ -1993,6 +2006,7 @@ public partial class Game
         public void Finish()
         {
             g.cineSat = null;
+            SurvivorUnchained.View.WardenLook.GlintScale = 1;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
             if (g.air.Haze != null) g.air.Haze = null;
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
