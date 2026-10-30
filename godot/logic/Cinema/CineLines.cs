@@ -67,6 +67,34 @@ public static class CineLines
         return Reading(l.Text);
     }
 
+    /// <summary>Where a subtitle too wide for one line breaks into two (the script's '/' says so outright
+    /// and wins): at the end of a sentence (or a clause: ; :) when both lines fit and the shorter is at
+    /// least half the longer, the most balanced such break; else at the word break that makes the longer
+    /// line shortest. Never leaves one word alone. Returns the text with a line break, or as it was (it
+    /// fits, or it needs more than two lines).</summary>
+    public static string Break(string text, Func<string, double> width, double max)
+    {
+        if (text.Contains('/') || text.Contains('\n') || width(text) <= max) return text;
+        string? best = null, bestSentence = null;
+        double bestW = double.MaxValue, bestBal = double.MaxValue;
+        for (int i = text.IndexOf(' '); i > 0; i = text.IndexOf(' ', i + 1))
+        {
+            string a = text[..i].TrimEnd(), b = text[(i + 1)..].TrimStart();
+            if (a.Length == 0 || b.Length == 0 || !a.Contains(' ') || !b.Contains(' ')) continue;
+            double wa = width(a), wb = width(b);
+            if (wa > max || wb > max) continue;
+            if (Math.Max(wa, wb) < bestW) { bestW = Math.Max(wa, wb); best = a + "\n" + b; }
+            string bare = a.TrimEnd('"', '\'', '\u201d', '\u2019', ')');
+            if (bare.Length > 0 && ".!?;:\u2026".IndexOf(bare[^1]) >= 0
+                && Math.Min(wa, wb) >= 0.5 * Math.Max(wa, wb) && Math.Abs(wa - wb) < bestBal)
+            {
+                bestBal = Math.Abs(wa - wb);
+                bestSentence = a + "\n" + b;
+            }
+        }
+        return bestSentence ?? best ?? text;
+    }
+
     public static double Reading(string text)
     {
         int words = text.Split((char[])[' ', '/'], StringSplitOptions.RemoveEmptyEntries).Length;

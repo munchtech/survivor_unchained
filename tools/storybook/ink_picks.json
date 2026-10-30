@@ -1,0 +1,7 @@
+{
+  "_note": "Storybook 3 lead's state picks per plate. Files are in tools/storybook/out/ink_layers/<plate>/. TEMP = placeholder until ink round 2 lands; the wiring must read this file, never hard-code the seeds.",
+  "p5": {},
+  "p6": {"sit": "traveler_sit.png", "stand": "traveler_stand_s47.png", "walk1": "traveler_walk1.png", "walk2": "traveler_walk2.png"},
+  "p7": {"blue_rim": "traveler_blue_rim.png"},
+  "p7u": {}
+}

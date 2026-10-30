@@ -1,0 +1,78 @@
+{
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p0",
+   "w": 1920,
+   "h": 848,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "Close inside an old stone watch-post at dusk. At right, a deep window cut through a thick rough stone wall, and through it the evening sky: deep indigo over a thin dull rose band above low black hills and a pale river far off. On the stone sill in front of the window sits a small round clay oil lamp with a short spout. An old man's weathered hand comes in from the left: gray hairs on its back, scarred knuckles, a cuff of rough slate blue-gray wool at the wrist, holding a small iron fire striker and a flint over the lamp. The small flame has just caught on the wick, warm yellow, carved as a few bold shapes, and its warm light falls on the fingers and the stone around it. Everything else is heavy solid black and deep blue-black. The only warm color is the small yellow flame and its light; no blue in the flame."
+  },
+  {
+   "name": "p1",
+   "w": 1536,
+   "h": 1728,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "Looking down into a great deep cut in a hillside at night, the picture taller than wide. At the top, on the lip of the cut against a black night sky: Roman legionaries of the Seventh Legion in rust-red cloaks and dull bronze helmets with crests and cheek guards; two smiths in leather aprons swing hammers onto a giant iron chain link on an anvil, orange sparks flying; a tall standard with a rust-red banner marked with the Roman numeral VII; two big burning torches at the top corners. A heavy black iron chain whose every link is as tall as a man runs from the anvil down the left wall of the cut into the dark. A long column of small soldiers carrying torches winds down a ramp cut into the right wall, a line of small orange points. Far below at the bottom of the cut, a massive doorway of fitted megalith stones with carved letters on its lintel; inside the dark doorway one smooth pale curved surface with ribs, part of something vast, glowing faint pale; a great flat stone slab stands to the right of the doorway. Orange firelight and rust red only near the top and along the torches; the depths are heavy solid black."
+  },
+  {
+   "name": "p2",
+   "w": 1536,
+   "h": 1632,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "A cutaway cross-section of the earth under a small valley town at night, the picture taller than wide, a cut through the layers of the ground. At the bottom, deep in black rock, a massive buried stone doorway of fitted megaliths shut by a great flat slab, a thin faint pale light leaking around its edges. From it, many thin wavering threads of light rise up through the layers of black rock, gravel and tangled roots, pale white deep down, turning warm orange-gold higher up, where they gather as many small glowing orange stones in the soil and in the gravel bed of a river at the right. Across the top, above the ground line: stone and timber houses with steep roofs where three dirt roads meet, warm gold light in small windows, a hearth glowing through an open door; at a market stall one figure hands coins to another for a small glowing stone; a cart loaded with glowing stones on the road; dark hills and a black night sky above. The layers of earth carved as bold horizontal bands of gouge strokes. The only warm color is the gold-orange of the stones, threads, windows and hearth."
+  },
+  {
+   "name": "p3a",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "A wide frieze at night on a frosted field beside a road, low black hills, a black sky. Small orange embers glint in the frozen soil like coals in ash. Left: the frost has cracked open in a jagged line with orange light inside it, and a dead man's bony hand reaches up out of the crack. Center-left: a dead man stands upright, slack and blank-faced, arms hanging, in soaked rags, an orange light glowing inside him that shows only at his open mouth, his empty eye sockets and the wounds in his chest, like a lamp behind paper. Center-right: an old soldier with a gray beard in a slate blue-gray cloak and tabard, a round wooden shield on his left arm, a small iron oil lamp hanging from his belt, drives a long spear with both hands into another standing dead man, who sags on the spear; orange light pours out of the wound and falls onto the frost as a scatter of small glowing stones; the old soldier's breath smokes white in the cold. Right: a dead body lying dark and empty on the frost among a few dim glowing stones. The only warm color is the orange ember light and the soldier's slate blue-gray; everything else is black and deep blue-black ink, the frost dim blue-gray."
+  },
+  {
+   "name": "p3b",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "A wide frieze at night on a frosted field beside a road under low black hills and a black sky, four moments read left to right, the figures large. Far left: a jagged crack in the frost glowing orange inside, a dead man's bony hand reaching up out of it. Left of center: a dead man standing upright with slack arms and a blank slack face, orange light glowing out of his open mouth, his empty eye sockets and the wounds in his chest, as if a lamp burned inside him. Right of center, the largest figure: an old gray-bearded soldier in a slate blue-gray wool cloak and tabard with a round wooden shield on his arm drives a long spear into a second dead man, who sags on it; orange light spills from the wound onto the frost as small glowing stones; the soldier's breath smokes. Far right: a body lying dark and empty on the frost. Small orange embers glint in the frozen soil. The only warm color is the orange ember light; everything else is black and deep blue-black ink, the frost dim blue-gray."
+  },
+  {
+   "name": "p4",
+   "w": 2496,
+   "h": 768,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "A wide frieze of a river crossing at night, read left to right. Left: on the near bank four priests in plain undyed pale linen robes and hoods raise small lamps that burn warm gold; out in the middle of the river a single warm gold lamp hangs high in the air, well clear of the water, whatever holds it hidden in a pale column of mist; beyond, the river winds away into dark hills past more crossings, each with one small high gold light. Center: the thick black twisted trunk and hanging branches of an old willow in the foreground, from the top of the picture to the bottom. Right: the same kind of crossing years later: an old soldier in a slate blue-gray cloak stands on a wooden ladder leaned against a stone post and pours oil from a clay jug into an iron lamp on top of the post; its flame is yellow and smoky; the river below is dark and smooth with nothing over it. The light is warm gold at left and a plainer yellow at right; everything else is black and deep blue-black ink."
+  }
+ ]
+}

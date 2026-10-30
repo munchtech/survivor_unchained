@@ -50,7 +50,7 @@ public partial class Game
         // before anything on screen changes), and the zone does without.
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
         // Straight after a storybook (SB00 into C01): its bars, full, are this one's from the first frame.
-        if (chained == null && TakeStoryBars() is { } sb) chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes), b.Combat);
+        if (chained == null && TakeStoryBars() is { } sb) { chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes), b.Combat); CutStorySeam(file); }
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
         try { cine = new Cine(this, file, b, done); cineId = id; }
@@ -424,7 +424,7 @@ public partial class Game
             made = null;
             SunAhead();
             double tSun = Ms();
-            GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
+            GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots; wall {Time.GetTicksMsec() / 1000.0:0.00}s)");
             Dispatch(player.Advance(0));
             if (Perf.On) GD.Print($"perf cine begin {file.Id}: ctor-to-take {tTake:0.0} cast {tCast - tTake:0.0} (worst {worst} {tWorst:0.0}) sun {tSun - tCast:0.0} dispatch {Ms() - tSun:0.0} ms");
         }

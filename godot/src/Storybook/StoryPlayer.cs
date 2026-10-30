@@ -54,6 +54,8 @@ public partial class StoryPlayer : Node
     /// <summary>--sb-shots: the moments to save, and one asked for once this frame is drawn.</summary>
     readonly Queue<double> shots = new();
     string? shotDue;
+    /// <summary>--sb-skip-at S: the skip done at storybook time S, as the hold does it (checks of the skip).</summary>
+    readonly double? skipAtArg = Args.Has("sb-skip-at") ? Args.Num("sb-skip-at", 0) : null;
 
     public StoryPlayer(StoryFile file, StoryHost host, Action<bool> done, CinemaBars? bars = null, double from = 0)
     {
@@ -101,6 +103,7 @@ public partial class StoryPlayer : Node
     {
         RenderingServer.FramePostDraw -= PostDraw;
         Unmuffle();
+        StoryArt.Release();
     }
 
     /// <summary>A run started late (--sb-from): what lasts (the score, the bus) set as it would
@@ -127,7 +130,8 @@ public partial class StoryPlayer : Node
             if (t >= skipAt + 0.15) { host.Voice?.Stop(); Synth.Instance?.Cut(); Finish(); }
             return;
         }
-        Skipping(delta);
+        if (StoryTimeline.SkipDue(t, skipAtArg)) { GD.Print($"storybook: --sb-skip-at {skipAtArg:0.00}: skipping at {t:0.00}s"); Skip(); }
+        else Skipping(delta);
         if (Skipped || over) return;
         foreach (var c in Line.Between(last, t).ToList()) Do(c);
         last = t;
@@ -224,14 +228,18 @@ public partial class StoryPlayer : Node
                     if (l.Raw == "") break;
                     var take = host.Voice?.Say(l.VoId, l.Raw);
                     // Labelled only where the file tags it; the sung line in italics.
-                    Bars.Say(l.Text, c.Str("tag"), (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7), l.Sung, italics: l.Sung);
+                    // Gone by the time the picture is black (the end, a plate's fade out to black); into a
+                    // plate's fade to black it fades out with the picture.
+                    double secs = (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7);
+                    Say(l.Text, c.Str("tag"), Line.SubtitleFor(tc.T, secs), l.Sung, l.Sung, Line.SubtitleFade(tc.T, secs));
                     break;
                 }
                 case "say":
                 {
                     var text = c.Str("text") ?? "";
                     bool sung = c.Bool("sung");
-                    Bars.Say(text, c.Str("speaker"), c.Num("dur", CineLines.Reading(text)), sung, italics: sung || c.Bool("italic"));
+                    double secs = c.Num("dur", CineLines.Reading(text));
+                    Say(text, c.Str("speaker"), Line.SubtitleFor(tc.T, secs), sung, sung || c.Bool("italic"), Line.SubtitleFade(tc.T, secs));
                     break;
                 }
                 case "sfx":
@@ -274,6 +282,12 @@ public partial class StoryPlayer : Node
             }
         }
         catch (Exception e) { GD.PushWarning($"storybook {File.Id} at {tc.T:0.00}: {c.Do} failed: {e.Message}"); }
+    }
+
+    /// <summary>A subtitle, if any of it is left before the black (none: not shown at all).</summary>
+    void Say(string text, string? who, double seconds, bool sung, bool italics, double fade)
+    {
+        if (seconds > 0.05) Bars.Say(text, who, seconds, sung, italics: italics, fade: fade);
     }
 
     /// <summary>A sound file on its own player (its own small bus when it is panned), through the storybook's muffle.</summary>
@@ -383,7 +397,7 @@ public partial class StoryPlayer : Node
         Bars.Frame(1, 1);
         Bars.Hush();
         Unmuffle();
-        GD.Print($"storybook: {File.Id} {(Skipped ? "skipped" : "done")} at {t:0.00}s");
+        GD.Print($"storybook: {File.Id} {(Skipped ? "skipped" : "done")} at {t:0.00}s (wall {Time.GetTicksMsec() / 1000.0:0.00}s)");
         done(Skipped);
         QueueFree();
     }

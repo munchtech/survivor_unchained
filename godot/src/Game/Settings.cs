@@ -87,7 +87,9 @@ public sealed class Settings
     public void ApplyWindow()
     {
         // Measured runs (--perf) keep the window they were given unless asked for the whole screen.
-        if (DisplayServer.GetName() == "headless" || OS.GetCmdlineUserArgs().Length > 0 && (Args.Has("shot") || Args.Has("perf") && !Args.Has("fullscreen"))) return;
+        // So do captures (Movie Maker, --write-movie) and storybook frames (--sb-shots): their size is --resolution's.
+        if (DisplayServer.GetName() == "headless" || OS.GetCmdlineUserArgs().Length > 0 && (Args.Has("shot") || Args.Has("perf") && !Args.Has("fullscreen")
+            || Args.Has("sb-shots") || Engine.GetWriteMoviePath() != "")) return;
         DisplayServer.WindowSetMode(Fullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
     }
 }

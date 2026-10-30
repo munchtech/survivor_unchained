@@ -1,0 +1,17 @@
+Context budget: 160k
+Item: sb2-player-fixes
+
+You are a code solver for the Storybook 3 lead (agent a46800cd8f93a7ecb; your final message returns to your lead; do NOT message main). Work in `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\storybook-2` (branch storybook-2). `godot/assets` is a junction: never `git stash`, `git reset --hard`, `git checkout .`. Another helper commits under `tools/storybook/` at the same time: commit only your own paths (`git commit <paths>`), never `git add -A`. End commit messages with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. No team onboarding: read `docs/storybook/README.md` (the storybook player's format and run lines) and the code under `godot/logic/Storybook`, `godot/src/Storybook`, `godot/shaders/storybook`, `godot/src/Game/GameStory.cs` as needed. Godot runs take a turn: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "storybook3: player fixes"` (give it back after). `G` = `C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe`; `dotnet build` first. `dotnet test` needs no turn. Never kill processes by name. Don't open pictures unless a fix needs one look (half size via `python tools/half.py`).
+
+## The five queued player fixes (from the last player check, 19 October)
+1. The last subtitle (the sung "Lamps are lit... stay where they reach..." in SB00's final plate) still shows on the black at 89.5 s: end every subtitle by the storybook's fade to black (a subtitle must never be visible over the end black or a plate's `out` fade to black).
+2. The black seam into C01: after SB00's own 2 s of black, the zone loads under ~2.5 s more black (91.0-93.0 s), then C01's sound-only shot 1 adds 2.5 s: about 7 s of black. Load the zone under SB00's black (start it at the last plate's fade) or cut C01's shot 1 silence by the measured load time, so the seam is the doc's 2 s + 2.5 s. Measure before and after (log timestamps).
+3. Skip can't be scripted: add a test switch `--sb-skip-at S` that performs the skip (the same code path as the 0.8 s hold) at storybook time S, and check skip once end to end (cut to black, sounds fade 0.15 s, ends as skipped, C01 plays as written). Saves and settings are expendable.
+4. `--resolution 1920x1080` is overridden by the saved Fullscreen setting unless `--shot` or `--perf` is passed. Make `--storybook` runs with `--sb-shots` or `--write-movie` respect `--resolution` (or, if that's wrong to change globally, fix the README run lines); and note in the README that ffmpeg isn't on PATH and imageio_ffmpeg's copy works (give the one-liner to find it).
+5. The `smoke` particle preset reads as one round blob: make it read as drifting smoke (several soft puffs, uneven edges, spreading and thinning as they rise; the README's fx section describes the intent). And 3 (up to 6) texture RIDs leak at quit (preloaded plates never used): free them.
+
+## Acceptance
+- Unit tests for what's testable in `godot/logic/Storybook` (subtitle end clamp, skip-at timing); `dotnet test` green (report pass/fail/skip counts).
+- One Godot run that proves 1-3 and the leak (no leaked RID warnings at quit), and one shot of the smoke (on `test_plates` or whatever plate has smoke; describe it in a line, don't send pictures to the lead unless it's ambiguous).
+- README updated for anything a user runs differently.
+- Report under 40 lines: the fixes with commit hashes, the measured seam before/after, test counts, your token use.

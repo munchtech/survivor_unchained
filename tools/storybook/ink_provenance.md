@@ -1,0 +1,68 @@
+# Ink storybook (SB00, Storybook 3): provenance
+
+## The four picks (Krea 2 turbo, local ComfyUI; sidecar JSON beside each PNG holds model files, prompt, seed, settings, sha256)
+
+| Plate | File (tools/storybook/out/) | Sidecar | sha256 (first 16) | Jobs file |
+|---|---|---|---|---|
+| p5 The Low Ford; the drowned | ink_r3/p5_s707.png | ink_r3/p5_s707.json | 3b032305db7357c9 | ink_jobs/r3.json |
+| p6 The traveler | ink_r2/p6_s47.png | ink_r2/p6_s47.json | 227f50786578c317 | ink_jobs/r2.json |
+| p7 The water | ink_r2/p7_s11.png | ink_r2/p7_s11.json | 80cee76fb19649aa | ink_jobs/r2.json |
+| p7u Underwater | ink_r3/p7u_s47.png | ink_r3/p7u_s47.json | fca646abe93bc661 | ink_jobs/r3.json |
+
+Fills behind cuts and the drawn states are Krea 2 turbo inpaints of these (same model, prompts in `ink_layers.py`,
+seeds 7 for fills and 11/23/47/202 for states); masks from MoGe-2 depth and SAM 3.1 (local models).
+
+## Paper
+
+- **ambientCG Paper005** (4K JPG, Color map only), https://ambientcg.com/view?id=Paper005,
+  downloaded 2026-10-29 from https://ambientcg.com/get?file=Paper005_4K-JPG.zip
+  (zip sha256 c20d1e04707988ce3c80449130ac01beca7a14decba3a7241c99c21bae2508ab).
+- Licence: **CC0 1.0** (ambientCG, https://docs.ambientcg.com/license/). No credit required.
+- Local copy: `tools/storybook/out/paper_Paper005.jpg` (git-ignored; sha256 63e73d68a5e1ddce...).
+  `ink_post.py` uses its luminance only (fibre + blotch), sampled at each layer's place in the plate.
+
+## p5 drowned and refills, rounds 2-3 (Krea 2 turbo, local ComfyUI; a JSON sidecar beside each PNG: model files, prompt, seed, settings, sha256)
+
+All under `tools/storybook/out/ink_layers/` (git-ignored). Round 2's sidecars were written in round 3 from `ink_r2.py`'s calls.
+Round 3's init (`_work/p5/r3_init.png`) is the clean plate plus round 2's frieze figures (above), darkened, re-haired and
+placed by `ink_r3.py init`; the shipped candidate's whole is `_work/p5/S_drowned_r3_<tag>.png`, baked into `p5/road.png`.
+
+| Round | File | What | sha256 (first 16) |
+|---|---|---|---|
+| ink round 2 | `_work/p5/frieze_s11.png` | frieze of drowned figures, txt2img 1920x1088, seed 11 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s11_sam.png` | cd980880d5e8a7d4 |
+| ink round 2 | `_work/p5/frieze_s23.png` | frieze of drowned figures, txt2img 1920x1088, seed 23 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s23_sam.png` | 743b3f971014ad48 |
+| ink round 2 | `_work/p5/frieze_s47.png` | frieze of drowned figures, txt2img 1920x1088, seed 47 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s47_sam.png` | c789ccbd392ab349 |
+| ink round 2 | `_work/p5/frieze_s202.png` | frieze of drowned figures, txt2img 1920x1088, seed 202 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s202_sam.png` | c367c8a0d318f70f |
+| ink round 2 | `_work/p5/frieze_s303.png` | frieze of drowned figures, txt2img 1920x1088, seed 303 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s303_sam.png` | 89b5694eeed504c4 |
+| ink round 2 | `_work/p5/frieze_s505.png` | frieze of drowned figures, txt2img 1920x1088, seed 505 (prompt `ink_layers.P5_FRIEZE`); BiRefNet matte `frieze_s505_sam.png` | abbd096b5d20cdc6 |
+| ink round 2 | `_work/p5/raw2_ghost_s31.png` | the right ditch ghost refill, inpaint denoise 1.0, seed 31 (prompt `P5_CLEAN_LOCAL`); applied into `S_clean.png` | f36f908515694640 |
+| ink round 3 | `_work/p5/r3_raw_left_d50_s11.png` | broad-ditch img2img, denoise 0.5, seed 11, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | adcc5a971f25f178 |
+| ink round 3 | `_work/p5/r3_raw_left_d50_s23.png` | broad-ditch img2img, denoise 0.5, seed 23, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | 86c0af09a10d6f90 |
+| ink round 3 | `_work/p5/r3_raw_left_d50_s47.png` | broad-ditch img2img, denoise 0.5, seed 47, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | 7016c813039b7c3e |
+| ink round 3 | `_work/p5/r3_raw_left_d60_s11.png` | broad-ditch img2img, denoise 0.6, seed 11, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | 1966d5c7b8054bf0 |
+| ink round 3 | `_work/p5/r3_raw_left_d60_s23.png` | broad-ditch img2img, denoise 0.6, seed 23, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | 7588e127b847ac5a |
+| ink round 3 | `_work/p5/r3_raw_left_d60_s47.png` | broad-ditch img2img, denoise 0.6, seed 47, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | d29033f100adc4fc |
+| ink round 3 | `_work/p5/r3_raw_left_d70_s11.png` | broad-ditch img2img, denoise 0.7, seed 11, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | 75cd323be43c212e |
+| ink round 3 | `_work/p5/r3_raw_left_d70_s23.png` | broad-ditch img2img, denoise 0.7, seed 23, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | e0916fd713ea3a21 |
+| ink round 3 | `_work/p5/r3_raw_left_d70_s47.png` | broad-ditch img2img, denoise 0.7, seed 47, init `r3_in_left.png` (prompt `ink_r3.PROMPT`) | da1d586127fe24a8 |
+| ink round 3 | `_work/p5/r3_raw_right_d50_s11.png` | broad-ditch img2img, denoise 0.5, seed 11, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 3fbea3e3fe16de85 |
+| ink round 3 | `_work/p5/r3_raw_right_d50_s23.png` | broad-ditch img2img, denoise 0.5, seed 23, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 6c1b8166027fdc2f |
+| ink round 3 | `_work/p5/r3_raw_right_d50_s47.png` | broad-ditch img2img, denoise 0.5, seed 47, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | a293b2580c959d36 |
+| ink round 3 | `_work/p5/r3_raw_right_d60_s11.png` | broad-ditch img2img, denoise 0.6, seed 11, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 78c1a8591caf80de |
+| ink round 3 | `_work/p5/r3_raw_right_d60_s23.png` | broad-ditch img2img, denoise 0.6, seed 23, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 55fa4bd51de13ad7 |
+| ink round 3 | `_work/p5/r3_raw_right_d60_s47.png` | broad-ditch img2img, denoise 0.6, seed 47, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 0d2607f85b7602db |
+| ink round 3 | `_work/p5/r3_raw_right_d70_s11.png` | broad-ditch img2img, denoise 0.7, seed 11, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 2c664332cd93a891 |
+| ink round 3 | `_work/p5/r3_raw_right_d70_s23.png` | broad-ditch img2img, denoise 0.7, seed 23, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 9f35f2ba70cb036d |
+| ink round 3 | `_work/p5/r3_raw_right_d70_s47.png` | broad-ditch img2img, denoise 0.7, seed 47, init `r3_in_right.png` (prompt `ink_r3.PROMPT`) | 5866542461dd831f |
+
+## Round 5g (Storybook 4, 29 Oct 2026): ChatGPT figure sources for p5
+- `p5_A1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G1: cropped 1536x816, Lanczos 2048x1088, Krea 2 turbo img2img 0.35/0.45/0.55, `ink_jobs/r5g_p5.json` -> `out/ink_r5g/g1A1_*`).
+- `p5_A2.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G1, as A1 -> `out/ink_r5g/g1A2_*`).
+- `p5_B1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (not used in round 5g).
+- `p5_C1.png`: OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; prompts in the Storybook 4 lead's message to main; used as figure source, re-drawn/posted by us (G2: BiRefNet cut, outlines re-inked as solid shared-ink silhouettes and stood in the ditches of Krea plate `ink_r5/p5r5bw_s11` emptied by inpaint, `ink_r5g.py` -> `out/ink_r5g/g2_*`).
+
+## Storybook 5 (29 Oct 2026, solver P, `ink_sb5_p.py`): ChatGPT sources for p5 and the new door plate p1d
+Prompts: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\afafb81e-73db-4471-9550-8c24bff6c27c\scratchpad\storybook5\chatgpt\prompts.md` (copied into `out/sb5/` with the images).
+- `p5_E2.png` (used; `p5_E1.png` the unused fallback): OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed; an edit of our `p5_R1.png` (refs `p5_R1.png`, `ref_p7_lamp.png`). Re-drawn/posted by us: cropped 1536x816 and Lanczos 2048x1088 as R1 was; Krea 2 turbo re-carves at 0.30/0.40 were tried and NOT used (they redrew the lamp, cressets and dead faces); the plate is the crop through our night tone + shared cold ink/paper post (`ink_rc_build.py p5`, `ink_post.py`).
+- `p1_D2.png` and `p1_D2_shut.png` (used; `p1_D1.png` / `p1_D1_shut.png` the unused fallback): OpenAI ChatGPT image output (owner's account, chatgpt.com), 29 Oct 2026, no credit needed. Re-drawn/posted by us: Lanczos to 3300 px and the shared warm ink/paper post (`ink_post.py`); the doorway gold split into an add layer; the shut slab's chain cloned off with the slab's own stone (no AI) for the sliding slab; the right jamb cut as a foreground layer (`ink_sb5_p.py make p1d`).
+- p1 (Storybook 4 Krea plate): the torch procession repainted out by Krea 2 turbo inpaint (`p1proc_d85_s11`, our prompt in `ink_sb5_p.py`), posted with the shared post.

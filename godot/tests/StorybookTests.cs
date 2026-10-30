@@ -58,8 +58,8 @@ public class StorybookTests
         Assert.Equal("sb_stay_where_they_reach", f.Conversation);
         var want = new (string Id, double At, double Until)[]
         {
-            ("p0", 0, 2.5), ("p1", 2.5, 11), ("p2", 11, 15.5), ("p3", 15.5, 25.5), ("p4", 25.5, 37), ("p5", 37, 46),
-            ("p6", 46, 56), ("p7", 56, 63.5), ("p8", 63.5, 71), ("p9", 71, 78), ("p10a", 78, 81.5), ("p10b", 81.5, 84), ("p10c", 84, 87.5),
+            ("ink_p0", 0, 2.5), ("ink_p1d", 2.5, 16.5), ("ink_p2", 16.5, 25.5), ("ink_p3", 25.5, 38), ("ink_p3d", 38, 46),
+            ("ink_p4", 46, 56), ("ink_p5", 56, 71), ("ink_p6", 71, 81.5), ("ink_p7", 81.5, 87.5), ("ink_p7u", 87, 89.5),
         };
         Assert.Equal(want.Select(w => w.Id), f.Plates.Select(p => p.Id));
         foreach (var (p, w) in f.Plates.Zip(want)) { Assert.Equal(w.At, p.At); Assert.Equal(w.Until, p.Until); }
@@ -75,10 +75,12 @@ public class StorybookTests
         Assert.True(lines[^1].T >= 78);
         var ctx = Make("hunter", "Wren", 1).C;
         Assert.True(CineLines.Find("cin_none_cross.call", ctx).Sung);
-        // Each of the nine is said within its own plate.
+        // Each of the nine is said while its plate is up (the ink plates carry the old cards' lines at their times:
+        // legion and chained in the cut, dawn under the dead, winter and waiting in the ford, lamps by the fire).
+        var host = new[] { "ink_p1d", "ink_p1d", "ink_p1d", "ink_p3", "ink_p3", "ink_p4", "ink_p5", "ink_p5", "ink_p6" };
         for (int i = 0; i < 9; i++)
         {
-            var p = f.Plates[i + 1];
+            var p = f.Plates.Single(q => q.Id == host[i]);
             Assert.InRange(lines[i].T, p.At, p.Until);
         }
         // It starts in silence and ends in it, the last sound gone down the well before the end.
@@ -331,5 +333,136 @@ public class StorybookTests
         var drops = after.Cues.Where(c => c.Shot.Index == 0 && c.Cue.Do == "sfx").Select(c => Math.Round(c.T, 6));
         Assert.Equal(new[] { end - 1.3, end - 0.55, end - 0.4 }.Select(d => Math.Round(d, 6)), drops);
         Assert.Equal(asWritten.Length, after.Length, 9);
+    }
+
+    static StoryTimeline Blacks() => new(StoryFile.Parse("""
+        { "id": "x", "conversation": "c", "end": 20,
+          "plates": [
+            { "id": "a", "at": 0, "until": 5, "in": { "kind": "fade", "dur": 1 } },
+            { "id": "b", "at": 4, "until": 9, "in": { "kind": "dissolve", "dur": 1 }, "out": { "kind": "fade", "dur": 1 } },
+            { "id": "c", "at": 9, "until": 12, "in": { "kind": "cut" }, "out": { "kind": "fade", "dur": 2, "color": "#ffffff" } },
+            { "id": "d", "at": 14, "until": 18, "out": { "kind": "fade", "dur": 2 } }
+          ] }
+        """));
+
+    [Fact]
+    public void The_screen_goes_black_at_gaps_fades_out_to_black_and_the_end()
+    {
+        var l = Blacks();
+        // b fades to black at 9 with nothing over it (c cuts in on the black).
+        Assert.Equal(9, l.BlackAfter(2), 9);
+        // c fades to white: not black; the gap from 12 is.
+        Assert.Equal(12, l.BlackAfter(9), 9);
+        Assert.Equal(18, l.BlackAfter(12), 9);
+        Assert.Equal(20, l.BlackAfter(18), 9);
+        Assert.True(double.IsPositiveInfinity(l.BlackAfter(20)));
+    }
+
+    [Fact]
+    public void A_subtitle_is_gone_by_the_black()
+    {
+        var l = Blacks();
+        Assert.Equal(3, l.SubtitleFor(1, 3), 9);
+        Assert.Equal(1.5, l.SubtitleFor(7.5, 4), 9);
+        Assert.Equal(2, l.SubtitleFor(16, 6), 9);
+        // Set in a black gap, it reads over the black until the next black (the end here).
+        Assert.Equal(4, l.SubtitleFor(13, 4), 9);
+    }
+
+    [Fact]
+    public void A_subtitle_fades_with_the_picture_into_a_fade_to_black()
+    {
+        var l = Blacks();
+        // b fades to black over 8-9: a line up until 9 goes down from 8 with it.
+        Assert.Equal(1.0, l.SubtitleFade(7, 4), 9);
+        Assert.Equal(1.0, l.SubtitleFade(7.5, 4), 9);
+        Assert.Equal(0.5, l.SubtitleFade(8.5, 4), 9);
+        // One that ends before the fade starts: the quarter second.
+        Assert.Equal(0.25, l.SubtitleFade(1, 3), 9);
+        // Into the end black (no fade of its own): the quarter second.
+        Assert.Equal(0.25, l.SubtitleFade(18.5, 10), 9);
+        // d fades to black over 16-18: ending inside it at 17 still goes down from 16.
+        Assert.Equal(1.0, l.SubtitleFade(15, 2), 9);
+    }
+
+    [Fact]
+    public void Sb00_s_sung_line_fades_with_its_last_plate()
+    {
+        var f = StoryFile.Load("sb00");
+        var l = new StoryTimeline(f);
+        var last = f.Plates[^1];
+        double dur = last.Out!.Dur;
+        foreach (var c in l.Cues.Where(c => c.Cue.Do is "line" or "say"))
+        {
+            double shown = l.SubtitleFor(c.T, 30);
+            if (c.T + shown > last.Until - dur + 1e-6)
+                Assert.True(l.SubtitleFade(c.T, 30) >= c.T + shown - Math.Max(c.T, last.Until - dur) - 1e-9);
+        }
+    }
+
+    static double Chars(string s) => s.Length * 10.0;
+
+    [Fact]
+    public void A_long_subtitle_breaks_at_a_sentence_end_never_one_word_alone()
+    {
+        var t = "Now the drowned stand along the ford road, waiting. And something in the water is singing.";
+        Assert.Equal("Now the drowned stand along the ford road, waiting.\nAnd something in the water is singing.",
+            CineLines.Break(t, Chars, 600));
+        // It fits: as it is; the script's '/' wins.
+        Assert.Equal("Short line.", CineLines.Break("Short line.", Chars, 600));
+        Assert.Equal("One two / three four five six", CineLines.Break("One two / three four five six", Chars, 100));
+        // No sentence end: the most balanced word break.
+        Assert.Equal("aaaa bbbb cccc\ndddd eeee ffff", CineLines.Break("aaaa bbbb cccc dddd eeee ffff", Chars, 200));
+        // A sentence end that would leave a short line loses to balance.
+        Assert.Equal("Yes. Then the\nlong road home", CineLines.Break("Yes. Then the long road home", Chars, 160));
+        foreach (var line in new[] { t, "a b c d e f g h i j k l m n o p q r s t u v w x y z" })
+        {
+            var parts = CineLines.Break(line, Chars, 300).Split('\n');
+            Assert.All(parts, p => Assert.Contains(' ', p));
+        }
+    }
+
+    [Fact]
+    public void Sb00_s_last_lines_are_gone_before_its_end_black()
+    {
+        var f = StoryFile.Load("sb00");
+        var l = new StoryTimeline(f);
+        var last = f.Plates[^1];
+        foreach (var c in l.Cues.Where(c => c.Cue.Do is "line" or "say"))
+            Assert.True(c.T + l.SubtitleFor(c.T, 30) <= last.Until + 1e-9, $"line at {c.T} runs past {last.Until}");
+    }
+
+    [Fact]
+    public void The_scripted_skip_is_due_from_its_moment()
+    {
+        Assert.False(StoryTimeline.SkipDue(100, null));
+        Assert.False(StoryTimeline.SkipDue(4.99, 5));
+        Assert.True(StoryTimeline.SkipDue(5, 5));
+        Assert.True(StoryTimeline.SkipDue(5.02, 5));
+    }
+
+    [Fact]
+    public void The_seam_cut_takes_the_load_from_a_timed_black_down_to_its_drops()
+    {
+        // A black shot with a length for after the storybook (a "durs" with a when): it loses the load, down to keep.
+        CineShot Shot() => new() { Dur = 3.5, Durs = new() { new CineDur { When = new CineWhen { Facts = new() { "sb00.ended" } }, Dur = 2.5 } } };
+        var shot = Shot();
+        Assert.Equal(1.0, StoryTimeline.CutSeam(shot, 1.0, 1.3), 9);
+        Assert.Equal(1.5, shot.Durs![0].Dur, 9);
+        shot = Shot();
+        Assert.Equal(1.2, StoryTimeline.CutSeam(shot, 2.5, 1.3), 9);
+        Assert.Equal(1.3, shot.Durs![0].Dur, 9);
+        Assert.Equal(3.5, shot.Dur, 9);   // as written, untouched
+    }
+
+    [Fact]
+    public void C01_s_opening_black_is_not_cut_by_the_load()
+    {
+        // 29 Oct (Cinematics 10 C01 final cut): C01 opens on black with the bedroll line at 1.2 s, the same length
+        // with or without SB00 (no "durs"), so the seam has no silence to lose; the load is not cut from it.
+        var shot = CineFile.Load("c01").Shots[0];
+        double was = shot.Dur;
+        Assert.Equal(0.0, StoryTimeline.CutSeam(shot, 2.5, 1.3), 9);
+        Assert.Equal(was, shot.Dur, 9);
     }
 }
