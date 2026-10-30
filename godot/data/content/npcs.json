@@ -1527,11 +1527,7 @@
     "hairColor": "#8e3e20",
     "skin": "#e0a47c",
     "figure": 1.35,
-    "dye": {
-     "cloth": "#354431",
-     "under": "#1e2a3e"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_sella"
    },
    "spot": {
     "x": -11.2,
