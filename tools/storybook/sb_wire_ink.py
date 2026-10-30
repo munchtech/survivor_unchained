@@ -662,9 +662,13 @@ def plate_p3(picks):
     return P, {
         "id": PREFIX + "p3", "at": 25.5, "until": 38.0,
         "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-        "camera": [P.cam(0, 900, 1000, 1.8), P.cam(3.2, 860, 1010, 2.0, ease="out"),
-                   P.cam(5.2, 1100, 600, 1.55, ease="inout"), P.cam(7.2, 1120, 590, 1.6),
-                   P.cam(9.3, 2420, 680, 1.3, ease="inout"), P.cam(12.5, 2500, 700, 1.38, ease="out")],
+        # 0-1 s close on the crack and the hand; by 3.3 s eased back and up to the crack + hand and the standing dead
+        # whole, head (the light at his eyes and mouth) to feet (the 3.5 s line "Just the bodies, full of its light");
+        # the canvas's left edge sets the zoom (1.22: x from 19). Held, a slow push to 7.2 s, then across to the spear.
+        "camera": [P.cam(0, 900, 1000, 1.8), P.cam(0.8, 890, 990, 1.8),
+                   P.cam(3.3, 1330, 660, 1.22, ease="inout"), P.cam(5.2, 1340, 655, 1.24),
+                   P.cam(7.2, 1360, 640, 1.3, ease="in"),
+                   P.cam(9.3, 2420, 680, 1.3, ease="out"), P.cam(12.5, 2500, 700, 1.38, ease="out")],
         "grade": [{"t": 0, "exposure": 1, "sat": 1, "tint": "#ffffff"}, {"t": 11.5, "exposure": 1, "sat": 1, "tint": "#ffffff"},
                   {"t": 12.5, "exposure": 1.1, "sat": 0.8, "tint": "#e6eaf0"}],
         "note": "INK: The dead get up (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
@@ -693,13 +697,15 @@ def plate_p3d(picks):
 
 
 def plate_p4(picks):
-    """Keepers and lamps: the pan left to right; the willow (z 0.8) passes faster, the years-pass divider at ~4.5 s."""
+    """Keepers and lamps: the pan left to right; the willow (z 0.8) passes faster, the years-pass divider at ~4.5 s.
+    The pan rises a little (y 800 -> 740, zoom 1.0) so the Watchman on the ladder (head top ~150 units), his jug and
+    the post lamp sit under the bars' top with headroom from ~4.5 s to the end."""
     P = Plate("p4")
     E = r6_layers(P)
     return P, {
         "id": PREFIX + "p4", "at": 46.0, "until": 56.0,
         "in": {"kind": "dissolve", "dur": 1.0},
-        "camera": [P.cam(0, 1650, 950, 1.05), P.cam(10.0, 4150, 950, 1.05, ease="inout")],
+        "camera": [P.cam(0, 1700, 800, 1.0), P.cam(10.0, 4100, 740, 1.0, ease="inout")],
         "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(E["base"], "base"),
                    P.layer(E["lamps"], "lamps", touch=[{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]),

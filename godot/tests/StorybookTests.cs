@@ -442,15 +442,27 @@ public class StorybookTests
     }
 
     [Fact]
-    public void C01_s_opening_silence_loses_the_load_but_keeps_its_drops()
+    public void The_seam_cut_takes_the_load_from_a_timed_black_down_to_its_drops()
     {
-        var shot = CineFile.Load("c01").Shots[0];
+        // A black shot with a length for after the storybook (a "durs" with a when): it loses the load, down to keep.
+        CineShot Shot() => new() { Dur = 3.5, Durs = new() { new CineDur { When = new CineWhen { Facts = new() { "sb00.ended" } }, Dur = 2.5 } } };
+        var shot = Shot();
         Assert.Equal(1.0, StoryTimeline.CutSeam(shot, 1.0, 1.3), 9);
         Assert.Equal(1.5, shot.Durs![0].Dur, 9);
-        shot = CineFile.Load("c01").Shots[0];
+        shot = Shot();
         Assert.Equal(1.2, StoryTimeline.CutSeam(shot, 2.5, 1.3), 9);
         Assert.Equal(1.3, shot.Durs![0].Dur, 9);
-        // As written (skipped: no sb00.ended), untouched.
-        Assert.Equal(3.5, shot.Dur, 9);
+        Assert.Equal(3.5, shot.Dur, 9);   // as written, untouched
+    }
+
+    [Fact]
+    public void C01_s_opening_black_is_not_cut_by_the_load()
+    {
+        // 29 Oct (Cinematics 10 C01 final cut): C01 opens on black with the bedroll line at 1.2 s, the same length
+        // with or without SB00 (no "durs"), so the seam has no silence to lose; the load is not cut from it.
+        var shot = CineFile.Load("c01").Shots[0];
+        double was = shot.Dur;
+        Assert.Equal(0.0, StoryTimeline.CutSeam(shot, 2.5, 1.3), 9);
+        Assert.Equal(was, shot.Dur, 9);
     }
 }
