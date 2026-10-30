@@ -55,31 +55,11 @@
       "dur": 2.4,
       "note": "Low at the water on the near bank, looking north-east at their backs: the drowned standing in their rows, waist-deep, heads bowed, facing the far bank. The mist moves; they do not. The lamp low in the middle distance, left.",
       "cam": {"pos": {"abs": [3.73, -0.75, -34.58]}, "at": {"abs": [10.6, -0.5, -44.0]}, "lens": 35},
-      "cues": [
-        {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0}
-      ]
-    },
-    {
-      "id": "4",
-      "type": "CU",
-      "dur": 4.0,
       "fit": ["cin_none_cross.call"],
-      "tail": 0.4,
-      "note": "Her face, listening, the moonlit before: the moon her key, soft and cool, high from screen right and behind her: a silver rim on cheek, jaw, ear and hair, the near cheek in soft shade with a little warmth from her ember; the same moonlight on the slope behind her. W1 rises from under the water, sung: the Order's evening call, slowed to a dirge, heard through water.",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.55, 0.12, -0.85]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.05, 0]}, "lens": 85},
+      "tail": 0.5,
       "cues": [
-        {"do": "skin", "off": "key,cap"},
-        {"do": "light", "light": 4, "level": 0},
-        {"do": "rig", "name": "moon", "energy": 4.0, "color": "#a8bde8", "angle": 30, "falloff": 0.6, "from": {"lens": [1.0, 1.2, -2.6]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}},
-        {"do": "rig", "name": "moonrim", "energy": 2.4, "color": "#a9c0ff", "angle": 14, "range": 3, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, 0.35, 0.95]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.02, 0]}},
-        {"do": "rig", "name": "fill", "energy": 0.06, "color": "#e6dccf", "angle": 35, "from": {"lens": [-0.35, 0.05, 0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}},
-        {"do": "glow", "name": "slope", "where": {"actor": "her", "bone": "head", "off": [1.0, 1.4, 4.2]}, "color": "#9fb4e6", "size": 0.001, "energy": 0, "spread": 0.001, "halo": 0, "light": 3.5, "range": 7},
-        {"do": "grade", "moonDrop": 0.35, "shade": "#3a3226", "shadeK": 0.3},
-        {"do": "atmosphere", "preset": "now", "key": 0.45, "hemi": 0.18, "env": 0.2, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0, "hemiSky": "#403c78", "azimuth": 195},
-        {"do": "rig", "name": "ember", "energy": 0.12, "color": "#ff7a4a", "angle": 40, "range": 1.2, "from": {"actor": "her", "bone": "eyes", "off": [-0.35, -0.1, -0.2]}, "aim": {"actor": "her", "bone": "eyes", "off": [-0.05, -0.05, 0]}},
-        {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
-        {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
-        {"do": "gaze", "look": [0.15, -0.1]}
+        {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0},
+        {"at": 0.3, "do": "line", "id": "cin_none_cross.call"}
       ]
     },
     {
