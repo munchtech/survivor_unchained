@@ -86,6 +86,7 @@ def proc_mask(b):
 D2, D2S = os.path.join(SB5, "p1_D2.png"), os.path.join(SB5, "p1_D2_shut.png")
 LINTEL_TOP = 132                   # the lintel's top-left corner (ChatGPT px row; the picture's highest door part)
 SLAB = (607, 298, 878, 742)        # the shut slab inside its gold seams (x0, y0, x1, y1)
+SLAB_TOP = (295, 610, 0.234)       # r3: the shut slab's top seam, row = a + (x - b) * c (ChatGPT px)
 CHAIN = (607, 452, 878, 612)       # the chain across it (inpainted off for the sliding slab)
 SLAB_PROMPT = ("A massive plain stone door slab, dark blue-gray granite carved in fine stippled gouge marks, two long "
                "thin cracks running diagonally across it, dimly lit. Plain stone only: no chain, no metal, no iron.")
@@ -374,6 +375,27 @@ def make_p1d():
     ys, xs_ = np.nonzero(jm)
     jx0, jy0, jx1, jy1 = xs_.min(), ys.min(), xs_.max() + 1, ys.max() + 1
     layers.append(("jamb", "mix", dim_p[jy0:jy1, jx0:jx1], jm[jy0:jy1, jx0:jx1].astype(np.float32), jx0, jy0))
+    # r3: the lintel (its rune face and the lit soffit under it) in front of the slab too: everything above the shut
+    # slab's top seam (SLAB_TOP, read off p1_D2_shut), so the slab slides in under it and its top at the hit is the shut
+    # picture's; the soffit's gold rides on it as its own add layer (the gold layer's keys)
+    ys_, xs__ = np.mgrid[0:PH, 0:P1D_W].astype(np.float32) / k
+    lm = (ys_ < SLAB_TOP[0] + (xs__ - SLAB_TOP[1]) * SLAB_TOP[2]) & (ys_ >= 230) & (xs__ >= 595) & (xs__ < 1000)
+    ly, lx = np.nonzero(lm)
+    lx0, ly0, lx1, ly1 = lx.min(), ly.min(), lx.max() + 1, ly.max() + 1
+    la = nd.gaussian_filter(lm[ly0:ly1, lx0:lx1].astype(np.float32), 0.7)
+    layers.append(("lintel", "mix", dim_p[ly0:ly1, lx0:lx1], la, lx0, ly0))
+    layers.append(("lintel_gold", "add", gold[ly0:ly1, lx0:lx1], la, lx0, ly0))
+    # r3: a warm rim on the slab's leading (left) edge, facing the glow: carved (on the stone's light strokes only),
+    # 16 units wide (~9 frame px), moved with the slab, dimmed with the gold
+    RW = 16
+    sl = slab_p[sy0:sy1, sx0:sx0 + RW]
+    lum = sl @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    fall = np.clip(1 - (np.arange(RW, dtype=np.float32) - 3) / (RW - 3), 0, 1)[None, :] ** 1.3
+    ra = np.clip(fall * (0.35 + 0.65 * np.clip((lum - 0.12) / 0.18, 0, 1)), 0, 1)
+    rcol = np.empty(sl.shape, np.float32)
+    rcol[:] = np.array([1.0, 0.69, 0.33], np.float32)
+    rcol = rcol * (0.55 + 0.45 * fall[..., None])
+    layers.append(("rim", "add", rcol, ra, sx0, sy0))
     layers.append(("shut", "mix", sdim_p, np.ones(sdim_p.shape[:2], np.float32), 0, 0))
     layers.append(("seams", "add") + crop_add(seams, np.ones(seams.shape[:2])))
     out = os.path.join(LAY, "p1d")

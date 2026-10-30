@@ -58,7 +58,7 @@ public class StorybookTests
         Assert.Equal("sb_stay_where_they_reach", f.Conversation);
         var want = new (string Id, double At, double Until)[]
         {
-            ("ink_p0", 0, 2.5), ("ink_p1", 2.5, 15.5), ("ink_p2", 15.5, 25.5), ("ink_p3", 25.5, 38), ("ink_p3d", 38, 46),
+            ("ink_p0", 0, 2.5), ("ink_p1d", 2.5, 15.5), ("ink_p2", 15.5, 25.5), ("ink_p3", 25.5, 38), ("ink_p3d", 38, 46),
             ("ink_p4", 46, 56), ("ink_p5", 56, 71), ("ink_p6", 71, 81.5), ("ink_p7", 81.5, 87.5), ("ink_p7u", 87, 89.5),
         };
         Assert.Equal(want.Select(w => w.Id), f.Plates.Select(p => p.Id));
@@ -77,7 +77,7 @@ public class StorybookTests
         Assert.True(CineLines.Find("cin_none_cross.call", ctx).Sung);
         // Each of the nine is said while its plate is up (the ink plates carry the old cards' lines at their times:
         // legion and chained in the cut, dawn under the dead, winter and waiting in the ford, lamps by the fire).
-        var host = new[] { "ink_p1", "ink_p1", "ink_p2", "ink_p3", "ink_p3", "ink_p4", "ink_p5", "ink_p5", "ink_p6" };
+        var host = new[] { "ink_p1d", "ink_p1d", "ink_p2", "ink_p3", "ink_p3", "ink_p4", "ink_p5", "ink_p5", "ink_p6" };
         for (int i = 0; i < 9; i++)
         {
             var p = f.Plates.Single(q => q.Id == host[i]);
