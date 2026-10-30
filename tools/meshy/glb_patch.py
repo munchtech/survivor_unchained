@@ -74,3 +74,16 @@ def vertex_normals(P, I):
     fn = np.cross(P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]]); N = np.zeros((n, 3))
     for j in range(3): np.add.at(N, W[T[:, j]], fn)
     N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-12; return N[W].astype(np.float32)
+
+def fair_plates(P, I, metal, opts=None):
+    """The app's plate fairing (Marionette util.js fairPlates via Marionette/tools/meshy/fair_plates.mjs): the crumpled-foil wobble
+    of the points flagged metal (n, 0/1) smoothed by bilateral normal filtering, rims/creases/borders pinned, moves capped
+    (default 4 mm). Returns (new positions float32, report dict)."""
+    import os, subprocess, tempfile
+    d = tempfile.mkdtemp(prefix='fair_')
+    np.ascontiguousarray(P, np.float32).tofile(os.path.join(d, 'pos.f32')); np.ascontiguousarray(I, np.uint32).tofile(os.path.join(d, 'idx.u32'))
+    np.ascontiguousarray(metal, np.uint8).tofile(os.path.join(d, 'metal.u8'))
+    subprocess.run(['node', 'C:/Users/munch/Desktop/Marionette/tools/meshy/fair_plates.mjs', d] + ([json.dumps(opts)] if opts else []), check=True, capture_output=True)
+    out = np.fromfile(os.path.join(d, 'out.f32'), np.float32).reshape(-1, 3); rep = json.load(open(os.path.join(d, 'report.json')))
+    for f in os.listdir(d): os.remove(os.path.join(d, f))
+    os.rmdir(d); return out, rep
