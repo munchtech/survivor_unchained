@@ -449,7 +449,7 @@ public static class StoryParticles
             OneShot = burst,
             Explosiveness = burst ? 0.92f : 0,
             Randomness = 0.3f,
-            Emitting = !burst,
+            Emitting = !burst && rate > 0,     // "rate": 0 = bursts only (no steady trickle)
             // The same particles every time it plays: frames and captures repeat.
             UseFixedSeed = true,
             Seed = (uint)(f.Num("seed", 1) + (burst ? 1000 : 0)),

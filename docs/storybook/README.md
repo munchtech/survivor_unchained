@@ -76,7 +76,7 @@ Each touch at most once a layer; masks and maps are images the size of the layer
 {"kind": "mist", "rect": [x, y, w, h], "z": 0.9, "color": "#b8c4cc", "density": 0.5, "speed": [12, 0], "scale": 260, "seed": 0}
 ```
 
-Presets (every number above overrides): `smoke` (soft puffs, rising slowly, spreading, fading), `sparks` (tiny, bright, gravity, short life, additive; `burst` times fire `count` at once), `motes` (glowing dabs rising slowly with wobble), `bubbles` (rising fast), `drips` (long drops falling), `ash`, `snow`. Particles parallax with their `z` like a layer, already in their steady state when the plate appears, and are the same every run (a fixed seed). They draw with small soft dabs made procedurally (an uneven brush edge), or a `texture` the lead supplies. Fx are drawn among the layers by depth.
+Presets (every number above overrides): `smoke` (soft puffs, rising slowly, spreading, fading), `sparks` (tiny, bright, gravity, short life, additive; `burst` times fire `count` at once; with `"rate": 0` there is no steady trickle, only the bursts), `motes` (glowing dabs rising slowly with wobble), `bubbles` (rising fast), `drips` (long drops falling), `ash`, `snow`. Particles parallax with their `z` like a layer, already in their steady state when the plate appears, and are the same every run (a fixed seed). They draw with small soft dabs made procedurally (an uneven brush edge), or a `texture` the lead supplies. Fx are drawn among the layers by depth.
 
 ## Cues
 

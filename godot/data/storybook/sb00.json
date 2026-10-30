@@ -27,27 +27,33 @@
       ]
     },
     {
-      "id": "p1",
+      "id": "ink_p1",
       "at": 2.5,
-      "until": 11,
-      "in": {"kind": "light", "dur": 1.6, "origin": [0.56, 0.5]},
-      "camera": [{"t": 0, "x": 1600, "y": 700, "zoom": 1.08}, {"t": 8.5, "x": 1700, "y": 1150, "zoom": 1.2, "dolly": 0.12}],
-      "note": "PLACEHOLDER: a flat card for P1 · Long ago; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#15121a", "label": "P1 · Long ago", "z": 1}],
+      "until": 15.5,
+      "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
+      "camera": [
+        {"t": 0, "x": 1600, "y": -338, "zoom": 1.0},
+        {"t": 1.2, "x": 1600, "y": -278, "zoom": 1.0},
+        {"t": 8.0, "x": 1597.6, "y": 2132, "zoom": 1.1, "ease": "inout"},
+        {"t": 14.2, "x": 1597.6, "y": 2152, "zoom": 1.15}
+      ],
+      "note": "INK: The cut and the chain (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "base", "image": "res://art/storybook/sb00/p1/base.png", "pos": [-50, -1038], "scale": 1.0, "z": 1.0},
+        {"id": "curve", "image": "res://art/storybook/sb00/p1/curve.png", "pos": [1294, 1645], "scale": 1.0, "z": 1.0, "keys": [{"t": 0, "opacity": 1}, {"t": 10.700000000000001, "opacity": 1}, {"t": 11.450000000000001, "opacity": 0, "ease": "out"}]},
+        {"id": "curve_glow", "image": "res://art/storybook/sb00/p1/curve_glow.png", "pos": [985, 1543], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 1}, {"t": 10.700000000000001, "opacity": 1}, {"t": 11.450000000000001, "opacity": 0, "ease": "out"}], "touch": [{"kind": "flicker", "rate": 0.5, "amount": 0.25, "seed": 11}]},
+        {"id": "slab", "image": "res://art/storybook/sb00/p1/slab.png", "pos": [2037, 1670], "scale": 1.0, "z": 1.0, "pivot": [2046.1, 2780], "keys": [{"t": 0, "dx": 0, "scale": 1.319}, {"t": 9.5, "dx": 0, "scale": 1.319}, {"t": 11.3, "dx": -748.7, "scale": 1.319, "ease": "inout"}]},
+        {"id": "torches", "image": "res://art/storybook/sb00/p1/torches.png", "pos": [-50, -1038], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 7, "amount": 0.3, "seed": 12}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "sparks", "at": [1602, -292], "area": [70, 20], "z": 1.0, "rate": 0, "burst": [0.3, 1.1, 1.9, 2.7, 3.5, 4.3, 5.1], "count": 18, "seed": 7}
+      ],
       "cues": [
         {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.25, "over": 4.0},
-        {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"}
+        {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"},
+        {"at": 8.8, "do": "line", "id": "chained"},
+        {"at": 11.3, "do": "sfx", "name": "hit", "gain": 0.8}
       ]
-    },
-    {
-      "id": "p2",
-      "at": 11,
-      "until": 15.5,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 650, "zoom": 1.1}, {"t": 4.5, "x": 1600, "y": 1200, "zoom": 1.15}],
-      "note": "PLACEHOLDER: a flat card for P2 · The chain; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#121214", "label": "P2 · The chain", "z": 1}],
-      "cues": [{"at": 0.3, "do": "line", "id": "chained"}]
     },
     {
       "id": "ink_p2",
@@ -114,13 +120,17 @@
       "layers": [{"id": "dawn", "image": "res://art/storybook/sb00/p3d/dawn.png", "pos": [-560, 104], "scale": 0.8, "z": 1.0}]
     },
     {
-      "id": "p6",
-      "at": 46,
-      "until": 56,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1200, "y": 900, "zoom": 1.15}, {"t": 10, "x": 2000, "y": 900, "zoom": 1.15}],
-      "note": "PLACEHOLDER: a flat card for P6 · Keepers and lamps; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#16140e", "label": "P6 · Keepers and lamps", "z": 1}],
+      "id": "ink_p4",
+      "at": 46.0,
+      "until": 56.0,
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [{"t": 0, "x": 350, "y": 900, "zoom": 1.05}, {"t": 10.0, "x": 2850, "y": 900, "zoom": 1.05, "ease": "inout"}],
+      "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "base", "image": "res://art/storybook/sb00/p4/base.png", "pos": [-1300, -50], "scale": 1.0, "z": 1.0},
+        {"id": "lamps", "image": "res://art/storybook/sb00/p4/lamps.png", "pos": [-1287, -50], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]},
+        {"id": "willow", "image": "res://art/storybook/sb00/p4/willow.png", "pos": [216, -50], "scale": 1.0, "z": 0.8}
+      ],
       "cues": [{"at": 0.8, "do": "line", "id": "keepers"}]
     },
     {
