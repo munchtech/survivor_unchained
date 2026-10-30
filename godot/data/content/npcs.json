@@ -306,10 +306,7 @@
     "hairColor": "#2a1a12",
     "skin": "#c4945e",
     "figure": 0.8,
-    "dye": {
-     "cloth": "#4a5a36"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_maeca"
    },
    "spot": {
     "x": 33.5,
