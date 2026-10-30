@@ -313,6 +313,9 @@ def check_p6_camera(P, keys, stand_span, walk_span, margin=60, min_window=0.8, e
 SB5_P6_SIT = False      # Storybook 5: the seated drawing is no longer shown
 
 
+RIM_W = (1.0, 0.95, 0.6)       # the silhouette's cold rim, per px in from the edge
+
+
 def p6_lamp_refl(P, cam_keys, end=10.5, soft=0.02):
     """The far bank lamps' reflections on the lamps' own layer (far, z 3), drawn over near; a reveal map shows each
     pixel only from when the near layer under it is river water for good (the near hill hides it before)."""
@@ -324,7 +327,10 @@ def p6_lamp_refl(P, cam_keys, end=10.5, soft=0.02):
     sc = far["scale"]
     u0, v0 = P6_LAMP_REFL["far_px"]
     w, h = P6_LAMP_REFL["size_px"]
-    e = {"file": P6_LAMP_REFL["file"], "name": "lamp_refl", "z": far["z"], "blend": "mix",
+    # The player draws layers by descending z, so a z-3 layer sits UNDER the z-1 near plate (r12a: nothing showed).
+    # It goes in at z 1 (listed after near, so over it) and its keys carry the far layer's parallax: at depth 3 a
+    # point shifts (X-1600)/3 against the screen centre, at depth 1 it shifts X-1600, so Dx = (2/3)(X-1600).
+    e = {"file": P6_LAMP_REFL["file"], "name": "lamp_refl", "z": 1.0, "blend": "mix",
          "pos": [far["pos"][0] + u0 * sc, far["pos"][1] + v0 * sc], "scale": sc, "size_px": [w, h]}
     river = np.asarray(Image.open(os.path.join(LAYERS, "_work", "p6_sam_river.png")).convert("L")
                        .resize(tuple(near["size_px"]), Image.NEAREST)) > 127
@@ -353,7 +359,9 @@ def p6_lamp_refl(P, cam_keys, end=10.5, soft=0.02):
     P.made["lamp_refl_map.png"] = np.dstack([m, m, m, np.full_like(m, 255)])
     a = np.asarray(Image.open(src))[..., 3] > 20
     print(f"p6 lamp_refl: shows from {t_w[a].min():.2f}..{t_w[a].max():.2f} s plate time ({(t_w[a] > end).mean():.0%} never)")
-    return P.layer(e, "lamp_refl", touch=[{"kind": "reveal", "map": f"{RES}/p6/lamp_refl_map.png", "t0": 0, "t1": end,
+    pkeys = [{"t": round(float(t), 3), "dx": r(2 / 3 * (float(fX(t)) - 1600), 2), "dy": r(2 / 3 * (float(fY(t)) - 900), 2)}
+             for t in np.arange(0, end + 1e-9, 0.1)]
+    return P.layer(e, "lamp_refl", keys=pkeys, touch=[{"kind": "reveal", "map": f"{RES}/p6/lamp_refl_map.png", "t0": 0, "t1": end,
                                             "soft": soft}, {"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 13}])
 
 
@@ -423,21 +431,21 @@ def plate_p6(picks):
             if len(xr):
                 fade = np.clip((y0 + 0.40 * H_ - y) / (0.08 * H_), 0, 1)
                 for j in range(3):
-                    w[y, xr.min() + j] = (1 - j / 3.0) * brk[y] * fade
+                    w[y, xr.min() + j] = RIM_W[j] * brk[y] * fade
         hood = np.zeros(m.shape, np.float32)
         run = np.zeros(m.shape[1], int)
         for y in range(m.shape[0]):
             run = np.where(m[y], run + 1, 0)
             if y0 <= y < y0 + (y1 - y0) // 4:
-                hood[y] = np.where((run >= 1) & (run <= 3), 1 - (run - 1) / 3.0, 0)
+                hood[y] = np.where((run >= 1) & (run <= 3), np.array([0, *RIM_W])[np.clip(run, 0, 3)], 0)
         top_ok = np.zeros(m.shape, bool)
         for x in range(m.shape[1]):
             yr = np.nonzero(m[:, x])[0]
             if len(yr):
                 top_ok[yr.min():yr.min() + 3, x] = True
         hood = np.where(top_ok, hood, 0) * broken(m.shape[1])[None, :]
-        k = (0.9 * np.maximum(w, hood))[..., None]       # Storybook 5: 0.6 did not show at 1:1 (judge r1)
-        rim = rim + 0.3 * (255 - rim)                     # a paler cold rim against the pale river
+        k = (1.0 * np.maximum(w, hood))[..., None]       # round 5b: 3 px, near full strength (0.9 with a 1.5 px effective width barely showed at 1:1)
+        rim = rim + 0.45 * (255 - rim)                     # a paler cold rim against the pale river
         col = col * (1 - k) + rim[None, None, :] * k
         # three deep-blue fold gouges down the cloak (long tapered cuts, inside the silhouette)
         fim = Image.new("L", (m.shape[1] * 3, m.shape[0] * 3), 0)
