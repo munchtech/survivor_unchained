@@ -999,11 +999,7 @@
     "hair": null,
     "skin": "#e0a47c",
     "figure": 0.6,
-    "dye": {
-     "cloth": "#5e7a4a",
-     "under": "#2a3222"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_wenna"
    },
    "arms": {
     "right": "short_staff"
