@@ -528,10 +528,7 @@
     ],
     "hair": "Hair_SimpleParted",
     "hairColor": "#8a6a3a",
-    "dye": {
-     "cloth": "#d8ccb0"
-    },
-    "body": "npc:npc_folk_m"
+    "body": "npc:npc_chid"
    },
    "spot": {
     "x": -20.6,
