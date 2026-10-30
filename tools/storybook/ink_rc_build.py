@@ -142,6 +142,9 @@ def build_p3():
 def build_p3d():
     P = L.PLATES["p3d"]
     lit = post(P, gen_img(P))
+    if P.get("band"):     # Storybook 5: the first-light band along the hills (ink_sb5_c.dawn_band)
+        import ink_sb5_c
+        lit = ink_sb5_c.dawn_band(lit)
     write("p3d", P, [("dawn", 1.0, "mix", np.dstack([lit, np.ones(lit.shape[:2], np.float32)]), 0, 0)])
 
 

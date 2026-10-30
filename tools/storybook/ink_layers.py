@@ -111,10 +111,12 @@ PLATES = {
                night_k=0.7, light="cold", fire_box=(700, 200, 1360, 560), layers=[("land", 1.0)], glows=[("fires", 1.0, None)]),
     # p3: night (base with the ember drained + two add glows: the standing dead's inner light, the ember in the soil
     # and the spilled stones) and its dawn, a separate plate after a hard cut (p3d).
-    "p3": dict(rc=True, r="rc", gen="ink_rc/fix/p3dead_d65_s11.png", target=5400, upp=0.7, rest=(1890, 696),
+    # Storybook 5 (ink_sb5_c.py): p3 = the dead hand and the speared man's light refixed; p3d = the spear pointed + the
+    # dawn band (band=True, applied after the post).
+    "p3": dict(rc=True, r="rc", gen="sb5/p3n_sb5.png", target=5400, upp=0.7, rest=(1890, 696),
                light="warm", layers=[("field", 1.0)], glows=[("dead_light", 1.0, None), ("ember", 1.0, None)],
                dead_box=(500, 30, 820, 760), keep_warm=[(1150, 330, 1290, 480)]),    # gen px: his body; the lamp + shield
-    "p3d": dict(rc=True, r="rc", gen="ink_rc/dawn2/dawn2_d40_s47.png", target=5400, upp=0.8, rest=(2160, 796),
+    "p3d": dict(rc=True, r="rc", gen="sb5/dawn_sb5.png", band=True, target=5400, upp=0.8, rest=(2160, 796),
                 light="warm", layers=[("dawn", 1.0)], glows=[]),
     "p6": dict(src="ink_r2/p6_s47.png", r="r2", target=3800, rest=(2600, 1055),
                cams=[(1650, 1050, 1.0, 0), (3550, 1060, 1.25, 0)],

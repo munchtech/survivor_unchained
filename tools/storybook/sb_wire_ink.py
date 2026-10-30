@@ -730,13 +730,14 @@ def plate_p3(picks):
     return P, {
         "id": PREFIX + "p3", "at": 25.5, "until": 38.0,
         "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-        # 0-1 s close on the crack and the hand; by 3.3 s eased back and up to the crack + hand and the standing dead
-        # whole, head (the light at his eyes and mouth) to feet (the 3.5 s line "Just the bodies, full of its light");
-        # the canvas's left edge sets the zoom (1.22: x from 19). Held, a slow push to 7.2 s, then across to the spear.
-        "camera": [P.cam(0, 900, 1000, 1.8), P.cam(0.8, 890, 990, 1.8),
-                   P.cam(3.3, 1330, 660, 1.22, ease="inout"), P.cam(5.2, 1340, 655, 1.24),
-                   P.cam(7.2, 1360, 640, 1.3, ease="in"),
-                   P.cam(9.3, 2420, 680, 1.3, ease="out"), P.cam(12.5, 2500, 700, 1.38, ease="out")],
+        # Storybook 5: the night is shown at no more than ~1.2x its own carving (frame px per gen px = 0.933 x zoom, so
+        # zoom <= 1.285; the old 1.8 open read as an enlargement). Opens on the staged wide: the crack + the dead hand
+        # and the standing dead whole (the canvas's left edge sets the zoom, 1.22: x from 19), a slow push to 7.2 s,
+        # then across to the spear, framed so the standing dead is fully out (left edge x >= 1270) and the right edge
+        # stays on the canvas (3780).
+        "camera": [P.cam(0, 1330, 660, 1.22), P.cam(3.3, 1340, 655, 1.24, ease="inout"),
+                   P.cam(7.2, 1360, 645, 1.27, ease="in"),
+                   P.cam(9.3, 2520, 680, 1.28, ease="out"), P.cam(12.5, 2525, 690, 1.285, ease="out")],
         "grade": [{"t": 0, "exposure": 1, "sat": 1, "tint": "#ffffff"}, {"t": 11.5, "exposure": 1, "sat": 1, "tint": "#ffffff"},
                   {"t": 12.5, "exposure": 1.1, "sat": 0.8, "tint": "#e6eaf0"}],
         "note": "INK: The dead get up (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
@@ -766,6 +767,9 @@ def plate_p3d(picks):
     }
 
 
+P4_FLAMES = (200, 690, 1500, 1010)   # p4 canvas px: the keepers' held lamps (the only real flames on the plate)
+
+
 def plate_p4(picks):
     """Keepers and lamps: the pan left to right; the willow (z 0.8) passes faster, the years-pass divider at ~4.5 s.
     The pan rises a little (y 760 -> 680, zoom 1.0) so the Watchman on the ladder (head top ~150 units), his jug and
@@ -773,8 +777,22 @@ def plate_p4(picks):
     P = Plate("p4")
     E = r6_layers(P)
     nowisp = os.path.join(LAYERS, "p4", "_base_nowisp.png")   # ink_p4_wisp.py: the smoke over the lamp painted out
-    if os.path.exists(nowisp):
-        P.made["base.png"] = np.asarray(Image.open(nowisp).convert("RGBA"))
+    sb5 = os.path.join(LAYERS, "p4", "_base_sb5.png")         # ink_sb5_c.py: + sky seam, water, post lamp, jug, haze
+    for f in (sb5, nowisp):
+        if os.path.exists(f):
+            P.made["base.png"] = np.asarray(Image.open(f).convert("RGBA"))
+            break
+    # Storybook 5: ink_r6's flame mask also caught the bright sunset sky and the lit robes, so the flickering add layer
+    # was an airbrushed haze over the whole sky (and kept the old genie lamp / teapot's shape over the post). Only the
+    # keepers' held flames keep their glow (canvas px box).
+    lam = np.asarray(Image.open(os.path.join(LAYERS, "p4", E["lamps"]["file"])).convert("RGBA")).copy()
+    lx, ly = E["lamps"]["pos"]
+    keep = np.zeros(lam.shape[:2], bool)
+    bx0, by0, bx1, by1 = P4_FLAMES
+    keep[max(0, int(by0 - ly)):int(by1 - ly), max(0, int(bx0 - lx)):int(bx1 - lx)] = True
+    soft = nd.gaussian_filter(keep.astype(np.float32), 25)
+    lam[..., 3] = (lam[..., 3] * soft).astype(np.uint8)
+    P.made["lamps.png"] = lam
     return P, {
         "id": PREFIX + "p4", "at": 46.0, "until": 56.0,
         "in": {"kind": "dissolve", "dur": 1.0},
@@ -782,7 +800,9 @@ def plate_p4(picks):
         "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": [P.layer(E["base"], "base"),
                    P.layer(E["lamps"], "lamps", touch=[{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]),
-                   P.layer(E["willow"], "willow")],
+                   # the willow (z 0.8) keeps its sideways parallax but not the vertical: on the rise its top edge
+                   # (the picture's top) dropped into view. dy = -(1/0.8 - 1) x (900 - camera y), keyed with the camera.
+                   P.layer(E["willow"], "willow", keys=[{"t": 0, "dy": -47.5}, {"t": 10.0, "dy": -67.5, "ease": "inout"}])],
         "cues": [],
     }
 
