@@ -36,7 +36,7 @@ public partial class Game
         /// by night: under 1 L either way, the ambient is not what carries her face there)
         static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue" };
         static readonly bool HerKeyArg = Args.Get("cine-her-key") != "off";
-        static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
+        static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && herOffNow?.Contains(p) != true && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
         // Her key's numbers (Face 48 round 2): --cine-her-key-gain, --cine-her-fill, --cine-her-rim, --cine-her-moon: the close
         // view's key, fill, rim and the moon on her, each times this (1: as the close view, exposure matched); --cine-her-fire F: the
         // nearest zone fire's share on her, as CloseFireShare; --cine-her-near-light N: any other light near her face (a flame,
@@ -69,6 +69,16 @@ public partial class Game
         // light just above the lens for her catchlights; --cine-her-body B: her key on her shoulders and chest at B.
         // --cine-her-off src,side,rim2,eye,body,scale: each back to round 2.
         static float HerScale => Args.Get("cine-her-scale") == "off" ? 0 : Args.Num("cine-her-scale", 300f);
+        // A shot's own her-rig knobs (Cinematics 11, C02 s4/s8: the cool fill's grey-blue where it met the warm key), from the
+        // "skin" cue's "fill" (the fill's energy times F), "fillColor" (hex) and "scale" (the face-scale cap in px per 10 cm),
+        // for the shot that sets them only; other shots keep the defaults above.
+        float herFillK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
+        // ("off": the parts this shot turns off, as --cine-her-off names them: C02 s4/s8, the moon and his lantern lit by the
+        // shot's own rigs, the close rig's key, fill and rim off so it does not re-aim them)
+        HashSet<string>? herOffShot;
+        static HashSet<string>? herOffNow;
+        bool HerKnobs => herKnobShot >= 0 && player.Shot.Index == herKnobShot;
+        float HerScaleNow => HerKnobs && herScaleShot > 0 ? herScaleShot : HerScale;
         static float HerSkinC => Args.Num("cine-her-skin-c", 0.87f);
         static float HerSkinCool => Args.Num("cine-her-skin-cool", 0.045f);
         static float HerSideGain => Args.Num("cine-her-side", 0.38f);
@@ -212,6 +222,7 @@ public partial class Game
         /// <summary>Each frame, after the rigs are placed: the twins, the cap, her night treatment.</summary>
         void HerLight()
         {
+            herOffNow = HerKnobs ? herOffShot : null;
             PersonView? her = people.TryGetValue("her", out var hv) && IsInstanceValid(hv) && hv.IsVisibleInTree() ? hv : null;
             // (her eyes as the close view finds them, People.EyesOf: the cue's "eyes" is her head bone and 7 cm up the world, off her face when she lies down)
             Vector3? eyes = her != null ? People.EyesOf(her.Person) : null;
@@ -357,18 +368,18 @@ public partial class Game
         /// lens in mm (36 mm film) after it; logs each shot's first clamp.</summary>
         double HerScaleCap(double lensMm)
         {
-            if (!HerPart("scale") || HerScale <= 0 || !people.TryGetValue("her", out var hv) || !IsInstanceValid(hv) || !hv.IsVisibleInTree()) return lensMm;
+            if (!HerPart("scale") || HerScaleNow <= 0 || !people.TryGetValue("her", out var hv) || !IsInstanceValid(hv) || !hv.IsVisibleInTree()) return lensMm;
             var cam = g.camera; var eyes = People.EyesOf(hv.Person);
             if (cam.IsPositionBehind(eyes)) return lensMm;
             var vp = g.GetViewport().GetVisibleRect().Size; var c = cam.UnprojectPosition(eyes);
             if (c.X < 0 || c.X > vp.X || c.Y < 0 || c.Y > vp.Y) return lensMm;
             if (HerHead(hv).fwd.Dot((cam.GlobalPosition - eyes).Normalized()) < -0.3f) return lensMm;
             float px = (cam.UnprojectPosition(eyes + cam.GlobalBasis.X * 0.1f) - c).Length() * 1080f / Mathf.Max(vp.Y, 1);
-            if (px <= HerScale) return lensMm;
-            float t0 = Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2), t1 = t0 * px / HerScale;
+            if (px <= HerScaleNow) return lensMm;
+            float t0 = Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2), t1 = t0 * px / HerScaleNow;
             cam.Fov = Mathf.RadToDeg(2 * Mathf.Atan(t1));
             if (herClampLogged.Add(player.Shot.Index))
-                GD.Print($"cine-her: shot {player.Shot.Shot.Id} lens clamp {18 / t0:F0} mm -> {18 / t1:F0} mm (face {px:F0} -> {HerScale:F0} px per 10 cm)");
+                GD.Print($"cine-her: shot {player.Shot.Shot.Id} lens clamp {18 / t0:F0} mm -> {18 / t1:F0} mm (face {px:F0} -> {HerScaleNow:F0} px per 10 cm)");
             return 18 / t1;
         }
 
@@ -549,8 +560,8 @@ public partial class Game
             herKeyGear.LightSpecular = night ? CloseKeyGearSpec : 0.3f; herKeyGear.GlobalTransform = herKey.GlobalTransform;
             // (by night the cool fill on the lens's far side from the key, raised on deep skin, People.HerSkinDark)
             float fillRatio = CloseFillRatio + CloseFillDeep * People.HerSkinDark(her.Person);
-            herFill!.LightColor = own ? HerFillColour : CloseFillColourNight;
-            herFill.LightEnergy = night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * m * HerFillGain * k * (src2 != null ? HerFillSide : 1) : 0;
+            herFill!.LightColor = HerKnobs && herFillCol is Color hfc ? hfc : own ? HerFillColour : CloseFillColourNight;
+            herFill.LightEnergy = night ? (CloseFillNight > 0 ? CloseFillNight : CloseKeyNight * fillRatio) * m * HerFillGain * k * (src2 != null ? HerFillSide : 1) * (HerKnobs ? herFillK : 1) : 0;
             herFill.Visible = herFill.LightEnergy > 0.005f;
             float side = W(a - lens) >= 0 ? -1 : 1;
             Place(herFill, lens + side * Mathf.DegToRad(35), Mathf.DegToRad(10), 2.6f, center);
@@ -827,6 +838,7 @@ public partial class Game
             herKey = herKeyHair = herKeyGear = herFill = herRim = herRimGear = herSide = herSideHair = herRimHair = herEye = herBody = null; herMoon = null; herFire = null;
             if (herSkyShown != 1 && people.TryGetValue("her", out var hs) && IsInstanceValid(hs)) People.HerSkyShare(hs.Person, 1);
             herSkyShown = 1;
+            herKnobShot = -1; herFillK = 1; herScaleShot = 0; herFillCol = null; herOffShot = herOffNow = null;
             foreach (var gi in herMoved)
                 if (IsInstanceValid(gi)) gi.Layers = (gi.Layers & ~(PlayerView.HerHairLayer | PlayerView.HerGearLayer)) | 2u;
             herMoved.Clear();

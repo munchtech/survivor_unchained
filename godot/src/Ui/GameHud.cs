@@ -1042,10 +1042,11 @@ public partial class GameHud : CanvasLayer
     {
         float w = Math.Max(annTitle.GetCombinedMinimumSize().X, Math.Max(annSub.GetCombinedMinimumSize().X, annKicker.Visible ? annKicker.GetCombinedMinimumSize().X : 0));
         w = Math.Min(1200, w + 40);
-        return new Rect2(960 - w / 2, announce.Position.Y, w, announce.GetCombinedMinimumSize().Y);
+        return new Rect2(announce.Position.X + 600 - w / 2, announce.Position.Y, w, announce.GetCombinedMinimumSize().Y);
     }
 
-    public void Announce(Announcement a)
+    /// <param name="place">null: the usual upper banner; "lower": the lower third, just above the subtitles (a cinematic title kept off a face). "lower-left": the same, centred on the frame's left third (C02 s11: ended before his body).</param>
+    public void Announce(Announcement a, string? place = null)
     {
         // --clean: no title cards over the picture (previs stills taken as storyboard staging).
         if (Args.Has("clean")) return;
@@ -1055,7 +1056,7 @@ public partial class GameHud : CanvasLayer
         annTitle.AddThemeFontSizeOverride("font_size", a.Kind == "zone" ? 60 : a.Title.Length > 30 ? 31 : a.Title.Length > 20 ? 38 : a.Kind == "story" ? 41 : 50);
         annTitle.AddThemeColorOverride(FontColor, a.Kind switch { "danger" => Hex("#ff7a5a"), "boon" => Hex("#ffd46a"), "story" => Hex("#e2dac8"), _ => Hex("#f0c878") });
         annSub.Text = a.Sub ?? "";
-        announce.Position = new Vector2(360, 1080 * (a.Kind == "zone" ? 0.16f : 0.2f));
+        announce.Position = new Vector2(place == "lower-left" ? -150 : 360, 1080 * (place is "lower" or "lower-left" ? 0.66f : a.Kind == "zone" ? 0.16f : 0.2f));
         annT = 0;
         annLife = a.Seconds;
     }
