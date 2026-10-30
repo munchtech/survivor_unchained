@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Storybook 3: one round of SB00's ink section (56-89.5 s), wired, imported and shot.
+# Storybook 3: one round of SB00's ink section (56-89.5 s by default), wired, imported and shot.
 #
 #   bash tools/storybook/sb3_shoot.sh <round>        e.g. r2
+#   FROM=0 TO=56 TIMES="0.5 1.5 2.3" bash tools/storybook/sb3_shoot.sh r7a   (another span: env FROM, TO, TIMES)
 #
 # Re-runs sb_wire_ink.py (ink_picks.json + the plates' layers.json -> sb00.json and the art),
 # builds the C#, imports, then with the godot turn held (taken and given back here):
 #   - 14 frames at 1920x1080 at the storybook times below
-#   - the 56-89.5 s capture with sound (voice-over on: --vo on) as an mp4
+#   - the FROM-TO capture with sound (voice-over on: --vo on) as an mp4
 #   - the contact sheet (each frame half size, 4 a row, labelled) and a half copy of it
 # into tools/storybook/out/sb3_frames/<round>/. Any failure stops the run with a message.
 set -euo pipefail
@@ -18,8 +19,14 @@ G="${G:-C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stabl
 TURN="C:/Users/munch/Desktop/survivorsunchained/tools/turn.py"
 TURN_NAME="storybook3: shoot $ROUND"
 OUT="$ROOT/tools/storybook/out/sb3_frames/$ROUND"
-TIMES=(57.5 59 63 66 69.5 72 75.5 78 80.5 82.2 84 86 88 89.2)
-FROM=56
+read -r -a TIMES <<< "${TIMES:-57.5 59 63 66 69.5 72 75.5 78 80.5 82.2 84 86 88 89.2}"
+FROM="${FROM:-56}"
+TO="${TO:-89.5}"
+END="$(python -c "import json; print(json.load(open(r'$(cygpath -m "$ROOT")/godot/data/storybook/sb00.json', encoding='utf-8'))['end'])")"
+# a span that stops before the end: the scripted skip ends the run at TO (the mp4 is cut to TO - FROM either way)
+SKIP=()
+if python -c "import sys; sys.exit(0 if float('$TO') < float('$END') - 0.01 else 1)"; then SKIP=(--sb-skip-at "$TO"); fi
+DUR="$(python -c "print(float('$TO') - float('$FROM'))")"
 
 die() { echo "sb3_shoot: FAILED: $*" >&2; exit 1; }
 [ -x "$G" ] || [ -f "$G" ] || die "no Godot at $G"
@@ -61,15 +68,15 @@ for n in "${names[@]}"; do
 done
 
 echo "== capture"
-AVI="$OUT/sb00_${ROUND}_56-89.5.avi"
-MP4="$OUT/sb00_${ROUND}_56-89.5.mp4"
+AVI="$OUT/sb00_${ROUND}_${FROM}-${TO}.avi"
+MP4="$OUT/sb00_${ROUND}_${FROM}-${TO}.mp4"
 rm -f "$AVI" "$MP4"
-"$G" --path "$ROOT/godot" --resolution 1920x1080 --write-movie "$AVI" --fixed-fps 30 -- --storybook sb00 --sb-from "$FROM" --vo on \
+"$G" --path "$ROOT/godot" --resolution 1920x1080 --write-movie "$AVI" --fixed-fps 30 -- --storybook sb00 --sb-from "$FROM" "${SKIP[@]}" --vo on \
   >"$OUT/capture.log" 2>&1 || { tail -30 "$OUT/capture.log" >&2; die "capture run (log: $OUT/capture.log)"; }
 [ -s "$AVI" ] || die "capture not written (log: $OUT/capture.log)"
 give
 
-"$FF" -y -loglevel error -i "$AVI" -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k "$MP4" || die "ffmpeg"
+"$FF" -y -loglevel error -i "$AVI" -t "$DUR" -c:v libx264 -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k "$MP4" || die "ffmpeg"
 rm -f "$AVI"
 
 echo "== sheet"
