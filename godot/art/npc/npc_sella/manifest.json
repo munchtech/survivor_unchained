@@ -214,14 +214,14 @@
     "wrist": {}
    },
    "hem": {
-    "points": 5038,
-    "moved": 3697.3,
-    "full": 4978,
-    "sheet": 6853,
+    "points": 5483,
+    "moved": 4158.6,
+    "full": 5481,
+    "sheet": 7298,
     "bib": 29,
-    "skipped": 445,
+    "skipped": 0,
     "waist": 1,
-    "hemLo": 0.155,
+    "hemLo": 0.093,
     "kneeY": 0.479,
     "hipY": 0.877,
     "opts": {
@@ -234,10 +234,6 @@
      "dilate": 2,
      "blur": 3,
      "sat": 0.6,
-     "skip": {
-      "C": 100,
-      "below": 0.155
-     },
      "sheet": {
       "waist": 1,
       "hem": [
