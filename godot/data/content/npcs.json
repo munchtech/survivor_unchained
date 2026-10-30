@@ -1345,7 +1345,7 @@
     "Spellbook_open"
    ],
    "tint": "#5a4a7a",
-   "idle": "Spellcasting",
+   "idle": "Idle",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1358,11 +1358,7 @@
     "hair": null,
     "skin": "#5e3c2a",
     "figure": 1,
-    "dye": {
-     "cloth": "#5a4a7a",
-     "under": "#221a2e"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_vonnra"
    },
    "spot": {
     "x": 28.4,
