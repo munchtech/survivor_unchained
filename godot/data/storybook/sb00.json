@@ -34,15 +34,15 @@
       "camera": [
         {"t": 0, "x": 1600, "y": -338, "zoom": 1.0},
         {"t": 1.2, "x": 1600, "y": -278, "zoom": 1.0},
-        {"t": 8.0, "x": 1597.6, "y": 2132, "zoom": 1.1, "ease": "inout"},
-        {"t": 14.2, "x": 1597.6, "y": 2152, "zoom": 1.15}
+        {"t": 8.0, "x": 1597.6, "y": 2042, "zoom": 1.0, "ease": "inout"},
+        {"t": 14.2, "x": 1597.6, "y": 2062, "zoom": 1.04}
       ],
       "note": "INK: The cut and the chain (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
       "layers": [
         {"id": "base", "image": "res://art/storybook/sb00/p1/base.png", "pos": [-50, -1038], "scale": 1.0, "z": 1.0},
         {"id": "curve", "image": "res://art/storybook/sb00/p1/curve.png", "pos": [1294, 1645], "scale": 1.0, "z": 1.0, "keys": [{"t": 0, "opacity": 1}, {"t": 10.700000000000001, "opacity": 1}, {"t": 11.450000000000001, "opacity": 0, "ease": "out"}]},
         {"id": "curve_glow", "image": "res://art/storybook/sb00/p1/curve_glow.png", "pos": [985, 1543], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 1}, {"t": 10.700000000000001, "opacity": 1}, {"t": 11.450000000000001, "opacity": 0, "ease": "out"}], "touch": [{"kind": "flicker", "rate": 0.5, "amount": 0.25, "seed": 11}]},
-        {"id": "slab", "image": "res://art/storybook/sb00/p1/slab.png", "pos": [2037, 1670], "scale": 1.0, "z": 1.0, "pivot": [2046.1, 2780], "keys": [{"t": 0, "dx": 0, "scale": 1.319}, {"t": 9.5, "dx": 0, "scale": 1.319}, {"t": 11.3, "dx": -748.7, "scale": 1.319, "ease": "inout"}]},
+        {"id": "slab", "image": "res://art/storybook/sb00/p1/slab.png", "pos": [2037, 1670], "scale": 1.0, "z": 1.0, "pivot": [2046.1, 2780], "keys": [{"t": 0, "dx": 0, "scale": 1.15}, {"t": 9.5, "dx": 0, "scale": 1.15}, {"t": 11.3, "dx": -711.9, "scale": 1.15, "ease": "inout"}]},
         {"id": "torches", "image": "res://art/storybook/sb00/p1/torches.png", "pos": [-50, -1038], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 7, "amount": 0.3, "seed": 12}]}
       ],
       "fx": [
