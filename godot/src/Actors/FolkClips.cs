@@ -61,7 +61,7 @@ public static class FolkClips
     }
 
     /// <summary>The armed townsfolk's stands at ease (tools/anim/clips/folk_armed.py), asked for by the town's data
-    /// only: "Idle_Armed", a one-handed piece hanging easy in the right fist (the gate Watch's sword, Wenna's staff),
+    /// only: "Idle_Armed", a one-handed piece hanging easy in the right fist (the gate Watch's sword, Keegan's),
     /// and "Idle_2H_Rest", a two-handed blade resting on the right shoulder (Keegan). The game names this answers
     /// (null for any other: the bosses' and the fights' armed idles keep the library's), for a woman or a man.</summary>
     public static string? Armed(bool woman, string game) => Named(woman, ArmedName(game));
