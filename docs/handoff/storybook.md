@@ -1,6 +1,15 @@
 # Handoff: the storybook cinematics
 
-## START HERE (Storybook 4, 29 October): all SB00 plates in ink, built + wired, NO judge yet (wind-down)
+## START HERE (Storybook 5, 29 October): SB00 judged (3 rounds, cap reached), art committed, MR READY; `live` false until the owner's yes
+**State:** SB00 (0-89.5 s) is all ink, wired by `tools/storybook/sb_wire_ink.py`, art committed (da7fcac0a). Tests 1335/0/10. Owner sheet + mp4: `survivorsunchained_inputs\storybook5_owner\` (from shoot `out/sb3_frames/r15`). chatgpt.lock released; no turns held.
+- **Judges (xhigh, whole-frame gate), cap 3 each, all used:** A (p5-p7u) r3 PASS-WITH-NOTES; B (p0-p2) r3 FAIL near on 17.0 only, C (p3-p4) r3 FAIL near on 26.0 only: both fixed by the judges' own cut (p1d holds its shut gate to 16.5 s, then a 1 s dissolve into p2 framed on the gold veins, deep-door layer dropped; p3 enters on a hard cut at 25.5). Checked by the lead at half size, not re-judged.
+- **Plate list now:** p0 0-2.5 | **p1d 2.5-16.5** (ChatGPT `p1_D2` + `p1_D2_shut`: tilt from the torch column to the rune door, slab slides under a lintel occluder 11.4-13.8, hard switch to the chained shut gate on the 13.8 drum + kick + ash) | p2 16.5-25.5 | p3 25.5-38 (zoom capped 1.285) | p3d 38-46 | p4 46-56 | **p5 56-71** (ChatGPT edit `p5_E2` of p5_R1, posted not Krea-recarved; the close CUT; p7's basket lamp composited) | p6 | p7 | p7u. The forge (old p1) is CUT (stock-AI hand).
+- **Patch scripts (re-run after any rebuild, in order):** `ink_sb5_c.py`, `ink_sb5_ab.py`, `ink_sb5_p.py`, `ink_sb5_r3b.py`, `ink_sb5_r3.py apply`; `sb_wire_ink.py` swaps their `_sb5`/`_r3` layers in (`SB5_R3`). ChatGPT sources + prompts: `tools/storybook/out/sb5/` (provenance in `ink_provenance.md`).
+- **Closed as known (judge notes, no more rounds):** 86.0 hood reads a little like a tied sack; p6's lanterns sit in cog-edged halos (baked in far/near); p4 55.0 a ghost ladder reflection (baked in base) and a smooth clay jug; p5 the finest hand in the film; p3 night coarser than p3d; p1d runes repeat one glyph; a faint green band inside the open doorway; the sliding slab a touch flat (darkened 18%).
+- **Owner decisions owed:** ship it (`live` true) or notes. VO is still the placeholder (only `cin_none_cross` plays); the narrator takes and the bed are the owner's (ElevenLabs/hand score).
+- **Spend (Storybook 5):** about 2.4M tokens (judges 9 rounds ~0.95M, solvers ~1.2M, ChatGPT helpers ~0.21M), ~25 GPU min, 6 ChatGPT images.
+
+## Storybook 4 (29 October, history): all SB00 plates in ink, built + wired, NO judge yet (wind-down)
 **State:** every SB00 plate (0-89.5 s) is ink, wired in sb00.json via `tools/storybook/sb_wire_ink.py`, shot, and looked at only by the lead at half size. Tests 1335/0/10. Nothing running, no turns held, chatgpt.lock released. `live` stays false until the owner's yes on the sheet (main, 29 Oct). VO/bed are as they were.
 - **Uncommitted on purpose (unjudged art, remade by sb_wire_ink.py from tools/storybook/out/):** `godot/art/storybook/sb00/p0 p1 p2 p3 p3d p4 p5 p6 p7 p7u`. Don't lose `tools/storybook/out/` (git-ignored; holds all sources, `ink_rc/`, `ink_r6/`, `ink_r5*/`).
 - **Plates (source, staging, lead's doubts):**
