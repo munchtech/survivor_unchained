@@ -107,8 +107,10 @@ PLATES = {
     # picture; upp = canvas units per posted px; rest = the camera that sees the plate as painted.
     # p5: one plane (the drowned stand continuously from the near ditches to the far banks: any cut crosses them);
     # the depth comes from the mist and snow fx; glows: the blue fires (add, diff of lit - dimmed).
-    "p5": dict(rc=True, r="rc", gen="ink_rc/fix/p5wagon_d55_s11.png", target=3600, upp=1.0, rest=(1850, 760),
-               night_k=0.7, light="cold", fire_box=(700, 200, 1360, 560), layers=[("land", 1.0)], glows=[("fires", 1.0, None)]),
+    # Storybook 5 (ink_sb5_p.py): p5 = ChatGPT p5_E2 as cut for the carve, NOT re-carved (every Krea pass redrew the
+    # hanging lamp, the cressets and the dead faces); was gen="ink_rc/fix/p5wagon_d55_s11.png", fire_box (700, 200, ...)
+    "p5": dict(rc=True, r="rc", gen="sb5/p5e2_sb5.png", target=3600, upp=1.0, rest=(1850, 760),
+               night_k=0.7, light="cold", fire_box=(700, 150, 1360, 560), layers=[("land", 1.0)], glows=[("fires", 1.0, None)]),
     # p3: night (base with the ember drained + two add glows: the standing dead's inner light, the ember in the soil
     # and the spilled stones) and its dawn, a separate plate after a hard cut (p3d).
     # Storybook 5 (ink_sb5_c.py): p3 = the dead hand and the speared man's light refixed; p3d = the spear pointed + the

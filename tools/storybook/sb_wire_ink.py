@@ -39,13 +39,14 @@ RES = "res://art/storybook/sb00"
 
 # The placeholder cards each ink plate replaces: a card goes only once the ink plate that covers its span is wired
 # (a plate function below and its layers.json built). Every ink_ plate of an earlier run is replaced too.
-COVERS = {"p0": {"p0"}, "p1": {"p1", "p2"}, "p2": {"p3"}, "p3": {"p4", "p5"}, "p4": {"p6"},
+COVERS = {"p0": {"p0"}, "p1": {"p1", "p2"}, "p1d": set(), "p2": {"p3"}, "p3": {"p4", "p5"}, "p4": {"p6"},
           "p5": {"p7", "p8", "p9", "p10a", "p10b", "p10c"}}
-PLATE_ORDER = ["p0", "p1", "p2", "p3", "p3d", "p4", "p5", "p6", "p7", "p7u"]
+PLATE_ORDER = ["p0", "p1", "p1d", "p2", "p3", "p3d", "p4", "p5", "p6", "p7", "p7u"]
 PREFIX = "ink_"
 
 # Where the art's own features are (comps units, found in the layer images; they follow the comps).
-P5_FOURTH_LIGHT = (1916, 585)   # Storybook 4 rc: the fourth light's water, just under its flame (out/ink_layers/p5)
+P5_FOURTH_LIGHT = (1918, 565)   # Storybook 5 (E2): the water under the hanging basket lamp (out/ink_layers/p5)
+P5_LAMP = (1918, 438)           # the basket lamp itself
 P3_AT = {"hand": (399, 882), "dead": (1030, 430), "wound": (2780, 560), "stones": (2730, 1070)}   # p3 rc units
 P1_ANVIL = (1652, 746)          # p1 (r6): the anvil, where the hammer sparks fly
 P7_FLASK = (1550, 1490)         # the comps' rings from the flask
@@ -56,6 +57,7 @@ SB5_AB = {
     "p2": {f + ".png": (f + "_sb5.png", {}) for f in ("base", "threads", "threads_glow", "door_glow")},
     "p6": {"near.png": ("near_sb5.png", {})},
     "p7": {"water.png": ("water_sb5.png", {})},
+    "p1": {f + ".png": (f + "_sb5p.png", {}) for f in ("base", "torches")},     # solver P (ink_sb5_p.py): procession out
     "p7u": {"bubbles.png": ("bubbles_sb5.png", {"pos": [0, 700], "scale": 1.0, "size_px": [3200, 1100]})},
 }
 P6_LAMP_REFL = dict(file="lamp_refl_sb5.png", far_px=(860, 735), size_px=(300, 140))   # on the far layer's grid (z 3)
@@ -172,8 +174,11 @@ def plate_p5(picks):
     return P, {
         "id": PREFIX + "p5", "at": 56, "until": 71,
         "in": {"kind": "fade", "dur": 1.4, "color": "#000000"},
-        "camera": [P.cam(0, 1880, 650, 2.2), P.cam(7.0, 1900, 625, 2.45, ease="out"), P.cam(7.5, 1900, 625, 2.45),
-                   P.cam(14.5, 1800, 880, 0.92, ease="inout")],
+        # Storybook 5: no close (the judge: the wide pushed past its detail at 2.35). Opens on the wide (1.08, the
+        # carve's px at 1.14x), a slow push toward the hanging lamp to 7.5 s (1.15, the most), the pull back to the
+        # whole ford road by 13 s (0.93: the lamp and its chain stay in, the near dead's feet go under the frame).
+        "camera": [P.cam(0, 1880, 820, 1.08), P.cam(7.5, P5_LAMP[0], 700, 1.15, ease="out"),
+                   P.cam(13.0, 1800, 1050, 0.93, ease="inout"), P.cam(15.0, 1800, 1050, 0.93)],
         "note": "INK: The Low Ford; the drowned (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
         "layers": layers,
         "fx": [{"kind": "mist", "rect": P.S(-200, 520) + [4000, 260], "z": 1.3, "color": "#8f9fb6", "density": 0.24,
@@ -667,6 +672,19 @@ def plate_p1(picks):
         print(f"p1: slab {sw:.0f} wide for a {ow:.0f} opening: scale {sc}")
     ax, ay = P1_ANVIL
     cx = (ox0 + ox1) / 2
+    if P1_CUT:   # Storybook 5: the forge only (the torch procession painted out), a hard cut to p1d at P1_CUT
+        for k in ("curve.png", "curve_glow.png", "slab.png"):   # the old doorway stays out of the new door beat
+            P.used.pop(k, None)
+        return P, {
+            "id": PREFIX + "p1", "at": 2.5, "until": P1_CUT,
+            "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
+            "camera": [P.cam(0, 1650, 700, 1.0), P.cam(1.2, 1650, 720, 1.0), P.cam(P1_CUT - 2.5, 1650, 760, 1.04)],
+            "note": "INK: The cut and the chain (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+            "layers": [P.layer(E["base"], "base"), torches],
+            "fx": [{"kind": "particles", "preset": "sparks", "at": P.S(ax, ay), "area": [70, 20], "z": 1.0, "rate": 0,
+                    "burst": [0.3, 1.1, 1.9, 2.7, 3.5, 4.3], "count": 18, "seed": 7}],
+            "cues": [],
+        }
     return P, {
         "id": PREFIX + "p1", "at": 2.5, "until": 15.5,
         "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
@@ -680,6 +698,61 @@ def plate_p1(picks):
         # the slab shuts on a deep drum beat
         "cues": [{"at": close1, "do": "sfx", "name": "hit", "gain": 0.8}],
     }
+
+
+P1_CUT = 7.6        # Storybook 5: the hard cut from the forge to the door plate (absolute s; between the two lines)
+P1D_HIT = 13.8      # the slab lands on the drum hit (absolute s)
+P1D_SLIDE = 2.4     # its slide (s)
+
+
+def plate_p1d(picks):
+    """The door (ChatGPT p1_D2 / p1_D2_shut, ink_sb5_p.py): a hard cut in from the forge; the doorway lit gold from deep
+    inside, a slow push; the slab slides in from behind the right jamb, the gold dimming as the gap narrows, and lands
+    on the drum hit: a hard switch to the shut picture (the chain across the slab), its gold seams flicker and settle."""
+    P = Plate("p1d")
+    E = r6_layers(P)
+    f = P.meta["features"]
+    sx0 = f["slab"][0]
+    hit = round(P1D_HIT - P1_CUT, 3)
+    t0 = hit - P1D_SLIDE
+    dx0 = E["jamb"]["pos"][0] + 4 - sx0          # the slab's left edge starts just behind the jamb's edge
+    prog = lambda u: -u ** 3 + 2 * u ** 2         # StoryCurve's segment with ease "in" (from rest, arriving at speed)
+    slab = P.layer(E["slab"], "slab", keys=[{"t": 0, "dx": r(dx0)}, {"t": r(t0, 3), "dx": r(dx0)},
+                                             {"t": hit, "dx": 0, "ease": "in"}])
+    gk = [{"t": 0, "opacity": 1}, {"t": r(t0, 3), "opacity": 1}]
+    for i in range(1, 7):
+        u = i / 6
+        gk.append({"t": r(t0 + u * P1D_SLIDE, 3), "opacity": r(0.3 + 0.7 * (1 - prog(u)) ** 1.3, 3)})
+    gold = P.layer(E["gold"], "gold", keys=gk, touch=[{"kind": "flicker", "rate": 0.5, "amount": 0.12, "seed": 11}])
+    shut = P.layer(E["shut"], "shut", keys=[{"t": 0, "opacity": 0}, {"t": hit, "opacity": 1, "ease": "hold"}])
+    end = round(15.5 - P1_CUT, 3)
+    sk = [{"t": 0, "opacity": 0}, {"t": hit, "opacity": 1, "ease": "hold"}]
+    for i, v in enumerate((0.72, 1.0, 0.8, 0.97, 0.86, 0.93, 0.9)):    # a slow small flicker that dies down
+        t = round(hit + 0.26 * (i + 1), 3)
+        if t <= end:
+            sk.append({"t": t, "opacity": v})
+    seams = P.layer(E["seams"], "seams", keys=sk)
+    W, H = P.meta["canvas_units"]
+    cx = W / 2
+    keys = [P.cam(0, cx, 845, 0.972), P.cam(end, cx - 60, 829, 1.016, ease="linear")]
+    check_p1d(P, keys, f["lintel_top"])
+    return P, {
+        "id": PREFIX + "p1d", "at": P1_CUT, "until": 15.5,
+        "in": {"kind": "cut"},
+        # the whole door at 1.15x ChatGPT's px (zoom 0.972), a slow push to 1.2x (1.016) drifting toward the doorway
+        "camera": keys,
+        "note": "INK: The door shut (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+        "layers": [P.layer(E["base"], "base"), gold, slab, P.layer(E["jamb"], "jamb"), shut, seams],
+        "cues": [{"at": hit, "do": "sfx", "name": "hit", "gain": 0.8}],
+    }
+
+
+def check_p1d(P, keys, lintel_top, band=402, gap=40):
+    """Every camera key: the lintel's top at least gap px under the picture's top edge (1080-px frame)."""
+    for k in keys:
+        y = 540 + (lintel_top - (k["y"] - P.shift[1])) * 0.6 * k["zoom"]
+        assert y >= 540 - band + gap, f"p1d: lintel top at {y:.0f} px at t={k['t']}"
+        print(f"p1d: lintel top at {y:.0f} px (t={k['t']})")
 
 
 def plate_p2(picks):
