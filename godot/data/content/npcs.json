@@ -1416,10 +1416,7 @@
     "hairColor": "#d8b870",
     "skin": "#f0b8a0",
     "figure": 0.8,
-    "dye": {
-     "cloth": "#b8bcc4"
-    },
-    "body": "npc:npc_folk_w"
+    "body": "npc:npc_keegan"
    },
    "arms": {
     "right": "viking_sword"
