@@ -52,6 +52,7 @@ public partial class BattleFx
         var school = e.School;
         var pal = Palette.Of(school);
         string art = e.Art ?? "";
+        if (IsOath(art)) BeatHit(e);
         float share = e.MaxHp > 0 ? Mathf.Clamp((float)(e.Amount / e.MaxHp), 0, 1) : 0.2f;
         float g = Grow(e.Rank);
         bool rich = hitBudget > 0;
@@ -59,6 +60,8 @@ public partial class BattleFx
         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
         away = away.Normalized();
+        // Her Oathblade's struck: the shared hit kit (HitKit.cs), not the school's throw.
+        if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich); return; }
         // The instant: a flare at the point of contact.
         // Capped and kept in the school's colour: a big blow on a champion threw a white flare
         // two metres across that swallowed the bodies round it.
@@ -243,6 +246,7 @@ public partial class BattleFx
         string art = e.Art ?? "";
         if (art is "palm" or "palm_temple" or "palm_storm") { Palm(e); return; }
         if (Flare.HushesSwings) return;
+        if (IsOath(art)) BeatSwing(e);
         float g = Grow(e.Rank);
         float gy = Y(e.X, e.Z);
         var at = V(e.X, gy + 1.0, e.Z);
@@ -269,6 +273,7 @@ public partial class BattleFx
             case "palm_storm": core = Palette.Of(School.Storm).Core; glow = Palette.Of(School.Storm).Glow; hue = Hdr("#5a96ff", 1.2f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
         }
         mirror = !mirror;
+        if (IsOath(art)) { OathSweep(e, at, facing, reach, g); return; }
         // The blade's path, cut fast: a hot edge at the reach and the smear of
         // its colour behind it (a painted fan read as a flat disc of beige, and
         // ribbons laid round it showed their joins), with a fainter echo inside
@@ -364,6 +369,8 @@ public partial class BattleFx
 
     /// <summary>Blades' swings in progress (shaders/blade.gdshader).</summary>
     public readonly Blades Blades = new();
+    /// <summary>Her Oathblade's gold crescents: light only (Blades(lit)).</summary>
+    public readonly Blades OathBlades = new(lit: true);
 
     /* -------------------------------------------------------- in the air -- */
 

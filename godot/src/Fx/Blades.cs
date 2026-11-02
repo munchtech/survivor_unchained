@@ -26,14 +26,18 @@ public partial class Blades : MultiMeshInstance3D
     readonly float[] buffer = new float[Max * Stride];
     readonly Random rng = new(5);
 
-    public Blades()
+    /// <summary>`lit`: the crescent only adds light (no dark bed under it), a hot edge and a smear in its hue
+    /// (her Oathblade's gold sweep: it lights the ground, never darkens it).</summary>
+    public Blades(bool lit = false)
     {
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
             InstanceCount = Max, VisibleInstanceCount = 0, Mesh = Grid(64, 6),
         };
-        MaterialOverride = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/blade.gdshader") };
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/blade.gdshader") };
+        mat.SetShaderParameter("lit", lit);
+        MaterialOverride = mat;
         CastShadow = ShadowCastingSetting.Off;
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
     }

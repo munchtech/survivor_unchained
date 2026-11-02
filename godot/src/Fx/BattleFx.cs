@@ -148,6 +148,7 @@ public partial class BattleFx : Node3D
         AddChild(Gore);
         AddChild(Ribbons);
         AddChild(Blades);
+        AddChild(OathBlades);
         Flare.HeightAt = heightAt;
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
@@ -1823,8 +1824,9 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
-        if (Flare.HushesSwings) Blades.Clear();
+        if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
+        OathBlades.Step(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
