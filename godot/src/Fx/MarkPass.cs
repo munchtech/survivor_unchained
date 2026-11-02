@@ -46,7 +46,7 @@ public partial class MarkPass : CompositorEffect
         // fill (the filled part a step brighter); over the still water hwat of it (the river: the hatch read as a net)
         ["hl"] = 0.35f, ["hp"] = 0.16f, ["hw"] = 0.014f, ["hu"] = 0.3f, ["hwat"] = 0f, ["hx"] = 1f,
         // every mark's pattern forced (hs, for shots; -1 each mark's own): 0 the crossed grid, 1 the half hatch, 2 chevrons,
-        // 3 molten, 4 cracks, 5 lattice (PatternIds)
+        // 3 molten, 4 cracks, 5 lattice, 6 none (the bed, rims and cast line alone) (PatternIds)
         ["hs"] = -1f,
         // the lane's far end (the owner, 28 Oct: "a flat line end not the arrow"): cap 2 flat (the rims squared across
         // it), 1 a spear tip, 0 the old soft end; the molten pattern's charred bands this much darker (ld); a pattern's
@@ -74,7 +74,7 @@ public partial class MarkPass : CompositorEffect
     public static string Look { get; private set; } = "scarlet";
 
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
-    public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice" };
+    public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice", "none" };
     /// <summary>mark_look.json "patterns": a telegraph's pattern by its school's name, else by its shape's (line, circle,
     /// cone, ring), else "default".</summary>
     static readonly Dictionary<string, string> patternBy = new(StringComparer.OrdinalIgnoreCase) { ["default"] = "chevron" };
@@ -634,7 +634,8 @@ public partial class MarkPass : CompositorEffect
                 }
                 else if (pp == 3) { vec2 lv = plava(l, filled); pl = lv.x * T_HL * 1.5; pd = lv.y * T_LD; }
                 else if (pp == 4) pl = pcrack(l) * T_HL * 1.4 * (1.0 + 0.6 * exp(-abs(dm) / 0.4));
-                else pl = plattice(l) * T_HL * 1.2;
+                else if (pp == 5) pl = plattice(l) * T_HL * 1.2;
+                // 6 none: no pattern (the owner, 29 Oct: no chevrons on the round marks)
                 pl *= inside * lit * ghw;
                 pd *= inside * ghw;
             }
