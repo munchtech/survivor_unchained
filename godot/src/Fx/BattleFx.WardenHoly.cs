@@ -75,7 +75,7 @@ public partial class BattleFx
         {
             bool clear = time - wbLast > 1.2;
             if (rbCount >= 2 && !rbBeatShot && clear) { rbBeatShot = true; Shots.WantFrames("rb_f1", 1); Shots.WantFrames("rb_f3", 3); Shots.WantFrames("rb_f8", 8); GD.Print($"[wh-beats] rebuke #{rbCount} t={time:F2}"); }
-            if (rbCount >= 6 && !rbPressShot && clear && rbDim < 1) { rbPressShot = true; Shots.WantFrames("rb_press", 2); GD.Print($"[wh-beats] rebuke press #{rbCount} t={time:F2}"); }
+            if (rbCount >= 5 && !rbPressShot && clear && time - wbLast > 2) { rbPressShot = true; Shots.WantFrames("rb_press", 2); GD.Print($"[wh-beats] rebuke press #{rbCount} t={time:F2}"); }
         }
     }
 
@@ -224,8 +224,10 @@ public partial class BattleFx
         liveWaves.Add(new Wave { At = ground, Reach = r * 0.94f, Age = 0, Delay = 0.12f, K = k * 0.55f, Dust = false });
         // The strike: a warm light under the bell's lip, short.
         Flash(pivot + Vector3.Down * (BellH + 0.2f), HolyGold, 3.5f * k * (Flare.Night ? 0.75f : 1f), 0.3f, 7);
+        // The air thrown out with it: the scene bent at the front (the pressure, not a lit hoop), its lip a dim bronze.
+        Waves.Add(ground + Vector3.Up * 0.35f, r * 1.05f, WaveRun * 1.1f, HolyBronze * 0.1f, 0.9f * k);
         Cam?.AddTrauma(0.1f);
-        if (WhBeats && wbCount == 1) { Shots.WantFrames("wb_f1", 1); Shots.WantFrames("wb_f6", 6); Shots.WantFrames("wb_f12", 12); Shots.WantFrames("wb_f24", 24); GD.Print($"[wh-beats] toll #{wbCount} t={time:F2} r={r:F1}"); }
+        if (WhBeats && wbCount == 2) { Shots.WantFrames("wb_f1", 1); Shots.WantFrames("wb_f6", 6); Shots.WantFrames("wb_f12", 12); Shots.WantFrames("wb_f24", 24); GD.Print($"[wh-beats] toll #{wbCount} t={time:F2} r={r:F1}"); }
     }
 
     /* ----------------------------------------------------------- Barrier -- */
@@ -250,7 +252,7 @@ public partial class BattleFx
                 Color = HolyGold * 1.2f * (Flare.Night ? 0.8f : 1f), ColorEnd = HolyBronze * 0.3f, Alpha = 1, Sprite = -1, Stretch = 0.03f,
             });
         }
-        if (WhBeats && !barShot && e.Source == "watch_bell") { barShot = true; Shots.WantFrames("bar_f8", 8); GD.Print($"[wh-beats] barrier {e.Amount:F1} of {max:F0} k={k:F2} t={time:F2}"); }
+        if (WhBeats && !barShot && e.Source == "watch_bell" && wbCount >= 2) { barShot = true; Shots.WantFrames("bar_f8", 8); GD.Print($"[wh-beats] barrier {e.Amount:F1} of {max:F0} k={k:F2} t={time:F2}"); }
     }
 
     /* -------------------------------------------------------------- step -- */
@@ -273,7 +275,7 @@ public partial class BattleFx
                 float strike = bell.Strike * Mathf.Exp(-s * 7);
                 float grow = Mathf.Lerp(0.88f, 1f, inA);
                 var basis = new Godot.Basis(bell.Axis, ang).Scaled(Vector3.One * BellH * grow);
-                bells.Add(new Transform3D(basis, bell.Pivot), new Color(night ? 0.72f : 1f, strike, 0, alpha));
+                bells.Add(new Transform3D(basis, bell.Pivot), new Color(night ? 0.62f : 1.35f, strike, 0, alpha));
             }
         }
         bells.End();
@@ -290,8 +292,8 @@ public partial class BattleFx
             float p = Mathf.Min(1, t / WaveRun), front = 1 - Mathf.Pow(1 - p, 2.2f);
             float rr = Mathf.Lerp(0.7f, w.Reach, front);
             float fade = t > WaveRun ? 1 - (t - WaveRun) / WaveFade : 1;
-            float k = w.K * Mathf.Lerp(1f, 0.4f, front) * fade * Mathf.Min(1, t / 0.03f) * (night ? 0.62f : 1f);
-            float band = Mathf.Min(0.6f, 0.95f / rr);
+            float k = w.K * Mathf.Lerp(1f, 0.4f, front) * fade * Mathf.Min(1, t / 0.03f) * (night ? 0.62f : 1.5f);
+            float band = Mathf.Min(0.65f, 1.4f / rr);
             waves.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(rr, 1, rr)), w.At + Vector3.Up * 0.02f), new Color(k, band, 0.24f, p));
             // Dust lifted where the front passes: low, solid, lit, sparse.
             if (w.Dust && dt > 0 && p < 0.9f)

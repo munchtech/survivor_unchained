@@ -23,9 +23,9 @@ void fragment() {
 	float band = exp(-pow((ly - c0) / 0.06, 2.0));
 	float trail = ly < c0 ? exp(-(c0 - ly) / 0.14) : 0.0;
 	float glints = smoothstep(0.55, 0.95, n1(UV.x * 70.0 + floor(p * 12.0) * 3.1));
-	float shell = rim * 0.28 * smoothstep(0.0, 0.12, p) * pow(1.0 - p, 1.3);
+	float shell = rim * 0.16 * smoothstep(0.0, 0.12, p) * pow(1.0 - p, 1.3);
 	float climb = (band * (0.35 + 0.65 * glints) + trail * 0.25 * glints) * (0.2 + 0.8 * rim) * (1.0 - smoothstep(0.85, 1.0, p));
 	vec3 gold = vec3(1.0, 0.58, 0.15);
-	vec3 bronze = vec3(0.6, 0.28, 0.07);
+	vec3 bronze = vec3(0.6, 0.25, 0.045);
 	ALBEDO = (gold * climb * 0.95 + bronze * shell) * k;
 }

@@ -32,12 +32,13 @@ void fragment() {
 	float k = COLOR.r, p = COLOR.a, u = vu;
 	float s = dot(MODEL_MATRIX[3].xz, vec2(1.7, 3.1));
 	// lit only toward the front: dark behind it
-	float lead = pow(smoothstep(0.5, 0.93, u), 2.2) * (1.0 - 0.7 * smoothstep(0.93, 1.0, u));
-	float hot = exp(-pow((u - 0.925) / 0.022, 2.0));
-	// broken round its length, the breaks drifting as it runs
-	float br = (0.35 + 0.65 * n1(va * 41.0 + s * 1.3 + p * 5.0)) * (0.5 + 0.5 * n1(va * 11.0 - s));
-	vec3 bronze = vec3(0.6, 0.26, 0.055);
-	vec3 gold = vec3(1.0, 0.56, 0.13);
-	vec3 c = bronze * lead * 0.95 + gold * hot * 0.85 * (0.4 + 0.6 * br);
+	float lead = pow(smoothstep(0.2, 0.93, u), 2.6) * (1.0 - 0.7 * smoothstep(0.93, 1.0, u));
+	float hot = exp(-pow((u - 0.925) / 0.02, 2.0));
+	// broken round its length, the breaks drifting as it runs: the crest's hot line in pieces with gaps between
+	float br = (0.3 + 0.7 * n1(va * 41.0 + s * 1.3 + p * 5.0)) * (0.45 + 0.55 * n1(va * 11.0 - s));
+	float bits = smoothstep(0.4, 0.75, n1(va * 67.0 + s * 2.1 - p * 3.0));
+	vec3 bronze = vec3(0.55, 0.22, 0.045);
+	vec3 gold = vec3(1.0, 0.52, 0.11);
+	vec3 c = bronze * lead * 0.8 + gold * hot * 0.75 * bits;
 	ALBEDO = c * br * k * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }
