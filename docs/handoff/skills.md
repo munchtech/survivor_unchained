@@ -1,5 +1,25 @@
 # Handoff: skills look and feel
 
+## Combat VFX 6 (vfx-6, 1 Nov): MR READY. No chevrons on round marks
+**The owner (29 Oct, verbatim):** "the chevron on the circular telegraphs is not wanted, it dosn't look good".
+
+**Built** (`godot/src/Fx/MarkPass.cs`, `godot/data/mark_look.json`, `godot/src/Fx/BattleFx.cs` ConeMark):
+- A pattern "none" (id 6 in `PatternIds`). mark_look.json `"patterns"` maps circle, ring and cone to none. The default stays chevron, so only lanes carry chevrons: a lane has a direction, and a round mark's chevrons are zigzags on arcs.
+- The bed has an unlit floor, `bf` 0.2 (as seen: the brightest channel on the display; `want = max(k x ground, bf)`). Before it, a night mark out of the lamp was only its rims, a hollow outline. Day is unchanged.
+- Cones fill from their point, with a cast line, as discs do (`ConeMark(..., progress)` for hostile blows; shader fill for `kind <= 2`, gated inside the wedge).
+- Salmon is unchanged.
+
+**Judged (xhigh, 2 rounds, ~145k):** r1 FAIL close (the night cone and disc were hollow without the chevrons). r2 PASS-WITH-NOTES: every frame passes the gate, day and night, at the boss clearings, the arena and the town.
+
+**Later list (not gating; added to the projection list below):**
+- Where a lane fan's lanes overlap at the root (Red Hand's Volley), the chevrons cross into a lattice. Fade the chevrons in over the first 1.5 lane widths, or draw them only where one lane covers.
+- At night the fill sits only ~1.5x over the bed's inner edge (~2x by day). The fix if touched: lift the night fill to ~sRGB 100,42,24.
+- A lane end runs past a wall top onto a building (same family as the cliff jog): clip where the ground steps more than ~0.5 m.
+
+**Routes:** Lighting: the night arena ground crushes to pure black outside the lamp. Character art: the Red Hand reads as flat, unshaded orange. UI: the bronze HUD statue goes semi-transparent over red lanes (05 in r2), so check the fade is intended.
+
+**Shots:** `shoot2.sh` kinds bpack, bred, bdead (arena bosses at night: `--zone arena --boss boss_X --minute 29.9`) and mpack, mred (day: `--zone map --people X --at boss --time day`). Barrow knight and the crowd make lanes only. Backed up in `survivorsunchained_inputs\scratch_vfx6`; judged r2 frames and a 2x2 sheet (night cone, night disc, day cone, day disc) in `survivorsunchained_inputsfx6`. Tests 1335/0/10.
+
 ## Combat VFX 5 (vfx-4, 29 Oct): MR READY. Chevrons, and the owner picked B SALMON
 **The owner picked chevrons (verbatim):** "agreed, chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges".
 **Then the color (verbatim):** "B salmon." It is set in mark_look.json (`"look": "salmon"`). The fire tint stays off.

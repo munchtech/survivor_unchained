@@ -13,3 +13,8 @@ Inspiration only, never copied. For the Flare (ultimate, a BOOM button: memory f
 - https://www.youtube.com/watch?v=NBA2L25WDcw
 - https://www.youtube.com/watch?v=yE5rjDocIAE
 - https://www.youtube.com/watch?v=dyYnofAdxQc
+
+Added 1 November 2026 (the owner: "2 more very good videos for vfx to study"):
+
+- https://www.youtube.com/watch?v=5ZQdZOK8hhg
+- https://www.youtube.com/watch?v=IPAfyFhDJcA

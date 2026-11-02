@@ -28,7 +28,7 @@
       "note": "Behind her as she comes down to the water's edge and stops: the near post at frame left, the ford's stones going out into mist, the two far posts. In the river to the right a lamp burns low over the water, and beyond it the drowned stand in their rows.",
       "cam": {"pos": [3.4, 1.5, -25.4], "at": {"abs": [3.6, -0.95, -44.0]}, "lens": 28},
       "cues": [
-        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#6e5a66", "note": "C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
+        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#1f2d48", "note": "(Env 23: #6e5a66 to #1f2d48, a lifted night navy: the mauve turned the far pines and cliff lilac-pink at C02 s5/s11; the far band OKLab L 0.246 to 0.189, still above the near pines 0.178) C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
         {"do": "grade", "sat": 0.88, "moonSat": 0.03, "moonDrop": 0.8, "shade": "#2e2452", "shadeK": 0.7, "moonTop": 0.62, "moonWidth": 0.15},
         {"do": "gaze", "wander": 0.04},
         {"do": "atmosphere", "preset": "now", "key": 0.45, "hemi": 0.18, "env": 0.2, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0, "hemiSky": "#403c78", "azimuth": 195},

@@ -41,6 +41,13 @@ public partial class Atmosphere : Node3D
             Env.FogDepthBegin = h.Begin; Env.FogDepthEnd = h.End; Env.FogDepthCurve = h.Curve;
             Env.FogDensity = h.Amount; Env.FogAerialPerspective = h.Sky;
             if (h.Tint is Color tc) Env.FogLightColor = tc;
+            // (--dbg-haze-tint #hex, --dbg-haze-sky, --dbg-haze-amount, --dbg-haze-begin/-end/-curve: A/B a cinematic haze cue without its data; Env 23)
+            if (SurvivorUnchained.Args.Get("dbg-haze-tint") is string dt) Env.FogLightColor = new Color(dt);
+            if (SurvivorUnchained.Args.Has("dbg-haze-sky")) Env.FogAerialPerspective = SurvivorUnchained.Args.Num("dbg-haze-sky", h.Sky);
+            if (SurvivorUnchained.Args.Has("dbg-haze-amount")) Env.FogDensity = SurvivorUnchained.Args.Num("dbg-haze-amount", h.Amount);
+            if (SurvivorUnchained.Args.Has("dbg-haze-begin")) Env.FogDepthBegin = SurvivorUnchained.Args.Num("dbg-haze-begin", h.Begin);
+            if (SurvivorUnchained.Args.Has("dbg-haze-end")) Env.FogDepthEnd = SurvivorUnchained.Args.Num("dbg-haze-end", h.End);
+            if (SurvivorUnchained.Args.Has("dbg-haze-curve")) Env.FogDepthCurve = SurvivorUnchained.Args.Num("dbg-haze-curve", h.Curve);
             if (System.Environment.GetEnvironmentVariable("FLORA_STATS") != null) GD.Print($"haze: depth {h.Begin}-{h.End} m, amount {h.Amount}, sky {h.Sky}; fog on {Env.FogEnabled}");
         }
         else if (Env.FogMode != Godot.Environment.FogModeEnum.Exponential)
@@ -70,11 +77,15 @@ public partial class Atmosphere : Node3D
     /// <summary>The camera's say over the grade's highlight tint (0: the preset's; 1: none). The close view by night takes the
     /// near-white highlight tint off her face, which it left pale and waxy (E1 round 3); in quarter steps, each table made once.</summary>
     public float ViewHighlightsNeutral { get; private set; }
-    public void SetViewHighlights(float k)
+    /// <summary>True: the view grade keeps the preset's highlight tint (the close view by day, Rendering 2: with it neutral the sky went
+    /// from cream to a dead grey, Oklab chroma 13.7 to 0.9, and the sunlit town read overcast).</summary>
+    public bool ViewKeepHighlightTint { get; private set; }
+    public void SetViewHighlights(float k, bool keepTint = false)
     {
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
-        if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
+        if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral) && keepTint == ViewKeepHighlightTint) return;
         ViewHighlightsNeutral = k;
+        ViewKeepHighlightTint = keepTint;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
@@ -83,7 +94,7 @@ public partial class Atmosphere : Node3D
     GradeSettings ViewGrade(GradeSettings g) => ViewHighlightsNeutral <= 0 ? g
         : g with
         {
-            HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
+            HighlightTint = ViewKeepHighlightTint ? g.HighlightTint : "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
             Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
             // (The close view by night takes its own paint grade: art style round 1's, which kept her copper hair.)
             PaintVib = Mathf.Lerp((float)g.PaintVib, CloseVib, ViewHighlightsNeutral),
@@ -210,7 +221,7 @@ public partial class Atmosphere : Node3D
         // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
         // play's presets (E1) nudged, for a sweep of pictures in one build.
         if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
-            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay)))
+            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay) || ReferenceEquals(p, Atmospheres.NightTown)))
         {
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
             string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
@@ -235,7 +246,7 @@ public partial class Atmosphere : Node3D
                     MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
                     MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
                     PaintShadow = H("psh", p.Grade.PaintShadow), PaintShadowK = T("pshk", p.Grade.PaintShadowK), PaintVib = T("pvib", p.Grade.PaintVib),
-                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi),
+                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi), PaintShadowSkin = T("pshskin", p.Grade.PaintShadowSkin),
                 },
             };
         }
