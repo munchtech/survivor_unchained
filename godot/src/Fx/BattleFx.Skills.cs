@@ -63,6 +63,7 @@ public partial class BattleFx
         // Her Oathblade's struck: the shared hit kit (HitKit.cs), not the school's throw.
         if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich, null, e.Target); return; }
         if (IsDisc(art)) { DiscStruck(e, at, away, g, rich); return; }
+        if (WardenHolyStruck(e, at)) return;
         // The instant: a flare at the point of contact.
         // Capped and kept in the school's colour: a big blow on a champion threw a white flare
         // two metres across that swallowed the bodies round it.
@@ -860,7 +861,9 @@ public partial class BattleFx
                 Flash(ground + Vector3.Up * 1.2f, f.Light, 6, 0.35f, r * 2.5f);
                 return true;
             }
-            case "nova_holy" or "nova_dawn" or "nova_sun" or "rebuke" or "watch_bell": // the two keep Dawnpulse's look until Combat VFX builds theirs
+            case "rebuke": RebukeFx(e); return true; // the Warden's holy pair: BattleFx.WardenHoly.cs
+            case "watch_bell": TollFx(e); return true;
+            case "nova_holy" or "nova_dawn" or "nova_sun":
             {
                 var h = Palette.Of(School.Holy);
                 // Deep gold and thin: wide and bright, its front bloomed to a thick cream ring that

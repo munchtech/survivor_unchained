@@ -1261,6 +1261,9 @@ public partial class BattleFx : Node3D
                     if (e.Broke) { Waves.Add(V(e.X, Y(e.X, e.Z) + 0.4, e.Z), 2.6f, 0.35f, Palette.Of(School.Holy).Glow, 1f); Cam?.AddTrauma(0.12f); }
                     break;
                 }
+                case Ev.Barrier e:
+                    BarrierGain(e);
+                    break;
                 case Ev.PlayerHeal e:
                     if (e.Amount >= 3) Hits.Text(PlayerPos + Vector3.Up * 1.6f, $"+{(int)Math.Round(e.Amount)}", new Color(0.5f, 1.8f, 0.6f), 50);
                     break;
@@ -1829,6 +1832,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
+        StepWardenHoly(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
         OathBlades.Step(hsw);
