@@ -78,8 +78,9 @@ public partial class Game : Node, IZoneHost
         ZoneData.UseGodotFiles();
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
-        // --lampsv2: the Lamps v2 board (docs/design/LAMPS_V2_RULES.md "The flag"); SU_LAMPS_V2=1 does it too.
-        if (Args.Has("lampsv2")) Content.Lamps.UseV2(true);
+        // The Lamps v2 board is the default; --lampsv1 (or SU_LAMPS_V2=0) plays v1's for one release (LAMPS_V2_RULES.md "The flag").
+        if (Args.Has("lampsv1")) Content.Lamps.UseV2(false);
+        else if (Args.Has("lampsv2")) Content.Lamps.UseV2(true);
         // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
         SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.

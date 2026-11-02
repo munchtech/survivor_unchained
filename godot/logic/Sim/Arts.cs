@@ -53,8 +53,23 @@ public sealed partial class Battle
 
     /// <summary>By night a lamp's barrier or mend is a size, so it runs at a quarter (v2; CLASSES.md §2.10, LAMPS_V2_RULES.md
     /// "By night"): the facet still fires, its amount doesn't cross into the night. A facet the art's own choice gives keeps it.</summary>
-    double Ward(string facet) =>
-        Content.Lamps.V2 && Lamps.Night && Lamps.Facets.Contains(facet) && !artFacets.Contains(facet) ? Content.Lamps.NightSize : 1;
+    double Ward(string facet) => Content.Lamps.V2 && Lamps.Night && LampFacet(facet) ? Content.Lamps.NightSize : 1;
+
+    /// <summary>The facet is the lamps' (SetLamps), not the art's own choice.</summary>
+    bool LampFacet(string facet) => Lamps.Facets.Contains(facet) && !artFacets.Contains(facet);
+
+    /// <summary>A lamp's barrier (v2; LAMPS_V2_RULES.md "By night"). By night it is a size, so a quarter (`sized`: the caller's
+    /// number isn't yet a Size). It is added to a barrier she holds without renewing its time, as Shield of Morning's
+    /// (WardenSkills.Rebuke): renewed by a reflex every few seconds, it kept every other barrier up for good (Classes 19: the
+    /// warden's full night board read P 1.49 on Shield Wall alone, still 1.31 with the wall at a hundredth). v1 keeps Barrier's.</summary>
+    void LampBarrier(double amount, double seconds, bool sized = false)
+    {
+        if (!Content.Lamps.V2) { Barrier(amount, seconds); return; }
+        if (!sized && Lamps.Night) amount *= Content.Lamps.NightSize;
+        var p = Player;
+        if (p.Shield > 0 && p.ShieldT > 0) p.Shield = Math.Min(MaxHp, p.Shield + StonesBarrier(amount));
+        else Barrier(amount, seconds);
+    }
 
     /// <summary>The ground a fight may be had on (a map's ways and clearings);
     /// null: any open ground. No art carries the survivor past it.</summary>
@@ -161,7 +176,11 @@ public sealed partial class Battle
             Interrupt(e);
             struck++;
         });
-        if (Has("shield_wall") && struck > 0) Barrier(MaxHp * Math.Min(0.4, 0.08 * struck) * Ward("shield_wall"), 5);
+        if (Has("shield_wall") && struck > 0)
+        {
+            double wall = MaxHp * Math.Min(0.4, 0.08 * struck);
+            if (LampFacet("shield_wall")) LampBarrier(wall, 5); else Barrier(wall, 5);
+        }
         if (Has("rebound")) p.AbilityCd = Math.Max(0.5, p.AbilityCd - 0.5 * struck);
         Events.Emit(new Ev.Shake { Amount = 0.35 });
         return true;
@@ -779,7 +798,7 @@ public sealed partial class Battle
                     });
                 }
             }
-            if (Has("anchor")) Barrier(MaxHp * 0.12 * Ward("anchor"), 4);
+            if (Has("anchor")) { if (LampFacet("anchor")) LampBarrier(MaxHp * 0.12, 4); else Barrier(MaxHp * 0.12, 4); }
         }
         return true;
     }

@@ -166,7 +166,7 @@ public sealed partial class Battle
     /// <summary>A perfect dash's lamps: a barrier (perfect.barrier) and a stone (parry).</summary>
     void LampsOnPerfect()
     {
-        if (Lamps.Has("perfect.barrier")) Barrier(MaxHp * Lamps.Size("perfect.barrier", "share"), 5);
+        if (Lamps.Has("perfect.barrier")) LampBarrier(MaxHp * Lamps.Size("perfect.barrier", "share"), 5, sized: true);
         if (Lamps.Has("parry")) AddStone();
     }
 

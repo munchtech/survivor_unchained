@@ -230,10 +230,11 @@ public static class Lamps
     static Board? board;
     static Board B => board ??= new Board(Json.Parse<File>(Json.ReadContent(V2 ? "lamps_v2.json" : "lamps.json")));
 
-    /* The flag (docs/design/LAMPS_V2_RULES.md "The flag"): v1's board (lamps.json) unless v2 is switched on, by the env
-     * SU_LAMPS_V2=1, the harness's or the game's --lampsv2 (UseV2), or a test. With it off nothing reads a v2 rule. */
+    /* The flag (docs/design/LAMPS_V2_RULES.md "The flag"): v2's board (lamps_v2.json) is the default from Classes 19. v1's
+     * (lamps.json) stays reachable for one release: the env SU_LAMPS_V2=0, the harness's or the game's --lampsv1
+     * (UseV2(false)), or a test. With v1 on nothing reads a v2 rule, and the sim is v1's to the byte. */
     static bool? v2;
-    public static bool V2 => v2 ??= Environment.GetEnvironmentVariable("SU_LAMPS_V2") == "1";
+    public static bool V2 => v2 ??= Environment.GetEnvironmentVariable("SU_LAMPS_V2") != "0";
 
     /// <summary>Switch the board (v2 on or off) and read it again.</summary>
     public static void UseV2(bool on)

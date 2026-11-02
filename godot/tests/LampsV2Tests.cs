@@ -11,6 +11,7 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>Lamps v2 in the fight (docs/design/LAMPS_V2_RULES.md; Sim/BoardRules.cs): rites, links, Hand lamps, the small
 /// rules and the blues on small synthetic boards, and the flag (v2 off is v1 unchanged).</summary>
+[Collection("Balance")]
 public sealed class LampsV2Tests
 {
     static Battle Fight(string? calling, params (string Id, int Rank)[] weapons)
@@ -68,6 +69,13 @@ public sealed class LampsV2Tests
     public void No_v1_rule_wakes_the_v2_board()
     {
         // v1's board never lights a v2 rule, so with v2 off every BoardRules path is a no-op (the Act 1 gate).
+        Lamps.UseV2(false);
+        try { OnV1(); }
+        finally { Lamps.UseV2(true); }
+    }
+
+    static void OnV1()
+    {
         Assert.False(Lamps.V2);
         var v1 = Lamps.All.Values.SelectMany(l => l.Effects).Where(e => e.Rule != null).Select(e => e.Rule!).Distinct().ToList();
         Assert.True(v1.Count > 100);
@@ -326,7 +334,7 @@ public sealed class LampsV2DataTests
     {
         Lamps.UseV2(true);
         try { return f(); }
-        finally { Lamps.UseV2(false); }
+        finally { Lamps.UseV2(true); }
     }
 
     /// <summary>Every phase-1 rule a v2 lamp lights is read by the fight (as LampsTests' for v1).</summary>
