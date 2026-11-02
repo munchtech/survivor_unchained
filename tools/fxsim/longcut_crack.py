@@ -293,7 +293,7 @@ def main():
     col *= 0.35 + 0.65 * gap_cracks[..., None] ** 0.5
     col *= (1 - 0.6 * hair[..., None])
     # inside the gap: dark heat-tempered rock (a little rust), the rubble darker
-    gapc = np.array([0.060, 0.034, 0.022], np.float32) * (1 - 0.5 * rub[..., None])
+    gapc = np.array([0.026, 0.016, 0.011], np.float32) * (1 - 0.5 * rub[..., None])
     col = np.where((g > 0)[..., None], gapc * (0.8 + 0.4 * (0.5 + 0.5 * N.fbm(X, Y, 20.0, "gapv", oct=2)))[..., None], col)
     # ash: a few pale grey flecks out on the scorch (where the heat blew the char to ash)
     ash = 0.6 * smooth(0.70, 0.85, N.fbm(X, Y, 28.0, "ash", oct=3) * 0.5 + 0.5) * (1 - lipzone) * char

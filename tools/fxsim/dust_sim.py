@@ -24,7 +24,7 @@ def args():
     a = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     o = dict(out=a[0], res=128, frames=64, fps=32, px=512, pitch=66.0, samples=64, seed=3, noise=2,
              bake_only=False, render_only=False, stats=False, only="", ortho=7.0, look_z=0.9,
-             smoke_k=9.0, alpha=-0.25, vort=0.35, dissolve=70, drag=1.6, turb=1.6, up=(2.0, 3.8), dpow=1.0)
+             smoke_k=9.0, alpha=-0.25, vort=0.35, dissolve=70, drag=1.6, turb=1.6, up=(2.0, 3.8), dpow=1.0, cut=0.0, cache="", key=6.0, amb=0.2, jets=9, base=12, fade=(26.0, 0.0))
     i = 1
     while i < len(a):
         k = a[i].lstrip("-").replace("-", "_")
@@ -87,6 +87,7 @@ def main():
     ds.cache_frame_start, ds.cache_frame_end = 1, F
     ds.use_adaptive_domain = False
     ds.vorticity = o["vort"]; ds.alpha = o["alpha"]; ds.beta = 0.0
+    ds.cfl_condition = 2.0; ds.timesteps_max = 8; ds.timesteps_min = 2
     ds.use_dissolve_smoke = True; ds.dissolve_speed = o["dissolve"]; ds.use_dissolve_smoke_log = True
     ds.use_noise = o["noise"] > 0
     if o["noise"]:
@@ -94,38 +95,44 @@ def main():
     ds.use_collision_border_bottom = True
     ds.effector_weights.gravity = 1.0
 
-    # The jets: 7 charges along the 2 m stretch, staggered by a frame or two, each punched up (fast, easing out) to
-    # its own height and leaning a little off the vertical, swelling as it goes.
-    n = 7
+    # The jets: charges along the 2 m stretch, staggered by a frame or two, each punched up (fast, easing out) to
+    # its own height (tall and short by turns: a ragged row, never a wall), leaning off the vertical, thin as it
+    # leaves the split and swelling into a cap at the top, where it keeps feeding a frame or two (the rollover).
+    n = o["jets"]
     for i in range(n):
         x = -0.95 + 1.9 * (i + rng.uniform(-0.3, 0.3)) / (n - 1)
-        t0 = 1 + rng.choice([0, 0, 1, 1, 2])
-        top = rng.uniform(*o["up"]) * (0.75 if i in (0, n - 1) else 1.0)
-        lean = (rng.uniform(-0.35, 0.35), rng.uniform(-0.45, 0.45))
-        T = rng.randint(7, 10)
+        t0 = 1 + rng.choice([0, 0, 1, 1, 2, 3])
+        top = rng.uniform(*o["up"]) * (rng.uniform(0.35, 0.6) if i % 2 else 1.0)
+        lean = (rng.uniform(-0.4, 0.4), rng.uniform(-0.5, 0.5))
+        T = rng.randint(6, 9)
+        r0, r1 = rng.uniform(0.05, 0.08), rng.uniform(0.12, 0.24) * (0.7 if i % 2 else 1.0)
         keys = []
         for j in range(T + 1):
             u = j / T
-            e = 1 - (1 - u) ** 2.2
-            r = 0.10 + rng.uniform(0.18, 0.30) * e
-            keys.append((t0 + j, (x + lean[0] * e, lean[1] * e, 0.08 + top * e), r))
+            e = 1 - (1 - u) ** 2.4
+            keys.append((t0 + j, (x + lean[0] * e, lean[1] * e, 0.08 + top * e), r0 + (r1 - r0) * u ** 2))
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=keys[0][1])
         c = bpy.context.object
-        lumpy(c, 0.35)
-        charge(c, f"jet{i}", (t0, t0 + T - 2), keys, rng.uniform(0.8, 1.0), 0.55, tex=(0.35, 1.6, 1.0))
-    # The base: dust shoved out flat both sides of the split, low and dense, rolling out along the ground.
-    for side in (-1, 1):
-        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, side * 0.15, 0.12))
+        lumpy(c, 0.18, 0.12)
+        charge(c, f"jet{i}", (t0, t0 + T), keys, rng.uniform(0.8, 1.0), 0.55, tex=(0.35, 1.6, 1.0))
+    # The base: puffs shoved out low both sides of the split, rolling out along the ground (dense at the foot).
+    for i in range(o["base"]):
+        side = 1 if i % 2 else -1
+        x = rng.uniform(-1.0, 1.0)
+        reach, T = rng.uniform(0.4, 1.0), rng.randint(6, 12)
+        r0, r1 = rng.uniform(0.07, 0.11), rng.uniform(0.14, 0.24)
+        keys = [(1 + j, (x + rng.uniform(-0.05, 0.05), side * (0.08 + reach * (1 - (1 - j / T) ** 2)),
+                         0.1 + 0.25 * j / T), r0 + (r1 - r0) * j / T) for j in range(T + 1)]
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=1.0, location=keys[0][1])
         b = bpy.context.object
-        lumpy(b, 0.25)
-        keys = [(1, (0, side * 0.15, 0.12), (2.1, 0.22, 0.16)), (6, (0, side * 0.55, 0.22), (2.3, 0.45, 0.30)),
-                (12, (0, side * 0.9, 0.3), (2.4, 0.5, 0.35))]
-        charge(b, f"base{side}", (1, 9), keys, 0.9, 0.6, vcoord=(0, side * 1.2, 0.5), tex=(0.3, 1.8, 1.0))
+        lumpy(b, 0.15, 0.12)
+        charge(b, f"base{i}", (1, T - 2), keys, 0.9, 0.5, tex=(0.3, 1.8, 1.0))
 
     # Drag (the jets slow and hang), turbulence (torn edges), scrolled upward with the dust.
-    bpy.ops.object.effector_add(type="DRAG", location=(0, 0, 0))
-    dg = bpy.context.object
-    dg.field.linear_drag = o["drag"]; dg.field.quadratic_drag = 0.0
+    if o["drag"] > 0:
+        bpy.ops.object.effector_add(type="DRAG", location=(0, 0, 0))
+        dg = bpy.context.object
+        dg.field.linear_drag = o["drag"]; dg.field.quadratic_drag = 0.0
     bpy.ops.object.effector_add(type="TURBULENCE", location=(0, 0, 1.0))
     tb = bpy.context.object
     tb.field.size = 0.55; tb.field.flow = 0.0; tb.field.noise = 0.0
@@ -148,12 +155,21 @@ def main():
     da = nt.nodes.new("ShaderNodeAttribute"); da.attribute_name = "density"
     dp = nt.nodes.new("ShaderNodeMath"); dp.operation = "POWER"; dp.inputs[1].default_value = o["dpow"]
     dk = nt.nodes.new("ShaderNodeMath"); dk.operation = "MULTIPLY"; dk.inputs[1].default_value = o["smoke_k"]
-    nt.links.new(da.outputs["Fac"], dp.inputs[0]); nt.links.new(dp.outputs["Value"], dk.inputs[0])
+    # thin haze cut away (density below `cut` is clear air), so the dust has torn edges, never a fuzzy bulb
+    dc = nt.nodes.new("ShaderNodeMath"); dc.operation = "SUBTRACT"; dc.inputs[1].default_value = o["cut"]
+    dm = nt.nodes.new("ShaderNodeMath"); dm.operation = "MAXIMUM"; dm.inputs[1].default_value = 0.0
+    nt.links.new(da.outputs["Fac"], dp.inputs[0]); nt.links.new(dp.outputs["Value"], dc.inputs[0])
+    nt.links.new(dc.outputs["Value"], dm.inputs[0]); nt.links.new(dm.outputs["Value"], dk.inputs[0])
     nt.links.new(dk.outputs["Value"], pv.inputs["Density"])
+    # thinning out: the whole cloud's density keyed from full at frame fade[0] to fade[1] of it at the last frame,
+    # so the curtain is gone (not popped) when the flipbook ends
+    f0, end = o["fade"]
+    for fr, k in ((1, 1.0), (int(f0), 1.0), (int(f0 + (F - f0) * 0.5), 0.35 + 0.65 * end), (F, end)):
+        dk.inputs[1].default_value = o["smoke_k"] * k; dk.inputs[1].keyframe_insert("default_value", frame=fr)
     nt.links.new(pv.outputs["Volume"], outn.inputs["Volume"])
     dom.data.materials.append(m)
 
-    ds.cache_directory = os.path.join(out, "cache")   # last: setting the domain after this frees the bake
+    ds.cache_directory = os.path.abspath(o["cache"]) if o["cache"] else os.path.join(out, "cache")   # last: setting the domain after this frees the bake
     if not o["render_only"]:
         with bpy.context.temp_override(object=dom, active_object=dom, selected_objects=[dom], scene=sc):
             bpy.ops.fluid.bake_all()
@@ -166,7 +182,7 @@ def main():
             sc.frame_set(f)
             ev = dom.evaluated_get(bpy.context.evaluated_depsgraph_get()).modifiers["Fluid"].domain_settings
             res = [int(v) for v in ev.domain_resolution]
-            a = np.array(ev.density_grid, np.float32)
+            a = np.empty(res[0] * res[1] * res[2], np.float32); ev.density_grid.foreach_get(a)
             if a.size != res[0] * res[1] * res[2]:
                 print("STAT", f, "no grid"); continue
             a = a.reshape(res[2], res[1], res[0]); h = max(W, D, H) / max(res)
@@ -185,12 +201,12 @@ def main():
     cam.location = (look[0], look[1] - dist * math.cos(pitch), look[2] + dist * math.sin(pitch))
     cam.rotation_euler = (math.pi / 2 - pitch, 0, 0)
     sc.camera = cam
-    sun_d = bpy.data.lights.new("key", "SUN"); sun_d.energy = 3.2; sun_d.color = (1.0, 0.97, 0.92); sun_d.angle = 0.2
+    sun_d = bpy.data.lights.new("key", "SUN"); sun_d.energy = o["key"]; sun_d.color = (1.0, 0.97, 0.92); sun_d.angle = 0.2
     sun = bpy.data.objects.new("key", sun_d); sc.collection.objects.link(sun)
-    sun.rotation_euler = (math.radians(30), math.radians(-15), math.radians(25))
+    sun.rotation_euler = (math.radians(55), math.radians(-10), math.radians(35))
     world = bpy.data.worlds.new("w"); sc.world = world; world.use_nodes = True
     bg = world.node_tree.nodes["Background"]
-    bg.inputs["Color"].default_value = (0.55, 0.6, 0.7, 1); bg.inputs["Strength"].default_value = 0.55
+    bg.inputs["Color"].default_value = (0.55, 0.6, 0.7, 1); bg.inputs["Strength"].default_value = o["amb"]
     r = sc.render
     r.engine = "CYCLES"; sc.cycles.device = "GPU"
     prefs = bpy.context.preferences.addons["cycles"].preferences
