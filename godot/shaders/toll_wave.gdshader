@@ -47,8 +47,8 @@ void fragment() {
 	// the leading edge: one hard thin line (~4 px = 0.06 m of the ~0.5 m band)
 	float edge = smoothstep(0.87, 0.89, u) * (1.0 - smoothstep(0.985, 1.0, u));
 	float jit = 0.8 + 0.2 * n1(va * 90.0 + s);
-	vec3 bodyc = vec3(1.0, 0.77, 0.35);
-	vec3 edgec = vec3(1.0, 0.9, 0.66);
+	vec3 bodyc = vec3(1.0, 0.57, 0.15); // the bell's r1 gold (was 1.0,0.77,0.35)
+	vec3 edgec = vec3(1.0, 0.57, 0.15); // the bell's r1 gold (was 1.0,0.9,0.66)
 	vec3 c = bodyc * body * 0.17 + edgec * edge * 0.42 * jit;
 	ALBEDO = c * gap * k * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

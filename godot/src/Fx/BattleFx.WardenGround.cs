@@ -304,6 +304,7 @@ public partial class BattleFx
     bool WgBeam(Ev.Beam e)
     {
         if (e.Art is not ("slash_heavy_line" or "slash_quake_crack")) return false;
+        if (WfxOff) return true;
         if (!wgWarm) WgWarmUp();
         bool quake = e.Art == "slash_quake_crack";
         var from = new Vector2((float)e.X0, (float)e.Z0);
@@ -370,6 +371,7 @@ public partial class BattleFx
     /// <summary>Groundbreaker's heave (the Explosion switch's own case): held until its crack's tip arrives.</summary>
     void WgHeave(Ev.Explosion e)
     {
+        if (WfxOff) return;
         if (!wgWarm) WgWarmUp();
         double delay = 0;
         foreach (var c in wgEnds)
@@ -843,9 +845,9 @@ public partial class BattleFx
         float s = (0.34f + R() * 0.1f) * force;
         var lip = new Vector3(R() - 0.5f, 0, R() - 0.5f) * 0.5f;
         float up = (2.1f + R() * 0.9f) * force;
-        WgPuff(p + Vector3.Up * 0.15f, Vector3.Up * up + lip, s, 1.9f, 0.7f + R() * 0.2f, WgDust(1.0f + R() * 0.15f), 0.76f, 2.4f);
-        WgPuff(p + Vector3.Up * 0.1f, Vector3.Up * up * 0.55f + lip * 0.5f, s * 1.1f, 1.7f, 0.65f + R() * 0.2f, WgDust(0.9f), 0.74f, 2.6f);
-        WgPuff(p + Vector3.Up * 0.05f, lip * 0.8f + Vector3.Up * 0.15f, s * 0.9f, 1.6f, 0.55f + R() * 0.2f, WgDust(0.72f), 0.72f, 3f);
+        WgPuff(p + Vector3.Up * 0.15f, Vector3.Up * up + lip, s, 1.9f, 0.3f, WgDust(1.0f + R() * 0.15f), 0.76f*0.7f, 2.4f);
+        WgPuff(p + Vector3.Up * 0.1f, Vector3.Up * up * 0.55f + lip * 0.5f, s * 1.1f, 1.7f, 0.3f, WgDust(0.9f), 0.74f*0.7f, 2.6f);
+        WgPuff(p + Vector3.Up * 0.05f, lip * 0.8f + Vector3.Up * 0.15f, s * 0.9f, 1.6f, 0.3f, WgDust(0.72f), 0.72f*0.7f, 3f);
     }
 
     static float WgGap(float u)
@@ -923,7 +925,7 @@ public partial class BattleFx
             bool night = Flare.Night;
             // the glow (30-40 px across) a touch behind, then the core (5-7 px)
             Sparks.Spawn(p + back, Vector3.Zero, 1.5f / 60f, 0.5f, new Color(WgTipCol.R * 1.6f, WgTipCol.G * 1.6f, WgTipCol.B * 1.6f), alpha: night ? 0.55f : 0.8f, sprite: -1);
-            Sparks.Spawn(p, Vector3.Zero, 1.5f / 60f, 0.09f, new Color(WgTipCol.R * 4f, WgTipCol.G * 4f, WgTipCol.B * 4f), alpha: 1, sprite: -1);
+            Sparks.Spawn(p, Vector3.Zero, 1.5f / 60f, 0.09f, new Color(WgTipCol.R * 2f, WgTipCol.G * 2f, WgTipCol.B * 2f), alpha: 1, sprite: -1);
         }
     }
 
@@ -937,7 +939,7 @@ public partial class BattleFx
         g.L.Visible = true;
     }
 
-    /// <summary>The heave's light: up over 2 frames, decaying over 18 (eased: most of it gone by frame 12).</summary>
+    /// <summary>The heave's light: up over 2 frames, held at peak to frame 12, decaying to zero by frame 30 (judge r2).</summary>
     void WgStepGlows(float dt)
     {
         foreach (var g in wgGlows)
@@ -945,8 +947,8 @@ public partial class BattleFx
             if (!g.On) continue;
             g.Age += dt;
             float f = g.Age * 60;
-            if (f >= 20) { g.On = false; g.L.Visible = false; g.L.LightEnergy = 0; continue; }
-            float k = f < 2 ? (f + 1) / 3f : Mathf.Pow(1 - (f - 2) / 18f, 1.6f);
+            if (f >= 30) { g.On = false; g.L.Visible = false; g.L.LightEnergy = 0; continue; }
+            float k = f < 2 ? (f + 1) / 3f : f < 12 ? 1f : Mathf.Pow(1 - (f - 12) / 18f, 1.6f);
             g.L.LightEnergy = g.Peak * k;
         }
     }

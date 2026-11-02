@@ -28,6 +28,8 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class BattleFx
 {
+    /// <summary>(dev, perf A/B only: --wfx-off makes none of the Warden skills' VFX, ground and holy; the sim is unchanged)</summary>
+    static readonly bool WfxOff = Args.Has("wfx-off");
     static readonly bool WhBeats = Args.Has("wh-beats");
     /// <summary>(dev A/B for the smear under the toll: --wh-nodist takes away the bent front, --wh-nodrag the drag dust)</summary>
     /// <summary>(dev: --wh-from T, the beats wait for T seconds in, past the title and tip cards)</summary>
@@ -47,6 +49,7 @@ public partial class BattleFx
 
     void RebukeFx(Ev.Nova e)
     {
+        if (WfxOff) return;
         var her = PlayerPos;
         var striker = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
         var to = striker - her; to.Y = 0;
@@ -105,6 +108,7 @@ public partial class BattleFx
     /// <summary>A body struck by Rebuke or the bell (its Hit; art `rebuke`, `watch_bell`). False for any other art.</summary>
     bool WardenHolyStruck(Ev.Hit e, Vector3 at)
     {
+        if (WfxOff && e.Art is "rebuke" or "watch_bell") return true;
         if (e.Art == "rebuke")
         {
             if (time == rbAt && rbStruck.Count < 6) rbStruck.Add((e.Target, at, e.Crit));
@@ -250,6 +254,7 @@ public partial class BattleFx
 
     void TollFx(Ev.Nova e)
     {
+        if (WfxOff) return;
         HolyReady();
         float r = (float)e.Radius;
         var ground = V(e.X, Y(e.X, e.Z), e.Z);
@@ -291,6 +296,7 @@ public partial class BattleFx
 
     void BarrierShow(Ev.Barrier e)
     {
+        if (WfxOff) return;
         HolyReady();
         double max = b0?.MaxHp ?? 100;
         float share = (float)(e.Amount / Math.Max(1, max));
@@ -376,13 +382,13 @@ public partial class BattleFx
             var step = now - new Vector3(d.Last.X, now.Y, d.Last.Z);
             if (step.LengthSquared() > 0.2f * 0.2f && dt > 0)
             {
-                var dust = night ? new Color(0.13f, 0.12f, 0.12f) : new Color(0.36f, 0.28f, 0.19f);
+                var dust = night ? new Color(1f, 0.57f, 0.15f) * 0.75f : new Color(1f, 0.57f, 0.15f); // the toll ring's gold (judge r2)
                 float sz = 0.3f + R() * 0.12f;
                 Smoke.Spawn(new Sparks.P
                 {
                     At = now + Vector3.Up * 0.14f - step.Normalized() * 0.15f, V = -step.Normalized() * 0.4f + Vector3.Up * 0.12f, Drag = 3,
                     Life = 0.35f + R() * 0.15f, Size = sz, SizeEnd = sz * 1.7f, Color = dust, ColorEnd = dust * 0.9f,
-                    Alpha = 0.4f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
+                    Alpha = 0.2f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
                 });
                 d.Last = now;
             }
