@@ -124,6 +124,9 @@ public sealed record AtmospherePreset(
     public double Ember { get; init; } = 1;
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }
+    /// <summary>Her lamp and the sky's fill on the crowd in its own paint (vat.gdshaderinc crowd_ember/crowd_fill; 0: none, by day
+    /// and in the cinematics' presets). Rendering 4: by night the bodies round her read as a black starburst.</summary>
+    public double CrowdFill { get; init; }
     /// <summary>A river's light, the sky in it, and how far its ripples bend it (1: as built; the water shader's water_air).</summary>
     public double RiverLight { get; init; } = 1;
     public double RiverSky { get; init; } = 1;
