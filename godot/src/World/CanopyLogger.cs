@@ -124,7 +124,7 @@ public partial class CanopyLogger : Node
         if (part > 0) partFrames++;
         started += Fader.Started; sumMs += Fader.Ms; maxMs = System.Math.Max(maxMs, Fader.Ms); sumTested += Fader.Tested; sumWrites += Fader.Writes;
         GD.Print($"canopy-frame {SurvivorUnchained.Shots.Clock:0.000} faded {inFrame} lens {byLens} easing {easing} crossed {crossed} her {her.X:0.0},{her.Z:0.0} " +
-            $"part {part} started {Fader.Started} tested {Fader.Tested} writes {Fader.Writes} cpu {Fader.Ms:0.0000}{dbg}");
+            $"part {part} started {Fader.Started} tested {Fader.Tested} writes {Fader.Writes} cpu {Fader.Ms:0.0000} set {Fader.MsSet:0.0000} judge {Fader.MsJudge:0.0000}{dbg}");
     }
     static readonly bool Dbg = SurvivorUnchained.Args.Has("canopy-trees");
     int frames, sumIn, maxIn, sumEase, crossings, crossFrames, partFrames, started, sumTested, sumWrites;

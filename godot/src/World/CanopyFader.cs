@@ -15,7 +15,11 @@ namespace SurvivorUnchained.View;
 /// writes only for the few easing.</summary>
 public partial class CanopyFader : Node
 {
-    public const float Secs = 0.3f;
+    public const float Secs = 0.25f;
+    /// <summary>(r2: her walk across a wood, to and fro, faded and restored the same trees each second) a crown that covered
+    /// her stays faded this long after it last did (longer left a trail of stumps behind her run).</summary>
+    public const float Hold = 0.3f;
+    double clock;
     const float Cell = 8f, Reach = 9f;
     readonly List<CanopyLog.Tree> trees = new();
     readonly Dictionary<(int, int), List<CanopyLog.Tree>> grid = new();
@@ -26,7 +30,7 @@ public partial class CanopyFader : Node
     int stamp;
     /// <summary>This frame: wants that began, trees tested, copies written, the CPU time (ms).</summary>
     public int Started, Tested, Writes;
-    public double Ms;
+    public double Ms, MsSet, MsJudge;
     internal IReadOnlyList<CanopyLog.Tree> Trees => trees;
 
     public CanopyFader() => ProcessPriority = 1000;
@@ -45,12 +49,13 @@ public partial class CanopyFader : Node
     {
         long t0 = Stopwatch.GetTimestamp();
         Started = Tested = Writes = 0;
+        clock += delta;
         var her4 = HouseFade.Her;
         var cam = GetViewport().GetCamera3D();
         var fd = KitLook.CanopyFade;
         if (!KitLook.CanopyPlaying || fd.W < 1.5f || her4.W <= 0 || cam == null)
         {
-            foreach (var t in live) { t.Want = t.ForHer = t.ForLens = false; t.Ease = 0; Write(t, 0); }
+            foreach (var t in live) { t.Want = t.ForHer = t.ForLens = false; t.Ease = 0; t.HerAt = -99; Write(t, 0); }
             live.Clear(); liveSet.Clear(); lastHer = null;
             Ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
             return;
@@ -67,6 +72,7 @@ public partial class CanopyFader : Node
         pts[2] = her + new Vector3(0, -0.2f, 0) + side * 0.22f; pts[3] = her + new Vector3(0, -0.2f, 0) - side * 0.22f;
         pts[4] = her; pts[5] = her + side * 0.3f; pts[6] = her - side * 0.3f;
         pts[7] = her + new Vector3(0, 0.45f, 0); pts[8] = her + new Vector3(0, 0.65f, 0);
+        MsSet = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
         stamp++;
         var a = new Vector2(eye.X, eye.Z); var b = new Vector2(her.X, her.Z);
         int x0 = Mathf.FloorToInt((Mathf.Min(a.X, b.X) - Reach) / Cell), x1 = Mathf.FloorToInt((Mathf.Max(a.X, b.X) + Reach) / Cell);
@@ -80,12 +86,14 @@ public partial class CanopyFader : Node
                 {
                     var p = new Vector2(t.At.X, t.At.Z);
                     float u = Mathf.Clamp((p - a).Dot(ab) / Mathf.Max(ab.Dot(ab), 1e-4f), 0, 1);
-                    if ((p - (a + ab * u)).Length() > Reach) continue;
+                    float dl = (p - (a + ab * u)).Length();
+                    if (dl > Reach) continue;
                     t.Stamp = stamp; Tested++;
-                    Judge(t, eye, view, fd);
+                    Judge(t, eye, view, fd, dl);
                     if (t.Want && liveSet.Add(t)) live.Add(t);
                 }
             }
+        MsJudge = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency - MsSet;
         float step = snap ? 1f : (float)delta / Secs;
         for (int i = live.Count - 1; i >= 0; i--)
         {
@@ -94,34 +102,53 @@ public partial class CanopyFader : Node
             if (t.Stamp != stamp) t.Want = t.ForHer = t.ForLens = false;
             t.Ease = Mathf.MoveToward(t.Ease, t.Want ? 1 : 0, step);
             float s = t.Ease * t.Ease * (3 - 2 * t.Ease);
-            if (Mathf.Abs(s - t.Shown) > 0.002f || (s != t.Shown && (s == 0 || s == 1))) Write(t, s);
+            // (while it eases only its lod0's copy, the one drawn this near; its others at the ease's end)
+            if (Mathf.Abs(s - t.Shown) > 0.002f || (s != t.Shown && (s == 0 || s == 1))) Write(t, s, s == 0 || s == 1);
             if (!t.Want && t.Ease <= 0) { live.RemoveAt(i); liveSet.Remove(t); }
         }
         Ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
     }
 
-    void Write(CanopyLog.Tree t, float s)
+    void Write(CanopyLog.Tree t, float s, bool all = true)
     {
         t.Shown = s;
-        foreach (var (mm, i) in t.Inst) { mm.SetInstanceCustomData(i, new Color(t.CustR, s, 0, 0)); Writes++; }
+        for (int k = 0; k < (all ? t.Inst.Length : Mathf.Min(1, t.Inst.Length)); k++) { t.Inst[k].Mm.SetInstanceCustomData(t.Inst[k].I, new Color(t.CustR, s, 0, 0)); Writes++; }
     }
 
-    void Judge(CanopyLog.Tree t, Vector3 eye, Transform3D view, Vector4 fd)
+    void Judge(CanopyLog.Tree t, Vector3 eye, Transform3D view, Vector4 fd, float dLine)
     {
         float sc = t.Up.Length(), rb = t.R * sc, rc = rb * t.Taper, rt = Mathf.Min(rc, 0.25f * sc);
         Vector3 B = t.At + t.Up * t.Lo, C = t.At + t.Up * t.Top, T = t.At + t.Up * t.Tip;
-        float zn = Mathf.Max((view * B).Z, Mathf.Max((view * C).Z, (view * T).Z));
-        t.ForLens = zn > -(rb + (t.ForLens ? 3.6f : 3.0f));
-        bool was = t.Want;
-        t.ForHer = Covers(eye, pts, B, C, T, rb, rc, rt, t.ForHer ? fd.Y : fd.X);
+        bool was = t.Want, h = t.ForHer, l = t.ForLens;
+        // (the lens: only a tree within 12 m of the camera on the ground can reach its plane in view)
+        float zn = -99;
+        if (new Vector2(t.At.X - eye.X, t.At.Z - eye.Z).Length() < 12)
+        {
+            zn = Mathf.Max((view * B).Z, Mathf.Max((view * C).Z, (view * T).Z));
+            t.ForLens = zn > -(rb + (t.ForLens ? 3.6f : 3.0f));
+        }
+        else t.ForLens = false;
+        // (her: a sight line's ground track runs from the lens's to hers, 0.3 m either side; a crown whose ground track is
+        // further than its radius, the gap, its tilt and 1.2 m of the shader's lean from it can't come near)
+        float tilt = new Vector2(T.X - t.At.X, T.Z - t.At.Z).Length();
+        if (dLine - tilt < rb + fd.Y + 1.6f && Covers(eye, pts, B, C, T, rb, rc, rt, t.ForHer ? fd.Y : fd.X)) t.HerAt = clock;
+        t.ForHer = clock - t.HerAt < Hold;
         t.Want = t.ForHer || t.ForLens;
         if (t.Want && !was) Started++;
+        if (CanopyLog.On && (t.Want != was || h != t.ForHer || l != t.ForLens))
+            GD.Print($"canopy-want {SurvivorUnchained.Shots.Clock:0.000} {t.Species} {t.At.X:0.0},{t.At.Z:0.0} want {(t.Want ? 1 : 0)} her {(t.ForHer ? 1 : 0)} lens {(t.ForLens ? 1 : 0)} zn {zn + rb:0.00} ease {t.Ease:0.00}");
     }
 
     /// <summary>Whether a crown (B to C, radius rb to rc; C to T, rc to rt) comes within m of a sight line from eye to any of pts.</summary>
     internal static bool Covers(Vector3 eye, Vector3[] pts, Vector3 B, Vector3 C, Vector3 T, float rb, float rc, float rt, float m)
     {
         bool spire = (T - C).LengthSquared() > 0.01f;
+        // (first the sight line to her chest, pts[4]: the others part from it by 1.2 m at most, at her, so a crown further
+        // than that from it is clear of them all)
+        float nc = Near(eye, pts[4], B, C, rb, rc);
+        if (spire) nc = Mathf.Min(nc, Near(eye, pts[4], C, T, rc, rt));
+        if (nc < m) return true;
+        if (nc > m + 1.2f) return false;
         foreach (var q in pts)
         {
             if (Near(eye, q, B, C, rb, rc) < m) return true;
@@ -131,7 +158,7 @@ public partial class CanopyFader : Node
     }
 
     /// <summary>The least gap between the segment p0-p1 and a cone's surface (axis a0-a1, radius r0 to r1): at the two
-    /// segments' closest points and at five points down the axis.</summary>
+    /// segments' closest points and at the axis's ends.</summary>
     internal static float Near(Vector3 p0, Vector3 p1, Vector3 a0, Vector3 a1, float r0, float r1)
     {
         var d1 = p1 - p0; var d2 = a1 - a0; var r = p0 - a0;
@@ -140,12 +167,12 @@ public partial class CanopyFader : Node
         float u = Mathf.Clamp((bb * s + f) / Mathf.Max(ee, 1e-6f), 0, 1);
         s = Mathf.Clamp((bb * u - c) / Mathf.Max(aa, 1e-6f), 0, 1);
         float best = (p0 + d1 * s - (a0 + d2 * u)).Length() - Mathf.Lerp(r0, r1, u);
-        for (int k = 0; k <= 4; k++)
+        // (the gap down the axis is convex, its radius's slope small: the axis's two ends are the other candidates)
+        for (int k = 0; k <= 1; k++)
         {
-            float w = k * 0.25f;
-            var x = a0 + d2 * w;
+            var x = k == 0 ? a0 : a1;
             float sp = Mathf.Clamp((x - p0).Dot(d1) / Mathf.Max(aa, 1e-6f), 0, 1);
-            best = Mathf.Min(best, (p0 + d1 * sp - x).Length() - Mathf.Lerp(r0, r1, w));
+            best = Mathf.Min(best, (p0 + d1 * sp - x).Length() - (k == 0 ? r0 : r1));
         }
         return best;
     }

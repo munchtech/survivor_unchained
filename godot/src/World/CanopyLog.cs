@@ -23,6 +23,7 @@ public static class CanopyLog
         public float Tip, CustR, Ease, Shown;
         public bool Want, ForHer, ForLens;
         public int Stamp;
+        public double HerAt = -99;
         public (MultiMesh Mm, int I)[] Inst = [];
     }
 

@@ -189,8 +189,9 @@ public static class KitLook
 
     static bool canopySet;
     /// <summary>The canopy fade's values in force (global canopy_fade), for --canopy-log's mirror.</summary>
-    public static Vector4 CanopyFade => canopyArg ?? (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"];
-    static Vector4? canopyArg;
+    public static Vector4 CanopyFade => canopyArg ?? (canopyDefault ??= (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"]);
+    // (r2: read each frame by CanopyFader; the project setting's dictionary costs ~0.1 ms a read)
+    static Vector4? canopyArg, canopyDefault;
     static bool? canopyOn;
     public static bool CanopyPlaying => canopyOn == true && CanopyFade.W > 0;
 

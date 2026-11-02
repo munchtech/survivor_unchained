@@ -195,7 +195,9 @@ uniform float near_back = 0.25;
 // own view: in a light's the tree is whole, so its shadow stays. canopy_fade.w 0: off (--canopy off).
 // (Env 23, judge e23v3: the ring of stumps round her) canopy_fade.w 2, the default: only a tree whose crown, on the screen,
 // covers HER (her body, feet to head, 0.35 m round it, plus canopy_fade.x m) and stands in front of her fades; w 1 the
-// ring above (canopy_fade.x the ground's radius). With w 2 the stump is capped: tools/assets/tree_caps.py gives each mesh
+// ring above (canopy_fade.x the ground's radius). (r2) With w 2 a copy CanopyFader keeps (custom data b 0) takes its fade
+// from its custom data's g, decided and eased in time on the CPU (canopy_fade.x and .y its gap in and out); the screen
+// test below only for a copy no fader keeps (OwnTree's, b 1). With w 2 the stump is capped: tools/assets/tree_caps.py gives each mesh
 // a lid on the bark's section at crown_keep (COLOR.b 0.3), collapsed unless its tree is faded, painted as sawn wood.
 uniform float crown_lo = 0.0;
 uniform float crown_hi = 0.0;
