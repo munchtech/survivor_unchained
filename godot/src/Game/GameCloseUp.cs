@@ -535,7 +535,7 @@ public partial class Game
         if (groundKey == null || !IsInstanceValid(groundKey) || groundKey.GetParent() != scene)
         {
             groundKey = new SpotLight3D { Name = "CloseGroundKey", LightSpecular = 0.2f, SpotAngleAttenuation = 0.6f, ShadowBlur = 2f,
-                LightCullMask = 0xFFFFFu & ~2u & ~SurvivorUnchained.View.PlayerView.HerLayers & ~SurvivorUnchained.View.Brush.MaskLayer };
+                LightCullMask = 0xFFFFFu & ~2u & ~SurvivorUnchained.View.PlayerView.CrowdLayer & ~SurvivorUnchained.View.PlayerView.HerLayers & ~SurvivorUnchained.View.Brush.MaskLayer };
             scene!.AddChild(groundKey);
         }
         groundKey.LightColor = CloseKeyColourNight;
