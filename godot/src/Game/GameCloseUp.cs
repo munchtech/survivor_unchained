@@ -155,6 +155,7 @@ public partial class Game
             if (scene?.Player is { } pv2 && eyesNight != 0) { eyesNight = 0; SurvivorUnchained.View.People.HerEyesNight(pv2.Person, 0); SurvivorUnchained.View.People.HerSkinHold(pv2.Person, 0); }
             if (fireFill != null && IsInstanceValid(fireFill)) fireFill.Visible = false;
             if (closeFill != null && IsInstanceValid(closeFill)) { closeFill.LightEnergy = 0; closeFill.Visible = false; }
+            FolkTwins(false);
             if (groundKey != null && IsInstanceValid(groundKey)) groundKey.Visible = false;
             TownLampsDim(1);
             return;
@@ -335,7 +336,7 @@ public partial class Game
         // (Rendering 1: at dawn and dusk (Atmosphere.TownLit) the close view stops down CloseExposureDusk: the low sun left her face waxy at 185-189.)
         air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1, day) : 1);
         // (Face 48: in a cinematic its own light on her owns the highlight grade and the skin guard, GameCinemaHer.)
-        if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0);
+        if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0, !night && CloseDayHiTint);
         // (Rendering 2: the grade's skin guard (Atmosphere.SkinGuard) by night, dawn and dusk, where warm keys turned deep skin copper.)
         if (!InCinematic) air.SetViewSkinGuard(lit && (night || SurvivorUnchained.View.Atmosphere.TownLit > 0.5f) ? day : 0);
         float wantRim = lit && night ? CloseRimNight * day : 0;
@@ -377,6 +378,60 @@ public partial class Game
             closeBodyRim.GlobalPosition = arms + new Vector3(Mathf.Sin(a) * Mathf.Cos(up), Mathf.Sin(up), Mathf.Cos(a) * Mathf.Cos(up)) * 2.4f;
             closeBodyRim.LookAt(arms);
         }
+        FolkTwins(pv.OwnLayer && CloseFolkOn, pv.GlobalPosition + new Vector3(0, 1.62f, 0));
+    }
+
+    // Rendering 2: the people beside her, and an NPC the close view frames (CloseStandIn), take the rig's lights through twins of
+    // their own on people's layer (2), while she is off it (OwnLayer); her own layers keep the rig as it was. Her rig's cool fill
+    // and moon rim on a package NPC's red-rich paint read lavender, then rose-magenta on the far cheek and nose (NPC 20's judges;
+    // Rendering 2 j1). Night only: by day she is on layer 2 and the rig is shared, as before. --close-folk off: as before.
+    // (j2: the faces passed; the amber fill's even 26-degree cone lit pale coats and tunics as bright as the face, studio-lit on the
+    // blue town, and the key's amber sheen on steel read mauve. So the amber fill and the key narrow onto the head (CloseFolkFillCone, the
+    // edge soft) and fall off down the body (Chid's tunic: the key, the fill and the moon each about a third of its light), a weak teal wash (CloseFolkCool of the fill, the cone as wide as before) ties the body into
+    // the night, and the key on them is a yellower amber with less sheen.)
+    // (j3: at 11 degrees with a hard edge (attenuation 2) the warm light stopped at the jaw and the skin and pale cloth below took the
+    // town's violet: Rav's neck Oklab hue 344, his chest 283, Harlan's coat 324, Rook's apron 303. A 22-degree cone with a soft
+    // falloff (0.45) and a truer teal: every one 20-60 (Rav's neck 50, chest 32; Harlan's coat 49; Rook's 30); Harlan's coat Oklab L
+    // 31 under his face's 65. Chid's near-white tunic stays bright under any cone tried (its paint: NPC's).)
+    SpotLight3D? keyFolk, rimFolk, coolFolk;
+    void FolkTwins(bool on, Vector3 head = default)
+    {
+        Twin(closeKey, ref keyFolk, "CloseKeyFolk", on, CloseFolkKey, null, CloseFolkKeySpec);
+        if (keyFolk != null && keyFolk.Visible)
+        {
+            keyFolk.LightColor = keyFolk.LightColor.Lerp(CloseKeyColourFolk, 0.5f);
+            keyFolk.SpotAngle = CloseFolkFillCone; keyFolk.SpotAngleAttenuation = CloseFolkFillEdge;
+            keyFolk.LookAt(head);
+        }
+        Twin(closeFill, ref closeFillFolk, "CloseFillFolk", on, 1f, CloseFillColourFolk, 0f);
+        if (closeFillFolk != null && closeFillFolk.Visible)
+        {
+            closeFillFolk.SpotAngle = CloseFolkFillCone; closeFillFolk.SpotAngleAttenuation = CloseFolkFillEdge;
+            closeFillFolk.LookAt(head);
+        }
+        Twin(closeFill, ref coolFolk, "CloseCoolFolk", on, CloseFolkCool, CloseRimColourFolk, 0f);
+        Twin(closeRim, ref rimFolk, "CloseRimFolk", on, CloseFolkRim, CloseRimColourFolk, 0f);
+        Twin(closeBodyRim, ref bodyRimFolk, "CloseBodyRimFolk", on, 0f, null, 0f);
+    }
+    SpotLight3D? bodyRimFolk;
+    void Twin(SpotLight3D? src, ref SpotLight3D? twin, string name, bool on, float gain, Color? colour, float spec)
+    {
+        if (src == null || !IsInstanceValid(src) || scene == null) return;
+        uint mask = src.LightCullMask;
+        uint want = on ? mask & ~2u : mask | 2u;
+        if (mask != want) src.LightCullMask = want;
+        if (twin == null || !IsInstanceValid(twin) || twin.GetParent() != scene)
+        {
+            twin = new SpotLight3D { Name = name, ShadowEnabled = false, LightCullMask = 2, LightEnergy = 0 };
+            scene.AddChild(twin);
+        }
+        twin.LightEnergy = on ? src.LightEnergy * gain : 0;
+        twin.Visible = on && src.Visible && twin.LightEnergy > 0.005f;
+        if (!twin.Visible) return;
+        twin.GlobalTransform = src.GlobalTransform;
+        twin.LightColor = colour ?? src.LightColor;
+        twin.LightSpecular = spec;
+        twin.SpotAngle = src.SpotAngle; twin.SpotRange = src.SpotRange; twin.SpotAttenuation = src.SpotAttenuation;
     }
 
     void FireOnHer(bool own, SurvivorUnchained.View.PlayerView pv)
@@ -532,13 +587,31 @@ public partial class Game
         if (lampDimK >= 0.999f) lampDim.Clear();
     }
     static readonly Color CloseFillColourNight = ArgColour("close-fill-colour-night", new Color(0.72f, 0.82f, 1f));
+    /// <summary>--close-fill-colour-folk R,G,B: the night fill's colour on people other than her (Rendering 2); --close-fill-folk off: the cool
+    /// fill on them too, as before.</summary>
+    static readonly Color CloseFillColourFolk = ArgColour("close-fill-colour-folk", new Color(1f, 0.86f, 0.62f));
+    /// <summary>--close-folk off: the rig on people as on her (before Rendering 2). --close-folk-key K, --close-folk-rim K: the night key's and the
+    /// moon rim's share on them (the key half a stop down: by the rig's full key they glowed against the dark town, j1); --close-rim-colour-folk:
+    /// the rim's colour on them (teal-neutral: blue on red-rich skin went magenta at the far cheek, j1). The body rim is off them.</summary>
+    static bool CloseFolkOn => Args.Get("close-folk") != "off";
+    static float CloseFolkKey => Args.Num("close-folk-key", 0.7f);
+    static float CloseFolkRim => Args.Num("close-folk-rim", 0.45f);
+    static readonly Color CloseRimColourFolk = ArgColour("close-rim-colour-folk", new Color(0.55f, 0.85f, 0.85f));
+    /// <summary>--close-folk-fill-cone DEG, --close-folk-fill-edge A: the amber fill's cone on people, aimed at the head, and its edge's
+    /// falloff (Godot's spot angle attenuation). --close-folk-cool K: the teal wash's share of the fill. --close-folk-key-spec S,
+    /// --close-key-colour-folk R,G,B: the key's sheen on people and the colour it is drawn halfway to.</summary>
+    static float CloseFolkFillCone => Args.Num("close-folk-fill-cone", 22f);
+    static float CloseFolkFillEdge => Args.Num("close-folk-fill-edge", 0.45f);
+    static float CloseFolkCool => Args.Num("close-folk-cool", 0.15f);
+    static float CloseFolkKeySpec => Args.Num("close-folk-key-spec", 0.12f);
+    static readonly Color CloseKeyColourFolk = ArgColour("close-key-colour-folk", new Color(1f, 0.92f, 0.75f));
     static Color ArgColour(string name, Color d) => Args.Get(name) is string s && s.Split(',') is { Length: 3 } p
         ? new Color(float.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(p[2], System.Globalization.CultureInfo.InvariantCulture))
         : d;
     // --close-key-gear-spec S: the night key's sheen on her gear (Rendering 2; 0.3 before).
     static float CloseKeyGearSpec => Args.Num("close-key-gear-spec", 0.08f);
     SpotLight3D? closeKeyGear;
-    SpotLight3D? closeKey, closeKeyHair, closeRim, closeRimGear, closeBodyRim, closeFill;
+    SpotLight3D? closeKey, closeKeyHair, closeRim, closeRimGear, closeBodyRim, closeFill, closeFillFolk;
     // --close-key-hair G, --close-key-hair-colour R,G,B: the key's twin on her hair by night (its light against the key's; its colour; default as the key).
     // --close-key-shadow 0|1: by night the key casts her shadows (her hair's on her hairline: without, the key from the fire's
     // low side lit the skin under her hairline as a red patch).
@@ -647,9 +720,14 @@ public partial class Game
     static float CloseSkyBody => Args.Num("close-sky-body", 1f);
     // --close-key-colour-day R,G,B: the day key's colour. --close-grade-day K: how much of the close view's own grade
     // (the night's and the Look's paint grade, Atmosphere.ViewGrade) it takes by day (0: play's; at 1 her cheek's chroma 6.5 to 6.4, so 0).
+    // Rendering 2: 1. Play's day grade (WaystationDay's slate shade at 1.6) laid navy in the NPCs' eye sockets and under their brows at
+    // chest-up by day (NPC 20's judges; Keegan's shaded skin Oklab hue 3 to 28, Wenna -12 to 18, Rav -18 to 2); the close view's own
+    // paint grade spares skin's hues in the shade.
     static readonly Color CloseKeyColourDay = Args.Get("close-key-colour-day") is string kcd && kcd.Split(',') is { Length: 3 } kd
         ? new Color(float.Parse(kd[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kd[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(kd[2], System.Globalization.CultureInfo.InvariantCulture))
         : new Color(1f, 0.8f, 0.66f);
-    static float CloseGradeDay => Args.Num("close-grade-day", 0f);
+    static float CloseGradeDay => Args.Num("close-grade-day", 1f);
+    /// <summary>--close-day-hi-tint off: the close view by day takes the neutral highlight tint of the night's view grade too (it greyed the sky).</summary>
+    static bool CloseDayHiTint => Args.Get("close-day-hi-tint") != "off";
     static float CloseLampByDay => Args.Has("close-lamp") ? Args.Num("close-lamp", 0.25f) : 0.25f;
 }
