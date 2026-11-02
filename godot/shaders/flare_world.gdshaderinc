@@ -466,7 +466,8 @@ vec3 flare_sweep_at(vec2 w) {
 
 // The Long Cut's light on a body: the sweep's on its rim as it passes, the seam's from below.
 vec3 flare_longcut_body(vec3 wp, vec3 nw, float rim) {
-	vec3 e = flare_sweep_at(wp.xz) * (0.1 + 0.9 * pow(rim, 2.5)) * 0.5;
+	// (the wedge only, at the rim: the wash on bodies turned the pale risen into a field of white ghosts, s2 night)
+	vec3 e = flare_sweep_at(wp.xz) * step(0.001, flare_sweep.y) * flare_sweep.y * pow(rim, 2.5) * 0.3;
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float h = fl_seam_heat(fl_seam_age(sw.x)) * step(0.0, sw.x);

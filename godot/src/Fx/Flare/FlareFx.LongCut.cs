@@ -95,6 +95,9 @@ public partial class FlareFx
         lcTrailB ??= LcLightNew(false);
         lcHerLight ??= LcLightNew(true);
         if (lcBooks == null) { lcBooks = new Flipbooks(); AddChild(lcBooks); }
+        // (made now, in the Hold, not at the sweep: the first dust and chunks held a frame ~1 s)
+        ChunkMeshes();
+        Dust(Her + Vector3.Down * 50, 0.01f, 0.01f, 0.05f, Vector3.Zero, 0);
         lcSweepT = lcCleaveT = -1;
         lcLen = 0;
         lcJetN = lcChunkN = 0;
@@ -270,7 +273,7 @@ public partial class FlareFx
                 spendLight.LightColor = new Color(1f, 0.74f, 0.4f);
                 spendLight.OmniRange = 10;
                 spendLight.ShadowEnabled = LcShadows;
-                spendLight.LightEnergy = (Night ? 2.6f : 2.2f) * Mathf.Max(sweepK, wash * 0.5f) * (LessFlash ? 0.6f : 1) * LcLight;
+                spendLight.LightEnergy = (Night ? 1.3f : 1.6f) * Mathf.Max(sweepK, wash * 0.4f) * (LessFlash ? 0.6f : 1) * LcLight;
                 spendLight.Visible = spendLight.LightEnergy > 0.01f;
             }
             // The skirt: dust kicked up along its leading angle, low.
@@ -363,19 +366,19 @@ public partial class FlareFx
             spendLight.GlobalPosition = fp + Vector3.Up * 0.6f;
             spendLight.LightColor = new Color(1f, 0.78f, 0.45f);
             spendLight.OmniRange = 9;
-            spendLight.LightEnergy = (Night ? 5.0f : 4.0f) * flash * LcLight;
+            spendLight.LightEnergy = (Night ? 3.0f : 3.6f) * flash * LcLight;
         }
         else
         {
             float k = 1 - Mathf.SmoothStep(0.05f, 0.7f, s - run);
             spendLight.GlobalPosition = SeamPoint(lcLen * 0.88f) + Vector3.Up * 0.6f;
             spendLight.LightColor = cool;
-            spendLight.LightEnergy = (Night ? 3.0f : 2.4f) * k * flash * LcLight;
+            spendLight.LightEnergy = (Night ? 1.8f : 2.2f) * k * flash * LcLight;
             spendLight.Visible = k > 0.01f;
         }
         // Two unshadowed trailing it, then settled at the line's thirds, cooling with it.
         float settle = Mathf.SmoothStep(0, 0.4f, s - run);
-        float trailE = (Night ? 3.2f : 2.0f) * Mathf.SmoothStep(0, 0.05f, s) * heat * fade * flash * LcLight;
+        float trailE = (Night ? 2.0f : 1.8f) * Mathf.SmoothStep(0, 0.05f, s) * heat * fade * flash * LcLight;
         if (lcTrailA != null && lcTrailB != null)
         {
             var pa = SeamPoint(Mathf.Lerp(Mathf.Max(0.6f, front - 6), lcLen * 0.6f, settle));
@@ -396,7 +399,7 @@ public partial class FlareFx
             lcHerLight.GlobalPosition = SeamPoint(0.9f) + Vector3.Up * 0.8f;
             lcHerLight.OmniRange = 7;
             lcHerLight.LightColor = new Color(1f, 0.8f, 0.5f);
-            lcHerLight.LightEnergy = (Night ? 4.0f : 3.0f) * k * flash * LcLight;
+            lcHerLight.LightEnergy = (Night ? 2.4f : 2.6f) * k * flash * LcLight;
             lcHerLight.Visible = k > 0.01f;
         }
 
