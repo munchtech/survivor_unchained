@@ -26,6 +26,7 @@ uniform vec2 hair_at = vec2(295.0, 822.0);
 uniform vec2 hair_size = vec2(1310.0, 258.0);
 uniform vec2 grp_anchor = vec2(295.33, 1080.0);
 uniform float grp_scale = 1.0;
+uniform float ref_scale = 0.94;   // UI 27: the shine's run is in the reference frame (her art at 0.94, unmoved): it follows her
 uniform float shine_front = -1000.0;
 uniform float shine_k = 0.0;
 uniform vec3 shine_c = vec3(0.80, 0.89, 1.0);   // day sky white; night violet white (0.88, 0.83, 1.0)
@@ -94,7 +95,7 @@ float sheen(vec2 s, float t)
 float shine_s(vec2 s) { return s.x + 0.5 * (clamp(s.y, 840.0, 1040.0) - 840.0) + 1.1 * max(s.y - 975.0, 0.0) * smoothstep(520.0, 575.0, s.x); }
 vec3 shine(vec3 fc, vec2 unscaled)
 {
-	vec2 scr = grp_anchor + (unscaled - grp_anchor) * grp_scale;
+	vec2 scr = grp_anchor + (unscaled - grp_anchor) * ref_scale;
 	vec2 M = texture(hair_mask, (unscaled - hair_at) / hair_size).rg;
 	float dd = shine_s(scr) - shine_front;
 	float g = dd > 0.0 ? exp(-pow(dd / 18.0, 2.0)) : exp(-pow(dd / 30.0, 2.0)) + 0.20 * exp(dd / 190.0);

@@ -40,17 +40,27 @@ PITCH = 2 * SEAT_R + GAP
 SEAT_XS = [960 - MED_R - GAP - SEAT_R - k * PITCH for k in (2, 1, 0)] + [960 + MED_R + GAP + SEAT_R + k * PITCH for k in (0, 1, 2)]
 FLASK_X = SEAT_XS[0] - SEAT_R - 4 - 21
 DASH_X = 1920 - FLASK_X
-VOL_R, PL_X0, PL_X1, PL_TOP, ARCH_R = 12.0, 626.0, 1294.0, 1003.0, MED_R + 6.0
+# UI 27 (the owner, 2 Nov: "slide them inward", "the dead space ... doesn't need to be so wide", "the same height";
+# "their backs are flush touching the hotbar"): the ends pulled in 11 px a side (was 626 / 1294) and steeper (the foot
+# 9 px out of PL_X0, was 19); the girl lowered and smaller, the keeper risen, both slid in so each back comes down into
+# the bar's top line just inward of the volute (asserted in main()).
+VOL_R, PL_X0, PL_X1, PL_TOP, ARCH_R = 12.0, 637.0, 1283.0, 1003.0, MED_R + 6.0
 INSET = 6.5
 INL = 6.5            # snap: the inlay's top run centred on the 1080 px row 1009 (was 6.0: on the 1008/1009 seam)
-FOOT_X = 607.0       # UI 24: the designed end, a straight side tangent to the volute down to this x at the screen foot
+FOOT_X = 628.0       # UI 24: the designed end, a straight side tangent to the volute down to this x at the screen foot
 TUCK_MIN = 4.0       # UI 24: every figure edge row from the panel top sits at least this far under the panel (asserted)
+CLEAR = (3.0, 8.0)   # UI 27: the nearest live part at each end (flask, dash, their tags) from the end's inlay (asserted)
+FLUSH = (0.0, 7.0)   # UI 27: the 12 rows over PL_TOP, each back's edge this far inward of the volute's inner end
 LD_PLATE = np.array([0.0, -0.816, 0.578], np.float32)   # P1: lit from straight above (the field's z kept)
-PANEL_RECT = (576, 988, 768, 92)                          # symmetric about 960
-S, ANCHOR = 0.94, (295.33, 1080.0)
+PANEL_RECT = (600, 988, 720, 92)                          # symmetric about 960 (UI 27: was 576, 768 wide)
+S, ANCHOR = 0.94, (295.33, 1080.0)                        # the reference frame (G1, the keeper's mirrored lock, the shine)
 GIRL_AT, GIRL_SIZE = (294.83, 822.0), (474.67, 258.0)    # place() convention (the frame's best match)
+G_S, G_D = 0.876, (49.5, 1.9)                             # UI 27: her own group scale about ANCHOR, then this offset
 GLOBE = (378.0, 960.0, 59.4)
-K_S, K_TOP, GAP_R = 0.28, 205.0, -17.0
+K_S, K_TOP, GAP_R = 0.28, 205.0, -17.0                    # the keeper's frame (as UI 24 built it)
+KF_X1 = 1294.0                                            # the keeper's frame was set off UI 24's PL_X1
+K_D = (-20, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12)
+FLASK_S = 0.94                                            # the flask draws at the girl's old scale (unchanged)
 LOCK_D = (-10.0, 4.0)                                     # K1: the mirrored back lock moved left and down
 EG_R = 37.0
 
@@ -131,11 +141,19 @@ def save_rgba(path, L_straight):
     Image.fromarray((np.clip(L_straight, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA').save(path, optimize=True)
 
 
-def girl_screen_rect(dxg=0.0):
-    """her art's rect on screen after the 0.94 about her outer bottom corner"""
-    x0 = ANCHOR[0] + (GIRL_AT[0] - ANCHOR[0]) * S + dxg
-    y0 = ANCHOR[1] + (GIRL_AT[1] - ANCHOR[1]) * S
-    return x0, y0, GIRL_SIZE[0] * S, GIRL_SIZE[1] * S
+def girl_screen_rect(ref=False):
+    """her art's rect on screen: G_S about her outer bottom corner (ANCHOR), then G_D (UI 27). ref: the reference
+    frame (UI 24's 0.94, no offset), which G1, the keeper's mirrored lock and the hair shine's run are set in."""
+    s, (dx, dy) = (S, (0.0, 0.0)) if ref else (G_S, G_D)
+    x0 = ANCHOR[0] + (GIRL_AT[0] - ANCHOR[0]) * s + dx
+    y0 = ANCHOR[1] + (GIRL_AT[1] - ANCHOR[1]) * s + dy
+    return x0, y0, GIRL_SIZE[0] * s, GIRL_SIZE[1] * s
+
+
+def girl_to_screen(px, py):
+    """a reference-frame screen point (0.94) to the screen now (G_S, G_D)"""
+    k = G_S / S
+    return ANCHOR[0] + (px - ANCHOR[0]) * k + G_D[0], ANCHOR[1] + (py - ANCHOR[1]) * k + G_D[1]
 
 
 # ================================================================== the girl (G1) and her masks
@@ -205,7 +223,7 @@ def keeper_source():
 def keeper_geom(k_a):
     k_top = np.nonzero((k_a > 0.5).any(1))[0].min()
     k_left = np.nonzero((k_a > 0.5).any(0))[0].min()
-    kx0 = PL_X1 + GAP_R + 1.0 - k_left * K_S
+    kx0 = KF_X1 + GAP_R + 1.0 - k_left * K_S
     ky0 = (1080 - K_TOP) - k_top * K_S
     return kx0, ky0
 
@@ -258,11 +276,20 @@ def lock_window(X, Y):
     """the mirrored back lock's window (mock7 KLOCK block), moved by K1; X, Y in mock pixel-index units. UI 24: no top
     fade here (it read as a smudge): main() tapers each strand to a tip above LOCK_TOP (lock_taper)."""
     dx, dy = LOCK_D
-    w = sm(1336.0 + dx, 1318.0 + dx, X) * (X > 1280 + dx)
+    # UI 27: X, Y are the keeper's frame (the screen less K_D). The lock's inner cut is the keeper's back over the bar:
+    # the mirror of her contact (her edge on the row over PL_TOP), so the two backs meet the top line mirror-true
+    gc = girl_contact()
+    w = sm(1336.0 + dx, 1318.0 + dx, X) * (X + 0.5 > 1920.0 - gc - K_D[0])
     # below the cap the lock reaches no further in than her edge's mirror (so both ends tuck the same under one mirrored end)
     ge = girl_edge_rows()
-    xc = 1920.0 - np.interp(Y + 0.5, np.arange(1080) + 0.5, ge)
-    return w * np.maximum(sm(xc - 1.0, xc + 1.0, X + 0.5), 1 - sm(PL_TOP + VOL_R - 4, PL_TOP + VOL_R, Y + 0.5))
+    xc = 1920.0 - np.interp(Y + K_D[1] + 0.5, np.arange(1080) + 0.5, ge) - K_D[0]
+    top = PL_TOP - K_D[1]
+    return w * np.maximum(sm(xc - 1.0, xc + 1.0, X + 0.5), 1 - sm(top + VOL_R - 4, top + VOL_R, Y + 0.5))
+
+
+def girl_contact():
+    """UI 27: her back's contact with the top line: her edge on the row just over PL_TOP (screen px)"""
+    return float(girl_edge_rows()[int(PL_TOP) - 1])
 
 
 LOCK_TOP, LOCK_R = 969.0, 14.0     # UI 24: the lock's strands end in rounded tips: none above LOCK_TOP, a LOCK_R px dome
@@ -284,7 +311,7 @@ _GE = {}
 
 
 def girl_edge_rows():
-    """her right edge (alpha > 0.5, 1080 px) per screen row, from her (fixed) art at its 0.94 rect; -1e3 where none"""
+    """her right edge (alpha > 0.5, 1080 px) per screen row, from her (fixed) art at its rect now; -1e3 where none"""
     if 'ge' not in _GE:
         art = girl_art()[0]
         x0, y0, w, h = girl_screen_rect()
@@ -564,6 +591,62 @@ def coin_static(Z, dgr):
     return over(out, groove)
 
 
+def clearances():
+    """UI 27: each live part at the ends (the flask and its R tag at the left; the dash ring and its SPACE tag at the
+    right, mirrored) from the inner edge of the end's inlay (sd = INL + 0.5 from the end's contour), px at 1080. The
+    flask is its texture's alpha at its drawn rect; the dash its ring (DgSmall.RingD 64 at 0.84); the tags the chips
+    (KeyTag: 16 tall, max(18, text + 9) wide: R 19, SPACE 54.4 in Alegreya Sans 800 16 tracked 0.6)."""
+    yy = np.linspace(PL_TOP, 1080, 3000)
+    cx = end_contour(yy)
+    B = np.stack([cx[cx < 900], yy[cx < 900]], 1)
+    fl = np.asarray(Image.open(os.path.join(UI, 'dg_meters', 'flask_full.png')).convert('RGBA'), np.float32)[..., 3] / 255
+    fw, fh = 39 * FLASK_S, 56 * FLASK_S
+    j, i = np.nonzero(fl > 0.5)
+    fp = np.stack([FLASK_X - fw / 2 + (i + 0.5) * fw / fl.shape[1], SEAT_Y - 9 - fh / 2 + (j + 0.5) * fh / fl.shape[0]], 1)
+    th = np.linspace(0, 2 * np.pi, 720)
+    dp = np.stack([1920 - (DASH_X + 32 * 0.84 * np.cos(th)), SEAT_Y - 7 + 32 * 0.84 * np.sin(th)], 1)
+    g = np.mgrid[0:41, 0:41].reshape(2, -1) / 40.0
+    rect = lambda x0, w: np.stack([x0 + g[1] * w, 1061 + g[0] * 16], 1)
+    out = {}
+    for k, P in (('flask', fp), ('R', rect(round(FLASK_X - 9.5), 19)), ('dash', dp), ('SPACE', rect(1920 - (round(DASH_X - 27.2) + 54.4), 54.4))):
+        d = np.sqrt(((P[:, None, :] - B[None]) ** 2).sum(-1)).min(1)
+        out[k] = round(float(d.min() - (INL + 0.5)), 2)
+    return out
+
+
+# ================================================================== UI 27: the bar baked at a bottom-HUD scale
+VARIANTS = (0.85,)   # hud.json bottomScale values with their own bake (DgPanel draws it when the knob matches)
+
+
+def variant_consts(k):
+    """the plate's design at the bottom HUD's scale k (about the screen's bottom middle), in SCREEN px, so every line
+    stays a hard whole px: the top line and the end's x on whole px, the inlay's run on a row's middle, the volute a
+    whole radius; seats, coin and arch at their mapped places (they are live-drawn there by the scaled HUD)."""
+    mx = lambda x: 960 + (x - 960) * k
+    my = lambda y: 1080 + (y - 1080) * k
+    x0 = float(round(mx(PL_X0)))
+    vr = float(round(VOL_R * k))
+    rx0, ry0 = int(np.floor(mx(PANEL_RECT[0]))), int(np.floor(my(PANEL_RECT[1])))
+    return dict(PL_X0=x0, PL_X1=1920 - x0, PL_TOP=float(round(my(PL_TOP))), VOL_R=vr, INL=round(INL * k - 0.5) + 0.5,
+                FOOT_X=x0 - (PL_X0 - FOOT_X) * k, SEAT_Y=my(SEAT_Y), SEAT_XS=[mx(x) for x in SEAT_XS], WELL_R=WELL_R * k,
+                BEZ=BEZ * k, SEAT_R=SEAT_R * k, MED_R=MED_R * k, ARCH_R=ARCH_R * k,
+                PANEL_RECT=(rx0, ry0, 1920 - 2 * rx0, 1080 - ry0))
+
+
+def bake_variant(k, Z):
+    """the plate, bezels and coin at k (variant_consts), premultiplied, and its screen rect"""
+    g = globals()
+    keep = {n: g[n] for n in variant_consts(k)}
+    try:
+        g.update(variant_consts(k))
+        P = plate(Z)
+        P = over(P, bezels(Z))
+        P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
+        return P, list(PANEL_RECT), {n: g[n] for n in ('PL_X0', 'PL_TOP', 'VOL_R', 'INL', 'FOOT_X')}
+    finally:
+        g.update(keep)
+
+
 # ================================================================== the bake
 def main():
     gr = json.load(open(os.path.join(SRC, 'keeper_grade.json')))
@@ -584,19 +667,25 @@ def main():
     kh, kw = k_a.shape
     kx0, ky0 = keeper_geom(k_a)
     rgb, a, fire = keeper_graded(k_rgb, k_a, gr)
-    gx0, gy0, gw, gh = girl_screen_rect()
+    # (the keeper is built in its frame, UI 24's screen; UI 27 moves the whole sprite by K_D whole px)
+    gx0, gy0, gw, gh = girl_screen_rect(ref=True)
     lx0 = 1920 - (gx0 + gw) + LOCK_D[0]
-    # the sprite's rect: whole 1080 px round the keeper and the lock
-    rx0 = int(np.floor(min(kx0, 1280 + LOCK_D[0]))) - 2
+    # the sprite's rect: whole 1080 px round the keeper and the lock, down to the frame row that lands on the foot
+    rx0 = int(np.floor(min(kx0, 1920 - girl_contact() - K_D[0] - 1))) - 2
     ry0 = int(np.floor(min(ky0, 966 + LOCK_D[1]))) - 2
     rx1 = int(np.ceil(kx0 + kw * K_S)) + 2
-    ry1 = 1080
+    ry1 = 1080 - K_D[1]
+    rep['keeper source below the foot (px)'] = round(ky0 + kh * K_S - ry1, 2)
+    assert ky0 + kh * K_S >= ry1 + 4, rep                   # UI 27: no visible cut at the screen's foot
     cvz = ((rx1 - rx0) * Z, (ry1 - ry0) * Z)
     Kp = place(np.dstack([rgb, a]), (kx0 - rx0) * Z, (ky0 - ry0) * Z, kw * K_S * Z, kh * K_S * Z, cvz)
     Fp = place(np.dstack([np.ones_like(rgb), fire * a]), (kx0 - rx0) * Z, (ky0 - ry0) * Z, kw * K_S * Z, kh * K_S * Z, cvz)[..., 3]
     jj, ii = np.mgrid[0:cvz[1], 0:cvz[0]].astype(np.float32)
     Xi, Yi = rx0 + (ii + 0.5) / Z - 0.5, ry0 + (jj + 0.5) / Z - 0.5      # mock pixel-index units
-    Lk = place(art[:, ::-1].copy(), (lx0 - rx0) * Z, (gy0 + LOCK_D[1] - ry0) * Z, gw * Z, gh * Z, cvz)
+    # (UI 27: her art's foot rows repeated down, so the risen lock still runs past the screen's foot)
+    pad = int(np.ceil((-K_D[1] + 4) * art.shape[0] / gh)) if K_D[1] < 0 else 0
+    lart = np.concatenate([art, np.repeat(art[-1:], pad, 0)], 0)
+    Lk = place(lart[:, ::-1].copy(), (lx0 - rx0) * Z, (gy0 + LOCK_D[1] - ry0) * Z, gw * Z, gh * lart.shape[0] / art.shape[0] * Z, cvz)
     Lk = lock_taper(Lk * lock_window(Xi, Yi)[..., None], Yi, Z)
     ls = straight(Lk)
     Lk = np.dstack([final_grade(ls, np.zeros(ls.shape[:2], np.float32), gr) * Lk[..., 3:4], Lk[..., 3]])
@@ -625,22 +714,31 @@ def main():
     # the figures' edges at 2x: her art (scaled) and the keeper sprite, full width rows from the panel's top
     py0 = PANEL_RECT[1]
     nrow = (1080 - py0) * Z
+    gx0, gy0, gw, gh = girl_screen_rect()
+    sx0, sy0, sx1 = rx0 + K_D[0], ry0 + K_D[1], rx1 + K_D[0]          # the keeper sprite's rect on the screen
     ga = place(art, gx0 * Z, (gy0 - py0) * Z, gw * Z, gh * Z, (1920 * Z, nrow))[..., 3]
     ka = np.zeros((nrow, 1920 * Z), np.float32)
-    ka[:, rx0 * Z:rx1 * Z] = K[(py0 - ry0) * Z:, :, 3]
+    ka[:, sx0 * Z:sx1 * Z] = K[(py0 - sy0) * Z:, :, 3]
     rows, ge, ke = figure_edges(ga, ka, Z, py0)
     cl = end_contour(rows)
     P = plate(Z)
     P = over(P, bezels(Z))
     P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
     save_rgba(os.path.join(UI, 'dg_panel', 'panel.png'), np.dstack([straight(P), P[..., 3]]))
+    variants = []
+    for vk in VARIANTS:
+        Pv, vrect, vc = bake_variant(vk, Z)
+        name = f'dg_panel/panel_{int(round(vk * 100)):03d}.png'
+        save_rgba(os.path.join(UI, *name.split('/')), np.dstack([straight(Pv), Pv[..., 3]]))
+        variants.append({'scale': vk, 'texture': name, 'screen_rect': vrect, 'design': {n: round(float(v), 3) for n, v in vc.items()}})
+    rep['bar variants'] = variants
     # UI 24: every row from the panel top: each figure tucks >= TUCK_MIN under its end, and no backdrop shows between
     # (a hole the figure itself encloses, a hair loop, is not a gap: the checks read the figures with their holes filled)
     pa, half = P[..., 3], P.shape[1] // 2
     gaf = ndimage.binary_fill_holes(place(art, gx0 * Z, (gy0 - 820) * Z, gw * Z, gh * Z, (1920 * Z, 260 * Z))[..., 3] > 0.5)
     gaf = gaf[(py0 - 820) * Z:]
     kaf = np.zeros((nrow, 1920 * Z), bool)
-    kaf[:, rx0 * Z:rx1 * Z] = ndimage.binary_fill_holes(K[..., 3] > 0.5)[(py0 - ry0) * Z:]
+    kaf[:, sx0 * Z:sx1 * Z] = ndimage.binary_fill_holes(K[..., 3] > 0.5)[(py0 - sy0) * Z:]
     tg, tk, gaps = [], [], 0
     for r in range(pa.shape[0]):
         if rows[r] < PL_TOP + 0.5:
@@ -655,32 +753,83 @@ def main():
     rep['tuck min (girl, keeper)'] = [round(min(tg), 2), round(min(tk), 2)]
     rep['gap rows'] = gaps
     assert min(tg) >= TUCK_MIN and min(tk) >= TUCK_MIN and gaps == 0, rep
+    # UI 27, flush backs: the 12 rows over PL_TOP, each back's edge FLUSH inward of its volute's inner end (vie); no
+    # statue px over the panel further in than that (never along the top line over the seats); the contacts mirror
+    kfull = np.zeros((1080 * Z, 1920 * Z), np.float32)
+    kfull[sy0 * Z:1080 * Z, sx0 * Z:sx1 * Z] = K[..., 3]
+    gfull = place(art, gx0 * Z, gy0 * Z, gw * Z, gh * Z, (1920 * Z, 1080 * Z))[..., 3]
+    vie = PL_X0 + 2 * VOL_R
+    fl = {'girl': [], 'keeper': []}
+    g_in, k_in = -1e3, 1e9
+    g_top = k_top_ = None
+    for r in range(int(PL_TOP)):
+        gmr = (gfull[r * Z:r * Z + Z, :960 * Z] > 0.5).any(0)
+        km = (kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5).any(0)
+        if gmr.any():
+            g_top = r if g_top is None else g_top
+            e = (np.nonzero(gmr)[0].max() + 1) / Z; g_in = max(g_in, e)
+            if r >= PL_TOP - 12: fl['girl'].append(round(e - vie, 2))
+        if km.any():
+            k_top_ = r if k_top_ is None else k_top_
+            e = 960 + np.nonzero(km)[0].min() / Z; k_in = min(k_in, e)
+            if r >= PL_TOP - 12: fl['keeper'].append(round((1920 - vie) - e, 2))
+    rep['flush rows over PL_TOP, px inward of the volute end (girl, keeper)'] = [fl['girl'], fl['keeper']]
+    gc, kc = vie + fl['girl'][-1], (1920 - vie) - fl['keeper'][-1]
+    rep['contacts (girl, keeper, mirror error)'] = [round(gc, 2), round(kc, 2), round(gc + kc - 1920, 2)]
+    rep['furthest in over the panel (girl, keeper)'] = [round(g_in, 2), round(k_in, 2)]
+    rep['tops (girl, keeper)'] = [g_top, k_top_]
+    assert len(fl['girl']) == 12 and len(fl['keeper']) == 12, rep
+    assert all(FLUSH[0] <= v <= FLUSH[1] for v in fl['girl'] + fl['keeper']), rep
+    assert g_in <= vie + FLUSH[1] and k_in >= 1920 - vie - FLUSH[1] and abs(gc + kc - 1920) <= 1.0, rep
+    assert abs(g_top - k_top_) <= 2 and -K_D[1] <= 12, rep
+    # UI 27: her orb and her hand: the orb >= 52 px, the hand under it (her palm, ref x <= 398) whole on the screen
+    orb = list(girl_to_screen(ANCHOR[0] + (GLOBE[0] - ANCHOR[0]) * S, ANCHOR[1] + (GLOBE[1] - ANCHOR[1]) * S)) + [GLOBE[2] * G_S]
+    hand = gm[..., 1]
+    rgx0, rgy0, rgw, rgh = girl_screen_rect(ref=True)
+    cols = int((398 - rgx0) / rgw * hand.shape[1])
+    hr = np.nonzero((hand[:, :cols] > 0.3).any(1))[0].max() + 1
+    palm = gy0 + hr * gh / hand.shape[0]
+    rep['orb (x, y, r)'] = [round(v, 2) for v in orb]; rep['palm foot'] = round(palm, 2)
+    assert orb[2] >= 52.0 and palm <= 1078.0, rep
+    # UI 27: the live parts at each end from the end's inlay
+    cle = clearances()
+    rep['clearance to the inlay (flask, R, dash, SPACE)'] = cle
+    near = min(min(cle['flask'], cle['R']), min(cle['dash'], cle['SPACE']))
+    assert all(v >= CLEAR[0] for v in cle.values()) and near <= CLEAR[1], rep
     # ---- the fire
     shutil.copy(os.path.join(SRC, 'fw_9931_0.png'), os.path.join(kd, 'fire.png'))
     shutil.copy(os.path.join(SRC, 'fo_9932_0.png'), os.path.join(kd, 'fire_ready.png'))
     # ---- the geometry
-    geo = geometry(kx0, ky0, (rx0, ry0, rx1 - rx0, ry1 - ry0), gr, rows, cl)
+    geo = geometry(kx0 + K_D[0], ky0 + K_D[1], (sx0, sy0, rx1 - rx0, ry1 - ry0), gr, rows, cl, (g_top, k_top_))
+    geo['panel']['variants'] = variants
+    geo['panel']['variants_note'] = ('UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect '
+                                     'when hud.json bottomScale is scale (its 1 px lines stay whole there)')
     json.dump(geo, open(os.path.join(kd, 'hud_a_geo.json'), 'w'), indent=1)
     rep['keeper rect'] = geo['keeper']['rect']; rep['glass'] = geo['glass']['center']
     print(json.dumps(rep))
 
 
-def geometry(kx0, ky0, krect, gr, rows, cl):
+def geometry(kx0, ky0, krect, gr, rows, cl, tops):
     gx0, gy0, gw, gh = girl_screen_rect()
+    orb = girl_to_screen(ANCHOR[0] + (GLOBE[0] - ANCHOR[0]) * S, ANCHOR[1] + (GLOBE[1] - ANCHOR[1]) * S)
     bcx = kx0 + gr['BOWL_C'] * K_S
     rim_y = ky0 + gr['RIM_C'] * K_S
     sel = rows >= PL_TOP + VOL_R
     return {
         'note': 'tools/uiforge/dg_keeper_hud.py: HUD A (the keeper). 1080 px screen coords; rects are [x, y, w, h], continuous '
                 'edges (pixel i spans [i, i+1]); every texture is 2x its rect. Day and night use the same sprites.',
-        'heights': {'left': 237, 'middle': 81, 'right': 205},
+        'heights': {'left': 1080 - tops[0], 'middle': int(1080 - (SEAT_Y - ARCH_R)), 'right': 1080 - tops[1]},
+        'bottom_note': 'UI 27: hud.json bottomScale scales all of this about the bottom middle of the screen (960, 1080) at run time',
         'girl': {'texture': 'lamp_life/drowned/lamp_cold.png', 'mask': 'lamp_life/drowned/lamp_mask.png',
                  'rect_unscaled': [GIRL_AT[0], GIRL_AT[1], GIRL_SIZE[0], GIRL_SIZE[1]],
                  'rect_unscaled_note': 'mock place() rect; lamp_geo.json at is 295.33 (the mock matched the frame at -0.5)',
-                 'group_anchor': list(ANCHOR), 'group_scale': S, 'dxg': 0,
+                 'group_anchor': list(ANCHOR), 'group_scale': G_S, 'group_offset': list(G_D),
+                 'group_note': 'UI 27: her screen px = group_anchor + (unscaled - group_anchor) group_scale + group_offset',
+                 'ref_scale': S,
                  'rect': [round(gx0, 3), round(gy0, 3), round(gw, 3), round(gh, 3)],
-                 'globe': [round(ANCHOR[0] + (GLOBE[0] - ANCHOR[0]) * S, 3), round(ANCHOR[1] + (GLOBE[1] - ANCHOR[1]) * S, 3), round(GLOBE[2] * S, 3)],
-                 'shine_run': 's = x + 0.5 (clamp(y, 840, 1040) - 840) + 1.1 max(y - 975, 0) smoothstep(520, 575, x); front 640 (mock7.py path_s, line 108)',
+                 'globe': [round(orb[0], 3), round(orb[1], 3), round(GLOBE[2] * G_S, 3)],
+                 'shine_run': 's = x + 0.5 (clamp(y, 840, 1040) - 840) + 1.1 max(y - 975, 0) smoothstep(520, 575, x); front 640 (mock7.py path_s, line 108); '
+                              'UI 27: x, y in the reference frame (group_anchor + (unscaled - group_anchor) ref_scale), so it follows her',
                  'hair_mask': 'dg_river/xp_light.png R = the hair outline (1 - tail) + hair_R6; G ridges (1 - tail) (dg_xp_mask.py)'},
         'keeper': {'texture': 'dg_keeper/keeper.png', 'lip': 'dg_keeper/keeper_lip.png', 'rect': list(map(int, krect)),
                    'source': 'gen ks60_2304_0', 'source_rect': [round(kx0, 3), round(ky0, 3), 1200 * K_S, 800 * K_S],
@@ -700,7 +849,7 @@ def geometry(kx0, ky0, krect, gr, rows, cl):
                                        'tick': 'live: 1.2 px wide gold (0.95,0.80,0.52) at 12 o\'clock over r0-1.5..r1+1.5 (mock7.py medallion, line 632)'},
                            'level_number': {'at': [960.0, SEAT_Y + 1], 'font': 'cinzel-700', 'size': 23, 'anchor': 'mm', 'stroke': 1,
                                             'day': [214, 234, 255], 'night': [232, 222, 255]}},
-                  'flask': {'center': [FLASK_X, SEAT_Y - 9], 'scale': S, 'count_badge': [FLASK_X + 15, SEAT_Y - 9 - 19, 9]},
+                  'flask': {'center': [FLASK_X, SEAT_Y - 9], 'scale': FLASK_S, 'count_badge': [FLASK_X + 15, SEAT_Y - 9 - 19, 9]},
                   'dash': {'center': [DASH_X, SEAT_Y - 7], 'scale': 0.84},
                   'key_tags': {'R': [FLASK_X, 1061], 'SPACE': [DASH_X, 1061], 'Q': [round(bcx + 6, 2), round(rim_y + 52, 2)],
                                'note': '[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: "Q  READY"'},

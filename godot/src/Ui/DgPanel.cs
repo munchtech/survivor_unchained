@@ -93,9 +93,12 @@ public partial class DgPanel : Control
     public static readonly float KeeperTop = 1080 - F(Part("heights"), "right", 205);
     /// <summary>The left and right groups draw at GroupScale about their outer bottom corners (the girl's: GirlAnchor;
     /// the keeper's: the screen's mirror of it).</summary>
+    /// UI 27: her group has its own scale and then an offset (group_offset), and the shine's reference scale (ref_scale);
+    /// the keeper's rect is final.
     public static readonly float GroupScale = F(Part("girl"), "group_scale", 0.94f);
     public static readonly Vector2 GirlAnchor = V(A(Part("girl"), "group_anchor"), new Vector2(295.33f, 1080));
-    public static readonly Vector2 KeeperAnchor = new(1920 - GirlAnchor.X, GirlAnchor.Y);
+    public static readonly Vector2 GirlOffset = V(A(Part("girl"), "group_offset"), Vector2.Zero);
+    public static readonly float GirlRefScale = F(Part("girl"), "ref_scale", 0.94f);
     /// <summary>The girl's globe on the screen (middle, radius), as drawn.</summary>
     public static readonly Vector3 Globe = A(Part("girl"), "globe") is { Length: 3 } g ? new Vector3(g[0], g[1], g[2]) : new Vector3(373.04f, 967.2f, 55.836f);
 
@@ -119,6 +122,22 @@ public partial class DgPanel : Control
     public static Rect2 BandRect => Rect;
 
     /* ---- the plate ---- */
+
+    /// <summary>UI 27: the plate's texture and its rect here: the bake's own at the bottom HUD's scale where it has one
+    /// (geo panel.variants: drawn at its screen rect, so its 1 px lines land whole), else panel.png on Rect.</summary>
+    public static (string Tex, Rect2 At) Plate()
+    {
+        if (HudBottom.Scaled && Part("panel").TryGetValue("variants", out var vs) && vs.VariantType == Variant.Type.Array)
+            foreach (var v in vs.AsGodotArray())
+                if (v.VariantType == Variant.Type.Dictionary && v.AsGodotDictionary() is { } d && Math.Abs(F(d, "scale", 0) - HudBottom.Scale) < 0.005f
+                    && A(d, "screen_rect") is { Length: 4 } r && d.TryGetValue("texture", out var t))
+                {
+                    var p0 = HudBottom.Unmap(new Vector2(r[0], r[1]));
+                    var p1 = HudBottom.Unmap(new Vector2(r[0] + r[2], r[1] + r[3]));
+                    return (t.AsString(), new Rect2(p0 - Rect.Position, p1 - p0));
+                }
+        return ("dg_panel/panel.png", new Rect2(Vector2.Zero, Rect.Size));
+    }
 
     /// <summary>The survivor, an elite or a marked attack behind the plate (Game sets it each frame): the plate's art
     /// alone fades as her figure does (LifeLamp's times); the seats, the coin's ring and the numbers stay at full.</summary>
@@ -151,8 +170,9 @@ public partial class DgPanel : Control
 
     public override void _Draw()
     {
-        if (UiArt.Art("dg_panel/panel.png") is { } art) DrawTextureRect(art, new Rect2(Vector2.Zero, Size), false);
-        else GD.PushError("DgPanel: dg_panel/panel.png did not load: the bar draws blank");
+        var (tex, at) = Plate();
+        if (UiArt.Art(tex) is { } art) DrawTextureRect(art, at, false);
+        else GD.PushError($"DgPanel: {tex} did not load: the bar draws blank");
     }
 
     /// <summary>What the ring shows now (XpLight: by day her experience, by night the ember) and the level in the coin.</summary>
