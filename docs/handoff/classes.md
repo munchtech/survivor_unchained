@@ -1,19 +1,44 @@
-# Classes 17 (2 Nov): MR2 READY in classes-17; Phase 1 is DONE when it merges. Next = the owner's answer on docs/design/PHASE2_SCOPE.md
+# Classes 18 starts here (2 Nov): Phase 2, session 1 of 3. The board v2 LAYOUT is in (fe334726c); next = the sim side
 
-Read CLASS_IDENTITY_AND_TALENTS.md §3.2-3.7 and §6.2, then PHASE2_SCOPE.md (the order question to the owner).
+Read CLASS_IDENTITY_AND_TALENTS.md §3.2-3.6 and §6.1-6.2, then docs/design/PHASE2_SCOPE.md. MR2 (Phase 1) is merged (integration cdedeb76f). The owner hasn't yet answered PHASE2_SCOPE's order question (board+screen in parallel, then the Warden's wave; or the wave first). Main asked for the sim side to continue either way.
 
-## MR2 (classes-17)
-- **VFX hooks a/b (426ce9d64, its own commit for VFX 9):** art keys `rebuke` / `watch_bell` (they fall into the `nova_holy` look case; Palette reads them as holy; `Glyphs.IconKey` lends them Dawnpulse's icon until UI paints theirs). `Ev.Barrier {X,Z,Amount,Source}` from Toll and Rebuke's Shield of Morning. WARDEN_SKILLS_VFX_HOOKS.md says so.
-- **P8 pages shot and fixed (e8f6d8ed5):** the Lamps list had zero height (it showed nothing); the wick strands ran off the panel; the plan's order showed raw lamp ids. Shot at 1:1 behind `--board` (functional, no judge): Lamps, "Light suggested" (lit 4 of 4), Wicks (3 strands fit, order by name), creation type row (Sunderer | Bulwark, "learns Sunder"). Lamp rules are one clipped line with the whole rule on hover; the screen's look is UI's (Phase 2).
-- **Dawnpulse Turns measured** (24 seeds, S = the skill on/off, band x0.90-1.15): Pulse 1.043 deft / 1.050 plain; Linger 0.999 / 1.015; Fire 0.945 / 0.955. All in band. Note for Phase 3's Turn library: Fire on a WARDEN's Dawnpulse reads P 0.80 (her damage taken up: the fire school drops Dawnpulse's sear), and the card doesn't say what it gives up; school Turns should name the status they replace.
-- **The harness plans wicks (confirmed in code, no change):** `--wicks suggested` (Light my way) is the default; the story bot takes the type pick (`spec.Type`); arena `--lamps suggested|full` lights the board; story boards stay empty past `--light`.
-- **Gate:** the sim changes only by adding events, so the story harness output is byte-identical to integration 74ef0757e (12 seeds, both bots and policies, pressing: sorted md5 equal). MR1's gate stands (never -1.1%, pressing +0.7%).
-- Open known: the warden ~7% slow on pressing (Flare fill); host probe 0.703 vs 0.70; board v1 x1.53/x1.41 (Phase 2 acceptance).
-- **Gotcha: a fresh worktree has no `.godot/imported`.** Shots spew NREs and time out, and a full `--import` segfaulted. Seed it with `robocopy <main>\godot\.godot\imported <wt>\godot\.godot\imported /E /MT:8`, then `--import` (about 2 min). Scripts: scratch `classes17\shoot2.sh` (backed up to survivorsunchained_inputs/scratch_classes17).
+## Done in Phase 2 so far (classes-17, not merged; nothing in the game reads it yet)
+- **fe334726c** `godot/data/content/board_v2.json` from `tools/classes/board_v2.py` (deterministic; it asserts every count, edge, reachability, spacing >= 38 and no edge grazing a lamp). It holds 574 lamps: id, kind, region, group, calling, v1 name, `v1` (kept from lamps.json), x/y (y up, the Ford at 0,0), `at`, and v2 gate (Strike 4; notables and links 8; blues and the Stand 16).
+  - Kept from v1: 288 lamps, by their v1 id (the 72 `skill` lamps left for wicks).
+  - New: 286 lamps, with ids like `{road}.s8/s9/n6/rite1-4/link1-2`, `{calling}.hand1-4`, `{calling}.hearth.p1/p2`, `{calling}.bridge.rite1/2`, `{cid}.rite1/2/blue/link`, `vigil.*`, `poachers.*`, `ford.*` and `path.{id}.*`.
+  - Kinds: blue 45, rite 72, link 32, hand 16. Preview: survivorsunchained_inputs/scratch_classes17/board_v2.png.
+  - Main has the sha; UI's design brief starts from it once the owner answers.
+- §3.4 now says 32 links (main agreed: the region table's count).
 
-## Next
-1. The owner's answer on PHASE2_SCOPE.md. Then Phase 2 session 1: positions and kinds for all 574 lamps first (`tools/classes/lamps_build.py` / `lamps_quarters.py`), so UI's design brief can start.
-- Experience owes a verge-day re-run now that the L1 calling-skill grant has landed.
+## Next: the sim side (sessions 2-3, from §6.1's Lamps v2 row)
+1. **Texts and effects for the 286 new lamps.** Extend `lamps_build.py` / `lamps_quarters.py` to emit v2 lamps.json from board_v2.json's ids, kinds and `at`, and add positions to lamps.json, so one source holds everything.
+   - Rites: the calling's mechanic onto a tag; they dim with no such skill carried.
+   - Links: a trigger that fires a carried skill she picks, one pick per link, its wait shown as a HUD arc.
+   - Hand lamps: they deepen the Hand (`Content/Hands.cs`, `Sim/Hands.cs`, hands.json).
+   - New blue lamps: the doc's examples (Iron Pilgrim, Drowned Lung, The Pack Remembers, Bell and Blade, Unhoused).
+   - Smalls are never a bare +n%.
+   - Rites and links need sim rules (new `R(...)` effect kinds read in `Sim/*Lamps.cs`).
+   - Names: ask main for the story writer with a list (about 290).
+2. **Gates 4/8/16** (`LampBook` reads `gate`).
+3. **Points:**
+   - levels, story bosses and atlas 30 (`LampBook.AtlasLamps` is 8 today);
+   - Act 1's four relit lamp-posts (a world fact each; the posts' placement is Env/story's, so ask main).
+4. **Three layouts**, each a whole build: board, wicks, carried skills, Flare (`LampState.Layouts` holds 2 board-only layouts today; DaySlotsTests pins the layout behavior). This goes with **save v6** (`World/Save.cs` Version 5): refund lamps, wicks on the suggested strands, off-calling skills to the storeroom as tomes.
+5. **The functional pages** (ArtsScreen BuildLamps/BuildWicks behind `--board`) keep working on v2 until UI's screen lands.
+6. **Acceptance:**
+   - `--pair board` at x1.25 for every calling (`tools/scratch/classes/board_ratio.py`; the warden reads x1.53/x1.41 on v1);
+   - Act 1 within ±3% of integration, with cells inside ±6%;
+   - types within x1.35 of the median.
+   - Gate scripts: survivorsunchained_inputs/scratch_classes16_b9e8a09f (gate.sh, bycall.py).
+
+## Phase 1 record (MR2, merged)
+- Hooks a/b (426ce9d64): art keys `rebuke`/`watch_bell` and `Ev.Barrier`; WARDEN_SKILLS_VFX_HOOKS.md.
+- The P8 pages were fixed and shot at 1:1.
+- Dawnpulse Turns S: Pulse 1.04/1.05, Linger 1.00/1.02, Fire 0.95/0.96 (deft/plain), all in band.
+  - Phase 3 note: Fire on a warden's Dawnpulse reads P 0.80 because it drops the sear, and the card doesn't say so. School Turns should name what they replace.
+- Open known: the warden ~7% slow on pressing (Flare fill); host probe 0.703 vs 0.70.
+- Experience owes a verge-day re-run since the L1 grant.
+- **Gotcha: a fresh worktree has no `.godot/imported`.** Robocopy the main checkout's `godot\.godot\imported` in (`/E /MT:8`), then `--headless --import` (about 2 min). Shoot scripts: survivorsunchained_inputs/scratch_classes17 (shoot2.sh: `--xp 3000` levels the quick warden, `--clicks X:Y` presses).
 
 ## Measuring
 - Harness: `dotnet build -c Release -o <scratch>/bal balance/Balance.csproj` from godot. `story --fight all --callings all --seeds 96 --policies greedy,random --bot plain,deft --par 20 [--flareuse 0] [--storyhp roost=116]`, then `python tools/classes/act1_match.py REF X --cells` (about 20 + 19 min). Rule: overall within ±3% of integration, no fight x pilot cell past ±6%; confirm a cell near the edge on fresh seeds (`--seeds 192 --seed0 97`) before tuning it.
