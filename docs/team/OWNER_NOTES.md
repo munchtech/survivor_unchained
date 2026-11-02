@@ -3,6 +3,8 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 2 November 2026 (coordinator 45b9ec4e)
+- **Lamps screen PICKED: option 1** ("i agree with the option 1 for lamps sheet"): C "The Day's Book" default + A "Nightfall" as its Open wide. HUD round 2 asked: potion slot the same size as SPACE (ends match), statues slightly further in, erase what spills above the bar ends (owner_frames_2nov/hud_r2_marked.png). Bottom HUD scale (100% / 85%) still open.
+- **HUD notes** (frame: survivorsunchained_inputs\owner_frames_2nov\hud_inner_edges_marked.webp): "the inner edges of the main hub still aren't as clean as I'd like and I have an idea - slide them inward so those areas are just gone. also the dead space on either side of the hotbar dosn't need to be so wide, also try to make the statues the same height so they have better symmetry - the left one seems taller". UI 27 (ui-27) does it; the owner sees a before/after first. Clarified: "ya basically their backs are flush touching the hotbar".
 - **Lighting lead STARTED** ("Yes, start it"): Rendering 4 on the night crowd-shadow starburst under her lamp (render-4, ~0.6M).
 - **Phase 2 order DECIDED: "Board + Lamps first"** (PHASE2_SCOPE recommendation): Classes 18 (board data + sim, classes-17) and UI 25 (Lamps screen max design brief, ui-25) in parallel; the Warden's wave after Classes' three sessions.
 - **Long Cut clip fix round FUNDED** ("Yes, fund it"): after Animation 60's max judge FAIL CLOSE (held kneel hunch at the play camera, statue hold, coil not loaded). One fix round + one max judge, ~0.35M hard, Animation 61 in anim-61. PASS = clip back on; FAIL = closes as known, clip stays off.

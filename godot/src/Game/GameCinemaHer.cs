@@ -710,7 +710,7 @@ public partial class Game
                     herMoon = new DirectionalLight3D { Name = "HerMoon", LightCullMask = 2u, DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel2Splits, DirectionalShadowMaxDistance = 20 };
                     scene.AddChild(herMoon);
                 }
-                if (!herMoonOff) { key.LightCullMask &= ~2u; herMoonOff = true; }
+                if (!herMoonOff) { key.LightCullMask &= ~(2u | PlayerView.CrowdLayer); herMoonOff = true; }
                 float want = (float)pre.KeyIntensity / Mathf.Pi * m * HerMoonGain;
                 herMoon.GlobalTransform = key.GlobalTransform;
                 // (round 3: the moon on her skin in her skin's colour of it, as her key)
@@ -836,7 +836,7 @@ public partial class Game
 
         void HerMoonBack()
         {
-            if (herMoonOff) { g.air.Key.LightCullMask |= 2u; herMoonOff = false; }
+            if (herMoonOff) { g.air.Key.LightCullMask |= 2u | PlayerView.CrowdLayer; herMoonOff = false; }
             if (herMoon != null && IsInstanceValid(herMoon)) herMoon.Visible = false;
             if (herMoonSpec != null && IsInstanceValid(herMoonSpec)) herMoonSpec.Visible = false;
         }

@@ -1,10 +1,11 @@
 {
  "note": "tools/uiforge/dg_keeper_hud.py: HUD A (the keeper). 1080 px screen coords; rects are [x, y, w, h], continuous edges (pixel i spans [i, i+1]); every texture is 2x its rect. Day and night use the same sprites.",
  "heights": {
-  "left": 237,
+  "left": 219,
   "middle": 81,
-  "right": 205
+  "right": 217
  },
+ "bottom_note": "UI 27: hud.json bottomScale scales all of this about the bottom middle of the screen (960, 1080) at run time",
  "girl": {
   "texture": "lamp_life/drowned/lamp_cold.png",
   "mask": "lamp_life/drowned/lamp_mask.png",
@@ -19,35 +20,40 @@
    295.33,
    1080.0
   ],
-  "group_scale": 0.94,
-  "dxg": 0,
+  "group_scale": 0.876,
+  "group_offset": [
+   49.5,
+   1.9
+  ],
+  "group_note": "UI 27: her screen px = group_anchor + (unscaled - group_anchor) group_scale + group_offset",
+  "ref_scale": 0.94,
   "rect": [
-   294.86,
-   837.48,
-   446.19,
-   242.52
+   344.392,
+   855.892,
+   415.811,
+   226.008
   ],
   "globe": [
-   373.04,
-   967.2,
-   55.836
+   417.249,
+   976.78,
+   52.034
   ],
-  "shine_run": "s = x + 0.5 (clamp(y, 840, 1040) - 840) + 1.1 max(y - 975, 0) smoothstep(520, 575, x); front 640 (mock7.py path_s, line 108)",
+  "shine_run": "s = x + 0.5 (clamp(y, 840, 1040) - 840) + 1.1 max(y - 975, 0) smoothstep(520, 575, x); front 640 (mock7.py path_s, line 108); UI 27: x, y in the reference frame (group_anchor + (unscaled - group_anchor) ref_scale), so it follows her",
   "hair_mask": "dg_river/xp_light.png R = the hair outline (1 - tail) + hair_R6; G ridges (1 - tail) (dg_xp_mask.py)"
  },
  "keeper": {
   "texture": "dg_keeper/keeper.png",
   "lip": "dg_keeper/keeper_lip.png",
   "rect": [
-   1254,
-   873,
+   1234,
+   861,
    341,
-   207
+   219
   ],
   "source": "gen ks60_2304_0",
   "source_rect": [
-   1256.16,
-   875.0,
+   1236.16,
+   863.0,
    336.00000000000006,
    224.00000000000003
   ],
@@ -56,163 +62,163 @@
  "panel": {
   "texture": "dg_panel/panel.png",
   "rect": [
-   576,
+   600,
    988,
-   768,
+   720,
    92
   ],
   "top_line": [
-   638.0,
-   1282.0,
+   649.0,
+   1271.0,
    1003.0
   ],
   "x": [
-   626.0,
-   1294.0
+   637.0,
+   1283.0
   ],
   "volute_r": 12.0,
   "volutes": [
    [
-    638.0,
+    649.0,
     1015.0
    ],
    [
-    1282.0,
+    1271.0,
     1015.0
    ]
   ],
   "end_contour_left": [
    [
     1015.25,
-    625.45
+    636.85
    ],
    [
     1017.25,
-    624.88
+    636.58
    ],
    [
     1019.25,
-    624.31
+    636.31
    ],
    [
     1021.25,
-    623.74
+    636.03
    ],
    [
     1023.25,
-    623.17
+    635.76
    ],
    [
     1025.25,
-    622.6
+    635.49
    ],
    [
     1027.25,
-    622.03
+    635.21
    ],
    [
     1029.25,
-    621.46
+    634.94
    ],
    [
     1031.25,
-    620.89
+    634.67
    ],
    [
     1033.25,
-    620.32
+    634.39
    ],
    [
     1035.25,
-    619.75
+    634.12
    ],
    [
     1037.25,
-    619.18
+    633.85
    ],
    [
     1039.25,
-    618.61
+    633.57
    ],
    [
     1041.25,
-    618.04
+    633.3
    ],
    [
     1043.25,
-    617.47
+    633.03
    ],
    [
     1045.25,
-    616.9
+    632.75
    ],
    [
     1047.25,
-    616.33
+    632.48
    ],
    [
     1049.25,
-    615.76
+    632.2
    ],
    [
     1051.25,
-    615.19
+    631.93
    ],
    [
     1053.25,
-    614.62
+    631.66
    ],
    [
     1055.25,
-    614.05
+    631.38
    ],
    [
     1057.25,
-    613.48
+    631.11
    ],
    [
     1059.25,
-    612.91
+    630.84
    ],
    [
     1061.25,
-    612.34
+    630.56
    ],
    [
     1063.25,
-    611.77
+    630.29
    ],
    [
     1065.25,
-    611.2
+    630.02
    ],
    [
     1067.25,
-    610.63
+    629.74
    ],
    [
     1069.25,
-    610.06
+    629.47
    ],
    [
     1071.25,
-    609.49
+    629.2
    ],
    [
     1073.25,
-    608.92
+    628.92
    ],
    [
     1075.25,
-    608.35
+    628.65
    ],
    [
     1077.25,
-    607.78
+    628.38
    ],
    [
     1079.25,
-    607.21
+    628.1
    ]
   ],
   "end_contour_note": "[y, x] of the left end below the volute; the right end is 1920 - x",
@@ -339,8 +345,8 @@
     1061
    ],
    "Q": [
-    1508.56,
-    1039.28
+    1488.56,
+    1027.28
    ],
    "note": "[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: \"Q  READY\""
   },
@@ -375,19 +381,39 @@
     1017.5,
     9
    ]
-  ]
+  ],
+  "variants": [
+   {
+    "scale": 0.85,
+    "texture": "dg_panel/panel_085.png",
+    "screen_rect": [
+     654,
+     1001,
+     612,
+     79
+    ],
+    "design": {
+     "PL_X0": 685.0,
+     "PL_TOP": 1015.0,
+     "VOL_R": 10.0,
+     "INL": 5.5,
+     "FOOT_X": 677.35
+    }
+   }
+  ],
+  "variants_note": "UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect when hud.json bottomScale is scale (its 1 px lines stay whole there)"
  },
  "glass": {
   "center": [
-   1502.56,
-   964.34
+   1482.56,
+   952.34
   ],
   "r": 37.0,
   "bezel_outer": 40.6,
-  "lip_y": 987.28,
+  "lip_y": 975.28,
   "bowl": [
-   1449.36,
-   1575.36
+   1429.36,
+   1555.36
   ],
   "fire": "dg_keeper/fire.png (idle), fire_ready.png (READY)",
   "constants": {

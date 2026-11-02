@@ -43,7 +43,7 @@ public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
 {
-    public const int Version = 5;
+    public const int Version = 6;
     public const int SlotCount = 3;
     readonly string dir;
 
@@ -109,6 +109,10 @@ public sealed class Saves
         // have earned back to light (a full refund). (The art in hand becoming the dash form joins
         // this step with the Battle's dash forms: docs/handoff/classes.md §4.)
         if (d.Version < 5) { LampBook.State(ch); ArtBook.HoldKin(ch); }
+        // 6: three layouts, each a whole build (CLASS_IDENTITY_AND_TALENTS.md 3.5): every layout refunded to its
+        // free lamps, wicks on Light my way's strands, skills her calling can't carry to the storeroom as tomes,
+        // and the carried skills copied into each layout.
+        if (d.Version < 6) LampBook.MigrateSix(ch, d.World);
         // Lamps v2 (behind its flag): lit ids the v2 board lacks are dropped (save v6 does the real migration).
         if (Content.Lamps.V2) LampBook.DropUnknown(ch);
         // The armor slots (Shoulders...Feet): anything worn in a slot its kind does not belong to is re-slotted.
@@ -120,6 +124,7 @@ public sealed class Saves
     public bool Write(int slot, SaveData data)
     {
         data.Version = Version;
+        if (data.Character?.Lamps != null) LampBook.Keep(data.Character);
         data.SavedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         try
         {

@@ -104,14 +104,15 @@ public partial class Game
         {
             case null: break;
             // (the whole chain, bracketed: it is the bar that fills, not its lock)
-            case "chain": areas.Add(Instrument.ChainFill); break;
+            case "chain": areas.Add(HudBottom.Map(Instrument.ChainFill)); break;
             // (the filled links, left of the lock: F2's, where the ember fills; the lock itself is L1's)
             // (the run of the bar, bracketed at its two ends: her hair to the Flare's cup. Experience 10 tried a bare point
             // on the crest instead; the teach judge (r1, r2) failed it: "a player can't tell what 'this' is")
-            case "chain_fill": areas.Add(Instrument.ChainFill); break;
-            case "dash": pts.Add(DgSmall.DashMid); break;
-            case "draught": pts.Add(DgSmall.DraughtMid); break;
-            case "art": pts.Add(Instrument.ArtAt); break;
+            // (UI 27: the bottom HUD's parts are its own 1080 px: brought onto the screen at its scale, HudBottom)
+            case "chain_fill": areas.Add(HudBottom.Map(Instrument.ChainFill)); break;
+            case "dash": pts.Add(HudBottom.Map(DgSmall.DashMid)); break;
+            case "draught": pts.Add(HudBottom.Map(DgSmall.DraughtMid)); break;
+            case "art": pts.Add(HudBottom.Map(Instrument.ArtAt)); break;
             case "banner": if (hud.BannerUp) areas.Add(hud.BannerArea); break;
             // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
             case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
@@ -484,7 +485,7 @@ public partial class Game
         var radii = new List<float>();
         int hudPts = pts.Count - worldOn;
         if (pts.Count > worldOn)
-            radii.Add(c.Target.Hud switch
+            radii.Add(HudBottom.Scale * c.Target.Hud switch
             {
                 "art" => DgPanel.GlassOuterR,
                 "dash" => DgSmall.DashR,

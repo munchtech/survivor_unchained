@@ -294,6 +294,9 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
+        // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
+        if (Args.Get("relight") is string rl)
+            foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s && s != "boss")
@@ -1362,7 +1365,8 @@ public partial class Game : Node, IZoneHost
                     bool In(double x, double z, float y)
                     {
                         var w = new Vector3((float)x, y, (float)z);
-                        return !camera.IsPositionBehind(w) && mask.Hit(camera.UnprojectPosition(w), rect, origin, scale);
+                        // (UI 27: the rects are the bottom HUD's own 1080 px; the point is brought back through its scale)
+                        return !camera.IsPositionBehind(w) && mask.Hit(Ui.HudBottom.Unmap(camera.UnprojectPosition(w)), rect, origin, scale);
                     }
                     float gy = at.Y + 1;
                     string? why = null;

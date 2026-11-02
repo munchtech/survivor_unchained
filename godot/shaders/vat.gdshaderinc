@@ -23,6 +23,26 @@ uniform float alpha_cut = 0.45;
 // key lies (key_dir, world, toward the light). Godot's RIM is lit by the key, so in the wood's shade a mob had none.
 global uniform vec4 crowd_rim;
 global uniform vec4 key_dir;
+// Rendering 4: the crowd's own light by night, in its own paint (no light added, no shadow). Her pool lit the floor round
+// her and its bodies stayed near-black (from the play camera most of a body is its back and shoulders, turned from her
+// lamp), so the ring of them leaning at her read as a black starburst. crowd_ember: her lamp's point over her (world xyz)
+// and its strength (PlayerView sets it each frame; 0 by day or with --crowd-fill off); crowd_fill: the sky's fill under
+// the crowns (rgb, from the preset's hemisphere sky), and the lamp's reach (a).
+// Round 2 (its judge: blue-grey plaster miniatures, as light at 10 m as at 2, the dead the lightest rays, pasted on in
+// the canopy's shade): the paint is lifted, not floored, and goes into ALBEDO, so the moon's own shadowed light and the
+// ambient light the bodies as they light the dirt (they sink in the canopy's shade with it); her lamp is a directional
+// warm light, strong within a few metres and gone past its reach; a small unshadowed fill keeps the shade's bodies from
+// black; the cool sky only on heads and shoulders. crowd_lamp: her pool's colour (rgb, linear) and the radius her lamp
+// is whole within (a); crowd_night: the paint's lift (x: a luminance the darkest paint is raised to), the cut on flat
+// and up-facing low surfaces (y), her lamp's wrap (z), the mode (w: 0 off (day), 1 on, 3 a debug mask of distance
+// bands for measuring); crowd_top: the cool on heads and shoulders (rgb) and the moon's wrap (a, BACKLIGHT).
+global uniform vec4 crowd_ember;
+global uniform vec4 crowd_fill;
+global uniform vec4 crowd_lamp;
+global uniform vec4 crowd_night;
+global uniform vec4 crowd_top;
+// (and how much of the sky's unshadowed ambient the crowd keeps by night: crowd_amb, AO)
+global uniform float crowd_amb;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -97,6 +117,8 @@ void vertex() {
 	fx_rim = fx_aa * clamp((INSTANCE_CUSTOM.y - float(f1)) / 0.45, 0.0, 1.0);
 }
 
+#define CROWD_BOUNCE 0.2
+#define CROWD_DUST 0.5
 void fragment() {
 	// Dissolve: the dead go back to the dark in ragged flakes.
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
@@ -142,6 +164,17 @@ void fragment() {
 	}
 	// (a negative red: the copy wears a coat of river mud (CrowdView.TintOf): dark brown patches, heaviest on the legs
 	// and the hem, on the body's own shape)
+	// (Rendering 4 r2: by night the arena crowd's paint lifted toward crowd_night.x, its hue kept, before its tint, so the
+	// dead's darkening (CrowdView.DrawCorpses) still reads; skin and pale paint barely move)
+	if (crowd_night.w > 0.5) {
+		float cn_l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+		float cn_t = crowd_night.x + cn_l * (1.0 - crowd_night.x);
+		c = cn_l > 0.004 ? c * (cn_t / cn_l) : vec3(cn_t);
+		// (what the lift adds leans to the dirt's hue (crowd_fill's), so a grey shroud under the blue moon reads as dusty
+		// cloth on the dirt, not blue-grey plaster)
+		vec3 cn_dirt = crowd_fill.rgb / max(dot(crowd_fill.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		c = mix(c, cn_dirt * cn_t, CROWD_DUST * clamp(1.0 - cn_l / max(cn_t, 1e-4), 0.0, 1.0));
+	}
 	c *= abs(COLOR.rgb);
 	if (COLOR.r < 0.0) {
 		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);
@@ -282,6 +315,38 @@ void fragment() {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
 		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
+	}
+	// Her lamp and the sky's fill on the crowd by night (crowd_ember, crowd_fill, crowd_lamp, crowd_night, crowd_top above).
+	// Her lamp: from over her, barely wrapped, so a body in her pool has a warm side toward her and a dark side away,
+	// whole within crowd_lamp.a and gone at the reach. A small fill in the dirt's hue, unshadowed (the moon's shadowed
+	// light is ALBEDO's); the cool sky only on heads and shoulders. Flat and up-facing low surfaces (the lying, the
+	// lunging backs) take less, so they sit under the standing ring.
+	float cn_flat = 0.0;
+	if (crowd_night.w > 0.5) {
+		vec3 cw_p = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 cw_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec3 cw_l = crowd_ember.xyz - cw_p;
+		float cw_d = length(cw_l);
+		float cw_h = length(cw_p.xz - crowd_ember.xz);
+		// (and a breath of her pool's bounce off the dirt on the far side, so a back turned to her is dark, not black)
+		float cw_wrap = CROWD_BOUNCE + (1.0 - CROWD_BOUNCE) * clamp((dot(cw_n, cw_l / max(cw_d, 1e-3)) + crowd_night.z) / (1.0 + crowd_night.z), 0.0, 1.0);
+		float cw_f = 1.0 - smoothstep(crowd_lamp.a, crowd_fill.a, cw_h);
+		cn_flat = smoothstep(0.55, 0.9, cw_n.y) * (1.0 - smoothstep(0.9, 1.4, vat_local.y));
+		float cn_k = 1.0 - crowd_night.y * cn_flat;
+		float cn_head = smoothstep(1.2, 1.6, vat_local.y) * clamp(cw_n.y, 0.0, 1.0);
+		e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f + crowd_fill.rgb + crowd_top.rgb * cn_head) * cn_k;
+		ALBEDO *= cn_k;
+		// (the moon wrapped round the body in its own shadowed light (Godot's backlight: the far side takes what the near
+		// side would), so under the canopy's dark the bodies sink with the dirt and in its pools they take it as the dirt does)
+		BACKLIGHT = vec3(crowd_top.a);
+		// (less of the unshadowed ambient, which lit them alike in the canopy's dark and in its pools)
+		AO = crowd_amb;
+		if (crowd_night.w > 2.5) {
+			// (the debug mask: red within 5 m of her, green 8-12 m, blue between; yellow the flat; magenta the dead)
+			bool dead = dot(abs(COLOR.rgb), vec3(0.333)) < 0.6;
+			ALBEDO = vec3(0.0);
+			e = dead ? vec3(0.4, 0.0, 0.4) : cn_flat > 0.5 ? vec3(0.4, 0.4, 0.0) : cw_h < 5.0 ? vec3(0.4, 0.0, 0.0) : (cw_h > 8.0 && cw_h < 12.0) ? vec3(0.0, 0.4, 0.0) : cw_h <= 8.0 ? vec3(0.0, 0.0, 0.4) : vec3(0.0);
+		}
 	}
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)

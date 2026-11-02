@@ -165,7 +165,7 @@ public sealed class CharacterData
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
     public Dictionary<string, ArtState> Arts = new();
-    /// <summary>The Lamps lit, in two layouts (Rpg/LampBook.cs); null in a save from before them.</summary>
+    /// <summary>The Lamps lit, in three layouts (Rpg/LampBook.cs); null in a save from before them.</summary>
     public LampState? Lamps;
     public List<Condition> Conditions = new();
     /// <summary>Kills with each weapon, across every expedition.</summary>
@@ -617,6 +617,7 @@ public static class Character
             else Inventory.AddToPack(ch, it);
         }
         Inventory.AddToPack(ch, Inventory.Make(ch, "health_draught", qty: 2));
+        LampBook.CarryOnAll(ch);
         return ch;
     }
 

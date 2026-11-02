@@ -193,10 +193,11 @@ public class LampsTests
         Assert.Equal(3, l.Lit.Count);
         Assert.Contains(Lamps.Entry("bulwark"), l.Lit);
         Assert.Equal("bell_of_the_morning", LampBook.Carried(ch));
-        // Two layouts: the other keeps its own.
-        Assert.True(LampBook.Switch(ch, 1));
+        // The other layouts keep their own (a switch is by day, in town).
+        var day = new WorldState { Time = TimeOfDay.Day };
+        Assert.True(LampBook.Switch(ch, 1, day, "waystation"));
         Assert.Equal("sunderer", LampBook.Now(ch).Type);
-        Assert.True(LampBook.Switch(ch, 0));
+        Assert.True(LampBook.Switch(ch, 0, day, "waystation"));
         Assert.Equal("bulwark", LampBook.Now(ch).Type);
     }
 

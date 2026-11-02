@@ -161,6 +161,15 @@ public sealed class FlareDef
     public double BeatAt(string key, double fallback) => Beat.TryGetValue(key, out var v) ? v : fallback;
 }
 
+/// <summary>A dark lamp-post of an act: where it stands (a zone and a spot) is a placeholder while Draft is set.</summary>
+public sealed class PostDef
+{
+    public string Id = "", Zone = "";
+    public int Act;
+    public double X, Z;
+    public bool Draft;
+}
+
 /// <summary>A road: one type of a calling (§1).</summary>
 public sealed class RoadDef
 {
@@ -182,6 +191,8 @@ public static class Lamps
         public List<LampDef> Lamps = new();
         /// <summary>The story's fights whose first win lights a lamp (their arena ids).</summary>
         public List<string> Story = new();
+        /// <summary>v2: the dark lamp-posts whose relighting gives a lamp (LampBook.RelightPost).</summary>
+        public List<PostDef> Posts = new();
         public int Version = 1;
     }
 
@@ -192,6 +203,7 @@ public static class Lamps
         public readonly Dictionary<string, FlareDef> Flares;
         public readonly Dictionary<string, List<string>> Next = new();
         public readonly List<string> Story;
+        public readonly List<PostDef> Posts;
 
         public Board(File f)
         {
@@ -199,6 +211,7 @@ public static class Lamps
             Roads = f.Roads.ToDictionary(r => r.Id);
             Flares = f.Flares.ToDictionary(x => x.Id);
             Story = f.Story;
+            Posts = f.Posts;
             foreach (var l in f.Lamps)
             {
                 Next[l.Id] = new();
@@ -234,6 +247,8 @@ public static class Lamps
     public static IReadOnlyDictionary<string, RoadDef> Roads => B.Roads;
     public static IReadOnlyDictionary<string, FlareDef> Flares => B.Flares;
     public static IReadOnlyList<string> StoryFights => B.Story;
+    public static IReadOnlyList<PostDef> Posts => B.Posts;
+    public static PostDef? Post(string id) => B.Posts.FirstOrDefault(p => p.Id == id);
 
     public static LampDef Get(string id) => B.All.TryGetValue(id, out var l) ? l : throw new KeyNotFoundException($"no lamp {id}");
     public static LampDef? Find(string id) => B.All.GetValueOrDefault(id);

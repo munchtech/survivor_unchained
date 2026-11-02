@@ -1108,7 +1108,7 @@ public partial class VatCrowd : MultiMeshInstance3D
     {
         Asset = asset;
         Name = $"crowd:{asset.Key}";
-        Layers = 2;
+        Layers = 2 | SurvivorUnchained.View.PlayerView.CrowdLayer;
         CastShadow = ShadowCastingSetting.On;
         // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));

@@ -128,7 +128,7 @@ public static class Graphics
         if (scene == null) return;
         scene.View.LampShadows(t.LampShadows);
         scene.View.GrassCell(t.GrassCell);
-        scene.Crowd.Shadows = t.CrowdShadows;
+        scene.Crowd.Shadows = t.CrowdShadows && Args.Get("crowd-shadows") != "off";
         scene.Crowd.CorpseMax = t.Corpses;
     }
 
