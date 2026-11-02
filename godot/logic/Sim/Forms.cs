@@ -83,7 +83,7 @@ public sealed partial class Battle
         {
             case AbilityKind.BullRush:
                 // To the lamp: a 6 m charge behind a barrier of 15% of health (Iron Hide 25%).
-                Art.Barrier = MaxHp * (Has("iron_hide") ? 0.25 : 0.15);
+                Art.Barrier = MaxHp * (0.15 + (Has("iron_hide") ? 0.10 * Ward("iron_hide") : 0));
                 Barrier(Art.Barrier, 4);
                 StartRush(AbilityKind.BullRush, dx, dz, 6, 0.27);
                 p.SlowT = 0; p.SlowF = 1;

@@ -207,7 +207,9 @@ void HandPairs(List<RunSpec> specs, string outPath)
         {
             if (board)
             {
-                var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = true };
+                // --offwicks 1: the off run keeps Light my way's wicks too, so the pair reads the board alone (the wicks light by the
+                // ember's ranks at night on an empty board as on a full one: CLASS_IDENTITY_AND_TALENTS.md §3.3).
+                var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = opt.Get("offwicks", "0") != "1" };
                 var b0 = ArenaSim.Play(spec with { Lamps = "empty" }, boff);
                 // --boardwicks 0: the on run's lamps without its wicks (which half of the board's P is the wicks').
                 // --nowick a,b / --noturn a,b: those skills' wicks off, or their Turns off (lead-ins kept), in the on run.
