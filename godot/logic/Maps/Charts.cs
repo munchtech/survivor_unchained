@@ -260,6 +260,12 @@ public static class Atlas
             w.Facts["atlas.points"] = Points(w) + 1;
             w.Facts["atlas.best"] = Math.Max(Best(w), c.Tier);
         }
+        // A tier's first clear (of any people) lights a lamp (CLASS_IDENTITY_AND_TALENTS.md 3.2 "Points"; LampBook.AtlasLit).
+        if (!w.Fact($"atlas.tier.{c.Tier}").Truthy)
+        {
+            w.Facts[$"atlas.tier.{c.Tier}"] = true;
+            w.Facts["lamps.atlas"] = w.Fact("lamps.atlas").Number + 1;
+        }
         return first;
     }
 }

@@ -7,8 +7,9 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Rpg;
 
-/// <summary>One way of lighting the board: the type (the road given at creation), the lamps lit
-/// and the Flare carried. A survivor keeps two (docs/design/CLASSES.md §2.4).</summary>
+/// <summary>One way of lighting the board, a whole build: the type (the road given at creation), the lamps lit,
+/// the Flare, the wicks, the links' picks and the skills carried by day. A survivor keeps three
+/// (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.5).</summary>
 public sealed class LampLayout
 {
     public string Type = "";
@@ -17,11 +18,18 @@ public sealed class LampLayout
     /// <summary>Each skill's wick plan (Rpg/WickBook.cs): its lamp ids in the order they light. A layout holds
     /// its wicks, so swapping layouts swaps builds (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.5).</summary>
     public Dictionary<string, List<string>> Wicks = new();
+    /// <summary>Lamps v2: each link's pick, its lamp id to the skill it fires (docs/design/LAMPS_V2_RULES.md "Links").
+    /// No pick, or one not carried: Light my way's (Battle.LinkSkill).</summary>
+    public Dictionary<string, string> Links = new();
+    /// <summary>The day slots' skills, in order. The active layout's live copy is the character's Slotted
+    /// (what everything reads); it is kept here on a switch and on a save (LampBook.Keep).</summary>
+    public List<string> Carried = new();
 }
 
 public sealed class LampState
 {
-    public List<LampLayout> Layouts = new() { new(), new() };
+    public const int Count = 3;
+    public List<LampLayout> Layouts = new() { new(), new(), new() };
     public int Active;
     /// <summary>Light my way: the suggested lamp is lit for you every level (§2.5).</summary>
     public bool LightMyWay;
@@ -34,8 +42,8 @@ public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Fr
 /* The lamps a survivor has lit (docs/design/CLASSES.md §2.4-2.5).
  *
  * Lamps come from levels (one a level from 2 to 30), the story's bosses
- * (one each, the first win) and the atlas (eight, placed by its
- * milestones): about fifty at the end of everything. Three are free: the
+ * (one each, the first win), the atlas (a tier's first clear; eight on v1,
+ * thirty on v2) and, on v2, the dark lamp-posts relit. Three are free: the
  * hearth's first lamp, and the chosen type's entry and Strike.
  *
  * A lamp is lit next to a lit one, past its road's depth gate. Lamps go out
@@ -44,7 +52,8 @@ public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Fr
  * Changing the type puts every lamp out. */
 public static class LampBook
 {
-    public const int AtlasLamps = 8;
+    /// <summary>The atlas's lamps at most: 8 on v1, 30 on v2 (CLASS_IDENTITY_AND_TALENTS.md 3.2 "Points").</summary>
+    public static int AtlasLamps => Lamps.V2 ? 30 : 8;
 
     public static LampState State(CharacterData ch)
     {
@@ -59,20 +68,43 @@ public static class LampBook
     {
         if (type == null || !Lamps.Roads.TryGetValue(type, out var r) || r.Calling != ch.Archetype) type = DefaultType(ch.Archetype);
         ch.Lamps = new LampState();
-        foreach (var l in ch.Lamps.Layouts) Reset(ch, l, type);
+        foreach (var l in ch.Lamps.Layouts) { Reset(ch, l, type); l.Carried = ch.Slotted.ToList(); }
     }
+
+    /// <summary>Every layout carries what she carries now (creation: the three start equal).</summary>
+    public static void CarryOnAll(CharacterData ch)
+    {
+        foreach (var l in State(ch).Layouts) l.Carried = ch.Slotted.ToList();
+    }
+
+    /// <summary>The active layout keeps the skills she carries now (a switch and a save call it).</summary>
+    public static void Keep(CharacterData ch) => Now(ch).Carried = ch.Slotted.ToList();
 
     public static LampLayout Now(CharacterData ch) => State(ch).Now;
 
     /// <summary>A calling's first road: the type a survivor who never chose one walks.</summary>
     public static string DefaultType(string calling) => Lamps.RoadsOf(calling).First().Id;
 
-    /// <summary>Lamps earned: levels, the story's bosses beaten, the atlas's milestones.</summary>
-    public static int Earned(CharacterData ch, WorldState? w) => Math.Max(0, ch.Level - 1) + StoryLamps(w) + AtlasLit(w);
+    /// <summary>Lamps earned: levels, the story's bosses beaten, the atlas's milestones, and (v2) the lamp-posts relit.</summary>
+    public static int Earned(CharacterData ch, WorldState? w) => Math.Max(0, ch.Level - 1) + StoryLamps(w) + AtlasLit(w) + PostLamps(w);
+
+    /// <summary>Lamps v2: the dark lamp-posts relit (lamps_v2.json "posts", four an act), a lamp each.</summary>
+    public static int PostLamps(WorldState? w) => w == null || !Lamps.V2 ? 0 : Lamps.Posts.Count(p => w.Fact(PostFact(p.Id)).Truthy);
+
+    static string PostFact(string post) => $"lampposts.{post}";
+
+    /// <summary>Lamps v2: a dark lamp-post is relit (where it stands is the zone's). True the first time; false if it
+    /// was lit already, or isn't one of the board's posts (none on v1).</summary>
+    public static bool RelightPost(WorldState w, string postId)
+    {
+        if (!Lamps.V2 || Lamps.Post(postId) == null || w.Fact(PostFact(postId)).Truthy) return false;
+        w.Facts[PostFact(postId)] = true;
+        return true;
+    }
 
     public static int StoryLamps(WorldState? w) => w == null ? 0 : Lamps.StoryFights.Count(id => w.Fact($"arena.{id}").Str == "won");
 
-    /// <summary>The atlas's lamps (the experience lead's milestones set the fact), eight at most.</summary>
+    /// <summary>The atlas's lamps (its milestones grow the fact: Maps.Atlas.Complete), AtlasLamps at most.</summary>
     public static int AtlasLit(WorldState? w) => w == null ? 0 : Math.Clamp((int)w.Fact("lamps.atlas").Number, 0, AtlasLamps);
 
     /// <summary>The lamps that cost nothing: the hearth's first, the type's entry and its Strike.</summary>
@@ -106,7 +138,7 @@ public static class LampBook
         if (lit.Contains(id)) return LampNo.Lit;
         if (def.Home && def.Calling != ch.Archetype) return LampNo.NotHome;
         if (!Lamps.Next(id).Any(lit.Contains)) return LampNo.Dark;
-        if (def.Road != null && Depth(lit, def.Road) < def.Gate) return LampNo.Gate;
+        if (def.Road != null && Depth(lit, def.Road) < def.Gate && !Ungated(ch, lit, def)) return LampNo.Gate;
         if (Spare(ch, w) <= 0) return LampNo.NoLamps;
         return LampNo.None;
     }
@@ -149,14 +181,54 @@ public static class LampBook
         return true;
     }
 
-    /// <summary>Take up the other saved layout.</summary>
-    public static bool Switch(CharacterData ch, int index)
+    /// <summary>The towns, where layouts change (Act 1 has one).</summary>
+    public static readonly HashSet<string> Towns = new() { "waystation" };
+
+    /// <summary>Can layouts change here and now? In a town, not by night, never mid-map or mid-arena (§3.5).</summary>
+    public static bool LayoutsOpen(WorldState? w, string? zone) =>
+        w != null && zone != null && Towns.Contains(zone) && w.Time != TimeOfDay.Night && w.Map == null && w.Arena == null;
+
+    /// <summary>Take up another saved layout, the whole build: the board, the wicks, the links, the Flare and the
+    /// skills carried (the one left keeps what she carried). Only where LayoutsOpen.</summary>
+    public static bool Switch(CharacterData ch, int index, WorldState? w, string? zone)
     {
         var s = State(ch);
-        if (index < 0 || index >= s.Layouts.Count) return false;
+        if (index < 0 || index >= s.Layouts.Count || !LayoutsOpen(w, zone)) return false;
+        Keep(ch);
         s.Active = index;
         if (s.Now.Type == "") Reset(ch, s.Now, DefaultType(ch.Archetype));
+        s.Now.Carried ??= new();
+        ch.Slotted = s.Now.Carried.Where(id => SkillBook.Knows(ch, id) && SkillBook.Carries(ch, id)).Distinct().Take(SkillBook.Slots(ch)).ToList();
         return true;
+    }
+
+    /// <summary>Save v6 (from v5): three layouts, each refunded to its free lamps with no wick plans (Light my way's
+    /// strands) and no link picks; skills her calling can no longer carry go to the storeroom as tomes; and the
+    /// skills she carries are copied into each layout.</summary>
+    public static void MigrateSix(CharacterData ch, WorldState w)
+    {
+        var s = State(ch);
+        while (s.Layouts.Count < LampState.Count) s.Layouts.Add(new());
+        if (s.Layouts.Count > LampState.Count) s.Layouts.RemoveRange(LampState.Count, s.Layouts.Count - LampState.Count);
+        s.Active = Math.Clamp(s.Active, 0, LampState.Count - 1);
+        foreach (var id in ch.Skills.Where(id => !SkillBook.Carries(ch, id)).ToList())
+        {
+            ch.Skills.Remove(id);
+            ch.Slotted.Remove(id);
+            if (Items.Find(SkillBook.Tome(id)) == null) continue;
+            var tome = Inventory.Make(ch, SkillBook.Tome(id), 1);
+            int at = w.Stash.IndexOf(null);
+            if (at < 0) { at = w.Stash.Count; for (int i = 0; i < WorldState.Shelf; i++) w.Stash.Add(null); }
+            w.Stash[at] = tome;
+        }
+        foreach (var l in s.Layouts)
+        {
+            var type = Lamps.Roads.TryGetValue(l.Type ?? "", out var r) && r.Calling == ch.Archetype ? l.Type! : DefaultType(ch.Archetype);
+            Reset(ch, l, type);
+            l.Wicks = new();
+            l.Links = new();
+            l.Carried = ch.Slotted.ToList();
+        }
     }
 
     static void Reset(CharacterData ch, LampLayout l, string type)
@@ -179,7 +251,30 @@ public static class LampBook
                 if (set.Contains(n) && seen.Add(n)) q.Enqueue(n);
         if (seen.Count != set.Count) return false;
         var free = Free(ch);
-        return lit.All(id => free.Contains(id) || Lamps.Get(id) is var d && (d.Road == null || Depth(lit, d.Road) >= d.Gate));
+        return lit.All(id => free.Contains(id) || Lamps.Get(id) is var d && (d.Road == null || Depth(lit, d.Road) >= d.Gate || Ungated(ch, lit, d)));
+    }
+
+    /// <summary>blue.unhoused (the Ford's blue, v2): lamps on other callings' roads open with no depth.</summary>
+    static bool Ungated(CharacterData ch, List<string> lit, LampDef d) =>
+        Lamps.V2 && d.Calling != null && d.Calling != ch.Archetype && lit.Any(Unhouses);
+
+    static bool Unhouses(string id) => Lamps.Find(id) is { } d && d.Effects.Any(e => e.Rule == "blue.unhoused" && e.Phase <= Lamps.LivePhase);
+
+    /// <summary>Lamps v2 on: the lit ids a save holds that the v2 board lacks are dropped (and links on them), the
+    /// free lamps lit again, and a type v2 lacks walks the default.</summary>
+    public static void DropUnknown(CharacterData ch)
+    {
+        if (ch.Lamps == null) return;
+        foreach (var l in ch.Lamps.Layouts)
+        {
+            if (l.Type == "") continue;
+            if (!Lamps.Roads.TryGetValue(l.Type, out var r) || r.Calling != ch.Archetype) { Reset(ch, l, DefaultType(ch.Archetype)); continue; }
+            l.Lit.RemoveAll(id => Lamps.Find(id) == null);
+            foreach (var f in Free(ch, l)) if (!l.Lit.Contains(f)) l.Lit.Add(f);
+            l.Links ??= new();
+            foreach (var k in l.Links.Keys.ToList()) if (Lamps.Find(k) == null) l.Links.Remove(k);
+            if (Lamps.Flare(l.Flare) == null) l.Flare = Lamps.Road(l.Type).Strike;
+        }
     }
 
     /* ------------------------------------------------------- the Flare -- */
@@ -257,6 +352,7 @@ public static class LampBook
         var l = Now(ch);
         var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch), Lit = l.Lit.Count };
         var counts = new Dictionary<string, double>();
+        if (l.Links != null) foreach (var (k, v) in l.Links) o.Links[k] = v;
         foreach (var id in l.Lit)
         {
             if (Lamps.Find(id) is not { } d) continue;
@@ -291,8 +387,22 @@ public static class LampBook
             }
         }
         foreach (var (stat, v) in counts) o.Mods.Add(new StatMod(stat, ModKind.Flat, Math.Min(Lamps.NightCount, v), "lamps:counts"));
+        if (Lamps.V2) BluePrices(o);
         o.Lean = LeanRoad(ch);
         return o;
+    }
+
+    /// <summary>Lamps v2: the blue lamps whose price is a number of hers (LAMPS_V2_RULES.md "The new blue lamps"), kept in
+    /// full by night. The rest of their prices are rules the fight reads (Sim/BoardRules.cs).</summary>
+    const double BaseDashCharges = 2;
+
+    static void BluePrices(LampLoadout o)
+    {
+        // blue.butchers_block: less maximum health.
+        if (o.Has("blue.butchers_block")) o.Mods.Add(new StatMod(Stat.MaxHealth, ModKind.More, -o.Full("blue.butchers_block", "health", 0.2), "price:blue.butchers_block"));
+        // blue.poachers_mercy, blue.pack_remembers: "you have 1 dash charge" (`charges`), from the base two: one fewer.
+        foreach (var r in new[] { "blue.poachers_mercy", "blue.pack_remembers" })
+            if (o.Has(r)) o.Mods.Add(new StatMod(Stat.DashCharges, ModKind.Flat, Math.Min(0, o.Full(r, "charges", 1) - BaseDashCharges), "price:" + r));
     }
 
     /// <summary>The road lit deepest (the type's own on a tie): its cards lean by night.</summary>

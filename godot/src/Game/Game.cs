@@ -78,6 +78,8 @@ public partial class Game : Node, IZoneHost
         ZoneData.UseGodotFiles();
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
+        // --lampsv2: the Lamps v2 board (docs/design/LAMPS_V2_RULES.md "The flag"); SU_LAMPS_V2=1 does it too.
+        if (Args.Has("lampsv2")) Content.Lamps.UseV2(true);
         // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
         SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.
@@ -292,6 +294,9 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
+        // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
+        if (Args.Get("relight") is string rl)
+            foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s && s != "boss")

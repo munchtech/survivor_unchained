@@ -1,0 +1,8706 @@
+{
+ "version": 2,
+ "coords": "board units, y up, the Ford at (0,0)",
+ "groups": [
+  {
+   "id": "reaver.hearth",
+   "kind": "hearth",
+   "name": "Reaver hearth",
+   "callings": [
+    "reaver"
+   ],
+   "angle": 45
+  },
+  {
+   "id": "arcanist.hearth",
+   "kind": "hearth",
+   "name": "Arcanist hearth",
+   "callings": [
+    "arcanist"
+   ],
+   "angle": 135
+  },
+  {
+   "id": "stalker.hearth",
+   "kind": "hearth",
+   "name": "Stalker hearth",
+   "callings": [
+    "stalker"
+   ],
+   "angle": 225
+  },
+  {
+   "id": "warden.hearth",
+   "kind": "hearth",
+   "name": "Warden hearth",
+   "callings": [
+    "warden"
+   ],
+   "angle": 315
+  },
+  {
+   "id": "butcher",
+   "kind": "road",
+   "name": "Road of the Butcher",
+   "callings": [
+    "reaver"
+   ],
+   "angle": 23
+  },
+  {
+   "id": "chainbound",
+   "kind": "road",
+   "name": "Road of the Chainbound",
+   "callings": [
+    "reaver"
+   ],
+   "angle": 67
+  },
+  {
+   "id": "moonweaver",
+   "kind": "road",
+   "name": "Road of the Moonweaver",
+   "callings": [
+    "arcanist"
+   ],
+   "angle": 113
+  },
+  {
+   "id": "kindler",
+   "kind": "road",
+   "name": "Road of the Kindler",
+   "callings": [
+    "arcanist"
+   ],
+   "angle": 157
+  },
+  {
+   "id": "verge_hunter",
+   "kind": "road",
+   "name": "Road of the Verge-Hunter",
+   "callings": [
+    "stalker"
+   ],
+   "angle": 203
+  },
+  {
+   "id": "roadknife",
+   "kind": "road",
+   "name": "Road of the Roadknife",
+   "callings": [
+    "stalker"
+   ],
+   "angle": 247
+  },
+  {
+   "id": "bulwark",
+   "kind": "road",
+   "name": "Road of the Bulwark",
+   "callings": [
+    "warden"
+   ],
+   "angle": 293
+  },
+  {
+   "id": "sunderer",
+   "kind": "road",
+   "name": "Road of the Sunderer",
+   "callings": [
+    "warden"
+   ],
+   "angle": 337
+  },
+  {
+   "id": "reaver.bridge",
+   "kind": "bridge",
+   "name": "Reaver bridge",
+   "callings": [
+    "reaver"
+   ],
+   "angle": 45
+  },
+  {
+   "id": "arcanist.bridge",
+   "kind": "bridge",
+   "name": "Arcanist bridge",
+   "callings": [
+    "arcanist"
+   ],
+   "angle": 135
+  },
+  {
+   "id": "stalker.bridge",
+   "kind": "bridge",
+   "name": "Stalker bridge",
+   "callings": [
+    "stalker"
+   ],
+   "angle": 225
+  },
+  {
+   "id": "warden.bridge",
+   "kind": "bridge",
+   "name": "Warden bridge",
+   "callings": [
+    "warden"
+   ],
+   "angle": 315
+  },
+  {
+   "id": "shambles",
+   "kind": "crossing",
+   "name": "Shambles",
+   "callings": [
+    "warden",
+    "reaver"
+   ],
+   "angle": 0.0
+  },
+  {
+   "id": "night_road",
+   "kind": "crossing",
+   "name": "The Night Road",
+   "callings": [
+    "reaver",
+    "arcanist"
+   ],
+   "angle": 90.0
+  },
+  {
+   "id": "firebreak",
+   "kind": "crossing",
+   "name": "Firebreak",
+   "callings": [
+    "arcanist",
+    "stalker"
+   ],
+   "angle": 180.0
+  },
+  {
+   "id": "duelists_road",
+   "kind": "crossing",
+   "name": "Duelist's Road",
+   "callings": [
+    "stalker",
+    "warden"
+   ],
+   "angle": 270.0
+  },
+  {
+   "id": "vigil",
+   "kind": "crossing",
+   "name": "The Vigil",
+   "callings": [
+    "arcanist",
+    "warden"
+   ],
+   "angle": 135
+  },
+  {
+   "id": "poachers",
+   "kind": "crossing",
+   "name": "Poacher's Crossing",
+   "callings": [
+    "reaver",
+    "stalker"
+   ],
+   "angle": 45
+  },
+  {
+   "id": "ford",
+   "kind": "ford",
+   "name": "the Ford",
+   "callings": [],
+   "angle": 0
+  },
+  {
+   "id": "path.steel",
+   "kind": "oldroad",
+   "name": "Steel and Blood",
+   "callings": [],
+   "angle": 0
+  },
+  {
+   "id": "path.host",
+   "kind": "oldroad",
+   "name": "The Host",
+   "callings": [],
+   "angle": 36
+  },
+  {
+   "id": "path.storm",
+   "kind": "oldroad",
+   "name": "The Storm",
+   "callings": [],
+   "angle": 72
+  },
+  {
+   "id": "path.grave",
+   "kind": "oldroad",
+   "name": "The Grave",
+   "callings": [],
+   "angle": 108
+  },
+  {
+   "id": "path.weave",
+   "kind": "oldroad",
+   "name": "The Weave",
+   "callings": [],
+   "angle": 135
+  },
+  {
+   "id": "path.pyre",
+   "kind": "oldroad",
+   "name": "The Pyre",
+   "callings": [],
+   "angle": 165
+  },
+  {
+   "id": "path.rime",
+   "kind": "oldroad",
+   "name": "The Long Winter",
+   "callings": [],
+   "angle": 195
+  },
+  {
+   "id": "path.wild",
+   "kind": "oldroad",
+   "name": "The Wild",
+   "callings": [],
+   "angle": 230
+  },
+  {
+   "id": "path.hunt",
+   "kind": "oldroad",
+   "name": "The Hunt",
+   "callings": [],
+   "angle": 280
+  },
+  {
+   "id": "path.dawn",
+   "kind": "oldroad",
+   "name": "Dawn's Light",
+   "callings": [],
+   "angle": 320
+  }
+ ],
+ "lamps": [
+  {
+   "id": "reaver.the_reavers_chain",
+   "kind": "start",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "The Reaver's Chain",
+   "v1": true,
+   "x": 212.1,
+   "y": 212.1,
+   "at": [],
+   "gate": 0
+  },
+  {
+   "id": "reaver.hearth.p1",
+   "kind": "small",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 308.9,
+   "y": 177.5,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.hearth.p2",
+   "kind": "small",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 177.5,
+   "y": 308.9,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.whirling_chain",
+   "kind": "form",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Whirling Chain",
+   "v1": true,
+   "x": 282.4,
+   "y": 219.5,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.moored",
+   "kind": "form",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Moored",
+   "v1": true,
+   "x": 300.1,
+   "y": 265.3,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.second_hook",
+   "kind": "form",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Second Hook",
+   "v1": true,
+   "x": 265.3,
+   "y": 300.1,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.reel",
+   "kind": "form",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Reel",
+   "v1": true,
+   "x": 219.5,
+   "y": 282.4,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.war_cry",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "War Cry",
+   "v1": true,
+   "x": 137.2,
+   "y": 278.6,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.terror",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Terror",
+   "v1": true,
+   "x": 120.9,
+   "y": 333.0,
+   "at": [
+    "reaver.war_cry"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bloodlust",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Bloodlust",
+   "v1": true,
+   "x": 84.9,
+   "y": 282.8,
+   "at": [
+    "reaver.war_cry"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.red_tide",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Red Tide",
+   "v1": true,
+   "x": 278.6,
+   "y": 137.2,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.second_tide",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Second Tide",
+   "v1": true,
+   "x": 298.4,
+   "y": 86.3,
+   "at": [
+    "reaver.red_tide"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.blood_for_the_flare",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Blood for the Flare",
+   "v1": true,
+   "x": 222.0,
+   "y": 148.5,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.not_done_yet",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Not Done Yet",
+   "v1": true,
+   "x": 224.6,
+   "y": 87.3,
+   "at": [
+    "reaver.blood_for_the_flare"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.nothing_spared",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Nothing Spared",
+   "v1": true,
+   "x": 333.5,
+   "y": 121.1,
+   "at": [
+    "reaver.red_tide"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "reaver.banked_flame",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "Banked Flame",
+   "v1": true,
+   "x": 181.7,
+   "y": 111.8,
+   "at": [
+    "reaver.not_done_yet"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "reaver.hand1",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 161.0,
+   "y": 231.7,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.hand2",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 120.7,
+   "y": 203.3,
+   "at": [
+    "reaver.hand1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.hand3",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 74.1,
+   "y": 218.9,
+   "at": [
+    "reaver.hand2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.hand4",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "reaver.hearth",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 41.6,
+   "y": 181.9,
+   "at": [
+    "reaver.hand3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.the_arcanists_glass",
+   "kind": "start",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "The Arcanist's Glass",
+   "v1": true,
+   "x": -212.1,
+   "y": 212.1,
+   "at": [],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hearth.p1",
+   "kind": "small",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -177.5,
+   "y": 308.9,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hearth.p2",
+   "kind": "small",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -308.9,
+   "y": 177.5,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hall_of_mirrors",
+   "kind": "form",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Hall of Mirrors",
+   "v1": true,
+   "x": -219.5,
+   "y": 282.4,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.cold_glass",
+   "kind": "form",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Cold Glass",
+   "v1": true,
+   "x": -265.3,
+   "y": 300.1,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.fighting_reflections",
+   "kind": "form",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Fighting Reflections",
+   "v1": true,
+   "x": -300.1,
+   "y": 265.3,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.glass_heart",
+   "kind": "form",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Glass Heart",
+   "v1": true,
+   "x": -282.4,
+   "y": 219.5,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.time_slip",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Time Slip",
+   "v1": true,
+   "x": -278.6,
+   "y": 137.2,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.borrowed_time",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Borrowed Time",
+   "v1": true,
+   "x": -333.0,
+   "y": 120.9,
+   "at": [
+    "arcanist.time_slip"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.deep_slip",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Deep Slip",
+   "v1": true,
+   "x": -282.8,
+   "y": 84.9,
+   "at": [
+    "arcanist.time_slip"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.spellward",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Spellward",
+   "v1": true,
+   "x": -137.2,
+   "y": 278.6,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.thick_ward",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Thick Ward",
+   "v1": true,
+   "x": -86.3,
+   "y": 298.4,
+   "at": [
+    "arcanist.spellward"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.kindling",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Kindling",
+   "v1": true,
+   "x": -148.5,
+   "y": 222.0,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.glass_clutch",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Glass Clutch",
+   "v1": true,
+   "x": -87.3,
+   "y": 224.6,
+   "at": [
+    "arcanist.kindling"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.unbound_casting",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Unbound Casting",
+   "v1": true,
+   "x": -121.1,
+   "y": 333.5,
+   "at": [
+    "arcanist.spellward"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "arcanist.banked_flame",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "Banked Flame",
+   "v1": true,
+   "x": -111.8,
+   "y": 181.7,
+   "at": [
+    "arcanist.glass_clutch"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "arcanist.hand1",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -231.7,
+   "y": 161.0,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hand2",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -203.3,
+   "y": 120.7,
+   "at": [
+    "arcanist.hand1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hand3",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -218.9,
+   "y": 74.1,
+   "at": [
+    "arcanist.hand2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.hand4",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "arcanist.hearth",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -181.9,
+   "y": 41.6,
+   "at": [
+    "arcanist.hand3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.the_stalkers_spring",
+   "kind": "start",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "The Stalker's Spring",
+   "v1": true,
+   "x": -212.1,
+   "y": -212.1,
+   "at": [],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hearth.p1",
+   "kind": "small",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -308.9,
+   "y": -177.5,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hearth.p2",
+   "kind": "small",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -177.5,
+   "y": -308.9,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.parting_volley",
+   "kind": "form",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Parting Volley",
+   "v1": true,
+   "x": -282.4,
+   "y": -219.5,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.caltrops_hold",
+   "kind": "form",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Caltrops Hold",
+   "v1": true,
+   "x": -300.1,
+   "y": -265.3,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.light_feet",
+   "kind": "form",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Light Feet",
+   "v1": true,
+   "x": -265.3,
+   "y": -300.1,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.nimble",
+   "kind": "form",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Nimble",
+   "v1": true,
+   "x": -219.5,
+   "y": -282.4,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.mark_prey",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Mark Prey",
+   "v1": true,
+   "x": -137.2,
+   "y": -278.6,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.two_prey",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Two Prey",
+   "v1": true,
+   "x": -120.9,
+   "y": -333.0,
+   "at": [
+    "stalker.mark_prey"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.executioner",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Executioner",
+   "v1": true,
+   "x": -84.9,
+   "y": -282.8,
+   "at": [
+    "stalker.mark_prey"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.smoke_bomb",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Smoke Bomb",
+   "v1": true,
+   "x": -278.6,
+   "y": -137.2,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.choking_smoke",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Choking Smoke",
+   "v1": true,
+   "x": -298.4,
+   "y": -86.3,
+   "at": [
+    "stalker.smoke_bomb"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hunters_patience",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Hunter's Patience",
+   "v1": true,
+   "x": -222.0,
+   "y": -148.5,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.into_the_smoke",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Into the Smoke",
+   "v1": true,
+   "x": -224.6,
+   "y": -87.3,
+   "at": [
+    "stalker.hunters_patience"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.light_step",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Light Step",
+   "v1": true,
+   "x": -333.5,
+   "y": -121.1,
+   "at": [
+    "stalker.smoke_bomb"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "stalker.banked_flame",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "Banked Flame",
+   "v1": true,
+   "x": -181.7,
+   "y": -111.8,
+   "at": [
+    "stalker.into_the_smoke"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "stalker.hand1",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -161.0,
+   "y": -231.7,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hand2",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -120.7,
+   "y": -203.3,
+   "at": [
+    "stalker.hand1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hand3",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -74.1,
+   "y": -218.9,
+   "at": [
+    "stalker.hand2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.hand4",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "stalker.hearth",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -41.6,
+   "y": -181.9,
+   "at": [
+    "stalker.hand3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.the_wardens_oath",
+   "kind": "start",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "The Warden's Oath",
+   "v1": true,
+   "x": 212.1,
+   "y": -212.1,
+   "at": [],
+   "gate": 0
+  },
+  {
+   "id": "warden.hearth.p1",
+   "kind": "small",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 177.5,
+   "y": -308.9,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.hearth.p2",
+   "kind": "small",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 308.9,
+   "y": -177.5,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.iron_hide",
+   "kind": "form",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Iron Hide",
+   "v1": true,
+   "x": 219.5,
+   "y": -282.4,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.pile_driver",
+   "kind": "form",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Pile Driver",
+   "v1": true,
+   "x": 265.3,
+   "y": -300.1,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.unbroken",
+   "kind": "form",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Unbroken",
+   "v1": true,
+   "x": 300.1,
+   "y": -265.3,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.gore",
+   "kind": "form",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Gore",
+   "v1": true,
+   "x": 282.4,
+   "y": -219.5,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.shield_bash",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Shield Bash",
+   "v1": true,
+   "x": 278.6,
+   "y": -137.2,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.concussion",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Concussion",
+   "v1": true,
+   "x": 333.0,
+   "y": -120.9,
+   "at": [
+    "warden.shield_bash"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.shield_wall",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Shield Wall",
+   "v1": true,
+   "x": 282.8,
+   "y": -84.9,
+   "at": [
+    "warden.shield_bash"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.braced",
+   "kind": "reflex",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Braced",
+   "v1": true,
+   "x": 137.2,
+   "y": -278.6,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.rallying_stand",
+   "kind": "reflexUp",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Rallying Stand",
+   "v1": true,
+   "x": 86.3,
+   "y": -298.4,
+   "at": [
+    "warden.braced"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.kindled_oath",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Kindled Oath",
+   "v1": true,
+   "x": 148.5,
+   "y": -222.0,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.last_at_the_crossing",
+   "kind": "flareLamp",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Last at the Crossing",
+   "v1": true,
+   "x": 87.3,
+   "y": -224.6,
+   "at": [
+    "warden.kindled_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.hold_fast",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Hold Fast",
+   "v1": true,
+   "x": 121.1,
+   "y": -333.5,
+   "at": [
+    "warden.braced"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "warden.banked_flame",
+   "kind": "blue",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "Banked Flame",
+   "v1": true,
+   "x": 111.8,
+   "y": -181.7,
+   "at": [
+    "warden.last_at_the_crossing"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "warden.hand1",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 231.7,
+   "y": -161.0,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.hand2",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 203.3,
+   "y": -120.7,
+   "at": [
+    "warden.hand1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.hand3",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 218.9,
+   "y": -74.1,
+   "at": [
+    "warden.hand2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.hand4",
+   "kind": "hand",
+   "region": "hearth",
+   "group": "warden.hearth",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 181.9,
+   "y": -41.6,
+   "at": [
+    "warden.hand3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.red_hands",
+   "kind": "entry",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Red Hands",
+   "v1": true,
+   "x": 368.2,
+   "y": 156.3,
+   "at": [
+    "reaver.hearth.p1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 418.8,
+   "y": 177.8,
+   "at": [
+    "butcher.red_hands"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 469.5,
+   "y": 199.3,
+   "at": [
+    "butcher.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 520.1,
+   "y": 220.8,
+   "at": [
+    "butcher.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 570.7,
+   "y": 242.3,
+   "at": [
+    "butcher.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 621.3,
+   "y": 263.7,
+   "at": [
+    "butcher.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 672.0,
+   "y": 285.2,
+   "at": [
+    "butcher.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 722.6,
+   "y": 306.7,
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 773.2,
+   "y": 328.2,
+   "at": [
+    "butcher.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 823.9,
+   "y": 349.7,
+   "at": [
+    "butcher.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 446.2,
+   "y": 113.3,
+   "at": [
+    "butcher.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.deep_frenzy",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Deep Frenzy",
+   "v1": true,
+   "x": 442.1,
+   "y": 263.7,
+   "at": [
+    "butcher.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.the_butchers_bill",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "The Butcher's Bill",
+   "v1": true,
+   "x": 496.8,
+   "y": 134.8,
+   "at": [
+    "butcher.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "butcher.the_butchers_bill.running_tab",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Running Tab",
+   "v1": true,
+   "x": 480.0,
+   "y": 51.6,
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "butcher.the_butchers_bill.wide_chops",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Wide Chops",
+   "v1": true,
+   "x": 528.8,
+   "y": 59.4,
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "butcher.the_butchers_bill.feast",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Feast",
+   "v1": true,
+   "x": 568.3,
+   "y": 89.2,
+   "at": [
+    "butcher.the_butchers_bill"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "butcher.fights_best_hurt",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Fights Best Hurt",
+   "v1": true,
+   "x": 492.7,
+   "y": 285.2,
+   "at": [
+    "butcher.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 547.4,
+   "y": 156.3,
+   "at": [
+    "butcher.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.open_vein",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Open Vein",
+   "v1": true,
+   "x": 598.1,
+   "y": 177.8,
+   "at": [
+    "butcher.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 660.5,
+   "y": 122.8,
+   "at": [
+    "butcher.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.red_work",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Red Work",
+   "v1": true,
+   "x": 594.0,
+   "y": 328.2,
+   "at": [
+    "butcher.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 648.7,
+   "y": 199.3,
+   "at": [
+    "butcher.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "butcher.hamstrung",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Hamstrung",
+   "v1": true,
+   "x": 644.6,
+   "y": 349.7,
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.always_bleeding",
+   "kind": "blue",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Always Bleeding",
+   "v1": true,
+   "x": 699.3,
+   "y": 220.8,
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.butchers_hour",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Butcher's Hour",
+   "v1": true,
+   "x": 761.8,
+   "y": 165.8,
+   "at": [
+    "butcher.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.butchers_hour.overtime",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Overtime",
+   "v1": true,
+   "x": 744.9,
+   "y": 82.6,
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.butchers_hour.red_mist",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Red Mist",
+   "v1": true,
+   "x": 793.8,
+   "y": 90.3,
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.butchers_hour.not_today",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "Not Today",
+   "v1": true,
+   "x": 833.3,
+   "y": 120.1,
+   "at": [
+    "butcher.butchers_hour"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 695.2,
+   "y": 371.2,
+   "at": [
+    "butcher.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.the_butchers_count",
+   "kind": "blue",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "The Butcher's Count",
+   "v1": true,
+   "x": 749.9,
+   "y": 242.3,
+   "at": [
+    "butcher.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "butcher.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 812.4,
+   "y": 187.3,
+   "at": [
+    "butcher.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "butcher.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "butcher",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 800.6,
+   "y": 263.8,
+   "at": [
+    "butcher.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.hooked",
+   "kind": "entry",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Hooked",
+   "v1": true,
+   "x": 156.3,
+   "y": 368.2,
+   "at": [
+    "reaver.hearth.p2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 177.8,
+   "y": 418.8,
+   "at": [
+    "chainbound.hooked"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 199.3,
+   "y": 469.5,
+   "at": [
+    "chainbound.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 220.8,
+   "y": 520.1,
+   "at": [
+    "chainbound.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 242.3,
+   "y": 570.7,
+   "at": [
+    "chainbound.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 263.7,
+   "y": 621.3,
+   "at": [
+    "chainbound.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 285.2,
+   "y": 672.0,
+   "at": [
+    "chainbound.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 306.7,
+   "y": 722.6,
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 328.2,
+   "y": 773.2,
+   "at": [
+    "chainbound.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 349.7,
+   "y": 823.9,
+   "at": [
+    "chainbound.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 113.3,
+   "y": 446.2,
+   "at": [
+    "chainbound.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.fast_binding",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Fast Binding",
+   "v1": true,
+   "x": 263.7,
+   "y": 442.1,
+   "at": [
+    "chainbound.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.drag_them_under",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Drag Them Under",
+   "v1": true,
+   "x": 134.8,
+   "y": 496.8,
+   "at": [
+    "chainbound.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "chainbound.drag_them_under.deeper",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Deeper",
+   "v1": true,
+   "x": 51.6,
+   "y": 480.0,
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "chainbound.drag_them_under.grinder",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Grinder",
+   "v1": true,
+   "x": 59.4,
+   "y": 528.8,
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "chainbound.drag_them_under.hold_him",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Hold Him",
+   "v1": true,
+   "x": 89.2,
+   "y": 568.3,
+   "at": [
+    "chainbound.drag_them_under"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "chainbound.conductor",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Conductor",
+   "v1": true,
+   "x": 285.2,
+   "y": 492.7,
+   "at": [
+    "chainbound.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 156.3,
+   "y": 547.4,
+   "at": [
+    "chainbound.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.short_leash",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Short Leash",
+   "v1": true,
+   "x": 177.8,
+   "y": 598.1,
+   "at": [
+    "chainbound.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 122.8,
+   "y": 660.5,
+   "at": [
+    "chainbound.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.knot",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Knot",
+   "v1": true,
+   "x": 328.2,
+   "y": 594.0,
+   "at": [
+    "chainbound.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 199.3,
+   "y": 648.7,
+   "at": [
+    "chainbound.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "chainbound.iron_reach",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Iron Reach",
+   "v1": true,
+   "x": 349.7,
+   "y": 644.6,
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.the_long_chain",
+   "kind": "blue",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "The Long Chain",
+   "v1": true,
+   "x": 220.8,
+   "y": 699.3,
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.storm_on_the_chain",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Storm on the Chain",
+   "v1": true,
+   "x": 165.8,
+   "y": 761.8,
+   "at": [
+    "chainbound.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.second_length",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Second Length",
+   "v1": true,
+   "x": 82.6,
+   "y": 744.9,
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.earthing",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Earthing",
+   "v1": true,
+   "x": 90.3,
+   "y": 793.8,
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.storm_on_the_chain.wide_lash",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Wide Lash",
+   "v1": true,
+   "x": 120.1,
+   "y": 833.3,
+   "at": [
+    "chainbound.storm_on_the_chain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 371.2,
+   "y": 695.2,
+   "at": [
+    "chainbound.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.lightning_rod",
+   "kind": "blue",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "Lightning Rod",
+   "v1": true,
+   "x": 242.3,
+   "y": 749.9,
+   "at": [
+    "chainbound.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "chainbound.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 187.3,
+   "y": 812.4,
+   "at": [
+    "chainbound.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "chainbound.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "chainbound",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 263.8,
+   "y": 800.6,
+   "at": [
+    "chainbound.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.moonmarked",
+   "kind": "entry",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Moonmarked",
+   "v1": true,
+   "x": -156.3,
+   "y": 368.2,
+   "at": [
+    "arcanist.hearth.p1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -177.8,
+   "y": 418.8,
+   "at": [
+    "moonweaver.moonmarked"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -199.3,
+   "y": 469.5,
+   "at": [
+    "moonweaver.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -220.8,
+   "y": 520.1,
+   "at": [
+    "moonweaver.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -242.3,
+   "y": 570.7,
+   "at": [
+    "moonweaver.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -263.7,
+   "y": 621.3,
+   "at": [
+    "moonweaver.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -285.2,
+   "y": 672.0,
+   "at": [
+    "moonweaver.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -306.7,
+   "y": 722.6,
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -328.2,
+   "y": 773.2,
+   "at": [
+    "moonweaver.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -349.7,
+   "y": 823.9,
+   "at": [
+    "moonweaver.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -113.3,
+   "y": 446.2,
+   "at": [
+    "moonweaver.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.silvered",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Silvered",
+   "v1": true,
+   "x": -263.7,
+   "y": 442.1,
+   "at": [
+    "moonweaver.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.the_branding",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "The Branding",
+   "v1": true,
+   "x": -134.8,
+   "y": 496.8,
+   "at": [
+    "moonweaver.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "moonweaver.the_branding.second_brand",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Second Brand",
+   "v1": true,
+   "x": -51.6,
+   "y": 480.0,
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "moonweaver.the_branding.branded_deep",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Branded Deep",
+   "v1": true,
+   "x": -59.4,
+   "y": 528.8,
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "moonweaver.the_branding.the_eye",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "The Eye",
+   "v1": true,
+   "x": -89.2,
+   "y": 568.3,
+   "at": [
+    "moonweaver.the_branding"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "moonweaver.many_lights",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Many Lights",
+   "v1": true,
+   "x": -285.2,
+   "y": 492.7,
+   "at": [
+    "moonweaver.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -156.3,
+   "y": 547.4,
+   "at": [
+    "moonweaver.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.moon_drawn",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Moon-Drawn",
+   "v1": true,
+   "x": -177.8,
+   "y": 598.1,
+   "at": [
+    "moonweaver.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -122.8,
+   "y": 660.5,
+   "at": [
+    "moonweaver.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.still_water",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Still Water",
+   "v1": true,
+   "x": -328.2,
+   "y": 594.0,
+   "at": [
+    "moonweaver.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -199.3,
+   "y": 648.7,
+   "at": [
+    "moonweaver.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "moonweaver.moonfire",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Moonfire",
+   "v1": true,
+   "x": -349.7,
+   "y": 644.6,
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.the_echo",
+   "kind": "blue",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "The Echo",
+   "v1": true,
+   "x": -220.8,
+   "y": 699.3,
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.the_drowned_moon",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "The Drowned Moon",
+   "v1": true,
+   "x": -165.8,
+   "y": 761.8,
+   "at": [
+    "moonweaver.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.full_moon",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Full Moon",
+   "v1": true,
+   "x": -82.6,
+   "y": 744.9,
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.moonset",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Moonset",
+   "v1": true,
+   "x": -90.3,
+   "y": 793.8,
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.the_drowned_moon.silver_tide",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Silver Tide",
+   "v1": true,
+   "x": -120.1,
+   "y": 833.3,
+   "at": [
+    "moonweaver.the_drowned_moon"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -371.2,
+   "y": 695.2,
+   "at": [
+    "moonweaver.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.crowded_sky",
+   "kind": "blue",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "Crowded Sky",
+   "v1": true,
+   "x": -242.3,
+   "y": 749.9,
+   "at": [
+    "moonweaver.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "moonweaver.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -187.3,
+   "y": 812.4,
+   "at": [
+    "moonweaver.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "moonweaver.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "moonweaver",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -263.8,
+   "y": 800.6,
+   "at": [
+    "moonweaver.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.fire_on_ice",
+   "kind": "entry",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Fire on Ice",
+   "v1": true,
+   "x": -368.2,
+   "y": 156.3,
+   "at": [
+    "arcanist.hearth.p2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -418.8,
+   "y": 177.8,
+   "at": [
+    "kindler.fire_on_ice"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -469.5,
+   "y": 199.3,
+   "at": [
+    "kindler.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -520.1,
+   "y": 220.8,
+   "at": [
+    "kindler.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -570.7,
+   "y": 242.3,
+   "at": [
+    "kindler.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -621.3,
+   "y": 263.7,
+   "at": [
+    "kindler.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -672.0,
+   "y": 285.2,
+   "at": [
+    "kindler.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -722.6,
+   "y": 306.7,
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -773.2,
+   "y": 328.2,
+   "at": [
+    "kindler.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -823.9,
+   "y": 349.7,
+   "at": [
+    "kindler.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -446.2,
+   "y": 113.3,
+   "at": [
+    "kindler.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.thermal_shock",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Thermal Shock",
+   "v1": true,
+   "x": -442.1,
+   "y": 263.7,
+   "at": [
+    "kindler.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.burns_twice",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Burns Twice",
+   "v1": true,
+   "x": -496.8,
+   "y": 134.8,
+   "at": [
+    "kindler.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "kindler.burns_twice.more_embers",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "More Embers",
+   "v1": true,
+   "x": -480.0,
+   "y": 51.6,
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "kindler.burns_twice.black_ice",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Black Ice",
+   "v1": true,
+   "x": -528.8,
+   "y": 59.4,
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "kindler.burns_twice.called_down",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Called Down",
+   "v1": true,
+   "x": -568.3,
+   "y": 89.2,
+   "at": [
+    "kindler.burns_twice"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "kindler.ashen_ground",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Ashen Ground",
+   "v1": true,
+   "x": -492.7,
+   "y": 285.2,
+   "at": [
+    "kindler.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -547.4,
+   "y": 156.3,
+   "at": [
+    "kindler.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.ford_cold_ground",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Ford-Cold Ground",
+   "v1": true,
+   "x": -598.1,
+   "y": 177.8,
+   "at": [
+    "kindler.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -660.5,
+   "y": 122.8,
+   "at": [
+    "kindler.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.firebreak_wall",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Firebreak Wall",
+   "v1": true,
+   "x": -594.0,
+   "y": 328.2,
+   "at": [
+    "kindler.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -648.7,
+   "y": 199.3,
+   "at": [
+    "kindler.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "kindler.stand_in_your_fire",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Stand in Your Fire",
+   "v1": true,
+   "x": -644.6,
+   "y": 349.7,
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.frostfire",
+   "kind": "blue",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Frostfire",
+   "v1": true,
+   "x": -699.3,
+   "y": 220.8,
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.hard_winter",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Hard Winter",
+   "v1": true,
+   "x": -761.8,
+   "y": 165.8,
+   "at": [
+    "kindler.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.hard_winter.deep_winter",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Deep Winter",
+   "v1": true,
+   "x": -744.9,
+   "y": 82.6,
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.hard_winter.thaw_burst",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Thaw-Burst",
+   "v1": true,
+   "x": -793.8,
+   "y": 90.3,
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.hard_winter.winter_keeps",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Winter Keeps",
+   "v1": true,
+   "x": -833.3,
+   "y": 120.1,
+   "at": [
+    "kindler.hard_winter"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -695.2,
+   "y": 371.2,
+   "at": [
+    "kindler.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.ash_walker",
+   "kind": "blue",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "Ash Walker",
+   "v1": true,
+   "x": -749.9,
+   "y": 242.3,
+   "at": [
+    "kindler.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "kindler.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -812.4,
+   "y": 187.3,
+   "at": [
+    "kindler.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "kindler.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "kindler",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -800.6,
+   "y": 263.8,
+   "at": [
+    "kindler.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.far_eye",
+   "kind": "entry",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Far Eye",
+   "v1": true,
+   "x": -368.2,
+   "y": -156.3,
+   "at": [
+    "stalker.hearth.p1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -418.8,
+   "y": -177.8,
+   "at": [
+    "verge_hunter.far_eye"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -469.5,
+   "y": -199.3,
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -520.1,
+   "y": -220.8,
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -570.7,
+   "y": -242.3,
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -621.3,
+   "y": -263.7,
+   "at": [
+    "verge_hunter.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -672.0,
+   "y": -285.2,
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -722.6,
+   "y": -306.7,
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -773.2,
+   "y": -328.2,
+   "at": [
+    "verge_hunter.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -823.9,
+   "y": -349.7,
+   "at": [
+    "verge_hunter.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -446.2,
+   "y": -113.3,
+   "at": [
+    "verge_hunter.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.pinned",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Pinned",
+   "v1": true,
+   "x": -442.1,
+   "y": -263.7,
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.one_arrow",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "One Arrow",
+   "v1": true,
+   "x": -496.8,
+   "y": -134.8,
+   "at": [
+    "verge_hunter.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "verge_hunter.one_arrow.split_thrice_more",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Split Thrice More",
+   "v1": true,
+   "x": -480.0,
+   "y": -51.6,
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "verge_hunter.one_arrow.pinned_to_the_earth",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Pinned to the Earth",
+   "v1": true,
+   "x": -528.8,
+   "y": -59.4,
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "verge_hunter.one_arrow.through_the_heart",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Through the Heart",
+   "v1": true,
+   "x": -568.3,
+   "y": -89.2,
+   "at": [
+    "verge_hunter.one_arrow"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "verge_hunter.run_it_down",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Run It Down",
+   "v1": true,
+   "x": -492.7,
+   "y": -285.2,
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -547.4,
+   "y": -156.3,
+   "at": [
+    "verge_hunter.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.fletchers_eye",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Fletcher's Eye",
+   "v1": true,
+   "x": -598.1,
+   "y": -177.8,
+   "at": [
+    "verge_hunter.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -660.5,
+   "y": -122.8,
+   "at": [
+    "verge_hunter.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.hold_the_distance",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Hold the Distance",
+   "v1": true,
+   "x": -594.0,
+   "y": -328.2,
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -648.7,
+   "y": -199.3,
+   "at": [
+    "verge_hunter.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "verge_hunter.spring_back",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Spring Back",
+   "v1": true,
+   "x": -644.6,
+   "y": -349.7,
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.long_sight",
+   "kind": "blue",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Long Sight",
+   "v1": true,
+   "x": -699.3,
+   "y": -220.8,
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.pinning_rain",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Pinning Rain",
+   "v1": true,
+   "x": -761.8,
+   "y": -165.8,
+   "at": [
+    "verge_hunter.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.pinning_rain.follow_the_hunter",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Follow the Hunter",
+   "v1": true,
+   "x": -744.9,
+   "y": -82.6,
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.pinning_rain.iron_rain",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Iron Rain",
+   "v1": true,
+   "x": -793.8,
+   "y": -90.3,
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.pinning_rain.thorned_rain",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Thorned Rain",
+   "v1": true,
+   "x": -833.3,
+   "y": -120.1,
+   "at": [
+    "verge_hunter.pinning_rain"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -695.2,
+   "y": -371.2,
+   "at": [
+    "verge_hunter.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.hunters_stillness",
+   "kind": "blue",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "Hunter's Stillness",
+   "v1": true,
+   "x": -749.9,
+   "y": -242.3,
+   "at": [
+    "verge_hunter.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "verge_hunter.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -812.4,
+   "y": -187.3,
+   "at": [
+    "verge_hunter.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "verge_hunter.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "verge_hunter",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -800.6,
+   "y": -263.8,
+   "at": [
+    "verge_hunter.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.opening",
+   "kind": "entry",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Opening",
+   "v1": true,
+   "x": -156.3,
+   "y": -368.2,
+   "at": [
+    "stalker.hearth.p2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -177.8,
+   "y": -418.8,
+   "at": [
+    "roadknife.opening"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -199.3,
+   "y": -469.5,
+   "at": [
+    "roadknife.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -220.8,
+   "y": -520.1,
+   "at": [
+    "roadknife.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -242.3,
+   "y": -570.7,
+   "at": [
+    "roadknife.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -263.7,
+   "y": -621.3,
+   "at": [
+    "roadknife.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -285.2,
+   "y": -672.0,
+   "at": [
+    "roadknife.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -306.7,
+   "y": -722.6,
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -328.2,
+   "y": -773.2,
+   "at": [
+    "roadknife.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -349.7,
+   "y": -823.9,
+   "at": [
+    "roadknife.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -113.3,
+   "y": -446.2,
+   "at": [
+    "roadknife.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.wide_opening",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Wide Opening",
+   "v1": true,
+   "x": -263.7,
+   "y": -442.1,
+   "at": [
+    "roadknife.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.the_roads_toll",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "The Road's Toll",
+   "v1": true,
+   "x": -134.8,
+   "y": -496.8,
+   "at": [
+    "roadknife.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "roadknife.the_roads_toll.toll_doubled",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Toll Doubled",
+   "v1": true,
+   "x": -51.6,
+   "y": -480.0,
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "roadknife.the_roads_toll.last_cut",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Last Cut",
+   "v1": true,
+   "x": -59.4,
+   "y": -528.8,
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "roadknife.the_roads_toll.gone",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Gone",
+   "v1": true,
+   "x": -89.2,
+   "y": -568.3,
+   "at": [
+    "roadknife.the_roads_toll"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "roadknife.adders_kiss",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Adder's Kiss",
+   "v1": true,
+   "x": -285.2,
+   "y": -492.7,
+   "at": [
+    "roadknife.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -156.3,
+   "y": -547.4,
+   "at": [
+    "roadknife.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.through_not_around",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Through, Not Around",
+   "v1": true,
+   "x": -177.8,
+   "y": -598.1,
+   "at": [
+    "roadknife.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -122.8,
+   "y": -660.5,
+   "at": [
+    "roadknife.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.slip_the_blow",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Slip the Blow",
+   "v1": true,
+   "x": -328.2,
+   "y": -594.0,
+   "at": [
+    "roadknife.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -199.3,
+   "y": -648.7,
+   "at": [
+    "roadknife.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "roadknife.venom_edge",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Venom Edge",
+   "v1": true,
+   "x": -349.7,
+   "y": -644.6,
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.never_still",
+   "kind": "blue",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Never Still",
+   "v1": true,
+   "x": -220.8,
+   "y": -699.3,
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.through_and_through",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Through and Through",
+   "v1": true,
+   "x": -165.8,
+   "y": -761.8,
+   "at": [
+    "roadknife.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.through_and_through.deeper_notches",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Deeper Notches",
+   "v1": true,
+   "x": -82.6,
+   "y": -744.9,
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.through_and_through.wake_of_blades",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Wake of Blades",
+   "v1": true,
+   "x": -90.3,
+   "y": -793.8,
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.through_and_through.free_hands",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Free Hands",
+   "v1": true,
+   "x": -120.1,
+   "y": -833.3,
+   "at": [
+    "roadknife.through_and_through"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -371.2,
+   "y": -695.2,
+   "at": [
+    "roadknife.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.adders_patience",
+   "kind": "blue",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "Adder's Patience",
+   "v1": true,
+   "x": -242.3,
+   "y": -749.9,
+   "at": [
+    "roadknife.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "roadknife.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -187.3,
+   "y": -812.4,
+   "at": [
+    "roadknife.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "roadknife.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "roadknife",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -263.8,
+   "y": -800.6,
+   "at": [
+    "roadknife.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.shield_arm",
+   "kind": "entry",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Shield Arm",
+   "v1": true,
+   "x": 156.3,
+   "y": -368.2,
+   "at": [
+    "warden.hearth.p1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 177.8,
+   "y": -418.8,
+   "at": [
+    "bulwark.shield_arm"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 199.3,
+   "y": -469.5,
+   "at": [
+    "bulwark.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 220.8,
+   "y": -520.1,
+   "at": [
+    "bulwark.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 242.3,
+   "y": -570.7,
+   "at": [
+    "bulwark.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 263.7,
+   "y": -621.3,
+   "at": [
+    "bulwark.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 285.2,
+   "y": -672.0,
+   "at": [
+    "bulwark.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 306.7,
+   "y": -722.6,
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 328.2,
+   "y": -773.2,
+   "at": [
+    "bulwark.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 349.7,
+   "y": -823.9,
+   "at": [
+    "bulwark.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 113.3,
+   "y": -446.2,
+   "at": [
+    "bulwark.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.mortar",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Mortar",
+   "v1": true,
+   "x": 263.7,
+   "y": -442.1,
+   "at": [
+    "bulwark.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.bell_of_the_morning",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Bell of the Morning",
+   "v1": true,
+   "x": 134.8,
+   "y": -496.8,
+   "at": [
+    "bulwark.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.fourth_toll",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Fourth Toll",
+   "v1": true,
+   "x": 51.6,
+   "y": -480.0,
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.bell_for_the_dead",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Bell for the Dead",
+   "v1": true,
+   "x": 59.4,
+   "y": -528.8,
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "bulwark.bell_of_the_morning.healing_peal",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Healing Peal",
+   "v1": true,
+   "x": 89.2,
+   "y": -568.3,
+   "at": [
+    "bulwark.bell_of_the_morning"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "bulwark.turned_arrows",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Turned Arrows",
+   "v1": true,
+   "x": 285.2,
+   "y": -492.7,
+   "at": [
+    "bulwark.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 156.3,
+   "y": -547.4,
+   "at": [
+    "bulwark.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.planted",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Planted",
+   "v1": true,
+   "x": 177.8,
+   "y": -598.1,
+   "at": [
+    "bulwark.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 122.8,
+   "y": -660.5,
+   "at": [
+    "bulwark.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.heavy_shield",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Heavy Shield",
+   "v1": true,
+   "x": 328.2,
+   "y": -594.0,
+   "at": [
+    "bulwark.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 199.3,
+   "y": -648.7,
+   "at": [
+    "bulwark.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "bulwark.faith_in_the_wall",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Faith in the Wall",
+   "v1": true,
+   "x": 349.7,
+   "y": -644.6,
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.the_wall_holds",
+   "kind": "blue",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "The Wall Holds",
+   "v1": true,
+   "x": 220.8,
+   "y": -699.3,
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Sixty on the Wall",
+   "v1": true,
+   "x": 165.8,
+   "y": -761.8,
+   "at": [
+    "bulwark.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.shield_brothers",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Shield-Brothers",
+   "v1": true,
+   "x": 82.6,
+   "y": -744.9,
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.the_wall_walks",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "The Wall Walks",
+   "v1": true,
+   "x": 90.3,
+   "y": -793.8,
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.sixty_on_the_wall.night_watch",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Night Watch",
+   "v1": true,
+   "x": 120.1,
+   "y": -833.3,
+   "at": [
+    "bulwark.sixty_on_the_wall"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 371.2,
+   "y": -695.2,
+   "at": [
+    "bulwark.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.bearer_of_blows",
+   "kind": "blue",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "Bearer of Blows",
+   "v1": true,
+   "x": 242.3,
+   "y": -749.9,
+   "at": [
+    "bulwark.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "bulwark.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 187.3,
+   "y": -812.4,
+   "at": [
+    "bulwark.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "bulwark.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "bulwark",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 263.8,
+   "y": -800.6,
+   "at": [
+    "bulwark.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.two_hands",
+   "kind": "entry",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Two Hands",
+   "v1": true,
+   "x": 368.2,
+   "y": -156.3,
+   "at": [
+    "warden.hearth.p2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s1",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 418.8,
+   "y": -177.8,
+   "at": [
+    "sunderer.two_hands"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s2",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 469.5,
+   "y": -199.3,
+   "at": [
+    "sunderer.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s3",
+   "kind": "attribute",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 520.1,
+   "y": -220.8,
+   "at": [
+    "sunderer.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s4",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 570.7,
+   "y": -242.3,
+   "at": [
+    "sunderer.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s5",
+   "kind": "attribute",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 621.3,
+   "y": -263.7,
+   "at": [
+    "sunderer.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s6",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 672.0,
+   "y": -285.2,
+   "at": [
+    "sunderer.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s7",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 722.6,
+   "y": -306.7,
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s8",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 773.2,
+   "y": -328.2,
+   "at": [
+    "sunderer.s7"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.s9",
+   "kind": "small",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 823.9,
+   "y": -349.7,
+   "at": [
+    "sunderer.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.rite1",
+   "kind": "rite",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 446.2,
+   "y": -113.3,
+   "at": [
+    "sunderer.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.breaking_point",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Breaking Point",
+   "v1": true,
+   "x": 442.1,
+   "y": -263.7,
+   "at": [
+    "sunderer.s2"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.the_long_cut",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "The Long Cut",
+   "v1": true,
+   "x": 496.8,
+   "y": -134.8,
+   "at": [
+    "sunderer.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "sunderer.the_long_cut.second_cut",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Second Cut",
+   "v1": true,
+   "x": 480.0,
+   "y": -51.6,
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "sunderer.the_long_cut.line_of_morning",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Line of Morning",
+   "v1": true,
+   "x": 528.8,
+   "y": -59.4,
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "sunderer.the_long_cut.through_the_wall",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Through the Wall",
+   "v1": true,
+   "x": 568.3,
+   "y": -89.2,
+   "at": [
+    "sunderer.the_long_cut"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "sunderer.sundered",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Sundered",
+   "v1": true,
+   "x": 492.7,
+   "y": -285.2,
+   "at": [
+    "sunderer.s3"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.rite2",
+   "kind": "rite",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 547.4,
+   "y": -156.3,
+   "at": [
+    "sunderer.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.momentum_of_the_blade",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Momentum of the Blade",
+   "v1": true,
+   "x": 598.1,
+   "y": -177.8,
+   "at": [
+    "sunderer.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.link1",
+   "kind": "link",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 660.5,
+   "y": -122.8,
+   "at": [
+    "sunderer.s4"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.morning_in_the_steel",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Morning in the Steel",
+   "v1": true,
+   "x": 594.0,
+   "y": -328.2,
+   "at": [
+    "sunderer.s5"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.rite3",
+   "kind": "rite",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 648.7,
+   "y": -199.3,
+   "at": [
+    "sunderer.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "sunderer.rooted_stance",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Rooted Stance",
+   "v1": true,
+   "x": 644.6,
+   "y": -349.7,
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.weight_of_the_oath",
+   "kind": "blue",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Weight of the Oath",
+   "v1": true,
+   "x": 699.3,
+   "y": -220.8,
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel",
+   "kind": "ultimate",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Dawn in the Steel",
+   "v1": true,
+   "x": 761.8,
+   "y": -165.8,
+   "at": [
+    "sunderer.s6"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.high_morning",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "High Morning",
+   "v1": true,
+   "x": 744.9,
+   "y": -82.6,
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.crescents_through",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Crescents Through",
+   "v1": true,
+   "x": 793.8,
+   "y": -90.3,
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.dawn_in_the_steel.mending_light",
+   "kind": "ultimateMod",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "Mending Light",
+   "v1": true,
+   "x": 833.3,
+   "y": -120.1,
+   "at": [
+    "sunderer.dawn_in_the_steel"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.n6",
+   "kind": "notable",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 695.2,
+   "y": -371.2,
+   "at": [
+    "sunderer.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.the_unbroken_line",
+   "kind": "blue",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "The Unbroken Line",
+   "v1": true,
+   "x": 749.9,
+   "y": -242.3,
+   "at": [
+    "sunderer.s7"
+   ],
+   "gate": 16
+  },
+  {
+   "id": "sunderer.link2",
+   "kind": "link",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 812.4,
+   "y": -187.3,
+   "at": [
+    "sunderer.s7"
+   ],
+   "gate": 8
+  },
+  {
+   "id": "sunderer.rite4",
+   "kind": "rite",
+   "region": "road",
+   "group": "sunderer",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 800.6,
+   "y": -263.8,
+   "at": [
+    "sunderer.s8"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bridge.s1",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 543.4,
+   "y": 306.7,
+   "at": [
+    "butcher.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bridge.red_chain",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "Red Chain",
+   "v1": true,
+   "x": 496.8,
+   "y": 377.4,
+   "at": [
+    "reaver.bridge.s1"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "reaver.bridge.s2",
+   "kind": "small",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 441.2,
+   "y": 441.2,
+   "at": [
+    "reaver.bridge.red_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bridge.cleaver_on_a_chain",
+   "kind": "blue",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "Cleaver on a Chain",
+   "v1": true,
+   "x": 497.8,
+   "y": 497.8,
+   "at": [
+    "reaver.bridge.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "reaver.bridge.hook_and_hatchet",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "Hook and Hatchet",
+   "v1": true,
+   "x": 377.4,
+   "y": 496.8,
+   "at": [
+    "reaver.bridge.s2"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "reaver.bridge.s3",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "",
+   "v1": true,
+   "x": 306.7,
+   "y": 543.4,
+   "at": [
+    "reaver.bridge.hook_and_hatchet",
+    "chainbound.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bridge.rite1",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 559.0,
+   "y": 424.6,
+   "at": [
+    "reaver.bridge.red_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "reaver.bridge.rite2",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "reaver.bridge",
+   "calling": "reaver",
+   "name": "",
+   "v1": false,
+   "x": 424.6,
+   "y": 559.0,
+   "at": [
+    "reaver.bridge.hook_and_hatchet"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.bridge.s1",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -543.4,
+   "y": 306.7,
+   "at": [
+    "kindler.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.bridge.two_schools",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "Two Schools",
+   "v1": true,
+   "x": -496.8,
+   "y": 377.4,
+   "at": [
+    "arcanist.bridge.s1"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "arcanist.bridge.s2",
+   "kind": "small",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -441.2,
+   "y": 441.2,
+   "at": [
+    "arcanist.bridge.two_schools"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.bridge.the_ledger",
+   "kind": "blue",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "The Ledger",
+   "v1": true,
+   "x": -497.8,
+   "y": 497.8,
+   "at": [
+    "arcanist.bridge.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "arcanist.bridge.cold_moon",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "Cold Moon",
+   "v1": true,
+   "x": -377.4,
+   "y": 496.8,
+   "at": [
+    "arcanist.bridge.s2"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "arcanist.bridge.s3",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "",
+   "v1": true,
+   "x": -306.7,
+   "y": 543.4,
+   "at": [
+    "arcanist.bridge.cold_moon",
+    "moonweaver.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.bridge.rite1",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -559.0,
+   "y": 424.6,
+   "at": [
+    "arcanist.bridge.two_schools"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "arcanist.bridge.rite2",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "arcanist.bridge",
+   "calling": "arcanist",
+   "name": "",
+   "v1": false,
+   "x": -424.6,
+   "y": 559.0,
+   "at": [
+    "arcanist.bridge.cold_moon"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.bridge.s1",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -306.7,
+   "y": -543.4,
+   "at": [
+    "roadknife.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.bridge.quick_hands",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "Quick Hands",
+   "v1": true,
+   "x": -377.4,
+   "y": -496.8,
+   "at": [
+    "stalker.bridge.s1"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "stalker.bridge.s2",
+   "kind": "small",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -441.2,
+   "y": -441.2,
+   "at": [
+    "stalker.bridge.quick_hands"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.bridge.close_and_far",
+   "kind": "blue",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "Close and Far",
+   "v1": true,
+   "x": -497.8,
+   "y": -497.8,
+   "at": [
+    "stalker.bridge.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "stalker.bridge.knife_and_fletch",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "Knife and Fletch",
+   "v1": true,
+   "x": -496.8,
+   "y": -377.4,
+   "at": [
+    "stalker.bridge.s2"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "stalker.bridge.s3",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "",
+   "v1": true,
+   "x": -543.4,
+   "y": -306.7,
+   "at": [
+    "stalker.bridge.knife_and_fletch",
+    "verge_hunter.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.bridge.rite1",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -424.6,
+   "y": -559.0,
+   "at": [
+    "stalker.bridge.quick_hands"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "stalker.bridge.rite2",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "stalker.bridge",
+   "calling": "stalker",
+   "name": "",
+   "v1": false,
+   "x": -559.0,
+   "y": -424.6,
+   "at": [
+    "stalker.bridge.knife_and_fletch"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.bridge.s1",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 543.4,
+   "y": -306.7,
+   "at": [
+    "sunderer.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.bridge.shield_swing",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "Shield Swing",
+   "v1": true,
+   "x": 496.8,
+   "y": -377.4,
+   "at": [
+    "warden.bridge.s1"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "warden.bridge.s2",
+   "kind": "small",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 441.2,
+   "y": -441.2,
+   "at": [
+    "warden.bridge.shield_swing"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.bridge.sword_and_board",
+   "kind": "blue",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "Sword-and-Board",
+   "v1": true,
+   "x": 497.8,
+   "y": -497.8,
+   "at": [
+    "warden.bridge.s2"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "warden.bridge.oath_and_bell",
+   "kind": "notable",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "Oath and Bell",
+   "v1": true,
+   "x": 377.4,
+   "y": -496.8,
+   "at": [
+    "warden.bridge.s2"
+   ],
+   "gate": 2
+  },
+  {
+   "id": "warden.bridge.s3",
+   "kind": "attribute",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "",
+   "v1": true,
+   "x": 306.7,
+   "y": -543.4,
+   "at": [
+    "warden.bridge.oath_and_bell",
+    "bulwark.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.bridge.rite1",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 559.0,
+   "y": -424.6,
+   "at": [
+    "warden.bridge.shield_swing"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "warden.bridge.rite2",
+   "kind": "rite",
+   "region": "bridge",
+   "group": "warden.bridge",
+   "calling": "warden",
+   "name": "",
+   "v1": false,
+   "x": 424.6,
+   "y": -559.0,
+   "at": [
+    "warden.bridge.oath_and_bell"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": true,
+   "x": 922.2,
+   "y": -331.6,
+   "at": [
+    "sunderer.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": true,
+   "x": 955.3,
+   "y": -218.5,
+   "at": [
+    "shambles.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.opened_up",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "Opened Up",
+   "v1": true,
+   "x": 976.8,
+   "y": -78.6,
+   "at": [
+    "shambles.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "shambles.cleavers_weight",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "Cleaver's Weight",
+   "v1": true,
+   "x": 976.8,
+   "y": 78.6,
+   "at": [
+    "shambles.opened_up"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "shambles.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": true,
+   "x": 955.3,
+   "y": 218.5,
+   "at": [
+    "shambles.cleavers_weight"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": true,
+   "x": 922.2,
+   "y": 331.6,
+   "at": [
+    "shambles.s2",
+    "butcher.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": false,
+   "x": 902.1,
+   "y": -72.6,
+   "at": [
+    "shambles.opened_up"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": false,
+   "x": 902.1,
+   "y": 72.6,
+   "at": [
+    "shambles.cleavers_weight"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "shambles.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": false,
+   "x": 1025.0,
+   "y": -187.2,
+   "at": [
+    "shambles.opened_up"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "shambles.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "shambles",
+   "name": "",
+   "v1": false,
+   "x": 1025.0,
+   "y": 187.2,
+   "at": [
+    "shambles.cleavers_weight"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "night_road.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": true,
+   "x": 331.6,
+   "y": 922.2,
+   "at": [
+    "chainbound.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": true,
+   "x": 218.5,
+   "y": 955.3,
+   "at": [
+    "night_road.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.lightning_leaps_the_chain",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "Lightning Leaps the Chain",
+   "v1": true,
+   "x": 78.6,
+   "y": 976.8,
+   "at": [
+    "night_road.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "night_road.moon_on_the_chain",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "Moon on the Chain",
+   "v1": true,
+   "x": -78.6,
+   "y": 976.8,
+   "at": [
+    "night_road.lightning_leaps_the_chain"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "night_road.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": true,
+   "x": -218.5,
+   "y": 955.3,
+   "at": [
+    "night_road.moon_on_the_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": true,
+   "x": -331.6,
+   "y": 922.2,
+   "at": [
+    "night_road.s2",
+    "moonweaver.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": false,
+   "x": 72.6,
+   "y": 902.1,
+   "at": [
+    "night_road.lightning_leaps_the_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": false,
+   "x": -72.6,
+   "y": 902.1,
+   "at": [
+    "night_road.moon_on_the_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "night_road.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": false,
+   "x": 187.2,
+   "y": 1025.0,
+   "at": [
+    "night_road.lightning_leaps_the_chain"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "night_road.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "night_road",
+   "name": "",
+   "v1": false,
+   "x": -187.2,
+   "y": 1025.0,
+   "at": [
+    "night_road.moon_on_the_chain"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "firebreak.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": true,
+   "x": -922.2,
+   "y": 331.6,
+   "at": [
+    "kindler.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": true,
+   "x": -955.3,
+   "y": 218.5,
+   "at": [
+    "firebreak.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.fire_arrows",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "Fire Arrows",
+   "v1": true,
+   "x": -976.8,
+   "y": 78.6,
+   "at": [
+    "firebreak.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "firebreak.frozen_snares",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "Frozen Snares",
+   "v1": true,
+   "x": -976.8,
+   "y": -78.6,
+   "at": [
+    "firebreak.fire_arrows"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "firebreak.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": true,
+   "x": -955.3,
+   "y": -218.5,
+   "at": [
+    "firebreak.frozen_snares"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": true,
+   "x": -922.2,
+   "y": -331.6,
+   "at": [
+    "firebreak.s2",
+    "verge_hunter.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": false,
+   "x": -902.1,
+   "y": 72.6,
+   "at": [
+    "firebreak.fire_arrows"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": false,
+   "x": -902.1,
+   "y": -72.6,
+   "at": [
+    "firebreak.frozen_snares"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "firebreak.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": false,
+   "x": -1025.0,
+   "y": 187.2,
+   "at": [
+    "firebreak.fire_arrows"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "firebreak.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "firebreak",
+   "name": "",
+   "v1": false,
+   "x": -1025.0,
+   "y": -187.2,
+   "at": [
+    "firebreak.frozen_snares"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "duelists_road.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": true,
+   "x": -331.6,
+   "y": -922.2,
+   "at": [
+    "roadknife.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": true,
+   "x": -218.5,
+   "y": -955.3,
+   "at": [
+    "duelists_road.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.parry",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "Parry",
+   "v1": true,
+   "x": -78.6,
+   "y": -976.8,
+   "at": [
+    "duelists_road.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "duelists_road.return_cut",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "Return Cut",
+   "v1": true,
+   "x": 78.6,
+   "y": -976.8,
+   "at": [
+    "duelists_road.parry"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "duelists_road.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": true,
+   "x": 218.5,
+   "y": -955.3,
+   "at": [
+    "duelists_road.return_cut"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": true,
+   "x": 331.6,
+   "y": -922.2,
+   "at": [
+    "duelists_road.s2",
+    "bulwark.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": false,
+   "x": -72.6,
+   "y": -902.1,
+   "at": [
+    "duelists_road.parry"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": false,
+   "x": 72.6,
+   "y": -902.1,
+   "at": [
+    "duelists_road.return_cut"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "duelists_road.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": false,
+   "x": -187.2,
+   "y": -1025.0,
+   "at": [
+    "duelists_road.parry"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "duelists_road.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "duelists_road",
+   "name": "",
+   "v1": false,
+   "x": 187.2,
+   "y": -1025.0,
+   "at": [
+    "duelists_road.return_cut"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "vigil.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": -176.8,
+   "y": 176.8,
+   "at": [
+    "arcanist.the_arcanists_glass"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": -145.0,
+   "y": 145.0,
+   "at": [
+    "vigil.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.n1",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": -113.1,
+   "y": 113.1,
+   "at": [
+    "vigil.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "vigil.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": -83.4,
+   "y": 83.4,
+   "at": [
+    "vigil.n1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": -69.3,
+   "y": 157.0,
+   "at": [
+    "vigil.n1"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "vigil.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": 176.8,
+   "y": -176.8,
+   "at": [
+    "warden.the_wardens_oath"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": 145.0,
+   "y": -145.0,
+   "at": [
+    "vigil.a2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.n2",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": 113.1,
+   "y": -113.1,
+   "at": [
+    "vigil.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "vigil.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": 83.4,
+   "y": -83.4,
+   "at": [
+    "vigil.n2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "vigil.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "vigil",
+   "name": "",
+   "v1": false,
+   "x": 69.3,
+   "y": -157.0,
+   "at": [
+    "vigil.n2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "poachers.a1",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": 176.8,
+   "y": 176.8,
+   "at": [
+    "reaver.the_reavers_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.s1",
+   "kind": "small",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": 145.0,
+   "y": 145.0,
+   "at": [
+    "poachers.a1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.n1",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": 113.1,
+   "y": 113.1,
+   "at": [
+    "poachers.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "poachers.rite1",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": 83.4,
+   "y": 83.4,
+   "at": [
+    "poachers.n1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.blue",
+   "kind": "blue",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": 157.0,
+   "y": 69.3,
+   "at": [
+    "poachers.n1"
+   ],
+   "gate": 5
+  },
+  {
+   "id": "poachers.a2",
+   "kind": "attribute",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": -176.8,
+   "y": -176.8,
+   "at": [
+    "stalker.the_stalkers_spring"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.s2",
+   "kind": "small",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": -145.0,
+   "y": -145.0,
+   "at": [
+    "poachers.a2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.n2",
+   "kind": "notable",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": -113.1,
+   "y": -113.1,
+   "at": [
+    "poachers.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "poachers.rite2",
+   "kind": "rite",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": -83.4,
+   "y": -83.4,
+   "at": [
+    "poachers.n2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "poachers.link",
+   "kind": "link",
+   "region": "crossing",
+   "group": "poachers",
+   "name": "",
+   "v1": false,
+   "x": -157.0,
+   "y": -69.3,
+   "at": [
+    "poachers.n2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "ford.hub",
+   "kind": "small",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": 0.0,
+   "y": 0.0,
+   "at": [
+    "vigil.rite1",
+    "vigil.rite2",
+    "poachers.rite1",
+    "poachers.rite2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "ford.n1",
+   "kind": "notable",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": -72.0,
+   "y": 0.0,
+   "at": [
+    "ford.hub"
+   ],
+   "gate": 1
+  },
+  {
+   "id": "ford.n2",
+   "kind": "notable",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": 72.0,
+   "y": 0.0,
+   "at": [
+    "ford.hub"
+   ],
+   "gate": 1
+  },
+  {
+   "id": "ford.unhoused",
+   "kind": "blue",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": 0.0,
+   "y": 76.0,
+   "at": [
+    "ford.hub"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "ford.s1",
+   "kind": "small",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": -122.0,
+   "y": 0.0,
+   "at": [
+    "ford.n1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "ford.s2",
+   "kind": "small",
+   "region": "ford",
+   "group": "ford",
+   "name": "",
+   "v1": false,
+   "x": 122.0,
+   "y": 0.0,
+   "at": [
+    "ford.n2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1115.8,
+   "y": -278.2,
+   "at": [
+    "shambles.opened_up"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1137.7,
+   "y": -168.0,
+   "at": [
+    "path.steel.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1148.6,
+   "y": -56.2,
+   "at": [
+    "path.steel.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1148.6,
+   "y": 56.2,
+   "at": [
+    "path.steel.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1137.7,
+   "y": 168.0,
+   "at": [
+    "path.steel.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1115.8,
+   "y": 278.2,
+   "at": [
+    "path.steel.s5",
+    "shambles.cleavers_weight"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1203.2,
+   "y": -300.0,
+   "at": [
+    "path.steel.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.steel.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1218.0,
+   "y": -232.4,
+   "at": [
+    "path.steel.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1233.2,
+   "y": -129.6,
+   "at": [
+    "path.steel.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.steel.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1238.5,
+   "y": -60.6,
+   "at": [
+    "path.steel.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.steel.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1238.5,
+   "y": 60.6,
+   "at": [
+    "path.steel.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.steel.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1233.2,
+   "y": 129.6,
+   "at": [
+    "path.steel.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.steel.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1218.0,
+   "y": 232.4,
+   "at": [
+    "path.steel.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.steel.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.steel",
+   "name": "",
+   "v1": false,
+   "x": 1203.2,
+   "y": 300.0,
+   "at": [
+    "path.steel.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.host.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1066.3,
+   "y": 430.8,
+   "at": [
+    "butcher.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1019.1,
+   "y": 532.8,
+   "at": [
+    "path.host.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 962.3,
+   "y": 629.7,
+   "at": [
+    "path.host.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 896.2,
+   "y": 720.6,
+   "at": [
+    "path.host.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 821.6,
+   "y": 804.6,
+   "at": [
+    "path.host.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 739.2,
+   "y": 881.0,
+   "at": [
+    "path.host.s5",
+    "chainbound.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1149.7,
+   "y": 464.5,
+   "at": [
+    "path.host.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.host.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1122.0,
+   "y": 528.0,
+   "at": [
+    "path.host.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1073.9,
+   "y": 620.0,
+   "at": [
+    "path.host.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.host.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 1037.6,
+   "y": 679.0,
+   "at": [
+    "path.host.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.host.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 966.4,
+   "y": 777.0,
+   "at": [
+    "path.host.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.host.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 921.5,
+   "y": 829.7,
+   "at": [
+    "path.host.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.host.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 848.8,
+   "y": 903.9,
+   "at": [
+    "path.host.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.host.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.host",
+   "name": "",
+   "v1": false,
+   "x": 797.1,
+   "y": 949.9,
+   "at": [
+    "path.host.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.storm.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 609.4,
+   "y": 975.3,
+   "at": [
+    "chainbound.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 511.3,
+   "y": 1030.1,
+   "at": [
+    "path.storm.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 408.4,
+   "y": 1075.0,
+   "at": [
+    "path.storm.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 301.5,
+   "y": 1109.8,
+   "at": [
+    "path.storm.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 191.8,
+   "y": 1133.9,
+   "at": [
+    "path.storm.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 80.2,
+   "y": 1147.2,
+   "at": [
+    "path.storm.s5",
+    "night_road.lightning_leaps_the_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 657.1,
+   "y": 1051.6,
+   "at": [
+    "path.storm.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.storm.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 597.4,
+   "y": 1086.6,
+   "at": [
+    "path.storm.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 504.4,
+   "y": 1132.8,
+   "at": [
+    "path.storm.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.storm.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 440.3,
+   "y": 1159.2,
+   "at": [
+    "path.storm.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.storm.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 325.1,
+   "y": 1196.6,
+   "at": [
+    "path.storm.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.storm.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 257.8,
+   "y": 1212.9,
+   "at": [
+    "path.storm.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.storm.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 155.4,
+   "y": 1230.2,
+   "at": [
+    "path.storm.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.storm.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.storm",
+   "name": "",
+   "v1": false,
+   "x": 86.5,
+   "y": 1237.0,
+   "at": [
+    "path.storm.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.grave.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -120.2,
+   "y": 1143.7,
+   "at": [
+    "night_road.moon_on_the_chain"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -215.5,
+   "y": 1129.6,
+   "at": [
+    "path.grave.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -309.3,
+   "y": 1107.6,
+   "at": [
+    "path.grave.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -400.9,
+   "y": 1077.9,
+   "at": [
+    "path.grave.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -489.6,
+   "y": 1040.6,
+   "at": [
+    "path.grave.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -575.0,
+   "y": 995.9,
+   "at": [
+    "path.grave.s5",
+    "moonweaver.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -129.6,
+   "y": 1233.2,
+   "at": [
+    "path.grave.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.grave.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -181.1,
+   "y": 1226.7,
+   "at": [
+    "path.grave.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -283.2,
+   "y": 1207.2,
+   "at": [
+    "path.grave.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.grave.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -333.5,
+   "y": 1194.3,
+   "at": [
+    "path.grave.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.grave.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -432.2,
+   "y": 1162.2,
+   "at": [
+    "path.grave.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.grave.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -480.5,
+   "y": 1143.1,
+   "at": [
+    "path.grave.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.grave.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -574.5,
+   "y": 1098.9,
+   "at": [
+    "path.grave.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.grave.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.grave",
+   "name": "",
+   "v1": false,
+   "x": -620.0,
+   "y": 1073.9,
+   "at": [
+    "path.grave.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.weave.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -626.3,
+   "y": 964.5,
+   "at": [
+    "moonweaver.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -704.8,
+   "y": 908.7,
+   "at": [
+    "path.weave.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -778.4,
+   "y": 846.5,
+   "at": [
+    "path.weave.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -846.5,
+   "y": 778.4,
+   "at": [
+    "path.weave.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -908.7,
+   "y": 704.8,
+   "at": [
+    "path.weave.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -964.5,
+   "y": 626.3,
+   "at": [
+    "path.weave.s5",
+    "kindler.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -675.4,
+   "y": 1040.0,
+   "at": [
+    "path.weave.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.weave.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -718.3,
+   "y": 1010.8,
+   "at": [
+    "path.weave.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -800.4,
+   "y": 947.1,
+   "at": [
+    "path.weave.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.weave.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -839.3,
+   "y": 912.8,
+   "at": [
+    "path.weave.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.weave.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -912.8,
+   "y": 839.3,
+   "at": [
+    "path.weave.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.weave.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -947.1,
+   "y": 800.4,
+   "at": [
+    "path.weave.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.weave.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -1010.8,
+   "y": 718.3,
+   "at": [
+    "path.weave.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.weave.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.weave",
+   "name": "",
+   "v1": false,
+   "x": -1040.0,
+   "y": 675.4,
+   "at": [
+    "path.weave.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.pyre.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1010.6,
+   "y": 548.7,
+   "at": [
+    "kindler.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1057.8,
+   "y": 451.2,
+   "at": [
+    "path.pyre.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1095.6,
+   "y": 349.6,
+   "at": [
+    "path.pyre.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1123.6,
+   "y": 245.0,
+   "at": [
+    "path.pyre.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1141.7,
+   "y": 138.2,
+   "at": [
+    "path.pyre.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1149.6,
+   "y": 30.1,
+   "at": [
+    "path.pyre.s5",
+    "firebreak.fire_arrows"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1089.7,
+   "y": 591.7,
+   "at": [
+    "path.pyre.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.pyre.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1119.2,
+   "y": 533.8,
+   "at": [
+    "path.pyre.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1160.0,
+   "y": 438.3,
+   "at": [
+    "path.pyre.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.pyre.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1181.3,
+   "y": 377.0,
+   "at": [
+    "path.pyre.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.pyre.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1211.5,
+   "y": 264.2,
+   "at": [
+    "path.pyre.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.pyre.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1223.7,
+   "y": 200.4,
+   "at": [
+    "path.pyre.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.pyre.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1236.2,
+   "y": 97.3,
+   "at": [
+    "path.pyre.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.pyre.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.pyre",
+   "name": "",
+   "v1": false,
+   "x": -1239.6,
+   "y": 32.5,
+   "at": [
+    "path.pyre.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.rime.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1149.6,
+   "y": -30.1,
+   "at": [
+    "firebreak.frozen_snares"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1141.7,
+   "y": -138.2,
+   "at": [
+    "path.rime.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1123.6,
+   "y": -245.0,
+   "at": [
+    "path.rime.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1095.6,
+   "y": -349.6,
+   "at": [
+    "path.rime.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1057.8,
+   "y": -451.2,
+   "at": [
+    "path.rime.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1010.6,
+   "y": -548.7,
+   "at": [
+    "path.rime.s5",
+    "verge_hunter.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1239.6,
+   "y": -32.5,
+   "at": [
+    "path.rime.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.rime.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1236.2,
+   "y": -97.3,
+   "at": [
+    "path.rime.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1223.7,
+   "y": -200.4,
+   "at": [
+    "path.rime.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.rime.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1211.5,
+   "y": -264.2,
+   "at": [
+    "path.rime.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.rime.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1181.3,
+   "y": -377.0,
+   "at": [
+    "path.rime.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.rime.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1160.0,
+   "y": -438.3,
+   "at": [
+    "path.rime.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.rime.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1119.2,
+   "y": -533.8,
+   "at": [
+    "path.rime.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.rime.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.rime",
+   "name": "",
+   "v1": false,
+   "x": -1089.7,
+   "y": -591.7,
+   "at": [
+    "path.rime.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.wild.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -930.4,
+   "y": -676.0,
+   "at": [
+    "verge_hunter.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -860.0,
+   "y": -763.5,
+   "at": [
+    "path.wild.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -781.4,
+   "y": -843.8,
+   "at": [
+    "path.wild.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -695.3,
+   "y": -916.0,
+   "at": [
+    "path.wild.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -602.6,
+   "y": -979.5,
+   "at": [
+    "path.wild.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -504.1,
+   "y": -1033.6,
+   "at": [
+    "path.wild.s5",
+    "roadknife.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -1003.2,
+   "y": -728.9,
+   "at": [
+    "path.wild.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.wild.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -960.9,
+   "y": -783.7,
+   "at": [
+    "path.wild.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -892.0,
+   "y": -861.4,
+   "at": [
+    "path.wild.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.wild.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -842.5,
+   "y": -909.8,
+   "at": [
+    "path.wild.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.wild.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -749.7,
+   "y": -987.7,
+   "at": [
+    "path.wild.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.wild.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -693.4,
+   "y": -1028.0,
+   "at": [
+    "path.wild.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.wild.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -604.9,
+   "y": -1082.4,
+   "at": [
+    "path.wild.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.wild.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.wild",
+   "name": "",
+   "v1": false,
+   "x": -543.6,
+   "y": -1114.5,
+   "at": [
+    "path.wild.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.hunt.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": -80.2,
+   "y": -1147.2,
+   "at": [
+    "duelists_road.parry"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 32.1,
+   "y": -1149.6,
+   "at": [
+    "path.hunt.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 144.1,
+   "y": -1140.9,
+   "at": [
+    "path.hunt.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 254.8,
+   "y": -1121.4,
+   "at": [
+    "path.hunt.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 363.0,
+   "y": -1091.2,
+   "at": [
+    "path.hunt.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 467.7,
+   "y": -1050.6,
+   "at": [
+    "path.hunt.s5",
+    "bulwark.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": -86.5,
+   "y": -1237.0,
+   "at": [
+    "path.hunt.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.hunt.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": -17.3,
+   "y": -1239.9,
+   "at": [
+    "path.hunt.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 86.5,
+   "y": -1237.0,
+   "at": [
+    "path.hunt.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.hunt.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 155.4,
+   "y": -1230.2,
+   "at": [
+    "path.hunt.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.hunt.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 274.7,
+   "y": -1209.2,
+   "at": [
+    "path.hunt.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.hunt.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 341.8,
+   "y": -1192.0,
+   "at": [
+    "path.hunt.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.hunt.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 440.3,
+   "y": -1159.2,
+   "at": [
+    "path.hunt.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.hunt.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.hunt",
+   "name": "",
+   "v1": false,
+   "x": 504.4,
+   "y": -1132.8,
+   "at": [
+    "path.hunt.s6"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.dawn.s1",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 676.0,
+   "y": -930.4,
+   "at": [
+    "bulwark.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.s2",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 763.5,
+   "y": -860.0,
+   "at": [
+    "path.dawn.s1"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.s3",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 843.8,
+   "y": -781.4,
+   "at": [
+    "path.dawn.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.s4",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 916.0,
+   "y": -695.3,
+   "at": [
+    "path.dawn.s3"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.s5",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 979.5,
+   "y": -602.6,
+   "at": [
+    "path.dawn.s4"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.s6",
+   "kind": "small",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 1033.6,
+   "y": -504.1,
+   "at": [
+    "path.dawn.s5",
+    "sunderer.s9"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.n1",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 728.9,
+   "y": -1003.2,
+   "at": [
+    "path.dawn.s1"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.dawn.rite1",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 783.7,
+   "y": -960.9,
+   "at": [
+    "path.dawn.s2"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.n2",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 861.4,
+   "y": -892.0,
+   "at": [
+    "path.dawn.s2"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.dawn.link",
+   "kind": "link",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 909.8,
+   "y": -842.5,
+   "at": [
+    "path.dawn.s3"
+   ],
+   "gate": 4
+  },
+  {
+   "id": "path.dawn.blue",
+   "kind": "blue",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 987.7,
+   "y": -749.7,
+   "at": [
+    "path.dawn.s4"
+   ],
+   "gate": 7
+  },
+  {
+   "id": "path.dawn.n3",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 1028.0,
+   "y": -693.4,
+   "at": [
+    "path.dawn.s5"
+   ],
+   "gate": 3
+  },
+  {
+   "id": "path.dawn.rite2",
+   "kind": "rite",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 1082.4,
+   "y": -604.9,
+   "at": [
+    "path.dawn.s5"
+   ],
+   "gate": 0
+  },
+  {
+   "id": "path.dawn.n4",
+   "kind": "notable",
+   "region": "oldroad",
+   "group": "path.dawn",
+   "name": "",
+   "v1": false,
+   "x": 1114.5,
+   "y": -543.6,
+   "at": [
+    "path.dawn.s6"
+   ],
+   "gate": 3
+  }
+ ]
+}

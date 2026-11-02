@@ -47,6 +47,8 @@ public sealed class WeaponInst
     public double CastMul = 1;
     /// <summary>Firings so far, and the Melee or Thrown ones the warden's Hand counts toward its heavy blow (Sim/Hands.cs).</summary>
     public int Casts, HandBlows;
+    /// <summary>Lamps v2 (Sim/BoardRules.cs): a heavy rite's own count of firings, and the firing a bind rite last bound in.</summary>
+    public int RiteBlows, RiteBound = -1;
     /// <summary>The last firing was heavy: its burst shots still to come are too.</summary>
     public bool HeavyCast;
     /// <summary>Its own heavy count (WeaponStats.HeavyEvery: Sunder's every 4th swing): firings so far, and whether the
@@ -140,6 +142,7 @@ public static partial class Firing
     public static double CooldownOf(Battle b, WeaponInst w)
     {
         double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w);
+        if (b.Lamps.Board) c *= b.BoardCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         if (w.Wick != null) c *= w.Wick.Cooldown;
         return Math.Max(0.08, Math.Min(20, c));
@@ -168,6 +171,7 @@ public static partial class Firing
     {
         double d = baseValue * b.Stats.Get(Stat.Duration) * (1 + Content.Weapons.DurationStep * (w.Rank - 1)) * w.Mods.Duration * (1 + b.ZoneLonger(w));
         if (w.Evolution != null) d *= w.Evolution.Mods.Duration ?? 1;
+        if (b.Lamps.Board) d *= b.BoardDurationMul(w);
         return d;
     }
 
@@ -253,6 +257,7 @@ public static partial class Firing
         if (fired) w.HeavyCast = heavy;
         if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
+        if (b.Lamps.Board) b.BoardAfterFire(w, fired);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
@@ -495,7 +500,7 @@ public static partial class Firing
     static bool FireChain(Battle b, WeaponInst w)
     {
         var p = At(b);
-        var first = b.NearestHostile(p.X, p.Z, RangeOf(w));
+        var first = (b.Lamps.Board ? b.RodTarget(w, p.X, p.Z, RangeOf(w)) : null) ?? b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (first == null) return false;
         int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0) + (w.Wick?.Chains ?? 0);
         double reach = AreaOf(b, w, w.Num(s => s.ChainRange) ?? 6);
@@ -575,9 +580,11 @@ public static partial class Firing
         var targets = b.HostilesInRadius(p.X, p.Z, area * b.Stats.Get(Stat.Area) + 3);
         if (targets.Count == 0) return false;
         targets = b.BoundFirst(w, targets); // chainbound.lightning_rod
+        // blue.lightning_rod: the first strike falls on the nearest champion.
+        var rod = b.Lamps.Board ? b.RodTarget(w, p.X, p.Z, area * b.Stats.Get(Stat.Area) + 3) : null;
         for (int i = 0; i < strikes; i++)
         {
-            var t = targets[b.Rng.Int(0, targets.Count - 1)];
+            var t = i == 0 && rod != null ? rod : targets[b.Rng.Int(0, targets.Count - 1)];
             double x = t.X + (b.Rng.Next() - 0.5) * 1.2, z = t.Z + (b.Rng.Next() - 0.5) * 1.2;
             b.ScheduleStrike(x, z, AreaOf(b, w, splash), dmg, w.School, w.Tags, 0.28 + i * 0.05, w);
         }
