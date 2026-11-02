@@ -1027,12 +1027,14 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>A cone on the ground from (x, z), pointing at `angle` (radians, in the plane), `radius` long.</summary>
-    void ConeMark(double x, double z, float radius, double angle, double arc, Color color, float life, int? key = null)
+    void ConeMark(double x, double z, float radius, double angle, double arc, Color color, float life, int? key = null, bool progress = false)
     {
         if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; }
         var m = Ground(x, z, radius, ConeTexture((int)Math.Round(arc * 180 / Math.PI / 5) * 5), color, life);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(Math.Cos(angle), Math.Sin(angle)), 0);
         if (m.Slot >= 0) { m.Shape = 2; m.P1 = (float)(arc / 2); }
+        // a hostile blow's cone fills from its point as the blow comes (as a circle from its heart: MarkPass)
+        m.Progress = progress;
         if (key is int k2) keyed[k2] = m;
     }
 
@@ -1370,7 +1372,7 @@ public partial class BattleFx : Node3D
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
                     }
-                    else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                     else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
