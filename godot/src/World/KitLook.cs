@@ -206,7 +206,8 @@ public static class KitLook
     }
 
     /// <summary>The canopy fade's tunables (kit.gdshader OWN_FOLIAGE, global canopy_fade; project.godot holds the defaults):
-    /// --canopy R,E,G[,M] (M 2, the default: R the margin round her body on the screen, m; M 1, the old ring: R the fight
+    /// --canopy R,E,G[,M] (M 2, the default, CanopyFader: R the gap, m, at which a crown near a sight line from the lens to her
+    /// outline starts to fade, E the gap at which it comes back (eased 0.3 s in time); M 1, the old ring: R the fight
     /// radius on the ground round her, m, and no stump caps, e.g. --canopy 6,1.5,1,1; E the ease, m; G the ghost, the share
     /// cut) or --canopy off. Set once.</summary>
     static void Canopy()

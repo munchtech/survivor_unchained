@@ -9,7 +9,10 @@ namespace SurvivorUnchained.View;
 /// tagged easeNNin_KK / easeNNout_KK, for judging the fade in motion.</summary>
 public partial class CanopyLogger : Node
 {
-    internal readonly List<CanopyLog.Tree> Trees = new();
+    /// <summary>The zone's fader: its trees, and (canopy_fade.w 2) their fades as drawn.</summary>
+    internal CanopyFader Fader = null!;
+    IReadOnlyList<CanopyLog.Tree> Trees => Fader.Trees;
+    public CanopyLogger() => ProcessPriority = 1001;
     Vector4? fade;
     static readonly int[]? Burst = SurvivorUnchained.Args.Get("canopy-burst") is string cb && cb.Split(',') is { Length: 2 } bp
         && int.TryParse(bp[0], out var bn) && int.TryParse(bp[1], out var bk) ? new[] { bn, bk } : null;
@@ -39,18 +42,28 @@ public partial class CanopyLogger : Node
         var tv = view * (her + new Vector3(0, 0.7f, 0));
         var f0 = new Vector2(fv.X, fv.Y) * (hz / Mathf.Min(fv.Z, -0.5f));
         var f1 = new Vector2(tv.X, tv.Y) * (hz / Mathf.Min(tv.Z, -0.5f));
-        int inFrame = 0, easing = 0, crossed = 0, byLens = 0; string dbg = "";
+        int inFrame = 0, easing = 0, crossed = 0, byLens = 0, part = 0; string dbg = "";
         var vp = GetViewport().GetVisibleRect().Size;
         foreach (var t in Trees)
         {
             float flat = new Vector2(t.At.X - her.X, t.At.Z - her.Z).Length();
             if (flat < t.Near) t.Near = flat;
             if (flat > 70) continue;
+            float f, fHer;
+            bool lens;
+            if (fd.W > 1.5f)
+            {
+                // (w 2: the fader's own, as drawn)
+                f = t.Shown; fHer = t.ForHer ? 1 : 0; lens = t.ForLens;
+                if (lens) Lens(t);
+                if (cam.IsPositionBehind(t.At + t.Up * t.Top) && cam.IsPositionBehind(t.At)) { t.F = f; continue; }
+                goto tally;
+            }
             var vb = view * (t.At + t.Up * t.Lo);
             var vt = view * (t.At + t.Up * t.Top);
             // (the shader's: a crown within 1 m of the lens's plane is cut whole)
             float z0 = Mathf.Max(vb.Z, vt.Z);
-            bool lens = z0 > -(t.R * t.Up.Length() + 1);
+            lens = z0 > -(t.R * t.Up.Length() + 1);
             if (Mathf.Max(vb.Z, vt.Z) > -1)
             {
                 if (Mathf.Min(vb.Z, vt.Z) > -1) { if (lens) Lens(t); continue; }
@@ -60,7 +73,6 @@ public partial class CanopyLogger : Node
             var a = new Vector2(vb.X, vb.Y) * (hz / Mathf.Min(vb.Z, -0.5f));
             var b = new Vector2(vt.X, vt.Y) * (hz / Mathf.Min(vt.Z, -0.5f));
             float rr = t.R * t.Up.Length() * hz / Mathf.Min(0.5f * (vb.Z + vt.Z), -0.5f);
-            float f;
             if (fd.W > 1.5f)
             {
                 var ab = b - a; var fb = f1 - f0;
@@ -82,8 +94,9 @@ public partial class CanopyLogger : Node
                 f = 1 - Mathf.SmoothStep(fd.X, fd.X + fd.Y, d);
             }
             if (lens) Lens(t);
-            float fHer = f;
+            fHer = f;
             f = Mathf.Max(f, Mathf.SmoothStep(-(t.R * t.Up.Length() + 2.5f), -(t.R * t.Up.Length() + 1), z0));
+        tally:
             if (f > 0.5f) t.Secs += dt;
             if (Burst != null && burstLeft == 0 && events < Burst[0] && SurvivorUnchained.Shots.Clock - lastEvent > 4)
             {
@@ -102,15 +115,20 @@ public partial class CanopyLogger : Node
             if (f > 0.5f && seen) { inFrame++; if (fHer <= 0.5f) byLens++; }
             if (f > 0.5f && seen && Dbg) dbg += $" [{t.Species[0]} {t.At.X - her.X:0.0},{t.At.Z - her.Z:0.0}]";
             if (f is > 0.02f and < 0.98f && seen) easing++;
+            if (f is > 0.002f and < 0.998f && seen) part++;
             if ((f > 0.5f) != (t.F > 0.5f) && seen) crossed++;
             t.F = f;
         }
         frames++; sumIn += inFrame; maxIn = Mathf.Max(maxIn, inFrame); sumEase += easing; crossings += crossed;
         if (crossed > 0) crossFrames++;
-        GD.Print($"canopy-frame {SurvivorUnchained.Shots.Clock:0.000} faded {inFrame} lens {byLens} easing {easing} crossed {crossed} her {her.X:0.0},{her.Z:0.0}{dbg}");
+        if (part > 0) partFrames++;
+        started += Fader.Started; sumMs += Fader.Ms; maxMs = System.Math.Max(maxMs, Fader.Ms); sumTested += Fader.Tested; sumWrites += Fader.Writes;
+        GD.Print($"canopy-frame {SurvivorUnchained.Shots.Clock:0.000} faded {inFrame} lens {byLens} easing {easing} crossed {crossed} her {her.X:0.0},{her.Z:0.0} " +
+            $"part {part} started {Fader.Started} tested {Fader.Tested} writes {Fader.Writes} cpu {Fader.Ms:0.0000}{dbg}");
     }
     static readonly bool Dbg = SurvivorUnchained.Args.Has("canopy-trees");
-    int frames, sumIn, maxIn, sumEase, crossings, crossFrames;
+    int frames, sumIn, maxIn, sumEase, crossings, crossFrames, partFrames, started, sumTested, sumWrites;
+    double sumMs, maxMs;
 
     /// <summary>A crown cut whole at the lens (counted; with --canopy-burst, a burst of the frames as it is).</summary>
     void Lens(CanopyLog.Tree t)
@@ -130,7 +148,9 @@ public partial class CanopyLogger : Node
         GD.Print($"canopy-log {GetParent()?.Name}: {hit.Count} of {Trees.Count} trees faded > 0.5; {lensFrames} tree-frames cut at the lens");
         if (frames > 0)
             GD.Print($"canopy-stats {GetParent()?.Name}: {frames} frames, stumps in frame mean {(float)sumIn / frames:0.00} max {maxIn}, " +
-                $"easing mean {(float)sumEase / frames:0.00}, {crossings} half-crossings in {crossFrames} frames");
+                $"easing mean {(float)sumEase / frames:0.00}, {crossings} half-crossings in {crossFrames} frames; part-faded in {partFrames} frames " +
+                $"({100f * partFrames / frames:0.0}%), {started} fades started; fader cpu mean {sumMs / frames:0.0000} ms max {maxMs:0.0000} ms, " +
+                $"trees tested mean {(float)sumTested / frames:0.0}, writes mean {(float)sumWrites / frames:0.00}");
         foreach (var t in hit)
             GD.Print($"canopy-log tree x {t.At.X:0.0} z {t.At.Z:0.0} {t.Species} faded {t.Secs:0.0} s, her path {t.Near:0.0} m from its trunk{(t.Near < 2 ? " IN LANE" : "")}");
     }

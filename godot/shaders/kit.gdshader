@@ -476,7 +476,13 @@ void vertex() {
 		// the ground round her seen foreshortened: screen heights stretched back to ground depth by the camera's pitch
 		float ky = 1.0 / max(abs(INV_VIEW_MATRIX[2].y), 0.3);
 		float d;
-		if (canopy_fade.w > 1.5) {
+		// (Env 23 r2, judge e23 r1: a fade eased by her place stood half-done nearly always, a stipple that crawled) a copy a
+		// CanopyFader keeps (custom data b 0) takes its fade from its custom data's g, eased in time on the CPU (her whole
+		// outline's sight lines against its crown, a gap between in and out): the dither only in its 0.3 s
+		bool kept_by_cpu = canopy_fade.w > 1.5 && INSTANCE_CUSTOM.b < 0.5;
+		if (kept_by_cpu) {
+			v_fade = clamp(INSTANCE_CUSTOM.g, 0.0, 1.0);
+		} else if (canopy_fade.w > 1.5) {
 			// (w 2) her body on the screen, feet (chest - 1.1 m) to head (+ 0.7 m), against the crown's segment: the
 			// nearer of the four ends' distances to the other segment (0 where they cross), less the crown's radius and hers
 			vec3 fv = (VIEW_MATRIX * vec4(survivor.xyz - vec3(0.0, 1.1, 0.0), 1.0)).xyz;
@@ -493,7 +499,8 @@ void vertex() {
 			float c1 = ab.x * (f0.y - a.y) - ab.y * (f0.x - a.x), c2 = ab.x * (f1.y - a.y) - ab.y * (f1.x - a.x);
 			float c3 = fb.x * (a.y - f0.y) - fb.y * (a.x - f0.x), c4 = fb.x * (b.y - f0.y) - fb.y * (b.x - f0.x);
 			d = (c1 * c2 < 0.0 && c3 * c4 < 0.0 ? -mix(rr, r1, c3 / (c3 - c4)) : min(min(d0, d1), min(d2, d3))) - 0.35;
-			v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+			// (a copy no fader keeps, OwnTree's: the screen margins as round 1's, -0.5 and 2)
+			v_fade = 1.0 - smoothstep(-0.5, 1.5, d);
 			// only a crown in front of her: its nearest edge (its axis's nearer end, its radius toward the lens) nearer
 			// the camera than her chest, eased over a metre (a crown behind her, which she covers, stands)
 			v_fade *= smoothstep(-0.5, 0.5, max(vb_z0, vt_z0) + crown_r * length(upv) - hv.z);
@@ -508,7 +515,9 @@ void vertex() {
 		// (a crown that reaches within 1 m of the lens's plane is cut whole: its axis behind the plane read as
 		// "not seen", yet its needles hung in front and flashed across her for a few frames as the camera passed, judge e2)
 		// (eased over the 1.5 m before it, so a crown that crosses it in view fades rather than pops: judge e3)
-		v_fade = max(v_fade, smoothstep(-(crown_r * length(upv) + 2.5), -(crown_r * length(upv) + 1.0), max(vb_z0, vt_z0)));
+		// (kept by the CPU: it fades such a crown from 3 m out in time; here only a hard stop at 1 m, should it lag)
+		if (kept_by_cpu) v_fade = max(v_fade, step(-(crown_r * length(upv) + 1.0), max(vb_z0, vt_z0)));
+		else v_fade = max(v_fade, smoothstep(-(crown_r * length(upv) + 2.5), -(crown_r * length(upv) + 1.0), max(vb_z0, vt_z0)));
 	}
 #endif
 	VERTEX.x += sway;
@@ -1037,8 +1046,10 @@ void fragment() {
 			float rr = length(hc);
 			float ring = 0.5 + 0.5 * sin(rr * 160.0 + 2.0 * sin(atan(hc.y, hc.x) * 3.0 + v_jit * 6.0));
 			// (weathered: greyed and a quarter darker than fresh-sawn, so in her lamp or the sun it is no brighter than the ground)
-			vec3 wood = mix(stump_wood, ALBEDO * 1.6, 0.35);
-			wood = mix(wood, vec3(dot(wood, LW)), 0.3) * 0.75;
+			// (r2, judge e23 r1 #4: by night in her lamp the cut was the brightest thing by her) older still: half toward the
+			// bark's own colour, greyer, and darker, so it sits with the litter round it
+			vec3 wood = mix(stump_wood, ALBEDO * 1.6, 0.5);
+			wood = mix(wood, vec3(dot(wood, LW)), 0.4) * 0.55;
 			vec3 cut = wood * mix(0.85, 1.05, fract(v_jit * 7.3)) * mix(0.8, 1.0, ring);
 			cut *= mix(0.7, 1.0, smoothstep(0.0, 0.35, rr / rw));
 			cut = mix(cut, wood * 1.18, smoothstep(0.72, 0.9, rr / rw) * 0.55);
@@ -1051,7 +1062,7 @@ void fragment() {
 			// (Env 23) the kept stump's bark, its light and dark pulled halfway to the strip's local mean: at the play
 			// camera its full-contrast scales read as cobbles on a well (judge e23v3)
 			float lr = dot(texture(albedo_tex, UV).rgb, LW), lm = dot(textureLod(albedo_tex, UV, 5.0).rgb, LW);
-			ALBEDO *= mix(1.0, lm / max(lr, 0.02), 0.5);
+			ALBEDO *= mix(1.0, lm / max(lr, 0.02), 0.5 * v_fade);
 		} else if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0 && canopy_fade.w < 1.5) {
 			// (lf6d) the cut's face where the view ray crosses the cut's plane (local y = crown_keep): its growth rings
 			// about the trunk's middle, a darker heart, the pale sapwood under the bark, a check split across it
