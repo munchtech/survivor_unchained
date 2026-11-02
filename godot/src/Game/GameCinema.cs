@@ -1004,6 +1004,8 @@ public partial class Game
                     else if (orbs.TryGetValue(c.Actor, out var o))
                     {
                         if (c.Has("lit")) o.Visible = c.Bool("lit", true);
+                        // ("light": its light's share of the glow, OrbView.LightShare; 1 gives it back)
+                        if (c.Has("light") && o is OrbView ov) ov.LightShare = (float)c.Num("light");
                         if (!c.Has("glow")) break;
                         double from = orbLight[c.Actor], to = 6 * c.Num("glow");
                         void Set(double l) { orbLight[c.Actor] = l; ((IOrb)o).Light = l; }

@@ -343,6 +343,9 @@ public partial class OrbView : Node3D, IOrb
     // The heartbeat's period (s); the light's swing about its mean (+-; the veins' is the shader's beat_amp).
     const double Period = 1.55;
     float lightAmp = 0.12f, lightK = 0.12f, lightAtt = 0.8f;
+    /// <summary>Its light's share of the glow (1 as built; a cinematic's "lamp" cue "light": the stone as bright, less of its light
+    /// on what is near it, C03 s8: her face keyed by the shot's own rigs, the stone's pale light greyed her skin).</summary>
+    public float LightShare = 1;
     const float FistK = 0.002f;
 
     static Mesh? heartMesh;
@@ -585,7 +588,7 @@ public partial class OrbView : Node3D, IOrb
         heart.SetShaderParameter("level", level);
         heart.SetShaderParameter("flow_t", (float)t);
         float sizeK = size / 0.05f;
-        light.LightEnergy = (float)(lightIn * lightK * sizeK * (1 + lightAmp * (2 * b - 1)));
+        light.LightEnergy = (float)(lightIn * lightK * sizeK * LightShare * (1 + lightAmp * (2 * b - 1)));
         light.Visible = lightIn > 0.01;
         // Wet from the water: soaked for its first 20 s shown, drying to a damp sheen by 60 s; the drips thin out by 25 s.
         float wet = (float)Math.Clamp(1 - (shownT - 20) / 40, 0.35, 1);
