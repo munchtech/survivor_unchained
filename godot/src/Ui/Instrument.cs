@@ -106,7 +106,10 @@ public partial class Instrument : Control
         AddChild(Passives);
         Statuses = Style.H(10);
         Statuses.Alignment = BoxContainer.AlignmentMode.Center;
-        Statuses.Position = new Vector2(LegacyLifeX - 150, LegacyTop - 40);
+        // UI 27: the row rides with her (its UI 24 place beside her hair, through her own scale and offset)
+        var stAt = new Vector2(LegacyLifeX, LegacyTop - 25);
+        stAt = DgPanel.GirlAnchor + (stAt - DgPanel.GirlAnchor) * (DgPanel.GroupScale / DgPanel.GirlRefScale) + DgPanel.GirlOffset;
+        Statuses.Position = stAt - new Vector2(150, 15);
         Statuses.Size = new Vector2(300, 30);
         AddChild(Statuses);
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
