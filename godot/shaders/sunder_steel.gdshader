@@ -11,17 +11,20 @@ render_mode blend_mix, cull_back, depth_draw_opaque;
 uniform sampler2D masks : filter_linear_mipmap_anisotropic, repeat_enable;
 
 // steel
-uniform vec3 steel = vec3(0.46, 0.46, 0.45);
-uniform float steel_rough = 0.28;
+uniform vec3 steel = vec3(0.34, 0.34, 0.333);
+uniform float steel_rough = 0.32;
 uniform float streak_k = 0.10;      // the brushed streaks' share of the flat's roughness
 uniform float run_k = 0.18;         // the slow light-to-dark run along the flat (albedo)
+uniform float ramp_k = 0.11;        // the whole blade this much darker toward the point (root = 0, tip = 1)
+uniform float panel_warm = 0.12;     // the etched ground's warm cast (cuts the sky's blue on it)
 uniform vec3 bevel = vec3(0.92, 0.92, 0.90);
-uniform float bevel_rough = 0.13;
-uniform float fuller_k = 0.45;      // the fuller's albedo against the flat's
-uniform float fuller_rough = 0.52;
+uniform float bevel_rough = 0.06;
+uniform float bevel_glow = 0.23;     // the bevel's own bright line (emission, the share of its albedo): a mirror edge reflects the dark valley, not light
+uniform float fuller_k = 0.50;      // the fuller's albedo against the flat's
+uniform float fuller_rough = 0.40;
 // gilt (oathbrand's metal_gold: its base colour texture's linear mean times its factor)
 uniform vec3 gilt = vec3(0.56, 0.39, 0.125);
-uniform float gilt_rough = 0.30;
+uniform float gilt_rough = 0.22;
 uniform float gilt_recess = 0.55;   // the gilt's creases (round the pommel's sun) darkened to this
 // leather
 uniform vec3 leather = vec3(0.040, 0.026, 0.017);
@@ -97,6 +100,7 @@ void fragment() {
 	vec3 col;
 	float metal = 1.0, rough, spec = 0.5;
 	vec3 dbg = vec3(1.0);
+	vec3 glow = vec3(0.0);
 	if (COLOR.g > 0.75) {
 		// the leather: a lapped spiral, low contrast
 		float ph = fract(opos.y / wrap_pitch + atan(opos.z / 0.84, opos.x) / 6.28318);
@@ -132,13 +136,15 @@ void fragment() {
 		col = mix(col, bevel * (1.0 + streak * 0.04), bev);
 		rough = mix(rough, bevel_rough + streak * 0.03, bev);
 		col = mix(col, bevel * 1.2, bev * smoothstep(0.75, 0.95, COLOR.r));
+		col *= 1.0 - ramp_k * clamp((opos.y - 0.372) / 1.04, 0.0, 1.0);
+		glow = bevel * bevel_glow * bev;
 		// the etched panel: gilt lines in the flat and the fuller, just below the guard
 		vec2 q = vec2(opos.x, opos.y - panel_y0);
 		if (bev < 0.5 && q.y > 0.0 && q.y < panel_len) {
 			float pm = panel(q);
 			float inside = step(abs(q.x), panel_hw) * step(0.004, q.y) * step(q.y, panel_len - 0.002 - (panel_len - 0.022) * 0.0)
 				* step(abs(q.x) / panel_hw * 0.018 + (q.y - (panel_len - 0.020)), 0.018);
-			col *= mix(1.0, panel_ground, inside);
+			col *= mix(vec3(1.0), vec3(1.0 + panel_warm, 1.0, 1.0 - panel_warm * 1.6) * panel_ground, inside);
 			rough = mix(rough, 0.55, inside);
 			col = mix(col, gilt * 0.95, pm);
 			rough = mix(rough, gilt_rough + 0.04, pm);
@@ -146,6 +152,7 @@ void fragment() {
 		dbg = bev > 0.5 ? vec3(1.0, 0.0, 0.0) : ful > 0.5 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
 	}
 	ALBEDO = col;
+	EMISSION = glow;
 	METALLIC = metal;
 	ROUGHNESS = clamp(rough, 0.05, 1.0);
 	SPECULAR = spec;
