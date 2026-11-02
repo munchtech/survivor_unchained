@@ -2001,7 +2001,10 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=N
         poses.append(post(fr, pose) if post else pose)
     bases = None if base is None else [(base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
                                        for fr in range(frames)]
-    rot, pos = solve_frames(rig, poses, bases, loop=loop, weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path,
+    # An "elbow_sigma" in the meta (frames; animation 59): how widely each elbow's way is smoothed in time (solve_frames'
+    # sigma); a fast cut whose elbows are keyed per beat takes a narrower one. Absent: 2.0, as before.
+    rot, pos = solve_frames(rig, poses, bases, loop=loop, sigma=float((meta or {}).get("elbow_sigma", 2.0)),
+                            weapon=(meta or {}).get("weapon", ""), pin_first=pin_first, pin_path=pin_path,
                             slide=float((meta or {}).get("grip_slide", 0.0)), tilt=float((meta or {}).get("grip_tilt", 0.0)),
                             slide_l=float((meta or {}).get("grip_slide_l", 0.0)), tilt_l=float((meta or {}).get("grip_tilt_l", 0.0)))
     m ={"source": "keyed (tools/anim)", "licence": "own work"}

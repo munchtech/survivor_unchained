@@ -126,7 +126,11 @@ public partial class PlayerView : Node3D
         loadout = lo;
         Name = "Survivor";
         AddToGroup(Brush.HerGroup);
-        var v = new PersonView(lo.Person, new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
+        // --held-right ID (pictures only): that Arms piece in her right hand and nothing else held (a clip with its own
+        // piece, e.g. The Long Cut's sunder_blade; animation 59).
+        var heldRight = SurvivorUnchained.Args.Get("held-right");
+        var v = new PersonView(lo.Person, heldRight != null ? new World.Held { Right = heldRight }
+            : new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         person = v.Person;
         view = v;
         AddChild(v);

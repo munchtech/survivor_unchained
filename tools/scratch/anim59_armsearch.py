@@ -80,7 +80,7 @@ def trial(fr, pose, P, d, psi, phi):
     bend = (bend, rv)
     E = gp[0, I["lowerarm_" + side]]
     global REACH
-    REACH = (np.linalg.norm(W - S), np.linalg.norm(gp[0, h] - gp[0, I["upperarm_" + side]]))
+    REACH = (np.linalg.norm(W - S), np.linalg.norm(gp[0, h] - gp[0, I["upperarm_" + side]]), getattr(rig, 'twist_last', {}).get(side, float('nan')))
     return err_d, err_p * 1000, bend, k, E, pole, qrot(qinv(chest[fr]), pole)
 
 
@@ -111,5 +111,5 @@ for fr in frames:
     else:
         top = res[:6]
     for R_, *r in top:
-        print(f"  reach {R_[0]:.3f}/{R_[1]:.3f} cost {r[0]:6.1f} blade {r[1]:5.1f} pos {r[2]:6.1f}mm bend {r[3][0]:5.1f} rv {np.round(r[3][1]).astype(int)} psi {r[4]:3d} phi {r[5]:3d} "
+        print(f"  tw {R_[2]:6.1f} reach {R_[0]:.3f}/{R_[1]:.3f} cost {r[0]:6.1f} blade {r[1]:5.1f} pos {r[2]:6.1f}mm bend {r[3][0]:5.1f} rv {np.round(r[3][1]).astype(int)} psi {r[4]:3d} phi {r[5]:3d} "
               f"knuck {np.round(r[6],2)} elbow {np.round(r[7],2)} pole_chest {np.round(r[8],2)} pref {r[9]:.0f}")

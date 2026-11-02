@@ -58,6 +58,7 @@ EDGE = _RT @ np.array([0.0, DIR0[2], -DIR0[1]])
 # hand_r to hand_l (WeaponSockets.MirrorRL).
 MIRROR = np.array([[-0.999976, 0.006672, 0.001970], [0.006660, 0.999958, -0.006359], [0.002012, 0.006345, 0.999978]])
 AT_L, DIR_L, EDGE_L = MIRROR @ AT, MIRROR @ DIR, MIRROR @ EDGE
+SIGMA = float(__import__("os").environ.get("LC_SIGMA", "2"))   # TEMP
 LEFT_T = -0.170          # the left fist's centre along the line from the right's (m; toward the pommel)
 BLADE_LEN = 1.122        # the right fist's centre to the tip (Arms sunder_blade: 1.412 - 0.290)
 
@@ -82,14 +83,14 @@ BLADE = [
     (13, (-0.03, 1.86, -0.34), _d(205), (0.19, -0.10, 0.98), (0.0, 0.91, -0.42), (0.35, -0.28, 0.89), (0, 0.91, -0.42)),
     (14, (-0.02, 2.00, -0.03), _d(150), (0.83, -0.32, 0.46), (0.0, 0.87, 0.50), (-0.04, -0.5, 0.87), (-0.5, 0.75, 0.43)),
     (15, (0.00, 1.60, 0.42), _d(60), (0.87, -0.19, -0.45), (0.50, -0.43, 0.75), (0.44, -0.72, 0.54), (-1, 0, 0)),
-    (16, (0.00, 1.007, 0.405), _d(-58), (0.77, 0.60, -0.21), (0.50, -0.46, -0.73), (0.47, -0.81, -0.35), (-1, 0, 0)),
-    (17, (0.00, 0.945, 0.464), _d(-66), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (0.39, 0.88, -0.28), (-0.87, -0.2, -0.46)),
-    (18, (0.00, 0.904, 0.496), _d(-70), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (0.58, 0.76, -0.29), (-1, 0, 0)),
-    (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.56, 0.8, -0.2), (-0.87, 0.14, 0.48)),
-    (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.53, 0.84, -0.08), (-0.87, 0.13, 0.48)),
-    (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.53, 0.84, -0.08), (-0.87, 0.13, 0.48)),
-    (62, (0.00, 1.00, 0.50), _d(-60), (-0.69, 0.64, 0.34), (0.87, 0.25, 0.43), (0.35, 0.76, -0.55), (-0.87, 0.25, 0.43)),
-    (67, (-0.12, 1.05, 0.35), _n(-0.10, -0.60, 0.80), (0.87, 0.43, 0.25), (0.56, -0.69, -0.45), (-0.38, 0.92, -0.06), (-0.43, -0.69, -0.58)),
+    (16, (0.00, 1.007, 0.405), _d(-58), (0.42, 0.86, 0.30), (0.97, -0.14, -0.22), (0.47, -0.81, -0.35), (-1, 0, 0)),
+    (17, (0.00, 0.945, 0.464), _d(-66), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (-0.07, -0.63, -0.78), (-0.87, 0.2, 0.46)),
+    (18, (0.00, 0.904, 0.496), _d(-70), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (-0.21, -0.02, -0.98), (-0.5, 0.3, 0.81)),
+    (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.19, 0.84, -0.51), (-0.5, 0.24, 0.83)),
+    (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
+    (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
+    (62, (0.00, 1.00, 0.50), _d(-60), (-0.69, 0.64, 0.34), (0.87, 0.25, 0.43), (-0.26, 0.15, -0.96), (-0.5, 0.43, 0.75)),
+    (67, (-0.12, 1.05, 0.35), _n(-0.10, -0.60, 0.80), (0.85, 0.42, 0.31), (0.75, -0.57, -0.33), (-0.08, -0.24, -0.97), (-0.9, 0.4, 0.19)),
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
@@ -269,7 +270,7 @@ class LongCut:
     def kneel(self, pose, fr):
         """The pose with the right knee down (actions._kneel: the hips brought onto the knee's pivot), the right foot up
         on tucked toes, mixed in by _kneel_w."""
-        from clips.actions import _kneel, TUCK_Y, TUCK_TOE
+        from clips.actions import _kneel, _legs, KNEE_Y, TUCK_Y, TUCK_TOE
         w = _kneel_w(fr)
         if w <= 0:
             return pose
@@ -280,13 +281,25 @@ class LongCut:
         p["foot_r"] = dict(p["foot_r"], rot=(yaw, 50.0, 0.0), toe=float(TUCK_TOE))
         kn = _kneel(self.rig, p, None, kz=KNEE_KZ, sides="r", ankle_y=TUCK_Y)
         hk = np.array(kn["hips"]["pos"]) - bo
+        # The knee's way: _kneel aims it from where the knee would sit on the keyed hips' turn alone, but the leg's
+        # solve aims it from the knee as the base's own leg has it, half a metre off here (the knee came down 9 cm
+        # high and out to her side). So the way from the hip-ankle line to the knee's place on the ground, made long
+        # enough that where it is aimed from no longer matters.
+        pel, hip, Lt, *_ = _legs(self.rig)
+        H = pel + np.array(kn["hips"]["pos"]) + qrot(qeuler(*h.get("rot", (0, 0, 0))), hip["r"])
+        A = np.array(kn["foot_r"]["pos"]) + self.rig.prest[self.rig.I["foot_r"]] * np.array([0, 1.0, 0])
+        kx = float(p["foot_r"]["pos"][0])
+        K = np.array([kx, KNEE_Y, H[2] - math.sqrt(max(Lt * Lt - (H[1] - KNEE_Y) ** 2 - (H[0] - kx) ** 2, 1e-6))])
+        ax = (A - H) / np.linalg.norm(A - H)
+        m = (K - H) - ax * float((K - H) @ ax)
+        kn["foot_r"]["pole"] = tuple(float(x) for x in m / np.linalg.norm(m))
         out = dict(pose)
         out["hips"] = dict(h, pos=tuple(np.array(h["pos"]) + (hk - np.array(h["pos"])) * w))
         a, b = pose["foot_r"], kn["foot_r"]
         mix = lambda x, y: tuple(float(u + (v - u) * w) for u, v in zip(x, y))
         out["foot_r"] = {"pos": mix(a["pos"], b["pos"]), "rot": mix(a["rot"], b["rot"]),
                          "toe": float(a["toe"] + (b["toe"] - a["toe"]) * w),
-                         "pole": tuple(_slerp_dir(_n(*a["pole"]), _n(*b["pole"]), w))}
+                         "pole": tuple(_slerp_dir(_n(*a["pole"]), _n(*b["pole"]), w) * (1.0 + 9.0 * w))}
         return out
 
     def pose(self, fr):
@@ -402,7 +415,8 @@ class LongCut:
             p["fingers_r"] = "grip"
             p["fingers_l"] = self.fingers_l(fr)
             return p
-        meta = {"layer": "full", "weapon": "sunder", **({"grip_tilt": TILT} if TILT else {}), "contact": CONTACT_T, "contacts": [CONTACT_T], "blend_out": 0.9}
+        meta = {"layer": "full", "weapon": "sunder", **({"grip_tilt": TILT} if TILT else {}), "contact": CONTACT_T, "contacts": [CONTACT_T], "blend_out": 0.9,
+                **({"elbow_sigma": SIGMA} if SIGMA != 2.0 else {})}
         return build(NAME, self.rig, self.keys, meta=meta, post=post, base=self.base)
 
     def hands_of(self, clip):
