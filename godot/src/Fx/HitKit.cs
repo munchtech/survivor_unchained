@@ -127,6 +127,8 @@ public partial class BattleFx
     /// <summary>The struck look in drawn frames (r3 judge): a warm-white flash for 2 (30% then 12% blend), then a gold
     /// fresnel rim fading to nothing over 8 (on real frames: a hitstop holds the bodies, not the light).</summary>
     const int RimFlash = 2, RimFrames = 8;
+    /// <summary>Struck bodies whose look has the rim only (the Shield Bash's).</summary>
+    readonly System.Collections.Generic.HashSet<int> rimNoFlash = new();
     /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
     static readonly bool NoRim = Args.Has("aa-norim");
     /// <summary>A struck body's (flash blend, rim strength) this frame; (-1, 0) when it has none. By night the rim is
@@ -138,8 +140,9 @@ public partial class BattleFx
     {
         if (!struckRims.TryGetValue(id, out var at)) return new Vector2(-1, 0);
         long age = Engine.GetFramesDrawn() - at;
-        if (age < 0 || age >= RimFrames) { if (age >= RimFrames) struckRims.Remove(id); return new Vector2(-1, 0); }
-        float flash = age < RimFlash ? (age == 0 ? 0.3f : 0.12f) : 0;
+        if (age < 0 || age >= RimFrames) { if (age >= RimFrames) { struckRims.Remove(id); rimNoFlash.Remove(id); } return new Vector2(-1, 0); }
+        // (r3 judge cuts: halved, 0.15 then 0.06; none on the Bash's stunned, whose wave, glints and throw carry the hit)
+        float flash = age < RimFlash && !rimNoFlash.Contains(id) ? (age == 0 ? 0.15f : 0.06f) : 0;
         float k = 1 - age / (float)RimFrames;
         return new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
     }
@@ -167,7 +170,7 @@ public partial class BattleFx
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
         // (every struck body: a tight gold rim fading over 8 frames, not the old cream ghost; the frame it was first struck)
-        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) struckRims[target] = Engine.GetFramesDrawn();
+        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) { struckRims[target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(target); }
         // The sparks (r3): on the full kits only (at most six bodies a swing; the rest of a crowd get the rim), 3-5 each:
         // 12-20 px x 2-3 px at the play camera, white-yellow head to an orange tail, flung on along the blow at 10-15 m/s
         // with drag, 4-6 frames. (They run through the hitstop on the FX's own clock: BattleFx.Update.)
@@ -218,7 +221,7 @@ public partial class BattleFx
             {
                 At = at + new Vector3((R() - 0.5f) * 0.2f, -0.2f + (R() - 0.5f) * 0.2f, (R() - 0.5f) * 0.2f),
                 V = away * (0.6f + R() * 0.6f) + Vector3.Up * (0.2f + R() * 0.2f), Drag = 3,
-                Life = (10 + R() * 4) / 60f, Size = s, SizeEnd = s * 1.6f, Color = dust, ColorEnd = dust * 0.92f,
+                Life = (10 + R() * 4) / 60f * (Flare.Night ? 1 : 0.7f), Size = s, SizeEnd = s * 1.6f, Color = dust, ColorEnd = dust * 0.92f,
                 Alpha = 0.5f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
             });
         }
@@ -250,7 +253,7 @@ public partial class BattleFx
 
     void DiscReady()
     {
-        discs = Add(new Batch(DiscMesh(), 120, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/disc.gdshader") }));
+        discs = Add(new Batch(DiscMesh(), 120, discMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/disc.gdshader") }));
         wedges = Add(new Batch(WedgeMesh(), 8, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/bash_wedge.gdshader") }));
         walls = Add(new Batch(WallMesh(), 8, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/bash_wall.gdshader") }));
         for (int i = 0; i < DiscLights; i++)
@@ -296,7 +299,12 @@ public partial class BattleFx
     /// <summary>The disc's radius (metres, before its throw's scale).</summary>
     const float DiscRad = 0.26f;
 
-    void DiscsBegin() { discLit = 0; discGlowN = 0; discs.Begin(); }
+    ShaderMaterial? discMat;
+    void DiscsBegin()
+    {
+        discLit = 0; discGlowN = 0; discs.Begin();
+        discMat?.SetShaderParameter("halo_gain", Flare.Night ? 1f : 0.6f);
+    }
 
     void DiscsEnd()
     {
@@ -544,6 +552,7 @@ public partial class BattleFx
         away = away.LengthSquared() > 0.01f ? away.Normalized() : Vector3.Forward;
         bool full = bashKits < 6 && hitBudget-- > 0;
         HitKit(at, away, BashSpark, 1, e.Crit, full, away, e.Target, first: bashKits == 0);
+        rimNoFlash.Add(e.Target);
         if (full) ChipPuff(at, away, 1);
         bashKits++;
         stunned[e.Target] = time + 1.5;

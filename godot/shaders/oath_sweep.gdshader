@@ -73,7 +73,8 @@ void fragment() {
 	float cover = body * (1.0 - smoothstep(0.2, 1.0 + fade_in, d)) * 0.55 * (0.75 + 0.25 * run);
 	float lum = body * (0.62 + 0.55 * streak) * (1.0 - smoothstep(0.3, 1.0 + fade_in, d) * 0.6);
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
-	float k = keep * clear;
+	// (r3 judge cut: thinned as it erodes, x0.85 at f3 and x0.70 at f4, so f4 is half the hit frame)
+	float k = keep * clear * (1.0 - 0.6 * clamp(erode, 0.0, 1.0));
 	vec3 col = gold * lum + hotc * hot * body * (0.7 + 0.5 * streak);
 	ALBEDO = col * k;
 	ALPHA = clamp(cover * k, 0.0, 1.0);

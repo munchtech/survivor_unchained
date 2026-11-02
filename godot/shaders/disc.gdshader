@@ -14,6 +14,8 @@ render_mode blend_premul_alpha, cull_disabled, depth_draw_never;
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
+uniform float halo_gain = 1.0;
+
 const float DISC_EDGE = 0.625;   // the disc's edge in UV.x (1 / 1.6)
 const float DISC_RIM = 0.76;     // the steel band's inner edge, as a share of the disc's radius (r3: >= 3 px at the play camera)
 
@@ -49,7 +51,8 @@ void fragment() {
 
 	// The halo (r3): tight, from the rim's edge out to 1.3x (it washed the band out at 1.6x), amber not cream.
 	float h = 1.0 - smoothstep(1.0, 1.3, r);
-	vec3 haloE = COLOR.rgb * vec3(1.0, 0.62, 0.2) * (h * h * 0.9) * (1.0 - inside);
+	// (r3 judge cut: by day x0.6, BattleFx sets halo_gain; it read as a pale ring round a coin)
+	vec3 haloE = COLOR.rgb * vec3(1.0, 0.62, 0.2) * (h * h * 0.9 * halo_gain) * (1.0 - inside);
 
 	ALBEDO = vec3(0.22, 0.22, 0.24) * rim;
 	METALLIC = rim;
