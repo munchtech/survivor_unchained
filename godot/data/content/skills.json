@@ -97,7 +97,7 @@
       "access": ["warden"],
       "findable": true,
       "growth": 0.16,
-      "bossDamage": 1.2,
+      "bossDamage": 2.2,
       "art": "slash_heavy",
       "description": "A slow, huge two-handed swing. Every fourth one is heavy and splits the ground in a line ahead of you.",
       "base": {
