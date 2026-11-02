@@ -1,5 +1,50 @@
 # Handoff: skills look and feel
 
+## Combat VFX 9 (vfx-7, 2 Nov): MR READY. The Long Cut rebuilt; her auto-attacks next
+**The Long Cut** (round cap raised to 4 by main; the last round). The max verdict on (B, "once she has the pose") was FAIL CLOSE, and the judge's final cuts are applied. What ships: the press (local gold light, white-gold blade core, no exposure lift or sepia), the hold, the fuse run, the cooling, the smoke curtain, both scars and the clear field. r1 was FAR, r2 and r3 were MEDIUM, r4 CLOSE.
+- **Sources:**
+  - `tools/fxsim/longcut_crack.py --seed 7` bakes the crack strip (`godot/art/fx/longcut/crack_*`, `crack.json` with the centre line);
+  - `tools/fxsim/longcut_chunks.py` (Blender) builds `chunks.glb`;
+  - `tools/fxsim/dust_sim.py` + `pack.py` make `fb/lc_dust` (built, but the jets are CUT: `JetsOn=false`).
+- **Code:**
+  - `FlareFx.LongCut.cs`: beats, ResolveDooms (two death classes timed from the drawn crack, fuse arrival + 0.1 s/m), the jets, smoke and chunks;
+  - `FlareFx.LongCutLight.cs`: press, hand, rim, sweep, the Spend column, the light dip;
+  - `FlareFx.LongCutArt.cs` reads the PNGs from the project folder, so **a shipped build must pack them**;
+  - `flare_world.gdshaderinc` (the seam sampled in the ground shader, the sweep band, the scorch) and `vat.gdshaderinc` (char and ash);
+  - `CrowdView.FlareCorpseAsh`;
+  - `--no-spawn`.
+- **Cuts behind consts:**
+  - `FL_LC_FRESH_CORE 0`: the fresh seam has no white-hot stage and opens at its orange stage;
+  - `LcGoldDead=false`: no gold cracks or edges on the struck; all die as lit char then ash;
+  - `LcSweepEdgeLights=false`;
+  - `JetsOn=false`.
+- **Bugs found:**
+  - The blade lookup `"arm:*"` never matched, because Godot turns `:` into `_` (now `"arm?*"`). **The Arcanist's `FindChild("arm:mage_staff")` likely has the same bug** (unfixed, not ours).
+  - The vat night factor read the sweep gain (gold was negative light by day).
+- **Frozen times** (Animation 59 is authoring her clip to them): press 0, sweep ~0.20 for 0.35 s, cleave ~0.545, cool 1.95, dead 6.1.
+- **Known (r4 judge, ranked):**
+  1. the sweep still reads slightly as a ray (now clamped to 12 m), and its afterglow doesn't read;
+  2. no shadows swing away from the line;
+  3. no white-hot instant on the fresh seam (cut);
+  4. day ash deaths leave dark brown smudges for ~1 s;
+  5. the night b6 crack fill is pale.
+  
+  Out of scope: auto-attack sparks and haze at night b1-b3 (item 2), the night loot ember ring b8-b9 (loot), and the LEVEL banner (UI).
+- **Shots:** scratchpad b9e8a09f `vfx9\cuts\shoot_lc.sh day|night` (+ measure.py, half.py). Final frames are in `survivorsunchained_inputs\vfx9\lc_final\`; judged frames in `lc2`, `lc3d` and `lc4b`.
+- **Tests and perf** (MR, 77c2fed74 plus docs):
+  - Tests 1373/0/10. The import logs one benign error line.
+  - Release ABAB at night with a 250 horde (`survivorsunchained_inputs\vfx9\perf\lc_A3..B4`), B minus A from the press to the cleave:
+    - CPU mean +0.16 ms;
+    - CPU p99 +5.6 ms: a one-frame ~11 ms cast spike, KNOWN (extend the warm-up);
+    - GPU mean +0.08 ms;
+    - shadow draws +23.
+  - The aftermath is about even.
+- **Cost:** VFX 9 ~2.1M; the Long Cut over VFX 7-9 ~3.05M.
+
+**Next:**
+- **Item 2, her auto-attacks** (study §6 item 2): the Oathblade sweep crescent and the Judgement Disc, a shared hit kit. First check that the Disc and Shield Bash fire in that loadout, and the ~4.5 s stop after a Flare.
+- **Item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`): cherry-pick classes-17@426ce9d64 (hooks a/b: `rebuke` and `watch_bell` art keys, `Ev.Barrier`). Split those two keys out of the `nova_holy` case in BattleFx.Skills.cs. Icons are UI's.
+
 ## Combat VFX 7 (vfx-7, 2 Nov): HANDOFF. The Long Cut r1 FAIL far, rebuild from better sources
 **The owner (1 Nov):** "Yes, Long Cut first". Build item 1 of `docs/design/SKILL_VFX_STUDY.md` §6 (the seam of morning, FLARE_LOOK §3 lines 289-311) with the Warden's dawn-gold press motes folded in. Item 2 (her auto-attacks) is next but NOT approved to build; its gap is confirmed (study §3). Judges at max, day and night, whole-frame gate first; perf in a packed night crowd; round cap 2-3 (1 used).
 
