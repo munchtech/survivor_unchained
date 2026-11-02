@@ -49,6 +49,7 @@ public partial class BattleFx
     /// still for a critical), then what that kind of blow throws.</summary>
     void Impact(Ev.Hit e, Vector3 at)
     {
+        if (WgOwns(e)) return;
         var school = e.School;
         var pal = Palette.Of(school);
         string art = e.Art ?? "";
@@ -63,6 +64,7 @@ public partial class BattleFx
         // Her Oathblade's struck: the shared hit kit (HitKit.cs), not the school's throw.
         if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich, null, e.Target); return; }
         if (IsDisc(art)) { DiscStruck(e, at, away, g, rich); return; }
+        if (WardenHolyStruck(e, at)) return;
         // The instant: a flare at the point of contact.
         // Capped and kept in the school's colour: a big blow on a champion threw a white flare
         // two metres across that swallowed the bodies round it.
@@ -860,7 +862,9 @@ public partial class BattleFx
                 Flash(ground + Vector3.Up * 1.2f, f.Light, 6, 0.35f, r * 2.5f);
                 return true;
             }
-            case "nova_holy" or "nova_dawn" or "nova_sun" or "rebuke" or "watch_bell": // the two keep Dawnpulse's look until Combat VFX builds theirs
+            case "rebuke": RebukeFx(e); return true; // the Warden's holy pair: BattleFx.WardenHoly.cs
+            case "watch_bell": TollFx(e); return true;
+            case "nova_holy" or "nova_dawn" or "nova_sun":
             {
                 var h = Palette.Of(School.Holy);
                 // Deep gold and thin: wide and bright, its front bloomed to a thick cream ring that
@@ -929,6 +933,7 @@ public partial class BattleFx
     /// as itself when it lands.</summary>
     bool Fall(Ev.Strike e)
     {
+        if (WgStrike(e)) return true;
         string art = e.Art ?? "";
         if (art is not ("storm_bolt" or "storm_clap" or "storm_eye" or "arc_sky" or "moonfall" or "arrow_rain" or "slash_quake")) return false;
         float r = (float)e.Radius;
@@ -1027,6 +1032,7 @@ public partial class BattleFx
     /// burning core, a flare at each end, and what it sheds along its length.</summary>
     bool Lance(Ev.Beam e)
     {
+        if (WgBeam(e)) return true;
         string art = e.Art ?? "";
         if (!art.StartsWith("beam")) return false;
         float g = Grow(e.Rank);

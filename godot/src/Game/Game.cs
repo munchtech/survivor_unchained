@@ -923,6 +923,7 @@ public partial class Game : Node, IZoneHost
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
     {
+        if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
@@ -1590,9 +1591,15 @@ public partial class Game : Node, IZoneHost
         if (!hordeDone && Args.Get("horde") is string h && Battle is { } hb)
         {
             hordeDone = true;
+            // --horde-arc DEG:WIDTH:DIST:SPREAD[:HELD][,...]: the i-th group in an arc (world degrees from +X toward +Z) at
+            // DIST..DIST+SPREAD m (a picture's pack staged where it reads: on the open road, outside her lamp).
+            var arcs = Args.Get("horde-arc")?.Split(',');
+            int gi = 0;
             foreach (var group in h.Split(','))
             {
                 var parts = group.Split(':');
+                double[]? arc = arcs != null && gi < arcs.Length ? arcs[gi].Split(':').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : null;
+                gi++;
                 int n = int.TryParse(parts[0], out var v) ? v : 100;
                 // A kind ending in ! comes as elites (pictures of the edge marks, elite fights).
                 string kind = parts.Length > 1 ? parts[1].TrimEnd('!') : "risen";
@@ -1600,7 +1607,12 @@ public partial class Game : Node, IZoneHost
                 for (int i = 0; i < n; i++)
                 {
                     double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
-                    hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
+                    if (arc is { Length: >= 4 }) { a = (arc[0] + (Rng.NextDouble() - 0.5) * arc[1]) * Math.PI / 180; d = arc[2] + Rng.NextDouble() * arc[3]; }
+                    var sp = hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
+                    // --horde-hp M: each one M times as tough (a picture of a hit that has to leave them standing).
+                    if (sp != null && Args.Has("horde-hp")) { sp.Hp *= Args.Num("horde-hp", 1); sp.MaxHp *= Args.Num("horde-hp", 1); }
+                    // (an arc's 5th value: held where they stand that many seconds, a line of them to be struck)
+                    if (sp != null && arc is { Length: >= 5 } && arc[4] > 0) { sp.BoundX = sp.X; sp.BoundZ = sp.Z; sp.Status.Ensure(StatusKind.Bound, arc[4], 1, 1, 0); }
                 }
             }
             // --no-spawn: the horde and nothing after it (the zone's waves, summons), so a field a Flare cleared reads.
