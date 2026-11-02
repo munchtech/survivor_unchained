@@ -1,6 +1,48 @@
 # Handoff: skills look and feel
 
-## Combat VFX 11 START HERE (vfx-7, 2 Nov): item 3, the Warden skill VFX, PAUSED in round 2 (wind-down)
+## Combat VFX 11 (vfx-7, 2 Nov): item 3 MR READY (the Warden skill VFX, shipped as a net gain)
+**r2 max judge (the 5th and last round):** every piece is a net gain over r1, and all ship. The 5 safe fixes are applied (ba15c6805). r2 ground build: afdb30caf.
+- **Verdicts:**
+  - Sunder line: PASS-WITH-NOTES, close.
+  - Groundbreaker crack: PASS-WITH-NOTES, close.
+  - Toll wave: PASS-WITH-NOTES, close.
+  - Rebuke: PASS-WITH-NOTES, medium.
+  - Bell: close. It regressed to pale glass, and is gold again by fix 1.
+  - Heave and aftershock: FAIL, medium (night close). They ship because r1 was a grey puff.
+  - Barrier: FAIL, medium. It ships as harmless.
+- **Safe fixes (ba15c6805):**
+  - the bell and toll rings are gold (toll_bell/toll_wave shaders);
+  - the heave light holds its peak to f12 and is gone by f30;
+  - the Sunder jets are gone by f18, at x0.7 opacity;
+  - the crack tip core is x2 (was x4; it clipped cream at night);
+  - the drag streaks are gold at alpha 0.2.
+  - New dev flag `--wfx-off`: no Warden VFX (perf A/B).
+  - Also new in r2: `--horde-arc` (Game.cs, shot staging). Groundbreaker numbers and flinch wait for the heave (view side; a kill still drops on the sim tick, ~15 frames early).
+- **Known (closed, r2 judge):**
+  - The heave and aftershock slabs have no rock material and read as clay blocks by day. That is a material job, not values.
+  - By day the dense pack hides most of the heave, and its dust wall doesn't read.
+  - At night the Sunder line's wide base reads thin.
+  - Rebuke has no shield flare by day; the barrier has no shimmer (only a small cream crescent at her feet).
+  - Day dust is ~17% under #8C7558 in value, and the Sunder jets are 1.34-1.41x the ground (spec 1.6x).
+  - Her auto-attack crescent overlaps the Sunder line's base (every 4th swing).
+  - The "THE MAP" hint panel shows despite `--no-banners`.
+- **Later list (a design or material pass, the owner's call):**
+  - a rock material for the heave slabs;
+  - a dust wall that reads in a dense pack;
+  - Rebuke's shield flare and the barrier shimmer.
+- **Shots:**
+  - Final: `survivorsunchained_inputs\vfx10\warden\g3\wg_sheet_{day,night}.jpg` and `h3\wh_sheet_{day,night}.jpg`. The judged sets were g2 and h2.
+  - Scripts: this session's (45b9ec4e) scratchpad `vfx11\wg\run2.sh` (`export GBARC=355:25:7:2 GBX=--no-spawn SLX=--no-spawn; bash run2.sh g3 day`) and `vfx11\wh\shoot.sh` (`SECS=40 bash shoot.sh h3 "--no-banners --horde-hp 10"`).
+- **Tests:** 1373/0/10.
+- **Perf:** a Release ABAB.
+  - Setup: night, arena, a 250 horde, `--horde-hp 10`, `--wfx-off` (A) vs on (B), all four skills.
+  - Window 8-10.5 s (the crowd is dense only then; foes 145-163): B-A CPU -0.06/-0.15 ms and GPU -0.06/-0.06 ms, so the cost is in the noise (A1 vs A2 differ by 0.15 ms).
+  - Window 8-38 s: also within the noise.
+  - Per-cast spikes weren't timed: the beat clock isn't the CSV clock.
+  - Files: `survivorsunchained_inputs\vfx11\perf\wfx_*`.
+- **Cost:** item 3 is about 1.2M against the 1.1M cap. This session spent ground solver 0.20M, judge 0.14M, workers ~0.13M and lead ~0.08M.
+
+## Combat VFX 10 → 11 START (vfx-7, 2 Nov): item 3, the Warden skill VFX, PAUSED in round 2 (wind-down)
 Item 2 (her auto-attacks) is MERGED (ef4e85632); its section is below. **Item 3** is the Warden skill VFX from `docs/design/WARDEN_SKILLS_VFX_HOOKS.md`. Budget: ~0.95M to its MR, with ~0.65M spent. Round cap: raised to 5 by main for `Item: warden skills`. 3 rounds are used (two build solvers and the r1 judge); the 2 left cover exactly **the r2 ground solver and the r2 judge**. After r2, MR what passes as a net gain and close the rest as known: cut any piece still far rather than patch it (no r3 unless main approves).
 - **Code:**
   - `godot/src/Fx/BattleFx.WardenGround.cs`: Sunder's heavy line `slash_heavy_line`, Groundbreaker crack `slash_quake_crack`, heave `slash_quake_heave`, aftershock `slash_quake`; it uses the Long Cut crack tiles and chunks.glb.
