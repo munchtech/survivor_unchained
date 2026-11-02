@@ -1329,7 +1329,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>True while a tutorial callout needs the river's numbers card up, as if the hold key were down.</summary>
     public bool TeachCard { get; set; }
     /// <summary>The river's numbers card, while it shows.</summary>
-    public Rect2? XpCardArea => irons.Panel.Card.Visible ? irons.Panel.Card.GetGlobalRect() : null;
+    public Rect2? XpCardArea => irons.Panel.Card.Visible ? HudBottom.GlobalRect(irons.Panel.Card) : null;
     /// <summary>The draft on the screen, if one is.</summary>
     public DraftPanel? DraftShown => draft != null && IsInstanceValid(draft) ? draft : null;
     /// <summary>A combat skill's place among the six, if it is on the instrument now.</summary>
@@ -1341,7 +1341,7 @@ public partial class GameHud : CanvasLayer
     /// <summary>A combat skill's place among the six, as a square, if it is on the instrument now.</summary>
     public Rect2? SocketRect(string id)
     {
-        foreach (var s in irons.Sockets) if (s.Id == id && s.IsVisibleInTree()) return s.GetGlobalRect();
+        foreach (var s in irons.Sockets) if (s.Id == id && s.IsVisibleInTree()) return HudBottom.GlobalRect(s);
         return null;
     }
 

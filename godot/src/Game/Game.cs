@@ -1365,7 +1365,8 @@ public partial class Game : Node, IZoneHost
                     bool In(double x, double z, float y)
                     {
                         var w = new Vector3((float)x, y, (float)z);
-                        return !camera.IsPositionBehind(w) && mask.Hit(camera.UnprojectPosition(w), rect, origin, scale);
+                        // (UI 27: the rects are the bottom HUD's own 1080 px; the point is brought back through its scale)
+                        return !camera.IsPositionBehind(w) && mask.Hit(Ui.HudBottom.Unmap(camera.UnprojectPosition(w)), rect, origin, scale);
                     }
                     float gy = at.Y + 1;
                     string? why = null;

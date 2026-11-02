@@ -205,9 +205,10 @@ public partial class Hits : Node3D
         var kr = SurvivorUnchained.Ui.DgPanel.KeeperRect; float kt = SurvivorUnchained.Ui.DgPanel.KeeperTop;
         float? top = null;
         int n = Mathf.Max(2, Mathf.CeilToInt((x1 - x0) / 40f));
+        // (UI 27: the parts are the bottom HUD's own 1080 px: the span brought into them, the top back out at its scale)
         for (int i = 0; i <= n; i++)
-            if (HudTop(x0 + (x1 - x0) * i / n, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, kr.Position.X, kr.End.X, kt) is float t) top = top is float o ? Mathf.Min(o, t) : t;
-        return top;
+            if (HudTop(SurvivorUnchained.Ui.HudBottom.UnmapX(x0 + (x1 - x0) * i / n), f.Position.X, f.End.X, f.Position.Y, seatL, seatR, kr.Position.X, kr.End.X, kt) is float t) top = top is float o ? Mathf.Min(o, t) : t;
+        return top is float y ? SurvivorUnchained.Ui.HudBottom.MapY(y) : null;
     }
 
     static int hudShots;

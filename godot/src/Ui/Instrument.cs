@@ -41,9 +41,11 @@ public partial class Instrument : Control
         get
         {
             float s = DgPanel.GroupScale;
-            var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s;
+            var tl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * s + DgPanel.GirlOffset;
+            float top = Math.Min(tl.Y, DgPanel.KeeperRect.Position.Y);
             float right = Math.Max(DgPanel.Rect.End.X, DgPanel.KeeperRect.End.X);
-            return new Rect2(tl, new Vector2(right - tl.X, 1080 - tl.Y));
+            // (UI 27: on the screen, at the bottom HUD's scale)
+            return HudBottom.Map(new Rect2(tl.X, top, right - tl.X, 1080 - top));
         }
     }
 
@@ -66,11 +68,12 @@ public partial class Instrument : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Position = Vector2.Zero;
         Size = new Vector2(1920, 1080);
+        HudBottom.Apply(this);   // (UI 27: the bottom HUD's size knob, about the screen's bottom middle)
         // (draw order, UI 23: the figures (her; the keeper, the next piece), then the plate over her hair's tail where
         // they meet, then what is live on it: the coin's ring, the seats, the flask and the dash, the beads, the key
         // chips, the numbers; the level's title and the numbers' card over everything)
         Life = new LifeLamp();
-        Life.Group(DgPanel.GirlAnchor, DgPanel.GroupScale);
+        Life.Group(DgPanel.GirlAnchor, DgPanel.GroupScale, DgPanel.GirlOffset, DgPanel.GirlRefScale);
         AddChild(Life);
         // (the right group's figure, the keeper: under the plate, at his geo rect)
         Keeper = new DgKeeper();

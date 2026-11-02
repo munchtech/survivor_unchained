@@ -103,12 +103,15 @@ public partial class LifeLamp : Control
 
     /// <summary>UI 23 (HUD A): her group drawn at s about its outer bottom corner (the geo's group_anchor): her place
     /// and her shader's screen (the sheen's and the shine's run are in screen px; her masks stay in her own).</summary>
-    public void Group(Vector2 anchor, float s)
+    /// UI 27: then moved by off (her own scale and place, hud_a_geo.json group_scale and group_offset); the shine's run
+    /// stays in the reference frame (refScale about the anchor, no offset), so it follows her art wherever she stands.
+    public void Group(Vector2 anchor, float s, Vector2 off, float refScale)
     {
         Scale = new Vector2(s, s);
-        Position = anchor + (At - anchor) * s;
+        Position = anchor + (At - anchor) * s + off;
         mat.SetShaderParameter("grp_anchor", anchor);
         mat.SetShaderParameter("grp_scale", s);
+        mat.SetShaderParameter("ref_scale", refScale);
     }
 
     /// <summary>The hair mask's rect in her unscaled coordinates (dg_river/xp_light.json).</summary>

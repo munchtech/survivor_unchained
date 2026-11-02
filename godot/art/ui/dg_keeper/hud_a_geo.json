@@ -381,7 +381,27 @@
     1017.5,
     9
    ]
-  ]
+  ],
+  "variants": [
+   {
+    "scale": 0.85,
+    "texture": "dg_panel/panel_085.png",
+    "screen_rect": [
+     654,
+     1001,
+     612,
+     79
+    ],
+    "design": {
+     "PL_X0": 685.0,
+     "PL_TOP": 1015.0,
+     "VOL_R": 10.0,
+     "INL": 5.5,
+     "FOOT_X": 677.35
+    }
+   }
+  ],
+  "variants_note": "UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect when hud.json bottomScale is scale (its 1 px lines stay whole there)"
  },
  "glass": {
   "center": [

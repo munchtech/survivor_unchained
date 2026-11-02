@@ -614,6 +614,39 @@ def clearances():
     return out
 
 
+# ================================================================== UI 27: the bar baked at a bottom-HUD scale
+VARIANTS = (0.85,)   # hud.json bottomScale values with their own bake (DgPanel draws it when the knob matches)
+
+
+def variant_consts(k):
+    """the plate's design at the bottom HUD's scale k (about the screen's bottom middle), in SCREEN px, so every line
+    stays a hard whole px: the top line and the end's x on whole px, the inlay's run on a row's middle, the volute a
+    whole radius; seats, coin and arch at their mapped places (they are live-drawn there by the scaled HUD)."""
+    mx = lambda x: 960 + (x - 960) * k
+    my = lambda y: 1080 + (y - 1080) * k
+    x0 = float(round(mx(PL_X0)))
+    vr = float(round(VOL_R * k))
+    rx0, ry0 = int(np.floor(mx(PANEL_RECT[0]))), int(np.floor(my(PANEL_RECT[1])))
+    return dict(PL_X0=x0, PL_X1=1920 - x0, PL_TOP=float(round(my(PL_TOP))), VOL_R=vr, INL=round(INL * k - 0.5) + 0.5,
+                FOOT_X=x0 - (PL_X0 - FOOT_X) * k, SEAT_Y=my(SEAT_Y), SEAT_XS=[mx(x) for x in SEAT_XS], WELL_R=WELL_R * k,
+                BEZ=BEZ * k, SEAT_R=SEAT_R * k, MED_R=MED_R * k, ARCH_R=ARCH_R * k,
+                PANEL_RECT=(rx0, ry0, 1920 - 2 * rx0, 1080 - ry0))
+
+
+def bake_variant(k, Z):
+    """the plate, bezels and coin at k (variant_consts), premultiplied, and its screen rect"""
+    g = globals()
+    keep = {n: g[n] for n in variant_consts(k)}
+    try:
+        g.update(variant_consts(k))
+        P = plate(Z)
+        P = over(P, bezels(Z))
+        P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
+        return P, list(PANEL_RECT), {n: g[n] for n in ('PL_X0', 'PL_TOP', 'VOL_R', 'INL', 'FOOT_X')}
+    finally:
+        g.update(keep)
+
+
 # ================================================================== the bake
 def main():
     gr = json.load(open(os.path.join(SRC, 'keeper_grade.json')))
@@ -692,6 +725,13 @@ def main():
     P = over(P, bezels(Z))
     P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
     save_rgba(os.path.join(UI, 'dg_panel', 'panel.png'), np.dstack([straight(P), P[..., 3]]))
+    variants = []
+    for vk in VARIANTS:
+        Pv, vrect, vc = bake_variant(vk, Z)
+        name = f'dg_panel/panel_{int(round(vk * 100)):03d}.png'
+        save_rgba(os.path.join(UI, *name.split('/')), np.dstack([straight(Pv), Pv[..., 3]]))
+        variants.append({'scale': vk, 'texture': name, 'screen_rect': vrect, 'design': {n: round(float(v), 3) for n, v in vc.items()}})
+    rep['bar variants'] = variants
     # UI 24: every row from the panel top: each figure tucks >= TUCK_MIN under its end, and no backdrop shows between
     # (a hole the figure itself encloses, a hair loop, is not a gap: the checks read the figures with their holes filled)
     pa, half = P[..., 3], P.shape[1] // 2
@@ -761,6 +801,9 @@ def main():
     shutil.copy(os.path.join(SRC, 'fo_9932_0.png'), os.path.join(kd, 'fire_ready.png'))
     # ---- the geometry
     geo = geometry(kx0 + K_D[0], ky0 + K_D[1], (sx0, sy0, rx1 - rx0, ry1 - ry0), gr, rows, cl, (g_top, k_top_))
+    geo['panel']['variants'] = variants
+    geo['panel']['variants_note'] = ('UI 27: the bar baked at a bottom-HUD scale, in screen px (2x): DgPanel draws texture at screen_rect '
+                                     'when hud.json bottomScale is scale (its 1 px lines stay whole there)')
     json.dump(geo, open(os.path.join(kd, 'hud_a_geo.json'), 'w'), indent=1)
     rep['keeper rect'] = geo['keeper']['rect']; rep['glass'] = geo['glass']['center']
     print(json.dumps(rep))
