@@ -294,6 +294,9 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
+        // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
+        if (Args.Get("relight") is string rl)
+            foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s && s != "boss")

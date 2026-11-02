@@ -89,7 +89,7 @@ public static class LampBook
     public static int Earned(CharacterData ch, WorldState? w) => Math.Max(0, ch.Level - 1) + StoryLamps(w) + AtlasLit(w) + PostLamps(w);
 
     /// <summary>Lamps v2: the dark lamp-posts relit (lamps_v2.json "posts", four an act), a lamp each.</summary>
-    public static int PostLamps(WorldState? w) => w == null || !Lamps.V2 ? 0 : Lamps.Posts.Count(id => w.Fact(PostFact(id)).Truthy);
+    public static int PostLamps(WorldState? w) => w == null || !Lamps.V2 ? 0 : Lamps.Posts.Count(p => w.Fact(PostFact(p.Id)).Truthy);
 
     static string PostFact(string post) => $"lampposts.{post}";
 
@@ -97,7 +97,7 @@ public static class LampBook
     /// was lit already, or isn't one of the board's posts (none on v1).</summary>
     public static bool RelightPost(WorldState w, string postId)
     {
-        if (!Lamps.V2 || !Lamps.Posts.Contains(postId) || w.Fact(PostFact(postId)).Truthy) return false;
+        if (!Lamps.V2 || Lamps.Post(postId) == null || w.Fact(PostFact(postId)).Truthy) return false;
         w.Facts[PostFact(postId)] = true;
         return true;
     }

@@ -209,7 +209,10 @@ public sealed class LampPointsV2Tests
             var w = new WorldState();
             w.Facts["lamps.atlas"] = 40;
             Assert.Equal(30, LampBook.AtlasLit(w));
-            Assert.Equal(new[] { "act1.post1", "act1.post2", "act1.post3", "act1.post4" }, Lamps.Posts);
+            Assert.Equal(new[] { "act1.post1", "act1.post2", "act1.post3", "act1.post4" }, Lamps.Posts.Select(p => p.Id));
+            Assert.All(Lamps.Posts, p => { Assert.Equal(1, p.Act); Assert.False(string.IsNullOrEmpty(p.Zone)); Assert.True(p.Draft); });
+            Assert.Equal("verge", Lamps.Post("act1.post2")!.Zone);
+            Assert.Null(Lamps.Post("act9.post1"));
 
             var a = Callings.Archetype("warden");
             var ch = Character.Create(new CreationChoice
@@ -223,7 +226,7 @@ public sealed class LampPointsV2Tests
             Assert.False(LampBook.RelightPost(v, "act9.post1"));
             Assert.True(v.Fact("lampposts.act1.post2").Truthy);
             Assert.Equal(before + 1, LampBook.Earned(ch, v));
-            foreach (var p in Lamps.Posts) LampBook.RelightPost(v, p);
+            foreach (var p in Lamps.Posts) LampBook.RelightPost(v, p.Id);
             Assert.Equal(before + 4, LampBook.Earned(ch, v));
         }
         finally { Lamps.UseV2(false); }
