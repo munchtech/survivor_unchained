@@ -516,6 +516,39 @@ varying float mouth_w;
 varying float mouth_c;
 varying float mouth_f;
 
+// Face 49 round 2 (cool-light skin; GameCinemaHer, People.HerCineCool): under a cool key in a close cinematic shot (the moon,
+// the Warden's blue-white lantern, the heart) the grade's lifts for the weakly coloured re-saturated her cool-lit skin to its
+// warm hue: bronze. Here, on her skin only (hair, brows, lashes, eyes, gear untouched): each lamp's light on her keeps
+// cool_lit of its colour (its hue and lightness kept: lit skin never pushed bluer, the lavender trap), the sky's cool_amb
+// with its grey leaning to cool_shade (her deepest shade takes the night's blue), both easing to cool_keep where her paint is
+// richer than her face's (cool_win, as her face's median's multiples: lips, ear rims, nostrils) and at her lit side's
+// warm edge (the terminator's red). cine_cool 0 (everywhere outside such a shot): as before.
+uniform float cine_cool = 0.0;
+uniform float cool_lit = 0.3;
+uniform float cool_amb = 0.3;
+uniform vec3 cool_shade : source_color = vec3(0.78, 0.84, 1.0);
+uniform float cool_shade_w = 0.0;
+uniform vec3 cool_med = vec3(0.3372, 0.2159, 0.1779);   // (her head paint's median, linear)
+// (her face's own chroma as cool_ref of the paint's median's with her tone: what her face tone and paint add; measured on C02 s8,
+// forehead, nose and chin 1.9-2.3, the cheeks' blush 3.2, lips 4.3, ear rims 4.7; cool_dbg T shows the ratio, blue under T, red over 2T)
+uniform float cool_ref = 2.1;
+uniform vec2 cool_win = vec2(1.45, 2.0);   // (r2: 1.2 kept the cheeks' blush as rouge)
+uniform float cool_keep = 0.9;
+uniform vec2 cool_edge = vec2(1.1, 1.5);
+uniform float cool_rough = 0.1;
+uniform float cool_dbg = 0.0;
+// (the paint's richness, 0 at most cool_win.x its median, 1 from cool_win.y: light() reads it from mouth_f's whole part,
+// 0-63, as Godot's 32 varyings are full; mouth_f's own share is its fraction, halved)
+float cool_sat(vec3 c) {
+	vec3 lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
+		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * c, vec3(1e-6)), vec3(1.0 / 3.0));
+	vec3 o = mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662),
+		vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * lms;
+	return length(o.yz) / max(o.x, 1e-4);
+}
+vec3 cool_tint() { return mix(vec3(1.0), cool_shade / max(dot(cool_shade, vec3(0.2126, 0.7152, 0.0722)), 1e-4), cool_shade_w); }
+float cool_mix(float m, float wv) { return mix(1.0, mix(m, cool_keep, wv), cine_cool); }
+
 void vertex() {
 	mouth_c = mouth_in * (1.0 - COLOR.a);
 	crease = mouth_in * (1.0 - COLOR.r);
@@ -740,6 +773,8 @@ void fragment() {
 	// BEFORE's, own and Sunborn alike, by day and at night; judge rj2v fix 4, 13 October 2026)
 	lift_w = (seam_ease ? 1.0 - aot.g : 1.0) * smoothstep(lift_from, lift_to, wd) * rig_w;
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
+	float cool_r = cool_sat(ALBEDO) / max(cool_sat(cool_med * tone) * cool_ref, 1e-4);
+	float cool_wv = cine_cool > 0.0 ? smoothstep(cool_win.x, cool_win.y, cool_r) : 0.0;
 	ALBEDO *= mix(ambient_tint / body_back, vec3(1.0), pa);
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
@@ -753,8 +788,17 @@ void fragment() {
 	}
 	ALBEDO *= sky_w;   // (after the mouth's own colour: light() divides every lamp's light by it, the mouth's too)
 	SPECULAR *= sky_w;   // (the sky's sheen on her too: her lamps' sheen is light()'s own, from `sheen`)
+	mouth_f = mouth_f * 0.5 + floor(cool_wv * 63.0 + 0.5);   // (packed for light(): see cool_win)
+	if (cine_cool > 0.0) {
+		// (the sky's light: her paint toward its grey, the grey toward the night's blue; light() undoes it for the lamps)
+		float cl = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
+		ALBEDO = mix(cl * cool_tint(), ALBEDO, cool_mix(cool_amb, cool_wv));
+		// (the key's own colour as a sheen on her face's planes: a touch glossier)
+		ROUGHNESS = clamp(ROUGHNESS - cool_rough * cine_cool * fm.b * (1.0 - cool_wv), 0.0, 1.0);
+	}
 	vec3 alb_dbg = ALBEDO / max(sky_w, 1e-3);
 	if (dbg_gate > 0.0) { ALBEDO = vec3(1.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); }
+	if (cool_dbg > 0.0) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.3 * vec3(step(cool_dbg * 2.0, cool_r), step(cool_dbg, cool_r) - step(cool_dbg * 2.0, cool_r), 1.0 - step(cool_dbg, cool_r)) * fract(cool_r * 4.0 + 0.5) ; }
 	// (dbg_gate 3+: her maps instead, emitted: red ao_map's shade, green its seam ease, blue the face's paint (features' blue))
 	if (dbg_gate > 2.5) { ALBEDO = vec3(0.0); EMISSION = (dbg_gate - 3.0) * vec3(aot.r, aot.g, fm.b); }
 	// (dbg_gate 9: her UV, emitted, to find a picture's point on her mesh, with --tonemap linear --grade off)
@@ -785,7 +829,8 @@ float schlick(float u) {
 }
 
 void light() {
-	float mouth_lit = (1.0 - mouth_occ * smoothstep(0.1, 1.0, mouth_f));
+	float cool_wv = floor(mouth_f) / 63.0;
+	float mouth_lit = (1.0 - mouth_occ * smoothstep(0.1, 1.0, fract(mouth_f) * 2.0));
 	// (her diffuse light sees peel_diffuse of the pores' coarse layer, her sheen all of it)
 	vec3 dn = macro_n.x > 2.0 ? NORMAL : normalize(mix(skin_unmacro(macro_n), NORMAL, peel_diffuse));
 	float ndl = dot(dn, LIGHT);
@@ -797,6 +842,7 @@ void light() {
 		DIFFUSE_LIGHT += (dbg_gate > 1.5 ? (dbg_gate - 2.0) * vec3(c_ndl * kw * (1.0 - bh), ATTENUATION * kw * (1.0 - bh), 0.0)
 			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
 	} else {
+	vec3 cool_d0 = DIFFUSE_LIGHT;
 	vec3 lc = LIGHT_COLOR;
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
@@ -860,6 +906,17 @@ void light() {
 	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * lc * ATTENUATION * un;
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
+	if (cine_cool > 0.0) {
+		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
+		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
+		float ma = cool_mix(cool_amb, cool_wv);
+		vec3 a1 = max(ALBEDO, vec3(1e-4));
+		vec3 a0 = max((ALBEDO - (1.0 - ma) * dot(ALBEDO, lw) * cool_tint()) / max(ma, 1e-3), vec3(0.0));
+		vec3 p = a0 * (DIFFUSE_LIGHT - cool_d0);
+		float ml = cool_mix(cool_lit, cool_wv);
+		ml = mix(ml, max(ml, mix(1.0, cool_keep, cine_cool)), smoothstep(cool_edge.x, cool_edge.y, soft.r / max(soft.b, 1e-4)));
+		DIFFUSE_LIGHT = cool_d0 + mix(vec3(dot(p, lw)), p, ml) / a1;
+	}
 	if (s_ndl > 0.0 && !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004)) {
 		float a = ROUGHNESS * ROUGHNESS;
 		float da = c_ndh * a;

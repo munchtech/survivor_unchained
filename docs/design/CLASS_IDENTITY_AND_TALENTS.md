@@ -576,6 +576,7 @@ Phase 1 is the smallest slice the owner can play.
 - On-calling (her own skills with her Hand and rites) beats the same night drafted off-calling by ×1.10 to ×1.25: home is clearly better, never mandatory.
 - The Hand alone is ×1.05 to ×1.10.
 - A full board at night is within ×1.25 of an empty one.
+  - Phase 1 (28 October, coordinator ruling): the warden reads x1.53 deft / x1.41 plain (dealt only x1.05; the rest is damage taken down about 30%, her defensive lamps); the others 1.07-1.18. Closed as known on the v1 board. **Phase 2 acceptance item:** the v2 board data meets x1.25 for every calling (`--pair board`, `tools/scratch/classes/board_ratio.py`).
 - No calling's best five builds share more than two skills with another calling's best five: identity, measured.
 - Act 1 against "pre-Flare 11 Oct" as above.
 

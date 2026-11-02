@@ -1,5 +1,7 @@
 # Cinematics: handoff
 
+**Face 49 (1 Nov) changed two shipped shots** (max SHIP; details in docs/handoff/face.md "Face 49"): C02 s8 lost its warm grade cue (zone night grade now), brighter lantern panes, the lantern key moved 25 deg toward the lens; C03 s8 restaged to a 3/4 front with the head nod halved (owner: "the neck looks wild there"), the heart's rigs as her key. C02 s4 stays cut. New cue knobs: `skin` `rim`, `lamp` `light`.
+
 ## MR READY: Cinematics 11 (29 Oct), branch cine-9: the reshoots are done; 3 max judge rounds (cap used)
 **Final cuts (max r3 SHIP; every NO was cut, none closed as known):**
 - **C02** plays s1, s2, s5, s8, s11, s12. W1 `call` is back on s2 (fit), heard before he is seen. s5: he rises from the water and the move ends on his lantern (the kneelers are pushed back into the fog, his boots ankle-deep). s8: her CU with his blue-white lantern in the lower-left corner as her ONLY key, "Lie down.". s11: the boss title lower-left, him backlit and tall on `folk/m_idle_armed`. CUT: s4 (her moonlit CU, NO twice: her skin goes bronze under cool low light), s6, s7, s10 (s3 and s9 stay cut).

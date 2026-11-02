@@ -21,6 +21,10 @@ namespace SurvivorUnchained.Play;
 /// --cine-her off: none of it (before frames). --cine-her-key off: round 1 (no key, the cap on).
 /// --cine-her-off layers,hair,gear,spec,cap,night,eyes,guard,key,moon,fire,near: those parts off.
 /// --cine-her-on hold,grade,lift,sky,spec2,kick,shadehue: parts kept off by default (Face 48 measured them worse or no better; spec2, kick, shadehue are round 4 and the final judge held them back), for pictures.
+/// Face 49 (cool-light skin): under a cool key (moon, blue-white lantern, the heart) her skin keeps the render's cool-lit colour
+/// through the grade and her shade falls neutral-dark (HerCoolShare, Atmosphere.SetViewSkinCool); --cine-her-off cool: before.
+/// Knobs --cine-her-cool-sat, -shade, -c, -from, -to. Pictures: --cine-rig-mute A,B
+/// (those rigs dark), --cine-grade-cue off (shots' palettes ignored).
 /// --cine-her-cap K: the cap as K of the close view's key (exposure counted). --cine-her-hair-back S: a light from
 /// behind or steeply above her keeps S of itself on her hair.
 public partial class Game
@@ -28,13 +32,15 @@ public partial class Game
     sealed partial class Cine
     {
         static readonly bool HerOn = Args.Get("cine-her") != "off";
+        static readonly HashSet<string> RigMute = (Args.Get("cine-rig-mute") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
+        static readonly bool GradeCueOff = Args.Get("cine-grade-cue") == "off";
         static readonly HashSet<string> HerOff = (Args.Get("cine-her-off") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
         static readonly HashSet<string> HerOnToo = (Args.Get("cine-her-on") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet();
         /// <summary>Parts off unless --cine-her-on names them (Face 48 diag: the skin hold turned rig-lit skin lemon, hue 57 to 68;
         /// the close view's highlight grade moved her face little and re-grades the whole frame).</summary>
         /// (and "lift", the rigs raised to the close key: flatter, p85-p15 19 to 13 on C02 s4; "sky", her skin off the sky's light
         /// by night: under 1 L either way, the ambient is not what carries her face there)
-        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue" };
+        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue", "gradecool" };
         static readonly bool HerKeyArg = Args.Get("cine-her-key") != "off";
         static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && herOffNow?.Contains(p) != true && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
         // Her key's numbers (Face 48 round 2): --cine-her-key-gain, --cine-her-fill, --cine-her-rim, --cine-her-moon: the close
@@ -72,7 +78,7 @@ public partial class Game
         // A shot's own her-rig knobs (Cinematics 11, C02 s4/s8: the cool fill's grey-blue where it met the warm key), from the
         // "skin" cue's "fill" (the fill's energy times F), "fillColor" (hex) and "scale" (the face-scale cap in px per 10 cm),
         // for the shot that sets them only; other shots keep the defaults above.
-        float herFillK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
+        float herFillK = 1, herRimK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
         // ("off": the parts this shot turns off, as --cine-her-off names them: C02 s4/s8, the moon and his lantern lit by the
         // shot's own rigs, the close rig's key, fill and rim off so it does not re-aim them)
         HashSet<string>? herOffShot;
@@ -147,7 +153,7 @@ public partial class Game
         }
 
         readonly List<GeometryInstance3D> herMoved = new();
-        float herNightShown, herCapShown = 1, herK, herSkyShown = 1;
+        float herNightShown, herCapShown = 1, herK, herSkyShown = 1, herCool;
         SpotLight3D? herKey, herKeyHair, herKeyGear, herFill, herRim, herRimGear;
         SpotLight3D? herSide, herSideHair, herRimHair, herEye, herBody;
         readonly HashSet<int> herClampLogged = new();
@@ -309,6 +315,17 @@ public partial class Game
                 if (skinSky == 1 && !HerPart("key")) People.HerSkyShare(her.Person, HerPart("sky") && sum > 0.001f ? Mathf.Lerp(1, HerSky, nk) : 1);
             }
             herNightShown = nk;
+            // Face 49 (cool-light skin): under a cool key (the moon, a blue-white lantern, the heart's blue: the light on her face
+            // HerCoolShare cool), by night and close, her skin keeps the render's cool-lit colour through the grade
+            // (Atmosphere.SetViewSkinCool): lit planes silvered, the shade cool-dark, not bronze. (Her sky tint, HerAmbientTint's
+            // warm 1.3/1.0/0.7, eased to neutral too: no change on C02 s4/s8 to 0.1 of chroma, the sky's light is not what lights her
+            // there; dropped.) A warm key (fire, a warm lamp): none of it, the frame as before. --cine-her-off cool.
+            float ck = 0;
+            if (HerPart("cool") && nk > 0 && eyes is Vector3 ce) ck = nk * Mathf.SmoothStep(HerCoolFrom, HerCoolTo, HerCoolShare(ce, on, k));
+            herCool = ck;
+            // (round 2: on her skin's material, hair, brows, lashes, eyes and gear untouched (People.HerCineCool); round 1's grade
+            // stage, every colour of hers in skin's hues, --cine-her-on gradecool)
+            if (her != null) { People.HerCineCool(her.Person, HerPart("gradecool") ? 0 : ck); g.air.SetViewSkinCool(HerPart("gradecool") ? ck : 0); }
             if (HerLights && eyes is Vector3 de && player.Shot.Index != herLightsShot && player.Local > 0.5)
             {
                 // (--cine-her-lights: once a shot, every light on people's layer that reaches her eyes, with its light there)
@@ -332,7 +349,7 @@ public partial class Game
                 herLogAt = Shots.Clock;
                 var c = g.camera.UnprojectPosition(le); var rr = g.camera.UnprojectPosition(le + g.camera.GlobalBasis.X * 0.1f);
                 GD.Print($"facepx t={Shots.Clock:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1}");
-                GD.Print($"cineher t={Shots.Clock:F2} shot={player.Shot.Shot.Id} local={player.Local:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1} rigs={sum:F3} close={CloseKeyOnFace():F3} cap={cap:F2} k={k:F2} key={(herKey?.LightEnergy ?? 0):F2} fill={(herFill?.LightEnergy ?? 0):F2} rim={(herRim?.LightEnergy ?? 0):F2} moon={(herMoon?.Visible == true ? herMoon.LightEnergy : -1):F3} fire={(herFire?.Visible == true ? herFire.LightEnergy : -1):F2} keyAt={(herKey?.Visible == true && eyes is Vector3 qe ? SpotAt(herKey, herKey.LightEnergy, qe) : 0):F3} fireAt={(herFire?.Visible == true && eyes is Vector3 qf ? OmniAt(herFire, herFire.LightEnergy, qf) : 0):F3} sky={herSkyShown:F2} src={herSrc} src2={herSrc2} keyoff={herKeyOff:F0} side={(herSide?.Visible == true ? herSide.LightEnergy : 0):F2} exp={g.air.Env.TonemapExposure:F3} keylens={herKeyLens:F0} keyface={herKeyFace:F0} facelight={herFaceLight:F3} eyeoff={herEyeOff:F1} kick={(herKick?.Visible == true ? herKick.LightEnergy : 0):F2} night={night} nk={nk:F2} lens={g.camera.GlobalPosition.DistanceTo(le):F2} "
+                GD.Print($"cineher t={Shots.Clock:F2} shot={player.Shot.Shot.Id} local={player.Local:F2} x={c.X:F0} y={c.Y:F0} s={(rr - c).Length():F1} rigs={sum:F3} close={CloseKeyOnFace():F3} cap={cap:F2} k={k:F2} key={(herKey?.LightEnergy ?? 0):F2} fill={(herFill?.LightEnergy ?? 0):F2} rim={(herRim?.LightEnergy ?? 0):F2} moon={(herMoon?.Visible == true ? herMoon.LightEnergy : -1):F3} fire={(herFire?.Visible == true ? herFire.LightEnergy : -1):F2} keyAt={(herKey?.Visible == true && eyes is Vector3 qe ? SpotAt(herKey, herKey.LightEnergy, qe) : 0):F3} fireAt={(herFire?.Visible == true && eyes is Vector3 qf ? OmniAt(herFire, herFire.LightEnergy, qf) : 0):F3} sky={herSkyShown:F2} src={herSrc} src2={herSrc2} keyoff={herKeyOff:F0} side={(herSide?.Visible == true ? herSide.LightEnergy : 0):F2} exp={g.air.Env.TonemapExposure:F3} keylens={herKeyLens:F0} keyface={herKeyFace:F0} facelight={herFaceLight:F3} eyeoff={herEyeOff:F1} kick={(herKick?.Visible == true ? herKick.LightEnergy : 0):F2} night={night} nk={nk:F2} cool={herCool:F2} lens={g.camera.GlobalPosition.DistanceTo(le):F2} "
                     + string.Join(" ", rigs.Select(kv => $"{kv.Key}={on.GetValueOrDefault(kv.Value):F3}")));
             }
         }
@@ -411,6 +428,36 @@ public partial class Game
             float f = C > cmax ? cmax / C : 1;
             return FromOk(new Vector3(0.9f, o.Y * f, o.Z * f));
         }
+
+        // Face 49 (cool-light skin): --cine-her-cool-from F, --cine-her-cool-to T: the cool share of the light on her face (HerCoolShare)
+        // from which the cool treatment starts and at which it is whole.
+        static float HerCoolFrom => Args.Num("cine-her-cool-from", 0.3f);
+        static float HerCoolTo => Args.Num("cine-her-cool-to", 0.7f);
+
+        /// <summary>A light's colour as cool (+1: Oklab hue outside the warm 35-115, as SkinSafe sorts them), warm (-1) or neutral (0),
+        /// by its chroma (whole from 0.02).</summary>
+        static float Coolness(Color c)
+        {
+            var o = Ok(c); float C = new Vector2(o.Y, o.Z).Length(), h = Mathf.PosMod(Mathf.RadToDeg(Mathf.Atan2(o.Z, o.Y)), 360);
+            return (h >= 35 && h <= 115 ? -1 : 1) * Mathf.SmoothStep(0.004f, 0.02f, C);
+        }
+
+        /// <summary>Face 49: the cool share of the light on her face (-1 all warm, 1 all cool): the shot's rigs (at their share on her
+        /// skin), her key, fill, side light, moon and fire, each by its light at her eyes and its colour's Coolness.</summary>
+        float HerCoolShare(Vector3 e, Dictionary<Rig, float> on, float k)
+        {
+            float sum = 0, cool = 0;
+            void Add(float at, Color c) { if (at <= 0) return; sum += at; cool += at * Coolness(c); }
+            float share = Mathf.Lerp(1, HerRigShare, k);
+            foreach (var r in rigs.Values) Add(on.GetValueOrDefault(r) * (r.L.LightEnergy / Mathf.Max(r.E, 1e-4f)) * share, r.L.LightColor);
+            foreach (var l in new[] { herKey, herFill, herSide })
+                if (l != null && IsInstanceValid(l) && l.Visible) Add(SpotAt(l, l.LightEnergy, e), l.LightColor);
+            if (herMoon != null && IsInstanceValid(herMoon) && herMoon.Visible) Add(herMoon.LightEnergy * Lum(herMoon.LightColor), herMoon.LightColor);
+            if (herFire != null && IsInstanceValid(herFire) && herFire.Visible) Add(OmniAt(herFire, herFire.LightEnergy, e), herFire.LightColor);
+            herCoolSum = sum;
+            return sum > 1e-4f ? cool / sum : 0;
+        }
+        float herCoolSum;
 
         static SpotLight3D HerSpot(Node at, string name, uint mask, float spec, float angle)
         {
@@ -567,7 +614,7 @@ public partial class Game
             Place(herFill, lens + side * Mathf.DegToRad(35), Mathf.DegToRad(10), 2.6f, center);
             herRim!.LightColor = new Color("#a9c4ff");
             bool rim2 = HerPart("rim2");
-            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k * (rim2 ? HerRim2 : 1) : 0;
+            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k * (rim2 ? HerRim2 : 1) * (HerKnobs ? herRimK : 1) : 0;
             herRim.Visible = herRim.LightEnergy > 0.005f;
             // (round 3: the rim from nearer straight behind, so it is a line on her far jaw, ear and hair, not a band)
             float rimAz = rim2 ? HerRimAz * (W(face - lens) < 0 ? -1 : 1) : CloseRimAz;
@@ -848,6 +895,8 @@ public partial class Game
                 g.air.SetViewSkinGuard(0); g.air.SetViewHighlights(0); g.air.SetViewShadeHue(0);
                 herNightShown = 0;
             }
+            g.air.SetViewSkinCool(0);
+            if (people.TryGetValue("her", out var hc) && IsInstanceValid(hc)) People.HerCineCool(hc.Person, 0);
         }
     }
 }

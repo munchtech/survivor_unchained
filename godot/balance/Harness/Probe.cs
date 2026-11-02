@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Balance;
 /// does not die, the survivor untouchable and walking a slow circle. Fast
 /// enough for the tests (a second or so), steady enough to compare builds.</summary>
 /// <param name="Wicks">The skills' wicks lit (false: as before the Wicks, for a floor measured without them).</param>
-public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead", bool Wicks = true)
+public sealed record ProbeSpec(int Seed, string Calling, string Policy, int Level, int Weapon = 0, int Art = 0, string People = "dead", bool Wicks = true, bool Unevolved = true)
 {
     public string Key => $"{Calling}/{Policy}/L{Level}/s{Seed}/w{Weapon}";
 }
@@ -61,6 +61,10 @@ public static class Probe
         var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)spec.Seed, arena: true);
         // No paths, and none lit on what she brought in: the fight as before the Wicks.
         if (!spec.Wicks) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
+        // Without the skills that have no evolutions yet (a rollout under way, as the Wicks are): never drafted.
+        if (!spec.Unevolved)
+            foreach (var id in Content.Weapons.Pool)
+                if (Content.Weapons.All[id].Evolutions.Length == 0) b.BannedCards.Add(id);
         var pick = Picker.Make(spec.Policy);
         var rng = new Rng((uint)(spec.Seed * 104729 + 7));
         var r = new RunResult { Spec = new RunSpec(spec.Seed, spec.Calling, spec.Policy) };

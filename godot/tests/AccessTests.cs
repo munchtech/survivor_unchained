@@ -24,6 +24,8 @@ public class AccessTests
         ["judgement_disc"] = ["stalker", "warden"], ["gale_chakram"] = ["stalker", "warden"],
         ["dawnpulse"] = ["warden", "arcanist"], ["hallowed_ring"] = ["warden", "arcanist"],
         ["spirit_herd"] = ["reaver", "stalker"], ["blightfield"] = ["reaver", "stalker"],
+        // The callings' own skills (one calling each).
+        ["sunder"] = ["warden"], ["groundbreaker"] = ["warden"], ["rebuke"] = ["warden"], ["watch_bell"] = ["warden"],
     };
 
     static Journey Survivor(string calling, uint seed = 7)
