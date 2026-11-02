@@ -135,6 +135,8 @@ void fragment() {
 		a = body * (0.6 + 0.4 * n2);
 		float under = smoothstep(0.45, -0.85, v_h + (n - 0.5) * 0.7);
 		rgb = col.rgb * (0.7 + 0.6 * n2) * mix(1.0, 0.55, smoothstep(-0.2, 0.9, v_h));
+		// (a floor at 0.75x its colour: the Long Cut's far smoke showed ink-black texels, vfx9 r3c)
+		rgb = max(rgb, col.rgb * 0.75);
 		float burn = 1.0 - smoothstep(0.0, 0.34, v_age);
 		emit = vec3(1.0, 0.34, 0.07) * under * burn * burn * (0.35 + 0.65 * n2) * body * 0.55;
 	} else if (v_kind > 6.5) {

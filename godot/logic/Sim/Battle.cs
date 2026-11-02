@@ -1556,12 +1556,12 @@ public sealed partial class Battle
         public double Wake;
     }
 
-    /// <summary>For pictures (--no-foes): nothing spawns, so a still of her in a combat zone is just her.</summary>
-    public bool NoSpawns;
+    /// <summary>No more enemies come (a developer's picture: --no-spawn, after --horde, so a cleared field stays clear).</summary>
+    public bool NoSpawn;
 
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
     {
-        if (NoSpawns) return null;
+        if (NoSpawn) return null;
         o ??= new SpawnOpts();
         var def = Content.Enemies.Get(defId);
         var e = Enemies.Spawn();

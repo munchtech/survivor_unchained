@@ -242,6 +242,7 @@ public partial class BattleFx
     {
         string art = e.Art ?? "";
         if (art is "palm" or "palm_temple" or "palm_storm") { Palm(e); return; }
+        if (Flare.HushesSwings) return;
         float g = Grow(e.Rank);
         float gy = Y(e.X, e.Z);
         var at = V(e.X, gy + 1.0, e.Z);

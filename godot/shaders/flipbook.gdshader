@@ -9,7 +9,7 @@
 // shows a hard line through the ground.
 //
 // Per instance: COLOR is the tint (rgb, above 1 to bloom) and the fade (a);
-// INSTANCE_CUSTOM is (life 0..1, angle, flat 0/1, unused).
+// INSTANCE_CUSTOM is (life 0..1, angle, flat 0/1, tall: above 1 a jet stretched up the screen, its foot lit warm).
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
@@ -25,11 +25,13 @@ uniform float soft = 0.6;
 varying vec4 tint;
 varying float life;
 varying float lie;
+varying float tall;
 
 void vertex() {
 	tint = COLOR;
 	life = INSTANCE_CUSTOM.x;
 	lie = INSTANCE_CUSTOM.z;
+	tall = INSTANCE_CUSTOM.w;
 	float s = length(MODEL_MATRIX[0].xyz);
 	float a = INSTANCE_CUSTOM.y;
 	vec3 right, up, out_;
@@ -41,6 +43,7 @@ void vertex() {
 		right = INV_VIEW_MATRIX[0].xyz * cos(a) + INV_VIEW_MATRIX[1].xyz * sin(a);
 		up = -INV_VIEW_MATRIX[0].xyz * sin(a) + INV_VIEW_MATRIX[1].xyz * cos(a);
 		out_ = INV_VIEW_MATRIX[2].xyz;
+		up *= max(tall, 1.0);
 	}
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(right * s, 0.0), vec4(up * s, 0.0), vec4(out_ * s, 0.0), MODEL_MATRIX[3]);
 }
@@ -78,5 +81,7 @@ void fragment() {
 	// a burst laid over her tinted her as well as lighting her.
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 	ALBEDO = c.rgb * tint.rgb * fade * clear;
+	// A jet's foot lit warm from below by the seam it rose from, fading as it climbs and cools.
+	if (tall > 1.01) ALBEDO += vec3(1.0, 0.52, 0.18) * c.a * smoothstep(0.35, 1.0, UV.y) * (1.0 - smoothstep(0.0, 0.55, life)) * 0.55 * fade * clear;
 	ALPHA = c.a * fade * (1.0 - add) * clear;
 }

@@ -1119,13 +1119,14 @@ public partial class BattleFx : Node3D
                             var bat = at;
                             if (Lines?.ClearOfLines(ref bat, 1.7f, 0.3f, 0.53f, 0.75) != false) Hits.Text(bat, "blocked", new Color(0.7f, 0.75f, 0.8f), 44);
                         }
-                        Burst(at, School.Physical, 5, 3, 2, 0.06f);
+                        if (!Flare.HushesHitSparks) Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
                         Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
-                    if (e.Art != null) Impact(e, at);
+                    if (Flare.HushesHitSparks) { }
+                    else if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)
                     {
@@ -1799,6 +1800,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
+        if (Flare.HushesSwings) Blades.Clear();
         Blades.Step(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
@@ -2081,7 +2083,7 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 4);
-                    float s = EmberSizes[tier];
+                    float s = EmberSizes[tier] * Flare.DropScale;
                     if (tier == 4)
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
@@ -2094,13 +2096,15 @@ public partial class BattleFx : Node3D
                         // (about three times the stone across, breathing slowly, each to its own beat)
                         float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
                         float hs = 0.62f + 0.75f * s;
+                        var (lcAcross, lcLight) = Flare.DropHalo(p.Age);
+                        if (lcAcross > 0) hs = lcAcross;
                         emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
-                            EmberTiers[tier] with { A = 0.32f + 0.09f * beat });
+                            EmberTiers[tier] with { A = (0.32f + 0.09f * beat) * lcLight });
                     }
                     break;
                 }
                 case PickupKind.Gold:
-                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
+                    coins.Add(new Transform3D((spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2)).Scaled(Vector3.One * Flare.DropScale), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
                     break;
                 case PickupKind.Heal:
                     flasks.Add(new Transform3D(spin, V(kx, gy + 0.35 + bob, kz)), Colors.White);
