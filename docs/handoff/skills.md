@@ -1,5 +1,51 @@
 # Handoff: skills look and feel
 
+## Combat VFX 7 (vfx-7, 2 Nov): HANDOFF. The Long Cut r1 FAIL far, rebuild from better sources
+**The owner (1 Nov):** "Yes, Long Cut first". Build item 1 of `docs/design/SKILL_VFX_STUDY.md` §6 (the seam of morning, FLARE_LOOK §3 lines 289-311) with the Warden's dawn-gold press motes folded in. Item 2 (her auto-attacks) is next but NOT approved to build; its gap is confirmed (study §3). Judges at max, day and night, whole-frame gate first; perf in a packed night crowd; round cap 2-3 (1 used).
+
+**Done:**
+- Study: `docs/design/SKILL_VFX_STUDY.md`. `SKILL_VFX_REFERENCES.md` now carries the numbers 1-11, matching CLASS_IDENTITY (that doc was already right).
+- Ref sheets: `survivorsunchained_inputs\vfx_refs\<id>\peaks.jpg` and `bursts.jpg`, made by scratchpad `vfx7\refsheets.py`.
+- Build r1 (5ff2bef01, tests 1337/0/10), on a procedural route:
+  - `godot/src/Fx/Flare/FlareFx.LongCut.cs`: press motes off the blade, gold head light, sweep light, the fuse light at 60 m/s, dust, chunks, sparks, smoke, the struck burn-up timed to the sweep angle or the fuse.
+  - `flare_world.gdshaderinc` gets the globals flare_seam, flare_seam_t and flare_sweep, registered in project.godot.
+  - `vat.gdshaderinc` gets a ragged gold burn-away.
+  - `CrowdView.FlareStatueLook` + `FlareFx.StatueLook`: the frost-blue flash was Burns Twice's `frozen=1` on every Flare's statues.
+  - The beat shots b4_sweep..b8_smoke.
+
+**Judge r1 (max, ~100k): FAIL, FAR.** All 14 frames fail the gate. Only the day crack's shape and its gold-to-red cooling land. Missing:
+- the press answer (the drain reads cold grey);
+- the sweep (invisible);
+- the fuse travel (the beats are mistimed);
+- death in gold (a black radial star of corpses stays; the judge won't accept "harness" without a respawn-off reshoot);
+- the scar.
+
+At night the seam reads as a straight tube with banding, and ~100 ember orbs bury the cool-down. Full verdict: transcript a08842844413e91d7. Its ranked fixes:
+1. Die in gold, then gone (rim 2-3 frames, char-dissolve to embers 0.6-0.8 s, removed). Reshoot with respawn off.
+2. A gold instant press (a warm 4 m light, bloom pulse, rim on her and the blade); the hold drain warm, never grey-cyan.
+3. A visible sweep: 0.3-0.4 s, a warm ground wedge, a fading wash for 0.5 s, a dust skirt, no rim.
+4. A crack with depth: taper 30-40 px to 10 px at 1:1, dark lips, 8-15 raised chunks, a meander, a chain of low warm lights so the shadows swing.
+5. Night: cap the core's emissive; the glow comes from the ground lights.
+6. Real dust and chunks, not confetti.
+7. Hold or shrink the ember orbs until after the seam.
+8. A warm exposure lift of ~1.3x for 2-4 frames at the cleave, a shake, and a char scar for 3-6 s.
+
+**Next (scrap rule: far means rebuild the sources, not patch):**
+1. A medium solver rebuilds the crack from a baked source (a Blender crack mask/decal with charred lips, taper, meander, plus rock-chunk meshes) and the dust/smoke as a tools/fxsim flipbook, Burns Twice's pipeline. In the same pass it does fixes 1-3, 5, 7 and 8 in code.
+2. Reshoot with respawn off (find the lab arg) and real beat times. b4 at night came out before b3: check the Shots.Want times in LongCut.
+3. Max judge r2, then a perf run without `--shot`: r1's 36/25 ms means include PNG saves.
+
+**Routed (not ours):**
+- Combat: after the Long Cut her auto-attacks stop ~4.5 s. No Ev.Hit at all: sim, not view. Likely nothing left in reach; check against Burns Twice.
+- UI: "Barrow Dust" nameplates over ~30 enemies by day; the LEVEL 3 banner sits over the fight.
+- Combat: a night wave spawns as a still ring of glows for 3 s.
+- Burns Twice: its burn front is a screen-wide hoop, and the fireball peaks at 1.6x (~0.1-0.2M, later).
+- Character: the arcanist mesh logs 0 shadow casters.
+
+**Shots:** scratchpad `vfx7\shoot2.sh`; the recipe is in this file's git log and in the study. The press lands at 6.35 s; frames come ≥0.13 s apart. Frames: `survivorsunchained_inputs\vfx7\` (now = the hub, useless; now2 = real fights; lc = r1). The worktree's modified `.import` files are reimport noise; don't commit them.
+
+**Cost:** VFX 7 so far ~0.95M (study ~0.45M, build r1 ~0.24M, judge ~0.1M, lead).
+
 ## Combat VFX 6 (vfx-6, 1 Nov): MR READY. No chevrons on round marks
 **The owner (29 Oct, verbatim):** "the chevron on the circular telegraphs is not wanted, it dosn't look good".
 
