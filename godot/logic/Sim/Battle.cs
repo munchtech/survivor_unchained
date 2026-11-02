@@ -430,6 +430,7 @@ public sealed partial class Battle
         Flow.Update(Player.X, Player.Z);
         if (Combat)
         {
+            RunOnKills();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickAuras(dt);
             TickTriggers(dt);
@@ -773,6 +774,7 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
+        if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
         if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
@@ -902,7 +904,11 @@ public sealed partial class Battle
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
-        if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
+        if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
+        {
+            if (o.Weapon != null) OnKillHit(o.Weapon, e);
+            KillEnemy(e, true, o.Weapon, depth);
+        }
         else ArtOnHit(e);
         return dmg;
     }
@@ -1235,7 +1241,7 @@ public sealed partial class Battle
             return 0;
         }
         if (TryLampBlock(amount, school, source, from)) return 0;
-        LampsOnBlowLanded();
+        LampsOnBlowLanded(from);
         // Watch Mail counts: every tenth blow that reaches the survivor glances off.
         if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
         {
@@ -1604,6 +1610,9 @@ public sealed partial class Battle
         e.LastWeapon = null;
         e.TakenMul = 1;
         e.SunderUntil = e.Sunder = 0;
+        e.AirUntil = e.AirMore = 0;
+        e.SlowUntil = e.SlowBy = 0;
+        e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
@@ -1632,6 +1641,7 @@ public sealed partial class Battle
         pr.Reset();
         pr.Owner = owner; pr.X = x; pr.Z = z; pr.Damage = damage; pr.School = school; pr.Credit = credit;
         if (owner == Side.Player) pr.HeavyId = HeavyBy?.Id;
+        pr.Echo = Echoing;
         return pr;
     }
 
@@ -1655,7 +1665,7 @@ public sealed partial class Battle
         var zn = Zones.Spawn();
         if (zn == null) return null;
         zn.Reset();
-        zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit;
+        zn.Owner = owner; zn.X = x; zn.Z = z; zn.Radius = radius; zn.Life = life; zn.Dps = dps; zn.School = school; zn.Credit = credit; zn.Echo = Echoing;
         ArcanistZoneSpawned(zn);
         return zn;
     }
@@ -1761,7 +1771,7 @@ public sealed partial class Battle
 
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
-        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
+        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing });
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2065,10 +2075,11 @@ public sealed partial class Battle
     /// <summary>A projectile strikes; one loosed in a heavy blow lands heavy, splash and all.</summary>
     void ProjectileHit(Projectile pr, Enemy e)
     {
-        var hb = HeavyBy;
+        var (hb, ech) = (HeavyBy, Echoing);
         HeavyBy = pr.HeavyId != null && ReferenceEquals(pr.HeavyId, pr.Weapon) ? WeaponById(pr.Weapon) : null;
+        Echoing = ech || pr.Echo;
         ProjectileStrikes(pr, e);
-        HeavyBy = hb;
+        (HeavyBy, Echoing) = (hb, ech);
     }
 
     void ProjectileStrikes(Projectile pr, Enemy e)
@@ -2186,7 +2197,8 @@ public sealed partial class Battle
             z.TickT -= dt;
             if (z.TickT > 0) continue;
             z.TickT = z.Tick;
-            ZoneTick(z);
+            if (z.Echo) { var ech = Echoing; Echoing = true; ZoneTick(z); Echoing = ech; }
+            else ZoneTick(z);
         }
     }
 
@@ -2249,10 +2261,11 @@ public sealed partial class Battle
             }
             else
             {
-                var was = credit;
-                credit = s.Credit;
-                Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
-                credit = was;
+                var (was, ech) = (credit, Echoing);
+                credit = s.Credit; Echoing = ech || s.Echo;
+                if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
+                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
+                (credit, Echoing) = (was, ech);
             }
         }
     }
@@ -2905,6 +2918,10 @@ sealed class StrikeSpec
     public Side Owner;
     public int Depth;
     public string? Credit;
+    /// <summary>Struck by an On-kill echo: its kills never echo again.</summary>
+    public bool Echo;
+    /// <summary>The ground heaves (Battle.Heave: heavy, stunning), not a blast.</summary>
+    public bool Heave;
 
     public StrikeSpec(double x, double z, double r, double dmg, School school, Tag[] tags, double t, WeaponInst? weapon, Side owner, int depth)
     {

@@ -129,6 +129,15 @@ public sealed class Enemy : Pooled
     public double TakenMul = 1;
     /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
     public double SunderUntil, Sunder;
+    /// <summary>Thrown up (Groundbreaker's upheaval): until this time it can't move or strike (a stun holds it) and
+    /// takes AirMore more from her side.</summary>
+    public double AirUntil, AirMore;
+    /// <summary>When the Watch Bell last drew it (the wall's answer doesn't throw back what was drawn in the last 2 s).</summary>
+    public double DrawnAt = -99;
+    /// <summary>When Rebuke last struck it (a champion is struck again only after the skill's ChampionGap).</summary>
+    public double RebukedAt = -99;
+    /// <summary>Held back (the Watch Bell's iron): until this time (the battle's clock) it moves SlowBy slower.</summary>
+    public double SlowUntil, SlowBy;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);
@@ -212,6 +221,8 @@ public sealed class Projectile : Pooled
     public string? Credit;
     /// <summary>Loosed in a heavy blow (the warden's Hand): the id of the skill whose blow it is.</summary>
     public string? HeavyId;
+    /// <summary>Loosed by an On-kill echo: its kills never echo again.</summary>
+    public bool Echo;
 
     public Projectile(int id) { Id = id; }
 
@@ -222,7 +233,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>
@@ -252,6 +263,8 @@ public sealed class GroundZone : Pooled
     public double BossMul = 1;
     /// <summary>What its damage is credited to when no weapon laid it.</summary>
     public string? Credit;
+    /// <summary>Laid by an On-kill echo: its kills never echo again.</summary>
+    public bool Echo;
 
     public GroundZone(int id) { Id = id; }
 
@@ -259,7 +272,7 @@ public sealed class GroundZone : Pooled
     {
         Owner = Side.Player; X = Z = 0; Radius = 1; Life = 1; Age = 0; Tick = 0.5; TickT = 0; Dps = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Slow = 0; Status = null; Art = "zone"; Weapon = null;
-        Follow = false; Armor = 0; BossDamage = 1; BossMul = 1; Credit = null;
+        Follow = false; Armor = 0; BossDamage = 1; BossMul = 1; Credit = null; Echo = false;
     }
 }
 

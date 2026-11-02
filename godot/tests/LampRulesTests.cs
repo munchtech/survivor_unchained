@@ -277,7 +277,7 @@ public sealed class LampRulesTests
         for (int i = 0; i < 10; i++) { w.Player.Iframes = 0; w.Player.BlockT = 0; w.HurtPlayer(1, School.Physical, "test", null); }
         Assert.Equal(1, w.Rebukes);
         Assert.Equal(0, w.Stones);
-        if (near != null) Assert.True(w.DamageBy.GetValueOrDefault("rebuke") > 0);
+        if (near != null) Assert.True(w.DamageBy.GetValueOrDefault("wall") > 0);
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public sealed class LampRulesTests
             int was = b.Rebukes, need = 6 - b.Stones;
             for (int i = 0; i < need; i++) { b.Player.Iframes = 0; b.HurtPlayer(1, School.Physical, "test", null); }
             Assert.Equal(was + 1, b.Rebukes);
-            return b.BossDamageBy.GetValueOrDefault("rebuke");
+            return b.BossDamageBy.GetValueOrDefault("wall");
         }
         double whole = Took(1), half = Took(0.5);
         Assert.True(whole > 0);

@@ -18,7 +18,7 @@ public class SkillsDataTests
     [Fact]
     public void Counts()
     {
-        Assert.Equal(26, Weapons.Pool.Length);
+        Assert.Equal(30, Weapons.Pool.Length);
         Assert.Equal(52, Weapons.Pool.Sum(id => Weapons.All[id].Evolutions.Length));
         Assert.Equal(9, Unions.All.Length);
         Assert.Equal(Weapons.Pool.Length + Unions.All.Length, Weapons.All.Count);

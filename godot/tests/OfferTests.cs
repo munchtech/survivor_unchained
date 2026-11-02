@@ -144,6 +144,7 @@ public class OfferTests
         Assert.True(SkillBook.Learn(j.Ch, "gale_chakram"));
         Assert.True(SkillBook.Learn(j.Ch, "thornbloom"));
         SkillBook.Unslot(j.Ch, "thornbloom");
+        SkillBook.Unslot(j.Ch, "knifestorm"); // the type's first calling skill, learned at creation, would lead the drafts
         var night = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3, arena: true);
         Assert.Equal(SkillBook.NightRank(j.Ch), night.Attuned["gale_chakram"]);
         Assert.Contains("thornbloom", night.Familiar);

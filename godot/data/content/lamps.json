@@ -2033,7 +2033,7 @@
    "feeds": [
     "watch_bell"
    ],
-   "text": "Each thing the bell draws gives a barrier of 3% of health.",
+   "text": "Each thing the bell draws gives a barrier of 1.5% of health (still up to 15% held).",
    "effects": [
     {
      "do": "rule",

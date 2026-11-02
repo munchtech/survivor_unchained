@@ -9,7 +9,8 @@ namespace SurvivorUnchained.Content;
 /* The Wicks (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.3): each skill's own tree of 12 lamps, three strands of
  * four, the fourth a Turn that changes what the skill is. The data is data/content/wicks.json; Rpg/WickBook.cs
  * plans a wick, Sim/Turns.cs turns its lit lamps into the skill's numbers in the fight. */
-public enum StrandKind { Shape, School, Bind }
+/// <summary>Calling: a calling skill's own bespoke strand (its lead-ins written out in "lamps", under the skill's "own").</summary>
+public enum StrandKind { Shape, School, Bind, Calling }
 
 /// <summary>A lead-in lamp's numbers. Increases, so lamps add (two +10% damage lamps are +20%).</summary>
 public sealed class WickLeadIn
@@ -34,8 +35,23 @@ public sealed class TurnDef
     /// <summary>The school's status ("burning", "chilled", "seared": the cards' word for what has it).</summary>
     public StatusPayload? Status;
     public string Statused = "";
-    /// <summary>Defined and plannable, not yet in the fight (Pulse, On-kill: P5b).</summary>
-    public bool Inert;
+    /// <summary>Pulse: it goes off this many times in all, the follow-ups PulseGap seconds apart (each the cast's own
+    /// firing again, at the Turn's damage and area).</summary>
+    public int Pulses = 1;
+    public double PulseGap = 0.3;
+    /// <summary>On-kill: a kill by its own hit fires it once more from the corpse, at OnKillDamage, at most once every
+    /// OnKillGap seconds; that firing's kills never fire it again.</summary>
+    public bool OnKill;
+    public double OnKillGap = 0.5, OnKillDamage = 0.6;
+    /// <summary>Its own heavy count becomes every this many firings (the skill's HeavyEvery; 0 leaves it).</summary>
+    public int HeavyEvery;
+    /// <summary>Again: its blow lands again on the same spot Again seconds later, at AgainDamage (0: never).</summary>
+    public double Again, AgainDamage = 0.6;
+    /// <summary>Its strike leaves her a barrier of BarrierEach of max health for each creature struck, at most
+    /// BarrierMost a strike (0: none; Shield of Morning).</summary>
+    public double BarrierEach, BarrierMost;
+    /// <summary>Each firing lays this many Stones, and StonesChampion more for each champion it draws (Stone Bell).</summary>
+    public int Stones, StonesChampion;
 }
 
 /// <summary>One alternative a strand suits: any of its behaviors, any of its tags, an explosion; absent, any.</summary>
@@ -94,6 +110,14 @@ public static class Wicks
     }
 
     public static void Reload() => file = null;
+
+    /// <summary>A measuring aid (the harness's --strands): this skill's strands for this run, its wick made if it has
+    /// none yet (Light my way then follows the first).</summary>
+    public static void SetStrands(string skill, string[] strands)
+    {
+        if (!F.Skills.TryGetValue(skill, out var w)) F.Skills[skill] = w = new SkillWick { Suggested = strands[0] };
+        w.Strands = strands;
+    }
 
     /// <summary>The skills that have a wick.</summary>
     public static IEnumerable<string> Skills => F.Skills.Keys;

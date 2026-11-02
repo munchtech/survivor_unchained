@@ -20,7 +20,8 @@ namespace SurvivorUnchained.Content;
  * Rank growth (applied by the runtime): +20% damage per rank, +4% area per
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
 
-public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise }
+/// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
+public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll }
 
 /// <summary>A weapon's numbers; unset ones fall back (in an evolution's Set,
 /// to the base).</summary>
@@ -46,6 +47,28 @@ public sealed class WeaponStats
     public double? Crit;
     /// <summary>What a raising weapon calls up (an ally's kind).</summary>
     public string? Raises;
+    /// <summary>Its own count: every this many firings is heavy (the warden's Hand's heavy blow, whatever the Hand
+    /// counts), and a heavy one strikes its Line too (Sunder's). Absent, only the Hand makes it heavy.</summary>
+    public double? HeavyEvery;
+    /// <summary>A heavy firing also strikes a line this long straight ahead, BeamWidth wide, at its full damage.</summary>
+    public double? Line;
+    /// <summary>A crack's path (Crack): the share of its damage what lies along it takes.</summary>
+    public double? Trail;
+    /// <summary>Seconds a blow stuns what it strikes (not a boss): Groundbreaker's heave.</summary>
+    public double? Stun;
+    /// <summary>Reactive (Rebuke): carried, her block chance at rank 1, and more a rank after.</summary>
+    public double? Block, BlockStep;
+    /// <summary>Reactive: how many creatures it strikes beside the blocker (the nearest it, within Radius).</summary>
+    public double? Others;
+    /// <summary>Reactive: seconds before the same champion (elite or boss) is struck again. A champion pinning her
+    /// struck her every half second and stood beside her for every other blow: at one strike a cooldown Rebuke dealt
+    /// a champion 2,369 a second, three times the rest of the dawn build together (the path probe, P6); every 5 s at
+    /// bossDamage 0.5, 246 (Dawnpulse 146, the wall 201). The crowd's numbers are untouched.</summary>
+    public double? ChampionGap;
+    /// <summary>Toll (Watch Bell): the barrier, a share of max health, for each thing drawn; at most DrawMost of them count.</summary>
+    public double? Barrier, DrawMost;
+    /// <summary>Toll: the bell tops her barrier up to this share of max health and no further.</summary>
+    public double? BarrierCap;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
