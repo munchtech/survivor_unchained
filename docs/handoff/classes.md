@@ -1,4 +1,4 @@
-# Classes 19 starts here (2 Nov): Phase 2, session 2 of 3. Lamps v2 data + sim are in, behind a flag (MR at classes-17)
+# Classes 19 starts here (2 Nov): Phase 2, session 3 of 3 (acceptance). Lamps v2 data, sim, points, layouts and save v6 are in, behind a flag
 
 The owner answered PHASE2_SCOPE (2 Nov): "Board + Lamps first". UI 25 (worktree ui-25) designs the Lamps screen from `board_v2.json`: keep its ids, kinds and positions FROZEN (tell main in one line if one must change). The contract between data and sim is **docs/design/LAMPS_V2_RULES.md** (read it first; its "As built" section says how the code reads it).
 
@@ -15,20 +15,40 @@ The owner answered PHASE2_SCOPE (2 Nov): "Board + Lamps first". UI 25 (worktree 
 - **Open notes:**
   - The stalker Hand ladder may run hot (window 2 to 3 s plus pierce 2 plus a refund); trim `stalker.hand3` if the measure says so.
   - `Hands.Line` (the card) doesn't show Hand-lamp deltas yet (UI/card follow-up).
-  - The Old Roads' `hand` rite lines list all four callings' versions; UI may show only hers.
+  - The Old Roads' `hand` rite lines list all four callings' versions; UI## Done (Classes 18, session 2; MR2 at classes-17)
+- **Points:**
+  - `AtlasLamps` is 30 on v2 (8 on v1). `Maps.Atlas.Complete` now adds a lamp on each tier's first clear (fact `atlas.tier.<n>`; nothing set `lamps.atlas` before).
+  - Tiers 1-16 give 16; **the other 14 need atlas bosses, which don't exist yet** (known; for the endgame lead).
+  - Relit posts: `LampBook.RelightPost(w, id)` sets the fact `lampposts.<id>`, which is a point (v2 only).
+  - The four Act 1 posts are `PostDef`s in lamps_v2.json `posts`, each with a draft anchor (lowford, verge, waystation, lowford; x/z 0). Env places them, and the story writer writes the scenes (main noted both in RESUME).
+  - Debug: `--relight id,id|all` (Game.cs, next to `--xp`).
+- **Three layouts, each a whole build:** `LampLayout.Carried` holds the day slots. `LampBook.Switch(ch, i, world, zone)` works only in town (`LampBook.Towns`), not at night (dawn and dusk count as day), and not in a map or arena. Tests are in `LampLayoutsTests.cs`.
+- **Save v6** (`LampBook.MigrateSix` from `Saves.Migrate`) runs on v1 too:
+  - 3 layouts;
+  - lamps refunded;
+  - wick plans and link picks cleared (Light my way's strands);
+  - skills she can't carry go to `World.Stash` as tomes;
+  - carried skills copied into every layout.
+- Tests 1402/0/10 at c0b2e1954. Flag-off story sweep identical before and after (4 seeds; MR1's was 24 seeds).
+- **Board-full night measure** (`arena --pair board --callings all --seeds 64 --par 22 [--lampsv2]`, plain, tier 1; `tools/scratch/classes/board_ratio.py`):
 
-## Next (session 2, then 3)
-1. **Points:**
-   - atlas 30 (`LampBook.AtlasLamps` is 8);
-   - Act 1's four relit lamp-posts (a world fact each; ask main for Env/story placement).
-2. **Three layouts**, each a whole build (board, wicks, carried skills, Flare; `LampState.Layouts` has 2 board-only), with **save v6** (`World/Save.cs` Version 5): a full refund of lamps, wicks on the suggested strands, off-calling skills to the storeroom as tomes. DaySlotsTests pins layout behavior.
-3. **Names:** ~290 draft names (and unnamed smalls) go to the story writer via main. List: every lamp with `draft: true` in lamps_v2.json.
-4. **Session 3, acceptance with `--lampsv2`:**
-   - `--pair board` at x1.25 for every calling (`tools/scratch/classes/board_ratio.py`);
-   - Act 1 within ±3% (cells ±6%);
-   - types within x1.35 of the median.
-   Then flip the default to v2 (or ask main).
-   Gate scripts: survivorsunchained_inputs/scratch_classes16_b9e8a09f.
+  | | Warden | Reaver | Stalker | Arcanist | All |
+  |---|---|---|---|---|---|
+  | v1 | 1.62 | 1.13 | 1.10 | 1.04 | 1.19 |
+  | v2 | **1.65** | 1.12 | 1.09 | 0.99 | 1.18 |
+
+  The warden's P is mostly damage taken (x1.50; dealt x1.10, top source judgement_disc). Her defensive lamps (block, barrier, stones) carry into the night in full as rules. Raw data: Temp scratchpad `45b9ec4e.../scratchpad/classes18/board` (backed up to survivorsunchained_inputs/scratch_classes18).
+
+## Next (session 3: acceptance, then flip the default)
+1. **Warden board-full to x1.25 on v2.**
+   - Find which lamp rules cut her damage taken by night (`--pair board` with LAMPS_OFF=id,... bisection, LampLoadout.cs).
+   - Then rule how they cross into the night: a price-like "in full" vs Size. A block chance is a size, so a quarter by night.
+   - Also run deft.
+2. **Act 1 on v2:** within ±3% of integration, cells within ±6% (story sweep with `--lampsv2`, `act1_match.py`). Types within x1.35 of the median.
+3. **Names:** ~290 `draft: true` names (and unnamed smalls) to the story writer via main.
+4. When all three pass, flip `Lamps.V2` to default on (ask main), and delete v1 only after UI's screen lands.
+
+_classes16_b9e8a09f.
 
 ## Phase 1 record (MR2, merged)
 - Hooks a/b (426ce9d64): art keys `rebuke`/`watch_bell` and `Ev.Barrier`; WARDEN_SKILLS_VFX_HOOKS.md.
