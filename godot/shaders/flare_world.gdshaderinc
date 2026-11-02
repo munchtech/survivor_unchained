@@ -440,12 +440,23 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	vec2 uv2 = uv + vec2(off.x / flare_seam.w, off.y / FL_BAND);
 	float core = texture(flare_crack_b, uv2).b * fl_in_strip(uv2) * smoothstep(0.05, 0.35, 1.0 - B.a);
 	float h = fl_seam_heat(age);
+	// The fresh seam (r4b: "a pale cream tube"): a hairline core of white-gold about 2 px wide, orange-gold glow round it,
+	// dark lips either side. Gone by 0.7 s after the fuse, so the cooled look is as it was.
+	float fresh = 1.0 - smoothstep(0.35, 0.7, age);
+	core = mix(core, core * smoothstep(0.55, 0.95, core), fresh);
 	// The char along it: the blurred coverage, darker near the crack, gone with the scar.
 	// (r3c: with the strip's 0.3 scorch paint, at most ~40% darker in all, from a mip that keeps the crack's own width (the strip's scorch is now within it),
 	// settling to half as the seam cools)
 	float charb = textureLod(flare_crack_a, uv, 3.0).a * inb * smoothstep(0.0, 0.25, age);
 	alb *= 1.0 - clamp(charb * 0.5, 0.0, 0.15) * mix(0.5, 1.0, 1.0 - smoothstep(0.5, 2.8, age)) * fade;
-	alb = mix(alb, A.rgb, cov * fade);
+	vec3 alb0 = alb;
+	// (night, once cooled: the scar is a darkening of the ground to no less than half, kept within the crack plus ~2.5 cm)
+	float scarTight = clamp(textureLod(flare_crack_b, uv, 1.5).b * 4.0, 0.0, 1.0) * inb;
+	float covN = mix(cov, cov * scarTight, night * smoothstep(1.0, 2.5, age));
+	alb = mix(alb, A.rgb, covN * fade);
+	alb = max(alb, alb0 * 0.5 * night * smoothstep(1.0, 2.5, age) * step(0.001, covN));
+	float lips = clamp(textureLod(flare_crack_b, uv, 2.0).b * 3.0, 0.0, 1.0) * inb * (1.0 - clamp(core * 3.0, 0.0, 1.0));
+	alb *= 1.0 - 0.6 * lips * fresh * open;
 	rough = mix(rough, 0.95, cov * fade);
 	vec2 nt = B.rg * 2.0 - 1.0;
 	vec3 nwld = normalize(nt.x * dir3 + nt.y * side3 + sqrt(max(1.0 - dot(nt, nt), 0.0)) * vec3(0.0, 1.0, 0.0));
@@ -455,14 +466,17 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	// (r3c: the walls catch a faint light only deep in the gap, near its floor: a flat 0.06 over the gap (r3b: over
 	// the whole char) was the even tube round the hairline. Embers in the crack, never on its lips.)
 	float gap = smoothstep(0.72, 0.6, B.a) * inb;
-	vec3 e = fl_seam_col(h * mix(0.7, 1.12, core) * hot) * pow(h, 1.3) * (core * 0.95 + 0.04 * gap * smoothstep(0.45, 0.2, B.a) * open) * mix(3.4, 2.0, night) * fade;
+	vec3 coreCol = fl_seam_col(h * mix(0.7, 1.12, core) * hot);
+	coreCol = mix(coreCol, vec3(1.0, 0.85, 0.55) * max(coreCol.r, 0.5), fresh * core);
+	vec3 e = coreCol * pow(h, 1.3) * (core * 0.95 + 0.04 * gap * smoothstep(0.45, 0.2, B.a) * open) * mix(3.4, 2.0, night) * fade;
 	// (night: the core capped, one white-gold line; the field's glow comes from the lights, not from here)
 	float cap = mix(1e3, flare_lc.z, night);
 	e = min(e, vec3(cap));
 	// Its glow at the crack's lips, gold: 0.08x the core's level by day, 0.04x at night (+-40%; at 0.28x the night exposure
 	// turned it into an even cream tube the width of the gap). The lights carry the reach.
 	float lvl = min(pow(h, 1.3) * 0.95 * mix(3.4, 2.0, night) * fade, cap);
-	e += fl_seam_col(min(h * 0.72, 0.78)) * lvl * mix(0.08, 0.04, night) * fl_seam_glow(sw) * (1.0 - core);
+	vec3 glowCol = mix(fl_seam_col(min(h * 0.72, 0.78)), vec3(1.0, 0.55, 0.15), fresh);
+	e += glowCol * lvl * mix(0.08, 0.04, night) * fl_seam_glow(sw) * (1.0 - core);
 	emi = emi * (1.0 - cov * 0.85 * fade) + e;
 }
 
@@ -482,10 +496,14 @@ vec3 flare_sweep_at(vec2 w) {
 	float m = behind * r;
 	float wedge = crossed * smoothstep(0.0, 0.12, m) * exp(-max(m - 0.12, 0.0) / 0.7) * flare_sweep.y;
 	float wash = crossed * flare_lc.y * 0.06;
+	// The afterglow: the last 35 degrees behind the edge keep 60%, 35%, 15% of the band's light, fading with the wash
+	// (gone 0.25 s after the sweep ends).
+	float tail = behind < 0.3054 ? mix(0.6, 0.35, behind / 0.3054) : mix(0.35, 0.15, clamp((behind - 0.3054) / 0.3054, 0.0, 1.0)) * (1.0 - smoothstep(0.6109, 0.69, behind));
+	float after = crossed * flare_lc.y * tail * smoothstep(5.67, 6.0, swept);
 	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 2.0;
 	float radial = smoothstep(0.4, 1.4, r) * (1.0 - smoothstep(R * 0.88, R * 1.04, r + wob));
-	float streak = 0.75 + 0.25 * texture(flare_noise, vec2(r * 0.42, a * 0.9)).g;
-	return vec3(1.0, 0.74, 0.42) * (wedge + wash) * radial * streak * flare_lc.w;
+	// (one continuous band: no streak texture along it, so no hot spots)
+	return vec3(1.0, 0.74, 0.42) * (max(wedge, after) + wash) * radial * flare_lc.w;
 }
 
 // The Long Cut's light on a body: the sweep's on its rim as it passes, the seam's from below.
@@ -736,9 +754,9 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	if (fl_seam_where(wp.xz, sw)) {
 		float age = fl_seam_age(sw.x);
 		// (burnt where the crack's char reaches: its coverage blurred)
-		float burnt = clamp(textureLod(flare_crack_a, sw.zw, 4.0).a * fl_in_strip(sw.zw) * 3.0, 0.0, 1.0) * smoothstep(0.0, 0.08, age) * step(0.0, sw.x);
+		float burnt = clamp(textureLod(flare_crack_a, sw.zw, mix(4.0, 2.0, flare_seam_t.w)).a * fl_in_strip(sw.zw) * 3.0, 0.0, 1.0) * smoothstep(0.0, 0.08, age) * step(0.0, sw.x);
 		float h = fl_seam_heat(age) * step(0.0, sw.x);
-		alb = mix(alb, vec3(0.015, 0.012, 0.01), burnt * 0.95 * flare_seam_t.z);
+		alb = mix(alb, mix(vec3(0.015, 0.012, 0.01), alb * 0.5, flare_seam_t.w), burnt * 0.95 * flare_seam_t.z);
 		emi *= 1.0 - burnt;
 		// (r3c: times the blade's own colour, so leaves in the glow are dark shapes on it, not cream confetti)
 		float glow = fl_seam_glow(sw) * (1.0 - 0.7 * tip);

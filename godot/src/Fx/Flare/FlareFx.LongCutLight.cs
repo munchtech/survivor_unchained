@@ -170,6 +170,9 @@ public partial class FlareFx
     }
 
     /// <summary>The sweep's lights riding its edge at 0.5 m (unshadowed, 3.5 m), its shimmer behind, the band's light.</summary>
+    /// <summary>The omnis riding the sweep's edge (off in r4b: the band is one continuous light, not a ray).</summary>
+    const bool LcSweepEdgeLights = false;
+
     void LcSweepLights(float sweepK)
     {
         LcLightsMake();
@@ -184,7 +187,7 @@ public partial class FlareFx
             var p = new Vector3(at.X + Mathf.Cos(ai) * r, 0, at.Z + Mathf.Sin(ai) * r);
             p.Y = (float)HeightAt(p.X, p.Z) + 0.5f;
             l.GlobalPosition = p;
-            l.LightEnergy = (Night ? 1.3f : 5f) * sweepK * flash * LcLight;
+            l.LightEnergy = (Night ? 1.3f : 5f) * sweepK * flash * LcLight * (LcSweepEdgeLights ? 1f : 0f);
             l.Visible = l.LightEnergy > 0.01f;
         }
         if (lcSweepHaze != null && lcHazeMat != null)

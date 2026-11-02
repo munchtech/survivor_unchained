@@ -44,6 +44,8 @@ public partial class FlareFx
     Vector2 lcO, lcDir;
     float lcLen, lcHalf;
     int lcJetN, lcChunkN;
+    /// <summary>The dust jets along the line (cut in r4b: they failed three judges).</summary>
+    const bool JetsOn = false;
     double lcSmokeAcc, lcSkirtAcc;
     /// <summary>Real seconds since the press (the struck's flash and the pictures' spacing run on it, not the Flare's clock).</summary>
     double lcRt;
@@ -263,7 +265,7 @@ public partial class FlareFx
     }
 
     /// <summary>The seam's deaths: within this of the drawn crack (m). The rest are the sweep's: ash, no gold (vfx9 r4a).</summary>
-    const float LcSeamBand = 2.5f;
+    const float LcSeamBand = 1.8f;
     /// <summary>The burn's lag behind the fuse, seconds a metre from the drawn crack (r4a: 0.1, so it visibly leaves the crack).</summary>
     const double CharPerMetre = 0.1;
     /// <summary>The ash deaths' fall (Flare time): greyed, then gone in flakes.</summary>
@@ -358,7 +360,7 @@ public partial class FlareFx
         {
             float s = (float)(t - lcSweepT);
             sweepK = Mathf.SmoothStep(0, 0.03f, s) * (1 - Mathf.SmoothStep(SweepLen - 0.03f, SweepLen + 0.08f, s));
-            wash = Mathf.SmoothStep(0, 0.12f, s) * (1 - Mathf.SmoothStep(SweepLen, SweepLen + 0.5f, s));
+            wash = Mathf.SmoothStep(0, 0.12f, s) * (1 - Mathf.SmoothStep(SweepLen, SweepLen + 0.25f, s));
             // Three unshadowed lights ride its edge at 0.5 m (the legs' rims), its shimmer behind (FlareFx.LongCutLight).
             LcSweepLights(sweepK);
             if (lcCleaveT < 0) { spendLight.LightEnergy = 0; spendLight.Visible = SpendLightOld; }
@@ -369,7 +371,7 @@ public partial class FlareFx
                 while (lcSkirtAcc >= 1)
                 {
                     lcSkirtAcc -= 1;
-                    float a = SweepLead() - R() * 0.25f, r = 2.5f + R() * (reach - 3);
+                    float r = 2.5f + R() * (reach - 3), a = SweepLead() - R() * 1.5f / r;
                     var p = new Vector3(at.X + Mathf.Cos(a) * r, 0, at.Z + Mathf.Sin(a) * r);
                     p.Y = (float)HeightAt(p.X, p.Z);
                     Dust(p + Vector3.Up * 0.3f, 0.7f + R() * 0.5f, 1.8f + R() * 0.8f, 0.9f + R() * 0.4f, new Vector3(-Mathf.Sin(a), 0.35f, Mathf.Cos(a)) * 1.2f, 0.7f);
@@ -569,9 +571,9 @@ public partial class FlareFx
         // Dust jets up in sequence behind the front, chunks thrown out.
         // (r3c: eleven even puffballs read as five dark-brown balls on the line. Now a jet every 0.8-2 m, irregular, about
         // half of them doubled, so the line stands as one wall within 0.3 s.)
-        if (lcJetAt.Count == 0)
+        if (JetsOn && lcJetAt.Count == 0)
             for (float a = 0.5f + R() * 0.6f; a < lcLen - 0.3f; a += 0.8f + R() * 1.2f) lcJetAt.Add(a);
-        while (lcJetN < lcJetAt.Count && front >= lcJetAt[lcJetN])
+        while (JetsOn && lcJetN < lcJetAt.Count && front >= lcJetAt[lcJetN])
         {
             float a = lcJetAt[lcJetN++];
             Jet(a);
@@ -586,7 +588,7 @@ public partial class FlareFx
 
         // The Return: a thin curtain of smoke off the cooling seam.
         // (r3c: from 0.25 s, behind the front only, holding through the cleave's +2 s, then thinning by +3.4 s)
-        if (s > 0.25f && s < 3.4f)
+        if (s > 0.3f && s < 3.4f)
         {
             lcSmokeAcc += dt * 26 * (1 - Mathf.SmoothStep(2.0f, 3.4f, s));
             while (lcSmokeAcc >= 1)
@@ -595,11 +597,13 @@ public partial class FlareFx
                 float a = 0.8f + R() * (front - 0.8f);
                 if (a < 0.8f) continue;
                 var p = SeamPoint(a);
+                // (lit by the crack: warm near the ground, easing to its own grey as it rises past about a metre)
+                var smokeWarm = new Color(1.0f, 0.75f, 0.5f, 1);
                 bed.Spawn(new FlareBits.P
                 {
                     Kind = FlareBits.Kind.Smoke, At = p + new Vector3((R() - 0.5f) * 0.5f, 0.25f + R() * 0.3f, (R() - 0.5f) * 0.5f),
                     V = new Vector3((R() - 0.5f) * 0.3f, 0.7f + R() * 0.6f, (R() - 0.5f) * 0.3f), Life = 1.9f + R() * 0.8f, Size = 0.5f + R() * 0.25f, SizeEnd = 1.6f + R() * 0.6f,
-                    Color = Night ? new Color(0.34f, 0.31f, 0.28f, 0.3f) : new Color(0.4f, 0.37f, 0.33f, 0.28f), ColorEnd = Night ? new Color(0.36f, 0.34f, 0.32f, 0.06f) : new Color(0.44f, 0.41f, 0.38f, 0.05f),
+                    Color = (Night ? new Color(0.34f, 0.31f, 0.28f, 0.3f) : new Color(0.4f, 0.37f, 0.33f, 0.28f)) * smokeWarm, ColorEnd = Night ? new Color(0.36f, 0.34f, 0.32f, 0.06f) : new Color(0.44f, 0.41f, 0.38f, 0.05f),
                     Drag = 0.8f, Lift = 0.25f, Swirl = 0.5f, Seed = R(), Wind = new Vector3(0.25f, 0, 0.1f),
                 });
             }

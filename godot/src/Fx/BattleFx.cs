@@ -1119,13 +1119,14 @@ public partial class BattleFx : Node3D
                             var bat = at;
                             if (Lines?.ClearOfLines(ref bat, 1.7f, 0.3f, 0.53f, 0.75) != false) Hits.Text(bat, "blocked", new Color(0.7f, 0.75f, 0.8f), 44);
                         }
-                        Burst(at, School.Physical, 5, 3, 2, 0.06f);
+                        if (!Flare.HushesHitSparks) Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
                         Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
-                    if (e.Art != null) Impact(e, at);
+                    if (Flare.HushesHitSparks) { }
+                    else if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)
                     {
