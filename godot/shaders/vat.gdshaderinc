@@ -238,7 +238,7 @@ void fragment() {
 	c = min(c * (1.0 + 1.6 * crit_k * struck * (1.0 - lc_k) * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck * (1.0 - lc_k), vec3(0.85 + 0.05 * fx_crit));
 	// The hit kit's flash: a warm white over the body's paint at up to half, lit by the scene (so no glowing cut-out
 	// by night), for its first 2 frames only.
-	c = mix(c, vec3(1.0, 0.94, 0.84), fx.x * fx_aa);
+	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa);
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -273,9 +273,9 @@ void fragment() {
 	// The hit kit's struck rim (BattleFx.HitKit: her auto-attacks' struck, 2 frames): gold-white at the body's
 	// edge, not scaled by its paint (a black wolf at night has none to lift), tight so the body keeps its shape.
 	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
-	// (r3: gold #FFB84A, fresnel power 3 cut to its outer edge so it is ~2-3 px on a 70 px body; strength 1 to 0 over
+	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
-	e += vec3(1.0, 0.479, 0.069) * fx_rim * pow(rim, 3.0) * smoothstep(0.55, 0.9, rim) * 2.2;
+	e += vec3(1.0, 0.479, 0.069) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

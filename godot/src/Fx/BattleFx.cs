@@ -1155,7 +1155,8 @@ public partial class BattleFx : Node3D
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
-                    if (e.Family != null)
+                    // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
+                    if (e.Family != null && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1192,11 +1193,13 @@ public partial class BattleFx : Node3D
                     bool told = e.Elite || e.Boss || killBudget-- > 0;
                     if (told)
                     {
-                        if (e.School == School.Physical)
+                        // (not on her auto-attacks' kills: pale grit unshaded by night was a snow of white specks; VFX 10 r3)
+                        bool aaKill = AaStruck(e.Enemy);
+                        if (e.School == School.Physical && !aaKill)
                             for (int i = 0; i < (e.Elite ? 18 : 6); i++)
                                 Smoke.Spawn(at, new Vector3((R() - 0.5f) * 5, 2 + R() * 3, (R() - 0.5f) * 5), 0.6f + R() * 0.3f, 0.06f + R() * 0.05f,
                                     new Color("#bfb6a2"), gravity: 12, sprite: Sprites.Of("dirt"), spinV: 6);
-                        else Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
+                        else if (!aaKill) Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
                         for (int i = 0; i < (e.Elite ? 12 : 3); i++)
                             Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
                                 new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);

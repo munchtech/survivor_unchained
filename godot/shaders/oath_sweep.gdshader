@@ -1,5 +1,5 @@
 // Her Oathblade's sweep (src/Fx/Blades.cs, Blades(oath: true)): one gold crescent at the blade's reach.
-// (VFX 10 r3) A true crescent, not a glass bubble: ~0.28 m thick through its leading middle, tapering to points at
+// (VFX 10 r3) A true crescent, not a glass bubble: ~0.21 m (14-18 px at the play camera's ~75 px/m) thick through its leading middle, tapering to points at
 // both horns; white-gold on its outer edge toward the lead, saturated gold through its body, fading to clear toward
 // her hand. Its streaks run ALONG the arc (radial ones echoed the bash's fan). Premultiplied: the gold body covers
 // what is under it a little (so it keeps its saturation in sunlight), the hot edge only adds.
@@ -17,8 +17,8 @@ render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled,
 #include "res://shaders/hero_clear.gdshaderinc"
 
 // The crescent's thickness at its thickest (metres) and how far its gold fades on inward past that (shares of it).
-uniform float thick = 0.28;
-uniform float fade_in = 0.9;
+uniform float thick = 0.21;
+uniform float fade_in = 0.4;
 
 varying flat vec4 v_custom;
 varying flat vec4 v_hue;
@@ -66,9 +66,9 @@ void fragment() {
 	float thr = erode * 1.14 - 0.06;
 	float keep = smoothstep(thr - 0.04, thr + 0.04, val);
 	// The colour: saturated gold through the body (hue ~42), white-gold on the outer quarter toward the lead.
-	vec3 gold = v_hue.rgb * vec3(1.0, 0.92, 0.55);
-	float hot = (1.0 - smoothstep(0.12, 0.32, d)) * mix(0.3, 1.0, smoothstep(0.35, 0.9, p));
-	vec3 hotc = vec3(1.0, 0.86, 0.55) * 1.5;
+	vec3 gold = v_hue.rgb * vec3(0.78, 0.7, 0.4);
+	float hot = (1.0 - smoothstep(0.08, 0.24, d)) * mix(0.3, 1.0, smoothstep(0.35, 0.9, p));
+	vec3 hotc = vec3(1.0, 0.84, 0.5) * 1.25;
 	// Alpha: what the gold covers (strongest in the body's middle, none in the fade), premultiplied below.
 	float cover = body * (1.0 - smoothstep(0.2, 1.0 + fade_in, d)) * 0.55 * (0.75 + 0.25 * run);
 	float lum = body * (0.62 + 0.55 * streak) * (1.0 - smoothstep(0.3, 1.0 + fade_in, d) * 0.6);

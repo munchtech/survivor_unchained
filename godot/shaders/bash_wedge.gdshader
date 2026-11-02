@@ -15,7 +15,7 @@ float h1(float n) { return fract(sin(n * 91.345) * 47453.5453); }
 float n1(float x) { float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }
 
 const vec3 CORE = vec3(0.745, 0.352, 0.080);   // #E0A050
-const vec3 RIM = vec3(1.0, 0.693, 0.352);      // #FFD9A0
+const vec3 RIM_C = vec3(1.0, 0.693, 0.352);      // #FFD9A0
 
 void fragment() {
 	float p = COLOR.a, k = COLOR.r;
@@ -42,6 +42,6 @@ void fragment() {
 	}
 	// Fading as it goes, the near end first (it has left the shield).
 	float fade = pow(1.0 - p, 1.3) * smoothstep(0.0, 0.08, x + 0.04 - p * 0.3);
-	vec3 e = CORE * (wake * 0.55 + rays * 0.9) + RIM * lip * 1.15;
+	vec3 e = CORE * (wake * 0.55 + rays * 0.9) + RIM_C * lip * 1.15;
 	ALBEDO = e * k * fwd * fade * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

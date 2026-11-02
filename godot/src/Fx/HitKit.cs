@@ -124,19 +124,22 @@ public partial class BattleFx
 
     /// <summary>The struck rim's bodies (enemy id: the drawn frame it was struck on); CrowdView.StruckRim reads it.</summary>
     readonly System.Collections.Generic.Dictionary<int, long> struckRims = new();
-    /// <summary>The struck look in drawn frames (r3 judge): a warm-white flash for 2 (50% then 25% blend), then a gold
+    /// <summary>The struck look in drawn frames (r3 judge): a warm-white flash for 2 (30% then 12% blend), then a gold
     /// fresnel rim fading to nothing over 8 (on real frames: a hitstop holds the bodies, not the light).</summary>
     const int RimFlash = 2, RimFrames = 8;
     /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
     static readonly bool NoRim = Args.Has("aa-norim");
     /// <summary>A struck body's (flash blend, rim strength) this frame; (-1, 0) when it has none. By night the rim is
     /// held to ~0.6 of the sweep's peak (Flare.Night).</summary>
+    /// <summary>Struck by her auto-attacks within the struck look's frames.</summary>
+    bool AaStruck(int id) => struckRims.TryGetValue(id, out var at) && Engine.GetFramesDrawn() - at < RimFrames;
+
     Vector2 StruckRimOn(int id)
     {
         if (!struckRims.TryGetValue(id, out var at)) return new Vector2(-1, 0);
         long age = Engine.GetFramesDrawn() - at;
         if (age < 0 || age >= RimFrames) { if (age >= RimFrames) struckRims.Remove(id); return new Vector2(-1, 0); }
-        float flash = age < RimFlash ? 0.5f / (1 + age) : 0;
+        float flash = age < RimFlash ? (age == 0 ? 0.3f : 0.12f) : 0;
         float k = 1 - age / (float)RimFrames;
         return new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
     }
@@ -169,6 +172,8 @@ public partial class BattleFx
         // 12-20 px x 2-3 px at the play camera, white-yellow head to an orange tail, flung on along the blow at 10-15 m/s
         // with drag, 4-6 frames. (They run through the hitstop on the FX's own clock: BattleFx.Update.)
         if (!full) return;
+        // (the Oathblade's full kits get the chip puff too; the Disc and Bash throw their own)
+        if (path == null) ChipPuff(at, away, 1);
         int n = Math.Min(5, (crit ? 5 : 3 + (int)(R() * 1.99f)) + (first ? 1 : 0));
         for (int i = 0; i < n; i++)
         {
@@ -204,7 +209,7 @@ public partial class BattleFx
     public void ChipPuff(Vector3 at, Vector3 away, int n = 2)
     {
         n = Math.Clamp(n, 1, 2);
-        var dust = Flare.Night ? new Color(0.15f, 0.14f, 0.15f) : new Color(0.5f, 0.43f, 0.33f);
+        var dust = Flare.Night ? new Color(0.15f, 0.14f, 0.15f) : new Color(0.4f, 0.32f, 0.23f);
         for (int i = 0; i < n; i++)
         {
             float s = 0.5f + R() * 0.2f;
@@ -314,7 +319,7 @@ public partial class BattleFx
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
         if (AaBeats && discThrows >= 1 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
-        if (AaBeats && discBounceShot && !discOpenShot && near > 3f && near < 9f && b0 != null && Clear(p.X, p.Z, 2.5)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
+        if (AaBeats && discBounceShot && !discOpenShot && near > 2.5f && near < 9f && b0 != null && Clear(p.X, p.Z, 1.8)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
         // A faint dark bed under it (so the head shows over the pale dead), and the head.
         Shade(at, 1.0f * s, 0.3f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
@@ -330,8 +335,8 @@ public partial class BattleFx
         {
             discSide[key] = side;
             float half = 0.34f * s / 1.1f;
-            Ribbons.Feed(key * 4 + 1, at + side * half, 0.065f, 0.16f, wake, 1.7f * off, Ribbons.Style.Glow);
-            Ribbons.Feed(key * 4 + 2, at - side * half, 0.065f, 0.16f, wake, 1.7f * off, Ribbons.Style.Glow);
+            Ribbons.Feed(key * 4 + 1, at + side * half, 0.065f, 0.1f, wake, 1.7f * off, Ribbons.Style.Glow);
+            Ribbons.Feed(key * 4 + 2, at - side * half, 0.065f, 0.1f, wake, 1.7f * off, Ribbons.Style.Glow);
         }
         Ribbons.Feed(key, at, half2(s), 0.12f, wake, 0.35f * off, Ribbons.Style.Glow);
         if (R() < 0.3f)
@@ -383,7 +388,7 @@ public partial class BattleFx
         // The contact (r3): a 2-frame amber flare ~1.5x the halo on every hit, at the disc's side of the body.
         Sparks.Spawn(new Sparks.P
         {
-            At = at - away * 0.3f, Life = 2 / 60f, Size = 1.4f, SizeEnd = 1.2f, Color = Hdr("#ffc868", 1.5f), ColorEnd = Hdr("#ff9a30", 0.8f),
+            At = at - away * 0.3f, Life = 2 / 60f, Size = 1.1f, SizeEnd = 0.95f, Color = Hdr("#ffb448", 1.1f), ColorEnd = Hdr("#ff8a28", 0.6f),
             Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f,
         });
         if (rich) ChipPuff(at, away, R() < 0.5f ? 1 : 2);
@@ -505,7 +510,7 @@ public partial class BattleFx
             // The plow: brown dust laid at the front as it runs, across +-40 degrees, drifting on (12-20 frames).
             if (dt > 0 && p < 0.75f)
             {
-                var dust = w.Night ? new Color(0.13f, 0.12f, 0.12f) : new Color(0.44f, 0.36f, 0.26f);
+                var dust = w.Night ? new Color(0.13f, 0.12f, 0.12f) : new Color(0.36f, 0.28f, 0.19f);
                 for (int j = 0; j < BashPlow; j++)
                 {
                     float a = w.Angle + (R() + R() - 1) * 0.7f;
