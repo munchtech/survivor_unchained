@@ -220,6 +220,58 @@ public static class LampIron
         return model;
     }
 
+    static ShaderMaterial? sunder;
+
+    /// <summary>Her Sunderer greatsword (tools/assets/sunder_blade.py; The Long Cut forms it), for Arms: the Watch blade's
+    /// shader, clean: satin steel with a bright honed bevel, no stain, pits, rust or silt; the fittings ("iron") gilt;
+    /// the grip dark leather. (A look test's overrides: SUNDER_BLADE="blade_flat_k=0.5;blade_rough=0.3".)</summary>
+    public static Node3D SunderBlade()
+    {
+        var model = GD.Load<PackedScene>("res://art/weapons/sunder_blade.glb").Instantiate<Node3D>();
+        if (sunder == null)
+        {
+            var m = sunder = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/keeper_iron.gdshader") };
+            m.SetShaderParameter("masks", GD.Load<Texture2D>(Masks));
+            m.SetShaderParameter("tile", 6f);
+            m.SetShaderParameter("rust_k", 0f);
+            m.SetShaderParameter("silt_k", 0f);
+            m.SetShaderParameter("pit_k", 0f);
+            m.SetShaderParameter("wet", 0.1f);
+            m.SetShaderParameter("bump", 0.3f);
+            // the gilt: a warm old gold in the body, brighter on its convex edges
+            m.SetShaderParameter("iron", new Vector3(0.50f, 0.36f, 0.15f));
+            m.SetShaderParameter("steel", new Vector3(0.86f, 0.68f, 0.34f));
+            m.SetShaderParameter("iron_metal", 1f);
+            m.SetShaderParameter("iron_rough", 0.42f);
+            m.SetShaderParameter("edge_rough", 0.28f);
+            m.SetShaderParameter("iron_spec", 0.5f);
+            m.SetShaderParameter("edge_lo", 0.5f);
+            m.SetShaderParameter("edge_hi", 0.85f);
+            m.SetShaderParameter("wear", 1f);
+            // the blade: clean satin steel, the honed bevel a shade brighter
+            m.SetShaderParameter("blade_flat", new Vector3(1, 1, 0.985f) * 0.5f);
+            m.SetShaderParameter("blade_edge", new Vector3(0.82f, 0.82f, 0.80f));
+            m.SetShaderParameter("blade_stain", 0f);
+            m.SetShaderParameter("blade_rough", 0.34f);
+            m.SetShaderParameter("bevel_rough", 0.2f);
+            // the leather
+            m.SetShaderParameter("cord", new Vector3(0.040f, 0.026f, 0.017f));
+            m.SetShaderParameter("cord_pitch", 0.022f);
+            m.SetShaderParameter("cord_groove", 0.35f);
+            m.SetShaderParameter("cord_spec", 0.25f);
+            m.SetShaderParameter("cord_rough", 0.72f);
+            if (System.Environment.GetEnvironmentVariable("SUNDER_BLADE") is { Length: > 0 } ov)
+                foreach (var kv in ov.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    {
+                        if (k.Trim() == "blade_flat_k") m.SetShaderParameter("blade_flat", new Vector3(1, 1, 0.985f) * f);
+                        else m.SetShaderParameter(k.Trim(), f);
+                    }
+        }
+        foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false)) ((MeshInstance3D)n).MaterialOverride = sunder;
+        return model;
+    }
+
     /// <summary>The old lamp of code primitives, if the model is missing.</summary>
     static Node3D Primitive(float bail)
     {

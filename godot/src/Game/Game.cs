@@ -1730,6 +1730,8 @@ public partial class Game : Node, IZoneHost
                 foreach (var w in gb.Weapons.Select(x => x.Id).ToList()) if (!keep.Contains(w)) gb.RemoveWeapon(w);
             }
         }
+        // --no-foes: nothing spawns (a still of her and a prop in a combat zone).
+        if (Battle is { } nf && Args.Has("no-foes")) nf.NoSpawns = true;
         // --lab: no drafts and no dying, so a run of pictures is all the skill in hand.
         if (Args.Has("lab") && Battle is { } lb)
         {

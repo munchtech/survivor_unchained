@@ -32,6 +32,8 @@ uniform vec3 blade_flat = vec3(0.075, 0.074, 0.072);
 uniform vec3 blade_edge = vec3(0.50, 0.50, 0.49);
 uniform float blade_stain = 0.7;
 uniform float blade_rough = 0.38;
+// the blade's pits (1 the Watch blade's old steel, 0 a clean blade: sunder_blade)
+uniform float pit_k = 1.0;
 // the grip's leather: its specular (dull: leather at 0.5 read as a pale tube under the sky) and roughness
 uniform float cord_spec = 0.5;
 uniform float cord_rough = 0.78;
@@ -110,7 +112,7 @@ void fragment() {
 		// (Warden 7 r3: the stain soft, low-frequency and low-contrast, a faint warm dulling, never a band; the pits
 		// small and few; the flats a mid steel that catches the light, the honed bevel the brightest thing on him)
 		float stain = smoothstep(0.35, 0.85, m2.r * 0.8 + m2.a * 0.3 + (m2.g - 0.5) * 0.3) * blade_stain;
-		float pit = smoothstep(0.7, 0.85, fine.b) * smoothstep(0.45, 0.7, m2.g + 0.1);
+		float pit = smoothstep(0.7, 0.85, fine.b) * smoothstep(0.45, 0.7, m2.g + 0.1) * pit_k;
 		vec3 flat_col = blade_flat * (0.9 + 0.2 * m.g) * (0.94 + 0.12 * m2.g);
 		flat_col = mix(flat_col, flat_col * vec3(0.92, 0.86, 0.8), stain);
 		vec3 ful_col = blade_flat * 0.72 * (0.9 + 0.2 * m.g) * mix(vec3(1.0), vec3(0.9, 0.84, 0.78), stain);

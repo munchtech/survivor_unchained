@@ -1556,8 +1556,12 @@ public sealed partial class Battle
         public double Wake;
     }
 
+    /// <summary>For pictures (--no-foes): nothing spawns, so a still of her in a combat zone is just her.</summary>
+    public bool NoSpawns;
+
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
     {
+        if (NoSpawns) return null;
         o ??= new SpawnOpts();
         var def = Content.Enemies.Get(defId);
         var e = Enemies.Spawn();
