@@ -1065,10 +1065,10 @@ void fragment() {
 			// (r2, judge e23 r1 #4: by night in her lamp the cut was the brightest thing by her) older still: half toward the
 			// bark's own colour, greyer, and darker, so it sits with the litter round it
 			vec3 wood = mix(stump_wood, ALBEDO * 1.6, 0.5);
-			wood = mix(wood, vec3(dot(wood, LW)), 0.4) * 0.55;
+			wood = mix(wood, vec3(dot(wood, LW)), 0.45) * 0.42;
 			vec3 cut = wood * mix(0.85, 1.05, fract(v_jit * 7.3)) * mix(0.8, 1.0, ring);
 			cut *= mix(0.7, 1.0, smoothstep(0.0, 0.35, rr / rw));
-			cut = mix(cut, wood * 1.18, smoothstep(0.72, 0.9, rr / rw) * 0.55);
+			cut = mix(cut, wood * 1.1, smoothstep(0.72, 0.9, rr / rw) * 0.5);
 			cut *= 1.0 - 0.4 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
 			// (the bark's ring round it, darker, so the lid reads as the trunk's own cut, not a disc laid on it)
 			cut *= mix(1.0, 0.6, smoothstep(0.9, 1.0, rr / rw));

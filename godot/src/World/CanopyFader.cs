@@ -8,8 +8,8 @@ namespace SurvivorUnchained.View;
 /// in motion) The canopy fade's per-tree state for canopy_fade.w 2 (kit.gdshader OWN_FOLIAGE reads it from each copy's custom
 /// data g). Each frame the trees near the ground line from the play camera to her are tested: a tree is WANTED faded when its
 /// crown (tapered from crown_r at its base to crown_r * crown_taper at crown_hi, then to its spire's tip) comes within
-/// canopy_fade.x m of a sight line from the lens to any of nine points of her outline (feet, knees, hips, chest and shoulders
-/// either side, head), and stays wanted until it is canopy_fade.y m clear (the gap: no flicker at the edge); or when its crown
+/// canopy_fade.x m of a sight line from the lens to any of nine points of her outline (feet, knees, hips and shoulders either
+/// side, waist, neck, head), and stays wanted until it is canopy_fade.y m clear (the gap: no flicker at the edge); or when its crown
 /// comes within 3 m of the lens's plane (out at 3.6 m). Each eases to what it is wanted over Secs, in time, so the dither shows
 /// only in those 0.3 s. A teleport (her or the camera 4 m in a frame) snaps. Cost: the trees within Reach of that line, and
 /// writes only for the few easing.</summary>
@@ -67,12 +67,12 @@ public partial class CanopyFader : Node
         lastHer = her; lastCam = eye;
         var view = ct.AffineInverse();
         var side = new Vector3(ct.Basis.X.X, 0, ct.Basis.X.Z).Normalized();
-        // her outline (her chest the survivor global, as the shader's: feet 1.1 m under it, the head's top 0.7 m over)
-        pts[0] = her + new Vector3(0, -1.0f, 0); pts[1] = her + new Vector3(0, -0.55f, 0);
-        pts[2] = her + new Vector3(0, -0.2f, 0) + side * 0.22f; pts[3] = her + new Vector3(0, -0.2f, 0) - side * 0.22f;
-        pts[4] = her; pts[5] = her + side * 0.3f; pts[6] = her - side * 0.3f;
-        pts[7] = her + new Vector3(0, 0.45f, 0); pts[8] = her + new Vector3(0, 0.65f, 0);
-        MsSet = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+        // her outline (the survivor global: at 1:1 it sits about 0.95 m over her feet, her head's top 0.8 m over it): feet,
+        // knees, hips and shoulders either side, the point itself, her neck, her head's top
+        pts[0] = her + new Vector3(0, -0.95f, 0); pts[1] = her + new Vector3(0, -0.5f, 0);
+        pts[2] = her + new Vector3(0, -0.05f, 0) + side * 0.2f; pts[3] = her + new Vector3(0, -0.05f, 0) - side * 0.2f;
+        pts[4] = her; pts[5] = her + new Vector3(0, 0.4f, 0) + side * 0.25f; pts[6] = her + new Vector3(0, 0.4f, 0) - side * 0.25f;
+        pts[7] = her + new Vector3(0, 0.55f, 0); pts[8] = her + new Vector3(0, 0.8f, 0);
         stamp++;
         var a = new Vector2(eye.X, eye.Z); var b = new Vector2(her.X, her.Z);
         int x0 = Mathf.FloorToInt((Mathf.Min(a.X, b.X) - Reach) / Cell), x1 = Mathf.FloorToInt((Mathf.Max(a.X, b.X) + Reach) / Cell);
