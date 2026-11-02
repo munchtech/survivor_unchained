@@ -92,6 +92,11 @@ PIECES = {"sword": dict(arms="chevalier_sword@hand_r", at="BladeAtR", dir="Blade
           # its fist (WRAP["wand"] is WRAP["sword"]).
           "wand": dict(arms="wand@hand_r", at="BladeAtR", dir="BladeDirR", outfit="arcanist", rest=("cast_flick", 0),
                        weapon=("wand",), wrap="sword"),
+          # Her greatsword's upper (right) fist (animation 59, The Long Cut): sunder_blade's leather conformed to the Blade1H
+          # section (round r 13.7; its own oval, 30.6 x 25.7 mm, fitted no fist: the forefinger 141-154 deg round at best), seated
+          # on the blade's pocket and held in the blade's fist (WRAP["sunder"] is WRAP["sword"]).
+          "sunder": dict(arms="sunder_blade@hand_r", at="BladeAtR", dir="BladeDirR", outfit="warden", rest=("idle_warden", 76),
+                         weapon=("sunder",), wrap="sword"),
           "crossbow": dict(arms="crossbow@hand_r", at="CrossbowAtR", dir="CrossbowDirR", outfit="ranger",
                            rest=("idle_stalker", 0), near=30.0, seed="sword")}
 # Pieces dropped in as data (GRIP_STANDARD.md section 4): tools/armor/weapon_drop.py writes each new piece's row, copied

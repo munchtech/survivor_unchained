@@ -181,6 +181,8 @@ public class WeaponSocketsTests
         Assert.Equal((WeaponSockets.CrossbowAtR, WeaponSockets.CrossbowDirR), WeaponSockets.PocketR(WeaponKind.Crossbow));
         // The wand is held in the one-handed blade's fist (Made.Wand's grip is the Blade1H's, anim-40).
         Assert.Equal((WeaponSockets.BladeAtR, WeaponSockets.BladeDirR), WeaponSockets.PocketR(WeaponKind.Wand));
+        // The two-handed blade's upper fist is the blade's (sunder_blade's grip conformed to the Blade1H section, animation 59).
+        Assert.Equal((WeaponSockets.BladeAtR, WeaponSockets.BladeDirR), WeaponSockets.PocketR(WeaponKind.Blade2H));
         foreach (var k in new[] { WeaponKind.None, WeaponKind.Shield })
             Assert.Null(WeaponSockets.PocketR(k));
     }

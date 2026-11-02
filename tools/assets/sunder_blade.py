@@ -134,7 +134,7 @@ def blade():
 
 
 def grip():
-    """The grip: oval, a little waisted between the hands; its leather's lapped spiral (12 mm pitch) is the shader's."""
+    """The grip: round (the Blade1H section), a breath waisted between the hands; its leather's lapped spiral (12 mm pitch) is the shader's."""
     y0, y1 = GRIP_Y0, GRIP_Y1
     segs = 16
     bm = bmesh.new()
@@ -143,11 +143,13 @@ def grip():
     for i in range(n + 1):
         y = y0 + (y1 - y0) * i / n
         s = (y - y0) / (y1 - y0)
-        r = 0.0153 - 0.0013 * math.sin(math.pi * s) ** 2 + 0.0007 * s     # waisted, a touch fuller under the guard
+        # Animation 59: conformed to the Blade1H grip section (round r 13.7 mm, tools/anim/data/grip_spec.json), so her fists close
+        # on it in the fitted blade fist (keyed.py WRAP["sword"]); was an oval 30.6 x 25.7 mm that no fist fitted (fistfit).
+        r = 0.0137 - 0.0002 * math.sin(math.pi * s) ** 2 + 0.0001 * s     # a breath waisted, a touch fuller under the guard
         ring = []
         for k in range(segs):
             th = k * math.tau / segs
-            ring.append(bm.verts.new((r * math.cos(th), y, 0.84 * r * math.sin(th))))
+            ring.append(bm.verts.new((r * math.cos(th), y, r * math.sin(th))))
         rows.append(ring)
     for r0, r1 in zip(rows, rows[1:]):
         for k in range(segs):
@@ -223,9 +225,9 @@ def fittings():
     parts.append((lathe([(0.0065, 0.0060), (0.0060, 0.0018), (0.0035, 0.0002), (0.0, 0.0)], 10), Matrix.Identity(4)))
     # Ferrules: one between pommel and grip, one under the guard.
     parts.append((lathe([(0.0, GRIP_Y0 + 0.003), (0.0150, GRIP_Y0 + 0.003), (0.0170, GRIP_Y0 - 0.002), (0.0145, GRIP_Y0 - 0.010),
-                         (0.0, GRIP_Y0 - 0.010)], 16, zscale=0.84), Matrix.Identity(4)))
+                         (0.0, GRIP_Y0 - 0.010)], 16, zscale=0.92), Matrix.Identity(4)))
     parts.append((lathe([(0.0, GRIP_Y1 - 0.003), (0.0165, GRIP_Y1 - 0.003), (0.0182, GRIP_Y1 + 0.002), (0.0175, GUARD_Y - 0.007),
-                         (0.0, GUARD_Y - 0.007)], 16, zscale=0.84), Matrix.Identity(4)))
+                         (0.0, GUARD_Y - 0.007)], 16, zscale=0.92), Matrix.Identity(4)))
     # The guard: the bar, and a block at its middle with the blade's root through it.
     parts.append((guard_bar(), Matrix.Identity(4)))
     parts.append((box(*BLOCK, 0.0035), Matrix.Translation((0, BLOCK_Y, 0))))

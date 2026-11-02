@@ -23,7 +23,7 @@ public partial class ArmsDump : Node
     {
         ("chevalier_sword", "hand_r"), ("viking_sword", "hand_r"), ("viking_axe", "hand_r"), ("viking_axe", "hand_l"),
         ("wand", "hand_r"), ("mage_staff", "hand_r"), ("crossbow", "hand_r"), ("daggers", "hand_r"), ("dagger_b", "hand_l"),
-        ("shield_round", "lowerarm_l"),
+        ("shield_round", "lowerarm_l"), ("sunder_blade", "hand_r"),
     };
 
     static string F(float v) => Math.Round(v, 4).ToString("0.####", CultureInfo.InvariantCulture);

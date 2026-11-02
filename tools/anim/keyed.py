@@ -1098,6 +1098,9 @@ WRAP = {"staff": {"bends": {"index": (58.9, 73.7, 46.5), "middle": (65.6, 79.3, 
 # above), seated on the blade's pocket (WeaponSockets.PocketR Wand: BladeAtR / BladeDirR, GRIP["wand"] 35): the same
 # fist. fistfit wand passes on it (cast_flick, the wand run and sprint).
 WRAP["wand"] = WRAP["sword"]
+# Her greatsword (animation 59, sunder_blade): its grip is the Blade1H section, so both her fists close in the blade's fist, the
+# left's laid mirrored (WRAP_LEFT), the clip keying her left fist onto the grip's line 0.170 m toward the pommel.
+WRAP["sunder"] = WRAP["sword"]
 
 
 def spread_axis(rig, j):
@@ -1177,12 +1180,12 @@ WRAP_TILT = {"staff": {20.0: {"bends": {"index": (77.9, 60.1, 60.1), "middle": (
 # second dagger's hilt is thinner), laid mirrored as every left hand is.
 # On 18 October (animation 38): WRAP["daggers_l"] fitted on her left hand and the conformed dagger_b (fistfit daggers --side l).
 # Arms.Spec dagger_b Seated.
-WRAP_LEFT = {"daggers": "daggers_l"}
+WRAP_LEFT = {"daggers": "daggers_l", "sunder": "sunder"}
 
 
 # The fitted line of her right fist per weapon (WeaponSockets.PocketR's Dir, hand_r's space: the shaft from the grip
 # toward the tip, the seated piece's +Y), for a clip's grip slide (slide_dir).
-POCKET_DIR = {"staff": "FistDirR", "sword": "BladeDirR", "wand": "BladeDirR", "axe": "BladeDirR", "axes": "BladeDirR",
+POCKET_DIR = {"staff": "FistDirR", "sword": "BladeDirR", "sunder": "BladeDirR", "wand": "BladeDirR", "axe": "BladeDirR", "axes": "BladeDirR",
               "daggers": "DaggerDirR", "crossbow": "CrossbowDirR"}
 _pocket_dirs = {}
 
@@ -1802,7 +1805,7 @@ def _one_frame(rig: Rig, keys, base=None):
 # haft at 35 in her fist, 8.95 deg past the old bounds axis the clips were keyed on at 30), so the bounds axis now leans
 # 43.95 in her hand: GRIP 43.95 turns the hand back under it and the axe lies in the world as it was keyed (both fists:
 # the left's plain mount is at Lean 35 on the same anchored haft).
-GRIP = {"sword": 35.0, "axe": 43.95, "daggers": 30.0, "wand": 35.0, "staff": 18.0}
+GRIP = {"sword": 35.0, "axe": 43.95, "daggers": 30.0, "wand": 35.0, "staff": 18.0, "sunder": 35.0}
 
 
 def grip_of(weapon, tilt=0.0, tilt_l=0.0):
