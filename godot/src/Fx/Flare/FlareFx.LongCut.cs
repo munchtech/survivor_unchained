@@ -106,6 +106,13 @@ public partial class FlareFx
         lcHerLight ??= LcLightNew(true);
         if (lcBooks == null) { lcBooks = new Flipbooks(); AddChild(lcBooks); }
         var p = Her + Vector3.Up * 1.2f;
+        LcLightsMake();
+        foreach (var l in new[] { lcHandLight!, lcSweepL[0]! }) { l.GlobalPosition = p; l.LightEnergy = 0.001f; l.Visible = true; }
+        lcBladeMat!.SetShaderParameter("col", new Color(0, 0, 0, 0));
+        lcColumnMat!.SetShaderParameter("col", new Color(0, 0, 0, 0));
+        LcStripDraw(lcBladeMesh!, lcBladeMat, p, p + Vector3.Up * 0.01f, 0.005f);
+        LcStripDraw(lcColumnMesh!, lcColumnMat, p, p + Vector3.Up * 0.01f, 0.005f);
+        lcBladeFx!.Visible = lcColumnFx!.Visible = true;
         foreach (var l in new[] { lcHerLight, spendLight })
         {
             l.GlobalPosition = p; l.OmniRange = 3; l.LightEnergy = 0.001f; l.ShadowEnabled = LcShadows; l.Visible = true;
@@ -135,6 +142,7 @@ public partial class FlareFx
         if (!Active)
         {
             foreach (var l in new[] { lcHerLight, spendLight }) if (l != null) { l.LightEnergy = 0; l.Visible = l == spendLight && SpendLightOld; }
+            LcLightClear();
         }
     }
 
@@ -159,12 +167,16 @@ public partial class FlareFx
         lcBeat = 0; lcBeatRt = -1; lcBeatFrame = -1;
         lcLastUs = 0; lcMsSum = lcMsMax = lcMsMaxClean = 0; lcMsN = 0; lcMsSaid = false;
         lcAshN = lcLogN = 0; lcLogStart = double.MaxValue; lcLogLast = double.MinValue; lcLogAcrossMax = 0; lcLogSaid = false;
-        // Frame 1: dawn-gold motes off the steel, drawn up it (a hue per calling: the Arcanist's are ember orange).
-        for (int i = 0; i < 22; i++)
+        LcLightClear();
+        LcLightsMake();
+        // Frame 1: gold motes off the steel, drawn up it (a hue per calling: the Arcanist's are ember orange); with the
+        // ones drawn up the edge through the hold, 20 at most (vfx9 r2: 30-odd white specks read as confetti at night).
+        for (int i = 0; i < 12; i++)
         {
             var p = BladeAt(0.3f + R() * 0.7f);
-            glow.Spawn(FlareBits.Kind.Mote, p, Rand3() * (1.5f + R() * 2.5f), 0.3f + R() * 0.25f, 0.04f + R() * 0.04f, Dawn, DawnEnd, drag: 4);
+            glow.Spawn(FlareBits.Kind.Mote, p, Rand3() * (1.2f + R() * 1.8f), 0.3f + R() * 0.25f, 0.035f + R() * 0.03f, new Color(1.1f, 0.66f, 0.24f), DawnEnd, drag: 4);
         }
+        lcMoteN = 12;
     }
 
     void LongSweep(Ev.Flare e)
@@ -173,6 +185,7 @@ public partial class FlareFx
         // The sweep comes round to the line's side; it starts a little past the aim so it ends on it.
         lcSweepFrom = (float)e.Angle + 0.4f;
         spendAt = t;
+        LcSpend();
         Cam?.Jolt(Vector3.Up, 0.25f * Motion);
         Cue("boom", at, 0.6f);
         Rumble(0.6f, 0.4f, 0.08f);
@@ -182,7 +195,7 @@ public partial class FlareFx
     void LongCleave(Ev.Flare e)
     {
         lcCleaveT = t;
-        if (lcSweepT < 0) { lcSweepT = t - 0.3; spendAt = t; }
+        if (lcSweepT < 0) { lcSweepT = t - 0.3; spendAt = t; LcSpend(); }
         lcO = new Vector2((float)e.X, (float)e.Z);
         lcDir = new Vector2((float)(e.TX - e.X), (float)(e.TZ - e.Z));
         lcLen = lcDir.Length();
@@ -271,55 +284,25 @@ public partial class FlareFx
     {
         lcRt += dt;
         LcArtPoll();
-        // The drain over the Draw and Hold, warm (look.z < 0); repainted from her outward after the cleave, slower.
+        // The drain over the Draw and Hold: a value dip with no hue (look.z < 0, flare_world: saturation 0.85, value
+        // 0.88), so her light is the only warm thing; repainted from her outward after the cleave, slower.
         double from = lcCleaveT >= 0 ? lcCleaveT : -1;
-        look.X = from < 0 ? Mathf.Min(1, (float)t / 0.12f) * 0.85f : Mathf.Max(0, 1 - (float)(t - from) / 1.2f) * 0.85f;
+        look.X = from < 0 ? Mathf.Min(1, (float)t / 0.12f) : Mathf.Max(0, 1 - (float)(t - from) / 1.2f);
         look.Y = from < 0 ? 0 : (float)(t - from) * (reach + 14) / 0.9f;
         look.Z = -1;
         web.X = 0;
         web.Y = 0;
 
-        // The exposure: a bloom pulse at the press (4 frames), the cleave's warm lift 1.3x (3 frames, in its hitstop).
-        float lift = 1;
-        if (lcRt < 4 / 60.0) lift = 1.12f;
-        if (lcCleaveRt >= 0 && lcRt - lcCleaveRt < 3.2 / 60.0) lift = 1.3f;
-        SetDip(1 + (lift - 1) * (LessFlash ? 0.5f : 1));
+        // No exposure lift, night or day (vfx9 r2: the field floodlit, no source): the light is local. By day the sun and
+        // ambient dip over the sweep and cleave instead (LcDayDip).
+        SetDip(1);
+        LcDayDip();
 
-        // The press: a warm 4 m light at her, behind her from the eye (her rim and the steel's), the brightest in the Hold.
+        // The press: the blade's white-gold core, a 2.5 m light at her hands, her rim (FlareFx.LongCutLight).
         bool held = lcSweepT < 0;
         float steel = held ? 0.75f + 0.6f * Mathf.Exp(-(float)t * 9) : Mathf.Max(0, 1 - (float)(t - lcSweepT) / 0.5f) * 0.75f;
-        var back = Her - EyeAt();
-        back.Y = 0;
-        back = back.LengthSquared() > 1e-4f ? back.Normalized() : Vector3.Forward;
-        headLight.LightColor = new Color(1f, 0.8f, 0.5f);
-        headLight.OmniRange = 4.0f;
-        headLight.GlobalPosition = Her + back * 0.9f + Vector3.Up * 1.5f;
-        headLight.LightEnergy = 2.4f * steel * (LessFlash ? 0.6f : 1) * LcLight;
-        if (held && R() < dt * 40)
-        {
-            // Light drawn up the edge, grip to tip.
-            var p = BladeAt(R() * 0.5f);
-            glow.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Mote, At = p, V = (BladeAt(1) - BladeAt(0)).Normalized() * (1.5f + R()), Life = 0.3f, Size = 0.035f, SizeEnd = 0.02f, Color = new Color(1.4f, 1.1f, 0.7f), ColorEnd = Dawn });
-        }
-
-        // The steel's own hot core while it cuts: a thin line along the real blade, as it moves.
-        bool cutting = lcSweepT >= 0 && t < lcSweepT + SweepLen + 0.04 || lcCleaveT >= 0 && t < lcCleaveT + 0.08;
-        if (cutting)
-        {
-            int n = HasBlade ? 7 : 4;
-            for (int i = 0; i < n; i++)
-            {
-                float k = 0.35f + 0.65f * (i + R()) / n;
-                Vector3 p;
-                if (HasBlade) p = BladeAt(k);
-                else
-                {
-                    float a = SweepLead();
-                    p = Her + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (0.5f + 1.2f * k) + Vector3.Up * 1.0f;
-                }
-                glow.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Mote, At = p, V = Vector3.Zero, Life = 0.09f, Size = 0.03f + 0.02f * k, Color = new Color(1.5f, 1.25f, 0.85f), ColorEnd = new Color(1.1f, 0.6f, 0.2f) });
-            }
-        }
+        LcPressLights(dt, held, steel);
+        LcColumn();
 
         // The sweep: its wedge (0..1) and its wash after it (0..1).
         float sweepK = 0, wash = 0;
@@ -328,17 +311,9 @@ public partial class FlareFx
             float s = (float)(t - lcSweepT);
             sweepK = Mathf.SmoothStep(0, 0.03f, s) * (1 - Mathf.SmoothStep(SweepLen - 0.03f, SweepLen + 0.08f, s));
             wash = Mathf.SmoothStep(0, 0.12f, s) * (1 - Mathf.SmoothStep(SweepLen, SweepLen + 0.5f, s));
-            if (lcCleaveT < 0)
-            {
-                // Its light rides it at knee height a few metres out: the shadows swing round her.
-                float a = SweepLead();
-                spendLight.GlobalPosition = new Vector3(at.X + Mathf.Cos(a) * 3.5f, (float)HeightAt(at.X, at.Z) + 0.7f, at.Z + Mathf.Sin(a) * 3.5f);
-                spendLight.LightColor = new Color(1f, 0.74f, 0.4f);
-                spendLight.OmniRange = 10;
-                spendLight.ShadowEnabled = LcShadows;
-                spendLight.LightEnergy = (Night ? 0.65f : 1.6f) * Mathf.Max(sweepK, wash * 0.4f) * (LessFlash ? 0.6f : 1) * LcLight;
-                spendLight.Visible = spendLight.LightEnergy > 0.01f;
-            }
+            // Three unshadowed lights ride its edge at 0.5 m (the legs' rims), its shimmer behind (FlareFx.LongCutLight).
+            LcSweepLights(sweepK);
+            if (lcCleaveT < 0) { spendLight.LightEnergy = 0; spendLight.Visible = SpendLightOld; }
             // The skirt: dust kicked up along its leading angle, low.
             if (sweepK > 0.2f)
             {
@@ -356,7 +331,7 @@ public partial class FlareFx
         if (lcSweepT < 0) { spendLight.LightEnergy = 0; spendLight.Visible = SpendLightOld; }
         RenderingServer.GlobalShaderParameterSet("flare_sweep", new Vector4(SweepLead(), sweepK, reach, lcSweepFrom));
         // (night: the core's emission capped, so the line wins by its shape and value and the lights carry the glow)
-        RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, LcBandGain));
 
         if (lcCleaveT >= 0 && lcLen > 0) SeamTick(dt);
         else
@@ -684,7 +659,9 @@ public partial class FlareFx
     {
         (string Tag, double At)[] beats =
         {
-            ("b1_press", 0.035), ("b2_hold", freezeLen - 0.1),
+            // (the hold's picture inside the hold: at freezeLen - 0.1 it came after the sweep had begun, and the 0.13 s spacing
+            // pushed the sweep's picture past its end: r2's "the sweep is never seen")
+            ("b1_press", 0.035), ("b2_hold", Math.Min(freezeLen - 0.1, 0.2)),
             ("b3_sweep", lcSweepT < 0 ? double.MaxValue : lcSweepT + 0.15),
             ("b4_fuse", lcCleaveT < 0 ? double.MaxValue : lcCleaveT + 0.2), ("b5_seam", lcCleaveT < 0 ? double.MaxValue : lcCleaveT + 0.45),
             ("b6_cool", lcCleaveT < 0 ? double.MaxValue : lcCleaveT + 1.4), ("b7_smoke", lcCleaveT < 0 ? double.MaxValue : lcCleaveT + 2.4),
@@ -708,6 +685,34 @@ public partial class FlareFx
             }
             GD.Print(sb.ToString());
         }
+        // (the local-light measure: her on screen, and at the sweep a ring of ground points round her at 3..11 m, each
+        // with how far behind the sweep's leading edge it lies, in metres of arc)
+        if (GetViewport()?.GetCamera3D() is { } cam2)
+        {
+            var vs = GetViewport().GetVisibleRect().Size;
+            var sc = new Vector2(1920f / vs.X, 1080f / vs.Y);
+            var hp = cam2.UnprojectPosition(Her + Vector3.Up * 0.9f) * sc;
+            GD.Print($"longcut her screen {beats[lcBeat].Tag}: {hp.X:0},{hp.Y:0}");
+            if (beats[lcBeat].Tag == "b3_sweep")
+            {
+                float lead = SweepLead();
+                foreach (float r in new[] { 3f, 5f, 7f, 9f, 11f })
+                {
+                    var sb = new System.Text.StringBuilder($"longcut sweep ring {r:0}:");
+                    for (int i = 0; i < 120; i++)
+                    {
+                        float ang = lead - i * Mathf.Tau / 120;
+                        var w = new Vector3(at.X + Mathf.Cos(ang) * r, 0, at.Z + Mathf.Sin(ang) * r);
+                        w.Y = (float)HeightAt(w.X, w.Z);
+                        if (cam2.IsPositionBehind(w)) continue;
+                        var q = cam2.UnprojectPosition(w) * sc;
+                        sb.Append($" {i * Mathf.Tau / 120 * r:0.00}:{q.X:0},{q.Y:0}");
+                    }
+                    GD.Print(sb.ToString());
+                }
+                GD.Print($"longcut sweep at b3: swept {lead - lcSweepFrom:0.00} rad of {Mathf.Tau:0.00}, blade {(HasBlade ? "held" : "none")}");
+            }
+        }
         Shots.Want(beats[lcBeat].Tag, 0);
         lcBeat++;
         lcBeatRt = lcRt;
@@ -725,6 +730,7 @@ public partial class FlareFx
         if (headLight != null) headLight.LightColor = new Color(1f, 0.55f, 0.2f);
         if (spendLight != null) spendLight.ShadowEnabled = true;
         foreach (var l in new[] { lcTrailA, lcTrailB, lcHerLight }) if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+        LcLightClear();
         foreach (var c in lcChunkList) if (IsInstanceValid(c.Node)) c.Node.QueueFree();
         lcChunkList.Clear();
     }

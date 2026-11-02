@@ -325,6 +325,7 @@ public partial class WorldScene : Node3D, IZoneLook
     // The held staff (the Flare's head light), found once per figure.
     PlayerView? staffOf;
     Node3D? staff, blade;
+    bool bladeSaid;
 
 
     void Draw(double dt, double fightDt)
@@ -369,6 +370,12 @@ public partial class WorldScene : Node3D, IZoneLook
                         if (n is Node3D a && a.Name != "arm:mage_staff" && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true
                             && a.HasMeta("kind") && (int)a.GetMeta("kind") is (int)SurvivorUnchained.Play.WeaponKind.Blade1H or (int)SurvivorUnchained.Play.WeaponKind.Blade2H)
                         { blade = a; break; }
+                if (blade == null && flare.Active && !bladeSaid && Args.Has("shot") && Player != null)
+                {
+                    bladeSaid = true;
+                    foreach (var n in Player.FindChildren("arm:*", "", true, false))
+                        GD.Print($"flare blade: none held; {n.Name} under {n.GetParent()?.Name} kind {(n.HasMeta("kind") ? (int)n.GetMeta("kind") : -1)}");
+                }
             }
             flare.Blade = blade;
             flare.Tick(FxStill ? 0 : dt, b);

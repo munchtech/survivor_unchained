@@ -34,7 +34,7 @@ global uniform vec4 flare_seam_t; // x: seconds since the cleave (Flare time); y
 global uniform vec4 flare_sweep;  // x: its leading angle (rad, unwrapped); y: its light 0..1 (0 none); z: the reach (m); w: the angle it began at
 global uniform sampler2D flare_crack_a : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 global uniform sampler2D flare_crack_b : filter_linear_mipmap_anisotropic, repeat_disable;
-global uniform vec4 flare_lc;     // x: the Long Cut is live (1); y: the sweep's wash 0..1; z: the core's cap (night); w: -
+global uniform vec4 flare_lc;     // x: the Long Cut is live (1); y: the sweep's wash 0..1; z: the core's cap (night); w: the sweep band's light (x albedo)
 global uniform sampler2D flare_plate : filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
 global uniform sampler2D flare_marks : filter_nearest, repeat_disable; // 32x2: row 0 an impact's x, z, radius, age (s), radius 0: none (texel 31 the BOOM's ring); row 1 its way over the ground (x, z), size, arcs' seed
@@ -55,9 +55,15 @@ void flare_drain(vec3 wp, inout vec3 alb, inout vec3 emi) {
 	float k = dr * (1.0 - back);
 	float l = dot(alb, FL_LUM);
 	// (Judge 6 (7): darkened by a quarter the press dipped the frame 14%, a swing: a tenth.)
-	// (the Long Cut's drain, look.z < 0: toward a warm dusk, never grey-cyan)
-	float warm = max(-flare_look.z, 0.0);
-	alb = mix(alb, vec3(l) * mix(vec3(1.0), vec3(1.1, 0.97, 0.8), warm), 0.7 * k * (1.0 - 0.35 * warm)) * (1.0 - 0.1 * k);
+	// (the Long Cut's drain, look.z < 0: a value dip, no hue (vfx9 r3b: its warm dusk read as a sepia photo filter
+	// over the whole field): saturation 0.85, value 0.88, so her light is the only warm thing)
+	if (flare_look.z < 0.0) {
+		// (not `warm` here: a grass material's own uniform of that name wins over a local in Godot's compiler)
+		alb = mix(alb, vec3(l), 0.15 * k) * (1.0 - 0.12 * k);
+		emi = mix(emi, vec3(dot(emi, FL_LUM)), 0.15 * k) * (1.0 - 0.12 * k);
+		return;
+	}
+	alb = mix(alb, vec3(l), 0.7 * k) * (1.0 - 0.1 * k);
 	// Burns Twice paints the world back cold first; the warmth comes with the embers.
 	// (Only on the ford's frost, the reach and a little past it: by the story's camera the whole wood went blue.)
 	float cold = max(flare_look.z, 0.0) * back * dr * (1.0 - smoothstep(flare_at.w, flare_at.w + 5.0, r));
@@ -444,8 +450,9 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	emi = emi * (1.0 - cov * 0.85 * fade) + e;
 }
 
-// The sweep's light over the ground round her: a warm wedge behind its leading angle (soft at its lead, no rim
-// line), then a wash over all it crossed fading over half a second.
+// The sweep's light over the ground round her (vfx9 r3b): a knee-height band 1.5-2 m wide behind its leading edge,
+// brightest at the edge, across the reach; a faint wash over what it crossed fading over half a second. Light, not
+// paint: every caller multiplies it by the albedo, so dark leaf litter stays dark.
 vec3 flare_sweep_at(vec2 w) {
 	if (flare_sweep.y <= 0.0 && flare_lc.y <= 0.0) return vec3(0.0);
 	vec2 rel = w - flare_at.xz;
@@ -456,18 +463,19 @@ vec3 flare_sweep_at(vec2 w) {
 	float swept = flare_sweep.x - flare_sweep.w;
 	float behind = mod(flare_sweep.x - a, 6.2831853);
 	float crossed = step(behind, swept + 0.001);
-	float wedge = crossed * smoothstep(0.0, 0.22, behind) * exp(-behind * 2.2) * flare_sweep.y;
-	float wash = crossed * flare_lc.y * 0.3;
-	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 3.0;
-	float radial = smoothstep(0.3, 2.0, r) * (1.0 - smoothstep(R * 0.7, R * 1.05, r + wob));
-	float streak = 0.6 + 0.4 * texture(flare_noise, vec2(r * 0.42, a * 0.9)).g;
-	return vec3(1.0, 0.72, 0.38) * (wedge + wash) * radial * streak * mix(1.0, 0.5, flare_lc.w);
+	float m = behind * r;
+	float wedge = crossed * smoothstep(0.0, 0.12, m) * exp(-max(m - 0.12, 0.0) / 0.7) * flare_sweep.y;
+	float wash = crossed * flare_lc.y * 0.06;
+	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 2.0;
+	float radial = smoothstep(0.4, 1.4, r) * (1.0 - smoothstep(R * 0.88, R * 1.04, r + wob));
+	float streak = 0.75 + 0.25 * texture(flare_noise, vec2(r * 0.42, a * 0.9)).g;
+	return vec3(1.0, 0.74, 0.42) * (wedge + wash) * radial * streak * flare_lc.w;
 }
 
 // The Long Cut's light on a body: the sweep's on its rim as it passes, the seam's from below.
 vec3 flare_longcut_body(vec3 wp, vec3 nw, float rim) {
 	// (the wedge only, at the rim: the wash on bodies turned the pale risen into a field of white ghosts, s2 night)
-	vec3 e = flare_sweep_at(wp.xz) * step(0.001, flare_sweep.y) * flare_sweep.y * pow(rim, 2.5) * 0.3;
+	vec3 e = flare_sweep_at(wp.xz) * step(0.001, flare_sweep.y) * flare_sweep.y * pow(rim, 2.5) * 0.12;
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float h = fl_seam_heat(fl_seam_age(sw.x)) * step(0.0, sw.x);
@@ -482,7 +490,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 	flare_drain(wp, alb, emi);
 	vec2 w = wp.xz;
 	vec3 web = flare_web_light(w);
-	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * (0.2 + 0.9 * alb) * mix(0.9, 0.55, flare_hue.a);
+	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
 	if (flare_seam.w > 0.0) flare_seam_ground(wp, inv_view[3].xyz, alb, rough, nrm_view, emi, view);
 	float kind = flare_look.w;
 	if (kind > 0.5 && length(w - flare_at.xz) < flare_at.w + 3.0) {
@@ -707,7 +715,7 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	// The Long Cut: the sweep's light along the grass, the seam's grass burnt black, lit gold from below at its roots.
-	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_sweep_at(wp.xz) * (0.3 + 0.7 * tip) * alb * 1.2;
+	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_sweep_at(wp.xz) * (0.3 + 0.7 * tip) * alb;
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float age = fl_seam_age(sw.x);

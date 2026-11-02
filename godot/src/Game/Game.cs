@@ -670,6 +670,7 @@ public partial class Game : Node, IZoneHost
         fl.HudDim = k => hud.FlareDim(k);
         fl.LabelsAlpha = k => hud.LabelsAlpha(k);
         fl.Dip = k => air.FlareDip = k;
+        fl.LightDip = k => air.FlareLight = k;
         fl.Cue = (cue, at, k) =>
         {
             // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).

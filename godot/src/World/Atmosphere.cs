@@ -63,6 +63,11 @@ public partial class Atmosphere : Node3D
     /// <summary>The eye stopping down after a Flare's BOOM (Fx/Flare/FlareFx.Dip): 1 none.</summary>
     public float FlareDip = 1;
     float dipShown = 1;
+    /// <summary>The sun and the sky's ambient dipped under a Flare by day (Fx/Flare/FlareFx.LightDip, the Long Cut's sweep
+    /// and cleave: its own light chain carries the frame): 1 none. Applied relative to what is set, so a cinematic's own
+    /// say over the key and ambient keeps its share.</summary>
+    public float FlareLight = 1;
+    float lightShown = 1;
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
     public float Mute = 0.16f;
@@ -193,6 +198,13 @@ public partial class Atmosphere : Node3D
     {
         clock += delta;
         if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * ViewExposure * FlareDip; }
+        if (FlareLight != lightShown)
+        {
+            float r = FlareLight / Mathf.Max(lightShown, 0.05f);
+            lightShown = FlareLight;
+            Key.LightEnergy *= r;
+            Env.AmbientLightEnergy *= r;
+        }
         RenderingServer.GlobalShaderParameterSet(SkyTime, (float)clock);
     }
 
@@ -255,7 +267,7 @@ public partial class Atmosphere : Node3D
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
         Key.Basis = Basis.LookingAt(-dir, Mathf.Abs(dir.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
         Key.LightColor = C(p.KeyColor);
-        Key.LightEnergy = (float)p.KeyIntensity / Mathf.Pi;
+        Key.LightEnergy = (float)p.KeyIntensity / Mathf.Pi * lightShown;
         Key.ShadowOpacity = (float)p.ShadowStrength;
 
         var s = p.Sky;
@@ -294,7 +306,7 @@ public partial class Atmosphere : Node3D
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure * FlareDip;
-        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * Key.LightEnergy);
+        SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * ((float)p.KeyIntensity / Mathf.Pi));
         EmberGain = (float)p.Ember;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));

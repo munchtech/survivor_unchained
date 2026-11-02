@@ -35,6 +35,9 @@ public partial class FlareFx : Node3D
     /// <summary>The dip now (1 none): the BOOM's birth burns through it (FlareFx.Boom BoomTick).</summary>
     float dipNow = 1;
     void SetDip(float k) { dipNow = k; Dip(k); }
+    /// <summary>The sun and ambient under the Flare by day (World/Atmosphere.FlareLight): 1 none. The Long Cut dips them
+    /// to 0.65 over its sweep and cleave so its own lights carry the frame (vfx9 r3b).</summary>
+    public Action<float> LightDip = _ => { };
     /// <summary>The pad: low motor, high motor, seconds.</summary>
     public Action<float, float, float> Rumble = (_, _, _) => { };
     /// <summary>The HUD's dim (0 none .. 1 the Flare's 35%).</summary>
