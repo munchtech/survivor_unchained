@@ -374,7 +374,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.PlayerPos = HerDrawn;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
-            Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
+            Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
             flare.Her = HerDrawn;
             if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; blade = null; }
             flare.Staff = staff;

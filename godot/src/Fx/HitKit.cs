@@ -121,13 +121,24 @@ public partial class BattleFx
 
     /* ----------------------------------------------------- the hit kit -- */
 
-    /// <summary>The struck rim's bodies (enemy id: until when, on the fight's clock); CrowdView.StruckRim reads it.</summary>
-    readonly System.Collections.Generic.Dictionary<int, double> struckRims = new();
-    /// <summary>The rim's life: 2 frames.</summary>
-    const double RimLife = 2.5 / 60;
+    /// <summary>The struck rim's bodies (enemy id: the drawn frame it was struck on); CrowdView.StruckRim reads it.</summary>
+    readonly System.Collections.Generic.Dictionary<int, long> struckRims = new();
+    /// <summary>The struck look in drawn frames (r3 judge): a warm-white flash for 2 (50% then 25% blend), then a gold
+    /// fresnel rim fading to nothing over 8 (on real frames: a hitstop holds the bodies, not the light).</summary>
+    const int RimFlash = 2, RimFrames = 8;
     /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
     static readonly bool NoRim = Args.Has("aa-norim");
-    bool StruckRimOn(int id) => struckRims.TryGetValue(id, out var until) && time < until;
+    /// <summary>A struck body's (flash blend, rim strength) this frame; (-1, 0) when it has none. By night the rim is
+    /// held to ~0.6 of the sweep's peak (Flare.Night).</summary>
+    Vector2 StruckRimOn(int id)
+    {
+        if (!struckRims.TryGetValue(id, out var at)) return new Vector2(-1, 0);
+        long age = Engine.GetFramesDrawn() - at;
+        if (age < 0 || age >= RimFrames) { if (age >= RimFrames) struckRims.Remove(id); return new Vector2(-1, 0); }
+        float flash = age < RimFlash ? 0.5f / (1 + age) : 0;
+        float k = 1 - age / (float)RimFrames;
+        return new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
+    }
 
     /// <summary>The shared hit kit at a struck body (`at`, chest height; `away` the blow's way, flat):
     /// 8-12 steel streaks (0.2-0.4 m, velocity-stretched: Sparks.P.Stretch; white-hot cooling to `spark`,
@@ -137,6 +148,8 @@ public partial class BattleFx
     /// what the first hit's hitstop holds. `full` false (past the caller's cap, or the frame's hit budget spent)
     /// throws three streaks only. The Disc and Shield Bash pass their own `spark` hue and `path`
     /// (their callers cap their kits).</summary>
+    static readonly Color SparkHead = Hdr("#fff2c0", 1.9f), SparkTail = Hdr("#ff8a2a", 1.5f);
+
     public void HitKit(Vector3 at, Vector3 away, Color spark, float g, bool crit, bool full = true, Vector3? path = null, int target = -1, bool first = false)
     {
         Vector3 along;
@@ -149,21 +162,24 @@ public partial class BattleFx
             var rim = at - oathAt; rim.Y = 0;
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
-        // (the rim on the full kits only: on all twenty a swing strikes the crowd went a field of lit ghosts)
-        if (target >= 0 && full && !NoRim) struckRims[target] = time + RimLife;
-        int n = full ? (crit ? 12 : 9) + (first ? 3 : 0) : 3;
+        // (every struck body: a tight gold rim fading over 8 frames, not the old cream ghost; the frame it was first struck)
+        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) struckRims[target] = Engine.GetFramesDrawn();
+        // The sparks (r3): on the full kits only (at most six bodies a swing; the rest of a crowd get the rim), 3-5 each:
+        // 12-20 px x 2-3 px at the play camera, white-yellow head to an orange tail, flung on along the blow at 10-15 m/s
+        // with drag, 4-6 frames. (They run through the hitstop on the FX's own clock: BattleFx.Update.)
+        if (!full) return;
+        int n = Math.Min(5, (crit ? 5 : 3 + (int)(R() * 1.99f)) + (first ? 1 : 0));
         for (int i = 0; i < n; i++)
         {
-            var dir = (away * (0.5f + R() * 0.9f) + along * (0.4f + R() * 1.0f) + new Vector3((R() - 0.5f) * 0.9f, 0.25f + R() * 0.6f, (R() - 0.5f) * 0.9f)).Normalized();
-            float speed = 5.5f + R() * 4.5f, len = 0.2f + R() * 0.2f;
+            var dir = (away * (0.7f + R() * 0.6f) + along * (0.3f + R() * 0.8f) + new Vector3((R() - 0.5f) * 0.5f, 0.15f + R() * 0.35f, (R() - 0.5f) * 0.5f)).Normalized();
+            float speed = 10 + R() * 5, len = 0.32f + R() * 0.16f;
             Sparks.Spawn(new Sparks.P
             {
-                At = at + new Vector3((R() - 0.5f) * 0.2f, (R() - 0.5f) * 0.35f, (R() - 0.5f) * 0.2f), V = dir * speed,
-                Life = 0.15f + R() * 0.1f, Size = 0.034f, SizeEnd = 0.018f, Color = SteelWhite * 1.15f, ColorEnd = spark * 0.8f,
-                Gravity = 9, Drag = 2.2f, Alpha = 1, Sprite = -1, Stretch = len / speed,
+                At = at + new Vector3((R() - 0.5f) * 0.2f, (R() - 0.5f) * 0.3f, (R() - 0.5f) * 0.2f), V = dir * speed,
+                Life = (4 + R() * 2) / 60f, Size = 0.07f, SizeEnd = 0.05f, Color = SparkHead, ColorEnd = SparkTail,
+                Gravity = 4, Drag = 5, Alpha = 1, Sprite = -1, Stretch = len / speed,
             });
         }
-        if (!full) return;
         // The contact glint: a 4-point star at the body, white-gold cooling to the spark's hue, 3 frames.
         float gs = (crit ? 0.8f : 0.66f) * Mathf.Min(g, 1.2f);
         Sparks.Spawn(new Sparks.P
@@ -180,20 +196,23 @@ public partial class BattleFx
         });
     }
 
-    /// <summary>A dark chip puff off a struck body (for the Disc and the Bash): a solid brown-grey puff, densest at
-    /// its centre (Sparks.P.Core, on the pack's solid puffs only: its last three are rings and read as grey donuts),
-    /// 0.3-0.4 m, 0.25-0.35 s, drifting along `away`; `n` puffs.</summary>
+    /// <summary>A chip puff off a struck body (for the Disc and the Bash; r3): 1-2 solid dust puffs, densest at the centre
+    /// (Sparks.P.Core, the pack's solid puffs), 18-28 px at the play camera (0.5-0.7 m), alpha 0.5, growing 1.0x to 1.6x
+    /// over 10-14 frames, drifting along `away`. Not additive, and lit by hand: a sunlit dust by day, a dark one by night
+    /// (the smoke batch is unshaded). Never a cloud of white specks.</summary>
     public void ChipPuff(Vector3 at, Vector3 away, int n = 2)
     {
+        n = Math.Clamp(n, 1, 2);
+        var dust = Flare.Night ? new Color(0.15f, 0.14f, 0.15f) : new Color(0.5f, 0.43f, 0.33f);
         for (int i = 0; i < n; i++)
         {
-            float s = 0.3f + R() * 0.1f;
+            float s = 0.5f + R() * 0.2f;
             Smoke.Spawn(new Sparks.P
             {
-                At = at + new Vector3((R() - 0.5f) * 0.15f, (R() - 0.5f) * 0.15f, (R() - 0.5f) * 0.15f),
-                V = away * (0.8f + R() * 0.8f) + Vector3.Up * (0.3f + R() * 0.3f), Drag = 3,
-                Life = 0.25f + R() * 0.1f, Size = s * 0.7f, SizeEnd = s, Color = new Color(0.2f, 0.17f, 0.14f), ColorEnd = new Color(0.16f, 0.14f, 0.12f),
-                Alpha = 0.7f, Sprite = SolidPuff(), Core = true,
+                At = at + new Vector3((R() - 0.5f) * 0.2f, -0.2f + (R() - 0.5f) * 0.2f, (R() - 0.5f) * 0.2f),
+                V = away * (0.6f + R() * 0.6f) + Vector3.Up * (0.2f + R() * 0.2f), Drag = 3,
+                Life = (10 + R() * 4) / 60f, Size = s, SizeEnd = s * 1.6f, Color = dust, ColorEnd = dust * 0.92f,
+                Alpha = 0.5f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
             });
         }
     }
@@ -338,7 +357,7 @@ public partial class BattleFx
         int nth = DiscHitsOf(e.Target);
         BeatDiscHit(nth);
         HitKit(at, away, DiscSpark(art), g, e.Crit, rich, away, e.Target, first: nth == 1);
-        if (rich) ChipPuff(at, away, 2);
+        if (rich) ChipPuff(at, away, R() < 0.5f ? 1 : 2);
     }
 
     /// <summary>Which of its throw's bodies this is (1 the first; 0 unknown): the living disc whose last hit it was.</summary>
@@ -455,7 +474,7 @@ public partial class BattleFx
         var away = at - bashFrom; away.Y = 0;
         if (away.LengthSquared() > 3.7f * 3.7f) return false;
         away = away.LengthSquared() > 0.01f ? away.Normalized() : Vector3.Forward;
-        bool full = bashKits < 8 && hitBudget-- > 0;
+        bool full = bashKits < 6 && hitBudget-- > 0;
         HitKit(at, away, BashSpark, 1, e.Crit, full, away, e.Target, first: bashKits == 0);
         if (full) ChipPuff(at, away, 1);
         bashKits++;

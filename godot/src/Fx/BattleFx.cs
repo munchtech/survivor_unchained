@@ -1735,10 +1735,14 @@ public partial class BattleFx : Node3D
 
     /* -------------------------------------------------------------- frame -- */
 
-    public void Update(Battle b, double dt, double now)
+    public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
         float fdt = (float)dt;
+        // The hit FX's clock (VFX 10 r3): through a hitstop (the fight held at 8%, not a Flare's freeze) the sweep, the
+        // sparks, the puffs and the pool run on at 60% of real time, so the held frame keeps moving (r2: f6 looked
+        // like the hit frame; the sparks froze as static scratches).
+        float hfx = !Flare.Active && realDt > 0 && fdt < realDt * 0.09 ? (float)realDt * 0.6f : fdt;
         frameDt = fdt;
         for (int i = pending.Count - 1; i >= 0; i--)
             if (pending[i].At <= now) { var fn = pending[i].Fn; pending.RemoveAt(i); fn(); }
@@ -1822,16 +1826,16 @@ public partial class BattleFx : Node3D
         StepFronts(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
-        OathBlades.Step(fdt);
-        StepOathPools(fdt);
+        OathBlades.Step(hfx);
+        StepOathPools(hfx);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
-        Sparks.Step(fdt);
+        Sparks.Step(hfx);
         Books.Step(fdt);
         Scars.Step(fdt);
         Waves.Step(fdt);
-        Smoke.Step(fdt);
+        Smoke.Step(hfx);
         Gore.Step(fdt);
     }
 

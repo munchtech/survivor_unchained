@@ -176,8 +176,9 @@ public partial class CrowdView : Node3D
     public static Func<double, double, bool>? FlareCorpseAsh;
     /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
     public static Func<int, float>? FlareStatueFlash;
-    /// <summary>A body showing the hit kit's struck rim this frame (BattleFx.HitKit: 2 frames of gold-white fresnel).</summary>
-    public static Func<int, bool>? StruckRim;
+    /// <summary>A body's hit-kit struck look this frame (BattleFx.HitKit): (flash blend 0-0.5, gold rim 0-1); X &lt; 0 none.
+    /// It replaces the sim's flash on the body (her auto-attacks' struck: no cream wash, no chalk ghosts by night).</summary>
+    public static Func<int, Vector2>? StruckRim;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -476,7 +477,9 @@ public partial class CrowdView : Node3D
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot, StruckRim?.Invoke(e.Id) == true);
+        var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
+        if (hk.X >= 0) flare = hk.X;
+        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
         living++;
     }
 
@@ -593,7 +596,7 @@ public partial class CrowdView : Node3D
                 crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) == true);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
         }
     }
 
