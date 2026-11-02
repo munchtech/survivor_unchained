@@ -68,7 +68,7 @@
       "tail": 2.0,
       "cues": [
         {"do": "lamp", "actor": "warden", "glint": 1},
-        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#6e5a66", "note": "C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
+        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#1f2d48", "note": "(Env 23: #6e5a66 to #1f2d48, a lifted night navy: the mauve turned the far pines and cliff lilac-pink at C02 s5/s11; the far band OKLab L 0.246 to 0.189, still above the near pines 0.178) C03 env: the far ridge pales toward the sky (it stood 27-33% darker, a cut-out); near stays clear"},
         {"do": "atmosphere", "preset": "now", "key": 0.12, "hemi": 0.08, "env": 0.1, "exposure": 1.0, "keyColor": "#c4cad6", "rim": 0.9, "hemiSky": "#403c78", "azimuth": 195},
         {"do": "grade", "sat": 0.88, "moonSat": 0.03, "moonDrop": 0.8, "shade": "#2e2452", "shadeK": 0.7, "moonTop": 0.62, "moonWidth": 0.15},
         {"do": "light", "light": 6, "level": 1.0},
@@ -147,7 +147,7 @@
       "cues": [
         {"do": "water", "foam": 1, "streak": 1, "mirror_cap": 100},
         {"do": "stones", "top": 1, "edge": 1, "all": true},
-        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#9a7680"},
+        {"do": "haze", "begin": 70, "end": 220, "curve": 0.6, "amount": 0.95, "sky": 0.0, "color": "#a48a66", "note": "Env 23: warm gold dawn air (was mauve #9a7680, the pink far treeline); end 150 -> 220 at curve 0.6 so the far ridge grades in depth instead of one flat band of equal tips"},
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
         {"at": 0.1, "do": "sfx", "name": "sniff", "gain": 0.8},
         {"at": 0.55, "do": "sfx", "name": "sniff", "gain": 0.8},

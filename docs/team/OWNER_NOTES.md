@@ -493,3 +493,5 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **ChatGPT desktop app back on (owner, 29 Oct):** "go ahead and try to use the app again, I won't interrupt". One driver at a time via `survivorsunchained_inputs\chatgpt.lock` (NPC 19 first, then Storybook 4). Still no OpenAI through Meshy.
 - **ChatGPT in the browser (owner, 29 Oct):** the desktop app can't be captured, so main drives chatgpt.com in its browser pane (owner signed in). Owner: "save ... ChatGPT images for NPC 19 and Storybook 4 without asking each time." Leads send main the exact prompt + save path; main saves full-res PNGs and a PROVENANCE line.
 - **ChatGPT in Chrome (owner, 29 Oct):** "Use Chrome for ChatGPT from now on." Main drives chatgpt.com in the owner's Chrome through Claude in Chrome (hands-free: no save clicks; reference images can be uploaded).
+
+- **Tam deferred (owner, 1 Nov):** asked whether to start Tam's child body package as a fifth lead: "Not yet". Tam stays out until the owner says go.

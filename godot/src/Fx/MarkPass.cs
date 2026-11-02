@@ -46,7 +46,7 @@ public partial class MarkPass : CompositorEffect
         // fill (the filled part a step brighter); over the still water hwat of it (the river: the hatch read as a net)
         ["hl"] = 0.35f, ["hp"] = 0.16f, ["hw"] = 0.014f, ["hu"] = 0.3f, ["hwat"] = 0f, ["hx"] = 1f,
         // every mark's pattern forced (hs, for shots; -1 each mark's own): 0 the crossed grid, 1 the half hatch, 2 chevrons,
-        // 3 molten, 4 cracks, 5 lattice (PatternIds)
+        // 3 molten, 4 cracks, 5 lattice, 6 none (the bed, rims and cast line alone) (PatternIds)
         ["hs"] = -1f,
         // the lane's far end (the owner, 28 Oct: "a flat line end not the arrow"): cap 2 flat (the rims squared across
         // it), 1 a spear tip, 0 the old soft end; the molten pattern's charred bands this much darker (ld); a pattern's
@@ -67,6 +67,9 @@ public partial class MarkPass : CompositorEffect
         // opacity over the ground (bo, 1 the whole re-tint; the rims and the front stay whole); the cast line rides
         // the pattern's light, so it may pass the red's fold (a pale line by day)
         ["cp"] = 0.55f, ["cs"] = 1.5f, ["cw"] = 0.06f, ["bo"] = 1f,
+        // the bed's unlit floor (bf, as seen: the brightest channel, display): out of the light by night a bed at k x a black
+        // ground went black, the mark only its rims (VFX 6 judge: a hollow wire outline); by day the bed is above it
+        ["bf"] = 0.2f,
     };
 
     /// <summary>The red line's colour, the owner's pick (godot/data/mark_look.json "look"; env MARK_LOOK overrides): a
@@ -74,7 +77,7 @@ public partial class MarkPass : CompositorEffect
     public static string Look { get; private set; } = "scarlet";
 
     /// <summary>The patterns a red mark can carry inside it, by name (their ids are the shader's).</summary>
-    public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice" };
+    public static readonly string[] PatternIds = { "grid", "hatch", "chevron", "molten", "cracks", "lattice", "none" };
     /// <summary>mark_look.json "patterns": a telegraph's pattern by its school's name, else by its shape's (line, circle,
     /// cone, ring), else "default".</summary>
     static readonly Dictionary<string, string> patternBy = new(StringComparer.OrdinalIgnoreCase) { ["default"] = "chevron" };
@@ -170,7 +173,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -613,8 +616,9 @@ public partial class MarkPass : CompositorEffect
                 sm = smoothstep(-0.33 * R, 0.0, d);
                 inner = d < 0.0 ? pc.glow + 0.2 * sm * sm : 0.0;
                 wh = fout * 2.0 * T_EW;
-                if (e.x >= 0.0 && kind == 1) { f = fillf(e.x * 0.97 - r); fln = T_FL * stroke(e.x * 0.97 - r, T_FW) * step(-0.05, -d); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
-                float rf = e.x >= 0.0 && kind == 1 ? e.x * 0.97 : rc;
+                // (a disc fills from its heart; a cone from its point, inside its wedge)
+                if (e.x >= 0.0 && kind <= 2) { float wg = kind == 2 ? smoothstep(-0.02, 0.02, -d) : 1.0; f = fillf(e.x * 0.97 - r) * wg; fln = T_FL * stroke(e.x * 0.97 - r, T_FW) * step(-0.05, -d); filled = smoothstep(-0.03, 0.03, e.x * 0.97 - r); }
+                float rf = e.x >= 0.0 && kind <= 2 ? e.x * 0.97 : rc;
                 ac = (atan(l.x, l.y) + 3.14159) * max(rf, 0.3); al = r; dm = rf - r;
             }
             // the pattern: inside the rims (clear of their glow), lit where the fill has run, T_HU of it ahead (the charge
@@ -634,7 +638,8 @@ public partial class MarkPass : CompositorEffect
                 }
                 else if (pp == 3) { vec2 lv = plava(l, filled); pl = lv.x * T_HL * 1.5; pd = lv.y * T_LD; }
                 else if (pp == 4) pl = pcrack(l) * T_HL * 1.4 * (1.0 + 0.6 * exp(-abs(dm) / 0.4));
-                else pl = plattice(l) * T_HL * 1.2;
+                else if (pp == 5) pl = plattice(l) * T_HL * 1.2;
+                // 6 none: no pattern (the owner, 29 Oct: no chevrons on the round marks)
                 pl *= inside * lit * ghw;
                 pd *= inside * ghw;
             }
@@ -767,7 +772,7 @@ public partial class MarkPass : CompositorEffect
             // by the water's line: the tiles' mean, not the pixel (shore foam, a wet band: no crease in the bed)
             if (pc.water_on > 0.5 && dz > 1e-7) gv = mix(gv, vtile(p), 1.0 - smoothstep(T_SB0, T_SB1, abs(yt - pc.water_y)));
             // (the darkening after the fold's cap: by day the bed sits at the fold, and a darkening before it was lost)
-            float want = pc.k * gv;
+            float want = max(pc.k * gv, T_BF);
             int lo = 0, hi = NT - 1;
             while (hi - lo > 1) { int mid = (lo + hi) / 2; if (tv[mid] <= want) lo = mid; else hi = mid; }
             float r;
