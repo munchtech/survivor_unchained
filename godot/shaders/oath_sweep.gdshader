@@ -11,7 +11,8 @@
 // 1 its end), how far the tail is eaten (0 none, 1 gone), the arc it sweeps, a seed.
 // The mesh is a unit grid (UV.x along the swing, UV.y from the inner radius out to the reach).
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+// (never hidden by the bodies it passes through: at 1 m up the crowd's heads covered most of it by day)
+render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
@@ -53,18 +54,19 @@ void fragment() {
 	float thr = erode * 1.12 - 0.06;
 	float keep = smoothstep(thr - 0.05, thr + 0.05, val);
 	// Brighter toward the reach (the blade's tip moves fastest) and toward the lead.
-	float out_k = mix(0.45, 1.0, smoothstep(inner, 1.0, s));
+	// (steeply: an even fill to her hand read as a solid gold plate, a pie slice, not a crescent)
+	float out_k = mix(0.06, 1.0, pow(smoothstep(inner, 1.0, s), 1.6));
 	vec3 hue = v_hue.rgb;
 	// A low bed in the hue so it reads as one shape; the streaks carry it.
-	float body = (0.16 + 1.25 * streak) * out_k * mix(1.0, 0.4, t);
+	float body = (0.07 + 1.3 * streak) * out_k * mix(1.0, 0.4, t);
 	// The cutting edge at the reach: a thin line in the hue, fading along the tail.
 	float ed = (s - 0.955) / 0.025;
 	float edge = exp(-ed * ed) * mix(1.0, 0.25, t) * (0.6 + 0.6 * tx.b);
-	vec3 col = hue * (body * 0.85 + edge * 0.9);
+	vec3 col = hue * (body * 1.05 + edge * 0.9);
 	// White-hot in the leading 15% only.
 	float lead = 1.0 - smoothstep(0.0, 0.15, t);
 	// (on the streaks and the edge only: a white bed under them read as a cream fog by her)
-	col += vec3(1.0, 0.94, 0.82) * (1.5 * streak * smoothstep(inner + 0.15, 0.8, s) + edge * 1.3) * lead;
+	col += vec3(1.0, 0.94, 0.82) * (2.0 * streak * smoothstep(inner + 0.15, 0.8, s) + edge * 1.3) * lead;
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 	ALBEDO = col * band * front * tail * keep * clear;
 }

@@ -125,6 +125,8 @@ public partial class BattleFx
     readonly System.Collections.Generic.Dictionary<int, double> struckRims = new();
     /// <summary>The rim's life: 2 frames.</summary>
     const double RimLife = 2.5 / 60;
+    /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
+    static readonly bool NoRim = Args.Has("aa-norim");
     bool StruckRimOn(int id) => struckRims.TryGetValue(id, out var until) && time < until;
 
     /// <summary>The shared hit kit at a struck body (`at`, chest height; `away` the blow's way, flat):
@@ -133,7 +135,7 @@ public partial class BattleFx
     /// gold-white fresnel rim on the body (`target`, the enemy's id; the crowd's VAT shader draws it). The first
     /// body of an Oathblade swing (or any call with `first`) also gets the impact flash, a light burst for 4 frames:
     /// what the first hit's hitstop holds. `full` false (past the caller's cap, or the frame's hit budget spent)
-    /// throws three streaks and the rim only. The Disc and Shield Bash pass their own `spark` hue and `path`
+    /// throws three streaks only. The Disc and Shield Bash pass their own `spark` hue and `path`
     /// (their callers cap their kits).</summary>
     public void HitKit(Vector3 at, Vector3 away, Color spark, float g, bool crit, bool full = true, Vector3? path = null, int target = -1, bool first = false)
     {
@@ -147,7 +149,8 @@ public partial class BattleFx
             var rim = at - oathAt; rim.Y = 0;
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
-        if (target >= 0) struckRims[target] = time + RimLife;
+        // (the rim on the full kits only: on all twenty a swing strikes the crowd went a field of lit ghosts)
+        if (target >= 0 && full && !NoRim) struckRims[target] = time + RimLife;
         int n = full ? (crit ? 12 : 9) + (first ? 3 : 0) : 3;
         for (int i = 0; i < n; i++)
         {
@@ -474,6 +477,7 @@ public partial class BattleFx
         {
             Shots.WantFrames($"s{oathSwings}_f1", 1);
             Shots.WantFrames($"s{oathSwings}_f3", 3);
+            Shots.WantFrames($"s{oathSwings}_f6", 6);
             beatHitFor = oathSwings;
         }
         else beatHitFor = 0;

@@ -266,7 +266,8 @@ void fragment() {
 	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_hue.a);
 	// The hit kit's struck rim (BattleFx.HitKit: her auto-attacks' struck, 2 frames): gold-white at the body's
 	// edge, not scaled by its paint (a black wolf at night has none to lift), tight so the body keeps its shape.
-	e += vec3(1.0, 0.8, 0.5) * fx_rim * (pow(rim, 2.0) * 3.4 + 0.1);
+	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
+	e += vec3(1.0, 0.78, 0.45) * fx_rim * pow(rim, 4.5) * 1.5;
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {
