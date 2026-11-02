@@ -44,6 +44,8 @@ At night the seam reads as a straight tube with banding, and ~100 ember orbs bur
 
 **Shots:** scratchpad `vfx7\shoot2.sh`; the recipe is in this file's git log and in the study. The press lands at 6.35 s; frames come ≥0.13 s apart. Frames: `survivorsunchained_inputs\vfx7\` (now = the hub, useless; now2 = real fights; lc = r1). The worktree's modified `.import` files are reimport noise; don't commit them.
 
+**Paused here (VFX 8, 2 Nov):** not started. Merged integration 7472253fc into vfx-7 (junction removed and remade to the worktree's own public/assets). Next: the rebuild solver, step 1 of "Next" above.
+
 **Cost:** VFX 7 so far ~0.95M (study ~0.45M, build r1 ~0.24M, judge ~0.1M, lead).
 
 ## Combat VFX 6 (vfx-6, 1 Nov): MR READY. No chevrons on round marks
