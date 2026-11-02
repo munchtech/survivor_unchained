@@ -74,9 +74,27 @@ def smooth(e0, e1, x):
 
 
 # ---------------------------------------------------------------- the fracture path
+def swing(rng, x):
+    """The split's slow swing (r3c: the judge's "lightning-fine zigzag on a straight path"): 0.6-1 m side to side over
+    every 4-6 m, its own length and size each time, starting on the line at her end."""
+    knots_x, knots_y = [0.0], [0.0]
+    side = 1 if rng.random() < 0.5 else -1
+    xx = rng.uniform(2.0, 3.0)
+    while xx < L_M + 6:
+        knots_x.append(xx); knots_y.append(side * rng.uniform(0.30, 0.50))
+        side = -side; xx += rng.uniform(4.0, 6.0)
+    kx, ky = np.array(knots_x), np.array(knots_y)
+    # cosine-eased between knots: a bend, never a corner
+    i = np.clip(np.searchsorted(kx, x) - 1, 0, len(kx) - 2)
+    t = np.clip((x - kx[i]) / (kx[i + 1] - kx[i]), 0, 1)
+    t = 0.5 - 0.5 * np.cos(np.pi * t)
+    return ky[i] + (ky[i + 1] - ky[i]) * t
+
+
 def path(rng, nx, xs):
-    """The crack's centreline y(x): straight-ish runs of 0.25-1.1 m with angular jogs, pulled back to the line, then
-    a fine jagged jitter both walls share."""
+    """The crack's centreline y(x): the slow swing, and about it straight-ish runs of 0.25-1.1 m with angular jogs
+    (half the r3b zigzag), then a fine jagged jitter both walls share."""
+    rs = np.random.default_rng(int(rng.integers(1 << 30)))
     pts = [(0.0, 0.0)]
     x, y = 0.0, 0.0
     drift, zig = 0.0, 1
@@ -88,15 +106,15 @@ def path(rng, nx, xs):
         if r < 0.12:
             run, ang = rng.uniform(0.5, 1.0), drift + rng.normal(0, 0.05)          # a long clean run
         elif r < 0.22:
-            run, ang = rng.uniform(0.05, 0.12), drift + zig * rng.uniform(0.8, 1.1)  # a hard step
+            run, ang = rng.uniform(0.05, 0.12), drift + zig * rng.uniform(0.4, 0.55)  # a hard step
         else:
             zig = -zig if rng.random() < 0.75 else zig
-            run, ang = rng.uniform(0.08, 0.40), drift + zig * rng.uniform(0.12, 0.55)
+            run, ang = rng.uniform(0.08, 0.40), drift + zig * rng.uniform(0.06, 0.28)
         x += run * math.cos(ang); y += run * math.sin(ang)
-        y = float(np.clip(y, -0.30, 0.30))
+        y = float(np.clip(y, -0.15, 0.15))
         pts.append((x, y))
     px, py = np.array(pts).T
-    yc = np.interp(xs, px, py)
+    yc = np.interp(xs, px, py) + swing(rs, xs) * np.clip(xs / 1.5, 0, 1)
     # soften the corners a touch (a real split rounds its jogs over a centimetre or two), keep the angles
     yc = ndimage.gaussian_filter1d(yc, 0.012 / (L_M / nx))
     return yc
@@ -117,8 +135,8 @@ def main():
 
     # ---- centreline + shared jagged edge (fine fracture teeth: both walls follow it)
     yc = path(rng, W, xs)
-    teeth = 0.022 * N.fbm(xs, np.zeros_like(xs), 9.0, "teeth", oct=4, gain=0.55)
-    teeth += 0.008 * N.fbm(xs, np.zeros_like(xs), 40.0, "teeth2", oct=2)
+    teeth = 0.011 * N.fbm(xs, np.zeros_like(xs), 9.0, "teeth", oct=4, gain=0.55)
+    teeth += 0.004 * N.fbm(xs, np.zeros_like(xs), 40.0, "teeth2", oct=2)
     ycj = (yc + teeth).astype(np.float32)
     # true distance to the path (a hard jog runs nearly across the band: a vertical-only measure spikes there), the
     # path sampled every 2.5 mm; the teeth bend only the walls (fading out a few cm away)
@@ -147,23 +165,23 @@ def main():
 
     # ---- forks: 2-4 near her end, angled forward, tapering to nothing
     fork_d = np.full_like(X, 9.0); fork_hw = np.zeros_like(X)
-    nf = int(rng.integers(2, 5))
+    nf = int(rng.integers(3, 7))
     for i in range(nf):
-        x0 = rng.uniform(0.7, 6.5) if i else rng.uniform(0.7, 2.5)
+        x0 = rng.uniform(0.8, 6.0) if i else rng.uniform(0.7, 2.0)
         side = 1 if (i % 2 == 0) ^ (rng.random() < 0.3) else -1
         i0 = int(x0 / dx)
         p = [(x0, float(ycj[i0]) + side * w[i0] * 0.35)]
         base = side * rng.uniform(0.4, 0.8)
-        Lf = rng.uniform(0.6, 1.7); s = 0.0; zig = 1
+        Lf = rng.uniform(0.35, 1.0); s = 0.0; zig = 1
         while s < Lf:
             # the same zigzag as the main split, about a heading that bends back toward the line's own direction
             run = rng.uniform(0.05, 0.22)
             zig = -zig if rng.random() < 0.7 else zig
             base *= 0.93
-            ang = base + zig * rng.uniform(0.15, 0.6)
+            ang = base + zig * rng.uniform(0.12, 0.4)
             px_, py_ = p[-1]
             nx_, ny_ = px_ + run * math.cos(ang), py_ + run * math.sin(ang)
-            ny_ = float(np.clip(ny_, -0.75, 0.75))
+            ny_ = float(np.clip(ny_, -0.9, 0.9))
             p.append((nx_, ny_)); s += run
         P = np.array(p)
         seg_s = np.concatenate([[0], np.cumsum(np.hypot(*np.diff(P, axis=0).T))])
@@ -201,7 +219,9 @@ def main():
     edge = np.maximum(edge, 0)
 
     # ---- the lips: Voronoi plates, each a flat slab tilted up toward the gap
-    lipw = (0.20 + 0.25 * (1 - u)) * (1 + 0.25 * N.fbm(X, Y, 1.4, "lipw", oct=3))       # how far the break runs
+    # (r3c: the broken lips and the scorch stay within the crack's own width each side, so the whole mark is at most
+    # twice the opening: at 0.2-0.45 m of lips and 0.55-0.9 m of char it read as a 90 px black ribbon at night)
+    lipw = (0.015 + 0.30 * w[None, :]) * (1 + 0.25 * N.fbm(X, Y, 1.4, "lipw", oct=3))       # how far the break runs
     rngp = np.random.default_rng(seed + 7)
     pts = []
     for cell in (0.13, 0.24):
@@ -263,10 +283,11 @@ def main():
     h = np.clip(h, H_LO, H_HI).astype(np.float32)
 
     # ---- coverage (alpha): the scorch, wider at her end, ragged, fully out by the band's edges
-    reach = (0.55 + 0.35 * (1 - u)) * (1 + 0.30 * N.fbm(X, Y, 1.1, "reach", oct=4))
-    char = 1 - smooth(0.0, 1.0, (edge - 0.06) / np.maximum(reach, 0.1))
-    char = np.clip(char + 0.25 * N.fbm(X, Y, 6.0, "charn", oct=3) * char * (1 - char) * 4, 0, 1)
-    alpha = np.maximum(char ** 0.8, (g > 0) * 1.0)
+    reach = (0.02 + 0.48 * w[None, :]) * (1 + 0.45 * N.fbm(X, Y, 2.3, "reach", oct=4))   # noisy, never parallel
+    char = 1 - smooth(0.0, 1.0, edge / np.maximum(reach, 0.015))
+    char = np.clip(char + 0.35 * N.fbm(X, Y, 9.0, "charn", oct=3) * char * (1 - char) * 4, 0, 1)
+    # the scorch only half-paints (darkening the ground at most ~40%); the gap and the lips are the crack itself
+    alpha = np.maximum(char ** 0.8 * 0.45, (g > 0) * 1.0)
     alpha = np.maximum(alpha, lipzone * 0.98)
     endfade = smooth(0.0, 0.25, X) * (1 - smooth(L_M - 0.6, L_M - 0.15, X))
     # past the tip the whole mark thins out to nothing (the scorch follows the crack's own reach)
@@ -308,12 +329,8 @@ def main():
     e = (0.92 * smooth(0.15, 1.0, gf) ** 1.5 + 0.08 * smooth(0.0, 0.6, g)) * along[None, :]
     e *= 1 - 0.85 * rub                                    # rubble blocks the light
     e += rub * smooth(0.004, 0.0, rb) * 0.5 * (g > 0.2)    # ...with its cracks shining through
-    rim = np.exp(-edge / 0.010) * (g == 0) * 0.20 * smooth(-0.2, 0.5, N.fbm(X, Y, 3.0, "rimp", oct=2)) * along[None, :]
-    # only some of the first row's seams glow (heat leaking up the nearest breaks), never a glowing net
-    seam_hot = (crand[..., 1] > 0.55) * np.exp(-seed_edge / 0.05)
-    fiss = (1 - gap_cracks) * np.exp(-edge / 0.05) * 0.35 * (g == 0) * seam_hot
-    fiss += hair * np.exp(-edge / 0.04) * 0.15
-    e = np.clip(np.maximum(e, rim + fiss * along[None, :]), 0, 1) * endfade
+    # (r3c: no glow on the lips or their seams: the embers live inside the crack)
+    e = np.clip(e, 0, 1) * endfade
 
     # ---- normal from height (OpenGL: green = up the image)
     hs = ndimage.gaussian_filter(h, (0.6, 0.6))
@@ -350,6 +367,7 @@ def main():
     gw = [float(np.interp(v, uu, w)) for v in (0.0, 0.05, 0.25, 0.5, 0.75, 0.93, 0.98)]
     json.dump({"length_m": L_M, "band_m": B_M, "u": "along the line, 0 = her end", "v": "across, 0.5 = the line",
                "height_range_m": [H_LO, H_HI], "normal": "OpenGL (Y+)", "seed": seed, "tiles": 12, "tile_m": 2.0,
+               "centre_m": [round(float(v), 4) for v in np.interp((np.arange(256) + 0.5) / 256 * L_M, xs, yc)],
                "gap_width_m_at_u": dict(zip(["0", "0.05", "0.25", "0.5", "0.75", "0.93", "0.98"], [round(v, 3) for v in gw])),
                "source": "tools/fxsim/longcut_crack.py"},
               open(os.path.join(out, "crack.json"), "w"), indent=1)

@@ -245,7 +245,8 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
 	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.7, 1.0, fx.y)) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	// (r3c: out by fx.y 0.62, so the last ~30% of a body (dn spans ~0.14-0.86) goes as dark ash, not gold lace or dust)
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 

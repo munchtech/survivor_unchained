@@ -225,12 +225,19 @@ public partial class FlareFx
         if (!on) return;
         var foot = new Vector3(Her.X, (float)HeightAt(Her.X, Her.Z) + 0.02f, Her.Z);
         lcHandLight.GlobalPosition = foot + Vector3.Up * 0.35f;
+        // (r3c: stood at her centre, the column was inside her body: from the play camera her own front hid its bright
+        // foot and only its dim top cleared her head, so the pictures showed the pool alone. It stands 0.45 m toward
+        // the eye, in front of her, so it overlays her as light does.)
+        var toEye = EyeAt() - foot;
+        toEye.Y = 0;
+        if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * 0.45f;
         lcColumnMat.SetShaderParameter("col", new Color(1f, 0.84f, 0.55f, a * flash));
         LcStripDraw(lcColumnMesh, lcColumnMat, foot, foot + Vector3.Up * h, 0.3f);
         // (the pictures: a frame of the Spend's first two, each taken once the next is drawn)
         if (Args.Has("shot"))
         {
             GD.Print($"longcut column frame {f}: {h:0.00} m, HDR {a * flash:0.0}, drawn {Engine.GetFramesDrawn()}");
+            // (the frame read back in a process step is the one drawn before it: spend_a shows frame 0, spend_b the peak)
             if (f == 1) { Shots.WantFrames("bx_spend_a", 0); Shots.WantFrames("bx_spend_b", 1); }
         }
     }

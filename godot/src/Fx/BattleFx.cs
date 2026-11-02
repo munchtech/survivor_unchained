@@ -2095,8 +2095,10 @@ public partial class BattleFx : Node3D
                         // (about three times the stone across, breathing slowly, each to its own beat)
                         float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
                         float hs = 0.62f + 0.75f * s;
+                        var (lcAcross, lcLight) = Flare.DropHalo(p.Age);
+                        if (lcAcross > 0) hs = lcAcross;
                         emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
-                            EmberTiers[tier] with { A = 0.32f + 0.09f * beat });
+                            EmberTiers[tier] with { A = (0.32f + 0.09f * beat) * lcLight });
                     }
                     break;
                 }

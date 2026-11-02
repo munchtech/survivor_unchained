@@ -68,6 +68,22 @@ public partial class FlareFx
         var emi = LcLoad(dir, "crack_emis.png");
         var hgt = LcLoad(dir, "crack_height.png");
         LcArt art = alb != null && nrm != null && emi != null && hgt != null ? LcPack(alb, nrm, emi, hgt) : LcStandIn();
+        // The main split's own centre (crack.json centre_m, 256 steps), so the jets and chunks rise from it, not from
+        // the light's centroid that the side branches pull off it (r3c).
+        try
+        {
+            var jp = System.IO.Path.Combine(dir, "crack.json");
+            if (art.Baked && System.IO.File.Exists(jp))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText(jp));
+                if (doc.RootElement.TryGetProperty("centre_m", out var c) && c.GetArrayLength() == 256)
+                {
+                    int k = 0;
+                    foreach (var v in c.EnumerateArray()) art.Off[k++] = v.GetSingle();
+                }
+            }
+        }
+        catch (Exception ex) { GD.PrintErr($"longcut art: crack.json {ex.Message}"); }
         art.A.GenerateMipmaps();
         art.B.GenerateMipmaps();
         return art;

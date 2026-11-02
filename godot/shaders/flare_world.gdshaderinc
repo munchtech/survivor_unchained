@@ -406,6 +406,16 @@ float fl_seam_near(vec4 sw, float lod) {
 	return clamp(max(m, exp(-max(abs(sw.y) - 0.4, 0.0) * 1.8) * 0.45), 0.0, 1.0);
 }
 
+// The painted glow round the crack (r3c): the core's own mask blurred (mip 4, about 7 cm), so it follows the split and
+// its branches and is as wide as the crack is open (0.9x median, 1.3x at the 90th percentile of the baked strip: it
+// tapers, pinches and pools), its strength wandering +-40% along the line. The reach beyond is the lights' work.
+// (The r3b band, max(core, 0.45 * exp(-(|perp| - 0.4) * 1.8)), was an even-width tube about the straight line.)
+float fl_seam_glow(vec4 sw) {
+	float m = fl_in_strip(sw.zw) * clamp(textureLod(flare_crack_b, sw.zw, 4.0).b * 3.5, 0.0, 1.0);
+	float n = mix(texture(flare_noise, vec2(sw.x * 0.21, 0.37)).g, texture(flare_noise, vec2(sw.x * 0.67, 0.81)).r, 0.4);
+	return m * (0.6 + 0.8 * smoothstep(0.3, 0.7, n));
+}
+
 // The seam on the ground, in it: the strip's crack (its paint, broken lips, its normal), the light deep in it seen
 // through its depth (parallax: the core shifts under the lips as the eye moves), a char along it, and its glow on the
 // ground beside it. It opens as the fuse passes, cools gold to red to dark, and is gone by ~6 s.
@@ -431,8 +441,10 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	float core = texture(flare_crack_b, uv2).b * fl_in_strip(uv2) * smoothstep(0.05, 0.35, 1.0 - B.a);
 	float h = fl_seam_heat(age);
 	// The char along it: the blurred coverage, darker near the crack, gone with the scar.
-	float charb = textureLod(flare_crack_a, uv, 5.0).a * inb * smoothstep(0.0, 0.25, age);
-	alb *= 1.0 - clamp(charb * 2.2, 0.0, 0.7) * fade;
+	// (r3c: at most 40% darker, from a mip that keeps the crack's own width (the strip's scorch is now within it),
+	// settling to half as the seam cools)
+	float charb = textureLod(flare_crack_a, uv, 3.0).a * inb * smoothstep(0.0, 0.25, age);
+	alb *= 1.0 - clamp(charb * 1.2, 0.0, 0.4) * mix(0.5, 1.0, 1.0 - smoothstep(0.5, 2.8, age)) * fade;
 	alb = mix(alb, A.rgb, cov * fade);
 	rough = mix(rough, 0.95, cov * fade);
 	vec2 nt = B.rg * 2.0 - 1.0;
@@ -440,13 +452,15 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	nrm_view = normalize(mix(nrm_view, (view * vec4(nwld, 0.0)).xyz, cov * fade));
 	// The light from below: gold-white along the hottest lengths, the walls a deep red-gold.
 	float hot = 0.75 + 0.5 * smoothstep(0.25, 0.75, texture(flare_noise, vec2(sw.x * 0.16, 0.13)).r);
-	vec3 e = fl_seam_col(h * mix(0.7, 1.12, core) * hot) * pow(h, 1.3) * (core * 0.95 + 0.06 * cov) * mix(3.4, 2.0, night) * fade;
+	// (r3c: the walls' faint light only inside the gap, not over the whole char: embers in the crack, never on its lips)
+	float gap = smoothstep(0.72, 0.6, B.a) * inb;
+	vec3 e = fl_seam_col(h * mix(0.7, 1.12, core) * hot) * pow(h, 1.3) * (core * 0.95 + 0.06 * gap * open) * mix(3.4, 2.0, night) * fade;
 	// (night: the core capped, one white-gold line; the field's glow comes from the lights, not from here)
 	float cap = mix(1e3, flare_lc.z, night);
 	e = min(e, vec3(cap));
-	// Its glow on the ground beside it, close and low (as if morning were under it): never a painted stripe.
-	float near = fl_seam_near(sw, 4.5) * (1.0 - cov);
-	e += fl_seam_col(h * 0.72) * pow(h, 1.6) * near * (0.25 + 0.8 * alb) * mix(0.5, 0.22, night) * fade;
+	// Its glow at the crack's lips, gold (never cream), at most 0.4x the core's own level (0.28 x its +-40%).
+	float lvl = min(pow(h, 1.3) * 0.95 * mix(3.4, 2.0, night) * fade, cap);
+	e += fl_seam_col(min(h * 0.72, 0.78)) * lvl * 0.28 * fl_seam_glow(sw) * (1.0 - core);
 	emi = emi * (1.0 - cov * 0.85 * fade) + e;
 }
 
@@ -724,8 +738,9 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 		float h = fl_seam_heat(age) * step(0.0, sw.x);
 		alb = mix(alb, vec3(0.015, 0.012, 0.01), burnt * 0.95 * flare_seam_t.z);
 		emi *= 1.0 - burnt;
-		float glow = fl_seam_near(sw, 4.5) * (1.0 - 0.7 * tip);
-		emi += fl_seam_col(h * 0.85) * pow(h, 1.5) * glow * mix(1.4, 0.7, flare_seam_t.w) * flare_seam_t.z;
+		// (r3c: times the blade's own colour, so leaves in the glow are dark shapes on it, not cream confetti)
+		float glow = fl_seam_glow(sw) * (1.0 - 0.7 * tip);
+		emi += fl_seam_col(min(h * 0.72, 0.78)) * pow(h, 1.5) * glow * alb * mix(1.2, 0.6, flare_seam_t.w) * flare_seam_t.z;
 	}
 
 	if (flare_look.w < 0.5) return;

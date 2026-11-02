@@ -35,7 +35,9 @@ public partial class FlareFx
     /// <summary>A body's burn-up (Flare time): charred, burnt away in gold.</summary>
     const float BurnLen = 0.5f;
     const float SweepLen = 0.35f;
-    const int LcJets = 11, LcChunks = 12;
+    const int LcChunks = 12;
+    /// <summary>The jets' places along the line (m), drawn at the cleave: 0.8-2 m apart, irregular (r3c).</summary>
+    readonly List<float> lcJetAt = new();
 
     double lcSweepT = -1, lcCleaveT = -1;
     float lcSweepFrom;
@@ -149,6 +151,16 @@ public partial class FlareFx
     /// <summary>For BattleFx.Pickups: the Long Cut's ember drops drawn at 0.6 at night (they dominated the last beats).</summary>
     public float DropScale => Active && IsLongCut && Night ? 0.6f : 1f;
 
+    /// <summary>For BattleFx.Pickups, in the Long Cut's aftermath only (r3c: ~200 soft peach halos made a hoop of bright
+    /// blobs at night): an ember drop's halo this many metres across (0.28 m: about 8 px of glow radius at the play
+    /// camera's ~83 px/m), its light at 0.25x, both coming in over the drop's first second. (0, 1) otherwise.</summary>
+    public (float Across, float Light) DropHalo(double age)
+    {
+        if (!(Active && IsLongCut)) return (0, 1);
+        float k = Mathf.SmoothStep(0, 1, (float)age);
+        return (0.28f * (0.5f + 0.5f * k), 0.25f * k);
+    }
+
     void LongPress()
     {
         LcArtStart();
@@ -162,6 +174,7 @@ public partial class FlareFx
         lcSweepT = lcCleaveT = -1;
         lcLen = 0;
         lcJetN = lcChunkN = 0;
+        lcJetAt.Clear();
         lcSmokeAcc = lcSkirtAcc = 0;
         lcRt = 0;
         lcBeat = 0; lcBeatRt = -1; lcBeatFrame = -1;
@@ -440,7 +453,8 @@ public partial class FlareFx
             spendLight.GlobalPosition = fp + Vector3.Up * 0.6f;
             spendLight.LightColor = new Color(1f, 0.78f, 0.45f);
             spendLight.OmniRange = 9;
-            spendLight.LightEnergy = (Night ? 3.0f : 3.6f) * flash * LcLight;
+            // (r3c: 1.5x, the painted glow at the crack cut to its lips: the light carries the reach)
+            spendLight.LightEnergy = (Night ? 4.5f : 5.4f) * flash * LcLight;
         }
         else
         {
@@ -452,7 +466,9 @@ public partial class FlareFx
         }
         // Two unshadowed trailing it, then settled at the line's thirds, cooling with it.
         float settle = Mathf.SmoothStep(0, 0.4f, s - run);
-        float trailE = (Night ? 2.0f : 1.8f) * Mathf.SmoothStep(0, 0.05f, s) * heat * fade * flash * LcLight;
+        // (r3c: 1.5x while hot, and out with the cooling, not lingering as two pools of light at the thirds: b7's blobs)
+        float heatT = 1 - Mathf.SmoothStep(0.3f, 2.0f, s - run * 0.5f);
+        float trailE = (Night ? 3.0f : 2.7f) * Mathf.SmoothStep(0, 0.05f, s) * heatT * heatT * flash * LcLight;
         if (lcTrailA != null && lcTrailB != null)
         {
             var pa = SeamPoint(Mathf.Lerp(Mathf.Max(0.6f, front - 6), lcLen * 0.6f, settle));
@@ -478,11 +494,15 @@ public partial class FlareFx
         }
 
         // Dust jets up in sequence behind the front, chunks thrown out.
-        while (lcJetN < LcJets && front >= (lcJetN + 0.55f) / LcJets * lcLen)
+        // (r3c: eleven even puffballs read as five dark-brown balls on the line. Now a jet every 0.8-2 m, irregular, about
+        // half of them doubled, so the line stands as one wall within 0.3 s.)
+        if (lcJetAt.Count == 0)
+            for (float a = 0.5f + R() * 0.6f; a < lcLen - 0.3f; a += 0.8f + R() * 1.2f) lcJetAt.Add(a);
+        while (lcJetN < lcJetAt.Count && front >= lcJetAt[lcJetN])
         {
-            float a = (lcJetN + 0.55f) / LcJets * lcLen + (R() - 0.5f) * 0.8f;
-            lcJetN++;
+            float a = lcJetAt[lcJetN++];
             Jet(a);
+            if (R() < 0.5f) Jet(Mathf.Min(lcLen - 0.2f, a + 0.25f + R() * 0.3f));
         }
         while (lcChunkN < LcChunks && front >= (lcChunkN + 0.4f) / LcChunks * lcLen * 0.92f)
         {
@@ -492,19 +512,21 @@ public partial class FlareFx
         }
 
         // The Return: a thin curtain of smoke off the cooling seam.
-        if (s > 0.6f && s < 3.2f)
+        // (r3c: from 0.25 s, behind the front only, holding through the cleave's +2 s, then thinning by +3.4 s)
+        if (s > 0.25f && s < 3.4f)
         {
-            lcSmokeAcc += dt * 18 * (1 - Mathf.SmoothStep(2.2f, 3.2f, s));
+            lcSmokeAcc += dt * 26 * (1 - Mathf.SmoothStep(2.0f, 3.4f, s));
             while (lcSmokeAcc >= 1)
             {
                 lcSmokeAcc -= 1;
-                float a = 0.8f + R() * (lcLen - 0.8f);
+                float a = 0.8f + R() * (front - 0.8f);
+                if (a < 0.8f) continue;
                 var p = SeamPoint(a);
                 bed.Spawn(new FlareBits.P
                 {
                     Kind = FlareBits.Kind.Smoke, At = p + new Vector3((R() - 0.5f) * 0.5f, 0.25f + R() * 0.3f, (R() - 0.5f) * 0.5f),
                     V = new Vector3((R() - 0.5f) * 0.3f, 0.7f + R() * 0.6f, (R() - 0.5f) * 0.3f), Life = 1.9f + R() * 0.8f, Size = 0.5f + R() * 0.25f, SizeEnd = 1.6f + R() * 0.6f,
-                    Color = Night ? new Color(0.07f, 0.06f, 0.055f, 0.3f) : new Color(0.2f, 0.18f, 0.16f, 0.28f), ColorEnd = Night ? new Color(0.09f, 0.085f, 0.08f, 0.06f) : new Color(0.26f, 0.24f, 0.22f, 0.05f),
+                    Color = Night ? new Color(0.34f, 0.31f, 0.28f, 0.3f) : new Color(0.4f, 0.37f, 0.33f, 0.28f), ColorEnd = Night ? new Color(0.36f, 0.34f, 0.32f, 0.06f) : new Color(0.44f, 0.41f, 0.38f, 0.05f),
                     Drag = 0.8f, Lift = 0.25f, Swirl = 0.5f, Seed = R(), Wind = new Vector3(0.25f, 0, 0.1f),
                 });
             }
@@ -521,10 +543,12 @@ public partial class FlareFx
     }
 
     /// <summary>A puff of the dust flipbook (lc_dust; smoke_puff standing in; the procedural puff if neither is there).</summary>
-    void Dust(Vector3 p, float size, float sizeEnd, float life, Vector3 v, float tone)
+    void Dust(Vector3 p, float size, float sizeEnd, float life, Vector3 v, float tone, float tall = 0)
     {
         var tint = Night ? new Color(0.3f, 0.26f, 0.22f) * tone : new Color(0.78f, 0.7f, 0.58f) * tone;
-        if (lcBooks != null && (lcBooks.Spawn("lc_dust", p, size, life, tint, false, sizeEnd, float.NaN, (R() - 0.5f) * 0.6f, v)
+        // (a jet stands upright: turned only a little, not spun)
+        float ang = tall > 1 ? (R() - 0.5f) * 0.25f : float.NaN, spin = tall > 1 ? 0 : (R() - 0.5f) * 0.6f;
+        if (lcBooks != null && (lcBooks.Spawn("lc_dust", p, size, life, tint, false, sizeEnd, ang, spin, v, tall)
             || lcBooks.Spawn("smoke_puff", p, size, life, tint, false, sizeEnd, float.NaN, (R() - 0.5f) * 0.6f, v))) return;
         bed.Spawn(new FlareBits.P
         {
@@ -538,8 +562,10 @@ public partial class FlareFx
     {
         var p = SeamPoint(along);
         float taper = Mathf.Lerp(1f, 0.6f, along / Math.Max(1, lcLen));
-        float size = (1.6f + R() * 0.6f) * taper;
-        Dust(p + Vector3.Up * size * 0.45f, size, size * 2.3f, 1.8f + R() * 0.4f, Vector3.Up * (1.4f + R() * 0.8f) * taper, 1);
+        // (r3c: narrower and 2.5x as tall as wide, rising fast; the curtain of smoke takes over from them)
+        float size = (0.8f + R() * 0.35f) * taper;
+        var side = new Vector3(-lcDir.Y, 0, lcDir.X) * (R() - 0.5f) * 0.12f;
+        Dust(p + side + Vector3.Up * size * 1.1f, size, size * 2.2f, 1.9f + R() * 0.5f, Vector3.Up * (1.8f + R() * 0.9f) * taper, Night ? 1.25f : 1f, 2.5f);
     }
 
     /// <summary>A chunk of the ground thrown up and out to one side of the crack, tumbling, hot underneath at first.</summary>
@@ -603,7 +629,8 @@ public partial class FlareFx
         bed.Spawn(new FlareBits.P
         {
             Kind = FlareBits.Kind.Smoke, At = w + Vector3.Up * 0.9f, V = Vector3.Up * 0.9f, Life = 1.4f + R() * 0.5f, Size = 0.45f, SizeEnd = 1.2f,
-            Color = new Color(0.06f, 0.05f, 0.045f, 0.3f), ColorEnd = new Color(0.08f, 0.075f, 0.07f, 0.0f), Drag = 1f, Lift = 0.3f, Swirl = 0.4f, Seed = R(),
+            // (r3c: no ink-black blots in the far smoke: the albedo floor 0.34)
+            Color = new Color(0.34f, 0.31f, 0.28f, 0.3f), ColorEnd = new Color(0.36f, 0.34f, 0.32f, 0.0f), Drag = 1f, Lift = 0.3f, Swirl = 0.4f, Seed = R(),
         });
         scars.Spawn(new FlareBits.P { Kind = FlareBits.Kind.Scar, At = w + Vector3.Up * 0.04f, Life = 4.2f + R(), Size = 0.6f + R() * 0.3f, Color = new Color(0.025f, 0.02f, 0.016f, 0.55f) });
     }

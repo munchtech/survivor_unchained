@@ -31,7 +31,7 @@ public partial class Flipbooks : Node3D
     struct Play
     {
         public Vector3 At, V;
-        public float Size, SizeEnd, Life, Age, Angle, Spin, Fade;
+        public float Size, SizeEnd, Life, Age, Angle, Spin, Fade, Tall;
         public Color Tint;
         public bool Flat;
     }
@@ -114,8 +114,10 @@ public partial class Flipbooks : Node3D
     /// <summary>Play an atlas once at `at`: `size` across growing to
     /// `sizeEnd`, over `life` seconds, tinted (rgb above 1 blooms), flat on
     /// the ground or facing the camera, drifting with `v`. False if there is
-    /// no such atlas (the caller falls back to what it drew before).</summary>
-    public bool Spawn(string name, Vector3 at, float size, float life, Color tint, bool flat = false, float sizeEnd = -1, float angle = float.NaN, float spin = 0, Vector3 v = default)
+    /// no such atlas (the caller falls back to what it drew before).
+    /// `tall` above 1: a camera-facing take stretched that many times up the
+    /// screen (a jet), its foot lit warm from below over its first half-life.</summary>
+    public bool Spawn(string name, Vector3 at, float size, float life, Color tint, bool flat = false, float sizeEnd = -1, float angle = float.NaN, float spin = 0, Vector3 v = default, float tall = 0)
     {
         var b = Of(name);
         if (b == null) return false;
@@ -123,7 +125,7 @@ public partial class Flipbooks : Node3D
         b.Plays.Add(new Play
         {
             At = at, V = v, Size = size, SizeEnd = sizeEnd < 0 ? size : sizeEnd, Life = Mathf.Max(0.05f, life), Tint = tint, Flat = flat,
-            Angle = float.IsNaN(angle) ? Sparks.R() * Mathf.Tau : angle, Spin = spin, Fade = 1,
+            Angle = float.IsNaN(angle) ? Sparks.R() * Mathf.Tau : angle, Spin = spin, Fade = 1, Tall = tall,
         });
         return true;
     }
@@ -165,7 +167,7 @@ public partial class Flipbooks : Node3D
                 // Every take fades over its last quarter, whether or not the clip did.
                 float fade = p.Tint.A * (k < 0.75f ? 1 : 1 - (k - 0.75f) / 0.25f);
                 buf[o + 12] = p.Tint.R; buf[o + 13] = p.Tint.G; buf[o + 14] = p.Tint.B; buf[o + 15] = fade;
-                buf[o + 16] = k; buf[o + 17] = p.Angle; buf[o + 18] = p.Flat ? 1 : 0; buf[o + 19] = 0;
+                buf[o + 16] = k; buf[o + 17] = p.Angle; buf[o + 18] = p.Flat ? 1 : 0; buf[o + 19] = p.Tall;
             }
             // Only what is live is sent; the rest of the buffer is left as it was.
             if (n > 0) mm.Buffer = b.Buffer;
