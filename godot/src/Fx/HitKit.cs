@@ -320,7 +320,7 @@ public partial class BattleFx
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
         if (AaBeats && discThrows >= 1 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
-        if (AaBeats && discBounceShot && !discOpenShot && near > 2.5f && near < 9f && b0 != null && Clear(p.X, p.Z, Flare.Night ? 1.8 : 1.2)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
+        if (AaBeats && discBounceShot && !discOpenShot && near > 2.5f && near < 9f && b0 != null && (Clear(p.X, p.Z, Flare.Night ? 1.8 : 1.2) || (discThrows >= 3 && near > 3.5f && Clear(p.X, p.Z, 0.8)))) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
         // A faint dark bed under it (so the head shows over the pale dead), and the head.
         Shade(at, 1.0f * s, 0.3f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
