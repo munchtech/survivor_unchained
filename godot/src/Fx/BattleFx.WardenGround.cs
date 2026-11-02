@@ -121,8 +121,18 @@ public partial class BattleFx
         {
             var root = ps.Instantiate();
             foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
-                if (((MeshInstance3D)n).Mesh is { } m)
+                if (((MeshInstance3D)n).Mesh is ArrayMesh src)
                 {
+                    // Earth, not pale stone: the chunks' own paint taken down to the ground's brown.
+                    var m = (ArrayMesh)src.Duplicate();
+                    for (int si = 0; si < m.GetSurfaceCount(); si++)
+                        if (m.SurfaceGetMaterial(si) is BaseMaterial3D bm)
+                        {
+                            var t = (BaseMaterial3D)bm.Duplicate();
+                            t.AlbedoColor = bm.AlbedoColor * new Color(0.52f, 0.46f, 0.4f);
+                            t.Roughness = 0.95f;
+                            m.SurfaceSetMaterial(si, t);
+                        }
                     var s = m.GetAabb().Size;
                     list.Add((m, Mathf.Max(s.X, s.Z)));
                 }
@@ -160,7 +170,7 @@ public partial class BattleFx
         {
             wgEnds.Add((e.X1, e.Z1, time, time + travel));
             wgCracks++;
-            if (WgBeats && !wgGcShot && time > 4) { wgGcShot = true; wgGcAt = time; Shots.WantFrames("gc_f3", 3); Shots.WantFrames("gc_f12", 12); GD.Print($"[wg-beats] crack {wgCracks} len {len:F1} travel {travel:F2} t={time:F2}"); }
+            if (WgBeats && !wgGcShot && (len >= 4 || time > 12)) { wgGcShot = true; wgGcAt = time; Shots.WantFrames("gc_f3", 3); Shots.WantFrames("gc_f12", 12); GD.Print($"[wg-beats] crack {wgCracks} len {len:F1} travel {travel:F2} t={time:F2}"); }
             // (twin: the second of a pair takes a different run of the strip)
             int t0 = wgEnds.Count(x => x.At == time) > 1 ? 1 : 0;
             int n = Math.Clamp((int)Mathf.Round(len / 1.7f), 2, 6);
@@ -170,7 +180,7 @@ public partial class BattleFx
         else
         {
             wgLines++;
-            if (WgBeats && !wgSlShot && time > 4) { wgSlShot = true; Shots.WantFrames("sl_f2", 2); Shots.WantFrames("sl_f8", 8); Shots.WantFrames("sl_f30", 30); GD.Print($"[wg-beats] line {wgLines} len {len:F1} t={time:F2}"); }
+            if (WgBeats && !wgSlShot && time > 2.5) { wgSlShot = true; Shots.WantFrames("sl_f2", 2); Shots.WantFrames("sl_f8", 8); Shots.WantFrames("sl_f30", 30); GD.Print($"[wg-beats] line {wgLines} len {len:F1} t={time:F2}"); }
             bool sear = b0?.Lamps is { } lp && lp.Has("sunder.burning_edge");
             // Tiles 6-11 (the strip's narrowing half: 0.25 m at her end, closing to a hairline) over the line.
             WgCrack(from, dir, len, 6, 6, 1f, travel, 1.8f, night, false, sear);
@@ -251,6 +261,7 @@ public partial class BattleFx
     /// blast) doubling the heave.</summary>
     bool WgStrike(Ev.Strike e)
     {
+        if (WgBeats && e.Art == "slash_quake") GD.Print($"[wg-beats] strike slash_quake delay {e.Delay:F2} lastHeave {wgLastHeave.At:F2} t={time:F2}");
         if (e.Art != "slash_quake" || wgLastHeave.At != time) return false;
         if (Math.Abs(wgLastHeave.X - e.X) > 0.05 || Math.Abs(wgLastHeave.Z - e.Z) > 0.05) return false;
         wgAfter.Add((e.X, e.Z, time + e.Delay));
@@ -301,15 +312,15 @@ public partial class BattleFx
                 var pos = V(c.X, Y(c.X, c.Y), c.Y);
                 WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), wgAlb![tile], wgNrm![tile], null, life, 1f, 0, 0);
                 // The hot edge: this tile's first 4 frames, dull orange; by night held low (never clipping).
-                WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), null, null, wgEmi![tile], 4 / 60f + (sear ? 1.2f : 0), 1f, night ? 1.1f : 2.4f, sear ? 1 : 0);
+                WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), null, null, wgEmi![tile], 4 / 60f + (sear ? 1.2f : 0), 1f, night ? 0.7f : 1.3f, sear ? 1 : 0);
             });
         }
         // Dust jets and chips as the tip passes: denser and taller where the force is (her end; the heave's end).
-        float step = heavy ? 0.36f : 0.44f;
-        int puffs = Math.Clamp((int)(len / step), 6, heavy ? 30 : 20);
+        // (not evenly spaced: an even chain of like puffs read as a caterpillar; random places, some in pairs)
+        int puffs = Math.Clamp((int)(len * (heavy ? 2.0f : 2.1f)), 6, heavy ? 22 : 16);
         for (int i = 0; i < puffs; i++)
         {
-            float along = (i + 0.3f + R() * 0.4f) * len / puffs;
+            float along = Mathf.Pow(R(), heavy ? 0.8f : 1.25f) * len;
             float force = heavy ? 0.75f + 0.35f * along / len : 1.1f - 0.45f * along / len;
             var p = WgCrackPoint(from, dir, side, along, len, t0, n, across);
             WgLater(travel * along / len, () => WgJet(p, force));
@@ -434,18 +445,20 @@ public partial class BattleFx
                 var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
                 var size = new Vector3(seg * 1.03f, 1.6f, WgBand * 1.15f * k);
                 WgDecalOn(pos, theta, size, wgAlb![t0 + j], wgNrm![t0 + j], null, after ? 1.6f : 2.5f, 1f, 0, 0);
-                WgDecalOn(pos, theta, size, null, null, wgEmi![t0 + j], 4 / 60f, 1f, night ? 1.0f : 2.2f, 0);
+                WgDecalOn(pos, theta, size, null, null, wgEmi![t0 + j], 4 / 60f, 1f, night ? 0.7f : 1.3f, 0);
             }
         }
         // The dust ring: low, solid and lit, rolling out to ~1.3 r over ~1 s; a darker skirt under it.
         int puffs = after ? 12 : 26;
         for (int i = 0; i < puffs; i++)
         {
-            float a = a0 + (i + R() * 0.7f) / puffs * Mathf.Tau, d0 = r * (0.35f + R() * 0.2f);
+            // (an even ring of like puffs read as a donut: gaps, clumps, sizes and reaches varied)
+            if (R() < 0.22f) continue;
+            float a = a0 + (i + R() * 0.9f) / puffs * Mathf.Tau, d0 = r * (0.3f + R() * 0.25f);
             var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-            float reach = r * (1.2f + R() * 0.2f) * k - d0, drag = 2.6f;
+            float reach = r * (0.95f + R() * 0.45f) * k - d0, drag = 2.6f;
             double px = x + o.X * d0, pz = z + o.Z * d0;
-            float s = (0.7f + R() * 0.35f) * k;
+            float s = (0.5f + R() * 0.6f) * k;
             WgPuff(V(px, Y(px, pz) + 0.3 * k, pz), o * reach * drag * 1.05f + Vector3.Up * (0.25f + R() * 0.3f), s, 1.9f, 0.9f + R() * 0.3f, WgDust(1.05f + R() * 0.15f), 0.62f, drag);
             if (i % 2 == 0)
                 WgPuff(V(px, Y(px, pz) + 0.15, pz), o * reach * drag * 0.8f, s * 0.8f, 1.7f, 0.8f + R() * 0.3f, WgDust(0.68f), 0.55f, drag);
@@ -564,7 +577,7 @@ public partial class BattleFx
     /// dark by night; `lit` above 1 the sunlit top, below 1 the shadowed skirt.</summary>
     Color WgDust(float lit)
     {
-        var c = Flare.Night ? new Color(0.13f, 0.122f, 0.125f) : new Color(0.4f, 0.335f, 0.262f);
+        var c = Flare.Night ? new Color(0.075f, 0.064f, 0.056f) : new Color(0.3f, 0.25f, 0.195f);
         return new Color(c.R * lit, c.G * lit, c.B * lit);
     }
 
@@ -580,9 +593,13 @@ public partial class BattleFx
     /// <summary>A jet of dust lifting off the crack as the tip passes: a lit plume 0.3-0.7 m tall over a darker foot.</summary>
     void WgJet(Vector3 p, float force)
     {
-        float s = (0.34f + R() * 0.16f) * force;
-        WgPuff(p + Vector3.Up * 0.12f, Vector3.Up * (0.9f + R() * 0.7f) * force + new Vector3(R() - 0.5f, 0, R() - 0.5f) * 0.4f, s, 1.8f, 0.5f + R() * 0.3f, WgDust(1.08f + R() * 0.12f), 0.6f, 2.6f);
-        WgPuff(p + Vector3.Up * 0.06f, new Vector3(R() - 0.5f, 0.2f, R() - 0.5f) * 0.6f, s * 0.85f, 1.6f, 0.55f + R() * 0.25f, WgDust(0.7f), 0.5f, 3f);
+        // Sizes and lifts varied widely (a few tall spurts, more low bursts), thrown off either lip.
+        bool spurt = R() < 0.3f;
+        float s = (spurt ? 0.26f + R() * 0.12f : 0.3f + R() * 0.3f) * force;
+        var lip = new Vector3(R() - 0.5f, 0, R() - 0.5f) * (spurt ? 0.4f : 1.2f);
+        WgPuff(p + Vector3.Up * 0.1f + lip * 0.15f, Vector3.Up * (spurt ? 1.9f + R() * 0.9f : 0.6f + R() * 0.7f) * force + lip, s, spurt ? 2.2f : 1.8f, 0.5f + R() * 0.3f, WgDust(1.0f + R() * 0.2f), 0.78f, 2.6f);
+        if (!spurt || R() < 0.5f)
+            WgPuff(p + Vector3.Up * 0.05f, lip * 0.8f + Vector3.Up * 0.15f, s * (0.7f + R() * 0.3f), 1.6f, 0.55f + R() * 0.25f, WgDust(0.62f), 0.7f, 3f);
     }
 
     /* ------------------------------------------------------------ bodies -- */
@@ -607,7 +624,7 @@ public partial class BattleFx
         if (Args.Has("wg-aftershock") && !wgWickSet && b0.Weapons.Exists(w => w.Id == "groundbreaker"))
         {
             wgWickSet = true;
-            b0.SetWickPath("groundbreaker", new[] { "groundbreaker.aftershock" });
+            b0.SetWickPath("groundbreaker", new[] { "groundbreaker.aftershock.4" });
             GD.Print("[wg-beats] aftershock lit");
         }
         if (wgOwned.Count > 64) { long f = Engine.GetFramesDrawn(); foreach (var k in wgOwned.Where(kv => kv.Value != f).Select(kv => kv.Key).ToList()) wgOwned.Remove(k); }
