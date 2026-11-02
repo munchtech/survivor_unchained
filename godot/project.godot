@@ -168,6 +168,22 @@ crowd_fill={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+crowd_lamp={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_night={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_top={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_amb={
+"type": "float",
+"value": 1.0
+}
 town_lit={
 "type": "float",
 "value": 0.0
