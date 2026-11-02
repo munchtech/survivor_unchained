@@ -10,6 +10,7 @@ turned by 90 degrees (the whole board is four-fold symmetric apart from the kind
 hung lamps); within a quarter the two roads are mirror images.
 """
 import json
+from collections import Counter
 import math
 import os
 import sys
@@ -531,9 +532,47 @@ def main():
             l["x"] = 0.0
         if l["y"] == 0:
             l["y"] = 0.0
+    regate()
     check()
+    reachable()
     write()
     preview()
+
+
+# Depth is counted in lamps lit in the lamp's own group (LampBook.Depth). The 4/8/16 gates are a road's (32 lamps:
+# an eighth, a quarter, a half); a smaller group's gates keep those shares of its own size, so every lamp can be lit.
+SCALED = {"hearth": {"blue": 8},
+          "bridge": {"notable": 2, "link": 2, "blue": 4},
+          "crossing": {"notable": 3, "link": 3, "blue": 5},
+          "ford": {"notable": 1, "blue": 3},
+          "oldroad": {"notable": 3, "link": 4, "blue": 7}}
+
+
+def regate():
+    for l in lamps:
+        g = SCALED.get(l["region"], {}).get(l["kind"])
+        if g is not None:
+            l["gate"] = g
+
+
+def reachable():
+    """Light the whole board greedily from the four starts, honoring each gate on its own group: all 574 must light."""
+    nxt = {l["id"]: set() for l in lamps}
+    for l in lamps:
+        for a in l["at"]:
+            nxt[l["id"]].add(a); nxt[a].add(l["id"])
+    lit = {l["id"] for l in lamps if l["kind"] == "start"}
+    depth = Counter(by_id[i]["group"] for i in lit)
+    grew = True
+    while grew:
+        grew = False
+        for l in lamps:
+            if l["id"] in lit or not (nxt[l["id"]] & lit) or depth[l["group"]] < l["gate"]:
+                continue
+            lit.add(l["id"]); depth[l["group"]] += 1; grew = True
+    dark = [l["id"] for l in lamps if l["id"] not in lit]
+    assert not dark, f"{len(dark)} lamps can't be lit: {dark[:10]}"
+    print("reachable: all", len(lit), "lamps light under their gates")
 
 
 def segdist(p, a, b):

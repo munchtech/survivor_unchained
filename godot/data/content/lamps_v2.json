@@ -1302,7 +1302,7 @@
    "at": [
     "reaver.red_tide"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "All mending is 50% stronger. You have no draught.",
    "effects": [
     {
@@ -1330,7 +1330,7 @@
    "at": [
     "reaver.not_done_yet"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
@@ -1816,7 +1816,7 @@
    "at": [
     "arcanist.spellward"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Spells wait 30% less. You have 20% less health.",
    "effects": [
     {
@@ -1848,7 +1848,7 @@
    "at": [
     "arcanist.glass_clutch"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
@@ -2324,7 +2324,7 @@
    "at": [
     "stalker.smoke_bomb"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Three dash charges. Each dash is 30% shorter.",
    "effects": [
     {
@@ -2355,7 +2355,7 @@
    "at": [
     "stalker.into_the_smoke"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
@@ -2837,7 +2837,7 @@
    "at": [
     "warden.braced"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "You can't be thrown, stunned or slowed. Your dash is 30% shorter.",
    "effects": [
     {
@@ -2862,7 +2862,7 @@
    "at": [
     "warden.last_at_the_crossing"
    ],
-   "gate": 16,
+   "gate": 8,
    "text": "Hold two Flares. The second fills half as fast; a Flare fired with both held strikes 75% harder.",
    "effects": [
     {
@@ -9984,7 +9984,7 @@
    "at": [
     "reaver.bridge.s1"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "Bound things bleed; bleeding things stay Bound 1 s longer.",
    "feeds": [
     "chain_lash",
@@ -10039,7 +10039,7 @@
    "at": [
     "reaver.bridge.s2"
    ],
-   "gate": 16,
+   "gate": 4,
    "text": "Hurled Cleaver flies on your chain, hooks what it hits and drags it to you. It no longer returns through the crowd.",
    "effects": [
     {
@@ -10062,7 +10062,7 @@
    "at": [
     "reaver.bridge.s2"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "A blow on a Bound thing adds a stack of Frenzy.",
    "feeds": [
     "axe_gyre",
@@ -10195,7 +10195,7 @@
    "at": [
     "arcanist.bridge.s1"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "Rime Field's frozen ground makes Lantern-Man flare twice as often.",
    "feeds": [
     "rime_field",
@@ -10247,7 +10247,7 @@
    "at": [
     "arcanist.bridge.s2"
    ],
-   "gate": 16,
+   "gate": 4,
    "text": "Some of them keep ledgers. Each fire or frost spell makes your next moon or shadow spell 30% harder, and the other way round. A spell of the same side twice running is 15% weaker.",
    "effects": [
     {
@@ -10273,7 +10273,7 @@
    "at": [
     "arcanist.bridge.s2"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "Motes chill what they strike; a frozen thing's mark passes when it shatters.",
    "feeds": [
     "seeking_motes",
@@ -10405,7 +10405,7 @@
    "at": [
     "stalker.bridge.s1"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "After a dash, your next Volley looses at once.",
    "feeds": [
     "volley"
@@ -10452,7 +10452,7 @@
    "at": [
     "stalker.bridge.s2"
    ],
-   "gate": 16,
+   "gate": 4,
    "text": "Within 4 m your blades strike 30% harder, beyond 8 m your arrows do. In between, both are 15% weaker.",
    "effects": [
     {
@@ -10480,7 +10480,7 @@
    "at": [
     "stalker.bridge.s2"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "Thrown knives pierce once more while you hold a bow.",
    "feeds": [
     "knifestorm"
@@ -10614,7 +10614,7 @@
    "at": [
     "warden.bridge.s1"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "Heavy blows lay stones, and each block makes the next heavy blow 30% harder.",
    "feeds": [
     "sunder"
@@ -10669,7 +10669,7 @@
    "at": [
     "warden.bridge.s2"
    ],
-   "gate": 16,
+   "gate": 4,
    "text": "You may carry a greatsword and a shield together. The greatsword strikes 15% slower, and the shield blocks half as often.",
    "effects": [
     {
@@ -10696,7 +10696,7 @@
    "at": [
     "warden.bridge.s2"
    ],
-   "gate": 8,
+   "gate": 2,
    "text": "The Watch Bell tolls when you stagger something, at most every 3 s.",
    "feeds": [
     "watch_bell"
@@ -10854,7 +10854,7 @@
    "at": [
     "shambles.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "A heavy blow on a bleeding thing deals the rest of its bleed at once.",
    "feeds": [
     "sunder",
@@ -10880,7 +10880,7 @@
    "at": [
     "shambles.opened_up"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Every third chop of Carve is heavy.",
    "feeds": [
     "carve"
@@ -11014,7 +11014,7 @@
    "at": [
     "shambles.opened_up"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "Heavy blows on bleeding things burst the bleed: all of its damage at once.",
    "price": "20% less maximum health.",
    "effects": [
@@ -11041,7 +11041,7 @@
    "at": [
     "shambles.cleavers_weight"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "When one blow takes 8% of your health or more, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -11117,7 +11117,7 @@
    "at": [
     "night_road.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Storm that strikes a Bound thing runs to everything Bound.",
    "feeds": [
     "iron_palms",
@@ -11142,7 +11142,7 @@
    "at": [
     "night_road.lightning_leaps_the_chain"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "A marked Bound thing marks everything Bound to it.",
    "feeds": [
     "seeking_motes",
@@ -11273,7 +11273,7 @@
    "at": [
     "night_road.lightning_leaps_the_chain"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "Bound things count as Marked, and a Bound thing that dies binds the 2 nearest for 2 s.",
    "price": "Spells come 20% slower.",
    "effects": [
@@ -11301,7 +11301,7 @@
    "at": [
     "night_road.moon_on_the_chain"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "When a shocked thing dies, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -11377,7 +11377,7 @@
    "at": [
     "firebreak.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Arrows that pass through your burning ground catch fire.",
    "feeds": [
     "volley",
@@ -11402,7 +11402,7 @@
    "at": [
     "firebreak.fire_arrows"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Snares in Rime Field freeze what they hold.",
    "feeds": [
     "snare_line",
@@ -11534,7 +11534,7 @@
    "at": [
     "firebreak.fire_arrows"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "Fire striking a chilled thing freezes it first, so Fire on Ice shatters it.",
    "price": "Your frost skills strike 25% softer.",
    "effects": [
@@ -11560,7 +11560,7 @@
    "at": [
     "firebreak.frozen_snares"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "When a frozen thing dies, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -11636,7 +11636,7 @@
    "at": [
     "duelists_road.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "A perfect dash lays a stone.",
    "feeds": [
     "oathblade"
@@ -11660,7 +11660,7 @@
    "at": [
     "duelists_road.parry"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "A block gives an Opening: your blows strike true for 1 s.",
    "feeds": [
     "twin_fangs",
@@ -11793,7 +11793,7 @@
    "at": [
     "duelists_road.parry"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "A perfect dash counts as a block, and a block as a perfect dash.",
    "price": "Both windows are 30% shorter.",
    "effects": [
@@ -11819,7 +11819,7 @@
    "at": [
     "duelists_road.return_cut"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "When you block, the skill you pick fires once, free (at most every 8 s).",
    "effects": [
     {
@@ -11902,7 +11902,7 @@
    "at": [
     "vigil.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Zone skills and auras reach 15% wider, and they last 25% longer.",
    "effects": [
     {
@@ -11971,7 +11971,7 @@
    "at": [
     "vigil.n1"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "While you hold 3 stones or more, spells strike 30% harder.",
    "price": "The wall never answers: no rebuke.",
    "effects": [
@@ -12051,7 +12051,7 @@
    "at": [
     "vigil.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "With 3 stones or more your barrier is 20% stronger, and standing still, spells strike 15% harder.",
    "effects": [
     {
@@ -12116,7 +12116,7 @@
    "at": [
     "vigil.n2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "After 2 s standing still, the skill you pick fires once, free (at most every 8 s).",
    "effects": [
     {
@@ -12200,7 +12200,7 @@
    "at": [
     "poachers.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Steel and thrown skills strike bleeding things 20% harder, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -12270,7 +12270,7 @@
    "at": [
     "poachers.n1"
    ],
-   "gate": 16,
+   "gate": 5,
    "text": "A blow that strikes true on a bleeding thing doubles its bleed.",
    "price": "You have 1 dash charge.",
    "effects": [
@@ -12350,7 +12350,7 @@
    "at": [
     "poachers.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Ranged skills and projectiles strike Bound things 20% harder, and they make what they strike bleed one time in six.",
    "effects": [
     {
@@ -12422,7 +12422,7 @@
    "at": [
     "poachers.n2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "When a champion dies, the skill you pick fires once, free (at most every 4 s).",
    "effects": [
     {
@@ -12484,7 +12484,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 8,
+   "gate": 1,
    "text": "While you move, melee skills and projectiles strike 15% harder, and they come 10% sooner.",
    "effects": [
     {
@@ -12525,7 +12525,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 8,
+   "gate": 1,
    "text": "Area skills and spells reach 15% wider, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -12565,7 +12565,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 16,
+   "gate": 3,
    "text": "Lamps on other callings' roads open with no depth: their gates are ignored.",
    "price": "Your Hand is gone.",
    "effects": [
@@ -12825,7 +12825,7 @@
    "at": [
     "path.steel.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Steel and physical skills make what they strike bleed one time in five, and they strike bleeding things 15% harder.",
    "effects": [
     {
@@ -12896,7 +12896,7 @@
    "at": [
     "path.steel.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Steel and physical skills come 12% sooner, and while you move they strike 12% harder.",
    "effects": [
     {
@@ -12937,7 +12937,7 @@
    "at": [
     "path.steel.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When one blow takes 10% of your health or more, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -12968,7 +12968,7 @@
    "at": [
     "path.steel.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Thrown skills return through you and strike again.",
    "price": "You can't carry projectile spells.",
    "effects": [
@@ -12992,7 +12992,7 @@
    "at": [
     "path.steel.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Steel and orbit skills reach 15% wider, and they last 20% longer.",
    "effects": [
     {
@@ -13061,7 +13061,7 @@
    "at": [
     "path.steel.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Below 35% of health, steel and physical skills strike 20% harder, and their kills mend 0.4% of health.",
    "effects": [
     {
@@ -13279,7 +13279,7 @@
    "at": [
     "path.host.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Summons and auras last 25% longer, and standing still they strike 15% harder.",
    "effects": [
     {
@@ -13349,7 +13349,7 @@
    "at": [
     "path.host.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Summons and auras reach 20% wider, and they come 10% sooner.",
    "effects": [
     {
@@ -13389,7 +13389,7 @@
    "at": [
     "path.host.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When you fall below half health, the skill you pick fires once, free (at most every 4 s).",
    "effects": [
     {
@@ -13419,7 +13419,7 @@
    "at": [
     "path.host.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Summons stay the night and grow 2% with every kill, to 40%.",
    "price": "You have 1 dash charge.",
    "effects": [
@@ -13447,7 +13447,7 @@
    "at": [
     "path.host.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Summons and auras frighten what they strike one time in ten, and they strike frightened things 15% harder.",
    "effects": [
     {
@@ -13518,7 +13518,7 @@
    "at": [
     "path.host.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Below 35% of health, summons and auras strike 20% harder, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -13738,7 +13738,7 @@
    "at": [
     "path.storm.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Storm and chain skills shock what they strike 15% of the time, and they strike shocked things 20% harder.",
    "effects": [
     {
@@ -13809,7 +13809,7 @@
    "at": [
     "path.storm.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Storm and chain skills reach 15% wider, and they last 20% longer.",
    "effects": [
     {
@@ -13849,7 +13849,7 @@
    "at": [
     "path.storm.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When a shocked thing dies, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -13880,7 +13880,7 @@
    "at": [
     "path.storm.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Storm and chain skills strike the nearest champion first, and 40% harder.",
    "price": "Missiles strike you 25% harder.",
    "effects": [
@@ -13907,7 +13907,7 @@
    "at": [
     "path.storm.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Storm and chain skills come 12% sooner, and standing still they strike 15% harder.",
    "effects": [
     {
@@ -13977,7 +13977,7 @@
    "at": [
     "path.storm.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Above 80% of health, storm and chain skills strike 20% harder, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -14196,7 +14196,7 @@
    "at": [
     "path.grave.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Shadow and rot skills last 25% longer, and they strike poisoned things 15% harder.",
    "effects": [
     {
@@ -14266,7 +14266,7 @@
    "at": [
     "path.grave.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Shadow and rot skills frighten what they strike one time in eight, and they strike frightened things 15% harder.",
    "effects": [
     {
@@ -14308,7 +14308,7 @@
    "at": [
     "path.grave.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "On every 15th kill, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -14339,7 +14339,7 @@
    "at": [
     "path.grave.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Kills by shadow skills mend 1% of health.",
    "price": "Nothing else mends you.",
    "effects": [
@@ -14365,7 +14365,7 @@
    "at": [
     "path.grave.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Below 35% of health, shadow and rot skills strike 25% harder, and they reach 12% wider.",
    "effects": [
     {
@@ -14435,7 +14435,7 @@
    "at": [
     "path.grave.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Shadow and rot skills come 12% sooner, and standing still they strike 15% harder.",
    "effects": [
     {
@@ -14654,7 +14654,7 @@
    "at": [
     "path.weave.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Arcane and orbit skills come 12% sooner, and standing still they strike 12% harder.",
    "effects": [
     {
@@ -14724,7 +14724,7 @@
    "at": [
     "path.weave.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Arcane and orbit skills mark what they strike one time in five, and they strike marked things 15% harder.",
    "effects": [
     {
@@ -14766,7 +14766,7 @@
    "at": [
     "path.weave.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "After 1.5 s standing still, the skill you pick fires once, free (at most every 8 s).",
    "effects": [
     {
@@ -14797,7 +14797,7 @@
    "at": [
     "path.weave.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Arcane skills come 30% sooner.",
    "price": "Each arcane firing costs 1% of health.",
    "effects": [
@@ -14824,7 +14824,7 @@
    "at": [
     "path.weave.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Arcane and orbit skills reach 20% wider, and they last 20% longer.",
    "effects": [
     {
@@ -14893,7 +14893,7 @@
    "at": [
     "path.weave.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Above 80% of health, arcane and orbit skills strike 20% harder, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -15112,7 +15112,7 @@
    "at": [
     "path.pyre.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Fire and explosion skills set what they strike burning one time in five, and they strike burning things 15% harder.",
    "effects": [
     {
@@ -15183,7 +15183,7 @@
    "at": [
     "path.pyre.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Fire and explosion skills reach 20% wider, and they come 10% sooner.",
    "effects": [
     {
@@ -15223,7 +15223,7 @@
    "at": [
     "path.pyre.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When a burning thing dies, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -15254,7 +15254,7 @@
    "at": [
     "path.pyre.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Burning ground never harms you, and standing in it you strike 25% harder.",
    "price": "Your burns last half as long.",
    "effects": [
@@ -15281,7 +15281,7 @@
    "at": [
     "path.pyre.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Standing in burning ground, fire and explosion skills strike 25% harder, and they last 20% longer.",
    "effects": [
     {
@@ -15351,7 +15351,7 @@
    "at": [
     "path.pyre.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Fire and explosion skills strike chilled things 15% harder, and their kills mend 0.4% of health.",
    "effects": [
     {
@@ -15571,7 +15571,7 @@
    "at": [
     "path.rime.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Frost and zone skills freeze what they strike one time in twenty, and they strike frozen things 15% harder.",
    "effects": [
     {
@@ -15642,7 +15642,7 @@
    "at": [
     "path.rime.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Frost and zone skills last 25% longer, and they reach 15% wider.",
    "effects": [
     {
@@ -15682,7 +15682,7 @@
    "at": [
     "path.rime.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When a frozen thing dies, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -15713,7 +15713,7 @@
    "at": [
     "path.rime.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Frost skills freeze in half the time.",
    "price": "You can't be mended while you stand still.",
    "effects": [
@@ -15739,7 +15739,7 @@
    "at": [
     "path.rime.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Frost and zone skills strike chilled things 20% harder, and they come 10% sooner.",
    "effects": [
     {
@@ -15809,7 +15809,7 @@
    "at": [
     "path.rime.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Above 80% of health, frost and zone skills strike 20% harder, and their kills mend 0.3% of health.",
    "effects": [
     {
@@ -16027,7 +16027,7 @@
    "at": [
     "path.wild.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Nature and healing skills bind what they strike one time in ten, and they strike Bound things 15% harder.",
    "effects": [
     {
@@ -16098,7 +16098,7 @@
    "at": [
     "path.wild.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "While you move, nature and healing skills strike 20% harder, and they come 10% sooner.",
    "effects": [
     {
@@ -16139,7 +16139,7 @@
    "at": [
     "path.wild.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When you dash, the skill you pick fires once, free (at most every 6 s).",
    "effects": [
     {
@@ -16169,7 +16169,7 @@
    "at": [
     "path.wild.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "While you move, nature skills strike 40% harder.",
    "price": "You can't block or strike true.",
    "effects": [
@@ -16195,7 +16195,7 @@
    "at": [
     "path.wild.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Nature and healing skills last 20% longer, and their kills mend 0.4% of health.",
    "effects": [
     {
@@ -16264,7 +16264,7 @@
    "at": [
     "path.wild.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Nature and healing skills reach 20% wider, and they strike poisoned things 15% harder.",
    "effects": [
     {
@@ -16484,7 +16484,7 @@
    "at": [
     "path.hunt.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Standing still, ranged skills and projectiles strike 20% harder, and they come 10% sooner.",
    "effects": [
     {
@@ -16554,7 +16554,7 @@
    "at": [
     "path.hunt.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Ranged skills and projectiles make what they strike bleed one time in six, and they strike bleeding things 15% harder.",
    "effects": [
     {
@@ -16596,7 +16596,7 @@
    "at": [
     "path.hunt.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When a champion dies, the skill you pick fires once, free (at most every 4 s).",
    "effects": [
     {
@@ -16626,7 +16626,7 @@
    "at": [
     "path.hunt.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Blows from beyond 10 m strike 35% harder.",
    "price": "Blows within 4 m strike 35% softer.",
    "effects": [
@@ -16655,7 +16655,7 @@
    "at": [
     "path.hunt.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Ranged skills and projectiles bind what they strike one time in twenty, and they strike Bound things 20% harder.",
    "effects": [
     {
@@ -16726,7 +16726,7 @@
    "at": [
     "path.hunt.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Ranged skills and projectiles loose 1 more projectile.",
    "effects": [
     {
@@ -16933,7 +16933,7 @@
    "at": [
     "path.dawn.s1"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Holy and beam skills sear what they strike one time in five, and they strike seared things 15% harder.",
    "effects": [
     {
@@ -17004,7 +17004,7 @@
    "at": [
     "path.dawn.s2"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Holy and beam skills reach 20% wider, and they last 20% longer.",
    "effects": [
     {
@@ -17044,7 +17044,7 @@
    "at": [
     "path.dawn.s3"
    ],
-   "gate": 8,
+   "gate": 4,
    "text": "When you press a Flare, the skill you pick fires once, free (at most every 4 s).",
    "effects": [
     {
@@ -17074,7 +17074,7 @@
    "at": [
     "path.dawn.s4"
    ],
-   "gate": 16,
+   "gate": 7,
    "text": "Holy skills sear what they strike, and a seared thing that dies mends 0.3% of health.",
    "price": "By night, holy skills come 20% slower.",
    "effects": [
@@ -17101,7 +17101,7 @@
    "at": [
     "path.dawn.s5"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "Standing still, holy and beam skills strike 20% harder, and they come 10% sooner.",
    "effects": [
     {
@@ -17171,7 +17171,7 @@
    "at": [
     "path.dawn.s6"
    ],
-   "gate": 8,
+   "gate": 3,
    "text": "At full health, holy and beam skills strike 15% harder, and their kills mend 0.4% of health.",
    "effects": [
     {

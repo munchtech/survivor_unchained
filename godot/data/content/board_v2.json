@@ -506,7 +506,7 @@
    "at": [
     "reaver.red_tide"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "reaver.banked_flame",
@@ -521,7 +521,7 @@
    "at": [
     "reaver.not_done_yet"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "reaver.hand1",
@@ -804,7 +804,7 @@
    "at": [
     "arcanist.spellward"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "arcanist.banked_flame",
@@ -819,7 +819,7 @@
    "at": [
     "arcanist.glass_clutch"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "arcanist.hand1",
@@ -1102,7 +1102,7 @@
    "at": [
     "stalker.smoke_bomb"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "stalker.banked_flame",
@@ -1117,7 +1117,7 @@
    "at": [
     "stalker.into_the_smoke"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "stalker.hand1",
@@ -1400,7 +1400,7 @@
    "at": [
     "warden.braced"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "warden.banked_flame",
@@ -1415,7 +1415,7 @@
    "at": [
     "warden.last_at_the_crossing"
    ],
-   "gate": 16
+   "gate": 8
   },
   {
    "id": "warden.hand1",
@@ -5345,7 +5345,7 @@
    "at": [
     "reaver.bridge.s1"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "reaver.bridge.s2",
@@ -5375,7 +5375,7 @@
    "at": [
     "reaver.bridge.s2"
    ],
-   "gate": 16
+   "gate": 4
   },
   {
    "id": "reaver.bridge.hook_and_hatchet",
@@ -5390,7 +5390,7 @@
    "at": [
     "reaver.bridge.s2"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "reaver.bridge.s3",
@@ -5466,7 +5466,7 @@
    "at": [
     "arcanist.bridge.s1"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "arcanist.bridge.s2",
@@ -5496,7 +5496,7 @@
    "at": [
     "arcanist.bridge.s2"
    ],
-   "gate": 16
+   "gate": 4
   },
   {
    "id": "arcanist.bridge.cold_moon",
@@ -5511,7 +5511,7 @@
    "at": [
     "arcanist.bridge.s2"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "arcanist.bridge.s3",
@@ -5587,7 +5587,7 @@
    "at": [
     "stalker.bridge.s1"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "stalker.bridge.s2",
@@ -5617,7 +5617,7 @@
    "at": [
     "stalker.bridge.s2"
    ],
-   "gate": 16
+   "gate": 4
   },
   {
    "id": "stalker.bridge.knife_and_fletch",
@@ -5632,7 +5632,7 @@
    "at": [
     "stalker.bridge.s2"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "stalker.bridge.s3",
@@ -5708,7 +5708,7 @@
    "at": [
     "warden.bridge.s1"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "warden.bridge.s2",
@@ -5738,7 +5738,7 @@
    "at": [
     "warden.bridge.s2"
    ],
-   "gate": 16
+   "gate": 4
   },
   {
    "id": "warden.bridge.oath_and_bell",
@@ -5753,7 +5753,7 @@
    "at": [
     "warden.bridge.s2"
    ],
-   "gate": 8
+   "gate": 2
   },
   {
    "id": "warden.bridge.s3",
@@ -5841,7 +5841,7 @@
    "at": [
     "shambles.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "shambles.cleavers_weight",
@@ -5855,7 +5855,7 @@
    "at": [
     "shambles.opened_up"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "shambles.s2",
@@ -5926,7 +5926,7 @@
    "at": [
     "shambles.opened_up"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "shambles.link",
@@ -5940,7 +5940,7 @@
    "at": [
     "shambles.cleavers_weight"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "night_road.a1",
@@ -5982,7 +5982,7 @@
    "at": [
     "night_road.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "night_road.moon_on_the_chain",
@@ -5996,7 +5996,7 @@
    "at": [
     "night_road.lightning_leaps_the_chain"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "night_road.s2",
@@ -6067,7 +6067,7 @@
    "at": [
     "night_road.lightning_leaps_the_chain"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "night_road.link",
@@ -6081,7 +6081,7 @@
    "at": [
     "night_road.moon_on_the_chain"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "firebreak.a1",
@@ -6123,7 +6123,7 @@
    "at": [
     "firebreak.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "firebreak.frozen_snares",
@@ -6137,7 +6137,7 @@
    "at": [
     "firebreak.fire_arrows"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "firebreak.s2",
@@ -6208,7 +6208,7 @@
    "at": [
     "firebreak.fire_arrows"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "firebreak.link",
@@ -6222,7 +6222,7 @@
    "at": [
     "firebreak.frozen_snares"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "duelists_road.a1",
@@ -6264,7 +6264,7 @@
    "at": [
     "duelists_road.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "duelists_road.return_cut",
@@ -6278,7 +6278,7 @@
    "at": [
     "duelists_road.parry"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "duelists_road.s2",
@@ -6349,7 +6349,7 @@
    "at": [
     "duelists_road.parry"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "duelists_road.link",
@@ -6363,7 +6363,7 @@
    "at": [
     "duelists_road.return_cut"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "vigil.a1",
@@ -6405,7 +6405,7 @@
    "at": [
     "vigil.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "vigil.rite1",
@@ -6433,7 +6433,7 @@
    "at": [
     "vigil.n1"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "vigil.a2",
@@ -6475,7 +6475,7 @@
    "at": [
     "vigil.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "vigil.rite2",
@@ -6503,7 +6503,7 @@
    "at": [
     "vigil.n2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "poachers.a1",
@@ -6545,7 +6545,7 @@
    "at": [
     "poachers.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "poachers.rite1",
@@ -6573,7 +6573,7 @@
    "at": [
     "poachers.n1"
    ],
-   "gate": 16
+   "gate": 5
   },
   {
    "id": "poachers.a2",
@@ -6615,7 +6615,7 @@
    "at": [
     "poachers.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "poachers.rite2",
@@ -6643,7 +6643,7 @@
    "at": [
     "poachers.n2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "ford.hub",
@@ -6674,7 +6674,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 8
+   "gate": 1
   },
   {
    "id": "ford.n2",
@@ -6688,7 +6688,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 8
+   "gate": 1
   },
   {
    "id": "ford.unhoused",
@@ -6702,7 +6702,7 @@
    "at": [
     "ford.hub"
    ],
-   "gate": 16
+   "gate": 3
   },
   {
    "id": "ford.s1",
@@ -6829,7 +6829,7 @@
    "at": [
     "path.steel.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.steel.rite1",
@@ -6857,7 +6857,7 @@
    "at": [
     "path.steel.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.steel.link",
@@ -6871,7 +6871,7 @@
    "at": [
     "path.steel.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.steel.blue",
@@ -6885,7 +6885,7 @@
    "at": [
     "path.steel.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.steel.n3",
@@ -6899,7 +6899,7 @@
    "at": [
     "path.steel.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.steel.rite2",
@@ -6927,7 +6927,7 @@
    "at": [
     "path.steel.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.host.s1",
@@ -7026,7 +7026,7 @@
    "at": [
     "path.host.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.host.rite1",
@@ -7054,7 +7054,7 @@
    "at": [
     "path.host.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.host.link",
@@ -7068,7 +7068,7 @@
    "at": [
     "path.host.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.host.blue",
@@ -7082,7 +7082,7 @@
    "at": [
     "path.host.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.host.n3",
@@ -7096,7 +7096,7 @@
    "at": [
     "path.host.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.host.rite2",
@@ -7124,7 +7124,7 @@
    "at": [
     "path.host.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.storm.s1",
@@ -7223,7 +7223,7 @@
    "at": [
     "path.storm.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.storm.rite1",
@@ -7251,7 +7251,7 @@
    "at": [
     "path.storm.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.storm.link",
@@ -7265,7 +7265,7 @@
    "at": [
     "path.storm.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.storm.blue",
@@ -7279,7 +7279,7 @@
    "at": [
     "path.storm.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.storm.n3",
@@ -7293,7 +7293,7 @@
    "at": [
     "path.storm.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.storm.rite2",
@@ -7321,7 +7321,7 @@
    "at": [
     "path.storm.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.grave.s1",
@@ -7420,7 +7420,7 @@
    "at": [
     "path.grave.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.grave.rite1",
@@ -7448,7 +7448,7 @@
    "at": [
     "path.grave.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.grave.link",
@@ -7462,7 +7462,7 @@
    "at": [
     "path.grave.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.grave.blue",
@@ -7476,7 +7476,7 @@
    "at": [
     "path.grave.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.grave.n3",
@@ -7490,7 +7490,7 @@
    "at": [
     "path.grave.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.grave.rite2",
@@ -7518,7 +7518,7 @@
    "at": [
     "path.grave.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.weave.s1",
@@ -7617,7 +7617,7 @@
    "at": [
     "path.weave.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.weave.rite1",
@@ -7645,7 +7645,7 @@
    "at": [
     "path.weave.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.weave.link",
@@ -7659,7 +7659,7 @@
    "at": [
     "path.weave.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.weave.blue",
@@ -7673,7 +7673,7 @@
    "at": [
     "path.weave.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.weave.n3",
@@ -7687,7 +7687,7 @@
    "at": [
     "path.weave.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.weave.rite2",
@@ -7715,7 +7715,7 @@
    "at": [
     "path.weave.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.pyre.s1",
@@ -7814,7 +7814,7 @@
    "at": [
     "path.pyre.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.pyre.rite1",
@@ -7842,7 +7842,7 @@
    "at": [
     "path.pyre.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.pyre.link",
@@ -7856,7 +7856,7 @@
    "at": [
     "path.pyre.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.pyre.blue",
@@ -7870,7 +7870,7 @@
    "at": [
     "path.pyre.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.pyre.n3",
@@ -7884,7 +7884,7 @@
    "at": [
     "path.pyre.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.pyre.rite2",
@@ -7912,7 +7912,7 @@
    "at": [
     "path.pyre.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.rime.s1",
@@ -8011,7 +8011,7 @@
    "at": [
     "path.rime.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.rime.rite1",
@@ -8039,7 +8039,7 @@
    "at": [
     "path.rime.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.rime.link",
@@ -8053,7 +8053,7 @@
    "at": [
     "path.rime.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.rime.blue",
@@ -8067,7 +8067,7 @@
    "at": [
     "path.rime.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.rime.n3",
@@ -8081,7 +8081,7 @@
    "at": [
     "path.rime.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.rime.rite2",
@@ -8109,7 +8109,7 @@
    "at": [
     "path.rime.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.wild.s1",
@@ -8208,7 +8208,7 @@
    "at": [
     "path.wild.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.wild.rite1",
@@ -8236,7 +8236,7 @@
    "at": [
     "path.wild.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.wild.link",
@@ -8250,7 +8250,7 @@
    "at": [
     "path.wild.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.wild.blue",
@@ -8264,7 +8264,7 @@
    "at": [
     "path.wild.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.wild.n3",
@@ -8278,7 +8278,7 @@
    "at": [
     "path.wild.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.wild.rite2",
@@ -8306,7 +8306,7 @@
    "at": [
     "path.wild.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.hunt.s1",
@@ -8405,7 +8405,7 @@
    "at": [
     "path.hunt.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.hunt.rite1",
@@ -8433,7 +8433,7 @@
    "at": [
     "path.hunt.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.hunt.link",
@@ -8447,7 +8447,7 @@
    "at": [
     "path.hunt.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.hunt.blue",
@@ -8461,7 +8461,7 @@
    "at": [
     "path.hunt.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.hunt.n3",
@@ -8475,7 +8475,7 @@
    "at": [
     "path.hunt.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.hunt.rite2",
@@ -8503,7 +8503,7 @@
    "at": [
     "path.hunt.s6"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.dawn.s1",
@@ -8602,7 +8602,7 @@
    "at": [
     "path.dawn.s1"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.dawn.rite1",
@@ -8630,7 +8630,7 @@
    "at": [
     "path.dawn.s2"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.dawn.link",
@@ -8644,7 +8644,7 @@
    "at": [
     "path.dawn.s3"
    ],
-   "gate": 8
+   "gate": 4
   },
   {
    "id": "path.dawn.blue",
@@ -8658,7 +8658,7 @@
    "at": [
     "path.dawn.s4"
    ],
-   "gate": 16
+   "gate": 7
   },
   {
    "id": "path.dawn.n3",
@@ -8672,7 +8672,7 @@
    "at": [
     "path.dawn.s5"
    ],
-   "gate": 8
+   "gate": 3
   },
   {
    "id": "path.dawn.rite2",
@@ -8700,7 +8700,7 @@
    "at": [
     "path.dawn.s6"
    ],
-   "gate": 8
+   "gate": 3
   }
  ]
 }
