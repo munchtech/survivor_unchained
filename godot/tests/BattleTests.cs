@@ -106,15 +106,15 @@ public class BattleTests
     [Fact]
     public void A_crowd_is_dangerous_not_lethal()
     {
-        // One seed is a coin toss; the contract is about the odds.
+        // One seed is a coin toss; the contract is about the odds (75%: 16 seeds, the draft pool is large).
         int alive = 0;
-        for (uint seed = 1; seed <= 8; seed++)
+        for (uint seed = 1; seed <= 16; seed++)
         {
             var b = Arena(seed);
             Simulate(b, 60);
             if (b.Player.Alive) alive++;
         }
-        Assert.True(alive >= 6, $"survived {alive} of 8");
+        Assert.True(alive >= 12, $"survived {alive} of 16");
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public class DraftTests
     [Fact]
     public void Fills_with_passives_and_honing_once_every_combat_skill_is_finished()
     {
-        var b = BattleTests.Arena(12, Content.Weapons.Pool.Take(Content.Weapons.MaxWeapons).Select(id => (id, Content.Weapons.MaxRank)).ToArray());
+        var b = BattleTests.Arena(12, Evolving().Take(Content.Weapons.MaxWeapons).Select(id => (id, Content.Weapons.MaxRank)).ToArray());
         b.EmberLevel = 3; b.PendingLevels = 1;
         foreach (var w in b.Weapons) b.Evolve(w.Id, w.Def.Evolutions[0].Id);
         var offers = LevelUp.Draft(b, 3);
@@ -347,10 +347,14 @@ public class DraftTests
             }
     }
 
+    /// <summary>The findable skills that evolve, in the pool's order (the warden's calling skills have none yet:
+    /// their evolutions are a later phase).</summary>
+    static IEnumerable<string> Evolving() => Content.Weapons.Pool.Where(id => Content.Weapons.All[id].Evolutions.Length > 0);
+
     [Fact]
     public void Evolutions_come_one_weapon_at_a_time()
     {
-        var b = BattleTests.Arena(15, Content.Weapons.Pool.Take(Content.Weapons.MaxWeapons).Select(id => (id, Content.Weapons.MaxRank)).ToArray());
+        var b = BattleTests.Arena(15, Evolving().Take(Content.Weapons.MaxWeapons).Select(id => (id, Content.Weapons.MaxRank)).ToArray());
         foreach (var id in new[] { "duplicity", "precision", "expanse", "perennial", "haste", "velocity" }) b.AddBoon(id);
         b.EmberLevel = 3; b.PendingLevels = 1;
         var evos = LevelUp.Draft(b, 3).Where(o => o.Kind == OfferKind.Evolve).ToList();

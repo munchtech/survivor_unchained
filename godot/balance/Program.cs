@@ -69,7 +69,9 @@ SurvivorUnchained.Rpg.WickBook.Lights = opt.Get("wicks", "suggested") switch
 foreach (var so in opt.List("strands", "").Where(x => x.Contains('=')))
 {
     var (sk, strands) = (so[..so.IndexOf('=')], so[(so.IndexOf('=') + 1)..].Split('/'));
-    (SurvivorUnchained.Content.Wicks.Of(sk) ?? throw new ArgumentException($"--strands {sk}: no wick")).Strands = strands;
+    // (A skill with no wick yet is given one for the run: a Turn measured where no skill carries it.)
+    if (!SurvivorUnchained.Content.Weapons.All.ContainsKey(sk)) throw new ArgumentException($"--strands {sk}: no such skill");
+    SurvivorUnchained.Content.Wicks.SetStrands(sk, strands);
 }
 SurvivorUnchained.Rpg.WickBook.ForceTurn = opt.Get("turn", "") is { Length: > 0 } turn ? turn : null;
 if (SurvivorUnchained.Rpg.WickBook.ForceTurn is { } ft && !SurvivorUnchained.Content.Wicks.Skills.Any(k => SurvivorUnchained.Content.Wicks.StrandsOf(k).Any(x => x.Id == ft)))
@@ -168,6 +170,9 @@ void HandPairs(List<RunSpec> specs, string outPath)
         if (specs.Count < had) Console.WriteLine($"turn pair: {had - specs.Count} arenas dropped (their calling can't carry {turnSkill})");
         Console.WriteLine($"turn pair {turnStrand} on {turnSkill}: on {string.Join(" ", pathOn)} | off {string.Join(" ", pathOff)}");
     }
+    // --pair board (the board measure): off = an empty board and no wicks, on = the full board (lamps: full) and the
+    // wicks Light my way lights; the on run replays the off run's cards. P = all dealt x taken, as the Hand measure.
+    bool board = opt.Get("pair", "0") == "board";
     int skillRank = opt.Int("skillrank", 4);
     ArenaSim.Fixed Fx(bool? hand, List<(double T, Action<SurvivorUnchained.Sim.Battle> Do)>? rep, bool on) => new ArenaSim.Fixed
     {
@@ -178,6 +183,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
     {
         Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.DamageTaken,
         Skill = f.SkillDmg, Elite = f.SkillElite, Boss = f.SkillBoss, f.TurnsOn, f.TurnsDark, By = f.DamageBy, r.Build,
+        r.Blocks, r.RebukeStrikes, r.Tolls, r.BellBarrier, r.MaxHpEnd,
     };
     Console.WriteLine($"{specs.Count} hand pairs (nofall {noFall}, replay {replay}, span {span}), {opt.Int("par", 16)} at a time -> {outPath}");
     var sw = Stopwatch.StartNew();
@@ -187,7 +193,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
     object Side(RunResult r, ArenaSim.Fixed f) => new
     {
         Dmg = r.DamageBy.Values.Sum(), r.DamageRaw, r.Minutes, f.Falls, Low = f.LowSeconds, r.Kills, r.Cards, r.Build,
-        Hand = r.DamageBy.GetValueOrDefault("hand"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
+        Hand = r.DamageBy.GetValueOrDefault("hand"), Wall = r.DamageBy.GetValueOrDefault("wall"), Rebuke = r.DamageBy.GetValueOrDefault("rebuke"), r.DamageTaken,
         Alive = r.ByMinute.Count > 0 ? r.ByMinute.Average(x => x.Alive) : 0,
         TtkF = r.ByMinute.Where(x => !double.IsNaN(x.TtkFodder)).Select(x => x.TtkFodder).DefaultIfEmpty(0).Average(),
         TtkE = r.ByMinute.Where(x => !double.IsNaN(x.TtkElite)).Select(x => x.TtkElite).DefaultIfEmpty(0).Average(),
@@ -197,6 +203,24 @@ void HandPairs(List<RunSpec> specs, string outPath)
     {
         try
         {
+            if (board)
+            {
+                var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = true };
+                var b0 = ArenaSim.Play(spec with { Lamps = "empty" }, boff);
+                // --boardwicks 0: the on run's lamps without its wicks (which half of the board's P is the wicks').
+                // --nowick a,b / --noturn a,b: those skills' wicks off, or their Turns off (lead-ins kept), in the on run.
+                var bon = new ArenaSim.Fixed { NoFall = noFall, Span = span, Replay = replay ? boff.Took : null, NoWicks = nul || opt.Get("boardwicks", "1") == "0",
+                    NoWick = opt.List("nowick", ""), NoTurn = opt.List("noturn", "") };
+                var b1 = ArenaSim.Play(spec with { Lamps = nul ? "empty" : "full" }, bon);
+                lock (gate)
+                {
+                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = TurnSide(b0, boff), On = TurnSide(b1, bon), OffBy = b0.DamageBy, OnBy = b1.DamageBy, OnLamps = b1.LampsLit }));
+                    file.Flush();
+                    done++;
+                    if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");
+                }
+                return;
+            }
             if (turnSkill != null)
             {
                 var toff = Fx(null, null, false);

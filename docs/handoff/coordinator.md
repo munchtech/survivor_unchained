@@ -35,6 +35,8 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 
 - **A `su-lead-max` LEAD needs "Spawning: allowed" as its brief's first line (29 Oct).** The spawn guard reads only the first brief, so without that line it can't start helpers, and a later message can't unlock it (Storybook 2 stopped on this). Judges and solvers don't need it.
 
+- **Lessons from b9e8a09f (2 Nov):** (1) Quiet relays really matter: relaying every lead update filled 250k in one evening; tell the owner only decisions and milestones. (2) Run `ctx.py` on every lead report; don't rely on self-reported cost. (3) Near 200k, don't start successors (VFX 8 wasted ~44k). (4) Before merging any lead branch, check `git ls-tree <branch> godot/assets` is a 120000 symlink: classes-15 had committed the junction's contents as 861 files and the merge aborted; fix on the branch with `git rm -r --cached godot/assets` + `git update-index --add --cacheinfo 120000,<blob>,godot/assets`. (5) `dotnet test` on the .sln runs nothing: use `godot/tests/Tests.csproj`.
+
 ## The owner
 - Pronouns: they/them unless the owner says otherwise. Some leads wrote "he"; don't repeat it.
 - Short, plain updates: what changed, what's next, and any decision that's theirs. Pictures over descriptions.

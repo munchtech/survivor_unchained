@@ -225,6 +225,8 @@ public sealed class CreationDraft
 {
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
+    /// <summary>The calling's type (a road's id in lamps.json): the first of its calling until chosen.</summary>
+    public string Type = "";
     public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "braid";
     /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or "".</summary>
     public string BeardStyle = "";
@@ -247,7 +249,7 @@ public sealed class CreationDraft
 
     public CreationChoice Choice() => new()
     {
-        Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability,
+        Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability, Type = Type,
         Headgear = Headgear, Cloak = Cloak, Skin = Skin, Hair = Hair, Sex = Sex, HairStyle = HairStyle, Beard = Beard, Figure = Figure,
         // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
@@ -336,6 +338,7 @@ public partial class CreateScreen : Overlay
     {
         var a = Callings.Archetype(id);
         d.Archetype = id; d.WeaponItem = a.Weapons[0]; d.Ability = a.Abilities[0]; d.Palette = a.Palettes[0].Id; d.Model = a.Model; d.Headgear = true;
+        d.Type = Content.Lamps.RoadsOf(id).FirstOrDefault()?.Id ?? "";
     }
 
     bool CanBegin => d.Name.Trim().Length > 0;
@@ -540,7 +543,18 @@ public partial class CreateScreen : Overlay
 
     Control Arms(Archetype a)
     {
-        var v = Style.V(Style.Gap2, Kit.Head("Weapon"));
+        var v = Style.V(Style.Gap2, Kit.Head("Type"));
+        var roads = Content.Lamps.RoadsOf(a.Id).ToList();
+        // (a fresh draft, or a save's calling with no type yet: its first road, as Character.Create reads it)
+        if (!roads.Any(r => r.Id == d.Type)) d.Type = roads.FirstOrDefault()?.Id ?? "";
+        v.AddChild(Flow(roads.Select(rd => (TypeName(rd), d.Type == rd.Id, (Action)(() => { var id = rd.Id; Set(() => { d.Section = 1; d.Type = id; }); }), $"type:{rd.Id}"))));
+        if (Content.Lamps.Roads.GetValueOrDefault(d.Type) is { } road)
+        {
+            var learns = Character.FirstCallingSkill(a.Id, d.Type, d.WeaponItem);
+            v.AddChild(Note(road.Line + (learns != null && Weapons.All.TryGetValue(learns, out var sk) ? $" · learns {sk.Name}" : "")));
+        }
+        v.AddChild(Style.Gap(Style.Gap1));
+        v.AddChild(Kit.Head("Weapon"));
         weaponRowH = 0;
         foreach (var id in a.Weapons)
         {
@@ -638,6 +652,8 @@ public partial class CreateScreen : Overlay
             Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))));
     }
 
+    static string TypeName(RoadDef rd) => rd.Name.StartsWith("Road of the ") ? rd.Name["Road of the ".Length..] : rd.Name;
+
     Control ArmsDetail()
     {
         var it = Items.Get(d.WeaponItem);
@@ -651,6 +667,7 @@ public partial class CreateScreen : Overlay
         if (it.Lore != null) v.AddChild(DBody(it.Lore, true));
         if (w != null && w.Evolutions.Length > 0)
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
+        if (Content.Lamps.Roads.GetValueOrDefault(d.Type) is { } rd) v.AddChild(Line("Type", $"{TypeName(rd)} · {rd.Line}"));
         v.AddChild(Kit.RuleH());
         // The art in hand: its mark, its name and key, what it does.
         var name = Style.H(Style.Gap2, Style.Label(ab.Name.ToUpperInvariant(), Style.Display, 18, Kit.Ink, false, HorizontalAlignment.Left, false), Style.Prompt(Act.Flare));

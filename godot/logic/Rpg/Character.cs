@@ -608,6 +608,7 @@ public static class Character
         ArtBook.HoldKin(ch);
         LampBook.Begin(ch, c.Type);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
+        LearnFirstCalling(ch, a, c.WeaponItem);
         foreach (var id in bg.Items)
         {
             var it = Inventory.Make(ch, id);
@@ -617,6 +618,34 @@ public static class Character
         }
         Inventory.AddToPack(ch, Inventory.Make(ch, "health_draught", qty: 2));
         return ch;
+    }
+
+    static string? SkillOfItem(string? item) => item != null && Items.All.ContainsKey(item) ? Items.Get(item).Weapon?.Id : null;
+
+    /// <summary>The type's first calling skill the calling can carry that is not the grip's own skill
+    /// (what creation teaches; the creation screen names it). Null when the road has none.</summary>
+    public static string? FirstCallingSkill(string archetype, string type, string? gripItem)
+    {
+        string? grip = SkillOfItem(gripItem);
+        var road = Content.Lamps.Roads.GetValueOrDefault(type);
+        return (road?.Skills ?? []).FirstOrDefault(id => id != grip && Content.Weapons.All.ContainsKey(id) && Weapons.CanCarry(archetype, id));
+    }
+
+    /// <summary>The second day skill at level 1 (CLASS_IDENTITY_AND_TALENTS.md §3.7): her type's first
+    /// calling skill that she can carry and does not already hold as her grip; else her archetype's
+    /// other starting weapon's skill. Creation only: old saves are untouched.</summary>
+    static void LearnFirstCalling(CharacterData ch, Archetype a, string? gripItem)
+    {
+        string? grip = SkillOfItem(gripItem);
+        var pick = FirstCallingSkill(ch.Archetype, ch.Lamps?.Now.Type ?? "", gripItem);
+        pick ??= a.Weapons.Select(SkillOfItem).FirstOrDefault(id => id != null && id != grip && Content.Weapons.All.ContainsKey(id) && SkillBook.Carries(ch, id));
+        if (pick == null) return;
+        if (!ch.Discovered.Contains(pick)) ch.Discovered.Add(pick);
+        if (!SkillBook.Learn(ch, pick) && !SkillBook.Knows(ch, pick))
+        {
+            ch.Skills.Add(pick);
+            if (ch.Slotted.Count < SkillBook.Slots(ch)) ch.Slotted.Add(pick);
+        }
     }
 
     static string ToBase36(long v)

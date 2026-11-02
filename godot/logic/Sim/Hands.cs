@@ -78,6 +78,8 @@ public sealed partial class Battle
             s.T = Math.Max(s.T, h.Stun);
         }
         HandEv(HandKind.Heavy, e.X, e.Z, e.Id);
+        // Oath and Bell: a stagger rings the Watch Bell.
+        BellOnStagger();
     }
 
     /// <summary>A Holy skill struck a champion: a Stone, once per champion per firing.</summary>
