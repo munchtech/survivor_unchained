@@ -60,6 +60,13 @@ On open, the board is at the Road stop, centered where she left off; the first t
 5. Everything else: cold glass on silver roads.
 6. Labels: low contrast, letterspaced Cinzel caps.
 
+**Her light reaches so far ("Lamps are lit. Stay where they reach.").** Unlit lamps fade with their road distance from her lit lamps:
+- within 3 steps: 100%;
+- 4-8 steps: 65%;
+- past 8: 40% (the other callings' quarters, until she walks there).
+
+A blue lamp past 3 steps keeps its 4-prong collet but loses its cobalt glow. Gate notches show only within 3 steps, and on the focused lamp's road. Seen in the first mock: without this, the Road stop read as icon soup, with 45 blue dots and every gate numeral competing with her build.
+
 **Kind by shape, state by light; color only for meaning.** These silhouettes are shared by all directions. Diameters are at the Road stop.
 
 | Kind | Shape | Size |
