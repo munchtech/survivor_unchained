@@ -243,6 +243,7 @@ public partial class FlareFx : Node3D
         if (Stop > 0) Stop = Math.Max(0, Stop - dt);
         if (!Frozen && ramp < 1) ramp = Math.Min(1, ramp + dt / 0.08 * 0.92);
         if (b != null && !Active) Ready(b, fdt);
+        LcWarmStep();
         if (Active)
         {
             t += Stop > 0 ? dt * 0.1 : dt;
@@ -295,6 +296,7 @@ public partial class FlareFx : Node3D
     {
         bool full = b.Flare != null && b.FlareMeter >= Battle.FlareFull;
         headLight.LightEnergy = Mathf.MoveToward(headLight.LightEnergy, full ? 0.5f + 0.35f * Mathf.Sin((float)readyT * Mathf.Tau * 0.5f) : 0, dt * 3);
+        if (!lcWarmed && b.Flare?.Id == LongCutId) LcWarmStart();
         if (!full) return;
         readyT += dt;
         var head = Head();
@@ -452,7 +454,7 @@ public partial class FlareFx : Node3D
     double DropsShow(Vector3 w)
     {
         // (the Long Cut's wait until the seam has cooled to red, rippling out from the line: r1's hundred orbs buried it)
-        if (IsLongCut) return lcCleaveT < 0 ? Held : lcCleaveT + 2.2 + 0.05 * Math.Min(12, Math.Abs(SeamAcross(w)));
+        if (IsLongCut) return lcCleaveT < 0 ? Held : lcCleaveT + 3.5 + 0.05 * Math.Min(12, Math.Abs(SeamAcross(w)));
         if (id != "burns_twice") return 0;
         if (lastAt <= 0) return Held;
         return lastAt + 4.2 + 0.6 * Mathf.Clamp(new Vector2(w.X - Her.X, w.Z - Her.Z).Length() / Math.Max(1, reach), 0, 1);

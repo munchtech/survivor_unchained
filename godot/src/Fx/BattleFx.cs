@@ -2081,7 +2081,7 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 4);
-                    float s = EmberSizes[tier];
+                    float s = EmberSizes[tier] * Flare.DropScale;
                     if (tier == 4)
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
@@ -2100,7 +2100,7 @@ public partial class BattleFx : Node3D
                     break;
                 }
                 case PickupKind.Gold:
-                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
+                    coins.Add(new Transform3D((spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2)).Scaled(Vector3.One * Flare.DropScale), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
                     break;
                 case PickupKind.Heal:
                     flasks.Add(new Transform3D(spin, V(kx, gy + 0.35 + bob, kz)), Colors.White);

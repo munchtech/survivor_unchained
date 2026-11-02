@@ -168,7 +168,9 @@ void fragment() {
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 		// (The Long Cut's burn-up is dawn-gold, its fire not the ember's orange: FlareFx.LongCut.)
 		float lc_gold = flare_lc.x > 0.0 ? 1.0 : 0.0;
-		e += mix(vec3(1.0, 0.3, 0.03), vec3(1.0, 0.62, 0.2), lc_gold) * tongue + mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.7, 0.32), lc_gold) * pow(rim, 3.0) * fx.w * 0.5;
+		// (night: the struck bodies' glow at 0.6, the Long Cut's luminance cap; flare_lc.w is night)
+		float lc_night = lc_gold > 0.5 ? mix(1.0, 0.6, flare_lc.w) : 1.0;
+		e += (mix(vec3(1.0, 0.3, 0.03), vec3(1.0, 0.62, 0.2), lc_gold) * tongue + mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.7, 0.32), lc_gold) * pow(rim, 3.0) * fx.w * 0.5) * lc_night;
 	}
 	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
 	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An

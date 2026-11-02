@@ -44,7 +44,7 @@ public partial class FlareFx
     /// <summary>Real seconds since the press (the struck's flash and the pictures' spacing run on it, not the Flare's clock).</summary>
     double lcRt;
     ulong lcLastUs;
-    double lcMsSum, lcMsMax;
+    double lcMsSum, lcMsMax, lcMsMaxClean;
     int lcMsN;
     bool lcMsSaid;
     /// <summary>Look-dev: the Long Cut's lights scaled (LC_LIGHT).</summary>
@@ -88,6 +88,57 @@ public partial class FlareFx
         return l;
     }
 
+    // The warm-up: when the Long Cut first stands ready, its lights, dust flipbook and chunk meshes are drawn once, tiny
+    // and in view, for 3 frames, so the press does not pay the first-use compiles (740-990 ms spikes in the shot).
+    static bool lcWarmed;
+    int lcWarmFrames;
+    readonly List<Node> lcWarmNodes = new();
+
+    void LcWarmStart()
+    {
+        lcWarmed = true;
+        lcWarmFrames = 3;
+        LcArtStart();
+        lcTrailA ??= LcLightNew(false);
+        lcTrailB ??= LcLightNew(false);
+        lcHerLight ??= LcLightNew(true);
+        if (lcBooks == null) { lcBooks = new Flipbooks(); AddChild(lcBooks); }
+        var p = Her + Vector3.Up * 1.2f;
+        foreach (var l in new[] { lcHerLight, spendLight })
+        {
+            l.GlobalPosition = p; l.OmniRange = 3; l.LightEnergy = 0.001f; l.ShadowEnabled = LcShadows; l.Visible = true;
+        }
+        var meshes = ChunkMeshes();
+        var hot = new StandardMaterial3D
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha, BlendMode = BaseMaterial3D.BlendModeEnum.Add,
+            AlbedoColor = new Color(1f, 0.6f, 0.22f, 0.01f),
+        };
+        var node = new MeshInstance3D { Mesh = meshes[0], MaterialOverlay = hot, CastShadow = GeometryInstance3D.ShadowCastingSetting.On, Scale = Vector3.One * 0.01f };
+        AddChild(node);
+        node.GlobalPosition = p;
+        lcWarmNodes.Add(node);
+        lcWarmChunk = node;
+        foreach (var n in new[] { "lc_dust", "smoke_puff" })
+            lcBooks.Spawn(n, p, 0.02f, 0.1f, new Color(0, 0, 0, 0.01f), false, 0.02f, float.NaN, 0, Vector3.Zero);
+    }
+    MeshInstance3D? lcWarmChunk;
+
+    void LcWarmStep()
+    {
+        if (lcWarmFrames <= 0) return;
+        if (--lcWarmFrames > 0) return;
+        foreach (var n in lcWarmNodes) if (IsInstanceValid(n)) n.QueueFree();
+        lcWarmNodes.Clear();
+        if (!Active)
+        {
+            foreach (var l in new[] { lcHerLight, spendLight }) if (l != null) { l.LightEnergy = 0; l.Visible = l == spendLight && SpendLightOld; }
+        }
+    }
+
+    /// <summary>For BattleFx.Pickups: the Long Cut's ember drops drawn at 0.6 at night (they dominated the last beats).</summary>
+    public float DropScale => Active && IsLongCut && Night ? 0.6f : 1f;
+
     void LongPress()
     {
         LcArtStart();
@@ -104,7 +155,7 @@ public partial class FlareFx
         lcSmokeAcc = lcSkirtAcc = 0;
         lcRt = 0;
         lcBeat = 0; lcBeatRt = -1; lcBeatFrame = -1;
-        lcLastUs = 0; lcMsSum = lcMsMax = 0; lcMsN = 0; lcMsSaid = false;
+        lcLastUs = 0; lcMsSum = lcMsMax = lcMsMaxClean = 0; lcMsN = 0; lcMsSaid = false;
         // Frame 1: dawn-gold motes off the steel, drawn up it (a hue per calling: the Arcanist's are ember orange).
         for (int i = 0; i < 22; i++)
         {
@@ -164,12 +215,15 @@ public partial class FlareFx
                 var rel = new Vector2(d.Where.X, d.Where.Z) - lcO;
                 float along = Mathf.Clamp(rel.Dot(lcDir), 0, lcLen);
                 d.At = FuseAt(along) + 0.02 + 0.012 * Math.Abs(SeamAcross(d.Where));
+                // (night: the luminance cap, the burn-up spread over 0.4 s by the body's distance from the line, the near first)
+                if (Night) d.At += 0.4 * Mathf.Clamp(Math.Abs(SeamAcross(d.Where)) / Math.Max(1f, lcHalf), 0, 1);
             }
             else
             {
                 float a = Mathf.Atan2(d.Where.Z - at.Z, d.Where.X - at.X);
                 float behind = Mathf.PosMod(a - lcSweepFrom, Mathf.Tau);
                 d.At = t + SweepEase(behind / Mathf.Tau) * SweepLen + 0.02;
+                if (Night) d.At += 0.4 * Mathf.Clamp(new Vector2(d.Where.X - at.X, d.Where.Z - at.Z).Length() / Math.Max(1f, reach), 0, 1);
             }
         }
     }
@@ -273,7 +327,7 @@ public partial class FlareFx
                 spendLight.LightColor = new Color(1f, 0.74f, 0.4f);
                 spendLight.OmniRange = 10;
                 spendLight.ShadowEnabled = LcShadows;
-                spendLight.LightEnergy = (Night ? 1.3f : 1.6f) * Mathf.Max(sweepK, wash * 0.4f) * (LessFlash ? 0.6f : 1) * LcLight;
+                spendLight.LightEnergy = (Night ? 0.65f : 1.6f) * Mathf.Max(sweepK, wash * 0.4f) * (LessFlash ? 0.6f : 1) * LcLight;
                 spendLight.Visible = spendLight.LightEnergy > 0.01f;
             }
             // The skirt: dust kicked up along its leading angle, low.
@@ -293,7 +347,7 @@ public partial class FlareFx
         if (lcSweepT < 0) { spendLight.LightEnergy = 0; spendLight.Visible = SpendLightOld; }
         RenderingServer.GlobalShaderParameterSet("flare_sweep", new Vector4(SweepLead(), sweepK, reach, lcSweepFrom));
         // (night: the core's emission capped, so the line wins by its shape and value and the lights carry the glow)
-        RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, 0));
+        RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, Night ? 1 : 0));
 
         if (lcCleaveT >= 0 && lcLen > 0) SeamTick(dt);
         else
@@ -312,12 +366,15 @@ public partial class FlareFx
             {
                 double ms = (now - lcLastUs) / 1000.0;
                 lcMsSum += ms; lcMsN++; lcMsMax = Math.Max(lcMsMax, ms);
+                bool shotFrame = (long)Engine.GetFramesDrawn() - lcBeatFrame <= 2;
+                if (!shotFrame) lcMsMaxClean = Math.Max(lcMsMaxClean, ms);
+                if (ms > 120) GD.Print($"longcut slow frame {ms:0} ms at flare t {t:0.000} {(shotFrame ? "(picture saved) " : "")}(cleave {(lcCleaveT < 0 ? -1 : t - lcCleaveT):0.000}, struck {doomed.Count}, jets {lcJetN}, chunks {lcChunkN})");
             }
             lcLastUs = now;
             if (!lcMsSaid && lcCleaveT >= 0 && t > lcCleaveT + 1.5)
             {
                 lcMsSaid = true;
-                GD.Print($"longcut frame time press..cleave+1.5s: mean {lcMsSum / Math.Max(1, lcMsN):0.0} ms, max {lcMsMax:0.0} ms over {lcMsN} frames; bits {glow.Count}+{bed.Count}, struck {doomed.Count}");
+                GD.Print($"longcut frame time press..cleave+1.5s: mean {lcMsSum / Math.Max(1, lcMsN):0.0} ms, max {lcMsMax:0.0} ms (max off the picture frames {lcMsMaxClean:0.0} ms) over {lcMsN} frames; bits {glow.Count}+{bed.Count}, struck {doomed.Count}");
             }
             LongBeats();
         }

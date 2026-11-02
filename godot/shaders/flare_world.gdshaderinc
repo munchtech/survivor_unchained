@@ -461,7 +461,7 @@ vec3 flare_sweep_at(vec2 w) {
 	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 3.0;
 	float radial = smoothstep(0.3, 2.0, r) * (1.0 - smoothstep(R * 0.7, R * 1.05, r + wob));
 	float streak = 0.6 + 0.4 * texture(flare_noise, vec2(r * 0.42, a * 0.9)).g;
-	return vec3(1.0, 0.72, 0.38) * (wedge + wash) * radial * streak;
+	return vec3(1.0, 0.72, 0.38) * (wedge + wash) * radial * streak * mix(1.0, 0.5, flare_lc.w);
 }
 
 // The Long Cut's light on a body: the sweep's on its rim as it passes, the seam's from below.
