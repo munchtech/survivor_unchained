@@ -496,3 +496,4 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 
 - **Tam deferred (owner, 1 Nov):** asked whether to start Tam's child body package as a fifth lead: "Not yet". Tam stays out until the owner says go.
 - **VFX study videos (owner, 1 Nov):** "2 more very good videos for vfx to study": 5ZQdZOK8hhg and IPAfyFhDJcA, added to docs/design/SKILL_VFX_REFERENCES.md for the next skills/Flare VFX lead.
+- **Classes restarted (owner, 1 Nov):** "start classes too. we really need to get going on our skill trees and class identity and stuff". Classes 16 takes over classes-15: land P5b+P6+P7-start now, then finish Phase 1 (P7, P8), then a Phase 2 scope.
