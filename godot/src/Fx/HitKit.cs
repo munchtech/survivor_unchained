@@ -22,74 +22,181 @@ public partial class BattleFx
     public static bool IsOath(string? art) => art is "slash_steel" or "slash_holy" or "slash_blood";
 
     /// <summary>The hitstop a blow asks for as the first hit of its swing (seconds; 0 none) and how long after
-    /// the blow it lands (the blade meeting the body, not the swing's first frame). Her auto-attacks' arts only:
-    /// the Disc and Shield Bash add theirs here.</summary>
+    /// the blow it lands: the sweep is revealed over its first 2 frames (OathReveal), so 0.03 s on, the blade
+    /// has passed every body it struck and their flash, streaks, glint and rim are up when the frame holds.
+    /// Her auto-attacks' arts only: the Disc and Shield Bash add theirs here.</summary>
     public static (double Len, double Delay) FirstHitStop(Ev.Hit h) =>
         h.Dot || h.ByFlare || h.Blocked ? (0, 0) : IsOath(h.Art) ? (0.042, 0.03) : (0, 0);
 
     /* ------------------------------------------------------- the sweep -- */
 
     // Her Oathblade's gold, its evolutions' hues (linear, near 1 so the tone curve keeps them a colour;
-    // the white-hot edge is the shader's), and the sparks off what they strike.
+    // the white-hot lead is the shader's), and the sparks off what they strike.
     static readonly Color OathSteel = Hdr("#ffb83a", 1.15f), OathHoly = Hdr("#ffd772", 1.2f), OathBlood = Hdr("#ff2a1a", 1.15f);
     static Color OathHue(string art) => art switch { "slash_holy" => OathHoly, "slash_blood" => OathBlood, _ => OathSteel };
     static Color OathSpark(string art) => art == "slash_blood" ? Blood : art == "slash_holy" ? OathGold : Ember;
 
-    // The swing in flight (for the struck's sparks: flung on along the blade's path), and how many full kits it has thrown.
+    /// <summary>The sweep's inner radius (her hand, metres), its reveal and its erosion (seconds: 2 and 4 frames).</summary>
+    const float OathInner = 0.55f, OathReveal = 2 / 60f, OathErode = 4 / 60f;
+
+    // The swing in flight (for the struck's streaks: flung on along the blade's path), and how many full kits it has thrown.
     Vector3 oathAt;
     bool oathMirror;
     int oathKits;
-    /// <summary>Full kits (sparks and contact) per swing; the rest of a crowd struck get two sparks.</summary>
+    /// <summary>Full kits (streaks, glint) per swing; the rest of a crowd struck get three streaks and the rim.</summary>
     const int OathKits = 6;
 
-    /// <summary>The Oathblade's sweep: ONE gold crescent leaving her blade, its leading edge white-hot, light only
-    /// (it lights the ground, never darkens it), gone in 6 frames; a faint gold pool on the ground under it for 3.</summary>
+    /// <summary>The Oathblade's sweep: ONE gold crescent leaving her hand (0.55 m) out to the blade's reach
+    /// (1.8-2.2 m), revealed along the arc over 2 frames and eaten from its tail over 4, light only, its body
+    /// fine broken streaks (shaders/oath_sweep.gdshader, art/fx/oath_streaks.png); and a real gold pool of
+    /// light on the ground under the middle of the arc (OathPool).</summary>
     void OathSweep(Ev.Slash e, Vector3 at, float facing, float reach, float g)
     {
         string art = e.Art ?? "";
         float rich = Mathf.Min(g, 1.35f);
         oathAt = at; oathMirror = mirror; oathKits = 0;
         var hue = OathHue(art);
-        OathBlades.Add(at, facing, reach, (float)e.Arc * 1.1f, mirror, 0.055f, 0.045f, hue * (0.9f + 0.1f * g), 0.4f * rich);
-        // The pool: under the middle of the arc, warm and faint, the decal's box shallow so it lights the ground only.
-        var mid = new Vector3(Mathf.Cos((float)e.Angle), 0, Mathf.Sin((float)e.Angle)) * reach * 0.55f;
-        var m = Ground(e.X + mid.X, e.Z + mid.Z, reach * 0.55f, glowTex!, hue with { A = 1 }, 0.05f, 0.9f);
-        m.Decal.Size = new Vector3(reach * 1.1f, 0.6f, reach * 1.1f);
+        float outer = Mathf.Clamp(reach * 0.66f * (1 + 0.3f * (rich - 1)), 1.8f, 2.2f);
+        OathBlades.Add(at, facing, outer, (float)e.Arc * 1.1f, mirror, OathReveal, OathErode, hue * (0.9f + 0.1f * g), OathInner / outer);
+        float mr = (OathInner + outer) * 0.5f;
+        double px = e.X + Math.Cos(e.Angle) * mr, pz = e.Z + Math.Sin(e.Angle) * mr;
+        OathPool(V(px, Y(px, pz) + 0.3, pz), art == "slash_blood" ? new Color("#ff6a40") : new Color("#ffc25a"));
+        if (AaBeats && oathSwings is 3 or 5 or 7 && GetViewport()?.GetCamera3D() is { } cam)
+        {
+            var sp = cam.UnprojectPosition(V(px, Y(px, pz), pz));
+            var hp = cam.UnprojectPosition(at);
+            GD.Print($"[aa-beats] pool s{oathSwings} screen {sp.X:F0},{sp.Y:F0} her {hp.X:F0},{hp.Y:F0}");
+        }
         // The Watch's oath along the edge of a ranked Oathblade: a few gold glints that hang.
         if (e.Rank >= 5 && art != "slash_blood")
             for (int i = 0; i < 4; i++)
             {
                 float a = (float)e.Angle + (float)e.Arc * (R() - 0.5f);
                 var rim = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                Sparks.Spawn(at + rim * reach * 0.95f, Vector3.Up * 0.4f, 0.5f, 0.12f, OathGold, OathGold * 0.3f, 0.02f, 0, 2, sprite: Sprites.Of("star"), spinV: 3);
+                Sparks.Spawn(at + rim * outer * 0.95f, Vector3.Up * 0.4f, 0.5f, 0.12f, OathGold, OathGold * 0.3f, 0.02f, 0, 2, sprite: Sprites.Of("star"), spinV: 3);
             }
     }
 
+    /* -------------------------------------------------------- the pool -- */
+
+    /// <summary>Pooled unshadowed lights for the sweep's pool: a swing's lives 6 frames, she swings about once a second.</summary>
+    const int OathPools = 3;
+    /// <summary>Full for 3 frames, then fading over 3 (seconds, on the fight's clock: a hitstop holds it).</summary>
+    const float PoolHold = 3 / 60f, PoolFade = 3 / 60f;
+    readonly OmniLight3D?[] oathPools = new OmniLight3D?[OathPools];
+    readonly float[] oathPoolAge = { 9, 9, 9 };
+    readonly float[] oathPoolEnergy = new float[OathPools];
+    int oathPoolNext;
+    /// <summary>The pool's energy scale (dev: --aa-pool K; 0 for the before frames).</summary>
+    static readonly float PoolScale = Args.Num("aa-pool", 1f);
+
+    /// <summary>The sweep's light on the ground: an unshadowed omni 0.3 m up at the arc's middle, 2.5 m in range,
+    /// about +50% on the ground under it at night, a warming of the grass by day.</summary>
+    void OathPool(Vector3 at, Color hue)
+    {
+        int i = oathPoolNext++ % OathPools;
+        if (oathPools[i] == null)
+        {
+            oathPools[i] = new OmniLight3D { OmniRange = 2.5f, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f, Visible = false };
+            AddChild(oathPools[i]);
+        }
+        var l = oathPools[i]!;
+        l.Position = at;
+        l.LightColor = hue;
+        oathPoolEnergy[i] = (Flare.Night ? 4.6f : 7f) * PoolScale;
+        oathPoolAge[i] = 0;
+        StepOathPool(i, 0);
+    }
+
+    void StepOathPools(float dt) { for (int i = 0; i < OathPools; i++) StepOathPool(i, dt); }
+
+    void StepOathPool(int i, float dt)
+    {
+        if (oathPools[i] is not { } l) return;
+        float a = oathPoolAge[i] += dt;
+        float k = a < PoolHold ? 1 : Mathf.Max(0, 1 - (a - PoolHold) / PoolFade);
+        l.LightEnergy = oathPoolEnergy[i] * k * k;
+        l.Visible = k > 0.001f && oathPoolEnergy[i] > 0 && !Flare.HushesSwings;
+    }
+
+    /* ----------------------------------------------------- the hit kit -- */
+
+    /// <summary>The struck rim's bodies (enemy id: until when, on the fight's clock); CrowdView.StruckRim reads it.</summary>
+    readonly System.Collections.Generic.Dictionary<int, double> struckRims = new();
+    /// <summary>The rim's life: 2 frames.</summary>
+    const double RimLife = 2.5 / 60;
+    bool StruckRimOn(int id) => struckRims.TryGetValue(id, out var until) && time < until;
+
     /// <summary>The shared hit kit at a struck body (`at`, chest height; `away` the blow's way, flat):
-    /// steel sparks white-hot cooling to `spark`, flung on along the blow and the blade's path, and a
-    /// 3-frame contact star. `full` false (past the swing's cap, or the frame's hit budget spent) throws
-    /// two sparks only. The rim is the crowd's own struck flash; the hitstop is FirstHitStop's.
-    /// The Disc and Shield Bash call this with their own `spark` hue.</summary>
-    public void HitKit(Vector3 at, Vector3 away, Color spark, float g, bool crit, bool full = true, Vector3? path = null)
+    /// 8-12 steel streaks (0.2-0.4 m, velocity-stretched: Sparks.P.Stretch; white-hot cooling to `spark`,
+    /// 0.15-0.25 s) flung on along the blow and `path`; a 4-point contact glint (0.66-0.8 m, 3 frames); a 2-frame
+    /// gold-white fresnel rim on the body (`target`, the enemy's id; the crowd's VAT shader draws it). The first
+    /// body of an Oathblade swing (or any call with `first`) also gets the impact flash, a light burst for 4 frames:
+    /// what the first hit's hitstop holds. `full` false (past the caller's cap, or the frame's hit budget spent)
+    /// throws three streaks and the rim only. The Disc and Shield Bash pass their own `spark` hue and `path`
+    /// (their callers cap their kits).</summary>
+    public void HitKit(Vector3 at, Vector3 away, Color spark, float g, bool crit, bool full = true, Vector3? path = null, int target = -1, bool first = false)
     {
         Vector3 along;
-        // The Disc and the Bash give their own path (their caller caps their kits); the Oathblade's
-        // is along the blade's path at this body (the swing's tangent there), so sparks fly on with the cut.
         if (path is { } own) along = own;
         else
         {
+            // The Oathblade's: along the blade's path at this body (the swing's tangent there), so the streaks fly on with the cut.
+            first = first || oathKits == 0;
             full = full && oathKits++ < OathKits;
             var rim = at - oathAt; rim.Y = 0;
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
-        int n = full ? (crit ? 9 : 6) : 2;
+        if (target >= 0) struckRims[target] = time + RimLife;
+        int n = full ? (crit ? 12 : 9) + (first ? 3 : 0) : 3;
         for (int i = 0; i < n; i++)
         {
-            var v = away * (3 + R() * 4) + along * (3 + R() * 4) + new Vector3((R() - 0.5f) * 3, 1.2f + R() * 2.5f, (R() - 0.5f) * 3);
-            Sparks.Spawn(at + Vector3.Up * (R() - 0.5f) * 0.3f, v, 0.14f + R() * 0.12f, 0.035f + R() * 0.02f, SteelWhite, spark, 0.008f, 9, 2.5f);
+            var dir = (away * (0.5f + R() * 0.9f) + along * (0.4f + R() * 1.0f) + new Vector3((R() - 0.5f) * 0.9f, 0.25f + R() * 0.6f, (R() - 0.5f) * 0.9f)).Normalized();
+            float speed = 5.5f + R() * 4.5f, len = 0.2f + R() * 0.2f;
+            Sparks.Spawn(new Sparks.P
+            {
+                At = at + new Vector3((R() - 0.5f) * 0.2f, (R() - 0.5f) * 0.35f, (R() - 0.5f) * 0.2f), V = dir * speed,
+                Life = 0.15f + R() * 0.1f, Size = 0.034f, SizeEnd = 0.018f, Color = SteelWhite * 1.15f, ColorEnd = spark * 0.8f,
+                Gravity = 9, Drag = 2.2f, Alpha = 1, Sprite = -1, Stretch = len / speed,
+            });
         }
-        if (full) Sparks.Spawn(at, Vector3.Zero, 0.05f, (crit ? 0.4f : 0.24f) * g, SteelWhite * 0.5f, SteelWhite * 0.1f, 0.12f, sprite: Sprites.Of("flare"), spinV: 0);
+        if (!full) return;
+        // The contact glint: a 4-point star at the body, white-gold cooling to the spark's hue, 3 frames.
+        float gs = (crit ? 0.8f : 0.66f) * Mathf.Min(g, 1.2f);
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at - away * 0.15f, Life = 0.05f, Size = gs, SizeEnd = gs * 0.55f, Color = Hdr("#fff2d6", 1.7f), ColorEnd = spark * 0.35f,
+            Alpha = 1, Sprite = Star4, Spin = 0.2f + R() * 0.4f, SpinV = 0.001f,
+        });
+        if (!first) return;
+        // The impact flash on the first contact: a hot light burst, 4 frames (the hitstop holds it).
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at - away * 0.1f, Life = 0.07f, Size = 0.6f, SizeEnd = 0.8f, Color = Hdr("#ffd890", 1.1f), ColorEnd = spark * 0.12f,
+            Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f,
+        });
     }
+
+    /// <summary>A dark chip puff off a struck body (for the Disc and the Bash): a solid brown-grey puff, densest at
+    /// its centre (Sparks.P.Core, on the pack's solid puffs only: its last three are rings and read as grey donuts),
+    /// 0.3-0.4 m, 0.25-0.35 s, drifting along `away`; `n` puffs.</summary>
+    public void ChipPuff(Vector3 at, Vector3 away, int n = 2)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            float s = 0.3f + R() * 0.1f;
+            Smoke.Spawn(new Sparks.P
+            {
+                At = at + new Vector3((R() - 0.5f) * 0.15f, (R() - 0.5f) * 0.15f, (R() - 0.5f) * 0.15f),
+                V = away * (0.8f + R() * 0.8f) + Vector3.Up * (0.3f + R() * 0.3f), Drag = 3,
+                Life = 0.25f + R() * 0.1f, Size = s * 0.7f, SizeEnd = s, Color = new Color(0.2f, 0.17f, 0.14f), ColorEnd = new Color(0.16f, 0.14f, 0.12f),
+                Alpha = 0.7f, Sprite = SolidPuff(), Core = true,
+            });
+        }
+    }
+
+    /// <summary>One of the pack's solid smoke puffs (its first seven; the last three are rings).</summary>
+    static float SolidPuff() => Sprites.Range("smoke").First + 1 + (int)(R() * 6.99f);
 
     /* ---------------------------------------------------------- the disc -- */
 

@@ -23,6 +23,11 @@ public partial class Sparks : MultiMeshInstance3D
         /// <summary>The sprite (Sprites: its id), 0 for the batch's own, below 0 for a soft spot.</summary>
         public float Sprite;
         public float Spin, SpinV;
+        /// <summary>Sparks: drawn as a streak along its velocity, this many seconds of travel long (0 a sprite).
+        /// Its Size is then the streak's width; it shortens as drag slows it.</summary>
+        public float Stretch;
+        /// <summary>Smoke: a solid puff whose alpha peaks at its centre (the pack's ring puffs read as grey donuts).</summary>
+        public bool Core;
     }
 
     readonly P[] parts;
@@ -97,11 +102,23 @@ public partial class Sparks : MultiMeshInstance3D
             var c = p.Color.Lerp(p.ColorEnd, k);
             float a = p.Alpha * (k < 0.8f ? 1 : 1 - (k - 0.8f) / 0.2f);
             int o = i * Stride;
-            buffer[o] = s; buffer[o + 1] = 0; buffer[o + 2] = 0; buffer[o + 3] = p.At.X;
-            buffer[o + 4] = 0; buffer[o + 5] = s; buffer[o + 6] = 0; buffer[o + 7] = p.At.Y;
-            buffer[o + 8] = 0; buffer[o + 9] = 0; buffer[o + 10] = s; buffer[o + 11] = p.At.Z;
+            if (p.Stretch > 0 && !smoke)
+            {
+                // A streak: its axis (the head at At, the tail behind it) in the basis's Y, its width in X's length.
+                var ax = p.V * p.Stretch;
+                var mid = p.At - ax * 0.5f;
+                buffer[o] = s; buffer[o + 1] = ax.X; buffer[o + 2] = 0; buffer[o + 3] = mid.X;
+                buffer[o + 4] = 0; buffer[o + 5] = ax.Y; buffer[o + 6] = 0; buffer[o + 7] = mid.Y;
+                buffer[o + 8] = 0; buffer[o + 9] = ax.Z; buffer[o + 10] = s; buffer[o + 11] = mid.Z;
+            }
+            else
+            {
+                buffer[o] = s; buffer[o + 1] = 0; buffer[o + 2] = 0; buffer[o + 3] = p.At.X;
+                buffer[o + 4] = 0; buffer[o + 5] = s; buffer[o + 6] = 0; buffer[o + 7] = p.At.Y;
+                buffer[o + 8] = 0; buffer[o + 9] = 0; buffer[o + 10] = s; buffer[o + 11] = p.At.Z;
+            }
             buffer[o + 12] = c.R; buffer[o + 13] = c.G; buffer[o + 14] = c.B; buffer[o + 15] = a;
-            buffer[o + 16] = Mathf.Max(0, p.Sprite); buffer[o + 17] = p.Spin; buffer[o + 18] = k; buffer[o + 19] = 0;
+            buffer[o + 16] = Mathf.Max(0, p.Sprite); buffer[o + 17] = p.Spin; buffer[o + 18] = k; buffer[o + 19] = smoke ? (p.Core ? 1 : 0) : (p.Stretch > 0 ? 1 : 0);
         }
         sent.Send(buffer, count, Stride);
     }

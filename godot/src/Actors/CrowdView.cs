@@ -130,6 +130,8 @@ public partial class CrowdView : Node3D
     public static Func<double, double, bool>? FlareCorpseAsh;
     /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
     public static Func<int, float>? FlareStatueFlash;
+    /// <summary>A body showing the hit kit's struck rim this frame (BattleFx.HitKit: 2 frames of gold-white fresnel).</summary>
+    public static Func<int, bool>? StruckRim;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -426,7 +428,7 @@ public partial class CrowdView : Node3D
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot);
+        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot, e.State != EnemyState.Dying && StruckRim?.Invoke(e.Id) == true);
         living++;
     }
 

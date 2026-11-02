@@ -61,7 +61,7 @@ public partial class BattleFx
         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
         away = away.Normalized();
         // Her Oathblade's struck: the shared hit kit (HitKit.cs), not the school's throw.
-        if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich); return; }
+        if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich, null, e.Target); return; }
         if (IsDisc(art)) { DiscStruck(e, at, away, g, rich); return; }
         // The instant: a flare at the point of contact.
         // Capped and kept in the school's colour: a big blow on a champion threw a white flare
@@ -368,7 +368,7 @@ public partial class BattleFx
     /// <summary>Blades' swings in progress (shaders/blade.gdshader).</summary>
     public readonly Blades Blades = new();
     /// <summary>Her Oathblade's gold crescents: light only (Blades(lit)).</summary>
-    public readonly Blades OathBlades = new(lit: true);
+    public readonly Blades OathBlades = new(oath: true);
 
     /* -------------------------------------------------------- in the air -- */
 

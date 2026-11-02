@@ -270,7 +270,7 @@ public partial class Hits : Node3D
         mat.SetShaderParameter("core", V(core ?? new Color(2.2f, 2.03f, 1.72f)));
         mat.SetShaderParameter("glow", V(glow ?? new Color(1.4f, 0.97f, 0.49f)));
         m.GlobalPosition = at;
-        m.Basis = new Basis(Vector3.Up, facing).Scaled(new Vector3(mirror ? -reach : reach, reach, reach));
+        m.Basis = new Basis(Vector3.Up, facing) * Basis.FromScale(new Vector3(mirror ? -reach : reach, reach, reach)); // (local mirror: Scaled is world-axis, see Blades.Add)
         m.Visible = true;
         mat.SetShaderParameter("head", 0f);
         mat.SetShaderParameter("seed", rng.Randf() * 100);

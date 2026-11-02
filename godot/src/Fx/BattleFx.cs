@@ -196,6 +196,7 @@ public partial class BattleFx : Node3D
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
         chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
         DiscReady();
+        CrowdView.StruckRim = StruckRimOn;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1822,6 +1823,7 @@ public partial class BattleFx : Node3D
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
         OathBlades.Step(fdt);
+        StepOathPools(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());

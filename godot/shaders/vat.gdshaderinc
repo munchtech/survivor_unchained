@@ -51,6 +51,8 @@ vec3 dye_hsv(vec3 c) {
 
 varying flat vec4 fx;
 varying flat float fx_crit;
+// The hit kit's struck rim (BattleFx.HitKit, 2 frames): a gold-white fresnel that lifts even a black body at night.
+varying flat float fx_rim;
 varying vec3 vat_local;
 // (the body's own place in the world, for the Long Cut's burn from the line outward)
 varying flat vec3 vat_org;
@@ -87,8 +89,9 @@ void vertex() {
 	vat_local = VERTEX;
 	vat_org = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	int w = int(INSTANCE_CUSTOM.w + 0.5);
-	fx = vec4(float(w & 127) / 127.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
+	fx = vec4(float(w & 63) / 63.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
 	fx_crit = float((w >> 7) & 1);
+	fx_rim = float((w >> 6) & 1);
 }
 
 void fragment() {
@@ -261,6 +264,9 @@ void fragment() {
 	// and it is the old cream cut-out again)
 	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit) * (1.0 - lc_k);
 	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_hue.a);
+	// The hit kit's struck rim (BattleFx.HitKit: her auto-attacks' struck, 2 frames): gold-white at the body's
+	// edge, not scaled by its paint (a black wolf at night has none to lift), tight so the body keeps its shape.
+	e += vec3(1.0, 0.8, 0.5) * fx_rim * (pow(rim, 2.0) * 3.4 + 0.1);
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

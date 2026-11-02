@@ -670,7 +670,8 @@ public partial class GameHud : CanvasLayer
             var line = new System.Text.StringBuilder();
             foreach (var r in b.Reflexes)
                 line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
-            irons.ArtNote.Text = line.ToString();
+            // (not in the auto-attack beats' shots: --lamp lights a reflex for them, and this debug line rode every frame)
+            irons.ArtNote.Text = Args.Has("aa-beats") ? "" : line.ToString();
         }
         else { art.Level = 0; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
