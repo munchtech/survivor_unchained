@@ -91,11 +91,17 @@ BLADE = [
     (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.19, 0.84, -0.51), (-0.5, 0.24, 0.83)),
     (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
     (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
-    (62, (0.00, 1.13, 0.50), _d(-72), (-0.70, 0.67, -0.23), (0.98, 0.05, 0.17), (0.47, 0.40, -0.79), (-0.98, 0.05, 0.17)),
+    # The edge rolled 50 deg about the blade's own line as it comes out (the tip does not move for it) and the elbow
+    # lifted, so her forearm is near square (twist +9 deg, the wrist 18) before it turns to the idle's (+93): from the
+    # kneel's -60 the forearm had 150-180 deg to turn on the way to her side and the blade swung across her with it.
+    (62, (0.00, 1.13, 0.50), _d(-72), (-0.22, 0.80, -0.55), (0.50, 0.27, 0.82), (0.47, 0.40, -0.79), (-0.98, 0.05, 0.17)),
+    # Still lifting out along its own line as she rises (the tip 0.18 m up); then her arm eased into the idle's own
+    # (_settle, ARM_SETTLE).
+    (66, (-0.04, 1.22, 0.47), _d(-66), (-0.22, 0.80, -0.55), (0.26, 0.39, 0.88), (0.47, 0.40, -0.79), (-0.98, 0.05, 0.17)),
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
-R_ON = [(0, 0.0), (3, 1.0), (62, 1.0), (72, 0.0)]
+R_ON = [(0, 0.0), (3, 1.0)]   # (the tail: the arm's own joints eased into the idle's, _settle)
 # The left hand on the grip: it joins at the top of the rise (travelling f7-9, in front of her face).
 L_ON = [(0, 0.0), (7, 0.0), (9, 1.0), (62, 1.0), (66, 0.0)]
 # The coil is one-handed: the left arm reaches forward down the line, open-handed (a counterweight), from the idle's
@@ -121,8 +127,9 @@ def _blade_at(fr):
                 u = _smooth(u)
             P = np.array(a[1]) + (np.array(b[1]) - np.array(a[1])) * u
             d = _slerp_dir(np.array(a[2]), np.array(b[2]), u)
-            k = _slerp_dir(fix(np.array(a[2]), _n(*a[4])), fix(np.array(b[2]), _n(*b[4])), u)
             kl = _slerp_dir(fix(np.array(a[2]), _n(*a[6])), fix(np.array(b[2]), _n(*b[6])), u)
+            ka, kb = fix(np.array(a[2]), _n(*a[4])), fix(np.array(b[2]), _n(*b[4]))
+            k = _slerp_dir(ka, kb, u)
             return (P, d, np.array(a[3]) + (np.array(b[3]) - np.array(a[3])) * u, fix(d, k),
                     np.array(a[5]) + (np.array(b[5]) - np.array(a[5])) * u, fix(d, kl))
     key = BLADE[0] if fr < BLADE[0][0] else BLADE[-1]
@@ -494,10 +501,28 @@ class LongCut:
         self.Gr = (g[:, hr], p[:, hr])
 
 
+ARM_SETTLE = (66, 74)
+
+
 def _settle(rig, clip, a=SETTLE, b=END):
-    """Every joint eased over f72-80 into idle_warden's own frames (its first at f80)."""
+    """Her right arm eased over ARM_SETTLE into idle_warden's own (its solved joints, as flare.py's _settle; each turns
+    the short way, so her forearm goes from the lift's +9 deg to the idle's +93 through neither limit), then every joint
+    over f72-80 into idle_warden's own frames (its first at f80). (Before, the hand's keys were blended toward the
+    base's bare hand_r, no arm solved: the blade aimed along her left side and its tip went 9 cm into the ground
+    f65-73.)"""
     ref = idle.build_one(rig, "idle_warden")
     n = ref.frames - 1
+    I, sk = rig.I, rig.sk
+    arm = [I["upperarm_r"]]
+    for j in arm:
+        arm += [k for k, p in enumerate(sk.parent) if p == j and k not in arm]
+    a0, b0 = ARM_SETTLE
+    for fr in range(a0, b + 1):
+        w = _smooth(min(1.0, (fr - a0) / (b0 - a0)))
+        k = (fr - END) % n
+        for j in arm:
+            q, o = ref.rot[k, j], clip.rot[fr, j]
+            clip.rot[fr, j] = qslerp(o, -q if float(np.dot(o, q)) < 0 else q, w)
     for fr in range(a, b + 1):
         w = _smooth((fr - a) / (b - a))
         k = (fr - END) % n
