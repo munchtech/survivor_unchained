@@ -1059,6 +1059,8 @@ public partial class Game : Node, IZoneHost
     }
 
     /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
+    // (eight points round a round mark's edge)
+    static readonly double[] RingCos = { 1, 0.7071, 0, -0.7071, -1, -0.7071, 0, 0.7071 }, RingSin = { 0, 0.7071, 1, 0.7071, 0, -0.7071, -1, -0.7071 };
     readonly List<(double X, double Z, double? X1, double? Z1, double R, double Until)> marks = new();
 
     void OnEvents(List<CombatEvent> evs)
@@ -1333,10 +1335,15 @@ public partial class Game : Node, IZoneHost
             // faded all the time)
             if (hud.FigureRect is Rect2 fig)
             {
-                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
-                bool Behind(Rect2 rect)
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone;
+                // the point must stand on the figure's art, Ui.HudMask, not just in its rect)
+                bool Behind(Rect2 rect, Ui.HudMask mask, Vector2 origin, float scale)
                 {
-                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    bool In(double x, double z, float y)
+                    {
+                        var w = new Vector3((float)x, y, (float)z);
+                        return !camera.IsPositionBehind(w) && mask.Hit(camera.UnprojectPosition(w), rect, origin, scale);
+                    }
                     float gy = at.Y + 1;
                     bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
                     if (!behind)
@@ -1345,14 +1352,22 @@ public partial class Game : Node, IZoneHost
                     marks.RemoveAll(m => m.Until < playedT);
                     if (!behind)
                         foreach (var m in marks)
-                            // (its middle and four points round its edge)
-                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
-                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
+                        {
+                            // (its middle and eight points round its edge; a lane: nine along it as well)
+                            if (In(m.X, m.Z, at.Y)) { behind = true; break; }
+                            for (int i = 0; i < 8 && !behind; i++)
+                                behind = In(m.X + m.R * RingCos[i], m.Z + m.R * RingSin[i], at.Y);
+                            if (!behind && m.X1 is double x1 && m.Z1 is double z1)
+                                for (int i = 0; i < 9 && !behind; i++)
+                                    behind = In(m.X + (x1 - m.X) * i / 8, m.Z + (z1 - m.Z) * i / 8, at.Y);
+                            if (behind) break;
+                        }
                     return behind;
                 }
-                hud.FigureBehind(Behind(fig));
-                hud.RiverBehind(Behind(Ui.DgPanel.BandRect));
-                hud.KeeperBehind(Behind(Ui.DgPanel.KeeperRect));
+                var lamp = Ui.LifeLamp.Live;
+                hud.FigureBehind(Behind(fig, Ui.HudMask.Lamp, lamp?.Position ?? fig.Position, lamp?.Scale.X ?? 1));
+                hud.RiverBehind(Behind(Ui.DgPanel.BandRect, Ui.HudMask.Panel, Ui.DgPanel.BandRect.Position, 1));
+                hud.KeeperBehind(Behind(Ui.DgPanel.KeeperRect, Ui.HudMask.Keeper, Ui.DgPanel.KeeperRect.Position, 1));
             }
             if (near != null)
             {
