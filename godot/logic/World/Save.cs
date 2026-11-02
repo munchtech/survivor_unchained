@@ -109,6 +109,8 @@ public sealed class Saves
         // have earned back to light (a full refund). (The art in hand becoming the dash form joins
         // this step with the Battle's dash forms: docs/handoff/classes.md §4.)
         if (d.Version < 5) { LampBook.State(ch); ArtBook.HoldKin(ch); }
+        // Lamps v2 (behind its flag): lit ids the v2 board lacks are dropped (save v6 does the real migration).
+        if (Content.Lamps.V2) LampBook.DropUnknown(ch);
         // The armor slots (Shoulders...Feet): anything worn in a slot its kind does not belong to is re-slotted.
         Inventory.Reslot(ch);
         d.Version = Version;

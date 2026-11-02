@@ -17,6 +17,9 @@ public sealed class LampLayout
     /// <summary>Each skill's wick plan (Rpg/WickBook.cs): its lamp ids in the order they light. A layout holds
     /// its wicks, so swapping layouts swaps builds (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.5).</summary>
     public Dictionary<string, List<string>> Wicks = new();
+    /// <summary>Lamps v2: each link's pick, its lamp id to the skill it fires (docs/design/LAMPS_V2_RULES.md "Links").
+    /// No pick, or one not carried: Light my way's (Battle.LinkSkill).</summary>
+    public Dictionary<string, string> Links = new();
 }
 
 public sealed class LampState
@@ -106,7 +109,7 @@ public static class LampBook
         if (lit.Contains(id)) return LampNo.Lit;
         if (def.Home && def.Calling != ch.Archetype) return LampNo.NotHome;
         if (!Lamps.Next(id).Any(lit.Contains)) return LampNo.Dark;
-        if (def.Road != null && Depth(lit, def.Road) < def.Gate) return LampNo.Gate;
+        if (def.Road != null && Depth(lit, def.Road) < def.Gate && !Ungated(ch, lit, def)) return LampNo.Gate;
         if (Spare(ch, w) <= 0) return LampNo.NoLamps;
         return LampNo.None;
     }
@@ -179,7 +182,30 @@ public static class LampBook
                 if (set.Contains(n) && seen.Add(n)) q.Enqueue(n);
         if (seen.Count != set.Count) return false;
         var free = Free(ch);
-        return lit.All(id => free.Contains(id) || Lamps.Get(id) is var d && (d.Road == null || Depth(lit, d.Road) >= d.Gate));
+        return lit.All(id => free.Contains(id) || Lamps.Get(id) is var d && (d.Road == null || Depth(lit, d.Road) >= d.Gate || Ungated(ch, lit, d)));
+    }
+
+    /// <summary>blue.unhoused (the Ford's blue, v2): lamps on other callings' roads open with no depth.</summary>
+    static bool Ungated(CharacterData ch, List<string> lit, LampDef d) =>
+        Lamps.V2 && d.Calling != null && d.Calling != ch.Archetype && lit.Any(Unhouses);
+
+    static bool Unhouses(string id) => Lamps.Find(id) is { } d && d.Effects.Any(e => e.Rule == "blue.unhoused" && e.Phase <= Lamps.LivePhase);
+
+    /// <summary>Lamps v2 on: the lit ids a save holds that the v2 board lacks are dropped (and links on them), the
+    /// free lamps lit again, and a type v2 lacks walks the default.</summary>
+    public static void DropUnknown(CharacterData ch)
+    {
+        if (ch.Lamps == null) return;
+        foreach (var l in ch.Lamps.Layouts)
+        {
+            if (l.Type == "") continue;
+            if (!Lamps.Roads.TryGetValue(l.Type, out var r) || r.Calling != ch.Archetype) { Reset(ch, l, DefaultType(ch.Archetype)); continue; }
+            l.Lit.RemoveAll(id => Lamps.Find(id) == null);
+            foreach (var f in Free(ch, l)) if (!l.Lit.Contains(f)) l.Lit.Add(f);
+            l.Links ??= new();
+            foreach (var k in l.Links.Keys.ToList()) if (Lamps.Find(k) == null) l.Links.Remove(k);
+            if (Lamps.Flare(l.Flare) == null) l.Flare = Lamps.Road(l.Type).Strike;
+        }
     }
 
     /* ------------------------------------------------------- the Flare -- */
@@ -257,10 +283,13 @@ public static class LampBook
         var l = Now(ch);
         var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch), Lit = l.Lit.Count };
         var counts = new Dictionary<string, double>();
+        if (l.Links != null) foreach (var (k, v) in l.Links) o.Links[k] = v;
+        // v2: by night a small's numbers run at a quarter (LAMPS_V2_RULES.md "Words"), where v1's small only leans the draft.
+        bool v2 = Lamps.V2;
         foreach (var id in l.Lit)
         {
             if (Lamps.Find(id) is not { } d) continue;
-            bool small = d.Kind is LampKind.Small or LampKind.Attribute;
+            bool small = !v2 && d.Kind is LampKind.Small or LampKind.Attribute;
             foreach (var e in d.Effects)
             {
                 if (e.Phase > Lamps.LivePhase) continue;
@@ -291,8 +320,20 @@ public static class LampBook
             }
         }
         foreach (var (stat, v) in counts) o.Mods.Add(new StatMod(stat, ModKind.Flat, Math.Min(Lamps.NightCount, v), "lamps:counts"));
+        if (v2) BluePrices(o);
         o.Lean = LeanRoad(ch);
         return o;
+    }
+
+    /// <summary>Lamps v2: the blue lamps whose price is a number of hers (LAMPS_V2_RULES.md "The new blue lamps"), kept in
+    /// full by night. The rest of their prices are rules the fight reads (Sim/BoardRules.cs).</summary>
+    static void BluePrices(LampLoadout o)
+    {
+        // blue.butchers_block: less maximum health.
+        if (o.Has("blue.butchers_block")) o.Mods.Add(new StatMod(Stat.MaxHealth, ModKind.More, -o.Full("blue.butchers_block", "health", 0.2), "price:blue.butchers_block"));
+        // blue.poachers_mercy, blue.pack_remembers: one dash charge.
+        foreach (var r in new[] { "blue.poachers_mercy", "blue.pack_remembers" })
+            if (o.Has(r)) o.Mods.Add(new StatMod(Stat.DashCharges, ModKind.Flat, -o.Full(r, "dash", 1), "price:" + r));
     }
 
     /// <summary>The road lit deepest (the type's own on a tie): its cards lean by night.</summary>

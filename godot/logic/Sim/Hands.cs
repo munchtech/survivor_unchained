@@ -31,7 +31,7 @@ public sealed partial class Battle
     /// <summary>Which Hand is hers (0 none, 1 warden, 2 reaver, 3 arcanist, 4 stalker), read once per calling set.</summary>
     int HandKindNow()
     {
-        if (!HandsOn) return 0;
+        if (!HandsOn || Lamps.Unhoused) return 0;
         if (!ReferenceEquals(handFor, Calling))
         {
             handFor = Calling;
@@ -53,8 +53,9 @@ public sealed partial class Battle
     internal bool HandBeginCast(WeaponInst w)
     {
         w.Casts++;
-        if (!WardenHand || !Content.Hands.Heavies(w.Tags)) return false;
-        int every = Math.Max(1, Content.Hands.Warden.Every);
+        // Lamps v2: a heavy rite makes another tag's skill heavy on its own count (Sim/BoardRules.cs).
+        if (!WardenHand || !Content.Hands.Heavies(w.Tags)) return Lamps.Board && RiteHeavyNext(w);
+        int every = Math.Max(1, HW.Every);
         // The count is of firings, not of attempts: an attempt with nothing in range is not a blow (HandEndCast).
         return (w.HandBlows + 1) % every == 0;
     }
@@ -64,12 +65,13 @@ public sealed partial class Battle
     {
         if (!fired) { w.Casts--; return; }
         if (WardenHand && Content.Hands.Heavies(w.Tags)) w.HandBlows++;
+        else if (Lamps.Board) RiteHeavyCount(w);
     }
 
     /// <summary>A heavy blow landed: a creature is stunned and thrown twice as far (HitEnemy doubles the push); a boss staggers.</summary>
     void HandHeavy(Enemy e)
     {
-        var h = Content.Hands.Warden;
+        var h = HW;
         HandHeavies++;
         if (e.Boss) AddStagger(e, h.Stagger);
         else if (e.Alive && e.State != EnemyState.Dying)
@@ -80,6 +82,7 @@ public sealed partial class Battle
         HandEv(HandKind.Heavy, e.X, e.Z, e.Id);
         // Oath and Bell: a stagger rings the Watch Bell.
         BellOnStagger();
+        if (Lamps.Board) LinkFire("heavy");
     }
 
     /// <summary>A Holy skill struck a champion: a Stone, once per champion per firing.</summary>
@@ -95,22 +98,25 @@ public sealed partial class Battle
 
     /// <summary>Shield Arm's number when that lamp is lit; the warden Hand's when it isn't (0 with neither).</summary>
     double WallArg(string arg, double fallback, double hand) =>
-        Lamps.Has("shield_arm") ? Lamps.Full("shield_arm", arg, fallback) : WardenHand ? hand : 0;
+        Lamps.Has("shield_arm") ? Lamps.Full("shield_arm", arg, fallback) : WardenHand || (Lamps.Board && RiteStones) ? hand : 0;
+
+    /// <summary>Lamps v2: a stone rite is lit, so the wall answers on the Hand's numbers for whoever lit it.</summary>
+    bool RiteStones { get { BoardSync(); return riteStone; } }
 
     /* ---------------------------------------------------------------- reaver -- */
 
-    double HandFrenzyCap => ReaverHand ? Content.Hands.Reaver.Cap : 0;
+    double HandFrenzyCap => ReaverHand ? HR.Cap : 0;
 
     /// <summary>Frenzy's attack speed a stack: the lamp's, never below the Hand's (by night the lamp's runs at a quarter).</summary>
-    double FrenzyPer() => Math.Max(Lamps.Size("frenzy", "per", 0.01), ReaverHand ? Content.Hands.Reaver.Per : 0);
+    double FrenzyPer() => Math.Max(Lamps.Size("frenzy", "per", 0.01), ReaverHand ? HR.Per : 0);
 
     /// <summary>How long a lull before Frenzy fades: the lamp's when lit, else the Hand's.</summary>
-    double FrenzyFade() => Lamps.Has("frenzy") ? Lamps.Full("frenzy", "fade", 3) : Content.Hands.Reaver.Fade;
+    double FrenzyFade() => Lamps.Has("frenzy") ? Lamps.Full("frenzy", "fade", 3) : HR.Fade;
 
     void HandReaverHit(Enemy e)
     {
         if (!e.Status.Has(StatusKind.Bleed) || Time < handFrenzyGate) return;
-        handFrenzyGate = Time + Content.Hands.Reaver.Gate;
+        handFrenzyGate = Time + HR.Gate;
         double before = frenzy;
         AddFrenzy(1);
         if (frenzy > before) { HandFrenzies++; HandEv(HandKind.Frenzy, e.X, e.Z, e.Id); }
@@ -120,7 +126,7 @@ public sealed partial class Battle
     public double HandAreaMul(WeaponInst w)
     {
         if (!ReaverHand || !w.Tags.Has(Tag.Area)) return 1;
-        var h = Content.Hands.Reaver;
+        var h = HR;
         return Player.Hp < MaxHp * h.Below ? 1 + h.Area : 1;
     }
 
@@ -133,9 +139,24 @@ public sealed partial class Battle
     void HandArcanistKill(Enemy e, WeaponInst? w)
     {
         if (w == null || !w.Tags.Has(Tag.Spell)) return;
-        var h = Content.Hands.Arcanist;
+        var h = HA;
         var school = w.School;
-        if (Content.Hands.GroundName(school) != null)
+        if (Content.Hands.GroundName(school) != null) LayHandGround(e, w, school);
+        // The mark passes once; the moon's lamps (moonmarked, cold_moon) pass it their own way and further.
+        if (e.Status[StatusKind.Mark] is not { } mark) return;
+        if (Lamps.Has("moonmarked") || (Lamps.Has("cold_moon") && e.Status.Has(StatusKind.Frozen))) return;
+        var next = NearestUnmarked(e, h.Reach);
+        if (next == null) return;
+        ApplyStatus(next, new StatusPayload(StatusKind.Mark, 1, mark.Power != 0 ? mark.Power : 1, h.MarkSeconds), 0, 2);
+        HandMarks++;
+        Events.Emit(new Ev.Chain { Points = [e.X, e.Z, next.X, next.Z], School = School.Arcane });
+        HandEv(HandKind.Mark, next.X, next.Z, next.Id);
+    }
+
+    /// <summary>The arcanist Hand's ground where a thing fell, of a school (fire, frost or arcane): the Hand's, or a ground rite's.</summary>
+    void LayHandGround(Enemy e, WeaponInst w, School school)
+    {
+        var h = HA;
         {
             handGround ??= new GroundZone?[Math.Max(1, h.Cap)];
             var old = handGround[handGroundAt];
@@ -154,15 +175,6 @@ public sealed partial class Battle
                 HandEv(HandKind.Ground, e.X, e.Z, e.Id);
             }
         }
-        // The mark passes once; the moon's lamps (moonmarked, cold_moon) pass it their own way and further.
-        if (e.Status[StatusKind.Mark] is not { } mark) return;
-        if (Lamps.Has("moonmarked") || (Lamps.Has("cold_moon") && e.Status.Has(StatusKind.Frozen))) return;
-        var next = NearestUnmarked(e, h.Reach);
-        if (next == null) return;
-        ApplyStatus(next, new StatusPayload(StatusKind.Mark, 1, mark.Power != 0 ? mark.Power : 1, h.MarkSeconds), 0, 2);
-        HandMarks++;
-        Events.Emit(new Ev.Chain { Points = [e.X, e.Z, next.X, next.Z], School = School.Arcane });
-        HandEv(HandKind.Mark, next.X, next.Z, next.Id);
     }
 
     Enemy? NearestUnmarked(Enemy from, double r)
@@ -184,13 +196,13 @@ public sealed partial class Battle
 
     void HandOnDash()
     {
-        if (StalkerHand) handDashUntil = Time + Abilities.Dash.Time + Content.Hands.Stalker.Seconds;
+        if (StalkerHand) handDashUntil = Time + Abilities.Dash.Time + HS.Seconds;
     }
 
     bool HandDashOpen => StalkerHand && Time < handDashUntil;
 
     /// <summary>The pierce a projectile skill gains just after a dash (Firing.PierceOf).</summary>
-    public int HandPierce(WeaponInst w) => HandDashOpen && w.Tags.Has(Tag.Projectile) ? Content.Hands.Stalker.Pierce : 0;
+    public int HandPierce(WeaponInst w) => HandDashOpen && w.Tags.Has(Tag.Projectile) ? HS.Pierce : 0;
 
     /// <summary>A projectile loosed with the Hand's pierce: counted, and told to the view.</summary>
     public void HandPierced(Projectile pr) { HandPierces++; HandEv(HandKind.Pierce, pr.X, pr.Z); }

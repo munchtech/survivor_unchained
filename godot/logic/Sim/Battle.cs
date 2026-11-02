@@ -435,6 +435,7 @@ public sealed partial class Battle
             TickAuras(dt);
             TickTriggers(dt);
             TickReflexes(dt);
+            if (Lamps.Board) BoardTick(dt);
             TickFlare(dt);
         }
         foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
@@ -625,6 +626,7 @@ public sealed partial class Battle
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         StalkerOnDash();
         HandOnDash();
+        if (Lamps.Board) BoardOnDash();
         OpenGate(x0, z0);
         return true;
     }
@@ -760,6 +762,7 @@ public sealed partial class Battle
         // and swings that happen to reach a neutral pass it by. Picking a
         // fight is a choice, not a stray spark.
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
+        if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
         double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
         // Allies go for the throat: champions and worse take more from them.
@@ -777,6 +780,7 @@ public sealed partial class Battle
         if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
         dmg *= e.TakenMul;
         dmg *= LampDamageMul(e, school, tags, o);
+        if (Lamps.Board) dmg *= BoardDamageMul(e, school, tags, o);
         if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
         dmg *= ReaverDamageMul(e, school, tags, o);
         dmg *= ArcanistDamageMul(e, school, tags, o);
@@ -807,8 +811,11 @@ public sealed partial class Battle
             if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
             // Night-Eyes: the far ones, in the dark, are seen best.
             if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
+            if (Lamps.Board) chance += BoardCritAdd(e, o);
             crit = Rng.Next() < chance;
         }
+        // blue.feral's price: she can't strike true.
+        if (crit && Lamps.Board && BoardNoTrue) crit = false;
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
@@ -878,7 +885,7 @@ public sealed partial class Battle
         bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
-            double k = o.Knockback * (heavy ? Content.Hands.Warden.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
+            double k = o.Knockback * (heavy ? HW.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
         }
@@ -901,6 +908,7 @@ public sealed partial class Battle
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
         if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
+        if (Lamps.Board) BoardOnHit(e, school, tags, o, dmg, heavy, crit);
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
@@ -961,6 +969,7 @@ public sealed partial class Battle
         if (credited && e.Disposition != Disposition.Ally && ArcanistHand) HandArcanistKill(e, weapon);
         ArcanistOnDeath(e, e.Credit, depth);
         StalkerOnDeath(e);
+        if (Lamps.Board) BoardOnKill(e, weapon, credited);
         FlareOnKilled(e, credited && e.Disposition != Disposition.Ally);
         if (credited && e.Disposition != Disposition.Ally)
         {
@@ -1049,6 +1058,8 @@ public sealed partial class Battle
         // Longer burning is more burning: the rate holds, the time stretches.
         double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
         if (statusWeapon?.Wick != null) dur *= WickDuration(p.Kind);
+        // blue.pyre_walker's price: her burns last half as long.
+        if (p.Kind == StatusKind.Burn && Lamps.Board && Lamp("blue.pyre_walker")) dur *= Lamps.Full("blue.pyre_walker", "burns", 0.5);
         from ??= credit;
         switch (p.Kind)
         {
@@ -1086,6 +1097,9 @@ public sealed partial class Battle
                 if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                // blue.drowned_lung: frost skills freeze in half the time.
+                if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
+                    cur.Stacks += p.Power * (Lamps.Full("blue.drowned_lung", "chill", 2) - 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1127,6 +1141,7 @@ public sealed partial class Battle
             }
         }
         if (p.Kind is StatusKind.Mark or StatusKind.Bound) MoonOnTheChain(e);
+        if (Lamps.Board) BoardAfterStatus(e, p);
         ReaverAfterStatus(e, p, hitDamage, depth);
         StalkerAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
@@ -1230,6 +1245,8 @@ public sealed partial class Battle
         }
         // Warding light.
         int blockRank = RoundInt(st.Get(Stat.Block));
+        // blue.feral's price: she can't block.
+        if (Lamps.Board && BoardNoTrue) blockRank = 0;
         if (blockRank > 0 && p.BlockT <= 0)
         {
             p.BlockT = new[] { 12.0, 9, 6 }[Math.Min(3, blockRank) - 1];
@@ -1296,6 +1313,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
+        if (Lamps.Board && BoardGroundSpares(school)) return;
         var st = Stats;
         double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
@@ -1328,6 +1346,7 @@ public sealed partial class Battle
         FlareOnPerfect();
         LampsOnPerfect();
         Reflex("perfect");
+        if (Lamps.Board) BoardOnPerfect(from);
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
 
@@ -1471,6 +1490,7 @@ public sealed partial class Battle
         double hpBefore = p.Hp;
         p.Hp -= dmg;
         DamageTaken += dmg;
+        if (Lamps.Board && !silent && !dot) BoardOnHurt(dmg, hpBefore);
         if (!silent && !dot)
         {
             FlareOnHurt(dmg, hpBefore, source);
@@ -1533,6 +1553,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
+        if (Lamps.Board && !BoardMends(source)) return;
         double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1) * ReaverMendMul(source);
         double before = p.Hp;
         p.Hp = Math.Min(MendCeiling(), p.Hp + h);
@@ -1993,7 +2014,7 @@ public sealed partial class Battle
                         continue;
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                     // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
                     if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
                     {
@@ -2151,7 +2172,7 @@ public sealed partial class Battle
                 if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                 }
                 if (pr.GroundOnHit is { } g)
                 {

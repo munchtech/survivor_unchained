@@ -115,6 +115,8 @@ public static class Ev
     public sealed class Ability : CombatEvent { public string Id = ""; public double X, Z, X1, Z1, Angle, Radius; public bool Wide; public int Who = -1; }
     /// <summary>A reflex fired itself (its art's own Ability event says what it did).</summary>
     public sealed class Reflex : CombatEvent { public string Art = ""; public double X, Z; }
+    /// <summary>A link lamp fired its skill (Lamps v2, docs/design/LAMPS_V2_RULES.md "Links"): the lamp, the skill, where she stood.</summary>
+    public sealed class Link : CombatEvent { public string Lamp = "", Skill = ""; public double X, Z; }
     /// <summary>The Flare (docs/design/CLASSES.md §3): Ready when the meter fills, Press at the cast (the
     /// shared beat's freeze and push begin here), Blow for each blow or pulse, End when it lets go.
     /// Clutch: cast below a quarter of health (it mends): a fall the Flare kept from happening, for

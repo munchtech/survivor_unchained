@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Sim;
 
@@ -20,9 +22,9 @@ namespace SurvivorUnchained.Content;
  * on the skill or the grip they change (LampsTests holds the accounting).
  * All of it is data (data/content/lamps.json). */
 
-public enum LampKind { Start, Small, Attribute, Entry, Skill, Notable, Blue, Reflex, ReflexUp, Form, FlareLamp, Ultimate, UltimateMod }
+public enum LampKind { Start, Small, Attribute, Entry, Skill, Notable, Blue, Reflex, ReflexUp, Form, FlareLamp, Ultimate, UltimateMod, Rite, Link, Hand }
 
-public enum LampRegion { Hearth, Road, Bridge, Crossing }
+public enum LampRegion { Hearth, Road, Bridge, Crossing, Ford, OldRoad }
 
 /// <summary>What an effect is: a number, an attribute, a rule the fight reads, a facet of an art,
 /// the dash form, a reflex, a Flare learned, or a Flare reshaped.</summary>
@@ -42,7 +44,33 @@ public sealed class LampEffect
     public string? Attr;
     /// <summary>Rule: the rule's id, read by the fight (Battle.Lamp); its numbers in Args.</summary>
     public string? Rule;
-    public Dictionary<string, double>? Args;
+    [JsonIgnore] public Dictionary<string, double>? Args;
+    /// <summary>The args that are words, not numbers (v2: a rite's `mech`, a link's `trigger`, a small's `when` and `vs`).</summary>
+    [JsonIgnore] public Dictionary<string, string>? Words;
+    /// <summary>The lamp that lights it (stamped as the board loads): a link's pick is saved under it.</summary>
+    [JsonIgnore] public string Lamp = "";
+
+    /// <summary>The file's `args`: numbers go to Args, words to Words (v1's files hold numbers only).</summary>
+    [JsonPropertyName("args")]
+    public Dictionary<string, JsonElement>? ArgsJson
+    {
+        get => null;
+        set
+        {
+            if (value == null) return;
+            foreach (var (k, v) in value)
+            {
+                if (v.ValueKind == JsonValueKind.Number) (Args ??= new())[k] = v.GetDouble();
+                else if (v.ValueKind == JsonValueKind.String)
+                {
+                    var str = v.GetString() ?? "";
+                    if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d)) (Args ??= new())[k] = d;
+                    else (Words ??= new())[k] = str;
+                }
+                else if (v.ValueKind is JsonValueKind.True or JsonValueKind.False) (Args ??= new())[k] = v.GetBoolean() ? 1 : 0;
+            }
+        }
+    }
     /// <summary>Facet, Form, Reflex: the art (Abilities' id) and the facet; a reflex's trigger and a form's or reflex's wait.</summary>
     public string? Art, Facet, Trigger;
     public double Wait;
@@ -58,6 +86,7 @@ public sealed class LampEffect
     public int Phase = 1;
 
     public double Arg(string key, double fallback = 0) => Args != null && Args.TryGetValue(key, out var v) ? v : fallback;
+    public string? Word(string key) => Words != null && Words.TryGetValue(key, out var v) ? v : null;
 }
 
 public sealed class LampDef
@@ -78,6 +107,12 @@ public sealed class LampDef
     public LampEffect[] Effects = [];
     /// <summary>A Flare modifier Light my way may light before Act 1 is done (one per Flare, measured on Act 1; §7).</summary>
     public bool Early;
+    /// <summary>v2: the board's group (board_v2.json), its place on the Lamps screen, a blue lamp's price line, and a
+    /// draft name the story writer has still to make.</summary>
+    public string? Group;
+    public double X, Y;
+    public string? Price;
+    public bool Draft;
 
     /// <summary>Only the calling may light it: the hearth is home, and Flares are the one hard lock (§2.7).</summary>
     public bool Home => Region == LampRegion.Hearth || Kind is LampKind.Ultimate or LampKind.UltimateMod;
@@ -147,6 +182,7 @@ public static class Lamps
         public List<LampDef> Lamps = new();
         /// <summary>The story's fights whose first win lights a lamp (their arena ids).</summary>
         public List<string> Story = new();
+        public int Version = 1;
     }
 
     sealed class Board
@@ -163,7 +199,11 @@ public static class Lamps
             Roads = f.Roads.ToDictionary(r => r.Id);
             Flares = f.Flares.ToDictionary(x => x.Id);
             Story = f.Story;
-            foreach (var l in f.Lamps) Next[l.Id] = new();
+            foreach (var l in f.Lamps)
+            {
+                Next[l.Id] = new();
+                foreach (var e in l.Effects) e.Lamp = l.Id;
+            }
             foreach (var l in f.Lamps)
                 foreach (var a in l.At)
                 {
@@ -175,7 +215,20 @@ public static class Lamps
     }
 
     static Board? board;
-    static Board B => board ??= new Board(Json.Parse<File>(Json.ReadContent("lamps.json")));
+    static Board B => board ??= new Board(Json.Parse<File>(Json.ReadContent(V2 ? "lamps_v2.json" : "lamps.json")));
+
+    /* The flag (docs/design/LAMPS_V2_RULES.md "The flag"): v1's board (lamps.json) unless v2 is switched on, by the env
+     * SU_LAMPS_V2=1, the harness's or the game's --lampsv2 (UseV2), or a test. With it off nothing reads a v2 rule. */
+    static bool? v2;
+    public static bool V2 => v2 ??= Environment.GetEnvironmentVariable("SU_LAMPS_V2") == "1";
+
+    /// <summary>Switch the board (v2 on or off) and read it again.</summary>
+    public static void UseV2(bool on)
+    {
+        if (v2 == on && board != null) return;
+        v2 = on;
+        board = null;
+    }
 
     public static IReadOnlyDictionary<string, LampDef> All => B.All;
     public static IReadOnlyDictionary<string, RoadDef> Roads => B.Roads;

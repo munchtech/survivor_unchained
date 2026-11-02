@@ -256,6 +256,7 @@ public sealed partial class Battle
             ? Lamps.Full("flare.low_unseen", "seconds", 2) : 0;
         CrowdPress(p);
         FlareStagedPress(f);
+        if (Lamps.Board) LinkFire("flare");
         if (stand && f.Blows > 0) FlareBlow();
         return true;
     }
