@@ -1,5 +1,56 @@
 # Handoff: UI design lead
 
+## START HERE (UI 26): the Lamps screen, mockup fix round, then the owner's sheet. UI 25 handed off at ~280k (2 Nov). Branch ui-25 (worktree .claude/worktrees/ui-25, junction godot/assets to its OWN public/assets, integration 6c9c3a213 merged, .godot/imported seeded)
+**Brief (main's, in short):**
+- The job: the real Lamps screen (PHASE2_SCOPE item 5; the owner on 2 Nov: "Board + Lamps first"). A UI design brief at max, then 2-3 directions at 1:1 over real backdrops, day and night. Then one su-lead-max judge in the foreground; the whole-frame gate comes first: "would this frame ship in a AAA game as it stands?" Then ONE comparison sheet to main for the owner's pick: each direction's centerpiece first, at 1:1, day and night, with my recommendation and why.
+- After the pick: the build plan goes in this handoff's top, the brief and mockup sources are committed, and "MR READY ui-25@<commit>" goes to main.
+- Budget: cap ~1.2M (main approved). About 0.75M is spent: lead ~280k, builders 168k + 173k + 152k, judge 87k.
+- Rules: judges run as su-lead-max subagents (the API is paused). Quiet relays: send main only the sheet, HANDOFF READY or a blocker.
+- Data: Classes fixed board_v2: 35d221d27 gives road links gate 8; 428adf41f fits small groups' gates to their size. The mock reads 428adf41f.
+
+**Done:**
+- **The brief:** `docs/design/LAMPS_SCREEN_BRIEF.md`. It covers the layout, zoom stops, reach falloff, states, the card, the wick panel, layouts and respec, pad and mouse navigation, motion and sound, the three directions, performance, data asks to Classes and ship checks.
+- **The mock engine** (Python, static 1:1) and all three directions are built. SCR is `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\45b9ec4e-5fc1-47d3-beda-6b269744e6f9\scratchpad\ui25`.
+  - Code is in `SCR\mock\`. Run `frames.py A|B all` and `frames_c.py all`. `SKINS.md` lists the skin hooks. `state.py` is the mock build: a level-14 warden on the Sunderer, 15 lit, 3 to light.
+  - Frames are in `SCR\mock\out\`: A_day/night/valley, B_day/night/valley and C_day/night, plus `*_half.jpg` and `*_crops.png`. The overview is `SCR\mock\sheet_look1.jpg`.
+  - Backdrops are in `SCR\shoot\out\`:
+    - `u25_town_day_foot/nofoot` and `u25_ford_night_foot/nofoot`: the nofoot frames are the world alone (`--nohud`), the foot frames have pinned seats.
+    - `u25_today_lamps(_night)`: the book open at today's `--board` page.
+    - The scripts are `SCR\shoot\bd2.sh` and `shot.py`.
+  - The builders' briefs are `SCR\briefs\engine_A.md`, `skin_B.md` and `skin_C.md`.
+
+**Judge r1** (xhigh, Item lamps-mock-judge, round 1 of 3). Read `SCR\briefs\judge_1_verdict.md` whole; it is 30 lines.
+- **Ranking:** C first as the DEFAULT (the book's half panel, with her in view), with A ("Nightfall") as its Open wide. B is far, so it is CUT (the scrap rule), with one caption line on the sheet.
+- **The gate:** all 8 frames are NO; C and A are CLOSE.
+- **Worst, first:**
+  - A's board has no edge: it runs under the header and the statues.
+  - C hard-clips lamps at its inner frame.
+  - The path to the next lamp doesn't read.
+  - A's valley is illegible.
+  - The night grade is too black.
+  - The L3/R3 key caps are broken.
+
+**My verdict:** I agree. C as the default with A as Open wide matches the owner's Journal and Map choice ("full screen feels bad") and keeps her seen; A carries the soul, because her build lights the valley. Do the braid nice-to-have: it is the wick panel's soul hook.
+
+**Next (exact):**
+1. **One builder** (su-lead-high, effort medium, `Context budget: 220k`, `Item: lamps-mock-fix`, with your agent id). It applies judge_1_verdict.md's MUST-FIX for C and A, plus the nice-to-haves: the braid, the Turn line wrap, cobalt glass, the link stroke, one gate notch at the road's door, and label margins. It re-runs `frames_c.py all` and `frames.py A all`, and skips B.
+2. **Check, then judge r2.** Look once at a half-size contact sheet. Then run judge r2 (su-lead-max xhigh, `Item: lamps-mock-judge`, round 2) on C_day, C_night, A_day, A_night and A_valley, with judge_1.md's gate and checklist and r1's must-fix list to verify. Fix its blockers.
+3. **The owner's sheet**, centerpiece first, at 1:1:
+   - First, 1:1 crops of the board and card: C_day, C_night with the wick, A_day, A_night.
+   - Then the half-size full frames, captioned in 3 lines each.
+   - Option 1 (recommended): C as the default, Open wide = A. Option 2: A only (full screen). B gets one line: "tried, far: cut".
+   - Copy it to `survivorsunchained_inputs\ui25_lamps\`, send main the paths and the recommendation, and STOP for the pick.
+4. **After the pick:**
+   - Write the build plan for the UI lead (brief §13-§15 plus the pick's look) in this handoff's top.
+   - Commit the brief and the mock sources: copy `SCR\mock\*.py`, `skins\` and `briefs\` into `tools/uiforge/lamps_mock/`, with no PNGs.
+   - Run `dotnet test` (godot/tests), then send MR READY ui-25@<commit>.
+   - Back up SCR to `survivorsunchained_inputs\scratch_ui25` and recycle only SCR (the coordinator's Temp is shared).
+
+**Gotchas:**
+- robocopy from Git Bash fails, because MSYS mangles `/E`; run it in PowerShell.
+- turn.py refuses a stale worktree. Merge integration first: rmdir the junction, merge, remake the junction, then `git update-index --assume-unchanged godot/assets`.
+- `--quick warden` carries one skill at level 1. The foot frames pin the seats and level with `--hud-pin "...,level=14,seats=f5:f4:f5:f3:f4"`. Those are arbitrary skills; `foot.paint_seat` repaints seat 3 as Sunder.
+
 ## DONE (UI 24, 2 Nov): HUD clean-up, MR READY (branch ui-24, worktree .claude/worktrees/ui-24; remove after the merge)
 **The owner's ask:** "clean up the inner edges of the statues, as well as the skill bar bordering. but it can go for the item vfx is asking about too".
 **Judged (item hud24-cleanup, max):** r1 FAIL close (items 1 statue edges + 2 bordering PASS; 3 fade FAIL close; 4 icons PWN); r2 **PASS-WITH-NOTES** (fade look PASS; trigger fixes numeric, done after: 0 fades under 1500 px2 in two 45 s mark runs). Every HUD gate YES; frame NOs were world only.
