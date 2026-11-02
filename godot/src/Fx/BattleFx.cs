@@ -1799,6 +1799,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
+        if (Flare.HushesSwings) Blades.Clear();
         Blades.Step(fdt);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);

@@ -73,6 +73,9 @@ public partial class FlareFx : Node3D
     public double HerRate => Motion <= 0 ? 1 : Stop > 0 ? 0.1 : 1;
     /// <summary>Ordinary damage numbers are hidden from the press until half a second after the Spend.</summary>
     public bool Quiet => Active && (spendAt < 0 || t < spendAt + 0.5);
+    /// <summary>Her auto-attack's swings are hidden from the Long Cut's press until its sweep is under way (the Oathblade's
+    /// doubled arc, frozen by the hold beside her, read as the Long Cut's sweep: vfx9 fix2).</summary>
+    public bool HushesSwings => Active && IsLongCut && (spendAt < 0 || t < spendAt + 0.35);
 
     /// <summary>The calling's Draw and Hold (FLARE_LOOK §1.2): stalker 0.15, reaver 0.2, warden and arcanist 0.3.</summary>
     static double HoldOf(string calling) => calling switch { "stalker" => 0.15, "reaver" => 0.2, _ => 0.3 };

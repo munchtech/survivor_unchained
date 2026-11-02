@@ -70,6 +70,8 @@ public partial class CrowdView : Node3D
     {
         /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
         public float Char;
+        /// <summary>Burning up with the Long Cut's struck (it lay in the reach before the blow came).</summary>
+        public bool Burning;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -120,6 +122,8 @@ public partial class CrowdView : Node3D
     /// <summary>How a held body is drawn (FlareFx.StatueLook: x frozen, y char, z dissolve, w burning): Burns Twice's
     /// ice statues, the Long Cut's burn-up in gold.</summary>
     public static Func<int, Godot.Vector4>? FlareStatueLook;
+    /// <summary>Seconds since the Long Cut reached a corpse's place, or -1 (FlareFx.CorpseBurnAge).</summary>
+    public static Func<double, double, double>? FlareCorpseBurn;
     /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
     public static Func<int, float>? FlareStatueFlash;
 
@@ -479,6 +483,14 @@ public partial class CrowdView : Node3D
     {
         double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
         corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
+        // The Long Cut burns up the dead already down in its reach with the struck, and they are gone after.
+        if (FlareCorpseBurn != null)
+            corpses.RemoveAll(c =>
+            {
+                double k = FlareCorpseBurn(c.X, c.Z);
+                if (!c.Burning && k >= 0 && time - c.Born > k) c.Burning = true;
+                return c.Burning && (k < 0 || k >= SurvivorUnchained.View.FlareFx.BurnTime);
+            });
         foreach (var c in corpses)
         {
             var crowd = Crowd(c.Visual);
@@ -494,6 +506,12 @@ public partial class CrowdView : Node3D
             var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
+            if (c.Burning)
+            {
+                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)FlareCorpseBurn!(c.X, c.Z));
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), 0, lk.W, Charred(tint, lk.Y), c.Glow);
+                continue;
+            }
             crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
     }

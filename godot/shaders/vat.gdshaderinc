@@ -165,12 +165,19 @@ void fragment() {
 		float lick = vat_noise(vec3(vat_local.x * 4.5, vat_local.y * 1.6 - TIME * 3.4, vat_local.z * 4.5));
 		float tongue = smoothstep(0.52, 0.8, lick * 0.75 + rim * 0.5) * fx.w;
 		float soot = smoothstep(0.28, 0.56, lick * 0.75 + rim * 0.35) * fx.w;
-		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
-		// (The Long Cut's burn-up is dawn-gold, its fire not the ember's orange: FlareFx.LongCut.)
-		float lc_gold = flare_lc.x > 0.0 ? 1.0 : 0.0;
-		// (night: the struck bodies' glow at 0.6, the Long Cut's luminance cap; flare_lc.w is night)
-		float lc_night = lc_gold > 0.5 ? mix(1.0, 0.6, flare_lc.w) : 1.0;
-		e += (mix(vec3(1.0, 0.3, 0.03), vec3(1.0, 0.62, 0.2), lc_gold) * tongue + mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.7, 0.32), lc_gold) * pow(rim, 3.0) * fx.w * 0.5) * lc_night;
+		if (flare_lc.x > 0.0) {
+			// The Long Cut's burn-up is char, not fire: the body goes dark, and its dawn-gold lives only in a ragged
+			// band just ahead of the burn line (the dissolve's edge, below). Tongues by the rim lit most of a body
+			// from the play camera ("rim" is nearly all of it from up here): the struck pack read as cream plaster
+			// ghosts with black heads (vfx9 fix2). (night: the struck bodies' glow at 0.6, the luminance cap)
+			float lc_night = mix(1.0, 0.6, flare_lc.w);
+			float ahead = smoothstep(fx.y + 0.13, fx.y + 0.015, dn) * (0.55 + 0.45 * lick);
+			c *= 1.0 - 0.6 * fx.w;
+			e += vec3(1.0, 0.5, 0.13) * ahead * fx.w * 1.1 * lc_night;
+		} else {
+			c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
+			e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
+		}
 	}
 	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
 	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An
@@ -183,7 +190,10 @@ void fragment() {
 	float crit_k = 1.0 + 0.6 * fx_crit;
 	// (its own hue only, and warm: a lift toward white, even shaded, read as an untextured clay body; at x2.3
 	// a grey hood under firelight still went white)
-	c = min(c * (1.0 + 1.6 * crit_k * struck * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck, vec3(0.85 + 0.05 * fx_crit));
+	// (The Long Cut's struck get no lift: their flash is a gold rim only, the first frames of the burn-up; a lifted
+	// pale body was the start of the cream ghosts: vfx9 fix2.)
+	float lc_k = flare_lc.x > 0.0 ? 1.0 : 0.0;
+	c = min(c * (1.0 + 1.6 * crit_k * struck * (1.0 - lc_k) * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck * (1.0 - lc_k), vec3(0.85 + 0.05 * fx_crit));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -212,7 +222,8 @@ void fragment() {
 	e += vec3(1.0, 0.62, 0.38) * c * struck * 0.25 * crit_k;
 	// (and a pop at its edge, in its own paint: scaled by c, or from up here the rim covers the whole body
 	// and it is the old cream cut-out again)
-	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit);
+	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit) * (1.0 - lc_k);
+	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_lc.w);
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {
@@ -221,7 +232,8 @@ void fragment() {
 		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
 	}
 	// Ember at the dissolve's edge.
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.7, 0.32) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.05, fx.y, dn) * 2.0 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.52, 0.14) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.04, fx.y, dn) * 1.5 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 

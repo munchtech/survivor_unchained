@@ -598,9 +598,42 @@ public partial class FlareFx
         if (!IsLongCut) return new Vector4(1, 0, 0, 0);
         if (!doomed.TryGetValue(enemy, out var d)) return Vector4.Zero;
         if (d.Pending || t < d.At) return Vector4.Zero;
-        float k = (float)(t - d.At);
-        return new Vector4(0, 0.9f * Mathf.SmoothStep(0.02f, 0.2f, k), Mathf.SmoothStep(0.08f, BurnLen, k), 0.7f * Mathf.SmoothStep(0, 0.05f, k) * (1 - Mathf.SmoothStep(0.35f, 0.65f, k)));
+        return BurnLook((float)(t - d.At));
     }
+
+    /// <summary>For CrowdView: seconds since the Long Cut's sweep or fuse reached a body lying at (x, z), or -1. The dead
+    /// already down in its reach burn up with the struck (a dark star of her earlier kills lay round her after the
+    /// clear: vfx9 fix2); CrowdView asks it only of corpses that were down before their moment.</summary>
+    public double CorpseBurnAge(double x, double z)
+    {
+        if (!Active || !IsLongCut) return -1;
+        double when = double.MaxValue;
+        var rel = new Vector2((float)x - at.X, (float)z - at.Z);
+        if (lcSweepT >= 0 && rel.Length() <= reach)
+        {
+            float behind = Mathf.PosMod(Mathf.Atan2(rel.Y, rel.X) - lcSweepFrom, Mathf.Tau);
+            when = lcSweepT + SweepEase(behind / Mathf.Tau) * SweepLen + 0.02;
+            if (Night) when += 0.4 * Mathf.Clamp(rel.Length() / Math.Max(1f, reach), 0, 1);
+        }
+        if (lcCleaveT >= 0 && lcLen > 0)
+        {
+            var w = new Vector3((float)x, 0, (float)z);
+            float along = (new Vector2(w.X, w.Z) - lcO).Dot(lcDir), across = Math.Abs(SeamAcross(w));
+            if (along >= -1 && along <= lcLen + 1 && across <= lcHalf)
+            {
+                double s = FuseAt(Mathf.Clamp(along, 0, lcLen)) + 0.02 + 0.012 * across;
+                if (Night) s += 0.4 * Mathf.Clamp(across / Math.Max(1f, lcHalf), 0, 1);
+                when = Math.Min(when, s);
+            }
+        }
+        return when == double.MaxValue || t < when ? -1 : t - when;
+    }
+
+    /// <summary>For CrowdView: a corpse's burn-up look (y char, z dissolve, w burning) this long after its moment, as the struck's.</summary>
+    public static Vector4 BurnLook(float k) => new(0, 0.9f * Mathf.SmoothStep(0.02f, 0.2f, k), Mathf.SmoothStep(0.08f, BurnLen, k), 0.7f * Mathf.SmoothStep(0, 0.05f, k) * (1 - Mathf.SmoothStep(0.35f, 0.65f, k)));
+
+    /// <summary>The burn-up's length (Flare time).</summary>
+    public static float BurnTime => BurnLen;
 
     /// <summary>For CrowdView: a held body's struck flash, its rim for 3 frames (real time) as its moment comes.</summary>
     public float StatueFlash(int enemy)
