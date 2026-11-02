@@ -363,6 +363,8 @@ vec3 flare_boom_flash(vec2 w) {
 // 1 the tip), V across a 2.4 m band.
 
 #define FL_BAND 2.4
+// The fresh seam's white-gold stage (0 off: it shows its orange b6 look from the fuse on).
+#define FL_LC_FRESH_CORE 0
 
 float fl_h1(float x) { return fract(sin(x * 127.1 + 311.7) * 43758.5453); }
 vec2 fl_h2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
@@ -466,8 +468,11 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	// (r3c: the walls catch a faint light only deep in the gap, near its floor: a flat 0.06 over the gap (r3b: over
 	// the whole char) was the even tube round the hairline. Embers in the crack, never on its lips.)
 	float gap = smoothstep(0.72, 0.6, B.a) * inb;
-	vec3 coreCol = fl_seam_col(h * mix(0.7, 1.12, core) * hot);
-	coreCol = mix(coreCol, vec3(1.0, 0.85, 0.55) * max(coreCol.r, 0.5), fresh * core);
+	// (final cuts: with the white-gold stage off, the colour heat is capped at the b6 look's gold-orange from the first frame)
+	float hc = h * mix(0.7, 1.12, core) * hot;
+	if (FL_LC_FRESH_CORE == 0) hc = min(hc, 0.8);
+	vec3 coreCol = fl_seam_col(hc);
+	coreCol = mix(coreCol, vec3(1.0, 0.85, 0.55) * max(coreCol.r, 0.5), fresh * core * float(FL_LC_FRESH_CORE));
 	vec3 e = coreCol * pow(h, 1.3) * (core * 0.95 + 0.04 * gap * smoothstep(0.45, 0.2, B.a) * open) * mix(3.4, 2.0, night) * fade;
 	// (night: the core capped, one white-gold line; the field's glow comes from the lights, not from here)
 	float cap = mix(1e3, flare_lc.z, night);
@@ -501,7 +506,7 @@ vec3 flare_sweep_at(vec2 w) {
 	float tail = behind < 0.3054 ? mix(0.6, 0.35, behind / 0.3054) : mix(0.35, 0.15, clamp((behind - 0.3054) / 0.3054, 0.0, 1.0)) * (1.0 - smoothstep(0.6109, 0.69, behind));
 	float after = crossed * flare_lc.y * tail * smoothstep(5.67, 6.0, swept);
 	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 2.0;
-	float radial = smoothstep(0.4, 1.4, r) * (1.0 - smoothstep(R * 0.88, R * 1.04, r + wob));
+	float radial = smoothstep(1.6, 3.6, r) * (1.0 - smoothstep(R * 0.88, R * 1.04, r + wob)) * (1.0 - smoothstep(10.0, 12.0, r));
 	// (one continuous band: no streak texture along it, so no hot spots)
 	return vec3(1.0, 0.74, 0.42) * (max(wedge, after) + wash) * radial * flare_lc.w;
 }

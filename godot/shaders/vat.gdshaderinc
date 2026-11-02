@@ -207,7 +207,8 @@ void fragment() {
 			float crack = (1.0 - smoothstep(0.0, 0.016, abs(cn - 0.5))) * smoothstep(0.4, 0.62, vat_noise(vat_local * 3.0 + 7.0));
 			// (r4a: the cracks only up from the feet, where the seam's light is: over whole bodies they were a carpet)
 			crack *= 1.0 - smoothstep(0.25, 1.0, vat_local.y);
-			e += vec3(1.0, 0.46, 0.1) * crack * fx.w * 3.5 * lc_night;
+			// (final cuts: no gold cracks on the seam's dead; the char and the light from below stay)
+			float lc_unused = crack;
 			}
 		} else {
 			c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
@@ -272,7 +273,7 @@ void fragment() {
 	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
 	// (r4a: about 2 px wide on the seam's deaths (dn_ew), so it survives sunlight; none on the ash deaths)
 	// (r3c: out by fx.y 0.62, so the last ~30% of a body (dn spans ~0.14-0.86) goes as dark ash, not gold lace or dust)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_hue.a) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + dn_ew, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * (1.0 - lc_ash) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_hue.a) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + dn_ew, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * 0.0 /* final cuts: no gold burn edge */ : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 

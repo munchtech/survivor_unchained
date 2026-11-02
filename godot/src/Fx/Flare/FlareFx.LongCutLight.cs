@@ -215,7 +215,7 @@ public partial class FlareFx
     {
         if (lcColumnFx == null || lcColumnMesh == null || lcColumnMat == null || lcHandLight == null) return;
         long f = lcSpendFrame < 0 ? -1 : (long)Engine.GetFramesDrawn() - lcSpendFrame;
-        (float h, float a) = f switch { 0 => (0.45f, 2.2f), 1 => (2.3f, 3.2f), 2 => (0.5f, 1.6f), 3 => (0.35f, 0.8f), _ => (0f, 0f) };
+        (float h, float a) = f switch { 0 => (0.45f, 1.5f), 1 => (2.3f, 2.4f), 2 => (0.5f, 0.8f), 3 => (0.35f, 0.4f), _ => (0f, 0f) };
         float flash = LessFlash ? 0.6f : 1f;
         bool on = a > 0;
         lcColumnFx.Visible = on;
@@ -223,7 +223,7 @@ public partial class FlareFx
         {
             lcHandLight.Visible = on;
             lcHandLight.OmniRange = 3f;
-            lcHandLight.LightEnergy = (Night ? 0.9f : 3.5f) * a * flash * LcLight;
+            lcHandLight.LightEnergy = (Night ? 0.55f : 2.0f) * a * flash * LcLight; // (final cuts: the pool at her feet no brighter than the press frame's brightest spot on her)
         }
         if (!on) return;
         var foot = new Vector3(Her.X, (float)HeightAt(Her.X, Her.Z) + 0.02f, Her.Z);

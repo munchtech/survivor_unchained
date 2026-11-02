@@ -266,6 +266,8 @@ public partial class FlareFx
 
     /// <summary>The seam's deaths: within this of the drawn crack (m). The rest are the sweep's: ash, no gold (vfx9 r4a).</summary>
     const float LcSeamBand = 1.8f;
+    /// <summary>Final cuts (vfx9): no gold on the struck (cracks, burn edge, rising motes, ash sparks) and no heat in the chunks.</summary>
+    const bool LcGoldDead = false;
     /// <summary>The burn's lag behind the fuse, seconds a metre from the drawn crack (r4a: 0.1, so it visibly leaves the crack).</summary>
     const double CharPerMetre = 0.1;
     /// <summary>The ash deaths' fall (Flare time): greyed, then gone in flakes.</summary>
@@ -445,7 +447,7 @@ public partial class FlareFx
             if (k >= len) continue;
             if (!d.Ash)
             {
-                if (lcAshN < AshMax && R() < dt * 12)
+                if (LcGoldDead && lcAshN < AshMax && R() < dt * 12)
                 {
                     lcAshN++;
                     glow.Spawn(new FlareBits.P
@@ -463,7 +465,7 @@ public partial class FlareFx
                 lcSootN++;
                 float h = 0.15f + R() * 1.5f * Mathf.Clamp((k - 0.08f) / (len - 0.08f), 0, 1) * d.Scale;
                 var at0 = d.Where + new Vector3((R() - 0.5f) * 0.6f, h, (R() - 0.5f) * 0.6f);
-                if (R() < 1f / 7)
+                if (LcGoldDead && R() < 1f / 7)
                     glow.Spawn(new FlareBits.P
                     {
                         Kind = FlareBits.Kind.Mote, At = at0, V = new Vector3((R() - 0.5f) * 0.8f, 0.5f + R() * 0.8f, (R() - 0.5f) * 0.8f), Life = 0.3f + R() * 0.3f,
@@ -656,7 +658,7 @@ public partial class FlareFx
         var hot = new StandardMaterial3D
         {
             ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha, BlendMode = BaseMaterial3D.BlendModeEnum.Add,
-            AlbedoColor = new Color(1f, 0.6f, 0.22f, 0.5f),
+            AlbedoColor = new Color(1f, 0.6f, 0.22f, LcGoldDead ? 0.5f : 0f),
         };
         var node = new MeshInstance3D { Mesh = meshes[lcChunkN % meshes.Length], MaterialOverlay = hot, CastShadow = GeometryInstance3D.ShadowCastingSetting.On };
         AddChild(node);
@@ -695,7 +697,7 @@ public partial class FlareFx
             // (gone by sinking into the ground in its last half second)
             float sink = Mathf.SmoothStep(c.Life - 0.5f, c.Life, c.Age);
             c.Node.Transform = new Transform3D(basis.Scaled(Vector3.One * c.Scale), c.P - Vector3.Up * sink * 0.3f);
-            c.Hot.AlbedoColor = new Color(1f, 0.6f, 0.22f, 0.5f * (1 - Mathf.SmoothStep(0, 0.6f, c.Age)));
+            c.Hot.AlbedoColor = new Color(1f, 0.6f, 0.22f, (LcGoldDead ? 0.5f : 0f) * (1 - Mathf.SmoothStep(0, 0.6f, c.Age)));
         }
     }
 
