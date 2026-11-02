@@ -1,5 +1,86 @@
 # Handoff: skills look and feel
 
+## Combat VFX 11 (vfx-7, 2 Nov): item 3 MR READY (the Warden skill VFX, shipped as a net gain)
+**r2 max judge (the 5th and last round):** every piece is a net gain over r1, and all ship. The 5 safe fixes are applied (ba15c6805). r2 ground build: afdb30caf.
+- **Verdicts:**
+  - Sunder line: PASS-WITH-NOTES, close.
+  - Groundbreaker crack: PASS-WITH-NOTES, close.
+  - Toll wave: PASS-WITH-NOTES, close.
+  - Rebuke: PASS-WITH-NOTES, medium.
+  - Bell: close. It regressed to pale glass, and is gold again by fix 1.
+  - Heave and aftershock: FAIL, medium (night close). They ship because r1 was a grey puff.
+  - Barrier: FAIL, medium. It ships as harmless.
+- **Safe fixes (ba15c6805):**
+  - the bell and toll rings are gold (toll_bell/toll_wave shaders);
+  - the heave light holds its peak to f12 and is gone by f30;
+  - the Sunder jets are gone by f18, at x0.7 opacity;
+  - the crack tip core is x2 (was x4; it clipped cream at night);
+  - the drag streaks are gold at alpha 0.2.
+  - New dev flag `--wfx-off`: no Warden VFX (perf A/B).
+  - Also new in r2: `--horde-arc` (Game.cs, shot staging). Groundbreaker numbers and flinch wait for the heave (view side; a kill still drops on the sim tick, ~15 frames early).
+- **Known (closed, r2 judge):**
+  - The heave and aftershock slabs have no rock material and read as clay blocks by day. That is a material job, not values.
+  - By day the dense pack hides most of the heave, and its dust wall doesn't read.
+  - At night the Sunder line's wide base reads thin.
+  - Rebuke has no shield flare by day; the barrier has no shimmer (only a small cream crescent at her feet).
+  - Day dust is ~17% under #8C7558 in value, and the Sunder jets are 1.34-1.41x the ground (spec 1.6x).
+  - Her auto-attack crescent overlaps the Sunder line's base (every 4th swing).
+  - The "THE MAP" hint panel shows despite `--no-banners`.
+- **Later list (a design or material pass, the owner's call):**
+  - a rock material for the heave slabs;
+  - a dust wall that reads in a dense pack;
+  - Rebuke's shield flare and the barrier shimmer.
+- **Shots:**
+  - Final: `survivorsunchained_inputs\vfx10\warden\g3\wg_sheet_{day,night}.jpg` and `h3\wh_sheet_{day,night}.jpg`. The judged sets were g2 and h2.
+  - Scripts: this session's (45b9ec4e) scratchpad `vfx11\wg\run2.sh` (`export GBARC=355:25:7:2 GBX=--no-spawn SLX=--no-spawn; bash run2.sh g3 day`) and `vfx11\wh\shoot.sh` (`SECS=40 bash shoot.sh h3 "--no-banners --horde-hp 10"`).
+- **Tests:** 1373/0/10.
+- **Perf:** a Release ABAB.
+  - Setup: night, arena, a 250 horde, `--horde-hp 10`, `--wfx-off` (A) vs on (B), all four skills.
+  - Window 8-10.5 s (the crowd is dense only then; foes 145-163): B-A CPU -0.06/-0.15 ms and GPU -0.06/-0.06 ms, so the cost is in the noise (A1 vs A2 differ by 0.15 ms).
+  - Window 8-38 s: also within the noise.
+  - Per-cast spikes weren't timed: the beat clock isn't the CSV clock.
+  - Files: `survivorsunchained_inputs\vfx11\perf\wfx_*`.
+- **Cost:** item 3 is about 1.2M against the 1.1M cap. This session spent ground solver 0.20M, judge 0.14M, workers ~0.13M and lead ~0.08M.
+
+## Combat VFX 10 → 11 START (vfx-7, 2 Nov): item 3, the Warden skill VFX, PAUSED in round 2 (wind-down)
+Item 2 (her auto-attacks) is MERGED (ef4e85632); its section is below. **Item 3** is the Warden skill VFX from `docs/design/WARDEN_SKILLS_VFX_HOOKS.md`. Budget: ~0.95M to its MR, with ~0.65M spent. Round cap: raised to 5 by main for `Item: warden skills`. 3 rounds are used (two build solvers and the r1 judge); the 2 left cover exactly **the r2 ground solver and the r2 judge**. After r2, MR what passes as a net gain and close the rest as known: cut any piece still far rather than patch it (no r3 unless main approves).
+- **Code:**
+  - `godot/src/Fx/BattleFx.WardenGround.cs`: Sunder's heavy line `slash_heavy_line`, Groundbreaker crack `slash_quake_crack`, heave `slash_quake_heave`, aftershock `slash_quake`; it uses the Long Cut crack tiles and chunks.glb.
+  - `godot/src/Fx/BattleFx.WardenHoly.cs`: Rebuke shield flare and lash, Watch Bell lathe bell, toll wave and drag streaks, and the `Ev.Barrier` shimmer and rim.
+  - Shaders: `toll_bell`, `toll_wave`, `barrier_shell`, and `shockwave` (now with a width channel).
+  - `rebuke` and `watch_bell` are split out of `nova_holy`.
+- **Dev flags:** `--wg-beats`, `--wg-aftershock`, `--wh-beats`, `--wh-from T`, `--horde-hp M` (view-side spawn toughness in Game.cs, not the sim), `--no-banners`.
+- **Shots:** session 14076147 scratchpad `vfx10\wg\shoot.sh|sheet.py` and `vfx10\wh\shoot.sh|sheet.py`, writing to `survivorsunchained_inputs\vfx10\warden\<label>\`. The r1 sets are `g1` and `h1`.
+- **r1 max judge: FAIL, medium-far overall.**
+  - Groundbreaker crack: PASS-WITH-NOTES.
+  - Heave and aftershock: FAR, scrap rule. Rebuild the impact's look and keep the crack, timing and slab motion.
+  - Sunder line, Rebuke, toll wave and barrier: medium.
+  - Bell: close.
+- **r2, done:** the holy pair's numeric fixes, built by a Sonnet worker (b69c4c686), shot as `warden\h2\wh_sheet_{day,night}.jpg` with all tags present. UNJUDGED; only placement was checked. The toll smear was the distortion front (30 px, now ~5 px).
+  - Barrier rim on an ellipsoid, not her mesh.
+  - Lash halo #FFC55A, about 65% saturated (the judge's cap was 35%).
+- **r2, next (NOT started): one medium solver (su-lead-high, effort medium) on the ground pair**, with the r1 judge's fixes:
+  1. **Heave:**
+     - its own warm omni: #FF9A4A, range 3.5 m, 2-frame rise, 18-frame decay; at peak the ground in 2.5 m is as bright as her lamp pool;
+     - crater cracks glowing #C8551E, fading over 20 frames;
+     - slabs 0.9-1.4 m tall and 1.3x wider, with fresh-earth tops at 1.6-2x the ground's value and shadows on;
+     - a dust wall of 24-32 puffs, 35-55 px, 0.4-0.6 m tall, rolling out to 3.25 m in 0.5 s, with night cores at 2x or more of the ground;
+     - 12-20 faceted lit rocks, not white specks;
+     - the aftershock follows from the heave.
+  2. **Sunder line:**
+     - 25-32 px at the base tapering to 10 px;
+     - a #FF8A3A 4-6 px core held 10 frames, then cooling over 12;
+     - start it 0.6 m past her shield;
+     - 6-8 dust jets 1.0-1.5 m tall, ground tan at 1.6x or more;
+     - raised lips 0.08-0.12 m with a lit top edge;
+     - camera shake at ~40% of Groundbreaker's.
+  3. **Groundbreaker damage numbers and hit reactions** show ~18 frames before the heave. The fix is view-side only: delay its numbers to the heave (never the sim).
+  4. **Crack tip:** a #FF7A2E 5-7 px core with a 30-40 px glow behind it, and 3-5 small stones popping along the path.
+  5. **All ground dust:** ground tan #8C7558 by day at 70-80% opacity (it's grey-white smoke now).
+  6. **Staging:** by day, the densest pack on the open road 7-9 m out, not under the bush; at night, the pack outside her lamp. Sunder frames 3/5/10/30 on a swing whose arc doesn't cover the line, with 3-5 enemies along it. `--no-banners`. Label `g2`.
+- **Then the max judge r2** on g2 + h2 (day and night, whole-frame gate first; Item: warden skills, the 5th and last spawn). Then MR: tests (1373/0/10) and a Release perf ABAB (a toll and a heave in a 250 night horde).
+- **Cost:** ground solver 0.19M, holy solver 0.14M, judge 0.13M, holy worker 0.13M, lead ~0.06M: ~0.65M.
+
 ## Combat VFX 10 (vfx-7, 2 Nov): item 2 MR READY (her auto-attacks); item 3 (Warden skills) next
 **Item 2, her auto-attacks** (SKILL_VFX_STUDY.md §6 item 2): r3 max (the FINAL round, cap raised to 4 by main) said **PASS-WITH-NOTES on all four and ship as a net gain**, with its 5 safe cuts applied (7deaa78a6). History: r1 FAIL (sweep medium, Disc and Bash far), so the sources were rebuilt; r2 FAIL medium on all four; r3 PASS-WITH-NOTES (sweep, hit kit and Bash close; Disc medium by day, close by night).
 - **What ships:**

@@ -3,13 +3,14 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 2 November 2026 (coordinator 45b9ec4e)
+- **Lighting lead STARTED** ("Yes, start it"): Rendering 4 on the night crowd-shadow starburst under her lamp (render-4, ~0.6M).
 - **Phase 2 order DECIDED: "Board + Lamps first"** (PHASE2_SCOPE recommendation): Classes 18 (board data + sim, classes-17) and UI 25 (Lamps screen max design brief, ui-25) in parallel; the Warden's wave after Classes' three sessions.
 - **Long Cut clip fix round FUNDED** ("Yes, fund it"): after Animation 60's max judge FAIL CLOSE (held kneel hunch at the play camera, statue hold, coil not loaded). One fix round + one max judge, ~0.35M hard, Animation 61 in anim-61. PASS = clip back on; FAIL = closes as known, clip stays off.
 
 ## 2 November 2026 (coordinator 14076147)
 - **UI (HUD clean-up):** "ui lead can run.  I wanted it to clean up the inner edges of the statues, as well as the skill bar bordering.  but it can go for the item vfx is asking about too". DONE: UI 24 merged c80e2f946 (statue edges, bar ends, glass-statue fade, Rebuke/Watch Bell/Groundbreaker icons).
 - **Animation (her Long Cut pose):** "Yes, start it". IN PROGRESS: Animation 59 (anim-59), greatsword route, one-handed coil, budget 2.3M.
-- **PENDING (the owner):** the Phase 2 order (docs/design/PHASE2_SCOPE.md: board data + Lamps screen in parallel, then the Warden's wave, which main recommends; or the wave first); whether to start a Lighting lead for the night crowd-shadow starburst under her lamp (it fails night play frames on its own).
+- **PENDING (the owner):** (answered 2 Nov: board + Lamps first) (answered 2 Nov: Lighting lead started).
 - **Later list:** auto-attacks are "clean, on palette, not yet effortlessly badass" (a design pass: the sweep's weight, the Disc's speed).
 
 ## 29 October 2026, evening (coordinator afafb81e)

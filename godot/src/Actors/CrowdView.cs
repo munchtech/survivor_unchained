@@ -179,6 +179,9 @@ public partial class CrowdView : Node3D
     /// <summary>A body's hit-kit struck look this frame (BattleFx.HitKit): (flash blend 0-0.5, gold rim 0-1); X &lt; 0 none.
     /// It replaces the sim's flash on the body (her auto-attacks' struck: no cream wash, no chalk ghosts by night).</summary>
     public static Func<int, Vector2>? StruckRim;
+    /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
+    /// heave: the flinch waits for the heave); null for the sim's.</summary>
+    public static Func<int, float?>? FlashHeld;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -451,7 +454,7 @@ public partial class CrowdView : Node3D
             if (stRole != null && e.State == EnemyState.Active && asset.Clips.ContainsKey(stRole)) { role = stRole; t = stT; }
         }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
-        float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
+        float f = e.State == EnemyState.Dying ? 0 : (FlashHeld?.Invoke(e.Id) ?? (float)e.Flash) * (1 - Still);
         // The struck flare's instant of white across the whole body is for a few at once, and two
         // champions besides (any ruler always); the rest keep it at the rim. A blast that hits sixty
         // at once turned sixty bodies white in the same frame.
