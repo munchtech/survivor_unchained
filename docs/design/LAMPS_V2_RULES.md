@@ -132,3 +132,16 @@ The rule ids are fixed; the content writes the args and the words.
 - With v2 on:
   - unknown lit ids in a save are dropped on load (save v6 does the real migration later);
   - the `--board` pages draw v2's lamps.
+
+## As built (the code lead, 2 November)
+
+The sim side is `Sim/BoardRules.cs` plus guarded hooks (every one behind `LampLoadout.Board`, set when a v2 rule is lit). With v2 off the harness is byte-identical to before (full and empty lamps byte-for-byte; suggested the same lines). What the contract left open, and how the code reads it:
+- **Args:** an `args` value that is a word (`mech`, `trigger`, `when`, `vs`, `status`) lands in `LampEffect.Words`; numbers in `Args`. `status` may also be the effect's own `status` field.
+- **By night (v2 only):** a small's rules and numbers come into the night at a quarter (`Size`, `SizeOn`); v1's smalls still give only the lean. Rites, links, Hand lamps and blue args are read in full.
+- **`Battle.LinkWait(lamp)`** is the share of the wait still to run: 0 ready, 1 just fired. `Battle.LinkSkill(lamp)` is the skill it would fire now.
+- **Links:** a `kills` link counts every kill, fires on the count-th if its wait is up (else on the next one that is); `crowd` and `still` are checked 4 times a second; `hurt` reads one blow after the shield; `low` is the crossing of half health.
+- **Rites:** a heavy rite counts its own firings and applies only to skills the warden's Hand doesn't already make heavy. A stone rite makes the wall answer on hands.json's numbers for any calling.
+- **Hand lamps:** `hand` deltas add to hands.json's number of the same name (`per_level` or `perLevel`); nothing when Unhoused. `hand.warden.heavy_stone` and `hand.stalker.second_wind` are built.
+- **Blues, all phase 1 but Iron Pilgrim (5):** Bell and Blade is built (the sim has a perfect dodge): its "windows" are the perfect-dodge window and a lamp block's chance. Pack Remembers is built (summons have a lifetime: it is lifted; the growth is +`per` damage a kill of hers, to `cap`). Lightning Rod's 40% is on champions. Poacher's Mercy doubles a thing's bleed at most once a second. Unspun's cost never takes her last point of health. Mourner's Debt blocks every other mend (regen, draughts, lifesteal). Feral turns off the Warding light and lamp blocks. Drowned Lung's `faster` 0.5 = chill builds twice as fast from frost skills.
+- **Stat prices** live in `LampBook.BluePrices`: Butcher's Block `health` (less maximum health, More), Poacher's Mercy and Pack Remembers `charges` (from the base two: one fewer; a gear charge still adds).
+- **Unhoused:** "other callings' roads" = lamps with a calling that isn't hers; crossings, the Ford and the Old Roads keep their gates.

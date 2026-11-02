@@ -2557,7 +2557,7 @@ public sealed partial class Battle
         });
         if (s != null)
         {
-            s.LifeT = life;
+            s.LifeT = Lamps.Board && Lamp("blue.pack_remembers") ? 0 : life; // blue.pack_remembers: summons stay the night
             s.MaxHp = s.Hp = s.Def.Health * AllyToughness(EmberLevel) * Stats.Get(Stat.SummonHealth);
             s.Damage = s.Def.Damage * AllyStrength(EmberLevel);
         }
@@ -2603,7 +2603,7 @@ public sealed partial class Battle
         var s = SpawnEnemy(kind, x + Math.Cos(a) * 1.2, z + Math.Sin(a) * 1.2, new SpawnOpts { Level = EmberLevel, Disposition = Disposition.Ally, Faction = Faction.Ally, Style = SpawnStyle.Rise });
         if (s == null) return null;
         s.SummonedBy = w.Id;
-        s.LifeT = life;
+        s.LifeT = Lamps.Board && Lamp("blue.pack_remembers") ? 0 : life; // blue.pack_remembers: summons stay the night
         s.MaxHp = s.Hp = s.Def.Health * AllyToughness(EmberLevel) * (1 + 0.1 * (w.Rank - 1)) * Stats.Get(Stat.SummonHealth);
         s.Damage = w.Damage;
         return s;
