@@ -2,6 +2,10 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 1 November: coordinator b9e8a09f
+**Live (report to b9e8a09f), all from 759a3fb69, own junctions:** Face 49 (face-49: her skin under cool low light reads warm/matte; rig/grade fix), Combat VFX 6 (vfx-6: chevrons off round marks, lanes keep them; r1 FAIL close, r2 last), Env 23 (env-23: lilac ford treeline = C02 night haze #6e5a66 -> #1f2d48, cleared by main, also c03 line 71; then the Verge map-edge skirt), Rendering 2 (rend-2: lavender night faces / blue day shadows on NPCs). Tam: owner "Not yet" (1 Nov).
+**Routes logged (unowned):** night arena ground crushes to pure black outside her lamp (Lighting); the Red Hand reads flat unshaded orange (Character art). Old worktrees armor-7 (dirty) and classes-15 unmerged 7-10 days: report in the sweep.
+
 ## 29 October, evening: coordinator afafb81e
 **NPC 20 MERGED** (npc-16@56e8adfec, tests 1326/0/10; worktree removed, an empty locked folder remains for the sweep): all 10 named NPCs PASS-WITH-NOTES (xhigh), wired and staged; 0 Meshy credits; ~2.3M. Known: lavender night faces and blue daylight shadows on every NPC = town lighting (unowned, for a lighting lead); red hair reads as sculpted clay. Marionette npcgen-1@f2d0d5b local only (re-bake nose clamp untested on an NPC). Left: Tam (needs a child body). Sample sheet sent to the owner.
 **STORYBOOK 5 MERGED** (storybook-2@113d7c1a2, tests 1335/0/10; worktree removed): SB00 ink lore intro (89.5 s) judged, cap reached (A PASS-WITH-NOTES; B/C near, fixed by the judges' own cuts, not re-judged); forge CUT, p1 = ChatGPT rune door; p5 close CUT. `live` FALSE until the OWNER says yes (sheet + mp4 sent: survivorsunchained_inputs\storybook5_owner). OWNER (29 Oct eve): "a good start", but the fire-to-lake pan (p6) still looks bad; later (OWNER_NOTES). VO still placeholder. Source layers moved to survivorsunchained_inputs\storybook_out (9.5 GB; sb_wire_ink.py rebuilds from it, repoint the path). ~2.4M.
