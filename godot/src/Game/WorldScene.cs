@@ -262,6 +262,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 {
                     if (e is Ev.LevelUp) Player?.LevelFlare();
                     else if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Ability ab)
                     {
                         if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
