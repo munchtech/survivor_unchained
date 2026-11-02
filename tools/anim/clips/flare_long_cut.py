@@ -17,7 +17,7 @@ the VFX (VFX 9): the sweep ~0.20 s, the cleave's contact 0.545 s, the seam coole
 - f16-24 THE KNEEL lands (the knee down by f20): right knee on the ground, toes tucked; left foot forward, its knee up;
   the blade near upright (87 deg down), its tip 0.2 m in the seam 0.56 m ahead; both fists on the grip at chest
   height, the right under the guard, the left above it; chest up, the back straight, the head bowed (a knight's kneel).
-- f24-57 the kneel held, a slow breath; nothing else moves.
+- f25-57 the kneel held, sat up (the chest back over the hips), two breaths; the head lifts f48-57 to look down the seam.
 - f57-72 the recovery: the blade drawn out (the tip clear by f62), she rises, the right foot stepping through to its
   place, then the left; her left hand lets go (f64-68) and her right carries the blade down to her side.
 - f72-80 eased into idle_warden's frame 0 (every joint).
@@ -75,9 +75,11 @@ def _d(theta, x=0.0):
 # (frame, P: the right fist's pocket point in her space, d: the blade's way, pole: the right elbow's way from the
 # shoulder in the chest's frame). The cleave keyed every frame.
 BLADE = [
-    (3, (-0.34, 0.99, -0.18), _n(-0.10, -0.50, -0.86), (0.16, 0.37, 0.91), (0.06, -0.87, 0.50), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
-    (5, (-0.43, 0.99, -0.295), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
-    (6, (-0.438, 0.975, -0.314), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
+    # The press: the blade swung out low to her right side (the tip 0.7 m off her right leg, the pommel clear of her side) on its way behind her.
+    (1, (-0.40, 1.00, -0.10), _n(-0.45, -0.70, -0.55), (0.16, 0.37, 0.91), (0.47, -0.88, -0.09), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
+    (3, (-0.35, 0.95, -0.25), _n(-0.10, -0.50, -0.86), (0.16, 0.37, 0.91), (0.06, -0.87, 0.50), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
+    (5, (-0.45, 0.91, -0.42), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
+    (6, (-0.458, 0.895, -0.44), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
     (7, (-0.46, 1.20, -0.25), _n(-0.19, -0.37, -0.91), (0.21, 0.78, 0.59), (-0.42, -0.81, 0.42), (0.79, -0.6, 0.14), (-0.98, 0, 0.2)),
     (8, (-0.40, 1.50, -0.17), _n(-0.25, -0.15, -0.96), (0.15, 0.94, 0.31), (-0.96, 0.17, 0.22), (0.65, -0.44, 0.62), (-0.86, 0.49, 0.15)),
     (9, (-0.10, 1.86, -0.22), _n(-0.12, -0.25, -0.96), (0.12, -0.14, 0.98), (0.14, 0.95, -0.27), (0.56, -0.02, 0.83), (-0.29, 0.94, -0.21)),
@@ -89,8 +91,8 @@ BLADE = [
     (17, (0.00, 0.99, 0.64), _d(-73), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (0.42, 0.89, -0.16), (0.0, 0.29, 0.96)),
     (18, (0.00, 0.93, 0.60), _d(-74), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (0.17, 0.81, -0.56), (-0.5, 0.24, 0.83)),
     (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.19, 0.84, -0.51), (-0.5, 0.24, 0.83)),
-    (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
-    (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
+    (25, (0.00, 0.93, 0.52), _d(-75.5), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.45, 0.85, -0.25), (-0.5, 0.22, 0.84)),
+    (57, (0.00, 0.93, 0.52), _d(-75.5), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.45, 0.85, -0.25), (-0.5, 0.22, 0.84)),
     # The edge rolled 50 deg about the blade's own line as it comes out (the tip does not move for it) and the elbow
     # lifted, so her forearm is near square (twist +9 deg, the wrist 18) before it turns to the idle's (+93): from the
     # kneel's -60 the forearm had 150-180 deg to turn on the way to her side and the blade swung across her with it.
@@ -101,7 +103,7 @@ BLADE = [
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
-R_ON = [(0, 0.0), (3, 1.0)]   # (the tail: the arm's own joints eased into the idle's, _settle)
+R_ON = [(0, 0.0), (1, 1.0)]   # (the tail: the arm's own joints eased into the idle's, _settle)
 # The left hand on the grip: it joins at the top of the rise (travelling f7-9, in front of her face).
 L_ON = [(0, 0.0), (7, 0.0), (9, 1.0), (62, 1.0), (66, 0.0)]
 # The coil is one-handed: the left arm reaches forward down the line, open-handed (a counterweight), from the idle's
@@ -141,10 +143,10 @@ def _blade_at(fr):
 # Each foot by its ball (as flare.py): (frame, the ball's offset from the idle's (x, z), lift (deg up on the ball),
 # arc (how high it is carried to this key)). The right foot steps back into the coil, rises on its ball, and from f16
 # goes down onto its tucked toes under the kneeling knee (KNEEL, below); it steps through to its place on the rise.
-FOOT_R = [(0, (0.0, 0.0), 0, 0), (4, (-0.04, -0.36), 0, 0.05), (6, (-0.04, -0.36), 0, 0), (9, (-0.04, -0.36), 28, 0),
-          (13, (-0.04, -0.36), 34, 0), (16, (-0.04, -0.36), 40, 0),
+FOOT_R = [(0, (0.0, 0.0), 0, 0), (4, (-0.04, -0.40), 0, 0.05), (6, (-0.04, -0.40), 0, 0), (9, (-0.04, -0.40), 28, 0),
+          (13, (-0.04, -0.40), 34, 0), (16, (-0.04, -0.40), 40, 0),
           (62, (-0.04, -0.40), 40, 0), (69, (0.0, 0.0), 0, 0.06), (END, (0.0, 0.0), 0, 0)]
-FOOT_L = [(0, (0.0, 0.0), 0, 0), (4, (0.0, 0.0), 0, 0), (9, (0.0, 0.0), 0, 0), (13, (0.0, 0.0), 12, 0),
+FOOT_L = [(0, (0.0, 0.0), 0, 0), (4, (0.0, 0.10), 0, 0.03), (9, (0.0, 0.10), 0, 0), (13, (0.0, 0.10), 12, 0),
           (17, (0.07, 0.45), 0, 0.06), (66, (0.07, 0.45), 0, 0), (74, (0.0, 0.0), 0, 0.05), (END, (0.0, 0.0), 0, 0)]
 # The kneel: the right knee down on the ground at z KNEE_KZ (her space), the foot up on tucked toes behind it; eased in
 # over f16-20 and out over f58-63 (the hips and the right leg between the kneel's and the keys').
@@ -172,15 +174,15 @@ def _body_keys():
                      "clav_l": cl, "clav_r": cr}, ease)
     return [
         k(0, "ease"),
-        k(3, "auto", hips=(-0.02, -0.03, -0.06), hrot=(-22, 0, 0), spine=(-18, 2, 0), neck=(18, 0, 0), head=(18, 0, 0),
+        k(3, "auto", hips=(-0.025, -0.07, -0.12), hrot=(-22, -2, 0), spine=(-18, -1, 0), neck=(18, 0, 0), head=(18, 0, 0),
           cl=(0, 10), cr=(0, -3)),
         # The coil: the hips down and back over the back foot, one long twist, the head back down the line.
-        k(5, "auto", hips=(-0.04, -0.06, -0.12), hrot=(-40, 2, 0), spine=(-28, 4, 0), neck=(35, -2, 0), head=(35, 0, 0),
+        k(5, "auto", hips=(-0.045, -0.14, -0.26), hrot=(-40, -5, 0), spine=(-28, -4, 0), neck=(35, -2, 0), head=(35, 0, 0),
           cl=(0, 16), cr=(0, -5)),
-        k(6, "auto", hips=(-0.045, -0.065, -0.13), hrot=(-42, 2, 0), spine=(-29, 4, 0), neck=(36, -2, 0), head=(36, 0, 0),
+        k(6, "auto", hips=(-0.05, -0.15, -0.27), hrot=(-42, -5, 0), spine=(-29, -4, 0), neck=(36, -2, 0), head=(36, 0, 0),
           cl=(0, 17), cr=(0, -5)),
         # The rise: unwinding, up onto the ball of the back foot.
-        k(8, "auto", hips=(-0.03, -0.02, -0.10), hrot=(-24, 0, 0), spine=(-16, -2, 0), neck=(16, 0, 0), head=(18, 2, 0),
+        k(8, "auto", hips=(-0.03, -0.045, -0.13), hrot=(-24, 0, 0), spine=(-16, -2, 0), neck=(16, 0, 0), head=(18, 2, 0),
           cl=(4, 6), cr=(8, 0)),
         k(9, "auto", hips=(-0.02, 0.0, -0.08), hrot=(-14, -2, 0), spine=(-8, -6, 0), neck=(8, 0, 0), head=(9, 4, 0),
           cl=(10, 2), cr=(12, 2)),
@@ -200,13 +202,18 @@ def _body_keys():
           cl=(-2, 8), cr=(-2, 8)),
         k(21, "auto", hips=(0.02, -0.51, 0.12), hrot=(0, 5, 0), spine=(0, 9, 0), neck=(0, 7, 0), head=(0, 23, 0),
           cl=(-2, 8), cr=(-2, 8)),
-        k(24, "ease", hips=(0.02, -0.50, 0.12), hrot=(0, 2, 0), spine=(0, 2, 0), neck=(0, 8, 0), head=(0, 20, 0),
-          cl=(-1, 7), cr=(-1, 7)),
-        # Held: a slow breath (in to f40, out to f57).
-        k(40, "ease", hips=(0.02, -0.497, 0.12), hrot=(0, 1, 0), spine=(0, 0, 0), neck=(0, 8, 0), head=(0, 19, 0),
-          cl=(1, 7), cr=(1, 7)),
-        k(57, "ease", hips=(0.02, -0.50, 0.12), hrot=(0, 2, 0), spine=(0, 2, 0), neck=(0, 8, 0), head=(0, 20, 0),
-          cl=(-1, 7), cr=(-1, 7)),
+        # Risen into the held kneel by f25: sat up (the chest back over the hips, the shoulders back), the head bowed
+        # less; two breaths (in f25-33, out -41, in -48), the head lifting f48-57 to look down the seam.
+        k(25, "ease", hips=(0.02, -0.50, 0.12), hrot=(0, -2, 0), spine=(0, -10, 0), neck=(0, 7, 0), head=(0, 17, 0),
+          cl=(0, -1), cr=(0, -1)),
+        k(33, "ease", hips=(0.02, -0.495, 0.12), hrot=(0, -2, 0), spine=(0, -11.5, 0), neck=(0, 7, 0), head=(0, 17, 0),
+          cl=(5, -1.5), cr=(5, -1.5)),
+        k(41, "ease", hips=(0.02, -0.50, 0.12), hrot=(0, -2, 0), spine=(0, -10, 0), neck=(0, 7, 0), head=(0, 16, 0),
+          cl=(0, -1), cr=(0, -1)),
+        k(48, "ease", hips=(0.02, -0.495, 0.12), hrot=(0, -2, 0), spine=(0, -11.5, 0), neck=(0, 7, 0), head=(0, 16, 0),
+          cl=(5, -1.5), cr=(5, -1.5)),
+        k(57, "ease", hips=(0.02, -0.50, 0.12), hrot=(0, -2, 0), spine=(0, -10, 0), neck=(0, 4, 0), head=(0, 6, 0),
+          cl=(0, -1), cr=(0, -1)),
         # The recovery.
         k(62, "auto", hips=(0.02, -0.46, 0.12), hrot=(0, 6, 0), spine=(0, 8, 0), neck=(0, 4, 0), head=(0, 8, 0),
           cl=(0, 6), cr=(0, 6)),
@@ -502,6 +509,7 @@ class LongCut:
 
 
 ARM_SETTLE = (66, 74)
+ENTRY = 1
 
 
 def _settle(rig, clip, a=SETTLE, b=END):
@@ -516,6 +524,14 @@ def _settle(rig, clip, a=SETTLE, b=END):
     arm = [I["upperarm_r"]]
     for j in arm:
         arm += [k for k, p in enumerate(sk.parent) if p == j and k not in arm]
+    # The entry: her right arm crossfaded over f0-2 from idle_warden's own (its solved joints), so the press starts from
+    # the idle's arm and not the base's bare hand (the f0 pop: the blade 78 mm into her right thigh).
+    for fr in range(ENTRY):
+        w = _smooth(fr / ENTRY)
+        k = (fr - END) % n
+        for j in arm:
+            q, o = ref.rot[k, j], clip.rot[fr, j]
+            clip.rot[fr, j] = qslerp(q, -o if float(np.dot(o, q)) < 0 else o, w)
     a0, b0 = ARM_SETTLE
     for fr in range(a0, b + 1):
         w = _smooth(min(1.0, (fr - a0) / (b0 - a0)))
