@@ -30,6 +30,7 @@ SETS = {
     # north edge, NE corner and west edge by night, each at the bound)
     "vergeedge": (["--zone", "verge", "--time", "day", "--auto", "idle", "--spots-clear", "--spots", "0,-141;140,-140;0,141;141,60"], 4),
     "fordedge": (NIGHT + ["--spots-clear", "--spots", "0,-123;123,-123;-123,60"], 3),
+    "fordedgens": (NIGHT + ["--no-skirt", "--spots-clear", "--spots", "123,-123"], 1),
     "fordw": (NIGHT + ["--spots", "0,-38;0,-37;-7,-46"], 3),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)

@@ -39,15 +39,21 @@ public class GroundSkirtTests
     public void FloraMirrorsOutNearTheEdgeAndFrays()
     {
         Assert.Empty(GroundSkirt.MirrorOut(0, 0, 145));
-        Assert.Equal((-147f, 0f), GroundSkirt.MirrorOut(-143, 0, 145)[0]);       // 2 m in: always copied, 2 m out
         int far = 0, near = 0;
         for (int k = 0; k < 400; k++)
         {
-            near += GroundSkirt.MirrorOut(-140, -100 + k * 0.5f, 145).Count;     // 5 m in
-            far += GroundSkirt.MirrorOut(-118, -100 + k * 0.5f, 145).Count;      // 27 m in: mostly dropped
+            float z = -100 + k * 0.5f;
+            foreach (var (x, cz, _) in GroundSkirt.MirrorOut(-144.5f, z, 145))
+            {
+                Assert.InRange(-145 - x, GroundSkirt.Gap, GroundSkirt.Gap + GroundSkirt.Push);   // never on the edge line
+                Assert.InRange(cz - z, -GroundSkirt.Slide, GroundSkirt.Slide);
+            }
+            near += GroundSkirt.MirrorOut(-140, z, 145).Count;                 // 5 m in: always copied
+            far += GroundSkirt.MirrorOut(-118, z, 145).Count;                  // 27 m in: mostly dropped
         }
         Assert.Equal(400, near);
-        Assert.InRange(far, 1, 60);
+        Assert.InRange(far, 0, 60);
         Assert.Equal(3, GroundSkirt.MirrorOut(143, 143, 145).Count);           // a corner: both edges and the diagonal
+        Assert.True(GroundSkirt.Mirrors("pine") && !GroundSkirt.Mirrors("rock") && !GroundSkirt.Mirrors("dead") && !GroundSkirt.Mirrors("pebble"));
     }
 }

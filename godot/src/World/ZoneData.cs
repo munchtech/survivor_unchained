@@ -121,12 +121,15 @@ public sealed class ZoneData
             }
             // (Env 23) the plants near the edge mirrored out onto the ground's skirt (GroundSkirt.MirrorOut), so the
             // woods do not stop in a line at the map's edge; their heights the skirt's (the edge's, straight out).
-            if (Place == null && !SurvivorUnchained.Args.Has("no-skirt"))
+            // Only the living, soft kinds (GroundSkirt.Mirrors); each copy turned about the up axis (never reflected, so
+            // never inside out).
+            if (Place == null && !SurvivorUnchained.Args.Has("no-skirt") && SurvivorUnchained.World.GroundSkirt.Mirrors(g.GetProperty("kind").GetString()!))
             {
                 var more = new List<Transform3D>(list);
                 foreach (var t0 in list)
-                    foreach (var (mx, mz) in SurvivorUnchained.World.GroundSkirt.MirrorOut(t0.Origin.X, t0.Origin.Z, Half))
-                        more.Add(new Transform3D(t0.Basis, new Vector3(mx, t0.Origin.Y + (float)(Ground.HeightAt(mx, mz) - Ground.HeightAt(t0.Origin.X, t0.Origin.Z)), mz)));
+                    foreach (var (mx, mz, yaw) in SurvivorUnchained.World.GroundSkirt.MirrorOut(t0.Origin.X, t0.Origin.Z, Half))
+                        more.Add(new Transform3D(new Basis(Vector3.Up, yaw) * t0.Basis,
+                            new Vector3(mx, t0.Origin.Y + (float)(Ground.HeightAt(mx, mz) - Ground.HeightAt(t0.Origin.X, t0.Origin.Z)), mz)));
                 list = more.ToArray();
             }
             // The kind's look: wind, its leaves' colours (sRGB hex, as the web

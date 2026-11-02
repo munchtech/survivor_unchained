@@ -57,23 +57,39 @@ public static class GroundSkirt
     /// thinning to none at `FloraBand`, so the trees past the edge fade out rather than stop in a line.</summary>
     public const float FloraBand = 30, FloraFull = 8;
 
+    /// <summary>No copy stands nearer the edge line than this (the edge's own plants and their copies would pair up
+    /// across it as a planted row: judge, e23v2 vergeedge_02), and each is pushed out up to `Push` more and slid
+    /// along the edge up to `Slide` either way, so no copy faces its original.</summary>
+    public const float Gap = 3, Push = 3, Slide = 4;
+
+    /// <summary>Only living, soft things are mirrored (trees, bushes, ferns, grasses, flowers): a stone, a dead tree or a
+    /// mushroom copied reads as placed (judge, e23v2).</summary>
+    public static bool Mirrors(string kind) => kind is "pine" or "broadleaf" or "autumn" or "bush" or "bramble" or "berry"
+        or "fern" or "plant" or "clover" or "flowers" or "grass";
+
     /// <summary>A plant at (x, z) within FloraBand of an edge, mirrored out across it onto the skirt (as the ground's
-    /// paint is mirrored there): each copy's (x, z), or none. Across both edges near a corner (three copies). A copy is
-    /// kept by a hash of where it stands, likelier the nearer the edge, so the band's far side frays.</summary>
-    public static System.Collections.Generic.List<(float X, float Z)> MirrorOut(float x, float z, float half)
+    /// paint is mirrored there), then pushed out and slid along (Gap, Push, Slide) and turned (Yaw, radians): each
+    /// copy, or none. Across both edges near a corner (three copies). A copy is kept by a hash of where it stands,
+    /// likelier the nearer the edge, so the band's far side frays.</summary>
+    public static System.Collections.Generic.List<(float X, float Z, float Yaw)> MirrorOut(float x, float z, float half)
     {
-        var outs = new System.Collections.Generic.List<(float, float)>(3);
-        float? mx = x < -half + FloraBand ? -2 * half - x : x > half - FloraBand ? 2 * half - x : null;
-        float? mz = z < -half + FloraBand ? -2 * half - z : z > half - FloraBand ? 2 * half - z : null;
+        var outs = new System.Collections.Generic.List<(float, float, float)>(3);
+        bool nx = x < -half + FloraBand, px = x > half - FloraBand, nz = z < -half + FloraBand, pz = z > half - FloraBand;
+        float h1 = Hash(x, z), h2 = Hash(x + 17.3f, z - 5.1f), h3 = Hash(x - 3.7f, z + 11.9f);
+        // out past the edge by the original's depth inside it, at least Gap, plus up to Push
+        float Out(float inside) => System.Math.Max(inside, Gap) + Push * h1;
+        float? mx = nx ? -half - Out(x + half) : px ? half + Out(half - x) : null;
+        float? mz = nz ? -half - Out(z + half) : pz ? half + Out(half - z) : null;
+        float slide = (h2 * 2 - 1) * Slide;
         void Try(float cx, float cz)
         {
             float d = System.Math.Max(System.Math.Abs(cx), System.Math.Abs(cz)) - half;   // how far past the edge
             float t = System.Math.Clamp((d - FloraFull) / (FloraBand - FloraFull), 0, 1);
             float keep = 1 - t * t * (3 - 2 * t);
-            if (keep > 0 && Hash(cx, cz) < keep) outs.Add((cx, cz));
+            if (keep > 0 && Hash(cx, cz) < keep) outs.Add((cx, cz, h3 * 6.2831853f));
         }
-        if (mx is float a) Try(a, z);
-        if (mz is float b) Try(x, b);
+        if (mx is float a) Try(a, z + slide);
+        if (mz is float b) Try(x + slide, b);
         if (mx is float c && mz is float e) Try(c, e);
         return outs;
     }
