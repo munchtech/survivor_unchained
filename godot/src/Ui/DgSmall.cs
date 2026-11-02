@@ -25,15 +25,17 @@ public partial class DgSmall : Control
     /// seats' row).</summary>
     public const float RingD = 64, WellK = 60f / 78, HoleR = 23, DashDy = 4;
     const int RingOf = 2;
-    /// <summary>The flask's middle above the draught's place.</summary>
-    public const float FlaskDy = -6;
+    /// <summary>UI 27 r2 (the owner: "potion should be same size as space button"): the draught sits in the dash's
+    /// seat (the same ring and well, at the dash's scale, mirrored), the flask drawn inside its hole at this share of
+    /// its size (DgPanel.FlaskIn, the geo's flask "inner"), its middle on the ring's.</summary>
+    public const float FlaskDy = DashDy;
     /// <summary>The flask's drawn size.</summary>
     public static Vector2 FlaskSize => DgMeterGeo.Flask().Size;
     /// <summary>Where the dash ring is drawn (HUD px): the round's middle, DashDy below it.</summary>
     public static Vector2 DashMid => Instrument.DashAt;
     /// <summary>The dash's and the flask's callout radii as drawn (UI 23: at DgPanel's scales).</summary>
     public static float DashR => RingD / 2 * DgPanel.DashScale;
-    public static float FlaskR => Math.Max(FlaskSize.X, FlaskSize.Y) / 2 * DgPanel.FlaskScale;
+    public static float FlaskR => RingD / 2 * DgPanel.FlaskScale;
     /// <summary>Where the flask is drawn (HUD px): the round's middle, FlaskDy above it.</summary>
     public static Vector2 DraughtMid => Instrument.DraughtAt;
     /// <summary>The dash's glass light (it has no element): the river's cold green.</summary>
@@ -65,6 +67,7 @@ public partial class DgSmall : Control
         fmat.SetShaderParameter("top", top);
         fmat.SetShaderParameter("bot", bot);
         // (its foot clear above the key plates' line, Instrument.DgTagTop, so R hangs from it inside the bar)
+        fs *= DgPanel.FlaskIn;
         AddChild(new ColorRect { Material = fmat, MouseFilter = MouseFilterEnum.Ignore, Size = fs, Position = Size / 2 - fs / 2 + new Vector2(0, FlaskDy) });
     }
 
@@ -75,6 +78,7 @@ public partial class DgSmall : Control
         int n = Math.Max(0, o.Count);
         float want = n > 0 ? 1 : Math.Clamp(o.Recharge, 0, 1);
         if (had < 0) { had = n; lvl = want; }
+        if ((n > 0) != (had > 0)) QueueRedraw();   // (its well dims with none left, as the dash's)
         if (n < had) { draining = true; wave = 1; }
         else if (n > had && had == 0) wave = 0.6f;
         had = n;
@@ -87,7 +91,19 @@ public partial class DgSmall : Control
 
     public override void _Draw()
     {
-        if (!dash) return;
+        if (!dash)
+        {
+            // UI 27 r2: the draught's seat, the dash's ring and well (the flask, a child, draws in its hole)
+            var cf = Size / 2 + new Vector2(0, FlaskDy);
+            if (DgRiver.Well(RingOf) is { } fw)
+            {
+                float wd = RingD * WellK;
+                DrawTextureRect(fw, new Rect2(cf - Vector2.One * wd / 2, Vector2.One * wd), false, o.Count > 0 ? Colors.White : new Color(0.72f, 0.72f, 0.72f));
+            }
+            else DrawCircle(cf, HoleR + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
+            if (DgRiver.Ring(RingOf) is { } fr) DrawTextureRect(fr, new Rect2(cf - Vector2.One * RingD / 2, Vector2.One * RingD), false);
+            return;
+        }
         // (round 2: rebuilt as a hair-bound seat like the skills', a little smaller, its middle level with theirs)
         var c = Size / 2 + new Vector2(0, DashDy);
         bool any = o.Count > 0;

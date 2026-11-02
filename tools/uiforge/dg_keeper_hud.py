@@ -55,12 +55,18 @@ LD_PLATE = np.array([0.0, -0.816, 0.578], np.float32)   # P1: lit from straight 
 PANEL_RECT = (600, 988, 720, 92)                          # symmetric about 960 (UI 27: was 576, 768 wide)
 S, ANCHOR = 0.94, (295.33, 1080.0)                        # the reference frame (G1, the keeper's mirrored lock, the shine)
 GIRL_AT, GIRL_SIZE = (294.83, 822.0), (474.67, 258.0)    # place() convention (the frame's best match)
-G_S, G_D = 0.876, (49.5, 1.9)                             # UI 27: her own group scale about ANCHOR, then this offset
+G_S, G_D = 0.876, (69.2, 1.9)                             # UI 27: her own group scale about ANCHOR, then this offset
+                                                          # (r2: x 49.5 -> 69.2: her flared strand cut, her back's own mass meets the top line)
 GLOBE = (378.0, 960.0, 59.4)
 K_S, K_TOP, GAP_R = 0.28, 205.0, -17.0                    # the keeper's frame (as UI 24 built it)
 KF_X1 = 1294.0                                            # the keeper's frame was set off UI 24's PL_X1
-K_D = (-20, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12)
-FLASK_S = 0.94                                            # the flask draws at the girl's old scale (unchanged)
+K_D = (-40, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12; r2 x -20 -> -40)
+FLASK_S = 0.84                                            # UI 27 r2 (the owner: "potion should be same size as space button"): the
+FLASK_IN = 0.80                                           # draught sits in the dash's seat (its ring and well at the dash's 0.84,
+FLASK_DY = -7.0                                           # mirrored), the flask art inside its hole at FLASK_IN (r <= 22.5 of 23)
+LOCK_ON = False                                           # UI 27 r2: the keeper's mirrored back lock dropped (its loop spilled over the
+                                                          # bar; under the bar the keeper's own robe tucks, asserted)
+BAND = 45                                                 # UI 27 r2: the rows over PL_TOP where each back is a clean line (back_line)
 LOCK_D = (-10.0, 4.0)                                     # K1: the mirrored back lock moved left and down
 EG_R = 37.0
 
@@ -379,6 +385,106 @@ def clean_edges(L, region, protect=None, ramp=2.0, min_keep=2000):
     return np.dstack([rgb2, a2]).astype(np.float32), int(len(small))
 
 
+# ================================================================== UI 27 r2: the backs over the bar, clean lines
+SOLID_W = 10.0      # px at 1080: from each back's edge inward the figure is solid this far, every row of the band
+
+
+def runs(m):
+    """a bool row's runs of True: (starts, ends), ends exclusive"""
+    d = np.diff(np.r_[0, m.astype(np.int8), 0])
+    return np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]
+
+
+def flush_floor(e, ylo, sign):
+    """the line a back may not stop short of (UI 27's flush): the volute's inner end (vie) + 0.5 px inward over the 12
+    rows over PL_TOP, eased in from the back's own edge over the 12 rows before (sign +1 the girl, -1 the keeper,
+    mirrored); e per 1080 row from ylo"""
+    vie = PL_X0 + 2 * VOL_R
+    tgt = vie + 0.5 if sign > 0 else 1920 - vie - 0.5
+    yy = ylo + np.arange(len(e))
+    i0 = int(PL_TOP) - 24 - ylo
+    t = sm(PL_TOP - 24, PL_TOP - 12, yy)
+    fl = e[i0] + (tgt - e[i0]) * t
+    return np.where(yy >= PL_TOP - 24, fl, -1e9 * sign)
+
+
+def fill_strip(rgb, a, strip):
+    """the texels of strip made solid, their colour inpainted from the figure round them (straight rgb, alpha)"""
+    if not strip.any():
+        return rgb, a, 0
+    hole = strip & (a < 0.9)
+    u8 = (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+    unknown = ndimage.binary_dilation(hole, iterations=1) | (a < 0.5)          # (known: the opaque figure only)
+    inp = cv2.inpaint(u8, unknown.astype(np.uint8) * 255, 4, cv2.INPAINT_TELEA).astype(np.float32) / 255
+    rgb = np.where(hole[..., None], inp, rgb)
+    return rgb, np.where(strip, np.maximum(a, 1.0), a), int(hole.sum())
+
+
+def girl_back_line(art):
+    """UI 27 r2 (the owner: "erase the stuff that spills up top"): her back over the bar, the BAND rows over PL_TOP,
+    is her hair's own mass: the flared strand that leaves it (and the see-through hook between them) is cut away
+    along the mass's edge (the mass's edge where the strand stands apart from it; between its last clear row over the
+    band and the strand's foot, a straight run), held to flush_floor and never moving back out going down. Returns
+    (art, ylo, c per row, px2 filled)."""
+    x0, y0, w, h = girl_screen_rect()
+    Z, WX = 4, 560
+    ylo, yhi = int(PL_TOP) - BAND, int(PL_TOP)
+    a4 = place(art, (x0 - WX) * Z, (y0 - ylo) * Z, w * Z, h * Z, (200 * Z, (yhi - ylo) * Z))[..., 3]
+    e = np.full(yhi - ylo, np.nan)
+    c600 = (600 - WX) * Z
+    for r in range(yhi - ylo):
+        st, en = runs(a4[r * Z + Z // 2] > 0.5)
+        k = [i for i in range(len(st)) if st[i] <= c600 < en[i]]
+        assert k, ('her mass not over x 600', ylo + r)
+        k = k[0]
+        apart = any(en[j] - st[j] > 2 for j in range(k + 1, len(st)))
+        if r == 0 or apart:
+            e[r] = WX + en[k] / Z
+    kn = np.nonzero(~np.isnan(e))[0]
+    e = np.interp(np.arange(len(e)), kn, e[kn])
+    c = np.maximum.accumulate(np.maximum(e, flush_floor(e, ylo, 1)))
+    H_, W_ = art.shape[:2]
+    ay, ax = np.mgrid[0:H_, 0:W_].astype(np.float32)
+    X, Y = x0 + (ax + 0.5) * w / W_, y0 + (ay + 0.5) * h / H_
+    rc = ylo + 0.5 + np.arange(len(c))
+    cv_, ev = np.interp(Y, rc, c), np.interp(Y, rc, e)
+    band = (Y >= ylo) & (Y < PL_TOP + 2)
+    keep = np.where(band, np.clip(cv_ + 0.75 - X, 0, 1), 1.0)
+    a = art[..., 3] * keep
+    strip = band & (Y < PL_TOP) & (X <= cv_) & (X >= ev - 1.0)
+    rgb, a2, nf = fill_strip(art[..., :3], a, strip & (np.clip(cv_ + 0.75 - X, 0, 1) > 0.5))
+    # (over the bar the edge is the line itself, a 1 px ramp, so no resample wobbles it; under it UI 24's clean_edges)
+    a2 = np.where(band & (Y < PL_TOP) & (X >= cv_ - 3.0), np.clip(cv_ + 0.75 - X, 0, 1), a2)
+    out = np.dstack([rgb, a2]).astype(np.float32)
+    region = ((Y >= PL_TOP) * sm(PL_TOP + 16, PL_TOP + 12, Y) * sm(596.0, 604.0, X)).astype(np.float32)
+    out, _ = clean_edges(out, region)
+    return out, ylo, c, nf * (w / W_) * (h / H_)
+
+
+def keeper_back_line(K, Xi, Yi, Z):
+    """UI 27 r2: the keeper's back over the bar, the mirror of girl_back_line: with the mirrored lock gone his robe's
+    own edge, held to flush_floor (mirrored), never moving back out going down; premultiplied K in the sprite's frame
+    (Xi, Yi its mock pixel-index units). Returns (K, c per row from PL_TOP - BAND, px2 filled)."""
+    Ks, a = straight(K), K[..., 3]
+    Xs, Ys = Xi + 0.5 + K_D[0], Yi + 0.5 + K_D[1]
+    ylo, yhi = int(PL_TOP) - BAND, int(PL_TOP)
+    e = np.full(yhi - ylo, 1e9)
+    for r in range(ylo, yhi):
+        for j in np.nonzero((Ys[:, 0] >= r) & (Ys[:, 0] < r + 1))[0]:
+            m = (a[j] > 0.5) & (Xs[j] < 1330)
+            if m.any():
+                e[r - ylo] = min(e[r - ylo], Xs[j][np.nonzero(m)[0].min()] - 0.5 / Z)
+    assert (e < 1330).all(), 'the keeper has no back in the band'
+    c = np.minimum.accumulate(np.minimum(e, flush_floor(e, ylo, -1)))
+    rc = ylo + 0.5 + np.arange(len(c))
+    cv_, ev = np.interp(Ys, rc, c), np.interp(Ys, rc, e)
+    band = (Ys >= ylo) & (Ys < PL_TOP)
+    a = a * np.where(band & (Xs < 1330), np.clip(Xs - (cv_ - 0.75), 0, 1), 1.0)
+    strip = band & (Xs >= cv_ - 0.5) & (Xs <= ev + 1.0) & (np.clip(Xs - cv_ + 0.75, 0, 1) > 0.5)
+    rgb, a2, nf = fill_strip(Ks, a, strip)
+    return np.dstack([rgb * a2[..., None], a2]).astype(np.float32), c, nf / (Z * Z)
+
+
 _GA = {}
 
 
@@ -401,6 +507,7 @@ def girl_art():
         lab2[..., 2] = lab[..., 2] + (138.0 - lab[..., 2]) * 0.7 * wm
         rgb = lab2rgb(lab2)
         art = np.dstack([np.where(wm[..., None] > 0.003, rgb, art[..., :3]), art[..., 3]])
+        art, _, _GA['back'], _GA['fill'] = girl_back_line(art)
         _GA['a'] = (art, n_g1, n_isl)
     return _GA['a']
 
@@ -599,11 +706,14 @@ def clearances():
     yy = np.linspace(PL_TOP, 1080, 3000)
     cx = end_contour(yy)
     B = np.stack([cx[cx < 900], yy[cx < 900]], 1)
+    # (UI 27 r2: the flask sits in the dash's seat, mirrored: its ring at FLASK_S round (FLASK_X, SEAT_Y + FLASK_DY), the
+    # flask art inside it at FLASK_IN)
     fl = np.asarray(Image.open(os.path.join(UI, 'dg_meters', 'flask_full.png')).convert('RGBA'), np.float32)[..., 3] / 255
-    fw, fh = 39 * FLASK_S, 56 * FLASK_S
+    fw, fh = 39 * FLASK_S * FLASK_IN, 56 * FLASK_S * FLASK_IN
     j, i = np.nonzero(fl > 0.5)
-    fp = np.stack([FLASK_X - fw / 2 + (i + 0.5) * fw / fl.shape[1], SEAT_Y - 9 - fh / 2 + (j + 0.5) * fh / fl.shape[0]], 1)
+    fp = np.stack([FLASK_X - fw / 2 + (i + 0.5) * fw / fl.shape[1], SEAT_Y + FLASK_DY - fh / 2 + (j + 0.5) * fh / fl.shape[0]], 1)
     th = np.linspace(0, 2 * np.pi, 720)
+    fp = np.concatenate([fp, np.stack([FLASK_X + 32 * FLASK_S * np.cos(th), SEAT_Y + FLASK_DY + 32 * FLASK_S * np.sin(th)], 1)])
     dp = np.stack([1920 - (DASH_X + 32 * 0.84 * np.cos(th)), SEAT_Y - 7 + 32 * 0.84 * np.sin(th)], 1)
     g = np.mgrid[0:41, 0:41].reshape(2, -1) / 40.0
     rect = lambda x0, w: np.stack([x0 + g[1] * w, 1061 + g[0] * 16], 1)
@@ -689,9 +799,11 @@ def main():
     Lk = lock_taper(Lk * lock_window(Xi, Yi)[..., None], Yi, Z)
     ls = straight(Lk)
     Lk = np.dstack([final_grade(ls, np.zeros(ls.shape[:2], np.float32), gr) * Lk[..., 3:4], Lk[..., 3]])
-    K = over(Lk, Kp)
+    K = over(Lk, Kp) if LOCK_ON else Kp
     K, n_plug = plug_holes(K, (Xi > 1240) & (Yi > 960), 60 * Z * Z)
     rep['K1 hole px plugged (2x)'] = n_plug
+    K, k_back, k_fill = keeper_back_line(K, Xi, Yi, Z)
+    rep['back line fill px2 (girl, keeper)'] = [round(_GA['fill'], 1), round(k_fill, 1)]
     # K4
     bcx = kx0 + gr['BOWL_C'] * K_S
     rim_y = ky0 + gr['RIM_C'] * K_S
@@ -782,6 +894,26 @@ def main():
     assert all(FLUSH[0] <= v <= FLUSH[1] for v in fl['girl'] + fl['keeper']), rep
     assert g_in <= vie + FLUSH[1] and k_in >= 1920 - vie - FLUSH[1] and abs(gc + kc - 1920) <= 1.0, rep
     assert abs(g_top - k_top_) <= 2 and -K_D[1] <= 12, rep
+    # UI 27 r2: the BAND rows over PL_TOP: each back's edge never moves back out going down (no notch, wedge or loop),
+    # and from it inward the figure is solid SOLID_W px in every sub-row (no see-through between edge and mass)
+    eg, ek, sol = [], [], {'girl': 1e9, 'keeper': 1e9}
+    for r in range(int(PL_TOP) - BAND, int(PL_TOP)):
+        gm_ = gfull[r * Z:r * Z + Z, :960 * Z] > 0.5
+        km_ = kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5
+        eg.append((np.nonzero(gm_.any(0))[0].max() + 1) / Z)
+        ek.append(960 + np.nonzero(km_.any(0))[0].min() / Z)
+        for q in range(Z):
+            i1 = np.nonzero(gm_[q])[0].max()
+            run = i1 - (np.nonzero(~gm_[q, :i1 + 1])[0].max() if (~gm_[q, :i1 + 1]).any() else -1)
+            sol['girl'] = min(sol['girl'], run / Z)
+            i0 = np.nonzero(km_[q])[0].min()
+            nz = np.nonzero(~km_[q, i0:])[0]
+            sol['keeper'] = min(sol['keeper'], (nz.min() if len(nz) else km_.shape[1] - i0) / Z)
+    back_out = [max(0.0, float(-np.diff(eg).min())), max(0.0, float(np.diff(ek).max()))]
+    rep['band: worst move back out going down (girl, keeper), solid px from the edge'] = [back_out, {k: round(v, 2) for k, v in sol.items()}]
+    rep['band edges every 5th row (girl, keeper)'] = [eg[::5], ek[::5]]
+    rep['band back-out rows'] = [int(PL_TOP) - BAND + 1 + int(i) for i in np.nonzero(np.diff(eg) < -0.01)[0]] + [int(PL_TOP) - BAND + 1 + int(i) for i in np.nonzero(np.diff(ek) > 0.01)[0]]
+    assert max(back_out) <= 0.01 and min(sol.values()) >= SOLID_W, rep
     # UI 27: her orb and her hand: the orb >= 52 px, the hand under it (her palm, ref x <= 398) whole on the screen
     orb = list(girl_to_screen(ANCHOR[0] + (GLOBE[0] - ANCHOR[0]) * S, ANCHOR[1] + (GLOBE[1] - ANCHOR[1]) * S)) + [GLOBE[2] * G_S]
     hand = gm[..., 1]
@@ -849,7 +981,8 @@ def geometry(kx0, ky0, krect, gr, rows, cl, tops):
                                        'tick': 'live: 1.2 px wide gold (0.95,0.80,0.52) at 12 o\'clock over r0-1.5..r1+1.5 (mock7.py medallion, line 632)'},
                            'level_number': {'at': [960.0, SEAT_Y + 1], 'font': 'cinzel-700', 'size': 23, 'anchor': 'mm', 'stroke': 1,
                                             'day': [214, 234, 255], 'night': [232, 222, 255]}},
-                  'flask': {'center': [FLASK_X, SEAT_Y - 9], 'scale': FLASK_S, 'count_badge': [FLASK_X + 15, SEAT_Y - 9 - 19, 9]},
+                  'flask': {'center': [FLASK_X, SEAT_Y + FLASK_DY], 'scale': FLASK_S, 'inner': FLASK_IN, 'count_badge': [FLASK_X + 15, SEAT_Y - 28, 9],
+                            'note': 'UI 27 r2: the draught in the dash seat (ring and well as the dash, mirrored), the flask inside at inner'},
                   'dash': {'center': [DASH_X, SEAT_Y - 7], 'scale': 0.84},
                   'key_tags': {'R': [FLASK_X, 1061], 'SPACE': [DASH_X, 1061], 'Q': [round(bcx + 6, 2), round(rim_y + 52, 2)],
                                'note': '[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: "Q  READY"'},

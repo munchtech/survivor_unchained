@@ -73,9 +73,11 @@ public partial class DgPanel : Control
     /// <summary>The experience ring's inner and outer radius (the lit filament in the coin's rim).</summary>
     public static readonly float RingR0 = F(Part("panel", "coin", "xp_ring"), "r0", 28.675f), RingR1 = F(Part("panel", "coin", "xp_ring"), "r1", 36.445f);
     /// <summary>The flask's and the dash's middles and the scales they draw at (the Drowned Girl's at 1:1).</summary>
-    public static readonly Vector2 FlaskAt = V(A(Part("panel", "flask"), "center"), new Vector2(673, 1033));
+    public static readonly Vector2 FlaskAt = V(A(Part("panel", "flask"), "center"), new Vector2(673, 1035));
     public static readonly Vector2 DashAt = V(A(Part("panel", "dash"), "center"), new Vector2(1247, 1035));
-    public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.94f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
+    public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.84f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
+    /// <summary>UI 27 r2: the flask art's share of its size inside the draught's seat (the dash's ring and well).</summary>
+    public static readonly float FlaskIn = F(Part("panel", "flask"), "inner", 0.80f);
     /// <summary>The flask's count badge (middle, radius).</summary>
     public static readonly Vector2 CountAt = V(A(Part("panel", "flask"), "count_badge"), new Vector2(688, 1014));
     /// <summary>The key chips' tops (R and SPACE: [middle x, top y]).</summary>
