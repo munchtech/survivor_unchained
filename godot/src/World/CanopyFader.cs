@@ -27,7 +27,7 @@ public partial class CanopyFader : Node
     readonly HashSet<CanopyLog.Tree> liveSet = new();
     readonly Vector3[] pts = new Vector3[9];
     Vector3? lastHer, lastCam;
-    int stamp;
+    int stamp, turn;
     /// <summary>This frame: wants that began, trees tested, copies written, the CPU time (ms).</summary>
     public int Started, Tested, Writes;
     public double Ms, MsSet, MsJudge;
@@ -73,11 +73,15 @@ public partial class CanopyFader : Node
         pts[2] = her + new Vector3(0, -0.05f, 0) + side * 0.2f; pts[3] = her + new Vector3(0, -0.05f, 0) - side * 0.2f;
         pts[4] = her; pts[5] = her + new Vector3(0, 0.4f, 0) + side * 0.25f; pts[6] = her + new Vector3(0, 0.4f, 0) - side * 0.25f;
         pts[7] = her + new Vector3(0, 0.55f, 0); pts[8] = her + new Vector3(0, 0.8f, 0);
-        stamp++;
+        // (the wants are judged every other frame, 15 times a second at 30 fps: half the cost, at most a frame's lag; the
+        // ease runs every frame)
+        bool judge = snap || (++turn & 1) == 0;
+        if (judge) stamp++;
         var a = new Vector2(eye.X, eye.Z); var b = new Vector2(her.X, her.Z);
         int x0 = Mathf.FloorToInt((Mathf.Min(a.X, b.X) - Reach) / Cell), x1 = Mathf.FloorToInt((Mathf.Max(a.X, b.X) + Reach) / Cell);
         int z0 = Mathf.FloorToInt((Mathf.Min(a.Y, b.Y) - Reach) / Cell), z1 = Mathf.FloorToInt((Mathf.Max(a.Y, b.Y) + Reach) / Cell);
         var ab = b - a;
+        if (judge)
         for (int cx = x0; cx <= x1; cx++)
             for (int cz = z0; cz <= z1; cz++)
             {
@@ -117,6 +121,15 @@ public partial class CanopyFader : Node
 
     void Judge(CanopyLog.Tree t, Vector3 eye, Transform3D view, Vector4 fd, float dLine)
     {
+        // (fast: a tree whose ground track is far from the sight lines' and far from the lens is neither; its hold runs out)
+        if (dLine - t.Reach > fd.Y + 1.6f && new Vector2(t.At.X - eye.X, t.At.Z - eye.Z).Length() >= 12)
+        {
+            bool w0 = t.Want;
+            t.ForLens = false; t.ForHer = clock - t.HerAt < Hold; t.Want = t.ForHer;
+            if (CanopyLog.On && w0 != t.Want)
+                GD.Print($"canopy-want {SurvivorUnchained.Shots.Clock:0.000} {t.Species} {t.At.X:0.0},{t.At.Z:0.0} want 0 her 0 lens 0 (clear) ease {t.Ease:0.00}");
+            return;
+        }
         float sc = t.Up.Length(), rb = t.R * sc, rc = rb * t.Taper, rt = Mathf.Min(rc, 0.25f * sc);
         // (the axis as the shader bends it: its lean, t.Lean * h * h at height h; the crown's middle a fourth point)
         Vector3 Pt(float hh) => t.At + t.Up * hh + t.Lean * (hh * hh);

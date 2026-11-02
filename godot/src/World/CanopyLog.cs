@@ -21,6 +21,8 @@ public static class CanopyLog
         /// <summary>(CanopyFader) the copy's top (its lod0 mesh's, stretched as drawn), local m; its draws; the packed
         /// piece's custom r; the eased fade (0..1, linear in time) and the value last written (eased); the targets.</summary>
         public float Tip, CustR, CustA, Ease, Shown;
+        /// <summary>(CanopyFader) its crown's reach on the ground from its trunk: its radius at the base and its lean's and tilt's offset at its tip.</summary>
+        public float Reach;
         public bool Want, ForHer, ForLens;
         public int Stamp;
         public double HerAt = -99;
@@ -74,7 +76,10 @@ public static class CanopyLog
                 float la = Mathf.DegToRad(lean) * (hs.La * 2 - 1), ld = hs.Ld * Mathf.Tau;
                 lw = t.Basis * (new Vector3(Mathf.Cos(ld), 0, Mathf.Sin(ld)) * (Mathf.Tan(la) / (2 * leanH)));
             }
-            fader.Add(new Tree { At = ip, Up = t.Basis.Y, Lean = lw, Species = sp.Name, Lo = lo * st, Top = top, R = r, Taper = tp, Tip = Mathf.Max(tip, top), CustR = cd.R, CustA = cd.A, Inst = refs[k].ToArray() });
+            float tipH = Mathf.Max(tip, top), sc = t.Basis.Y.Length();
+            var tipOff = t.Basis.Y * tipH + lw * (tipH * tipH);
+            float reach = r * sc + new Vector2(tipOff.X, tipOff.Z).Length();
+            fader.Add(new Tree { At = ip, Up = t.Basis.Y, Lean = lw, Reach = reach, Species = sp.Name, Lo = lo * st, Top = top, R = r, Taper = tp, Tip = Mathf.Max(tip, top), CustR = cd.R, CustA = cd.A, Inst = refs[k].ToArray() });
         }
     }
 }

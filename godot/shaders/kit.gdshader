@@ -640,7 +640,15 @@ void fragment() {
 	float kept = 1.0;
 	if (v_fade > 0.0) {
 		// (lf6d: with stump_top, the bark cut level and hard, a saw's cut, not eased: the eased cut's band read as a dome)
-		float ff = v_cap > 0.0 ? 0.0 : v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
+		// (Env 23 r2, w 2: a wipe, not a uniform dither: the crown goes from its top down to the stump in a band 0.3 of its
+		// height, so only that band is stippled at any moment and the low branches about the stump, which the stump showed
+		// through as a ghost, go last; it comes back from the stump up)
+		float pf = v_fade;
+		if (canopy_fade.w > 1.5) {
+			float hn = clamp((v_y - crown_keep) / max(crown_hi - crown_keep, 0.5), 0.0, 1.0);
+			pf = clamp((v_fade * 1.3 - (1.0 - hn)) / 0.3, 0.0, 1.0);
+		}
+		float ff = v_cap > 0.0 ? 0.0 : pf * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
 		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
