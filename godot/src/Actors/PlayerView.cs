@@ -87,6 +87,8 @@ public partial class PlayerView : Node3D
     public const uint CrowdLayer = 1u << 16;
     /// <summary>--ember-crowd off: the crowd out of her pool again, as before Rendering 4.</summary>
     static readonly bool EmberCrowd = SurvivorUnchained.Args.Get("ember-crowd") != "off";
+    /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.25f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
     {
@@ -825,6 +827,13 @@ public partial class PlayerView : Node3D
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
         Light.Position = new Vector3(0, EmberH, 0.4f);
+        // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
+        if (mine)
+        {
+            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
+            var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
+            RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
+        }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }

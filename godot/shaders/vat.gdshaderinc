@@ -23,6 +23,13 @@ uniform float alpha_cut = 0.45;
 // key lies (key_dir, world, toward the light). Godot's RIM is lit by the key, so in the wood's shade a mob had none.
 global uniform vec4 crowd_rim;
 global uniform vec4 key_dir;
+// Rendering 4: the crowd's own light by night, in its own paint (no light added, no shadow). Her pool lit the floor round
+// her and its bodies stayed near-black (from the play camera most of a body is its back and shoulders, turned from her
+// lamp), so the ring of them leaning at her read as a black starburst. crowd_ember: her lamp's point over her (world xyz)
+// and its strength (PlayerView sets it each frame; 0 by day or with --crowd-fill off); crowd_fill: the sky's fill under
+// the crowns (rgb, from the preset's hemisphere sky), and the lamp's reach (a).
+global uniform vec4 crowd_ember;
+global uniform vec4 crowd_fill;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -97,6 +104,8 @@ void vertex() {
 	fx_rim = fx_aa * clamp((INSTANCE_CUSTOM.y - float(f1)) / 0.45, 0.0, 1.0);
 }
 
+#define CROWD_WRAP 0.6
+#define CROWD_FLOOR 0.1
 void fragment() {
 	// Dissolve: the dead go back to the dark in ragged flakes.
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
@@ -282,6 +291,21 @@ void fragment() {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
 		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
+	}
+	// Her lamp and the sky's fill on the crowd by night (crowd_ember, crowd_fill above): a wrapped light from over her, so
+	// shoulders and backs turned from her still take some, falling to nothing at the lamp's reach; all in the body's own
+	// paint, so dark cloth stays dark cloth.
+	if (crowd_ember.w > 0.0 || crowd_fill.r > 0.0) {
+		vec3 cw_p = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 cw_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec3 cw_l = crowd_ember.xyz - cw_p;
+		float cw_d = length(cw_l);
+		float cw_wrap = clamp((dot(cw_n, cw_l / max(cw_d, 1e-3)) + CROWD_WRAP) / (1.0 + CROWD_WRAP), 0.0, 1.0);
+		float cw_f = clamp(1.0 - cw_d / max(crowd_fill.a, 0.1), 0.0, 1.0);
+		// (a floor under the paint for this light only: the shrouds' cloth is ~0.015, which no light lifts past the night
+		// grade's crush without turning the pale skin beside it to ghosts)
+		vec3 cw_c = max(c, vec3(CROWD_FLOOR));
+		e += cw_c * (vec3(1.0, 0.53, 0.25) * crowd_ember.w * cw_wrap * cw_f * cw_f + crowd_fill.rgb * (0.6 + 0.4 * cw_n.y));
 	}
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)

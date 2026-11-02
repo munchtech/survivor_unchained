@@ -105,7 +105,8 @@ public static class ArenaPlaces
             "ashen" => (night with { FogColor = "#1c1612" }, air with { Haze = air.Haze * 1.5, HazeColor = "#3a2a20", EmberGlow = air.EmberGlow * 1.25 }),
             _ => (night, air),
         };
-        return new ArenaPlace(id, spec.People, mood, night, air);
+        // (Rendering 4: the crowd's own light by night, her lamp and the sky's fill in its paint: Zone.CrowdFill)
+        return new ArenaPlace(id, spec.People, mood, night with { CrowdFill = 1 }, air);
     }
 
     /* ------------------------------------------------------------ nights -- */
