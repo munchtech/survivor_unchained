@@ -79,6 +79,16 @@ def trial(fr, pose, P, d, psi, phi):
     bend = ((abs(rv[2]) / 70) ** 4 + (abs(rv[0]) / 30) ** 4) ** 0.25 * 50 + abs(rv[1]) * 0.5
     bend = (bend, rv)
     E = gp[0, I["lowerarm_" + side]]
+    # Clearance of the arm off her trunk (a capsule on pelvis-spine_03-neck_01, radius TR m): the least, m (- inside).
+    TR = float(__import__("os").environ.get("TRUNK_R", "0.17"))
+    segs = [(gp[0, I["pelvis"]], gp[0, I["spine_03"]]), (gp[0, I["spine_03"]], gp[0, I["neck_01"]])]
+    Sh = gp[0, I["upperarm_" + side]]
+    pts = [Sh + (E - Sh) * t for t in (0.35, 0.6, 0.8, 1.0)] + [E + (gp[0, h] - E) * t for t in (0.33, 0.66, 1.0)]
+    def dseg(x, a, b):
+        u = min(1.0, max(0.0, float((x - a) @ (b - a)) / float((b - a) @ (b - a))))
+        return float(np.linalg.norm(x - a - (b - a) * u))
+    global CLR
+    CLR = min(min(dseg(x, a, b) for a, b in segs) for x in pts) - TR
     global REACH
     REACH = (np.linalg.norm(W - S), np.linalg.norm(gp[0, h] - gp[0, I["upperarm_" + side]]), getattr(rig, 'twist_last', {}).get(side, float('nan')))
     return err_d, err_p * 1000, bend, k, E, pole, qrot(qinv(chest[fr]), pole)
@@ -100,7 +110,7 @@ for fr in frames:
             ed, ep, bend, k, E, pole, pole_c = trial(fr, pose, P, d, psi, phi)
             pk = prefer.get(str(fr))
             pref = ang(k, np.array(pk)) if pk else 0.0
-            res.append((REACH, ed * 3 + ep / 5 + bend[0] * 0.3 + pref * float(__import__("os").environ.get("PREFW", "0.15")), ed, ep, bend, psi, phi, k, E, pole_c, pref))
+            res.append((REACH, ed * 3 + ep / 5 + bend[0] * 0.3 + pref * float(__import__("os").environ.get("PREFW", "0.15")) + max(0.0, -CLR) * 1000 * float(__import__("os").environ.get("CLRW", "0")), ed, ep, bend, psi, phi, k, E, pole_c, pref, CLR))
     res.sort(key=lambda r: r[1])
     print(f"f{fr} ({time.time()-t0:.0f}s) d={np.round(d,2)} S={np.round((S_r if side=='r' else S_l)[fr],2)}")
     if __import__('os').environ.get("PERPSI"):
@@ -111,5 +121,5 @@ for fr in frames:
     else:
         top = res[:6]
     for R_, *r in top:
-        print(f"  tw {R_[2]:6.1f} reach {R_[0]:.3f}/{R_[1]:.3f} cost {r[0]:6.1f} blade {r[1]:5.1f} pos {r[2]:6.1f}mm bend {r[3][0]:5.1f} rv {np.round(r[3][1]).astype(int)} psi {r[4]:3d} phi {r[5]:3d} "
+        print(f"  clr {r[-1]*100:5.1f}cm tw {R_[2]:6.1f} reach {R_[0]:.3f}/{R_[1]:.3f} cost {r[0]:6.1f} blade {r[1]:5.1f} pos {r[2]:6.1f}mm bend {r[3][0]:5.1f} rv {np.round(r[3][1]).astype(int)} psi {r[4]:3d} phi {r[5]:3d} "
               f"knuck {np.round(r[6],2)} elbow {np.round(r[7],2)} pole_chest {np.round(r[8],2)} pref {r[9]:.0f}")
