@@ -195,6 +195,7 @@ public partial class BattleFx : Node3D
         shards = Add(new Batch(IceLance(), 600, Crystal(0.5f, 1.8f, 0.05f, 1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
         chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
+        DiscReady();
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1151,6 +1152,7 @@ public partial class BattleFx : Node3D
                         Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     if (Flare.HushesHitSparks) { }
                     else if (e.Art != null) Impact(e, at);
+                    else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)
                     {
@@ -1581,14 +1583,7 @@ public partial class BattleFx : Node3D
         switch (e.Id)
         {
             case "shield_bash":
-                Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle), (float)e.Radius, 0.25f, false, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
-                if (e.Wide)
-                {
-                    Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle + Math.PI), (float)e.Radius, 0.25f, true, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
-                    Nova(e.X, e.Z, (float)e.Radius, Palette.Of(School.Holy).Glow, 0.35f);
-                }
-                Burst(at + new Vector3((float)Math.Cos(e.Angle) * 1.5f, 1, (float)Math.Sin(e.Angle) * 1.5f), School.Physical, 20, 6);
-                Flash(at + Vector3.Up * 1.2f, new Color("#fff0d0"), 10, 0.3f);
+                ShieldBash(e);
                 break;
             case "leap":
                 Ring(e.X, e.Z, (float)e.Radius, Palette.HostileRim * 0.3f + Palette.Of(School.Physical).Glow, 0.42f, true);
@@ -1996,6 +1991,8 @@ public partial class BattleFx : Node3D
     void Projectiles(Battle b, float dt, double now)
     {
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
+        DiscsBegin();
+        StunGlints(b);
         Buffs(b);
         foreach (var p in b.Projectiles.Living())
         {
@@ -2072,6 +2069,7 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
+        DiscsEnd();
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); chakrams.End(); kegs.End(); herdCrowd?.End();
     }
 
