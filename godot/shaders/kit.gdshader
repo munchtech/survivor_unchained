@@ -212,8 +212,6 @@ uniform vec3 stump_wood : source_color = vec3(0.42, 0.33, 0.22);
 global uniform vec4 flora_night;
 varying flat float v_fade;
 varying flat float v_cap;
-// (Env 24 r3) world metres per local unit up the trunk (instance scale x stretch), for the wipe band and the dissolve's cell
-varying flat float v_ws;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
@@ -420,20 +418,6 @@ float see_through(vec2 mo) {
 	return mo.y <= 0.0 ? 1.0 : smoothstep(1.45 * mo.y, 2.5 * mo.y, mo.x);
 }
 
-float hash13(vec3 p) {
-	p = fract(p * 0.1031);
-	p += dot(p, p.zyx + 31.32);
-	return fract((p.x + p.y) * p.z);
-}
-
-// (Env 24 r3) smooth trilinear value noise on a hashed lattice, 0..1
-float vnoise3(vec3 p) {
-	vec3 i = floor(p), f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	return mix(mix(mix(hash13(i), hash13(i + vec3(1, 0, 0)), f.x), mix(hash13(i + vec3(0, 1, 0)), hash13(i + vec3(1, 1, 0)), f.x), f.y),
-		mix(mix(hash13(i + vec3(0, 0, 1)), hash13(i + vec3(1, 0, 1)), f.x), mix(hash13(i + vec3(0, 1, 1)), hash13(i + vec3(1, 1, 1)), f.x), f.y), f.z);
-}
-
 void vertex() {
 	vec3 ip = MODEL_MATRIX[3].xyz;
 	// (E9c2: a copy's fade unit + 1 in its custom data's r, 0 none; ours below take theirs from its whole part too)
@@ -477,7 +461,6 @@ void vertex() {
 		VERTEX.y *= mix(stretch_lo, stretch_hi, h_st);
 		h = max(VERTEX.y, 0.0);
 	}
-	v_ws = length(MODEL_MATRIX[1].xyz) * mix(stretch_lo, stretch_hi, h_st);
 	if (lean > 0.0) {
 		float la = radians(lean) * (h_la * 2.0 - 1.0);
 		float ld = h_ld * TAU;
@@ -662,19 +645,11 @@ void fragment() {
 		// through as a ghost, go last; it comes back from the stump up)
 		float pf = v_fade;
 		if (canopy_fade.w > 1.5) {
-			// (Env 24 r3, judge e23 r2: the band was 0.3 of the crown, ~250 px, a pixel dot screen) a 0.5 m band in world metres
-			// that descends from the crown's top (all of it above crown_keep gone at v_fade 1); a leaf-scale noise in the tree's own space
-			float ws = max(v_ws, 1e-3);
-			float Bl = 0.5 / ws;
-			float Hc = max(crown_hi - crown_keep, 0.5 / ws);
-			pf = clamp((v_fade * (Hc + Bl) - (crown_hi - v_y)) / Bl, 0.0, 1.0);
+			float hn = clamp((v_y - crown_keep) / max(crown_hi - crown_keep, 0.5), 0.0, 1.0);
+			pf = clamp((v_fade * 1.3 - (1.0 - hn)) / 0.3, 0.0, 1.0);
 		}
 		float ff = v_cap > 0.0 ? 0.0 : pf * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
-		if (canopy_fade.w > 1.5) {
-			float nz = clamp((vnoise3(v_kl * (max(v_ws, 1e-3) / 0.2)) + 0.35 * vnoise3(v_kl * (max(v_ws, 1e-3) / 0.08) + 17.0)) / 1.35, 0.0, 1.0);
-			nz = clamp((nz - 0.5) * 1.8 + 0.5, 0.0, 1.0);
-			if (nz < ff) discard;
-		} else if (coverage_cut(FRAGCOORD.xy) < ff) discard;
+		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
 	vec2 mo = see_parts(VERTEX, VIEW_MATRIX, INV_VIEW_MATRIX, PROJECTION_MATRIX, CAMERA_POSITION_WORLD);
@@ -1097,13 +1072,11 @@ void fragment() {
 			// (weathered: greyed and a quarter darker than fresh-sawn, so in her lamp or the sun it is no brighter than the ground)
 			// (r2, judge e23 r1 #4: by night in her lamp the cut was the brightest thing by her) older still: half toward the
 			// bark's own colour, greyer, and darker, so it sits with the litter round it
-			// (Env 24 r3, judge e23 r2: the caps read as cobbled stone) the bark's mean colour at a coarse mip, so its cells cannot show
-			vec3 bark_mean = ALBEDO * (textureLod(albedo_tex, UV, 6.0).rgb / max(texture(albedo_tex, UV).rgb, vec3(0.02)));
-			vec3 wood = mix(stump_wood, bark_mean * 1.6, 0.35);
-			wood = mix(wood, vec3(dot(wood, LW)), 0.3) * 0.62;
+			vec3 wood = mix(stump_wood, ALBEDO * 1.6, 0.5);
+			wood = mix(wood, vec3(dot(wood, LW)), 0.45) * 0.42;
 			vec3 cut = wood * mix(0.85, 1.05, fract(v_jit * 7.3)) * mix(0.8, 1.0, ring);
 			cut *= mix(0.7, 1.0, smoothstep(0.0, 0.35, rr / rw));
-			cut = mix(cut, wood * 1.18, smoothstep(0.72, 0.9, rr / rw) * 0.55);
+			cut = mix(cut, wood * 1.1, smoothstep(0.72, 0.9, rr / rw) * 0.5);
 			cut *= 1.0 - 0.4 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
 			// (the bark's ring round it, darker, so the lid reads as the trunk's own cut, not a disc laid on it)
 			cut *= mix(1.0, 0.6, smoothstep(0.9, 1.0, rr / rw));
