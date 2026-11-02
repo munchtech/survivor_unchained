@@ -117,7 +117,7 @@ public partial class Flipbooks : Node3D
     /// no such atlas (the caller falls back to what it drew before).
     /// `tall` above 1: a camera-facing take stretched that many times up the
     /// screen (a jet), its foot lit warm from below over its first half-life.</summary>
-    public bool Spawn(string name, Vector3 at, float size, float life, Color tint, bool flat = false, float sizeEnd = -1, float angle = float.NaN, float spin = 0, Vector3 v = default, float tall = 0)
+    public bool Spawn(string name, Vector3 at, float size, float life, Color tint, bool flat = false, float sizeEnd = -1, float angle = float.NaN, float spin = 0, Vector3 v = default, float tall = 0, float delay = 0)
     {
         var b = Of(name);
         if (b == null) return false;
@@ -125,7 +125,7 @@ public partial class Flipbooks : Node3D
         b.Plays.Add(new Play
         {
             At = at, V = v, Size = size, SizeEnd = sizeEnd < 0 ? size : sizeEnd, Life = Mathf.Max(0.05f, life), Tint = tint, Flat = flat,
-            Angle = float.IsNaN(angle) ? Sparks.R() * Mathf.Tau : angle, Spin = spin, Fade = 1, Tall = tall,
+            Angle = float.IsNaN(angle) ? Sparks.R() * Mathf.Tau : angle, Spin = spin, Fade = 1, Tall = tall, Age = -Mathf.Max(0, delay),
         });
         return true;
     }
@@ -141,6 +141,7 @@ public partial class Flipbooks : Node3D
             {
                 var p = plays[i];
                 p.Age += dt;
+                if (p.Age < 0) { plays[n++] = p; continue; }
                 if (p.Age >= p.Life) continue;
                 p.At += p.V * dt;
                 p.Angle += p.Spin * dt;
@@ -156,7 +157,7 @@ public partial class Flipbooks : Node3D
             for (int i = 0; i < n; i++)
             {
                 var p = plays[i];
-                float k = p.Age / p.Life;
+                float k = Mathf.Max(0, p.Age) / p.Life;
                 // Grows fast at first and settles, as a burst does.
                 float s = Mathf.Lerp(p.Size, p.SizeEnd, 1 - (1 - k) * (1 - k));
                 int o = i * Stride;
@@ -165,7 +166,7 @@ public partial class Flipbooks : Node3D
                 buf[o + 4] = 0; buf[o + 5] = s; buf[o + 6] = 0; buf[o + 7] = p.At.Y;
                 buf[o + 8] = 0; buf[o + 9] = 0; buf[o + 10] = s; buf[o + 11] = p.At.Z;
                 // Every take fades over its last quarter, whether or not the clip did.
-                float fade = p.Tint.A * (k < 0.75f ? 1 : 1 - (k - 0.75f) / 0.25f);
+                float fade = (p.Age < 0 ? 0 : p.Tint.A) * (k < 0.75f ? 1 : 1 - (k - 0.75f) / 0.25f);
                 buf[o + 12] = p.Tint.R; buf[o + 13] = p.Tint.G; buf[o + 14] = p.Tint.B; buf[o + 15] = fade;
                 buf[o + 16] = k; buf[o + 17] = p.Angle; buf[o + 18] = p.Flat ? 1 : 0; buf[o + 19] = p.Tall;
             }

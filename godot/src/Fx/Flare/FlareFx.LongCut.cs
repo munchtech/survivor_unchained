@@ -543,12 +543,12 @@ public partial class FlareFx
     }
 
     /// <summary>A puff of the dust flipbook (lc_dust; smoke_puff standing in; the procedural puff if neither is there).</summary>
-    void Dust(Vector3 p, float size, float sizeEnd, float life, Vector3 v, float tone, float tall = 0)
+    void Dust(Vector3 p, float size, float sizeEnd, float life, Vector3 v, float tone, float tall = 0, float delay = 0)
     {
         var tint = Night ? new Color(0.3f, 0.26f, 0.22f) * tone : new Color(0.78f, 0.7f, 0.58f) * tone;
         // (a jet stands upright: turned only a little, not spun)
         float ang = tall > 1 ? (R() - 0.5f) * 0.25f : float.NaN, spin = tall > 1 ? 0 : (R() - 0.5f) * 0.6f;
-        if (lcBooks != null && (lcBooks.Spawn("lc_dust", p, size, life, tint, false, sizeEnd, ang, spin, v, tall)
+        if (lcBooks != null && (lcBooks.Spawn("lc_dust", p, size, life, tint, false, sizeEnd, ang, spin, v, tall, delay)
             || lcBooks.Spawn("smoke_puff", p, size, life, tint, false, sizeEnd, float.NaN, (R() - 0.5f) * 0.6f, v))) return;
         bed.Spawn(new FlareBits.P
         {
@@ -562,10 +562,10 @@ public partial class FlareFx
     {
         var p = SeamPoint(along);
         float taper = Mathf.Lerp(1f, 0.6f, along / Math.Max(1, lcLen));
-        // (r3c: narrower and 2.5x as tall as wide, rising fast; the curtain of smoke takes over from them)
-        float size = (0.8f + R() * 0.35f) * taper;
+        // (r3d: stretch 1.3 not 2.5 (a picket fence of spikes), scale +-25%, start +-0.06 s, so neighbours merge into one wall)
+        float size = (0.8f + R() * 0.35f) * taper * (0.75f + R() * 0.5f);
         var side = new Vector3(-lcDir.Y, 0, lcDir.X) * (R() - 0.5f) * 0.12f;
-        Dust(p + side + Vector3.Up * size * 1.1f, size, size * 2.7f, 1.9f + R() * 0.5f, Vector3.Up * (1.8f + R() * 0.9f) * taper, Night ? 1.25f : 1.7f, 2.5f);
+        Dust(p + side + Vector3.Up * size * 1.1f, size, size * 2.7f, 1.9f + R() * 0.5f, Vector3.Up * (1.8f + R() * 0.9f) * taper, Night ? 1.25f : 1.7f, 1.3f, (R() - 0.5f) * 0.12f + 0.06f);
     }
 
     /// <summary>A chunk of the ground thrown up and out to one side of the crack, tumbling, hot underneath at first.</summary>
