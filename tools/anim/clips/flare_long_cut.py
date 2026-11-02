@@ -75,8 +75,7 @@ def _d(theta, x=0.0):
 # (frame, P: the right fist's pocket point in her space, d: the blade's way, pole: the right elbow's way from the
 # shoulder in the chest's frame). The cleave keyed every frame.
 BLADE = [
-    # The press: the blade swung out low to her right side (the tip 0.7 m off her right leg, the pommel clear of her side) on its way behind her.
-    (1, (-0.40, 1.00, -0.10), _n(-0.45, -0.70, -0.55), (0.16, 0.37, 0.91), (0.47, -0.88, -0.09), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
+    # (Animation 61 tried an f1 press key here, the blade swung out low to her right: off, ENTRY below.)
     (3, (-0.35, 0.95, -0.25), _n(-0.10, -0.50, -0.86), (0.16, 0.37, 0.91), (0.06, -0.87, 0.50), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
     (5, (-0.45, 0.91, -0.42), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
     (6, (-0.458, 0.895, -0.44), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
@@ -509,7 +508,7 @@ class LongCut:
 
 
 ARM_SETTLE = (66, 74)
-ENTRY = 1
+ENTRY = 0   # 1 = f0 from idle_warden's arm + an f1 swing key (anim61 r14: a 177-deg one-frame forearm turn at f1; kept off, the round-1 judge passed the old entry)
 
 
 def _settle(rig, clip, a=SETTLE, b=END):
