@@ -2,6 +2,9 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 2 November: coordinator 45b9ec4e (live)
+**LIVE:** Combat VFX 11 (vfx-7; item 3 cap raised to ~1.1M, perf ABAB kept): r2 ground solver, ONE max judge, MR. **ANIMATION 60 MERGED** (anim-59@e43ab84fe, her clips repacked 115, tests 1376/0/10, worktree removed): Long Cut wiring + sunder_blade greatsword ship with the clip OFF (lamps.json). Clip max judge FAIL CLOSE (held kneel hunch at the play camera, night white "C", statue hold, coil not loaded); one fix round ~0.3M is ranked in animation.md top, unfunded. Owner decisions pending: Phase 2 order; Lighting lead for the night starburst; fund the Long Cut fix round.
+
 ## 2 November: coordinator 14076147
 **WIND-DOWN DONE (14076147, 2 Nov): nothing live, no turns.** Integration f8d8dbc39+ (tests 1373/0/10 after the Classes/Env merges; VFX/UI merges tested on their branches). RESTART ORDER (fresh successors, lead_brief.md):
 1. **Combat VFX 11** in vfx-7 (@88818a87e, own junction; skills.md "Combat VFX 11 START HERE"): Warden skill VFX r2. Holy pair fixes built (b69c4c686), unjudged; next the r2 ground solver (heave rebuild + Sunder), then ONE max judge r2; ~0.65M of ~0.95M spent; tell the successor in its brief "Round cap raised for warden skills to 5" (2 spawns left: ground solver + judge). Then MR what passes, cut what's far. KEEP scratch b9e8a09f\scratchpad\vfx9 and 14076147\scratchpad\vfx10 (shot scripts).

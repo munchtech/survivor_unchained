@@ -253,6 +253,20 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "staff"
 	},
+	"flare_long_cut": {
+		"blend_out": 0.9,
+		"contact": 0.545,
+		"contacts": [
+			0.545
+		],
+		"elbow_sigma": 1.0,
+		"layer": "full",
+		"length": 2.66666674613953,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "sunder"
+	},
 	"flask_drink": {
 		"changes": "retargeted to her skeleton, feet locked, centred; back, head and arms keyed over",
 		"hold": true,
