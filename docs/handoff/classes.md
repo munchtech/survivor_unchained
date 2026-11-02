@@ -1,35 +1,34 @@
-# Classes 18 starts here (2 Nov): Phase 2, session 1 of 3. The board v2 LAYOUT is in (fe334726c); next = the sim side
+# Classes 19 starts here (2 Nov): Phase 2, session 2 of 3. Lamps v2 data + sim are in, behind a flag (MR at classes-17)
 
-Read CLASS_IDENTITY_AND_TALENTS.md §3.2-3.6 and §6.1-6.2, then docs/design/PHASE2_SCOPE.md. MR2 (Phase 1) is merged (integration cdedeb76f). The owner hasn't yet answered PHASE2_SCOPE's order question (board+screen in parallel, then the Warden's wave; or the wave first). Main asked for the sim side to continue either way.
+The owner answered PHASE2_SCOPE (2 Nov): "Board + Lamps first". UI 25 (worktree ui-25) designs the Lamps screen from `board_v2.json`: keep its ids, kinds and positions FROZEN (tell main in one line if one must change). The contract between data and sim is **docs/design/LAMPS_V2_RULES.md** (read it first; its "As built" section says how the code reads it).
 
-## Done in Phase 2 so far (classes-17, not merged; nothing in the game reads it yet)
-- **fe334726c** `godot/data/content/board_v2.json` from `tools/classes/board_v2.py` (deterministic; it asserts every count, edge, reachability, spacing >= 38 and no edge grazing a lamp). It holds 574 lamps: id, kind, region, group, calling, v1 name, `v1` (kept from lamps.json), x/y (y up, the Ford at 0,0), `at`, and v2 gate (Strike 4; notables and links 8; blues and the Stand 16).
-  - Kept from v1: 288 lamps, by their v1 id (the 72 `skill` lamps left for wicks).
-  - New: 286 lamps, with ids like `{road}.s8/s9/n6/rite1-4/link1-2`, `{calling}.hand1-4`, `{calling}.hearth.p1/p2`, `{calling}.bridge.rite1/2`, `{cid}.rite1/2/blue/link`, `vigil.*`, `poachers.*`, `ford.*` and `path.{id}.*`.
-  - Kinds: blue 45, rite 72, link 32, hand 16. Preview: survivorsunchained_inputs/scratch_classes17/board_v2.png.
-  - Main has the sha; UI's design brief starts from it once the owner answers.
-- §3.4 now says 32 links (main agreed: the region table's count).
+## Done (Classes 18)
+- **Data:**
+  - `tools/classes/lamps_v2.py` reads lamps.json (v1) and board_v2.json, and writes `godot/data/content/lamps_v2.json`. It holds 574 lamps with positions, groups, texts, effects, `price` on blues, and `draft: true` on the 286 new names.
+  - Run order: `lamps_build.py`, then `board_v2.py`, then `lamps_v2.py`.
+  - board_v2 fixes: road links gate 8 (35d221d27). Small groups' gates scaled to their size (428adf41f): hearth blue 8; bridge 2/4; crossing 3/5; Ford 1/3; Old Roads 3/4/7. A reachability check asserts that all 574 can be lit.
+- **Sim:**
+  - `Sim/BoardRules.cs` holds rites (9 mechs), links (11 triggers, picks in `LampLayout.Links`, Light my way's default pick, `Weapons.Echo`, `Ev.Link`, `Battle.LinkWait`/`LinkSkill`), Hand lamps (deltas on hands.json; off when Unhoused), the `tags.*` smalls and 16 of the 17 blues. Iron Pilgrim is phase 5 (it waits on the Return Turn).
+  - LampBook on v2: Unhoused; unknown lit ids dropped on load. The `--board` pages compile and run on v2.
+  - By night, smalls give only the road's lean (as v1).
+- **The flag:** `SU_LAMPS_V2=1`, `Lamps.UseV2(true)`, harness and game `--lampsv2`. With it off, the Act 1 story sweep (24 seeds, all fights, callings, policies and bots) is byte-identical to integration 6c9c3a213. Tests 1394/0/10 at ead0ae9f4. Gate logs: Temp scratchpad `45b9ec4e.../scratchpad/classes18/gate`.
+- **Open notes:**
+  - The stalker Hand ladder may run hot (window 2 to 3 s plus pierce 2 plus a refund); trim `stalker.hand3` if the measure says so.
+  - `Hands.Line` (the card) doesn't show Hand-lamp deltas yet (UI/card follow-up).
+  - The Old Roads' `hand` rite lines list all four callings' versions; UI may show only hers.
 
-## Next: the sim side (sessions 2-3, from §6.1's Lamps v2 row)
-1. **Texts and effects for the 286 new lamps.** Extend `lamps_build.py` / `lamps_quarters.py` to emit v2 lamps.json from board_v2.json's ids, kinds and `at`, and add positions to lamps.json, so one source holds everything.
-   - Rites: the calling's mechanic onto a tag; they dim with no such skill carried.
-   - Links: a trigger that fires a carried skill she picks, one pick per link, its wait shown as a HUD arc.
-   - Hand lamps: they deepen the Hand (`Content/Hands.cs`, `Sim/Hands.cs`, hands.json).
-   - New blue lamps: the doc's examples (Iron Pilgrim, Drowned Lung, The Pack Remembers, Bell and Blade, Unhoused).
-   - Smalls are never a bare +n%.
-   - Rites and links need sim rules (new `R(...)` effect kinds read in `Sim/*Lamps.cs`).
-   - Names: ask main for the story writer with a list (about 290).
-2. **Gates 4/8/16** (`LampBook` reads `gate`).
-3. **Points:**
-   - levels, story bosses and atlas 30 (`LampBook.AtlasLamps` is 8 today);
-   - Act 1's four relit lamp-posts (a world fact each; the posts' placement is Env/story's, so ask main).
-4. **Three layouts**, each a whole build: board, wicks, carried skills, Flare (`LampState.Layouts` holds 2 board-only layouts today; DaySlotsTests pins the layout behavior). This goes with **save v6** (`World/Save.cs` Version 5): refund lamps, wicks on the suggested strands, off-calling skills to the storeroom as tomes.
-5. **The functional pages** (ArtsScreen BuildLamps/BuildWicks behind `--board`) keep working on v2 until UI's screen lands.
-6. **Acceptance:**
-   - `--pair board` at x1.25 for every calling (`tools/scratch/classes/board_ratio.py`; the warden reads x1.53/x1.41 on v1);
-   - Act 1 within ±3% of integration, with cells inside ±6%;
+## Next (session 2, then 3)
+1. **Points:**
+   - atlas 30 (`LampBook.AtlasLamps` is 8);
+   - Act 1's four relit lamp-posts (a world fact each; ask main for Env/story placement).
+2. **Three layouts**, each a whole build (board, wicks, carried skills, Flare; `LampState.Layouts` has 2 board-only), with **save v6** (`World/Save.cs` Version 5): a full refund of lamps, wicks on the suggested strands, off-calling skills to the storeroom as tomes. DaySlotsTests pins layout behavior.
+3. **Names:** ~290 draft names (and unnamed smalls) go to the story writer via main. List: every lamp with `draft: true` in lamps_v2.json.
+4. **Session 3, acceptance with `--lampsv2`:**
+   - `--pair board` at x1.25 for every calling (`tools/scratch/classes/board_ratio.py`);
+   - Act 1 within ±3% (cells ±6%);
    - types within x1.35 of the median.
-   - Gate scripts: survivorsunchained_inputs/scratch_classes16_b9e8a09f (gate.sh, bycall.py).
+   Then flip the default to v2 (or ask main).
+   Gate scripts: survivorsunchained_inputs/scratch_classes16_b9e8a09f.
 
 ## Phase 1 record (MR2, merged)
 - Hooks a/b (426ce9d64): art keys `rebuke`/`watch_bell` and `Ev.Barrier`; WARDEN_SKILLS_VFX_HOOKS.md.
