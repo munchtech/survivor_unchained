@@ -1071,12 +1071,35 @@ public partial class BattleFx : Node3D
         }
     }
 
+    static readonly bool FxLog = Args.Has("fx-log"); // dev only: one line per combat event
+    double fxLogNext;
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
         hitBudget = 28;
         killBudget = 6;
         rose = false;
+        if (FxLog)
+        {
+            if (b.Time >= fxLogNext)
+            {
+                fxLogNext = Math.Floor(b.Time) + 1;
+                double best = double.MaxValue; int n = 0;
+                foreach (var le in b.Enemies.Living())
+                {
+                    n++;
+                    best = Math.Min(best, Math.Sqrt((le.X - b.Player.X) * (le.X - b.Player.X) + (le.Z - b.Player.Z) * (le.Z - b.Player.Z)));
+                }
+                GD.Print($"[fx-log] t={b.Time:F2} NEAREST living={n} dist={(n > 0 ? best : -1):F2}");
+            }
+            foreach (var ev in events)
+            {
+                var t = ev.GetType();
+                string art = t.GetField("Art")?.GetValue(ev) as string ?? t.GetField("Id")?.GetValue(ev) as string ?? t.GetField("Source")?.GetValue(ev) as string ?? "-";
+                GD.Print($"[fx-log] t={b.Time:F2} {t.Name} art={art}");
+            }
+        }
         foreach (var ev in events)
         {
             switch (ev)
