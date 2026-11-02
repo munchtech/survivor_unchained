@@ -42,8 +42,8 @@ public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Fr
 /* The lamps a survivor has lit (docs/design/CLASSES.md §2.4-2.5).
  *
  * Lamps come from levels (one a level from 2 to 30), the story's bosses
- * (one each, the first win) and the atlas (eight, placed by its
- * milestones): about fifty at the end of everything. Three are free: the
+ * (one each, the first win), the atlas (a tier's first clear; eight on v1,
+ * thirty on v2) and, on v2, the dark lamp-posts relit. Three are free: the
  * hearth's first lamp, and the chosen type's entry and Strike.
  *
  * A lamp is lit next to a lit one, past its road's depth gate. Lamps go out
