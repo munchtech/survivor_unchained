@@ -34,17 +34,18 @@ void fragment() {
 
 	float core = exp(-pow(r / 0.3, 2.0));
 	float blur = smear(a, r, 0.42, 0.075, 0.0, 1.0) + smear(a, r, 0.62, 0.07, 0.37, 1.0) + 0.8 * smear(a, r, 0.78, 0.06, 0.71, 2.0);
-	vec3 faceE = COLOR.rgb * (0.95 + 0.35 * (1.0 - r)) + white * (core * 3.2 + blur * 1.5);
+	// (r3: the core held to a warm heart, not a white ball, so the steel band and its glints read)
+	vec3 faceE = COLOR.rgb * (0.7 + 0.3 * (1.0 - r)) + white * (core * 1.0 + blur * 1.1);
 
 	// The steel (r3): a darker worn band, and over it three unequal glint arcs (~100, 80 and 55 degrees) turning
 	// with the disc (BattleFx.DiscFlight: ~38 degrees a frame), each brightest at its leading end, ~3-4 px thick
 	// in the band's middle.
-	float band_mid = 1.0 - smoothstep(0.0, 0.6, abs((r - (DISC_RIM + 1.0) * 0.5) / ((1.0 - DISC_RIM) * 0.5)));
+	float band_mid = 1.0 - smoothstep(0.2, 0.9, abs((r - (DISC_RIM + 1.0) * 0.5) / ((1.0 - DISC_RIM) * 0.5)));
 	float g1 = smoothstep(0.0, 0.28, fract(a)) * step(fract(a), 0.28);
 	float g2 = smoothstep(0.0, 0.22, fract(a - 0.41)) * step(fract(a - 0.41), 0.22);
 	float g3 = smoothstep(0.0, 0.15, fract(a - 0.72)) * step(fract(a - 0.72), 0.15);
 	float glint = (pow(g1, 1.6) + pow(g2, 1.6) * 0.85 + pow(g3, 1.6) * 0.7) * band_mid;
-	vec3 rimE = COLOR.rgb * 0.06 + white * glint * 1.4;
+	vec3 rimE = COLOR.rgb * 0.06 + white * glint * 2.4;
 
 	// The halo (r3): tight, from the rim's edge out to 1.3x (it washed the band out at 1.6x), amber not cream.
 	float h = 1.0 - smoothstep(1.0, 1.3, r);

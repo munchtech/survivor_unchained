@@ -175,6 +175,7 @@ public partial class BattleFx
         // (the Oathblade's full kits get the chip puff too; the Disc and Bash throw their own)
         if (path == null) ChipPuff(at, away, 1);
         int n = Math.Min(5, (crit ? 5 : 3 + (int)(R() * 1.99f)) + (first ? 1 : 0));
+        if (AaBeats) GD.Print($"[aa-kit] {(path == null ? $"s{oathSwings}" : time == bashAt ? $"b{bashBeat}" : "d")} sparks {n}");
         for (int i = 0; i < n; i++)
         {
             var dir = (away * (0.7f + R() * 0.6f) + along * (0.3f + R() * 0.8f) + new Vector3((R() - 0.5f) * 0.5f, 0.15f + R() * 0.35f, (R() - 0.5f) * 0.5f)).Normalized();
@@ -319,7 +320,7 @@ public partial class BattleFx
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
         if (AaBeats && discThrows >= 1 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
-        if (AaBeats && discBounceShot && !discOpenShot && near > 2.5f && near < 9f && b0 != null && Clear(p.X, p.Z, 1.8)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
+        if (AaBeats && discBounceShot && !discOpenShot && near > 2.5f && near < 9f && b0 != null && Clear(p.X, p.Z, Flare.Night ? 1.8 : 1.2)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
         // A faint dark bed under it (so the head shows over the pale dead), and the head.
         Shade(at, 1.0f * s, 0.3f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
