@@ -111,9 +111,8 @@
       "cues": [
         {"do": "water", "foam": 0, "streak": 0, "mirror_cap": 0.03},
         {"do": "stones", "top": 0.45, "edge": 0, "all": true},
-        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.3, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 160, "key": 0.7, "hemi": 0.75, "rim": 0.05},
-        {"do": "skin", "sky": 0.3, "ear": 0.4},
+        {"do": "skin", "sky": 0, "ear": 0.4, "fill": 0, "rim": 0.25, "note": "Face 49 restage: the heart her only light"},
         {"do": "hold", "actor": "her", "slot": "all", "piece": null},
         {"do": "place", "actor": "her", "mark": "her", "heading": 2.18},
         {"do": "music", "mood": "mystery", "intensity": 0.75, "over": 3.0},

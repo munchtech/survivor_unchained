@@ -78,7 +78,7 @@ public partial class Game
         // A shot's own her-rig knobs (Cinematics 11, C02 s4/s8: the cool fill's grey-blue where it met the warm key), from the
         // "skin" cue's "fill" (the fill's energy times F), "fillColor" (hex) and "scale" (the face-scale cap in px per 10 cm),
         // for the shot that sets them only; other shots keep the defaults above.
-        float herFillK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
+        float herFillK = 1, herRimK = 1, herScaleShot; Color? herFillCol; int herKnobShot = -1;
         // ("off": the parts this shot turns off, as --cine-her-off names them: C02 s4/s8, the moon and his lantern lit by the
         // shot's own rigs, the close rig's key, fill and rim off so it does not re-aim them)
         HashSet<string>? herOffShot;
@@ -614,7 +614,7 @@ public partial class Game
             Place(herFill, lens + side * Mathf.DegToRad(35), Mathf.DegToRad(10), 2.6f, center);
             herRim!.LightColor = new Color("#a9c4ff");
             bool rim2 = HerPart("rim2");
-            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k * (rim2 ? HerRim2 : 1) : 0;
+            herRim.LightEnergy = night ? CloseRimNight * m * HerRimGain * k * (rim2 ? HerRim2 : 1) * (HerKnobs ? herRimK : 1) : 0;
             herRim.Visible = herRim.LightEnergy > 0.005f;
             // (round 3: the rim from nearer straight behind, so it is a line on her far jaw, ear and hair, not a band)
             float rimAz = rim2 ? HerRimAz * (W(face - lens) < 0 ? -1 : 1) : CloseRimAz;

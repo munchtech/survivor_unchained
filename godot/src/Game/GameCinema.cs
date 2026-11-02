@@ -1438,11 +1438,11 @@ public partial class Game
                     // "ear": her ears' warm shade, 1 as built (a warm ear against her cheek once the key is the rig).
                     skinSky = (float)c.Num("sky", skinSky);
                     skinEar = (float)c.Num("ear", skinEar);
-                    // ("fill", "fillColor", "scale": her rig's fill and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
+                    // ("fill", "fillColor", "rim", "scale": her rig's fill, rim and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
                     // ("off": "key,moon": her rig's parts off for this shot, as --cine-her-off)
-                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off"))
+                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off") || c.Has("rim"))
                     {
-                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herScaleShot = (float)c.Num("scale", 0);
+                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herRimK = (float)c.Num("rim", 1); herScaleShot = (float)c.Num("scale", 0);
                         herFillCol = c.Str("fillColor") is string hfc ? new Color(hfc) : null;
                         herOffShot = c.Str("off") is string ho ? ho.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet() : null;
                     }
