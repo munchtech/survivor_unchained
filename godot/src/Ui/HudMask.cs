@@ -64,6 +64,45 @@ public sealed class HudMask
             }
     }
 
+    // (hud24 r2: the set cells' ground points, cast once a frame for the marks' area test: no allocation per frame)
+    int[]? cells;
+    float[]? gx, gz;
+    ulong stamp = ulong.MaxValue;
+
+    /// <summary>The screen px2 of this art that lie over the ground inside the mark's footprint: each set cell (4 px a side
+    /// in the art, 16 px2 x scale2 on the screen) is cast through the camera onto the plane y = groundY, and counted if the
+    /// mark covers where it lands. Cast once per frame (frame); the art lies at origin with scale. If the art did not load: 0.</summary>
+    public float Hidden(HudMark m, Camera3D cam, Vector2 origin, float scale, float groundY, ulong frame)
+    {
+        if (grid == null) return 0;
+        if (cells == null)
+        {
+            int n = 0;
+            for (int i = 0; i < grid.Length; i++) if (grid[i]) n++;
+            cells = new int[n]; gx = new float[n]; gz = new float[n];
+            n = 0;
+            for (int i = 0; i < grid.Length; i++) if (grid[i]) cells[n++] = i;
+        }
+        if (stamp != frame)
+        {
+            stamp = frame;
+            var o = cam.GlobalPosition;
+            for (int k = 0; k < cells.Length; k++)
+            {
+                int c = cells[k];
+                var scr = origin + new Vector2(((c % w) + 0.5f) * Cell, ((c / w) + 0.5f) * Cell) * scale;
+                var d = cam.ProjectRayNormal(scr);
+                float t = d.Y < -1e-4f ? (groundY - o.Y) / d.Y : -1;
+                if (t > 0) { gx[k] = o.X + d.X * t; gz[k] = o.Z + d.Z * t; }
+                else gx[k] = gz[k] = float.NaN;
+            }
+        }
+        int hit = 0;
+        for (int k = 0; k < cells.Length; k++)
+            if (!float.IsNaN(gx![k]) && m.Covers(gx[k], gz![k])) hit++;
+        return hit * Cell * Cell * scale * scale;
+    }
+
     /// <summary>Is the screen point inside the rect and on the art? origin: where the art's top left is on the screen,
     /// scale: its group scale (1 for the keeper and the panel).</summary>
     public bool Hit(Vector2 screen, Rect2 rect, Vector2 origin, float scale)

@@ -124,6 +124,8 @@ public partial class DgKeeper : Control
         // (hud24 r1: the fade and the gold rim are the shader's)
         mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_keeper_fade.gdshader") };
         mat.SetShaderParameter("fade_to", LifeLamp.FadeTo);
+        if (UiArt.Tex("dg_keeper/keeper_rim.png", false) is { } rimTex) mat.SetShaderParameter("rim_src", rimTex);
+        else GD.PushError("DgKeeper: dg_keeper/keeper_rim.png did not load: the keeper's rim draws wrong");
         mat.SetShaderParameter("texels_per_px", tex != null ? tex.GetWidth() / k.Size.X : 2f);
         Material = mat;
         if (tex == null) GD.PushError("DgKeeper: dg_keeper/keeper.png did not load: the keeper is missing");
