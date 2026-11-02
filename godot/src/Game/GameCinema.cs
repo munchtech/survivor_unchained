@@ -1402,6 +1402,8 @@ public partial class Game
                     float e0 = 0;
                     if (rigs.Remove(name, out var was)) { e0 = was.E; was.Free(); }
                     float e = (float)c.Num("energy", 0.3);
+                    // (--cine-rig-mute A,B: those rigs at no light, for pictures: one term at a time on her skin)
+                    if (RigMute.Contains(name)) e = 0;
                     bool fade = c.Bool("fade") && over > 0 && !skipping;
                     if (!fade) e0 = 0;
                     if (e <= 0 && !(fade && e0 > 0)) break;
@@ -1695,7 +1697,8 @@ public partial class Game
                     // "moonWidth" (the grade's moon step: what it lays on the weakly coloured, and up to what lightness, as GradeSettings has it), "shade" and "shadeK" (the
                     // paint grade's colour for the darks), "shadowTint", "hiTint", "vib". (C03's night, judge r1: the moon, the lamps,
                     // the ambient and the heart one blue, so the heart wasn't special: the moon silver, the shade violet.)
-                    if (new[] { "moonSat", "moonHue", "moonDrop", "moonTop", "moonWidth", "shade", "shadeK", "shadowTint", "hiTint", "vib" }.Any(c.Has))
+                    // (--cine-grade-cue off: a shot's palette ignored, the zone's grade kept: pictures)
+                    if (!GradeCueOff && new[] { "moonSat", "moonHue", "moonDrop", "moonTop", "moonWidth", "shade", "shadeK", "shadowTint", "hiTint", "vib" }.Any(c.Has))
                     {
                         double? Opt(string k) => c.Has(k) ? c.Num(k) : null;
                         double? ms = Opt("moonSat"), mh = Opt("moonHue"), md = Opt("moonDrop"), mt = Opt("moonTop"), mw = Opt("moonWidth"), sk = Opt("shadeK"), vb = Opt("vib");
