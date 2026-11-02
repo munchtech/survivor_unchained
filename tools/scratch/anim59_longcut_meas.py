@@ -18,7 +18,7 @@ fr_list = sys.argv[1:] and [int(x) for x in sys.argv[1].split(",")] or range(cli
 print("fr  P(x y z)              dErr  tip(x y z)            Lline Lang  kneeR(y z)   ballL(y)  ballR(y)  pel_y")
 for f in fr_list:
     P = p[f, hr] + qrot(g[f, hr], M.AT); d = qrot(g[f, hr], M.DIR)
-    Pk, dk, _ = M._blade_at(f)
+    Pk, dk = M._blade_at(f)[:2]
     tip = P + d * M.BLADE_LEN
     Q = p[f, hl] + qrot(g[f, hl], M.AT_L); dl = qrot(g[f, hl], M.DIR_L)
     v = Q - P; off = v - d * float(v @ d)

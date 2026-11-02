@@ -36,7 +36,7 @@ import numpy as np
 from clips import idle
 from clips.flare import _n, _smooth, _euler, _foot_at, _curve, _slerp_dir
 from clips.soul import arms_of
-from keyed import Track, build, _socket_vec, finger_curl, WRAP
+from keyed import Track, build, _socket_vec, _axis_matrix, finger_curl, grip_of, WRAP, WRAP_TILT
 from rig import Clip, qaxis, qinv, qmul, qrot, qslerp, qbetween, qeuler, qfrom_basis
 
 NAME = "flare_long_cut"
@@ -46,9 +46,15 @@ LAND = 20
 SETTLE = 72
 
 # The right fist's pocket (hand_r space) and the grip's line in it, pommel toward blade; the edge's way (the piece's +X).
+# grip_tilt (animation 58, the clip's meta): the blade turned TILT deg in her fist about hand_r +X through the pocket, toward
+# a square two-handed grip (the fist fitted for it: WRAP_TILT["sunder"], the blade's); the game turns the seated piece so.
+TILT = float(__import__("os").environ.get("LC_TILT", "0"))
+_RT = _axis_matrix([1.0, 0, 0], TILT)
+GRIP_LEAN = grip_of("sunder", TILT)["r"]   # the hand turned back from the keyed blade by the grip's lean (Rig.solve)
 AT = _socket_vec("BladeAtR")
-DIR = _socket_vec("BladeDirR") / np.linalg.norm(_socket_vec("BladeDirR"))
-EDGE = np.array([0.0, DIR[2], -DIR[1]])
+DIR0 = _socket_vec("BladeDirR") / np.linalg.norm(_socket_vec("BladeDirR"))
+DIR = _RT @ DIR0
+EDGE = _RT @ np.array([0.0, DIR0[2], -DIR0[1]])
 # hand_r to hand_l (WeaponSockets.MirrorRL).
 MIRROR = np.array([[-0.999976, 0.006672, 0.001970], [0.006660, 0.999958, -0.006359], [0.002012, 0.006345, 0.999978]])
 AT_L, DIR_L, EDGE_L = MIRROR @ AT, MIRROR @ DIR, MIRROR @ EDGE
@@ -66,23 +72,24 @@ def _d(theta, x=0.0):
 # (frame, P: the right fist's pocket point in her space, d: the blade's way, pole: the right elbow's way from the
 # shoulder in the chest's frame). The cleave keyed every frame.
 BLADE = [
-    (3, (-0.17, 1.00, -0.06), _n(-0.10, -0.50, -0.86), (-0.6, -0.7, -0.3)),
-    (5, (-0.20, 0.95, -0.13), _n(-0.12, -0.55, -0.83), (-0.6, -0.7, -0.4)),
-    (6, (-0.21, 0.93, -0.15), _n(-0.12, -0.57, -0.82), (-0.6, -0.7, -0.4)),
-    (8, (-0.30, 1.45, -0.12), _n(-0.25, -0.15, -0.96), (-0.9, -0.2, -0.2)),
-    (9, (-0.20, 1.75, -0.12), _n(-0.12, -0.25, -0.96), (-0.8, 0.2, 0.3)),
-    (11, (-0.05, 1.96, -0.12), _d(205), (-0.7, 0.3, 0.6)),
-    (13, (-0.03, 1.97, -0.16), _d(211), (-0.7, 0.3, 0.6)),
-    (14, (-0.02, 2.00, -0.03), _d(150), (-0.7, 0.3, 0.6)),
-    (15, (-0.01, 1.72, 0.25), _d(60), (-0.7, 0.0, 0.5)),
-    (16, (0.00, 1.04, 0.47), _d(-56), (-0.7, -0.4, 0.2)),
-    (17, (0.00, 0.96, 0.475), _d(-72), (-0.7, -0.6, 0.0)),
-    (18, (0.00, 0.945, 0.48), _d(-80), (-0.7, -0.7, 0.0)),
-    (LAND, (0.00, 0.93, 0.50), _d(-86), (-0.7, -0.7, 0.0)),
-    (24, (0.00, 0.925, 0.50), _d(-87), (-0.7, -0.7, 0.0)),
-    (57, (0.00, 0.925, 0.50), _d(-87), (-0.7, -0.7, 0.0)),
-    (62, (0.00, 1.15, 0.47), _d(-80), (-0.7, -0.7, 0.0)),
-    (67, (-0.12, 1.05, 0.35), _n(-0.10, -0.60, 0.80), (-0.7, -0.7, -0.2)),
+    (3, (-0.17, 1.00, -0.06), _n(-0.10, -0.50, -0.86), (0.16, 0.37, 0.91), (0.06, -0.87, 0.50), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
+    (5, (-0.20, 0.95, -0.13), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
+    (6, (-0.21, 0.93, -0.15), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
+    (7, (-0.255, 1.19, -0.135), _n(-0.19, -0.37, -0.91), (0.84, 0.53, 0.11), (-0.42, -0.81, 0.41), (0.79, -0.6, 0.14), (-0.98, 0, 0.2)),
+    (8, (-0.30, 1.45, -0.12), _n(-0.25, -0.15, -0.96), (0.91, 0.40, -0.12), (-0.97, 0.0, 0.25), (0.65, -0.44, 0.62), (-0.86, 0.49, 0.15)),
+    (9, (-0.20, 1.75, -0.12), _n(-0.12, -0.25, -0.96), (0.88, -0.38, 0.27), (-0.03, 0.97, -0.25), (0.75, -0.02, 0.66), (-0.52, 0.84, -0.15)),
+    (11, (-0.03, 1.90, -0.30), _d(200), (0.22, -0.07, 0.97), (0.0, 0.94, -0.34), (0.38, -0.21, 0.9), (0, 0.94, -0.34)),
+    (13, (-0.03, 1.86, -0.34), _d(205), (0.19, -0.10, 0.98), (0.0, 0.91, -0.42), (0.35, -0.28, 0.89), (0, 0.91, -0.42)),
+    (14, (-0.02, 2.00, -0.03), _d(150), (0.83, -0.32, 0.46), (0.0, 0.87, 0.50), (-0.04, -0.5, 0.87), (-0.5, 0.75, 0.43)),
+    (15, (0.00, 1.60, 0.42), _d(60), (0.87, -0.19, -0.45), (0.50, -0.43, 0.75), (0.44, -0.72, 0.54), (-1, 0, 0)),
+    (16, (0.00, 1.007, 0.405), _d(-58), (0.77, 0.60, -0.21), (0.50, -0.46, -0.73), (0.47, -0.81, -0.35), (-1, 0, 0)),
+    (17, (0.00, 0.945, 0.464), _d(-66), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (0.39, 0.88, -0.28), (-0.87, -0.2, -0.46)),
+    (18, (0.00, 0.904, 0.496), _d(-70), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (0.58, 0.76, -0.29), (-1, 0, 0)),
+    (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.56, 0.8, -0.2), (-0.87, 0.14, 0.48)),
+    (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.53, 0.84, -0.08), (-0.87, 0.13, 0.48)),
+    (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.53, 0.84, -0.08), (-0.87, 0.13, 0.48)),
+    (62, (0.00, 1.00, 0.50), _d(-60), (-0.69, 0.64, 0.34), (0.87, 0.25, 0.43), (0.35, 0.76, -0.55), (-0.87, 0.25, 0.43)),
+    (67, (-0.12, 1.05, 0.35), _n(-0.10, -0.60, 0.80), (0.87, 0.43, 0.25), (0.56, -0.69, -0.45), (-0.38, 0.92, -0.06), (-0.43, -0.69, -0.58)),
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
@@ -92,15 +99,24 @@ L_ON = [(0, 0.0), (3, 1.0), (64, 1.0), (68, 0.0)]
 
 
 def _blade_at(fr):
+    """(P, d, pole (chest frame), k: the grip's knuckles / the blade's edge, square to d) at a frame."""
+    def fix(d, k):
+        k = k - d * float(k @ d)
+        return k / np.linalg.norm(k)
     for a, b in zip(BLADE, BLADE[1:]):
         if a[0] <= fr <= b[0]:
             u = (fr - a[0]) / (b[0] - a[0])
             if a[0] not in CLEAVE:
                 u = _smooth(u)
             P = np.array(a[1]) + (np.array(b[1]) - np.array(a[1])) * u
-            return P, _slerp_dir(np.array(a[2]), np.array(b[2]), u), np.array(a[3]) + (np.array(b[3]) - np.array(a[3])) * u
-    k = BLADE[0] if fr < BLADE[0][0] else BLADE[-1]
-    return np.array(k[1]), np.array(k[2]), np.array(k[3])
+            d = _slerp_dir(np.array(a[2]), np.array(b[2]), u)
+            k = _slerp_dir(fix(np.array(a[2]), _n(*a[4])), fix(np.array(b[2]), _n(*b[4])), u)
+            kl = _slerp_dir(fix(np.array(a[2]), _n(*a[6])), fix(np.array(b[2]), _n(*b[6])), u)
+            return (P, d, np.array(a[3]) + (np.array(b[3]) - np.array(a[3])) * u, fix(d, k),
+                    np.array(a[5]) + (np.array(b[5]) - np.array(a[5])) * u, fix(d, kl))
+    key = BLADE[0] if fr < BLADE[0][0] else BLADE[-1]
+    return (np.array(key[1]), np.array(key[2]), np.array(key[3]), fix(np.array(key[2]), _n(*key[4])), np.array(key[5]),
+            fix(np.array(key[2]), _n(*key[6])))
 
 
 # ----------------------------------------------------------------- feet --
@@ -221,6 +237,9 @@ class LongCut:
         I = rig.I
         _, bp = rig.sk.fk(self.base.rot, self.base.pos)
         self.bo = bp[:, I["pelvis"]] - rig.prest[I["pelvis"]]     # the base's pelvis off her rest's (Rig.solve's hp)
+        bg, _ = rig.sk.fk(self.base.rot, self.base.pos)
+        lq = qaxis([1.0, 0, 0], -GRIP_LEAN)
+        self.R_idle = bg[:, I["hand_r"]]   # the idle's own right hand (its global turn), per frame
 
     def _stand(self):
         rig, base = self.rig, self.base
@@ -292,30 +311,30 @@ class LongCut:
         out = []
         idle_r = self.idle["hand_r"]
         v_idle = _arc_vec(idle_r["arc"])
+        lq = qaxis([1.0, 0, 0], -GRIP_LEAN)
         for fr in range(self.n):
-            P, d, pole = _blade_at(fr)
-            R = self.Rr[fr] if self.Rr is not None else None
-            if R is not None:
-                # The hand as last solved, turned the least way to put its line on d: the wrist put from it.
-                Rk = qmul(qbetween(qrot(R, DIR), d), R)
-                W = P - qrot(Rk, AT)
-            else:
-                z, y = _hand_frame(d, np.array([0, 1.0, 0]) if abs(d[1]) < 0.9 else np.array([0, 0, 1.0]))
-                Rm = np.stack([np.cross(y, z), y, z], axis=1)
-                W = P - Rm @ AT
-            spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in d), "frame": "char",
+            P, d, pole, kn = _blade_at(fr)[:4]
+            # The hand that holds the blade along d, its edge (the grip's knuckles) along kn: the wrist put from it.
+            Rk = qmul(qfrom_basis(np.cross(kn, d), kn, d), qinv(lq))
+            W = P - qrot(Rk, AT)
+            spec = {"pos": tuple(float(x) for x in W), "blade": tuple(float(x) for x in d),
+                    "knuckles": tuple(float(x) for x in kn), "frame": "char",
                     "pole": tuple(float(x) for x in qrot(chest[fr], _n(*pole))), "pole_at": "shoulder", "twist": 0.5}
             w = _curve(R_ON, fr)
             if w < 1.0:
                 Wi = S_r[fr] + qrot(chest[fr], v_idle)
                 bi = qrot(chest[fr], np.array(idle_r["blade"], float))
                 spec["pos"] = tuple(float(x) for x in Wi + (W - Wi) * w)
-                spec["blade"] = tuple(float(x) for x in _slerp_dir(bi / np.linalg.norm(bi), d, w))
+                # The hand turned from the idle's own the short way to the keyed one (blade and edge together), so
+                # the wrist's turn about the forearm never takes the long way round.
+                Ri = self.R_idle[fr]
+                Rw = qmul(qslerp(Ri, -Rk if float(np.dot(Ri, Rk)) < 0 else Rk, w), lq)
+                spec["blade"] = tuple(float(x) for x in qrot(Rw, np.array([0, 0, 1.0])))
+                spec["knuckles"] = tuple(float(x) for x in qrot(Rw, np.array([0, 1.0, 0])))
                 spec.pop("pole_at")
+
                 pi = qrot(chest[fr], np.array(idle_r["pole"], float))
                 spec["pole"] = tuple(float(x) for x in pi + (qrot(chest[fr], _n(*pole)) - pi) * w)
-                if "knuckles" in idle_r and w < 0.5:
-                    spec["knuckles"] = tuple(float(x) for x in qrot(chest[fr], np.array(idle_r["knuckles"], float)))
             out.append(spec)
         return out
 
@@ -331,22 +350,30 @@ class LongCut:
             if ws > 0:
                 qr, pr = self.Gr[0][fr], self.Gr[1][fr]
                 d = qrot(qr, DIR)
-                e = qrot(qr, EDGE)
+                _, _, _, _, pole_l, kl = _blade_at(fr)
+                kl = kl - d * float(kl @ d)
+                kl = kl / np.linalg.norm(kl)
                 Q = pr + qrot(qr, AT + DIR * LEFT_T)
-                # The left fist turned so its own line (DIR_L) is the blade's and its edge (EDGE_L) the blade's edge.
-                Mw = np.stack([d, e, np.cross(d, e)], axis=1)
-                Mh = np.stack([DIR_L, EDGE_L, np.cross(DIR_L, EDGE_L)], axis=1)
+                # The left fist turned so its own line (DIR_L) is the blade's, rolled about it so its own +Y (square to
+                # the line) lies along kl: the roll keyed per beat (the grip is round), chosen with the elbow's way for
+                # an easy wrist (tools/scratch/anim59_armsearch.py).
+                yl = np.array([0, 1.0, 0]) - DIR_L * DIR_L[1]
+                yl = yl / np.linalg.norm(yl)
+                Mw = np.stack([d, kl, np.cross(d, kl)], axis=1)
+                Mh = np.stack([DIR_L, yl, np.cross(DIR_L, yl)], axis=1)
                 Rw = Mw @ Mh.T
-                Rl = self.Rl[fr] if self.Rl is not None and ws >= 1.0 else None
-                Ws = Q - (qrot(Rl, AT_L) if Rl is not None else Rw @ AT_L)
+                Ws = Q - Rw @ AT_L
                 bump = qrot(chest[fr], np.array((0.04, 0.03, 0.12))) * math.sin(math.pi * ws) if ws < 1 else 0.0
                 W = Wi + (Ws - Wi) * ws + bump
                 spec["blade"] = tuple(float(x) for x in Rw[:, 2])
                 spec["knuckles"] = tuple(float(x) for x in Rw[:, 1])
+                pole_g = qrot(chest[fr], _n(*pole_l))
                 if ws < 1.0:
                     spec["aim"] = ws
-                pole_g = qrot(chest[fr], _n(0.7, -0.6, -0.1))
-                spec["pole"] = tuple(float(x) for x in pole_i + (pole_g - pole_i) * ws)
+                    spec["pole"] = tuple(float(x) for x in pole_i + (pole_g - pole_i) * ws)
+                else:
+                    spec["pole"] = tuple(float(x) for x in pole_g)
+                    spec["pole_at"] = "shoulder"
             else:
                 W = Wi
                 spec["thumb"] = tuple(float(x) for x in qrot(chest[fr], np.array(idle_l["thumb"], float)))
@@ -357,10 +384,10 @@ class LongCut:
 
     def fingers_l(self, fr):
         w = _curve(L_ON, fr)
+        b = WRAP_TILT["sunder"][TILT] if TILT else WRAP["sunder"]   # her left fist the right's, laid mirrored
         if w >= 1.0:
-            return "grip"
+            return b
         a = self.idle["fingers_l"]
-        b = WRAP["sunder"]
         ca, cb = finger_curl(a), finger_curl(b)
         out = {"bends": {k: [x + (y - x) * w for x, y in zip(ca[k], cb[k])] for k in cb},
                "spreads": {k: v * w for k, v in b.get("spreads", {}).items()},
@@ -375,7 +402,7 @@ class LongCut:
             p["fingers_r"] = "grip"
             p["fingers_l"] = self.fingers_l(fr)
             return p
-        meta = {"layer": "full", "weapon": "sunder", "contact": CONTACT_T, "contacts": [CONTACT_T], "blend_out": 0.9}
+        meta = {"layer": "full", "weapon": "sunder", **({"grip_tilt": TILT} if TILT else {}), "contact": CONTACT_T, "contacts": [CONTACT_T], "blend_out": 0.9}
         return build(NAME, self.rig, self.keys, meta=meta, post=post, base=self.base)
 
     def hands_of(self, clip):
