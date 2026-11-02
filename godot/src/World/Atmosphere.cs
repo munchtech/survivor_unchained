@@ -41,6 +41,10 @@ public partial class Atmosphere : Node3D
             Env.FogDepthBegin = h.Begin; Env.FogDepthEnd = h.End; Env.FogDepthCurve = h.Curve;
             Env.FogDensity = h.Amount; Env.FogAerialPerspective = h.Sky;
             if (h.Tint is Color tc) Env.FogLightColor = tc;
+            // (--dbg-haze-tint #hex, --dbg-haze-sky, --dbg-haze-amount: A/B a cinematic haze cue without its data; Env 23)
+            if (SurvivorUnchained.Args.Get("dbg-haze-tint") is string dt) Env.FogLightColor = new Color(dt);
+            if (SurvivorUnchained.Args.Has("dbg-haze-sky")) Env.FogAerialPerspective = SurvivorUnchained.Args.Num("dbg-haze-sky", h.Sky);
+            if (SurvivorUnchained.Args.Has("dbg-haze-amount")) Env.FogDensity = SurvivorUnchained.Args.Num("dbg-haze-amount", h.Amount);
             if (System.Environment.GetEnvironmentVariable("FLORA_STATS") != null) GD.Print($"haze: depth {h.Begin}-{h.End} m, amount {h.Amount}, sky {h.Sky}; fog on {Env.FogEnabled}");
         }
         else if (Env.FogMode != Godot.Environment.FogModeEnum.Exponential)
