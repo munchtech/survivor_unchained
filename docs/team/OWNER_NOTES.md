@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 2 November 2026 (coordinator 45b9ec4e)
+- **Long Cut clip fix round FUNDED** ("Yes, fund it"): after Animation 60's max judge FAIL CLOSE (held kneel hunch at the play camera, statue hold, coil not loaded). One fix round + one max judge, ~0.35M hard, Animation 61 in anim-61. PASS = clip back on; FAIL = closes as known, clip stays off.
+
 ## 2 November 2026 (coordinator 14076147)
 - **UI (HUD clean-up):** "ui lead can run.  I wanted it to clean up the inner edges of the statues, as well as the skill bar bordering.  but it can go for the item vfx is asking about too". DONE: UI 24 merged c80e2f946 (statue edges, bar ends, glass-statue fade, Rebuke/Watch Bell/Groundbreaker icons).
 - **Animation (her Long Cut pose):** "Yes, start it". IN PROGRESS: Animation 59 (anim-59), greatsword route, one-handed coil, budget 2.3M.
