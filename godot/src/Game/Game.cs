@@ -670,6 +670,7 @@ public partial class Game : Node, IZoneHost
         fl.HudDim = k => hud.FlareDim(k);
         fl.LabelsAlpha = k => hud.LabelsAlpha(k);
         fl.Dip = k => air.FlareDip = k;
+        fl.LightDip = k => air.FlareLight = k;
         fl.Cue = (cue, at, k) =>
         {
             // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).
@@ -677,6 +678,11 @@ public partial class Game : Node, IZoneHost
             Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night);
         };
         CrowdView.FlareDeath = fl.DeathOf;
+        CrowdView.FlareStatueLook = fl.StatueLook;
+        CrowdView.FlareCorpseBurn = fl.CorpseBurnAge;
+        CrowdView.FlareCorpseAsh = fl.CorpseAsh;
+        CrowdView.FlareStatueFlash = fl.StatueFlash;
+
         CrowdView.FlareChar = fl.CharAt;
         CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();
@@ -1586,6 +1592,8 @@ public partial class Game : Node, IZoneHost
                     hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
                 }
             }
+            // --no-spawn: the horde and nothing after it (the zone's waves, summons), so a field a Flare cleared reads.
+            if (Args.Has("no-spawn")) hb.NoSpawn = true;
         }
         // --drops: one of every kind of thing that lies on the ground, in a ring round the survivor, left
         // where they lie (a pickup is not drawn in until it has settled) and worth next to nothing (a picture).

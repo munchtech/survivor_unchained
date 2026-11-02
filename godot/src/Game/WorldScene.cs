@@ -324,7 +324,9 @@ public partial class WorldScene : Node3D, IZoneLook
 
     // The held staff (the Flare's head light), found once per figure.
     PlayerView? staffOf;
-    Node3D? staff;
+    Node3D? staff, blade;
+    bool bladeSaid;
+
 
     void Draw(double dt, double fightDt)
     {
@@ -357,8 +359,26 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
             flare.Her = HerDrawn;
-            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; }
+            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; blade = null; }
             flare.Staff = staff;
+            // The blade in her hand (not one hung at her back), for the Long Cut's steel.
+            if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())
+            {
+                blade = null;
+                if (Player != null)
+                    foreach (var n in Player.FindChildren("arm?*", "", true, false))
+                        // ("arm?*": Godot turns the ":" in "arm:id" into "_", so "arm:*" never matched and the steel had no light)
+                        if (n is Node3D a && !a.Name.ToString().Contains("mage_staff") && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true
+                            && a.HasMeta("kind") && (int)a.GetMeta("kind") is (int)SurvivorUnchained.Play.WeaponKind.Blade1H or (int)SurvivorUnchained.Play.WeaponKind.Blade2H)
+                        { blade = a; break; }
+                if (blade == null && flare.Active && !bladeSaid && Args.Has("shot") && Player != null)
+                {
+                    bladeSaid = true;
+                    foreach (var n in Player.FindChildren("mount_*", "", true, false))
+                        foreach (var c in n.GetChildren()) GD.Print($"flare blade: none held; {c.Name} under {n.Name} kind {(c.HasMeta("kind") ? (int)c.GetMeta("kind") : -1)}");
+                }
+            }
+            flare.Blade = blade;
             flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));

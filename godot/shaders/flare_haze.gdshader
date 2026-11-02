@@ -12,6 +12,11 @@ uniform vec3 center = vec3(0.0);
 uniform float radius = 0.0;   // the ring's line (m)
 uniform float strength = 0.0; // 0..1
 uniform float age = 0.0;
+// The Long Cut's sweep (Fx/Flare/FlareFx.LongCutLight.cs): the shimmer behind its leading angle, no dust (its skirt
+// has its own). sweep 1 for this mode; lead its leading angle (rad, unwrapped); swept how far it has turned.
+uniform float sweep = 0.0;
+uniform float lead = 0.0;
+uniform float swept = 0.0;
 
 varying vec3 v_w;
 
@@ -27,6 +32,14 @@ void fragment() {
 	float ah = dl - radius;
 	float x = (ah - 0.6) / 0.6;
 	float band = (exp(-x * x) + 0.5 * exp(-pow((ah + 0.25) / 0.4, 2.0))) * strength;
+	if (sweep > 0.5) {
+		// (metres behind the leading edge at this radius: the air hottest 0.4-2 m behind the blade's smear)
+		float behind = mod(lead - atan(d.y, d.x), 6.2831853);
+		float m = behind * dl;
+		band = step(behind, swept + 0.001) * smoothstep(0.1, 0.5, m) * exp(-max(m - 0.5, 0.0) / 1.6)
+			* smoothstep(0.6, 1.5, dl) * (1.0 - smoothstep(radius * 0.85, radius * 1.02, dl)) * strength;
+		x = 9.0;
+	}
 	band = min(band, 1.0);
 	if (band < 0.01) discard;
 	// It churns: rising cells, bending more across the band than along it.

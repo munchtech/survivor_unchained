@@ -71,6 +71,31 @@ flare_frost={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_seam={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_seam_t={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_sweep={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_lc={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_crack_a={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_marks0.png"
+}
+flare_crack_b={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_marks0.png"
+}
+
 flare_hue={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

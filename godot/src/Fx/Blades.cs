@@ -55,6 +55,9 @@ public partial class Blades : MultiMeshInstance3D
         });
     }
 
+    /// <summary>Every swing in flight gone (the Long Cut's press: the Flare has the frame).</summary>
+    public void Clear() => live.Clear();
+
     public void Step(float dt)
     {
         int n = 0;

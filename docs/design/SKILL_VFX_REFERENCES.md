@@ -4,17 +4,17 @@
 
 Inspiration only, never copied. For the Flare (ultimate, a BOOM button: memory flare-is-a-boom-button) and normal skills.
 
-- https://www.youtube.com/watch?v=HTPbHeqstT0
-- https://www.youtube.com/watch?v=vS1v4QjjcJk
-- https://www.youtube.com/watch?v=AoS3bivvFNQ
-- https://www.youtube.com/watch?v=I9-uYCadJ4g
-- https://www.youtube.com/watch?v=iXdos0VaPhU
-- https://www.youtube.com/watch?v=RKtcNsFTPRg
-- https://www.youtube.com/watch?v=NBA2L25WDcw
-- https://www.youtube.com/watch?v=yE5rjDocIAE
-- https://www.youtube.com/watch?v=dyYnofAdxQc
+- 2. RIOT character effects: https://www.youtube.com/watch?v=HTPbHeqstT0
+- 8. 32 elemental hits: https://www.youtube.com/watch?v=vS1v4QjjcJk
+- 1. Fighter: https://www.youtube.com/watch?v=AoS3bivvFNQ
+- 3. Blood orb: https://www.youtube.com/watch?v=I9-uYCadJ4g
+- 7. Wave crash: https://www.youtube.com/watch?v=iXdos0VaPhU
+- 5. Bird strike: https://www.youtube.com/watch?v=RKtcNsFTPRg
+- 4. Lost Ark boss: https://www.youtube.com/watch?v=NBA2L25WDcw
+- 9. Constellation buff: https://www.youtube.com/watch?v=yE5rjDocIAE
+- 6. Unity portfolio: https://www.youtube.com/watch?v=dyYnofAdxQc
 
 Added 1 November 2026 (the owner: "2 more very good videos for vfx to study"):
 
-- https://www.youtube.com/watch?v=5ZQdZOK8hhg
-- https://www.youtube.com/watch?v=IPAfyFhDJcA
+- 10. Lightning (UE5 + Houdini): https://www.youtube.com/watch?v=5ZQdZOK8hhg
+- 11. Fire spell (UE5 + Houdini): https://www.youtube.com/watch?v=IPAfyFhDJcA

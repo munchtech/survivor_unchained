@@ -70,6 +70,10 @@ public partial class CrowdView : Node3D
     {
         /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
         public float Char;
+        /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
+        public double BurnAt = -1;
+        /// <summary>Its Long Cut death is ash (off the drawn seam), not gold.</summary>
+        public bool Ash;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -117,6 +121,15 @@ public partial class CrowdView : Node3D
     /// <summary>The Flare's say over a body it struck down (FlareFx.DeathOf): 1 held standing until its blow lands, -1 shattered
     /// (not drawn), 0 its own death.</summary>
     public static Func<int, int>? FlareDeath;
+    /// <summary>How a held body is drawn (FlareFx.StatueLook: x frozen, y char, z dissolve, w burning): Burns Twice's
+    /// ice statues, the Long Cut's burn-up in gold.</summary>
+    public static Func<int, Godot.Vector4>? FlareStatueLook;
+    /// <summary>Seconds since the Long Cut reached a corpse's place, or -1 (FlareFx.CorpseBurnAge).</summary>
+    public static Func<double, double, double>? FlareCorpseBurn;
+    /// <summary>Whether a corpse there goes as ash, not gold (FlareFx.CorpseAsh: off the Long Cut's drawn seam).</summary>
+    public static Func<double, double, bool>? FlareCorpseAsh;
+    /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
+    public static Func<int, float>? FlareStatueFlash;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -124,6 +137,10 @@ public partial class CrowdView : Node3D
     public static Func<double, double, bool>? FlareRingPast;
     /// <summary>Last frame's audit: bodies drawn where the ring passed 4+ frames ago, and those of them not charred.</summary>
     public static int FlareAuditSeen, FlareAuditBad;
+    // (the pictures' census, for the Long Cut's log: what the crowd drew this frame)
+    static int censusFall, censusStatue, censusCorpse, censusBurn;
+    static double censusFallD, b0X, b0Z;
+    public static string FlareCensus => $"drawn: struck standing {censusStatue}, falling (not the Flare's) {censusFall} at mean {(censusFall > 0 ? censusFallD / censusFall : 0):0.0} m from her, corpses {censusCorpse} (burning {censusBurn})";
     /// <summary>Char: the body's paint times this (albedo under 0.06 linear).</summary>
     static readonly Color CharTint = new(0.06f, 0.048f, 0.04f, 1);
 
@@ -190,6 +207,7 @@ public partial class CrowdView : Node3D
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
         FlareAuditSeen = FlareAuditBad = 0;
+        censusFall = censusStatue = censusCorpse = censusBurn = 0; censusFallD = 0; b0X = b.Player.X; b0Z = b.Player.Z;
         whiteFlashes = 0;
         eliteFlashes = 0;
         foreach (var e in b.Enemies.Items)
@@ -237,6 +255,7 @@ public partial class CrowdView : Node3D
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
+        Godot.Vector4 fallBurn = default;
         double speed = Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz);
         // Walking or standing, with a margin between the two, so a creature
         // jostled at the edge of walking pace does not flicker between clips.
@@ -272,6 +291,16 @@ public partial class CrowdView : Node3D
                 }
                 role = g.Death ??= DeathOf(asset, e);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
+                // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
+                // metre), and they are gone before they land: r2's ring of bodies falling away from her, black by day and
+                // blue-grey by night, were these (the hold slows their fall), not the struck, who never fall.
+                if (FlareCorpseBurn?.Invoke(ex, ez) is double fk && fk >= 0)
+                {
+                    bool fa = FlareCorpseAsh?.Invoke(ex, ez) ?? false;
+                    if (fk >= SurvivorUnchained.View.FlareFx.BurnTimeOf(fa)) { laidOut.Add((e.Id, e.Seed)); return; }
+                    fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk, fa);
+                }
+                censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
@@ -396,6 +425,7 @@ public partial class CrowdView : Node3D
         tint = Charred(tint, chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
+        if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot);
         living++;
     }
@@ -446,7 +476,10 @@ public partial class CrowdView : Node3D
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - st.Facing) * Godot.Basis.FromScale(Vector3.One * st.Scale);
             // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
             Audit(st.X, st.Z, 0, 1);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, 0, 1, 0, st.Tint, st.Glow);
+            censusStatue++;
+            var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
+
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
     }
@@ -472,6 +505,21 @@ public partial class CrowdView : Node3D
     {
         double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
         corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
+        // The Long Cut burns up the dead in its reach with the struck, and they are gone after: those down when it came,
+        // and those still falling then (her kills just before the press lie down after it: the hold slows their fall),
+        // as they land, up to 2.5 s after its moment. (The first try asked only the already-down: the star stayed.)
+        if (FlareCorpseBurn != null)
+            corpses.RemoveAll(c =>
+            {
+                if (c.BurnAt < 0)
+                {
+                    double k = FlareCorpseBurn(c.X, c.Z);
+                    // (on the struck's clock, not restarted as it lands: her kills falling in reach burn as they fall, and one
+                    // laid out after its moment had restarted its burn, the lying star at cleave +0.55 s in r3a)
+                    if (k >= 0) { c.BurnAt = time - k; c.Ash = FlareCorpseAsh?.Invoke(c.X, c.Z) ?? false; }
+                }
+                return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTimeOf(c.Ash);
+            });
         foreach (var c in corpses)
         {
             var crowd = Crowd(c.Visual);
@@ -487,6 +535,14 @@ public partial class CrowdView : Node3D
             var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
+            censusCorpse++;
+            if (c.BurnAt >= 0)
+            {
+                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
+                censusBurn++;
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
+                continue;
+            }
             crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
     }
