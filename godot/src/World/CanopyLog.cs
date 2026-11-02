@@ -17,7 +17,7 @@ public static class CanopyLog
     {
         public Vector3 At, Up;
         public string Species = "";
-        public float Lo, Top, R, Secs, F, Near = float.MaxValue;
+        public float Lo, Top, R, Secs, F, Taper = 1, Near = float.MaxValue;
     }
 
     static float Hash(Vector3 ip, float a, float b, float k)
@@ -36,14 +36,14 @@ public static class CanopyLog
         if (!On || hi <= 0) return;
         if (root.GetNodeOrNull<CanopyLogger>("CanopyLog") is not { } log) root.AddChild(log = new CanopyLogger { Name = "CanopyLog" });
         float lo = P(sp, "crown_lo", 0), r = P(sp, "crown_r", 2), slo = P(sp, "stretch_lo", 1), shi = P(sp, "stretch_hi", 1),
-            lf = P(sp, "leader_from", 6), llo = P(sp, "leader_lo", 1), lhi = P(sp, "leader_hi", 1);
+            lf = P(sp, "leader_from", 6), tp = P(sp, "crown_taper", 1), llo = P(sp, "leader_lo", 1), lhi = P(sp, "leader_hi", 1);
         foreach (var t in at)
         {
             var ip = t.Origin;
             float st = Mathf.Lerp(slo, shi, Hash(ip, 17.17f, 63.41f, 19417.83f));
             float hl = Mathf.Lerp(llo, lhi, Hash(ip, 51.3f, 27.9f, 37281.41f));
             float top = (hi > lf ? lf + (hi - lf) * hl : hi) * st;
-            log.Trees.Add(new Tree { At = ip, Up = t.Basis.Y, Species = sp.Name, Lo = lo * st, Top = top, R = r });
+            log.Trees.Add(new Tree { At = ip, Up = t.Basis.Y, Species = sp.Name, Lo = lo * st, Top = top, R = r, Taper = tp });
         }
     }
 }

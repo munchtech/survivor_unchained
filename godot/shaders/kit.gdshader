@@ -193,16 +193,23 @@ uniform float near_back = 0.25;
 // origin, its scale and its species' crown (local m: crown_lo its base, crown_hi its top, 0 never faded, crown_r its
 // radius; flora_species.json's "shader"), the same for every vertex of it (a flat varying). Only in the play camera's
 // own view: in a light's the tree is whole, so its shadow stays. canopy_fade.w 0: off (--canopy off).
+// (Env 23, judge e23v3: the ring of stumps round her) canopy_fade.w 2, the default: only a tree whose crown, on the screen,
+// covers HER (her body, feet to head, 0.35 m round it, plus canopy_fade.x m) and stands in front of her fades; w 1 the
+// ring above (canopy_fade.x the ground's radius). With w 2 the stump is capped: tools/assets/tree_caps.py gives each mesh
+// a lid on the bark's section at crown_keep (COLOR.b 0.3), collapsed unless its tree is faded, painted as sawn wood.
 uniform float crown_lo = 0.0;
 uniform float crown_hi = 0.0;
 uniform float crown_r = 2.0;
 uniform float crown_keep = 1.5;
+// (Env 23, w 2) the crown's radius at its top over crown_r (at its base): a spruce's cone narrows to its spire
+uniform float crown_taper = 1.0;
 global uniform vec4 canopy_fade;
 // (lf5p) the kept stump's cut top (its trunk's inside seen from above), and our broadleaves' night grey (flora_night.x)
 uniform float stump_top = 0.0;
 uniform vec3 stump_wood : source_color = vec3(0.42, 0.33, 0.22);
 global uniform vec4 flora_night;
 varying flat float v_fade;
+varying flat float v_cap;
 #ifdef OWN_BROADLEAF
 // (the alder: its leaves take this much of the key's shadow, the proxy's and its neighbours', so a
 // crown in its own shade by day still reads lit through, judge E4c; lamps' shadows whole)
@@ -468,12 +475,36 @@ void vertex() {
 		if (zb > 1e8) a = b = vec2(1e6);
 		// the ground round her seen foreshortened: screen heights stretched back to ground depth by the camera's pitch
 		float ky = 1.0 / max(abs(INV_VIEW_MATRIX[2].y), 0.3);
-		vec2 p = hv.xy;
-		a.y *= ky; b.y *= ky; p.y *= ky;
-		vec2 ab = b - a;
-		float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
-		float d = length(p - (a + ab * t)) - rr;
-		v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+		float d;
+		if (canopy_fade.w > 1.5) {
+			// (w 2) her body on the screen, feet (chest - 1.1 m) to head (+ 0.7 m), against the crown's segment: the
+			// nearer of the four ends' distances to the other segment (0 where they cross), less the crown's radius and hers
+			vec3 fv = (VIEW_MATRIX * vec4(survivor.xyz - vec3(0.0, 1.1, 0.0), 1.0)).xyz;
+			vec3 tv = (VIEW_MATRIX * vec4(survivor.xyz + vec3(0.0, 0.7, 0.0), 1.0)).xyz;
+			vec2 f0 = fv.xy * (hz / min(fv.z, -0.5)), f1 = tv.xy * (hz / min(tv.z, -0.5));
+			// (the crown's radius tapers from rr at its base to rr * crown_taper at its top, taken where each is nearest)
+			vec2 ab = b - a, fb = f1 - f0;
+			float r1 = rr * crown_taper;
+			float t0 = clamp(dot(f0 - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0), t1 = clamp(dot(f1 - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+			float d0 = length(f0 - (a + ab * t0)) - mix(rr, r1, t0);
+			float d1 = length(f1 - (a + ab * t1)) - mix(rr, r1, t1);
+			float d2 = length(a - (f0 + fb * clamp(dot(a - f0, fb) / max(dot(fb, fb), 1e-4), 0.0, 1.0))) - rr;
+			float d3 = length(b - (f0 + fb * clamp(dot(b - f0, fb) / max(dot(fb, fb), 1e-4), 0.0, 1.0))) - r1;
+			float c1 = ab.x * (f0.y - a.y) - ab.y * (f0.x - a.x), c2 = ab.x * (f1.y - a.y) - ab.y * (f1.x - a.x);
+			float c3 = fb.x * (a.y - f0.y) - fb.y * (a.x - f0.x), c4 = fb.x * (b.y - f0.y) - fb.y * (b.x - f0.x);
+			d = (c1 * c2 < 0.0 && c3 * c4 < 0.0 ? -mix(rr, r1, c3 / (c3 - c4)) : min(min(d0, d1), min(d2, d3))) - 0.35;
+			v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+			// only a crown in front of her: its nearest edge (its axis's nearer end, its radius toward the lens) nearer
+			// the camera than her chest, eased over a metre (a crown behind her, which she covers, stands)
+			v_fade *= smoothstep(-0.5, 0.5, max(vb_z0, vt_z0) + crown_r * length(upv) - hv.z);
+		} else {
+			vec2 p = hv.xy;
+			a.y *= ky; b.y *= ky; p.y *= ky;
+			vec2 ab = b - a;
+			float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-4), 0.0, 1.0);
+			d = length(p - (a + ab * t)) - rr;
+			v_fade = 1.0 - smoothstep(canopy_fade.x, canopy_fade.x + canopy_fade.y, d);
+		}
 		// (a crown that reaches within 1 m of the lens's plane is cut whole: its axis behind the plane read as
 		// "not seen", yet its needles hung in front and flashed across her for a few frames as the camera passed, judge e2)
 		// (eased over the 1.5 m before it, so a crown that crosses it in view fades rather than pops: judge e3)
@@ -484,6 +515,11 @@ void vertex() {
 	VERTEX.z += sway * 0.5;
 #if defined(OWN_FOLIAGE) || defined(OWN_ROCK)
 	if (packed && abs(COLOR.a - INSTANCE_CUSTOM.r) > 0.06) VERTEX = vec3(0.0);
+#endif
+#ifdef OWN_FOLIAGE
+	// (Env 23) a stump's cap (tree_caps.py) only while its tree is faded, in the w 2 fade; else nothing
+	v_cap = abs(COLOR.b - 0.3) < 0.08 && UV.x > 0.75 ? 1.0 : 0.0;
+	if (v_cap > 0.0 && (v_fade <= 0.0 || canopy_fade.w < 1.5)) VERTEX = vec3(0.0);
 #endif
 #ifdef OWN_ROCK
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -579,7 +615,7 @@ void fragment() {
 	float kept = 1.0;
 	if (v_fade > 0.0) {
 		// (lf6d: with stump_top, the bark cut level and hard, a saw's cut, not eased: the eased cut's band read as a dome)
-		float ff = v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
+		float ff = v_cap > 0.0 ? 0.0 : v_fade * canopy_fade.z * (UV.x < 0.75 ? 1.0 : (stump_top > 0.0 ? step(crown_keep, v_y) : smoothstep(crown_keep, crown_keep + 0.6, v_y)));
 		if (coverage_cut(FRAGCOORD.xy) < ff) discard;
 	}
 #else
@@ -993,7 +1029,30 @@ void fragment() {
 		// (Low Ford lf5p, judge lf4 #4: the canopy fade's kept stump read from above as a black pit: its hollow, the trunk's
 		// inside, seen down through the cut) the inside (back faces) of a faded tree's trunk drawn as the cut's pale wood,
 		// facing up, so the stump reads as a sawn top with its bark round it; stump_top 0: as before
-		if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0) {
+		if (v_cap > 0.0) {
+			// (Env 23) the cap: sawn wood, a little weathered toward the bark's own colour; growth rings about its middle
+			// (its offset in its uv, its radius in COLOR.g / 2), a darker heart, the pale sapwood under the bark, a check
+			vec2 hc = (UV - vec2(0.875, 0.5)) / 0.2;
+			float rw = max(COLOR.g * 0.5, 0.02);
+			float rr = length(hc);
+			float ring = 0.5 + 0.5 * sin(rr * 160.0 + 2.0 * sin(atan(hc.y, hc.x) * 3.0 + v_jit * 6.0));
+			// (weathered: greyed and a quarter darker than fresh-sawn, so in her lamp or the sun it is no brighter than the ground)
+			vec3 wood = mix(stump_wood, ALBEDO * 1.6, 0.35);
+			wood = mix(wood, vec3(dot(wood, LW)), 0.3) * 0.75;
+			vec3 cut = wood * mix(0.85, 1.05, fract(v_jit * 7.3)) * mix(0.8, 1.0, ring);
+			cut *= mix(0.7, 1.0, smoothstep(0.0, 0.35, rr / rw));
+			cut = mix(cut, wood * 1.18, smoothstep(0.72, 0.9, rr / rw) * 0.55);
+			cut *= 1.0 - 0.4 * (1.0 - smoothstep(0.004, 0.012, abs(dot(hc, vec2(cos(v_jit * 6.28), sin(v_jit * 6.28)))))) * step(rr, rw * 0.8);
+			// (the bark's ring round it, darker, so the lid reads as the trunk's own cut, not a disc laid on it)
+			cut *= mix(1.0, 0.6, smoothstep(0.9, 1.0, rr / rw));
+			ALBEDO = cut;
+			NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+		} else if (v_fade > 0.0 && canopy_fade.w > 1.5 && FRONT_FACING) {
+			// (Env 23) the kept stump's bark, its light and dark pulled halfway to the strip's local mean: at the play
+			// camera its full-contrast scales read as cobbles on a well (judge e23v3)
+			float lr = dot(texture(albedo_tex, UV).rgb, LW), lm = dot(textureLod(albedo_tex, UV, 5.0).rgb, LW);
+			ALBEDO *= mix(1.0, lm / max(lr, 0.02), 0.5);
+		} else if (v_fade > 0.0 && !FRONT_FACING && stump_top > 0.0 && canopy_fade.w < 1.5) {
 			// (lf6d) the cut's face where the view ray crosses the cut's plane (local y = crown_keep): its growth rings
 			// about the trunk's middle, a darker heart, the pale sapwood under the bark, a check split across it
 			mat4 im = inverse(MODEL_MATRIX);
