@@ -1,5 +1,43 @@
 # Handoff: skills look and feel
 
+## Combat VFX 10 (vfx-7, 2 Nov): item 2 MR READY (her auto-attacks); item 3 (Warden skills) next
+**Item 2, her auto-attacks** (SKILL_VFX_STUDY.md §6 item 2): r3 max (the FINAL round, cap raised to 4 by main) said **PASS-WITH-NOTES on all four and ship as a net gain**, with its 5 safe cuts applied (7deaa78a6). History: r1 FAIL (sweep medium, Disc and Bash far), so the sources were rebuilt; r2 FAIL medium on all four; r3 PASS-WITH-NOTES (sweep, hit kit and Bash close; Disc medium by day, close by night).
+- **What ships:**
+  - Sweep: a true gold crescent, peaking at f2 and eaten from its trailing horn, on real frames through the hitstop (oath_sweep.gdshader).
+  - Hit kit (HitKit.cs `HitKit`, `StruckRimOn`):
+    - a 2-frame flash at 15% then 6%, with none on the Bash's stunned (`rimNoFlash`);
+    - a #FFB84A fresnel rim fading over 8 frames, 0.55x at night;
+    - sparks 3-5 per body on at most 6 bodies a swing;
+    - solid lit chip puffs (day life x0.7);
+    - the bone-chip "snow" skipped for her auto-attacks.
+  - Disc (disc.gdshader `halo_gain` x0.6 by day): twin world-space rails, steel band glints, an amber 1.3x halo, a 2-frame contact flare.
+  - Bash (bash_wedge.gdshader + new bash_wall.gdshader):
+    - forward-weighted 100/50/7% at 0/35/69 deg over the sim's real ±1.2 rad, 3.4 m (wider than r1's spec on purpose);
+    - a bronze flash at the shield face and a 0.42 m standing front;
+    - a brown plow and a gold stun twinkle;
+    - a view-only throw for the dying (CrowdView), 1.7-1.8 m by f15.
+  - Sim untouched. The "shield_bash N" debug line is now only shown with `--reflex-note` (aa96dcae0).
+- **Known (r3 judge, closed):**
+  - Sweep: a moon-even taper, one flat gold, reads thin in a dense crowd; a dark olive inner band on f1.
+  - Hit kit: the f1 sparks read white; the puffs are paler than the road; the flash leads the arc by 1 frame.
+  - Disc: no spin reads by day at 1:1, and the rails are a faint V.
+  - Bash: the rim reads smooth; toward the camera the cream band thickens; the plow is faint by day; the throw-back only reads in motion.
+  - Night: s3's hit cluster is a dense glitter.
+  - **"Not yet effortlessly badass: the sweep needs weight, the disc a sense of speed: a design pass, not values"** (a later list item, owner's call).
+- **Tests and perf:**
+  - Tests 1373/0/10.
+  - Release ABAB at night, 250 horde, `--aa-fx-off` (A, none of the kit drawn, sim the same) vs on (B), window 8-10.5 s while the crowd is dense (`survivorsunchained_inputs\vfx10\perf`):
+    - B-A mean is CPU +0.10/-0.02 ms and GPU +0.10/-0.02 ms;
+    - p99 is +0.9/+1.1 ms in pair 1 only (likely the first-use pipeline compile; pair 2 is -0.03/-0.12);
+    - this is the whole kit against nothing, so an upper bound on the change.
+- **Shots:** `survivorsunchained_inputs\vfx10\aa4\r3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4\r3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4
+3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+- **Dev flags:** `--aa-beats`, `--aa-norim`, `--aa-pool K`, `--aa-fx-off`, `--reflex-note`.
+- **Cost:** item 2 ~1.45-1.5M of the 1.45M cap (r2 solver ~0.2M + judge 0.105M; r3 solver 0.21M + judge 0.12M + runner 0.03M; lead ~0.12M).
+
+**Next: item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`). Hooks a/b are in integration (art keys `rebuke`, `watch_bell`, now in the `nova_holy` case of BattleFx.Skills.cs, to split out; `Ev.Barrier`). Sunder and Groundbreaker too.
+
 ## Combat VFX 9 (vfx-7, 2 Nov): MR READY. The Long Cut rebuilt; her auto-attacks next
 **The Long Cut** (round cap raised to 4 by main; the last round). The max verdict on (B, "once she has the pose") was FAIL CLOSE, and the judge's final cuts are applied. What ships: the press (local gold light, white-gold blade core, no exposure lift or sepia), the hold, the fuse run, the cooling, the smoke curtain, both scars and the clear field. r1 was FAR, r2 and r3 were MEDIUM, r4 CLOSE.
 - **Sources:**

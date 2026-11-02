@@ -55,6 +55,47 @@ public partial class CrowdView : Node3D
         public double ShotT;
         /// <summary>Burnt by a Flare's ring as it died (0..1), kept for its body.</summary>
         public float Char;
+        /// <summary>Thrown as it died (view only): the sim stops a dying body's knockback slide (Ai returns before it),
+        /// so a body killed by a heavy shove (Shield Bash, a slam, a rush) fell where it stood. Its fall carries the
+        /// slide the sim gave it instead: offset (X, Z) and speed (Vx, Vz, decaying as Ai's slide does).</summary>
+        public double ThrowX, ThrowZ, ThrowVx, ThrowVz;
+        public bool Thrown;
+    }
+
+    /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
+    const double ThrowFrom = 6;
+    /// <summary>The farthest a fall carries a body (metres): the view has no walls to stop it.</summary>
+    const double ThrowMax = 2.5;
+
+    /// <summary>A dying body's thrown offset this frame: Ai's knockback slide (v * e^-9t, about v/9 metres) run in the
+    /// view from its first dying frame, capped at ThrowMax. The sim is untouched.</summary>
+    (double X, double Z) ThrowOf(Enemy e, Gait g)
+    {
+        if (!g.Thrown)
+        {
+            g.Thrown = true;
+            g.ThrowX = g.ThrowZ = 0;
+            double v = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);
+            (g.ThrowVx, g.ThrowVz) = v >= ThrowFrom ? (e.Kbx, e.Kbz) : (0, 0);
+        }
+        if (g.ThrowVx != 0 || g.ThrowVz != 0)
+        {
+            g.ThrowX += g.ThrowVx * dt; g.ThrowZ += g.ThrowVz * dt;
+            double k = Math.Exp(-dt * 9);
+            g.ThrowVx *= k; g.ThrowVz *= k;
+            double d = Math.Sqrt(g.ThrowX * g.ThrowX + g.ThrowZ * g.ThrowZ);
+            if (d > ThrowMax) { g.ThrowX *= ThrowMax / d; g.ThrowZ *= ThrowMax / d; g.ThrowVx = g.ThrowVz = 0; }
+            if (Math.Abs(g.ThrowVx) + Math.Abs(g.ThrowVz) < 0.05) g.ThrowVx = g.ThrowVz = 0;
+        }
+        return (g.ThrowX, g.ThrowZ);
+    }
+
+    /// <summary>Where a body is drawn (the fight's interpolation, plus a dying body's throw): for the fx that sit on it.</summary>
+    public (double X, double Z) DrawnAt(Enemy e)
+    {
+        var (x, z) = Drawn?.Of(e) ?? (e.X, e.Z);
+        if (e.State == EnemyState.Dying && gaits.TryGetValue(e.Id, out var g) && g.Seed == e.Seed && g.Thrown) { x += g.ThrowX; z += g.ThrowZ; }
+        return (x, z);
     }
 
     /// <summary>Where in a slam's clip the fists (or the axe) meet the ground (crowd.py's SLAM_IMPACT): the
@@ -70,6 +111,8 @@ public partial class CrowdView : Node3D
     {
         /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
         public float Char;
+        /// <summary>The fallen's enemy id (its struck rim lasts into its fall: most of a crowd her blade strikes dies of it).</summary>
+        public int Id = -1;
         /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
         public double BurnAt = -1;
         /// <summary>Its Long Cut death is ash (off the drawn seam), not gold.</summary>
@@ -111,7 +154,10 @@ public partial class CrowdView : Node3D
     double time, dt;
     int living;
 
-    public CrowdView() { Name = "Crowd"; }
+    public CrowdView() { Name = "Crowd"; Placed = DrawnAt; }
+
+    /// <summary>The live crowd's DrawnAt (the fx that sit on a body: its stun glint; the beats' throw log).</summary>
+    public static Func<Enemy, (double X, double Z)>? Placed;
 
     /// <summary>Where each is drawn, between the fight's steps (WorldScene's).</summary>
     public Interp? Drawn;
@@ -130,6 +176,9 @@ public partial class CrowdView : Node3D
     public static Func<double, double, bool>? FlareCorpseAsh;
     /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
     public static Func<int, float>? FlareStatueFlash;
+    /// <summary>A body's hit-kit struck look this frame (BattleFx.HitKit): (flash blend 0-0.5, gold rim 0-1); X &lt; 0 none.
+    /// It replaces the sim's flash on the body (her auto-attacks' struck: no cream wash, no chalk ghosts by night).</summary>
+    public static Func<int, Vector2>? StruckRim;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -253,6 +302,8 @@ public partial class CrowdView : Node3D
         g.Seen = true;
         string role = "idle";
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
+        if (e.State == EnemyState.Dying) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
+        else g.Thrown = false;
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
         Godot.Vector4 fallBurn = default;
@@ -426,7 +477,9 @@ public partial class CrowdView : Node3D
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot);
+        var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
+        if (hk.X >= 0) flare = hk.X;
+        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
         living++;
     }
 
@@ -497,7 +550,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id });
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
@@ -543,7 +596,7 @@ public partial class CrowdView : Node3D
                 crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
         }
     }
 

@@ -51,6 +51,10 @@ vec3 dye_hsv(vec3 c) {
 
 varying flat vec4 fx;
 varying flat float fx_crit;
+// The hit kit's struck look (BattleFx.HitKit): fx_aa 1 on such a body (fx.x is then its flash blend, 0-0.5, for 2
+// frames), fx_rim the gold rim's strength (1 to 0 over 8 frames; held lower by night).
+varying flat float fx_rim;
+varying flat float fx_aa;
 varying vec3 vat_local;
 // (the body's own place in the world, for the Long Cut's burn from the line outward)
 varying flat vec3 vat_org;
@@ -87,8 +91,10 @@ void vertex() {
 	vat_local = VERTEX;
 	vat_org = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	int w = int(INSTANCE_CUSTOM.w + 0.5);
-	fx = vec4(float(w & 127) / 127.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
+	fx = vec4(float(w & 63) / 63.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
 	fx_crit = float((w >> 7) & 1);
+	fx_aa = float((w >> 6) & 1);
+	fx_rim = fx_aa * clamp((INSTANCE_CUSTOM.y - float(f1)) / 0.45, 0.0, 1.0);
 }
 
 void fragment() {
@@ -220,7 +226,7 @@ void fragment() {
 	// added light lit it as if by day: at night the Barrow Knight went a flat cream cut-out, struck after
 	// struck, and read as a model glitch (Experience 9's judge, 27 October).
 	// (half the old falloff's power: at s^3 a champion's blow was gone before a frame at 1:1 caught it)
-	float struck = pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5);
+	float struck = pow(max(fx.x - 0.12, 0.0) / 0.88, 1.5) * (1.0 - fx_aa);
 	// A critical's is bigger and warmer, for the two or three frames its flash is high: 1.6x the lift and the rim's pop,
 	// and a warm breath that reaches the darks (a grey hood lifted x2.6 of its own paint stayed grey; round 3's judge).
 	float crit_k = 1.0 + 0.6 * fx_crit;
@@ -230,6 +236,9 @@ void fragment() {
 	// pale body was the start of the cream ghosts: vfx9 fix2.)
 	float lc_k = flare_lc.x > 0.0 ? 1.0 : 0.0;
 	c = min(c * (1.0 + 1.6 * crit_k * struck * (1.0 - lc_k) * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck * (1.0 - lc_k), vec3(0.85 + 0.05 * fx_crit));
+	// The hit kit's flash: a warm white over the body's paint at up to half, lit by the scene (so no glowing cut-out
+	// by night), for its first 2 frames only.
+	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa);
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -250,7 +259,7 @@ void fragment() {
 	// The rim-only flare (the crowd's, up to 0.12) as it was. Past it, the lifted paint above and a hot
 	// edge, never a flat wash: from the play camera most of a body is "rim", so rim^2 x 1.1 plus 0.38
 	// over all of it was a flat unlit cream body.
-	float low = min(fx.x, 0.12), high = max(fx.x - 0.12, 0.0) / 0.88;
+	float low = min(fx.x, 0.12) * (1.0 - fx_aa), high = max(fx.x - 0.12, 0.0) / 0.88;
 	// (the rim's breath gives way as the struck lift comes: at night it alone was a pale wash)
 	// (none on the Long Cut's struck: under the sweep at night the whole pack's breath was a field of pale ghosts)
 	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1) * (1.0 - lc_k);
@@ -261,6 +270,12 @@ void fragment() {
 	// and it is the old cream cut-out again)
 	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit) * (1.0 - lc_k);
 	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_hue.a);
+	// The hit kit's struck rim (BattleFx.HitKit: her auto-attacks' struck, 2 frames): gold-white at the body's
+	// edge, not scaled by its paint (a black wolf at night has none to lift), tight so the body keeps its shape.
+	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
+	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
+	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
+	e += vec3(1.0, 0.479, 0.069) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

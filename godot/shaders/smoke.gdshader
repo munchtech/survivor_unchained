@@ -8,10 +8,12 @@ uniform sampler2DArray sprites : filter_linear_mipmap;
 
 varying vec4 tint;
 varying float sprite;
+varying float core;
 
 void vertex() {
 	tint = COLOR;
 	sprite = INSTANCE_CUSTOM.x;
+	core = INSTANCE_CUSTOM.w;
 	float s = length(MODEL_MATRIX[0].xyz);
 	float a = INSTANCE_CUSTOM.y;
 	vec3 right = INV_VIEW_MATRIX[0].xyz * cos(a) + INV_VIEW_MATRIX[1].xyz * sin(a);
@@ -28,6 +30,9 @@ void fragment() {
 		ALBEDO = tint.rgb * mix(0.6, 1.1, t.r);
 		// Round, whatever the sprite: one that runs to its own edge (a clod
 		// thrown wide) would otherwise show the square of its quad as it turns.
-		ALPHA = tint.a * t.a * (1.0 - smoothstep(0.82, 0.98, length(UV * 2.0 - 1.0)));
+		float r = length(UV * 2.0 - 1.0);
+		ALPHA = tint.a * t.a * (1.0 - smoothstep(0.82, 0.98, r));
+		// A solid puff (Sparks.P.Core): densest at its centre whatever the sprite, the sprite only breaking it up.
+		if (core > 0.5) ALPHA = tint.a * pow(clamp(1.0 - r, 0.0, 1.0), 1.3) * (0.45 + 0.75 * t.a);
 	}
 }
