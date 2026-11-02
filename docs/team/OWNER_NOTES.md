@@ -3,6 +3,7 @@
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 2 November 2026 (coordinator 45b9ec4e)
+- **Phase 2 order DECIDED: "Board + Lamps first"** (PHASE2_SCOPE recommendation): Classes 18 (board data + sim, classes-17) and UI 25 (Lamps screen max design brief, ui-25) in parallel; the Warden's wave after Classes' three sessions.
 - **Long Cut clip fix round FUNDED** ("Yes, fund it"): after Animation 60's max judge FAIL CLOSE (held kneel hunch at the play camera, statue hold, coil not loaded). One fix round + one max judge, ~0.35M hard, Animation 61 in anim-61. PASS = clip back on; FAIL = closes as known, clip stays off.
 
 ## 2 November 2026 (coordinator 14076147)
