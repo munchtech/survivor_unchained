@@ -37,9 +37,10 @@ public static class Arms
         ["zweihander"] = new("zweihander", 1.6f, 0.2f, Kind: WeaponKind.Blade2H),
         // The Ford-Warden's old Watch blade (tools/assets/watch_blade.py, concept A): straight, corroded, the zweihander's size; a broad blade (Warden 7), its fist a little down the two-hand grip, clear of the guard.
         ["watch_blade"] = new("", 1.6f, 0.19f, Build: LampIron.WatchBlade, Kind: WeaponKind.Blade2H),
-        // Her Sunderer greatsword (tools/assets/sunder_blade.py; The Long Cut forms it): 1.35 m at her scale, the model 1:1. Grip = her
-        // right (upper) fist's centre, 0.243 m from the pommel's end (under the guard); her left (lower) fist's centre is 0.153 m.
-        ["sunder_blade"] = new("", 1.35f, 0.243f / 1.35f, Build: LampIron.SunderBlade, Kind: WeaponKind.Blade2H),
+        // Her Sunderer greatsword (tools/assets/sunder_blade.py; The Long Cut forms it): 1.412 m at her scale (0.27 m of grip, a 1.04 m
+        // blade), the model 1:1. Grip = her right (upper) fist's centre, 0.290 m from the pommel's end (under the guard); her left
+        // (lower) fist's centre is 0.120 m (above the pommel), a lever gap between them.
+        ["sunder_blade"] = new("", 1.412f, 0.290f / 1.412f, Build: LampIron.SunderBlade, Kind: WeaponKind.Blade2H),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
         ["viking_axe"] = new("viking_axe", 0.7702f, 0.15f, Roll: Mathf.Pi, Lean: 35, Kind: WeaponKind.Axe, Seated: true),  // haft conformed to her one-handed fist (anim-40: tapered haft, an oval wrap 34.7 x 21.7 mm over the fist, anchor_grip on the haft's line); seated on BladeAtR (PocketR Axe), Length keeps the old scale; fistfit axe
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
