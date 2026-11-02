@@ -81,6 +81,12 @@ public partial class PlayerView : Node3D
     public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
     /// <summary>The bosses' and cinematic actors' render layer (15): off people's layer (2) so her FolkLight (2 | HerLayers) does not wash them; every other light that lit layer 2 takes this too.</summary>
     public const uint CastLayer = 1u << 14;
+    /// <summary>The fighting crowd's own layer (17), worn with the people's (2): her ember's pool lights the crowd as it
+    /// lights the ground round her (Rendering 4: the pool was off layer 2, so by night the bodies in it stayed near-black on a
+    /// lit floor and the ring of them pointing at her read as a black starburst of shadows), but not the town's folk.</summary>
+    public const uint CrowdLayer = 1u << 16;
+    /// <summary>--ember-crowd off: the crowd out of her pool again, as before Rendering 4.</summary>
+    static readonly bool EmberCrowd = SurvivorUnchained.Args.Get("ember-crowd") != "off";
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
     {
@@ -801,7 +807,7 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu;
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
         FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;

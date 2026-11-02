@@ -554,6 +554,7 @@ public partial class CrowdView : Node3D
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
+    static readonly bool DbgNoCorpses = SurvivorUnchained.Args.Has("dbg-no-corpses");
     void DrawCorpses(Func<double, double, double> heightAt)
     {
         double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
@@ -573,6 +574,7 @@ public partial class CrowdView : Node3D
                 }
                 return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTimeOf(c.Ash);
             });
+        if (DbgNoCorpses) return;
         foreach (var c in corpses)
         {
             var crowd = Crowd(c.Visual);
