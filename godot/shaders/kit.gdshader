@@ -441,22 +441,36 @@ void vertex() {
 		VERTEX.y += sin(TIME * (2.7 + 1.6 * (flutter - 1.0)) + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * flutter * fr;
 		VERTEX.xz += vec2(sin(TIME * 4.3 + dot(VERTEX, vec3(2.1, 1.3, 0.9))), cos(TIME * 3.7 + dot(VERTEX, vec3(0.8, 1.9, 1.7)))) * 0.02 * max(flutter - 1.0, 0.0) * fr;
 	}
+	// (Env 23 r2) the copy's own hashes, its stretch, leader and lean: a sin hash of its place, unless its custom data's a
+	// carries them (1 + four 6-bit values, CanopyFader's trees: the GPU's sin of a large angle is not the CPU's, so the CPU
+	// read each crown as some other height and lean and missed a spire over her, judge e23 r1 #2)
+	float h_st = fract(sin(dot(ip.xz, vec2(17.17, 63.41))) * 19417.83);
+	float h_hl = fract(sin(dot(ip.xz, vec2(51.3, 27.9))) * 37281.41);
+	float h_la = fract(sin(dot(ip.xz, vec2(39.35, 11.13))) * 24634.63);
+	float h_ld = fract(sin(dot(ip.xz, vec2(7.77, 93.51))) * 51721.17);
+	if (INSTANCE_CUSTOM.a > 0.5) {
+		float hv4 = INSTANCE_CUSTOM.a - 1.0;
+		h_st = mod(hv4, 64.0) / 63.0; hv4 = floor(hv4 / 64.0);
+		h_hl = mod(hv4, 64.0) / 63.0; hv4 = floor(hv4 / 64.0);
+		h_la = mod(hv4, 64.0) / 63.0; hv4 = floor(hv4 / 64.0);
+		h_ld = mod(hv4, 64.0) / 63.0;
+	}
 	if (stretch_hi != stretch_lo || leader_hi != leader_lo) {
-		float hl = mix(leader_lo, leader_hi, fract(sin(dot(ip.xz, vec2(51.3, 27.9))) * 37281.41));
+		float hl = mix(leader_lo, leader_hi, h_hl);
 		if (VERTEX.y > leader_from) VERTEX.y = leader_from + (VERTEX.y - leader_from) * hl;
-		VERTEX.y *= mix(stretch_lo, stretch_hi, fract(sin(dot(ip.xz, vec2(17.17, 63.41))) * 19417.83));
+		VERTEX.y *= mix(stretch_lo, stretch_hi, h_st);
 		h = max(VERTEX.y, 0.0);
 	}
 	if (lean > 0.0) {
-		float la = radians(lean) * (fract(sin(dot(ip.xz, vec2(39.35, 11.13))) * 24634.63) * 2.0 - 1.0);
-		float ld = fract(sin(dot(ip.xz, vec2(7.77, 93.51))) * 51721.17) * TAU;
+		float la = radians(lean) * (h_la * 2.0 - 1.0);
+		float ld = h_ld * TAU;
 		VERTEX.xz += vec2(cos(ld), sin(ld)) * tan(la) / (2.0 * lean_h) * h * h;
 	}
 	v_fade = 0.0;
 	if (crown_hi > 0.0 && canopy_fade.w > 0.0 && survivor.w > 0.0 && view_from.w > 0.0 && distance(INV_VIEW_MATRIX[3].xyz, view_from.xyz) <= 1.0) {
 		// the crown's base and top as this copy is drawn (its stretch and its leader, as above)
-		float st = mix(stretch_lo, stretch_hi, fract(sin(dot(ip.xz, vec2(17.17, 63.41))) * 19417.83));
-		float hl = mix(leader_lo, leader_hi, fract(sin(dot(ip.xz, vec2(51.3, 27.9))) * 37281.41));
+		float st = mix(stretch_lo, stretch_hi, h_st);
+		float hl = mix(leader_lo, leader_hi, h_hl);
 		float top = (crown_hi > leader_from ? leader_from + (crown_hi - leader_from) * hl : crown_hi) * st;
 		vec3 upv = MODEL_MATRIX[1].xyz;
 		vec3 vb = (VIEW_MATRIX * vec4(ip + upv * (crown_lo * st), 1.0)).xyz;

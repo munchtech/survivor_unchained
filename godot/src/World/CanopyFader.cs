@@ -112,13 +112,17 @@ public partial class CanopyFader : Node
     void Write(CanopyLog.Tree t, float s, bool all = true)
     {
         t.Shown = s;
-        for (int k = 0; k < (all ? t.Inst.Length : Mathf.Min(1, t.Inst.Length)); k++) { t.Inst[k].Mm.SetInstanceCustomData(t.Inst[k].I, new Color(t.CustR, s, 0, 0)); Writes++; }
+        for (int k = 0; k < (all ? t.Inst.Length : Mathf.Min(1, t.Inst.Length)); k++) { t.Inst[k].Mm.SetInstanceCustomData(t.Inst[k].I, new Color(t.CustR, s, 0, t.CustA)); Writes++; }
     }
 
     void Judge(CanopyLog.Tree t, Vector3 eye, Transform3D view, Vector4 fd, float dLine)
     {
         float sc = t.Up.Length(), rb = t.R * sc, rc = rb * t.Taper, rt = Mathf.Min(rc, 0.25f * sc);
-        Vector3 B = t.At + t.Up * t.Lo, C = t.At + t.Up * t.Top, T = t.At + t.Up * t.Tip;
+        // (the axis as the shader bends it: its lean, t.Lean * h * h at height h; the crown's middle a fourth point)
+        Vector3 Pt(float hh) => t.At + t.Up * hh + t.Lean * (hh * hh);
+        float hm = 0.5f * (t.Lo + t.Top);
+        Vector3 B = Pt(t.Lo), M = Pt(hm), C = Pt(t.Top), T = Pt(t.Tip);
+        float rm = 0.5f * (rb + rc);
         bool was = t.Want, h = t.ForHer, l = t.ForLens;
         // (the lens: only a tree within 12 m of the camera on the ground can reach its plane in view)
         float zn = -99;
@@ -129,9 +133,9 @@ public partial class CanopyFader : Node
         }
         else t.ForLens = false;
         // (her: a sight line's ground track runs from the lens's to hers, 0.3 m either side; a crown whose ground track is
-        // further than its radius, the gap, its tilt and 1.2 m of the shader's lean from it can't come near)
-        float tilt = new Vector2(T.X - t.At.X, T.Z - t.At.Z).Length();
-        if (dLine - tilt < rb + fd.Y + 1.6f && Covers(eye, pts, B, C, T, rb, rc, rt, t.ForHer ? fd.Y : fd.X)) t.HerAt = clock;
+        // further than its radius, the gap, its tilt and lean and 1.6 m from it can't come near)
+        float tilt = Mathf.Max(new Vector2(T.X - t.At.X, T.Z - t.At.Z).Length(), new Vector2(C.X - t.At.X, C.Z - t.At.Z).Length());
+        if (dLine - tilt < rb + fd.Y + 1.6f && Covers(eye, pts, B, M, C, T, rb, rm, rc, rt, t.ForHer ? fd.Y : fd.X)) t.HerAt = clock;
         t.ForHer = clock - t.HerAt < Hold;
         t.Want = t.ForHer || t.ForLens;
         if (t.Want && !was) Started++;
@@ -139,21 +143,23 @@ public partial class CanopyFader : Node
             GD.Print($"canopy-want {SurvivorUnchained.Shots.Clock:0.000} {t.Species} {t.At.X:0.0},{t.At.Z:0.0} want {(t.Want ? 1 : 0)} her {(t.ForHer ? 1 : 0)} lens {(t.ForLens ? 1 : 0)} zn {zn + rb:0.00} ease {t.Ease:0.00}");
     }
 
-    /// <summary>Whether a crown (B to C, radius rb to rc; C to T, rc to rt) comes within m of a sight line from eye to any of pts.</summary>
-    internal static bool Covers(Vector3 eye, Vector3[] pts, Vector3 B, Vector3 C, Vector3 T, float rb, float rc, float rt, float m)
+    /// <summary>Whether a crown (B to M to C, radius rb to rm to rc; C to T, rc to rt) comes within m of a sight line from
+    /// eye to any of pts.</summary>
+    internal static bool Covers(Vector3 eye, Vector3[] pts, Vector3 B, Vector3 M, Vector3 C, Vector3 T, float rb, float rm, float rc, float rt, float m)
     {
         bool spire = (T - C).LengthSquared() > 0.01f;
+        float Gap(Vector3 q)
+        {
+            float g = Mathf.Min(Near(eye, q, B, M, rb, rm), Near(eye, q, M, C, rm, rc));
+            return spire ? Mathf.Min(g, Near(eye, q, C, T, rc, rt)) : g;
+        }
         // (first the sight line to her chest, pts[4]: the others part from it by 1.2 m at most, at her, so a crown further
         // than that from it is clear of them all)
-        float nc = Near(eye, pts[4], B, C, rb, rc);
-        if (spire) nc = Mathf.Min(nc, Near(eye, pts[4], C, T, rc, rt));
+        float nc = Gap(pts[4]);
         if (nc < m) return true;
         if (nc > m + 1.2f) return false;
         foreach (var q in pts)
-        {
-            if (Near(eye, q, B, C, rb, rc) < m) return true;
-            if (spire && Near(eye, q, C, T, rc, rt) < m) return true;
-        }
+            if (Gap(q) < m) return true;
         return false;
     }
 

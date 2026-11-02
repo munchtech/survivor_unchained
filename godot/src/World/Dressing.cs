@@ -477,7 +477,8 @@ public static class Dressing
     }
 
     /// <remarks>(Env 23 r2) A species with a crown (crown_hi) carries custom data on every copy: g its canopy fade (CanopyFader
-    /// writes it, eased in time), b 1 for a copy no fader keeps (OwnTree: the shader's own stateless fade). Returns, for a
+    /// writes it, eased in time), b 1 for a copy no fader keeps (OwnTree: the shader's own stateless fade), a its stretch,
+    /// leader and lean hashes packed (CanopyLog.Hashes) so the fader's crown is the drawn one. Returns, for a
     /// crowned species, each copy's draws (its LODs' MultiMesh and index) and the lod0 mesh's top (local m), else null.</remarks>
     static List<(MultiMesh Mm, int I)>[]? OwnFlora(Node3D root, FloraSpecies.Species sp, string file, KitLook.Look look, List<Transform3D> all, List<int> vars, bool managed, out float tipY)
     {
@@ -493,7 +494,8 @@ public static class Dressing
             for (int i = 0; i < idx.Count; i++)
             {
                 mm.SetInstanceTransform(i, at[idx[i]]);
-                if (sp.Packed || crowned) mm.SetInstanceCustomData(i, new Color(sp.Packed ? (vars[idx[i]] + 0.5f) / 8f : 0, 0, managed ? 0 : 1, 0));
+                if (sp.Packed || crowned) mm.SetInstanceCustomData(i, new Color(sp.Packed ? (vars[idx[i]] + 0.5f) / 8f : 0, 0, managed ? 0 : 1,
+                    crowned && managed ? CanopyLog.Hashes(at[idx[i]].Origin).Packed : 0));
                 if (draw && refs != null) refs[idx[i]].Add((mm, i));
             }
             return Kind(new MultiMeshInstance3D { Multimesh = mm, Name = $"{sp.Kind}:{file}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off }, sp.Kind);
