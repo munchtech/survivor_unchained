@@ -259,7 +259,11 @@ public static class Dressing
         // (--flora-hide A,B: a developer's switch, these species or kinds of ours left out (a frame's diff finds what they are))
         var hide = SurvivorUnchained.Args.Get("flora-hide")?.Split(',') ?? [];
         foreach (var ((file, look), (sp, at, vars)) in merged)
-            if (!hide.Contains(sp.Name) && !hide.Contains(sp.Kind)) { OwnFlora(root, sp, file, look, at, vars); CanopyLog.Register(root, sp, at); }
+            if (!hide.Contains(sp.Name) && !hide.Contains(sp.Kind))
+            {
+                var refs = OwnFlora(root, sp, file, look, at, vars, true, out var tipY);
+                if (refs != null) CanopyLog.Register(root, sp, at, refs, tipY);
+            }
         // (a stone darkened under a crown (sky_dark, the pebbles) reads the ground's exposure, as the ground's litter does)
         int skySet = 0;
         if (z.Place == null && merged.Keys.Any(k => merged[k].Sp.Stone && merged[k].Sp.Shader.ContainsKey("sky_dark")))
@@ -468,22 +472,31 @@ public static class Dressing
         var (file, v) = sp.FileOf(piece);
         if (!ResourceLoader.Exists($"res://art/world/flora/{file}.gltf")) return null;
         var root = new Node3D { Name = "own_" + piece };
-        OwnFlora(root, sp, file, KitLook.Look.Plain with { Wind = sp.Wind ?? 0 }, [Transform3D.Identity], [v]);
+        OwnFlora(root, sp, file, KitLook.Look.Plain with { Wind = sp.Wind ?? 0 }, [Transform3D.Identity], [v], false, out _);
         return root;
     }
 
-    static void OwnFlora(Node3D root, FloraSpecies.Species sp, string file, KitLook.Look look, List<Transform3D> all, List<int> vars)
+    /// <remarks>(Env 23 r2) A species with a crown (crown_hi) carries custom data on every copy: g its canopy fade (CanopyFader
+    /// writes it, eased in time), b 1 for a copy no fader keeps (OwnTree: the shader's own stateless fade), a its stretch,
+    /// leader and lean hashes packed (CanopyLog.Hashes) so the fader's crown is the drawn one. Returns, for a
+    /// crowned species, each copy's draws (its LODs' MultiMesh and index) and the lod0 mesh's top (local m), else null.</remarks>
+    static List<(MultiMesh Mm, int I)>[]? OwnFlora(Node3D root, FloraSpecies.Species sp, string file, KitLook.Look look, List<Transform3D> all, List<int> vars, bool managed, out float tipY)
     {
         var lods = LodsOf(file);
         var lr = LodsFor(sp);
         float cell = CellFor(sp);
-        MultiMeshInstance3D Mmi(Mesh mesh, string tag, List<int> idx, List<Transform3D> at)
+        bool crowned = sp.Shader.TryGetValue("crown_hi", out var chv) && chv.ValueKind == System.Text.Json.JsonValueKind.Number && chv.GetSingle() > 0;
+        var refs = crowned ? Enumerable.Range(0, all.Count).Select(_ => new List<(MultiMesh, int)>(3)).ToArray() : null;
+        tipY = lods[0] is Mesh m0 ? m0.GetAabb().End.Y : 0;
+        MultiMeshInstance3D Mmi(Mesh mesh, string tag, List<int> idx, List<Transform3D> at, bool draw = true)
         {
-            var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = sp.Packed, Mesh = Looked(mesh, look), InstanceCount = idx.Count };
+            var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseCustomData = sp.Packed || crowned, Mesh = Looked(mesh, look), InstanceCount = idx.Count };
             for (int i = 0; i < idx.Count; i++)
             {
                 mm.SetInstanceTransform(i, at[idx[i]]);
-                if (sp.Packed) mm.SetInstanceCustomData(i, new Color((vars[idx[i]] + 0.5f) / 8f, 0, 0, 0));
+                if (sp.Packed || crowned) mm.SetInstanceCustomData(i, new Color(sp.Packed ? (vars[idx[i]] + 0.5f) / 8f : 0, 0, managed ? 0 : 1,
+                    crowned && managed ? CanopyLog.Hashes(at[idx[i]].Origin).Packed : 0));
+                if (draw && refs != null) refs[idx[i]].Add((mm, i));
             }
             return Kind(new MultiMeshInstance3D { Multimesh = mm, Name = $"{sp.Kind}:{file}:{tag}", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off }, sp.Kind);
         }
@@ -513,7 +526,7 @@ public static class Dressing
             }
             else if (sp.End > 0) l1.VisibilityRangeEnd = sp.End;
         }
-        if (!sp.Shadow || lods[3] is not Mesh proxy) return;
+        if (!sp.Shadow || lods[3] is not Mesh proxy) return refs;
         // (cast as the kit's pines are: by the key and by a lamp in reach, every one of them)
         // Each copy's shadow its own (judge E4b: the camp's night shadows stood as identical blades): the proxy
         // turned about the trunk and stretched by its own hash, width within 15%; its height within 30% (judge
@@ -543,10 +556,11 @@ public static class Dressing
         }
         foreach (var ((cx, cz), idx) in Cells(shAt, 2 * cell))
         {
-            var sh = Mmi(proxy, $"shadow_{cx}_{cz}", idx, shAt); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
+            var sh = Mmi(proxy, $"shadow_{cx}_{cz}", idx, shAt, false); sh.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
             if (leafSh != null) sh.MaterialOverride = leafSh;
             root.AddChild(sh);
         }
+        return refs;
     }
 
     /// <summary>What our stones keep clear of (flora_species.json "stone" "clear"; its _doc): a tree whose trunk stands within a

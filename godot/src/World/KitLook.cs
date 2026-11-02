@@ -189,8 +189,9 @@ public static class KitLook
 
     static bool canopySet;
     /// <summary>The canopy fade's values in force (global canopy_fade), for --canopy-log's mirror.</summary>
-    public static Vector4 CanopyFade => canopyArg ?? (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"];
-    static Vector4? canopyArg;
+    public static Vector4 CanopyFade => canopyArg ?? (canopyDefault ??= (Vector4)ProjectSettings.GetSetting("shader_globals/canopy_fade").AsGodotDictionary()["value"]);
+    // (r2: read each frame by CanopyFader; the project setting's dictionary costs ~0.1 ms a read)
+    static Vector4? canopyArg, canopyDefault;
     static bool? canopyOn;
     public static bool CanopyPlaying => canopyOn == true && CanopyFade.W > 0;
 
@@ -206,8 +207,10 @@ public static class KitLook
     }
 
     /// <summary>The canopy fade's tunables (kit.gdshader OWN_FOLIAGE, global canopy_fade; project.godot holds the defaults):
-    /// --canopy R,E,G (the fight radius on the screen at her distance, m; the ease, m; the ghost, the share cut) or
-    /// --canopy off. Set once.</summary>
+    /// --canopy R,E,G[,M] (M 2, the default, CanopyFader: R the gap, m, at which a crown near a sight line from the lens to her
+    /// outline starts to fade, E the gap at which it comes back (eased 0.3 s in time); M 1, the old ring: R the fight
+    /// radius on the ground round her, m, and no stump caps, e.g. --canopy 6,1.5,1,1; E the ease, m; G the ghost, the share
+    /// cut) or --canopy off. Set once.</summary>
     static void Canopy()
     {
         if (canopySet) return;
@@ -219,7 +222,7 @@ public static class KitLook
         else
         {
             var p = arg.Split(',');
-            for (int i = 0; i < p.Length && i < 3; i++)
+            for (int i = 0; i < p.Length && i < 4; i++)
                 if (float.TryParse(p[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) v[i] = f;
         }
         canopyArg = v;
