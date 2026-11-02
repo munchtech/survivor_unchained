@@ -495,3 +495,4 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **ChatGPT in Chrome (owner, 29 Oct):** "Use Chrome for ChatGPT from now on." Main drives chatgpt.com in the owner's Chrome through Claude in Chrome (hands-free: no save clicks; reference images can be uploaded).
 
 - **Tam deferred (owner, 1 Nov):** asked whether to start Tam's child body package as a fifth lead: "Not yet". Tam stays out until the owner says go.
+- **VFX study videos (owner, 1 Nov):** "2 more very good videos for vfx to study": 5ZQdZOK8hhg and IPAfyFhDJcA, added to docs/design/SKILL_VFX_REFERENCES.md for the next skills/Flare VFX lead.
