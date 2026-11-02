@@ -1,3 +1,34 @@
+# Classes 20 starts here (2 Nov, wound down by the coordinator): Phase 2 session 3 (acceptance) half done; read this, then "Classes 19 starts here" below
+
+Branch classes-17 (junction to its own public/assets). Scratch: survivorsunchained_inputs/scratch_classes19 (scripts abl.sh, ow.sh, f4.sh, t14.sh; abl_table.py; all .jsonl runs by folder).
+
+## Done (Classes 19, all committed; tests 1402/0/10 with the flip, before the barrier rule)
+- **Bug fixed (3ffdfecc3):** a v2 link (kills/status_kill/heavy) re-fired itself inside its own echo's blows: stack overflow on the warden's full v2 board. `Battle.RunLink` now starts the wait before `Firing.Echo`.
+- **Why classes18's x1.65 is stale:** MR2's atlas points (30) made `--lamps full` a 37-lamp board (was 15). Same measure today: warden **x2.73**, arcanist x1.85.
+- **The measure, board alone (`--offwicks 1`, Program.cs):** the off run keeps Light my way's wicks too. Wicks light by the ember's ranks at night on any board (CLASS_IDENTITY §3.3), so counting them only in the on run credited the board with them (warden: x1.97 without wicks vs 2.73 with). Report both readings in the MR; acceptance reads board alone.
+- **The night rule for lamp defenses (Arts.cs `Ward`, `LampFacet`, `LampBarrier`; v2 only, v1 byte-identical):**
+  - a lamp facet's barrier or mend runs at a quarter by night (shield_wall, iron_hide, rallying, unbroken, glass_heart, battle_trance, second_wind, stolen_moments, hunger, full_echo, soul_tithe, anchor); art-chosen facets keep theirs;
+  - **a lamp's barrier is added to a held barrier without renewing its time** (Shield Wall, Spellward, anchor, perfect.barrier). It's the Shield of Morning precedent: renewed every bash, it kept every other barrier up for good.
+- **The flip is in (5e2e12b6a, WIP until acceptance):** `Lamps.V2` defaults on; v1 via `SU_LAMPS_V2=0`, game/harness `--lampsv1`. LampsTests is pinned to v1 (a Balance-collection fixture); the `finally`s restore `UseV2(true)`.
+- Harness: board pairs log `OnIds` (the lit lamp ids); `--dark id,..` is the lamp-level ablation.
+
+## Measured (plain, T1, 64 seeds, board alone; P = dealt x taken)
+| | before rule | after rule |
+|---|---|---|
+| warden | 1.49 | **1.27** (A 1.30 / B 1.24); deft 1.50 |
+| arcanist | 1.85 | **1.25** |
+| reaver | 1.19 | 1.19 |
+| stalker | 1.13 | 1.13 |
+- What's left for both is one reflex barrier on a fixed wait. Warden, Shield Wall dark: 1.07 (a sweep of its night size: 0.10 gives 1.21, 0.05 gives 1.15). Arcanist, Spellward dark: 1.08. At T1 her intake is about 0.7-0.9 hp/s, so even a quarter barrier every 7-8 s absorbs most contact damage.
+- Every other warden lamp is within noise (hand, hold_fast, iron_hide+unbroken, braced, last crossing). Arcanist: frostfire and links add about 0.05 each; mirrors, time_slip, ash_walker and stand_in_fire are noise.
+- **T1-T4 (f4/t14_all.jsonl, 32 seeds a tier, board alone, plain): higher tiers are WORSE, so the median doesn't save it.** Warden 1.30/1.32/1.35/1.37 (all 1.35); arcanist 1.28/1.26/1.39/1.30 (1.32); reaver 1.14/1.18/1.32/1.30 (1.27); stalker 1.14/1.20/1.20/1.26 (1.22). Taken carries it everywhere (dealt 0.96-1.07).
+
+## Next
+1. Not one lamp now: the band fails at T3-T4 for warden, arcanist and reaver. Ablate at T3-T4 first (`--tiers 3,4 --dark ...` per calling; the reaver hasn't been ablated yet). The likely shared cause is v2 rules read in full by night that cut damage taken. Then rule by kind: reflex barriers at half their art numbers (by night 1%/struck to 5% for the Wall, 5% for the Spellward; about P 1.21 at T1 by the sweep), plus whatever the T3-T4 ablation names. Target: every calling x1.25 at every tier T1-T4, plain, 64 seeds; deft as a report. If two rounds don't land it, send it to a medium solver (su-lead-high, effort medium) with this section as the brief.
+2. Act 1 on v2 (now the default): `story ... --seeds 96` on this build, plus `--lampsv1` (equals integration). Run act1_match against tools/classes/out/prefl11.jsonl in the MAIN checkout (seeds 1-32) and v1 vs v2 with --cells. Say what moved and why.
+3. Types: `arena --type both --lamps full` and `--lamps empty`, `--tiers 1,2,3,4 --level tier --bot deft --callings all --seeds 24`, read with balance/classes_summary.py (fe.md). Band x1.35 of the median.
+4. Docs: LAMPS_V2_RULES "By night" and "The flag" (v2 default, --lampsv1), CLASSES §2.10 one line (lamp barriers). Full tests, then MR READY.
+
 # Classes 19 starts here (2 Nov): Phase 2, session 3 of 3 (acceptance). Lamps v2 data, sim, points, layouts and save v6 are in, behind a flag
 
 The owner answered PHASE2_SCOPE (2 Nov): "Board + Lamps first". UI 25 (worktree ui-25) designs the Lamps screen from `board_v2.json`: keep its ids, kinds and positions FROZEN (tell main in one line if one must change). The contract between data and sim is **docs/design/LAMPS_V2_RULES.md** (read it first; its "As built" section says how the code reads it).
