@@ -212,8 +212,10 @@ public sealed partial class Battle
         if (w.Wick is { BarrierEach: > 0 } fx)
         {
             double add = MaxHp * Math.Min(fx.BarrierMost > 0 ? fx.BarrierMost : 1, fx.BarrierEach * struck.Count);
+            double before = Math.Max(0, p.Shield);
             if (p.Shield > 0 && p.ShieldT > 0) p.Shield = Math.Min(MaxHp, p.Shield + StonesBarrier(add));
             else Barrier(add, 6);
+            if (p.Shield - before > 0) Events.Emit(new Ev.Barrier { X = p.X, Z = p.Z, Amount = p.Shield - before, Source = w.Def.Id });
         }
         RebukeMends();
         return true;
@@ -295,6 +297,7 @@ public sealed partial class Battle
                 BellBarrier += amount;
                 Player.Shield = Math.Max(Player.Shield, 0) + amount;
                 Player.ShieldT = Math.Max(Player.ShieldT, 6);
+                Events.Emit(new Ev.Barrier { X = Player.X, Z = Player.Z, Amount = amount, Source = w.Def.Id });
             }
         }
         // Stone Bell: the toll lays stones on the wall (the Hand's wall, Shield Arm or not).
