@@ -14,8 +14,8 @@ render_mode blend_premul_alpha, cull_disabled, depth_draw_never;
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
-const float EDGE = 0.625;   // the disc's edge in UV.x (1 / 1.6)
-const float RIM = 0.87;     // the steel band's inner edge, as a share of the disc's radius
+const float DISC_EDGE = 0.625;   // the disc's edge in UV.x (1 / 1.6)
+const float DISC_RIM = 0.87;     // the steel band's inner edge, as a share of the disc's radius
 
 float smear(float a, float r, float at, float wid, float off, float turns) {
 	float band = 1.0 - smoothstep(0.0, wid, abs(r - at));
@@ -24,10 +24,10 @@ float smear(float a, float r, float at, float wid, float off, float turns) {
 }
 
 void fragment() {
-	float r = UV.x / EDGE;            // 0..1 across the disc, 1..1.6 over the halo
+	float r = UV.x / DISC_EDGE;            // 0..1 across the disc, 1..1.6 over the halo
 	float a = UV.y;
 	float inside = 1.0 - smoothstep(0.985, 1.0, r);
-	float rim = smoothstep(RIM - 0.015, RIM, r) * inside;
+	float rim = smoothstep(DISC_RIM - 0.015, DISC_RIM, r) * inside;
 	float face = inside * (1.0 - rim);
 	float lum = max(COLOR.r, max(COLOR.g, COLOR.b));
 	vec3 white = vec3(1.0, 0.95, 0.84) * lum;

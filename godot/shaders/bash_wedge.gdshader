@@ -35,6 +35,6 @@ void fragment() {
 	float fade = pow(1.0 - p, 1.4) * smoothstep(0.0, 0.08, x + 0.04 - p * 0.3);
 	float lum = max(COLOR.r, max(COLOR.g, COLOR.b));
 	vec3 hot = vec3(1.0, 0.9, 0.7) * lum;
-	vec3 e = COLOR.rgb * (wake * 0.55 + streak * 0.9) + mix(COLOR.rgb, hot, 0.6) * lip * 1.3;
+	vec3 e = COLOR.rgb * (wake * 0.75 + streak * 1.2) + mix(COLOR.rgb, hot, 0.6) * lip * 1.3;
 	ALBEDO = e * fwd * fade * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

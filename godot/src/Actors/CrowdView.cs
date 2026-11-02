@@ -55,6 +55,47 @@ public partial class CrowdView : Node3D
         public double ShotT;
         /// <summary>Burnt by a Flare's ring as it died (0..1), kept for its body.</summary>
         public float Char;
+        /// <summary>Thrown as it died (view only): the sim stops a dying body's knockback slide (Ai returns before it),
+        /// so a body killed by a heavy shove (Shield Bash, a slam, a rush) fell where it stood. Its fall carries the
+        /// slide the sim gave it instead: offset (X, Z) and speed (Vx, Vz, decaying as Ai's slide does).</summary>
+        public double ThrowX, ThrowZ, ThrowVx, ThrowVz;
+        public bool Thrown;
+    }
+
+    /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
+    const double ThrowFrom = 6;
+    /// <summary>The farthest a fall carries a body (metres): the view has no walls to stop it.</summary>
+    const double ThrowMax = 2.5;
+
+    /// <summary>A dying body's thrown offset this frame: Ai's knockback slide (v * e^-9t, about v/9 metres) run in the
+    /// view from its first dying frame, capped at ThrowMax. The sim is untouched.</summary>
+    (double X, double Z) ThrowOf(Enemy e, Gait g)
+    {
+        if (!g.Thrown)
+        {
+            g.Thrown = true;
+            g.ThrowX = g.ThrowZ = 0;
+            double v = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);
+            (g.ThrowVx, g.ThrowVz) = v >= ThrowFrom ? (e.Kbx, e.Kbz) : (0, 0);
+        }
+        if (g.ThrowVx != 0 || g.ThrowVz != 0)
+        {
+            g.ThrowX += g.ThrowVx * dt; g.ThrowZ += g.ThrowVz * dt;
+            double k = Math.Exp(-dt * 9);
+            g.ThrowVx *= k; g.ThrowVz *= k;
+            double d = Math.Sqrt(g.ThrowX * g.ThrowX + g.ThrowZ * g.ThrowZ);
+            if (d > ThrowMax) { g.ThrowX *= ThrowMax / d; g.ThrowZ *= ThrowMax / d; g.ThrowVx = g.ThrowVz = 0; }
+            if (Math.Abs(g.ThrowVx) + Math.Abs(g.ThrowVz) < 0.05) g.ThrowVx = g.ThrowVz = 0;
+        }
+        return (g.ThrowX, g.ThrowZ);
+    }
+
+    /// <summary>Where a body is drawn (the fight's interpolation, plus a dying body's throw): for the fx that sit on it.</summary>
+    public (double X, double Z) DrawnAt(Enemy e)
+    {
+        var (x, z) = Drawn?.Of(e) ?? (e.X, e.Z);
+        if (e.State == EnemyState.Dying && gaits.TryGetValue(e.Id, out var g) && g.Seed == e.Seed && g.Thrown) { x += g.ThrowX; z += g.ThrowZ; }
+        return (x, z);
     }
 
     /// <summary>Where in a slam's clip the fists (or the axe) meet the ground (crowd.py's SLAM_IMPACT): the
@@ -113,7 +154,10 @@ public partial class CrowdView : Node3D
     double time, dt;
     int living;
 
-    public CrowdView() { Name = "Crowd"; }
+    public CrowdView() { Name = "Crowd"; Placed = DrawnAt; }
+
+    /// <summary>The live crowd's DrawnAt (the fx that sit on a body: its stun glint; the beats' throw log).</summary>
+    public static Func<Enemy, (double X, double Z)>? Placed;
 
     /// <summary>Where each is drawn, between the fight's steps (WorldScene's).</summary>
     public Interp? Drawn;
@@ -257,6 +301,8 @@ public partial class CrowdView : Node3D
         g.Seen = true;
         string role = "idle";
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
+        if (e.State == EnemyState.Dying) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
+        else g.Thrown = false;
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
         Godot.Vector4 fallBurn = default;

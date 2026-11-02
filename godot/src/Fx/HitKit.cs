@@ -286,7 +286,7 @@ public partial class BattleFx
         // Leaving her hand it is held down, so it never blooms over her.
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
-        if (AaBeats && discThrows >= 2 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
+        if (AaBeats && discThrows >= 1 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
         // A faint dark bed under it (so the head shows over the pale dead), and the head.
         Shade(at, 1.0f * s, 0.3f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
@@ -363,7 +363,7 @@ public partial class BattleFx
     /// over the ground across exactly what it strikes (the sim's +-1.2 rad to 3.4 m: shaders/bash_wedge.gdshader),
     /// 1.2 m across at the shield, its weight on her facing line, its front out over 4 frames on the frame's own
     /// clock (a hitstop holds the bodies, never the shove); the shield's contact glint and light; a ground plow of
-    /// 30 low solid dust puffs and grit running outward. The struck get the hit kit (BashStruck) and a stun glint;
+    /// 30 low solid dust puffs running outward. The struck get the hit kit (BashStruck) and a stun glint;
     /// the hitstop is WorldScene's (3 frames). Wide: the same, mirrored behind her.</summary>
     void ShieldBash(Ev.Ability e)
     {
@@ -398,21 +398,7 @@ public partial class BattleFx
                 {
                     At = V(x, Y(x, z) + 0.1 + R() * 0.08, z), V = u * (3 + R() * 2) + Vector3.Up * (0.15f + R() * 0.25f), Drag = 3.2f, Gravity = 0.6f,
                     Life = 0.4f + R() * 0.2f, Size = sz * 0.6f, SizeEnd = sz, Color = new Color(0.36f, 0.31f, 0.25f), ColorEnd = new Color(0.24f, 0.21f, 0.17f),
-                    Alpha = 0.6f, Sprite = SolidPuff(), Core = true,
-                });
-            }
-            // Grit: bronze-lit flecks streaking out low with the plow.
-            for (int i = 0; i < 10; i++)
-            {
-                float a = ang + (R() + R() - 1) * 1.1f;
-                var u = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                double x = e.X + u.X * (0.8f + R()), z = e.Z + u.Z * (0.8f + R());
-                float sp = 4 + R() * 2;
-                Sparks.Spawn(new Sparks.P
-                {
-                    At = V(x, Y(x, z) + 0.12, z), V = u * sp + Vector3.Up * (0.6f + R() * 0.8f), Gravity = 9, Drag = 2.5f,
-                    Life = 0.25f + R() * 0.15f, Size = 0.022f, SizeEnd = 0.012f, Color = BashBronze * 0.7f, ColorEnd = BashBronze * 0.15f,
-                    Alpha = 1, Sprite = -1, Stretch = 0.25f / sp,
+                    Alpha = 0.75f, Sprite = SolidPuff(), Core = true,
                 });
             }
         }
@@ -476,7 +462,7 @@ public partial class BattleFx
         stunned[e.Target] = time + 1.5;
         if (AaBeats && bashBeat == 1 && throwLog.Count < 3 && b0 != null && b0.Enemies.Items[e.Target] is { } en)
         {
-            var (x, z) = Drawn?.Of(en) ?? (en.X, en.Z);
+            var (x, z) = CrowdView.Placed?.Invoke(en) ?? Drawn?.Of(en) ?? (en.X, en.Z);
             throwLog.Add((e.Target, x, z, time, 0));
         }
         return true;
@@ -492,7 +478,7 @@ public partial class BattleFx
             var (id, x0, z0, t0, n) = throwLog[i];
             if (n < 0) continue;
             var en = b.Enemies.Items[id];
-            var (x, z) = Drawn?.Of(en) ?? (en.X, en.Z);
+            var (x, z) = CrowdView.Placed?.Invoke(en) ?? Drawn?.Of(en) ?? (en.X, en.Z);
             double dx = x - x0, dz = z - z0, simd = Math.Sqrt((en.X - x0) * (en.X - x0) + (en.Z - z0) * (en.Z - z0));
             GD.Print($"[aa-throw] id={id} f={n} t={time - t0:F3} drawn={Math.Sqrt(dx * dx + dz * dz):F2} sim={simd:F2} alive={en.Alive} state={en.State} kb=({en.Kbx:F2},{en.Kbz:F2}) mass={en.Mass:F1}");
             throwLog[i] = (id, x0, z0, t0, time - t0 > 0.35 ? -1 : n + 1);
@@ -516,7 +502,7 @@ public partial class BattleFx
             if (en == null || !en.Alive || time > until || !en.Status.Has(StatusKind.Stun)) { (gone ??= new()).Add(id); continue; }
             float ph = (float)time * 5 + id * 2.3f;
             float tw = 0.3f + 0.7f * Mathf.Pow(Mathf.Max(0, Mathf.Sin(ph * 1.6f)), 2);
-            var (gx, gz) = Drawn?.Of(en) ?? (en.X, en.Z);
+            var (gx, gz) = CrowdView.Placed?.Invoke(en) ?? Drawn?.Of(en) ?? (en.X, en.Z);
             var over = V(gx, Y(gx, gz) + 2.05, gz) + new Vector3(Mathf.Cos(ph), 0, Mathf.Sin(ph)) * 0.2f;
             Sparks.Spawn(new Sparks.P
             {
@@ -532,13 +518,13 @@ public partial class BattleFx
     int discThrows, bashBeat;
     bool discBeat, discHitShot, discBounceShot, discFlyShot;
 
-    /// <summary>The Disc's beats: half a second after her 3rd throw (in flight), then that throw's
+    /// <summary>The Disc's beats: her 1st throw in flight (1.8-6 m out, while the crowd is still off her), then that throw's
     /// first hit and its first bounce (the next frame after each, as the player sees them land).</summary>
     void BeatDiscThrow()
     {
         if (!AaBeats) return;
         discThrows++;
-        if (discThrows == 3) { discBeat = true; }
+        if (discThrows == 1) { discBeat = true; }
         GD.Print($"[aa-beats] disc {discThrows} t={time:F2}");
     }
 
