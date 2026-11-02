@@ -26,11 +26,13 @@
   - **"Not yet effortlessly badass: the sweep needs weight, the disc a sense of speed: a design pass, not values"** (a later list item, owner's call).
 - **Tests and perf:**
   - Tests 1373/0/10.
-  - Release ABAB at night, 250 horde, `--aa-fx-off` (A, none of the kit drawn, sim the same) vs on (B), window 8-10.5 s while the crowd is dense (`survivorsunchained_inputsfx10\perf`):
+  - Release ABAB at night, 250 horde, `--aa-fx-off` (A, none of the kit drawn, sim the same) vs on (B), window 8-10.5 s while the crowd is dense (`survivorsunchained_inputs\vfx10\perf`):
     - B-A mean is CPU +0.10/-0.02 ms and GPU +0.10/-0.02 ms;
     - p99 is +0.9/+1.1 ms in pair 1 only (likely the first-use pipeline compile; pair 2 is -0.03/-0.12);
     - this is the whole kit against nothing, so an upper bound on the change.
-- **Shots:** `survivorsunchained_inputsfx10a43c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa43`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+- **Shots:** `survivorsunchained_inputs\vfx10\aa4\r3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4\r3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4
+3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
 - **Dev flags:** `--aa-beats`, `--aa-norim`, `--aa-pool K`, `--aa-fx-off`, `--reflex-note`.
 - **Cost:** item 2 ~1.45-1.5M of the 1.45M cap (r2 solver ~0.2M + judge 0.105M; r3 solver 0.21M + judge 0.12M + runner 0.03M; lead ~0.12M).
 
