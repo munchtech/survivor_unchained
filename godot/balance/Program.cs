@@ -216,7 +216,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
                 var b1 = ArenaSim.Play(spec with { Lamps = nul ? "empty" : "full" }, bon);
                 lock (gate)
                 {
-                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = TurnSide(b0, boff), On = TurnSide(b1, bon), OffBy = b0.DamageBy, OnBy = b1.DamageBy, OnLamps = b1.LampsLit }));
+                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = TurnSide(b0, boff), On = TurnSide(b1, bon), OffBy = b0.DamageBy, OnBy = b1.DamageBy, OnLamps = b1.LampsLit, OnIds = b1.LampIds }));
                     file.Flush();
                     done++;
                     if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");

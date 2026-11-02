@@ -502,8 +502,9 @@ public sealed partial class Battle
         if (!Combat || !p.Alive) return;
         var w = LinkSkill(l);
         if (w == null) return;
-        if (!Firing.Echo(this, w)) return;
+        // The wait starts before the echo: its blows may kill, and a kill link must not fire itself again inside them.
         l.Cd = l.Wait;
+        if (!Firing.Echo(this, w)) { l.Cd = 0; return; }
         l.Fired++;
         Events.Emit(new Ev.Link { Lamp = l.Lamp, Skill = w.Id, X = p.X, Z = p.Z });
     }
