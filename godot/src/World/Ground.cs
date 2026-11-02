@@ -36,6 +36,10 @@ public static class Ground
                 if (((i + j) & 1) == 1) { idx[p++] = a; idx[p++] = b; idx[p++] = c; idx[p++] = b; idx[p++] = d; idx[p++] = c; }
                 else { idx[p++] = a; idx[p++] = d; idx[p++] = c; idx[p++] = a; idx[p++] = b; idx[p++] = d; }
             }
+        // The skirt (Env 23): the ground on past the zone's edge, so the play camera at the bound sees no void
+        // (GroundSkirt; not an arena's, whose ring goes dark long before its edge). --no-skirt for the A/B.
+        if (z.Place == null && !SurvivorUnchained.Args.Has("no-skirt"))
+            (verts, normals, idx) = WithSkirt(z, verts, normals, idx);
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = verts;
@@ -130,6 +134,43 @@ public static class Ground
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
+    }
+
+    /// <summary>The field's vertices with the skirt's appended (GroundSkirt): its outer row's normals from the edge's
+    /// slope along the edge only (it runs out level), so the light carries on past the seam.</summary>
+    static (Vector3[], Vector3[], int[]) WithSkirt(ZoneData z, Vector3[] verts, Vector3[] normals, int[] idx)
+    {
+        int n = z.Res;
+        var h = z.Heights;
+        var (xyz, sIdx) = SurvivorUnchained.World.GroundSkirt.Build(n, z.Half, z.Step, h);
+        int nv = xyz.Length / 3, n2 = n * n;
+        var v = new Vector3[n2 + nv];
+        var nr = new Vector3[n2 + nv];
+        System.Array.Copy(verts, v, n2);
+        System.Array.Copy(normals, nr, n2);
+        // (the edge's along-edge slope at t: the field's heights at k(t-1), k(t+1))
+        Vector3 Along(System.Func<int, float> k, int t, bool alongX)
+        {
+            float d = k(Mathf.Max(t - 1, 0)) - k(Mathf.Min(t + 1, n - 1));
+            return (alongX ? new Vector3(d, 2 * z.Step, 0) : new Vector3(0, 2 * z.Step, d)).Normalized();
+        }
+        for (int k = 0; k < nv; k++)
+        {
+            v[n2 + k] = new Vector3(xyz[k * 3], xyz[k * 3 + 1], xyz[k * 3 + 2]);
+            int side = k / n, t = k % n;
+            nr[n2 + k] = side switch
+            {
+                0 => Along(q => h[q * n], t, false),
+                1 => Along(q => h[q * n + n - 1], t, false),
+                2 => Along(q => h[q], t, true),
+                3 => Along(q => h[(n - 1) * n + q], t, true),
+                _ => Vector3.Up,
+            };
+        }
+        var all = new int[idx.Length + sIdx.Length];
+        System.Array.Copy(idx, all, idx.Length);
+        System.Array.Copy(sIdx, 0, all, idx.Length, sIdx.Length);
+        return (v, nr, all);
     }
 
     /// <summary>The fires' warmth, where no frost lies: (x, z, radius), four at most.</summary>

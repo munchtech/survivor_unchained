@@ -66,7 +66,7 @@ void vertex() {
 	vec2 wp = root.xz + span * round((centre - root.xz) / span);
 	float edge = 1.0 - smoothstep(span * 0.36, span * 0.5, length(wp - centre));
 	float h1 = gh(wp * 7.1), h3 = gh(wp * 3.3 + 11.0), h4 = gh(wp * 5.7 + 4.0);
-	vec4 sp = texture(splat, (wp + zone_size * 0.5) / zone_size);
+	vec4 sp = texture(splat, (1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size))));
 	sp.b *= 1.0 - heal * 0.85;
 	vec4 nz = texture(noise_tex, wp * 0.035);
 	float bare = max(max(sp.r, sp.g), max(sp.b, sp.a));
@@ -85,12 +85,12 @@ void vertex() {
 	// (20-100% over 2-5 m, judge 1, E3 fix 8: clumps and bare patches.)
 	dens *= (1.0 - bare_p) * mix(1.0, mix(0.26, 1.3, smoothstep(0.32, 0.68, clump)), meadow_amt);
 	// None on a road's made surface (R 0.8) or in its ruts; sparse on its centre strip (R to 1).
-	vec4 pm = textureLod(paint_mask, (wp + zone_size * 0.5) / zone_size, 0.0);
+	vec4 pm = textureLod(paint_mask, (1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size))), 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	// Thin under a crown, where needles and leaves lie (terrain.gdshader, the same sky).
-	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0).r));
+	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, (1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size))), 0.0).r));
 	float keep = step(h3, dens * density * edge);
 	for (int i = 0; i < 4; i++) keep *= step(bare_at[i].z, length(wp - bare_at[i].xy));
 	// Shorter than a meadow: the fight is read through it from above.
@@ -121,14 +121,14 @@ void vertex() {
 	// The frost on this tuft: the sky over it, thawed in the sun at dawn, each tuft its own.
 	v_frost = 0.0;
 	if (ground_frost.x > 0.001) {
-		vec2 ex = textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0).rg;
+		vec2 ex = textureLod(expo_tex, (1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size))), 0.0).rg;
 		v_frost = ground_frost.x * ex.r * (1.0 - ground_frost.y * ex.g * 0.92) * (0.6 + 0.4 * h1);
 		for (int i = 0; i < 4; i++) if (warm_at[i].z > 0.0) v_frost *= smoothstep(warm_at[i].z, warm_at[i].z + 2.5, length(wp - warm_at[i].xy));
 	}
 	v_dry = clamp(smoothstep(0.45, 0.75, texture(noise_tex, wp * 0.02 + 5.3).g) * (0.6 + 0.4 * h1) + straw_bias, 0.0, 1.0);
 	// The ground's lie under it (terrain.gdshader): straw on the rises, damp green in the lows, browner
 	// where worn, so tuft and ground agree and the tufts read lighter than the ground at their crowns.
-	vec4 ex4 = textureLod(expo_tex, (wp + zone_size * 0.5) / zone_size, 0.0);
+	vec4 ex4 = textureLod(expo_tex, (1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size))), 0.0);
 	float low = ex4.b * 2.0 - 1.0;
 	float lush = clamp(smoothstep(0.08, 0.6, low + (nM.r - 0.5) * 0.3), 0.0, 1.0);
 	float dry = smoothstep(0.46, 0.72, nL.g * 0.5 + nC.r * 0.3 + nM.r * 0.2 + max(-low, 0.0) * 0.45) * (1.0 - lush);

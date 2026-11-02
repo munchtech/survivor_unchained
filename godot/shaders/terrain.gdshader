@@ -293,7 +293,9 @@ void fragment() {
 	vec4 nC = texture(noise_tex, w * 0.0213 + 0.13);   // ~47 m: the macro
 	vec4 nM = texture(noise_tex, w * 0.061 + 0.37);    // ~16 m
 	vec4 nF = texture(noise_tex, w * 0.29 + 0.71);     // ~3.4 m
-	vec2 zuv = (w + zone_size * 0.5) / zone_size;
+	// (Env 23: past the zone's edge, on the skirt (Ground.cs), its masks mirrored about the edge: the paint goes on as
+	// believable ground, not its edge texel streaked out)
+	vec2 zuv = 1.0 - abs(1.0 - abs((w + zone_size * 0.5) / zone_size));
 	vec4 sp = texture(splat, zuv);
 	vec4 pm = texture(paint_mask, zuv);
 	vec4 ex4 = texture(expo_tex, zuv);
