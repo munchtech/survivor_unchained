@@ -1,0 +1,24 @@
+{
+ "length_m": 24.0,
+ "band_m": 2.4,
+ "u": "along the line, 0 = her end",
+ "v": "across, 0.5 = the line",
+ "height_range_m": [
+  -0.3,
+  0.1
+ ],
+ "normal": "OpenGL (Y+)",
+ "seed": 7,
+ "tiles": 12,
+ "tile_m": 2.0,
+ "gap_width_m_at_u": {
+  "0": 0.002,
+  "0.05": 0.386,
+  "0.25": 0.35,
+  "0.5": 0.253,
+  "0.75": 0.156,
+  "0.93": 0.093,
+  "0.98": 0.019
+ },
+ "source": "tools/fxsim/longcut_crack.py"
+}
