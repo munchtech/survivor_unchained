@@ -24,6 +24,8 @@ SETS = {
     "town": (["--zone", "waystation", "--time", "day", "--auto", "idle", "--spots", "3,3;24,0;0,-24;-7,-7"], 4),
     "ford": (NIGHT + ["--spots", "-7.5,87.5;3,64;9,40;0,-38;-2,-72;0,-37;-7,-46"], 7),
     # (env lead 22: the ford water only: ford_o_03, 05, 06)
+    # (Env 23: the Verge by day near its start (-132, 8: 13 m from the west edge), where UI 23 saw a black void past the map edge)
+    "vergeday": (["--zone", "verge", "--time", "day", "--auto", "idle", "--spots-clear", "--spots", "-132,8;-138,8;-136,-20;-125,30"], 4),
     "fordw": (NIGHT + ["--spots", "0,-38;0,-37;-7,-46"], 3),
     "close": (NIGHT + ["--spots", "-8.6,88.6,1,0;-8.6,88.6,1,0;-9.5,92.5,1,0;-9.5,92.5,1,0"], 4),
     # (lead 4: the night restaged with the living held off: no fight, no spell FX; the camp, the ford, the ford's lamp)
