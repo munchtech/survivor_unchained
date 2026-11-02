@@ -1612,7 +1612,7 @@ public sealed partial class Battle
         e.SunderUntil = e.Sunder = 0;
         e.AirUntil = e.AirMore = 0;
         e.SlowUntil = e.SlowBy = 0;
-        e.DrawnAt = -99;
+        e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
         e.ThawT = 0;

@@ -310,6 +310,8 @@ public sealed class WardenSkillsTests
             es[1].Elite = true;
             b.Player.Hp = b.MaxHp * 0.5;
             Block(b, es[0]);
+            // One strike each so far: the elite is struck again only after its gap (ChampionGap), the rest every cooldown.
+            double ratio = Taken(es[1]) / Taken(es[0]);
             if (strong)
             {
                 Assert.Equal(b.MaxHp * 0.51, b.Player.Hp, 6);
@@ -317,12 +319,14 @@ public sealed class WardenSkillsTests
                 Assert.Equal(b.MaxHp * 0.51, b.Player.Hp, 6);
                 // Half a second on (the clock alone: a tick would let the dummies' touch reach her, and Rebuke answer it).
                 b.Time += 0.6;
-                double hp = b.Player.Hp;
+                double hp = b.Player.Hp, elite = Taken(es[1]), other = Taken(es[0]);
                 Block(b, es[0]);
                 Assert.Equal(hp + b.MaxHp * 0.01, b.Player.Hp, 6);
-                return Taken(es[1]) / Taken(es[0]);
+                // The other struck again; the elite, inside its gap, not.
+                Assert.True(Taken(es[0]) > other);
+                Assert.Equal(elite, Taken(es[1]), 6);
             }
-            return Taken(es[1]) / Taken(es[0]);
+            return ratio;
         }
         // Elites and the rest take the same blow, but the elite twice over with strong (crits aside: compared as ratios).
         Assert.InRange(On(true) / On(false), 1.6, 2.5);

@@ -134,6 +134,8 @@ public sealed class Enemy : Pooled
     public double AirUntil, AirMore;
     /// <summary>When the Watch Bell last drew it (the wall's answer doesn't throw back what was drawn in the last 2 s).</summary>
     public double DrawnAt = -99;
+    /// <summary>When Rebuke last struck it (a champion is struck again only after the skill's ChampionGap).</summary>
+    public double RebukedAt = -99;
     /// <summary>Held back (the Watch Bell's iron): until this time (the battle's clock) it moves SlowBy slower.</summary>
     public double SlowUntil, SlowBy;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>

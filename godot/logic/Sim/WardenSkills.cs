@@ -188,9 +188,12 @@ public sealed partial class Battle
         var p = Player;
         double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5);
         int others = (int)(w.Num(s => s.Others) ?? 5);
+        // A champion is struck again only after its gap: pinned by one, she isn't a turret that fires at it twice a second.
+        double gap = w.Num(s => s.ChampionGap) ?? 0;
+        bool Ready(Enemy e) => !(e.Elite || e.Boss) || Time >= e.RebukedAt + gap;
         var struck = new List<Enemy>(others + 1);
-        if (blocker != null) struck.Add(blocker);
-        struck.AddRange(HostilesInRadius(x, z, r).Where(e => e != blocker && e.Alive && e.State != EnemyState.Dying)
+        if (blocker != null && Ready(blocker)) struck.Add(blocker);
+        struck.AddRange(HostilesInRadius(x, z, r).Where(e => e != blocker && e.Alive && e.State != EnemyState.Dying && Ready(e))
             .OrderBy(e => Dist(e.X, e.Z, x, z)).Take(others));
         if (struck.Count == 0) return false;
         RebukeStrikes++;
@@ -200,6 +203,7 @@ public sealed partial class Battle
         foreach (var e in struck)
         {
             if (!e.Alive || e.State == EnemyState.Dying) continue;
+            if (e.Elite || e.Boss) e.RebukedAt = Time;
             double d = Dist(e.X, e.Z, p.X, p.Z), dd = d < 1e-6 ? 1 : d;
             HitEnemy(e, w.Damage * RebukeChampionMul(e), w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = status, BossDamage = w.Def.BossDamage });
         }
