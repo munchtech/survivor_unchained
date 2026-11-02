@@ -147,7 +147,7 @@
       "cues": [
         {"do": "water", "foam": 1, "streak": 1, "mirror_cap": 100},
         {"do": "stones", "top": 1, "edge": 1, "all": true},
-        {"do": "haze", "begin": 70, "end": 150, "curve": 1.0, "amount": 0.9, "sky": 0.0, "color": "#9a7680"},
+        {"do": "haze", "begin": 70, "end": 220, "curve": 0.6, "amount": 0.95, "sky": 0.0, "color": "#a48a66", "note": "Env 23: warm gold dawn air (was mauve #9a7680, the pink far treeline); end 150 -> 220 at curve 0.6 so the far ridge grades in depth instead of one flat band of equal tips"},
         {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [1.0, 0, -0.5]}, "style": "burrow", "tag": "grim", "neutral": true, "sink": 0.55},
         {"at": 0.1, "do": "sfx", "name": "sniff", "gain": 0.8},
         {"at": 0.55, "do": "sfx", "name": "sniff", "gain": 0.8},
