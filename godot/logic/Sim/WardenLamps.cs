@@ -43,6 +43,7 @@ public sealed partial class Battle
     {
         lampBlocked = false;
         double chance = LampBlockChance(from);
+        if (Lamps.Board) chance = BoardBlockChance(chance);
         if (chance <= 0 || Rng.Next() >= chance) return false;
         var p = Player;
         lampBlocked = true;
@@ -60,6 +61,7 @@ public sealed partial class Battle
         var p = Player;
         Blocks++;
         var l = Lamps;
+        if (l.Board) BoardOnBlock(from);
         // bulwark.block.mend: each block mends a sliver while above half.
         if (l.Has("block.mend") && p.Hp > MaxHp * l.Full("block.mend", "above", 0.5)) HealPlayer(MaxHp * l.Size("block.mend", "share") * BearerMend(), "block");
         // bulwark.mortar: each block gives a barrier.
@@ -98,13 +100,15 @@ public sealed partial class Battle
         if (!hand && !Lamps.Has("shield_arm") && !Lamps.Has("parry") && !Lamps.Has("mortar")) return;
         stoneLull = 0;
         // Unlit Shield Arm, the warden's Hand's wall answers on its own numbers (and a Parry's stones join it); with no Hand, none does.
-        int cap = (int)WallArg("stones", 6, Content.Hands.Warden.Stones);
+        int cap = (int)WallArg("stones", 6, HW.Stones);
         // Parry without Shield Arm lays stones the wall can't answer (no cap, no reach).
         if (cap <= 0) return;
         // rebuke.readier: the wall answers sooner (Shield Arm's six: five).
         if (Lamps.Has("rebuke.readier")) cap = Math.Max(3, (int)Math.Round(cap * Lamps.Full("rebuke.readier", "share", 5.0 / 6)));
         stoneDrop = 0;
-        if (++stones >= cap) { stones = 0; WallAnswer(); }
+        // blue.vigil's price: the wall never answers (the stones stay, held at the cap).
+        if (Lamps.Board && Lamps.Has("blue.vigil")) { stones = Math.Min(cap, stones + 1); StonesPeak = Math.Max(StonesPeak, stones); }
+        else if (++stones >= cap) { stones = 0; WallAnswer(); }
         else StonesPeak = Math.Max(StonesPeak, stones);
     }
 
@@ -113,7 +117,7 @@ public sealed partial class Battle
     void WallAnswer()
     {
         var p = Player;
-        double r = WallArg("radius", 8, Content.Hands.Warden.Radius) * Math.Sqrt(Stats.Get(Stat.Area));
+        double r = WallArg("radius", 8, HW.Radius) * Math.Sqrt(Stats.Get(Stat.Area));
         double dmg = RebukePower() + bearerStore;
         Rebukes++;
         bearerStore = 0;
@@ -123,7 +127,7 @@ public sealed partial class Battle
             double dd = d == 0 ? 1 : d;
             double m = RebukeChampionMul(e);
             // A boss takes a share: the wall breaks the crowd; against a lord of the night it mustn't rival the Flare.
-            if (e.Boss) m *= WallArg("boss", 1, Content.Hands.Warden.Boss);
+            if (e.Boss) m *= WallArg("boss", 1, HW.Boss);
             // What the bell drew in the last 2 s stays where it was drawn: struck, not thrown back.
             double kb = Time - e.DrawnAt < 2 ? 0 : 1.2;
             HitEnemy(e, dmg * m, School.Holy, [Tag.Holy, Tag.Area, Tag.Shield], new HitOpts { Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "wall" });
@@ -136,7 +140,7 @@ public sealed partial class Battle
     public double RebukePower()
     {
         int level = EmberOn ? EmberLevel : Level;
-        return MaxHp * WallArg("rebuke", 10, Content.Hands.Warden.Rebuke) * (1 + WallArg("per_level", 0.08, Content.Hands.Warden.PerLevel) * Math.Max(0, level - 1));
+        return MaxHp * WallArg("rebuke", 10, HW.Rebuke) * (1 + WallArg("per_level", 0.08, HW.PerLevel) * Math.Max(0, level - 1));
     }
 
     /// <summary>The lull is in the fight: no blow taken or blocked and no hostile within 3 m for `lull` seconds, then stones
@@ -145,7 +149,7 @@ public sealed partial class Battle
     {
         if (stones == 0) return;
         if (Lamps.Has("mortar")) return;
-        double lull = WallArg("lull", 6, Content.Hands.Warden.Lull);
+        double lull = WallArg("lull", 6, HW.Lull);
         bool near = false;
         ForEachHostileInRadius(Player.X, Player.Z, 3, (e, d) => near = true);
         if (near) stoneLull = 0; else stoneLull += dt;

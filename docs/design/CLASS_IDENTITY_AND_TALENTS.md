@@ -414,7 +414,7 @@ That's 98 wicks, about 1,180 lamps. About 290 are bespoke; the rest are configur
 
 **Build-defining nodes:**
 - the 45 blue lamps;
-- the 16 links;
+- the 32 links (roads 16, crossings 6, Old Roads 10; §3.2's table, settled 2 November);
 - the Turns.
 
 **Examples of new blue lamps:**

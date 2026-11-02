@@ -197,6 +197,7 @@ public partial class BattleFx : Node3D
         chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
         DiscReady();
         CrowdView.StruckRim = StruckRimOn;
+        CrowdView.FlashHeld = WgFlash;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1149,14 +1150,19 @@ public partial class BattleFx : Node3D
                         break;
                     }
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
+                    // (The Warden's line and heave: the number waits for the view's blow, the tip or the heave.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
-                        Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    {
+                        float wgd = WgHitWait(e);
+                        if (wgd > 0) { int tg = e.Target; double am = e.Amount, mh = e.MaxHp; bool cr = e.Crit; var wat = at; WgLater(wgd, () => { WgNumberLog(tg); Hits.Tally(tg, wat, am, mh, cr); }); }
+                        else Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    }
                     if (Flare.HushesHitSparks) { }
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
-                    if (e.Family != null && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || (e.Art == null && time == bashAt))))
+                    if (e.Family != null && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1261,6 +1267,9 @@ public partial class BattleFx : Node3D
                     if (e.Broke) { Waves.Add(V(e.X, Y(e.X, e.Z) + 0.4, e.Z), 2.6f, 0.35f, Palette.Of(School.Holy).Glow, 1f); Cam?.AddTrauma(0.12f); }
                     break;
                 }
+                case Ev.Barrier e:
+                    BarrierGain(e);
+                    break;
                 case Ev.PlayerHeal e:
                     if (e.Amount >= 3) Hits.Text(PlayerPos + Vector3.Up * 1.6f, $"+{(int)Math.Round(e.Amount)}", new Color(0.5f, 1.8f, 0.6f), 50);
                     break;
@@ -1289,6 +1298,9 @@ public partial class BattleFx : Node3D
                 // A moon's splash is drawn by its landing (Landing): the arcane school's filmed burst
                 // under it was a pink-white ball at every moon.
                 case Ev.Explosion { Art: "moonfall" }:
+                    break;
+                case Ev.Explosion { Art: "slash_quake_heave" } e:
+                    WgHeave(e);
                     break;
                 case Ev.Explosion e:
                 {
@@ -1829,6 +1841,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
+        StepWardenHoly(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
         OathBlades.Step(hsw);
@@ -1836,6 +1849,7 @@ public partial class BattleFx : Node3D
         StepOathPools(hsw);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
+        StepWardenGround(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(hfx);
         Books.Step(fdt);

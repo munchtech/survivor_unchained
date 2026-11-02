@@ -165,6 +165,8 @@ public sealed class Enemy : Pooled
     public double Stagger, StaggeredT, StaggerResistT;
     /// <summary>The firing (skill slot and cast) that last laid a warden Hand's Stone on it: one a firing.</summary>
     public long HandStoneKey;
+    /// <summary>Lamps v2 (Sim/BoardRules.cs): when blue.poachers_mercy last doubled its bleed.</summary>
+    public double PoachedAt = double.NegativeInfinity;
     /// <summary>Quickened by its own kind's aura (pace and blows), and warded (less taken), for a while.</summary>
     public double HasteT, Haste = 1, WardT, Ward;
     /// <summary>The verbs' own clocks, what it is casting and where, the runs left in a

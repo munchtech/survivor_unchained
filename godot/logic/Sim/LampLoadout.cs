@@ -41,6 +41,21 @@ public sealed class LampLoadout
 
     public bool Has(string rule) => Rules.ContainsKey(rule);
 
+    /// <summary>A v2 rule is lit (docs/design/LAMPS_V2_RULES.md): the fight's v2 paths (Sim/BoardRules.cs) wake. With none,
+    /// every one of them is a no-op, so v1's fight is unchanged to the byte.</summary>
+    public bool Board;
+    /// <summary>blue.unhoused: her Hand is gone.</summary>
+    public bool Unhoused;
+    /// <summary>Bumped by every Add: the fight re-reads its rites and links when it changes.</summary>
+    public int Version;
+    /// <summary>Each link's pick (its lamp id to a skill id), from the layout (LampLayout.Links).</summary>
+    public readonly Dictionary<string, string> Links = new();
+
+    /// <summary>The v2 rule ids (the board's new rules: rites, links, Hand lamps, the small rules and the blues).</summary>
+    public static bool IsBoardRule(string rule) =>
+        rule is "rite" or "link" or "hand" or "tags.more" or "tags.sooner" or "tags.duration" or "tags.status" or "tags.kill_mend"
+        || rule.StartsWith("hand.", StringComparison.Ordinal) || rule.StartsWith("blue.", StringComparison.Ordinal);
+
     /// <summary>Debug switch for bisecting: LAMPS_OFF=id1,id2 leaves those rule ids unlit (read once).</summary>
     static readonly HashSet<string> Off = new((Environment.GetEnvironmentVariable("LAMPS_OFF") ?? "")
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
@@ -48,6 +63,8 @@ public sealed class LampLoadout
     public void Add(LampEffect e)
     {
         if (e.Rule == null || Off.Contains(e.Rule)) return;
+        Version++;
+        if (IsBoardRule(e.Rule)) { Board = true; if (e.Rule == "blue.unhoused") Unhoused = true; }
         Rules.TryAdd(e.Rule, e);
         if (!Each.TryGetValue(e.Rule, out var l)) Each[e.Rule] = l = new();
         l.Add(e);
@@ -65,7 +82,10 @@ public sealed class LampLoadout
     public bool HasOn(string rule, string skill, Tag[]? tags) =>
         Each.TryGetValue(rule, out var l) && l.Exists(e => On(e, skill, tags));
 
-    static bool On(LampEffect e, string skill, Tag[]? tags) =>
+    static bool On(LampEffect e, string skill, Tag[]? tags) => Covers(e, skill, tags);
+
+    /// <summary>The effect is on this skill: it names no skill or tag (all), names it, or names one of its tags.</summary>
+    public static bool Covers(LampEffect e, string skill, Tag[]? tags) =>
         (e.Skill == null && e.Tags == null) || e.Skill == skill || (e.Tags != null && tags != null && Array.Exists(e.Tags, t => Array.IndexOf(tags, t) >= 0));
 
     double Sum(string rule, string arg, double fallback, Func<LampEffect, bool>? where)
@@ -79,6 +99,10 @@ public sealed class LampLoadout
     /// <summary>A rule's number that is not a size (a price, a duration, a threshold): kept in full.</summary>
     public double Full(string rule, string arg, double fallback = 0) =>
         Rules.TryGetValue(rule, out var e) ? e.Arg(arg, fallback) : 0;
+
+    /// <summary>A rule's number in full for one skill (a rite's, a link's): the lamps on it, and on any of its tags, summed.</summary>
+    public double FullOn(string rule, string arg, string skill, Tag[]? tags, double fallback = 0) =>
+        Sum(rule, arg, fallback, e => On(e, skill, tags));
 
     public static readonly LampLoadout None = new();
 }
