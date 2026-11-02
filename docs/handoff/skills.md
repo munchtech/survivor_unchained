@@ -1,50 +1,40 @@
 # Handoff: skills look and feel
 
-## Combat VFX 10 START HERE (vfx-7, 2 Nov): item 2, her auto-attacks, after the rebuild and before judge r2
-**The Long Cut is MERGED** (integration 073a166eb). See the VFX 9 section below for its known list and frozen times.
+## Combat VFX 10 (vfx-7, 2 Nov): item 2 MR READY (her auto-attacks); item 3 (Warden skills) next
+**Item 2, her auto-attacks** (SKILL_VFX_STUDY.md §6 item 2): r3 max (the FINAL round, cap raised to 4 by main) said **PASS-WITH-NOTES on all four and ship as a net gain**, with its 5 safe cuts applied (7deaa78a6). History: r1 FAIL (sweep medium, Disc and Bash far), so the sources were rebuilt; r2 FAIL medium on all four; r3 PASS-WITH-NOTES (sweep, hit kit and Bash close; Disc medium by day, close by night).
+- **What ships:**
+  - Sweep: a true gold crescent, peaking at f2 and eaten from its trailing horn, on real frames through the hitstop (oath_sweep.gdshader).
+  - Hit kit (HitKit.cs `HitKit`, `StruckRimOn`):
+    - a 2-frame flash at 15% then 6%, with none on the Bash's stunned (`rimNoFlash`);
+    - a #FFB84A fresnel rim fading over 8 frames, 0.55x at night;
+    - sparks 3-5 per body on at most 6 bodies a swing;
+    - solid lit chip puffs (day life x0.7);
+    - the bone-chip "snow" skipped for her auto-attacks.
+  - Disc (disc.gdshader `halo_gain` x0.6 by day): twin world-space rails, steel band glints, an amber 1.3x halo, a 2-frame contact flare.
+  - Bash (bash_wedge.gdshader + new bash_wall.gdshader):
+    - forward-weighted 100/50/7% at 0/35/69 deg over the sim's real ±1.2 rad, 3.4 m (wider than r1's spec on purpose);
+    - a bronze flash at the shield face and a 0.42 m standing front;
+    - a brown plow and a gold stun twinkle;
+    - a view-only throw for the dying (CrowdView), 1.7-1.8 m by f15.
+  - Sim untouched. The "shield_bash N" debug line is now only shown with `--reflex-note` (aa96dcae0).
+- **Known (r3 judge, closed):**
+  - Sweep: a moon-even taper, one flat gold, reads thin in a dense crowd; a dark olive inner band on f1.
+  - Hit kit: the f1 sparks read white; the puffs are paler than the road; the flash leads the arc by 1 frame.
+  - Disc: no spin reads by day at 1:1, and the rails are a faint V.
+  - Bash: the rim reads smooth; toward the camera the cream band thickens; the plow is faint by day; the throw-back only reads in motion.
+  - Night: s3's hit cluster is a dense glitter.
+  - **"Not yet effortlessly badass: the sweep needs weight, the disc a sense of speed: a design pass, not values"** (a later list item, owner's call).
+- **Tests and perf:**
+  - Tests 1373/0/10.
+  - Release ABAB at night, 250 horde, `--aa-fx-off` (A, none of the kit drawn, sim the same) vs on (B), window 8-10.5 s while the crowd is dense (`survivorsunchained_inputsfx10\perf`):
+    - B-A mean is CPU +0.10/-0.02 ms and GPU +0.10/-0.02 ms;
+    - p99 is +0.9/+1.1 ms in pair 1 only (likely the first-use pipeline compile; pair 2 is -0.03/-0.12);
+    - this is the whole kit against nothing, so an upper bound on the change.
+- **Shots:** `survivorsunchained_inputsfx10a43c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa43`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+- **Dev flags:** `--aa-beats`, `--aa-norim`, `--aa-pool K`, `--aa-fx-off`, `--reflex-note`.
+- **Cost:** item 2 ~1.45-1.5M of the 1.45M cap (r2 solver ~0.2M + judge 0.105M; r3 solver 0.21M + judge 0.12M + runner 0.03M; lead ~0.12M).
 
-**Item 2: her auto-attacks** (spec: SKILL_VFX_STUDY.md §6 item 2). Main's budget is ~1.0M more to the MR, with rounds r2 and r3 the cap (`Item: auto-attacks`; r1 is used). **Judge mainly BY DAY.** At night her lamp throws a black radial starburst of crowd shadows. That's Lighting's, routed: tell the judge it's routed, not counted.
-
-**Firing check** (`--fx-log`, e4d17eccb):
-- The Oathblade fires about every 1.05 s and the Disc every ~2.2 s.
-- Shield Bash is lamp-granted, so it only fires with `--lamp warden.shield_bash`.
-- The gap after the Long Cut is ~2.7 s, and it's correct: nothing is left in reach (Weapons.cs:257 retries).
-- `--lab` strips every weapon not in `--give`, so use `--give oathblade,judgement_disc --lab`.
-
-**r1, max judge: FAIL on all 20 frames.** The sweep was MEDIUM (source), the Disc FAR, the Bash FAR. Scrap rule, so we rebuild.
-
-**Rebuild 1, the sweep and hit kit: DONE, UNJUDGED** (6415af046):
-- **The wrong-side arc:** `Blades.Add` used `Basis.Scaled`, which flips world X. It's now `Basis * FromScale`, and `Hits.Arc` is fixed too.
-- **The sweep:** `oath_sweep.gdshader`. It's hand-anchored (0.55 m to ~2 m), reveals over 2 frames and erodes over 4. It uses the baked streaks `tools/fxsim/oath_streaks.py` → `godot/art/fx/oath_streaks.png`.
-- **The pool:** `OathPool`, 3 pooled omnis.
-- **The hit kit:**
-  - stretched sparks: `Sparks.P.Stretch`;
-  - a gold rim bit in vat.gdshaderinc (through `CrowdView.StruckRim`);
-  - `ChipPuff`: a center-peaked puff, which replaces the ring sprites 7-9 (the "donuts").
-- **Numbers:**
-  - night peak is only 1.12x of mid (the aim was 1.35-1.4x; the lever is the arc's body gain);
-  - the pool is +46-82% at night and +16-27% by day.
-- **Frames:** f1, hit and f3 land inside the hitstop freeze, so `s{n}_f6` was added to show the erosion.
-- **Sheets:** `survivorsunchained_inputs\vfx9\aa3\sheet_{day,night}_half.jpg` (frames in `aa3\r5\`).
-- Dev flags: `--aa-beats`, `--aa-pool K`, `--aa-norim`.
-- **Shot script:** b9e8a09f scratchpad `vfx9\aa_c\shoot.sh <label>`. It runs with `--fixed-fps 60`, because otherwise PNG saves stretch game time.
-
-**Next:**
-1. **Rebuild 2, a medium solver for the Disc and the Bash** (judge r1 fixes 4-6). Current code: HitKit.cs `DiscFlight`/`DiscStruck`/`ShieldBash`/`BashStruck`/`StunGlints`, and `disc.gdshader`.
-   - **Disc:** an emissive core 2-3x, a halo at 1.6x the radius, a steel rim ≤15% of the radius, and spin shown by blur streaks, not spokes. A curved additive ribbon trail at 80-100% of the head's width, tapering over 0.15-0.2 s. An omni riding at 0.4 m, within the 4-light cap. It must never read as a coin, lollipop or trefoil.
-   - **Bash:** a forward wedge on her facing, ~1.2 m wide at the shield and 2.5 m deep, bronze-gold, fading forward over 3-4 frames, no ring. A ground plow of 25-40 particles across the ±40°, 2.5 m cone (3-5 m/s, drag, ≤0.5 m high, 0.4-0.6 s). The struck visibly fly back 1.5-2.5 m in 0.25 s. A 0.25-0.3 m stun glint over each head for 1.5 s.
-   - **Switch both to the new hit kit:** `HitKit(..., target: id, first:)` and `ChipPuff`. Their own `Smoke.Spawn` still uses the ring sprites.
-   - The Bash's f1 and f3 frames were identical: check its 0.05 s hitstop.
-2. **Max judge r2 on all three,** by day mainly plus one night set, with the whole-frame gate first. Then fix or cut, then r3 if needed, then the MR (tests, Release perf ABAB like the Long Cut's: `tools/perf/release.py`, cast or press inside t ≥ 8 s).
-3. **Item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`). Cherry-pick classes-17@426ce9d64 (hooks a/b). Split `rebuke` and `watch_bell` out of `nova_holy` in BattleFx.Skills.cs.
-
-**Routes logged by main:**
-- Lighting: the night crowd-shadow starburst.
-- Combat: the Bash freeze.
-- UI: the reflex debug line `ArtNote` ("shield_bash N") shows in normal play.
-- The Arcanist's `FindChild("arm:mage_staff")`: Godot turns ':' into '_'.
-
-**Cost:** item 2 so far is ~0.7M (check 0.06M, build 0.14+0.16M, judge 0.13M, rebuild 0.19M). VFX 9 total ~2.9M.
+**Next: item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`). Hooks a/b are in integration (art keys `rebuke`, `watch_bell`, now in the `nova_holy` case of BattleFx.Skills.cs, to split out; `Ev.Barrier`). Sunder and Groundbreaker too.
 
 ## Combat VFX 9 (vfx-7, 2 Nov): MR READY. The Long Cut rebuilt; her auto-attacks next
 **The Long Cut** (round cap raised to 4 by main; the last round). The max verdict on (B, "once she has the pose") was FAIL CLOSE, and the judge's final cuts are applied. What ships: the press (local gold light, white-gold blade core, no exposure lift or sepia), the hold, the fuse run, the cooling, the smoke curtain, both scars and the clear field. r1 was FAR, r2 and r3 were MEDIUM, r4 CLOSE.
