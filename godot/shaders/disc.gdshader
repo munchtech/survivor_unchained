@@ -15,7 +15,7 @@ render_mode blend_premul_alpha, cull_disabled, depth_draw_never;
 #include "res://shaders/hero_clear.gdshaderinc"
 
 const float DISC_EDGE = 0.625;   // the disc's edge in UV.x (1 / 1.6)
-const float DISC_RIM = 0.87;     // the steel band's inner edge, as a share of the disc's radius
+const float DISC_RIM = 0.76;     // the steel band's inner edge, as a share of the disc's radius (r3: >= 3 px at the play camera)
 
 float smear(float a, float r, float at, float wid, float off, float turns) {
 	float band = 1.0 - smoothstep(0.0, wid, abs(r - at));
@@ -36,15 +36,21 @@ void fragment() {
 	float blur = smear(a, r, 0.42, 0.075, 0.0, 1.0) + smear(a, r, 0.62, 0.07, 0.37, 1.0) + 0.8 * smear(a, r, 0.78, 0.06, 0.71, 2.0);
 	vec3 faceE = COLOR.rgb * (0.95 + 0.35 * (1.0 - r)) + white * (core * 3.2 + blur * 1.5);
 
-	// The steel: bright, worn, its glint smeared round with the turn.
-	float glint = pow(fract(a * 2.0 + 0.15), 4.0) * smoothstep(1.0, 0.94, fract(a * 2.0 + 0.15));
-	vec3 rimE = COLOR.rgb * 0.18 + white * glint * 0.9;
+	// The steel (r3): a darker worn band, and over it three unequal glint arcs (~100, 80 and 55 degrees) turning
+	// with the disc (BattleFx.DiscFlight: ~38 degrees a frame), each brightest at its leading end, ~3-4 px thick
+	// in the band's middle.
+	float band_mid = 1.0 - smoothstep(0.0, 0.6, abs((r - (DISC_RIM + 1.0) * 0.5) / ((1.0 - DISC_RIM) * 0.5)));
+	float g1 = smoothstep(0.0, 0.28, fract(a)) * step(fract(a), 0.28);
+	float g2 = smoothstep(0.0, 0.22, fract(a - 0.41)) * step(fract(a - 0.41), 0.22);
+	float g3 = smoothstep(0.0, 0.15, fract(a - 0.72)) * step(fract(a - 0.72), 0.15);
+	float glint = (pow(g1, 1.6) + pow(g2, 1.6) * 0.85 + pow(g3, 1.6) * 0.7) * band_mid;
+	vec3 rimE = COLOR.rgb * 0.06 + white * glint * 1.4;
 
-	// The halo: from the rim's edge out to 1.6x, soft.
-	float h = 1.0 - smoothstep(1.0, 1.6, r);
-	vec3 haloE = COLOR.rgb * (h * h * 0.85) * (1.0 - inside);
+	// The halo (r3): tight, from the rim's edge out to 1.3x (it washed the band out at 1.6x), amber not cream.
+	float h = 1.0 - smoothstep(1.0, 1.3, r);
+	vec3 haloE = COLOR.rgb * vec3(1.0, 0.62, 0.2) * (h * h * 0.9) * (1.0 - inside);
 
-	ALBEDO = vec3(0.5, 0.5, 0.52) * rim;
+	ALBEDO = vec3(0.22, 0.22, 0.24) * rim;
 	METALLIC = rim;
 	ROUGHNESS = mix(1.0, 0.28, rim);
 	SPECULAR = 0.5 * rim;

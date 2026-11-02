@@ -1,31 +1,36 @@
-// Her Oathblade's sweep (src/Fx/Blades.cs, Blades(oath: true)): one gold crescent leaving her hand,
-// light only (blend_add: it lights what is under it, never darkens it).
-// It is revealed along the arc with the swing (2 frames), then eaten from its tail by noise (3-4).
-// Its width runs from the whole band at the leading end to about 30% at the trailing end, from the
-// reach inward. Its body is the baked streaks (tools/fxsim/oath_streaks.py: 20-40 fine broken runs of
-// varied length, scrolled along the arc), never even bands; only its leading 15% is white-hot.
+// Her Oathblade's sweep (src/Fx/Blades.cs, Blades(oath: true)): one gold crescent at the blade's reach.
+// (VFX 10 r3) A true crescent, not a glass bubble: ~0.28 m thick through its leading middle, tapering to points at
+// both horns; white-gold on its outer edge toward the lead, saturated gold through its body, fading to clear toward
+// her hand. Its streaks run ALONG the arc (radial ones echoed the bash's fan). Premultiplied: the gold body covers
+// what is under it a little (so it keeps its saturation in sunlight), the hot edge only adds.
+// Revealed along the arc with the swing (3 frames, its peak at f2), then eaten from the trailing horn toward the tip
+// (half by f4, gone by f6; on real frames through a hitstop: BattleFx.Update).
 //
-// One instance per swing: COLOR.rgb its hue (linear, near 1 so the tone curve keeps it a colour),
-// COLOR.a the inner radius as a share of the outer (the basis is scaled by the outer radius);
-// INSTANCE_CUSTOM (head, erode, span in radians, seed): the blade's place along the arc (0 its start,
-// 1 its end), how far the tail is eaten (0 none, 1 gone), the arc it sweeps, a seed.
+// One instance per swing: COLOR.rgb its hue (linear, near 1), COLOR.a the inner radius as a share of the outer (the
+// basis is scaled by the outer radius); INSTANCE_CUSTOM (head, erode, span in radians, seed): the blade's place along
+// the arc (0 its start, 1 its end), how far it is eaten (0 none, 1 gone), the arc it sweeps, a seed.
 // The mesh is a unit grid (UV.x along the swing, UV.y from the inner radius out to the reach).
 shader_type spatial;
 // (never hidden by the bodies it passes through: at 1 m up the crowd's heads covered most of it by day)
-render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
-uniform sampler2D streaks : filter_linear_mipmap, repeat_enable;
-// The strip's repeats per radian of arc at the reach.
-uniform float tile = 1.5;
+// The crescent's thickness at its thickest (metres) and how far its gold fades on inward past that (shares of it).
+uniform float thick = 0.28;
+uniform float fade_in = 0.9;
 
 varying flat vec4 v_custom;
 varying flat vec4 v_hue;
+varying flat float v_reach;
+
+float h1(float n) { return fract(sin(n * 127.1) * 43758.5453); }
+float n1(float x) { float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(h1(i), h1(i + 1.0), f); }
 
 void vertex() {
 	v_custom = INSTANCE_CUSTOM;
 	v_hue = COLOR;
+	v_reach = length(MODEL_MATRIX[2].xyz);
 	float a = (UV.x - 0.5) * INSTANCE_CUSTOM.z;
 	float r = mix(COLOR.a, 1.0, UV.y);
 	// The swing's plane tilts up a little through its middle, as an arm's does.
@@ -36,37 +41,40 @@ void vertex() {
 void fragment() {
 	float head = v_custom.x, erode = v_custom.y, span = v_custom.z, seed = v_custom.w;
 	float u = UV.x, s = UV.y;
-	if (u > head + 0.03) discard;
-	// 0 at the leading end (the blade), 1 at the trailing end (where the swing began).
-	float t = clamp((head - u) / max(head, 0.08), 0.0, 1.0);
-	// Width: the whole band at the lead, 30% at the trail, from the reach inward; soft inner edge.
-	float inner = 1.0 - mix(1.0, 0.3, pow(t, 0.8));
-	float band = smoothstep(inner - 0.04, inner + 0.16, s) * (1.0 - smoothstep(0.94, 1.0, s));
-	// The leading end soft, the trailing end to a point.
-	float front = 1.0 - smoothstep(head - 0.035, head + 0.03, u);
-	float tail = smoothstep(0.0, 0.08, u);
-	// The streaks, scrolled along the arc with the swing (they run on ahead as it goes).
-	vec2 st = vec2(u * span * tile + fract(seed * 0.618) - head * 0.18, s * 0.94 + 0.03);
-	vec4 tx = texture(streaks, st);
-	float streak = tx.r;
-	// Eaten from the tail as it dies: the noise against a threshold that runs from the tail to the lead.
-	float val = (1.0 - t) * 0.55 + tx.g * 0.45;
-	float thr = erode * 1.12 - 0.06;
-	float keep = smoothstep(thr - 0.05, thr + 0.05, val);
-	// Brighter toward the reach (the blade's tip moves fastest) and toward the lead.
-	// (steeply: an even fill to her hand read as a solid gold plate, a pie slice, not a crescent)
-	float out_k = mix(0.06, 1.0, pow(smoothstep(inner, 1.0, s), 1.6));
-	vec3 hue = v_hue.rgb;
-	// A low bed in the hue so it reads as one shape; the streaks carry it.
-	float body = (0.07 + 1.3 * streak) * out_k * mix(1.0, 0.4, t);
-	// The cutting edge at the reach: a thin line in the hue, fading along the tail.
-	float ed = (s - 0.955) / 0.025;
-	float edge = exp(-ed * ed) * mix(1.0, 0.25, t) * (0.6 + 0.6 * tx.b);
-	vec3 col = hue * (body * 1.05 + edge * 0.9);
-	// White-hot in the leading 15% only.
-	float lead = 1.0 - smoothstep(0.0, 0.15, t);
-	// (on the streaks and the edge only: a white bed under them read as a cream fog by her)
-	col += vec3(1.0, 0.94, 0.82) * (2.0 * streak * smoothstep(inner + 0.15, 0.8, s) + edge * 1.3) * lead;
+	if (u > head + 0.02) discard;
+	// 0 at the trailing horn (where the swing began), 1 at the leading tip (the blade).
+	float p = clamp(u / max(head, 0.05), 0.0, 1.0);
+	float metres = max(v_reach * (1.0 - v_hue.a), 0.1);
+	// The crescent's profile: points at both horns, thickest a little ahead of the middle.
+	float prof = pow(max(sin(PI * pow(p, 1.3)), 0.0), 0.75);
+	float w = thick / metres * prof;
+	// 0 at the outer edge, 1 at the crescent's inner edge (past it, the fade toward her hand).
+	float d = (1.0 - s) / max(w, 1e-4);
+	float outer = 1.0 - smoothstep(0.986, 1.0, s);
+	float body = (1.0 - smoothstep(0.55, 1.0 + fade_in, d)) * outer * smoothstep(0.0, 0.02, prof);
+	// The tip soft as the blade passes.
+	body *= 1.0 - smoothstep(head - 0.01, head + 0.02, u);
+	// Streaks ALONG the arc: lanes across the crescent's thickness, each broken along its length by its own noise,
+	// running on ahead with the swing.
+	float lane = d * 5.0;
+	float li = floor(lane), lf = fract(lane);
+	float along = u * span * v_reach * 3.2 + h1(li + seed) * 17.0 - head * 1.6;
+	float run = smoothstep(0.38, 0.78, n1(along + li * 5.3));
+	float streak = run * (1.0 - pow(abs(lf - 0.5) * 2.0, 2.0));
+	// Eaten from the trailing horn toward the tip: a ragged front.
+	float val = p * 0.78 + n1(u * span * v_reach * 6.0 + seed) * 0.22;
+	float thr = erode * 1.14 - 0.06;
+	float keep = smoothstep(thr - 0.04, thr + 0.04, val);
+	// The colour: saturated gold through the body (hue ~42), white-gold on the outer quarter toward the lead.
+	vec3 gold = v_hue.rgb * vec3(1.0, 0.92, 0.55);
+	float hot = (1.0 - smoothstep(0.12, 0.32, d)) * mix(0.3, 1.0, smoothstep(0.35, 0.9, p));
+	vec3 hotc = vec3(1.0, 0.86, 0.55) * 1.5;
+	// Alpha: what the gold covers (strongest in the body's middle, none in the fade), premultiplied below.
+	float cover = body * (1.0 - smoothstep(0.2, 1.0 + fade_in, d)) * 0.55 * (0.75 + 0.25 * run);
+	float lum = body * (0.62 + 0.55 * streak) * (1.0 - smoothstep(0.3, 1.0 + fade_in, d) * 0.6);
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
-	ALBEDO = col * band * front * tail * keep * clear;
+	float k = keep * clear;
+	vec3 col = gold * lum + hotc * hot * body * (0.7 + 0.5 * streak);
+	ALBEDO = col * k;
+	ALPHA = clamp(cover * k, 0.0, 1.0);
 }

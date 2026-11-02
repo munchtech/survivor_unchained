@@ -36,8 +36,9 @@ public partial class BattleFx
     static Color OathHue(string art) => art switch { "slash_holy" => OathHoly, "slash_blood" => OathBlood, _ => OathSteel };
     static Color OathSpark(string art) => art == "slash_blood" ? Blood : art == "slash_holy" ? OathGold : Ember;
 
-    /// <summary>The sweep's inner radius (her hand, metres), its reveal and its erosion (seconds: 2 and 4 frames).</summary>
-    const float OathInner = 0.55f, OathReveal = 2 / 60f, OathErode = 4 / 60f;
+    /// <summary>The sweep's inner radius (her hand, metres), its reveal and its erosion (seconds, real frames through a
+    /// hitstop: revealed by f2, its peak; half eaten by f4, gone by f6).</summary>
+    const float OathInner = 0.55f, OathReveal = 3 / 60f, OathErode = 4 / 60f;
 
     // The swing in flight (for the struck's streaks: flung on along the blade's path), and how many full kits it has thrown.
     Vector3 oathAt;
@@ -245,6 +246,7 @@ public partial class BattleFx
     {
         discs = Add(new Batch(DiscMesh(), 120, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/disc.gdshader") }));
         wedges = Add(new Batch(WedgeMesh(), 8, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/bash_wedge.gdshader") }));
+        walls = Add(new Batch(WallMesh(), 8, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/bash_wall.gdshader") }));
         for (int i = 0; i < DiscLights; i++)
         {
             discLamps[i] = new OmniLight3D { LightEnergy = 0, OmniRange = 2.6f, OmniAttenuation = 1.3f, ShadowEnabled = false, Visible = false };
@@ -281,6 +283,10 @@ public partial class BattleFx
         return st.Commit();
     }
 
+    // (each disc's last drawn place and side, for its twin rails)
+    readonly System.Collections.Generic.Dictionary<long, Vector3> discLast = new(), discSide = new();
+    static float half2(float s) => 0.62f * s / 1.1f;
+
     /// <summary>The disc's radius (metres, before its throw's scale).</summary>
     const float DiscRad = 0.26f;
 
@@ -289,6 +295,7 @@ public partial class BattleFx
     void DiscsEnd()
     {
         discs.End();
+        if (discLast.Count > 64) { discLast.Clear(); discSide.Clear(); }
         for (int i = discLit; i < DiscLights; i++) { discLamps[i].Visible = false; discLamps[i].LightEnergy = 0; }
         for (int i = discGlowN; i < discGlows.Count; i++) discGlows[i].Visible = false;
     }
@@ -301,16 +308,32 @@ public partial class BattleFx
         string art = p.Art;
         float s = 1.1f * Mathf.Sqrt(g) * (art == "disc_reckon" ? 1.15f : 1);
         var hue = DiscHue(art);
-        float spin = (float)(now * 16 + p.Id);
+        // (r3: ~38 degrees a frame, under the 3 glint arcs' strobing rates)
+        float spin = (float)(now * 40 + p.Id);
         // Leaving her hand it is held down, so it never blooms over her.
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
         if (AaBeats && discThrows >= 1 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
+        if (AaBeats && discBounceShot && !discOpenShot && near > 3f && near < 9f && b0 != null && Clear(p.X, p.Z, 2.5)) { discOpenShot = true; Shots.WantFrames("d_open", 1); GD.Print($"[aa-beats] disc over open ground t={time:F2}"); }
         // A faint dark bed under it (so the head shows over the pale dead), and the head.
         Shade(at, 1.0f * s, 0.3f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
-        // Its wake: a ribbon at 90% of the head's width, tapering and fading over 0.18 s.
-        Ribbons.Feed(key, at, DiscRad * 2 * 0.9f * s, 0.18f, art == "disc_aegis" ? Hdr("#bcd4ff", 1f) : Hdr("#ffb040", 1f), 1.5f * off, Ribbons.Style.Glow);
+        // Its wake (r3): twin rails off the disc's two edges (~0.68 m apart, 36-40 px at the play camera) with a faint fill
+        // between them, in world space (a bounce leaves a V for ~0.1 s), tapering and fading over 0.16 s. Never one
+        // stick behind a ball.
+        var wake = art == "disc_aegis" ? Hdr("#bcd4ff", 1f) : Hdr("#ffb040", 1f);
+        var side = Vector3.Zero;
+        if (discLast.TryGetValue(key, out var was) && (at - was).LengthSquared() > 1e-5f) { var mv = (at - was).Normalized(); side = new Vector3(-mv.Z, 0, mv.X); }
+        else if (discSide.TryGetValue(key, out var ws)) side = ws;
+        discLast[key] = at;
+        if (side != Vector3.Zero)
+        {
+            discSide[key] = side;
+            float half = 0.34f * s / 1.1f;
+            Ribbons.Feed(key * 4 + 1, at + side * half, 0.065f, 0.16f, wake, 1.7f * off, Ribbons.Style.Glow);
+            Ribbons.Feed(key * 4 + 2, at - side * half, 0.065f, 0.16f, wake, 1.7f * off, Ribbons.Style.Glow);
+        }
+        Ribbons.Feed(key, at, half2(s), 0.12f, wake, 0.35f * off, Ribbons.Style.Glow);
         if (R() < 0.3f)
         {
             float a = R() * Mathf.Tau;
@@ -357,6 +380,12 @@ public partial class BattleFx
         int nth = DiscHitsOf(e.Target);
         BeatDiscHit(nth);
         HitKit(at, away, DiscSpark(art), g, e.Crit, rich, away, e.Target, first: nth == 1);
+        // The contact (r3): a 2-frame amber flare ~1.5x the halo on every hit, at the disc's side of the body.
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at - away * 0.3f, Life = 2 / 60f, Size = 1.4f, SizeEnd = 1.2f, Color = Hdr("#ffc868", 1.5f), ColorEnd = Hdr("#ff9a30", 0.8f),
+            Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f,
+        });
         if (rich) ChipPuff(at, away, R() < 0.5f ? 1 : 2);
     }
 
@@ -380,9 +409,10 @@ public partial class BattleFx
 
     /// <summary>Shield Bash: a short heavy shove of the shield's face. A bronze-gold wedge of force driven forward
     /// over the ground across exactly what it strikes (the sim's +-1.2 rad to 3.4 m: shaders/bash_wedge.gdshader),
-    /// 1.2 m across at the shield, its weight on her facing line, its front out over 4 frames on the frame's own
-    /// clock (a hitstop holds the bodies, never the shove); the shield's contact glint and light; a ground plow of
-    /// 30 low solid dust puffs running outward. The struck get the hit kit (BashStruck) and a stun glint;
+    /// from the shield's face (0.5 m), its weight forward (100% on her facing line, ~50% at +-35 degrees, under 15% at
+    /// the sides), its front out over 4 frames on the frame's own clock (a hitstop holds the bodies, never the shove)
+    /// with a standing face 0.4 m tall (bash_wall.gdshader); a bronze flash at the shield on f0-f2; a brown dust
+    /// plow laid at the front across +-40 degrees, drifting on (StepWedges). The struck get the hit kit (BashStruck) and a stun glint;
     /// the hitstop is WorldScene's (3 frames). Wide: the same, mirrored behind her.</summary>
     void ShieldBash(Ev.Ability e)
     {
@@ -396,39 +426,29 @@ public partial class BattleFx
         {
             float ang = (float)e.Angle + k * Mathf.Pi;
             var dir = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
-            liveWedges.Add(new Wedge { At = her + Vector3.Up * 0.06f, Angle = ang, Reach = reach });
-            var face = her + dir * 0.75f + Vector3.Up * 0.85f;
-            // The shield's face meeting them: a white-gold glint off its boss and a short bronze light burst, 4 frames.
+            liveWedges.Add(new Wedge { At = her + Vector3.Up * 0.06f, Angle = ang, Reach = reach, Night = Flare.Night });
+            // The shove (r3): a bronze flash 0.6-0.8 m wide at the shield's face, ~0.5 m in front of her, on f0-f2.
+            var face = her + dir * 0.5f + Vector3.Up * 0.55f;
             Sparks.Spawn(new Sparks.P
             {
-                At = face, Life = 0.07f, Size = 0.6f, SizeEnd = 0.35f, Color = Hdr("#fff2d8", 1.5f), ColorEnd = BashBronze * 0.3f,
-                Alpha = 1, Sprite = Star4, Spin = 0.38f, SpinV = 0.001f,
+                At = face, Life = 3 / 60f, Size = 0.75f, SizeEnd = 0.65f, Color = BashBronze * (Flare.Night ? 0.75f : 1f), ColorEnd = BashBronze * 0.3f,
+                Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f,
             });
-            Sparks.Spawn(new Sparks.P { At = face + dir * 0.2f, V = dir * 2f, Life = 0.07f, Size = 0.7f, SizeEnd = 1.0f, Color = BashBronze * 0.8f, ColorEnd = BashBronze * 0.1f, Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f });
-            Flash(face + dir * 0.6f - Vector3.Up * 0.4f, new Color("#ffc878"), 6, 0.16f, 5);
-            // The plow: low solid dust thrown outward across the cone from the shield's line, 3-5 m/s, dragged to a stop.
-            for (int i = 0; i < BashPlow; i++)
-            {
-                float a = ang + (R() + R() - 1) * 1.2f, d = 0.7f + R() * 1.4f;
-                var u = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                double x = e.X + u.X * d, z = e.Z + u.Z * d;
-                float sz = 0.28f + R() * 0.18f;
-                Smoke.Spawn(new Sparks.P
-                {
-                    At = V(x, Y(x, z) + 0.1 + R() * 0.08, z), V = u * (3 + R() * 2) + Vector3.Up * (0.15f + R() * 0.25f), Drag = 3.2f, Gravity = 0.6f,
-                    Life = 0.4f + R() * 0.2f, Size = sz * 0.6f, SizeEnd = sz, Color = new Color(0.36f, 0.31f, 0.25f), ColorEnd = new Color(0.24f, 0.21f, 0.17f),
-                    Alpha = 0.75f, Sprite = SolidPuff(), Core = true,
-                });
-            }
+            Flash(face + dir * 0.4f - Vector3.Up * 0.2f, new Color("#ffc878"), 6, 0.16f, 5);
         }
     }
 
-    /// <summary>The plow's dust puffs a side.</summary>
-    const int BashPlow = 30;
+    /// <summary>The plow's dust puffs laid at the front each frame it runs (r3: a band travelling with it across +-40 degrees).</summary>
+    const int BashPlow = 6;
 
-    /// <summary>The wedge's life, on the frame's own clock (seconds: 5 frames, its front out by the 4th).</summary>
-    const float WedgeLife = 5 / 60f;
-    struct Wedge { public Vector3 At; public float Angle, Reach, Age; }
+    /// <summary>The wedge's life, on the frame's own clock (seconds: 6 frames, its front out by the 4th).</summary>
+    const float WedgeLife = 6 / 60f;
+    /// <summary>The wedge's mesh starts at the shield's face (metres from her, of the sim's 3.4 m reach).</summary>
+    const float WedgeInner = 0.5f;
+    /// <summary>Where the wedge's front is (UV share from the shield to the reach) at `p` of its life: bash_wedge.gdshader's.</summary>
+    static float WedgeFront(float p) => Mathf.Lerp(0.04f, 1.08f, 1 - Mathf.Pow(1 - Mathf.Min(p, 1), 2.2f));
+    struct Wedge { public Vector3 At; public float Angle, Reach, Age; public bool Night; }
+    Batch walls = null!;
     readonly System.Collections.Generic.List<Wedge> liveWedges = new();
     Batch wedges = null!;
 
@@ -437,7 +457,7 @@ public partial class BattleFx
     static ArrayMesh WedgeMesh()
     {
         const int Na = 40, Nr = 16;
-        const float Inner = 0.65f / 3.4f, Half = 1.2f;
+        const float Inner = WedgeInner / 3.4f, Half = 1.2f;
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
         void P(int i, int j)
@@ -450,19 +470,61 @@ public partial class BattleFx
         return st.Commit();
     }
 
+    /// <summary>The wave front's standing face (r3): a vertical strip on the arc, unit radius and height, +-1.2 rad;
+    /// UV.x across it (-1..1, the angle), UV.y up it (shaders/bash_wall.gdshader).</summary>
+    static ArrayMesh WallMesh()
+    {
+        const int Na = 48;
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        void P(int i, int j)
+        {
+            float v = i / (float)Na * 2 - 1, a = v * 1.2f;
+            st.SetNormal(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a))); st.SetUV(new Vector2(v, j)); st.AddVertex(new Vector3(Mathf.Cos(a), j, Mathf.Sin(a)));
+        }
+        for (int i = 0; i < Na; i++) { P(i, 0); P(i + 1, 0); P(i + 1, 1); P(i, 0); P(i + 1, 1); P(i, 1); }
+        return st.Commit();
+    }
+
     void StepWedges()
     {
         wedges.Begin();
+        walls.Begin();
         float dt = frameDt > 0 ? (float)GetProcessDeltaTime() : 0;
         for (int i = liveWedges.Count - 1; i >= 0; i--)
         {
             var w = liveWedges[i];
             if (w.Age >= WedgeLife) { liveWedges.RemoveAt(i); continue; }
-            wedges.Add(new Transform3D(new Godot.Basis(Vector3.Up, -w.Angle).Scaled(Vector3.One * w.Reach), w.At), BashBronze with { A = w.Age / WedgeLife });
+            float p = w.Age / WedgeLife;
+            // (its strength in the colour: lower by night, so the rim never clips to white)
+            float k = w.Night ? 0.62f : 1f;
+            wedges.Add(new Transform3D(new Godot.Basis(Vector3.Up, -w.Angle).Scaled(Vector3.One * w.Reach), w.At), new Color(k, k, k, p));
+            // The front's standing face, 0.4 m tall, riding the front out.
+            float fr = Mathf.Lerp(WedgeInner, w.Reach, Mathf.Min(1, WedgeFront(p)));
+            walls.Add(new Transform3D(new Godot.Basis(Vector3.Up, -w.Angle).Scaled(new Vector3(fr, 0.42f, fr)), w.At), new Color(k, k, k, p));
+            // The plow: brown dust laid at the front as it runs, across +-40 degrees, drifting on (12-20 frames).
+            if (dt > 0 && p < 0.75f)
+            {
+                var dust = w.Night ? new Color(0.13f, 0.12f, 0.12f) : new Color(0.44f, 0.36f, 0.26f);
+                for (int j = 0; j < BashPlow; j++)
+                {
+                    float a = w.Angle + (R() + R() - 1) * 0.7f;
+                    var u = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                    float d = fr * (0.92f + R() * 0.12f), sz = 0.42f + R() * 0.14f;
+                    double x = w.At.X + u.X * d, z = w.At.Z + u.Z * d;
+                    Smoke.Spawn(new Sparks.P
+                    {
+                        At = V(x, Y(x, z) + 0.22 + R() * 0.08, z), V = u * (1.4f + R() * 1.2f) + Vector3.Up * (0.1f + R() * 0.2f), Drag = 2.5f,
+                        Life = (12 + R() * 8) / 60f, Size = sz, SizeEnd = sz * 1.5f, Color = dust, ColorEnd = dust * 0.9f,
+                        Alpha = 0.4f + R() * 0.2f, Sprite = SolidPuff(), Core = true, Spin = R() * Mathf.Tau,
+                    });
+                }
+            }
             w.Age += dt;
             liveWedges[i] = w;
         }
         wedges.End();
+        walls.End();
     }
 
     /// <summary>A blow of the Bash (its hits carry no art: they land in the same step as its event, within its reach):
@@ -505,7 +567,8 @@ public partial class BattleFx
     }
 
     /// <summary>The stun glint's size (metres).</summary>
-    const float StunGlint = 0.28f;
+    const float StunGlint = 0.3f;
+    static readonly Color StunGold = Hdr("#ffb84a", 1.5f);
 
     /// <summary>The stunned: a small dim gold 4-point glint circling over each for its stun, each twinkling
     /// on its own phase (a crowd of them all lit at once read as a field of icons).</summary>
@@ -520,12 +583,13 @@ public partial class BattleFx
             var en = id >= 0 && id < b.Enemies.Capacity ? b.Enemies.Items[id] : null;
             if (en == null || !en.Alive || time > until || !en.Status.Has(StatusKind.Stun)) { (gone ??= new()).Add(id); continue; }
             float ph = (float)time * 5 + id * 2.3f;
-            float tw = 0.3f + 0.7f * Mathf.Pow(Mathf.Max(0, Mathf.Sin(ph * 1.6f)), 2);
+            // (r3) A twinkle: 0.6x to 1.0x and back over ~0.4 s, each on its own phase; gold, clear of the skull (2.2 m up).
+            float tw = 0.6f + 0.4f * Mathf.Pow(Mathf.Sin(((float)time / 0.4f + id * 0.37f) * Mathf.Pi), 2);
             var (gx, gz) = CrowdView.Placed?.Invoke(en) ?? Drawn?.Of(en) ?? (en.X, en.Z);
-            var over = V(gx, Y(gx, gz) + 2.05, gz) + new Vector3(Mathf.Cos(ph), 0, Mathf.Sin(ph)) * 0.2f;
+            var over = V(gx, Y(gx, gz) + 2.2, gz) + new Vector3(Mathf.Cos(ph), 0, Mathf.Sin(ph)) * 0.18f;
             Sparks.Spawn(new Sparks.P
             {
-                At = over, Life = frameDt * 1.5f, Size = StunGlint, SizeEnd = StunGlint, Color = OathGold * (0.95f * tw), ColorEnd = OathGold * (0.95f * tw),
+                At = over, Life = frameDt * 1.5f, Size = StunGlint * tw, SizeEnd = StunGlint * tw, Color = StunGold * (0.6f + 0.4f * tw), ColorEnd = StunGold * (0.6f + 0.4f * tw),
                 Alpha = 1, Sprite = Star4, Spin = 0.001f, SpinV = 0.001f,
             });
         }
@@ -535,7 +599,15 @@ public partial class BattleFx
     /* --------------------------------------------------------- the beats -- */
 
     int discThrows, bashBeat;
-    bool discBeat, discHitShot, discBounceShot, discFlyShot;
+    bool discBeat, discHitShot, discBounceShot, discFlyShot, discOpenShot;
+
+    // (dev: no living body within `r` metres of (x, z))
+    bool Clear(double x, double z, double r)
+    {
+        foreach (var en in b0!.Enemies.Items)
+            if (en != null && en.Alive && (en.X - x) * (en.X - x) + (en.Z - z) * (en.Z - z) < r * r) return false;
+        return true;
+    }
 
     /// <summary>The Disc's beats: her 1st throw in flight (1.8-6 m out, while the crowd is still off her), then that throw's
     /// first hit and its first bounce (the next frame after each, as the player sees them land).</summary>
@@ -551,7 +623,7 @@ public partial class BattleFx
     {
         if (!AaBeats || !discBeat || b0 == null) return;
         if (n == 1 && !discHitShot) { discHitShot = true; Shots.WantFrames("d_hit", 1); GD.Print($"[aa-beats] disc hit t={time:F2}"); }
-        else if (n == 2 && discHitShot && !discBounceShot) { discBounceShot = true; Shots.WantFrames("d_bounce", 1); GD.Print($"[aa-beats] disc bounce t={time:F2}"); }
+        else if (n == 2 && discHitShot && !discBounceShot) { discBounceShot = true; Shots.WantFrames("d_bounce", 1); Shots.WantFrames("d_bounce3", 4); GD.Print($"[aa-beats] disc bounce t={time:F2}"); }
     }
 
     /// <summary>The Bash's beats: its first two, at +1 and +3 drawn frames.</summary>
@@ -560,6 +632,7 @@ public partial class BattleFx
         if (!AaBeats) return;
         bashBeat++;
         if (bashBeat <= 2) { Shots.WantFrames($"b{bashBeat}_f1", 1); Shots.WantFrames($"b{bashBeat}_f3", 3); }
+        if (bashBeat == 1) { Shots.WantFrames("b1_f6", 6); Shots.WantFrames("b1_f10", 10); }
         GD.Print($"[aa-beats] bash {bashBeat} t={time:F2}");
     }
 
@@ -575,11 +648,25 @@ public partial class BattleFx
             Shots.WantFrames($"s{oathSwings}_f1", 1);
             Shots.WantFrames($"s{oathSwings}_f3", 3);
             Shots.WantFrames($"s{oathSwings}_f6", 6);
+            if (oathSwings == 5) { Shots.WantFrames("s5_f4", 4); Shots.WantFrames("s5_f8", 8); }
             beatHitFor = oathSwings;
+            sweepLogFrom = Engine.GetFramesDrawn(); sweepAge = 0;
         }
         else beatHitFor = 0;
         if (oathSwings == 4) Shots.Want("mid", 0.5);
         GD.Print($"[aa-beats] swing {oathSwings} t={time:F2} angle={e.Angle:F2} arc={e.Arc:F2} reach={e.Reach:F2}");
+    }
+
+    // (dev, --aa-beats: the sweep's timeline on swings 3, 5 and 7, a line a drawn frame for 10 frames)
+    long sweepLogFrom = -100;
+    float sweepAge;
+    void LogSweep(float dt, bool stopped)
+    {
+        long f = Engine.GetFramesDrawn() - sweepLogFrom;
+        if (!AaBeats || f < 0 || f > 10) return;
+        sweepAge += dt;
+        float hd = Mathf.Min(1, sweepAge / OathReveal), er = Mathf.Clamp((sweepAge - OathReveal) / OathErode, 0, 1);
+        GD.Print($"[aa-sweep] s{oathSwings} f{f} frame {Engine.GetFramesDrawn()} age {sweepAge * 60:F1}/60 head {1 - (1 - hd) * (1 - hd):F2} erode {er:F2} hitstop {(stopped ? 1 : 0)} fight-dt {frameDt * 60:F2}/60");
     }
 
     void BeatHit(Ev.Hit e)
