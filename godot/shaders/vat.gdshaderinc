@@ -102,8 +102,8 @@ void fragment() {
 		// (one octave at 14 a metre, 2.3x r2: at 21 and 47 a cell was a pixel at the play camera and the last of each body
 		// went to gold glitter)
 		// (vfx9 r4a: coarse, so a body goes in 2-4 big ragged pieces, not glitter: one octave at 2.4 a metre, offset per
-		// body, with a 7-a-metre one at a quarter for a torn edge; the front runs from the line's side and the feet up)
-		float bn = vat_noise(vat_local * 2.4 + vat_org * 0.37) * 0.75 + vat_noise(vat_local * 7.0 + 3.1) * 0.25;
+		// body, with a 7-a-metre one at an eighth for a torn edge (a quarter laced the edges); the front runs from the line's side and the feet up)
+		float bn = vat_noise(vat_local * 2.4 + vat_org * 0.37) * 0.88 + vat_noise(vat_local * 7.0 + 3.1) * 0.12;
 		vec2 src = flare_at.xz;
 		if (flare_seam.w > 0.0) {
 			vec2 sd = vec2(cos(flare_seam.z), sin(flare_seam.z));
@@ -116,6 +116,9 @@ void fragment() {
 		dn = clamp((bn - 0.25) / 0.5, 0.0, 1.0) * 0.4 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.34 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.26;
 	}
 
+	// (r4a: the burn edge's width in screen terms, about 2 px: with the coarse noise dn barely changes across a body,
+	// so a fixed 0.08 of dn was a band 10-20 cm wide and the seam's pack went to a gold mass at night)
+	float dn_ew = clamp(fwidth(dn) * 2.2, 0.008, 0.08);
 	if (fx.y > 0.0 && dn < fx.y) discard;
 	vec3 c = albedo.rgb;
 	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
@@ -181,17 +184,20 @@ void fragment() {
 			// r3: the char is the body's own paint at a quarter, floored (a flat near-black tint read as a missing
 			// texture: vfx9 r2), lit through its own normals, matte, and seamed with dawn-gold cracks at HDR 4
 			// (0.6x at night, the luminance cap). fx.w is the char's amount.
-			float lc_night = mix(1.0, 0.6, flare_lc.w);
+			float lc_night = mix(1.0, 0.6, flare_hue.a);
+			// (r4a: was mix(1, 0.6, flare_lc.w), but flare_lc.w is the sweep band's gain, 7 by day: -1.8, so by day every gold
+			// term on the struck was negative light and they went flat black, "no gold reads in sunlight")
 			if (lc_ash > 0.0) {
 				// vfx9 r4a: the sweep's dead, off the seam: greyed to about half their own value, a little drained, lit and
 				// shaded as ever (never a flat silhouette), and a dark charred lip where they fall away; no gold.
 				float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
 				c = mix(c, mix(c, vec3(lum) * vec3(1.04, 0.98, 0.9), 0.4) * 0.52, fx.w);
 				rough = mix(rough, 0.86, fx.w);
-				if (fx.y > 0.0) c *= 1.0 - 0.45 * smoothstep(fx.y + 0.06, fx.y, dn);
+				if (fx.y > 0.0) c *= 1.0 - 0.45 * smoothstep(fx.y + dn_ew * 1.5, fx.y, dn);
 			} else {
 			vec3 c0 = c;
-			c = mix(c, max(c * 0.3, vec3(0.05, 0.043, 0.037)), fx.w);
+			// (r4a: half its paint, warm-browned: at a quarter or 0.42 the seam's dead were flat black cut-outs by day)
+			c = mix(c, max(c * 0.5 * vec3(1.0, 0.88, 0.76), vec3(0.06, 0.05, 0.043)), fx.w);
 			rough = mix(rough, 0.88, fx.w);
 			// (r4a: the seam's light from below, in the body's own paint: warmest at the feet and on what faces down)
 			float down = clamp(-dot(NORMAL, sky), 0.0, 1.0);
@@ -199,6 +205,8 @@ void fragment() {
 			float cn = vat_noise(vat_local * vec3(7.0, 4.5, 7.0)) * 0.7 + vat_noise(vat_local * 15.0) * 0.3;
 			// (thin and broken: r3a's 0.035-wide net over every body read as a pale lattice)
 			float crack = (1.0 - smoothstep(0.0, 0.016, abs(cn - 0.5))) * smoothstep(0.4, 0.62, vat_noise(vat_local * 3.0 + 7.0));
+			// (r4a: the cracks only up from the feet, where the seam's light is: over whole bodies they were a carpet)
+			crack *= 1.0 - smoothstep(0.25, 1.0, vat_local.y);
 			e += vec3(1.0, 0.46, 0.1) * crack * fx.w * 3.5 * lc_night;
 			}
 		} else {
@@ -251,7 +259,7 @@ void fragment() {
 	// (and a pop at its edge, in its own paint: scaled by c, or from up here the rim covers the whole body
 	// and it is the old cream cut-out again)
 	e += c * 0.6 * crit_k * struck * pow(rim, 3.0 - fx_crit) * (1.0 - lc_k);
-	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_lc.w);
+	e += vec3(1.0, 0.55, 0.16) * struck * pow(rim, 4.0) * 0.9 * lc_k * mix(1.0, 0.6, flare_hue.a);
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {
@@ -262,9 +270,9 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
 	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
-	// (r4a: 0.08 wide on the seam's deaths, so it survives sunlight; none on the ash deaths)
+	// (r4a: about 2 px wide on the seam's deaths (dn_ew), so it survives sunlight; none on the ash deaths)
 	// (r3c: out by fx.y 0.62, so the last ~30% of a body (dn spans ~0.14-0.86) goes as dark ash, not gold lace or dust)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.08, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * (1.0 - lc_ash) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_hue.a) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + dn_ew, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * (1.0 - lc_ash) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 
