@@ -32,7 +32,10 @@ public partial class FlareFx
     float lcLen, lcHalf;
     float lcJetAlong;
     double lcSmokeAcc;
-    int lcDbg;
+    ulong lcLastUs;
+    double lcMsSum, lcMsMax;
+    int lcMsN;
+    bool lcMsSaid;
     /// <summary>Look-dev: the Long Cut's lights scaled (LC_LIGHT).</summary>
     static readonly float LcLight = float.TryParse(System.Environment.GetEnvironmentVariable("LC_LIGHT"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lcl) ? lcl : 1f;
 
@@ -60,6 +63,7 @@ public partial class FlareFx
         lcLen = 0;
         lcJetAlong = 0;
         lcSmokeAcc = 0;
+        lcLastUs = 0; lcMsSum = lcMsMax = 0; lcMsN = 0; lcMsSaid = false;
         // Frame 1: dawn-gold motes off the steel, drawn up it (a hue per calling: the Arcanist's are ember orange).
         for (int i = 0; i < 26; i++)
         {
@@ -74,6 +78,7 @@ public partial class FlareFx
         // The sweep comes round to the line's side; it starts a little past the aim so it ends on it.
         lcSweepFrom = (float)e.Angle + 0.4f;
         spendAt = t;
+        Shots.Want("b4_sweep", 0.05);
         Cam?.Jolt(Vector3.Up, 0.25f * Motion);
         Cue("boom", at, 0.6f);
         Rumble(0.6f, 0.4f, 0.08f);
@@ -90,6 +95,12 @@ public partial class FlareFx
         lcDir = lcLen > 1e-3f ? lcDir / lcLen : Vector2.Right;
         lcHalf = (float)e.Radius;
         lastAt = t;
+        // Pictures at the beats (--shot), real seconds: the cleave's hitstop (8 frames) runs first, then the 0.4 s fuse.
+        Shots.Want("b5_fuse", 0.33);
+        Shots.Want("b6_seam", 0.6);
+        Shots.Want("b7_cool", 1.6);
+        Shots.Want("b8_smoke", 3.1);
+
         Cam?.Jolt(new Vector3(lcDir.X, 0, lcDir.Y) * 0.4f + Vector3.Up, 0.7f * Motion);
         Cue("boom", at, 1);
         Rumble(1, 0.6f, 0.14f);
@@ -280,12 +291,21 @@ public partial class FlareFx
             RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
         }
 
-        if (Args.Has("shot") && (int)(t * 4) != lcDbg)
+        // (for the pictures' log: wall-clock frame time from the press to the seam's cooling, in the packed crowd)
+        if (Args.Has("shot"))
         {
-            lcDbg = (int)(t * 4);
-            int pend = 0, done = 0, wait = 0;
-            foreach (var d in doomed.Values) { if (d.Pending) pend++; else if (d.Done) done++; else wait++; }
-            GD.Print($"longcut t={t:0.00} sweep={lcSweepT:0.00} cleave={lcCleaveT:0.00} doomed={doomed.Count} pending={pend} waiting={wait} burnt={done}");
+            ulong now = Time.GetTicksUsec();
+            if (lcLastUs > 0)
+            {
+                double ms = (now - lcLastUs) / 1000.0;
+                lcMsSum += ms; lcMsN++; lcMsMax = Math.Max(lcMsMax, ms);
+            }
+            lcLastUs = now;
+            if (!lcMsSaid && lcCleaveT >= 0 && t > lcCleaveT + 1.5)
+            {
+                lcMsSaid = true;
+                GD.Print($"longcut frame time press..cleave+1.5s: mean {lcMsSum / Math.Max(1, lcMsN):0.0} ms, max {lcMsMax:0.0} ms over {lcMsN} frames; bits {glow.Count}+{bed.Count}, struck {doomed.Count}");
+            }
         }
         // The struck burn up as their moment comes.
         foreach (var d in doomed.Values)
@@ -372,9 +392,11 @@ public partial class FlareFx
     public Vector4 StatueLook(int enemy)
     {
         if (!IsLongCut) return new Vector4(1, 0, 0, 0);
-        if (!doomed.TryGetValue(enemy, out var d) || d.Pending || t < d.At) return Vector4.Zero;
+        if (!doomed.TryGetValue(enemy, out var d)) return Vector4.Zero;
+        // (held: struck dark, waiting for the fuse; a pale risen body stood as a cream ghost in the drain)
+        if (d.Pending || t < d.At) return new Vector4(0, 0.45f, 0, 0);
         float k = (float)(t - d.At);
-        return new Vector4(0, Mathf.SmoothStep(0, 0.08f, k), Mathf.SmoothStep(0.1f, BurnLen, k), 0.5f * (1 - Mathf.SmoothStep(0.25f, 0.55f, k)) * Mathf.SmoothStep(0, 0.04f, k));
+        return new Vector4(0, 0.45f + 0.55f * Mathf.SmoothStep(0, 0.08f, k), Mathf.SmoothStep(0.1f, BurnLen, k), 0.5f * (1 - Mathf.SmoothStep(0.25f, 0.55f, k)) * Mathf.SmoothStep(0, 0.04f, k));
     }
 
     void LongClear()

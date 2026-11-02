@@ -451,7 +451,7 @@ void flare_seam_ground(vec2 w, inout vec3 alb, inout float rough, inout vec3 emi
 	vec3 col = fl_seam_col(hc);
 	float k = mix(3.6, 1.9, night) * fade;
 	// (the walls: a deep red glow; the core: gold to gold-white)
-	vec3 e = col * pow(h, 1.4) * inside * (0.1 + 0.9 * core * hot) * k;
+	vec3 e = col * pow(h, 1.4) * inside * (mix(0.12, 0.3, night) + 0.9 * core * hot) * k;
 	float hb = fl_seam_heat(age - 0.05 - d * 0.15) * 0.7;
 	e += fl_seam_col(hb * 0.75) * pow(hb, 1.6) * branch * (1.0 - smoothstep(0.0, reachB * 0.8, d) * 0.6) * k * 0.5;
 
@@ -482,13 +482,13 @@ vec3 flare_sweep_at(vec2 w) {
 
 // The Long Cut's light on a body: the sweep's on its rim as it passes, the seam's from below.
 vec3 flare_longcut_body(vec3 wp, vec3 nw, float rim) {
-	vec3 e = flare_sweep_at(wp.xz) * (0.1 + 0.9 * pow(rim, 2.5)) * 0.3;
+	vec3 e = flare_sweep_at(wp.xz) * (0.1 + 0.9 * pow(rim, 2.5)) * 0.5;
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float age = flare_seam_t.x - max(sw.x, 0.0) / flare_seam_t.y;
 		float h = fl_seam_heat(age) * step(0.001, sw.w);
 		float near = exp(-max(sw.y - 0.3, 0.0) * 1.6) * exp(-max(wp.y - 0.3, 0.0) * 0.0);
-		e += fl_seam_col(h * 0.8) * pow(h, 1.5) * near * (0.06 + 0.4 * max(-nw.y, 0.0) + 0.3 * pow(rim, 2.5)) * mix(0.7, 0.4, flare_seam_t.w) * flare_seam_t.z;
+		e += fl_seam_col(h * 0.8) * pow(h, 1.5) * near * (0.06 + 0.4 * max(-nw.y, 0.0) + 0.3 * pow(rim, 2.5)) * mix(1.1, 0.8, flare_seam_t.w) * flare_seam_t.z;
 
 	}
 	return e;
@@ -658,7 +658,8 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
-	if (flare_seam.w > 0.0 || flare_sweep.y > 0.0) emi += flare_longcut_body(wp, nw, rim);
+	// (as light: by its paint, so a charred body stays dark and only a pale one takes it)
+	if (flare_seam.w > 0.0 || flare_sweep.y > 0.0) emi += flare_longcut_body(wp, nw, rim) * (alb * 1.8 + 0.03);
 	float g = flare_glazed(wp);
 	bool black = flare_look.w > 1.5;
 	float night = flare_hue.a;
