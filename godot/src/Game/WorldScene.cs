@@ -52,6 +52,8 @@ public partial class WorldScene : Node3D, IZoneLook
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
     // Her auto-attack's first hit (BattleFx.FirstHitStop): a short hitstop that lands as the blade meets the body.
     double stopDue = -1, stopLen;
+    // (--aa-beats: the beats are shot with hitstops on, whatever the saved Motion setting)
+    static readonly bool AaBeats = Args.Has("aa-beats");
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
     double dashHeld, artHeld;
@@ -221,7 +223,11 @@ public partial class WorldScene : Node3D, IZoneLook
         if (stopDue >= 0 && (stopDue -= dt) < 0)
         {
             stopDue = -1;
-            if (hitstop <= 0 && Hitstop && !Fx.Flare.Active) { hitstop = stopLen; hitstopCd = Math.Max(hitstopCd, stopLen + 0.3); }
+            if (hitstop <= 0 && (Hitstop || AaBeats) && !Fx.Flare.Active)
+            {
+                hitstop = stopLen; hitstopCd = Math.Max(hitstopCd, stopLen + 0.3);
+                if (AaBeats) GD.Print($"[aa-beats] first-hit hitstop {stopLen:F3} s at frame {Engine.GetFramesDrawn()}");
+            }
         }
         bool held = hitstop > 0;
         if (held) hitstop -= dt;
@@ -312,7 +318,7 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }
-        if (hitstopCd > 0 || !Hitstop) return;
+        if (hitstopCd > 0 || !(Hitstop || AaBeats)) return;
         double s = 0;
         foreach (var e in evs)
         {
