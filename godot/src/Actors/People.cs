@@ -2322,6 +2322,30 @@ public static class People
                     m.SetShaderParameter("cine_spec_split", on);
     }
 
+    /// <summary>Face 49 round 2 (cool-light skin): her skin's cine_cool (heroine_skin.gdshader: under a cool key in a close
+    /// cinematic shot her lamps' light keeps cool_lit of its colour, the sky's cool_amb leaning to cool_shade; 0: as before).
+    /// Knobs --cine-her-cool-lit, -amb, -shade-w, -rough, -keep (pictures).</summary>
+    public static void HerCineCool(Person p, float k)
+    {
+        if (p.Body != "heroine") return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    if (Mathf.IsEqualApprox(m.GetShaderParameter("cine_cool").AsSingle(), k)) continue;
+                    m.SetShaderParameter("cine_cool", k);
+                    m.SetShaderParameter("cool_lit", CoolLit); m.SetShaderParameter("cool_amb", CoolAmb);
+                    m.SetShaderParameter("cool_shade_w", CoolShadeW); m.SetShaderParameter("cool_rough", CoolRough);
+                    m.SetShaderParameter("cool_keep", CoolKeep);
+                    m.SetShaderParameter("cool_dbg", SurvivorUnchained.Args.Num("cine-her-cool-dbg", 0f));
+                    if (CoolWin != null) m.SetShaderParameter("cool_win", new Vector2(CoolWin[0], CoolWin[1]));
+                }
+    }
+    static readonly float CoolLit = SurvivorUnchained.Args.Num("cine-her-cool-lit", 0.3f), CoolAmb = SurvivorUnchained.Args.Num("cine-her-cool-amb", 0.3f),
+        CoolShadeW = SurvivorUnchained.Args.Num("cine-her-cool-shade-w", 0.5f), CoolRough = SurvivorUnchained.Args.Num("cine-her-cool-rough", 0.1f),
+        CoolKeep = SurvivorUnchained.Args.Num("cine-her-cool-keep", 0.9f);
+    static readonly float[]? CoolWin = SurvivorUnchained.Args.Get("cine-her-cool-win") is string cw ? cw.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : null;
+
     /// <summary>Her gaze (heroine_eye.gdshader's gaze_a and gaze_b averaged: in irises' radii, +x to her left, +y down).</summary>
     public static Vector2 HerGaze(Person p)
     {

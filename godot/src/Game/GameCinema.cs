@@ -560,6 +560,11 @@ public partial class Game
         // (env CINEDBG, shots only, off unless set: the cinematic light changed, to tell her materials' faults from
         // its own (face 30 cine): "key=0.5" the sun or moon's energy scaled, "glow=0.5" the cues' held lamps',
         // "lamps=0.5" the zone's lamps', "ambient=0.5" the sky's, "nossao", "nosunshadow", "noomnishadow", "nodof", "fill=E" a soft white spot from over the lens)
+        static readonly RenderingServer.DofBlurQuality? DofQ = Args.Get("cine-dof-q") switch
+        {
+            "verylow" => RenderingServer.DofBlurQuality.VeryLow, "low" => RenderingServer.DofBlurQuality.Low,
+            "medium" => RenderingServer.DofBlurQuality.Medium, "high" => RenderingServer.DofBlurQuality.High, _ => null,
+        };
         static readonly Dictionary<string, float>? cineDbg = Args.Has("shot") && System.Environment.GetEnvironmentVariable("CINEDBG") is { Length: > 0 } cd
             ? cd.Split(',').Select(kv => kv.Split('=')).ToDictionary(a => a[0], a => a.Length > 1 ? float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture) : 1f)
             : null;
@@ -846,6 +851,10 @@ public partial class Game
                 dof.DofBlurFarDistance = (float)Math.Min(far, 500);
                 dof.DofBlurFarTransition = (float)Math.Max(0.1, (far - f) * 1.5 + f * 0.25);
                 dof.DofBlurAmount = 0.12f;
+                // (Face 49 r2: --cine-dof-q low|medium|high|verylow, --cine-dof-jitter on|off: Godot's bokeh quality, global, for pictures)
+                if (DofQ != null) RenderingServer.CameraAttributesSetDofBlurQuality(DofQ.Value, Args.Get("cine-dof-jitter") == "on");
+                if (Args.Get("cine-dof-shape") == "circle") RenderingServer.CameraAttributesSetDofBlurBokehShape(RenderingServer.DofBokehShape.Circle);
+                if (Args.Num("cine-dof-amount", 0) > 0) dof.DofBlurAmount = Args.Num("cine-dof-amount", 0.12f);
                 cam.Attributes = dof;
             }
             else cam.Attributes = saved.Attr;

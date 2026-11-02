@@ -40,7 +40,7 @@ public partial class Game
         /// the close view's highlight grade moved her face little and re-grades the whole frame).</summary>
         /// (and "lift", the rigs raised to the close key: flatter, p85-p15 19 to 13 on C02 s4; "sky", her skin off the sky's light
         /// by night: under 1 L either way, the ambient is not what carries her face there)
-        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue" };
+        static readonly HashSet<string> HerOffByDefault = new() { "hold", "grade", "lift", "sky", "spec2", "kick", "shadehue", "gradecool" };
         static readonly bool HerKeyArg = Args.Get("cine-her-key") != "off";
         static bool HerPart(string p) => HerOn && !HerOff.Contains(p) && herOffNow?.Contains(p) != true && (!HerOffByDefault.Contains(p) || HerOnToo.Contains(p)) && (p != "key" || HerKeyArg);
         // Her key's numbers (Face 48 round 2): --cine-her-key-gain, --cine-her-fill, --cine-her-rim, --cine-her-moon: the close
@@ -323,7 +323,9 @@ public partial class Game
             float ck = 0;
             if (HerPart("cool") && nk > 0 && eyes is Vector3 ce) ck = nk * Mathf.SmoothStep(HerCoolFrom, HerCoolTo, HerCoolShare(ce, on, k));
             herCool = ck;
-            if (her != null) g.air.SetViewSkinCool(ck);
+            // (round 2: on her skin's material, hair, brows, lashes, eyes and gear untouched (People.HerCineCool); round 1's grade
+            // stage, every colour of hers in skin's hues, --cine-her-on gradecool)
+            if (her != null) { People.HerCineCool(her.Person, HerPart("gradecool") ? 0 : ck); g.air.SetViewSkinCool(HerPart("gradecool") ? ck : 0); }
             if (HerLights && eyes is Vector3 de && player.Shot.Index != herLightsShot && player.Local > 0.5)
             {
                 // (--cine-her-lights: once a shot, every light on people's layer that reaches her eyes, with its light there)
@@ -894,6 +896,7 @@ public partial class Game
                 herNightShown = 0;
             }
             g.air.SetViewSkinCool(0);
+            if (people.TryGetValue("her", out var hc) && IsInstanceValid(hc)) People.HerCineCool(hc.Person, 0);
         }
     }
 }

@@ -111,7 +111,7 @@
       "cues": [
         {"do": "water", "foam": 0, "streak": 0, "mirror_cap": 0.03},
         {"do": "stones", "top": 0.45, "edge": 0, "all": true},
-        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.6, "angle": 32, "range": 6},
+        {"do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.3, "angle": 32, "range": 6},
         {"do": "atmosphere", "preset": "now", "azimuth": 160, "key": 0.7, "hemi": 0.75, "rim": 0.05},
         {"do": "skin", "sky": 0.3, "ear": 0.4},
         {"do": "hold", "actor": "her", "slot": "all", "piece": null},
@@ -127,6 +127,7 @@
         {"do": "sfx", "name": "heart_hum", "gain": 1.0},
         {"at": 0.6, "do": "head", "actor": "her", "where": {"mark": "her", "off": [0.0, 1.29, -0.5]}, "amount": 1.0, "over": 1.0},
         {"do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 1.0, "angle": 40, "range": 2.5},
+        {"do": "rig", "name": "heartnear", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head", "off": [0, -0.08, 0]}, "color": "#8fd8ff", "energy": 2.0, "angle": 80, "falloff": 1.0, "range": 0.6, "shadow": true, "size": 0.02},
         {"at": 3.2, "do": "event", "name": "grim_up"},
         {"at": 3.2, "do": "sfx", "name": "burst", "gain": 1.0},
         {"at": 3.2, "do": "vfx", "kind": "shake", "amount": 0.45},
@@ -135,6 +136,7 @@
         {"at": 3.25, "do": "lamp", "actor": "heart", "glow": 0.6, "over": 0.3},
         {"at": 3.25, "do": "rig", "name": "spill", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.4, "angle": 40, "range": 3},
         {"at": 3.25, "do": "rig", "name": "chin", "from": {"actor": "heart"}, "aim": {"actor": "her", "bone": "head"}, "color": "#4f8cff", "energy": 0.0, "angle": 40, "range": 3},
+        {"at": 3.25, "do": "rig", "name": "heartnear", "energy": 0.0},
         {"at": 3.25, "do": "rig", "name": "skin", "from": {"lens": [0.95, 0.55, -0.95]}, "aim": {"actor": "her", "bone": "head"}, "color": "#ffd8b0", "energy": 0.9, "angle": 32, "range": 6}
       ]
     },
