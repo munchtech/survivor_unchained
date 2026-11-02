@@ -10,12 +10,12 @@ namespace SurvivorUnchained.View;
 /// crown (tapered from crown_r at its base to crown_r * crown_taper at crown_hi, then to its spire's tip) comes within
 /// canopy_fade.x m of a sight line from the lens to any of nine points of her outline (feet, knees, hips and shoulders either
 /// side, waist, neck, head), and stays wanted until it is canopy_fade.y m clear (the gap: no flicker at the edge); or when its crown
-/// comes within 3 m of the lens's plane (out at 3.6 m). Each eases to what it is wanted over Secs, in time, so the dither shows
+/// comes within 3 m of the lens's plane (out at 3.6 m). Each eases to what it is wanted over SecsOut (going) or SecsIn (back), in time, so the dither shows
 /// only in those 0.3 s. A teleport (her or the camera 4 m in a frame) snaps. Cost: the trees within Reach of that line, and
 /// writes only for the few easing.</summary>
 public partial class CanopyFader : Node
 {
-    public const float Secs = 0.25f;
+    public const float SecsOut = 0.18f, SecsIn = 0.3f;
     /// <summary>(r2: her walk across a wood, to and fro, faded and restored the same trees each second) a crown that covered
     /// her stays faded this long after it last did (longer left a trail of stumps behind her run).</summary>
     public const float Hold = 0.3f;
@@ -98,13 +98,12 @@ public partial class CanopyFader : Node
                 }
             }
         MsJudge = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency - MsSet;
-        float step = snap ? 1f : (float)delta / Secs;
         for (int i = live.Count - 1; i >= 0; i--)
         {
             var t = live[i];
             // (a tree out of reach this frame is no longer wanted)
             if (t.Stamp != stamp) t.Want = t.ForHer = t.ForLens = false;
-            t.Ease = Mathf.MoveToward(t.Ease, t.Want ? 1 : 0, step);
+            t.Ease = Mathf.MoveToward(t.Ease, t.Want ? 1 : 0, snap ? 1f : (float)delta / (t.Want ? SecsOut : SecsIn));
             float s = t.Ease * t.Ease * (3 - 2 * t.Ease);
             // (while it eases only its lod0's copy, the one drawn this near; its others at the ease's end)
             if (Mathf.Abs(s - t.Shown) > 0.002f || (s != t.Shown && (s == 0 || s == 1))) Write(t, s, s == 0 || s == 1);
