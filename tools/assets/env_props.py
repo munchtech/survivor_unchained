@@ -254,19 +254,34 @@ def uv_cyl(p, rng, uvl):
             l[uvl].uv = (u0 + (u1 - u0) * min(max(uu, 0.004), 0.996), v0 + (v1 - v0) * min(max(vv, 0.004), 0.996))
 
 
+TILES = {'tile': 0.5, 'wool': 0.4}  # tiling cloth regions (their own sheet and material, not the atlas): metres a tile
+
+
 def uv_part(p, rng):
     """Box-project the part's faces into its region, in its own frame (grain along local y),
     each island placed at a random spot in the region (shrunk only if it is bigger)."""
     bm = p.bm
     uvl = bm.loops.layers.uv.verify()
-    if p.region == 'tile':
+    if p.region in TILES:
         # (E9d) cloth on its own tiling sheet (canvas_tile.png, 0.5 m a tile): box-projected in metres, no atlas
+        # (C01 set) or the bedroll's wool (wool_tile.png, 0.4 m a tile)
+        m = TILES[p.region]
+        if p.cyl:
+            # (C01 set) round a tube (a roll): unwrapped about its axis (local y), the weave at its true size all round
+            for f in bm.faces:
+                ac = math.atan2(f.calc_center_median().z, f.calc_center_median().x)
+                for l in f.loops:
+                    c = l.vert.co
+                    a = math.atan2(c.z, c.x)
+                    a += 2 * math.pi * round((ac - a) / (2 * math.pi))
+                    l[uvl].uv = (a * p.cyl / m, c.y / m)
+            return
         for f in bm.faces:
             ax = max(range(3), key=lambda i: abs(f.normal[i]))
             for l in f.loops:
                 c = l.vert.co
                 a, b = (c.x, c.z) if ax == 1 else (c.z, c.y) if ax == 0 else (c.x, c.y)
-                l[uvl].uv = (a / 0.5, b / 0.5)
+                l[uvl].uv = (a / m, b / m)
         return
     if p.cyl:
         uv_cyl(p, rng, uvl)
@@ -436,7 +451,9 @@ def bake_colours(me, tints, kind_of_face, ground=True, rays=14, vmods=None):
                     mz = 0.5 + 0.55 * hnoise(co * 4.2, 23) + 0.35 * hnoise(co * 11.0, 29)
                     m = GRIME['moss'] * smooth01(0.42, 0.58, mz) * min(1.0, (up - 0.78) * 6.0)
                     lt = lt.lerp(MOSS * (0.85 + 0.3 * hnoise(co * 5.0, 31)), m)
-            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground and not upf else 1.0)
+            # (e22r1a: earth that runs out into the ground ('soil_clean') takes no contact shade at its foot: a dark ring)
+            soil_out = OLD.get('soil_clean') and kind_of_face[poly.index] == 'soil'
+            s = occ[vi] * (0.72 + 0.28 * min(1.0, max(0.0, y / 0.08)) if ground and not upf and not soil_out else 1.0)
             if hard:
                 s *= 1.0 + 0.35 * max(0.0, min(conv[vi], 0.6))
             s *= 1.0 + 0.4 * min(0.0, max(conv[vi], -0.5)) * 0.6
@@ -494,7 +511,7 @@ def finish(name, parts, mat, seed):
     kinds = [info[i][1] for i in pidx]
     bake_colours(me, tints, kinds, vmods=[info[i][4] for i in pidx])
     me.materials.append(mat)
-    for kind_, mname in (('tile', 'cloth'), ('glow', 'glow')):
+    for kind_, mname in (('tile', 'cloth'), ('wool', 'wool'), ('glow', 'glow')):
         # (E9d) the cloth's faces take a material of their own (main() splits them off as <name>_cloth); (E8 later) so
         # do a near prop's lit panes (<name>_glow: OwnProps' unshaded glow), not the far castle's (its one far mesh)
         if kind_ not in kinds or (kind_ == 'glow' and GRIME.get('far')):
@@ -683,76 +700,169 @@ def roll_parts(p, L, r, at, rng, blanket, band, strap, sag=0.0):
     return out
 
 
+def thick(bm, t, rim=0.45, segs=3):
+    """(C01 set) A cloth surface given its thickness (offset down its normals) and its rims rolled soft (the
+    edges between its top and its sides bevelled round, rim x t), so it reads as wool, not a razor-thin sheet."""
+    bm.normal_update()
+    bmesh.ops.solidify(bm, geom=bm.faces[:], thickness=t)
+    bm.normal_update()
+    sharp = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle(0.0) > 1.0]
+    if sharp and rim > 0:
+        bmesh.ops.bevel(bm, geom=sharp, offset=t * rim, segments=segs, affect='EDGES', profile=0.5, clamp_overlap=True)
+    bm.normal_update()
+    return bm
+
+
+def wool_roll(L, r, at, tint, seed):
+    """(C01 set) A roll of wool along local x: a soft lumpy tube (wool tile) with spiral ends (the atlas's roll ends)."""
+    out = []
+    segs, rings = 18, 8
+    prof = [(r * (1 + 0.04 * math.sin(k * 1.9 + seed)), -L / 2 + L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=False)
+    for v in bm.verts:
+        k = 1 + 0.035 * hnoise(v.co * 7, seed)
+        v.co.x *= k
+        v.co.z *= k
+    turn = R('Z', -math.pi / 2)
+    out.append(Part(bm, 'wool', tint, at @ turn, smooth=True, jitter=0.0, cyl=r))
+    for sgn in (-1, 1):
+        endc = lathe([(r * 0.985, 0.0), (r * 0.5, 0.006), (0.0, 0.008)], segs, cap0=False, cap1=False)
+        out.append(Part(endc, 'rollend', tint * 0.9, at @ turn @ T(0, sgn * L / 2, 0) @ (R('X', math.pi) if sgn < 0 else Matrix.Identity(4)),
+                        cap='rollend', smooth=True, jitter=0.0, capr=r, capto=0.14))
+    return out
+
+
 def bedroll_open(p):
-    rng = Rng(p['seed'])
+    """(C01 set, judge: "a rubber doormat and a towel: chunky embossed weave, flat stamped blanket, razor edges")
+    A traveller's bedroll unrolled for the night, dry, nobody in it: an oiled groundsheet with a real hem, a thick
+    fulled-wool blanket over it (its own tiling wool, the weave at its true size) with soft rolled edges, its head
+    end turned back, two woven bands across its foot; the head end of the roll still rolled (a pillow), its ties loose."""
     L, W = p['len'], p['wide']
     parts = []
     blanket, band, sheet, pillow, strap = (hexlin(p[k]) for k in ('blanket', 'band', 'sheet', 'pillow', 'strap'))
+    seed = p['seed']
+    rr = p.get('roll_r', 0.1)
+    zr = -L / 2 + rr  # the head roll's axis
+    # The groundsheet: oiled canvas (the stalls' linen tile, dark), 5 mm thick, a rolled hem, its foot corners
+    # lifting a little, running into the bottom of the head roll.
+    SL0, SL1 = L / 2 + 0.1, zr
+    SW = W + 0.12
 
-    # The groundsheet: oiled canvas, edges curling up a little.
     def gs(u, v):
-        x, z = (u - 0.5) * (W + 0.1), (v - 0.5) * (L + 0.28)
-        e = max(abs(u - 0.5), abs(v - 0.5)) * 2
-        y = 0.008 + 0.012 * max(0.0, e - 0.85) / 0.15 + 0.004 * hnoise((x * 3, 0, z * 3), p['seed'])
+        x = (u - 0.5) * SW
+        z = SL0 + (SL1 - SL0) * v
+        e = abs(u - 0.5) * 2
+        corner = max(0.0, e - 0.8) / 0.2 * max(0.0, 1 - v * 1.6)
+        y = 0.006 + 0.012 * corner ** 2 + 0.003 * hnoise((x * 3, 0, z * 3), seed)
         return (x, y, z)
-    parts.append(Part(grid(6, 14, gs, skirt=0.012), 'canvas', sheet, smooth=True, jitter=0.0))
-
-    # The blanket: foot (v = 0, +z) to head (v = 1, -z); the head end turned down along a slanted line.
-    fold_v = 0.62
-    rf = 0.022
-
-    def fold_at(u):
-        return fold_v + 0.08 * (u - 0.5)
+    parts.append(Part(thick(grid(10, 24, gs), 0.005, rim=0.5, segs=2), 'tile', sheet, smooth=True, jitter=0.0))
+    # The blanket: from its foot (+z) to its head end, turned back (a slanted fold) so the sheet shows below the
+    # roll. Thick (1.4 cm), soft: a slow rumple, the middle a touch lower, the long edges settling onto the sheet.
+    t = p.get('thick', 0.014)
+    BL0 = L / 2 + 0.02
+    BL = BL0 - (zr + rr * 0.6)
+    fold_v, rf = 0.6, 0.03
 
     def bl(u, v):
         x = (u - 0.5) * W
-        rump = 0.02 * hnoise((x * 4, 0, v * 7), p['seed']) + 0.012 * math.sin(v * 17 + u * 5) * (0.5 + 0.5 * math.sin(u * 9 + 1))
-        # the body's hollow: a little lower down the middle of the lower half, raised edges
-        hollow = -0.006 * math.exp(-((u - 0.5) / 0.22) ** 2) + 0.004 * (abs(u - 0.5) * 2) ** 3
-        # edges draped down to the sheet
-        drape = -0.02 * max(0.0, abs(u - 0.5) * 2 - 0.86) / 0.14
-        base = 0.03 + rump + hollow + drape
-        vf = fold_at(u)
+        # slow lumps, and two or three soft folds running down its length where it settled (wool's weight)
+        rump = 0.012 * hnoise((x * 3, 0, v * 5), seed) + 0.006 * math.sin(v * 9 + u * 4) * (0.5 + 0.5 * math.sin(u * 7 + 1))
+        hollow = -0.005 * math.exp(-((u - 0.5) / 0.25) ** 2)
+        e = abs(u - 0.5) * 2
+        drape = -0.012 * smooth01(0.82, 1.0, e)
+        base = 0.016 + t + max(-t * 0.4, rump + hollow + drape)
+        vf = fold_v + 0.1 * (u - 0.5)
         if v <= vf:
-            z = (0.5 - v) * L
-            return (x, base, z)
-        d = (v - vf) * L
-        zf = (0.5 - vf) * L
+            return (x, base, BL0 - v * BL)
+        d = (v - vf) * BL
+        zf = BL0 - vf * BL
         if d < math.pi * rf:
             th = d / rf
-            return (x, base + rf - rf * math.cos(th), zf - rf * math.sin(th) * 0.9)
+            return (x, base + rf - rf * math.cos(th), zf - rf * math.sin(th))
         back = d - math.pi * rf
-        return (x, base + 2 * rf + 0.006 * hnoise((x * 5, 1, back * 9), p['seed'] + 3), zf + back)
-    nu, nv = 8, 22
-    bmb = grid(nu, nv, bl)
-    # The flap's faces turned over (its top is the blanket's underside): both sides drawn there.
-    flap = [f for f in bmb.faces if sum(1 for v in f.verts if v.co.y > 0.03 + 1.2 * rf) >= 2]
-    dup = bmesh.ops.duplicate(bmb, geom=flap)
-    bmesh.ops.reverse_faces(bmb, faces=[g for g in dup['geom'] if isinstance(g, bmesh.types.BMFace)])
-    for g in dup['geom']:
-        if isinstance(g, bmesh.types.BMVert):
-            g.co.y += 0.003
-    parts.append(Part(bmb, 'cloth', blanket, smooth=True, jitter=0.0))
-    # A woven band across the blanket near its foot, and one on the flap (the head end's band, turned).
-    for vb in (0.08, 0.94):
-        def bandf(u, v, vb=vb):
-            q = bl(u, vb + (v - 0.5) * 0.045)
-            return (q[0], q[1] + 0.0025, q[2])
-        bb = grid(nu, 1, bandf)
-        if vb > 0.5:
-            bmesh.ops.reverse_faces(bb, faces=bb.faces[:])
-        parts.append(Part(bb, 'cloth', band, smooth=True, jitter=0.0))
-    # The pillow: a rolled cloak across the head of the sheet.
-    pr = 0.085
-    parts += roll_parts(p, W * 0.78, pr, T(0, pr * 0.8, -(L / 2) - 0.02) @ S(1, 0.72, 1), rng, pillow, pillow * 1.1, strap)
-    # Two straps lying loose by the head, curving.
-    for k, (x0, z0, a) in enumerate(((W / 2 + 0.12, -L / 2 + 0.25, 0.4), (W / 2 + 0.05, -L / 2 + 0.55, -0.3))):
+        return (x, base + 2 * rf + 0.004 * hnoise((x * 5, 1, back * 9), seed + 3), zf + back * 0.97)
+    bp = Part(thick(grid(16, 44, bl), t, rim=0.48, segs=3), 'wool', blanket, smooth=True, jitter=0.0)
+
+    # Two woven bands across its foot: the dye in the vertex colours (smooth across faces), not a strip laid on it.
+    def bands(tint, q):
+        k = 0.0
+        for zc, w in ((BL0 - 0.1, 0.035), (BL0 - 0.155, 0.012)):
+            k = max(k, 1 - smooth01(w * 0.5, w * 0.5 + 0.006, abs(q.z - zc)))
+        return tint.lerp(band, k)
+    bp.vmod = bands
+    parts.append(bp)
+    # The head end still rolled (a pillow), its ties loose on the sheet.
+    parts += wool_roll(SW * 0.98, rr, T(0, rr * 0.92, zr) @ S(1, 0.9, 1), pillow, seed + 7)
+    for k, (x0, a) in enumerate(((-W * 0.28, 0.25), (W * 0.3, -0.35))):
         pts = []
-        for i in range(7):
-            t = i / 6
-            pts.append((x0 + 0.08 * math.sin(t * 3 + k), 0.004 + 0.006 * math.sin(t * 7), z0 + (t - 0.5) * 0.55))
-        parts.append(Part(ribbon(pts, 0.032, 0.006), 'leather', strap, R('Y', a) @ T(0, 0, 0)))
-        parts.append(Part(box(0.05, 0.012, 0.045), 'iron', hexlin('#ffffff'), R('Y', a) @ T(pts[0][0], 0.008, pts[0][2])))
+        for i in range(9):
+            q = i / 8
+            ang = q * 2.2
+            if ang < 1.5:
+                # round the roll's top and down its front
+                pts.append((x0, rr * 0.92 + (rr + 0.005) * math.cos(ang), zr + (rr + 0.005) * math.sin(ang)))
+            else:
+                s_ = (ang - 1.5) / 0.7
+                pts.append((x0 + 0.05 * s_ * math.sin(a * 3), 0.026, zr + rr + 0.02 + 0.2 * s_))
+        parts.append(Part(ribbon(pts, 0.028, 0.005), 'leather', strap))
+        parts.append(Part(box(0.034, 0.008, 0.03), 'iron', hexlin('#8a8478'), T(pts[-1][0], 0.03, pts[-1][2])))
+    return parts
+
+
+def saddlebags(p):
+    """(C01 set: a stock crate and a treasure chest were the camp's brightest things) A rider's saddlebags set down
+    by the fire: two stiff leather bags on a wide yoke, one sat up leaning back, one lying on its back; flaps
+    buckled, the yoke slack on the ground between them. Dull, oiled, scuffed: night-dark."""
+    W_, H_, D_ = p.get('w', 0.34), p.get('h', 0.3), p.get('d', 0.13)
+    leather, flap, strap = hexlin(p['leather']), hexlin(p['flap']), hexlin(p['strap'])
+    iron = hexlin(p.get('iron', '#8a8478'))
+    parts = []
+
+    def bag(at, seed):
+        # the body: a rounded box, lumpy with what is in it (a squashed lathe, as the pack's)
+        prof = [(0.8, 0.0), (0.97, 0.03), (1.0, 0.1), (1.0, 0.7), (0.96, 0.92), (0.88, 1.0)]
+        bm = lathe([(r_ * W_ / 2, y_ * H_) for r_, y_ in prof], 16, cap0=True, cap1=True)
+        for v in bm.verts:
+            v.co.z *= D_ / W_ * (1.05 + 0.15 * math.sin(math.pi * min(1.0, v.co.y / H_)))
+            k = 1 + 0.04 * hnoise(v.co * 9, seed)
+            v.co.x *= k
+            v.co.z *= k
+            v.co.y = max(v.co.y, 0.0)
+        out = [Part(bm, 'leather', leather, at, smooth=True, jitter=0.03)]
+
+        # the flap over the top and two thirds down the front
+        def fl(u, v):
+            x = (u - 0.5) * W_
+            if v < 0.35:
+                q = v / 0.35
+                z = -D_ * 0.55 + q * D_ * 1.1
+                y = H_ + 0.006 + 0.012 * math.sin(q * math.pi)
+            else:
+                q = (v - 0.35) / 0.65
+                z = D_ * 0.58 + 0.006 * q
+                y = H_ - q * H_ * 0.62
+            return (x * (1 - 0.12 * max(0.0, v - 0.8) / 0.2), y + 0.003 * hnoise((x * 9, y, z), seed + 2), z)
+        out.append(Part(thick(grid(6, 10, fl), 0.005, rim=0.5, segs=2), 'leather', flap, at, smooth=True, jitter=0.0))
+        for sx in (-1, 1):
+            x = sx * W_ * 0.26
+            out.append(Part(box(0.026, H_ * 0.42, 0.006, 0.002), 'leather', strap, at @ T(x, H_ * 0.47, D_ * 0.6 + 0.008)))
+            out.append(Part(box(0.034, 0.03, 0.008, 0.002), 'iron', iron, at @ T(x, H_ * 0.3, D_ * 0.6 + 0.012)))
+        return out
+    a_at = T(-W_ * 0.62, 0, 0.02) @ R('Y', 0.12) @ R('X', -0.22)
+    b_at = T(W_ * 0.55, D_ * 0.62, 0.12) @ R('Y', -0.25) @ R('X', -math.pi / 2)
+    parts += bag(a_at, p['seed'])
+    parts += bag(b_at, p['seed'] + 3)
+    # the yoke: a wide strap from the top of one to the top of the other, slack on the ground between
+    ta = a_at @ Vector((0, H_, -D_ * 0.2))
+    tb = b_at @ Vector((0, H_, -D_ * 0.2))
+    pts = []
+    for i in range(9):
+        q = i / 8
+        x = ta.x + (tb.x - ta.x) * q
+        z = ta.z + (tb.z - ta.z) * q - 0.12 * math.sin(q * math.pi)
+        y = max(0.006, (ta.y * (1 - q) + tb.y * q) - 0.4 * math.sin(q * math.pi))
+        pts.append((x, y, z))
+    parts.append(Part(ribbon(pts, 0.12, 0.005), 'leather', leather * 0.9, smooth=True, jitter=0.0))
     return parts
 
 
@@ -1349,14 +1459,14 @@ def sblock(parts, size, at, tint, rng, **kw):
     parts.append(Part(stone_block(*size, rng, **kw), 'stone', tint * (1 + rng(-0.07, 0.07)), at, cap='stone', jitter=0.0))
 
 
-def lay_course(xa, xb, bl, rng, half_first, forced=()):
-    """One course's joints from xa to xb: blocks about bl long (0.75-1.2x), the first a half (running bond)
+def lay_course(xa, xb, bl, rng, half_first, forced=(), var=(0.75, 1.2)):
+    """One course's joints from xa to xb: blocks about bl long ('var' times it: 0.75-1.2x), the first a half (running bond)
     when half_first, joints forced at the given x (an opening's edges); no sliver under 0.28 bl."""
     xs = [xa]
     x = xa
     first = True
     while x < xb - 1e-6:
-        n = bl * (rng(0.45, 0.6) if (first and half_first) else rng(0.75, 1.2))
+        n = bl * (rng(0.45, 0.6) if (first and half_first) else rng(*var))
         first = False
         nx = min(xb, x + n)
         for f in forced:
@@ -1669,6 +1779,17 @@ def mound(a, b, h, seed, tint, cx=0.0, cz=0.0, sag=0.0, moss=0.5, step=0.12, cel
         tf = tuft(rng, Vector((cx + x, y - 0.015, cz + z)), rng(0.14, 0.3), n=int(rng(5, 8)))
         tf.tint = Vector(old.get('tuft', (0.3, 0.42, 0.16))) * rng(0.8, 1.2)
         out.append(tf)
+    nf = old.get('fringe', 0)
+    for i in range(nf):
+        # (e22r1a, the Env 22 triage: the mound's edge hard against the turf) a fringe of grass round its foot, standing
+        # over the line where its earth meets the ground, so the turf runs up onto it
+        an = 2 * math.pi * (i + rng(-0.4, 0.4)) / nf
+        rr = rng(0.86, 1.06)
+        x, z = math.cos(an) * a * rr, math.sin(an) * b * rr
+        y = max(0.0, mound_y(x, z, a, b, h, seed, sag, pw=pw))
+        tf = tuft(rng, Vector((cx + x, y - 0.02, cz + z)), rng(0.12, 0.26), n=int(rng(6, 10)))
+        tf.tint = Vector(old.get('fringe_tint', old.get('tuft', (0.3, 0.42, 0.16)))) * rng(0.75, 1.2)
+        out.append(tf)
     nl = old.get('leaves', 0)
     if nl:
         pts = []
@@ -1926,10 +2047,10 @@ def rubble(p):
     cx = p.get('x0', -L / 2) + L / 2
     a, b = L * 0.42, Wd * 0.42
     def hy(x, z):
-        return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07))
+        return max(0.0, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.07, pw=p.get('pw', 0.55)))
     def fn(uu, vv):
         x, z = cx + (uu - 0.5) * 2 * a * 1.15, (vv - 0.5) * 2 * b * 1.15
-        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.16), z)
+        return (x, mound_y(x - cx, z, a, b, Hm, p['seed'], 0.0, 0.16, pw=p.get('pw', 0.55)), z)
     weed = Vector((0.62, 0.86, 0.42))
     def ft(c):
         r = math.sqrt(((c.x - cx) / a) ** 2 + (c.z / b) ** 2)
@@ -1965,6 +2086,16 @@ def rubble(p):
         bm = gravel(s, rng)
         m = bedded(bm, T(x, 0, z) @ R('Y', rng(0, 6.28)) @ R('X', rng(-0.4, 0.4)), s * 0.3 - hy(x, z))
         parts.append(Part(bm, 'stone', stone * rng(0.66, 0.9), m, cap='stone', jitter=0.0))
+    nf = p.get('fringe', 0)
+    for i in range(nf):
+        # (e22r1a, the Env 22 triage: a dark ring round the heap at the Watch-post) grass standing over its foot, where its
+        # spoil runs out into the ground, so soil and grass meet the rubble
+        an = 2 * math.pi * (i + rng(-0.4, 0.4)) / nf
+        rr = rng(0.8, 1.08)
+        x, z = cx + math.cos(an) * a * rr, math.sin(an) * b * rr
+        tf = tuft(rng, Vector((x, hy(x, z) - 0.02, z)), rng(0.14, 0.3) * u, n=int(rng(6, 10)))
+        tf.tint = Vector(p.get('fringe_tint', (0.5, 0.62, 0.28))) * rng(0.75, 1.2)
+        parts.append(tf)
     return parts
 
 
@@ -2272,7 +2403,9 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
         frame = basis(along, up, down)  # local x along the ridge, y off the slope, z down it
         # the underlay: a dark deck under the slabs (what a slipped slab shows)
         parts.append(Part(box(ln - 0.1, 0.08, run - 0.15), 'stone', slab * 0.45, T(*(ridge + down * (run / 2 + 0.02) - up * 0.06 - Vector((0, sag, 0)))) @ frame, cap='stone', jitter=0.0))
-        course = 0.56
+        # (e22r1a, the Env 22 triage: "an even grid of slabs, like wall texture" from the play camera) 'course' the courses'
+        # depth and 'bl_var' the slabs' spread of width: bigger, unequal slates, so fewer, uneven joints
+        course = ro.get('course', 0.56)
         nk = int(run / course + 0.999)
         # (lf6d) old: courses of unequal depth (the quarry's beds), slabs of unequal width, so no grid shows
         cvar = ro.get('course_var', 0.0)
@@ -2283,7 +2416,7 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
             s0 = s_at[k]
             course = cds[k]
             lift = 0.035  # each course rides on the one below at its tail
-            xs = lay_course(-ln / 2, ln / 2, ro.get('bl', 0.82), rng, k % 2 == 1)
+            xs = lay_course(-ln / 2, ln / 2, ro.get('bl', 0.82), rng, k % 2 == 1, var=tuple(ro.get('bl_var', (0.75, 1.2))))
             t = (s0 + course / 2) / run
             for a, b in zip(xs, xs[1:]):
                 xm = (a + b) / 2
@@ -2298,6 +2431,11 @@ def roof_parts(parts, rng, iw, idp, eave, roofH, p):
                 if ro.get('cluster'):
                     # weathering in drifts across the slabs (wet, darker; dry, paler), not slab by slab
                     tn = tn * (1 + ro['cluster'] * hnoise(Vector((xm * 0.8, 0, s0 * 1.1 + sx * 5.3)), 63))
+                if ro.get('streak'):
+                    # (e22r1a) rain streaks: dark bands down the slope, the same along it (by the slab's place across the roof),
+                    # stronger toward the eave where the run-off gathers
+                    sk = smooth01(0.5, 0.85, 0.5 + 0.55 * hnoise(Vector((xm * 1.9, 0, sx * 7.7)), 73))
+                    tn = tn * (1 - ro['streak'] * sk * (0.55 + 0.45 * t))
                 if rng() < p_lichen:
                     tn = tn.lerp(Vector((0.86, 0.85, 0.74)), rng(0.3, 0.6))  # pale lichen
                 tn = tn.lerp(moss * rng(0.85, 1.1), min(1.0, m * 0.9))
@@ -2560,7 +2698,9 @@ def stall(p):
             ax = (x + hx) / (2 * hx)
             az = (z - zb) / (zf - zb)
             dip = math.sin(math.pi * ax) * math.sin(math.pi * az) ** 0.7
-            base = base * (1.0 + p['sag_shade'] * (0.35 - dip))
+            # (Env 22 r1f, judge: stall_cloth's rails read as a pale piped rim round its awning) rail_lift: how much lighter
+            # over the rails than the flat sheet (0.35 as before)
+            base = base * (1.0 + p['sag_shade'] * (p.get('rail_lift', 0.35) - dip))
         # soiled toward the low edges, tide marks in blotches, a dark rain line along the back
         low = smooth01(0.3, 1.0, (z - zf + 0.3) / 0.5) * 0.25 + smooth01(hx - 0.1, hx + 0.16, abs(x)) * 0.22
         blot = smooth01(0.35, 0.62, hnoise(Vector((x * 4.1, 1.3, z * 4.1)), p['seed'] + 9)) * 0.14
@@ -2925,6 +3065,12 @@ def trough(p):
         parts.append(Part(box(0.04, 0.36, 0.006), 'iron', hexlin('#ffffff'), T(sx * L * 0.2, 0.3, Wd / 2 + 0.003), jitter=0.0))
     # (E9d r3) the water: its own mesh and material (trough_water_mesh; OwnProps' glossy rippled water), not the canvas
     # region (its weave read as woven mesh at the close camera)
+    # (Env 22 r1f, judge: the water a pale slab with no edge) the boards' inner faces dark and wet for 6 cm over the water
+    wet = wood * 0.3
+    for sz in (-1, 1):
+        parts.append(Part(box(0.06, L - 2 * t - 0.004, 0.004, 0.001), 'wood', wet, T(0, H - 0.06, sz * (Wd / 2 - t - 0.002)) @ R('Z', math.pi / 2), jitter=0.0))
+    for sx in (-1, 1):
+        parts.append(Part(box(Wd - 2 * t - 0.004, 0.06, 0.004, 0.001), 'wood', wet, T(sx * (L / 2 - t - 0.002), H - 0.06, 0) @ R('Y', math.pi / 2), jitter=0.0))
     bk = lathe([(0.12, 0.0), (0.15, 0.3)], 12, cap0=True, cap1=False)
     parts.append(Part(bk, 'wood', wood * 0.85, T(L / 2 + 0.3, 0, 0.25), smooth=False))
     parts.append(Part(torus(0.15, 0.008, 12, 4), 'iron', hexlin('#ffffff'), T(L / 2 + 0.3, 0.25, 0.25), smooth=True, jitter=0.0))
@@ -3964,6 +4110,14 @@ def camp_ground(p):
         x, z, r = sp_[:3]
         t = stone * rng(0.75, 1.15)
         parts.append(Part(pebble(r, rng, *sp_[3:5]), 'stone', Vector((t.x, t.y * rng(0.97, 1.03), t.z * rng(0.94, 1.04))), T(x, r * 0.12, z) @ R('Y', rng(0, 6.28)), smooth=True, jitter=0.0))
+    # (Env 22 r2) the same kit for a yard or an apron (gate_apron): straw spills [x, z, rx, rz, n], and any of the
+    # fire's own (kindling, twigs, ash, brands) left out.
+    for (x, z, rx, rz, n) in p.get('straw', []):
+        straw_spill(parts, Vector((x, 0.0, z)), rx, rz, int(n), rng, hexlin(p['straw_tint']) if 'straw_tint' in p else None)
+    if 'kindling' not in p:
+        for (x, z, a, L) in p.get('twigs', []):
+            parts.append(Part(stick(L, rng(0.012, 0.022), rng, 4), 'bark', bark * rng(0.7, 1.0), T(x, 0.015, z) @ R('Y', a), jitter=0.0))
+        return parts
     kx, kz, ka = p['kindling']
     at = T(kx, 0, kz) @ R('Y', ka)
     for i in range(7):
@@ -3983,13 +4137,221 @@ def camp_ground(p):
     return parts
 
 
-KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
+# ------------------------------------------------- forest floor (Env 22 r1e) --
+# (Env 22 r1e, judge: the wood road by night one violet value, nothing at its verges) a forest road's verge kit:
+# a fallen trunk (broken top, a root plate torn up with its soil), a scatter of fallen branches, surface roots for
+# a tree's foot, and a waymarker stone. All lie low (no shadow casters: env_props.json "no_shadow").
+
+def _aim(d, at):
+    """The matrix taking local y to direction d (unit), at point at."""
+    d = d.normalized()
+    x = Vector((0, 1, 0)).cross(d) if abs(d.y) < 0.95 else Vector((1, 0, 0))
+    x.normalize()
+    z = x.cross(d).normalized()
+    return T(*at) @ basis(x, d, z)
+
+
+def _stick(L, r0, r1, rng, segs=6, rings=3, lump=0.12):
+    """A tapered lumpy stick along local y from 0 to L."""
+    prof = [(r0 + (r1 - r0) * k / rings, L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=True)
+    sd = int(rng(0, 99))
+    for v in bm.verts:
+        k = 1 + lump * hnoise(v.co * 9.0, sd)
+        v.co.x *= k
+        v.co.z *= k
+    return bm
+
+
+def _bent(parts, rng, at, d, L, r0, r1, tint, sag=0.0, bend=0.25, segs=6):
+    """A stick in two pieces with a kink: from at along d, the second half turned by up to `bend` rad about up."""
+    d1 = d.normalized()
+    a = rng(-bend, bend)
+    d2 = Vector((d1.x * math.cos(a) - d1.z * math.sin(a), d1.y - sag, d1.x * math.sin(a) + d1.z * math.cos(a))).normalized()
+    rm = r0 + (r1 - r0) * 0.5
+    parts.append(Part(_stick(L * 0.5 + rm, r0, rm, rng, segs), 'bark', tint * rng(0.85, 1.1), _aim(d1, at), smooth=True, jitter=0.0, cyl=r0))
+    mid = Vector(at) + d1 * (L * 0.5)
+    parts.append(Part(_stick(L * 0.5, rm, r1, rng, segs), 'bark', tint * rng(0.85, 1.1), _aim(d2, mid), smooth=True, jitter=0.0, cyl=rm))
+    return mid + d2 * (L * 0.5), d2
+
+
+def fallen(p):
+    """A fallen trunk: a long bark tube lying along game x (top toward -x), lumpy and tapering, its top snapped off in
+    splinters (pale wood), its foot's root plate torn up on edge (a ragged disc of soil and roots), sunk into the litter,
+    moss along its upper side; two broken limbs."""
+    rng = Rng(p['seed'])
+    L, r = p['len'], p['r']
+    bark, wood, soil = hexlin(p['bark']), hexlin(p['cut']), hexlin(p['soil'])
+    moss = MOSS_DARK.lerp(MOSS_SAGE, 0.35)
+    sink = p.get('sink', 0.25) * r
+    seed = p['seed']
+    parts = []
+    segs, rings = 14, max(10, int(L / 0.25))
+    prof = [(r * (1.0 - 0.32 * k / rings), -L / 2 + L * k / rings) for k in range(rings + 1)]
+    bm = lathe(prof, segs, cap0=False, cap1=False)
+    for v in bm.verts:
+        a = math.atan2(v.co.z, v.co.x)
+        k = (1 + 0.07 * hnoise(v.co * 3.5, seed) + 0.03 * math.sin(a * 5 + v.co.y * 2 + seed)) * (1 + 0.06 * math.cos(2 * a + seed))
+        k *= 1 + 0.07 * hnoise(Vector((0.3, v.co.y * 0.9, 0.7)), seed + 3)
+        # the foot flares into the root plate
+        k *= 1 + 0.7 * math.exp(-(v.co.y + L / 2) / (0.35 * r / 0.3))
+        v.co.x *= k
+        v.co.z *= k
+        v.co.z += 0.06 * math.sin(math.pi * v.co.y / L * 1.3 + seed)
+    turn = T(0, r * 0.85 - sink, 0) @ R('Z', math.pi / 2)   # local y -> -x (the top), local x -> +y (up)
+    # moss along the top: a face's tint by its height (local x up), ragged along the length
+    mk = Vector((moss.x / bark.x, moss.y / bark.y, moss.z / bark.z)) * 1.6
+    bp = Part(bm, 'bark', bark, turn, smooth=True, jitter=0.0, cyl=r)
+    bp.ftint = lambda c: mk if c.x > r * (0.62 + 0.3 * hnoise(Vector((0.1, c.y * 1.3, 0.4)), seed + 9)) else Vector((1, 1, 1))
+    # the foot's end: kept open under the plate; the top snapped: splinters round the rim, pale wood
+    top = [v for v in bm.verts if abs(v.co.y - L / 2) < 1e-4]
+    top.sort(key=lambda v: math.atan2(v.co.z, v.co.x))
+    foot = [v for v in bm.verts if abs(v.co.y + L / 2) < 1e-4]
+    rf = max(Vector((v.co.x, 0, v.co.z)).length for v in foot)
+    sb = bmesh.new()
+    rim = [sb.verts.new(v.co.copy()) for v in top]
+    rt = max(Vector((v.co.x, 0, v.co.z)).length for v in top)
+    mids = []
+    for i, v in enumerate(top):
+        a = math.atan2(v.co.z, v.co.x)
+        mids.append(sb.verts.new((math.cos(a) * rt * 0.55, L / 2 + rt * rng(0.1, 1.4) * (1.6 if i % 4 == 0 else 0.6), math.sin(a) * rt * 0.55)))
+    cen = sb.verts.new((0, L / 2 + rt * 0.5, 0))
+    n = len(rim)
+    for i in range(n):
+        j = (i + 1) % n
+        sb.faces.new((rim[i], rim[j], mids[j], mids[i]))
+        sb.faces.new((mids[i], mids[j], cen))
+    sb.normal_update()
+    for f in sb.faces:
+        if f.normal.dot(f.calc_center_median() - Vector((0, L / 2 - rt, 0))) < 0:
+            f.normal_flip()
+    parts.append(bp)
+    parts.append(Part(sb, 'wood', wood * 0.75, turn, smooth=False, jitter=0.0))
+    # the root plate: a ragged disc of soil on edge at the foot, half in the ground
+    Rp = r * p.get('plate', 2.4)
+    nr = 16
+    pb = bmesh.new()
+    th = 0.16 * Rp
+    fr, bk = [], []
+    for i in range(nr):
+        a = 2 * math.pi * i / nr
+        rr = Rp * (0.75 + 0.35 * rng() + 0.12 * math.sin(3 * a + seed))
+        fr.append(pb.verts.new((math.cos(a) * rr, -L / 2 - th * 0.6, math.sin(a) * rr)))
+        bk.append(pb.verts.new((math.cos(a) * rr * 0.8, -L / 2 + th * 0.5, math.sin(a) * rr * 0.8)))
+    c0 = pb.verts.new((0, -L / 2 - th * 1.3, 0))
+    for i in range(nr):
+        j = (i + 1) % nr
+        pb.faces.new((fr[j], fr[i], c0))
+        pb.faces.new((fr[i], fr[j], bk[j], bk[i]))
+    pb.normal_update()
+    for f in pb.faces:
+        if f.normal.dot(f.calc_center_median() - Vector((0, -L / 2, 0))) < 0:
+            f.normal_flip()
+    for v in pb.verts:
+        v.co += Vector((rng(-1, 1), rng(-0.4, 0.4), rng(-1, 1))) * 0.06 * Rp
+    parts.append(Part(pb, 'soil', soil, turn, smooth=True, jitter=0.0))
+    # roots out of the plate's face and rim, snapped short
+    nroots = p.get('roots', 9)
+    for i in range(nroots):
+        a = 2 * math.pi * (i + rng(-0.3, 0.3)) / nroots
+        d = Vector((math.cos(a), -rng(0.15, 0.6), math.sin(a)))
+        at = Vector((math.cos(a) * rf * 0.6, -L / 2 - th * 0.4, math.sin(a) * rf * 0.6))
+        sub = []
+        _bent(sub, rng, at, d, Rp * rng(0.8, 1.35), r * rng(0.16, 0.28), r * 0.04, bark * 0.8, bend=0.5)
+        for s in sub:
+            s.at = turn @ s.at
+        parts += sub
+    # two broken limbs along it
+    for (fy, fa) in ((0.15, 0.9), (0.32, -1.1)):
+        at = Vector((math.cos(fa) * r * 0.75, L * fy, math.sin(fa) * r * 0.75))
+        d = Vector((math.cos(fa), 0.6, math.sin(fa)))
+        sub = []
+        _bent(sub, rng, at, d, r * rng(2.0, 3.5), r * 0.22, r * 0.07, bark * 0.9, bend=0.3)
+        for s in sub:
+            s.at = turn @ s.at
+        parts += sub
+    return parts
+
+
+def branches(p):
+    """Fallen branches on the forest floor: n crooked sticks, each forking once or twice, lying in a w x d spread
+    about the origin (their long axes along game x, give or take)."""
+    rng = Rng(p['seed'])
+    bark = hexlin(p['bark'])
+    w, dp = p['w'], p['d']
+    parts = []
+    for i in range(p.get('n', 5)):
+        L = rng(*p.get('len', (0.8, 2.2)))
+        r0 = rng(*p.get('r', (0.025, 0.06)))
+        a = rng(-0.6, 0.6) + (math.pi if rng() < 0.5 else 0)
+        d = Vector((math.cos(a), -0.02, math.sin(a)))
+        at = Vector((rng(-w / 2, w / 2) - d.x * L / 2, r0 * 0.8, rng(-dp / 2, dp / 2) - d.z * L / 2))
+        _bent(parts, rng, at, d, L, r0, r0 * 0.35, bark, bend=0.35, segs=5)
+        for k in range(2 if rng() < 0.6 else 1):
+            fat = at + d * (L * rng(0.35, 0.8) * 0.95)
+            fa = a + rng(0.45, 0.9) * (1 if rng() < 0.5 else -1)
+            _bent(parts, rng, fat, Vector((math.cos(fa), 0.0, math.sin(fa))), L * rng(0.25, 0.5), r0 * 0.5, r0 * 0.15, bark, bend=0.3, segs=4)
+    return parts
+
+
+def roots(p):
+    """Surface roots at a tree's foot: n roots out from a trunk of radius rt, each running out of the soil by the
+    trunk and diving back in, tapering, some forking; placed on a tree's foot (the trunk stands in the middle)."""
+    rng = Rng(p['seed'])
+    bark = hexlin(p['bark'])
+    rt = p['rt']
+    parts = []
+    n = p.get('n', 6)
+    for i in range(n):
+        a = 2 * math.pi * (i + rng(-0.3, 0.3)) / n
+        L = rng(*p.get('len', (0.9, 1.8)))
+        r0 = rng(*p.get('r', (0.07, 0.13)))
+        at = Vector((math.cos(a) * rt * 0.75, r0 * 0.2, math.sin(a) * rt * 0.75))
+        d = Vector((math.cos(a), -0.12, math.sin(a)))
+        _bent(parts, rng, at, d, L, r0, r0 * 0.2, bark, sag=0.05, bend=0.45, segs=6)
+        if rng() < 0.5:
+            fat = at + d * (L * 0.4)
+            fa = a + rng(0.4, 0.8) * (1 if rng() < 0.5 else -1)
+            _bent(parts, rng, fat, Vector((math.cos(fa), -0.15, math.sin(fa))), L * 0.5, r0 * 0.5, r0 * 0.12, bark, bend=0.4, segs=5)
+    return parts
+
+
+def waystone(p):
+    """A waymarker by a road: a rough standing stone, tapered and leaning, a cross cut in its road face (+z), sunk in
+    a low mound with fallen chips round its foot; mossed (env_props.json "dress")."""
+    rng = Rng(p['seed'])
+    stone, soil = hexlin(p['stone']), hexlin(p['soil'])
+    h, w, t = p['h'], p['w'], p['t']
+    parts = []
+    bm = stone_block(w, h, t, rng, bevel=0.04, chip=0.8, jag=0.025, top_cuts=2)
+    for v in bm.verts:
+        f = (v.co.y + h / 2) / h
+        v.co.x *= 1.0 - 0.28 * f
+        v.co.z *= 1.0 - 0.2 * f
+        if v.co.y > h * 0.35:
+            v.co.y += 0.06 * hnoise(v.co * 6, p['seed']) - 0.08 * max(0.0, v.co.x / w)
+    lean = R('Z', p.get('roll', 0.1)) @ R('X', p.get('lean', -0.08))
+    at = bedded(bm, lean @ T(0, h / 2, 0), p.get('sink', 0.12))
+    parts.append(Part(bm, 'stone', stone, at, cap='stone', jitter=0.0))
+    for (sx, sy) in ((0.05, h * 0.32), (w * 0.42, 0.05)):
+        parts.append(Part(box(sx, sy, 0.02, 0.005), 'stone', stone * 0.35, at @ T(0, h * 0.18, t / 2 - 0.005), cap='stone', jitter=0.0))
+    for i in range(p.get('chips', 5)):
+        a = rng(0, 2 * math.pi)
+        s = rng(0.08, 0.18)
+        cb = chunk(s, rng)
+        parts.append(Part(cb, 'stone', stone * rng(0.75, 1.0), bedded(cb, T(math.cos(a) * rng(w * 0.6, w * 1.1), 0, math.sin(a) * rng(t * 0.8, w)) @ R('Y', rng(0, 3)), s * 0.3), cap='stone', jitter=0.0))
+    parts += mound(w * 0.7, t * 1.5 + 0.2, 0.06, p['seed'], soil, sag=0.2, moss=0.9, old=p.get('mound'))
+    return parts
+
+
+KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'saddlebags': saddlebags, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
          'fence': fence, 'grave': grave, 'gravestone': gravestone, 'marker': marker, 'crypt': crypt,
          'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier,
          'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle,
-         'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground}
+         'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground,
+         'fallen': fallen, 'branches': branches, 'roots': roots, 'waystone': waystone}
 
 
 # ---------------------------------------------------------------- build --
@@ -4117,7 +4479,7 @@ def main():
         if SHADOW:
             meta['tris_shadow'] = tris(obs[-1])
         for o in obs[1:]:
-            if o.name.endswith(('_cloth', '_glow')):
+            if o.name.endswith(('_cloth', '_wool', '_glow')):
                 meta['tris_' + o.name.rsplit('_', 1)[1]] = tris(o)
         if p.get('no_shadow'):
             meta['no_shadow'] = True  # (E8 later) OwnProps casts no shadow from it (cheap dressing, backdrops)
@@ -4141,6 +4503,9 @@ def main():
             wm = bpy.data.materials.get('water') or bpy.data.materials.new('water')
             obs.append(trough_water_mesh(name + '_water', wm, p))
         bb = [B2G @ Vector(c) for c in ob.bound_box]
+        if p.get('box_all'):
+            # (C01 set) the box of all its meshes (the bedroll is mostly its wool, split off; its main mesh is the ties)
+            bb = [B2G @ (o.matrix_world @ Vector(c)) for o in obs if not o.name.endswith(('_shadow', '_LOD1')) for c in o.bound_box]
         meta['box'] = [round(min(v[i] for v in bb), 3) for i in range(3)] + [round(max(v[i] for v in bb), 3) for i in range(3)]
         if p.get('runs'):
             # (E8 later r2) the grime runs' shape for OwnProps' runs material: where they hang from (the crenels, m), how

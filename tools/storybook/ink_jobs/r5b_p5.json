@@ -1,0 +1,31 @@
+{
+ "_note": "Storybook 4 round 5b (lead's notes on r5c_s47): posture as shape, in the ditch water, clumps; three different crude baskets; wagon on its side; carved snow; near figures whole in the 14.5 s band (w) or big and cut by the frame (k).",
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p5r5bw",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    11
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. Along both sides of the road run ditches of black water, and in them stand the drowned dead, standing in the black water to the shins, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire. The whole scene sits in the middle band of the picture: the nearest drowned stand in the lower middle, small enough that their feet are well above the bottom edge, with plain carved ground below them."
+  },
+  {
+   "name": "p5r5bk",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    11
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. Along both sides of the road run ditches of black water, and in them stand the drowned dead, standing in the black water to the shins, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire. Two or three of the drowned stand very close to us at the left and right edges of the picture, huge black silhouettes from the knees up, deliberately cut by the frame edges, framing the road."
+  }
+ ]
+}

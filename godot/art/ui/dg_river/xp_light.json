@@ -7,7 +7,7 @@
   1310,
   258
  ],
- "s0": 52.62,
- "s1": 1158.25,
+ "s0": 53.88,
+ "s1": 1157.25,
  "note": "tools/uiforge/dg_xp_mask.py: R her hair, G the ridges, B the cool cast (blurred); s0..s1 the run (s = x - 500 + 0.5 (clamp(y, 830, 980) - 830))"
 }

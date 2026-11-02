@@ -37,7 +37,7 @@ public static class OwnProps
     public sealed record KitEntry(string[] Presets, bool Over, float Scale, string Preset = "");
     public sealed record Zone(Dictionary<string, string> Pieces, List<Vector2> Keep, List<Place> Places, Dictionary<string, Lamp> Lamps, List<Nudge>? Nudges = null, List<string>? Drop = null,
         Dictionary<string, KitEntry>? Kits = null, List<Vector2>? NoGutter = null, List<Vector2>? Lit = null, List<(Vector2 At, Vector2? By)>? FloraMove = null, Lamp? LitLight = null,
-        List<Vector3>? Clear = null);
+        List<Vector3>? Clear = null, List<(Vector2 At, float Ra, float Rb, float Turn)>? Puddles = null);
 
     static readonly Dictionary<string, Zone?> zones = new();
     static Dictionary<string, Aabb>? boxes;
@@ -126,7 +126,13 @@ public static class OwnProps
             // clear: [x, z, r] where the kit's small props (props/*) go (E9d: the web game's wares on the stalls our own stalls carry)
             var clear = new List<Vector3>();
             if (r.TryGetProperty("clear", out var cl)) foreach (var c in cl.EnumerateArray()) clear.Add(new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()));
-            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear);
+            // (Env 22 r2) puddles: [x, z, ra, rb, degrees] a standing puddle the ground's paint lays there (GroundPaint, its A
+            // mask: the wet rim, the sky's broken mirror), an ellipse ra by rb metres turned so many degrees (the gate's apron).
+            var pud = new List<(Vector2 At, float Ra, float Rb, float Turn)>();
+            if (r.TryGetProperty("puddles", out var pd))
+                foreach (var q in pd.EnumerateArray())
+                    pud.Add((new Vector2(q[0].GetSingle(), q[1].GetSingle()), q[2].GetSingle(), q[3].GetSingle(), q.GetArrayLength() > 4 ? Mathf.DegToRad(q[4].GetSingle()) : 0));
+            z = new Zone(pieces, keep, places, lamps, nudges, drop, kits, noGut, lit, fm, litLight, clear, pud);
         }
         zones[zone] = z;
         return z;
@@ -308,11 +314,15 @@ public static class OwnProps
     };
 
     static StandardMaterial3D? water;
+    /// <summary>(Env 22 r1f, judge: the trough read as a pale ice-blue slab at the town camera) murky dark water, the sky in it
+    /// only at grazing angles (the Fresnel of a low specular): --trough-water #hex, --trough-spec K.</summary>
+    static readonly string TroughWaterCol = SurvivorUnchained.Args.Get("trough-water") ?? "#1c211c";
+    static readonly float TroughWaterSpec = SurvivorUnchained.Args.Num("trough-spec", 0.3f);
     /// <summary>(E9d r3) A trough's water (env_props.py trough_water_mesh, UVs in metres): a grey-blue sky value, glossy, in
     /// broad soft ripples (a smooth noise as its normal map, about 25 cm across); the canvas weave read as woven mesh.</summary>
     static Material Water => water ??= new StandardMaterial3D
     {
-        ResourceName = "trough_water", AlbedoColor = new Color("#485a68"), Roughness = 0.14f, MetallicSpecular = 0.45f,
+        ResourceName = "trough_water", AlbedoColor = new Color(TroughWaterCol), Roughness = 0.1f, MetallicSpecular = TroughWaterSpec,
         NormalEnabled = true, NormalScale = 0.55f,
         NormalTexture = new NoiseTexture2D
         {
@@ -333,6 +343,19 @@ public static class OwnProps
         NormalScale = 0.6f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
         // (light through the canvas from above: its underside not black at the close camera)
         BacklightEnabled = true, Backlight = new Color(0.22f, 0.2f, 0.17f),
+    };
+
+    static StandardMaterial3D? wool;
+    /// <summary>(C01 set) A bedroll's blanket: fulled wool on its own tiling sheet (tools/assets/env_wool_tile.py, 0.4 m a
+    /// tile; the atlas's cloth tile, fitted to a 1.75 m blanket, showed its weave 4x too coarse), times the vertex colours
+    /// (its dye and bands, the baked occlusion). Matte, a little sheen at grazing light (the nap).</summary>
+    static Material Wool => wool ??= new StandardMaterial3D
+    {
+        ResourceName = "wool", VertexColorUseAsAlbedo = true, Roughness = 0.96f,
+        AlbedoColor = new Color(0.65f, 0.65f, 0.65f),  // 29 Oct: 35% darker, hue kept (it read as a flat pink sheet at the play camera)
+        AlbedoTexture = GD.Load<Texture2D>($"{Dir}/wool_tile.png"), NormalEnabled = true, NormalTexture = GD.Load<Texture2D>($"{Dir}/wool_tile_n.png"),
+        NormalScale = 0.45f, TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
+        RimEnabled = true, Rim = 0.25f, RimTint = 0.6f,
     };
 
     /// <summary>--props-skip a,b,...: presets left out (the kit's piece keeps its place), for bisecting.</summary>
@@ -369,6 +392,7 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_paper")) { m.MaterialOverride = Paper; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             // (E9d) a stall's canvas: its own tiling sheet (canvas_tile.png), casting the stall's shade, no LOD
             if (m.Name.ToString().EndsWith("_cloth")) { m.MaterialOverride = Cloth; continue; }
+            if (m.Name.ToString().EndsWith("_wool")) { m.MaterialOverride = Wool; m.CastShadow = small ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On; continue; }
             // (E8 later) a near prop's lit panes (a window, a lantern's glass): their colour as it is, unshaded, in the fog
             if (m.Name.ToString().EndsWith("_glow")) { m.MaterialOverride = Glow; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }
             if (m.Name.ToString().EndsWith("_water")) { m.MaterialOverride = Water; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off; continue; }

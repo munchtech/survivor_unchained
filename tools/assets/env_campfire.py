@@ -175,7 +175,9 @@ def sides():
         ember = np.maximum(ember, (1 - ss(0.0, 0.025, np.abs(front - 0.36))) * patch * patch * 0.38 * (1 - scorch))
         x0 = k * w
         b3 = burnt[..., None]
-        ALB[0:h, x0:x0 + w] = lerp(bark, calb, b3)
+        # (C01 set) the outer end blackened too, scorched by the fire that once reached it (no clean bark at the cut)
+        endburn = ss(0.86, 0.99, yy + 0.05 * (fbm(h, w, 6, 4, s + 14) - 0.5))[..., None]
+        ALB[0:h, x0:x0 + w] = lerp(lerp(bark, calb, b3), calb * 1.1, endburn * 0.85)
         HGT[0:h, x0:x0 + w] = lerp(bh, ch, burnt)
         EMB[0:h, x0:x0 + w] = ember
         MPP[0:h, x0:x0 + w] = (CIRC / w, LEN / h)
@@ -208,16 +210,16 @@ def caps():
         pith = 1 - ss(0.02, 0.07, rho)
         fine = fbm(n, n, 32, 32, s + 2, 3)
         if i < 4:
-            wood = lerp(rgb(0.18, 0.143, 0.11), rgb(0.11, 0.08, 0.058), ringline[..., None] * 0.7) * (0.85 + 0.3 * fine[..., None])
-            wood = lerp(wood, rgb(0.08, 0.06, 0.045), pith[..., None])
-            wood = lerp(wood, rgb(0.03, 0.022, 0.017), checks[..., None])
-            # weathered grey on old cut ends, soot creeping in from the rim
-            wood = lerp(wood, rgb(0.2, 0.19, 0.175), (ss(0.4, 0.75, fbm(n, n, 4, 4, s + 3)) * 0.5)[..., None])
-            soot = np.clip(ss(0.55, 1.0, rho + wob * 0.3) * 0.85 + ss(0.65, 0.85, fbm(n, n, 5, 5, s + 4)) * 0.4, 0, 1)
-            wood = lerp(wood, rgb(0.018, 0.016, 0.015), soot[..., None])
-            alb = lerp(wood, rgb(0.03, 0.024, 0.019), bark[..., None])
-            hgt = 0.0006 * ringline - 0.003 * checks + 0.002 * bark
-            emb = np.zeros_like(rho)
+            # (C01 set, judge: "clean logs with tree rings showing on the cut ends") the outer ends burnt too: a
+            # fire's logs are pushed in as they burn, so what shows past the stones is a charred stub (alligator char,
+            # the rings only a faint relief, the checks black), a little ember left deep in the checks
+            calb, ch, crack = char_layer(n, n, 0.12, 0.12, s + 9)
+            alb = lerp(calb * 1.15, rgb(0.006, 0.005, 0.005), (ringline * 0.35)[..., None])
+            alb = lerp(alb, rgb(0.003, 0.003, 0.003), checks[..., None])
+            alb = lerp(alb, rgb(0.05, 0.047, 0.044), (ss(0.5, 0.8, fbm(n, n, 5, 5, s + 3)) * 0.45 * (1 - bark))[..., None])  # grey ash film
+            alb = lerp(alb, rgb(0.02, 0.016, 0.013), bark[..., None])
+            hgt = ch * 0.8 - 0.0015 * ringline - 0.003 * checks + 0.002 * bark
+            emb = np.clip(checks * ss(0.1, 0.45, rho) * 0.35 * ss(0.55, 0.8, fbm(n, n, 4, 4, s + 8)), 0, 1)
         else:
             calb, ch, crack = char_layer(n, n, 0.12, 0.12, s + 5)
             alb = lerp(calb, rgb(0.004, 0.004, 0.004), (ringline * 0.6)[..., None])

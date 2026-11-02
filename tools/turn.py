@@ -23,6 +23,11 @@ gets the next free turn, and giving a turn back then taking it again puts you
 at the back. Asking again (or --wait) keeps your place; a place nobody has
 asked for in 90 s lapses.
 
+Idle gpu turns (28 Oct: a lead held the gpu 66 min with nothing running while three
+jobs queued): every gpu-touching call samples GPU use; a gpu holder of 20+ min whose
+card stayed under 5% for the last 20 min (well sampled) is freed when someone else
+asks. STALE (3 h) stays as the fallback.
+
 Run it from any worktree by its full path in the main checkout:
 C:/Users/munch/Desktop/survivorsunchained/tools/turn.py
 """
@@ -34,11 +39,15 @@ import time
 import urllib.request
 from pathlib import Path
 
-HOME = Path.home() / ".su_turns"
+HOME = Path(os.environ["TURN_HOME"]) if os.environ.get("TURN_HOME") else Path.home() / ".su_turns"
 SLOTS = {"gpu": 1, "blender": 3, "godot": 4}  # raised 12 Oct (owner): the RAM and VRAM guards are the real limit
 STALE = 3 * 3600  # a holder that never gave its turn back (crashed or forgotten)
 LEAST_RAM = {"gpu": 0, "blender": 6, "godot": 5}  # GB free needed, beyond the turn itself
 LEAST_VRAM = {"blender": 4, "godot": 4}  # GB of the card free needed while the gpu turn is held
+IDLE_GPU = 20 * 60  # a gpu holder this old with the card idle that long is freed for a waiter
+IDLE_PCT = 5
+SAMPLE_KEEP = 30 * 60
+SAMPLE_GAP = 5 * 60
 FRESH = 90  # seconds a place in the queue lasts without being asked again
 
 
@@ -102,6 +111,50 @@ def free_vram_gb():
         return None
 
 
+def gpu_util():
+    """GPU utilization percent, or None if nvidia-smi can't say."""
+    import subprocess
+    try:
+        out = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
+                             capture_output=True, text=True, timeout=5).stdout
+        return int(out.split()[0])
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        return None
+
+
+def sample_gpu():
+    """Records (time, util) in HOME/gpu_util.json, keeping the last 30 min. Returns util or None."""
+    util = gpu_util()
+    if util is None:
+        return None
+    f = HOME / "gpu_util.json"
+    now = time.time()
+    try:
+        old = [s for s in json.loads(f.read_text()) if now - s[0] <= SAMPLE_KEEP]
+    except (OSError, ValueError, TypeError):
+        old = []
+    try:
+        HOME.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(old + [[now, util]]))
+    except OSError:
+        pass
+    return util
+
+
+def gpu_idle_for_window():
+    """True only if samples cover the last 20 min (oldest in window >= 18 min old, no gap over 5 min) and all are under 5%."""
+    now = time.time()
+    try:
+        ss = sorted(s for s in json.loads((HOME / "gpu_util.json").read_text()) if now - s[0] <= IDLE_GPU)
+    except (OSError, ValueError, TypeError):
+        return False
+    if not ss or now - ss[0][0] < IDLE_GPU - 120 or now - ss[-1][0] > SAMPLE_GAP:
+        return False
+    if any(b[0] - a[0] > SAMPLE_GAP for a, b in zip(ss, ss[1:])):
+        return False
+    return all(s[1] < IDLE_PCT for s in ss)
+
+
 def holders(kind):
     out = []
     for i in range(SLOTS[kind]):
@@ -117,9 +170,14 @@ def holders(kind):
 
 
 def try_take(kind, who):
-    HOME.mkdir(exist_ok=True)
+    HOME.mkdir(parents=True, exist_ok=True)
+    smi_ok = sample_gpu() is not None if kind == "gpu" else False  # no reading, no idle takeover
     for d, w in holders(kind):
-        if time.time() - w["since"] > STALE:
+        if smi_ok and w["who"] != who and time.time() - w["since"] >= IDLE_GPU and gpu_idle_for_window():
+            print(f"taking over an idle gpu turn from {w['who']} ({(time.time() - w['since']) / 60:.0f} min, GPU under 5% for 20 min)")
+            (d / "who.json").unlink(missing_ok=True)
+            d.rmdir()
+        elif time.time() - w["since"] > STALE:
             print(f"taking over a stale turn from {w['who']} ({(time.time() - w['since']) / 3600:.1f} h old)")
             (d / "who.json").unlink(missing_ok=True)
             d.rmdir()
@@ -172,8 +230,10 @@ def show():
     print(f"{free_ram_gb():.1f} GB of RAM free")
     for kind in SLOTS:
         hs = holders(kind)
+        util = sample_gpu() if kind == "gpu" else None
         print(f"{kind}: " + ("free" if not hs else "; ".join(
-            f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs)))
+            f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs))
+            + (f" (GPU {util}%)" if util is not None else ""))
         q = HOME / f"want_{kind}"
         ws = []
         for f in q.glob("*.json") if q.exists() else []:

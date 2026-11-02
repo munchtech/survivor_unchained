@@ -20,7 +20,8 @@ public static class MistLayers
     static readonly float[] Cap = { 0.22f, 0.15f, 0.1f };
     static Color tint = new(0.3f, 0.36f, 0.45f), keyLight;
     static float thick;
-    static bool shown = true;
+    // (MIST_OFF=1: the sheets hidden, to see the water under them)
+    static bool shown = System.Environment.GetEnvironmentVariable("MIST_OFF") != "1";
 
     /// <summary>False: the sheets hidden whatever the air (the perf flip "mist").</summary>
     public static bool Shown { get => shown; set { if (shown == value) return; shown = value; Apply(); } }

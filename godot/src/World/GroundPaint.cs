@@ -320,6 +320,9 @@ public sealed class GroundPaint
             }
         }
 
+        // (Env 22 r2) the zone's own puddles (props_own.json "puddles"), where a place wants standing water.
+        if (OwnProps.For(z.Id)?.Puddles is { } own)
+            foreach (var (at, ra, rb, turn) in own) Pool(at, new Vector2(Mathf.Cos(turn), Mathf.Sin(turn)), ra, rb);
         var mask = new byte[mr * mr * 4];
         var core = new float[mr * mr];
         var verge = new float[mr * mr];
@@ -483,6 +486,9 @@ public sealed class GroundPaint
             if (c.Soft) continue;
             bool box = c.Kind == ColliderKind.Box;
             if (!box && c.R < 0.25) continue;
+            // (e22r1a, the Env 22 triage: a dark ring round the Watch-post's rubble) a heap (props_own.json no_gutter) is not
+            // a thing standing: no damp foot or collar round it; its own spoil runs out into the soil and grass
+            if (box && OwnProps.For(z.Id)?.NoGutter is { } ng && ng.Exists(g => Math.Abs(g.X - c.X) < 0.5 && Math.Abs(g.Y - c.Z) < 0.5)) continue;
             bool wall = box && Math.Max(c.Hw, c.Hd) >= 2.0 && Math.Min(c.Hw, c.Hd) >= 0.25;
             float rr = (float)(box ? Math.Sqrt(c.Hw * c.Hw + c.Hd * c.Hd) : c.R) + 2.1f;
             int i0 = Math.Max(0, (int)(((float)c.X - rr + half) / et)), i1 = Math.Min(er - 1, (int)(((float)c.X + rr + half) / et));
@@ -550,6 +556,38 @@ public sealed class GroundPaint
             jzz = Blur(Blur(jzz, sr, rb), sr, rb);
             dirS = new float[sr * sr];
             for (int k = 0; k < dirS.Length; k++) dirS[k] = jzz[k] / (jxx[k] + jzz[k] + 1e-6f);
+            // (Env 22 r1c, the triage judge: diagonal seams across the Watch-post's floor and the gate's apron) in a square
+            // the distance's ridge is its diagonals: the wear lane ran corner to corner and the courses turned along them, a
+            // mitred X across the floor. A plaza (flora_species.json "ground" setts_plaza: paving whose half-width somewhere
+            // within twice that many metres is over it; 0, the town's default: none) keeps one course direction and no
+            // ridge lane; a street keeps both.
+            float plaza = Args.Num("setts-plaza", FloraSpecies.GroundFor(z.Id).TryGetValue("setts_plaza", out var pz) ? pz : 0f);
+            if (plaza > 0)
+            {
+                var wide = Dilate(dd, sr, Math.Max(1, (int)(2f * plaza / smt)));
+                var pf = new float[sr * sr];
+                for (int k = 0; k < pf.Length; k++) pf[k] = Mathf.SmoothStep(plaza, plaza * 1.4f, wide[k]);
+                pf = Blur(pf, sr, Math.Max(1, (int)(1f / smt)));
+                for (int k = 0; k < pf.Length; k++) { dirS[k] *= 1f - pf[k]; lane[k] *= 1f - pf[k]; }
+            }
+            // (and its ways, flora_species.json "setts_ways": a worn lane 2-3 m wide down each, where the ridge lane went)
+            var ways = FloraSpecies.SettsWaysFor(z.Id);
+            if (ways.Count > 0)
+                for (int j = 0; j < sr; j++)
+                    for (int i = 0; i < sr; i++)
+                    {
+                        int k = j * sr + i;
+                        if (dd[k] == 0) continue;
+                        var w = new Vector2(-half + (i + 0.5f) * smt, -half + (j + 0.5f) * smt);
+                        float d = 1e9f;
+                        foreach (var sg in ways)
+                        {
+                            Vector2 a = new(sg.X, sg.Y), ab = new Vector2(sg.Z, sg.W) - a;
+                            float t = Math.Clamp((w - a).Dot(ab) / Math.Max(ab.LengthSquared(), 1e-4f), 0, 1);
+                            d = Math.Min(d, (w - a - ab * t).Length());
+                        }
+                        lane[k] = Math.Max(lane[k], 1f - Mathf.SmoothStep(0.25f, 1.4f, d));   // (half at 0.8 m: the ruts, terrain setts_ruts)
+                    }
             // (The distance off the splat's texels stair-stepped the kerb: centred on the texel's edge, blurred twice over
             // a texel, and read bilinearly below, its contours run smooth.)
             distS = new float[sr * sr];

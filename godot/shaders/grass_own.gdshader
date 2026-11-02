@@ -134,7 +134,7 @@ void vertex() {
 	}
 	float edge = 1.0 - smoothstep(span * 0.36, span * 0.5, length(wp - centre));
 	float h1 = gh(wp * 7.1), h3 = gh(wp * 3.3 + 11.0), h4 = gh(wp * 5.7 + 4.0), h5 = gh(wp * 9.3 + 2.0), h6 = gh(wp * 4.1 + 7.0);
-	vec2 zuv = (wp + zone_size * 0.5) / zone_size;
+	vec2 zuv = 1.0 - abs(1.0 - abs((wp + zone_size * 0.5) / zone_size));   // (mirrored past the edge, as the ground's)
 	vec4 sp = texture(splat, zuv);
 	sp.b *= 1.0 - heal * 0.85;
 	vec4 nz = texture(noise_tex, wp * 0.035);

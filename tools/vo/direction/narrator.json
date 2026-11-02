@@ -54,7 +54,7 @@
  "say.e08ae8c1e46c": {"emo": "plain", "intent": "your fallen things, found", "pace": "measured", "vol": "quiet", "note": "Plain; 'most of them' level."},
  "dlg.greymuzzle.first.0": {"emo": "plain", "intent": "meeting the old wolf", "pace": "slow", "vol": "quiet", "note": "Still; a long pause after 'for a long time'; the last image very quiet."},
  "dlg.greymuzzle.show.0": {"emo": "plain", "intent": "the sick Pack", "pace": "slow", "vol": "quiet", "note": "Plain and close; 'and cannot' after a small pause. It ends on him waiting."},
- "dlg.greymuzzle.ally.0": {"emo": "plain", "intent": "the Pack's answer", "pace": "slow", "vol": "quiet", "note": "'He is not coming.' on its own. 'They are his answer.' plain."},
+ "dlg.greymuzzle.ally.0": {"emo": "plain", "intent": "the Pack's answer", "pace": "slow", "vol": "quiet", "note": "'He is not coming.' on its own, plain."},
  "dlg.greymuzzle.again.0": {"emo": "plain", "intent": "the Pack has turned its back", "pace": "slow", "vol": "quiet", "note": "Flat and final."},
  "dlg.greymuzzle.again.1": {"emo": "plain", "intent": "the Pack is dying", "pace": "slow", "vol": "quiet", "note": "Plain."},
  "dlg.greymuzzle.again.2": {"emo": "plain", "intent": "the Pack is well", "pace": "measured", "vol": "quiet", "note": "Plain."},

@@ -32,22 +32,6 @@
    ],
    "voice": "narrator"
   },
-  "dlg.cin_drowned_fire.prints.0": {
-   "file": "narrator/dlg.cin_drowned_fire.prints.0.ogg",
-   "hash": "2d8b284f0b0e",
-   "placeholder": true,
-   "read": 6.95,
-   "sec": 6.95,
-   "segs": [
-    [
-     0.0,
-     6.953,
-     0.0,
-     1.0
-    ]
-   ],
-   "voice": "narrator"
-  },
   "dlg.cin_first_light.back.0": {
    "file": "narrator/dlg.cin_first_light.back.0.ogg",
    "hash": "a9b2d8ab716a",

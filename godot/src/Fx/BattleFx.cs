@@ -110,7 +110,7 @@ public partial class BattleFx : Node3D
         /// <summary>A red mark drawn by MarkPass on the finished frame (its decals kept hidden, as its data): its shape
         /// (0 lane, 1 ring, 2 cone, 3 band; -1 the decal draws it), its heights' slot, a cone's half arc or a band's
         /// inner radius, whether a roof over it takes it, and whether its heights are to be sampled.</summary>
-        public int Shape = -1, Slot = -1;
+        public int Shape = -1, Slot = -1, Pattern = 1;
         public float P1;
         public bool Roof, HeightsDue;
     }
@@ -358,6 +358,7 @@ public partial class BattleFx : Node3D
         }
         m.Active = true;
         m.T = 0;
+        m.Pattern = patternNext;
         m.Life = life;
         m.Radius = radius;
         m.Color = color;
@@ -880,6 +881,8 @@ public partial class BattleFx : Node3D
     /// <summary>The next Ground mark's style, set by the telegraph and taken by Ground: 1 an elite's or a boss's blow
     /// (the red line), 2 a crowd's blow (dim amber); 0 the mark's own colour. raisingNext: the amber ring is a raising.</summary>
     int styleNext;
+    /// <summary>The next red mark's pattern (MarkPass.PatternIds), set by the telegraph from its own, its school's or its shape's.</summary>
+    int patternNext = 1;
     bool raisingNext;
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
@@ -1024,12 +1027,14 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>A cone on the ground from (x, z), pointing at `angle` (radians, in the plane), `radius` long.</summary>
-    void ConeMark(double x, double z, float radius, double angle, double arc, Color color, float life, int? key = null)
+    void ConeMark(double x, double z, float radius, double angle, double arc, Color color, float life, int? key = null, bool progress = false)
     {
         if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; }
         var m = Ground(x, z, radius, ConeTexture((int)Math.Round(arc * 180 / Math.PI / 5) * 5), color, life);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(Math.Cos(angle), Math.Sin(angle)), 0);
         if (m.Slot >= 0) { m.Shape = 2; m.P1 = (float)(arc / 2); }
+        // a hostile blow's cone fills from its point as the blow comes (as a circle from its heart: MarkPass)
+        m.Progress = progress;
         if (key is int k2) keyed[k2] = m;
     }
 
@@ -1358,6 +1363,7 @@ public partial class BattleFx : Node3D
                     if (danger) col = Palette.TeleDanger;
                     else if (amber) col = Palette.TeleAmber;
                     styleNext = danger ? 1 : amber ? 2 : 0;
+                    patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
                     raisingNext = raising;
                     if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
@@ -1366,7 +1372,7 @@ public partial class BattleFx : Node3D
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
                     }
-                    else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                     else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
@@ -1837,7 +1843,7 @@ public partial class BattleFx : Node3D
             if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
             buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
             float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
-            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy, 1, fill, m.P1, m.Slot, m.Roof);
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy, 1, fill, m.P1, m.Slot, m.Roof, m.Pattern);
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);

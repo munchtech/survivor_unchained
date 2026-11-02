@@ -1,3 +1,5 @@
+**RETIRED 28 October 2026:** the romance routes and love scenes are out of the game (the owner). Affection stays: Sella's free night, Maeca's watch nights, Keegan's supper, Rav's surgery. This folder is history.
+
 # Romance drafts
 
 Drafts of the game's five romances (Sella, Maeca, Keegan, Rav and Ysolde)

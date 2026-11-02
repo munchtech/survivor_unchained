@@ -87,6 +87,12 @@ public partial class HerPose : SkeletonModifier3D
     static readonly float? FanLTry = Try("look-fan-l"), CurlLTry = Try("look-curl-l"), ThumbLTry = Try("look-thumb-l");
     int[] fingL = System.Array.Empty<int>();   // index, middle, ring, pinky: _01, _02, _03 each
     int thumb1L = -1, thumb3L = -1;
+    int[] fingR = System.Array.Empty<int>();
+    int thumb1R = -1;
+
+    /// <summary>Cinematics only (the `fingers` cue): each hand's fingers curled toward the palm by this many degrees,
+    /// whatever the Look's weight. The thumb follows at 0.4x. Zero leaves the clip's fingers alone.</summary>
+    public float CineCurlL, CineCurlR;
 
     public HerPose() { Name = "HerPose"; }
 
@@ -116,6 +122,11 @@ public partial class HerPose : SkeletonModifier3D
         fingL = fl.Contains(-1) ? System.Array.Empty<int>() : fl.ToArray();
         thumb1L = sk.FindBone("thumb_01_l");
         thumb3L = sk.FindBone("thumb_03_l");
+        var fr = new System.Collections.Generic.List<int>();
+        foreach (var f in new[] { "index", "middle", "ring", "pinky" })
+            for (int k = 1; k <= 3; k++) fr.Add(sk.FindBone($"{f}_0{k}_r"));
+        fingR = fr.Contains(-1) ? System.Array.Empty<int>() : fr.ToArray();
+        thumb1R = sk.FindBone("thumb_01_r");
         spine3 = sk.FindBone("spine_03");
         neck = sk.FindBone("neck_01");
         head = sk.FindBone("Head");
@@ -156,6 +167,8 @@ public partial class HerPose : SkeletonModifier3D
         }
         lookW = Mathf.MoveToward(lookW, LookOn ? 1 : 0, (float)delta / LookEase);
         if (lookW > 0) LookArms(sk, LookWeight);
+        if (CineCurlL != 0 && fingL.Length == 12 && handL >= 0) CurlHand(sk, fingL, handL, thumb1L, CineCurlL, false);
+        if (CineCurlR != 0 && fingR.Length == 12 && handR >= 0) CurlHand(sk, fingR, handR, thumb1R, CineCurlR, true);
         if (lib > 0)
         {
             Turn(sk, pelvis, Vector3.Forward, HipTilt * lib);
@@ -207,12 +220,43 @@ public partial class HerPose : SkeletonModifier3D
 
     /// <summary>The palm's frame from the posed joints: across (index knuckle to little finger's), along (wrist to
     /// middle knuckle, square to across) and their cross, which points out of the back of her left hand.</summary>
-    (Vector3 across, Vector3 along, Vector3 back) PalmL(Skeleton3D sk)
+    (Vector3 across, Vector3 along, Vector3 back) PalmL(Skeleton3D sk) => Palm(sk, fingL, handL, false);
+
+    /// <summary>The palm's frame for either hand. The right hand is the left mirrored, so the same cross product
+    /// points out of its palm; it is flipped here so back is out of the back of the hand on both.</summary>
+    static (Vector3 across, Vector3 along, Vector3 back) Palm(Skeleton3D sk, int[] fing, int hand, bool right)
     {
         Vector3 P(int b) => sk.GetBoneGlobalPose(b).Origin;
-        var a = (P(fingL[9]) - P(fingL[0])).Normalized();
-        var m = P(fingL[3]) - P(handL); m = (m - a * a.Dot(m)).Normalized();
-        return (a, m, m.Cross(a));
+        var a = (P(fing[9]) - P(fing[0])).Normalized();
+        var m = P(fing[3]) - P(hand); m = (m - a * a.Dot(m)).Normalized();
+        return (a, m, right ? a.Cross(m) : m.Cross(a));
+    }
+
+    /// <summary>Each finger bent toward the palm by `curl` degrees at its knuckle and middle joint, half at the last.</summary>
+    static void CurlFingers(Skeleton3D sk, int[] fing, int hand, float curl, bool right)
+    {
+        Vector3 P(int b) => sk.GetBoneGlobalPose(b).Origin;
+        for (int f = 0; f < 4; f++)
+        {
+            var n = Palm(sk, fing, hand, right).back;
+            var ax = (P(fing[f * 3 + 1]) - P(fing[f * 3])).Normalized().Cross(-n).Normalized();   // + toward her palm
+            Turn(sk, fing[f * 3], ax, curl);
+            Turn(sk, fing[f * 3 + 1], ax, curl);
+            Turn(sk, fing[f * 3 + 2], ax, curl / 2);
+        }
+    }
+
+    /// <summary>The fingers curled, and the thumb's base 0.4x about the index finger's axis.</summary>
+    static void CurlHand(Skeleton3D sk, int[] fing, int hand, int thumb1, float curl, bool right)
+    {
+        Vector3 P(int b) => sk.GetBoneGlobalPose(b).Origin;
+        CurlFingers(sk, fing, hand, curl, right);
+        if (thumb1 >= 0)
+        {
+            var n = Palm(sk, fing, hand, right).back;
+            var ax = (P(fing[1]) - P(fing[0])).Normalized().Cross(-n).Normalized();
+            Turn(sk, thumb1, ax, curl * 0.4f);
+        }
     }
 
     /// <summary>LookFanL, LookCurlL and LookThumbL at their eased values (see LookFanL).</summary>
@@ -228,15 +272,7 @@ public partial class HerPose : SkeletonModifier3D
                 float spread = Mathf.RadToDeg(Mathf.Atan2(dm.Cross(dp).Dot(n), dm.Dot(dp)));
                 Turn(sk, fingL[f * 3], n, -fan * spread);
             }
-        if (curl != 0)
-            for (int f = 0; f < 4; f++)
-            {
-                var n = PalmL(sk).back;
-                var ax = (P(fingL[f * 3 + 1]) - P(fingL[f * 3])).Normalized().Cross(-n).Normalized();   // + toward her palm
-                Turn(sk, fingL[f * 3], ax, curl);
-                Turn(sk, fingL[f * 3 + 1], ax, curl);
-                Turn(sk, fingL[f * 3 + 2], ax, curl / 2);
-            }
+        if (curl != 0) CurlFingers(sk, fingL, handL, curl, false);
         if (thumb != 0 && thumb1L >= 0 && thumb3L >= 0)
         {
             // toward a point beside the index's middle joint: 15 mm to its thumb side and 8 mm toward the palm

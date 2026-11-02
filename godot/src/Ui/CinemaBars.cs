@@ -1,4 +1,5 @@
 using Godot;
+using SurvivorUnchained.Cinema;
 
 namespace SurvivorUnchained.Ui;
 
@@ -18,7 +19,7 @@ public partial class CinemaBars : CanvasLayer
     readonly ColorRect black = new() { Color = Colors.Black, MouseFilter = Control.MouseFilterEnum.Ignore };
     readonly Label who, words;
     readonly SkipRing ring = new();
-    double sayT, sayFull;
+    double sayT, sayFull, sayFade = 0.25;
     float barsK;
 
     public CinemaBars()
@@ -68,11 +69,17 @@ public partial class CinemaBars : CanvasLayer
     /// <summary>A line under the picture for this long: the narrator's in italics,
     /// unnamed; a sung line in italics under its singer's name. `italics` says
     /// so outright (the storybook's teller is unnamed but in roman).</summary>
-    public void Say(string text, string? speaker, double seconds, bool sung = false, bool? italics = null)
+    public void Say(string text, string? speaker, double seconds, bool sung = false, bool? italics = null, double fade = 0.25)
     {
-        // The script's '/' marks where a long line breaks.
+        var font = italics ?? (speaker == null || sung) ? Style.TextItalic : Style.Text;
+        words.AddThemeFontOverride("font", font);
+        // The script's '/' marks where a long line breaks; else a line too wide breaks where it reads
+        // best (a sentence's end when balanced, never one word alone: CineLines.Break).
+        int px = words.GetThemeFontSize("font_size");
+        float wide = Mathf.Min(1100, (GetViewport()?.GetVisibleRect().Size.X ?? 1920) - 120);
+        text = CineLines.Break(text, s => font.GetStringSize(s, HorizontalAlignment.Left, -1, px).X, wide - 8);
         words.Text = text.Replace(" / ", "\n").Replace("/", "\n");
-        words.AddThemeFontOverride("font", italics ?? (speaker == null || sung) ? Style.TextItalic : Style.Text);
+        sayFade = Mathf.Clamp(fade, 0.05, Mathf.Max(0.05, seconds));
         who.Text = speaker?.ToUpperInvariant() ?? "";
         who.Visible = speaker != null;
         sayT = sayFull = seconds;
@@ -89,8 +96,8 @@ public partial class CinemaBars : CanvasLayer
         if (sayT > 0)
         {
             sayT -= delta;
-            // Out over the last quarter second.
-            float a = (float)Mathf.Clamp(sayT / 0.25, 0, 1);
+            // Out over the last quarter second (or with the picture's own fade to black).
+            float a = (float)Mathf.Clamp(sayT / sayFade, 0, 1);
             words.Modulate = who.Modulate = new Color(1, 1, 1, a);
             if (sayT <= 0) Hush();
         }

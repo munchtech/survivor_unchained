@@ -660,8 +660,8 @@ public class RouteTests
     {
         // The road to Keegan's supper (WRITING_PASS section 16), every step played:
         // the dead watchman's book (read in the prologue), Ashe's trunk in the
-        // Quiet Garden and Rook asked about it, both told to Keegan, the dinner
-        // she refuses, and back after dark.
+        // Quiet Garden and Rook asked about it, both told to Keegan,
+        // and back after dark.
         var p = Route.New("scholar");
         p.Enter("waystation");
         p.Use("garden");
@@ -670,8 +670,6 @@ public class RouteTests
         Assert.True(p.Knows("lore.ashe"));
         p.Talk("keegan", "Ford-Warden");
         p.Talk("keegan", "Captain Ashe");
-        p.Talk("keegan", "dinner");
-        Assert.DoesNotContain(p.Offered("keegan"), c => c.Contains("Have you eaten"));
         p.Night();
         p.Talk("keegan", "Have you eaten");
         Assert.True(p.F("keegan.supper").Truthy);

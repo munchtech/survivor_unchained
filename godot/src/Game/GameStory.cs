@@ -18,6 +18,28 @@ public partial class Game
     /// that follows it on the cut (C01) to take over, so nothing moves at the seam.</summary>
     CinemaBars? storyBars;
     bool beginning, storyEnded, quickStoried;
+    /// <summary>When the storybook ended (wall seconds; 0: none pending), to cut the silence C01 opens on by the load.</summary>
+    double storyDoneAt;
+
+    /// <summary>C01 starting on a storybook's bars: its opening black shot loses the time the zone took to stand up
+    /// under the black (only after SB00 played to its end: its "durs" for sb00.ended), so the seam stays the doc's.</summary>
+    void CutStorySeam(SurvivorUnchained.Cinema.CineFile file)
+    {
+        if (storyDoneAt <= 0 || !World.Facts.ContainsKey("sb00.ended")) { storyDoneAt = 0; return; }
+        double load = Time.GetTicksMsec() / 1000.0 - storyDoneAt;
+        storyDoneAt = 0;
+        if (file.Shots.Count == 0) return;
+        double cut = StoryTimeline.CutSeam(file.Shots[0], load, 1.3);
+        GD.Print($"storybook: the zone stood up in {load:0.00}s under the black; {file.Id} shot {file.Shots[0].Id} cut by {cut:0.00}s");
+    }
+
+    /// <summary>At a storybook's end, into the Low Ford, the time noted for C01's seam (CutStorySeam).</summary>
+    void WhenStoryBuilt(Action fn)
+    {
+        storyDoneAt = Time.GetTicksMsec() / 1000.0;
+        fn();
+    }
+
     public bool InStorybook => storybook != null;
 
     static bool StoryExists(string id) => FileAccess.FileExists($"res://data/storybook/{id}.json");
@@ -80,7 +102,7 @@ public partial class Game
             bars.Frame(1, 1);
             // Nothing of the world is drawn under it.
             GetViewport().Disable3D = true;
-            storybook = new StoryPlayer(f, Host(), skipped => AfterStory(c, skipped, bars), bars);
+            storybook = new StoryPlayer(f, Host(), skipped => { storybook = null; WhenStoryBuilt(() => AfterStory(c, skipped, bars)); }, bars, Args.Num("sb-from", 0));
             AddChild(storybook);
             hud.Fade(0, 0);
         });
@@ -89,6 +111,7 @@ public partial class Game
     void AfterStory(CreationChoice c, bool skipped, CinemaBars? bars)
     {
         storybook = null;
+        GD.Print($"storybook: into the Low Ford at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
         GetViewport().Disable3D = false;
         EndCreate();
         storyEnded = !skipped;
@@ -117,11 +140,15 @@ public partial class Game
         storybook = new StoryPlayer(f, Host(), skipped =>
         {
             storybook = null;
-            storyEnded = !skipped;
-            storyBars = bars;
-            Quick();
-            Unbar();
-        }, bars);
+            WhenStoryBuilt(() =>
+            {
+                storyEnded = !skipped;
+                storyBars = bars;
+                GD.Print($"storybook: into the quick start at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
+                Quick();
+                Unbar();
+            });
+        }, bars, Args.Num("sb-from", 0));
         AddChild(storybook);
         hud.Fade(0, 0);
         return true;

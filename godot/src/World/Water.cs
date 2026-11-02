@@ -34,6 +34,27 @@ public static class Water
         PushTints();
     }
 
+    static readonly Vector4[] wade = new Vector4[4];
+    static int waded;
+
+    /// <summary>Who stands in the water this frame (env 22, the ford's "wading rings"): up to four feet as (x, z, how deep
+    /// 0-1, how fast m/s), packed from the first; the shader rings the surface round each (water.gdshader's wade_at), and
+    /// skips its loop outside their bounds (wade_box). Pass none to clear.</summary>
+    public static void Wade(ReadOnlySpan<Vector4> feet)
+    {
+        int n = Math.Min(feet.Length, wade.Length);
+        if (n == 0 && waded == 0) return;
+        var box = new Vector4(1e9f, 1e9f, -1e9f, -1e9f);
+        for (int i = 0; i < wade.Length; i++)
+        {
+            wade[i] = i < n ? feet[i] : Vector4.Zero;
+            if (i < n) box = new Vector4(Math.Min(box.X, feet[i].X), Math.Min(box.Y, feet[i].Y), Math.Max(box.Z, feet[i].X), Math.Max(box.W, feet[i].Y));
+        }
+        waded = n;
+        foreach (var r in mats)
+            if (r.GetRef().Obj is ShaderMaterial m) { m.SetShaderParameter("wade_at", wade); m.SetShaderParameter("wade_box", box); }
+    }
+
     static void PushTints()
     {
         var at = new Vector4[4];
@@ -185,7 +206,8 @@ public static class Water
     /// lace_size (m: the shore foam's lace).</summary>
     public static readonly string[] Keys = ["clarity", "deep", "shore", "foam_depth", "foam_amt", "wake", "ripple_size", "ripple_bend", "refract", "gloss", "glint_cap", "glint_spread", "glint_bend", "glint_near", "glint_sheen", "wake_taper", "lace_size", "mirror", "mirror_from", "mirror_to", "mirror_ripple", "streak", "streak_w", "streak_l", "streak_cap", "streak_tame", "streak_h0", "streak_h1", "streak_h2", "streak_h3", "streak_high", "glint_high", "bed_soft", "bed_soft_lod", "bed_soft_depth",
         "moon_rough", "moon_sparse", "moon_gain", "moon_cap", "moon_column", "moon_col_w", "moon_col_l", "moon_break", "lamp_cap", "lamp_pool", "moon_along", "moon_across",
-        "foam_emerge", "foam_emerge_r", "moon_taper", "moon_vary", "bank_tint", "bank_depth"];
+        "foam_emerge", "foam_emerge_r", "moon_taper", "moon_vary", "bank_tint", "bank_depth",
+        "band_amt", "band_size", "flow_lines", "flow_line_size", "ripple_shade", "ripple_sheen", "wake_foam", "near_diffuse", "wade_amt", "wade_reach", "wade_len", "wade_foam"];
 
     /// <summary>The bed and the bank (water.json "look" "bed"; the terrain shader's global water_bed, water_silt): pebbles
     /// (0-1, river stones in the silt), silt (0-1, how far the bed takes the silt's colour), wet (m above the water the bank

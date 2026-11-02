@@ -1,0 +1,241 @@
+{
+ "_note": "Storybook 4 re-carve: ChatGPT sources flattened (ink_recarve.py FLAT) then Krea img2img in the r2 hand.",
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p5R1_f1_d40",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f1.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p5R1_f1_d50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f1.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5R1_f1_d60",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f1.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p5R1_f2_d40",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f2.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p5R1_f2_d50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f2.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5R1_f2_d60",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f2.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p5R1_f0_d50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5R1_f0.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5A2_f1_d40",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f1.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p5A2_f1_d50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f1.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5A2_f1_d60",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f1.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p5A2_f2_d40",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f2.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p5A2_f2_d50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f2.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5A2_f2_d60",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47
+   ],
+   "prompt": "A shadow puppet theatre scene in carved black ink. Winter night at a river ford: a black starless sky, the black river across the upper middle of the picture with flat stepping stones. On the near bank three crude fire baskets of rough black iron bars on iron posts, each a different shape: one squat and bent, one tall and narrow, one tilted on a crooked post; no stem, no goblet, no bowl, no glass; each burns cold pale blue, its light carved as glittering strokes on the water. Midstream a fourth cold blue light hovers just above the water, lost in its own glare, rings carved on the water under it. A dirt road comes from the ford down toward us; on it a heavy wooden farm wagon lies overturned on its side, its bed facing us, one wheel up in the air. On both sides of the road the black water floods the banks, and in it stand the drowned dead, knee-deep in the black water, in irregular clumps and gaps, a few leaning: thin bodies in soaked ragged shifts clinging to them, heads hung forward, arms slack, long wet hair and river weed hanging from their heads and fingers, barefoot, no hats, no coats, no cloaks. Every one is a flat solid black puppet silhouette cut against the snow and the blue water, no faces, nothing drawn inside them. The snow and the ground are carved all over in long gouge strokes and furrows like a woodcut road, dim blue-gray, with small pools of pale blue light only around the fires; everything away from the fires sinks into black and deep blue-black. No warm light, no orange, no yellow; the only color is the cold blue fire.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p5A2_f2.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p3N1_f1_d40",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f1.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p3N1_f1_d50",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f1.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p3N1_f1_d60",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f1.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p3N1_f2_d40",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f2.png",
+   "denoise": 0.4
+  },
+  {
+   "name": "p3N1_f2_d50",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f2.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p3N1_f2_d60",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f2.png",
+   "denoise": 0.6
+  },
+  {
+   "name": "p3N1_f0_d50",
+   "w": 2432,
+   "h": 896,
+   "seeds": [
+    47,
+    202
+   ],
+   "prompt": "A shadow puppet theatre frieze in carved black ink. Winter night on a frozen field beside a rutted dirt road, low dark hills under a black sky carved in long sweeping gouge lines. Ember glints in the frosted soil like coals in ash, small bold orange marks. At left a crack runs through the frost glowing ember orange, and a dead hand claws up out of it. Center-left a dead man stands, gaunt, in a torn ragged tunic, arms slack, his face blank and slack, not a skull: ember orange light burns at his open mouth, his eye sockets and the wounds in his chest, like a lamp behind paper. Center-right an old Watch soldier with a gray beard, a long slate blue-gray wool cloak and tabard, a round wooden shield on his left arm and a small iron oil lamp hanging at his belt, lunges and drives one long spear through a second dead man; his breath smokes white in the cold. The speared dead man sags on the spear, head hung, no breath, and his light pours out of the wound and falls onto the frost as small glowing ember stones. At right a body lies fallen empty and dark on the frost. The dead never breathe smoke. The frost and field are carved in long gouge strokes, dim blue-gray; large masses of solid black. The only warm color is the orange ember light; everything else is black, slate and deep blue-black ink.",
+   "init": "C:\\Users\\munch\\Desktop\\survivorsunchained\\.claude\\worktrees\\storybook-2\\tools\\storybook\\out\\ink_rc\\_init_p3N1_f0.png",
+   "denoise": 0.5
+  }
+ ]
+}

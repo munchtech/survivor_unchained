@@ -46,8 +46,8 @@ public partial class Hits : Node3D
         {
             var l = new Label3D
             {
-                Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FontSize = 64, OutlineSize = 14,
-                PixelSize = 0.006f, Modulate = new Color(1f, 0.95f, 0.85f), OutlineModulate = new Color(0.08f, 0.03f, 0.02f), Visible = false,
+                Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FontSize = 64, OutlineSize = NumOutline,
+                PixelSize = NumPixel, Modulate = new Color(1f, 0.95f, 0.85f), OutlineModulate = new Color(0.08f, 0.03f, 0.02f), Visible = false,
                 Shaded = false, RenderPriority = 10, OutlineRenderPriority = 9,
             };
             AddChild(l);
@@ -185,36 +185,60 @@ public partial class Hits : Node3D
 
     /// <summary>The Drowned Girl's HUD top at screen x (1080 px): her figure's head over its span, her hair's river
     /// 880 to the first seat, 955 across the seats, 915 at the eddy; null where nothing of the HUD stands.</summary>
-    public static float? HudTop(float x, float figL, float figR, float figTop, float seatL, float seatR, float eddyL, float eddyR)
+    public static float? HudTop(float x, float figL, float figR, float figTop, float seatL, float seatR, float keepL, float keepR, float keepTop = 875)
     {
         if (x >= figL && x <= figR) return Mathf.Min(818, figTop);
         if (x > figR && x < seatL) return 880;
         if (x >= seatL && x <= seatR) return 955;
-        if (x > seatR && x < eddyL) return 955;
-        if (x >= eddyL && x <= eddyR) return 915;
+        if (x > seatR && x < keepL) return 955;
+        if (x >= keepL && x <= keepR) return keepTop;
         return null;
     }
 
+    /// <summary>The highest (smallest y) HUD top over a span of screen x, both in 1080 design px, sampled at its ends,
+    /// its middle and every 40 px between, with the live HUD (her figure's fade rect, the seats, the keeper);
+    /// null where no part of the HUD stands under the span or the HUD isn't up. Shared by numbers and barks.</summary>
+    public static float? HudTopOver(float x0, float x1)
+    {
+        if (SurvivorUnchained.Ui.LifeLamp.Live?.FadeRect is not Rect2 f) return null;
+        float seatL = SurvivorUnchained.Ui.DgPanel.Rect.Position.X, seatR = SurvivorUnchained.Ui.DgPanel.Rect.End.X;
+        var kr = SurvivorUnchained.Ui.DgPanel.KeeperRect; float kt = SurvivorUnchained.Ui.DgPanel.KeeperTop;
+        float? top = null;
+        int n = Mathf.Max(2, Mathf.CeilToInt((x1 - x0) / 40f));
+        for (int i = 0; i <= n; i++)
+            if (HudTop(x0 + (x1 - x0) * i / n, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, kr.Position.X, kr.End.X, kt) is float t) top = top is float o ? Mathf.Min(o, t) : t;
+        return top;
+    }
+
     static int hudShots;
+    const int NumOutline = 14;
+    const float NumPixel = 0.006f;
+
+    /// <summary>A number restyled (a tally's text or size grew: a crit at 80-98 from the 60 it was placed at) kept
+    /// clear of the HUD again at its new size (UI 20: crits were placed as an empty 60 px box, then grew over the hair).</summary>
+    void Reclear(int i)
+    {
+        var l = numbers[i].Label;
+        if (l.Visible) l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
+    }
     /// <summary>The Drowned Girl (UI 17): a number's box keeps its bottom 8 px above the HUD's top at its x.</summary>
     Vector3 AboveHud(Vector3 at, string text, int size)
     {
         var fig = SurvivorUnchained.Ui.LifeLamp.Live?.FadeRect;
         var cam = GetViewport()?.GetCamera3D();
-        if (fig is not Rect2 f || cam == null || cam.IsPositionBehind(at)) return at;
+        if (fig == null || cam == null || cam.IsPositionBehind(at)) return at;
         float k = GetViewport().GetVisibleRect().Size.Y / 1080f;
         var p = cam.UnprojectPosition(at);
-        float h = size * 0.8f;
-        float seatL = SurvivorUnchained.Ui.DgRiver.Seat(0).X - SurvivorUnchained.Ui.DgRiver.SeatD / 2, seatR = SurvivorUnchained.Ui.DgRiver.Seat(5).X + SurvivorUnchained.Ui.DgRiver.SeatD / 2;
-        var fl = SurvivorUnchained.Ui.DgRiver.FlareAt; float fr = SurvivorUnchained.Ui.DgRiver.FlareR;
-        // (the box's width is its text's: check its left, middle and right)
-        float w = Mathf.Max(50, text.Length * size * 0.4f);
-        float top = float.MaxValue;
-        foreach (float dx in new[] { -w / 2, 0, w / 2 })
-            if (HudTop((p.X + dx) / k, f.Position.X, f.End.X, f.Position.Y, seatL, seatR, fl.X - fr, fl.X + fr) is float t) top = Mathf.Min(top, t * k);
+        // (UI 20: the box from the label's real size on screen at its depth, its outline included: a font px is
+        // PixelSize metres, so a crit's 98 at the play camera is ~2x the 60 the old guess took for every number)
+        float em = (cam.UnprojectPosition(at + cam.GlobalBasis.Y * (size + 2 * NumOutline) * NumPixel) - p).Length();
+        float h = em * 0.8f;
+        // (the box's width is its text's: checked across all of it)
+        float w = Mathf.Max(em * 0.8f, text.Length * em * 0.6f);
+        float top = HudTopOver((p.X - w / 2) / k, (p.X + w / 2) / k) is float ht ? ht * k : float.MaxValue;
         if (top == float.MaxValue || p.Y + h / 2 <= top - 8) return at;
         float to = top - 8 - h / 2;
-        if (hudShots++ < 6) GD.Print($"hits: number '{text}' at y {p.Y:0} (bottom {p.Y + h / 2:0}) lifted to {to:0}, HUD top {top:0}");
+        if (hudShots++ < 12) GD.Print($"hits: number '{text}' size {size} ({h:0} px tall) at y {p.Y:0} (bottom {p.Y + h / 2:0}) lifted to {to:0}, HUD top {top:0}");
         float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
         return cam.ProjectPosition(new Vector2(p.X, to), depth);
     }

@@ -39,7 +39,7 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
 3. Give suggested lines only where a note needs one.
 4. Be the hardest reader the treatment gets before it reaches the owner.
 
-**Rules:** love scenes fade to black. Never "Ashford" in item names or lore
+**Rules:** no romance routes and no love scenes (the owner, 28 October); affection stays. Never "Ashford" in item names or lore
 (StoryLint holds it). Hand off at about 500k tokens of context.
 
 ## 3. Done, in progress, next
@@ -97,7 +97,7 @@ section of `docs/team/OWNER_NOTES.md`, then this page, then
 - **The owner's §10 answers** (in `OWNER_NOTES.md`) are folded into notes
   01. The lie to Brannoc costs the relationship, not his trade, and the
   notes list what that unsettles in the treatment and in crafting.
-- **I praised and protected:** the romances, C07, C14's images, the comedy
+- **I praised and protected:** the romances (since removed, 28 October), C07, C14's images, the comedy
   (Snib, Keegan, Chid, Sella), ember-is-the-dead, C09's eyeline rule, and
   "Them first."
 

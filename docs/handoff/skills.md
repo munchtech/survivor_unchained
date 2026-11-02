@@ -1,5 +1,64 @@
 # Handoff: skills look and feel
 
+## Combat VFX 6 (vfx-6, 1 Nov): MR READY. No chevrons on round marks
+**The owner (29 Oct, verbatim):** "the chevron on the circular telegraphs is not wanted, it dosn't look good".
+
+**Built** (`godot/src/Fx/MarkPass.cs`, `godot/data/mark_look.json`, `godot/src/Fx/BattleFx.cs` ConeMark):
+- A pattern "none" (id 6 in `PatternIds`). mark_look.json `"patterns"` maps circle, ring and cone to none. The default stays chevron, so only lanes carry chevrons: a lane has a direction, and a round mark's chevrons are zigzags on arcs.
+- The bed has an unlit floor, `bf` 0.2 (as seen: the brightest channel on the display; `want = max(k x ground, bf)`). Before it, a night mark out of the lamp was only its rims, a hollow outline. Day is unchanged.
+- Cones fill from their point, with a cast line, as discs do (`ConeMark(..., progress)` for hostile blows; shader fill for `kind <= 2`, gated inside the wedge).
+- Salmon is unchanged.
+
+**Judged (xhigh, 2 rounds, ~145k):** r1 FAIL close (the night cone and disc were hollow without the chevrons). r2 PASS-WITH-NOTES: every frame passes the gate, day and night, at the boss clearings, the arena and the town.
+
+**Later list (not gating; added to the projection list below):**
+- Where a lane fan's lanes overlap at the root (Red Hand's Volley), the chevrons cross into a lattice. Fade the chevrons in over the first 1.5 lane widths, or draw them only where one lane covers.
+- At night the fill sits only ~1.5x over the bed's inner edge (~2x by day). The fix if touched: lift the night fill to ~sRGB 100,42,24.
+- A lane end runs past a wall top onto a building (same family as the cliff jog): clip where the ground steps more than ~0.5 m.
+
+**Routes:** Lighting: the night arena ground crushes to pure black outside the lamp. Character art: the Red Hand reads as flat, unshaded orange. UI: the bronze HUD statue goes semi-transparent over red lanes (05 in r2), so check the fade is intended.
+
+**Shots:** `shoot2.sh` kinds bpack, bred, bdead (arena bosses at night: `--zone arena --boss boss_X --minute 29.9`) and mpack, mred (day: `--zone map --people X --at boss --time day`). Barrow knight and the crowd make lanes only. Backed up in `survivorsunchained_inputs\scratch_vfx6`; judged r2 frames and a 2x2 sheet (night cone, night disc, day cone, day disc) in `survivorsunchained_inputsfx6`. Tests 1335/0/10.
+
+## Combat VFX 5 (vfx-4, 29 Oct): MR READY. Chevrons, and the owner picked B SALMON
+**The owner picked chevrons (verbatim):** "agreed, chevrons - with clear edges and a flat line end not the arrow. clear cast line and edges".
+**Then the color (verbatim):** "B salmon." It is set in mark_look.json (`"look": "salmon"`). The fire tint stays off.
+
+**Built** (all in `godot/src/Fx/MarkPass.cs` and `godot/data/mark_look.json`; red marks only):
+- Chevrons are on every red mark (`"patterns"` default chevron). The other patterns stay as named choices.
+- The chevrons are cut dark into the bed ahead of the running front and lit behind it (`cd`). The bed's darkening is applied after the fold's cap; before it, by day, it was lost.
+- Chevron shape: period `cp` 0.55 m, slope `cs` 1.5 (an apex near 67 deg), half width `cw` 0.06 m.
+- The lane's far end is flat (`cap` 2).
+- Clear rims: less outer glow (`eg`) and less bleed (`ew`), plus a keyline just inside them (`kg`, `kw`).
+- The cast line is a hard line at the running front (`fl`, `fw`, `front` 0.04). It rides the pattern's light, so by day it can pass the red's fold as a pale line.
+- Scarlet's look (`looks.scarlet`): `bo` 0.82 (bed opacity), `cd` 0.72, `hl` 0.5. Salmon keeps the defaults.
+- School tint (`"tints"`, shader `pcol` code = pattern + 8 x tint): OFF behind `"tinted": false`. The judge would leave it off; it's on the owner's sheet as an option. `MARK_TUNE=tt=1` forces it for shots.
+
+**Judged:**
+- Round 1 (xhigh): salmon PASS; scarlet FAIL by day, close.
+- Round 2 (xhigh, the last round): salmon PASS, every frame gate YES. Scarlet PASS on every frame except f14, a late Warden disc on the bank that is cut by a straight chord with no rim.
+
+**Later list: telegraph projection** (pre-existing, routed by main 29 Oct; one item for the next VFX slot):
+- The f14 chord: the height gate (g0/g1) on a sloped bank.
+- The mark paints corpses and debris on the ground.
+- A lane appears to jog where it crosses a roofless building's wall.
+- A faint dark lane outlives the red for a moment after the hit. It seems to be BattleFx's own Danger decal bed fading out; unconfirmed.
+
+**Owner sheet (SENT via main):** `C:\Users\munch\Desktop\survivorsunchained_inputs\vfx5\telegraph_color_scarlet_vs_salmon.jpg`.
+
+**Next:** merge (main). Then the queued input below (the warden's 4 new skills), and the projection later list above.
+
+The shot scripts (shoot.sh `NAME:LOOK:KIND:MARK_TUNE`, pace.py, jsheet.py, red.py, owner_sheet.py) are backed up in `survivorsunchained_inputs\scratch_vfx5`.
+
+## QUEUED INPUT (28 Oct, from Classes 15 P6, via main): the warden's 4 new skills need VFX
+Sim lands with placeholder art keys (classes-15; MR1 = P5b+P6). All warden-only, holy + steel. Build after MR1 merges.
+1. **Sunder** (greatsword grip): slow heavy 220-deg cleave (300 with Wide Swing). Every 4th swing (3rd with Third Blow, 2nd with its Turn) a heavy overhead splits the ground in a line 7 m long, ~1.2 m wide, ahead of her; Burning Edge = holy fire along the crack. Her greatsword prop + clips are Phase 3; until then it swings whatever she holds.
+2. **Groundbreaker:** every 5 s a crack races from her to the densest pack within 10 m (14 with Fault Line); the end heaves ~2.5 m round, 0.6 s stun. Twin Cracks = two cracks splayed 30 deg; Upheaval = lesser things popped airborne 0.8 s; Turn "Aftershock" = the same spot heaves again 0.8 s later.
+3. **Rebuke** (reactive, no cast): each block strikes the blocker + 3 nearest with holy light, shield to targets. Turn "Shield of Morning" = a barrier glint to her per creature struck.
+4. **Watch Bell:** every 6 s a bell toll rings 8 m round (10 with Loud Bell); everything drawn in to her for 2 s (draw-in streaks), she gains barrier (shimmer) per creature. Iron Bell slows what's drawn. Turn "Stone Bell" lays wall stones as it tolls.
+**Generic Turn looks (parameters on each skill's look, not new art per Turn):** Pulse = fires 3x at 85% size, 0.3 s apart; On-kill = fires again from a corpse at 30% damage; school Turns recolor (fire/frost/holy); Wide/Linger exist (P5a). Turn names are placeholders for the story lead.
+Owner standards apply: every press visible; Flare "BOOM" scale is for Flares, not these (keep these readable under a Flare).
+
 ## MR READY (Combat VFX 3, vfx-1, 28 Oct): the red line re-tint (MarkPass) ships; after the merge, the next lead starts at step 2 below
 
 **Judged and done (all on vfx-1, tests 1191/0/10):**

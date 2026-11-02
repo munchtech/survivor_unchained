@@ -16,5 +16,14 @@
   "pistol": false,
   "lean": null,
   "grip": 0.11
+ },
+ "smith_hammer": {
+  "file": "res://art/weapons/smith_hammer.glb",
+  "length": 0.397,
+  "kind": "blunt",
+  "node": null,
+  "pistol": false,
+  "lean": null,
+  "grip": 0.18
  }
 }

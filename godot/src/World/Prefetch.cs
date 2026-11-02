@@ -33,8 +33,7 @@ public static class Prefetch
     {
         Release();
         var scenes = new List<string>(Dressing.Files(z)) { $"{z.Dir}/landmarks.glb" };
-        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
-            if (w.EndsWith(".glb")) scenes.Add($"res://assets/weapons/{w}");
+        scenes.AddRange(Arms.Files());
         if (her != null) scenes.AddRange(People.Files(her));
         if (folk) scenes.AddRange(Wardrobe());
         Scenes(scenes);
@@ -120,8 +119,7 @@ public static class Prefetch
     public static IEnumerable<object?> Ahead(ZoneData z, PersonSpec? her, bool folk)
     {
         var scenes = new List<string>(Dressing.Files(z)) { $"{z.Dir}/landmarks.glb" };
-        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
-            if (w.EndsWith(".glb")) scenes.Add($"res://assets/weapons/{w}");
+        scenes.AddRange(Arms.Files());
         if (her != null) scenes.AddRange(People.Files(her));
         if (folk) scenes.AddRange(Wardrobe());
         var unread = new List<string>();
@@ -167,8 +165,7 @@ public static class Prefetch
     public static System.Threading.Tasks.Task PeopleAhead(PersonSpec? her)
     {
         var files = new List<string>(Wardrobe());
-        foreach (var w in DirAccess.GetFilesAt("res://assets/weapons"))
-            if (w.EndsWith(".glb")) files.Add($"res://assets/weapons/{w}");
+        files.AddRange(Arms.Files());
         if (her != null) files.AddRange(People.Files(her));
         return System.Threading.Tasks.Task.Run(() =>
         {

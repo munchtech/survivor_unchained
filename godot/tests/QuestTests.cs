@@ -187,29 +187,19 @@ public class QuestTests
     }
 
     [Fact]
-    public void A_night_with_Sella_is_paid_up_front_and_leaves_you_warmed()
+    public void A_night_in_the_blue_room_is_paid_up_front_and_is_only_sleep()
     {
         var s = Q("hunter");
         s.Ch.Gold = 20;
-        // Paid at the foot of the stairs; the last place to stop is in the bath.
-        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her");
+        // Paid at the foot of the stairs; the only thing to buy up them is the room and the sleep.
+        Talk(Convo("sella"), s.C, "how much", "only want to sleep", "Yes", "until next time");
         Assert.Equal(5, s.Ch.Gold);
-        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
-        // Warmed only says the night happened: a fight is no different for it (the owner's call).
-        var stats = new[] { Stat.Damage, Stat.MoveSpeed, Stat.MaxHealth, Stat.Armor, Stat.CritChance, Stat.Regen };
-        var with = stats.Select(Character.Kit(s.Ch).Stats.Get).ToList();
-        s.Ch.Conditions.RemoveAll(c => c.Id == ConditionId.Warmed);
-        Assert.Equal(stats.Select(Character.Kit(s.Ch).Stats.Get).ToList(), with);
+        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Rested);
+        Assert.DoesNotContain(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
         Assert.Equal(1, s.World.Fact("sella.nights").Number);
-        // Stopped there, she counts thirteen back: two were for the water.
-        var stop = Q("hunter");
-        stop.Ch.Gold = 20;
-        Talk(Convo("sella"), stop.C, "how much", "15 gold, then", "stop here");
-        Assert.Equal(18, stop.Ch.Gold);
-        Assert.False(stop.World.Fact("sella.nights").Truthy);
         var poor = Q("hunter");
         poor.Ch.Gold = 10;
-        Assert.Contains("locked", Assert.Throws<InvalidOperationException>(() => Talk(Convo("sella"), poor.C, "how much", "15 gold, then")).Message);
+        Assert.Contains("locked", Assert.Throws<InvalidOperationException>(() => Talk(Convo("sella"), poor.C, "how much", "only want to sleep")).Message);
     }
 
     [Fact]
@@ -433,7 +423,7 @@ public class QuestTests
     }
 
     [Fact]
-    public void Maeca_asks_once_the_Pack_is_settled_and_the_scene_cuts_away_unless_asked_not_to()
+    public void Maeca_asks_once_the_Pack_is_settled_and_the_Blind_is_a_watch_night()
     {
         var s = Q("hunter");
         Talk(Convo("maeca"), s.C, "goodbye");
@@ -443,17 +433,19 @@ public class QuestTests
         s.World.Facts["beasts.outcome"] = "cured";
         Assert.NotEqual("invite", new DialogueRunner(Convo("maeca"), s.C).Start()!.Node.Id);
         s.World.Time = TimeOfDay.Night;
-        // The walk out to the Blind, the fire, her terms; then the moment.
+        // The walk out to the Blind, the fire, her terms; then the watch.
         var p = Talk(Convo("maeca"), s.C, "keep quiet", "I won't");
-        Assert.Equal("blind", p!.Node.Id);
-        Assert.DoesNotContain("[explicit scene", p.Text);
-        Assert.True(s.World.Fact("maeca.lover").Truthy);
-        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
-        // No setting shows more: the moment itself fades for everyone.
-        s.World.Facts["settings.intimacy"] = "full";
-        p = Talk(Convo("maeca"), s.C, "big enough for two", "take her hand");
-        Assert.Equal("blind", p!.Node.Id);
-        Assert.DoesNotContain("[explicit", p.Text);
+        Assert.Equal("watch_only", p!.Node.Id);
+        Assert.Contains("frost is on both your shoulders", p.Text);
+        Assert.Equal(1, s.World.Fact("maeca.blind_nights").Number);
+        Assert.False(s.World.Fact("maeca.lover").Truthy);
+        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Rested);
+        Assert.DoesNotContain(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
+        // The second night is the same watch, and she sits down sooner.
+        p = Talk(Convo("maeca"), s.C, "big enough for two", "Feed the fire");
+        Assert.Equal("watch_only", p!.Node.Id);
+        Assert.Contains("sooner than she did the first time", p.Text);
+        Assert.Equal(2, s.World.Fact("maeca.blind_nights").Number);
     }
 
     [Fact]

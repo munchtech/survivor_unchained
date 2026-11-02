@@ -390,6 +390,72 @@ def low_point(pitch=(-34.0, -40.0), out=(18.0, 16.0), side="r", grip=0.0):
     return f
 
 
+def _about(v, axis, deg):
+    """v turned deg about axis (right hand)."""
+    a = np.asarray(axis, float) / np.linalg.norm(axis); v = np.asarray(v, float); t = math.radians(deg)
+    return v * math.cos(t) + np.cross(a, v) * math.sin(t) + a * (a @ v) * (1 - math.cos(t))
+
+
+def _haft_off(side, tilt=None):
+    """Degrees an axe's haft lies off the keyed blade (the hand's +Z as keyed.Rig aims it, the grip's lean less the
+    tilt), turned about the hand's +X: the grip tilt's fitted haft (keyed.slide_dir / slide_dir_left) against it."""
+    from keyed import GRIP, qaxis, qrot, slide_dir, slide_dir_left
+    t = GRIP_TILT if tilt is None else tilt
+    d = slide_dir_left("axes", t) if side == "l" else slide_dir("axe", t)
+    z = qrot(qaxis([1.0, 0, 0], -(GRIP["axe"] - t)), [0, 0, 1.0])
+    return math.degrees(math.atan2(float(np.dot(np.cross(z, d), [1.0, 0, 0])), float(np.dot(z, d))))
+
+
+def haft_carry(pitch, out, side="r", grip=0.0, roll=0.0, sway=0.0, sway_lag=0.0, fa=(15.0, 25.0), face=None,
+               lag=0.0, dip=0.0, dip_at=0.1, lift=0.0, lift_at=0.5):
+    """low_point's line with a carried piece's life (Animation 58 round 2; the max judge's notes on the high carries):
+    - `pitch`, `out`, `grip`: as low_point, eased with the arm's swing `lag` of a cycle late (the piece trailing the fist).
+    - `dip`: degrees the line drops after each foot lands (`dip_at`: that far into the cycle past each contact).
+    - `roll` / `sway`: degrees the hand rolls about the forearm (`fa`: its drop below level and heading out to that
+      side, in her frame), + supinating (the tip out from her head), `sway` either way with the swing, outermost
+      `sway_lag` of a cycle after the fist's forward end (the other arm half a cycle off).
+    - `face`: "plumb" (an axe): `pitch` and `out` are the haft's own line and the head is kept upright, its face square
+      to level, so its side shows from her front quarters and both sides (keyed then turns the hand to it: blade and
+      knuckles); a number: the knuckles' heading (deg, 0 straight ahead, + out to that side); None leaves the hand's
+      turn about the shaft to the forearm (blade only).
+    - `lift` (m): the fist raised that much about `lift_at` of the cycle (a cos^2 bump 0.2 wide)."""
+    sg = 1.0 if side == "l" else -1.0
+    off = 0.5 if side == "l" else 0.0
+    dr, dh = (math.radians(x) for x in fa)
+    spec_tilt = _haft_off(side) if face == "plumb" else 0.0
+    ax = np.array((sg * math.sin(dh) * math.cos(dr), -math.sin(dr), math.cos(dh) * math.cos(dr)))
+
+    def f(ph, k, hand):
+        hand = dict(hand)
+        kl = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - lag))
+        pd = pitch[1] + (pitch[0] - pitch[1]) * kl - dip * ((1 + math.cos(4 * math.pi * (ph - dip_at))) / 2) ** 2
+        p, o = math.radians(pd), math.radians(out[1] + (out[0] - out[1]) * kl)
+        b = np.array((sg * math.sin(o) * math.cos(p), math.sin(p), math.cos(o) * math.cos(p)))
+        th = -sg * (roll + sway * math.cos(2 * math.pi * (ph - off - 0.5 - sway_lag)))
+        b = _about(b, ax, th)
+        hand.update({"blade": tuple(b), "frame": "char"})
+        if face == "plumb":
+            # The line is the piece's own (its haft as the fist holds it on the tilt); its head kept upright, the
+            # face square to level (the palm's normal level and square to the haft), the knuckles ahead.
+            x = np.array((b[2], 0.0, -b[0])); x = x / np.linalg.norm(x)
+            if np.cross(b, x)[2] < 0:
+                x = -x
+            z = _about(b, x, -spec_tilt)
+            hand.update({"blade": tuple(z), "knuckles": tuple(np.cross(z, x))})
+        elif face is not None:
+            r = _about(np.array((sg * math.sin(math.radians(face)), 0.0, math.cos(math.radians(face)))), ax, th)
+            r = r - b * (r @ b)
+            hand["knuckles"] = tuple(r / np.linalg.norm(r))
+        nud = -grip * b if grip else np.zeros(3)
+        if lift:
+            u = (ph - lift_at + 0.5) % 1.0 - 0.5
+            nud = nud + np.array((0.0, lift * (math.cos(math.pi * u / 0.2) ** 2 if abs(u) < 0.1 else 0.0), 0.0))
+        if grip or lift:
+            hand["nudge"] = tuple(nud)
+        return hand
+    return f
+
+
 # The low-point arm: the upper arm a little ahead and behind hanging, 19 out (at 13 the sword passed 11-15 mm from her
 # thigh as the knee drove through, the sprint's 10 mm into it), the elbow open 125-128 (the axe's 118-122: its head
 # off the floor, 0.25 m at the lowest), the forearm turned a little out.
@@ -411,13 +477,32 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # 14-30 and 5-16 mm into her plate, motion --outfits) and its forearm turned out (-20, -22) for the heading.
 # "belt" (the judge's in-hold try: fist at the navel, elbow bend ~85, keyed -46 straight ahead): tip 0.51 m (sprint
 # 0.42) but the wrist won't point it down past -33, so it reads 2-18 deg from 90. "low": Animation 56's low point.
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high")
-REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # trail | low (see RUNS)
+# Animation 58 (the grip tilt, keyed.WRAP_TILT: GRIP_TILT turns the piece in her fist about the palm's normal, so at a
+# resting wrist the sword or haft sits ~82 off her forearm, was 52 against a radial cap of 72): "high" re-set lower and
+# easier. The max judge on Animation 57's high (gate YES, close FAIL): "a little posed / salute at 30": the forearm raised
+# level (5-12 above), the wrist cocked (radial 17-22, keyed's cap 22), the blade's angle barely moving (pitch 77-80).
+# Now (measured, packed): the fist 9 cm lower (1.07-1.15 m, was 1.16-1.24), the forearm 7-17 below level, the wrist easy
+# (radial 2-5, flex 2-4 back), the blade 66-76 up and 29-40 out, swaying ~10 each with the stride; the tip 1.99 m; 44+
+# deg on screen at all eight views; its face 39 px clear at 30 (close-up). The low_point aims the thumb, so the tilt
+# turns the blade in the world: these numbers are set with the tilt in (RUN_GRIPS). The upper arm 31 out (at 29 it
+# went 1 mm into her plate in the run, 7 in the sprint; motion --outfits). Animation 57's high stays behind
+# the switch as "high57" (HIGH_ARM_57, pitch (80, 80), out (30, 30), no tilt).
+# Round 2 (max judge: gate YES, close FAIL: at 30 "a drill-parade candle", the blade edge-on down the camera's axis, <4 deg
+# of rock; at 90 phase 0.5 the fist on the raised far knee): haft_carry rolls the hand 10 about the forearm (supinated,
+# the tip out from her head) and 6 either way with the swing, outermost 2 frames after the forward end, and lifts the
+# fist 4 cm about phase 0.5. Measured (packed): at 30 (close-up) 14 deg off her torso line and 14 of rock (was 7 and 2),
+# at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
+# (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
+GRIP_TILT = 30.0
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high57")
+REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
-HIGH_ARM = ((14, 29, 82, -20), (4, 29, 76, -22))
+HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
+HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
 WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
                   "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
-                  "high": (HIGH_ARM, dict(pitch=(80, 80), out=(30, 30)))}
+                  "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
+                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30)))}
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -428,6 +513,20 @@ REAVER_ARM_R = ((6, 28, 126, -35), (-18, 22, 104, -20))
 REAVER_ARM_L = ((-4, 32, 128, -10), (-18, 28, 116, -15))
 REAVER_AXE_R = dict(pitch=(-60, -51), out=(12, 10), grip=REAVER_GRIP)
 REAVER_AXE_L = dict(side="l", pitch=(-45, -45), out=(0, -4), grip=REAVER_GRIP)
+# Animation 58, REAVER_CARRY "high" (the default): the axe carried up, the haft standing by her shoulder, on the grip
+# tilt (GRIP_TILT), the fist 13 cm up the haft as the idle holds it (grip slide -REAVER_GRIP). Measured (packed): the
+# fist at her belt (1.02-1.14 m), the forearm 11-22 below level, the haft 65-76 up and 14-25 out, leaning back toward
+# upright as the arm swings forward; the head at her shoulder (1.34-1.50 m), 95/59 px clear of her face at 330/30
+# (close-up), 41+ deg on screen at all eight views; an easy wrist (radial 5-10 of keyed's 22, flex 5-10 back). Why not steeper: at the
+# wrist's ~82 rest the haft stands at 82 less the forearm's drop, so each degree up past that is a degree of radial
+# bend (requested (78, 66): pinned at the cap, 20-22); lower than ~65 it flattens from 330/30 at the close-up's pitch
+# (requested (58, 46): 55-66 up, 1-15 deg on screen). The pair breaks the mirror: the left a touch further out
+# (21-34) on a shorter, higher pump (REAVER_HIGH_L: its back elbow 86, at 92 the sprint's wrist bent 17-19 to the thumb).
+# The axe arm 30/28 out (at 24/22 its upper arm went 11 mm into the reaver's outfit, 17 into the warden's; motion --outfits).
+REAVER_HIGH_R = ((2, 30, 100, -15), (-12, 28, 89, -15))
+REAVER_HIGH_L = ((4, 27, 96, -12), (-10, 25, 86, -12))
+REAVER_HIGH_AXE_R = dict(pitch=(68, 56), out=(25, 22), grip=REAVER_GRIP)
+REAVER_HIGH_AXE_L = dict(side="l", pitch=(64, 54), out=(30, 26), grip=REAVER_GRIP)
 # The owner on the reaver run (routed, 27 Oct): "it reads as a careful jog". Her armed reaver runs drive harder: leant
 # 18 (was 14) with the back 4, more flight (duty 0.27, was 0.30), a deeper, heavier drop and bob (0.11, 0.09), the
 # knee up (0.42, was 0.36), the heel kicked (0.52) and the foot reaching (0.40); the hips turn less (9, was 11) and
@@ -445,11 +544,18 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": low_point(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
-    # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (default: the trailing carry, Animation 55's, what
-    # integration ships) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
-    **({"run_reaver": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
+    # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
+    # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
+    # Animation 58: "high" (the default; REAVER_HIGH_*, on the grip tilt).
+    # (Its free arm 2 further out both ends: at the low carry's 16/15 its upper arm went 1 mm into her side.)
+    **({"run_reaver": (replace(REAVER_ARMED, swing_r=REAVER_HIGH_R, swing=((20, 18, 70, 5), (-36, 17, 65, -30))),
+                       {"r": low_point(**REAVER_HIGH_AXE_R)}, "axe"),
+        "run_reaver_axes": (replace(REAVER_ARMED, swing_r=REAVER_HIGH_R, swing=REAVER_HIGH_L),
+                            {"r": low_point(**REAVER_HIGH_AXE_R), "l": low_point(**REAVER_HIGH_AXE_L)}, "axes")}
+       if REAVER_CARRY == "high" else
+       {"run_reaver": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=((20, 16, 70, 5), REAVER.swing[1])),
                        {"r": low_point(**REAVER_AXE_R)}, "axe"),
         "run_reaver_axes": (replace(REAVER_ARMED, swing_r=REAVER_ARM_R, swing=REAVER_ARM_L),
                             {"r": low_point(**REAVER_AXE_R), "l": low_point(**REAVER_AXE_L)}, "axes")}
@@ -487,6 +593,13 @@ RUNS = {
 # slide at full run weight, PlayerView), the same in the sprint (sprint_stop). Each must match its low_point's `grip`.
 RUN_GRIPS = ({"run_reaver": {"grip_slide": -REAVER_GRIP},
               "run_reaver_axes": {"grip_slide": -REAVER_GRIP, "grip_slide_l": -REAVER_GRIP}} if REAVER_CARRY == "low" else {})
+# Animation 58: the high carries turn the piece in her fist (grip_tilt / grip_tilt_l, GRIP_TILT).
+if REAVER_CARRY == "high":
+    RUN_GRIPS.update({"run_reaver": {"grip_slide": -REAVER_GRIP, "grip_tilt": GRIP_TILT},
+                      "run_reaver_axes": {"grip_slide": -REAVER_GRIP, "grip_slide_l": -REAVER_GRIP,
+                                          "grip_tilt": GRIP_TILT, "grip_tilt_l": GRIP_TILT}})
+if WARDEN_CARRY == "high":
+    RUN_GRIPS["run_warden"] = {"grip_tilt": GRIP_TILT}
 
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
 # The shield hand sits back toward her (run 2.5 cm, sprint 2 cm from the first pass) so the

@@ -76,6 +76,8 @@ public partial class Game : Node, IZoneHost
         // Data through Godot's file access from the first frame: skills.json and items.json are read
         // on first use, which can come before any zone loads, and only res:// reads inside an export.
         ZoneData.UseGodotFiles();
+        // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
+        Lore.KitFolk = Args.Has("folk-kit");
         // The renderer's clock followed from its first frame, for what moves by code (MotionClock).
         SurvivorUnchained.View.MotionClock.Start(this);
         // The colour sheets as Godot should have them, before any model loads.
@@ -1264,6 +1266,11 @@ public partial class Game : Node, IZoneHost
             // A story night's boss kept in frame with her (FollowCamera.Toward).
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
                 ? new Vector3((float)be.X, 0, (float)be.Z) : null;
+            // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
+            // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
+            var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
+            if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : (0.33f, 4.5f);
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             UpdateCloseUp(dt);
@@ -1344,7 +1351,8 @@ public partial class Game : Node, IZoneHost
                     return behind;
                 }
                 hud.FigureBehind(Behind(fig));
-                hud.RiverBehind(Behind(Ui.DgRiver.BandRect));
+                hud.RiverBehind(Behind(Ui.DgPanel.BandRect));
+                hud.KeeperBehind(Behind(Ui.DgPanel.KeeperRect));
             }
             if (near != null)
             {

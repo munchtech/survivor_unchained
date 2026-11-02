@@ -275,9 +275,6 @@ public class StoryLint
                     if (v.When?.FactKey == "settings.intimacy") problems.Add($"{id}.{nid}: a variant keyed to settings.intimacy");
                 }
         Assert.Empty(problems);
-        // The scenes are still there, each with a variant for every night it can be had.
-        foreach (var (id, nid) in new[] { ("sella", "night"), ("sella", "free_night"), ("maeca", "blind") })
-            Assert.Contains(Dialogue.All[id].Nodes[nid].Text, v => v.When == null);
     }
 
     [Fact]

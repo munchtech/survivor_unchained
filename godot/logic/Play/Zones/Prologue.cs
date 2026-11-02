@@ -83,10 +83,16 @@ public sealed class Prologue : ZoneRuntime
     readonly bool[] litPylons;
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
+    /// <summary>The Ford-Warden while the boss fight runs (the play camera keeps him in frame with her).</summary>
+    public Enemy? BossInFrame => Now == Stage.Boss && warden is { Alive: true } w && w.State != EnemyState.Dying ? w : null;
     bool wardenGone, chestOpened, finished, coreShown, doused;
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
     readonly XZ wardenHome;
+    /// <summary>Metres east of his fight's home where he lies asleep, clear of the causeway.</summary>
+    public const double SleepEast = 5.5;
+    /// <summary>Metres he lies below the waterline asleep (his chest and face just break the surface).</summary>
+    public const double SleepSink = 0.3;
     (double X, double Z, double Facing) wardenPos;
     readonly WardenAI ai = new();
     IBossView wardenView = null!;
@@ -115,7 +121,9 @@ public sealed class Prologue : ZoneRuntime
         checkpoint = new XZ(camp.X + 1.5, camp.Z - 1.5);
         var ford = L("ford");
         wardenHome = new XZ(ford.X + 1, ford.Z - 2);
-        wardenPos = (wardenHome.X, wardenHome.Z, 0);
+        // Lying where he fell before the fight: in the water east of the causeway, never across its stepping
+        // stones (they run x -2.7..2.7 through the ford; at the fight's home the stones came up through his legs).
+        wardenPos = (wardenHome.X + SleepEast, wardenHome.Z, 0);
         Hooks = new BattleHooks
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
@@ -442,7 +450,7 @@ public sealed class Prologue : ZoneRuntime
         // 4 s clear of anything else (Experience 9: no crowd gate; the Rising stays crowded after the 2nd rise, so
         // v6 never asked it until the Road; the arrow sits on the HUD, off the fight). Dropped unseen ("passed") once the Ambush begins.
         if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road)
-            G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The lock", "The ember's level tonight. It springs open each time the ember rises.", Aim.At("lock"))
+            G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The ember's count", $"Hold {Key("experience")} to see the ember's level, and how far it is to the next.", Aim.At("card"))
                 { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
@@ -1505,13 +1513,18 @@ public sealed class Prologue : ZoneRuntime
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        // (the ford's risen come close and many: each its own pace and weave, not a file of clones, NPC 17)
+        b.VaryPacks = true;
+        // (and they steer round the camp: the fire and its ring of logs, not walked through or stood on, judge r2)
+        var fireAt = L("fire");
+        b.Avoid.Add((fireAt.X, fireAt.Z, 2.4));
         wardenView = G.Look.BossView("ford_warden");
         wardenView.SetPose("sleep");
         core = G.Look.Orb("#bfe6ff", 0.42);
         core.Visible = false;
         // The dead watchman at the post, where he fell: the fall played out and held.
         var man = L("watchman");
-        watchman = G.Look.Fallen(new PersonSpec
+        watchman = G.Look.Fallen(Lore.PackageFolk ? new PersonSpec { Sex = Sex.Male, Body = "npc:" + (Lore.FolkPackages!.GetValueOrDefault("watch") ?? "npc_watch_m") } : new PersonSpec
         {
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#4a3a2a", Skin = "#c8b0a0",
             Dye = new Dye { Cloth = "#4a5064" },
@@ -1569,6 +1582,8 @@ public sealed class Prologue : ZoneRuntime
         if (wardenInCine) { wardenView.Hide(); return; }
         if (warden is { Alive: true } && warden.State != EnemyState.Dying) wardenPos = (warden.X, warden.Z, Math.PI / 2 - warden.Facing);
         double wy = Math.Max(G.Look.HeightAt(wardenPos.X, wardenPos.Z), waterY - 0.25);
+        // Asleep he lies half under the ford's water, not on top of it (Env 22's triage: he lay ON the water).
+        if (ai.Mode == "sleep") wy -= SleepSink;
         wardenView.Glow = Math.Clamp(0.3 + LitCount * 0.25, 0, 1);
         wardenView.Update(warden is { Alive: true } ? warden : null, wardenPos.X, wy, wardenPos.Z, wardenPos.Facing, dt);
         if (ai.Mode == "dead")
@@ -1630,6 +1645,7 @@ public sealed class Prologue : ZoneRuntime
 
     public override Dictionary<string, object?> Debug() => new()
     {
+        ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
         ["wardenMode"] = ai.Mode, ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
     };

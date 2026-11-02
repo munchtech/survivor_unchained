@@ -14,15 +14,12 @@ the narrator's; `>` is a choice.
 
 (Her breath smokes. She breathes again, to see it. She drinks the river.)
 
-*You try to call up your mother's face, and find it is not quite where you
-left it.*
-
-*Her voice is still there. "Lamp's lit, Wick. Stay where it reaches."*
+*You try to call up your mother's voice, and it is not there. Not faint: gone. Her face comes at once: the line between her brows, the thread she bit instead of cutting.*
 
 (Three seconds of nothing. She walks up the road toward the gate.)
 
-> **Performance.** No weight on any of it. The quoted line is said exactly
-> as plainly as the rest: the narrator does not do a voice for the mother.
+> **Performance.** No weight on any of it. Nothing is quoted: the narrator
+> never says the call before the stair (reveal A, 28 October).
 > (Under twist A it is her own voice saying her own words, and nobody will
 > hear that the first time.)
 
@@ -196,7 +193,7 @@ The lamp at his belt goes down the dark, very small, and goes out.)
 of all of it, from below, in the voice that has told her every night since
 the ford what was in front of her:)
 
-**Her mother:** Lamp's lit, Wick.
+**Her mother:** Lamp's lit, Spark.
 
 > "Mam?" / (Listen.) / "Let them go."
 
@@ -207,7 +204,7 @@ tell you where you were.
 
 **Her mother:** You'd have sat down in the road and waited for me.
 
-*Her face is exactly where you left it.*
+*And with the voice, her face comes back: the brows, the thread she bit.*
 
 > **Performance.** The narrator's own voice and pace, unchanged, for the
 > first time coming from a place (the sound moves out of the air and into

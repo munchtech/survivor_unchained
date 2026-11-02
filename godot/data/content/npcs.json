@@ -9,9 +9,9 @@
    "show": [
     "Mug"
    ],
-   "tint": "#8a5a6a",
+   "tint": "#4f5b6b",
    "scale": 0.95,
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle_B",
    "person": {
     "sex": "female",
     "outfit": [
@@ -24,10 +24,7 @@
     "hairColor": "#7a746e",
     "skin": "#e0a47c",
     "figure": 1.2,
-    "dye": {
-     "cloth": "#8a5a6a",
-     "under": "#3a2a2a"
-    }
+    "body": "npc:npc_rook"
    },
    "spot": {
     "x": -11.2,
@@ -129,7 +126,7 @@
     "Knight_Cape"
    ],
    "tint": "#9aa8c0",
-   "idle": "Idle_FoldArms_Loop",
+   "idle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [
@@ -143,9 +140,7 @@
     "hairColor": "#4a4038",
     "beard": true,
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#56627e"
-    }
+    "body": "npc:npc_holloway"
    },
    "spot": {
     "x": -3.6,
@@ -311,9 +306,7 @@
     "hairColor": "#2a1a12",
     "skin": "#c4945e",
     "figure": 0.8,
-    "dye": {
-     "cloth": "#4a5a36"
-    }
+    "body": "npc:npc_maeca"
    },
    "spot": {
     "x": 33.5,
@@ -532,9 +525,7 @@
     ],
     "hair": "Hair_SimpleParted",
     "hairColor": "#8a6a3a",
-    "dye": {
-     "cloth": "#d8ccb0"
-    }
+    "body": "npc:npc_chid"
    },
    "spot": {
     "x": -20.6,
@@ -666,18 +657,15 @@
     "beard": true,
     "hairColor": "#5a4a3a",
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#8a3a34",
-     "under": "#2a1a18"
-    }
+    "body": "npc:npc_rav"
    },
    "arms": {
     "right": "dagger_b"
    },
    "spot": {
-    "x": -11.4,
-    "z": -7.6,
-    "facing": 1.5707963267948966
+    "x": -6.5,
+    "z": -7.45,
+    "facing": 0.8
    },
    "barks": [
     "I'm a doctor. Don't make me prove it.",
@@ -815,10 +803,7 @@
     "hairColor": "#5e3e28",
     "beard": true,
     "skin": "#e0a47c",
-    "dye": {
-     "cloth": "#a0784a",
-     "under": "#3a2a1c"
-    }
+    "body": "npc:npc_harlan"
    },
    "spot": {
     "x": 10.4,
@@ -948,10 +933,7 @@
     "hair": "Hair_SimpleParted",
     "hairColor": "#1a1410",
     "beard": false,
-    "dye": {
-     "cloth": "#3e4a3a",
-     "under": "#1a1e1a"
-    }
+    "body": "npc:npc_pell"
    },
    "spot": {
     "x": 20.2,
@@ -1001,7 +983,7 @@
    ],
    "tint": "#5e7a4a",
    "scale": 0.9,
-   "idle": "Idle_Armed",
+   "idle": "Idle",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1014,13 +996,7 @@
     "hair": null,
     "skin": "#e0a47c",
     "figure": 0.6,
-    "dye": {
-     "cloth": "#5e7a4a",
-     "under": "#2a3222"
-    }
-   },
-   "arms": {
-    "right": "short_staff"
+    "body": "npc:npc_wenna"
    },
    "spot": {
     "x": -23.6,
@@ -1141,11 +1117,12 @@
     "dye": {
      "cloth": "#b8a070",
      "under": "#4a3a2a"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
-    "x": 2.6,
-    "z": 2.8,
+    "x": 1.7,
+    "z": 4.3,
     "facing": 2.5132741228718345
    },
    "barks": [
@@ -1229,6 +1206,7 @@
    ],
    "tint": "#5a4a3a",
    "idle": "1H_Melee_Attack_Chop",
+   "talkIdle": "Idle",
    "person": {
     "sex": "male",
     "outfit": [
@@ -1239,12 +1217,10 @@
     "hairColor": "#2a2422",
     "beard": true,
     "skin": "#946040",
-    "dye": {
-     "under": "#3a3028"
-    }
+    "body": "npc:npc_brannoc"
    },
    "arms": {
-    "right": "mace"
+    "right": "smith_hammer"
    },
    "spot": {
     "x": 11.6,
@@ -1363,7 +1339,7 @@
     "Spellbook_open"
    ],
    "tint": "#5a4a7a",
-   "idle": "Spellcasting",
+   "idle": "Idle",
    "person": {
     "sex": "female",
     "outfit": [
@@ -1376,15 +1352,12 @@
     "hair": null,
     "skin": "#5e3c2a",
     "figure": 1,
-    "dye": {
-     "cloth": "#5a4a7a",
-     "under": "#221a2e"
-    }
+    "body": "npc:npc_vonnra"
    },
    "spot": {
-    "x": 28.4,
-    "z": -4.4,
-    "facing": -1.5707963267948966
+    "x": 29.6,
+    "z": -1.55,
+    "facing": -1.0
    },
    "barks": [
     "The toll is the toll.",
@@ -1443,17 +1416,15 @@
     "hairColor": "#d8b870",
     "skin": "#f0b8a0",
     "figure": 0.8,
-    "dye": {
-     "cloth": "#b8bcc4"
-    }
+    "body": "npc:npc_keegan"
    },
    "arms": {
     "right": "viking_sword"
    },
    "spot": {
-    "x": 0,
-    "z": -33,
-    "facing": 0
+    "x": 5.6,
+    "z": -31.2,
+    "facing": -1.2
    },
    "barks": [
     "None pass north. Not yet.",
@@ -1553,14 +1524,12 @@
     "hairColor": "#8e3e20",
     "skin": "#e0a47c",
     "figure": 1.35,
-    "dye": {
-     "under": "#1e2a3e"
-    }
+    "body": "npc:npc_sella"
    },
    "spot": {
-    "x": -11.2,
-    "z": 7.9,
-    "facing": 0.9
+    "x": -8.8,
+    "z": 13.0,
+    "facing": 1.2
    },
    "barks": [
     "Buy a girl a drink? No? Buy yourself one, then. You look like you need it.",
@@ -1647,7 +1616,8 @@
     "skin": "#e0a47c",
     "dye": {
      "cloth": "#a02820"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "arms": {
     "right": "crossbow"
@@ -1688,7 +1658,8 @@
     "dye": {
      "cloth": "#7a6a8a",
      "under": "#2e2a34"
-    }
+    },
+    "body": "npc:npc_folk_m"
    },
    "spot": {
     "x": 12.4,
@@ -1729,7 +1700,8 @@
     "dye": {
      "cloth": "#4a5668",
      "under": "#2a2622"
-    }
+    },
+    "body": "npc:npc_folk_w"
    },
    "spot": {
     "x": 19.0,

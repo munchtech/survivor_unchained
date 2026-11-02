@@ -1,0 +1,224 @@
+{
+ "g40": {
+  "seed": 9911,
+  "denoise": 0.4,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue. The head and bare shoulders of a beautiful young woman in clean side profile facing left, her face lifted, eyes closed. Her long hair is sculpted as raised flowing ribbon strands with polished edges and smooth hollows between them, sweeping back from her head and down over her shoulder. Her hair ends cleanly just past her shoulder: each lock finishes in a smooth tapered sculpted tip that curls softly, a finished cast edge, nothing ragged, frayed or cut off. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "girl_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "g50": {
+  "seed": 9912,
+  "denoise": 0.5,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue. The head and bare shoulders of a beautiful young woman in clean side profile facing left, her face lifted, eyes closed. Her long hair is sculpted as raised flowing ribbon strands with polished edges and smooth hollows between them, sweeping back from her head and down over her shoulder. Her hair ends cleanly just past her shoulder: each lock finishes in a smooth tapered sculpted tip that curls softly, a finished cast edge, nothing ragged, frayed or cut off. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "girl_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "kt45": {
+  "seed": 9921,
+  "denoise": 0.45,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, the keeper of the ember, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. Her deep hood and mantle are sculpted like long flowing hair: raised ribbon strands with polished edges sweep back over her head and down her back, smooth hollows between them with fine engraved lines. The bust ends cleanly: at her back the strands of the mantle finish in smooth tapered sculpted tips that curl inward, a finished cast edge, nothing ragged, frayed or cut off. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, live coals lit orange and gold through their cracks; her face lit warm orange from below by the embers. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide_taper.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "kt55": {
+  "seed": 9922,
+  "denoise": 0.55,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, the keeper of the ember, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. Her deep hood and mantle are sculpted like long flowing hair: raised ribbon strands with polished edges sweep back over her head and down her back, smooth hollows between them with fine engraved lines. The bust ends cleanly: at her back the strands of the mantle finish in smooth tapered sculpted tips that curl inward, a finished cast edge, nothing ragged, frayed or cut off. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, live coals lit orange and gold through their cracks; her face lit warm orange from below by the embers. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide_taper.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "ks45": {
+  "seed": 9923,
+  "denoise": 0.45,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, the keeper of the ember, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. Her deep hood and mantle are sculpted like long flowing hair: raised ribbon strands with polished edges sweep back over her head and down her back, smooth hollows between them with fine engraved lines. The bust ends cleanly: the back of her mantle finishes in a smooth curved sculpted border with a polished raised rim, a finished cast edge, nothing ragged, frayed or cut off. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, live coals lit orange and gold through their cracks; her face lit warm orange from below by the embers. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide_smooth.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "ks55": {
+  "seed": 9924,
+  "denoise": 0.55,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, the keeper of the ember, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. Her deep hood and mantle are sculpted like long flowing hair: raised ribbon strands with polished edges sweep back over her head and down her back, smooth hollows between them with fine engraved lines. The bust ends cleanly: the back of her mantle finishes in a smooth curved sculpted border with a polished raised rim, a finished cast edge, nothing ragged, frayed or cut off. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, live coals lit orange and gold through their cracks; her face lit warm orange from below by the embers. AAA game UI art, painterly realism, crisp clean sculpted edges, big simple readable shapes, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide_smooth.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "fw": {
+  "seed": 9931,
+  "prompt": "A solid wall of fire filling the lower two thirds of the frame, seen straight on: dense roiling orange and gold flame, a white-hot glow low in the middle, deep red at the sides, and along its top edge a crown of irregular licking flame tongues of different heights rising into a pure black background above. Painterly realism, dark fantasy game art, rich warm colour, crisp flame shapes. No text, no letters.",
+  "mode": "t2i",
+  "size": [
+   768,
+   768
+  ],
+  "n": 2,
+  "graph": "tools/uiforge/krea.py t2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "fo": {
+  "seed": 9932,
+  "prompt": "A perfectly round orb of living fire seen straight on, centered, filling most of the frame: roiling orange and gold flames swirling inside a dark glass sphere, a white-hot heart low in the middle, deep red toward the rim, fine sparks. Painterly realism, dark fantasy game UI art, pure black background. No text, no letters.",
+  "mode": "t2i",
+  "size": [
+   768,
+   768
+  ],
+  "n": 2,
+  "graph": "tools/uiforge/krea.py t2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "h45": {
+  "seed": 9951,
+  "denoise": 0.45,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; the woman, her hand and arm are all bronze. A beautiful young woman in side profile facing left, face lifted, holds up a large glowing red glass orb in one hand. Her slender graceful hand cradles the orb from below: the orb rests in her cupped palm, her fingers curl gently up round the orb's lower left edge with their fingertips just touching the glass, her thumb curves up the lower right, and a slim wrist leads down and back toward her body. A natural, well proportioned small feminine hand with short delicate tapered fingers, softly rounded knuckles, a sculptor's anatomy. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "hand_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "h55": {
+  "seed": 9952,
+  "denoise": 0.55,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; the woman, her hand and arm are all bronze. A beautiful young woman in side profile facing left, face lifted, holds up a large glowing red glass orb in one hand. Her slender graceful hand cradles the orb from below: the orb rests in her cupped palm, her fingers curl gently up round the orb's lower left edge with their fingertips just touching the glass, her thumb curves up the lower right, and a slim wrist leads down and back toward her body. A natural, well proportioned small feminine hand with short delicate tapered fingers, softly rounded knuckles, a sculptor's anatomy. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "hand_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "h65": {
+  "seed": 9953,
+  "denoise": 0.65,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; the woman, her hand and arm are all bronze. A beautiful young woman in side profile facing left, face lifted, holds up a large glowing red glass orb in one hand. Her slender graceful hand cradles the orb from below: the orb rests in her cupped palm, her fingers curl gently up round the orb's lower left edge with their fingertips just touching the glass, her thumb curves up the lower right, and a slim wrist leads down and back toward her body. A natural, well proportioned small feminine hand with short delicate tapered fingers, softly rounded knuckles, a sculptor's anatomy. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "hand_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "b60": {
+  "seed": 9961,
+  "denoise": 0.6,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round glass orb full of living fire rests in a cradle of sculpted bronze locks of long flowing hair: raised ribbon strands with polished edges and smooth hollows between them rise from a short slender stem and sweep up and around the orb's lower half; two slender locks curl up in front of the glass like fingers holding it. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange from within. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "b70": {
+  "seed": 9962,
+  "denoise": 0.7,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round glass orb full of living fire rests in a cradle of sculpted bronze locks of long flowing hair: raised ribbon strands with polished edges and smooth hollows between them rise from a short slender stem and sweep up and around the orb's lower half; two slender locks curl up in front of the glass like fingers holding it. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange from within. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "b80": {
+  "seed": 9963,
+  "denoise": 0.8,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round glass orb full of living fire rests in a cradle of sculpted bronze locks of long flowing hair: raised ribbon strands with polished edges and smooth hollows between them rise from a short slender stem and sweep up and around the orb's lower half; two slender locks curl up in front of the glass like fingers holding it. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange from within. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "c62": {
+  "seed": 9971,
+  "denoise": 0.62,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round dark glass orb glowing with fire inside sits in a shallow cup of short sculpted bronze locks at its base, on a short slender stem. Behind the orb, longer locks of long flowing hair sweep up around both sides like a halo of flames, leaving the orb's face clear and unobstructed: raised ribbon strands with polished edges and smooth hollows between them. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide2.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "c70": {
+  "seed": 9972,
+  "denoise": 0.7,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round dark glass orb glowing with fire inside sits in a shallow cup of short sculpted bronze locks at its base, on a short slender stem. Behind the orb, longer locks of long flowing hair sweep up around both sides like a halo of flames, leaving the orb's face clear and unobstructed: raised ribbon strands with polished edges and smooth hollows between them. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide2.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "c78": {
+  "seed": 9973,
+  "denoise": 0.78,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze brazier, Art Nouveau, elegant flowing organic lines, a finished cast piece. A round dark glass orb glowing with fire inside sits in a shallow cup of short sculpted bronze locks at its base, on a short slender stem. Behind the orb, longer locks of long flowing hair sweep up around both sides like a halo of flames, leaving the orb's face clear and unobstructed: raised ribbon strands with polished edges and smooth hollows between them. Every lock ends cleanly in a smooth tapered tip that curls softly outward, nothing ragged, frayed or cut off. The fire lights the polished bronze edges warm orange. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, warm golden-brown river-worn bronze like an old statue, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left on the polished edges, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide2.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "hg42": {
+  "seed": 6011,
+  "denoise": 0.42,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue. The head and bare shoulders of a beautiful young woman in clean side profile facing left, her face lifted, eyes closed. Her long hair is sculpted as raised flowing ribbon strands with polished edges and smooth hollows between them, sweeping back from her head and falling straight down her back in long smooth locks to the bottom of the frame, a clean smooth outer contour, every strand a finished cast edge, nothing ragged, frayed or cut off. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "hair_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "hg52": {
+  "seed": 6012,
+  "denoise": 0.52,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted relief cast in bronze, Art Nouveau, elegant flowing lines; everything is bronze, a statue. The head and bare shoulders of a beautiful young woman in clean side profile facing left, her face lifted, eyes closed. Her long hair is sculpted as raised flowing ribbon strands with polished edges and smooth hollows between them, sweeping back from her head and falling straight down her back in long smooth locks to the bottom of the frame, a clean smooth outer contour, every strand a finished cast edge, nothing ragged, frayed or cut off. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "hair_guide.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "kk55": {
+  "seed": 6021,
+  "denoise": 0.55,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth polished planes and a few soft long folds, no ornament, no scrollwork, no engraving, no pattern. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, ending in softly curled tips. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, lit orange from below. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide6.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "kk65": {
+  "seed": 6022,
+  "denoise": 0.65,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth polished planes and a few soft long folds, no ornament, no scrollwork, no engraving, no pattern. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, ending in softly curled tips. With both slender hands held in front of her chest she holds a wide shallow round bronze bowl heaped with glowing embers, lit orange from below. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide6.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "cb65": {
+  "seed": 6031,
+  "denoise": 0.65,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze piece, Art Nouveau, a cast statue fragment. A large round dark glass orb with fire inside, held in a cradle made of a woman's long sculpted bronze hair: on each side a thick lock of long hair, a bundle of smooth raised ribbon strands with polished edges and fine grooves between them, rises from the stem round the orb, arcs over its shoulder and falls away down the outside like long hair, ending in softly curled tips. Below the orb, more locks of the same hair flow down a short stem and spread over a broad round foot. The orb's face stays clear. Heavy, solid, smooth polished broad surfaces, no ornament, no engraving. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide6.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "cb75": {
+  "seed": 6032,
+  "denoise": 0.75,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze piece, Art Nouveau, a cast statue fragment. A large round dark glass orb with fire inside, held in a cradle made of a woman's long sculpted bronze hair: on each side a thick lock of long hair, a bundle of smooth raised ribbon strands with polished edges and fine grooves between them, rises from the stem round the orb, arcs over its shoulder and falls away down the outside like long hair, ending in softly curled tips. Below the orb, more locks of the same hair flow down a short stem and spread over a broad round foot. The orb's face stays clear. Heavy, solid, smooth polished broad surfaces, no ornament, no engraving. Symmetrical, centred, seen straight on. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "b_guide6.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "ks40": {
+  "seed": 2301,
+  "denoise": 0.4,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth evenly polished planes, satin-smooth metal with no blotches, no streaks, no painted texture, crisp thin bright highlights only along the edges of the folds, a few soft long folds, no ornament, no engraving. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, one lock falling to the bottom left corner. With both slender hands she holds a wide shallow round bronze bowl. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide23s.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "ks50": {
+  "seed": 2302,
+  "denoise": 0.5,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth evenly polished planes, satin-smooth metal with no blotches, no streaks, no painted texture, crisp thin bright highlights only along the edges of the folds, a few soft long folds, no ornament, no engraving. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, one lock falling to the bottom left corner. With both slender hands she holds a wide shallow round bronze bowl. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide23s.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "kg50": {
+  "seed": 2303,
+  "denoise": 0.5,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth evenly polished planes, satin-smooth metal with no blotches, no streaks, no painted texture, crisp thin bright highlights only along the edges of the folds, a few soft long folds, no ornament, no engraving. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, one lock falling to the bottom left corner. With both slender hands she holds a wide shallow round bronze bowl. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide23.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ },
+ "ks60": {
+  "seed": 2304,
+  "denoise": 0.6,
+  "prompt": "Dark fantasy action RPG game HUD ornament: one sculpted bronze statue, Art Nouveau, elegant flowing lines; everything is bronze: her face, hood, hands and the bowl are bronze too. A bust of a beautiful young woman, a hooded mourner, in clean side profile facing right, her head bowed, eyes downcast, lips closed, solemn and calm. A plain deep hood and mantle of heavy cloth cast in bronze: broad smooth evenly polished planes, satin-smooth metal with no blotches, no streaks, no painted texture, crisp thin bright highlights only along the edges of the folds, a few soft long folds, no ornament, no engraving. Her long hair spills from the hood down her back in long flowing ribbon strands with polished edges and smooth hollows between them, one lock falling to the bottom left corner. With both slender hands she holds a wide shallow round bronze bowl. The bust ends cleanly at the chest. AAA game UI art, painterly realism, crisp clean sculpted edges, smooth polished surfaces with restrained weathering, dark umber river-worn bronze like an old statue, deep brown with warm golden highlights on the polished edges, green verdigris only deep in the narrowest grooves, warm candlelight from the upper left, a faint cool blue rim light, deep shadows. Isolated on a pure flat black background. No text, no letters, no numbers, no icons.",
+  "guide": "keeper_guide23s.png",
+  "n": 2,
+  "graph": "tools/uiforge/krea.py i2i_many (krea2_turbo_fp8_scaled, NO LoRA, 8 steps, euler/simple, cfg 1)"
+ }
+}

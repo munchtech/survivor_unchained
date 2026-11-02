@@ -100,6 +100,16 @@ public sealed class OwnClips
         return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
     }
 
+    /// <summary>The same for the piece in her LEFT hand (meta "grip_tilt_l", animation 58: the second axe turned in her left
+    /// fist about its palm's normal, the right's mirror image; WeaponSockets.TiltPocketL); 0 for none. Takes the clip with
+    /// or without this library's prefix.</summary>
+    public float GripTiltL(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "grip_tilt_l");
+        return v.VariantType == Variant.Type.Nil ? 0 : (float)v;
+    }
+
     /// <summary>A gesture (a nod, an exhale), laid over what plays rather
     /// than played in its place (Gestures); and whether it holds its end.</summary>
     public bool Gesture(string clip) => Meta(clip, "layer").VariantType == Variant.Type.String && (string)Meta(clip, "layer") == "gesture";

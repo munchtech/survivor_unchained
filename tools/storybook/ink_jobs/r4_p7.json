@@ -1,0 +1,34 @@
+{
+ "prefix": "Full-bleed woodcut relief print filling the entire frame edge to edge, no border, no margin. Bold carved black ink, large areas of heavy solid black, simple bold shapes, very few mid-tones.",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p7t",
+   "w": 1152,
+   "h": 1536,
+   "seeds": [
+    11,
+    23,
+    47,
+    202,
+    303,
+    404,
+    505,
+    606
+   ],
+   "prompt": "Night, a tall upright view at the edge of a black river. At the bottom, close to us, one lone hooded traveler in a long plain dark wool cloak kneels on flat wet stones at the very edge of the water, seen in three-quarter view from behind and to the left, the deep hood up, whole and clearly drawn, the face hidden inside it. One gloved hand reaches down and dips a small round leather flask into the water, the hand and the flask simple and clear, rings spreading from it. The black water fills the lower part of the picture, carved in long horizontal gouge lines, the dark hooded reflection broken among them. To the right of the hood, hanging a hand's breadth above the water at the height of the hood, a small crude iron fire basket: an open cage of a few black iron bars, no glass, no lantern, no dome, holding a cold pale blue fire. Above the cage, a dark sleeve and a pale hand reach down from above and hold it by a short chain, the arm dissolving upward into a bright glare of cold pale blue carved lines radiating from the fire. Under the cage the fire's reflection lies in the water as a column of short blue-white carved strokes. The cold blue light catches the near edge of the hood as thin carved blue lines. Behind, black night water and a black far bank. The only color is the cold pale blue of the fire, carved as thin cut lines, never a soft glow; everything else is black and deep navy blue-black ink, large solid black masses."
+  },
+  {
+   "name": "p7u4",
+   "w": 1920,
+   "h": 1088,
+   "seeds": [
+    11,
+    23,
+    47,
+    202
+   ],
+   "prompt": "Underwater at night, looking up from below the surface of a black river: black and deep green-black murky water carved in woodcut gouge lines. High above, the rippling underside of the surface catches a cold pale blue light, carved as broken curved strokes; in the middle of that light, seen through the water, the dark warped silhouette of a small crude cage of black iron bars, bent by the ripples, with a small bright cold blue-white fire at its core. Streams of small round bubbles rush up, each bubble a clean simple carved pale ring or dot, many sizes, black water between them. Nothing else. The only color is the cold pale blue light; everything else is black and deep green-black ink."
+  }
+ ]
+}

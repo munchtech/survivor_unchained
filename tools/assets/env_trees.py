@@ -1107,13 +1107,14 @@ def shadow_proxy(H, R, seed, form=None):
             hd = np.array([math.cos(az), math.sin(az), 0.0]); sd = np.array([-hd[1], hd[0], 0.0])
             r = rt * rng.uniform(0.8, 1.15)
             dr = 0.17 + 0.17 * (1 - t)
-            P = []
+            P, UV = [], []
             for s, hw in ((0.0, 0.08), (0.3, rng.uniform(0.22, 0.29)), (0.5, rng.uniform(0.08, 0.12)), (0.74, rng.uniform(0.19, 0.26)), (1.0, rng.uniform(0.02, 0.05))):
                 cc = c0 + hd * r * s + np.array([0, 0, -r * (dr * s + 0.2 * s * s - 0.06 * max(s - 0.7, 0) ** 2 / 0.09)])
                 j = rng.uniform(-0.08, 0.08) * r
                 P.append([cc - sd * (hw * r + j), cc + sd * (hw * r - j)])
+                # (Env 22 r1c) the blade's own place for leaf_shadow.gdshader: across it -1..1 in u, along it 0..1 in v
+                UV.append([(0.0, 0.5 + 0.5 * s), (0.7, 0.5 + 0.5 * s)])
             N = [[np.array([0, 0, 1.0])] * 2] * 5
-            UV = [[uv] * 2] * 5
             b.quad_grid(P, N, UV, 1, 4)
     return b
 
@@ -1268,7 +1269,10 @@ def alder_proxy(H, R, seed, stems):
         jit = rng.uniform(0.82, 1.18, (nv + 1, nu))
         P = [[c + o * np.array([rx, rx, rz]) * (jit[jv, iu % nu] if 0 < jv < nv else 1.0) for iu, o in enumerate(row)] for jv, row in enumerate(P)]
         N = [[np.array([0, 0, 1.0])] * (nu + 1)] * (nv + 1)
-        UV = [[uv] * (nu + 1)] * (nv + 1)
+        # (Env 22 r1c) each point's place in the flattened mass, its disc seen from above (0 the middle, 1 the rim), for
+        # leaf_shadow.gdshader's ragged outline: u = 0.35 + 0.35 x, v = 0.5 + 0.5 y
+        UV = [[(0.35 + 0.35 * math.sin(math.pi * jv / nv) * math.cos(2 * math.pi * (iu % nu) / nu),
+                0.5 + 0.5 * math.sin(math.pi * jv / nv) * math.sin(2 * math.pi * (iu % nu) / nu)) for iu in range(nu + 1)] for jv in range(nv + 1)]
         b.quad_grid(P, N, UV, nu, nv)
 
     # (0.86 of the crown, judge E4c: the cards' outer halves out of it, so a crown's sunward top reads lit)

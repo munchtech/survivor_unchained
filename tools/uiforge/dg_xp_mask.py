@@ -72,6 +72,16 @@ def main():
     sy = AT[1] + (Y + 0.5) / K
     sx = AT[0] + (X + 0.5) / K
     hp = gaussian_filter(hp * (sy < 1030), 3.0 * K)
+    # UI 23 (HUD A, R6): her locks run down her back: the tail's own hair mask (hair_R6) replaces the outline there, and
+    # the ridges are off the tail (tail_R6), as the judged mock (dg_keeper_src, mock7.py HAIR / CREST)
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dg_keeper_src')
+    if os.path.exists(os.path.join(src, 'hair_R6.png')):
+        def lay(n):
+            m = np.asarray(Image.open(os.path.join(src, n)).convert('L').resize((fw, fh), Image.LANCZOS)).astype(float) / 255
+            return place(m[..., None], int(round((lg['at'][0] - AT[0]) * K)), int(round((lg['at'][1] - AT[1]) * K)), W, H)[..., 0]
+        hm, tw = lay('hair_R6.png'), lay('tail_R6.png')
+        hp = np.clip(hp * (1 - tw) + hm, 0, 1)
+        ridge = ridge * (1 - tw)
     Mh = F[..., 3] * hp
     Mr = R[..., 3] * (1 - F[..., 3])
     M = np.maximum(Mh, Mr)

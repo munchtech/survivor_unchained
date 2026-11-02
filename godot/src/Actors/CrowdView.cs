@@ -91,7 +91,7 @@ public partial class CrowdView : Node3D
         float best = 1.5f * 1.5f;
         foreach (var c in corpses)
         {
-            if (c.Visual != e.Def.Visual) continue;
+            if (c.Visual != Vary.Body(e.Def.Visual, e.Seed)) continue;
             float dx = c.X - (float)e.X, dz = c.Z - (float)e.Z, d = dx * dx + dz * dz;
             if (d < best) { best = d; near = c; }
         }
@@ -127,7 +127,7 @@ public partial class CrowdView : Node3D
     /// <summary>Char: the body's paint times this (albedo under 0.06 linear).</summary>
     static readonly Color CharTint = new(0.06f, 0.048f, 0.04f, 1);
 
-    static Color Charred(Color tint, float k) => k <= 0 ? tint : new Color(Mathf.Lerp(tint.R, CharTint.R, k), Mathf.Lerp(tint.G, CharTint.G, k), Mathf.Lerp(tint.B, CharTint.B, k), tint.A);
+    static Color Charred(Color tint, float k) => k <= 0 ? tint : new Color(Math.Sign(tint.R + 1e-9f) * Mathf.Lerp(Math.Abs(tint.R), CharTint.R, k), Mathf.Lerp(tint.G, CharTint.G, k), Mathf.Lerp(tint.B, CharTint.B, k), tint.A);
 
     /// <summary>Counts what is drawn: the char the body's paint gets, and whether it is ice (vat.gdshaderinc paints the
     /// fireball's colour only on the frozen, so a body drawn unfrozen and charred is black under it; judge 7 (1)).</summary>
@@ -152,7 +152,8 @@ public partial class CrowdView : Node3D
     public void Prepare(IEnumerable<string> visuals)
     {
         var kinds = new List<string>();
-        foreach (var v in visuals) if (!v.StartsWith("view:")) kinds.Add(v);
+        foreach (var v in visuals)
+            if (!v.StartsWith("view:")) { kinds.Add(v); if (Vary.Bodies.TryGetValue(v, out var alt)) kinds.Add(alt.Visual); }
         // The people still to be baked (a first launch) are built from the
         // kit's models: their textures decoded side by side first, not one by
         // one as each model loads.
@@ -226,7 +227,8 @@ public partial class CrowdView : Node3D
     {
         // Its body already lies where it fell: the fight lets it go shortly.
         if (laidOut.Contains((e.Id, e.Seed))) return;
-        var crowd = Crowd(e.Def.Visual);
+        // (its body: the kind's, or its second body for a share of copies: Vary.Body)
+        var crowd = Crowd(Vary.Body(e.Def.Visual, e.Seed));
         var asset = crowd.Asset;
         if (!gaits.TryGetValue(e.Id, out var g) || g.Seed != e.Seed)
             gaits[e.Id] = g = new Gait { Seed = e.Seed, Phase = e.Seed * 7, Facing = e.Facing };
@@ -241,6 +243,10 @@ public partial class CrowdView : Node3D
         g.Walking = speed > (g.Walking ? 0.2 : 0.45);
         switch (e.State)
         {
+            // (risen, a varied pack's copy stands its own moment before it comes on: Ai, Vary.Delay)
+            case EnemyState.Rising when e.AnimT >= RiseTime && asset.Clips.ContainsKey("idle"):
+                role = "idle"; t = time + e.Seed * 9;
+                break;
             case EnemyState.Rising:
                 role = "rise";
                 t = e.AnimT * (asset.Duration("rise") / RiseTime);
@@ -259,8 +265,8 @@ public partial class CrowdView : Node3D
                     {
                         var (st, sg) = TintOf(e);
                         string sr = g.LastRole ?? (g.Death ??= DeathOf(asset, e));
-                        statues[key] = new Statue(key, e.Id, e.Def.Visual, sr, g.LastRole != null ? g.LastT : 0, (float)ex, (float)ez, (float)g.Facing,
-                            (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), st, sg);
+                        statues[key] = new Statue(key, e.Id, Vary.Body(e.Def.Visual, e.Seed), sr, g.LastRole != null ? g.LastT : 0, (float)ex, (float)ez, (float)g.Facing,
+                            (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), st, sg);
                     }
                     return;
                 }
@@ -331,8 +337,9 @@ public partial class CrowdView : Node3D
                     // Its own walk clock, run faster or slower with its pace:
                     // time times pace would leap to a new pose at every change of speed.
                     // A walk whose pace is known keeps its feet on the ground at any size and speed.
-                    role = "move";
-                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+                    // (a share of a varied pack walks its kind's second gait, the other hand reaching: Vary.Second)
+                    role = battle?.VaryPacks == true && asset.Clips.ContainsKey("move2") && Vary.Second(e.Seed, 0.45) ? "move2" : "move";
+                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
                     g.Phase += dt * (asset.Pace > 0
                         ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
                         : Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
@@ -352,7 +359,8 @@ public partial class CrowdView : Node3D
         }
         // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
         // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
-        float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+        // (each copy of a many-at-once kind its own size: EnemyDef.Size, Sim.Vary)
+        float sc = (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual);
         // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
         // the dirt whole.)
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
@@ -407,6 +415,16 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
+        // A varied pack's copy (the Low Ford's risen): its own skin value (0.35 to 1: NPC 18 r3, not a crowd of bone-white
+        // bodies at night; the drowned woman, painted darker, 0.9 to 1: lower sank her to one dark blob out of firelight) and, for about a third, a coat of river mud: a
+        // little browner all over and dark patches over the legs and hem (vat.gdshaderinc's mud, flagged by a negative red
+        // in the tint: a uniform tint alone read as no mud at all).
+        if (battle?.VaryPacks == true && e.Def.Weave is > 0)
+        {
+            var (val, mud) = Vary.Coat(e.Seed, Vary.Body(e.Def.Visual, e.Seed) == e.Def.Visual ? 0.35 : 0.9, 0.3);
+            tint *= new Color((float)val, (float)val, (float)val);
+            if (mud) { tint *= new Color(0.9f, 0.84f, 0.76f); tint.R = -tint.R; }
+        }
         return (tint, glow);
     }
 
@@ -446,7 +464,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), e.Def.Visual, role, (float)x, (float)z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred });
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 

@@ -36,6 +36,10 @@ public static class Ground
                 if (((i + j) & 1) == 1) { idx[p++] = a; idx[p++] = b; idx[p++] = c; idx[p++] = b; idx[p++] = d; idx[p++] = c; }
                 else { idx[p++] = a; idx[p++] = d; idx[p++] = c; idx[p++] = a; idx[p++] = b; idx[p++] = d; }
             }
+        // The skirt (Env 23): the ground on past the zone's edge, so the play camera at the bound sees no void
+        // (GroundSkirt; not an arena's, whose ring goes dark long before its edge). --no-skirt for the A/B.
+        if (z.Place == null && !SurvivorUnchained.Args.Has("no-skirt"))
+            (verts, normals, idx) = WithSkirt(z, verts, normals, idx);
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
         arrays[(int)Mesh.ArrayType.Vertex] = verts;
@@ -107,10 +111,11 @@ public static class Ground
             ("meadow_val", "ground-meadow-val", 0.13f), ("frost_crisp", "frost-crisp", 1f), ("frost_dawn", "frost-dawn", 0.12f), ("frost_soft", "frost-soft", 0.3f), ("setts_bump", "setts-bump", 0.32f), ("night_dew", "ground-night-dew", 0.35f), ("pud_dark", "ground-pud-dark", 0.45f), ("night_spec", "ground-night-spec", 0.12f),
             ("verge_soft", "ground-verge-soft", 0.8f), ("rut_sun", "ground-rut-sun", 0.35f), ("pud_rim", "ground-pud-rim", 0.45f), ("mirror_amt", "ground-mirror", 1f), ("mirror_rut", "ground-mirror-rut", 1f), ("night_tuft", "ground-night-tuft", 1f), ("night_val", "ground-night-val", 0.7f),
             ("setts_mud", "setts-mud", 1f), ("setts_reach", "setts-reach", 1.5f), ("setts_moss", "setts-moss", 1f), ("setts_collar", "setts-collar", 0f), ("mud_tone", "setts-mud-tone", 1f), ("mud_sat", "setts-mud-sat", 1.45f), ("mud_spec", "setts-mud-spec", 0.1f), ("mud_paint", "setts-mud-paint", 0f), ("mud_ao", "setts-mud-ao", 0.8f), ("mud_warm", "setts-mud-warm", 1f),
-                 ("setts_kerb", "setts-kerb", 1f), ("kerb_in", "setts-kerb-in", 0.28f), ("kerb_w", "setts-kerb-w", 0.3f), ("setts_turn", "setts-turn", 1f), ("setts_lf", "setts-lf", 1f), ("mud_pool", "setts-mud-pool", 1f), ("close_bump", "setts-close-bump", 2.2f),
+                 ("setts_kerb", "setts-kerb", 1f), ("setts_wild", "setts-wild", 0f), ("setts_ruts", "setts-ruts", 0f), ("kerb_in", "setts-kerb-in", 0.28f), ("kerb_w", "setts-kerb-w", 0.3f), ("setts_turn", "setts-turn", 1f), ("setts_lf", "setts-lf", 1f), ("mud_pool", "setts-mud-pool", 1f), ("close_bump", "setts-close-bump", 2.2f),
                  ("rut_soft", "ground-rut-soft", 0f), ("rut_blur", "ground-rut-blur", 0.3f), ("road_rime", "ground-road-rime", 1f), ("crown_grass", "ground-crown-grass", 0.45f), ("pud_night", "ground-pud-night", 0f), ("pud_mud", "ground-pud-mud", 0f), ("pud_sheen", "ground-pud-sheen", 0f),
                  ("foot_damp", "ground-foot-damp", 0f), ("foot_w", "ground-foot-w", 0.6f),
-                 ("camp_scorch", "ground-camp-scorch", 0f), ("scorch_r", "ground-scorch-r", 1f), ("trample", "ground-trample", 0f), ("path_hw", "ground-path-hw", 0.2f), ("path_lift", "ground-path-lift", 0f) })
+                 ("camp_scorch", "ground-camp-scorch", 0f), ("scorch_r", "ground-scorch-r", 1f), ("trample", "ground-trample", 0f), ("path_hw", "ground-path-hw", 0.2f), ("path_lift", "ground-path-lift", 0f),
+                 ("mud_night_floor", "setts-mud-night-floor", 0.75f), ("mud_night_wet", "setts-mud-night-wet", 1f), ("road_night", "ground-road-night", 0f), ("verge_litter", "ground-verge-litter", 0f), ("verge_mip", "ground-verge-mip", 5f), ("litter_wood", "ground-litter-wood", 0.5f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, zg.TryGetValue(u, out var zv) ? zv : sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
         // (E8 later r2) the zone's footpaths (flora_species.json "ground_paths": polylines of [x, z]), as segments
         var segs = FloraSpecies.PathsFor(z.Id);
@@ -129,6 +134,43 @@ public static class Ground
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
         return Finish(z, mesh);
+    }
+
+    /// <summary>The field's vertices with the skirt's appended (GroundSkirt): its outer row's normals from the edge's
+    /// slope along the edge only (it runs out level), so the light carries on past the seam.</summary>
+    static (Vector3[], Vector3[], int[]) WithSkirt(ZoneData z, Vector3[] verts, Vector3[] normals, int[] idx)
+    {
+        int n = z.Res;
+        var h = z.Heights;
+        var (xyz, sIdx) = SurvivorUnchained.World.GroundSkirt.Build(n, z.Half, z.Step, h);
+        int nv = xyz.Length / 3, n2 = n * n;
+        var v = new Vector3[n2 + nv];
+        var nr = new Vector3[n2 + nv];
+        System.Array.Copy(verts, v, n2);
+        System.Array.Copy(normals, nr, n2);
+        // (the edge's along-edge slope at t: the field's heights at k(t-1), k(t+1))
+        Vector3 Along(System.Func<int, float> k, int t, bool alongX)
+        {
+            float d = k(Mathf.Max(t - 1, 0)) - k(Mathf.Min(t + 1, n - 1));
+            return (alongX ? new Vector3(d, 2 * z.Step, 0) : new Vector3(0, 2 * z.Step, d)).Normalized();
+        }
+        for (int k = 0; k < nv; k++)
+        {
+            v[n2 + k] = new Vector3(xyz[k * 3], xyz[k * 3 + 1], xyz[k * 3 + 2]);
+            int side = k / n, t = k % n;
+            nr[n2 + k] = side switch
+            {
+                0 => Along(q => h[q * n], t, false),
+                1 => Along(q => h[q * n + n - 1], t, false),
+                2 => Along(q => h[q], t, true),
+                3 => Along(q => h[(n - 1) * n + q], t, true),
+                _ => Vector3.Up,
+            };
+        }
+        var all = new int[idx.Length + sIdx.Length];
+        System.Array.Copy(idx, all, idx.Length);
+        System.Array.Copy(sIdx, 0, all, idx.Length, sIdx.Length);
+        return (v, nr, all);
     }
 
     /// <summary>The fires' warmth, where no frost lies: (x, z, radius), four at most.</summary>

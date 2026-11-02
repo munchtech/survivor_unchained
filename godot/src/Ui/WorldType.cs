@@ -170,14 +170,36 @@ public partial class Notice : Control
         Life = life;
         MouseFilter = MouseFilterEnum.Ignore;
         int size = grand ? 26 : 18;
-        Title = WorldType.Lettering(text, grand ? Style.Display : Style.UiBold, size, colour);
+        var titleFont = grand ? Style.Display : Style.UiBold;
+        Title = WorldType.Lettering(text, titleFont, size, colour);
         Title.Name = "Title";
         var row = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
         row.AddThemeConstantOverride("separation", 8);
-        if (icon != null) { icon.SizeFlagsVertical = SizeFlags.ShrinkCenter; row.AddChild(icon); }
+        // A long title (a lore line: "Ember: light that seeps up from under the valley...") breaks evenly at the
+        // notice's width rather than running 1200 px across the play; its glyph stays on the first line.
+        float iconW0 = icon?.GetCombinedMinimumSize().X ?? 0, textW = Wide - (icon != null ? iconW0 + 8 : 0);
+        bool wraps = titleFont.GetStringSize(text, HorizontalAlignment.Left, -1, size).X > textW;
+        float line1 = titleFont.GetHeight(size);
+        if (wraps)
+        {
+            Title.Text = Kit.Balance(text, titleFont, size, textW);
+            GD.Print($"notice: '{(text.Length > 40 ? text[..40] + "..." : text)}' wrapped at {textW:0} px into {Title.Text.Count(ch => ch == (char)10) + 1} lines");
+        }
+        if (icon != null)
+        {
+            if (!wraps) { icon.SizeFlagsVertical = SizeFlags.ShrinkCenter; row.AddChild(icon); }
+            else
+            {
+                // (centred on the first line, not on the block)
+                var at = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore, SizeFlagsVertical = SizeFlags.ShrinkBegin };
+                at.AddThemeConstantOverride("margin_top", (int)Math.Max(0, Math.Round((line1 - icon.GetCombinedMinimumSize().Y) / 2)));
+                at.AddChild(icon);
+                row.AddChild(at);
+            }
+        }
         row.AddChild(Title);
         Control whole = row;
-        float lineH = row.GetCombinedMinimumSize().Y;
+        float lineH = wraps ? line1 : row.GetCombinedMinimumSize().Y;
         if (!string.IsNullOrEmpty(sub))
         {
             int subSize = grand ? 17 : 15;

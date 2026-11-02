@@ -107,6 +107,8 @@ public static class People
         // A person Marionette made, from its package (art/npc/NAME): no code of its own.
         if (NpcPackage.NameOf(body) is string pkg && NpcPackage.Build(pkg) is Person made)
         {
+            // (its own colours, height and place in its loops, per copy: NpcDye)
+            NpcDye.Apply(made, pkg, spec);
             return made;
         }
         // The woman survivor is the heroine (tools/assets/build_heroine.py),
@@ -195,6 +197,9 @@ public static class People
         public required Skeleton3D Skeleton;
         public required AnimationPlayer Anim;
         public readonly List<MeshInstance3D> Meshes = new();
+        /// <summary>A package copy's height factor (NpcDye, random mode; PersonView scales by it) and where in its
+        /// loops it starts (0..1; -1: at their start).</summary>
+        public float Jitter = 1f, Phase = -1f;
         /// <summary>Which body: "" for the kit's, "heroine" for hers (her
         /// own idle and carriage).</summary>
         public string Body = "";
@@ -245,6 +250,9 @@ public static class People
             // library, the library's idle.
             if (FolkClips.ArmedName(name) != null && (p.Kit || p.Package != null))
                 return FolkClips.Armed(p.Woman, name) ?? Resolve("Idle");
+            // (the crossed arms break on the generated packages, their full sleeves a rigid bar with no hands: their
+            // weight-shift stand instead, NPC 17)
+            if (p.Package != null && name is "Idle_FoldArms_Loop" or "Idle_FoldArms") name = "Idle";
             return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         }
         // (One of their own asked for by its own name.)
@@ -653,7 +661,7 @@ public static class People
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                 {
-                    var hm = Hair(src, colour, highlight, style);
+                    var hm = Hair(src, colour, highlight, style, src.ResourceName == "hair_cap" && HasRopes(mi.Mesh, s));
                     // (face 32 r2b: the pixie's lifted cards' undersides lit as their tops, not dark: heroine_hair.gdshaderinc's fibre_back)
                     if (style == "pixie" && hm is ShaderMaterial sm)
                         foreach (var pass in HairDraw.Passes(sm)) pass.SetShaderParameter("fibre_back", true);
@@ -1349,6 +1357,14 @@ public static class People
         return ImageTexture.CreateFromImage(img);
     }
 
+    /// <summary>Whether a hair surface has a braid's ropes (vertex blue 0.5 or more on the cap: tools/assets/heroine_hair.py, mat 1).</summary>
+    static bool HasRopes(Mesh mesh, int surface)
+    {
+        if (mesh.SurfaceGetArrays(surface)[(int)Mesh.ArrayType.Color].AsColorArray() is not { Length: > 0 } c) return false;
+        foreach (var k in c) if (k.B >= 0.5f) return true;
+        return false;
+    }
+
     static Shader? hairShader, hairSoftShader, eyeShader, teethShader, tongueShader;
     // (--hair-atlas PATH: her hair's strands atlas from a file, tried before a build)
     static Texture2D? hairAtlas;
@@ -1357,7 +1373,7 @@ public static class People
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
     /// strands, darker at the roots and deep in, with the long highlight
     /// across them.</summary>
-    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null)
+    internal static Material Hair(BaseMaterial3D src, Color colour, Color? highlight = null, string? style = null, bool ropes = false)
     {
         hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
         hairSoftShader ??= GD.Load<Shader>("res://shaders/heroine_hair_soft.gdshader");
@@ -1369,6 +1385,8 @@ public static class People
             ?? new ShaderMaterial { Shader = soft ? hairSoftShader : Coverage.On ? Coverage.Hair : hairShader, RenderPriority = src.ResourceName == "hair_fine" ? (HairDraw.Blended ? 2 : 1) : 0 };
         // (--hair-erase: FSR 2's reactive mask erased under the blended ones: HairDraw)
         if (soft || src.ResourceName == "hair" && HairDraw.Blended) m = HairDraw.WithErase(m);
+        // (a braid's ropes on the cap drawn solid under it, their depth written: HairDraw.RopeCore; --rope-core off: as before)
+        if (ropes && src.ResourceName == "hair_cap" && Args.Get("rope-core") != "off") m = HairDraw.RopeCore(m);
         foreach (var pass in HairDraw.Passes(m))
         {
             pass.SetShaderParameter("strands", src.AlbedoTexture?.ResourcePath.EndsWith("hair_strands.png") == true ? (hairAtlas ??= TryFile("hair-atlas")) ?? src.AlbedoTexture : src.AlbedoTexture);
@@ -2293,6 +2311,28 @@ public static class People
                 { m.SetShaderParameter("sky_share", w); m.SetShaderParameter("sky_body", body); }
     }
 
+    /// <summary>Face 48 round 4: her skin's and eyes' cine_spec_split (1 in a cinematic while GameCinemaHer's sheen twins are
+    /// on: a light tagged light_specular 0.31 lights them with no sheen; 0: as before, everywhere else).</summary>
+    public static void HerCineSpec(Person p, float on)
+    {
+        if (p.Body != "heroine") return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && (m.Shader == skinShader2 || (eyeShader != null && m.Shader == eyeShader)))
+                    m.SetShaderParameter("cine_spec_split", on);
+    }
+
+    /// <summary>Her gaze (heroine_eye.gdshader's gaze_a and gaze_b averaged: in irises' radii, +x to her left, +y down).</summary>
+    public static Vector2 HerGaze(Person p)
+    {
+        if (p.Body != "heroine" || eyeShader == null) return Vector2.Zero;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == eyeShader)
+                    return (m.GetShaderParameter("gaze_a").AsVector2() + m.GetShaderParameter("gaze_b").AsVector2()) * 0.5f;
+        return Vector2.Zero;
+    }
+
     /// <summary>Her eyes by night (heroine_eye.gdshader's night_ease, 0 by day to 1): the lids' shade on them eased
     /// and the iris lifted (HerEyes' night_*), so under the night key her irises read a dark olive, not black.
     /// GameCloseUp sets it each frame while its night light is on her.</summary>
@@ -2308,6 +2348,41 @@ public static class People
     /// on her skin pulled toward hold_tint (face 46 skin C), so under the night key and the fires she stays on her skin line
     /// while her hair, clothes and the scene keep their warmth. GameCloseUp sets it each frame while its night light is on
     /// her. --skin-hold off: none (as before); --skin-hold K: K of it (pictures).</summary>
+    /// <summary>Her skin's own lift (Rendering 3, judge j2 D3): the skin shader's tone times k (1: as her look set it), her skin
+    /// only, where the Look's lights lifted by night for deep skin lifted her copper hair pale with it. The tone her look set is
+    /// kept on the material (meta) and taken again when her look sets a new one.</summary>
+    /// <summary>Her skin's darkness, 0 (the fairest swatch's luminance, 0.4 linear, or over) to 1 (0.04 or under), from the tone
+    /// her look set on her skin (Rendering 3: the close view's fill by night is the stronger on deep skin).</summary>
+    public static float HerSkinDark(Person p)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return 0;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    var c = (m.HasMeta("su_tone0") ? m.GetMeta("su_tone0").AsColor() : m.GetShaderParameter("tone").AsColor()).SrgbToLinear();
+                    return Mathf.Clamp((0.4f - (0.2126f * c.R + 0.7152f * c.G + 0.0722f * c.B)) / 0.36f, 0, 1);
+                }
+        return 0;
+    }
+
+    public static void HerSkinGain(Person p, float k)
+    {
+        if (p.Body != "heroine" || skinShader2 == null) return;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial m && m.Shader == skinShader2)
+                {
+                    var now = m.GetShaderParameter("tone").AsColor();
+                    // (a tone not the one set here last: her look set it again, the new base)
+                    Color b = m.HasMeta("su_tone0") && m.HasMeta("su_tone_set") && m.GetMeta("su_tone_set").AsColor().IsEqualApprox(now) ? m.GetMeta("su_tone0").AsColor() : now;
+                    if (Mathf.IsEqualApprox(k, 1)) { if (m.HasMeta("su_tone0")) { m.SetShaderParameter("tone", b); m.RemoveMeta("su_tone0"); m.RemoveMeta("su_tone_set"); } continue; }
+                    // (tone is sRGB (source_color): k in linear light)
+                    var lin = b.SrgbToLinear(); var t = new Color(lin.R * k, lin.G * k, lin.B * k).LinearToSrgb();
+                    m.SetShaderParameter("tone", t); m.SetMeta("su_tone0", b); m.SetMeta("su_tone_set", t);
+                }
+    }
+
     public static void HerSkinHold(Person p, float k)
     {
         if (p.Body != "heroine" || skinShader2 == null) return;

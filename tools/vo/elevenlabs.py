@@ -96,40 +96,7 @@ def lock_state(line: dict) -> str:
     return "broken" if st == "gone" else st
 
 
-# Behind the door (docs/story/LOVE_SCENES.md "Where the door is"; the owner chose B, 6 October): only
-# the lovers speak there. The narrator stops at the door, so a narrator's part behind it is never
-# recorded, locked or not. The one exception is the bolt, which she hears from the stairs.
-DOOR = ("dlg.sella.stairs_room.", "dlg.sella.stairs_rules.", "dlg.sella.night.", "dlg.sella.stop_",
-        "dlg.sella.rest_night_paid.", "dlg.sella.rest_bed.", "dlg.sella.rest_dark.", "dlg.sella.rest_morning.",
-        "dlg.sella.morning.", "dlg.sella.free_night.", "dlg.sella.free_morning.", "dlg.sella.past.",
-        "dlg.sella.sleeptalk.", "dlg.sella.door.", "dlg.sella.door_years.", "dlg.sella.door_south.",
-        "dlg.sella.free_door.", "dlg.sella.free_want.", "dlg.sella.free_stop.", "dlg.sella.free_sit.",
-        "dlg.sella.free_sleep.", "dlg.sella.free_sleep_bed.", "dlg.sella.free_bolt.", "dlg.sella.free_m_",
-        "dlg.maeca.blind.", "dlg.maeca.blind_dark.", "dlg.maeca.blind2_", "dlg.maeca.told_",
-        "dlg.maeca.blind3_")
-DOOR_BOLT = ("dlg.sella.free_bolt.0", "dlg.sella.free_sleep_bed.0")
-# The exception is this sentence, not those ids: anything else the narrator says in them (A's "Her
-# forehead is against the door", pasted back after the bolt) is behind the door like the rest.
-BOLT = ("Behind the door, the bolt sticks halfway; nobody has ever shot it. Swearing, and a shoulder to it, and then "
-        "it goes home, with a sound like the last coin put down on a counter.")
-DOOR_WHY = "behind the door: the narrator stops at the door (docs/story/LOVE_SCENES.md); never recorded"
-
-
-def behind_door(line: dict, voice: str) -> bool:
-    """A narrator's part behind the door: held for good, whatever the lock says. The bolt is exempt
-    only where every narrator part of the line is exactly BOLT (a line without its segments can't
-    show that, so it is held)."""
-    if voice != "narrator" or not line["id"].startswith(DOOR):
-        return False
-    if line["id"] not in DOOR_BOLT:
-        return True
-    told = [s["text"] for s in line.get("segments") or [] if s["voice"] == "narrator"]
-    return not told or any(t != BOLT for t in told)
-
-
 def held(line: dict, voice: str) -> str | None:
-    if behind_door(line, voice):
-        return DOOR_WHY
     st = lock_state(line)
     if st == "ok":
         return None  # locked: recorded now, whatever else holds the voice
@@ -282,15 +249,15 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
 
     for e in entries(man, voice):
         key = e["seg"].get("acted", e["seg"]["text"])
-        e["locked"] = lock_state(e["line"]) == "ok" and not behind_door(e["line"], voice)
+        e["locked"] = lock_state(e["line"]) == "ok"
         f = first.get(key)
         if f is None:
             e["also"] = []
             first[key] = e
             es.append(e)
         elif aside(f) and not aside(e):
-            # The same words as an aside and as a line of their own (the bolt, heard from the
-            # stairs): the take is listed once, under the line's own direction.
+            # The same words as an aside and as a line of their own: the take is listed once, under
+            # the line's own direction.
             e["also"] = f["also"] + [file_name(f["line"], f["part"])]
             e["locked"] = e["locked"] or f["locked"]
             es[es.index(f)] = e
@@ -375,10 +342,8 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         # a whole part on hold says so once, at the top, unless some of it is locked: then each take says which
         hold = held(l, voice) if voice not in HOLD_VOICES or locked else None
-        is_locked = e["locked"] and not behind_door(l, voice)
-        if behind_door(l, voice):
-            hold = DOOR_WHY
-        elif is_locked:
+        is_locked = e["locked"]
+        if is_locked:
             hold = None
         redo = file_name(l, k)[:-4] in again or l["id"] in again
         w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else "") + ("  **RE-RECORD: the words changed**" if redo else "")

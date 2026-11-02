@@ -225,4 +225,19 @@ public class CloseUpTests
         Assert.Equal((0.0, 0.0), Folk.OutOfView(c, 6, -8));
         Assert.Equal((0.0, 0.0), Folk.OutOfView(c, 0, 30));
     }
+
+    [Fact]
+    public void ACarriedTorchKeysTheCloseViewByNight()
+    {
+        Assert.Equal(1, CloseUp.CarriedShare(night: false, carries: true));
+        Assert.Equal(1, CloseUp.CarriedShare(night: true, carries: false));
+        Assert.InRange(CloseUp.CarriedShare(night: true, carries: true), 0.3, 0.4);
+        // From his left (x+), level with his chest: keyed from there, level.
+        var (az, el) = CloseUp.CarriedAim(0.4, 0, 0.3);
+        Assert.Equal(System.Math.Atan2(0.4, 0.3), az, 6);
+        Assert.Equal(0, el, 6);
+        // Below his chin: held level, never lit from under; high above: held at the cap.
+        Assert.Equal(0, CloseUp.CarriedAim(0.3, -0.5, 0.3).El, 6);
+        Assert.Equal(CloseUp.CarriedElMax * System.Math.PI / 180, CloseUp.CarriedAim(0.1, 2, 0.1).El, 6);
+    }
 }

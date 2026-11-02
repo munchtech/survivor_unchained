@@ -10,149 +10,241 @@
   "skip": {"from": 1.5, "hold": 0.8},
   "plates": [
     {
-      "id": "p0",
+      "id": "ink_p0",
       "at": 0,
       "until": 2.5,
-      "in": {"kind": "fade", "dur": 0.6},
-      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}],
-      "note": "PLACEHOLDER: a flat card for P0 · The lamp at the post; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#14110d", "label": "P0 · The lamp at the post", "z": 1}],
-      "cues": []
-    },
-    {
-      "id": "p1",
-      "at": 2.5,
-      "until": 11,
-      "in": {"kind": "light", "dur": 1.6, "origin": [0.56, 0.5]},
-      "camera": [{"t": 0, "x": 1600, "y": 700, "zoom": 1.08}, {"t": 8.5, "x": 1700, "y": 1150, "zoom": 1.2, "dolly": 0.12}],
-      "note": "PLACEHOLDER: a flat card for P1 · Long ago; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#15121a", "label": "P1 · Long ago", "z": 1}],
-      "cues": [
-        {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.25, "over": 4.0},
-        {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"}
+      "in": {"kind": "fade", "dur": 0.6, "color": "#000000"},
+      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 4.1, "x": 1588, "y": 921, "zoom": 1.045, "ease": "linear"}],
+      "note": "INK: The lamp at the post (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "dark", "image": "res://art/storybook/sb00/p0/dark.png", "pos": [-100, 149], "scale": 1.0, "z": 1.0},
+        {"id": "lit", "image": "res://art/storybook/sb00/p0/lit.png", "pos": [-100, 149], "scale": 1.0, "z": 1.0, "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p0/lit_map.png", "t0": 1.0, "t1": 2.2, "soft": 0.14}, {"kind": "flicker", "rate": 5, "amount": 0.05, "seed": 2}]},
+        {"id": "flame", "image": "res://art/storybook/sb00/p0/flame.png", "pos": [1526, 805], "scale": 1.0, "z": 1.0, "pivot": [1581.5, 1119], "keys": [{"t": 0, "scale": 0.06, "opacity": 0}, {"t": 0.88, "scale": 0.06, "opacity": 0}, {"t": 0.9, "scale": 0.1, "opacity": 1}, {"t": 1.2, "scale": 1, "opacity": 1, "ease": "out"}], "touch": [{"kind": "flicker", "rate": 8, "amount": 0.16, "seed": 3}]},
+        {"id": "glow", "image": "res://art/storybook/sb00/p0/glow.png", "pos": [894, 243], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 0}, {"t": 0.95, "opacity": 0}, {"t": 1.9, "opacity": 1, "ease": "out"}], "touch": [{"kind": "flicker", "rate": 6, "amount": 0.3, "seed": 1}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "sparks", "at": [1581.5, 1089], "area": [30, 14], "z": 1.0, "rate": 0, "burst": [0.86], "count": 16, "speed": [60, 170], "size": [3, 6], "seed": 5}
       ]
     },
     {
-      "id": "p2",
-      "at": 11,
-      "until": 15.5,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 650, "zoom": 1.1}, {"t": 4.5, "x": 1600, "y": 1200, "zoom": 1.15}],
-      "note": "PLACEHOLDER: a flat card for P2 · The chain; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#121214", "label": "P2 · The chain", "z": 1}],
-      "cues": [{"at": 0.3, "do": "line", "id": "chained"}]
+      "id": "ink_p1d",
+      "at": 2.5,
+      "until": 16.5,
+      "in": {"kind": "light", "dur": 1.6, "origin": [0.5, 0.52]},
+      "camera": [
+        {"t": 0, "x": 1600, "y": 667.3, "zoom": 0.972},
+        {"t": 5.5, "x": 1600, "y": 827, "zoom": 0.972, "ease": "inout"},
+        {"t": 11.3, "x": 1553.6, "y": 819.3, "zoom": 1.006, "ease": "linear"},
+        {"t": 11.333, "x": 1553.6, "y": 809.3, "zoom": 1.006, "ease": "linear"},
+        {"t": 11.367, "x": 1553.6, "y": 823.3, "zoom": 1.006, "ease": "linear"},
+        {"t": 11.433, "x": 1552.5, "y": 819.1, "zoom": 1.0068, "ease": "linear"},
+        {"t": 13.0, "x": 1540, "y": 817, "zoom": 1.016, "ease": "linear"},
+        {"t": 14.0, "x": 1532, "y": 815.7, "zoom": 1.0219, "ease": "linear"}
+      ],
+      "note": "INK: The door shut (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "base", "image": "res://art/storybook/sb00/p1d/base.png", "pos": [-50, -23], "scale": 1.0, "z": 1.0},
+        {"id": "gold", "image": "res://art/storybook/sb00/p1d/gold.png", "pos": [1044, 463], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 1}, {"t": 8.9, "opacity": 1}, {"t": 9.3, "opacity": 0.954}, {"t": 9.7, "opacity": 0.836}, {"t": 10.1, "opacity": 0.68}, {"t": 10.5, "opacity": 0.518}, {"t": 10.9, "opacity": 0.381}, {"t": 11.3, "opacity": 0.3}], "touch": [{"kind": "flicker", "rate": 0.5, "amount": 0.12, "seed": 11}]},
+        {"id": "slab", "image": "res://art/storybook/sb00/p1d/slab.png", "pos": [1144, 563], "scale": 1.0, "z": 1.0, "keys": [{"t": 0, "dx": 550}, {"t": 8.9, "dx": 550}, {"t": 11.3, "dx": 0, "ease": "in"}]},
+        {"id": "rim", "image": "res://art/storybook/sb00/p1d/rim.png", "pos": [1144, 563], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "dx": 550, "opacity": 1}, {"t": 8.9, "dx": 550, "opacity": 1}, {"t": 9.3, "opacity": 0.954}, {"t": 9.7, "opacity": 0.836}, {"t": 10.1, "opacity": 0.68}, {"t": 10.5, "opacity": 0.518}, {"t": 10.9, "opacity": 0.381}, {"t": 11.3, "dx": 0, "ease": "in", "opacity": 0.3}]},
+        {"id": "jamb", "image": "res://art/storybook/sb00/p1d/jamb.png", "pos": [1690, -23], "scale": 1.0, "z": 1.0},
+        {"id": "lintel", "image": "res://art/storybook/sb00/p1d/lintel.png", "pos": [1121, 430], "scale": 1.0, "z": 1.0},
+        {"id": "lintel_gold", "image": "res://art/storybook/sb00/p1d/lintel_gold.png", "pos": [1121, 430], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 1}, {"t": 8.9, "opacity": 1}, {"t": 9.3, "opacity": 0.954}, {"t": 9.7, "opacity": 0.836}, {"t": 10.1, "opacity": 0.68}, {"t": 10.5, "opacity": 0.518}, {"t": 10.9, "opacity": 0.381}, {"t": 11.3, "opacity": 0.3}], "touch": [{"kind": "flicker", "rate": 0.5, "amount": 0.12, "seed": 11}]},
+        {"id": "shut", "image": "res://art/storybook/sb00/p1d/shut.png", "pos": [-50, -23], "scale": 1.0, "z": 1.0, "keys": [{"t": 0, "opacity": 0}, {"t": 11.3, "opacity": 1, "ease": "hold"}]},
+        {"id": "seams", "image": "res://art/storybook/sb00/p1d/seams.png", "pos": [1004, 465], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 0}, {"t": 11.3, "opacity": 1, "ease": "hold"}, {"t": 11.56, "opacity": 0.72}, {"t": 11.82, "opacity": 1.0}, {"t": 12.08, "opacity": 0.8}, {"t": 12.34, "opacity": 0.97}, {"t": 12.6, "opacity": 0.86}, {"t": 12.86, "opacity": 0.93}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "ash", "at": [1411, 1423], "area": [534, 18], "z": 1.0, "rate": 0, "burst": [11.3], "count": 46, "life": 1.5, "speed": [40, 130], "dir": [0, -1], "spread": 80, "gravity": [0, 70], "damping": 30, "size": [5, 11], "wobble": 0.4, "color": ["#8a7d6ec8", "#4a443c00"], "seed": 9}
+      ],
+      "cues": [
+        {"at": 0.0, "do": "music", "mood": "night", "intensity": 0.25, "over": 4.0},
+        {"at": 0.8, "do": "line", "id": "legion", "tag": "An old Watchman"},
+        {"at": 8.8, "do": "line", "id": "chained"},
+        {"at": 11.3, "do": "sfx", "name": "hit", "gain": 0.8},
+        {"at": 13.8, "do": "line", "id": "ember"}
+      ]
     },
     {
-      "id": "p3",
-      "at": 15.5,
+      "id": "ink_p2",
+      "at": 16.5,
       "until": 25.5,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 1250, "zoom": 1.12}, {"t": 10, "x": 1600, "y": 650, "zoom": 1.1}],
-      "note": "PLACEHOLDER: a flat card for P3 · Ember; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#18120c", "label": "P3 · Ember", "z": 1}],
-      "cues": [{"at": 0.8, "do": "line", "id": "ember"}]
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [{"t": 0, "x": 1539, "y": 759.7, "zoom": 1.04}, {"t": 9.0, "x": 1600, "y": -121, "zoom": 1.0, "ease": "inout"}],
+      "note": "INK: Ember (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "base", "image": "res://art/storybook/sb00/p2/base.png", "pos": [-50, -881], "scale": 1.0, "z": 1.0},
+        {"id": "branches", "image": "res://art/storybook/sb00/p2/branches.png", "pos": [50, -61], "scale": 1.0, "z": 1.0, "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/branches_map.png", "t0": 2.3, "t1": 7.0, "soft": 0.15}, {"kind": "flicker", "rate": 0.6, "amount": 0.2, "seed": 6}]},
+        {"id": "threads", "image": "res://art/storybook/sb00/p2/threads.png", "pos": [104, 287], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_map.png", "t0": -2.5, "t1": 7.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
+        {"id": "threads_glow", "image": "res://art/storybook/sb00/p2/threads_glow.png", "pos": [25, 226], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p2/threads_glow_map.png", "t0": -2.5, "t1": 7.5, "soft": 0.12}, {"kind": "flicker", "rate": 0.6, "amount": 0.3, "seed": 6}]},
+        {"id": "lights", "image": "res://art/storybook/sb00/p2/lights.png", "pos": [-50, -591], "scale": 1.0, "z": 1.0, "blend": "add", "keys": [{"t": 0, "opacity": 0.6}, {"t": 5.8, "opacity": 0.6}, {"t": 7.3, "opacity": 1.0, "ease": "inout"}], "touch": [{"kind": "flicker", "rate": 6, "amount": 0.25, "seed": 7}]}
+      ]
     },
     {
-      "id": "p4",
+      "id": "ink_p3",
       "at": 25.5,
-      "until": 37,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1250, "y": 950, "zoom": 1.12}, {"t": 11.5, "x": 1950, "y": 950, "zoom": 1.12}],
-      "note": "PLACEHOLDER: a flat card for P4 · The dead get up; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#101418", "label": "P4 · The dead get up", "z": 1}],
+      "until": 38.0,
+      "in": {"kind": "cut"},
+      "camera": [
+        {"t": 0, "x": 978, "y": 864, "zoom": 1.27},
+        {"t": 3.3, "x": 968, "y": 859, "zoom": 1.28, "ease": "inout"},
+        {"t": 7.2, "x": 963, "y": 849, "zoom": 1.285, "ease": "in"},
+        {"t": 9.3, "x": 2230, "y": 884, "zoom": 1.28, "ease": "out"},
+        {"t": 12.5, "x": 2235, "y": 894, "zoom": 1.285, "ease": "out"}
+      ],
+      "grade": [
+        {"t": 0, "exposure": 1, "sat": 1, "tint": "#ffffff"},
+        {"t": 11.5, "exposure": 1, "sat": 1, "tint": "#ffffff"},
+        {"t": 12.5, "exposure": 1.1, "sat": 0.8, "tint": "#e6eaf0"}
+      ],
+      "note": "INK: The dead get up (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "field", "image": "res://art/storybook/sb00/p3/field.png", "pos": [-290, 204], "scale": 0.7, "z": 1.0},
+        {"id": "dead_light", "image": "res://art/storybook/sb00/p3/dead_light.png", "pos": [594.1, 351.7], "scale": 0.7, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 0.35, "amount": 0.3, "seed": 21}], "keys": [{"t": 0, "opacity": 1}, {"t": 11.5, "opacity": 1}, {"t": 12.4, "opacity": 0.0}]},
+        {"id": "ember", "image": "res://art/storybook/sb00/p3/ember.png", "pos": [-173.8, 449], "scale": 0.7, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 0.6, "amount": 0.16, "seed": 22}], "keys": [{"t": 0, "opacity": 0.55}, {"t": 1.8, "opacity": 0.55}, {"t": 2.4, "opacity": 1}, {"t": 11.5, "opacity": 1}, {"t": 12.4, "opacity": 0.1}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "motes", "at": [89, 1286], "area": [520, 160], "z": 1, "rate": 3, "size": [4, 8], "color": ["#ffa040e0", "#ff602000"], "seed": 23},
+        {"kind": "particles", "preset": "sparks", "at": [2490, 764], "area": [50, 40], "z": 1, "burst": [7.6], "count": 22, "dir": [0.2, 1], "speed": [40, 140], "gravity": [0, 320], "size": [3, 6], "life": 1.3, "seed": 24}
+      ],
       "cues": [
         {"at": 0.8, "do": "line", "id": "dead"},
         {"at": 2.0, "do": "sfx", "name": "frost_crack"},
-        {"at": 3.2, "do": "sfx", "name": "rasp", "gain": 0.6}
+        {"at": 3.2, "do": "sfx", "name": "rasp", "gain": 0.6},
+        {"at": 12.3, "do": "line", "id": "dawn"}
       ]
     },
     {
-      "id": "p5",
-      "at": 37,
-      "until": 46,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 1150, "zoom": 1.1}, {"t": 9, "x": 1600, "y": 700, "zoom": 1.08}],
-      "note": "PLACEHOLDER: a flat card for P5 · First light; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#1a1612", "label": "P5 · First light", "z": 1}],
-      "cues": [{"at": 0.8, "do": "line", "id": "dawn"}]
+      "id": "ink_p3d",
+      "at": 38.0,
+      "until": 46.0,
+      "in": {"kind": "cut"},
+      "camera": [
+        {"t": 0, "x": 1600, "y": 849, "zoom": 0.97},
+        {"t": 1.0, "x": 1600, "y": 844, "zoom": 0.97},
+        {"t": 7.5, "x": 1600, "y": 754, "zoom": 1.05, "ease": "inout"}
+      ],
+      "note": "INK: First light (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [{"id": "dawn", "image": "res://art/storybook/sb00/p3d/dawn.png", "pos": [-560, 104], "scale": 0.8, "z": 1.0}]
     },
     {
-      "id": "p6",
-      "at": 46,
-      "until": 56,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1200, "y": 900, "zoom": 1.15}, {"t": 10, "x": 2000, "y": 900, "zoom": 1.15}],
-      "note": "PLACEHOLDER: a flat card for P6 · Keepers and lamps; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#16140e", "label": "P6 · Keepers and lamps", "z": 1}],
+      "id": "ink_p4",
+      "at": 46.0,
+      "until": 56.0,
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [{"t": 0, "x": 400, "y": 710, "zoom": 1.0}, {"t": 10.0, "x": 2800, "y": 630, "zoom": 1.0, "ease": "inout"}],
+      "note": "INK: Keepers and lamps (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "base", "image": "res://art/storybook/sb00/p4/base.png", "pos": [-1300, -50], "scale": 1.0, "z": 1.0},
+        {"id": "lamps", "image": "res://art/storybook/sb00/p4/lamps.png", "pos": [-1287, -50], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 6.5, "amount": 0.28, "seed": 9}]},
+        {"id": "willow", "image": "res://art/storybook/sb00/p4/willow.png", "pos": [216, -50], "scale": 1.0, "z": 0.8, "keys": [{"t": 0, "dy": -47.5}, {"t": 10.0, "dy": -67.5, "ease": "inout"}]}
+      ],
       "cues": [{"at": 0.8, "do": "line", "id": "keepers"}]
     },
     {
-      "id": "p7",
+      "id": "ink_p5",
       "at": 56,
-      "until": 63.5,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 7.5, "x": 1650, "y": 920, "zoom": 1.06, "dolly": 0.2}],
-      "note": "PLACEHOLDER: a flat card for P7 · Last winter; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#0c1219", "label": "P7 · Last winter", "z": 1}],
-      "cues": [{"at": 0.8, "do": "line", "id": "winter"}]
-    },
-    {
-      "id": "p8",
-      "at": 63.5,
       "until": 71,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1250, "y": 950, "zoom": 1.1}, {"t": 7.5, "x": 1950, "y": 900, "zoom": 1.14}],
-      "note": "PLACEHOLDER: a flat card for P8 · Waiting; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#0e1214", "label": "P8 · Waiting", "z": 1}],
-      "cues": [{"at": 0.8, "do": "line", "id": "waiting"}]
-    },
-    {
-      "id": "p9",
-      "at": 71,
-      "until": 78,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.0}, {"t": 5.0, "zoom": 1.0}, {"t": 7, "x": 1800, "y": 930, "zoom": 1.03, "ease": "in"}],
-      "note": "PLACEHOLDER: a flat card for P9 · The traveler; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#141019", "label": "P9 · The traveler", "z": 1}],
-      "cues": [{"at": 0.8, "do": "line", "id": "lamps"}, {"at": 5.2, "do": "music", "mood": "silence"}]
-    },
-    {
-      "id": "p10a",
-      "at": 78,
-      "until": 81.5,
-      "in": {"kind": "ink", "dur": 1.4, "origin": [0.5, 0.55]},
-      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.02}, {"t": 3.5, "zoom": 1.05}],
-      "note": "PLACEHOLDER: a flat card for P10a · The water (kneeling); the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#0b1116", "label": "P10a · The water (kneeling)", "z": 1}],
-      "cues": [{"at": 0.6, "do": "sfx", "name": "kneel_water"}]
-    },
-    {
-      "id": "p10b",
-      "at": 81.5,
-      "until": 84,
-      "in": {"kind": "cut"},
-      "camera": [{"t": 0, "x": 1600, "y": 900, "zoom": 1.1}, {"t": 2.5, "zoom": 1.14}],
-      "note": "PLACEHOLDER: a flat card for P10b · The reflection; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#0a1014", "label": "P10b · The reflection", "z": 1}],
-      "cues": [{"at": 0.3, "do": "line", "id": "cin_none_cross.call", "tag": "A voice under the water"}]
-    },
-    {
-      "id": "p10c",
-      "at": 84,
-      "until": 87.5,
-      "in": {"kind": "cut"},
-      "camera": [{"t": 0, "x": 1600, "y": 880, "zoom": 1.05}, {"t": 1.4, "y": 900, "zoom": 1.06}, {"t": 3.5, "y": 1200, "zoom": 1.12, "rot": -3, "ease": "in"}],
-      "note": "PLACEHOLDER: a flat card for P10c · Under; the lead replaces its layers with the plate's art (docs/story/storybook/sb00_stay_where_they_reach.md).",
-      "layers": [{"id": "card", "color": "#070c0d", "label": "P10c · Under", "z": 1}],
-      "cues": [
-        {"at": 1.4, "do": "sfx", "name": "cloth_water"},
-        {"at": 1.5, "do": "sfx", "name": "water_close"},
-        {"at": 1.5, "do": "bus", "lowpass": 650, "gain": -3, "over": 0.35},
-        {"at": 2.2, "do": "sfx", "name": "heart_hum", "gain": 0.7}
+      "in": {"kind": "fade", "dur": 1.4, "color": "#000000"},
+      "camera": [
+        {"t": 0, "x": 1630, "y": 960, "zoom": 1.08},
+        {"t": 7.5, "x": 1668, "y": 840, "zoom": 1.15, "ease": "out"},
+        {"t": 13.0, "x": 1550, "y": 1190, "zoom": 0.93, "ease": "inout"},
+        {"t": 15.0, "x": 1550, "y": 1190, "zoom": 0.93}
       ],
-      "out": {"kind": "fade", "dur": 2.0}
+      "note": "INK: The Low Ford; the drowned (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "land", "image": "res://art/storybook/sb00/p5/land.png", "pos": [-250, 140], "scale": 1.0, "z": 1.0, "touch": [{"kind": "ripple", "centers": [[1668, 705]], "period": 3.6, "speed": 30, "amp": 1.4, "rings": 3, "gap": 20, "reach": 260, "squash": 0.28, "light": 0.3}]},
+        {"id": "fires", "image": "res://art/storybook/sb00/p5/fires.png", "pos": [969, 445], "scale": 1.0, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 5}]}
+      ],
+      "fx": [{"kind": "mist", "rect": [-450, 660, 4000, 260], "z": 1.3, "color": "#8f9fb6", "density": 0.24, "speed": [9, 0], "scale": 320, "seed": 3}],
+      "cues": [
+        {"at": 0.8, "do": "line", "id": "winter"},
+        {"at": 8.3, "do": "line", "id": "waiting"}
+      ]
+    },
+    {
+      "id": "ink_p6",
+      "at": 71,
+      "until": 81.5,
+      "in": {"kind": "dissolve", "dur": 1.0},
+      "camera": [
+        {"t": 0, "x": 650, "y": 845, "zoom": 1.0},
+        {"t": 4.6, "x": 650, "y": 845, "zoom": 1.0},
+        {"t": 7.55, "x": 1760, "y": 900, "zoom": 1.3},
+        {"t": 10.5, "x": 2650, "y": 905, "zoom": 1.3, "ease": "inout"}
+      ],
+      "note": "INK: The traveler (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "sky", "image": "res://art/storybook/sb00/p6/sky.png", "pos": [-1000, -155], "scale": 1.31579, "z": 10},
+        {"id": "far", "image": "res://art/storybook/sb00/p6/far.png", "pos": [857.9, -155], "scale": 1.31579, "z": 3.0},
+        {"id": "near", "image": "res://art/storybook/sb00/p6/near.png", "pos": [-1000, -155], "scale": 1.31579, "z": 1.0},
+        {"id": "lamp_refl", "image": "res://art/storybook/sb00/p6/lamp_refl.png", "pos": [1963.2, 772.6], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0.0, "dx": -633.33, "dy": -36.67}, {"t": 0.1, "dx": -633.33, "dy": -36.67}, {"t": 0.2, "dx": -633.33, "dy": -36.67}, {"t": 0.3, "dx": -633.33, "dy": -36.67}, {"t": 0.4, "dx": -633.33, "dy": -36.67}, {"t": 0.5, "dx": -633.33, "dy": -36.67}, {"t": 0.6, "dx": -633.33, "dy": -36.67}, {"t": 0.7, "dx": -633.33, "dy": -36.67}, {"t": 0.8, "dx": -633.33, "dy": -36.67}, {"t": 0.9, "dx": -633.33, "dy": -36.67}, {"t": 1.0, "dx": -633.33, "dy": -36.67}, {"t": 1.1, "dx": -633.33, "dy": -36.67}, {"t": 1.2, "dx": -633.33, "dy": -36.67}, {"t": 1.3, "dx": -633.33, "dy": -36.67}, {"t": 1.4, "dx": -633.33, "dy": -36.67}, {"t": 1.5, "dx": -633.33, "dy": -36.67}, {"t": 1.6, "dx": -633.33, "dy": -36.67}, {"t": 1.7, "dx": -633.33, "dy": -36.67}, {"t": 1.8, "dx": -633.33, "dy": -36.67}, {"t": 1.9, "dx": -633.33, "dy": -36.67}, {"t": 2.0, "dx": -633.33, "dy": -36.67}, {"t": 2.1, "dx": -633.33, "dy": -36.67}, {"t": 2.2, "dx": -633.33, "dy": -36.67}, {"t": 2.3, "dx": -633.33, "dy": -36.67}, {"t": 2.4, "dx": -633.33, "dy": -36.67}, {"t": 2.5, "dx": -633.33, "dy": -36.67}, {"t": 2.6, "dx": -633.33, "dy": -36.67}, {"t": 2.7, "dx": -633.33, "dy": -36.67}, {"t": 2.8, "dx": -633.33, "dy": -36.67}, {"t": 2.9, "dx": -633.33, "dy": -36.67}, {"t": 3.0, "dx": -633.33, "dy": -36.67}, {"t": 3.1, "dx": -633.33, "dy": -36.67}, {"t": 3.2, "dx": -633.33, "dy": -36.67}, {"t": 3.3, "dx": -633.33, "dy": -36.67}, {"t": 3.4, "dx": -633.33, "dy": -36.67}, {"t": 3.5, "dx": -633.33, "dy": -36.67}, {"t": 3.6, "dx": -633.33, "dy": -36.67}, {"t": 3.7, "dx": -633.33, "dy": -36.67}, {"t": 3.8, "dx": -633.33, "dy": -36.67}, {"t": 3.9, "dx": -633.33, "dy": -36.67}, {"t": 4.0, "dx": -633.33, "dy": -36.67}, {"t": 4.1, "dx": -633.33, "dy": -36.67}, {"t": 4.2, "dx": -633.33, "dy": -36.67}, {"t": 4.3, "dx": -633.33, "dy": -36.67}, {"t": 4.4, "dx": -633.33, "dy": -36.67}, {"t": 4.5, "dx": -633.33, "dy": -36.67}, {"t": 4.6, "dx": -633.33, "dy": -36.67}, {"t": 4.7, "dx": -630.84, "dy": -36.54}, {"t": 4.8, "dx": -623.59, "dy": -36.18}, {"t": 4.9, "dx": -611.93, "dy": -35.61}, {"t": 5.0, "dx": -596.21, "dy": -34.83}, {"t": 5.1, "dx": -576.76, "dy": -33.86}, {"t": 5.2, "dx": -553.95, "dy": -32.73}, {"t": 5.3, "dx": -528.11, "dy": -31.45}, {"t": 5.4, "dx": -499.59, "dy": -30.04}, {"t": 5.5, "dx": -468.73, "dy": -28.51}, {"t": 5.6, "dx": -435.88, "dy": -26.88}, {"t": 5.7, "dx": -401.39, "dy": -25.17}, {"t": 5.8, "dx": -365.61, "dy": -23.4}, {"t": 5.9, "dx": -328.87, "dy": -21.58}, {"t": 6.0, "dx": -291.53, "dy": -19.73}, {"t": 6.1, "dx": -253.93, "dy": -17.87}, {"t": 6.2, "dx": -216.41, "dy": -16.01}, {"t": 6.3, "dx": -179.33, "dy": -14.17}, {"t": 6.4, "dx": -143.02, "dy": -12.37}, {"t": 6.5, "dx": -107.84, "dy": -10.63}, {"t": 6.6, "dx": -74.13, "dy": -8.96}, {"t": 6.7, "dx": -42.24, "dy": -7.38}, {"t": 6.8, "dx": -12.51, "dy": -5.9}, {"t": 6.9, "dx": 14.72, "dy": -4.56}, {"t": 7.0, "dx": 39.09, "dy": -3.35}, {"t": 7.1, "dx": 60.26, "dy": -2.3}, {"t": 7.2, "dx": 77.89, "dy": -1.43}, {"t": 7.3, "dx": 91.62, "dy": -0.75}, {"t": 7.4, "dx": 101.12, "dy": -0.27}, {"t": 7.5, "dx": 106.04, "dy": -0.03}, {"t": 7.6, "dx": 107.17, "dy": 0}, {"t": 7.7, "dx": 111.11, "dy": 0.02}, {"t": 7.8, "dx": 118.73, "dy": 0.07}, {"t": 7.9, "dx": 129.74, "dy": 0.13}, {"t": 8.0, "dx": 143.87, "dy": 0.21}, {"t": 8.1, "dx": 160.85, "dy": 0.3}, {"t": 8.2, "dx": 180.39, "dy": 0.41}, {"t": 8.3, "dx": 202.22, "dy": 0.54}, {"t": 8.4, "dx": 226.06, "dy": 0.67}, {"t": 8.5, "dx": 251.63, "dy": 0.81}, {"t": 8.6, "dx": 278.66, "dy": 0.97}, {"t": 8.7, "dx": 306.87, "dy": 1.12}, {"t": 8.8, "dx": 335.98, "dy": 1.29}, {"t": 8.9, "dx": 365.71, "dy": 1.46}, {"t": 9.0, "dx": 395.79, "dy": 1.62}, {"t": 9.1, "dx": 425.94, "dy": 1.79}, {"t": 9.2, "dx": 455.88, "dy": 1.96}, {"t": 9.3, "dx": 485.34, "dy": 2.13}, {"t": 9.4, "dx": 514.03, "dy": 2.29}, {"t": 9.5, "dx": 541.68, "dy": 2.44}, {"t": 9.6, "dx": 568.02, "dy": 2.59}, {"t": 9.7, "dx": 592.76, "dy": 2.73}, {"t": 9.8, "dx": 615.63, "dy": 2.86}, {"t": 9.9, "dx": 636.35, "dy": 2.98}, {"t": 10.0, "dx": 654.64, "dy": 3.08}, {"t": 10.1, "dx": 670.23, "dy": 3.17}, {"t": 10.2, "dx": 682.84, "dy": 3.24}, {"t": 10.3, "dx": 692.19, "dy": 3.29}, {"t": 10.4, "dx": 698, "dy": 3.32}, {"t": 10.5, "dx": 700, "dy": 3.33}], "touch": [{"kind": "reveal", "map": "res://art/storybook/sb00/p6/lamp_refl_map.png", "t0": 0, "t1": 10.5, "soft": 0.02}, {"kind": "flicker", "rate": 1.3, "amount": 0.18, "seed": 13}]},
+        {"id": "fire_glow", "image": "res://art/storybook/sb00/p6/fire_glow.png", "pos": [-1000, -155], "scale": 1.31579, "z": 1.0, "blend": "add", "touch": [{"kind": "flicker", "rate": 5, "amount": 0.22, "seed": 2}]},
+        {"id": "stand", "image": "res://art/storybook/sb00/p6/stand.png", "pos": [50, 560.8], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0, "opacity": 1}, {"t": 7.6, "opacity": 1}, {"t": 7.62, "opacity": 0}]},
+        {"id": "walk2", "image": "res://art/storybook/sb00/p6/walk2.png", "pos": [3117.1, 966.1], "scale": 1.31579, "z": 1.0, "keys": [{"t": 0, "opacity": 0}, {"t": 7.6, "opacity": 0}, {"t": 7.62, "opacity": 1}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "sparks", "at": [-417, 862.1], "area": [110, 40], "z": 1.0, "rate": 4, "life": 2.2, "speed": [40, 95], "dir": [0, -1], "spread": 18, "gravity": [0, -20], "size": [3, 6], "wobble": 0.7, "damping": 0.3, "seed": 6}
+      ],
+      "cues": [
+        {"at": 0.8, "do": "line", "id": "lamps"},
+        {"at": 5.2, "do": "music", "mood": "silence"}
+      ]
+    },
+    {
+      "id": "ink_p7",
+      "at": 81.5,
+      "until": 87.5,
+      "in": {"kind": "dissolve", "dur": 0.6},
+      "camera": [
+        {"t": 0, "x": 1780, "y": 1740, "zoom": 1.2},
+        {"t": 0.8, "x": 1780, "y": 1700, "zoom": 1.2, "ease": "out"},
+        {"t": 2.8, "x": 1700, "y": 800, "zoom": 1.08, "ease": "inout"},
+        {"t": 4.7, "x": 1600, "y": 90, "zoom": 1.01, "ease": "inout"},
+        {"t": 5.5, "x": 1600, "y": 75, "zoom": 1.01},
+        {"t": 6.0, "x": 1700, "y": 1300, "zoom": 1.3, "ease": "in"}
+      ],
+      "note": "INK: The water (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "water", "image": "res://art/storybook/sb00/p7/water.png", "pos": [0, -1100], "scale": 1.25, "z": 1.2, "touch": [{"kind": "water", "amp": 1.2, "freq": 1.2, "scale": 40}, {"kind": "ripple", "centers": [[1735.8, 2008.2]], "period": 2.6, "speed": 55, "amp": 2, "rings": 3, "gap": 24, "reach": 320, "squash": 0.3, "light": 0.22}]},
+        {"id": "lamp", "image": "res://art/storybook/sb00/p7/lamp.png", "pos": [1882.5, -1100], "scale": 1.25, "z": 1.1, "pivot": [2266.9, -1100], "keys": [{"t": 0, "dy": 0}, {"t": 2.0, "dy": -6, "ease": "inout"}, {"t": 4.0, "dy": 4, "ease": "inout"}, {"t": 6.0, "dy": -2, "ease": "inout"}]},
+        {"id": "traveler", "image": "res://art/storybook/sb00/p7/traveler.png", "pos": [0, -392.5], "scale": 1.25, "z": 0.95},
+        {"id": "blue_rim", "image": "res://art/storybook/sb00/p7/blue_rim.png", "pos": [1243.8, -358.8], "scale": 1.25, "z": 0.95, "blend": "add", "keys": [{"t": 0, "opacity": 0}, {"t": 1.7, "opacity": 0}, {"t": 2.5, "opacity": 1, "ease": "out"}], "touch": [{"kind": "flicker", "rate": 0.9, "amount": 0.12, "seed": 4}]},
+        {"id": "lamp_glare", "image": "res://art/storybook/sb00/p7/lamp_glare.png", "pos": [1507.5, -1100], "scale": 1.25, "z": 1.1, "blend": "add", "touch": [{"kind": "flicker", "rate": 0.9, "amount": 0.2, "seed": 4}], "keys": [{"t": 0, "dy": 0}, {"t": 2.0, "dy": -6, "ease": "inout"}, {"t": 4.0, "dy": 4, "ease": "inout"}, {"t": 6.0, "dy": -2, "ease": "inout"}]},
+        {"id": "reflection_blue", "image": "res://art/storybook/sb00/p7/reflection_blue.png", "pos": [1266.2, 1266.2], "scale": 1.25, "z": 1.2, "blend": "add", "touch": [{"kind": "water", "amp": 2.0, "freq": 1.1, "scale": 50}, {"kind": "flicker", "rate": 0.9, "amount": 0.1, "seed": 4}], "keys": [{"t": 0, "dx": 320, "opacity": 0}, {"t": 0.6, "dx": 320, "opacity": 0}, {"t": 2.5, "dx": 0, "opacity": 1, "ease": "out"}]}
+      ],
+      "cues": [
+        {"at": 0.1, "do": "sfx", "name": "kneel_water"},
+        {"at": 0.3, "do": "line", "id": "cin_none_cross.call", "tag": "A voice under the water"},
+        {"at": 5.4, "do": "sfx", "name": "cloth_water"}
+      ]
+    },
+    {
+      "id": "ink_p7u",
+      "at": 87.0,
+      "until": 89.5,
+      "in": {"kind": "dissolve", "dur": 0.5},
+      "out": {"kind": "fade", "dur": 2.0, "color": "#000000"},
+      "camera": [{"t": 0, "x": 1600, "y": 760, "zoom": 1.06}, {"t": 1.2, "x": 1600, "y": 880, "zoom": 1.04, "ease": "out"}],
+      "note": "INK: Underwater (tools/storybook/sb_wire_ink.py writes this plate; edit the script, not here).",
+      "layers": [
+        {"id": "under", "image": "res://art/storybook/sb00/p7u/under.png", "pos": [0, 0], "scale": 1.66667, "z": 1.0},
+        {"id": "bubbles", "image": "res://art/storybook/sb00/p7u/bubbles.png", "pos": [0, 700], "scale": 1.0, "z": 0.9, "keys": [{"t": 0, "dy": 0}, {"t": 2.6, "dy": -150, "ease": "linear"}]},
+        {"id": "lamp_warped", "image": "res://art/storybook/sb00/p7u/lamp_warped.png", "pos": [0, 0], "scale": 1.66667, "z": 1.0, "blend": "add", "touch": [{"kind": "water", "amp": 6, "freq": 0.7, "scale": 150}, {"kind": "flicker", "rate": 1.1, "amount": 0.14, "seed": 8}]}
+      ],
+      "fx": [
+        {"kind": "particles", "preset": "bubbles", "at": [1480, 1100], "area": [160, 120], "z": 0.85, "rate": 7, "speed": [70, 130], "size": [4, 10], "seed": 9}
+      ],
+      "cues": [
+        {"at": 0.0, "do": "sfx", "name": "water_close"},
+        {"at": 0.0, "do": "bus", "lowpass": 650, "gain": -3, "over": 0.35},
+        {"at": 0.7, "do": "sfx", "name": "heart_hum", "gain": 0.7}
+      ]
     }
   ],
-  "cues": [{"at": 0.0, "do": "music", "mood": "silence"}, {"at": 87.5, "do": "bus", "lowpass": 180, "gain": -60, "over": 2.0}],
+  "cues": [
+    {"at": 0.0, "do": "music", "mood": "silence"},
+    {"at": 87.5, "do": "bus", "lowpass": 180, "gain": -60, "over": 2.0}
+  ],
   "end": 89.5
 }

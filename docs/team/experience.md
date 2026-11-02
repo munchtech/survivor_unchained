@@ -5,7 +5,11 @@ Status page for the gameplay experience director. The last lead was `a9f0d6c64d8
 The audit is `docs/EXPERIENCE_AUDIT.md`; the approved design is `docs/design/STORY_NIGHTS_AND_TIME.md`;
 evidence frames are in `docs/experience/`.
 
-## Current state (2026-10-05)
+## Current state (2026-10-28, Experience 10)
+
+The fixed list is done and the MR is ready: the Act 1 days measure (`verge-day` in godot/balance), the Ambush stakes check (idle player loses 35%), and the teach callouts fitted to the Drowned Girl HUD ("Ember fills this", the numbers card lesson, the ring sizes). The details are at the top of `docs/handoff/experience.md`. Later item: Verge day packs have no stakes.
+
+## History (2026-10-05)
 
 **Built and seen (this lead), all on the branch:**
 - Hostile lanes fill as they come. A named move draws at a boss's strength.

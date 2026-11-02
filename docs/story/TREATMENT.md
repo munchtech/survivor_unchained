@@ -40,7 +40,7 @@ anything below, in this section too. Each has its own page for the detail.
   climbs into her knife on purpose. After the kill, risen at his gate on the
   fourth dusk, he counts to ninety-two (C20b); his daybook ends "92." with no
   name, and "Sorry." (C22). Maeca's "He never counted me." becomes "...He
-  counted me."
+  counted me." (said at his table, C22, not at the hole: P3, 29 October).
 - **The toll: "It takes less than it did"** (`TWIST_WTF.md` option 1; the
   build, `TOLL_SPEC.md`). The survivor's first rising cost the twenty-six
   Vonnra drowned. Every rising since costs one life in the valley: someone
@@ -131,9 +131,7 @@ anything below, in this section too. Each has its own page for the detail.
   the stair the player learns why: their ember crowded her out. Her voice
   leaves them, and goes down. The word is checkable: on day 3 she writes it in
   her journal at Chid's asking.
-- **Love scenes: B, the lovers' own lines** (the owner, 6 October;
-  `LOVE_SCENES.md`): the narrator stops at the door, and silent narration in
-  the room can't read as her mother having been there. A is the fallback.
+- **Love scenes and romance routes: removed** (the owner, 28 October). Sella keeps her warmth and her free night (she sits with you); Maeca's Blind is a watch night; Keegan's supper and Rav's surgery are friendship. `docs/story/notes/history_love_scenes_b.md` is the history.
 
 **The owner, in his words:**
 - "we really want a powerful epic story with real emotional happenings.
@@ -200,14 +198,25 @@ the one the Waystation's gate says every dusk without knowing whose it was,
 made small and kept in one family. The call is the valley's; the name is
 hers.
 
-- **C04, the first dawn** (trunk): *"You try to call up your mother's face,
-  and find it is not quite where you left it. Her voice is still there. 'Lamp's
-  lit, Spark. Stay where it reaches.'"*
-- **The first dusk at the gate:** the Watch call the lamps, and she turns her
-  head. *"You have heard that said at a door."*
+- **C04, the first dawn** (trunk): *"You try to call up your mother's voice,
+  and it is not there. Not faint: gone. Her face comes at once: the line
+  between her brows, the thread she bit instead of cutting."* The narrator
+  never says the call: there is nothing to compare her with (reveal A, the
+  owner's pick, 28 October; `NARRATOR_REVEAL_OPTIONS.md`).
+- **Day one, Rook's bar** (`rook.mother_word`; P1, 29 October): right after "She
+  went in her sleep, pet", Rook gives the words and the name: *"She'd sit at my
+  back window at dusk, the week she was here, and say it to the road. 'Lamp's
+  lit, Spark. Stay where it reaches.' I took it for a prayer."* Every player
+  holds them from here; no lamp and no river bank in her line.
+- **The first dusk at the gate:** the Watch call the lamps ("Lamps are lit.
+  Stay where they reach.", the valley's plural), and she turns her head. *"You
+  have heard that said at a door."* The player learns the words from the
+  valley, never the voice from her; the one-lamp version, hers, waits for C43.
 - **The dawns take it.** One line now and then, at the night's end:
-  - day 3, *"Her voice is going the way her face went. You still have the
-    word."*;
+  - day 3, *"Her face is going the way her voice went. The brows first. You
+    still have the word."*;
+  - day 6, *"This morning it takes you a moment to find her word. It is
+    there."* (the journal keeps it: *"Spark. What she called me, at dusk."*);
   - after Act 2's turn, *"Somebody used to call you something at dusk. One
     short word. It was yours."*;
   - and then the line stops coming. The player notices what is gone because
@@ -292,8 +301,8 @@ Brannoc's, and it has been paid.
 she was failing she came down to the Waystation to be near the ford road, and
 took Rook's back room. Her hands were bad, so Rook wrote her last letter for
 her: *Come home by the Low Ford. I'll be at the water with a lamp, so you'll
-see me.* (That is the letter in the survivor's coat in C01, its ink run to
-blue water.) Rook, paid by Vonnra to report the road, reported that a
+see me.* (That is the letter in the survivor's coat, its ink run to blue water; one
+line still reads, *Come home by the Low Ford.*: P2, 29 October.) Rook, paid by Vonnra to report the road, reported that a
 traveller was expected on it, and Vonnra paid her double. Every evening the
 mother went down to the north bank with a lamp. On the seventh she went down
 to the water's edge, and the Warden took her. She is the twenty-sixth line in
@@ -308,7 +317,10 @@ lamp toward her face the way the Warden lifts his. She did not strike.
 prologue's path, just before C02.
 
 **The plants, all on the trunk, each innocent:**
-- C01: the letter whose ink has run.
+- C04 A: the letter whose ink has run, one line still legible: *Come home by
+  the Low Ford.* (journal `home.letter`; the hand stays unseen until C32; P2,
+  29 October. Until Cinematics 8 restages C01, its shot 6 keeps the letter as an
+  object with no word legible; after, the letter is seen only at C04 A.)
 - The prologue: the drowned woman at the water's edge, who lifts a lamp
   instead of her hands. The narrator says nothing.
 - C04, the dawn crossing: *"On the stones at the water's edge, a lamp
@@ -406,23 +418,19 @@ no player can match the accents.
    checking a bed.
 2. **"Prints in the frost, your own. They come up from the river. None go
    down to it."** She watched her child walk out of the water.
-3. **C04's dawn:** "...not quite where you left it. Her voice is still
-   there." The narrator quotes the mother in the narrator's own voice. Of
-   course she does: it is hers.
+3. **C04's dawn:** the voice is gone ("Not faint: gone."); the face comes
+   whole. The narrator quotes nothing. Of course the voice is not in her
+   memory: it is in her ear.
 4. **Every rise: "You get up. It takes less than it did."** A mother getting
    a child up.
-5. **The narrator never enters a bedroom.** At every love scene the voice
-   stops at the door: her last line is the bolt, heard from the stairs, and
-   behind it only the lovers speak (B, `LOVE_SCENES.md`). Players read it as a
-   rating choice.
-6. **The dawn lines that take "Spark" away.** She is narrating her child
+5. **The dawn lines that take her face, then "Spark," away.** She is narrating her child
    forgetting her, plainly, with no weight, night after night.
-7. **The silences:** at the water's edge in the prologue; through Rook's
+6. **The silences:** at the water's edge in the prologue; through Rook's
    confession. The only two places in the game the narrator does not speak.
-8. **Act 2's memory swaps:** *"Your father's hands are gone. In their place:
+7. **Act 2's memory swaps:** *"Your father's hands are gone. In their place:
    a hammer, and someone saying 'Mine.'"* She is telling her child that the
    child has lost the father, her husband.
-9. **"Somewhere up the street, someone is baking."** The one warm line in the
+8. **"Somewhere up the street, someone is baking."** The one warm line in the
    prologue. Who notices that, on the worst morning of your life?
 
 **The payoff: the bottom of the stair (C43).** The names; Aldo, Ewan, Corran,
@@ -435,7 +443,7 @@ speaks in the first person, once:
 - "I came up with you. Somebody had to tell you where you were."
 - And, if she asks why she never said: "You'd have sat down in the road and
   waited for me."
-- Her face is exactly where she left it.
+- And with the voice, her face comes back: the brows, the thread she bit.
 
 **The endings each settle the voice.**
 - **A, re-forge, the survivor lies down:** *"You lie down."* Then, for the
@@ -635,8 +643,7 @@ It is Ashford, exactly, and the player knows it.
    (and the Pack, if it lives) holding the top.
 3. **The last.** Everyone up but the two of them. "Up. Go on. I'm last.
    Count's not right till you're up." She climbs. At the lip, Maeca's hand
-   takes hers and pulls her over. (If she is the survivor's lover, it is the
-   hand she has held.)
+   takes hers and pulls her over. (If the survivor has kept her fire at the Blind, it is the hand that woke them there.)
 4. **The laugh.** Grey light coming. Tam's Pa, on his back in the mud,
    swearing at everyone, at Holloway down the hole: "And you took your bloody
    time, Captain!" Below, Holloway laughs: the first time the player has ever
@@ -648,16 +655,16 @@ It is Ashford, exactly, and the player knows it.
 6. **The cut.** One stroke of her knife through the rope at the post. The
    camera does not cut away. The rope runs. He does not cry out. The lamp at
    his belt goes down the dark, very small, and goes out.
-7. **The silence.** No music. She puts the knife away. To nobody, flat:
-   **"Ninety-two."**
+7. **The silence.** No music. She puts the knife away. Nobody says a number.
+   Tolley's lips move, and stop. The count waits four dusks for the gate
+   (C20b), where the risen Holloway says it and the player does the sum (P3,
+   29 October).
 
 Only then do the choices come.
 
 ### 4.6 The aftermath, unflinching
 
-- **The lip.** The survivor: "Maeca." / take hold of her / (Say nothing.). If
-  she is the survivor's lover and the survivor says her name, Maeca looks at
-  her: "You were up." (She waited until the survivor was safe. That is the
+- **The lip.** The survivor: "Maeca." / take hold of her / (Say nothing.). If the survivor has kept her fire and says her name, Maeca looks at her: "You were up." (She waited until the survivor was safe. That is the
   most frightening kindness in the game.)
 - **The Pack** (if it lives): Greymuzzle gets up, and walks into the trees,
   and the Pack goes after him. The one thing that saw her at Ashford and did
@@ -710,7 +717,7 @@ Only then do the choices come.
    to a lot of things to see if they'd live."; "...Did he."; she never let
    him pay; she pulled the survivor up first.
 6. **Not optional:** a fixed point. The player bends what follows.
-7. **Worse if she is the lover:** the same scene; the hand that pulled her up
+7. **Worse if the survivor kept her fire:** the same scene; the hand that pulled her up
    cut his rope; "You were up."
 
 ---
@@ -838,7 +845,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 |---|---|---|
 | The waking: no breath, prints up from the river | dread | C01 |
 | "Is it morning?" and the nod (her choice) | grace | C03 |
-| First dawn: breath smoking; "Lamp's lit, Spark." | relief, and the first thing to lose | C04 |
+| First dawn: breath smoking; her voice gone, her face whole | relief, and the first thing lost | C04 |
 | Holloway's coat; Rook's back room | warmth | C04 B |
 | Brannoc's pride: the road he lit, her new boots | dread (the player knows) | the forge |
 | The first night's return: Holloway asleep at the gate, Maeca over him with her crossbow | warmth (re-read: a hunter waiting) | the gate |
@@ -859,9 +866,9 @@ as only Nell did. He stops. It is a gift, not a wound.
 |---|---|---|
 | The farm goes; Holloway goes down drunk and shaking | dread, then pride | C20 |
 | The hole, played; the count; Tam's Pa swearing; his laugh | **elation** | C20 |
-| "Count's right." The knife. "Ninety-two." | **HOLY SHIT** | C20 |
-| The Pack walks away from her; Tolley counts ten | silence | C20 |
-| Holloway at the gate at dusk; she lays him down | devastation, unflinching | C20b |
+| "Count's right." The knife. No number. | **HOLY SHIT** | C20 |
+| The Pack walks away from her; Tolley's lips move, and stop | silence | C20 |
+| Holloway at the gate at dusk counts to ninety-two, Maeca at the well looking at her hands; the sum is the player's; she lays him down | **the click, then devastation** | C20b |
 | His table: "No." to Sallow; "Sorry." in ink | grief | C22 |
 | Chapter four: Keegan doesn't want to be right | dread | C21 |
 | Harlan exposed (now a twist) | betrayal | C24 |
@@ -915,8 +922,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 
 - **Story data** (mine, after the yes): Holloway, Maeca, Brannoc, Rook and
   Vonnra's fortune rewritten; the gate scenes, the confession and C07's
-  extension written; the narrator's dawn lines and silences; the love
-  scenes as the lovers' own lines (B); new facts (`holloway.confessed`,
+  extension written; the narrator's dawn lines and silences; the blue room and the Blind as affection, not romance (28 October); new facts (`holloway.confessed`,
   `maeca.told_lid`, `mother.lamp`) and their StoryLint and tests.
 - **The prologue** (combat and the experience director): the drowned woman
   with the dead lamp on the last stepping stone, who does not strike; the
@@ -935,7 +941,7 @@ as only Nell did. He stops. It is a gift, not a wound.
 
 1. The twists: all four.
 2. The narrator recast: yes, plain and dry.
-3. Love scenes: B, the lovers' own lines (6 October; `LOVE_SCENES.md`).
+3. Love scenes: B (6 October); then removed with every romance route (28 October).
 4. Holloway risen at his gate: yes, on the fourth dusk.
 5. The nod as the first choice: yes.
 6. The lamp-iron lantern: yes.

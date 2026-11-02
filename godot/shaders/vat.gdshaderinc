@@ -106,7 +106,14 @@ void fragment() {
 		float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
 		c = mix(c, min(dye_color * (lum / dye_lum), vec3(1.0)), m);
 	}
-	c *= COLOR.rgb;
+	// (a negative red: the copy wears a coat of river mud (CrowdView.TintOf): dark brown patches, heaviest on the legs
+	// and the hem, on the body's own shape)
+	c *= abs(COLOR.rgb);
+	if (COLOR.r < 0.0) {
+		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);
+		float mud = smoothstep(0.5, 0.64, vat_noise(vat_local * 6.5) * 0.8 + low * 0.4) * (0.35 + 0.65 * low);
+		c = mix(c, c * vec3(0.36, 0.3, 0.23), mud);
+	}
 	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	vec3 sky = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float up = clamp(dot(NORMAL, sky), 0.0, 1.0);

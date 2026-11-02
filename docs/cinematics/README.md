@@ -213,13 +213,7 @@ tests know it.
 the change is on its conversation's nodes, so it happens whether the
 cinematic plays or is skipped.
 
-**Love scenes are not cinematics.** There are no NPC faces to hold, and
-two-person animation is the dearest thing on this list. Each love scene's
-cut-away is narrated, as written in `docs/romance/`, and the screen holds one
-object, still, for its length: Sella's bolt going home; Maeca's boots side by
-side outside the hides; Keegan's armour laid out in order on a chapel bench;
-two cups on Rav's table, one full; Ysolde's spectacles folded on the twelfth
-drawing. An insert at 85 to 100, the room's own light, no music but the room.
+**There are no love scenes** (the owner, 28 October): the romance routes are out of the game; `docs/romance/` is history.
 
 **Performance.** Lines carry a note: the feeling under it, the beat, where the
 speaker looks. For the heroine, the notes give face shapes and gaze. For NPCs,

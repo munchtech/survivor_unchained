@@ -17,7 +17,6 @@
  "dlg.keegan.say_calling.2": {"emo": "slip, then cover", "intent": "nearly says too much", "pace": "quick", "vol": "level", "note": "Breaks off 'a ledger of—'. Over-cheerful cover: 'Good morning.' The last question too bright."},
  "dlg.keegan.say_calling.3": {"emo": "pride, then honest", "intent": "pretends she noticed you", "pace": "measured", "vol": "level", "note": "Prim claim; a pause; honest and small: 'I did not know.'"},
  "dlg.keegan.say_calling.4": {"emo": "pride, then honest", "intent": "pretends she noticed you", "pace": "measured", "vol": "level", "note": "Prim claim; a pause; honest and small: 'I did not know.'"},
- "dlg.keegan.dinner.0": {"emo": "flustered, tempted", "intent": "fraternisation", "pace": "quick", "vol": "level", "note": "Prim citation; caught lying; confession; the answer wobbles: 'very nearly no.' Hasty 'Good day.'"},
  "dlg.keegan.t_keegan.0": {"emo": "earnest longing, then comic", "intent": "what she wants", "pace": "measured", "vol": "level", "note": "Sincere and moving: 'without the bracket.' A pause; comic: the bath, the protest underlining."},
  "dlg.keegan.say_risen.0": {"emo": "dawning fear, composure cracking", "intent": "sees the sign", "pace": "measured then quick", "vol": "level", "wants": "to be wrong", "note": "Narrator for the long look. 'You look well. You look extremely well.' too careful. Then the contraction slips: 'I've got to go' quick and frightened, catching herself 'I— I have to go'. A brittle 'Good day.'"},
  "bark.keegan.day.0": {"emo": "earnest", "pace": "measured", "vol": "raised"},

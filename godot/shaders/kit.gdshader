@@ -119,6 +119,14 @@ uniform float amb_occl = 1.0;
 // (lf5c) leaf litter caught on its ledges and level faces (what faces up, in its hollows and inner corners: the baked
 // cavity and occlusion), in scattered spots, litter_color; 0 none
 uniform float litter = 0.0;
+// (e22r1a, the Env 22 triage: a boulder sat on the ground with no contact) the foot's skirt: earth and grass climbing its
+// foot to foot_soil_h m (over the copy's own origin, its line ragged by the sheet), foot_soil of it; earth with patches of
+// grass (foot_grass of them) so soil and turf meet the stone, not a clean cut; 0 none
+uniform float foot_soil = 0.0;
+uniform float foot_soil_h = 0.3;
+uniform float foot_grass = 0.5;
+uniform vec4 foot_soil_color : source_color = vec4(0.23, 0.18, 0.13, 1.0);
+uniform vec4 foot_grass_color : source_color = vec4(0.22, 0.27, 0.13, 1.0);
 uniform vec4 litter_color : source_color = vec4(0.36, 0.22, 0.11, 1.0);
 // (a pebble under a crown darkens as the ground's litter does there: GroundPaint's exposure (R the open sky), sky_dark of it; Dressing sets it)
 uniform sampler2D expo_tex : filter_linear, repeat_disable, hint_default_white;
@@ -349,6 +357,12 @@ uniform float old_tile = 0.16;     // (E9b6 r4) the share of tiles old and dark:
 uniform float tile_tilt = 0.09;    // each tile's normal turned +-this (a tile bedded a few degrees off its neighbours)
 uniform float trough_dirt = 0.45;   // dirt streaks running down the slope (narrow, broken), this much darker
 uniform float moss_any = 0.5;     // moss in patches on every slope's lower courses (not only the north ones)
+// (Env 22 r1f, judge: the clay roof read clean salmon) soot along the ridge (the smoke's lee: the top 0.2-0.8 m of each
+// slope, patchy) and moss along the eaves (the lowest course or two, in broken patches); 0: as before
+uniform float ridge_soot = 0.0;
+uniform float clay_sat = 1.0;
+uniform float eave_moss = 0.0;
+varying float v_lx;
 varying vec3 v_wn;
 varying float v_rh;
 varying float v_lz;
@@ -502,6 +516,7 @@ void vertex() {
 	v_hgt = VERTEX.y + INSTANCE_CUSTOM.g;
 	v_rh = VERTEX.y;
 	v_lz = VERTEX.z;
+	v_lx = abs(VERTEX.x);   // (Env 22 r1f) from the ridge (env_roof.py: the ridge along z at x = 0)
 	v_wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 #endif
@@ -805,6 +820,8 @@ void fragment() {
 		else if (ax.r > 0.25) tint = timber_tints[ti % 3];
 		vec3 col = c.rgb * tint;
 		bool cover = COLOR.b > 0.5 && ax.r > 0.6;
+		// (Env 22 r1f) the clay's saturation (the sheet's painted tiles read salmon under the warm key: 1 as before)
+		if (ax.r > 0.9) col = mix(vec3(dot(col, LW)), col, clay_sat);
 		if (cover) {
 			// each tile again its own value and warmth: its id on the sheet (32 steps), its run's hash, its roof's
 			float th = wall_hash(vec2(floor(ax.b * 32.0), COLOR.g * 131.0 + v_wall.b * 17.0));
@@ -872,6 +889,12 @@ void fragment() {
 				col = mix(col, lc * dot(col, LW) * 1.15 * (0.85 + 0.25 * wall_noise(v_wp.xz * 23.0)), lichen * lp * lf);
 			}
 		}
+		if (cover) {
+			// (Env 22 r1f) the ridge's soot: the top of each slope darker, patchy, browner-grey
+			float rsn = wall_noise(vec2(v_lz * 1.9 + v_wall.b * 7.0, v_lx * 2.2));
+			float rs = ridge_soot * (1.0 - smoothstep(0.15 + 0.35 * rsn, 0.55 + 0.6 * rsn, v_lx)) * (0.55 + 0.45 * rsn);
+			col = mix(col, vec3(dot(col, LW)) * vec3(0.92, 0.9, 0.88), rs * 0.6) * (1.0 - rs);
+		}
 		float rough = ax.g;
 		if (cover) {
 			// moss on the slopes facing north, patchy, thickest toward the eaves and on the shaded roofs' lower courses
@@ -881,6 +904,8 @@ void fragment() {
 			float em = mix(1.0, 0.35, smoothstep(0.4, 3.5, v_rh));
 			float m = roof_moss * hm * em * smoothstep(0.05, 0.45, fn) * smoothstep(0.3, 0.7, mn);
 			m += moss_any * hm * smoothstep(0.6, 0.72, mn) * mix(1.0, 0.6, smoothstep(0.4, 3.5, v_rh));
+			// (Env 22 r1f) the eaves' moss: the lowest course or two, broken along the eave
+			m += eave_moss * hm * (1.0 - smoothstep(0.15 + 0.35 * mn, 0.7 + 0.4 * mn, v_rh)) * smoothstep(0.38, 0.6, mn);
 			m = clamp(m, 0.0, 0.85);
 			col = mix(col, roof_moss_color.rgb * (0.55 + 0.4 * mn), m);   // (E9b6 r4: darker, it read chartreuse in the sun)
 			rough = mix(rough, 1.0, m);
@@ -1033,6 +1058,12 @@ void fragment() {
 			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
 			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
 			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
+		}
+		if (foot_soil > 0.0) {
+			float fl = texture(stone_tex, wp.xz / (tile * 0.61) + vec2(0.43, 0.19)).a;
+			float fs = 1.0 - smoothstep(0.35 * foot_soil_h, foot_soil_h, v_foot + 0.6 * foot_soil_h * (fl - 0.5) + 0.3 * foot_soil_h * (st.a - 0.5));
+			float gz = smoothstep(1.0 - foot_grass - 0.08, 1.0 - foot_grass + 0.08, texture(stone_tex, wp.zx / (tile * 0.29) + vec2(0.17, 0.71)).a);
+			col = mix(col, mix(foot_soil_color.rgb, foot_grass_color.rgb, gz) * (0.8 + 0.4 * st.r), foot_soil * fs * (1.0 - wet));
 		}
 		col *= mix(1.0, wet_dark, wet);
 		float damp = top_damp * smoothstep(0.0, 0.25, flora_light.x) * (1.0 - wet) * mix(0.55, 1.0, smoothstep(0.3, 0.7, st.a + 0.25 * COLOR.g));

@@ -68,21 +68,21 @@ Screen time is counted in recorded lines (`VO_CAST.md`) and cinematics (C number
 | **The hero** | the survivor, a man, 32 | the male choice (behind a flag today) | **Own** · blocker · A | As hers. His head is already MakeHuman; his body is the tainted part. Stop polishing the current one |
 | **The Ford-Warden** | the prologue's boss | C02, C03; the endless hour's last echo | **Own** · must · A or B | See below |
 | **Vonnra Ash-of-Morrow** | toll-keeper, the last binder, 66 | 78 lines; C09 (2 min, her hands on your palm), C32, C41; all three acts | **Own** · should · A (B for her shape) | The story's other lead, and its longest close-up. She is tall and straight-backed; the old build is short and stooped |
-| **Sella** | the blue room, 28 | 95 lines, the most of anyone; a romance from the first night | **Own** · should · A (B for her shape) | A romance lead whose figure is part of her trade, framed close upstairs. On the shared build she'd read as a townswoman in a better dress, and on the heroine's body as the heroine's twin in the same scenes |
+| **Sella** | the blue room, 28 | 95 lines, the most of anyone; the blue room from the first night | **Own** · should · A (B for her shape) | A lead whose figure is part of her trade, framed close upstairs. On the shared build she'd read as a townswoman in a better dress, and on the heroine's body as the heroine's twin in the same scenes |
 | **Grimtunnel** | Boss of the Dig | C03 (the prologue), C12; arena boss; Act 3 | **Own** · should · B (or A) | Made on the lampling's skeleton: his bulk, an iron hat with three lamps, and a boss's silhouette in close-up. Today he's a scaled lampling |
 | **The Barrow Lord** | the Seventh Legion's standard-bearer | C13; the Risen's arena boss | **Own** · should · A | A Legion dead in its armour, with the eagle pole. He becomes the Legion base: the Barrow Knight, the legionaries, the Decurion, the Signifer and Act 3's Centurion are reskins of him |
-| **Maeca Barefoot** | hunter, 34 | 65 lines; romance; C23 | Reskin · woman, average (lean) | Her own face and hair, a hunter's leathers and bare feet; the base's feet must hold up in close-up. Her clothes carry her, not a shape of her own |
+| **Maeca Barefoot** | hunter, 34 | 65 lines; C23 | Reskin · woman, average (lean) | Her own face and hair, a hunter's leathers and bare feet; the base's feet must hold up in close-up. Her clothes carry her, not a shape of her own |
 | **Captain Holloway** | Watch captain, 45 | 62 lines; C22 | Reskin · man, average | The Watch set with a captain's cloak |
 | **Harlan Coyle** | merchant, 55 | 59 lines; C24 | Reskin · man, heavy | A merchant's coat |
-| **Rav Cutwell** | physician of a sort, 54 | 52 lines; romance in Act 2 | Reskin · man, average | A worn coat and hood, a knife, an older face |
+| **Rav Cutwell** | physician of a sort, 54 | 52 lines | Reskin · man, average | A worn coat and hood, a knife, an older face |
 | **Brannoc** | smith, 52 | 50 lines; C07, C14, C27 | Reskin · man, strong | A smith's apron over bare arms |
-| **Dame Keegan Orme** | probationary knight, 24 | 44 lines; C21; Act 2 day boss; romance in Act 2 | Reskin · woman, average | The Vigil's argent plate, which then dresses the Vigil's knights |
+| **Dame Keegan Orme** | probationary knight, 24 | 44 lines; C21; Act 2 day boss | Reskin · woman, average | The Vigil's argent plate, which then dresses the Vigil's knights |
 | **Mother Rook** | innkeeper, 60 | 43 lines | Reskin · woman, heavy | An innkeeper's dress and apron, her mug |
 | **Redcowl (the Red Hand)** | Kerchief chief, 45 | 43 lines; C06, C11, C26; arena boss at 1.9× | Reskin · man, strong | A red brigandine, a red hood thrown back, a greataxe. One model as man and boss: the cinematics need them to match, and today they're two. The Enforcer wears his kit without his face |
 | **Chid** | priest of the Order, "32", near 200 | 40 lines; C08, C42; carries you home after every death | Reskin · man, average | The Order of the Morning Light's robes, which the Grave-Caller wears rotten |
 | **Pell Varrow** | factor, 40 | 32 lines; C25 | Reskin · man, average | A factor's coat |
 | **Old Wenna** | herbalist, 74 | 30 lines | Reskin · woman, old | A herbalist's shawl and hat, a staff, the blightward mask |
-| **Ysolde Marrow** | the Wayfinder, 55 | 27 lines; Act 2; romance in Act 2 | Reskin · woman, average | A cartographer's coat, spectacles, a map case, an older face |
+| **Ysolde Marrow** | the Wayfinder, 55 | 27 lines; Act 2 | Reskin · woman, average | A cartographer's coat, spectacles, a map case, an older face |
 | **Tam Penhale** | farm boy, 9 | 16 lines; Act 2 | Reskin · child | Farm clothes |
 | **Jory Coyle** | teamster, 17 | 15 lines | Reskin · man, average | A carter's set from the crowd, and the youngest face |
 | **Nell** | Brannoc's daughter | C08, C14: seen risen and dead | Reskin · woman, average | Her own face, in grave paint |

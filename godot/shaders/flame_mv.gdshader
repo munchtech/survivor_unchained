@@ -38,6 +38,9 @@ uniform float core_lo = 0.86;
 uniform float pull = 0.0;
 // A cold flame's core pulled from blue-white toward blue (0..1), so the tonemapper doesn't clip it to pure white.
 uniform float core_blue = 0.0;
+// The cold ramp paled toward blue-white all through (0..1; the Warden's lamp: concept A's pale flame, and saturated
+// blue went purple-pink in the tonemapper).
+uniform float cold_pale = 0.0;
 // How much the flame's body covers what is behind it (0: purely added light, as a lamp's; the blend is premultiplied, so 0
 // is exactly the old additive look). A big flame's middle hides the log behind it rather than letting its edge show through.
 uniform float occlude = 0.0;
@@ -45,12 +48,26 @@ uniform float occlude = 0.0;
 // (0: the old ramp; 1: the camp fire's, so the tonemapper doesn't wash its body to peach and cream).
 uniform float body_pow = 1.6;
 uniform float warm_sat = 0.0;
+// A carried flame (a torch in a hand) grows toward this many times its size from far off (full from 16 m): at the play camera
+// its few pixels otherwise read as a glint, not a flame (FlameKit, carried).
+uniform float far_grow = 1.0;
+// A carried flame's inner card, at a chest-up only (full within 2.5 m, none from 4 m: the play camera's flame and a walker's behind her are as they were):
+// a solid teardrop of hot, saturated yellow-orange under the simulated heat, so at chest-up the flame has a glowing core, not a
+// pale wisp (NPC 18). `tear` its share, `tear_k` its brightness (linear, before exposure).
+uniform float tear = 0.0;
+uniform float tear_k = 2.0;
+uniform float tear_lod = 3.0;
+uniform float tear_lo = 0.1;
+uniform float tear_sat = 1.0;
+varying float cam_d;
 
 void vertex() {
 	vec3 to_cam = INV_VIEW_MATRIX[3].xyz - MODEL_MATRIX[3].xyz;
+	cam_d = length(to_cam);
 	vec3 up = normalize(mix(vec3(0.0, 1.0, 0.0), INV_VIEW_MATRIX[1].xyz, tilt));
 	vec3 right = normalize(cross(up, to_cam));
 	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), 1.0);
+	s.xy *= mix(1.0, far_grow, smoothstep(6.0, 16.0, length(to_cam)));
 	// Drawn a little toward the camera from far off (`pull` m, none within 6 m): a lamp's flame then clears its
 	// cage's top bar and hood, which from the play camera's height stand just in front of it.
 	vec3 o = MODEL_MATRIX[3].xyz + normalize(to_cam) * pull * smoothstep(6.0, 12.0, length(to_cam));
@@ -75,6 +92,15 @@ float sim_heat(vec2 uv) {
 	return mix(ha, hb, t);
 }
 
+float sim_heat_lod(vec2 uv, float lod) {
+	float n = float(frames);
+	float f = mod(TIME * fps + phase * n, n);
+	int a = int(floor(f));
+	int b = (a + 1) % frames;
+	float t = fract(f);
+	return mix(textureLod(atlas, cell_uv(a, uv), lod).r, textureLod(atlas, cell_uv(b, uv), lod).r, t);
+}
+
 float proc_heat(vec2 uv) {
 	float tt = TIME + phase * 37.0;
 	// y up from the base, x from the middle.
@@ -95,6 +121,7 @@ vec3 ramp(float h) {
 	vec3 w0 = mix(vec3(0.3, 0.02, 0.003), vec3(0.4, 0.012, 0.0), warm_sat), w1 = mix(vec3(0.9, 0.16, 0.01), vec3(0.95, 0.09, 0.003), warm_sat);
 	vec3 w2 = mix(vec3(1.0, 0.42, 0.05), vec3(1.0, 0.3, 0.015), warm_sat), w3 = mix(vec3(1.0, 0.7, 0.32), vec3(1.0, 0.62, 0.16), warm_sat);
 	vec3 c0 = vec3(0.02, 0.05, 0.35), c1 = vec3(0.07, 0.2, 1.0), c2 = vec3(0.35, 0.55, 1.0), c3 = vec3(0.78, 0.88, 1.0);
+	c0 = mix(c0, vec3(0.12, 0.2, 0.42), cold_pale); c1 = mix(c1, vec3(0.32, 0.52, 0.95), cold_pale); c2 = mix(c2, vec3(0.58, 0.76, 1.0), cold_pale); c3 = mix(c3, vec3(0.88, 0.94, 1.0), cold_pale);
 	vec3 a = mix(w0, c0, cold), b = mix(w1, c1, cold), c = mix(w2, c2, cold), d = mix(w3, c3, cold);
 	vec3 col = mix(a, b, smoothstep(0.0, 0.35, h));
 	col = mix(col, c, smoothstep(0.35, 0.7, h));
@@ -119,6 +146,22 @@ void fragment() {
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, d, 1.0);
 	behind.xyz /= behind.w;
 	float fade = clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
+	float alpha = occlude * smoothstep(0.08, 0.45, h);
+	float tn = tear * (1.0 - smoothstep(2.5, 4.0, cam_d));
+	if (tn > 0.0) {
+		// The core follows the flame: its heat blurred (a coarse mip of the same frames), so it is one solid, rounded body that
+		// moves with the tongue, held inside a teardrop (widest a quarter of the way up, gone by 0.85) so it never fills the card.
+		float hs = procedural ? h : sim_heat_lod(uv, tear_lod);
+		vec2 p = vec2(uv.x - 0.5, 1.0 - uv.y);
+		float w = 0.42 * sqrt(clamp(p.y / 0.22, 0.0, 1.0)) * pow(max(1.0 - max(p.y - 0.22, 0.0) / 0.63, 0.0), 1.2);
+		float env = clamp(1.0 - pow(abs(p.x) / max(w, 1e-3), 2.0), 0.0, 1.0);
+		float t = hs * env;
+		float m = smoothstep(tear_lo, tear_lo + 0.3, t) * tn;
+		vec3 edge = mix(vec3(1.0, 0.24, 0.02), vec3(0.9, 0.12, 0.005), tear_sat), hot = mix(vec3(1.0, 0.56, 0.1), vec3(1.0, 0.42, 0.03), tear_sat);
+		vec3 tc = mix(edge, hot, smoothstep(tear_lo + 0.1, tear_lo + 0.5, t)) * tear_k;
+		col = mix(col, tc, m);
+		alpha = mix(alpha, 1.0, m);
+	}
 	ALBEDO = col * intensity * fade;
-	ALPHA = occlude * smoothstep(0.08, 0.45, h) * fade * min(intensity, 1.0);
+	ALPHA = alpha * fade * min(intensity, 1.0);
 }

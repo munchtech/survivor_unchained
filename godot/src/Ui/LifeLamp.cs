@@ -60,13 +60,13 @@ public partial class LifeLamp : Control
     public static readonly Color Cream = new("#f3e7cc");
     static readonly StringName UFigA = "fig_a";
     /// <summary>The faded part's rect on the HUD (1080 px).</summary>
-    public Rect2 FadeRect => new(Position + FadeLocal.Position, FadeLocal.Size);
+    public Rect2 FadeRect => new(Position + FadeLocal.Position * Scale, FadeLocal.Size * Scale);
     public string Number = "";
     /// <summary>Her figure on the HUD now.</summary>
     public static LifeLamp? Live;
 
     readonly ShaderMaterial mat;
-    /// <summary>Her figure's shader (DgRiver.Light runs the experience light on her hair through it).</summary>
+    /// <summary>Her figure's shader.</summary>
     public ShaderMaterial Mat => mat;
     readonly Vessel.Flow flow;
     readonly Figure figure;
@@ -88,9 +88,60 @@ public partial class LifeLamp : Control
         mat.SetShaderParameter("scr_at", At);
         AddChild(orbCopy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(0, 0, 1, 1) });
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
+        if (UiArt.Tex("dg_river/xp_light.png", false) is { } hm) mat.SetShaderParameter("hair_mask", hm);
+        else GD.PushError("LifeLamp: dg_river/xp_light.png did not load: her hair's shine draws blank");
+        var hg = HairGeo();
+        mat.SetShaderParameter("hair_at", hg.At);
+        mat.SetShaderParameter("hair_size", hg.Size);
         flow = new Vessel.Flow(mat, true);
         figure = new Figure(this);
         AddChild(figure);
+    }
+
+    /// <summary>UI 23 (HUD A): her group drawn at s about its outer bottom corner (the geo's group_anchor): her place
+    /// and her shader's screen (the sheen's and the shine's run are in screen px; her masks stay in her own).</summary>
+    public void Group(Vector2 anchor, float s)
+    {
+        Scale = new Vector2(s, s);
+        Position = anchor + (At - anchor) * s;
+        mat.SetShaderParameter("grp_anchor", anchor);
+        mat.SetShaderParameter("grp_scale", s);
+    }
+
+    /// <summary>The hair mask's rect in her unscaled coordinates (dg_river/xp_light.json).</summary>
+    static (Vector2 At, Vector2 Size) HairGeo()
+    {
+        const string path = UiArt.Root + "dg_river/xp_light.json";
+        if (FileAccess.FileExists(path) && Json.ParseString(FileAccess.GetFileAsString(path)).AsGodotDictionary() is { Count: > 0 } d
+            && d.TryGetValue("at", out var a) && a.AsGodotArray() is { Count: 2 } aa && d.TryGetValue("size", out var z) && z.AsGodotArray() is { Count: 2 } zz)
+            return (new Vector2((float)aa[0].AsDouble(), (float)aa[1].AsDouble()), new Vector2((float)zz[0].AsDouble(), (float)zz[1].AsDouble()));
+        GD.PushError($"LifeLamp: {path} did not load: her hair's shine runs wrong");
+        return (new Vector2(295, 822), new Vector2(1310, 258));
+    }
+
+    /* ---- UI 23: the shine down her hair (decoration, never the experience) ---- */
+    double shineT = 2;
+    float sFront = float.NaN, sK = -1, sSheen = -1;
+    int sDay = -1;
+    static readonly StringName UShineFront = "shine_front", UShineK = "shine_k", UShineC = "shine_c", USheen = "sheen_on";
+    /// <summary>The shine's front and strength now: from ShineFrom to ShineTo (hud.json xpRing) in ShineTravel seconds,
+    /// once every ShinePeriod, fading over its last second past the end. A pin (--hud-pin shine=S) holds the front at S
+    /// at full strength and the idle sheen off, as the judged mock's still frame.</summary>
+    public static (float Front, float K) Shine(double t, Play.XpLight.RingLook k)
+    {
+        double u = t % k.ShinePeriod;
+        if (u <= k.ShineTravel) return ((float)(k.ShineFrom + (k.ShineTo - k.ShineFrom) * (u / k.ShineTravel)), (float)Math.Min(1, u / 0.4));
+        return ((float)k.ShineTo, (float)Math.Max(0, 1 - (u - k.ShineTravel)));
+    }
+    void ShineTick(double dt)
+    {
+        var (front, k) = HudPin.Shine is float ps ? (ps, 1f) : Shine(shineT += dt, Play.XpLight.RingLook.Game);
+        float sheen = HudPin.Shine != null ? 0 : 1;
+        if (k != sK) { sK = k; mat.SetShaderParameter(UShineK, k); }
+        if (k > 0 && front != sFront) { sFront = front; mat.SetShaderParameter(UShineFront, front); }
+        if (sheen != sSheen) { sSheen = sheen; mat.SetShaderParameter(USheen, sheen); }
+        int day = Cuff.Day ? 1 : 0;
+        if (day != sDay) { sDay = day; mat.SetShaderParameter(UShineC, day == 1 ? new Vector3(0.80f, 0.89f, 1.0f) : new Vector3(0.88f, 0.83f, 1.0f)); }
     }
 
     public override void _Process(double delta)
@@ -98,6 +149,7 @@ public partial class LifeLamp : Control
         using var _ = new Perf.Span(Perf.Part.Hud);
         float dt = Math.Min((float)delta, 0.1f);
         flow.Tick(dt, Level, Shield, Pulse > 0);
+        ShineTick(dt);
         clearFor = Behind ? 0 : clearFor + dt;
         bool dim = clearFor < FadeHold;
         figA = Mathf.MoveToward(figA, dim ? FadeTo : 1, dt * (1 - FadeTo) / (dim ? FadeTime : FadeBack));

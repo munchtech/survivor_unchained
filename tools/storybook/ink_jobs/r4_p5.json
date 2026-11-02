@@ -1,0 +1,147 @@
+{
+ "_note": "Storybook 3 ink round 4, p5 (r2 brief): p5 regenerated in p6's hand (r2 style, no prefix, p6's prompt structure and ink rule). p5d/p5e: first try (drowned in / ditches empty); p5f: composition forced; p5i80/p5i90: img2img over round 3's pick darkened to the night inks (the layout). p5c70/p5c80: img2img over round 3's clean plate quantized and darkened to the night inks (keeps the drowned's ditch geometry for ink_r3's route); p5t: the same prompt from scratch. p5c50/p5c60: the same at lower denoise (the layout and the drowned's ditch geometry held).",
+ "prefix": "",
+ "style": "Expressive carved gouge lines like a woodblock, sky carved with long sweeping gouge lines. Printed on warm parchment with visible paper fiber grain and slight ink texture. Graphic, stark, grim, shadow puppet theatre, Darkest Dungeon ink style, linocut, adult and serious, realistic proportions, no gradients, not photorealistic, no text.",
+ "jobs": [
+  {
+   "name": "p5d",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606,
+    11,
+    23,
+    303,
+    707
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford in the middle distance at the centre of the picture. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Bare black winter trees on both sides frame the road. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water. Both ditches are full of the drowned dead, many of them, standing in the water: gaunt corpses in waterlogged rags clinging to them, long hair plastered with river weed, heads hung, arms hanging, one or two pale hollow-eyed faces, water running off the hems, varied heights, spacing and turn, lit only by the cold blue. Everything else is black and deep blue-black ink; the only light is the cold blue fire."
+  },
+  {
+   "name": "p5e",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606,
+    11,
+    23,
+    303,
+    707
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford in the middle distance at the centre of the picture. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Bare black winter trees on both sides frame the road. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water. The ditches are empty: black water, frosted reeds, nobody. Everything else is black and deep blue-black ink; the only light is the cold blue fire."
+  },
+  {
+   "name": "p5f",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky across the top of the picture. Seen from a little above, a rutted dirt road climbs from a river ford straight down toward us, widening to the bottom of the picture. The black river runs straight across the picture just above the middle, carved in long horizontal gouge lines catching the blue, stepping stones across the ford, a low dark far bank and black trees beyond it. On the near bank at the ford, three crude open fire baskets of black iron bars on short black iron posts, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. Out in the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. Snow on the banks only, carved in dim moonlit blue-gray. Big bare black winter trees at the left and right edges frame the road. Halfway down the road toward us, a wooden wagon lies overturned on its side across the road, one wheel in the air. Along both sides of the road, close to us, run flooded ditches of black water. Both ditches are full of the drowned dead, many of them, standing in the water: gaunt corpses in waterlogged rags clinging to them, long hair plastered with river weed, heads hung, arms hanging, one or two pale hollow-eyed faces, water running off the hems, varied heights, spacing and turn, lit only by the cold blue. Bold simple carved shapes, large solid black masses. Everything else is black and deep blue-black ink; the only light is the cold blue fire."
+  },
+  {
+   "name": "p5i80",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky across the top of the picture. Seen from a little above, a rutted dirt road climbs from a river ford straight down toward us, widening to the bottom of the picture. The black river runs straight across the picture just above the middle, carved in long horizontal gouge lines catching the blue, stepping stones across the ford, a low dark far bank and black trees beyond it. On the near bank at the ford, three crude open fire baskets of black iron bars on short black iron posts, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. Out in the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. Snow on the banks only, carved in dim moonlit blue-gray. Big bare black winter trees at the left and right edges frame the road. Halfway down the road toward us, a wooden wagon lies overturned on its side across the road, one wheel in the air. Along both sides of the road, close to us, run flooded ditches of black water. Both ditches are full of the drowned dead, many of them, standing in the water: gaunt corpses in waterlogged rags clinging to them, long hair plastered with river weed, heads hung, arms hanging, one or two pale hollow-eyed faces, water running off the hems, varied heights, spacing and turn, lit only by the cold blue. Bold simple carved shapes, large solid black masses. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_dark707.png",
+   "denoise": 0.8
+  },
+  {
+   "name": "p5i90",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky across the top of the picture. Seen from a little above, a rutted dirt road climbs from a river ford straight down toward us, widening to the bottom of the picture. The black river runs straight across the picture just above the middle, carved in long horizontal gouge lines catching the blue, stepping stones across the ford, a low dark far bank and black trees beyond it. On the near bank at the ford, three crude open fire baskets of black iron bars on short black iron posts, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. Out in the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. Snow on the banks only, carved in dim moonlit blue-gray. Big bare black winter trees at the left and right edges frame the road. Halfway down the road toward us, a wooden wagon lies overturned on its side across the road, one wheel in the air. Along both sides of the road, close to us, run flooded ditches of black water. Both ditches are full of the drowned dead, many of them, standing in the water: gaunt corpses in waterlogged rags clinging to them, long hair plastered with river weed, heads hung, arms hanging, one or two pale hollow-eyed faces, water running off the hems, varied heights, spacing and turn, lit only by the cold blue. Bold simple carved shapes, large solid black masses. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_dark707.png",
+   "denoise": 0.9
+  },
+  {
+   "name": "p5c70",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Big dark bare trees on both sides frame the road, carved as bold simple black shapes. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water, empty: frosted reeds, nobody. Carved as a bold linocut: broad flat shapes, thick gouge strokes, large solid black masses, no fine hatching, no fine lines. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_flat_clean.png",
+   "denoise": 0.7
+  },
+  {
+   "name": "p5c80",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Big dark bare trees on both sides frame the road, carved as bold simple black shapes. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water, empty: frosted reeds, nobody. Carved as a bold linocut: broad flat shapes, thick gouge strokes, large solid black masses, no fine hatching, no fine lines. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_flat_clean.png",
+   "denoise": 0.8
+  },
+  {
+   "name": "p5t",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Big dark bare trees on both sides frame the road, carved as bold simple black shapes. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water, empty: frosted reeds, nobody. Carved as a bold linocut: broad flat shapes, thick gouge strokes, large solid black masses, no fine hatching, no fine lines. Everything else is black and deep blue-black ink; the only light is the cold blue fire."
+  },
+  {
+   "name": "p5c50",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Big dark bare trees on both sides frame the road, carved as bold simple black shapes. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water, empty: frosted reeds, nobody. Carved as a bold linocut: broad flat shapes, thick gouge strokes, large solid black masses, no fine hatching, no fine lines. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_flat_clean.png",
+   "denoise": 0.5
+  },
+  {
+   "name": "p5c60",
+   "w": 2048,
+   "h": 1088,
+   "seeds": [
+    47,
+    202,
+    505,
+    606
+   ],
+   "prompt": "Medieval winter night at the Low Ford, deep dark: a black starless sky. Looking down a rutted dirt road that climbs toward us from a river ford. At the ford, three crude open fire baskets of black iron bars on short black iron posts stand on the near bank, solid black silhouettes with cold pale blue fire cut into them; no glow, no glass, no lantern. In the middle of the river a fourth light: the same kind of crude black iron cage of cold blue fire hangs just clear of the water, a faint glare above it hiding whoever holds it, rings carved on the water under it. The black river carved in long horizontal gouge lines catching the blue. Snow on the banks only, carved in dim moonlit blue-gray. Big dark bare trees on both sides frame the road, carved as bold simple black shapes. On the road in the middle ground a wooden wagon lies overturned on its side, one wheel in the air. Along both sides of the road run flooded ditches of black water, empty: frosted reeds, nobody. Carved as a bold linocut: broad flat shapes, thick gouge strokes, large solid black masses, no fine hatching, no fine lines. Everything else is black and deep blue-black ink; the only light is the cold blue fire.",
+   "init": "out/ink_r4/_init_flat_clean.png",
+   "denoise": 0.6
+  }
+ ]
+}
