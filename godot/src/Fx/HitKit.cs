@@ -53,6 +53,7 @@ public partial class BattleFx
     /// light on the ground under the middle of the arc (OathPool).</summary>
     void OathSweep(Ev.Slash e, Vector3 at, float facing, float reach, float g)
     {
+        if (AaFxOff) return;
         string art = e.Art ?? "";
         float rich = Mathf.Min(g, 1.35f);
         oathAt = at; oathMirror = mirror; oathKits = 0;
@@ -159,6 +160,7 @@ public partial class BattleFx
 
     public void HitKit(Vector3 at, Vector3 away, Color spark, float g, bool crit, bool full = true, Vector3? path = null, int target = -1, bool first = false)
     {
+        if (AaFxOff) return;
         Vector3 along;
         if (path is { } own) along = own;
         else
@@ -319,6 +321,7 @@ public partial class BattleFx
     /// of its width fading over 0.18 s (so it draws the bounces as a curve), and its light riding with it.</summary>
     bool DiscFlight(Projectile p, Vector3 at, double now, float g, long key)
     {
+        if (AaFxOff) return true;
         string art = p.Art;
         float s = 1.1f * Mathf.Sqrt(g) * (art == "disc_reckon" ? 1.15f : 1);
         var hue = DiscHue(art);
@@ -390,6 +393,7 @@ public partial class BattleFx
     /// stuttered under the Oathblade's own.</summary>
     void DiscStruck(Ev.Hit e, Vector3 at, Vector3 away, float g, bool rich)
     {
+        if (AaFxOff) return;
         string art = e.Art ?? "";
         int nth = DiscHitsOf(e.Target);
         BeatDiscHit(nth);
@@ -430,6 +434,7 @@ public partial class BattleFx
     /// the hitstop is WorldScene's (3 frames). Wide: the same, mirrored behind her.</summary>
     void ShieldBash(Ev.Ability e)
     {
+        if (AaFxOff) return;
         float gy = Y(e.X, e.Z);
         var her = V(e.X, gy, e.Z);
         bashAt = time; bashFrom = her; bashKits = 0;
@@ -652,6 +657,8 @@ public partial class BattleFx
     }
 
     static readonly bool AaBeats = Args.Has("aa-beats");
+    /// <summary>(dev, perf A/B only: --aa-fx-off draws none of her auto-attacks' VFX; the sim is unchanged)</summary>
+    static readonly bool AaFxOff = Args.Has("aa-fx-off");
     int oathSwings, beatHitFor;
 
     void BeatSwing(Ev.Slash e)
