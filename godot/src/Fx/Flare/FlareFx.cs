@@ -131,11 +131,17 @@ public partial class FlareFx : Node3D
                 Frozen = false;
                 ramp = 0.08;
                 releaseAt = t;
-                if (id != "burns_twice") Spend(e.X, e.Z, 1);
+                if (id != "burns_twice" && !IsLongCut) Spend(e.X, e.Z, 1);
                 break;
             case FlarePhase.Blow:
                 if (!Active) break;
                 if (id == "burns_twice") BurnsBlow(e, b);
+                else if (IsLongCut)
+                {
+                    Hitstop(e.Hitstop);
+                    if (e.Part == "sweep") LongSweep(e);
+                    else if (e.Part == "cleave") LongCleave(e);
+                }
                 else { Hitstop(e.Hitstop); if (e.Last) Spend(e.TX, e.TZ, 1); }
                 break;
         }
@@ -160,14 +166,15 @@ public partial class FlareFx : Node3D
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
         RenderingServer.GlobalShaderParameterSet("flare_at", new Vector4(at.X, at.Y, at.Z, reach));
         // (a: night, for the glaze's value: by day the sky's reflection on it turned the field to snow)
-        RenderingServer.GlobalShaderParameterSet("flare_hue", new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet("flare_hue", calling == "warden" ? new Vector4(1f, 0.72f, 0.32f, Night ? 1 : 0) : new Vector4(1f, 0.42f, 0.1f, Night ? 1 : 0));
         float kind = id == "burns_twice" ? (b.Lamps.FlareMods.Contains("burns.black_ice") ? 2 : 1) : 0;
         look = new Vector4(0, 0, 0, kind);
         web = new Vector4(0, 1, 0, R() * 10);
         frost = Vector4.Zero;
         // Frame 1 answers: the staff flares, the missiles near her burst into ember, the confirm, the pad's tick.
         var head = Head();
-        for (int i = 0; i < 26; i++)
+        if (IsLongCut) LongPress();
+        else for (int i = 0; i < 26; i++)
             glow.Spawn(FlareBits.Kind.Mote, head, Rand3() * (3 + R() * 4), 0.25f + R() * 0.25f, 0.07f + R() * 0.06f, new Color(1.3f, 0.62f, 0.2f), new Color(0.8f, 0.2f, 0.04f), drag: 4);
         foreach (var m in missiles)
         {
@@ -237,11 +244,13 @@ public partial class FlareFx : Node3D
             t += Stop > 0 ? dt * 0.1 : dt;
             Envelope();
             if (id == "burns_twice") BurnsTick(fdt);
+            else if (IsLongCut) LongTick(fdt);
             else Plain();
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
             float sl = spendLightT < 0 ? 0 : (float)(t - spendLightT);
-            spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
-            spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
+            // (the Long Cut rides its light itself: FlareFx.LongCut)
+            if (!IsLongCut) spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
+            if (!IsLongCut) spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
             if (sl > 0.6f) spendLightT = -1;
             RenderingServer.GlobalShaderParameterSet("flare_look", look);
             // (FLARE_NOWEB=1, a look-dev switch: the web off, to find what else draws lines on the ground.)
@@ -274,7 +283,7 @@ public partial class FlareFx : Node3D
         shards.Step(fdt, HeightAt);
     }
 
-    bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : spendAt >= 0 && t > spendAt + 2.5 || t > 8;
+    bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : IsLongCut ? lcCleaveT >= 0 && t > lcCleaveT + 6.2 || t > 12 : spendAt >= 0 && t > spendAt + 2.5 || t > 8;
 
     /// <summary>Ready (FLARE_LOOK §1.2): the staff's head breathes in the calling's light, a curl of wick-smoke lifts.</summary>
     double readyT;
@@ -305,7 +314,7 @@ public partial class FlareFx : Node3D
             push = Mathf.Lerp(push, up ? -0.15f : 0, o);
             pitch = Mathf.Lerp(pitch, up ? -Mathf.DegToRad(8) : 0, o);
         }
-        double settleFrom = id == "burns_twice" ? (lastAt > 0 ? lastAt + 0.3 : -1) : (spendAt >= 0 ? spendAt + 0.3 : -1);
+        double settleFrom = IsLongCut ? (lcCleaveT >= 0 ? lcCleaveT + 0.35 : -1) : id == "burns_twice" ? (lastAt > 0 ? lastAt + 0.3 : -1) : (spendAt >= 0 ? spendAt + 0.3 : -1);
         if (settleFrom > 0 && t > settleFrom)
         {
             float s = 1 - Mathf.SmoothStep(0, 1, (float)Math.Min(1, (t - settleFrom) / 0.6));
@@ -354,6 +363,7 @@ public partial class FlareFx : Node3D
         audited = 0;
         colT = -1;
         BoomClear();
+        LongClear();
         spendLightT = -1;
         foreach (var em in embers) if (em.Light != null && IsInstanceValid(em.Light)) em.Light.QueueFree();
         embers.Clear();
@@ -380,6 +390,9 @@ public partial class FlareFx : Node3D
     {
         public double At;
         public bool Shatter, Done;
+        /// <summary>The Long Cut's: killed, its moment not yet known (its blow's event comes after its Ev.Kill).</summary>
+        public bool Pending;
+        public double Born;
         public Vector3 Where, From;
         public float Scale;
     }
@@ -392,6 +405,8 @@ public partial class FlareFx : Node3D
     public int DeathOf(int enemy)
     {
         if (!doomed.TryGetValue(enemy, out var d)) return 0;
+        // The Long Cut's: standing till the fuse reaches it, then its burn-up, then gone (no corpse: it burnt).
+        if (IsLongCut) return d.Pending || t < d.At + BurnLen ? 1 : -1;
         if (t < d.At) return 1;
         return d.Shatter ? -1 : 0;
     }
@@ -408,6 +423,7 @@ public partial class FlareFx : Node3D
             double when = lastAt > 0 ? Math.Max(t + 0.02, lastAt + RingTime(w.DistanceTo(boomAt)) + CrackHold()) : Held;
             doomed[e.Enemy] = new Doom { At = when, Shatter = true, Where = w, From = lastAt > 0 ? boomAt : at, Scale = e.Elite || e.Boss ? 1.6f : (float)e.Scale };
         }
+        else if (IsLongCut) doomed[e.Enemy] = new Doom { At = Held, Pending = true, Born = t, Where = w, Scale = (float)e.Scale };
         else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w };
     }
 

@@ -324,7 +324,8 @@ public partial class WorldScene : Node3D, IZoneLook
 
     // The held staff (the Flare's head light), found once per figure.
     PlayerView? staffOf;
-    Node3D? staff;
+    Node3D? staff, blade;
+
 
     void Draw(double dt, double fightDt)
     {
@@ -357,8 +358,19 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
             flare.Her = HerDrawn;
-            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; }
+            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; blade = null; }
             flare.Staff = staff;
+            // The blade in her hand (not one hung at her back), for the Long Cut's steel.
+            if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())
+            {
+                blade = null;
+                if (Player != null)
+                    foreach (var n in Player.FindChildren("arm:*", "", true, false))
+                        if (n is Node3D a && a.Name != "arm:mage_staff" && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true
+                            && a.HasMeta("kind") && (int)a.GetMeta("kind") is (int)SurvivorUnchained.Play.WeaponKind.Blade1H or (int)SurvivorUnchained.Play.WeaponKind.Blade2H)
+                        { blade = a; break; }
+            }
+            flare.Blade = blade;
             flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));

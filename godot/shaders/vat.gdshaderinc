@@ -91,6 +91,13 @@ void vertex() {
 void fragment() {
 	// Dissolve: the dead go back to the dark in ragged flakes.
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+	// (The Long Cut's burn-up: burnt away like paper from the head down along a ragged edge, not in square flakes,
+	// which at 1:1 read as a glitch: FlareFx.LongCut.)
+	if (flare_seam.w > 0.0) {
+		float bn = vat_noise(vat_local * 6.0) * 0.65 + vat_noise(vat_local * 17.0) * 0.35;
+		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.6 + clamp(1.0 - vat_local.y / 1.9, 0.0, 1.0) * 0.4;
+	}
+
 	if (fx.y > 0.0 && dn < fx.y) discard;
 	vec3 c = albedo.rgb;
 	vec4 tex = use_tex ? texture(albedo_tex, UV, tex_bias * vat_pace) : vec4(1.0);
@@ -147,7 +154,9 @@ void fragment() {
 		float tongue = smoothstep(0.52, 0.8, lick * 0.75 + rim * 0.5) * fx.w;
 		float soot = smoothstep(0.28, 0.56, lick * 0.75 + rim * 0.35) * fx.w;
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
-		e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
+		// (The Long Cut's burn-up is dawn-gold, its fire not the ember's orange: FlareFx.LongCut.)
+		float lc_gold = flare_seam.w > 0.0 ? 1.0 : 0.0;
+		e += mix(vec3(1.0, 0.3, 0.03), vec3(1.0, 0.62, 0.2), lc_gold) * tongue + mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.7, 0.32), lc_gold) * pow(rim, 3.0) * fx.w * 0.5;
 	}
 	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
 	// by the scene's own light, so the flash keeps its shading and is as bright as the place allows. An
@@ -198,7 +207,8 @@ void fragment() {
 		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
 	}
 	// Ember at the dissolve's edge.
-	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;
+	if (fx.y > 0.0) e += (flare_seam.w > 0.0 ? vec3(1.0, 0.68, 0.3) : vec3(1.0, 0.45, 0.12)) * (flare_seam.w > 0.0 ? smoothstep(fx.y + 0.035, fx.y, dn) * 2.2 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+
 	EMISSION = e;
 
 	// The Flare's drain and glaze (flare_world.gdshaderinc).

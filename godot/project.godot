@@ -71,6 +71,19 @@ flare_frost={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_seam={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_seam_t={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_sweep={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+
 flare_hue={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

@@ -117,6 +117,9 @@ public partial class CrowdView : Node3D
     /// <summary>The Flare's say over a body it struck down (FlareFx.DeathOf): 1 held standing until its blow lands, -1 shattered
     /// (not drawn), 0 its own death.</summary>
     public static Func<int, int>? FlareDeath;
+    /// <summary>How a held body is drawn (FlareFx.StatueLook: x frozen, y char, z dissolve, w burning): Burns Twice's
+    /// ice statues, the Long Cut's burn-up in gold.</summary>
+    public static Func<int, Godot.Vector4>? FlareStatueLook;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -446,7 +449,9 @@ public partial class CrowdView : Node3D
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - st.Facing) * Godot.Basis.FromScale(Vector3.One * st.Scale);
             // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
             Audit(st.X, st.Z, 0, 1);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, 0, 1, 0, st.Tint, st.Glow);
+            var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
+
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
     }
