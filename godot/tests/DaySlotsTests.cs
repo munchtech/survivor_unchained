@@ -120,4 +120,32 @@ public class DaySlotsTests
     {
         Assert.Equal(expect, MakeWith(calling, type, weapon).Skills.Single());
     }
+
+    [Theory]
+    [InlineData("bulwark", "rebuke")] [InlineData("sunderer", "sunder")]
+    public void Warden_type_decides_the_second_skill(string type, string skill)
+    {
+        var a = Callings.Archetype("warden");
+        var ch = Character.Create(new CreationChoice
+        {
+            Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = "worn_oathblade", Ability = a.Abilities[0], Type = type,
+        }, seed: 7);
+        Assert.Contains(skill, ch.Skills);
+        Assert.Equal(skill, Character.FirstCallingSkill("warden", type, "worn_oathblade"));
+    }
+
+    [Fact]
+    public void FirstCallingSkill_matches_what_Create_learned_for_every_road()
+    {
+        foreach (var road in Content.Lamps.Roads.Values)
+        {
+            var a = Callings.Archetype(road.Calling);
+            var ch = Character.Create(new CreationChoice
+            {
+                Name = "Ashe", Archetype = road.Calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0], Type = road.Id,
+            }, seed: 7);
+            var pick = Character.FirstCallingSkill(road.Calling, road.Id, a.Weapons[0]);
+            if (pick != null) Assert.Contains(pick, ch.Skills);
+        }
+    }
 }
