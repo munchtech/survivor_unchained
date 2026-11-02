@@ -197,6 +197,7 @@ public partial class BattleFx : Node3D
         chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
         DiscReady();
         CrowdView.StruckRim = StruckRimOn;
+        CrowdView.FlashHeld = WgFlash;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1149,8 +1150,13 @@ public partial class BattleFx : Node3D
                         break;
                     }
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
+                    // (The Warden's line and heave: the number waits for the view's blow, the tip or the heave.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
-                        Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    {
+                        float wgd = WgHitWait(e);
+                        if (wgd > 0) { int tg = e.Target; double am = e.Amount, mh = e.MaxHp; bool cr = e.Crit; var wat = at; WgLater(wgd, () => { WgNumberLog(tg); Hits.Tally(tg, wat, am, mh, cr); }); }
+                        else Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
+                    }
                     if (Flare.HushesHitSparks) { }
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
