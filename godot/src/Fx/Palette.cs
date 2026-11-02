@@ -75,7 +75,7 @@ public static class Palette
         if (Regex.IsMatch(art, "arc|storm|static")) return School.Storm;
         if (Regex.IsMatch(art, "green|blight|thorn|bloom|herd|root|plague|venom|gaze")) return School.Nature;
         if (Regex.IsMatch(art, "mote|moon|arcane")) return School.Arcane;
-        if (Regex.IsMatch(art, "holy|disc|dawn|sun|sanct|reckon|aegis|crescent")) return School.Holy;
+        if (Regex.IsMatch(art, "holy|disc|dawn|sun|sanct|reckon|aegis|crescent|rebuke|watch_bell")) return School.Holy;
         if (Regex.IsMatch(art, "umbral|ruin|siphon|tether|blood|rend|harrow|shadow")) return School.Shadow;
         return School.Physical;
     }
