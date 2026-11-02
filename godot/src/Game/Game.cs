@@ -921,6 +921,7 @@ public partial class Game : Node, IZoneHost
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a)
     {
+        if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         hud.Announce(a);
         sound.Announce(a, bossUp);
@@ -1598,7 +1599,9 @@ public partial class Game : Node, IZoneHost
                 for (int i = 0; i < n; i++)
                 {
                     double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
-                    hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
+                    var sp = hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
+                    // --horde-hp M: each one M times as tough (a picture of a hit that has to leave them standing).
+                    if (sp != null && Args.Has("horde-hp")) { sp.Hp *= Args.Num("horde-hp", 1); sp.MaxHp *= Args.Num("horde-hp", 1); }
                 }
             }
             // --no-spawn: the horde and nothing after it (the zone's waves, summons), so a field a Flare cleared reads.
