@@ -545,6 +545,8 @@ public partial class CreateScreen : Overlay
     {
         var v = Style.V(Style.Gap2, Kit.Head("Type"));
         var roads = Content.Lamps.RoadsOf(a.Id).ToList();
+        // (a fresh draft, or a save's calling with no type yet: its first road, as Character.Create reads it)
+        if (!roads.Any(r => r.Id == d.Type)) d.Type = roads.FirstOrDefault()?.Id ?? "";
         v.AddChild(Flow(roads.Select(rd => (TypeName(rd), d.Type == rd.Id, (Action)(() => { var id = rd.Id; Set(() => { d.Section = 1; d.Type = id; }); }), $"type:{rd.Id}"))));
         if (Content.Lamps.Roads.GetValueOrDefault(d.Type) is { } road)
         {
