@@ -53,8 +53,16 @@ public static class Glyphs
     /// <summary>A glyph as a texture, at a size in pixels. A painted icon
     /// (art/ui/icons/glyph/KEY.png, white on transparent) is tinted the same
     /// way and wins, so painted icons keep every state colour the glyphs had.</summary>
+    /// <summary>Art keys that show another key's icon until they get their own (empty since UI 24 gave Rebuke and Watch
+    /// Bell theirs: line glyphs in glyphs.json and paintings in icons/glyph_color).</summary>
+    static readonly Dictionary<string, string> Borrowed = new();
+
+    /// <summary>The key whose icon an art key shows (itself, or the one it borrows).</summary>
+    public static string IconKey(string key) => Borrowed.TryGetValue(key, out var lent) ? lent : key;
+
     public static Texture2D Texture(string key, int size, Color color, float stroke = 1.6f, bool line = false)
     {
+        key = IconKey(key);
         // Full-colour paintings (icons/glyph_color/KEY.png) keep their colours; asked for in a
         // dim tint (not ready, not known), they are greyed and darkened instead. line: the drawn
         // glyph only, so a set of them reads as one hand where only some are painted.

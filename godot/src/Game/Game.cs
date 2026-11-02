@@ -1065,7 +1065,11 @@ public partial class Game : Node, IZoneHost
     }
 
     /// <summary>The marked attacks still to land (the Drowned Girl's figure fades when one is behind it).</summary>
-    readonly List<(double X, double Z, double? X1, double? Z1, double R, double Until)> marks = new();
+    // (hud24 r2: each with its damage footprint; the statues fade for the area of it they hide, Ui.HudMask.Hidden)
+    readonly List<Ui.HudMark> marks = new();
+    // (the fade log, --shot only: what each HUD part's fade is for now)
+    readonly Dictionary<string, string?> fadeLog = new();
+    const float FadeArea = 1500;
 
     void OnEvents(List<CombatEvent> evs)
     {
@@ -1077,7 +1081,7 @@ public partial class Game : Node, IZoneHost
         foreach (var e in evs)
         {
             if (e is Ev.Telegraph tg && tg.Hostile && tg.Duration > 0.02)
-                marks.Add((tg.X, tg.Z, tg.X1, tg.Z1, tg.Radius, playedT + tg.Duration));
+                if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
             Feel(e, ref crits);
@@ -1339,26 +1343,46 @@ public partial class Game : Node, IZoneHost
             // faded all the time)
             if (hud.FigureRect is Rect2 fig)
             {
-                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone)
-                bool Behind(Rect2 rect)
+                // (the same test for her figure and for the river's band: Ui.DgRiver.Behind fades the river's art alone;
+                // the point must stand on the figure's art, Ui.HudMask, not just in its rect)
+                bool Behind(string part, Rect2 rect, Ui.HudMask mask, Vector2 origin, float scale)
                 {
-                    bool In(double x, double z, float y) { var w = new Vector3((float)x, y, (float)z); return !camera.IsPositionBehind(w) && rect.HasPoint(camera.UnprojectPosition(w)); }
+                    bool In(double x, double z, float y)
+                    {
+                        var w = new Vector3((float)x, y, (float)z);
+                        return !camera.IsPositionBehind(w) && mask.Hit(camera.UnprojectPosition(w), rect, origin, scale);
+                    }
                     float gy = at.Y + 1;
-                    bool behind = In(at.X, at.Z, gy) || Ui.HudPin.Behind == true;
-                    if (!behind)
+                    string? why = null;
+                    float hid = 0;
+                    if (In(at.X, at.Z, gy) || Ui.HudPin.Behind == true) why = "her";
+                    if (why == null)
                         foreach (var e in fb2.Enemies.Living())
-                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { behind = true; break; }
+                            if ((e.Elite || e.Boss) && In(e.X, e.Z, gy)) { why = "elite"; break; }
                     marks.RemoveAll(m => m.Until < playedT);
-                    if (!behind)
+                    if (why == null && marks.Count > 0)
+                    {
+                        // (the art's set cells cast onto the ground at her feet: fire when >= 1500 px2 of it lies in a blow's footprint)
+                        ulong frame = Engine.GetProcessFrames();
                         foreach (var m in marks)
-                            // (its middle and four points round its edge)
-                            if (In(m.X, m.Z, at.Y) || In(m.X + m.R, m.Z, at.Y) || In(m.X - m.R, m.Z, at.Y) || In(m.X, m.Z + m.R, at.Y) || In(m.X, m.Z - m.R, at.Y)
-                                || m.X1 is double x1 && m.Z1 is double z1 && In(x1, z1, at.Y)) { behind = true; break; }
-                    return behind;
+                        {
+                            float h = mask.Hidden(m, camera, origin, scale, at.Y, frame);
+                            if (h >= FadeArea) { why = "mark:" + m.Name; hid = h; break; }
+                        }
+                    }
+                    if (Args.Has("shot"))
+                    {
+                        fadeLog.TryGetValue(part, out var was);
+                        if ((was == null) != (why == null))
+                            GD.Print(why != null ? $"hud fade {part} by {why} hidden={hid:0}" : $"hud fade {part} released");
+                        fadeLog[part] = why;
+                    }
+                    return why != null;
                 }
-                hud.FigureBehind(Behind(fig));
-                hud.RiverBehind(Behind(Ui.DgPanel.BandRect));
-                hud.KeeperBehind(Behind(Ui.DgPanel.KeeperRect));
+                var lamp = Ui.LifeLamp.Live;
+                hud.FigureBehind(Behind("figure", fig, Ui.HudMask.Lamp, lamp?.Position ?? fig.Position, lamp?.Scale.X ?? 1));
+                hud.RiverBehind(Behind("river", Ui.DgPanel.BandRect, Ui.HudMask.Panel, Ui.DgPanel.BandRect.Position, 1));
+                hud.KeeperBehind(Behind("keeper", Ui.DgPanel.KeeperRect, Ui.HudMask.Keeper, Ui.DgPanel.KeeperRect.Position, 1));
             }
             if (near != null)
             {

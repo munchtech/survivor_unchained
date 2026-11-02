@@ -884,7 +884,7 @@ public partial class BattleFx
                 Flash(ground + Vector3.Up * 1.2f, f.Light, 6, 0.35f, r * 2.5f);
                 return true;
             }
-            case "nova_holy" or "nova_dawn" or "nova_sun":
+            case "nova_holy" or "nova_dawn" or "nova_sun" or "rebuke" or "watch_bell": // the two keep Dawnpulse's look until Combat VFX builds theirs
             {
                 var h = Palette.Of(School.Holy);
                 // Deep gold and thin: wide and bright, its front bloomed to a thick cream ring that

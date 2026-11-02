@@ -2884,7 +2884,17 @@ public sealed partial class Battle
     public void End(BattleOver reason) => Over = reason;
 
     /// <summary>For the HUD: how ready a weapon is, 0..1.</summary>
-    public double WeaponReady(WeaponInst w) => Clamp(1 - w.Timer / Math.Max(0.01, Firing.CooldownOf(this, w)), 0, 1);
+    public double WeaponReady(WeaponInst w)
+    {
+        // A reactive skill (Rebuke) never ticks its Timer: it is ready whenever its own gap (rebukeAt) allows a strike;
+        // only a real wait of over a second reads as cooling.
+        if (w.Behavior == WeaponBehavior.Reactive)
+        {
+            double cd = Math.Max(0.01, Firing.CooldownOf(this, w)), left = rebukeAt + cd - Time;
+            return left <= 1 ? 1 : Clamp(1 - left / cd, 0, 1);
+        }
+        return Clamp(1 - w.Timer / Math.Max(0.01, Firing.CooldownOf(this, w)), 0, 1);
+    }
 
     /// <summary>Ember needed for the next ember level. Quick early, steep late:
     /// in a first-tier arena about five levels in the first minute, fourteen by

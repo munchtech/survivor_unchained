@@ -46,7 +46,9 @@ public partial class LifeLamp : Control
     /// solid while she faded, they read as pasted on); the glass stays. (dg1 faded to 35% for any foe: in a horde
     /// that was the normal state, a murky ghost.)</summary>
     public bool Behind;
-    public const float FadeTo = 0.55f, FadeTime = 0.25f, FadeBack = 0.4f, FadeHold = 0.8f;
+    /// <summary>hud24 r1: the figures fade to 0.30 behind a gold rim (a glass statue, the threat inside); the panel band
+    /// alone keeps 0.55. Quick in, slower out, held 0.5 s (hud24 r2) after the last frame something was behind.</summary>
+    public const float FadeTo = 0.30f, PanelFadeTo = 0.55f, FadeTime = 0.12f, FadeBack = 0.35f, FadeHold = 0.5f;
     float figA = 1, sFigA = -1, clearFor = 99;
     bool wasBehind, liveShot;
     /// <summary>The orb: its rect (the glass and the refraction's reach) copied from the screen before the quad
@@ -77,10 +79,11 @@ public partial class LifeLamp : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = Canvas;
         mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_orb.gdshader") };
-        foreach (var (u, f) in new[] { ("cold", "lamp_cold"), ("mask", "lamp_mask") })
+        foreach (var (u, f) in new[] { ("cold", "lamp_cold"), ("mask", "lamp_mask"), ("rim_src", "lamp_rim") })
             if (UiArt.Tex($"{Dir}/{f}.png", false) is { } t) mat.SetShaderParameter(u, t);
             else GD.PushError($"LifeLamp: {Dir}/{f}.png did not load (unimported?): her figure draws wrong");
         mat.SetShaderParameter("canvas", Canvas);
+        mat.SetShaderParameter("fade_to", FadeTo);
         if (Geo.ContainsKey("level_foot")) mat.SetShaderParameter("level_foot", F("level_foot"));
         mat.SetShaderParameter("orb_c", OrbC);
         mat.SetShaderParameter("orb_r", OrbR);
