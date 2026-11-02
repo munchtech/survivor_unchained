@@ -680,6 +680,7 @@ public partial class Game : Node, IZoneHost
         CrowdView.FlareDeath = fl.DeathOf;
         CrowdView.FlareStatueLook = fl.StatueLook;
         CrowdView.FlareCorpseBurn = fl.CorpseBurnAge;
+        CrowdView.FlareCorpseAsh = fl.CorpseAsh;
         CrowdView.FlareStatueFlash = fl.StatueFlash;
 
         CrowdView.FlareChar = fl.CharAt;

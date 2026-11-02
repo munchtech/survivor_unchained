@@ -411,6 +411,9 @@ public partial class FlareFx : Node3D
         public double RimAt = -1, RimRt = -1;
         /// <summary>The Long Cut's: how far from the seam's line it stands (m), for the log.</summary>
         public float Across;
+        /// <summary>The Long Cut's: off the drawn seam (more than LcSeamBand from its crack), so it greys and falls away as
+        /// ash, no gold (vfx9 r4a: the judge's two classes of death).</summary>
+        public bool Ash;
         public Vector3 Where, From;
         public float Scale;
     }

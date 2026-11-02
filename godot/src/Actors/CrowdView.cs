@@ -72,6 +72,8 @@ public partial class CrowdView : Node3D
         public float Char;
         /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
         public double BurnAt = -1;
+        /// <summary>Its Long Cut death is ash (off the drawn seam), not gold.</summary>
+        public bool Ash;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -124,6 +126,8 @@ public partial class CrowdView : Node3D
     public static Func<int, Godot.Vector4>? FlareStatueLook;
     /// <summary>Seconds since the Long Cut reached a corpse's place, or -1 (FlareFx.CorpseBurnAge).</summary>
     public static Func<double, double, double>? FlareCorpseBurn;
+    /// <summary>Whether a corpse there goes as ash, not gold (FlareFx.CorpseAsh: off the Long Cut's drawn seam).</summary>
+    public static Func<double, double, bool>? FlareCorpseAsh;
     /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
     public static Func<int, float>? FlareStatueFlash;
 
@@ -292,8 +296,9 @@ public partial class CrowdView : Node3D
                 // blue-grey by night, were these (the hold slows their fall), not the struck, who never fall.
                 if (FlareCorpseBurn?.Invoke(ex, ez) is double fk && fk >= 0)
                 {
-                    if (fk >= SurvivorUnchained.View.FlareFx.BurnTime) { laidOut.Add((e.Id, e.Seed)); return; }
-                    fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk);
+                    bool fa = FlareCorpseAsh?.Invoke(ex, ez) ?? false;
+                    if (fk >= SurvivorUnchained.View.FlareFx.BurnTimeOf(fa)) { laidOut.Add((e.Id, e.Seed)); return; }
+                    fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk, fa);
                 }
                 censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
@@ -420,7 +425,7 @@ public partial class CrowdView : Node3D
         tint = Charred(tint, chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
-        if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; }
+        if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot);
         living++;
     }
@@ -511,9 +516,9 @@ public partial class CrowdView : Node3D
                     double k = FlareCorpseBurn(c.X, c.Z);
                     // (on the struck's clock, not restarted as it lands: her kills falling in reach burn as they fall, and one
                     // laid out after its moment had restarted its burn, the lying star at cleave +0.55 s in r3a)
-                    if (k >= 0) c.BurnAt = time - k;
+                    if (k >= 0) { c.BurnAt = time - k; c.Ash = FlareCorpseAsh?.Invoke(c.X, c.Z) ?? false; }
                 }
-                return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTime;
+                return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTimeOf(c.Ash);
             });
         foreach (var c in corpses)
         {
@@ -533,9 +538,9 @@ public partial class CrowdView : Node3D
             censusCorpse++;
             if (c.BurnAt >= 0)
             {
-                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt));
+                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
                 censusBurn++;
-                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), 0, lk.W, Charred(tint, lk.Y), c.Glow);
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }
             crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);

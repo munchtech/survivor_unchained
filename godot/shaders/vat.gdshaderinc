@@ -101,7 +101,9 @@ void fragment() {
 		// (3-4x finer than r2's 6 and 17: its coarse holes over a dark body read as a beige leopard-spot dissolve)
 		// (one octave at 14 a metre, 2.3x r2: at 21 and 47 a cell was a pixel at the play camera and the last of each body
 		// went to gold glitter)
-		float bn = vat_noise(vat_local * 14.0);
+		// (vfx9 r4a: coarse, so a body goes in 2-4 big ragged pieces, not glitter: one octave at 2.4 a metre, offset per
+		// body, with a 7-a-metre one at a quarter for a torn edge; the front runs from the line's side and the feet up)
+		float bn = vat_noise(vat_local * 2.4 + vat_org * 0.37) * 0.75 + vat_noise(vat_local * 7.0 + 3.1) * 0.25;
 		vec2 src = flare_at.xz;
 		if (flare_seam.w > 0.0) {
 			vec2 sd = vec2(cos(flare_seam.z), sin(flare_seam.z));
@@ -111,7 +113,7 @@ void fragment() {
 		away = dot(away, away) > 1e-4 ? normalize(away) : vec2(1.0, 0.0);
 		float side = dot((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz - vat_org.xz, away);
 		// (r3: the noise only rags a coherent front from the line's side; at 0.45 its fine holes peppered every body gold)
-		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.28 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.52 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.2;
+		dn = clamp((bn - 0.25) / 0.5, 0.0, 1.0) * 0.4 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.34 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.26;
 	}
 
 	if (fx.y > 0.0 && dn < fx.y) discard;
@@ -148,7 +150,9 @@ void fragment() {
 	vec3 e = glow_color;
 	// Burns Twice's glaze takes the rime's place in its reach (flare_world.gdshaderinc): the fight freezes the
 	// whole reach at once, but a body glazes only as the frost's front reaches it (t10: all rimed by frost +0.1 s).
-	float fz = fx.z > 0.0 && flare_live() && flare_frosting((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) ? 0.0 : fx.z;
+	// (the Long Cut sends its death's class in the frozen slot: 1/15 an ash death, off the drawn seam; never ice)
+	float lc_ash = flare_lc.x > 0.0 && fx.z > 0.0 ? 1.0 : 0.0;
+	float fz = flare_lc.x > 0.0 ? 0.0 : fx.z > 0.0 && flare_live() && flare_frosting((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz) ? 0.0 : fx.z;
 	if (fz > 0.001) {
 		// Frozen (chill to half): rime grows in patches on what faces up, a cold blue at a
 		// middle value that a pale body shows against; the ice is glossy, with a thin cold rim
@@ -178,12 +182,25 @@ void fragment() {
 			// texture: vfx9 r2), lit through its own normals, matte, and seamed with dawn-gold cracks at HDR 4
 			// (0.6x at night, the luminance cap). fx.w is the char's amount.
 			float lc_night = mix(1.0, 0.6, flare_lc.w);
-			c = mix(c, max(c * 0.25, vec3(0.05, 0.043, 0.037)), fx.w);
+			if (lc_ash > 0.0) {
+				// vfx9 r4a: the sweep's dead, off the seam: greyed to about half their own value, a little drained, lit and
+				// shaded as ever (never a flat silhouette), and a dark charred lip where they fall away; no gold.
+				float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+				c = mix(c, mix(c, vec3(lum) * vec3(1.04, 0.98, 0.9), 0.4) * 0.52, fx.w);
+				rough = mix(rough, 0.86, fx.w);
+				if (fx.y > 0.0) c *= 1.0 - 0.45 * smoothstep(fx.y + 0.06, fx.y, dn);
+			} else {
+			vec3 c0 = c;
+			c = mix(c, max(c * 0.3, vec3(0.05, 0.043, 0.037)), fx.w);
 			rough = mix(rough, 0.88, fx.w);
+			// (r4a: the seam's light from below, in the body's own paint: warmest at the feet and on what faces down)
+			float down = clamp(-dot(NORMAL, sky), 0.0, 1.0);
+			e += vec3(1.0, 0.55, 0.2) * max(c0, vec3(0.12)) * (1.0 - smoothstep(0.0, 1.3, vat_local.y)) * (0.45 + 0.55 * down) * fx.w * 1.1 * lc_night;
 			float cn = vat_noise(vat_local * vec3(7.0, 4.5, 7.0)) * 0.7 + vat_noise(vat_local * 15.0) * 0.3;
 			// (thin and broken: r3a's 0.035-wide net over every body read as a pale lattice)
 			float crack = (1.0 - smoothstep(0.0, 0.016, abs(cn - 0.5))) * smoothstep(0.4, 0.62, vat_noise(vat_local * 3.0 + 7.0));
 			e += vec3(1.0, 0.46, 0.1) * crack * fx.w * 3.5 * lc_night;
+			}
 		} else {
 			c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 			e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
@@ -245,8 +262,9 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
 	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
+	// (r4a: 0.08 wide on the seam's deaths, so it survives sunlight; none on the ash deaths)
 	// (r3c: out by fx.y 0.62, so the last ~30% of a body (dn spans ~0.14-0.86) goes as dark ash, not gold lace or dust)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.08, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.46, 0.62, fx.y)) * (1.0 - lc_ash) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 
