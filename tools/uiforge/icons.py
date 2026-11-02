@@ -107,6 +107,9 @@ SUBJECTS = {
     # The arts in hand.
     "shield": ("physical", "a battered round iron shield driven forward"),
     "aegis": ("holy", "a kite shield with a ward of golden light round it"),
+    # UI 24 (Classes 17's new Warden skills): their own icons, no longer Dawnpulse's.
+    "rebuke": ("holy", "a dark iron kite shield seen from the front in the centre, a radiant four-pointed star of golden lamp light blazing on its face (no cross), sharp rays of golden light bursting outward all round its rim as if a blow was just turned back, the whole shield in view, no figure"),
+    "watch_bell": ("holy", "a heavy old bronze watch bell swinging as it tolls, its clapper mid-strike, rings of golden light pulsing outward from its mouth, no figure"),
     "howl": ("blood", "a snarling wolf's head howling, red breath"),
     "hourglass": ("arcane", "an hourglass with sand frozen in mid fall, violet light"),
     "mark": ("blood", "a red hunter's target mark, a crosshair of claws"),
