@@ -1,0 +1,134 @@
+# Lamps v2: the data and the sim rules (Classes 18, Phase 2)
+
+The contract between the board's data (`tools/classes/lamps_v2.py` → `godot/data/content/lamps_v2.json`) and the fight (`godot/logic/Sim`). It follows CLASS_IDENTITY_AND_TALENTS.md §3.2-3.6. The layout (ids, kinds, regions, groups, positions, edges, gates) is `board_v2.json` from `tools/classes/board_v2.py`, and **it is frozen**: UI lays the Lamps screen out from it.
+
+## The data
+
+`lamps_v2.py` reads `lamps.json` (v1, built by `lamps_build.py`) and `board_v2.json`, and writes `lamps_v2.json`. That file has the same shape as `lamps.json` (`story`, `roads`, `flares`, `lamps`) plus `version: 2` and `groups` (copied from board_v2). Each lamp:
+- **From board_v2:** `id`, `kind`, `region` (now also `ford`, `oldroad`), `group`, `calling`, `x`, `y`, `at`, `gate`.
+- **`road`** = the board_v2 `group` (LampBook counts depth by it: "hearth", a road id, "{calling}.bridge", a crossing id, "ford", "path.{id}").
+- **A kept v1 lamp** keeps its v1 `name`, `text`, `effects`, `feeds` and `early`. Its `at` and `gate` come from board_v2.
+- **A new lamp** gets these from `lamps_v2.py`:
+  - `name`: a draft. **`"draft": true`** marks it for the story writer.
+  - `text`: one line.
+  - `price`: blue lamps only; the red line, kept out of `text`.
+  - `effects`.
+  - `feeds` (skill ids, where it feeds named skills).
+- **Gone:** the 72 v1 `skill` lamps (they become wicks).
+
+Effects use v1's helpers (`M`, `A`, `R`, `F`, `FM`). **`phase`** has the same meaning as v1's: 1 = live now. A higher phase means inert until that phase's skills or systems land (4 = kindred moves, 5 = the valley's new skills and Turns not yet built). The test "every phase-1 rule is read by the fight" covers v2 too.
+
+**Words (§3.6):**
+- Every lamp is one line, in the board's voice (short, concrete, second person, American spelling), with numbers in the line.
+- A small is never a bare "+n%": it names a condition or two tags.
+- A notable is one rule that deepens or joins.
+- A blue is a big rule; its price goes in `price`.
+- By night a small's numbers run at a quarter (v1's rule). Rites, links, Hand lamps and blue prices are rules, so they're in full.
+
+## Rites (72): `R("rite", tags="<tag>", mech="<mech>", ...)`
+
+A rite puts a calling's mechanic onto one tag. It works for whoever lights it: the mechanic's numbers come from the args or hands.json, never from her Hand being on. It dims when she carries no skill with the tag.
+
+| mech | Whose | What a skill with the tag gets | Args |
+|---|---|---|---|
+| `heavy` | sunderer | the warden Hand's heavy blow: every `every`th firing is heavy (stun, knockback, stagger, from hands.json) | `every` (default the Hand's) |
+| `stone` | bulwark | a blow on a champion lays a Stone (once a firing), as the Hand's Holy does | |
+| `bleed` | butcher | what it strikes bleeds `share` of the hit over 3 s (feeds Frenzy) | `share` |
+| `bind` | chainbound | the first thing struck each firing is Bound `seconds` (a champion half as long) | `seconds` |
+| `ground` | kindler | its kills leave the arcanist Hand's ground. The school is the skill's if fire, frost or arcane; otherwise fire | |
+| `mark` | moonweaver | what it strikes is Marked (Moonmarked's rules, if lit, apply) | `seconds` |
+| `opening` | roadknife | for 2 s after a dash its blows strike true (the stalker Hand's window) | `seconds` |
+| `far` | verge_hunter | its blows from beyond 8 m strike true one time in four (Far Eye) | `range`, `chance` |
+| `hand` | the Old Roads | resolved by her calling: warden `heavy`, reaver `bleed`, arcanist `ground`, stalker `opening` | |
+
+Where each kind goes:
+- **Road rites** use the road's own mech.
+- **Bridge rites:** rite1 uses the calling's first road's mech, rite2 the second's.
+- **Crossing rites:** one per side; rite1 uses side A's calling and rite2 side B's (`groups[].callings` order), each with the mech of that calling's road nearest the crossing.
+- **Old Road rites** use `hand`, with the path's school tags.
+
+Rites are for her **off-road** skills: choose tags that the rite's own road doesn't already carry, and that at least one skill in `skills.json` has. Today that's area, spell, projectile, physical, melee, steel, shadow, holy, thrown, nova, nature, zone, fire, explosion, arcane, frost, storm, summon, aura, orbit, bounce, chain, heal, dot, beam. A rite on a tag with no skill yet (trap, hook, twin) is phase 4 or 5.
+
+## Links (32): `R("link", trigger="<trigger>", wait=<s>, tags="<hint tags>")`
+
+When the trigger comes and the link's wait is up, the skill she picked for this link fires once, free (`Weapons.Echo`); its own timer is untouched.
+- **The pick** is saved per layout: `LampLayout.Links[lampId] = skillId`.
+- **No pick, or the picked skill isn't carried:** Light my way's pick is the carried skill sharing the most tags with `tags`, ties broken by the order she carries them. With nothing carried, the link sleeps.
+- **For the view:** the sim emits `Ev.Link { Lamp, Skill, X, Z }` when a link fires. Its wait is readable (`Battle.LinkWait(lampId)` → 0..1) for the HUD's arc, which is UI's to draw.
+
+| trigger | When | Args |
+|---|---|---|
+| `block` | any block (a lamp's or the Warding light's) | |
+| `dash` | any dash | |
+| `heavy` | a heavy blow lands | |
+| `champion_kill` | an elite or boss dies | |
+| `hurt` | one blow takes `share` of health or more | `share` |
+| `low` | she falls below half health | |
+| `flare` | she presses a Flare | |
+| `crowd` | `count` or more things within `radius` m (checked 4 times a second) | `count`, `radius` |
+| `still` | after `seconds` standing still (then every wait while still) | `seconds` |
+| `kills` | every `count`th kill | `count` |
+| `status_kill` | something carrying `status` dies | `status` |
+
+The wait is 4-12 s: the trigger's rarity sets it, never a skill's power.
+
+## Hand lamps (16): `R("hand", <field>=<delta>, ...)`
+
+They deepen her Hand by adding deltas to hands.json's numbers. The fields are hands.json's (warden: `every`, `stun`, `stones`, `rebuke`, ...; reaver: `per`, `cap`, `area`, `below`; arcanist: `radius`, `seconds`, `burn`, `cap`; stalker: `seconds`, `pierce`).
+- The four in a hearth make a ladder: hand1 to hand4, each a step.
+- Warden example: every 6 → 5 → 4, plus a lamp that lets heavy blows lay a stone.
+- They are rules, so they're in full by night.
+- They do nothing when the Hand is off (*Unhoused*).
+- One may also carry a rule of its own (`hand.<calling>.<slug>`) where a pure number isn't the right deepening, but at most one per calling.
+
+## Small and notable rules (new; one place in the sim, `Sim/BoardRules.cs`)
+
+| rule | Args | Reads as |
+|---|---|---|
+| `tags.more` | `more`, optional `when` (a ModWhen name: Moving, Still, LowHealth, FullHealth, InBurning, AfterDash, Healthy), optional `vs` (a status: the struck must carry it) | "Fire and frost skills strike 6% harder at chilled things" |
+| `tags.area` (v1) | `inc` | |
+| `tags.sooner` | `sooner` (share off the wait) | |
+| `tags.duration` | `inc` | |
+| `tags.projectiles` (v1) | `add` (a count: by night +1 at most, board-wide) | |
+| `tags.status` | `status`, `chance` | skills with the tags inflict a status |
+| `tags.kill_mend` | `share` (of health) | kills by them mend her |
+
+These take `tags` (any of them).
+- **Smalls:** one effect with two tags, or one tag plus a `when`/`vs`.
+- **Notables:** two effects that join two tags or two mechanics, or a v1 rule.
+- **Hearth smalls** (`{calling}.hearth.p1/p2`) feed the calling's own mechanic: v1 rule ids at a small size, or `tags.*` on its Hand's tags.
+- Attribute lamps: `A("might"|"finesse"|"wits"|"resolve")`, as in v1.
+
+## The new blue lamps (17)
+
+The rule ids are fixed; the content writes the args and the words.
+
+| Lamp | rule | Rule | Price | Phase |
+|---|---|---|---|---|
+| `shambles.blue` | `blue.butchers_block` | heavy blows on bleeding things burst the bleed: all its damage at once | -20% maximum health | 1 |
+| `night_road.blue` | `blue.tethered_stars` | Bound things count as Marked; a Bound thing that dies binds the two nearest for 2 s | spells come 20% slower | 1 |
+| `firebreak.blue` | `blue.kindled_frost` | fire striking a chilled thing freezes it first (Fire on Ice then shatters it) | your frost skills strike 25% softer | 1 |
+| `duelists_road.blue` | `blue.bell_and_blade` | a perfect dash counts as a block, and a block as a perfect dash | both windows 30% shorter | 1 if the sim has a perfect dash, else 4 |
+| `vigil.blue` | `blue.vigil` | while you hold three stones or more, spells strike 30% harder | the wall never answers (no rebuke) | 1 |
+| `poachers.blue` | `blue.poachers_mercy` | a blow that strikes true on a bleeding thing doubles its bleed | one dash charge | 1 |
+| `ford.unhoused` | `blue.unhoused` | lamps on other callings' roads open with no depth (their gates are ignored) | your Hand is gone | 1 (LampBook and the Hand) |
+| `path.steel.blue` | `blue.iron_pilgrim` | thrown skills return through you and strike again | you can't carry Projectile spells | 5 (the Return Turn) |
+| `path.host.blue` | `blue.pack_remembers` | summons stay the night and grow 2% with every kill, to 40% | one dash charge | 1 if summons have a lifetime to lift, else 5 |
+| `path.storm.blue` | `blue.lightning_rod` | storm and chain skills strike the nearest champion first, 40% harder | missiles strike you 25% harder | 1 |
+| `path.grave.blue` | `blue.mourners_debt` | kills by shadow skills mend 1% of health | nothing else mends you | 1 |
+| `path.weave.blue` | `blue.unspun` | arcane skills come 30% sooner | each arcane firing costs 1% of health | 1 |
+| `path.pyre.blue` | `blue.pyre_walker` | burning ground never harms you, and standing in it you strike 25% harder | your burns last half as long | 1 |
+| `path.rime.blue` | `blue.drowned_lung` | frost skills freeze in half the time | you can't be mended while you stand still | 1 |
+| `path.wild.blue` | `blue.feral` | nature skills strike 40% harder while you move | you can't block or strike true | 1 |
+| `path.hunt.blue` | `blue.long_watch` | blows from beyond 10 m strike 35% harder | blows within 4 m strike 35% softer | 1 |
+| `path.dawn.blue` | `blue.unsetting_sun` | holy skills sear what they strike; a seared thing that dies mends you 0.3% | by night, holy skills come 20% slower | 1 |
+
+**Who decides the phase:** the code lead, if a rule needs a system the sim lacks. That phase is reported, and the content follows it.
+
+## The flag
+
+- The game and the harness read v1 (`lamps.json`) unless v2 is switched on: the env `SU_LAMPS_V2=1`, `Lamps.UseV2(true)` (tests, harness `--lampsv2`), or the game's `--lampsv2`.
+- With v2 off, the sim is byte-identical to integration (the Act 1 gate).
+- With v2 on:
+  - unknown lit ids in a save are dropped on load (save v6 does the real migration later);
+  - the `--board` pages draw v2's lamps.
