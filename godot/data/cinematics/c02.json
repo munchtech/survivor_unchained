@@ -102,7 +102,7 @@
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.588, 0.06, -1.863]}, "at": {"actor": "her", "bone": "eyes", "off": [0.0, -0.04, 0.0]}, "lens": 95, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 5.6},
       "cues": [
         {"do": "skin", "off": "key,cap"},
-        {"do": "grade", "moonDrop": 0.35, "shade": "#3a3226", "shadeK": 0.3},
+        {"do": "grade", "moonSat": 0.1, "moonDrop": 0.5, "moonHue": 240, "moonTop": 0.44, "moonWidth": 0.15, "shade": "#2c4870", "shadeK": 0.75, "note": "Face 49: the zone's own night grade (s5's carried over otherwise); the warm shade and moonDrop 0.35 dropped"},
         {"do": "light", "light": 4, "level": 0},
         {"do": "music", "mood": "silence"},
         {"do": "hide", "actor": "warden"},
@@ -110,12 +110,12 @@
         {"at": 1.1, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},
         {"at": "after:cin_none_cross.lie_down+0.62", "do": "lids", "value": null},
-        {"at": 0.25, "do": "rig", "name": "lampkey", "energy": 2.2, "over": 0.4, "color": "#c8d8ff", "angle": 40, "falloff": 0.8, "from": {"lens": [-0.95, -0.8, -1.3]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}, "shadow": true, "size": 0.01},
+        {"at": 0.25, "do": "rig", "name": "lampkey", "energy": 2.2, "over": 0.4, "color": "#c8d8ff", "angle": 40, "falloff": 0.8, "from": {"lens": [-0.59, -0.8, -0.96]}, "aim": {"actor": "her", "bone": "eyes", "off": [0, -0.04, 0]}, "shadow": true, "size": 0.08, "spec": 0.8},
         {"at": 0.25, "do": "rig", "name": "lampcatch", "energy": 0.2, "over": 0.4, "color": "#e4ecff", "angle": 6, "spec": 30, "from": {"lens": [-0.42, -0.28, -0.75]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "gaze", "look": [0.0, 0.55], "wander": 0.0},
         {"at": 0.45, "do": "gaze", "look": [-0.15, 0.1], "over": 0.35, "wander": 0.03},
         {"at": 1.1, "do": "line", "id": "cin_none_cross.lie_down"},
-        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.025, -0.104, -0.832]}, "color": "#a8c4ff", "size": 0.006, "energy": 2.5, "spread": 30, "halo": 0.3, "light": 0, "soft": true, "lantern": 1, "iron": "warden", "turn": 20, "glass": 0.8},
+        {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.025, -0.104, -0.832]}, "color": "#a8c4ff", "size": 0.006, "energy": 8, "spread": 30, "halo": 0.6, "light": 0, "soft": true, "lantern": 1, "iron": "warden", "turn": 20, "glass": 3},
         {"do": "glow", "name": "heldcold", "where": {"actor": "her", "bone": "eyes", "off": [-0.175, -0.057, -1.164]}, "color": "#8fb0e0", "size": 0.001, "energy": 0.2, "spread": 300, "halo": 0.18, "light": 0, "soft": true}
       ]
     },

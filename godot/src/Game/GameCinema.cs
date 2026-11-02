@@ -560,6 +560,11 @@ public partial class Game
         // (env CINEDBG, shots only, off unless set: the cinematic light changed, to tell her materials' faults from
         // its own (face 30 cine): "key=0.5" the sun or moon's energy scaled, "glow=0.5" the cues' held lamps',
         // "lamps=0.5" the zone's lamps', "ambient=0.5" the sky's, "nossao", "nosunshadow", "noomnishadow", "nodof", "fill=E" a soft white spot from over the lens)
+        static readonly RenderingServer.DofBlurQuality? DofQ = Args.Get("cine-dof-q") switch
+        {
+            "verylow" => RenderingServer.DofBlurQuality.VeryLow, "low" => RenderingServer.DofBlurQuality.Low,
+            "medium" => RenderingServer.DofBlurQuality.Medium, "high" => RenderingServer.DofBlurQuality.High, _ => null,
+        };
         static readonly Dictionary<string, float>? cineDbg = Args.Has("shot") && System.Environment.GetEnvironmentVariable("CINEDBG") is { Length: > 0 } cd
             ? cd.Split(',').Select(kv => kv.Split('=')).ToDictionary(a => a[0], a => a.Length > 1 ? float.Parse(a[1], System.Globalization.CultureInfo.InvariantCulture) : 1f)
             : null;
@@ -846,6 +851,10 @@ public partial class Game
                 dof.DofBlurFarDistance = (float)Math.Min(far, 500);
                 dof.DofBlurFarTransition = (float)Math.Max(0.1, (far - f) * 1.5 + f * 0.25);
                 dof.DofBlurAmount = 0.12f;
+                // (Face 49 r2: --cine-dof-q low|medium|high|verylow, --cine-dof-jitter on|off: Godot's bokeh quality, global, for pictures)
+                if (DofQ != null) RenderingServer.CameraAttributesSetDofBlurQuality(DofQ.Value, Args.Get("cine-dof-jitter") == "on");
+                if (Args.Get("cine-dof-shape") == "circle") RenderingServer.CameraAttributesSetDofBlurBokehShape(RenderingServer.DofBokehShape.Circle);
+                if (Args.Num("cine-dof-amount", 0) > 0) dof.DofBlurAmount = Args.Num("cine-dof-amount", 0.12f);
                 cam.Attributes = dof;
             }
             else cam.Attributes = saved.Attr;
@@ -995,6 +1004,8 @@ public partial class Game
                     else if (orbs.TryGetValue(c.Actor, out var o))
                     {
                         if (c.Has("lit")) o.Visible = c.Bool("lit", true);
+                        // ("light": its light's share of the glow, OrbView.LightShare; 1 gives it back)
+                        if (c.Has("light") && o is OrbView ov) ov.LightShare = (float)c.Num("light");
                         if (!c.Has("glow")) break;
                         double from = orbLight[c.Actor], to = 6 * c.Num("glow");
                         void Set(double l) { orbLight[c.Actor] = l; ((IOrb)o).Light = l; }
@@ -1402,6 +1413,8 @@ public partial class Game
                     float e0 = 0;
                     if (rigs.Remove(name, out var was)) { e0 = was.E; was.Free(); }
                     float e = (float)c.Num("energy", 0.3);
+                    // (--cine-rig-mute A,B: those rigs at no light, for pictures: one term at a time on her skin)
+                    if (RigMute.Contains(name)) e = 0;
                     bool fade = c.Bool("fade") && over > 0 && !skipping;
                     if (!fade) e0 = 0;
                     if (e <= 0 && !(fade && e0 > 0)) break;
@@ -1427,11 +1440,11 @@ public partial class Game
                     // "ear": her ears' warm shade, 1 as built (a warm ear against her cheek once the key is the rig).
                     skinSky = (float)c.Num("sky", skinSky);
                     skinEar = (float)c.Num("ear", skinEar);
-                    // ("fill", "fillColor", "scale": her rig's fill and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
+                    // ("fill", "fillColor", "rim", "scale": her rig's fill, rim and face-scale cap for this shot only, GameCinemaHer.HerKnobs)
                     // ("off": "key,moon": her rig's parts off for this shot, as --cine-her-off)
-                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off"))
+                    if (c.Has("fill") || c.Has("fillColor") || c.Has("scale") || c.Has("off") || c.Has("rim"))
                     {
-                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herScaleShot = (float)c.Num("scale", 0);
+                        herKnobShot = tc.Shot.Index; herFillK = (float)c.Num("fill", 1); herRimK = (float)c.Num("rim", 1); herScaleShot = (float)c.Num("scale", 0);
                         herFillCol = c.Str("fillColor") is string hfc ? new Color(hfc) : null;
                         herOffShot = c.Str("off") is string ho ? ho.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet() : null;
                     }
@@ -1695,7 +1708,8 @@ public partial class Game
                     // "moonWidth" (the grade's moon step: what it lays on the weakly coloured, and up to what lightness, as GradeSettings has it), "shade" and "shadeK" (the
                     // paint grade's colour for the darks), "shadowTint", "hiTint", "vib". (C03's night, judge r1: the moon, the lamps,
                     // the ambient and the heart one blue, so the heart wasn't special: the moon silver, the shade violet.)
-                    if (new[] { "moonSat", "moonHue", "moonDrop", "moonTop", "moonWidth", "shade", "shadeK", "shadowTint", "hiTint", "vib" }.Any(c.Has))
+                    // (--cine-grade-cue off: a shot's palette ignored, the zone's grade kept: pictures)
+                    if (!GradeCueOff && new[] { "moonSat", "moonHue", "moonDrop", "moonTop", "moonWidth", "shade", "shadeK", "shadowTint", "hiTint", "vib" }.Any(c.Has))
                     {
                         double? Opt(string k) => c.Has(k) ? c.Num(k) : null;
                         double? ms = Opt("moonSat"), mh = Opt("moonHue"), md = Opt("moonDrop"), mt = Opt("moonTop"), mw = Opt("moonWidth"), sk = Opt("shadeK"), vb = Opt("vib");
