@@ -3,7 +3,8 @@
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
 ## 1 November: coordinator b9e8a09f
-**Live (report to b9e8a09f), all from 759a3fb69, own junctions:** Face 49 (face-49: her skin under cool low light reads warm/matte; rig/grade fix), Combat VFX 6 (vfx-6: chevrons off round marks, lanes keep them; r1 FAIL close, r2 last), Env 23 (env-23: lilac ford treeline = C02 night haze #6e5a66 -> #1f2d48, cleared by main, also c03 line 71; then the Verge map-edge skirt), Rendering 2 (rend-2: lavender night faces / blue day shadows on NPCs). Tam: owner "Not yet" (1 Nov).
+**COMBAT VFX 6 MERGED** (vfx-6@01e6637eb, tests 1335/0/10, worktree unregistered; an empty locked vfx-6 folder remains for the sweep): round marks (disc, ring, cone) have no chevrons, lanes keep them; night bed floor bf 0.2; cones fill from the point with a cast line. xhigh r2 PASS-WITH-NOTES. ~0.5M. Sheet SENT (survivorsunchained_inputsfx6). Later list in skills.md. Routed: UI (the HUD statue goes semi-transparent, red lanes show through her face and hair: intended?). vfx6 scratch (3 GB) too big for the bin: owner to delete.
+**Live (report to b9e8a09f), all from 759a3fb69, own junctions:** Face 49 (face-49: her skin under cool low light reads warm/matte; rig/grade fix), Env 23 (env-23: lilac ford treeline = C02 night haze #6e5a66 -> #1f2d48, cleared by main, also c03 line 71; then the Verge map-edge skirt), Rendering 2 (rend-2: lavender night faces / blue day shadows on NPCs). Tam: owner "Not yet" (1 Nov).
 **Routes logged (unowned):** night arena ground crushes to pure black outside her lamp (Lighting); the Red Hand reads flat unshaded orange (Character art). Old worktrees armor-7 (dirty) and classes-15 unmerged 7-10 days: report in the sweep.
 
 ## 29 October, evening: coordinator afafb81e
