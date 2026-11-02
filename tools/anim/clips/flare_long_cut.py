@@ -48,7 +48,7 @@ SETTLE = 72
 # The right fist's pocket (hand_r space) and the grip's line in it, pommel toward blade; the edge's way (the piece's +X).
 # grip_tilt (animation 58, the clip's meta): the blade turned TILT deg in her fist about hand_r +X through the pocket, toward
 # a square two-handed grip (the fist fitted for it: WRAP_TILT["sunder"], the blade's); the game turns the seated piece so.
-TILT = float(__import__("os").environ.get("LC_TILT", "0"))
+TILT = 0.0   # (tried 30: the kneel's contact pose out of her wrists' reach; animation 59 r2)
 _RT = _axis_matrix([1.0, 0, 0], TILT)
 GRIP_LEAN = grip_of("sunder", TILT)["r"]   # the hand turned back from the keyed blade by the grip's lean (Rig.solve)
 AT = _socket_vec("BladeAtR")
@@ -58,7 +58,9 @@ EDGE = _RT @ np.array([0.0, DIR0[2], -DIR0[1]])
 # hand_r to hand_l (WeaponSockets.MirrorRL).
 MIRROR = np.array([[-0.999976, 0.006672, 0.001970], [0.006660, 0.999958, -0.006359], [0.002012, 0.006345, 0.999978]])
 AT_L, DIR_L, EDGE_L = MIRROR @ AT, MIRROR @ DIR, MIRROR @ EDGE
-SIGMA = float(__import__("os").environ.get("LC_SIGMA", "2"))   # TEMP
+# Each elbow's way smoothed over a narrower window than the default 2 frames: the elbows are keyed per beat, and the
+# cleave turns the blade 120 deg in two frames (at 2, f15-f16 were pulled toward their neighbours' elbows: 6-15 deg off).
+SIGMA = 1.0
 LEFT_T = -0.170          # the left fist's centre along the line from the right's (m; toward the pommel)
 BLADE_LEN = 1.122        # the right fist's centre to the tip (Arms sunder_blade: 1.412 - 0.290)
 
@@ -80,17 +82,17 @@ BLADE = [
     (8, (-0.30, 1.45, -0.12), _n(-0.25, -0.15, -0.96), (0.91, 0.40, -0.12), (-0.97, 0.0, 0.25), (0.65, -0.44, 0.62), (-0.86, 0.49, 0.15)),
     (9, (-0.20, 1.75, -0.12), _n(-0.12, -0.25, -0.96), (0.88, -0.38, 0.27), (-0.03, 0.97, -0.25), (0.75, -0.02, 0.66), (-0.52, 0.84, -0.15)),
     (11, (-0.03, 1.90, -0.30), _d(200), (0.22, -0.07, 0.97), (0.0, 0.94, -0.34), (0.38, -0.21, 0.9), (0, 0.94, -0.34)),
-    (13, (-0.03, 1.86, -0.34), _d(205), (0.19, -0.10, 0.98), (0.0, 0.91, -0.42), (0.35, -0.28, 0.89), (0, 0.91, -0.42)),
+    (13, (-0.03, 1.86, -0.34), _d(205), (0.19, -0.10, 0.98), (0.0, 0.91, -0.42), (0.35, -0.28, 0.89), (0.26, 0.88, -0.41)),
     (14, (-0.02, 2.00, -0.03), _d(150), (0.83, -0.32, 0.46), (0.0, 0.87, 0.50), (-0.04, -0.5, 0.87), (-0.5, 0.75, 0.43)),
-    (15, (0.00, 1.60, 0.42), _d(60), (0.87, -0.19, -0.45), (0.50, -0.43, 0.75), (0.44, -0.72, 0.54), (-1, 0, 0)),
-    (16, (0.00, 1.007, 0.405), _d(-58), (0.42, 0.86, 0.30), (0.97, -0.14, -0.22), (0.47, -0.81, -0.35), (-1, 0, 0)),
+    (15, (0.00, 1.60, 0.42), _d(60), (0.70, 0.17, -0.70), (0.87, -0.25, 0.43), (0.44, -0.72, 0.54), (-1, 0, 0)),
+    (16, (0.00, 1.007, 0.405), _d(-58), (0.42, 0.86, 0.30), (0.97, -0.14, -0.22), (0.30, -0.60, -0.74), (-0.97, 0.14, 0.22)),
     (17, (0.00, 0.945, 0.464), _d(-66), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (-0.07, -0.63, -0.78), (-0.87, 0.2, 0.46)),
     (18, (0.00, 0.904, 0.496), _d(-70), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (-0.21, -0.02, -0.98), (-0.5, 0.3, 0.81)),
     (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.19, 0.84, -0.51), (-0.5, 0.24, 0.83)),
     (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
     (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
     (62, (0.00, 1.00, 0.50), _d(-60), (-0.69, 0.64, 0.34), (0.87, 0.25, 0.43), (-0.26, 0.15, -0.96), (-0.5, 0.43, 0.75)),
-    (67, (-0.12, 1.05, 0.35), _n(-0.10, -0.60, 0.80), (0.85, 0.42, 0.31), (0.75, -0.57, -0.33), (-0.08, -0.24, -0.97), (-0.9, 0.4, 0.19)),
+    (67, (-0.12, 1.05, 0.35), _n(-0.22, -0.58, 0.78), (0.87, 0.42, 0.25), (0.62, -0.70, -0.35), (-0.08, -0.24, -0.97), (-0.9, 0.4, 0.19)),
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
@@ -416,7 +418,7 @@ class LongCut:
             p["fingers_l"] = self.fingers_l(fr)
             return p
         meta = {"layer": "full", "weapon": "sunder", **({"grip_tilt": TILT} if TILT else {}), "contact": CONTACT_T, "contacts": [CONTACT_T], "blend_out": 0.9,
-                **({"elbow_sigma": SIGMA} if SIGMA != 2.0 else {})}
+                "elbow_sigma": SIGMA}
         return build(NAME, self.rig, self.keys, meta=meta, post=post, base=self.base)
 
     def hands_of(self, clip):
