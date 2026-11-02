@@ -8,6 +8,86 @@
 **Owner picks:** 100% or 85% (sheet `survivorsunchained_inputs\ui27_hud\ui27_before_after_1x.png` and `_half.jpg`, plus full frames). Set `bottomScale` on the answer.
 **Later list:** `dg_keeper_check.py` (the check against the old mockup) no longer matches the new places; the right end is snugger than the left (the dash and SPACE tag are wider): don't pull the ends in further (at 0.85 the dash clearance is ~3.9 px); flat charcoal lattice domes in the day verge (Env).
 **Cost:** lead ~110k; builder 231k (medium); runners 27k + 27k; judge 90k (max); $0 API. Scratch backup `survivorsunchained_inputs\scratch_ui27\` (mock, edges/comp.py, shots/run.sh with TAG/EXTRA, judge/js.py).
+## START HERE (the Lamps build lead): BUILD the Lamps screen. The owner PICKED Option 1 (2 Nov); UI 26 closed the design (branch ui-25, worktree .claude/worktrees/ui-25, junction godot/assets to its OWN public/assets, integration 6c9c3a213 merged)
+**The pick (verbatim):** "i agree with the option 1 for lamps sheet". That means:
+- C, "The Day's Book", is the default: the board is the Lamps page of the Arts book, in its right-hand panel, with her in view on the left.
+- A, "Nightfall", is its Open wide (Z; View on the pad).
+- B is cut.
+
+**Read:** `docs/design/LAMPS_SCREEN_BRIEF.md` §4-§15, then §16 (the settled rules; §16 wins where it differs).
+- The look: `survivorsunchained_inputs\ui25_lamps\` (the owner's sheet, plus C_day, C_night, A_day, A_night and A_valley at 1:1).
+- The mock: `tools/uiforge/lamps_mock/` (Python; `mock/SKINS.md` says how to run it). Its backdrops and caches are in `survivorsunchained_inputs\scratch_ui25\`.
+
+**Data:** `godot/data/content/board_v2.json` and `lamps_v2.json` (Classes 18, classes-17): all 574 positions, texts, effects and feeds; gates as of 428adf41f, road links at gate 8.
+- Ids, kinds and positions are frozen.
+- Before building, check which §14 asks Classes has shipped (PathTo, Sleeps, link picks, Light my way's suggestions, session undo, the wick's sum). Ask main for the rest.
+- Classes' functional pages (ArtsScreen behind `--board`) stay until this lands.
+- My call: Arts' "Wicks" sub-tab folds into this page. It stays only as a shortcut that opens the wick panel on the first seat.
+
+**HUD geometry comes from data, never hardcoded:** read `godot/art/ui/dg_keeper/hud_a_geo.json` and `hud.json` bottomScale at runtime.
+- UI 27's geometry (ui-27@744a69370, unjudged):
+  - bar ends 637/1283 at the top and 628/1292 at the foot; PANEL_RECT 600,988,720,92;
+  - the girl at scale 0.876, top 861; the keeper top 863; the HUD spans x 360-1554;
+  - bottomScale 1.0 or 0.85, the owner's pick pending.
+- A round-2 HUD tweak will narrow the bar and even its ends.
+- By §16's rule, A's wick panel sits ABOVE both statues' heads: 780 px wide, its bottom 24 px above the higher head, with the stem rising from the chosen seat.
+
+**The build plan** (each phase ends with its check):
+1. **The board renderer** (§13): three draw calls.
+   - One MultiMesh of 574 lamps, with per-instance kind, state, phase and fade. SDF shapes for every §5 kind, including cobalt glass and the chain link.
+   - One road mesh with an anti-aliased line shader: cold, lit, fuse, and path with running dashes.
+   - One additive halo pass (at most 90).
+   - The reach fade, threshold gate notches, and labels culled by stop with the overlap test.
+   - Check: 1:1 shots at all three stops; perf ABAB (at most 0.25 ms GPU and 0.2 ms CPU at 1080).
+2. **C, the book page:**
+   - The header row: the layout coins, the count, Light my way, Open wide.
+   - The board window with the 48 px feather and the page glow.
+   - The wick tabs row (her carried skills, plus All learned) and the prompt row.
+   - The card: §7's contents, §16's placement and shadow.
+   - Check: C by day matches the owner's frame at 1:1.
+3. **Interaction** (§9-§10):
+   - pad: stick focus along the roads (direction cones), LB/RB the frontier, R3 home;
+   - the path preview and light-the-path; put out (held) by day at a lamp-post;
+   - Find chips, the three layouts, session undo; mouse hover, drag and wheel.
+   - Tests: every lamp is reachable by stick moves; no label overlap at any stop; text at least 13 px.
+4. **The wick panel** (§8 + §16):
+   - the boxless band, with the stem as the braid's root;
+   - three rows, the plan numbers, One Turn a skill, the whole sum line;
+   - the focused lamp's text in its own row (no floating card).
+5. **A, Open wide:**
+   - the grade shader (by day a warm dusk, x0.42; by night x0.62 with the moonlight multiply);
+   - the pools; the field mask;
+   - her silhouette knockout (render her layer's alpha; the mock used grabCut);
+   - the HUD's seats as wick tabs, the keeper's fire as the Flare's tab;
+   - the wick panel placed from the geometry.
+6. **Motion and sound** (§11), with reduce-motion.
+7. **Ship checks** (§15): the whole-frame gate, day and night at 1:1; the glance; perf.
+
+**The build's first judge must check r3's fixes, which no judge has seen** (judge r2's verdict: `tools/uiforge/lamps_mock/briefs/judge_2_verdict.md`):
+- **C night:** no card over the board; the Turn row carrying it all; the stem running into the braid; the hairline gone; the board at 0.70, recentered.
+- **A day:** her silhouette knockout; the card 10 px lower; the chips fading with their lamps.
+- **A night:**
+  - the boxless panel, which is now a new layout above the heads;
+  - the Turn row: A's state line wrapped to two lines at 214 px (widen the column);
+  - the prompts;
+  - the x0.62 night grade (r2 asked x0.5, which measured a luma of 14).
+- **A valley:** the x0.9 fit; halos on the labels that sit on roads.
+- **Never measured:** C day's card clearing two lamps by 6 px; the girl's 48 px face knockout.
+- **Seen but not fixed:** A's Turn has no focus ring (C's has one); C's "4" sits on its focus-ring line.
+
+**Budget:** the design spent about 1.31M of its 1.2M cap. The build needs its own budget from main.
+**Routes:**
+- Stick-press L3/R3 prompt icons (`godot/art/ui/icons/prompt/`).
+- Classes' §14 asks.
+
+## DONE (UI 25-26, 2 Nov): the Lamps screen design, the owner PICKED Option 1, MR READY (branch ui-25)
+- **UI 25:** the brief, the mock engine and three directions. Judge r1 (xhigh): C and A close, B far (cut).
+- **UI 26:**
+  - fix round r2: r1's list, plus the braid, cobalt glass, threshold notches and chain links;
+  - judge r2 (max): C day passed, with four layout blockers elsewhere;
+  - fix round r3: the blockers and the small items;
+  - the owner's sheet, then the pick;
+  - §16 added to the brief; the mock committed to `tools/uiforge/lamps_mock/`.
 
 ## DONE (UI 24, 2 Nov): HUD clean-up, MR READY (branch ui-24, worktree .claude/worktrees/ui-24; remove after the merge)
 **The owner's ask:** "clean up the inner edges of the statues, as well as the skill bar bordering. but it can go for the item vfx is asking about too".
