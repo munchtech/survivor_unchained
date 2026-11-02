@@ -88,7 +88,7 @@ public partial class PlayerView : Node3D
     /// <summary>--ember-crowd off: the crowd out of her pool again, as before Rendering 4.</summary>
     static readonly bool EmberCrowd = SurvivorUnchained.Args.Get("ember-crowd") != "off";
     /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
-    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.25f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.35f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
         CrowdEmberIn = SurvivorUnchained.Args.Num("crowd-inner", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)

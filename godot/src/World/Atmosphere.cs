@@ -82,7 +82,7 @@ public partial class Atmosphere : Node3D
     /// into ALBEDO, so the moon's shadowed light and the ambient light it); --crowd-flat K the cut on flat, up-facing low surfaces;
     /// --crowd-wrap W her lamp's wrap; --crowd-top K the cool on heads and shoulders; --crowd-dirt T the fill's hue from the sky's
     /// (0) to the ground's (1); --crowd-back B the moon's wrap round the body (BACKLIGHT, shadowed); --crowd-amb A the ambient it keeps (AO); --crowd-dbg the distance-band mask (measuring).</summary>
-    static readonly float CrowdLift = SurvivorUnchained.Args.Num("crowd-lift", 0.12f), CrowdFlat = SurvivorUnchained.Args.Num("crowd-flat", 0.8f),
+    static readonly float CrowdLift = SurvivorUnchained.Args.Num("crowd-lift", 0.04f), CrowdFlat = SurvivorUnchained.Args.Num("crowd-flat", 0.8f),
         CrowdWrap = SurvivorUnchained.Args.Num("crowd-wrap", 0.3f), CrowdTopK = SurvivorUnchained.Args.Num("crowd-top", 0.2f), CrowdDirt = SurvivorUnchained.Args.Num("crowd-dirt", 0.7f), CrowdBack = SurvivorUnchained.Args.Num("crowd-back", 1f),
         CrowdAmb = SurvivorUnchained.Args.Num("crowd-amb", 0.25f);
     static readonly bool CrowdDbg = SurvivorUnchained.Args.Has("crowd-dbg");
