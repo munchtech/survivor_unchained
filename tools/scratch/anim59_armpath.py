@@ -105,14 +105,40 @@ for fr in frames:
     P, d = M._blade_at(fr)[:2]
     pose = L.pose(fr)
     row = []
-    for psi in range(0, 360, STEP):
-        for phi in range(0, 360, STEP):
+    psis = list(range(0, 360, STEP))
+    if os.environ.get("KEEP") and (not os.environ.get("KEEPF") or str(fr) in os.environ["KEEPF"].split(",")):
+        # The fist's roll kept within +-KEEP deg of the key's own (the right fist's roll is the blade's edge).
+        k0 = M._blade_at(fr)[3 if side == "r" else 5]
+        u0, v0 = perp(d)
+        p0 = math.degrees(math.atan2(float(k0 @ v0), float(k0 @ u0)))
+        kw = int(os.environ["KEEP"])
+        psis = [p0 + o for o in range(-kw, kw + 1, max(1, kw // 2 or 1))] if kw else [p0]
+    if os.environ.get("ALPHA") and side == "l":
+        # The left fist's roll locked to the right's (a firm two-handed grip): the right's knuckles turned ALPHA deg
+        # about the blade (each value in the comma list is one candidate set).
+        kr = M._blade_at(fr)[3]
+        u0, v0 = perp(d)
+        pr = math.degrees(math.atan2(float(kr @ v0), float(kr @ u0)))
+        psis = [pr + float(a) for a in os.environ["ALPHA"].split(",")]
+    for psi in psis:
+        for phi in range(0, 360, int(os.environ.get("PSTEP", STEP))):
             ed, ep, bend, k, E, pole, pole_c = trial(fr, pose, P, d, psi, phi)
             c = ed * 3 + ep / 5 + bend[0] * 0.3 + max(0.0, -CLR) * 1000 * CLRW
             row.append(dict(c=c, tw=REACH[2], E=np.array(E), psi=psi, phi=phi, k=k, pole=pole_c, clr=CLR, ed=ed, ep=ep, bend=bend[0]))
     cands.append(row)
+    if os.environ.get("DUMP"):
+        for r in sorted(row, key=lambda r: r["c"])[:int(os.environ["DUMP"])]:
+            print(f"   psi {r['psi']:5.0f} phi {r['phi']:3d} tw {r['tw']:6.1f} clr {r['clr']*100:5.1f} ed {r['ed']:4.1f} ep {r['ep']:5.1f} bend {r['bend']:5.1f} c {r['c']:6.1f} pole {tuple(round(float(x), 2) for x in r['pole'])}")
     print(f"f{fr}: {len(row)} candidates, best alone {min(r['c'] for r in row):.1f}", flush=True)
+if os.environ.get("PKL"):
+    import pickle
+    pickle.dump({fr: [{k: v for k, v in r.items() if k != "E"} | {"E": r["E"].tolist()} for r in row] for fr, row in zip(frames, cands)},
+                open(os.environ["PKL"], "wb"))
 n = len(frames)
+if os.environ.get("TWEND"):
+    # The last key's twist pulled toward TWEND (deg; the clip's next pose, e.g. the idle's), 1 cost per TWENDW deg.
+    for r in cands[-1]:
+        r["c"] += abs(r["tw"] - float(os.environ["TWEND"])) / float(os.environ.get("TWENDW", "3"))
 acc = [[r["c"] for r in cands[0]]]
 back = []
 for i in range(1, n):
@@ -135,13 +161,14 @@ path = path[::-1]
 out = {}
 for fr, row, j in zip(frames, cands, path):
     r = row[j]
-    print(f"f{fr:2d} psi {r['psi']:3d} phi {r['phi']:3d} tw {r['tw']:6.1f} clr {r['clr']*100:5.1f}cm blade {r['ed']:4.1f} pos {r['ep']:5.1f}mm bend {r['bend']:5.1f}"
+    print(f"f{fr:2d} psi {r['psi']:5.0f} phi {r['phi']:3d} tw {r['tw']:6.1f} clr {r['clr']*100:5.1f}cm blade {r['ed']:4.1f} pos {r['ep']:5.1f}mm bend {r['bend']:5.1f}"
           f" pole {tuple(round(float(x), 2) for x in r['pole'])} knuck {tuple(round(float(x), 2) for x in r['k'])}")
     out[fr] = (tuple(round(float(x), 2) for x in r["pole"]), tuple(round(float(x), 2) for x in r["k"]))
 if "--write" in sys.argv:
     p = M.__file__
     s = open(p).read()
-    a0 = s.index("BLADE = ["); a1 = s.index("]\n", s.index("(67, ", a0))
+    a0 = s.index("BLADE = ["); a1 = s.index("]\n", s.index("
+]", a0) - 1)
     lines = s[a0:a1].split("\n")
     names = {"LAND": M.LAND}
     for li, ln in enumerate(lines):

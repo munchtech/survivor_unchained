@@ -76,29 +76,37 @@ def _d(theta, x=0.0):
 # shoulder in the chest's frame). The cleave keyed every frame.
 BLADE = [
     (3, (-0.34, 0.99, -0.18), _n(-0.10, -0.50, -0.86), (0.16, 0.37, 0.91), (0.06, -0.87, 0.50), (0.87, -0.49, 0.07), (-0.83, -0.43, 0.35)),
-    (5, (-0.46, 0.95, -0.30), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
-    (6, (-0.47, 0.93, -0.32), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
-    (7, (-0.46, 1.20, -0.25), _n(-0.19, -0.37, -0.91), (0.84, 0.53, 0.11), (-0.42, -0.81, 0.41), (0.79, -0.6, 0.14), (-0.98, 0, 0.2)),
-    (8, (-0.38, 1.45, -0.17), _n(-0.25, -0.15, -0.96), (0.91, 0.40, -0.12), (-0.97, 0.0, 0.25), (0.65, -0.44, 0.62), (-0.86, 0.49, 0.15)),
-    (9, (-0.25, 1.73, -0.10), _n(-0.12, -0.25, -0.96), (0.88, -0.38, 0.27), (-0.03, 0.97, -0.25), (0.75, -0.02, 0.66), (-0.52, 0.84, -0.15)),
+    (5, (-0.43, 0.99, -0.295), _n(-0.12, -0.55, -0.83), (0.68, 0.50, 0.54), (0.08, -0.84, 0.54), (0.57, -0.51, -0.64), (-0.82, -0.42, 0.4)),
+    (6, (-0.438, 0.975, -0.314), _n(-0.12, -0.57, -0.82), (0.72, 0.48, 0.51), (0.08, -0.82, 0.56), (0.6, -0.5, -0.62), (-0.82, -0.41, 0.41)),
+    (7, (-0.46, 1.20, -0.25), _n(-0.19, -0.37, -0.91), (0.21, 0.78, 0.59), (-0.42, -0.81, 0.42), (0.79, -0.6, 0.14), (-0.98, 0, 0.2)),
+    (8, (-0.40, 1.50, -0.17), _n(-0.25, -0.15, -0.96), (0.15, 0.94, 0.31), (-0.96, 0.17, 0.22), (0.65, -0.44, 0.62), (-0.86, 0.49, 0.15)),
+    (9, (-0.10, 1.86, -0.22), _n(-0.12, -0.25, -0.96), (0.12, -0.14, 0.98), (0.14, 0.95, -0.27), (0.56, -0.02, 0.83), (-0.29, 0.94, -0.21)),
     (11, (-0.03, 1.90, -0.30), _d(200), (0.22, -0.07, 0.97), (0.0, 0.94, -0.34), (0.38, -0.21, 0.9), (0, 0.94, -0.34)),
     (13, (-0.03, 1.86, -0.34), _d(205), (0.19, -0.10, 0.98), (0.0, 0.91, -0.42), (0.35, -0.28, 0.89), (0.26, 0.88, -0.41)),
     (14, (-0.02, 2.00, -0.03), _d(150), (0.83, -0.32, 0.46), (0.0, 0.87, 0.50), (-0.04, -0.5, 0.87), (-0.5, 0.75, 0.43)),
-    (15, (0.00, 1.58, 0.50), _d(60), (0.70, 0.17, -0.70), (0.87, -0.25, 0.43), (0.44, -0.72, 0.54), (-1, 0, 0)),
-    (16, (0.00, 1.06, 0.62), _d(-70), (0.42, 0.86, 0.30), (0.97, -0.14, -0.22), (0.30, -0.60, -0.74), (-0.97, 0.14, 0.22)),
-    (17, (0.00, 0.99, 0.64), _d(-73), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (-0.07, -0.63, -0.78), (-0.87, 0.2, 0.46)),
-    (18, (0.00, 0.93, 0.60), _d(-74), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (-0.21, -0.02, -0.98), (-0.5, 0.3, 0.81)),
+    (15, (0.00, 1.58, 0.50), _d(60), (0.70, 0.17, -0.70), (0.87, -0.25, 0.43), (0.21, -0.84, 0.50), (-0.71, -0.35, 0.61)),
+    (16, (0.00, 1.06, 0.62), _d(-70), (0.42, 0.86, 0.30), (0.97, -0.14, -0.22), (0.28, 0.96, -0.04), (-0.26, 0.33, 0.91)),
+    (17, (0.00, 0.99, 0.64), _d(-73), (0.02, 0.97, 0.23), (1.0, 0.0, 0.0), (0.42, 0.89, -0.16), (0.0, 0.29, 0.96)),
+    (18, (0.00, 0.93, 0.60), _d(-74), (-0.27, 0.96, 0.05), (1.0, 0.0, 0.0), (0.17, 0.81, -0.56), (-0.5, 0.24, 0.83)),
     (LAND, (0.00, 0.889, 0.551), _d(-74), (-0.72, 0.63, 0.31), (0.87, 0.14, 0.48), (0.19, 0.84, -0.51), (-0.5, 0.24, 0.83)),
     (24, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
     (57, (0.00, 0.884, 0.56), _d(-75), (-0.75, 0.56, 0.35), (0.87, 0.13, 0.48), (0.13, 0.93, -0.34), (-0.5, 0.22, 0.84)),
-    (62, (0.00, 1.13, 0.50), _d(-72), (-0.69, 0.64, 0.34), (0.87, 0.25, 0.43), (-0.26, 0.15, -0.96), (-0.5, 0.43, 0.75)),
-    (67, (-0.18, 1.18, 0.48), _n(-0.22, -0.58, 0.78), (0.87, 0.42, 0.25), (0.62, -0.70, -0.35), (-0.08, -0.24, -0.97), (-0.9, 0.4, 0.19)),
+    (62, (0.00, 1.13, 0.50), _d(-72), (-0.70, 0.67, -0.23), (0.98, 0.05, 0.17), (0.47, 0.40, -0.79), (-0.98, 0.05, 0.17)),
 ]
 CLEAVE = range(13, 18)   # keyed every frame: interpolated straight, not eased
 # How much of the right hand is the path's (the rest the idle's own arm).
-R_ON = [(0, 0.0), (3, 1.0), (66, 1.0), (72, 0.0)]
-# The left hand on the grip.
-L_ON = [(0, 0.0), (3, 1.0), (64, 1.0), (68, 0.0)]
+R_ON = [(0, 0.0), (3, 1.0), (62, 1.0), (72, 0.0)]
+# The left hand on the grip: it joins at the top of the rise (travelling f7-9, in front of her face).
+L_ON = [(0, 0.0), (7, 0.0), (9, 1.0), (62, 1.0), (66, 0.0)]
+# The coil is one-handed: the left arm reaches forward down the line, open-handed (a counterweight), from the idle's
+# hand by f4. REACH: (frame, the wrist from the left shoulder in her space, the elbow's way); the hand's fingers along
+# the reach, its palm down and in (the thumb side REACH_THUMB).
+L_REACH = [(0, 0.0), (4, 1.0), (9, 1.0), (10, 0.0)]
+REACH = [(4, (0.05, -0.16, 0.40), (0.55, -0.80, -0.20)),
+         (6, (0.06, -0.14, 0.42), (0.55, -0.80, -0.20)),
+         (7, (0.04, -0.02, 0.42), (0.55, -0.75, -0.30))]
+REACH_THUMB = (-0.75, 0.65, 0.0)
+OPEN_L = {"curl": 0.07, "thumb": 0.12, "cascade": 0.45, "spread": 3}
 
 
 def _blade_at(fr):
@@ -201,6 +209,22 @@ def _body_keys():
         k(75, "auto", hips=(0.0, -0.01, 0.0), spine=(0, 1, 0)),
         k(END, "ease"),
     ]
+
+
+def _reach_at(fr):
+    """The open left arm's reach at a frame: (the wrist from the left shoulder, the elbow's way), both in her space."""
+    if fr <= REACH[0][0]:
+        return np.array(REACH[0][1]), _n(*REACH[0][2])
+    for a, b in zip(REACH, REACH[1:]):
+        if a[0] <= fr <= b[0]:
+            u = _smooth((fr - a[0]) / (b[0] - a[0]))
+            return (np.array(a[1]) + (np.array(b[1]) - np.array(a[1])) * u,
+                    _slerp_dir(_n(*a[2]), _n(*b[2]), u))
+    return np.array(REACH[-1][1]), _n(*REACH[-1][2])
+
+
+def _qmat(q):
+    return np.stack([qrot(q, np.array(e)) for e in ([1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0])], axis=1)
 
 
 def _shifted_base(base):
@@ -359,9 +383,19 @@ class LongCut:
         out = []
         for fr in range(self.n):
             ws = _curve(L_ON, fr) if self.Gr is not None else 0.0
+            wr = _curve(L_REACH, fr)
             Wi = S_l[fr] + qrot(chest[fr], v_idle)
             spec = {"frame": "char", "twist": 0.4}
             pole_i = qrot(chest[fr], np.array(idle_l["pole"], float))
+            Rr_ = None
+            if wr > 0:
+                v, pole_r = _reach_at(fr)
+                Wi = Wi + (S_l[fr] + v - Wi) * wr
+                pole_i = pole_i + (pole_r - pole_i) * wr
+                y = v / np.linalg.norm(v)
+                z = np.array(REACH_THUMB) - y * float(np.array(REACH_THUMB) @ y)
+                z = z / np.linalg.norm(z)
+                Rr_ = np.stack([np.cross(y, z), y, z], axis=1)
             if ws > 0:
                 qr, pr = self.Gr[0][fr], self.Gr[1][fr]
                 d = qrot(qr, DIR)
@@ -380,15 +414,33 @@ class LongCut:
                 Ws = Q - Rw @ AT_L
                 bump = qrot(chest[fr], np.array((0.04, 0.03, 0.12))) * math.sin(math.pi * ws) if ws < 1 else 0.0
                 W = Wi + (Ws - Wi) * ws + bump
-                spec["blade"] = tuple(float(x) for x in Rw[:, 2])
-                spec["knuckles"] = tuple(float(x) for x in Rw[:, 1])
+                Rh = Rw
+                if Rr_ is not None and ws < 1.0:
+                    # From the open reach to the grip, turned the short way.
+                    qa, qb = qfrom_basis(*Rr_.T), qfrom_basis(*Rw.T)
+                    Rh = _qmat(qslerp(qa, -qb if float(np.dot(qa, qb)) < 0 else qb, _smooth(ws)))
+                spec["blade"] = tuple(float(x) for x in Rh[:, 2])
+                spec["knuckles"] = tuple(float(x) for x in Rh[:, 1])
                 pole_g = qrot(chest[fr], _n(*pole_l))
                 if ws < 1.0:
-                    spec["aim"] = ws
+                    if Rr_ is None:
+                        spec["aim"] = ws
                     spec["pole"] = tuple(float(x) for x in pole_i + (pole_g - pole_i) * ws)
                 else:
                     spec["pole"] = tuple(float(x) for x in pole_g)
                     spec["pole_at"] = "shoulder"
+            elif Rr_ is not None and wr >= 1.0:
+                W = Wi
+                spec["blade"] = tuple(float(x) for x in Rr_[:, 2])
+                spec["knuckles"] = tuple(float(x) for x in Rr_[:, 1])
+                spec["pole"] = tuple(float(x) for x in pole_i)
+            elif Rr_ is not None:
+                # Out of the idle into the reach: the hand aimed by how far it has gone.
+                W = Wi
+                spec["blade"] = tuple(float(x) for x in Rr_[:, 2])
+                spec["knuckles"] = tuple(float(x) for x in Rr_[:, 1])
+                spec["aim"] = wr
+                spec["pole"] = tuple(float(x) for x in pole_i)
             else:
                 W = Wi
                 spec["thumb"] = tuple(float(x) for x in qrot(chest[fr], np.array(idle_l["thumb"], float)))
@@ -403,11 +455,21 @@ class LongCut:
         if w >= 1.0:
             return b
         a = self.idle["fingers_l"]
-        ca, cb = finger_curl(a), finger_curl(b)
+        if fr < 40:
+            # The coil's open hand (fingers relaxed-extended, a little spread) from the idle's, then onto the grip.
+            o = _curve(L_REACH, fr)
+            ci, co = finger_curl(a), finger_curl(OPEN_L)
+            ca = {k: [x + (y - x) * o for x, y in zip(ci[k], co[k])] for k in co}
+            sp = OPEN_L["spread"] * o
+            oa, ta = a.get("oppose", 0.0) * (1 - o), a.get("thumb_roll", 0.0) * (1 - o)
+        else:
+            ca, sp = finger_curl(a), 0.0
+            oa, ta = a.get("oppose", 0.0), a.get("thumb_roll", 0.0)
+        cb = finger_curl(b)
         out = {"bends": {k: [x + (y - x) * w for x, y in zip(ca[k], cb[k])] for k in cb},
-               "spreads": {k: v * w for k, v in b.get("spreads", {}).items()},
-               "oppose": a.get("oppose", 0.0) + (b.get("oppose", 0.0) - a.get("oppose", 0.0)) * w,
-               "thumb_roll": a.get("thumb_roll", 0.0) + (b.get("thumb_roll", 0.0) - a.get("thumb_roll", 0.0)) * w}
+               "spreads": {k: v * w for k, v in b.get("spreads", {}).items()}, "spread": sp * (1 - w),
+               "oppose": oa + (b.get("oppose", 0.0) - oa) * w,
+               "thumb_roll": ta + (b.get("thumb_roll", 0.0) - ta) * w}
         return out
 
     def solve(self, HR, HL):
