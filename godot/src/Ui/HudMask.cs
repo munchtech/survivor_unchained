@@ -3,14 +3,14 @@ using Godot;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>UI 24: a HUD figure's silhouette for the fade test. From the art's alpha (above 0.3, grown by 12 px) a
-/// grid of 4 px cells, built once. Hit takes a point on the 1080 screen, inside the figure's rect and on a set cell:
+/// <summary>UI 24: a HUD figure's silhouette for the fade test. From the art's alpha (above 0.5, eroded by 20 px: a
+/// real overlap, not a graze at the edge) a grid of 4 px cells, built once. Hit takes a point on the 1080 screen, inside the figure's rect and on a set cell:
 /// her figure, the keeper and the panel fade for what is behind their art, not behind their empty corners. The grid
 /// lies over the art's own space (Size, 1080 px); Hit maps the screen point in with the art's origin and scale.
 /// If the art does not load the test is the rect's alone.</summary>
 public sealed class HudMask
 {
-    const float Cell = 4, Grow = 12, Cut = 0.3f;
+    const float Cell = 4, Shrink = 20, Cut = 0.5f;
     readonly bool[]? grid;
     readonly int w, h;
 
@@ -37,26 +37,30 @@ public sealed class HudMask
         for (int cy = 0; cy < h; cy++)
             for (int cx = 0; cx < w; cx++)
             {
-                // (the cell's pixels in the image: any above the cut sets it)
+                // (the cell's pixels in the image: all above the cut set it, so the erosion is true to the art)
                 int x0 = (int)(cx * Cell / size.X * iw), x1 = Math.Min(iw, Math.Max(x0 + 1, (int)((cx + 1) * Cell / size.X * iw)));
                 int y0 = (int)(cy * Cell / size.Y * ih), y1 = Math.Min(ih, Math.Max(y0 + 1, (int)((cy + 1) * Cell / size.Y * ih)));
-                for (int y = y0; y < y1 && !solid[cy * w + cx]; y++)
+                bool all = true;
+                for (int y = y0; y < y1 && all; y++)
                     for (int x = x0; x < x1; x++)
-                        if (img.GetPixel(Math.Min(x, iw - 1), Math.Min(y, ih - 1)).A > Cut) { solid[cy * w + cx] = true; break; }
+                        if (img.GetPixel(Math.Min(x, iw - 1), Math.Min(y, ih - 1)).A <= Cut) { all = false; break; }
+                solid[cy * w + cx] = all;
             }
-        // (grown by 12 px: a disc of cells round each set one)
-        int r = (int)Math.Ceiling(Grow / Cell);
+        // (eroded by 20 px: a cell stays set only if every cell in a disc round it is set; off the grid is empty)
+        int r = (int)Math.Ceiling(Shrink / Cell);
         grid = new bool[w * h];
         for (int cy = 0; cy < h; cy++)
             for (int cx = 0; cx < w; cx++)
             {
-                if (!solid[cy * w + cx]) continue;
-                for (int dy = -r; dy <= r; dy++)
+                bool keep = solid[cy * w + cx];
+                for (int dy = -r; dy <= r && keep; dy++)
                     for (int dx = -r; dx <= r; dx++)
                     {
+                        if (dx * dx + dy * dy > r * r) continue;
                         int x = cx + dx, y = cy + dy;
-                        if (x >= 0 && y >= 0 && x < w && y < h && dx * dx + dy * dy <= r * r) grid[y * w + x] = true;
+                        if (x < 0 || y < 0 || x >= w || y >= h || !solid[y * w + x]) { keep = false; break; }
                     }
+                grid[cy * w + cx] = keep;
             }
     }
 

@@ -145,7 +145,7 @@ public partial class DgPanel : Control
         float dt = (float)delta;
         clearFor = Behind ? 0 : clearFor + dt;
         bool dim = clearFor < LifeLamp.FadeHold;
-        float a = Mathf.MoveToward(alpha, dim ? LifeLamp.FadeTo : 1, dt * (1 - LifeLamp.FadeTo) / (dim ? LifeLamp.FadeTime : LifeLamp.FadeBack));
+        float a = Mathf.MoveToward(alpha, dim ? LifeLamp.PanelFadeTo : 1, dt * (1 - LifeLamp.PanelFadeTo) / (dim ? LifeLamp.FadeTime : LifeLamp.FadeBack));
         if (a != alpha) { alpha = a; SelfModulate = Colors.White with { A = alpha }; }
     }
 

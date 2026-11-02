@@ -40,6 +40,10 @@ uniform float orb_r = 60.0;
 uniform float orb_vis = 59.4;
 uniform float level_foot = -1.0;
 uniform float fig_a = 1.0;
+// hud24 r1: as she fades to fade_to a 1 screen px gold rim stays along her outer silhouette (0.85, #CDAE72), crossfaded in
+// with the fade: a glass statue with the threat inside it. Taken from cold's alpha, 1 screen px (1 / grp_scale canvas px) out.
+uniform float fade_to = 0.30;
+const vec3 RIM_GOLD = vec3(0.8039, 0.6824, 0.4471);
 uniform vec2 scr_at = vec2(295.33, 822.0);   // the quad's top left on the 1080 screen (the sheen's sweep is in screen px)
 
 // Vessel.Flow
@@ -129,6 +133,21 @@ void fragment()
 	// her figure in two layers: under the glass (all but her fingers over it) and over it
 	vec4 back = vec4(fc * a * (1.0 - M.r), a * (1.0 - M.r));
 	vec4 front = vec4(fc * a * M.r, a * M.r);
+	// (the rim: her alpha less the least of eight neighbours a screen px away, only inside her; none at fig_a = 1)
+	float rim_k = clamp((1.0 - fig_a) / (1.0 - fade_to), 0.0, 1.0);
+	if (rim_k > 0.0)
+	{
+		vec2 st = (1.0 / grp_scale) / canvas;
+		float mn = C.a;
+		for (int i = 0; i < 8; i++)
+		{
+			float ang = float(i) * 0.785398;
+			mn = min(mn, textureLod(cold, UV + vec2(cos(ang), sin(ang)) * st, 0.0).a);
+		}
+		float rw = clamp(C.a - mn, 0.0, 1.0) * step(0.5, C.a) * 0.85 * rim_k;
+		back = back * (1.0 - rw * (1.0 - M.r)) + vec4(RIM_GOLD * rw * (1.0 - M.r), rw * (1.0 - M.r));
+		front = front * (1.0 - rw * M.r) + vec4(RIM_GOLD * rw * M.r, rw * M.r);
+	}
 	vec4 outc = back;
 
 	vec2 q = (px - orb_c) / orb_r;
