@@ -70,6 +70,7 @@
   "skills": {
     "oathblade":      { "strands": ["wide", "linger", "holy"], "suggested": "wide" },
     "judgement_disc": { "strands": ["chain", "split", "fire"], "suggested": "chain" },
+    "dawnpulse":      { "strands": ["pulse", "linger", "fire"], "suggested": "pulse" },
     // The warden's calling skills: one bespoke strand ("calling") and two of the library's each (3.3).
     "sunder": { "strands": ["wide", "holy", "sunder.stroke"], "suggested": "sunder.stroke", "own": {
       "sunder.stroke": { "kind": "calling", "turn": "sunder.stroke", "lamps": [
