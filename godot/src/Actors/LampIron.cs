@@ -220,6 +220,31 @@ public static class LampIron
         return model;
     }
 
+    static ShaderMaterial? sunder;
+
+    /// <summary>Her Sunderer greatsword (tools/assets/sunder_blade.py; The Long Cut forms it), for Arms, in its own shader
+    /// (sunder_steel.gdshader: brushed steel, a dark fuller, a gilt etched panel, oathbrand's gilt, dark leather). Its look is
+    /// the shader's defaults; a look test's overrides: SUNDER_BLADE="steel_k=0.45;steel_rough=0.3" (steel_k scales the steel's
+    /// grey, any other key is a shader float).</summary>
+    public static Node3D SunderBlade()
+    {
+        var model = GD.Load<PackedScene>("res://art/weapons/sunder_blade.glb").Instantiate<Node3D>();
+        if (sunder == null)
+        {
+            var m = sunder = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/sunder_steel.gdshader") };
+            m.SetShaderParameter("masks", GD.Load<Texture2D>(Masks));
+            if (System.Environment.GetEnvironmentVariable("SUNDER_BLADE") is { Length: > 0 } ov)
+                foreach (var kv in ov.Split(';', System.StringSplitOptions.RemoveEmptyEntries))
+                    if (kv.Split('=') is [var k, var v] && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f))
+                    {
+                        if (k.Trim() == "steel_k") m.SetShaderParameter("steel", new Vector3(1, 1, 0.98f) * f);
+                        else m.SetShaderParameter(k.Trim(), f);
+                    }
+        }
+        foreach (var n in model.FindChildren("*", "MeshInstance3D", true, false)) ((MeshInstance3D)n).MaterialOverride = sunder;
+        return model;
+    }
+
     /// <summary>The old lamp of code primitives, if the model is missing.</summary>
     static Node3D Primitive(float bail)
     {

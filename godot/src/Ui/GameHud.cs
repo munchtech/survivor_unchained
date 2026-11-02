@@ -26,6 +26,8 @@ public sealed record PromptView(string Key, string Verb, string Target, string? 
 /// </summary>
 public partial class GameHud : CanvasLayer
 {
+    /// <summary>Dev only (--reflex-note): the reflexes' cooldowns as a line of text over the Flare.</summary>
+    static readonly bool ReflexNote = Args.Has("reflex-note");
     Control root = null!, play = null!, combat = null!;
     ColorRect bruise = null!;
     Label tallyTime = null!, tallyKills = null!, tallyGold = null!;
@@ -668,9 +670,11 @@ public partial class GameHud : CanvasLayer
             // (the Drowned Girl: the coal's heat is the reading; no glyph, no percent)
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
             var line = new System.Text.StringBuilder();
+            if (ReflexNote)
             foreach (var r in b.Reflexes)
                 line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
-            irons.ArtNote.Text = line.ToString();
+            // (a debug readout of the reflexes' cooldowns: dev only, --reflex-note; it showed "shield_bash N" in normal play)
+            irons.ArtNote.Text = ReflexNote ? line.ToString() : "";
         }
         else { art.Level = 0; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 

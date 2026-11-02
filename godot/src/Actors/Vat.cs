@@ -1170,7 +1170,7 @@ public partial class VatCrowd : MultiMeshInstance3D
     }
 
     /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
-    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false)
+    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false, float rim = 0, float rimFlash = -1)
     {
         if (!slotOf.TryGetValue(key, out int s))
         {
@@ -1193,8 +1193,10 @@ public partial class VatCrowd : MultiMeshInstance3D
         if (s >= top) top = s + 1;
         var (f0, f1, blend) = Asset.Frame(role, t);
         static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
-        // (the flash in 7 bits and its top bit a critical's: a word past 24 bits is no longer a whole float)
-        int word = (Q(flash, 127) | (crit && flash > 0 ? 128 : 0)) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
+        // (the flash in 6 bits, then the struck rim's bit (BattleFx's hit kit) and a critical's: a word past 24 bits is no longer a whole float)
+        // (a hit-kit struck body (rim > 0): the flash slot is its flash blend, the rim's strength rides in the second frame's fraction)
+        if (rim > 0 && rimFlash >= 0) flash = rimFlash;
+        int word = (Q(flash, 63) | (rim > 0 ? 64 : 0) | (crit && flash > 0 ? 128 : 0)) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
         var b = at.Basis;
         var buf = buffer;
         buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = at.Origin.X;
@@ -1202,7 +1204,7 @@ public partial class VatCrowd : MultiMeshInstance3D
         buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = at.Origin.Z;
         buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; buf[o + 15] = glow;
         // The pace rides in the first frame's fraction (the shader rounds the frame).
-        buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1; buf[o + 18] = blend; buf[o + 19] = word;
+        buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1 + 0.45f * Math.Clamp(rim, 0, 1); buf[o + 18] = blend; buf[o + 19] = word;
         // The dark under it: flat on the ground at its feet, as wide as it is tall by its scale, a hand over the
         // ground so a gentle slope does not cut it.
         int q = s * BlobStride;

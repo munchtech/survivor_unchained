@@ -148,6 +148,7 @@ public partial class BattleFx : Node3D
         AddChild(Gore);
         AddChild(Ribbons);
         AddChild(Blades);
+        AddChild(OathBlades);
         Flare.HeightAt = heightAt;
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
@@ -194,6 +195,8 @@ public partial class BattleFx : Node3D
         shards = Add(new Batch(IceLance(), 600, Crystal(0.5f, 1.8f, 0.05f, 1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
         chakrams = Add(new Batch(ChakramMesh(), 200, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/chakram.gdshader") }));
+        DiscReady();
+        CrowdView.StruckRim = StruckRimOn;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1071,12 +1074,35 @@ public partial class BattleFx : Node3D
         }
     }
 
+    static readonly bool FxLog = Args.Has("fx-log"); // dev only: one line per combat event
+    double fxLogNext;
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
         hitBudget = 28;
         killBudget = 6;
         rose = false;
+        if (FxLog)
+        {
+            if (b.Time >= fxLogNext)
+            {
+                fxLogNext = Math.Floor(b.Time) + 1;
+                double best = double.MaxValue; int n = 0;
+                foreach (var le in b.Enemies.Living())
+                {
+                    n++;
+                    best = Math.Min(best, Math.Sqrt((le.X - b.Player.X) * (le.X - b.Player.X) + (le.Z - b.Player.Z) * (le.Z - b.Player.Z)));
+                }
+                GD.Print($"[fx-log] t={b.Time:F2} NEAREST living={n} dist={(n > 0 ? best : -1):F2}");
+            }
+            foreach (var ev in events)
+            {
+                var t = ev.GetType();
+                string art = t.GetField("Art")?.GetValue(ev) as string ?? t.GetField("Id")?.GetValue(ev) as string ?? t.GetField("Source")?.GetValue(ev) as string ?? "-";
+                GD.Print($"[fx-log] t={b.Time:F2} {t.Name} art={art}");
+            }
+        }
         foreach (var ev in events)
         {
             switch (ev)
@@ -1119,15 +1145,18 @@ public partial class BattleFx : Node3D
                             var bat = at;
                             if (Lines?.ClearOfLines(ref bat, 1.7f, 0.3f, 0.53f, 0.75) != false) Hits.Text(bat, "blocked", new Color(0.7f, 0.75f, 0.8f), 44);
                         }
-                        Burst(at, School.Physical, 5, 3, 2, 0.06f);
+                        if (!Flare.HushesHitSparks) Burst(at, School.Physical, 5, 3, 2, 0.06f);
                         break;
                     }
                     // (While a Flare holds the frame only champions' and bosses' numbers show: FLARE_LOOK §1.5.)
                     if (!Flare.Quiet || b.Enemies.Items[Math.Clamp(e.Target, 0, b.Enemies.Capacity - 1)] is { Elite: true } or { Boss: true })
                         Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
-                    if (e.Art != null) Impact(e, at);
+                    if (Flare.HushesHitSparks) { }
+                    else if (e.Art != null) Impact(e, at);
+                    else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
-                    if (e.Family != null)
+                    // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
+                    if (e.Family != null && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1164,11 +1193,13 @@ public partial class BattleFx : Node3D
                     bool told = e.Elite || e.Boss || killBudget-- > 0;
                     if (told)
                     {
-                        if (e.School == School.Physical)
+                        // (not on her auto-attacks' kills: pale grit unshaded by night was a snow of white specks; VFX 10 r3)
+                        bool aaKill = AaStruck(e.Enemy);
+                        if (e.School == School.Physical && !aaKill)
                             for (int i = 0; i < (e.Elite ? 18 : 6); i++)
                                 Smoke.Spawn(at, new Vector3((R() - 0.5f) * 5, 2 + R() * 3, (R() - 0.5f) * 5), 0.6f + R() * 0.3f, 0.06f + R() * 0.05f,
                                     new Color("#bfb6a2"), gravity: 12, sprite: Sprites.Of("dirt"), spinV: 6);
-                        else Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
+                        else if (!aaKill) Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
                         for (int i = 0; i < (e.Elite ? 12 : 3); i++)
                             Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
                                 new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);
@@ -1556,14 +1587,7 @@ public partial class BattleFx : Node3D
         switch (e.Id)
         {
             case "shield_bash":
-                Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle), (float)e.Radius, 0.25f, false, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
-                if (e.Wide)
-                {
-                    Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle + Math.PI), (float)e.Radius, 0.25f, true, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
-                    Nova(e.X, e.Z, (float)e.Radius, Palette.Of(School.Holy).Glow, 0.35f);
-                }
-                Burst(at + new Vector3((float)Math.Cos(e.Angle) * 1.5f, 1, (float)Math.Sin(e.Angle) * 1.5f), School.Physical, 20, 6);
-                Flash(at + Vector3.Up * 1.2f, new Color("#fff0d0"), 10, 0.3f);
+                ShieldBash(e);
                 break;
             case "leap":
                 Ring(e.X, e.Z, (float)e.Radius, Palette.HostileRim * 0.3f + Palette.Of(School.Physical).Glow, 0.42f, true);
@@ -1714,10 +1738,16 @@ public partial class BattleFx : Node3D
 
     /* -------------------------------------------------------------- frame -- */
 
-    public void Update(Battle b, double dt, double now)
+    public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
         float fdt = (float)dt;
+        // The hit FX's clock (VFX 10 r3): through a hitstop (the fight held at 8%, not a Flare's freeze) the sweep, the
+        // sparks, the puffs and the pool run on at 60% of real time, so the held frame keeps moving (r2: f6 looked
+        // like the hit frame; the sparks froze as static scratches).
+        // (the sweep and its pool on real frames: its timeline is counted in frames, hitstop or not)
+        bool stopped = !Flare.Active && realDt > 0 && fdt < realDt * 0.09;
+        float hfx = stopped ? (float)realDt * 0.6f : fdt, hsw = stopped ? (float)realDt : fdt;
         frameDt = fdt;
         for (int i = pending.Count - 1; i >= 0; i--)
             if (pending[i].At <= now) { var fn = pending[i].Fn; pending.RemoveAt(i); fn(); }
@@ -1799,15 +1829,19 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
+        if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }
         Blades.Step(fdt);
+        OathBlades.Step(hsw);
+        LogSweep(hsw, stopped);
+        StepOathPools(hsw);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
-        Sparks.Step(fdt);
+        Sparks.Step(hfx);
         Books.Step(fdt);
         Scars.Step(fdt);
         Waves.Step(fdt);
-        Smoke.Step(fdt);
+        Smoke.Step(hfx);
         Gore.Step(fdt);
     }
 
@@ -1969,6 +2003,8 @@ public partial class BattleFx : Node3D
     void Projectiles(Battle b, float dt, double now)
     {
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
+        DiscsBegin();
+        StunGlints(b);
         Buffs(b);
         foreach (var p in b.Projectiles.Living())
         {
@@ -2045,6 +2081,7 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
+        DiscsEnd();
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); chakrams.End(); kegs.End(); herdCrowd?.End();
     }
 
@@ -2081,7 +2118,7 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 4);
-                    float s = EmberSizes[tier];
+                    float s = EmberSizes[tier] * Flare.DropScale;
                     if (tier == 4)
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
@@ -2094,13 +2131,15 @@ public partial class BattleFx : Node3D
                         // (about three times the stone across, breathing slowly, each to its own beat)
                         float beat = Mathf.Sin((float)(now * 2.2 + p.Id * 1.7));
                         float hs = 0.62f + 0.75f * s;
+                        var (lcAcross, lcLight) = Flare.DropHalo(p.Age);
+                        if (lcAcross > 0) hs = lcAcross;
                         emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
-                            EmberTiers[tier] with { A = 0.32f + 0.09f * beat });
+                            EmberTiers[tier] with { A = (0.32f + 0.09f * beat) * lcLight });
                     }
                     break;
                 }
                 case PickupKind.Gold:
-                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
+                    coins.Add(new Transform3D((spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2)).Scaled(Vector3.One * Flare.DropScale), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
                     break;
                 case PickupKind.Heal:
                     flasks.Add(new Transform3D(spin, V(kx, gy + 0.35 + bob, kz)), Colors.White);

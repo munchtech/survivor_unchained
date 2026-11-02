@@ -28,6 +28,9 @@ const float OUTER_R = 1.06;
 // The cutting edge's radius (soft glow outside it).
 const float EDGE_R = 0.96;
 
+// Light only (her Oathblade's gold crescent): no dark bed, the smear in the hue itself.
+uniform bool lit = false;
+
 varying flat vec4 v_custom;
 varying flat vec4 v_hue;
 
@@ -105,6 +108,22 @@ void fragment() {
 	float bed = smoothstep(inner - 0.07, inner + depth * 0.5, y) * (1.0 - smoothstep(EDGE_R, EDGE_R + 0.07, y)) * step(0.001, depth);
 	float dark = bed * 0.5 * mix(1.0, 0.2, tc) * smoothstep(0.1, 0.7, keep) * left * left * smoothstep(-0.05, 0.05, t);
 	float clear = hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
-	ALBEDO = light * left * clear;
-	ALPHA = clamp(dark * clear, 0.0, 1.0);
+	if (lit) {
+		// Her Oathblade (Blades(lit)): one gold crescent that only adds light. The smear is the hue itself,
+		// never its darker self (that read as a brown arc), solid enough to read as one shape, streaked
+		// along the swing; the leading edge white-hot and thick enough to read from the play camera.
+		float solid = 0.45 + 0.9 * pow(lines, 2.0) + 0.2 * fine;
+		float glow = pow(across, 1.3) * solid * inBand * mix(1.0, 0.4, tc);
+		float lead = 1.0 - smoothstep(0.0, 0.35, t);
+		float ew = (y - EDGE_R) / 0.02;
+		float edgeL = exp(-ew * ew) * mix(1.0, 0.45, tc) * tipOff;
+		float haloL = exp(-pow((y - EDGE_R) / 0.06, 2.0)) * (1.0 - tc) * tipOff;
+		vec3 white = mix(hue, vec3(1.0), 0.8) * (2.2 + 1.6 * lead);
+		vec3 lightL = hue * glow * 0.75 + white * edgeL + hue * haloL * 0.45;
+		ALBEDO = lightL * keep * left * clear;
+		ALPHA = 0.0;
+	} else {
+		ALBEDO = light * left * clear;
+		ALPHA = clamp(dark * clear, 0.0, 1.0);
+	}
 }

@@ -1,0 +1,34 @@
+using System.Linq;
+using SurvivorUnchained.Content;
+using Xunit;
+
+namespace SurvivorUnchained.Tests;
+
+/// <summary>A Flare's own clip, grip and free time are data (FlareDef.Clip / Grip / ClipFree); no keys means today's behaviour.</summary>
+public class FlareClipDataTests
+{
+    [Fact]
+    public void TheLongCutCarriesItsGripAndFreeTime()
+    {
+        // (Animation 60, 2 Nov: the clip is SWITCHED OFF, closed as known after its max judge (FAIL close: the kneel reads
+        // as a huddle). Turning it on is one data line, "clip": "flare_long_cut"; until then the press plays nothing new.)
+        var f = Lamps.Flare("the_long_cut")!;
+        Assert.Null(f.Clip);
+        Assert.Equal("sunder_blade", f.Grip);
+        Assert.Equal(0.9, f.ClipFree, 3);
+    }
+
+    [Fact]
+    public void BurnsTwiceAndBulwarkCarryNone()
+    {
+        foreach (var id in new[] { "burns_twice", "bell_of_the_morning" })
+        {
+            var f = Lamps.Flare(id)!;
+            Assert.Null(f.Clip); Assert.Null(f.Grip); Assert.Equal(0, f.ClipFree);
+        }
+    }
+
+    [Fact]
+    public void OnlyTheLongCutCarriesClipDataToday() =>
+        Assert.Equal(["the_long_cut"], Lamps.Flares.Values.Where(f => f.Clip != null || f.Grip != null).Select(f => f.Id).ToArray());
+}

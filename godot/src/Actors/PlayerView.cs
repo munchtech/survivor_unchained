@@ -126,7 +126,11 @@ public partial class PlayerView : Node3D
         loadout = lo;
         Name = "Survivor";
         AddToGroup(Brush.HerGroup);
-        var v = new PersonView(lo.Person, new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
+        // --held-right ID (pictures only): that Arms piece in her right hand and nothing else held (a clip with its own
+        // piece, e.g. The Long Cut's sunder_blade; animation 59).
+        var heldRight = SurvivorUnchained.Args.Get("held-right");
+        var v = new PersonView(lo.Person, heldRight != null ? new World.Held { Right = heldRight }
+            : new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         person = v.Person;
         view = v;
         AddChild(v);
@@ -414,6 +418,44 @@ public partial class PlayerView : Node3D
 
     double artTail = -1;
 
+    // A Flare's own clip (FlareDef.Clip): the facing it holds, and the grip that lasts exactly as long as the clip plays.
+    double flareFaceUntil = -1; float flareFaceY;
+    string? flareClipName; double flareClipStart; bool flareClipSeen;
+
+    /// <summary>The Flare's press (Ev.Flare, Press): her own full-body clip if its data names one, facing the aim, with
+    /// its grip formed in her hands for the clip's length. Without a Clip (or without that clip) nothing happens.</summary>
+    public void OnFlarePress(Ev.Flare e, Battle b)
+    {
+        if (!mine || dead || Content.Lamps.Flare(e.Id) is not { Clip: { } clip } def || !own.Has(clip)) return;
+        // (the sim's line runs TX = X + cos, TZ = Z + sin; her facing for (dx, dz) is atan2(dx, dz))
+        float face = Mathf.Atan2((float)System.Math.Cos(e.Angle), (float)System.Math.Sin(e.Angle));
+        Rotation = new Vector3(0, face, 0);
+        aim = 0;
+        flareFaceY = face;
+        flareFaceUntil = time + def.ClipFree;
+        FlareClipEnd();
+        if (def.Grip != null) view?.FlareGrip(def.Grip);
+        if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;
+        if (!FullHer(clip, 1, false)) { view?.FlareGripEnd(); return; }
+        flareClipName = clip; flareClipStart = time; flareClipSeen = false;
+        artTail = time + def.ClipFree;
+    }
+
+    void FlareClipEnd()
+    {
+        flareClipName = null;
+        if (view?.FlareGripOn == true) { view.FlareGripEnd(); if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero; }
+    }
+
+    // The grip ends the moment the full shot no longer plays the Flare's clip (finished, faded, or replaced by a dodge).
+    void FlareClipWatch()
+    {
+        if (flareClipName == null) return;
+        bool on = (bool)tree.Get("parameters/fullShot/active") && fullClip == flareClipName;
+        if (on) { flareClipSeen = true; return; }
+        if (flareClipSeen || time - flareClipStart > 0.5) FlareClipEnd();
+    }
+
     bool Busy => (bool)tree.Get("parameters/upperShot/active") || (bool)tree.Get("parameters/fullShot/active");
 
     public void LevelFlare() => flare = 1;
@@ -646,11 +688,12 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
-        if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
+        if (time < flareFaceUntil) Rotation = new Vector3(0, flareFaceY, 0);   // (a Flare's clip holds her on its line until ClipFree)
+        else if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
         else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
-        if (Turned is float tw && sp < 0.4f && p.AttackAnim == null)
+        if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
         Watching(sp < 0.4f && p.AttackAnim == null);
         // Dash: a roll (hers: a low lunge).
@@ -683,6 +726,7 @@ public partial class PlayerView : Node3D
             artTail = time + l2.Dur + 0.1;
         }
         ArtTail(sp);
+        FlareClipWatch();
         // A charge behind the shield; a haul on the chain, blade first.
         if (b.Art.Rush != rushSeen)
         {

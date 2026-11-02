@@ -52,6 +52,7 @@ public partial class BattleFx
         var school = e.School;
         var pal = Palette.Of(school);
         string art = e.Art ?? "";
+        if (IsOath(art)) BeatHit(e);
         float share = e.MaxHp > 0 ? Mathf.Clamp((float)(e.Amount / e.MaxHp), 0, 1) : 0.2f;
         float g = Grow(e.Rank);
         bool rich = hitBudget > 0;
@@ -59,6 +60,9 @@ public partial class BattleFx
         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
         away = away.Normalized();
+        // Her Oathblade's struck: the shared hit kit (HitKit.cs), not the school's throw.
+        if (IsOath(art)) { HitKit(at, away, OathSpark(art), g, e.Crit, rich, null, e.Target); return; }
+        if (IsDisc(art)) { DiscStruck(e, at, away, g, rich); return; }
         // The instant: a flare at the point of contact.
         // Capped and kept in the school's colour: a big blow on a champion threw a white flare
         // two metres across that swallowed the bodies round it.
@@ -79,10 +83,6 @@ public partial class BattleFx
                 // A cut across the body in the wind's colour (its blood for Razorgale). Held low: a
                 // ring of bodies cut at once at her feet summed to a pale glow at her hips.
                 Sparks.Spawn(at, Vector3.Zero, 0.13f, 0.6f * g, art == "chakram_razor" ? Blood * 0.7f : art == "chakram_hail" ? Hdr("#9fd8ff", 1.15f) : Hdr("#a8f0d0", 1.1f), null, 0.75f * g, sprite: Sprites.Of("scratch"), spinV: 0);
-                break;
-            case "disc" or "disc_aegis" or "disc_reckon":
-                if (e.Crit) Books.Spawn("gold_flare", at + Vector3.Up * 0.3f, 0.6f * g, 0.3f, new Color(1f, 0.85f, 0.55f, 0.85f), sizeEnd: 1.4f * g);
-                Sparks.Spawn(at, Vector3.Zero, 0.18f, 1.1f * g, OathGold, OathGold * 0.2f, 0.3f, sprite: Sprites.Range("star").First + 3 + 1, spinV: 2);
                 break;
             case "mote" or "mote_cascade" or "mote_star":
                 Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.8f * g, art == "mote_cascade" ? FenLight : Hdr("#e070ff", 2.6f), null, 0.2f, sprite: Sprites.Range("star").First + 2 + 1, spinV: 3);
@@ -227,6 +227,7 @@ public partial class BattleFx
                 for (int i = 0; i < 5; i++) Sparks.Spawn(hand, dir * R() + Vector3.Up * (0.5f + R()), 0.5f, 0.14f, pal.Core * 0.6f, pal.Dim, 0.02f, -0.5f, 2);
                 break;
             case "dagger" or "dagger_blood" or "dagger_flurry" or "disc" or "disc_aegis" or "disc_reckon" or "chakram" or "chakram_razor" or "chakram_hail":
+                if (IsDisc(art)) BeatDiscThrow();
                 Sparks.Spawn(hand, dir * 3, 0.06f, 0.25f * g, SteelWhite * 0.4f, null, 0.05f, sprite: Sprites.Of("light"));
                 break;
         }
@@ -242,6 +243,8 @@ public partial class BattleFx
     {
         string art = e.Art ?? "";
         if (art is "palm" or "palm_temple" or "palm_storm") { Palm(e); return; }
+        if (Flare.HushesSwings) return;
+        if (IsOath(art)) BeatSwing(e);
         float g = Grow(e.Rank);
         float gy = Y(e.X, e.Z);
         var at = V(e.X, gy + 1.0, e.Z);
@@ -268,6 +271,7 @@ public partial class BattleFx
             case "palm_storm": core = Palette.Of(School.Storm).Core; glow = Palette.Of(School.Storm).Glow; hue = Hdr("#5a96ff", 1.2f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
         }
         mirror = !mirror;
+        if (IsOath(art)) { OathSweep(e, at, facing, reach, g); return; }
         // The blade's path, cut fast: a hot edge at the reach and the smear of
         // its colour behind it (a painted fan read as a flat disc of beige, and
         // ribbons laid round it showed their joins), with a fainter echo inside
@@ -363,6 +367,8 @@ public partial class BattleFx
 
     /// <summary>Blades' swings in progress (shaders/blade.gdshader).</summary>
     public readonly Blades Blades = new();
+    /// <summary>Her Oathblade's gold crescents: light only (Blades(lit)).</summary>
+    public readonly Blades OathBlades = new(oath: true);
 
     /* -------------------------------------------------------- in the air -- */
 
@@ -420,36 +426,7 @@ public partial class BattleFx
                 return true;
             }
             case "disc" or "disc_aegis" or "disc_reckon":
-            {
-                float s = 1.1f * Mathf.Sqrt(g) * (art == "disc_reckon" ? 1.15f : 1);
-                bool aegis = art == "disc_aegis";
-                // The ring itself held below white, so it stays gold and its turning arcs show over it.
-                var gold = aegis ? Hdr("#c8dcff", 0.8f) : Hdr("#ffa62e", 0.75f);
-                var edge = aegis ? Hdr("#cfe0ff", 1f) : Hdr("#ffc04a", 1f);
-                float spin = (float)(now * 16 + p.Id);
-                // Its face: a sawblade of sunlight (painted, tools/comfy/fx_sprites.py), turning.
-                // Held dim, so its grooves and teeth show rather than a filled sun.
-                // Leaving her hand it is held down, so it never blooms over her.
-                float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length()));
-                Body(at, 1.05f * s, aegis ? "ward_disc" : "sun_disc", gold * (0.6f * off), spin * 1.3f);
-                // The sun it carries: a hot gold heart, kept small and coloured (a wide
-                // white halo read as a cream doughnut), on a dark bed.
-                Shade(at, 1.7f * s, 0.6f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.3f * s), at), (aegis ? Hdr("#f0f6ff", 1.8f) : Hdr("#fff0c0", 1.8f)) * off);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.95f * s), at), (aegis ? Hdr("#9ab8ff", 1.6f) : Hdr("#ffb030", 1.6f)) * (0.1f * off));
-                // A blade spinning: arcs of light whipping round its rim, as the eye
-                // sees a sawblade turn, and the sun's rays flung off its edge.
-                SpinArcs(at, 0.6f * s, spin * 1.6f, 0.1f * s, aegis ? Hdr("#e8f2ff", 1f) : Hdr("#fff0c0", 1f), 3f * off);
-                // Its wake: short, so a thrown disc never reads as a beam.
-                Ribbons.Feed(key, at, 0.36f * s, 0.13f, edge, 1.5f, Ribbons.Style.Glow);
-                if (R() < 0.5f)
-                {
-                    float a = R() * Mathf.Tau;
-                    var rim = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                    Sparks.Spawn(at + rim * 0.5f * s, new Vector3(-rim.Z, 0, rim.X) * 3.5f + rim * 1.5f + Vector3.Up * 0.5f, 0.22f, 0.06f, Hdr("#ffe8a0", 2f), Hdr("#ff9a20", 1.4f), 0.01f, 0, 3, sprite: R() < 0.3f ? Sprites.Of("star") : 0, spinV: 4);
-                }
-                return true;
-            }
+                return DiscFlight(p, at, now, g, key);
             case "chakram" or "chakram_razor" or "chakram_hail":
             {
                 // A thrown blade: dark steel lying flat and spinning, its five hooked teeth honed

@@ -72,10 +72,11 @@ SETS = {
     "staff": [("staff", "mage_staff@hand_r")],
     "crossbow": [("crossbow", "crossbow@hand_r")],
     "daggers": [("dagger_r", "daggers@hand_r"), ("dagger_l", "dagger_b@hand_l")],
+    "sunder": [("sunder", "sunder_blade@hand_r")],
 }
 # The kind of each right-hand piece (keyed.slide_dir: the line a clip's grip slide moves it along).
 PIECE_KIND = {"mage_staff": "staff", "chevalier_sword": "sword", "viking_sword": "sword", "oathbrand": "sword",
-              "viking_axe": "axe", "wand": "wand", "crossbow": "crossbow", "daggers": "daggers", "dagger_b": "daggers"}
+              "viking_axe": "axe", "wand": "wand", "crossbow": "crossbow", "daggers": "daggers", "dagger_b": "daggers", "sunder_blade": "sunder"}
 ALIAS = {
     "warden": "warden_sword_shield", "worn_oathblade": "warden_sword_shield",
     "oath": "oath_shield", "judgement_disc_item": "oath_shield",

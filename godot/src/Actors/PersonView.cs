@@ -71,7 +71,70 @@ public partial class PersonView : Node3D, INpcView
     public void Sheathe(bool on)
     {
         if (person.Own == null) return;
+        if (flareGrip != null) { gripSheathe = on; return; }   // (a Flare's grip is on: her kit stays as stashed; applied once at the end)
         foreach (var (slot, id) in pieces) Swap(slot, id, on);
+    }
+
+    // A Flare's grip (Lamps FlareDef.Grip): every piece she has hidden with its exact state stashed, the grip mounted in
+    // her right hand by the same path (Arms.Hold into held["handslot.r"], so the clips' grip_slide / grip_tilt act on it).
+    Node3D? flareGrip;
+    bool? gripSheathe;
+    (string slot, Node3D mount, bool vis, Node? parent, Transform3D xf, Node3D? attach, bool attachVis, Transform3D attachXf)[] gripStash = [];
+    Node3D? gripRightMount;
+    string? gripRightPiece;
+
+    public bool FlareGripOn => flareGrip != null;
+
+    /// <summary>Forms `id` in her right hand and hides all her pieces; false (nothing touched) if it is unknown or she has no kit.</summary>
+    public bool FlareGrip(string id)
+    {
+        if (person.Own == null || flareGrip != null) return false;
+        if (!Arms.All.ContainsKey(id)) { GD.PushWarning($"flare grip: no Arms id '{id}' (the clip plays without it)"); return false; }
+        var stash = new System.Collections.Generic.List<(string, Node3D, bool, Node?, Transform3D, Node3D?, bool, Transform3D)>();
+        foreach (var (slot, m) in held)
+        {
+            if (!IsInstanceValid(m)) continue;
+            var att = m.GetParent() as Node3D;
+            stash.Add((slot, m, m.Visible, m.GetParent(), m.Transform, att, att?.Visible ?? true, att?.Transform ?? Transform3D.Identity));
+        }
+        gripStash = stash.ToArray();
+        foreach (var t in gripStash) { t.mount.Visible = false; }
+        held.TryGetValue("handslot.r", out gripRightMount);
+        pieces.TryGetValue("handslot.r", out gripRightPiece);
+        flareGrip = Arms.Hold(person, id, "hand_r");
+        held["handslot.r"] = flareGrip;
+        pieces["handslot.r"] = id;
+        gripSheathe = null;
+        return true;
+    }
+
+    /// <summary>Takes the grip off and puts every stashed piece back exactly; applies the sheath once if it changed meanwhile.</summary>
+    public void FlareGripEnd()
+    {
+        if (flareGrip == null) return;
+        var g = flareGrip;
+        flareGrip = null;
+        (g.GetParent() as BoneAttachment3D ?? (Node)g).QueueFree();
+        if (gripRightMount != null) held["handslot.r"] = gripRightMount; else held.Remove("handslot.r");
+        if (gripRightPiece != null) pieces["handslot.r"] = gripRightPiece; else pieces.Remove("handslot.r");
+        seats.Remove("handslot.r");
+        foreach (var t in gripStash)
+        {
+            if (!IsInstanceValid(t.mount)) continue;
+            t.mount.Visible = t.vis;
+        }
+        double maxPos = 0, maxRot = 0; int vis = 0;
+        foreach (var t in gripStash)
+        {
+            if (!IsInstanceValid(t.mount)) continue;
+            if (t.mount.Visible != t.vis || t.mount.GetParent() != t.parent) vis++;
+            maxPos = Mathf.Max(maxPos, (t.mount.Transform.Origin - t.xf.Origin).Length());
+            maxRot = Mathf.Max(maxRot, Mathf.RadToDeg((t.mount.Transform.Basis.GetRotationQuaternion().Inverse() * t.xf.Basis.GetRotationQuaternion()).GetAngle()));
+        }
+        GD.Print($"flare grip restore: {gripStash.Length} pieces, max pos delta {maxPos * 1000:0.###} mm, max rot delta {maxRot:0.###} deg, visible mismatches {vis}");
+        gripStash = [];
+        gripRightMount = null; gripRightPiece = null;
+        if (gripSheathe is bool on) { gripSheathe = null; Sheathe(on); }
     }
 
     // One piece to its sheathed mount (on) or back into its hand; false if it has none or is already there.

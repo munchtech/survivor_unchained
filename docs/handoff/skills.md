@@ -1,5 +1,136 @@
 # Handoff: skills look and feel
 
+## Combat VFX 10 (vfx-7, 2 Nov): item 2 MR READY (her auto-attacks); item 3 (Warden skills) next
+**Item 2, her auto-attacks** (SKILL_VFX_STUDY.md §6 item 2): r3 max (the FINAL round, cap raised to 4 by main) said **PASS-WITH-NOTES on all four and ship as a net gain**, with its 5 safe cuts applied (7deaa78a6). History: r1 FAIL (sweep medium, Disc and Bash far), so the sources were rebuilt; r2 FAIL medium on all four; r3 PASS-WITH-NOTES (sweep, hit kit and Bash close; Disc medium by day, close by night).
+- **What ships:**
+  - Sweep: a true gold crescent, peaking at f2 and eaten from its trailing horn, on real frames through the hitstop (oath_sweep.gdshader).
+  - Hit kit (HitKit.cs `HitKit`, `StruckRimOn`):
+    - a 2-frame flash at 15% then 6%, with none on the Bash's stunned (`rimNoFlash`);
+    - a #FFB84A fresnel rim fading over 8 frames, 0.55x at night;
+    - sparks 3-5 per body on at most 6 bodies a swing;
+    - solid lit chip puffs (day life x0.7);
+    - the bone-chip "snow" skipped for her auto-attacks.
+  - Disc (disc.gdshader `halo_gain` x0.6 by day): twin world-space rails, steel band glints, an amber 1.3x halo, a 2-frame contact flare.
+  - Bash (bash_wedge.gdshader + new bash_wall.gdshader):
+    - forward-weighted 100/50/7% at 0/35/69 deg over the sim's real ±1.2 rad, 3.4 m (wider than r1's spec on purpose);
+    - a bronze flash at the shield face and a 0.42 m standing front;
+    - a brown plow and a gold stun twinkle;
+    - a view-only throw for the dying (CrowdView), 1.7-1.8 m by f15.
+  - Sim untouched. The "shield_bash N" debug line is now only shown with `--reflex-note` (aa96dcae0).
+- **Known (r3 judge, closed):**
+  - Sweep: a moon-even taper, one flat gold, reads thin in a dense crowd; a dark olive inner band on f1.
+  - Hit kit: the f1 sparks read white; the puffs are paler than the road; the flash leads the arc by 1 frame.
+  - Disc: no spin reads by day at 1:1, and the rails are a faint V.
+  - Bash: the rim reads smooth; toward the camera the cream band thickens; the plow is faint by day; the throw-back only reads in motion.
+  - Night: s3's hit cluster is a dense glitter.
+  - **"Not yet effortlessly badass: the sweep needs weight, the disc a sense of speed: a design pass, not values"** (a later list item, owner's call).
+- **Tests and perf:**
+  - Tests 1373/0/10.
+  - Release ABAB at night, 250 horde, `--aa-fx-off` (A, none of the kit drawn, sim the same) vs on (B), window 8-10.5 s while the crowd is dense (`survivorsunchained_inputs\vfx10\perf`):
+    - B-A mean is CPU +0.10/-0.02 ms and GPU +0.10/-0.02 ms;
+    - p99 is +0.9/+1.1 ms in pair 1 only (likely the first-use pipeline compile; pair 2 is -0.03/-0.12);
+    - this is the whole kit against nothing, so an upper bound on the change.
+- **Shots:** `survivorsunchained_inputs\vfx10\aa4\r3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4\r3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+3c\sheet_{day,night}_half.jpg` (the final build; the judged r3 set is `aa4
+3`). The day `d_open` beat never fires (the crowd is too dense). Shot scripts and stats: session 14076147 scratchpad `vfx10\` (shoot.sh, sheet.py, perf_stats*.py).
+- **Dev flags:** `--aa-beats`, `--aa-norim`, `--aa-pool K`, `--aa-fx-off`, `--reflex-note`.
+- **Cost:** item 2 ~1.45-1.5M of the 1.45M cap (r2 solver ~0.2M + judge 0.105M; r3 solver 0.21M + judge 0.12M + runner 0.03M; lead ~0.12M).
+
+**Next: item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`). Hooks a/b are in integration (art keys `rebuke`, `watch_bell`, now in the `nova_holy` case of BattleFx.Skills.cs, to split out; `Ev.Barrier`). Sunder and Groundbreaker too.
+
+## Combat VFX 9 (vfx-7, 2 Nov): MR READY. The Long Cut rebuilt; her auto-attacks next
+**The Long Cut** (round cap raised to 4 by main; the last round). The max verdict on (B, "once she has the pose") was FAIL CLOSE, and the judge's final cuts are applied. What ships: the press (local gold light, white-gold blade core, no exposure lift or sepia), the hold, the fuse run, the cooling, the smoke curtain, both scars and the clear field. r1 was FAR, r2 and r3 were MEDIUM, r4 CLOSE.
+- **Sources:**
+  - `tools/fxsim/longcut_crack.py --seed 7` bakes the crack strip (`godot/art/fx/longcut/crack_*`, `crack.json` with the centre line);
+  - `tools/fxsim/longcut_chunks.py` (Blender) builds `chunks.glb`;
+  - `tools/fxsim/dust_sim.py` + `pack.py` make `fb/lc_dust` (built, but the jets are CUT: `JetsOn=false`).
+- **Code:**
+  - `FlareFx.LongCut.cs`: beats, ResolveDooms (two death classes timed from the drawn crack, fuse arrival + 0.1 s/m), the jets, smoke and chunks;
+  - `FlareFx.LongCutLight.cs`: press, hand, rim, sweep, the Spend column, the light dip;
+  - `FlareFx.LongCutArt.cs` reads the PNGs from the project folder, so **a shipped build must pack them**;
+  - `flare_world.gdshaderinc` (the seam sampled in the ground shader, the sweep band, the scorch) and `vat.gdshaderinc` (char and ash);
+  - `CrowdView.FlareCorpseAsh`;
+  - `--no-spawn`.
+- **Cuts behind consts:**
+  - `FL_LC_FRESH_CORE 0`: the fresh seam has no white-hot stage and opens at its orange stage;
+  - `LcGoldDead=false`: no gold cracks or edges on the struck; all die as lit char then ash;
+  - `LcSweepEdgeLights=false`;
+  - `JetsOn=false`.
+- **Bugs found:**
+  - The blade lookup `"arm:*"` never matched, because Godot turns `:` into `_` (now `"arm?*"`). **The Arcanist's `FindChild("arm:mage_staff")` likely has the same bug** (unfixed, not ours).
+  - The vat night factor read the sweep gain (gold was negative light by day).
+- **Frozen times** (Animation 59 is authoring her clip to them): press 0, sweep ~0.20 for 0.35 s, cleave ~0.545, cool 1.95, dead 6.1.
+- **Known (r4 judge, ranked):**
+  1. the sweep still reads slightly as a ray (now clamped to 12 m), and its afterglow doesn't read;
+  2. no shadows swing away from the line;
+  3. no white-hot instant on the fresh seam (cut);
+  4. day ash deaths leave dark brown smudges for ~1 s;
+  5. the night b6 crack fill is pale.
+  
+  Out of scope: auto-attack sparks and haze at night b1-b3 (item 2), the night loot ember ring b8-b9 (loot), and the LEVEL banner (UI).
+- **Shots:** scratchpad b9e8a09f `vfx9\cuts\shoot_lc.sh day|night` (+ measure.py, half.py). Final frames are in `survivorsunchained_inputs\vfx9\lc_final\`; judged frames in `lc2`, `lc3d` and `lc4b`.
+- **Tests and perf** (MR, 77c2fed74 plus docs):
+  - Tests 1373/0/10. The import logs one benign error line.
+  - Release ABAB at night with a 250 horde (`survivorsunchained_inputs\vfx9\perf\lc_A3..B4`), B minus A from the press to the cleave:
+    - CPU mean +0.16 ms;
+    - CPU p99 +5.6 ms: a one-frame ~11 ms cast spike, KNOWN (extend the warm-up);
+    - GPU mean +0.08 ms;
+    - shadow draws +23.
+  - The aftermath is about even.
+- **Cost:** VFX 9 ~2.1M; the Long Cut over VFX 7-9 ~3.05M.
+
+**Next:**
+- **Item 2, her auto-attacks** (study §6 item 2): the Oathblade sweep crescent and the Judgement Disc, a shared hit kit. First check that the Disc and Shield Bash fire in that loadout, and the ~4.5 s stop after a Flare.
+- **Item 3, the Warden skills** (`docs/design/WARDEN_SKILLS_VFX_HOOKS.md`): cherry-pick classes-17@426ce9d64 (hooks a/b: `rebuke` and `watch_bell` art keys, `Ev.Barrier`). Split those two keys out of the `nova_holy` case in BattleFx.Skills.cs. Icons are UI's.
+
+## Combat VFX 7 (vfx-7, 2 Nov): HANDOFF. The Long Cut r1 FAIL far, rebuild from better sources
+**The owner (1 Nov):** "Yes, Long Cut first". Build item 1 of `docs/design/SKILL_VFX_STUDY.md` §6 (the seam of morning, FLARE_LOOK §3 lines 289-311) with the Warden's dawn-gold press motes folded in. Item 2 (her auto-attacks) is next but NOT approved to build; its gap is confirmed (study §3). Judges at max, day and night, whole-frame gate first; perf in a packed night crowd; round cap 2-3 (1 used).
+
+**Done:**
+- Study: `docs/design/SKILL_VFX_STUDY.md`. `SKILL_VFX_REFERENCES.md` now carries the numbers 1-11, matching CLASS_IDENTITY (that doc was already right).
+- Ref sheets: `survivorsunchained_inputs\vfx_refs\<id>\peaks.jpg` and `bursts.jpg`, made by scratchpad `vfx7\refsheets.py`.
+- Build r1 (5ff2bef01, tests 1337/0/10), on a procedural route:
+  - `godot/src/Fx/Flare/FlareFx.LongCut.cs`: press motes off the blade, gold head light, sweep light, the fuse light at 60 m/s, dust, chunks, sparks, smoke, the struck burn-up timed to the sweep angle or the fuse.
+  - `flare_world.gdshaderinc` gets the globals flare_seam, flare_seam_t and flare_sweep, registered in project.godot.
+  - `vat.gdshaderinc` gets a ragged gold burn-away.
+  - `CrowdView.FlareStatueLook` + `FlareFx.StatueLook`: the frost-blue flash was Burns Twice's `frozen=1` on every Flare's statues.
+  - The beat shots b4_sweep..b8_smoke.
+
+**Judge r1 (max, ~100k): FAIL, FAR.** All 14 frames fail the gate. Only the day crack's shape and its gold-to-red cooling land. Missing:
+- the press answer (the drain reads cold grey);
+- the sweep (invisible);
+- the fuse travel (the beats are mistimed);
+- death in gold (a black radial star of corpses stays; the judge won't accept "harness" without a respawn-off reshoot);
+- the scar.
+
+At night the seam reads as a straight tube with banding, and ~100 ember orbs bury the cool-down. Full verdict: transcript a08842844413e91d7. Its ranked fixes:
+1. Die in gold, then gone (rim 2-3 frames, char-dissolve to embers 0.6-0.8 s, removed). Reshoot with respawn off.
+2. A gold instant press (a warm 4 m light, bloom pulse, rim on her and the blade); the hold drain warm, never grey-cyan.
+3. A visible sweep: 0.3-0.4 s, a warm ground wedge, a fading wash for 0.5 s, a dust skirt, no rim.
+4. A crack with depth: taper 30-40 px to 10 px at 1:1, dark lips, 8-15 raised chunks, a meander, a chain of low warm lights so the shadows swing.
+5. Night: cap the core's emissive; the glow comes from the ground lights.
+6. Real dust and chunks, not confetti.
+7. Hold or shrink the ember orbs until after the seam.
+8. A warm exposure lift of ~1.3x for 2-4 frames at the cleave, a shake, and a char scar for 3-6 s.
+
+**Next (scrap rule: far means rebuild the sources, not patch):**
+1. A medium solver rebuilds the crack from a baked source (a Blender crack mask/decal with charred lips, taper, meander, plus rock-chunk meshes) and the dust/smoke as a tools/fxsim flipbook, Burns Twice's pipeline. In the same pass it does fixes 1-3, 5, 7 and 8 in code.
+2. Reshoot with respawn off (find the lab arg) and real beat times. b4 at night came out before b3: check the Shots.Want times in LongCut.
+3. Max judge r2, then a perf run without `--shot`: r1's 36/25 ms means include PNG saves.
+
+**Routed (not ours):**
+- Combat: after the Long Cut her auto-attacks stop ~4.5 s. No Ev.Hit at all: sim, not view. Likely nothing left in reach; check against Burns Twice.
+- UI: "Barrow Dust" nameplates over ~30 enemies by day; the LEVEL 3 banner sits over the fight.
+- Combat: a night wave spawns as a still ring of glows for 3 s.
+- Burns Twice: its burn front is a screen-wide hoop, and the fireball peaks at 1.6x (~0.1-0.2M, later).
+- Character: the arcanist mesh logs 0 shadow casters.
+
+**Shots:** scratchpad `vfx7\shoot2.sh`; the recipe is in this file's git log and in the study. The press lands at 6.35 s; frames come ≥0.13 s apart. Frames: `survivorsunchained_inputs\vfx7\` (now = the hub, useless; now2 = real fights; lc = r1). The worktree's modified `.import` files are reimport noise; don't commit them.
+
+**Paused here (VFX 8, 2 Nov):** not started. Merged integration 7472253fc into vfx-7 (junction removed and remade to the worktree's own public/assets). Next: the rebuild solver, step 1 of "Next" above.
+
+**Cost:** VFX 7 so far ~0.95M (study ~0.45M, build r1 ~0.24M, judge ~0.1M, lead).
+
 ## Combat VFX 6 (vfx-6, 1 Nov): MR READY. No chevrons on round marks
 **The owner (29 Oct, verbatim):** "the chevron on the circular telegraphs is not wanted, it dosn't look good".
 

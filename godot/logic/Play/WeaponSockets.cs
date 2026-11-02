@@ -161,6 +161,10 @@ public static class WeaponSockets
         // the axe lies in the world as its clips were keyed).
         WeaponKind.Axe => (BladeAtR, BladeDirR),
         WeaponKind.Dagger => (DaggerAtR, DaggerDirR),
+        // The two-handed blade (animation 59): her greatsword's grip conformed to the one-handed blade's section (round r
+        // 13.7, tools/assets/sunder_blade.py), so her upper (right) fist is the blade's (keyed.py WRAP["sunder"] is WRAP["sword"]);
+        // seated only where the Spec is Seated or anchored (sunder_blade: the zweihander and the Watch blade keep the plain mount).
+        WeaponKind.Blade2H => (BladeAtR, BladeDirR),
         WeaponKind.Crossbow => (CrossbowAtR, CrossbowDirR),
         _ => null,
     };

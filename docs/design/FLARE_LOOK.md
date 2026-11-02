@@ -293,7 +293,7 @@ Dawn-gold on steel. The brightest light, and the only calling with a column. Hol
 #### The Long Cut · Strike · Clear
 *The image:* a seam of morning opened across the night. The cleave splits the ground in a 24 m line, light shines up through the crack as if the morning were under it, and every shadow on the field swings away from the line.
 - **Pose:**
-  - her: the blade low behind, in both hands, weight on the back foot, her torso wound away from the line so her back and waist make one long twist, head turned to look down the line over her shoulder;
+  - her: the blade low behind in her right fist, her left arm reaching forward down the line, open-handed, weight on the back foot, her torso wound away from the line so her back and waist make one long twist, head turned to look down the line over her shoulder (Animation 59, 2 Nov: one-handed, because with both hands low behind her right hip the left arm crosses her chest; the left hand joins the grip at the top of the rise);
   - the rise (0.1 s) peaks in a full arch with the blade overhead: the second poster;
   - the recovery kneel is the aftermath's image: one knee down, both hands on the hilt buried in the seam, head bowed, lit from below;
   - him: the same, wider and lower, shoulders square.

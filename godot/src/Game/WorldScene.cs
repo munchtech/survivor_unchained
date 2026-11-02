@@ -50,6 +50,10 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>A freeze frame (a tutorial callout): the effects hold still with the fight.</summary>
     public bool FxStill;
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
+    // Her auto-attack's first hit (BattleFx.FirstHitStop): a short hitstop that lands as the blade meets the body.
+    double stopDue = -1, stopLen;
+    // (--aa-beats: the beats are shot with hitstops on, whatever the saved Motion setting)
+    static readonly bool AaBeats = Args.Has("aa-beats");
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
     double dashHeld, artHeld;
@@ -216,6 +220,15 @@ public partial class WorldScene : Node3D, IZoneLook
         var b = Battle;
         Time += dt;
         hitstopCd = Math.Max(0, hitstopCd - dt);
+        if (stopDue >= 0 && (stopDue -= dt) < 0)
+        {
+            stopDue = -1;
+            if (hitstop <= 0 && (Hitstop || AaBeats) && !Fx.Flare.Active)
+            {
+                hitstop = stopLen; hitstopCd = Math.Max(hitstopCd, stopLen + 0.3);
+                if (AaBeats) GD.Print($"[aa-beats] first-hit hitstop {stopLen:F3} s at frame {Engine.GetFramesDrawn()}");
+            }
+        }
         bool held = hitstop > 0;
         if (held) hitstop -= dt;
         // A perfect dodge: the world slows round you for a breath.
@@ -262,6 +275,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 {
                     if (e is Ev.LevelUp) Player?.LevelFlare();
                     else if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Ability ab)
                     {
                         if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
@@ -305,7 +319,7 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }
-        if (hitstopCd > 0 || !Hitstop) return;
+        if (hitstopCd > 0 || !(Hitstop || AaBeats)) return;
         double s = 0;
         foreach (var e in evs)
         {
@@ -316,7 +330,11 @@ public partial class WorldScene : Node3D, IZoneLook
             else if (e is Ev.Ability a && a.Id is "shield_bash" or "bull_rush") s = Math.Max(s, 0.05);
             else if (e is Ev.Ability l && l.Id == "leap") s = Math.Max(s, 0.06);
         }
-        if (s > 0) { hitstop = s; hitstopCd = s + 0.3; }
+        if (s > 0) { hitstop = s; hitstopCd = s + 0.3; return; }
+        // Her auto-attack's first hit only (one a swing: its hits all land in one step), on the blade's contact.
+        if (stopDue >= 0) return;
+        foreach (var e in evs)
+            if (e is Ev.Hit h && SurvivorUnchained.View.BattleFx.FirstHitStop(h) is { Len: > 0 } fs) { stopLen = fs.Len; stopDue = fs.Delay; break; }
     }
 
     // (A name made once, not a new one every frame for the collector.)
@@ -324,7 +342,9 @@ public partial class WorldScene : Node3D, IZoneLook
 
     // The held staff (the Flare's head light), found once per figure.
     PlayerView? staffOf;
-    Node3D? staff;
+    Node3D? staff, blade;
+    bool bladeSaid;
+
 
     void Draw(double dt, double fightDt)
     {
@@ -355,10 +375,28 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.PlayerPos = HerDrawn;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
-            Fx.Update(b, FxStill ? 0 : fightDt, fightTime);
+            Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
             flare.Her = HerDrawn;
-            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; }
+            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; blade = null; }
             flare.Staff = staff;
+            // The blade in her hand (not one hung at her back), for the Long Cut's steel.
+            if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())
+            {
+                blade = null;
+                if (Player != null)
+                    foreach (var n in Player.FindChildren("arm?*", "", true, false))
+                        // ("arm?*": Godot turns the ":" in "arm:id" into "_", so "arm:*" never matched and the steel had no light)
+                        if (n is Node3D a && !a.Name.ToString().Contains("mage_staff") && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true
+                            && a.HasMeta("kind") && (int)a.GetMeta("kind") is (int)SurvivorUnchained.Play.WeaponKind.Blade1H or (int)SurvivorUnchained.Play.WeaponKind.Blade2H)
+                        { blade = a; break; }
+                if (blade == null && flare.Active && !bladeSaid && Args.Has("shot") && Player != null)
+                {
+                    bladeSaid = true;
+                    foreach (var n in Player.FindChildren("mount_*", "", true, false))
+                        foreach (var c in n.GetChildren()) GD.Print($"flare blade: none held; {c.Name} under {n.Name} kind {(c.HasMeta("kind") ? (int)c.GetMeta("kind") : -1)}");
+                }
+            }
+            flare.Blade = blade;
             flare.Tick(FxStill ? 0 : dt, b);
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));

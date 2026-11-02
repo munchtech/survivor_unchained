@@ -107,6 +107,12 @@ public sealed class FlareDef
     /// <summary>What it does for the survivor while it holds (a Stand): "cut" blows by Value, "mend" a share a second.</summary>
     public string? Guard;
     public double GuardValue;
+    /// <summary>Her own full-body clip for the press (null: none, today's behaviour).</summary>
+    public string? Clip;
+    /// <summary>An Arms id formed in her hands for the clip's length (null: her kit stays).</summary>
+    public string? Grip;
+    /// <summary>Seconds from the press after which moving cancels the clip into her run (0: at once).</summary>
+    public double ClipFree;
     /// <summary>A staged Flare's beat (phase 2, CLASSES.md §3.5-3.6): its timings from the press in seconds ("key": the
     /// key pose's end; "first"/"step" or "first"/"last": the blows'; Burns Twice's "frost") and its hitstop in frames
     /// ("hitstop", "hitstopLast", "hitstopExecute", "hitstopFrost"). The logic schedules its blows by it; the view reads the rest.</summary>

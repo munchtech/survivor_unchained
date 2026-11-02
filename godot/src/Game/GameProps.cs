@@ -9,6 +9,8 @@ namespace SurvivorUnchained.Play;
 /// --prop SPEC[;SPEC...], SPEC = PATH@dx,dz[,yaw[,height]]: a model stood in the place, for pictures. PATH is a res://
 /// .glb/.gltf, or an absolute .glb read at run time (no import needed). Placed dx,dz metres from her start, on the
 /// ground there, yaw in degrees; height (metres) scales it uniformly so its box is that tall. Its meshes cast shadows.
+/// Or PATH = arm:ID, a weapon from Arms (its game material) planted point-down, upright: its 4th number is how deep its
+/// point is buried (metres, default 0.15), e.g. --prop arm:sunder_blade@0.5,-0.4,0,0.15.
 /// </summary>
 public partial class Game
 {
@@ -23,6 +25,20 @@ public partial class Game
             var nums = spec[(at + 1)..].Split(',');
             double N(int i, double d) => i < nums.Length && double.TryParse(nums[i], NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : d;
             double x = pl.X + N(0, 0), z = pl.Z + N(1, 0), yaw = N(2, 0), want = N(3, 0);
+            if (path.StartsWith("arm:"))
+            {
+                var id = path[4..];
+                if (!Arms.All.ContainsKey(id)) { GD.PushWarning($"prop: no arm {id}"); continue; }
+                var arm = Arms.Make(id);
+                float tip = (float)arm.GetMeta("tip"), bury = (float)N(3, 0.15);
+                arm.Name = "ShotProp";
+                arm.Basis = new Basis(Vector3.Up, Mathf.DegToRad((float)yaw)) * new Basis(Vector3.Right, Mathf.Pi);
+                scene.AddChild(arm);
+                arm.Position = new Vector3((float)x, (float)scene.HeightAt(x, z) - bury + tip, (float)z);
+                SetShadows(arm);
+                GD.Print($"prop: arm {id} at ({x:0.##},{z:0.##}) yaw {yaw:0.##} planted, tip {tip:0.###} buried {bury:0.##}");
+                continue;
+            }
             Node? root = null;
             if (path.StartsWith("res://")) root = GD.Load<PackedScene>(path)?.Instantiate();
             else

@@ -25,15 +25,25 @@ public partial class Blades : MultiMeshInstance3D
     readonly List<Swing> live = new();
     readonly float[] buffer = new float[Max * Stride];
     readonly Random rng = new(5);
+    readonly bool oath;
 
-    public Blades()
+    /// <summary>`lit`: the crescent only adds light (no dark bed under it), a hot edge and a smear in its hue
+    /// (her Oathblade's gold sweep: it lights the ground, never darkens it).</summary>
+    /// <summary>`oath`: her Oathblade's sweep (shaders/oath_sweep.gdshader): revealed along the arc over its
+    /// `sweep`, eaten from its tail over its `drain`; `reach` is its outer radius and `depth` its inner
+    /// radius as a share of it (Add's other arguments as ever).</summary>
+    public Blades(bool lit = false, bool oath = false)
     {
+        this.oath = oath;
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
-            InstanceCount = Max, VisibleInstanceCount = 0, Mesh = Grid(64, 6),
+            InstanceCount = Max, VisibleInstanceCount = 0, Mesh = oath ? Grid(96, 8) : Grid(64, 6),
         };
-        MaterialOverride = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/blade.gdshader") };
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>(oath ? "res://shaders/oath_sweep.gdshader" : "res://shaders/blade.gdshader") };
+        if (oath) mat.SetShaderParameter("streaks", GD.Load<Texture2D>("res://art/fx/oath_streaks.png"));
+        else mat.SetShaderParameter("lit", lit);
+        MaterialOverride = mat;
         CastShadow = ShadowCastingSetting.Off;
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
     }
@@ -47,13 +57,19 @@ public partial class Blades : MultiMeshInstance3D
     public void Add(Vector3 centre, float facing, float reach, float span, bool mirror, float sweep, float drain, Color hue, float depth, float delay = 0)
     {
         if (live.Count >= Max) live.RemoveAt(0);
-        var basis = new Basis(Vector3.Up, facing).Scaled(new Vector3(mirror ? -reach : reach, reach, reach));
+        // The mirror is the swing's own (its local X), applied before the turn: Basis.Scaled scales in the
+        // world's axes, so a mirrored swing was flipped across the world's X and drawn on the far side of
+        // her from its hits whenever it faced along X (vfx9 aa: "a gold crescent 2 m to her left").
+        var basis = new Basis(Vector3.Up, facing) * Basis.FromScale(new Vector3(mirror ? -reach : reach, reach, reach));
         live.Add(new Swing
         {
             At = new Transform3D(basis, centre), Span = span, Sweep = Mathf.Max(0.02f, sweep), Drain = Mathf.Max(0.02f, drain),
             Age = -delay, Depth = Mathf.Clamp(depth, 0.05f, 0.62f), Hue = hue, Seed = 1 + rng.Next(900),
         });
     }
+
+    /// <summary>Every swing in flight gone (the Long Cut's press: the Flare has the frame).</summary>
+    public void Clear() => live.Clear();
 
     public void Step(float dt)
     {
@@ -65,8 +81,22 @@ public partial class Blades : MultiMeshInstance3D
             if (s.Age >= s.Sweep + s.Drain) { live.RemoveAt(i); continue; }
             live[i] = s;
             if (s.Age < 0) continue;
-            // Fast out of the wind-up, slowing through the follow.
             float k = Mathf.Min(1, s.Age / s.Sweep);
+            if (oath)
+            {
+                // Revealed with the swing (eased out), then eaten from the tail.
+                float hd = 1 - (1 - k) * (1 - k);
+                float er = Mathf.Clamp((s.Age - s.Sweep) / s.Drain, 0, 1);
+                int q = n++ * Stride;
+                var ob = s.At.Basis;
+                buffer[q] = ob.X.X; buffer[q + 1] = ob.Y.X; buffer[q + 2] = ob.Z.X; buffer[q + 3] = s.At.Origin.X;
+                buffer[q + 4] = ob.X.Y; buffer[q + 5] = ob.Y.Y; buffer[q + 6] = ob.Z.Y; buffer[q + 7] = s.At.Origin.Y;
+                buffer[q + 8] = ob.X.Z; buffer[q + 9] = ob.Y.Z; buffer[q + 10] = ob.Z.Z; buffer[q + 11] = s.At.Origin.Z;
+                buffer[q + 12] = s.Hue.R; buffer[q + 13] = s.Hue.G; buffer[q + 14] = s.Hue.B; buffer[q + 15] = s.Depth;
+                buffer[q + 16] = hd; buffer[q + 17] = er; buffer[q + 18] = s.Span; buffer[q + 19] = s.Seed;
+                continue;
+            }
+            // Fast out of the wind-up, slowing through the follow.
             float head = 1 - Mathf.Pow(1 - k, 2.2f);
             const float Tail = 0.75f;
             float back = Mathf.Max(0, head - Tail);
