@@ -283,12 +283,15 @@ public partial class ArtsScreen : Overlay
             list.AddChild(Kit.Head(reg.Key.ToString()));
             foreach (var grp in reg.GroupBy(l => l.Road ?? ""))
             {
-                string rn = grp.Key == "" ? "" : Lamps.Roads.TryGetValue(grp.Key, out var gr) ? gr.Name : grp.Key;
+                string rn = grp.Key == "" ? "" : Lamps.Roads.TryGetValue(grp.Key, out var gr) ? gr.Name : Style.Cap1(grp.Key.Replace('.', ' ').Replace('_', ' '));
                 if (rn != "") list.AddChild(Style.Label($"{rn}  ·  {LampBook.Depth(ch, grp.Key)} lit", Style.UiBold, 14, Kit.Dim));
                 foreach (var l in grp) list.AddChild(LampRow(ch, w, l));
             }
         }
-        page.AddChild(Style.Scroll(list));
+        // The book panel sizes to what it holds, so the list is given its height (left at 0 it showed nothing).
+        var scroll = Style.Scroll(list);
+        scroll.CustomMinimumSize = new Vector2(0, 620);
+        page.AddChild(scroll);
     }
 
     Control LampRow(CharacterData ch, SurvivorUnchained.World.WorldState w, LampDef l)
@@ -306,6 +309,8 @@ public partial class ArtsScreen : Overlay
         var gate = l.Gate > 0 ? $"  ·  needs {l.Gate} on the road" : "";
         var t = Style.Label(l.Text, Style.Ui, 14, open ? Kit.Ink2 : Kit.Faint, false);
         t.ClipText = true;
+        // One line a lamp; the whole rule on hover (most v1 rules are longer than the line).
+        b.TooltipText = l.Text;
         t.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         var row = Style.H(10, Style.Label(lit ? "●" : "○", Style.UiBold, 16, lit ? Style.EmberHi : Kit.Faint),
             Style.Label(l.Name + gate, Style.DisplayLight, 16, lit ? Style.EmberHi : open ? Kit.Ink : Kit.Dim), t);
@@ -321,7 +326,7 @@ public partial class ArtsScreen : Overlay
         if (wickSkill == null || !ch.Skills.Contains(wickSkill)) wickSkill = ch.Skills.FirstOrDefault(s => Wicks.Of(s) != null);
         var row = Style.H(0);
         var list = Style.V(4);
-        list.CustomMinimumSize = new Vector2(300, 0);
+        list.CustomMinimumSize = new Vector2(180, 0);
         list.AddChild(Kit.Head("Learned skills"));
         if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet.", Style.TextItalic, 15, Kit.Dim, true));
         foreach (var id in ch.Skills)
@@ -331,7 +336,7 @@ public partial class ArtsScreen : Overlay
             string name = Weapons.All.TryGetValue(id, out var wd) ? wd.Name : id;
             var b = Row(() => { wickSkill = sid; status = ""; Refresh(); }, 34);
             if (wickSkill == id) b.AddThemeStyleboxOverride("normal", new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = Style.Ember, BorderWidthLeft = 2 });
-            var l = Style.Label(has ? name : name + "  ·  no wick yet", Style.DisplayLight, 16, !has ? Kit.Faint : wickSkill == id ? Style.EmberHi : Kit.Ink);
+            var l = Style.Label(name, Style.DisplayLight, 16, !has ? Kit.Faint : wickSkill == id ? Style.EmberHi : Kit.Ink);
             l.Position = new Vector2(10, 4);
             l.MouseFilter = MouseFilterEnum.Ignore;
             b.AddChild(l);
@@ -362,7 +367,9 @@ public partial class ArtsScreen : Overlay
         {
             var col = Style.V(2);
             col.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            col.CustomMinimumSize = new Vector2(250, 0);
+            // Three strands share what the 900 px panel leaves beside the skill list (at 250 each the third ran off its edge).
+            col.CustomMinimumSize = new Vector2(190, 0);
+            col.SizeFlagsStretchRatio = 1;
             col.AddChild(Style.Label(s.Kind.ToString().ToUpperInvariant() + (s.Id == wick.Suggested ? "  ·  Light my way" : ""), Style.UiBold, 14, s.Id == wick.Suggested ? Style.EmberHi : Kit.Dim, true));
             col.AddChild(Style.Label(s.TurnDef.Name, Style.DisplayLight, 18, Kit.Ink, true));
             for (int n = 1; n <= Wicks.PerStrand; n++)
@@ -407,7 +414,7 @@ public partial class ArtsScreen : Overlay
     }
 
     static System.Func<string, string> PathName(string skill) => id =>
-        Wicks.Lamp(skill, id) is { } ln ? (ln.N == Wicks.PerStrand ? ln.Strand.TurnDef.Name : id) : id;
+        Wicks.Lamp(skill, id) is { } ln ? (ln.N == Wicks.PerStrand ? $"{ln.Strand.TurnDef.Name} (Turn)" : $"{ln.Strand.TurnDef.Name} {Ranks[ln.N]}") : id;
 
     /* ------------------------------------------------------ skills by day -- */
 

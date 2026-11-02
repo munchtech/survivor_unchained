@@ -1,27 +1,18 @@
-# Classes 16 paused here (2 Nov): MR READY classes-15@HEAD; next = MR2 items below, then the Phase 2 scope
+# Classes 17 (2 Nov): MR2 READY in classes-17; Phase 1 is DONE when it merges. Next = the owner's answer on docs/design/PHASE2_SCOPE.md
 
-Read CLASS_IDENTITY_AND_TALENTS.md §3.3, §3.7, §6.2 (the Phase 1 row) first. The owner approved all 10 recommendations. Integration 1ba403c37 is merged in.
+Read CLASS_IDENTITY_AND_TALENTS.md §3.2-3.7 and §6.2, then PHASE2_SCOPE.md (the order question to the owner).
 
-## In the MR (classes-15; tests 1373/0/10; Act 1 gate PASS)
-- **P5b:** Pulse and On-kill Turns, unions carry lead-ins. The board measure reads Pulse S 1.05/1.04 and On-kill 1.08. The warden's v1 full board at x1.53/x1.41 is closed as known; x1.25 is a Phase 2 acceptance item.
-- **P6:** Sunder, Groundbreaker, Rebuke and Watch Bell, with wicks, Turns and tests.
-  - Classes 16 fixes: Rebuke strikes the same champion at most every 5 s, bossDamage 0.5 (a0217ec02: it dealt 2,369/s to a pinned champion). Sunder bossDamage is 2.2 (b56f72466).
-  - Path probes leave out skills with no evolutions yet (`ProbeSpec.Unevolved`). With them in, host's crowd is 1% under its floor and Consecration's worst seed is 46%.
-- **P7:** creation teaches the type's first calling skill at L1 (e74175465). The type pick is on creation screen 1 (8ea2eb491, e344de176; a plain chip row, so the look is UI's). Dawnpulse has a wick (2a3eee230: Pulse/Linger/Fire, **its Turns not measured yet**).
-- **P8:** a functional Lamps board and Wick screen as pages 3-4 of the Arts screen, behind `--board` / `SU_BOARD=1` (3346db3a5). **Never shot in Godot:** layout and clicks are untested.
-- `docs/design/WARDEN_SKILLS_VFX_HOOKS.md`: what fires and the hooks, for Combat VFX 7.
-- **Gate** (96 seeds vs integration 1ba403c37):
-  - never-press -1.1%, cells -4.7 to +2.2%;
-  - pressing +0.7%, cells -1.9 to +3.7%.
-  - The warden alone is still about 7% slow on the pressing pass (dig +9/+12%) because her Flare fills less (she takes less damage). The cells pass because the other callings run fast. Known; the lever is the Flare fill for her skills.
-  - Outputs and scripts: `survivorsunchained_inputs/scratch_classes16_b9e8a09f` (gate.sh, bycall.py, out/int.*, out/fin22.*, solver/).
+## MR2 (classes-17)
+- **VFX hooks a/b (426ce9d64, its own commit for VFX 9):** art keys `rebuke` / `watch_bell` (they fall into the `nova_holy` look case; Palette reads them as holy; `Glyphs.IconKey` lends them Dawnpulse's icon until UI paints theirs). `Ev.Barrier {X,Z,Amount,Source}` from Toll and Rebuke's Shield of Morning. WARDEN_SKILLS_VFX_HOOKS.md says so.
+- **P8 pages shot and fixed (e8f6d8ed5):** the Lamps list had zero height (it showed nothing); the wick strands ran off the panel; the plan's order showed raw lamp ids. Shot at 1:1 behind `--board` (functional, no judge): Lamps, "Light suggested" (lit 4 of 4), Wicks (3 strands fit, order by name), creation type row (Sunderer | Bulwark, "learns Sunder"). Lamp rules are one clipped line with the whole rule on hover; the screen's look is UI's (Phase 2).
+- **Dawnpulse Turns measured** (24 seeds, S = the skill on/off, band x0.90-1.15): Pulse 1.043 deft / 1.050 plain; Linger 0.999 / 1.015; Fire 0.945 / 0.955. All in band. Note for Phase 3's Turn library: Fire on a WARDEN's Dawnpulse reads P 0.80 (her damage taken up: the fire school drops Dawnpulse's sear), and the card doesn't say what it gives up; school Turns should name the status they replace.
+- **The harness plans wicks (confirmed in code, no change):** `--wicks suggested` (Light my way) is the default; the story bot takes the type pick (`spec.Type`); arena `--lamps suggested|full` lights the board; story boards stay empty past `--light`.
+- **Gate:** the sim changes only by adding events, so the story harness output is byte-identical to integration 74ef0757e (12 seeds, both bots and policies, pressing: sorted md5 equal). MR1's gate stands (never -1.1%, pressing +0.7%).
+- Open known: the warden ~7% slow on pressing (Flare fill); host probe 0.703 vs 0.70; board v1 x1.53/x1.41 (Phase 2 acceptance).
+- **Gotcha: a fresh worktree has no `.godot/imported`.** Shots spew NREs and time out, and a full `--import` segfaulted. Seed it with `robocopy <main>\godot\.godot\imported <wt>\godot\.godot\imported /E /MT:8`, then `--import` (about 2 min). Scripts: scratch `classes17\shoot2.sh` (backed up to survivorsunchained_inputs/scratch_classes17).
 
-## Next, in order (MR2, then Phase 1 is DONE)
-1. Shoot the P8 pages and fix the layout. Use `--quick warden --zone waystation --time day --board --open arts --keys SubNext,SubNext[,SubNext] --shot NAME` (Shots.cs, Game.cs ~1829). Take a godot turn, look at it at half size. It's functional only, so no judge, and no picture goes to main.
-2. Hooks owed to VFX (the doc): (a) own art keys `rebuke` and `watch_bell` in skills.json; (b) `Ev.Barrier {X,Z,Amount,Source}` where WardenSkills.Toll and RebukeStrike add Player.Shield. Add a line to the doc when they land.
-3. The Dawnpulse Turn measure: `tools/scratch/classes/turn_measure.sh` for pulse@dawnpulse, linger and fire, deft+plain, band x0.90-1.15.
-4. "The harness taught it": the bots already plan wicks (Light my way) and light the board (`--pair board`). Confirm, then run the Act 1 gate again, then MR2.
-5. Phase 2 scope for main (board v2 data for all four quarters, the three layouts, save v6, the Lamps screen through UI; then the calling waves), with an estimate (design §6.2: Phase 2 is 5 sessions).
+## Next
+1. The owner's answer on PHASE2_SCOPE.md. Then Phase 2 session 1: positions and kinds for all 574 lamps first (`tools/classes/lamps_build.py` / `lamps_quarters.py`), so UI's design brief can start.
 - Experience owes a verge-day re-run now that the L1 calling-skill grant has landed.
 
 ## Measuring

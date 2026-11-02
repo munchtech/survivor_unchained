@@ -60,6 +60,8 @@ public static class Ev
 
     /// <summary>A ward took the blow (or some of it); Broke: and is gone.</summary>
     public sealed class ShieldHit : CombatEvent { public double X, Z, Absorbed; public bool Broke; }
+    /// <summary>She gained a barrier (Watch Bell's toll, Rebuke's Shield of Morning): where she stands, how much was added, and the skill's id.</summary>
+    public sealed class Barrier : CombatEvent { public double X, Z, Amount; public string Source = ""; }
     public sealed class PlayerHeal : CombatEvent { public double Amount; }
     public sealed class PlayerDeath : CombatEvent { public double X, Z; public string Killer = ""; public int KillerId; }
     public sealed class Status : CombatEvent { public int Target; public StatusKind Kind; public double X, Z; }

@@ -450,7 +450,7 @@ public partial class Socket : Control
         waitSecs = secs;
         if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
-        var newArt = UiArt.Icon("glyph_color", glyph) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        var newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
         if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
