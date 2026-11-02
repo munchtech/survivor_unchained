@@ -172,7 +172,7 @@ public partial class BattleFx
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
         float off = Mathf.Lerp(0.35f, 1, Mathf.SmoothStep(0.8f, 3f, near));
         // A dark soft bed under it (so the head shows over the pale dead), the head, a small hot heart.
-        if (AaBeats && discBeat && !discFlyShot && near > 3f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
+        if (AaBeats && discThrows >= 2 && !discFlyShot && near > 1.8f && near < 6f) { discFlyShot = true; Shots.WantFrames("d_fly", 1); GD.Print($"[aa-beats] disc in flight t={time:F2}"); }
         Shade(at, 1.05f * s, 0.5f);
         discs.Add(new Transform3D(new Godot.Basis(Vector3.Up, -spin).Scaled(Vector3.One * s), at), hue * off);
         orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.26f * s), at + Vector3.Up * 0.03f), Hdr("#fff2d0", 1.3f) * off);
@@ -261,7 +261,7 @@ public partial class BattleFx
             var dir = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
             var face = her + dir * 1.35f + Vector3.Up * 0.8f;
             // The shield's face: a squat bronze flash, a white-gold glint off its dented boss, gone in 6 frames.
-            Sparks.Spawn(face, dir * 1.2f, 0.1f, 1.0f, BashBronze, BashBronze * 0.12f, 1.5f, sprite: Sprites.Of("flare"), spinV: 0);
+            Sparks.Spawn(new Sparks.P { At = face, V = dir * 1.2f, Life = 0.1f, Size = 0.95f, SizeEnd = 1.4f, Color = BashBronze, ColorEnd = BashBronze * 0.12f, Alpha = 1, Sprite = Sprites.Range("light").First + 1 + 1, Spin = R() * Mathf.Tau + 0.001f, SpinV = 0.001f });
             Sparks.Spawn(new Sparks.P
             {
                 At = face + Vector3.Up * 0.12f - dir * 0.05f, Life = 0.06f, Size = 0.55f, SizeEnd = 0.3f, Color = Hdr("#fff2d8", 1.5f), ColorEnd = BashBronze * 0.3f,
@@ -276,13 +276,13 @@ public partial class BattleFx
             }
             Flash(face, new Color("#ffc878"), 6, 0.16f, 5);
             // The dust kicked low across the cone, its front running out to 2.5 m.
-            for (int i = 0; i < 14; i++)
+            for (int i = 0; i < 18; i++)
             {
                 float a = ang + (R() - 0.5f) * 1.5f, d = 0.5f + R() * 2.0f;
                 var u = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                 double x = e.X + u.X * d, z = e.Z + u.Z * d;
-                Smoke.Spawn(V(x, Y(x, z) + 0.12, z), u * (1.5f + R() * 2.5f) + Vector3.Up * (0.15f + R() * 0.4f), 0.5f + R() * 0.3f, 0.3f + R() * 0.2f,
-                    new Color(0.34f, 0.3f, 0.25f), new Color(0.2f, 0.18f, 0.15f), 0.9f, 0, 3, 0.5f);
+                Smoke.Spawn(V(x, Y(x, z) + 0.12, z), u * (1.5f + R() * 2.5f) + Vector3.Up * (0.15f + R() * 0.4f), 0.55f + R() * 0.3f, 0.4f + R() * 0.25f,
+                    new Color(0.34f, 0.3f, 0.25f), new Color(0.2f, 0.18f, 0.15f), 1.2f, 0, 3, 0.55f);
             }
         }
     }
@@ -315,7 +315,7 @@ public partial class BattleFx
             var over = V(en.X, Y(en.X, en.Z) + 2.05, en.Z) + new Vector3(Mathf.Cos(ph), 0, Mathf.Sin(ph)) * 0.2f;
             Sparks.Spawn(new Sparks.P
             {
-                At = over, Life = frameDt * 1.5f, Size = 0.2f, SizeEnd = 0.2f, Color = OathGold * (0.45f * tw), ColorEnd = OathGold * (0.45f * tw),
+                At = over, Life = frameDt * 1.5f, Size = 0.24f, SizeEnd = 0.24f, Color = OathGold * (0.7f * tw), ColorEnd = OathGold * (0.7f * tw),
                 Alpha = 1, Sprite = Star4, Spin = 0.001f, SpinV = 0.001f,
             });
         }
