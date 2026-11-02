@@ -176,7 +176,7 @@ def build_road(rid):
             elif what.startswith("rite"):
                 add(f"{rid}.{what}", "rite", "road", rid, pos, [sid], calling)
             elif what.startswith("link"):
-                add(f"{rid}.{what}", "link", "road", rid, pos, [sid], calling, 8)
+                add(f"{rid}.{what}", "link", "road", rid, pos, [sid], calling, gate=8)
             else:
                 ult = strike_id if what == "strike" else stand_id
                 v1lamp(ult, "ultimate", "road", rid, pos, [sid], calling, 4 if what == "strike" else 16)

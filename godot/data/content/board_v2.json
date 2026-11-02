@@ -1768,14 +1768,14 @@
    "region": "road",
    "group": "butcher",
    "calling": "reaver",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 660.5,
    "y": 122.8,
    "at": [
     "butcher.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "butcher.red_work",
@@ -1933,14 +1933,14 @@
    "region": "road",
    "group": "butcher",
    "calling": "reaver",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 812.4,
    "y": 187.3,
    "at": [
     "butcher.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "butcher.rite4",
@@ -2248,14 +2248,14 @@
    "region": "road",
    "group": "chainbound",
    "calling": "reaver",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 122.8,
    "y": 660.5,
    "at": [
     "chainbound.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "chainbound.knot",
@@ -2413,14 +2413,14 @@
    "region": "road",
    "group": "chainbound",
    "calling": "reaver",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 187.3,
    "y": 812.4,
    "at": [
     "chainbound.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "chainbound.rite4",
@@ -2728,14 +2728,14 @@
    "region": "road",
    "group": "moonweaver",
    "calling": "arcanist",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -122.8,
    "y": 660.5,
    "at": [
     "moonweaver.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "moonweaver.still_water",
@@ -2893,14 +2893,14 @@
    "region": "road",
    "group": "moonweaver",
    "calling": "arcanist",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -187.3,
    "y": 812.4,
    "at": [
     "moonweaver.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "moonweaver.rite4",
@@ -3208,14 +3208,14 @@
    "region": "road",
    "group": "kindler",
    "calling": "arcanist",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -660.5,
    "y": 122.8,
    "at": [
     "kindler.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "kindler.firebreak_wall",
@@ -3373,14 +3373,14 @@
    "region": "road",
    "group": "kindler",
    "calling": "arcanist",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -812.4,
    "y": 187.3,
    "at": [
     "kindler.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "kindler.rite4",
@@ -3688,14 +3688,14 @@
    "region": "road",
    "group": "verge_hunter",
    "calling": "stalker",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -660.5,
    "y": -122.8,
    "at": [
     "verge_hunter.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "verge_hunter.hold_the_distance",
@@ -3853,14 +3853,14 @@
    "region": "road",
    "group": "verge_hunter",
    "calling": "stalker",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -812.4,
    "y": -187.3,
    "at": [
     "verge_hunter.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "verge_hunter.rite4",
@@ -4168,14 +4168,14 @@
    "region": "road",
    "group": "roadknife",
    "calling": "stalker",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -122.8,
    "y": -660.5,
    "at": [
     "roadknife.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "roadknife.slip_the_blow",
@@ -4333,14 +4333,14 @@
    "region": "road",
    "group": "roadknife",
    "calling": "stalker",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": -187.3,
    "y": -812.4,
    "at": [
     "roadknife.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "roadknife.rite4",
@@ -4648,14 +4648,14 @@
    "region": "road",
    "group": "bulwark",
    "calling": "warden",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 122.8,
    "y": -660.5,
    "at": [
     "bulwark.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "bulwark.heavy_shield",
@@ -4813,14 +4813,14 @@
    "region": "road",
    "group": "bulwark",
    "calling": "warden",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 187.3,
    "y": -812.4,
    "at": [
     "bulwark.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "bulwark.rite4",
@@ -5128,14 +5128,14 @@
    "region": "road",
    "group": "sunderer",
    "calling": "warden",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 660.5,
    "y": -122.8,
    "at": [
     "sunderer.s4"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "sunderer.morning_in_the_steel",
@@ -5293,14 +5293,14 @@
    "region": "road",
    "group": "sunderer",
    "calling": "warden",
-   "name": 8,
+   "name": "",
    "v1": false,
    "x": 812.4,
    "y": -187.3,
    "at": [
     "sunderer.s7"
    ],
-   "gate": 0
+   "gate": 8
   },
   {
    "id": "sunderer.rite4",
