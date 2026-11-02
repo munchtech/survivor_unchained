@@ -31,7 +31,7 @@ public partial class FlareFx
     float LcDay => Night ? 1f : 2.5f;
 
     /// <summary>The blade's core peak (HDR) and the sweep band's light (x albedo), night and day.</summary>
-    const float BladeHdr = 7f, BandNight = 0.6f, BandDay = 2.6f;
+    const float BladeHdr = 7f, BandNight = 0.6f, BandDay = 7f;
 
     void LcLightsMake()
     {
@@ -51,6 +51,7 @@ public partial class FlareFx
                 lcSweepL[i] = l;
             }
         if (lcBladeFx == null) lcBladeFx = LcStrip(out lcBladeMesh, out lcBladeMat, false);
+        if (!lcLateHooked) { RenderingServer.FramePreDraw += LcStripsLate; lcLateHooked = true; }
         if (lcColumnFx == null) lcColumnFx = LcStrip(out lcColumnMesh, out lcColumnMat, true);
         if (lcSweepHaze == null)
         {
@@ -63,6 +64,20 @@ public partial class FlareFx
             };
             AddChild(lcSweepHaze);
         }
+    }
+
+    bool lcBladeLate, lcLateHooked;
+
+    /// <summary>The blade's strip from the steel's pose as it will be drawn (RenderingServer.FramePreDraw).</summary>
+    void LcStripsLate()
+    {
+        if (!IsInstanceValid(this) || !lcBladeLate || lcBladeMesh == null || lcBladeMat == null || !HasBlade) return;
+        LcStripDraw(lcBladeMesh, lcBladeMat, BladeAt(0.08f), BladeAt(1f), 0.05f);
+    }
+
+    public override void _ExitTree()
+    {
+        if (lcLateHooked) { RenderingServer.FramePreDraw -= LcStripsLate; lcLateHooked = false; }
     }
 
     MeshInstance3D LcStrip(out ImmediateMesh mesh, out ShaderMaterial mat, bool column)
@@ -135,10 +150,13 @@ public partial class FlareFx
         {
             bool on = HasBlade && core > 0.01f;
             lcBladeFx.Visible = on;
+            lcBladeLate = false;
             if (on)
             {
                 lcBladeMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.58f, BladeHdr * core * flash));
-                LcStripDraw(lcBladeMesh, lcBladeMat, BladeAt(0.08f), BladeAt(1f), 0.07f);
+                // (drawn just before the frame is drawn, LcStripsLate: drawn here, from the hand's pose before this frame's
+                // animation, it trailed the swinging steel by a frame)
+                lcBladeLate = true;
             }
         }
 
@@ -166,7 +184,7 @@ public partial class FlareFx
             var p = new Vector3(at.X + Mathf.Cos(ai) * r, 0, at.Z + Mathf.Sin(ai) * r);
             p.Y = (float)HeightAt(p.X, p.Z) + 0.5f;
             l.GlobalPosition = p;
-            l.LightEnergy = (Night ? 1.3f : 3.2f) * sweepK * flash * LcLight;
+            l.LightEnergy = (Night ? 1.3f : 5f) * sweepK * flash * LcLight;
             l.Visible = l.LightEnergy > 0.01f;
         }
         if (lcSweepHaze != null && lcHazeMat != null)
@@ -202,14 +220,19 @@ public partial class FlareFx
         {
             lcHandLight.Visible = on;
             lcHandLight.OmniRange = 3f;
-            lcHandLight.LightEnergy = (Night ? 1.4f : 3.5f) * a * flash * LcLight;
+            lcHandLight.LightEnergy = (Night ? 0.9f : 3.5f) * a * flash * LcLight;
         }
         if (!on) return;
         var foot = new Vector3(Her.X, (float)HeightAt(Her.X, Her.Z) + 0.02f, Her.Z);
         lcHandLight.GlobalPosition = foot + Vector3.Up * 0.35f;
         lcColumnMat.SetShaderParameter("col", new Color(1f, 0.84f, 0.55f, a * flash));
         LcStripDraw(lcColumnMesh, lcColumnMat, foot, foot + Vector3.Up * h, 0.3f);
-        if (Args.Has("shot") && f is 1 or 2) Shots.Want(f == 1 ? "bx_spend_a" : "bx_spend_b", 0);
+        // (the pictures: a frame of the Spend's first two, each taken once the next is drawn)
+        if (Args.Has("shot"))
+        {
+            GD.Print($"longcut column frame {f}: {h:0.00} m, HDR {a * flash:0.0}, drawn {Engine.GetFramesDrawn()}");
+            if (f == 1) { Shots.WantFrames("bx_spend_a", 0); Shots.WantFrames("bx_spend_b", 1); }
+        }
     }
 
     /// <summary>By day the sun and ambient dip to 0.65 from the Spend to the cleave's +0.35 s, back by +0.75 s (real).</summary>
