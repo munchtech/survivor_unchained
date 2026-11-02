@@ -194,8 +194,23 @@ public sealed partial class Battle
 
     /* --------------------------------------------------------------- stalker -- */
 
+    /// <summary>hand.stalker.second_wind (the hearth's fourth Hand lamp, v2): a true blow on a champion in the window gives
+    /// back a share of a dash, once a dash.</summary>
+    bool secondWindSpent;
+    void HandSecondWind()
+    {
+        if (secondWindSpent || !HandRule("hand.stalker.second_wind")) return;
+        secondWindSpent = true;
+        var p = Player;
+        int max = RoundInt(Stats.Get(Stat.DashCharges));
+        if (p.DashCharges >= max) return;
+        p.DashRecharge += Lamps.Full("hand.stalker.second_wind", "share", 0.25) * Abilities.Dash.Recharge;
+        if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
+    }
+
     void HandOnDash()
     {
+        secondWindSpent = false;
         if (StalkerHand) handDashUntil = Time + Abilities.Dash.Time + HS.Seconds;
     }
 
@@ -220,6 +235,8 @@ public sealed partial class Battle
         {
             case 1:
                 if ((e.Elite || e.Boss) && o.Weapon is { } w && !o.Summon && w.Tags.Has(Tag.Holy)) HandStone(e, w);
+                // hand.warden.heavy_stone (the hearth's fourth Hand lamp, v2): a heavy blow on a champion lays a stone, once a firing.
+                else if (heavy && (e.Elite || e.Boss) && o.Weapon is { } hw && !o.Summon && HandRule("hand.warden.heavy_stone")) HandStone(e, hw);
                 break;
             case 2:
                 if (!o.Dot && !o.Summon && (o.Weapon != null || o.Projectile)) HandReaverHit(e);

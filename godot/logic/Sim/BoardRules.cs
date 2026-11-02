@@ -205,10 +205,10 @@ public sealed partial class Battle
         {
             double d = Dist(e.X, e.Z, Player.X, Player.Z);
             if (d > l.Full("blue.long_watch", "far", 10)) m *= 1 + l.Full("blue.long_watch", "more", 0.35);
-            else if (d < l.Full("blue.long_watch", "near", 4)) m *= 1 - l.Full("blue.long_watch", "softer", 0.35);
+            else if (d < l.Full("blue.long_watch", "near", 4)) m *= 1 - l.Full("blue.long_watch", "less", 0.35);
         }
         if (l.Has("blue.pack_remembers") && o.Summon)
-            m *= 1 + Math.Min(l.Full("blue.pack_remembers", "cap", 0.4), packKills * l.Full("blue.pack_remembers", "grow", 0.02));
+            m *= 1 + Math.Min(l.Full("blue.pack_remembers", "cap", 0.4), packKills * l.Full("blue.pack_remembers", "per", 0.02));
         return m;
     }
 
@@ -275,7 +275,7 @@ public sealed partial class Battle
         // blue.butchers_block: a heavy blow on a bleeding thing bursts the bleed, all its damage at once.
         if (heavy && bleed != null && bleed.T > 0 && l.Has("blue.butchers_block"))
         {
-            double all = bleed.Power * bleed.T;
+            double all = bleed.Power * bleed.T * l.Full("blue.butchers_block", "share", 1);
             e.Status.Remove(StatusKind.Bleed);
             if (all > 0) HitEnemy(e, all, School.Physical, DotBleedBurst, new HitOpts { NoCrit = true, NoProcs = true, Dot = true, Credit = "butchers_block" });
             return;
@@ -284,7 +284,7 @@ public sealed partial class Battle
         if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= 1)
         {
             e.PoachedAt = Time;
-            bleed.Power *= 2;
+            bleed.Power *= l.Full("blue.poachers_mercy", "mul", 2);
         }
     }
 

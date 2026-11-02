@@ -327,13 +327,15 @@ public static class LampBook
 
     /// <summary>Lamps v2: the blue lamps whose price is a number of hers (LAMPS_V2_RULES.md "The new blue lamps"), kept in
     /// full by night. The rest of their prices are rules the fight reads (Sim/BoardRules.cs).</summary>
+    const double BaseDashCharges = 2;
+
     static void BluePrices(LampLoadout o)
     {
         // blue.butchers_block: less maximum health.
         if (o.Has("blue.butchers_block")) o.Mods.Add(new StatMod(Stat.MaxHealth, ModKind.More, -o.Full("blue.butchers_block", "health", 0.2), "price:blue.butchers_block"));
-        // blue.poachers_mercy, blue.pack_remembers: one dash charge.
+        // blue.poachers_mercy, blue.pack_remembers: "you have 1 dash charge" (`charges`), from the base two: one fewer.
         foreach (var r in new[] { "blue.poachers_mercy", "blue.pack_remembers" })
-            if (o.Has(r)) o.Mods.Add(new StatMod(Stat.DashCharges, ModKind.Flat, -o.Full(r, "dash", 1), "price:" + r));
+            if (o.Has(r)) o.Mods.Add(new StatMod(Stat.DashCharges, ModKind.Flat, Math.Min(0, o.Full(r, "charges", 1) - BaseDashCharges), "price:" + r));
     }
 
     /// <summary>The road lit deepest (the type's own on a tie): its cards lean by night.</summary>

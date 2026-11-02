@@ -909,7 +909,7 @@ public sealed partial class Battle
         StalkerOnHit(e, o, dmg);
         if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
         if (Lamps.Board) BoardOnHit(e, school, tags, o, dmg, heavy, crit);
-        if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); }
+        if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
         FlareOnHit(e, o, dmg);
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
@@ -1099,7 +1099,7 @@ public sealed partial class Battle
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 // blue.drowned_lung: frost skills freeze in half the time.
                 if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
-                    cur.Stacks += p.Power * (Lamps.Full("blue.drowned_lung", "chill", 2) - 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
