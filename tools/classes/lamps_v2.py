@@ -658,7 +658,10 @@ def main():
             assert brit not in t.lower(), (l["id"], brit)
         assert "  " not in t and t.endswith("."), l["id"]
 
-    data = {"version": 2, "story": v1["story"], "roads": v1["roads"], "flares": v1["flares"], "groups": board["groups"], "lamps": lamps}
+    # Relit lamp-posts (CLASS_IDENTITY_AND_TALENTS.md 3.2 "Points"): a lamp each, four an act. Only the ids are
+    # Classes'; where each post stands is Env/story's (LampBook.RelightPost sets the fact lampposts.<id>).
+    posts = [f"act1.post{i}" for i in range(1, 5)]
+    data = {"version": 2, "story": v1["story"], "posts": posts, "roads": v1["roads"], "flares": v1["flares"], "groups": board["groups"], "lamps": lamps}
     with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(data, fh, indent=1, ensure_ascii=False)
         fh.write("\n")

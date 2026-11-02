@@ -253,8 +253,9 @@ public partial class ArtsScreen : Overlay
             int k = i;
             chips.AddChild(Kit.Word($"{i + 1}", () =>
             {
-                if (!Safe) status = "Change layouts somewhere safe.";
-                else { G.Gear((j, _) => LampBook.Switch(j.Ch, k)); status = ""; }
+                bool done = false;
+                if (Safe) G.Gear((j, _) => done = LampBook.Switch(j.Ch, k, j.World, G.Zone?.Id));
+                status = done || k == st.Active ? "" : "Change layouts by day, in town.";
                 Refresh();
             }, i == st.Active ? Style.EmberHi : Kit.Ink2));
         }

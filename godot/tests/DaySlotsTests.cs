@@ -57,7 +57,7 @@ public class DaySlotsTests
         // Its free lamps are lit and its Strike carried, as a type change would leave them.
         Assert.All(LampBook.State(ch).Layouts, l => Assert.Equal(Lamps.Road(road).Strike, l.Flare));
         Assert.Subset(LampBook.State(ch).Layouts[1].Lit.ToHashSet(), LampBook.Free(ch, LampBook.State(ch).Layouts[1]));
-        Assert.True(LampBook.Switch(ch, 1));
+        Assert.True(LampBook.Switch(ch, 1, new WorldState { Time = TimeOfDay.Day }, "waystation"));
         Assert.Equal(road, LampBook.Now(ch).Type);
     }
 

@@ -182,6 +182,8 @@ public static class Lamps
         public List<LampDef> Lamps = new();
         /// <summary>The story's fights whose first win lights a lamp (their arena ids).</summary>
         public List<string> Story = new();
+        /// <summary>v2: the dark lamp-posts whose relighting gives a lamp (LampBook.RelightPost).</summary>
+        public List<string> Posts = new();
         public int Version = 1;
     }
 
@@ -192,6 +194,7 @@ public static class Lamps
         public readonly Dictionary<string, FlareDef> Flares;
         public readonly Dictionary<string, List<string>> Next = new();
         public readonly List<string> Story;
+        public readonly List<string> Posts;
 
         public Board(File f)
         {
@@ -199,6 +202,7 @@ public static class Lamps
             Roads = f.Roads.ToDictionary(r => r.Id);
             Flares = f.Flares.ToDictionary(x => x.Id);
             Story = f.Story;
+            Posts = f.Posts;
             foreach (var l in f.Lamps)
             {
                 Next[l.Id] = new();
@@ -234,6 +238,7 @@ public static class Lamps
     public static IReadOnlyDictionary<string, RoadDef> Roads => B.Roads;
     public static IReadOnlyDictionary<string, FlareDef> Flares => B.Flares;
     public static IReadOnlyList<string> StoryFights => B.Story;
+    public static IReadOnlyList<string> Posts => B.Posts;
 
     public static LampDef Get(string id) => B.All.TryGetValue(id, out var l) ? l : throw new KeyNotFoundException($"no lamp {id}");
     public static LampDef? Find(string id) => B.All.GetValueOrDefault(id);

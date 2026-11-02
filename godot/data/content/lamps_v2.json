@@ -6,6 +6,12 @@
   "dig_boils",
   "vault_opened"
  ],
+ "posts": [
+  "act1.post1",
+  "act1.post2",
+  "act1.post3",
+  "act1.post4"
+ ],
  "roads": [
   {
    "id": "sunderer",
