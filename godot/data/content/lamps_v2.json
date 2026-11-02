@@ -1932,13 +1932,13 @@
     "arcanist.hand2"
    ],
    "gate": 0,
-   "text": "Your Hand's ground spreads 1.1 m round, not 1 m.",
+   "text": "Your Hand's ground spreads 1.5 m round, not 1 m.",
    "effects": [
     {
      "do": "rule",
      "rule": "hand",
      "args": {
-      "radius": 0.1
+      "radius": 0.5
      }
     }
    ]
@@ -12272,7 +12272,7 @@
    ],
    "gate": 5,
    "text": "A blow that strikes true on a bleeding thing doubles its bleed.",
-   "price": "You have 1 dash charge.",
+   "price": "1 dash charge fewer.",
    "effects": [
     {
      "do": "rule",
@@ -13421,7 +13421,7 @@
    ],
    "gate": 7,
    "text": "Summons stay the night and grow 2% with every kill, to 40%.",
-   "price": "You have 1 dash charge.",
+   "price": "1 dash charge fewer.",
    "effects": [
     {
      "do": "rule",

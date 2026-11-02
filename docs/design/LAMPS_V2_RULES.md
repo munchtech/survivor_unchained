@@ -23,7 +23,7 @@ Effects use v1's helpers (`M`, `A`, `R`, `F`, `FM`). **`phase`** has the same me
 - A small is never a bare "+n%": it names a condition or two tags.
 - A notable is one rule that deepens or joins.
 - A blue is a big rule; its price goes in `price`.
-- By night a small's numbers run at a quarter (v1's rule). Rites, links, Hand lamps and blue prices are rules, so they're in full.
+- By night a small gives nothing but its road's lean (v1's rule, CLASSES §2.10); a notable's sizes run at a quarter. Rites, links, Hand lamps and blue prices are rules, so they're in full.
 
 ## Rites (72): `R("rite", tags="<tag>", mech="<mech>", ...)`
 
@@ -137,7 +137,7 @@ The rule ids are fixed; the content writes the args and the words.
 
 The sim side is `Sim/BoardRules.cs` plus guarded hooks (every one behind `LampLoadout.Board`, set when a v2 rule is lit). With v2 off the harness is byte-identical to before (full and empty lamps byte-for-byte; suggested the same lines). What the contract left open, and how the code reads it:
 - **Args:** an `args` value that is a word (`mech`, `trigger`, `when`, `vs`, `status`) lands in `LampEffect.Words`; numbers in `Args`. `status` may also be the effect's own `status` field.
-- **By night (v2 only):** a small's rules and numbers come into the night at a quarter (`Size`, `SizeOn`); v1's smalls still give only the lean. Rites, links, Hand lamps and blue args are read in full.
+- **By night:** a small (v1 or v2) gives only its road's lean (the lead's ruling, 2 November: CLASSES §2.10 stands; the contract's first draft was wrong). Notables' sizes run at a quarter (`Size`, `SizeOn`). Rites, links, Hand lamps and blue args are read in full.
 - **`Battle.LinkWait(lamp)`** is the share of the wait still to run: 0 ready, 1 just fired. `Battle.LinkSkill(lamp)` is the skill it would fire now.
 - **Links:** a `kills` link counts every kill, fires on the count-th if its wait is up (else on the next one that is); `crowd` and `still` are checked 4 times a second; `hurt` reads one blow after the shield; `low` is the crossing of half health.
 - **Rites:** a heavy rite counts its own firings and applies only to skills the warden's Hand doesn't already make heavy. A stone rite makes the wall answer on hands.json's numbers for any calling.

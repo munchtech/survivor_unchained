@@ -284,12 +284,10 @@ public static class LampBook
         var o = new LampLoadout { Night = night, Type = l.Type, Flare = Carried(ch), Lit = l.Lit.Count };
         var counts = new Dictionary<string, double>();
         if (l.Links != null) foreach (var (k, v) in l.Links) o.Links[k] = v;
-        // v2: by night a small's numbers run at a quarter (LAMPS_V2_RULES.md "Words"), where v1's small only leans the draft.
-        bool v2 = Lamps.V2;
         foreach (var id in l.Lit)
         {
             if (Lamps.Find(id) is not { } d) continue;
-            bool small = !v2 && d.Kind is LampKind.Small or LampKind.Attribute;
+            bool small = d.Kind is LampKind.Small or LampKind.Attribute;
             foreach (var e in d.Effects)
             {
                 if (e.Phase > Lamps.LivePhase) continue;
@@ -320,7 +318,7 @@ public static class LampBook
             }
         }
         foreach (var (stat, v) in counts) o.Mods.Add(new StatMod(stat, ModKind.Flat, Math.Min(Lamps.NightCount, v), "lamps:counts"));
-        if (v2) BluePrices(o);
+        if (Lamps.V2) BluePrices(o);
         o.Lean = LeanRoad(ch);
         return o;
     }
