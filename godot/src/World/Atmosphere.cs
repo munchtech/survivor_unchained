@@ -210,7 +210,7 @@ public partial class Atmosphere : Node3D
         // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
         // play's presets (E1) nudged, for a sweep of pictures in one build.
         if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
-            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay)))
+            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay) || ReferenceEquals(p, Atmospheres.NightTown)))
         {
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
             string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
@@ -235,7 +235,7 @@ public partial class Atmosphere : Node3D
                     MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
                     MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
                     PaintShadow = H("psh", p.Grade.PaintShadow), PaintShadowK = T("pshk", p.Grade.PaintShadowK), PaintVib = T("pvib", p.Grade.PaintVib),
-                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi),
+                    PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi), PaintShadowSkin = T("pshskin", p.Grade.PaintShadowSkin),
                 },
             };
         }
