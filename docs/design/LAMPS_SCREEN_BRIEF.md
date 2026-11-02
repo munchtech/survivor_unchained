@@ -1,6 +1,6 @@
 # The Lamps screen: the UI design brief
 
-UI 25, 2 November 2026. This is the design for the real Lamps screen (PHASE2_SCOPE.md item 5): the board v2, the Wicks, the layouts and respec, on one screen. It follows CLASS_IDENTITY_AND_TALENTS.md §3.2-3.6, which the owner approved on 27 October. The owner answered PHASE2_SCOPE's order question on 2 November with "Board + Lamps first". The look is the owner's pick from the directions in §12. Everything else here is the UI lead's design and holds for any direction. Classes' functional pages (ArtsScreen behind `--board`) keep working until this screen lands.
+UI 25, 2 November 2026. This is the design for the real Lamps screen (PHASE2_SCOPE.md item 5): the board v2, the Wicks, the layouts and respec, on one screen. It follows CLASS_IDENTITY_AND_TALENTS.md §3.2-3.6, which the owner approved on 27 October. The owner answered PHASE2_SCOPE's order question on 2 November with "Board + Lamps first". The look is the owner's pick from the directions in §12: **picked 2 November, Option 1: C "The Day's Book" as the default, with A "Nightfall" as its Open wide (B cut).** §16 holds the rules the mock rounds settled; where it differs from §4-§12, §16 wins. Everything else here is the UI lead's design. Classes' functional pages (ArtsScreen behind `--board`) keep working until this screen lands.
 
 ## 1. The owner's words this answers
 - "as simple to figure out as just clicking and having fun, but as complex to master to have fun planning" (skill trees, 11 October).
@@ -264,3 +264,51 @@ All three share §4-§11. They differ in what the board *is*.
 - No label overlaps a lamp or another label at any stop (a test).
 - Text is at least 13 px at 1080. The card never needs hover-only information on a pad.
 - Perf ABAB within §13.
+
+## 16. The pick and what the mock rounds settled (UI 26, 2 November; supersedes §4-§12 where they differ)
+The owner: "i agree with the option 1 for lamps sheet": **C is the default, A is its Open wide (Z, R3).** B was tried, judged far and cut. The look reference is `survivorsunchained_inputs\ui25_lamps\` (the owner's sheet and five 1:1 frames). The mock is `tools/uiforge/lamps_mock/`. Judge r2 (max) passed C by day; the fixes for C night, A day, A night and A valley were built after it and are unjudged (the build's first judge checks them).
+- **Edges, C:** the board feathers to 0 alpha over 48 px inside its window (smoothstep), on all four sides. No inner frame: the panel's ground is the board's ground.
+- **Edges, A:** the field fades over y 84-124 and 900-960. A 32 px soft knockout surrounds the statues and the seat panel (48 px at the girl's face), taken from the HUD's own alpha. Her silhouette is knocked out too (10 px feather), so no lamp, road or label crosses her: she stands on her road.
+- Number chips (plan numbers, gate numerals) fade with their lamps.
+- **Centering on open:** the lit lamps' bbox (plus the focus's path) is centered, with every lit lamp at least 96 px inside the window's edge.
+- **The card:**
+  - Try right of the lamp, then left, above and below, each 22 px from the lamp's rim and shifted in 8 px steps up to ±120 px.
+  - It never covers a lit lamp, the path preview or the focus lamp.
+  - Its edge band (the rect grown by 6 px) never crosses a lamp or a label; if no spot is clean, take the least overlap.
+  - A soft 20 px drop shadow, black at 45%.
+- **The path preview reads first:**
+  - the path's roads 3 px #ffd27a at 100%, dashed 6 on and 4 off, running at 30 px/s;
+  - ordinary fuses 2 px at 60%;
+  - lamps on the path get a 60% warm inner glow.
+- **Gate notches:** the numeral shows only on blocked lamps that touch a non-blocked lamp (the threshold), and on the focused lamp. This replaces §5/§6's notch on every blocked lamp.
+- **Blue lamps are cobalt glass,** not glossy marbles: a dark core (#0d2a6b), a cobalt rim (#3b6fd8), a 2 px crescent glint at the upper left and a faint reflection at the lower right. The 4-prong collet stays.
+- **Link lamps** get a 1 px inner chain-link stroke.
+- **Labels:**
+  - at least 40 px from the header, the card and the wick panel;
+  - at least 64 px inside the screen's edge;
+  - labels that sit on roads get a 3 px dark halo at 60%.
+- **The Valley stop:**
+  - roads 1.5 px at 40%, unlit dots at least 3 px at 50%;
+  - three faint concentric guides (the hearths', the roads' and the Old Roads' rings; each radius is the median distance of that group's lamps; 1 px, #d8cfbd at 18%);
+  - the ring fits inside the unfaded field (the mock: ×0.9 of the field-height fit).
+- **The wick panel has no box in either view:**
+  - C: a smoked band, the panel's ground ×0.65, with a feathered 24 px top. A: smoke at 88%, fading to 0 over 24 px at its edges.
+  - No gold rim and no hairline.
+  - **The wick stem is the braid's root:** one continuous gold line rises from the chosen tab or seat, bends on a 20 px radius, and becomes the three-ply braid (about 40 px) before the three strands part.
+- **No floating card inside the wick panel:**
+  - The focused lamp's row carries its name, its line in at most 2 lines (Alegreya 14), and the state line (Alegreya Sans 13, gold #e8c87a).
+  - A focused lead-in lamp's text takes the row's text slot while it's focused.
+  - The plan number sits at the node's upper left (-16, -16); the row's text starts 14 px past the node's ring.
+- **A's wick panel is placed from the HUD's geometry, never hardcoded** (read `godot/art/ui/dg_keeper/hud_a_geo.json` and `hud.json` bottomScale at runtime; the HUD is still changing):
+  - If the gap between the statues' inner edges, across the panel's height, is at least the panel's width + 48 px, it sits between them.
+  - Otherwise it sits above both heads at §8's 780 px, its bottom 24 px above the higher head's top, centered on the bar.
+  - The stem rises from the chosen seat to it. UI 27's geometry (ui-27@744a69370: girl top 861, keeper top 863, HUD x 360-1554) puts it above the heads.
+- **C with the wick open:** no card over the board. The board slides, and zooms out continuously if needed (the mock used 0.70 px a unit), so the lit cluster sits in the band above the wick band.
+- **C's page glow:** a 15% warm radial (#ffcf86, about 1.6× the cluster's bbox) on the page under the lit cluster, echoing A's pools.
+- **A's night grade:** ×0.62 with a moonlight multiply (0.85, 0.93, 1.10), so the world outside the pools reads (a mean luma about 18 of 255), with the pools at full color. This replaces §12 A's ×0.30.
+- **Prompts:**
+  - C's foot row: by day "Click Choose a wick · Tab Wick · F Find · H Home"; with the wick open "Click Plan · Space Light my way · Tab Board". The book's own "K Close" stays at the top right.
+  - A: Find shows once, in the header ("Y Light my way · L3 Find · B Close").
+  - A, lower right: "LT RT Zoom · LB RB Next lamp" / "R3 Home · View The book"; with the wick open "A Unplan / Y Light my way / B Back".
+  - **Open wide on the pad is View** (§12 C's "Z or R3" clashed with §10's R3 Home). View in C opens wide; View in A goes back to the book. The layouts are reached with D-pad up (the coins), as §10 already allows. The keyboard keeps Z both ways.
+  - The L3/R3 caps are new 22 px stick-press icons: a dark disc, a light rim, a dished inner ring and a bold L or R. The game's `pad_lstick`/`pad_rstick` mean stick movement and read as bare crescents at 22 px.
