@@ -53,9 +53,9 @@ public static class Glyphs
     /// <summary>A glyph as a texture, at a size in pixels. A painted icon
     /// (art/ui/icons/glyph/KEY.png, white on transparent) is tinted the same
     /// way and wins, so painted icons keep every state colour the glyphs had.</summary>
-    /// <summary>Art keys that show another key's icon until they get their own (Rebuke and Watch Bell took their own
-    /// art keys for Combat VFX, 2 November; their icons are still Dawnpulse's until UI paints theirs).</summary>
-    static readonly Dictionary<string, string> Borrowed = new() { ["rebuke"] = "nova_holy", ["watch_bell"] = "nova_holy" };
+    /// <summary>Art keys that show another key's icon until they get their own (empty since UI 24 gave Rebuke and Watch
+    /// Bell theirs: line glyphs in glyphs.json and paintings in icons/glyph_color).</summary>
+    static readonly Dictionary<string, string> Borrowed = new();
 
     /// <summary>The key whose icon an art key shows (itself, or the one it borrows).</summary>
     public static string IconKey(string key) => Borrowed.TryGetValue(key, out var lent) ? lent : key;
