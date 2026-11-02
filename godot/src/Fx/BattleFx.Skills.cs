@@ -49,6 +49,7 @@ public partial class BattleFx
     /// still for a critical), then what that kind of blow throws.</summary>
     void Impact(Ev.Hit e, Vector3 at)
     {
+        if (WgOwns(e)) return;
         var school = e.School;
         var pal = Palette.Of(school);
         string art = e.Art ?? "";
@@ -932,6 +933,7 @@ public partial class BattleFx
     /// as itself when it lands.</summary>
     bool Fall(Ev.Strike e)
     {
+        if (WgStrike(e)) return true;
         string art = e.Art ?? "";
         if (art is not ("storm_bolt" or "storm_clap" or "storm_eye" or "arc_sky" or "moonfall" or "arrow_rain" or "slash_quake")) return false;
         float r = (float)e.Radius;
@@ -1030,6 +1032,7 @@ public partial class BattleFx
     /// burning core, a flare at each end, and what it sheds along its length.</summary>
     bool Lance(Ev.Beam e)
     {
+        if (WgBeam(e)) return true;
         string art = e.Art ?? "";
         if (!art.StartsWith("beam")) return false;
         float g = Grow(e.Rank);

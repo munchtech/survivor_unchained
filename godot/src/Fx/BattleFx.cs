@@ -1293,6 +1293,9 @@ public partial class BattleFx : Node3D
                 // under it was a pink-white ball at every moon.
                 case Ev.Explosion { Art: "moonfall" }:
                     break;
+                case Ev.Explosion { Art: "slash_quake_heave" } e:
+                    WgHeave(e);
+                    break;
                 case Ev.Explosion e:
                 {
                     float gy = Y(e.X, e.Z), r = (float)e.Radius;
@@ -1840,6 +1843,7 @@ public partial class BattleFx : Node3D
         StepOathPools(hsw);
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
+        StepWardenGround(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(hfx);
         Books.Step(fdt);
