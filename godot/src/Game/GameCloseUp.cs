@@ -386,14 +386,19 @@ public partial class Game
     // and moon rim on a package NPC's red-rich paint read lavender, then rose-magenta on the far cheek and nose (NPC 20's judges;
     // Rendering 2 j1). Night only: by day she is on layer 2 and the rig is shared, as before. --close-folk off: as before.
     // (j2: the faces passed; the amber fill's even 26-degree cone lit pale coats and tunics as bright as the face, studio-lit on the
-    // blue town, and the key's amber sheen on steel read mauve. So the amber fill narrows onto the head (CloseFolkFillCone, its edge
-    // soft) and falls off down the body, a weak teal wash (CloseFolkCool of the fill, the cone as wide as before) ties the body into
+    // blue town, and the key's amber sheen on steel read mauve. So the amber fill and the key narrow onto the head (CloseFolkFillCone, the
+    // edge soft) and fall off down the body (Chid's tunic: the key, the fill and the moon each about a third of its light), a weak teal wash (CloseFolkCool of the fill, the cone as wide as before) ties the body into
     // the night, and the key on them is a yellower amber with less sheen.)
     SpotLight3D? keyFolk, rimFolk, coolFolk;
     void FolkTwins(bool on, Vector3 head = default)
     {
         Twin(closeKey, ref keyFolk, "CloseKeyFolk", on, CloseFolkKey, null, CloseFolkKeySpec);
-        if (keyFolk != null && keyFolk.Visible) keyFolk.LightColor = keyFolk.LightColor.Lerp(CloseKeyColourFolk, 0.5f);
+        if (keyFolk != null && keyFolk.Visible)
+        {
+            keyFolk.LightColor = keyFolk.LightColor.Lerp(CloseKeyColourFolk, 0.5f);
+            keyFolk.SpotAngle = CloseFolkFillCone; keyFolk.SpotAngleAttenuation = CloseFolkFillEdge;
+            keyFolk.LookAt(head);
+        }
         Twin(closeFill, ref closeFillFolk, "CloseFillFolk", on, 1f, CloseFillColourFolk, 0f);
         if (closeFillFolk != null && closeFillFolk.Visible)
         {
@@ -591,7 +596,7 @@ public partial class Game
     /// <summary>--close-folk-fill-cone DEG, --close-folk-fill-edge A: the amber fill's cone on people, aimed at the head, and its edge's
     /// falloff (Godot's spot angle attenuation). --close-folk-cool K: the teal wash's share of the fill. --close-folk-key-spec S,
     /// --close-key-colour-folk R,G,B: the key's sheen on people and the colour it is drawn halfway to.</summary>
-    static float CloseFolkFillCone => Args.Num("close-folk-fill-cone", 14f);
+    static float CloseFolkFillCone => Args.Num("close-folk-fill-cone", 11f);
     static float CloseFolkFillEdge => Args.Num("close-folk-fill-edge", 2f);
     static float CloseFolkCool => Args.Num("close-folk-cool", 0.25f);
     static float CloseFolkKeySpec => Args.Num("close-folk-key-spec", 0.12f);
