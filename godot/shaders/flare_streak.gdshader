@@ -12,6 +12,8 @@ void fragment() {
 	float x = abs(UV.x * 2.0 - 1.0);
 	float across = (1.0 - x) * (1.0 - x) * (1.0 - x);
 	float y = UV.y;
-	float along = column > 0.5 ? smoothstep(0.0, 0.06, y) * pow(1.0 - y, 1.6) : smoothstep(0.0, 0.12, y) * (1.0 - smoothstep(0.86, 1.0, y));
+	// (r3c: the column held its light only near its foot, (1 - y)^1.6, and the play camera's 64-degree pitch
+	// shortens 2.3 m to ~80 px: it merged with the pool at her feet. Now even up its lower half, out over the top.)
+	float along = column > 0.5 ? smoothstep(0.0, 0.06, y) * (1.0 - 0.35 * y) * (1.0 - smoothstep(0.5, 1.0, y)) : smoothstep(0.0, 0.12, y) * (1.0 - smoothstep(0.86, 1.0, y));
 	ALBEDO = col.rgb * col.a * across * along;
 }

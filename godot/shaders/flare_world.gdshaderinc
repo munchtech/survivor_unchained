@@ -411,7 +411,7 @@ float fl_seam_near(vec4 sw, float lod) {
 // tapers, pinches and pools), its strength wandering +-40% along the line. The reach beyond is the lights' work.
 // (The r3b band, max(core, 0.45 * exp(-(|perp| - 0.4) * 1.8)), was an even-width tube about the straight line.)
 float fl_seam_glow(vec4 sw) {
-	float m = fl_in_strip(sw.zw) * clamp(textureLod(flare_crack_b, sw.zw, 4.0).b * 3.5, 0.0, 1.0);
+	float m = fl_in_strip(sw.zw) * clamp(textureLod(flare_crack_b, sw.zw, 4.0).b * 2.5, 0.0, 1.0);
 	float n = mix(texture(flare_noise, vec2(sw.x * 0.21, 0.37)).g, texture(flare_noise, vec2(sw.x * 0.67, 0.81)).r, 0.4);
 	return m * (0.6 + 0.8 * smoothstep(0.3, 0.7, n));
 }
@@ -441,10 +441,10 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	float core = texture(flare_crack_b, uv2).b * fl_in_strip(uv2) * smoothstep(0.05, 0.35, 1.0 - B.a);
 	float h = fl_seam_heat(age);
 	// The char along it: the blurred coverage, darker near the crack, gone with the scar.
-	// (r3c: at most 40% darker, from a mip that keeps the crack's own width (the strip's scorch is now within it),
+	// (r3c: with the strip's 0.3 scorch paint, at most ~40% darker in all, from a mip that keeps the crack's own width (the strip's scorch is now within it),
 	// settling to half as the seam cools)
 	float charb = textureLod(flare_crack_a, uv, 3.0).a * inb * smoothstep(0.0, 0.25, age);
-	alb *= 1.0 - clamp(charb * 1.2, 0.0, 0.4) * mix(0.5, 1.0, 1.0 - smoothstep(0.5, 2.8, age)) * fade;
+	alb *= 1.0 - clamp(charb * 0.5, 0.0, 0.15) * mix(0.5, 1.0, 1.0 - smoothstep(0.5, 2.8, age)) * fade;
 	alb = mix(alb, A.rgb, cov * fade);
 	rough = mix(rough, 0.95, cov * fade);
 	vec2 nt = B.rg * 2.0 - 1.0;
@@ -452,15 +452,17 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	nrm_view = normalize(mix(nrm_view, (view * vec4(nwld, 0.0)).xyz, cov * fade));
 	// The light from below: gold-white along the hottest lengths, the walls a deep red-gold.
 	float hot = 0.75 + 0.5 * smoothstep(0.25, 0.75, texture(flare_noise, vec2(sw.x * 0.16, 0.13)).r);
-	// (r3c: the walls' faint light only inside the gap, not over the whole char: embers in the crack, never on its lips)
+	// (r3c: the walls catch a faint light only deep in the gap, near its floor: a flat 0.06 over the gap (r3b: over
+	// the whole char) was the even tube round the hairline. Embers in the crack, never on its lips.)
 	float gap = smoothstep(0.72, 0.6, B.a) * inb;
-	vec3 e = fl_seam_col(h * mix(0.7, 1.12, core) * hot) * pow(h, 1.3) * (core * 0.95 + 0.06 * gap * open) * mix(3.4, 2.0, night) * fade;
+	vec3 e = fl_seam_col(h * mix(0.7, 1.12, core) * hot) * pow(h, 1.3) * (core * 0.95 + 0.04 * gap * smoothstep(0.45, 0.2, B.a) * open) * mix(3.4, 2.0, night) * fade;
 	// (night: the core capped, one white-gold line; the field's glow comes from the lights, not from here)
 	float cap = mix(1e3, flare_lc.z, night);
 	e = min(e, vec3(cap));
-	// Its glow at the crack's lips, gold (never cream), at most 0.4x the core's own level (0.28 x its +-40%).
+	// Its glow at the crack's lips, gold: 0.08x the core's level by day, 0.04x at night (+-40%; at 0.28x the night exposure
+	// turned it into an even cream tube the width of the gap). The lights carry the reach.
 	float lvl = min(pow(h, 1.3) * 0.95 * mix(3.4, 2.0, night) * fade, cap);
-	e += fl_seam_col(min(h * 0.72, 0.78)) * lvl * 0.28 * fl_seam_glow(sw) * (1.0 - core);
+	e += fl_seam_col(min(h * 0.72, 0.78)) * lvl * mix(0.08, 0.04, night) * fl_seam_glow(sw) * (1.0 - core);
 	emi = emi * (1.0 - cov * 0.85 * fade) + e;
 }
 

@@ -286,8 +286,8 @@ def main():
     reach = (0.02 + 0.48 * w[None, :]) * (1 + 0.45 * N.fbm(X, Y, 2.3, "reach", oct=4))   # noisy, never parallel
     char = 1 - smooth(0.0, 1.0, edge / np.maximum(reach, 0.015))
     char = np.clip(char + 0.35 * N.fbm(X, Y, 9.0, "charn", oct=3) * char * (1 - char) * 4, 0, 1)
-    # the scorch only half-paints (darkening the ground at most ~40%); the gap and the lips are the crack itself
-    alpha = np.maximum(char ** 0.8 * 0.45, (g > 0) * 1.0)
+    # the scorch only half-paints (with the shader's char, darkening the ground at most ~40%); the gap and the lips are the crack itself
+    alpha = np.maximum(char ** 0.8 * 0.3, (g > 0) * 1.0)
     alpha = np.maximum(alpha, lipzone * 0.98)
     endfade = smooth(0.0, 0.25, X) * (1 - smooth(L_M - 0.6, L_M - 0.15, X))
     # past the tip the whole mark thins out to nothing (the scorch follows the crack's own reach)

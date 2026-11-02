@@ -565,7 +565,7 @@ public partial class FlareFx
         // (r3c: narrower and 2.5x as tall as wide, rising fast; the curtain of smoke takes over from them)
         float size = (0.8f + R() * 0.35f) * taper;
         var side = new Vector3(-lcDir.Y, 0, lcDir.X) * (R() - 0.5f) * 0.12f;
-        Dust(p + side + Vector3.Up * size * 1.1f, size, size * 2.2f, 1.9f + R() * 0.5f, Vector3.Up * (1.8f + R() * 0.9f) * taper, Night ? 1.25f : 1f, 2.5f);
+        Dust(p + side + Vector3.Up * size * 1.1f, size, size * 2.7f, 1.9f + R() * 0.5f, Vector3.Up * (1.8f + R() * 0.9f) * taper, Night ? 1.25f : 1.7f, 2.5f);
     }
 
     /// <summary>A chunk of the ground thrown up and out to one side of the crack, tumbling, hot underneath at first.</summary>
