@@ -70,11 +70,15 @@ public partial class Atmosphere : Node3D
     /// <summary>The camera's say over the grade's highlight tint (0: the preset's; 1: none). The close view by night takes the
     /// near-white highlight tint off her face, which it left pale and waxy (E1 round 3); in quarter steps, each table made once.</summary>
     public float ViewHighlightsNeutral { get; private set; }
-    public void SetViewHighlights(float k)
+    /// <summary>True: the view grade keeps the preset's highlight tint (the close view by day, Rendering 2: with it neutral the sky went
+    /// from cream to a dead grey, Oklab chroma 13.7 to 0.9, and the sunlit town read overcast).</summary>
+    public bool ViewKeepHighlightTint { get; private set; }
+    public void SetViewHighlights(float k, bool keepTint = false)
     {
         k = Mathf.Round(Mathf.Clamp(k, 0, 1) * 4) / 4;
-        if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral)) return;
+        if (Mathf.IsEqualApprox(k, ViewHighlightsNeutral) && keepTint == ViewKeepHighlightTint) return;
         ViewHighlightsNeutral = k;
+        ViewKeepHighlightTint = keepTint;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue);
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
@@ -83,7 +87,7 @@ public partial class Atmosphere : Node3D
     GradeSettings ViewGrade(GradeSettings g) => ViewHighlightsNeutral <= 0 ? g
         : g with
         {
-            HighlightTint = "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
+            HighlightTint = ViewKeepHighlightTint ? g.HighlightTint : "#" + new Color(g.HighlightTint).Lerp(new Color("#bcbcbc"), ViewHighlightsNeutral).ToHtml(false),
             Moon = g.Moon * (1 - CloseMoonOff * ViewHighlightsNeutral),
             // (The close view by night takes its own paint grade: art style round 1's, which kept her copper hair.)
             PaintVib = Mathf.Lerp((float)g.PaintVib, CloseVib, ViewHighlightsNeutral),
