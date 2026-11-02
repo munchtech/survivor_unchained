@@ -133,6 +133,10 @@ public partial class CrowdView : Node3D
     public static Func<double, double, bool>? FlareRingPast;
     /// <summary>Last frame's audit: bodies drawn where the ring passed 4+ frames ago, and those of them not charred.</summary>
     public static int FlareAuditSeen, FlareAuditBad;
+    // (the pictures' census, for the Long Cut's log: what the crowd drew this frame)
+    static int censusFall, censusStatue, censusCorpse, censusBurn;
+    static double censusFallD, b0X, b0Z;
+    public static string FlareCensus => $"drawn: struck standing {censusStatue}, falling (not the Flare's) {censusFall} at mean {(censusFall > 0 ? censusFallD / censusFall : 0):0.0} m from her, corpses {censusCorpse} (burning {censusBurn})";
     /// <summary>Char: the body's paint times this (albedo under 0.06 linear).</summary>
     static readonly Color CharTint = new(0.06f, 0.048f, 0.04f, 1);
 
@@ -199,6 +203,7 @@ public partial class CrowdView : Node3D
         foreach (var g in gaits.Values) g.Seen = false;
         living = 0;
         FlareAuditSeen = FlareAuditBad = 0;
+        censusFall = censusStatue = censusCorpse = censusBurn = 0; censusFallD = 0; b0X = b.Player.X; b0Z = b.Player.Z;
         whiteFlashes = 0;
         eliteFlashes = 0;
         foreach (var e in b.Enemies.Items)
@@ -281,6 +286,7 @@ public partial class CrowdView : Node3D
                 }
                 role = g.Death ??= DeathOf(asset, e);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
+                censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
@@ -455,6 +461,7 @@ public partial class CrowdView : Node3D
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - st.Facing) * Godot.Basis.FromScale(Vector3.One * st.Scale);
             // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
             Audit(st.X, st.Z, 0, 1);
+            censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
             Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
 
@@ -511,9 +518,11 @@ public partial class CrowdView : Node3D
             var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
+            censusCorpse++;
             if (c.BurnAt >= 0)
             {
                 var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt));
+                censusBurn++;
                 crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), 0, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }

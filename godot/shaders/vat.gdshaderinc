@@ -98,7 +98,8 @@ void fragment() {
 	// which at 1:1 read as a glitch: FlareFx.LongCut.)
 	// It burns from the side facing what struck it (the nearest point of the seam, or her for the sweep) outward.
 	if (flare_lc.x > 0.0) {
-		float bn = vat_noise(vat_local * 6.0) * 0.65 + vat_noise(vat_local * 17.0) * 0.35;
+		// (3-4x finer than r2's 6 and 17: its coarse holes over a dark body read as a beige leopard-spot dissolve)
+		float bn = vat_noise(vat_local * 21.0) * 0.7 + vat_noise(vat_local * 47.0) * 0.3;
 		vec2 src = flare_at.xz;
 		if (flare_seam.w > 0.0) {
 			vec2 sd = vec2(cos(flare_seam.z), sin(flare_seam.z));
@@ -107,7 +108,8 @@ void fragment() {
 		vec2 away = vat_org.xz - src;
 		away = dot(away, away) > 1e-4 ? normalize(away) : vec2(1.0, 0.0);
 		float side = dot((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz - vat_org.xz, away);
-		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.45 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.4 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.15;
+		// (r3: the noise only rags a coherent front from the line's side; at 0.45 its fine holes peppered every body gold)
+		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.28 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.52 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.2;
 	}
 
 	if (fx.y > 0.0 && dn < fx.y) discard;
@@ -170,10 +172,16 @@ void fragment() {
 			// band just ahead of the burn line (the dissolve's edge, below). Tongues by the rim lit most of a body
 			// from the play camera ("rim" is nearly all of it from up here): the struck pack read as cream plaster
 			// ghosts with black heads (vfx9 fix2). (night: the struck bodies' glow at 0.6, the luminance cap)
+			// r3: the char is the body's own paint at a quarter, floored (a flat near-black tint read as a missing
+			// texture: vfx9 r2), lit through its own normals, matte, and seamed with dawn-gold cracks at HDR 4
+			// (0.6x at night, the luminance cap). fx.w is the char's amount.
 			float lc_night = mix(1.0, 0.6, flare_lc.w);
-			float ahead = smoothstep(fx.y + 0.13, fx.y + 0.015, dn) * (0.55 + 0.45 * lick);
-			c *= 1.0 - 0.6 * fx.w;
-			e += vec3(1.0, 0.5, 0.13) * ahead * fx.w * 1.1 * lc_night;
+			c = mix(c, max(c * 0.25, vec3(0.05, 0.043, 0.037)), fx.w);
+			rough = mix(rough, 0.88, fx.w);
+			float cn = vat_noise(vat_local * vec3(7.0, 4.5, 7.0)) * 0.7 + vat_noise(vat_local * 15.0) * 0.3;
+			// (thin and broken: r3a's 0.035-wide net over every body read as a pale lattice)
+			float crack = (1.0 - smoothstep(0.0, 0.016, abs(cn - 0.5))) * smoothstep(0.4, 0.62, vat_noise(vat_local * 3.0 + 7.0));
+			e += vec3(1.0, 0.46, 0.1) * crack * fx.w * 3.5 * lc_night;
 		} else {
 			c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 			e += vec3(1.0, 0.3, 0.03) * tongue + vec3(1.0, 0.42, 0.08) * pow(rim, 3.0) * fx.w * 0.5;
@@ -216,7 +224,8 @@ void fragment() {
 	// over all of it was a flat unlit cream body.
 	float low = min(fx.x, 0.12), high = max(fx.x - 0.12, 0.0) / 0.88;
 	// (the rim's breath gives way as the struck lift comes: at night it alone was a pale wash)
-	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1);
+	// (none on the Long Cut's struck: under the sweep at night the whole pack's breath was a field of pale ghosts)
+	e += vec3(1.0, 0.86, 0.72) * low * (1.0 - high) * (0.1 + rim * rim * 1.1) * (1.0 - lc_k);
 	// (and a breath of warm light in its own paint: no rim term, which covers the whole body from up here,
 	// and no more, or the night's dark body goes pale)
 	e += vec3(1.0, 0.62, 0.38) * c * struck * 0.25 * crit_k;
@@ -233,7 +242,8 @@ void fragment() {
 	}
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.52, 0.14) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.04, fx.y, dn) * 1.5 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 

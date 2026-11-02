@@ -19,9 +19,11 @@ namespace SurvivorUnchained.View;
  *   away from the line: one shadowed riding the fuse front, two unshadowed trailing it, the shadowed spend light at her
  *   for 0.5 s. At night the core is capped: the glow on the field is the lights', one white-gold line among the pack's
  *   orange ember-hearts.
- * - The struck: a rim for 3 frames as their moment comes (the sweep's as it passes them, the seam's as the fuse
- *   reaches them, later the farther they lie from the line), then charred and burnt away to gold embers from the side
- *   facing the line in 0.7 s (vat.gdshaderinc), then gone; a char scar where each stood for 4-5 s. Their ember drops
+ * - The struck: a warm rim for 3 frames (the sweep's as it passes them, the seam's own as the fuse reaches them), then
+ *   standing and shaded as ever (the faces the seam lights) until the fuse reaches their point on the line; their char
+ *   starts then, 0.05 s later a metre farther from the line: the paint at a quarter, lit, with dawn-gold cracks, burnt
+ *   away from the side facing the line along a thin gold edge with ash rising, gone 0.5 s after it starts
+ *   (vat.gdshaderinc); never knocked down, so no ring of bodies; a char scar where each stood for 4-5 s. Their ember drops
  *   wait until the seam has cooled (FlareFx.DropsShow). */
 public partial class FlareFx
 {
@@ -31,7 +33,7 @@ public partial class FlareFx
     /// <summary>The seam's fuse: metres a second (24 m in 0.4 s).</summary>
     const float FuseSpeed = 60f;
     /// <summary>A body's burn-up (Flare time): charred, burnt away in gold.</summary>
-    const float BurnLen = 0.7f;
+    const float BurnLen = 0.5f;
     const float SweepLen = 0.35f;
     const int LcJets = 11, LcChunks = 12;
 
@@ -156,6 +158,7 @@ public partial class FlareFx
         lcRt = 0;
         lcBeat = 0; lcBeatRt = -1; lcBeatFrame = -1;
         lcLastUs = 0; lcMsSum = lcMsMax = lcMsMaxClean = 0; lcMsN = 0; lcMsSaid = false;
+        lcAshN = lcLogN = 0; lcLogStart = double.MaxValue; lcLogLast = double.MinValue; lcLogAcrossMax = 0; lcLogSaid = false;
         // Frame 1: dawn-gold motes off the steel, drawn up it (a hue per calling: the Arcanist's are ember orange).
         for (int i = 0; i < 22; i++)
         {
@@ -209,24 +212,30 @@ public partial class FlareFx
         foreach (var d in doomed.Values)
         {
             if (!d.Pending) continue;
-            d.Pending = false;
             if (lcCleaveT >= 0 && lcLen > 0)
             {
+                // Every struck body waits for the fuse (vfx9 r2: charred at the sweep, the pack went flat black before the
+                // seam had lit them): its char starts as the front reaches its point on the line, 0.05 s later a metre
+                // farther from the line, so the burn spreads out from the seam.
+                d.Pending = false;
                 var rel = new Vector2(d.Where.X, d.Where.Z) - lcO;
                 float along = Mathf.Clamp(rel.Dot(lcDir), 0, lcLen);
-                d.At = FuseAt(along) + 0.02 + 0.012 * Math.Abs(SeamAcross(d.Where));
-                // (night: the luminance cap, the burn-up spread over 0.4 s by the body's distance from the line, the near first)
-                if (Night) d.At += 0.4 * Mathf.Clamp(Math.Abs(SeamAcross(d.Where)) / Math.Max(1f, lcHalf), 0, 1);
+                d.Across = Math.Abs(SeamAcross(d.Where));
+                if (d.RimAt < 0) d.RimAt = FuseAt(along);
+                d.At = FuseAt(along) + CharPerMetre * d.Across;
             }
-            else
+            else if (d.RimAt < 0)
             {
+                // The sweep's: its rim only as the light comes round to it; it stands, shaded as ever, till the fuse.
                 float a = Mathf.Atan2(d.Where.Z - at.Z, d.Where.X - at.X);
                 float behind = Mathf.PosMod(a - lcSweepFrom, Mathf.Tau);
-                d.At = t + SweepEase(behind / Mathf.Tau) * SweepLen + 0.02;
-                if (Night) d.At += 0.4 * Mathf.Clamp(new Vector2(d.Where.X - at.X, d.Where.Z - at.Z).Length() / Math.Max(1f, reach), 0, 1);
+                d.RimAt = t + SweepEase(behind / Mathf.Tau) * SweepLen + 0.02;
             }
         }
     }
+
+    /// <summary>The char's lag behind the fuse, seconds a metre from the line (vfx9 r2's fix 1).</summary>
+    const double CharPerMetre = 0.05;
 
     /// <summary>The share of the sweep's time it takes to reach this share of its turn (the inverse of its ease).</summary>
     static float SweepEase(float turn) => 1 - Mathf.Sqrt(1 - Mathf.Clamp(turn, 0, 1));
@@ -378,24 +387,57 @@ public partial class FlareFx
             }
             LongBeats();
         }
-        // The struck burn up as their moment comes, gold embers off them as they go.
+        // The struck: a warm rim for 3 frames as the sweep (or the fuse) reaches them, then shaded as ever until their
+        // char starts (the fuse's arrival, later the farther from the line); then charred with gold cracks and burnt
+        // away in 0.5 s, ash flakes rising off the burn line (capped).
+        if (lcCleaveT >= 0) ResolveDooms();
         foreach (var d in doomed.Values)
         {
+            if (d.RimAt >= 0 && d.RimRt < 0 && t >= d.RimAt) d.RimRt = lcRt;
             if (d.Pending || t < d.At) continue;
-            if (!d.Done) { d.Done = true; d.Rt = lcRt; BurnUp(d); }
+            if (!d.Done)
+            {
+                d.Done = true; d.Rt = lcRt; BurnUp(d);
+                if (Args.Has("shot"))
+                {
+                    lcLogN++;
+                    lcLogStart = Math.Min(lcLogStart, d.At - lcCleaveT);
+                    lcLogLast = Math.Max(lcLogLast, d.At - lcCleaveT);
+                    lcLogAcrossMax = Math.Max(lcLogAcrossMax, d.Across);
+                    if (lcLogN <= 20)
+                    {
+                        float along = lcLen > 0 ? Mathf.Clamp((new Vector2(d.Where.X, d.Where.Z) - lcO).Dot(lcDir), 0, lcLen) : 0;
+                        GD.Print($"longcut struck {lcLogN}: across {d.Across:0.0} m, along {along:0.0} m, rim +{d.RimAt - lcCleaveT:0.000}, fuse +{FuseAt(along) - lcCleaveT:0.000}, char +{d.At - lcCleaveT:0.000}, gone +{d.At + BurnLen - lcCleaveT:0.000} (Flare s from the cleave)");
+                    }
+                }
+            }
             float k = (float)(t - d.At);
-            if (k < BurnLen && R() < dt * 16)
+            if (k < BurnLen && lcAshN < AshMax && R() < dt * 12)
+            {
+                lcAshN++;
                 glow.Spawn(new FlareBits.P
                 {
                     Kind = FlareBits.Kind.Mote, At = d.Where + new Vector3((R() - 0.5f) * 0.5f, 0.2f + R() * 1.4f * (1 - k / BurnLen), (R() - 0.5f) * 0.5f),
-                    V = new Vector3((R() - 0.5f) * 0.6f, 0.9f + R() * 1.5f, (R() - 0.5f) * 0.6f), Life = 0.6f + R() * 0.6f, Size = 0.035f + R() * 0.03f, SizeEnd = 0.012f,
-                    Color = new Color(1.3f, 0.95f, 0.5f), ColorEnd = new Color(0.9f, 0.4f, 0.08f), Drag = 1.5f, Lift = 0.7f,
+                    V = new Vector3((R() - 0.5f) * 0.5f, 0.8f + R() * 1.2f, (R() - 0.5f) * 0.5f), Life = 0.5f + R() * 0.5f, Size = 0.03f + R() * 0.025f, SizeEnd = 0.01f,
+                    Color = Night ? new Color(0.8f, 0.5f, 0.16f) : new Color(1.3f, 0.82f, 0.3f), ColorEnd = new Color(0.5f, 0.2f, 0.04f), Drag = 1.5f, Lift = 0.7f,
                 });
+            }
         }
-        // (a kill whose blow event never came: its moment now)
+        if (Args.Has("shot") && !lcLogSaid && lcLogN > 0 && lcCleaveT >= 0 && t > lcCleaveT + 2.0)
+        {
+            lcLogSaid = true;
+            GD.Print($"longcut struck summary: {lcLogN} of {doomed.Count} charred, chars start cleave +{lcLogStart:0.000}..+{lcLogLast:0.000}, all gone by +{lcLogLast + BurnLen:0.000}, farthest {lcLogAcrossMax:0.0} m from the line, ash flakes {lcAshN}; {CrowdView.FlareCensus}");
+        }
+        // (a kill whose blow event never came and no seam to wait for: its moment now)
         foreach (var d in doomed.Values)
-            if (d.Pending && t > d.Born + 0.4) { d.Pending = false; d.At = t; }
+            if (d.Pending && lcCleaveT < 0 && t > d.Born + 0.6) { d.Pending = false; d.At = t; }
     }
+
+    const int AshMax = 240;
+    int lcAshN, lcLogN;
+    double lcLogStart = double.MaxValue, lcLogLast = double.MinValue;
+    float lcLogAcrossMax;
+    bool lcLogSaid;
 
     /// <summary>The seam: its uniforms, its lights, its chunks and dust jets in sequence, the smoke of the Return.</summary>
     void SeamTick(float dt)
@@ -606,31 +648,21 @@ public partial class FlareFx
     /// clear: vfx9 fix2); CrowdView asks it only of corpses that were down before their moment.</summary>
     public double CorpseBurnAge(double x, double z)
     {
-        if (!Active || !IsLongCut) return -1;
-        double when = double.MaxValue;
-        var rel = new Vector2((float)x - at.X, (float)z - at.Z);
-        if (lcSweepT >= 0 && rel.Length() <= reach)
-        {
-            float behind = Mathf.PosMod(Mathf.Atan2(rel.Y, rel.X) - lcSweepFrom, Mathf.Tau);
-            when = lcSweepT + SweepEase(behind / Mathf.Tau) * SweepLen + 0.02;
-            if (Night) when += 0.4 * Mathf.Clamp(rel.Length() / Math.Max(1f, reach), 0, 1);
-        }
-        if (lcCleaveT >= 0 && lcLen > 0)
-        {
-            var w = new Vector3((float)x, 0, (float)z);
-            float along = (new Vector2(w.X, w.Z) - lcO).Dot(lcDir), across = Math.Abs(SeamAcross(w));
-            if (along >= -1 && along <= lcLen + 1 && across <= lcHalf)
-            {
-                double s = FuseAt(Mathf.Clamp(along, 0, lcLen)) + 0.02 + 0.012 * across;
-                if (Night) s += 0.4 * Mathf.Clamp(across / Math.Max(1f, lcHalf), 0, 1);
-                when = Math.Min(when, s);
-            }
-        }
-        return when == double.MaxValue || t < when ? -1 : t - when;
+        // (on the struck's clock: nothing at the sweep, the char at the fuse's arrival plus 0.05 s a metre from the line)
+        if (!Active || !IsLongCut || lcCleaveT < 0 || lcLen <= 0) return -1;
+        var w = new Vector3((float)x, 0, (float)z);
+        float along = (new Vector2(w.X, w.Z) - lcO).Dot(lcDir), across = Math.Abs(SeamAcross(w));
+        bool inSweep = new Vector2((float)x - at.X, (float)z - at.Z).Length() <= reach;
+        bool onSeam = along >= -1 && along <= lcLen + 1 && across <= lcHalf;
+        if (!inSweep && !onSeam) return -1;
+        double when = FuseAt(Mathf.Clamp(along, 0, lcLen)) + CharPerMetre * across;
+        return t < when ? -1 : t - when;
     }
 
-    /// <summary>For CrowdView: a corpse's burn-up look (y char, z dissolve, w burning) this long after its moment, as the struck's.</summary>
-    public static Vector4 BurnLook(float k) => new(0, 0.9f * Mathf.SmoothStep(0.02f, 0.2f, k), Mathf.SmoothStep(0.08f, BurnLen, k), 0.7f * Mathf.SmoothStep(0, 0.05f, k) * (1 - Mathf.SmoothStep(0.35f, 0.65f, k)));
+    /// <summary>For CrowdView: a body's burn-up look this long after its char starts (x frozen 0; y the tint's char, 0: the
+    /// char is the shader's now, lit with its normals kept and gold cracks; z dissolve; w the char 0..1). Charred in 0.1 s,
+    /// burnt away from 0.1 s, gone by 0.5 s (vfx9 r2: a flat black tint read as a missing texture).</summary>
+    public static Vector4 BurnLook(float k) => new(0, 0, Mathf.SmoothStep(0.1f, BurnLen - 0.02f, k), Mathf.SmoothStep(0, 0.1f, k));
 
     /// <summary>The burn-up's length (Flare time).</summary>
     public static float BurnTime => BurnLen;
@@ -638,8 +670,9 @@ public partial class FlareFx
     /// <summary>For CrowdView: a held body's struck flash, its rim for 3 frames (real time) as its moment comes.</summary>
     public float StatueFlash(int enemy)
     {
-        if (!IsLongCut || !doomed.TryGetValue(enemy, out var d) || !d.Done) return 0;
-        return lcRt - d.Rt < 3.2 / 60.0 ? 0.5f : 0;
+        // (the sweep's passing, or the fuse's for the seam's own: a warm rim, no lift of the paint)
+        if (!IsLongCut || !doomed.TryGetValue(enemy, out var d) || d.RimRt < 0) return 0;
+        return lcRt - d.RimRt < 3.2 / 60.0 ? 0.5f : 0;
     }
 
     /* The pictures (--shot): each beat on the Flare's clock, at least 0.13 s of real time and a drawn frame apart. */
@@ -661,7 +694,20 @@ public partial class FlareFx
         if (lcBeatRt >= 0 && lcRt - lcBeatRt < 0.13) return;
         long frame = (long)Engine.GetFramesDrawn();
         if (frame <= lcBeatFrame) return;
-        GD.Print($"longcut beat {beats[lcBeat].Tag}: flare t {t:0.000} (due {beats[lcBeat].At:0.000}), press +{lcRt:0.00} s real");
+        GD.Print($"longcut beat {beats[lcBeat].Tag}: flare t {t:0.000} (due {beats[lcBeat].At:0.000}), press +{lcRt:0.00} s real; {CrowdView.FlareCensus}");
+        // (the measure's mask: each struck body's torso on screen, the 1920x1080 picture's pixels)
+        if (GetViewport()?.GetCamera3D() is { } cam && lcBeat >= 1 && lcBeat <= 4)
+        {
+            var sb = new System.Text.StringBuilder($"longcut struck screen {beats[lcBeat].Tag}:");
+            var vs = GetViewport().GetVisibleRect().Size;
+            foreach (var d in doomed.Values)
+            {
+                if (cam.IsPositionBehind(d.Where)) continue;
+                var p = cam.UnprojectPosition(d.Where + Vector3.Up * 0.9f * d.Scale) * new Vector2(1920f / vs.X, 1080f / vs.Y);
+                sb.Append($" {p.X:0},{p.Y:0}");
+            }
+            GD.Print(sb.ToString());
+        }
         Shots.Want(beats[lcBeat].Tag, 0);
         lcBeat++;
         lcBeatRt = lcRt;

@@ -404,6 +404,10 @@ public partial class FlareFx : Node3D
         public double Born;
         /// <summary>The Long Cut's: real seconds (its lcRt) when its moment came, for its flash.</summary>
         public double Rt;
+        /// <summary>The Long Cut's: when its rim comes (Flare time: the sweep passing it, or the fuse), and the real time it came (-1 not yet).</summary>
+        public double RimAt = -1, RimRt = -1;
+        /// <summary>The Long Cut's: how far from the seam's line it stands (m), for the log.</summary>
+        public float Across;
         public Vector3 Where, From;
         public float Scale;
     }
