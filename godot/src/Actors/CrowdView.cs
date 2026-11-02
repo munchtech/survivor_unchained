@@ -70,8 +70,8 @@ public partial class CrowdView : Node3D
     {
         /// <summary>Burnt by a Flare's ring (0..1), kept as it lies.</summary>
         public float Char;
-        /// <summary>Burning up with the Long Cut's struck (it lay in the reach before the blow came).</summary>
-        public bool Burning;
+        /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
+        public double BurnAt = -1;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -483,13 +483,18 @@ public partial class CrowdView : Node3D
     {
         double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
         corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
-        // The Long Cut burns up the dead already down in its reach with the struck, and they are gone after.
+        // The Long Cut burns up the dead in its reach with the struck, and they are gone after: those down when it came,
+        // and those still falling then (her kills just before the press lie down after it: the hold slows their fall),
+        // as they land, up to 2.5 s after its moment. (The first try asked only the already-down: the star stayed.)
         if (FlareCorpseBurn != null)
             corpses.RemoveAll(c =>
             {
-                double k = FlareCorpseBurn(c.X, c.Z);
-                if (!c.Burning && k >= 0 && time - c.Born > k) c.Burning = true;
-                return c.Burning && (k < 0 || k >= SurvivorUnchained.View.FlareFx.BurnTime);
+                if (c.BurnAt < 0)
+                {
+                    double k = FlareCorpseBurn(c.X, c.Z);
+                    if (k >= 0 && k < 2.5) c.BurnAt = time - Math.Min(k, time - c.Born);
+                }
+                return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTime;
             });
         foreach (var c in corpses)
         {
@@ -506,9 +511,9 @@ public partial class CrowdView : Node3D
             var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
-            if (c.Burning)
+            if (c.BurnAt >= 0)
             {
-                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)FlareCorpseBurn!(c.X, c.Z));
+                var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt));
                 crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), 0, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }
