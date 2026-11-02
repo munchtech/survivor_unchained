@@ -251,6 +251,7 @@ public partial class CrowdView : Node3D
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
+        Godot.Vector4 fallBurn = default;
         double speed = Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz);
         // Walking or standing, with a margin between the two, so a creature
         // jostled at the edge of walking pace does not flicker between clips.
@@ -286,6 +287,14 @@ public partial class CrowdView : Node3D
                 }
                 role = g.Death ??= DeathOf(asset, e);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
+                // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
+                // metre), and they are gone before they land: r2's ring of bodies falling away from her, black by day and
+                // blue-grey by night, were these (the hold slows their fall), not the struck, who never fall.
+                if (FlareCorpseBurn?.Invoke(ex, ez) is double fk && fk >= 0)
+                {
+                    if (fk >= SurvivorUnchained.View.FlareFx.BurnTime) { laidOut.Add((e.Id, e.Seed)); return; }
+                    fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk);
+                }
                 censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
@@ -411,6 +420,7 @@ public partial class CrowdView : Node3D
         tint = Charred(tint, chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
+        if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; }
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot);
         living++;
     }
@@ -499,7 +509,9 @@ public partial class CrowdView : Node3D
                 if (c.BurnAt < 0)
                 {
                     double k = FlareCorpseBurn(c.X, c.Z);
-                    if (k >= 0 && k < 2.5) c.BurnAt = time - Math.Min(k, time - c.Born);
+                    // (on the struck's clock, not restarted as it lands: her kills falling in reach burn as they fall, and one
+                    // laid out after its moment had restarted its burn, the lying star at cleave +0.55 s in r3a)
+                    if (k >= 0) c.BurnAt = time - k;
                 }
                 return c.BurnAt >= 0 && time - c.BurnAt >= SurvivorUnchained.View.FlareFx.BurnTime;
             });

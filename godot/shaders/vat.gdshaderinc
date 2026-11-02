@@ -99,7 +99,9 @@ void fragment() {
 	// It burns from the side facing what struck it (the nearest point of the seam, or her for the sweep) outward.
 	if (flare_lc.x > 0.0) {
 		// (3-4x finer than r2's 6 and 17: its coarse holes over a dark body read as a beige leopard-spot dissolve)
-		float bn = vat_noise(vat_local * 21.0) * 0.7 + vat_noise(vat_local * 47.0) * 0.3;
+		// (one octave at 14 a metre, 2.3x r2: at 21 and 47 a cell was a pixel at the play camera and the last of each body
+		// went to gold glitter)
+		float bn = vat_noise(vat_local * 14.0);
 		vec2 src = flare_at.xz;
 		if (flare_seam.w > 0.0) {
 			vec2 sd = vec2(cos(flare_seam.z), sin(flare_seam.z));
@@ -243,7 +245,7 @@ void fragment() {
 	// Ember at the dissolve's edge.
 	// (the Long Cut's: a thin dawn-gold line, kept a colour: at 2x of a pale gold it tonemapped to white)
 	// (r3: a 0.03 band at HDR 3.5, still a gold, never cream: its hue stays deep)
-	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.46, 0.1) * mix(1.0, 0.6, flare_lc.w) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.03, fx.y, dn) * 3.5 * (1.0 - smoothstep(0.7, 1.0, fx.y)) : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 
