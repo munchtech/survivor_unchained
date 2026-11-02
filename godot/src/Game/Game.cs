@@ -678,6 +678,7 @@ public partial class Game : Node, IZoneHost
         };
         CrowdView.FlareDeath = fl.DeathOf;
         CrowdView.FlareStatueLook = fl.StatueLook;
+        CrowdView.FlareStatueFlash = fl.StatueFlash;
 
         CrowdView.FlareChar = fl.CharAt;
         CrowdView.FlareRingPast = fl.RingPast;
@@ -1564,6 +1565,8 @@ public partial class Game : Node, IZoneHost
                     hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
                 }
             }
+            // --no-spawn: the horde and nothing after it (the zone's waves, summons), so a field a Flare cleared reads.
+            if (Args.Has("no-spawn")) hb.NoSpawn = true;
         }
         // --drops: one of every kind of thing that lies on the ground, in a ring round the survivor, left
         // where they lie (a pickup is not drawn in until it has settled) and worth next to nothing (a picture).

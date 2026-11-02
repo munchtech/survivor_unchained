@@ -186,9 +186,13 @@ public partial class FlareFx : Node3D
         Rumble(0, 0.5f, 0.04f);
         HudDim(1); LabelsAlpha(0);
         // Pictures at the beats (--shot): press +1 frame, the Draw's end, the Hold.
-        Shots.Want("b1_press", 1 / 60.0);
-        Shots.Want("b2_draw", 0.22);
-        Shots.Want("b3_hold", freezeLen - 0.12);
+        // (the Long Cut times its own, on the Flare's clock: FlareFx.LongCut LongBeats)
+        if (!IsLongCut)
+        {
+            Shots.Want("b1_press", 1 / 60.0);
+            Shots.Want("b2_draw", 0.22);
+            Shots.Want("b3_hold", freezeLen - 0.12);
+        }
     }
 
     int bankShots;
@@ -264,7 +268,7 @@ public partial class FlareFx : Node3D
                 if (Args.Has("shot")) GD.Print($"flare {id}: ring +4f +{AuditAfter[audited]:0.00}s, bodies in the ring drawn {CrowdView.FlareAuditSeen}, neither shattered nor charred {CrowdView.FlareAuditBad}");
                 audited++;
             }
-            if (lastAt > 0)
+            if (lastAt > 0 && !IsLongCut)
             {
                 float s = (float)(t - lastAt);
                 // (Flare time: the last word's 6-frame hitstop runs it at a tenth, so 0.005 s is about 3 real frames.)
@@ -393,6 +397,8 @@ public partial class FlareFx : Node3D
         /// <summary>The Long Cut's: killed, its moment not yet known (its blow's event comes after its Ev.Kill).</summary>
         public bool Pending;
         public double Born;
+        /// <summary>The Long Cut's: real seconds (its lcRt) when its moment came, for its flash.</summary>
+        public double Rt;
         public Vector3 Where, From;
         public float Scale;
     }
@@ -445,6 +451,8 @@ public partial class FlareFx : Node3D
     /// orange confetti on the char): at the Return's end, rippling out from her over 0.6 s. Flare time.</summary>
     double DropsShow(Vector3 w)
     {
+        // (the Long Cut's wait until the seam has cooled to red, rippling out from the line: r1's hundred orbs buried it)
+        if (IsLongCut) return lcCleaveT < 0 ? Held : lcCleaveT + 2.2 + 0.05 * Math.Min(12, Math.Abs(SeamAcross(w)));
         if (id != "burns_twice") return 0;
         if (lastAt <= 0) return Held;
         return lastAt + 4.2 + 0.6 * Mathf.Clamp(new Vector2(w.X - Her.X, w.Z - Her.Z).Length() / Math.Max(1, reach), 0, 1);

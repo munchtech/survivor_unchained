@@ -52,6 +52,8 @@ vec3 dye_hsv(vec3 c) {
 varying flat vec4 fx;
 varying flat float fx_crit;
 varying vec3 vat_local;
+// (the body's own place in the world, for the Long Cut's burn from the line outward)
+varying flat vec3 vat_org;
 // How fast the body moves (0 still, 1 fast): FSR 2 keeps little history on it.
 varying flat float vat_pace;
 
@@ -83,6 +85,7 @@ void vertex() {
 	VERTEX = mix(p0, p1, k);
 	NORMAL = normalize(mix(n0, n1, k));
 	vat_local = VERTEX;
+	vat_org = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 	int w = int(INSTANCE_CUSTOM.w + 0.5);
 	fx = vec4(float(w & 127) / 127.0, float((w >> 8) & 255) / 255.0, float((w >> 16) & 15) / 15.0, float((w >> 20) & 15) / 15.0);
 	fx_crit = float((w >> 7) & 1);
@@ -93,9 +96,18 @@ void fragment() {
 	float dn = fract(sin(dot(floor(vat_local * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
 	// (The Long Cut's burn-up: burnt away like paper from the head down along a ragged edge, not in square flakes,
 	// which at 1:1 read as a glitch: FlareFx.LongCut.)
-	if (flare_seam.w > 0.0) {
+	// It burns from the side facing what struck it (the nearest point of the seam, or her for the sweep) outward.
+	if (flare_lc.x > 0.0) {
 		float bn = vat_noise(vat_local * 6.0) * 0.65 + vat_noise(vat_local * 17.0) * 0.35;
-		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.6 + clamp(1.0 - vat_local.y / 1.9, 0.0, 1.0) * 0.4;
+		vec2 src = flare_at.xz;
+		if (flare_seam.w > 0.0) {
+			vec2 sd = vec2(cos(flare_seam.z), sin(flare_seam.z));
+			src = flare_seam.xy + sd * clamp(dot(vat_org.xz - flare_seam.xy, sd), 0.0, flare_seam.w);
+		}
+		vec2 away = vat_org.xz - src;
+		away = dot(away, away) > 1e-4 ? normalize(away) : vec2(1.0, 0.0);
+		float side = dot((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xz - vat_org.xz, away);
+		dn = clamp((bn - 0.22) / 0.56, 0.0, 1.0) * 0.45 + clamp(0.5 + side / 1.1, 0.0, 1.0) * 0.4 + clamp(vat_local.y / 1.9, 0.0, 1.0) * 0.15;
 	}
 
 	if (fx.y > 0.0 && dn < fx.y) discard;
@@ -155,7 +167,7 @@ void fragment() {
 		float soot = smoothstep(0.28, 0.56, lick * 0.75 + rim * 0.35) * fx.w;
 		c *= (1.0 - soot * 0.72) * (1.0 - tongue * 0.9);
 		// (The Long Cut's burn-up is dawn-gold, its fire not the ember's orange: FlareFx.LongCut.)
-		float lc_gold = flare_seam.w > 0.0 ? 1.0 : 0.0;
+		float lc_gold = flare_lc.x > 0.0 ? 1.0 : 0.0;
 		e += mix(vec3(1.0, 0.3, 0.03), vec3(1.0, 0.62, 0.2), lc_gold) * tongue + mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.7, 0.32), lc_gold) * pow(rim, 3.0) * fx.w * 0.5;
 	}
 	// Struck past the crowd's rim-only flare (a champion's, a few at once): the body's paint is lifted, lit
@@ -207,7 +219,7 @@ void fragment() {
 		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
 	}
 	// Ember at the dissolve's edge.
-	if (fx.y > 0.0) e += (flare_seam.w > 0.0 ? vec3(1.0, 0.68, 0.3) : vec3(1.0, 0.45, 0.12)) * (flare_seam.w > 0.0 ? smoothstep(fx.y + 0.035, fx.y, dn) * 2.2 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
+	if (fx.y > 0.0) e += (flare_lc.x > 0.0 ? vec3(1.0, 0.7, 0.32) : vec3(1.0, 0.45, 0.12)) * (flare_lc.x > 0.0 ? smoothstep(fx.y + 0.05, fx.y, dn) * 2.0 : smoothstep(fx.y + 0.12, fx.y, dn) * 3.0);
 
 	EMISSION = e;
 

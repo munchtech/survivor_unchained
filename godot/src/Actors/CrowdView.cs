@@ -120,6 +120,8 @@ public partial class CrowdView : Node3D
     /// <summary>How a held body is drawn (FlareFx.StatueLook: x frozen, y char, z dissolve, w burning): Burns Twice's
     /// ice statues, the Long Cut's burn-up in gold.</summary>
     public static Func<int, Godot.Vector4>? FlareStatueLook;
+    /// <summary>A held body's struck flash (FlareFx.StatueFlash: the Long Cut's rim for 2-3 frames as its moment comes).</summary>
+    public static Func<int, float>? FlareStatueFlash;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -450,7 +452,7 @@ public partial class CrowdView : Node3D
             // (A statue still standing where the ring passed 4 frames ago is a body neither shattered nor charred.)
             Audit(st.X, st.Z, 0, 1);
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);
