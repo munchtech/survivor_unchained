@@ -100,7 +100,8 @@ public partial class DgGlobe : ColorRect
 /// <summary>UI 23, HUD A: the keeper, the hooded bronze mourner bowed over the bowl that holds the Flare
 /// (art/ui/dg_keeper/keeper.png, 2x, at the geo's final screen rect: no group scale on top). Under the plate; the same
 /// sprite by day and night. When the survivor, an elite or a marked attack is behind him (Game, as for her figure), he
-/// fades as her figure does (LifeLamp's FadeTo and times); the glass stays, the bowl's lip fades with him (DgGlobe).</summary>
+/// fades as her figure does (LifeLamp's FadeTo and times) to a gold-rimmed 0.30 (hud_dg_keeper_fade); the glass stays, the bowl's lip fades with him
+/// (its body alpha only, no rim: DgGlobe).</summary>
 public partial class DgKeeper : Control
 {
     readonly Texture2D? tex;
@@ -109,6 +110,7 @@ public partial class DgKeeper : Control
     /// <summary>His figure's alpha now (1, or down to LifeLamp.FadeTo).</summary>
     public float FigA { get; private set; } = 1;
     float clearFor = 9;
+    readonly ShaderMaterial mat;
     public DgGlobe? Globe;
 
     public DgKeeper()
@@ -119,6 +121,13 @@ public partial class DgKeeper : Control
         Position = k.Position;
         Size = k.Size;
         tex = UiArt.Tex("dg_keeper/keeper.png", false);
+        // (hud24 r1: the fade and the gold rim are the shader's)
+        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hud_dg_keeper_fade.gdshader") };
+        mat.SetShaderParameter("fade_to", LifeLamp.FadeTo);
+        if (UiArt.Tex("dg_keeper/keeper_rim.png", false) is { } rimTex) mat.SetShaderParameter("rim_src", rimTex);
+        else GD.PushError("DgKeeper: dg_keeper/keeper_rim.png did not load: the keeper's rim draws wrong");
+        mat.SetShaderParameter("texels_per_px", tex != null ? tex.GetWidth() / k.Size.X : 2f);
+        Material = mat;
         if (tex == null) GD.PushError("DgKeeper: dg_keeper/keeper.png did not load: the keeper is missing");
     }
 
@@ -134,7 +143,7 @@ public partial class DgKeeper : Control
         bool dim = clearFor < LifeLamp.FadeHold;
         float to = dim ? LifeLamp.FadeTo : 1;
         float a = Mathf.MoveToward(FigA, to, dt * (1 - LifeLamp.FadeTo) / (dim ? LifeLamp.FadeTime : LifeLamp.FadeBack));
-        if (a != FigA) { FigA = a; SelfModulate = new Color(1, 1, 1, a); }
+        if (a != FigA) { FigA = a; mat.SetShaderParameter("fig_a", a); }
         if (Globe != null) { Globe.FigA = FigA; Globe.LipTint = Modulate; }
     }
 }

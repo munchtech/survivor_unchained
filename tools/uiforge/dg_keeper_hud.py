@@ -43,8 +43,8 @@ DASH_X = 1920 - FLASK_X
 VOL_R, PL_X0, PL_X1, PL_TOP, ARCH_R = 12.0, 626.0, 1294.0, 1003.0, MED_R + 6.0
 INSET = 6.5
 INL = 6.5            # snap: the inlay's top run centred on the 1080 px row 1009 (was 6.0: on the 1008/1009 seam)
-TUCK = 7.0           # P1: the end side sits this far over the more outward figure's edge
-DEPTH = (4.0, 10.0)  # every figure edge row sits this far under the panel
+FOOT_X = 607.0       # UI 24: the designed end, a straight side tangent to the volute down to this x at the screen foot
+TUCK_MIN = 4.0       # UI 24: every figure edge row from the panel top sits at least this far under the panel (asserted)
 LD_PLATE = np.array([0.0, -0.816, 0.578], np.float32)   # P1: lit from straight above (the field's z kept)
 PANEL_RECT = (576, 988, 768, 92)                          # symmetric about 960
 S, ANCHOR = 0.94, (295.33, 1080.0)
@@ -255,13 +255,29 @@ def k4_curve(rgb, away, thr):
 
 
 def lock_window(X, Y):
-    """the mirrored back lock's window (mock7 KLOCK block), moved by K1; X, Y in mock pixel-index units"""
+    """the mirrored back lock's window (mock7 KLOCK block), moved by K1; X, Y in mock pixel-index units. UI 24: no top
+    fade here (it read as a smudge): main() tapers each strand to a tip above LOCK_TOP (lock_taper)."""
     dx, dy = LOCK_D
-    w = sm(1336.0 + dx, 1318.0 + dx, X) * sm(966.0 + dy, 984.0 + dy, Y) * (X > 1280 + dx)
+    w = sm(1336.0 + dx, 1318.0 + dx, X) * (X > 1280 + dx)
     # below the cap the lock reaches no further in than her edge's mirror (so both ends tuck the same under one mirrored end)
     ge = girl_edge_rows()
     xc = 1920.0 - np.interp(Y + 0.5, np.arange(1080) + 0.5, ge)
     return w * np.maximum(sm(xc - 1.0, xc + 1.0, X + 0.5), 1 - sm(PL_TOP + VOL_R - 4, PL_TOP + VOL_R, Y + 0.5))
+
+
+LOCK_TOP, LOCK_R = 969.0, 14.0     # UI 24: the lock's strands end in rounded tips: none above LOCK_TOP, a LOCK_R px dome
+
+
+def lock_taper(Lk, Y, Z):
+    """UI 24: the mirrored lock's strands end in rounded tips (a sculpted bronze lock's end) instead of a fade: s px
+    below LOCK_TOP a texel stays where the strand's half-width there (its alpha's inner distance, 1080 px) exceeds
+    R - sqrt(R^2 - (R - s)^2): a thick strand domes, a thin one ends near the top; premultiplied in and out"""
+    m = Lk[..., 3] > 0.5
+    din = ndimage.distance_transform_edt(m) / Z
+    sd = np.clip(Y - LOCK_TOP, 0, None)
+    thr = np.where(sd < LOCK_R, LOCK_R - np.sqrt(np.clip(LOCK_R ** 2 - (LOCK_R - sd) ** 2, 0, None)), 0.0)
+    tap = np.clip((din - thr) * Z + 0.5, 0, 1) * (Y >= LOCK_TOP)
+    return Lk * tap[..., None]
 
 
 _GE = {}
@@ -270,7 +286,7 @@ _GE = {}
 def girl_edge_rows():
     """her right edge (alpha > 0.5, 1080 px) per screen row, from her (fixed) art at its 0.94 rect; -1e3 where none"""
     if 'ge' not in _GE:
-        art, _ = fix_girl(load_rgba(os.path.join(SRC, 'girl_R6.png')))
+        art = girl_art()[0]
         x0, y0, w, h = girl_screen_rect()
         a = place(art, x0 * 4, y0 * 4, w * 4, h * 4, (960 * 4, 1080 * 4))[..., 3]
         ge = np.full(1080, -1e3)
@@ -304,6 +320,64 @@ def plug_holes(L, region, max_area):
     return out, int(hole.sum())
 
 
+def clean_edges(L, region, protect=None, ramp=2.0, min_keep=2000):
+    """UI 24, the statues' inner edges: straight RGBA L; region 0..1 (where to work). (1) a crisp silhouette: the
+    0.5 alpha contour from a 4x bicubic upsample, alpha = its signed distance over a ramp of `ramp` texels (2 texels of
+    the 2x art = 1 px at 1080), so faint wisps and soft mattes go; (2) islands: alpha components (> 0.05) smaller than
+    min_keep texels in the region are removed (protect: a bool mask that counts as solid when labelling, e.g. the
+    orb's hole); (3) decontamination: within 3 texels of the edge the colour is lifted to the interior's (never
+    darkened, so the lit rims stay), no dark ring. Returns (L, n_islands_removed)."""
+    a = np.clip(L[..., 3], 0, 1)
+    h, w = a.shape
+    up = cv2.resize(a, (w * 4, h * 4), interpolation=cv2.INTER_CUBIC) > 0.5
+    sdu = (ndimage.distance_transform_edt(up) - ndimage.distance_transform_edt(~up)).astype(np.float32)
+    sd = sdu.reshape(h, 4, w, 4).mean((1, 3)) / 4.0
+    a_new = np.clip(sd / ramp + 0.5, 0, 1)
+    a2 = a * (1 - region) + a_new * region
+    solid = a2 > 0.05
+    if protect is not None:
+        solid = solid | protect
+    lab, n = ndimage.label(solid, structure=np.ones((3, 3)))
+    sz = ndimage.sum(np.ones_like(a2), lab, range(1, n + 1))
+    small = 1 + np.nonzero(sz < min_keep)[0]
+    kill = np.isin(lab, small) & (region > 0.5)
+    a2 = np.where(kill, 0.0, a2)
+    core = ndimage.binary_erosion(a > 0.97, iterations=2)
+    rgb = L[..., :3]
+    num = np.stack([G_(rgb[..., c] * core, 2.5) for c in range(3)], -1)
+    den = G_(core.astype(np.float32), 2.5)[..., None]
+    col = np.where(den > 0.02, num / np.maximum(den, 1e-4), rgb)
+    t = (sm(3.0, 0.5, sd) * region * (den[..., 0] > 0.02))[..., None]
+    rgb2 = rgb * (1 - t) + np.maximum(rgb, col) * t
+    return np.dstack([rgb2, a2]).astype(np.float32), int(len(small))
+
+
+_GA = {}
+
+
+def girl_art():
+    """her art: girl_R6 with G1 (fix_girl), then UI 24's clean_edges on her inner (right, back) side, art x > 540 (her
+    face, hand and the orb hole are left of it); cached. Returns (art, n_g1, n_islands)."""
+    if 'a' not in _GA:
+        art, n_g1 = fix_girl(load_rgba(os.path.join(SRC, 'girl_R6.png')))
+        h, w = art.shape[:2]
+        xx = np.mgrid[0:h, 0:w][1].astype(np.float32)
+        art, n_isl = clean_edges(art, sm(520.0, 560.0, xx))
+        # UI 24, her lowest back locks by the end cap: the grey-teal shadow mass (art x 630-740, y 340-516) warmed to the
+        # bronze's shadow and lifted a little, so it reads as shadowed bronze running under the cap, not mud
+        yy = np.mgrid[0:h, 0:w][0].astype(np.float32)
+        lab = lab_of(art[..., :3])
+        wm = sm(620.0, 640.0, xx) * sm(330.0, 350.0, yy) * sm(48.0, 32.0, lab[..., 0] * 100 / 255) * np.clip(art[..., 3], 0, 1)
+        lab2 = lab.copy()
+        lab2[..., 0] = lab[..., 0] * (1 + 0.22 * wm)
+        lab2[..., 1] = lab[..., 1] + (131.0 - lab[..., 1]) * 0.7 * wm
+        lab2[..., 2] = lab[..., 2] + (138.0 - lab[..., 2]) * 0.7 * wm
+        rgb = lab2rgb(lab2)
+        art = np.dstack([np.where(wm[..., None] > 0.003, rgb, art[..., :3]), art[..., 3]])
+        _GA['a'] = (art, n_g1, n_isl)
+    return _GA['a']
+
+
 # ================================================================== the panel (P1, P2, snapped inlay)
 def figure_edges(ga, ka, Z, y0):
     """per row (1080-px row centres) the girl's right edge and the keeper's left edge (alpha > 0.5); ga, ka are
@@ -316,22 +390,37 @@ def figure_edges(ga, ka, Z, y0):
     return rows, ge, ke
 
 
-def end_contour(rows, ge, ke):
-    """P1: one end (the left), mirrored: the plate's end side = the more outward of the two figure edges (the keeper's
-    mirrored about 960), set TUCK px in, held so every row of both edges sits DEPTH[0]..DEPTH[1] px under the panel."""
-    km = 1920.0 - ke
-    a_ = np.where(ge < -100, km, ge)
-    b_ = np.where(km < -100, a_, km)
-    a_ = np.where(a_ < -100, b_, a_)
-    lo_e, hi_e = np.minimum(a_, b_), np.maximum(a_, b_)
-    c = lo_e - TUCK
-    c = np.maximum(c, hi_e - DEPTH[1])
-    c = np.minimum(c, lo_e - DEPTH[0])
-    return c
+def end_line():
+    """UI 24: the left end's straight side, tangent to the volute (centre VL, radius VOL_R) through (FOOT_X, 1080):
+    returns (x_t, y_t, slope): the tangent point and dx/dy (< 0, the side leans out toward the foot)"""
+    cx, cy, r = PL_X0 + VOL_R, PL_TOP + VOL_R, VOL_R
+    fx, fy = FOOT_X, 1080.0
+    dx, dy = cx - fx, cy - fy
+    L = np.hypot(dx, dy)
+    base = np.arctan2(dy, dx)
+    # the tangent from the foot that touches the circle's outer (left) side
+    ang = base - np.arcsin(r / L)
+    ux, uy = np.cos(ang), np.sin(ang)
+    tl = np.sqrt(L * L - r * r)
+    xt, yt = fx + ux * tl, fy + uy * tl
+    return xt, yt, ux / uy
 
 
-def plate(Z, rows, cl, verbose=False):
-    """the middle plate at Z x the 1080 px, on the panel rect (PANEL_RECT): premultiplied RGBA"""
+def end_contour(y):
+    """UI 24, the designed end (replaces P1's traced contour): the left end's outer x per 1080 px y: the volute's
+    left arc above the tangent point, the straight side below it (mirror-symmetric about 960 for the right end)"""
+    y = np.asarray(y, np.float64)
+    cx, cy, r = PL_X0 + VOL_R, PL_TOP + VOL_R, VOL_R
+    xt, yt, sl = end_line()
+    arc = cx - np.sqrt(np.clip(r * r - (y - cy) ** 2, 0, None))
+    lin = xt + (y - yt) * sl
+    return np.where(y < yt, np.where(y >= PL_TOP, arc, 1e3), lin)
+
+
+def plate(Z):
+    """the middle plate at Z x the 1080 px, on the panel rect (PANEL_RECT): premultiplied RGBA. UI 24: the ends are the
+    designed end_contour (volute + a straight side tangent to it), every line is a hard step on the supersample grid
+    (exact coverage at 2x, so whole and even at 1080): a 1 px dark outline, a 1 px light bevel, the 1 px gold inlay."""
     x0, y0, w, h = PANEL_RECT
     x1, y1 = x0 + w, y0 + h
     ss = 4 * Z
@@ -339,31 +428,22 @@ def plate(Z, rows, cl, verbose=False):
     from PIL import ImageDraw as _D
     VL = (PL_X0 + VOL_R, PL_TOP + VOL_R)
     VR_ = (PL_X1 - VOL_R, PL_TOP + VOL_R)
-    pts = [(PL_X0 + INSET, 1100), (PL_X0 + INSET, VL[1]), (VL[0], PL_TOP), (VR_[0], PL_TOP), (PL_X1 - INSET, VR_[1]),
-           (PL_X1 - INSET, 1100)]
     mim = Image.new('L', (w * ss, (h + 20) * ss), 0)
     dd_ = _D.Draw(mim)
-    dd_.polygon([((px - x0) * ss, (py - y0) * ss) for px, py in pts], fill=255)
-    for (vx, vy) in (VL, VR_):
-        dd_.ellipse(((vx - VOL_R - x0) * ss, (vy - VOL_R - y0) * ss, (vx + VOL_R - x0) * ss, (vy + VOL_R - y0) * ss), fill=255)
     dd_.ellipse(((960 - ARCH_R - x0) * ss, (SEAT_Y - ARCH_R - y0) * ss, (960 + ARCH_R - x0) * ss, (SEAT_Y + ARCH_R - y0) * ss), fill=255)
-    mb = np.asarray(mim)[: h * ss] > 127
+    arch = np.asarray(mim)[: h * ss] > 127
+    xm = np.minimum(X, 1920 - X)
+    body = (Y >= PL_TOP) & (xm >= end_contour(Y[:, :1]))
+    mb = body | arch
     mb = mb | mb[:, ::-1]
     mbc = ndimage.binary_closing(mb, structure=np.ones((3, 3)), iterations=10 * Z)
-    near_v = (np.hypot(X - VL[0], Y - VL[1]) < VOL_R + 6) | (np.hypot(X - VR_[0], Y - VR_[1]) < VOL_R + 6)
-    mb = np.where(near_v, mb, mbc)
-    # P1: below the volute the end side follows the end contour (left end; mirrored for the right)
-    yr = Y[:, :1]
-    cle = np.interp(yr, rows, cl)
-    below = yr >= PL_TOP + VOL_R
-    left = (X >= cle) & (X <= PL_X0 + INSET + 1) & below
-    left = left & (X < 960)
-    mb = mb | left | left[:, ::-1]
+    mb = np.where(xm > VL[0] + VOL_R + 8, mbc, mb)          # fillets only where the arch meets the top run
     mb = mb | mb[:, ::-1]
-    sd = (ndimage.distance_transform_edt(mb) - ndimage.distance_transform_edt(~mb)) / ss
-    sd = G_(sd, 1.0 * Z)
-    inside = np.clip(sd * 1.0 + 0.5, 0, 1)
-    bev = 2.4 * sm(0.0, 3.2, sd)
+    # the signed distance to the edge between samples (the EDT counts to the nearest sample centre: half a sample off)
+    sd = np.where(mb, ndimage.distance_transform_edt(mb) - 0.5, 0.5 - ndimage.distance_transform_edt(~mb)) / ss
+    sd = G_(sd, 0.5 * Z)
+    inside = mb.astype(np.float32)
+    bev = 2.4 * sm(1.0, 4.0, sd)
     spir = np.full(X.shape, 1e3, np.float32)
     for (vx, vy), sg in ((VL, 1), (VR_, -1)):
         tt = np.linspace(0, 1, 160)
@@ -380,14 +460,17 @@ def plate(Z, rows, cl, verbose=False):
     sock = np.zeros_like(X)
     for sx in SEAT_XS:
         dd = np.hypot(X - sx, Y - SEAT_Y)
-        sock -= 1.2 * np.exp(-np.clip(dd - SEAT_R, 0, None) / 2.0) * (dd > SEAT_R - 1)
+        sock -= 1.2 * np.exp(-np.clip(dd - SEAT_R, 0, None) / 0.8) * (dd > SEAT_R - 1)
     dd = np.hypot(X - 960, Y - SEAT_Y)
-    sock -= 1.2 * np.exp(-np.clip(dd - MED_R, 0, None) / 2.0) * (dd > MED_R - 1)
+    sock -= 1.2 * np.exp(-np.clip(dd - MED_R, 0, None) / 0.8) * (dd > MED_R - 1)
     Hh = bev + groove + sock
     gy, gx = np.gradient(Hh * 1.0, 1 / ss)
     nrm = np.dstack([-gx, -gy, np.ones_like(gx)]); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
     Ld = LD_PLATE / np.linalg.norm(LD_PLATE)
     diff = np.clip(nrm @ Ld, 0, 1)
+    gy0_, gx0_ = np.gradient((bev + sock) * 1.0, 1 / ss)                # UI 24: the inlay lit by the plate, not its groove
+    n0 = np.dstack([-gx0_, -gy0_, np.ones_like(gx0_)]); n0 /= np.linalg.norm(n0, axis=-1, keepdims=True)
+    diff0 = np.clip(n0 @ Ld, 0, 1)
     hv = Ld + np.array([0, 0, 1.0], np.float32); hv /= np.linalg.norm(hv)
     spec = np.clip(nrm @ hv, 0, 1) ** 40
     # the mottle drawn at the 4x grid (one realisation for every Z), then resized
@@ -400,28 +483,27 @@ def plate(Z, rows, cl, verbose=False):
         brushed = cv2.resize(brushed, (X.shape[1], X.shape[0]), interpolation=cv2.INTER_LINEAR)
     base = np.array([0.150, 0.112, 0.078], np.float32)
     verd = np.array([0.075, 0.115, 0.100], np.float32)
-    vmask = np.clip(0.25 + 0.6 * mot, 0, 1) * 0.35 * (sd > 9) * (line_d > 2.5)
+    vmask = np.clip(0.25 + 0.6 * mot, 0, 1) * 0.35 * sm(8.5, 9.5, sd) * sm(2.0, 3.0, line_d)
     alb = base * (1 + 0.10 * mot + 0.05 * brushed)[..., None]
     alb = alb * (1 - vmask[..., None]) + verd * vmask[..., None]
-    edge = sm(3.6, 2.4, sd) * (sd > -0.5)
-    inlay_line = np.exp(-(line_d / 0.75) ** 2)
+    edge = 0.6 * sm(3.6, 2.2, sd)                             # UI 24: the polished slope behind the bevel line, quieter
+    inlay_line = (line_d < 0.5).astype(np.float32)          # UI 24: a hard 1 px line (was a 0.75 px gaussian)
     polished = np.array([0.46, 0.35, 0.22], np.float32)
     alb = alb * (1 - edge[..., None]) + polished * edge[..., None]
     lin = np.array([0.86, 0.68, 0.40], np.float32)
     col = alb * (0.28 + 0.95 * diff)[..., None] + np.array([1.0, 0.85, 0.6], np.float32) * (spec * (0.25 + 0.75 * edge))[..., None] * 0.6
-    col = col * (1 - inlay_line[..., None] * 0.9) + lin * (inlay_line * (0.75 + 0.55 * diff))[..., None]
-    outline = sm(0.0, 0.9, sd) * (1 - sm(0.9, 1.6, sd))
-    col = col * (1 - 0.6 * outline[..., None])
+    col = col * (1 - inlay_line[..., None] * 0.9) + lin * (inlay_line * (0.75 + 0.55 * diff0))[..., None]
+    # UI 24: the rim, hard steps: a 1 px dark outline, then a 1 px light bevel (lit a little more on the top run)
+    outline = (sd < 1.0)[..., None]
+    bevel1 = ((sd >= 1.0) & (sd < 2.0))[..., None]
+    light = np.array([0.80, 0.62, 0.38], np.float32) * (0.62 + 0.45 * diff)[..., None]
+    col = np.where(bevel1, light, col)
+    col = np.where(outline, np.array([0.040, 0.030, 0.022], np.float32), col)
     rgba = np.dstack([col * inside[..., None], inside])
-    sh = np.clip(1 - inside, 0, 1) * np.exp(-np.clip(-sd, 0, None) / 3.0) * 0.55
-    # P2: a 3 px contact shadow (35 %) just outside each end's rim and under each cap, onto the figures
-    endz = sm(PL_X0 + 2 * VOL_R + 10, PL_X0 + 2 * VOL_R + 2, np.minimum(X, 1920 - X))
-    ring3 = np.clip(1 - inside, 0, 1) * sm(3.6, 2.4, -sd) * (sd < 0)
-    cap = np.zeros_like(X)
-    for (vx, vy) in (VL, VR_):
-        cap = np.maximum(cap, sm(VOL_R + 0.5, VOL_R - 1.0, np.hypot(X - vx, Y - (vy + 2.5))) * (Y > vy))
-    p2 = 0.35 * np.maximum(ring3, cap * np.clip(1 - inside, 0, 1)) * endz
-    sh = np.maximum(sh, p2)
+    # P2 (UI 24: tight): a 1.5 px contact shadow (35 %) just outside each end's rim, onto the figures; none on the top run
+    endz = sm(PL_X0 + 2 * VOL_R + 10, PL_X0 + 2 * VOL_R + 2, xm)
+    ring = ((sd < 0) & (sd > -1.5)).astype(np.float32)
+    sh = 0.35 * ring * endz
     rgba[..., 3] = rgba[..., 3] + sh * (1 - rgba[..., 3])
     return ss_down(rgba, 4)          # 4 samples per output px a side (ss = 4 Z)
 
@@ -437,7 +519,7 @@ def bezels(Z):
         X, Y = ss_grid(bx0, by0, bx1, by1, ss)
         dx, dy = X - sx, Y - SEAT_Y
         d = np.hypot(dx, dy)
-        ring = np.clip(SEAT_R - d + 0.5, 0, 1) * np.clip(d - WELL_R + 0.5, 0, 1)
+        ring = ((d < SEAT_R) & (d >= WELL_R)).astype(np.float64)       # UI 24: hard steps (exact coverage at 2x)
         t = np.clip((d - WELL_R) / BEZ, 0, 1)
         tilt = (t - 0.5) * 1.6
         nx, ny = dx / (d + 1e-3) * tilt, dy / (d + 1e-3) * tilt
@@ -446,10 +528,10 @@ def bezels(Z):
         diff = np.clip(nx * Ld[0] + ny * Ld[1] + nz * Ld[2], 0, 1)
         spec = np.clip(diff, 0, 1) ** 24
         c = np.array([0.55, 0.42, 0.26]) * (0.30 + 1.05 * diff)[..., None] + np.array([1, 0.88, 0.64]) * (spec * 0.6)[..., None]
-        inner = np.exp(-((d - WELL_R - 0.2) / 0.6) ** 2)
+        inner = ((d >= WELL_R) & (d < WELL_R + 0.75)).astype(np.float64)   # a crisp dark inner lip
         c = c * (1 - 0.7 * inner[..., None])
-        outl = np.clip(SEAT_R + 1.0 - d + 0.5, 0, 1) * (1 - np.clip(SEAT_R - d + 0.5, 0, 1))
-        a = np.clip(ring + outl * 0.9, 0, 1)
+        outl = ((d >= SEAT_R) & (d < SEAT_R + 1.0)).astype(np.float64)     # a crisp 1 px dark outline
+        a = np.clip(ring + outl, 0, 1)
         rgb = c * ring[..., None] + np.array([0.03, 0.024, 0.018]) * outl[..., None]
         piece = ss_down(np.dstack([rgb, a]).astype(np.float32), 4)
         ox, oy = (bx0 - x0) * Z, (by0 - y0) * Z
@@ -488,10 +570,10 @@ def main():
     Z = 2
     rep = {}
     # ---- the girl
-    art = load_rgba(os.path.join(SRC, 'girl_R6.png'))
+    art, n_g1, n_isl = girl_art()
     cur = load_rgba(os.path.join(UI, 'lamp_life', 'drowned', 'lamp_cold.png'))
     assert art.shape == cur.shape, (art.shape, cur.shape)
-    art, n_g1 = fix_girl(art)
+    rep['girl islands removed'] = n_isl
     gm = lamp_mask(art)
     dd = os.path.join(UI, 'lamp_life', 'drowned')
     save_rgba(os.path.join(dd, 'lamp_cold.png'), art)
@@ -515,7 +597,7 @@ def main():
     jj, ii = np.mgrid[0:cvz[1], 0:cvz[0]].astype(np.float32)
     Xi, Yi = rx0 + (ii + 0.5) / Z - 0.5, ry0 + (jj + 0.5) / Z - 0.5      # mock pixel-index units
     Lk = place(art[:, ::-1].copy(), (lx0 - rx0) * Z, (gy0 + LOCK_D[1] - ry0) * Z, gw * Z, gh * Z, cvz)
-    Lk = Lk * lock_window(Xi, Yi)[..., None]
+    Lk = lock_taper(Lk * lock_window(Xi, Yi)[..., None], Yi, Z)
     ls = straight(Lk)
     Lk = np.dstack([final_grade(ls, np.zeros(ls.shape[:2], np.float32), gr) * Lk[..., 3:4], Lk[..., 3]])
     K = over(Lk, Kp)
@@ -530,6 +612,10 @@ def main():
     ks = straight(K)
     ks = k4_curve(ks, away, gr['K4_thr'])
     K = np.dstack([ks * K[..., 3:4], K[..., 3]])
+    # UI 24: his inner (left) side cleaned like hers (crisp, islands, decontaminated), x < 1350
+    Ks, n_kisl = clean_edges(np.dstack([straight(K), K[..., 3]]), sm(1360.0, 1340.0, Xi))
+    K = np.dstack([Ks[..., :3] * Ks[..., 3:4], Ks[..., 3]])
+    rep['keeper islands removed'] = n_kisl
     bl, br = kx0 + gr['BOWL_L'] * K_S, kx0 + gr['BOWL_R'] * K_S
     front = sm(rim_y - 1.0, rim_y + 1.5, Yi) * (Xi > bl - 2) * (Xi < br + 2)
     kd = os.path.join(UI, 'dg_keeper')
@@ -543,11 +629,32 @@ def main():
     ka = np.zeros((nrow, 1920 * Z), np.float32)
     ka[:, rx0 * Z:rx1 * Z] = K[(py0 - ry0) * Z:, :, 3]
     rows, ge, ke = figure_edges(ga, ka, Z, py0)
-    cl = end_contour(rows, ge, ke)
-    P = plate(Z, rows, cl)
+    cl = end_contour(rows)
+    P = plate(Z)
     P = over(P, bezels(Z))
     P = over(P, coin_static(Z, os.path.join(UI, 'dg_river')))
     save_rgba(os.path.join(UI, 'dg_panel', 'panel.png'), np.dstack([straight(P), P[..., 3]]))
+    # UI 24: every row from the panel top: each figure tucks >= TUCK_MIN under its end, and no backdrop shows between
+    # (a hole the figure itself encloses, a hair loop, is not a gap: the checks read the figures with their holes filled)
+    pa, half = P[..., 3], P.shape[1] // 2
+    gaf = ndimage.binary_fill_holes(place(art, gx0 * Z, (gy0 - 820) * Z, gw * Z, gh * Z, (1920 * Z, 260 * Z))[..., 3] > 0.5)
+    gaf = gaf[(py0 - 820) * Z:]
+    kaf = np.zeros((nrow, 1920 * Z), bool)
+    kaf[:, rx0 * Z:rx1 * Z] = ndimage.binary_fill_holes(K[..., 3] > 0.5)[(py0 - ry0) * Z:]
+    tg, tk, gaps = [], [], 0
+    for r in range(pa.shape[0]):
+        if rows[r] < PL_TOP + 0.5:
+            continue
+        lc = np.nonzero(pa[r, :half] > 0.5)[0].min()
+        rc = np.nonzero(pa[r, half:] > 0.5)[0].max() + half
+        tg.append(ge[r] - (PANEL_RECT[0] + lc / Z)); tk.append((PANEL_RECT[0] + (rc + 1) / Z) - ke[r])
+        gl, gk = PANEL_RECT[0] * Z + lc - 1, PANEL_RECT[0] * Z + rc + 1
+        if not gaf[r, gl] or not kaf[r, gk]:
+            gaps += 1
+            rep.setdefault('gap at', []).append(round(float(rows[r]), 2))
+    rep['tuck min (girl, keeper)'] = [round(min(tg), 2), round(min(tk), 2)]
+    rep['gap rows'] = gaps
+    assert min(tg) >= TUCK_MIN and min(tk) >= TUCK_MIN and gaps == 0, rep
     # ---- the fire
     shutil.copy(os.path.join(SRC, 'fw_9931_0.png'), os.path.join(kd, 'fire.png'))
     shutil.copy(os.path.join(SRC, 'fo_9932_0.png'), os.path.join(kd, 'fire_ready.png'))
