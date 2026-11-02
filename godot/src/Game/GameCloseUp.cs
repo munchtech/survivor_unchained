@@ -389,6 +389,10 @@ public partial class Game
     // blue town, and the key's amber sheen on steel read mauve. So the amber fill and the key narrow onto the head (CloseFolkFillCone, the
     // edge soft) and fall off down the body (Chid's tunic: the key, the fill and the moon each about a third of its light), a weak teal wash (CloseFolkCool of the fill, the cone as wide as before) ties the body into
     // the night, and the key on them is a yellower amber with less sheen.)
+    // (j3: at 11 degrees with a hard edge (attenuation 2) the warm light stopped at the jaw and the skin and pale cloth below took the
+    // town's violet: Rav's neck Oklab hue 344, his chest 283, Harlan's coat 324, Rook's apron 303. A 22-degree cone with a soft
+    // falloff (0.45) and a truer teal: every one 20-60 (Rav's neck 50, chest 32; Harlan's coat 49; Rook's 30); Harlan's coat Oklab L
+    // 31 under his face's 65. Chid's near-white tunic stays bright under any cone tried (its paint: NPC's).)
     SpotLight3D? keyFolk, rimFolk, coolFolk;
     void FolkTwins(bool on, Vector3 head = default)
     {
@@ -592,13 +596,13 @@ public partial class Game
     static bool CloseFolkOn => Args.Get("close-folk") != "off";
     static float CloseFolkKey => Args.Num("close-folk-key", 0.7f);
     static float CloseFolkRim => Args.Num("close-folk-rim", 0.45f);
-    static readonly Color CloseRimColourFolk = ArgColour("close-rim-colour-folk", new Color(0.70f, 0.84f, 0.88f));
+    static readonly Color CloseRimColourFolk = ArgColour("close-rim-colour-folk", new Color(0.55f, 0.85f, 0.85f));
     /// <summary>--close-folk-fill-cone DEG, --close-folk-fill-edge A: the amber fill's cone on people, aimed at the head, and its edge's
     /// falloff (Godot's spot angle attenuation). --close-folk-cool K: the teal wash's share of the fill. --close-folk-key-spec S,
     /// --close-key-colour-folk R,G,B: the key's sheen on people and the colour it is drawn halfway to.</summary>
-    static float CloseFolkFillCone => Args.Num("close-folk-fill-cone", 11f);
-    static float CloseFolkFillEdge => Args.Num("close-folk-fill-edge", 2f);
-    static float CloseFolkCool => Args.Num("close-folk-cool", 0.25f);
+    static float CloseFolkFillCone => Args.Num("close-folk-fill-cone", 22f);
+    static float CloseFolkFillEdge => Args.Num("close-folk-fill-edge", 0.45f);
+    static float CloseFolkCool => Args.Num("close-folk-cool", 0.15f);
     static float CloseFolkKeySpec => Args.Num("close-folk-key-spec", 0.12f);
     static readonly Color CloseKeyColourFolk = ArgColour("close-key-colour-folk", new Color(1f, 0.92f, 0.75f));
     static Color ArgColour(string name, Color d) => Args.Get(name) is string s && s.Split(',') is { Length: 3 } p
