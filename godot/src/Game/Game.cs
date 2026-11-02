@@ -230,6 +230,15 @@ public partial class Game : Node, IZoneHost
                 LampBook.Carry(ch, fparts[0]);
             }
         }
+        // --lamp ID[+ID]: those lamps lit (dev: e.g. --lamp warden.shield_bash wakes Shield Bash's reflex in a --quick run).
+        if (Args.Get("lamp") is string lampArg)
+        {
+            var ch = Journey.Ch;
+            LampBook.State(ch);
+            foreach (var id in lampArg.Split('+'))
+                if (Content.Lamps.Find(id) != null) LampBook.Now(ch).Lit.Add(id);
+                else GD.PrintErr($"--lamp: no lamp {id}");
+        }
         // --charts N: N Wayfinder's charts in the pack, the first plain, the rest finer and higher
         // (pictures of the atlas); --lit PEOPLE:TIER+...: those pairs of the atlas cleared, and
         // their points (e.g. --lit pack:1 for the beta's first tier and point).
