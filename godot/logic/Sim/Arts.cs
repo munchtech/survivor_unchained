@@ -63,6 +63,10 @@ public sealed partial class Battle
     /// and when the art's own choice gives the facet (Classes 20).</summary>
     double NightCut(string facet, double full, double none) { double w = Ward(facet); return w == 1 ? full : none + (full - none) * w; }
 
+    /// <summary>A lamp reflex is a rule; by night its numbers are sizes, a quarter (v2; Classes 20). Only while a reflex runs
+    /// (RunReflex): the same art in hand keeps its numbers. Its trigger, own hit damage, knockback and interrupt stay.</summary>
+    double ReflexSize => inReflex && Content.Lamps.V2 && Lamps.Night ? Content.Lamps.NightSize : 1;
+
     /// <summary>A blue lamp's gift by night is a size, so a quarter (v2; CLASSES.md §2.10); its price stays in full.</summary>
     double GiftSize => Content.Lamps.V2 && Lamps.Night ? Content.Lamps.NightSize : 1;
 
@@ -182,7 +186,7 @@ public sealed partial class Battle
             if (!wide && Math.Abs(da) > 1.2) return;
             double dd = d == 0 ? 1 : d;
             HitEnemy(e, 22 * power * (wide ? 0.8 : 1), School.Physical, [Tag.Melee, Tag.Physical], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.6 : 1.5) + (Has("concussion") ? Ward("concussion") : 0)), 0);
+            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.6 : 1.5) * ReflexSize /* A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20) */ + (Has("concussion") ? Ward("concussion") : 0)), 0);
             Interrupt(e);
             struck++;
         });
@@ -200,6 +204,8 @@ public sealed partial class Battle
     {
         var p = Player;
         p.BulwarkT = 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        p.BulwarkSize = ReflexSize;
         Art.BulwarkUp = true;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 2 });
         return true;
@@ -225,12 +231,12 @@ public sealed partial class Battle
         double terrorT = terror ? Ward("terror") : 0;
         ForEachHostileInRadius(p.X, p.Z, 8, (e, _) =>
         {
-            if (!e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 2.5), 0);
+            if (!e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 2.5 * ReflexSize /* A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20) */), 0);
             else if (terror && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, terrorT), 0);
             Interrupt(e);
         });
         double t = Has("echoing") ? 10 : 6;
-        AddBuff("warcry", Stat.Damage, 0.25 * power, ModKind.Inc, t, 1);
+        AddBuff("warcry", Stat.Damage, 0.25 * power * ReflexSize, ModKind.Inc, t, 1); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         if (Has("bloodlust")) AddBuff("bloodlust", Stat.MoveSpeed, 0.2 * Ward("bloodlust"), ModKind.Inc, t, 1);
         if (Has("battle_trance")) HealPlayer(MaxHp * 0.15 * Ward("battle_trance"), "war cry");
         return true;
@@ -279,7 +285,9 @@ public sealed partial class Battle
     bool TimeSlip(AbilityDef def, double angle, double power)
     {
         var p = Player;
-        WorldRate = Has("deep_slip") ? NightCut("deep_slip", 0.2, 1.0 / 3) : 1.0 / 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        double slow = 1 - (1 - 1.0 / 3) * ReflexSize;
+        WorldRate = Has("deep_slip") ? NightCut("deep_slip", 0.2, slow) : slow;
         WorldRateT = (Has("long_slip") ? 5.5 : 3.5) * power;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 30 });
         foreach (var e in Enemies.Items) if (e.Alive) Interrupt(e);
@@ -293,8 +301,9 @@ public sealed partial class Battle
         if (marked.Count == 0) { p.AbilityCd = 0.5; return false; }
         foreach (var e in marked)
         {
-            ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2, 8), 0);
+            ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2 * ReflexSize, 8), 0); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
             e.Prey = true;
+            e.PreySize = ReflexSize;
             if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower);
             Events.Emit(new Ev.Ability { Id = def.Id, X = e.X, Z = e.Z, Angle = angle, Radius = 1 });
         }
@@ -304,9 +313,11 @@ public sealed partial class Battle
     bool SmokeBomb(AbilityDef def, double angle, double power)
     {
         var p = Player;
-        double hide = Has("thick_smoke") ? 5 : 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        double rs = ReflexSize;
+        double hide = (Has("thick_smoke") ? 5 : 3) * rs;
         p.InvisibleT = hide;
-        p.SureCritT = hide + 0.5 + (Has("ambush") ? 2 : 0);
+        p.SureCritT = (hide / rs + 0.5 + (Has("ambush") ? 2 : 0)) * rs;
         if (Has("ambush")) AddBuff("ambush", Stat.CritDamage, 0.5, ModKind.More, p.SureCritT, 1);
         if (Has("mist_step")) AddBuff("mist_step", Stat.MoveSpeed, 0.3, ModKind.Inc, hide, 1);
         if (Has("choking"))
@@ -857,7 +868,7 @@ public sealed partial class Battle
     void ArtOnHit(Enemy e)
     {
         if (!e.Prey || e.Boss || e.Hp <= 0 || !e.Status.Has(StatusKind.Mark)) return;
-        if (e.Hp < e.MaxHp * (Has("executioner") ? NightCut("executioner", 0.3, 0.2) : 0.2))
+        if (e.Hp < e.MaxHp * (Has("executioner") ? NightCut("executioner", 0.3, 0.2 * e.PreySize) : 0.2 * e.PreySize)) // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         {
             Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Executed" });
             KillEnemy(e, true, null);
