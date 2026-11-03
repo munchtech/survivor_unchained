@@ -1205,7 +1205,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             Interactables.Add(new Interactable
             {
                 Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
-                Hint = () => $"Won. Or stay: {Clock(Seconds - End)} {Past}",
+                Hint = () => $"Won. Or stay: {Clock(Math.Max(0, Seconds - End))} {Past}",
                 When = () => wayShown, Act = Leave,
             });
             G.After(2.6, () => wayShown = true);
@@ -1312,7 +1312,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (Spec.Story) steps.Add(new Step("The night lets you go", Optional: true));
             else
             {
-                steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} {Past}", Optional: true));
+                steps.Add(new Step($"Stay as long as you dare: {Clock(Math.Max(0, Seconds - End))} {Past}", Optional: true));
                 int back = (int)Math.Max(0, nextReturn - Seconds);
                 steps.Add(new Step(bossUp ? $"{BossName} has come again" : $"{BossName} comes again in {back / 60}:{back % 60:00}", Optional: true));
             }

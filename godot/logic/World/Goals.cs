@@ -28,6 +28,10 @@ public sealed class GoalDef
     public bool Edge = true;
     /// <summary>Metres: the on-screen pin hides when she is closer than this.</summary>
     public double Near = 4;
+    /// <summary>Metres: the on-screen pin fades out from Fade + 2 to Fade; none: Near.</summary>
+    public double? Fade;
+    /// <summary>A block of its own goes to the top of the tracker (after "tonight"), not the end.</summary>
+    public bool First;
 }
 
 public sealed record ActiveGoal(GoalDef Def, double X, double Z, double R, bool Line);
@@ -67,7 +71,12 @@ public static class Goals
                 into.InsertRange(Math.Clamp(a.Def.At, 0, into.Count), steps);
                 o[i] = o[i] with { Steps = into };
             }
-            else o.Add(new Tracked(a.Def.Id, a.Def.Title, TrackTone.Main, steps));
+            else
+            {
+                var block = new Tracked(a.Def.Id, a.Def.Title, TrackTone.Main, steps);
+                if (a.Def.First) o.Insert(o.FindIndex(t => t.Id == "tonight") + 1, block);
+                else o.Add(block);
+            }
         }
         return o;
     }

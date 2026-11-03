@@ -217,13 +217,13 @@ public partial class Minimap : Control
         foreach (var m in list)
         {
             var at = new Vector2((float)(m.X - px), (float)(m.Z - pz)) * scale;
-            bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit;
+            bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal;
             bool off = at.Length() > r - 12;
             if (off && !guide) continue;
             // Off the disc, what is sought waits on the rim, pointing the way.
             if (off) at = at.Normalized() * (r - 12);
             // People are many in a town: a dot each; what is sought keeps its sign.
-            var key = m.Kind == MarkKind.Person ? (MarkKind.Person, 0) : (m.Kind, off ? 15 : 18);
+            var key = m.Kind == MarkKind.Person ? (MarkKind.Person, 0) : (m.Kind, m.Kind == MarkKind.Goal ? (off ? 21 : 25) : off ? 15 : 18);
             if (!pool.TryGetValue(key, out var spare)) pool[key] = spare = new List<Control>();
             pooledUsed.TryGetValue(key, out int taken);
             pooledUsed[key] = taken + 1;
@@ -266,7 +266,10 @@ public partial class Minimap : Control
         // A pale disc under the ink, so a mark reads on dark ground and on paper alike.
         var holder = new Control { CustomMinimumSize = new Vector2(size, size), Size = new Vector2(size, size), MouseFilter = MouseFilterEnum.Ignore };
         var back = new Panel { Size = new Vector2(size, size), MouseFilter = MouseFilterEnum.Ignore };
-        back.AddThemeStyleboxOverride("panel", Style.Box(new Color("#efe3c4") with { A = 0.92f }, color, 1, size / 2, 0));
+        // (the goal's disc is gold, the others pale paper)
+        back.AddThemeStyleboxOverride("panel", kind == MarkKind.Goal
+            ? Style.Box(new Color("#e8c070"), color, 2, size / 2, 0)
+            : Style.Box(new Color("#efe3c4") with { A = 0.92f }, color, 1, size / 2, 0));
         holder.AddChild(back);
         var g = Glyphs.Icon(glyph, size - 6, color);
         g.Position = new Vector2(3, 3);
@@ -287,6 +290,7 @@ public partial class Minimap : Control
     {
         MarkKind.Quest or MarkKind.Turn => ("quest", new Color("#a8321e")), MarkKind.Danger => ("skull", new Color("#6a1a10")),
         MarkKind.Mystery => ("eye", new Color("#5a3a7a")), MarkKind.Exit => ("next", new Color("#2a4a3a")), MarkKind.Person => ("talk", new Color("#3a2414")),
+        MarkKind.Goal => ("chart", new Color("#3a2414")),
         _ => ("map", new Color("#3a2414")),
     };
 

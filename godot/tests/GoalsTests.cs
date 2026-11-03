@@ -90,4 +90,28 @@ public class GoalsTests
         Assert.Equal("Leave by the way out, where Mordrake fell", merged[0].Steps[1].Text);
         Assert.Equal(2, block.Steps.Count);
     }
+
+    [Fact]
+    public void A_first_goal_leads_the_tracker_after_tonight()
+    {
+        var def = new GoalDef { Id = "lead", Title = "Lead", First = true, Steps = new() { new GoalStep { Text = "Go" } } };
+        var act = new List<ActiveGoal> { new(def, 0, 0, 1, true) };
+        var tonight = new Tracked("tonight", "Tonight", TrackTone.Main, new() { new Step("x") });
+        var other = new Tracked("other", "Other", TrackTone.Main, new() { new Step("y") });
+        Assert.Equal(new[] { "lead", "other" }, Goals.Merge(new() { other }, act, _ => null).Select(t => t.Id));
+        Assert.Equal(new[] { "tonight", "lead", "other" }, Goals.Merge(new() { tonight, other }, act, _ => null).Select(t => t.Id));
+        Assert.Equal(new[] { "other", "tonight", "lead" }, Goals.Merge(new() { other, tonight }, act, _ => null).Select(t => t.Id));
+        def.First = false;
+        Assert.Equal(new[] { "other", "lead" }, Goals.Merge(new() { other }, act, _ => null).Select(t => t.Id));
+    }
+
+    [Fact]
+    public void The_table_leads_and_the_way_out_fades_at_the_ring()
+    {
+        Assert.True(Goals.All.Single(g => g.Id == "table").First);
+        foreach (var g in Goals.All.Where(g => g.Id != "table")) { Assert.False(g.First); Assert.Equal(6, g.Fade); Assert.Equal("arch", g.Glyph); }
+        Assert.Null(Goals.All.Single(g => g.Id == "table").Fade);
+        Assert.Equal("chart", Goals.All.Single(g => g.Id == "table").Glyph);
+        Assert.True(System.Enum.IsDefined(typeof(MarkKind), "Goal"));
+    }
 }

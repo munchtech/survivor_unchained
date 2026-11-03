@@ -24,5 +24,7 @@ public partial class GameHud
         var words = objectives.GetGlobalRect();
         goalMarks.Avoid = list.Count == 0 ? null : new Rect2(words.Position.X - 24, 0, goalMarks.GetViewportRect().Size.X - words.Position.X + 24, words.End.Y + 16);
         goalMarks.Show(list);
+        // The boss and elite marks slide off the goal arrows.
+        edges.Keep = new List<Vector2>(goalMarks.ArrowPoints);
     }
 }

@@ -31,7 +31,7 @@ public partial class Game
     static string GoalKey(List<ActiveGoal> pins) => string.Join(",", pins.Select(p => p.Def.Id + (p.Line ? "+" : "-")));
 
     /// <summary>Corner-map marks for the goals.</summary>
-    List<MiniMark> GoalMiniMarks() => GoalPins().Select(p => new MiniMark(p.X, p.Z, MarkKind.Quest, p.Def.Label)).ToList();
+    List<MiniMark> GoalMiniMarks() => GoalPins().Select(p => new MiniMark(p.X, p.Z, MarkKind.Goal, p.Def.Label)).ToList();
 
     /// <summary>The waypoints and edge arrows for this frame; the tracker is redone when a goal comes or goes.</summary>
     List<GoalMark> GoalScreen()
@@ -45,15 +45,18 @@ public partial class Game
         foreach (var p in pins)
         {
             double d = Math.Sqrt((p.X - b.Player.X) * (p.X - b.Player.X) + (p.Z - b.Player.Z) * (p.Z - b.Player.Z));
-            var w = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 1.8f, (float)p.Z);
+            var w = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.1f, (float)p.Z);
             var sp = camera.UnprojectPosition(w);
             bool behind = camera.IsPositionBehind(w);
             bool on = !behind && view.HasPoint(sp);
-            if (on ? d < p.Def.Near : !p.Def.Edge) continue;
+            // On screen the pin fades out between Fade + 2 m and Fade m (Fade: Near unless the goal says).
+            double fade = p.Def.Fade ?? p.Def.Near;
+            float alpha = on ? (float)Math.Clamp((d - fade) / 2, 0, 1) : 1;
+            if (on ? alpha <= 0 : !p.Def.Edge) continue;
             if (behind) sp = view.GetCenter() - (sp - view.GetCenter());
             Color c;
             try { c = new Color(p.Def.Color); } catch { c = Colors.White; }
-            o.Add(new GoalMark(sp, on, p.Def.Glyph, c, p.Def.Label, (float)d));
+            o.Add(new GoalMark(sp, on, p.Def.Glyph, c, p.Def.Label, (float)d, alpha));
         }
         return o;
     }

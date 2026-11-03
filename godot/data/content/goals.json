@@ -11,9 +11,10 @@
       { "text": "Each map is a night's ground, and something rules it", "optional": true }
     ],
     "label": "The Wayfinder's table",
-    "glyph": "map",
+    "glyph": "chart",
     "color": "#e8c070",
     "edge": true,
+    "first": true,
     "near": 4
   },
   {
@@ -24,10 +25,11 @@
     "at": 1,
     "steps": [ { "text": "Leave by the way out, where {boss} fell" } ],
     "label": "The way out",
-    "glyph": "next",
+    "glyph": "arch",
     "color": "#8ab4ff",
     "edge": true,
-    "near": 3
+    "near": 4,
+    "fade": 6
   },
   {
     "id": "map_out",
@@ -37,9 +39,10 @@
     "at": 1,
     "steps": [ { "text": "Leave by the way out: the map is cleared" } ],
     "label": "The way out",
-    "glyph": "next",
+    "glyph": "arch",
     "color": "#8ab4ff",
     "edge": true,
-    "near": 3
+    "near": 4,
+    "fade": 6
   }
 ]

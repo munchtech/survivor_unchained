@@ -398,7 +398,7 @@ public partial class MapScreen : Overlay
         }
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * F), (float)((z / extent + 0.5) * F));
         var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label)).ToList();
-        foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Quest, gp.Def.Label));
+        foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Goal, gp.Def.Label));
         if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
         foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind);
         // The ring that marks what the list has chosen.
@@ -464,7 +464,7 @@ public partial class MapScreen : Overlay
         {
             // In the panel: under the map, the road she is on (the way out, who needs her), nearest first,
             // in two columns; then the legend and the tools. The rest of the list is the wide map's.
-            var road = Near(entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit)).Take(4).ToList();
+            var road = Near(entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal)).Take(4).ToList();
             if (road.Count > 0)
             {
                 v.AddChild(Kit.Head("Your road", "nearest first"));
@@ -506,7 +506,7 @@ public partial class MapScreen : Overlay
             list.AddChild(Style.Label(title.ToUpperInvariant(), Style.UiHeavy, 12, Kit.HeadInk, false, HorizontalAlignment.Left, false));
             foreach (var e in these) list.AddChild(Line(e, Px(e.X, e.Z)));
         }
-        Group("Your road", entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit));
+        Group("Your road", entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal));
         Group("People", entries.Where(e => e.Kind == MarkKind.Person));
         Group("Places", entries.Where(e => e.Kind == MarkKind.Place));
         Group("Danger and the strange", entries.Where(e => e.Kind is MarkKind.Danger or MarkKind.Mystery));
@@ -634,7 +634,7 @@ public partial class MapScreen : Overlay
         var taken = new List<Rect2>();
         foreach (var (node, _, kind, _) in names)
             if (kind != MarkKind.Place) taken.Add(new Rect2(node.GlobalPosition - new Vector2(11, 11), new Vector2(22, 22)));
-        static int Order(MarkKind k) => k == MarkKind.Place ? 0 : k is MarkKind.Quest or MarkKind.Exit ? 1 : k == MarkKind.Person ? 2 : 3;
+        static int Order(MarkKind k) => k == MarkKind.Place ? 0 : k is MarkKind.Quest or MarkKind.Exit or MarkKind.Goal ? 1 : k == MarkKind.Person ? 2 : 3;
         foreach (var (node, text, kind, w) in names.OrderBy(n => Order(n.Kind)))
         {
             Vector2[] spots = kind == MarkKind.Place
