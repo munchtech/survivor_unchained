@@ -1,6 +1,14 @@
 # Handoff: UI design lead
 
-## START HERE (UI 29): the owner's 2 Nov HUD notes, all BUILT, not yet judged; next = ONE max judge, then the full suite and MR. Branch ui-27 @ (this commit), integration 9e271a7b8 merged, freshness passes (junction godot/assets to its OWN public/assets)
+## DONE (UI 29, 3 Nov): HUD at 0.85 judged and closed, MR READY (branch ui-27, worktree .claude/worktrees/ui-27, junction godot/assets to its OWN public/assets; remove after the merge)
+**Judge hud28 r2 (max, 1:1, play + town, day + night, heavy buffs):** every owner item PASSES: the nape gap reads as her hair, the potion fills its ring (the cork over the top line is OK as a flask in a socket), the held marks (slot level digits, R/SPACE/Q, stacks, +N, timer rings) are legible at 0.85, the buff shelf works at 12 statuses day and night, the town frames are clean, and nothing regressed against round 1. One must-fix (near): the passive studs floated ~13 px off the coin's arch at 0.85. Fixed in 77d57caf5 (`DgMeters.PassiveStud._Draw` now places in the HUD's own px via `HudBottom.Unmap`), re-shot (night, fight, heavy night) and spot-checked: back on the ring as at 100%.
+**Verify note, closed:** the frames' lone aegis buff with no silver arc is a pin artifact (`--hud-pin shield=0` overrides only the orb; the shelf reads the sim's `p.Shield`). In play both come from `p.Shield` (GameHud ~575/584).
+**Tests:** 1406/0/10 at 77d57caf5. The *.import churn was discarded by named checkout.
+**After the demo (polish, not gate):** (1) her orb hand: a repaint (ComfyUI/Krea img2img guided by the shortened hand) to remove the reddish streaks between the fingers; at 1:1 they read as the orb's glow. (2) Give the buff icons their glass (a soft top highlight, a thin bronze rim); at 1:1 they read as flat dark tokens.
+**Tools:** the shot scripts (run.sh, with t/u = town day/night via `--zone waystation --time day|night`), sheet29.py, all29.sh and fix29.sh are backed up in `survivorsunchained_inputs\scratch_ui29\`.
+**Cost (UI 29):** lead ~90k; judge 137k (max); $0 API.
+
+## HISTORY (UI 29 start): the owner's 2 Nov HUD notes, all BUILT, not yet judged; next = ONE max judge, then the full suite and MR. Branch ui-27 @ (this commit), integration 9e271a7b8 merged, freshness passes (junction godot/assets to its OWN public/assets)
 **The owner PICKED bottomScale 0.85** ("I'm happy with 85% tho"); hud.json set (6942e8c30).
 **Built since UI 28's judge (hud28 r1 PASS-WITH-NOTES, see below):**
 - **Her hair:** the inward-curl rounds were rejected ("it looks worse than the last one. put her back how she was I guess and add some hair in the gap between"), so it is reverted to r2b (75cdb4b25). Keep her fuller back against the bar ("I do like her back against the bar tho"). 6ed96cf36 fills r2b's near-black corner wedge (x ~664-684, y 984-1002) with her own lit strands; the outline is unchanged. Note: the owner's gap frame was the MAIN checkout's old UI 24 art, so the owner has not yet seen r2b in the game. Crop: `survivorsunchained_inputs\scratch_ui28\out\gap_before_after.png`.
