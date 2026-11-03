@@ -776,8 +776,9 @@ public partial class CrowdView : Node3D
 
     /// <summary>How far a body settles as it dissolves (metres at its size).</summary>
     const float SinkDepth = 0.08f;
-    /// <summary>The steepest a lying body is tilted to its ground.</summary>
-    const double TiltMax = 20 * Math.PI / 180;
+    /// <summary>The steepest a lying body is tilted to its ground. (20 degrees left the Verge's hillside dead, on 36 degree
+    /// slopes, 0.4 m into or over the ground at their far end; past 40 a body would rather roll.)</summary>
+    const double TiltMax = 40 * Math.PI / 180;
 
     /// <summary>Which way a body lying in this death runs from its feet (world heading), or null where it is not known.</summary>
     static double? FallHeading(VatAsset asset, string role, double facing) =>
@@ -839,7 +840,10 @@ public partial class CrowdView : Node3D
             // is taken back where it lies, dissolving over CorpseSink and settling a few centimetres with it (it slid 1.1 m
             // down through the floor: the night arena's dead were seen sinking).
             float sink = Smooth(age, lie, lie + CorpseSink);
-            if (!c.Tilted) { c.Tilt = RestTilt(heightAt, c.X, c.Z, FallHeading(crowd.Asset, c.Role, c.Facing), c.Scale); c.Tilted = true; }
+            if (!c.Tilted)
+            {
+                c.Tilt = RestTilt(heightAt, c.X, c.Z, FallHeading(crowd.Asset, c.Role, c.Facing), c.Scale); c.Tilted = true;
+            }
             var at = new Vector3(c.X, (float)heightAt(c.X, c.Z) - sink * SinkDepth * c.Scale, c.Z);
             var basis = c.Tilt * new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - c.Facing) * Godot.Basis.FromScale(Vector3.One * c.Scale);
             // The dead go dark and a little cold as soon as they are down, so the living read
