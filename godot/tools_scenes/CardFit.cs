@@ -96,18 +96,6 @@ public partial class CardFit : Node
         var view = new DraftView(LevelUp.DraftLevel(j.B), j.Blessing, j.Offers, 3, 2, 0, null, j.Build, _ => { }, () => { }, _ => { }, j.Great, j.B);
         var p = new DraftPanel(view);
         host.AddChild(p);
-        // The detail strip's text for each card with a recipe, laid out off screen at the strip's width (Measure counts its lines).
-        for (int i = 0; i < j.Offers.Count; i++)
-        {
-            if (DraftPanel.DetailText(j.Offers[i]) is not { Length: > 0 } t) continue;
-            var strip = DraftPanel.DetailLabel();
-            strip.Name = $"Strip{i}";
-            strip.Text = t;
-            strip.MaxLinesVisible = -1;
-            strip.Position = new Vector2(-5000, 0);
-            strip.Size = new Vector2(DraftPanel.DetailW, 400);
-            host.AddChild(strip);
-        }
         return p;
     }
 
@@ -341,8 +329,14 @@ public partial class CardFit : Node
             if (fr.Position.Y < cr.Position.Y - 0.5f || fr.End.Y > cr.End.Y + 0.5f || fr.Position.X < cr.Position.X - 0.5f || fr.End.X > cr.End.X + 0.5f)
                 row.Fails.Add($"footer outside the card (footer {fr.Position.X - cr.Position.X:0},{fr.Position.Y - cr.Position.Y:0} {fr.Size.X:0}x{fr.Size.Y:0} in a {cr.Size.X:0}x{cr.Size.Y:0} card)");
             // The detail strip: this card's recipe fits its two lines.
-            if (p.GetParent().GetNodeOrNull<Label>($"Strip{i}") is { } strip)
+            if (p.StripText(i) is { Length: > 0 } stripText)
             {
+                var strip = DraftPanel.DetailLabel();
+                strip.Text = stripText;
+                strip.MaxLinesVisible = -1;
+                strip.Position = new Vector2(-5000, 0);
+                strip.Size = new Vector2(DraftPanel.DetailW, 400);
+                p.GetParent().AddChild(strip);
                 stripCards++;
                 if (strip.GetLineCount() > 2) row.Fails.Add($"detail strip needs {strip.GetLineCount()} lines (2 shown): \"{strip.Text}\"");
             }

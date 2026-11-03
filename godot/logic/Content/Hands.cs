@@ -99,7 +99,7 @@ public static class Hands
                 if (Heavies(tags))
                     parts.Add($"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; a boss's stagger fills)");
                 if (tags.Has(Tag.Holy) || school == School.Holy)
-                    parts.Add($"each champion it strikes lays a Stone, and at {h.Stones} the wall answers with a rebuke");
+                    parts.Add($"each champion it strikes lays a Stone; at {h.Stones} the wall rebukes");
                 break;
             }
             case "reaver":

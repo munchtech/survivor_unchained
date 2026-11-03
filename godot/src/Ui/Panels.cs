@@ -381,8 +381,16 @@ public partial class DraftPanel : Control
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
-        foreach (var why in o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2))
-            fv.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
+        // (the second why yields to the body: if the body still hides lines at the floor, Fit takes it off the face
+        // and the detail strip carries it with the recipe; a teaching panel has no strip, so it keeps both)
+        var whys = o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2).ToList();
+        for (int wi = 0; wi < whys.Count; wi++)
+        {
+            var why = whys[wi];
+            var wl = Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center);
+            fv.AddChild(wl);
+            if (wi == 1 && !v.Teaching) wl.SetMeta("why2", true);
+        }
         // (what a combat skill becomes, and with what, is the detail strip's under the row: it took three lines of the face)
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
@@ -444,8 +452,20 @@ public partial class DraftPanel : Control
     }
 
     /// <summary>What the strip says of a card: its title, then what it evolves into and with what (empty when it has no recipe).</summary>
-    internal static string DetailText(Offer o) =>
-        o.Recipe is { Length: > 0 } r ? (r.StartsWith("Evolves: ") ? $"{o.Title} evolves: {r["Evolves: ".Length..]}" : $"{o.Title}: {r}") : "";
+    internal static string DetailText(Offer o, string why2 = null)
+    {
+        string recipe = o.Recipe is { Length: > 0 } r ? (r.StartsWith("Evolves: ") ? $"{o.Title} evolves: {r["Evolves: ".Length..]}" : $"{o.Title}: {r}") : "";
+        if (string.IsNullOrEmpty(why2)) return recipe;
+        if (recipe.Length == 0) return why2;
+        // (the why goes first; if both do not fit the two lines, the why is dropped, never the recipe cut)
+        string both = why2 + " " + recipe;
+        var f = Style.TextItalic;
+        return f.GetMultilineStringSize(both, HorizontalAlignment.Left, DetailW, Style.Small).Y <= f.GetHeight(Style.Small) * 2 + 1 ? both : recipe;
+    }
+
+    /// <summary>The strip's text for card i as the panel has it now (its dropped second why included).</summary>
+    internal string StripText(int i) => i >= 0 && i < v.Offers.Count ? DetailText(v.Offers[i], droppedWhy.GetValueOrDefault(i)) : "";
+    readonly Dictionary<int, string> droppedWhy = new();
 
     /// <summary>Whether any card's body would still hide lines at a 16 px type in the full art box; then every card in the row
     /// takes the compact box (the medallion scaled to match), so medallions and titles stay level.</summary>
@@ -478,8 +498,9 @@ public partial class DraftPanel : Control
         return true;
     }
 
-    static void Fit((VBoxContainer Top, VBoxContainer Foot, Label Body) c)
+    void Fit(int ci)
     {
+        var c = fitted[ci];
         float room = c.Foot.Position.Y - Style.Gap2;
         if (c.Foot.Size.Y <= 0 || room <= 0) return;
         // (a new size sorts at the frame's end: the body's share is known on the next; upper words taller than the
@@ -494,12 +515,22 @@ public partial class DraftPanel : Control
             c.Body.AddThemeFontSizeOverride("font_size", fs);
             if (fs <= BodyFloor || c.Body.GetLineCount() <= c.Body.GetVisibleLineCount()) break;
         }
+        // Still hiding lines at the floor: the second why leaves the face for the strip (the room it frees is refitted next frame).
+        if (detail != null && c.Body.GetLineCount() > c.Body.GetVisibleLineCount()
+            && c.Foot.GetChildren().OfType<Label>().FirstOrDefault(l => l.HasMeta("why2")) is { } w2)
+        {
+            droppedWhy[ci] = w2.Text;
+            c.Foot.RemoveChild(w2);
+            w2.QueueFree();
+            c.Body.RemoveMeta("fit");
+            Mark();
+        }
     }
 
     /// <summary>The focused card lifted, the banish mark shown, a chosen card glowing; its skill lit in the build.</summary>
     void Mark()
     {
-        if (detail != null) detail.Text = focus >= 0 && focus < v.Offers.Count ? DetailText(v.Offers[focus]) : "";
+        if (detail != null) detail.Text = focus >= 0 && focus < v.Offers.Count ? StripText(focus) : "";
         bool pad = Controls.Instance.UsingPad;
         for (int i = 0; i < cards.Count; i++)
         {
@@ -611,7 +642,7 @@ public partial class DraftPanel : Control
             float e = 1 - (1 - k) * (1 - k) * (1 - k);
             if (chosen == null) cards[i].Modulate = Colors.White with { A = e };
             if (!artDecided) continue;
-            Fit(fitted[i]);
+            Fit(i);
             // (risen from below to where the card's own frame puts its words: the painted frame's
             // inset, not the drawn one's, or the words sat 18 px left of the card's middle)
             var words = cards[i].GetChild<Control>(1);
