@@ -482,7 +482,7 @@ public partial class FlareFx : Node3D
 
     const double DropRingLag = 0.05, DropGrow = 0.3;
     /// <summary>The Return's end (Flare time after the BOOM): a fresh drop's light comes up to full over these.</summary>
-    const float DropDimFrom = 3.4f, DropDimTo = 4.3f, DropDim = 0.3f;
+    const float DropDimFrom = 3.4f, DropDimTo = 4.3f, DropDim = 0.3f, DropSettle = 0.1f;
     double pressWorld;
 
     /// <summary>For BattleFx.Pickups, after Burns Twice's BOOM: a drop born since the press (bornWorld: Battle.Time at its
@@ -494,7 +494,10 @@ public partial class FlareFx : Node3D
         double show = lastAt + RingTime(new Vector2((float)x - boomAt.X, (float)z - boomAt.Z).Length()) + DropRingLag;
         float k = Mathf.SmoothStep(0, 1, (float)((t - show) / DropGrow));
         float s = (float)(t - lastAt);
-        float light = Mathf.Lerp(DropDim, 1, Mathf.SmoothStep(DropDimFrom, DropDimTo, s));
+        // 0.3 through the scale-in, then down to 0.1 over 0.4 s (judge r2: at 0.3 ~200 glowing points read as confetti
+        // at night; at 0.1 the stone's own shape reads), and full from the Return's end.
+        float settle = Mathf.Lerp(DropDim, DropSettle, Mathf.SmoothStep(0, 1, (float)((t - show - DropGrow) / 0.4)));
+        float light = Mathf.Lerp(settle, 1, Mathf.SmoothStep(DropDimFrom, DropDimTo, s));
         if (Args.Has("shot") && !dropLogged && t >= lastAt + RingTime(ringMax) + DropRingLag)
         {
             dropLogged = true;
