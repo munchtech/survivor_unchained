@@ -549,6 +549,70 @@ def girl_back_line(art):
     return out, ylo, e_old, added
 
 
+# UI 28 (the owner on r2b's nape, 2 Nov: "literally the same thing just rolling outward instead of drifting inward"):
+# the back strand's end (its bright run into the bar's top line) is r2's strand carried along the fillet, so it rolled
+# OUT toward the bar; r2 had it drifting IN. Its end curl is mirrored about the strand's own line (its run over
+# NAPE_FIT), NAPE_GAIN x, so it drifts toward her neck: per art row the strand's band (NAPE_R px a side) moves left
+# and the dark texels it lands on move to its right (a swap: her own texels, no stretch, no smear); alpha untouched
+NAPE_B = tuple(zip((959.5, 962.1, 964.7, 967.4, 970.0, 972.6, 975.2, 977.9, 980.5, 983.1, 985.8, 988.4, 991.0, 993.6,
+                    996.3, 998.9, 1001.5, 1002.8, 1004.2),
+                   (657.84, 658.42, 658.53, 659.20, 659.27, 659.97, 660.01, 660.52, 660.98, 661.50, 662.56, 663.55,
+                    664.71, 665.65, 666.39, 668.01, 670.06, 670.74, 670.62)))   # (y, x) its centre on r2b, screen px
+NAPE_FIT, NAPE_RAMP, NAPE_R, NAPE_GAIN = (959.0, 981.0), (976.0, 984.0), 4.0, 1.5
+
+
+def nape_line():
+    """the strand's own line (screen x per y) and its traced centre (ys, xs)"""
+    ys, xs = np.array([b[0] for b in NAPE_B]), np.array([b[1] for b in NAPE_B])
+    f = (ys >= NAPE_FIT[0]) & (ys <= NAPE_FIT[1])
+    k1, k0 = np.polyfit(ys[f], xs[f], 1)
+    return (lambda y: k0 + k1 * np.asarray(y, np.float64)), ys, xs
+
+
+def nape_shift(Y):
+    """px the strand's band moves left at screen row Y (0 above the curl), and its centre before"""
+    line, ys, xs = nape_line()
+    yc = min(Y, PL_TOP + 0.5)
+    xo = float(np.interp(yc, ys, xs))
+    return 2.0 * NAPE_GAIN * max(xo - float(line(yc)), 0.0) * float(sm(NAPE_RAMP[0], NAPE_RAMP[1], np.array(Y))), xo
+
+
+def girl_nape_ends(art):
+    """UI 28: the back strand's end drifts inward (see NAPE_B). Returns (art, rows changed)."""
+    x0, y0, w, h = girl_screen_rect()
+    H_, W_ = art.shape[:2]
+    sx, sy = w / W_, h / H_
+    pm = premul(art)
+    out = art.copy()
+    X = x0 + (np.arange(W_) + 0.5) * sx
+    hb, n = 0.6, 0
+    for j in range(H_):
+        Y = y0 + (j + 0.5) * sy
+        if Y < NAPE_RAMP[0] or Y > PL_TOP + 9:
+            continue
+        s, xo = nape_shift(Y)
+        if s <= 0.02:
+            continue
+        xm = xo - s
+        al = art[j, :, 3]
+        edge = x0 + (np.nonzero(al > 0.5)[0].max() + 1) * sx
+        assert xo + NAPE_R < edge - 0.5, ('the nape strand band runs past her edge', Y, xo, edge)
+        w1 = sm(xm - NAPE_R - hb, xm - NAPE_R + hb, X) * (1 - sm(xm + NAPE_R - hb, xm + NAPE_R + hb, X))
+        w2 = sm(xm + NAPE_R - hb, xm + NAPE_R + hb, X) * (1 - sm(xo + NAPE_R - hb, xo + NAPE_R + hb, X))
+        w0 = 1 - w1 - w2
+
+        def at(U):
+            c = (U - x0) / sx - 0.5
+            return np.stack([ndimage.map_coordinates(pm[j:j + 1, :, k], [np.zeros_like(c), c], order=3, mode='nearest')
+                             for k in range(4)], -1)
+        S = at(X) * w0[:, None] + at(X + s) * w1[:, None] + at(X - 2 * NAPE_R) * w2[:, None]
+        col = np.clip(S[:, :3] / np.clip(S[:, 3:4], 1e-4, None), 0, 1)
+        wv = (al > 0.02) & (w0 < 0.999)
+        out[j, wv, :3] = col[wv]
+        n += 1
+    return out, n
+
+
 def keeper_back_line(K, Xi, Yi, Z):
     """UI 28 r2b: the keeper ends cleanly at his cloak: everything of the sprite toward 960 of cloak_x (the loop, its
     streaks, any lock or plug leftovers), over the rows from KCLOAK[0] down to K_CUT_TO, erased on a crisp 1 px ramp;
@@ -586,6 +650,7 @@ def girl_art():
         rgb = lab2rgb(lab2)
         art = np.dstack([np.where(wm[..., None] > 0.003, rgb, art[..., :3]), art[..., 3]])
         art, _, _GA['back'], _GA['fill'] = girl_back_line(art)
+        art, _GA['nape'] = girl_nape_ends(art)
         _GA['a'] = (art, n_g1, n_isl)
     return _GA['a']
 
@@ -850,6 +915,22 @@ def main():
     save_rgba(os.path.join(dd, 'lamp_cold.png'), art)
     Image.fromarray((np.clip(gm, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGB').save(os.path.join(dd, 'lamp_mask.png'))
     rep['G1 px filled (art)'] = n_g1
+    # UI 28: the nape strand's end drifts inward: its brightest texel within 16 px of its own line, at the last rows over
+    # the bar, sits left of the line (toward her neck), and no ghost of the old outward end is left
+    ln_, _, _ = nape_line()
+    gx0_, gy0_, gw_, gh_ = girl_screen_rect()
+    lum_ = ndimage.gaussian_filter(art[..., :3] @ LUMW, 1.0)
+    xs_ = gx0_ + (np.arange(art.shape[1]) + 0.5) * gw_ / art.shape[1]
+    dr, gh_lum = [], []
+    for Yq in (994.0, 998.0, 1002.0):
+        j = int((Yq - gy0_) * art.shape[0] / gh_)
+        Yc = gy0_ + (j + 0.5) * gh_ / art.shape[0]
+        win = np.abs(xs_ - float(ln_(Yc))) <= 16.0
+        dr.append(round(float(xs_[win][np.argmax(lum_[j, win])] - ln_(Yc)), 2))
+        _, xo_ = nape_shift(Yc)
+        gh_lum.append(round(float(lum_[j, np.abs(xs_ - xo_) <= 1.0].max()), 3))
+    rep['nape strand end: peak from its line (px, - = in) at 994, 998, 1002; old end luma'] = [dr, gh_lum, _GA['nape']]
+    assert max(dr) < 0 and dr[-1] <= -3.0 and max(gh_lum) < 0.3, rep
     # ---- the keeper at 2x
     k_rgb, k_a = keeper_source()
     kh, kw = k_a.shape
