@@ -504,58 +504,120 @@ public sealed class LampBoardModel
 
     /// <summary>
     /// §16's card: right of the lamp, then left, above and below, each 22 px from the lamp's rim (r) and shifted in 8 px
-    /// steps up to ±120 px. The first spot where no lamp disc crosses its edge band (the rect grown by 6 px), no label
-    /// comes within 40 px, no protected disc (her lit lamps, the path preview's lamps and roads, the focus) touches the
-    /// band, and the card stays `inset` px inside the window (the board's window: never over the header or the tabs). Else the
-    /// least overlap; if nothing fits the window at all, the right spot clamped into it.
+    /// steps up to ±120 px along that side; then (wide) each side pushed out from the lamp in 8 px steps up to 120 px as
+    /// well, the nearest first. A protected disc (her lit lamps, her hearth, the path preview's lamps and roads, the focus)
+    /// touching the card or its edge band (the rect grown by 6 px) is a hard reject. The first spot where no lamp drawn
+    /// (faded ones included) crosses the edge band (6 px either side of the edge: a lamp wholly under the card, 6 px in, is
+    /// covered, not crossed), no label comes within 40 px, and the card stays `inset` px inside the window (the board's
+    /// window: never over the header or the tabs) wins. Else the least crossed spot that covers nothing protected; only
+    /// if every spot does, the least overlap; if nothing fits the window at all, the right spot clamped into it.
     /// </summary>
     public static CardSpot PlaceCard(double fx, double fy, double r, double w, double h,
         IReadOnlyList<(double X, double Y, double R)> lamps, IReadOnlyList<(double X, double Y, double R)> protect,
-        IReadOnlyList<Box> labels, Box window, double inset = 16, IReadOnlyList<Box>? hard = null) =>
-        PlaceCard(fx, fy, r, w, h, new DiscGrid(lamps, 32), new DiscGrid(protect, 32), labels, window, inset, hard: hard);
+        IReadOnlyList<Box> labels, Box window, double inset = 16, IReadOnlyList<Box>? hard = null, bool wide = true) =>
+        PlaceCard(fx, fy, r, w, h, new DiscGrid(lamps, 32), new DiscGrid(protect, 32), labels, window, inset, hard: hard, wide: wide);
+
+    /// <summary>The band's rule: a disc counts when it touches the rect grown by 6 px and isn't wholly 6 px inside it.</summary>
+    public static bool Crosses(Box rect, (double X, double Y, double R) d) =>
+        rect.Grow(6).Hits(d.X, d.Y, d.R) && !(d.X - d.R >= rect.X0 + 6 && d.X + d.R <= rect.X1 - 6 && d.Y - d.R >= rect.Y0 + 6 && d.Y + d.R <= rect.Y1 - 6);
+
+    /// <summary>The candidates in order: each side's shifts at 22 px from the rim, then (wide) pushed further out.</summary>
+    static IEnumerable<(string Side, int Shift, int Push)> Candidates(bool wide)
+    {
+        var shifts = new List<int> { 0 };
+        for (int k = 8; k <= 120; k += 8) { shifts.Add(k); shifts.Add(-k); }
+        string[] sides = ["right", "left", "above", "below"];
+        foreach (var side in sides) foreach (var s in shifts) yield return (side, s, 0);
+        if (!wide) yield break;
+        var far = new List<(string, int, int)>();
+        foreach (var side in sides) for (int p = 8; p <= 120; p += 8) foreach (var s in shifts) far.Add((side, s, p));
+        foreach (var c in far.OrderBy(c => c.Item3 + Math.Abs(c.Item2))) yield return c;
+    }
 
     /// <summary>The same on grids built once (the open's slide tries the window at many offsets over one board).
     /// cleanOnly: only a clean spot will do (each candidate stops at its first hit); none gives Score int.MaxValue.</summary>
     public static CardSpot PlaceCard(double fx, double fy, double r, double w, double h,
-        DiscGrid lampGrid, DiscGrid protGrid, IReadOnlyList<Box> labels, Box window, double inset = 16, bool cleanOnly = false, IReadOnlyList<Box>? hard = null)
+        DiscGrid lampGrid, DiscGrid protGrid, IReadOnlyList<Box> labels, Box window, double inset = 16, bool cleanOnly = false,
+        IReadOnlyList<Box>? hard = null, bool wide = true)
     {
-        CardSpot? best = null;
-        var shifts = new List<int> { 0 };
-        for (int k = 8; k <= 120; k += 8) { shifts.Add(k); shifts.Add(-k); }
+        CardSpot? best = null, worst = null;
         var inner = window.Grow(-inset);
-        foreach (var side in new[] { "right", "left", "above", "below" })
-            foreach (var s in shifts)
+        foreach (var (side, s, push) in Candidates(wide))
+        {
+            double x0 = side switch { "right" => fx + r + 22 + push, "left" => fx - r - 22 - push - w, _ => fx - w / 2 + s };
+            double y0 = side switch { "above" => fy - r - 22 - push - h, "below" => fy + r + 22 + push, _ => fy - h / 2 + s };
+            x0 = Math.Round(x0); y0 = Math.Round(y0);
+            var rect = new Box(x0, y0, x0 + w, y0 + h);
+            if (!rect.Inside(inner)) continue;
+            // (A: never over the HUD's foot)
+            if (hard != null) { var hb = rect.Grow(8); bool over = false; foreach (var q in hard) if (q.Overlaps(hb)) { over = true; break; } if (over) continue; }
+            var band = rect.Grow(6);
+            var rm = rect.Grow(LabelRoom);
+            if (cleanOnly)
             {
-                double x0 = side switch { "right" => fx + r + 22, "left" => fx - r - 22 - w, _ => fx - w / 2 + s };
-                double y0 = side switch { "above" => fy - r - 22 - h, "below" => fy + r + 22, _ => fy - h / 2 + s };
-                x0 = Math.Round(x0); y0 = Math.Round(y0);
-                var rect = new Box(x0, y0, x0 + w, y0 + h);
-                if (!rect.Inside(inner)) continue;
-                // (A: never over the HUD's foot)
-                if (hard != null) { var hb = rect.Grow(8); bool over = false; foreach (var q in hard) if (q.Overlaps(hb)) { over = true; break; } if (over) continue; }
-                var band = rect.Grow(6);
-                if (cleanOnly)
-                {
-                    if (protGrid.Any(band) || lampGrid.Count(band, 1, d => d.X - d.R >= rect.X0 && d.X + d.R <= rect.X1 && d.Y - d.R >= rect.Y0 && d.Y + d.R <= rect.Y1) > 0) continue;
-                    var rm = rect.Grow(LabelRoom);
-                    if (labels.Any(lb => lb.Overlaps(rm))) continue;
-                    return new CardSpot(rect, side, s, 0);
-                }
-                // a disc wholly under the card is covered, not crossed (protect counts the ones that matter)
-                int cross = lampGrid.Count(band, int.MaxValue,
-                    d => d.X - d.R >= rect.X0 && d.X + d.R <= rect.X1 && d.Y - d.R >= rect.Y0 && d.Y + d.R <= rect.Y1);
-                // labels keep 40 px from the card (the caller hides one it still crowds)
-                var room = rect.Grow(LabelRoom);
-                foreach (var lb in labels) if (lb.Overlaps(room)) cross++;
-                int score = cross + 100 * protGrid.Count(band);
-                if (score == 0) return new CardSpot(rect, side, s, 0);
-                if (best is not { } b || score < b.Score) best = new CardSpot(rect, side, s, score);
+                if (protGrid.Any(band) || lampGrid.Count(band, 1, d => !Crosses(rect, d)) > 0) continue;
+                if (labels.Any(lb => lb.Overlaps(rm))) continue;
+                return new CardSpot(rect, side, s, 0);
             }
+            int cross = lampGrid.Count(band, int.MaxValue, d => !Crosses(rect, d));
+            // labels keep 40 px from the card (the caller hides one it still crowds)
+            foreach (var lb in labels) if (lb.Overlaps(rm)) cross++;
+            int prot = protGrid.Count(band);
+            if (prot > 0)
+            {
+                // a hard reject: kept only for the case where every spot covers something protected
+                int sc = cross + 100 * prot;
+                if (worst is not { } wv || sc < wv.Score) worst = new CardSpot(rect, side, s, sc);
+                continue;
+            }
+            if (cross == 0) return new CardSpot(rect, side, s, 0);
+            if (best is not { } b || cross < b.Score) best = new CardSpot(rect, side, s, cross);
+        }
         if (cleanOnly) return new CardSpot(default, "none", 0, int.MaxValue);
         if (best is { } bb) return bb;
+        if (worst is { } ww) return ww;
         double cx = Math.Clamp(fx + r + 22, inner.X0, Math.Max(inner.X0, inner.X1 - w));
         double cy = Math.Clamp(fy - h / 2, inner.Y0, Math.Max(inner.Y0, inner.Y1 - h));
         return new CardSpot(new Box(cx, cy, cx + w, cy + h), "clamped", 0, int.MaxValue);
+    }
+
+    /// <summary>Is there a card spot near the focus that covers nothing protected (the plain sides and shifts; the
+    /// card's own search, wider, runs once the view is there)?</summary>
+    public static bool RoomAt(double fx, double fy, double r, double w, double h, DiscGrid protGrid, Box window, double inset = 16, IReadOnlyList<Box>? hard = null)
+    {
+        var inner = window.Grow(-inset);
+        foreach (var (side, s, push) in Candidates(false))
+        {
+            double x0 = Math.Round(side switch { "right" => fx + r + 22 + push, "left" => fx - r - 22 - push - w, _ => fx - w / 2 + s });
+            double y0 = Math.Round(side switch { "above" => fy - r - 22 - push - h, "below" => fy + r + 22 + push, _ => fy - h / 2 + s });
+            var rect = new Box(x0, y0, x0 + w, y0 + h);
+            if (!rect.Inside(inner)) continue;
+            if (hard != null) { var hb = rect.Grow(8); bool over = false; foreach (var q in hard) if (q.Overlaps(hb)) { over = true; break; } if (over) continue; }
+            if (!protGrid.Any(rect.Grow(6))) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Fix round 1 (§16: the card never covers her lit lamps, her hearth, the path or the focus): when no spot near the
+    /// focus is clear of them, the board moves. The nearest offset of the build (step px, up to ±reachX by ±reachY) at
+    /// which one is, ok(offset) holding (the caller keeps the focus and its path well inside); null if none. The board
+    /// stays put and the window moves the other way (one grid for every offset); hard boxes stay on the screen.
+    /// </summary>
+    public static (int X, int Y)? RoomFor(double fx, double fy, double r, double w, double h, DiscGrid protGrid, Box window,
+        Func<int, int, bool> ok, int reachX = 240, int reachY = 160, int step = 16, IReadOnlyList<Box>? hard = null)
+    {
+        var offs = new List<(int X, int Y)>();
+        for (int ox = -reachX; ox <= reachX; ox += step) for (int oy = -reachY; oy <= reachY; oy += step) offs.Add((ox, oy));
+        offs.Sort((a, b) => (a.X * a.X + a.Y * a.Y).CompareTo(b.X * b.X + b.Y * b.Y));
+        foreach (var (ox, oy) in offs)
+        {
+            if (!ok(ox, oy)) continue;
+            var win = new Box(window.X0 - ox, window.Y0 - oy, window.X1 - ox, window.Y1 - oy);
+            var hd = hard?.Select(q => new Box(q.X0 - ox, q.Y0 - oy, q.X1 - ox, q.Y1 - oy)).ToList();
+            if (RoomAt(fx, fy, r, w, h, protGrid, win, hard: hd)) return (ox, oy);
+        }
+        return null;
     }
 
     static double Cost((int A, int L) q) => (q.A >= 0 ? q.A : -2.5 * q.A) + 1.4 * Math.Abs(q.L);

@@ -56,6 +56,8 @@ public partial class LampPage : Control
         CustomMinimumSize = new Vector2(0, Height);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool night = w?.Time == TimeOfDay.Night;
+        // C: the page's own backdrop under everything on it (no townsfolk through the board; her side untouched)
+        if (!wide) AddChild(backdrop = new LampWindow(night));
         AddChild(Header = new LampHeader(ch, w, zone, wide));
         AddChild(Board = new LampBoard(ch, w) { Wide = wide });
         if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
@@ -94,10 +96,13 @@ public partial class LampPage : Control
     static readonly Vector2 Bleed = new(-4, -2);
     const float Wider = 6;
 
+    LampWindow? backdrop;
+
     void Lay()
     {
         if (Wide) { LayWide(); return; }
         float wd = Size.X + Wider;
+        if (backdrop != null) { backdrop.Position = Bleed; backdrop.Fit(new Vector2(wd, Height - Bleed.Y)); }
         Header.Position = Bleed;
         Header.Size = new Vector2(wd, HeaderH);
         Board.Position = Bleed + new Vector2(0, BoardTop);
@@ -172,7 +177,7 @@ public partial class LampPage : Control
                 ? pad ? new[] { new[] { ("A", "Plan") }, new[] { ("Y", "Light my way") }, new[] { ("B", "Back") } }
                       : new[] { new[] { ("Click", "Plan") }, new[] { ("Space", "Light my way") }, new[] { ("Tab", "Back") } }
                 : pad ? new[] { new[] { ("LT", ""), ("RT", "Zoom"), ("D-pad", "Next lamp") }, new[] { ("L3", "Home"), ("R3", "The book") } }
-                      : new[] { new[] { ("Wheel", "Zoom"), ("F", "Find") }, new[] { ("H", "Home"), ("Z", "The book") } };
+                      : new[] { new[] { ("Wheel", "Zoom") }, new[] { ("H", "Home"), ("Z", "The book") } };
             foreach (var r in rows)
             {
                 var h = LampInk.Row(r, pad, 15, 16);
@@ -180,6 +185,15 @@ public partial class LampPage : Control
                 v.AddChild(h);
             }
             return v;
+        }
+        if (!wickOpen && zone_ == Zone.Header && Header.Focused >= 0)
+        {
+            // §9: the pad's focus in the header (the lamp card hides): the focused item's prompts and the way back, so Y
+            // never means both "Copy to III" and "Light my way"
+            var hp = Header.Focused <= 2 ? CoinWords(Header.Focused, pad).Prompts
+                : [(pad ? "A" : "Enter", Header.Focused switch { 3 => "Light my way", 4 => "Find", _ => Wide ? "Close" : "Open wide" })];
+            hp.Add(pad ? ("B", "Back") : ("Esc", "Back"));
+            return LampInk.Row(hp, pad);
         }
         return LampInk.Row(wickOpen
             ? pad ? [("A", "Plan"), ("Y", "Light my way"), ("B", "Board")] : [("Click", "Plan"), ("Space", "Light my way"), ("Tab", "Board")]
@@ -212,6 +226,9 @@ public partial class LampPage : Control
         Tabs.QueueRedraw(); Header.QueueRedraw();
         coinCard.Visible = false;
         Lay();
+        // (A: the panel's real rect, its 24 px fade inside it, keeps the labels 40 px off)
+        if (Wide) Board.WickBox = new Box(WickRect.Position.X - Board.Position.X, WickRect.Position.Y - Board.Position.Y,
+            WickRect.End.X - Board.Position.X, WickRect.End.Y - Board.Position.Y);
         if (!was) Board.Reframe(Wide ? WickRect.Position.Y + 60 - FieldTop : LampWick.BandTop - BoardTop, true);
         SetPrompts();
         Sound.Sfx.Page();
@@ -223,6 +240,7 @@ public partial class LampPage : Control
         wickOpen = false;
         Wick.Visible = false;
         zone_ = Zone.Board;
+        Board.WickBox = null;
         Board.Reframe(Wide ? FieldBottom - FieldTop : BoardH, false);
         SetPrompts();
         Sound.Sfx.Page();
@@ -241,8 +259,31 @@ public partial class LampPage : Control
         string road = Lamps.Roads.TryGetValue(l.Type, out var r) ? r.Name : "";
         string type = road.StartsWith("Road of the ") ? "The " + road[12..] : road == "" ? "Not yet walked" : road;
         string flare = Lamps.Flare(l.Flare)?.Name ?? "";
-        var glyphs = (l.Carried ?? new()).Where(Weapons.All.ContainsKey).Select(s => (Weapons.All[s].Art, true)).ToList();
         bool open = LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
+        // §9: the glyphs of all its carried skills (the active layout's are her seats now)
+        var carried = (active ? SkillBook.Carried(ch).Select(c => c.Id) : l.Carried ?? new()).Where(Weapons.All.ContainsKey).Distinct().ToList();
+        var glyphs = carried.Select(s => (Weapons.All[s].Art, true)).ToList();
+        string? carries = null;
+        if (carried.Count > 0)
+        {
+            carries = "Carries " + string.Join(", ", carried.Select(s => Weapons.All[s].Name));
+            float room = LampCard.Wd - 2 * LampCard.Pad - 21 * glyphs.Count - 4;
+            if (LampInk.W(Style.Ui, carries, 15) > room) carries = carried.Count == 1 ? "Carries 1 skill" : $"Carries {carried.Count} skills";
+        }
+        var (stateLine, pr) = CoinWords(i, pad);
+        var t = new LampCardText($"{ArtsScreen.Numerals[i]} · {type}", null, LampInk.Chip, $"{flare} · {l.Lit.Count} lamps", "", glyphs,
+            carries, null, stateLine, active ? LampInk.Gold : open ? LampInk.Gold : LampInk.Gate, null, pr);
+        coinCard.Show(t, pad);
+        // (its top 12 px under the header's italic line, which ends at 223 px on the frame)
+        coinCard.Position = Bleed + new Vector2(8, HeaderH + 2);
+        coinCard.Visible = true;
+    }
+
+    /// <summary>A coin's state line and prompts (its card and, with the pad's focus on it, the foot row).</summary>
+    (string State, List<(string, string)> Prompts) CoinWords(int i, bool pad)
+    {
+        var st = LampBook.State(ch);
+        bool open = LampBook.LayoutsOpen(w, zone), active = i == st.Active;
         var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
         string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a town’s lamp-post";
         var pr = new List<(string, string)>();
@@ -252,12 +293,7 @@ public partial class LampPage : Control
             else stateLine = $"Copy to {ArtsScreen.Numerals[others[0]]} / {ArtsScreen.Numerals[others[1]]}: right-click its coin";
         }
         else if (open) { pr.Add(pad ? ("A", "Take it up") : ("Click", "Take it up")); if (!pad) pr.Add(("Right-click", $"Copy {ArtsScreen.Numerals[st.Active]} here")); }
-        var t = new LampCardText($"{ArtsScreen.Numerals[i]} · {type}", null, LampInk.Chip, $"{flare} · {l.Lit.Count} lamps", "", glyphs,
-            glyphs.Count > 0 ? "Carries " + string.Join(", ", (l.Carried ?? new()).Where(Weapons.All.ContainsKey).Select(s => Weapons.All[s].Name)) : null,
-            null, stateLine, active ? LampInk.Gold : open ? LampInk.Gold : LampInk.Gate, null, pr);
-        coinCard.Show(t, pad);
-        coinCard.Position = Bleed + new Vector2(8, HeaderH - 14);
-        coinCard.Visible = true;
+        return (stateLine, pr);
     }
 
     void Pick(int i, bool right)
@@ -310,6 +346,8 @@ public partial class LampPage : Control
         find.Focused = z == Zone.Find ? Math.Max(0, find.Focused) : -1;
         Header.QueueRedraw(); Tabs.QueueRedraw(); find.QueueRedraw();
         ShowCoinCard(Header.Focused, false);
+        Board.CardAway(z == Zone.Header);
+        SetPrompts();
         Sound.Sfx.Hover();
     }
 
@@ -396,7 +434,7 @@ public partial class LampPage : Control
                 break;
             case Zone.Header:
                 if (a == Act.Down) SetZone(find.Visible ? Zone.Find : Zone.Board);
-                else if (dx != 0) { Header.Focused = Math.Clamp(Header.Focused + dx, 0, 5); Header.QueueRedraw(); ShowCoinCard(Header.Focused, false); Sound.Sfx.Hover(); }
+                else if (dx != 0) { Header.Focused = Math.Clamp(Header.Focused + dx, 0, 5); Header.QueueRedraw(); ShowCoinCard(Header.Focused, false); SetPrompts(); Sound.Sfx.Hover(); }
                 break;
             case Zone.Tabs:
                 if (a == Act.Up) { SetZone(Zone.Board); if (Wide) Board.SetFound(null); }
@@ -844,12 +882,20 @@ public static class LampInk
     {
         var h = Style.H(sep);
         h.MouseFilter = Control.MouseFilterEnum.Ignore;
+        var caps = new List<Control>();
         foreach (var (k, wd) in items)
         {
-            var one = Style.H(9, Cap(k, pad), Style.Label(wd, Style.Ui, size, Body with { A = 0.95f }, false, HorizontalAlignment.Left, false));
+            caps.Add(Cap(k, pad));
+            if (wd == "") continue;
+            // (a cap with no word sits 4 px from the next one: "LT RT Zoom")
+            Control keysOf = caps.Count == 1 ? caps[0] : Style.H(4, caps.ToArray());
+            if (keysOf is BoxContainer kb) { kb.Alignment = BoxContainer.AlignmentMode.Center; kb.MouseFilter = Control.MouseFilterEnum.Ignore; }
+            caps.Clear();
+            var one = Style.H(9, keysOf, Style.Label(wd, Style.Ui, size, Body with { A = 0.95f }, false, HorizontalAlignment.Left, false));
             one.Alignment = BoxContainer.AlignmentMode.Center;
             h.AddChild(one);
         }
+        foreach (var c in caps) h.AddChild(c);
         return h;
     }
 }
@@ -882,7 +928,8 @@ public partial class LampHeader : Control
         MouseFilter = MouseFilterEnum.Pass;
         bool pad = Play.Controls.Instance?.UsingPad == true;
         // (A: Light my way and Find; the way back to the book is in the lower right)
-        if (wide) keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find")] : [("Space", "Light my way"), ("F", "Find")], pad, 16, 22);
+        // (A, §16: "Y Light my way · Find · B Close"; Close goes back to the book, as B does)
+        if (wide) keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("B", "Close")] : [("Space", "Light my way"), ("F", "Find"), ("Esc", "Close")], pad, 16, 22);
         else keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("R3", "Open wide")] : [("Space", "Light my way"), ("F", "Find"), ("Z", "Open wide")], pad, 16, 22);
         AddChild(keys);
         Resized += Lay;
@@ -1208,6 +1255,53 @@ public partial class GlyphMark : Control
     public override void _Draw() => DrawTextureRect(Glyphs.Texture(key, px * 2, Colors.White, line: true), new Rect2(Vector2.Zero, Size), false, color);
 }
 
+/// <summary>
+/// C's page backdrop (§13's half-res blur for C; fix round 1: a townsman read through the lit cluster): the world behind
+/// blurred about 10 px at 1080 with the panel's ground at 88% over it (shaders/ui_lamps_window.gdshader), feathered
+/// into the panel over 40 px, so there is no inner frame. --lamps-measure: 120 frames with it, 120 without (from 8 s).
+/// </summary>
+public partial class LampWindow : ColorRect
+{
+    static Shader? shader;
+    readonly ShaderMaterial mat;
+
+    public LampWindow(bool night)
+    {
+        MouseFilter = MouseFilterEnum.Ignore;
+        Color = Colors.White;
+        mat = new ShaderMaterial { Shader = shader ??= GD.Load<Shader>("res://shaders/ui_lamps_window.gdshader") };
+        // the panel's ground as it reads on the frame (C_day's margins 28,23,24; by night 24,20,22)
+        mat.SetShaderParameter("ground", night ? new Color(24 / 255f, 20 / 255f, 22 / 255f) : new Color(28 / 255f, 23 / 255f, 24 / 255f));
+        Material = mat;
+    }
+
+    public void Fit(Vector2 size)
+    {
+        Size = size;
+        mat.SetShaderParameter("size", size);
+    }
+
+    int mf = -1;
+    double gOn, gOff;
+    public override void _Process(double delta)
+    {
+        if (mf == -2 || !SurvivorUnchained.Args.Has("lamps-measure")) return;
+        mf++;
+        // (after the board's own measure, frames 180-426)
+        if (mf < 480) return;
+        double g = RenderingServer.ViewportGetMeasuredRenderTimeGpu(GetViewport().GetViewportRid());
+        if (mf < 600) gOn += g;
+        else if (mf == 600) Visible = false;
+        else if (mf > 605 && mf <= 725) gOff += g;
+        else if (mf == 726)
+        {
+            Visible = true;
+            GD.Print($"LAMPBOARD backdrop: viewport GPU {gOn / 120:F3} with vs {gOff / 120:F3} ms without (backdrop {(gOn - gOff) / 120:F3} ms)");
+            mf = -2;
+        }
+    }
+}
+
 /// <summary>What the focus card says (§7, in order; LampBoard words it from the lamp).</summary>
 public sealed record LampCardText(string Name, string? Chip, Color ChipColor, string Place, string Line,
     IReadOnlyList<(string Glyph, bool Carried)> Feeds, string? FeedsText, string? Price, string State, Color StateColor,
@@ -1257,7 +1351,7 @@ public partial class LampCard : Control
         float iw = Wd - 2 * Pad;
         lines = t.Line != "" ? LampInk.Wrap(t.Line, FLine, 17, iw) : new();
         price = t.Price is { } p ? LampInk.Wrap(p, FPrice, 16, iw) : new();
-        float y = Pad + 19 + 20 + 11 + 8 + 22 * lines.Count;
+        float y = (t.Name == "" ? Pad + 14 : Pad + 19 + 20) + 11 + 8 + 22 * lines.Count;
         if (t.FeedsText != null) y += 27;
         y += 21 * price.Count + 13 + 22;
         if (t.Fires != null) y += 22;
@@ -1297,13 +1391,23 @@ public partial class LampCard : Control
         DrawStyleBox(glass, new Rect2(Vector2.Zero, Size));
         DrawLine(new Vector2(3, 1.5f), new Vector2(Wd - 3, 1.5f), new Color(1, 1, 1, 0.06f), 1);
         float x0 = Pad, x1 = Wd - Pad, y = Pad;
-        // the name, the chip at its right
-        y += 19;
         float xc = x1;
-        if (c.Chip != null) xc = Chip(x1, y - 2, c.Chip, c.ChipColor) - 8;
-        LampInk.Text(this, FName, 21, x0, y, Ellipsize(c.Name, FName, 21, xc - x0), LampInk.Ink);
-        y += 20;
-        LampInk.Text(this, FPlace, 13, x0, y, c.Place, LampInk.Dim);
+        if (c.Name == "")
+        {
+            // no name (a small lamp, an attribute): the title row collapses, the place line leads with the chip at its right
+            y += 14;
+            if (c.Chip != null) xc = Chip(x1, y + 1, c.Chip, c.ChipColor) - 8;
+            LampInk.Text(this, FPlace, 13, x0, y, Ellipsize(c.Place, FPlace, 13, xc - x0), LampInk.Dim);
+        }
+        else
+        {
+            // the name, the chip at its right
+            y += 19;
+            if (c.Chip != null) xc = Chip(x1, y - 2, c.Chip, c.ChipColor) - 8;
+            LampInk.Text(this, FName, 21, x0, y, Ellipsize(c.Name, FName, 21, xc - x0), LampInk.Ink);
+            y += 20;
+            LampInk.Text(this, FPlace, 13, x0, y, c.Place, LampInk.Dim);
+        }
         y += 11;
         LampInk.Rule(this, x0, x1, y);
         y += 8;

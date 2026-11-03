@@ -427,7 +427,7 @@ public partial class LampWick : Control
         float w = TextR - TextX;
         if (r == fr)
         {
-            string line = Wicks.Text(Skill!, Id(r, fc));
+            string line = LineOf(r, fc);
             var lines = LampInk.Wrap(line, fl, 14, w);
             if (lines.Count > 2) { lines = lines.Take(2).ToList(); lines[1] = Ellipsize(lines[1] + "…", fl, 14, w); }
             LampInk.Text(ci, fn, 18, TextX, ry - 16, NameOf(r, fc), LampInk.Ink);
@@ -438,11 +438,21 @@ public partial class LampWick : Control
             return;
         }
         bool crossed = Crossed(r);
-        string tl = crossed ? "One Turn a skill" : Wicks.Text(Skill!, Id(r, 3));
+        string tl = crossed ? "One Turn a skill" : LineOf(r, 3);
         LampInk.Text(ci, fn, 18, TextX, ry - 2, strands[r].TurnDef.Name, crossed ? LampInk.Dim : LampInk.Ink);
         var ls = LampInk.Wrap(tl, fl, 14, w);
-        if (ls.Count > 0) LampInk.Text(ci, fl, 14, TextX, ry + 16, ls.Count > 1 ? Ellipsize(ls[0] + "…", fl, 14, w) : ls[0], (crossed ? LampInk.Dim : LampInk.Body) with { A = 0.9f });
+        // the Turn's whole line (two lines where the next row leaves room: the last row keeps one, the sum line below it)
+        // (in C's 64 px pitch a focus row below draws its name 16 px higher: one line then)
+        int most = r < strands.Count - 1 && (Wide || fr != r + 1) ? 2 : 1;
+        for (int j = 0; j < Math.Min(most, ls.Count); j++)
+        {
+            string t = j == most - 1 && ls.Count > most ? Ellipsize(ls[j] + "…", fl, 14, w) : ls[j];
+            LampInk.Text(ci, fl, 14, TextX, ry + 16 + j * 16, t, (crossed ? LampInk.Dim : LampInk.Body) with { A = 0.9f });
+        }
     }
+
+    /// <summary>A lamp's line under its name: the Turn's own text (Wicks.Text prefixes the Turn's name, already drawn above it).</summary>
+    string LineOf(int r, int c) => c == 3 ? strands[r].TurnDef.Text : Wicks.Text(Skill!, Id(r, c));
 
     static string Ellipsize(string s, Font f, int px, float maxw)
     {

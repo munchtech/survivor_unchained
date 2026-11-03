@@ -39,6 +39,9 @@ public partial class LampBoard : Control
     LampCard card = new(), cardOut = new();
     /// <summary>The page sets this off while the wick is open (§16: no card over the board then).</summary>
     public bool CardOn = true;
+    bool cardAway;
+    /// <summary>The page's pad focus in its header (§9: the coin's card, not a lamp's): the lamp card hides meanwhile.</summary>
+    public void CardAway(bool away) { if (cardAway == away) return; cardAway = away; PlaceCard(); }
     /// <summary>The focus moved (-1: none).</summary>
     public event Action<int>? FocusChanged;
     Func<int, bool> gateOk = _ => true;
@@ -205,6 +208,8 @@ public partial class LampBoard : Control
     public Vector4 Fe = new(-1, -1, -1, -1);
     /// <summary>A: the foot's boxes in this control (labels and the card keep out); the page glow off (A's pools are its glow).</summary>
     public List<Box> Keep = new();
+    /// <summary>A, the wick open: its panel's rect in this control (§16: labels keep 40 px from it, its fade included).</summary>
+    public Box? WickBox;
     public bool Wide;
     ShaderMaterial? inkMat;
     /// <summary>The view was laid again (A's pools follow her lit lamps).</summary>
@@ -282,6 +287,8 @@ public partial class LampBoard : Control
             view = Slide(view, keep);
             GD.Print($"LAMPBOARD slide search: {(System.Diagnostics.Stopwatch.GetTimestamp() - ts) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms");
         }
+        // (fix round 1: the pad's frontier too; no spot near the focus clear of her lit lamps, hearth and path: room)
+        if (focus >= 0 && CardOn && want != "valley" && Room(view) is { } ro) view = view with { Sx = view.Sx + ro.X, Sy = view.Sy + ro.Y };
         Relayout(view, settle: true, open: true);
         if (!opened) { opened = true; PlayOpen(); }
         double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
@@ -386,7 +393,7 @@ public partial class LampBoard : Control
             R[i] = LampBoardModel.Diameter(m.Nodes[i].Kind, v.S, valleyS) / 2 * (i == focus ? 1.1 : 1.0);
             discs.Add((P[i].X, P[i].Y, R[i]));
         }
-        foreach (var i in keep.Distinct()) prot.Add((P[i].X, P[i].Y, R[i] + 4));
+        foreach (var i in keep.Distinct()) prot.Add((P[i].X, P[i].Y, R[i] + (i == Hearth ? 12 : 4)));
         if (pathFrom >= 0)
         {
             var chain = new List<int> { pathFrom };
@@ -419,8 +426,9 @@ public partial class LampBoard : Control
         foreach (var (ox, oy) in offs)
         {
             if (ox % 16 != 0 || oy % 16 != 0 || !Inside(ox, oy)) continue;
+            // (the wide search, pushed out from the lamp, only for the build where it is: 2k spots a try is too many here)
             var sp = LampBoardModel.PlaceCard(P[focus].X, P[focus].Y, R[focus] + 5, LampCard.Wd, h, lampGrid, protGrid, [],
-                new Box(-ox, -oy, Size.X - ox, Size.Y - oy));
+                new Box(-ox, -oy, Size.X - ox, Size.Y - oy), wide: ox == 0 && oy == 0);
             if (sp.Score == 0)
             {
                 if (ox == 0 && oy == 0) return v;
@@ -432,6 +440,52 @@ public partial class LampBoard : Control
         if (best is not { } bb || (bb.X == 0 && bb.Y == 0)) return v;
         GD.Print($"LAMPBOARD slide: build offset ({bb.X}, {bb.Y}), no clean card spot (least overlap {bb.S})");
         return v with { Sx = v.Sx + bb.X, Sy = v.Sy + bb.Y };
+    }
+
+    /// <summary>
+    /// Fix round 1 (§16: the card never covers her lit lamps, her hearth, the path or the focus): at view v, is there a
+    /// spot near the focus clear of them? If not, the nearest build offset (16 px steps, up to ±240 by ±160) with one, the
+    /// focus and its path still 64 px inside the window; null when there is room already, or none anywhere.
+    /// </summary>
+    (int X, int Y)? Room(BoardView v)
+    {
+        if (focus < 0) return null;
+        var m = M;
+        float h = LampCard.HeightOf(CardFor(focus), out _, out _, out _);
+        var prot = new List<(double X, double Y, double R)>();
+        (double X, double Y) P(int i) => v.Project(m.Nodes[i].X, m.Nodes[i].Y);
+        double Rd(int i) => LampBoardModel.Diameter(m.Nodes[i].Kind, v.S, valleyS) / 2 * (i == focus ? 1.1 : 1.0);
+        foreach (var i in lit) { var p = P(i); prot.Add((p.X, p.Y, Rd(i) + (i == Hearth ? 12 : 4))); }
+        var near = new List<int> { focus };
+        near.AddRange(path);
+        foreach (var i in near) { var p = P(i); prot.Add((p.X, p.Y, Rd(i) + 4)); }
+        if (pathFrom >= 0)
+        {
+            var chain = new List<int> { pathFrom };
+            chain.AddRange(path);
+            for (int k = 0; k + 1 < chain.Count; k++)
+            {
+                var (ax, ay) = P(chain[k]);
+                var (bx, by) = P(chain[k + 1]);
+                for (int t = 0; t <= 12; t++) prot.Add((ax + (bx - ax) * t / 12, ay + (by - ay) * t / 12, 3));
+            }
+        }
+        var grid = new LampBoardModel.DiscGrid(prot, 32);
+        var (fx, fy) = P(focus);
+        double r = Rd(focus) + 5;
+        var win = new Box(0, 0, Size.X, Size.Y);
+        if (LampBoardModel.RoomAt(fx, fy, r, LampCard.Wd, h, grid, win, hard: Keep)) return null;
+        var pts = near.Select(P).ToList();
+        bool Ok(int ox, int oy)
+        {
+            foreach (var (x, y) in pts)
+                if (x + ox < 64 || x + ox > Size.X - 64 || y + oy < 64 || y + oy > Size.Y - 64) return false;
+            return true;
+        }
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var ro = LampBoardModel.RoomFor(fx, fy, r, LampCard.Wd, h, grid, win, Ok, hard: Keep);
+        GD.Print($"LAMPBOARD room search: {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms, offset {(ro is { } o ? $"({o.X}, {o.Y})" : "none")}");
+        return ro is { X: 0, Y: 0 } ? null : ro;
     }
 
     /// <summary>--lamps-focus auto: a far notable worth a path preview, as the mock's C_day (a notable that feeds a skill, its
@@ -794,7 +848,7 @@ public partial class LampBoard : Control
         for (int i = 0; i < n; i++)
             if (slot[i] >= 0) { discs.Add((pos[i].X, pos[i].Y, radius[i] + 5)); discOf.Add(i); }
         var allowed = Wide ? new Box(64, 40, Size.X - 64, Size.Y - 20) : new Box(40, 40, Size.X - 40, Size.Y - 40);
-        string key = $"{stop}|{view}|{Size}|{block}|{string.Join(",", lit.OrderBy(i => i))}";
+        string key = $"{stop}|{view}|{Size}|{block}|{WickBox}|{string.Join(",", lit.OrderBy(i => i))}";
         if (!labelCache.TryGetValue(key, out var placed))
         {
             // her lit roads, sampled every 8 px: no label sits across them
@@ -808,7 +862,10 @@ public partial class LampBoard : Control
                     int k = Math.Max(1, (int)(Math.Sqrt(Sq(bx - ax) + Sq(by - ay)) / 8));
                     for (int t = 0; t <= k; t++) roads.Add((ax + (bx - ax) * t / k, ay + (by - ay) * t / k, 4));
                 }
-            placed = M.PlaceLabels(view, stop, discs, allowed, block is { } bk ? [.. Keep, bk] : Keep, (t, p) => LampInk.W(font, t, p), lit, discOf, roads);
+            var blockers = new List<Box>(Keep);
+            if (block is { } bk) blockers.Add(bk);
+            if (WickBox is { } wb) blockers.Add(wb.Grow(LampBoardModel.LabelRoom));
+            placed = M.PlaceLabels(view, stop, discs, allowed, blockers, (t, p) => LampInk.W(font, t, p), lit, discOf, roads);
             if (labelCache.Count > 16) labelCache.Clear();
             labelCache[key] = placed;
             if (Measuring && valley)
@@ -926,7 +983,8 @@ public partial class LampBoard : Control
         {
             "notable" => ("NOTABLE", LampInk.Chip), "blue" => ("BLUE LAMP", LampInk.Cobalt), "rite" => ("RITE", LampInk.Chip),
             "link" => ("LINK", LampInk.Chip), "ultimate" or "ultimateMod" or "flareLamp" => ("FLARE", LampInk.Fire),
-            "entry" => ("ENTRY", LampInk.Chip), _ => ((string?)null, LampInk.Chip),
+            "entry" => ("ENTRY", LampInk.Chip), "small" => ("LAMP", LampInk.Chip), "attribute" => ("ATTRIBUTE", LampInk.Chip),
+            _ => ((string?)null, LampInk.Chip),
         };
         string place = m.Groups.TryGetValue(nd.Group, out var g) ? m.GroupName(g) : "";
         var carried = SkillBook.Carried(ch).Select(c => c.Id).ToHashSet();
@@ -979,7 +1037,8 @@ public partial class LampBoard : Control
             string pn = pick != null && Weapons.All.TryGetValue(pick, out var pw) ? pw.Name : "Light my way’s pick";
             fires = $"Fires: {pn} (change: {(pad ? "A" : "Click")})";
         }
-        return new LampCardText(d?.Name ?? nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
+        // (a small lamp or an attribute has no name: the card's title row collapses, the place line leads)
+        return new LampCardText(d != null ? d.Name : nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
             nd.Kind == "blue" ? d?.Price : null, stateLine, stateC, fires, prompts);
     }
 
@@ -987,7 +1046,7 @@ public partial class LampBoard : Control
     /// band clear of every lamp and label, else the least overlap; inside the board's window.</summary>
     void PlaceCard(bool open = false)
     {
-        if (!CardOn || focus < 0 || slot.Length == 0 || slot[focus] < 0)
+        if (!CardOn || cardAway || focus < 0 || slot.Length == 0 || slot[focus] < 0)
         {
             card.Visible = false; CardSpot = null;
             if (crowd != null) { crowd = null; WriteInk(); }
@@ -1009,7 +1068,9 @@ public partial class LampBoard : Control
         {
             if (slot[i] < 0) continue;
             discs.Add((pos[i].X, pos[i].Y, radius[i]));
-            if (state[i] == 0 || onPath[i] || i == focus) prot.Add((pos[i].X, pos[i].Y, radius[i] + 4));
+            // (her hearth with its glow: C_post's card sat on it)
+            if (i == Hearth) prot.Add((pos[i].X, pos[i].Y, radius[i] + 12));
+            else if (state[i] == 0 || onPath[i] || i == focus) prot.Add((pos[i].X, pos[i].Y, radius[i] + 4));
         }
         if (pathFrom >= 0)
         {
@@ -1228,6 +1289,13 @@ public partial class LampBoard : Control
     {
         if (i < 0) return;
         SetFocus(i);
+        // (fix round 1: the card covers something protected wherever it goes here: the board makes room, 0.18 s)
+        if (CardOn && !cardAway && CardSpot is { Score: >= 100 } && glide == null && Room(view) is { } ro)
+        {
+            GD.Print($"LAMPBOARD room: build offset ({ro.X}, {ro.Y}) for {M.Nodes[i].Id}'s card");
+            Glide(M.Nodes[i].X, M.Nodes[i].Y, pos[i].X + ro.X, pos[i].Y + ro.Y, view.S, 0.18);
+            return;
+        }
         if (!follow) return;
         double mx = Size.X * 0.22, my = Size.Y * 0.22;
         var (x, y) = pos[i];
