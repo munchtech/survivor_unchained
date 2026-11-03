@@ -101,7 +101,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     string BossTitle => Spec.BossTitle ?? people.BossTitle;
     /// <summary>What rules the horde is dead: the fight is won, and the way out open.</summary>
     public bool Won => won;
-    public override string? Word(string key) => key == "boss" ? BossName : null;
+    public override string? Word(string key) => key == "boss" ? Maps.MapOffers.InSentence(BossName) : null;
     double Seconds => B?.Time ?? 0;
     /// <summary>The night's clock, in minutes of a thirty-minute night: a story's twenty-minute night
     /// runs it half again as fast, so it is the same night (its kinds, levels, heralds, stretches

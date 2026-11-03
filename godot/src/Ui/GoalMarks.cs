@@ -14,6 +14,8 @@ public partial class GoalMarks : Control
 {
     readonly List<GoalMark> marks = new();
     const float Inset = 64, FontSize = 18;
+    /// <summary>A part of the screen the edge arrows keep out of (the corner's words), or none.</summary>
+    public Rect2? Avoid;
 
     public GoalMarks() { MouseFilter = MouseFilterEnum.Ignore; }
 
@@ -56,6 +58,12 @@ public partial class GoalMarks : Control
                 float tx = d.X != 0 ? ((d.X > 0 ? box.End.X : box.Position.X) - mid.X) / d.X : float.MaxValue;
                 float ty = d.Y != 0 ? ((d.Y > 0 ? box.End.Y : box.Position.Y) - mid.Y) / d.Y : float.MaxValue;
                 var p = mid + d * Mathf.Min(tx, ty);
+                // Inside the corner's words: drawn in from them, along the same line from the middle.
+                if (Avoid is Rect2 av && av.HasPoint(p) && d.X > 0)
+                {
+                    float ax = (av.Position.X - 130 - mid.X) / d.X;
+                    if (ax > 0) p = mid + d * Mathf.Min(ax, Mathf.Min(tx, ty));
+                }
                 var dir = d.Normalized();
                 var c = m.Color with { A = 1 };
                 var tip = p + dir * 38;

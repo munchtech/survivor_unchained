@@ -390,6 +390,10 @@ public sealed class Autopilot
 
     /// <summary>Walk to the goal and use it: in the town, the first one standing; in a won arena, the way out
     /// once --leave-after S (20) have passed since it was won. True when it has the step.</summary>
+    List<(double X, double Z)>? route;
+    double routeT;
+    (double, double) routeFor;
+
     bool GoalWalk(double dt, Battle b, ZoneRuntime z)
     {
         var pins = g.GoalPins();
@@ -428,7 +432,22 @@ public sealed class Autopilot
                 if (ed < 3) close++;
                 if (ed < 7) { double w = Math.Max(0, 7 - ed) / 7; rx += ex / ed * w; rz += ez / ed * w; }
             }
-        Steer(dt, dx / d + rx * 0.5, dz / d + rz * 0.5, p, pin.X, pin.Z);
+        // Round what is solid, not into it (GroundPath): the route is found again every 3 s, or when the goal moves.
+        routeT -= dt;
+        if (route == null || routeT <= 0 || routeFor != (pin.X, pin.Z))
+        {
+            routeT = 3; routeFor = (pin.X, pin.Z);
+            route = SurvivorUnchained.Sim.GroundPath.Find(b.Collision, p.X, p.Z, pin.X, pin.Z);
+            if (route == null) Godot.GD.Print($"auto: no route to {pin.Def.Pin} from ({p.X:0.0},{p.Z:0.0})");
+        }
+        while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.8) route.RemoveAt(0);
+        double sx = dx / d, sz = dz / d;
+        if (route is { Count: > 0 })
+        {
+            double wx = route[0].X - p.X, wz = route[0].Z - p.Z, wd = Math.Max(0.01, Math.Sqrt(wx * wx + wz * wz));
+            sx = wx / wd; sz = wz / wd;
+        }
+        Steer(dt, sx + rx * 0.5, sz + rz * 0.5, p, pin.X, pin.Z);
         dashT -= dt;
         if (close >= 4 && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
         return true;
