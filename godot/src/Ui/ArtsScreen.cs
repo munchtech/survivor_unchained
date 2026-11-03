@@ -52,6 +52,8 @@ public partial class ArtsScreen : Overlay
     /// <summary>Its two pages turn with LT and RT (, and .).</summary>
     public override bool Key(Act a)
     {
+        // the Lamps page takes the pad and the keys first (§10: LT/RT zoom there, LB/RB walk the lamps to light)
+        if (page == 2 && LampBoardOn && lampPage != null && IsInstanceValid(lampPage) && lampPage.Key(a)) return true;
         if (a is not (Act.SubNext or Act.SubPrev)) return false;
         page = (page + (a == Act.SubNext ? 1 : Pages - 1)) % Pages;
         Sound.Sfx.Page();
@@ -234,9 +236,16 @@ public partial class ArtsScreen : Overlay
 
     /// <summary>v2: direction C's page (LampPage): the header, the board in C's window (BOARD (1030, 232)-(1876, 874)
     /// at 1080), the wick tabs and the prompt row, laid out as the mock is from the content rect's top (y 152).</summary>
+    LampPage? lampPage;
+    LampSession? lampVisit;
+
     void BuildBoard(VBoxContainer page)
     {
-        page.AddChild(new LampPage(G.Journey.Ch, G.Journey.World, G.Zone?.Id) { CustomMinimumSize = new Vector2(0, LampPage.Height) });
+        // the visit outlives a page turn: the lamps lit since the book opened go out anywhere until it closes (§9)
+        if (lampVisit != null && lampVisit.Layout != LampBook.State(G.Journey.Ch).Active) lampVisit = null;
+        lampPage = new LampPage(G.Journey.Ch, G.Journey.World, G.Zone?.Id, lampVisit, Safe) { CustomMinimumSize = new Vector2(0, LampPage.Height) };
+        lampVisit = lampPage.Visit;
+        page.AddChild(lampPage);
     }
 
     void BuildLamps(VBoxContainer page)

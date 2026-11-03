@@ -5,6 +5,7 @@ using Godot;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.World;
+using SurvivorUnchained.Play;
 
 namespace SurvivorUnchained.Ui;
 
@@ -22,27 +23,55 @@ public partial class LampPage : Control
 
     public readonly LampBoard Board;
     public readonly LampHeader Header;
-    public readonly WickTabs Tabs;
+    public WickTabs Tabs { get; private set; }
     readonly HBoxContainer prompts;
+    readonly LampFind find;
+    readonly LampCard coinCard = new();
+    readonly CharacterData ch;
+    readonly WorldState? w;
+    readonly string? zone;
+    /// <summary>Open wide (Z, View): phase 5 builds it; the page only calls this.</summary>
+    public event Action? OpenWide;
+    /// <summary>The wick (Tab, A on a tab): phase 4 builds its panel.</summary>
+    public event Action<int>? WickOpen;
 
-    public LampPage(CharacterData ch, WorldState? w, string? zone)
+    enum Zone { Board, Header, Tabs, Find }
+    Zone zone_ = Zone.Board;
+    int layoutShown;
+
+    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, bool safe = true)
     {
+        this.ch = ch; this.w = w; this.zone = zone;
         MouseFilter = MouseFilterEnum.Pass;
         CustomMinimumSize = new Vector2(0, Height);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool night = w?.Time == TimeOfDay.Night;
         AddChild(Header = new LampHeader(ch, w, zone));
         AddChild(Board = new LampBoard(ch, w));
+        Board.Visit = visit ?? new LampSession(ch);
+        Board.Night = night;
+        Board.Safe = safe;
+        Board.AtPost = !night && LampBook.LayoutsOpen(w, zone);
         AddChild(Tabs = new WickTabs(ch));
+        AddChild(find = new LampFind(ch) { Visible = false });
+        AddChild(coinCard);
         bool pad = Play.Controls.Instance?.UsingPad == true;
         prompts = LampInk.Row(night
             ? pad ? [("A", "Plan"), ("Y", "Light my way"), ("B", "Board")] : [("Click", "Plan"), ("Space", "Light my way"), ("Tab", "Board")]
             : pad ? [("A", "Choose a wick"), ("D-pad down", "Wick"), ("L3", "Find"), ("R3", "Home")]
                   : [("Click", "Choose a wick"), ("Tab", "Wick"), ("F", "Find"), ("H", "Home")], pad);
         AddChild(prompts);
+        layoutShown = LampBook.State(ch).Active;
+        Board.LampsChanged += Changed;
+        Header.Hovered += i => ShowCoinCard(i, false);
+        Header.Picked += (i, right) => Pick(i, right);
+        find.Changed += () => Board.SetFound(find.Marked);
         Resized += Lay;
         Lay();
     }
+
+    /// <summary>The visit, for the screen to keep across its pages (the session undo lasts until the book closes).</summary>
+    public LampSession Visit => Board.Visit;
 
     /// <summary>The book's page sits at (1034, 154), 840 wide; C's content rect is (1030, 152), 846 wide: the page
     /// bleeds 4 px left, 2 px right and 2 px up so the board's window lands on the mock's (1030, 232)-(1876, 874).</summary>
@@ -58,9 +87,402 @@ public partial class LampPage : Control
         Board.Size = new Vector2(wd, BoardH);
         Tabs.Position = Bleed + new Vector2(0, TabsY - WickTabs.H / 2);
         Tabs.Size = new Vector2(wd, WickTabs.H);
+        find.Position = Bleed + new Vector2(0, HeaderH + 2);
+        find.Size = new Vector2(wd, LampFind.H);
         var ps = prompts.GetCombinedMinimumSize();
         prompts.Size = ps;
         prompts.Position = Bleed + new Vector2(Mathf.Round((wd - ps.X) / 2), Mathf.Round(PromptY - ps.Y / 2));
+    }
+
+    void Changed()
+    {
+        Header.Refresh();
+        var st = LampBook.State(ch);
+        if (st.Active == layoutShown) { ShowCoinCard(Header.Focused, true); return; }
+        // a switch: a new visit (its lamps are another layout's), her carried skills' tabs and Find's chips again
+        layoutShown = st.Active;
+        Board.Visit = new LampSession(ch);
+        RemoveChild(Tabs);
+        Tabs.QueueFree();
+        AddChild(Tabs = new WickTabs(ch));
+        MoveChild(Tabs, 2);
+        find.Rebuild();
+        Lay();
+        ShowCoinCard(Header.Focused, true);
+    }
+
+    /* ------------------------------------------------------------- the coins' card (§9) -- */
+
+    void ShowCoinCard(int i, bool keep)
+    {
+        if (i is < 0 or > 2) { coinCard.Visible = false; return; }
+        var st = LampBook.State(ch);
+        var l = st.Layouts[i];
+        string road = Lamps.Roads.TryGetValue(l.Type, out var r) ? r.Name : "";
+        string type = road.StartsWith("Road of the ") ? "The " + road[12..] : road == "" ? "Not yet walked" : road;
+        string flare = Lamps.Flare(l.Flare)?.Name ?? "";
+        var glyphs = (l.Carried ?? new()).Where(Weapons.All.ContainsKey).Select(s => (Weapons.All[s].Art, true)).ToList();
+        bool open = LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
+        var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
+        string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a town’s lamp-post";
+        var pr = new List<(string, string)>();
+        if (active && open)
+        {
+            if (pad) { pr.Add(("X", $"Copy to {ArtsScreen.Numerals[others[0]]}")); pr.Add(("Y", $"Copy to {ArtsScreen.Numerals[others[1]]}")); }
+            else stateLine = $"Copy to {ArtsScreen.Numerals[others[0]]} / {ArtsScreen.Numerals[others[1]]}: right-click its coin";
+        }
+        else if (open) { pr.Add(pad ? ("A", "Take it up") : ("Click", "Take it up")); if (!pad) pr.Add(("Right-click", $"Copy {ArtsScreen.Numerals[st.Active]} here")); }
+        var t = new LampCardText($"{ArtsScreen.Numerals[i]} · {type}", null, LampInk.Chip, $"{flare} · {l.Lit.Count} lamps", "", glyphs,
+            glyphs.Count > 0 ? "Carries " + string.Join(", ", (l.Carried ?? new()).Where(Weapons.All.ContainsKey).Select(s => Weapons.All[s].Name)) : null,
+            null, stateLine, active ? LampInk.Gold : open ? LampInk.Gold : LampInk.Gate, null, pr);
+        coinCard.Show(t, pad);
+        coinCard.Position = Bleed + new Vector2(8, HeaderH - 14);
+        coinCard.Visible = true;
+    }
+
+    void Pick(int i, bool right)
+    {
+        var st = LampBook.State(ch);
+        if (i <= 2)
+        {
+            if (right) Copy(i);
+            else if (i != st.Active) Board.Switch(i, zone);
+            ShowCoinCard(i, true);
+        }
+        else if (i == 3) Board.LightMyWay();
+        else OpenWideNow();
+    }
+
+    void Copy(int to)
+    {
+        if (LampAsk.CopyLayout(ch, to, w, zone)) { Sound.Sfx.Pick(); GD.Print($"LAMPBOARD copy {LampBook.State(ch).Active + 1} to {to + 1}"); Header.Refresh(); }
+        else Board.Deny("Layouts change by day at a town’s lamp-post");
+    }
+
+    void OpenWideNow()
+    {
+        GD.Print("LAMPBOARD open wide (phase 5)");
+        OpenWide?.Invoke();
+    }
+
+    /* ------------------------------------------------------------- the pad and the keys (§10) -- */
+
+    static IEnumerable<int> Pads() => Input.GetConnectedJoypads();
+    static bool PadHeld(JoyButton b) => Pads().Any(d => Input.IsJoyButtonPressed(d, b));
+    static Vector2 PadAxis(JoyAxis x, JoyAxis y)
+    {
+        var v = Vector2.Zero;
+        foreach (var d in Pads()) { var a = new Vector2(Input.GetJoyAxis(d, x), Input.GetJoyAxis(d, y)); if (a.Length() > v.Length()) v = a; }
+        return v;
+    }
+    static bool Pad => Play.Controls.Instance?.UsingPad == true;
+
+    void SetZone(Zone z)
+    {
+        zone_ = z;
+        Header.Focused = z == Zone.Header ? Math.Max(0, Header.Focused < 0 ? LampBook.State(ch).Active : Header.Focused) : -1;
+        Tabs.Focused = z == Zone.Tabs ? Math.Max(0, Tabs.Chosen) : -1;
+        find.Focused = z == Zone.Find ? Math.Max(0, find.Focused) : -1;
+        Header.QueueRedraw(); Tabs.QueueRedraw(); find.QueueRedraw();
+        ShowCoinCard(Header.Focused, false);
+        Sound.Sfx.Hover();
+    }
+
+    /// <summary>An action from the book (ArtsScreen.Key): true when the page took it.</summary>
+    public bool Key(Act a)
+    {
+        if (find.Typing) return true;
+        switch (a)
+        {
+            case Act.Up or Act.Down or Act.Left or Act.Right:
+                // the keys pan and the left stick steps (both polled each frame); the D-pad walks the page's rows
+                if (!Pad || PadAxis(JoyAxis.LeftX, JoyAxis.LeftY).Length() > 0.4f) return true;
+                Dpad(a);
+                return true;
+            case Act.Confirm:
+                switch (zone_)
+                {
+                    case Zone.Board: Board.LightFocus(); break;
+                    case Zone.Header: Pick(Header.Focused, false); break;
+                    case Zone.Tabs: Tabs.Choose(Tabs.Focused); WickOpen?.Invoke(Tabs.Focused); break;
+                    case Zone.Find: find.Toggle(find.Focused); break;
+                }
+                return true;
+            case Act.Cancel:
+                if (zone_ == Zone.Find || find.Visible) { find.Close(); Board.SetFound(null); SetZone(Zone.Board); return true; }
+                if (zone_ != Zone.Board) { SetZone(Zone.Board); return true; }
+                return false;
+            case Act.Alt:
+                if (zone_ == Zone.Header && Header.Focused == LampBook.State(ch).Active) { Copy(Enumerable.Range(0, 3).First(k => k != LampBook.State(ch).Active)); return true; }
+                if (zone_ == Zone.Board) Board.BeginOut(() => PadHeld(JoyButton.X));
+                return true;
+            case Act.Alt2:
+                if (zone_ == Zone.Header && Header.Focused == LampBook.State(ch).Active) { Copy(Enumerable.Range(0, 3).Last(k => k != LampBook.State(ch).Active)); return true; }
+                Board.LightMyWay();
+                return true;
+            case Act.TabPrev or Act.TabNext: Board.NextLamp(a == Act.TabNext ? 1 : -1); return true;
+            case Act.SubPrev or Act.SubNext: Board.ZoomStop(a == Act.SubNext ? 1 : -1); return true;
+            case Act.Answer when Pad:
+                if (find.Visible) { find.Close(); Board.SetFound(null); SetZone(Zone.Board); }
+                else { find.Open(false); SetZone(Zone.Find); }
+                return true;
+            case Act.Skip or Act.Expand:
+                if (Pad) Board.Home(); else if (a == Act.Expand) OpenWideNow();
+                return true;
+            case Act.Inventory:
+                if (Pad) { OpenWideNow(); return true; }
+                if (Input.IsPhysicalKeyPressed(Godot.Key.Tab)) { SetZone(zone_ == Zone.Tabs ? Zone.Board : Zone.Tabs); return true; }
+                return false;
+            case Act.Dash when !Pad: Board.LightMyWay(); return true;
+            case Act.Interact when !Pad && Input.IsPhysicalKeyPressed(Godot.Key.F): find.Open(true); return true;
+            case Act.Pick1 or Act.Pick2 or Act.Pick3: Board.Switch(a - Act.Pick1, zone); return true;
+        }
+        return false;
+    }
+
+    void Dpad(Act a)
+    {
+        int dx = a == Act.Left ? -1 : a == Act.Right ? 1 : 0;
+        switch (zone_)
+        {
+            case Zone.Board:
+                if (a == Act.Down) SetZone(Zone.Tabs);
+                else if (a == Act.Up) SetZone(find.Visible ? Zone.Find : Zone.Header);
+                break;
+            case Zone.Header:
+                if (a == Act.Down) SetZone(find.Visible ? Zone.Find : Zone.Board);
+                else if (dx != 0) { Header.Focused = Math.Clamp(Header.Focused + dx, 0, 4); Header.QueueRedraw(); ShowCoinCard(Header.Focused, false); Sound.Sfx.Hover(); }
+                break;
+            case Zone.Tabs:
+                if (a == Act.Up) SetZone(Zone.Board);
+                else if (dx != 0) { Tabs.Focused = Math.Clamp(Tabs.Focused + dx, 0, Tabs.Count - 1); Tabs.QueueRedraw(); Sound.Sfx.Hover(); }
+                break;
+            case Zone.Find:
+                if (a == Act.Down) SetZone(Zone.Board);
+                else if (a == Act.Up) SetZone(Zone.Header);
+                else if (dx != 0) { find.Focused = Math.Clamp(find.Focused + dx, 0, find.Count - 1); find.QueueRedraw(); Sound.Sfx.Hover(); }
+                break;
+        }
+    }
+
+    /// <summary>Keys no action names (H; Find's typing; Esc out of Find), before the game's input hears them.</summary>
+    public override void _Input(InputEvent e)
+    {
+        if (e is not InputEventKey { Pressed: true } k || !IsVisibleInTree()) return;
+        if (find.Typing)
+        {
+            if (k.PhysicalKeycode == Godot.Key.Escape) { find.Close(); Board.SetFound(null); }
+            else if (k.PhysicalKeycode is Godot.Key.Enter or Godot.Key.KpEnter) Board.FocusNext(find.Matches);
+            else if (k.PhysicalKeycode == Godot.Key.Backspace) find.Type(null);
+            else if (k.Unicode >= 32) find.Type(char.ConvertFromUtf32((int)k.Unicode));
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+        if (k.Echo) return;
+        if (k.PhysicalKeycode == Godot.Key.H) { Board.Home(); GetViewport().SetInputAsHandled(); }
+        else if (k.PhysicalKeycode == Godot.Key.Escape && find.Visible) { find.Close(); Board.SetFound(null); SetZone(Zone.Board); GetViewport().SetInputAsHandled(); }
+    }
+
+    // the left stick: a step on the push, then after 0.32 s at 7 a second; the right stick and the keys pan
+    double stickT, stickNext;
+    double? stickAngle;
+    bool panning;
+    // --lamps-moves: a scripted hand for the shots and the report (pad moves by name, 0.35 s apart)
+    string[]? moves;
+    int moveI;
+    double moveT = 2.5;
+
+    public override void _Process(double delta)
+    {
+        if (!IsVisibleInTree()) return;
+        Script(delta);
+        if (find.Typing) return;
+        var ls = PadAxis(JoyAxis.LeftX, JoyAxis.LeftY);
+        if (zone_ == Zone.Board && ls.Length() > 0.5f)
+        {
+            double ang = Math.Atan2(ls.Y, ls.X);
+            if (stickAngle is not { } held || Math.Abs(Math.IEEERemainder(ang - held, 2 * Math.PI)) > 35 * Math.PI / 180)
+            {
+                stickAngle = ang; stickT = 0; stickNext = 0.32;
+                Board.Step(ang);
+            }
+            else
+            {
+                stickT += delta;
+                if (stickT >= stickNext) { stickNext += 1.0 / 7; stickAngle = ang; Board.Step(ang); }
+            }
+        }
+        else stickAngle = null;
+        var rs = PadAxis(JoyAxis.RightX, JoyAxis.RightY);
+        float m = rs.Length();
+        if (m > 0.2f)
+        {
+            // up to 1400 board units a second, eased in from the dead zone
+            float k = Mathf.Pow(Mathf.Min(1, (m - 0.2f) / 0.75f), 1.6f);
+            Board.PanBy(-rs / m * k * 1400f * (float)Board.View.S * (float)delta);
+            panning = true;
+        }
+        else if (panning) { panning = false; Board.PanReleased(); }
+        var kd = Vector2.Zero;
+        if (Input.IsPhysicalKeyPressed(Godot.Key.A) || Input.IsPhysicalKeyPressed(Godot.Key.Left)) kd.X -= 1;
+        if (Input.IsPhysicalKeyPressed(Godot.Key.D) || Input.IsPhysicalKeyPressed(Godot.Key.Right)) kd.X += 1;
+        if (Input.IsPhysicalKeyPressed(Godot.Key.W) || Input.IsPhysicalKeyPressed(Godot.Key.Up)) kd.Y -= 1;
+        if (Input.IsPhysicalKeyPressed(Godot.Key.S) || Input.IsPhysicalKeyPressed(Godot.Key.Down)) kd.Y += 1;
+        if (kd != Vector2.Zero) Board.PanBy(-kd.Normalized() * 760f * (float)delta);
+    }
+
+    void Script(double dt)
+    {
+        moves ??= SurvivorUnchained.Args.Get("lamps-moves")?.Split(',') ?? [];
+        if (moveI >= moves.Length) return;
+        moveT -= dt;
+        if (moveT > 0) return;
+        moveT = 0.35;
+        var mv = moves[moveI++];
+        double? ang = mv switch { "R" => 0, "DR" => Math.PI / 4, "D" => Math.PI / 2, "DL" => 3 * Math.PI / 4, "L" => Math.PI, "UL" => -3 * Math.PI / 4, "U" => -Math.PI / 2, "UR" => -Math.PI / 4, _ => null };
+        if (ang is { } a) Board.Step(a);
+        else switch (mv)
+        {
+            case "in": Board.ZoomStop(1); break;
+            case "out": Board.ZoomStop(-1); break;
+            case "home": Board.Home(); break;
+            case "next": Board.NextLamp(1); break;
+            case "light": Board.LightFocus(); break;
+            case "lmw": Board.LightMyWay(); break;
+            case "find": find.Open(false); SetZone(Zone.Find); find.Toggle(0); break;
+            case "wait": moveT = 1; break;
+        }
+        GD.Print($"LAMPBOARD move {mv}: focus {(Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "-")}, scale {Board.View.S:F3}, worst focus {Board.WorstFocusMs:F2} ms");
+    }
+}
+
+/// <summary>
+/// Find (§10, L3 or F): a row of chips under the header (her carried skills, the schools, blue lamps, links, rites, the
+/// Flare); the chosen chip marks the lamps it feeds (§6 Found). With F the keys type a filter (a lamp's name, its line,
+/// its kind or the skills it feeds) and Enter steps through the matches.
+/// </summary>
+public partial class LampFind : Control
+{
+    public const float H = 30;
+    readonly CharacterData ch;
+    readonly List<(string Word, string? Glyph, HashSet<int> Lamps)> chips = new();
+    int chosen = -1;
+    string typed = "";
+    public int Focused = -1;
+    public bool Typing { get; private set; }
+    public int Count => chips.Count;
+    public event Action? Changed;
+    /// <summary>The marked lamps (null: none), and as a list in board order (Enter's steps).</summary>
+    public HashSet<int>? Marked { get; private set; }
+    public List<int> Matches { get; private set; } = new();
+
+    public LampFind(CharacterData ch) { this.ch = ch; MouseFilter = MouseFilterEnum.Pass; Rebuild(); }
+
+    public void Rebuild()
+    {
+        chips.Clear();
+        var m = LampBoard.M;
+        HashSet<int> Where(Func<LampDef, LampBoardModel.Node, bool> f) =>
+            m.Nodes.Where(nd => Lamps.Find(nd.Id) is { } d && f(d, nd)).Select(nd => nd.I).ToHashSet();
+        var carried = SkillBook.Carried(ch).Select(c => c.Id).Where(Weapons.All.ContainsKey).ToList();
+        foreach (var s in carried) chips.Add((Weapons.All[s].Name, Weapons.All[s].Art, Where((d, _) => d.Feeds.Contains(s))));
+        foreach (var school in carried.Select(s => Weapons.All[s].School).Distinct())
+            chips.Add((Style.Cap1(school.ToString()), null, Where((d, _) => d.Feeds.Any(f => Weapons.All.TryGetValue(f, out var wd) && wd.School == school))));
+        chips.Add(("Blue lamps", null, Where((_, nd) => nd.Kind == "blue")));
+        chips.Add(("Links", null, Where((_, nd) => nd.Kind == "link")));
+        chips.Add(("Rites", null, Where((_, nd) => nd.Kind == "rite")));
+        chips.Add(("The Flare", null, Where((_, nd) => nd.Kind is "ultimate" or "ultimateMod" or "flareLamp")));
+        chosen = -1;
+        Mark();
+    }
+
+    public void Open(bool typing)
+    {
+        Visible = true;
+        Typing = typing;
+        if (typing) { chosen = -1; Mark(); }
+        QueueRedraw();
+    }
+
+    public void Close()
+    {
+        Visible = false; Typing = false; chosen = -1; typed = ""; Focused = -1;
+        Marked = null; Matches = new();
+        QueueRedraw();
+    }
+
+    public void Toggle(int i)
+    {
+        if (i < 0 || i >= chips.Count) return;
+        chosen = chosen == i ? -1 : i;
+        typed = ""; Typing = false;
+        Sound.Sfx.Click();
+        Mark();
+    }
+
+    public void Type(string? s)
+    {
+        typed = s == null ? typed.Length > 0 ? typed[..^1] : "" : typed + s;
+        chosen = -1;
+        Mark();
+    }
+
+    void Mark()
+    {
+        var m = LampBoard.M;
+        if (chosen >= 0) Marked = chips[chosen].Lamps;
+        else if (typed.Trim().Length >= 2)
+        {
+            var q = typed.Trim().ToLowerInvariant();
+            Marked = m.Nodes.Where(nd => Lamps.Find(nd.Id) is { } d && (d.Name.ToLowerInvariant().Contains(q) || d.Text.ToLowerInvariant().Contains(q)
+                || nd.Kind.ToLowerInvariant().Contains(q) || d.Feeds.Any(f => Weapons.All.TryGetValue(f, out var wd) && wd.Name.ToLowerInvariant().Contains(q))))
+                .Select(nd => nd.I).ToHashSet();
+        }
+        else Marked = null;
+        Matches = Marked?.OrderBy(i => i).ToList() ?? new();
+        QueueRedraw();
+        Changed?.Invoke();
+    }
+
+    readonly List<Rect2> rects = new();
+
+    public override void _GuiInput(InputEvent e)
+    {
+        if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } mb)
+            for (int i = 0; i < rects.Count; i++) if (rects[i].HasPoint(mb.Position)) { Toggle(i); AcceptEvent(); return; }
+    }
+
+    public override void _Draw()
+    {
+        rects.Clear();
+        var f = Style.Ui;
+        const int Px = 14;
+        float x = 16, cy = H / 2;
+        if (Typing || typed != "")
+        {
+            string t = $"Find: {typed}{(Typing ? "|" : "")}";
+            LampInk.Text(this, LampInk.F("alegreya-400-italic"), 15, x, cy + 5, t, LampInk.Gold);
+            x += LampInk.W(LampInk.F("alegreya-400-italic"), t, 15) + 10;
+            if (Marked != null) { var c = $"{Marked.Count} found · Enter steps"; LampInk.Text(this, f, 13, x, cy + 5, c, LampInk.Dim); x += LampInk.W(f, c, 13) + 18; }
+        }
+        for (int i = 0; i < chips.Count; i++)
+        {
+            var (word, glyph, set) = chips[i];
+            float tw = LampInk.W(f, word, Px), gw = glyph != null ? 18 : 0;
+            var r = new Rect2(x, cy - 11, tw + gw + 18, 22);
+            if (r.End.X > Size.X - 12) break;
+            bool on = i == chosen;
+            DrawStyleBox(new StyleBoxFlat { BgColor = new Color("#0d1015") with { A = on ? 0.9f : 0.6f }, BorderColor = on ? LampInk.Gold : LampInk.RimGold with { A = 0.45f },
+                BorderWidthBottom = 1, BorderWidthTop = 1, BorderWidthLeft = 1, BorderWidthRight = 1, CornerRadiusBottomLeft = 11, CornerRadiusBottomRight = 11,
+                CornerRadiusTopLeft = 11, CornerRadiusTopRight = 11, AntiAliasing = true }, r);
+            if (i == Focused) DrawStyleBox(new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = new Color("#fff2cf"), BorderWidthBottom = 2, BorderWidthTop = 2,
+                BorderWidthLeft = 2, BorderWidthRight = 2, CornerRadiusBottomLeft = 13, CornerRadiusBottomRight = 13, CornerRadiusTopLeft = 13, CornerRadiusTopRight = 13,
+                AntiAliasing = true }, r.Grow(3));
+            if (glyph != null) DrawTextureRect(Glyphs.Texture(glyph, 32, Colors.White, line: true), new Rect2(x + 8, cy - 8, 16, 16), false, on ? LampInk.Gold : LampInk.Body);
+            LampInk.Text(this, f, Px, x + 9 + gw, cy + 5, word, on ? LampInk.Gold : LampInk.Body with { A = 0.9f });
+            rects.Add(r);
+            x = r.End.X + 8;
+        }
     }
 }
 
@@ -150,14 +572,34 @@ public static class LampInk
 /// </summary>
 public partial class LampHeader : Control
 {
-    readonly int count, active;
-    readonly string sub, name;
-    readonly string? post, night;
+    int count, active;
+    string sub = "", name = "";
+    string? post, night;
     readonly HBoxContainer keys;
+    readonly CharacterData ch;
+    readonly WorldState? w;
+    readonly string? zone;
+    /// <summary>The pad's focus in the header (0-2 the coins, 3 Light my way, 4 Open wide; -1 none).</summary>
+    public int Focused = -1;
+    /// <summary>The mouse over an item (-1 none), and a click on one (the right button: true).</summary>
+    public event Action<int>? Hovered;
+    public event Action<int, bool>? Picked;
+    int hover = -1;
 
     public LampHeader(CharacterData ch, WorldState? w, string? zone)
     {
-        MouseFilter = MouseFilterEnum.Ignore;
+        this.ch = ch; this.w = w; this.zone = zone;
+        MouseFilter = MouseFilterEnum.Pass;
+        bool pad = Play.Controls.Instance?.UsingPad == true;
+        keys = LampInk.Row(pad ? [("Y", "Light my way"), ("View", "Open wide")] : [("Space", "Light my way"), ("Z", "Open wide")], pad, 16, 22);
+        AddChild(keys);
+        Resized += Lay;
+        Refresh();
+    }
+
+    /// <summary>The count, the layout and the lines again (after a light, a put out, a switch).</summary>
+    public void Refresh()
+    {
         count = Math.Max(0, LampBook.Spare(ch, w));
         var st = LampBook.State(ch);
         active = st.Active;
@@ -175,10 +617,28 @@ public partial class LampHeader : Control
         if (isNight) night = "By night the board is read-only";
         else if (LampBook.LayoutsOpen(w, zone))
             post = $"At the {Style.Cap1(zone ?? "")}’s lamp-post: lamps go out free";
-        bool pad = Play.Controls.Instance?.UsingPad == true;
-        keys = LampInk.Row(pad ? [("Y", "Light my way"), ("View", "Open wide")] : [("Space", "Light my way"), ("Z", "Open wide")], pad, 16, 22);
-        AddChild(keys);
-        Resized += Lay;
+        else post = null;
+        QueueRedraw();
+    }
+
+    /// <summary>An item's rect (the coins, then the two keys).</summary>
+    public Rect2 ItemRect(int i)
+    {
+        if (i < 3) return new Rect2(new Vector2(16 + i * 40 - 18, Ccy - 18), new Vector2(36, 36));
+        var kids = keys.GetChildren();
+        if (kids.Count <= i - 3 || kids[i - 3] is not Control k) return new Rect2();
+        return new Rect2(keys.Position + k.Position - new Vector2(6, 4), k.Size + new Vector2(12, 8));
+    }
+
+    public override void _GuiInput(InputEvent e)
+    {
+        int At(Vector2 p) { for (int i = 0; i < 5; i++) if (ItemRect(i).HasPoint(p)) return i; return -1; }
+        if (e is InputEventMouseMotion mm && At(mm.Position) is var h && h != hover) { hover = h; Hovered?.Invoke(h); }
+        if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left or MouseButton.Right } mb && At(mb.Position) is >= 0 and var k)
+        {
+            Picked?.Invoke(k, mb.ButtonIndex == MouseButton.Right);
+            AcceptEvent();
+        }
     }
 
     const float Yb = 28;            // the count's baseline (skins/c.py: y0 + 28)
@@ -206,6 +666,16 @@ public partial class LampHeader : Control
         if (night != null) LampInk.Text(this, LampInk.F("alegreya-400-italic"), 15, cx, Yb + 38, night, LampInk.Dim with { A = 0.85f }, 0);
         for (int i = 0; i < 3; i++) Coin(this, new Vector2(16 + i * 40, Ccy), ArtsScreen.Numerals[i], i == active);
         LampInk.Text(this, LampInk.F("alegreya-700"), 17, 16 + 2 * 40 + 28, Ccy + 6, name, LampInk.Ink with { A = 0.95f });
+        int f = Focused >= 0 ? Focused : hover;
+        if (f >= 0)
+        {
+            var r = ItemRect(f);
+            var col = LampInk.Focus with { A = Focused >= 0 ? 1f : 0.6f };
+            if (f < 3) DrawArc(r.GetCenter(), 20, 0, Mathf.Tau, 64, col, 1.5f, true);
+            else DrawStyleBox(new StyleBoxFlat { BgColor = Colors.Transparent, BorderColor = col, CornerDetail = 6, AntiAliasing = true,
+                BorderWidthBottom = 1, BorderWidthTop = 1, BorderWidthLeft = 1, BorderWidthRight = 1, CornerRadiusBottomLeft = 4,
+                CornerRadiusBottomRight = 4, CornerRadiusTopLeft = 4, CornerRadiusTopRight = 4 }, r);
+        }
     }
 
     /// <summary>A layout coin (skins/a.py coin()): bronze, 32 px; the active one lit, its numeral warm.</summary>
@@ -239,6 +709,9 @@ public partial class WickTabs : Control
 {
     public const float H = 64, D = 56, Pitch = 70;
     public int Chosen { get; private set; }
+    /// <summary>The pad's focus on a tab (-1: the focus is elsewhere).</summary>
+    public int Focused = -1;
+    public int Count => Centers.Count;
     public event Action<int>? ChosenChanged;
     readonly List<(Socket S, int Index)> seats = new();
     readonly Socket empty;
@@ -341,6 +814,8 @@ public partial class WickTabs : Control
             for (int k = 4; k >= 1; k--) DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, 2 + k * 2.5f, true);
             DrawArc(c, 29.5f, 0, Mathf.Tau, 72, LampInk.Focus, 2f, true);
         }
+        if (Focused >= 0 && Focused < Centers.Count)
+            DrawArc(Centers[Focused], 34f, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, 1.5f, true);
     }
 
     void RingUnder(Vector2 c, int idx)
@@ -422,11 +897,18 @@ public partial class LampCard : Control
         return y + Pad - 2;
     }
 
+    List<(string Key, string Word)>? shownPrompts;
+    bool shownPad;
+
     public float Show(LampCardText t, bool pad)
     {
         c = t;
         float h = HeightOf(t, out lines, out price, out promptY);
         Size = new Vector2(Wd, h);
+        // the prompt row is rebuilt only when its words change (a focus move costs no new controls)
+        bool same = shownPrompts != null && shownPad == pad && shownPrompts.SequenceEqual(t.Prompts);
+        if (same) { if (promptHost.GetChildCount() > 0) promptHost.Position = new Vector2(Pad, promptY - 5 - promptHost.Size.Y / 2); QueueRedraw(); return h; }
+        shownPrompts = t.Prompts.ToList(); shownPad = pad;
         foreach (var ch in promptHost.GetChildren()) { promptHost.RemoveChild(ch); ch.QueueFree(); }
         if (t.Prompts.Count > 0)
         {

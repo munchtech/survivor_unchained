@@ -300,7 +300,8 @@ public sealed class LampBoardModel
     /* ------------------------------------------------------------- labels -- */
 
     public sealed record LabelSpec(string Text, double Cx, double Cy, bool Hearth, int[] Lamps);
-    public readonly record struct Placed(string Text, double X, double Y, Box Box);
+    /// <summary>A placed label; Lamps its group's lamps (it fades with their feather, and goes when none is in the window).</summary>
+    public readonly record struct Placed(string Text, double X, double Y, Box Box, int[]? Lamps = null);
 
     /// <summary>The label text px at a stop (Cinzel 600; §5: 15, 16 at the Valley). Never under 13 (the build's check).</summary>
     public static int LabelPx(BoardStop stop) => stop == BoardStop.Valley ? 16 : 15;
@@ -409,7 +410,7 @@ public sealed class LampBoardModel
                     {
                         double x = ax + lat, y = ay - a;
                         var b = new Box(x - w / 2 - 6, y - h / 2 - 7, x + w / 2 + 6, y + h / 2 + 7);
-                        if (Free(b)) { best = new Placed(sp.Text, x, y, b); break; }
+                        if (Free(b)) { best = new Placed(sp.Text, x, y, b, sp.Lamps); break; }
                     }
                     if (best is { } ab) { placed.Add(ab); continue; }
                 }
@@ -436,7 +437,7 @@ public sealed class LampBoardModel
                 {
                     double x = X + ux * (a0 + a) - uy * lat, y = Y + uy * (a0 + a) + ux * lat;
                     var b = new Box(x - w / 2 - 6, y - h / 2 - 7, x + w / 2 + 6, y + h / 2 + 7);
-                    if (Free(b)) { best = new Placed(sp.Text, x, y, b); break; }
+                    if (Free(b)) { best = new Placed(sp.Text, x, y, b, sp.Lamps); break; }
                 }
                 if (best != null) break;
             }
