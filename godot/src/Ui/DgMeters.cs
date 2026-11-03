@@ -159,8 +159,11 @@ public static partial class DgMeters
         public override void _Draw()
         {
             const float R = BeadD / 2, Cx = R + 1;
-            float gx = GlobalPosition.X + Cx;
-            float dy = CrestY(gx) - BeadLift - (GlobalPosition.Y + 14);
+            // (UI 29 judge: in the bottom HUD's own 1080 px, not the screen's: at bottomScale 0.85 the screen y
+            // floated the studs ~13 px off the coin's arch)
+            var g = HudBottom.Unmap(GlobalPosition);
+            float gx = g.X + Cx;
+            float dy = CrestY(gx) - BeadLift - (g.Y + 14);
             var c = new Vector2(Cx, 14 + dy);
             // (UI 18 judge P1: "their dark discs don't match the bronze rank beads": the collar now the ranks' own
             // bronze, Engrave's tablet: its dark ground, a lit upper face, a darker lower one and a hair of light on
