@@ -7,8 +7,7 @@
 shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
 
-uniform vec4 win = vec4(0.0, 0.0, 1920.0, 1080.0);   // the board window in framebuffer px
-uniform float feather = 48.0;
+#include "res://shaders/ui_lamps_field.gdshaderinc"
 uniform float valley = 0.0;                            // 1: the Valley's dots
 uniform float find_on = 0.0;                           // 1: Find is up (the rest drop to 45%)
 uniform sampler2D palm : filter_linear_mipmap, repeat_disable;
@@ -123,10 +122,7 @@ void fill(inout vec4 acc, float d, vec3 c, float a) { over_(acc, c, cov(d) * a);
 void fills(inout vec4 acc, float d, vec3 c, float a, float soft) { over_(acc, c, covs(d, soft) * a); }
 void glow(inout vec3 light, vec2 p, float sigma, vec3 c, float peak) { light += c * peak * exp(-dot(p, p) / (2.0 * sigma * sigma)); }
 
-float fmask(vec2 fc) {
-	return smoothstep(0.0, feather, fc.x - win.x) * smoothstep(0.0, feather, win.z - fc.x)
-		* smoothstep(0.0, feather, fc.y - win.y) * smoothstep(0.0, feather, win.w - fc.y);
-}
+float fmask(vec2 fc) { return field_mask(fc); }
 
 void fragment() {
 	vec4 acc = vec4(0.0);

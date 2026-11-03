@@ -509,13 +509,13 @@ public sealed class LampBoardModel
     /// </summary>
     public static CardSpot PlaceCard(double fx, double fy, double r, double w, double h,
         IReadOnlyList<(double X, double Y, double R)> lamps, IReadOnlyList<(double X, double Y, double R)> protect,
-        IReadOnlyList<Box> labels, Box window, double inset = 16) =>
-        PlaceCard(fx, fy, r, w, h, new DiscGrid(lamps, 32), new DiscGrid(protect, 32), labels, window, inset);
+        IReadOnlyList<Box> labels, Box window, double inset = 16, IReadOnlyList<Box>? hard = null) =>
+        PlaceCard(fx, fy, r, w, h, new DiscGrid(lamps, 32), new DiscGrid(protect, 32), labels, window, inset, hard: hard);
 
     /// <summary>The same on grids built once (the open's slide tries the window at many offsets over one board).
     /// cleanOnly: only a clean spot will do (each candidate stops at its first hit); none gives Score int.MaxValue.</summary>
     public static CardSpot PlaceCard(double fx, double fy, double r, double w, double h,
-        DiscGrid lampGrid, DiscGrid protGrid, IReadOnlyList<Box> labels, Box window, double inset = 16, bool cleanOnly = false)
+        DiscGrid lampGrid, DiscGrid protGrid, IReadOnlyList<Box> labels, Box window, double inset = 16, bool cleanOnly = false, IReadOnlyList<Box>? hard = null)
     {
         CardSpot? best = null;
         var shifts = new List<int> { 0 };
@@ -529,6 +529,8 @@ public sealed class LampBoardModel
                 x0 = Math.Round(x0); y0 = Math.Round(y0);
                 var rect = new Box(x0, y0, x0 + w, y0 + h);
                 if (!rect.Inside(inner)) continue;
+                // (A: never over the HUD's foot)
+                if (hard != null) { var hb = rect.Grow(8); bool over = false; foreach (var q in hard) if (q.Overlaps(hb)) { over = true; break; } if (over) continue; }
                 var band = rect.Grow(6);
                 if (cleanOnly)
                 {

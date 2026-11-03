@@ -164,6 +164,14 @@ public partial class Instrument : Control
         artKey.Refresh();
     }
 
+    /// <summary>The Lamps' Open wide (§4): the flask and the dash (no wicks) drop to 45%; off, back to full.</summary>
+    public void Lamps(bool on)
+    {
+        var m = new Color(1, 1, 1, on ? 0.45f : 1);
+        Dash.Modulate = dashKey.Modulate = m;
+        Draught.Modulate = draughtKey.Modulate = m;
+    }
+
     /// <summary>A callout's spotlight: every part dimmed to dim but the one taught (keep: "art", "dash",
     /// "draught", "chain", "socket:ID"); the six places and the passives at slots' strength; the light pulsing
     /// along the river (pulse).</summary>

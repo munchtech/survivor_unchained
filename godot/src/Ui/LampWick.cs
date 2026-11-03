@@ -25,11 +25,38 @@ public partial class LampWick : Control
     /// <summary>The wick band's top in C coordinates (the board's window ends here while the wick is open).</summary>
     public const float BandTop = 482;
     // WICK_RECT (1040, 634)-(1866, 862) and WICK_LAY, here
-    const float X0 = 10, Y0 = 24, X1 = 836, Y1 = 252;
-    const float Kx = X0 + 256, Braid = 40, Lx0 = X0 + 350, PitchX = 60, Tx = X0 + 519, Row0 = Y0 + 44, PitchY = 64;
+    float X0 = 10, Y0 = 24, X1 = 836, Y1 = 252;
+    float Kx = 10 + 256, Braid = 40, Lx0 = 10 + 350, PitchX = 60, Tx = 10 + 519, Row0 = 24 + 44, PitchY = 64, Pad = 18;
     const float Rw = 11, Rt = 17;
     /// <summary>The row's text: 14 px past the node's ring (the focus ring at r + 5).</summary>
-    const float TextX = Tx + Rt + 5 + 14, TextR = X1 - 24;
+    float TextX = 10 + 519 + Rt + 5 + 14, TextR = 836 - 24;
+    /// <summary>A's panel (§16): smoke at 88% fading over 24 px at its edges, no box; the mock's A layout (frames.py
+    /// wick_spec), its text column as wide as the panel allows (judge r2: the Turn's state line wrapped at 214 px).</summary>
+    public bool Wide { get; private set; }
+
+    public void SetWide(Vector2 size)
+    {
+        Wide = true;
+        X0 = 0; Y0 = 0; X1 = size.X; Y1 = size.Y;
+        Kx = 140; Braid = 36; Lx0 = 221; PitchX = 50; Tx = 371; Row0 = 56; PitchY = 76; Pad = 24;
+        TextX = Tx + 31; TextR = X1 - 24;
+        var sm = new ShaderMaterial { Shader = WideSmoke }; sm.SetShaderParameter("size", size); smoke.Material = sm;
+        Size = size;
+    }
+
+    static Shader? wideSmoke;
+    static Shader WideSmoke => wideSmoke ??= new Shader
+    {
+        Code = """
+            shader_type canvas_item;
+            uniform vec2 size = vec2(780.0, 282.0);
+            void fragment() {
+                vec2 p = UV * size;
+                float e = min(min(p.x, size.x - p.x), min(p.y, size.y - p.y));
+                COLOR = vec4(0.051, 0.063, 0.082, 0.88 * smoothstep(0.0, 24.0, e));
+            }
+            """,
+    };
     static readonly Color StrandGold = new("#f2c06b"), StrandPlan = new("#e2b066"), StrandSilver = new("#a7b1c2"),
         LitRim = new("#ffd98a"), Ember = new("#ffb04a");
 
@@ -102,7 +129,7 @@ public partial class LampWick : Control
             uniform vec2 size = vec2(846.0, 276.0);
             void fragment() {
                 vec2 p = UV * size;
-                float m = smoothstep({{Y0:F1}}, {{Y0 + 24:F1}}, p.y) * (1.0 - smoothstep({{Y1:F1}}, {{Y1 + 24:F1}}, p.y))
+                float m = smoothstep(24.0, 48.0, p.y) * (1.0 - smoothstep(252.0, 276.0, p.y))
                     * smoothstep(0.0, 24.0, p.x) * smoothstep(0.0, 24.0, size.x - p.x);
                 COLOR = vec4(0.0, 0.0, 0.0, 0.35 * m);
             }
@@ -341,9 +368,9 @@ public partial class LampWick : Control
         var seat = new Vector2(X0 + 46, Y0 + 50);
         string art = Weapons.All.TryGetValue(Skill, out var wd) ? wd.Art : "";
         WickTabs.Seat(ci, seat, 56, 0, art, wd != null ? ItemViews.SchoolColors[wd.School] : LampInk.Gold);
-        LampInk.Text(ci, LampInk.F("cinzel-700", 1), 22, X0 + 18, Y0 + 118, (wd?.Name ?? Skill).ToUpperInvariant(), LampInk.Ink);
-        LampInk.Text(ci, LampInk.F("alegreya-sans-700", 2), 13, X0 + 18, Y0 + 140, $"DAY RANK {Roman(Math.Max(1, rank))}", LampInk.Gold);
-        LampInk.Text(ci, fs, 14, X0 + 18, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned", LampInk.Dim);
+        LampInk.Text(ci, LampInk.F("cinzel-700", 1), 22, X0 + Pad, Y0 + 118, (wd?.Name ?? Skill).ToUpperInvariant(), LampInk.Ink);
+        LampInk.Text(ci, LampInk.F("alegreya-sans-700", 2), 13, X0 + Pad, Y0 + 140, $"DAY RANK {Roman(Math.Max(1, rank))}", LampInk.Gold);
+        LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned", LampInk.Dim);
         // the stem: up from the chosen tab, a 20 px bend, into the braid's knot
         var knot = new Vector2(Kx, Row0 + PitchY);
         DrawStem(ci, knot);
@@ -357,7 +384,7 @@ public partial class LampWick : Control
             float ry = Row0 + r * PitchY;
             var s = strands[r];
             bool sug = Wicks.Of(Skill)?.Suggested == s.Id;
-            LampInk.Text(ci, fk, 13, Lx0 - 20, ry - 19, s.Kind.ToString().ToUpperInvariant() + (sug ? " · LIGHT MY WAY" : ""), LampInk.Dim with { A = 0.95f });
+            LampInk.Text(ci, fk, 13, Lx0 + (Wide ? -36 : -20), ry - 19, s.Kind.ToString().ToUpperInvariant() + (sug ? " · LIGHT MY WAY" : ""), LampInk.Dim with { A = 0.95f });
             for (int c = 0; c < 3; c++)
             {
                 var a = At(r, c); var b = At(r, c + 1);
@@ -371,7 +398,7 @@ public partial class LampWick : Control
         if (LampAsk.Sum(ch, Skill, false) is { } sum)
         {
             string line = $"{sum.Stat} {sum.Total:0} = " + string.Join(" · ", sum.Parts.Select(p => $"{p.What} {p.Value}"));
-            LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, X0 + 532, Y1 - 12, line, LampInk.Body with { A = 0.95f }, 0);
+            LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, Wide ? (X0 + X1) / 2 : X0 + 532, Y1 - (Wide ? 14 : 12), line, LampInk.Body with { A = 0.95f }, 0);
         }
     }
 
@@ -526,7 +553,9 @@ public partial class LampWick : Control
             {
                 int pi = plan.ToList().IndexOf(Id(r, c));
                 if (pi < 0) continue;
-                var p = At(r, c) + new Vector2(-16, -16 + 4.5f);
+                // (the Turn's number clear of its focus ring at r + 5: judge r2 saw C's "4" on the ring's line)
+                float o = c == 3 ? 24 : 16;
+                var p = At(r, c) + new Vector2(-o, -o + 4.5f);
                 LampInk.Text(ci, f, 12, p.X, p.Y, (pi + 1).ToString(), LampInk.Gold, 0, 3, 1f);
             }
     }

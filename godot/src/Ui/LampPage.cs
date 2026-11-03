@@ -24,7 +24,7 @@ public partial class LampPage : Control
     public readonly LampBoard Board;
     public readonly LampHeader Header;
     public WickTabs Tabs { get; private set; }
-    HBoxContainer prompts;
+    Container prompts;
     readonly LampFind find;
     /// <summary>The wick panel (§8, §16), open over the page's foot when a tab is chosen.</summary>
     public readonly LampWick Wick;
@@ -41,21 +41,31 @@ public partial class LampPage : Control
     Zone zone_ = Zone.Board;
     int layoutShown;
 
-    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, bool safe = true)
+    /// <summary>A, Open wide (§4, §16): the page over the whole screen, the board across the field (y 84-960), the HUD's
+    /// seats its wick tabs (and the keeper's fire the Flare's), the wick panel placed from the HUD's geometry.</summary>
+    public readonly bool Wide;
+    public Rect2 WickRect;
+    /// <summary>A: the field's top and bottom.</summary>
+    public const float FieldTop = 84, FieldBottom = 960;
+
+    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, bool safe = true, bool wide = false, Rect2 wickRect = default, List<Vector2>? seats = null)
     {
         this.ch = ch; this.w = w; this.zone = zone;
+        Wide = wide; WickRect = wickRect;
         MouseFilter = MouseFilterEnum.Pass;
         CustomMinimumSize = new Vector2(0, Height);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool night = w?.Time == TimeOfDay.Night;
-        AddChild(Header = new LampHeader(ch, w, zone));
-        AddChild(Board = new LampBoard(ch, w));
+        AddChild(Header = new LampHeader(ch, w, zone, wide));
+        AddChild(Board = new LampBoard(ch, w) { Wide = wide });
+        if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
         Board.Visit = visit ?? new LampSession(ch);
         Board.Night = night;
         Board.Safe = safe;
         Board.AtPost = !night && LampBook.LayoutsOpen(w, zone);
         AddChild(Wick = new LampWick(ch) { Visible = false, Safe = safe });
         AddChild(Tabs = new WickTabs(ch));
+        if (wide) { Wick.SetWide(wickRect.Size); Tabs.SetSeats(seats ?? new()); }
         AddChild(find = new LampFind(ch) { Visible = false });
         AddChild(coinCard);
         prompts = Prompts();
@@ -83,6 +93,7 @@ public partial class LampPage : Control
 
     void Lay()
     {
+        if (Wide) { LayWide(); return; }
         float wd = Size.X + Wider;
         Header.Position = Bleed;
         Header.Size = new Vector2(wd, HeaderH);
@@ -98,6 +109,24 @@ public partial class LampPage : Control
         var ps = prompts.GetCombinedMinimumSize();
         prompts.Size = ps;
         prompts.Position = Bleed + new Vector2(Mathf.Round((wd - ps.X) / 2), Mathf.Round(PromptY - ps.Y / 2));
+    }
+
+    void LayWide()
+    {
+        Header.Position = new Vector2(26, 22);
+        Header.Size = new Vector2(1920 - 52, 54);
+        Board.Position = new Vector2(0, FieldTop);
+        if (!wickOpen) Board.Size = new Vector2(1920, FieldBottom - FieldTop);
+        Wick.Position = WickRect.Position;
+        Wick.Size = WickRect.Size;
+        Tabs.Position = Vector2.Zero;
+        Tabs.Size = new Vector2(1920, 1080);
+        if (wickOpen && Tabs.Count > 0) Wick.TabAt = Tabs.Centers[Math.Clamp(wickTab, 0, Tabs.Count - 1)] - Wick.Position;
+        find.Position = new Vector2(560, FieldTop + 2);
+        find.Size = new Vector2(800, LampFind.H);
+        var ps = prompts.GetCombinedMinimumSize();
+        prompts.Size = ps;
+        prompts.Position = new Vector2(1900 - ps.X, 1052 - ps.Y);
     }
 
     void Changed()
@@ -123,9 +152,26 @@ public partial class LampPage : Control
 
     /// <summary>The foot row (§16, the build lead's input of 2 November): by day the board's, with the wick open the
     /// wick's.</summary>
-    HBoxContainer Prompts()
+    Container Prompts()
     {
         bool pad = Pad;
+        if (Wide)
+        {
+            var v = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.End };
+            v.AddThemeConstantOverride("separation", 8);
+            var rows = wickOpen
+                ? pad ? new[] { new[] { ("A", "Plan") }, new[] { ("Y", "Light my way") }, new[] { ("B", "Back") } }
+                      : new[] { new[] { ("Click", "Plan") }, new[] { ("Space", "Light my way") }, new[] { ("Tab", "Back") } }
+                : pad ? new[] { new[] { ("LT", ""), ("RT", "Zoom"), ("D-pad", "Next lamp") }, new[] { ("L3", "Home"), ("R3", "The book") } }
+                      : new[] { new[] { ("Wheel", "Zoom"), ("F", "Find") }, new[] { ("H", "Home"), ("Z", "The book") } };
+            foreach (var r in rows)
+            {
+                var h = LampInk.Row(r, pad, 15, 16);
+                h.Alignment = BoxContainer.AlignmentMode.End;
+                v.AddChild(h);
+            }
+            return v;
+        }
         return LampInk.Row(wickOpen
             ? pad ? [("A", "Plan"), ("Y", "Light my way"), ("B", "Board")] : [("Click", "Plan"), ("Space", "Light my way"), ("Tab", "Board")]
             : pad ? [("A", "Light"), ("Y", "Light my way"), ("L3", "Home"), ("R3", "Open wide")]
@@ -148,6 +194,7 @@ public partial class LampPage : Control
         i = Math.Clamp(i, 0, Tabs.Count - 1);
         wickTab = i;
         Tabs.Choose(i);
+        if (Wide && i >= Tabs.Skills.Count) return;   // (A: the keeper's fire is the Flare's tab: focus only)
         if (i >= Tabs.Skills.Count) Wick.OpenList(); else Wick.Open(Tabs.Skills[i]);
         bool was = wickOpen;
         wickOpen = true;
@@ -156,7 +203,7 @@ public partial class LampPage : Control
         Tabs.QueueRedraw(); Header.QueueRedraw();
         coinCard.Visible = false;
         Lay();
-        if (!was) Board.Reframe(LampWick.BandTop - BoardTop, true);
+        if (!was) Board.Reframe(Wide ? WickRect.Position.Y + 60 - FieldTop : LampWick.BandTop - BoardTop, true);
         SetPrompts();
         Sound.Sfx.Page();
     }
@@ -167,7 +214,7 @@ public partial class LampPage : Control
         wickOpen = false;
         Wick.Visible = false;
         zone_ = Zone.Board;
-        Board.Reframe(BoardH, false);
+        Board.Reframe(Wide ? FieldBottom - FieldTop : BoardH, false);
         SetPrompts();
         Sound.Sfx.Page();
         GD.Print("LAMPBOARD wick closed");
@@ -281,6 +328,7 @@ public partial class LampPage : Control
             case Act.Cancel:
                 if (zone_ == Zone.Find || find.Visible) { find.Close(); Board.SetFound(null); SetZone(Zone.Board); return true; }
                 if (zone_ != Zone.Board) { SetZone(Zone.Board); return true; }
+                if (Wide) { OpenWideNow(); return true; }   // (A: B goes back to the book)
                 return false;
             case Act.Alt:
                 if (zone_ == Zone.Header && Header.Focused == LampBook.State(ch).Active) { Copy(Enumerable.Range(0, 3).First(k => k != LampBook.State(ch).Active)); return true; }
@@ -291,7 +339,7 @@ public partial class LampPage : Control
                 Board.LightMyWay();
                 return true;
             // LB/RB turn the book's tabs (Overlay); LT/RT zoom (as the Map's); L3 Home, R3 Open wide (§16, 2 Nov)
-            case Act.TabPrev or Act.TabNext: return false;
+            case Act.TabPrev or Act.TabNext: return Wide;
             case Act.SubPrev or Act.SubNext: Board.ZoomStop(a == Act.SubNext ? 1 : -1); return true;
             case Act.Answer when Pad: Board.Home(); return true;
             case Act.Skip when Pad: OpenWideNow(); return true;
@@ -342,8 +390,13 @@ public partial class LampPage : Control
                 else if (dx != 0) { Header.Focused = Math.Clamp(Header.Focused + dx, 0, 5); Header.QueueRedraw(); ShowCoinCard(Header.Focused, false); Sound.Sfx.Hover(); }
                 break;
             case Zone.Tabs:
-                if (a == Act.Up) SetZone(Zone.Board);
-                else if (dx != 0) { Tabs.Focused = Math.Clamp(Tabs.Focused + dx, 0, Tabs.Count - 1); Tabs.QueueRedraw(); Sound.Sfx.Hover(); }
+                if (a == Act.Up) { SetZone(Zone.Board); if (Wide) Board.SetFound(null); }
+                else if (dx != 0)
+                {
+                    Tabs.Focused = Math.Clamp(Tabs.Focused + dx, 0, Tabs.Count - 1); Tabs.QueueRedraw(); Sound.Sfx.Hover();
+                    // (A: the keeper's fire is the Flare's tab: focused, the Flare's lamps are marked)
+                    if (Wide) Board.SetFound(Tabs.Focused == Tabs.Count - 1 ? Board.FlareLamps() : null);
+                }
                 break;
             case Zone.Find:
                 if (a == Act.Down) SetZone(Zone.Board);
@@ -812,12 +865,14 @@ public partial class LampHeader : Control
     public event Action<int, bool>? Picked;
     int hover = -1;
 
-    public LampHeader(CharacterData ch, WorldState? w, string? zone)
+    public LampHeader(CharacterData ch, WorldState? w, string? zone, bool wide = false)
     {
         this.ch = ch; this.w = w; this.zone = zone;
         MouseFilter = MouseFilterEnum.Pass;
         bool pad = Play.Controls.Instance?.UsingPad == true;
-        keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("R3", "Open wide")] : [("Space", "Light my way"), ("F", "Find"), ("Z", "Open wide")], pad, 16, 22);
+        // (A: Light my way and Find; the way back to the book is in the lower right)
+        if (wide) keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find")] : [("Space", "Light my way"), ("F", "Find")], pad, 16, 22);
+        else keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("R3", "Open wide")] : [("Space", "Light my way"), ("F", "Find"), ("Z", "Open wide")], pad, 16, 22);
         AddChild(keys);
         Resized += Lay;
         Refresh();
@@ -977,8 +1032,22 @@ public partial class WickTabs : Control
         return ldw + 20 + n * D + Math.Max(0, n - 1) * (Pitch - D) + 26 + D + 8 + lw;
     }
 
+    /// <summary>A: the HUD's own seats are the tabs (their screen centers; the last the keeper's fire, the Flare's). Only
+    /// the chosen seat's gold ring and the pad's focus are drawn: the seats are the HUD's.</summary>
+    public bool Wide;
+    public void SetSeats(List<Vector2> centers)
+    {
+        Wide = true;
+        Centers.Clear();
+        Centers.AddRange(centers);
+        scroll.Visible = false;
+        MouseFilter = MouseFilterEnum.Ignore;
+        QueueRedraw();
+    }
+
     void Lay()
     {
+        if (Wide) { QueueRedraw(); return; }
         float tot = Total(out var ldw, out _);
         float x = Mathf.Round(Size.X / 2 - tot / 2), cy = Size.Y / 2;
         lead = x;
@@ -1017,6 +1086,20 @@ public partial class WickTabs : Control
 
     public override void _Draw()
     {
+        if (Wide)
+        {
+            float s = HudBottom.Scale;
+            float R(int i) => i == Centers.Count - 1 ? (DgPanel.GlassOuterR + 3) * s : (DgPanel.SeatR + 1.5f) * s;
+            if (Chosen >= 0 && Chosen < Centers.Count - 1)
+            {
+                var c = Centers[Chosen];
+                for (int k = 4; k >= 1; k--) DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus with { A = 0.07f }, 2 + k * 2.5f, true);
+                DrawArc(c, R(Chosen), 0, Mathf.Tau, 72, LampInk.Focus, 2f, true);
+            }
+            if (Focused >= 0 && Focused < Centers.Count)
+                DrawArc(Centers[Focused], R(Focused) + 4, 0, Mathf.Tau, 72, new Color("#fff2cf") with { A = 0.9f }, 1.5f, true);
+            return;
+        }
         float cy = Size.Y / 2;
         Total(out _, out _);
         LampInk.Text(this, LampInk.F("alegreya-sans-700", 2), 13, lead, cy + 5, Lead, LampInk.Dim with { A = 0.95f });
@@ -1040,6 +1123,25 @@ public partial class WickTabs : Control
     /// <summary>A tab's seat as the HUD lights it (C_day.png's tabs): the HUD's bronze ring, lifted toward lit bronze; a
     /// well of glass lit in the skill's school, brightest up and left; the skill's gold inlay, bright, warm-lit under.
     /// art null: an empty well (All learned).</summary>
+    static Texture2D? well;
+    /// <summary>A radial well: alpha (1 - t)^1.2 from the middle to the edge, clipped to the disc.</summary>
+    static Texture2D Well
+    {
+        get
+        {
+            if (well != null) return well;
+            const int n = 96;
+            var im = Image.CreateEmpty(n, n, false, Image.Format.Rgba8);
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float t = new Vector2(x + 0.5f - n / 2f, y + 0.5f - n / 2f).Length() / (n / 2f);
+                    im.SetPixel(x, y, new Color(1, 1, 1, t >= 1 ? 0 : Mathf.Pow(1 - t, 1.2f)));
+                }
+            return well = ImageTexture.CreateFromImage(im);
+        }
+    }
+
     public static void Seat(CanvasItem ci, Vector2 c, float d, int idx, string? art, Color school)
     {
         float k = d / (2 * 36.6f);
@@ -1051,11 +1153,12 @@ public partial class WickTabs : Control
         }
         else ci.DrawArc(c, d / 2 - 2, 0, Mathf.Tau, 64, new Color("#9a7442"), 4, true);
         ci.DrawCircle(c, hr + 1, new Color("#0b0a0c"), true, -1, true);
-        var disc = DgMeters.Disc;
-        ci.DrawTextureRect(disc, new Rect2(c - Vector2.One * hr * 1.25f + new Vector2(-hr * 0.12f, -hr * 0.16f), Vector2.One * hr * 2.5f), false,
-            school with { A = art != null ? 0.95f : 0.55f });
-        ci.DrawTextureRect(disc, new Rect2(c - Vector2.One * hr * 0.8f + new Vector2(-hr * 0.2f, -hr * 0.28f), Vector2.One * hr * 1.6f), false,
-            school.Lightened(0.25f) with { A = art != null ? 0.35f : 0.2f });
+        // (the mock's seats, foot.py paint_seat: the school's glass lit from the middle, up and left, to a dark rim:
+        // tint (1 - t)^1.2 over 1.08 of the well's radius; phase 4's soft discs read dark next to C_day.png)
+        ci.DrawTextureRect(Well, new Rect2(c - Vector2.One * hr * 1.08f + new Vector2(-hr * 0.13f, -hr * 0.16f), Vector2.One * hr * 2.16f), false,
+            (school * new Color(0.62f, 0.62f, 0.62f)) with { A = art != null ? 1f : 0.45f });
+        ci.DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 0.7f + new Vector2(-hr * 0.2f, -hr * 0.26f), Vector2.One * hr * 1.4f), false,
+            school.Lightened(0.3f) with { A = art != null ? 0.30f : 0.12f });
         if (art != null && art != "")
         {
             int gi = (int)Mathf.Round(hr * 2 * 0.82f);

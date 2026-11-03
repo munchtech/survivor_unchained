@@ -4,8 +4,7 @@
 shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
 
-uniform vec4 win = vec4(0.0, 0.0, 1920.0, 1080.0);
-uniform float feather = 48.0;
+#include "res://shaders/ui_lamps_field.gdshaderinc"
 uniform float valley = 0.0;
 uniform float find_on = 0.0;
 const float PAD = 8.0;
@@ -59,8 +58,6 @@ void fragment() {
 			* (0.5 + 0.5 * clamp(0.5 - ddash, 0.0, 1.0));
 	}
 	if (find_on > 0.5) { acc *= 0.45; light *= 0.45; }
-	vec2 fc = FRAGCOORD.xy;
-	float m = smoothstep(0.0, feather, fc.x - win.x) * smoothstep(0.0, feather, win.z - fc.x)
-		* smoothstep(0.0, feather, fc.y - win.y) * smoothstep(0.0, feather, win.w - fc.y);
+	float m = field_mask(FRAGCOORD.xy);
 	COLOR = vec4(acc.rgb + light, acc.a) * m;
 }

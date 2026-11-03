@@ -193,9 +193,50 @@ public partial class LampBoard : Control
 
     float EdgeMask(double x, double y)
     {
-        static double Ss(double t) { t = Math.Clamp(t / Feather, 0, 1); return t * t * (3 - 2 * t); }
-        return (float)(Ss(x) * Ss(Size.X - x) * Ss(y) * Ss(Size.Y - y));
+        static double Ss(double t, float f) { if (f < 0.5f) return t >= 0 ? 1 : 0; t = Math.Clamp(t / f, 0, 1); return t * t * (3 - 2 * t); }
+        var f = Fe.X < 0 ? new Vector4(Feather, Feather, Feather, Feather) : Fe;
+        return (float)(Ss(x, f.X) * Ss(Size.X - x, f.Z) * Ss(y, f.Y) * Ss(Size.Y - y, f.W));
     }
+
+    /* ------------------------------------------------------------- A, Open wide (§16 "Edges, A") -- */
+
+    /// <summary>The window's feather per side (left, top, right, bottom); X < 0: Feather on all four (C).</summary>
+    public Vector4 Fe = new(-1, -1, -1, -1);
+    /// <summary>A: the foot's boxes in this control (labels and the card keep out); the page glow off (A's pools are its glow).</summary>
+    public List<Box> Keep = new();
+    public bool Wide;
+    ShaderMaterial? inkMat;
+    /// <summary>The view was laid again (A's pools follow her lit lamps).</summary>
+    public event Action? Relaid;
+
+    /// <summary>A's knockout on every pass (the foot's and her masks), and on the type.</summary>
+    public void Knock(Texture2D hud, Texture2D? her, Vector2 vp)
+    {
+        inkMat ??= new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ui_lamps_ink.gdshader") };
+        ink.Material = inkMat;
+        foreach (var mat in new[] { lampMat, roadMat, haloMat, inkMat })
+        {
+            mat.SetShaderParameter("knock_on", 1f);
+            mat.SetShaderParameter("knock_hud", hud);
+            if (her != null) mat.SetShaderParameter("knock_her", her);
+            mat.SetShaderParameter("vp_size", vp);
+        }
+    }
+
+    /// <summary>Her lit lamps' places on the screen (inside the window).</summary>
+    public List<Vector2> LitScreen()
+    {
+        var o = new List<Vector2>();
+        var g = GetGlobalRect().Position;
+        foreach (var i in lit)
+            if (i < n && slot[i] >= 0 && InView(i, 0)) o.Add(g + new Vector2((float)pos[i].X, (float)pos[i].Y));
+        return o;
+    }
+
+    public bool IsValley => stop == BoardStop.Valley;
+
+    /// <summary>The Flare's lamps (A: the keeper's fire, focused, marks them).</summary>
+    public HashSet<int> FlareLamps() => Enumerable.Range(0, M.Nodes.Length).Where(i => Flare(M.Nodes[i].Kind)).ToHashSet();
 
     /// <summary>Read her lamps, place the view, and write every instance (on open and on a resize).</summary>
     public void Rebuild()
@@ -307,6 +348,7 @@ public partial class LampBoard : Control
         WriteLamps(valley);
         WritePage(valley);
         if (open || old != stop) SetUniforms(valley);
+        Relaid?.Invoke();
         if (settle)
         {
             labelView = view;
@@ -576,7 +618,7 @@ public partial class LampBoard : Control
         var discOf = new List<int>();
         for (int i = 0; i < n; i++)
             if (slot[i] >= 0) { discs.Add((pos[i].X, pos[i].Y, radius[i] + 5)); discOf.Add(i); }
-        var allowed = new Box(40, 40, Size.X - 40, Size.Y - 40);
+        var allowed = Wide ? new Box(64, 40, Size.X - 64, Size.Y - 20) : new Box(40, 40, Size.X - 40, Size.Y - 40);
         string key = $"{stop}|{view}|{Size}|{block}|{string.Join(",", lit.OrderBy(i => i))}";
         if (!labelCache.TryGetValue(key, out var placed))
         {
@@ -591,7 +633,7 @@ public partial class LampBoard : Control
                     int k = Math.Max(1, (int)(Math.Sqrt(Sq(bx - ax) + Sq(by - ay)) / 8));
                     for (int t = 0; t <= k; t++) roads.Add((ax + (bx - ax) * t / k, ay + (by - ay) * t / k, 4));
                 }
-            placed = M.PlaceLabels(view, stop, discs, allowed, block is { } bk ? [bk] : [], (t, p) => LampInk.W(font, t, p), lit, discOf, roads);
+            placed = M.PlaceLabels(view, stop, discs, allowed, block is { } bk ? [.. Keep, bk] : Keep, (t, p) => LampInk.W(font, t, p), lit, discOf, roads);
             if (labelCache.Count > 16) labelCache.Clear();
             labelCache[key] = placed;
         }
@@ -797,7 +839,7 @@ public partial class LampBoard : Control
         }
         var labelsBoxes = placedLabels.Select(p => p.Box).ToList();
         var (fx, fy) = pos[focus];
-        var spot = LampBoardModel.PlaceCard(fx, fy, radius[focus] + 5, LampCard.Wd, h, discs, prot, labelsBoxes, new Box(0, 0, Size.X, Size.Y));
+        var spot = LampBoardModel.PlaceCard(fx, fy, radius[focus] + 5, LampCard.Wd, h, discs, prot, labelsBoxes, new Box(0, 0, Size.X, Size.Y), hard: Keep);
         CardSpot = spot;
         var room = spot.Rect.Grow(LampBoardModel.LabelRoom);
         // on open, a label the card crowds is placed again around it (the card's room a blocker); on a hover, it hides
@@ -825,6 +867,7 @@ public partial class LampBoard : Control
     {
         foreach (var mat in new[] { lampMat, roadMat, haloMat })
         {
+            mat.SetShaderParameter("fe", Fe);
             mat.SetShaderParameter(PFeather, Feather);
             mat.SetShaderParameter(PValley, valley ? 1f : 0f);
             mat.SetShaderParameter(PFind, findOn ? 1f : 0f);
