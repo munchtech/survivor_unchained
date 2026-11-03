@@ -203,7 +203,7 @@ public partial class DraftPanel : Control
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         bool pad = Controls.Instance.UsingPad;
         // (the shared keycap, as the tips draw it)
-        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.KeyCap($"1-{Math.Clamp(v.Offers.Count, 2, 4)}", 0.9f), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
+        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.KeyCap(v.Offers.Count <= 1 ? "1" : $"1-{Math.Min(v.Offers.Count, 4)}", 0.9f), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
         var take = Style.H(6, pad ? Style.Prompt(Act.Confirm) : Style.KeyCap(Controls.Instance?.KeyLabel(Act.Confirm) ?? "Enter", 0.9f), Style.Label(banishing ? "Banish it" : "Take it", Style.Ui, Style.Caption, Style.InkDim));
         take.Alignment = BoxContainer.AlignmentMode.Center;
         foot.AddChild(take);
@@ -456,9 +456,12 @@ public partial class DraftPanel : Control
     {
         string recipe = o.Recipe is { Length: > 0 } r ? (r.StartsWith("Evolves: ") ? $"{o.Title} evolves: {r["Evolves: ".Length..]}" : $"{o.Title}: {r}") : "";
         if (string.IsNullOrEmpty(why2)) return recipe;
-        if (recipe.Length == 0) return why2;
-        // (the why goes first; if both do not fit the two lines, the why is dropped, never the recipe cut)
-        string both = why2 + " " + recipe;
+        string why = why2.TrimEnd('.') + ".";
+        if (recipe.Length == 0) return $"{o.Title}: {why}";
+        // (the card's name first, so the strip reads as the focused card's, and the why its own sentence after the
+        // recipe: joined in front, "...Verge-Hunter Rimeshard evolves" read as one name, UI 30 judge; if both do not
+        // fit the two lines, the why is dropped, never the recipe cut)
+        string both = recipe.TrimEnd() + " " + why;
         var f = Style.TextItalic;
         return f.GetMultilineStringSize(both, HorizontalAlignment.Left, DetailW, Style.Small).Y <= f.GetHeight(Style.Small) * 2 + 1 ? both : recipe;
     }

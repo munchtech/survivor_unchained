@@ -139,7 +139,7 @@
       "growth": 0.16,
       "bossDamage": 0.5,
       "art": "rebuke",
-      "description": "Your shield turns more blows; every blow that reaches you strikes back in holy light at its source and the five nearest, at most every 0.5 s (same champion every 5 s).",
+      "description": "Your shield turns more blows; every blow that reaches you, turned or not, smites its source and the five nearest in holy light, at most every 0.5 s (same champion every 5 s).",
       "base": { "cooldown": 0.5, "damage": 1500, "range": 6, "radius": 5, "others": 5, "championGap": 5, "knockback": 0.6, "block": 0.08, "blockStep": 0.01 },
       "evolutions": []
     },
