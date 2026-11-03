@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Sim;
 
@@ -60,6 +61,27 @@ public partial class CrowdView : Node3D
         /// slide the sim gave it instead: offset (X, Z) and speed (Vx, Vz, decaying as Ai's slide does).</summary>
         public double ThrowX, ThrowZ, ThrowVx, ThrowVz;
         public bool Thrown;
+        /// <summary>Away from the blow at its first dying frame (world heading, radians; NaN: not yet).</summary>
+        public double Away = double.NaN;
+        // (the census's: a 0.5 s window of where it was drawn and what it played, and how long its pose has held)
+        public double CT = -1, CX, CZ, CClipT, CPhase, FSince;
+        public string? CRole;
+        public long FKey = -1;
+        public EnemyState LastState;
+        public double LastX, LastZ;
+        /// <summary>How fast it is drawn moving (m/s, eased over about 0.15 s: the interpolated place, every shove in it), and which way.</summary>
+        public double DrawnSpeed, DVx, DVz;
+        /// <summary>Its death's twist under the blow: from the facing it had to the one its fall needs (NaN: none).</summary>
+        public double FaceFrom, FaceTo = double.NaN;
+        /// <summary>When the blow that knocked it back began its stagger (-1: none).</summary>
+        public double KnockAt = -1;
+        /// <summary>Shoved back against its facing: its steps run backward.</summary>
+        public bool Back;
+        public bool HasLast;
+        /// <summary>Where the sim had it last frame, and how far the view holds it off that (a strike's planted feet).</summary>
+        public double SimX, SimZ, OffX, OffZ;
+        public string? SlideRole;
+        public double SlideSince;
     }
 
     /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
@@ -94,7 +116,11 @@ public partial class CrowdView : Node3D
     public (double X, double Z) DrawnAt(Enemy e)
     {
         var (x, z) = Drawn?.Of(e) ?? (e.X, e.Z);
-        if (e.State == EnemyState.Dying && gaits.TryGetValue(e.Id, out var g) && g.Seed == e.Seed && g.Thrown) { x += g.ThrowX; z += g.ThrowZ; }
+        if (gaits.TryGetValue(e.Id, out var g) && g.Seed == e.Seed)
+        {
+            x += g.OffX; z += g.OffZ;
+            if (e.State == EnemyState.Dying && g.Thrown) { x += g.ThrowX; z += g.ThrowZ; }
+        }
         return (x, z);
     }
 
@@ -117,6 +143,9 @@ public partial class CrowdView : Node3D
         public double BurnAt = -1;
         /// <summary>Its Long Cut death is ash (off the drawn seam), not gold.</summary>
         public bool Ash;
+        /// <summary>How it lies on the slope (the ground's tilt under it; identity on the flat).</summary>
+        public Godot.Basis Tilt = Godot.Basis.Identity;
+        public bool Tilted;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -144,6 +173,61 @@ public partial class CrowdView : Node3D
         }
         if (near != null && near.Role == Deaths[k]) k = (k + 1) % have;
         return Deaths[k];
+    }
+
+    /// <summary>The farthest a strike's planted feet hold a body off where the fight has it (metres).</summary>
+    const double PlantMax = 0.45;
+
+    /// <summary>The most a death turns a body to fall away (a kit body has a fall within this of any heading; a rig with one
+    /// fall struck from behind twists this far and no further).</summary>
+    const double TwistMax = 100 * Math.PI / 180;
+
+    static double Hash01(double seed, double salt) { double v = Math.Sin(seed * 12.9898 + salt * 78.233) * 43758.5453; return v - Math.Floor(v); }
+
+    /// <summary>THE DEATH-DIRECTION RULE: a body falls away from the blow (its knockback, else away from her), within
+    /// 40 degrees of it by its seed (no starburst of spokes round her; a thrown body too: it slides along its throw and
+    /// lands a little turned, and most of her kills are thrown). Of its
+    /// deaths, its seed's if that one needs a turn of at most TwistMax and is not the nearest lying body's of its kind
+    /// (DeathOf's rule), else the one that needs the least; the facing it needs is eased in as it falls (Draw).</summary>
+    string DeathToward(VatAsset asset, Enemy e, Gait g, bool thrown)
+    {
+        double spread = 40 * Math.PI / 180;
+        double target = g.Away + (Hash01(e.Seed, 3.7) * 2 - 1) * spread;
+        string seeded = DeathOf(asset, e);
+        string? best = null, bestFree = null;
+        double bestTurn = double.MaxValue, bestFreeTurn = double.MaxValue;
+        string? nearRole = NearestRole(e);
+        foreach (var (role, off) in asset.FallOff!)
+        {
+            if (!asset.Clips.ContainsKey(role)) continue;
+            double turn = Math.Abs(Wrap(target - off - g.Facing));
+            if (turn < bestTurn) { bestTurn = turn; best = role; }
+            if (role != nearRole && turn < bestFreeTurn) { bestFreeTurn = turn; bestFree = role; }
+        }
+        if (best == null) return seeded;
+        string pick = asset.FallOff.TryGetValue(seeded, out var so) && Math.Abs(Wrap(target - so - g.Facing)) <= TwistMax ? seeded
+            : bestFree != null && bestFreeTurn <= TwistMax ? bestFree : best;
+        double need = Wrap(target - asset.FallOff[pick] - g.Facing);
+        // (past what it can twist, it turns as far as it can toward straight away, not toward its seed's offset)
+        if (Math.Abs(need) > TwistMax) need = Wrap(g.Away - asset.FallOff[pick] - g.Facing);
+        g.FaceFrom = g.Facing;
+        g.FaceTo = g.Facing + Math.Clamp(need, -TwistMax, TwistMax);
+        return pick;
+    }
+
+    /// <summary>The death of the nearest body of its kind already lying within a metre and a half (null: none).</summary>
+    string? NearestRole(Enemy e)
+    {
+        Corpse? near = null;
+        float best = 1.5f * 1.5f;
+        string visual = Vary.Body(e.Def.Visual, e.Seed);
+        foreach (var c in corpses)
+        {
+            if (c.Visual != visual) continue;
+            float dx = c.X - (float)e.X, dz = c.Z - (float)e.Z, d = dx * dx + dz * dz;
+            if (d < best) { best = d; near = c; }
+        }
+        return near?.Role;
     }
 
     readonly Dictionary<string, VatCrowd> crowds = new();
@@ -193,6 +277,87 @@ public partial class CrowdView : Node3D
     static int censusFall, censusStatue, censusCorpse, censusBurn;
     static double censusFallD, b0X, b0Z;
     public static string FlareCensus => $"drawn: struck standing {censusStatue}, falling (not the Flare's) {censusFall} at mean {(censusFall > 0 ? censusFallD / censusFall : 0):0.0} m from her, corpses {censusCorpse} (burning {censusBurn})";
+    // (--crowd-census: the deaths' fall against the blow, the dead's rest on the ground, the walkers' feet; a line a second)
+    static readonly bool CensusOn = SurvivorUnchained.Args.Has("crowd-census");
+    int cnDeaths, cnIn45, cnIn90, cnOver90, cnKnown, cnKb; double cnRC, cnRS;
+    readonly Dictionary<string, int> cnRoles = new();
+    int cnCorpN, cnSinking; double cnErrSum, cnErrMax, cnSinkMax;
+    int cnFrames, cnActive, cnStall, cnWin; readonly Dictionary<string, int> cnSlide = new(), cnHeld = new();
+    int cnLunge, cnLungeDie, cnLungeN; double cnLungeAng;
+    double cnNext = -1, cnSlideT;
+    readonly Dictionary<string, double> cnSlideNow = new();
+
+    static double Wrap(double a) => Math.Atan2(Math.Sin(a), Math.Cos(a));
+
+    void CensusDeath(Gait g, VatAsset asset, string role, double x, double z)
+    {
+        cnDeaths++;
+        if (!cnRoles.TryAdd(role, 1)) cnRoles[role]++;
+        if (asset.FallOff == null || !asset.FallOff.TryGetValue(role, out var off) || double.IsNaN(g.Away)) return;
+        cnKnown++;
+        double fall = g.Facing + off, d = Math.Abs(Wrap(fall - g.Away));
+        if (d <= Math.PI / 4) cnIn45++; else if (d <= Math.PI / 2) cnIn90++; else cnOver90++;
+        var p = battle!.Player;
+        double r = Wrap(fall - Math.Atan2(z - p.Z, x - p.X));
+        cnRC += Math.Cos(r); cnRS += Math.Sin(r);
+    }
+
+    void CensusWalker(Enemy e, Gait g, VatAsset asset, string role, double t, double x, double z)
+    {
+        if (e.State == EnemyState.Lunging)
+        {
+            double vx = (x - g.LastX) / Math.Max(dt, 1e-4), vz = (z - g.LastZ) / Math.Max(dt, 1e-4);
+            if (vx * vx + vz * vz > 0.25 && g.LastState == EnemyState.Lunging) { cnLungeAng += Math.Abs(Wrap(g.Facing - Math.Atan2(vz, vx))); cnLungeN++; }
+            cnLunge++;
+        }
+        if (e.State != EnemyState.Active) { g.CT = -1; g.FKey = -1; return; }
+        cnActive++;
+        bool loco0 = role is "move" or "move2" or "hit";
+        if (role != g.SlideRole) { g.SlideRole = role; g.SlideSince = time; }
+        if (g.DrawnSpeed > 0.3 && !loco0 && time - g.SlideSince > 0.2) { cnSlideT += dt; if (!cnSlideNow.TryAdd(role, dt)) cnSlideNow[role] += dt; }
+        long fk = ((long)role.GetHashCode() << 20) ^ asset.Frame(role, t).F0;
+        if (fk != g.FKey) { g.FKey = fk; g.FSince = time; }
+        else if (time - g.FSince > 1.5) { if (!cnHeld.TryAdd(role, 1)) cnHeld[role]++; }
+        if (g.CT < 0) { g.CT = time; g.CX = x; g.CZ = z; g.CClipT = t; g.CRole = role; g.CPhase = g.Phase; return; }
+        if (time - g.CT < 0.5) return;
+        double span = time - g.CT, sp = Math.Sqrt((x - g.CX) * (x - g.CX) + (z - g.CZ) * (z - g.CZ)) / span;
+        bool loco = role is "move" or "move2" or "hit";
+        cnWin++;
+        if (sp > 0.3 && (!loco || Math.Abs(t - g.CClipT) < 1e-3))
+        {
+            string k = role != g.CRole ? $"{g.CRole}>{role}" : role;
+            if (!cnSlide.TryAdd(k, 1)) cnSlide[k]++;
+        }
+        if (loco && role != "hit" && g.CRole == role && Math.Abs(g.Phase - g.CPhase) < 0.05) cnStall++;
+        g.CT = time; g.CX = x; g.CZ = z; g.CClipT = t; g.CRole = role; g.CPhase = g.Phase;
+    }
+
+    void CensusLog()
+    {
+        if (!CensusOn) return;
+        cnFrames++;
+        if (cnNext < 0) cnNext = time + 1;
+        if (time < cnNext) return;
+        double cnSpan = Math.Max(1e-3, time - cnNext + 1);
+        cnNext = time + 1;
+        double R = cnKnown > 0 ? Math.Sqrt(cnRC * cnRC + cnRS * cnRS) / cnKnown : 1;
+        double sd = R >= 1 ? 0 : Math.Sqrt(-2 * Math.Log(Math.Max(R, 1e-9))) * 180 / Math.PI;
+        static string D(Dictionary<string, int> m, double per)
+        {
+            var l = new List<string>();
+            foreach (var (k, v) in m) l.Add($"{k}:{v / per:0.#}");
+            return l.Count == 0 ? "-" : string.Join(",", l);
+        }
+        int fr = Math.Max(1, cnFrames);
+        GD.Print($"crowd census t={time:0.0}: deaths {cnDeaths} (fall known {cnKnown}, by knockback {cnKb}) roles {D(cnRoles, 1)}; fall vs away <=45 {cnIn45} 45-90 {cnIn90} >90 {cnOver90}; fall-radial sd {sd:0} deg"
+            + $" | corpses {cnCorpN / (double)fr:0}/frame far-end |dy| mean {(cnCorpN > 0 ? cnErrSum / cnCorpN : 0):0.000} max {cnErrMax:0.000} m, sinking {cnSinking / (double)fr:0.0}/frame, sink max {cnSinkMax:0.00} m"
+            + $" | active {cnActive / (double)fr:0}/frame, windows {cnWin}: sliding (0.5 s windows) {D(cnSlide, 1)} walk-stalled {cnStall}, held>1.5s {D(cnHeld, fr)}/frame"
+            + $" | drawn moving >0.3 m/s in a held pose: {cnSlideT / Math.Max(1e-3, cnSpan):0.0} bodies ({string.Join(",", cnSlideNow.Select(kv => $"{kv.Key}:{kv.Value / Math.Max(1e-3, cnSpan):0.0}"))})"
+            + $" | lunging {cnLunge / (double)fr:0.0}/frame facing-vs-travel {(cnLungeN > 0 ? cnLungeAng / cnLungeN * 180 / Math.PI : 0):0} deg, died mid-lunge {cnLungeDie}");
+        cnCorpN = cnFrames = cnActive = cnWin = cnStall = cnSinking = cnLunge = cnLungeN = 0; cnErrSum = cnErrMax = cnSinkMax = cnLungeAng = 0;
+        cnSlide.Clear(); cnHeld.Clear(); cnSlideNow.Clear(); cnSlideT = 0;
+    }
+
     /// <summary>Char: the body's paint times this (albedo under 0.06 linear).</summary>
     static readonly Color CharTint = new(0.06f, 0.048f, 0.04f, 1);
 
@@ -271,6 +436,7 @@ public partial class CrowdView : Node3D
         DrawStatues(heightAt);
         DrawCorpses(heightAt);
         foreach (var c in crowds.Values) c.End();
+        CensusLog();
         // Whatever the fight let go of forgets its gait.
         if (gaits.Count > 2 * living + 64)
         {
@@ -305,15 +471,41 @@ public partial class CrowdView : Node3D
         g.Seen = true;
         string role = "idle";
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
+        // A strike plants its feet: the crowd's shoves and its own last steps during it are held off (up to PlantMax) and
+        // walked out after it (the census: a strike slid on its feet for 2 to 5 bodies at a time at the press).
+        if (g.HasLast)
+        {
+            bool planted = e.State == EnemyState.Active && e.Anim == EnemyAnim.Attack && e.AnimT < asset.Duration("attack") && Staged == null;
+            if (planted) { g.OffX -= ex - g.SimX; g.OffZ -= ez - g.SimZ; }
+            else { double k = Math.Exp(-dt / 0.2); g.OffX *= k; g.OffZ *= k; }
+            double od = Math.Sqrt(g.OffX * g.OffX + g.OffZ * g.OffZ);
+            if (od > PlantMax) { g.OffX *= PlantMax / od; g.OffZ *= PlantMax / od; }
+        }
+        g.SimX = ex; g.SimZ = ez;
+        ex += g.OffX; ez += g.OffZ;
         if (e.State == EnemyState.Dying) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
         else g.Thrown = false;
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
         Godot.Vector4 fallBurn = default;
         double speed = Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz);
+        // How it is drawn moving: the sim's walk, and also every shove the sim gives it without a walk (the crowd's
+        // press: FinishMove keeps them out of each other; a knockback's slide).
+        if (dt > 0 && g.LastState == e.State && g.HasLast)
+        {
+            double ivx = (ex - g.LastX) / dt, ivz = (ez - g.LastZ) / dt;
+            if (ivx * ivx + ivz * ivz < 900) { double k = Math.Min(1, dt / 0.15); g.DVx += (ivx - g.DVx) * k; g.DVz += (ivz - g.DVz) * k; }
+        }
+        g.DrawnSpeed = Math.Sqrt(g.DVx * g.DVx + g.DVz * g.DVz);
+        // THE WALKER RULE: a held pose never slides. A body drawn moving walks (its steps run with how fast it is drawn
+        // going, also when the crowd shoves it and its own mind stands still), and one knocked back staggers back.
+        // (The census: about 11 bodies at a time in a 250 night horde slid in their idle or strike, up to 25 at the press.)
+        double moving = Math.Max(speed, g.DrawnSpeed);
         // Walking or standing, with a margin between the two, so a creature
         // jostled at the edge of walking pace does not flicker between clips.
-        g.Walking = speed > (g.Walking ? 0.2 : 0.45);
+        g.Walking = moving > (g.Walking ? 0.2 : 0.45);
+        double kbNow = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);
+        if (e.State == EnemyState.Active && kbNow >= 1 && asset.Clips.ContainsKey("hit") && (g.KnockAt < 0 || time - g.KnockAt > 0.25)) g.KnockAt = time;
         switch (e.State)
         {
             // (risen, a varied pack's copy stands its own moment before it comes on: Ai, Vary.Delay)
@@ -343,7 +535,17 @@ public partial class CrowdView : Node3D
                     }
                     return;
                 }
+                if (g.Death == null)
+                {
+                    double kb = Math.Sqrt(e.Kbx * e.Kbx + e.Kbz * e.Kbz);
+                    if (kb > 0.5) { g.Away = Math.Atan2(e.Kbz, e.Kbx); cnKb++; }
+                    else g.Away = Math.Atan2(ez - battle!.Player.Z, ex - battle.Player.X);
+                    if (g.LastState == EnemyState.Lunging) cnLungeDie++;
+                    if (asset.FallOff != null) g.Death = DeathToward(asset, e, g, kb >= ThrowFrom);
+                }
                 role = g.Death ??= DeathOf(asset, e);
+                // The twist under the blow: eased over the fall's first 0.2 s, then held (never a one-frame snap).
+                if (!double.IsNaN(g.FaceTo)) g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) * Smooth(e.DieT, 0, 0.2);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
                 // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
                 // metre), and they are gone before they land: r2's ring of bodies falling away from her, black by day and
@@ -358,7 +560,7 @@ public partial class CrowdView : Node3D
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
-                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role, g.Char); return; }
+                else if (e.DieT >= Ai.DieTime - 0.12) { if (CensusOn) CensusDeath(g, asset, role, ex, ez); LayOut(e, ex, ez, g.Facing, role, g.Char); return; }
                 break;
             }
             case EnemyState.Burrowed:
@@ -415,6 +617,8 @@ public partial class CrowdView : Node3D
                 g.Aimed = false;
                 g.ShotT = 0;
                 if (e.Anim == EnemyAnim.Attack && e.AnimT < asset.Duration("attack")) { role = "attack"; t = e.AnimT; }
+                // Knocked back: staggered off the blow, its feet carried by the clip, until the stagger is done.
+                else if (g.KnockAt >= 0 && time - g.KnockAt < asset.Duration("hit")) { role = "hit"; t = time - g.KnockAt; }
                 else if (g.Walking)
                 {
                     // Its own walk clock, run faster or slower with its pace:
@@ -423,9 +627,11 @@ public partial class CrowdView : Node3D
                     // (a share of a varied pack walks its kind's second gait, the other hand reaching: Vary.Second)
                     role = battle?.VaryPacks == true && asset.Clips.ContainsKey("move2") && Vary.Second(e.Seed, 0.45) ? "move2" : "move";
                     double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
-                    g.Phase += dt * (asset.Pace > 0
-                        ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
-                        : Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
+                    // (shoved against its facing, its steps run backward: it is pushed back a step, it does not moonwalk)
+                    g.Back = speed < 0.2 && g.DrawnSpeed > 0.2 && Math.Abs(Wrap(Math.Atan2(g.DVz, g.DVx) - g.Facing)) > Math.PI * (g.Back ? 0.45 : 0.61);
+                    g.Phase += (g.Back ? -dt : dt) * (asset.Pace > 0
+                        ? Math.Clamp(moving / (asset.Pace * size), 0.5, 1.8)
+                        : Math.Clamp(moving / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
                     t = g.Phase;
                 }
                 else { role = "idle"; t = time + e.Seed * 9; }
@@ -434,7 +640,10 @@ public partial class CrowdView : Node3D
         // Turned toward where it is going when it walks, toward what it wants
         // when it stands or strikes; never in a single frame.
         bool free = e.State == EnemyState.Active && e.Anim != EnemyAnim.Attack;
-        double aim = g.Walking && free ? Math.Atan2(e.Vz, e.Vx) : e.Facing;
+        // (shoved and walking with it: toward where it is carried, or, carried back, still facing what it wants)
+        double aim = !(g.Walking && free) ? e.Facing
+            : speed >= 0.2 || g.DrawnSpeed < 0.2 ? (speed > 1e-6 ? Math.Atan2(e.Vz, e.Vx) : e.Facing)
+            : g.Back ? e.Facing : Math.Atan2(g.DVz, g.DVx);
         if (e.State != EnemyState.Dying)
         {
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
@@ -470,6 +679,12 @@ public partial class CrowdView : Node3D
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(ex + e.LastDx * f * push), (float)y, (float)(ez + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
+        // (a falling body comes down onto the slope it will lie on: THE CORPSE REST RULE, eased in as it goes down)
+        if (e.State == EnemyState.Dying && e.Disposition != Disposition.Ally)
+        {
+            float w = Smooth(e.DieT, Ai.DieTime * 0.3, Ai.DieTime - 0.12);
+            if (w > 0) basis = Godot.Basis.Identity.Slerp(RestTilt(heightAt, ex, ez, FallHeading(asset, role, g.Facing), sc), w) * basis;
+        }
         // (Held by a ground that is not the cold, a thicket's or a rot's: its slow is no rime.)
         bool held = battle != null && e.HeldUntil > battle.Time;
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : !held && e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
@@ -479,6 +694,8 @@ public partial class CrowdView : Node3D
         tint = Charred(tint, chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
+        if (CensusOn) CensusWalker(e, g, asset, role, t, ex, ez);
+        g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
         if (hk.X >= 0) flare = hk.X;
@@ -557,6 +774,42 @@ public partial class CrowdView : Node3D
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
+    /// <summary>How far a body settles as it dissolves (metres at its size).</summary>
+    const float SinkDepth = 0.08f;
+    /// <summary>The steepest a lying body is tilted to its ground.</summary>
+    const double TiltMax = 20 * Math.PI / 180;
+
+    /// <summary>Which way a body lying in this death runs from its feet (world heading), or null where it is not known.</summary>
+    static double? FallHeading(VatAsset asset, string role, double facing) =>
+        asset.FallOff != null && asset.FallOff.TryGetValue(role, out var off) ? facing + off : null;
+
+    /// <summary>The turn that lays a body on the ground's slope under it: the plane through the ground at its feet, at
+    /// its far end (1.2 m along its fall at its size) and to either side of its middle; where its fall is not known, the
+    /// slope round its middle. At most TiltMax.</summary>
+    static Godot.Basis RestTilt(Func<double, double, double> heightAt, double x, double z, double? heading, double scale)
+    {
+        double y0 = heightAt(x, z), L = 1.2 * scale, wd = 0.3 * scale, h = heading ?? 0;
+        double ax = Math.Cos(h), az = Math.Sin(h), bx = -az, bz = ax;
+        double along, across;
+        if (heading != null)
+        {
+            along = (heightAt(x + ax * L, z + az * L) - y0) / L;
+            double mx = x + ax * L * 0.5, mz = z + az * L * 0.5;
+            across = (heightAt(mx + bx * wd, mz + bz * wd) - heightAt(mx - bx * wd, mz - bz * wd)) / (2 * wd);
+        }
+        else
+        {
+            double r = 0.5 * scale;
+            along = (heightAt(x + ax * r, z + az * r) - heightAt(x - ax * r, z - az * r)) / (2 * r);
+            across = (heightAt(x + bx * r, z + bz * r) - heightAt(x - bx * r, z - bz * r)) / (2 * r);
+        }
+        var n = new Vector3((float)(-(along * ax + across * bx)), 1, (float)(-(along * az + across * bz))).Normalized();
+        float ang = Mathf.Acos(Math.Clamp(n.Y, -1, 1));
+        if (ang < 1e-4f) return Godot.Basis.Identity;
+        var axis = Vector3.Up.Cross(n).Normalized();
+        return new Godot.Basis(axis, Math.Min(ang, (float)TiltMax));
+    }
+
     static readonly bool DbgNoCorpses = SurvivorUnchained.Args.Has("dbg-no-corpses");
     void DrawCorpses(Func<double, double, double> heightAt)
     {
@@ -582,9 +835,13 @@ public partial class CrowdView : Node3D
         {
             var crowd = Crowd(c.Visual);
             double age = time - c.Born;
+            // THE CORPSE REST RULE: it lies on the ground's slope under it (RestTilt, once: the ground does not move), and
+            // is taken back where it lies, dissolving over CorpseSink and settling a few centimetres with it (it slid 1.1 m
+            // down through the floor: the night arena's dead were seen sinking).
             float sink = Smooth(age, lie, lie + CorpseSink);
-            var at = new Vector3(c.X, (float)heightAt(c.X, c.Z) - sink * 1.1f * c.Scale, c.Z);
-            var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - c.Facing) * Godot.Basis.FromScale(Vector3.One * c.Scale);
+            if (!c.Tilted) { c.Tilt = RestTilt(heightAt, c.X, c.Z, FallHeading(crowd.Asset, c.Role, c.Facing), c.Scale); c.Tilted = true; }
+            var at = new Vector3(c.X, (float)heightAt(c.X, c.Z) - sink * SinkDepth * c.Scale, c.Z);
+            var basis = c.Tilt * new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - c.Facing) * Godot.Basis.FromScale(Vector3.One * c.Scale);
             // The dead go dark and a little cold as soon as they are down, so the living read
             // at a glance against them (the risen are pale: a body the same grey as the walking
             // ones made the horde twice its size). Then they darken on as they lie.
@@ -594,14 +851,24 @@ public partial class CrowdView : Node3D
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
             censusCorpse++;
+            if (CensusOn && crowd.Asset.FallOff != null && crowd.Asset.FallOff.TryGetValue(c.Role, out var coff))
+            {
+                // The ground at the body's far end against the body drawn there (its basis carries any tilt).
+                double h = c.Facing + coff, L = 1.2 * c.Scale;
+                var flat = new Vector3((float)(Math.Cos(h) * L), 0, (float)(Math.Sin(h) * L));
+                var tip = at + new Vector3(0, sink * SinkDepth * c.Scale, 0) + c.Tilt * flat;
+                double err = Math.Abs(heightAt(tip.X, tip.Z) - tip.Y);
+                cnCorpN++; cnErrSum += err; cnErrMax = Math.Max(cnErrMax, err);
+                if (sink > 0) { cnSinking++; cnSinkMax = Math.Max(cnSinkMax, heightAt(c.X, c.Z) - at.Y); }
+            }
             if (c.BurnAt >= 0)
             {
                 var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
                 censusBurn++;
-                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
         }
     }
 
