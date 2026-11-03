@@ -80,7 +80,7 @@ public static class LevelUp
         if (!b.EmberOn || string.IsNullOrEmpty(b.Lamps?.Lean)) return lean;
         var road = Content.Lamps.Roads.GetValueOrDefault(b.Lamps!.Lean);
         if (road == null || System.Array.IndexOf(road.Skills, skill) < 0) return lean;
-        o.Why.Add($"Your road: {road.Name}");
+        o.Why.Add($"Your road: {(road.Name.StartsWith("Road of the ") ? "the " + road.Name[12..] : road.Name)}");
         return System.Math.Min(lean * Content.Lamps.RoadLean, Content.Lamps.LeanCap);
     }
 

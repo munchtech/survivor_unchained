@@ -156,7 +156,7 @@ public partial class DraftPanel : Control
         col.AddChild(plaque);
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
         if (v.Battle != null && LevelUp.BuildPaths(v.Battle) is { Count: > 0 } paths)
-            col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
+            col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name.StartsWith("The ") ? "the " + p.Name[4..] : p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
         if (v.Teaching)
         {
             // The callout's title and line stand here (it draws them): their room kept.
