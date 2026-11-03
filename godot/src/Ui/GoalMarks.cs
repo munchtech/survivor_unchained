@@ -30,7 +30,9 @@ public partial class GoalMarks : Control
     {
         bool had = marks.Count > 0;
         marks.Clear();
-        marks.AddRange(list);
+        // A pin under the corner's words (the place, the tracker, the map) is drawn as an arrow pointing in under
+        // them, from outside them: the words never cover it, nor it the words.
+        foreach (var m in list) marks.Add(m.OnScreen && Avoid is Rect2 av && av.HasPoint(m.At) ? m with { OnScreen = false } : m);
         edges.Clear();
         arrowPoints.Clear();
         if (marks.Count > 0)
