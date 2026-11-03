@@ -23,6 +23,8 @@ public enum Act
     /// <summary>Held in play (the Drowned Girl HUD): her level and experience (by night the ember) on the river's card,
     /// readable without a mouse (UI 18, XpLight).</summary>
     Experience,
+    /// <summary>The day's book's Lamps tab (L): the board and the wicks (docs/design/LAMPS_SCREEN_BRIEF.md §10).</summary>
+    Lamps,
 }
 
 /// <summary>
@@ -48,10 +50,10 @@ public partial class Controls : Node
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
-        [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey],
+        [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey], [Act.Lamps] = ["KeyL"],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Lamps, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs

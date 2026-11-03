@@ -13,6 +13,10 @@
     <Compile Include="../logic/**/*.cs" LinkBase="logic" />
     <!-- The balance harness's bots and probes (not its command line), for the balance tests. -->
     <Compile Include="../balance/Harness/**/*.cs" LinkBase="balance" />
+    <!-- The Lamps board's geometry (plain C#; src/Ui/LampBoard.cs draws it). -->
+    <Compile Include="../src/Ui/LampBoardModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/LampNav.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/LampAsk.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

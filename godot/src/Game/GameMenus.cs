@@ -50,6 +50,7 @@ public partial class Game
             case Act.Inventory: Open("inventory"); return true;
             case Act.Character: Open("character"); return true;
             case Act.Arts: Open("arts"); return true;
+            case Act.Lamps when LampsScreen.On: Open("lamps"); return true;
             case Act.Journal: Open("journal"); return true;
             case Act.Map: Open("map"); return true;
             case Act.Interact when near != null:
@@ -77,6 +78,7 @@ public partial class Game
             "maps" => new MapTableScreen(this),
             "atlas" => new MapTableScreen(this, "atlas"),
             "arts" => new ArtsScreen(this),
+            "lamps" => new LampsScreen(this),
             "chapter" => new ChapterScreen(this),
             "credits" => new CreditsScreen(this, () => { Open("pause"); (screens.Current as PauseScreen)?.FocusOn("Credits and licences"); }),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
@@ -96,6 +98,16 @@ public partial class Game
         // day too, the world goes on behind it (the owner's rule).
         // (the credits are opened from the pause menu, and the world waits for them as it does for it)
         scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
+        Reframe(o);
+        LookFor(o.CameraLook);
+        controls.Captured = true;
+        hud.Prompt(promptShown = null);
+    }
+
+    /// <summary>The view as a screen asks it (its shift, nearness and frame), and her pose with it: on open, and when a
+    /// screen changes its view while open (the Lamps' Open wide: the book's frame goes, the play camera holds).</summary>
+    public void Reframe(Overlay o)
+    {
         cam.ScreenShift = o.CameraShift;
         cam.ScreenNear = o.CameraNear;
         cam.ScreenFrame = o.CameraFrame;
@@ -109,9 +121,6 @@ public partial class Game
             // (by day her carried light is dimmed while the book frames her: the sun models her face)
             pv.LampScale = o.CameraFrame != null && scene.View.Night != true ? BookLampByDay : 1;
         }
-        LookFor(o.CameraLook);
-        controls.Captured = true;
-        hud.Prompt(promptShown = null);
     }
 
     bool screenLook;

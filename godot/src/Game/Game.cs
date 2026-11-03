@@ -366,7 +366,12 @@ public partial class Game : Node, IZoneHost
             }
             EnterZone(z, "lowford", at);
         }
-        else EnterZone(z, null, at);
+        else
+        {
+            // --time on Lowford too (pictures of the town by night: the Lamps page's night frame); without it, as ever
+            if (Args.Get("time") is string ts && Enum.TryParse<TimeOfDay>(ts, true, out var lt)) World.Time = lt;
+            EnterZone(z, null, at);
+        }
         // --near ID: stood a few steps from that person (pictures of what shows over their head).
         if (Args.Get("near") is string nearId && zone != null && zone.Actors.TryGetValue(nearId, out var na) && Battle is { } nb)
         {

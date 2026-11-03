@@ -171,6 +171,8 @@ public partial class GameHud : CanvasLayer
         fadeSub = Style.Label("", Style.TextItalic, 24, Style.Ink, false, HorizontalAlignment.Center);
         fadeSub.Position = new Vector2(0, 560); fadeSub.Size = new Vector2(1920, 40);
         top.AddChild(fadeSub);
+        // (the Lamps' Open wide knockout, built ahead on a worker so the first open does not hitch: LampKnock)
+        if (LampsScreen.On) Callable.From(LampKnock.Prewarm).CallDeferred();
     }
 
     static Control Box(Control parent, float x, float y, float w, float h)
@@ -608,18 +610,21 @@ public partial class GameHud : CanvasLayer
         xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
         xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
         xpHave = ember ? b.EmberXp : level.K * xpNeed;
-        underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar;
+        underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar && !lampsWide;
 
         // The six places: what fires by itself, in the order it came; the rest quiet.
         var socks = irons.Sockets;
         int i = 0;
+        // (the Lamps' Open wide: the six seats are the wick tabs, her carried skills, in a fight or not)
+        if (lampsWide && lampsSeats != null) LampsSeats();
+        else
         foreach (var w in b.Weapons)
         {
             if (i >= socks.Length) break;
             bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
             socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve, w.Timer);
         }
-        for (; i < socks.Length; i++) socks[i].Empty();
+        if (!(lampsWide && lampsSeats != null)) for (; i < socks.Length; i++) socks[i].Empty();
 
         boonWant.Clear();
         foreach (var (id, rank) in b.Boons)
@@ -1145,10 +1150,56 @@ public partial class GameHud : CanvasLayer
     /// <summary>The Drowned Girl: the part of her figure above the bar line, on the HUD; Game tells her when a foe
     /// or the survivor stands behind it, and she fades (and the river, RiverBehind).</summary>
     public Rect2? FigureRect => irons.Life.FadeRect;
-    public void FigureBehind(bool behind) => irons.Life.Behind = behind;
-    public void RiverBehind(bool behind) => irons.Panel.Behind = behind;
+    public void FigureBehind(bool behind) => irons.Life.Behind = behind && !lampsWide;
+    public void RiverBehind(bool behind) => irons.Panel.Behind = behind && !lampsWide;
     /// <summary>Something is behind the keeper (UI 23): he fades as her figure does.</summary>
-    public void KeeperBehind(bool behind) => irons.Keeper.Behind = behind;
+    public void KeeperBehind(bool behind) => irons.Keeper.Behind = behind && !lampsWide;
+
+    bool lampsWide;
+    /// <summary>A's seats: her carried skills (SkillBook.Carried), shown in the HUD's six while the board is open wide.</summary>
+    System.Collections.Generic.List<(string Id, int Rank)>? lampsSeats;
+    readonly List<(CanvasItem C, bool Was)> lampsHid = new();
+
+    /// <summary>The Lamps' Open wide (docs/design/LAMPS_SCREEN_BRIEF.md §4, §16): the HUD's foot stays in place as the
+    /// screen's wick tabs (her figure, the panel and its seats, the keeper and the Flare's glass), solid (no fade for
+    /// what stands behind it), with the flask and the dash at 45%; the rest of the play HUD steps away. Off: as it was.</summary>
+    void LampsSeats()
+    {
+        var socks = irons.Sockets;
+        int i = 0;
+        foreach (var (id, rank) in lampsSeats!)
+        {
+            if (i >= socks.Length) break;
+            if (!Weapons.All.TryGetValue(id, out var wd)) continue;
+            socks[i++].Show(id, wd.Art, ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
+        }
+        for (; i < socks.Length; i++) socks[i].Empty();
+    }
+
+    public void LampsWide(bool on, System.Collections.Generic.IEnumerable<(string Id, int Rank)>? seats = null)
+    {
+        if (on && seats != null) { lampsSeats = new(seats); LampsSeats(); }
+        if (on == lampsWide) return;
+        lampsWide = on;
+        if (!on) lampsSeats = null;
+        if (on)
+        {
+            ShowPlay(true);
+            lampsHid.Clear();
+            foreach (var c in play.GetChildren())
+                if (c is CanvasItem ci && ci != irons) { lampsHid.Add((ci, ci.Visible)); ci.Visible = false; }
+            irons.Life.Behind = irons.Panel.Behind = irons.Keeper.Behind = false;
+        }
+        else
+        {
+            foreach (var (c, was) in lampsHid) if (IsInstanceValid(c)) c.Visible = was;
+            lampsHid.Clear();
+        }
+        irons.Lamps(on);
+    }
+
+    /// <summary>The foot (the Lamps' Open wide reads its seats and art through it).</summary>
+    public Instrument Foot => irons;
 
     public void Follow(Vector2? at)
     {
@@ -1190,6 +1241,8 @@ public partial class GameHud : CanvasLayer
     /// <summary>The corner map, a few times a second; null hides it (an arena, the title).</summary>
     public void MapFrame(MinimapView? m)
     {
+        // (the Lamps' Open wide hides it; LampsWide(false) gives it back)
+        if (lampsWide) return;
         bool on = m != null;
         if (minimap.Visible != on)
         {
