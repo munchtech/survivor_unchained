@@ -41,6 +41,20 @@ global uniform vec4 crowd_fill;
 global uniform vec4 crowd_lamp;
 global uniform vec4 crowd_night;
 global uniform vec4 crowd_top;
+global uniform float crowd_dbg_s;
+// Rendering 5 (the r2 judge's numbers): crowd_lamp2 = her lamp's curve on the crowd (x: the inverse-square coefficient k,
+// y: the radius it is whole within, z: where it is gone (0: the older smoothstep curve and cuts, for A/B), w: the warm
+// rim's strength toward her); crowd_lamp3 = (x: the radius the crowd is held under her, y: the lamp's share there, z: the
+// dead's own lift after their tint (a luminance), w: unused).
+global uniform vec4 crowd_lamp2;
+global uniform vec4 crowd_lamp3;
+// Her lamp's reach on the crowd by distance h from her (metres, on the ground): 1 whole, 0 gone.
+float crowd_lamp_f(float h) {
+	if (crowd_lamp2.z <= 0.0) return 1.0 - smoothstep(crowd_lamp.a, crowd_fill.a, h);
+	// (r5: 1 within y, then 1 / (1 + k d^2) - half by 3.5 m, a tenth by 6 m - and gone at z)
+	float d = max(h - crowd_lamp2.y, 0.0);
+	return (1.0 / (1.0 + crowd_lamp2.x * d * d)) * (1.0 - smoothstep(crowd_lamp2.z - 1.0, crowd_lamp2.z, h));
+}
 // (and how much of the sky's unshadowed ambient the crowd keeps by night: crowd_amb, AO)
 global uniform float crowd_amb;
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
@@ -166,8 +180,14 @@ void fragment() {
 	// and the hem, on the body's own shape)
 	// (Rendering 4 r2: by night the arena crowd's paint lifted toward crowd_night.x, its hue kept, before its tint, so the
 	// dead's darkening (CrowdView.DrawCorpses) still reads; skin and pale paint barely move)
+	float cn_l0 = dot(c, vec3(0.2126, 0.7152, 0.0722));
+#ifdef VAT_CUT
+	// (r5: hair and fur cards are not lifted: they stay the dark of their paint)
+	if (crowd_night.w > 0.5 && crowd_lamp2.z <= 0.0) {
+#else
 	if (crowd_night.w > 0.5) {
-		float cn_l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+#endif
+		float cn_l = cn_l0;
 		float cn_t = crowd_night.x + cn_l * (1.0 - crowd_night.x);
 		c = cn_l > 0.004 ? c * (cn_t / cn_l) : vec3(cn_t);
 		// (what the lift adds leans to the dirt's hue (crowd_fill's), so a grey shroud under the blue moon reads as dusty
@@ -180,6 +200,12 @@ void fragment() {
 		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);
 		float mud = smoothstep(0.5, 0.64, vat_noise(vat_local * 6.5) * 0.8 + low * 0.4) * (0.35 + 0.65 * low);
 		c = mix(c, c * vec3(0.36, 0.3, 0.23), mud);
+	}
+	if (crowd_night.w > 0.5 && crowd_lamp2.z > 0.0 && dot(abs(COLOR.rgb), vec3(0.333)) < 0.6) {
+		// (r5: the dead are lifted again after their darkening, to a floor of their own, so they never sink under their ground)
+		float cd_l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+		float cd_t = crowd_lamp3.z + cd_l * (1.0 - crowd_lamp3.z);
+		c = cd_l > 0.002 ? c * (cd_t / cd_l) : vec3(cd_t);
 	}
 	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	vec3 sky = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
@@ -330,11 +356,22 @@ void fragment() {
 		float cw_h = length(cw_p.xz - crowd_ember.xz);
 		// (and a breath of her pool's bounce off the dirt on the far side, so a back turned to her is dark, not black)
 		float cw_wrap = CROWD_BOUNCE + (1.0 - CROWD_BOUNCE) * clamp((dot(cw_n, cw_l / max(cw_d, 1e-3)) + crowd_night.z) / (1.0 + crowd_night.z), 0.0, 1.0);
-		float cw_f = 1.0 - smoothstep(crowd_lamp.a, crowd_fill.a, cw_h);
+		float cw_f = crowd_lamp_f(cw_h);
 		cn_flat = smoothstep(0.55, 0.9, cw_n.y) * (1.0 - smoothstep(0.9, 1.4, vat_local.y));
 		float cn_k = 1.0 - crowd_night.y * cn_flat;
 		float cn_head = smoothstep(1.2, 1.6, vat_local.y) * clamp(cw_n.y, 0.0, 1.0);
-		e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f + crowd_fill.rgb + crowd_top.rgb * cn_head) * cn_k;
+		if (crowd_lamp2.z > 0.0) {
+			// (r5: the flat and the dead lose only the lamp, not the moon or the fill; the crowd close to her takes a share of it
+			// so she reads over the ring; a warm rim on the side toward her)
+			float cw_near = mix(crowd_lamp3.y, 1.0, smoothstep(crowd_lamp3.x, crowd_lamp3.x + 1.0, cw_h));
+			e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f * cw_near * cn_k + crowd_fill.rgb + crowd_top.rgb * cn_head);
+			vec3 cw_v = normalize((VIEW_MATRIX * vec4(cw_l, 0.0)).xyz);
+			float cw_side = clamp(dot(NORMAL, cw_v) * 0.5 + 0.5, 0.0, 1.0);
+			e += crowd_lamp.rgb / max(dot(crowd_lamp.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * crowd_lamp2.w * pow(rim, 3.0) * cw_side * cw_side * cw_f * cw_near * (1.0 - busy) * step(0.001, crowd_ember.w);
+			cn_k = 1.0;
+		} else {
+			e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f + crowd_fill.rgb + crowd_top.rgb * cn_head) * cn_k;
+		}
 		ALBEDO *= cn_k;
 		// (the moon wrapped round the body in its own shadowed light (Godot's backlight: the far side takes what the near
 		// side would), so under the canopy's dark the bodies sink with the dirt and in its pools they take it as the dirt does)
@@ -342,9 +379,25 @@ void fragment() {
 		// (less of the unshadowed ambient, which lit them alike in the canopy's dark and in its pools)
 		AO = crowd_amb;
 		if (crowd_night.w > 2.5) {
-			// (the debug mask: red within 5 m of her, green 8-12 m, blue between; yellow the flat; magenta the dead)
+			// (the debug masks, for tools/render/crowd_lamp_measure.py; ALBEDO and every light off, an emission of 0.4 on one
+			// channel. Mode 3: red within 5 m of her, green 8-12 m, blue between; yellow the flat; magenta the dead. Mode 4:
+			// red within 1.5 m of her, green 1.5-2.5 m, blue 3-4 m. Mode 5: red 5.5-6.5 m, green 6.5-7.5 m, blue past 7.5 m.
+			// Mode 6 (the paint): red cloth, green skin, blue hair and fur. Mode 7: her lamp's factor as a grey (scaled by
+			// crowd_dbg_s), to read the falloff curve off the picture.)
 			bool dead = dot(abs(COLOR.rgb), vec3(0.333)) < 0.6;
 			ALBEDO = vec3(0.0);
+			int dm = int(crowd_night.w + 0.5);
+			if (dm == 4) e = cw_h < 1.5 ? vec3(0.4, 0.0, 0.0) : (cw_h >= 1.5 && cw_h < 2.5) ? vec3(0.0, 0.4, 0.0) : (cw_h >= 3.0 && cw_h < 4.0) ? vec3(0.0, 0.0, 0.4) : vec3(0.0);
+			else if (dm == 5) e = (cw_h >= 5.5 && cw_h < 6.5) ? vec3(0.4, 0.0, 0.0) : (cw_h >= 6.5 && cw_h < 7.5) ? vec3(0.0, 0.4, 0.0) : cw_h >= 7.5 ? vec3(0.0, 0.0, 0.4) : vec3(0.0);
+			else if (dm == 6) {
+#ifdef VAT_CUT
+				e = vec3(0.0, 0.0, 0.4);
+#else
+				e = cn_l0 < 0.08 ? vec3(0.4, 0.0, 0.0) : vec3(0.0, 0.4, 0.0);
+#endif
+			}
+			else if (dm == 7) e = vec3(crowd_lamp_f(cw_h) * crowd_dbg_s);
+			else
 			e = dead ? vec3(0.4, 0.0, 0.4) : cn_flat > 0.5 ? vec3(0.4, 0.4, 0.0) : cw_h < 5.0 ? vec3(0.4, 0.0, 0.0) : (cw_h > 8.0 && cw_h < 12.0) ? vec3(0.0, 0.4, 0.0) : cw_h <= 8.0 ? vec3(0.0, 0.0, 0.4) : vec3(0.0);
 		}
 	}
