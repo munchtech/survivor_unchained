@@ -581,12 +581,12 @@ public sealed class LampBoardModel
         return new CardSpot(new Box(cx, cy, cx + w, cy + h), "clamped", 0, int.MaxValue);
     }
 
-    /// <summary>Is there a card spot near the focus that covers nothing protected (the plain sides and shifts; the
-    /// card's own search, wider, runs once the view is there)?</summary>
-    public static bool RoomAt(double fx, double fy, double r, double w, double h, DiscGrid protGrid, Box window, double inset = 16, IReadOnlyList<Box>? hard = null)
+    /// <summary>Is there a card spot near the focus that covers nothing protected (wide: the card's own whole search;
+    /// else the plain sides and shifts, as the room search tries at each offset)?</summary>
+    public static bool RoomAt(double fx, double fy, double r, double w, double h, DiscGrid protGrid, Box window, double inset = 16, IReadOnlyList<Box>? hard = null, bool wide = false)
     {
         var inner = window.Grow(-inset);
-        foreach (var (side, s, push) in Candidates(false))
+        foreach (var (side, s, push) in Candidates(wide))
         {
             double x0 = Math.Round(side switch { "right" => fx + r + 22 + push, "left" => fx - r - 22 - push - w, _ => fx - w / 2 + s });
             double y0 = Math.Round(side switch { "above" => fy - r - 22 - push - h, "below" => fy + r + 22 + push, _ => fy - h / 2 + s });

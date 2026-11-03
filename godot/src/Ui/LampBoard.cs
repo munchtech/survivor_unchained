@@ -445,7 +445,7 @@ public partial class LampBoard : Control
     /// <summary>
     /// Fix round 1 (§16: the card never covers her lit lamps, her hearth, the path or the focus): at view v, is there a
     /// spot near the focus clear of them? If not, the nearest build offset (16 px steps, up to ±240 by ±160) with one, the
-    /// focus and its path still 64 px inside the window; null when there is room already, or none anywhere.
+    /// focus and its path still 64 px inside the window, her lit lamps 64 px inside and those she can light 24; null when there is room already, or none anywhere.
     /// </summary>
     (int X, int Y)? Room(BoardView v)
     {
@@ -474,12 +474,16 @@ public partial class LampBoard : Control
         var (fx, fy) = P(focus);
         double r = Rd(focus) + 5;
         var win = new Box(0, 0, Size.X, Size.Y);
-        if (LampBoardModel.RoomAt(fx, fy, r, LampCard.Wd, h, grid, win, hard: Keep)) return null;
+        if (LampBoardModel.RoomAt(fx, fy, r, LampCard.Wd, h, grid, win, hard: Keep, wide: true)) return null;
         var pts = near.Select(P).ToList();
+        // (her lit lamps stay 64 px inside, out of the feather; those she can light now at least 24)
+        var litP = Enumerable.Range(0, n).Where(i => state[i] <= 1).Select(i => (P(i), state[i] == 0 ? 64.0 : 24.0)).ToList();
         bool Ok(int ox, int oy)
         {
             foreach (var (x, y) in pts)
                 if (x + ox < 64 || x + ox > Size.X - 64 || y + oy < 64 || y + oy > Size.Y - 64) return false;
+            foreach (var ((x, y), d) in litP)
+                if (x + ox < d || x + ox > Size.X - d || y + oy < d || y + oy > Size.Y - d) return false;
             return true;
         }
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();

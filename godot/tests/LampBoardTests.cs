@@ -271,10 +271,11 @@ public sealed class LampCardDemoTests
                 var s = LampBoardModel.PlaceCard(P[f].X, P[f].Y, R[f] + 5, 380, h, drawn, prot, [], win);
                 if (s.Score >= 100)
                 {
-                    // no spot clear here: the board makes room (LampBoard.Room), the focus and its path 64 px inside
+                    // no spot clear here: the board makes room (LampBoard.Room), the focus and its path 64 px inside, her lit lamps 64 px inside
                     var near = path.Append(f).Select(i => P[i]).ToList();
                     var ro = LampBoardModel.RoomFor(P[f].X, P[f].Y, R[f] + 5, 380, h, new LampBoardModel.DiscGrid(prot, 32), win,
-                        (ox, oy) => near.All(q => q.X + ox >= 64 && q.X + ox <= win.X1 - 64 && q.Y + oy >= 64 && q.Y + oy <= win.Y1 - 64));
+                        (ox, oy) => near.All(q => q.X + ox >= 64 && q.X + ox <= win.X1 - 64 && q.Y + oy >= 64 && q.Y + oy <= win.Y1 - 64)
+                            && lit.All(i => P[i].X + ox >= 64 && P[i].X + ox <= win.X1 - 64 && P[i].Y + oy >= 64 && P[i].Y + oy <= win.Y1 - 64));
                     moved++;
                     if (ro is { } o) s = LampBoardModel.PlaceCard(P[f].X, P[f].Y, R[f] + 5, 380, h, drawn, prot, [], new Box(-o.X, -o.Y, win.X1 - o.X, win.Y1 - o.Y));
                 }

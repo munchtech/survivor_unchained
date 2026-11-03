@@ -887,8 +887,9 @@ public static class LampInk
         {
             caps.Add(Cap(k, pad));
             if (wd == "") continue;
-            // (a cap with no word sits 4 px from the next one: "LT RT Zoom")
-            Control keysOf = caps.Count == 1 ? caps[0] : Style.H(4, caps.ToArray());
+            // (a cap with no word sits 4 px from the next one, to the drawn bezels: "LT RT Zoom"; the pad caps carry
+            // about 3.5 px of clear margin a side)
+            Control keysOf = caps.Count == 1 ? caps[0] : Style.H(pad ? -3 : 4, caps.ToArray());
             if (keysOf is BoxContainer kb) { kb.Alignment = BoxContainer.AlignmentMode.Center; kb.MouseFilter = Control.MouseFilterEnum.Ignore; }
             caps.Clear();
             var one = Style.H(9, keysOf, Style.Label(wd, Style.Ui, size, Body with { A = 0.95f }, false, HorizontalAlignment.Left, false));
@@ -995,6 +996,8 @@ public partial class LampHeader : Control
 
     public override void _Draw()
     {
+        // (a coin focused: its card's X and Y copy, so the header's own Y and its keys step back)
+        keys.Modulate = new Color(1, 1, 1, Focused is >= 0 and <= 2 ? 0.35f : 1f);
         var fnum = LampInk.F("cinzel-700");
         var fw = LampInk.F("cinzel-600", 3);
         string num = count.ToString(), words = count == 1 ? "LAMP TO LIGHT" : "LAMPS TO LIGHT";
