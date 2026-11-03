@@ -44,6 +44,8 @@ public sealed record DialogueView(string Name, string Title, string Mood, string
 public partial class DraftPanel : Control
 {
     const float CardW = 320, CardH = 500;
+    /// <summary>The smallest a card's body steps down to before its words are too long for it.</summary>
+    public const int BodyFloor = 14;
     readonly DraftView v;
     int focus;
     bool armed, banishing;
@@ -53,6 +55,8 @@ public partial class DraftPanel : Control
     /// <summary>Each card's upper words, its footer block and its body (Fit keeps the words clear of the footer).</summary>
     readonly List<(VBoxContainer Top, VBoxContainer Foot, Label Body)> fitted = new();
     readonly Dictionary<string, Control> buildChips = new();
+    /// <summary>Each card and its words as laid out (tools_scenes/CardFit.cs measures them).</summary>
+    internal IEnumerable<(Button Card, VBoxContainer Top, VBoxContainer Foot, Label Body)> Laid => cards.Zip(fitted, (c, f) => (c, f.Top, f.Foot, f.Body));
     HBoxContainer foot = null!;
     Label banner = null!;
 
@@ -353,6 +357,10 @@ public partial class DraftPanel : Control
         // A short line sits in the middle of the card's open space, not under the title with the
         // space empty beneath it; the medallions and titles stay level across the row.
         body.VerticalAlignment = VerticalAlignment.Center;
+        // (trimmed, its minimum is a line's sliver, not its whole text: the upper words are then exactly the
+        // room above the footer and the body takes what is left, which Fit fills; the ellipsis is the last net,
+        // never the plan: tools_scenes/CardFit.cs fails any card that needs it)
+        body.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
@@ -411,17 +419,24 @@ public partial class DraftPanel : Control
         return b;
     }
 
-    /// <summary>A card's upper words kept above its footer block: the body takes what room is left, and a
-    /// body too long for it steps its type down (a point a frame, three at most) rather than push the
-    /// footer off its line.</summary>
+    /// <summary>A card's upper words kept above its footer block: they are given exactly the room above it, the
+    /// body takes what is left, and a body too long for that steps its type down (from Style.Body to BodyFloor)
+    /// until every line shows, in one pass once the room is known (a frame or two after the panel opens, while
+    /// the cards are still dark), so nothing jumps as they rise in.</summary>
     static void Fit((VBoxContainer Top, VBoxContainer Foot, Label Body) c)
     {
         float room = c.Foot.Position.Y - Style.Gap2;
         if (c.Foot.Size.Y <= 0 || room <= 0) return;
-        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) c.Top.Size = new Vector2(c.Top.Size.X, room);
-        int fs = c.Body.HasThemeFontSizeOverride("font_size") ? c.Body.GetThemeFontSize("font_size") : Style.Body;
-        if (c.Top.GetCombinedMinimumSize().Y > room + 0.5f && fs > Style.Body - 3)
-            c.Body.AddThemeFontSizeOverride("font_size", fs - 1);
+        // (a new size sorts at the frame's end: the body's share is known on the next)
+        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) { c.Top.Size = new Vector2(c.Top.Size.X, room); return; }
+        float h = c.Body.Size.Y;
+        if (c.Body.HasMeta("fit") && Mathf.IsEqualApprox((float)c.Body.GetMeta("fit"), h)) return;
+        c.Body.SetMeta("fit", h);
+        for (int fs = Style.Body; ; fs--)
+        {
+            c.Body.AddThemeFontSizeOverride("font_size", fs);
+            if (fs <= BodyFloor || c.Body.GetLineCount() <= c.Body.GetVisibleLineCount()) break;
+        }
     }
 
     /// <summary>The focused card lifted, the banish mark shown, a chosen card glowing; its skill lit in the build.</summary>
