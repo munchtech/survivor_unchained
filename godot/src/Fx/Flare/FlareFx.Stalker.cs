@@ -67,7 +67,7 @@ public partial class FlareFx
     /// <summary>A line of light from (from) to (to) at h over the ground: threads a metre apart drawn along it (size: the
     /// thread's; width a quarter of it), each with a soft glow (halo: its share of the colour), fading from (from) first:
     /// life at (from), + grow at (to). Threads half a metre apart, each ~2.5 m along the line, so they join into one
-    /// streak (judge r2: by day a metre apart they stepped like a staircase). Up to 80 threads and 40 motes.</summary>
+    /// streak (judge r2: by day a metre apart they stepped like a staircase). Up to 80 threads and 80 motes.</summary>
     void Line(Vector3 from, Vector3 to, float h, float size, Color c, Color ce, float life, float grow, float halo)
     {
         var d = to - from; d.Y = 0;
@@ -90,7 +90,8 @@ public partial class FlareFx
                 Kind = FlareBits.Kind.Thread, At = q, Show = (qb - qa).Normalized() * 25, Life = life + grow * k,
                 Size = size, SizeEnd = size * 0.7f, Color = c, ColorEnd = ce,
             });
-            if (i % 2 == 0) glow.Spawn(FlareBits.Kind.Mote, q, Vector3.Zero, life + grow * k, size * 1.5f, c * halo, ce * (halo * 0.4f));
+            // (a glow on every thread at half: one every 2nd read as beads ~70 px apart at night, judge r3)
+            glow.Spawn(FlareBits.Kind.Mote, q, Vector3.Zero, life + grow * k, size * 1.5f, c * (halo * 0.5f), ce * (halo * 0.2f));
         }
     }
 
