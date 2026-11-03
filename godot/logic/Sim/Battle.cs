@@ -1099,7 +1099,7 @@ public sealed partial class Battle
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 // blue.drowned_lung: frost skills freeze in half the time.
                 if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
-                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -2252,7 +2252,7 @@ public sealed partial class Battle
         {
             HitEnemy(e, z.Dps * z.Tick * (e.Boss ? z.BossMul : 1), z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
             if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
-            if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
+            if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.3 : 1.5) * Ward("snare_line")), 0);
             if (z.Slow > 0)
             {
                 var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);
