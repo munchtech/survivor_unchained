@@ -22,19 +22,19 @@
   ],
   "group_scale": 0.876,
   "group_offset": [
-   49.5,
+   69.2,
    1.9
   ],
   "group_note": "UI 27: her screen px = group_anchor + (unscaled - group_anchor) group_scale + group_offset",
   "ref_scale": 0.94,
   "rect": [
-   344.392,
+   364.092,
    855.892,
    415.811,
    226.008
   ],
   "globe": [
-   417.249,
+   436.949,
    976.78,
    52.034
   ],
@@ -45,14 +45,14 @@
   "texture": "dg_keeper/keeper.png",
   "lip": "dg_keeper/keeper_lip.png",
   "rect": [
-   1234,
+   1203,
    861,
    341,
    219
   ],
   "source": "gen ks60_2304_0",
   "source_rect": [
-   1236.16,
+   1205.16,
    863.0,
    336.00000000000006,
    224.00000000000003
@@ -319,14 +319,17 @@
   "flask": {
    "center": [
     673.0,
-    1033.0
+    1035.0
    ],
-   "scale": 0.94,
+   "scale": 0.84,
+   "inner": 1.15385,
+   "body_cy": 0.66071,
    "count_badge": [
     688.0,
     1014.0,
     9
-   ]
+   ],
+   "note": "UI 27 r2: the draught in the dash seat (ring and well as the dash, mirrored), the flask inside at inner"
   },
   "dash": {
    "center": [
@@ -345,7 +348,7 @@
     1061
    ],
    "Q": [
-    1488.56,
+    1457.56,
     1027.28
    ],
    "note": "[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: \"Q  READY\""
@@ -405,15 +408,15 @@
  },
  "glass": {
   "center": [
-   1482.56,
+   1451.56,
    952.34
   ],
   "r": 37.0,
   "bezel_outer": 40.6,
   "lip_y": 975.28,
   "bowl": [
-   1429.36,
-   1555.36
+   1398.36,
+   1524.36
   ],
   "fire": "dg_keeper/fire.png (idle), fire_ready.png (READY)",
   "constants": {

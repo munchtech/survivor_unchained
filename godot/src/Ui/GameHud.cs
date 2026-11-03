@@ -577,18 +577,18 @@ public partial class GameHud : CanvasLayer
         life.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
         double hpNum = Math.Ceiling(Math.Max(p.Hp, 0));
         if (hpNum != globeNum) { globeNum = hpNum; life.Number = $"{hpNum}"; }
-        statusWant.Clear();
-        statusLeft.Clear();
-        void Status(string glyph, double left, bool good) { statusWant.Add((glyph, good)); statusLeft.Add(left); }
-        if (p.BurnT > 0) Status("flame", p.BurnT, false);
-        if (p.PoisonT > 0) Status("plague", p.PoisonT, false);
-        if (p.SlowT > 0 && p.SlowF < 1) Status("boot", p.SlowT, false);
-        if (p.Shield > 0) Status("aegis", p.ShieldT, true);
-        if (p.BulwarkT > 0) Status("shield", p.BulwarkT, true);
-        if (p.InvisibleT > 0) Status("smoke", p.InvisibleT, true);
-        if (b.WorldRate < 1) Status("hourglass", b.WorldRateT, true);
-        foreach (var (id, bf) in b.Buffs) Status(id == "warcry" ? "howl" : "arcane", bf.T, true);
-        Statuses();
+        // UI 28: what is on her, keyed across frames (StatusRow / StatusShelf: timer rings, stacks, priority, overflow)
+        statusNow.Clear();
+        void Status(string key, string glyph, double left, bool good, int stacks = 0) => statusNow.Add(new(key, glyph, good, left, stacks));
+        if (p.BurnT > 0) Status("burn", "flame", p.BurnT, false);
+        if (p.PoisonT > 0) Status("poison", "plague", p.PoisonT, false);
+        if (p.SlowT > 0 && p.SlowF < 1) Status("slow", "boot", p.SlowT, false);
+        if (p.Shield > 0) Status("barrier", "aegis", p.ShieldT, true);
+        if (p.BulwarkT > 0) Status("bulwark", "totem", p.BulwarkT, true);
+        if (p.InvisibleT > 0) Status("smoke", "smoke", p.InvisibleT, true);
+        if (b.WorldRate < 1) Status("world", "hourglass", b.WorldRateT, true);
+        foreach (var (id, bf) in b.Buffs) Status("buff:" + id, id == "warcry" ? "howl" : id, bf.T, true, bf.Stacks);
+        irons.Statuses.Show(HudPin.Status ?? (IReadOnlyList<StatusShelf.Entry>)statusNow);
 
         // The chain: the ember while it burns; by day, the survivor's own growing.
         bool ember = b.EmberOn;
@@ -711,9 +711,7 @@ public partial class GameHud : CanvasLayer
     // The chips over the globe and in the boons' row, as last built. They were
     // all remade on every call (twelve a second); now only when which there are
     // changes, a countdown set in place, so nothing shifts in between.
-    readonly List<(string Glyph, bool Good)> statusWant = new(), statusHave = new();
-    readonly List<double> statusLeft = new(), statusShown = new();
-    readonly List<Label> statusText = new();
+    readonly List<StatusShelf.Entry> statusNow = new();
     readonly List<(string Id, int Rank)> boonWant = new(), boonHave = new();
     static readonly int PinBoons = (int)Args.Num("hud-boons", 0);
     double globeNum = double.NaN;
@@ -727,7 +725,6 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>A status's countdown as shown: whole seconds, none for what lasts.</summary>
-    static double Countdown(double left) => left > 600 ? -1 : Math.Ceiling(left);
 
     double pinMax = 100;
 
@@ -799,40 +796,6 @@ public partial class GameHud : CanvasLayer
         if (HudPin.Draught is int dr) irons.Draught.Count = dr;
         if (HudPin.Art is float ar) irons.Art.Level = ar;
         if (withSeats && HudPin.Seats is { } seats) irons.PinSeats(seats);
-    }
-
-    void Statuses()
-    {
-        if (Same(statusWant, statusHave))
-        {
-            for (int i = 0; i < statusText.Count; i++)
-            {
-                double n = Countdown(statusLeft[i]);
-                if (n == statusShown[i]) continue;
-                statusShown[i] = n;
-                statusText[i].Text = n < 0 ? "" : $"{n}";
-            }
-            return;
-        }
-        statusHave.Clear();
-        statusHave.AddRange(statusWant);
-        statusText.Clear();
-        statusShown.Clear();
-        var row = irons.Statuses;
-        foreach (var c in row.GetChildren()) c.QueueFree();
-        for (int i = 0; i < statusWant.Count; i++)
-        {
-            var (glyph, good) = statusWant[i];
-            double n = Countdown(statusLeft[i]);
-            var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
-            // What is on her as its mark and its seconds, on the world over her life (no chip round it).
-            var text = Style.Label(n < 0 ? "" : $"{n}", Style.UiHeavy, Style.Badge, col);
-            var mark = Style.H(3, Glyphs.Icon(glyph, 20, col, line: true), text);
-            mark.MouseFilter = Control.MouseFilterEnum.Ignore;
-            row.AddChild(mark);
-            statusText.Add(text);
-            statusShown.Add(n);
-        }
     }
 
     /// <summary>A passive over the six places: its glyph in its rarity's colour, its rank at its foot if
