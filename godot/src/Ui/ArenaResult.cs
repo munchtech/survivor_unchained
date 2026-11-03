@@ -53,13 +53,13 @@ public partial class ArenaResultScreen : TellingScreen
             (r.Seconds, Clock, !r.Won ? "held out" : SurvivorUnchained.Play.Story.StoryScripts.Has(r.Spec.Id) ? "fought" : "survived", 0.3, r.Won),
             (r.Kills, x => $"{x:N0}", "slain", 0.55, r.Won), (r.EmberLevel, x => $"{x:0}", "ember", 0.8, r.Won),
         };
-        double cue = 0.8 + Count;
-        if (r.Won && beyond >= 1) { stats.Add((beyond, Clock, "past the dead of night", 1.05, r.Won)); cue = 1.05 + Count; }
+        double cue = 0.3 + Count;
+        if (r.Won && beyond >= 1) { stats.Add((beyond, Clock, "past the dead of night", 1.05, r.Won)); cue = 0.55 + Count; }
         v.AddChild(Tally(stats.ToArray()));
         if (r.Longest && r.Seconds > 120)
         {
             v.AddChild(Beat(Style.Label("Your longest night yet", Style.TextItalic, 18, Style.EmberHi, false, HorizontalAlignment.Center), cue, Sound.Sfx.Discovery));
-            cue += 0.3;
+            cue += 0.1;
         }
         var story = Story();
 

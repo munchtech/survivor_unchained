@@ -366,7 +366,7 @@ public partial class MapTableScreen : Overlay
         // (the gear in a line: the names only, three at most; the bane in full is in the sub-title's words)
         var lean = MapOffers.Lean(o.Spec, o.People).Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a).Distinct().Take(3);
         v.AddChild(L($"Gear leaning to {string.Join(", ", lean)}", Style.TextItalic, Style.Caption, Answer));
-        v.AddChild(L(Kit.Balance($"Win, and about one night in {System.Math.Round(1 / SurvivorUnchained.Arena.Arenas.TableTome)} brings out a blank tome: it teaches you a skill you saw burn. Experience and gold for every minute held.", Style.TextItalic, Style.Caption, 380), Style.TextItalic, Style.Caption, InkSoft));
+        v.AddChild(L(Kit.Balance($"Win, and about one night in {new[] { "one", "two", "three", "four", "five", "six" }[System.Math.Clamp((int)System.Math.Round(1 / SurvivorUnchained.Arena.Arenas.TableTome), 1, 6) - 1]} brings out a blank tome: it teaches you a skill you fought with. Experience and gold for every minute held.", Style.TextItalic, Style.Caption, 380), Style.TextItalic, Style.Caption, InkSoft));
         return v;
     }
 
