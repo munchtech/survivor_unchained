@@ -171,6 +171,8 @@ def numbers(tag):
     lit = near4 | b5[0]   # the bodies in her lamp's reach (within 6.5 m)
     hh, cc = hair & (lit | b5[1]), cloth & lit
     out["hair_over_cloth"] = float(Y["base"][hh].mean() / Y["base"][cc].mean()) if hh.sum() > 20 else float("nan")
+    hh, cc = hair & b5[2], cloth & b5[2]   # (few risen wear hair cards, and none were near her in this frame: the moonlit ones too)
+    out["hair_over_cloth_moon"] = float(Y["base"][hh].mean() / Y["base"][cc].mean()) if hh.sum() > 20 else float("nan")
     if "rimoff" in fr:
         dy = Y["base"] - Y["rimoff"]
         out["rim_added_over_body"] = float(dy[lit].sum() / Y["base"][lit].sum()) if lit.sum() else float("nan")
@@ -194,6 +196,7 @@ TARGETS = [
     ("pool_over_ground", "0.7-0.9", "standing bodies in the pool over the lit floor"),
     ("flat_over_ground", ">=0.6", "flat bodies over their ground"), ("dead_over_ground", ">=0.6", "dead bodies over their ground"),
     ("skin_over_cloth", ">=3", "skin over cloth, within 4 m"), ("hair_over_cloth", "<=0.5", "hair (not lifted) over cloth, in her reach"),
+    ("hair_over_cloth_moon", "< before", "the same, past 7.5 m (moonlit): the lift gone from the hair"),
     ("rim_added_over_body", "~0.15", "the warm rim added, over the bodies' luma"),
     ("moonlit_over_ground", "<=0.8", "moonlit bodies over the moonlit floor"), ("top_added_rel", "0.5", "the cool top's addition, over the first tag's"),
     ("near_over_her", "0.75", "bodies within 1.5 m over her own L"),
