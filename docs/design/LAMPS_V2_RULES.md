@@ -127,17 +127,28 @@ The rule ids are fixed; the content writes the args and the words.
 
 ## The flag
 
-- The game and the harness read v1 (`lamps.json`) unless v2 is switched on: the env `SU_LAMPS_V2=1`, `Lamps.UseV2(true)` (tests, harness `--lampsv2`), or the game's `--lampsv2`.
-- With v2 off, the sim is byte-identical to integration (the Act 1 gate).
-- With v2 on:
-  - unknown lit ids in a save are dropped on load (save v6 does the real migration later);
+- **v2 is the default** (game, harness and tests). v1 (`lamps.json`) stays reachable for one release: the env `SU_LAMPS_V2=0`, `Lamps.UseV2(false)`, or `--lampsv1` on the game or the harness.
+- With v1 the sim is byte-identical to integration before v2 (the Act 1 gate).
+- With v2:
+  - unknown lit ids in a save are dropped on load (save v6 does the real migration);
   - the `--board` pages draw v2's lamps.
+
+## By night (Classes 19-20; v2 only, by night only: day and v1 byte-identical)
+
+Every lamp keeps its rule but not its size (CLASSES §2.10). What that means rule by rule:
+- **Notables:** sizes at a quarter (`Size`, `SizeOn`).
+- **Facets keep their rule, not their size** (`NightCut`, `GiftSize`): nimble, light_feet's speed, concussion and pile_driver stuns, snare hold, cold_glass, terror, executioner, deep_slip, borrowed_time, second_hook, reel and bloodlust at a quarter. A facet's own damage (gore's bleed, choking's poison) stays in full.
+- **Blue gifts** at a quarter (wall_holds, bearer_of_blows, the BoardRules draft blues, and `flare.banked`'s banked bonus only: the Flare's own hit is unchanged). Prices stay in full, except the four that follow their gift (§2.10), Always Bleeding's among them: mends stop at 7/8 (`MendCeiling`).
+- **Lamp barriers** (`Ward`, `LampBarrier`) at a quarter; a reflex's barrier (Shield Wall, Spellward) at a quarter of that, 1/16 (`LampBarrier(..., reflex: true)`).
+- **A lamp reflex's numbers are sizes,** a quarter (`ReflexSize`, inside `RunReflex` only; a Hand art keeps its numbers): shield_bash stun, bulwark cut (`Player.BulwarkSize`), warcry fear and +%, red_tide mend and +%, time_slip's slowdown (world rate about 0.833), smoke_bomb unseen and sure strikes, mark_prey strength and execute line (`Enemy.PreySize`). The trigger (count, radius, wait) and the reflex's own hit stay in full.
+- **Statuses a rule lays** carry its size (Frostfire's chill and burn at a quarter).
+- Rites, links and Hand lamps keep their numbers in full.
 
 ## As built (the code lead, 2 November)
 
 The sim side is `Sim/BoardRules.cs` plus guarded hooks (every one behind `LampLoadout.Board`, set when a v2 rule is lit). With v2 off the harness is byte-identical to before (full and empty lamps byte-for-byte; suggested the same lines). What the contract left open, and how the code reads it:
 - **Args:** an `args` value that is a word (`mech`, `trigger`, `when`, `vs`, `status`) lands in `LampEffect.Words`; numbers in `Args`. `status` may also be the effect's own `status` field.
-- **By night:** a small (v1 or v2) gives only its road's lean (the lead's ruling, 2 November: CLASSES §2.10 stands; the contract's first draft was wrong). Notables' sizes run at a quarter (`Size`, `SizeOn`). Rites, links, Hand lamps and blue args are read in full.
+- **By night:** a small (v1 or v2) gives only its road's lean (the lead's ruling, 2 November: CLASSES §2.10 stands; the contract's first draft was wrong). Notables' sizes run at a quarter (`Size`, `SizeOn`); facets, blue gifts, barriers and reflex numbers too ("By night" above). Rites, links and Hand lamps are read in full.
 - **`Battle.LinkWait(lamp)`** is the share of the wait still to run: 0 ready, 1 just fired. `Battle.LinkSkill(lamp)` is the skill it would fire now.
 - **Links:** a `kills` link counts every kill, fires on the count-th if its wait is up (else on the next one that is); `crowd` and `still` are checked 4 times a second; `hurt` reads one blow after the shield; `low` is the crossing of half health.
 - **Rites:** a heavy rite counts its own firings and applies only to skills the warden's Hand doesn't already make heavy. A stone rite makes the wall answer on hands.json's numbers for any calling.

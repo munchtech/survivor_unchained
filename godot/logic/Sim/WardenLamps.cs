@@ -33,7 +33,7 @@ public sealed partial class Battle
         if (l.Has("wall_holds"))
         {
             if (Player.Moving) return 0;
-            return Math.Min(l.Full("wall_holds", "cap", 0.75), c * 2);
+            return Math.Min(l.Full("wall_holds", "cap", 0.75), c * (1 + GiftSize));
         }
         return Math.Min(0.75, c);
     }
@@ -67,7 +67,7 @@ public sealed partial class Battle
         // bulwark.mortar: each block gives a barrier.
         if (l.Has("mortar")) Barrier(MaxHp * l.Size("mortar", "barrier"), 8);
         // bulwark.bearer_of_blows: what is blocked is stored for the rebuke.
-        if (l.Has("bearer_of_blows")) bearerStore += amount;
+        if (l.Has("bearer_of_blows")) bearerStore += amount * GiftSize;
         // bulwark.heavy_shield: a champion's blow turned stuns it.
         if (l.Has("heavy_shield") && from is { Alive: true, Elite: true, Boss: false })
             ApplyStatus(from, new StatusPayload(StatusKind.Stun, 1, 1, l.Full("heavy_shield", "seconds", 0.5)), 0);
@@ -166,7 +166,7 @@ public sealed partial class Battle
     /// <summary>A perfect dash's lamps: a barrier (perfect.barrier) and a stone (parry).</summary>
     void LampsOnPerfect()
     {
-        if (Lamps.Has("perfect.barrier")) Barrier(MaxHp * Lamps.Size("perfect.barrier", "share"), 5);
+        if (Lamps.Has("perfect.barrier")) LampBarrier(MaxHp * Lamps.Size("perfect.barrier", "share"), 5, sized: true);
         if (Lamps.Has("parry")) AddStone();
     }
 

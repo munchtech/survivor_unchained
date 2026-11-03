@@ -48,6 +48,43 @@ public sealed partial class Battle
 
     public bool Has(string facet) => Facets.Contains(facet);
 
+    /// <summary>The facets the art's own choice gives (ArtBook), as against those the lamps add (SetLamps).</summary>
+    readonly HashSet<string> artFacets = new();
+
+    /// <summary>By night a lamp's barrier or mend is a size, so it runs at a quarter (v2; CLASSES.md §2.10, LAMPS_V2_RULES.md
+    /// "By night"): the facet still fires, its amount doesn't cross into the night. A facet the art's own choice gives keeps it.</summary>
+    double Ward(string facet) => Content.Lamps.V2 && Lamps.Night && LampFacet(facet) ? Content.Lamps.NightSize : 1;
+
+    /// <summary>The facet is the lamps' (SetLamps), not the art's own choice.</summary>
+    bool LampFacet(string facet) => Lamps.Facets.Contains(facet) && !artFacets.Contains(facet);
+
+    /// <summary>A lamp facet's number by night (v2; CLASSES.md §2.10): what it is without the facet (`none`) plus a quarter of
+    /// what the facet adds (a cut of a wait, a longer hold, a +% rider, a status's length or strength). In full by day, in v1,
+    /// and when the art's own choice gives the facet (Classes 20).</summary>
+    double NightCut(string facet, double full, double none) { double w = Ward(facet); return w == 1 ? full : none + (full - none) * w; }
+
+    /// <summary>A lamp reflex is a rule; by night its numbers are sizes, a quarter (v2; Classes 20). Only while a reflex runs
+    /// (RunReflex): the same art in hand keeps its numbers. Its trigger, own hit damage, knockback and interrupt stay.</summary>
+    double ReflexSize => inReflex && Content.Lamps.V2 && Lamps.Night ? Content.Lamps.NightSize : 1;
+
+    /// <summary>A blue lamp's gift by night is a size, so a quarter (v2; CLASSES.md §2.10); its price stays in full.</summary>
+    double GiftSize => Content.Lamps.V2 && Lamps.Night ? Content.Lamps.NightSize : 1;
+
+    /// <summary>A lamp's barrier (v2; LAMPS_V2_RULES.md "By night"). By night it is a size, so a quarter (`sized`: the caller's
+    /// number isn't yet a Size). It is added to a barrier she holds without renewing its time, as Shield of Morning's
+    /// (WardenSkills.Rebuke): renewed by a reflex every few seconds, it kept every other barrier up for good (Classes 19: the
+    /// warden's full night board read P 1.49 on Shield Wall alone, still 1.31 with the wall at a hundredth). v1 keeps Barrier's.</summary>
+    void LampBarrier(double amount, double seconds, bool sized = false, bool reflex = false)
+    {
+        if (!Content.Lamps.V2) { Barrier(amount, seconds); return; }
+        if (!sized && Lamps.Night) amount *= Content.Lamps.NightSize;
+        // A reflex renews its barrier itself on its wait, with no press: by night a quarter of the quarter (Classes 20).
+        if (reflex && Lamps.Night) amount *= Content.Lamps.NightSize;
+        var p = Player;
+        if (p.Shield > 0 && p.ShieldT > 0) p.Shield = Math.Min(MaxHp, p.Shield + StonesBarrier(amount));
+        else Barrier(amount, seconds);
+    }
+
     /// <summary>The ground a fight may be had on (a map's ways and clearings);
     /// null: any open ground. No art carries the survivor past it.</summary>
     public Func<double, double, bool>? InBounds;
@@ -81,6 +118,8 @@ public sealed partial class Battle
         ArtRank = Math.Clamp(rank, 1, Abilities.MaxRank);
         Facets.Clear();
         Facets.UnionWith(facets);
+        artFacets.Clear();
+        artFacets.UnionWith(Facets);
     }
 
     /// <summary>Q: the art in hand.</summary>
@@ -147,11 +186,15 @@ public sealed partial class Battle
             if (!wide && Math.Abs(da) > 1.2) return;
             double dd = d == 0 ? 1 : d;
             HitEnemy(e, 22 * power * (wide ? 0.8 : 1), School.Physical, [Tag.Melee, Tag.Physical], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.6 : 1.5) + (Has("concussion") ? 1 : 0)), 0);
+            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.6 : 1.5) * ReflexSize /* A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20) */ + (Has("concussion") ? Ward("concussion") : 0)), 0);
             Interrupt(e);
             struck++;
         });
-        if (Has("shield_wall") && struck > 0) Barrier(MaxHp * Math.Min(0.4, 0.08 * struck), 5);
+        if (Has("shield_wall") && struck > 0)
+        {
+            double wall = MaxHp * Math.Min(0.4, 0.08 * struck);
+            if (LampFacet("shield_wall")) LampBarrier(wall, 5, reflex: true); else Barrier(wall, 5);
+        }
         if (Has("rebound")) p.AbilityCd = Math.Max(0.5, p.AbilityCd - 0.5 * struck);
         Events.Emit(new Ev.Shake { Amount = 0.35 });
         return true;
@@ -161,6 +204,8 @@ public sealed partial class Battle
     {
         var p = Player;
         p.BulwarkT = 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        p.BulwarkSize = ReflexSize;
         Art.BulwarkUp = true;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 2 });
         return true;
@@ -183,16 +228,17 @@ public sealed partial class Battle
         var p = Player;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 8 });
         bool terror = Has("terror");
+        double terrorT = terror ? Ward("terror") : 0;
         ForEachHostileInRadius(p.X, p.Z, 8, (e, _) =>
         {
-            if (!e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 2.5), 0);
-            else if (terror && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 1), 0);
+            if (!e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 2.5 * ReflexSize /* A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20) */), 0);
+            else if (terror && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, terrorT), 0);
             Interrupt(e);
         });
         double t = Has("echoing") ? 10 : 6;
-        AddBuff("warcry", Stat.Damage, 0.25 * power, ModKind.Inc, t, 1);
-        if (Has("bloodlust")) AddBuff("bloodlust", Stat.MoveSpeed, 0.2, ModKind.Inc, t, 1);
-        if (Has("battle_trance")) HealPlayer(MaxHp * 0.15, "war cry");
+        AddBuff("warcry", Stat.Damage, 0.25 * power * ReflexSize, ModKind.Inc, t, 1); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        if (Has("bloodlust")) AddBuff("bloodlust", Stat.MoveSpeed, 0.2 * Ward("bloodlust"), ModKind.Inc, t, 1);
+        if (Has("battle_trance")) HealPlayer(MaxHp * 0.15 * Ward("battle_trance"), "war cry");
         return true;
     }
 
@@ -239,7 +285,9 @@ public sealed partial class Battle
     bool TimeSlip(AbilityDef def, double angle, double power)
     {
         var p = Player;
-        WorldRate = Has("deep_slip") ? 0.2 : 1.0 / 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        double slow = 1 - (1 - 1.0 / 3) * ReflexSize;
+        WorldRate = Has("deep_slip") ? NightCut("deep_slip", 0.2, slow) : slow;
         WorldRateT = (Has("long_slip") ? 5.5 : 3.5) * power;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 30 });
         foreach (var e in Enemies.Items) if (e.Alive) Interrupt(e);
@@ -253,8 +301,9 @@ public sealed partial class Battle
         if (marked.Count == 0) { p.AbilityCd = 0.5; return false; }
         foreach (var e in marked)
         {
-            ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2, 8), 0);
+            ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 2 * ReflexSize, 8), 0); // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
             e.Prey = true;
+            e.PreySize = ReflexSize;
             if (Has("blood_trail")) ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, 0.6, 8), 30 * ArtPower);
             Events.Emit(new Ev.Ability { Id = def.Id, X = e.X, Z = e.Z, Angle = angle, Radius = 1 });
         }
@@ -264,9 +313,11 @@ public sealed partial class Battle
     bool SmokeBomb(AbilityDef def, double angle, double power)
     {
         var p = Player;
-        double hide = Has("thick_smoke") ? 5 : 3;
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        double rs = ReflexSize;
+        double hide = (Has("thick_smoke") ? 5 : 3) * rs;
         p.InvisibleT = hide;
-        p.SureCritT = hide + 0.5 + (Has("ambush") ? 2 : 0);
+        p.SureCritT = (hide / rs + 0.5 + (Has("ambush") ? 2 : 0)) * rs;
         if (Has("ambush")) AddBuff("ambush", Stat.CritDamage, 0.5, ModKind.More, p.SureCritT, 1);
         if (Has("mist_step")) AddBuff("mist_step", Stat.MoveSpeed, 0.3, ModKind.Inc, hide, 1);
         if (Has("choking"))
@@ -336,15 +387,16 @@ public sealed partial class Battle
         double power = ArtPower;
         Events.Emit(new Ev.Ability { Id = "mirror_break", X = e.X, Z = e.Z, Radius = 2.5 });
         bool cold = Has("cold_glass");
+        double chill = cold ? 3 * Ward("cold_glass") : 0;
         ForEachHostileInRadius(e.X, e.Z, 2.5, (h, _) =>
-            HitEnemy(h, 16 * power, School.Arcane, ArcaneTags, new HitOpts { Status = cold ? new StatusPayload(StatusKind.Chill, 1, 3, 3) : null, NoProcs = true }));
-        if (Has("glass_heart")) HealPlayer(MaxHp * 0.04, "glass heart");
+            HitEnemy(h, 16 * power, School.Arcane, ArcaneTags, new HitOpts { Status = cold ? new StatusPayload(StatusKind.Chill, 1, chill, 3) : null, NoProcs = true }));
+        if (Has("glass_heart")) HealPlayer(MaxHp * 0.04 * Ward("glass_heart"), "glass heart");
     }
 
     bool BullRush(AbilityDef def, double ax, double az, double angle)
     {
         var p = Player;
-        Art.Barrier = MaxHp * (Has("iron_hide") ? 0.30 : 0.18);
+        Art.Barrier = MaxHp * (0.18 + (Has("iron_hide") ? 0.12 * Ward("iron_hide") : 0));
         Barrier(Art.Barrier, 4);
         StartRush(AbilityKind.BullRush, ax, az, 9, 0.4);
         p.SlowT = 0; p.SlowF = 1;
@@ -430,7 +482,7 @@ public sealed partial class Battle
                 hook.Kbx = -(hook.X - p.X) / d * pull;
                 hook.Kbz = -(hook.Z - p.Z) / d * pull;
                 HitEnemy(hook, 12 * ArtPower, School.Physical, RushTags, new HitOpts { NoProcs = true });
-                ApplyStatus(hook, new StatusPayload(StatusKind.Stun, 1, 1, 1.8), 0);
+                ApplyStatus(hook, new StatusPayload(StatusKind.Stun, 1, 1, NightCut("reel", 1.8, 0.8)), 0);
                 Interrupt(hook);
                 return true;
             }
@@ -485,7 +537,7 @@ public sealed partial class Battle
         p.Iframes = Math.Max(p.Iframes, 0.3);
         Events.Emit(new Ev.Ability { Id = "echo_recall", X = p.X, Z = p.Z, X1 = x0, Z1 = z0, Radius = 3 });
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = p.X, Z1 = p.Z });
-        if (lost > 0) HealPlayer(lost * (Has("full_echo") ? 1 : 0.5), "echo");
+        if (lost > 0) HealPlayer(lost * (0.5 + (Has("full_echo") ? 0.5 * Ward("full_echo") : 0)), "echo");
         if (Has("resonance"))
         {
             double power = ArtPower;
@@ -512,7 +564,7 @@ public sealed partial class Battle
             dist = 0.5 * k;
         }
         p.Leap = new Leap { T = 0, Dur = 0.32, X0 = x0, Z0 = z0, X1 = x0 + vx * dist, Z1 = z0 + vz * dist, Kind = AbilityKind.Vault };
-        if (Has("nimble")) p.AbilityCd *= 0.67;
+        if (Has("nimble")) p.AbilityCd *= NightCut("nimble", 0.67, 1);
         var zn = SpawnZone(Side.Player, x0, z0, 2.4, 4, 5 * power, School.Physical);
         if (zn != null)
         {
@@ -548,7 +600,7 @@ public sealed partial class Battle
             if (Has("light_feet"))
             {
                 p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
-                AddBuff("light_feet", Stat.MoveSpeed, 0.4, ModKind.Inc, 2, 1);
+                AddBuff("light_feet", Stat.MoveSpeed, 0.4 * Ward("light_feet"), ModKind.Inc, 2, 1);
             }
             StalkerVaultLanded();
             return;
@@ -592,7 +644,7 @@ public sealed partial class Battle
         a.HotT = Math.Max(0, a.HotT - dt);
 
         // Bulwark: mending behind it, a burst when it drops.
-        if (p.BulwarkT > 0 && Has("rallying")) HealPlayer(MaxHp * 0.04 * dt, "rallying", true);
+        if (p.BulwarkT > 0 && Has("rallying")) HealPlayer(MaxHp * 0.04 * Ward("rallying") * dt, "rallying", true);
         if (a.BulwarkUp && p.BulwarkT <= 0)
         {
             a.BulwarkUp = false;
@@ -603,13 +655,13 @@ public sealed partial class Battle
                 ForEachHostileInRadius(p.X, p.Z, 5, (e, _) => HitEnemy(e, 30 * power, School.Holy, HolyTags));
             }
         }
-        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("stolen_moments")) HealPlayer(MaxHp * 0.03 * dt, "stolen moments", true);
+        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("stolen_moments")) HealPlayer(MaxHp * 0.03 * Ward("stolen_moments") * dt, "stolen moments", true);
 
         if (a.SprintT > 0)
         {
             a.SprintT -= dt;
             p.SlowF = 1;
-            if (Has("second_wind")) HealPlayer(MaxHp * 0.03 * dt, "second wind", true);
+            if (Has("second_wind")) HealPlayer(MaxHp * 0.03 * Ward("second_wind") * dt, "second wind", true);
             if (Has("trample")) Trample(p.Vx, p.Vz, 12, 1.8);
         }
 
@@ -623,7 +675,7 @@ public sealed partial class Battle
                 e.DrainedAt = Time;
                 HitEnemy(e, 12 * power, School.Shadow, ShadowTags, new HitOpts { NoProcs = true });
                 // A crowd feeds a wraith, but only so far: ten drains mend, the rest only hurt.
-                if (a.Drains++ < 10) HealPlayer(MaxHp * (Has("hunger") ? 0.035 : 0.02), "wraith walk", true);
+                if (a.Drains++ < 10) HealPlayer(MaxHp * (0.02 + (Has("hunger") ? 0.015 * Ward("hunger") : 0)), "wraith walk", true);
                 if (Has("grave_chill") && !e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 1.5), 0);
                 Events.Emit(new Ev.Ability { Id = "drain", X = e.X, Z = e.Z, X1 = p.X, Z1 = p.Z, Radius = 0.6 });
             });
@@ -719,7 +771,7 @@ public sealed partial class Battle
                 if (e.Elite || e.Boss)
                 {
                     stopper = e;
-                    HitEnemy(e, 18 * power * (gore ? 1.5 : 1), School.Physical, RushTags, new HitOpts { Status = bleed });
+                    HitEnemy(e, 18 * power * (gore ? NightCut("gore", 1.5, 1) : 1), School.Physical, RushTags, new HitOpts { Status = bleed });
                     ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.4 : 1.2), 0);
                     Interrupt(e);
                     return;
@@ -727,7 +779,7 @@ public sealed partial class Battle
                 double side = (e.X - p.X) * a.RushDZ - (e.Z - p.Z) * a.RushDX;
                 double sx = side >= 0 ? a.RushDZ : -a.RushDZ, sz = side >= 0 ? -a.RushDX : a.RushDX;
                 HitEnemy(e, 18 * power, School.Physical, RushTags, new HitOpts { Knockback = 2.2, DirX = sx * 0.85 + a.RushDX * 0.5, DirZ = sz * 0.85 + a.RushDZ * 0.5, Status = bleed });
-                if (unbroken && p.Shield < a.Barrier + MaxHp * 0.2) { p.Shield += MaxHp * 0.02; p.ShieldT = Math.Max(p.ShieldT, 3); }
+                if (unbroken && p.Shield < a.Barrier + MaxHp * 0.2) { p.Shield += MaxHp * 0.02 * Ward("unbroken"); p.ShieldT = Math.Max(p.ShieldT, 3); }
             });
             if (stopper != null) { done = true; Events.Emit(new Ev.Shake { Amount = 0.4 }); }
             if (done)
@@ -735,13 +787,14 @@ public sealed partial class Battle
                 a.Rush = null;
                 if (Has("pile_driver"))
                 {
+                    double held = Ward("pile_driver");
                     Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3, School = School.Physical, Power = 1.1 });
                     Events.Emit(new Ev.Shake { Amount = 0.5 });
                     ForEachHostileInRadius(p.X, p.Z, 3, (e, d) =>
                     {
                         double dd = d == 0 ? 1 : d;
                         HitEnemy(e, 28 * power, School.Physical, SlamTags, new HitOpts { Knockback = 1.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-                        ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1), 0);
+                        ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.3 : 1) * held), 0);
                     });
                 }
             }
@@ -769,7 +822,7 @@ public sealed partial class Battle
                     });
                 }
             }
-            if (Has("anchor")) Barrier(MaxHp * 0.12, 4);
+            if (Has("anchor")) { if (LampFacet("anchor")) LampBarrier(MaxHp * 0.12, 4); else Barrier(MaxHp * 0.12, 4); }
         }
         return true;
     }
@@ -807,15 +860,15 @@ public sealed partial class Battle
             Art.SprintT += 0.5;
             if (Buffs.TryGetValue("sprint", out var b)) b.T = Art.SprintT;
         }
-        if (Has("soul_tithe") && Time - e.DrainedAt < 3) HealPlayer(MaxHp * 0.05, "soul tithe");
-        if (Art.Hooked == e && Has("second_hook") && Time - Art.HookedAt < 3) { p.AbilityCd *= 0.5; Art.Hooked = null; }
+        if (Has("soul_tithe") && Time - e.DrainedAt < 3) HealPlayer(MaxHp * 0.05 * Ward("soul_tithe"), "soul tithe");
+        if (Art.Hooked == e && Has("second_hook") && Time - Art.HookedAt < 3) { p.AbilityCd *= NightCut("second_hook", 0.5, 1); Art.Hooked = null; }
     }
 
     /// <summary>A marked prey below the line dies outright (not a boss).</summary>
     void ArtOnHit(Enemy e)
     {
         if (!e.Prey || e.Boss || e.Hp <= 0 || !e.Status.Has(StatusKind.Mark)) return;
-        if (e.Hp < e.MaxHp * (Has("executioner") ? 0.3 : 0.2))
+        if (e.Hp < e.MaxHp * (Has("executioner") ? NightCut("executioner", 0.3, 0.2 * e.PreySize) : 0.2 * e.PreySize)) // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         {
             Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Executed" });
             KillEnemy(e, true, null);
@@ -827,7 +880,7 @@ public sealed partial class Battle
     {
         double h = 1;
         if (Art.SprintT > 0 && Has("tailwind")) h *= 2;
-        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("borrowed_time")) h *= 3;
+        if (WorldRateT > 0 && Runs(AbilityKind.TimeSlip) && Has("borrowed_time")) h *= NightCut("borrowed_time", 3, 1);
         h *= StalkerDashHaste();
         return h;
     }

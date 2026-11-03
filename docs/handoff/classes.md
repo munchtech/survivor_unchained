@@ -1,3 +1,143 @@
+# Classes 21 (3 Nov): Phase 2 acceptance closed; MR READY; read this, then "Classes 20" below
+
+Branch classes-17 (junction to its own public/assets; integration merged at 16bf3eeff). Scratch backed up to survivorsunchained_inputs/scratch_classes21 (j1.sh, j1b.sh, j2.sh, j3.sh, ct_table.py; fe.md and fe96/fe.md tables).
+
+## Acceptance (Lamps v2 the default)
+| Gate | Measured | Verdict |
+|---|---|---|
+| Board alone, every calling x T1-T4 at most x1.25 (64 seeds; Classes 20 run C) | max 1.22 except warden T4 1.24 | pass |
+| Warden T4 at 256 seeds | **1.237** (bootstrap CI90 1.208-1.265) | pass |
+| Act 1, never pressing vs "pre-Flare 11 Oct" (seeds 1-32, matched, `--flareuse 0`), within ±3%, falls no higher | boss 233->227 s (**-2.5%**), falls 0.125->0.057, won 95.6->98.4% | pass |
+| Act 1, good use (Flare pressed), clearly shorter | -19.3%, falls 0.015 | pass |
+| Act 1, v2 vs `--lampsv1` (pressing, 2048 runs) | +0.0% in every fight x hands cell (byte-equal: story fights light no board) | pass |
+| Types within x1.35 of the median, T1-T4, lamps full and empty (deft, 24 seeds; arcanist and reaver roads 96) | all in band but **moonweaver, full board: T3 1.37, T4 1.45** (T1 1.35) | known, closed (below) |
+
+- Act 1 cells (never pressing, 32 seeds a cell, noisy): dig +2.7/+7.4 (plain/deft), hollow -6.5/-5.2, roost -5.7/-4.1, vault -0.2/-6.3. The same on v1 and v2 (story nights light no board), so they are integration's, not this area's.
+- **Moonweaver (known, after the demo):** v1 on matched seeds reads 216.7/811.4/1174.7k at T1/T3/T4 against v2's 229.0/831.1/1210.4k, so v2 adds 2-6%; the overage is the type's own (empty board T3/T4 1.25/1.16, its board lifting it x1.14/x1.21, as CLASSES §7 noted on 12 Oct at 1.38). It is 7% over at T4, not a hair, so no rule round. The fix would be a medium solver finding its carrier (likely the Echo or Moonfire rules), about 100k tokens and 1-2 h of CPU.
+- The Long Cut's clip was missing from lamps_v2.json (Animation 61 put it back in v1 only): added, so the Flare plays its clip on the v2 default.
+- Tests (godot/tests/Tests.csproj, full run at f6ccf883e): 1402 passed, 0 failed, 10 skipped.
+
+## Night against day, by calling (what still visibly fires)
+Every reflex fires by night on its full trigger and with its own hit; what changes is its numbers (a quarter) and a reflex barrier (a sixteenth).
+- **Warden:** Shield Bash still bashes and stuns, a quarter as long; Concussion's stun a quarter; Shield Wall still rises, thin; Braced and Rallying Stand fire on their windows, with a quarter of their numbers.
+- **Reaver:** War Cry still roars and frightens, a quarter as long, +% a quarter; Terror and Bloodlust fire as facets at a quarter; Red Tide still washes red with a quarter of its mend and +%.
+- **Arcanist:** Time Slip still slows the world, about 0.833 instead of a third; Borrowed Time and Deep Slip at a quarter; Spellward still forms, a sixteenth thick.
+- **Stalker:** Smoke Bomb still blooms, unseen and sure strikes a quarter as long; Mark Prey still marks, at a quarter of its strength and execute line; Executioner at a quarter; Choking Smoke's poison in full.
+
+## Capability (the app can now)
+- play the Lamps v2 board by night with every lamp's rule intact and its size quartered (facets, blue gifts, barriers, reflex numbers, statuses), held by the harness at x1.25 of an empty board for every calling and tier (`dotnet Balance.dll arena --pair board --offwicks 1`, read with scratch ct_table.py);
+- check Act 1 against the named baseline on matched seeds, pressing or never pressing (`tools/classes/act1_match.py`, `story ... --flareuse 0`);
+- `--lampsv1` keeps v1 for one release (LAMPS_V2_RULES "The flag").
+
+## Not done
+- The Lamps §14 MR ("Classes 20", Next 5): no signatures came through main during this session; it waits for after the demo.
+- Deft board-alone report (Classes 20 Next 1): skipped; not a gate.
+
+## Cost (Classes 21)
+About 60k lead tokens, no helpers, no judges; CPU about 2.5 h of harness runs.
+
+# Classes 21 starts here (2 Nov, coordinator wind-down): Phase 2 session 3 (acceptance): the board-alone band passes at 64 seeds; confirm warden T4, then Act 1, types, docs, MR; read this, then "Classes 20" and "Classes 19" below
+
+Branch classes-17 (junction to its own public/assets; integration 0564eded0 merged at 716c6e85b). Scratch: survivorsunchained_inputs/scratch_classes20 (scripts t34.sh, k1-k3.sh, acc.sh, st.sh, wd.sh; tier_table.py `<dir> '<glob>'` per tier, ct_table.py `<jsonl>` calling x tier; runs by folder).
+
+## Rules in (all v2, by night only; day and v1 byte-identical; main approved each as a rule by kind)
+- **c20bb5e95:**
+  - a reflex's lamp barrier (Shield Wall, Spellward) runs at a quarter of the quarter (`LampBarrier(..., reflex: true)`);
+  - Frostfire's chill and burn run at a quarter (a status a rule lays carries its size);
+  - Always Bleeding's price follows its gift: mends stop at 7/8 (`MendCeiling`). At half, the pilot held low played safe enough to read P 1.31 on the price alone; with no ceiling it read 1.21.
+- **12c7f2cdd (medium solver), lamp facets and blue gifts keep their rule, not their size:**
+  - helpers `Ward`, `NightCut`, `GiftSize`;
+  - facet sizes are quartered: nimble, light_feet's speed, concussion and pile_driver stuns, snare hold (Battle.cs), cold_glass, terror, executioner, deep_slip, borrowed_time, second_hook, reel, bloodlust;
+  - blue gifts are quartered: wall_holds, bearer_of_blows, flare.banked (only the banked BONUS; the Flare's own base hit is unchanged, which main required), plus the BoardRules draft blues;
+  - prices stay in full;
+  - facet own damage (gore's bleed, choking's poison) is kept in full on purpose.
+- **c0c3a75e2 (worker), a lamp reflex's numbers are sizes, a quarter by night** (`ReflexSize`, applied only inside `RunReflex`; a Hand art keeps its numbers):
+  - shield_bash stun; bulwark cut (`Player.BulwarkSize`);
+  - warcry fear and +%; red_tide mend and +%;
+  - time_slip world rate (about 0.833); smoke_bomb unseen and sure;
+  - mark_prey strength and execute line (`Enemy.PreySize`).
+  - The trigger (count, radius, wait) and its own hit damage stay. Spellward's barrier is the sixteenth above.
+
+## Measured (plain, board alone `--offwicks 1`, 64 seeds a tier; CI90 of a 64-seed cell is about ±0.05)
+- With c20bb5e95 only (acc/A_all):
+
+  | | T1 | T2 | T3 | T4 |
+  |---|---|---|---|---|
+  | arcanist | 1.13 | 1.18 | 1.18 | 1.19 |
+  | reaver | 1.15 | 1.13 | 1.21 | 1.22 |
+  | stalker | 1.13 | 1.22 | 1.22 | 1.32 |
+  | warden | 1.20 | 1.26 | 1.24 | 1.29 |
+
+- With 12c7f2cdd: stalker T4 1.279, warden T2 1.215, warden T4 1.282. What still carried them was the reflexes' own numbers: Shield Bash's stun (warden T2/T4 1.12/1.20 with it dark), braced (about 0.04), smoke_bomb (about 0.05). That led to c0c3a75e2.
+- **c0c3a75e2, the full measure (acc/C_all.jsonl): every cell ≤1.25.**
+
+  | | T1 | T2 | T3 | T4 |
+  |---|---|---|---|---|
+  | arcanist | 1.14 | 1.17 | 1.19 | 1.20 |
+  | reaver | 1.12 | 1.14 | 1.22 | 1.18 |
+  | stalker | 1.10 | 1.22 | 1.18 | 1.22 |
+  | warden | 1.16 | 1.18 | 1.21 | **1.24** |
+
+  Warden T4 is within noise of 1.25: confirm it at 256 seeds.
+
+## Next
+1. **Acceptance:**
+   - C passed every cell (above). Confirm warden T4 at 256 seeds (su-runner), from godot: `dotnet <bal>/Balance.dll arena --pair board --tiers 4 --seeds 256 --par 22 --offwicks 1 --callings warden --out w4_256.jsonl`. Build bal with `dotnet build -c Release -o <bal> balance/Balance.csproj`; it runs about 12 min. If T4 is truly over, the next carrier is braced's 3 s window, or Shield Bash itself.
+   - Main's gate: every cell ≤1.25. For a borderline cell, rerun it at 256 seeds (su-runner) for a CI of about ±0.025. Only if a cell is still within noise of 1.25 at 256 seeds, propose "no cell significantly over" to main, with the numbers.
+   - Medium solver only if a carrier has no rule-by-kind fix.
+   - Also run deft as a report.
+2. **Act 1:**
+   - `story --fight all --callings all --seeds 96 --policies greedy,random --bot plain,deft --par 20` on this build (v2 default), plus `--lampsv1`.
+   - `python tools/classes/act1_match.py <main checkout>/tools/classes/out/prefl11.jsonl X --cells` (prefl11 is seeds 1-32: match seed sets), and v1 vs v2 with --cells.
+   - Say what moved and why. The facet, blue and reflex rules touch story nights too.
+3. **Types:** `arena --type both --lamps full` and `--lamps empty`, `--tiers 1,2,3,4 --level tier --bot deft --callings all --seeds 24`, read with balance/classes_summary.py. The band is x1.35 of the median.
+4. **Docs:**
+   - LAMPS_V2_RULES "By night" (all rules above) and "The flag" (v2 default, `--lampsv1`); CLASSES §2.10 lines (lamp barriers, reflex numbers, facets, Always Bleeding's price follows its gift).
+   - Main wants the MR to list, for each calling, the night-vs-day feel: which reflexes still visibly fire.
+   - Then the full test once (godot/tests/Tests.csproj) and MR READY to main.
+5. **Then the second small MR, the Lamps screen's §14 asks** (main approved; decided changes go to su-worker). The signatures are agreed with the Lamps build lead (agent aaee520051cff5068, worktree lamps-1; stand-ins in lamps-1 godot/src/Ui/LampAsk.cs). In namespace SurvivorUnchained.Rpg:
+   - `IReadOnlyList<string> LampBook.PathTo(ch, w, id)`: the fewest unlit lamps, in lighting order, honoring gates (incl. Ungated) and home; empty if lit or unreachable; no Spare check. Plus `bool LightPath(ch, w, id)`: all or nothing.
+   - `LampSleep? LampBook.Sleeps(ch, id)`, with `record LampSleep(string[] Skills, string[] Tags)`: null if it feeds something carried or nothing named. It must match the sim.
+   - `string? LinkPick(ch, link)` (her pick, else what Battle.LinkSkill fires); `IReadOnlyList<string> LinkChoices(ch, link)`; `bool SetLinkPick(ch, link, skill)`.
+   - `IReadOnlyList<string> Suggested(ch, w, n)`: no mutation.
+   - #7 session undo is the UI's own. I told them that Unlight may reset `Now(ch).Flare`, and to undo newest first.
+   - `WickSumView? WickBook.Sum(ch, skill, night)`, with `record WickSumView(string Stat, double Total, IReadOnlyList<(string What, string Value)> Parts)`.
+   - Put both records in Rpg and tell that lead so it deletes its copies.
+
+## Cost (Classes 20)
+About 175k lead, plus a medium solver (99k) and a worker (58k). CPU only.
+
+# Classes 20 starts here (2 Nov, wound down by the coordinator): Phase 2 session 3 (acceptance) half done; read this, then "Classes 19 starts here" below
+
+Branch classes-17 (junction to its own public/assets). Scratch: survivorsunchained_inputs/scratch_classes19 (scripts abl.sh, ow.sh, f4.sh, t14.sh; abl_table.py; all .jsonl runs by folder).
+
+## Done (Classes 19, all committed; tests 1402/0/10 with the flip, before the barrier rule)
+- **Bug fixed (3ffdfecc3):** a v2 link (kills/status_kill/heavy) re-fired itself inside its own echo's blows: stack overflow on the warden's full v2 board. `Battle.RunLink` now starts the wait before `Firing.Echo`.
+- **Why classes18's x1.65 is stale:** MR2's atlas points (30) made `--lamps full` a 37-lamp board (was 15). Same measure today: warden **x2.73**, arcanist x1.85.
+- **The measure, board alone (`--offwicks 1`, Program.cs):** the off run keeps Light my way's wicks too. Wicks light by the ember's ranks at night on any board (CLASS_IDENTITY §3.3), so counting them only in the on run credited the board with them (warden: x1.97 without wicks vs 2.73 with). Report both readings in the MR; acceptance reads board alone.
+- **The night rule for lamp defenses (Arts.cs `Ward`, `LampFacet`, `LampBarrier`; v2 only, v1 byte-identical):**
+  - a lamp facet's barrier or mend runs at a quarter by night (shield_wall, iron_hide, rallying, unbroken, glass_heart, battle_trance, second_wind, stolen_moments, hunger, full_echo, soul_tithe, anchor); art-chosen facets keep theirs;
+  - **a lamp's barrier is added to a held barrier without renewing its time** (Shield Wall, Spellward, anchor, perfect.barrier). It's the Shield of Morning precedent: renewed every bash, it kept every other barrier up for good.
+- **The flip is in (5e2e12b6a, WIP until acceptance):** `Lamps.V2` defaults on; v1 via `SU_LAMPS_V2=0`, game/harness `--lampsv1`. LampsTests is pinned to v1 (a Balance-collection fixture); the `finally`s restore `UseV2(true)`.
+- Harness: board pairs log `OnIds` (the lit lamp ids); `--dark id,..` is the lamp-level ablation.
+
+## Measured (plain, T1, 64 seeds, board alone; P = dealt x taken)
+| | before rule | after rule |
+|---|---|---|
+| warden | 1.49 | **1.27** (A 1.30 / B 1.24); deft 1.50 |
+| arcanist | 1.85 | **1.25** |
+| reaver | 1.19 | 1.19 |
+| stalker | 1.13 | 1.13 |
+- What's left for both is one reflex barrier on a fixed wait. Warden, Shield Wall dark: 1.07 (a sweep of its night size: 0.10 gives 1.21, 0.05 gives 1.15). Arcanist, Spellward dark: 1.08. At T1 her intake is about 0.7-0.9 hp/s, so even a quarter barrier every 7-8 s absorbs most contact damage.
+- Every other warden lamp is within noise (hand, hold_fast, iron_hide+unbroken, braced, last crossing). Arcanist: frostfire and links add about 0.05 each; mirrors, time_slip, ash_walker and stand_in_fire are noise.
+- **T1-T4 (f4/t14_all.jsonl, 32 seeds a tier, board alone, plain): higher tiers are WORSE, so the median doesn't save it.** Warden 1.30/1.32/1.35/1.37 (all 1.35); arcanist 1.28/1.26/1.39/1.30 (1.32); reaver 1.14/1.18/1.32/1.30 (1.27); stalker 1.14/1.20/1.20/1.26 (1.22). Taken carries it everywhere (dealt 0.96-1.07).
+
+## Next
+1. Not one lamp now: the band fails at T3-T4 for warden, arcanist and reaver. Ablate at T3-T4 first (`--tiers 3,4 --dark ...` per calling; the reaver hasn't been ablated yet). The likely shared cause is v2 rules read in full by night that cut damage taken. Then rule by kind: reflex barriers at half their art numbers (by night 1%/struck to 5% for the Wall, 5% for the Spellward; about P 1.21 at T1 by the sweep), plus whatever the T3-T4 ablation names. Target: every calling x1.25 at every tier T1-T4, plain, 64 seeds; deft as a report. If two rounds don't land it, send it to a medium solver (su-lead-high, effort medium) with this section as the brief.
+2. Act 1 on v2 (now the default): `story ... --seeds 96` on this build, plus `--lampsv1` (equals integration). Run act1_match against tools/classes/out/prefl11.jsonl in the MAIN checkout (seeds 1-32) and v1 vs v2 with --cells. Say what moved and why.
+3. Types: `arena --type both --lamps full` and `--lamps empty`, `--tiers 1,2,3,4 --level tier --bot deft --callings all --seeds 24`, read with balance/classes_summary.py (fe.md). Band x1.35 of the median.
+4. Docs: LAMPS_V2_RULES "By night" and "The flag" (v2 default, --lampsv1), CLASSES §2.10 one line (lamp barriers). Full tests, then MR READY.
+
 # Classes 19 starts here (2 Nov): Phase 2, session 3 of 3 (acceptance). Lamps v2 data, sim, points, layouts and save v6 are in, behind a flag
 
 The owner answered PHASE2_SCOPE (2 Nov): "Board + Lamps first". UI 25 (worktree ui-25) designs the Lamps screen from `board_v2.json`: keep its ids, kinds and positions FROZEN (tell main in one line if one must change). The contract between data and sim is **docs/design/LAMPS_V2_RULES.md** (read it first; its "As built" section says how the code reads it).

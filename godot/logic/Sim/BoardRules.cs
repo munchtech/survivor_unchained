@@ -196,19 +196,19 @@ public sealed partial class Battle
             }
             m *= 1 + more * SmallSize;
         }
-        if (l.Has("blue.vigil") && tags.Has(Tag.Spell) && Stones >= l.Full("blue.vigil", "stones", 3)) m *= 1 + l.Full("blue.vigil", "more", 0.3);
-        if (l.Has("blue.feral") && (tags.Has(Tag.Nature) || school == School.Nature) && Player.Moving) m *= 1 + l.Full("blue.feral", "more", 0.4);
-        if (l.Has("blue.pyre_walker") && inBurning) m *= 1 + l.Full("blue.pyre_walker", "more", 0.25);
+        if (l.Has("blue.vigil") && tags.Has(Tag.Spell) && Stones >= l.Full("blue.vigil", "stones", 3)) m *= 1 + l.Full("blue.vigil", "more", 0.3) * GiftSize;
+        if (l.Has("blue.feral") && (tags.Has(Tag.Nature) || school == School.Nature) && Player.Moving) m *= 1 + l.Full("blue.feral", "more", 0.4) * GiftSize;
+        if (l.Has("blue.pyre_walker") && inBurning) m *= 1 + l.Full("blue.pyre_walker", "more", 0.25) * GiftSize;
         if (l.Has("blue.kindled_frost") && hers && (school == School.Frost || tags.Has(Tag.Frost))) m *= 1 - l.Full("blue.kindled_frost", "softer", 0.25);
-        if (l.Has("blue.lightning_rod") && (e.Elite || e.Boss) && (tags.Has(Tag.Storm) || tags.Has(Tag.Chain))) m *= 1 + l.Full("blue.lightning_rod", "more", 0.4);
+        if (l.Has("blue.lightning_rod") && (e.Elite || e.Boss) && (tags.Has(Tag.Storm) || tags.Has(Tag.Chain))) m *= 1 + l.Full("blue.lightning_rod", "more", 0.4) * GiftSize;
         if (l.Has("blue.long_watch") && hers && !o.Summon)
         {
             double d = Dist(e.X, e.Z, Player.X, Player.Z);
-            if (d > l.Full("blue.long_watch", "far", 10)) m *= 1 + l.Full("blue.long_watch", "more", 0.35);
+            if (d > l.Full("blue.long_watch", "far", 10)) m *= 1 + l.Full("blue.long_watch", "more", 0.35) * GiftSize;
             else if (d < l.Full("blue.long_watch", "near", 4)) m *= 1 - l.Full("blue.long_watch", "less", 0.35);
         }
         if (l.Has("blue.pack_remembers") && o.Summon)
-            m *= 1 + Math.Min(l.Full("blue.pack_remembers", "cap", 0.4), packKills * l.Full("blue.pack_remembers", "per", 0.02));
+            m *= 1 + Math.Min(l.Full("blue.pack_remembers", "cap", 0.4), packKills * l.Full("blue.pack_remembers", "per", 0.02)) * GiftSize;
         return m;
     }
 
@@ -270,7 +270,7 @@ public sealed partial class Battle
             }
         // blue.unsetting_sun: holy skills sear what they strike.
         if (blow && l.Has("blue.unsetting_sun") && (w!.Tags.Has(Tag.Holy) || w.School == School.Holy))
-            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, 1, l.Full("blue.unsetting_sun", "seconds", 3)), dmg, o.Depth + 1);
+            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, GiftSize, l.Full("blue.unsetting_sun", "seconds", 3)), dmg, o.Depth + 1);
         var bleed = e.Status[StatusKind.Bleed];
         // blue.butchers_block: a heavy blow on a bleeding thing bursts the bleed, all its damage at once.
         if (heavy && bleed != null && bleed.T > 0 && l.Has("blue.butchers_block"))
@@ -284,7 +284,7 @@ public sealed partial class Battle
         if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= 1)
         {
             e.PoachedAt = Time;
-            bleed.Power *= l.Full("blue.poachers_mercy", "mul", 2);
+            bleed.Power *= 1 + (l.Full("blue.poachers_mercy", "mul", 2) - 1) * GiftSize;
         }
     }
 
@@ -319,14 +319,14 @@ public sealed partial class Battle
             if (share > 0) HealPlayer(MaxHp * share * SmallSize, "kill_mend", true);
         }
         if (w != null && l.Has("blue.mourners_debt") && (w.Tags.Has(Tag.Shadow) || w.School == School.Shadow))
-            HealPlayer(MaxHp * l.Full("blue.mourners_debt", "share", 0.01), "mourners_debt", true);
+            HealPlayer(MaxHp * l.Full("blue.mourners_debt", "share", 0.01) * GiftSize, "mourners_debt", true);
         if (l.Has("blue.unsetting_sun") && e.Status.Has(StatusKind.Sear))
-            HealPlayer(MaxHp * l.Full("blue.unsetting_sun", "mend", 0.003), "unsetting_sun", true);
+            HealPlayer(MaxHp * l.Full("blue.unsetting_sun", "mend", 0.003) * GiftSize, "unsetting_sun", true);
         // blue.tethered_stars: a Bound thing that dies binds the two nearest.
         if (l.Has("blue.tethered_stars") && e.Status.Has(StatusKind.Bound))
         {
             int n = (int)l.Full("blue.tethered_stars", "count", 2);
-            double sec = l.Full("blue.tethered_stars", "seconds", 2);
+            double sec = l.Full("blue.tethered_stars", "seconds", 2) * GiftSize;
             var near = HostilesInRadius(e.X, e.Z, 8);
             near.Remove(e);
             near.Sort((a, b) => ((a.X - e.X) * (a.X - e.X) + (a.Z - e.Z) * (a.Z - e.Z)).CompareTo((b.X - e.X) * (b.X - e.X) + (b.Z - e.Z) * (b.Z - e.Z)));
@@ -348,7 +348,7 @@ public sealed partial class Battle
         if (!Lamps.Board) return 1;
         var l = Lamps;
         double m = 1 - Math.Min(0.9, l.SizeOn("tags.sooner", "sooner", w.Def.Id, w.Tags));
-        if (l.Has("blue.unspun") && (w.Tags.Has(Tag.Arcane) || w.School == School.Arcane)) m *= 1 - l.Full("blue.unspun", "sooner", 0.3);
+        if (l.Has("blue.unspun") && (w.Tags.Has(Tag.Arcane) || w.School == School.Arcane)) m *= 1 - l.Full("blue.unspun", "sooner", 0.3) * GiftSize;
         if (l.Has("blue.tethered_stars") && w.Tags.Has(Tag.Spell)) m *= 1 + l.Full("blue.tethered_stars", "slower", 0.2);
         if (l.Has("blue.unsetting_sun") && l.Night && (w.Tags.Has(Tag.Holy) || w.School == School.Holy)) m *= 1 + l.Full("blue.unsetting_sun", "slower", 0.2);
         return m;
@@ -502,8 +502,9 @@ public sealed partial class Battle
         if (!Combat || !p.Alive) return;
         var w = LinkSkill(l);
         if (w == null) return;
-        if (!Firing.Echo(this, w)) return;
+        // The wait starts before the echo: its blows may kill, and a kill link must not fire itself again inside them.
         l.Cd = l.Wait;
+        if (!Firing.Echo(this, w)) { l.Cd = 0; return; }
         l.Fired++;
         Events.Emit(new Ev.Link { Lamp = l.Lamp, Skill = w.Id, X = p.X, Z = p.Z });
     }
