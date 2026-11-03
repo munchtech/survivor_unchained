@@ -22,7 +22,7 @@ namespace SurvivorUnchained.Ui;
 public partial class LampBoard : Control
 {
     public const float Feather = 48;
-    const int MaxHalos = 90, MaxLabels = 64, MaxChips = 24;
+    const int MaxHalos = 90;
 
     static LampBoardModel? model;
     public static LampBoardModel M => model ??= LampBoardModel.FromJson(SurvivorUnchained.Core.Json.ReadContent("lamps_v2.json"));
@@ -35,13 +35,23 @@ public partial class LampBoard : Control
     readonly MultiMeshInstance2D roads = new(), halos = new(), lamps = new();
     readonly ColorRect page = new() { MouseFilter = MouseFilterEnum.Ignore, Color = Colors.White };
     readonly ShaderMaterial lampMat, roadMat, haloMat, pageMat;
-    readonly Label[] labels = new Label[MaxLabels], chips = new Label[MaxChips];
-    LabelSettings? labelRoad, labelValley, chipSet;
+    readonly BoardInk ink = new();
+    readonly LampCard card = new();
+    /// <summary>The page sets this off while the wick is open (§16: no card over the board then).</summary>
+    public bool CardOn = true;
+    /// <summary>The focus moved (-1: none).</summary>
+    public event Action<int>? FocusChanged;
+    Func<int, bool> gateOk = _ => true;
+    List<int> path = new();
+    int pathFrom = -1;
+    List<LampBoardModel.Placed> placedLabels = new();
+    /// <summary>Where the card went last (for the shots' report).</summary>
+    public LampBoardModel.CardSpot? CardSpot { get; private set; }
 
     // the board's state, as of the last Rebuild
     int n;
     int[] state = [], steps = [], slot = [];
-    bool[] dim = [], onPath = [], notch = [];
+    bool[] dim = [], onPath = [], notch = [], gateNotch = [];
     float[] radius = [], fade = [];
     (double X, double Y)[] pos = [];
     readonly HashSet<int> lit = new();
@@ -79,8 +89,8 @@ public partial class LampBoard : Control
             };
             AddChild(mmi);
         }
-        for (int i = 0; i < MaxLabels; i++) AddChild(labels[i] = new Label { Visible = false, MouseFilter = MouseFilterEnum.Ignore });
-        for (int i = 0; i < MaxChips; i++) AddChild(chips[i] = new Label { Visible = false, MouseFilter = MouseFilterEnum.Ignore });
+        AddChild(ink);
+        AddChild(card);
         Resized += () => { if (Size.X > 8 && Size != builtSize) Rebuild(); };
     }
 
@@ -114,6 +124,8 @@ public partial class LampBoard : Control
             if (LampBook.Suggest(ch, w) is not { } id || !LampBook.Light(ch, w, id)) break;
             got++;
         }
+        // and leave her 3 to light, as the mock's frames do ("3 LAMPS TO LIGHT")
+        for (int k = 0; k < 40 && LampBook.Spare(ch, w) < 3; k++) ch.Level++;
         GD.Print($"LAMPBOARD demo: lit {got} of {want} (level {ch.Level}, {LampBook.Now(ch).Lit.Count} lit)");
     }
 
@@ -168,12 +180,10 @@ public partial class LampBoard : Control
 
         // the focus and its path
         var fid = SurvivorUnchained.Args.Get("lamps-focus");
-        fixedFocus = fid == "auto" ? AutoFocus(GateOk) : fid != null && m.Index.TryGetValue(fid, out var fi) ? fi : -1;
+        fixedFocus = fid == "auto" ? AutoFocus(GateOk) : fid == "blue" ? AutoFocus(GateOk, "blue") : fid != null && m.Index.TryGetValue(fid, out var fi) ? fi : -1;
         focus = fixedFocus;
-        List<int> path = new();
-        int pathFrom = -1;
-        if (focus >= 0 && !lit.Contains(focus) && m.PathTo(lit, GateOk, focus) is { } pr) { path = pr.Path; pathFrom = pr.From; }
-        foreach (var i in path) onPath[i] = true;
+        gateOk = GateOk;
+        FindPath();
 
         // the view (§16 centering; the stop by flag)
         var window = new Box(0, 0, Size.X, Size.Y);
@@ -205,6 +215,7 @@ public partial class LampBoard : Control
         foreach (var i in Enumerable.Range(0, n).Where(i => state[i] == 3 && m.Nodes[i].Adj.Any(j => state[j] != 3))
                      .OrderBy(i => steps[i]).ThenBy(i => m.Nodes[i].Id, StringComparer.Ordinal))
             if (seen.Add(m.Nodes[i].Group) && steps[i] <= 3) notch[i] = true;
+        gateNotch = (bool[])notch.Clone();
         if (focus >= 0 && state[focus] == 3) notch[focus] = true;
 
         WriteRoads(path, pathFrom, valley);
@@ -212,20 +223,21 @@ public partial class LampBoard : Control
         WritePage(valley);
         WriteLabels(valley);
         SetUniforms(valley);
+        PlaceCard();
         double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         var g = GetGlobalRect();
         GD.Print($"LAMPBOARD rebuild: {ms:F1} ms, stop {stop} scale {view.S:F3} (valley {valleyS:F3}), lit {lit.Count}, focus {(focus >= 0 ? m.Nodes[focus].Id : "-")}, path {path.Count}, window {g.Position.X:F0},{g.Position.Y:F0}-{g.End.X:F0},{g.End.Y:F0}");
     }
 
-    /// <summary>--lamps-focus auto: a far lamp worth a path preview (a notable or blue 3 steps out, its road open, nearest
+    /// <summary>--lamps-focus auto (or blue: a blue lamp): a far lamp worth a path preview (a notable or blue 3 steps out, its road open, nearest
     /// her lit lamps' middle).</summary>
-    int AutoFocus(Func<int, bool> gateOk)
+    int AutoFocus(Func<int, bool> gateOk, string? kind = null)
     {
         var m = M;
         if (lit.Count == 0) return -1;
         double cx = lit.Average(i => m.Nodes[i].X), cy = lit.Average(i => m.Nodes[i].Y);
-        return Enumerable.Range(0, n).Where(i => steps[i] >= 2 && steps[i] <= 4 && gateOk(i) && m.Nodes[i].Kind is not ("small" or "attribute"))
-            .Where(i => m.PathTo(lit, gateOk, i) is { Path.Count: >= 2 })
+        return Enumerable.Range(0, n).Where(i => steps[i] >= (kind == null ? 2 : 1) && steps[i] <= (kind == null ? 4 : 6) && gateOk(i) && (kind == null ? m.Nodes[i].Kind is not ("small" or "attribute") : m.Nodes[i].Kind == kind))
+            .Where(i => m.PathTo(lit, gateOk, i) is { } pp && pp.Path.Count >= (kind == null ? 2 : 1))
             .OrderBy(i => Sq(m.Nodes[i].X - cx) + Sq(m.Nodes[i].Y - cy)).DefaultIfEmpty(-1).First();
     }
 
@@ -335,7 +347,7 @@ public partial class LampBoard : Control
         float R = radius[i];
         float H = R + 14;
         int flags = (dim[i] ? 1 : 0) | (i == focus ? 2 : 0) | (onPath[i] ? 4 : 0) | (steps[i] <= 3 || state[i] == 0 || onPath[i] || i == focus ? 8 : 0)
-                    | (notch[i] ? 32 : 0);
+                    | (notch[i] ? 32 : 0) | (stop == BoardStop.Lamp && nd.Kind == "notable" && FeedGlyph(Lamps.Find(nd.Id)) != null ? 64 : 0);
         var mm = lamps.Multimesh;
         mm.SetInstanceTransform2D(k, new Transform2D(0, new Vector2(2 * H, 2 * H), 0, new Vector2((float)pos[i].X, (float)pos[i].Y)));
         mm.SetInstanceColor(k, new Color(KindIndex(nd.Kind), state[i], fade[i], flags));
@@ -347,6 +359,7 @@ public partial class LampBoard : Control
         pageMat.SetShaderParameter(PSize, Size);
         page.Position = Vector2.Zero;
         page.Size = Size;
+        ink.Size = Size;
         if (lit.Count > 0)
         {
             double x0 = lit.Min(i => pos[i].X), x1 = lit.Max(i => pos[i].X), y0 = lit.Min(i => pos[i].Y), y1 = lit.Max(i => pos[i].Y);
@@ -359,58 +372,203 @@ public partial class LampBoard : Control
         pageMat.SetShaderParameter(PRings, valley ? new Vector3((float)(rr[0] * view.S), (float)(rr[1] * view.S), (float)(rr[2] * view.S)) : Vector3.Zero);
     }
 
-    static Font LabelFont(int px)
-    {
-        return new FontVariation { BaseFont = Style.DisplayLight, SpacingGlyph = (int)Math.Round(px * 0.16) };
-    }
+    static Font LabelFont(int px) => LampInk.F("cinzel-600", (int)Math.Round(px * 0.16));
 
+    /// <summary>The placed labels, kept across opens for the same view and lit set (the Valley's search is the open's
+    /// cost; the grid made it cheap, this makes a reopen free).</summary>
+    static readonly Dictionary<string, List<LampBoardModel.Placed>> labelCache = new();
+
+    /// <summary>The labels, the gate numerals and the Lamp stop's ink (each notable's feed glyph, the names under
+    /// notables, blue lamps, entries and Strikes, a lit link's bound skill), all drawn by one control (BoardInk): one
+    /// canvas item, not a Label per name (phase 1's went from 3 draw calls to 13).</summary>
     void WriteLabels(bool valley)
     {
         int px = LampBoardModel.LabelPx(stop);
-        var dark = new Color("#07080b");
-        labelRoad ??= new LabelSettings { Font = LabelFont(15), FontSize = 15, FontColor = new Color("#d8cfbd") with { A = 0.75f },
-            OutlineSize = 4, OutlineColor = dark with { A = 0.55f }, ShadowSize = 8, ShadowColor = dark with { A = 0.6f }, ShadowOffset = Vector2.Zero };
-        labelValley ??= new LabelSettings { Font = LabelFont(16), FontSize = 16, FontColor = new Color("#d8cfbd") with { A = 0.75f },
-            OutlineSize = 6, OutlineColor = dark with { A = 0.6f }, ShadowSize = 8, ShadowColor = dark with { A = 0.6f }, ShadowOffset = Vector2.Zero };
-        chipSet ??= new LabelSettings { Font = Style.UiHeavy, FontSize = LampBoardModel.ChipPx, FontColor = new Color("#cdae72") };
-        var set = valley ? labelValley : labelRoad;
-        var font = set.Font;
+        var font = LabelFont(px);
         var discs = new List<(double, double, double)>();
+        var discOf = new List<int>();
         for (int i = 0; i < n; i++)
-            if (slot[i] >= 0) discs.Add((pos[i].X, pos[i].Y, radius[i] + 5));
+            if (slot[i] >= 0) { discs.Add((pos[i].X, pos[i].Y, radius[i] + 5)); discOf.Add(i); }
         var allowed = new Box(40, 40, Size.X - 40, Size.Y - 40);
-        var placed = M.PlaceLabels(view, stop, discs, allowed, [], (t, p) => font.GetStringSize(t, HorizontalAlignment.Left, -1, p).X, lit);
-        float asc = font.GetAscent(px), capH = (float)Math.Round(px * 0.70);
-        for (int k = 0; k < MaxLabels; k++)
+        string key = $"{stop}|{view}|{Size}|{string.Join(",", lit.OrderBy(i => i))}";
+        if (!labelCache.TryGetValue(key, out var placed))
         {
-            var lb = labels[k];
-            if (k >= placed.Count) { lb.Visible = false; continue; }
-            var pl = placed[k];
-            float tw = font.GetStringSize(pl.Text, HorizontalAlignment.Left, -1, px).X;
-            lb.LabelSettings = set;
-            lb.Text = pl.Text;
-            lb.Position = new Vector2((float)pl.X - tw / 2, (float)pl.Y + capH / 2 - asc);
-            lb.Size = Vector2.Zero;
-            lb.Visible = true;
+            placed = M.PlaceLabels(view, stop, discs, allowed, [], (t, p) => LampInk.W(font, t, p), lit, discOf);
+            if (labelCache.Count > 16) labelCache.Clear();
+            labelCache[key] = placed;
         }
+        placedLabels = placed;
+        WriteInk();
+    }
+
+    /// <summary>Everything BoardInk draws, from the current state (on a rebuild and on a focus change).</summary>
+    void WriteInk()
+    {
+        bool valley = stop == BoardStop.Valley;
+        int px = LampBoardModel.LabelPx(stop);
+        var font = LabelFont(px);
+        ink.Clear();
+        float capH = (float)Math.Round(px * 0.70);
+        foreach (var pl in placedLabels)
+            ink.Labels.Add(new BoardInk.Word(font, px, pl.Text, new Vector2((float)pl.X, (float)pl.Y + capH / 2), LampInk.Body with { A = 0.75f }, 0,
+                valley ? 6 : 4, 1));
         // the gate numerals in their notches
-        int c = 0;
-        for (int i = 0; i < n && c < MaxChips; i++)
+        if (!valley)
+            for (int i = 0; i < n; i++)
+            {
+                if (!notch[i] || slot[i] < 0) continue;
+                float R = radius[i];
+                float cx = (float)pos[i].X + R * 0.72f + 5f, cy = (float)pos[i].Y + R * 0.72f + 4f;
+                ink.Labels.Add(new BoardInk.Word(Style.UiHeavy, LampBoardModel.ChipPx, M.Nodes[i].Gate.ToString(),
+                    new Vector2(cx + 0.5f, cy + LampBoardModel.ChipPx * 0.36f), LampInk.RimGold, 0, 0, fade[i] * EdgeMask(pos[i].X, pos[i].Y)));
+            }
+        if (stop == BoardStop.Lamp) WriteLampStopInk();
+        ink.QueueRedraw();
+    }
+
+    /// <summary>§5's Lamp stop: each notable's feed glyph inside it (the shader leaves its ring and flame out: flag 64),
+    /// names under notables, blue lamps, entries and Strikes (Alegreya Sans 700 14 caps at 80%, clear of every lamp,
+    /// label and other name), and a lit link's bound skill's glyph beside it.</summary>
+    void WriteLampStopInk()
+    {
+        var m = M;
+        var nameFont = LampInk.F("alegreya-sans-700", 1);
+        const int NamePx = 14;
+        var taken = placedLabels.Select(p => p.Box).ToList();
+        var discs = new List<(double X, double Y, double R)>();
+        for (int i = 0; i < n; i++) if (slot[i] >= 0) discs.Add((pos[i].X, pos[i].Y, radius[i] + 2));
+        var grid = new LampBoardModel.DiscGrid(discs, 32);
+        for (int i = 0; i < n; i++)
         {
-            if (!notch[i] || slot[i] < 0 || stop == BoardStop.Valley) continue;
-            var lb = chips[c++];
+            if (slot[i] < 0) continue;
+            var nd = m.Nodes[i];
+            float a = fade[i] * EdgeMask(pos[i].X, pos[i].Y);
+            if (a < 0.05f) continue;
+            var d = Lamps.Find(nd.Id);
+            var at = new Vector2((float)pos[i].X, (float)pos[i].Y);
             float R = radius[i];
-            var txt = M.Nodes[i].Gate.ToString();
-            float tw = Style.UiHeavy.GetStringSize(txt, HorizontalAlignment.Left, -1, LampBoardModel.ChipPx).X;
-            float cx = (float)pos[i].X + R * 0.72f + 5f, cy = (float)pos[i].Y + R * 0.72f + 4f;
-            lb.LabelSettings = chipSet;
-            lb.Text = txt;
-            lb.Position = new Vector2(cx - tw / 2 + 0.5f, cy + LampBoardModel.ChipPx * 0.36f - Style.UiHeavy.GetAscent(LampBoardModel.ChipPx));
-            lb.Size = Vector2.Zero;
-            lb.Modulate = Colors.White with { A = fade[i] * EdgeMask(pos[i].X, pos[i].Y) };
-            lb.Visible = true;
+            if (nd.Kind == "notable" && FeedGlyph(d) is { } g)
+            {
+                float gs = R * 1.15f;
+                var col = state[i] == 0 && !dim[i] ? new Color("#4a3214") with { A = 0.9f } : new Color("#9aa4b2") with { A = 0.7f };
+                ink.Glyphs.Add(new BoardInk.Mark(g, new Rect2(at - Vector2.One * gs / 2, Vector2.One * gs), col with { A = col.A * a }));
+            }
+            if (nd.Kind == "link" && state[i] == 0 && LampAsk.LinkPick(ch, nd.Id) is { } pick && Weapons.All.TryGetValue(pick, out var wd))
+                ink.Glyphs.Add(new BoardInk.Mark(wd.Art, new Rect2(at + new Vector2(R + 6, -9), new Vector2(18, 18)), LampInk.Gold with { A = a }));
+            if (d != null && nd.Kind is "notable" or "blue" or "entry" or "ultimate" && d.Name != "")
+            {
+                var text = d.Name.ToUpperInvariant();
+                float w = LampInk.W(nameFont, text, NamePx);
+                float y = at.Y + R + 8 + 10;            // the caps' baseline: 8 px under the rim
+                var box = new Box(at.X - w / 2 - 3, y - 12, at.X + w / 2 + 3, y + 3);
+                bool clear = box.Inside(new Box(12, 12, Size.X - 12, Size.Y - 12)) && !taken.Any(box.Overlaps)
+                    && grid.Count(box, 2, q => Math.Abs(q.X - at.X) < 0.5 && Math.Abs(q.Y - at.Y) < 0.5) == 0;
+                if (!clear) continue;
+                taken.Add(box);
+                ink.Labels.Add(new BoardInk.Word(nameFont, NamePx, text, new Vector2(at.X, y), LampInk.Body with { A = 0.80f }, 0, 3, a));
+            }
         }
-        for (; c < MaxChips; c++) chips[c].Visible = false;
+    }
+
+    static string? FeedGlyph(LampDef? d) =>
+        d is { Feeds.Length: > 0 } && Weapons.All.TryGetValue(d.Feeds[0], out var w) && w.Art != "" ? w.Art : null;
+
+    /* ------------------------------------------------------------- the focus card -- */
+
+    /// <summary>The card's words for lamp i (§7, in order).</summary>
+    LampCardText CardFor(int i)
+    {
+        var m = M;
+        var nd = m.Nodes[i];
+        var d = Lamps.Find(nd.Id);
+        bool pad = Play.Controls.Instance?.UsingPad == true;
+        var (chip, chipC) = nd.Kind switch
+        {
+            "notable" => ("NOTABLE", LampInk.Chip), "blue" => ("BLUE LAMP", LampInk.Cobalt), "rite" => ("RITE", LampInk.Chip),
+            "link" => ("LINK", LampInk.Chip), "ultimate" or "ultimateMod" or "flareLamp" => ("FLARE", LampInk.Fire),
+            "entry" => ("ENTRY", LampInk.Chip), _ => ((string?)null, LampInk.Chip),
+        };
+        string place = m.Groups.TryGetValue(nd.Group, out var g) ? m.GroupName(g) : "";
+        var carried = SkillBook.Carried(ch).Select(c => c.Id).ToHashSet();
+        var feeds = new List<(string, bool)>();
+        var names = new List<string>();
+        foreach (var f in d?.Feeds ?? [])
+            if (Weapons.All.TryGetValue(f, out var wd)) { feeds.Add((wd.Art, carried.Contains(f))); names.Add(wd.Name); }
+        string? feedsText = names.Count > 0 ? "Feeds " + string.Join(", ", names) : null;
+        string stateLine;
+        var stateC = LampInk.Gold;
+        var prompts = new List<(string, string)>();
+        int spare = LampBook.Spare(ch, w);
+        bool night = w?.Time == TimeOfDay.Night;
+        if (state[i] == 0)
+        {
+            if (LampAsk.Sleeps(ch, nd.Id) is { } sl)
+                stateLine = $"Sleeps: carry {string.Join(" or ", sl.Skills.Select(s => Weapons.All.TryGetValue(s, out var x) ? x.Name : s))} to wake it";
+            else stateLine = "Lit  ·  lamps go out at a town’s lamp-post, by day";
+            if (!night && LampBook.CanUnlight(ch, nd.Id) == LampNo.None)
+                prompts.Add(pad ? ("X", "Hold: put out") : ("Right-click", "Hold: put out"));
+        }
+        else if (state[i] == 3)
+        {
+            stateLine = $"Opens at {nd.Gate} lit on this road  ·  {(nd.Road != null ? LampBook.Depth(ch, nd.Road) : 0)} lit";
+            stateC = LampInk.Gate;
+        }
+        else if (state[i] == 1)
+        {
+            stateLine = "Light it: 1 lamp";
+            if (!night) prompts.Add(pad ? ("A", "Light") : ("Click", "Light it"));
+        }
+        else
+        {
+            int k = LampAsk.PathTo(ch, w, nd.Id).Count;
+            stateLine = k > 0 ? $"{k} lamps away  ·  you have {spare}" : "Out of reach";
+            if (k > 0 && !night) prompts.Add(pad ? ("A", "Light the path") : ("Click", "Light the path"));
+        }
+        string? fires = null;
+        if (nd.Kind == "link")
+        {
+            var pick = LampAsk.LinkPick(ch, nd.Id);
+            string pn = pick != null && Weapons.All.TryGetValue(pick, out var pw) ? pw.Name : "Light my way’s pick";
+            fires = $"Fires: {pn} (change: {(pad ? "A" : "Click")})";
+        }
+        return new LampCardText(d?.Name ?? nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
+            nd.Kind == "blue" ? d?.Price : null, stateLine, stateC, fires, prompts);
+    }
+
+    /// <summary>§16's placement: beside the focus, never over her lit lamps, the path preview or the focus; its edge
+    /// band clear of every lamp and label, else the least overlap; inside the board's window.</summary>
+    void PlaceCard()
+    {
+        if (!CardOn || focus < 0 || slot.Length == 0 || slot[focus] < 0) { card.Visible = false; CardSpot = null; return; }
+        bool pad = Play.Controls.Instance?.UsingPad == true;
+        float h = card.Show(CardFor(focus), pad);
+        var discs = new List<(double X, double Y, double R)>();
+        var prot = new List<(double X, double Y, double R)>();
+        for (int i = 0; i < n; i++)
+        {
+            if (slot[i] < 0) continue;
+            discs.Add((pos[i].X, pos[i].Y, radius[i]));
+            if (state[i] == 0 || onPath[i] || i == focus) prot.Add((pos[i].X, pos[i].Y, radius[i] + 4));
+        }
+        if (pathFrom >= 0)
+        {
+            var chain = new List<int> { pathFrom };
+            chain.AddRange(path);
+            for (int k = 0; k + 1 < chain.Count; k++)
+            {
+                var (ax, ay) = pos[chain[k]];
+                var (bx, by) = pos[chain[k + 1]];
+                for (int t = 0; t <= 12; t++) prot.Add((ax + (bx - ax) * t / 12, ay + (by - ay) * t / 12, 3));
+            }
+        }
+        var labelsBoxes = placedLabels.Select(p => p.Box).ToList();
+        var (fx, fy) = pos[focus];
+        var spot = LampBoardModel.PlaceCard(fx, fy, radius[focus] + 5, LampCard.Wd, h, discs, prot, labelsBoxes, new Box(0, 0, Size.X, Size.Y));
+        CardSpot = spot;
+        card.Position = new Vector2((float)spot.Rect.X0, (float)spot.Rect.Y0);
+        card.Visible = true;
+        var g = GetGlobalRect().Position;
+        GD.Print($"LAMPBOARD card: {spot.Side} of {M.Nodes[focus].Id}, shift {spot.Shift}, overlap {spot.Score}, at {g.X + spot.Rect.X0:F0},{g.Y + spot.Rect.Y0:F0}-{g.X + spot.Rect.X1:F0},{g.Y + spot.Rect.Y1:F0}");
     }
 
     void SetUniforms(bool valley)
@@ -451,16 +609,36 @@ public partial class LampBoard : Control
         if (hit != focus) SetFocus(hit);
     }
 
-    void SetFocus(int i)
+    /// <summary>The focus's path preview: the fewest unlit lamps to it (none when it is lit or out of reach).</summary>
+    void FindPath()
     {
-        int old = focus;
+        Array.Clear(onPath);
+        path = new();
+        pathFrom = -1;
+        if (focus >= 0 && !lit.Contains(focus) && M.PathTo(lit, gateOk, focus) is { } pr) { path = pr.Path; pathFrom = pr.From; }
+        foreach (var i in path) onPath[i] = true;
+    }
+
+    /// <summary>Hover or the pad moved the focus: the path preview, the lamps' marks, the ink and the card follow
+    /// (the instances are rewritten, ~1200 writes; nothing else is rebuilt).</summary>
+    public void SetFocus(int i)
+    {
+        if (i == focus || n == 0) return;
         focus = i;
-        foreach (var j in new[] { old, i })
+        FindPath();
+        bool valley = stop == BoardStop.Valley;
+        for (int j = 0; j < n; j++)
         {
-            if (j < 0 || slot[j] < 0) continue;
             radius[j] = (float)(LampBoardModel.Diameter(M.Nodes[j].Kind, view.S, valleyS) / 2 * (j == focus ? 1.1 : 1.0));
-            WriteLamp(j, slot[j]);
+            bool litOrPath = state[j] == 0 || onPath[j] || j == focus;
+            fade[j] = litOrPath ? 1f : (float)LampBoardModel.Fade(steps[j]);
+            notch[j] = gateNotch[j] || (j == focus && state[j] == 3);
         }
+        WriteRoads(path, pathFrom, valley);
+        WriteLamps(valley);
+        WriteInk();
+        PlaceCard();
+        FocusChanged?.Invoke(i);
     }
 
     /* ------------------------------------------------------------- per frame: nothing but the window check -- */
@@ -508,15 +686,48 @@ public partial class LampBoard : Control
         else if (f > 125 && f <= 245) dcOff += (int)dc;
         else if (f == 246)
         {
-            foreach (var c in GetChildren()) if (c is CanvasItem ci && ci is not Label) ci.Visible = true;
-            WriteLabels(stop == BoardStop.Valley);
+            foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != card) ci.Visible = true;
+            card.Visible = CardSpot != null;
             double ms = cpuTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / 246;
-            int labelsOn = labels.Count(l => l.Visible) + chips.Count(l => l.Visible);
+            int labelsOn = ink.Labels.Count;
             GD.Print($"LAMPBOARD measure: draw calls with board {dcOn / (double)dcN:F1}, without {dcOff / 120.0:F1}, board {(dcOn / (double)dcN) - dcOff / 120.0:F1} " +
                      $"(labels+chips {labelsOn}); _Process {ms * 1000:F1} us/frame; allocated {allocBytes} B over 246 frames; " +
                      $"viewport GPU {gpuOn / 120:F3} vs {gpuOff / 120:F3} ms, render CPU {cpuOn / 120:F3} vs {cpuOff / 120:F3} ms; " +
                      $"process {Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000:F2} ms, fps {Performance.GetMonitor(Performance.Monitor.TimeFps):F0}");
             measureFrame = -1;
+        }
+    }
+}
+
+/// <summary>The board's type and marks in one canvas item: the labels (Cinzel with a dark halo), the gate numerals and
+/// the Lamp stop's names and glyphs. LampBoard fills the lists and asks for a redraw; it never draws per frame.</summary>
+public partial class BoardInk : Control
+{
+    /// <summary>Text with its baseline at At, centered (Align 0) or left (-1); Halo the dark outline's px; A its alpha.</summary>
+    public readonly record struct Word(Font F, int Px, string Text, Vector2 At, Color C, int Align, int Halo, float A);
+    public readonly record struct Mark(string Glyph, Rect2 Rect, Color C);
+    public readonly List<Word> Labels = new();
+    public readonly List<Mark> Glyphs = new();
+
+    public BoardInk() { MouseFilter = MouseFilterEnum.Ignore; }
+
+    public void Clear() { Labels.Clear(); Glyphs.Clear(); }
+
+    public override void _Draw()
+    {
+        foreach (var g in Glyphs)
+            DrawTextureRect(Ui.Glyphs.Texture(g.Glyph, Math.Max(16, (int)Math.Ceiling(g.Rect.Size.X * 2)), Colors.White, line: true), g.Rect, false, g.C);
+        foreach (var w in Labels)
+        {
+            if (w.A <= 0.01f) continue;
+            float tw = LampInk.W(w.F, w.Text, w.Px);
+            var at = new Vector2(Mathf.Round(w.Align == 0 ? w.At.X - tw / 2 : w.At.X), Mathf.Round(w.At.Y));
+            if (w.Halo > 0)
+            {
+                DrawStringOutline(w.F, at, w.Text, HorizontalAlignment.Left, -1, w.Px, w.Halo * 2, LampInk.Dark with { A = 0.35f * w.A });
+                DrawStringOutline(w.F, at, w.Text, HorizontalAlignment.Left, -1, w.Px, w.Halo, LampInk.Dark with { A = 0.6f * w.A });
+            }
+            DrawString(w.F, at, w.Text, HorizontalAlignment.Left, -1, w.Px, w.C with { A = w.C.A * w.A });
         }
     }
 }

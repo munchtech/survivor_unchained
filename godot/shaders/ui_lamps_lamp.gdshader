@@ -137,6 +137,7 @@ void fragment() {
 	int flags = int(d0.a + 0.5);
 	bool dim = (flags & 1) != 0, focus = (flags & 2) != 0, onpath = (flags & 4) != 0, near = (flags & 8) != 0;
 	bool found = (flags & 16) != 0, notch_on = (flags & 32) != 0;
+	bool inked = (flags & 64) != 0;                       // the Lamp stop: its feed glyph is drawn inside (LampBoard's ink layer)
 	float R = d1.x;
 	float seed = d1.y;
 	int calling = int(d1.z + 0.5);
@@ -277,7 +278,7 @@ void fragment() {
 		// ---- the kind's marks
 		vec3 mark_c = (lit && !asleep) ? hexc(0x4a3214) : GLASS_RIM;
 		float mark_a = lit ? 0.85 : 0.65;
-		if (kind == 5) {
+		if (kind == 5 && !inked) {
 			fill(acc, ring(length(p) - R * 0.60, 1.0), mark_c, lit ? 0.55 : 0.45);
 		} else if (kind == 3) {
 			fill(acc, ring(length(p) - (R - 3.5), 1.0), lit ? mark_c : GLASS_RIM, lit ? 0.75 : 0.5);
@@ -301,7 +302,7 @@ void fragment() {
 
 		// ---- the flame / core
 		float D_ = 2.0 * R;
-		if (lit && kind != 14) {
+		if (lit && kind != 14 && !inked) {
 			if (asleep) fill(acc, teardrop(p, vec2(0.0, R * 0.1), R * 0.6, R * 0.34), ASLEEP, 0.9);
 			else if (D_ >= 18.0 && (kind == 5 || kind == 3 || kind == 13 || kind == 10 || kind == 7 || kind == 9))
 				fills(acc, teardrop(p, vec2(0.0, R * 0.05), R * 0.70, R * 0.36), hexc(0xfffbea), 0.95, 0.25);
@@ -323,7 +324,12 @@ void fragment() {
 		}
 
 		// ---- available: the ember rim, breathing (60-100% over 2.6 s)
-		if (st == 1) {
+		if (st == 1 && blue) {
+			// a blue stays cobalt glass: its ember is a thin outer rim past the collet, and its glow never on the glass
+			fill(acc, ring(length(p) - (R + 3.4), 1.1), EMBER, 0.85 * breathe);
+			float outside = smoothstep(R + 1.5, R + 3.5, length(p));
+			glow(add_light, p, R + 3.0, EMBER, 0.14 * breathe * outside);
+		} else if (st == 1) {
 			fill(acc, ring(body + 0.875, 1.75), EMBER, breathe);
 			glow(add_light, p, R + 3.0, EMBER, 0.20 * breathe);
 		}

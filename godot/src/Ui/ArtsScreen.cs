@@ -69,8 +69,7 @@ public partial class ArtsScreen : Overlay
         pages.Alignment = BoxContainer.AlignmentMode.Center;
         v.AddChild(pages);
         if (page == 2 && LampBoardOn) LampBoard.Demo(ch, G.Journey.World);
-        if (page == 2 && LampBoardOn) v.AddChild(Style.Label(BoardCount(ch), Style.UiBold, 16, Kit.Ink, false, HorizontalAlignment.Center));
-        else v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
+        if (!(page == 2 && LampBoardOn)) v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
             : page == 3 ? "Plan the order a skill's lamps light; its rank is how many are lit."
             : skills ? "What the arenas showed you, learned for the day; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened; change your art where it is safe.",
@@ -93,6 +92,8 @@ public partial class ArtsScreen : Overlay
             }
             if (sel != null && Abilities.Find(sel) is { } def) Chosen(v, ch, def, known.Contains(def.Id));
         }
+        // C's page carries its own prompt row (§16); the book's K Close stays in its head
+        if (page == 2 && LampBoardOn) return;
         bool pad = Controls.Instance.UsingPad;
         var p = pad
             ? Kit.Prompts(Kit.Prompt(Act.Confirm, "Choose"), Kit.Prompt(Act.SubNext, PageNames[(page + 1) % Pages]), Kit.Prompt(Act.TabNext, "Turn"), Kit.Prompt(Act.Cancel, "Close"))
@@ -231,24 +232,11 @@ public partial class ArtsScreen : Overlay
 
     Label Status() => Style.Label(status, Style.TextItalic, 15, Style.EmberHi, true);
 
-    /// <summary>Phase 1's plain count line (phase 2 brings C's header).</summary>
-    string BoardCount(CharacterData ch)
-    {
-        var w = G.Journey.World;
-        int spare = LampBook.Spare(ch, w);
-        return $"{spare} {(spare == 1 ? "lamp" : "lamps")} to light  ·  {LampBook.Now(ch).Lit.Count} lit";
-    }
-
-    /// <summary>v2: the board in C's window (BOARD (1030, 232)-(1876, 874) at 1080).</summary>
+    /// <summary>v2: direction C's page (LampPage): the header, the board in C's window (BOARD (1030, 232)-(1876, 874)
+    /// at 1080), the wick tabs and the prompt row, laid out as the mock is from the content rect's top (y 152).</summary>
     void BuildBoard(VBoxContainer page)
     {
-        var board = new LampBoard(G.Journey.Ch, G.Journey.World)
-        {
-            CustomMinimumSize = new Vector2(0, 642), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-        };
-        // C's window starts at y 232 (the mock's BOARD); the header (phase 2) takes this band
-        page.AddChild(new Control { CustomMinimumSize = new Vector2(0, 37), MouseFilter = Control.MouseFilterEnum.Ignore });
-        page.AddChild(board);
+        page.AddChild(new LampPage(G.Journey.Ch, G.Journey.World, G.Zone?.Id) { CustomMinimumSize = new Vector2(0, LampPage.Height) });
     }
 
     void BuildLamps(VBoxContainer page)
