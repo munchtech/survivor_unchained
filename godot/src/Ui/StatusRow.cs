@@ -131,7 +131,7 @@ public partial class StatusRow : Control
                 DrawCircle(c, 14.6f, new Color("#0a141d") with { A = 0.88f });
                 DrawCircle(c + new Vector2(0, -3.5f), 9.5f, new Color("#2a4458") with { A = 0.22f });
                 // the rim, and the timer on it
-                DrawArc(c, 14.6f, 0, Mathf.Tau, 48, new Color("#6e8799") with { A = 0.9f }, 1.0f, true);
+                DrawArc(c, 14.6f, 0, Mathf.Tau, 48, (s.Glyph == "aegis" ? BarrierC : new Color("#6e8799")) with { A = 0.9f }, 1.0f, true);
                 DrawArc(c, 12.6f, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.45f), rw, true);
                 if (s.More == 0 && s.Fraction > 0.001f)
                 {
@@ -143,8 +143,8 @@ public partial class StatusRow : Control
             {
                 var shadow = Facet(c + new Vector2(0, 1), 16.0f);
                 DrawColoredPolygon(shadow, new Color(0, 0, 0, 0.35f));
-                DrawColoredPolygon(Facet(c, 15.4f), new Color("#1d0907") with { A = 0.9f });
-                DrawColoredPolygon(Facet(c + new Vector2(0, -3.5f), 9.5f), new Color("#5a2218") with { A = 0.22f });
+                DrawColoredPolygon(Facet(c, 15.4f), new Color("#160807") with { A = 0.9f });
+                DrawColoredPolygon(Facet(c + new Vector2(0, -3.5f), 9.5f), new Color("#43201a") with { A = 0.17f });
                 var rim = Facet(c, 15.4f, 1);
                 DrawPolyline(rim, new Color("#a3604c") with { A = 0.9f }, 1.0f, true);
                 DrawPolyline(Facet(c, 13.2f, 1), new Color(0, 0, 0, 0.45f), rw, true);

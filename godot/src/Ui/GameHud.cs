@@ -582,10 +582,10 @@ public partial class GameHud : CanvasLayer
         if (p.PoisonT > 0) Status("poison", "plague", p.PoisonT, false);
         if (p.SlowT > 0 && p.SlowF < 1) Status("slow", "boot", p.SlowT, false);
         if (p.Shield > 0) Status("barrier", "aegis", p.ShieldT, true);
-        if (p.BulwarkT > 0) Status("bulwark", "shield", p.BulwarkT, true);
+        if (p.BulwarkT > 0) Status("bulwark", "totem", p.BulwarkT, true);
         if (p.InvisibleT > 0) Status("smoke", "smoke", p.InvisibleT, true);
         if (b.WorldRate < 1) Status("world", "hourglass", b.WorldRateT, true);
-        foreach (var (id, bf) in b.Buffs) Status("buff:" + id, id == "warcry" ? "howl" : "arcane", bf.T, true, bf.Stacks);
+        foreach (var (id, bf) in b.Buffs) Status("buff:" + id, id == "warcry" ? "howl" : id, bf.T, true, bf.Stacks);
         irons.Statuses.Show(HudPin.Status ?? (IReadOnlyList<StatusShelf.Entry>)statusNow);
 
         // The chain: the ember while it burns; by day, the survivor's own growing.

@@ -7,7 +7,7 @@ namespace SurvivorUnchained.Ui;
 /// (art/ui/lamp_life/drowned, tools/uiforge/dg_figure_cut.py) cradles the life orb at her lips at the bar's left end.
 /// One quad and one shader (shaders/hud_dg_orb.gdshader): the glass over her palm, her fingers up its far side over
 /// it, the screen behind it seen through its empty part (OrbCopy), the blood in it her life (Vessel.Flow's motion:
-/// the damped slosh, the hurt film, the heal, the heartbeat at 30% and under, the shield's frost). The survivor, an
+/// the damped slosh, the hurt film, the heal, the heartbeat at 30% and under). The survivor, an
 /// elite or a marked attack behind her figure fades it (never the glass): Behind. The number (the area titles'
 /// serif, cream on a dark halo) stands on the orb; it redraws only when it changes. Every place comes from the
 /// folder's lamp_geo.json, read once.</summary>
@@ -160,7 +160,7 @@ public partial class LifeLamp : Control
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
         float dt = Math.Min((float)delta, 0.1f);
-        flow.Tick(dt, Level, Shield, Pulse > 0);
+        flow.Tick(dt, Level, 0, Pulse > 0);   // UI 28: no frost rime from the barrier; the Ward ring is its one mark
         ShineTick(dt);
         clearFor = Behind ? 0 : clearFor + dt;
         bool dim = clearFor < FadeHold;
