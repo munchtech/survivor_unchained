@@ -1,6 +1,6 @@
 {
- "bottomScale": 1.0,
- "bottomScaleNote": "UI 27: the whole bottom HUD drawn at this scale about the screen's bottom middle (Ui/HudBottom.cs); a run's --hud-scale S overrides it; 0.85 has its own baked bar (hud_a_geo.json panel.variants)",
+ "bottomScale": 0.85,
+ "bottomScaleNote": "UI 27: the whole bottom HUD drawn at this scale about the screen's bottom middle (Ui/HudBottom.cs); a run's --hud-scale S overrides it; 0.85 has its own baked bar (hud_a_geo.json panel.variants). UI 28: the owner picked 0.85 (2 Nov); the smallest marks are held at their 100% pixel size (HudBottom.Keep)",
  "xpLight": {
   "restTail": 0.30,
   "restFront": 0.50,

@@ -73,9 +73,13 @@ public partial class DgPanel : Control
     /// <summary>The experience ring's inner and outer radius (the lit filament in the coin's rim).</summary>
     public static readonly float RingR0 = F(Part("panel", "coin", "xp_ring"), "r0", 28.675f), RingR1 = F(Part("panel", "coin", "xp_ring"), "r1", 36.445f);
     /// <summary>The flask's and the dash's middles and the scales they draw at (the Drowned Girl's at 1:1).</summary>
-    public static readonly Vector2 FlaskAt = V(A(Part("panel", "flask"), "center"), new Vector2(673, 1033));
+    public static readonly Vector2 FlaskAt = V(A(Part("panel", "flask"), "center"), new Vector2(673, 1035));
     public static readonly Vector2 DashAt = V(A(Part("panel", "dash"), "center"), new Vector2(1247, 1035));
-    public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.94f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
+    public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.84f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
+    /// <summary>UI 27 r2: the flask art's share of its size inside the draught's seat (the dash's ring and well).</summary>
+    public static readonly float FlaskIn = F(Part("panel", "flask"), "inner", 45f / 39f);
+    /// <summary>UI 28: the round body's middle as a share of the flask art's height; the body, not the art, is centred on the ring.</summary>
+    public static readonly float FlaskBodyCy = F(Part("panel", "flask"), "body_cy", 74f / 112f);
     /// <summary>The flask's count badge (middle, radius).</summary>
     public static readonly Vector2 CountAt = V(A(Part("panel", "flask"), "count_badge"), new Vector2(688, 1014));
     /// <summary>The key chips' tops (R and SPACE: [middle x, top y]).</summary>
@@ -270,7 +274,8 @@ public partial class DgPanel : Control
             ci.DrawCircle(c, ChipR + 0.5f, hot ? new Color(1f, 0.80f, 0.45f) : new Color(166 / 255f, 128 / 255f, 80 / 255f), true, -1, true);
             ci.DrawCircle(c, ChipR - 0.5f, new Color(20 / 255f, 16 / 255f, 13 / 255f, 248 / 255f), true, -1, true);
             var f = Style.Display;
-            ci.DrawString(f, Mid(f, s, 15, c + new Vector2(0.5f, 1)), s, HorizontalAlignment.Left, -1, 15, new Color(248 / 255f, 238 / 255f, 216 / 255f));
+            int fs = HudBottom.KeepFont(15);   // (UI 28: held at its 100% pixel size on screen)
+            ci.DrawString(f, Mid(f, s, fs, c + new Vector2(0.5f, 1)), s, HorizontalAlignment.Left, -1, fs, new Color(248 / 255f, 238 / 255f, 216 / 255f));
         }
         public override void _Draw()
         {
