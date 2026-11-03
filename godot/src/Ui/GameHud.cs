@@ -56,11 +56,13 @@ public partial class GameHud : CanvasLayer
     double sayT, annT, annLife;
     ColorRect fade = null!, pull = null!;
     ShaderMaterial pullMat = null!;
-    double pullT = -1, pullDur = 1;
     Label fadeCaption = null!, fadeSub = null!;
     TextureRect fadeGlow = null!;
     Control fadeRule = null!;
-    double fadeFrom = 1, fadeTo = 1, fadeT = 1, fadeDur = 1;
+    /// <summary>The black and the pull, as engine-free state (logic/Play/Veil.cs: the pull counts in real time,
+    /// a lift cancels a pending pull; demo gate item 6).</summary>
+    readonly Veil veil = new();
+    static double RealNow => Time.GetTicksUsec() / 1e6;
     DraftPanel? draft;
     TalkPanel? talk;
     public float FadeAmount => fade.Color.A;
@@ -1260,8 +1262,7 @@ public partial class GameHud : CanvasLayer
     /// dark, where the caption comes up (shaders/pull.gdshader).</summary>
     public void Pull(double seconds, string? caption = null, string? sub = null)
     {
-        pullT = 0;
-        pullDur = Math.Max(0.1, seconds);
+        veil.Pull(seconds, RealNow);
         pull.Visible = true;
         pullMat.SetShaderParameter("progress", 0f);
         fadeCaption.Text = caption ?? "";
@@ -1272,10 +1273,7 @@ public partial class GameHud : CanvasLayer
     /// if given, rises along the foot with them (first light, for a dawn).</summary>
     public void Fade(float to, double seconds, string? caption = null, string? sub = null, Color? glow = null)
     {
-        fadeFrom = fade.Color.A;
-        fadeTo = to;
-        fadeT = 0;
-        fadeDur = Math.Max(0.01, seconds);
+        veil.Fade(to, seconds);
         if (to > 0.5f)
         {
             fadeCaption.Text = caption ?? "";
@@ -1494,29 +1492,19 @@ public partial class GameHud : CanvasLayer
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
         art.Ping = (float)(artPing * artPing);
-        if (pullT >= 0)
+        veil.Tick(delta, RealNow);
+        if (pull.Visible)
         {
-            pullT += delta;
-            var vs = GetViewport().GetVisibleRect().Size;
-            pullMat.SetShaderParameter("aspect", vs.X / Math.Max(1, vs.Y));
-            pullMat.SetShaderParameter("progress", (float)(pullT / pullDur));
-            if (pullT >= pullDur)
+            // (a lift cancelled it, or it burned through: the dark holds, and the caption with it)
+            if (!veil.Pulling) pull.Visible = false;
+            else
             {
-                // Burned through: the dark holds, and the caption with it.
-                pullT = -1;
-                pull.Visible = false;
-                fadeFrom = fadeTo = 1;
-                fadeT = fadeDur = 1;
-                fade.Color = new Color(0, 0, 0, 1);
+                var vs = GetViewport().GetVisibleRect().Size;
+                pullMat.SetShaderParameter("aspect", vs.X / Math.Max(1, vs.Y));
+                pullMat.SetShaderParameter("progress", (float)veil.PullProgress);
             }
         }
-        if (fadeT < fadeDur)
-        {
-            fadeT += delta;
-            float k = (float)Math.Clamp(fadeT / fadeDur, 0, 1);
-            k = k * k * (3 - 2 * k);
-            fade.Color = new Color(0, 0, 0, Mathf.Lerp((float)fadeFrom, (float)fadeTo, k));
-        }
+        fade.Color = new Color(0, 0, 0, (float)veil.Alpha);
         float cap = Mathf.Clamp((fade.Color.A - 0.6f) / 0.4f, 0, 1);
         fadeCaption.Modulate = Colors.White with { A = cap };
         fadeSub.Modulate = Colors.White with { A = cap };
