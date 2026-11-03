@@ -388,7 +388,8 @@ public partial class WorldScene : Node3D, IZoneLook
             {
                 staff = null; staffLook = 30;
                 foreach (var n in Player.FindChildren(SurvivorUnchained.Play.GripSlide.ArmNode("mage_staff"), "", true, false))
-                    if (n is Node3D a && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true) { staff = a; break; }
+                    if (n is Node3D a && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true)
+                    { staff = a; if (Args.Has("shot")) GD.Print($"flare staff: held {a.Name} under {a.GetParent()?.Name}"); break; }
                 if (staff == null && flare.Active && !staffSaid && Args.Has("shot") && (b.Flare?.Calling ?? "") == "arcanist")
                 { staffSaid = true; GD.PushWarning("flare staff: an arcanist with no held " + SurvivorUnchained.Play.GripSlide.ArmNode("mage_staff") + " (the light falls back over her shoulder)"); }
             }
