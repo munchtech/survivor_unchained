@@ -81,6 +81,15 @@ public partial class PlayerView : Node3D
     public const uint HerLayers = HerLayer | HerHairLayer | HerGearLayer;
     /// <summary>The bosses' and cinematic actors' render layer (15): off people's layer (2) so her FolkLight (2 | HerLayers) does not wash them; every other light that lit layer 2 takes this too.</summary>
     public const uint CastLayer = 1u << 14;
+    /// <summary>The fighting crowd's own layer (17), worn with the people's (2): her ember's pool lights the crowd as it
+    /// lights the ground round her (Rendering 4: the pool was off layer 2, so by night the bodies in it stayed near-black on a
+    /// lit floor and the ring of them pointing at her read as a black starburst of shadows), but not the town's folk.</summary>
+    public const uint CrowdLayer = 1u << 16;
+    /// <summary>--ember-crowd off: the crowd out of her pool again, as before Rendering 4.</summary>
+    static readonly bool EmberCrowd = SurvivorUnchained.Args.Get("ember-crowd") != "off";
+    /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.35f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
+        CrowdEmberIn = SurvivorUnchained.Args.Num("crowd-inner", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
     {
@@ -801,7 +810,7 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu;
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
         FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;
@@ -819,6 +828,15 @@ public partial class PlayerView : Node3D
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
         Light.Position = new Vector3(0, EmberH, 0.4f);
+        // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
+        if (mine)
+        {
+            float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
+            var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
+            RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
+            var lc = Light.LightColor.SrgbToLinear();
+            RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
+        }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }

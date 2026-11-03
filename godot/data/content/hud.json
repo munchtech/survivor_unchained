@@ -1,4 +1,6 @@
 {
+ "bottomScale": 1.0,
+ "bottomScaleNote": "UI 27: the whole bottom HUD drawn at this scale about the screen's bottom middle (Ui/HudBottom.cs); a run's --hud-scale S overrides it; 0.85 has its own baked bar (hud_a_geo.json panel.variants)",
  "xpLight": {
   "restTail": 0.30,
   "restFront": 0.50,

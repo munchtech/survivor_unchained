@@ -70,6 +70,8 @@ public partial class WorldScene : Node3D, IZoneLook
     public readonly Interp Drawn = new();
     /// <summary>Where she is drawn this frame (on the ground; Interp).</summary>
     public Vector3 HerDrawn { get; private set; }
+    static readonly bool ShadowDbg = SurvivorUnchained.Args.Has("shadowdbg");
+    double shadowDbgT;
 
     public WorldScene(ZoneData data, FollowCamera cam) : this(data, cam, new ZoneView(data, new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z))) { }
 
@@ -407,6 +409,30 @@ public partial class WorldScene : Node3D, IZoneLook
             View.FollowGrass(at);
             // The one shadowed lamp at a time (E1): the nearest to her, cross-faded.
             ShadowLamp.Update(HerDrawn, dt);
+            // (--shadowdbg) every positional light that shadows now, where, and how far from her: every 2 s
+            if (SurvivorUnchained.Args.Has("dbg-key-noshadow") && GetNodeOrNull<DirectionalLight3D>("/root/Game/Atmosphere/Key") is { } dk) dk.ShadowEnabled = false;
+            if (SurvivorUnchained.Args.Get("dbg-hide") is string dh)
+            {
+                if (dh.Contains("crowd")) Crowd.Visible = false;
+                if (dh.Contains("fx")) Fx.Visible = false;
+                if (dh.Contains("ssao")) foreach (var n in GetTree().Root.FindChildren("*", "WorldEnvironment", true, false)) ((WorldEnvironment)n).Environment.SsaoEnabled = false;
+                if (dh.Contains("her,") || dh.EndsWith("her")) { if (Player != null) Player.Visible = false; }
+                if (dh.Contains("herlights") && Player != null) { Player.Light.Visible = false; Player.FolkLight.Visible = false; }
+                if (dh.Contains("alllights")) foreach (var n in GetTree().Root.FindChildren("*", "Light3D", true, false)) if (n is not DirectionalLight3D) ((Light3D)n).Visible = false;
+                if (dh.Contains("decals")) foreach (var n in GetTree().Root.FindChildren("*", "Decal", true, false)) ((Decal)n).Visible = false;
+            }
+            if (ShadowDbg && (shadowDbgT += dt) >= 2)
+            {
+                shadowDbgT = 0;
+                int all = 0;
+                foreach (var n in GetTree().Root.FindChildren("*", "Light3D", true, false))
+                    if (n is Light3D l && ++all > 0 && (l.ShadowEnabled || l is DirectionalLight3D) && l.IsVisibleInTree() && l.LightEnergy > 0)
+                        GD.Print($"shadowdbg {l.GetPath()} {l.GetType().Name} at {l.GlobalPosition - HerDrawn} e {l.LightEnergy:0.00} opac {l.ShadowOpacity:0.00} size {l.LightSize:0.000} blur {l.ShadowBlur:0.0} mask {l.LightCullMask:X} shadow {l.ShadowEnabled}");
+                GD.Print($"shadowdbg lights {all}");
+                if (Player != null) foreach (var l in new Light3D[] { Player.Light, Player.FolkLight })
+                    GD.Print($"shadowdbg her {l.Name} vis {l.IsVisibleInTree()} e {l.LightEnergy:0.000} range {((OmniLight3D)l).OmniRange:0.0} att {((OmniLight3D)l).OmniAttenuation:0.0} mask {l.LightCullMask:X} at {l.GlobalPosition - HerDrawn}");
+                foreach (var c in Crowd.GetChildren()) if (c is GeometryInstance3D gi) GD.Print($"shadowdbg crowd {gi.Name} layers {gi.Layers:X} cast {gi.CastShadow}");
+            }
             // Taking a blow bruises the edges of the picture; so does being low.
             damageFlash = Math.Max(0, damageFlash - dt * 2.2);
             double low = p.Alive ? Math.Max(0, 0.35 - p.Hp / b.MaxHp) * 1.2 : 0.6;

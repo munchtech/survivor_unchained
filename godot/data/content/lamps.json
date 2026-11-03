@@ -126,6 +126,7 @@
    "name": "The Long Cut",
    "calling": "warden",
    "road": "sunderer",
+   "clip": "flare_long_cut",
    "grip": "sunder_blade",
    "clipFree": 0.9,
    "kind": "strike",

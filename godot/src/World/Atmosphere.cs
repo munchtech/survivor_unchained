@@ -73,6 +73,19 @@ public partial class Atmosphere : Node3D
     public float Mute = 0.16f;
     /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
     public static float EmberGain = 1;
+    /// <summary>The preset's crowd light by night (CrowdFill; 0 by day). --crowd-fill off: none (Rendering 4's A/B);
+    /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
+    public static float CrowdFill;
+    static readonly bool CrowdFillOn = SurvivorUnchained.Args.Get("crowd-fill") != "off";
+    static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
+    /// <summary>Round 2 (vat.gdshaderinc crowd_night, crowd_top): --crowd-lift L the luminance the darkest paint is lifted to (it goes
+    /// into ALBEDO, so the moon's shadowed light and the ambient light it); --crowd-flat K the cut on flat, up-facing low surfaces;
+    /// --crowd-wrap W her lamp's wrap; --crowd-top K the cool on heads and shoulders; --crowd-dirt T the fill's hue from the sky's
+    /// (0) to the ground's (1); --crowd-back B the moon's wrap round the body (BACKLIGHT, shadowed); --crowd-amb A the ambient it keeps (AO); --crowd-dbg the distance-band mask (measuring).</summary>
+    static readonly float CrowdLift = SurvivorUnchained.Args.Num("crowd-lift", 0.04f), CrowdFlat = SurvivorUnchained.Args.Num("crowd-flat", 0.8f),
+        CrowdWrap = SurvivorUnchained.Args.Num("crowd-wrap", 0.3f), CrowdTopK = SurvivorUnchained.Args.Num("crowd-top", 0.2f), CrowdDirt = SurvivorUnchained.Args.Num("crowd-dirt", 0.7f), CrowdBack = SurvivorUnchained.Args.Num("crowd-back", 1f),
+        CrowdAmb = SurvivorUnchained.Args.Num("crowd-amb", 0.25f);
+    static readonly bool CrowdDbg = SurvivorUnchained.Args.Has("crowd-dbg");
     /// <summary>(E9d) How lit the town is (0 by day, 1 at dawn, dusk and night): its lamps burn and some windows glow
     /// (ZoneView.Town, kit.gdshader's town_lit) from a low or a moonlit key.</summary>
     public static float TownLit = 1;
@@ -247,7 +260,7 @@ public partial class Atmosphere : Node3D
                 HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),
                 KeyIntensity = T("key", p.KeyIntensity), KeyElevation = T("elevation", p.KeyElevation), KeyAzimuth = T("azimuth", p.KeyAzimuth),
                 ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
-                FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), RiverLight = T("river", p.RiverLight),
+                FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), CrowdFill = T("crowdfill", p.CrowdFill), RiverLight = T("river", p.RiverLight),
                 RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
                 Grade = p.Grade with
                 {
@@ -312,6 +325,18 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
         RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
+        // Rendering 4: the crowd's own light by night (vat.gdshaderinc): the sky's fill here, her lamp's in PlayerView.
+        CrowdFill = CrowdFillOn ? (float)p.CrowdFill : 0;
+        // (r2: the fill in the moonlit dirt's hue, at the sky's luminance; the cool sky only on heads and shoulders)
+        var hs = C(p.HemiSky).SrgbToLinear();
+        var hg = C(p.HemiGround).SrgbToLinear();
+        var hue = hs.Lerp(hg * (hs.Luminance / Mathf.Max(hg.Luminance, 1e-4f)), CrowdDirt);
+        var fill = hue * (CrowdFill * CrowdMoonK);
+        var top = hs * (CrowdFill * CrowdTopK);
+        RenderingServer.GlobalShaderParameterSet("crowd_fill", new Vector4(fill.R, fill.G, fill.B, CrowdEmberRange));
+        RenderingServer.GlobalShaderParameterSet("crowd_top", new Vector4(top.R, top.G, top.B, CrowdBack));
+        RenderingServer.GlobalShaderParameterSet("crowd_amb", CrowdFill > 0 ? Mathf.Lerp(1f, CrowdAmb, CrowdFill) : 1f);
+        RenderingServer.GlobalShaderParameterSet("crowd_night", CrowdFill > 0 ? new Vector4(CrowdLift * CrowdFill, CrowdFlat, CrowdWrap, CrowdDbg ? 3 : 1) : Vector4.Zero);
         // Our own trees' light (kit.gdshader's OWN_FOLIAGE, E4): how much the key is the moon (a blue key)
         // and how much a low warm sun (dawn, dusk): the needles' back light and greens follow them.
         var kc = C(p.KeyColor);

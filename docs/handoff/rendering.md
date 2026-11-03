@@ -1,6 +1,34 @@
 # Handoff: rendering (global light, exposure, tonemap, grade, her light vs the scene's)
 
-## START HERE (Rendering 3, 1 Nov): NPC town light CLOSED as the better state; MR READY
+## START HERE (Rendering 4, 2 Nov): night crowd "starburst" CLOSED as known, switch ON (net gain); MR READY
+- **Worktree** `.claude/worktrees/render-4`, branch `render-4` (integration merged at 9dd4b0611; own junction, assume-unchanged).
+- **Cause (measured, not a shadow):** in play no positional light shadows (only the moon key) and the crowd casts none (CastShadow Off). The "spokes" are the risen bodies themselves (VatCrowd, cloth paint ~0.015), pointing at her (lunge/slam lean, the dead fall straight away), crushed by the grade: about half the body pixels were pure black on her lit floor. The proof chain: moon shadow off, SSAO off, blobs off, corpses hidden, all lights hidden, FX hidden, SMAA all keep the spokes; hiding the crowd removes them.
+- **Fix (arena nights only, `CrowdFill` in ArenaPlaces.For; day and story zones skip it):**
+  - The crowd shader gets its own night light (vat.gdshaderinc, globals crowd_ember/lamp/fill/top/amb/night, set in PlayerView and Atmosphere):
+    - her lamp, directional (wrap 0.3), full within 3 m, gone by 10 m;
+    - the paint lifted toward luminance 0.04 with its hue kept, in ALBEDO, so the moon's shadowed light sinks figures in the canopy shade;
+    - a small dirt-hued fill, and a cool top only on heads and shoulders;
+    - flat, up-facing surfaces cut.
+  - Pool blobs are 25% wider, 20% darker, offset 0.25 m away from her.
+  - The crowd also wears `PlayerView.CrowdLayer` (1<<16), and her ember pool lights it.
+  - Switches: `--crowd-fill off` (A/B), `--crowd-lift/-ember/-ember-h/-reach/-moon/-wrap/-top/-dirt/-back/-amb/-flat/-dbg`, `--ember-crowd off`. Debug: `--shadowdbg`, `--dbg-hide crowd,fx,ssao,herlights,alllights,decals`, `--dbg-key-noshadow`, `--dbg-no-corpses`, `--crowd-shadows off`.
+- **Judged (max):**
+  - r1 FAIL medium: grey plaster crowd, a pale burst of flat bodies.
+  - r2 (final, main's cap) FAIL medium, near end. Q2 net gain over the black starburst: YES, so it ships ON.
+  - Day identical, her unchanged.
+- **Numbers (night 250 mid):** body vs ground L 0.44 to 0.86; pure-black body pixels 43-53% to 17-26% (mostly in the canopy shade).
+- **Perf** (Release ABAB, night 250, `--crowd-fill off` vs on, 8-10.5 s; `survivorsunchained_inputs\render4\perf`): GPU -0.01/+0.04 ms, CPU +0.10/+0.31 ms, p99 +1.2/+2.9 ms (two pairs; a shader-only change, so CPU and p99 are likely noise or first use, unproven). **Tests** 1402/0/10.
+- **Later list (r2 judge, settings in the same model):**
+  1. The lamp on the crowd tighter: full within 2 m, half by 3.5 m, 10% at 6 m, 0 at 7 m, squared falloff, -35%. Target: bodies 0.7-0.9x the lit floor.
+  2. The dead and flat bodies never darker than 0.6-0.8x their ground (a black ring of dead returns in B3/B4); cut only the lamp on them, not the moon.
+  3. Material separation: hair not lifted; skin at least 3x cloth under the lamp; a warm rim on the side facing her (about 0.15).
+  4. The cool top fill -50% (moonlit bodies at most 0.8x the moonlit floor).
+  5. The crowd within 1.5 m about 25% under her.
+- **Routed (main logged them):** death and lunge fall directions, and corpses sinking (combat/animation); frozen walkers; ember glows on the crowd; the Deep Shaw grade crushing the canopy shade (~20% of the frame pure black). Her own rim or light, so she reads over the ring (rendering later).
+- **Scratch:** coordinator pad `45b9ec4e...\scratchpad\render4\` (shoot.sh, bodyground.py, solver/m.py, solver2/m2.py, judge1/judge2 frames); backed up to `survivorsunchained_inputs\scratch_render4\`.
+- **Cost:** about 0.76M, over the 0.6M cap. Lead ~0.28M, solvers 0.11M + 0.15M, max judges 0.09M + 0.11M, runner 0.03M.
+
+## Rendering 3 (history, 1 Nov): NPC town light CLOSED as the better state; MR READY
 - **Worktree** `.claude/worktrees/rend-2`, branch `rend-2` (integration merged at 54282c1b1). Round 4 (final, main's cap 4): xhigh FAIL near, but B better than integration on all 12 NPC night frames (none same or worse), so closed per main's rule. Gate YES: Rav, Sella (round 3 faults fixed), Keegan, Holloway, Rook, Wenna (nothing broke). Gate NO: Harlan (LIGHT, near: the camel coat is lit evenly from shoulder to sleeve, no head-to-body falloff), Chid (ASSET, near: near-white tunic paint, routed clamp ~0.65-0.70 sRGB).
 - **Later list (light, not gate-failing alone):** (1) Harlan falloff: lower-frame cloth about 1 stop under the same cloth at the shoulder, face unchanged; if the 22 deg cone can't (spot too far), move the people's key 30-40 deg off the camera axis so the coat gets a shadow side. (2) The teal wash reads mint on pale cloth in shade (Chid's hood lining, Harlan's shirt edge): pull `--close-rim-colour-folk` toward grey-teal ~0.62,0.78,0.80. Re-check Chid after the NPC area's tunic clamp.
 - **Tests:** `dotnet test godot/tests/Tests.csproj` 1337/0/10 (the .sln runs nothing). **Perf** (night close-up, her, `--close-folk off` A vs on B, ABAB 25 s): GPU 4.37 -> 4.46 ms (+0.09), render CPU +0.5 ms, shadow draws +25; frame ms noisy (machine shared). The A runs (`--close-folk off`, a debug switch) segfault at quit after Godot's "indexing did not unpair geometries from light"; the default (B) and all 26 shots exit clean.

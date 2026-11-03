@@ -1,0 +1,23 @@
+You are the judge, round 2, for the Lamps screen mockups (Survivor Unchained, a 3D action RPG; the screen is its talent board, 574 lamps). Context budget: 120k. Item: lamps-mock-judge. Read only what this brief names. No helpers, no edits, no builds: look and write. Report to the UI design lead UI 26 (agent id a51ec0ede69eafdfc) by returning your verdict.
+
+THE GATE FIRST, for every frame: *would this frame ship in a AAA game as it stands?* A NO fails the frame. The finish line (the owner): "judge at max zoom seen in game but make sure its critically! it should still look 'perfect' just at those distances". A judge rules at the cameras the player has, at full size and critically; here that means the frames at 1:1 (each is the player's 1080p screen). Marks visible only when enlarged don't count.
+
+The owner's bar: "AAA", "perfect, not improved", "do we have soul?"; "those borders are just ugly, adding more of them dosn't make them better"; generic fantasy ornament reads "ai looking"; "we like to see our beautiful game" (he chose half-window panels with an option to expand for the Journal and the Map: a full screen "feels bad"); skill trees "as simple to figure out as just clicking and having fun, but as complex to master to have fun planning". The HUD at the foot in A (the bronze Drowned Girl with the red orb, the hooded keeper with the fire bowl, the seat panel) and the book panel's frame, tabs and head in C are the game's approved UI and NOT under review; judge only how the screen sits with them. The heroine's body and outfit are not under review.
+
+THE PROPOSAL going to the owner: C "The Day's Book" as the DEFAULT (the board in the book's right-hand panel, as the Journal and Map are; she stays in view, ungraded, on the left), with A "Nightfall" as its "Open wide" (Z): the full-screen board, the world dimmed to dusk (day) or night, her lit lamps throwing pools that give the world back its color. (Direction B was cut in round 1.)
+
+READ: (1) your round-1 verdict, C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\45b9ec4e-5fc1-47d3-beda-6b269744e6f9\scratchpad\ui25\briefs\judge_1_verdict.md (30 lines; its MUST-FIX and nice-to-have lists were all applied this round); (2) only if a rule is unclear: C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\ui-25\docs\design\LAMPS_SCREEN_BRIEF.md §5-§8 and §12. Then the frames, in ...\scratchpad\ui25\mock\out\ (same folder as above, under mock\out): C_day.png, C_night.png, A_day.png, A_night.png, A_valley.png. Look at each at full size once; crops at 1:1 only if you need a detail (never enlarged). Round 1's frames are in mock\out\r1\ if a comparison settles a doubt; don't open them otherwise.
+
+The mock state: a level-14 warden on the Sunderer's road, 15 lamps lit, 3 to light. Day frames focus a notable 2 lamps away (path preview + card). Night frames have the wick panel open on Sunder with its Turn focused. The valley frame (A only) is the whole board with a blocked blue lamp focused. Stand-in words and numbers are not judged.
+
+The builder's own notes (verify them): the C day card touches two unlit lamps at its top edge (no fully clean spot existed; a 20 px soft shadow softens it); one blue lamp sits partly under the C night card's left edge; A's wick panel moved up 20 px (now 650-1290 x 720-948) to clear the keeper by 24 px; the valley's outer ring fades at its top and bottom under the field mask; in C the wick panel lost its box (a smoked band with one gold hairline) and the chosen tab's wick stem now runs as a full-height vertical line beside the left block. The lead's question on that stem: does it read as a divider (a border by another name)? Would it be better if the stem rose from the chosen tab and became the braid's root (the wick literally rising from the skill and braiding into its three strands)?
+
+CHECKLIST:
+1. Gate YES/NO per frame, with the one reason that decides it.
+2. Round 1's MUST-FIX: each item fixed / partly / not, one line each.
+3. The glance (one second): her build's road, the count to light, the next lamp. What pulls the eye first, and is it right?
+4. Soul: unique to this world (lamps, roads, the night, the bronze, the braid), or generic?
+5. Craft at 1:1: lines, glass, type, the card, the wick panel and braid, labels, key caps, the valley. Visible defects only.
+6. Distance to shippable per direction: close / medium / far.
+
+RETURN (under 800 words): the per-frame gate table; the round-1 check; then NEW BLOCKERS, worst first, each a concrete change with values (what, where, how much) that would turn a NO into a YES; then nice-to-have; then one line: "Ready for the owner's sheet: YES / YES after the blockers / NO", with the reason. Be blunt; don't pad.

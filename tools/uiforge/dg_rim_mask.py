@@ -9,7 +9,7 @@ frame (the panel's alpha on the 1080 screen, dilated 12 px, mapped back into the
 rim does not run along the frame. The body alpha is the art's own (the shaders only read these for the rim).
 Run from the repo root after dg_keeper_hud.py:  python tools/uiforge/dg_rim_mask.py
 """
-import os
+import json, os
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
@@ -17,9 +17,14 @@ from scipy import ndimage as ndi
 UI = os.path.join('godot', 'art', 'ui')
 HOLE_PX2 = 600.0      # screen px2
 NEAR, RAMP = 12.0, 18.0
-PANEL_RECT = (576.0, 988.0, 768.0, 92.0)       # hud_a_geo.json panel.rect
-KEEPER_RECT = (1254.0, 873.0, 341.0, 207.0)    # keeper.rect (the art is 2x)
-LAMP_AT, LAMP_ANCHOR, LAMP_SCALE, LAMP_CANVAS = (295.33, 822.0), (295.33, 1080.0), 0.94, (474.67, 258.0)
+# UI 27: the places from the bake's geo (hud_a_geo.json), so a moved statue or bar re-masks right
+_GEO = json.load(open(os.path.join(UI, 'dg_keeper', 'hud_a_geo.json')))
+PANEL_RECT = tuple(float(v) for v in _GEO['panel']['rect'])
+KEEPER_RECT = tuple(float(v) for v in _GEO['keeper']['rect'])      # the art is 2x
+_G = _GEO['girl']
+_L = json.load(open(os.path.join(UI, 'lamp_life', 'drowned', 'lamp_geo.json')))     # her quad (LifeLamp.At, its canvas)
+LAMP_AT, LAMP_ANCHOR, LAMP_SCALE, LAMP_CANVAS = tuple(_L['at']), tuple(_G['group_anchor']), _G['group_scale'], tuple(_L['canvas'])
+LAMP_OFF = tuple(_G.get('group_offset', (0.0, 0.0)))
 
 
 def panel_distance():
@@ -67,8 +72,8 @@ def bake(name, src, dst, origin, screen_per_texel, dist):
 
 def main():
     dist = panel_distance()
-    lx = LAMP_ANCHOR[0] + (LAMP_AT[0] - LAMP_ANCHOR[0]) * LAMP_SCALE
-    ly = LAMP_ANCHOR[1] + (LAMP_AT[1] - LAMP_ANCHOR[1]) * LAMP_SCALE
+    lx = LAMP_ANCHOR[0] + (LAMP_AT[0] - LAMP_ANCHOR[0]) * LAMP_SCALE + LAMP_OFF[0]
+    ly = LAMP_ANCHOR[1] + (LAMP_AT[1] - LAMP_ANCHOR[1]) * LAMP_SCALE + LAMP_OFF[1]
     bake('lamp', 'lamp_life/drowned/lamp_cold.png', 'lamp_life/drowned/lamp_rim.png', (lx, ly), LAMP_CANVAS[0] * LAMP_SCALE / 949.0, dist)
     bake('keeper', 'dg_keeper/keeper.png', 'dg_keeper/keeper_rim.png', (KEEPER_RECT[0], KEEPER_RECT[1]), 0.5, dist)
 

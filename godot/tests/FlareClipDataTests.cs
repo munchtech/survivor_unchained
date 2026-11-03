@@ -8,12 +8,11 @@ namespace SurvivorUnchained.Tests;
 public class FlareClipDataTests
 {
     [Fact]
-    public void TheLongCutCarriesItsGripAndFreeTime()
+    public void TheLongCutCarriesItsClipGripAndFreeTime()
     {
-        // (Animation 60, 2 Nov: the clip is SWITCHED OFF, closed as known after its max judge (FAIL close: the kneel reads
-        // as a huddle). Turning it on is one data line, "clip": "flare_long_cut"; until then the press plays nothing new.)
+        // (Animation 61, 2 Nov: the clip is back ON after its fix round's max judge, PASS-WITH-NOTES; Animation 60 had it off.)
         var f = Lamps.Flare("the_long_cut")!;
-        Assert.Null(f.Clip);
+        Assert.Equal("flare_long_cut", f.Clip);
         Assert.Equal("sunder_blade", f.Grip);
         Assert.Equal(0.9, f.ClipFree, 3);
     }
