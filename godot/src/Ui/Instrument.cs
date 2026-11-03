@@ -696,8 +696,8 @@ public partial class KeyTag : Control
     float ChipTextW(string s)
     {
         float tw = 0;
-        foreach (char ch in s) tw += Style.UiHeavy.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, 16).X + 0.6f;
-        return tw - 0.6f;
+        foreach (char ch in s) tw += Style.UiHeavy.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, HudBottom.KeepFont(16)).X + HudBottom.Keep(0.6f);
+        return tw - HudBottom.Keep(0.6f);
     }
 
     void Fit()
@@ -751,6 +751,8 @@ public partial class KeyTag : Control
         if (Chip && padName == null && text != "")
         {
             var cf = Style.UiHeavy;
+            int cfs = HudBottom.KeepFont(16);   // (UI 28: the key held at its 100% pixel size on screen; the chip stays the art's)
+            float trk = HudBottom.Keep(0.6f);
             string label = Shown;
             float tw = ChipTextW(label);
             // (about the true middle: Place put the chip on whole px)
@@ -762,13 +764,13 @@ public partial class KeyTag : Control
             box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
             DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
             float tx = mid - tw / 2;
-            float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(16) - cf.GetDescent(16)) / 2;
+            float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(cfs) - cf.GetDescent(cfs)) / 2;
             var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : new Color(240 / 255f, 230 / 255f, 208 / 255f);
             foreach (char ch in label)
             {
                 string s = ch.ToString();
-                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, 16, ink);
-                tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, 16).X + 0.6f;
+                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, cfs, ink);
+                tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, cfs).X + trk;
             }
             return;
         }

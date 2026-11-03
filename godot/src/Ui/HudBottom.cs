@@ -37,6 +37,11 @@ public static class HudBottom
         c.Scale = new Vector2(Scale, Scale);
         c.Position = Pivot * (1 - Scale);
     }
+    /// <summary>UI 28: the one rule for the smallest marks (key tags, seat digits, the status shelf's stack and "+N",
+    /// the timer ring): a size px that must read at its 100% pixel size on screen, as drawn inside the scaled bottom HUD.</summary>
+    public static float Keep(float px) => px / Scale;
+    /// <summary>Keep for a font size (whole px).</summary>
+    public static int KeepFont(int px) => Mathf.RoundToInt(px / Scale);
     public static Vector2 Map(Vector2 p) => Pivot + (p - Pivot) * Scale;
     public static Rect2 Map(Rect2 r) => new(Map(r.Position), r.Size * Scale);
     public static float MapY(float y) => Pivot.Y + (y - Pivot.Y) * Scale;

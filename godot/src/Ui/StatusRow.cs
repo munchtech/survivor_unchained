@@ -123,7 +123,7 @@ public partial class StatusRow : Control
             var ink = Ink(s);
             float pulse = s.Pulse ? 0.5f + 0.5f * Mathf.Cos((float)Time.GetTicksMsec() / 1000f * Mathf.Tau * 2.6f) : 1;
             var ringC = ink with { A = s.Pulse ? 0.45f + 0.55f * pulse : 1 };
-            const float rw = 2.5f;
+            float rw = Math.Max(2.5f, HudBottom.Keep(2f));   // (UI 28: at least 2 px on screen)
             if (s.Good)
             {
                 // the glass: a soft drop under it, the dark disc, a lift of light in its upper half
@@ -155,10 +155,11 @@ public partial class StatusRow : Control
             {
                 var f = Style.UiHeavy;
                 string t = $"+{s.More}";
-                var sz = f.GetStringSize(t, HorizontalAlignment.Left, -1, 13);
-                var at = new Vector2(Mathf.Round(c.X - sz.X / 2), Mathf.Round(c.Y + 4.6f));
-                DrawStringOutline(f, at, t, HorizontalAlignment.Left, -1, 13, 4, new Color(0, 0, 0, 0.8f));
-                DrawString(f, at, t, HorizontalAlignment.Left, -1, 13, ink);
+                int fs = HudBottom.KeepFont(13);   // (UI 28: held at its 100% pixel size on screen)
+                var sz = f.GetStringSize(t, HorizontalAlignment.Left, -1, fs);
+                var at = new Vector2(Mathf.Round(c.X - sz.X / 2), Mathf.Round(c.Y + HudBottom.Keep(4.6f)));
+                DrawStringOutline(f, at, t, HorizontalAlignment.Left, -1, fs, 4, new Color(0, 0, 0, 0.8f));
+                DrawString(f, at, t, HorizontalAlignment.Left, -1, fs, ink);
                 return;
             }
             if (glyph != null) DrawTextureRect(glyph, new Rect2(c - new Vector2(10, 10), new Vector2(20, 20)), false);
@@ -166,10 +167,11 @@ public partial class StatusRow : Control
             {
                 var f = Style.UiHeavy;
                 string t = $"{s.Stacks}";
-                var sz = f.GetStringSize(t, HorizontalAlignment.Left, -1, 12);
+                int fs = HudBottom.KeepFont(12);   // (UI 28: held at its 100% pixel size on screen)
+                var sz = f.GetStringSize(t, HorizontalAlignment.Left, -1, fs);
                 var at = new Vector2(Mathf.Round(D + 2 - sz.X), D + 2);
-                DrawStringOutline(f, at, t, HorizontalAlignment.Left, -1, 12, 4, new Color(0.02f, 0.02f, 0.03f, 0.95f));
-                DrawString(f, at, t, HorizontalAlignment.Left, -1, 12, new Color("#f4efe6"));
+                DrawStringOutline(f, at, t, HorizontalAlignment.Left, -1, fs, 4, new Color(0.02f, 0.02f, 0.03f, 0.95f));
+                DrawString(f, at, t, HorizontalAlignment.Left, -1, fs, new Color("#f4efe6"));
             }
         }
     }

@@ -272,7 +272,8 @@ public partial class DgPanel : Control
             ci.DrawCircle(c, ChipR + 0.5f, hot ? new Color(1f, 0.80f, 0.45f) : new Color(166 / 255f, 128 / 255f, 80 / 255f), true, -1, true);
             ci.DrawCircle(c, ChipR - 0.5f, new Color(20 / 255f, 16 / 255f, 13 / 255f, 248 / 255f), true, -1, true);
             var f = Style.Display;
-            ci.DrawString(f, Mid(f, s, 15, c + new Vector2(0.5f, 1)), s, HorizontalAlignment.Left, -1, 15, new Color(248 / 255f, 238 / 255f, 216 / 255f));
+            int fs = HudBottom.KeepFont(15);   // (UI 28: held at its 100% pixel size on screen)
+            ci.DrawString(f, Mid(f, s, fs, c + new Vector2(0.5f, 1)), s, HorizontalAlignment.Left, -1, fs, new Color(248 / 255f, 238 / 255f, 216 / 255f));
         }
         public override void _Draw()
         {
