@@ -18,7 +18,7 @@ namespace SurvivorUnchained.Tools;
 /// <summary>
 /// Every offer a calling can be dealt (all four callings), laid out three to a row in a real DraftPanel at
 /// 1920x1080, twice: as dealt, and with the worst-case footer that kind can carry (its two longest why lines,
-/// its recipe, tags, a path name), so no future combination exceeds what was checked. Per card: the body's last
+/// tags, a path name; the recipe is the detail strip's, checked to fit its two lines), so no future combination exceeds what was checked. Per card: the body's last
 /// line against the footer's top, the footer inside the card, the medallion, title and footer level across the
 /// row, and no line hidden. A JSON report; exit 1 on any failure, printed. tools_scenes/card_fit.gd runs it:
 ///   Godot --headless --path godot -s res://tools_scenes/card_fit.gd -- OUT.json [--calling ID]
@@ -44,7 +44,8 @@ public partial class CardFit : Node
     sealed class Row
     {
         public string Calling = "", State = "", Pass = "", Kind = "", Id = "", Title = "";
-        public int Font, Lines, Visible, Job;
+        public int Font, Lines, Visible, Job, Card;
+        public string Text = "";
         public float Slack, Overlap, Short, BodyH, FootH, Above;
         public List<string> Fails = new();
     }
@@ -55,10 +56,10 @@ public partial class CardFit : Node
     readonly List<(Job J, DraftPanel P)> live = new();
     string outPath = "";
     bool sheet;
-    int next, wait;
+    int next, wait, stripCards;
     SubViewport vp = null!;
     // The sheet: the rows to shoot, the one up now, its clock.
-    List<int> shots = new();
+    List<(int Job, int Card)> shots = new();
     int shot = -1;
     double clock;
     DraftPanel? shotPanel;
@@ -95,6 +96,18 @@ public partial class CardFit : Node
         var view = new DraftView(LevelUp.DraftLevel(j.B), j.Blessing, j.Offers, 3, 2, 0, null, j.Build, _ => { }, () => { }, _ => { }, j.Great, j.B);
         var p = new DraftPanel(view);
         host.AddChild(p);
+        // The detail strip's text for each card with a recipe, laid out off screen at the strip's width (Measure counts its lines).
+        for (int i = 0; i < j.Offers.Count; i++)
+        {
+            if (DraftPanel.DetailText(j.Offers[i]) is not { Length: > 0 } t) continue;
+            var strip = DraftPanel.DetailLabel();
+            strip.Name = $"Strip{i}";
+            strip.Text = t;
+            strip.MaxLinesVisible = -1;
+            strip.Position = new Vector2(-5000, 0);
+            strip.Size = new Vector2(DraftPanel.DetailW, 400);
+            host.AddChild(strip);
+        }
         return p;
     }
 
@@ -167,7 +180,7 @@ public partial class CardFit : Node
         string[] why = o.Kind switch
         {
             // (Banked and Familiar never meet; Banked, then a road, a surge or the calling's lean)
-            OfferKind.Weapon => ["Banked: carried through the day, it wakes at rank 8", Longest("Surge: it comes a rank higher", "Suits your calling", LongRoad)],
+            OfferKind.Weapon => ["Banked: it wakes at rank 8", Longest("Surge: it comes a rank higher", "Suits your calling", LongRoad)],
             OfferKind.Rank => ["Surge: two ranks at once", LongRoad],
             OfferKind.Boon when o.Great => ["Suits your calling"],
             OfferKind.Boon when o.Blessing => [$"For {LongPathName}", "A duo: two of your families at once"],
@@ -309,7 +322,7 @@ public partial class CardFit : Node
             var row = new Row
             {
                 Calling = j.Calling, State = j.State, Pass = j.Pass, Kind = o.Kind.ToString(), Id = o.Id + (o.Branch != null ? ":" + o.Branch : ""), Title = o.Title,
-                Font = body.GetThemeFontSize("font_size"), Lines = lines, Visible = vis, Job = ji,
+                Font = body.GetThemeFontSize("font_size"), Lines = lines, Visible = vis, Job = ji, Card = i, Text = o.Text,
                 Overlap = textBottom - footTop, Slack = footTop - Style.Gap2 - bodyTop - textH,
                 Short = (lines - vis) * (body.GetLineHeight() + body.GetThemeConstant("line_spacing")), BodyH = bodyH, FootH = foot.Size.Y,
             };
@@ -327,6 +340,12 @@ public partial class CardFit : Node
             fr.Position -= words.Position - (Vector2)words.GetMeta("home");
             if (fr.Position.Y < cr.Position.Y - 0.5f || fr.End.Y > cr.End.Y + 0.5f || fr.Position.X < cr.Position.X - 0.5f || fr.End.X > cr.End.X + 0.5f)
                 row.Fails.Add($"footer outside the card (footer {fr.Position.X - cr.Position.X:0},{fr.Position.Y - cr.Position.Y:0} {fr.Size.X:0}x{fr.Size.Y:0} in a {cr.Size.X:0}x{cr.Size.Y:0} card)");
+            // The detail strip: this card's recipe fits its two lines.
+            if (p.GetParent().GetNodeOrNull<Label>($"Strip{i}") is { } strip)
+            {
+                stripCards++;
+                if (strip.GetLineCount() > 2) row.Fails.Add($"detail strip needs {strip.GetLineCount()} lines (2 shown): \"{strip.Text}\"");
+            }
             level.Add((Y(top.GetChild<Control>(1)), Y(top.GetChild<Control>(2)), Bottom(foot)));
             rows.Add(row);
         }
@@ -352,13 +371,14 @@ public partial class CardFit : Node
         var report = new
         {
             cards = rows.Count,
+            stripsChecked = stripCards,
             failed = rows.Count(r => r.Fails.Count > 0),
             worstOverlap = rows.Count > 0 ? rows.Max(r => r.Overlap) : 0,
             leastSlack = rows.Count > 0 ? rows.Min(r => r.Slack) : 0,
             atFloor = rows.Count(r => r.Font <= DraftPanel.BodyFloor),
             fonts = rows.GroupBy(r => r.Font).OrderByDescending(g => g.Key).ToDictionary(g => g.Key.ToString(), g => g.Count()),
             failures = fails,
-            rows = rows.Select(r => new { r.Calling, r.State, r.Pass, r.Kind, r.Id, r.Title, r.Font, r.Lines, r.Visible, Slack = MathF.Round(r.Slack, 1), Overlap = MathF.Round(r.Overlap, 1), Short = MathF.Round(r.Short, 1), BodyH = MathF.Round(r.BodyH, 1), FootH = MathF.Round(r.FootH, 1), Above = MathF.Round(r.Above, 1), r.Fails }),
+            rows = rows.Select(r => new { r.Calling, r.State, r.Pass, r.Kind, r.Id, r.Title, r.Text, r.Font, r.Lines, r.Visible, Slack = MathF.Round(r.Slack, 1), Overlap = MathF.Round(r.Overlap, 1), Short = MathF.Round(r.Short, 1), BodyH = MathF.Round(r.BodyH, 1), FootH = MathF.Round(r.FootH, 1), Above = MathF.Round(r.Above, 1), r.Fails }),
         };
         File.WriteAllText(outPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
         GD.Print($"card_fit: {rows.Count} cards, {report.failed} failed, worst overlap {report.worstOverlap:0.0} px, least slack {report.leastSlack:0.0} px, {report.atFloor} at the floor font -> {outPath}");
@@ -368,7 +388,8 @@ public partial class CardFit : Node
         {
             // The rows of the six least-slack cards, each shot as the game shows it.
             var worst = rows.OrderBy(r => r.Slack).DistinctBy(r => (r.Kind, r.Id)).Take(6).ToList();
-            shots = worst.Select(r => r.Job).Distinct().ToList();
+            // (the card lifted: the first in the row with a recipe, so the strip shows one, else the least-slack card)
+            shots = worst.Select(r => (r.Job, Card: jobs[r.Job].Offers.FindIndex(o => o.Recipe is { Length: > 0 }) is int k and >= 0 ? k : r.Card)).DistinctBy(x => x.Job).ToList();
             foreach (var r in worst) GD.Print($"  sheet: {r.Calling} {r.State} {r.Pass} {r.Kind} {r.Id} \"{r.Title}\" slack {r.Slack:0.0} font {r.Font}");
             shot = 0;
             clock = -1;
@@ -384,7 +405,8 @@ public partial class CardFit : Node
         {
             foreach (var c in vp.GetChildren()) c.QueueFree();
             vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
-            shotPanel = Lay(vp, jobs[shots[shot]]);
+            shotPanel = Lay(vp, jobs[shots[shot].Job]);
+            shotPanel.FocusCard(shots[shot].Card);
             clock = 0;
             return;
         }
@@ -395,7 +417,7 @@ public partial class CardFit : Node
         Directory.CreateDirectory(dir);
         var file = Path.Combine(dir, $"card_fit_{shot + 1}.png");
         vp.GetTexture().GetImage().SavePng(file);
-        var j = jobs[shots[shot]];
+        var j = jobs[shots[shot].Job];
         GD.Print($"card_fit: shot {file} ({j.Calling} {j.State} {j.Pass}: {string.Join(", ", j.Offers.Select(o => o.Title))})");
         shot++;
         clock = -1;
