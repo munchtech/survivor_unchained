@@ -32,7 +32,7 @@ public partial class LampPage : Control
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool night = w?.Time == TimeOfDay.Night;
         AddChild(Header = new LampHeader(ch, w, zone));
-        AddChild(Board = new LampBoard(ch, w) { Position = new Vector2(0, BoardTop) });
+        AddChild(Board = new LampBoard(ch, w));
         AddChild(Tabs = new WickTabs(ch));
         bool pad = Play.Controls.Instance?.UsingPad == true;
         prompts = LampInk.Row(night
@@ -44,17 +44,23 @@ public partial class LampPage : Control
         Lay();
     }
 
+    /// <summary>The book's page sits at (1034, 154), 840 wide; C's content rect is (1030, 152), 846 wide: the page
+    /// bleeds 4 px left, 2 px right and 2 px up so the board's window lands on the mock's (1030, 232)-(1876, 874).</summary>
+    static readonly Vector2 Bleed = new(-4, -2);
+    const float Wider = 6;
+
     void Lay()
     {
-        float wd = Size.X;
-        Header.Position = Vector2.Zero;
+        float wd = Size.X + Wider;
+        Header.Position = Bleed;
         Header.Size = new Vector2(wd, HeaderH);
+        Board.Position = Bleed + new Vector2(0, BoardTop);
         Board.Size = new Vector2(wd, BoardH);
-        Tabs.Position = new Vector2(0, TabsY - WickTabs.H / 2);
+        Tabs.Position = Bleed + new Vector2(0, TabsY - WickTabs.H / 2);
         Tabs.Size = new Vector2(wd, WickTabs.H);
         var ps = prompts.GetCombinedMinimumSize();
         prompts.Size = ps;
-        prompts.Position = new Vector2(Mathf.Round((wd - ps.X) / 2), Mathf.Round(PromptY - ps.Y / 2));
+        prompts.Position = Bleed + new Vector2(Mathf.Round((wd - ps.X) / 2), Mathf.Round(PromptY - ps.Y / 2));
     }
 }
 

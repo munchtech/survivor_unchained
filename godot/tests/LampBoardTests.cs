@@ -67,15 +67,16 @@ public sealed class LampBoardTests
         var stop = LampBoardModel.StopOf(v.S, vs);
         Assert.Equal(stopName, stop.ToString().ToLowerInvariant());
         var discs = new List<(double X, double Y, double R)>();
+        var lampOf = new List<int>();
         foreach (var nd in m.Nodes)
         {
             var (x, y) = v.Project(nd.X, nd.Y);
             if (x > -60 && x < Window.W + 60 && y > -60 && y < Window.H + 60)
-                discs.Add((x, y, LampBoardModel.Diameter(nd.Kind, v.S, vs) / 2 + 5));
+            { discs.Add((x, y, LampBoardModel.Diameter(nd.Kind, v.S, vs) / 2 + 5)); lampOf.Add(nd.I); }
         }
         var allowed = new Box(40, 40, Window.W - 40, Window.H - 40);
         var lit = start != null ? new HashSet<int> { start.I } : null;
-        var placed = m.PlaceLabels(v, stop, discs, allowed, [], Width, lit);
+        var placed = m.PlaceLabels(v, stop, discs, allowed, [], Width, lit, lampOf);
         if (where != "ford") Assert.NotEmpty(placed);    // the Ford's middle names nothing at the Road and Lamp stops
         for (int a = 0; a < placed.Count; a++)
         {
@@ -102,12 +103,12 @@ public sealed class LampBoardTests
         Assert.Equal(200 + 15 + 22, s.Rect.X0);
     }
 
-    [Fact(Skip = "lamps p2 WIP: fails, test geometry or PlaceCard to check")]
+    [Fact]
     public void The_card_never_covers_a_lit_lamp_or_the_focus()
     {
-        // lit lamps fill the right side: it must go elsewhere
+        // lit lamps fill the right side and the lower right: it must go elsewhere (above, where a 380 x 200 card fits)
         var lit = new List<(double X, double Y, double R)>();
-        for (int x = 260; x < 830; x += 30) for (int y = 100; y < 560; y += 30) lit.Add((x, y, 6));
+        for (int x = 260; x < 830; x += 30) for (int y = 280; y < 600; y += 30) lit.Add((x, y, 6));
         var s = LampBoardModel.PlaceCard(200, 300, 15, 380, 200, lit, lit.Append((200, 300, 15)).ToList(), [], Win);
         Assert.NotEqual("right", s.Side);
         Assert.True(s.Score < 100, $"covers a protected lamp: {s}");
@@ -116,12 +117,13 @@ public sealed class LampBoardTests
         Assert.True(s.Rect.Inside(Win.Grow(-16)));
     }
 
-    [Fact(Skip = "lamps p2 WIP: fails, test geometry or PlaceCard to check")]
+    [Fact]
     public void The_card_takes_the_least_overlap_when_no_spot_is_clean()
     {
-        // unlit lamps everywhere (none protected): no clean spot, so the least crossed one, still inside the window
+        // unlit lamps everywhere, 16 px apart (none protected): every edge band crosses some (a lamp wholly under the
+        // card is covered, not crossed), so the least crossed spot, still inside the window
         var lamps = new List<(double X, double Y, double R)>();
-        for (int x = 10; x < 846; x += 40) for (int y = 10; y < 642; y += 40) lamps.Add((x, y, 6));
+        for (int x = 10; x < 846; x += 16) for (int y = 10; y < 642; y += 16) lamps.Add((x, y, 6));
         var s = LampBoardModel.PlaceCard(420, 320, 15, 380, 200, lamps, [(420, 320, 15)], [], Win);
         Assert.True(s.Score > 0 && s.Score < 100);
         Assert.True(s.Rect.Inside(Win.Grow(-16)));
@@ -136,12 +138,14 @@ public sealed class LampBoardTests
         Assert.Equal(Score(s.Rect), s.Score);
     }
 
-    [Fact(Skip = "lamps p2 WIP: fails, test geometry or PlaceCard to check")]
+    [Fact]
     public void The_card_avoids_labels_and_clamps_when_nothing_fits()
     {
-        var label = new Box(230, 200, 640, 420);
+        // a label right of the focus: the card goes below it, 40 px clear of the label (§16: labels keep 40 px)
+        var label = new Box(230, 200, 640, 290);
         var s = LampBoardModel.PlaceCard(200, 300, 15, 380, 200, [], [(200, 300, 15)], [label], Win);
-        Assert.False(s.Rect.Grow(6).Overlaps(label));
+        Assert.Equal(0, s.Score);
+        Assert.False(s.Rect.Grow(40).Overlaps(label));
         var tiny = new Box(0, 0, 300, 200);
         var c = LampBoardModel.PlaceCard(100, 100, 10, 380, 200, [], [], [], tiny);
         Assert.Equal("clamped", c.Side);
