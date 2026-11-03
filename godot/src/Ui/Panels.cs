@@ -427,7 +427,9 @@ public partial class DraftPanel : Control
     {
         float room = c.Foot.Position.Y - Style.Gap2;
         if (c.Foot.Size.Y <= 0 || room <= 0) return;
-        // (a new size sorts at the frame's end: the body's share is known on the next)
+        // (a new size sorts at the frame's end: the body's share is known on the next; upper words taller than the
+        // room keep their own height, and the body steps down to the floor: CardFit fails such a card)
+        room = Mathf.Max(room, c.Top.GetCombinedMinimumSize().Y);
         if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) { c.Top.Size = new Vector2(c.Top.Size.X, room); return; }
         float h = c.Body.Size.Y;
         if (c.Body.HasMeta("fit") && Mathf.IsEqualApprox((float)c.Body.GetMeta("fit"), h)) return;

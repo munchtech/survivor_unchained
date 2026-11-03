@@ -313,6 +313,8 @@ public partial class CardFit : Node
                 Overlap = textBottom - footTop, Slack = footTop - Style.Gap2 - bodyTop - textH,
                 Short = (lines - vis) * (body.GetLineHeight() + body.GetThemeConstant("line_spacing")), BodyH = bodyH, FootH = foot.Size.Y,
             };
+            // (slack counts what is hidden: a trimmed card is as far short as its missing lines)
+            row.Slack -= row.Short;
             if (row.Overlap > 0.5f) row.Fails.Add($"body overlaps the footer by {row.Overlap:0} px");
             if (vis < lines) row.Fails.Add($"body truncated: {vis} of {lines} lines shown");
             // Nothing above the body reaches the footer (the title, the badge, the pips).
@@ -365,8 +367,9 @@ public partial class CardFit : Node
         if (sheet)
         {
             // The rows of the six least-slack cards, each shot as the game shows it.
-            shots = rows.OrderBy(r => r.Slack).Select(r => r.Job).Distinct().Take(6).ToList();
-            foreach (var r in rows.OrderBy(r => r.Slack).Take(6)) GD.Print($"  sheet: {r.Calling} {r.State} {r.Pass} {r.Kind} {r.Id} \"{r.Title}\" slack {r.Slack:0.0} font {r.Font}");
+            var worst = rows.OrderBy(r => r.Slack).DistinctBy(r => (r.Kind, r.Id)).Take(6).ToList();
+            shots = worst.Select(r => r.Job).Distinct().ToList();
+            foreach (var r in worst) GD.Print($"  sheet: {r.Calling} {r.State} {r.Pass} {r.Kind} {r.Id} \"{r.Title}\" slack {r.Slack:0.0} font {r.Font}");
             shot = 0;
             clock = -1;
             return;
