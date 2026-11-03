@@ -19,9 +19,10 @@ public class StorybookTests
         Directory.GetFiles(Path.Combine(DataFiles.Dir, "storybook"), "*.json").Select(f => StoryFile.Parse(File.ReadAllText(f)));
 
     [Fact]
-    public void Sb00_is_not_live_while_its_plates_are_placeholders()
+    public void Sb00_is_live_for_the_demo()
     {
-        Assert.False(StoryFile.Load("sb00").Live);
+        // Every plate is ink and judged (Storybook 5); the owner switched it on, 3 Nov 2026.
+        Assert.True(StoryFile.Load("sb00").Live);
     }
 
     [Fact]
