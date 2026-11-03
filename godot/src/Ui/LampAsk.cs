@@ -18,15 +18,26 @@ public static class LampAsk
     {
         var lit = LampBook.Now(ch).Lit.ToHashSet();
         if (lit.Contains(id) || Lamps.Find(id) is not { } goal || (goal.Home && goal.Calling != ch.Archetype)) return [];
-        // Stand-in: breadth-first from the lit set over the roads; gates are read off the depth the path would leave.
+        // Stand-in: breadth-first from the lit set over the roads. A lamp is passable when it is home (or no home lamp)
+        // and its road's gate is met by the lit lamps plus those the path lights before it on the same road.
+        var depth = new Dictionary<string, int>();
+        foreach (var l in lit) if (Lamps.Find(l)?.Road is { } r) depth[r] = depth.GetValueOrDefault(r) + 1;
         var from = new Dictionary<string, string?>();
+        bool Ok(string n, string? via)
+        {
+            if (Lamps.Find(n) is not { } d || (d.Home && d.Calling != ch.Archetype)) return false;
+            if (d.Road == null || d.Gate <= 0) return true;
+            int k = depth.GetValueOrDefault(d.Road);
+            for (string? c = via; c != null && k < d.Gate; c = from[c]) if (Lamps.Find(c)?.Road == d.Road) k++;
+            return k >= d.Gate || (Lamps.V2 && d.Calling != null && d.Calling != ch.Archetype && lit.Any(Unhouses));
+        }
         var q = new Queue<string>();
-        foreach (var l in lit) foreach (var n in Lamps.Next(l)) if (!lit.Contains(n) && from.TryAdd(n, null)) q.Enqueue(n);
+        foreach (var l in lit) foreach (var n in Lamps.Next(l)) if (!lit.Contains(n) && !from.ContainsKey(n) && Ok(n, null)) { from[n] = null; q.Enqueue(n); }
         while (q.Count > 0)
         {
             var c = q.Dequeue();
             if (c == id) break;
-            foreach (var n in Lamps.Next(c)) if (!lit.Contains(n) && from.TryAdd(n, c)) q.Enqueue(n);
+            foreach (var n in Lamps.Next(c)) if (!lit.Contains(n) && !from.ContainsKey(n) && Ok(n, c)) { from[n] = c; q.Enqueue(n); }
         }
         if (!from.ContainsKey(id)) return [];
         var path = new List<string>();
@@ -35,17 +46,36 @@ public static class LampAsk
         return path;
     }
 
-    /// <summary>§14.3: light the whole path or nothing.</summary>
+    static bool Unhouses(string id) => Lamps.Find(id) is { } d && d.Effects.Any(e => e.Rule == "blue.unhoused" && e.Phase <= Lamps.LivePhase);
+
+    /// <summary>§14.3: light the whole path or nothing (on a refusal every lamp it lit goes back out, and the Flare
+    /// is as it was).</summary>
     public static bool LightPath(CharacterData ch, WorldState? w, string id)
     {
         var p = PathTo(ch, w, id);
         if (p.Count == 0 || p.Count > LampBook.Spare(ch, w)) return false;
-        var done = new List<string>();
-        foreach (var l in p)
+        var l = LampBook.Now(ch);
+        var keep = l.Lit.ToList();
+        var flare = l.Flare;
+        foreach (var x in p)
+            if (!LampBook.Light(ch, w, x)) { l.Lit.Clear(); l.Lit.AddRange(keep); l.Flare = flare; return false; }
+        return true;
+    }
+
+    /// <summary>"Copy to II / III" (§9): the active layout, the whole build (type, lamps, Flare, wicks, links, the skills
+    /// carried), copied over another. Only where layouts change (LampBook.LayoutsOpen). Stand-in until Classes has one.</summary>
+    public static bool CopyLayout(CharacterData ch, int to, WorldState? w, string? zone)
+    {
+        var s = LampBook.State(ch);
+        if (to < 0 || to >= s.Layouts.Count || to == s.Active || !LampBook.LayoutsOpen(w, zone)) return false;
+        LampBook.Keep(ch);
+        var a = s.Now;
+        s.Layouts[to] = new LampLayout
         {
-            if (!LampBook.Light(ch, w, l)) { for (int i = done.Count - 1; i >= 0; i--) LampBook.Unlight(ch, done[i]); return false; }
-            done.Add(l);
-        }
+            Type = a.Type, Lit = a.Lit.ToList(), Flare = a.Flare,
+            Wicks = a.Wicks.ToDictionary(kv => kv.Key, kv => kv.Value.ToList()),
+            Links = new Dictionary<string, string>(a.Links), Carried = a.Carried.ToList(),
+        };
         return true;
     }
 
