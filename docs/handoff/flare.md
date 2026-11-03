@@ -4,6 +4,29 @@ Read `docs/team/README.md`, `RESUME.md` (top block), `OWNER_NOTES.md` (13 Octobe
 `docs/design/FLARE_LOOK.md` §0, §1.6, §4.1, §4.4. Branch `flare-1` (merged; the worktree is removed after the merge).
 Numbers are classes' (paused; send anything for classes through the coordinator). Her clip is animation's.
 
+## Combat VFX 12 (vfx-12, 3 Nov): MR READY. The closeout's five bugs and syncs (CLOSEOUT.md wave 1)
+One high judge (whole frame first, 1:1 play camera), 3 rounds on One Arrow, 2 on the drops, 1 on the rest. Branch vfx-12; tests 1455/0/10.
+- **The app can now:**
+  - light the Flare's staff on the staff. The holder was "arm:mage_staff", which Godot rewrites to "arm_mage_staff", so the lookup never matched. `GripSlide.ArmNode(id)` now builds the name, and the held one (under mount_) is re-looked while missing. Log: "flare staff: held arm_mage_staff under mount_hand_r" (`--weapon ember_staff`; the quick arcanist holds a wand). Same bug fixed in `sheathed:` → `GripSlide.SheathPrefix`: PersonView.Swap never saw a piece already sheathed. GripSlideTests fails on any node name in src that Godot would rewrite.
+  - land Groundbreaker's and Sunder's KILLS with the view's blow. A killed body holds its last pose, then falls, bursts and throws on DieT minus the lag (`CrowdView.DeathHeld`, `KillFx` split out of Handle).
+    - Heave: day falls f45 → f60 (heave f60); night f35 → f50.
+    - Crack tip: 8 frames early → 0. Sunder tip: 3-4 frames early → 0.
+    - Numbers and flinch were already held by VFX 11.
+  - draw Sunder's line swing without the heavy crescent over the line's base (`--wg-sl-crescent`: as before). Judge: the base is clean, and the swing isn't weaker.
+  - mark every Road's Toll cut and every One Arrow arrow and split at the play camera (FlareFx.Stalker.cs, new).
+    - Toll: day 900 → 2,300-6,000 px, 71 frames. Arrow: day 984 → 13,448 px, 24 frames. Burns Twice is ~55,000 px.
+    - Threads follow the slope of the ground (r2's ladder was flat threads on a hillside). The glow is on every thread at half (r3: beads at night; applied after the judge, not re-shot).
+  - show Burns Twice's drops as the ring passes them, the last at +0.77 s (was +4.2 to +4.8 s). They scale in over 0.3 s, then fade from 0.3 to 0.1 light until the Return ends (`Flare.DropFresh` in BattleFx.Pickups).
+- **Known (closed, judge):**
+  - Inside-ring drops are hard to read as loot at night: the loot or UI pass.
+  - Item drops are sim pickups and still drop on the sim tick, ~15 frames before the heave.
+  - Kill sounds tied to the kill event weren't checked.
+  - All 12 Toll cuts stack on one target, by design. The stand-in lines are plain white: the next Flare build.
+  - The night Sunder base near her is dim: pass 4.
+- **Perf:** a Release ABAB (f9372bbd9 vs vfx-12, night arena, 250 horde, all four Warden skills; `survivorsunchained_inputs\vfx12\perf\`). Inconclusive: the machine was at 94-100% CPU, and A1 vs A2 differ by 2.1 ms. The changes are view-only and small: the Toll ~600 bits a press, the Arrow ~230 bits, against a 3,400 pool.
+- **Strips:** `survivorsunchained_inputs\vfx12\a\` (sl_base_*, gb_heave_*) and `\b\` (item4_*_r3, item5_burns_drops_r2). Verdicts were in-session (judge a7a06521).
+- **Cost:** ~0.75M. Helper A 0.155M, helper B 0.26M, fixer 0.07M, judge 0.1M, runner 0.04M, lead ~0.12M.
+
 ## Done (successor 10, 19 October): Burns Twice merged; the area is closed until the next Flare build
 - **Judged:** judge 6 (`survivorsunchained_inputs/flare10/verdict_j6.txt`, on s18): NOT READY, 4/18 frames shipped;
   keep the BOOM, 2 fixes, 4 cuts. Fix solvers A (02fda81e), B (38a9f18b), C (3238a756). Judge 7 (`verdict_j7.txt`, on
