@@ -345,7 +345,8 @@ public partial class WorldScene : Node3D, IZoneLook
     // The held staff (the Flare's head light), found once per figure.
     PlayerView? staffOf;
     Node3D? staff, blade;
-    bool bladeSaid;
+    bool bladeSaid, staffSaid;
+    int staffLook;
 
 
     void Draw(double dt, double fightDt)
@@ -379,7 +380,18 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
             flare.Her = HerDrawn;
-            if (staffOf != Player) { staffOf = Player; staff = Player?.FindChild("arm:mage_staff", true, false) as Node3D; blade = null; }
+            // The staff in her hand (under a mount_, not one hung at her back); looked for again while there is none (the
+            // arms are built after the person), at most every 30 frames. VFX 12: "arm:mage_staff" never matched (Godot's
+            // node names turn ':' into '_'), so the staff light never rode the staff.
+            if (staffOf != Player) { staffOf = Player; staff = null; staffLook = 0; blade = null; }
+            if ((staff == null || !IsInstanceValid(staff) || !staff.IsInsideTree()) && Player != null && staffLook-- <= 0)
+            {
+                staff = null; staffLook = 30;
+                foreach (var n in Player.FindChildren(SurvivorUnchained.Play.GripSlide.ArmNode("mage_staff"), "", true, false))
+                    if (n is Node3D a && a.GetParent()?.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.MountPrefix) == true) { staff = a; break; }
+                if (staff == null && flare.Active && !staffSaid && Args.Has("shot") && (b.Flare?.Calling ?? "") == "arcanist")
+                { staffSaid = true; GD.PushWarning("flare staff: an arcanist with no held " + SurvivorUnchained.Play.GripSlide.ArmNode("mage_staff") + " (the light falls back over her shoulder)"); }
+            }
             flare.Staff = staff;
             // The blade in her hand (not one hung at her back), for the Long Cut's steel.
             if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())

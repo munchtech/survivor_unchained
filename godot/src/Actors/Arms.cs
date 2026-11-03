@@ -153,7 +153,7 @@ public static class Arms
         inner.Basis = turn.Scaled(Vector3.One * k);
         // The grip is the origin: the anchor if the asset has one, else the Spec's Grip along the long axis.
         inner.Position = aGrip is { } g ? -(turn * (g.Origin - centre)) * k : new Vector3(0, spec.Length * (0.5f - spec.Grip), 0);
-        var holder = new Node3D { Name = $"arm:{id}" };
+        var holder = new Node3D { Name = GripSlide.ArmNode(id) };
         holder.AddChild(inner);
         // The sheath point (where the piece hangs from; the grip when there is no anchor for it) and the tip's height on the shaft.
         holder.SetMeta("sheath", aSheath is { } sa ? turn * (sa.Origin - centre) * k + inner.Position : Vector3.Zero);
@@ -462,7 +462,7 @@ public static class Arms
         var (bone, at) = sock;
         var att = new BoneAttachment3D { BoneName = bone };
         skeleton.AddChild(att);
-        var mount = new Node3D { Name = $"sheathed:{bone}" };
+        var mount = new Node3D { Name = GripSlide.SheathPrefix + bone };
         att.AddChild(mount);
         mount.Transform = at;
         mount.AddChild(MakeSheathed(id, left));

@@ -19,6 +19,32 @@ public class GripSlideTests
         Assert.Equal("mount_hand_r", GripSlide.ValidNodeName("mount:hand_r"));
 
     [Fact]
+    public void ArmNodeSurvivesGodotNodeNameRule()
+    {
+        Assert.Equal("arm_mage_staff", GripSlide.ArmNode("mage_staff"));
+        Assert.Equal(GripSlide.ArmNode("mage_staff"), GripSlide.ValidNodeName(GripSlide.ArmNode("mage_staff")));
+    }
+
+    /// <summary>VFX 12: the staff light looked for "arm:mage_staff", a name Godot never keeps (':' becomes '_'), so it never
+    /// lit. No view code may build or look up a node name with a forbidden character; holders go through GripSlide.ArmNode.</summary>
+    [Fact]
+    public void NoNodeNameInTheViewUsesAForbiddenCharacter()
+    {
+        var d = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        while (d != null && !System.IO.File.Exists(System.IO.Path.Combine(d.FullName, "project.godot"))) d = d.Parent;
+        Assert.NotNull(d);
+        var bad = new System.Text.RegularExpressions.Regex(@"(FindChild(ren)?\(|GetNode(OrNull)?(<\w+>)?\(|Name\.ToString\(\)\.StartsWith\(|\bName\s*=\s*)\$?""(arm|mount|sheathed):");
+        var hits = new System.Collections.Generic.List<string>();
+        foreach (var f in System.IO.Directory.EnumerateFiles(System.IO.Path.Combine(d!.FullName, "src"), "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            var lines = System.IO.File.ReadAllLines(f);
+            for (int i = 0; i < lines.Length; i++) if (bad.IsMatch(lines[i])) hits.Add($"{System.IO.Path.GetFileName(f)}:{i + 1}");
+        }
+        Assert.True(hits.Count == 0, "node names Godot will rewrite: " + string.Join(", ", hits));
+        Assert.Contains("GripSlide.ArmNode(", System.IO.File.ReadAllText(System.IO.Path.Combine(d.FullName, "src", "Actors", "Arms.cs")));
+    }
+
+    [Fact]
     public void FullShotWinsOverUpperAndMove() =>
         Assert.Equal(0.3f, GripSlide.Target(true, 0.3f, true, 0.2f, 0.5f, 0.1f, 0.0f));
 
