@@ -84,6 +84,8 @@ public partial class PersonView : Node3D, INpcView
     string? gripRightPiece;
 
     public bool FlareGripOn => flareGrip != null;
+    /// <summary>The grip's mount while it is formed (its world place for the probes), else null.</summary>
+    public Node3D? FlareGripNode => flareGrip;
 
     /// <summary>Forms `id` in her right hand and hides all her pieces; false (nothing touched) if it is unknown or she has no kit.</summary>
     public bool FlareGrip(string id)
