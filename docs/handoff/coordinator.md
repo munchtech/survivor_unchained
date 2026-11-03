@@ -37,6 +37,8 @@ From the coordinator session that ran 3 to 6 October 2026. Read this after `docs
 
 - **Lessons from b9e8a09f (2 Nov):** (1) Quiet relays really matter: relaying every lead update filled 250k in one evening; tell the owner only decisions and milestones. (2) Run `ctx.py` on every lead report; don't rely on self-reported cost. (3) Near 200k, don't start successors (VFX 8 wasted ~44k). (4) Before merging any lead branch, check `git ls-tree <branch> godot/assets` is a 120000 symlink: classes-15 had committed the junction's contents as 861 files and the merge aborted; fix on the branch with `git rm -r --cached godot/assets` + `git update-index --add --cacheinfo 120000,<blob>,godot/assets`. (5) `dotnet test` on the .sln runs nothing: use `godot/tests/Tests.csproj`.
 
+- **Lessons from 29291afc (3 Nov):** (1) The demo reset worked: four Phase 0 MRs + a whole-loop gate + two gate leads, all merged in one session (~3.1M), and the gate came out at six items, none art. Keep the gate as the only backlog until the demo is tagged (`docs/team/DEMO_PLAN.md`). (2) Never chain `git push` after a grep of the suite log: `grep | tail` succeeds on "Failed!" too; I pushed one red commit that way. Push only after reading the Passed!/Failed! line. (3) `merge_lead.sh` runs for minutes on the .uid/.import set-aside loop: run it in the background with the suite in the same command. (4) `git worktree remove` leaves an empty locked folder when the shell's cwd is inside it: `cd` out, then `cmd /c rmdir`.
+
 ## The owner
 - Pronouns: they/them unless the owner says otherwise. Some leads wrote "he"; don't repeat it.
 - Short, plain updates: what changed, what's next, and any decision that's theirs. Pictures over descriptions.
