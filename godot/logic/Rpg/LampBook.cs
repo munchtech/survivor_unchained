@@ -36,6 +36,9 @@ public sealed class LampState
     public LampLayout Now => Layouts[Math.Clamp(Active, 0, Layouts.Count - 1)];
 }
 
+/// <summary>A dim lamp's reason (LampBook.Sleeps): any one of these skills (ids) or tags, carried, wakes it.</summary>
+public sealed record LampSleep(string[] Skills, string[] Tags);
+
 /// <summary>Why a lamp can't be lit or put out (None: it can).</summary>
 public enum LampNo { None, Unknown, Lit, Unlit, NoLamps, NotHome, Dark, Gate, Free, Holds }
 
@@ -133,14 +136,99 @@ public static class LampBook
 
     public static LampNo CanLight(CharacterData ch, WorldState? w, string id)
     {
-        if (Lamps.Find(id) is not { } def) return LampNo.Unknown;
-        var lit = Now(ch).Lit;
-        if (lit.Contains(id)) return LampNo.Lit;
-        if (def.Home && def.Calling != ch.Archetype) return LampNo.NotHome;
-        if (!Lamps.Next(id).Any(lit.Contains)) return LampNo.Dark;
-        if (def.Road != null && Depth(lit, def.Road) < def.Gate && !Ungated(ch, lit, def)) return LampNo.Gate;
+        var why = Check(ch, Now(ch).Lit, id);
+        if (why != LampNo.None) return why;
         if (Spare(ch, w) <= 0) return LampNo.NoLamps;
         return LampNo.None;
+    }
+
+    /// <summary>CanLight's rules on any lit list, the count of spare lamps aside (PathTo and Suggested walk copies).</summary>
+    static LampNo Check(CharacterData ch, List<string> lit, string id) =>
+        Check(ch, lit.Contains, road => Depth(lit, road), lit.Any(Unhouses), id);
+
+    /// <summary>The rules themselves, on any lit set: is it lit, a road's depth, and is an Unhoused blue lit.</summary>
+    static LampNo Check(CharacterData ch, Func<string, bool> isLit, Func<string, int> depth, bool unhoused, string id)
+    {
+        if (Lamps.Find(id) is not { } def) return LampNo.Unknown;
+        if (isLit(id)) return LampNo.Lit;
+        if (def.Home && def.Calling != ch.Archetype) return LampNo.NotHome;
+        if (!Lamps.Next(id).Any(isLit)) return LampNo.Dark;
+        if (def.Road != null && depth(def.Road) < def.Gate && !Ungated(ch, unhoused, def)) return LampNo.Gate;
+        return LampNo.None;
+    }
+
+    /// <summary>The Lamps screen's far lamp (LAMPS_SCREEN_BRIEF.md §14.3): the unlit lamps to light, in lighting order, each
+    /// lightable (CanLight's rules) after those before it; the fewest the roads allow, gates and home honored. Empty when it
+    /// is lit, unknown or can't be reached. The spare lamps are not counted (LightPath does).</summary>
+    public static IReadOnlyList<string> PathTo(CharacterData ch, WorldState? w, string id)
+    {
+        var now = Now(ch).Lit;
+        if (Lamps.Find(id) is not { } goal || now.Contains(id) || (goal.Home && goal.Calling != ch.Archetype)) return [];
+        var s = now.ToList();
+        int start = s.Count;
+        // Each round lights the shortest chain to the goal that its own lamps open; failing that, the nearest lamp on
+        // the road whose gate shuts the way (its depth grows a lamp a round), until the goal is in reach.
+        for (int guard = Lamps.All.Count; guard-- > 0;)
+        {
+            if (Chain(ch, s, x => x == id) is { } c) { s.AddRange(c); return s.Skip(start).ToList(); }
+            // The first gate on the open way (gates and Unhoused aside): which road needs more lamps lit.
+            if (Chain(ch, s, x => x == id, gates: false) is not { } way) return [];
+            var t = s.ToList();
+            string? road = null;
+            foreach (var x in way)
+            {
+                if (Check(ch, t, x) == LampNo.Gate) { road = Lamps.Get(x).Road; break; }
+                t.Add(x);
+            }
+            if (road == null || Chain(ch, s, x => Lamps.Find(x)?.Road == road) is not { } more) return [];
+            s.AddRange(more);
+        }
+        return [];
+    }
+
+    /// <summary>The shortest run of unlit lamps from the lit list to one that matches, each lightable after the ones
+    /// before it (gates: false, only joined and home), in order; null when none is reached.</summary>
+    static List<string>? Chain(CharacterData ch, List<string> lit, Func<string, bool> goal, bool gates = true)
+    {
+        var from = new Dictionary<string, string?>();
+        var q = new Queue<string>();
+        var litSet = lit.ToHashSet();
+        var depth = new Dictionary<string, int>();
+        foreach (var x in lit) if (Lamps.Find(x)?.Road is { } r) depth[r] = depth.GetValueOrDefault(r) + 1;
+        bool unhoused = lit.Any(Unhouses);
+        List<string> Run(string? c) { var r = new List<string>(); for (; c != null; c = from[c]) r.Add(c); r.Reverse(); return r; }
+        bool Ok(string n, string? via)
+        {
+            if (litSet.Contains(n) || from.ContainsKey(n)) return false;
+            if (!gates) return Lamps.Find(n) is { } d && !(d.Home && d.Calling != ch.Archetype);
+            // CanLight's rules on the lit list plus the run to `via`.
+            bool OnRun(string x) { for (string? c = via; c != null; c = from[c]) if (c == x) return true; return false; }
+            int Deep(string road) { int k = depth.GetValueOrDefault(road); for (string? c = via; c != null; c = from[c]) if (Lamps.Find(c)?.Road == road) k++; return k; }
+            bool un = unhoused;
+            for (string? c = via; c != null && !un; c = from[c]) un = Unhouses(c);
+            return Check(ch, x => litSet.Contains(x) || OnRun(x), Deep, un, n) == LampNo.None;
+        }
+        foreach (var l in lit) foreach (var n in Lamps.Next(l)) if (Ok(n, null)) { from[n] = null; q.Enqueue(n); }
+        while (q.Count > 0)
+        {
+            var c = q.Dequeue();
+            if (goal(c)) return Run(c);
+            foreach (var n in Lamps.Next(c)) if (Ok(n, c)) { from[n] = c; q.Enqueue(n); }
+        }
+        return null;
+    }
+
+    /// <summary>§14.3: light PathTo's lamps, all or none (a refusal puts every lamp it lit out again, the Flare as it was).</summary>
+    public static bool LightPath(CharacterData ch, WorldState? w, string id)
+    {
+        var p = PathTo(ch, w, id);
+        if (p.Count == 0 || p.Count > Spare(ch, w)) return false;
+        var l = Now(ch);
+        var keep = l.Lit.ToList();
+        var flare = l.Flare;
+        foreach (var x in p)
+            if (!Light(ch, w, x)) { l.Lit.Clear(); l.Lit.AddRange(keep); l.Flare = flare; return false; }
+        return true;
     }
 
     public static bool Light(CharacterData ch, WorldState? w, string id)
@@ -255,8 +343,10 @@ public static class LampBook
     }
 
     /// <summary>blue.unhoused (the Ford's blue, v2): lamps on other callings' roads open with no depth.</summary>
-    static bool Ungated(CharacterData ch, List<string> lit, LampDef d) =>
-        Lamps.V2 && d.Calling != null && d.Calling != ch.Archetype && lit.Any(Unhouses);
+    static bool Ungated(CharacterData ch, List<string> lit, LampDef d) => Ungated(ch, lit.Any(Unhouses), d);
+
+    static bool Ungated(CharacterData ch, bool unhoused, LampDef d) =>
+        Lamps.V2 && d.Calling != null && d.Calling != ch.Archetype && unhoused;
 
     static bool Unhouses(string id) => Lamps.Find(id) is { } d && d.Effects.Any(e => e.Rule == "blue.unhoused" && e.Phase <= Lamps.LivePhase);
 
@@ -303,17 +393,19 @@ public static class LampBook
 
     /// <summary>The lamp the board suggests next (§2.5): along the survivor's own road first, what
     /// changes most for what they carry. Null when none can be lit.</summary>
-    public static string? Suggest(CharacterData ch, WorldState? w)
+    public static string? Suggest(CharacterData ch, WorldState? w) => Suggest(ch, w, Now(ch).Lit, Spare(ch, w));
+
+    static string? Suggest(CharacterData ch, WorldState? w, List<string> lit, int spare)
     {
-        if (Spare(ch, w) <= 0) return null;
+        if (spare <= 0) return null;
         var l = Now(ch);
         var carried = SkillBook.Carried(ch).Select(s => s.Id).ToHashSet();
         foreach (var s in Items.EquipSlots) if (ch.Equipment[s] is { } it && Items.Find(it.Def)?.Weapon is { } wd) carried.Add(wd.Id);
         string? best = null;
         double bestScore = double.MinValue;
-        foreach (var id in l.Lit.SelectMany(Lamps.Next).Distinct())
+        foreach (var id in lit.SelectMany(Lamps.Next).Distinct())
         {
-            if (CanLight(ch, w, id) != LampNo.None) continue;
+            if (Check(ch, lit, id) != LampNo.None) continue;
             var d = Lamps.Get(id);
             // Banked Flame is a choice, never a suggestion: it pays only to a hand that holds a charge back, and
             // spent as it fills it is a trap (the owner, 12 October: Light my way never lights it).
@@ -341,6 +433,74 @@ public static class LampBook
         int n = 0;
         while (Suggest(ch, w) is { } id && Light(ch, w, id)) n++;
         return n;
+    }
+
+    /// <summary>§14.6: the next n lamps Light my way would light, in order, lighting none (it walks a copy of the lit list).</summary>
+    public static IReadOnlyList<string> Suggested(CharacterData ch, WorldState? w, int n)
+    {
+        var lit = Now(ch).Lit.ToList();
+        int spare = Spare(ch, w);
+        var got = new List<string>();
+        while (got.Count < n && Suggest(ch, w, lit, spare) is { } s) { got.Add(s); lit.Add(s); spare--; }
+        return got;
+    }
+
+    /* --------------------------------------------- what wakes a lamp -- */
+
+    /// <summary>§14.4: why a lamp is dim (lit: asleep), by the sim's own rule. Null when it works on what she fights with
+    /// by day (Character.DaySkills, each as WickBook.Weapon builds it): a lamp with any effect on every skill, a link while
+    /// she carries anything (BoardRules.LinkPick sleeps only on nothing), or a skill or tag effect that covers one of them
+    /// (LampLoadout.Covers, the rule the v2 rites and tags rules read). Null too when it names nothing (no live effect).
+    /// Otherwise the skills (ids) and tags any one of which, carried, would wake it.</summary>
+    public static LampSleep? Sleeps(CharacterData ch, string id)
+    {
+        if (Lamps.Find(id) is not { } d) return null;
+        var live = d.Effects.Where(e => e.Phase <= Lamps.LivePhase).ToList();
+        if (live.Count == 0) return null;
+        bool link = live.Any(e => e.Rule == "link");
+        var scoped = live.Where(e => e.Rule != "link").ToList();
+        if (!link && scoped.Any(e => e.Skill == null && e.Tags == null)) return null;
+        var day = DayWeapons(ch);
+        if (link ? day.Count > 0 : day.Any(w => scoped.Any(e => LampLoadout.Covers(e, w.Def.Id, w.Tags)))) return null;
+        bool Wakes(string skill)
+        {
+            if (!Weapons.All.ContainsKey(skill) || !SkillBook.Carries(ch, skill)) return false;
+            if (link) return true;
+            var w = WickBook.Weapon(ch, skill, SkillBook.Rank(ch));
+            return scoped.Any(e => LampLoadout.Covers(e, w.Def.Id, w.Tags));
+        }
+        var names = scoped.Where(e => e.Skill != null).Select(e => e.Skill!).Concat(d.Feeds).Where(Wakes).Distinct().ToList();
+        if (names.Count == 0) names = ch.Skills.Where(Wakes).Distinct().ToList();
+        if (names.Count == 0) names = Weapons.All.Values.Where(x => x.Findable).Select(x => x.Id).Where(Wakes).ToList();
+        string[] tags = link ? [] : scoped.Where(e => e.Tags != null).SelectMany(e => e.Tags!).Distinct().Select(t => t.ToString().ToLowerInvariant()).ToArray();
+        return new LampSleep(names.ToArray(), tags);
+    }
+
+    /// <summary>What she fights with by day, as the fight builds each (its rank, its lit wick).</summary>
+    static List<WeaponInst> DayWeapons(CharacterData ch) =>
+        Character.DaySkills(ch).Select(x => WickBook.Weapon(ch, x.Id, x.Rank)).ToList();
+
+    /* ------------------------------------------------------- links -- */
+
+    /// <summary>The link lamp's rule (its trigger, wait and hint tags), or null when it is no live link.</summary>
+    static LampEffect? LinkRule(string link) =>
+        Lamps.Find(link)?.Effects.FirstOrDefault(e => e.Rule == "link" && e.Phase <= Lamps.LivePhase);
+
+    /// <summary>§14.5: the skill the link fires by day: her pick if she carries it, else Light my way's (the most tags
+    /// shared with the link's: Battle.LinkPick, the rule Battle.LinkSkill fires by). Null: no link, or nothing carried.</summary>
+    public static string? LinkPick(CharacterData ch, string link) =>
+        LinkRule(link) is { } e ? Battle.LinkPick(DayWeapons(ch), Now(ch).Links.GetValueOrDefault(link), e.Tags)?.Id : null;
+
+    /// <summary>§14.5: the skills the link may be bound to: what she fights with by day (the sim fires a pick only if carried).</summary>
+    public static IReadOnlyList<string> LinkChoices(CharacterData ch, string link) =>
+        LinkRule(link) == null ? [] : Character.DaySkills(ch).Select(x => x.Id).ToList();
+
+    /// <summary>§14.5: bind the link to one of LinkChoices.</summary>
+    public static bool SetLinkPick(CharacterData ch, string link, string skill)
+    {
+        if (!LinkChoices(ch, link).Contains(skill)) return false;
+        Now(ch).Links[link] = skill;
+        return true;
     }
 
     /* ------------------------------------------------ into the fight -- */

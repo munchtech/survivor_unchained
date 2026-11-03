@@ -5,6 +5,10 @@ using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Rpg;
 
+/// <summary>"Damage 142 = 100 base · rank 3 ×1.20 · wicks +12% · Turn: Twin Swing ×1.10": the stat's name, its total,
+/// then every part in order as (what, worded value), the Turn's line last when one is lit (WickBook.Sum).</summary>
+public sealed record WickSumView(string Stat, double Total, IReadOnlyList<(string What, string Value)> Parts);
+
 /// <summary>Why a wick lamp can't be planned or unplanned (None: it can).</summary>
 public enum WickNo { None, NoWick, Unknown, Planned, Unplanned, Order, Turn, Full, Holds }
 
@@ -120,6 +124,51 @@ public static class WickBook
     /// <summary>The lamps a skill would light in this fight at a rank.</summary>
     public static string[] Lit(Battle b, string skill, int rank) =>
         b.WickPaths.TryGetValue(skill, out var p) ? p.Take(System.Math.Max(0, rank)).ToArray() : System.Array.Empty<string>();
+
+    /// <summary>A skill as a fight takes it up at a rank: its wick lit to the rank (Battle.Relight's rule, on Path's lamps).</summary>
+    public static WeaponInst Weapon(CharacterData ch, string skill, int rank)
+    {
+        var w = new WeaponInst(skill, rank, 0);
+        if (Lights == Mode.None || Wicks.Of(skill) == null) return w;
+        var path = Path(ch, skill);
+        var ids = path.Take(System.Math.Min(rank, path.Length)).ToArray();
+        w.Wick = Turns.Build(w, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
+        return w;
+    }
+
+    /// <summary>The rank a skill comes into a fight at: the gear's own rank either way; else by day its carried rank
+    /// (SkillBook.Rank), by night the ember's (SkillBook.NightRank, before the night ranks it further).</summary>
+    public static int RankIn(CharacterData ch, string skill, bool night)
+    {
+        foreach (var (id, rank) in Character.DaySkills(ch, gearOnly: true)) if (id == skill) return rank;
+        return night ? SkillBook.NightRank(ch) : SkillBook.Rank(ch);
+    }
+
+    /// <summary>§14.8: the wick's whole sum for one skill's damage, the number its blows start from in the fight
+    /// (WeaponInst.Damage on WickBook.Weapon: base, rank, the lead-ins, the Turns), at RankIn. Night has no other size on
+    /// a wick (Turns.Build reads none). The Hand, rites and lamps change blows by condition (a heavy, a bleeding thing,
+    /// low health), not this number, so they are not parts. Null for a skill with no wick or no damage of its own.</summary>
+    public static WickSumView? Sum(CharacterData ch, string skill, bool night)
+    {
+        if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || (def.Base.Damage ?? 0) <= 0) return null;
+        int rank = RankIn(ch, skill, night);
+        var w = Weapon(ch, skill, rank);
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var parts = new List<(string What, string Value)> { ("base", def.Base.Damage!.Value.ToString("0.#", inv)) };
+        double growth = 1 + def.Growth * (rank - 1);
+        if (growth != 1) parts.Add(($"rank {rank}", "×" + growth.ToString("0.00", inv)));
+        if (w.Wick is { } fx)
+        {
+            double lead = 0;
+            foreach (var id in fx.Lit)
+                if (Wicks.Lamp(skill, id) is { } ln && ln.N < Wicks.PerStrand) lead += ln.Strand.LeadIns[ln.N - 1].Damage;
+            if (lead != 0) parts.Add(("wicks", (lead > 0 ? "+" : "") + (lead * 100).ToString("0.#", inv) + "%"));
+            foreach (var t in fx.Turns.Select(Wicks.Turn))
+                parts.Add(("Turn:", t.Damage != 1 ? $"{t.Name} ×{t.Damage.ToString("0.00", inv)}" : t.Name));
+            foreach (var t in fx.Dark.Select(Wicks.Turn)) parts.Add(("Turn (dark):", t.Name));
+        }
+        return new WickSumView("Damage", w.Damage, parts);
+    }
 
     /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none.</summary>
     public static Dictionary<string, string[]>? Paths(CharacterData ch) =>
