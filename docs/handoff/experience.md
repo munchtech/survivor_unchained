@@ -5,6 +5,14 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 12 (exp-12 lead, 3 Nov): gate items 1, 2, 4 and tools T1-T3 DONE, MR READY
+
+**State:** DEMO_GATE items 1, 2 and 4 DONE (see their rows), T1-T3 DONE. Tests 1453/0/10. xhigh judge "goal pins" r1 PASS-WITH-NOTES on both items, its must-fixes applied and checked at 1:1 (no round 2 needed).
+- **The goal system** (the app can now point a player anywhere with one data entry): `godot/data/content/goals.json` (zone, `when`/`lineWhen` as the shared `Cond`, `pin` = an interactable id, `into`/`at`/`first`, label, glyph, color, `edge`, `near`, `fade`; `{boss}` words from `Zone.Word`), `godot/logic/World/Goals.cs` (Active, Merge), `godot/src/Game/GameGoals.cs` (tracker merge, minimap `MarkKind.Goal`, map "Your road", screen marks), `godot/src/Ui/GoalMarks.cs` + `GameHud.Goals.cs` (on-screen pin with a ground tick, edge arrow with distance, kept off the tracker corner; `EdgeMarks.Keep` slides boss/elite marks off it). Glyphs `chart`, `arch` added. Tests `GoalsTests`.
+- **The autopilot follows the goals** (`godot/src/Game/Autopilot.cs`, `GoalWalk`, `Table`, `Track`; routes by `godot/logic/Sim/GroundPath.cs`, tests `GroundPathTests`): flags `--offer N`, `--leave-after S`, `--nights N`, `--no-goals`; step frames `loop_*`; town steps kept as saves (`Keep`).
+- **Run tool:** `tools/experience/demo_run.py` (+ `sheet.py`); the proof batch `survivorsunchained_inputs/scratch_exp12/batch_final.json`, snapshots in `survivorsunchained_inputs/demo_runs/` (`load_snap: "fr3_loop:loop_back_1"` = back at the table after a won night).
+- **Routes (after the demo):** UI: the won result's "What you take out" shows its spoils then empties within ~2 s; the tracker's goal diamonds could take the goal's color; the night line "Answer the night: hold N" beside "Tonight: The Wayfinder's table" may read as a second route. Experience: the "way out is open" banner subline shows 1.6 s before the line and arrow; nothing says what leaving takes at the ring.
+
 ## Experience 11 (demo-1 lead, 3 Nov): THE DEMO GATE written, MR READY
 
 **State:** `docs/team/DEMO_GATE.md` is the one backlog (owner's reset, `DEMO_PLAN.md`): the loop played end to end at 1920x1080 (first-time path 21 min, 125 frames, 0 exceptions; all four callings through the prologue; town screens; table > night > result > table; save/reload), ranked BROKEN 1 (suspected) / MISSING 2 / CONFUSING 3, one max xhigh review applied. No game code changed.
