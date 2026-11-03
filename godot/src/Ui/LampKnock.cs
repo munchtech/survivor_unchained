@@ -77,9 +77,11 @@ public static class LampKnock
         for (int i = 0; i < Content.Weapons.MaxWeapons; i++) Disc(DgPanel.Seat(i), DgPanel.SeatR);
         Disc(DgPanel.Coin, DgPanel.ArchR);
         Disc(DgPanel.GlassAt, DgPanel.GlassOuterR);
-        Disc(DgPanel.FlaskAt, 27);
-        Disc(DgPanel.CountAt, 10);
-        Disc(DgPanel.DashAt, 26);
+        // (the flask and the dash by their geo scales: the dash's ring is 26 px at 0.84; UI 29 seats the flask in a ring as
+        // the dash's, at its own scale; the count's badge at its own radius)
+        Disc(DgPanel.FlaskAt, 31 * DgPanel.FlaskScale);
+        Disc(DgPanel.CountAt, DgPanel.CountR + 1);
+        Disc(DgPanel.DashAt, 31 * DgPanel.DashScale);
         Disc(new Vector2(DgPanel.Globe.X, DgPanel.Globe.Y), DgPanel.Globe.Z);
         // the girl's face: the middle of her art's top band (her head), on the screen
         face = FaceOf(girlImg, girl);
@@ -282,6 +284,28 @@ public partial class HerMask : Node
                 RenderingServer.ViewportGetMeasuredRenderTimeCpu(view.GetViewportRid()) + RenderingServer.ViewportGetMeasuredRenderTimeCpu(soft.GetViewportRid()));
     }
 
+    /// <summary>The mask is drawn every Every-th frame (the play camera holds in A and she barely moves: the 10 px
+    /// feather covers a few frames' sway); --lamps-her full: every frame (the cost check).</summary>
+    public static int Every => SurvivorUnchained.Args.Get("lamps-her") == "full" ? 1 : 4;
+    int tick;
+    int mf = -1, mn;
+    double mg, mc;
+    public override void _Process(double delta)
+    {
+        if (!SurvivorUnchained.Args.Has("lamps-measure") || mf == -2) return;
+        // (--lamps-measure: frames 180-299, the two passes' own viewport times on the frames they draw)
+        mf++;
+        if (mf < 180) return;
+        if (drewLast) { var (g, c) = Cost(); mg += g; mc += c; mn++; }
+        if (mf == 299)
+        {
+            GD.Print($"LAMPWIDE her mask: per draw GPU {mg / Math.Max(1, mn):F3} ms, render CPU {mc / Math.Max(1, mn):F3} ms; drawn every {Every} frames: " +
+                     $"{mg / 120:F3} ms GPU, {mc / 120:F3} ms CPU a frame (two {LampKnock.W}x{LampKnock.H} passes, {mn} draws in 120 frames)");
+            mf = -2;
+        }
+    }
+    bool drewLast;
+
     public override void _ExitTree()
     {
         RenderingServer.FramePreDraw -= Sync;
@@ -296,6 +320,14 @@ public partial class HerMask : Node
         if (cam == null || !IsInsideTree()) return;
         var main = GetViewport().GetCamera3D();
         if (main == null) return;
+        drewLast = tick % Every == 1 % Every;   // (the frame after a draw is asked reads its time)
+        bool draw = tick++ % Every == 0;
+        if (Every > 1 && view != null && soft != null)
+        {
+            if (!draw) return;
+            view.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
+            soft.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
+        }
         // her meshes on the mask's layer (again now and then: a weapon drawn, an outfit changed)
         if (scanT-- <= 0)
         {

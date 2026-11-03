@@ -381,6 +381,8 @@ void fragment() {
 		glow(add_light, p, R + 6.0, FOCUS, 0.12);
 	}
 
+	// (the glows end in a round window inside the quad (R + 14): the focus's wide glow read as a lighter square on A's smoke)
+	add_light *= 1.0 - smoothstep(R + 4.0, R + 14.0, length(lp));
 	float m = fmask(FRAGCOORD.xy);
 	COLOR = vec4(acc.rgb + add_light, acc.a) * m;
 }

@@ -261,7 +261,8 @@ public partial class LampBoard : Control
 
         // the view (§16 centering; the stop by flag)
         var window = new Box(0, 0, Size.X, Size.Y);
-        valleyS = m.ValleyScale(window, Feather);
+        // (A: x0.9 of the field-height fit, §16 "Valley in A": the field's own edges fade, no window feather to clear)
+        valleyS = m.ValleyScale(window, Wide ? 0 : Feather);
         var keep = lit.Concat(path).Concat(focus >= 0 ? [focus] : Array.Empty<int>()).ToList();
         if (keep.Count == 0) keep.Add(m.Index.GetValueOrDefault(Lamps.Start(ch.Archetype)));
         var want = SurvivorUnchained.Args.Get("lamps-stop") ?? "road";
@@ -1401,6 +1402,8 @@ public partial class LampBoard : Control
 
     public override void _Ready()
     {
+        // (A sizes the board before it is in the tree, where Resized does not fire: build on entering)
+        if (Size.X > 8 && Size != builtSize) Rebuild();
         if (SurvivorUnchained.Args.Has("lamps-measure"))
         {
             measureFrame = 0;

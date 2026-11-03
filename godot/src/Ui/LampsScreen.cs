@@ -52,7 +52,7 @@ public partial class LampsScreen : Overlay
     {
         wide = !wide;
         Sound.Sfx.Page();
-        G.Hud.LampsWide(wide);
+        G.Hud.LampsWide(wide, SkillBook.Carried(G.Journey.Ch).Where(c => Weapons.All.ContainsKey(c.Id)).Take(6));
         if (!wide)
         {
             G.Hud.ShowPlay(false);
@@ -112,8 +112,7 @@ public partial class LampsScreen : Overlay
         var ch = G.Journey.Ch;
         LampBoard.Demo(ch, G.Journey.World);
         if (visit != null && visit.Layout != LampBook.State(ch).Active) visit = null;
-        G.Hud.LampsWide(true);
-        float s = HudBottom.Scale;
+        G.Hud.LampsWide(true, SkillBook.Carried(ch).Where(c => Weapons.All.ContainsKey(c.Id)).Take(6));
         var seats = new System.Collections.Generic.List<Vector2>();
         int n = System.Math.Min(6, SkillBook.Carried(ch).Count(c => Weapons.All.ContainsKey(c.Item1)));
         for (int i = 0; i < n; i++) seats.Add(HudBottom.Map(DgPanel.Seat(i)));
@@ -132,7 +131,6 @@ public partial class LampsScreen : Overlay
         page = new LampPage(ch, G.Journey.World, G.Zone?.Id, visit, Safe, true, WickRect(), seats) { Position = Vector2.Zero, Size = new Vector2(1920, 1080) };
         visit = page.Visit;
         page.OpenWide += ToggleWide;
-        AddChild(page);
         var board = page.Board;
         var vf = vp / new Vector2(1920, 1080);
         board.Knock(LampKnock.Hud, her?.Texture, vp);
@@ -140,6 +138,10 @@ public partial class LampsScreen : Overlay
         grade.Field(new Vector4(0, LampPage.FieldTop * vf.Y, vp.X, LampPage.FieldBottom * vf.Y), new Vector4(0, 40 * vf.Y, 0, 60 * vf.Y), vp, LampKnock.Hud, null);
         var g2 = grade;
         board.Relaid += () => { if (IsInstanceValid(g2)) g2.Pools(board.LitScreen(), board.IsValley); };
+        // (in the tree only now: the board builds on entering, with its knockout and keep-outs set)
+        AddChild(page);
+        // (debug --lamps-noboard: the graded world alone, for the night's luma outside the pools)
+        if (SurvivorUnchained.Args.Has("lamps-noboard")) foreach (var c in board.GetChildren()) if (c is CanvasItem ci) ci.Visible = false;
         page.Modulate = new Color(1, 1, 1, 0);
         page.CreateTween().TweenProperty(page, "modulate:a", 1f, 0.35f);
     }

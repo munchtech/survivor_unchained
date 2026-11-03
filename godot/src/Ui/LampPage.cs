@@ -83,6 +83,9 @@ public partial class LampPage : Control
         Lay();
     }
 
+    // (A is sized before it is in the tree, where Resized does not fire: lay out again on entering)
+    public override void _Ready() => Lay();
+
     /// <summary>The visit, for the screen to keep across its pages (the session undo lasts until the book closes).</summary>
     public LampSession Visit => Board.Visit;
 
@@ -813,6 +816,8 @@ public static class LampInk
     {
         var lines = new List<string>();
         var cur = "";
+        // (a number keeps its unit: "3 m", "10 s", "5 %" never break)
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"(\d) (m|s|%|px)\b", "$1\u00a0$2");
         foreach (var word in s.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             var t = cur == "" ? word : cur + " " + word;
@@ -878,6 +883,8 @@ public partial class LampHeader : Control
         Refresh();
     }
 
+    public override void _Ready() => Lay();
+
     /// <summary>The count, the layout and the lines again (after a light, a put out, a switch).</summary>
     public void Refresh()
     {
@@ -930,16 +937,20 @@ public partial class LampHeader : Control
         var s = keys.GetCombinedMinimumSize();
         keys.Size = s;
         keys.Position = new Vector2(Mathf.Round(Size.X - s.X), Mathf.Round(Ccy - s.Y / 2));
+        QueueRedraw();
     }
 
     public override void _Draw()
     {
-        float cx = Size.X / 2;
         var fnum = LampInk.F("cinzel-700");
         var fw = LampInk.F("cinzel-600", 3);
         string num = count.ToString(), words = count == 1 ? "LAMP TO LIGHT" : "LAMPS TO LIGHT";
         float wn = LampInk.W(fnum, num, 30), ww = LampInk.W(fw, words, 16) - 3;
-        float xs = cx - (wn + 10 + ww) / 2;
+        // the count centered on the row; where the keys reach it (C on a pad: three keys), it moves left to clear them
+        // by 24 px, never past the layout's name
+        float wc = wn + 10 + ww, nameR = 16 + 2 * 40 + 28 + LampInk.W(LampInk.F("alegreya-700"), name, 17) + 32;
+        float xs = Mathf.Max(nameR, Mathf.Min(Size.X / 2 - wc / 2, keys.Position.X - 24 - wc));
+        float cx = xs + wc / 2;
         LampInk.Text(this, fnum, 30, xs, Yb, num, LampInk.Gold);
         LampInk.Text(this, fw, 16, xs + wn + 10, Yb - 1, words, LampInk.Gold with { A = 0.95f });
         LampInk.Text(this, LampInk.F("alegreya-sans-400"), 14, cx, Yb + 19, sub, LampInk.Dim, 0);
@@ -1146,22 +1157,27 @@ public partial class WickTabs : Control
     {
         float k = d / (2 * 36.6f);
         float hr = (DgRiver.Hole(idx) > 0 ? DgRiver.Hole(idx) : 26.5f) * k;
-        if (DgRiver.Ring(idx) is { } ring)
-        {
-            var rs = ring.GetSize() * k;
-            ci.DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false, new Color(1.35f, 1.22f, 1.05f));
-        }
-        else ci.DrawArc(c, d / 2 - 2, 0, Mathf.Tau, 64, new Color("#9a7442"), 4, true);
+        // (p5b: the mock's tab ring, foot.py seat_ring as C_day.png draws it: a clean bronze band lit up and left, a dark
+        // seat line inside; the HUD's ornate ring read dark and blotchy at the tab's size)
+        float rr = hr + 4.5f;
+        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#1a120a") with { A = 0.85f }, 7.5f, true);
+        ci.DrawArc(c, rr, 0, Mathf.Tau, 72, new Color("#8c6a3c"), 4.2f, true);
+        ci.DrawArc(c, rr + 0.6f, Mathf.Pi * 0.95f, Mathf.Pi * 1.75f, 40, new Color("#e8c98a") with { A = 0.5f }, 1.6f, true);
+        ci.DrawArc(c, rr - 0.4f, -Mathf.Pi * 0.05f, Mathf.Pi * 0.75f, 40, new Color("#4a3418") with { A = 0.8f }, 1.6f, true);
         ci.DrawCircle(c, hr + 1, new Color("#0b0a0c"), true, -1, true);
-        // (the mock's seats, foot.py paint_seat: the school's glass lit from the middle, up and left, to a dark rim:
-        // tint (1 - t)^1.2 over 1.08 of the well's radius; phase 4's soft discs read dark next to C_day.png)
+        // (the mock's seats, foot.py paint_seat: the school's glass lit from the middle, up and left, to a dark rim. p5b:
+        // the glass filled in a deep shade of the school's color first, so the tint shows across the well as C_day.png's,
+        // then its light (1 - t)^1.2 over 1.08 of the well's radius and a soft spot up and left)
+        float fa = art != null ? 1f : 0.45f;
+        ci.DrawCircle(c, hr, (school * new Color(0.26f, 0.26f, 0.26f)).Lerp(new Color("#0b0a0c"), 0.3f) with { A = fa }, true, -1, true);
         ci.DrawTextureRect(Well, new Rect2(c - Vector2.One * hr * 1.08f + new Vector2(-hr * 0.13f, -hr * 0.16f), Vector2.One * hr * 2.16f), false,
-            (school * new Color(0.62f, 0.62f, 0.62f)) with { A = art != null ? 1f : 0.45f });
+            (school * new Color(0.62f, 0.62f, 0.62f)) with { A = 0.85f * fa });
         ci.DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 0.7f + new Vector2(-hr * 0.2f, -hr * 0.26f), Vector2.One * hr * 1.4f), false,
-            school.Lightened(0.3f) with { A = art != null ? 0.30f : 0.12f });
+            school.Lightened(0.3f) with { A = art != null ? 0.22f : 0.10f });
+        ci.DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0, 0, 0, 0.45f * fa), 3f, true);
         if (art != null && art != "")
         {
-            int gi = (int)Mathf.Round(hr * 2 * 0.82f);
+            int gi = (int)Mathf.Round(hr * 2 * 0.62f);
             var (gold, glow) = DgGold.Of(art, gi);
             float gs = gi + 2 * DgGold.Pad;
             var gr = new Rect2(c - new Vector2(gs, gs) / 2, new Vector2(gs, gs));

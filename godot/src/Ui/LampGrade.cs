@@ -43,6 +43,28 @@ public partial class LampGrade : CanvasLayer
         Amount = 0;
     }
 
+    // (--lamps-measure: frames 320-439 with the grade, 446-565 without: the viewport's GPU difference)
+    int mf = -1;
+    double gOn, gOff;
+    readonly List<CanvasItem> parts = new();
+    public override void _Process(double delta)
+    {
+        if (!SurvivorUnchained.Args.Has("lamps-measure") || mf == -2) return;
+        mf++;
+        if (mf < 320) return;
+        if (parts.Count == 0) foreach (var c in GetChildren()) if (c is CanvasItem ci) parts.Add(ci);
+        double g = RenderingServer.ViewportGetMeasuredRenderTimeGpu(GetViewport().GetViewportRid());
+        if (mf < 440) gOn += g;
+        else if (mf == 440) foreach (var c in parts) c.Visible = false;
+        else if (mf > 445 && mf <= 565) gOff += g;
+        else if (mf == 566)
+        {
+            foreach (var c in parts) c.Visible = true;
+            GD.Print($"LAMPWIDE grade: viewport GPU {gOn / 120:F3} with vs {gOff / 120:F3} ms without (grade + pools {(gOn - gOff) / 120:F3} ms)");
+            mf = -2;
+        }
+    }
+
     /// <summary>0: the world as it is; 1: the grade and the pools at full.</summary>
     public float Amount
     {
@@ -74,5 +96,6 @@ public partial class LampGrade : CanvasLayer
             mm.SetInstanceCustomData(i, new Color(sg, 0, 0, 0));
         }
         mm.VisibleInstanceCount = n;
+        if (SurvivorUnchained.Args.Has("lamps-measure")) GD.Print($"LAMPWIDE pools: {n} at " + string.Join(";", System.Linq.Enumerable.Take(System.Linq.Enumerable.Select(at, p => $"{p.X:F0},{p.Y:F0}"), n)));
     }
 }

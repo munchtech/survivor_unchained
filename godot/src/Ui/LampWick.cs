@@ -38,10 +38,13 @@ public partial class LampWick : Control
     {
         Wide = true;
         X0 = 0; Y0 = 0; X1 = size.X; Y1 = size.Y;
-        Kx = 140; Braid = 36; Lx0 = 221; PitchX = 50; Tx = 371; Row0 = 56; PitchY = 76; Pad = 24;
+        // (p5b: the knot clear of the left block, whose type is fitted to 142 px: the braid ran over "DAY RANK VI" and the
+        // stem through the counts at Kx 140)
+        Kx = 200; Braid = 36; Lx0 = 270; PitchX = 50; Tx = 420; Row0 = 56; PitchY = 76; Pad = 24;
         TextX = Tx + 31; TextR = X1 - 24;
         var sm = new ShaderMaterial { Shader = WideSmoke }; sm.SetShaderParameter("size", size); smoke.Material = sm;
         Size = size;
+        Fit();
     }
 
     static Shader? wideSmoke;
@@ -104,8 +107,12 @@ public partial class LampWick : Control
             AddChild(mmi);
         }
         AddChild(over = new WickLayer(DrawOver));
-        Resized += () => { smoke.Size = Size; under.Size = Size; over.Size = Size; };
+        Resized += Fit;
     }
+
+    void Fit() { smoke.Size = Size; under.Size = Size; over.Size = Size; }
+    // (A sizes the panel before it is in the tree, where Resized does not fire)
+    public override void _Ready() => Fit();
 
     static ArrayMesh Quad()
     {
@@ -368,9 +375,19 @@ public partial class LampWick : Control
         var seat = new Vector2(X0 + 46, Y0 + 50);
         string art = Weapons.All.TryGetValue(Skill, out var wd) ? wd.Art : "";
         WickTabs.Seat(ci, seat, 56, 0, art, wd != null ? ItemViews.SchoolColors[wd.School] : LampInk.Gold);
-        LampInk.Text(ci, LampInk.F("cinzel-700", 1), 22, X0 + Pad, Y0 + 118, (wd?.Name ?? Skill).ToUpperInvariant(), LampInk.Ink);
+        string nm = (wd?.Name ?? Skill).ToUpperInvariant();
+        var fnm = LampInk.F("cinzel-700", 1);
+        int nmPx = 22;
+        // (A: the left block fitted to LeftW so the stem and the braid pass clear of it; the counts on two lines)
+        if (Wide) while (nmPx > 15 && LampInk.W(fnm, nm, nmPx) > LeftW) nmPx--;
+        LampInk.Text(ci, fnm, nmPx, X0 + Pad, Y0 + 118, nm, LampInk.Ink);
         LampInk.Text(ci, LampInk.F("alegreya-sans-700", 2), 13, X0 + Pad, Y0 + 140, $"DAY RANK {Roman(Math.Max(1, rank))}", LampInk.Gold);
-        LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned", LampInk.Dim);
+        if (Wide)
+        {
+            LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit", LampInk.Dim);
+            LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 177, $"{plan.Count} planned", LampInk.Dim);
+        }
+        else LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned", LampInk.Dim);
         // the stem: up from the chosen tab, a 20 px bend, into the braid's knot
         var knot = new Vector2(Kx, Row0 + PitchY);
         DrawStem(ci, knot);
@@ -457,12 +474,40 @@ public partial class LampWick : Control
 
     /// <summary>The stem (skins/c.py _stem_dist): one continuous gold line up from the chosen tab, bending on a 20 px
     /// radius into the knot. From a tab right of the knot it runs left under the rows, then up.</summary>
+    /// <summary>A: the left block's widest type (the stem rises at Kx - 20, 14 px clear of it).</summary>
+    float LeftW => Kx - 20 - 14 - (X0 + Pad);
+
+    /// <summary>A polyline through the corners, each rounded by r (a quadratic through the corner).</summary>
+    static List<Vector2> Rounded(Vector2[] c, float r)
+    {
+        var o = new List<Vector2> { c[0] };
+        for (int i = 1; i < c.Length - 1; i++)
+        {
+            var a = c[i - 1]; var v = c[i]; var b = c[i + 1];
+            float ra = Math.Min(r, a.DistanceTo(v) / 2), rb = Math.Min(r, v.DistanceTo(b) / 2);
+            if (ra < 0.5f || rb < 0.5f) { o.Add(v); continue; }
+            var p0 = v + (a - v).Normalized() * ra; var p2 = v + (b - v).Normalized() * rb;
+            for (int k = 0; k <= 8; k++) { float t = k / 8f; o.Add(p0 * (1 - t) * (1 - t) + v * 2 * t * (1 - t) + p2 * t * t); }
+        }
+        o.Add(c[^1]);
+        return o;
+    }
+
     void DrawStem(Control ci, Vector2 knot)
     {
         var pts = new List<Vector2>();
         float tx = TabAt.X, top = TabAt.Y - 28 - 2.5f;
         const float rad = 20;
-        if (tx + rad <= knot.X)
+        if (Wide)
+        {
+            // A: up from the seat into the smoke's foot, along under the rows to Kx - 20 (clear of the left block), up,
+            // and into the knot
+            float rx = knot.X - rad, ch = Y1 - 8;
+            pts = Math.Abs(tx - rx) < 1
+                ? Rounded([new Vector2(tx, top), new Vector2(rx, knot.Y), knot], rad)
+                : Rounded([new Vector2(tx, top), new Vector2(tx, ch), new Vector2(rx, ch), new Vector2(rx, knot.Y), knot], 10);
+        }
+        else if (tx + rad <= knot.X)
         {
             pts.Add(new Vector2(tx, top));
             Arc(pts, new Vector2(tx + rad, knot.Y + rad), rad, Mathf.Pi, 1.5f * Mathf.Pi);

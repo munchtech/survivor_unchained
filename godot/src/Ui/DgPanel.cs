@@ -78,6 +78,7 @@ public partial class DgPanel : Control
     public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.94f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
     /// <summary>The flask's count badge (middle, radius).</summary>
     public static readonly Vector2 CountAt = V(A(Part("panel", "flask"), "count_badge"), new Vector2(688, 1014));
+    public static readonly float CountR = A(Part("panel", "flask"), "count_badge") is { Length: >= 3 } cb ? cb[2] : 9;
     /// <summary>The key chips' tops (R and SPACE: [middle x, top y]).</summary>
     public static readonly Vector2 KeyR = V(A(Part("panel", "key_tags"), "R"), new Vector2(673, 1061));
     public static readonly Vector2 KeySpace = V(A(Part("panel", "key_tags"), "SPACE"), new Vector2(1247, 1061));
