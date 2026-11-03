@@ -1409,6 +1409,7 @@ public partial class Game : Node, IZoneHost
             else hud.PromptAt(null);
             Perf.Begin(Perf.Part.Labels);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
+            hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Ground(Overlay == null && !labelsOff && !Args.Has("clean") ? Labels(fb2) : new());
             Perf.End(Perf.Part.Labels);
         }
@@ -1551,6 +1552,7 @@ public partial class Game : Node, IZoneHost
         }
         var marks = zone.MapMarks().Where(m => m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)))
             .Select(m => new MiniMark(m.X, m.Z, m.Kind, m.Label)).ToList();
+        marks.AddRange(GoalMiniMarks());
         if (World.Corpse is { } corpse && corpse.Zone == zone.Id) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
         return new MinimapView(zone.Id, MapScreen.Drawing(scene.Data), extent, seen, Journey.FogN, marks, b.Player.X, b.Player.Z, b.Player.Facing, zone.TimeOf(World) == TimeOfDay.Night);
     }

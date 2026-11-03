@@ -245,5 +245,5 @@ public partial class Game
         return new List<Tracked> { new("tonight", "Tonight", TrackTone.Main, steps) }.Concat(list).ToList();
     }
 
-    void RefreshObjectives() => hud.Objectives(WithTonight(objectivesBase));
+    void RefreshObjectives() => hud.Objectives(WithGoals(WithTonight(objectivesBase)));
 }

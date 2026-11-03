@@ -465,6 +465,8 @@ public abstract class ZoneRuntime
     /// <summary>A death here: true if the zone handled it (the prologue does).</summary>
     public virtual bool OnDeath(string killer) => false;
     public virtual List<MapMark> MapMarks() => new();
+    /// <summary>A word the goals' lines may name ({boss}); null: the zone has none by that key.</summary>
+    public virtual string? Word(string key) => null;
     /// <summary>Ground you know without walking it (a town seen whole from its gate).</summary>
     public virtual List<(double X, double Z, double R)> MapKnown => new();
     /// <summary>Where the map opens, and how close, if not the whole zone.</summary>

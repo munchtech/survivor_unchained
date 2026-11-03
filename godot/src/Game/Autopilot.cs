@@ -80,7 +80,16 @@ public sealed class Autopilot
         if (g.Overlay == "chest") return;
         // A night's result is read, then left as a player leaves it (closing it as a screen
         // stranded the survivor on the empty field).
-        if (g.Overlay == "arena") { if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); } return; }
+        if (g.Overlay == "arena")
+        {
+            if (!resultSeen) { resultSeen = true; nightsEnded++; if (GoalsOn) Frame($"loop_result_{Math.Max(1, arenasEntered)}", 2); }
+            if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); }
+            return;
+        }
+        resultSeen = false;
+        // The Wayfinder's table: a picture of it, then the night's offer taken (--offer N), as a player does.
+        if (g.Overlay == "maps" && GoalsOn) { Table(dt); return; }
+        tableOpen = false;
         if (g.Overlay != null) { g.CloseOverlay(); return; }
         // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
         // (spare, finish), or with its first answer: a run never stalls at his knee.
@@ -95,6 +104,7 @@ public sealed class Autopilot
         choiceT = 0;
         var b = g.Battle;
         var z = g.Zone;
+        if (GoalsOn) Track(dt, b, z);
         // (--auto toward: walking down the screen, toward the camera, her face
         // to it: pictures of her face at play zoom)
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
@@ -104,6 +114,7 @@ public sealed class Autopilot
         // the worst player in its first real fight, MR5 item 11); under --spots (pictures of fixed places) it stands where it is set down)
         if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
+        if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);
     }
@@ -300,6 +311,123 @@ public sealed class Autopilot
                 }
             }
         return (x, z);
+    }
+
+    // ---- The goals (data/content/goals.json): the loop of a night, followed as a new player would ----
+
+    /// <summary>Follow the goals under --auto (not in the idle/toward/away/across/talk modes), unless --no-goals.</summary>
+    bool GoalsOn => !Idle && !Toward && !Away && !Across && !Talk && !Args.Has("no-goals");
+    bool resultSeen, tableOpen, townShot, leaving, tableEnded;
+    int nightsEnded, arenasEntered, backFor;
+    double tableT, wonT = -1, leaveT, interactT, printT;
+    string lastZone = "";
+
+    void Frame(string tag, double seconds)
+    {
+        Godot.GD.Print($"auto: {tag} (frame in {seconds} s)");
+        Shots.Want(tag, seconds);
+    }
+
+    /// <summary>Where the loop is: entering the town and the arenas, and an arena won.</summary>
+    void Track(double dt, Battle? b, ZoneRuntime? z)
+    {
+        if (b == null || z == null || g.InTransit) return;
+        if (z.Id != lastZone)
+        {
+            lastZone = z.Id;
+            if (z.Id == "waystation")
+            {
+                if (!townShot) { townShot = true; Frame("loop_town", 3); }
+                if (nightsEnded > 0 && backFor < nightsEnded) { backFor = nightsEnded; Frame($"loop_back_{nightsEnded}", 3); }
+            }
+            else if (z is ArenaRun or MapRun)
+            {
+                arenasEntered++;
+                wonT = -1; leaving = false; leaveT = 0; printT = 0;
+                Frame($"loop_arena_{arenasEntered}", 10);
+            }
+        }
+        bool won = z switch { ArenaRun a => a.Won, MapRun m => m.Cleared, _ => false };
+        if (!won) return;
+        if (wonT < 0)
+        {
+            wonT = 0;
+            Frame($"loop_won_{arenasEntered}", 3);
+            Frame($"loop_wayline_{arenasEntered}", 6);
+        }
+        else wonT += dt;
+    }
+
+    /// <summary>The table open: a picture, then the offer taken; after the last night (--nights N) it stays open.</summary>
+    void Table(double dt)
+    {
+        int n = arenasEntered + 1, last = (int)Args.Num("nights", 0);
+        bool done = last > 0 && nightsEnded >= last;
+        if (!tableOpen)
+        {
+            tableOpen = true; tableT = 0;
+            Frame($"loop_table_open_{n}", 2);
+            if (done) Frame("loop_table_after", 2);
+        }
+        tableT += dt;
+        if (done)
+        {
+            if (!tableEnded) { tableEnded = true; Shots.EndIn(4); }
+            return;
+        }
+        if (tableT < 3) return;
+        var w = g.Journey.World;
+        var offers = SurvivorUnchained.Maps.MapOffers.Today(w.Day, Math.Max(1, (int)w.Fact("arena.best").Number), (int)w.Fact("map.drawn").Number);
+        int pick = Math.Clamp((int)Args.Num("offer", 0), 0, offers.Count - 1);
+        Godot.GD.Print($"auto: night {n}: taking offer {pick}");
+        tableOpen = false;
+        g.SetOut(offers[pick]);
+    }
+
+    /// <summary>Walk to the goal and use it: in the town, the first one standing; in a won arena, the way out
+    /// once --leave-after S (20) have passed since it was won. True when it has the step.</summary>
+    bool GoalWalk(double dt, Battle b, ZoneRuntime z)
+    {
+        var pins = g.GoalPins();
+        ActiveGoal? pin;
+        bool crowd = false;
+        if (!z.Combat) pin = pins.FirstOrDefault();
+        else
+        {
+            if (wonT < 0 || wonT < Args.Num("leave-after", 20)) return false;
+            pin = pins.FirstOrDefault(a => a.Def.Pin == "way_out");
+            crowd = true;
+            if (pin != null && !leaving)
+            {
+                leaving = true; leaveT = 0;
+                Frame($"loop_leaving_{arenasEntered}", 0.5);
+                Frame($"loop_leaving_{arenasEntered}_b", 5);
+            }
+        }
+        if (pin == null) return false;
+        var p = b.Player;
+        double dx = pin.X - p.X, dz = pin.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        interactT -= dt;
+        if (d < pin.R * 0.7)
+        {
+            if (interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
+            return true;
+        }
+        if ((printT -= dt) <= 0) { printT = 5; Godot.GD.Print($"auto: to {pin.Def.Pin} {d:0.0} m"); }
+        double rx = 0, rz = 0;
+        int close = 0;
+        if (crowd)
+            foreach (var e in b.Enemies.Living())
+            {
+                if (e.State is EnemyState.Dying or EnemyState.Burrowed || !b.HostileToPlayer(e)) continue;
+                double ex = p.X - e.X, ez = p.Z - e.Z, ed = Math.Max(0.01, Math.Sqrt(ex * ex + ez * ez));
+                if (ed < 3) close++;
+                if (ed < 7) { double w = Math.Max(0, 7 - ed) / 7; rx += ex / ed * w; rz += ez / ed * w; }
+            }
+        Steer(dt, dx / d + rx * 0.5, dz / d + rz * 0.5, p, pin.X, pin.Z);
+        dashT -= dt;
+        if (close >= 4 && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
+        return true;
     }
 
     /// <summary>Go that way; wedged on something, sidestep for a moment.</summary>

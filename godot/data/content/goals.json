@@ -1,0 +1,45 @@
+[
+  {
+    "id": "table",
+    "zone": "waystation",
+    "when": { "fact": "prologue.done", "eq": true },
+    "lineWhen": { "not": { "time": "night" } },
+    "pin": "maps",
+    "title": "The Wayfinder's Table",
+    "steps": [
+      { "text": "Choose tonight's fight from the Wayfinder's maps, on the Old Road toward the east gate" },
+      { "text": "Each map is a night's ground, and something rules it", "optional": true }
+    ],
+    "label": "The Wayfinder's table",
+    "glyph": "map",
+    "color": "#e8c070",
+    "edge": true,
+    "near": 4
+  },
+  {
+    "id": "way_out",
+    "zone": "arena",
+    "pin": "way_out",
+    "into": "arena",
+    "at": 1,
+    "steps": [ { "text": "Leave by the way out, where {boss} fell" } ],
+    "label": "The way out",
+    "glyph": "next",
+    "color": "#8ab4ff",
+    "edge": true,
+    "near": 3
+  },
+  {
+    "id": "map_out",
+    "zone": "map",
+    "pin": "way_out",
+    "into": "map",
+    "at": 1,
+    "steps": [ { "text": "Leave by the way out: the map is cleared" } ],
+    "label": "The way out",
+    "glyph": "next",
+    "color": "#8ab4ff",
+    "edge": true,
+    "near": 3
+  }
+]

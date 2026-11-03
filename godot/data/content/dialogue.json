@@ -488,7 +488,7 @@
    },
    "town": {
     "id": "town",
-    "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
+    "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge, and the Wayfinder's table on it, before the gate: she sells maps to worse nights than the one you've had, and somebody always buys. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
     "choices": [
      {
       "text": "Who runs the place?",
