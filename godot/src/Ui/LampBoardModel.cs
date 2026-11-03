@@ -430,7 +430,9 @@ public sealed class LampBoardModel
                 passes.Add((reach + half + 10, past));
             }
             passes.Add((0, near));
-            if (Her(sp)) passes.Add((0, wide ??= Sorted(-60, 320, 8, -200, 200, 8)));
+            // (her hearth, and at the Valley an outer name (a calling, an Old Road; not the Ford in the middle): wider. A's
+            // field is shorter than the mock's window, and the Grave's name had no spot within 64 px of its own)
+            if (Her(sp) || (stop == BoardStop.Valley && n * v.S > 150)) passes.Add((0, wide ??= Sorted(-60, 320, 8, -200, 200, 8)));
             foreach (var (a0, cands) in passes)
             {
                 foreach (var (a, lat) in cands)

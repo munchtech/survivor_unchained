@@ -54,26 +54,63 @@ public static class LampKnock
         return (l, r);
     }
 
+    /// <summary>What the build reads from the HUD's art and geo (gathered on the main thread; the arithmetic runs on a
+    /// worker: phase 5 built it on the first open, 122-158 ms in the open's frame).</summary>
+    sealed record Inputs(float Scale, List<(ArtImg? Art, Rect2 R)> Arts, List<(Vector2 C, float R)> Discs, ArtImg? Girl, Rect2 GirlR);
+    sealed record Built(byte[] Bytes, List<Box> Boxes, Vector2 Face, float[] Alpha, float HeadsTop, double Ms);
+
+    static System.Threading.Tasks.Task<Built>? pending;
+    static float pendingScale = -1;
+
+    /// <summary>Build it ahead (the HUD calls this when it loads): the art is read here, the rest on a worker; the first
+    /// open then only makes the texture (Build waits for the worker if it is still running).</summary>
+    public static void Prewarm()
+    {
+        if ((hud != null && Math.Abs(builtScale - HudBottom.Scale) < 1e-4f) || (pending != null && Math.Abs(pendingScale - HudBottom.Scale) < 1e-4f)) return;
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var inp = Gather();
+        pendingScale = inp.Scale;
+        pending = System.Threading.Tasks.Task.Run(() => Compute(inp));
+        GD.Print($"LAMPWIDE knock: prewarm started at HUD scale {inp.Scale:F2} (art read in {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms on the main thread)");
+    }
+
     static void Build()
     {
         if (hud != null && Math.Abs(builtScale - HudBottom.Scale) < 1e-4f) return;
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        bool warm = pending != null && Math.Abs(pendingScale - HudBottom.Scale) < 1e-4f;
+        var b = warm ? pending!.Result : Compute(Gather());
+        pending = null;
         builtScale = HudBottom.Scale;
-        var a = new float[W * H];
+        var img = Image.CreateFromData(W, H, false, Image.Format.L8, b.Bytes);
+        hud = ImageTexture.CreateFromImage(img);
+        boxes.Clear();
+        boxes.AddRange(b.Boxes);
+        face = b.Face;
+        alpha = b.Alpha;
+        HeadsTop = b.HeadsTop;
+        buildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        GD.Print($"LAMPWIDE knock: {(warm ? "prewarmed" : "built")} ({b.Ms:F1} ms of work{(warm ? " on a worker" : "")}), {buildMs:F1} ms on the open's frame, at HUD scale {builtScale:F2}, {boxes.Count} boxes, face {face.X:F0},{face.Y:F0}");
+    }
+
+    static Inputs Gather()
+    {
+        float s = HudBottom.Scale;
         // the art: her figure (her quad at her group's scale), the keeper and his lip, the plate
         float gs = DgPanel.GroupScale;
         var girlTl = DgPanel.GirlAnchor + (LifeLamp.At - DgPanel.GirlAnchor) * gs + DgPanel.GirlOffset;
         var girl = HudBottom.Map(new Rect2(girlTl, LifeLamp.Canvas * gs));
         var girlImg = Art("lamp_life/drowned/lamp_cold.png");
-        Stamp(a, girlImg, girl);
         var kr = HudBottom.Map(DgPanel.KeeperRect);
-        Stamp(a, Art("dg_keeper/keeper.png"), kr);
-        Stamp(a, Art("dg_keeper/keeper_lip.png"), kr);
         var (plate, at) = DgPanel.Plate();
-        Stamp(a, Art(plate), HudBottom.Map(new Rect2(DgPanel.Rect.Position + at.Position, at.Size)));
+        var arts = new List<(ArtImg?, Rect2)>
+        {
+            (girlImg, girl), (Art("dg_keeper/keeper.png"), kr), (Art("dg_keeper/keeper_lip.png"), kr),
+            (Art(plate), HudBottom.Map(new Rect2(DgPanel.Rect.Position + at.Position, at.Size))),
+        };
         // the live parts over the art (each a disc, a pixel over its rim)
-        float s = HudBottom.Scale;
-        void Disc(Vector2 c, float r) => DiscAt(a, HudBottom.Map(c), (r + 1) * s);
+        var discs = new List<(Vector2, float)>();
+        void Disc(Vector2 c, float r) => discs.Add((HudBottom.Map(c), (r + 1) * s));
         for (int i = 0; i < Content.Weapons.MaxWeapons; i++) Disc(DgPanel.Seat(i), DgPanel.SeatR);
         Disc(DgPanel.Coin, DgPanel.ArchR);
         Disc(DgPanel.GlassAt, DgPanel.GlassOuterR);
@@ -83,29 +120,36 @@ public static class LampKnock
         Disc(DgPanel.CountAt, DgPanel.CountR + 1);
         Disc(DgPanel.DashAt, 31 * DgPanel.DashScale);
         Disc(new Vector2(DgPanel.Globe.X, DgPanel.Globe.Y), DgPanel.Globe.Z);
+        return new Inputs(s, arts, discs, girlImg, girl);
+    }
+
+    /// <summary>The arithmetic (no engine calls: a worker runs it).</summary>
+    static Built Compute(Inputs inp)
+    {
+        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        float s = inp.Scale;
+        var a = new float[W * H];
+        foreach (var (art, r) in inp.Arts) Stamp(a, art, r);
+        foreach (var (c, r) in inp.Discs) DiscAt(a, c, r);
         // the girl's face: the middle of her art's top band (her head), on the screen
-        face = FaceOf(girlImg, girl);
-        alpha = a;
-        HeadsTop = 1080;
-        for (int i = 0; i < a.Length && HeadsTop >= 1080; i++) if (a[i] > 0.5f) HeadsTop = (i / W) * Down;
+        var fc = FaceOf(inp.Girl, inp.GirlR);
+        float headsTop = 1080;
+        for (int i = 0; i < a.Length && headsTop >= 1080; i++) if (a[i] > 0.5f) headsTop = (i / W) * Down;
         // the distance from the foot (screen px), then the soft knockout: 0 on the art, 1 at 32 px (48 at her face)
         var d = Distance(a);
-        var img = Image.CreateEmpty(W, H, false, Image.Format.L8);
         var bytes = new byte[W * H];
         float fr = 70 * s;
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
             {
                 var p = new Vector2((x + 0.5f) * Down, (y + 0.5f) * Down);
-                float f = Mathf.Exp(-(p - face).LengthSquared() / (fr * fr));
-                float k = Grow + (GrowFace - Grow) * Mathf.Clamp(f * 1.6f, 0, 1);
-                float t = Mathf.Clamp(d[y * W + x] / k, 0, 1);
-                bytes[y * W + x] = (byte)Mathf.RoundToInt(t * t * (3 - 2 * t) * 255);
+                float f = MathF.Exp(-(p - fc).LengthSquared() / (fr * fr));
+                float k = Grow + (GrowFace - Grow) * Math.Clamp(f * 1.6f, 0, 1);
+                float t = Math.Clamp(d[y * W + x] / k, 0, 1);
+                bytes[y * W + x] = (byte)Math.Round(t * t * (3 - 2 * t) * 255);
             }
-        img.SetData(W, H, false, Image.Format.L8, bytes);
-        hud = ImageTexture.CreateFromImage(img);
         // the boxes: per 16 px row, each run of cells not clear
-        boxes.Clear();
+        var bx = new List<Box>();
         const int Row = 16 / Down;
         for (int y0 = 0; y0 < H; y0 += Row)
         {
@@ -115,11 +159,11 @@ public static class LampKnock
                 bool set = false;
                 if (x < W) for (int y = y0; y < Math.Min(H, y0 + Row) && !set; y++) set = bytes[y * W + x] < 250;
                 if (set && run < 0) run = x;
-                else if (!set && run >= 0) { boxes.Add(new Box(run * Down, y0 * Down, x * Down, Math.Min(H, y0 + Row) * Down)); run = -1; }
+                else if (!set && run >= 0) { bx.Add(new Box(run * Down, y0 * Down, x * Down, Math.Min(H, y0 + Row) * Down)); run = -1; }
             }
         }
-        buildMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-        GD.Print($"LAMPWIDE knock: built in {buildMs:F1} ms at HUD scale {s:F2}, {boxes.Count} boxes, face {face.X:F0},{face.Y:F0}, girl {girl.Position.X:F0},{girl.Position.Y:F0} {girl.Size.X:F0}x{girl.Size.Y:F0}");
+        double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        return new Built(bytes, bx, fc, a, headsTop, ms);
     }
 
     sealed record ArtImg(byte[] Data, int W, int H);

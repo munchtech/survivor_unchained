@@ -1,27 +1,47 @@
 // The Lamps board's lamps (src/Ui/LampBoard.cs): one MultiMesh of 574 quads, every kind an SDF here
 // (docs/design/LAMPS_SCREEN_BRIEF.md §5, §6, §16; the mock's skins/a.py lamp() is the look).
-// Instance COLOR: r kind (LampKind's order), g state (0 lit, 1 available, 2 unlit, 3 blocked), b fade, a flags
-// (1 dim, 2 focus, 4 on the path, 8 near (within 3 steps), 16 found, 32 the gate notch).
-// INSTANCE_CUSTOM: x radius px (the focus's x1.1 in), y seed 0..1, z calling (0 warden, 1 reaver, 2 arcanist, 3 stalker),
-// w the notch's alpha (it fades with its lamp).
+// Instance COLOR: r kind (LampKind's order), g state (0 lit, 1 available, 2 unlit, 3 blocked), b the event's time
+// (LampMotion's clock; -1e4 none), a flags + fade x 0.999 (flags: 1 dim, 2 focus, 4 on the path, 8 near (within 3 steps),
+// 16 found, 32 the gate notch, 64 inked, 128 the focus ring gliding (drawn by kind 18, not here)).
+// INSTANCE_CUSTOM: x radius px (the focus's x1.1 in), y seed 0..1, z calling (0 warden, 1 reaver, 2 arcanist, 3 stalker)
+// + 4 x the event (1 lit with the flame run, 2 put out, 3 lit, no run), w the notch's alpha (it fades with its lamp).
+// Kind 18: the focus ring alone, gliding to its new lamp (§11 Focus move).
 shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
 
 #include "res://shaders/ui_lamps_field.gdshaderinc"
+#include "res://shaders/ui_lamps_motion.gdshaderinc"
 uniform float valley = 0.0;                            // 1: the Valley's dots
 uniform float find_on = 0.0;                           // 1: Find is up (the rest drop to 45%)
 uniform sampler2D palm : filter_linear_mipmap, repeat_disable;
 
 varying flat vec4 d0;
 varying flat vec4 d1;
+varying flat vec4 mo;        // x the open/close alpha, y the catch's scale, z the catch's bloom, w the gutter's light
+varying flat float st_over;  // the state shown while an event runs (-1: the instance's own)
 varying vec2 lp;
-
 
 void vertex() {
 	d0 = COLOR;
 	d1 = INSTANCE_CUSTOM;
 	float H = d1.x + 14.0;
 	lp = (UV - 0.5) * 2.0 * H;
+	// (the instance's center on the board: VERTEX is the corner after the instance transform)
+	vec2 c = VERTEX - (UV - 0.5) * 2.0 * H;
+	float a = open_in(length(c - hearth)) * close_out();
+	int ev = int(d1.z + 0.5) >> 2;
+	float t = now - d0.b, sc = 1.0, bloom = 0.0, gut = 1.0;
+	st_over = -1.0;
+	if (ev == 1 || ev == 3) {
+		float run = ev == 1 ? RUN : 0.0;
+		if (t < run) st_over = 1.0;                       // the flame is on its way: still the ember-rimmed glass
+		else if (t < run + CATCH) { float u = (t - run) / CATCH; sc = mix(0.85, 1.0, ease_out(u)); bloom = 1.0 - u; }
+	} else if (ev == 2 && t < GUTTER) {
+		float u = t / GUTTER;                               // the flame gutters: lit, its light stuttering down
+		st_over = 0.0;
+		gut = (1.0 - u) * (0.72 + 0.28 * sin(t * 95.0));
+	}
+	mo = vec4(a, sc, bloom, gut);
 	COLOR = vec4(1.0);
 }
 
@@ -128,16 +148,27 @@ void fragment() {
 	vec4 acc = vec4(0.0);
 	vec3 add_light = vec3(0.0);
 	int kind = int(d0.r + 0.5);
-	int st = int(d0.g + 0.5);
-	float fade = d0.b;
-	int flags = int(d0.a + 0.5);
-	bool dim = (flags & 1) != 0, focus = (flags & 2) != 0, onpath = (flags & 4) != 0, near = (flags & 8) != 0;
+	if (kind == 18) {
+		// the focus ring alone, between its old lamp and its new one (0.10 s)
+		vec4 ra = vec4(0.0);
+		vec3 rl = vec3(0.0);
+		float R0 = d1.x;
+		float fr0 = valley > 0.5 ? ring(length(lp) - (R0 + 4.0), 1.5) : ring(length(lp) - (R0 + 5.0), 1.5);
+		fill(ra, fr0, hexc(0xe8c87a), 1.0);
+		if (valley < 0.5) { rl += hexc(0xe8c87a) * 0.30 * covs(fr0, 3.0); glow(rl, lp, R0 + 6.0, hexc(0xe8c87a), 0.12); }
+		rl *= 1.0 - smoothstep(R0 + 4.0, R0 + 14.0, length(lp));
+		COLOR = vec4(ra.rgb + rl, ra.a) * fmask(FRAGCOORD.xy) * mo.x;
+	} else {
+	int st = st_over >= 0.0 ? int(st_over + 0.5) : int(d0.g + 0.5);
+	int flags = int(floor(d0.a));
+	float fade = clamp(fract(d0.a) / 0.999, 0.0, 1.0);
+	bool dim = (flags & 1) != 0, focus = (flags & 2) != 0 && (flags & 128) == 0, onpath = (flags & 4) != 0, near = (flags & 8) != 0;
 	bool found = (flags & 16) != 0, notch_on = (flags & 32) != 0;
 	bool inked = (flags & 64) != 0;                       // the Lamp stop: its feed glyph is drawn inside (LampBoard's ink layer)
 	float R = d1.x;
 	float seed = d1.y;
-	int calling = int(d1.z + 0.5);
-	vec2 p = lp;
+	int calling = int(d1.z + 0.5) & 3;
+	vec2 p = lp / mo.y;
 	bool lit = st == 0;
 	// kinds: 0 start 1 small 2 attribute 3 entry 4 skill 5 notable 6 blue 7 reflex 8 reflexUp 9 form 10 flareLamp
 	// 11 ultimate 12 ultimateMod 13 rite 14 link 15 hand; the wick panel's (LampWick): 16 wick lead-in 17 Turn
@@ -146,8 +177,8 @@ void fragment() {
 	bool far_blue = blue && !lit && !near;
 	bool asleep = lit && dim;
 	float op = (dim ? 0.5 : 1.0) * fade;
-	float flick = 1.0 + (seed - 0.5) * 0.08;
-	float breathe = 0.8 + 0.2 * sin(2.0 * PI * (TIME / 2.6 + seed));
+	float flick = flicker(seed) * mo.w;
+	float breathe = still > 0.5 ? 0.9 : 0.8 + 0.2 * sin(2.0 * PI * (TIME / 2.6 + seed));
 	float rimw = 1.25;
 	float rim_a = st == 3 ? 0.30 : 0.55;
 
@@ -299,13 +330,14 @@ void fragment() {
 		// ---- the flame / core
 		float D_ = 2.0 * R;
 		if (lit && kind != 14 && !inked) {
+			float ga = mo.w;
 			if (asleep) fill(acc, teardrop(p, vec2(0.0, R * 0.1), R * 0.6, R * 0.34), ASLEEP, 0.9);
 			else if (D_ >= 18.0 && (kind == 5 || kind == 3 || kind == 13 || kind == 10 || kind == 7 || kind == 9 || kind == 17))
-				fills(acc, teardrop(p, vec2(0.0, R * 0.05), R * 0.70, R * 0.36), hexc(0xfffbea), 0.95, 0.25);
+				fills(acc, teardrop(p, vec2(0.0, R * 0.05), R * 0.70, R * 0.36), hexc(0xfffbea), 0.95 * ga, 0.25);
 			else if (kind != 0 && kind != 15 && kind != 6 && kind != 11 && kind != 12)
-				fills(acc, length(p) - max(R * 0.32, 1.4), hexc(0xfffbea), 0.95, 0.3);
+				fills(acc, length(p) - max(R * 0.32, 1.4), hexc(0xfffbea), 0.95 * ga, 0.3);
 			else if (kind == 6 || kind == 11)
-				fills(acc, length(p) - R * 0.22, vec3(1.0), 0.85, 0.6);
+				fills(acc, length(p) - R * 0.22, vec3(1.0), 0.85 * ga, 0.6);
 		}
 
 		// ---- the Turn's flame crown: three small tongues over its top (skins/a.py wick_turn)
@@ -373,16 +405,20 @@ void fragment() {
 		acc = acc * na + keep * (1.0 - acc.a * na);
 	}
 
-	// ---- focus: a crisp 1.5 px gold ring at r+5, a soft outer glow at 30%
+	// ---- the catch's bloom (0.12 s): a warm flare from the glass outward
+	if (mo.z > 0.0) glow(add_light, lp, R * 1.15, blue ? hexc(0xcfe2ff) : hexc(0xffd27a), 0.85 * mo.z);
+
+	// ---- focus: a crisp 1.5 px gold ring at r+5, a soft outer glow at 30% (unscaled by the catch)
 	if (focus && valley < 0.5) {
-		float fr = ring(length(p) - (R + 5.0), 1.5);
+		float fr = ring(length(lp) - (R + 5.0), 1.5);
 		fill(acc, fr, FOCUS, 1.0);
 		add_light += FOCUS * 0.30 * covs(fr, 3.0);
-		glow(add_light, p, R + 6.0, FOCUS, 0.12);
+		glow(add_light, lp, R + 6.0, FOCUS, 0.12);
 	}
 
 	// (the glows end in a round window inside the quad (R + 14): the focus's wide glow read as a lighter square on A's smoke)
 	add_light *= 1.0 - smoothstep(R + 4.0, R + 14.0, length(lp));
 	float m = fmask(FRAGCOORD.xy);
-	COLOR = vec4(acc.rgb + add_light, acc.a) * m;
+	COLOR = vec4(acc.rgb + add_light, acc.a) * m * mo.x;
+	}
 }

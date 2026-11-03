@@ -26,7 +26,10 @@ public partial class LampsScreen : Overlay
     bool wide = SurvivorUnchained.Args.Has("lamps-wide");
     LampGrade? grade;
     HerMask? her;
-    Tween? fade;
+    /// <summary>A's open and close on LampMotion's clock (§11): the grade in over 0.35 s and the page's chrome over
+    /// 0.25 s (the board has its own); the close, all of it out over 0.2 s, then the book's page.</summary>
+    double openAt = -1, closeAt = -1;
+    bool Closing => closeAt >= 0;
 
     /// <summary>The tab is on the chain (v2, not --board).</summary>
     public static bool On => Lamps.V2 && !ArtsScreen.BoardOn;
@@ -48,25 +51,71 @@ public partial class LampsScreen : Overlay
         };
     }
 
+    // (--lamps-measure / --lamps-moves: the worst frame over the 20 after an open or a toggle, the hitch check)
+    ulong lastTick;
+    int probe;
+    double worst;
+    public override void _Process(double delta)
+    {
+        ulong now = Time.GetTicksUsec();
+        double d = lastTick == 0 ? 0 : (now - lastTick) / 1000.0;
+        lastTick = now;
+        Motion();
+        if (probe <= 0) return;
+        worst = System.Math.Max(worst, d);
+        if (--probe == 0) GD.Print($"LAMPWIDE open hitch: worst frame {worst:F1} ms over 20 frames ({(wide ? "A" : "C")}, knock built in {LampKnock.BuildMs:F1} ms)");
+    }
+
+    void Probe() { if (SurvivorUnchained.Args.Has("lamps-measure") || SurvivorUnchained.Args.Has("lamps-moves")) { probe = 20; worst = 0; } }
+
+    void Motion()
+    {
+        double t = LampMotion.Now;
+        if (Closing)
+        {
+            float a = 1 - (float)System.Math.Clamp((t - closeAt) / 0.2, 0, 1);
+            if (grade != null && IsInstanceValid(grade)) grade.Amount = a;
+            if (page != null && IsInstanceValid(page)) page.ChromeAlpha(a);
+            if (a <= 0) { closeAt = -1; Back(); }
+            return;
+        }
+        if (openAt < 0 || !wide) return;
+        float g = (float)System.Math.Clamp((t - openAt) / 0.35, 0, 1), c = LampMotion.EaseOut((t - openAt) / 0.25);
+        if (grade != null && IsInstanceValid(grade)) grade.Amount = g;
+        if (page != null && IsInstanceValid(page)) page.ChromeAlpha(c);
+        if (g >= 1 && c >= 1) openAt = -1;
+    }
+
     void ToggleWide()
     {
+        if (Closing) return;
+        if (wide)
+        {
+            // A to the book: the reverse of the open over 0.2 s, no stagger, then the page switches back
+            Sound.Sfx.Page();
+            closeAt = LampMotion.Now;
+            openAt = -1;
+            if (page != null && IsInstanceValid(page)) page.Board.PlayClose();
+            return;
+        }
+        Probe();
         wide = !wide;
         Sound.Sfx.Page();
         G.Hud.LampsWide(wide, SkillBook.Carried(G.Journey.Ch).Where(c => Weapons.All.ContainsKey(c.Id)).Take(6));
-        if (!wide)
-        {
-            G.Hud.ShowPlay(false);
-            // (the grade out over 0.2 s, no stagger)
-            fade?.Kill();
-            if (grade is { } gr && IsInstanceValid(gr))
-            {
-                var t = gr.CreateTween();
-                t.TweenMethod(Callable.From<float>(v => gr.Amount = v), gr.Amount, 0f, 0.2f);
-                t.TweenCallback(Callable.From(gr.QueueFree));
-            }
-            grade = null;
-            her?.QueueFree(); her = null;
-        }
+        G.Reframe(this);
+        Refresh();
+    }
+
+    /// <summary>The close has run: the book's page (C) again.</summary>
+    void Back()
+    {
+        Probe();
+        wide = false;
+        G.Hud.LampsWide(false, SkillBook.Carried(G.Journey.Ch).Where(c => Weapons.All.ContainsKey(c.Id)).Take(6));
+        G.Hud.ShowPlay(false);
+        if (grade != null && IsInstanceValid(grade)) grade.QueueFree();
+        grade = null;
+        her?.QueueFree(); her = null;
         G.Reframe(this);
         Refresh();
     }
@@ -89,7 +138,7 @@ public partial class LampsScreen : Overlay
 
     bool Safe => G.Battle is not { Combat: true };
 
-    public override bool Key(Act a) => page != null && IsInstanceValid(page) && page.Key(a);
+    public override bool Key(Act a) => Closing || (page != null && IsInstanceValid(page) && page.Key(a));
 
     protected override void Build()
     {
@@ -124,9 +173,7 @@ public partial class LampsScreen : Overlay
         {
             grade = new LampGrade(night);
             G.AddChild(grade);
-            fade = grade.CreateTween();
-            var gr = grade;
-            fade.TweenMethod(Callable.From<float>(v => gr.Amount = v), 0f, 1f, 0.35f);
+            openAt = LampMotion.Now;
         }
         page = new LampPage(ch, G.Journey.World, G.Zone?.Id, visit, Safe, true, WickRect(), seats) { Position = Vector2.Zero, Size = new Vector2(1920, 1080) };
         visit = page.Visit;
@@ -142,7 +189,7 @@ public partial class LampsScreen : Overlay
         AddChild(page);
         // (debug --lamps-noboard: the graded world alone, for the night's luma outside the pools)
         if (SurvivorUnchained.Args.Has("lamps-noboard")) foreach (var c in board.GetChildren()) if (c is CanvasItem ci) ci.Visible = false;
-        page.Modulate = new Color(1, 1, 1, 0);
-        page.CreateTween().TweenProperty(page, "modulate:a", 1f, 0.35f);
+        // (the chrome and the grade start with the board's open, after the build)
+        if (openAt >= 0) { openAt = LampMotion.Now; page.ChromeAlpha(0); }
     }
 }

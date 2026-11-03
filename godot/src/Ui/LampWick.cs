@@ -95,7 +95,7 @@ public partial class LampWick : Control
         AddChild(under = new WickLayer(DrawUnder));
         lampMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ui_lamps_lamp.gdshader") };
         haloMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ui_lamps_halo.gdshader") };
-        foreach (var m in new[] { lampMat, haloMat }) { m.SetShaderParameter("win", new Vector4(-1e5f, -1e5f, 1e5f, 1e5f)); m.SetShaderParameter("feather", 1f); }
+        foreach (var m in new[] { lampMat, haloMat }) { m.SetShaderParameter("win", new Vector4(-1e5f, -1e5f, 1e5f, 1e5f)); m.SetShaderParameter("feather", 1f); m.SetShaderParameter("still", LampMotion.Still ? 1f : 0f); }
         foreach (var (mmi, mat) in new[] { (halos, haloMat), (lamps, lampMat) })
         {
             mmi.Material = mat;
@@ -208,7 +208,7 @@ public partial class LampWick : Control
                     int st = lit ? 0 : planned ? 1 : 2;
                     int flags = (crossed ? 1 : 0) | (r == fr && c == fc ? 2 : 0) | 8;
                     mm.SetInstanceTransform2D(k, new Transform2D(0, new Vector2(2 * Hh, 2 * Hh), 0, p));
-                    mm.SetInstanceColor(k, new Color(turn ? 17 : 16, st, 1, flags));
+                    mm.SetInstanceColor(k, new Color(turn ? 17 : 16, st, LampMotion.None, flags + 0.999f));
                     mm.SetInstanceCustomData(k, new Color(R, ((r * 4 + c) * 0.137f) % 1f, 0, 0));
                     k++;
                     if (lit)
@@ -216,7 +216,7 @@ public partial class LampWick : Control
                         float HH = R * 1.8f * 3.2f;
                         hm.SetInstanceTransform2D(h, new Transform2D(0, new Vector2(2 * HH, 2 * HH), 0, p));
                         hm.SetInstanceColor(h, LampBoard.HaloLit);
-                        hm.SetInstanceCustomData(h, new Color(R, 1, 0, 0));
+                        hm.SetInstanceCustomData(h, new Color(R, 1, 0, LampMotion.None));
                         h++;
                     }
                 }
@@ -265,7 +265,7 @@ public partial class LampWick : Control
             var no = WickBook.Plan(ch, Skill, id);
             if (no != WickNo.None) return Deny(no == WickNo.Turn ? "One Turn a skill" : BoardWords.Why(no).TrimEnd('.'));
         }
-        Sound.Sfx.Pick();
+        Sound.Sfx.Lamps(fc == 3 ? "wick_turn" : "wick_plan");
         said = null;
         Read();
         Write();

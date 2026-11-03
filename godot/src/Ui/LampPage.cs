@@ -114,6 +114,12 @@ public partial class LampPage : Control
         prompts.Position = Bleed + new Vector2(Mathf.Round((wd - ps.X) / 2), Mathf.Round(PromptY - ps.Y / 2));
     }
 
+    /// <summary>A's open and close (§11): everything on the page but the board (it has its own motion) at this alpha.</summary>
+    public void ChromeAlpha(float a)
+    {
+        foreach (var c in GetChildren()) if (c is CanvasItem ci && c != Board) ci.Modulate = new Color(1, 1, 1, a);
+    }
+
     void LayWide()
     {
         Header.Position = new Vector2(26, 22);
@@ -1217,6 +1223,8 @@ public sealed record LampCardText(string Name, string? Chip, Color ChipColor, st
 public partial class LampCard : Control
 {
     public const float Wd = 380, Pad = 16;
+    /// <summary>Denied (§11): the state line flashes (two pulses over 0.3 s from this time, LampMotion's clock).</summary>
+    public double FlashAt = -1e4;
     LampCardText? c;
     List<string> lines = new(), price = new();
     readonly HBoxContainer promptHost = new() { MouseFilter = MouseFilterEnum.Ignore };
@@ -1315,7 +1323,10 @@ public partial class LampCard : Control
         y += 13;
         LampInk.Rule(this, x0, x1, y);
         y += 22;
-        LampInk.Text(this, FUi, 15, x0, y, c.State, c.StateColor);
+        double fa = LampMotion.Now - FlashAt;
+        var sc = c.StateColor;
+        if (fa >= 0 && fa < 0.3) sc = sc.Lerp(new Color("#fff2cf"), 0.85f * (0.5f - 0.5f * Mathf.Cos((float)(fa / 0.3) * Mathf.Tau * 2)));
+        LampInk.Text(this, FUi, 15, x0, y, c.State, sc);
         if (c.Fires != null) { y += 22; LampInk.Text(this, FUi, 15, x0, y, c.Fires, LampInk.Body); }
     }
 

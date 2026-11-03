@@ -171,6 +171,8 @@ public partial class GameHud : CanvasLayer
         fadeSub = Style.Label("", Style.TextItalic, 24, Style.Ink, false, HorizontalAlignment.Center);
         fadeSub.Position = new Vector2(0, 560); fadeSub.Size = new Vector2(1920, 40);
         top.AddChild(fadeSub);
+        // (the Lamps' Open wide knockout, built ahead on a worker so the first open does not hitch: LampKnock)
+        if (LampsScreen.On) Callable.From(LampKnock.Prewarm).CallDeferred();
     }
 
     static Control Box(Control parent, float x, float y, float w, float h)

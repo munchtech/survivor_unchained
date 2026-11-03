@@ -28,7 +28,7 @@ public partial class LampBoard : Control
     public static LampBoardModel M => model ??= LampBoardModel.FromJson(SurvivorUnchained.Core.Json.ReadContent("lamps_v2.json"));
 
     static readonly StringName PWin = "win", PFeather = "feather", PValley = "valley", PFind = "find_on", PPalm = "palm",
-        PSize = "size", PGlowC = "glow_c", PGlowR = "glow_r", PRingC = "ring_c", PRings = "rings";
+        PSize = "size", PGlowC = "glow_c", PGlowR = "glow_r", PRingC = "ring_c", PRings = "rings", PNow = "now";
 
     readonly CharacterData ch;
     readonly WorldState? w;
@@ -36,7 +36,7 @@ public partial class LampBoard : Control
     readonly ColorRect page = new() { MouseFilter = MouseFilterEnum.Ignore, Color = Colors.White };
     readonly ShaderMaterial lampMat, roadMat, haloMat, pageMat;
     readonly BoardInk ink = new();
-    readonly LampCard card = new();
+    LampCard card = new(), cardOut = new();
     /// <summary>The page sets this off while the wick is open (§16: no card over the board then).</summary>
     public bool CardOn = true;
     /// <summary>The focus moved (-1: none).</summary>
@@ -81,7 +81,7 @@ public partial class LampBoard : Control
         if (ResourceLoader.Exists("res://art/ui/icons/glyph_color/palm.png")) lampMat.SetShaderParameter(PPalm, GD.Load<Texture2D>("res://art/ui/icons/glyph_color/palm.png"));
         page.Material = pageMat;
         AddChild(page);
-        foreach (var (mmi, mat, count, centered) in new[] { (roads, roadMat, M.Edges.Length, false), (halos, haloMat, MaxHalos, true), (lamps, lampMat, M.Nodes.Length, true) })
+        foreach (var (mmi, mat, count, centered) in new[] { (roads, roadMat, M.Edges.Length, false), (halos, haloMat, MaxHalos, true), (lamps, lampMat, M.Nodes.Length + 1, true) })
         {
             mmi.Material = mat;
             mmi.Multimesh = new MultiMesh
@@ -92,6 +92,7 @@ public partial class LampBoard : Control
             AddChild(mmi);
         }
         AddChild(ink);
+        AddChild(cardOut);
         AddChild(card);
         Resized += () => { if (Size.X > 8 && Size != builtSize) Rebuild(); };
     }
@@ -247,6 +248,7 @@ public partial class LampBoard : Control
         n = m.Nodes.Length;
         state = new int[n]; dim = new bool[n]; onPath = new bool[n]; notch = new bool[n]; radius = new float[n]; fade = new float[n];
         found = new bool[n];
+        if (evT.Length != n) { evT = Enumerable.Repeat(LampMotion.None, n).ToArray(); evK = new byte[n]; }
         pos = new (double, double)[n];
         lit.Clear();
         foreach (var id in LampBook.Now(ch).Lit) if (m.Index.TryGetValue(id, out var i)) lit.Add(i);
@@ -281,6 +283,7 @@ public partial class LampBoard : Control
             GD.Print($"LAMPBOARD slide search: {(System.Diagnostics.Stopwatch.GetTimestamp() - ts) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms");
         }
         Relayout(view, settle: true, open: true);
+        if (!opened) { opened = true; PlayOpen(); }
         double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         var g = GetGlobalRect();
         GD.Print($"LAMPBOARD rebuild: {ms:F1} ms, stop {stop} scale {view.S:F3} (valley {valleyS:F3}), lit {lit.Count}, focus {(focus >= 0 ? m.Nodes[focus].Id : "-")}, path {path.Count}, window {g.Position.X:F0},{g.Position.Y:F0}-{g.End.X:F0},{g.End.Y:F0}");
@@ -473,6 +476,7 @@ public partial class LampBoard : Control
     {
         var m = M;
         var mm = roads.Multimesh;
+        Prune();
         var pathEdge = new Dictionary<long, (int A, int B, double Acc)>();
         if (from >= 0)
         {
@@ -516,7 +520,12 @@ public partial class LampBoard : Control
             float f = kind == 0 ? Math.Min(fade[a], fade[b]) : 1f;
             float phase = kind == 3 ? -(float)(ph + ra) : -(float)ra;
             mm.SetInstanceTransform2D(k2, xf);
-            mm.SetInstanceColor(k2, Colors.White);
+            // §11: the flame's run toward the lamp just lit, the gold draining from a road put out
+            long ek = EKey(a, b);
+            float rT = LampMotion.None, rDir = 1, dT = LampMotion.None;
+            if (runs.TryGetValue(ek, out var ru)) { rT = (float)ru.T; rDir = ru.To == b ? 1 : -1; }
+            if (drains.TryGetValue(ek, out var dr)) dT = (float)dr;
+            mm.SetInstanceColor(k2, new Color(rT, rDir, dT, 0));
             mm.SetInstanceCustomData(k2, new Color((float)len, kind, f, phase));
             k2++;
         }
@@ -541,20 +550,27 @@ public partial class LampBoard : Control
             slot[i] = k;
             WriteLamp(i, k++);
         }
+        ringSlot = k;
+        if (RingGliding) { WriteRing(); k++; }
         mm.VisibleInstanceCount = k;
         // halos: lit and awake
         var hm = halos.Multimesh;
         int h = 0;
+        double now = LampMotion.Now;
         foreach (var i in order)
         {
-            if (h >= MaxHalos || state[i] != 0 || dim[i] || slot[i] < 0) continue;
+            // (a lamp just put out keeps its halo while it gutters: the shader fades it over 0.2 s)
+            bool gut = state[i] != 0 && evK[i] == 2 && now - evT[i] < 0.2;
+            if (h >= MaxHalos || (state[i] != 0 && !gut) || dim[i] || slot[i] < 0) continue;
             var kind = m.Nodes[i].Kind;
             var col = kind == "blue" ? HaloBlue : Flare(kind) ? HaloFlare : HaloLit;
             float R = radius[i];
             float H = valley ? Math.Max(R * 1.4f, 2.5f) * 3.2f : R * 1.8f * 3.2f;
+            // w: lit, the catch (the halo grows from it); guttering, the put out
+            float ev = gut ? evT[i] : evK[i] is 1 or 3 ? evT[i] + (evK[i] == 1 ? Run : 0) : LampMotion.None;
             hm.SetInstanceTransform2D(h, new Transform2D(0, new Vector2(2 * H, 2 * H), 0, new Vector2((float)pos[i].X, (float)pos[i].Y)));
             hm.SetInstanceColor(h, col);
-            hm.SetInstanceCustomData(h, new Color(R, Flicker(i), valley ? 1 : 0, 0));
+            hm.SetInstanceCustomData(h, new Color(R, Seed(i), (valley ? 1 : 0) + (gut ? 2 : 0), ev));
             h++;
         }
         hm.VisibleInstanceCount = h;
@@ -567,7 +583,6 @@ public partial class LampBoard : Control
         foreach (var ch in M.Nodes[i].Id) { h ^= ch; h *= 16777619; }
         return (h % 1000u) / 1000f;
     }
-    static float Flicker(int i) => 1f + (Seed(i) - 0.5f) * 0.08f;
 
     void WriteLamp(int i, int k)
     {
@@ -575,14 +590,173 @@ public partial class LampBoard : Control
         float R = radius[i];
         float H = R + 14;
         int flags = (dim[i] ? 1 : 0) | (i == focus ? 2 : 0) | (onPath[i] ? 4 : 0) | (steps[i] <= 3 || state[i] == 0 || onPath[i] || i == focus ? 8 : 0)
-                    | (found[i] ? 16 : 0) | (notch[i] ? 32 : 0) | (stop == BoardStop.Lamp && nd.Kind == "notable" && FeedGlyph(Lamps.Find(nd.Id)) != null ? 64 : 0);
+                    | (found[i] ? 16 : 0) | (notch[i] ? 32 : 0) | (stop == BoardStop.Lamp && nd.Kind == "notable" && FeedGlyph(Lamps.Find(nd.Id)) != null ? 64 : 0)
+                    | (i == focus && RingGliding ? 128 : 0);
         var mm = lamps.Multimesh;
         // denied: the focus shakes ±3 px for 0.15 s (§11)
         float sx = i == focus && shakeT > 0 ? 3f * Mathf.Sin((float)shakeT * 80f) * (float)(shakeT / 0.15) : 0;
         mm.SetInstanceTransform2D(k, new Transform2D(0, new Vector2(2 * H, 2 * H), 0, new Vector2((float)pos[i].X + sx, (float)pos[i].Y)));
-        mm.SetInstanceColor(k, new Color(KindIndex(nd.Kind), state[i], fade[i], flags));
-        mm.SetInstanceCustomData(k, new Color(R, Seed(i), CallingIndex(nd.Calling), fade[i] * EdgeMask(pos[i].X, pos[i].Y)));
+        // (b: its event's time; a: the flags with the fade in the fraction; z: the calling + 4 x the event)
+        mm.SetInstanceColor(k, new Color(KindIndex(nd.Kind), state[i], evT[i], flags + fade[i] * 0.999f));
+        mm.SetInstanceCustomData(k, new Color(R, Seed(i), CallingIndex(nd.Calling) + 4 * evK[i], fade[i] * EdgeMask(pos[i].X, pos[i].Y)));
     }
+
+    /* ------------------------------------------------------------- motion (§11) -- */
+
+    /// <summary>The flame's run along the road from the lit neighbor (s).</summary>
+    const float Run = 0.16f;
+    /// <summary>Each lamp's last event (LampMotion's clock; None) and its kind (1 lit with a run, 2 put out, 3 lit).</summary>
+    float[] evT = [];
+    byte[] evK = [];
+    /// <summary>The roads' flames (by edge: when, toward which lamp) and drains (when).</summary>
+    readonly Dictionary<long, (double T, int To)> runs = new();
+    readonly Dictionary<long, double> drains = new();
+    double openT0 = LampMotion.None, closeT0 = LampMotion.Never, lastNow = -1;
+    bool opened;
+    /// <summary>The focus ring's glide (0.10 s): from lamp ringFrom (its radius then) to the focus; -1 none.</summary>
+    double ringT = -1;
+    int ringFrom = -1, ringSlot;
+    float ringR0;
+    bool RingGliding => ringT >= 0 && ringFrom >= 0 && focus >= 0 && ringFrom < n && slot.Length == n && slot[focus] >= 0;
+    /// <summary>The card's cross-fade (0.08 s; -1 none), and the lamp it shows.</summary>
+    double cardT = -1;
+    int cardLamp = -1, revealN, lmwN;
+    float inkA = -1, cardA = -1;
+
+    /// <summary>The open (§11): the lamps fade in from her hearth outward (0.25 s), the halos bloom last; the labels and the
+    /// card follow. On the board's first build (the tab opened in C, Open wide in A).</summary>
+    public void PlayOpen()
+    {
+        openT0 = LampMotion.Now;
+        closeT0 = LampMotion.Never;
+        var hp = n > 0 ? new Vector2((float)pos[Hearth].X, (float)pos[Hearth].Y) : Size / 2;
+        float r = 1;
+        for (int i = 0; i < n; i++) if (slot[i] >= 0) r = Math.Max(r, hp.DistanceTo(new Vector2((float)pos[i].X, (float)pos[i].Y)));
+        foreach (var mat in new[] { lampMat, roadMat, haloMat })
+        {
+            mat.SetShaderParameter("open_t0", (float)openT0);
+            mat.SetShaderParameter("close_t0", LampMotion.Never);
+            mat.SetShaderParameter("hearth", hp);
+            mat.SetShaderParameter("open_r", r);
+            mat.SetShaderParameter("stagger", LampMotion.Still ? 0f : 0.15f);
+            mat.SetShaderParameter("still", LampMotion.Still ? 1f : 0f);
+            mat.SetShaderParameter(PNow, (float)openT0);
+        }
+        Fades(openT0);
+        Sound.Sfx.Lamps("open");
+        if (Burst == "open") StartBurst(openT0);
+    }
+
+    /// <summary>The close (§11): everything out over 0.2 s, no stagger.</summary>
+    public void PlayClose()
+    {
+        closeT0 = LampMotion.Now;
+        foreach (var mat in new[] { lampMat, roadMat, haloMat }) mat.SetShaderParameter("close_t0", (float)closeT0);
+        Sound.Sfx.Lamps("close");
+    }
+
+    /// <summary>The labels' and the card's alpha with the open and the close, and the card's cross-fade (written only when
+    /// it changes).</summary>
+    void Fades(double now)
+    {
+        float shut = 1 - (float)Math.Clamp((now - closeT0) / 0.2, 0, 1);
+        float ia = LampMotion.EaseOut((now - openT0 - 0.10) / 0.20) * shut;
+        float ca = LampMotion.EaseOut((now - openT0 - 0.22) / 0.13) * shut;
+        if (ia != inkA) { inkA = ia; ink.Modulate = new Color(1, 1, 1, ia); }
+        float x = cardT >= 0 ? (float)Math.Clamp(cardT / 0.08, 0, 1) : 1;
+        if (ca * x != cardA || cardT >= 0)
+        {
+            cardA = ca * x;
+            card.Modulate = new Color(1, 1, 1, cardA);
+            cardOut.Modulate = new Color(1, 1, 1, ca * (1 - x));
+        }
+    }
+
+    /// <summary>Lamp i is lit (at time t): the flame runs to it along each road from a lit neighbor, then it catches.</summary>
+    void MarkLit(int i, double t)
+    {
+        bool run = false;
+        if (!LampMotion.Still)
+            foreach (var j in M.Nodes[i].Adj)
+                if (j != i && lit.Contains(j)) { runs[EKey(i, j)] = (t, i); run = true; }
+        evT[i] = (float)t;
+        evK[i] = (byte)(run ? 1 : 3);
+        var nd = M.Nodes[i];
+        if (nd.Kind == "blue") Sound.Sfx.Lamps("blue_lit");
+        if (nd.Road is { } r)
+        {
+            int depth = 1;
+            foreach (var j in lit) if (M.Nodes[j].Road == r) depth++;
+            if (M.Nodes.Any(q => q.Road == r && q.Gate == depth)) Sound.Sfx.Lamps("gate_open");
+        }
+        if (Burst == "light" && burstOffs == null) StartBurst(t);
+    }
+
+    /// <summary>Lamp i is put out (at time t): it gutters; the gold drains from its roads to lit neighbors.</summary>
+    void MarkOut(int i, double t)
+    {
+        foreach (var j in M.Nodes[i].Adj)
+            if (j != i && lit.Contains(j)) drains[EKey(i, j)] = t;
+        evT[i] = (float)t;
+        evK[i] = 2;
+    }
+
+    void Prune()
+    {
+        double now = LampMotion.Now;
+        if (runs.Count > 0) foreach (var k in runs.Where(q => now - q.Value.T > 1).Select(q => q.Key).ToList()) runs.Remove(k);
+        if (drains.Count > 0) foreach (var k in drains.Where(q => now - q.Value > 1).Select(q => q.Key).ToList()) drains.Remove(k);
+    }
+
+    /// <summary>The gliding ring (kind 18) between its old lamp and the focus, in the slot after the lamps.</summary>
+    void WriteRing()
+    {
+        float e = LampMotion.EaseOut(ringT / 0.10);
+        var a = new Vector2((float)pos[ringFrom].X, (float)pos[ringFrom].Y);
+        var b = new Vector2((float)pos[focus].X, (float)pos[focus].Y);
+        var c = a.Lerp(b, e);
+        float R = Mathf.Lerp(ringR0, radius[focus], e), H = R + 14;
+        var mm = lamps.Multimesh;
+        mm.SetInstanceTransform2D(ringSlot, new Transform2D(0, new Vector2(2 * H, 2 * H), 0, c));
+        mm.SetInstanceColor(ringSlot, new Color(18, 0, LampMotion.None, 0.999f));
+        mm.SetInstanceCustomData(ringSlot, new Color(R, 0, 0, 0));
+    }
+
+    /* ------------------------------------------------------------- the shots' bursts -- */
+
+    /// <summary>--lamps-burst open|light: four frames at the motion's own times after the open (0, 0.1, 0.2, 0.35 s) or
+    /// the first lamp lit (0, 0.08, 0.16, 0.3 s), the clock frozen at each (godot/.shots/NAME_b000.png...).</summary>
+    static string? Burst => SurvivorUnchained.Args.Get("lamps-burst");
+    double[]? burstOffs;
+    double burstT0;
+    int burstI, burstWait = -1;
+
+    void StartBurst(double t0)
+    {
+        // (the open's burst is for A: the C page's board opens first when the shot toggles in)
+        if (Burst == "open" && !Wide) return;
+        burstOffs = Burst == "open" ? [0, 0.1, 0.2, 0.35] : [0, 0.08, 0.16, 0.30];
+        burstT0 = t0;
+        burstI = 0;
+        burstWait = -1;
+        GD.Print($"LAMPBOARD burst {Burst} from {t0:F3}");
+    }
+
+    void BurstStep()
+    {
+        if (burstOffs == null || burstI >= burstOffs.Length) return;
+        if (burstWait < 0) { LampMotion.Freeze(burstT0 + burstOffs[burstI]); burstWait = 3; return; }
+        if (--burstWait > 0) return;
+        var dir = ProjectSettings.GlobalizePath("res://.shots");
+        DirAccess.MakeDirRecursiveAbsolute(dir);
+        var f = $"{dir}/{SurvivorUnchained.Args.Get("shot") ?? "lamps"}_b{(int)Math.Round(burstOffs[burstI] * 1000):000}.png";
+        GetViewport().GetTexture().GetImage().SavePng(f);
+        GD.Print($"LAMPBOARD burst saved {f} at +{burstOffs[burstI]:F2} s");
+        burstI++;
+        burstWait = -1;
+        if (burstI >= burstOffs.Length) LampMotion.Thaw();
+    }
+
 
     void WritePage(bool valley)
     {
@@ -637,6 +811,8 @@ public partial class LampBoard : Control
             placed = M.PlaceLabels(view, stop, discs, allowed, block is { } bk ? [.. Keep, bk] : Keep, (t, p) => LampInk.W(font, t, p), lit, discOf, roads);
             if (labelCache.Count > 16) labelCache.Clear();
             labelCache[key] = placed;
+            if (Measuring && valley)
+                GD.Print("LAMPBOARD labels unplaced: " + string.Join(", ", M.LabelSpecs(stop).Select(sp => sp.Text).Where(t => placed.All(q => q.Text != t))));
         }
         placedLabels = placed;
         WriteInk();
@@ -818,6 +994,14 @@ public partial class LampBoard : Control
             return;
         }
         bool pad = Play.Controls.Instance?.UsingPad == true;
+        // §11: a new lamp's card cross-fades with the last one's (0.08 s)
+        if (card.Visible && cardLamp >= 0 && cardLamp != focus)
+        {
+            (card, cardOut) = (cardOut, card);
+            cardT = 0;
+            MoveChild(card, -1);
+        }
+        cardLamp = focus;
         float h = card.Show(CardFor(focus), pad);
         var discs = new List<(double X, double Y, double R)>();
         var prot = new List<(double X, double Y, double R)>();
@@ -1044,7 +1228,6 @@ public partial class LampBoard : Control
     {
         if (i < 0) return;
         SetFocus(i);
-        Sound.Sfx.Hover();
         if (!follow) return;
         double mx = Size.X * 0.22, my = Size.Y * 0.22;
         var (x, y) = pos[i];
@@ -1080,7 +1263,8 @@ public partial class LampBoard : Control
     {
         Said = why;
         shakeT = 0.15;
-        Sound.Sfx.Deny();
+        Sound.Sfx.Lamps("denied");
+        card.FlashAt = LampMotion.Now;
         if (why != null && focus >= 0 && CardOn) PlaceCard();
         if (why != null) GD.Print($"LAMPBOARD denied: {why}");
     }
@@ -1101,7 +1285,7 @@ public partial class LampBoard : Control
             Deny(why == LampNo.NoLamps || (why == LampNo.Dark && path.Count > LampBook.Spare(ch, w)) ? "Not enough lamps to light" : null);
             return false;
         }
-        Sound.Sfx.Pick();
+        Sound.Sfx.Lamps(M.Nodes[focus].Kind is "notable" or "blue" or "ultimate" ? "light_notable" : "light");
         Show(got.Select(x => (M.Index[x], true)), 0.09);
         GD.Print($"LAMPBOARD lit {string.Join(",", got)} (spare {LampBook.Spare(ch, w)})");
         return true;
@@ -1114,6 +1298,7 @@ public partial class LampBoard : Control
         if (LampBook.Suggest(ch, w) == null) { Deny(LampBook.Spare(ch, w) <= 0 ? "No lamps left to light" : "Nothing to light next to her lamps"); return; }
         lighting = true;
         lightT = 0;
+        lmwN = 0;
     }
 
     /// <summary>X held or the right button held on the focus: put it out (0.35 s; 0.9 s and its branch, tips first, for a
@@ -1146,7 +1331,7 @@ public partial class LampBoard : Control
     {
         holding = false;
         if (!Visit.PutOut(holdOrder)) { Deny(); WriteInk(); return; }
-        Sound.Sfx.Close();
+        Sound.Sfx.Lamps("put_out");
         GD.Print($"LAMPBOARD out {string.Join(",", holdOrder)}");
         Show(holdOrder.Select(x => (M.Index[x], false)), holdOrder.Count > 1 ? Math.Min(0.06, 0.3 / holdOrder.Count) : 0);
     }
@@ -1167,7 +1352,7 @@ public partial class LampBoard : Control
         foreach (var i in ins) reveal.Enqueue((i, true, 0.45 / ins.Count));
         revealT = 0;
         ComputeDim();
-        Sound.Sfx.Page();
+        Sound.Sfx.Lamps("layout");
         GD.Print($"LAMPBOARD switch to {index + 1}: {outs.Count} out, {ins.Count} in");
         LampsChanged?.Invoke();
         return true;
@@ -1177,7 +1362,7 @@ public partial class LampBoard : Control
     {
         bool first = reveal.Count == 0;
         foreach (var (i, on) in what) reveal.Enqueue((i, on, every));
-        if (first) revealT = 0;
+        if (first) { revealT = 0; revealN = 0; }
         LampsChanged?.Invoke();
     }
 
@@ -1199,10 +1384,14 @@ public partial class LampBoard : Control
         {
             revealT -= dt;
             bool any = false;
+            double now = LampMotion.Now;
             while (reveal.Count > 0 && revealT <= 0)
             {
                 var (i, on, wait) = reveal.Dequeue();
-                if (on) lit.Add(i); else lit.Remove(i);
+                // (its own time: a frame late is its due time, not the frame's)
+                double at = now + revealT;
+                if (on) { MarkLit(i, at); lit.Add(i); if (revealN++ > 0) Sound.Sfx.Lamps("path_tick"); }
+                else { lit.Remove(i); MarkOut(i, at); }
                 revealT += wait;
                 any = true;
             }
@@ -1217,8 +1406,9 @@ public partial class LampBoard : Control
                 lightT = 0.09;
                 if (LampBook.Suggest(ch, w) is { } id && Visit.Light(w, id))
                 {
+                    MarkLit(M.Index[id], LampMotion.Now);
                     lit.Add(M.Index[id]);
-                    Sound.Sfx.Hover();
+                    Sound.Sfx.Lamps(lmwN++ == 0 ? "light" : "path_tick");
                     Restate();
                     LampsChanged?.Invoke();
                 }
@@ -1230,6 +1420,20 @@ public partial class LampBoard : Control
             if (holdHeld?.Invoke() != true || focus < 0 || !lit.Contains(focus)) { holding = false; WriteInk(); }
             else { holdT += dt; if (holdT >= holdDur) EndOut(); else WriteInk(); }
         }
+        if (ringT >= 0)
+        {
+            ringT += dt;
+            if (ringT >= 0.10 || !RingGliding)
+            {
+                ringT = -1;
+                if (focus >= 0 && slot.Length == n && slot[focus] >= 0) WriteLamp(focus, slot[focus]);
+                lamps.Multimesh.VisibleInstanceCount = ringSlot;
+            }
+            else WriteRing();
+        }
+        if (cardT >= 0) { cardT += dt; if (cardT >= 0.08) { cardT = -1; cardOut.Visible = false; } }
+        Fades(LampMotion.Now);
+        if (LampMotion.Now - card.FlashAt < 0.32) card.QueueRedraw();
         if (labelFade < 1 && settled) { labelFade = Math.Min(1, labelFade + (float)dt / 0.12f); WriteInk(); }
         if (moved) { still = 0; settled = false; moved = false; }
         else
@@ -1375,6 +1579,11 @@ public partial class LampBoard : Control
     {
         if (i == focus || n == 0) return;
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        // §11: the ring glides from the old focus (0.10 s); the glass tick, pitched by kind
+        int old = focus;
+        if (old >= 0 && i >= 0 && !LampMotion.Still && slot.Length == n && slot[old] >= 0) { ringFrom = old; ringR0 = radius[old]; ringT = 0; }
+        else ringT = -1;
+        if (i >= 0) Sound.Sfx.Lamps(M.Nodes[i].Kind switch { "blue" => "focus_blue", "notable" or "start" or "ultimate" or "rite" or "link" => "focus_notable", _ => "focus_small" });
         focus = i;
         Said = null;
         holding = false;
@@ -1416,7 +1625,15 @@ public partial class LampBoard : Control
         long a0 = measureFrame >= 0 ? GC.GetAllocatedBytesForCurrentThread() : 0;
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         if (n > 0) UpdateWin();
-        Tick(delta);
+        // the motion's clock (LampMotion: frozen in a shots' burst), one uniform a material
+        double now = LampMotion.Now;
+        double dt = lastNow < 0 ? delta : Math.Max(0, now - lastNow);
+        lastNow = now;
+        lampMat.SetShaderParameter(PNow, (float)now);
+        roadMat.SetShaderParameter(PNow, (float)now);
+        haloMat.SetShaderParameter(PNow, (float)now);
+        Tick(dt);
+        if (burstOffs != null) BurstStep();
         if (measureFrame < 0) return;
         cpuTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
         allocBytes += GC.GetAllocatedBytesForCurrentThread() - a0;
@@ -1440,7 +1657,7 @@ public partial class LampBoard : Control
         else if (f > 125 && f <= 245) dcOff += (int)dc;
         else if (f == 246)
         {
-            foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != card) ci.Visible = true;
+            foreach (var c in GetChildren()) if (c is CanvasItem ci && ci != card && ci != cardOut) ci.Visible = true;
             card.Visible = CardSpot != null;
             double ms = cpuTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / 246;
             int labelsOn = ink.Labels.Count;
