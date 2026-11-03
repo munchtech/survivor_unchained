@@ -1900,8 +1900,11 @@ public partial class Game : Node, IZoneHost
         var list = want == "all" ? all : want.Split(',');
         if (tourI >= list.Length)
         {
-            // --keys A,B,...: actions pressed in turn once the screen is up (--pad: as from a pad), for pictures of focus.
-            if (Args.Get("keys") is string keys && keyI < keys.Split(',').Length)
+            // --keys A,B,...: actions pressed in turn once the screen is up (--pad: as from a pad), for pictures of focus;
+            // --keys-after: pressed once the clicks are done instead (a click into an arena, then keys in its first frames).
+            bool keysDue = Args.Get("keys") is string kk && keyI < kk.Split(',').Length;
+            bool clicksDue = Args.Get("clicks") is string cc && clickI < cc.Split(',').Length;
+            if (keysDue && (!clicksDue || !Args.Has("keys-after")) && Args.Get("keys") is string keys)
             {
                 tourT = 0.35;
                 if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
