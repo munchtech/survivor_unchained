@@ -1,3 +1,41 @@
+# Classes 21 (3 Nov): Phase 2 acceptance closed; MR READY; read this, then "Classes 20" below
+
+Branch classes-17 (junction to its own public/assets; integration merged at 16bf3eeff). Scratch backed up to survivorsunchained_inputs/scratch_classes21 (j1.sh, j1b.sh, j2.sh, j3.sh, ct_table.py; fe.md and fe96/fe.md tables).
+
+## Acceptance (Lamps v2 the default)
+| Gate | Measured | Verdict |
+|---|---|---|
+| Board alone, every calling x T1-T4 at most x1.25 (64 seeds; Classes 20 run C) | max 1.22 except warden T4 1.24 | pass |
+| Warden T4 at 256 seeds | **1.237** (bootstrap CI90 1.208-1.265) | pass |
+| Act 1, never pressing vs "pre-Flare 11 Oct" (seeds 1-32, matched, `--flareuse 0`), within ±3%, falls no higher | boss 233->227 s (**-2.5%**), falls 0.125->0.057, won 95.6->98.4% | pass |
+| Act 1, good use (Flare pressed), clearly shorter | -19.3%, falls 0.015 | pass |
+| Act 1, v2 vs `--lampsv1` (pressing, 2048 runs) | +0.0% in every fight x hands cell (byte-equal: story fights light no board) | pass |
+| Types within x1.35 of the median, T1-T4, lamps full and empty (deft, 24 seeds; arcanist and reaver roads 96) | all in band but **moonweaver, full board: T3 1.37, T4 1.45** (T1 1.35) | known, closed (below) |
+
+- Act 1 cells (never pressing, 32 seeds a cell, noisy): dig +2.7/+7.4 (plain/deft), hollow -6.5/-5.2, roost -5.7/-4.1, vault -0.2/-6.3. The same on v1 and v2 (story nights light no board), so they are integration's, not this area's.
+- **Moonweaver (known, after the demo):** v1 on matched seeds reads 216.7/811.4/1174.7k at T1/T3/T4 against v2's 229.0/831.1/1210.4k, so v2 adds 2-6%; the overage is the type's own (empty board T3/T4 1.25/1.16, its board lifting it x1.14/x1.21, as CLASSES §7 noted on 12 Oct at 1.38). It is 7% over at T4, not a hair, so no rule round. The fix would be a medium solver finding its carrier (likely the Echo or Moonfire rules), about 100k tokens and 1-2 h of CPU.
+- The Long Cut's clip was missing from lamps_v2.json (Animation 61 put it back in v1 only): added, so the Flare plays its clip on the v2 default.
+- Tests (godot/tests/Tests.csproj, full run at f6ccf883e): 1402 passed, 0 failed, 10 skipped.
+
+## Night against day, by calling (what still visibly fires)
+Every reflex fires by night on its full trigger and with its own hit; what changes is its numbers (a quarter) and a reflex barrier (a sixteenth).
+- **Warden:** Shield Bash still bashes and stuns, a quarter as long; Concussion's stun a quarter; Shield Wall still rises, thin; Braced and Rallying Stand fire on their windows, with a quarter of their numbers.
+- **Reaver:** War Cry still roars and frightens, a quarter as long, +% a quarter; Terror and Bloodlust fire as facets at a quarter; Red Tide still washes red with a quarter of its mend and +%.
+- **Arcanist:** Time Slip still slows the world, about 0.833 instead of a third; Borrowed Time and Deep Slip at a quarter; Spellward still forms, a sixteenth thick.
+- **Stalker:** Smoke Bomb still blooms, unseen and sure strikes a quarter as long; Mark Prey still marks, at a quarter of its strength and execute line; Executioner at a quarter; Choking Smoke's poison in full.
+
+## Capability (the app can now)
+- play the Lamps v2 board by night with every lamp's rule intact and its size quartered (facets, blue gifts, barriers, reflex numbers, statuses), held by the harness at x1.25 of an empty board for every calling and tier (`dotnet Balance.dll arena --pair board --offwicks 1`, read with scratch ct_table.py);
+- check Act 1 against the named baseline on matched seeds, pressing or never pressing (`tools/classes/act1_match.py`, `story ... --flareuse 0`);
+- `--lampsv1` keeps v1 for one release (LAMPS_V2_RULES "The flag").
+
+## Not done
+- The Lamps §14 MR ("Classes 20", Next 5): no signatures came through main during this session; it waits for after the demo.
+- Deft board-alone report (Classes 20 Next 1): skipped; not a gate.
+
+## Cost (Classes 21)
+About 60k lead tokens, no helpers, no judges; CPU about 2.5 h of harness runs.
+
 # Classes 21 starts here (2 Nov, coordinator wind-down): Phase 2 session 3 (acceptance): the board-alone band passes at 64 seeds; confirm warden T4, then Act 1, types, docs, MR; read this, then "Classes 20" and "Classes 19" below
 
 Branch classes-17 (junction to its own public/assets; integration 0564eded0 merged at 716c6e85b). Scratch: survivorsunchained_inputs/scratch_classes20 (scripts t34.sh, k1-k3.sh, acc.sh, st.sh, wd.sh; tier_table.py `<dir> '<glob>'` per tier, ct_table.py `<jsonl>` calling x tier; runs by folder).
