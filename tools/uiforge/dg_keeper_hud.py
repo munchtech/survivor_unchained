@@ -401,8 +401,8 @@ G_FILL = (913.0, 968.0, 5.0)    # her back: an outward offset easing in from row
 # UI 28 r3 (the owner on r2b: "literally the same thing just rolling outward instead of drifting inward. maybe a couple
 # extra strands"): r2b's fullness kept down to G_CURL[0]; from there her back's edge curls IN (a J: a little round, then
 # back toward her neck), meeting the top line at x G_CURL[1] (just inward of the volute, x 661), her strands carried along it
-G_CURL = (972.0, 661.3, -0.7, 2.0)   # (row the curl starts, contact x, the edge's slope dx/dy there, the round in px)
-G_CONTACT, G_OFF_MAX, G_TURN = (661.0, 663.0), 6.0, 5.0   # asserted: the contact x; px out of r2's edge above the curl;
+G_CURL = (972.0, 655.3, -0.7, 2.0)   # (row the curl starts, contact x, the edge's slope dx/dy there, the round in px)
+G_CONTACT, G_OFF_MAX, G_TURN = (654.0, 657.0), 6.0, 5.0   # asserted: the contact x; px out of r2's edge above the curl;
                                      # px the edge turns back in from its round to the top line (at least)
 G_FLOW, G_FLOW_K, G_EXT = 12.0, 0.5, 12.0   # the curl's texels within G_FLOW px of the edge carried along it (source rows
                                      # G_FLOW_K x the arc length down from the flow's top); the J runs on G_EXT px under the bar
