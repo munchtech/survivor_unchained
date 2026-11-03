@@ -512,3 +512,5 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **Classes restarted (owner, 1 Nov):** "start classes too. we really need to get going on our skill trees and class identity and stuff". Classes 16 takes over classes-15: land P5b+P6+P7-start now, then finish Phase 1 (P7, P8), then a Phase 2 scope.
 - **Neck at the orb (owner, 1 Nov, frame `survivorsunchained_inputs\owner_frames_1nov\orb_neck.png`):** "the neck looks wild there". Her head-down look at the orb in profile: the neck juts forward and stretches. Routed to Face 49 (it owns C03 s8 now): restage the pose, not only the light.
 - **VFX 7 proposal (owner, 1 Nov):** "Yes, Long Cut first". Build The Long Cut (the Warden's Flare, seam of morning, FLARE_LOOK section 3) with dawn-gold press motes, ~2-3M; then her two auto-attacks; then the shared Flare breath.
+
+- **2 Nov (coordinator f6d72738), the Lamps screen budget:** on the build lead's 2.0-2.6M estimate the owner said: "its a fundamental part of the game.  go for the best whatever it takes". The Lamps screen is not budget-capped; aim for the best.
