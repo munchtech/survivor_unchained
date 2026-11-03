@@ -32,7 +32,7 @@ public sealed class PlayerState
     public bool PerfectThisDash;
     public double AbilityCd, AbilityActive;
     public bool Moving;
-    public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT;
+    public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT, BulwarkSize = 1;
     public Leap? Leap;
     public AttackAnim? AttackAnim;
     /// <summary>Standing in a hazard: burning, poisoned.</summary>
@@ -1099,7 +1099,7 @@ public sealed partial class Battle
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 // blue.drowned_lung: frost skills freeze in half the time.
                 if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
-                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1292,7 +1292,7 @@ public sealed partial class Battle
         if (from != null) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(from.Def.Family)), -1, 0.8);
         // Emberblood: what burns is busy burning (the Pyre's ward, as chill is the Winter's).
         if (from != null && from.Status.Has(StatusKind.Burn) && Boons.TryGetValue("emberblood", out int eb)) dmg *= 1 - 0.06 * eb;
-        if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
+        if (p.BulwarkT > 0) dmg *= p.BulwarkSize == 1 ? (Has("unmoving") ? 0.2 : 0.35) : 1 - (1 - (Has("unmoving") ? 0.2 : 0.35)) * p.BulwarkSize; // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         // Half a ghost: blows land at half.
         if (Art.WraithT > 0) dmg *= 0.5;
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
@@ -1316,7 +1316,7 @@ public sealed partial class Battle
         if (Lamps.Board && BoardGroundSpares(school)) return;
         var st = Stats;
         double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
-        if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
+        if (p.BulwarkT > 0) dmg *= p.BulwarkSize == 1 ? (Has("unmoving") ? 0.2 : 0.35) : 1 - (1 - (Has("unmoving") ? 0.2 : 0.35)) * p.BulwarkSize; // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         if (Art.WraithT > 0) dmg *= 0.5;
         string source = named ?? school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
         Dot(ref groundSum, dmg, school, source, dt);
@@ -2252,7 +2252,7 @@ public sealed partial class Battle
         {
             HitEnemy(e, z.Dps * z.Tick * (e.Boss ? z.BossMul : 1), z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
             if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
-            if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
+            if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.3 : 1.5) * Ward("snare_line")), 0);
             if (z.Slow > 0)
             {
                 var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);

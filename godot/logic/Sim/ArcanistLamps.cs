@@ -264,9 +264,10 @@ public sealed partial class Battle
             if (l.Has("cold_moon")) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 0.5, 2.5), dmg, o.Depth + 1);
         }
         // kindler.frostfire: fire chills and frost burns, each weaker (the price, in full). Burn and chill never cancelled here.
+        // A status a rule lays carries its size (CLASSES §2.10): by night the chill and the burn are a quarter.
         if (l.Has("frostfire") && (o.Weapon != null || o.Projectile))
         {
-            double k = 1 - l.Full("frostfire", "weaker", 0.3);
+            double k = (1 - l.Full("frostfire", "weaker", 0.3)) * (l.Night ? Content.Lamps.NightSize : 1);
             if (school == School.Fire) ApplyStatus(e, new StatusPayload(StatusKind.Chill, 1, 1 * k, 2.5), dmg, o.Depth + 1);
             else if (school == School.Frost) ApplyStatus(e, new StatusPayload(StatusKind.Burn, 1, 0.25 * k, 3), dmg, o.Depth + 1);
         }

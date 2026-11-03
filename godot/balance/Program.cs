@@ -56,8 +56,10 @@ Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
 // --hand 0: every calling's Hand off (docs/design/CLASS_IDENTITY_AND_TALENTS.md 2.2), to measure what the Hands bring.
 SurvivorUnchained.Sim.Battle.Hands = opt.Get("hand", "1") != "0";
-// --lampsv2: the Lamps v2 board (data/content/lamps_v2.json; docs/design/LAMPS_V2_RULES.md "The flag").
-if (opt.Has("lampsv2")) SurvivorUnchained.Content.Lamps.UseV2(opt.Get("lampsv2", "true") != "0");
+// The Lamps v2 board (data/content/lamps_v2.json) is the default; --lampsv1 (or --lampsv2 0, SU_LAMPS_V2=0) reads v1's
+// (docs/design/LAMPS_V2_RULES.md "The flag").
+if (opt.Has("lampsv1")) SurvivorUnchained.Content.Lamps.UseV2(false);
+else if (opt.Has("lampsv2")) SurvivorUnchained.Content.Lamps.UseV2(opt.Get("lampsv2", "true") != "0");
 // The Wicks: none, Light my way (a player who never plans: the default here), or the character's plan; --turn
 // lights that strand first on every skill that has it.
 SurvivorUnchained.Rpg.WickBook.Lights = opt.Get("wicks", "suggested") switch
@@ -207,7 +209,9 @@ void HandPairs(List<RunSpec> specs, string outPath)
         {
             if (board)
             {
-                var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = true };
+                // --offwicks 1: the off run keeps Light my way's wicks too, so the pair reads the board alone (the wicks light by the
+                // ember's ranks at night on an empty board as on a full one: CLASS_IDENTITY_AND_TALENTS.md §3.3).
+                var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = opt.Get("offwicks", "0") != "1" };
                 var b0 = ArenaSim.Play(spec with { Lamps = "empty" }, boff);
                 // --boardwicks 0: the on run's lamps without its wicks (which half of the board's P is the wicks').
                 // --nowick a,b / --noturn a,b: those skills' wicks off, or their Turns off (lead-ins kept), in the on run.
@@ -216,7 +220,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
                 var b1 = ArenaSim.Play(spec with { Lamps = nul ? "empty" : "full" }, bon);
                 lock (gate)
                 {
-                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = TurnSide(b0, boff), On = TurnSide(b1, bon), OffBy = b0.DamageBy, OnBy = b1.DamageBy, OnLamps = b1.LampsLit }));
+                    file.WriteLine(JsonSerializer.Serialize(new { spec.Key, spec.Calling, spec.Tier, spec.Deft, spec.Seed, Off = TurnSide(b0, boff), On = TurnSide(b1, bon), OffBy = b0.DamageBy, OnBy = b1.DamageBy, OnLamps = b1.LampsLit, OnIds = b1.LampIds }));
                     file.Flush();
                     done++;
                     if (done % 20 == 0 || done == specs.Count) Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}");

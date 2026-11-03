@@ -217,7 +217,7 @@ public sealed partial class Battle
         flarePower = Content.Lamps.FlarePower(f, EmberOn ? EmberLevel : Level) * (1 + 0.25 * rank) * (1 + FlareLampGlow * Lamps.Lit);
         // Banked Flame's gift beyond the second charge: every Flare "harder", one spent from a full bank "held" more.
         if (Lamp("flare.banked"))
-            flarePower *= 1 + Lamps.Full("flare.banked", "harder", 0) + (fromFullBank ? Lamps.Full("flare.banked", "held", 0) : 0);
+            flarePower *= 1 + (Lamps.Full("flare.banked", "harder", 0) + (fromFullBank ? Lamps.Full("flare.banked", "held", 0) : 0)) * GiftSize;
         bool stand = f.Kind == FlareKind.Stand;
         flareAt = FlareSchedule(f);
         // A staged Strike runs to its last blow and a breath after (the Fourth Toll), never past the 1.2 s.

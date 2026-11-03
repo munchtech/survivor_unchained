@@ -86,6 +86,8 @@ public sealed class RunResult
     /// <summary>The survivor's type (road) and the lamps lit (free ones too) at the start.</summary>
     public string Road = "";
     public int LampsLit;
+    /// <summary>The lit lamp ids (a measuring aid: which lamps a board carries).</summary>
+    public string LampIds = "";
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
     /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
     public int FlareCasts, FlareBossCasts, FlareClutches;
@@ -433,6 +435,7 @@ public static class ArenaSim
         r.Build = Describe(b);
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
+        r.LampIds = string.Join(",", LampBook.Now(j.Ch).Lit);
         r.FlareCasts = b.FlareCasts;
         r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
         r.RebukeStrikes = b.RebukeStrikes; r.Tolls = b.Tolls; r.BellBarrier = b.BellBarrier; r.MaxHpEnd = b.MaxHp;

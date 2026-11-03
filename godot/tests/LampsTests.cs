@@ -11,8 +11,13 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>The Lamps (docs/design/CLASSES.md §2): the board's shape, and how a survivor lights,
 /// puts out and carries it (Content/Lamps.cs, Rpg/LampBook.cs).</summary>
-public class LampsTests
+[Collection("Balance")]
+public class LampsTests : IDisposable
 {
+    /// <summary>These test v1's board (lamps.json): pinned for the class, the default (v2) restored after.</summary>
+    public LampsTests() => Lamps.UseV2(false);
+    public void Dispose() => Lamps.UseV2(true);
+
     static readonly string[] Callings4 = ["warden", "reaver", "arcanist", "stalker"];
 
     static CharacterData Survivor(string calling, int level = 1)

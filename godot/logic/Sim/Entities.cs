@@ -148,6 +148,8 @@ public sealed class Enemy : Pooled
     public bool Decoy;
     /// <summary>Marked as prey: below the line it dies outright.</summary>
     public bool Prey;
+    /// <summary>1, or a quarter when a lamp reflex marked it by night (Classes 20): the execute line scales with it.</summary>
+    public double PreySize = 1;
     /// <summary>When a wraith last drained it.</summary>
     public double DrainedAt = -99;
     /// <summary>Just thawed: it cannot freeze again until this runs out (3 s, a champion 5 s).</summary>

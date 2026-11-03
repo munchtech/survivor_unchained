@@ -12,6 +12,7 @@ namespace SurvivorUnchained.Tests;
 
 /// <summary>Three layouts, each a whole build; the atlas's tier lamps; save v6 (docs/design/CLASS_IDENTITY_AND_TALENTS.md
 /// 3.2 "Points", 3.5; Rpg/LampBook.cs, World/Save.cs). On v1's board: the v2-only points are LampPointsV2Tests.</summary>
+[Collection("Balance")]
 public sealed class LampLayoutsTests
 {
     static CharacterData Make(string calling = "warden")
@@ -119,6 +120,13 @@ public sealed class LampLayoutsTests
     [Fact]
     public void Each_new_tiers_first_clear_lights_one_atlas_lamp()
     {
+        Lamps.UseV2(false);
+        try { EachTier(); }
+        finally { Lamps.UseV2(true); }
+    }
+
+    static void EachTier()
+    {
         var w = new WorldState();
         Assert.Equal(0, LampBook.AtlasLit(w));
         Atlas.Complete(w, new Chart { Tier = 1, People = "a" });
@@ -135,6 +143,13 @@ public sealed class LampLayoutsTests
 
     [Fact]
     public void Lamp_posts_give_nothing_on_v1()
+    {
+        Lamps.UseV2(false);
+        try { PostsOnV1(); }
+        finally { Lamps.UseV2(true); }
+    }
+
+    static void PostsOnV1()
     {
         var ch = Make();
         var w = new WorldState();
@@ -229,6 +244,6 @@ public sealed class LampPointsV2Tests
             foreach (var p in Lamps.Posts) LampBook.RelightPost(v, p.Id);
             Assert.Equal(before + 4, LampBook.Earned(ch, v));
         }
-        finally { Lamps.UseV2(false); }
+        finally { Lamps.UseV2(true); }
     }
 }

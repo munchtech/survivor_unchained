@@ -295,7 +295,16 @@ public sealed partial class Battle
     }
 
     /// <summary>The most health mending can reach (butcher.always_bleeding: half, and the rest is lost).</summary>
-    double MendCeiling() => Lamp("always_bleeding") ? Math.Max(Player.Hp, MaxHp * Lamps.Full("always_bleeding", "cap", 0.5)) : MaxHp;
+    double MendCeiling()
+    {
+        if (!Lamp("always_bleeding")) return MaxHp;
+        double cap = Lamps.Full("always_bleeding", "cap", 0.5);
+        // By night the price follows its gift (CLASSES §2.10, as the Echo's and the Butcher's Count's): the lost
+        // top of her health is a quarter as deep, so mends stop at 7/8 (Classes 20: at half, the pilot held low
+        // played safe enough to read P 1.31 on this lamp alone).
+        if (Lamps.Night) cap = 1 - (1 - cap) * Content.Lamps.NightSize;
+        return Math.Max(Player.Hp, MaxHp * cap);
+    }
 
     /// <summary>reaver.nothing_spared: the survivor has no draught.</summary>
     public bool NoDraught => Lamp("no_draught");

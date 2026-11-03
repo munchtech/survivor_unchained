@@ -83,7 +83,7 @@ public sealed partial class Battle
         {
             case AbilityKind.BullRush:
                 // To the lamp: a 6 m charge behind a barrier of 15% of health (Iron Hide 25%).
-                Art.Barrier = MaxHp * (Has("iron_hide") ? 0.25 : 0.15);
+                Art.Barrier = MaxHp * (0.15 + (Has("iron_hide") ? 0.10 * Ward("iron_hide") : 0));
                 Barrier(Art.Barrier, 4);
                 StartRush(AbilityKind.BullRush, dx, dz, 6, 0.27);
                 p.SlowT = 0; p.SlowF = 1;
@@ -194,6 +194,9 @@ public sealed partial class Battle
             if (r.Def.Trigger == "spells" && spellsInWindow >= (int)Arg(r.Def.Args, "count", 3) && r.Cd <= 0) { RunReflex(r); spellsInWindow = 0; }
     }
 
+    /// <summary>True only while RunReflex runs an art (ReflexSize in Arts).</summary>
+    bool inReflex;
+
     void RunReflex(ReflexRun r)
     {
         var p = Player;
@@ -210,6 +213,7 @@ public sealed partial class Battle
         double angle = t != null ? Math.Atan2(t.Z - p.Z, t.X - p.X) : Math.Atan2(Math.Cos(p.Facing), Math.Sin(p.Facing));
         var was = credit;
         credit = "art";
+        inReflex = true;
         bool used = r.Kind switch
         {
             AbilityKind.ShieldBash => ShieldBash(def, angle, ArtPower),
@@ -222,6 +226,7 @@ public sealed partial class Battle
             AbilityKind.Spellward => Spellward(def),
             _ => false,
         };
+        inReflex = false;
         credit = was;
         r.Cd = used ? p.AbilityCd : Math.Max(0.5, Math.Min(p.AbilityCd, 0.5));
         r.Full = Math.Max(0.1, r.Cd);
@@ -234,8 +239,9 @@ public sealed partial class Battle
     bool RedTide(AbilityDef def)
     {
         var p = Player;
-        HealPlayer(MaxHp * 0.1, "red tide");
-        AddBuff("red_tide", Stat.Damage, 0.3, ModKind.More, 4, 1);
+        // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        HealPlayer(MaxHp * 0.1 * ReflexSize, "red tide");
+        AddBuff("red_tide", Stat.Damage, 0.3 * ReflexSize, ModKind.More, 4, 1);
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Radius = 4 });
         return true;
     }
@@ -244,7 +250,7 @@ public sealed partial class Battle
     {
         var p = Player;
         double share = Lamp("spellward.thick") ? Lamps.Full("spellward.thick", "barrier", 0.15) : Arg(Reflexes.FirstOrDefault(r => r.Kind == AbilityKind.Spellward)?.Def.Args, "barrier", 0.1);
-        Barrier(MaxHp * share, 5);
+        LampBarrier(MaxHp * share, 5, reflex: true);
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Radius = 1.5 });
         return true;
     }
