@@ -40,7 +40,9 @@ public partial class ArtsScreen : Overlay
 
     /// <summary>The functional Lamps board and Wick screen: launch with --board, or set SU_BOARD=1.</summary>
     public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
-    static int Pages => BoardOn ? 4 : 2;
+    /// <summary>v2's Lamps page is the board (LampBoard, LAMPS_SCREEN_BRIEF.md); --board keeps the functional pages.</summary>
+    static bool LampBoardOn => !BoardOn && Lamps.V2;
+    static int Pages => BoardOn ? 4 : LampBoardOn ? 3 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills by day", "Lamps", "Wicks"];
 
     public ArtsScreen(Game g) : base(g) { }
@@ -66,12 +68,15 @@ public partial class ArtsScreen : Overlay
         var pages = Kit.Tabs(PageNames[..Pages], page, k => { page = k; Refresh(); }, 16, 28);
         pages.Alignment = BoxContainer.AlignmentMode.Center;
         v.AddChild(pages);
-        v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
+        if (page == 2 && LampBoardOn) LampBoard.Demo(ch, G.Journey.World);
+        if (page == 2 && LampBoardOn) v.AddChild(Style.Label(BoardCount(ch), Style.UiBold, 16, Kit.Ink, false, HorizontalAlignment.Center));
+        else v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
             : page == 3 ? "Plan the order a skill's lamps light; its rank is how many are lit."
             : skills ? "What the arenas showed you, learned for the day; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened; change your art where it is safe.",
             Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center));
-        if (page == 2) BuildLamps(v);
+        if (page == 2 && LampBoardOn) BuildBoard(v);
+        else if (page == 2) BuildLamps(v);
         else if (page == 3) BuildWicks(v);
         else if (skills) BuildSkills(v);
         else
@@ -225,6 +230,26 @@ public partial class ArtsScreen : Overlay
     }
 
     Label Status() => Style.Label(status, Style.TextItalic, 15, Style.EmberHi, true);
+
+    /// <summary>Phase 1's plain count line (phase 2 brings C's header).</summary>
+    string BoardCount(CharacterData ch)
+    {
+        var w = G.Journey.World;
+        int spare = LampBook.Spare(ch, w);
+        return $"{spare} {(spare == 1 ? "lamp" : "lamps")} to light  ·  {LampBook.Now(ch).Lit.Count} lit";
+    }
+
+    /// <summary>v2: the board in C's window (BOARD (1030, 232)-(1876, 874) at 1080).</summary>
+    void BuildBoard(VBoxContainer page)
+    {
+        var board = new LampBoard(G.Journey.Ch, G.Journey.World)
+        {
+            CustomMinimumSize = new Vector2(0, 642), SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        // C's window starts at y 232 (the mock's BOARD); the header (phase 2) takes this band
+        page.AddChild(new Control { CustomMinimumSize = new Vector2(0, 37), MouseFilter = Control.MouseFilterEnum.Ignore });
+        page.AddChild(board);
+    }
 
     void BuildLamps(VBoxContainer page)
     {

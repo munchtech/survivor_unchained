@@ -1,0 +1,421 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+
+namespace SurvivorUnchained.Ui;
+
+/* The Lamps board's geometry, plain C# (no Godot types) so godot/tests can check it (docs/design/LAMPS_SCREEN_BRIEF.md
+ * §5, §13, §16; the mock tools/uiforge/lamps_mock/mock/ is the visual spec). Board units are lamps_v2.json's (y up);
+ * screen px are y down. LampBoard.cs draws it. Ids, kinds and positions are read, never written. */
+
+/// <summary>A screen rect in px.</summary>
+public readonly record struct Box(double X0, double Y0, double X1, double Y1)
+{
+    public double W => X1 - X0;
+    public double H => Y1 - Y0;
+    public bool Overlaps(Box o) => X0 < o.X1 && o.X0 < X1 && Y0 < o.Y1 && o.Y0 < Y1;
+    public bool Inside(Box o) => X0 >= o.X0 && X1 <= o.X1 && Y0 >= o.Y0 && Y1 <= o.Y1;
+    public Box Grow(double d) => new(X0 - d, Y0 - d, X1 + d, Y1 + d);
+    /// <summary>Does a disc touch it?</summary>
+    public bool Hits(double x, double y, double r)
+    {
+        double cx = Math.Clamp(x, X0, X1), cy = Math.Clamp(y, Y0, Y1);
+        return (x - cx) * (x - cx) + (y - cy) * (y - cy) < r * r;
+    }
+}
+
+/// <summary>Board units to screen px: the view's center (board units), px per unit, and the screen point it lands on.</summary>
+public readonly record struct BoardView(double Cx, double Cy, double S, double Sx, double Sy)
+{
+    public (double X, double Y) Project(double x, double y) => (Sx + (x - Cx) * S, Sy - (y - Cy) * S);
+    public (double X, double Y) Unproject(double px, double py) => (Cx + (px - Sx) / S, Cy - (py - Sy) / S);
+}
+
+public enum BoardStop { Valley, Road, Lamp }
+
+public sealed class LampBoardModel
+{
+    /* --------------------------------------------------------------------- the board -- */
+
+    public sealed class Node
+    {
+        public int I;
+        public string Id = "", Kind = "", Group = "", Region = "";
+        public string? Calling, Road;
+        public double X, Y;
+        public int Gate;
+        public int[] Adj = [];
+        /// <summary>The pad's neighbors (road neighbors and the nearest lamps around), nearest first.</summary>
+        public int[] Pad = [];
+        public double[] PadAngle = [];
+    }
+
+    public sealed record Group(string Id, string Kind, string Name, string[] Callings);
+
+    public readonly Node[] Nodes;
+    public readonly (int A, int B)[] Edges;
+    public readonly Dictionary<string, int> Index;
+    public readonly Dictionary<string, Group> Groups;
+
+    public const double Cell = 64;
+    readonly Dictionary<long, List<int>> grid = new();
+    static long Key(int cx, int cy) => ((long)cx << 32) ^ (uint)cy;
+
+    /// <summary>Read the board from lamps_v2.json's text (lamps and groups; nothing else).</summary>
+    public static LampBoardModel FromJson(string json)
+    {
+        using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        var root = doc.RootElement;
+        var groups = new List<Group>();
+        if (root.TryGetProperty("groups", out var gs))
+            foreach (var g in gs.EnumerateArray())
+                groups.Add(new Group(g.GetProperty("id").GetString()!, g.GetProperty("kind").GetString()!,
+                    g.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "",
+                    g.TryGetProperty("callings", out var c) ? c.EnumerateArray().Select(x => x.GetString()!).ToArray() : []));
+        var nodes = new List<Node>();
+        var at = new List<string[]>();
+        foreach (var l in root.GetProperty("lamps").EnumerateArray())
+        {
+            string? S(string k) => l.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+            nodes.Add(new Node
+            {
+                Id = S("id")!, Kind = S("kind")!, Group = S("group") ?? "", Region = S("region") ?? "", Calling = S("calling"), Road = S("road"),
+                X = l.GetProperty("x").GetDouble(), Y = l.GetProperty("y").GetDouble(),
+                Gate = l.TryGetProperty("gate", out var gt) && gt.ValueKind == JsonValueKind.Number ? gt.GetInt32() : 0,
+            });
+            at.Add(l.TryGetProperty("at", out var a) ? a.EnumerateArray().Select(x => x.GetString()!).ToArray() : []);
+        }
+        return new LampBoardModel(nodes, at, groups);
+    }
+
+    LampBoardModel(List<Node> nodes, List<string[]> at, List<Group> groups)
+    {
+        Nodes = nodes.ToArray();
+        for (int i = 0; i < Nodes.Length; i++) Nodes[i].I = i;
+        Index = Nodes.ToDictionary(n => n.Id, n => n.I);
+        Groups = groups.ToDictionary(g => g.Id);
+        var adj = Nodes.Select(_ => new List<int>()).ToArray();
+        var edges = new List<(int, int)>();
+        for (int i = 0; i < Nodes.Length; i++)
+            foreach (var a in at[i])
+                if (Index.TryGetValue(a, out var j) && !adj[i].Contains(j))
+                {
+                    adj[i].Add(j); adj[j].Add(i);
+                    edges.Add((j, i));
+                }
+        Edges = edges.ToArray();
+        for (int i = 0; i < Nodes.Length; i++) Nodes[i].Adj = adj[i].ToArray();
+        foreach (var n in Nodes)
+        {
+            var k = Key((int)Math.Floor(n.X / Cell), (int)Math.Floor(n.Y / Cell));
+            if (!grid.TryGetValue(k, out var list)) grid[k] = list = new();
+            list.Add(n.I);
+        }
+        BuildPad();
+    }
+
+    /* ------------------------------------------------------------- the pad's moves -- */
+
+    /// <summary>Each lamp's pad neighbors: its road neighbors and the 8 nearest lamps within 260 units, nearest first,
+    /// with their screen angles (radians, y down: 0 right, +pi/2 down).</summary>
+    void BuildPad()
+    {
+        foreach (var n in Nodes)
+        {
+            var set = new HashSet<int>(n.Adj);
+            foreach (var j in Near(n.X, n.Y, 260).OrderBy(j => D2(n, Nodes[j])).Where(j => j != n.I).Take(8)) set.Add(j);
+            n.Pad = set.OrderBy(j => D2(n, Nodes[j])).ToArray();
+            n.PadAngle = n.Pad.Select(j => Math.Atan2(-(Nodes[j].Y - n.Y), Nodes[j].X - n.X)).ToArray();
+        }
+    }
+
+    static double D2(Node a, Node b) => (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y);
+
+    /// <summary>The pad's next lamp from one toward a screen direction (radians, y down), within a cone (default ±50°):
+    /// the nearest, with the angle off the stick weighed in. -1 when none lies that way.</summary>
+    public int Step(int from, double angle, double cone = 50 * Math.PI / 180)
+    {
+        var n = Nodes[from];
+        int best = -1;
+        double bestScore = double.MaxValue;
+        for (int k = 0; k < n.Pad.Length; k++)
+        {
+            double off = Math.Abs(Math.IEEERemainder(n.PadAngle[k] - angle, 2 * Math.PI));
+            if (off > cone) continue;
+            double sc = Math.Sqrt(D2(n, Nodes[n.Pad[k]])) * (1 + 1.5 * off);
+            if (sc < bestScore) { bestScore = sc; best = n.Pad[k]; }
+        }
+        return best;
+    }
+
+    /* ------------------------------------------------------------- hit testing -- */
+
+    /// <summary>The lamps whose 64-unit cells lie within r units of a point (no allocation: fills the list given).</summary>
+    public void Near(double x, double y, double r, List<int> into)
+    {
+        into.Clear();
+        int x0 = (int)Math.Floor((x - r) / Cell), x1 = (int)Math.Floor((x + r) / Cell);
+        int y0 = (int)Math.Floor((y - r) / Cell), y1 = (int)Math.Floor((y + r) / Cell);
+        for (int cx = x0; cx <= x1; cx++)
+            for (int cy = y0; cy <= y1; cy++)
+                if (grid.TryGetValue(Key(cx, cy), out var list)) into.AddRange(list);
+    }
+
+    List<int> Near(double x, double y, double r) { var l = new List<int>(); Near(x, y, r, l); return l; }
+
+    readonly List<int> hitScratch = new(64);
+
+    /// <summary>The lamp under a board point: the nearest whose disc (rUnits[i]) holds it, else -1.</summary>
+    public int Hit(double x, double y, Func<int, double> rUnits, double reach = 40)
+    {
+        Near(x, y, reach, hitScratch);
+        int best = -1;
+        double bd = double.MaxValue;
+        foreach (var i in hitScratch)
+        {
+            var n = Nodes[i];
+            double d = Math.Sqrt((n.X - x) * (n.X - x) + (n.Y - y) * (n.Y - y));
+            if (d <= rUnits(i) && d < bd) { bd = d; best = i; }
+        }
+        return best;
+    }
+
+    /* ------------------------------------------------------------- stops and sizes -- */
+
+    public const double RoadScale = 0.80, LampScale = 1.25, ValleyScaleA = 0.337;
+
+    /// <summary>§5's lamp diameters at the Road stop (px at 1080); the link is 22 × 14.</summary>
+    public static double RoadD(string kind) => kind switch
+    {
+        "start" => 34, "entry" => 24, "ultimate" => 26, "ultimateMod" => 12, "flareLamp" => 16, "blue" => 28, "notable" => 20,
+        "rite" => 18, "link" => 22, "hand" => 18, "form" => 14, "reflex" => 16, "reflexUp" => 12, "small" => 12, "attribute" => 10,
+        _ => 12,
+    };
+
+    /// <summary>§5's Valley dots.</summary>
+    public static double ValleyD(string kind) => kind switch
+    {
+        "start" => 14, "blue" => 10, "entry" => 9, "ultimate" => 9, "notable" => 7, "link" => 7, "rite" => 6, _ => 4,
+    };
+
+    /// <summary>A lamp's diameter at a scale: the Valley's dots at or below the Valley scale, the Road's shapes at 0.80,
+    /// ×1.3 at the Lamp stop's 1.25, continuous between.</summary>
+    public static double Diameter(string kind, double s, double valleyS)
+    {
+        if (s <= valleyS) return ValleyD(kind);
+        if (s <= RoadScale)
+        {
+            double t = (s - valleyS) / (RoadScale - valleyS);
+            return ValleyD(kind) + (RoadD(kind) - ValleyD(kind)) * t;
+        }
+        double u = Math.Min((s - RoadScale) / (LampScale - RoadScale), 1.5);
+        return RoadD(kind) * (1 + 0.3 * u);
+    }
+
+    /// <summary>The stop a scale reads as (labels, dots, marks): the nearest of the three.</summary>
+    public static BoardStop StopOf(double s, double valleyS) =>
+        s < (valleyS + RoadScale) / 2 ? BoardStop.Valley : s > (RoadScale + LampScale) / 2 ? BoardStop.Lamp : BoardStop.Road;
+
+    /// <summary>The Valley's scale for a window: the whole board (its outer ring) inside the unfeathered field, ×0.9 (§16).</summary>
+    public double ValleyScale(Box window, double feather)
+    {
+        double ext = Nodes.Max(n => Math.Sqrt(n.X * n.X + n.Y * n.Y)) + 20;
+        return Math.Min(window.W - 2 * feather, window.H - 2 * feather) / (2 * ext) * 0.9;
+    }
+
+    /// <summary>§16 A4: the three faint guides' radii (units): the hearths', the roads' and the Old Roads' median distance.</summary>
+    public double[] RingRadii()
+    {
+        double Med(IEnumerable<Node> ns)
+        {
+            var d = ns.Select(n => Math.Sqrt(n.X * n.X + n.Y * n.Y)).OrderBy(v => v).ToArray();
+            return d.Length == 0 ? 0 : d[d.Length / 2];
+        }
+        bool Old(Node n) => Groups.TryGetValue(n.Group, out var g) && g.Kind == "oldroad";
+        return [Med(Nodes.Where(n => !Old(n) && n.Region == "hearth")), Med(Nodes.Where(n => !Old(n) && n.Region == "road")), Med(Nodes.Where(Old))];
+    }
+
+    /* ------------------------------------------------------------- her reach -- */
+
+    /// <summary>Road steps from the lit lamps (0 lit; int.MaxValue unreachable).</summary>
+    public int[] Steps(IReadOnlyCollection<int> lit)
+    {
+        var st = Enumerable.Repeat(int.MaxValue, Nodes.Length).ToArray();
+        var q = new Queue<int>();
+        foreach (var i in lit) { st[i] = 0; q.Enqueue(i); }
+        while (q.Count > 0)
+        {
+            var a = q.Dequeue();
+            foreach (var b in Nodes[a].Adj)
+                if (st[b] == int.MaxValue) { st[b] = st[a] + 1; q.Enqueue(b); }
+        }
+        return st;
+    }
+
+    /// <summary>§5: unlit lamps fade with road steps: within 3 100%, 4-8 65%, past 8 40%.</summary>
+    public static double Fade(int steps) => steps <= 3 ? 1.0 : steps <= 8 ? 0.65 : 0.40;
+
+    /// <summary>The cheapest unlit lamps to light, in order, to reach a target (one a lamp, gates as of now), and the lit
+    /// lamp it leaves from; null when it can't be reached.</summary>
+    public (List<int> Path, int From)? PathTo(ISet<int> lit, Func<int, bool> gateOk, int target)
+    {
+        var dist = new Dictionary<int, int>();
+        var prev = new Dictionary<int, int>();
+        var q = new Queue<int>();
+        foreach (var a in lit)
+            foreach (var b in Nodes[a].Adj)
+                if (!lit.Contains(b) && gateOk(b) && !dist.ContainsKey(b)) { dist[b] = 1; prev[b] = a; q.Enqueue(b); }
+        while (q.Count > 0)
+        {
+            var a = q.Dequeue();
+            if (a == target) break;
+            foreach (var b in Nodes[a].Adj)
+                if (!lit.Contains(b) && gateOk(b) && !dist.ContainsKey(b)) { dist[b] = dist[a] + 1; prev[b] = a; q.Enqueue(b); }
+        }
+        if (!dist.ContainsKey(target)) return null;
+        var p = new List<int>();
+        int c = target;
+        while (!lit.Contains(c)) { p.Add(c); c = prev[c]; }
+        p.Reverse();
+        return (p, c);
+    }
+
+    /* ------------------------------------------------------------- centering -- */
+
+    /// <summary>§16 centering on open: the lit lamps' bbox (and any extra, the focus's path) centered in the window, at
+    /// most the Road scale, zoomed out until every one sits at least inset px inside the window's edge.</summary>
+    public BoardView Center(IEnumerable<int> keep, Box window, double maxScale = RoadScale, double inset = 96)
+    {
+        var ids = keep.ToList();
+        if (ids.Count == 0) ids.Add(0);
+        double x0 = ids.Min(i => Nodes[i].X), x1 = ids.Max(i => Nodes[i].X), y0 = ids.Min(i => Nodes[i].Y), y1 = ids.Max(i => Nodes[i].Y);
+        double rmax = ids.Max(i => RoadD(Nodes[i].Kind) * 1.1) / 2;
+        double s = maxScale;
+        if (x1 > x0) s = Math.Min(s, (window.W - 2 * inset - 2 * rmax) / (x1 - x0));
+        if (y1 > y0) s = Math.Min(s, (window.H - 2 * inset - 2 * rmax) / (y1 - y0));
+        return new BoardView((x0 + x1) / 2, (y0 + y1) / 2, Math.Max(s, 0.05), (window.X0 + window.X1) / 2, (window.Y0 + window.Y1) / 2);
+    }
+
+    /* ------------------------------------------------------------- labels -- */
+
+    public sealed record LabelSpec(string Text, double Cx, double Cy, bool Hearth, int[] Lamps);
+    public readonly record struct Placed(string Text, double X, double Y, Box Box);
+
+    /// <summary>The label text px at a stop (Cinzel 600; §5: 15, 16 at the Valley). Never under 13 (the build's check).</summary>
+    public static int LabelPx(BoardStop stop) => stop == BoardStop.Valley ? 16 : 15;
+    /// <summary>The gate numeral's px (Alegreya Sans 800).</summary>
+    public const int ChipPx = 13;
+
+    static readonly string[] Callings = ["warden", "reaver", "arcanist", "stalker"];
+
+    public string GroupName(Group g) => g.Kind switch
+    {
+        "hearth" => $"THE {(g.Callings.FirstOrDefault() ?? "").ToUpperInvariant()}'S HEARTH",
+        "ford" => "THE FORD",
+        _ => g.Name.ToUpperInvariant(),
+    };
+
+    /// <summary>§5's labels by stop: the Valley names the 4 callings, the Ford and the 10 Old Roads; the Road and Lamp
+    /// stops name hearths, roads, bridges, crossings and Old Roads.</summary>
+    public List<LabelSpec> LabelSpecs(BoardStop stop)
+    {
+        var out_ = new List<LabelSpec>();
+        LabelSpec Of(string text, IEnumerable<Node> ns, bool hearth = false)
+        {
+            var a = ns.ToArray();
+            return new LabelSpec(text, a.Average(n => n.X), a.Average(n => n.Y), hearth, a.Select(n => n.I).ToArray());
+        }
+        if (stop == BoardStop.Valley)
+        {
+            foreach (var c in Callings)
+            {
+                var ns = Nodes.Where(n => n.Calling == c && n.Region is "hearth" or "road" or "bridge").ToList();
+                if (ns.Count > 0) out_.Add(Of(c.ToUpperInvariant(), ns));
+            }
+            foreach (var g in Groups.Values.Where(g => g.Kind is "ford" or "oldroad"))
+            {
+                var ns = Nodes.Where(n => n.Group == g.Id).ToList();
+                if (ns.Count > 0) out_.Add(Of(GroupName(g), ns));
+            }
+        }
+        else
+            foreach (var g in Groups.Values.Where(g => g.Kind is "hearth" or "road" or "bridge" or "crossing" or "oldroad"))
+            {
+                var ns = Nodes.Where(n => n.Group == g.Id).ToList();
+                if (ns.Count > 0) out_.Add(Of(GroupName(g), ns, g.Kind == "hearth"));
+            }
+        return out_;
+    }
+
+    /// <summary>
+    /// Each label beside its group's center, pushed outward from the Ford, clear of every lamp disc (screen x, y, r: the
+    /// lamp's radius + 5), of every other label and of the blockers; its box (text + 6 px a side, cap height + 7 px a
+    /// side) inside the allowed rect (the window less 40 px). Her own hearth looks wider before it gives up.
+    /// width(text, px) is the text's advance with its tracking.
+    /// </summary>
+    public List<Placed> PlaceLabels(BoardView v, BoardStop stop, IReadOnlyList<(double X, double Y, double R)> lamps, Box allowed,
+        IReadOnlyList<Box> blockers, Func<string, int, double> width, ISet<int>? lit = null)
+    {
+        int px = LabelPx(stop);
+        double h = Math.Round(px * 0.70);                  // Cinzel's cap height
+        var placed = new List<Placed>();
+        var local = new List<(double X, double Y, double R)>(lamps.Count);
+        bool Free(Box b)
+        {
+            if (!b.Inside(allowed)) return false;
+            foreach (var q in placed) if (b.Overlaps(q.Box)) return false;
+            foreach (var q in blockers) if (b.Overlaps(q)) return false;
+            foreach (var (lx, ly, r) in local) if (b.Hits(lx, ly, r)) return false;
+            return true;
+        }
+        // only the lamps a label's search can reach (the search's reach + the box's half size + the disc)
+        void Local(double x, double y, double reach)
+        {
+            local.Clear();
+            foreach (var d in lamps)
+                if (Math.Abs(d.X - x) < reach + d.R && Math.Abs(d.Y - y) < reach + d.R) local.Add(d);
+        }
+        var near = new List<(int A, int L)>();
+        for (int a = -30; a <= 190; a += 4) for (int l = -64; l <= 64; l += 4) near.Add((a, l));
+        near.Sort((p, q) => Cost(p).CompareTo(Cost(q)));
+        List<(int, int)>? wide = null;
+        foreach (var sp in LabelSpecs(stop))
+        {
+            double n = Math.Sqrt(sp.Cx * sp.Cx + sp.Cy * sp.Cy);
+            double ux = n > 1e-6 ? sp.Cx / n : 0, uy = n > 1e-6 ? -sp.Cy / n : 0;
+            var (X, Y) = v.Project(sp.Cx, sp.Cy);
+            double w = width(sp.Text, px);
+            if (X < allowed.X0 - w || X > allowed.X1 + w || Y < allowed.Y0 - 60 || Y > allowed.Y1 + 60) continue;
+            Placed? best = null;
+            bool her = sp.Hearth && lit != null && sp.Lamps.Any(lit.Contains);
+            var passes = new List<List<(int A, int L)>> { near };
+            if (her)
+            {
+                if (wide == null)
+                {
+                    wide = new();
+                    for (int a = -60; a <= 320; a += 8) for (int l = -200; l <= 200; l += 8) wide.Add((a, l));
+                    wide.Sort((p, q) => Cost(p).CompareTo(Cost(q)));
+                }
+                passes.Add(wide);
+            }
+            for (int pi = 0; pi < passes.Count; pi++)
+            {
+                var cands = passes[pi];
+                Local(X, Y, (pi == 0 ? 190 + 64 : 320 + 200) + w / 2 + 16);
+                foreach (var (a, lat) in cands)
+                {
+                    double x = X + ux * a - uy * lat, y = Y + uy * a + ux * lat;
+                    var b = new Box(x - w / 2 - 6, y - h / 2 - 7, x + w / 2 + 6, y + h / 2 + 7);
+                    if (Free(b)) { best = new Placed(sp.Text, x, y, b); break; }
+                }
+                if (best != null) break;
+            }
+            if (best is { } pl) placed.Add(pl);
+        }
+        return placed;
+    }
+
+    static double Cost((int A, int L) q) => (q.A >= 0 ? q.A : -2.5 * q.A) + 1.4 * Math.Abs(q.L);
+}
