@@ -40,6 +40,7 @@ public partial class ArtsScreen : Overlay
 
     /// <summary>The functional Lamps board and Wick screen: launch with --board, or set SU_BOARD=1.</summary>
     public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
+    /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
     static int Pages => BoardOn ? 4 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills by day", "Lamps", "Wicks"];
 
@@ -66,6 +67,7 @@ public partial class ArtsScreen : Overlay
         var pages = Kit.Tabs(PageNames[..Pages], page, k => { page = k; Refresh(); }, 16, 28);
         pages.Alignment = BoxContainer.AlignmentMode.Center;
         v.AddChild(pages);
+        if (page >= Pages) page = 0;
         v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
             : page == 3 ? "Plan the order a skill's lamps light; its rank is how many are lit."
             : skills ? "What the arenas showed you, learned for the day; what you carry is banked for the night."

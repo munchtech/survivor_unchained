@@ -324,6 +324,7 @@ public static class Style
         ["A"] = "pad_a", ["B"] = "pad_b", ["X"] = "pad_x", ["Y"] = "pad_y", ["LB"] = "pad_lb", ["RB"] = "pad_rb", ["LT"] = "pad_lt", ["RT"] = "pad_rt",
         ["View"] = "pad_view", ["Menu"] = "pad_menu", ["D-pad up"] = "pad_dpad_up", ["D-pad down"] = "pad_dpad_down", ["D-pad left"] = "pad_dpad_left",
         ["D-pad right"] = "pad_dpad_right", ["D-pad"] = "pad_dpad", ["Left stick"] = "pad_lstick", ["Right stick"] = "pad_rstick",
+        ["L3"] = "pad_l3", ["R3"] = "pad_r3",
     };
 
     /// <summary>A pad button as it looks: a face button is a dark disc with its
