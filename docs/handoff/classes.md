@@ -1,3 +1,65 @@
+# Classes 21 starts here (2 Nov, coordinator wind-down): Phase 2 session 3 (acceptance), round 3 measuring; read this, then "Classes 20" and "Classes 19" below
+
+Branch classes-17 (junction to its own public/assets; integration 0564eded0 merged at 716c6e85b). Scratch: survivorsunchained_inputs/scratch_classes20 (scripts t34.sh, k1-k3.sh, acc.sh, st.sh, wd.sh; tier_table.py `<dir> '<glob>'` per tier, ct_table.py `<jsonl>` calling x tier; runs by folder).
+
+## Rules in (all v2, by night only; day and v1 byte-identical; main approved each as a rule by kind)
+- **c20bb5e95:**
+  - a reflex's lamp barrier (Shield Wall, Spellward) runs at a quarter of the quarter (`LampBarrier(..., reflex: true)`);
+  - Frostfire's chill and burn run at a quarter (a status a rule lays carries its size);
+  - Always Bleeding's price follows its gift: mends stop at 7/8 (`MendCeiling`). At half, the pilot held low played safe enough to read P 1.31 on the price alone; with no ceiling it read 1.21.
+- **12c7f2cdd (medium solver), lamp facets and blue gifts keep their rule, not their size:**
+  - helpers `Ward`, `NightCut`, `GiftSize`;
+  - facet sizes are quartered: nimble, light_feet's speed, concussion and pile_driver stuns, snare hold (Battle.cs), cold_glass, terror, executioner, deep_slip, borrowed_time, second_hook, reel, bloodlust;
+  - blue gifts are quartered: wall_holds, bearer_of_blows, flare.banked (only the banked BONUS; the Flare's own base hit is unchanged, which main required), plus the BoardRules draft blues;
+  - prices stay in full;
+  - facet own damage (gore's bleed, choking's poison) is kept in full on purpose.
+- **c0c3a75e2 (worker), a lamp reflex's numbers are sizes, a quarter by night** (`ReflexSize`, applied only inside `RunReflex`; a Hand art keeps its numbers):
+  - shield_bash stun; bulwark cut (`Player.BulwarkSize`);
+  - warcry fear and +%; red_tide mend and +%;
+  - time_slip world rate (about 0.833); smoke_bomb unseen and sure;
+  - mark_prey strength and execute line (`Enemy.PreySize`).
+  - The trigger (count, radius, wait) and its own hit damage stay. Spellward's barrier is the sixteenth above.
+
+## Measured (plain, board alone `--offwicks 1`, 64 seeds a tier; CI90 of a 64-seed cell is about ±0.05)
+- With c20bb5e95 only (acc/A_all):
+
+  | | T1 | T2 | T3 | T4 |
+  |---|---|---|---|---|
+  | arcanist | 1.13 | 1.18 | 1.18 | 1.19 |
+  | reaver | 1.15 | 1.13 | 1.21 | 1.22 |
+  | stalker | 1.13 | 1.22 | 1.22 | 1.32 |
+  | warden | 1.20 | 1.26 | 1.24 | 1.29 |
+
+- With 12c7f2cdd: stalker T4 1.279, warden T2 1.215, warden T4 1.282. What still carried them was the reflexes' own numbers: Shield Bash's stun (warden T2/T4 1.12/1.20 with it dark), braced (about 0.04), smoke_bomb (about 0.05). That led to c0c3a75e2.
+- **c0c3a75e2, the full measure (acc/C_all.jsonl, bal5): NOT READ at wind-down**; see "Next" 1.
+
+## Next
+1. **Acceptance:**
+   - Read or rerun C: from godot, `dotnet <scratch>/bal5/Balance.dll arena --pair board --tiers 1,2,3,4 --seeds 64 --par 22 --offwicks 1 --callings all --out C_all.jsonl` (about 47 min; rebuild bal5 from c0c3a75e2 if the scratch is gone), then `python ct_table.py C_all.jsonl`.
+   - Main's gate: every cell ≤1.25. For a borderline cell, rerun it at 256 seeds (su-runner) for a CI of about ±0.025. Only if a cell is still within noise of 1.25 at 256 seeds, propose "no cell significantly over" to main, with the numbers.
+   - Medium solver only if a carrier has no rule-by-kind fix.
+   - Also run deft as a report.
+2. **Act 1:**
+   - `story --fight all --callings all --seeds 96 --policies greedy,random --bot plain,deft --par 20` on this build (v2 default), plus `--lampsv1`.
+   - `python tools/classes/act1_match.py <main checkout>/tools/classes/out/prefl11.jsonl X --cells` (prefl11 is seeds 1-32: match seed sets), and v1 vs v2 with --cells.
+   - Say what moved and why. The facet, blue and reflex rules touch story nights too.
+3. **Types:** `arena --type both --lamps full` and `--lamps empty`, `--tiers 1,2,3,4 --level tier --bot deft --callings all --seeds 24`, read with balance/classes_summary.py. The band is x1.35 of the median.
+4. **Docs:**
+   - LAMPS_V2_RULES "By night" (all rules above) and "The flag" (v2 default, `--lampsv1`); CLASSES §2.10 lines (lamp barriers, reflex numbers, facets, Always Bleeding's price follows its gift).
+   - Main wants the MR to list, for each calling, the night-vs-day feel: which reflexes still visibly fire.
+   - Then the full test once (godot/tests/Tests.csproj) and MR READY to main.
+5. **Then the second small MR, the Lamps screen's §14 asks** (main approved; decided changes go to su-worker). The signatures are agreed with the Lamps build lead (agent aaee520051cff5068, worktree lamps-1; stand-ins in lamps-1 godot/src/Ui/LampAsk.cs). In namespace SurvivorUnchained.Rpg:
+   - `IReadOnlyList<string> LampBook.PathTo(ch, w, id)`: the fewest unlit lamps, in lighting order, honoring gates (incl. Ungated) and home; empty if lit or unreachable; no Spare check. Plus `bool LightPath(ch, w, id)`: all or nothing.
+   - `LampSleep? LampBook.Sleeps(ch, id)`, with `record LampSleep(string[] Skills, string[] Tags)`: null if it feeds something carried or nothing named. It must match the sim.
+   - `string? LinkPick(ch, link)` (her pick, else what Battle.LinkSkill fires); `IReadOnlyList<string> LinkChoices(ch, link)`; `bool SetLinkPick(ch, link, skill)`.
+   - `IReadOnlyList<string> Suggested(ch, w, n)`: no mutation.
+   - #7 session undo is the UI's own. I told them that Unlight may reset `Now(ch).Flare`, and to undo newest first.
+   - `WickSumView? WickBook.Sum(ch, skill, night)`, with `record WickSumView(string Stat, double Total, IReadOnlyList<(string What, string Value)> Parts)`.
+   - Put both records in Rpg and tell that lead so it deletes its copies.
+
+## Cost (Classes 20)
+About 175k lead, plus a medium solver (99k) and a worker (58k). CPU only.
+
 # Classes 20 starts here (2 Nov, wound down by the coordinator): Phase 2 session 3 (acceptance) half done; read this, then "Classes 19 starts here" below
 
 Branch classes-17 (junction to its own public/assets). Scratch: survivorsunchained_inputs/scratch_classes19 (scripts abl.sh, ow.sh, f4.sh, t14.sh; abl_table.py; all .jsonl runs by folder).
