@@ -403,6 +403,8 @@ G_MEET, G_OFF_MAX = (684.0, 692.0), 6.0   # asserted: the fillet's x on the top 
 G_SHADE = 0.15                  # the fillet's corner a little darker (shadowed bronze, warmed), at most this much luma off
 G_FLOW, G_FLOW_K = 12.0, 0.5    # the fillet's texels within G_FLOW px of the edge carried along the curve (source rows
                                 # G_FLOW_K x the arc length down from the fillet's top)
+G_GAP = (982.0, 992.0, 3.5, 5.5, 0.3)   # UI 28 nape gap: rows easing in (screen y), the outer band's depth (full, out), the
+                                        # band's source rows (x the arc length down from the fillet's top)
 # the keeper's cloak edge (the lit rim of his hood, then his cloak's fold) traced on the r2 sprite at 2x, in the
 # keeper's frame (screen = frame + K_D; traced at K_D (-40, -12)): (y, x). A monotone fit (pchip) through it is his
 # back's edge: everything of the sprite toward 960 of it, over the rows from KCLOAK[0] down under the bar, is erased
@@ -532,6 +534,17 @@ def girl_back_line(art):
     smp = np.stack([ndimage.map_coordinates(src[..., c], [js, is_], order=1, mode='nearest') for c in range(4)], -1)
     colf = smp[:, :3] / np.maximum(smp[:, 3:4], 1e-4)
     wv = sm(G_FLOW, G_FLOW - 4.0, v)[:, None] * (smp[:, 3:4] > 0.05)
+    # (2b) UI 28, the nape gap (the owner: "add some hair in the gap between"): low in the fillet its outer band carried
+    # the source's dark edge, stretched into a near-black wedge between the lit lock and the bar. There the band takes the
+    # lock's own lit strands instead (source rows higher up, G_GAP[4] x u; depth remapped past the source's dark edge),
+    # keeping a thin dark rim on the edge; colour only (the alpha is r2b's)
+    wg = (sm(G_GAP[0], G_GAP[1], q[:, 1]) * sm(G_GAP[3], G_GAP[2], v))[:, None]
+    ys2 = yf + G_GAP[4] * u
+    rho = np.where(v < 0.5, 3.2 * v, 1.6 + 0.8 * (v - 0.5))
+    xs2 = girl_new_edge(ys2) - np.maximum(rho, 0.6)
+    smp2 = np.stack([ndimage.map_coordinates(src[..., c], [(ys2 - y0) / sy - 0.5, (xs2 - x0) / sx - 0.5], order=1, mode='nearest')
+                     for c in range(4)], -1)
+    colf = colf * (1 - wg) + smp2[:, :3] / np.maximum(smp2[:, 3:4], 1e-4) * wg
     rgb = out[..., :3].copy()
     rgb[box] = rgb[box] * (1 - wv) + colf * wv
     # (3) the corner: a little darker toward the bar, warmed (shadowed bronze)
