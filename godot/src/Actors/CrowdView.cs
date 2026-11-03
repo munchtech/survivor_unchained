@@ -12,6 +12,8 @@ namespace SurvivorUnchained.View;
 /// are). Which clip a creature plays, and how far into it, is decided here;
 /// the simulation only says what it is doing. The dead lie where they fell
 /// for a while, then the ground takes them back.
+/// VFX 12: a death the view's blow hasn't reached (DeathHeld: the Warden's line and heave) stands in its last living
+/// pose, then falls, bursts and is thrown on DieT minus the lag; it is still laid out on the sim's DieT (none blinks out).
 /// </summary>
 public partial class CrowdView : Node3D
 {
@@ -182,6 +184,9 @@ public partial class CrowdView : Node3D
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
+    /// <summary>How far a dying body's death runs behind the sim's (s, by id and seed; 0 none): the Warden's heave kills
+    /// stand in their last living pose until the heave lands, then fall, burst and are thrown on DieT minus this.</summary>
+    public static Func<int, double, double>? DeathHeld;
 
     /// <summary>The Flare's char over a body here (FlareFx.CharAt: x, z, living), and whether its ring passed here 4 frames
     /// or more ago (FlareFx.RingPast). Judge 6 A2: a body the ring passes is ice that shatters or char, never beige.</summary>
@@ -293,6 +298,9 @@ public partial class CrowdView : Node3D
     /// rim): seven at once round one Iron Palms, struck again each frame as they flew.</summary>
     const float FlashRimOnly = 0.12f;
 
+    static readonly bool WgBeatsLog = SurvivorUnchained.Args.Has("wg-beats");
+    int wgFallLogged;
+
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
         // Its body already lies where it fell: the fight lets it go shortly.
@@ -305,7 +313,10 @@ public partial class CrowdView : Node3D
         g.Seen = true;
         string role = "idle";
         var (ex, ez) = Drawn?.Of(e) ?? (e.X, e.Z);
-        if (e.State == EnemyState.Dying) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
+        // (a death the view's blow has not reached yet stands; its fall runs on dieT, the sim's DieT minus the lag)
+        double dieLag = e.State == EnemyState.Dying ? DeathHeld?.Invoke(e.Id, e.Seed) ?? 0 : 0, dieT = e.DieT - dieLag;
+        bool dieHeld = e.State == EnemyState.Dying && dieT < 0 && e.DieT < Ai.DieTime - 0.5;
+        if (e.State == EnemyState.Dying && !dieHeld) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
         else g.Thrown = false;
         double t = e.AnimT, y = heightAt(ex, ez);
         float dissolve = 0;
@@ -329,7 +340,11 @@ public partial class CrowdView : Node3D
                 // Burst apart: nothing is left to fall (the gore threw it). A Flare's kill is the Flare's to show first: the
                 // frost's overkill bursts nearly every body, and the pack vanished at frost +0.1 s (s2a).
                 int flareSays = FlareDeath?.Invoke(e.Id) ?? 0;
-                if (flareSays == 0 && e.Burst) return;
+                if (flareSays == 0 && e.Burst && !dieHeld)
+                {
+                    if (WgBeatsLog && dieT < 0.017 && wgFallLogged++ < 40) GD.Print($"[wg-beats] burst gone on {e.Id} frame {Engine.GetFramesDrawn()} dieT {e.DieT:F3} lag {dieLag * 60:F1}f");
+                    return;
+                }
                 if (flareSays < 0) return;
                 if (flareSays > 0)
                 {
@@ -343,6 +358,14 @@ public partial class CrowdView : Node3D
                     }
                     return;
                 }
+                if (dieHeld)
+                {
+                    // Its last living pose, the loops running on (a walk or an idle frozen mid-stride read as a hitch).
+                    role = g.LastRole ?? "idle";
+                    t = role is "idle" or "move" or "move2" ? g.LastT + e.DieT : g.LastT;
+                    break;
+                }
+                if (WgBeatsLog && g.Death == null && wgFallLogged++ < 40) GD.Print($"[wg-beats] fall starts on {e.Id} frame {Engine.GetFramesDrawn()} dieT {e.DieT:F3} lag {dieLag * 60:F1}f");
                 role = g.Death ??= DeathOf(asset, e);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
                 // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
@@ -355,7 +378,7 @@ public partial class CrowdView : Node3D
                     fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk, fa);
                 }
                 censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
-                t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
+                t = dieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
                 else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, ex, ez, g.Facing, role, g.Char); return; }

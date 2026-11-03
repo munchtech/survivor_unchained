@@ -22,6 +22,7 @@ namespace SurvivorUnchained.View;
 /// Every skill grows with its rank (Grow) and its evolution adds a layer of
 /// its own. A crowd being hit by several skills at once is kept readable by
 /// a budget per frame for the small things (sparks per hit).
+/// VFX 12: Sunder's swing that splits the ground draws no crescent, sparks or chop crack (WgLineSwing): the line is its blow.
 /// </summary>
 public partial class BattleFx
 {
@@ -274,6 +275,8 @@ public partial class BattleFx
         }
         mirror = !mirror;
         if (IsOath(art)) { OathSweep(e, at, facing, reach, g); return; }
+        // Sunder's heavy swing that splits the ground: the line is its blow (no crescent, sparks or chop crack over its base).
+        if (art == "slash_heavy" && WgLineSwing(e)) return;
         // The blade's path, cut fast: a hot edge at the reach and the smear of
         // its colour behind it (a painted fan read as a flat disc of beige, and
         // ribbons laid round it showed their joins), with a fainter echo inside
