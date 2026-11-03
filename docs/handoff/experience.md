@@ -5,6 +5,14 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## Experience 11 (demo-1 lead, 3 Nov): THE DEMO GATE written, MR READY
+
+**State:** `docs/team/DEMO_GATE.md` is the one backlog (owner's reset, `DEMO_PLAN.md`): the loop played end to end at 1920x1080 (first-time path 21 min, 125 frames, 0 exceptions; all four callings through the prologue; town screens; table > night > result > table; save/reload), ranked BROKEN 1 (suspected) / MISSING 2 / CONFUSING 3, one max xhigh review applied. No game code changed.
+- **Worktree** `.claude/worktrees/demo-1`, own junction `godot/assets` -> its own `public/assets` (skip-worktree). Evidence: `docs/experience/demo_gate/*.jpg` (half size); full frames in demo-1's `godot/.shots/` (a_*, b_path*, c*, e1_*, f*, g1*, h*, k_*).
+- **Run tool:** `survivorsunchained_inputs\scratch_demo11un.py BATCH.json` (one godot turn per batch; `fresh` moves saves aside, `snap` copies the saves after a run, `load_snap` reloads the longest-played slot with `--load`). Batches `batch_a..k.json` are the gate's runs; `sheet.py` makes labelled contact sheets.
+- **Gotchas:** `--auto` closes every overlay (so no `--open maps` under it) and never takes an arena's way out; `--pull` + `--auto` gives a black night (gate item 6); `--zone arena --offer 0 --auto` is the clean night harness; other leads' quick runs overwrite `user://saves` (snapshot right after a run).
+- **Next (Phase 2, Experience):** gate items 1, 2, 4 and tools T1-T3.
+
 ## Experience 10 (exp-10 lead, 28 Oct): fixed list DONE, MR READY
 
 **State:** all five items closed; exp-10 merged with integration 47c99dae; the full test run is the last check before the MR.
