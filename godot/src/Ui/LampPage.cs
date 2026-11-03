@@ -636,7 +636,7 @@ public partial class LampPage : Control
         {
             if (!Enum.TryParse<JoyButton>(mv[4..], true, out var jb)) { Said(mv, false, "no such button"); return true; }
             PadTap(jb);
-            later.Add((0.1, () => Said(mv, true, $"wick {(wickOpen ? $"open, focus {Wick.FocusId}, plan {Wick.PlanCount}" : "closed")}, board focus {(Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "-")}")));
+            later.Add((0.3, () => Said(mv, true, $"wick {(wickOpen ? $"open, focus {Wick.FocusId}, plan {Wick.PlanCount}" : "closed")}, board focus {(Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "-")}, {Pan()}")));
             return true;
         }
         if (mv == "xhold")
@@ -648,6 +648,14 @@ public partial class LampPage : Control
             return true;
         }
         return false;
+    }
+
+    /// <summary>The scripted moves' log: the build's pan (her hearth's place in the board's window) after each move.</summary>
+    string Pan()
+    {
+        var h = LampBoard.M.Nodes[LampBoard.M.Index.GetValueOrDefault(Lamps.Start(ch.Archetype))];
+        var (x, y) = Board.View.Project(h.X, h.Y);
+        return $"pan hearth at {x:F0},{y:F0}";
     }
 
     void Script(double dt)
@@ -678,7 +686,7 @@ public partial class LampPage : Control
             case "wait": moveT = 1; break;
             case "wick": OpenWick(wickTab); break;
         }
-        GD.Print($"LAMPBOARD move {mv}: focus {(Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "-")}, scale {Board.View.S:F3}, worst focus {Board.WorstFocusMs:F2} ms");
+        later.Add((0.3, () => GD.Print($"LAMPBOARD move {mv}: focus {(Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "-")}, scale {Board.View.S:F3}, worst focus {Board.WorstFocusMs:F2} ms, {Pan()}")));
     }
 }
 
