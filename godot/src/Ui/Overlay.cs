@@ -26,10 +26,17 @@ public abstract partial class Overlay : Control
     public virtual bool Dismissable => true;
 
     /// <summary>The day's book: its tabs in order, each with the key that opens it.</summary>
-    public static readonly (string Kind, string Name, Act Key)[] Book =
+    public static (string Kind, string Name, Act Key)[] Book => LampsScreen.On ? WithLamps : Without;
+    static readonly (string Kind, string Name, Act Key)[] Without =
     {
         ("inventory", "Pack", Act.Inventory), ("character", "Self", Act.Character), ("arts", "Arts", Act.Arts),
         ("journal", "Journal", Act.Journal), ("map", "Map", Act.Map),
+    };
+    /// <summary>v2: Lamps is its own tab after Arts (docs/design/LAMPS_SCREEN_BRIEF.md §10, §16).</summary>
+    static readonly (string Kind, string Name, Act Key)[] WithLamps =
+    {
+        ("inventory", "Pack", Act.Inventory), ("character", "Self", Act.Character), ("arts", "Arts", Act.Arts),
+        ("lamps", "Lamps", Act.Lamps), ("journal", "Journal", Act.Journal), ("map", "Map", Act.Map),
     };
     bool InBook => Book.Any(b => b.Kind == Kind);
 

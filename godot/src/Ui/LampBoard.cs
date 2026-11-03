@@ -173,7 +173,7 @@ public partial class LampBoard : Control
 
     static int KindIndex(string kind) => Enum.TryParse<LampKind>(kind, true, out var k) ? (int)k : (int)LampKind.Small;
     static int CallingIndex(string? c) => c switch { "reaver" => 1, "arcanist" => 2, "stalker" => 3, _ => 0 };
-    static readonly Color HaloLit = new("#ffb04a"), HaloBlue = new("#5d8dff"), HaloFlare = new("#ff7a2a");
+    internal static readonly Color HaloLit = new("#ffb04a"), HaloBlue = new("#5d8dff"), HaloFlare = new("#ff7a2a");
 
     static bool Flare(string k) => k is "ultimate" or "ultimateMod" or "flareLamp";
 
@@ -1253,6 +1253,51 @@ public partial class LampBoard : Control
                 if (h2 != focus) SetFocus(h2);
                 return;
         }
+    }
+
+    /// <summary>The wick opened or closed (§16 "C with the wick open"): the window takes height h (its foot at the wick
+    /// band's top) and the view slides, zooming out only as far as it must, so her lit cluster sits in what is left (48 px
+    /// in, 0.3 s). Closing keeps the view where it is. The focus is kept.</summary>
+    public void Reframe(float h, bool wick)
+    {
+        CardOn = !wick;
+        if (Math.Abs(h - Size.Y) < 0.5f || n == 0) { Size = new Vector2(Size.X, h); PlaceCard(); return; }
+        var before = view;
+        int f = focus;
+        Size = new Vector2(Size.X, h);                     // (Resized: Rebuild)
+        if (f >= 0 && f != focus) SetFocus(f);
+        Relayout(before, settle: !wick);
+        if (!wick) { PlaceCard(); return; }
+        var keep = lit.Count > 0 ? lit.ToList() : new List<int> { Hearth };
+        var to = M.Center(keep, new Box(0, 0, Size.X, Size.Y), Math.Min(before.S, LampBoardModel.RoadScale), 48);
+        Glide(to.Cx, to.Cy, to.Sx, to.Sy, to.S, 0.3);
+        GD.Print($"LAMPBOARD reframe: window {h:F0} high, scale {before.S:F3} to {Math.Clamp(to.S, MinS, MaxS):F3}, lit {lit.Count}");
+    }
+
+    /// <summary>A lamp's place in the viewport (for --lamps-moves' real mouse), or null when it is off the window.</summary>
+    public Vector2? ScreenOf(string id)
+    {
+        if (!M.Index.TryGetValue(id, out var i) || i >= n || !InView(i, 0)) return null;
+        return GetGlobalTransformWithCanvas() * new Vector2((float)pos[i].X, (float)pos[i].Y);
+    }
+
+    /// <summary>Empty board near a window point (no lamp under it), in the viewport, for a scripted drag.</summary>
+    public Vector2 EmptyNear(Vector2 local)
+    {
+        for (int r = 0; r < 200; r += 12)
+            for (int k = 0; k < 12; k++)
+            {
+                var q = local + new Vector2(Mathf.Cos(k * Mathf.Tau / 12), Mathf.Sin(k * Mathf.Tau / 12)) * r;
+                if (q.X > 60 && q.Y > 60 && q.X < Size.X - 60 && q.Y < Size.Y - 60 && HitAt(q) < 0) return GetGlobalTransformWithCanvas() * q;
+            }
+        return GetGlobalTransformWithCanvas() * local;
+    }
+
+    /// <summary>The board point under a viewport point (the wheel's anchor check).</summary>
+    public (double X, double Y) BoardAt(Vector2 global)
+    {
+        var q = GetGlobalTransformWithCanvas().AffineInverse() * global;
+        return view.Unproject(q.X, q.Y);
     }
 
     int HitAt(Vector2 p)

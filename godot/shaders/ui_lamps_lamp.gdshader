@@ -144,7 +144,7 @@ void fragment() {
 	vec2 p = lp;
 	bool lit = st == 0;
 	// kinds: 0 start 1 small 2 attribute 3 entry 4 skill 5 notable 6 blue 7 reflex 8 reflexUp 9 form 10 flareLamp
-	// 11 ultimate 12 ultimateMod 13 rite 14 link 15 hand
+	// 11 ultimate 12 ultimateMod 13 rite 14 link 15 hand; the wick panel's (LampWick): 16 wick lead-in 17 Turn
 	bool flare = kind == 10 || kind == 11 || kind == 12;
 	bool blue = kind == 6;
 	bool far_blue = blue && !lit && !near;
@@ -304,12 +304,24 @@ void fragment() {
 		float D_ = 2.0 * R;
 		if (lit && kind != 14 && !inked) {
 			if (asleep) fill(acc, teardrop(p, vec2(0.0, R * 0.1), R * 0.6, R * 0.34), ASLEEP, 0.9);
-			else if (D_ >= 18.0 && (kind == 5 || kind == 3 || kind == 13 || kind == 10 || kind == 7 || kind == 9))
+			else if (D_ >= 18.0 && (kind == 5 || kind == 3 || kind == 13 || kind == 10 || kind == 7 || kind == 9 || kind == 17))
 				fills(acc, teardrop(p, vec2(0.0, R * 0.05), R * 0.70, R * 0.36), hexc(0xfffbea), 0.95, 0.25);
 			else if (kind != 0 && kind != 15 && kind != 6 && kind != 11 && kind != 12)
 				fills(acc, length(p) - max(R * 0.32, 1.4), hexc(0xfffbea), 0.95, 0.3);
 			else if (kind == 6 || kind == 11)
 				fills(acc, length(p) - R * 0.22, vec3(1.0), 0.85, 0.6);
+		}
+
+		// ---- the Turn's flame crown: three small tongues over its top (skins/a.py wick_turn)
+		if (kind == 17) {
+			vec3 cc = lit ? hexc(0xffd98a) : hexc(0x8a8f98);
+			float ca = lit ? 0.95 : 0.55;
+			float dc = 1e6;
+			dc = min(dc, teardrop(p, vec2(-6.5, -R - 3.5 + 3.0), 7.0, 4.2));
+			dc = min(dc, teardrop(p, vec2(0.0, -R - 5.0 + 3.0), 10.0, 4.2));
+			dc = min(dc, teardrop(p, vec2(6.5, -R - 3.5 + 3.0), 7.0, 4.2));
+			fill(acc, dc, cc, ca);
+			if (lit) glow(add_light, p - vec2(0.0, -R - 3.0), 6.0, hexc(0xffb04a), 0.35);
 		}
 
 		// ---- the hand's palm
@@ -345,6 +357,13 @@ void fragment() {
 
 	acc *= op;
 	add_light *= op;
+
+	// ---- the Turn crossed (One Turn a skill): a thin dark bar, at full strength over the dimmed glass
+	if (kind == 17 && dim) {
+		float ds = segd(p, vec2(-R - 2.0, R + 2.0), vec2(R + 2.0, -R - 2.0));
+		fill(acc, ds - 1.6, hexc(0x050607), 0.9);
+		fill(acc, abs(ds - 2.1) - 0.4, hexc(0x9aa4b2), 0.25);
+	}
 
 	// ---- the gate notch (its alpha is its lamp's fade and the edge's)
 	if (notch_on && valley < 0.5) {

@@ -40,9 +40,8 @@ public partial class ArtsScreen : Overlay
 
     /// <summary>The functional Lamps board and Wick screen: launch with --board, or set SU_BOARD=1.</summary>
     public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
-    /// <summary>v2's Lamps page is the board (LampBoard, LAMPS_SCREEN_BRIEF.md); --board keeps the functional pages.</summary>
-    static bool LampBoardOn => !BoardOn && Lamps.V2;
-    static int Pages => BoardOn ? 4 : LampBoardOn ? 3 : 2;
+    /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
+    static int Pages => BoardOn ? 4 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills by day", "Lamps", "Wicks"];
 
     public ArtsScreen(Game g) : base(g) { }
@@ -52,8 +51,6 @@ public partial class ArtsScreen : Overlay
     /// <summary>Its two pages turn with LT and RT (, and .).</summary>
     public override bool Key(Act a)
     {
-        // the Lamps page takes the pad and the keys first (§10: LT/RT zoom there, LB/RB walk the lamps to light)
-        if (page == 2 && LampBoardOn && lampPage != null && IsInstanceValid(lampPage) && lampPage.Key(a)) return true;
         if (a is not (Act.SubNext or Act.SubPrev)) return false;
         page = (page + (a == Act.SubNext ? 1 : Pages - 1)) % Pages;
         Sound.Sfx.Page();
@@ -70,14 +67,13 @@ public partial class ArtsScreen : Overlay
         var pages = Kit.Tabs(PageNames[..Pages], page, k => { page = k; Refresh(); }, 16, 28);
         pages.Alignment = BoxContainer.AlignmentMode.Center;
         v.AddChild(pages);
-        if (page == 2 && LampBoardOn) LampBoard.Demo(ch, G.Journey.World);
-        if (!(page == 2 && LampBoardOn)) v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
+        if (page >= Pages) page = 0;
+        v.AddChild(Style.Label(page == 2 ? "Light lamps with the points you have earned; put them out where it is safe."
             : page == 3 ? "Plan the order a skill's lamps light; its rank is how many are lit."
             : skills ? "What the arenas showed you, learned for the day; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened; change your art where it is safe.",
             Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center));
-        if (page == 2 && LampBoardOn) BuildBoard(v);
-        else if (page == 2) BuildLamps(v);
+        if (page == 2) BuildLamps(v);
         else if (page == 3) BuildWicks(v);
         else if (skills) BuildSkills(v);
         else
@@ -94,8 +90,6 @@ public partial class ArtsScreen : Overlay
             }
             if (sel != null && Abilities.Find(sel) is { } def) Chosen(v, ch, def, known.Contains(def.Id));
         }
-        // C's page carries its own prompt row (§16); the book's K Close stays in its head
-        if (page == 2 && LampBoardOn) return;
         bool pad = Controls.Instance.UsingPad;
         var p = pad
             ? Kit.Prompts(Kit.Prompt(Act.Confirm, "Choose"), Kit.Prompt(Act.SubNext, PageNames[(page + 1) % Pages]), Kit.Prompt(Act.TabNext, "Turn"), Kit.Prompt(Act.Cancel, "Close"))
@@ -233,20 +227,6 @@ public partial class ArtsScreen : Overlay
     }
 
     Label Status() => Style.Label(status, Style.TextItalic, 15, Style.EmberHi, true);
-
-    /// <summary>v2: direction C's page (LampPage): the header, the board in C's window (BOARD (1030, 232)-(1876, 874)
-    /// at 1080), the wick tabs and the prompt row, laid out as the mock is from the content rect's top (y 152).</summary>
-    LampPage? lampPage;
-    LampSession? lampVisit;
-
-    void BuildBoard(VBoxContainer page)
-    {
-        // the visit outlives a page turn: the lamps lit since the book opened go out anywhere until it closes (§9)
-        if (lampVisit != null && lampVisit.Layout != LampBook.State(G.Journey.Ch).Active) lampVisit = null;
-        lampPage = new LampPage(G.Journey.Ch, G.Journey.World, G.Zone?.Id, lampVisit, Safe) { CustomMinimumSize = new Vector2(0, LampPage.Height) };
-        lampVisit = lampPage.Visit;
-        page.AddChild(lampPage);
-    }
 
     void BuildLamps(VBoxContainer page)
     {
