@@ -1,4 +1,4 @@
-# Classes 21 starts here (2 Nov, coordinator wind-down): Phase 2 session 3 (acceptance), round 3 measuring; read this, then "Classes 20" and "Classes 19" below
+# Classes 21 starts here (2 Nov, coordinator wind-down): Phase 2 session 3 (acceptance): the board-alone band passes at 64 seeds; confirm warden T4, then Act 1, types, docs, MR; read this, then "Classes 20" and "Classes 19" below
 
 Branch classes-17 (junction to its own public/assets; integration 0564eded0 merged at 716c6e85b). Scratch: survivorsunchained_inputs/scratch_classes20 (scripts t34.sh, k1-k3.sh, acc.sh, st.sh, wd.sh; tier_table.py `<dir> '<glob>'` per tier, ct_table.py `<jsonl>` calling x tier; runs by folder).
 
@@ -31,11 +31,20 @@ Branch classes-17 (junction to its own public/assets; integration 0564eded0 merg
   | warden | 1.20 | 1.26 | 1.24 | 1.29 |
 
 - With 12c7f2cdd: stalker T4 1.279, warden T2 1.215, warden T4 1.282. What still carried them was the reflexes' own numbers: Shield Bash's stun (warden T2/T4 1.12/1.20 with it dark), braced (about 0.04), smoke_bomb (about 0.05). That led to c0c3a75e2.
-- **c0c3a75e2, the full measure (acc/C_all.jsonl, bal5): NOT READ at wind-down**; see "Next" 1.
+- **c0c3a75e2, the full measure (acc/C_all.jsonl): every cell ≤1.25.**
+
+  | | T1 | T2 | T3 | T4 |
+  |---|---|---|---|---|
+  | arcanist | 1.14 | 1.17 | 1.19 | 1.20 |
+  | reaver | 1.12 | 1.14 | 1.22 | 1.18 |
+  | stalker | 1.10 | 1.22 | 1.18 | 1.22 |
+  | warden | 1.16 | 1.18 | 1.21 | **1.24** |
+
+  Warden T4 is within noise of 1.25: confirm it at 256 seeds.
 
 ## Next
 1. **Acceptance:**
-   - Read or rerun C: from godot, `dotnet <scratch>/bal5/Balance.dll arena --pair board --tiers 1,2,3,4 --seeds 64 --par 22 --offwicks 1 --callings all --out C_all.jsonl` (about 47 min; rebuild bal5 from c0c3a75e2 if the scratch is gone), then `python ct_table.py C_all.jsonl`.
+   - C passed every cell (above). Confirm warden T4 at 256 seeds (su-runner), from godot: `dotnet <bal>/Balance.dll arena --pair board --tiers 4 --seeds 256 --par 22 --offwicks 1 --callings warden --out w4_256.jsonl`. Build bal with `dotnet build -c Release -o <bal> balance/Balance.csproj`; it runs about 12 min. If T4 is truly over, the next carrier is braced's 3 s window, or Shield Bash itself.
    - Main's gate: every cell ≤1.25. For a borderline cell, rerun it at 256 seeds (su-runner) for a CI of about ±0.025. Only if a cell is still within noise of 1.25 at 256 seeds, propose "no cell significantly over" to main, with the numbers.
    - Medium solver only if a carrier has no rule-by-kind fix.
    - Also run deft as a report.
