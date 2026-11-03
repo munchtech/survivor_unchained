@@ -68,7 +68,7 @@ public partial class DgSmall : Control
         fmat.SetShaderParameter("bot", bot);
         // (its foot clear above the key plates' line, Instrument.DgTagTop, so R hangs from it inside the bar)
         fs *= DgPanel.FlaskIn;
-        AddChild(new ColorRect { Material = fmat, MouseFilter = MouseFilterEnum.Ignore, Size = fs, Position = Size / 2 - fs / 2 + new Vector2(0, FlaskDy) });
+        AddChild(new ColorRect { Material = fmat, MouseFilter = MouseFilterEnum.Ignore, Size = fs, Position = Size / 2 + new Vector2(-fs.X / 2, FlaskDy - fs.Y * DgPanel.FlaskBodyCy) });
     }
 
     /// <summary>The draught's level (Round._Process, each frame).</summary>

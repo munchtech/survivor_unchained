@@ -62,7 +62,8 @@ KF_X1 = 1294.0                                            # the keeper's frame w
 K_D = (-51, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12; r2 x -20 -> -40;
                                                           # UI 28 r2b -51: his cloak, the loop erased, tucks under the bar end)
 FLASK_S = 0.84                                            # UI 27 r2 (the owner: "potion should be same size as space button"): the
-FLASK_IN = 0.80                                           # draught sits in the dash's seat (its ring and well at the dash's 0.84,
+FLASK_IN = 45 / 39                                            # draught sits in the dash's seat (its ring and well at the dash's 0.84,
+FLASK_BCY = 74 / 112                                      # UI 28: the round body's middle in the art (rows 69-78 widest, of 112); the body (78 art px = 39 local) fills
 FLASK_DY = -7.0                                           # mirrored), the flask art inside its hole at FLASK_IN (r <= 22.5 of 23)
 LOCK_ON = False                                           # UI 27 r2: the keeper's mirrored back lock dropped (its loop spilled over the
                                                           # bar; under the bar the keeper's own robe tucks, asserted)
@@ -801,8 +802,9 @@ def clearances():
     # flask art inside it at FLASK_IN)
     fl = np.asarray(Image.open(os.path.join(UI, 'dg_meters', 'flask_full.png')).convert('RGBA'), np.float32)[..., 3] / 255
     fw, fh = 39 * FLASK_S * FLASK_IN, 56 * FLASK_S * FLASK_IN
+    fcy = SEAT_Y + FLASK_DY - fh * FLASK_BCY   # UI 28: the art's top; its body (not the whole art) centred on the ring
     j, i = np.nonzero(fl > 0.5)
-    fp = np.stack([FLASK_X - fw / 2 + (i + 0.5) * fw / fl.shape[1], SEAT_Y + FLASK_DY - fh / 2 + (j + 0.5) * fh / fl.shape[0]], 1)
+    fp = np.stack([FLASK_X - fw / 2 + (i + 0.5) * fw / fl.shape[1], fcy + (j + 0.5) * fh / fl.shape[0]], 1)
     th = np.linspace(0, 2 * np.pi, 720)
     fp = np.concatenate([fp, np.stack([FLASK_X + 32 * FLASK_S * np.cos(th), SEAT_Y + FLASK_DY + 32 * FLASK_S * np.sin(th)], 1)])
     dp = np.stack([1920 - (DASH_X + 32 * 0.84 * np.cos(th)), SEAT_Y - 7 + 32 * 0.84 * np.sin(th)], 1)
@@ -1084,7 +1086,7 @@ def geometry(kx0, ky0, krect, gr, rows, cl, tops):
                                        'tick': 'live: 1.2 px wide gold (0.95,0.80,0.52) at 12 o\'clock over r0-1.5..r1+1.5 (mock7.py medallion, line 632)'},
                            'level_number': {'at': [960.0, SEAT_Y + 1], 'font': 'cinzel-700', 'size': 23, 'anchor': 'mm', 'stroke': 1,
                                             'day': [214, 234, 255], 'night': [232, 222, 255]}},
-                  'flask': {'center': [FLASK_X, SEAT_Y + FLASK_DY], 'scale': FLASK_S, 'inner': FLASK_IN, 'count_badge': [FLASK_X + 15, SEAT_Y - 28, 9],
+                  'flask': {'center': [FLASK_X, SEAT_Y + FLASK_DY], 'scale': FLASK_S, 'inner': round(FLASK_IN, 5), 'body_cy': round(FLASK_BCY, 5), 'count_badge': [FLASK_X + 15, SEAT_Y - 28, 9],
                             'note': 'UI 27 r2: the draught in the dash seat (ring and well as the dash, mirrored), the flask inside at inner'},
                   'dash': {'center': [DASH_X, SEAT_Y - 7], 'scale': 0.84},
                   'key_tags': {'R': [FLASK_X, 1061], 'SPACE': [DASH_X, 1061], 'Q': [round(bcx + 6, 2), round(rim_y + 52, 2)],

@@ -77,7 +77,9 @@ public partial class DgPanel : Control
     public static readonly Vector2 DashAt = V(A(Part("panel", "dash"), "center"), new Vector2(1247, 1035));
     public static readonly float FlaskScale = F(Part("panel", "flask"), "scale", 0.84f), DashScale = F(Part("panel", "dash"), "scale", 0.84f);
     /// <summary>UI 27 r2: the flask art's share of its size inside the draught's seat (the dash's ring and well).</summary>
-    public static readonly float FlaskIn = F(Part("panel", "flask"), "inner", 0.80f);
+    public static readonly float FlaskIn = F(Part("panel", "flask"), "inner", 45f / 39f);
+    /// <summary>UI 28: the round body's middle as a share of the flask art's height; the body, not the art, is centred on the ring.</summary>
+    public static readonly float FlaskBodyCy = F(Part("panel", "flask"), "body_cy", 74f / 112f);
     /// <summary>The flask's count badge (middle, radius).</summary>
     public static readonly Vector2 CountAt = V(A(Part("panel", "flask"), "count_badge"), new Vector2(688, 1014));
     /// <summary>The key chips' tops (R and SPACE: [middle x, top y]).</summary>
