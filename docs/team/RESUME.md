@@ -2,6 +2,11 @@
 
 The one page of what's current. Every lead starts from the latest `claude/vigilant-galileo-l6jqyx`. Merge it first and keep your own workflow; this page says what has changed around you. Updated by the main session, 5 October 2026.
 
+## 3 November: coordinator 29291afc (running)
+**THE OWNER'S RESET: a playable demo first (tutorial, town, queue into arenas). Plan: `docs/team/DEMO_PLAN.md`.** One backlog until the demo is tagged: `docs/team/DEMO_GATE.md` (BROKEN / MISSING / CONFUSING on the player's path; polish goes under "After the demo"). Leads finish DONE-ONCE (one judge, merge, worktree removed); no later lists start.
+**Live (fresh successors, lead_brief.md + the reset):** UI 29 (ui-27@23b332f7a: fingers only if one worker pass, one max judge, suite, MR), Classes 21 (classes-17@ccca93e0d local, push first: warden T4 at 256, Act 1 ±3%, types band, MR), Lamps build 2 (lamps-1@1f988e0a9: finish A Open wide + the brief, one max judge, MR; beauty after the demo), **Experience 11 = THE DEMO GATE** (NEW worktree demo-1@5aca7a1b6: plays the whole loop as a first-time player, writes DEMO_GATE.md, one xhigh review, MR). Worktrees: main, armor-7 (stale, dirty), classes-17, ui-27, lamps-1, demo-1. Nothing merged yet. Weekly usage 29% at start.
+Outside our team: the owner's own "Marionette lead" session has a live agent (not ours; left alone).
+
 ## 2 November, evening: coordinator f6d72738 (wound down)
 **WIND-DOWN DONE (f6d72738): nothing live, all three leads stopped clean.** RESTART ORDER (fresh successors, lead_brief.md):
 1. **UI 29** in ui-27 (@23b332f7a, handoff ui_design.md "START HERE (UI 29)"): all built, UNJUDGED: bottomScale 0.85 PICKED by the owner (small marks incl. skill-level digits held at 100% px), nape gap filled on the restored r2b hair (owner rejected both inward-curl rounds: "put her back how she was ... add some hair in the gap"), potion fills its ring, her fingers ~27% shorter but still blotchy (repaint = real fix; owner: "way too long and a little shoddy"), buff SHELF over the bar (owner: shields on the life orb AND as a buff; scalable 10-16 buffs). Next: the fingers repaint if needed, one max judge, full suite, MR. ~1.3M spent.
