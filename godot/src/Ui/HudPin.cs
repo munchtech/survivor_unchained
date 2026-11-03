@@ -13,6 +13,8 @@ namespace SurvivorUnchained.Ui;
 ///     behind=1: the Drowned Girl's figure faded as if something were behind it; day=1|0: her XP thread
 ///     drawn as by day (her experience) or by night (the ember), whatever the fight is; dash=1.4: the dash's
 ///     charges held (1 held, the next 40% back).
+///     UI 28: status=b:aegis:6:8+d:flame:3:5:4 the statuses shown (b buff, d debuff: glyph, seconds left, starting
+///     seconds, stacks), replacing the live ones; shield= is also the orb's barrier ring.
 ///     UI 18, the experience light (the game's HUD): xp=run:F:T the light T seconds after a gain to F from rest,
 ///     xp=rise:F:T T seconds after a level-up (F carried over), xp=rest:F the resting glow at F after its
 ///     gain has settled, xp=dark (or dark:F) dark after the long quiet; xptip=hold (the hold key's card, at the run's front) or
@@ -31,6 +33,9 @@ public static class HudPin
     public static string[]? Seats;
     public static string? Xp, XpTip;
     public static int[]? XpNum;
+    /// <summary>UI 28 (status=b:aegis:6:8+d:flame:3:5:4+...): the statuses shown instead of the live ones, each
+    /// "b|d:glyph:left:max[:stacks]" ('+' between, so run.sh's ',' and ';' pass it whole).</summary>
+    public static System.Collections.Generic.List<SurvivorUnchained.Play.StatusShelf.Entry>? Status;
     static readonly string baseSpec = Args.Get("hud-pin") ?? "";
     /// <summary>The sequence's states (empty: none).</summary>
     public static readonly string[] Seq = Args.Get("hud-seq") is string q ? q.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : [];
@@ -43,7 +48,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
-        Xp = XpTip = null; XpNum = null; Shine = null; Level = null;
+        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -71,6 +76,7 @@ public static class HudPin
                 case "level": Level = int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var lv) ? lv : null; break;
                 case "xptip": XpTip = kv[1]; break;
                 case "xpnum": XpNum = Array.ConvertAll(kv[1].Split(':'), v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0); break;
+                case "status": Status = SurvivorUnchained.Play.StatusShelf.Parse(kv[1]); break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
             }
         }

@@ -72,6 +72,9 @@ public partial class LifeLamp : Control
     public ShaderMaterial Mat => mat;
     readonly Vessel.Flow flow;
     readonly Figure figure;
+    readonly Ward ward, glaze;
+    /// <summary>UI 28: the barrier as drawn (eased toward Shield).</summary>
+    float wardShown;
     string drawnNumber = "";
 
     public LifeLamp()
@@ -90,6 +93,8 @@ public partial class LifeLamp : Control
         mat.SetShaderParameter("orb_vis", F("orb_vis"));
         mat.SetShaderParameter("scr_at", At);
         AddChild(orbCopy = new BackBufferCopy { CopyMode = BackBufferCopy.CopyModeEnum.Rect, Rect = new Rect2(0, 0, 1, 1) });
+        // (UI 28: the barrier's ring round the glass, under her figure so it passes behind the fingers cradling it)
+        AddChild(ward = new Ward(this, false));
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
         if (UiArt.Tex("dg_river/xp_light.png", false) is { } hm) mat.SetShaderParameter("hair_mask", hm);
         else GD.PushError("LifeLamp: dg_river/xp_light.png did not load: her hair's shine draws blank");
@@ -97,6 +102,7 @@ public partial class LifeLamp : Control
         mat.SetShaderParameter("hair_at", hg.At);
         mat.SetShaderParameter("hair_size", hg.Size);
         flow = new Vessel.Flow(mat, true);
+        AddChild(glaze = new Ward(this, true));   // (over the glass, under the number)
         figure = new Figure(this);
         AddChild(figure);
     }
@@ -172,6 +178,45 @@ public partial class LifeLamp : Control
             GD.Print($"dg live fade shot at {Time.GetTicksMsec() / 1000.0:0.00}");
         }
         if (Number != drawnNumber) { drawnNumber = Number; figure.QueueRedraw(); }
+        float ws = Mathf.MoveToward(wardShown, Math.Clamp(Shield, 0, 1), dt * 1.6f);
+        if (ws != wardShown) { wardShown = ws; ward.QueueRedraw(); glaze.QueueRedraw(); }
+    }
+
+    /// <summary>UI 28: the barrier on the orb, its amount (StatusRow's "aegis" mark is its timer): a silver-blue glass
+    /// ring just outside the rim, its arc growing from 12 o'clock down both sides with the barrier / her max life
+    /// (full: the whole ring), under her figure so it passes behind her fingers; and over the glass a faint silver
+    /// glaze while any is up. HerLight's ShieldC, the same as the mark's.</summary>
+    sealed partial class Ward : Control
+    {
+        readonly LifeLamp l;
+        readonly bool over;
+        public Ward(LifeLamp l, bool over) { this.l = l; this.over = over; MouseFilter = MouseFilterEnum.Ignore; Size = Canvas; }
+
+        public override void _Draw()
+        {
+            float f = l.wardShown;
+            if (f <= 0.002f) return;
+            float k = 1 / Math.Max(l.Scale.X, 0.01f);   // screen px to her own
+            var c = OrbC;
+            var col = StatusRow.BarrierC;
+            if (over)
+            {
+                // the glaze: a faint silver film, a little brighter to the upper left where the window is
+                float a = 0.05f + 0.05f * Math.Min(1, f * 3);
+                DrawCircle(c, F("orb_vis"), col with { A = a });
+                DrawCircle(c + new Vector2(-0.22f, -0.28f) * OrbR, OrbR * 0.42f, new Color(1, 1, 1, a * 0.6f));
+                return;
+            }
+            float r = 56 * k, half = Mathf.Pi * f;
+            float a0 = -Mathf.Pi / 2 - half, a1 = -Mathf.Pi / 2 + half;
+            int n = Math.Max(6, (int)(96 * f));
+            // the glow, then the glass ring: a dark seat, the silver, a bright thread on its outer edge
+            DrawArc(c, r, a0, a1, n, col with { A = 0.10f }, 9 * k, true);
+            DrawArc(c, r, a0, a1, n, col with { A = 0.22f }, 5.5f * k, true);
+            DrawArc(c, r, a0, a1, n, new Color(0.03f, 0.05f, 0.08f, 0.55f), 3.6f * k, true);
+            DrawArc(c, r, a0, a1, n, col with { A = 0.95f }, 2.6f * k, true);
+            DrawArc(c, r + 0.9f * k, a0, a1, n, new Color("#eef4fa") with { A = 0.75f }, 0.9f * k, true);
+        }
     }
 
     public override void _EnterTree() => Live = this;

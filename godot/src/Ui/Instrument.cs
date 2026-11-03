@@ -59,16 +59,9 @@ public partial class Instrument : Control
     public readonly DgPanel Panel;
     /// <summary>The passives' beads over the plate's top line, over the seats' middle; what is on her (burning,
     /// shielded); the art's state in a word over the art.</summary>
-    public readonly HBoxContainer Passives, Statuses;
-    // UI 28: clear of the statue, over the orb
-    const float StatusOrbX = 436.95f, StatusOrbTop = 925f, StatusGap = 8f, StatusH = 30f, StatusRightMax = 492f;
-
-    void SettleStatuses()
-    {
-        float w = Statuses.GetCombinedMinimumSize().X;
-        float left = Math.Min(StatusOrbX - w / 2, StatusRightMax - w);
-        Statuses.Position = new Vector2(left, StatusOrbTop - StatusGap - StatusH);
-    }
+    public readonly HBoxContainer Passives;
+    /// <summary>UI 28: what is on her, buffs and debuffs (StatusRow: the shelf over the bar, or beside the orb).</summary>
+    public readonly StatusRow Statuses;
     public readonly Label ArtWord, ArtNote;
     readonly KeyTag draughtKey = new(Act.Draught) { Chip = true }, dashKey = new(Act.Dash) { Chip = true }, artKey = new(Act.Flare) { Chip = true };
 
@@ -113,13 +106,8 @@ public partial class Instrument : Control
         Passives.Size = new Vector2(w, 28);
         Passives.ZIndex = 2;   // (UI 23: the studs ride on top of the panel)
         AddChild(Passives);
-        Statuses = Style.H(10);
-        Statuses.Alignment = BoxContainer.AlignmentMode.Begin;
-        // UI 28: clear of the statue, over the orb (design px at scale 1; this node carries HudBottom's scale)
-        Statuses.Size = new Vector2(300, StatusH);
-        Statuses.MinimumSizeChanged += SettleStatuses;
+        Statuses = new StatusRow { ZIndex = 2 };
         AddChild(Statuses);
-        SettleStatuses();
         ArtWord = Style.Label("", Style.UiHeavy, Style.Badge, new Color("#d8b8ff"), false, HorizontalAlignment.Center);
         ArtWord.Position = new Vector2(ArtAt.X - 150, LegacyTop - 30);
         ArtWord.Size = new Vector2(300, 20);
