@@ -432,6 +432,7 @@ public partial class LampPage : Control
     // --lamps-moves' real hand: pending checks and releases (time left, what to do)
     readonly List<(double T, Action Do)> later = new();
     Vector2 pointer = new(-1, -1);
+    string? lastClicked;
 
     static void Send(InputEvent e) => Input.ParseInputEvent(e);
 
@@ -467,7 +468,8 @@ public partial class LampPage : Control
     {
         if (mv.StartsWith("click@") || mv.StartsWith("rhold@"))
         {
-            string id = mv[6..];
+            string id = mv[6..] != "focus" ? mv[6..] : lastClicked ?? (Board.Focus >= 0 ? LampBoard.M.Nodes[Board.Focus].Id : "");
+            if (mv[0] == 'c') lastClicked = id;
             if (Board.ScreenOf(id) is not { } at) { Said(mv, false, "the lamp is off the window"); return true; }
             bool was = LampBook.IsLit(ch, id);
             MouseTo(at);
@@ -513,10 +515,14 @@ public partial class LampPage : Control
             var c0 = (Board.View.Cx, Board.View.Cy);
             MouseTo(from);
             MouseButtonAt(from, MouseButton.Left, true);
-            for (int k = 1; k <= 6; k++) MouseTo(from + dv * k / 6f);
-            MouseButtonAt(from + dv, MouseButton.Left, false);
-            double mx = (c0.Item1 - Board.View.Cx) * Board.View.S, my = (Board.View.Cy - c0.Item2) * Board.View.S;
-            Said(mv, Math.Abs(mx - dv.X) < 3 && Math.Abs(my - dv.Y) < 3, $"the board moved {mx:F1},{my:F1} px for a drag of {dv.X:F0},{dv.Y:F0}");
+            // (motion is accumulated per frame: one step a frame, the release after)
+            for (int k = 1; k <= 6; k++) { var to = from + dv * k / 6f; later.Add((0.034 * k, () => MouseTo(to))); }
+            later.Add((0.26, () => MouseButtonAt(from + dv, MouseButton.Left, false)));
+            later.Add((0.32, () =>
+            {
+                double mx = (c0.Item1 - Board.View.Cx) * Board.View.S, my = (Board.View.Cy - c0.Item2) * Board.View.S;
+                Said(mv, Math.Abs(mx - dv.X) < 3 && Math.Abs(my - dv.Y) < 3, $"the board moved {mx:F1},{my:F1} px for a drag of {dv.X:F0},{dv.Y:F0}");
+            }));
             return true;
         }
         if (mv.StartsWith("key:"))

@@ -117,7 +117,8 @@ public partial class LampWick : Control
         Skill = skill;
         Listing = false;
         said = null;
-        strands = Wicks.StrandsOf(skill).Take(3).ToList();
+        // the mock's rows: the calling's strand (Light my way's) first, then shape, school, bind
+        strands = Wicks.StrandsOf(skill).OrderBy(x => x.Kind switch { StrandKind.Calling => 0, StrandKind.Shape => 1, StrandKind.School => 2, _ => 3 }).Take(3).ToList();
         Read();
         (fr, fc) = (0, 0);
         for (int r = 0; r < strands.Count; r++)

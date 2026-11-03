@@ -23,7 +23,7 @@ public partial class LampsScreen : Overlay
     public static bool On => Lamps.V2 && !ArtsScreen.BoardOn;
 
     /// <summary>The height Arts' page-name row and its gap took (measured: the board's window at y 234).</summary>
-    const float Room = 0;
+    const float Room = 27;
 
     LampPage? page;
     /// <summary>The visit outlives a rebuild: the lamps lit since the book opened go out anywhere until it closes (§9).</summary>
