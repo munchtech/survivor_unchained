@@ -7,14 +7,15 @@ The only backlog until the demo ships (`DEMO_PLAN.md`). Every item below is a st
 - **The first-time path runs clean, start to finish: 21 minutes, 125 frames, 0 exceptions** (`b_path`: a fresh save, title, creation, SB00 played live, C01, the prologue Wake > Rising > Road > Ambush > Post > Barrow > Ford > the Ford-Warden > Victory > Dawn, C04, into the Waystation). Every teach callout fired and was shot (15 lessons, `b_path_teach_*`).
 - **Title and creation:** the title, all four callings on "Who sits here?", the origin page, the Look for each calling and the hair page (`a_title`, `a_new0_*`, `a_look_*`). With a save on disk the title offers Continue (`h2_title_saved`).
 - **The Waystation by day:** every screen opens and closes: Mother Rook (rest: sleep until morning, wait until nightfall), Rook's storeroom (the stash), Brannoc, Harlan's shop, inventory, character sheet, journal, the town map, the Wayfinder's table, the arts page, the pause menu with Save (`a_town_open_00..11`). Talk prompts show (`a_town_talk_prompt_talk_1`). The day clock turns to dusk and night, and at night the tracker sends her to the table ("Tonight: The Wayfinder's table / Answer the night: hold N", `night_tracker_table.jpg`).
+- **The other three callings:** the arcanist, reaver and stalker each played the prologue through to its Exit (Wake to Dawn, about 9 minutes each) and four minutes of a tier-1 Deep Shaw night on the autopilot, 0 exceptions, no stall, no black frame (`k_pro_*`, `k_arena_*`).
 - **The table into a night:** a click on "Enter the arena" pulls her into the Deep Shaw, the opening Great Blessing, the arena with its 30:00 clock (`table_click_into_arena.jpg`, `c5_click_pick`), with a fast click pick during the entry fade too (`g1_fastpick`). A full tier-1 night on the autopilot: 31 minutes, the Pack-Mother at the half hour and down in about 80 s, "The Deep Shaw is won", then the endless Beyond (`e1_night_*`, 0 exceptions). The night was never left: the autopilot can't find the way out (items 2 and 4).
 - **Back from a night:** a real fall ends on its result ("The Ember Gutters") and returns her to town (`result_fell.jpg`, `h1_fall`, `--die 20`). The won result and the return to the table were shown only from a forced sample result (`--open result`, `f1_result`: `result_won.jpg`, `back_at_table.jpg`); from it a reload lands her at the table and the table offers again (`f2_reload`, `f3_table2`). The end of a real won night is unproven (item 4).
 
-So nothing on the player's path is proven BROKEN. The gate is three things a first-time player would miss or can't read, the unplayed end of a won night, the lore intro's switch, one suspected black screen, and the three callings not yet played past the Look.
+So nothing on the player's path is proven BROKEN. The gate is three things a first-time player would miss or can't read, the unplayed end of a won night, the lore intro's switch and one suspected black screen.
 
 ## The gate, ranked
 
-Reviewed once by a max judge at xhigh (3 November): nothing on it is polish; it added items 3, 4 and 7 and moved item 6 from the tools onto the gate.
+Reviewed once by a max judge at xhigh (3 November): nothing on it is polish; it added items 3 and 4 and a check of the other three callings (since passed), and moved item 6 from the tools onto the gate.
 
 | # | Class | Area | Item | Evidence | Smallest fix that passes |
 |---|---|---|---|---|---|
@@ -24,11 +25,10 @@ Reviewed once by a max judge at xhigh (3 November): nothing on it is polish; it 
 | 4 | MISSING (unproven) | experience | **The end of a real won night has never been played.** After the forced result the table still says "You have won none yet" (`f3_table2`), though `Arena.Won` sets `arena.best`; the real night (`e1_night`) never ended. So the real result, its record, the return, a second night and a reload after a real win are unproven. | `f3_table2`, `f1_result.log` ("open result") | Tool T2 below, then one run: win, take the way out, check the result's "What you took out" is filled, the table says tier 1 is won, what day it is after (she came back at "Day, Day 1", `h1_fall_04`) against the design, a second night, then a reload. |
 | 5 | MISSING | cinematics (storybook) | **The lore intro is off.** `godot/data/storybook/sb00.json` has `"live": false`, so a new game opens on black, then C01. Played live it runs clean, 89 s, into C01 (`b_path_00..03`). | `sb00_plays.jpg` | Ship the demo build with `live: true`. **Needs the owner's yes** (DEMO_PLAN: it waits on the owner). The owner's p6 note (the fire-to-water pan, 71-81.5 s, "a good start") goes after the demo: it works as it stands. |
 | 6 | BROKEN (suspected) | ui (`GameHud`) | **The arena entry can hold black for the whole night.** With the blessing picked in the same frames as the entry (`--pull` with `--auto`), the fight ran 12 minutes behind black (`c2_night1`, again `c6_pull_auto`). Two click runs lift, but the blessing also takes keys 1-3 and Enter, so a player's quick key may hit it. Likely cause: `GameHud.Pull`'s completion re-blackens after `Fade(0)`. | `harness_pull_auto_black.jpg` | In `GameHud`, a `Fade(0)` cancels a pending pull, so no later pull completion can hold the black; plus a unit test where a pull completes after `Fade(0)` and must not re-blacken. Re-run `--pull 3 --auto`: the arena shows within 5 s. |
-| 7 | unverified | combat, classes | **The arcanist, reaver and stalker are never played past the Look.** All four are offered at creation. | runs `k_*` | One autopilot run each through the prologue and five minutes of a tier-1 night, checked for exceptions and stalls. |
 
 Outside the ranking, in flight as Phase 0: **the Lamps screen in town is still the old arts page.** It works: the arts she knows, facets, Click to choose (`arts_default.jpg`); the board pages are behind `--board` (`lamps_board_flag.jpg`). Lamps build 2 merges it as DEMO_PLAN Phase 0 says. The Long Cut doesn't wait on it: it is the Sunderer road's own Flare and fired on the old page (`c2_night1.log`).
 
-Counts: BROKEN 1 (suspected), MISSING 2 (one unproven), CONFUSING 3, unverified 1.
+Counts: BROKEN 1 (suspected), MISSING 2 (one unproven), CONFUSING 3. The judge's item 7 (the other three callings never played past the Look) was checked the same day and passes: see "What already works".
 
 ## The gate's own tools (experience; needed for item 4, Phase 3 and every replay)
 
@@ -59,5 +59,4 @@ Every open later list in the handoffs and RESUME's top section was sorted (138 i
 - **Experience:** items 1, 2 and 4 (two tracker lines with their pins, the real won-night end) and tools T1-T3: about one session, code at medium.
 - **UI:** item 3 (the draft card's layout and its overlap check) and item 6 (`GameHud` pull/fade, with its test); the pins and the edge arrow for items 1-2 if Experience can't place them with the existing tracker and minimap: about half a session.
 - **Cinematics (storybook):** item 5, one data line after the owner's yes, plus one replay of the opening: a fraction of a session.
-- **Combat / classes:** item 7, three autopilot runs (a runner, no lead) unless one stalls.
-- **Arena art, story, animation, env:** nothing on the gate.
+- **Arena art, combat, classes, story, animation, env:** nothing on the gate.
