@@ -360,6 +360,14 @@ public sealed class Autopilot
             Frame($"loop_wayline_{arenasEntered}", 6);
         }
         else wonT += dt;
+        // The first moment she is free again after the win (the hoard's chest and its words closed): what the player sees then.
+        if (freeFor != arenasEntered && g.Overlay == null && g.Teaching == null)
+        {
+            freeFor = arenasEntered;
+            Frame($"loop_free_{arenasEntered}", 1);
+            Frame($"loop_free_{arenasEntered}_b", 8);
+            Frame($"loop_free_{arenasEntered}_c", 16);
+        }
     }
 
     /// <summary>The table open: a picture, then the offer taken; after the last night (--nights N) it stays open.</summary>
@@ -390,6 +398,7 @@ public sealed class Autopilot
 
     /// <summary>Walk to the goal and use it: in the town, the first one standing; in a won arena, the way out
     /// once --leave-after S (20) have passed since it was won. True when it has the step.</summary>
+    int freeFor;
     List<(double X, double Z)>? route;
     double routeT;
     (double, double) routeFor;
