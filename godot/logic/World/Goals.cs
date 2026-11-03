@@ -63,7 +63,7 @@ public static class Goals
         string Say(string text) => Token.Replace(text, m => word(m.Groups[1].Value) ?? m.Groups[1].Value);
         foreach (var a in active.Where(a => a.Line))
         {
-            var steps = a.Def.Steps.Select(s => new Step(Say(s.Text), s.Optional)).ToList();
+            var steps = a.Def.Steps.Select(s => new Step(Say(s.Text), s.Optional, Color: a.Def.Color)).ToList();
             int i = a.Def.Into == null ? -1 : o.FindIndex(t => t.Id == a.Def.Into);
             if (i >= 0)
             {

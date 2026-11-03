@@ -17,7 +17,8 @@ namespace SurvivorUnchained.World;
  * wood's heart and crosses the road; Wolf Hollow is north, the Roost in the
  * ravine to the south-east. */
 
-public sealed record Step(string Text, bool Optional = false, bool Done = false);
+/// <summary>A tracker line; `Color` is its goal's (goals.json), for its mark, none for a quest's own step.</summary>
+public sealed record Step(string Text, bool Optional = false, bool Done = false, string? Color = null);
 public enum TrackTone { Main, Side, Tutorial }
 public sealed record Tracked(string Id, string Title, TrackTone Tone, List<Step> Steps);
 
