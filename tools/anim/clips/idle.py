@@ -921,6 +921,18 @@ _WF_X = town_idle.loop_wave(0.25217, (0.00032, 0.00016), (-0.00035, 0.00125), (-
 WARDEN_FIST_L = dict(pos=lambda t: (_WF_X(t), 1.2654, -0.03), pole=town_idle._pole(28.0), knuckles=_WF_K, blade=_WF_B,
                      fingers=dict(FINGER_PRESETS["fist"], curl=0.8, thumb=0.6))
 WARDEN_TOWN_FIST = town_idle.hang_arms(town_idle.on_hip(WARDEN_FIST_L, _NONE), r=_WARDEN_TOWN_R())
+# "thumb" (Animation 62, not the default until a judge; the fist judge's fix A): her left thumb hooked over the belt at
+# the front of her hip, AHEAD of the hilt (the grip and pommel stand 7 cm out of her left side, 1.15-1.27 m up, forward
+# to 0.155 m), the fingers draped soft down the belt, the palm to her (town_idle.STALKER_THUMB_R's way, mirrored and
+# refitted). The wrist sits at 45 deg round her front, so the forearm crosses BEHIND the grip (forearm or hand 3.9 mm
+# from the sword at the closest); the elbow out 0.28-0.31 m, 9-12 deg behind her side, flexed 89-103, the upper arm
+# 20-28 deg out, the wrist flex -2..6, ulnar to 17 (of 38). Contacts (scratch anim62/elbow, A45): hand 9-10 mm off the
+# warden belt, 3-4 off the reaver's and ranger's (their belts are thicker there; at the warden's 0-5 the fingertips
+# go 1-3 mm into theirs), 26 off her bare belt.
+_WTH_K, _WTH_B = town_idle._hand((-0.6, -0.6, 0.5), (-0.64, 0.0, -0.77))
+WARDEN_THUMB_L = dict(pos=(0.129, 1.19, 0.118), pole=town_idle._pole(40.0), knuckles=_WTH_K, blade=_WTH_B,
+                      fingers=town_idle.graded((9.0, 23.0), (14.0, 29.0), (4.5, 10.5)))
+WARDEN_TOWN_THUMB = town_idle.hang_arms(town_idle.on_hip(WARDEN_THUMB_L, _NONE), r=_WARDEN_TOWN_R())
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
@@ -1000,7 +1012,8 @@ IDLES = {
     "idle_stalker_daggers": ("Crouched", stalker_daggers, "daggers"),
     "idle_arcanist_wand": ("Strutting", arcanist_wand, "wand"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
-    "idle_warden_town": ("WiggleHips", {"side": WARDEN_TOWN, "back": WARDEN_TOWN_BACK, "fist": WARDEN_TOWN_FIST}[WARDEN_TOWN_ARM], ""),
+    "idle_warden_town": ("WiggleHips", {"side": WARDEN_TOWN, "back": WARDEN_TOWN_BACK, "fist": WARDEN_TOWN_FIST,
+                                       "thumb": WARDEN_TOWN_THUMB}[WARDEN_TOWN_ARM], ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
     # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
     "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
