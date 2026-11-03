@@ -50,7 +50,6 @@ INL = 6.5            # snap: the inlay's top run centred on the 1080 px row 1009
 FOOT_X = 628.0       # UI 24: the designed end, a straight side tangent to the volute down to this x at the screen foot
 TUCK_MIN = 4.0       # UI 24: every figure edge row from the panel top sits at least this far under the panel (asserted)
 CLEAR = (3.0, 8.0)   # UI 27: the nearest live part at each end (flask, dash, their tags) from the end's inlay (asserted)
-FLUSH = (0.0, 7.0)   # UI 27: the 12 rows over PL_TOP, each back's edge this far inward of the volute's inner end
 LD_PLATE = np.array([0.0, -0.816, 0.578], np.float32)   # P1: lit from straight above (the field's z kept)
 PANEL_RECT = (600, 988, 720, 92)                          # symmetric about 960 (UI 27: was 576, 768 wide)
 S, ANCHOR = 0.94, (295.33, 1080.0)                        # the reference frame (G1, the keeper's mirrored lock, the shine)
@@ -60,7 +59,8 @@ G_S, G_D = 0.876, (69.2, 1.9)                             # UI 27: her own group
 GLOBE = (378.0, 960.0, 59.4)
 K_S, K_TOP, GAP_R = 0.28, 205.0, -17.0                    # the keeper's frame (as UI 24 built it)
 KF_X1 = 1294.0                                            # the keeper's frame was set off UI 24's PL_X1
-K_D = (-40, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12; r2 x -20 -> -40)
+K_D = (-51, -12)                                           # UI 27: the keeper sprite moved by whole px (x, y: up 12; r2 x -20 -> -40;
+                                                          # UI 28 r2b -51: his cloak, the loop erased, tucks under the bar end)
 FLASK_S = 0.84                                            # UI 27 r2 (the owner: "potion should be same size as space button"): the
 FLASK_IN = 0.80                                           # draught sits in the dash's seat (its ring and well at the dash's 0.84,
 FLASK_DY = -7.0                                           # mirrored), the flask art inside its hole at FLASK_IN (r <= 22.5 of 23)
@@ -395,94 +395,172 @@ def runs(m):
     return np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]
 
 
-def flush_floor(e, ylo, sign):
-    """the line a back may not stop short of (UI 27's flush): the volute's inner end (vie) + 0.5 px inward over the 12
-    rows over PL_TOP, eased in from the back's own edge over the 12 rows before (sign +1 the girl, -1 the keeper,
-    mirrored); e per 1080 row from ylo"""
-    vie = PL_X0 + 2 * VOL_R
-    tgt = vie + 0.5 if sign > 0 else 1920 - vie - 0.5
-    yy = ylo + np.arange(len(e))
-    i0 = int(PL_TOP) - 24 - ylo
-    t = sm(PL_TOP - 24, PL_TOP - 12, yy)
-    fl = e[i0] + (tgt - e[i0]) * t
-    return np.where(yy >= PL_TOP - 24, fl, -1e9 * sign)
+# UI 28 r2b (the owner, on r2: "the right statue cleanly ending at its cloak and removing that weird stuff, and the
+# left statue just being a little more full (only a little) and curving in more blended")
+G_FILL = (913.0, 968.0, 5.0)    # her back: an outward offset easing in from row G_FILL[0] to G_FILL[1], at most G_FILL[2] px
+G_FILLET = (968.0, 688.0)       # then a concave quarter-ellipse from that row, meeting the top line nearly tangent at x 688
+G_MEET, G_OFF_MAX = (684.0, 692.0), 6.0   # asserted: the fillet's x on the top line; px out of r2's edge above it
+G_SHADE = 0.15                  # the fillet's corner a little darker (shadowed bronze, warmed), at most this much luma off
+G_FLOW, G_FLOW_K = 12.0, 0.5    # the fillet's texels within G_FLOW px of the edge carried along the curve (source rows
+                                # G_FLOW_K x the arc length down from the fillet's top)
+# the keeper's cloak edge (the lit rim of his hood, then his cloak's fold) traced on the r2 sprite at 2x, in the
+# keeper's frame (screen = frame + K_D; traced at K_D (-40, -12)): (y, x). A monotone fit (pchip) through it is his
+# back's edge: everything of the sprite toward 960 of it, over the rows from KCLOAK[0] down under the bar, is erased
+KCLOAK = tuple((y + 12.0, x + 40.0) for y, x in (
+    (940, 1304.5), (944, 1301.0), (948, 1297.6), (952, 1294.5), (956, 1291.6), (960, 1290.3), (966, 1290.0),
+    (971, 1289.5), (975, 1286.9), (979, 1284.3), (984, 1283.8), (992, 1283.6), (997, 1283.0), (1000, 1282.2),
+    (1003, 1281.2), (1008, 1280.1), (1014, 1279.4), (1020, 1279.0), (1040, 1278.0)))
+K_CUT_TO = PL_TOP + 16          # the erase runs down to here (under the bar end: below it all is under the panel)
 
 
-def fill_strip(rgb, a, strip):
-    """the texels of strip made solid, their colour inpainted from the figure round them (straight rgb, alpha)"""
-    if not strip.any():
-        return rgb, a, 0
-    hole = strip & (a < 0.9)
-    u8 = (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
-    unknown = ndimage.binary_dilation(hole, iterations=1) | (a < 0.5)          # (known: the opaque figure only)
-    inp = cv2.inpaint(u8, unknown.astype(np.uint8) * 255, 4, cv2.INPAINT_TELEA).astype(np.float32) / 255
-    rgb = np.where(hole[..., None], inp, rgb)
-    return rgb, np.where(strip, np.maximum(a, 1.0), a), int(hole.sum())
+def cloak_x(y):
+    """the keeper's back edge (screen x) per screen y, K_D applied"""
+    from scipy.interpolate import PchipInterpolator
+    ky = np.array([k[0] for k in KCLOAK]) + K_D[1]
+    kx = np.array([k[1] for k in KCLOAK]) + K_D[0]
+    y = np.asarray(y, np.float64)
+    return PchipInterpolator(ky, kx)(np.clip(y, ky[0], ky[-1]))
+
+
+def girl_old_edge():
+    """her back's edge as round 2 cut it (screen x per 1080 row from row 900): the mass's edge, the flared strand
+    that leaves it over the BAND rows cut (r2's rule: from the band's first row to the rows where the strand stands
+    apart, interpolated). Read from her art before the back line (girl_back_line keeps it in _GA['pre'])."""
+    if 'old' not in _GE:
+        art = _GA['pre']
+        x0, y0, w, h = girl_screen_rect()
+        Z, WX = 4, 560
+        ylo, yhi = 900, int(PL_TOP) + 4
+        a4 = place(art, (x0 - WX) * Z, (y0 - ylo) * Z, w * Z, h * Z, (200 * Z, (yhi - ylo) * Z))[..., 3]
+        c600 = (600 - WX) * Z
+        e = np.full(yhi - ylo, np.nan)
+        b0 = int(PL_TOP) - BAND - ylo
+        for r in range(yhi - ylo):
+            st, en = runs(a4[r * Z + Z // 2] > 0.5)
+            k = [i for i in range(len(st)) if st[i] <= c600 < en[i]]
+            assert k, ('her mass not over x 600', ylo + r)
+            k = k[0]
+            apart = any(en[j] - st[j] > 2 for j in range(k + 1, len(st)))
+            if r <= b0 or apart:
+                e[r] = WX + en[k] / Z
+        kn = np.nonzero(~np.isnan(e))[0]
+        _GE['old'] = (ylo, np.interp(np.arange(len(e)), kn, e[kn]))
+    return _GE['old']
+
+
+def girl_new_edge(yy):
+    """UI 28 r2b: her back's new edge (screen x) per screen y, G_FILL[0]..PL_TOP + 1: the old edge (smoothed) plus an
+    offset easing in to G_FILL[2], then from G_FILLET[0] a concave quarter-ellipse sweeping toward 960 to meet the top
+    line nearly tangent at G_FILLET[1]; over the BAND rows never moving back out going down. NaN outside the rows."""
+    ylo, e = girl_old_edge()
+    rr = ylo + 0.5 + np.arange(len(e))
+    es = ndimage.gaussian_filter1d(e, 3.0, mode='nearest')
+    yf = G_FILLET[0]
+    ef = float(np.interp(yf, rr, es)) + G_FILL[2] * float(sm(G_FILL[0], G_FILL[1], np.array(yf)))
+    g = np.arange(G_FILL[0], PL_TOP + 1.0 + 1e-6, 0.125)
+    t = np.clip((g - yf) / (PL_TOP - yf), 0, 1)
+    gb = np.where(g < yf, np.interp(g, rr, es) + G_FILL[2] * sm(G_FILL[0], G_FILL[1], g),
+                  ef + (G_FILLET[1] - ef) * (1 - np.sqrt(np.clip(1 - t * t, 0, None))))
+    inb = g >= PL_TOP - BAND
+    gm = np.where(inb, np.maximum.accumulate(np.where(inb, gb, -1e9)), gb)
+    yy = np.asarray(yy, np.float64)
+    return np.where((yy >= G_FILL[0]) & (yy <= PL_TOP + 1.0), np.interp(yy, g, gm), np.nan)
 
 
 def girl_back_line(art):
-    """UI 27 r2 (the owner: "erase the stuff that spills up top"): her back over the bar, the BAND rows over PL_TOP,
-    is her hair's own mass: the flared strand that leaves it (and the see-through hook between them) is cut away
-    along the mass's edge (the mass's edge where the strand stands apart from it; between its last clear row over the
-    band and the strand's foot, a straight run), held to flush_floor and never moving back out going down. Returns
-    (art, ylo, c per row, px2 filled)."""
+    """UI 28 r2b: her back over the bar, a LITTLE fuller and curving into the bar end. (1) From G_FILL[0] to the top
+    line every art row is re-laid so its old edge lands on girl_new_edge: the texels from wd px inside the old edge out
+    to it stretched outward along the row; the alpha a crisp 1 px ramp on the new edge. (2) The fillet (from
+    G_FILLET[0]): within G_FLOW px of the new edge the texels are her hair's own, carried along the curve: each texel
+    at arc length u and depth v from the edge takes the texel at depth v under the edge G_FLOW_K u further down from
+    the fillet's top (so the strands bend with the curve into the bar; no inpaint). (3) The fillet's corner a little
+    darker toward the bar and warmed (shadowed bronze). The old flared strand and its see-through notch go (all past
+    the new edge is cut). Returns (art, ylo, old edge per row, px2 added)."""
+    from scipy.spatial import cKDTree
+    _GA['pre'] = art.copy()
+    _GE.pop('old', None)
     x0, y0, w, h = girl_screen_rect()
-    Z, WX = 4, 560
-    ylo, yhi = int(PL_TOP) - BAND, int(PL_TOP)
-    a4 = place(art, (x0 - WX) * Z, (y0 - ylo) * Z, w * Z, h * Z, (200 * Z, (yhi - ylo) * Z))[..., 3]
-    e = np.full(yhi - ylo, np.nan)
-    c600 = (600 - WX) * Z
-    for r in range(yhi - ylo):
-        st, en = runs(a4[r * Z + Z // 2] > 0.5)
-        k = [i for i in range(len(st)) if st[i] <= c600 < en[i]]
-        assert k, ('her mass not over x 600', ylo + r)
-        k = k[0]
-        apart = any(en[j] - st[j] > 2 for j in range(k + 1, len(st)))
-        if r == 0 or apart:
-            e[r] = WX + en[k] / Z
-    kn = np.nonzero(~np.isnan(e))[0]
-    e = np.interp(np.arange(len(e)), kn, e[kn])
-    c = np.maximum.accumulate(np.maximum(e, flush_floor(e, ylo, 1)))
     H_, W_ = art.shape[:2]
-    ay, ax = np.mgrid[0:H_, 0:W_].astype(np.float32)
-    X, Y = x0 + (ax + 0.5) * w / W_, y0 + (ay + 0.5) * h / H_
-    rc = ylo + 0.5 + np.arange(len(c))
-    cv_, ev = np.interp(Y, rc, c), np.interp(Y, rc, e)
-    band = (Y >= ylo) & (Y < PL_TOP + 2)
-    keep = np.where(band, np.clip(cv_ + 0.75 - X, 0, 1), 1.0)
-    a = art[..., 3] * keep
-    strip = band & (Y < PL_TOP) & (X <= cv_) & (X >= ev - 1.0)
-    rgb, a2, nf = fill_strip(art[..., :3], a, strip & (np.clip(cv_ + 0.75 - X, 0, 1) > 0.5))
-    # (over the bar the edge is the line itself, a 1 px ramp, so no resample wobbles it; under it UI 24's clean_edges)
-    a2 = np.where(band & (Y < PL_TOP) & (X >= cv_ - 3.0), np.clip(cv_ + 0.75 - X, 0, 1), a2)
-    out = np.dstack([rgb, a2]).astype(np.float32)
-    region = ((Y >= PL_TOP) * sm(PL_TOP + 16, PL_TOP + 12, Y) * sm(596.0, 604.0, X)).astype(np.float32)
-    out, _ = clean_edges(out, region)
-    return out, ylo, c, nf * (w / W_) * (h / H_)
+    sx, sy = w / W_, h / H_
+    ylo, e_old = girl_old_edge()
+    rr = ylo + 0.5 + np.arange(len(e_old))
+    out = art.copy()
+    pm = premul(art)
+    X = x0 + (np.arange(W_) + 0.5) * sx
+    ti = np.arange(W_)
+    added = 0.0
+    for j in range(H_):
+        Y = y0 + (j + 0.5) * sy
+        if Y < G_FILL[0] or Y >= PL_TOP + 0.5:
+            continue
+        eo = float(np.interp(Y, rr, e_old))
+        en = float(girl_new_edge(np.array([Y]))[0])
+        p = max(en - eo, 0.0)
+        A = eo - (24.0 + 1.5 * p)
+        sel = (X >= A) & (X <= en + 2.0)
+        Xs = np.where(sel, A + (X - A) * (eo - A) / max(en - A, 1e-3), X)
+        fc = (np.minimum(Xs, eo - 0.6) - x0) / sx - 0.5          # colour from inside the old edge (no matte)
+        rgbp = np.stack([np.interp(fc, ti, pm[j, :, c]) for c in range(3)], -1)
+        ap = np.interp(fc, ti, pm[j, :, 3])
+        col = rgbp / np.maximum(ap, 1e-4)[:, None]
+        asrc = np.interp((Xs - x0) / sx - 0.5, ti, art[j, :, 3])
+        edge = np.clip(en + 0.5 - X, 0, 1)
+        solid = (X >= en - SOLID_W - 2.0).astype(np.float32)   # no see-through between the edge and the mass
+        anew = np.where(sel, np.minimum(np.maximum(asrc, solid), edge), np.where(X > en, 0.0, art[j, :, 3]))
+        added += float(np.clip(anew - art[j, :, 3], 0, None).sum()) * sx * sy
+        out[j, :, :3] = np.where((sel & (ap > 1e-3))[:, None], col, art[j, :, :3])
+        out[j, :, 3] = anew
+    # (2) the fillet: her strands carried along the curve
+    yf = G_FILLET[0]
+    g = np.arange(yf, PL_TOP + 1.0, 0.05)
+    cxy = np.stack([girl_new_edge(g), g], 1)
+    arc = np.r_[0, np.cumsum(np.hypot(*np.diff(cxy, axis=0).T))]
+    tree = cKDTree(cxy)
+    jj, ii = np.mgrid[0:H_, 0:W_]
+    Yg, Xg = y0 + (jj + 0.5) * sy, x0 + (ii + 0.5) * sx
+    box = (Yg >= yf) & (Yg < PL_TOP + 0.5) & (Xg > np.interp(Yg, rr, e_old) - G_FLOW - 2) & (Xg < G_MEET[1] + 2)
+    en_g = girl_new_edge(np.where(box, Yg, yf))
+    box &= Xg < en_g + 0.5
+    q = np.stack([Xg[box], Yg[box]], 1)
+    d, k = tree.query(q)
+    u = arc[k]
+    v = d
+    ys = yf + G_FLOW_K * u
+    xs = girl_new_edge(ys) - np.maximum(v, 0.6)
+    js, is_ = (ys - y0) / sy - 0.5, (xs - x0) / sx - 0.5
+    src = premul(out)
+    smp = np.stack([ndimage.map_coordinates(src[..., c], [js, is_], order=1, mode='nearest') for c in range(4)], -1)
+    colf = smp[:, :3] / np.maximum(smp[:, 3:4], 1e-4)
+    wv = sm(G_FLOW, G_FLOW - 4.0, v)[:, None] * (smp[:, 3:4] > 0.05)
+    rgb = out[..., :3].copy()
+    rgb[box] = rgb[box] * (1 - wv) + colf * wv
+    # (3) the corner: a little darker toward the bar, warmed (shadowed bronze)
+    wsh = sm(PL_TOP - 30.0, PL_TOP, Yg) * sm(np.interp(Yg, rr, e_old) - 6.0, np.interp(Yg, rr, e_old) + 8.0, Xg) * (Yg >= G_FILL[0]) * (Yg < PL_TOP + 0.5)
+    zz = wsh > 0.01
+    lab = lab_of(np.clip(rgb[zz], 0, 1)[None])[0]
+    ws = wsh[zz]
+    lab[:, 0] *= 1 - G_SHADE * ws
+    lab[:, 1] += (131.0 - lab[:, 1]) * 0.4 * ws
+    lab[:, 2] += (140.0 - lab[:, 2]) * 0.4 * ws
+    rgb[zz] = lab2rgb(lab[None])[0]
+    out[..., :3] = rgb
+    region = ((Yg >= PL_TOP) * sm(PL_TOP + 16, PL_TOP + 12, Yg) * sm(596.0, 604.0, Xg)).astype(np.float32)
+    out, _ = clean_edges(out.astype(np.float32), region)
+    return out, ylo, e_old, added
 
 
 def keeper_back_line(K, Xi, Yi, Z):
-    """UI 27 r2: the keeper's back over the bar, the mirror of girl_back_line: with the mirrored lock gone his robe's
-    own edge, held to flush_floor (mirrored), never moving back out going down; premultiplied K in the sprite's frame
-    (Xi, Yi its mock pixel-index units). Returns (K, c per row from PL_TOP - BAND, px2 filled)."""
-    Ks, a = straight(K), K[..., 3]
+    """UI 28 r2b: the keeper ends cleanly at his cloak: everything of the sprite toward 960 of cloak_x (the loop, its
+    streaks, any lock or plug leftovers), over the rows from KCLOAK[0] down to K_CUT_TO, erased on a crisp 1 px ramp;
+    premultiplied K in the sprite's frame (Xi, Yi its mock pixel-index units). Returns (K, edge per BAND row, px2
+    erased)."""
     Xs, Ys = Xi + 0.5 + K_D[0], Yi + 0.5 + K_D[1]
-    ylo, yhi = int(PL_TOP) - BAND, int(PL_TOP)
-    e = np.full(yhi - ylo, 1e9)
-    for r in range(ylo, yhi):
-        for j in np.nonzero((Ys[:, 0] >= r) & (Ys[:, 0] < r + 1))[0]:
-            m = (a[j] > 0.5) & (Xs[j] < 1330)
-            if m.any():
-                e[r - ylo] = min(e[r - ylo], Xs[j][np.nonzero(m)[0].min()] - 0.5 / Z)
-    assert (e < 1330).all(), 'the keeper has no back in the band'
-    c = np.minimum.accumulate(np.minimum(e, flush_floor(e, ylo, -1)))
-    rc = ylo + 0.5 + np.arange(len(c))
-    cv_, ev = np.interp(Ys, rc, c), np.interp(Ys, rc, e)
-    band = (Ys >= ylo) & (Ys < PL_TOP)
-    a = a * np.where(band & (Xs < 1330), np.clip(Xs - (cv_ - 0.75), 0, 1), 1.0)
-    strip = band & (Xs >= cv_ - 0.5) & (Xs <= ev + 1.0) & (np.clip(Xs - cv_ + 0.75, 0, 1) > 0.5)
-    rgb, a2, nf = fill_strip(Ks, a, strip)
-    return np.dstack([rgb * a2[..., None], a2]).astype(np.float32), c, nf / (Z * Z)
+    y_a = KCLOAK[0][0] + K_D[1]
+    zone = (Ys >= y_a) & (Ys < K_CUT_TO) & (Xs < 1330)
+    keep = np.where(zone, np.clip(Xs - cloak_x(Ys) + 0.5, 0, 1), 1.0)
+    erased = float((K[..., 3] * (1 - keep)).sum()) / (Z * Z)
+    rc = int(PL_TOP) - BAND + 0.5 + np.arange(BAND)
+    return (K * keep[..., None]).astype(np.float32), cloak_x(rc), erased
 
 
 _GA = {}
@@ -803,7 +881,7 @@ def main():
     K, n_plug = plug_holes(K, (Xi > 1240) & (Yi > 960), 60 * Z * Z)
     rep['K1 hole px plugged (2x)'] = n_plug
     K, k_back, k_fill = keeper_back_line(K, Xi, Yi, Z)
-    rep['back line fill px2 (girl, keeper)'] = [round(_GA['fill'], 1), round(k_fill, 1)]
+    rep['back line px2 (girl added, keeper erased)'] = [round(_GA['fill'], 1), round(k_fill, 1)]
     # K4
     bcx = kx0 + gr['BOWL_C'] * K_S
     rim_y = ky0 + gr['RIM_C'] * K_S
@@ -865,43 +943,32 @@ def main():
     rep['tuck min (girl, keeper)'] = [round(min(tg), 2), round(min(tk), 2)]
     rep['gap rows'] = gaps
     assert min(tg) >= TUCK_MIN and min(tk) >= TUCK_MIN and gaps == 0, rep
-    # UI 27, flush backs: the 12 rows over PL_TOP, each back's edge FLUSH inward of its volute's inner end (vie); no
-    # statue px over the panel further in than that (never along the top line over the seats); the contacts mirror
+    # UI 28 r2b, per side over the bar. The keeper: no px of his toward 960 of his cloak's edge (cloak_x), the edge
+    # never moving back out going down from KCLOAK's top, meeting the top line at the bar end's outer contour (the
+    # volute's top, 1920 - (PL_X0 + VOL_R)) or a few px under it. The girl: her fillet meets the top line at
+    # G_MEET, nothing of her further in over the panel, the edge never moving back out going down over the band, at most
+    # G_OFF_MAX px out of r2's edge above the fillet. Both: solid SOLID_W px from the edge in every band sub-row; tops
+    # within 2 px.
     kfull = np.zeros((1080 * Z, 1920 * Z), np.float32)
     kfull[sy0 * Z:1080 * Z, sx0 * Z:sx1 * Z] = K[..., 3]
     gfull = place(art, gx0 * Z, gy0 * Z, gw * Z, gh * Z, (1920 * Z, 1080 * Z))[..., 3]
-    vie = PL_X0 + 2 * VOL_R
-    fl = {'girl': [], 'keeper': []}
-    g_in, k_in = -1e3, 1e9
-    g_top = k_top_ = None
+    g_in, g_top, k_top_ = -1e3, None, None
     for r in range(int(PL_TOP)):
-        gmr = (gfull[r * Z:r * Z + Z, :960 * Z] > 0.5).any(0)
-        km = (kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5).any(0)
-        if gmr.any():
+        if (gfull[r * Z:r * Z + Z, :960 * Z] > 0.5).any():
             g_top = r if g_top is None else g_top
-            e = (np.nonzero(gmr)[0].max() + 1) / Z; g_in = max(g_in, e)
-            if r >= PL_TOP - 12: fl['girl'].append(round(e - vie, 2))
-        if km.any():
-            k_top_ = r if k_top_ is None else k_top_
-            e = 960 + np.nonzero(km)[0].min() / Z; k_in = min(k_in, e)
-            if r >= PL_TOP - 12: fl['keeper'].append(round((1920 - vie) - e, 2))
-    rep['flush rows over PL_TOP, px inward of the volute end (girl, keeper)'] = [fl['girl'], fl['keeper']]
-    gc, kc = vie + fl['girl'][-1], (1920 - vie) - fl['keeper'][-1]
-    rep['contacts (girl, keeper, mirror error)'] = [round(gc, 2), round(kc, 2), round(gc + kc - 1920, 2)]
-    rep['furthest in over the panel (girl, keeper)'] = [round(g_in, 2), round(k_in, 2)]
-    rep['tops (girl, keeper)'] = [g_top, k_top_]
-    assert len(fl['girl']) == 12 and len(fl['keeper']) == 12, rep
-    assert all(FLUSH[0] <= v <= FLUSH[1] for v in fl['girl'] + fl['keeper']), rep
-    assert g_in <= vie + FLUSH[1] and k_in >= 1920 - vie - FLUSH[1] and abs(gc + kc - 1920) <= 1.0, rep
-    assert abs(g_top - k_top_) <= 2 and -K_D[1] <= 12, rep
-    # UI 27 r2: the BAND rows over PL_TOP: each back's edge never moves back out going down (no notch, wedge or loop),
-    # and from it inward the figure is solid SOLID_W px in every sub-row (no see-through between edge and mass)
-    eg, ek, sol = [], [], {'girl': 1e9, 'keeper': 1e9}
-    for r in range(int(PL_TOP) - BAND, int(PL_TOP)):
+            g_in = max(g_in, (np.nonzero((gfull[r * Z:r * Z + Z, :960 * Z] > 0.5).any(0))[0].max() + 1) / Z)
+        if k_top_ is None and (kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5).any():
+            k_top_ = r
+    ky_a = int(np.ceil(KCLOAK[0][0] + K_D[1]))
+    eg, ek, sol = {}, {}, {'girl': 1e9, 'keeper': 1e9}
+    for r in range(int(G_FILL[0]), int(PL_TOP)):
         gm_ = gfull[r * Z:r * Z + Z, :960 * Z] > 0.5
-        km_ = kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5
-        eg.append((np.nonzero(gm_.any(0))[0].max() + 1) / Z)
-        ek.append(960 + np.nonzero(km_.any(0))[0].min() / Z)
+        eg[r] = (np.nonzero(gm_.any(0))[0].max() + 1) / Z
+        if r >= ky_a:
+            km_ = kfull[r * Z:r * Z + Z, 960 * Z:] > 0.5
+            ek[r] = 960 + np.nonzero(km_.any(0))[0].min() / Z
+        if r < PL_TOP - BAND:
+            continue
         for q in range(Z):
             i1 = np.nonzero(gm_[q])[0].max()
             run = i1 - (np.nonzero(~gm_[q, :i1 + 1])[0].max() if (~gm_[q, :i1 + 1]).any() else -1)
@@ -909,11 +976,34 @@ def main():
             i0 = np.nonzero(km_[q])[0].min()
             nz = np.nonzero(~km_[q, i0:])[0]
             sol['keeper'] = min(sol['keeper'], (nz.min() if len(nz) else km_.shape[1] - i0) / Z)
-    back_out = [max(0.0, float(-np.diff(eg).min())), max(0.0, float(np.diff(ek).max()))]
-    rep['band: worst move back out going down (girl, keeper), solid px from the edge'] = [back_out, {k: round(v, 2) for k, v in sol.items()}]
-    rep['band edges every 5th row (girl, keeper)'] = [eg[::5], ek[::5]]
-    rep['band back-out rows'] = [int(PL_TOP) - BAND + 1 + int(i) for i in np.nonzero(np.diff(eg) < -0.01)[0]] + [int(PL_TOP) - BAND + 1 + int(i) for i in np.nonzero(np.diff(ek) > 0.01)[0]]
-    assert max(back_out) <= 0.01 and min(sol.values()) >= SOLID_W, rep
+    # the keeper: px toward 960 of his cloak (2x px centres more than 0.75 px in from cloak_x: any alpha; 0.25: > 0.5)
+    yc = (np.arange(ky_a * Z, int(PL_TOP) * Z) + 0.5) / Z
+    xc = (np.arange(960 * Z, 1920 * Z) + 0.5) / Z
+    cxr = cloak_x(yc)[:, None]
+    kb = kfull[ky_a * Z:int(PL_TOP) * Z, 960 * Z:]
+    k_left = [int(((xc[None] < cxr - 0.75) & (kb > 0.02)).sum()), int(((xc[None] < cxr - 0.25) & (kb > 0.5)).sum())]
+    kr = sorted(ek)
+    k_out = max(0.0, float(np.diff([ek[r] for r in kr]).max()))
+    g_band = [r for r in sorted(eg) if r >= PL_TOP - BAND]
+    g_out = max(0.0, float(-np.diff([eg[r] for r in g_band]).min()))
+    ylo_o, e_old = girl_old_edge()
+    g_off = {r: eg[r] - e_old[r - ylo_o] for r in eg if r < G_FILLET[0]}
+    gc, kc = eg[int(PL_TOP) - 1], ek[int(PL_TOP) - 1]
+    k_rim = 1920 - (PL_X0 + VOL_R)
+    rep['contacts at the top line (girl fillet x, keeper x; keeper px under the volute top)'] = [round(gc, 2), round(kc, 2), round(k_rim - kc, 2)]
+    rep['furthest in over the panel (girl)'] = round(g_in, 2)
+    rep['girl offset over r2 above the fillet (max, at row; at 940, 960)'] = [round(max(g_off.values()), 2), max(g_off, key=g_off.get),
+                                                                           round(g_off[940], 2), round(g_off[960], 2)]
+    rep['girl edge every 5th row from 913'] = [eg[r] for r in sorted(eg)[::5]] + [eg[int(PL_TOP) - 1]]
+    rep['keeper edge every 5th row from %d' % ky_a] = [ek[r] for r in kr[::5]] + [ek[kr[-1]]]
+    rep['keeper px toward 960 of his cloak (any alpha 0.75 in, > 0.5 0.25 in)'] = k_left
+    rep['worst move back out going down (girl band, keeper from cloak top), solid px from the edge'] = [[g_out, k_out], {k: round(v, 2) for k, v in sol.items()}]
+    rep['tops (girl, keeper)'] = [g_top, k_top_]
+    assert G_MEET[0] <= gc <= G_MEET[1] and g_in <= G_MEET[1], rep
+    assert max(g_off.values()) <= G_OFF_MAX and g_out <= 0.01 and k_out <= 0.01, rep
+    assert k_left == [0, 0] and k_rim - 6.0 <= kc <= k_rim + 1.0, rep
+    assert min(sol.values()) >= SOLID_W, rep
+    assert abs(g_top - k_top_) <= 2 and -K_D[1] <= 12, rep
     # UI 27: her orb and her hand: the orb >= 52 px, the hand under it (her palm, ref x <= 398) whole on the screen
     orb = list(girl_to_screen(ANCHOR[0] + (GLOBE[0] - ANCHOR[0]) * S, ANCHOR[1] + (GLOBE[1] - ANCHOR[1]) * S)) + [GLOBE[2] * G_S]
     hand = gm[..., 1]

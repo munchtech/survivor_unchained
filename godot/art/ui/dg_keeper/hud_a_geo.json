@@ -45,14 +45,14 @@
   "texture": "dg_keeper/keeper.png",
   "lip": "dg_keeper/keeper_lip.png",
   "rect": [
-   1214,
+   1203,
    861,
    341,
    219
   ],
   "source": "gen ks60_2304_0",
   "source_rect": [
-   1216.16,
+   1205.16,
    863.0,
    336.00000000000006,
    224.00000000000003
@@ -347,7 +347,7 @@
     1061
    ],
    "Q": [
-    1468.56,
+    1457.56,
     1027.28
    ],
    "note": "[centre x, top y], 16 px high, radius 3, alegreya-sans-800 16, tracking 0.6; lit when READY: \"Q  READY\""
@@ -407,15 +407,15 @@
  },
  "glass": {
   "center": [
-   1462.56,
+   1451.56,
    952.34
   ],
   "r": 37.0,
   "bezel_outer": 40.6,
   "lip_y": 975.28,
   "bowl": [
-   1409.36,
-   1535.36
+   1398.36,
+   1524.36
   ],
   "fire": "dg_keeper/fire.png (idle), fire_ready.png (READY)",
   "constants": {
