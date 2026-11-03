@@ -150,7 +150,7 @@ public partial class FlareFx : Node3D
                     if (e.Part == "sweep") LongSweep(e);
                     else if (e.Part == "cleave") LongCleave(e);
                 }
-                else { Hitstop(e.Hitstop); if (e.Last) Spend(e.TX, e.TZ, 1); }
+                else { Hitstop(e.Hitstop); StalkerBlow(e); if (e.Last) Spend(e.TX, e.TZ, 1); }
                 break;
         }
     }
@@ -161,6 +161,8 @@ public partial class FlareFx : Node3D
     {
         Clear();
         id = e.Id;
+        pressWorld = b.Time;
+        dropLogged = false;
         t = 0;
         at = new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z);
         reach = (float)e.Radius;
@@ -248,6 +250,7 @@ public partial class FlareFx : Node3D
     public void Tick(double dt, Battle? b)
     {
         float fdt = (float)dt;
+        rt += dt;
         if (Stop > 0) Stop = Math.Max(0, Stop - dt);
         if (!Frozen && ramp < 1) ramp = Math.Min(1, ramp + dt / 0.08 * 0.92);
         if (b != null && !Active) Ready(b, fdt);
@@ -460,20 +463,48 @@ public partial class FlareFx : Node3D
     {
         if (!Active || doomed.Count == 0) return false;
         foreach (var d in doomed.Values)
-            if (t < Math.Max(d.At + DropAfter, DropsShow(d.Where)) && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
+            if (t < (id == "burns_twice" ? Math.Max(d.At + 0.05, DropsShow(d.Where)) : Math.Max(d.At + DropAfter, DropsShow(d.Where))) && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
         return false;
     }
 
-    /// <summary>When Burns Twice's drops show (judge 6 (9): 250 embers falling out of the statues over the Return read as
-    /// orange confetti on the char): at the Return's end, rippling out from her over 0.6 s. Flare time.</summary>
+    /// <summary>When Burns Twice's drops show. Judge 6 (9): 250 embers falling out of the statues over the Return read as
+    /// orange confetti on the char, so they waited for the Return's end (+4.2 s). The owner (29 Oct): loot as near instant
+    /// as reads clean, under 1 s. Now each shows as the ring passes it (+0.05 s), scaled in over 0.3 s and held dim
+    /// until the Return ends (DropFresh), so it reads as loot settling, not orange flecks. Flare time.</summary>
     double DropsShow(Vector3 w)
     {
         // (the Long Cut's wait until the seam has cooled to red, rippling out from the line: r1's hundred orbs buried it)
         if (IsLongCut) return lcCleaveT < 0 ? Held : lcCleaveT + 3.5 + 0.05 * Math.Min(12, Math.Abs(SeamAcross(w)));
         if (id != "burns_twice") return 0;
         if (lastAt <= 0) return Held;
-        return lastAt + 4.2 + 0.6 * Mathf.Clamp(new Vector2(w.X - Her.X, w.Z - Her.Z).Length() / Math.Max(1, reach), 0, 1);
+        return lastAt + RingTime(new Vector2(w.X - boomAt.X, w.Z - boomAt.Z).Length()) + DropRingLag;
     }
+
+    const double DropRingLag = 0.05, DropGrow = 0.3;
+    /// <summary>The Return's end (Flare time after the BOOM): a fresh drop's light comes up to full over these.</summary>
+    const float DropDimFrom = 3.4f, DropDimTo = 4.3f, DropDim = 0.3f;
+    double pressWorld;
+
+    /// <summary>For BattleFx.Pickups, after Burns Twice's BOOM: a drop born since the press (bornWorld: Battle.Time at its
+    /// birth) is drawn at this scale (0.35 to 1 over 0.3 s from the ring passing it) and this light (0.35 of its own
+    /// until the Return ends, then full by +4.3 s, before the Flare clears at +4.6 s). (1, 1) otherwise.</summary>
+    public (float Scale, float Light) DropFresh(double x, double z, double bornWorld)
+    {
+        if (!Active || id != "burns_twice" || lastAt <= 0 || bornWorld < pressWorld - 1e-6) return (1, 1);
+        double show = lastAt + RingTime(new Vector2((float)x - boomAt.X, (float)z - boomAt.Z).Length()) + DropRingLag;
+        float k = Mathf.SmoothStep(0, 1, (float)((t - show) / DropGrow));
+        float s = (float)(t - lastAt);
+        float light = Mathf.Lerp(DropDim, 1, Mathf.SmoothStep(DropDimFrom, DropDimTo, s));
+        if (Args.Has("shot") && !dropLogged && t >= lastAt + RingTime(ringMax) + DropRingLag)
+        {
+            dropLogged = true;
+            GD.Print($"flare {id}: the last drop shows {rt - boomRt:0.000} s real after the BOOM (ring at its edge {RingTime(ringMax):0.000} s Flare time)");
+        }
+        return (0.35f + 0.65f * k, k * light);
+    }
+
+    bool dropLogged;
+    double rt, boomRt;
 
     /// <summary>How charred a body here is (judge 6 A2: beige bodies left lying in the ring read as wooden mannequins): 0
     /// till the BOOM's ring reaches it, charred within 3 frames of it, inside her reach (the ring's char). The living
