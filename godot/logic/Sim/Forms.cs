@@ -244,7 +244,7 @@ public sealed partial class Battle
     {
         var p = Player;
         double share = Lamp("spellward.thick") ? Lamps.Full("spellward.thick", "barrier", 0.15) : Arg(Reflexes.FirstOrDefault(r => r.Kind == AbilityKind.Spellward)?.Def.Args, "barrier", 0.1);
-        LampBarrier(MaxHp * share, 5);
+        LampBarrier(MaxHp * share, 5, reflex: true);
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Radius = 1.5 });
         return true;
     }

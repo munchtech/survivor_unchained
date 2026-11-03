@@ -62,10 +62,12 @@ public sealed partial class Battle
     /// number isn't yet a Size). It is added to a barrier she holds without renewing its time, as Shield of Morning's
     /// (WardenSkills.Rebuke): renewed by a reflex every few seconds, it kept every other barrier up for good (Classes 19: the
     /// warden's full night board read P 1.49 on Shield Wall alone, still 1.31 with the wall at a hundredth). v1 keeps Barrier's.</summary>
-    void LampBarrier(double amount, double seconds, bool sized = false)
+    void LampBarrier(double amount, double seconds, bool sized = false, bool reflex = false)
     {
         if (!Content.Lamps.V2) { Barrier(amount, seconds); return; }
         if (!sized && Lamps.Night) amount *= Content.Lamps.NightSize;
+        // A reflex renews its barrier itself on its wait, with no press: by night a quarter of the quarter (Classes 20).
+        if (reflex && Lamps.Night) amount *= Content.Lamps.NightSize;
         var p = Player;
         if (p.Shield > 0 && p.ShieldT > 0) p.Shield = Math.Min(MaxHp, p.Shield + StonesBarrier(amount));
         else Barrier(amount, seconds);
@@ -179,7 +181,7 @@ public sealed partial class Battle
         if (Has("shield_wall") && struck > 0)
         {
             double wall = MaxHp * Math.Min(0.4, 0.08 * struck);
-            if (LampFacet("shield_wall")) LampBarrier(wall, 5); else Barrier(wall, 5);
+            if (LampFacet("shield_wall")) LampBarrier(wall, 5, reflex: true); else Barrier(wall, 5);
         }
         if (Has("rebound")) p.AbilityCd = Math.Max(0.5, p.AbilityCd - 0.5 * struck);
         Events.Emit(new Ev.Shake { Amount = 0.35 });
