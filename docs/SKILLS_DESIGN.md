@@ -239,29 +239,29 @@ union stage.
 
 | Passive (id) | What it is, and does |
 |---|---|
-| Legion Bronze (`might`) | Old-empire bronze, green at the edges and still the hardest thing in the valley: +10% damage with everything, and your blows land 10% heavier. |
+| Legion Bronze (`might`) | Old-empire bronze, the hardest thing in the valley: +10% damage with everything, and your blows land 10% heavier. |
 | Trimmed Wick (`haste`) | A wick trimmed short burns quick: every weapon fires 8% more often. |
 | Toll-Runner's Boots (`fleetfoot`) | Worn thin on the toll road: +10% movement speed, and on the run ember comes to you from 10% farther. |
 | Lampling's Scoop (`greed`) | Ember, gold and draughts fly to you from 1.2 m farther, and every stone holds 4% more ember. The Dig will want it back. |
 | Morrow Pippins (`vitality`) | A pocketful of the valley's apples: +25 maximum health, and a heal when taken. |
-| Watch Mail (`ironhide`) | From the Watch's stores, never paid for: +3 armour, and it counts: every tenth blow that reaches you glances off. |
+| Watch Mail (`ironhide`) | From the Watch's stores, never paid for: +3 armor, and it counts: every tenth blow that reaches you glances off. |
 | Night-Eyes (`precision`) | You see the weak places better in the dark: +7% critical strike chance, and 3% more against anything beyond six paces. |
 | Wolf-Tooth (`ferocity`) | It bites deeper than it should: +25% critical strike damage, and the wounded (below half) feel 12% more of it. |
-| Ford Lamp (`expanse`) | Light thrown wide, like the lamps at the ford: +12% area. Novas, fields, orbits, storms and auras are bigger; chains, beams and blades reach farther. |
+| Ford Lamp (`expanse`) | +12% area: novas, fields, orbits, storms and auras grow; chains, beams and blades reach farther. |
 | Second Shadow (`duplicity`) | Everything you send out has a shadow that flies beside it: +1 projectile. |
-| Crossroads Penny (`fortune`) | Left at the crossroads, and picked up again: +10% luck. A fourth card more often, rarer cards, ranks that surge, better drops. |
+| Crossroads Penny (`fortune`) | Left at the crossroads: +10% luck. A fourth card more often, rarer cards, ranks that surge, better drops. |
 | Wayfinder's Chart (`wisdom`) | Every road on it, and some that aren't there yet: +6% ember from every stone, and a redraw with every rank. |
-| Bitterroot (`recovery`) | Chewed slowly, as the hunters do: +0.6 health regenerated per second, and burning or poison on you wears off twice as fast. |
-| Grey Fletching (`velocity`) | Goose-grey and cut close: projectiles fly 12% faster and land 5% harder. |
+| Bitterroot (`recovery`) | Chewed slowly: +0.6 health a second, and burning or poison on you wears off twice as fast. |
+| Gray Fletching (`velocity`) | Goose-gray and cut close: projectiles fly 12% faster and land 5% harder. |
 | Evergreen (`perennial`) | +10% duration: fields, gyres, beasts and ground effects last longer. |
 | Fen Step (`evasion`) | Light on soft ground: +7% chance to avoid a blow entirely, and a blow avoided leaves you 20% quicker for a moment. |
-| Bramble Coat (`thorns`) | Struck, you burst with thorns: everything close takes a blow that grows with the ember, and what struck you takes a fifth of its blow back. |
+| Bramble Coat (`thorns`) | Struck, you burst with thorns: everything close takes a blow that grows with the ember, and what struck you takes a fifth back. |
 | Whetstone (`serration`) | Critical strikes open a wound that bleeds 30% of the blow over 3 s. |
 | The Ford's Cold (`chilling`) | The cold of the ford never quite left you: creatures near you are slowed, more as they come closer. |
 | Morning Light (`searing`) | A holy light sears everything near you twice a second. |
 | Emberblood (`emberblood`) | +10% fire damage; what you set burning burns 15% longer, and strikes you 6% weaker. |
 | Conduit (`conduit`) | +10% storm damage, and the shocked take 6% more from the blow that finds them. |
-| Ember-Slurry (`venom`) | What the Dig pours into the stream: damage over time (burning, bleeding, poison, searing) is 12% stronger, and every status takes hold 10% more often. |
+| Ember-Slurry (`venom`) | Damage over time (burning, bleeding, poison, searing) is 12% stronger; every status lands 10% more often. |
 | Pack-Bond (`kinship`) | What fights for you strikes 15% harder and is 15% tougher. |
 | Warding Light (`warding`) | Blocks one blow completely, then recharges (12 / 9 / 6 s). |
 
@@ -298,7 +298,7 @@ each, so the late draft still has depth.
 | Axe Gyre | Physical | Orbit | Gyrestorm (Wolf-Tooth); Reaver's Wheel (Whetstone) |
 | Iron Palms | Physical | Palm | Temple Breaker (Fen Step); Thunder Palm (Trimmed Wick or Conduit) |
 | Reaving Arc | Shadow | Nova | Rend and Mend (Bitterroot or Morrow Pippins); The Harrowing (Ford Lamp or Pack-Bond) |
-| Volley | Physical | Spray | Arrowfall (Grey Fletching); Predator's Volley (Night-Eyes) |
+| Volley | Physical | Spray | Arrowfall (Gray Fletching); Predator's Volley (Night-Eyes) |
 | Knifestorm | Physical | Ring | Steel Flurry (Toll-Runner's Boots); A Thousand Cuts (Whetstone) |
 | Gale Chakram | Physical | Chakram | Razorgale (Whetstone); Hailwheel (The Ford's Cold) |
 | Judgement Disc | Holy | Bounce | Reckoning (Crossroads Penny or Night-Eyes); Aegis Wheel (Watch Mail or Morrow Pippins) |
@@ -306,7 +306,7 @@ each, so the late draft still has depth.
 | Seeking Motes | Arcane | Aimed | Fen Lights (Second Shadow); Starseeker (Night-Eyes) |
 | Moonbrand | Arcane | Aimed | Moonfall (Lampling's Scoop or Ford Lamp); Lunar Brand (Crossroads Penny) |
 | Cinderfall | Fire | Aimed | Fallen Star (Ford Lamp); Living Flame (Evergreen or Emberblood) |
-| Rimeshard | Frost | Aimed | Deepwinter (Trimmed Wick); Ford Ice (Grey Fletching) |
+| Rimeshard | Frost | Aimed | Deepwinter (Trimmed Wick); Ford Ice (Gray Fletching) |
 | Hoarfrost | Frost | Nova | Winter Ward (Warding Light); Absolute Zero (The Ford's Cold) |
 | Arcweb | Storm | Chain | Skybreak (Night-Eyes or Conduit); Tempest Coil (Ford Lamp) |
 | Thunderhead | Storm | Storm | Split Oak (Conduit); Thunderclap (Legion Bronze) |
@@ -417,14 +417,14 @@ night**: as Dusk's power card half the time, otherwise at Midnight.
 
 | New great | What it does | Ranks 2, 3 |
 |---|---|---|
-| **Cold, Then Not** (Pyre, Dawn) | Once a night a killing blow does not kill: you go cold, then the ember catches; rise at half health and everything near burns | Rise whole, fire twice as wide; twice a night |
-| **Grounding** (Storm, Weave) | A fifth of every blow is turned to lightning that leaps to three near you | A third; six, and shocked |
-| **Rootbind** (Wild, Long Winter) | Every 6 s roots hold the toughest near you for a second; held, it takes 40% more | The two toughest; every 4 s |
-| **Go for the Throat** (Host, Grave) | What fights for you goes for the toughest near you and strikes champions 40% harder | 20% faster; a champion felled calls a wolf for the night |
-| **Hold the Crossing** (warden) | Standing still: +6 armour, weapons fire 20% faster | +10 and 25%; mend 3 a second while holding |
-| **Blood Up** (reaver) | Below a third of health, blows land 40% harder and kills mend 1% | 60%; kills mend 2% |
-| **Second Reading** (arcanist) | Every 8 s everything you carry fires at once | Every 6 s; every 4 s |
-| **The Hunters' Blind** (stalker) | Half your blows on anything unhurt strike true | All of them; +25% critical damage |
+| **Cold, Then Not** (Pyre, Dawn) | Once a fight, a blow that would end you does not: you go cold, then the ember catches, and you are up with half your health, burning | Up whole, the fire twice as far; then your dash with you, and a moment longer before anything can touch you |
+| **Grounding** (Storm, Weave) | A fifth of every blow that reaches you is turned aside as lightning, which leaps to three creatures near you | A third of every blow; the lightning leaps to six, and shocks all it strikes |
+| **Rootbind** (Wild, Long Winter) | Every 6 s roots seize the toughest thing near you: held fast for a second, it takes 40% more from everything | The two toughest are seized; the roots come every 4 s |
+| **Go for the Throat** (Host, Grave) | What fights for you goes for the toughest thing near you, and strikes champions 40% harder | They strike 20% faster; each champion that falls calls up a spirit wolf that stays the night |
+| **Hold the Crossing** (warden) | While you stand still, +6 armor and your weapons fire 20% faster | +10 armor and 25% faster; you mend 3 health a second while you hold |
+| **Blood Up** (reaver) | Below a third of your health your blows land 40% harder, and every kill mends 1% of it | 60% harder; each kill mends 2% |
+| **Second Reading** (arcanist) | Every 8 s, everything you carry fires at once | Every 6 s; every 4 s |
+| **The Hunters' Blind** (stalker) | Half your blows on anything unhurt are critical strikes | All of them; +25% critical strike damage |
 
 ### Why this is the answer
 
