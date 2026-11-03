@@ -514,3 +514,4 @@ Not made by us: poses or animation whose purpose is a sex act, or that show nudi
 - **VFX 7 proposal (owner, 1 Nov):** "Yes, Long Cut first". Build The Long Cut (the Warden's Flare, seam of morning, FLARE_LOOK section 3) with dawn-gold press motes, ~2-3M; then her two auto-attacks; then the shared Flare breath.
 
 - **2 Nov (coordinator f6d72738), the Lamps screen budget:** on the build lead's 2.0-2.6M estimate the owner said: "its a fundamental part of the game.  go for the best whatever it takes". The Lamps screen is not budget-capped; aim for the best.
+- **2 Nov, HUD shields:** "on the life orb makes sense for shields". The barrier shows on the life orb, not as a buff icon (it had sat on the girl statue's head with seconds left as a bare number).
