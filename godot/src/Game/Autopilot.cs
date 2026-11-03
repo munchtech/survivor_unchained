@@ -328,6 +328,10 @@ public sealed class Autopilot
         Shots.Want(tag, seconds);
     }
 
+    /// <summary>A step of the loop kept as a save (town steps only: an arena keeps nothing until it is over), so a
+    /// replay can start from it: tools/experience/demo_run.py copies the saves folder on each "auto: saved" line.</summary>
+    void Keep(string tag) => g.After(4, () => { g.Save("loop"); Godot.GD.Print($"auto: saved {tag}"); });
+
     /// <summary>Where the loop is: entering the town and the arenas, and an arena won.</summary>
     void Track(double dt, Battle? b, ZoneRuntime? z)
     {
@@ -337,8 +341,8 @@ public sealed class Autopilot
             lastZone = z.Id;
             if (z.Id == "waystation")
             {
-                if (!townShot) { townShot = true; Frame("loop_town", 3); }
-                if (nightsEnded > 0 && backFor < nightsEnded) { backFor = nightsEnded; Frame($"loop_back_{nightsEnded}", 3); }
+                if (!townShot) { townShot = true; Frame("loop_town", 3); Keep("loop_town"); }
+                if (nightsEnded > 0 && backFor < nightsEnded) { backFor = nightsEnded; Frame($"loop_back_{nightsEnded}", 3); Keep($"loop_back_{nightsEnded}"); }
             }
             else if (z is ArenaRun or MapRun)
             {
