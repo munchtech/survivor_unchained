@@ -810,7 +810,7 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu;
+        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu;
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
         FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;
