@@ -208,6 +208,48 @@ def fix_girl(art):
     return out, int(hole.sum())
 
 
+# UI 28 (the owner, 2 Nov: "her hand/fingers ... still are way too long and a little shoddy"): her orb hand's fingers
+# shortened along their common run (art px): from the knuckle line (through HAND_K, across HAND_D) the span HAND_S is
+# squeezed by HAND_F and the tips beyond it move in rigidly (the longest finger 112 -> 82 art px past the knuckles, 49 ->
+# 36 screen px at 1.0); the palm, thumb and wrist untouched; then the thin spike off the top fingertip opened away.
+HAND_K, HAND_D, HAND_S, HAND_F = (128.0, 420.0), (-0.77, -0.64), (8.0, 80.0), 0.58
+HAND_WIN = (0, 290, 200, 516)          # x0, y0, x1, y1 (art px): where the warp acts
+HAND_OPEN = (20, 300, 150, 445, 2)     # x0, y0, x1, y1, r: the finger zone's alpha opened by a disc of r (spikes off)
+
+
+def shorten_hand(art):
+    d = np.array(HAND_D, np.float64)
+    d /= np.linalg.norm(d)
+    h, w = art.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float64)
+    s = (xx - HAND_K[0]) * d[0] + (yy - HAND_K[1]) * d[1]
+    s0, s1 = HAND_S
+    span = (s1 - s0) * HAND_F
+    grid = np.linspace(-400, 400, 8001)
+    sig = lambda x: 1 / (1 + np.exp(-x / 1.5))
+    slope = 1 + (1 / HAND_F - 1) * sig(grid - s0) * sig(s0 + span - grid)
+    S = np.cumsum(slope) * (grid[1] - grid[0])
+    S -= np.interp(0.0, grid, S)
+    x0, y0, x1, y1 = HAND_WIN
+    disp = np.where((xx >= x0) & (xx < x1) & (yy >= y0) & (yy < y1), np.interp(s, grid, S) - s, 0.0)
+    pm = art.copy()
+    pm[..., :3] *= pm[..., 3:4]
+    o = cv2.remap(pm, (xx + disp * d[0]).astype(np.float32), (yy + disp * d[1]).astype(np.float32), cv2.INTER_CUBIC,
+                  borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    a = np.clip(o[..., 3], 0, 1)
+    ox0, oy0, ox1, oy1, r = HAND_OPEN
+    zone = np.zeros(a.shape, bool)
+    zone[oy0:oy1, ox0:ox1] = True
+    disc = np.hypot(*np.mgrid[-r:r + 1, -r:r + 1]) <= r + 0.01
+    keep = ndimage.binary_dilation(ndimage.binary_opening(a > 0.5, disc), iterations=1)
+    a = np.where(zone & ~keep, 0.0, a)
+    rgb = np.clip(o[..., :3], 0, None) / np.maximum(o[..., 3:4], 1e-6)
+    new = np.dstack([np.where(a[..., None] > 1e-4, np.clip(rgb, 0, 1), 0), a]).astype(np.float32)
+    out = art.copy()                     # everything outside the warp's window kept bit for bit (her hair, back, nape)
+    out[y0:y1, x0:x1] = new[y0:y1, x0:x1]
+    return out, float(disp.max())
+
+
 def lamp_mask(art):
     """R: her parts over the glass (the R5 fingertips and thumb inside the globe's circle); G: the R5 hand and forearm"""
     h, w = art.shape[:2]
@@ -585,6 +627,7 @@ def girl_art():
     face, hand and the orb hole are left of it); cached. Returns (art, n_g1, n_islands)."""
     if 'a' not in _GA:
         art, n_g1 = fix_girl(load_rgba(os.path.join(SRC, 'girl_R6.png')))
+        art, _GA['hand_shift'] = shorten_hand(art)          # UI 28: her orb hand's fingers natural length
         h, w = art.shape[:2]
         xx = np.mgrid[0:h, 0:w][1].astype(np.float32)
         art, n_isl = clean_edges(art, sm(520.0, 560.0, xx))
