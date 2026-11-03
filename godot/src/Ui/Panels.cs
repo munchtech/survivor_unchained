@@ -44,6 +44,8 @@ public sealed record DialogueView(string Name, string Title, string Mood, string
 public partial class DraftPanel : Control
 {
     const float CardW = 320, CardH = 500;
+    /// <summary>The smallest a card's body steps down to before its words are too long for it.</summary>
+    public const int BodyFloor = 14;
     readonly DraftView v;
     int focus;
     bool armed, banishing;
@@ -53,6 +55,17 @@ public partial class DraftPanel : Control
     /// <summary>Each card's upper words, its footer block and its body (Fit keeps the words clear of the footer).</summary>
     readonly List<(VBoxContainer Top, VBoxContainer Foot, Label Body)> fitted = new();
     readonly Dictionary<string, Control> buildChips = new();
+    /// <summary>Each card and its words as laid out (tools_scenes/CardFit.cs measures them).</summary>
+    /// <summary>Each card's art box and a maker of its medallion at a given size (the row steps all of them down together).</summary>
+    readonly List<(CenterContainer Art, Func<int, Medallion> Make)> arts = new();
+    /// <summary>The art box a card carries, and the one every card in a row steps down to when a body would still hide lines.</summary>
+    public const int ArtFull = 132, ArtCompact = 100;
+    bool artDecided, compact;
+    /// <summary>The detail strip under the row: the focused card's recipe (null on a teaching panel).</summary>
+    Label? detail;
+    /// <summary>The strip's width: the three cards' span.</summary>
+    public const float DetailW = CardW * 3 + 104;
+    internal IEnumerable<(Button Card, VBoxContainer Top, VBoxContainer Foot, Label Body)> Laid => cards.Zip(fitted, (c, f) => (c, f.Top, f.Foot, f.Body));
     HBoxContainer foot = null!;
     Label banner = null!;
 
@@ -164,6 +177,13 @@ public partial class DraftPanel : Control
         row.CustomMinimumSize = new Vector2(0, CardH + 16);
         col.AddChild(row);
         for (int i = 0; i < v.Offers.Count; i++) row.AddChild(Card(v.Offers[i], i));
+        if (!v.Teaching)
+        {
+            // What the focused card becomes: its recipe, off the card's face (it crowded the body), kept in a strip
+            // of two lines' height that stays when empty, so nothing below moves.
+            detail = DetailLabel();
+            col.AddChild(detail);
+        }
         col.AddChild(Style.Gap(Style.Gap3));
         banner = Style.Label("", Style.UiHeavy, Style.Lead, new Color("#ff8a6a"), false, HorizontalAlignment.Center);
         col.AddChild(banner);
@@ -183,7 +203,7 @@ public partial class DraftPanel : Control
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         bool pad = Controls.Instance.UsingPad;
         // (the shared keycap, as the tips draw it)
-        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.KeyCap($"1-{Math.Clamp(v.Offers.Count, 2, 4)}", 0.9f), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
+        foot.AddChild(Style.H(6, pad ? Style.PadButton("D-pad") : Style.KeyCap(v.Offers.Count <= 1 ? "1" : $"1-{Math.Min(v.Offers.Count, 4)}", 0.9f), Style.Label("Choose", Style.Ui, Style.Caption, Style.InkDim)));
         var take = Style.H(6, pad ? Style.Prompt(Act.Confirm) : Style.KeyCap(Controls.Instance?.KeyLabel(Act.Confirm) ?? "Enter", 0.9f), Style.Label(banishing ? "Banish it" : "Take it", Style.Ui, Style.Caption, Style.InkDim));
         take.Alignment = BoxContainer.AlignmentMode.Center;
         foot.AddChild(take);
@@ -320,9 +340,10 @@ public partial class DraftPanel : Control
         if (Fresh(o) && !Kicker(o).StartsWith("New", StringComparison.OrdinalIgnoreCase)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
-        var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, 132), MouseFilter = MouseFilterEnum.Ignore };
-        var medal = new Medallion(124, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
-        art.AddChild(medal);
+        var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, ArtFull), MouseFilter = MouseFilterEnum.Ignore };
+        Func<int, Medallion> make = sz => new Medallion(sz, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
+        art.AddChild(make(124));
+        arts.Add((art, make));
         v2.AddChild(art);
         v2.AddChild(Style.Label(o.Title, Style.Display, Style.Title, Style.GoldHi, true, HorizontalAlignment.Center));
         if (o.Kind == OfferKind.Evolve && Weapons.All.TryGetValue(o.Id, out var from))
@@ -353,15 +374,24 @@ public partial class DraftPanel : Control
         // A short line sits in the middle of the card's open space, not under the title with the
         // space empty beneath it; the medallions and titles stay level across the row.
         body.VerticalAlignment = VerticalAlignment.Center;
+        // (trimmed, its minimum is a line's sliver, not its whole text: the upper words are then exactly the
+        // room above the footer and the body takes what is left, which Fit fills; the ellipsis is the last net,
+        // never the plan: tools_scenes/CardFit.cs fails any card that needs it)
+        body.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         v2.AddChild(body);
         // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
         // (on a teaching panel, not a reason every card gives: it tells none of them apart, round 3)
-        foreach (var why in o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2))
-            fv.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
-        // What a combat skill becomes, and with what (not on a teaching panel: the same line under every
-        // card, and "Fits your build" with no build yet, said nothing that told the cards apart, round 2 judge).
-        if (o.Recipe is { Length: > 0 } recipe && !v.Teaching)
-            fv.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
+        // (the second why yields to the body: if the body still hides lines at the floor, Fit takes it off the face
+        // and the detail strip carries it with the recipe; a teaching panel has no strip, so it keeps both)
+        var whys = o.Why.Where(w => (o.Path == null || !w.StartsWith("On your path")) && !(v.Teaching && v.Offers.Count > 1 && v.Offers.All(x => x.Why.Contains(w)))).Take(2).ToList();
+        for (int wi = 0; wi < whys.Count; wi++)
+        {
+            var why = whys[wi];
+            var wl = Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center);
+            fv.AddChild(wl);
+            if (wi == 1 && !v.Teaching) wl.SetMeta("why2", true);
+        }
+        // (what a combat skill becomes, and with what, is the detail strip's under the row: it took three lines of the face)
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
         bool fits = false;
@@ -411,22 +441,99 @@ public partial class DraftPanel : Control
         return b;
     }
 
-    /// <summary>A card's upper words kept above its footer block: the body takes what room is left, and a
-    /// body too long for it steps its type down (a point a frame, three at most) rather than push the
-    /// footer off its line.</summary>
-    static void Fit((VBoxContainer Top, VBoxContainer Foot, Label Body) c)
+    /// <summary>The detail strip's label: two lines of the small italic, across the cards' span.</summary>
+    internal static Label DetailLabel()
+    {
+        var l = Style.Label("", Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center);
+        l.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+        l.CustomMinimumSize = new Vector2(DetailW, Mathf.Ceil(Style.TextItalic.GetHeight(Style.Small)) * 2 + 4);
+        l.MaxLinesVisible = 2;
+        return l;
+    }
+
+    /// <summary>What the strip says of a card: its title, then what it evolves into and with what (empty when it has no recipe).</summary>
+    internal static string DetailText(Offer o, string why2 = null)
+    {
+        string recipe = o.Recipe is { Length: > 0 } r ? (r.StartsWith("Evolves: ") ? $"{o.Title} evolves: {r["Evolves: ".Length..]}" : $"{o.Title}: {r}") : "";
+        if (string.IsNullOrEmpty(why2)) return recipe;
+        string why = why2.TrimEnd('.') + ".";
+        if (recipe.Length == 0) return $"{o.Title}: {why}";
+        // (the card's name first, so the strip reads as the focused card's, and the why its own sentence after the
+        // recipe: joined in front, "...Verge-Hunter Rimeshard evolves" read as one name, UI 30 judge; if both do not
+        // fit the two lines, the why is dropped, never the recipe cut)
+        string both = recipe.TrimEnd() + " " + why;
+        var f = Style.TextItalic;
+        return f.GetMultilineStringSize(both, HorizontalAlignment.Left, DetailW, Style.Small).Y <= f.GetHeight(Style.Small) * 2 + 1 ? both : recipe;
+    }
+
+    /// <summary>The strip's text for card i as the panel has it now (its dropped second why included).</summary>
+    internal string StripText(int i) => i >= 0 && i < v.Offers.Count ? DetailText(v.Offers[i], droppedWhy.GetValueOrDefault(i)) : "";
+    readonly Dictionary<int, string> droppedWhy = new();
+
+    /// <summary>Whether any card's body would still hide lines at a 16 px type in the full art box; then every card in the row
+    /// takes the compact box (the medallion scaled to match), so medallions and titles stay level.</summary>
+    bool Cramped()
+    {
+        bool any = false;
+        foreach (var f in fitted)
+        {
+            f.Body.AddThemeFontSizeOverride("font_size", Style.Small);
+            any |= f.Body.GetLineCount() > f.Body.GetVisibleLineCount();
+        }
+        return any;
+    }
+
+    internal bool CompactArt => compact;
+
+    /// <summary>The card lifted and its recipe in the strip (the harness shoots a row so).</summary>
+    internal void FocusCard(int i) { focus = i; Mark(); }
+
+    /// <summary>A card's upper words kept above its footer block: they are given exactly the room above it, the
+    /// body takes what is left, and a body too long for that steps its type down (from Style.Body to BodyFloor)
+    /// until every line shows, in one pass once the room is known (a frame or two after the panel opens, while
+    /// the cards are still dark), so nothing jumps as they rise in.</summary>
+    static bool Seated((VBoxContainer Top, VBoxContainer Foot, Label Body) c)
     {
         float room = c.Foot.Position.Y - Style.Gap2;
+        if (c.Foot.Size.Y <= 0 || room <= 0) return false;
+        room = Mathf.Max(room, c.Top.GetCombinedMinimumSize().Y);
+        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) { c.Top.Size = new Vector2(c.Top.Size.X, room); return false; }
+        return true;
+    }
+
+    void Fit(int ci)
+    {
+        var c = fitted[ci];
+        float room = c.Foot.Position.Y - Style.Gap2;
         if (c.Foot.Size.Y <= 0 || room <= 0) return;
-        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) c.Top.Size = new Vector2(c.Top.Size.X, room);
-        int fs = c.Body.HasThemeFontSizeOverride("font_size") ? c.Body.GetThemeFontSize("font_size") : Style.Body;
-        if (c.Top.GetCombinedMinimumSize().Y > room + 0.5f && fs > Style.Body - 3)
-            c.Body.AddThemeFontSizeOverride("font_size", fs - 1);
+        // (a new size sorts at the frame's end: the body's share is known on the next; upper words taller than the
+        // room keep their own height, and the body steps down to the floor: CardFit fails such a card)
+        room = Mathf.Max(room, c.Top.GetCombinedMinimumSize().Y);
+        if (!Mathf.IsEqualApprox(c.Top.Size.Y, room)) { c.Top.Size = new Vector2(c.Top.Size.X, room); return; }
+        float h = c.Body.Size.Y;
+        if (c.Body.HasMeta("fit") && Mathf.IsEqualApprox((float)c.Body.GetMeta("fit"), h)) return;
+        c.Body.SetMeta("fit", h);
+        for (int fs = Style.Body; ; fs--)
+        {
+            c.Body.AddThemeFontSizeOverride("font_size", fs);
+            if (fs <= BodyFloor || c.Body.GetLineCount() <= c.Body.GetVisibleLineCount()) break;
+        }
+        // Still hiding lines at the floor: the second why leaves the face for the strip (the room it frees is refitted next frame).
+        if (detail != null && c.Body.GetLineCount() > c.Body.GetVisibleLineCount()
+            && c.Foot.GetChildren().OfType<Label>().FirstOrDefault(l => l.HasMeta("why2")) is { } w2)
+        {
+            droppedWhy[ci] = w2.Text;
+            c.Foot.RemoveChild(w2);
+            w2.QueueFree();
+            c.Body.RemoveMeta("fit");
+            Mark();
+        }
     }
 
     /// <summary>The focused card lifted, the banish mark shown, a chosen card glowing; its skill lit in the build.</summary>
     void Mark()
     {
+        if (detail != null) detail.Text = focus >= 0 && focus < v.Offers.Count ? StripText(focus) : "";
         bool pad = Controls.Instance.UsingPad;
         for (int i = 0; i < cards.Count; i++)
         {
@@ -514,6 +621,22 @@ public partial class DraftPanel : Control
     public override void _Process(double delta)
     {
         t += delta;
+        // The art box is settled once, when the room is known (every card seated, a frame or two in, the cards still dark).
+        if (!artDecided && fitted.Select(Seated).ToList().All(x => x))
+        {
+            artDecided = true;
+            if (Cramped())
+            {
+                compact = true;
+                foreach (var (art, make) in arts)
+                {
+                    art.CustomMinimumSize = art.CustomMinimumSize with { Y = ArtCompact };
+                    foreach (var c in art.GetChildren()) { art.RemoveChild(c); c.QueueFree(); }
+                    art.AddChild(make(ArtCompact - 6));
+                }
+                Mark();
+            }
+        }
         if (!armed && t > 0.38) armed = true;
         // The cards rise in, one after another; the chosen one swells as the rest fall away.
         for (int i = 0; i < cards.Count; i++)
@@ -521,7 +644,8 @@ public partial class DraftPanel : Control
             float k = Mathf.Clamp((float)((t - 0.06 - i * 0.08) / 0.5), 0, 1);
             float e = 1 - (1 - k) * (1 - k) * (1 - k);
             if (chosen == null) cards[i].Modulate = Colors.White with { A = e };
-            Fit(fitted[i]);
+            if (!artDecided) continue;
+            Fit(i);
             // (risen from below to where the card's own frame puts its words: the painted frame's
             // inset, not the drawn one's, or the words sat 18 px left of the card's middle)
             var words = cards[i].GetChild<Control>(1);

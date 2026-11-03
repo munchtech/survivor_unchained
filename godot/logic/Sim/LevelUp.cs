@@ -450,7 +450,7 @@ public static class LevelUp
                     w *= AttunedLean;
                     o.Attuned = true;
                     o.To = at;
-                    o.Why.Insert(0, $"Banked: carried through the day, it wakes at rank {at}");
+                    o.Why.Insert(0, $"Banked: it wakes at rank {at}");
                 }
                 else if (b.Familiar.Contains(id))
                 {
