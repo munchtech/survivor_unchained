@@ -82,7 +82,7 @@ public sealed class Autopilot
         // stranded the survivor on the empty field).
         if (g.Overlay == "arena")
         {
-            if (!resultSeen) { resultSeen = true; nightsEnded++; if (GoalsOn) Frame($"loop_result_{Math.Max(1, arenasEntered)}", 2); }
+            if (!resultSeen) { resultSeen = true; nightsEnded++; if (GoalsOn) Frame($"loop_result_{Math.Max(1, arenasEntered)}", 4); }
             if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); }
             return;
         }
