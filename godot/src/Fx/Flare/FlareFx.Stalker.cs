@@ -80,9 +80,14 @@ public partial class FlareFx
             var q = from + dir * Mathf.Min(l, (i + 1) * (l / n));
             q.Y = (float)HeightAt(q.X, q.Z) + h;
             float k = (float)i / Mathf.Max(1, n - 1);
+            // Drawn along the line as it lies on the ground, not along its flat way: the line rises and falls with
+            // the terrain, and on a slope flat threads stood across it as rungs (judge r2: a ladder by day on the
+            // verge's hillside).
+            var qa = q - dir * 0.75f; qa.Y = (float)HeightAt(qa.X, qa.Z);
+            var qb = q + dir * 0.75f; qb.Y = (float)HeightAt(qb.X, qb.Z);
             glow.Spawn(new FlareBits.P
             {
-                Kind = FlareBits.Kind.Thread, At = q, Show = dir * 25, Life = life + grow * k,
+                Kind = FlareBits.Kind.Thread, At = q, Show = (qb - qa).Normalized() * 25, Life = life + grow * k,
                 Size = size, SizeEnd = size * 0.7f, Color = c, ColorEnd = ce,
             });
             if (i % 2 == 0) glow.Spawn(FlareBits.Kind.Mote, q, Vector3.Zero, life + grow * k, size * 1.5f, c * halo, ce * (halo * 0.4f));
