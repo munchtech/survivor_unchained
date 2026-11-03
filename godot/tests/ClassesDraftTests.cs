@@ -17,7 +17,7 @@ public sealed class ClassesDraftTests
         b.Lamps = new LampLoadout { Lean = road.Id };
         var o = new Offer();
         Assert.Equal(Lamps.RoadLean, LevelUp.RoadLeaned(b, road.Skills[0], 1, o), 6);
-        Assert.Contains(o.Why, w => w.Contains(road.Name));
+        Assert.Contains(o.Why, w => w.StartsWith("Your road: ") && road.Name.EndsWith(w["Your road: the ".Length..]));
         // With the path and calling leans, the product stops at the cap.
         Assert.Equal(Lamps.LeanCap, LevelUp.RoadLeaned(b, road.Skills[0], LevelUp.PathLean * LevelUp.CallingLean, new Offer()), 6);
         // Not its skill, or no road, or by day: no lean.
