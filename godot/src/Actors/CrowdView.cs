@@ -19,7 +19,16 @@ public partial class CrowdView : Node3D
     const double RiseTime = 1.1;
     // The dead lie longer where there are few of them (the story's fights) and are taken back
     // sooner in a horde, where the living must stand out (docs/EXPERIENCE_AUDIT.md, finding 3).
-    const double CorpseLie = 18, CorpseLieCrowded = 8, CorpseSink = 2.5;
+    const double CorpseLie = 18, CorpseLieCrowded = 8;
+    /// <summary>THE STAGGERED DISSOLVE: each body is taken back on its own clock once its lie is over, starting up to half a
+    /// second late and dissolving over 0.6-1.2 s, by its seed, so a mass kill thins unevenly (all at once over 2.5 s, a
+    /// field of the dead went in one breath).</summary>
+    static (double Start, double End) DissolveOf(Corpse c)
+    {
+        double k = (c.Key % 1000003) * 0.001;
+        double start = 0.5 * Hash01(k, 1.9);
+        return (start, start + 0.6 + 0.6 * Hash01(k, 6.1));
+    }
     /// <summary>The most bodies left lying (fewer at the lower qualities).</summary>
     public int CorpseMax = 160;
     /// <summary>How still the world is held (WorldScene.Hold): a blow's flash fades rather than
@@ -73,6 +82,8 @@ public partial class CrowdView : Node3D
         public double DrawnSpeed, DVx, DVz;
         /// <summary>Its death's twist under the blow: from the facing it had to the one its fall needs (NaN: none).</summary>
         public double FaceFrom, FaceTo = double.NaN;
+        /// <summary>The turn every fall ends with (radians), and how long its first turn takes (s).</summary>
+        public double EndTwist, TurnTime = 0.2;
         /// <summary>When the blow that knocked it back began its stagger (-1: none).</summary>
         public double KnockAt = -1;
         /// <summary>Shoved back against its facing: its steps run backward.</summary>
@@ -146,6 +157,8 @@ public partial class CrowdView : Node3D
         /// <summary>How it lies on the slope (the ground's tilt under it; identity on the flat).</summary>
         public Godot.Basis Tilt = Godot.Basis.Identity;
         public bool Tilted;
+        /// <summary>Its fall heading minus the heading from her to it as it was laid out (radians; NaN: not known): a spoke.</summary>
+        public float Rad = float.NaN;
     }
 
     /// <summary>Who a body is, for its slot in its kind's batch (VatCrowd): the same while it lives
@@ -184,19 +197,28 @@ public partial class CrowdView : Node3D
 
     static double Hash01(double seed, double salt) { double v = Math.Sin(seed * 12.9898 + salt * 78.233) * 43758.5453; return v - Math.Floor(v); }
 
-    /// <summary>THE DEATH-DIRECTION RULE: a body falls away from the blow (its knockback, else away from her), within
-    /// 40 degrees of it by its seed (no starburst of spokes round her; a thrown body too: it slides along its throw and
-    /// lands a little turned, and most of her kills are thrown). Of its
-    /// deaths, its seed's if that one needs a turn of at most TwistMax and is not the nearest lying body's of its kind
-    /// (DeathOf's rule), else the one that needs the least; the facing it needs is eased in as it falls (Draw).</summary>
+    /// <summary>The share of deaths that crumple where they stand, falling any way at all (the rest fall away from the blow).</summary>
+    const double CrumpleShare = 0.4;
+    /// <summary>How far off straight away from the blow a body that does not crumple may fall (either side).</summary>
+    const double FallCone = 75 * Math.PI / 180;
+    /// <summary>The turn every fall ends with (either side), eased in over its last part: no two lie on one line.</summary>
+    const double EndTwist = 30 * Math.PI / 180;
+
+    /// <summary>THE DEATH-DIRECTION RULE (r2: one death on the risen read as a sunflower of spokes round her even at +-40):
+    /// by its seed, 2 in 5 crumple where they stand, falling any way (a kit body on its side where it can), the rest away
+    /// from the blow (its knockback, else away from her) within FallCone of it; a thrown body too (it slides along its throw).
+    /// Of its deaths, its seed's if that one needs a turn it can make and is not the nearest lying body's of its kind
+    /// (DeathOf's rule), else the one that needs the least. The facing it needs is eased in as it falls, and every fall
+    /// ends with a seeded twist of up to EndTwist eased in over its last part (Draw; Twist).</summary>
     string DeathToward(VatAsset asset, Enemy e, Gait g, bool thrown)
     {
-        double spread = 40 * Math.PI / 180;
-        double target = g.Away + (Hash01(e.Seed, 3.7) * 2 - 1) * spread;
-        string seeded = DeathOf(asset, e);
+        bool crumple = Hash01(e.Seed, 5.3) < CrumpleShare;
+        double target = crumple ? Hash01(e.Seed, 3.7) * 2 * Math.PI : g.Away + (Hash01(e.Seed, 3.7) * 2 - 1) * FallCone;
+        double maxTurn = crumple ? Math.PI : TwistMax;
+        string? nearRole = NearestRole(e);
+        string seeded = crumple && asset.Clips.ContainsKey("die3") && asset.FallOff!.ContainsKey("die3") && nearRole != "die3" ? "die3" : DeathOf(asset, e);
         string? best = null, bestFree = null;
         double bestTurn = double.MaxValue, bestFreeTurn = double.MaxValue;
-        string? nearRole = NearestRole(e);
         foreach (var (role, off) in asset.FallOff!)
         {
             if (!asset.Clips.ContainsKey(role)) continue;
@@ -204,15 +226,64 @@ public partial class CrowdView : Node3D
             if (turn < bestTurn) { bestTurn = turn; best = role; }
             if (role != nearRole && turn < bestFreeTurn) { bestFreeTurn = turn; bestFree = role; }
         }
-        if (best == null) return seeded;
-        string pick = asset.FallOff.TryGetValue(seeded, out var so) && Math.Abs(Wrap(target - so - g.Facing)) <= TwistMax ? seeded
-            : bestFree != null && bestFreeTurn <= TwistMax ? bestFree : best;
+        if (best == null) { Twist(e, g, crumple); return seeded; }
+        string pick = asset.FallOff.TryGetValue(seeded, out var so) && Math.Abs(Wrap(target - so - g.Facing)) <= maxTurn ? seeded
+            : bestFree != null && bestFreeTurn <= maxTurn ? bestFree : best;
         double need = Wrap(target - asset.FallOff[pick] - g.Facing);
         // (past what it can twist, it turns as far as it can toward straight away, not toward its seed's offset)
-        if (Math.Abs(need) > TwistMax) need = Wrap(g.Away - asset.FallOff[pick] - g.Facing);
+        if (Math.Abs(need) > maxTurn) need = Wrap(g.Away - asset.FallOff[pick] - g.Facing);
         g.FaceFrom = g.Facing;
-        g.FaceTo = g.Facing + Math.Clamp(need, -TwistMax, TwistMax);
+        g.FaceTo = g.Facing + Math.Clamp(need, -maxTurn, maxTurn);
+        g.EndTwist = (Hash01(e.Seed, 9.1) * 2 - 1) * EndTwist;
+        g.TurnTime = crumple ? 0.5 : 0.2;
+        // NO SPOKES IN A ROW: a body that would lie straight away from her (within SpokeBand) next to another lying so turns
+        // its end twist to lie at least SpokeOff off it (r2's census: runs of 11 such side by side read as one long spoke).
+        var p = battle!.Player;
+        double dev = Wrap(g.FaceTo + g.EndTwist + asset.FallOff[pick] - Math.Atan2(e.Z - p.Z, e.X - p.X));
+        if (Math.Abs(dev) < SpokeBand && SpokeNear(e))
+        {
+            double side = dev != 0 ? Math.Sign(dev) : Hash01(e.Seed, 2.3) < 0.5 ? -1 : 1;
+            g.EndTwist += side * (SpokeOff + 8 * Math.PI / 180 * Hash01(e.Seed, 4.1)) - dev;
+            dev = Wrap(g.FaceTo + g.EndTwist + asset.FallOff[pick] - Math.Atan2(e.Z - p.Z, e.X - p.X));
+        }
+        falling.RemoveAll(f => time - f.T > Ai.DieTime + 0.2);
+        falling.Add(((float)e.X, (float)e.Z, (float)dev, time));
         return pick;
+    }
+
+    /// <summary>A rig whose fall is not known: a crumpling one turns to any heading as it goes down, and every fall ends
+    /// with the seeded twist (DeathToward's rule, without the cone it cannot aim).</summary>
+    static void Twist(Enemy e, Gait g, bool crumple)
+    {
+        g.FaceFrom = g.Facing;
+        g.FaceTo = crumple ? g.Facing + (Hash01(e.Seed, 3.7) * 2 - 1) * Math.PI : g.Facing;
+        g.EndTwist = (Hash01(e.Seed, 9.1) * 2 - 1) * EndTwist;
+        g.TurnTime = crumple ? 0.5 : 0.2;
+    }
+
+    /// <summary>A body lying within this of straight away from her lies on a spoke; one falling within SpokeNearM of such turns
+    /// at least SpokeOff off it. (The census counts a spoke within 15 degrees and 1.5 m: the margin covers a thrown body's slide,
+    /// which moves where it lies after the rule has decided.)</summary>
+    const double SpokeBand = 20 * Math.PI / 180, SpokeOff = 25 * Math.PI / 180;
+    const float SpokeNearM = 1.8f;
+
+    /// <summary>Whether a body lying (or falling to lie) on a spoke (SpokeBand) lies within SpokeNearM of this one.</summary>
+    bool SpokeNear(Enemy e)
+    {
+        // (and those still falling: a mass kill decides a dozen side by side in one frame, before any lies)
+        foreach (var f in falling)
+        {
+            if (Math.Abs(f.Rad) >= SpokeBand) continue;
+            float dx = f.X - (float)e.X, dz = f.Z - (float)e.Z;
+            if (dx * dx + dz * dz <= SpokeNearM * SpokeNearM) return true;
+        }
+        foreach (var c in corpses)
+        {
+            if (float.IsNaN(c.Rad) || Math.Abs(c.Rad) >= SpokeBand) continue;
+            float dx = c.X - (float)e.X, dz = c.Z - (float)e.Z;
+            if (dx * dx + dz * dz <= SpokeNearM * SpokeNearM) return true;
+        }
+        return false;
     }
 
     /// <summary>The death of the nearest body of its kind already lying within a metre and a half (null: none).</summary>
@@ -233,6 +304,8 @@ public partial class CrowdView : Node3D
     readonly Dictionary<string, VatCrowd> crowds = new();
     readonly Dictionary<int, Gait> gaits = new();
     readonly List<Corpse> corpses = new();
+    /// <summary>The bodies falling now that a spoke's rule has decided (where, and how far off straight away from her they will lie).</summary>
+    readonly List<(float X, float Z, float Rad, double T)> falling = new();
     readonly HashSet<(int, double)> laidOut = new();
     Battle? battle;
     double time, dt;
@@ -279,7 +352,7 @@ public partial class CrowdView : Node3D
     public static string FlareCensus => $"drawn: struck standing {censusStatue}, falling (not the Flare's) {censusFall} at mean {(censusFall > 0 ? censusFallD / censusFall : 0):0.0} m from her, corpses {censusCorpse} (burning {censusBurn})";
     // (--crowd-census: the deaths' fall against the blow, the dead's rest on the ground, the walkers' feet; a line a second)
     static readonly bool CensusOn = SurvivorUnchained.Args.Has("crowd-census");
-    int cnDeaths, cnIn45, cnIn90, cnOver90, cnKnown, cnKb; double cnRC, cnRS;
+    int cnDeaths, cnIn45, cnIn90, cnOver90, cnKnown, cnKb, cnR20, cnRunMax, cnRuns; double cnRC, cnRS; float cnLastRad = float.NaN;
     readonly Dictionary<string, int> cnRoles = new();
     int cnCorpN, cnSinking; double cnErrSum, cnErrMax, cnSinkMax;
     int cnFrames, cnActive, cnStall, cnWin; readonly Dictionary<string, int> cnSlide = new(), cnHeld = new();
@@ -300,6 +373,29 @@ public partial class CrowdView : Node3D
         var p = battle!.Player;
         double r = Wrap(fall - Math.Atan2(z - p.Z, x - p.X));
         cnRC += Math.Cos(r); cnRS += Math.Sin(r);
+        if (Math.Abs(r) <= 20 * Math.PI / 180) cnR20++;
+    }
+
+    /// <summary>(the census's) the largest run of lying bodies, each within 1.5 m of the next, all lying within 15 degrees of
+    /// straight away from her (a spoke of the sunflower); and how many runs of 4 or more lie now.</summary>
+    (int Largest, int Runs) RadialRuns()
+    {
+        var l = new List<Corpse>();
+        foreach (var c in corpses) if (!float.IsNaN(c.Rad) && Math.Abs(c.Rad) <= 15 * Math.PI / 180) l.Add(c);
+        var root = new int[l.Count];
+        for (int i = 0; i < l.Count; i++) root[i] = i;
+        int Find(int i) { while (root[i] != i) i = root[i] = root[root[i]]; return i; }
+        for (int i = 0; i < l.Count; i++)
+            for (int j = i + 1; j < l.Count; j++)
+            {
+                float dx = l[i].X - l[j].X, dz = l[i].Z - l[j].Z;
+                if (dx * dx + dz * dz <= 1.5f * 1.5f) root[Find(i)] = Find(j);
+            }
+        var size = new Dictionary<int, int>();
+        for (int i = 0; i < l.Count; i++) { int r = Find(i); size[r] = size.GetValueOrDefault(r) + 1; }
+        int big = 0, runs = 0;
+        foreach (var v in size.Values) { big = Math.Max(big, v); if (v >= 4) runs++; }
+        return (big, runs);
     }
 
     void CensusWalker(Enemy e, Gait g, VatAsset asset, string role, double t, double x, double z)
@@ -349,7 +445,8 @@ public partial class CrowdView : Node3D
             return l.Count == 0 ? "-" : string.Join(",", l);
         }
         int fr = Math.Max(1, cnFrames);
-        GD.Print($"crowd census t={time:0.0}: deaths {cnDeaths} (fall known {cnKnown}, by knockback {cnKb}) roles {D(cnRoles, 1)}; fall vs away <=45 {cnIn45} 45-90 {cnIn90} >90 {cnOver90}; fall-radial sd {sd:0} deg"
+        var rr = RadialRuns(); cnRunMax = Math.Max(cnRunMax, rr.Largest);
+        GD.Print($"crowd census t={time:0.0}: deaths {cnDeaths} (fall known {cnKnown}, by knockback {cnKb}) roles {D(cnRoles, 1)}; fall vs away <=45 {cnIn45} 45-90 {cnIn90} >90 {cnOver90}; fall-radial sd {sd:0} deg, within 20 of radial {(cnKnown > 0 ? 100.0 * cnR20 / cnKnown : 0):0}%, radial runs now {rr.Largest} largest ({rr.Runs} of 4+; largest yet {cnRunMax})"
             + $" | corpses {cnCorpN / (double)fr:0}/frame far-end |dy| mean {(cnCorpN > 0 ? cnErrSum / cnCorpN : 0):0.000} max {cnErrMax:0.000} m, sinking {cnSinking / (double)fr:0.0}/frame, sink max {cnSinkMax:0.00} m"
             + $" | active {cnActive / (double)fr:0}/frame, windows {cnWin}: sliding (0.5 s windows) {D(cnSlide, 1)} walk-stalled {cnStall}, held>1.5s {D(cnHeld, fr)}/frame"
             + $" | drawn moving >0.3 m/s in a held pose: {cnSlideT / Math.Max(1e-3, cnSpan):0.0} bodies ({string.Join(",", cnSlideNow.Select(kv => $"{kv.Key}:{kv.Value / Math.Max(1e-3, cnSpan):0.0}"))})"
@@ -414,7 +511,7 @@ public partial class CrowdView : Node3D
         {
             battle = b;
             gaits.Clear();
-            corpses.Clear();
+            corpses.Clear(); falling.Clear();
             laidOut.Clear();
             statues.Clear();
         }
@@ -542,10 +639,14 @@ public partial class CrowdView : Node3D
                     else g.Away = Math.Atan2(ez - battle!.Player.Z, ex - battle.Player.X);
                     if (g.LastState == EnemyState.Lunging) cnLungeDie++;
                     if (asset.FallOff != null) g.Death = DeathToward(asset, e, g, kb >= ThrowFrom);
+                    else Twist(e, g, Hash01(e.Seed, 5.3) < CrumpleShare);
                 }
                 role = g.Death ??= DeathOf(asset, e);
-                // The twist under the blow: eased over the fall's first 0.2 s, then held (never a one-frame snap).
-                if (!double.IsNaN(g.FaceTo)) g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) * Smooth(e.DieT, 0, 0.2);
+                // The twist under the blow: eased over the fall's first 0.2 s (a crumple's 0.5 s), then the end twist eased in
+                // over its last part, from half its time to the moment it is laid out (never a one-frame snap).
+                if (!double.IsNaN(g.FaceTo))
+                    g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) * Smooth(e.DieT, 0, g.TurnTime)
+                        + g.EndTwist * Smooth(e.DieT, Ai.DieTime * 0.5, Ai.DieTime - 0.12);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
                 // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
                 // metre), and they are gone before they land: r2's ring of bodies falling away from her, black by day and
@@ -560,7 +661,12 @@ public partial class CrowdView : Node3D
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
-                else if (e.DieT >= Ai.DieTime - 0.12) { if (CensusOn) CensusDeath(g, asset, role, ex, ez); LayOut(e, ex, ez, g.Facing, role, g.Char); return; }
+                else if (e.DieT >= Ai.DieTime - 0.12) {
+                    if (CensusOn) CensusDeath(g, asset, role, ex, ez);
+                    var pl = battle!.Player;
+                    cnLastRad = asset.FallOff != null && asset.FallOff.TryGetValue(role, out var lo) ? (float)Wrap(g.Facing + lo - Math.Atan2(ez - pl.Z, ex - pl.X)) : float.NaN;
+                    LayOut(e, ex, ez, g.Facing, role, g.Char); return;
+                }
                 break;
             }
             case EnemyState.Burrowed:
@@ -770,7 +876,8 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id });
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad });
+        cnLastRad = float.NaN;
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
@@ -815,7 +922,7 @@ public partial class CrowdView : Node3D
     void DrawCorpses(Func<double, double, double> heightAt)
     {
         double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
-        corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
+        corpses.RemoveAll(c => time - c.Born >= lie + DissolveOf(c).End);
         // The Long Cut burns up the dead in its reach with the struck, and they are gone after: those down when it came,
         // and those still falling then (her kills just before the press lie down after it: the hold slows their fall),
         // as they land, up to 2.5 s after its moment. (The first try asked only the already-down: the star stayed.)
@@ -837,9 +944,10 @@ public partial class CrowdView : Node3D
             var crowd = Crowd(c.Visual);
             double age = time - c.Born;
             // THE CORPSE REST RULE: it lies on the ground's slope under it (RestTilt, once: the ground does not move), and
-            // is taken back where it lies, dissolving over CorpseSink and settling a few centimetres with it (it slid 1.1 m
+            // is taken back where it lies, dissolving on its own clock (DissolveOf) and settling a few centimetres with it (it slid 1.1 m
             // down through the floor: the night arena's dead were seen sinking).
-            float sink = Smooth(age, lie, lie + CorpseSink);
+            var (ds, de) = DissolveOf(c);
+            float sink = Smooth(age, lie + ds, lie + de);
             if (!c.Tilted)
             {
                 c.Tilt = RestTilt(heightAt, c.X, c.Z, FallHeading(crowd.Asset, c.Role, c.Facing), c.Scale); c.Tilted = true;
@@ -878,7 +986,7 @@ public partial class CrowdView : Node3D
 
     public override void _ExitTree()
     {
-        corpses.Clear();
+        corpses.Clear(); falling.Clear();
         gaits.Clear();
     }
 }
