@@ -4,6 +4,10 @@
 // little rougher for the dead plant). Hoar frost settles on tops as the ground's does.
 shader_type spatial;
 render_mode diffuse_burley, cull_disabled;
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+#include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -48,4 +52,6 @@ void fragment() {
 		flare_prop(wp, NORMAL, INV_VIEW_MATRIX, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

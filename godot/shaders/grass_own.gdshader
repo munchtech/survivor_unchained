@@ -8,6 +8,12 @@
 // night (`night`). Wind, her pushing through, frost and the Flare as the kit grass (grass.gdshader).
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
+// The cel model (cel.gdshaderinc, L1 B1a): ink 2 (none), a soft ramp (no stripes on the ground), no rim; its own light() below.
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -273,6 +279,8 @@ void fragment() {
 		flare_blade(v_wp, t, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 // The key's light on the blades as the built-in gives it (Burley, and the back light through them), its sunlit upper
@@ -283,15 +291,21 @@ void fragment() {
 global uniform float flora_lamp;
 uniform vec3 lamp_ochre = vec3(1.0, 0.74, 0.40);
 void light() {
+	vec3 nb = cel_nb(NORMAL);
+	float t = dot(nb, LIGHT);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, t, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
 	float cnl = max(dot(NORMAL, LIGHT), 0.0);
 	float cnv = max(dot(NORMAL, VIEW), 1e-3);
 	float clh = max(dot(LIGHT, normalize(LIGHT + VIEW)), 0.0);
 	float fd90m1 = 2.0 * clh * clh * ROUGHNESS - 0.5;
 	float fl = 1.0 + fd90m1 * pow(1.0 - cnl, 5.0), fv = 1.0 + fd90m1 * pow(1.0 - cnv, 5.0);
-	float d = fl * fv * cnl;
-	vec3 lc = LIGHT_COLOR * ATTENUATION;
+	// (cel: the band and the hardened key shadow in place of Burley and the soft one; the back light, sun and ochre kept)
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	vec3 d = cel_on > 0.0 ? mix(vec3(fl * fv * cnl), cel_level(t), cel_on) : vec3(fl * fv * cnl);
+	vec3 lc = LIGHT_COLOR * mix(ATTENUATION, sh, cel_on);
 	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
-	vec3 add = lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	vec3 add = lc * (d + BACKLIGHT * max(vec3(1.0) - d, vec3(0.0))) / PI;
 	if (!LIGHT_IS_DIRECTIONAL && flora_lamp > 0.0) {
 		float warmth = clamp((lc.r - lc.b) / max(lc.r, 1e-4) * 2.0, 0.0, 1.0);
 		vec3 lum = vec3(0.2126, 0.7152, 0.0722);
@@ -300,5 +314,6 @@ void light() {
 		vec3 och = lamp_ochre * (dot(lit, lum) / dot(lamp_ochre, lum));
 		add = mix(lit, och, flora_lamp * warmth) / a;
 	}
-	DIFFUSE_LIGHT += add;
+	DIFFUSE_LIGHT += add + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
+	}
 }

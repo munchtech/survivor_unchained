@@ -10,6 +10,8 @@
 // compressed mask bleeds its channels into each other in 4x4 blocks (specks of one dye in another).
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
+#define CEL_INK 1
+#include "res://shaders/cel.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D texture_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -90,4 +92,6 @@ void fragment() {
 	ROUGHNESS = roughness_tex * roughness;
 	NORMAL_MAP = texture(texture_normal, base_uv).rgb;
 	NORMAL_MAP_DEPTH = normal_scale;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

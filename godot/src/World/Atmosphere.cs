@@ -426,7 +426,42 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
+        SetCel(p);
         if (grade) { var lut = LutFor(p); if (GradeOff) Env.AdjustmentColorCorrection = null; else ShowLut(lut); }
+    }
+
+    /* ------------------------------------------------- the cel model (L1 B1a) -- */
+
+    /// <summary>--cel off|on|0..1 (default on: the preset's CelOn; off lights exactly as before the cel model).</summary>
+    static readonly float? CelArg = SurvivorUnchained.Args.Get("cel") is string ca
+        ? ca == "off" ? 0f : ca == "on" ? null : float.TryParse(ca, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var cv) ? Mathf.Clamp(cv, 0f, 1f) : null
+        : null;
+    /// <summary>--cel-rig hardness,fill,rim,width and --cel-tune band,halftone,spec,form (multipliers): sweeps without edits.</summary>
+    static readonly float[]? CelRigArg = SurvivorUnchained.Args.Get("cel-rig") is string ? Floats("cel-rig", 0, 0, 0, 0) : null;
+    static readonly float[] CelTune = Floats("cel-tune", 1, 1, 1, 1);
+    /// <summary>--cel-dbg band|ink: the key's band level as gray, or each material's ink class unlit (0 white, 1 yellow, 2 blue, 3 red).</summary>
+    static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, _ => 0f };
+
+    /// <summary>The cel model's globals (shaders/cel.gdshaderinc) from the preset: its hues taken at luminance 1, so
+    /// CelFill and CelRim are how much of the key's light they are.</summary>
+    static void SetCel(AtmospherePreset p)
+    {
+        static Vector3 Hue(Color c)
+        {
+            float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);
+            var v = new Vector3(c.R, c.G, c.B) / l;
+            float m = Mathf.Max(v.X, Mathf.Max(v.Y, v.Z));
+            return m > 3f ? v * (3f / m) : v;
+        }
+        var fill = Hue(C(p.CelFillColor != "" ? p.CelFillColor : p.HemiSky).SrgbToLinear());
+        var rim = Hue(C(p.CelRimColor != "" ? p.CelRimColor : p.Rim).SrgbToLinear());
+        var rig = CelRigArg ?? [(float)p.CelShadow, (float)p.CelFill, (float)p.CelRim, (float)p.CelRimWidth];
+        RenderingServer.GlobalShaderParameterSet("cel_on", CelArg ?? (float)p.CelOn);
+        RenderingServer.GlobalShaderParameterSet("cel_rig", new Vector4(rig[0], rig[1], rig[2], rig[3]));
+        RenderingServer.GlobalShaderParameterSet("cel_fill", fill);
+        RenderingServer.GlobalShaderParameterSet("cel_rim", rim);
+        RenderingServer.GlobalShaderParameterSet("cel_tune", new Vector4(CelTune[0], CelTune[1], CelTune[2], CelTune[3]));
+        RenderingServer.GlobalShaderParameterSet("cel_dbg", CelDbg);
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */

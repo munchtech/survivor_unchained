@@ -10,6 +10,10 @@
 // that moves on it (g_tone, g_sat), and the ember's glow keeps to the char.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+#include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 #include "res://shaders/arena_masses.gdshaderinc"
@@ -471,4 +475,6 @@ void fragment() {
 		flare_ground((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, fl_a, fl_r, fl_s, fl_n, fl_e, VIEW_MATRIX, INV_VIEW_MATRIX);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; SPECULAR = fl_s; NORMAL = fl_n; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

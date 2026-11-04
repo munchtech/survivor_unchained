@@ -154,6 +154,17 @@ public sealed record AtmospherePreset(
     /// <summary>The sun's elevation the thaw is baked for, when not the key's (below 0: the key's): a sun climbing
     /// over minutes (Atmospheres.Morning) keeps its dawn's thaw while the frost burns off, not a bake a degree.</summary>
     public double ThawElevation { get; init; } = -1;
+    /// <summary>(L1 B1a) The painted-cel shading model (shaders/cel.gdshaderinc) under this air: CelOn 0 lights as before,
+    /// 1 the cel model; CelShadow the key's cast-shadow hardness (0 the PCF penumbra, 1 a narrow step); CelFill the key's
+    /// fill in the shadow band (0..0.25, of the key's luminance); CelRim the stepped rim's strength and CelRimWidth its
+    /// width in 1 - n.v; CelFillColor and CelRimColor their hues ("": the sky's, HemiSky, and the moon's or sun's rim, Rim).</summary>
+    public double CelOn { get; init; } = 1;
+    public double CelShadow { get; init; } = 0.85;
+    public double CelFill { get; init; } = 0.06;
+    public double CelRim { get; init; } = 0.35;
+    public double CelRimWidth { get; init; } = 0.25;
+    public string CelFillColor { get; init; } = "";
+    public string CelRimColor { get; init; } = "";
 }
 
 public sealed class ZoneMeta

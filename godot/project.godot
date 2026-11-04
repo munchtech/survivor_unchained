@@ -48,6 +48,7 @@ anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.04, 0.05, 0.07, 1)
 anti_aliasing/quality/screen_space_aa=0
 anti_aliasing/quality/use_taa=true
+anti_aliasing/screen_space_roughness_limiter/enabled=false
 
 [shader_globals]
 
@@ -261,6 +262,30 @@ motion_then={
 "value": 0.0
 }
 motion_frame={
+"type": "float",
+"value": 0.0
+}
+cel_on={
+"type": "float",
+"value": 0.0
+}
+cel_rig={
+"type": "vec4",
+"value": Vector4(0.85, 0.06, 0.35, 0.25)
+}
+cel_fill={
+"type": "vec3",
+"value": Vector3(0.1, 0.12, 0.3)
+}
+cel_rim={
+"type": "vec3",
+"value": Vector3(0.5, 0.6, 0.9)
+}
+cel_tune={
+"type": "vec4",
+"value": Vector4(1, 1, 1, 1)
+}
+cel_dbg={
 "type": "float",
 "value": 0.0
 }

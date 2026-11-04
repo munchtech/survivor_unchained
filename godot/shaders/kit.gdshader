@@ -12,6 +12,14 @@
 // whole instead (the house fade, below; E9c).
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+// The cel model (cel.gdshaderinc, L1 B1a): ink 0 (full) on kit pieces, walls, roofs and rocks; the foliage ink 1
+// (silhouette only), its own light() (below) banded with its wrap and back light kept, and no rim (card normals).
+#if defined(OWN_FOLIAGE)
+#define CEL_INK 1
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#endif
+#include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -1184,20 +1192,31 @@ void fragment() {
 		flare_prop((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 #ifdef OWN_BROADLEAF
 // The alder's own light (its leaves take only part of the key's shadow, self_shadow): Lambert with the
 // built-in back light's transmission, wrapped (wrap) and floored; its bark (u > .75) the shadow whole.
 void light() {
-	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, ATTENUATION, self_shadow) : ATTENUATION;
+	// (cel: the band on the wrapped n.l of the band's normal, over the same 0.45 floor; the key's shadow hardened before
+	// the leaves' self_shadow share of it)
+	vec3 nb = cel_nb(NORMAL);
+	float tw = (dot(nb, LIGHT) + wrap) / (1.0 + wrap);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, tw, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, mix(ATTENUATION, sh, cel_on), self_shadow) : mix(ATTENUATION, sh, cel_on);
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
+	vec3 dd = cel_on > 0.0 ? mix(vec3(d), max(cel_level(tw), vec3(0.45)), cel_on) : vec3(d);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) * (1.0 - flora_light.y) : 1.0;
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
-	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
+	DIFFUSE_LIGHT += LIGHT_COLOR * att * (dd * lift + BACKLIGHT * (1.0 - dd)) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
+	}
 }
 #endif
 
@@ -1208,7 +1227,16 @@ void light() {
 void light() {
 	vec3 lc = LIGHT_COLOR;
 	if (!LIGHT_IS_DIRECTIONAL && UV.x < 0.75) lc *= vec3(1.0, 1.0 - lamp_green, 1.0 - 0.5 * lamp_green) * lamp_gain;
+	vec3 nb = cel_nb(NORMAL);
+	float t = dot(nb, LIGHT);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, t, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
 	float d = max(dot(NORMAL, LIGHT), 0.0);
-	DIFFUSE_LIGHT += lc * ATTENUATION * (d + BACKLIGHT * (1.0 - d)) / PI;
+	// (cel: the band and the hardened key shadow in place of Lambert and the soft one, the back light kept)
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	vec3 dd = cel_on > 0.0 ? mix(vec3(d), cel_level(t), cel_on) : vec3(d);
+	float att = mix(ATTENUATION, sh, cel_on);
+	DIFFUSE_LIGHT += lc * att * (dd + BACKLIGHT * (1.0 - dd)) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
+	}
 }
 #endif

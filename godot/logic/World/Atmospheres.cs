@@ -272,6 +272,10 @@ public static class Atmospheres
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
             BushNightSat = Lerp(a.BushNightSat, b.BushNightSat, t), GroundEmberOchre = Lerp(a.GroundEmberOchre, b.GroundEmberOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
+            CelOn = Lerp(a.CelOn, b.CelOn, t), CelShadow = Lerp(a.CelShadow, b.CelShadow, t), CelFill = Lerp(a.CelFill, b.CelFill, t),
+            CelRim = Lerp(a.CelRim, b.CelRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
+            CelFillColor = a.CelFillColor != "" && b.CelFillColor != "" ? Mix(a.CelFillColor, b.CelFillColor, t) : t < 0.5 ? a.CelFillColor : b.CelFillColor,
+            CelRimColor = a.CelRimColor != "" && b.CelRimColor != "" ? Mix(a.CelRimColor, b.CelRimColor, t) : t < 0.5 ? a.CelRimColor : b.CelRimColor,
         };
 
     /* ------------------------------------------------------------ colour -- */

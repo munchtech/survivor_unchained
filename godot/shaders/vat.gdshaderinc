@@ -1,4 +1,10 @@
 #include "res://shaders/flare_world.gdshaderinc"
+// The cel model (L1 B1a): the crowd's ink class is 1 (silhouette only); Godot's RIM reproduced and, under cel, stepped;
+// the cel rim is the crowd's own edge (crowd_edge, hardened below), so the global one is off here.
+#define CEL_INK 1
+#define CEL_BUILTIN_RIM
+#define CEL_NO_RIM
+#include "res://shaders/cel.gdshaderinc"
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -68,12 +74,16 @@ global uniform vec4 crowd_r4;
 // (whole by 1 - NdotV 0.92: a soft 2-4 px edge on a body at the play camera, not a hairline)
 #define CROWD_EDGE_END 0.92
 // (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
+// (L1 B1a: under the cel model (cel_on) the edge is the cel rim: whole past the old ramp's half-way, over a 0.04 step
+// of 1 - NdotV, not a soft glow; its strength and where it sits are R4's)
 float crowd_edge(float rim) {
-	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return pow(rim, 3.0);
+	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return mix(pow(rim, 3.0), smoothstep(0.77, 0.81, rim), cel_on);
+	float m = 0.5 * (crowd_r4.x + CROWD_EDGE_END);
+	float e = mix(smoothstep(crowd_r4.x, CROWD_EDGE_END, rim), smoothstep(m - 0.02, m + 0.02, rim), cel_on);
 #ifdef VAT_CUT
-	return smoothstep(crowd_r4.x, CROWD_EDGE_END, rim) * crowd_lamp3.w;
+	return e * crowd_lamp3.w;
 #else
-	return smoothstep(crowd_r4.x, CROWD_EDGE_END, rim);
+	return e;
 #endif
 }
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
@@ -453,4 +463,6 @@ void fragment() {
 			EMISSION = mix(EMISSION, fc * fire_rim, fw * ice) + fc * fire_rim * fw * (1.0 - ice) * pow(rim, 3.0) * 0.35;
 		}
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

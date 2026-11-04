@@ -6,6 +6,9 @@
 // channel of a texture, two-sided, a rim of light at the edge.
 shader_type spatial;
 render_mode cull_disabled;
+#define CEL_INK 1
+#define CEL_BUILTIN_RIM
+#include "res://shaders/cel.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -61,4 +64,6 @@ void fragment() {
 	RIM = rim_amount;
 	RIM_TINT = rim_tint;
 	EMISSION = emission;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
