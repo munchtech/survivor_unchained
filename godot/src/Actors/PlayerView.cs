@@ -515,12 +515,14 @@ public partial class PlayerView : Node3D
         {
             bool live = (bool)tree.Get("parameters/fullShot/active");
             GD.Print($"grip probe press: full shot {(live ? $"{fullClip} at {(time - fullStart) * fullSpeed:0.000} s (soft {fullSoft})" : "none")}, upper {((bool)tree.Get("parameters/upperShot/active") ? upperClip : "-")}");
-            probeN = 0; probeTipLocal = null;
+            probeN = 0; probeTipLocal = null; probeVisN = -1;
         }
-        if (def.Grip != null) view?.FlareGrip(def.Grip);
+        gripShowAt = -1;
+        // (formed at the press but hidden: the blade shows once her hand is at the coil, FlareXfade on)
+        if (def.Grip != null && view != null && view.FlareGrip(def.Grip) && view.FlareGripNode is { } gn) { gn.Visible = false; gripShowAt = time + FlareXfade; }
         if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;
         // (from her live pose over 0.1 s, 3 of the clip's frames: no swing dropped in a frame)
-        if (!FullHerFrom(clip, 1, false, FlareXfade)) { view?.FlareGripEnd(); return; }
+        if (!FullHerFrom(clip, 1, false, FlareXfade)) { gripShowAt = -1; view?.FlareGripEnd(); return; }
         flareClipName = clip; flareClipStart = time; flareClipSeen = false;
         artTail = time + def.ClipFree;
     }
@@ -539,8 +541,9 @@ public partial class PlayerView : Node3D
         int hb = skel.FindBone("hand_r");
         var hand = skel.GlobalTransform * skel.GetBoneGlobalPose(hb).Origin;
         Vector3? tip = null;
-        if (view?.FlareGripNode is { } g && probeN > 0)
+        if (view?.FlareGripNode is { Visible: true } g && probeN > 0)
         {
+            if (probeVisN < 0) probeVisN = probeN;
             if (probeTipLocal == null)
             {
                 // the grip's farthest point from its seat (its mesh's box corners, in the mount's space)
@@ -558,7 +561,8 @@ public partial class PlayerView : Node3D
         }
         bool fullOn = (bool)tree.Get("parameters/fullShot/active");
         GD.Print($"grip probe f{probeN}: hand_r {hand} step {(probeN > 0 ? (hand - probeHand).Length() * 1000 : 0):0} mm"
-            + (tip is { } tp ? $", tip {tp} step {(probeN > 1 ? (tp - probeTip).Length() * 1000 : 0):0} mm" : "")
+            + (tip is { } tp ? $", tip {tp} step {(probeN > probeVisN ? (tp - probeTip).Length() * 1000 : 0):0} mm" : "")
+            + (probeN == probeVisN ? " (first visible grip frame)" : "")
             + $", full {(fullOn ? fullClip : "-")} at {(time - fullStart) * fullSpeed:0.000} s, yaw {Mathf.RadToDeg(Rotation.Y):0.0}");
         probeHand = hand;
         if (tip is { } t2) probeTip = t2;
@@ -566,10 +570,20 @@ public partial class PlayerView : Node3D
     }
 
     const double FlareXfade = 0.1;
+    double gripShowAt = -1;
+    int probeVisN = -1;
+
+    void FlareGripShow()
+    {
+        if (gripShowAt < 0 || time < gripShowAt) return;
+        gripShowAt = -1;
+        if (view?.FlareGripNode is { } g) { g.Visible = true; if (GripProbe) probeVisN = probeN; }
+    }
 
     void FlareClipEnd()
     {
         flareClipName = null;
+        gripShowAt = -1;
         if (view?.FlareGripOn == true) { view.FlareGripEnd(); if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero; }
     }
 
@@ -853,7 +867,7 @@ public partial class PlayerView : Node3D
             artTail = time + l2.Dur + 0.1;
         }
         ArtTail(sp);
-        FlareClipWatch();
+        FlareClipWatch(); FlareGripShow();
         // A charge behind the shield; a haul on the chain, blade first.
         if (b.Art.Rush != rushSeen)
         {
