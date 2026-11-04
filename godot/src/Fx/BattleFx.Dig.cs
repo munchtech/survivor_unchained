@@ -276,7 +276,7 @@ public partial class BattleFx
     {
         string key = map + layer;
         if (digLayers.TryGetValue(key, out var t)) return t;
-        var arr = GD.Load<Resource>($"res://art/arena/dig/{map}.jpg") as TextureLayered;
+        var arr = GD.Load<Resource>(SurvivorUnchained.View.ArenaGround.Sheet("res://art/arena/dig", map)) as TextureLayered;
         var img = arr != null && layer < arr.GetLayers() ? arr.GetLayerData(layer) : null;
         return digLayers[key] = img != null ? ImageTexture.CreateFromImage(img) : null;
     }

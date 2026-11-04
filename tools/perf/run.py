@@ -65,6 +65,8 @@ SCENARIOS = {
     "horde600": (HER + ["--zone", "arena", "--tier", "2", "--horde", "300:risen,150:wolf,150:footpad", "--auto", "idle"], 15, 30),
     # The title by its fire.
     "title": ([], 8, 20),
+    # The style frames' 09 (tools/style/frames.py lk_shaw): the Deep Shaw at tier 1, 8.5 minutes in, the pack streaming at her.
+    "shaw_horde": (HER + ["--zone", "arena", "--offer", "0", "--tier", "1", "--minute", "8.5", "--auto"], 15, 25),
 }
 
 

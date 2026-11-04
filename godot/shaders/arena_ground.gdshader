@@ -12,6 +12,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
 #include "res://shaders/flare_world.gdshaderinc"
+#include "res://shaders/arena_masses.gdshaderinc"
 
 #define NL 7
 #define FACE 6
@@ -169,8 +170,14 @@ void fragment() {
 	vec4 nM = texture(noise_tex, w * 0.061 + 0.37);
 	vec4 nF = texture(noise_tex, w * 0.29 + 0.71);
 	vec2 suv = (w + zone_size * 0.5) / zone_size;
-	vec4 sp = texture(splat, suv);
 	vec4 s2 = texture(splat2, suv);
+	// (H2 R2 round 2: the paints' edges feathered. Read straight, a paint's texel steps drew the
+	// litter's edge against the rot and the moss as box-edged slabs at 1:1; read through a warp of a
+	// metre or so, the edge wanders like a drift's.)
+	vec2 warp = (vec2(nM.g, nF.r) - 0.5) * 2.4 + (vec2(nF.b, nM.a) - 0.5) * 0.9;
+	vec2 suv_w = (w + warp + zone_size * 0.5) / zone_size;
+	vec4 sp = texture(splat, suv_w);
+	s2.a = texture(splat2, suv_w).a;
 	vec3 n_geo = normalize(w_nrm);
 
 	// The ground's two materials, in the patches the paint asks for.
@@ -178,10 +185,10 @@ void fragment() {
 	float gw[NL] = float[](1.0 - b2, b2, 0.0, 0.0, 0.0, 0.0, 0.0);
 	// The four painted over them, each taking its share from what is under it.
 	float wp[4] = float[](
-		smoothstep(0.35, 0.65, sp.r + (nM.b - 0.5) * 0.4 + (nF.g - 0.5) * 0.12),
-		smoothstep(0.35, 0.65, sp.g + (nM.g - 0.5) * 0.4 + (nF.b - 0.5) * 0.12),
-		smoothstep(0.35, 0.65, sp.b + (nM.r - 0.5) * 0.4 + (nF.r - 0.5) * 0.12),
-		smoothstep(0.35, 0.65, sp.a + (nM.a - 0.5) * 0.4 + (nF.g - 0.5) * 0.12));
+		smoothstep(0.3, 0.7, sp.r + (nM.b - 0.5) * 0.4 + (nF.g - 0.5) * 0.12),
+		smoothstep(0.3, 0.7, sp.g + (nM.g - 0.5) * 0.4 + (nF.b - 0.5) * 0.12),
+		smoothstep(0.3, 0.7, sp.b + (nM.r - 0.5) * 0.4 + (nF.r - 0.5) * 0.12),
+		smoothstep(0.3, 0.7, sp.a + (nM.a - 0.5) * 0.4 + (nF.g - 0.5) * 0.12));
 	for (int l = 0; l < 4; l++) {
 		for (int k = 0; k < NL; k++) gw[k] *= 1.0 - wp[l];
 		gw[2 + l] += wp[l];
@@ -247,6 +254,8 @@ void fragment() {
 	// Slow variation over tens of metres, so a field is never one colour.
 	albedo *= 0.78 + 0.3 * nL.r;
 	albedo = mix(albedo, albedo * vec3(1.04, 1.0, 0.9), smoothstep(0.55, 0.8, nL.b) * 0.4);
+	// The value masses, five to thirty metres, by the ring's shape (arena_masses.gdshaderinc).
+	albedo *= arena_mass(w_inn, texture(noise_tex, w * 0.0085 + vec2(0.41, 0.17)), nL);
 
 	// Moss grows in clumps, each a little dome: lit on top, dark in the
 	// creases between, its own green from yellow to deep. Domes at two sizes
