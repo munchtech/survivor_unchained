@@ -33,6 +33,9 @@ public sealed partial class Prologue
 
     void AddDay()
     {
+        // The ring's line, while the gate waits on it: the goal arrow's pin (never a prompt: no reach).
+        if (DayStretch.For(Id)?.Beats.FirstOrDefault(x => x.Kind == "ring") is { } rb)
+            Interactables.Add(new() { Id = "ring_line", X = rb.X, Z = rb.Z + 2, R = 0, Name = "The road", When = () => day?.RingOwed != null && B?.Player is { } q && q.Z < ExitZ + 9 });
         if (DayBeat("post") is not { Post: { } postId } pb) return;
         Interactables.Add(new()
         {
@@ -113,10 +116,34 @@ public sealed partial class Prologue
         return true;
     }
 
+    /// <summary>The gate shut across its passage while the day's ring is owed or its wolves stand (H8, N22): a bar only
+    /// she meets, on the town side of the exit line. A shut gate says so from the wall, and its arrow points back at the
+    /// ring's line (goals.json "day_ring", pinned to "ring_line").</summary>
+    Collider? gateBar;
+    double gateBarkAt = -99;
+    const double GateBarkEvery = 7;
+
+    void DayGate()
+    {
+        if (day == null || B == null) return;
+        var g = L("gate");
+        bool shut = Now is Stage.Dawn or Stage.Exit && !finished && !day.GateOpen;
+        if (shut && gateBar == null) gateBar = B.Collision.AddBox(g.X, ExitZ - 0.6, 9.5, 0.5, 0, new ColliderOpts("gate_shut", PlayerOnly: true));
+        else if (!shut && gateBar != null) { B.Collision.Remove(gateBar.Id); gateBar = null; }
+        var p = B.Player;
+        if (shut && p.Z < ExitZ + 2.5 && Math.Abs(p.X - g.X) < 10 && B.Time - gateBarkAt > GateBarkEvery)
+        {
+            gateBarkAt = B.Time;
+            B.Events.Emit(new Ev.Bark { X = g.X + 3.5, Z = g.Z + 2, Text = "Not with that behind you!", Speaker = "The gate watch" });
+            PaceNotes.Enqueue($"day gate shut t={B.Time:0.0} ring={(day.RingAt >= 0 ? "up" : "owed")} at=({p.X:0.0},{p.Z:0.0})");
+        }
+    }
+
     void DayTick(double dt)
     {
         if (day == null || B == null) return;
         day.Tick(dt);
+        DayGate();
         // The strongbox, once the cinematic's gather has been (it would have brought it to her feet).
         if (box == null && dawnK >= 1 && !day.Done("strongbox") && DayBeat("strongbox") is { } sb)
         {

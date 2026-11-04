@@ -245,16 +245,24 @@ public sealed class DayStretch
             // with the gate ahead: j08 r2 came along the wall from the wallow and sprang it in the trees)
             if (Math.Abs(p.X - bt.X) > bt.HalfWidth) armed = false;
             else if (p.Z > bt.ArmZ) armed = true;
-            if (!armed || p.Z > bt.Z || Math.Abs(p.X - bt.X) > bt.HalfWidth || Fighting || Held?.Invoke() == true) continue;
+            // (H8, N22: on the road a metre past its line it springs armed or not: she came round by the wall onto the
+            // gate's apron, and the wolves come out there, the gate ahead of her)
+            if (!(armed || p.Z < bt.Z - 1) || p.Z > bt.Z || Math.Abs(p.X - bt.X) > bt.HalfWidth || Fighting || Held?.Invoke() == true) continue;
             Ring(bt);
         }
     }
 
-    /// <summary>The way out is open: no ring sprung whose second wave is still to come or still on its feet (the wolves
-    /// hold the gate; r3: a player at the ring's line is 7 m from the exit and would walk out in the breath). The last one
-    /// standing does not hold it (the harness's bots were held for good by a howler that kept off behind a tree).</summary>
-    public bool GateOpen => !Of("ring").Any(bt => RingAt >= 0 && (bt.Follow.Count > 0 || bt.FollowElite != null)
-        && (!followed || Standing(bt.Id).Count(e => Dist(e.X, e.Z, b.Player.X, b.Player.Z) < 25) > 1));
+    /// <summary>The way out is open: every ring sprung, and its second wave come and down (the wolves hold the gate;
+    /// r3: a player at the ring's line is 7 m from the exit and would walk out in the breath). Shut before the ring is
+    /// sprung too (H8, N22, the owner: "we are able to just run up to the waystation and skip the whole day time
+    /// tutorial"). The last one standing does not hold it (the harness's bots were held for good by a howler that kept
+    /// off behind a tree).</summary>
+    /// (Not sprung this run but done: put down before a reload, the save after its wave.)
+    public bool GateOpen => Of("ring").All(bt => RingAt < 0 ? Done(bt.Id)
+        : (bt.Follow.Count > 0 || bt.FollowElite != null ? followed : true) && Standing(bt.Id).Count(e => Dist(e.X, e.Z, b.Player.X, b.Player.Z) < 25) <= 1);
+
+    /// <summary>The gate is shut and no ring has been sprung: what holds it is the ring still to come (its line on the road).</summary>
+    public Beat? RingOwed => RingAt < 0 ? Of("ring").FirstOrDefault(bt => !Done(bt.Id)) : null;
 
     /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands.</summary>
     void Spring(Beat bt)

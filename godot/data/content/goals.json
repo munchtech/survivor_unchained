@@ -1,5 +1,19 @@
 [
   {
+    "id": "day_ring",
+    "zone": "lowford",
+    "pin": "ring_line",
+    "title": "The Road North",
+    "steps": [ { "text": "Back to the road: the gate watch will not open for you yet" } ],
+    "into": "pro",
+    "at": 1,
+    "label": "Back to the road",
+    "glyph": "boot",
+    "color": "#e8c070",
+    "edge": true,
+    "near": 3
+  },
+  {
     "id": "table",
     "zone": "waystation",
     "when": { "fact": "prologue.done", "eq": true },
