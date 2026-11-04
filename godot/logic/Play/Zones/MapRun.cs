@@ -512,6 +512,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
         Interactables.Add(new Interactable { Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out", Hint = () => "The map is cleared", Act = Leave });
         B.Events.Emit(new Ev.Victory { X = x, Z = z });
+        B.Events.Emit(new Ev.WayOutOpen { X = wx, Z = wz });  // the way out and its banner are already one moment here
         G.Announce(new Announcement($"{Chart.Name} is cleared", first ? "A new mark on the Wayfinder's atlas" : "The way out is open", "reward", 4, "Cleared"));
         Objectives();
     }

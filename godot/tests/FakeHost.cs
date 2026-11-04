@@ -75,6 +75,8 @@ sealed class FakeHost : IZoneHost
         return true;
     }
     public bool CanCinematic(string id) => Plays?.Invoke(id) == true;
+    /// <summary>The arrival's black has lifted (a test holds it to see what waits for it).</summary>
+    public bool Arrived { get; set; } = true;
     public void SetDraftTip(string tip) => DraftTip = tip;
     public void Revived(double x, double z) => Revival = (x, z);
     public string KeyLabel(string action) => action.ToUpperInvariant()[..1];

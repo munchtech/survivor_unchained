@@ -137,6 +137,9 @@ public static class Ev
     /// <summary>What ruled the night has fallen where it stood: the night's peak (the view
     /// slows the world, turns to it and lets it land; the people break and run).</summary>
     public sealed class Victory : CombatEvent { public double X, Z; }
+    /// <summary>The way out of a won night or cleared map is shown (with its banner): the one moment the
+    /// player is told where to leave, so the sound is raised on it (SoundHooks "ui.way_out").</summary>
+    public sealed class WayOutOpen : CombatEvent { public double X, Z; }
     /// <summary>A boss's phase broken: the damage past its mark, shown as one number.</summary>
     public sealed class Break : CombatEvent { public double X, Z, Amount; public int Enemy; }
     public sealed class Sound : CombatEvent { public string Id = ""; public double? X, Z, Volume; }

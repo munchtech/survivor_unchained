@@ -44,6 +44,8 @@ public partial class Game : Node, IZoneHost
     public GameHud Hud => hud;
     public Saves Saves => saves;
     public bool InTransit => inTransit;
+    /// <summary>Not travelling and the arrival's fade-in has finished (IZoneHost.Arrived).</summary>
+    public bool Arrived => !inTransit && !fadingIn;
     /// <summary>What has the screen: the draft, a conversation, or an overlay (null: play).</summary>
     public string? Overlay => hudMode ?? screens.Current?.Kind;
     public string Mode { get; private set; } = "title";
@@ -67,7 +69,7 @@ public partial class Game : Node, IZoneHost
     PromptView? promptShown;
     string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
-    bool inTransit;
+    bool inTransit, fadingIn;
     double autosaveT, fogT, hudT, draftWait, reportT, shareT;
     Autopilot? auto;
 
@@ -866,6 +868,8 @@ public partial class Game : Node, IZoneHost
                 controls.Captured = false;
                 controls.ClearLatches();
                 inTransit = false;
+                fadingIn = true;
+                Wait(1.4, () => fadingIn = false);
             }));
         }));
     }
@@ -1080,6 +1084,7 @@ public partial class Game : Node, IZoneHost
                 break;
             case Ev.Kill k when k.ByPlayer && k.Elite && !k.Boss: Haptics.Add(0.7f, 0, 0.15f); break;
             case Ev.Victory: Haptics.Add(1, 0.4f, 0.4f, peak: true); break;
+            case Ev.WayOutOpen: SurvivorUnchained.Sound.SoundHooks.Play("ui.way_out"); break;
             case Ev.PlayerDeath: Haptics.Add(1, 0, 0.4f, blow: true, peak: true); break;
             case Ev.Evolve { Chest: false }: Haptics.Add(0.6f, 0.4f, 0.25f); break;
             case Ev.Rise: Haptics.Add(0.9f, 0.2f, 0.3f, blow: true, peak: true); break;

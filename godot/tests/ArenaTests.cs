@@ -48,6 +48,14 @@ public class ArenaTests
         return new Setup(j, host, zone, b, map, spec);
     }
 
+    /// <summary>Past the opening blessing (owed a beat after the arrival; chosen here, so the horde is let in).</summary>
+    static void Opened(Setup s)
+    {
+        Run(s, 1.6);
+        s.B.GreatOwed = 0;
+        Run(s, 0.1);
+    }
+
     static void Run(Setup s, double seconds)
     {
         for (double t = 0; t < seconds; t += 1 / 60.0)
@@ -206,6 +214,7 @@ public class ArenaTests
     public void A_great_blessing_is_chosen_as_it_begins_and_another_at_the_fifteenth_minute()
     {
         var s = Make(Spec());
+        Run(s, 1.6);  // (owed once she has seen the place: after the arrival, not before)
         Assert.True(LevelUp.GreatNext(s.B));
         var first = LevelUp.Draft(s.B, 3);
         Assert.Equal(3, first.Count);
@@ -228,6 +237,29 @@ public class ArenaTests
         bool deeper = false;
         for (int k = 0; k < 30 && !deeper; k++) deeper = LevelUp.Draft(s.B, 3).Any(o => o.Id == first[0].Id && o.To == 2 && o.Text.StartsWith("Rank 2:"));
         Assert.True(deeper);
+    }
+
+    /// <summary>The opening Great Blessing waits for the arrival's black to lift and a beat after it, and the
+    /// horde holds off until it is chosen: it used to open over the fade, with the dead already closing in.</summary>
+    [Fact]
+    public void The_opening_great_blessing_waits_for_her_to_see_the_place_and_the_horde_waits_for_it()
+    {
+        var s = Make(Spec());
+        s.Host.Arrived = false;
+        Run(s, 4);
+        Assert.Equal(0, s.B.GreatOwed);
+        Assert.Equal(0, Hostile(s.B));
+        s.Host.Arrived = true;
+        Run(s, 1.3);
+        Assert.Equal(0, s.B.GreatOwed);
+        Run(s, 0.4);
+        Assert.Equal(1, s.B.GreatOwed);
+        // The draft is open: nobody comes until it is closed.
+        Run(s, 10);
+        Assert.Equal(0, Hostile(s.B));
+        LevelUp.Choose(s.B, LevelUp.Draft(s.B, 3)[0]);
+        Run(s, 4);
+        Assert.True(Hostile(s.B) > 0);
     }
 
     /// <summary>The Kindling (docs/bosses/SURVIVORS_BOSSES.md 9): in the breath before the fifteenth
@@ -279,10 +311,12 @@ public class ArenaTests
         foreach (bool story in new[] { true, false })
         {
             var s = Make(Spec(story: story));
+            Opened(s);
             s.B.Player.Iframes = 1e9;
             s.B.Time = 1800;
             Run(s, 1);
             bool fell = false;
+            int wayOpened = 0;
             var boss = Boss(s);
             for (int i = 0; i < 400 && !s.Zone.Won; i++)
             {
@@ -292,7 +326,7 @@ public class ArenaTests
                     s.Zone.Step(1 / 60.0);
                     s.Zone.Frame(1 / 60.0);
                     s.B.Tick(1 / 60.0, 0, 0);
-                    foreach (var ev in s.B.Events.Drain()) fell |= ev is Ev.Victory;
+                    foreach (var ev in s.B.Events.Drain()) { fell |= ev is Ev.Victory; if (ev is Ev.WayOutOpen) wayOpened++; }
                     s.Host.Pass(1 / 60.0);
                 }
             }
@@ -304,6 +338,24 @@ public class ArenaTests
             var way = s.Zone.Interactables.FirstOrDefault(i => i.Id == "way_out");
             if (story) Assert.Null(way);
             else Assert.False(way!.When!(), "the way out's prompt stood over the fall");
+            if (!story) Assert.Equal(0, wayOpened);
+            if (!story) Assert.StartsWith("Leave the night here", way!.Hint!()!);
+            // The banner and the way out are one moment (0.8 s on), and the sound is raised on it.
+            if (!story)
+            {
+                bool banner = false;
+                for (double t = 0; t < 1.2 && !way!.When!(); t += 1 / 60.0)
+                {
+                    s.Zone.Step(1 / 60.0); s.Zone.Frame(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+                    foreach (var ev in s.B.Events.Drain()) if (ev is Ev.WayOutOpen) wayOpened++;
+                    s.Host.Pass(1 / 60.0);
+                    banner |= s.Host.Announced.Any(a => a.Kicker == "Victory");
+                }
+                Assert.True(way!.When!(), "the way out never showed with its banner");
+                foreach (var ev in s.B.Events.Drain()) if (ev is Ev.WayOutOpen) wayOpened++;
+                Assert.True(banner, "the way out showed before its banner");
+                Assert.Equal(1, wayOpened);
+            }
             Run(s, 8);
             Assert.Equal(story, s.Zone.Over);
             if (!story) Assert.True(way!.When!());
@@ -360,6 +412,7 @@ public class ArenaTests
     public void The_horde_thickens_with_the_minutes()
     {
         var s = Make(Spec());
+        Opened(s);
         s.B.Player.Iframes = 1e9;
         Run(s, 20);
         int early = Hostile(s.B);

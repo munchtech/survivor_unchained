@@ -51,6 +51,11 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// and which turn comes next (ArenaPacing; the experience lead's).</summary>
     readonly ArenaPacing pacing;
     bool hushed, opened;
+    /// <summary>The opening Great Blessing waits for her to have seen the place: it is owed once the arrival's
+    /// black has lifted and GreatHold seconds have passed, and the horde holds back until its draft is closed.</summary>
+    bool openingGreat = true, openingGreatOwed;
+    double openingSeen;
+    const double GreatHold = 1.5;
     double heraldAt;
     bool herald10, herald20, great15, bossUp, won, over, wayShown;
     double nextHerald, pulseT;
@@ -168,8 +173,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         b.Charges.Spikes = true;
         (b.Charges.Tell, b.Charges.TellSound) = SpikeTell();
         b.Charges.Cap = ChargeCap();
-        // The first great blessing, before anything moves.
-        b.GreatOwed = 1;
+        // The first great blessing, before anything moves: but only once she has seen where she is (Step owes it).
         G.Announce(new Announcement(Spec.Name, Region, "zone", 3.4, "Ember arena"));
         Objectives();
     }
@@ -186,6 +190,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         escalation.SkipTo(Minute);
         hushed = pacing.Hush(seconds);
         B.GreatOwed = 0;
+        openingGreat = false;
         // Its sign was given two minutes ago: the light stands on the edge, the words long gone.
         if (!runUp && seconds >= End - 120) RunUp(quiet: true);
     }
@@ -453,6 +458,14 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         else B.Charges.SpikeEvery = (40, 55);
         // The first of them in sight at once: the night used to open on an empty field for its
         // first half minute while the horde walked in from out of sight.
+        if (openingGreat)
+        {
+            // Owed GreatHold seconds after the arrival's black has lifted; the field stays empty until it is chosen.
+            // (A clock set well on, as the probes do, lets go of the hold: the opening blessing is long past.)
+            if (!openingGreatOwed && Seconds < 30 && G.Arrived && (openingSeen += dt) >= GreatHold) { openingGreatOwed = true; B.GreatOwed++; }
+            if (Seconds >= 30 || openingGreatOwed && B.GreatOwed == 0) openingGreat = false;
+            if (openingGreat) { spawnT = Math.Max(spawnT, 0.5); return; }
+        }
         if (!opened && Seconds > 1.5)
         {
             opened = true;
@@ -1205,10 +1218,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             Interactables.Add(new Interactable
             {
                 Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
-                Hint = () => $"Won. Or stay: {Clock(Math.Max(0, Seconds - End))} {Past}",
+                Hint = () => $"Leave the night here. Or stay: {Clock(Math.Max(0, Seconds - End))} {Past}",
                 When = () => wayShown, Act = Leave,
             });
-            G.After(2.6, () => wayShown = true);
         }
         // The night's peak: the world slows on the fall, and the people break and run for a
         // breath before they gather again (docs/EXPERIENCE_AUDIT.md, finding 2).
@@ -1226,8 +1238,14 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             G.After(2.4, () => { if (B != null && !over) foreach (var k in B.Pickups.Items) if (k.Alive) k.Pulled = true; });
             G.After(7, () => { if (won && !over) Finish(); });
         }
-        // The words a beat after the blow, as time comes back, not over the flash.
-        G.After(0.8, () => G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory")));
+        // The words a beat after the blow, as time comes back, not over the flash. The way out shows with them
+        // (its prompt, pin and arrow), so the banner and the door are one moment, and the sound is raised then.
+        G.After(0.8, () =>
+        {
+            G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory"));
+            wayShown = true;
+            if (!Spec.Story && way is { } w) B!.Events.Emit(new Ev.WayOutOpen { X = w.X, Z = w.Z });
+        });
         Objectives();
     }
 
