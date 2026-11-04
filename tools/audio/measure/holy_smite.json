@@ -1,0 +1,145 @@
+{
+ "family": "holy_smite",
+ "kept": 4,
+ "n": 6,
+ "takes": [
+  {
+   "i": 0,
+   "key": "131cc54b41ddb5e95887c7fe87ba07ac89b8c59f889483a4ae5b13812cd54bee",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.5999319727891157,
+    "peak_dbfs": -2.169282325863928,
+    "true_peak_dbfs": -0.9999999999999976,
+    "rms_dbfs": -20.902891833002933,
+    "crest_db": 18.733609507139004,
+    "lufs": -17.97729326545645,
+    "lufs_padded": false,
+    "onset_ms": 0.40816326530612246,
+    "tail_ms": 502.4943310657597,
+    "centroid_hz": 7635.004914708817,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.3861,
+    "clap_neg": 0.0439,
+    "clap_margin": 0.3423
+   }
+  },
+  {
+   "i": 1,
+   "key": "6963d6fb35e1e5aa81d2ed794995e77ad16d7547de47c60f9e5375e80b51ba52",
+   "file": "holy_smite_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.5640058122889027,
+    "true_peak_dbfs": -0.9999999999999964,
+    "rms_dbfs": -21.117414326843267,
+    "crest_db": 19.553408514554363,
+    "lufs": -18.238278063618132,
+    "lufs_padded": false,
+    "onset_ms": 0.6802721088435374,
+    "tail_ms": 542.8798185941043,
+    "centroid_hz": 10120.551731034006,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3711,
+    "clap_neg": 0.04,
+    "clap_margin": 0.3311
+   }
+  },
+  {
+   "i": 2,
+   "key": "0fcbfbd2698d67821debfc72d27a8fdb7768b59249768d3efc31694360af2749",
+   "file": null,
+   "dropped": "not among the 4 best-ranked takes",
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.4086033400196982,
+    "true_peak_dbfs": -1.0000000000000029,
+    "rms_dbfs": -11.995944550668113,
+    "crest_db": 10.587341210648415,
+    "lufs": -8.904223298124743,
+    "lufs_padded": false,
+    "onset_ms": 0.3401360544217687,
+    "tail_ms": 494.48979591836735,
+    "centroid_hz": 9692.682976154047,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.2984,
+    "clap_neg": 0.1196,
+    "clap_margin": 0.1789
+   }
+  },
+  {
+   "i": 3,
+   "key": "618666b7af7c36e43d79e7ee4edc920710736e4df3f785050781ec33325fed78",
+   "file": "holy_smite_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -17.84571619098978,
+    "crest_db": 16.84018881595871,
+    "lufs": -15.462189449067832,
+    "lufs_padded": false,
+    "onset_ms": 0.24943310657596374,
+    "tail_ms": 481.70068027210885,
+    "centroid_hz": 9253.14456300579,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.404,
+    "clap_neg": 0.1537,
+    "clap_margin": 0.2504
+   }
+  },
+  {
+   "i": 4,
+   "key": "145ca32bd9c83d8afa7cb5584140d34b94a3132af9f80283042d9d7a6838cda2",
+   "file": "holy_smite_2.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.2953082117768941,
+    "true_peak_dbfs": -0.9999999999999964,
+    "rms_dbfs": -16.83629880092903,
+    "crest_db": 15.540990589152134,
+    "lufs": -24.24853327067223,
+    "lufs_padded": false,
+    "onset_ms": 0.24943310657596374,
+    "tail_ms": 424.2857142857143,
+    "centroid_hz": 6601.1919446938355,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3045,
+    "clap_neg": 0.0166,
+    "clap_margin": 0.2878
+   }
+  },
+  {
+   "i": 5,
+   "key": "78d1ff1d0139ff419503afa2524d9eab6ccea966fbcef3b368335918c900177e",
+   "file": "holy_smite_3.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.4415115011633413,
+    "true_peak_dbfs": -0.9999999999999964,
+    "rms_dbfs": -20.302686748285975,
+    "crest_db": 18.861175247122635,
+    "lufs": -18.051279479625567,
+    "lufs_padded": false,
+    "onset_ms": 0.7936507936507936,
+    "tail_ms": 582.0861678004535,
+    "centroid_hz": 11730.50803580912,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3828,
+    "clap_neg": 0.0483,
+    "clap_margin": 0.3345
+   }
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "family": "bed_lowford_night",
+ "kept": 1,
+ "n": 2,
+ "takes": [
+  {
+   "i": 0,
+   "key": "85611bc4d47836677c36f5e1beda50da75f68b5cb5a17ae8e52fd4eb68aeaad5",
+   "file": "bed_lowford_night_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -14.357019285342844,
+    "true_peak_dbfs": -14.351491910311776,
+    "rms_dbfs": -34.20382445419742,
+    "crest_db": 19.846805168854573,
+    "lufs": -28.0,
+    "lufs_padded": false,
+    "lufs_short_max": -27.31930076275091,
+    "onset_ms": 0.0,
+    "tail_ms": 19290.408163265303,
+    "centroid_hz": 9754.34129100385,
+    "clipped": 0,
+    "clap": 0.34,
+    "clap_neg": 0.0853,
+    "clap_margin": 0.2547
+   }
+  },
+  {
+   "i": 1,
+   "key": "0c2aced050ec20af15fe9a85a02db6f753ab67bf280c8b7b3da2fbe74adb9fde",
+   "file": null,
+   "dropped": "not among the 1 best-ranked takes",
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -15.410167650515646,
+    "true_peak_dbfs": -14.436798696178206,
+    "rms_dbfs": -34.24413281345573,
+    "crest_db": 18.833965162940082,
+    "lufs": -27.999999999999996,
+    "lufs_padded": false,
+    "lufs_short_max": -27.171989753324116,
+    "onset_ms": 2.5850340136054424,
+    "tail_ms": 4685.918367346939,
+    "centroid_hz": 9738.961979641843,
+    "clipped": 0,
+    "clap": 0.1954,
+    "clap_neg": -0.0013,
+    "clap_margin": 0.1966
+   }
+  }
+ ]
+}

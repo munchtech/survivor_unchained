@@ -1,0 +1,99 @@
+{
+ "family": "skill_ready",
+ "kept": 3,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "4f177f966e91be3e2363d88427775e5f270fdabbf01fcae119e3b815071c16ce",
+   "file": "skill_ready_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.36376417233560093,
+    "peak_dbfs": -1.306126020301136,
+    "true_peak_dbfs": -0.9999999999999953,
+    "rms_dbfs": -18.076922479364224,
+    "crest_db": 16.77079645906309,
+    "lufs": -15.277341506043157,
+    "lufs_padded": true,
+    "onset_ms": 14.920634920634921,
+    "tail_ms": 120.15873015873017,
+    "centroid_hz": 9381.257616235733,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.425,
+    "clap_neg": -0.1383,
+    "clap_margin": 0.5633
+   }
+  },
+  {
+   "i": 1,
+   "key": "53b64d83267632a7f279e46f53150cd3ac1cc6a276f95547bcf411f332158c20",
+   "file": "skill_ready_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.3758956916099773,
+    "peak_dbfs": -1.1448021369983015,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -18.515686034399412,
+    "crest_db": 17.37088389740111,
+    "lufs": -15.49221520672377,
+    "lufs_padded": true,
+    "onset_ms": 2.5170068027210886,
+    "tail_ms": 225.51020408163265,
+    "centroid_hz": 7933.630316844391,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.5026,
+    "clap_neg": -0.1289,
+    "clap_margin": 0.6315
+   }
+  },
+  {
+   "i": 2,
+   "key": "de7482b7974d2b49eb7e6eaa770a33bfda3dd817dfffc6acaf07d895cc8930ff",
+   "file": null,
+   "dropped": "not among the 3 best-ranked takes",
+   "measure": {
+    "duration_s": 0.4798866213151927,
+    "peak_dbfs": -1.6358035097038315,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -23.018661744304218,
+    "crest_db": 21.382858234600388,
+    "lufs": -19.654864592131123,
+    "lufs_padded": false,
+    "onset_ms": 1.3605442176870748,
+    "tail_ms": 254.73922902494334,
+    "centroid_hz": 7964.85678267631,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.3992,
+    "clap_neg": -0.0925,
+    "clap_margin": 0.4917
+   }
+  },
+  {
+   "i": 3,
+   "key": "e85c5b1ed01c737b7df2efbc825eb5230ffdbb9f18dd8a9cc607163284e09322",
+   "file": "skill_ready_2.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.41061224489795917,
+    "peak_dbfs": -1.7451286643738686,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.049494349077417,
+    "crest_db": 15.304365684703548,
+    "lufs": -13.651528329330906,
+    "lufs_padded": false,
+    "onset_ms": 1.6099773242630386,
+    "tail_ms": 311.26984126984127,
+    "centroid_hz": 7859.685827813729,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.4745,
+    "clap_neg": -0.1655,
+    "clap_margin": 0.6399
+   }
+  }
+ ]
+}

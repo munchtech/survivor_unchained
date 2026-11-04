@@ -61,10 +61,10 @@ public sealed class SoundBridge
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
-                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z)); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
+                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
                     break;
                 case Ev.Kill k when k.Def != "mirror":
-                    Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z));
+                    Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z), k.Burst);
                     if (k.ByPlayer) { fell++; recent.Enqueue(now); }
                     break;
                 case Ev.PlayerHit ph:
@@ -74,13 +74,14 @@ public sealed class SoundBridge
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
                 case Ev.PlayerDeath: Sfx.Death(); break;
                 case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
-                case Ev.Nova n: Sfx.Nova(n.School); break;
+                case Ev.Nova n: Sfx.Nova(n.School, n.Art); break;
                 // Each skill in its own voice (Sfx.Skills), the school's where it has none.
                 case Ev.Slash s: Sfx.Swing(s.Art, At(s.X, s.Z)); break;
                 case Ev.Muzzle m: Sfx.Cast(m.Art, m.School, At(m.X, m.Z)); break;
                 case Ev.Strike st when st.Art != null: Sfx.Falling(st.Art, st.Delay, At(st.X, st.Z)); break;
                 case Ev.Chain ch when ch.Points.Length >= 2: Sfx.Arc(At(ch.Points[0], ch.Points[1])); break;
                 case Ev.Beam bm when bm.Art?.StartsWith("beam") == true: Sfx.Lance(bm.Art, bm.Duration, At(bm.X1, bm.Z1)); break;
+                case Ev.Telegraph t when t.Tell != null: Sfx.Telegraph(t.Tell, t.Phase == TellPhase.Land, t.Boss, At(t.X, t.Z), t.Duration > 0 ? t.Duration : null); break;
                 case Ev.Dash: Sfx.Dash(); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;
@@ -108,6 +109,8 @@ public sealed class SoundBridge
                     break;
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
                 case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
+                // Any other named sound is the bank's (ford.channel, ford.lamp_out...): placed if it has a place.
+                case Ev.Sound snd: Sfx.Cue(snd.Id, snd.X is double sx && snd.Z is double sz ? At(sx, sz) : default); break;
             }
         }
         // A Legendary lying untaken tolls faintly every eight seconds, until it is taken (§8.2).
@@ -235,11 +238,24 @@ public sealed class SoundBridge
         }
         else beatT = 0;
         // A chest opening has the room: the score steps well back for its jingle.
-        a.DuckMusic(o == "dialogue" ? 0.55f : o == "chest" ? 0.3f : o != null && o != "draft" ? 0.7f : 1);
+        a.DuckMusic(o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
+        // The zone's recorded room, looked up only when the place or the hour changes (SoundBank.Has logs each ask).
+        var bedAt = (s.Mode is "title" or "create" ? "title" : s.Mode, s.Zone, s.Time == TimeOfDay.Night || s.Time == TimeOfDay.Dusk);
+        if (bedAt != lastBedAt)
+        {
+            lastBedAt = bedAt;
+            bedId = bedAt.Item1 == "title" ? SoundBank.FirstBanked("bed.title")
+                : bedAt.Item1 == "play" && s.Zone != null ? SoundBank.FirstBanked($"bed.{s.Zone}.{(bedAt.Item3 ? "night" : "day")}", $"bed.{s.Zone}")
+                : null;
+        }
+        Ambience.SetZone(bedId);
         Ambience.Update(dt);
     }
+
+    (string, string?, bool) lastBedAt = ("", null, false);
+    string? bedId;
 
     /// <summary>The title's fire on the Low Ford road: wind, the fire, crickets.</summary>
     static readonly AmbienceMix TitleAir = new() { Wind = 0.5, Fire = 0.8, Crickets = 0.4, Owl = 0.3 };

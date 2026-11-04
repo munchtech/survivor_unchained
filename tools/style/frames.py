@@ -28,6 +28,9 @@ Q = ["--quick", "warden"] + HER
 FPS = ["--fixed-fps", "60"]
 ARENA = Q + ["--zone", "arena", "--offer", "0", "--tier", "1"]
 
+# The runs (several frames may share one). (H2 R4, 3 Nov: the arena minutes since H1's teeth, tier 1 ten minutes to its
+# boss (Content/Teeth, Pace 1): 09 at 8.5 +20 s (the pack streaming at her) and 12 at 6 +35 s
+# (a pack at her lower left), picked from a scout; the old 14 and 20 of thirty were past the boss; 10 keeps 29.9.)
 # The runs (several frames may share one). "scout" replaces the run's frame options in --scout mode.
 RUNS = {
     "lk_title": dict(args=["--seconds", "6", "--count", "1"], fresh=True, timeout=300),
@@ -42,14 +45,14 @@ RUNS = {
                     scout=Q + ["--zone", "waystation", "--time", "day", "--seconds", "6", "--every", "6", "--count", "3"]),
     "lk_lamps": dict(args=["--open", "lamps", "--seconds", "6", "--count", "1"], load_snap="fr3_loop:loop_back_1", timeout=400,
                      fallback=Q + ["--zone", "waystation", "--time", "day", "--open", "lamps", "--seconds", "6", "--count", "1"]),
-    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "14", "--seconds", "20", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "--minute", "14", "--seconds", "20", "--every", "15", "--count", "4"]),
+    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--count", "1"], timeout=600,
+                    scout=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--every", "15", "--count", "4"]),
     "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "18", "--count", "1"], timeout=600,
                     scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "12", "--every", "6", "--count", "5"]),
     "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "7", "--count", "1"], timeout=400,
                       scout=ARENA + ["--open", "result", "--seconds", "3", "--every", "2", "--count", "3"]),
-    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "20", "--seconds", "40", "--count", "1"], timeout=600,
-                   scout=ARENA + ["--auto", "--minute", "20", "--seconds", "20", "--every", "10", "--count", "3"]),
+    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "6", "--seconds", "35", "--count", "1"], timeout=600,
+                   scout=ARENA + ["--auto", "--minute", "6", "--seconds", "25", "--every", "10", "--count", "3"]),
     "lk_close": dict(args=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "8", "--count", "1"], timeout=400,
                      scout=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "6", "--every", "3", "--count", "2"]),
 }

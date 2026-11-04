@@ -1,0 +1,99 @@
+{
+ "family": "gold_pickup",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "190bc2a433a4d9dec6bf7e7c2654186f47cda32f13340185ef47f2c928a4b425",
+   "file": "gold_pickup_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.4799773242630386,
+    "peak_dbfs": -1.9666319830607804,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -25.267668135055082,
+    "crest_db": 23.301036151994303,
+    "lufs": -22.97246797810472,
+    "lufs_padded": false,
+    "onset_ms": 1.3151927437641724,
+    "tail_ms": 247.41496598639458,
+    "centroid_hz": 10174.569080302075,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.4184,
+    "clap_neg": -0.1147,
+    "clap_margin": 0.5331
+   }
+  },
+  {
+   "i": 1,
+   "key": "6e748931ae9d0776060a957b2e5b9a820db16c0dbaebe7af133b8ebf2d73f385",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.47993197278911565,
+    "peak_dbfs": -1.1307934239229296,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -21.52687611395197,
+    "crest_db": 20.39608269002904,
+    "lufs": -18.342485909125475,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 308.1179138321996,
+    "centroid_hz": 10866.90666453907,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.3752,
+    "clap_neg": -0.2045,
+    "clap_margin": 0.5797
+   }
+  },
+  {
+   "i": 2,
+   "key": "d3bbdd9399d267cd8f62fddfd13acacf0ed3bcdb6ad16dd097da436fae48f9a3",
+   "file": "gold_pickup_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.48,
+    "peak_dbfs": -1.1713948561899363,
+    "true_peak_dbfs": -0.9999999999999976,
+    "rms_dbfs": -23.00525276238838,
+    "crest_db": 21.833857906198443,
+    "lufs": -21.16839337222871,
+    "lufs_padded": false,
+    "onset_ms": 0.8390022675736961,
+    "tail_ms": 343.922902494331,
+    "centroid_hz": 10342.575492919763,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.5805,
+    "clap_neg": -0.0647,
+    "clap_margin": 0.6452
+   }
+  },
+  {
+   "i": 3,
+   "key": "34c9c766852ee70858de328311b4115cd1a26ab2a0299845e2f5039f20812f9a",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.39639455782312927,
+    "peak_dbfs": -1.212921163708641,
+    "true_peak_dbfs": -1.000000000000004,
+    "rms_dbfs": -22.840878139526083,
+    "crest_db": 21.62795697581744,
+    "lufs": -19.599650333032596,
+    "lufs_padded": true,
+    "onset_ms": 1.3378684807256236,
+    "tail_ms": 254.3310657596372,
+    "centroid_hz": 9700.78019087974,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.3271,
+    "clap_neg": -0.1371,
+    "clap_margin": 0.4642
+   }
+  }
+ ]
+}

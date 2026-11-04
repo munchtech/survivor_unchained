@@ -18,6 +18,7 @@ public static partial class Sfx
     public static void Cast(string? art, School school, Where w = default)
     {
         if (A is not { } a) return;
+        if (art != null && Bank($"art.{art}.cast", w)) return;
         double p = w.Pan, t = Now;
         switch (art)
         {
@@ -99,6 +100,7 @@ public static partial class Sfx
     public static void Swing(string? art, Where w)
     {
         if (A is not { } a) return;
+        if (BankFirst(w, true, art != null ? new[] { $"art.{art}.swing", "swing" } : new[] { "swing" })) return;
         double p = w.Pan;
         switch (art)
         {
@@ -123,7 +125,8 @@ public static partial class Sfx
                 if (art == "palm_storm") a.Play(new Hiss { D = 0.08, G = 0.05, Bp = 3500, Q = 0.7, Pan = p });
                 return;
             default:
-                Swing(w);
+                // (The bank has been asked: only the made swing is left.)
+                if (a.Gate("swing", 3, 110)) a.Play(new Hiss { A = 0.01, D = 0.09, G = 0.04, Bp = R(2000, 2600), Bp2 = 800, Q = 2, Pan = w.Pan });
                 return;
         }
     }
@@ -133,6 +136,7 @@ public static partial class Sfx
     {
         Explosion(power, w);
         if (A is not { } a) return;
+        if (art != null && Bank($"art.{art}.burst", w)) return;
         double p = w.Pan, g = 0.5 + 0.5 * w.Near;
         switch (art)
         {
@@ -151,6 +155,7 @@ public static partial class Sfx
     public static void Falling(string? art, double delay, Where w)
     {
         if (A is not { } a) return;
+        if (art != null && Bank($"art.{art}.land", w, at: Now + System.Math.Max(0, delay))) return;
         double p = w.Pan, t = Now + System.Math.Max(0, delay), g = 0.5 + 0.5 * w.Near;
         switch (art)
         {
@@ -188,6 +193,7 @@ public static partial class Sfx
     public static void Arc(Where w)
     {
         if (A is not { } a || !a.Gate("arc", 3, 120)) return;
+        if (Bank("arc", w, gated: false)) return;
         a.Play(new Hiss { D = 0.11, G = 0.06, Bp = R(3000, 4200), Q = 0.8, Pan = w.Pan });
         a.Play(new Tone { F = R(90, 130), Type = Wave.Square, D = 0.09, G = 0.025, Lp = 2200, Pan = w.Pan });
     }
@@ -196,6 +202,7 @@ public static partial class Sfx
     public static void Lance(string? art, double duration, Where w)
     {
         if (A is not { } a || !a.Gate("lance", 1, 300)) return;
+        if (art != null && Bank($"art.{art}.cast", w, gated: false)) return;
         double d = System.Math.Clamp(duration, 0.2, 1.5);
         if (art == "beam_sun")
         {
@@ -214,6 +221,7 @@ public static partial class Sfx
     public static void HitOf(string? art, Where w)
     {
         if (A is not { } a || art == null) return;
+        if (Bank($"art.{art}.hit", w)) return;
         double p = w.Pan, g = 0.5 + 0.5 * w.Near;
         switch (art)
         {

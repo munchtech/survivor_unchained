@@ -1,0 +1,95 @@
+{
+ "family": "ford_lamp_out",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "70e1a5c12479057486a4b13403e991caacea0ab07413281f7a7df74eae76d2fd",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.48,
+    "peak_dbfs": -1.181690349121933,
+    "true_peak_dbfs": -1.000000000000004,
+    "rms_dbfs": -21.12951383524252,
+    "crest_db": 19.947823486120587,
+    "lufs": -14.32005352642109,
+    "lufs_padded": false,
+    "onset_ms": 0.6802721088435374,
+    "tail_ms": 942.0408163265306,
+    "centroid_hz": 7706.770336348137,
+    "clipped": 0,
+    "clap": 0.1955,
+    "clap_neg": 0.0468,
+    "clap_margin": 0.1487
+   }
+  },
+  {
+   "i": 1,
+   "key": "2e83b0e02f1ef87c9a03949dbef44d12beca2783d3d5172adfc86efcfc365e93",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.479954648526077,
+    "peak_dbfs": -1.37908722401508,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -26.58087687910418,
+    "crest_db": 25.2017896550891,
+    "lufs": -18.246724300091334,
+    "lufs_padded": false,
+    "onset_ms": 0.4988662131519275,
+    "tail_ms": 1269.8185941043082,
+    "centroid_hz": 6752.866616284637,
+    "clipped": 0,
+    "clap": 0.2049,
+    "clap_neg": 0.0301,
+    "clap_margin": 0.1748
+   }
+  },
+  {
+   "i": 2,
+   "key": "31b4ebaccb8cf31f9490d2281026e0406f79792376b0996bd3740a884d5db263",
+   "file": "ford_lamp_out_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.479795918367347,
+    "peak_dbfs": -1.439831609277256,
+    "true_peak_dbfs": -0.9999999999999976,
+    "rms_dbfs": -22.956490979035973,
+    "crest_db": 21.516659369758717,
+    "lufs": -16.63017152662154,
+    "lufs_padded": false,
+    "onset_ms": 0.7256235827664399,
+    "tail_ms": 1020.7709750566894,
+    "centroid_hz": 7231.218858880367,
+    "clipped": 0,
+    "clap": 0.3031,
+    "clap_neg": -0.0171,
+    "clap_margin": 0.3202
+   }
+  },
+  {
+   "i": 3,
+   "key": "51d9db1a4657ada673e05be8c737d7ed29377e5880a8d04250f970d6dfa7178e",
+   "file": "ford_lamp_out_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.48,
+    "peak_dbfs": -2.4053436767859693,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -26.410558623275406,
+    "crest_db": 24.00521494648944,
+    "lufs": -18.951876343050852,
+    "lufs_padded": false,
+    "onset_ms": 1.564625850340136,
+    "tail_ms": 1102.81179138322,
+    "centroid_hz": 7536.824803868797,
+    "clipped": 0,
+    "clap": 0.379,
+    "clap_neg": -0.0039,
+    "clap_margin": 0.3829
+   }
+  }
+ ]
+}
