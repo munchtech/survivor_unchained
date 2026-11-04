@@ -1309,16 +1309,16 @@ public partial class Game : Node, IZoneHost
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
-            // H4 item 5: the look leans toward the middle of him and the lamps' triangle, a little wider,
+            // H4 item 5: the look leans toward the lamps' triangle's middle and a third toward him, wider,
             // so the three posts read as three at the play camera (it framed one).
             if (fordBoss != null && zone is Prologue fz)
             {
                 var lc = fz.LampsCenter;
-                cam.Toward = new Vector3((float)(fordBoss.X + lc.X) * 0.5f, 0, (float)(fordBoss.Z + lc.Z) * 0.5f);
+                cam.Toward = new Vector3((float)(fordBoss.X * 0.35 + lc.X * 0.65), 0, (float)(fordBoss.Z * 0.35 + lc.Z * 0.65));
             }
-            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.6f, 9f) : (0.33f, 4.5f);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.55f, 9f) : (0.33f, 4.5f);
             bool fordWideNow = fordBoss != null && hudMode == null && camSaved == null && !Args.Has("cam");
-            if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 27f : 23f; }
+            if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 29f : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             UpdateCloseUp(dt);
