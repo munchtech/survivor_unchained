@@ -162,6 +162,7 @@ public partial class FlareFx : Node3D
     void Press(Ev.Flare e, Battle b)
     {
         Clear();
+        if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)}");
         id = e.Id;
         pressWorld = b.Time;
         dropLogged = false;
