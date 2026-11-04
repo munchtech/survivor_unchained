@@ -1106,6 +1106,12 @@ public partial class Game : Node, IZoneHost
                 if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
+            // --on tells: each kit telegraph (ring, charge, pull, closing) a third and two thirds into its windup and just after it lands.
+            if (Shots.On("tells") && e is Ev.Telegraph kt && kt.Tell is { Length: > 0 } kind)
+            {
+                if (kt.Phase == TellPhase.Warn) { Shots.Want($"tell_{kind}", kt.Duration * 0.33); Shots.Want($"tell_{kind}", kt.Duration * 0.7); }
+                else Shots.Want($"tell_{kind}_land", 0.15);
+            }
             Feel(e, ref crits);
             switch (e)
             {
