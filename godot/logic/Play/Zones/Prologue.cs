@@ -1164,6 +1164,7 @@ public sealed partial class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Exit:
+                MorningClimbs();
                 // (and not while the wolf ring's second wave holds it, DayStretch.GateOpen)
                 // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
                 if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && !finished) { finished = true; Finish(); }
@@ -1547,7 +1548,23 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     public override TimeOfDay TimeOf(WorldState w) => Now is Stage.Dawn or Stage.Exit ? TimeOfDay.Dawn : TimeOfDay.Night;
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.LowFordDawn : Atmospheres.LowFordNight;
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Dawn ? Atmospheres.Morning(morningK) : Atmospheres.LowFordNight;
+
+    /// <summary>The day stretch's sun climbs (H4 item 10): from the dawn C04 A hands back into, MorningFrom s into the
+    /// road (the hand-back's frame and its ease untouched) and over MorningOver s, to LowFordMorning (Atmospheres), so
+    /// the wallow, the camp and the gate are in morning sun, not the low dawn's long shade. Eased (smoothstep: at
+    /// most 0.17% of the way a tenth of a second), set each 0.2% of the way, the grade unchanged (the dawn's).</summary>
+    void MorningClimbs()
+    {
+        double k = Math.Clamp((stageT - MorningFrom) / MorningOver, 0, 1);
+        k = k * k * (3 - 2 * k);
+        if (k <= morningK || k - morningK < 0.002 && k < 1) return;
+        morningK = k;
+        G.SetAtmosphere(Atmospheres.Morning(k), false);
+    }
+
+    const double MorningFrom = 5, MorningOver = 100;
+    double morningK;
 
     public override void Begin(Battle b)
     {
@@ -1577,7 +1594,9 @@ public sealed partial class Prologue : ZoneRuntime
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
             Now = Stage.Exit; stageT = 0; dawnK = 1; doused = true;
-            G.SetAtmosphere(Atmospheres.LowFordDawn);
+            // (the morning's sun, climbed: the road by day after the prologue, MorningClimbs)
+            morningK = 1;
+            G.SetAtmosphere(Atmospheres.Morning(1));
             // (the host set the night from the time before the stage was known: the post's own torch burned on at dawn, E7b r3)
             G.Look.SetNight(false);
             b.Collision.RemoveTagged("gate");

@@ -151,6 +151,9 @@ public sealed record AtmospherePreset(
     /// and how much of it the sun has thawed where it falls (0: none; 1: all of it, leaving it in the shade).</summary>
     public double Frost { get; init; }
     public double FrostThaw { get; init; }
+    /// <summary>The sun's elevation the thaw is baked for, when not the key's (below 0: the key's): a sun climbing
+    /// over minutes (Atmospheres.Morning) keeps its dawn's thaw while the frost burns off, not a bake a degree.</summary>
+    public double ThawElevation { get; init; } = -1;
 }
 
 public sealed class ZoneMeta

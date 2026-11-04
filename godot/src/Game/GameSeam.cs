@@ -155,6 +155,20 @@ public partial class Game
                  $"hud={hud.PlayAlpha:0.00} cap={(controls.Captured ? 1 : 0)} {her}{Scr(pose)}{AirLog()}");
     }
 
+    double dbgAirT;
+
+    /// <summary>--dbg-air: the light once a second in play (the preset's key, elevation and exposure, the night switch
+    /// and the applied key), for finding where a stretch's light turns.</summary>
+    void DbgAir(double dt)
+    {
+        if (!Args.Has("dbg-air") || (dbgAirT -= dt) > 0) return;
+        dbgAirT = 1;
+        var p = air.Current;
+        string name = ReferenceEquals(p, SurvivorUnchained.World.Atmospheres.LowFordDawn) ? "LowFordDawn" : ReferenceEquals(p, SurvivorUnchained.World.Atmospheres.LowFordNight) ? "LowFordNight" : "other";
+        GD.Print($"DBGAIR t={Time.GetTicksMsec() / 1000.0:0.0} preset={name} key={p.KeyIntensity:0.000} el={p.KeyElevation:0.0} az={p.KeyAzimuth:0.0} exp={p.Exposure:0.000} "
+               + $"night={(scene?.View.Night ?? false ? 1 : 0)} vis={(air.Key.Visible ? 1 : 0)} sh={(air.Key.ShadowEnabled ? 1 : 0)} cull={air.Key.LightCullMask}{AirLog()}");
+    }
+
     /// <summary>Where her head and feet land on screen, as fractions of the frame (u right, v down; 9 behind the lens).</summary>
     string Scr((Vector3 Root, Vector3 Head, Vector3 Hand)? pose)
     {

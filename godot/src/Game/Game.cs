@@ -1368,6 +1368,7 @@ public partial class Game : Node, IZoneHost
         CinemaFrame(dt);
         SeamFrame(dt);
         CutLog(dt);
+        DbgAir(dt);
         DoubleAhead(dt);
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.

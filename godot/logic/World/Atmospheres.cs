@@ -174,6 +174,22 @@ public static class Atmospheres
         Frost = 0.5, FrostThaw = 1,
     };
 
+    /// <summary>The Low Ford's morning (H4 item 10), what the day stretch's sun climbs to from LowFordDawn's over its
+    /// first minutes (Morning): at 18 degrees from the north-north-east the wood's shadows ran 40 m and more toward the
+    /// camera, and the wallow, the camp's clearing and the gate under the north wood sat in solid shade, a moonlit
+    /// blue. 34 degrees up on the same bearing (the shadows half as long), the gold a little nearer white, the key's
+    /// strength down as the sun climbs (6.6 x sin 34 = 3.7 on level ground against the dawn's 10 x sin 18 = 3.1), the
+    /// frost burnt off. The grade, the sky and the fill are the dawn's: only the sun moves.</summary>
+    public static readonly AtmospherePreset LowFordMorning = LowFordDawn with
+    {
+        KeyColor = "#ffdfc2", KeyIntensity = 6.6, KeyElevation = 34, Frost = 0,
+    };
+
+    /// <summary>The day stretch's light k of the way (0 to 1) from LowFordDawn to LowFordMorning: the thaw held at the
+    /// dawn's sun while its frost goes (no ground bake a degree).</summary>
+    public static AtmospherePreset Morning(double k) =>
+        k <= 0 ? LowFordDawn : Blend(LowFordDawn, LowFordMorning, Math.Min(k, 1)) with { ThawElevation = LowFordDawn.KeyElevation };
+
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>
     public static readonly AtmospherePreset WaystationDawn = LowFordDawn with

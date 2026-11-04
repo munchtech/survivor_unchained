@@ -293,7 +293,7 @@ public partial class Atmosphere : Node3D
     public static Vector3? ThawSun(AtmospherePreset p)
     {
         if (!(p.Frost * FrostScale > 0 && p.FrostThaw > 0)) return null;
-        float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
+        float el = Mathf.DegToRad((float)(p.ThawElevation >= 0 ? p.ThawElevation : p.KeyElevation)), az = Mathf.DegToRad((float)p.KeyAzimuth);
         return new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az)).Normalized();
     }
 
@@ -420,7 +420,7 @@ public partial class Atmosphere : Node3D
         // where the sun falls: its shade baked for this key. (--frost K scales it, for sweeps.)
         float frost = (float)p.Frost * FrostScale, thaw = (float)p.FrostThaw;
         RenderingServer.GlobalShaderParameterSet("ground_frost", new Vector4(frost, thaw, 0, 0));
-        if (frost > 0 && thaw > 0) GroundPaint.SunAt(dir);   // (as ThawSun says)
+        if (frost > 0 && thaw > 0) GroundPaint.SunAt(ThawSun(p) ?? dir);   // (as ThawSun says)
         // The key's light off the ground (a mid albedo, 0.18), what metal sees below the horizon: the
         // sky's lower half is the hemisphere's dark ground colour, so in shade her plate reflected
         // nothing and read as rubber (look bible, armor metal; metal round 3).
