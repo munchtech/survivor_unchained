@@ -2,6 +2,15 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 3 November 2026, evening (coordinator b6ad7e4e): the owner played demo-rc1
+Whole: "Overall it doesn't show enough to hook me, is too clunky to hook me, and visually doesn't hook me. it doesn't know what it wants to be stylistically. art wise it needs a style." Sorted onto `DEMO_GATE.md` "Phase 3" (N1-N17) with the plan in `DEMO_PLAN.md` "Phase 3 verdict". By area:
+- **Combat / classes:** "enemies all get 1 shot and can't see health"; "zero danger"; "click to move does nothing. hovering a thing for a prio target would be a fun way to have some skill expression when things are 'automatic'"; "mechanics should probably have a reason to force dodges, like being in an expanding circle should maybe slow you (sometimes). if the whole thing is skill expression thru 2 buttons (dash and ultimate) there needs to be ways to express it - and that its needed. otherwise they are just movement buttons"; "the arena survivor area is just too big and theres no strategy to it at all"; "bosses are indistinguishable"; "first boss fight doesn't have 3 lamps, it has 1 lamp that refills". Keep: "corpses exploding", "some skills are genuinely decent looking". "lamps is promising! heavy customization and build diversity and exploring is great to have. don't know how intricate this is yet."
+- **Art style (all areas):** "it doesn't know what it wants to be stylistically. art wise it needs a style."
+- **Audio:** "all the sounds kinda stink".
+- **Cinematics / experience:** "at the lamps are lit stay where they reach part, the pan over to the side looks awkward"; "the transition out of the cinematic into play is jarring"; "the cinematic after killing warden is clunky - the walk up and stuff"; "in the town cinematic I kept walking into a wheelbarrow it was funny"; "jumping to a 30 minute one can be rough. the exit wasn't clear either".
+- **UI:** "the way the skills flash is awkward"; "some clunky ui stuff, missing head in inventory (lol)".
+- **Animation / body:** "movement is 'ok'"; "she holds her elbow bent the whole time instead of looking casually badass".
+
 ## 2 November 2026 (coordinator 45b9ec4e)
 - **Lamps screen PICKED: option 1** ("i agree with the option 1 for lamps sheet"): C "The Day's Book" default + A "Nightfall" as its Open wide. HUD round 2 asked: potion slot the same size as SPACE (ends match), statues slightly further in, erase what spills above the bar ends (owner_frames_2nov/hud_r2_marked.png). Bottom HUD scale (100% / 85%) still open.
 - **HUD notes** (frame: survivorsunchained_inputs\owner_frames_2nov\hud_inner_edges_marked.webp): "the inner edges of the main hub still aren't as clean as I'd like and I have an idea - slide them inward so those areas are just gone. also the dead space on either side of the hotbar dosn't need to be so wide, also try to make the statues the same height so they have better symmetry - the left one seems taller". UI 27 (ui-27) does it; the owner sees a before/after first. Clarified: "ya basically their backs are flush touching the hotbar".

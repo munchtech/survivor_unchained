@@ -32,6 +32,8 @@
 
 ## After the owner's demo notes
 
+**SUPERSEDED (3 Nov, evening): the owner played demo-rc1 and it doesn't hook.** The passes 1-7 below do not start in this order; `DEMO_PLAN.md` "Phase 3 verdict" replaces them with the hook passes H1-H5 (combat teeth, one look, sound, seams, her arm route D). Experience 13's and Performance 4's items fold into H4; passes 1-5 fold into H2 under the look bible; 6-7 stay game dev. The dispositions above (finish-once, closed as known, owner decides) stand.
+
 | Lead | Fixed list |
 |---|---|
 | **Experience 13** | the owner's Phase 3 notes (gate class) plus the open experience items: the "way out is open" banner leading its line and arrow by 1.6 s; what leaving takes at the ring; the Great Blessing shown over the entry black before she has seen the place; day 1's clock waiting on Rook; the tier-1 stakes call (the autopilot never fell under 93% life: the owner's feel decides); the first table night 30 min before its boss |
