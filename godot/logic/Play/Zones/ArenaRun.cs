@@ -1355,6 +1355,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
 
     void OnKill(Enemy e, bool byPlayer)
     {
+        Corpse(e);
         // (Let go of the fallen: the pool gives the same body to the next of the horde.)
         if (e == herald) herald = null;
         if (e == boss && !over)

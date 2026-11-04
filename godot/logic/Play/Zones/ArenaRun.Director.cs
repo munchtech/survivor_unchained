@@ -24,7 +24,10 @@ public sealed partial class ArenaRun
     Teeth.Director? Dir => teeth?.Director;
     Rng? dirRng;
     double flankAt = -1, surroundFor, closeReady, standReady, poolFor, poolNext, sampleT, stuckT;
-    bool snufferTold;
+    bool snufferTold, ironTold;
+    double ironAt = -1;
+    readonly Dictionary<int, double> slamReady = new();
+    readonly List<(double X, double Z, double T, HashSet<int> Fed, bool Sounded)> corpses = new();
     readonly Queue<(double T, double X, double Z)> herTrail = new();
     readonly List<(Enemy E, double Seed)> leaders = new();
     readonly Dictionary<int, (double Seed, double X, double Z, double Since)> stuck = new();
@@ -34,6 +37,10 @@ public sealed partial class ArenaRun
     public int SurroundCloses { get; private set; }
     public int StandCharges { get; private set; }
     public int Recalls { get; private set; }
+    /// <summary>Ironbacks sent, their ring slams cast, and times a wolf stopped to feed (H6 round 1).</summary>
+    public int IronSpawns { get; private set; }
+    public int IronSlams { get; private set; }
+    public int Feeds { get; private set; }
 
     /// <summary>Ground from which the flow field leads to her (the director on): N34's wolves were spawned in pockets of the
     /// cover nothing leads out of, ran on the spot there and never came. Off: any standable ground, as it was.</summary>
@@ -71,6 +78,80 @@ public sealed partial class ArenaRun
         if (d.Stand) Standing(d);
         if (d.Recall && (stuckT -= dt) <= 0) { stuckT = 1; Recall(d); }
         if (d.Explain && !snufferTold) Snuffer(d);
+        if (d.Ironback) Ironbacks(d);
+        if (d.Feed) Feeding(d);
+    }
+
+    /* ------------------------------------------------------ the ironback -- */
+
+    void Ironbacks(Teeth.Director d)
+    {
+        var p = B!.Player;
+        int alive = 0;
+        foreach (var e in B.Enemies.Living())
+        {
+            if (e.Def.Id != "boar_ironback" || e.State == EnemyState.Dying) continue;
+            alive++;
+            if (e.State != EnemyState.Active || e.HoldUntil > B.Time || !TellsOn) continue;
+            if (slamReady.TryGetValue(e.Id, out var rd) && rd > Seconds) continue;
+            if (Dist(e.X, e.Z, p.X, p.Z) > d.SlamNear) continue;
+            var k = Telegraphs.Get("ring");
+            if (k == null) continue;
+            slamReady[e.Id] = Seconds + d.SlamCooldown;
+            IronSlams++;
+            Cast("ring", e, e.X, e.Z, scale: d.SlamScale);
+            e.Vx = e.Vz = 0;
+            e.HoldUntil = B.Time + k.Windup;
+        }
+        if (ironAt < 0) ironAt = d.IronFrom;
+        if (Seconds < ironAt) return;
+        if (pacing.Hush(Seconds) || heraldAt > 0) { ironAt = Seconds + 2; return; }
+        if (alive >= d.IronMax) { ironAt = Seconds + 5; return; }
+        double sp = Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz), heading = sp > 0.5 ? Math.Atan2(p.Vz, p.Vx) : p.Facing;
+        double dist = d.IronDist[0] + DR() * (d.IronDist[1] - d.IronDist[0]);
+        (double X, double Z)? at = FlankPoint(heading + Math.PI, dist);
+        for (int t = 0; at == null && t < 6; t++) at = FlankPoint(DR() * Math.Tau, dist);
+        if (at is not var (x, z)) { ironAt = Seconds + 3; return; }
+        var ib = Spawn("boar_ironback", x, z, elite: true);
+        if (ib == null) { ironAt = Seconds + 3; return; }
+        ironAt = Seconds + d.IronEvery[0] + DR() * (d.IronEvery[1] - d.IronEvery[0]);
+        IronSpawns++;
+        if (ironTold) return;
+        ironTold = true;
+        B.Events.Emit(new Ev.Bark { X = ib.X, Z = ib.Z, Text = "Ironback. Don't stand and trade with it. Keep moving.", Speaker = null });
+        double seed = ib.Seed;
+        G.Teach(new Callout("ironback", CalloutKind.Freeze, "Ironback", "IRONBACK: too slow to catch you, too strong to stand beside. Keep moving and let your weapons work.",
+            Aim.In(() => new[] { (ib.X, 1.0, ib.Z) }))
+        { Urgent = true, Mark = "IRONBACK", Still = () => ib.Alive && ib.Seed == seed && ib.State != EnemyState.Dying });
+    }
+
+    /* ------------------------------------------------------- the pack feeds -- */
+
+    /// <summary>A crowd wolf fell (OnKill): its spot is a corpse for CorpseLife s.</summary>
+    void Corpse(Enemy e)
+    {
+        if (Dir is not { Feed: true } || e.Elite || e.Boss || e.Def.Family != Family.Wolf || B == null) return;
+        corpses.Add((e.X, e.Z, Seconds, new HashSet<int>(), false));
+    }
+
+    void Feeding(Teeth.Director d)
+    {
+        var p = B!.Player;
+        for (int i = corpses.Count - 1; i >= 0; i--)
+        {
+            var c = corpses[i];
+            if (Seconds - c.T > d.CorpseLife) { corpses.RemoveAt(i); continue; }
+            foreach (var e in B.HostilesInRadius(c.X, c.Z, d.FeedNear))
+            {
+                if (e.Elite || e.Boss || e.Scripted || e.Def.Family != Family.Wolf || e.State != EnemyState.Active || e.HoldUntil > B.Time || c.Fed.Contains(e.Id)) continue;
+                if (Dist(e.X, e.Z, p.X, p.Z) < d.FeedFar) continue;
+                c.Fed.Add(e.Id);
+                e.HoldUntil = B.Time + d.FeedFor;
+                e.Vx = e.Vz = 0;
+                Feeds++;
+                if (!c.Sounded) { c.Sounded = true; corpses[i] = c; B.Events.Emit(new Ev.Sound { Id = "pack.feed", X = c.X, Z = c.Z }); }
+            }
+        }
     }
 
     /* ---------------------------------------------------- the pincer -- */

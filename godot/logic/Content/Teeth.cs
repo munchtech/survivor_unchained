@@ -74,6 +74,17 @@ public static class Teeth
         /// night) and a callout (once a profile).</summary>
         public bool Explain = true;
         public double SnufferNear = 12;
+        /// <summary>The Ironback (H6 round 1): a foe too slow to catch a mover and lethal to a stander. From IronFrom s, every
+        /// IronEvery [min, max] s, at most IronMax alive, IronDist [min, max] m from her (behind her heading if it can);
+        /// within SlamNear of her it casts the kit's ring on itself at SlamScale, at most each SlamCooldown s. Off by default.</summary>
+        public bool Ironback;
+        public double IronFrom = 90, SlamNear = 3.2, SlamCooldown = 3, SlamScale = 0.5;
+        public double[] IronEvery = { 70, 90 }, IronDist = { 14, 17 };
+        public int IronMax = 1;
+        /// <summary>The pack feeds: a wolf of the crowd within FeedNear of a recent kill (CorpseLife s) while she is at least
+        /// FeedFar from it stops to feed for FeedFor s (once a corpse), so running leaves the crowd behind. Off by default.</summary>
+        public bool Feed;
+        public double FeedFor = 2, FeedNear = 2.2, FeedFar = 8, CorpseLife = 6;
     }
 
     sealed class File

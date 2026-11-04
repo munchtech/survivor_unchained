@@ -113,7 +113,7 @@ public sealed class RunResult
     public double LampPoolSec, LampOutSec, FlareAtBoss = double.NaN;
     public int LampOuts, LampRelights, LampHitsIn, LampHitsOut;
     /// <summary>The crowd's director (H6, ArenaRun.Director): pincers sent, surrounds closed on her, stand charges, stuck foes recalled.</summary>
-    public int Flanks, SurroundCloses, StandCharges, Recalls;
+    public int Flanks, SurroundCloses, StandCharges, Recalls, IronSpawns, IronSlams, Feeds;
     /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
     public int FlareCastsOnBoss;
     public int FlareFullBankShots;
@@ -530,7 +530,7 @@ public static class ArenaSim
         r.LampIds = string.Join(",", LampBook.Now(j.Ch).Lit);
         r.FlareCasts = b.FlareCasts;
         if (hold != null) { r.LampHeld = hold.Holds; r.LampOuts = zone.LampOuts; r.LampRelights = zone.LampRelights; }
-        r.Flanks = zone.Flanks; r.SurroundCloses = zone.SurroundCloses; r.StandCharges = zone.StandCharges; r.Recalls = zone.Recalls;
+        r.Flanks = zone.Flanks; r.SurroundCloses = zone.SurroundCloses; r.StandCharges = zone.StandCharges; r.Recalls = zone.Recalls; r.IronSpawns = zone.IronSpawns; r.IronSlams = zone.IronSlams; r.Feeds = zone.Feeds;
         r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
         r.RebukeStrikes = b.RebukeStrikes; r.Tolls = b.Tolls; r.BellBarrier = b.BellBarrier; r.MaxHpEnd = b.MaxHp;
         r.FlareClutches = b.FlareClutches;
