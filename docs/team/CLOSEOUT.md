@@ -61,7 +61,7 @@ Then `DEMO_PLAN.md`'s order, as passes with scope and an exit (one line each, th
 
 ## Owner decides (one answer each; the default runs if there is none)
 
-1. **Her arm.** Routes: (A) restage the town idle so the bend is never seen side-on (Animation 62, in this wave); (C) an outside character artist on `docs/design/ARM_SCULPT_ARTIST_BRIEF.md` (work for hire; you said no once); (D) a new source arm through the Meshy-generator / Marionette-fixer route inside pass 1. **Recommendation and default: A now, D in pass 1, no C.**
+1. **Her arm.** Routes: (A) restage the town idle so the bend is never seen side-on (Animation 62, in this wave); (C) an outside character artist on `docs/design/ARM_SCULPT_ARTIST_BRIEF.md` (work for hire; you said no once); (D) a new source arm through the Meshy-generator / Marionette-fixer route inside pass 1. **DECIDED by the owner, 3 Nov: A now (Animation 62), D in pass 1, no C.** (Body 22's outside-artist brief stays on disk, unused.)
 2. **The Warden skill design pass** (slab rock, dust wall, Rebuke, auto-attack weight; VFX 11 left it as "the owner's call"). **Default: pass 4, after the HUD.**
 3. **Stale branches, safe to delete** (all superseded by merged work): `classes-12`, `ui-11`, `anim-staff-pack-1`, `outfits-lead-wip`, `outfits-lead-wip2`, `claude/creatures-boar`, `story/act2`, and nine `worktree-agent-*`. **Default: left alone (they cost nothing); say "delete them" and they go.**
 4. **Narrator takes and the SB00 bed:** yours (ElevenLabs, the hymn). No default.
