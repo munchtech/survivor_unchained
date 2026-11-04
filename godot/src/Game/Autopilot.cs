@@ -231,10 +231,10 @@ public sealed class Autopilot
         }
         // (a day fight is fought where it stands, as a player would: pulled to its foe at least as hard as five metres
         // off, so the crowd's push does not walk her out of the camp and down to the river, j08 r2)
-        double ax = tx - p.X, az = tz - p.Z, ad = Math.Sqrt(ax * ax + az * az);
-        if (dayFight && ad > 0.01 && ad < 5) { ax *= 5 / ad; az *= 5 / ad; }
+        double pullX = tx - p.X, pullZ = tz - p.Z, pullD = Math.Sqrt(pullX * pullX + pullZ * pullZ);
+        if (dayFight && pullD > 0.01 && pullD < 5) { pullX *= 5 / pullD; pullZ *= 5 / pullD; }
         dayFight = false;
-        Steer(dt, ax + rx * 1.4, az + rz * 1.4, p, tx, tz);
+        Steer(dt, pullX + rx * 1.4, pullZ + rz * 1.4, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
         if (near >= 3 && abilityT <= 0 && !g.HoldFlare) { Press(Act.Flare); abilityT = 2; }
