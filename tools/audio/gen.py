@@ -264,8 +264,8 @@ def process_family(name, fam):
     sec = min(fam["seconds"], fam.get("max_s") or fam["seconds"])
     for t in takes:
         m = t["m"]
-        if fam["kind"] == "oneshot" and m["onset_ms"] > 25:
-            t["drop"] = "onset %.0f ms > 25" % m["onset_ms"]
+        if fam["kind"] == "oneshot" and m["onset_ms"] > fam.get("max_onset_ms", 25):
+            t["drop"] = "onset %.0f ms > %d" % (m["onset_ms"], fam.get("max_onset_ms", 25))
         elif m["clipped"] > 0:
             t["drop"] = "clipped %d" % m["clipped"]
         elif fam["kind"] != "bed" and not (0.4 * sec <= m["duration_s"] <= 2.5 * sec):

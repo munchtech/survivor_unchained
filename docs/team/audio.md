@@ -12,13 +12,8 @@ Branch `audio-h3`. Brief: `docs/team/hook/H3_sound.md`. Handoff: `docs/handoff/a
 BEFORE with the old mix peaked at 0.0 dBFS (clipping) in every fight. With the limiter: peaks -2.5 to -5 dBFS, integrated -24 to -26 LUFS in fights (sfx stem -21 to -25), ambience -36 to -41, music -29 to -31. Target for the next pass: fights about -20 LUFS integrated, true peak <= -1.
 
 ## For the owner (sounds generation could not get right; one line each: what, length, character, a reference in words)
-- `ui_open` (0 takes kept): a book or journal opening for every screen; 0.4 s; soft leather creak and one paper rustle, intimate; like opening a worn diary.
-- `lamp_lit_big` (0 kept): a notable lamp lit on the Lamps screen; 1.2 s; a deep warm whoosh of flame catching in a brass lantern with a ringing metal body; like a forge flaring.
-- `lamp_out` (weak match): a lamp put out; 0.5 s; a soft breath and a wick's hiss; like blowing out a candle up close.
-- `heal_glow` (weak match): her healing; 0.8 s; a warm soft swell with a few tiny chimes, no tune; like warmth spreading through the chest.
-- `result_fell` (weak match): the night lost; 3-4 s; one low mournful drone and a single deep drum, fading; like a funeral bell heard far off.
-- `tg_pull_land` (weak match): a vortex's blow at its heart; 0.7 s; an inward suck then a hard crack; like air slammed out of a room.
-- `spawn_rise`, `crowdfall` (weak matches): the risen clawing up (1 s, dirt tearing, bones creaking, a rasp) and a crowd dropping at once (1 s, a cascade of thuds).
+- `lamp_out` (weak match after two prompts): a lamp put out; 0.5 s; a soft breath and a wick's hiss; like blowing out a candle up close.
+- Kept on a loosened rule or a second prompt (the machine's match is now good; replace any that miss by ear): `ui_open` (a worn diary opening, 0.4 s), `lamp_lit_big` (a forge-like flare in a brass lantern, 1.2 s), `heal_glow` (warmth spreading, tiny chimes, 0.8 s), `result_fell` (one far funeral bell over a drone, 4 s), `tg_pull_land` (air slammed out of a room, 0.7 s), `spawn_rise` (the risen clawing up, 1 s), `crowdfall` (a crowd dropping at once, 1 s).
 
 ## Music (not in H3's list: the next pass, the owner decides)
 Today every note is made by `godot/src/Audio/Music.cs` (moods: day, night, town, danger, boss, story; a generative synth score in D). It is likely half of "kinda stink". The route I'd take:

@@ -255,7 +255,7 @@
    "max_onsets": 3
   },
   "spawn_rise": {
-   "prompt": "An undead corpse clawing up out of the earth: dirt and roots tearing, bones creaking, a low rasping groan, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "A rotting corpse clawing up out of the earth: wet soil and roots tearing, dry bones creaking and cracking, one low guttural rasp, close-miked, dry, no reverb, no music, no voice",
    "seconds": 1.2,
    "influence": 0.55,
    "n": 6,
@@ -266,10 +266,11 @@
    "loop": false,
    "tail_db": -55,
    "note": "a risen rises (spawn.rise)",
-   "max_onsets": 8
+   "max_onsets": 8,
+   "max_onset_ms": 150
   },
   "crowdfall": {
-   "prompt": "Many bodies dropping dead to the ground at once: a cascade of heavy thuds, bones and gear clattering, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "A dozen bodies collapsing to the dirt at once: one quick cascade of heavy soft thuds with bones and armor clattering, close-miked, dry, no reverb, no music, no voice",
    "seconds": 1.0,
    "influence": 0.55,
    "n": 4,
@@ -535,7 +536,7 @@
    "note": "pickup.gold"
   },
   "heal_glow": {
-   "prompt": "A gentle warm magical healing shimmer: a soft rising glow with tiny chimes, no melody",
+   "prompt": "A warm soft magical swell gently rising and fading, like warmth spreading through the chest, airy breathy pad with three or four tiny high glassy sparkles, no melody, no music, no voice",
    "seconds": 1.0,
    "influence": 0.55,
    "n": 4,
@@ -626,7 +627,7 @@
    "note": "result.won"
   },
   "result_fell": {
-   "prompt": "A somber defeat sting: a low mournful drone and a deep drum fading into silence, dark, cinematic",
+   "prompt": "One deep funeral bell tolling once, heard far away, over a low mournful drone and a single deep muffled drum hit, slowly fading into silence, dark and sad, no melody, no voice",
    "seconds": 4.0,
    "influence": 0.55,
    "n": 4,
@@ -704,7 +705,7 @@
    "note": "telegraph.pull.windup"
   },
   "tg_pull_land": {
-   "prompt": "A dark energy implosion: a deep sucking thump with a sharp crack at its heart",
+   "prompt": "Air violently sucked inward for a split second, then one hard concussive crack, like all the air slammed out of a room, a dark magic implosion, close, no music, no voice",
    "seconds": 0.8,
    "influence": 0.55,
    "n": 4,
