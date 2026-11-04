@@ -166,7 +166,7 @@ public class DayStretchTests
         foreach (var bt in s.Beats.Where(x => x.Kind is "pack" or "chest"))
         {
             Assert.False(col.Blocked(bt.X, bt.Z, 0.7), bt.Id + " stands in a tree");
-            var path = GroundPath.Find(col, 1, -84, bt.X, bt.Z, 0.5);
+            var path = GroundPath.Find(col, 1, -84, bt.X, bt.Z, 0.8);
             Assert.True(path != null, bt.Id + ": no way there");
             Assert.True(MathX.Dist(path![^1].X, path[^1].Z, bt.X, bt.Z) < 1.5, $"{bt.Id}: the way ends at ({path[^1].X:0.0}, {path[^1].Z:0.0})");
         }

@@ -85,6 +85,7 @@ public static class LowfordDaySim
             if (p.Z < s.GateZ) { r.Reached = true; break; }
         }
         r.Seconds = b.Time - t0;
+        if (!r.Reached) { var gg = d.Goal(_ => r.PostLit, _ => box is { Alive: true, Ref: "day_strongbox" } bx2 ? (bx2.X, bx2.Z) : null, 0); Console.Error.WriteLine($"  goal ({gg.X:0.0},{gg.Z:0.0}) {gg.For?.Id} foes {string.Join(" ", b.Enemies.Living().Where(e => Math.Abs(e.X - b.Player.X) + Math.Abs(e.Z - b.Player.Z) < 30).Select(e => $"{e.Def.Id}@({e.X:0},{e.Z:0}){e.State}{(e.Roused ? "R" : "")}"))} picks {string.Join(" ", b.Pickups.Living().Where(k => Math.Abs(k.X - b.Player.X) + Math.Abs(k.Z - b.Player.Z) < 12).Select(k => $"{k.Kind}@({k.X:0.0},{k.Z:0.0})"))}"); }
         if (!r.Reached) Console.Error.WriteLine($"{spec.Key}: stuck at ({b.Player.X:0.0},{b.Player.Z:0.0}) post {r.PostLit} box {r.BoxOpened} up {string.Join(",", d.Packs.Keys.Select(k => k + ":" + d.Standing(k).Count))}");
         foreach (var (id, woke) in d.WokeAt)
             r.Beats[id] = (woke - t0, d.DownAt.TryGetValue(id, out var dn) ? dn - t0 : double.NaN, lows.GetValueOrDefault(id, 1));

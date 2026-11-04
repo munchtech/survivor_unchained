@@ -40,6 +40,17 @@ public static class GroundPath
                         if (Math.Max(Math.Abs(di), Math.Abs(dj)) == rr && Open(gi + di, gj + dj)) { gi += di; gj += dj; found = true; }
             if (!found) return null;
         }
+        // (and she may stand pressed to a trunk, her own cell solid at the route's radius: out from the nearest open cell)
+        bool moved = false;
+        if (!Open(si, sj))
+        {
+            bool found = false;
+            for (int rr = 1; rr <= 4 && !found; rr++)
+                for (int dj = -rr; dj <= rr && !found; dj++)
+                    for (int di = -rr; di <= rr && !found; di++)
+                        if (Math.Max(Math.Abs(di), Math.Abs(dj)) == rr && Open(si + di, sj + dj)) { si += di; sj += dj; found = moved = true; }
+            if (!found) return null;
+        }
         var g = new Dictionary<int, double>();
         var from = new Dictionary<int, int>();
         var pq = new PriorityQueue<int, double>();
@@ -76,6 +87,7 @@ public static class GroundPath
         // Keep only the corners: a waypoint is dropped while the one after it is in plain sight.
         var route = new List<(double X, double Z)>();
         var at = (fx, fz);
+        if (moved) { at = P(start); route.Add(at); }
         int k = 0;
         while (k < cells.Count)
         {

@@ -20,6 +20,10 @@ public sealed class DayStretch
 {
     public sealed class Foe { public string Def = ""; public int N = 1; }
 
+    /// <summary>A pack's next wave: out of the trees round its ground (Out m from it) once Under or fewer of it stand,
+    /// with Elite one more of that kind as a champion.</summary>
+    public sealed class Wave { public List<Foe> Foes = new(); public string? Elite; public int Under = 2; public double Out = 11; }
+
     public sealed class Beat
     {
         public string Id = "", Kind = "";
@@ -33,6 +37,8 @@ public sealed class DayStretch
         /// <summary>A ring's second wave: the rest of the pack, out of the trees toward the gate, FollowAfter s on.</summary>
         public List<Foe> Follow = new();
         public double FollowAfter = 3;
+        /// <summary>A pack's waves after the first (the camp's sleepers out of the tents, the wallow's from the reeds).</summary>
+        public List<Wave> Waves = new();
         public double[] Every = [5, 7];
         public int N, Light = -1, Gold, LevelUp;
     }
@@ -168,6 +174,14 @@ public sealed class DayStretch
                         o.Tag = "day:" + id; o.Roused = true;
                         list.Add((o, o.Seed)); up.Add((o, o.Seed));
                     }
+            // (its next wave, out of the trees round its ground, when it is thinned to Under)
+            if (WokeAt.ContainsKey(id) && Sent(id) < bt.Waves.Count && up.Count <= bt.Waves[Sent(id)].Under)
+            {
+                var w = bt.Waves[Sent(id)];
+                sent[id] = Sent(id) + 1;
+                foreach (var e in SendWave(bt, w)) { list.Add((e, e.Seed)); up.Add((e, e.Seed)); }
+                Waved?.Invoke(bt, sent[id]);
+            }
             if (up.Count == 0)
             {
                 DownAt[id] = b.Time;
@@ -205,6 +219,39 @@ public sealed class DayStretch
     }
 
     bool followed;
+    readonly Dictionary<string, int> sent = new();
+    /// <summary>How many of a pack's waves have come.</summary>
+    public int Sent(string beat) => sent.GetValueOrDefault(beat);
+    /// <summary>A pack's next wave came out of the trees (its number, from 1).</summary>
+    public Action<Beat, int>? Waved;
+
+    /// <summary>A wave round the pack's ground, Out m from it (a clearing's edge, the tree line), its champion the last.</summary>
+    List<Enemy> SendWave(Beat bt, Wave w)
+    {
+        var p = b.Player;
+        int lv = Level(level, day, bt);
+        var got = new List<Enemy>();
+        var kinds = w.Foes.SelectMany(f => Enumerable.Repeat(f.Def, f.N)).Select(d => (d, false)).ToList();
+        if (w.Elite != null) kinds.Add((w.Elite, true));
+        double a0 = b.Rng.Next() * Math.Tau;
+        for (int i = 0; i < kinds.Count; i++)
+        {
+            var (def, elite) = kinds[i];
+            for (int t = 0; t < 12; t++)
+            {
+                double a = a0 + i * 2.39996 + (b.Rng.Next() - 0.5) * 0.5, d = w.Out + b.Rng.Next() * 2.5;
+                double x = bt.X + Math.Cos(a) * d, z = bt.Z + Math.Sin(a) * d;
+                if ((b.Collision.Blocked(x, z, 0.7) || Dist(x, z, p.X, p.Z) < 5) && t < 11) continue;
+                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
+                {
+                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash + 4),
+                });
+                if (e != null) { e.Roused = true; got.Add(e); }
+                break;
+            }
+        }
+        return got;
+    }
 
     /// <summary>Where a sensible player goes next (the autopilot's day and the harness's, one route): a waking pack's
     /// nearest foe, fought where it stands; else the beats in the data's order, each pack's ground, a chest once its
@@ -220,7 +267,8 @@ public sealed class DayStretch
             if (!WokeAt.ContainsKey(id) || DownAt.ContainsKey(id)) continue;
             foreach (var e in Standing(id)) { double d = Dist(e.X, e.Z, p.X, p.Z); if (d < nd) { nd = d; near = e; } }
         }
-        if (near != null) return (near.X, near.Z, null);
+        // (round the trees to it: a footpad's bowman backs into the wood)
+        if (near != null) return nd < 4 ? (near.X, near.Z, null) : Route(near.X, near.Z, null);
         foreach (var bt in S.Beats)
         {
             switch (bt.Kind)
@@ -254,11 +302,28 @@ public sealed class DayStretch
         if (route == null || b.Time - routeAt > 2 || Dist(routeTo.X, routeTo.Z, x, z) > 1.5)
         {
             routeAt = b.Time; routeTo = (x, z);
-            route = GroundPath.Find(b.Collision, p.X, p.Z, x, z, 0.5);
+            route = GroundPath.Find(b.Collision, p.X, p.Z, x, z, 0.8);
         }
         while (route is { Count: > 1 } && Dist(route[0].X, route[0].Z, p.X, p.Z) < 0.9) route.RemoveAt(0);
-        return route is { Count: > 0 } ? (route[0].X, route[0].Z, bt) : (x, z, bt);
+        var (wx, wz) = route is { Count: > 0 } ? route[0] : (x, z);
+        // Wedged (no nearer the corner for 1.2 s): a step aside, to whichever hand is open, and the route found again.
+        if (b.Time < sideUntil) return (side.X, side.Z, bt);
+        double d = Dist(wx, wz, p.X, p.Z);
+        if (Dist(wx, wz, lastW.X, lastW.Z) > 0.5) { lastW = (wx, wz); lastD = d; stuckSince = b.Time; }
+        else if (d < lastD - 0.3) { lastD = d; stuckSince = b.Time; }
+        else if (b.Time - stuckSince > 1.2 && d > 0.3)
+        {
+            double ux = (wx - p.X) / d, uz = (wz - p.Z) / d;
+            int hand = b.Collision.Blocked(p.X - uz * 1.5, p.Z + ux * 1.5, 0.4) ? -1 : 1;
+            side = (p.X - uz * 1.8 * hand - ux * 0.6, p.Z + ux * 1.8 * hand - uz * 0.6);
+            sideUntil = b.Time + 0.6; stuckSince = b.Time + 0.6; lastD = 1e9; route = null;
+            return (side.X, side.Z, bt);
+        }
+        return (wx, wz, bt);
     }
+
+    (double X, double Z) side, lastW;
+    double sideUntil = -1, stuckSince, lastD = 1e9;
 
     /// <summary>The rest of the ring's pack: out of the trees 12 m on toward the gate, hunting her.</summary>
     void Follow(Beat bt)
