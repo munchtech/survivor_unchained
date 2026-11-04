@@ -1,6 +1,35 @@
 {
   "about": "Teeth (H1 combat teeth, docs/team/hook/H1_combat_teeth.md): what a table night's tier asks of a human, on top of the night's own curves; numbers described in logic/Content/Teeth.cs. Measured with the harness's late hands: `arena --bot plain,deft,human,careless`, then tools/balance/danger.py. A tier with no entry is as it was. Tier 1, round 1 (H1, 3 Nov; 128 nights a bot at 12 min, kit on): fodder fall to 3 of her hits and champions to 9 (ember 0-10); the late human ends at 31% of life at its lowest and falls 15%, careless 20%, the deft hands win 96%; the boss comes at 10:00 and takes about 2:15. Round 2 (3 Nov): with the kit's bite raised, the tier-1 boss hits x1.1 (from 1.25): careless fall 22%, human 15% (lowest life median 0.29), deft win 98%; fodder 3 hits, champions 9.5-10, boss about 2:13.",
   "tiers": {
-    "1": { "fodderHp": 3, "fodderDamage": 1.15, "eliteHp": 3.4, "eliteDamage": 1.15, "crowd": 1, "bossHp": 2.5, "bossDamage": 1.1, "minutes": 10 }
+    "1": {
+      "fodderHp": 3,
+      "fodderDamage": 1.15,
+      "eliteHp": 3.4,
+      "eliteDamage": 1.15,
+      "crowd": 1,
+      "bossHp": 2.5,
+      "bossDamage": 1.1,
+      "minutes": 10
+    }
+  },
+  "prologue": {
+    "fordWarden": {
+      "about": "The Ford-Warden (H8, N20; numbers by H6, 4 Nov, by reason, measured by H8 with --auto --lampcheck): indexed by lamps lit 0-3. floors: the least share of his life he can be brought to (0.67 while three burn, 0.34 while two, none while one or none: two crashes are the way through, the third lamp optional); ward: the share of a blow he takes (each crash a visible jump in damage); hpMul on his 2600; minSeconds: a backstop, the last floor held at backstop until he has fought this long (if it fires in most fights, his charge cadence is wrong, not this). Targets: a human 60-90 s, every calling's careless bot wins, no fall for the deft.",
+      "floors": [
+        0,
+        0,
+        0.34,
+        0.67
+      ],
+      "ward": [
+        1,
+        0.7,
+        0.55,
+        0.4
+      ],
+      "hpMul": 2.5,
+      "minSeconds": 60,
+      "backstop": 0.05
+    }
   }
 }

@@ -25,9 +25,28 @@ public static class Teeth
         public double Minutes;
     }
 
+    /// <summary>The Ford-Warden (H8, N20, numbers H6's; the owner on demo-rc2: "the warden was easy. died in like 8
+    /// seconds didn't have to crash a lamp"): by lamps lit, 0-3, the least of his life he can be brought to (a share
+    /// of it) and the share of a blow he takes; his life's multiplier; and a backstop, a last floor held until he has
+    /// fought this long.</summary>
+    public sealed class FordWarden
+    {
+        public double[] Floors = [0, 0, 0, 0];
+        public double[] Ward = [1, 0.7, 0.55, 0.4];
+        public double HpMul = 1;
+        public double MinSeconds;
+        public double Backstop = 0.05;
+    }
+
+    public sealed class PrologueTeeth
+    {
+        public FordWarden? FordWarden;
+    }
+
     sealed class File
     {
         public Dictionary<string, Tier> Tiers = new();
+        public PrologueTeeth? Prologue;
     }
 
     static File? file;
@@ -35,6 +54,9 @@ public static class Teeth
 
     /// <summary>A tier's teeth, or null (as it was).</summary>
     public static Tier? For(int tier) => F.Tiers.TryGetValue(tier.ToString(), out var t) ? t : null;
+
+    /// <summary>The Ford-Warden's teeth, or null (as it was: the ward alone).</summary>
+    public static FordWarden? Ford => F.Prologue?.FordWarden;
 
     // SU_TEETH=<path>: a variant of the file for a measuring run (the harness tunes several at once).
     /// <summary>Read the file again (a test or a variant that changed it).</summary>
