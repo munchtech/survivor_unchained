@@ -98,7 +98,7 @@ public partial class FoeMarks : Control
         {
             lampBar = true; lampOut = !l.Lit;
             lampAt = cam.UnprojectPosition(top);
-            lampAt.Y = Math.Max(lampAt.Y, 40 * vp.Size.Y / 1080f);
+            lampAt.Y = Math.Max(lampAt.Y, 60 * vp.Size.Y / 1080f);
             lampK = l.Lit ? (float)Math.Clamp(l.Life, 0, 1) : 0;
         }
         var p = b.Player;
@@ -133,14 +133,19 @@ public partial class FoeMarks : Control
         }
         if (lampRing)
         {
-            DrawPolyline(poolPts, new Color(Ink, 0.25f), 3.5f * s, true);
-            DrawPolyline(poolPts, new Color(LampFill, 0.3f), 1.5f * s, true);
+            // A dashed warm-white line (the place to hold), never the unbroken amber ring of a blow to leave.
+            var warm = new Color("#fff1d6");
+            for (int i = 0; i + 1 < poolPts.Length; i += 2)
+            {
+                DrawLine(poolPts[i], poolPts[i + 1], new Color(Ink, 0.4f), 4.5f * s);
+                DrawLine(poolPts[i], poolPts[i + 1], new Color(warm, 0.75f), 2.2f * s);
+            }
         }
         if (lampBar)
         {
             // As a champion's bar, in the lamp's own light.
-            float w = 64 * s, h = 6 * s;
-            var r = new Rect2(lampAt.X - w / 2, lampAt.Y, w, h);
+            float w = 128 * s, h = 12 * s;
+            var r = new Rect2(lampAt.X - w / 2, lampAt.Y - h - 4 * s, w, h);
             float a = lampOut ? 0.55f : 1f;
             DrawRect(r, new Color(Ink, Ink.A * a));
             var inner = r.Grow(-1 * s);
@@ -149,7 +154,7 @@ public partial class FoeMarks : Control
             if (lampOut)
             {
                 var font = ThemeDB.FallbackFont;
-                int fs = (int)(15 * s);
+                int fs = (int)(22 * s);
                 const string hint = "Out: stand at the lamp to relight";
                 var sz = font.GetStringSize(hint, HorizontalAlignment.Left, -1, fs);
                 var at = new Vector2(lampAt.X - sz.X / 2, lampAt.Y - 5 * s);
@@ -161,13 +166,13 @@ public partial class FoeMarks : Control
         {
             // A small diamond, ink-edged, the cold of what puts the light out.
             var c = snuffs[i];
-            float rx = 6 * s, ry = 8 * s;
+            float rx = 12 * s, ry = 16 * s;
             dia[0] = diaEdge[0] = diaEdge[4] = c + new Vector2(0, -ry);
             dia[1] = diaEdge[1] = c + new Vector2(rx, 0);
             dia[2] = diaEdge[2] = c + new Vector2(0, ry);
             dia[3] = diaEdge[3] = c + new Vector2(-rx, 0);
             DrawColoredPolygon(dia, new Color(Snuff, 0.9f));
-            DrawPolyline(diaEdge, Ink, 1.5f * s, true);
+            DrawPolyline(diaEdge, Ink, 3f * s, true);
         }
         if (ring)
         {

@@ -1419,6 +1419,8 @@ public partial class BattleFx : Node3D
                     // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
                     bool fodderCharge = e.Tell == "charge" && e.Hostile && e.Shape == TelegraphShape.Line && look != TelegraphRead.TeleLook.Danger;
                     if (fodderCharge) look = TelegraphRead.TeleLook.Danger;
+                    // The kit's ring (a hostile circle): the full danger red, never the amber the lamp's hold ring was read as.
+                    if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.TeleLook.Danger;
                     bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
