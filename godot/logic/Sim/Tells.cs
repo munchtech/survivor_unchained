@@ -44,7 +44,7 @@ public sealed partial class Battle
     public IReadOnlyList<TellOn> ActiveTells => tells;
 
     /// <summary>How long a charger takes to run its lane once its blow has landed.</summary>
-    const double ChargeRun = 0.25;
+    public const double ChargeRun = 0.25;
 
     /// <summary>
     /// The app can now cast a named telegraph from the kit (data/content/telegraphs.json) with one call, from any zone:

@@ -45,14 +45,15 @@ public class BossTests
         return new Fight(b, zone, host, j);
     }
 
-    static void Step(Fight f, double seconds, Action<double>? each = null)
+    static void Step(Fight f, double seconds, Action<double>? each = null, Action<System.Collections.Generic.List<CombatEvent>>? seen = null)
     {
         for (double t = 0; t < seconds; t += 1 / 60.0)
         {
             f.Zone.Step(1 / 60.0);
             f.Zone.Frame(1 / 60.0);
             f.B.Tick(1 / 60.0, 0, 0);
-            f.B.Events.Drain();
+            var evs = f.B.Events.Drain();
+            seen?.Invoke(evs);
             f.Host.Pass(1 / 60.0);
             f.B.PendingLevels = 0; f.B.PendingBlessings.Clear(); f.B.GreatOwed = 0;
             f.B.Player.Hp = f.B.MaxHp;
@@ -406,5 +407,55 @@ public class BossTests
         b.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Cone, X = b.Player.X - 3, Z = b.Player.Z, Radius = 5, Angle = Math.PI, Arc = Math.PI / 2, Delay = 0.1, Damage = 20, Source = "test" });
         for (int i = 0; i < 12; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
         Assert.Equal(hp, b.Player.Hp, 3);
+    }
+
+    /// <summary>H1 item 5: each arena boss has one signature from the telegraph kit (all four kinds, one each), and a
+    /// tell before it: it stops and casts (the view's cast clip) and barks the move's name, about 0.7 s before the
+    /// kit's ground mark.</summary>
+    [Theory]
+    [InlineData("pack", "charge")]
+    [InlineData("dead", "closing")]
+    [InlineData("lamplings", "pull")]
+    [InlineData("kerchiefs", "ring")]
+    public void Each_boss_casts_its_signature_with_a_tell_first(string people, string kind)
+    {
+        var f = At30(people);
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        double t = 0, castAt = -1, castFrom = -1, tellAt = -1;
+        bool barked = false;
+        for (int i = 0; i < 60 * 20 && tellAt < 0; i++)
+        {
+            Step(f, 1 / 60.0, seen: evs =>
+            {
+                foreach (var ev in evs)
+                {
+                    if (ev is Ev.Telegraph { Phase: TellPhase.Warn } tg && tg.Tell == kind && tellAt < 0) tellAt = t;
+                    if (ev is Ev.Bark bk && s.SignatureCasts > 0 && tellAt < 0 && bk.Text.Contains(':')) barked = true;
+                }
+            });
+            t += 1 / 60.0;
+            if (tellAt < 0 && boss.State == EnemyState.Casting && s.SignatureCasts > 0) { castAt = t; if (castFrom < 0) castFrom = t; }
+        }
+        Assert.True(tellAt > 0, $"{people}: no {kind} tell in 20 s; fight {s.FightT:0.0} casts {s.SignatureCasts} cast {castFrom:0.00} phase {s.PhaseIx} state {boss.State} alive {boss.Alive}");
+        Assert.True(castFrom > 0 && castFrom < tellAt, $"{people}: no cast before the {kind}");
+        // It cast up to the tell (held still and casting), for about the signature's lead.
+        Assert.InRange(tellAt - castFrom, ArenaBoss.SignatureLead - 0.1, ArenaBoss.SignatureLead + 0.1);
+        Assert.True(tellAt - castAt < 0.05);
+        Assert.True(barked, $"{people}: no bark naming the {kind}");
+    }
+
+    /// <summary>The Pack-Mother's Drive comes in every phase, not only the first.</summary>
+    [Fact]
+    public void Her_drive_comes_in_every_phase()
+    {
+        var f = At30("pack");
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        var phases = new System.Collections.Generic.HashSet<int>();
+        for (int i = 0; i < 60 * 150 && phases.Count < 3 && boss.Alive; i++)
+            Step(f, 1 / 60.0, _ => { if (boss.TakenMul > 0) f.B.HitEnemy(boss, boss.MaxHp * 0.0006, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true }); },
+                evs => { foreach (var ev in evs) if (ev is Ev.Telegraph { Phase: TellPhase.Warn, Tell: "charge" }) phases.Add(s.PhaseIx); });
+        Assert.Equal(3, phases.Count);
     }
 }

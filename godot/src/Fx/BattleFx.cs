@@ -1842,7 +1842,13 @@ public partial class BattleFx : Node3D
             beams[i] = (m, mat, t, life);
         }
         bossUp = false;
-        foreach (var e in b.Enemies.Living()) if (e.Boss) { bossUp = true; break; }
+        // (one pass: whether a boss is up, and the lights the bosses carry)
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Boss) bossUp = true;
+            if (e.Def.CarriedLight != null) Aura(e, fdt);
+        }
+        StepAuras(fdt);
         Zones(b, now);
         ArtTrails(b, fdt);
         StepRise(b, fdt);

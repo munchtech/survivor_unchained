@@ -75,6 +75,9 @@ public static class Ai
         // Held by a kit telegraph (Sim/Tells.cs): planted for its windup, no step and no blow.
         if (e.HoldUntil > 0 && e.HoldUntil > b.Time)
         {
+            // A boss's script runs on while a kit move holds it (it holds itself for its own kit charge:
+            // ArenaBoss.HoldForCharge), so its phase clocks and enrages keep time.
+            if ((e.Boss || e.Scripted) && b.Hooks.BossTick?.Invoke(e, dt) == true) { e.Vx = e.Vz = 0; return; }
             e.Vx = e.Vz = 0;
             e.Anim = EnemyAnim.Windup;
             return;
