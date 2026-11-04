@@ -59,15 +59,15 @@
       "tail": 0.5,
       "cues": [
         {"do": "mist", "name": "river", "where": {"abs": [7.0, -1.15, -41.0]}, "size": [26, 1.5, 18], "density": 0.45, "color": "#8494aa", "falloff": 2.0},
-        {"at": 0.3, "do": "line", "id": "cin_none_cross.call"}
+        {"at": 0.3, "do": "line", "id": "cin_none_cross.call", "as": "A VOICE IN THE WATER"}
       ]
     },
     {
       "id": "5",
       "type": "LS",
       "dur": 3.4,
-      "note": "At the waterline, north-west of him, the river and the lamp's reflection in the bottom third: he rises, the head first, water sheeting off hood and beard; stands, taller than the far post behind him. The moon behind him rims hood and shoulders; the lamp is the only light from the front. The camera ends swung onto the lamp, its glow toward the lens (s8 opens on it).",
-      "cam": {"pos": {"abs": [0.2, -0.62, -38.7]}, "at": {"abs": [5.85, 0.45, -43.2]}, "lens": 24, "move": {"start": 2.1, "end": 3.0, "at": {"abs": [6.45, 0.75, -42.6]}, "lens": 35, "ease": "inout"}},
+      "note": "At the waterline, north-west of him, the river and the lamp's reflection in the bottom third: he rises, the head first, water sheeting off hood and beard; stands, taller than the far post behind him. The moon behind him rims hood and shoulders; the lamp is the only light from the front. (H4 item 2 (the owner: the pan over to the side looks awkward): the 0.9 s swing and 24-35 mm zoom onto his lantern are gone; the camera tilts up with him as he rises, a slow 2 mm push, his hood kept in frame.)",
+      "cam": {"pos": {"abs": [0.2, -0.62, -38.7]}, "at": {"abs": [5.95, 0.55, -43.3]}, "lens": 24, "move": {"start": 0.4, "end": 3.4, "at": {"abs": [6.05, 1.0, -43.3]}, "lens": 26, "ease": "inout"}},
       "cues": [
         {"do": "grade", "moonSat": 0.14, "moonDrop": 1.0, "shade": "#2e2452", "shadeK": 0.7, "moonHue": 258, "moonTop": 1.0, "moonWidth": 0.3},
         {"do": "glow", "name": "slope", "remove": true},
@@ -114,7 +114,7 @@
         {"at": 0.25, "do": "rig", "name": "lampcatch", "energy": 0.2, "over": 0.4, "color": "#e4ecff", "angle": 6, "spec": 30, "from": {"lens": [-0.42, -0.28, -0.75]}, "aim": {"actor": "her", "bone": "eyes"}},
         {"do": "gaze", "look": [0.0, 0.55], "wander": 0.0},
         {"at": 0.45, "do": "gaze", "look": [-0.15, 0.1], "over": 0.35, "wander": 0.03},
-        {"at": 1.1, "do": "line", "id": "cin_none_cross.lie_down"},
+        {"at": 1.1, "do": "line", "id": "cin_none_cross.lie_down", "as": "A VOICE IN THE WATER"},
         {"do": "glow", "name": "held", "where": {"actor": "her", "bone": "eyes", "off": [-0.025, -0.104, -0.832]}, "color": "#a8c4ff", "size": 0.006, "energy": 8, "spread": 30, "halo": 0.6, "light": 0, "soft": true, "lantern": 1, "iron": "warden", "turn": 20, "glass": 3},
         {"do": "glow", "name": "heldcold", "where": {"actor": "her", "bone": "eyes", "off": [-0.175, -0.057, -1.164]}, "color": "#8fb0e0", "size": 0.001, "energy": 0.2, "spread": 300, "halo": 0.18, "light": 0, "soft": true}
       ]
