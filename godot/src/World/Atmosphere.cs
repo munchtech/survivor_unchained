@@ -103,13 +103,13 @@ public partial class Atmosphere : Node3D
     /// 1 - NdotV = E (0: the older pow 3); --crowd-spec S the crowd's specular; --crowd-grim G Godot's per-light rim (a scale); --crowd-card-edge K the fur cards' share of the edge;
     /// --crowd-edge-k K the moon rim's strength on the edge (a scale of the preset's);
     /// --crowd-r4 off: none of it (the r1_2 crowd exactly, for A/B and --perf).
-    /// The defaults (the r4 judge's frames): a tight edge from 0.7, the moon's rim there 6.5x the preset's (CrowdRim 0.2 x 6.5:
-    /// the edge is a line, not the old wash over the body), specular 0.15, no Godot rim, the fur cards 0.3 of the edge; and
+    /// The defaults (the r4 judge's round 2): a soft edge from 0.5, whole by 0.92 (2-4 px on a body), the moon's rim there 2.5x the
+    /// preset's (CrowdRim 0.2 x 2.5; its peak under her pool's), specular 0.15, no Godot rim, the fur cards 0.1 of the edge (they flecked); and
     /// (above) the moon's wrap round the body 1 to 0.15, the fill 0.45 to 0.3 and its hue 0.7 to 0.3 of the ground's, so a body
     /// out of her reach is a dark form lit only along its edge. Nothing here by day or off the arena (CrowdFill 0).</summary>
-    static readonly float CrowdEdge = SurvivorUnchained.Args.Num("crowd-edge", 0.7f), CrowdSpec = SurvivorUnchained.Args.Num("crowd-spec", 0.15f),
-        CrowdGRim = SurvivorUnchained.Args.Num("crowd-grim", 0f), CrowdCardEdge = SurvivorUnchained.Args.Num("crowd-card-edge", 0.3f),
-        CrowdEdgeK = SurvivorUnchained.Args.Num("crowd-edge-k", 6.5f);
+    static readonly float CrowdEdge = SurvivorUnchained.Args.Num("crowd-edge", 0.5f), CrowdSpec = SurvivorUnchained.Args.Num("crowd-spec", 0.15f),
+        CrowdGRim = SurvivorUnchained.Args.Num("crowd-grim", 0f), CrowdCardEdge = SurvivorUnchained.Args.Num("crowd-card-edge", 0.1f),
+        CrowdEdgeK = SurvivorUnchained.Args.Num("crowd-edge-k", 2.5f);
     static readonly float CrowdDbg = SurvivorUnchained.Args.Has("crowd-dbg-mode") ? SurvivorUnchained.Args.Num("crowd-dbg-mode", 3) : SurvivorUnchained.Args.Has("crowd-dbg") ? 3 : 0;
     /// <summary>(E9d) How lit the town is (0 by day, 1 at dawn, dusk and night): its lamps burn and some windows glow
     /// (ZoneView.Town, kit.gdshader's town_lit) from a low or a moonlit key.</summary>
