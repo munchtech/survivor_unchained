@@ -141,7 +141,7 @@ public partial class PersonView : Node3D, INpcView
     bool Swap(string slot, string id, bool on)
     {
         if (!held.TryGetValue(slot, out var old)) return false;
-        if (on && IsInstanceValid(old) && old.Name.ToString().StartsWith("sheathed:")) return false;
+        if (on && IsInstanceValid(old) && old.Name.ToString().StartsWith(SurvivorUnchained.Play.GripSlide.SheathPrefix)) return false;
         Node3D? now = on ? Arms.HoldSheathed(person, id, slot == "handslot.l") : Arms.Hold(person, id, BoneOf(slot));
         if (now == null) return false;
         (old.GetParent() as BoneAttachment3D ?? (Node)old).QueueFree();

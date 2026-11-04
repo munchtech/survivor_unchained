@@ -198,6 +198,7 @@ public partial class BattleFx : Node3D
         DiscReady();
         CrowdView.StruckRim = StruckRimOn;
         CrowdView.FlashHeld = WgFlash;
+        CrowdView.DeathHeld = WgDeathLag;
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
         // worth; a draught, a lodestone, a sack of what was carried, a chest.
@@ -1078,6 +1079,61 @@ public partial class BattleFx : Node3D
     static readonly bool FxLog = Args.Has("fx-log"); // dev only: one line per combat event
     double fxLogNext;
 
+    /// <summary>A death's fx: its gore, its burst, its light (Handle's Ev.Kill).</summary>
+    void KillFx(Ev.Kill e)
+    {
+        // A reflection breaking is glass, not a body (Ability: mirror_break).
+        if (e.Def == "mirror") return;
+        if (WgBeats && wgHitAt.TryGetValue(e.Enemy, out var wka)) GD.Print($"[wg-beats] kill fx on {e.Enemy} frame {Engine.GetFramesDrawn()} blow f{Engine.GetFramesDrawn() + (wka - time) * 60:F0} burst {e.Burst} t={time:F3}");
+        float gy = Y(e.X, e.Z);
+        var pal = Palette.Of(e.School);
+        var at = V(e.X, gy + 0.9, e.Z);
+        var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
+        if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
+        Gore.Kill(V(e.X, gy + 0.7 * e.Scale, e.Z), (float)e.Scale, View.Gore.Of(e.Family, e.Def), e.Family == Family.Undead, e.Burst, away.Normalized());
+        // A crowd cut down at once is told by its first few deaths in a frame; the
+        // rest fall with their gore alone (every death's burst of light together
+        // read as one cream blob over the crowd). What steel kills throws bone
+        // and grit, not light.
+        bool told = e.Elite || e.Boss || killBudget-- > 0;
+        if (told)
+        {
+            // (not on her auto-attacks' kills: pale grit unshaded by night was a snow of white specks; VFX 10 r3)
+            bool aaKill = AaStruck(e.Enemy);
+            if (e.School == School.Physical && !aaKill)
+                for (int i = 0; i < (e.Elite ? 18 : 6); i++)
+                    Smoke.Spawn(at, new Vector3((R() - 0.5f) * 5, 2 + R() * 3, (R() - 0.5f) * 5), 0.6f + R() * 0.3f, 0.06f + R() * 0.05f,
+                        new Color("#bfb6a2"), gravity: 12, sprite: Sprites.Of("dirt"), spinV: 6);
+            else if (!aaKill) Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
+            for (int i = 0; i < (e.Elite ? 12 : 3); i++)
+                Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
+                    new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);
+        }
+        // The dry dead's bone dust, the grey of old bone and few (pale and six to a death, every
+        // kill on the dead hung a cream cloud over the crowd, and sixty falling to one blow a
+        // snow of white specks): told by the first few too.
+        if (e.Family == Family.Undead)
+            for (int i = 0; i < (told ? 4 : 1); i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.7f, 0.14f, new Color("#7e776b"), gravity: 11, sprite: Sprites.Of("dirt"), spinV: 3);
+        Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
+        if (e.Elite || e.Boss)
+        {
+            // A champion's fall is brief and no wider than its body's reach (the experience
+            // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
+            // bigger than a level-up). A boss's is the fall's (Ev.Victory): its light and rings,
+            // with no flat blast of its own under them (one fourteen metres across filled the peak).
+            // Champions falling together are told by the first: the rest burst light and
+            // small (eight full blasts at once washed the whole crowd white).
+            bool first = e.Boss || time - lastFall > 0.3;
+            if (first) lastFall = time;
+            Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
+            if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
+            // (A burst's reach is its radius, its picture 2.4 times that across: at 2 it was
+            // nearly five metres of colour, the rule's three is 1.3.)
+            else if (!Blast(e.X, e.Z, e.School, first ? 1.3f : 0.9f, 0.55f, 0.8f, light: !first)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
+            Cam?.AddTrauma(0.35f);
+        }
+    }
+
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         b0 = b;
@@ -1104,6 +1160,7 @@ public partial class BattleFx : Node3D
                 GD.Print($"[fx-log] t={b.Time:F2} {t.Name} art={art}");
             }
         }
+        WgLineSwings(events);
         foreach (var ev in events)
         {
             switch (ev)
@@ -1184,55 +1241,10 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Kill e:
                 {
-                    // A reflection breaking is glass, not a body (Ability: mirror_break).
-                    if (e.Def == "mirror") break;
-                    float gy = Y(e.X, e.Z);
-                    var pal = Palette.Of(e.School);
-                    var at = V(e.X, gy + 0.9, e.Z);
-                    var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
-                    if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
-                    Gore.Kill(V(e.X, gy + 0.7 * e.Scale, e.Z), (float)e.Scale, View.Gore.Of(e.Family, e.Def), e.Family == Family.Undead, e.Burst, away.Normalized());
-                    // A crowd cut down at once is told by its first few deaths in a frame; the
-                    // rest fall with their gore alone (every death's burst of light together
-                    // read as one cream blob over the crowd). What steel kills throws bone
-                    // and grit, not light.
-                    bool told = e.Elite || e.Boss || killBudget-- > 0;
-                    if (told)
-                    {
-                        // (not on her auto-attacks' kills: pale grit unshaded by night was a snow of white specks; VFX 10 r3)
-                        bool aaKill = AaStruck(e.Enemy);
-                        if (e.School == School.Physical && !aaKill)
-                            for (int i = 0; i < (e.Elite ? 18 : 6); i++)
-                                Smoke.Spawn(at, new Vector3((R() - 0.5f) * 5, 2 + R() * 3, (R() - 0.5f) * 5), 0.6f + R() * 0.3f, 0.06f + R() * 0.05f,
-                                    new Color("#bfb6a2"), gravity: 12, sprite: Sprites.Of("dirt"), spinV: 6);
-                        else if (!aaKill) Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
-                        for (int i = 0; i < (e.Elite ? 12 : 3); i++)
-                            Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
-                                new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);
-                    }
-                    // The dry dead's bone dust, the grey of old bone and few (pale and six to a death, every
-                    // kill on the dead hung a cream cloud over the crowd, and sixty falling to one blow a
-                    // snow of white specks): told by the first few too.
-                    if (e.Family == Family.Undead)
-                        for (int i = 0; i < (told ? 4 : 1); i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.7f, 0.14f, new Color("#7e776b"), gravity: 11, sprite: Sprites.Of("dirt"), spinV: 3);
-                    Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
-                    if (e.Elite || e.Boss)
-                    {
-                        // A champion's fall is brief and no wider than its body's reach (the experience
-                        // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
-                        // bigger than a level-up). A boss's is the fall's (Ev.Victory): its light and rings,
-                        // with no flat blast of its own under them (one fourteen metres across filled the peak).
-                        // Champions falling together are told by the first: the rest burst light and
-                        // small (eight full blasts at once washed the whole crowd white).
-                        bool first = e.Boss || time - lastFall > 0.3;
-                        if (first) lastFall = time;
-                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
-                        if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
-                        // (A burst's reach is its radius, its picture 2.4 times that across: at 2 it was
-                        // nearly five metres of colour, the rule's three is 1.3.)
-                        else if (!Blast(e.X, e.Z, e.School, first ? 1.3f : 0.9f, 0.55f, 0.8f, light: !first)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
-                        Cam?.AddTrauma(0.35f);
-                    }
+                    // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
+                    float wkd = WgKillWait(e);
+                    if (wkd > 0) WgLater(wkd, () => KillFx(e));
+                    else KillFx(e);
                     break;
                 }
                 case Ev.PlayerHit e:
@@ -2125,6 +2137,8 @@ public partial class BattleFx : Node3D
             // A Flare's statue keeps its body's drop until it breaks.
             if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && Flare.HidesDrop(kx, kz)) continue;
             float gy = Y(kx, kz);
+            // (After Burns Twice's BOOM a fresh drop settles in: scaled up and held dim until the Return ends.)
+            var (freshS, freshL) = p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled ? Flare.DropFresh(kx, kz, b.Time - p.Age) : (1f, 1f);
             float bob = Mathf.Sin((float)(now * 3 + p.Id)) * 0.08f;
             var spin = new Godot.Basis(Vector3.Up, (float)(now * 2.2 + p.Id));
             switch (p.Kind)
@@ -2132,14 +2146,15 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 4);
-                    float s = EmberSizes[tier] * Flare.DropScale;
+                    float s = EmberSizes[tier] * Flare.DropScale * freshS;
                     if (tier == 4)
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
                         if (!CleanShots) HoardLight(kx, gy, kz);
                     }
-                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), EmberTiers[tier]);
+                    var ec = EmberTiers[tier];
+                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(kx, gy + 0.45 + bob, kz)), new Color(ec.R * freshL, ec.G * freshL, ec.B * freshL, ec.A));
                     if (!p.Pulled)
                     {
                         // (about three times the stone across, breathing slowly, each to its own beat)
@@ -2148,12 +2163,12 @@ public partial class BattleFx : Node3D
                         var (lcAcross, lcLight) = Flare.DropHalo(p.Age);
                         if (lcAcross > 0) hs = lcAcross;
                         emberHalos.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * hs * (1 + 0.08f * beat)), V(kx, gy + 0.45 + bob, kz)),
-                            EmberTiers[tier] with { A = (0.32f + 0.09f * beat) * lcLight });
+                            EmberTiers[tier] with { A = (0.32f + 0.09f * beat) * lcLight * freshL * freshL });
                     }
                     break;
                 }
                 case PickupKind.Gold:
-                    coins.Add(new Transform3D((spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2)).Scaled(Vector3.One * Flare.DropScale), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f, 0.75f, 0.3f));
+                    coins.Add(new Transform3D((spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2)).Scaled(Vector3.One * Flare.DropScale * freshS), V(kx, gy + 0.35 + bob, kz)), new Color(1.0f * freshL, 0.75f * freshL, 0.3f * freshL));
                     break;
                 case PickupKind.Heal:
                     flasks.Add(new Transform3D(spin, V(kx, gy + 0.35 + bob, kz)), Colors.White);

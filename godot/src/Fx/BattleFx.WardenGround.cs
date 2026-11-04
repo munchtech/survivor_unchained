@@ -22,7 +22,10 @@ namespace SurvivorUnchained.View;
 /// The sim fires the heave in the same tick as the crack; the view holds the heave (and the struck bodies' kits) until
 /// the crack's tip arrives (0.06 s + 0.028 s a metre, at most the event's 0.35 s). The bodies the line and the heave
 /// strike get the shared HitKit as the tip or the heave reaches them, and the plain school impact is skipped for them.
-/// Dev: --wg-beats (frames: sl_*, gc_*, gh_*, ga_*), --wg-aftershock (lights Groundbreaker's Aftershock Turn).
+/// VFX 12: a body the line or the heave KILLS waits too: its fall, burst, throw and death fx land with the tip or the
+/// heave (wgDieHold, CrowdView.DeathHeld; was ~15 frames early); Sunder's line swing draws no crescent over its base.
+/// Dev: --wg-beats (frames: sl_*, gc_*, gh_*, ga_*), --wg-aftershock (lights Groundbreaker's Aftershock Turn),
+/// --wg-sl-crescent (the line swing's crescent and chop crack drawn as before).
 /// </summary>
 public partial class BattleFx
 {
@@ -351,7 +354,7 @@ public partial class BattleFx
             for (int i = 0; i < items.Length; i++)
             {
                 var en = items[i];
-                if (en == null || !en.Alive) continue;
+                if (en == null || !en.Alive || WgFallen(en)) continue;
                 var p = new Vector2((float)en.X, (float)en.Z) - from;
                 float along = p.Dot(dir), off = Mathf.Abs(p.X * dir.Y - p.Y * dir.X);
                 if (along < -0.3f || along > len + 0.3f || off > half + (float)en.Radius) continue;
@@ -362,6 +365,7 @@ public partial class BattleFx
                 var awayDir = new Vector3(dir.X, 0, dir.Y);
                 float kd = Mathf.Clamp(along / len, 0, 1) * travel;
                 wgHitAt[id] = time + kd;
+                WgHoldDeath(en, time + kd);
                 WgLater(kd, () => WgKit(id, awayDir, full));
             }
         }
@@ -390,13 +394,16 @@ public partial class BattleFx
             for (int i = 0; i < items.Length; i++)
             {
                 var en = items[i];
-                if (en == null || !en.Alive) continue;
+                if (en == null || !en.Alive || WgFallen(en)) continue;
                 double dx = en.X - e.X, dz = en.Z - e.Z;
                 if (dx * dx + dz * dz > (e.Radius + en.Radius) * (e.Radius + en.Radius)) continue;
                 wgOwned[i] = Engine.GetFramesDrawn();
                 wgHitAt[i] = time + delay;
+                WgHoldDeath(en, time + delay);
                 ids.Add(i);
             }
+            if (WgBeats && !after && wgBeatHeaves++ < 3)
+                GD.Print($"[wg-beats] heave-struck frame {Engine.GetFramesDrawn()} delay {delay * 60:F1}f lands f{Engine.GetFramesDrawn() + delay * 60:F0} living {ids.Count(i => items[i].State != EnemyState.Dying)} dying {ids.Count(i => items[i].State == EnemyState.Dying)} (dieT {string.Join(",", ids.Where(i => items[i].State == EnemyState.Dying).Select(i => $"{i}:{items[i].DieT:F2}"))}) t={time:F3}");
         }
         float r = (float)e.Radius, k = after ? 0.35f : 1f;
         double x = e.X, z = e.Z;
@@ -448,7 +455,51 @@ public partial class BattleFx
         e.Art is "slash_heavy" or "slash_quake" && !e.Dot && wgHitAt.TryGetValue(e.Target, out var at) && at > time + 0.001
             && wgOwned.TryGetValue(e.Target, out var f) && f == Engine.GetFramesDrawn() ? (float)(at - time) : 0;
 
-    int wgNumLogged;
+    int wgNumLogged, wgBeatHeaves;
+
+    /// <summary>Where Sunder's heavy lines start this tick (the swing that splits the ground is drawn as the line alone).</summary>
+    readonly List<(double X, double Z)> wgLineFrom = new();
+    static readonly bool WgSlCrescent = Args.Has("wg-sl-crescent");
+
+    void WgLineSwings(IReadOnlyList<CombatEvent> events)
+    {
+        wgLineFrom.Clear();
+        if (WfxOff || WgSlCrescent) return;
+        foreach (var ev in events)
+            if (ev is Ev.Beam { Art: "slash_heavy_line" } lb) wgLineFrom.Add((lb.X0, lb.Z0));
+    }
+
+    /// <summary>Swing's hook: this slash_heavy swing is the one whose line splits the ground this tick (dev
+    /// --wg-sl-crescent: drawn as before, its crescent over the line's base).</summary>
+    bool WgLineSwing(Ev.Slash e)
+    {
+        foreach (var (x, z) in wgLineFrom)
+            if (Math.Abs(x - e.X) < 0.05 && Math.Abs(z - e.Z) < 0.05) return true;
+        return false;
+    }
+
+    /// <summary>Bodies the line or the heave kill: their fall (and burst, gore, death light) waits for the view's blow.
+    /// (Seed: the pool's slot is reused; Until: when the blow lands; Lag: how far their death runs behind the sim's.)</summary>
+    readonly Dictionary<int, (double Seed, double Until, double Lag)> wgDieHold = new();
+
+    /// <summary>Already falling before this blow (a body killed this tick is Dying at DieT one tick): not struck again.</summary>
+    static bool WgFallen(Enemy en) => en.State == EnemyState.Dying && en.DieT > 0.05;
+
+    void WgHoldDeath(Enemy en, double at)
+    {
+        if (en.State != EnemyState.Dying || at <= time + 0.001) return;
+        if (wgDieHold.Count > 256) foreach (var k in wgDieHold.Where(kv => time - kv.Value.Until > 2).Select(kv => kv.Key).ToList()) wgDieHold.Remove(k);
+        wgDieHold[en.Id] = (en.Seed, at, at - time);
+    }
+
+    /// <summary>CrowdView's DeathHeld: how far this dying body's death runs behind the sim's (s; 0 none).</summary>
+    double WgDeathLag(int id, double seed) =>
+        wgDieHold.Count > 0 && wgDieHold.TryGetValue(id, out var h) && h.Seed == seed ? h.Lag : 0;
+
+    /// <summary>How long this kill's fx wait for the view's blow (0: now).</summary>
+    float WgKillWait(Ev.Kill e) =>
+        wgDieHold.Count > 0 && b0 != null && e.Enemy >= 0 && e.Enemy < b0.Enemies.Capacity && wgDieHold.TryGetValue(e.Enemy, out var h)
+            && h.Seed == b0.Enemies.Items[e.Enemy].Seed && h.Until > time + 0.001 ? (float)(h.Until - time) : 0;
     void WgNumberLog(int id)
     {
         if (WgBeats && wgNumLogged++ < 40) GD.Print($"[wg-beats] number lands on {id} frame {Engine.GetFramesDrawn()} t={time:F3}");

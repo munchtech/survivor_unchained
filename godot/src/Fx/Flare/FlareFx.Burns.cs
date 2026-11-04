@@ -357,7 +357,7 @@ public partial class FlareFx
         Hitstop(em.Hitstop);
         if (em.Last)
         {
-            lastAt = t; boomAt = p;
+            lastAt = t; boomAt = p; boomRt = rt;
             ringMax = reach + new Vector2(p.X - at.X, p.Z - at.Z).Length() + 1.5f;
             // Every statue still standing breaks as the ring crosses it, outward from the blast.
             foreach (var d in doomed.Values)

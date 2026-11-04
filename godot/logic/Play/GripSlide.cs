@@ -12,6 +12,15 @@ public static class GripSlide
     /// <summary>Name prefix of a held piece's mount node (Arms.Hold) and what PersonView.Slide looks for. Must survive ValidNodeName unchanged.</summary>
     public const string MountPrefix = "mount_";
 
+    /// <summary>Name prefix of a sheathed piece's mount (Arms.HoldSheathed; PersonView.Swap looks for it). VFX 12: it was
+    /// "sheathed:", which Godot rewrites, so Swap never saw a piece already sheathed and rebuilt it.</summary>
+    public const string SheathPrefix = "sheathed_";
+
+    /// <summary>A piece's holder node (Arms.Make): "arm_" + its id. VFX 12: it was "arm:" + id, which Godot silently turns
+    /// into "arm_", so FindChild("arm:mage_staff") never matched and the Flare's staff light sat at a fixed offset over her.
+    /// Every lookup goes through here (GripSlideTests checks the sources).</summary>
+    public static string ArmNode(string id) => ValidNodeName("arm_" + id);
+
     /// <summary>Godot's node-name rule: each of . : @ / " % becomes '_' (silently, so a name using them never matches a later lookup).</summary>
     public static string ValidNodeName(string name)
     {
