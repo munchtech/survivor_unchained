@@ -256,7 +256,8 @@ public sealed class BarrowLord : ArenaBoss
         // While shieldmen stand round him, he takes half.
         e.TakenMul = Near("risen_warrior", 5) >= 4 ? 0.5 : 1;
         // His signature, "Close up!", on its own clock in every phase.
-        if (lineT <= 0) { lineT = (Hard ? 10 : 18) * Cadence; CloseUp(); return true; }
+        // (24 s, not 18: every phase at 18 put the humanlike bot down at the Barrow Lord 59% at tier 1, from 38%.)
+        if (lineT <= 0) { lineT = (Hard ? 12 : 24) * Cadence; CloseUp(); return true; }
         switch (PhaseIx)
         {
             case 0:
