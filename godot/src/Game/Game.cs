@@ -952,6 +952,7 @@ public partial class Game : Node, IZoneHost
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
+    public void DuckTip(double seconds) => hud.DuckTip(seconds);
     public void SetHint(Hint? hint)
     {
         // (a scripted run logs each tip and shoots it, as it does a callout: its words and keys are checked too)
@@ -1485,6 +1486,7 @@ public partial class Game : Node, IZoneHost
         scene.Fx.FireSpots = scene.Fx.Deadfalls != null ? scene.View.Data.Meta.Fires : null;
         // Names over heads and barks have no place in a cinematic's picture either.
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null || cine != null;
+        scene.Voices.Held = InSeam;
         // Fallen: the world loses its colour.
         air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : cine != null && cineSat is double cs ? (float)cs : 1f, 1 - Mathf.Exp(-2 * (float)dt));
         Report(dt);

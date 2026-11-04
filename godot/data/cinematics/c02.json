@@ -185,7 +185,8 @@
         {"do": "globe", "light": 5, "level": 1, "over": 0.6, "at": 1.4},
         {"do": "globe", "light": 6, "level": 1, "over": 0.6, "at": 1.4},
         {"at": 0.0, "do": "play"},
-        {"do": "anim", "actor": "warden", "clip": "Idle_Shield_Loop", "blend": 0.3},
+        {"do": "anim", "actor": "warden", "clip": "Sword_Idle", "blend": 0.5, "note": "H4 r3: he sets his guard in the fight's own stand (Idle_Shield_Loop snapped to Sword_Idle, blade high, on the control frame)"},
+        {"at": 0.15, "do": "look", "actor": "warden", "where": [1.5, -31.83], "over": 1.1, "note": "H4 r3: he turns to her inside the shot (play faced him to her: a ~50 deg turn on the control frame)"},
         {"at": "end", "do": "event", "name": "warden_up"},
         {"at": "end", "do": "lamp", "actor": "warden", "flame": 1, "halo": 1}
       ]

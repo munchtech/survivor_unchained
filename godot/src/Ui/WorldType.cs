@@ -477,6 +477,9 @@ public partial class TipLine : Control
     public float Fade = 1;
     /// <summary>A boss fight's telegraphs run under the words: a 60% black backing behind them (H4 r2).</summary>
     public bool Backed;
+    /// <summary>Stepped out of the way for a moment (GameHud.DuckTip): out over 0.15 s, back over 0.35 s.</summary>
+    public bool Duck;
+    float duckK;
     readonly Panel backing;
 
     public TipLine(string title, string text, Control? keys)
@@ -591,6 +594,7 @@ public partial class TipLine : Control
     {
         if (Held) { Modulate = Colors.Transparent; return; }
         T += delta;
+        duckK = Duck ? Math.Min(1, duckK + (float)delta / 0.15f) : Math.Max(0, duckK - (float)delta / 0.35f);
         var s = column.GetCombinedMinimumSize();
         column.Size = s;
         // Always at its full size (the owner: no shrinking from big to small).
@@ -601,7 +605,7 @@ public partial class TipLine : Control
         backing.Size = new Vector2(s.X + 32, s.Y + 16);
         // It burns in: the ember's glow first, the words coming up through it, then the glow cools away.
         float k = (float)Math.Clamp(T / 0.5, 0, 1);
-        Modulate = Colors.White with { A = k * Fade };
+        Modulate = Colors.White with { A = k * Fade * (1 - duckK) };
         burn.Modulate = Style.Ember with { A = 0.32f * (float)Math.Max(0, 1 - Math.Abs(T - 0.25) / 0.6) };
     }
 }

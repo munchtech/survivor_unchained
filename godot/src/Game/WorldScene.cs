@@ -540,16 +540,26 @@ public partial class WorldScene : Node3D, IZoneLook
     public void SetNight(bool on) => View.SetNight(on);
     public void Plates(List<Plate> plates) => Voices.Plates(plates);
 
-    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null) =>
-        Voices.Bark(text, new Vector3((float)x, (float)y, (float)z), speaker, voice: voice);
+    // (a zone's townsfolk and walkers: lines said to nobody, one at a time after a film or a talk, Voices.Ambient)
+    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null)
+    {
+        var at = new Vector3((float)x, (float)y, (float)z);
+        if (speaker == null) Voices.Ambient(text, at, voice);
+        else Voices.Bark(text, at, speaker, voice: voice);
+    }
 
     public IBossView BossView(string kind)
     {
         var v = new WardenView();
         PlayerView.ToCast(v);
         AddChild(v);
+        playBosses.Add(v);
         return v;
     }
+
+    /// <summary>The zone's own boss views (a cinematic's hand-back gives them its double's last pose, GameCinema.Finish).</summary>
+    public IEnumerable<WardenView> PlayBosses { get { playBosses.RemoveAll(w => !IsInstanceValid(w)); return playBosses; } }
+    readonly List<WardenView> playBosses = new();
 
     public INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip)
     {

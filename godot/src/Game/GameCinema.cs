@@ -203,6 +203,28 @@ public partial class Game
         castChain = null;
     }
 
+    /// <summary>The frame last drawn held on screen for the next few drawn frames (a chained cinematic's cut: the
+    /// next one's cast and set stand up behind it, so its first frame seen is complete).</summary>
+    public void HoldFrame(int frames)
+    {
+        if (Args.Get("hold-cut") == "off") return;
+        var img = GetViewport().GetTexture().GetImage();
+        var layer = new CanvasLayer { Layer = 120, Name = "CutHold" };
+        var tr = new TextureRect
+        {
+            Texture = ImageTexture.CreateFromImage(img), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        tr.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        layer.AddChild(tr);
+        AddChild(layer);
+        int left = frames;
+        var tree = GetTree();
+        void Tick() { if (--left > 0) return; tree.ProcessFrame -= Tick; if (IsInstanceValid(layer)) layer.QueueFree(); }
+        tree.ProcessFrame += Tick;
+        GD.Print($"cinema: cut held {frames} frames");
+    }
+
     /// <summary>Each frame (a look a second): her double made ahead if there is none for her as she is.</summary>
     void DoubleAhead(double dt)
     {
@@ -2107,6 +2129,8 @@ public partial class Game
             foreach (var (name, w) in bosses)
             {
                 if (keep.Contains(name)) { g.kept.Add(w); continue; }
+                // Play's own view of him starts on the film's last frame: his turn and the clip he stands in.
+                if (!player.Skipped && w.Visible && g.scene != null) foreach (var pw in g.scene.PlayBosses) pw.TakeFrom(w);
                 var tree = g.GetTree();
                 void Gone() { tree.ProcessFrame -= Gone; if (IsInstanceValid(w)) w.QueueFree(); }
                 tree.ProcessFrame += Gone;
@@ -2144,6 +2168,9 @@ public partial class Game
             {
                 // On into the next on the cut: the zone starts it from done; if it
                 // does not, play is handed back here as usual.
+                // (this frame held over the cut until the next one's cast is drawn: C04 A's first frame showed the
+                // dawn set with no heroine and no grass, she came a frame later; H4 r3)
+                if (!player.Skipped) g.HoldFrame(2);
                 g.chained = new Chain(bars, saved, combatWas);
                 Seen();
                 done?.Invoke();

@@ -102,6 +102,8 @@ public interface IZoneHost
     void SetObjectives(List<Tracked> list);
     void SetHint(Hint? hint);
     Hint? CurrentHint { get; }
+    /// <summary>The tip up steps out of the way for a moment (a lamp's burst under it), eased out and back.</summary>
+    void DuckTip(double seconds) { }
     /// <summary>The arrival is over: the black has lifted, so the player can see the place (a host without a fade
     /// is always arrived). What opens with a screen of its own, over the place, waits for it.</summary>
     bool Arrived => true;

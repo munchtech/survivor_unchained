@@ -158,6 +158,26 @@ public partial class WardenView : Node3D, IBossView
         }
     }
 
+    /// <summary>A cinematic's double hands this view his last frame (H4 r3: C02's Warden turned ~40 deg and raised his
+    /// blade on the control frame): his turn, and the clip he was in at its place, so play's first frame is the film's.</summary>
+    public void TakeFrom(WardenView film)
+    {
+        var fb = film.Body;
+        heading = fb.GlobalRotation.Y;
+        Rotation = new Vector3(0, (float)heading, 0);
+        var fa = fb.Person.Anim;
+        var a = view.Person.Anim;
+        string cur = fa.CurrentAnimation;
+        if (cur != "" && a.HasAnimation(cur))
+        {
+            a.Play(cur, 0);
+            a.Seek(fa.CurrentAnimationPosition, true);
+        }
+        filmAt = fb.GlobalPosition;
+        GD.Print($"warden handoff: film clip {cur} at {fa.CurrentAnimationPosition:0.00}, heading {Mathf.RadToDeg((float)heading):0.0}, at {filmAt}");
+    }
+    Vector3? filmAt;
+
     /// <summary>Back to walking after a held pose.</summary>
     public void Release()
     {
@@ -170,6 +190,7 @@ public partial class WardenView : Node3D, IBossView
         time += dt;
         Visible = true;
         Position = new Vector3((float)x, (float)y, (float)z);
+        if (filmAt is { } fa0) { GD.Print($"warden handoff: play at {view.GlobalPosition} (film {fa0}), facing {Mathf.RadToDeg((float)facing):0.0}"); filmAt = null; }
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
         Rotation = new Vector3(0, (float)heading, 0);
         if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz) * 1.2);

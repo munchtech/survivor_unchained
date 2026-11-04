@@ -45,7 +45,7 @@ public sealed class Prologue : ZoneRuntime
     sealed class WardenAI
     {
         public string Mode = "sleep";
-        public double T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, RaiseT, ContactT, HitX, HitZ;
+        public double Hold, T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, RaiseT, ContactT, HitX, HitZ;
         public List<double> Thresholds = [0.7, 0.4];
     }
 
@@ -443,7 +443,8 @@ public sealed class Prologue : ZoneRuntime
         // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
         {
-            if (shown.Add("lore.ember"))
+            // (never in the boss fight: it stood over a lamp's burst, H4 r3; it comes when the fight is done)
+            if (Now is not (Stage.Intro or Stage.Boss or Stage.Victory) && shown.Add("lore.ember"))
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
         // F4: the first skill draft, the ember's first rise (on the panel, at the first combat-skill card).
@@ -739,7 +740,9 @@ public sealed class Prologue : ZoneRuntime
         G.Look.SetLit(p.Light, false);
         B.Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3.2, School = School.Frost, Power = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.6 });
+        // (one line a lamp event: "The Warden reels!" stacked on it at the burst, H4 r3; the tip up steps aside for the burst)
         B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z, Text = how == "charge" ? "The lamp shatters!" : "The lamp goes dark" });
+        G.DuckTip(1.3);
         B.Events.Emit(new Ev.Sound { Id = how == "charge" ? "ford.lamp_shatter" : "ford.lamp_out", X = p.X, Z = p.Z });
         int left = LitCount;
         if (left > 0) G.Toast(new Toast(ToastKind.World, $"A lamp goes out — {left} still burn{(left == 1 ? "s" : "")}"));
@@ -755,6 +758,7 @@ public sealed class Prologue : ZoneRuntime
         pylonHp[i] = 200;
         G.Look.SetLit(pylons[i].Light, true);
         B?.Events.Emit(new Ev.Nova { X = pylons[i].X, Z = pylons[i].Z, Radius = 4, School = School.Frost, Duration = 0.8 });
+        G.DuckTip(1.3);
         G.Toast(new Toast(ToastKind.Warning, "The drowned rekindle a lamp"));
     }
 
@@ -794,6 +798,7 @@ public sealed class Prologue : ZoneRuntime
             case "walk":
             {
                 e.Facing = Math.Atan2(dz, dx);
+                if (ai.Hold > 0) { ai.Hold -= dt; e.Vx = e.Vz = 0; ai.ContactT -= dt; return true; }
                 // Channel at thresholds, or when it has been a while.
                 double? th = ai.Thresholds.Count > 0 ? ai.Thresholds[0] : null;
                 if ((th is double t0 && hpK < t0) || ai.ChannelCd <= 0)
@@ -877,7 +882,6 @@ public sealed class Prologue : ZoneRuntime
                         Snuff(i, "charge");
                         ai.Mode = "stun"; ai.T = -1.5;
                         wardenView.SetPose("stunned");
-                        B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "The Warden reels!" });
                         return true;
                     }
                 }
@@ -1195,6 +1199,8 @@ public sealed class Prologue : ZoneRuntime
     }
 
     bool introByCine;
+    /// <summary>After C02 he holds where the film leaves him this long (the hand-back and the HUD's fade), then moves.</summary>
+    const double WakeHold = 1.0;
 
     /// <summary>C02's end: the Warden up and facing her an arm's length off, the fight on.</summary>
     void WardenUp()
@@ -1209,7 +1215,8 @@ public sealed class Prologue : ZoneRuntime
         {
             warden.Facing = Math.Atan2(p.Z - wz, p.X - wx); ai.Mode = "walk"; ai.T = 0;
             // A beat after the bars go before his first blow: play opens 1.9 m from him (cinematics 3, k13).
-            ai.ContactT = 1.0; ai.CleaveCd = Math.Max(ai.CleaveCd, 1.0);
+            // (H4 r3: he stands in the film's last pose until the HUD is up, then comes on; was a step at her on the control frame)
+            ai.Hold = WakeHold; ai.ContactT = WakeHold + 0.6; ai.CleaveCd = Math.Max(ai.CleaveCd, WakeHold + 0.6);
         }
         wardenPos = (wx, wz, Math.PI / 2 - (warden?.Facing ?? 0));
         wardenView.Release();

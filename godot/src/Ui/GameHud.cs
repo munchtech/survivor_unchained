@@ -1364,6 +1364,10 @@ public partial class GameHud : CanvasLayer
     public bool TipUp => tipLine != null && IsInstanceValid(tipLine) && !tipLine.Held;
     /// <summary>A callout is up: a tip waits under it.</summary>
     public bool HoldTip;
+    ulong tipDuckUntil;
+    /// <summary>The tip up eases out for this long and back after (H4 r3: the Warden's spell tip stood over a lamp's
+    /// burst as it shattered).</summary>
+    public void DuckTip(double seconds) => tipDuckUntil = Math.Max(tipDuckUntil, Time.GetTicksMsec() + (ulong)(seconds * 1000));
     /// <summary>A callout points at the banner: it stays up, whole, until let go.</summary>
     public bool HoldBanner;
     /// <summary>Where the banner's words are (the callout's target), while it shows.</summary>
@@ -1489,6 +1493,7 @@ public partial class GameHud : CanvasLayer
         {
             tipLine.Held = Banner != null || HoldTip;
             tipLine.Backed = bossBox.Visible;
+            tipLine.Duck = Time.GetTicksMsec() < tipDuckUntil;
             tipLine.Position = new Vector2(960, TipY);
             // (--shot: a tip's picture once it is drawn at full strength, after it has waited for any banner; once per tip)
             if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);

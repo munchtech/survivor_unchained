@@ -38,6 +38,8 @@ public partial class Voices : Node3D
         /// <summary>Its shot under a live tip was asked for (--shot only).</summary>
         public bool Shot;
         public bool HudLogged;
+        /// <summary>Said to nobody (a townsperson's idle line, a walker's): one at a time, eased in.</summary>
+        public bool Ambient;
     }
     static int barkTipShots;
 
@@ -53,6 +55,36 @@ public partial class Voices : Node3D
     CanvasLayer? layer;
     /// <summary>A conversation is on: the names and words step back.</summary>
     public bool Quiet;
+    /// <summary>A cinematic's hand-back still easing in (Game.InSeam): the town's idle lines wait, as for Quiet.</summary>
+    public bool Held;
+    /// <summary>Lines said to nobody (Ambient) wait this long after a film or a talk lets go (H4 r3: three town
+    /// lines popped on with the HUD at C04 B's hand-back and two were gone 0.4 s later), one up at a time.</summary>
+    public const double AmbientAfter = 1.5, AmbientGap = 0.6, AmbientFadeIn = 0.45;
+    double loudT, ambientGapT;
+    readonly Queue<(Waiting W, double At)> ambientQ = new();
+
+    /// <summary>A line said to nobody: shown when the screen is free of films and talk for AmbientAfter, and no
+    /// other such line is up; at most two wait, each for at most 6 s.</summary>
+    public void Ambient(string text, Vector3 at, string? voice = null)
+    {
+        if (ambientQ.Any(a => a.W.Text == text) || barks.Any(b => b.Text == text && b.T < b.Life)) return;
+        ambientQ.Enqueue((new Waiting(text, at, null, false, voice, null), now));
+        while (ambientQ.Count > 2) ambientQ.Dequeue();
+    }
+
+    void AmbientStep(double delta)
+    {
+        loudT = Quiet || Held ? 0 : loudT + delta;
+        while (ambientQ.Count > 0 && now - ambientQ.Peek().At > 6) ambientQ.Dequeue();
+        if (barks.Any(b => b.Ambient && b.T < b.Life)) { ambientGapT = AmbientGap; return; }
+        ambientGapT -= delta;
+        if (ambientQ.Count == 0 || loudT < AmbientAfter || ambientGapT > 0) return;
+        var w = ambientQ.Dequeue().W;
+        string key = $"@{Mathf.RoundToInt(w.At.X / 3)},{Mathf.RoundToInt(w.At.Z / 3)}";
+        if (barks.Any(b => b.Key == key)) return;
+        Show(key, w);
+        barks[^1].Ambient = true;
+    }
     /// <summary>The close view of her is in (GameCloseUp): the names step away (eased out, back at once), so
     /// none floats beside her head.</summary>
     public bool Away;
@@ -255,6 +287,7 @@ public partial class Voices : Node3D
     {
         now += delta;
         floaters.RemoveAll(f => f.Until <= now);
+        AmbientStep(delta);
         float quiet = Quiet ? 0 : 1;
         plateK = Away ? Mathf.Max(0, plateK - (float)delta / 0.4f) : 1;
         float pk = Bare ? 0 : quiet * plateK;
@@ -413,7 +446,7 @@ public partial class Voices : Node3D
             b.Box.Size = size;
             placed.Add(new Rect2(at - new Vector2(0, want), size).Grow(6));
             if (Args.Has("shot")) { var me = new Rect2(at - new Vector2(0, want), size); foreach (var o in barkRects) { float gx = Math.Max(o.Position.X - me.End.X, me.Position.X - o.End.X), gy = Math.Max(o.Position.Y - me.End.Y, me.Position.Y - o.End.Y); float g = Math.Max(gx, gy); if (g < barkMinGap) { barkMinGap = g; GD.Print($"[bark-gap] min {g:0.0} px me {me} other {o} lift {b.Lift:0.0} want {want:0.0} T {b.T:0.00} ({b.Text.Length} chars, {b.Box.GetCombinedMinimumSize().Y:0} px tall)"); } } barkRects.Add(me); }
-            float a = (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet * b.Vis;
+            float a = (float)Mathf.Min(1, Mathf.Min(b.T / (b.Ambient ? AmbientFadeIn : 0.2), (b.Life - b.T) / 0.6)) * quiet * b.Vis;
             b.Box.Modulate = new Color(1, 1, 1, a);
         }
     }
