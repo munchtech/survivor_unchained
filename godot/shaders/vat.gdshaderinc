@@ -48,6 +48,9 @@ global uniform float crowd_dbg_s;
 // dead's own lift after their tint (a luminance), w: unused).
 global uniform vec4 crowd_lamp2;
 global uniform vec4 crowd_lamp3;
+// H1 round 2C (the round-1 judge: fodder away from her light vanished in the boss's dark): a floor on a foe's outline
+// past her lamp's reach, while a boss is up (PlayerView): rgb the hostile hue (linear), a its strength (0: off).
+global uniform vec4 crowd_floor;
 // Her lamp's reach on the crowd by distance h from her (metres, on the ground): 1 whole, 0 gone.
 float crowd_lamp_f(float h) {
 	if (crowd_lamp2.z <= 0.0) return 1.0 - smoothstep(crowd_lamp.a, crowd_fill.a, h);
@@ -388,6 +391,10 @@ void fragment() {
 		} else {
 			e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f + crowd_fill.rgb + crowd_top.rgb * cn_head) * cn_k;
 		}
+		// (the floor: a faint rim in the hostile hue, at the outermost edge only (from up here most of a body is "rim": a wider
+		// one washed the pack pale pink), where her lamp is gone; none on the dead)
+		if (crowd_floor.a > 0.0 && dot(abs(COLOR.rgb), vec3(0.333)) >= 0.6)
+			e += crowd_floor.rgb * crowd_floor.a * pow(rim, 3.0) * smoothstep(0.78, 0.97, rim) * (1.0 - cw_f) * (1.0 - busy) * (1.0 - cn_flat * 0.6);
 		ALBEDO *= cn_k;
 		if (crowd_r4.w > 0.5) { SPECULAR = crowd_r4.y * (1.0 - busy); RIM = rim_amount * crowd_r4.z * (1.0 - busy); }
 		// (the moon wrapped round the body in its own shadowed light (Godot's backlight: the far side takes what the near

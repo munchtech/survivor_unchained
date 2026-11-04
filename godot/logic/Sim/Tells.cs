@@ -36,15 +36,22 @@ public sealed partial class Battle
         internal bool RootTried;
         internal double RunLeft, RunX, RunZ;
         internal readonly List<(Enemy E, double Seed)> Foes = new();
+        /// <summary>A closing's rush still running (s): its ring's foes that reach her hit her once each (Kind.Hit).</summary>
+        public double RushLeft;
+        internal readonly HashSet<double> Bit = new();
     }
 
     readonly List<TellOn> tells = new();
+
+    /// <summary>The closing bites and opens (its Hit and Gap, H1 round 2B): set by a zone whose nights carry the kit
+    /// (ArenaRun, the kit's tiers). Off, a closing is as it was: a gapless crowd, draw for draw.</summary>
+    public bool ClosingTeeth;
 
     /// <summary>The kit telegraphs alive now (their windups, a charger's run): the hands read a pull's reach here.</summary>
     public IReadOnlyList<TellOn> ActiveTells => tells;
 
     /// <summary>How long a charger takes to run its lane once its blow has landed.</summary>
-    const double ChargeRun = 0.25;
+    public const double ChargeRun = 0.25;
 
     /// <summary>
     /// The app can now cast a named telegraph from the kit (data/content/telegraphs.json) with one call, from any zone:
@@ -81,6 +88,18 @@ public sealed partial class Battle
             // A band (the closing): drawn as ground, not a blow to step out of (its danger is the crowd on it).
             b.Shape = TelegraphShape.Ring; b.Kind = TelegraphKind.Ground;
             b.X = x; b.Z = z; b.Inner = k.Inner * scale; b.Radius = k.Radius * scale;
+            // Its way out: a gap at a seeded bearing whose outside is open ground (the first of eight turns from it).
+            if (ClosingTeeth && k.Gap > 0)
+            {
+                double a0 = Rng.Next() * Math.Tau, ro = b.Radius + 2;
+                b.GapAngle = a0;
+                for (int i = 0; i < 8; i++)
+                {
+                    double a = a0 + i * Math.Tau / 8, gx = x + Math.Cos(a) * ro, gz = z + Math.Sin(a) * ro;
+                    if (!Collision.Blocked(gx, gz, 0.6) && (InBounds == null || InBounds(gx, gz))) { b.GapAngle = a; break; }
+                }
+                b.GapWidth = k.Gap * scale;
+            }
         }
         else
         {
@@ -90,6 +109,7 @@ public sealed partial class Battle
         if (k.Pull > 0) { t.Reach = k.Radius * scale; t.Pull = k.Pull; }
         b.After = bt => bt.TellLands(t);
         Blow(b);
+        landings.Add((Time + k.Windup, b));
         // A pull's reach, so where it drags reads: a ground band at its edge (no Tell: the blow's own mark carries the sound).
         if (t.Reach > 0)
             Events.Emit(new Ev.Telegraph
@@ -110,10 +130,12 @@ public sealed partial class Battle
     {
         var pts = new List<(double X, double Z)>();
         if (Tell("closing", null, x, z) is not { } b) return pts;
-        double r = (b.Inner + b.Radius) / 2;
+        double r = (b.Inner + b.Radius) / 2, gapHalf = b.GapWidth > 0 ? (b.GapWidth / 2 + 0.5) / r : -1;
         for (int i = 0; i < n; i++)
         {
             double a = (double)i / Math.Max(1, n) * Math.Tau;
+            // (none in the way out)
+            if (gapHalf > 0 && Math.Abs(Math.IEEERemainder(a - b.GapAngle, Math.Tau)) < gapHalf) continue;
             pts.Add((x + Math.Cos(a) * r, z + Math.Sin(a) * r));
         }
         return pts;
@@ -144,6 +166,42 @@ public sealed partial class Battle
         p.RootT = Math.Max(p.RootT, seconds * (1 - ten));
     }
 
+    /// <summary>The app can now space the kit (H1 round 2B): how long a cast of this kind should wait (s): to land Spacing after (or before) every kit blow landing near her,
+    /// and (a fodder's charge) until fewer than FodderLanes fodder lanes are alive near her. 0: now.</summary>
+    public double KitWait(string kind, Enemy? from)
+    {
+        var w = Telegraphs.Waves;
+        var p = Player;
+        double now = Time, land = now + (Telegraphs.Get(kind)?.Windup ?? 0), wait = 0;
+        landings.RemoveAll(l => l.At < now - w.Spacing);
+        foreach (var (at, bl) in landings)
+            if (Near(bl, p.X, p.Z) <= w.SpacingNear && Math.Abs(land + wait - at) < w.Spacing) wait = Math.Max(wait, at + w.Spacing - land);
+        if (kind == "charge" && from is { Elite: false, Boss: false })
+        {
+            int lanes = 0;
+            double first = double.MaxValue;
+            foreach (var t in tells)
+                if (t.Kind == "charge" && !t.Landed && t.Blow.From is { Elite: false, Boss: false } && Near(t.Blow, p.X, p.Z) <= w.SpacingNear) { lanes++; first = Math.Min(first, t.Blow.T); }
+            if (lanes >= w.FodderLanes) wait = Math.Max(wait, first + ChargeRun + 0.05);
+        }
+        return wait;
+    }
+
+    /// <summary>How far (x, z) is outside a blow's ground (0 inside it; a band: inside it counts as in).</summary>
+    static double Near(EnemyBlow b, double x, double z)
+    {
+        if (b.Shape == TelegraphShape.Line)
+        {
+            double lx = b.X1 - b.X, lz = b.Z1 - b.Z, ll = Math.Max(1e-6, lx * lx + lz * lz);
+            double u = Math.Clamp(((x - b.X) * lx + (z - b.Z) * lz) / ll, 0, 1);
+            return Math.Max(0, Dist(x, z, b.X + lx * u, b.Z + lz * u) - b.Width / 2);
+        }
+        return Math.Max(0, Dist(x, z, b.X, b.Z) - b.Radius);
+    }
+
+    /// <summary>Every kit blow cast, and when it lands (KitWait reads them; kept Spacing past its landing).</summary>
+    readonly List<(double At, EnemyBlow B)> landings = new();
+
     static bool Same(Enemy e, double seed) => e.Alive && e.State != EnemyState.Dying && e.Seed == seed;
 
     /// <summary>The windups at work, before she moves: the ring's fill and root, the pull's drag, a charger's run.</summary>
@@ -155,7 +213,12 @@ public sealed partial class Battle
         {
             var t = tells[i];
             var bl = t.Blow;
-            if (t.Landed) { RunCharge(t, dt); if (t.RunLeft <= 0) tells.RemoveAt(i); continue; }
+            if (t.Landed)
+            {
+                if (t.RushLeft > 0) Rush(t, dt); else RunCharge(t, dt);
+                if (t.RunLeft <= 0 && t.RushLeft <= 0) tells.RemoveAt(i);
+                continue;
+            }
             if (!blows.Contains(bl)) { tells.RemoveAt(i); continue; }
             // A charger felled in its windup: its lane is called off.
             if (t.From != null && t.K.Length > 0 && !Same(t.From, t.FromSeed))
@@ -203,7 +266,23 @@ public sealed partial class Battle
             f.HoldUntil = 0;
             if (t.K.RushFor > 0) { f.Haste = t.K.Rush; f.HasteT = t.K.RushFor; }
         }
-        if (t.RunLeft <= 0) tells.Remove(t);
+        if (ClosingTeeth && t.K.Hit > 0 && t.Foes.Count > 0) t.RushLeft = Math.Max(0.1, t.K.RushFor);
+        if (t.RunLeft <= 0 && t.RushLeft <= 0) tells.Remove(t);
+    }
+
+    /// <summary>A closing's rush: each of its ring's foes that reaches her hits her once (a dash's frames let it by).</summary>
+    void Rush(TellOn t, double dt)
+    {
+        t.RushLeft -= dt;
+        var p = Player;
+        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
+        foreach (var (f, seed) in t.Foes)
+        {
+            if (!Same(f, seed) || t.Bit.Contains(seed) || Dist(f.X, f.Z, p.X, p.Z) > f.Radius + p.Radius + 0.35) continue;
+            t.Bit.Add(seed);
+            HurtPlayer(t.K.Hit * MaxHp, School.Physical, f.Def.Name, f, telegraphed: true);
+            if (!p.Alive) return;
+        }
     }
 
     /// <summary>A charger runs its lane to its end in ChargeRun seconds, stopping at whatever stands in it.</summary>

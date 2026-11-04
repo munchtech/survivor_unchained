@@ -203,4 +203,81 @@ public class TellTests
         Assert.Equal(0, p.RootT);
         Assert.DoesNotContain(Run(b, 1.5), m => m.Phase == TellPhase.Land);
     }
+
+    [Fact]
+    public void A_closing_with_teeth_opens_a_gap_and_its_ring_bites_once_each_on_the_rush()
+    {
+        var b = Fresh();
+        b.ClosingTeeth = true;
+        var p = b.Player;
+        p.DashCharges = 0;
+        var pts = b.TellClosing(p.X, p.Z, 24);
+        var warn = Assert.Single(b.Events.Drain().OfType<Ev.Telegraph>(), m => m.Tell == "closing");
+        Assert.Equal(3.5, warn.GapWidth, 6);
+        // No foe stands in the way out: the gap's mouth is clear by its width.
+        double r = (warn.Inner + warn.Radius) / 2;
+        Assert.All(pts, q => Assert.True(Math.Abs(Math.IEEERemainder(Math.Atan2(q.Z - p.Z, q.X - p.X) - warn.GapAngle, Math.Tau)) * r > warn.GapWidth / 2));
+        Assert.True(pts.Count < 24 && pts.Count >= 20);
+        var foes = pts.Select(q => b.SpawnEnemy("risen", q.X, q.Z)!).ToList();
+        Assert.All(foes, f => Assert.True(b.Closes(f)));
+        var t = Assert.Single(b.ActiveTells, x => x.Kind == "closing");
+        double before = p.Hp, bit = 0;
+        Run(b, 1.65);
+        Assert.True(t.RushLeft > 3);
+        // Her own foes' blows aside, the rush's bites: each at most once, each 4% of her max life.
+        for (double s = 0; s < 4 && p.Alive; s += Dt)
+        {
+            b.Tick(Dt, 0, 0);
+            foreach (var h in b.Events.Drain().OfType<Ev.PlayerHit>()) if (Math.Abs(h.Amount - 0.04 * b.MaxHp) < 0.5 * 0.04 * b.MaxHp) bit += h.Amount;
+        }
+        Assert.True(before - p.Hp > 0.1 * b.MaxHp, $"the ring cost {(before - p.Hp) / b.MaxHp:0.00}");
+        Assert.True(bit <= pts.Count * 0.04 * b.MaxHp * 1.25);
+    }
+
+    [Fact]
+    public void A_closing_without_teeth_is_as_it_was_whole_and_harmless()
+    {
+        var b = Fresh();
+        var p = b.Player;
+        Assert.Equal(12, b.TellClosing(p.X, p.Z, 12).Count);
+        Assert.Equal(0, Assert.Single(b.Events.Drain().OfType<Ev.Telegraph>(), m => m.Tell == "closing").GapWidth);
+    }
+
+    [Fact]
+    public void Two_kit_tells_near_her_land_at_least_the_spacing_apart()
+    {
+        var b = Fresh();
+        var p = b.Player;
+        var foe = b.SpawnEnemy("risen", p.X + 6, p.Z)!;
+        Assert.Equal(0, b.KitWait("ring", null));
+        b.Tell("ring", null, p.X, p.Z);
+        // A charge now would land 0.9 s before the ring: it waits to land 1.5 s after it (2.0 + 1.5 - 1.1).
+        Assert.Equal(2.4, b.KitWait("charge", foe), 6);
+        // Far from her, nothing waits on it.
+        var c = BattleTests.Arena(7); c.Tick(Dt, 0, 0);
+        c.Tell("ring", null, c.Player.X + 30, c.Player.Z);
+        Assert.Equal(0, c.KitWait("ring", null));
+    }
+
+    [Fact]
+    public void At_most_two_fodder_lanes_are_alive_near_her()
+    {
+        var w = Content.Telegraphs.Waves;
+        double keep = w.Spacing;
+        w.Spacing = 0;
+        try
+        {
+            var b = Fresh();
+            var p = b.Player;
+            var foes = Enumerable.Range(0, 3).Select(i => b.SpawnEnemy("risen", p.X + 5, p.Z + (i - 1) * 3)!).ToList();
+            Assert.Equal(0, b.KitWait("charge", foes[0]));
+            b.Tell("charge", foes[0], p.X, p.Z);
+            Assert.Equal(0, b.KitWait("charge", foes[1]));
+            b.Tell("charge", foes[1], p.X, p.Z);
+            Assert.True(b.KitWait("charge", foes[2]) > 1);
+            Run(b, 1.5);
+            Assert.Equal(0, b.KitWait("charge", foes[2]));
+        }
+        finally { w.Spacing = keep; }
+    }
 }

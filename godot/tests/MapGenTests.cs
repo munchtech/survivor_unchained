@@ -47,7 +47,7 @@ public class MapGenTests
     [InlineData(77)]
     public void An_arena_is_one_great_clearing_with_cover(int seed)
     {
-        var m = MapGen.Generate(new MapSpec { Seed = seed, Arena = true });
+        var m = MapGen.Generate(new MapSpec { Seed = seed, Arena = true, Tier = 2 }); // (the open bowl: tier 1's is a board, BoardTests)
         Assert.Equal("arena", m.Meta.Id);
         Assert.Single(m.Areas);
         Assert.Empty(m.Packs);
@@ -88,7 +88,7 @@ public class MapGenTests
         Assert.True(m.Meta.Lights.Count > 12);
         Assert.All(m.Pieces, p => Assert.True(Math.Sqrt(p.X * p.X + p.Z * p.Z) < ArenaPlaceTests.Edge(m, p.X, p.Z) + 8, $"{p.Id} at {p.X:0},{p.Z:0}"));
         // The Pack's wood has bare trees for cover, not full crowns.
-        var wood = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = "pack" });
+        var wood = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = "pack", Tier = 2 }); // (the open bowl: tier 1's is a board, BoardTests)
         Assert.DoesNotContain(wood.Flora, f => f.Kind is "pine" or "broadleaf" or "autumn" && Math.Sqrt(f.X * f.X + f.Z * f.Z) < MapGen.ArenaR - 14);
     }
 

@@ -19,6 +19,8 @@ public enum TelegraphKind { Blow, Ground, Safe, Wall }
 /// <summary>A kit telegraph's moment (data/content/telegraphs.json): Warn as it is marked (Duration = its windup),
 /// Land as it lands (Duration 0, Caught = she was in it). Draw only Warn; sound both (H3's bank: telegraph.&lt;tell&gt;.windup/.land).</summary>
 public enum TellPhase { Warn, Land }
+/// <summary>Ev.BoardLamp's moments.</summary>
+public enum BoardLampState { Lit, Dousing, Out, Relit }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
 /// <summary>The Flare's moments (CLASSES.md §3.5): Ready (a charge full), Press (t = 0: the freeze, the grade, the push),
@@ -95,6 +97,9 @@ public static class Ev
         /// <summary>The telegraph kit's kind (data/content/telegraphs.json: ring, charge, pull, closing); null = a mark
         /// outside the kit. Phase: Warn (marked) or Land (landed: nothing to draw).</summary>
         public string? Tell; public TellPhase Phase; public bool Caught;
+        /// <summary>A closing's way out (H1 round 2B): the bearing (radians, atan2(z, x) from its center) of a gap GapWidth m
+        /// wide along the band's middle where no foe of its ring stands, drawn lit. GapWidth 0: no gap.</summary>
+        public double GapAngle, GapWidth;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }
@@ -135,7 +140,13 @@ public static class Ev
         public FlarePhase Phase; public string Id = ""; public double X, Z, Radius, Angle; public bool Clutch, Stand; public int Blow;
         public string Part = ""; public bool Last; public double TX, TZ; public int Target, Hitstop;
     }
-    public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
+    /// <summary>A board's lamp (H1 item 6B, Play/Zones/ArenaRun.Lamp.cs), for the sound (H3) and the view: its contract.
+    /// State: Lit (it catches at its minute), Dousing (snuffers at it: once as it starts, then once a second while it
+    /// goes on), Out (its life gone; its light off), Relit (she cupped the wick). Life: its life left, 0 to 1.</summary>
+    public sealed class BoardLamp : CombatEvent { public double X, Z; public BoardLampState State; public double Life; }
+    public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker;
+        /// <summary>A boss's (IBossArena.Bark): shown in a fixed slot under the boss's bar, wherever the boss is.</summary>
+        public bool Boss; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>

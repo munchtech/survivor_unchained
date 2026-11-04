@@ -25,13 +25,13 @@ public partial class Gore : Node3D
 {
     public sealed record Blood(Color Spray, Color Pool);
 
-    static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#4a0404"));
+    static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#5e0a07"));
     /// <summary>A blood colour for the matter's unshaded sprites, whose instance colour is drawn as it is (linear): #8e0c0c
     /// sent as it was drew as (196, 61, 61), coral-pink droplets (round 3's judge).</summary>
     static Color Lin(Color c) => c.SrgbToLinear();
     static readonly Blood Ichor = new(new Color("#3a4a10"), new Color("#1c240a"));
     /// <summary>The lamplings': thick and dark, from a long way under.</summary>
-    static readonly Blood Deep = new(new Color("#6a1a0c"), new Color("#2c0906"));
+    static readonly Blood Deep = new(new Color("#6a1a0c"), new Color("#3e0d08"));
 
     /// <summary>What a family bleeds (null: it does not).</summary>
     public static Blood? Of(Family? family, string def = "") => family switch
@@ -98,7 +98,7 @@ public partial class Gore : Node3D
             var d = new Decal
             {
                 CullMask = 1, TextureAlbedo = albedo, TextureOrm = orm, Size = new Vector3(1, 1.2f, 1), Visible = false,
-                UpperFade = 0.2f, LowerFade = 0.4f, AlbedoMix = 1, SortingOffset = i * 0.001f,
+                UpperFade = 0.2f, LowerFade = 0.4f, AlbedoMix = 0.8f, SortingOffset = i * 0.001f,
             };
             AddChild(d);
             splats.Add(new Splat { Decal = d });
@@ -166,7 +166,7 @@ public partial class Gore : Node3D
         // It dries brown, and in its time is gone.
         float dry = Mathf.SmoothStep(0.1f, 0.7f, k);
         var c = s.Color.Lerp(s.Color * new Color(0.8f, 0.62f, 0.55f), dry);
-        c.A = 0.92f * (1 - Mathf.SmoothStep(0.75f, 1, k));
+        c.A = 0.8f * (1 - Mathf.SmoothStep(0.75f, 1, k));
         if (c != s.SentColor) { s.SentColor = c; s.Decal.Modulate = c; }
         if (k >= 1) { s.Shown = false; s.Decal.Visible = false; }
     }

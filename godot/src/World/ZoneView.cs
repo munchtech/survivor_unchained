@@ -135,6 +135,7 @@ public partial class ZoneView : Node3D
         lightRoot = new Node3D { Name = "Lights" };
         AddChild(lightRoot);
         for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(z.Lights[i]); yield return null; }
+        for (int i = 0; i < meta.Lights.Count; i++) if (meta.Lights[i].Core > 0) Core(i, meta.Lights[i]);
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
         foreach (var f in meta.Fires)
@@ -227,6 +228,23 @@ public partial class ZoneView : Node3D
         lights.Add(light);
         lightRoot.AddChild(light);
         return light;
+    }
+
+    /// <summary>A light's bright core (LightDef.Core: a board lamp's lantern flame, H1 item 6): a small unshaded glow at it,
+    /// drawn over its glass, unshadowed, shown while the light is on (SetLit, as a lit-in-play light's flame).</summary>
+    void Core(int i, SurvivorUnchained.World.LightDef l)
+    {
+        float r = (float)l.Core;
+        var c = new Color(l.Color).SrgbToLinear() * 4;
+        var core = new MeshInstance3D
+        {
+            Name = $"Core{i}",
+            Mesh = new SphereMesh { Radius = r, Height = r * 2.6f, RadialSegments = 10, Rings = 5 },
+            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(c.R, c.G, c.B), RenderPriority = 1 },
+            Position = new Vector3((float)l.X, (float)l.Y, (float)l.Z), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+        lightRoot.AddChild(core);
+        flames[i] = core;
     }
 
     /// <summary>A light set down now (a torch, a lamp lit in play), with a

@@ -5,7 +5,11 @@ under half), her life at the end, the hits a fodder and a champion took to fall
 (medians over ember 0-10: H1's targets 2-4 and 8-12 at tier 1), the boss's seconds,
 and the late hands' threats read.
 
-    python tools/balance/danger.py out.jsonl [--by calling|tier|none] [--falls]
+    python tools/balance/danger.py out.jsonl [--by calling|tier|none] [--falls] [--lamp]
+
+--lamp: a board's lamp (H1 item 6B), by bot, holders against the rest: nights, won %, fell %, her lowest life and
+her life at the end, seconds in the lit pool, the lamp's outs and relights, Flare casts and the Flare meter (in casts)
+as the boss came, and blows landed on her a minute in the pool and out of it (after it caught).
 
 H1's tier-1 targets: the late human ends at 30-60% life and falls ~1 night in 4
 careless; the deft bot still wins ~90%."""
@@ -59,6 +63,29 @@ def falls(path):
         print(f"{bot:9} kit caught {k[0]}/{k[1]} ({100 * k[0] / max(1, k[1]):.0f}%)  draughts/night {k[2] / k[3]:.1f}  falls: " +
               ', '.join(f"{n} {w} {m}" for (n, w), m in sorted(c[bot].items(), key=lambda x: -x[1])[:6]))
 
+def lamp(path):
+    rows = defaultdict(list)
+    for line in open(path, encoding='utf-8'):
+        if not line.strip(): continue
+        r = json.loads(line); sp = r['Spec']
+        if r.get('LampHeld') is None: continue
+        bot = sp.get('Bot') or ('deft' if sp.get('Deft') else 'plain')
+        rows[(bot, 'held' if r['LampHeld'] else 'not')].append(r)
+    print(f"{'bot':9} {'hold':5} {'n':>4} {'won%':>5} {'fell%':>5} {'low':>5} {'end':>5} {'pool s':>6} {'outs':>5} {'relit':>5} {'flare':>5} {'@boss':>5} {'hit/m in':>8} {'out':>5}")
+    for k in sorted(rows):
+        rs = rows[k]; n = len(rs)
+        won = 100 * sum(1 for r in rs if r.get('WonAt') is not None) / n
+        fell = 100 * sum(1 for r in rs if r.get('Died')) / n
+        low = med([r.get('LowHp', 1) for r in rs]); end = med([r.get('HpEnd', float('nan')) for r in rs if not r.get('Died')])
+        pool = med([r.get('LampPoolSec', 0) for r in rs])
+        outs = sum(r.get('LampOuts', 0) for r in rs) / n; relit = sum(r.get('LampRelights', 0) for r in rs) / n
+        flare = med([r.get('FlareCasts', 0) for r in rs]); atb = med([r.get('FlareAtBoss') for r in rs])
+        si = sum(r.get('LampPoolSec', 0) for r in rs); so = sum(r.get('LampOutSec', 0) for r in rs)
+        hin = 60 * sum(r.get('LampHitsIn', 0) for r in rs) / si if si else float('nan')
+        hout = 60 * sum(r.get('LampHitsOut', 0) for r in rs) / so if so else float('nan')
+        print(f"{k[0]:9} {k[1]:5} {n:4} {won:5.0f} {fell:5.0f} {low:5.2f} {end:5.2f} {pool:6.0f} {outs:5.2f} {relit:5.2f} {flare:5.0f} {atb:5.2f} {hin:8.1f} {hout:5.1f}")
+
 if __name__ == '__main__':
     if '--falls' in sys.argv: falls(sys.argv[1]); sys.exit()
+    if '--lamp' in sys.argv: lamp(sys.argv[1]); sys.exit()
     main()

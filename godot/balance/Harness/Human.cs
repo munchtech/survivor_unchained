@@ -55,6 +55,9 @@ public sealed class Human
         void Consider(string k, double l) { if (l < left) { left = l; key = k; } }
         foreach (var bl in b.Blows)
             if (bl.Hit(p.X, p.Z, p.Radius + 4)) Consider($"b{bl.MarkId}", bl.T);
+        foreach (var t in b.ActiveTells)
+            if (t.Kind == "closing" && (!t.Landed || t.RushLeft > 0) && Dist(t.Blow.X, t.Blow.Z, p.X, p.Z) < t.Blow.Radius + 1)
+                Consider($"c{t.Blow.MarkId}", t.Landed ? 0.05 : t.Blow.T);
         foreach (var s in b.EnemyStrikes())
             if (Dist(s.X, s.Z, p.X, p.Z) < s.R + p.Radius + 3) Consider($"s{Math.Round(s.X, 1)}:{Math.Round(s.Z, 1)}:{Math.Round(now - (s.Marked - s.Left), 1)}", s.Left);
         foreach (var e in b.Enemies.Living())
@@ -82,11 +85,12 @@ public sealed class Human
     }
 
     /// <summary>The hands' move this step: the deft Pilot's while aware, else the plain Pilot's reading nothing.</summary>
-    public (double X, double Z) Steer(Battle b, ArenaBoss? boss)
+    /// <param name="goal">Where the night wants her (a board's lamp held: Harness/LampHold.cs), or null.</param>
+    public (double X, double Z) Steer(Battle b, ArenaBoss? boss, (double X, double Z)? goal = null)
     {
         bool aware = Aware(b);
         lastAware = aware;
-        return aware ? Pilot.Steer(b, true, boss) : Pilot.Steer(b, false, null, naive: true);
+        return aware ? Pilot.Steer(b, true, boss, goal: goal) : Pilot.Steer(b, false, null, goal: goal, naive: true);
     }
     bool lastAware;
 
