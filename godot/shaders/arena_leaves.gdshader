@@ -103,7 +103,7 @@ void vertex() {
 	// The hue nudged a quarter of the way to the drift's, at the litter's value.
 	float ly = max(dot(a, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 	vec3 dn = dc / max(dot(dc, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * ly;
-	vec3 c = mix(a, dn, 0.25) * (0.88 + 0.24 * gh(wp * 9.1 + own * 3.0));
+	vec3 c = mix(a, dn, 0.25) * (0.8 + 0.24 * gh(wp * 9.1 + own * 3.0));
 	// The ground's own terms over the litter (arena_ground.gdshader), so the leaf keeps to it.
 	vec2 suv = (lp + zone_size * 0.5) / zone_size;
 	float trod = texture(splat2, suv).b * (0.8 + 0.4 * nF.r);

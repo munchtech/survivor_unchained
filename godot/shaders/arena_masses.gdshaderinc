@@ -13,8 +13,8 @@ vec3 arena_mass(float inn, vec4 np, vec4 nl) {
 	// The floor's plateaus: three values, soft edged, the lighter ones gathering toward the middle.
 	float t = np.g + 0.12 * smoothstep(12.0, 50.0, inn) - 0.06;
 	float lv = smoothstep(0.36, 0.5, t) + smoothstep(0.56, 0.7, t);
-	// (Centred under 1, 0.96 on the middle plateau: lighter overall, the ember's pool lost its key over the floor.)
-	float v = mix(0.82, 1.0, floor_in) * mix(0.86, 1.06, lv * 0.5 * floor_in);
+	// (Centred under 1, 0.93 on the middle plateau, 0.8 on the dark one: lighter overall, the ember's pool lost its key over the floor.)
+	float v = mix(0.82, 1.0, floor_in) * mix(0.8, 1.06, lv * 0.5 * floor_in);
 	// The lighter plateaus a touch warm: ready for the ember's pool and the lamps.
 	vec3 warm = mix(vec3(1.0), vec3(1.035, 1.0, 0.94), lv * 0.5 * floor_in);
 	return v * warm;
