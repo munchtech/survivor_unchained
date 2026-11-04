@@ -46,6 +46,57 @@ public partial class PlayerView : Node3D
     public readonly Reflections Reflections;
     readonly List<GeometryInstance3D> skin = new();
     readonly ShaderMaterial wraith = new() { Shader = GD.Load<Shader>("res://shaders/ghost.gdshader") };
+    /// <summary>Her silhouette through what hides her from the play camera (shaders/her_xray.gdshader, H1 round 2C): an
+    /// overlay on her solid meshes (no cards, fur, eyes or teeth: an overlay ignores their cut-outs), on only in play
+    /// with the camera far (HerLod.InPlay), eased in and out.</summary>
+    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader") };
+    readonly List<GeometryInstance3D> xrayOn = new();
+    float xrayK = -1;
+    static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
+    static bool XraySolid(GeometryInstance3D g)
+    {
+        if (g is not MeshInstance3D mi || mi.Mesh == null) return false;
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+        {
+            var m = mi.GetActiveMaterial(s);
+            if (m is BaseMaterial3D bm ? bm.Transparency != BaseMaterial3D.TransparencyEnum.Disabled
+                : m is ShaderMaterial sm ? sm.Shader?.ResourcePath is not string sp || sp.Contains("card") || sp.Contains("fur") || sp.Contains("eye") || sp.Contains("teeth") || sp.Contains("sheer") || sp.Contains("hair")
+                : true) return false;
+        }
+        return true;
+    }
+    /// <summary>The crowd's floor while a boss is up (vat.gdshaderinc crowd_floor): looked for twice a second, eased over a second.</summary>
+    void FloorStep(Battle b, float dt)
+    {
+        if ((floorLookT -= dt) <= 0)
+        {
+            floorLookT = 0.5f;
+            floorBoss = false;
+            foreach (var e in b.Enemies.Living()) if (e.Boss) { floorBoss = true; break; }
+        }
+        float k = Mathf.MoveToward(floorK, floorBoss && Atmosphere.CrowdFill > 0 ? 1 : 0, dt);
+        if (k == floorK && floorSent) return;
+        floorK = k; floorSent = true;
+        var c = FloorHue.SrgbToLinear();
+        RenderingServer.GlobalShaderParameterSet("crowd_floor", new Vector4(c.R, c.G, c.B, k * FloorStrength));
+        RenderingServer.GlobalShaderParameterSet("lip_calm", k);
+    }
+    float floorLookT, floorK;
+    bool floorBoss, floorSent;
+    static readonly Color FloorHue = new(SurvivorUnchained.Args.Get("floor-hue") ?? "#ff5a2a");
+    static readonly float FloorStrength = SurvivorUnchained.Args.Num("floor", 1.2f);
+    void XrayStep(float dt)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
+        float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
+        if (k == xrayK) return;
+        if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
+        bool was = xrayK > 0;
+        xrayK = k;
+        xray.SetShaderParameter("strength", k);
+        if (was != k > 0 && !ghostly) foreach (var g in xrayOn) if (IsInstanceValid(g)) g.MaterialOverlay = k > 0 ? xray : null;
+    }
     bool ghostly;
     Content.AbilityKind? rushSeen;
     double lastAttack = -1, hurtSeen, flare, castT, time, lastMuzzle = -1;
@@ -338,7 +389,7 @@ public partial class PlayerView : Node3D
         {
             if (!IsInstanceValid(g)) continue;
             g.Transparency = on ? 0.55f : 0;
-            g.MaterialOverlay = on ? wraith : null;
+            g.MaterialOverlay = on ? wraith : xrayK > 0 && xrayOn.Contains(g) ? xray : null;
         }
     }
 
@@ -832,6 +883,8 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)x, (float)y, (float)z);
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
+        if (mine) XrayStep((float)dt);
+        if (mine) FloorStep(b, (float)dt);
         // --hold CLIP@S: one of her clips held at S seconds, her pieces drawn, under the game's own light and
         // cameras (a judge's 1:1 frame of one pose; for pictures only). A town clip (*_town) is held with her pieces
         // sheathed, as the game plays it.

@@ -164,6 +164,14 @@ crowd_ember={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+crowd_floor={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+lip_calm={
+"type": "float",
+"value": 0.0
+}
 crowd_fill={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
