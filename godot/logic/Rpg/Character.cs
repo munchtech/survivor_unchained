@@ -749,22 +749,12 @@ public static class Character
                 kit.Kindled.Add(kin.Id);
                 Kindle(kit, kin.Kindled!);
             }
-            // Skills the gear grants, while there is room for them.
-            foreach (var ar in it.Affixes)
-                if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
-                    kit.Weapons.Add((g, 1 + ar.Tier / 2));
+            GearSkills(ch, it, def, s, kit.Weapons);
             // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
             // twice is the finer of the two (design 20.3).
             if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
                 && (kit.Marks.ContainsKey(mk.Id) || kit.Marks.Count < Crafting.Rules.Mark.Worn))
                 kit.Marks[mk.Id] = Math.Max(kit.Marks.GetValueOrDefault(mk.Id), Items.MarkStrength(mk.Tier));
-            // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
-            if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
-            {
-                // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
-                int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
-                kit.Weapons.Add((def.Weapon.Id, Math.Min(Inventory.GearRankCap, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity))));
-            }
         }
         // A set worn far enough: each bonus reached, its numbers and its rules (docs/design/LOOT_DESIGN.md §10.2).
         foreach (var (set, b) in Drops.SetBonuses(ch))
@@ -802,6 +792,38 @@ public static class Character
             }
         }
         return kit;
+    }
+
+    /// <summary>The skills one worn piece brings a fight, into the kit's list: those its affixes grant (while there is
+    /// room), then its weapon's own (Kit and DaySkills share it).</summary>
+    static void GearSkills(CharacterData ch, ItemInstance it, ItemDef def, EquipSlot s, List<(string Id, int Rank)> into)
+    {
+        // Skills the gear grants, while there is room for them.
+        foreach (var ar in it.Affixes)
+            if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g) && into.Count < Content.Weapons.MaxWeapons)
+                into.Add((g, 1 + ar.Tier / 2));
+        // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
+        if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
+        {
+            // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
+            int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
+            into.Add((def.Weapon.Id, Math.Min(Inventory.GearRankCap, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity))));
+        }
+    }
+
+    /// <summary>The skills she fights with by day, in the order the fight takes them up (Journey: the gear's, then those
+    /// learned, MaxWeapons at most), each at its rank: the Battle's Weapons before any draft.</summary>
+    /// <param name="gearOnly">Only the gear's (by night these come in at their ranks; the rest the ember drafts).</param>
+    public static List<(string Id, int Rank)> DaySkills(CharacterData ch, bool gearOnly = false)
+    {
+        var gear = new List<(string Id, int Rank)>();
+        foreach (var s in Items.EquipSlots)
+            if (ch.Equipment[s] is { } it) GearSkills(ch, it, Items.Get(it.Def), s, gear);
+        // Battle.AddWeapon's rule: a known skill, once, MaxWeapons at most.
+        var o = new List<(string Id, int Rank)>();
+        foreach (var (id, rank) in gearOnly ? gear : gear.Concat(SkillBook.Carried(ch)))
+            if (o.Count < Content.Weapons.MaxWeapons && o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id)) o.Add((id, rank));
+        return o;
     }
 
     static void Kindle(CombatKit kit, string key)

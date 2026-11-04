@@ -457,14 +457,17 @@ public sealed partial class Battle
         return null;
     }
 
-    WeaponInst? LinkSkill(LinkRun l)
+    WeaponInst? LinkSkill(LinkRun l) => LinkPick(Weapons, Lamps.Links.TryGetValue(l.Lamp, out var pick) ? pick : null, l.Def.Tags);
+
+    /// <summary>The rule LinkSkill fires by, for any carried list (the Lamps screen's LampBook.LinkPick reads it too): the
+    /// pick if carried, else the most tags shared with the hint, ties to the order carried; null when nothing is carried.</summary>
+    public static WeaponInst? LinkPick(IReadOnlyList<WeaponInst> carried, string? pick, Tag[]? hint)
     {
-        if (Lamps.Links.TryGetValue(l.Lamp, out var pick))
-            foreach (var w in Weapons) if (w.Id == pick || w.Def.Id == pick) return w;
+        if (pick != null)
+            foreach (var w in carried) if (w.Id == pick || w.Def.Id == pick) return w;
         WeaponInst? best = null;
         int bestN = -1;
-        var hint = l.Def.Tags;
-        foreach (var w in Weapons)
+        foreach (var w in carried)
         {
             int n = 0;
             if (hint != null) foreach (var t in hint) if (w.Tags.Has(t)) n++;
