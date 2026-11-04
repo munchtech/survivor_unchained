@@ -1164,7 +1164,8 @@ public sealed partial class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Exit:
-                if (p.Z < ExitZ && !finished) { finished = true; Finish(); }
+                // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
+                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && !finished) { finished = true; Finish(); }
                 break;
         }
     }

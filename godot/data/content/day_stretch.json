@@ -38,7 +38,7 @@
           "z": -89,
           "spread": 3.5,
           "wake": 9,
-          "leash": 15,
+          "leash": 22,
           "foes": [
             {
               "def": "footpad",
@@ -115,7 +115,7 @@
           "z": -89,
           "spread": 3.5,
           "wake": 9,
-          "leash": 16,
+          "leash": 20,
           "foes": [
             {
               "def": "boar",
