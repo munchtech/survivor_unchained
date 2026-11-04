@@ -175,6 +175,8 @@ public class PrologueTests
         Run(s, 7);
         Assert.Equal(Prologue.Stage.Exit, s.Zone.Now);
         var gate = s.Meta.Place("LOWFORD", "gate");
+        // (the day's wolf ring at the gate put down today: H4 item 10 r3's ring holds the gate till its second wave is down)
+        s.J.World.Zone("lowford")[Play.Zones.DayStretch.DoneKey("wolves")] = true;
         Stand(s, gate.X, gate.Z + 6);
         Run(s, 0.1);
         Assert.True(s.J.World.Fact("prologue.done").Truthy);
