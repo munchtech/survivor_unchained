@@ -171,6 +171,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         LampBegin(b);
         b.ClosingTeeth = Array.IndexOf(Telegraphs.Waves.Tiers, Spec.Tier) >= 0;
         b.KitDamageMul = Spec.Story ? 1 : Telegraphs.Waves.DamageAt(Spec.Tier);
+        if (teeth != null) { b.FodderHeals = teeth.FodderHeals; b.EliteHeals = teeth.EliteHeals; }
         Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
@@ -341,6 +342,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
             bool big = champion || e.Elite;
             e.MaxHp = e.Hp = e.MaxHp * (big ? teeth.EliteHp : teeth.FodderHp);
             e.Damage *= big ? teeth.EliteDamage : teeth.FodderDamage;
+            if (!big) e.Speed *= teeth.FodderSpeed;
         }
         if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / EaseFor(Math.Min(Minute, 30));
         if (Asks && !champion && !e.Elite) e.Damage *= 1 + Math.Clamp((Math.Min(Minute, 30) - 8) / 22, 0, 1);

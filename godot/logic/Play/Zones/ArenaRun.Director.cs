@@ -200,6 +200,19 @@ public sealed partial class ArenaRun
         standReady = Seconds + d.StandCooldown;
         StandCharges++;
         Cast("charge", near, p.X, p.Z, scale: d.StandScale);
+        // A second from another side (StandPair): one step answers both lanes only if she reads both.
+        if (d.StandPair < 2) return;
+        double a0 = Math.Atan2(near.Z - p.Z, near.X - p.X);
+        Enemy? other = null; double od = double.MaxValue;
+        foreach (var e in B.HostilesInRadius(p.X, p.Z, d.StandNear))
+        {
+            if (e == near || e.Boss || e.Elite || e.Scripted || e.HoldUntil > B.Time || e.State != EnemyState.Active) continue;
+            double da = Math.Abs(Math.Atan2(Math.Sin(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0), Math.Cos(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0)));
+            if (da < Math.PI / 2) continue;
+            double dd = Dist(e.X, e.Z, p.X, p.Z);
+            if (dd < od) { od = dd; other = e; }
+        }
+        if (other != null) Cast("charge", other, p.X, p.Z, scale: d.StandScale);
     }
 
     /* ------------------------------------------------- stuck foes recalled -- */

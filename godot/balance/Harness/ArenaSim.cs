@@ -104,8 +104,12 @@ public sealed class RunResult
     /// <summary>H6: times surrounded (foes within 4 m in three or more of six sectors, held 2 s) and at what minutes;
     /// seconds so; marks laid on her from 0:45 to the boss, and the longest stretch without one.</summary>
     public int Surrounds, MarksOnHer;
+    /// <summary>Times she stood inside a closing's walled ring as it rose (ringed by the pack, the gap her way out).</summary>
+    public int Ringed;
     public double SurroundSec, MarkGapMax;
     public List<double> SurroundAt = new();
+    /// <summary>Life she got back, by source (Battle.HealBy), and the damage that landed on her, by source.</summary>
+    public Dictionary<string, double> HealBy = new(), HurtBy = new();
     public double LampPoolSec, LampOutSec, FlareAtBoss = double.NaN;
     public int LampOuts, LampRelights, LampHitsIn, LampHitsOut;
     /// <summary>The crowd's director (H6, ArenaRun.Director): pincers sent, surrounds closed on her, stand charges, stuck foes recalled.</summary>
@@ -384,6 +388,8 @@ public static class ArenaSim
             Drain:
             foreach (var ev in b.Events.Drain())
             {
+                if (ev is Ev.ClosingWall { Up: true } cw && Math.Sqrt((p.X - cw.X) * (p.X - cw.X) + (p.Z - cw.Z) * (p.Z - cw.Z)) < cw.Inner) r.Ringed++;
+                if (ev is Ev.PlayerHit { Amount: > 0 } hb) r.HurtBy[hb.Source] = Math.Round(r.HurtBy.GetValueOrDefault(hb.Source) + hb.Amount);
                 if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } onHer && Covers(onHer, p.X, p.Z, p.Radius)) marksOn.Add(t);
                 if (hold != null && ev is Ev.PlayerHit { Amount: > 0, Dodged: false } && b.HeldLamp is { Caught: true }) { if (zone.InLampPool) r.LampHitsIn++; else r.LampHitsOut++; }
                 if (ev is Ev.Telegraph { Tell: not null } kt) { if (kt.Phase == TellPhase.Warn) r.KitMarked++; else if (kt.Caught) r.KitCaught++; }
@@ -492,6 +498,7 @@ public static class ArenaSim
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;
         r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
+        foreach (var (k, v) in b.HealBy) r.HealBy[k] = Math.Round(v);
         if (fx?.Skill is { } sk)
         {
             fx.DamageBy = r.DamageBy;

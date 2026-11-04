@@ -32,7 +32,7 @@ def main():
         bot = sp.get('Bot') or ('deft' if sp.get('Deft') else 'plain')
         k = (bot, sp['Calling'] if by == 'calling' else '', sp['Tier'] if by in ('calling', 'tier') else '')
         rows[k].append(r)
-    print(f"{'bot':9} {'calling':9} {'t':>2} {'n':>4} {'won%':>5} {'fell%':>5} {'low':>5} {'<50%':>5} {'end':>5} {'hitsF':>5} {'hitsE':>5} {'boss s':>6} {'read':>5} {'min':>5} {'surr':>4} {'s2+%':>4} {'mk':>4} {'gap':>4} {'flk':>3} {'cls':>3} {'stc':>3} {'rcl':>3}")
+    print(f"{'bot':9} {'calling':9} {'t':>2} {'n':>4} {'won%':>5} {'fell%':>5} {'low':>5} {'<50%':>5} {'end':>5} {'hitsF':>5} {'hitsE':>5} {'boss s':>6} {'read':>5} {'min':>5} {'surr':>4} {'s2+%':>4} {'rng':>4} {'mk':>4} {'gap':>4} {'flk':>3} {'cls':>3} {'stc':>3} {'rcl':>3}")
     for k in sorted(rows, key=lambda k: (str(k[1]), str(k[2]), k[0])):
         rs = rows[k]
         n = len(rs)
@@ -51,7 +51,7 @@ def main():
         mk = med([r.get('MarksOnHer', 0) for r in rs]); gap = med([r.get('MarkGapMax', float('nan')) for r in rs])
         # H6 item 3: the director's work a night (median): pincers, surrounds closed, stand charges, stuck foes recalled.
         flk, cls, stc, rcl = (med([r.get(f, 0) for r in rs]) for f in ('Flanks', 'SurroundCloses', 'StandCharges', 'Recalls'))
-        print(f"{k[0]:9} {str(k[1]):9} {str(k[2]):>2} {n:4} {won:5.0f} {fell:5.0f} {low:5.2f} {under:5.0f} {end:5.2f} {hf:5.1f} {he:5.1f} {boss:6.0f} {read:>5} {mins:5.1f} {surr:4.0f} {s2:4.0f} {mk:4.0f} {gap:4.0f} {flk:3.0f} {cls:3.0f} {stc:3.0f} {rcl:3.0f}")
+        print(f"{k[0]:9} {str(k[1]):9} {str(k[2]):>2} {n:4} {won:5.0f} {fell:5.0f} {low:5.2f} {under:5.0f} {end:5.2f} {hf:5.1f} {he:5.1f} {boss:6.0f} {read:>5} {mins:5.1f} {surr:4.0f} {s2:4.0f} {med([r.get('Ringed', 0) for r in rs]):4.0f} {mk:4.0f} {gap:4.0f} {flk:3.0f} {cls:3.0f} {stc:3.0f} {rcl:3.0f}")
 
 def falls(path):
     """What felled her, by bot: the killer, and whether on the way (before the boss) or at the boss; the kit's

@@ -1053,7 +1053,7 @@ public sealed partial class Battle
             {
                 double luck = Stats.Get(Stat.Luck);
                 if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Boss || e.Def.Miniboss ? 1 : e.Elite ? Rules.ChampionGold : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
-                if (Rng.Next() < 0.012 * luck + (e.Elite ? 0.4 : 0)) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
+                if (Rng.Next() < (0.012 * luck * FodderHeals + (e.Elite ? 0.4 * EliteHeals : 0))) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
                 if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, e.X, e.Z, 1);
                 if (Hooks.OnLoot != null)
                     foreach (var d in Hooks.OnLoot(e))
@@ -1609,6 +1609,11 @@ public sealed partial class Battle
         return dmg;
     }
 
+    /// <summary>Life she got back, by source (a measuring aid: what keeps a stander standing, H6).</summary>
+    public readonly Dictionary<string, double> HealBy = new();
+    /// <summary>The kills' healing drops, the crowd's and the champions' chance (Teeth.FodderHeals/EliteHeals; 1: as it was).</summary>
+    public double FodderHeals = 1, EliteHeals = 1;
+
     public void HealPlayer(double amount, string source, bool silent = false)
     {
         var p = Player;
@@ -1617,6 +1622,7 @@ public sealed partial class Battle
         double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1) * ReaverMendMul(source);
         double before = p.Hp;
         p.Hp = Math.Min(MendCeiling(), p.Hp + h);
+        if (p.Hp > before) HealBy[source] = HealBy.GetValueOrDefault(source) + (p.Hp - before);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
     }
 

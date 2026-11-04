@@ -23,6 +23,12 @@ public static class Teeth
         public double BossHp = 1, BossDamage = 1;
         /// <summary>The table night's length to the boss, in real minutes (0: thirty, the table's own).</summary>
         public double Minutes;
+        /// <summary>Healing that drops from kills (Battle.SpawnPickup Heal): the chance from the crowd and from champions
+        /// (H6: on demo-rc2's tier 1 the drops gave back about six lives a night, so a stander healed through anything).</summary>
+        public double FodderHeals = 1, EliteHeals = 1;
+        /// <summary>The crowd's pace (not champions, not the boss): under 1, a mover sheds the crowd and a stander is
+        /// reached (H6: the Pack's wolves ran at her own pace, so moving bought nothing).</summary>
+        public double FodderSpeed = 1;
         /// <summary>The crowd's director (H6, Play/Zones/ArenaRun.Director.cs): what makes standing itself dangerous.
         /// None: as it was.</summary>
         public Director? Director;
@@ -53,6 +59,8 @@ public static class Teeth
         /// the nearest fodder (not held) casts the kit's charge at her at StandScale, at most once each StandCooldown.</summary>
         public bool Stand = true;
         public double StandMoved = 1.2, StandFor = 3, StandNear = 7, StandScale = 0.6, StandCooldown = 3.5;
+        /// <summary>Chargers at a stander at once (1 or 2; the second from at least a quarter turn round from the first).</summary>
+        public int StandPair = 1;
         /// <summary>The lamp's holder draws a flank: PoolFor s in the lit pool without leaving it brings the next flank
         /// now, and again each PoolEvery s while she stays.</summary>
         public bool Pool = true;
