@@ -151,9 +151,14 @@ public class DayStretchTests
                 double gap = MathX.Dist(a.X, a.Z, c.X, c.Z) - Reach(a) - Reach(c);
                 Assert.True(gap >= 20, $"{a.Id} and {c.Id}: {gap:0.0} m between their waking rings");
             }
-        // Each pack 6-10 strong with its champion (the road's boars, the charge's lesson, 3-4); the strongbox in its keepers' camp.
+        // Each pack 5-10 strong with its champion, and as many again in its waves (the road's boars, the charge's lesson,
+        // 3-4 and no waves); the strongbox in its keepers' camp.
         foreach (var bt in s.Beats.Where(x => x.Kind == "pack"))
-            Assert.InRange(bt.Foes.Sum(f => f.N) + (bt.Captain != null ? 1 : 0), bt.Id == "boars" ? 3 : 6, bt.Id == "boars" ? 4 : 10);
+        {
+            Assert.InRange(bt.Foes.Sum(f => f.N) + (bt.Captain != null ? 1 : 0), bt.Id == "boars" ? 3 : 5, bt.Id == "boars" ? 4 : 10);
+            foreach (var w in bt.Waves) Assert.InRange(w.Foes.Sum(f => f.N) + (w.Elite != null ? 1 : 0), 4, 10);
+            if (bt.Id != "boars") Assert.NotEmpty(bt.Waves);
+        }
         var box = s.Get("strongbox")!; var camp = s.Get(box.Guard!)!;
         Assert.InRange(MathX.Dist(box.X, box.Z, camp.X, camp.Z), 0, camp.Spread + 2);
     }
