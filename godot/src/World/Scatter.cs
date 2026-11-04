@@ -235,7 +235,10 @@ public static class Scatter
         }
         void Stone(float x, float zz, float size, float sink)
         {
-            if (Ok(x, zz)) Put(pebbles[rng.Next(4)], x, zz, size, sink, 0.4f, Grey(), 0);
+            // (H2 R2: a step darker and warmer than the camp's grey, near the road's own value: pale in the sun, a
+            // pebble on the road read as a white fleck, an egg.)
+            var g = Grey();
+            if (Ok(x, zz)) Put(pebbles[rng.Next(4)], x, zz, size, sink, 0.4f, new Color(g.R * 0.8f, g.G * 0.76f, g.B * 0.7f, 0), 0);
         }
 
         foreach (var (p, hw0) in paths)

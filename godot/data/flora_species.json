@@ -106,7 +106,7 @@
                  "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"],
                  "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.015,
                  "card": [0.62, 0.55], "cell": 0.8, "yaw": 35, "drift": [0.46, 0.54],
-                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.88, 1.0, 1.0], "night": [0.62, 0.9, 0.64], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.02, 1.0, 0.95], "sun_body": [1.05, 1.0, 0.86], "size_var": 0.3}}
+                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.84, 0.98, 1.06], "night": [0.6, 0.86, 0.8], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.07, 1.0, 0.8], "sun_body": [1.02, 1.0, 0.92], "size_var": 0.3}}
     }
   }
 }

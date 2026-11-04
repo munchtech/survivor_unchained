@@ -64,13 +64,16 @@ void vertex() {
 	float h = gh(wp * 5.3 + own * 17.0);
 	c = mix(c, mix(rust, ochre, h), 0.22);
 	// Older underneath: darker where they lie thickest.
-	v_col = c * (0.86 + 0.24 * gh(wp * 9.1 + own * 3.0)) * mix(1.0, 0.78, smoothstep(0.6, 1.0, paint * drift));
+	// (Lifted to the litter's own value under them, 1.3: the ground takes the ember's glow and the moon's sheen and the
+	// leaves do not, so at 0.8-1.0 each leaf lay on it as a dark chip, the litter's gravel noise.)
+	v_col = 1.3 * c * (0.86 + 0.24 * gh(wp * 9.1 + own * 3.0)) * mix(1.0, 0.78, smoothstep(0.6, 1.0, paint * drift));
 	v_t = UV.y;
 }
 
 void fragment() {
 	// The curl's crown catches the light; the leaf's edges lie in its own shade.
-	ALBEDO = v_col * mix(0.7, 1.15, v_t);
+	// (A soft curl, 0.88-1.08: with a dark rim each leaf was outlined, and the litter read as chips.)
+	ALBEDO = v_col * mix(0.88, 1.08, v_t);
 	// Dry and matte: with a sheen, every leaf gave back the cold moon and lay on the litter
 	// as a blue-grey chip of slate.
 	ROUGHNESS = 0.88;

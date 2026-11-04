@@ -193,7 +193,7 @@ def paint(albedo, normal, p):
 # Sizes are in metres and turned into texels by the sheet's texels per metre, so the stroke is one size on
 # every ground whatever its scan's density (a 2 m litter tile at 1024 px and a 4 m road at 1024 px alike).
 GROUND = dict(stroke=0.08, width=0.3, fine=0.02, mass=0.35, mid=0.6, fine_keep=0.05, levels=3, post=0.5, dull=0.8, chroma=1.08,
-              warm=(1.0, 2.5), hue=(0.0, 0.0), pull=0.0, lic=0.12, cavity=0.6, nflat=0.55, nblur=0.025, ao=0.55)
+              warm=(1.0, 2.5), hue=(0.0, 0.0), pull=0.0, lic=0.12, cavity=0.6, nflat=0.45, nblur=0.03, ao=0.55, hblur=0.5)
 
 # Per ground (the sheets' folder name), per layer: what differs from GROUND. Stone and rock faces keep their scans
 # (chunky planes are rule 6's stone, not the ground's masses; the setts are R8's); the Hollow's litter and needles
@@ -293,7 +293,9 @@ def paint_ground(albedo, normal, arh, tpm, p):
     ao = blur(arh[..., 0].astype(np.float32), px(p["nblur"]))
     ao = 1 - (1 - ao) * p["ao"]
     ro = blur(arh[..., 1].astype(np.float32), px(p["nblur"]))
-    hh = blur(arh[..., 2].astype(np.float32), px(p["fine"]) * 0.5)
+    # (the height drives the shader's bump by derivatives and the layers' blend edges: at the stroke's half width, so
+    # under a grazing moon the litter's relief is broad swells, not a scaled hide of 10 cm cells)
+    hh = blur(arh[..., 2].astype(np.float32), px(p["stroke"]) * p["hblur"])
     return out, np.clip(nn, 0, 1), np.clip(np.dstack([ao, ro, hh]), 0, 1)
 
 

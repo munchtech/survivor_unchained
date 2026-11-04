@@ -183,7 +183,9 @@ public static class ArenaGround
     static readonly Dictionary<string, LeafLook> LeafLooks = new()
     {
         // The Hollow's: this autumn's, over the litter of years.
-        ["hollow"] = new(1f, 14, 1.35f),
+        // (H2 R2: under half as many and a little larger, 0.4 and 1.6: forty leaves a square metre, each its own
+        // chip, were the litter's gravel noise at the play camera; fewer, they are its brush strokes.)
+        ["hollow"] = new(0.4f, 14, 1.6f),
     };
 
     public static LeafLook? LeavesOf(string place) => LeafLooks.GetValueOrDefault(place);
