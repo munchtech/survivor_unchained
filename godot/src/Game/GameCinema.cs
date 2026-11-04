@@ -2102,7 +2102,15 @@ public partial class Game
             // Who stays where it left them (a body in the river) stays, still, until the next one.
             var keep = file.End.Keep ?? new List<string>();
             foreach (var (name, v) in people) if (!bosses.ContainsKey(name)) { if (keep.Contains(name)) g.kept.Add(v); else v.QueueFree(); }
-            foreach (var (name, w) in bosses) { if (keep.Contains(name)) g.kept.Add(w); else w.QueueFree(); }
+            // (A boss's own view goes at the start of the next frame, the frame the zone's own first draws: freed here,
+            // C02's Warden was missing for a frame at the hand-back, H4 solver r2b.)
+            foreach (var (name, w) in bosses)
+            {
+                if (keep.Contains(name)) { g.kept.Add(w); continue; }
+                var tree = g.GetTree();
+                void Gone() { tree.ProcessFrame -= Gone; if (IsInstanceValid(w)) w.QueueFree(); }
+                tree.ProcessFrame += Gone;
+            }
             foreach (var o in orbs.Values) o.QueueFree();
             bosses.Clear(); orbs.Clear(); groups.Clear(); later.Clear();
             foreach (var n in props.Values) n.QueueFree();

@@ -177,6 +177,7 @@
       "cues": [
         {"do": "hide", "actor": "her", "hidden": false},
         {"do": "atmosphere", "preset": "play", "from": "now", "over": 2.0},
+        {"do": "lamp", "actor": "warden", "glow": 1.0, "over": 1.8, "note": "H4 solver r2b: up to the glow play gives him (0.3 + 0.25 a lit lamp): at 0.3 to the end, his blue light jumped at the hand-back, the frame 40% brighter"},
         {"do": "haze", "off": true, "over": 2.0, "note": "H4 solver r2b: the far haze thins out under the hand-back shot's rise (taken off at the hand-back it brightened the frame 29-33% in a tenth of a second)"},
         {"do": "mist", "name": "river", "density": 0, "over": 2.0},
         {"do": "water", "level": 1, "over": 2.0},
