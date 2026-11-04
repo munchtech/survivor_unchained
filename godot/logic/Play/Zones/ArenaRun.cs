@@ -297,7 +297,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         {
             double a = angle + (t == 0 ? 0 : (R() - 0.5) * 2.4), d = dist * (t < 5 ? 1 : 0.7);
             double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.7)) return (x, z);
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.7) && Reaches(x, z)) return (x, z);
         }
         return null;
     }
@@ -438,7 +438,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         {
             double a = R() * Math.PI * 2, d = R() * spread;
             double sx = x + Math.Cos(a) * d, sz = z + Math.Sin(a) * d;
-            if (!map.CanStand(sx, sz) || B!.Collision.Blocked(sx, sz, 0.6)) continue;
+            if (!map.CanStand(sx, sz) || B!.Collision.Blocked(sx, sz, 0.6) || !Reaches(sx, sz)) continue;
             // Now and then one of them a champion (more under the oath of champions, and as the minutes go).
             if (Spawn(def, sx, sz, R() < 0.012 * elites * (1 + Minute / 12)) is { } e)
             {
@@ -447,6 +447,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
                 o.Add(e);
             }
         }
+        Led(o);
         return o;
     }
 
@@ -556,6 +557,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (makingWay.Count > 0) MakingWay();
         Tells();
         LampStep(dt);
+        Direct(dt);
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -871,7 +873,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (wait > 0) { held.Add((Seconds + wait, () => Close(def, n))); return; }
         var p = B.Player;
         foreach (var (x, z) in B.TellClosing(p.X, p.Z, n))
-            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Spawn(def, x, z) is { } e) B.Closes(e);
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Reaches(x, z) && Spawn(def, x, z) is { } e) B.Closes(e);
     }
 
     /// <summary>Kit casts waiting their turn (Battle.KitWait): when, and the cast.</summary>

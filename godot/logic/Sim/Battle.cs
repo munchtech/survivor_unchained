@@ -1699,7 +1699,8 @@ public sealed partial class Battle
         e.SlowUntil = e.SlowBy = 0;
         e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
-        e.Decoy = e.Prey = e.Goal = false;
+        e.Decoy = e.Prey = e.Goal = e.Steer = false;
+        e.FlowUntil = e.CoverCheckAt = 0;
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;

@@ -302,6 +302,30 @@ public class ArenaTests
         Assert.Equal(3, LevelUp.Count(t.B));
     }
 
+    /// <summary>H6 item 3, the crowd's director (Teeth.Director on tier 1): a survivor who stands is charged and, from the
+    /// minute, flanked from behind; a story night has none of it.</summary>
+    [Fact]
+    public void The_director_flanks_and_charges_a_stander_on_a_table_night_only()
+    {
+        foreach (bool story in new[] { false, true })
+        {
+            var s = Make(Spec(story: story));
+            s.B.Player.Iframes = 1e9;
+            Opened(s);
+            Run(s, 62);
+            if (story)
+            {
+                Assert.Equal(0, s.Zone.Flanks + s.Zone.StandCharges + s.Zone.SurroundCloses + s.Zone.Recalls);
+                Assert.DoesNotContain(s.B.Enemies.Living(), e => e.Steer);
+            }
+            else
+            {
+                Assert.True(s.Zone.Flanks >= 1, $"flanks {s.Zone.Flanks}");
+                Assert.True(s.Zone.StandCharges >= 1, $"stand charges {s.Zone.StandCharges}");
+            }
+        }
+    }
+
     /// <summary>The boss's fall is the night's peak: the view is told (it slows the world and
     /// turns to it) and the people break and run. A story night then gives up its spoils and
     /// ends on its beat; a table night goes on into the long night.</summary>

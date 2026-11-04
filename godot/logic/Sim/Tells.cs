@@ -64,6 +64,10 @@ public sealed partial class Battle
     /// <summary>The closing bites and opens (its Hit and Gap, H1 round 2B): set by a zone whose nights carry the kit
     /// (ArenaRun, the kit's tiers). Off, a closing is as it was: a gapless crowd, draw for draw.</summary>
     public bool ClosingTeeth;
+    /// <summary>A pack's far foe held up against cover on its way to its slot round her (the straight line to its slot
+    /// blocked, looked at twice a second) follows the flow field wholly for two seconds (Enemy.FlowUntil): N34's wolves
+    /// stuck behind a rock. Set by the arena's director (H6, ArenaRun.Director.cs); off: as it was.</summary>
+    public bool PackRoundCover;
 
     /// <summary>Every kit damage times this (H6: the night's tier, the waves' TierDamage; set by the zone with ClosingTeeth).
     /// 1: as it was.</summary>
