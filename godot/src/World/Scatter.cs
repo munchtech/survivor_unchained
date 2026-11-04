@@ -237,8 +237,10 @@ public static class Scatter
         {
             // (H2 R2: a step darker and warmer than the camp's grey, near the road's own value: pale in the sun, a
             // pebble on the road read as a white fleck, an egg.)
-            var g = Grey();
-            if (Ok(x, zz)) Put(pebbles[rng.Next(4)], x, zz, size, sink, 0.4f, new Color(g.R * 0.8f, g.G * 0.76f, g.B * 0.7f, 0), 0);
+            // (Round 2, frame 04: at the road's own value, the painted stone layer's 0.076 a shade under for the pebble's
+            // lit crown, within about 0.05 L of it, and sunk deeper: a crown in the road, not a fleck on it.)
+            float k = U(0.82f, 1.1f);
+            if (Ok(x, zz)) Put(pebbles[rng.Next(4)], x, zz, size, sink, 0.4f, new Color(0.078f * k, 0.071f * k, 0.062f * k, 0), 0);
         }
 
         foreach (var (p, hw0) in paths)
@@ -264,9 +266,9 @@ public static class Scatter
                         if (Chance(0.12f))
                         {
                             var q = c + n * (sg * U(0f, hw)) + dir * U(0, Step);
-                            Stone(q.X, q.Y, U(0.045f, 0.09f), 0.1f);
+                            Stone(q.X, q.Y, U(0.045f, 0.09f), 0.4f);
                         }
-                        if (Chance(0.2f)) { var q = c + n * (sg * (hw + U(-0.2f, 1.2f))) + dir * U(0, Step); Stone(q.X, q.Y, U(0.045f, 0.1f), 0.3f); }
+                        if (Chance(0.2f)) { var q = c + n * (sg * (hw + U(-0.2f, 1.2f))) + dir * U(0, Step); Stone(q.X, q.Y, U(0.045f, 0.1f), 0.5f); }
                         // (Judge 1, E3 fix 9: the odd edge stone sunk 30-50%, flat, dark as the road, dirt up its lower half,
                         // 0.25 m at most; the pale smooth ones read as eggs.)
                         if (Chance(0.04f))
@@ -341,8 +343,11 @@ public static class Scatter
                 float lx = fx + Mathf.Cos(an) * rr, lz = fz + Mathf.Sin(an) * rr;
                 if (!Ok(lx, lz)) continue;
                 double u = rng.NextDouble();
-                if (u < 0.35) Put(pebbles[rng.Next(4)], lx, lz, U(0.02f, 0.05f), 0.3f, 0.4f, Grey(), 0);
-                else if (u < 0.55) { if (!OnSetts(lx, lz)) Put(twig, lx, lz, U(0.12f, 0.4f), 0, 0.2f, Plant(new(0.07f, 0.055f, 0.04f), new(0.09f, 0.07f, 0.05f), U(0.7f, 1.1f)), 0.005f); }
+                // (H2 R2 round 2, frame 01: the pebbles a third as many, 6-10 cm and sunk, at the trodden earth's own value
+                // (the painted dirt's Y 0.052, within about 0.05 L): pale grey 2-5 cm ones were a rash of white specks at the
+                // title camera. The twigs out: 1-2 px black hairlines there.)
+                if (u < 0.12) { float k = U(0.85f, 1.18f); Put(pebbles[rng.Next(4)], lx, lz, U(0.06f, 0.1f), 0.5f, 0.4f, new Color(0.068f * k, 0.054f * k, 0.04f * k, 0), 0); }
+                else if (u < 0.55) continue;
                 else if (u < 0.7) Put(pebbles[rng.Next(4)], lx, lz, U(0.025f, 0.05f), 0.2f, 0.5f, Plant(new(0.16f, 0.11f, 0.07f), new(0.2f, 0.15f, 0.09f), U(0.6f, 1f)), 0, 0.45f);   // a wood chip
                 else if (!OnSetts(lx, lz)) Put(needle, lx, lz, U(0.07f, 0.12f), 0, 0.15f, Plant(new(0.13f, 0.08f, 0.04f), new(0.17f, 0.11f, 0.05f), U(0.6f, 1f)), 0.004f);
             }

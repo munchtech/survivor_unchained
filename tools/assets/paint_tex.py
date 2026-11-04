@@ -202,8 +202,10 @@ GROUND = dict(stroke=0.08, width=0.3, fine=0.02, mass=0.35, mid=0.6, fine_keep=0
 # CIE Lab about (4, 24), so the earths that lie under her pools are pulled there: litter, needles, rot; dirt, mud, leaves.)
 STRAW = (4.0, 24.0)
 GROUND_LAYERS = {
-    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}, "dirt": {"hue": STRAW, "pull": 0.45}, "mud": {"hue": STRAW, "pull": 0.3},
-               "leaves": {"hue": STRAW, "pull": 0.35}},
+    # (Judge r2-1 #5: the Verge's day grit was in the normals: the earths' and the grass's relief under the stroke to 20%.)
+    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}, "dirt": {"hue": STRAW, "pull": 0.45, "ndetail": 0.2},
+               "mud": {"hue": STRAW, "pull": 0.3, "ndetail": 0.2}, "leaves": {"hue": STRAW, "pull": 0.35, "ndetail": 0.2},
+               "grass": {"ndetail": 0.2}},
     "hollow": {"face": {"skip": 1}, "litter": {"hue": STRAW, "pull": 0.55}, "needles": {"hue": STRAW, "pull": 0.45},
                "rot": {"hue": STRAW, "pull": 0.3}},
     "ruts": {"face": {"skip": 1}}, "dig": {"face": {"skip": 1}}, "barrow": {"face": {"skip": 1}},
@@ -291,7 +293,13 @@ def paint_ground(albedo, normal, arh, tpm, p):
     out = np.clip(out * (y0 / max(y1, 1e-6)) ** (1 / 2.2), 0, 1)
     # the normals: the fine bumps smoothed away (they spark under the moon as speckle), the broad ones kept
     n = normal.astype(np.float32) * 2 - 1
-    nxy = blur(n[..., :2], px(p["nblur"])) * p["nflat"]
+    nxy = blur(n[..., :2], px(p["nblur"]))
+    # (R2 round 2, frame 04: under the Verge's sun the grit was in the normals) ndetail: the share kept of the relief
+    # finer than the stroke (1: all of it, as before); the swells the stroke's size and up kept whole
+    if p.get("ndetail", 1.0) < 1.0:
+        lo = blur(n[..., :2], px(p["stroke"]))
+        nxy = lo + (nxy - lo) * p["ndetail"]
+    nxy = nxy * p["nflat"]
     nz = np.sqrt(np.clip(1 - (nxy ** 2).sum(axis=2), 0.04, 1))
     nn = np.dstack([nxy, nz]) * 0.5 + 0.5
     # the arh: AO smoothed and lifted (its speckle is the gravel again), roughness smoothed, the height softened

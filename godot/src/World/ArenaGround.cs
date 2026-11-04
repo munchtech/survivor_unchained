@@ -90,6 +90,28 @@ public static class ArenaGround
         return !SurvivorUnchained.Args.Has("ground-raw") && ResourceLoader.Exists(p) ? p : $"{dir}/{k}.jpg";
     }
 
+    /// <summary>A place's layers as its ground shader takes them: texture repeats a metre
+    /// (1 / its metres x Look.Size), the tone that brings its photograph's mean (Y, linear) to
+    /// Look.Y, that mean, and its Look. The leaves (Grass.Leaves) take layer 0's from here too.</summary>
+    public readonly record struct LayerTone(float Scale, float Tone, float Mean, Layer Look);
+
+    public static List<LayerTone> Tones(string place)
+    {
+        using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"res://art/arena/{place}/layers.json"));
+        var looks = Looks[place];
+        var list = new List<LayerTone>();
+        int k = 0;
+        foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
+        {
+            var m = l.GetProperty("mean");
+            float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
+            var look = looks[k++];
+            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
+            list.Add(new LayerTone(1f / (l.GetProperty("metres").GetSingle() * look.Size), look.Y / y, y, look));
+        }
+        return list;
+    }
+
     public static ShaderMaterial Material(ZoneData z)
     {
         var place = z.Place!;
@@ -113,7 +135,6 @@ public static class ArenaGround
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(Sheet(dir, "normal")));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(Sheet(dir, "arh")));
         mat.SetShaderParameter("zone_size", z.Size);
-        using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json"));
         var scales = new Godot.Collections.Array<float>();
         var tones = new Godot.Collections.Array<float>();
         var sats = new Godot.Collections.Array<float>();
@@ -121,22 +142,15 @@ public static class ArenaGround
         var means = new Godot.Collections.Array<float>();
         var lifts = new Godot.Collections.Array<float>();
         var bumps = new Godot.Collections.Array<float>();
-        var looks = Looks[place.Id];
-        int k = 0;
-        foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
+        foreach (var t in Tones(place.Id))
         {
-            var m = l.GetProperty("mean");
-            float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
-            var look = looks[k];
-            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
-            scales.Add(1f / (l.GetProperty("metres").GetSingle() * look.Size));
-            tones.Add(look.Y / y);
-            sats.Add(look.Sat);
-            cons.Add(look.Con);
-            means.Add(y);
-            lifts.Add(look.Lift);
-            bumps.Add(look.Bump);
-            k++;
+            scales.Add(t.Scale);
+            tones.Add(t.Tone);
+            sats.Add(t.Look.Sat);
+            cons.Add(t.Look.Con);
+            means.Add(t.Mean);
+            lifts.Add(t.Look.Lift);
+            bumps.Add(t.Look.Bump);
         }
         mat.SetShaderParameter("g_scale", scales);
         mat.SetShaderParameter("g_tone", tones);

@@ -76,6 +76,11 @@ uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_black;
 // The ruts: the albedo at a full rut's core (GroundPaint gives G 0.42-1, so plus or minus 40%); the crown between them lighter.
 uniform float rut_dark = 0.45;
 uniform float crown_lift = 0.12;
+// (H2 R2 round 2, bible rule 5: the road's value masses) rut_cool: the ruts cooler as well as darker, damp tracks (at 1,
+// red 0.84, green 0.95, blue 1.1 of themselves at a full rut); verge_lift: the road's shoulders outside the ruts a step
+// lighter, like the crown, so the road reads as two dark tracks between lighter bands. 0: as before.
+uniform float rut_cool = 0.0;
+uniform float verge_lift = 0.0;
 // (lf3b, judge lf2 #3: Low Ford's ruts read as straight near-black trenches beside a pale kerb) rut_soft: the ruts' darkness
 // taken from the mask blurred over about rut_blur m (their edges eased out into the road and the grass), and broken along
 // them by a 2-3 m field down to (1 - rut_soft * 0.55) in places; 0: as before
@@ -124,6 +129,13 @@ uniform vec4 path_seg[12];
 uniform int path_n = 0;
 uniform float path_hw = 0.2;
 uniform float path_lift = 0.0;
+// (H2 R2 round 2, frame 01) camp_dim: the clearing past the trodden ring a step darker, from camp_dim_in m of the fire to
+// full by camp_dim_full and easing back by camp_dim_out, so the fire's pool is the lit mass and the moonlit clearing
+// round it holds under it. 0 (the default): none.
+uniform float camp_dim = 0.0;
+uniform float camp_dim_in = 3.2;
+uniform float camp_dim_full = 6.5;
+uniform float camp_dim_out = 22.0;
 // The setts' shoulders lit less (judge 1, E3 fix 6: the bevel rims read as mosaic; halve their highlight).
 uniform float setts_bump = 0.32;
 uniform float night_dew = 0.35;
@@ -638,6 +650,8 @@ void fragment() {
 			rough = mix(rough, 0.95, sc);
 			float tr = smoothstep(scorch_r * 0.95, scorch_r * 1.4, dn) * (1.0 - smoothstep(2.6, 3.4, dn)) * trample;
 			albedo *= 1.0 + tr * (0.7 + 0.6 * nM.g);
+			float dim = smoothstep(camp_dim_in, camp_dim_full, dn + (nM.r - 0.5) * 1.2) * (1.0 - smoothstep(camp_dim_out * 0.6, camp_dim_out, dn));
+			albedo *= 1.0 - camp_dim * dim;
 		}
 	}
 	if (path_n > 0) {
@@ -712,6 +726,8 @@ void fragment() {
 	albedo *= mix(1.0, rut_dark, rut_w);
 	albedo *= 1.0 - rut_sun * rut_w * ex4.g;
 	albedo *= 1.0 + crown_lift * smoothstep(0.82, 0.95, pm.r) * w_soft;
+	albedo *= mix(vec3(1.0), vec3(0.84, 0.95, 1.1), clamp(rut_w * rut_cool, 0.0, 1.0));
+	albedo *= 1.0 + verge_lift * smoothstep(0.2, 0.5, pm.r) * (1.0 - smoothstep(0.78, 0.9, pm.r)) * (1.0 - smoothstep(0.05, 0.3, rut_w)) * w_soft;
 	albedo *= mix(1.0, 0.64, wet);
 	rough = mix(rough, 0.72, wet * 0.6);
 	// (Not smoother: at the dawn's low sun a smoother rut took a sheen and read lighter than the road.)
