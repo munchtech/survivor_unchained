@@ -17,6 +17,9 @@ OUT defaults to survivorsunchained_inputs/demo_runs (outside the repo: saves and
 import json, os, shutil, subprocess, sys, time
 
 args = sys.argv[1:]
+# --stale-ok: the turn taken for a shot that needs no current art (a flow proof), as turn.py has it.
+STALE_OK = "--stale-ok" in args
+if STALE_OK: args.remove("--stale-ok")
 def opt(name, default):
     if name in args:
         i = args.index(name); v = args[i + 1]; del args[i:i + 2]; return v
@@ -46,7 +49,7 @@ def longest(folder):
 b = subprocess.run(["dotnet", "build", os.path.join(G, "SurvivorUnchained.csproj"), "-v", "q", "-nologo"], capture_output=True, text=True)
 if b.returncode != 0: print(b.stdout[-3000:]); sys.exit(1)
 TURN = "demo_run: " + os.path.basename(args[0])
-if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", "--root", ROOT]).returncode != 0:
+if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", "--root", ROOT] + (["--stale-ok"] if STALE_OK else [])).returncode != 0:
     print("TURN REFUSED"); sys.exit(1)
 try:
     for r in runs:

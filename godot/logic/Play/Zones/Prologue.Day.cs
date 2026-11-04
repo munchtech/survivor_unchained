@@ -191,20 +191,21 @@ public sealed partial class Prologue
         // The captain: on first sight, before his pack is on her or a beat after it is.
         if (DayBeat("kerchiefs") is { } kb && day.Captain(kb.Id) is { } cap && Dist(cap.X, cap.Z, p.X, p.Z) < 15
             && (!day.WokeAt.TryGetValue(kb.Id, out var kw) || B.Time - kw > 1.5))
-            Teach("day_hover", CalloutKind.Freeze, "Pick your target",
+            // (a lesson's quiet: 4 s clear of the charge's freeze and any other, j08 had them 1.7 s apart)
+            G.Teach(new Callout("day_hover", CalloutKind.Freeze, "Pick your target",
                 $"Point at the captain (mouse, or the right stick):{NL}your blows go to him first. He rallies the rest.",
                 new Aim
                 {
                     World = () => day?.Captain(kb.Id) is { } c ? [Up(c.X, c.Z, 1.0)] : [], Safe = true,
                     Ring = () => day?.Captain(kb.Id) is { } c ? [Up(c.X, c.Z, 0.15)] : [], RingRadius = 1.1,
-                }, patience: 8, urgent: true);
+                }) { Patience = 12, Urgent = true, Quiet = LessonQuiet });
         // The ring: the wolves on its band, the Flare full; frozen before they rush.
         if (day.RingAt >= 0 && B.Time - day.RingAt < 1.3 && DayBeat("wolves") is { } wb)
         {
             if (B.Flare is { } fl && B.FlareReady)
                 Teach("day_flare", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare. It clears the ring.",
                     new Aim { Hud = "art", World = () => day?.Standing(wb.Id).Select(e => Up(e.X, e.Z, 0.6)).ToList() ?? [], Each = true }, "flare", overHint: true, patience: 1.2, urgent: true);
-            else
+            else if (B.Flare == null)
                 Teach("day_gap", CalloutKind.Freeze, "The ring", $"{Key("dash")}: out through the gap before they close.", Aim.At("dash"), "dash", overHint: true, patience: 1.2, urgent: true);
         }
     }
