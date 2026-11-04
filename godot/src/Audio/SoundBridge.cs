@@ -241,8 +241,21 @@ public sealed class SoundBridge
         a.DuckMusic(o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
+        // The zone's recorded room, looked up only when the place or the hour changes (SoundBank.Has logs each ask).
+        var bedAt = (s.Mode is "title" or "create" ? "title" : s.Mode, s.Zone, s.Time == TimeOfDay.Night || s.Time == TimeOfDay.Dusk);
+        if (bedAt != lastBedAt)
+        {
+            lastBedAt = bedAt;
+            bedId = bedAt.Item1 == "title" ? SoundBank.FirstBanked("bed.title")
+                : bedAt.Item1 == "play" && s.Zone != null ? SoundBank.FirstBanked($"bed.{s.Zone}.{(bedAt.Item3 ? "night" : "day")}", $"bed.{s.Zone}")
+                : null;
+        }
+        Ambience.SetZone(bedId);
         Ambience.Update(dt);
     }
+
+    (string, string?, bool) lastBedAt = ("", null, false);
+    string? bedId;
 
     /// <summary>The title's fire on the Low Ford road: wind, the fire, crickets.</summary>
     static readonly AmbienceMix TitleAir = new() { Wind = 0.5, Fire = 0.8, Crickets = 0.4, Owl = 0.3 };

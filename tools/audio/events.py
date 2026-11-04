@@ -101,6 +101,12 @@ EV = {
     "telegraph.charge.land.boss":   E(L("tg_charge_land", 0.65, [0.8, 0.85]), L("gore_thump", 0.4, [0.7, 0.8]), near=0.8),
     "telegraph.pull.windup.boss":   E(L("tg_pull_windup", 0.60, [0.8, 0.85]), near=0.8),
     "telegraph.pull.land.boss":     E(L("tg_pull_land", 0.65, [0.8, 0.85]), L("gore_thump", 0.4, [0.7, 0.8]), near=0.8),
+    # zone beds (Ambience.SetZone: bed.<zone>.<day|night>, then bed.<zone>; the first layer's take loops, at its gain)
+    "bed.verge.day":       E(L("bed_verge_day", 0.45, stereo=True), bus="ambience"),
+    "bed.lowford":         E(L("bed_lowford_night", 0.45, stereo=True), bus="ambience"),
+    "bed.waystation":      E(L("bed_waystation", 0.45, stereo=True), bus="ambience"),
+    "bed.arena":           E(L("bed_deepshaw_night", 0.45, stereo=True), bus="ambience"),
+    "bed.title":           E(L("bed_title", 0.50, stereo=True), bus="ambience"),
     "ford.channel":        E(L("ford_channel", 0.55), near=0.8),
     "ford.channel_broken": E(L("ford_broken", 0.60), near=1),
     "ford.lamp_out":       E(L("ford_lamp_out", 0.60), near=0.8),
