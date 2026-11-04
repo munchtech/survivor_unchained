@@ -11,6 +11,7 @@ Each run: Godot at 1920x1080 with --shot NAME added; frames go to godot/.shots/N
   at the table after night N) copies the saves folder to OUT/snap_NAME_TAG while the run goes on, so a later
   run can start from any step of the loop.
 - "load_snap": "SNAP" (a folder name after snap_) or "RUN:TAG" reloads the longest-played slot in it with --load.
+- "godot": ["--fixed-fps", "60"]: engine arguments before the game's own (tools/style/frames.py: even game time, the same frames each round).
 One godot turn (tools/turn.py) for the whole batch; the game is built first. Stops only the Godot it started, by PID.
 OUT defaults to survivorsunchained_inputs/demo_runs (outside the repo: saves and logs are large and personal)."""
 import json, os, shutil, subprocess, sys, time
@@ -59,7 +60,7 @@ try:
             extra = ["--load", best[1]] + extra
         logp = os.path.join(LOGS, name + ".log")
         with open(logp, "w", encoding="utf-8", errors="replace") as lf:
-            p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080", "--", "--shot", name] + extra, stdout=lf, stderr=subprocess.STDOUT)
+            p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080"] + list(r.get("godot", [])) + ["--", "--shot", name] + extra, stdout=lf, stderr=subprocess.STDOUT)
             seen, deadline = 0, t0 + r.get("timeout", 600)
             while p.poll() is None:
                 time.sleep(2)
