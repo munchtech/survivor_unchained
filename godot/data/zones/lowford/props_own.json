@@ -1,5 +1,5 @@
 {
- "_doc": "Our own props in this zone (OwnProps.cs; the presets: tools/assets/env_props.json, built by env_props.py). pieces: a kit piece of props.json -> the preset standing in for it wherever it stands (fitted to the kit piece's height, on its footprint). keep: [x, z] places where the kit piece stays (another lead's). place: a preset stood at x, z (on the ground, + y), turned rot radians about up, scaled; or along a line from a to b ([x, y, z], the preset's long axis on it) at radius r (a log). bare: [r, k] the grass gone within r and thinning out to k times r (with the fires, the first four in the zone). hide: [x, z, r, max height] the web game's blocked-out meshes there go (not its kit pieces). lamps: a lamp holder's light by its glow node: color, energy (times the road lamps'), range, att, day (its share when not night), spec (its specular; E8: the gate torches' pools on the cobbles, smooth and dim at dawn). nudge: [x, z, dx, dz, degrees] the preset standing in for the kit piece at x, z shifted and turned (the chest off the log's end). drop: landmark nodes that go (the unlit standing lantern west of the camp, a crate in its place). kits (E7b): a KayKit piece of landmarks.glb (kk-PACK-NAME-N) -> our preset standing in for it (a list: the copies take them in turn by N), built in the kit piece's own units and frame so it stands where the kit piece stood, inside its collider; {\"preset\", \"over\": the made piece (Pieces.cs) stays under it, minus what the preset is (the crypt keeps its slate roof, coping and iron door), \"scale\"}; \"flora:NAME\" is one of our own trees. flora_move (E7b r3): [x, z, dx, dz] shifts the zone's flora copy at x, z (within 0.5 m), [x, z] drops it (nine trees north-east of the Watch-post, on the dawn sun's line to its walls' tops (out to 30 m: the sun is 18 degrees up), moved 4-10 m aside, so the wood keeps its density; lf1b: the first five, a spruce clump on her line south from the camp at z 63-70 (Experience 3: trunks ~1 m from her path), moved 3 m west, the one that would stand on (-11.7, 69.9) dropped; E8: the spruce at (6.05, -14.93) and the broadleaf at (6.14, -19.97) about 2 m east, off C01 s8a's line to the third ford lamp). lit_light: the \"lit\" torches' own light (color, energy times the kit torch's, range, att). The barrow's crosses and the headstone at (-17, 0) are nudged (turned) so their faces meet the play camera (their kit frames had them edge-on).",
+ "_doc": "Our own props in this zone (OwnProps.cs; the presets: tools/assets/env_props.json, built by env_props.py). pieces: a kit piece of props.json -> the preset standing in for it wherever it stands (fitted to the kit piece's height, on its footprint). keep: [x, z] places where the kit piece stays (another lead's). place: a preset stood at x, z (on the ground, + y), turned rot radians about up, scaled; or along a line from a to b ([x, y, z], the preset's long axis on it) at radius r (a log). bare: [r, k] the grass gone within r and thinning out to k times r (with the fires, the first four in the zone). hide: [x, z, r, max height] the web game's blocked-out meshes there go (not its kit pieces). lamps: a lamp holder's light by its glow node: color, energy (times the road lamps'), range, att, day (its share when not night), spec (its specular; E8: the gate torches' pools on the cobbles, smooth and dim at dawn). nudge: [x, z, dx, dz, degrees] the preset standing in for the kit piece at x, z shifted and turned (the chest off the log's end). drop: landmark nodes that go (the unlit standing lantern west of the camp, a crate in its place). kits (E7b): a KayKit piece of landmarks.glb (kk-PACK-NAME-N) -> our preset standing in for it (a list: the copies take them in turn by N), built in the kit piece's own units and frame so it stands where the kit piece stood, inside its collider; {\"preset\", \"over\": the made piece (Pieces.cs) stays under it, minus what the preset is (the crypt keeps its slate roof, coping and iron door), \"scale\"}; \"flora:NAME\" is one of our own trees. flora_move (E7b r3): [x, z, dx, dz] shifts the zone's flora copy at x, z (within 0.5 m), [x, z] drops it (nine trees north-east of the Watch-post, on the dawn sun's line to its walls' tops (out to 30 m: the sun is 18 degrees up), moved 4-10 m aside, so the wood keeps its density; lf1b: the first five, a spruce clump on her line south from the camp at z 63-70 (Experience 3: trunks ~1 m from her path), moved 3 m west, the one that would stand on (-11.7, 69.9) dropped; E8: the spruce at (6.05, -14.93) and the broadleaf at (6.14, -19.97) about 2 m east, off C01 s8a's line to the third ford lamp). lit_light: the \"lit\" torches' own light (color, energy times the kit torch's, range, att). The barrow's crosses and the headstone at (-17, 0) are nudged (turned) so their faces meet the play camera (their kit frames had them edge-on). H4 item 10 r2: the day stretch's Kerchief camp (44, -89) and boars' wallow (-42, -89) and their tracks off the road opened by flora_move (the copies moved out to the clearings' and tracks' edges, so the wood keeps its density); flora_move now moves the tree's collider too (ZoneMeta.MoveFloraColliders).",
  "pieces": {
   "props/Chest_Wood": "chest",
   "props/Crate_Wooden": "crate",
@@ -17,52 +17,613 @@
    0.0,
    12
   ],
-  [19.6, 29.0, -0.7, 0.14, 0],
-  [-21.0, 5.0, 0, 0, -84.1],
-  [-19.5, 9.0, 0, 0, 82.0],
-  [-12.5, 3.5, 0, 0, -112.6],
-  [-17.0, 0.0, 0, 0, -79.4]
+  [
+   19.6,
+   29.0,
+   -0.7,
+   0.14,
+   0
+  ],
+  [
+   -21.0,
+   5.0,
+   0,
+   0,
+   -84.1
+  ],
+  [
+   -19.5,
+   9.0,
+   0,
+   0,
+   82.0
+  ],
+  [
+   -12.5,
+   3.5,
+   0,
+   0,
+   -112.6
+  ],
+  [
+   -17.0,
+   0.0,
+   0,
+   0,
+   -79.4
+  ]
  ],
  "flora_move": [
-  [-40.27, -74.45, 37.47, -12.05],
-  [32.38, -69.06, -34.58, -23.44],
-  [28.18, -77.12, -31.58, 10.62],
-  [6.05, -14.93, 2.20, -1.00],
-  [6.14, -19.97, 1.76, 0.57],
-  [-3.73, 63.18, -3.00, -0.60],
-  [-6.61, 66.90, -3.00, 0.00],
-  [-5.61, 69.44, -3.00, 0.00],
-  [-7.91, 69.93],
-  [-7.96, 64.29, -3.00, -0.80],
-  [23.51, 20.77, -8.25, 3.25],
-  [26.01, 21.47, 0.75, 8.25],
-  [27.33, 22.36, 5.50, 7.00],
-  [23.07, 18.53, -9.50, 0.00],
-  [27.46, 18.47, 7.75, -3.75],
-  [26.04, 13.75, -1.75, -5.25],
-  [30.78, 7.38, -4.75, -1.25],
-  [32.58, 3.73, -4.00, -2.00],
-  [32.68, 7.14, 7.00, 3.50]
+  [
+   -40.27,
+   -74.45,
+   37.47,
+   -12.05
+  ],
+  [
+   32.38,
+   -69.06,
+   -34.58,
+   -23.44
+  ],
+  [
+   28.18,
+   -77.12,
+   -31.58,
+   10.62
+  ],
+  [
+   6.05,
+   -14.93,
+   2.2,
+   -1.0
+  ],
+  [
+   6.14,
+   -19.97,
+   1.76,
+   0.57
+  ],
+  [
+   -3.73,
+   63.18,
+   -3.0,
+   -0.6
+  ],
+  [
+   -6.61,
+   66.9,
+   -3.0,
+   0.0
+  ],
+  [
+   -5.61,
+   69.44,
+   -3.0,
+   0.0
+  ],
+  [
+   -7.91,
+   69.93
+  ],
+  [
+   -7.96,
+   64.29,
+   -3.0,
+   -0.8
+  ],
+  [
+   23.51,
+   20.77,
+   -8.25,
+   3.25
+  ],
+  [
+   26.01,
+   21.47,
+   0.75,
+   8.25
+  ],
+  [
+   27.33,
+   22.36,
+   5.5,
+   7.0
+  ],
+  [
+   23.07,
+   18.53,
+   -9.5,
+   0.0
+  ],
+  [
+   27.46,
+   18.47,
+   7.75,
+   -3.75
+  ],
+  [
+   26.04,
+   13.75,
+   -1.75,
+   -5.25
+  ],
+  [
+   30.78,
+   7.38,
+   -4.75,
+   -1.25
+  ],
+  [
+   32.58,
+   3.73,
+   -4.0,
+   -2.0
+  ],
+  [
+   32.68,
+   7.14,
+   7.0,
+   3.5
+  ],
+  [
+   -48.17,
+   -90.22,
+   -3.47,
+   -1.41
+  ],
+  [
+   -48.78,
+   -85.94,
+   -1.98,
+   0.1
+  ],
+  [
+   -45.17,
+   -93.82,
+   0.21,
+   -5.95
+  ],
+  [
+   -39.89,
+   -94.09,
+   2.66,
+   -2.75
+  ],
+  [
+   -39.4,
+   -88.92,
+   8.68,
+   -2.6
+  ],
+  [
+   -24.45,
+   -89.35,
+   1.46,
+   -3.54
+  ],
+  [
+   -46.71,
+   -84.51,
+   -4.97,
+   -0.38
+  ],
+  [
+   -39.55,
+   -85.51,
+   3.92,
+   3.62
+  ],
+  [
+   -24.56,
+   -88.72,
+   0.23,
+   -3.63
+  ],
+  [
+   -43.13,
+   -92.27,
+   -0.42,
+   -7.3
+  ],
+  [
+   -22.74,
+   -87.89,
+   -0.86,
+   2.22
+  ],
+  [
+   -5.78,
+   -87.37,
+   -1.5,
+   3.66
+  ],
+  [
+   -45.38,
+   -89.18,
+   -5.33,
+   -1.29
+  ],
+  [
+   -33.44,
+   -88.24,
+   1.04,
+   2.1
+  ],
+  [
+   -13.07,
+   -89.33,
+   0.68,
+   -3.19
+  ],
+  [
+   -38.91,
+   -84.26,
+   4.35,
+   3.89
+  ],
+  [
+   41.76,
+   -92.3,
+   -5.4,
+   -4.39
+  ],
+  [
+   42.82,
+   -90.37,
+   -5.41,
+   -5.33
+  ],
+  [
+   47.02,
+   -92.04,
+   5.92,
+   -4.56
+  ],
+  [
+   37.99,
+   -88.81,
+   -3.18,
+   3.43
+  ],
+  [
+   40.09,
+   -87.76,
+   -4.69,
+   2.33
+  ],
+  [
+   9.88,
+   -84.91,
+   0.54,
+   -3.31
+  ],
+  [
+   42.24,
+   -85.61,
+   -4.67,
+   5.29
+  ],
+  [
+   40.49,
+   -82.46,
+   -3.73,
+   -0.15
+  ],
+  [
+   42.62,
+   -81.38,
+   -1.14,
+   2.39
+  ],
+  [
+   38.1,
+   -93.88,
+   -0.8,
+   -1.91
+  ],
+  [
+   9.89,
+   -84.51,
+   -0.71,
+   4.0
+  ],
+  [
+   14.43,
+   -86.49,
+   0.71,
+   -1.73
+  ],
+  [
+   42.33,
+   -81.33,
+   -4.78,
+   0.61
+  ],
+  [
+   42.35,
+   -94.23,
+   -2.14,
+   -3.96
+  ],
+  [
+   37.47,
+   -92.09,
+   -4.26,
+   0.72
+  ],
+  [
+   41.75,
+   -94.46,
+   -4.0,
+   -1.77
+  ],
+  [
+   47.42,
+   -95.39,
+   0.77,
+   -2.35
+  ],
+  [
+   44.97,
+   -87.94,
+   5.54,
+   8.62
+  ],
+  [
+   40.57,
+   -85.68,
+   -5.95,
+   1.7
+  ],
+  [
+   49.03,
+   -94.79,
+   0.57,
+   -3.09
+  ],
+  [
+   49.06,
+   -91.93,
+   0.87,
+   -6.73
+  ],
+  [
+   51.04,
+   -86.38,
+   2.94,
+   -0.72
+  ],
+  [
+   50.19,
+   -90.52,
+   2.14,
+   -4.95
+  ],
+  [
+   -48.78,
+   -85.94,
+   -2.52,
+   0.24
+  ],
+  [
+   -48.71,
+   -87.4,
+   -3.91,
+   -3.05
+  ],
+  [
+   -38.62,
+   -92.33,
+   1.86,
+   -5.51
+  ],
+  [
+   -33.44,
+   -88.24,
+   -0.16,
+   3.7
+  ],
+  [
+   -21.18,
+   -87.28,
+   1.25,
+   2.54
+  ],
+  [
+   -46.48,
+   -89.18,
+   -5.6,
+   -0.12
+  ],
+  [
+   -28.61,
+   -87.1,
+   0.19,
+   1.78
+  ],
+  [
+   -16.24,
+   -87.93,
+   -0.2,
+   3.25
+  ],
+  [
+   -45.47,
+   -84.22,
+   -1.86,
+   2.72
+  ],
+  [
+   -42.67,
+   -83.18,
+   0.02,
+   5.77
+  ],
+  [
+   -25.66,
+   -88.72,
+   1.48,
+   -3.16
+  ],
+  [
+   -18.98,
+   -88.03,
+   -0.17,
+   2.24
+  ],
+  [
+   9.88,
+   -84.91,
+   -1.52,
+   -2.23
+  ],
+  [
+   20.27,
+   -85.63,
+   0.18,
+   2.47
+  ],
+  [
+   44.97,
+   -87.94,
+   1.65,
+   9.27
+  ],
+  [
+   49.06,
+   -91.93,
+   3.81,
+   -2.71
+  ],
+  [
+   -38.97,
+   -88.83,
+   7.92,
+   3.0
+  ],
+  [
+   -36.99,
+   -88.88,
+   3.92,
+   -3.1
+  ],
+  [
+   38.85,
+   -86.71,
+   -5.28,
+   3.18
+  ],
+  [
+   24.74,
+   -86.27,
+   1.62,
+   3.46
+  ]
  ],
- "lit_light": {"energy": 5.0, "range": 5.0, "att": 1.2},
- "lit": [[18.9, 29.14]],
+ "lit_light": {
+  "energy": 5.0,
+  "range": 5.0,
+  "att": 1.2
+ },
+ "lit": [
+  [
+   18.9,
+   29.14
+  ]
+ ],
  "drop": [
   "kk-halloween-lantern_standing-0"
  ],
  "place": [
-  {"_doc": "Env 22 r1e (judge: the wood road by night one violet value, nothing at its verges): the wood road's verge kit at the moonlit gap (flora_move: three alders from deep in the wood to the road's west edge, their shadows across it north and south of the gap)", "preset": "fallen_trunk", "x": 6.0, "z": -79.0, "rot": 0.6},
-  {"preset": "waystone", "x": -1.5, "z": -76.0, "rot": 0.9},
-  {"preset": "branches_a", "x": -4.6, "z": -78.8, "rot": 0.3},
-  {"preset": "branches_b", "x": 4.9, "z": -66.5, "rot": 2.1},
-  {"preset": "roots_a", "x": -5.9, "z": -76.66, "rot": 0.6},
-  {"preset": "roots_a", "x": -3.4, "z": -66.5, "rot": 2.4, "scale": 0.9},
-  {"preset": "branches_b", "x": 3.6, "z": 84.5, "rot": 0.7},
-  {"preset": "castle", "x": 3.0, "z": -650.0, "y": 0.2, "scale": 0.6},
-  {"preset": "beyond_house", "x": 2.6, "z": -117.8},
-  {"preset": "haze_veil", "x": 0.0, "z": -114.85, "y": -0.4},
-  {"preset": "beyond_lamp", "x": -1.3, "z": -116.0},
-  {"preset": "camp_ground", "x": -10.5, "z": 90.5},
-  {"preset": "bedroll_open", "x": -12.6, "z": 90.6, "rot": 3.1416, "hide": [-12.6, 90.6, 0.7, 1.2], "bare": [1.05, 1.5]},
+  {
+   "_doc": "Env 22 r1e (judge: the wood road by night one violet value, nothing at its verges): the wood road's verge kit at the moonlit gap (flora_move: three alders from deep in the wood to the road's west edge, their shadows across it north and south of the gap)",
+   "preset": "fallen_trunk",
+   "x": 6.0,
+   "z": -79.0,
+   "rot": 0.6
+  },
+  {
+   "preset": "waystone",
+   "x": -1.5,
+   "z": -76.0,
+   "rot": 0.9
+  },
+  {
+   "preset": "branches_a",
+   "x": -4.6,
+   "z": -78.8,
+   "rot": 0.3
+  },
+  {
+   "preset": "branches_b",
+   "x": 4.9,
+   "z": -66.5,
+   "rot": 2.1
+  },
+  {
+   "preset": "roots_a",
+   "x": -5.9,
+   "z": -76.66,
+   "rot": 0.6
+  },
+  {
+   "preset": "roots_a",
+   "x": -3.4,
+   "z": -66.5,
+   "rot": 2.4,
+   "scale": 0.9
+  },
+  {
+   "preset": "branches_b",
+   "x": 3.6,
+   "z": 84.5,
+   "rot": 0.7
+  },
+  {
+   "preset": "castle",
+   "x": 3.0,
+   "z": -650.0,
+   "y": 0.2,
+   "scale": 0.6
+  },
+  {
+   "preset": "beyond_house",
+   "x": 2.6,
+   "z": -117.8
+  },
+  {
+   "preset": "haze_veil",
+   "x": 0.0,
+   "z": -114.85,
+   "y": -0.4
+  },
+  {
+   "preset": "beyond_lamp",
+   "x": -1.3,
+   "z": -116.0
+  },
+  {
+   "preset": "camp_ground",
+   "x": -10.5,
+   "z": 90.5
+  },
+  {
+   "preset": "bedroll_open",
+   "x": -12.6,
+   "z": 90.6,
+   "rot": 3.1416,
+   "hide": [
+    -12.6,
+    90.6,
+    0.7,
+    1.2
+   ],
+   "bare": [
+    1.05,
+    1.5
+   ]
+  },
   {
    "preset": "log_long",
    "a": [
@@ -91,8 +652,19 @@
    ],
    "r": 0.215
   },
-  {"_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)", "preset": "saddlebags", "x": -15.0, "z": 93.1, "rot": 0.9},
-  {"preset": "pack_dull", "x": -14.3, "z": 93.7, "rot": 2.6},
+  {
+   "_doc": "C01 set (judge: a stock crate and a treasure chest the brightest props in s10 and s12): a traveller's camp, so her saddlebags where the crate stood and her pack where the chest stood (the camp's chest is a kit piece of dressing, cleared: \"clear\"; the watch's chest by the post, the tutorial's, stays)",
+   "preset": "saddlebags",
+   "x": -15.0,
+   "z": 93.1,
+   "rot": 0.9
+  },
+  {
+   "preset": "pack_dull",
+   "x": -14.3,
+   "z": 93.7,
+   "rot": 2.6
+  },
   {
    "preset": "wagon",
    "x": 5,
@@ -105,16 +677,146 @@
     1.9
    ]
   },
-  {"_doc": "Env 22 r1c (triage judge: the gate's apron large, flat and empty): a handcart left by the west tower, barrels and a crate by the east one, off the way", "preset": "handcart", "x": -6.2, "z": -104.2, "rot": 1.25},
-  {"preset": "barrel", "x": 6.4, "z": -105.9, "rot": 0.4},
-  {"preset": "barrel", "x": 7.25, "z": -105.2, "rot": 1.9, "scale": 0.92},
-  {"preset": "crate", "x": 5.7, "z": -104.7, "rot": 0.3, "scale": 0.8},
-  {"_doc": "Env 22 r2 (judge r1: the apron still empty): loose cobbles, straw off the carts, twigs (gate_apron, camp_ground's kit; no shadow); the puddle is \"puddles\"", "preset": "gate_apron", "x": 0.0, "z": -103.5}
+  {
+   "_doc": "Env 22 r1c (triage judge: the gate's apron large, flat and empty): a handcart left by the west tower, barrels and a crate by the east one, off the way",
+   "preset": "handcart",
+   "x": -6.2,
+   "z": -104.2,
+   "rot": 1.25
+  },
+  {
+   "preset": "barrel",
+   "x": 6.4,
+   "z": -105.9,
+   "rot": 0.4
+  },
+  {
+   "preset": "barrel",
+   "x": 7.25,
+   "z": -105.2,
+   "rot": 1.9,
+   "scale": 0.92
+  },
+  {
+   "preset": "crate",
+   "x": 5.7,
+   "z": -104.7,
+   "rot": 0.3,
+   "scale": 0.8
+  },
+  {
+   "_doc": "Env 22 r2 (judge r1: the apron still empty): loose cobbles, straw off the carts, twigs (gate_apron, camp_ground's kit; no shadow); the puddle is \"puddles\"",
+   "preset": "gate_apron",
+   "x": 0.0,
+   "z": -103.5
+  },
+  {
+   "_doc": "H4 item 10 r2: the Kerchiefs' camp in a clearing 44 m east of the road (flora_move opens it and its track; the strongbox at its back, by the crates)",
+   "preset": "heap_crates",
+   "x": 47.6,
+   "z": -85.6,
+   "rot": 2.6,
+   "col": [
+    0.0,
+    0.1,
+    1.3,
+    0.6
+   ]
+  },
+  {
+   "preset": "heap_sacks",
+   "x": 48.6,
+   "z": -88.6,
+   "rot": 1.9
+  },
+  {
+   "preset": "woodpile",
+   "x": 42.4,
+   "z": -94.2,
+   "rot": 0.2,
+   "col": [
+    0.75,
+    0.0,
+    1.6,
+    0.45
+   ]
+  },
+  {
+   "preset": "handcart",
+   "x": 39.8,
+   "z": -84.4,
+   "rot": 2.3
+  },
+  {
+   "preset": "bedroll_open",
+   "x": 41.2,
+   "z": -88.0,
+   "rot": 1.3
+  },
+  {
+   "preset": "bedroll_open",
+   "x": 45.0,
+   "z": -92.6,
+   "rot": 3.4
+  },
+  {
+   "preset": "barrel",
+   "x": 49.2,
+   "z": -91.0,
+   "rot": 0.7
+  },
+  {
+   "_doc": "H4 item 10 r2: the boars' wallow in the low hollow 42 m west of the road (flora_move opens it): a fallen spruce across its north side",
+   "preset": "fallen_trunk",
+   "x": -43.5,
+   "z": -95.2,
+   "rot": 0.25
+  }
  ],
- "clear": [[-12.1, 88.3, 0.5]],
- "puddles": [[1.5, -103.1, 0.95, 0.55, 18], [-2.3, -101.6, 0.5, 0.32, -30]],
+ "clear": [
+  [
+   -12.1,
+   88.3,
+   0.5
+  ]
+ ],
+ "puddles": [
+  [
+   1.5,
+   -103.1,
+   0.95,
+   0.55,
+   18
+  ],
+  [
+   -2.3,
+   -101.6,
+   0.5,
+   0.32,
+   -30
+  ]
+ ],
  "night_lamps": [
-  {"_": "(Env 22 r2, judge r1: the gate's apron cool and empty, the passage floor a black void) a lantern set down inside the arch by the east jamb: its light down the passage floor and out over the apron", "holder": "lantern_standing", "on": [1.35, -109.3, 0.0], "local": [0.0, 0.0, 0.0], "turn": 0.5, "color": "#ffb468", "energy": 3.2, "range": 14.0, "att": 0.7, "spec": 0.25}
+  {
+   "_": "(Env 22 r2, judge r1: the gate's apron cool and empty, the passage floor a black void) a lantern set down inside the arch by the east jamb: its light down the passage floor and out over the apron",
+   "holder": "lantern_standing",
+   "on": [
+    1.35,
+    -109.3,
+    0.0
+   ],
+   "local": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "turn": 0.5,
+   "color": "#ffb468",
+   "energy": 3.2,
+   "range": 14.0,
+   "att": 0.7,
+   "spec": 0.25
+  }
  ],
  "lamps": {
   "glow-1-0": {
@@ -159,14 +861,54 @@
    "energy": 1.0,
    "day": 0.15
   },
-  "glow-7-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06},
-  "glow-8-0": {"color": "#ffd090", "energy": 0.6, "att": 1.05, "spec": 0.1, "day": 0.06}
+  "glow-7-0": {
+   "color": "#ffd090",
+   "energy": 0.6,
+   "att": 1.05,
+   "spec": 0.1,
+   "day": 0.06
+  },
+  "glow-8-0": {
+   "color": "#ffd090",
+   "energy": 0.6,
+   "att": 1.05,
+   "spec": 0.1,
+   "day": 0.06
+  }
  },
- "no_gutter": [[12.5, 29.8], [20.2, 39.5]],
+ "no_gutter": [
+  [
+   12.5,
+   29.8
+  ],
+  [
+   20.2,
+   39.5
+  ]
+ ],
  "kits": {
-  "hex_buildings/wall_straight": {"preset": ["curtain_a", "curtain_b", "curtain_c", "curtain_d"], "scale": 0.192308},
-  "hex_buildings/wall_straight_gate": {"preset": "gatehouse", "scale": 0.192308},
-  "hex_buildings/building_tower_base_blue": {"preset": ["tower_w", "tower_e", "tower_w", "tower_w"], "scale": 0.213675},
+  "hex_buildings/wall_straight": {
+   "preset": [
+    "curtain_a",
+    "curtain_b",
+    "curtain_c",
+    "curtain_d"
+   ],
+   "scale": 0.192308
+  },
+  "hex_buildings/wall_straight_gate": {
+   "preset": "gatehouse",
+   "scale": 0.192308
+  },
+  "hex_buildings/building_tower_base_blue": {
+   "preset": [
+    "tower_w",
+    "tower_e",
+    "tower_w",
+    "tower_w"
+   ],
+   "scale": 0.213675
+  },
   "dungeon/wall_cracked": "wall_cracked",
   "dungeon/wall_broken": "wall_broken",
   "dungeon/wall_half": "wall_half",

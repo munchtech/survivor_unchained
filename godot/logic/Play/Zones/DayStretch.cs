@@ -26,6 +26,10 @@ public sealed class DayStretch
         public double X, Z, Spread = 3, Wake = 9, Leash = 20, R = 2.4, ArmZ, FlareTo = 1, FirstAfter = 1.2;
         public List<Foe> Foes = new();
         public string? Tell, Captain, Post, Def, FollowElite;
+        /// <summary>Only this kind casts the pack's tell (null: all of it); a chest's keepers (a pack's id).</summary>
+        public string? TellBy, Guard;
+        /// <summary>A ring springs only within this of its x (a fight off the road that strays north does not).</summary>
+        public double HalfWidth = 999;
         /// <summary>A ring's second wave: the rest of the pack, out of the trees toward the gate, FollowAfter s on.</summary>
         public List<Foe> Follow = new();
         public double FollowAfter = 3;
@@ -176,6 +180,7 @@ public sealed class DayStretch
             double reach = k is { Length: > 0 } ? k.Length - 2 : 12;
             foreach (var (e, seed) in up)
             {
+                if (bt.TellBy != null && e.Def.Id != bt.TellBy) continue;
                 // Its charge is the kit's (marked, held, dashed), never its own.
                 e.RangedT = Math.Max(e.RangedT, 5);
                 if (!nextTell.TryGetValue(seed, out var at)) nextTell[seed] = at = woke + bt.FirstAfter + 0.9 * up.IndexOf((e, seed));
@@ -194,12 +199,66 @@ public sealed class DayStretch
             if (RingAt >= 0 && !followed && b.Time - RingAt >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
             if (p.Z > bt.ArmZ) armed = true;
-            if (!armed || p.Z > bt.Z || Held?.Invoke() == true) continue;
+            if (!armed || p.Z > bt.Z || Math.Abs(p.X - bt.X) > bt.HalfWidth || Fighting || Held?.Invoke() == true) continue;
             Ring(bt);
         }
     }
 
     bool followed;
+
+    /// <summary>Where a sensible player goes next (the autopilot's day and the harness's, one route): a waking pack's
+    /// nearest foe, fought where it stands; else the beats in the data's order, each pack's ground, a chest once its
+    /// keepers are down (chestAt: where it lies, null while it is not on the ground), a dark post, the ring's line
+    /// (south of its arming line first); then the gate. A place across the ground comes back as the next corner of a
+    /// route round the trees (GroundPath), a foe straight. For: the beat it is for (null: the gate or a fight).</summary>
+    public (double X, double Z, Beat? For) Goal(Func<Beat, bool> postLit, Func<Beat, (double X, double Z)?> chestAt, double gateX)
+    {
+        var p = b.Player;
+        Enemy? near = null; double nd = 16;
+        foreach (var (id, _) in Packs)
+        {
+            if (!WokeAt.ContainsKey(id) || DownAt.ContainsKey(id)) continue;
+            foreach (var e in Standing(id)) { double d = Dist(e.X, e.Z, p.X, p.Z); if (d < nd) { nd = d; near = e; } }
+        }
+        if (near != null) return (near.X, near.Z, null);
+        foreach (var bt in S.Beats)
+        {
+            switch (bt.Kind)
+            {
+                case "pack" when Packs.ContainsKey(bt.Id) && !DownAt.ContainsKey(bt.Id):
+                {
+                    // (woke, its foes strayed: the nearest of them; resting: its ground)
+                    var up = Standing(bt.Id);
+                    if (WokeAt.ContainsKey(bt.Id) && up.Count > 0) { var f = up.MinBy(e => Dist(e.X, e.Z, p.X, p.Z))!; return Route(f.X, f.Z, bt); }
+                    return Route(bt.X, bt.Z, bt);
+                }
+                case "chest" when !Done(bt.Id) && (bt.Guard == null || Done(bt.Guard)) && chestAt(bt) is { } c:
+                    return Route(c.X, c.Z, bt);
+                case "post" when !postLit(bt):
+                    return Route(bt.X + 1.4, bt.Z, bt);
+                case "ring" when !Done(bt.Id) && RingAt < 0:
+                    return armed ? Route(bt.X, bt.Z - 3, bt) : Route(bt.X, bt.ArmZ + 2.5, bt);
+            }
+        }
+        return Route(gateX, S.GateZ - 6, null);
+    }
+
+    List<(double X, double Z)>? route;
+    (double X, double Z) routeTo;
+    double routeAt = -99;
+
+    /// <summary>The next corner of a route round what is solid to (x, z), found again every 2 s or when the goal moves.</summary>
+    (double X, double Z, Beat? For) Route(double x, double z, Beat? bt)
+    {
+        var p = b.Player;
+        if (route == null || b.Time - routeAt > 2 || Dist(routeTo.X, routeTo.Z, x, z) > 1.5)
+        {
+            routeAt = b.Time; routeTo = (x, z);
+            route = GroundPath.Find(b.Collision, p.X, p.Z, x, z, 0.5);
+        }
+        while (route is { Count: > 1 } && Dist(route[0].X, route[0].Z, p.X, p.Z) < 0.9) route.RemoveAt(0);
+        return route is { Count: > 0 } ? (route[0].X, route[0].Z, bt) : (x, z, bt);
+    }
 
     /// <summary>The rest of the ring's pack: out of the trees 12 m on toward the gate, hunting her.</summary>
     void Follow(Beat bt)

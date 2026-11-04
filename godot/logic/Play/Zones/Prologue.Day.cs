@@ -97,6 +97,7 @@ public sealed partial class Prologue
         var steps = new List<Step> { new("Walk up the road to the Waystation") };
         if (DayBeat("post") is { Post: { } pid } && Lamps.V2) steps.Add(new("Relight the road lamp", true, LampBook.PostLit(W, pid)));
         if (day != null && DayBeat("strongbox") != null) steps.Add(new("Find the Kerchiefs' strongbox", true, day.Done("strongbox")));
+        if (day != null && DayBeat("wallow") != null) steps.Add(new("Drive the boars from the west wallow", true, day.Done("wallow")));
         G.SetObjectives([new Tracked("pro", "The Road North", TrackTone.Tutorial, steps)]);
     }
 
@@ -224,25 +225,13 @@ public sealed partial class Prologue
         return pts.OrderBy(q => Dist(q.X, q.Z, p.X, p.Z)).ToList();
     }
 
-    /// <summary>Where a sensible player goes next on the stretch (the autopilot's day): a waking pack fought where it
-    /// stands, the strongbox once its keepers are down, the dark lamp, then the gate. Press: the prompt to answer there.</summary>
+    /// <summary>Where a sensible player goes next on the stretch (the autopilot's day): DayStretch.Goal's route (the
+    /// harness walks the same one): a waking pack fought where it stands, the road's boars, the Kerchiefs' camp and its
+    /// strongbox, the dark lamp, the wallow, the ring, the gate. Press: the prompt to answer there.</summary>
     public (double X, double Z, string? Press)? DayGoal()
     {
         if (day == null || B == null) return null;
-        var p = B.Player;
-        Enemy? near = null; double nd = 16;
-        foreach (var (id, _) in day.Packs)
-        {
-            if (!day.WokeAt.ContainsKey(id) || day.DownAt.ContainsKey(id)) continue;
-            foreach (var e in day.Standing(id)) { double d = Dist(e.X, e.Z, p.X, p.Z); if (d < nd) { nd = d; near = e; } }
-        }
-        if (near != null) return (near.X, near.Z, null);
-        bool kerchiefsDown = DayBeat("kerchiefs") is not { } kb || day.Done(kb.Id);
-        if (box is { Alive: true } bx && kerchiefsDown) return (bx.X, bx.Z, null);
-        if (DayBeat("post") is { Post: { } pid } pb && Lamps.V2 && !LampBook.PostLit(W, pid) && p.Z < pb.Z + 14) return (pb.X + 1.4, pb.Z, "post");
-        // Up the road (its next point north), then through the gate.
-        // (back onto the road first: the trees east of it stand between the camp and the gate)
-        var gate = L("gate");
-        return Math.Abs(p.X - gate.X) > 3 ? (gate.X + 1, p.Z - 1.5, null) : (gate.X, ExitZ - 6, null);
+        var g = day.Goal(pb => !Lamps.V2 || LampBook.PostLit(W, pb.Post!), _ => box is { Alive: true } bx ? (bx.X, bx.Z) : null, L("gate").X);
+        return (g.X, g.Z, g.For?.Kind == "post" ? "post" : null);
     }
 }

@@ -67,10 +67,9 @@ public static class LowfordDaySim
         while (b.Time - t0 < cap)
         {
             var p = b.Player;
-            bool keepersDown = s.Get("kerchiefs") is not { } kb || d.Done(kb.Id);
-            (double X, double Z) to = !r.PostLit && post != null && p.Z < post.Z + 14 && keepersDown ? (post.X + 1.4, post.Z)
-                : box is { Alive: true, Ref: "day_strongbox" } bx && keepersDown ? (bx.X, bx.Z)
-                : Math.Abs(p.X) > 3 ? (1, p.Z - 1.5) : (0, s.GateZ - 6);
+            // (the zone's route: DayStretch.Goal, as the autopilot walks it)
+            var g = d.Goal(_ => r.PostLit, _ => box is { Alive: true, Ref: "day_strongbox" } bx ? (bx.X, bx.Z) : null, 0);
+            (double X, double Z) to = (g.X, g.Z);
             var (mx, mz) = human != null ? human.Steer(b, null, onward: to) : Pilot.Steer(b, deft, null, onward: to);
             if (human != null ? human.Act(b, j, mx, mz, null) : Pilot.Act(b, j, mx, mz)) r.Quaffs++;
             b.Tick(ArenaSim.Dt, mx, mz);

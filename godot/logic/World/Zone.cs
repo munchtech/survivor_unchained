@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Sim;
@@ -211,6 +212,7 @@ public sealed class ZoneMeta
         catch { return; }
         if (string.IsNullOrWhiteSpace(text)) return;  // a zone with no props_own.json (the verge) reads as empty
         using var doc = JsonDocument.Parse(text);
+        MoveFloraColliders(z, doc.RootElement);
         if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
         int nextId = 0;
         foreach (var c in z.Colliders) nextId = Math.Max(nextId, c.Id + 1);
@@ -220,6 +222,24 @@ public sealed class ZoneMeta
             if (c == null) continue;
             c.Id = nextId++;
             z.Colliders.Add(c);
+        }
+    }
+
+    /// <summary>props_own.json "flora_move" ([x, z, dx, dz] a flora copy at x, z within 0.5 m shifted, [x, z] dropped:
+    /// OwnProps on the drawn side) applied to the tree's own collider too, so what blocks her is where the tree is
+    /// drawn (H4 item 10: the day stretch's camp and hollow are cleared this way; the E7b moves had left their trunks'
+    /// colliders standing in the open).</summary>
+    public static void MoveFloraColliders(ZoneMeta z, JsonElement root)
+    {
+        if (!root.TryGetProperty("flora_move", out var mv) || mv.ValueKind != JsonValueKind.Array) return;
+        foreach (var m in mv.EnumerateArray())
+        {
+            if (m.ValueKind != JsonValueKind.Array || m.GetArrayLength() < 2) continue;
+            double x = m[0].GetDouble(), zz = m[1].GetDouble();
+            var c = z.Colliders.FirstOrDefault(k => k.Kind == ColliderKind.Circle && k.Tag == null && Math.Abs(k.X - x) < 0.5 && Math.Abs(k.Z - zz) < 0.5);
+            if (c == null) continue;
+            if (m.GetArrayLength() >= 4) { c.X += m[2].GetDouble(); c.Z += m[3].GetDouble(); }
+            else z.Colliders.Remove(c);
         }
     }
 
