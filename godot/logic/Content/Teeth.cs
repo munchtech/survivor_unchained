@@ -36,6 +36,9 @@ public static class Teeth
         public double HpMul = 1;
         public double MinSeconds;
         public double Backstop = 0.05;
+        /// <summary>Seconds held at one floor before it cracks a step (a player who can't bring a lamp down is never
+        /// held for good: H8's runs had the autopilot's lamps relit by his channel over and over).</summary>
+        public double CrackAfter = 45;
     }
 
     public sealed class PrologueTeeth

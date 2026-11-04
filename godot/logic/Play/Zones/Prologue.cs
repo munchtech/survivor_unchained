@@ -749,19 +749,31 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     /// <summary>When a floor last turned a blow (game seconds): "Warded" says so at most every WardedEvery s.</summary>
-    double wardedAt = -99, overSeen;
+    double wardedAt = -99, overSeen, floorHeldT;
+    int wardCracks;
     const double WardedEvery = 4;
 
     /// <summary>The lamps' floor under his life (never above it: a relit lamp does not heal him), and the backstop
     /// until he has fought MinSeconds; a blow the floor turns says "Warded" over him.</summary>
-    void WardFloor(Enemy e, Teeth.FordWarden? fw)
+    void WardFloor(Enemy e, Teeth.FordWarden? fw, double dt)
     {
         if (fw == null || B == null) { e.HpFloor = 0; return; }
-        double k = fw.Floors is { Length: 4 } fl ? fl[LitCount] : 0;
+        double k = fw.Floors is { Length: 4 } fl ? fl[Math.Max(0, LitCount - wardCracks)] : 0;
         if (Now == Stage.Boss && stageT < fw.MinSeconds) k = Math.Max(k, fw.Backstop);
         double floor = k * e.MaxHp;
         // (a floor of 0 is none; a floor over his life now is his life: a relight never heals him)
         e.HpFloor = floor <= 0 ? 0 : Math.Min(floor, Math.Max(e.Hp, 1));
+        // Held at a floor too long: it cracks a step, said over him.
+        if (e.HpFloor > 0 && e.Hp <= e.HpFloor + 1 && Now == Stage.Boss)
+        {
+            floorHeldT += dt;
+            if (fw.CrackAfter > 0 && floorHeldT > fw.CrackAfter && LitCount - wardCracks > 0)
+            {
+                wardCracks++; floorHeldT = 0;
+                B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "The ward cracks", Boss = true });
+                PaceNotes.Enqueue($"ford ward cracks t={B.Time:0.0} fought={stageT:0.0} lit={LitCount} cracks={wardCracks}");
+            }
+        }
         if (e.Overflow > overSeen + 1)
         {
             if (B.Time - wardedAt > WardedEvery)
@@ -828,7 +840,7 @@ public sealed partial class Prologue : ZoneRuntime
         // their floor, so the crash is the way through (Teeth.Ford, H6's numbers).
         var fw = Teeth.Ford;
         double mul = (fw?.Ward is { Length: 4 } wd ? wd : Ward)[LitCount];
-        WardFloor(e, fw);
+        WardFloor(e, fw, dt);
         if (ai.Mode == "stun") mul *= 1.5;
         e.TakenMul = mul;
         ai.CleaveCd -= dt; ai.ChargeCd -= dt; ai.ChannelCd -= dt;
