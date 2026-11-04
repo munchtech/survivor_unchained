@@ -61,7 +61,7 @@ public partial class FlareFx : Node3D
     bool clutch, banked;
     double freezeLen = 0.52;
 
-    /// <summary>Press to Release: the world at 8%, she at full speed, the Flare's clock lent the rest (Battle.FlareLead).</summary>
+    /// <summary>Press to Release: the world held (H7: flare_family.json worldRate, 0), she at full speed, the Flare's clock lent the rest (Battle.FlareLead).</summary>
     public bool Frozen { get; private set; }
     /// <summary>The Flare clock's rate during the freeze (its key over the calling's Draw and Hold).</summary>
     public double LeadRate { get; private set; }
@@ -73,7 +73,7 @@ public partial class FlareFx : Node3D
     /// its last word (judge 2: "LEVEL 3" over the BOOM's column).</summary>
     public bool HoldsFrame => Active && (lastAt < 0 || t < lastAt + 1.2);
     /// <summary>The world's clock now (1 when no Flare holds it).</summary>
-    public double WorldRate => Motion <= 0 ? 1 : Stop > 0 ? 0.03 : Frozen ? 0.08 : ramp;
+    public double WorldRate => Motion <= 0 ? 1 : Stop > 0 ? 0.03 : Frozen ? Content.FlareFamily.Stop.WorldRate : ramp;
     /// <summary>Hers.</summary>
     public double HerRate => Motion <= 0 ? 1 : Stop > 0 ? 0.1 : 1;
     /// <summary>Ordinary damage numbers are hidden from the press until half a second after the Spend.</summary>
@@ -84,8 +84,6 @@ public partial class FlareFx : Node3D
     public bool HushesHitSparks => Active && IsLongCut && (lcCleaveT < 0 || t < lcCleaveT + 0.6);
     public bool HushesSwings => Active && IsLongCut && (spendAt < 0 || t < spendAt + 0.35);
 
-    /// <summary>The calling's Draw and Hold (FLARE_LOOK §1.2): stalker 0.15, reaver 0.2, warden and arcanist 0.3.</summary>
-    static double HoldOf(string calling) => calling switch { "stalker" => 0.15, "reaver" => 0.2, _ => 0.3 };
 
     OmniLight3D headLight = null!, spendLight = null!;
     static readonly bool SpendLightOld = Args.Get("spend-light") == "old";
@@ -173,7 +171,8 @@ public partial class FlareFx : Node3D
         banked = b.FlareFullBankShots > bankShots;
         bankShots = b.FlareFullBankShots;
         var calling = b.Flare?.Calling ?? "arcanist";
-        freezeLen = 0.22 + HoldOf(calling) + (clutch ? 0.06 : 0) + (banked ? 0.05 : 0);
+        // (H7: the stop's real seconds are the family's data, per calling and Flare: flare_family.json "stop")
+        freezeLen = Content.FlareFamily.StopOf(e.Id, calling, clutch, banked);
         LeadRate = b.FlareKey / freezeLen;
         Frozen = !e.Stand && Motion > 0;
         if (e.Stand) freezeLen = Math.Min(freezeLen, 0.15);
@@ -198,6 +197,13 @@ public partial class FlareFx : Node3D
         Cue("inhale", Her, (float)freezeLen);
         Rumble(0, 0.5f, 0.04f);
         HudDim(1); LabelsAlpha(0);
+        FamilyPress(e, b, calling);
+        if (Args.Has("clip") && GetViewport()?.GetCamera3D() is { } pc)
+        {
+            var vs = GetViewport().GetVisibleRect().Size;
+            var hp = pc.UnprojectPosition(Her + Vector3.Up) * new Vector2(1920f / vs.X, 1080f / vs.Y);
+            GD.Print($"flare her screen {hp.X:0},{hp.Y:0} stop {freezeLen:0.000} s");
+        }
         // Pictures at the beats (--shot): press +1 frame, the Draw's end, the Hold.
         // (the Long Cut times its own, on the Flare's clock: FlareFx.LongCut LongBeats)
         if (!IsLongCut)
@@ -296,6 +302,7 @@ public partial class FlareFx : Node3D
                 Clear();
             }
         }
+        FamilyTick(dt, b);
         glow.Step(fdt, HeightAt);
         bed.Step(fdt, HeightAt);
         scars.Step(fdt, HeightAt);
@@ -348,7 +355,8 @@ public partial class FlareFx : Node3D
     /// <summary>The plain Flares: the drain and the web over the beat, repainted at the Spend.</summary>
     void Plain()
     {
-        look.X = spendAt < 0 ? Mathf.Min(1, (float)t / 0.12f) : Mathf.Max(0, 1 - (float)(t - spendAt) / 0.8f);
+        // (H7: the gray drain is gone; the family's indigo grade (FlareFx.Family) carries the stop and eases back)
+        look.X = 0;
         look.Y = spendAt < 0 ? 0 : (float)(t - spendAt) * (reach + 8) / 0.35f;
         web.X = spendAt < 0 ? Mathf.Min(1, (float)t / 0.22f) : Mathf.Max(0, 1 - (float)(t - spendAt) / 1.5f);
         web.Y = spendAt < 0 ? 1 : Mathf.Max(0, 1 - (float)(t - spendAt) / 2f);
@@ -393,6 +401,7 @@ public partial class FlareFx : Node3D
         markAux.Clear();
         doomed.Clear();
         look = web = frost = Vector4.Zero;
+        FamilyClear();
         SetDip(1);
         RenderingServer.GlobalShaderParameterSet("flare_look", look);
         RenderingServer.GlobalShaderParameterSet("flare_web", web);

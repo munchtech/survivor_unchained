@@ -45,6 +45,8 @@ public sealed partial class Battle
     public int FlareLateMarks, FlareDecisionMarks;
     /// <summary>The last cast's foes ever marked, and of them never hit by it (set when the cast ends; reset at each press).</summary>
     public int FlareMarkedCount, FlareMarkedUnhit;
+    /// <summary>Whether the cast (the last one, once it ends) has hit this foe slot (the view's marks pop on a hit, fade if never).</summary>
+    public bool FlareWasHit(int id) => id >= 0 && id < Enemies.Items.Length && Enemies.Items[id] is { } e && markHit.Contains(e);
 
     bool markCast;
     double markDt = 1 / 30.0;

@@ -1,0 +1,41 @@
+// The ultimate's family (H7, docs/team/hook/H7_flare_ultimate.md; FLARE_LOOK §1.2, §1.5, §1.6): what every Strike Flare
+// does before its blow, as data. The eight Strikes are instances; "flares" holds the few that need their own.
+// Read by logic/Content/FlareFamily.cs; the view is Fx/Flare/FlareFx.Family.cs and Fx/Flare/FlareMarksView.cs.
+{
+  // The stop: from the press (after frame 1's answer) to the release the world's clock is held (worldRate), she is not.
+  // Seconds of real time per calling; the clutch and a banked charge add a little; clamped to [min, max].
+  "stop": {
+    "calling": { "warden": 0.38, "arcanist": 0.36, "reaver": 0.32, "stalker": 0.27 },
+    "clutch": 0.02, "banked": 0.02, "min": 0.25, "max": 0.40,
+    "worldRate": 0.0,
+    // The ordinary damage numbers and hit sparks already on screen fade out over this at the press.
+    "hush": 0.06
+  },
+  // The grade: the world's materials fall toward moon indigo (LOOK_BIBLE rows 1-3), her ember the only warm light.
+  // value: the world's albedo x; keep: how much of a material's own color stays (0 all indigo); tint: the shade's hue
+  // (sRGB; normalised to unit luminance in the shader); lights: the world's own lamps, fires and windows x;
+  // emit: emissive world materials x. in/out: seconds to fall at the press, to ease back after the release.
+  "grade": {
+    "in": 0.066, "out": 0.5,
+    "night": { "value": 0.56, "keep": 0.35, "tint": "#7080c8", "lights": 0.25, "emit": 0.3 },
+    "day":   { "value": 0.76, "keep": 0.5,  "tint": "#9aa6d8", "lights": 0.4,  "emit": 0.5 }
+  },
+  // The marks: a lit ring under every foe in Battle.FlareMarks, in Palette.Of(the Flare's school).
+  // scale: the ring's outer radius x the foe's; ripple: seconds for the rings to appear from her outward;
+  // pop: a struck ring's flash and pop; fade: an unhit ring's fade at the cast's end; main: the hovered target's value x;
+  // pulse: its slow pulse (Hz); gain: the ring's light by night and day; dark: the soft shade laid just outside a ring
+  // (premultiplied, so it reads over a bright day ground); strip: a line Flare's path light; rim: the marked foe's rim.
+  "marks": {
+    "scale": 1.5, "ripple": 0.1, "pop": 0.15, "fade": 0.2,
+    "main": 2.0, "pulse": 1.6, "pillar": 2.4,
+    "night": { "gain": 1.0, "dark": 0.18, "strip": 0.22 },
+    "day":   { "gain": 1.8, "dark": 0.38, "strip": 0.3 },
+    "rim": 0.7
+  },
+  // Per-Flare overrides. The Long Cut: its clip (tools/anim/clips/flare_long_cut.py, 30 fps on her clock) tops its
+  // arch at f12-13 (0.40-0.43 s) and the whip starts; the release lands there, so the sweep's blow (0.1 s of Flare
+  // time later) meets the clip's contact (f16.5, 0.545 s).
+  "flares": {
+    "the_long_cut": { "stop": 0.40 }
+  }
+}

@@ -197,7 +197,8 @@ public partial class FlareFx
         float draw = Mathf.Min(1, (float)t / 0.22f);
         if (sinceSpend < 0)
         {
-            look.X = Mathf.Min(1, (float)t / 0.12f);
+            // (H7: before its release the family's indigo grade holds the world, FlareFx.Family; its cold repaint after is its own)
+            look.X = 0;
             web.X = draw;
             web.Y = 1;
             web.Z = draw * (reach + 3);

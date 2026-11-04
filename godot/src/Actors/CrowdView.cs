@@ -338,6 +338,8 @@ public partial class CrowdView : Node3D
     /// <summary>A body's hit-kit struck look this frame (BattleFx.HitKit): (flash blend 0-0.5, gold rim 0-1); X &lt; 0 none.
     /// It replaces the sim's flash on the body (her auto-attacks' struck: no cream wash, no chalk ghosts by night).</summary>
     public static Func<int, Vector2>? StruckRim;
+    /// <summary>H7: a marked foe's rim in the Flare's school (FlareFx.MarkRim; the hue is flare_mark_rim): 0 none.</summary>
+    public static Func<int, float>? FlareMarkRim;
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
@@ -827,6 +829,7 @@ public partial class CrowdView : Node3D
         g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
+        if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
         living++;

@@ -707,6 +707,7 @@ public partial class Game : Node, IZoneHost
         CrowdView.FlareCorpseAsh = fl.CorpseAsh;
         CrowdView.FlareStatueFlash = fl.StatueFlash;
 
+        CrowdView.FlareMarkRim = fl.MarkRim;
         CrowdView.FlareChar = fl.CharAt;
         CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();
@@ -1948,6 +1949,20 @@ public partial class Game : Node, IZoneHost
         {
             castDone = true;
             cb.Aim = null;
+            // --flare-hover elite|boss|nearest (pictures only): her hovered target at the press, the nearest such foe in reach.
+            if (Args.Get("flare-hover") is { Length: > 0 } hv && cb.Flare is { } hf)
+            {
+                Enemy? best = null; double bd = hf.Radius;
+                foreach (var e in cb.Enemies.Living())
+                {
+                    if (e.State == EnemyState.Dying || !cb.Targetable(e) || !cb.HostileToPlayer(e)) continue;
+                    if (hv == "elite" && !(e.Elite && !e.Boss) || hv == "boss" && !e.Boss) continue;
+                    double d = Math.Sqrt((e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z));
+                    if (d <= bd) { bd = d; best = e; }
+                }
+                cb.Priority = best?.Id ?? -1;
+                GD.Print($"flare hover {hv}: {(best == null ? "none in reach" : $"{best.Def.Id} #{best.Id} at {bd:0.0} m")}");
+            }
             cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:

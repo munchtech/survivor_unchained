@@ -339,7 +339,8 @@ public partial class FlareFx
         // The drain over the Draw and Hold: a value dip with no hue (look.z < 0, flare_world: saturation 0.85, value
         // 0.88), so her light is the only warm thing; repainted from her outward after the cleave, slower.
         double from = lcCleaveT >= 0 ? lcCleaveT : -1;
-        look.X = from < 0 ? Mathf.Min(1, (float)t / 0.12f) : Mathf.Max(0, 1 - (float)(t - from) / 1.2f);
+        // (H7: the value dip is replaced by the family's indigo grade, FlareFx.Family)
+        look.X = 0;
         look.Y = from < 0 ? 0 : (float)(t - from) * (reach + 14) / 0.9f;
         look.Z = -1;
         web.X = 0;

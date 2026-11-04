@@ -154,6 +154,10 @@ public partial class BattleFx : Node3D
         AddChild(Blades);
         AddChild(OathBlades);
         Flare.HeightAt = heightAt;
+        // (H7: the stop hushes what was up, and the grade reaches the blood on the ground: FlareFx.Family)
+        Flare.Hush = k => { Hits.Hush = k; Sparks.Transparency = 1 - k; };
+        Flare.HushDone = () => { Hits.Retire(); Sparks.Clear(); Sparks.Transparency = 0; };
+        Flare.DecalGrade = c => Gore.FlareGrade = c;
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {

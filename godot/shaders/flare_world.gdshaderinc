@@ -9,6 +9,10 @@
 
 global uniform vec4 flare_at;     // xyz: where she stood at the press; w: the reach (m)
 global uniform vec4 flare_look;   // x: drain 0..1; y: repaint radius (m); z: the repaint's cold 0..1; w: kind (0 none, 1 Burns Twice, 2 its Black Ice)
+// The ultimate's grade (H7, data/content/flare_family.json "grade"; FlareFx.Family): x the grade 0..1; y the world's value x;
+// z how much of a material's own colour stays; w its emission x. Her, her ember and the Flare's own light never read it.
+global uniform vec4 flare_grade;
+global uniform vec4 flare_grade_tint; // rgb: the moon-indigo shade (linear, unit luminance)
 global uniform vec4 flare_web;    // x: web light 0..1; y: heat (1 the calling's hue .. 0 dark); z: how far it has lit (m); w: seed
 global uniform vec4 flare_frost;  // x: the front (m); y: frost alive 0..1; z: melted in from the edge (m); w: seconds since the frost
 global uniform vec4 flare_fire;   // xyz: the BOOM's fireball (world); w: its light on the world I(t) 0..1 (0 none)
@@ -42,11 +46,19 @@ global uniform sampler2D flare_marks : filter_nearest, repeat_disable; // 32x2: 
 const vec3 FL_LUM = vec3(0.2126, 0.7152, 0.0722);
 
 bool flare_live() {
-	return flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
+	return flare_grade.x > 0.0 || flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
 }
 
 // The drain and the repaint, on a world colour.
 void flare_drain(vec3 wp, inout vec3 alb, inout vec3 emi) {
+	// The stop's grade first (bible rows 1-3): the world's colours fall to the moon's indigo shade, lower in value, its
+	// own emission (windows, braziers) dimmed, so her ember is the one warm light. Never gray: the shade keeps its hue.
+	float gr = flare_grade.x;
+	if (gr > 0.0) {
+		vec3 shade = dot(alb, FL_LUM) * flare_grade_tint.rgb;
+		alb = mix(alb, mix(shade, alb, flare_grade.z), gr) * mix(1.0, flare_grade.y, gr);
+		emi *= mix(1.0, flare_grade.w, gr);
+	}
 	float dr = flare_look.x;
 	if (dr <= 0.0) return;
 	float r = length(wp.xz - flare_at.xz);

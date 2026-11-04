@@ -1,4 +1,6 @@
 #include "res://shaders/flare_world.gdshaderinc"
+// (H7: a marked foe's rim takes the Flare's school hue while the marks are up: FlareFx.Family; a 0 none)
+global uniform vec4 flare_mark_rim;
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -353,7 +355,7 @@ void fragment() {
 	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
 	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
-	e += vec3(1.0, 0.479, 0.069) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

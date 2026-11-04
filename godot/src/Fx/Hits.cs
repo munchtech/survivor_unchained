@@ -316,6 +316,16 @@ public partial class Hits : Node3D
         arcs[i] = (m, mat, 0, life);
     }
 
+    /// <summary>H7: a Flare's press fades what is up (1 shown .. 0 gone; FlareFx.Family), then Retire.</summary>
+    public float Hush = 1;
+
+    /// <summary>Every number and word up now, gone (a Flare's stop clears the frame for its marks).</summary>
+    public void Retire()
+    {
+        for (int i = 0; i < numbers.Count; i++) { var (l, _) = numbers[i]; l.Visible = false; numbers[i] = (l, 1); }
+        for (int i = 0; i < words.Count; i++) { var (l, _, life, at) = words[i]; l.Visible = false; words[i] = (l, 1, life, at); }
+    }
+
     public override void _Process(double delta)
     {
         StepTally(delta);
@@ -326,7 +336,7 @@ public partial class Hits : Node3D
             if (t >= 1) continue;
             t += dt / 0.75f;
             l.Position += Vector3.Up * dt * 1.4f * (1 - t);
-            var c = l.Modulate; c.A = t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f; l.Modulate = c;
+            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
             numbers[i] = (l, t);
@@ -339,8 +349,8 @@ public partial class Hits : Node3D
             // In quickly, a slow lift while it holds, out over its last fifth.
             float a = Mathf.Min(1, t * life / 0.12f) * (t < 0.8f ? 1 : 1 - (t - 0.8f) / 0.2f);
             l.GlobalPosition = UnderTheBars(at + Vector3.Up * 0.35f * t);
-            var c = l.Modulate; c.A = a; l.Modulate = c;
-            l.OutlineModulate = new Color(l.OutlineModulate, a);
+            var c = l.Modulate; c.A = a * Hush; l.Modulate = c;
+            l.OutlineModulate = new Color(l.OutlineModulate, a * Hush);
             if (t >= 1) l.Visible = false;
             words[i] = (l, t, life, at);
         }
