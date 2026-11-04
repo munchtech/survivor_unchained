@@ -76,11 +76,14 @@ public partial class Atmosphere : Node3D
     /// <summary>Her carried light's colour and reach under the air in force (AtmospherePreset.EmberColor/EmberReach; null: her own).</summary>
     public static Color? EmberColor;
     public static float EmberReach = 1;
+    /// <summary>H2 R4 on (the foes at night; --crowd-r4 off: the r1_2 crowd). Before the crowd terms: their defaults read it
+    /// (static fields start in the order written).</summary>
+    static readonly bool R4 = SurvivorUnchained.Args.Get("crowd-r4") != "off";
     /// <summary>The preset's crowd light by night (CrowdFill; 0 by day). --crowd-fill off: none (Rendering 4's A/B);
     /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
     public static float CrowdFill;
     static readonly bool CrowdFillOn = SurvivorUnchained.Args.Get("crowd-fill") != "off";
-    static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
+    static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", R4 ? 0.3f : 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
     /// <summary>Round 2 (vat.gdshaderinc crowd_night, crowd_top): --crowd-lift L the luminance the darkest paint is lifted to (it goes
     /// into ALBEDO, so the moon's shadowed light and the ambient light it); --crowd-flat K the cut on flat, up-facing low surfaces;
     /// --crowd-wrap W her lamp's wrap; --crowd-top K the cool on heads and shoulders; --crowd-dirt T the fill's hue from the sky's
@@ -94,8 +97,19 @@ public partial class Atmosphere : Node3D
     /// <summary>True unless --crowd-curve old: the Rendering 5 curve and cuts are on (the real lamp light then skips the crowd, PlayerView).</summary>
     public static bool CrowdCurveNew => SurvivorUnchained.Args.Get("crowd-curve") != "old";
     static readonly float CrowdLift = SurvivorUnchained.Args.Num("crowd-lift", 0.04f), CrowdFlat = SurvivorUnchained.Args.Num("crowd-flat", 0.8f),
-        CrowdWrap = SurvivorUnchained.Args.Num("crowd-wrap", 0.3f), CrowdTopK = SurvivorUnchained.Args.Num("crowd-top", 0.1f), CrowdDirt = SurvivorUnchained.Args.Num("crowd-dirt", 0.7f), CrowdBack = SurvivorUnchained.Args.Num("crowd-back", 1f),
+        CrowdWrap = SurvivorUnchained.Args.Num("crowd-wrap", 0.3f), CrowdTopK = SurvivorUnchained.Args.Num("crowd-top", 0.1f), CrowdDirt = SurvivorUnchained.Args.Num("crowd-dirt", R4 ? 0.3f : 0.7f), CrowdBack = SurvivorUnchained.Args.Num("crowd-back", R4 ? 0.15f : 1f),
         CrowdAmb = SurvivorUnchained.Args.Num("crowd-amb", 0.25f);
+    /// <summary>H2 R4 (vat.gdshaderinc crowd_r4, arena nights): --crowd-edge E the moon's and her lamp's rim as a tight edge from
+    /// 1 - NdotV = E (0: the older pow 3); --crowd-spec S the crowd's specular; --crowd-grim G Godot's per-light rim (a scale); --crowd-card-edge K the fur cards' share of the edge;
+    /// --crowd-edge-k K the moon rim's strength on the edge (a scale of the preset's);
+    /// --crowd-r4 off: none of it (the r1_2 crowd exactly, for A/B and --perf).
+    /// The defaults (the r4 judge's frames): a tight edge from 0.7, the moon's rim there 6.5x the preset's (CrowdRim 0.2 x 6.5:
+    /// the edge is a line, not the old wash over the body), specular 0.15, no Godot rim, the fur cards 0.3 of the edge; and
+    /// (above) the moon's wrap round the body 1 to 0.15, the fill 0.45 to 0.3 and its hue 0.7 to 0.3 of the ground's, so a body
+    /// out of her reach is a dark form lit only along its edge. Nothing here by day or off the arena (CrowdFill 0).</summary>
+    static readonly float CrowdEdge = SurvivorUnchained.Args.Num("crowd-edge", 0.7f), CrowdSpec = SurvivorUnchained.Args.Num("crowd-spec", 0.15f),
+        CrowdGRim = SurvivorUnchained.Args.Num("crowd-grim", 0f), CrowdCardEdge = SurvivorUnchained.Args.Num("crowd-card-edge", 0.3f),
+        CrowdEdgeK = SurvivorUnchained.Args.Num("crowd-edge-k", 6.5f);
     static readonly float CrowdDbg = SurvivorUnchained.Args.Has("crowd-dbg-mode") ? SurvivorUnchained.Args.Num("crowd-dbg-mode", 3) : SurvivorUnchained.Args.Has("crowd-dbg") ? 3 : 0;
     /// <summary>(E9d) How lit the town is (0 by day, 1 at dawn, dusk and night): its lamps burn and some windows glow
     /// (ZoneView.Town, kit.gdshader's town_lit) from a low or a moonlit key.</summary>
@@ -341,7 +355,7 @@ public partial class Atmosphere : Node3D
         EmberColor = p.EmberColor != "" ? new Color(p.EmberColor) : null; EmberReach = (float)p.EmberReach;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
-        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));
+        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim) * (R4 && CrowdFillOn && p.CrowdFill > 0 ? CrowdEdgeK : 1)));
         RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
         // Rendering 4: the crowd's own light by night (vat.gdshaderinc): the sky's fill here, her lamp's in PlayerView.
         CrowdFill = CrowdFillOn ? (float)p.CrowdFill : 0;
@@ -354,10 +368,11 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("crowd_fill", new Vector4(fill.R, fill.G, fill.B, CrowdEmberRange));
         RenderingServer.GlobalShaderParameterSet("crowd_top", new Vector4(top.R, top.G, top.B, CrowdBack));
         RenderingServer.GlobalShaderParameterSet("crowd_lamp2", CrowdFill > 0 ? new Vector4(CrowdK, CrowdFull, CrowdZero, CrowdZero > 0 ? CrowdRimK : 0) : Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("crowd_lamp3", new Vector4(CrowdNearR, CrowdNearK, CrowdDead, 0));
+        RenderingServer.GlobalShaderParameterSet("crowd_lamp3", new Vector4(CrowdNearR, CrowdNearK, CrowdDead, CrowdCardEdge));
         RenderingServer.GlobalShaderParameterSet("crowd_dbg_s", SurvivorUnchained.Args.Num("crowd-dbg-s", 0.3f));
         RenderingServer.GlobalShaderParameterSet("crowd_amb", CrowdFill > 0 ? Mathf.Lerp(1f, CrowdAmb, CrowdFill) : 1f);
         RenderingServer.GlobalShaderParameterSet("crowd_night", CrowdFill > 0 ? new Vector4(CrowdLift * CrowdFill, CrowdFlat, CrowdWrap, CrowdDbg > 0 ? CrowdDbg : 1) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("crowd_r4", CrowdFill > 0 && R4 ? new Vector4(CrowdEdge, CrowdSpec, CrowdGRim, 1) : new Vector4(0, 0.5f, 1, 0));
         // Our own trees' light (kit.gdshader's OWN_FOLIAGE, E4): how much the key is the moon (a blue key)
         // and how much a low warm sun (dawn, dusk): the needles' back light and greens follow them.
         var kc = C(p.KeyColor);

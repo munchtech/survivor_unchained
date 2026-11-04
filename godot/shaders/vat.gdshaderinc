@@ -57,6 +57,20 @@ float crowd_lamp_f(float h) {
 }
 // (and how much of the sky's unshadowed ambient the crowd keeps by night: crowd_amb, AO)
 global uniform float crowd_amb;
+// H2 R4 (the foes at night, LOOK_BIBLE rules 3 and 7): dark forms with a cold moon edge and her ember's warm side.
+// x: where the moon's (and her lamp's) rim starts as a tight edge, smoothstep(x, 1, 1 - NdotV) (0: the older pow 3,
+// which from the play camera covered most of a body and made the pack pale smears); y: the crowd's specular by night;
+// z: Godot's per-light RIM by night (a scale of rim_amount); w: on (arena nights, Atmosphere.Set).
+global uniform vec4 crowd_r4;
+// (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
+float crowd_edge(float rim) {
+	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return pow(rim, 3.0);
+#ifdef VAT_CUT
+	return smoothstep(crowd_r4.x, 1.0, rim) * crowd_lamp3.w;
+#else
+	return smoothstep(crowd_r4.x, 1.0, rim);
+#endif
+}
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
 // (the wolf's fur sparkled): a moving body's paint is read up to this many mips softer, and shine and rim fade
 // where the normal turns faster than a pixel can show. (Fading cards edge-on thinned the fur's
@@ -340,7 +354,7 @@ void fragment() {
 	if (crowd_rim.a > 0.0) {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
-		e += crowd_rim.rgb * crowd_rim.a * pow(rim, 3.0) * side * (1.0 - busy);
+		e += crowd_rim.rgb * crowd_rim.a * crowd_edge(rim) * side * (1.0 - busy);
 	}
 	// Her lamp and the sky's fill on the crowd by night (crowd_ember, crowd_fill, crowd_lamp, crowd_night, crowd_top above).
 	// Her lamp: from over her, barely wrapped, so a body in her pool has a warm side toward her and a dark side away,
@@ -367,12 +381,13 @@ void fragment() {
 			e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f * cw_near * cn_k + crowd_fill.rgb + crowd_top.rgb * cn_head);
 			vec3 cw_v = normalize((VIEW_MATRIX * vec4(cw_l, 0.0)).xyz);
 			float cw_side = clamp(dot(NORMAL, cw_v) * 0.5 + 0.5, 0.0, 1.0);
-			e += crowd_lamp.rgb / max(dot(crowd_lamp.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * crowd_lamp2.w * pow(rim, 3.0) * cw_side * cw_side * cw_f * cw_near * (1.0 - busy) * step(0.001, crowd_ember.w);
+			e += crowd_lamp.rgb / max(dot(crowd_lamp.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * crowd_lamp2.w * crowd_edge(rim) * cw_side * cw_side * cw_f * cw_near * (1.0 - busy) * step(0.001, crowd_ember.w);
 			cn_k = 1.0;
 		} else {
 			e += c * (crowd_lamp.rgb * crowd_ember.w * cw_wrap * cw_f + crowd_fill.rgb + crowd_top.rgb * cn_head) * cn_k;
 		}
 		ALBEDO *= cn_k;
+		if (crowd_r4.w > 0.5) { SPECULAR = crowd_r4.y * (1.0 - busy); RIM = rim_amount * crowd_r4.z * (1.0 - busy); }
 		// (the moon wrapped round the body in its own shadowed light (Godot's backlight: the far side takes what the near
 		// side would), so under the canopy's dark the bodies sink with the dirt and in its pools they take it as the dirt does)
 		BACKLIGHT = vec3(crowd_top.a);
