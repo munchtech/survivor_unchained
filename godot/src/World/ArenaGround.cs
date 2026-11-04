@@ -36,9 +36,11 @@ public static class ArenaGround
         // (Leaves drawn a third larger than the scan's: a leaf must be a few pixels to read as
         // one from the arena camera. Whole red-brown leaves read as leaves; a scan of pale
         // chips on black read as gravel however it was toned.) The rot is black earth.
-        ["hollow"] = [new(0.095f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
+        // (H2 R2: the litter 0.095 to 0.11, the needles 0.085 to 0.095, painted toward ochre-straw: the lit top a step
+        // lighter, so her pool on them reads gold.)
+        ["hollow"] = [new(0.11f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
             // (The mud trodden smooth: at the scan's own contrast the den's floor read as asphalt.)
-            new(0.035f, 0.8f, Con: 0.75f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
+            new(0.035f, 0.8f, Con: 0.75f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.095f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
             new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
