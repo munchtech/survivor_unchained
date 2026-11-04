@@ -26,6 +26,9 @@ public sealed class LightDef
     public string Color = "#ffffff";
     public double Intensity, Distance, Flicker;
     public bool On;
+    /// <summary>Metres: the radius of a small bright glow drawn at the light while it is on (a board lamp's lantern
+    /// flame, Maps/ArenaBoard.cs); 0 for none.</summary>
+    public double Core;
     /// <summary>The landmark nodes that glow with it (shown while it is on).</summary>
     public List<string> Glow = new();
 }

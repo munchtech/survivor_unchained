@@ -49,7 +49,7 @@ public sealed partial class ArenaRun
         if (lamp.Light >= 0) G.Look.SetLit(lamp.Light, false);
         b.GoalFlow = new FlowField(b.Collision, (int)Math.Ceiling(board.Radius + 12));
         b.GoalFlow.Update(lamp.X, lamp.Z, true);
-        lampMark.X = lamp.X; lampMark.Z = lamp.Z; lampMark.Pool = lampDef.Pool;
+        lampMark.X = lamp.X; lampMark.Z = lamp.Z; lampMark.Pool = lampDef.Pool; lampMark.Top = lamp.Top;
         b.HeldLamp = lampMark;
     }
 
@@ -66,9 +66,21 @@ public sealed partial class ArenaRun
         }
         // The snuffers at it.
         int at = 0;
+        double near = double.MaxValue;
         foreach (var e in B.Enemies.Living())
-            if (e.Goal && e.State != EnemyState.Dying && Dist(e.X, e.Z, lamp.X, lamp.Z) <= d.AtLamp) at++;
+        {
+            if (!e.Goal || e.State == EnemyState.Dying) continue;
+            double de = Dist(e.X, e.Z, lamp.X, lamp.Z);
+            if (de <= d.AtLamp) at++;
+            near = Math.Min(near, de);
+        }
         double her = Dist(p.X, p.Z, lamp.X, lamp.Z);
+        // The warning as the first of them comes near, wherever she is: time to turn and meet them.
+        if (lampLit && near <= d.WarnR && Seconds - lampWarnAt >= d.WarnEvery)
+        {
+            lampWarnAt = Seconds;
+            G.Announce(new Announcement("They are at the lamp!", "", "danger", 2));
+        }
         if (lampLit && at > 0)
         {
             lampLife = Math.Max(0, lampLife - d.Douse * at * dt);
@@ -76,11 +88,6 @@ public sealed partial class ArenaRun
             {
                 lampTickAt = Seconds;
                 B.Events.Emit(new Ev.BoardLamp { X = lamp.X, Z = lamp.Z, State = BoardLampState.Dousing, Life = LampLife });
-            }
-            if (!dousing && her > d.Pool && Seconds - lampWarnAt >= d.WarnEvery)
-            {
-                lampWarnAt = Seconds;
-                G.Announce(new Announcement("They are at the lamp!", "", "danger", 2));
             }
             dousing = true;
             if (lampLife <= 0)

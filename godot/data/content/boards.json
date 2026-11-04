@@ -1,14 +1,16 @@
 {
-  "about": "Boards (H1 combat teeth, docs/team/hook/H1_combat_teeth.md item 6): a table arena made a board to play on rather than an open field. By place id (ArenaPlaces.IdFor), the table-night tiers it applies at; a place or tier with no board is made as it was. Numbers described in logic/Content/Boards.cs; the shape's generation is logic/Maps/ArenaBoard.cs and the place's own (Arenas/Hollow.cs). Check a board with `dotnet balance/bin/<build>/Balance.dll board --people pack --tier 1 --seed N --out plan.png`. First pass, 3 Nov: the owner, after the tier-1 Deep Shaw, 'the arena survivor area is just too big and theres no strategy to it at all'. Round 2 (3 Nov): the lamp pays less (Flare fill x1.5, ember x1.25 to x1.1) and is doused faster (12/s, a quarter of the fodder): 3-5 outs a night for holders. Holding still keeps the Pack's tier-1 night from falls (matched seeds, every bot holding against none: 4% against 30-34%), and even with no pay at all it is 5-7%: the fold's position, not the numbers, carries it.",
+  "about": "Boards (H1 combat teeth, docs/team/hook/H1_combat_teeth.md item 6): a table arena made a board to play on rather than an open field. By place id (ArenaPlaces.IdFor), the table-night tiers it applies at; a place or tier with no board is made as it was. Numbers described in logic/Content/Boards.cs; the shape's generation is logic/Maps/ArenaBoard.cs and the place's own (Arenas/Hollow.cs). Check a board with `dotnet balance/bin/<build>/Balance.dll board --people pack --tier 1 --seed N --out plan.png`. First pass, 3 Nov: the owner, after the tier-1 Deep Shaw, 'the arena survivor area is just too big and theres no strategy to it at all'. Round 2 (3 Nov): the lamp pays less (Flare fill x1.5, ember x1.25 to x1.1) and is doused faster (12/s, a quarter of the fodder): 3-5 outs a night for holders. Holding still keeps the Pack's tier-1 night from falls (matched seeds, every bot holding against none: 4% against 30-34%), and even with no pay at all it is 5-7%: the fold's position, not the numbers, carries it. Round 2A (4 Nov, the judge: 'the fold is bigger than the screen ... the lamp object never shows ... it goes out about 3.5 s after the warning'): the fold cut to fit the play camera (wall 9-11 m, 2 m through, dressed every 2.2 m, a warm door light at both sides of each gap), the lamp's light reaching 4 m past the wall from its lantern's flame (scale 2, a bright core), its pool 7 m, douse 2/s and Flare fill x1.3: holders see 1.7-2.7 outs a night; the warning when the first snuffer comes within 12 m, wherever she is.",
   "places": {
     "hollow": {
       "tiers": [1],
       "radius": 52,
-      "fold": { "offset": [18, 24], "wall": [17, 20], "thick": 3, "gaps": 3, "gapWidth": [5, 6], "jitter": 0.3, "clearEdge": 6 },
-      "lamp": { "piece": "halloween/post_lantern", "scale": 1.3, "color": "#ffd07a", "energy": 7, "height": 2.7, "flicker": 0.04, "pool": 8,
-        "litAt": 4.5, "flareFill": 1.5, "ember": 1.1,
-        "snuffFrom": 5.0, "snuffShare": 0.25, "snuffAggro": 5, "atLamp": 1.6, "life": 100, "douse": 12,
-        "relightR": 2.5, "relight": 2, "warnEvery": 15,
+      "fold": { "offset": [18, 24], "wall": [9, 11], "thick": 2, "gaps": 3, "gapWidth": [5, 6], "jitter": 0.3, "clearEdge": 6, "dress": 2.2,
+        "door": { "color": "#ffb060", "energy": 2.5, "range": 4.5, "height": 1.2, "in": 0.6 } },
+      "lamp": { "piece": "halloween/post_lantern", "scale": 2.0, "color": "#ffd07a", "energy": 20, "height": 2.7, "flicker": 0.04, "pool": 7,
+        "reach": 4, "head": [0, 2.25, 1.12], "core": 0.11,
+        "litAt": 4.5, "flareFill": 1.3, "ember": 1.1,
+        "snuffFrom": 5.0, "snuffShare": 0.25, "snuffAggro": 5, "atLamp": 1.6, "life": 100, "douse": 2,
+        "relightR": 2.5, "relight": 2, "warnEvery": 15, "warnR": 12,
         "hold": { "deft": 1.0, "human": 0.6, "careless": 0.3, "plain": 0.7 } },
       "lanes": { "width": [3, 4] },
       "cover": { "count": [6, 8], "spacing": 13, "from": 10, "edge": 9 }

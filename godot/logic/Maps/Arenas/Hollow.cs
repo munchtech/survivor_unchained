@@ -326,33 +326,44 @@ public sealed class Hollow : ArenaShape
             if (board != null) BoardGen.Raise(B, board, B.BoardDef!, FoldWall);
     }
 
-    /// <summary>The fold's wall in the Hollow's kit, a piece every four metres along it: fallen trunks end to end, mossed
-    /// rock, stumps and roots, bramble grown through all of it; a stump or a rock for a post at each gap.</summary>
+    /// <summary>The fold's wall in the Hollow's kit, a piece every couple of metres along it (FoldDef.Dress) so it reads
+    /// as one wall from the play camera, not a scatter: fallen trunks end to end with their root plates, mossed rock
+    /// heaped with a boulder, stumps and roots, bramble and bush grown through all of it on both faces; a big stump or
+    /// rock for a post at each gap.</summary>
     void FoldWall(double x, double z, double rot, bool post)
     {
         var (ax, az) = ArenaGen.Builder.Along(rot);
         double cx = -az, cz = ax;
         if (post)
         {
-            B.Put(Rng.Chance(0.5) ? "scan_stump" : "scan_mossrock", x, z, Rng.Range(1.1, 1.4), 0.15);
-            B.Put("bramble", x + cx * Rng.Range(-1.2, 1.2), z + cz * Rng.Range(-1.2, 1.2), Rng.Range(1.0, 1.3));
+            B.Put(Rng.Chance(0.5) ? "scan_stump" : "scan_mossrock", x, z, Rng.Range(1.4, 1.7), 0.15);
+            B.Put("bramble", x + cx * Rng.Range(-0.9, 0.9), z + cz * Rng.Range(-0.9, 0.9), Rng.Range(1.1, 1.4));
             return;
         }
         double roll = Rng.Range(0, 1);
-        if (roll < 0.5) B.PutAt("scan_trunk", x, z, rot + Rng.Range(-0.12, 0.12), Rng.Range(1.3, 1.6), 0.25);
-        else if (roll < 0.7)
-            for (int n = 0; n < 2; n++) B.Put("scan_mossrock", x + ax * Rng.Range(-1.4, 1.4), z + az * Rng.Range(-1.4, 1.4), Rng.Range(0.9, 1.2), 0.25);
-        else if (roll < 0.85)
+        if (roll < 0.55)
         {
-            B.Put("scan_stump", x + ax * Rng.Range(-1, 1), z + az * Rng.Range(-1, 1), Rng.Range(1.0, 1.3), 0.1);
-            B.PutAt("scan_root", x, z, rot + Rng.Range(-0.4, 0.4), Rng.Range(1.3, 1.7), 0.12);
+            B.PutAt("scan_trunk", x, z, rot + Rng.Range(-0.1, 0.1), Rng.Range(1.45, 1.75), 0.2);
+            if (Rng.Chance(0.6))
+            {
+                double e = Rng.Chance(0.5) ? 1 : -1;
+                B.PutAt("scan_root", x + ax * e * Rng.Range(1.4, 1.9), z + az * e * Rng.Range(1.4, 1.9), rot + Rng.Range(-0.5, 0.5), Rng.Range(1.6, 2.0), 0.1);
+            }
         }
-        else B.PutAt("scan_root", x, z, rot + Rng.Range(-0.3, 0.3), Rng.Range(1.6, 2.0), 0.1);
-        for (int n = Rng.Int(1, 2); n > 0; n--)
+        else if (roll < 0.8)
         {
-            double o = Rng.Range(0.6, 1.4) * (Rng.Chance(0.5) ? 1 : -1);
-            B.Put("bramble", x + cx * o + ax * Rng.Range(-1.5, 1.5), z + cz * o + az * Rng.Range(-1.5, 1.5), Rng.Range(1.0, 1.4));
+            for (int n = 0; n < 2; n++) B.Put("scan_mossrock", x + ax * Rng.Range(-1.1, 1.1), z + az * Rng.Range(-1.1, 1.1), Rng.Range(1.15, 1.45), 0.2);
+            if (Rng.Chance(0.5)) B.Put("scan_boulder", x + cx * Rng.Range(-0.4, 0.4), z + cz * Rng.Range(-0.4, 0.4), Rng.Range(0.45, 0.6), 0.25);
         }
-        if (Rng.Chance(0.5)) B.Put(Rng.Pick(new[] { "scan_shrub", "scan_fern", "fern" }), x + cx * Rng.Range(1.6, 2.2), z + cz * Rng.Range(1.6, 2.2), Rng.Range(0.9, 1.2));
+        else
+        {
+            B.Put("scan_stump", x + ax * Rng.Range(-0.8, 0.8), z + az * Rng.Range(-0.8, 0.8), Rng.Range(1.3, 1.6), 0.1);
+            B.PutAt("scan_root", x, z, rot + Rng.Range(-0.4, 0.4), Rng.Range(1.6, 2.0), 0.1);
+        }
+        // Grown through it, both faces.
+        foreach (double side in new[] { -1.0, 1.0 })
+            if (Rng.Chance(0.8))
+                B.Put(Rng.Chance(0.7) ? "bramble" : "bush", x + cx * side * Rng.Range(0.5, 1.1) + ax * Rng.Range(-1, 1), z + cz * side * Rng.Range(0.5, 1.1) + az * Rng.Range(-1, 1), Rng.Range(1.1, 1.5));
+        if (Rng.Chance(0.35)) B.Put(Rng.Pick(new[] { "scan_shrub", "scan_fern", "fern" }), x + cx * Rng.Range(1.3, 1.8), z + cz * Rng.Range(1.3, 1.8), Rng.Range(0.9, 1.2));
     }
 }

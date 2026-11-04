@@ -40,13 +40,21 @@ public class BoardTests
         Assert.Equal(3, b.Lanes.Count);
         var lamp = b.Lamps[0];
         Assert.InRange(lamp.Light, 0, m.Meta.Lights.Count - 1);
-        Assert.Equal(lamp.X, m.Meta.Lights[lamp.Light].X, 3);
+        // Its light hangs at the lantern's flame, off the post by the arm (Head, at its scale), and reaches past the wall.
+        var ll = m.Meta.Lights[lamp.Light];
+        Assert.InRange(MathX.Dist(ll.X, ll.Z, lamp.X, lamp.Z), 0.5, 1.12 * lamp.Def.Scale + 0.1);
+        Assert.True(ll.Distance >= b.Fold.WallR + 1, "the lamp's light falls short of the wall");
+        Assert.True(ll.Core > 0);
+        // Door lights at both sides of each gap.
+        Assert.Equal(2 * b.Chokes.Count, m.Meta.Lights.Count(l => l.Color == Boards.For("hollow", 1)!.Fold.Door.Color && MathX.Dist(l.X, l.Z, b.Fold.X, b.Fold.Z) < b.Fold.OuterR));
         Assert.Contains(m.Pieces, p => p.Id == "halloween/post_lantern" && Math.Abs(p.X - lamp.X) < 0.01);
         var r = BoardCheck.Measure(m);
         Assert.False(r.Leaks, "the fold reaches the outside with its gaps shut");
         Assert.True(r.StartOutside);
         Assert.True(r.FoldReached);
-        Assert.InRange(r.FoldInside, 500, 1100);
+        // The fold fits the play camera (about 28 by 24 m round her): wall 9-11 m out, 2 m through.
+        Assert.InRange(b.Fold.OuterR, 9.5, 12.5);
+        Assert.InRange(r.FoldInside, 150, 420);
         foreach (var g in r.Gaps)
         {
             Assert.True(g.Passable, $"gap at {g.Bearing:0.00} shut");

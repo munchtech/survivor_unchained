@@ -56,6 +56,8 @@ public sealed class BoardLamp
 {
     public double X, Z, Pool;
     public int Light = -1;
+    /// <summary>The lantern's height in metres over its foot (where its life bar hangs above).</summary>
+    public double Top = 3.3;
     /// <summary>Its numbers (Content/Boards.LampDef: when it catches, what it pays, who comes to douse it).</summary>
     public SurvivorUnchained.Content.Boards.LampDef Def = new();
 }
@@ -157,8 +159,8 @@ public static class BoardGen
                 double mx = (px + qx) / 2 + tx * (hi - lo) / 2, mz = (pz + qz) / 2 + tz * (hi - lo) / 2;
                 b.Slab(mx, mz, len / 2 + (lo + hi) / 2, half, Math.Atan2(tz, tx));
             }
-            // The dressing, every four metres or so, a post at either end.
-            int m = Math.Max(1, (int)Math.Round(r * (a1 - a0) / 4));
+            // The dressing, every few metres (FoldDef.Dress), a post at either end.
+            int m = Math.Max(1, (int)Math.Round(r * (a1 - a0) / d.Fold.Dress));
             for (int i = 0; i <= m; i++)
             {
                 double p = a0 + (a1 - a0) * i / m;
@@ -166,13 +168,32 @@ public static class BoardGen
                 double tx = -Math.Sin(p), tz = Math.Cos(p);
                 dress(x, z, Math.Atan2(-tz, tx), i == 0 || i == m);
             }
+            // Each end a door light, a little in from the post so the gap and the wall's inner face both catch it.
+            var door = d.Fold.Door;
+            if (door.Energy > 0)
+                foreach (double p in new[] { a0, a1 })
+                {
+                    double dr = r - door.In;
+                    b.Glow(fold.X + Math.Cos(p) * dr, fold.Z + Math.Sin(p) * dr, door.Color, door.Energy, height: door.Height, flicker: 0.12, range: door.Range);
+                }
         }
         // The lamp at the middle.
         var l = d.Lamp;
-        b.Piece(l.Piece, fold.X, fold.Z, b.Rng.Range(0, Math.PI * 2), l.Scale);
+        double rot = b.Rng.Range(0, Math.PI * 2);
+        b.Piece(l.Piece, fold.X, fold.Z, rot, l.Scale);
         b.Block(fold.X, fold.Z, 0.3 * l.Scale);
-        int light = b.Glow(fold.X, fold.Z, l.Color, l.Energy, height: l.Height, flicker: l.Flicker);
-        board.Lamps.Add(new BoardLamp { X = fold.X, Z = fold.Z, Pool = l.Pool, Light = light, Def = l });
+        // Its light at the flame in its glass (the piece turned by rot about up: its own +z is (sin, cos) on the ground),
+        // reaching past the wall so the wall's inner faces are lit by it.
+        double hx = fold.X, hz = fold.Z, hy = l.Height;
+        if (l.Head.Length == 3)
+        {
+            hx += (Math.Cos(rot) * l.Head[0] + Math.Sin(rot) * l.Head[2]) * l.Scale;
+            hz += (-Math.Sin(rot) * l.Head[0] + Math.Cos(rot) * l.Head[2]) * l.Scale;
+            hy = l.Head[1] * l.Scale;
+        }
+        double range = l.Reach > 0 ? fold.WallR + l.Reach : 0;
+        int light = b.Glow(hx, hz, l.Color, l.Energy, height: hy + (b.HeightAt(fold.X, fold.Z) - b.HeightAt(hx, hz)), flicker: l.Flicker, range: range, core: l.Core * l.Scale);
+        board.Lamps.Add(new BoardLamp { X = fold.X, Z = fold.Z, Pool = l.Pool, Light = light, Def = l, Top = 3.3 * l.Scale });
     }
 }
 

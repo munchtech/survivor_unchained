@@ -338,11 +338,13 @@ public static class ArenaGen
         public void Slab(double x, double z, double hw, double hd, double rot) =>
             Colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = x, Z = z, Hw = hw, Hd = hd, Rot = rot, R = Math.Sqrt(hw * hw + hd * hd) });
 
-        /// <summary>A lamp's light (or a fire's, with its flames) at a point.</summary>
-        public int Glow(double x, double z, string color, double intensity, bool fire = false, double height = 1.1, double flicker = 0.14, double size = 0.7)
+        /// <summary>A lamp's light (or a fire's, with its flames) at a point.
+        /// `range`: metres it reaches (by default as many as its intensity); `core`: the radius of a small bright glow drawn at it
+        /// while it is on (a lantern's flame seen from the play camera; none by default).</summary>
+        public int Glow(double x, double z, string color, double intensity, bool fire = false, double height = 1.1, double flicker = 0.14, double size = 0.7, double range = 0, double core = 0)
         {
             double y = HeightAt(x, z);
-            Lights.Add(new LightDef { X = x, Y = y + height, Z = z, Color = color, Intensity = intensity, Distance = intensity, Flicker = fire ? 0.28 : flicker, On = true });
+            Lights.Add(new LightDef { X = x, Y = y + height, Z = z, Color = color, Intensity = intensity, Distance = range > 0 ? range : intensity, Flicker = fire ? 0.28 : flicker, On = true, Core = core });
             if (fire) Fires.Add(new FireDef { X = x, Y = y + 0.1, Z = z, Size = size, Light = Lights.Count - 1 });
             return Lights.Count - 1;
         }

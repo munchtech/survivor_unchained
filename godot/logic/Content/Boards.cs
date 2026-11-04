@@ -42,6 +42,18 @@ public static class Boards
         public double Jitter = 0.3;
         /// <summary>Metres kept between the wall's outside and the board's edge (a way round behind it).</summary>
         public double ClearEdge = 6;
+        /// <summary>Metres between two of the wall's dressing spots along its middle line (the place's own pieces).</summary>
+        public double Dress = 4;
+        /// <summary>The small warm lights at both sides of each gap, so the gaps read as doors (none if Energy is 0).</summary>
+        public DoorDef Door = new();
+    }
+    /// <summary>A gap's door lights: their colour, energy, reach in metres, and height over the ground.</summary>
+    public sealed class DoorDef
+    {
+        public string Color = "#ffb060";
+        public double Energy = 0, Range = 4.5, Height = 1.2;
+        /// <summary>Metres in from the wall's middle line toward the fold's middle (a light on the inside of the post).</summary>
+        public double In = 0.6;
     }
 
     /// <summary>The lamp at the fold's middle: a reason to stand somewhere (Play/Zones/ArenaRun.Lamp.cs). Cold till LitAt;
@@ -53,6 +65,13 @@ public static class Boards
         public double Scale = 1.3;
         public string Color = "#ffd07a";
         public double Energy = 7, Height = 2.7, Flicker = 0.04;
+        /// <summary>Metres the lamp's light reaches past the wall's middle line (its range is the wall's radius and this;
+        /// 0: as many metres as its energy, as any other lamp).</summary>
+        public double Reach = 0;
+        /// <summary>Where the light hangs in the lantern piece's own frame at scale 1 (x, up, z: the flame in its glass;
+        /// none: Height over its foot), and the radius at scale 1 of the bright core drawn there (LightDef.Core).</summary>
+        public double[] Head = [];
+        public double Core = 0;
         /// <summary>Metres of the lamp's pool, where her reward is (while it is lit).</summary>
         public double Pool = 8;
         /// <summary>The night's minute it catches (cold and dark before).</summary>
@@ -71,8 +90,9 @@ public static class Boards
         public double Life = 100, Douse = 8;
         /// <summary>Out, she lights it again by standing within RelightR metres of it for Relight seconds, no snuffer at it.</summary>
         public double RelightR = 2.5, Relight = 2;
-        /// <summary>Seconds at least between two "They are at the lamp!" warnings (said only while she is outside the pool).</summary>
-        public double WarnEvery = 15;
+        /// <summary>Seconds at least between two "They are at the lamp!" warnings, said when the first snuffer comes within
+        /// WarnR metres of it (wherever she is).</summary>
+        public double WarnEvery = 15, WarnR = 12;
         /// <summary>The harness's bots (balance/Harness/LampHold.cs): the chance a night's hands hold the lamp, by bot.</summary>
         public Dictionary<string, double> Hold = new();
     }
