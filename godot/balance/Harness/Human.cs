@@ -93,7 +93,7 @@ public sealed class Human
     /// <summary>The hands that are not the feet, as the Pilot's, with a champion's lunge dashed only when read and seen,
     /// and (careless) no Flare saved for a boss.</summary>
     public bool Act(Battle b, Journey j, double mx, double mz, ArenaBoss? boss) =>
-        Pilot.Act(b, j, mx, mz, boss, lunges: lastAware, aimsFlare: !Careless);
+        Pilot.Act(b, j, mx, mz, boss, lunges: lastAware, aimsFlare: !Careless, rooted: lastAware);
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

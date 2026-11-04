@@ -45,7 +45,7 @@ public class TellTests
         var p = b.Player;
         var blow = b.Tell("ring", null, p.X, p.Z);
         Assert.NotNull(blow);
-        Assert.Equal(b.MaxHp * 0.22, blow!.Damage, 6);
+        Assert.Equal(b.MaxHp * SurvivorUnchained.Content.Telegraphs.Get("ring")!.Damage, blow!.Damage, 6);
         var marks = b.Events.Drain().OfType<Ev.Telegraph>().ToList();
         var warn = Assert.Single(marks, m => m.Tell == "ring");
         Assert.Equal(TellPhase.Warn, warn.Phase);

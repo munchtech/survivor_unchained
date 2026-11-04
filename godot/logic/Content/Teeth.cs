@@ -31,11 +31,12 @@ public static class Teeth
     }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>(Json.ReadContent("teeth.json"));
+    static File F => file ??= Json.Parse<File>((System.Environment.GetEnvironmentVariable("SU_TEETH") is { Length: > 0 } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("teeth.json")));
 
     /// <summary>A tier's teeth, or null (as it was).</summary>
     public static Tier? For(int tier) => F.Tiers.TryGetValue(tier.ToString(), out var t) ? t : null;
 
+    // SU_TEETH=<path>: a variant of the file for a measuring run (the harness tunes several at once).
     /// <summary>Read the file again (a test or a variant that changed it).</summary>
     public static void Reload() => file = null;
 }

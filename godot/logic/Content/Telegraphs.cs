@@ -60,7 +60,7 @@ public static class Telegraphs
     }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>(Json.ReadContent("telegraphs.json"));
+    static File F => file ??= Json.Parse<File>((System.Environment.GetEnvironmentVariable("SU_TELLS") is { Length: > 0 } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("telegraphs.json")));
 
     /// <summary>The named telegraph, or null for a name the kit does not have.</summary>
     public static Kind? Get(string kind) => F.Kinds.TryGetValue(kind, out var k) ? k : null;
@@ -71,6 +71,7 @@ public static class Telegraphs
     /// <summary>The kind a wave shape casts (ring, champion, stampede, swarm, signature), or null for none.</summary>
     public static string? Turn(string shape) => F.Waves.Turns.TryGetValue(shape, out var k) && Get(k) != null ? k : null;
 
+    // SU_TELLS=<path>: a variant of the file for a measuring run (the harness tunes several at once).
     /// <summary>Read the file again (a test or a variant that changed it).</summary>
     public static void Reload() => file = null;
 }

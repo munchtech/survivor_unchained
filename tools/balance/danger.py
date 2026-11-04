@@ -5,7 +5,7 @@ under half), her life at the end, the hits a fodder and a champion took to fall
 (medians over ember 0-10: H1's targets 2-4 and 8-12 at tier 1), the boss's seconds,
 and the late hands' threats read.
 
-    python tools/balance/danger.py out.jsonl [--by calling|tier|none]
+    python tools/balance/danger.py out.jsonl [--by calling|tier|none] [--falls]
 
 H1's tier-1 targets: the late human ends at 30-60% life and falls ~1 night in 4
 careless; the deft bot still wins ~90%."""
@@ -44,5 +44,21 @@ def main():
         mins = med([r.get('Minutes') for r in rs])
         print(f"{k[0]:9} {str(k[1]):9} {str(k[2]):>2} {n:4} {won:5.0f} {fell:5.0f} {low:5.2f} {under:5.0f} {end:5.2f} {hf:5.1f} {he:5.1f} {boss:6.0f} {read:>5} {mins:5.1f}")
 
+def falls(path):
+    """What felled her, by bot: the killer, and whether on the way (before the boss) or at the boss; the kit's
+    tells that caught her of those marked, and draughts drunk."""
+    c = defaultdict(lambda: defaultdict(int)); kit = defaultdict(lambda: [0, 0, 0, 0])
+    for line in open(path, encoding='utf-8'):
+        if not line.strip(): continue
+        r = json.loads(line); sp = r['Spec']
+        bot = sp.get('Bot') or ('deft' if sp.get('Deft') else 'plain')
+        if r.get('Died'): c[bot][(r.get('KilledBy', '?'), 'boss' if r.get('BossLeft', -1) >= 0 or r['Minutes'] >= sp.get('Minutes', 30) else 'way')] += 1
+        k = kit[bot]; k[0] += r.get('KitCaught', 0); k[1] += r.get('KitMarked', 0); k[2] += r.get('Quaffs', 0); k[3] += 1
+    for bot in sorted(kit):
+        k = kit[bot]
+        print(f"{bot:9} kit caught {k[0]}/{k[1]} ({100 * k[0] / max(1, k[1]):.0f}%)  draughts/night {k[2] / k[3]:.1f}  falls: " +
+              ', '.join(f"{n} {w} {m}" for (n, w), m in sorted(c[bot].items(), key=lambda x: -x[1])[:6]))
+
 if __name__ == '__main__':
+    if '--falls' in sys.argv: falls(sys.argv[1]); sys.exit()
     main()

@@ -1,9 +1,9 @@
 {
   "about": "The telegraph kit (docs/team/hook/H1_combat_teeth.md item 3): named blows any zone casts on a foe with one call (Battle.Tell, logic/Sim/Tells.cs). Each number is described in logic/Content/Telegraphs.cs. Damage is a fraction of her max life (before her armor), so it is the same at every tier. The kind names (ring, charge, pull, closing) are H3's sound bank's keys: telegraph.<kind>.windup / .land. Never rename them.",
   "kinds": {
-    "ring": { "windup": 2.0, "radius": 6.5, "damage": 0.22, "slow": 0.4, "rootAt": 0.45, "rootRadius": 1.6, "root": 0.6 },
-    "charge": { "windup": 1.1, "length": 16, "width": 2.6, "damage": 0.18 },
-    "pull": { "windup": 1.6, "radius": 9, "core": 2.4, "damage": 0.28, "pull": 3.2 },
+    "ring": { "windup": 2.0, "radius": 6.5, "damage": 0.286, "slow": 0.4, "rootAt": 0.45, "rootRadius": 1.6, "root": 0.6 },
+    "charge": { "windup": 1.1, "length": 16, "width": 2.6, "damage": 0.234 },
+    "pull": { "windup": 1.6, "radius": 9, "core": 2.4, "damage": 0.364, "pull": 3.2 },
     "closing": { "windup": 1.6, "inner": 8, "radius": 9.5, "damage": 0, "rush": 1.6, "rushFor": 4 }
   },
   "waves": {
