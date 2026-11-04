@@ -44,6 +44,36 @@ The owner played demo-rc1 start to finish (`DEMO_GATE.md` "Phase 3"). The loop i
 4. **Click-to-move:** no (recommended: WASD plus hover priority target keeps her hands on the keys; click-to-move fights the auto-attack), or yes? Default: no.
 5. **Sound route:** ElevenLabs sound generation on the owner's account plus CC0 beds (recommended: owned output, no credit), or CC0 libraries only? Default: CC0 only until the key is set.
 
+## demo-rc2 verdict (4 November, coordinator 5b4265e7): a lot better, still not a game. The second hook set
+
+The owner played demo-rc2 (`DEMO_GATE.md` "Phase 3b", N19-N38): "still not very polished/smooth. tho a lot better." The next tag is `demo-rc3`. The weight, in order:
+
+1. **Standing still wins** (N21, N20, N32, N34). H1 gave the foes teeth and built the kit, and measured a bot that reacts late, never one that does nothing. The kit taxes (a ring is 0.46 of life and a 1 s root) and never kills; foes path in from the spawn side, so she is never flanked; the lamp fold is a corner to sit in; the Ford-Warden falls in 8 s. A game whose best play is standing still has no hook, whatever it looks like. The fix is a rule, not a number: **every 45-60 s of a night something must be dodged or she dies, and the crowd comes from more than one side.** A standing build stays possible, earned by gear and Lamps (the owner's line), never as the default.
+2. **The Flare is not an ultimate** (N29, N37): no stop, no marks on what it will hit, no sound built as a beat.
+3. **rc2's bugs** (N19 no elite bars, N22 the day stretch skippable, N25 the map freeze, N35 the boss camera, N36 the x-ray legs, N23 the walk in place, N24 the quick loss line): seven marks a player sums up as "not polished".
+4. **The look** (N26 the arena floor, N28 the placeholder Warden, N33 the screens). Held on the style question (N38).
+5. **Items** (N31): on her, and explained. After this wave.
+
+### N38, the owner's question: a Marvel Rivals style? The coordinator's verdict: no switch now; test it for cheap after R10
+
+- **What Marvel Rivals is, technically:** hand-painted texture masses, real forms pushed a little, saturated colored light, and on top a cel ramp with an ink line. Two thirds of that is our bible already (rules 3, 5, 6: color in the light, painted masses, real forms). The third we don't have is the ramp and the line.
+- **Why it reads AAA for less:** an outline and a two-band ramp hide low texel density and shading flaws; realism shows every one. The owner's instinct about the cost is right.
+- **Why not switch now:** what reads "not AAA" in rc2 is the arena floor, a placeholder Warden, her rigid fight idle, screens in no language and a HUD in another material. A cel shader over those shows the same faults with lines around them. The restyles R5-R10 are the same work under either style: painted maps under one light. R10 (her painted pass) is the deciding frame, since she is in every shot.
+- **The cheap test:** after R10, one style frame (~0.2M, no remake): the thirteen bible frames through a cel ramp and ink-line post pass (one shader on `tools/style/frames.py`'s shoot), the owner picks A|B. If the owner picks the line, it is a shader and a grade over the same painted maps, not a remake of her or the world. Sex appeal is in her forms and the camera, which no style changes.
+- **Owner decides:** (a) no switch, R5-R10 run after this wave's merges (recommended, the default); (b) the cel test first, this week (~0.2M), then decide. Until the answer, every look restyle holds (R2b, R5-R10, R12) and the three leads below run.
+
+### The second hook set (three leads now; the owner's next playtest is the exit)
+
+| Pass | Lead(s) | Scope | Exit |
+|---|---|---|---|
+| **H6 Combat: the player must move** | combat design (high; one max judge) + the sim; a UI worker | The rule above as data (`teeth.json`, `telegraphs.json`, `boards.json`, the director): the kit's marks kill or cripple when stood in (a tier-1 ring stood through costs 60-80% of life; the closing is a wall she must leave; a stand of 3 s inside any mark is the fall); a surround director (spawn lanes from two or three sides, a flank pack every 60-90 s, foes that cut her off instead of trailing); kiting as a pay-off (a foe type she must pull, a pack that punishes a stand); a **standing bot** in the harness (never moves, never dodges) that must fall in 80%+ of tier-1 nights while the late human still wins about 80% and the deft 95%+; the lamp explained once in play (what a snuffer is, one bark and one callout) and foes that get stuck re-pathed or recalled (N34); elite bars seen in a frame (N19); the turn measured against Hades and Diablo IV and fixed (N27); dash charges under her bar (N30); the Ford-Warden's numbers agreed with H8 (he lives to the lamp beat). Keep the hover target. | the owner plays a tier-1 night: "I had to move, and I was surrounded twice" |
+| **H7 Flare: an ultimate** | VFX (high) with audio; one max judge on a clip | Every Flare on press: a 0.25-0.4 s stop (hit-stop; the grade drops toward indigo, her ember the only warm light), the targets it will hit marked before the blow (the hovered one brightest), the blow with a screen-wide read (a shock band, kills popping on the beat), its sound as two beats (the stop's intake, the blow) generated at H3's bar, the recovery on her pose, the loot on the beat. Judged at 1:1 against the owner's line ("a time stop ... super epic finisher") and the best ultimates in Hades and Vampire Survivors' evolutions. One family, eight Flares as data. | a clip: "epic, and I know what it hit" |
+| **H8 rc2's bugs and the tutorial fight** | experience (high) with cinematics; one xhigh judge | N22 the gate shut until the ring is down; N25 the map in arenas; N35 the boss camera; N36 the x-ray legs; N23 C04b's walk in place; N24 the loss as a click-through card at dawn (storybook language: what the ember takes, what she keeps); N20 the Ford-Warden fight at a lesson's length (he lives until the lamp crash, the crash is the way through; a human can't bring him down in under 60 s). | the owner's next run: none of the seven come back |
+
+**Held on N38:** R2b (the Hollow's floor), R5 (HUD), R6, R7, R8, R9 (the screens), R10 (her), R12 (the Warden remake). **After this wave:** the items pass (N31), the fight idle (N32), her hits in audio (N37), H5 (her arm, route D) as a slot frees.
+
+**Rough cost before the owner plays rc3:** H6 ~1.5M, H7 ~0.6M, H8 ~0.8M: about 3M.
+
 ## Why we loop
 
 1. **Nobody gates the loop as a whole.** Every area judges its own sheet (a HUD crop, a hair style, one Flare), so each area polishes toward AAA in isolation while the demo, start to finish, has never been played and passed. The last end-to-end audit (`docs/EXPERIENCE_AUDIT.md`) is a month old.
