@@ -57,6 +57,7 @@ public sealed class Autopilot
 
     double draftFor;
     static readonly double DraftHold = Args.Num("draft-hold", 0);
+    static readonly bool DayRush = Args.Has("day-rush");
 
     public void Drive(double dt)
     {
@@ -207,6 +208,8 @@ public sealed class Autopilot
                 if (pickChampion) PickChampion(b);
                 tx = dg.X; tz = dg.Z;
                 dayFight = pd.DayFighting; dayRoad = true;
+                // (--day-rush: straight up the road to the gate, past every fight: the owner's run on demo-rc2, N22)
+                if (DayRush) { tx = 0.3; tz = -110; dayFight = false; }
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;
