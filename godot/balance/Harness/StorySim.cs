@@ -209,7 +209,7 @@ public static class StorySim
                     : $"stage {zone.BeatIx + 1} at {t / 60:0.0} max {b.MaxHp:0}");
             foreach (var ev in b.Events.Drain())
             {
-                if (ev is Ev.Telegraph { Boss: true, Kind: TelegraphKind.Blow } && zone.Now == StoryNight.Stage.Boss) r.BossMarked++;
+                if (ev is Ev.Telegraph { Boss: true, Kind: TelegraphKind.Blow, Phase: TellPhase.Warn } && zone.Now == StoryNight.Stage.Boss) r.BossMarked++;
                 if (ev is Ev.PlayerHit { Dodged: false } hit && hit.Amount > 0)
                 {
                     string part = zone.Now == StoryNight.Stage.Boss ? "boss" : $"stage {zone.BeatIx + 1}";

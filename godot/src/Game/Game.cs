@@ -1167,12 +1167,12 @@ public partial class Game : Node, IZoneHost
         bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
         switch (e)
         {
-            case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
                 foreach (var f in TeleFracs) Shots.Want($"tele{t.Id}", t.Duration * f);
                 MarkGeo($"tele{t.Id}", t);
                 break;
             // (and the crowd's marks, one frame of one at most every 6 s)
-            case Ev.Telegraph t when t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
                 crowdTeleShot = Battle?.Time ?? 0;
                 Shots.Want("crowd", t.Duration * 0.6);
                 MarkGeo("crowd", t);
@@ -1226,7 +1226,7 @@ public partial class Game : Node, IZoneHost
     {
         switch (e)
         {
-            case Ev.Telegraph t when Shots.On("casts") && t.Id >= 0 && t.Hostile:
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && Shots.On("casts") && t.Id >= 0 && t.Hostile:
                 for (int i = 0; i * (1 / 15.0) < t.Duration + 1; i++) Shots.Want($"cast{t.Id}", i / 15.0);
                 break;
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;

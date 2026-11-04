@@ -1,0 +1,6 @@
+{
+  "about": "Teeth (H1 combat teeth, docs/team/hook/H1_combat_teeth.md): what a table night's tier asks of a human, on top of the night's own curves; numbers described in logic/Content/Teeth.cs. Measured with the harness's late hands: `arena --bot plain,deft,human,careless`, then tools/balance/danger.py. A tier with no entry is as it was.",
+  "tiers": {
+    "1": { "fodderHp": 1, "fodderDamage": 1, "eliteHp": 1, "eliteDamage": 1, "crowd": 1, "bossHp": 1, "bossDamage": 1, "minutes": 0 }
+  }
+}
