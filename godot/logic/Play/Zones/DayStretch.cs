@@ -27,6 +27,9 @@ public sealed class DayStretch
         public List<Foe> Foes = new(); public string? Elite; public int Under = 2; public double Out = 11;
         /// <summary>(r3, pulses) set: the wave comes this many seconds after the pack is all down (a breath), not at Under.</summary>
         public double? After;
+        /// <summary>(r3) its foes' leash round the pack's ground; unset, the pack's own plus 4 (a camp's waves keep
+        /// the camp's tight leash, so the fight stays on its ground).</summary>
+        public double? Leash;
     }
 
     public sealed class Beat
@@ -179,6 +182,8 @@ public sealed class DayStretch
                     if (o.Tag == null && o.LifeT < 0.5 && o.Faction == cap.E.Faction && o.State != EnemyState.Dying && Dist(o.X, o.Z, cap.E.X, cap.E.Z) < su.Range + 2)
                     {
                         o.Tag = "day:" + id; o.Roused = true;
+                        // (on the pack's leash, round its ground: a called foe had none, and drew her 40 m off the camp)
+                        o.HomeX = bt.X; o.HomeZ = bt.Z; o.Leash = bt.Leash;
                         list.Add((o, o.Seed)); up.Add((o, o.Seed));
                     }
             // (its next wave, out of the trees round its ground, when it is thinned to Under)
@@ -303,7 +308,7 @@ public sealed class DayStretch
                 if ((b.Collision.Blocked(x, z, 0.7) || Dist(x, z, p.X, p.Z) < 5) && t < 11) continue;
                 var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
                 {
-                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash + 4),
+                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, w.Leash ?? bt.Leash + 4),
                 });
                 if (e != null) { e.Roused = true; got.Add(e); }
                 break;

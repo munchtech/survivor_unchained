@@ -216,9 +216,19 @@ public sealed class ZoneMeta
         if (string.IsNullOrWhiteSpace(text)) return;  // a zone with no props_own.json (the verge) reads as empty
         using var doc = JsonDocument.Parse(text);
         MoveFloraColliders(z, doc.RootElement);
-        if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
         int nextId = 0;
         foreach (var c in z.Colliders) nextId = Math.Max(nextId, c.Id + 1);
+        // "solid": [x, z, r] circles where the web game left none (H4 item 10: the cliff rocks along the hill's foot
+        // east of the Kerchiefs' camp and west of the wallow, 8-20 m masses she could walk into, hidden at the play
+        // camera; each rock's footprint and the strip north of it that it hides from the south-looking camera).
+        if (doc.RootElement.TryGetProperty("solid", out var solid) && solid.ValueKind == JsonValueKind.Array)
+            foreach (var e in solid.EnumerateArray())
+                if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() >= 3)
+                {
+                    double r = e[2].GetDouble();
+                    z.Colliders.Add(new ColliderDef { Id = nextId++, Kind = ColliderKind.Circle, X = e[0].GetDouble(), Z = e[1].GetDouble(), R = r, Hw = r, Hd = r, Tag = "solid" });
+                }
+        if (!doc.RootElement.TryGetProperty("place", out var place) || place.ValueKind != JsonValueKind.Array) return;
         foreach (var e in place.EnumerateArray())
         {
             var c = PropCollider(e);
