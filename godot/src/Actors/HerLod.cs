@@ -23,6 +23,10 @@ public partial class HerLod : Node
 {
     /// <summary>Set by the game each frame: play, with no conversation, overlay, held camera or cinematic.</summary>
     public static bool InPlay;
+    /// <summary>Set by the game each frame: a cinematic's last shot that hands back to play, where the cast follows
+    /// play's rule too (H4 r3: C02's crane ended on the Warden's full pieces at 24 m and play's first frame drew his
+    /// gameplay ones; the switch now falls in the crane's pull-back, with his baked body's 18 m one).</summary>
+    public static bool FilmFollows;
     /// <summary>The camera's distance (m) beyond which she is drawn from her gameplay model, and within which she is
     /// drawn whole again (a conversation brings the camera to 12.5 m, a chest to 12-13.5).</summary>
     public const float Far = 18f, Near = 16f;
@@ -168,7 +172,7 @@ public partial class HerLod : Node
     public override void _Process(double delta)
     {
         bool want = Mode is "on" or "mesh";
-        if (Mode == "auto" && InPlay && GetViewport().GetCamera3D() is Camera3D cam)
+        if (Mode == "auto" && (InPlay || FilmFollows) && GetViewport().GetCamera3D() is Camera3D cam)
         {
             float d = cam.GlobalPosition.DistanceTo(skel.GlobalPosition + Vector3.Up);
             want = on == true ? d > Near : d > Far;

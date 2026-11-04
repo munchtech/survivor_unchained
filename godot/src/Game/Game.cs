@@ -1267,6 +1267,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         // Her gameplay model only in play: never in a conversation, an overlay, a held camera or a cinematic.
         View.HerLod.InPlay = Mode == "play" && !showing && !InCinematic && hudMode == null;
+        // (but a cinematic's last shot into play already draws as play will: no change of model on the cut, HerLod.FilmFollows)
+        View.HerLod.FilmFollows = Mode == "play" && !showing && hudMode == null && cine is { EndsInPlay: true, InLastShot: true };
         // A storybook played alone has no place under it: its score is kept here.
         if (scene == null && storybook != null) StorySound(Math.Min(delta, 0.1));
         if (scene == null) return;

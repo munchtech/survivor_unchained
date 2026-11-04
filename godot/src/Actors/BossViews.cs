@@ -173,12 +173,15 @@ public partial class WardenView : Node3D, IBossView
             a.Play(cur, 0);
             a.Seek(fa.CurrentAnimationPosition, true);
         }
-        filmAt = fb.GlobalPosition;
         PieceSprings.TakeAll(view, fb);
-        GD.Print($"warden handoff: film clip {cur} at {fa.CurrentAnimationPosition:0.00}, heading {Mathf.RadToDeg((float)heading):0.0}, at {filmAt}, body rot {fb.Rotation} scale {fb.Scale} root {film.GlobalRotation}");
+        // (and his lamp's light from where the film burned it, at the flame inside the cage: play's hangs above the lamp
+        // and lit his plate bright on the first frame; it rises there over FlameHand seconds instead)
+        flameHold = FlameHand;
     }
-    Vector3? filmAt;
-    int logLeft = 6;
+
+    /// <summary>Seconds a film's lamp light (at the flame) takes to rise to play's place after a hand-back (TakeFrom).</summary>
+    const double FlameHand = 1.6;
+    double flameHold;
 
     /// <summary>Back to walking after a held pose.</summary>
     public void Release()
@@ -192,7 +195,7 @@ public partial class WardenView : Node3D, IBossView
         time += dt;
         Visible = true;
         Position = new Vector3((float)x, (float)y, (float)z);
-        if (filmAt is { } fa0 && logLeft-- > 0) { var an = view.Person.Anim; GD.Print($"warden handoff: play at {view.GlobalPosition} (film {fa0}), facing {Mathf.RadToDeg((float)facing):0.0} heading {Mathf.RadToDeg((float)heading):0.0}, clip {an.CurrentAnimation} {an.CurrentAnimationPosition:0.00} body rot {view.Rotation} scale {view.Scale} pose {pose}"); if (logLeft == 0) filmAt = null; }
+        flameHold = Math.Max(0, flameHold - dt);
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
         Rotation = new Vector3(0, (float)heading, 0);
         if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz) * 1.2);
@@ -287,6 +290,11 @@ public partial class WardenView : Node3D, IBossView
         if (atFlame && fire != null) { light.GlobalPosition = swordLight.GlobalPosition = fire.At; return; }
         var at = lamp.GlobalPosition;
         light.GlobalPosition = swordLight.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
+        if (flameHold > 0 && fire != null)
+        {
+            float k = (float)(1 - flameHold / FlameHand);
+            light.GlobalPosition = swordLight.GlobalPosition = fire.At.Lerp(light.GlobalPosition, k * k * (3 - 2 * k));
+        }
         // (its streak on the water in the flame's hue, not the light's blue: C03 s2)
         if (light.IsInsideTree()) Water.StreakTint(light, flameColor);
     }
