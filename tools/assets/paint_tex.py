@@ -198,9 +198,14 @@ GROUND = dict(stroke=0.08, width=0.3, fine=0.02, mass=0.35, mid=0.6, fine_keep=0
 # Per ground (the sheets' folder name), per layer: what differs from GROUND. Stone and rock faces keep their scans
 # (chunky planes are rule 6's stone, not the ground's masses; the setts are R8's); the Hollow's litter and needles
 # pulled from red-brown toward ochre, so the pool her ember lights on them reads gold (hue 50-55), not rust.
+# (Judge r2-1 #4: the ember-lit ground read rust, hue 43-48: ember x ground lands gold only on an ochre-straw ground,
+# CIE Lab about (4, 24), so the earths that lie under her pools are pulled there: litter, needles, rot; dirt, mud, leaves.)
+STRAW = (4.0, 24.0)
 GROUND_LAYERS = {
-    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}},
-    "hollow": {"face": {"skip": 1}, "litter": {"hue": (14, 30), "pull": 0.3}, "needles": {"hue": (14, 30), "pull": 0.25}},
+    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}, "dirt": {"hue": STRAW, "pull": 0.45}, "mud": {"hue": STRAW, "pull": 0.3},
+               "leaves": {"hue": STRAW, "pull": 0.35}},
+    "hollow": {"face": {"skip": 1}, "litter": {"hue": STRAW, "pull": 0.55}, "needles": {"hue": STRAW, "pull": 0.45},
+               "rot": {"hue": STRAW, "pull": 0.3}},
     "ruts": {"face": {"skip": 1}}, "dig": {"face": {"skip": 1}}, "barrow": {"face": {"skip": 1}},
 }
 
