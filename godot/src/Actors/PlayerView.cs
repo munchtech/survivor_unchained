@@ -87,8 +87,13 @@ public partial class PlayerView : Node3D
     public const uint CrowdLayer = 1u << 16;
     /// <summary>--ember-crowd off: the crowd out of her pool again, as before Rendering 4.</summary>
     static readonly bool EmberCrowd = SurvivorUnchained.Args.Get("ember-crowd") != "off";
+    /// <summary>--crowd-omni on|off (Rendering 5): her real lamp light on the crowd layer. Default: it skips the crowd by night when the
+    /// crowd's own light is on (the shader's lamp curve is then the whole of her light on it: 0 at 7 m, the crowd round her held under her;
+    /// the real light added about a third within 1.5 m and nothing past 3 m), and lights it as before by day or with --crowd-fill off.</summary>
+    static readonly string CrowdOmniArg = SurvivorUnchained.Args.Get("crowd-omni") ?? "";
+    static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew));
     /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
-    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.35f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.43f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
         CrowdEmberIn = SurvivorUnchained.Args.Num("crowd-inner", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
@@ -810,7 +815,7 @@ public partial class PlayerView : Node3D
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
         Light.OmniAttenuation = EmberAtt;
-        Light.LightCullMask = LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu;
+        Light.LightCullMask = (LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu) & (CrowdOmni ? 0xFFFFFu : ~CrowdLayer);
         // (the close view by night keeps its own: her lamp off her and off people, as before)
         FolkLight.Visible = !LampOffHer && FolkK > 0;
         FolkLight.LightEnergy = Light.LightEnergy * FolkK * FolkScale;

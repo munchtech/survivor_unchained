@@ -180,6 +180,18 @@ crowd_top={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+crowd_dbg_s={
+"type": "float",
+"value": 0.3
+}
+crowd_lamp2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_lamp3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 crowd_amb={
 "type": "float",
 "value": 1.0
