@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -147,9 +147,26 @@ public static class CineCamera
             // A long, gentle start and settle: a dolly grip's move.
             "inout" => k * k * (3 - 2 * k),
             "slow" => k * k * k * (k * (k * 6 - 15) + 10),
+            "settle" => Settle(k, 0.25),
             _ => k,
         };
     }
+
+    /// <summary>A walk that arrives (a move's "settle"): its one pace, then slowing evenly to a stand over the last
+    /// share a of its time; its speed never jumps. (An inout's swells to 1.5x the mean and dies at both ends, and a
+    /// walk's clip at one pace treads on the spot through them.)</summary>
+    public static double Settle(double k, double a)
+    {
+        k = Math.Clamp(k, 0, 1);
+        a = Math.Clamp(a, 0, 1);
+        double v = Cruise(a), s0 = 1 - a;
+        if (k <= s0) return v * k;
+        double u = k - s0;
+        return v * (s0 + u - u * u / (2 * a));
+    }
+
+    /// <summary>A settling move's cruising speed against its mean (distance over duration): what its walk is paced to.</summary>
+    public static double Cruise(double a) => 1 / (1 - Math.Clamp(a, 0, 1) / 2);
 
     public static CamPose Eval(ShotSpan span, double local, Func<JsonElement, V3> place)
     {
