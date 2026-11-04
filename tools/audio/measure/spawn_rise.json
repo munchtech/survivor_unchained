@@ -1,13 +1,13 @@
 {
  "family": "spawn_rise",
- "kept": 0,
+ "kept": 3,
  "n": 6,
  "takes": [
   {
    "i": 0,
    "key": "1bdf40b39ce5d26250e7c29a28fd045a199fd8c51769e63bc145435a15e6873e",
    "file": null,
-   "dropped": "onsets 5 > 2",
+   "dropped": "clap margin -0.067 < 0.00",
    "measure": {
     "duration_s": 1.2,
     "peak_dbfs": -1.0760755691317612,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "6dd6c15df50951e7e575fb30488f5fc6f56d5f02b8c39ad01523556adbe0d828",
-   "file": null,
-   "dropped": "onsets 4 > 2",
+   "file": "spawn_rise_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.1987074829931972,
     "peak_dbfs": -1.0055273750310683,
@@ -53,7 +53,7 @@
    "i": 2,
    "key": "4e4f9817f6aa206de57ab3bdcfca3e73ab666e980b5272abb354a6a1cb5128cb",
    "file": null,
-   "dropped": "onsets 5 > 2",
+   "dropped": "clap margin -0.118 < 0.00",
    "measure": {
     "duration_s": 1.2,
     "peak_dbfs": -1.0060255951728434,
@@ -76,7 +76,7 @@
    "i": 3,
    "key": "610c788d373e303f17e0cfe9c8c6a890d7079526476a48cc4d9e5f5decff3bc9",
    "file": null,
-   "dropped": "onsets 5 > 2",
+   "dropped": "clap margin -0.146 < 0.00",
    "measure": {
     "duration_s": 1.19984126984127,
     "peak_dbfs": -1.0055273750310696,
@@ -98,8 +98,8 @@
   {
    "i": 4,
    "key": "589f6f281bbca9a7f6c881570329f27fc96c318597c4f72a1dd942c93dd06685",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "spawn_rise_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.1838775510204083,
     "peak_dbfs": -1.0469268339110707,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "f949c65827911ec2da46ff935a02533a5a3b1009d2e7869e8671c59b9c28fcca",
-   "file": null,
-   "dropped": "onsets 8 > 2",
+   "file": "spawn_rise_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.092562358276644,
     "peak_dbfs": -1.0669497648415172,

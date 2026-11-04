@@ -1,13 +1,13 @@
 {
  "family": "sunder_impact",
- "kept": 1,
+ "kept": 3,
  "n": 6,
  "takes": [
   {
    "i": 0,
    "key": "f3a52229f1890dbc7fb174179a40330cc392cc1b72f210c45c35a574243dd791",
-   "file": null,
-   "dropped": "onsets 4 > 2",
+   "file": "sunder_impact_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.8876870748299319,
     "peak_dbfs": -1.065487306632982,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "8ad8a3913bd8d6797349e18baf8261ac617e778f6eeae89927026c5abbee2c6d",
-   "file": "sunder_impact_0.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 0.5872335600907029,
     "peak_dbfs": -1.0648568466654005,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "2ad06f8fff29744c6efd75b4c2bc156a835d0bb76a385da85962a6181680afd5",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "sunder_impact_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.0,
     "peak_dbfs": -1.0055273750310696,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "61cb0b31c79101923299b3bc28a4da7ee0cc6b09cdc498b40d1d10e60886eb15",
-   "file": null,
-   "dropped": "onsets 4 > 2",
+   "file": "sunder_impact_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.9996598639455783,
     "peak_dbfs": -1.015414020767906,
@@ -99,7 +99,7 @@
    "i": 4,
    "key": "6b8129c7cbc0823f3bcf59be094e0ba6dc341a77b300d353ea9e56adf38471fd",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 0.9999773242630385,
     "peak_dbfs": -1.0055273750310683,
@@ -122,7 +122,7 @@
    "i": 5,
    "key": "efc61c235ae0da01bb93cfee50379e1dcf3d4b2a613dbfb3da8828b86d74bcdb",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 0.8784353741496599,
     "peak_dbfs": -1.0855210018583665,

@@ -1,6 +1,6 @@
 {
  "family": "kill_bone",
- "kept": 4,
+ "kept": 5,
  "n": 8,
  "takes": [
   {
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "2277207e316c24eb9f3684d171cab53203b44e498c710e49fd232d86bc713b65",
-   "file": "kill_bone_0.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.5107936507936508,
     "peak_dbfs": -1.0986795532603093,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "968adbc5658bf4d38b0bc8667349bf65dcd3d7b8095f4a1afa40bba83a3a7841",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_bone_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.4423809523809524,
     "peak_dbfs": -1.0055273750310683,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "3674b5bad280dde2e7fc191f9087154914f49762fe19470b74b4f7b76b8c0735",
-   "file": "kill_bone_3.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.7150113378684807,
     "peak_dbfs": -1.0737494728137302,
@@ -144,8 +144,8 @@
   {
    "i": 6,
    "key": "e226264efef218e41f89c2f848f24bf04f708bbcf4ecd6a3fa4f3cd4020c5158",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_bone_3.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.6490929705215419,
     "peak_dbfs": -1.0555287618699671,
@@ -167,8 +167,8 @@
   {
    "i": 7,
    "key": "90ae62d28841c50055f93826d0202362f3ec39f4b00fd2be81d4f9725ec38104",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_bone_4.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.7051473922902495,
     "peak_dbfs": -1.1896157134262042,

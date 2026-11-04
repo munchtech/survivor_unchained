@@ -74,7 +74,7 @@ public sealed class SoundBridge
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
                 case Ev.PlayerDeath: Sfx.Death(); break;
                 case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
-                case Ev.Nova n: Sfx.Nova(n.School); break;
+                case Ev.Nova n: Sfx.Nova(n.School, n.Art); break;
                 // Each skill in its own voice (Sfx.Skills), the school's where it has none.
                 case Ev.Slash s: Sfx.Swing(s.Art, At(s.X, s.Z)); break;
                 case Ev.Muzzle m: Sfx.Cast(m.Art, m.School, At(m.X, m.Z)); break;

@@ -1,6 +1,6 @@
 {
  "family": "bone_burst",
- "kept": 4,
+ "kept": 5,
  "n": 8,
  "takes": [
   {
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "9d4944378db8f8511b63184012af9622fa929969654725477d75cb88ee4fd1b4",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "bone_burst_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.8798639455782313,
     "peak_dbfs": -1.051365298998232,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "1c225a135391508f76e70298d0da26ca7e75dbc8b8c176f39fbcc6dc41c7bb38",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "bone_burst_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0522673277204289,
@@ -75,7 +75,7 @@
   {
    "i": 3,
    "key": "467adfce183cc003a561eae04a70ecef06526d108c36196fc3aff4fff5e52aa9",
-   "file": "bone_burst_0.wav",
+   "file": "bone_burst_2.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.5375056689342403,
@@ -98,8 +98,8 @@
   {
    "i": 4,
    "key": "fa5130fc4e1129f800cf2dbb6a382689a71088dd60ff95cbbfec969b6a2347e8",
-   "file": "bone_burst_1.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.2456380485626717,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "22975537e18b029e36aa11d581f136f63cf1f31edf0fb306b1e653e4e3aff712",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "bone_burst_3.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.49439909297052154,
     "peak_dbfs": -1.0187106770954844,
@@ -144,8 +144,8 @@
   {
    "i": 6,
    "key": "b130af30116c32d9b6ede65fb5f8f533179445041021873dc918adf93adf6c81",
-   "file": "bone_burst_2.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0469736482178034,
@@ -167,7 +167,7 @@
   {
    "i": 7,
    "key": "c15808276dd56f351601c5cd097b0a20a1014060038f463f38674849f7c8b30b",
-   "file": "bone_burst_3.wav",
+   "file": "bone_burst_4.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.88,

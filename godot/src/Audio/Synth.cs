@@ -118,6 +118,7 @@ public partial class Synth : Node
         {
             tapePath = path;
             tape = new List<Vector2>();
+            Dynamics();
             if (Args.Has("stems")) { stems = new List<Vector2>[5]; for (int i = 0; i < 5; i++) stems[i] = new List<Vector2>(); }
             SoundBank.Load(this);
             SoundHooks.Cue = id => Sfx.Cue(id);
@@ -128,6 +129,7 @@ public partial class Synth : Node
         SoundBank.Load(this);
         SoundHooks.Cue = id => Sfx.Cue(id);
         Rate = AudioServer.GetMixRate();
+        Dynamics();
         int room = AudioServer.GetBusIndex("Room");
         if (room < 0)
         {
@@ -136,7 +138,7 @@ public partial class Synth : Node
             AudioServer.SetBusName(room, "Room");
             AudioServer.SetBusSend(room, "Master");
             AudioServer.AddBusEffect(room, new AudioEffectReverb { RoomSize = 0.86f, Damping = 0.7f, Spread = 1, Dry = 0, Wet = 0.8f, PredelayMsec = 20, Hipass = 0.1f });
-            AudioServer.AddBusEffect(0, new AudioEffectCompressor { Threshold = -16, Ratio = 4, AttackUs = 4000, ReleaseMs = 250, Gain = 0 });
+            // The master's compressor and limiter run in Mix (so tapes measure true); none on Godot's bus.
         }
         dry = Player("Master");
         wet = Player("Room");
@@ -314,8 +316,18 @@ public partial class Synth : Node
                 if (stems != null) { stemAcc[(int)Bus.Amb * 2] += l; stemAcc[(int)Bus.Amb * 2 + 1] += r; }
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }
-            outDry[i] = new Vector2(dl, dr) * masterNow;
-            outWet[i] = new Vector2(wl, wr) * masterNow;
+            // The master's dynamics, in the mix itself so a tape (--wav) is what the speakers get: the compressor
+            // that sat on Godot's master bus (-16 dB, 4:1, 4 ms, 250 ms), then a limiter at -1 dBFS (instant down,
+            // 80 ms back), on the dry signal plus the room as the tape folds it in.
+            float pk = Math.Max(Math.Abs(dl + wl * 0.35f), Math.Abs(dr + wr * 0.35f)) * masterNow;
+            compEnv += (pk - compEnv) * (pk > compEnv ? compAtk : compRel);
+            float over = compEnv > 1e-6f ? 20 * MathF.Log10(compEnv) - CompThreshold : -120;
+            float dyn = over > 0 ? MathF.Pow(10, -over * (1 - 1 / CompRatio) / 20) : 1;
+            float post = pk * dyn * limG;
+            if (post > Ceiling) limG = Ceiling / (pk * dyn); else limG += (1 - limG) * limRel;
+            dyn *= limG * masterNow;
+            outDry[i] = new Vector2(dl, dr) * dyn;
+            outWet[i] = new Vector2(wl, wr) * dyn;
             if (stems != null)
                 for (int k = 0; k < 5; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
         }
@@ -326,10 +338,15 @@ public partial class Synth : Node
 
     public int Voices => voices.Count;
 
+    const float CompThreshold = -16, CompRatio = 4, Ceiling = 0.891f;
+    float compEnv, limG = 1, compAtk, compRel, limRel;
+    void Dynamics() { compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
+
     public override void _ExitTree()
     {
         running = false;
         worker?.Join(200);
+        SoundBank.PrintLog();
         if (tape == null || tapePath == null) return;
         WriteWav(tapePath, tape);
         if (stems != null)

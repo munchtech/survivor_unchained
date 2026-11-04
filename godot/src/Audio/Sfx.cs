@@ -236,9 +236,11 @@ public static partial class Sfx
         a.Play(new Hiss { D = 0.25, G = 0.1 * g, Bp = 2400, Q = 0.6, Pan = w.Pan });
     }
 
-    public static void Nova(School school)
+    public static void Nova(School school, string? art = null)
     {
         if (A is not { } a || !a.Gate("nova", 2, 200)) return;
+        // A skill's own ring (art.watch_bell.nova), then the school's.
+        if (art != null && Bank($"art.{art}.nova", null, gated: false)) return;
         if (Bank($"nova.{school.ToString().ToLowerInvariant()}", null, gated: false)) return;
         a.Play(new Tone { F = 190, F2 = 55, D = 0.4, G = 0.18 });
         a.Play(new Hiss { A = 0.02, D = 0.35, G = 0.08, Bp = 700, Bp2 = 2200, Q = 0.8 });

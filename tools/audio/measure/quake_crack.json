@@ -1,13 +1,13 @@
 {
  "family": "quake_crack",
- "kept": 1,
+ "kept": 3,
  "n": 6,
  "takes": [
   {
    "i": 0,
    "key": "77d3ac471b0541be72a523522385a431addae7bcd7faf8a39d04e43221704320",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 1.48,
     "peak_dbfs": -1.0141565305257925,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "e367fea82380dcc0ae7825da60ead3a55b224bac02928ac889ffecb42fc2633d",
-   "file": "quake_crack_0.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 1.48,
     "peak_dbfs": -1.1487519577191214,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "4d51ef980d159886f96fef350cb6dd3aff6637c2c8b9a050466d721d09c8716a",
-   "file": null,
-   "dropped": "onsets 4 > 2",
+   "file": "quake_crack_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.0944897959183673,
     "peak_dbfs": -1.0747361665398472,
@@ -76,7 +76,7 @@
    "i": 3,
    "key": "51c42738d3b27c0929e81ef551c56d9aad31c3ce3acadc282e2007fe35a3e691",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 1.4799319727891156,
     "peak_dbfs": -1.0055273750310683,
@@ -98,8 +98,8 @@
   {
    "i": 4,
    "key": "bf3417df24b36f46ab67bcbef555f6439dafbbc135fbd823a7e7f21f1993a2d9",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "quake_crack_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.4799773242630385,
     "peak_dbfs": -1.0872607770479428,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "05f6dcd347f7fa922f53099bd5d582154f49e0bc70c797db35ccf48b0f473889",
-   "file": null,
-   "dropped": "onsets 4 > 2",
+   "file": "quake_crack_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.4799773242630385,
     "peak_dbfs": -1.0055273750310683,

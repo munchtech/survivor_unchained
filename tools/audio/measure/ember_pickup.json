@@ -1,13 +1,13 @@
 {
  "family": "ember_pickup",
- "kept": 3,
+ "kept": 4,
  "n": 6,
  "takes": [
   {
    "i": 0,
    "key": "7475935cc263c8e175a6e44d6efc97f9db6ae6f3313d4257503671b4323be83d",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "ember_pickup_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.4799773242630386,
     "peak_dbfs": -1.8913709223848028,
@@ -30,7 +30,7 @@
    "i": 1,
    "key": "544caf6fa4e93e0f9b2f85ea5088c3c6f973aaf79fa7205ef3c607b6709fb56a",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "clap margin -0.269 < 0.00",
    "measure": {
     "duration_s": 0.48,
     "peak_dbfs": -1.0055273750310696,
@@ -52,7 +52,7 @@
   {
    "i": 2,
    "key": "cf4496b07ebbd6b1aeed373417a1385ffb6ffd3f7e41323f045284a40e0269d4",
-   "file": "ember_pickup_0.wav",
+   "file": "ember_pickup_1.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.48,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "bf666056eafd6771801c1e5f34f54db001326b4869b7c38c6e4fc1d60fad3edb",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "ember_pickup_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.48,
     "peak_dbfs": -1.0055273750310696,
@@ -98,7 +98,7 @@
   {
    "i": 4,
    "key": "6fe785a3716cd45d46851e61c4d9ea6e829b181c3cdb32a5b6a8537718a8cfc7",
-   "file": "ember_pickup_1.wav",
+   "file": "ember_pickup_3.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.4799546485260771,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "a4fddf4b215403a1bcbd0433e89d8feab8af1aeca6808faadde6261f3018c5f5",
-   "file": "ember_pickup_2.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 4 best-ranked takes",
    "measure": {
     "duration_s": 0.4799773242630386,
     "peak_dbfs": -1.471433286033139,

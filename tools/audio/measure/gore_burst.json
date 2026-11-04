@@ -1,13 +1,13 @@
 {
  "family": "gore_burst",
- "kept": 4,
+ "kept": 5,
  "n": 8,
  "takes": [
   {
    "i": 0,
    "key": "9c2a66be9cffca5ca5c8428ed2eaef704350646bc8e8b04588f640ceb2c64b9f",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "gore_burst_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0880305636691894,
@@ -29,7 +29,7 @@
   {
    "i": 1,
    "key": "8ff08542bb3738320a28152558b3436871780760183aa67f76b0af8bd4240e82",
-   "file": "gore_burst_0.wav",
+   "file": "gore_burst_1.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.6281859410430839,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "93e6a5f2adf54880d4398c5b8f767d01ec9f0e5750f741408e078d0f62a318e2",
-   "file": "gore_burst_1.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.011424828833134,
@@ -98,8 +98,8 @@
   {
    "i": 4,
    "key": "a76ae37ca730019f37e29d63eb53bf8c2a54c7bb322a74c3f66c61c5c95ef1e5",
-   "file": "gore_burst_2.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 5 best-ranked takes",
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0055273750310696,
@@ -121,8 +121,8 @@
   {
    "i": 5,
    "key": "f2d9000baf3f4b08d861c094de80e6fd5f10cf04b4269bc1fcdcfda152d60b19",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "gore_burst_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0835777726677323,
@@ -167,8 +167,8 @@
   {
    "i": 7,
    "key": "981739e10253bb043c0e57dd643c69c8cfdc4ee120675597835e78855720abed",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "gore_burst_4.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0055273750310696,

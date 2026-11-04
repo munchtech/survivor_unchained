@@ -51,8 +51,25 @@ public static class SoundBank
     /// <summary>Whether the event exists and every layer of it has takes.</summary>
     public static bool Has(string id)
     {
+        if (Log) lock (Asked) Asked[id] = Asked.GetValueOrDefault(id) + 1;
         if (banked.TryGetValue(id, out var v)) return v;
-        return banked[id] = Data.Banked(id, Recordings.Has);
+        return banked[id] = !Off && Data.Banked(id, Recordings.Has);
+    }
+
+    /// <summary>--nobank: every event plays its made recipe, as before the bank (the "before" of a listening sheet).</summary>
+    static readonly bool Off = Args.Has("nobank");
+    /// <summary>--soundlog: every id a recipe asked the bank for, and how often, printed when the mixer stops
+    /// (which events a night really fires, banked or not).</summary>
+    public static readonly bool Log = Args.Has("soundlog");
+    public static readonly Dictionary<string, int> Asked = new();
+
+    public static void PrintLog()
+    {
+        if (!Log) return;
+        KeyValuePair<string, int>[] all;
+        lock (Asked) all = Asked.OrderByDescending(kv => kv.Value).ToArray();
+        foreach (var (id, n) in all)
+            GD.Print($"[soundlog] {id} {n} {(banked.GetValueOrDefault(id) ? "banked" : "synth")}");
     }
 
     /// <summary>A duck depth from data (ducks.talk.music), today's number if the data has none.</summary>

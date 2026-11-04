@@ -1,13 +1,13 @@
 {
  "family": "kill_elite",
- "kept": 1,
+ "kept": 3,
  "n": 4,
  "takes": [
   {
    "i": 0,
    "key": "0de7beadf2c04db38046259e75bcbdce4f051aa192da5f270184e2e55827671b",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_elite_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.2,
     "peak_dbfs": -1.0302401751524446,
@@ -29,7 +29,7 @@
   {
    "i": 1,
    "key": "1cd96e36eba40251b32c833ed61487d8d9db7a8516301f3e82c018bd0e27ddb2",
-   "file": "kill_elite_0.wav",
+   "file": "kill_elite_1.wav",
    "dropped": null,
    "measure": {
     "duration_s": 1.1998866213151926,
@@ -53,7 +53,7 @@
    "i": 2,
    "key": "d5846b507e96759b6ee73fcb6db719cc463d25b9d569ce50a1b5a2f60e6f35fb",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 1.1998185941043085,
     "peak_dbfs": -1.0280769652661088,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "bf059f1d3bb2e70d1dce28bdaa939d20423169a2f0c3973ca58cb7b897b9c8a7",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_elite_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.1999773242630385,
     "peak_dbfs": -1.023416949694305,

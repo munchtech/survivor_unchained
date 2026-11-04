@@ -1,13 +1,13 @@
 {
  "family": "explosion_small",
- "kept": 1,
+ "kept": 3,
  "n": 4,
  "takes": [
   {
    "i": 0,
    "key": "f299e7962cceaf67a1181c580a04a6fb5294f52e841ef5a2048c6d178a2335cc",
    "file": null,
-   "dropped": "onsets 3 > 2",
+   "dropped": "clap margin -0.071 < 0.00",
    "measure": {
     "duration_s": 1.0,
     "peak_dbfs": -1.0055273750310705,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "24b8cb31b9dbcbddc04230bbab49ec7f9fe3463cf8afccce4ac754ab46d11a8f",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "explosion_small_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.9999546485260771,
     "peak_dbfs": -1.1181422074838776,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "1a68035a83acf21a9ba6c3f11da6d6e818fce97b8da2a2ec242a04d2ead60aa2",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "explosion_small_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.0,
     "peak_dbfs": -1.0055273750310696,
@@ -75,7 +75,7 @@
   {
    "i": 3,
    "key": "583f977e966388b3a1739ee05ac0f8791c935f936b0f76544b5229dd53f16d93",
-   "file": "explosion_small_0.wav",
+   "file": "explosion_small_2.wav",
    "dropped": null,
    "measure": {
     "duration_s": 1.0,

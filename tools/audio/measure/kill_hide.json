@@ -7,7 +7,7 @@
    "i": 0,
    "key": "f32347ef1b296a6e9c74880e35f2ff015341baa10ba87d6fa764cff859659bee",
    "file": null,
-   "dropped": "onsets 4 > 2",
+   "dropped": "onsets 4 > 3",
    "measure": {
     "duration_s": 0.88,
     "peak_dbfs": -1.0055273750310683,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "530056cb49f9bda081b034fdf420856b5f533e29ea60b6b6dd095a1be242cbc3",
-   "file": "kill_hide_0.wav",
-   "dropped": null,
+   "file": null,
+   "dropped": "not among the 4 best-ranked takes",
    "measure": {
     "duration_s": 0.7327210884353742,
     "peak_dbfs": -1.0055273750310696,
@@ -52,7 +52,7 @@
   {
    "i": 2,
    "key": "58ef65e299db0c00cac38049a2955ce1088b3e0c0cfd211c20742e3431704346",
-   "file": "kill_hide_1.wav",
+   "file": "kill_hide_0.wav",
    "dropped": null,
    "measure": {
     "duration_s": 0.8791156462585034,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "572d2fbfe0dbd349a6a640dd501ec82bb87e00f3148d6983a8e7682cf1175c59",
-   "file": null,
-   "dropped": "onsets 3 > 2",
+   "file": "kill_hide_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.7327210884353742,
     "peak_dbfs": -1.0227018595786508,
