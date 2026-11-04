@@ -53,6 +53,8 @@ public partial class PlayerView : Node3D
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
+    /// <summary>--xray-old: the x-ray as demo-rc2 had it (her own body hides her too), for the before strip.</summary>
+    static readonly bool XrayOld = SurvivorUnchained.Args.Has("xray-old");
     static bool XraySolid(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return false;
@@ -91,7 +93,7 @@ public partial class PlayerView : Node3D
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
         // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
-        if (k > 0 || want > 0) xray.SetShaderParameter("her_at", GlobalPosition);
+        if ((k > 0 || want > 0) && !XrayOld) xray.SetShaderParameter("her_at", GlobalPosition);
         if (k == xrayK) return;
         if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
         bool was = xrayK > 0;

@@ -1166,8 +1166,10 @@ public partial class Game : Node, IZoneHost
                     // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back. (H8,
                     // N35: it follows her, half the way to the boss and never past the middle third, and nothing it
                     // set is left once it is over, a panel open or not.)
-                    bossFocus = (f.X, f.Z);
                     focusT = f.Duration;
+                    // (--focus-old: as demo-rc2 had it, for the before strip)
+                    if (FocusOld) { cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2); break; }
+                    bossFocus = (f.X, f.Z);
                     BossFocus();
                     break;
             }
@@ -1271,6 +1273,7 @@ public partial class Game : Node, IZoneHost
     double focusT;
     /// <summary>The boss a Focus event frames with her (its place), and the look it last set.</summary>
     (double X, double Z)? bossFocus;
+    static readonly bool FocusOld = Args.Has("focus-old");
     Vector3? bossFocusSet;
 
     /// <summary>The boss focus this frame: the look half the way from her to it (capped to the middle third), set
@@ -1312,8 +1315,8 @@ public partial class Game : Node, IZoneHost
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;
-        if (focusT > 0) focusT -= dt;
-        BossFocus();
+        if (FocusOld) { if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null; }
+        else { if (focusT > 0) focusT -= dt; BossFocus(); }
         if (Mode == "play" && zone != null)
         {
             Perf.Begin(Perf.Part.Auto);
@@ -1361,6 +1364,7 @@ public partial class Game : Node, IZoneHost
             (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : gateAt != null ? (0.33f, 2.5f) : (0.33f, 4.5f);
             // (H8, N35: a boss farther off than this is left to the pointer; the gate leans from its 28 m)
             cam.TowardRange = gateAt != null ? 40f : fordBoss != null ? 26f : 22f;
+            cam.LeanOld = FocusOld;
             // H4 item 5 (N8, the owner saw one lamp): the fight's frame stays on her and him, 25 m out (23 elsewhere). The
             // three posts read by their lamps burning (GameLampPosts' beacons), the bar's three marks and the pointers to the
             // lit ones off the frame. (Framing the triangle failed twice: a lean to its middle lost her 36% of the fight on

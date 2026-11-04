@@ -41,6 +41,8 @@ public sealed class FollowCamera
     /// <summary>The share of the frame's half-width and half-height the look may lean off her (a third of the frame
     /// round its middle: she never leaves the middle third for a boss).</summary>
     public const float LeanThird = 1 / 3f;
+    /// <summary>--focus-old: the lean as demo-rc2 had it (no range, no cap, no ease), for the before strip.</summary>
+    public bool LeanOld;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
     public float ScreenShift;
@@ -206,18 +208,18 @@ public sealed class FollowCamera
         if (Toward is Vector3 tw)
         {
             float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
-            if (dl > 0.01f && dl <= TowardRange)
+            if (dl > 0.01f && (dl <= TowardRange || LeanOld))
             {
                 float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k;
-                (wx, wz) = CapLean(wx, wz);
+                if (!LeanOld) (wx, wz) = CapLean(wx, wz);
                 leaning = true;
             }
         }
         // (H8, N35: the lean comes in over a second, eased, and goes as gently)
-        towardOn = Mathf.MoveToward(towardOn, leaning ? 1 : 0, dt);
+        towardOn = LeanOld ? 1 : Mathf.MoveToward(towardOn, leaning ? 1 : 0, dt);
         float ease = towardOn * towardOn * (3 - 2 * towardOn);
-        towardX = Damp(towardX, wx * ease, 3f, dt);
-        towardZ = Damp(towardZ, wz * ease, 3f, dt);
+        towardX = Damp(towardX, wx * ease, LeanOld ? 1.5f : 3f, dt);
+        towardZ = Damp(towardZ, wz * ease, LeanOld ? 1.5f : 3f, dt);
         var t = new Vector3(x + leadX + towardX, y + 0.8f, z + leadZ + towardZ);
         overrideBlend = Damp(overrideBlend, FocusOverride.HasValue ? 1 : 0, 2.5f, dt);
         var f = FocusOverride is Vector3 o ? t.Lerp(o, overrideBlend) : t;
