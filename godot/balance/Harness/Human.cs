@@ -19,6 +19,8 @@ public sealed class Human
 {
     public readonly double React, Reads;
     public readonly bool Careless;
+    /// <summary>H6's idler: the human's eyes and reaction, but it stands unless a read threat moves it.</summary>
+    public bool Idle;
     readonly Rng rng;
     readonly Dictionary<string, (double Seen, bool Read)> seen = new();
     double sweep;
@@ -91,6 +93,9 @@ public sealed class Human
     {
         bool aware = Aware(b);
         lastAware = aware;
+        // H6's idler (the owner's demo-rc2 play): stands where it is (or walks to the night's goal, the lamp) and
+        // steps only out of what it has read; nothing else moves it.
+        if (Idle && !aware) return goal is var (gx, gz) && Math.Sqrt((gx - b.Player.X) * (gx - b.Player.X) + (gz - b.Player.Z) * (gz - b.Player.Z)) > 1.2 ? Pilot.Steer(b, false, null, goal: goal, naive: true) : (0, 0);
         return aware ? Pilot.Steer(b, true, boss, goal: goal, onward: onward) : Pilot.Steer(b, false, null, goal: goal, naive: true, onward: onward);
     }
     bool lastAware;

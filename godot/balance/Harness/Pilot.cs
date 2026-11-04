@@ -128,7 +128,7 @@ public static class Pilot
     /// <returns>Whether a draught was drunk.</returns>
     /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
     /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true)
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
@@ -144,7 +144,7 @@ public static class Pilot
                     break;
                 }
         // Out of a crush (the wall stays in it: the crush is what it came for).
-        if (p.DashCharges > 0 && !Wall(b) && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
+        if (crush && p.DashCharges > 0 && !Wall(b) && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
         // The Flare: a boss within ten metres, a crowd of eight within its reach, or health below a quarter;
         // and nobody sits on a full meter: after eight seconds ready, four within its reach will do.
         // (A crowd of eight within six metres kept a kiting caster's meter full for minutes.)

@@ -101,6 +101,11 @@ public sealed class RunResult
     /// it, seconds she stood in its lit pool, its outs and relights, blows landed on her in its pool and out of it after
     /// it caught (with the seconds of each), and her Flare meter (in casts) as the boss came.</summary>
     public bool? LampHeld;
+    /// <summary>H6: times surrounded (foes within 4 m in three or more of six sectors, held 2 s) and at what minutes;
+    /// seconds so; marks laid on her from 0:45 to the boss, and the longest stretch without one.</summary>
+    public int Surrounds, MarksOnHer;
+    public double SurroundSec, MarkGapMax;
+    public List<double> SurroundAt = new();
     public double LampPoolSec, LampOutSec, FlareAtBoss = double.NaN;
     public int LampOuts, LampRelights, LampHitsIn, LampHitsOut;
     /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
@@ -328,11 +333,42 @@ public static class ArenaSim
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
         int replayed = 0;
         // --bot human|careless: a player's hands, late (Harness/Human.cs).
-        var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
-        var hold = LampHold.For(zone, map, b, spec.Seed, spec.Bot != "" ? spec.Bot : spec.Deft ? "deft" : "plain");
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
+        var hold = LampHold.For(zone, map, b, spec.Seed, spec.Bot is "camper" or "idler" ? "deft" : spec.Bot != "" ? spec.Bot : spec.Deft ? "deft" : "plain");
+        // H6's hands (Harness/Bots.cs): standing, camper, kiter.
+        bool simple = Bots.Is(spec.Bot);
+        double boardR = zone.Board?.Radius ?? 60;
+        // H6's measures: surrounded (foes within 4 m in three or more of six sectors, held 2 s), and the marks laid
+        // on her (a hostile telegraph that covers where she stands as it is made).
+        double ringFor = 0; bool ringCounted = false;
+        var marksOn = new List<double>();
+        void Surround()
+        {
+            int mask = 0;
+            foreach (var e in b.HostilesInRadius(p.X, p.Z, 4))
+            {
+                if (e.State == EnemyState.Dying) continue;
+                double a = Math.Atan2(e.Z - p.Z, e.X - p.X) + Math.PI;
+                mask |= 1 << Math.Min(5, (int)(a / (Math.PI / 3)));
+            }
+            int sectors = 0; for (int i = 0; i < 6; i++) if ((mask >> i & 1) != 0) sectors++;
+            if (sectors >= 3)
+            {
+                ringFor += Dt; r.SurroundSec += Dt;
+                if (ringFor >= 2 && !ringCounted) { ringCounted = true; r.Surrounds++; r.SurroundAt.Add(Math.Round(t / 60, 2)); }
+            }
+            else { ringFor = 0; ringCounted = false; }
+        }
         while (t < spec.Cap * 60 && p.Alive && host.Result == null && (fx == null || fx.Span <= 0 || t < fx.Span * 60 - 1e-9))
         {
             var goal = hold?.Goal(b);
+            if (simple)
+            {
+                var (sx, sz) = Bots.Steer(spec.Bot, b, goal, boardR);
+                if (Bots.Act(spec.Bot, b, j, sx, sz, zone.BossScript)) r.Quaffs++;
+                zone.Step(Dt); zone.Frame(Dt); b.Tick(Dt, sx, sz);
+                Surround(); goto Drain;
+            }
             var (mx, mz) = human != null ? human.Steer(b, zone.BossScript, goal) : Pilot.Steer(b, spec.Deft, zone.BossScript, goal: goal);
             // A holder near the pool's edge turns back in rather than step out of it (not while dodging: the boss's
             // marks and the kit's are read inside Steer, and a goal does not overrule them).
@@ -342,8 +378,11 @@ public static class ArenaSim
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
+            Surround();
+            Drain:
             foreach (var ev in b.Events.Drain())
             {
+                if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } onHer && Covers(onHer, p.X, p.Z, p.Radius)) marksOn.Add(t);
                 if (hold != null && ev is Ev.PlayerHit { Amount: > 0, Dodged: false } && b.HeldLamp is { Caught: true }) { if (zone.InLampPool) r.LampHitsIn++; else r.LampHitsOut++; }
                 if (ev is Ev.Telegraph { Tell: not null } kt) { if (kt.Phase == TellPhase.Warn) r.KitMarked++; else if (kt.Caught) r.KitCaught++; }
                 switch (ev)
@@ -466,6 +505,14 @@ public static class ArenaSim
         r.DamageRaw = b.DamageRaw;
         if (human != null) { r.ThreatsMet = human.Met; r.ThreatsRead = human.Read; }
         r.HpEnd = p.Hp / Math.Max(1, b.MaxHp);
+        // The marks laid on her before the boss came (or the night's end): how many, and the longest stretch from
+        // 0:45 without one (H6's rule: something to dodge every 45-60 s).
+        double until = bossUp >= 0 ? bossUp : t;
+        var on = marksOn.Where(x => x >= 45 && x < until).ToList();
+        r.MarksOnHer = on.Count;
+        double last = 45, gap = 0;
+        foreach (var x in on) { gap = Math.Max(gap, x - last); last = x; }
+        r.MarkGapMax = Math.Max(gap, until - last);
         r.HitsFodder = hitsFodder.Count == 0 ? double.NaN : Median(hitsFodder);
         r.HitsElite = hitsElite.Count == 0 ? double.NaN : Median(hitsElite);
         r.Build = Describe(b);
@@ -498,6 +545,32 @@ public static class ArenaSim
     public static string Describe(Battle b) =>
         string.Join(" ", b.Weapons.Select(w => $"{w.Evolution?.Id ?? w.Id}{w.Rank}")) + " | " +
         string.Join(" ", b.Boons.Select(kv => $"{kv.Key}{kv.Value}"));
+
+    /// <summary>Whether a telegraph made now covers her (a circle or ring's disc, a line's lane, a cone's wedge), with a
+    /// metre's grace.</summary>
+    static bool Covers(Ev.Telegraph t, double x, double z, double r)
+    {
+        double dx = x - t.X, dz = z - t.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        switch (t.Shape)
+        {
+            case TelegraphShape.Line when t.X1 is { } x1 && t.Z1 is { } z1:
+            {
+                double lx = x1 - t.X, lz = z1 - t.Z, ll = lx * lx + lz * lz;
+                double u = ll < 1e-9 ? 0 : Math.Clamp((dx * lx + dz * lz) / ll, 0, 1);
+                double ex = t.X + lx * u - x, ez = t.Z + lz * u - z;
+                return Math.Sqrt(ex * ex + ez * ez) <= (t.Width ?? 1.5) / 2 + r + 1;
+            }
+            case TelegraphShape.Cone:
+            {
+                if (d > t.Radius + r + 1) return false;
+                double half = (t.Arc ?? Math.PI / 2) / 2, a = Math.Atan2(dz, dx) - (t.Angle ?? 0);
+                a = Math.Atan2(Math.Sin(a), Math.Cos(a));
+                return d < 1.5 || Math.Abs(a) <= half + 0.2;
+            }
+            case TelegraphShape.Ring: return d <= t.Radius + r + 1 && d >= t.Inner - r - 1;
+            default: return d <= t.Radius + r + 1;
+        }
+    }
 
     public static double Median(List<double> xs)
     {
