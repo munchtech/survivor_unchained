@@ -1142,7 +1142,7 @@ public partial class Game : Node, IZoneHost
                     // (one of theirs at a time: the next waits for the last to be said).
                     var said = bk.Text;
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
-                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null);
+                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);

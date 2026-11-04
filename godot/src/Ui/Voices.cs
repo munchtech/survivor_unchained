@@ -38,11 +38,13 @@ public partial class Voices : Node3D
         /// <summary>Its shot under a live tip was asked for (--shot only).</summary>
         public bool Shot;
         public bool HudLogged;
+        /// <summary>A boss's line (H1 round 2B): stood in a fixed slot under the boss's bar, wherever he is.</summary>
+        public bool Boss;
     }
     static int barkTipShots;
 
     /// <summary>A line waiting for its speaker's last to finish.</summary>
-    sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown);
+    sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown, bool Boss = false);
 
     readonly List<Said> barks = new();
     /// <summary>Combat's floaters standing now (a "blocked"), where they stand on the screen and until when:
@@ -132,7 +134,7 @@ public partial class Voices : Node3D
     /// still showing, it waits its turn (the same words again only keep that
     /// one up longer); `shown` runs when it shows (a named voice heard then,
     /// returning how long it speaks).</summary>
-    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null)
+    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null, bool boss = false)
     {
         // Whose turn it is: a named speaker's own; else whatever stands there.
         string key = speaker ?? $"@{Mathf.RoundToInt(at.X / 3)},{Mathf.RoundToInt(at.Z / 3)}";
@@ -144,12 +146,12 @@ public partial class Voices : Node3D
             now.Life = Math.Max(now.T + 0.25, Math.Min(now.Life, alert ? 0 : 1.0 + now.Text.Length * 0.045));
             if (!waiting.TryGetValue(key, out var q)) waiting[key] = q = new();
             if (q.Any(w => w.Text == text)) return;
-            q.Enqueue(new Waiting(text, at, speaker, alert, voice, shown));
+            q.Enqueue(new Waiting(text, at, speaker, alert, voice, shown, boss));
             // (a speaker who says too much drops what is oldest unsaid, not what is newest)
             while (q.Count > 3) q.Dequeue();
             return;
         }
-        Show(key, new Waiting(text, at, speaker, alert, voice, shown));
+        Show(key, new Waiting(text, at, speaker, alert, voice, shown, boss));
     }
 
     /// <summary>A bark's width: one line if it fits 460 px; else the narrowest width giving the same number of
@@ -197,7 +199,7 @@ public partial class Voices : Node3D
         if (!w.Alert && w.Speaker == null && Sound.VoiceOver.Instance?.Bark(w.Text, this, w.At, w.Voice) is double said and > 0)
             life = Mathf.Max(life, said + 0.8);
         if (w.Shown?.Invoke() is double spoken and > 0) life = Mathf.Max(life, spoken + 0.6);
-        barks.Add(new Said { Box = box, Key = key, At = w.At, Text = w.Text, Life = life });
+        barks.Add(new Said { Box = box, Key = key, At = w.At, Text = w.Text, Life = life, Boss = w.Boss });
         // Not too many at once: the oldest go first.
         while (barks.Count > 6) { barks[0].Box.QueueFree(); barks.RemoveAt(0); }
     }
@@ -340,6 +342,21 @@ public partial class Voices : Node3D
         var barkRects = new List<Rect2>();
         foreach (var b in barks)
         {
+            if (b.Boss)
+            {
+                // The boss's slot: centered under his bar, always on screen (round 1's judge: a bark was overprinted by the
+                // timer, and a boss off screen said nothing seen). Nothing else is moved by it but the others stand clear.
+                var bsize = b.Box.GetCombinedMinimumSize();
+                var bvp = GetViewport().GetVisibleRect().Size;
+                b.Vis = 1;
+                b.Box.Visible = true;
+                var bat = new Vector2((bvp.X - bsize.X) / 2, Ui.GameHud.TopClear + 4);
+                b.Box.Position = bat;
+                b.Box.Size = bsize;
+                placed.Add(new Rect2(bat, bsize).Grow(6));
+                b.Box.Modulate = new Color(1, 1, 1, (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet);
+                continue;
+            }
             var head = b.At + Vector3.Up * 2.1f;
             if (cam.IsPositionBehind(head)) { b.Vis = 0; b.Box.Visible = false; b.Anchor = null; continue; }
             var size = b.Box.GetCombinedMinimumSize();
