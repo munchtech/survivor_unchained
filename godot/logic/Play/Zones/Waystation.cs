@@ -460,11 +460,15 @@ public sealed class Waystation : ZoneRuntime
             W.Facts["waystation.visited"] = true;
             // C04 B (docs/cinematics/shoot/c04b.md): the first arrival, at first light.
             // Its chapter card is the place's title, so there is no other.
-            if (G.Cinematic("c04b", () => { rookByCine = false; Presence(); })) return;
+            // The first day's clock starts on arrival: it used to wait for Rook's quest, and a player who walked
+            // past him stayed at "Dawn, Day 1" for good. Control is hers when the cinematic hands back.
+            if (G.Cinematic("c04b", () => { rookByCine = false; Presence(); W.Facts["clock.started"] = true; })) return;
+            W.Facts["clock.started"] = true;
             G.AnnounceZone();
             G.After(2.5, () => G.Say("The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.", null, 5));
             return;
         }
+        W.Facts["clock.started"] = true;  // (she came back before the cinematic handed over: the day runs)
         G.AnnounceZone();
         // A scene the story set for a morning or a dusk she spent elsewhere plays when she comes
         // into the town on that side of the day (Journey.TakeScene).

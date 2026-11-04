@@ -161,4 +161,27 @@ public class WaystationTests
         Run(s, 2.2);
         Assert.Equal('!', Mark(who));
     }
+
+    /// <summary>Day 1's clock starts when she arrives and has control, whether or not she has met Rook.</summary>
+    [Fact]
+    public void The_first_days_clock_starts_on_arrival_without_Rooks_quest()
+    {
+        var s = Make(TimeOfDay.Dawn);
+        Assert.Equal(1, s.J.World.Day);
+        Assert.DoesNotContain(s.J.World.Quests, q => q.Key is "beasts" or "caravan" && q.Value.Status != QuestStatus.Unknown);
+        Assert.True(s.J.ClockStarted);
+        // With the arrival cinematic, it starts as that hands control back, not before.
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 42);
+        var meta = ZoneMeta.Load("waystation");
+        var host = new FakeHost(j, meta) { Plays = id => id == "c04b" };
+        var zone = new Waystation(host, meta);
+        var at = zone.ArrivalFrom(null);
+        var b = j.StartBattle(false, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 3);
+        host.Battle = b;
+        zone.Begin(b);
+        Assert.False(j.ClockStarted);
+        host.Cines.Single().Done!();
+        Assert.True(j.ClockStarted);
+    }
 }

@@ -97,8 +97,9 @@ public sealed partial class Journey
     /// <summary>She has fought tonight already (back from a fight into this same night).</summary>
     public bool FoughtTonight => World.Time == TimeOfDay.Night && World.Fact("night.fought").Number == World.Day;
 
-    /// <summary>The clock has started: on the first day it waits until the arrival is over (the
-    /// first of the two troubles in her journal), when she has somewhere to be; after that it runs.</summary>
+    /// <summary>The clock has started: on the first day it waits until she has arrived in the
+    /// Waystation (Waystation sets "clock.started" when the arrival hands control back) or has
+    /// somewhere to be (a quest of Rook's is known); after that it runs.</summary>
     public bool ClockStarted
     {
         get
