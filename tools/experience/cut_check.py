@@ -13,7 +13,10 @@ for each hand-back, reports:
 A cut FAILS on: a camera frame over 0.3 m or 4 deg moving 4x faster than the frames around it (a new shot
 inside the cinematic is not counted); a lens step over 1.5 deg; the HUD starting more than 0.3 s before the
 camera lands; through the hand-back (to control), her head or hand moving over 0.12 m, or her
-root over 0.2 m, per 60th of a second (speeds, since a picture run's frames are 0.1 s). --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
+root over 0.2 m, per 60th of a second (speeds, since a picture run's frames are 0.1 s). In frame: over the seam and play frames to 3 s after control, her head and feet must stay inside
+x 0.25..0.75, y 0.20..0.72 of the screen (the scr= field); when her on-screen height is over 0.52 the feet are
+exempt (a close frame crops her legs) and the exempt frames are counted and reported. Logs without scr print
+"no data" and do not fail. --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
 """
 import math, os, re, sys
 
@@ -40,7 +43,8 @@ def parse(path):
         rest = dict(re.findall(r"(\w+)=([-\d.,]+)", m[11]))
         cur["frames"].append(dict(t=t, dt=float(m[3]), phase=m[4], shot=int(m[5]) if m[5] else -1, pos=VEC(m[6]), fwd=VEC(m[7]), vfov=float(m[8]),
                                   hud=float(m[9]), cap=int(m[10]), root=VEC(rest["root"]) if "root" in rest else None,
-                                  head=VEC(rest["head"]) if "head" in rest else None, hand=VEC(rest["hand"]) if "hand" in rest else None))
+                                  head=VEC(rest["head"]) if "head" in rest else None, hand=VEC(rest["hand"]) if "hand" in rest else None,
+                                  scr=tuple(float(x) for x in rest["scr"].split(",")) if rest.get("scr", "").count(",") == 3 else None))
     return cuts
 
 
@@ -101,6 +105,28 @@ def check(c):
     out["pose"], out["root"] = pj, rj
     if pj[0] > 0.12: out["fails"].append(f"her {pj[2]} jumps {pj[0]:.2f} m a 60th at t={pj[1]:+.2f}")
     if rj[0] > 0.2: out["fails"].append(f"her root jumps {rj[0]:.2f} m a 60th at t={rj[1]:+.2f}")
+    # In frame: her head and feet inside the middle of the picture, seam and play, to 3 s after control.
+    X0, X1, Y0, Y1 = 0.25, 0.75, 0.20, 0.72
+    win = [x for x in f if x["phase"] in ("seam", "play") and x.get("scr") and (land is None or x["t"] <= land + 3.0)]
+    out["frame"] = None
+    if win:
+        fr = dict(n=len(win), exempt=0, bad=[], hx=(min(x["scr"][0] for x in win), max(x["scr"][0] for x in win)),
+                  hy=(min(x["scr"][1] for x in win), max(x["scr"][1] for x in win)), worst=None, worstd=-1e9)
+        fxs, fys = [], []
+        for x in win:
+            hx, hy, fx, fy = x["scr"]
+            pts = [("head", hx, hy)]
+            if fy - hy > 0.52: fr["exempt"] += 1
+            else: pts.append(("feet", fx, fy)); fxs.append(fx); fys.append(fy)
+            for k, u, v in pts:
+                dd = max(X0 - u, u - X1, Y0 - v, v - Y1)
+                if dd > fr["worstd"]: fr["worstd"] = dd; fr["worst"] = (k, x["t"], u, v)
+                if dd > 0: fr["bad"].append((k, x["t"], u, v))
+        fr["fx"] = (min(fxs), max(fxs)) if fxs else None; fr["fy"] = (min(fys), max(fys)) if fys else None
+        out["frame"] = fr
+        if fr["bad"]:
+            k, t, u, v = fr["bad"][0]
+            out["fails"].append(f"her {k} out of frame at t={t:+.2f} ({u:.2f},{v:.2f}); {len(fr['bad'])} out-of-frame points")
     return out
 
 
@@ -119,6 +145,12 @@ def main():
             st = r["step"]
             print(f"     cam worst step {st[1]:.2f} m / {st[2]:.1f} deg at t={st[3]:+.2f} ({st[4]:.1f}x); peak {r['speed']:.1f} m/s, {r['turn']:.0f} deg/s;"
                   f" lens {r['fov'][0]:.2f} deg; her pose {r['pose'][0]:.3f} m ({r['pose'][2]} t={r['pose'][1]:+.2f}), root {r['root'][0]:.2f} m")
+            fr = r["frame"]
+            if fr is None: print("     her in frame: no data")
+            else:
+                w = fr["worst"]; rg = lambda a: "%.2f..%.2f" % a if a else "-"
+                print(f"     her in frame: head x {rg(fr['hx'])} y {rg(fr['hy'])}, feet x {rg(fr['fx'])} y {rg(fr['fy'])}"
+                      f" over {fr['n']} frames (seam+3s); worst {w[0]} at t={w[1]:+.2f} ({w[2]:.2f},{w[3]:.2f}); feet exempt {fr['exempt']}")
             for x in r["fails"]: print("     -", x)
             if csv:
                 os.makedirs(csv, exist_ok=True)

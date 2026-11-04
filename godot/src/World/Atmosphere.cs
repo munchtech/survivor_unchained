@@ -116,7 +116,7 @@ public partial class Atmosphere : Node3D
         ViewHighlightsNeutral = k;
         ViewKeepHighlightTint = keepTint;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
-        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+        ShowLut(lut);
     }
     // (#bcbcbc is linear 0.5: the grade adds a tint as its distance from 0.5, so this one adds nothing.)
     // (And the moon's colour off her skin: its weakly coloured parts went grey in patches beside the ember-lit ones.)
@@ -142,7 +142,7 @@ public partial class Atmosphere : Node3D
     {
         CineGrade = f;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
-        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+        ShowLut(lut);
     }
     /// <summary>--close-vib V, --close-vib-dark D: the close view's paint vibrance and its share in the darks (pictures).</summary>
     static readonly float CloseVib = SurvivorUnchained.Args.Num("close-vib", (float)Atmospheres.CloseNightPaint.PaintVib),
@@ -380,7 +380,87 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
-        if (grade) { var lut = GradeLut(Cine(ViewGrade(Own(p))), Mute, SkinGuardFor(p), ViewShadeHue, ViewSkinCool); Env.AdjustmentColorCorrection = GradeOff ? null : lut; }
+        if (grade) { var lut = LutFor(p); if (GradeOff) Env.AdjustmentColorCorrection = null; else ShowLut(lut); }
+    }
+
+    /* ---------------------------------------------------- the grade's glide (H4) -- */
+
+    /// <summary>The grade table this air and the view's settings make (what Set shows).</summary>
+    public ImageTexture3D LutFor(AtmospherePreset p) => GradeLut(Cine(ViewGrade(Own(p))), Mute, SkinGuardFor(p), ViewShadeHue, ViewSkinCool);
+
+    // A table shown is switched at once, except inside a glide's window (a cinematic's hand-back: GameSeam), when it
+    // blends in from what was on screen over the glide's time (a mix of the two tables' bytes, one 3D texture reused).
+    double glideFor, glideWindow, blendT, blendDur;
+    byte[]? blendFrom, blendTo, blendMix;
+    ImageTexture3D? blendTarget, blendTex;
+    static readonly Dictionary<ulong, byte[]> lutBytes = new();
+
+    /// <summary>For the next window seconds, a new table blends in over seconds (a blend running is stretched to it).</summary>
+    public void GlideLuts(double seconds, double window)
+    {
+        glideFor = seconds; glideWindow = window;
+        if (blendTarget != null) blendDur = Math.Max(blendDur, seconds);
+    }
+
+    static byte[] Bytes(ImageTexture3D t)
+    {
+        if (lutBytes.TryGetValue(t.GetInstanceId(), out var b)) return b;
+        var all = new List<byte>();
+        foreach (var im in t.GetData()) all.AddRange(im.GetData());
+        return lutBytes[t.GetInstanceId()] = all.ToArray();
+    }
+
+    /// <summary>The bytes of the table on screen now (a blend's mix as it stands), or null.</summary>
+    public byte[]? LutShown() => Env.AdjustmentColorCorrection is ImageTexture3D cur
+        ? (cur == blendTex ? (byte[]?)blendMix?.Clone() : Bytes(cur)) : null;
+
+    void ShowLut(ImageTexture3D lut)
+    {
+        if (GradeOff) return;
+        if (blendTarget == lut) return;
+        if (glideWindow > 0 && Env.AdjustmentColorCorrection != lut && LutShown() is { } from)
+        {
+            blendFrom = from; blendTo = Bytes(lut); blendTarget = lut; blendT = 0; blendDur = glideFor;
+            WriteMix(0);
+            return;
+        }
+        blendTarget = null;
+        Env.AdjustmentColorCorrection = lut;
+    }
+
+    /// <summary>A mix of a table as it was (LutShown) and another, k of the way (an atmosphere cue's blend: GameCinema).</summary>
+    public void MixLuts(byte[] from, ImageTexture3D to, float k)
+    {
+        if (GradeOff) return;
+        if (k >= 1) { blendTarget = null; Env.AdjustmentColorCorrection = to; return; }
+        blendTarget = null; blendFrom = from; blendTo = Bytes(to);
+        WriteMix(k);
+    }
+
+    void WriteMix(float k)
+    {
+        var a = blendFrom!; var b = blendTo!;
+        if (a.Length != b.Length) { Env.AdjustmentColorCorrection = blendTarget; blendTarget = null; return; }
+        blendMix ??= new byte[a.Length];
+        if (blendMix.Length != a.Length) blendMix = new byte[a.Length];
+        for (int i = 0; i < a.Length; i++) blendMix[i] = (byte)Math.Clamp((int)(a[i] + (b[i] - a[i]) * k + 0.5f), 0, 255);
+        int slice = LutSize * LutSize * 3;
+        var slices = new Godot.Collections.Array<Image>();
+        for (int z = 0; z < LutSize; z++) slices.Add(Image.CreateFromData(LutSize, LutSize, false, Image.Format.Rgb8, blendMix.AsSpan(z * slice, slice).ToArray()));
+        if (blendTex == null) { blendTex = new ImageTexture3D(); blendTex.Create(Image.Format.Rgb8, LutSize, LutSize, LutSize, false, slices); }
+        else blendTex.Update(slices);
+        Env.AdjustmentColorCorrection = blendTex;
+    }
+
+    /// <summary>Once a frame: a glide's blend moves on.</summary>
+    public void GradeTick(double dt)
+    {
+        glideWindow = Math.Max(0, glideWindow - dt);
+        if (blendTarget == null) return;
+        blendT += dt;
+        float k = Mathf.SmoothStep(0, 1, (float)Math.Clamp(blendT / Math.Max(blendDur, 1e-3), 0, 1));
+        if (k >= 1) { Env.AdjustmentColorCorrection = blendTarget; blendTarget = null; return; }
+        WriteMix(k);
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
@@ -546,7 +626,7 @@ public partial class Atmosphere : Node3D
         if (Mathf.IsEqualApprox(k, ViewSkinCool)) return;
         ViewSkinCool = k;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
-        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+        ShowLut(lut);
     }
     public float ViewShadeHue { get; private set; }
     public void SetViewShadeHue(float k)
@@ -555,7 +635,7 @@ public partial class Atmosphere : Node3D
         if (Mathf.IsEqualApprox(k, ViewShadeHue)) return;
         ViewShadeHue = k;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
-        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+        ShowLut(lut);
     }
     /// <summary>The skin guard's share for this air (0 to 1): the Look's (Atmospheres.Front) whole, else the close view's (SetViewSkinGuard).</summary>
     float SkinGuardFor(AtmospherePreset p) => SkinGuardOff ? 0 : IsFront(p) ? 1 : ViewSkinGuard;
@@ -568,7 +648,7 @@ public partial class Atmosphere : Node3D
         if (Mathf.IsEqualApprox(k, ViewSkinGuard)) return;
         ViewSkinGuard = k;
         var lut = GradeLut(Cine(ViewGrade(Own(Current))), Mute, SkinGuardFor(Current), ViewShadeHue, ViewSkinCool);
-        if (!GradeOff) Env.AdjustmentColorCorrection = lut;
+        ShowLut(lut);
     }
 
     /// <summary>A channel as Image.SetPixel stores it in RGB8 (Godot: uint8_t(CLAMP(c * 255.0, 0, 255))).</summary>

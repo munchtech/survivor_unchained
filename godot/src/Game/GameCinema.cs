@@ -331,6 +331,7 @@ public partial class Game
     void CinemaFrame(double dt)
     {
         carryT = Math.Max(0, carryT - dt);
+        air.GradeTick(dt);
         HandoffFrames(dt, cine?.ToEnd);
         CineShadows();
         if (cine == null) return;
@@ -438,6 +439,9 @@ public partial class Game
             double tSun = Ms();
             GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots; wall {Time.GetTicksMsec() / 1000.0:0.00}s)");
             Dispatch(player.Advance(0));
+            // Its first frame's camera with its first cues: run on from another, C04 A's dawn landed on C03's last
+            // river frame for one frame before its own first shot (H4 r1).
+            Camera(0);
             if (Perf.On) GD.Print($"perf cine begin {file.Id}: ctor-to-take {tTake:0.0} cast {tCast - tTake:0.0} (worst {worst} {tWorst:0.0}) sun {tSun - tCast:0.0} dispatch {Ms() - tSun:0.0} ms");
         }
 
@@ -1226,11 +1230,16 @@ public partial class Game
                         if (over > 0 && !skipping)
                         {
                             double last = -1;
+                            byte[]? lutA = null; ImageTexture3D? lutB = null;
                             tweens.Add(new Tween(t0, t0 + over, k =>
                             {
                                 if (k - last <= 0.02 && k < 1) return;
                                 last = k;
+                                // The grade's table goes with the air (H4 r1: kept to the end and switched there, C01's light
+                                // jumped 21 to 33 in a tenth of a second while the camera stood still).
+                                if (lutA == null) { lutA = g.air.LutShown(); lutB = g.air.LutFor(Atmospheres.Blend(from, to, k1)); }
                                 g.SetAtmosphere(Atmospheres.Blend(from, to, k0 + (k1 - k0) * k), k >= 1);
+                                if (k < 1 && lutA != null && lutB != null) g.air.MixLuts(lutA, lutB, (float)k);
                             }));
                         }
                         else g.SetAtmosphere(k1 >= 1 ? to : Atmospheres.Blend(from, to, k1));
@@ -2027,6 +2036,8 @@ public partial class Game
 
         public void Finish()
         {
+            // Handing back to play: the grade's table the end gives back blends in over the seam (GameSeam), not at once.
+            if (file.End.Next == null) g.air.GlideLuts(0.8, 0.4);
             g.cineSat = null;
             SurvivorUnchained.View.WardenLook.GlintScale = 1;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
