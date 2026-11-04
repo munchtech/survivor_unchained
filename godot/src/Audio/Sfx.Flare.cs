@@ -21,9 +21,11 @@ public static partial class Sfx
     /// <summary>One of the Flare's cues (FlareFx.Cue): its name, where (panned and distanced from her), a size
     /// (the catch: 1.4 when the ember answers at low health; the inhale: the Hold's length in seconds), and the
     /// night (the valley answers only in the open at night).</summary>
-    public static void Flare(string cue, Where w, float k, bool night)
+    public static void Flare(string cue, Where w, float k, bool night, string? flareId = null)
     {
         if (A is not { } a) return;
+        // Recorded first: this Flare's own (flare.<id>.<cue>), then the cue's for all of them (flare.<cue>).
+        if (BankFirst(w, true, flareId != null ? new[] { $"flare.{flareId}.{cue}", $"flare.{cue}" } : new[] { $"flare.{cue}" })) return;
         double p = w.Pan, t = Now, near = 0.55 + 0.45 * w.Near;
         switch (cue)
         {

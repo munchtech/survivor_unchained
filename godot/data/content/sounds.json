@@ -1,0 +1,21 @@
+{
+  "buses": {
+    "master":   { "level": 0.85 },
+    "sfx":      { "level": 0.85, "send": 0.20 },
+    "music":    { "level": 0.80, "send": 0.55 },
+    "ambience": { "level": 0.90, "send": 0.30 },
+    "ui":       { "level": 0.70, "send": 0.08 },
+    "flare":    { "level": 0.85, "send": 0.22 }
+  },
+  "ducks": {
+    "talk": { "music": 0.6, "ambience": 0.72 },
+    "bark": { "music": 0.8, "ambience": 0.88 },
+    "dialogue": { "music": 0.55 }, "chest": { "music": 0.3 }, "overlay": { "music": 0.7 }
+  },
+  "materials": { "Undead": "bone", "Wolf": "hide", "Beast": "hide", "Boar": "hide", "Kerchief": "flesh", "Human": "flesh",
+                 "Lampling": "flesh", "Blighted": "rot", "Elemental": "stone", "Construct": "wood" },
+  "events": {
+    "hit.flesh": { "bus": "sfx", "gate": [7, 70], "gateKey": "hit", "near": 0.5, "synth": "replace",
+                   "layers": [ { "take": "hit_flesh", "gain": 0.55, "pitch": [0.92, 1.08] } ] }
+  }
+}

@@ -695,7 +695,7 @@ public partial class Game : Node, IZoneHost
         {
             // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).
             double dx = at.X - fl.Her.X, dz = at.Z - fl.Her.Z, d = Math.Sqrt(dx * dx + dz * dz);
-            Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night);
+            Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night, fl.FlareId);
         };
         CrowdView.FlareDeath = fl.DeathOf;
         CrowdView.FlareStatueLook = fl.StatueLook;

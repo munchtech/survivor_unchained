@@ -1,0 +1,91 @@
+# Every sound id a recipe can ask the bank for (data/content/sounds.json "events"), with the Sfx method it sits in.
+# Documentation only, written by hand from src/Audio/Sfx*.cs. Chains are tried in order; the first BANKED id plays
+# (an event is banked when every layer's take family exists in art/sound/sounds.json). Anything not banked: the made recipe plays.
+# <material> = bone hide flesh rot stone wood (sounds.json "materials"); <school> = physical fire frost storm holy nature shadow arcane.
+# combat
+hit.<material>.crit  Sfx.Hit   (physical crit; then hit.<material>, then hit.flesh)
+hit.<material>  Sfx.Hit
+hit.flesh  Sfx.Hit
+hit.<school>  Sfx.Hit   (non-physical schools)
+hit.crit  Sfx.Hit   (when banked it replaces the crit's FM ring)
+art.<art>.hit  Sfx.HitOf
+block  Sfx.Blocked
+shatter  Sfx.Shatter
+hurt  Sfx.Hurt
+heartbeat  Sfx.Heartbeat   (gain 0.5 + urgency)
+death  Sfx.Death
+result.fell  Sfx.Death   (on top of death)
+heal  Sfx.Heal
+dash  Sfx.Dash
+dodge  Sfx.Dodge
+dodge.perfect  Sfx.Perfect
+rise  Sfx.Rise
+rise.ember  Sfx.Rise
+spawn.rise  Sfx.Spawn
+spawn.burrow  Sfx.Spawn
+spawn.walk  Sfx.Spawn
+spawn.drop  Sfx.Spawn
+kill.<material>.burst  Sfx.Kill   (a body torn apart; then kill.<material>)
+kill.<material>  Sfx.Kill
+kill.elite  Sfx.Kill   (on top, never replacing the base)
+kill.boss  Sfx.Kill   (on top; when banked the made triumph stinger is skipped)
+crowdfall  Sfx.CrowdFall
+swell.<tier 0-3>  Sfx.Swell   (then swell)
+swell  Sfx.Swell
+swing  Sfx.Swing
+art.<art>.swing  Sfx.Swing(art, w)   (then swing)
+art.<art>.cast  Sfx.Cast, Sfx.Lance
+shoot  Sfx.Shoot
+art.<art>.burst  Sfx.Burst
+art.<art>.land  Sfx.Falling   (at the strike's landing time)
+explosion  Sfx.Explosion
+nova.<school>  Sfx.Nova
+arc  Sfx.Arc
+bash  Sfx.Bash
+art.<id>  Sfx.Art
+telegraph.<tell>.windup.boss  Sfx.Telegraph   (then telegraph.<tell>.windup; recorded only, no synth fallback)
+telegraph.<tell>.land.boss  Sfx.Telegraph   (then telegraph.<tell>.land)
+tell.<howl|drum|fuse|horn|...>  Sfx.Tell   (tell_drum -> tell.drum)
+# pickups and growth
+pickup.ember  Sfx.Xp   (pitched up the ladder by the step; gain by the stones merged)
+pickup.gold  Sfx.Gold
+pickup.lodestone  Sfx.Lodestone
+loot  Sfx.Loot
+loot.rare  Sfx.Loot
+drop.<tier 0-10>  Sfx.Drop
+toll  Sfx.Toll
+levelup  Sfx.LevelUp
+levelup.milestone  Sfx.LevelUp   (then levelup)
+evolve  Sfx.Evolve
+result.won  Sfx.Fall
+chest.shake  Sfx.ChestShake
+chest.burst  Sfx.ChestBurst
+chest.land  Sfx.ChestLand   (pitched up the ladder by the step)
+chest.tick  Sfx.ChestTick
+anvil  Sfx.Anvil   (once per blow)
+cage  Sfx.Cage
+pour  Sfx.Pour
+discovery  Sfx.Discovery
+quest  Sfx.Quest
+rel.good  Sfx.Rel
+rel.bad  Sfx.Rel
+# world and story
+stinger.<boss|danger|triumph|story|pull|zone>  Sfx.Stinger
+cine.<name>  Sfx.Cine
+door  Sfx.Door
+step.<grass|dirt|concrete|...>  Sfx.Step
+flare.<flareId>.<cue>  Sfx.Flare   (then flare.<cue>; cues: catch confirm inhale frost ember_fall ember_land ember_last boom)
+flare.<cue>  Sfx.Flare
+lamps.<cue>  Sfx.Lamps   (cues: open close focus_small focus_notable focus_blue light light_notable path_tick blue_lit gate_open put_out denied layout wick_plan wick_turn)
+# interface
+ui.hover  Sfx.Hover
+ui.click  Sfx.Click
+ui.open  Sfx.Open
+ui.close  Sfx.Close
+ui.page  Sfx.Page
+ui.pick  Sfx.Pick
+ui.equip  Sfx.Equip
+ui.deny  Sfx.Deny
+ui.chainslide  Sfx.ChainSlide
+# anything, by id, from the game's code with no recipe behind it
+<any event id>  SoundHooks.Play / Sfx.Cue

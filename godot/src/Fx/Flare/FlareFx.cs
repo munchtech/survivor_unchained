@@ -53,6 +53,8 @@ public partial class FlareFx : Node3D
 
     // The cast, on real time from the press (-1: none).
     string id = "";
+    /// <summary>Which Flare was pressed last (its sound cues look for a take of their own: Sfx.Flare).</summary>
+    public string? FlareId => id.Length > 0 ? id : null;
     double t = -1, releaseAt = -1, spendAt = -1, lastAt = -1;
     Vector3 at;
     float reach = 14;

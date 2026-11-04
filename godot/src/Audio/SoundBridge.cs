@@ -61,10 +61,10 @@ public sealed class SoundBridge
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
-                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z)); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
+                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
                     break;
                 case Ev.Kill k when k.Def != "mirror":
-                    Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z));
+                    Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z), k.Burst);
                     if (k.ByPlayer) { fell++; recent.Enqueue(now); }
                     break;
                 case Ev.PlayerHit ph:
@@ -235,7 +235,7 @@ public sealed class SoundBridge
         }
         else beatT = 0;
         // A chest opening has the room: the score steps well back for its jingle.
-        a.DuckMusic(o == "dialogue" ? 0.55f : o == "chest" ? 0.3f : o != null && o != "draft" ? 0.7f : 1);
+        a.DuckMusic(o == "dialogue" ? SoundBank.Duck("dialogue", "music", 0.55f) : o == "chest" ? SoundBank.Duck("chest", "music", 0.3f) : o != null && o != "draft" ? SoundBank.Duck("overlay", "music", 0.7f) : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
         Ambience.Update(dt);

@@ -16,6 +16,7 @@ public static partial class Sfx
         if (SurvivorUnchained.Args.Has("lamps-sfx")) GD.Print($"LAMPSFX {cue}");
         // (the focus ticks: at most 12 a second, §11)
         if (cue.StartsWith("focus_") && A is { } g && !g.Gate("lamps_focus", 1, 83)) return;
+        if (Bank("lamps." + cue)) return;
         if (Recordings.Has("lamps_" + cue))
         {
             if (A is { } a) a.Play(new Clip { Of = "lamps_" + cue, G = 0.2, Pitch = R(0.97, 1.03), Bus = Bus.Ui });

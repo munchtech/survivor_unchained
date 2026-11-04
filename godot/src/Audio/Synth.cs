@@ -48,6 +48,8 @@ public struct Clip
     public double? T, Pitch, Lp, Verb;
     public Bus Bus;
     public double Pan;
+    /// <summary>Play the take's two channels as recorded (when it has them), ignoring Pan.</summary>
+    public bool Stereo;
 }
 
 /// <summary>
@@ -72,7 +74,11 @@ public partial class Synth : Node
     readonly List<Bed> beds = new();
     AudioStreamGeneratorPlayback? dry, wet;
     public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f, 0.85f };
-    static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
+    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order.</summary>
+    List<Vector2>[]? stems;
+    readonly float[] stemAcc = new float[10];
+    /// <summary>Each bus's send to the room; like Level, in Bus order, and set from data/content/sounds.json (SoundBank).</summary>
+    public static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
     float duck = 1, duckNow = 1, masterNow;
     /// <summary>The fight's own noise held down under a big moment (the boss's fall, an
@@ -112,12 +118,15 @@ public partial class Synth : Node
         {
             tapePath = path;
             tape = new List<Vector2>();
-            Recordings.Load();
+            if (Args.Has("stems")) { stems = new List<Vector2>[5]; for (int i = 0; i < 5; i++) stems[i] = new List<Vector2>(); }
+            SoundBank.Load(this);
+            SoundHooks.Cue = id => Sfx.Cue(id);
             return;
         }
         // Runs without a screen (tools) take no sound, unless asked (--sound).
         if ((DisplayServer.GetName() == "headless" && !Args.Has("sound")) || Args.Has("shot")) return;
-        Recordings.Load();
+        SoundBank.Load(this);
+        SoundHooks.Cue = id => Sfx.Cue(id);
         Rate = AudioServer.GetMixRate();
         int room = AudioServer.GetBusIndex("Room");
         if (room < 0)
@@ -290,8 +299,9 @@ public partial class Synth : Node
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
                 float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
-                float l = s * voice.L * bus, r = s * voice.R * bus;
+                float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
                 dl += l; dr += r;
+                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; }
                 float send = Send[(int)voice.Bus] + voice.Verb;
                 wl += l * send; wr += r * send;
             }
@@ -301,10 +311,13 @@ public partial class Synth : Node
                 if (s == 0 && s2 == 0) continue;
                 float amb = Level[(int)Bus.Amb] * voiceAmbNow, l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
+                if (stems != null) { stemAcc[(int)Bus.Amb * 2] += l; stemAcc[(int)Bus.Amb * 2 + 1] += r; }
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }
             outDry[i] = new Vector2(dl, dr) * masterNow;
             outWet[i] = new Vector2(wl, wr) * masterNow;
+            if (stems != null)
+                for (int k = 0; k < 5; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
         }
         Interlocked.Add(ref clock, n);
         MixCost += (Time.GetTicksUsec() - t0) / 1e6;
@@ -318,18 +331,29 @@ public partial class Synth : Node
         running = false;
         worker?.Join(200);
         if (tape == null || tapePath == null) return;
-        // 16-bit stereo PCM.
-        using var f = new System.IO.BinaryWriter(System.IO.File.Create(tapePath));
-        int bytes = tape.Count * 4;
+        WriteWav(tapePath, tape);
+        if (stems != null)
+        {
+            string stem = tapePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? tapePath[..^4] : tapePath;
+            string[] names = ["sfx", "music", "ambience", "ui", "flare"];
+            for (int i = 0; i < 5; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
+        }
+        GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
+    }
+
+    /// <summary>16-bit stereo PCM.</summary>
+    void WriteWav(string path, List<Vector2> samples)
+    {
+        using var f = new System.IO.BinaryWriter(System.IO.File.Create(path));
+        int bytes = samples.Count * 4;
         f.Write("RIFF"u8); f.Write(36 + bytes); f.Write("WAVE"u8);
         f.Write("fmt "u8); f.Write(16); f.Write((short)1); f.Write((short)2); f.Write((int)Rate); f.Write((int)Rate * 4); f.Write((short)4); f.Write((short)16);
         f.Write("data"u8); f.Write(bytes);
-        foreach (var v in tape)
+        foreach (var v in samples)
         {
             f.Write((short)Math.Clamp(v.X * 32767, -32768, 32767));
             f.Write((short)Math.Clamp(v.Y * 32767, -32768, 32767));
         }
-        GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
     }
 
     /* ----------------------------------------------------------- voices -- */
@@ -340,6 +364,9 @@ public partial class Synth : Node
         public double Start, End;
         public Bus Bus;
         public float L, R, Verb;
+        /// <summary>A wide voice's right side, set by each Sample (which gives its left); only read when Wide.</summary>
+        public float Right;
+        public virtual bool Wide => false;
         public abstract float Sample(double t, float dt);
 
         protected void Place(Bus bus, double pan, double? verb)
@@ -536,19 +563,23 @@ public partial class Synth : Node
         readonly float[] data;
         readonly double step;
         readonly float gain;
-        readonly Biquad? lp;
+        readonly Biquad? lp, lpR;
         readonly double lpf;
         double pos;
+
+        readonly float[]? right;
+        public override bool Wide => right != null;
 
         public ClipVoice(Synth s, Clip o, Recordings.Take take)
         {
             data = take.Data;
+            if (o.Stereo && take.Left != null && take.Right != null) { data = take.Left; right = take.Right; }
             double pitch = o.Pitch ?? 1;
             step = take.Rate / s.Rate * pitch;
             Start = o.T ?? s.Now;
             End = Start + data.Length / (take.Rate * pitch) + 0.01;
             gain = (float)o.G;
-            if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpf = f; }
+            if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
             Place(o.Bus, o.Pan, o.Verb);
         }
 
@@ -558,6 +589,11 @@ public partial class Synth : Node
             if (i >= data.Length - 1) return 0;
             float k = (float)(pos - i), x = data[i] + (data[i + 1] - data[i]) * k;
             pos += step;
+            if (right != null)
+            {
+                float xr = right[i] + (right[i + 1] - right[i]) * k;
+                Right = (lpR != null ? lpR.Run(xr, lpf) : xr) * gain;
+            }
             if (lp != null) x = lp.Run(x, lpf);
             return x * gain;
         }

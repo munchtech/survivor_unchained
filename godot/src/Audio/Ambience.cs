@@ -161,20 +161,23 @@ public sealed class Ambience
     sealed class TakeBed : Synth.Bed
     {
         readonly float[] data;
+        readonly float[]? right;
         readonly double step;
         readonly float gain;
         double pos;
 
         public TakeBed(Recordings.Take take, double rate, float gain)
         {
-            data = take.Data;
+            // A take recorded in stereo is wide as it was recorded.
+            data = take.Left ?? take.Data;
+            right = take.Right;
             step = take.Rate / rate;
             this.gain = gain;
             pos = rng.NextDouble() * data.Length;
             Wide = true;
         }
 
-        float At(double p)
+        float At(double p, float[] data)
         {
             if (p >= data.Length) p -= data.Length;
             int i = (int)p;
@@ -189,8 +192,8 @@ public sealed class Ambience
             pos += step;
             if (pos >= data.Length) pos -= data.Length;
             float g = gain * Level;
-            Right = At(pos + data.Length / 2) * g;
-            return At(pos) * g;
+            Right = right != null ? At(pos, right) * g : At(pos + data.Length / 2, data) * g;
+            return At(pos, data) * g;
         }
     }
 

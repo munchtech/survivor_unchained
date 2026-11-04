@@ -16,7 +16,8 @@ namespace SurvivorUnchained.Sound;
 /// </summary>
 public static class Recordings
 {
-    public sealed record Take(float[] Data, int Rate);
+    /// <summary>A take: its mono mix (L+R)/2 for positional use, and its two channels when it was recorded in stereo.</summary>
+    public sealed record Take(float[] Data, int Rate, float[]? Left = null, float[]? Right = null);
 
     static readonly Dictionary<string, Take[]> families = new();
     static readonly Dictionary<string, int> last = new();
@@ -38,13 +39,19 @@ public static class Recordings
                     var bytes = w.Data;
                     int channels = w.Stereo ? 2 : 1, frames = bytes.Length / 2 / channels;
                     var data = new float[frames];
+                    float[]? left = w.Stereo ? new float[frames] : null, right = w.Stereo ? new float[frames] : null;
                     for (int f = 0; f < frames; f++)
                     {
                         float s = 0;
                         for (int c = 0; c < channels; c++) s += BitConverter.ToInt16(bytes, (f * channels + c) * 2) / 32768f;
                         data[f] = s / channels;
+                        if (left != null && right != null)
+                        {
+                            left[f] = BitConverter.ToInt16(bytes, f * 4) / 32768f;
+                            right[f] = BitConverter.ToInt16(bytes, f * 4 + 2) / 32768f;
+                        }
                     }
-                    takes.Add(new Take(data, w.MixRate));
+                    takes.Add(new Take(data, w.MixRate, left, right));
                 }
             if (takes.Count > 0) families[name] = takes.ToArray();
         }
