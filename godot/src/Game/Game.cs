@@ -944,7 +944,7 @@ public partial class Game : Node, IZoneHost
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
     }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
-    bool fordWide;
+    float fordWide;
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
@@ -1309,18 +1309,20 @@ public partial class Game : Node, IZoneHost
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
-            // H4 item 5: the look leans toward the lamps' triangle's middle (most of the way: a held arena frame), wider,
-            // so the three posts read as three at the play camera (it framed one).
-            if (fordBoss != null && zone is Prologue fz)
+            // H4 item 5 (N8, the owner saw one lamp): the fight's camera leans half the way to him (to 7 m), 25 m out;
+            // it opens on the whole triangle (its first 3 s after C02, and while "The lamps" freeze holds the frame) (34 m, on its middle, 1.8 m to the
+            // camera's side: the near post stands 10.7 m south of it, the far two 5.4 m north), and eases back after.
+            // (--lampcheck measured a held lean toward the middle in play: her out of frame 36% of the fight.)
+            bool lampsUp = fordBoss != null && zone is Prologue lz && (lz.BossFor < 3.2 || teacher?.Current?.Id == "lamps");
+            if (fordBoss != null && zone is Prologue fz && lampsUp)
             {
                 var lc = fz.LampsCenter;
-                // (1.8 m to the camera's side of the middle: the near post stands 10.7 m south of it, the far two 5.4 m north;
-                // --lampcheck measured a third toward him and 0.55: one post in frame 96% of the fight)
                 cam.Toward = new Vector3((float)lc.X, 0, (float)lc.Z + 1.8f);
             }
-            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.85f, 12f) : (0.33f, 4.5f);
-            bool fordWideNow = fordBoss != null && hudMode == null && camSaved == null && !Args.Has("cam");
-            if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 30f : 23f; }
+            else if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
+            (cam.TowardShare, cam.TowardMax) = lampsUp ? (1f, 40f) : fordBoss != null ? (0.5f, 7f) : (0.33f, 4.5f);
+            float fordDist = fordBoss == null || hudMode != null || camSaved != null || Args.Has("cam") ? 0 : lampsUp ? 34f : 25f;
+            if (fordDist != fordWide) { fordWide = fordDist; cam.TargetDistance = fordDist > 0 ? fordDist : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             UpdateCloseUp(dt);
