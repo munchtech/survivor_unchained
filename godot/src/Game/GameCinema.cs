@@ -321,7 +321,9 @@ public partial class Game
     /// and reach (Graphics.Sun), so the judged shots are unchanged. Acts only on a change.</summary>
     void CineShadows()
     {
-        bool on = cine != null;
+        // (Held to the middle of a hand-back, where the camera moves fastest: switched at its first frame, C02's
+        // sun cascades went 4 to 2 on a still frame, H4 solver r2.)
+        bool on = cine != null || (seam is { } sm && sm.T < sm.Dur * 0.5);
         if (ShadowLamp.Suspended == on) return;
         ShadowLamp.Suspended = on;
         Graphics.Sun(air, Graphics.Current);
@@ -1773,6 +1775,9 @@ public partial class Game
             var to = Tuned(c.Str("preset") switch
             {
                 "now" => g.air.Current,
+                // Where the clock runs, the clock's own air (BlendAir's, the dawn warming into day): C04b handed back
+                // into the zone's dawn, then the clock started and its air took over a frame later (H4 solver r2).
+                "play" when g.zone is { ClockRuns: true } => g.ClockAir(),
                 "play" when g.zone != null => g.zone.AtmosphereFor(g.zone.TimeOf(g.World)),
                 // "playdawn": the zone's own dawn, the air play will take up at a dawn hand-back
                 // (C04 A: the dawn comes up under its lines, not a night with stars; play-1).
@@ -2041,7 +2046,8 @@ public partial class Game
             g.cineSat = null;
             SurvivorUnchained.View.WardenLook.GlintScale = 1;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
-            if (g.air.Haze != null) g.air.Haze = null;
+            // The far haze thins out over the hand-back (GameSeam sets its length); at once into a chained cinematic.
+            if (g.air.Haze != null) { if (file.End.Next == null) g.air.FadeHaze(1.0); else g.air.Haze = null; }
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
             { SurvivorUnchained.View.People.HerSkyShare(hs.Person, 1); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, 1); }
             skinSky = 1; skinEar = 1;

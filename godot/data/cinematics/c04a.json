@@ -88,7 +88,7 @@
         {"at": 0.0, "do": "play"},
         {"at": "after:cin_first_light.back+0.3", "do": "music", "mood": "silence"},
         {"at": "after:cin_first_light.back+0.8", "do": "line", "id": "cin_first_light.face"},
-        {"at": "end", "do": "event", "name": "douse"},
+        {"at": "end-1.2", "do": "event", "name": "douse"},
         {"at": "end-3.0", "do": "mist", "name": "road1", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road2", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road3", "density": 0, "over": 2.6},

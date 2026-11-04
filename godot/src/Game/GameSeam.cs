@@ -44,8 +44,10 @@ public partial class Game
         return skipped ? Math.Min(d, 0.6) : d;
     }
 
-    /// <summary>The point the ease turns round: her body 1.1 m up (null: she is not drawn).</summary>
-    Vector3? SeamFocus() => scene?.Player is { } pv && !pv.Hidden ? pv.GlobalPosition + Vector3.Up * 1.1f : null;
+    /// <summary>The point the ease turns round: her body 0.9 m up, her middle, so a close frame's head-high
+    /// look does not lift her feet off the bottom while she is still large (H4 solver r2: C01's feet at y 0.88).
+    /// Null: she is not drawn.</summary>
+    Vector3? SeamFocus() => scene?.Player is { } pv && !pv.Hidden ? pv.GlobalPosition + Vector3.Up * 0.9f : null;
 
     /// <summary>A turn looking from one point straight at another (no roll).</summary>
     static Quaternion LookTurn(Vector3 from, Vector3 at)
@@ -76,6 +78,7 @@ public partial class Game
         // The look eases over the same time: a grade table changed at the hand-back blends in rather than
         // switching (Atmosphere.GlideLuts; the H4 r1 brightness pops).
         air.GlideLuts(Math.Max(0.5, seam.Dur), 0.4);
+        air.FadeHaze(Math.Max(0.6, seam.Dur));
         if (Args.Has("cutlog")) GD.Print($"CUTSEAM {cineId} dur={seam.Dur:0.00} metres={metres:0.00} degrees={degrees:0.0} skipped={skipped} arc={seam.Arc}");
     }
 
@@ -100,7 +103,10 @@ public partial class Game
             float len = Mathf.Exp(Mathf.Lerp(Mathf.Log(l0), Mathf.Log(l1), e));
             var pos = f + dir * len;
             var toTurn = LookTurn(play.Origin, f).Inverse() * play.Basis.GetRotationQuaternion();
-            var q = LookTurn(pos, f) * s.FromTurn.Slerp(toTurn, e);
+            // The framing (how far each end turns off her) blends ahead of the move: the film's own framing, held
+            // while the camera is still close, put her feet out of frame (C01, H4 solver r2).
+            float eLook = 1 - (1 - e) * (1 - e);
+            var q = LookTurn(pos, f) * s.FromTurn.Slerp(toTurn, eLook);
             camera.GlobalTransform = new Transform3D(new Basis(q.Normalized()), pos);
         }
         else

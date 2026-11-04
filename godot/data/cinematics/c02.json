@@ -67,7 +67,7 @@
       "type": "LS",
       "dur": 3.4,
       "note": "At the waterline, north-west of him, the river and the lamp's reflection in the bottom third: he rises, the head first, water sheeting off hood and beard; stands, taller than the far post behind him. The moon behind him rims hood and shoulders; the lamp is the only light from the front. (H4 item 2 (the owner: the pan over to the side looks awkward): the 0.9 s swing and 24-35 mm zoom onto his lantern are gone; the camera tilts up with him as he rises, a slow 2 mm push, his hood kept in frame.)",
-      "cam": {"pos": {"abs": [0.2, -0.62, -38.7]}, "at": {"abs": [5.95, 0.55, -43.3]}, "lens": 24, "move": {"start": 0.4, "end": 3.4, "at": {"abs": [6.05, 1.0, -43.3]}, "lens": 26, "ease": "inout"}},
+      "cam": {"pos": {"abs": [0.2, -0.62, -38.7]}, "at": {"abs": [5.95, 0.55, -43.3]}, "lens": 24, "move": {"start": 0.4, "end": 3.4, "at": {"abs": [6.05, 1.4, -43.3]}, "lens": 26, "ease": "inout"}},
       "cues": [
         {"do": "grade", "moonSat": 0.14, "moonDrop": 1.0, "shade": "#2e2452", "shadeK": 0.7, "moonHue": 258, "moonTop": 1.0, "moonWidth": 0.3},
         {"do": "glow", "name": "slope", "remove": true},

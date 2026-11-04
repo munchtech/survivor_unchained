@@ -136,6 +136,9 @@ public partial class Game
         airDirty = false;
     }
 
+    /// <summary>The air the clock gives now where it runs (what BlendAir will set once it starts).</summary>
+    AtmospherePreset ClockAir() { DayClock.Sync(World); return AirAt(zone!, World.Clock).Air; }
+
     /// <summary>The light set outright (a skip, a new place): the clock's air is put back at once.</summary>
     void StopBlend() => airDirty = true;
 

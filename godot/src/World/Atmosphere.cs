@@ -30,8 +30,37 @@ public partial class Atmosphere : Node3D
     /// <summary>A cinematic's far haze (C03: the far ridge 27-33% darker than the sky over it, a cut-out): depth fog from
     /// Begin to End m (Curve its ramp), at most Amount, its colour the sky's behind it by Sky (aerial perspective), so
     /// distance pales toward the sky and near stays clear. Null: play's exponential fog. Kept across Set (a blend's tween).</summary>
-    public (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? Haze { get => haze; set { haze = value; HazeApply(); } }
+    public (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? Haze { get => haze; set { hazeFadeDur = 0; hazeScale = 1; fogScale = 1; haze = value; HazeApply(); } }
     (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? haze;
+
+    /// <summary>The haze let go over seconds rather than at once (the hand-back, H4 solver r2: C02's depth fog dropped
+    /// 0.90 to play's 0.0038 in one frame, a 29% brightness pop): the depth haze thins to nothing over the first half,
+    /// then play's own fog comes up from nothing over the second. A new Haze set cancels it.</summary>
+    public void FadeHaze(double seconds)
+    {
+        if (haze == null) return;
+        if (seconds <= 0) { Haze = null; return; }
+        hazeFadeT = 0; hazeFadeDur = seconds;
+    }
+    double hazeFadeT, hazeFadeDur;
+    float hazeScale = 1, fogScale = 1;
+    static float Smooth(double k) { k = Math.Clamp(k, 0, 1); return (float)(k * k * (3 - 2 * k)); }
+    void HazeFadeTick(double delta)
+    {
+        if (hazeFadeDur <= 0) return;
+        hazeFadeT += delta;
+        double k = hazeFadeT / hazeFadeDur;
+        if (haze != null)
+        {
+            hazeScale = 1 - Smooth(k * 2);
+            if (k < 0.5) { HazeApply(); return; }
+            haze = null; hazeScale = 1; fogScale = 0;
+            HazeApply();
+        }
+        fogScale = Smooth((k - 0.5) * 2);
+        if (k >= 1) { fogScale = 1; hazeFadeDur = 0; }
+        Env.FogDensity = (float)(Current.FogDensity * Current.FogDensity * FogMatchDistance) * fogScale;
+    }
 
     void HazeApply()
     {
@@ -39,7 +68,7 @@ public partial class Atmosphere : Node3D
         {
             Env.FogMode = Godot.Environment.FogModeEnum.Depth;
             Env.FogDepthBegin = h.Begin; Env.FogDepthEnd = h.End; Env.FogDepthCurve = h.Curve;
-            Env.FogDensity = h.Amount; Env.FogAerialPerspective = h.Sky;
+            Env.FogDensity = h.Amount * hazeScale; Env.FogAerialPerspective = h.Sky;
             if (h.Tint is Color tc) Env.FogLightColor = tc;
             // (--dbg-haze-tint #hex, --dbg-haze-sky, --dbg-haze-amount, --dbg-haze-begin/-end/-curve: A/B a cinematic haze cue without its data; Env 23)
             if (SurvivorUnchained.Args.Get("dbg-haze-tint") is string dt) Env.FogLightColor = new Color(dt);
@@ -54,7 +83,7 @@ public partial class Atmosphere : Node3D
         {
             Env.FogMode = Godot.Environment.FogModeEnum.Exponential; Env.FogAerialPerspective = 0;
             Env.FogLightColor = C(Current.FogColor);
-            Env.FogDensity = (float)(Current.FogDensity * Current.FogDensity * FogMatchDistance);
+            Env.FogDensity = (float)(Current.FogDensity * Current.FogDensity * FogMatchDistance) * fogScale;
         }
     }
     /// <summary>A touch less exposure at low quality keeps the mood (the web
@@ -224,6 +253,7 @@ public partial class Atmosphere : Node3D
     public override void _Process(double delta)
     {
         clock += delta;
+        HazeFadeTick(delta);
         if (FlareDip != dipShown) { dipShown = FlareDip; Env.TonemapExposure = (float)Current.Exposure * ExposureScale * ViewExposure * FlareDip; }
         if (FlareLight != lightShown)
         {
@@ -319,7 +349,7 @@ public partial class Atmosphere : Node3D
         sky.SetShaderParameter("env_intensity", (float)p.EnvIntensity);
 
         Env.FogLightColor = C(p.FogColor);
-        Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance);
+        Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance) * fogScale;
         HazeApply();
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
         Env.VolumetricFogDensity = (float)p.Haze;
