@@ -1,0 +1,30 @@
+{
+ "why": "Thresholds for tools/body/check.py. Only 'hard' fails the run (exit 1): the same head and weight sanity. Everything under 'targets' is reported against, never failed, until the P1 lead tightens it after B's first run.",
+ "hard": {
+  "weight_sum_err_max": 0.001,
+  "influences_max": 8,
+  "why": "NaN or negative weights, sums off 1 and more than 8 influences are broken exports (Godot 4.5 skins 8). The same head (--same-head) is the face's contract: the head the owner approved stays byte-identical."
+ },
+ "same_head_meshes": ["HeroineHead", "HeroineEyes", "HeroineLashes", "HeroineTeeth", "HeroineTongue"],
+ "weights": {
+  "mirror_tol_m": 0.004,
+  "far_m": 0.18,
+  "island_weight": 0.02,
+  "why": "far_m: a vertex weighted > 0.05 to a bone more than 18 cm from its segment is a stray (her breast and glute helpers reach about 12 cm); island_weight: a bone's weight above 0.02 should be one connected patch."
+ },
+ "targets": {
+  "girth_ratio": [0.92, 1.1],
+  "area_ratio": [0.85, 1.15],
+  "penetration_count_over_rest": 50,
+  "penetration_depth_mm": 3.0,
+  "outline_mean_mm": 2.0,
+  "outline_max_mm": 5.0,
+  "mirror_p95": 0.01,
+  "silhouette_max_outline_px": 3,
+  "why": "Girth and area: a joint keeps its flesh (volume loss is the candy-wrapper and the pinch; gain past 10 percent is a balloon). Penetration: skin folding through itself shows at the close-up once deeper than about 3 mm (3 px at 9.4 px/cm); the rest pose's count is the leak floor of an open mesh. Outline: 2 mm mean is 2 px at the close-up, 5 mm max a visible shape error. Silhouette: within 3 px at the close-up and the Look (PIPELINE P1)."
+ },
+ "silhouette": {
+  "look_px_per_cm": 30.0,
+  "why": "The Look camera's scale was not pinned in 10 minutes of godot/src reading (GameFront.PoseCreate frames the whole figure at about 6.2 m with the 34 degree lens, about 2.9 px/cm at 1080p; the face step frames closer): 30 px/cm per the P1 brief's fallback, the stricter scale."
+ }
+}
