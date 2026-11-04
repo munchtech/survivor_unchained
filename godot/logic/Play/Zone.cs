@@ -148,6 +148,10 @@ public interface IZoneHost
     /// left, after a beat, and lets the night go when she has none. A rise's words are
     /// Journey.RiseLine (counted, so the host asks for them once a rise).</summary>
     void StoryFall(int risesLeft, Action rise, Action letGo) => After(1.0, risesLeft > 0 ? rise : letGo);
+
+    /// <summary>The dawn's card (DawnCard): shown over the held world until a click, then `closed`. A host that
+    /// draws nothing goes straight on.</summary>
+    void DawnCard(DawnCard card, Action closed) => closed();
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no
     /// screen, the tests): the zone then says its lines as captions. `marks`

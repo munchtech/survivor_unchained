@@ -171,7 +171,12 @@ public class PrologueTests
         Assert.Equal(1, s.B.EmberLevel);
         Assert.Empty(s.B.Boons);
         Assert.Equal(Character.Kit(s.J.Ch).Weapons.Select(w => w.Id), s.B.Weapons.Select(w => w.Id));
-        Assert.Contains(s.Host.Announced, a => a.Title == "The ember goes out");
+        // (said on the dawn's card, held until a click: N24; no banner and no caption say it again)
+        var dawn = Assert.Single(s.Host.Dawns);
+        Assert.Equal("The ember goes out", dawn.Title);
+        Assert.Contains("The Lamps' light", dawn.Takes);
+        Assert.DoesNotContain(s.Host.Announced, a => a.Title == "The ember goes out");
+        Assert.DoesNotContain(s.Host.Said, l => l.Contains("the ember goes out of you"));
         Run(s, 7);
         Assert.Equal(Prologue.Stage.Exit, s.Zone.Now);
         var gate = s.Meta.Place("LOWFORD", "gate");

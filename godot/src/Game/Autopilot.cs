@@ -65,6 +65,8 @@ public sealed class Autopilot
         // A callout is read: a freeze answered 1.2 s (real) after it shows, with its answer or the key
         // that goes on, and a panel's words left up as long before a card is taken. (With --shot, not
         // before its frame is taken.)
+        // The dawn's card is read as a freeze is, then clicked through (with --shot, after its frame).
+        if (g.DawnUp) { if (g.DawnFor >= 1.2 && !Shots.Pending("dawn_card")) Controls.Instance.Press(Act.Confirm); return; }
         if (g.Teaching is { } tc && (tc.Kind == CalloutKind.Freeze || tc.Kind == CalloutKind.Panel && g.Overlay == "draft"))
         {
             if (g.TeachingFor < 1.2 || Shots.Pending("teach_" + tc.Id)) return;

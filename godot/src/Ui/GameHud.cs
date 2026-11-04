@@ -869,6 +869,22 @@ public partial class GameHud : CanvasLayer
         root.AddChild(fall);
     }
 
+    DawnCardView? dawn;
+
+    /// <summary>The dawn's card over the held world (null takes it down at once); the play's HUD goes
+    /// while it is up, and comes back as it closes. Returns the card, for the keys the game passes it.</summary>
+    public DawnCardView? Dawn(DawnCard? c, Action? go = null)
+    {
+        if (dawn != null && IsInstanceValid(dawn)) dawn.QueueFree();
+        dawn = null;
+        // (the HUD goes as the card comes, and comes back as it goes)
+        CreateTween().TweenProperty(play, "modulate:a", c != null ? 0f : 1f, c != null ? DawnCardView.In : DawnCardView.Out);
+        if (c == null || go == null) return null;
+        dawn = new DawnCardView(c, () => { dawn = null; go(); });
+        root.AddChild(dawn);
+        return dawn;
+    }
+
     StoryChoices? choice;
 
     /// <summary>A choice the story puts to her, over the live world: each answer on its key (null clears it).</summary>

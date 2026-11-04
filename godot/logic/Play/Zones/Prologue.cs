@@ -1502,7 +1502,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     /// <summary>The dawn puts the ember out: the cards, the blessing, all it
     /// built. What the survivor carries, and what they learned, stay.</summary>
-    /// <summary>C04 A: the ember goes out in it (its "douse" event), and the narrator says what Douse's caption did.</summary>
+    /// <summary>C04 A: the ember goes out in it (its "douse" event), the narrator says it, and the dawn's card follows its hand-back.</summary>
     void FirstLight(bool south, bool onward = false)
     {
         doused = true;
@@ -1511,6 +1511,8 @@ public sealed partial class Prologue : ZoneRuntime
             {
                 dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); G.Look.SetNight(false); if (!dousedByCine) Douse(false);
                 DayObjective();
+                // As the film hands back: the dawn's card, the world held under it (N24).
+                DawnCardUp();
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -1539,14 +1541,39 @@ public sealed partial class Prologue : ZoneRuntime
         }
     }
 
-    void Douse(bool caption = true)
+    /// <summary>The ember goes out: what it built is taken (Journey.Douse), the night's lessons paid. Out of a
+    /// film (`card`), the dawn's card follows a breath later; in C04 A it waits for the film's hand-back.</summary>
+    void Douse(bool card = true)
     {
         if (B == null) return;
         var p = B.Player;
         B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
+        // What the night gave, by name, read before the dawn takes it.
+        var skills = DawnCard.NightSkills(B, Character.Kit(G.Journey.Ch).Weapons.Select(w => w.Id));
         int taught = G.Journey.Douse(B);
-        G.Announce(new Announcement("The ember goes out", "First light takes back what it lent", "zone", 4.2, "Dawn"));
+        dawnTaught = taught;
+        dawnCard = DawnCard.Build(skills, taught > 0 ? G.Journey.Ch.Level : null);
+        if (card) G.After(1.2, DawnCardUp);
+    }
+
+    DawnCard? dawnCard;
+    int dawnTaught;
+    bool dawnCardShown;
+
+    /// <summary>The dawn's card (N24, in place of the narrator's caption and "The ember goes out" banner): what
+    /// the ember takes and what she keeps, held until a click. Once it closes, the level the night taught, its
+    /// traits, and the day's tip follow in their order (game time: a freeze holds them).</summary>
+    void DawnCardUp()
+    {
+        if (dawnCard == null || dawnCardShown) return;
+        dawnCardShown = true;
+        G.DawnCard(dawnCard, DawnCardClosed);
+    }
+
+    void DawnCardClosed()
+    {
+        int taught = dawnTaught;
         // What the night taught her, paid now the ember has gone: the first character level, on
         // its own, where it can be understood.
         if (taught > 0)
@@ -1558,12 +1585,9 @@ public sealed partial class Prologue : ZoneRuntime
                 G.Announce(levelAnn);
                 G.Journey.Grew();
             });
-        // Without C04 A the narrator's words are a caption; with it, they were said in it.
-        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
-        // F12 once her dawn line is over (the caption's 14 s; with C04 A it was said in it), and the
-        // day's tip after that (game time: a freeze holds it back).
-        if (taught > 0) G.After(caption ? 15.4 : 5.2, () => levelDue = true);
-        G.After(caption ? 24.5 : 18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        // F12 just after, and the day's tip after that.
+        if (taught > 0) G.After(5.2, () => levelDue = true);
+        G.After(18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
     void Finish()
