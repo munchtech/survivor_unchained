@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dpm7cb2jxy52j"
+path="res://.godot/imported/spawn_rise_0.wav-909557fd4960eae08eda91d6263345ba.sample"
 
 [deps]
 
 source_file="res://art/sound/spawn_rise_0.wav"
+dest_files=["res://.godot/imported/spawn_rise_0.wav-909557fd4960eae08eda91d6263345ba.sample"]
 
 [params]
 

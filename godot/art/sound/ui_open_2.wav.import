@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://divg03v7ys2ah"
+path="res://.godot/imported/ui_open_2.wav-d144f811604a8760e9ab50c28dfd420d.sample"
 
 [deps]
 
 source_file="res://art/sound/ui_open_2.wav"
+dest_files=["res://.godot/imported/ui_open_2.wav-d144f811604a8760e9ab50c28dfd420d.sample"]
 
 [params]
 

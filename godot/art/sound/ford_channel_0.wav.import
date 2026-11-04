@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cndxab4wug6f0"
+path="res://.godot/imported/ford_channel_0.wav-6eb2d72dbf40b03e3acc445c90a512cd.sample"
 
 [deps]
 
 source_file="res://art/sound/ford_channel_0.wav"
+dest_files=["res://.godot/imported/ford_channel_0.wav-6eb2d72dbf40b03e3acc445c90a512cd.sample"]
 
 [params]
 

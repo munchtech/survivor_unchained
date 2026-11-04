@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bkj8nlm2lih3f"
+path="res://.godot/imported/bed_title_0.wav-71c56f4011e4b69fd5999ddfcb27051e.sample"
 
 [deps]
 
 source_file="res://art/sound/bed_title_0.wav"
+dest_files=["res://.godot/imported/bed_title_0.wav-71c56f4011e4b69fd5999ddfcb27051e.sample"]
 
 [params]
 

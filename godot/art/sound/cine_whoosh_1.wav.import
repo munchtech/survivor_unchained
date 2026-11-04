@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dom3gd0ys7dru"
+path="res://.godot/imported/cine_whoosh_1.wav-4d4ad3a57cca13703bc46b01092833d6.sample"
 
 [deps]
 
 source_file="res://art/sound/cine_whoosh_1.wav"
+dest_files=["res://.godot/imported/cine_whoosh_1.wav-4d4ad3a57cca13703bc46b01092833d6.sample"]
 
 [params]
 

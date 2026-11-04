@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://deafbktv1pj0r"
+path="res://.godot/imported/heal_glow_0.wav-99e4b94453d373fbdea51ed1c00afc77.sample"
 
 [deps]
 
 source_file="res://art/sound/heal_glow_0.wav"
+dest_files=["res://.godot/imported/heal_glow_0.wav-99e4b94453d373fbdea51ed1c00afc77.sample"]
 
 [params]
 

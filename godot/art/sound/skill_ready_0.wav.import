@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://btvl1ukvmwo7d"
+path="res://.godot/imported/skill_ready_0.wav-fae62948439ba84cf02bd9a6616874b4.sample"
 
 [deps]
 
 source_file="res://art/sound/skill_ready_0.wav"
+dest_files=["res://.godot/imported/skill_ready_0.wav-fae62948439ba84cf02bd9a6616874b4.sample"]
 
 [params]
 

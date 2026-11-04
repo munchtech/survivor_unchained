@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cyq7u60no8m0e"
+path="res://.godot/imported/hit_bone_4.wav-3ea1c5e240777b7765b4432ac3ffdfe7.sample"
 
 [deps]
 
 source_file="res://art/sound/hit_bone_4.wav"
+dest_files=["res://.godot/imported/hit_bone_4.wav-3ea1c5e240777b7765b4432ac3ffdfe7.sample"]
 
 [params]
 

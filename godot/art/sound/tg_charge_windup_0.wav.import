@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dsytafn8hel25"
+path="res://.godot/imported/tg_charge_windup_0.wav-2a30035deb3ff6ce20b73a6871603ddb.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_charge_windup_0.wav"
+dest_files=["res://.godot/imported/tg_charge_windup_0.wav-2a30035deb3ff6ce20b73a6871603ddb.sample"]
 
 [params]
 

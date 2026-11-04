@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bgqjl040ut5dn"
+path="res://.godot/imported/levelup_big_0.wav-a5c60c521cc0b2d41196f9851dad7a7c.sample"
 
 [deps]
 
 source_file="res://art/sound/levelup_big_0.wav"
+dest_files=["res://.godot/imported/levelup_big_0.wav-a5c60c521cc0b2d41196f9851dad7a7c.sample"]
 
 [params]
 

@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://r3tf071p68rm"
+path="res://.godot/imported/ford_broken_0.wav-1e3c5751ef21cccf515a3d5b5df7ec55.sample"
 
 [deps]
 
 source_file="res://art/sound/ford_broken_0.wav"
+dest_files=["res://.godot/imported/ford_broken_0.wav-1e3c5751ef21cccf515a3d5b5df7ec55.sample"]
 
 [params]
 

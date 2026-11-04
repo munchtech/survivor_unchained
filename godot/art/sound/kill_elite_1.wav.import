@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cpsuqbwv8edqi"
+path="res://.godot/imported/kill_elite_1.wav-5307ed5dea53b6e3d7bf7bb9785c53b3.sample"
 
 [deps]
 
 source_file="res://art/sound/kill_elite_1.wav"
+dest_files=["res://.godot/imported/kill_elite_1.wav-5307ed5dea53b6e3d7bf7bb9785c53b3.sample"]
 
 [params]
 

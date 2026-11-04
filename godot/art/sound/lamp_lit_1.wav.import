@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bkb3pmd4bgyol"
+path="res://.godot/imported/lamp_lit_1.wav-3034d51050bc7a403cf8cc244e9086dc.sample"
 
 [deps]
 
 source_file="res://art/sound/lamp_lit_1.wav"
+dest_files=["res://.godot/imported/lamp_lit_1.wav-3034d51050bc7a403cf8cc244e9086dc.sample"]
 
 [params]
 

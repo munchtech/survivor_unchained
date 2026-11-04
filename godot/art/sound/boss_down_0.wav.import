@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://crlrig7oj0tk8"
+path="res://.godot/imported/boss_down_0.wav-5bab574d8841014a06d2f908e6c6dd29.sample"
 
 [deps]
 
 source_file="res://art/sound/boss_down_0.wav"
+dest_files=["res://.godot/imported/boss_down_0.wav-5bab574d8841014a06d2f908e6c6dd29.sample"]
 
 [params]
 

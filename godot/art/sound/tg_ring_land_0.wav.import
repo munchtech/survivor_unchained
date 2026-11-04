@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://egi736ndys42"
+path="res://.godot/imported/tg_ring_land_0.wav-10f6f6702a121dc681e78c17576194a1.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_ring_land_0.wav"
+dest_files=["res://.godot/imported/tg_ring_land_0.wav-10f6f6702a121dc681e78c17576194a1.sample"]
 
 [params]
 

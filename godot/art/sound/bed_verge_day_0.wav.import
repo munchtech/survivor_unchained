@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://d10le2u31mp7c"
+path="res://.godot/imported/bed_verge_day_0.wav-144496a99f5d9a98bb24d3f2de4bbac8.sample"
 
 [deps]
 
 source_file="res://art/sound/bed_verge_day_0.wav"
+dest_files=["res://.godot/imported/bed_verge_day_0.wav-144496a99f5d9a98bb24d3f2de4bbac8.sample"]
 
 [params]
 

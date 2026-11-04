@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://drnkb3lk5mvqs"
+path="res://.godot/imported/holy_smite_2.wav-ceb9da1538d57a58f974dba5fda87ec3.sample"
 
 [deps]
 
 source_file="res://art/sound/holy_smite_2.wav"
+dest_files=["res://.godot/imported/holy_smite_2.wav-ceb9da1538d57a58f974dba5fda87ec3.sample"]
 
 [params]
 

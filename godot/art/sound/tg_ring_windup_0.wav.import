@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bhehgpfgjtcwu"
+path="res://.godot/imported/tg_ring_windup_0.wav-2e18024c2b458f9c8ccf814dc10fffc1.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_ring_windup_0.wav"
+dest_files=["res://.godot/imported/tg_ring_windup_0.wav-2e18024c2b458f9c8ccf814dc10fffc1.sample"]
 
 [params]
 

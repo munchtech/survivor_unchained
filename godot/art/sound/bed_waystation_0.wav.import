@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dmwwhdsteharg"
+path="res://.godot/imported/bed_waystation_0.wav-dc775a158f20d7893deabc331cf432ba.sample"
 
 [deps]
 
 source_file="res://art/sound/bed_waystation_0.wav"
+dest_files=["res://.godot/imported/bed_waystation_0.wav-dc775a158f20d7893deabc331cf432ba.sample"]
 
 [params]
 

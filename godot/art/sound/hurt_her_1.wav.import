@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://b7j38bqsy62od"
+path="res://.godot/imported/hurt_her_1.wav-2b3eca0d4477d27eb78587d44cb149a3.sample"
 
 [deps]
 
 source_file="res://art/sound/hurt_her_1.wav"
+dest_files=["res://.godot/imported/hurt_her_1.wav-2b3eca0d4477d27eb78587d44cb149a3.sample"]
 
 [params]
 

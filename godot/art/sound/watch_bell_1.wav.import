@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cyc6ckcq3dg7q"
+path="res://.godot/imported/watch_bell_1.wav-6c7649bf3f23cbddc512ab70bee4ff8f.sample"
 
 [deps]
 
 source_file="res://art/sound/watch_bell_1.wav"
+dest_files=["res://.godot/imported/watch_bell_1.wav-6c7649bf3f23cbddc512ab70bee4ff8f.sample"]
 
 [params]
 

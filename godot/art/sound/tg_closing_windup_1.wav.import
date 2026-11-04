@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bnkilrfsggoee"
+path="res://.godot/imported/tg_closing_windup_1.wav-40073a1702f6cb82a0c43556a9272306.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_closing_windup_1.wav"
+dest_files=["res://.godot/imported/tg_closing_windup_1.wav-40073a1702f6cb82a0c43556a9272306.sample"]
 
 [params]
 

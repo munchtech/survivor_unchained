@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://6vxotlkqntko"
+path="res://.godot/imported/tg_closing_land_1.wav-75484f7b9b7e789e4ae2fa63451deff7.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_closing_land_1.wav"
+dest_files=["res://.godot/imported/tg_closing_land_1.wav-75484f7b9b7e789e4ae2fa63451deff7.sample"]
 
 [params]
 

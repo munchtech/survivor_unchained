@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://symud06iag4x"
+path="res://.godot/imported/kill_hide_1.wav-d1ed31567aefb31d51fb703ad8697cf0.sample"
 
 [deps]
 
 source_file="res://art/sound/kill_hide_1.wav"
+dest_files=["res://.godot/imported/kill_hide_1.wav-d1ed31567aefb31d51fb703ad8697cf0.sample"]
 
 [params]
 

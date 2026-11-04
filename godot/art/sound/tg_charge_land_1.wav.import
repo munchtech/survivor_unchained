@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c7nyp4xvyer6w"
+path="res://.godot/imported/tg_charge_land_1.wav-aed1a01953123b307f51ccb055c72eae.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_charge_land_1.wav"
+dest_files=["res://.godot/imported/tg_charge_land_1.wav-aed1a01953123b307f51ccb055c72eae.sample"]
 
 [params]
 

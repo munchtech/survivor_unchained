@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dj45lm0ox18y8"
+path="res://.godot/imported/bed_lowford_night_0.wav-7fd575d5cd35c0f528b29d378ee39488.sample"
 
 [deps]
 
 source_file="res://art/sound/bed_lowford_night_0.wav"
+dest_files=["res://.godot/imported/bed_lowford_night_0.wav-7fd575d5cd35c0f528b29d378ee39488.sample"]
 
 [params]
 

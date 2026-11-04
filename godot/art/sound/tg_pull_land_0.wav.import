@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dk5h0mdfeo58w"
+path="res://.godot/imported/tg_pull_land_0.wav-be3dcbbe105bb4949d0f8ea51b2a255d.sample"
 
 [deps]
 
 source_file="res://art/sound/tg_pull_land_0.wav"
+dest_files=["res://.godot/imported/tg_pull_land_0.wav-be3dcbbe105bb4949d0f8ea51b2a255d.sample"]
 
 [params]
 

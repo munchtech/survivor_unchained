@@ -235,7 +235,32 @@
  },
  {
   "name": "m06_ember_level_draft",
-  "what": "Ember pickups, a level-up and the draft",
+  "what": "Ember pickups and a level-up",
+  "flags": [
+   "--quick",
+   "warden",
+   "--zone",
+   "arena",
+   "--people",
+   "dead",
+   "--time",
+   "night",
+   "--tier",
+   "2",
+   "--auto",
+   "--drops",
+   "--open",
+   "draft",
+   "--seconds",
+   "1",
+   "--count",
+   "1"
+  ],
+  "until": 14
+ },
+ {
+  "name": "m06_draft_pick",
+  "what": "The draft: hovering the cards and picking one",
   "flags": [
    "--quick",
    "warden",

@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://b3gfpxswd2fsx"
+path="res://.godot/imported/block_shield_1.wav-76f2d99bd7e3236b8aa69093dd15a1ee.sample"
 
 [deps]
 
 source_file="res://art/sound/block_shield_1.wav"
+dest_files=["res://.godot/imported/block_shield_1.wav-76f2d99bd7e3236b8aa69093dd15a1ee.sample"]
 
 [params]
 

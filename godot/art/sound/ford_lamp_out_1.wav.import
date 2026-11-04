@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c1oc0xhw3vi6r"
+path="res://.godot/imported/ford_lamp_out_1.wav-7da4277dc7abeed667e3449d0b97445f.sample"
 
 [deps]
 
 source_file="res://art/sound/ford_lamp_out_1.wav"
+dest_files=["res://.godot/imported/ford_lamp_out_1.wav-7da4277dc7abeed667e3449d0b97445f.sample"]
 
 [params]
 

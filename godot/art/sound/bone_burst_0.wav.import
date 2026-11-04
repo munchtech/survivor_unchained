@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dmy0ihqfhuutx"
+path="res://.godot/imported/bone_burst_0.wav-91e5d98ac79cf90540ab28c43453bc66.sample"
 
 [deps]
 
 source_file="res://art/sound/bone_burst_0.wav"
+dest_files=["res://.godot/imported/bone_burst_0.wav-91e5d98ac79cf90540ab28c43453bc66.sample"]
 
 [params]
 

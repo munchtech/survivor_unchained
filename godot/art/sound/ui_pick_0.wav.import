@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://ca7kpg3f8cxrd"
+path="res://.godot/imported/ui_pick_0.wav-ef76f1c9e75dc4385b13dd4abbf5aa2e.sample"
 
 [deps]
 
 source_file="res://art/sound/ui_pick_0.wav"
+dest_files=["res://.godot/imported/ui_pick_0.wav-ef76f1c9e75dc4385b13dd4abbf5aa2e.sample"]
 
 [params]
 

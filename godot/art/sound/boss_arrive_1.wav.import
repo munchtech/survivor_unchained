@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cnsa128wai8w6"
+path="res://.godot/imported/boss_arrive_1.wav-04e1e3ddad9b8ffc4da7a3f878b83286.sample"
 
 [deps]
 
 source_file="res://art/sound/boss_arrive_1.wav"
+dest_files=["res://.godot/imported/boss_arrive_1.wav-04e1e3ddad9b8ffc4da7a3f878b83286.sample"]
 
 [params]
 

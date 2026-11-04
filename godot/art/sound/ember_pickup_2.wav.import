@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c51dtwy215k0l"
+path="res://.godot/imported/ember_pickup_2.wav-a15c7470773e022a767f54b92f8ef40e.sample"
 
 [deps]
 
 source_file="res://art/sound/ember_pickup_2.wav"
+dest_files=["res://.godot/imported/ember_pickup_2.wav-a15c7470773e022a767f54b92f8ef40e.sample"]
 
 [params]
 

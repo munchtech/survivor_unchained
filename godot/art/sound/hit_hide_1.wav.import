@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://b3kkymr40i7tm"
+path="res://.godot/imported/hit_hide_1.wav-3ff0070d3362cc8a628aaf853c8eaba0.sample"
 
 [deps]
 
 source_file="res://art/sound/hit_hide_1.wav"
+dest_files=["res://.godot/imported/hit_hide_1.wav-3ff0070d3362cc8a628aaf853c8eaba0.sample"]
 
 [params]
 

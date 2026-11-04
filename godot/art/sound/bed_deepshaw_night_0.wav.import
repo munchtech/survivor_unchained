@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c8yyuyu0dryic"
+path="res://.godot/imported/bed_deepshaw_night_0.wav-cfcfed55fedd16be042bcb2bec2284f1.sample"
 
 [deps]
 
 source_file="res://art/sound/bed_deepshaw_night_0.wav"
+dest_files=["res://.godot/imported/bed_deepshaw_night_0.wav-cfcfed55fedd16be042bcb2bec2284f1.sample"]
 
 [params]
 

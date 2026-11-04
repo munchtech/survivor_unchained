@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bbat0chx2xkbm"
+path="res://.godot/imported/explosion_small_1.wav-c8ffd2e895ff46561974f3d05f2599a1.sample"
 
 [deps]
 
 source_file="res://art/sound/explosion_small_1.wav"
+dest_files=["res://.godot/imported/explosion_small_1.wav-c8ffd2e895ff46561974f3d05f2599a1.sample"]
 
 [params]
 
