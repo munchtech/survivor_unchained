@@ -15,6 +15,10 @@ void vertex() {
 		vec3 right = normalize(vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z));
 		vec3 world = org + right * VERTEX.x * w + vec3(0.0, 1.0, 0.0) * (VERTEX.y + 0.5) * h;
 		POSITION = PROJECTION_MATRIX * (VIEW_MATRIX * vec4(world, 1.0));
+	} else {
+		// (writing POSITION in any branch makes Godot drop the default transform for every vertex: the flat marks, the
+		// rings and the strip, must write it too, or they collapse to one point and never show)
+		POSITION = PROJECTION_MATRIX * (VIEW_MATRIX * (MODEL_MATRIX * vec4(VERTEX, 1.0)));
 	}
 }
 

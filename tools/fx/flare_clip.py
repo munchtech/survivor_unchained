@@ -1,5 +1,8 @@
 """Shoot a Flare clip at 1:1 (1920x1080, 60 fps, with the game's audio) in the arena under `--auto idle` (the bot stands; plain --auto presses the Flare at once, so --cast would be moot).
 --cast T is Journey.Playtime seconds (arena time).
+--time day: the arena is always night (ArenaRun.TimeOf), so a day clip is shot on the Verge (--zone verge --time day) with a
+placed, still horde (--horde 25 --dist 4 --spread 8 --no-spawn, as tools/audio/moments.json m05_long_cut; your --godot-args
+--horde overrides it); use a short --cast there (3 or so), since the horde stands at her from the start.
 
   python tools/fx/flare_clip.py NAME --flare ID [--cast T] [--time night|day] [--pre 1.0] [--len 6.0]
                                 [--godot-args "--horde 25 --seed 7"]
@@ -33,6 +36,7 @@ ap.add_argument("--cast", type=float, default=50.0)
 ap.add_argument("--time", default="night"); ap.add_argument("--pre", type=float, default=1.0)
 ap.add_argument("--len", type=float, default=6.0); ap.add_argument("--bot", default="idle", help="Autopilot mode: idle (stands, so --cast T decides the press) or toward/across/away; the plain bot presses the full Flare itself the moment 3 foes are near")
 ap.add_argument("--godot-args", default="")
+ap.add_argument("--zone", default=None, help="default arena by night, verge by day (the arena has no day)")
 ap.add_argument("--sound", action="store_true", help="drop --shot so the game plays its audio (Synth.cs returns early under --shot): clip.mp4 then has sound, but the run is unseeded and the struck-down line and slow-frame pictures are gone (not tested)")
 a = ap.parse_args()
 
@@ -40,11 +44,13 @@ out = OUT / a.name
 shutil.rmtree(out, ignore_errors=True); out.mkdir(parents=True)
 tmp = Path(tempfile.mkdtemp(prefix="flareclip_", dir=str(OUT)))
 avi = tmp / "movie.avi"
+ZONE = a.zone or ("verge" if a.time == "day" else "arena")
+if ZONE == "verge" and "--horde" not in a.godot_args.split(): a.godot_args = "--horde 25 --dist 4 --spread 8 --no-spawn " + a.godot_args
 label = f"flare-h7: clip {a.name}"
 frames = int((a.cast + a.pre + a.len + 4) * FPS)  # headroom; the press lands near cast + startup
 gargs = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi),
          "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", str(frames), "--",
-         "--quick", "warden", "--zone", "arena", "--offer", "0", "--auto", a.bot, "--flare", a.flare,
+         "--quick", "warden", "--zone", ZONE, "--offer", "0", "--auto", a.bot, "--flare", a.flare,
          "--cast", str(a.cast), "--time", a.time, "--clip"] + ([] if a.sound else ["--shot", "clip", "--seconds", str(a.cast + a.len + 2)]) + (["--wav", str(tmp / "tape.wav"), "--stems"] if not a.sound else []) + a.godot_args.split()
 ov = ROOT / "godot" / "override.cfg"
 if ov.exists(): ov.unlink()
