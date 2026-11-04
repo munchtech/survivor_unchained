@@ -1,0 +1,6 @@
+{
+  "about": "Teeth (H1 combat teeth, docs/team/hook/H1_combat_teeth.md): what a table night's tier asks of a human, on top of the night's own curves; numbers described in logic/Content/Teeth.cs. Measured with the harness's late hands: `arena --bot plain,deft,human,careless`, then tools/balance/danger.py. A tier with no entry is as it was. Tier 1, round 1 (H1, 3 Nov; 128 nights a bot at 12 min, kit on): fodder fall to 3 of her hits and champions to 9 (ember 0-10); the late human ends at 31% of life at its lowest and falls 15%, careless 20%, the deft hands win 96%; the boss comes at 10:00 and takes about 2:15.",
+  "tiers": {
+    "1": { "fodderHp": 3, "fodderDamage": 1.15, "eliteHp": 3.4, "eliteDamage": 1.15, "crowd": 1, "bossHp": 2.5, "bossDamage": 1.25, "minutes": 10 }
+  }
+}

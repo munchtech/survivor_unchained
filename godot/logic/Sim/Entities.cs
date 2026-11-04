@@ -138,6 +138,9 @@ public sealed class Enemy : Pooled
     public double RebukedAt = -99;
     /// <summary>Held back (the Watch Bell's iron): until this time (the battle's clock) it moves SlowBy slower.</summary>
     public double SlowUntil, SlowBy;
+    /// <summary>Held by a kit telegraph (Sim/Tells.cs: a charger planted in its windup, a closing's ring waiting): until
+    /// this time (the battle's clock) it neither moves nor strikes. 0: free.</summary>
+    public double HoldUntil;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);

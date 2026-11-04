@@ -18,11 +18,11 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty", string For = "", string Flare = "")
+    string Type = "", string Lamps = "empty", string For = "", string Flare = "", string Bot = "")
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
-        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "");
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "") + (Bot != "" ? $"/{Bot}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -45,6 +45,10 @@ public sealed class RunResult
     public int Kills, Ember, Cards, Respites, Rerolls, Banishes, Skips;
     public string KilledBy = "", Build = "", Path = "";
     public double DamageTaken, LowHp = 1;
+    /// <summary>The late hands' threats met and read (Harness/Human.cs); her life at the end (of her most); her hits a
+    /// fodder and a champion took to fall, the median over the first ten ember levels (H1: 2-4 and 8-12 at tier 1).</summary>
+    public int ThreatsMet, ThreatsRead;
+    public double HpEnd = 1, HitsFodder = double.NaN, HitsElite = double.NaN;
     public double? BossTtk;
     public List<double> HeraldTtk = new();
     public List<Minute> ByMinute = new();
@@ -67,6 +71,8 @@ public sealed class RunResult
     /// <summary>The boss's fight: its telegraphed blows marked and landed, its Break (of its
     /// health), its staggers, the phase it reached, and whether it grew wild (three minutes).</summary>
     public int BossMarked, BossLanded, BossStaggers, BossPhase = -1;
+    /// <summary>The telegraph kit (Sim/Tells.cs): its blows marked, and those that caught her as they landed.</summary>
+    public int KitMarked, KitCaught;
     public double BossBreak;
     /// <summary>Each boss phase as it ended: [the Flare's cut, seconds, seconds to its mark or -1] (the last as the fight ended).</summary>
     public List<double[]> BossPhases = new();
@@ -251,7 +257,7 @@ public static class ArenaSim
         }
         // (A night shorter than the table's is a story's: it ends on its boss.)
         var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList(),
-            Minutes = spec.Minutes, Story = spec.Minutes != 30 };
+            Minutes = spec.Minutes, Story = spec.Minutes != Arenas.TableMinutes(spec.Tier) };
         Arenas.Begin(j.World, arena);
         var map = MapGen.Generate(arena.Map);
         var host = new HeadlessHost(j, spec.Seed);
@@ -301,6 +307,9 @@ public static class ArenaSim
         var rng = new Rng((uint)(spec.Seed * 7919 + 13));
         var r = new RunResult { Spec = spec, Path = pick.Path?.Id ?? "" };
         var firstHit = new Dictionary<int, double>();
+        var hitCount = new Dictionary<int, int>();
+        var hitsFodder = new List<double>();
+        var hitsElite = new List<double>();
         var fodder = new List<double>();
         var elite = new List<double>();
         double bossAt = -1, bossUp = -1;
@@ -312,23 +321,32 @@ public static class ArenaSim
         var trace = Environment.GetEnvironmentVariable("ARENA_TRACE") is { } tr && tr.Split('@')[0] == spec.Key ? tr : null;
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
         int replayed = 0;
+        // --bot human|careless: a player's hands, late (Harness/Human.cs).
+        var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
         while (t < spec.Cap * 60 && p.Alive && host.Result == null && (fx == null || fx.Span <= 0 || t < fx.Span * 60 - 1e-9))
         {
-            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
-            if (Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
+            var (mx, mz) = human != null ? human.Steer(b, zone.BossScript) : Pilot.Steer(b, spec.Deft, zone.BossScript);
+            if (human != null ? human.Act(b, j, mx, mz, zone.BossScript) : Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
             foreach (var ev in b.Events.Drain())
             {
+                if (ev is Ev.Telegraph { Tell: not null } kt) { if (kt.Phase == TellPhase.Warn) r.KitMarked++; else if (kt.Caught) r.KitCaught++; }
                 switch (ev)
                 {
                     case Ev.Spawn s:
                         firstHit.Remove(s.Enemy);
+                        hitCount.Remove(s.Enemy);
                         if (Enemies.Get(s.Def).Miniboss) r.MinibossesMet.Add(s.Def);
                         break;
-                    case Ev.Hit h when h.Amount > 0 && !firstHit.ContainsKey(h.Target): firstHit[h.Target] = t; break;
+                    case Ev.Hit h when h.Amount > 0:
+                        if (!firstHit.ContainsKey(h.Target)) firstHit[h.Target] = t;
+                        hitCount[h.Target] = hitCount.GetValueOrDefault(h.Target) + 1;
+                        break;
                     case Ev.Kill k when k.ByPlayer:
+                        if (b.EmberLevel <= 10 && hitCount.TryGetValue(k.Enemy, out var hc) && !k.Boss) (k.Elite ? hitsElite : hitsFodder).Add(hc);
+                        hitCount.Remove(k.Enemy);
                         r.KillsBy[k.Family.ToString()] = r.KillsBy.GetValueOrDefault(k.Family.ToString()) + 1;
                         if (k.Elite && !k.Boss) r.Champions++;
                         if (firstHit.TryGetValue(k.Enemy, out var t0))
@@ -345,8 +363,8 @@ public static class ArenaSim
                         }
                         firstHit.Remove(k.Enemy);
                         break;
-                    case Ev.Kill k2: firstHit.Remove(k2.Enemy); break;
-                    case Ev.Telegraph tg when tg.Boss && tg.Kind == TelegraphKind.Blow: r.BossMarked++; break;
+                    case Ev.Kill k2: firstHit.Remove(k2.Enemy); hitCount.Remove(k2.Enemy); break;
+                    case Ev.Telegraph tg when tg.Boss && tg.Kind == TelegraphKind.Blow && tg.Phase == TellPhase.Warn: r.BossMarked++; break;
                     case Ev.Announce an when an.Title == "Staggered": r.BossStaggers++; break;
                     // ARENA_TRACE=KEY@MINUTE: the blows that land on the survivor, from that minute (why a run fell).
                     case Ev.PlayerHit ph when trace != null && t >= traceFrom:
@@ -432,6 +450,10 @@ public static class ArenaSim
             fx.TurnsDark = sw?.Wick?.Dark.ToArray() ?? [];
         }
         r.DamageRaw = b.DamageRaw;
+        if (human != null) { r.ThreatsMet = human.Met; r.ThreatsRead = human.Read; }
+        r.HpEnd = p.Hp / Math.Max(1, b.MaxHp);
+        r.HitsFodder = hitsFodder.Count == 0 ? double.NaN : Median(hitsFodder);
+        r.HitsElite = hitsElite.Count == 0 ? double.NaN : Median(hitsElite);
         r.Build = Describe(b);
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;

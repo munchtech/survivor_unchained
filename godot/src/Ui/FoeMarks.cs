@@ -1,0 +1,99 @@
+using System;
+using Godot;
+using SurvivorUnchained.Sim;
+
+namespace SurvivorUnchained.Ui;
+
+/// <summary>
+/// Foe health (H1 combat teeth, item 2) and the priority mark (item 4), drawn in one batch for every foe:
+/// a thin bar just under a foe's feet (crowd foes only once below 70%, champions always, fainter while full),
+/// and an ellipse ring at the feet of the priority foe. No nodes per foe, nothing allocated per frame.
+/// </summary>
+public partial class FoeMarks : Control
+{
+    struct Bar { public Vector2 At; public float K; public bool Elite, Full; }
+    Bar[] bars = new Bar[256];
+    int count;
+    bool ring;
+    Vector2 ringAt;
+    float ringR;
+    float time;
+    readonly Vector2[] ringPts = new Vector2[33];
+    static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c");
+
+    public FoeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
+
+    /// <summary>This frame's marks from the battle. at: where a foe is drawn (sim X, Z).</summary>
+    public void Show(Battle b, Camera3D cam, Func<Enemy, (double X, double Z)> at, bool bars_)
+    {
+        count = 0;
+        ring = false;
+        var vp = GetViewportRect();
+        float s = vp.Size.Y / 1080f;
+        time += (float)GetProcessDeltaTime();
+        var items = b.Enemies.Items;
+        int pri = b.Priority;
+        if (pri >= 0 && (pri >= items.Length || !b.Targetable(items[pri]))) pri = -1;
+        for (int i = 0; i < items.Length; i++)
+        {
+            var e = items[i];
+            if (!e.Alive || e.State == EnemyState.Dying || e.State == EnemyState.Burrowed || e.Faction == Faction.Dead) continue;
+            if (e.Disposition == Disposition.Ally) continue;
+            bool isPri = i == pri;
+            if (e.Boss && !isPri) continue;
+            if (!isPri && !b.Targetable(e)) continue;
+            bool low = e.Hp / Math.Max(1e-6, e.MaxHp) < 0.7;
+            bool wantBar = bars_ && !e.Boss && (low || e.Elite || isPri);
+            if (!wantBar && !isPri) continue;
+            var (x, z) = at(e);
+            var p = new Vector3((float)x, (float)b.HeightAt(x, z), (float)z);
+            if (cam.IsPositionBehind(p)) continue;
+            var sp = cam.UnprojectPosition(p);
+            if (sp.X < -80 || sp.Y < -40 || sp.X > vp.Size.X + 80 || sp.Y > vp.Size.Y + 80) continue;
+            if (isPri)
+            {
+                ring = true;
+                ringAt = sp;
+                // Radius on screen: the foe's radius at its ground point, to the side of the camera.
+                var side = cam.UnprojectPosition(p + cam.GlobalTransform.Basis.X * (float)Math.Max(0.4, e.Radius));
+                ringR = Math.Max(10 * s, Math.Abs(side.X - sp.X) * 1.15f);
+            }
+            if (!wantBar || e.Boss) continue;
+            if (count == bars.Length) Array.Resize(ref bars, count * 2);
+            bool full = !low;
+            bars[count++] = new Bar { At = sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = full && !isPri };
+        }
+        QueueRedraw();
+    }
+
+    /// <summary>Nothing this frame.</summary>
+    public void Show0() { if (count == 0 && !ring) return; count = 0; ring = false; QueueRedraw(); }
+
+    public override void _Draw()
+    {
+        float s = GetViewportRect().Size.Y / 1080f;
+        for (int i = 0; i < count; i++)
+        {
+            ref var b = ref bars[i];
+            float w = (b.Elite ? 64 : 34) * s, h = (b.Elite ? 6 : 4) * s;
+            float a = b.Full ? 0.45f : 1f;
+            var r = new Rect2(b.At.X - w / 2, b.At.Y + 3 * s, w, h);
+            DrawRect(r, new Color(Ink, Ink.A * a));
+            var inner = r.Grow(-1 * s);
+            DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y)), new Color(Danger, a));
+            if (b.Elite) DrawRect(r, new Color(Bronze, a), false, Math.Max(1, s));
+        }
+        if (ring)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(time * 2.6f);
+            float rx = ringR * (1 + 0.05f * pulse), ry = rx * 0.5f;
+            for (int i = 0; i < ringPts.Length; i++)
+            {
+                float t = i / (float)(ringPts.Length - 1) * Mathf.Tau;
+                ringPts[i] = ringAt + new Vector2(Mathf.Cos(t) * rx, Mathf.Sin(t) * ry);
+            }
+            DrawPolyline(ringPts, new Color(Ink, 0.6f), 4.5f * s, true);
+            DrawPolyline(ringPts, new Color(BronzeHi, 0.65f + 0.3f * pulse), 2.5f * s, true);
+        }
+    }
+}

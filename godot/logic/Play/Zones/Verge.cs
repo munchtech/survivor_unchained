@@ -255,7 +255,7 @@ public sealed class Verge : ZoneRuntime
         {
             Id = $"scar:{W.Day}:{s.Index}", Name = s.Name, Sub = $"Tier {tier} · held by {people.Name}",
             Seed = W.Day * 131 + s.Index * 17 + 3, Tier = tier, People = s.People, Theme = s.People == "dead" ? "blight" : "wood",
-            ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing,
+            ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing, Minutes = Arena.Arenas.TableMinutes(tier),
             OnWin = $$"""[{ "set": { "scar.{{W.Day}}.{{s.Index}}": "won" } }]""",
         };
     }

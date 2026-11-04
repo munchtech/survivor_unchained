@@ -33,6 +33,10 @@ public sealed class PlayerState
     public double AbilityCd, AbilityActive;
     public bool Moving;
     public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT, BulwarkSize = 1;
+    /// <summary>Rooted (the kit's ring, Sim/Tells.cs): no walking while above 0; a dash is still hers, and ends it.</summary>
+    public double RootT;
+    /// <summary>Dragged (the kit's pull): a velocity added to her walk, set each tick by what drags her (0: nothing does).</summary>
+    public double DriftX, DriftZ;
     public Leap? Leap;
     public AttackAnim? AttackAnim;
     /// <summary>Standing in a hazard: burning, poisoned.</summary>
@@ -426,6 +430,7 @@ public sealed partial class Battle
 
         RebuildSpatial();
         Charges.Tick(this, wdt);
+        if (tells.Count > 0) UpdateTells(dt);
         UpdatePlayer(dt, moveX, moveZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
@@ -472,6 +477,7 @@ public sealed partial class Battle
         p.BulwarkT = Math.Max(0, p.BulwarkT - dt);
         p.SlowT = Math.Max(0, p.SlowT - dt);
         if (p.SlowT <= 0) p.SlowF = 1;
+        if (p.RootT > 0) p.RootT = Math.Max(0, p.RootT - dt);
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
         p.UnstruckT += dt;
         if (Boons.TryGetValue("iron_vow", out int vow)) Vow(vow);
@@ -545,17 +551,27 @@ public sealed partial class Battle
         double accel = 1 - Math.Exp(-dt * 14);
         p.Vx += (targetVX - p.Vx) * accel;
         p.Vz += (targetVZ - p.Vz) * accel;
+        // Rooted (the kit's ring): her feet are held; only a dash frees them.
+        if (p.RootT > 0) { p.Vx = p.Vz = 0; p.DriftX = p.DriftZ = 0; }
         double wasX = p.X, wasZ = p.Z;
-        p.X += p.Vx * dt;
-        p.Z += p.Vz * dt;
+        // Dragged (the kit's pull): the drag moves her on top of her own walk, and is not her pace.
+        bool drift = p.DriftX != 0 || p.DriftZ != 0;
+        if (drift) { p.X += (p.Vx + p.DriftX) * dt; p.Z += (p.Vz + p.DriftZ) * dt; }
+        else
+        {
+            p.X += p.Vx * dt;
+            p.Z += p.Vz * dt;
+        }
         Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
         // Pressed against a wall or the well, she moves only as far as it lets her: her speed is what she
         // made, so she stands (or runs along it) instead of running on the spot into it.
         if (dt > 0)
         {
             double mvx = (p.X - wasX) / dt, mvz = (p.Z - wasZ) / dt;
+            if (drift) { mvx -= p.DriftX; mvz -= p.DriftZ; }
             if (mvx * mvx + mvz * mvz < p.Vx * p.Vx + p.Vz * p.Vz) { p.Vx = mvx; p.Vz = mvz; }
         }
+        p.DriftX = p.DriftZ = 0;
         double sp = Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
         p.Moving = sp > 0.6;
         if (p.Moving)
@@ -615,6 +631,8 @@ public sealed partial class Battle
         p.WakeX = p.X; p.WakeZ = p.Z;
         p.PerfectThisDash = false;
         p.DashCharges--;
+        // A dash is the answer to a root (the kit's ring).
+        p.RootT = 0;
         double x0 = p.X, z0 = p.Z;
         // The dash form rides it after its own wait; a form that carries her itself takes the dash's motion.
         if (DashForm(p.DashDX, p.DashDZ)) p.DashT = 0;
@@ -685,8 +703,24 @@ public sealed partial class Battle
         return best;
     }
 
+    /// <summary>Her priority target (H1, docs/team/hook/H1_combat_teeth.md item 4): the foe under the pointer, or the pad's
+    /// right-stick pick (Sim/Targeting.cs). Every look for the nearest foe within a reach (her auto-attacks, her aimed
+    /// skills) takes it first while it is within that reach. -1: none (the harness never sets one).</summary>
+    public int Priority = -1;
+
+    /// <summary>The priority target, if it is a foe to hit within r of (x, z) that passes the filter.</summary>
+    public Enemy? Prioritized(double x, double z, double r, Func<Enemy, bool>? filter = null)
+    {
+        if (Priority < 0 || Priority >= Enemies.Items.Length) return null;
+        var e = Enemies.Items[Priority];
+        if (!Targetable(e) || (filter != null && !filter(e))) return null;
+        double rr = r + e.Radius;
+        return (e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z) <= rr * rr ? e : null;
+    }
+
     public Enemy? NearestHostile(double x, double z, double r, Func<Enemy, bool>? filter = null)
     {
+        if (Priority >= 0 && Prioritized(x, z, r, filter) is { } pe) return pe;
         Enemy? best = null;
         double bd = r * r;
         Spatial.Query(x, z, r, q);
@@ -1645,6 +1679,7 @@ public sealed partial class Battle
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
         e.HandStoneKey = 0;
         e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
+        e.HoldUntil = 0;
         // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
         e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;
         e.SummonT = def.Summon is { } su ? su.Every * 0.5 : 0;
@@ -1815,6 +1850,8 @@ public sealed partial class Battle
         /// <summary>Slowed by it (a fraction of pace, for a time).</summary>
         public double Slow, SlowFor;
         public string? Label;
+        /// <summary>The telegraph kit's kind (Ev.Telegraph.Tell), and the id its marks were emitted under.</summary>
+        public string? Tell; public int MarkId;
         /// <summary>When it was marked (the battle's clock).</summary>
         public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
@@ -1878,7 +1915,7 @@ public sealed partial class Battle
             if (pr.Alive && pr.Lob && pr.Owner == Side.Enemy) yield return (pr.LandX, pr.LandZ, 1.6, pr.Life, pr.Life - pr.Age, pr.Damage);
     }
     /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
-    public void CancelBlows() => blows.Clear();
+    public void CancelBlows() { blows.Clear(); if (tells.Count > 0 || Player.RootT > 0) CancelTells(); }
 
     /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
     /// if they are still in its shape (a blow slipped by a dash in time is a
@@ -1888,9 +1925,10 @@ public sealed partial class Battle
         b.T = b.Delay;
         b.At = Time;
         blows.Add(b);
+        b.MarkId = 900000 + blowIds++;
         Events.Emit(new Ev.Telegraph
         {
-            Id = 900000 + blowIds++, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
+            Id = b.MarkId, Tell = b.Tell, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
             ByX = b.From?.X, ByZ = b.From?.Z,
         });
@@ -1906,6 +1944,9 @@ public sealed partial class Battle
             if (b.T > 0) continue;
             blows.RemoveAt(i);
             var p = Player;
+            if (b.Tell != null)
+                Events.Emit(new Ev.Telegraph { Id = b.MarkId, Tell = b.Tell, Phase = TellPhase.Land, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1,
+                    Radius = b.Radius, Inner = b.Inner, Hostile = true, Boss = b.From?.Boss == true, Caught = p.Alive && b.Hit(p.X, p.Z, p.Radius) });
             if (b.Damage > 0 || b.Slow > 0)
             {
                 double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;

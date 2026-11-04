@@ -113,6 +113,9 @@ public static class Pilot
         // Naive hands read only a boss's marks: the way in's (a drive's lane) they walk into, as a first-timer does.
         double hx = mx, hz = mz;
         if (ReadsBosses && (boss != null || (b.Blows.Count > 0 || strikes && (b.EnemyStrikes().Any() || BossSense.Underfoot(b))) && !naive)) Boss(b, boss, deft, ref mx, ref mz, goal, strikes && !naive, first);
+        // The kit's pull (Sim/Tells.cs), seen: out of its reach, straight away from its heart (its drag is not on the ground's marks).
+        lastDeft = deft;
+        if (!naive && b.ActiveTells.Count > 0) OutOfPull(b, deft, ref mx, ref mz);
         if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
@@ -122,12 +125,15 @@ public static class Pilot
     /// <summary>The hands that are not the feet: a dash out of a crush, the art
     /// on a crowd, a draught when low.</summary>
     /// <returns>Whether a draught was drunk.</returns>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null)
+    /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
+    /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true)
     {
         var p = b.Player;
+        if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
-        if (p.DashCharges > 0)
+        if (p.DashCharges > 0 && lunges)
             foreach (var e in b.HostilesInRadius(p.X, p.Z, 7))
                 if (e.Elite && (!e.Boss || !ReadsBosses) && e.State == EnemyState.Windup)
                 {
@@ -146,7 +152,7 @@ public static class Pilot
             int near = b.HostilesInRadius(p.X, p.Z, reach).Count;
             bool low = p.Hp < b.MaxHp * 0.25;
             // A boss in its phase transition can't be hurt (TakenMul 0): spare the Flare unless health is low.
-            bool bossNear = (AimsFlare || low) && b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
+            bool bossNear = (AimsFlare && aimsFlare || low) && b.HostilesInRadius(p.X, p.Z, 10).Any(e => e.Boss && (low || e.TakenMul > 0));
             // A phase-aware banker (judge 3: it beat firing both at once for every calling; --phaseaware 0 for the old hands): with two charges, a phase the Flare has already cut by a
             // quarter keeps the next for the next phase (a cut stops at half; the second Flare's would be wasted).
             if (PhaseAware && bossNear && !low && b.FlareCharges > 1 && boss is { } bs && bs.FlareCut >= 0.25) bossNear = false;
@@ -271,6 +277,53 @@ public static class Pilot
     /// <summary>Off (--flareuse 0): hands that never press the Flare (today's game measured as before the Flare).</summary>
     public static bool UsesFlare = true;
     public static bool PhaseAware = true;
+    /// <summary>Whether the last Steer was deft (Act reads the kit's telegraphs with the same eyes).</summary>
+    [ThreadStatic] static bool lastDeft;
+
+    /// <summary>A pull seen (BossSense.Threat: marked long enough, noticed): walk straight out of its reach.</summary>
+    static void OutOfPull(Battle b, bool deft, ref double mx, ref double mz)
+    {
+        var p = b.Player;
+        foreach (var t in b.ActiveTells)
+        {
+            if (t.Pull <= 0 || t.Landed || !BossSense.Threat(t.Blow, deft)) continue;
+            double dx = p.X - t.Blow.X, dz = p.Z - t.Blow.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            if (d > t.Reach + 0.5) continue;
+            if (d < 0.05) { dx = mx; dz = mz; d = Math.Max(1e-6, Math.Sqrt(dx * dx + dz * dz)); }
+            mx = dx / d; mz = dz / d;
+            return;
+        }
+    }
+
+    /// <summary>The kit's telegraphs that only a dash answers: rooted inside a marked blow, or dragged into a pull's
+    /// heart faster than she can walk out of it before it lands. Out, away from its heart (seen as Steer saw it).</summary>
+    static void KitDash(Battle b, double mx, double mz)
+    {
+        var p = b.Player;
+        if (p.DashCharges <= 0 || p.DashT > 0) return;
+        foreach (var t in b.ActiveTells)
+        {
+            var bl = t.Blow;
+            if (t.Landed || bl.Kind != TelegraphKind.Blow || !BossSense.Threat(bl, lastDeft)) continue;
+            double dx = p.X - bl.X, dz = p.Z - bl.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            bool dash;
+            if (p.RootT > 0) dash = bl.Hit(p.X, p.Z, p.Radius + 0.3);
+            else if (t.Pull > 0 && d <= t.Reach)
+            {
+                double walk = Math.Max(1, b.Stats.Get(Stat.MoveSpeed) * p.SlowF) - t.Pull;
+                double need = bl.Radius + p.Radius + 0.5 - d;
+                dash = need > 0 && (walk <= 0.1 || need / walk > bl.T);
+            }
+            else continue;
+            if (!dash) continue;
+            // A lane: across it. A circle: away from its heart.
+            if (bl.Shape == TelegraphShape.Line) { double lx = bl.X1 - bl.X, lz = bl.Z1 - bl.Z; (dx, dz) = (-lz, lx); if (dx * (p.X - bl.X) + dz * (p.Z - bl.Z) < 0) { dx = -dx; dz = -dz; } }
+            else if (d < 0.05) { dx = mx; dz = mz; }
+            b.Dash(dx, dz);
+            return;
+        }
+    }
+
     /// <summary>When this run's Flare came ready (each run plays on one thread).</summary>
     [ThreadStatic] static Battle? readyIn;
     [ThreadStatic] static double readyAt;
