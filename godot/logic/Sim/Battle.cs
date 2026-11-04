@@ -438,7 +438,9 @@ public sealed partial class Battle
         RebuildSpatial();
         Charges.Tick(this, wdt);
         if (tells.Count > 0) UpdateTells(dt);
+        double footX = Player.X, footZ = Player.Z;
         UpdatePlayer(dt, moveX, moveZ);
+        if (tells.Count > 0) Walls(footX, footZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
         {
@@ -1882,6 +1884,8 @@ public sealed partial class Battle
         public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
         public Action<Battle>? After;
+        /// <summary>What it dealt her when it landed (after her armor; 0: missed, slipped, blocked), set before After runs.</summary>
+        public double Dealt;
         public bool Hit(double x, double z, double r)
         {
             double dx = x - X, dz = z - Z, d = Math.Sqrt(dx * dx + dz * dz);
@@ -1980,7 +1984,7 @@ public sealed partial class Battle
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
                     blowLabel = b.Label;
-                    if (b.Damage > 0 && HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true) > 0 && b.From?.Boss == true) BossBlowsTaken++;
+                    if (b.Damage > 0 && (b.Dealt = HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true)) > 0 && b.From?.Boss == true) BossBlowsTaken++;
                     blowLabel = null;
                     if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
                 }

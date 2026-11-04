@@ -280,4 +280,131 @@ public class TellTests
         }
         finally { w.Spacing = keep; }
     }
+    /* H6 (the owner after demo-rc2: standing in the marks did not kill): the knockdown, the pull's slam, the closing's
+     * wall and crush, the kit's bite by tier. */
+
+    [Fact]
+    public void A_caught_charge_knocks_her_down()
+    {
+        var b = Fresh();
+        var p = b.Player;
+        var e = b.SpawnEnemy("risen", p.X + 10, p.Z)!;
+        b.Tick(Dt, 0, 0);
+        b.Events.Drain();
+        b.Tell("charge", e, p.X, p.Z);
+        Ev.Knockdown? down = null;
+        for (double t = 0; t < 1.3 && down == null; t += Dt)
+        {
+            b.Tick(Dt, 0, 0);
+            down = b.Events.Drain().OfType<Ev.Knockdown>().FirstOrDefault();
+        }
+        Assert.NotNull(down);
+        Assert.InRange(down!.Seconds, 0.1, SurvivorUnchained.Content.Telegraphs.Get("charge")!.Knock + 1e-9);
+        Assert.True(p.RootT > 0);
+    }
+
+    [Fact]
+    public void A_pull_lands_then_marks_a_slam_on_its_heart_that_she_can_walk_out_of()
+    {
+        var k = SurvivorUnchained.Content.Telegraphs.Get("pull")!;
+        var b = Fresh();
+        var p = b.Player;
+        b.Tell("pull", null, p.X, p.Z);
+        var marks = Run(b, 1.62);
+        var slam = Assert.Single(marks, m => m.Tell == "pull" && m.Phase == TellPhase.Warn && Math.Abs(m.Duration - k.Follow) < 1e-6);
+        Assert.Equal(k.Core, slam.Radius, 6);
+        var follow = Assert.Single(b.Blows, x => x.Tell == "pull");
+        Assert.Equal(k.FollowDamage * b.MaxHp, follow.Damage, 6);
+        // She stands: it lands on her.
+        double hp = p.Hp;
+        Run(b, k.Follow + 0.05);
+        Assert.True(p.Hp < hp - 5, $"slam {hp - p.Hp}");
+
+        // Another walks out of the heart: it misses.
+        var c = Fresh();
+        var q = c.Player;
+        c.Tell("pull", null, q.X, q.Z);
+        Run(c, 1.62);
+        hp = q.Hp;
+        var tail = Run(c, k.Follow + 0.05, mx: 1);
+        Assert.False(Assert.Single(tail, m => m.Tell == "pull" && m.Phase == TellPhase.Land).Caught);
+    }
+
+    /// <summary>A closing with its ring on its points, the ring's foes spawned (risen).</summary>
+    static (Battle B, Battle.TellOn T) Closing()
+    {
+        var b = Fresh();
+        b.ClosingTeeth = true;
+        var p = b.Player;
+        p.DashCharges = 2;
+        foreach (var q in b.TellClosing(p.X, p.Z, 24)) Assert.True(b.Closes(b.SpawnEnemy("risen", q.X, q.Z)!));
+        return (b, Assert.Single(b.ActiveTells, x => x.Kind == "closing"));
+    }
+
+    [Fact]
+    public void A_closing_is_a_wall_but_for_its_gap_and_a_dash_does_not_cross_it()
+    {
+        var (b, t) = Closing();
+        var p = b.Player;
+        var bl = t.Blow;
+        Assert.True(t.Walled);
+        // Away from the gap, walking and then dashing: she stays inside the inner edge.
+        double ax = -Math.Cos(bl.GapAngle), az = -Math.Sin(bl.GapAngle);
+        for (double s = 0; s < 2.5 && p.Alive; s += Dt)
+        {
+            if (Math.Abs(s - 1.2) < Dt / 2) b.Dash(ax, az);
+            b.Tick(Dt, ax, az);
+            Assert.True(Math.Sqrt((p.X - bl.X) * (p.X - bl.X) + (p.Z - bl.Z) * (p.Z - bl.Z)) <= bl.Inner + 0.01);
+        }
+        Assert.Contains(b.Events.Drain().OfType<Ev.ClosingWall>(), w => w.Up && w.Id == bl.MarkId);
+
+        // By the gap: she walks out.
+        var (c, u) = Closing();
+        var q = c.Player;
+        var cl = u.Blow;
+        double gx = Math.Cos(cl.GapAngle), gz = Math.Sin(cl.GapAngle);
+        for (double s = 0; s < 3 && q.Alive; s += Dt) c.Tick(Dt, gx, gz);
+        Assert.True(Math.Sqrt((q.X - cl.X) * (q.X - cl.X) + (q.Z - cl.Z) * (q.Z - cl.Z)) > cl.Radius);
+    }
+
+    [Fact]
+    public void A_closing_crushes_her_inside_it_and_not_once_she_is_out()
+    {
+        var k = SurvivorUnchained.Content.Telegraphs.Get("closing")!;
+        var (b, t) = Closing();
+        var p = b.Player;
+        p.DashCharges = 0;
+        double crushed = 0;
+        for (double s = 0; s < k.Windup + k.CrushAfter + 1.6 && p.Alive; s += Dt)
+        {
+            b.Tick(Dt, 0, 0);
+            crushed += b.Events.Drain().OfType<Ev.PlayerHit>().Where(h => h.Source == "closing").Sum(h => h.Amount);
+        }
+        Assert.True(crushed > 0 || !p.Alive, "no crush");
+
+        var (c, u) = Closing();
+        var q = c.Player;
+        var cl = u.Blow;
+        double gx = Math.Cos(cl.GapAngle), gz = Math.Sin(cl.GapAngle), out_ = 0;
+        for (double s = 0; s < k.Windup + k.CrushAfter + 1.6 && q.Alive; s += Dt)
+        {
+            c.Tick(Dt, gx, gz);
+            out_ += c.Events.Drain().OfType<Ev.PlayerHit>().Where(h => h.Source == "closing").Sum(h => h.Amount);
+        }
+        Assert.Equal(0, out_, 6);
+    }
+
+    [Fact]
+    public void The_kit_bites_harder_by_tier_and_never_softer()
+    {
+        var w = SurvivorUnchained.Content.Telegraphs.Waves;
+        double last = 0;
+        foreach (int tier in w.Tiers) { Assert.True(w.DamageAt(tier) >= last); last = w.DamageAt(tier); }
+        Assert.Equal(1, w.DamageAt(1), 6);
+        Assert.Equal(1, w.DamageAt(99), 6);
+        var b = Fresh();
+        b.KitDamageMul = 1.3;
+        var blow = b.Tell("ring", null, b.Player.X, b.Player.Z)!;
+        Assert.Equal(b.MaxHp * SurvivorUnchained.Content.Telegraphs.Get("ring")!.Damage * 1.3, blow.Damage, 6);
+    }
 }

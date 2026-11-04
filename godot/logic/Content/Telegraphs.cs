@@ -20,7 +20,7 @@ public static class Telegraphs
         public double Inner;
         /// <summary>A charge's line, from the foe through the point.</summary>
         public double Length, Width = 1;
-        /// <summary>The blow, as a fraction of her max life (before her armor): the same bite at every tier.</summary>
+        /// <summary>The blow, as a fraction of her max life (before her armor): the same bite at every tier but for WaveRules.TierDamage.</summary>
         public double Damage;
         /// <summary>A ring: inside its fill (growing from the center to the edge over the windup), she is slowed by this share.</summary>
         public double Slow;
@@ -36,6 +36,20 @@ public static class Telegraphs
         /// <summary>A closing's way out: a gap this wide (m, along the band's middle) at a seeded bearing, where no foe
         /// of its ring is spawned (drawn lit). 0: none.</summary>
         public double Gap;
+        /// <summary>A charge's knockdown (H6): a caught charge (one that hurt her) holds her down this long (s; Battle.KnockPlayer,
+        /// less for the tenacious, Ev.Knockdown). 0: none.</summary>
+        public double Knock;
+        /// <summary>A pull's slam (H6): when the pull lands, a circle blow of its Core at its center is marked at once (its own
+        /// Ev.Telegraph, Tell = the pull's kind) and lands Follow s later for FollowDamage of her max life (before her armor).
+        /// Follow 0: none.</summary>
+        public double Follow, FollowDamage;
+        /// <summary>A closing's wall (H6; only where the closing has teeth and a gap): from its mark until CrushAfter + CrushFor
+        /// past its landing, while at least WallShare of its ring's foes live, she cannot cross the band outside its gap
+        /// (walking or dashing; Ev.ClosingWall). From CrushAfter s past its landing, for CrushFor s, inside the band's inner
+        /// edge she is crushed for Crush of her max life a second (in half-second blows). Crush 0: no wall, no crush.</summary>
+        public double Crush, CrushAfter, CrushFor;
+        /// <summary>The share of a closing's ring that must live for its wall to stand.</summary>
+        public double WallShare = 0.4;
     }
 
     /// <summary>Where a table night casts the kit (ArenaRun): its tiers, past its minute, how often, and which wave shape casts what.</summary>
@@ -62,6 +76,16 @@ public static class Telegraphs
         public double Spacing = 1.5, SpacingNear = 10;
         /// <summary>At most this many fodder charge lanes alive at once near her (within SpacingNear); a further one waits.</summary>
         public int FodderLanes = 2;
+        /// <summary>The kit's bite by tier (H6, never softer): every kit damage (each kind's Damage, Hit, FollowDamage, Crush)
+        /// times the entry at the tier's place in Tiers. None (or short): x1.</summary>
+        public double[] TierDamage = [];
+
+        /// <summary>The kit's damage multiplier at this table tier (1 off the list).</summary>
+        public double DamageAt(int tier)
+        {
+            int i = System.Array.IndexOf(Tiers, tier);
+            return i >= 0 && i < TierDamage.Length ? TierDamage[i] : 1;
+        }
     }
 
     sealed class File

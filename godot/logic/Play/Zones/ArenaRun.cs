@@ -170,6 +170,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         sworn = MapOffers.Rules(Spec.Map);
         LampBegin(b);
         b.ClosingTeeth = Array.IndexOf(Telegraphs.Waves.Tiers, Spec.Tier) >= 0;
+        b.KitDamageMul = Spec.Story ? 1 : Telegraphs.Waves.DamageAt(Spec.Tier);
         Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).

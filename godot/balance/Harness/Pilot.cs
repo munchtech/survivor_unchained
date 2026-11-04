@@ -305,9 +305,16 @@ public static class Pilot
         foreach (var t in b.ActiveTells)
         {
             var bl = t.Blow;
-            if (t.Kind != "closing" || bl.GapWidth <= 0 || t.Landed && t.RushLeft <= 0) continue;
+            if (t.Kind != "closing" || bl.GapWidth <= 0 || t.Landed && t.RushLeft <= 0 && !t.Walled) continue;
             if (!t.Landed && bl.Delay - bl.T < (deft ? BossSense.ReactDeft : BossSense.ReactPlain)) continue;
-            if (Math.Sqrt((p.X - bl.X) * (p.X - bl.X) + (p.Z - bl.Z) * (p.Z - bl.Z)) > bl.Radius + 0.5) continue;
+            double dx = p.X - bl.X, dz = p.Z - bl.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            if (d > bl.Radius + 0.5) continue;
+            // Its wall (H6) lets her out only by the gap: from inside the inner edge and off the gap's bearing, first to the
+            // gap's mouth (a chord, inside the wall), then out; on the band itself, straight off it.
+            double mid = (bl.Inner + bl.Radius) / 2, off = d > 1e-3 ? Math.Abs(Math.IEEERemainder(Math.Atan2(dz, dx) - bl.GapAngle, Math.Tau)) * mid : 0;
+            if (t.Walled && d < bl.Inner && off > bl.GapWidth / 2 - p.Radius)
+                return (bl.X + Math.Cos(bl.GapAngle) * (bl.Inner - 1), bl.Z + Math.Sin(bl.GapAngle) * (bl.Inner - 1));
+            if (t.Walled && d >= bl.Inner && off > bl.GapWidth / 2) return (bl.X + dx / d * (bl.Radius + 3), bl.Z + dz / d * (bl.Radius + 3));
             return (bl.X + Math.Cos(bl.GapAngle) * (bl.Radius + 3), bl.Z + Math.Sin(bl.GapAngle) * (bl.Radius + 3));
         }
         return null;
