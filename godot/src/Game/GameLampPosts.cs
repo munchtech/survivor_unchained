@@ -19,7 +19,7 @@ public partial class Game
     /// of its light on the water and the bank round it; put out, both go at once (Snuff's frost burst covers it);
     /// relit, they flare up and settle. Only while the fight is on (Prologue.LampPosts): C02 and C03 light posts 4-6
     /// themselves, and their look is theirs.</summary>
-    sealed class Beacon { public Node3D Root = null!; public MeshInstance3D Halo = null!; public StandardMaterial3D Mat = null!; public OmniLight3D Pool = null!; public bool Lit, Seen; public float A, Flare; }
+    sealed class Beacon { public Node3D Root = null!; public MeshInstance3D Halo = null!; public StandardMaterial3D Mat = null!; public OmniLight3D Pool = null!; public bool Lit, Seen, Rising; public float A, Flare; }
     readonly List<Beacon> beacons = new();
     static ImageTexture? beaconTex;
     /// <summary>--beacon-halo R, --beacon-glow A, --beacon-pool E, --beacon-off: the halo's half size (m), its strength,
@@ -87,9 +87,12 @@ public partial class Game
             // (relit in the fight: a flare; the fight's first frame comes up with no flare, C02 had them burning)
             if (lit && !b.Lit && b.Seen) { b.Flare = 1; if (Args.Has("lampcheck")) { Shots.Want("relit_a", 0.25); Shots.Want("relit_b", 1.0); } }
             if (!lit && b.Lit && b.Seen && Args.Has("lampcheck")) Shots.Want("snuffed", 0.6);
-            if (!b.Seen) b.A = lit ? 1 : 0;
+            // (first seen, as the film hands back: they come up over 1.2 s; at once, their pools lit the bank 40% brighter
+            // in a tenth of a second, C02's hand-back, H4 solver r2b)
+            if (!b.Seen) { b.A = 0; b.Rising = lit; }
             b.Lit = lit; b.Seen = true;
-            b.A = Mathf.MoveToward(b.A, lit ? 1 : 0, (float)dt / (lit ? 0.35f : 0.12f));
+            if (!lit || b.A >= 1) b.Rising = false;
+            b.A = Mathf.MoveToward(b.A, lit ? 1 : 0, (float)dt / (lit ? (b.Rising ? 1.2f : 0.35f) : 0.12f));
             b.Flare = Mathf.MoveToward(b.Flare, 0, (float)dt / 1.4f);
             b.Root.Visible = b.A > 0.001f;
             if (!b.Root.Visible) continue;

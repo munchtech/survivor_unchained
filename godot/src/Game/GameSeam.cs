@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Sound;
 
@@ -174,7 +176,26 @@ public partial class Game
         var kd = -air.Key.GlobalTransform.Basis.Z;
         ulong lut = air.Env.AdjustmentColorCorrection?.GetInstanceId() ?? 0;
         return $" air={air.Env.TonemapExposure:0.000},{air.Key.LightEnergy:0.000},{kd.X:0.000},{kd.Y:0.000},{kd.Z:0.000},{air.Key.DirectionalShadowMaxDistance:0},"
-             + $"{(int)air.Key.DirectionalShadowMode},{air.Env.AdjustmentSaturation:0.000},{air.Env.FogDensity:0.0000},{(SurvivorUnchained.View.ShadowLamp.Suspended ? 1 : 0)} lut={lut % 1000000}";
+             + $"{(int)air.Key.DirectionalShadowMode},{air.Env.AdjustmentSaturation:0.000},{air.Env.FogDensity:0.0000},{(SurvivorUnchained.View.ShadowLamp.Suspended ? 1 : 0)} lut={lut % 1000000}"
+             + (Args.Has("cutlights") ? Lights() : "");
+    }
+
+    /// <summary>--cutlights: the positional lights within 25 m of the camera's look that are on (name:energy, the
+    /// strongest five) and the sum of all of them, for finding which light pops at a hand-back.</summary>
+    string Lights()
+    {
+        var c = camera.GlobalTransform;
+        var aim = c.Origin - c.Basis.Z * 20;
+        var found = new List<(string, float)>();
+        void Walk(Node n)
+        {
+            if (n is Light3D l && l is not DirectionalLight3D && l.IsVisibleInTree() && l.LightEnergy > 0.001f && l.GlobalPosition.DistanceTo(aim) < 25)
+                found.Add(($"{l.GetParent()?.Name}/{l.Name}", l.LightEnergy * (l.ShadowEnabled ? -1 : 1)));
+            foreach (var ch in n.GetChildren()) Walk(ch);
+        }
+        if (scene != null) Walk(scene);
+        var top = found.OrderByDescending(x => Math.Abs(x.Item2)).Take((int)SurvivorUnchained.Args.Num("cutlights", 5)).Select(x => $"{x.Item1}:{x.Item2:0.00}");
+        return $" lights={found.Count},{found.Sum(x => Math.Abs(x.Item2)):0.00} [{string.Join(" ", top)}]";
     }
 
     float VfovOf(float hfov)
