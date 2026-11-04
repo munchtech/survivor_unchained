@@ -134,6 +134,8 @@ public sealed partial class ArenaRun
         corpses.Add((e.X, e.Z, Seconds, new HashSet<int>(), false));
     }
 
+    readonly Dictionary<int, (double Seed, double T)> fedAt = new();
+
     void Feeding(Teeth.Director d)
     {
         var p = B!.Player;
@@ -145,6 +147,10 @@ public sealed partial class ArenaRun
             {
                 if (e.Elite || e.Boss || e.Scripted || e.Def.Family != Family.Wolf || e.State != EnemyState.Active || e.HoldUntil > B.Time || c.Fed.Contains(e.Id)) continue;
                 if (Dist(e.X, e.Z, p.X, p.Z) < d.FeedFar) continue;
+                // A wolf feeds once in FeedEvery, and a corpse feeds FeedMax at most: a pause bought by breaking away,
+                // not a crowd that grazes its way across the field.
+                if (c.Fed.Count >= d.FeedMax || fedAt.TryGetValue(e.Id, out var fa) && fa.Seed == e.Seed && Seconds - fa.T < d.FeedEvery) continue;
+                fedAt[e.Id] = (e.Seed, Seconds);
                 c.Fed.Add(e.Id);
                 e.HoldUntil = B.Time + d.FeedFor;
                 e.Vx = e.Vz = 0;

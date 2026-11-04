@@ -85,6 +85,9 @@ public static class Teeth
         /// FeedFar from it stops to feed for FeedFor s (once a corpse), so running leaves the crowd behind. Off by default.</summary>
         public bool Feed;
         public double FeedFor = 2, FeedNear = 2.2, FeedFar = 8, CorpseLife = 6;
+        /// <summary>A wolf feeds at most once each FeedEvery seconds; a corpse feeds at most FeedMax.</summary>
+        public double FeedEvery = 15;
+        public int FeedMax = 3;
     }
 
     sealed class File
