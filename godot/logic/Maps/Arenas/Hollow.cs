@@ -22,15 +22,20 @@ public sealed class Hollow : ArenaShape
     readonly List<(double Ang, double X, double Z)> greats = new();
     readonly List<(double Ax, double Az, double Bx, double Bz, double Hw)> rootSegs = new();
 
+    /// <summary>The board the Hollow is made to (Content/Boards, H1 item 6), or null: the open bowl as it was.</summary>
+    ArenaBoard? board;
+    /// <summary>The bowl's scale to the open one's (1 as it was): a board's Hollow is a whole Hollow, only smaller.</summary>
+    double S => B.R / ArenaGen.R;
+
     bool Drowned => B.Place.HasMood("drowned");
     bool Autumn => B.Spec.Theme == "autumn";
 
     public override void Plan()
     {
         // The stream: across one side of the bowl, curving.
-        double beta = Rng.Range(0, Math.PI * 2), dist = Rng.Range(34, 50);
+        double beta = Rng.Range(0, Math.PI * 2), dist = Rng.Range(34 * S, 50 * S);
         double cx = Math.Cos(beta) * dist, cz = Math.Sin(beta) * dist, dx = -Math.Sin(beta), dz = Math.Cos(beta);
-        stream = B.Curve(cx - dx * 140, cz - dz * 140, cx + dx * 140, cz + dz * 140, Rng.Range(-30, 30), Drowned ? 3.4 : 2.4, 0.35);
+        stream = B.Curve(cx - dx * 140, cz - dz * 140, cx + dx * 140, cz + dz * 140, Rng.Range(-30, 30) * S, Drowned ? 3.4 : 2.4, 0.35);
         streamF = B.PathField(stream);
         B.Lane(stream);
         B.Streams.Add(stream);
@@ -50,7 +55,7 @@ public sealed class Hollow : ArenaShape
             for (int r = Rng.Int(4, 7); r > 0; r--)
             {
                 // A root: in from the trunk, wandering, thinning.
-                double ra = a + Math.PI + Rng.Range(-0.9, 0.9), len = Rng.Range(7, 17), x = tx, z = tz, hw = Rng.Range(0.7, 1.0);
+                double ra = a + Math.PI + Rng.Range(-0.9, 0.9), len = Rng.Range(7, 17) * (B.BoardDef == null ? 1 : 0.4 + 0.6 * S), x = tx, z = tz, hw = Rng.Range(0.7, 1.0);
                 for (double s = 0; s < len; s += 2.5)
                 {
                     double nx = x + Math.Cos(ra) * 2.5, nz = z + Math.Sin(ra) * 2.5;
@@ -61,10 +66,27 @@ public sealed class Hollow : ArenaShape
             }
         }
         rootsF = B.SegsField(roots);
-        // The Pack's runs: worn paths from the den out across the bowl, and down to the water.
-        for (int k = 0; k < 4; k++)
+        // A board: the fold to hold, off the water and the den, its lanes out (ArenaBoard.cs). The lanes are the
+        // Pack's runs worn deepest, and the ways in to the lamp are trodden too; two runs from the den besides.
+        if (B.BoardDef is { } def)
         {
-            double a = denAng + Math.PI + Rng.Range(-0.9, 0.9), x = denX, z = denZ, len = Rng.Range(40, 80);
+            B.Board = board = BoardGen.Plan(B, def, (x, z) =>
+            {
+                var (d, hw, _) = ArenaGen.Builder.Near(stream, x, z);
+                return Math.Min(d - hw, MathX.Dist(x, z, denX, denZ) - 14);
+            });
+            foreach (var lane in board.Lanes)
+                for (int k = 0; k + 1 < lane.Length; k++) runs.Add((lane[k].X, lane[k].Z, lane[k + 1].X, lane[k + 1].Z, lane[k].Hw * 0.8));
+            foreach (var c in board.Chokes)
+            {
+                double ox = Math.Cos(c.Bearing), oz = Math.Sin(c.Bearing);
+                runs.Add((board.Fold.X + ox * 2, board.Fold.Z + oz * 2, c.X + ox * (board.Fold.Thick / 2 + 1), c.Z + oz * (board.Fold.Thick / 2 + 1), 1.0));
+            }
+        }
+        // The Pack's runs: worn paths from the den out across the bowl, and down to the water.
+        for (int k = 0; k < (board == null ? 4 : 2); k++)
+        {
+            double a = denAng + Math.PI + Rng.Range(-0.9, 0.9), x = denX, z = denZ, len = Rng.Range(40, 80) * S;
             for (double s = 0; s < len; s += 4)
             {
                 double nx = x + Math.Cos(a) * 4, nz = z + Math.Sin(a) * 4;
@@ -80,7 +102,7 @@ public sealed class Hollow : ArenaShape
     {
         double r = Math.Sqrt(x * x + z * z);
         // A bowl: the middle lies lower than its rim.
-        double h = -1.4 * (1 - MathX.Smoothstep(0, ArenaGen.R + 8, r));
+        double h = -1.4 * (1 - MathX.Smoothstep(0, B.R + 8, r));
         double f = B.At(streamF, x, z);
         if (f < 2.5) h += -0.75 * (1 - MathX.Smoothstep(0.2, 1.25, f)) + 0.12 * (1 - Math.Abs(f - 1.6) / 0.9) * (f > 0.7 ? 1 : 0);
         double rf = B.At(rootsF, x, z);
@@ -129,6 +151,23 @@ public sealed class Hollow : ArenaShape
         // Grass only where the canopy opens, in clearings of the litter.
         double hard = Math.Max(Math.Max(p.L2, p.L3), Math.Max(p.L4, p.L5));
         p.Grass = (1 - hard) * MathX.Smoothstep(0.2, 0.55, Noise.Noise(x * 0.03 - 40, z * 0.03 + 12) + n2 * 0.2);
+        if (board != null) FoldPaint(x, z, n1, n2, ref p);
+    }
+
+    /// <summary>A board's fold: the ground under its wall dark with roots and moss, leaves banked against it; open
+    /// at the gaps.</summary>
+    void FoldPaint(double x, double z, double n1, double n2, ref ArenaPaint p)
+    {
+        var f = board!.Fold;
+        double dw = Math.Abs(MathX.Dist(x, z, f.X, f.Z) - f.WallR) + n1 * 0.6;
+        if (dw > f.Thick / 2 + 2) return;
+        double band = 1 - MathX.Smoothstep(f.Thick / 2 - 0.3, f.Thick / 2 + 1.6, dw);
+        foreach (var c in board.Chokes)
+            band *= MathX.Smoothstep(c.Width / 2 - 0.4, c.Width / 2 + 0.8, MathX.Dist(x, z, c.X, c.Z));
+        p.L2 = Math.Max(p.L2, band * 0.75);
+        p.Moss = Math.Max(p.Moss, band * 0.55 * MathX.Smoothstep(-0.2, 0.3, n2));
+        p.Leaves = Math.Max(p.Leaves, band);
+        p.Grass *= 1 - band;
     }
 
     public override void Wall(double x, double z, double d)
@@ -224,16 +263,20 @@ public sealed class Hollow : ArenaShape
         // ----------------------------------------------------------- cover --
         // Fallen trunks, mossed boulders, stumps where something was brought down;
         // low, so the Pack shows round them. Bare trees only in the outer ring.
+        // (A board's are fewer, and never in the fold or on a lane: Free keeps off what the board took.)
         var islands = new List<(double X, double Z)>();
-        for (int t = 0; t < 500 && islands.Count < 17; t++)
+        var cv = B.BoardDef?.Cover;
+        int count = cv == null ? 17 : Rng.Int(cv.Count[0], cv.Count[1]);
+        double r0 = cv?.From ?? 16, r1 = cv == null ? ArenaGen.R - 14 : B.R - cv.Edge, apart = cv?.Spacing ?? 19, bare = 48 * S;
+        for (int t = 0; t < 500 && islands.Count < count; t++)
         {
-            double a = Rng.Range(0, Math.PI * 2), rr = Rng.Range(16, ArenaGen.R - 14);
+            double a = Rng.Range(0, Math.PI * 2), rr = Rng.Range(r0, r1);
             double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr;
-            if (!B.Free(x, z, 4) || islands.Exists(o => MathX.Dist(o.X, o.Z, x, z) < 19)) continue;
+            if (!B.Free(x, z, 4) || islands.Exists(o => MathX.Dist(o.X, o.Z, x, z) < apart)) continue;
             islands.Add((x, z));
             B.Take(x, z, 5);
             int kind = Rng.Int(0, 3);
-            if (kind == 3 && rr < 48) kind = 1;
+            if (kind == 3 && rr < bare) kind = 1;
             if (kind == 0)
             {
                 // A trunk come down, ferns grown up along it.
@@ -280,5 +323,47 @@ public sealed class Hollow : ArenaShape
                 for (int k = 0; k < 4; k++) B.Put(Rng.Pick(new[] { "fern", "bramble", "scan_fern" }), x + Rng.Range(-4, 4), z + Rng.Range(-4, 4));
             }
         }
+            if (board != null) BoardGen.Raise(B, board, B.BoardDef!, FoldWall);
+    }
+
+    /// <summary>The fold's wall in the Hollow's kit, a piece every couple of metres along it (FoldDef.Dress) so it reads
+    /// as one wall from the play camera, not a scatter: fallen trunks end to end with their root plates, mossed rock
+    /// heaped with a boulder, stumps and roots, bramble and bush grown through all of it on both faces; a big stump or
+    /// rock for a post at each gap.</summary>
+    void FoldWall(double x, double z, double rot, bool post)
+    {
+        var (ax, az) = ArenaGen.Builder.Along(rot);
+        double cx = -az, cz = ax;
+        if (post)
+        {
+            B.Put(Rng.Chance(0.5) ? "scan_stump" : "scan_mossrock", x, z, Rng.Range(1.4, 1.7), 0.15);
+            B.Put("bramble", x + cx * Rng.Range(-0.9, 0.9), z + cz * Rng.Range(-0.9, 0.9), Rng.Range(1.1, 1.4));
+            return;
+        }
+        double roll = Rng.Range(0, 1);
+        if (roll < 0.55)
+        {
+            B.PutAt("scan_trunk", x, z, rot + Rng.Range(-0.1, 0.1), Rng.Range(1.45, 1.75), 0.2);
+            if (Rng.Chance(0.6))
+            {
+                double e = Rng.Chance(0.5) ? 1 : -1;
+                B.PutAt("scan_root", x + ax * e * Rng.Range(1.4, 1.9), z + az * e * Rng.Range(1.4, 1.9), rot + Rng.Range(-0.5, 0.5), Rng.Range(1.6, 2.0), 0.1);
+            }
+        }
+        else if (roll < 0.8)
+        {
+            for (int n = 0; n < 2; n++) B.Put("scan_mossrock", x + ax * Rng.Range(-1.1, 1.1), z + az * Rng.Range(-1.1, 1.1), Rng.Range(1.15, 1.45), 0.2);
+            if (Rng.Chance(0.5)) B.Put("scan_boulder", x + cx * Rng.Range(-0.4, 0.4), z + cz * Rng.Range(-0.4, 0.4), Rng.Range(0.45, 0.6), 0.25);
+        }
+        else
+        {
+            B.Put("scan_stump", x + ax * Rng.Range(-0.8, 0.8), z + az * Rng.Range(-0.8, 0.8), Rng.Range(1.3, 1.6), 0.1);
+            B.PutAt("scan_root", x, z, rot + Rng.Range(-0.4, 0.4), Rng.Range(1.6, 2.0), 0.1);
+        }
+        // Grown through it, both faces.
+        foreach (double side in new[] { -1.0, 1.0 })
+            if (Rng.Chance(0.8))
+                B.Put(Rng.Chance(0.7) ? "bramble" : "bush", x + cx * side * Rng.Range(0.5, 1.1) + ax * Rng.Range(-1, 1), z + cz * side * Rng.Range(0.5, 1.1) + az * Rng.Range(-1, 1), Rng.Range(1.1, 1.5));
+        if (Rng.Chance(0.35)) B.Put(Rng.Pick(new[] { "scan_shrub", "scan_fern", "fern" }), x + cx * Rng.Range(1.3, 1.8), z + cz * Rng.Range(1.3, 1.8), Rng.Range(0.9, 1.2));
     }
 }

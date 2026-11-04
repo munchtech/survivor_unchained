@@ -170,6 +170,55 @@ public partial class BattleFx
         if (who != null) panting.Add((who, time + e.Duration, 0));
     }
 
+    /// <summary>The kit's closing and pull at work (H1 round 2B): red streaks pulse inward across the closing's band (none in
+    /// its gap), violet streaks spiral inward over a pull's reach: the horde closes, the ground drags.</summary>
+    void StepTellStreaks(Battle b, float dt)
+    {
+        var tells = b.ActiveTells;
+        for (int i = 0; i < tells.Count; i++)
+        {
+            var t = tells[i];
+            if (t.Kind == "closing" && t.Blow.T > 0)
+            {
+                var k = t.Blow;
+                float outer = (float)k.Radius, inner = (float)k.Inner, speed = 7f;
+                // (a pulse, three beats a second: a few streaks a frame at the crest, one between)
+                int n = Math.Sin(time * 6 * Math.PI) > 0.2f ? 3 : 1;
+                for (int j = 0; j < n; j++)
+                {
+                    double a = R() * Math.Tau, dg = Math.Abs(Math.IEEERemainder(a - k.GapAngle, Math.Tau));
+                    if (k.GapWidth > 0 && dg * outer < k.GapWidth * 0.5 + 0.3) continue;
+                    float ca = Mathf.Cos((float)a), sa = Mathf.Sin((float)a);
+                    float r0 = outer - R() * 0.3f;
+                    double px = k.X + ca * r0, pz = k.Z + sa * r0;
+                    Sparks.Spawn(new Sparks.P
+                    {
+                        At = V(px, Y(px, pz) + 0.15, pz), V = new Vector3(-ca, 0, -sa) * speed,
+                        Life = (outer - inner + 0.3f) / speed, Size = 0.1f, SizeEnd = 0.05f, Color = new Color(2.4f, 0.25f, 0.12f), ColorEnd = new Color(0.8f, 0.04f, 0.03f),
+                        Alpha = 0.9f, Sprite = -1, Stretch = 0.09f,
+                    });
+                }
+            }
+            else if (t.Kind == "pull" && !t.Landed && t.Reach > 0)
+            {
+                var k = t.Blow;
+                for (int j = 0; j < 3; j++)
+                {
+                    float a = R() * Mathf.Tau, r0 = (float)t.Reach * (0.55f + R() * 0.45f);
+                    float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                    double px = k.X + ca * r0, pz = k.Z + sa * r0;
+                    // (inward, with a turn to one side: a spiral, not a spoke)
+                    var v = new Vector3(-ca, 0, -sa) * 4.5f + new Vector3(-sa, 0, ca) * 3f;
+                    Sparks.Spawn(new Sparks.P
+                    {
+                        At = V(px, Y(px, pz) + 0.15, pz), V = v, Life = 0.55f + R() * 0.2f, Size = 0.09f, SizeEnd = 0.04f,
+                        Color = Palette.TeleGround, ColorEnd = Palette.TeleGround * 0.3f, Alpha = 0.85f, Sprite = -1, Stretch = 0.08f,
+                    });
+                }
+            }
+        }
+    }
+
     void StepPanting(float dt)
     {
         for (int i = panting.Count - 1; i >= 0; i--)

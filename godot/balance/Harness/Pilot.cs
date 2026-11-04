@@ -116,6 +116,7 @@ public static class Pilot
         // The kit's pull (Sim/Tells.cs), seen: out of its reach, straight away from its heart (its drag is not on the ground's marks).
         lastDeft = deft;
         if (!naive && b.ActiveTells.Count > 0) OutOfPull(b, deft, ref mx, ref mz);
+        if (!naive && b.ActiveTells.Count > 0) OutOfClosing(b, deft, ref mx, ref mz);
         if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
@@ -131,6 +132,7 @@ public static class Pilot
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
+        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b);
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0 && lunges)
@@ -293,6 +295,39 @@ public static class Pilot
             mx = dx / d; mz = dz / d;
             return;
         }
+    }
+
+    /// <summary>A closing round her with a way out (Sim/Tells.cs, its gap), seen: the mouth of the gap she is inside of,
+    /// a little past its outer edge (null: none, or she is out).</summary>
+    static (double X, double Z)? GapOut(Battle b, bool deft)
+    {
+        var p = b.Player;
+        foreach (var t in b.ActiveTells)
+        {
+            var bl = t.Blow;
+            if (t.Kind != "closing" || bl.GapWidth <= 0 || t.Landed && t.RushLeft <= 0) continue;
+            if (!t.Landed && bl.Delay - bl.T < (deft ? BossSense.ReactDeft : BossSense.ReactPlain)) continue;
+            if (Math.Sqrt((p.X - bl.X) * (p.X - bl.X) + (p.Z - bl.Z) * (p.Z - bl.Z)) > bl.Radius + 0.5) continue;
+            return (bl.X + Math.Cos(bl.GapAngle) * (bl.Radius + 3), bl.Z + Math.Sin(bl.GapAngle) * (bl.Radius + 3));
+        }
+        return null;
+    }
+
+    /// <summary>Inside a closing: walk for its way out.</summary>
+    static void OutOfClosing(Battle b, bool deft, ref double mx, ref double mz)
+    {
+        if (GapOut(b, deft) is not var (gx, gz)) return;
+        var p = b.Player;
+        mx = gx - p.X; mz = gz - p.Z;
+    }
+
+    /// <summary>Inside a closing, near its way out: dash through it.</summary>
+    static void ClosingDash(Battle b)
+    {
+        var p = b.Player;
+        if (p.DashCharges <= 0 || p.DashT > 0 || GapOut(b, lastDeft) is not var (gx, gz)) return;
+        double dx = gx - p.X, dz = gz - p.Z;
+        if (dx * dx + dz * dz < 8.5 * 8.5) b.Dash(dx, dz);
     }
 
     /// <summary>The kit's telegraphs that only a dash answers: rooted inside a marked blow, or dragged into a pull's

@@ -48,7 +48,7 @@ public sealed class PackMother : ArenaBoss
     bool He => A.BossName == "Greymuzzle";
     string Her => He ? "his" : "her";
     protected override string HardName => "The Long Hunt";
-    double driveT = 6, biteT = 3, howlT, shakeT = 2, lungeT = 4;
+    double driveT = 5, biteT = 3, howlT, shakeT = 2, lungeT = 4;
     double howlHp;
     bool lastPack;
     /// <summary>Let go (the story's Greymuzzle, spared): he goes down and does not die.</summary>
@@ -73,10 +73,11 @@ public sealed class PackMother : ArenaBoss
         int pack = Near("wolf", 4) + Near("wolf_blighted", 4);
         e.TakenMul = 1 - Math.Min(0.25, 0.05 * pack);
         driveT -= dt; biteT -= dt; howlT -= dt; shakeT -= dt; lungeT -= dt;
+        // Her signature, the Drive, on its own clock in every phase (the Pack wheels first only in the Drive's own phase).
+        if (driveT <= 0) { driveT = 14 * Cadence; Drive(PhaseIx == 0); return true; }
         switch (PhaseIx)
         {
             case 0:
-                if (driveT <= 0) { driveT = 14 * Cadence; Drive(); return true; }
                 if (d < 6 && biteT <= 0) { biteT = 5 * Cadence; Hamstring(); return true; }
                 return false;
             case 1:
@@ -96,30 +97,32 @@ public sealed class PackMother : ArenaBoss
         }
     }
 
-    /// <summary>The Drive: the Pack closes in a crescent on one side; she waits across
-    /// the gap and runs its lane as it closes. Go through the wolves, not the gap.</summary>
-    void Drive()
+    /// <summary>The Drive, her signature (the kit's charge at half again its size): in its own phase the Pack closes
+    /// in a crescent on one side first; she drops her head (the howl, the bark naming it), then runs the lane at the
+    /// survivor. Go through the wolves, not the gap; dash out of the lane.</summary>
+    void Drive(bool wheel)
     {
         var p = B.Player;
-        // The crescent on the far side of the survivor from her, its open side toward her.
-        double away = Math.Atan2(p.Z - E.Z, p.X - E.X);
-        A.Bark(E.X, E.Z, "A rising howl: the Pack wheels.", null);
-        int n = 7 + A.Tier;
-        for (int k = 0; k < n; k++)
+        if (wheel)
         {
-            double a = away + (k / (double)Math.Max(1, n - 1) - 0.5) * Math.PI * 1.1;
-            double x = p.X + Math.Cos(a) * 10, z = p.Z + Math.Sin(a) * 10;
-            if (A.CanStand(x, z)) A.Spawn("wolf", x, z);
+            // The crescent on the far side of the survivor from her, its open side toward her.
+            double away = Math.Atan2(p.Z - E.Z, p.X - E.X);
+            int n = 7 + A.Tier;
+            for (int k = 0; k < n; k++)
+            {
+                double a = away + (k / (double)Math.Max(1, n - 1) - 0.5) * Math.PI * 1.1;
+                double x = p.X + Math.Cos(a) * 10, z = p.Z + Math.Sin(a) * 10;
+                if (A.CanStand(x, z)) A.Spawn("wolf", x, z);
+            }
         }
-        Hold(1.0, () =>
+        Signature(He ? "He drops his head: the Drive!" : "She drops her head: the Drive!", SignatureLead, () =>
         {
-            var (dx, dz, d) = ToPlayer();
-            double len = d + 6;
-            double x1 = E.X + dx * len, z1 = E.Z + dz * len;
-            Lane(E.X, E.Z, x1, z1, 2.4, 1.0, 1.8, "The Drive");
-            Hold(1.0, () => DashTo(x1, z1, 0.4));
+            var pp = B.Player;
+            if (B.Tell("charge", E, pp.X, pp.Z, DriveScale) != null) HoldForCharge();
         });
     }
+    /// <summary>The Drive's size over the kit's charge.</summary>
+    public const double DriveScale = 1.5;
 
     void Hamstring()
     {
@@ -225,7 +228,7 @@ public sealed class BarrowLord : ArenaBoss
     public override string WeaknessText => "Holy lays him down twice as fast";
     protected override string HardName => "The Last Watch";
     protected override bool DiesAtZero => false;
-    double lineT = 4, pilumT = 6, testudoT = 1, gladiusT = 2, holdT = 6;
+    double lineT = 5, pilumT = 6, testudoT = 1, gladiusT = 2, holdT = 6;
     double layT, layHeld;
     bool laying;
     int risings;
@@ -252,10 +255,12 @@ public sealed class BarrowLord : ArenaBoss
         lineT -= dt; pilumT -= dt; testudoT -= dt; gladiusT -= dt; holdT -= dt;
         // While shieldmen stand round him, he takes half.
         e.TakenMul = Near("risen_warrior", 5) >= 4 ? 0.5 : 1;
+        // His signature, "Close up!", on its own clock in every phase.
+        // (24 s, not 18: every phase at 18 put the humanlike bot down at the Barrow Lord 59% at tier 1, from 38%.)
+        if (lineT <= 0) { lineT = (Hard ? 12 : 24) * Cadence; CloseUp(); return true; }
         switch (PhaseIx)
         {
             case 0:
-                if (lineT <= 0) { lineT = (Hard ? 6 : Soft ? 10 : 16) * Cadence; CloseUp(); return true; }
                 if (pilumT <= 0 && d > 5) { pilumT = 7 * Cadence; Pilum(); return true; }
                 return false;
             case 1:
@@ -263,7 +268,6 @@ public sealed class BarrowLord : ArenaBoss
                 if (pilumT <= 0 && d > 5) { pilumT = 7 * Cadence; Pilum(); return true; }
                 return false;
             default:
-                if (Hard && lineT <= 0) { lineT = 12; CloseUp(); }
                 if (d < 4.8 && gladiusT <= 0)
                 {
                     gladiusT = 4 * Cadence;
@@ -291,22 +295,18 @@ public sealed class BarrowLord : ArenaBoss
         }
     }
 
-    /// <summary>"Close up!": shieldmen rise in a line between him and the survivor and walk.</summary>
+    /// <summary>"Close up!", his signature (the kit's closing): he raises his blade and calls it, then his dead rise
+    /// in a ring round the survivor, held for the windup, and rush in. The Flare, or a dash out through the ring
+    /// before it lands.</summary>
     void CloseUp()
     {
-        var p = B.Player;
-        A.Bark(E.X, E.Z, "\"Iungite!\"", "The Barrow Lord");
-        double a = Math.Atan2(E.Z - p.Z, E.X - p.X);
-        double cx = p.X + Math.Cos(a) * 9, cz = p.Z + Math.Sin(a) * 9;
-        double sx = -Math.Sin(a), sz = Math.Cos(a);
-        int n = 6 + A.Tier;
-        for (int k = 0; k < n; k++)
+        Signature("He raises his blade: \"Iungite!\" Close up!", SignatureLead, () =>
         {
-            double off = (k - (n - 1) / 2.0) * 1.9;
-            double x = cx + sx * off, z = cz + sz * off;
-            if (A.CanStand(x, z)) A.Spawn("risen_warrior", x, z, false, SpawnStyle.Rise);
-        }
-        Hold(0.6);
+            var p = B.Player;
+            foreach (var (x, z) in B.TellClosing(p.X, p.Z, 10 + A.Tier))
+                if (A.CanStand(x, z) && A.Spawn("risen_warrior", x, z, false, SpawnStyle.Rise) is { } f) B.Closes(f);
+            Hold(0.6);
+        });
     }
 
     void Pilum()
@@ -541,17 +541,24 @@ public sealed class Grimtunnel : ArenaBoss
         under = true;
         DashTo(tx, tz, 2.4, () =>
         {
-            Circle(E.X, E.Z, 3.5, 1.2, 2.0, "He bursts up", School.Physical);
-            double bx = E.X, bz = E.Z;
-            Hold(1.2, () =>
+            // His signature (the kit's pull): he bursts up and roars, then the ground caves toward him; the
+            // sinkhole opens where the pull's heart was.
+            Signature(ganger ? "It bursts up: the ground caves in!" : "He bursts up: the ground caves in!", SignatureLead, () =>
             {
-                under = false;
-                dazeT = frostCaught ? 8 : 4;
-                frostCaught = false;
-                if (PhaseIx == 1) Pit(bx, bz);
+                double bx = E.X, bz = E.Z;
+                var b = B.Tell("pull", E, bx, bz, CaveScale);
+                Hold(b?.Delay ?? 1.2, () =>
+                {
+                    under = false;
+                    dazeT = frostCaught ? 8 : 4;
+                    frostCaught = false;
+                    if (PhaseIx == 1) Pit(bx, bz);
+                });
             });
         });
     }
+    /// <summary>The cave-in's size over the kit's pull.</summary>
+    public const double CaveScale = 1.3;
     bool frostCaught, under;
 
     /// <summary>A sinkhole where he burst: ground nothing can stand on, up to six (and one more a tier).</summary>
@@ -671,7 +678,7 @@ public sealed class RedHand : ArenaBoss
     // 26 + 4.3 with the Kindling's chest and card, 73 s.
     public override double HealthMul(int tier) => 29 + 4.7 * tier;
     protected override string HardName => "Everything Owed";
-    double tollT = 10, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
+    double tollT = 6, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
     bool levy, everything;
     Enemy? thief;
     WeaponInst? taken;
@@ -695,7 +702,8 @@ public sealed class RedHand : ArenaBoss
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         tollT -= dt; volleyT -= dt; cageT -= dt; maulT -= dt; sweepT -= dt;
-        if ((PhaseIx == 0 || Hard) && tollT <= 0 && thief == null) { tollT = (Hard ? 10 : Soft ? 15 : 30); Toll(); return true; }
+        // His signature, the Toll, on its own clock in every phase (never while a thief runs with what he took).
+        if (tollT <= 0 && thief == null) { tollT = Hard ? 10 : 24 * Cadence; Toll(); return true; }
         switch (PhaseIx)
         {
             case 0:
@@ -724,16 +732,23 @@ public sealed class RedHand : ArenaBoss
     /// <summary>The Toll: a red ring closes on the survivor; still in it, a footpad
     /// touches them and runs with their best weapon. It comes back in 8 s, or at
     /// once (and firing) when he is caught.</summary>
-    void Toll()
+    void Toll() => Signature("He holds out his palm: \"Toll's due.\"", SignatureLead, TollRing, "The Red Hand");
+
+    /// <summary>The Toll's size over the kit's ring.</summary>
+    public const double TollScale = 1.5;
+
+    /// <summary>The Toll's ring (the kit's: slow in its fill, root at its heart), on the survivor; caught in it as
+    /// it lands, the footpad takes her best weapon.</summary>
+    void TollRing()
     {
         var p = B.Player;
-        A.Bark(E.X, E.Z, "\"Toll's due.\"", "The Red Hand");
-        var ring = B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, X = p.X, Z = p.Z, Radius = 2.6, Delay = 1.0, From = E, Label = "The Toll" });
-        double rx = p.X, rz = p.Z;
+        if (B.Tell("ring", E, p.X, p.Z, TollScale) is not { } ring) return;
+        var kit = ring.After;
         ring.After = bb =>
         {
+            kit?.Invoke(bb);
             var pp = bb.Player;
-            if ((pp.X - rx) * (pp.X - rx) + (pp.Z - rz) * (pp.Z - rz) > 2.6 * 2.6 || pp.Iframes > 0) { bb.Events.Emit(new Ev.Bark { X = pp.X, Z = pp.Z + 2, Text = "The toll missed." }); return; }
+            if (!pp.Alive || !ring.Hit(pp.X, pp.Z, pp.Radius) || pp.Iframes > 0) { bb.Events.Emit(new Ev.Bark { X = pp.X, Z = pp.Z + 2, Text = "The toll missed." }); return; }
             taken = bb.Weapons.Where(w => w.DisabledT <= 0).OrderByDescending(w => w.Rank + (w.Evolution != null ? 8 : 0)).FirstOrDefault();
             if (taken == null) return;
             taken.DisabledT = 8;

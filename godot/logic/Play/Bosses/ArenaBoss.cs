@@ -305,6 +305,43 @@ public abstract class ArenaBoss
         move = new Move { Dur = seconds, Done = done, Dash = true, DashFromX = E.X, DashFromZ = E.Z, DashX = x, DashZ = z };
     }
 
+    /// <summary>
+    /// The app can now give any boss a signature beat (H1 item 5): it stops where it stands, plays its cast (the view's
+    /// "cast" clip: the wolves' howl, the people's rally), barks one short line naming the move, and `lead` seconds later
+    /// calls `cast` (which marks the move: a kit Tell, and whatever Hold the move needs). The bark and the cast are the
+    /// tell; the ground mark comes only after them.
+    /// </summary>
+    protected void Signature(string bark, double lead, Action cast, string? speaker = null)
+    {
+        E.Vx = E.Vz = 0;
+        E.State = EnemyState.Casting;
+        E.Cast = CastKind.None;
+        E.Anim = EnemyAnim.Cast;
+        E.AnimT = 0;
+        if (bark.Length > 0) A.Bark(E.X, E.Z, bark, speaker);
+        SignatureCasts++;
+        E.SignatureUntil = B.Time + lead;
+        Hold(lead, cast, _ =>
+        {
+            // Running set it to a windup this tick: the beat is a cast, so the view plays its cast clip.
+            E.State = EnemyState.Casting;
+            E.Cast = CastKind.None;
+            E.Anim = EnemyAnim.Cast;
+            return true;
+        });
+    }
+
+    /// <summary>How long a signature's cast and bark run before its ground mark.</summary>
+    public const double SignatureLead = 0.7;
+
+    /// <summary>How many signature beats it has begun (the harness and the tests read it).</summary>
+    public int SignatureCasts;
+
+    /// <summary>Holds the script while a kit charge it cast runs (its windup, then its run), so its own moves do
+    /// not fight the kit's.</summary>
+    protected void HoldForCharge(Action? done = null) =>
+        Hold((Content.Telegraphs.Get("charge")?.Windup ?? 1.1) + Battle.ChargeRun + 0.05, done);
+
     protected bool Busy => move != null;
     /// <summary>Its runs carry it over gaps in the ground (Grimtunnel under it).</summary>
     protected virtual bool OverGaps => false;

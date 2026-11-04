@@ -32,7 +32,7 @@ if shots.is_dir():
         if f.name.startswith(name + "_") or f.name == name + ".png":
             f.unlink()
 try:
-    out = subprocess.run(args, capture_output=True, text=True, timeout=900, encoding="utf-8", errors="replace")
+    out = subprocess.run(args, capture_output=True, text=True, timeout=int(os.environ.get("SHOTS_TIMEOUT", "900")), encoding="utf-8", errors="replace")
     text = out.stdout + out.stderr
 except subprocess.TimeoutExpired as e:
     text = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")

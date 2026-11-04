@@ -141,6 +141,8 @@ public sealed class Enemy : Pooled
     /// <summary>Held by a kit telegraph (Sim/Tells.cs: a charger planted in its windup, a closing's ring waiting): until
     /// this time (the battle's clock) it neither moves nor strikes. 0: free.</summary>
     public double HoldUntil;
+    /// <summary>A boss's signature being cast (ArenaBoss.Signature) until this time: the view pulses its off-screen pointer.</summary>
+    public double SignatureUntil;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);
@@ -149,6 +151,11 @@ public sealed class Enemy : Pooled
     public bool Roused;
     /// <summary>A reflection of the survivor: the horde turns on it.</summary>
     public bool Decoy;
+    /// <summary>A goal other than her (H1 item 6B, a board's lamp): it walks to (GoalX, GoalZ) down Battle.GoalFlow and
+    /// stands there (the zone reads who is at it), turning on her for good once she is within GoalAggro of it, or it is
+    /// frightened. False on every spawn.</summary>
+    public bool Goal;
+    public double GoalX, GoalZ, GoalAggro;
     /// <summary>Marked as prey: below the line it dies outright.</summary>
     public bool Prey;
     /// <summary>1, or a quarter when a lamp reflex marked it by night (Classes 20): the execute line scales with it.</summary>

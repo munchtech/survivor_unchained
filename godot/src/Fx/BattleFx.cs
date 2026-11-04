@@ -113,6 +113,8 @@ public partial class BattleFx : Node3D
         public int Shape = -1, Slot = -1, Pattern = 1;
         public float P1;
         public bool Roof, HeightsDue;
+        /// <summary>A fodder charger's lane (H1 round 2B): the danger style at a lower strength (SoftEnergy, SoftBed).</summary>
+        public bool Soft;
     }
 
     /// <summary>The red marks' pass (one, shared by every BattleFx) and its slots' ground heights.</summary>
@@ -372,7 +374,7 @@ public partial class BattleFx : Node3D
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
         if (m.Slot >= 0) { slotUsed[m.Slot] = false; m.Slot = -1; }
-        m.Shape = -1; m.P1 = 0; m.Roof = false; m.HeightsDue = false;
+        m.Shape = -1; m.P1 = 0; m.Roof = false; m.HeightsDue = false; m.Soft = false;
         m.Danger = styleNext == 1;
         if (m.Danger && !MarkPassOff)
         {
@@ -893,6 +895,8 @@ public partial class BattleFx : Node3D
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
     const float DangerEnergy = 0.45f, DangerFlare = 1.4f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
+    const float SoftEnergy = 0.75f, SoftBed = 0.35f;
+    static readonly Color ClosingRed = new(0.5f, 0.05f, 0.04f);
     const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
     /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
     const float BedAo = 0.15f;
@@ -1411,11 +1415,17 @@ public partial class BattleFx : Node3D
                     // drawn as a ring that fills, in the crowd's amber. As a filled band it flooded the screen salmon.)
                     Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
                     var (look, raising) = TelegraphRead.Of(e, champ);
+                    // A fodder charger's kit lane (a champion's or a boss's is red already): the same red line at a lower
+                    // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
+                    bool fodderCharge = e.Tell == "charge" && e.Hostile && e.Shape == TelegraphShape.Line && look != TelegraphRead.TeleLook.Danger;
+                    if (fodderCharge) look = TelegraphRead.TeleLook.Danger;
                     bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
                     bool amber = look == TelegraphRead.TeleLook.Amber;
                     if (danger) col = Palette.TeleDanger;
+                    // The closing's band is the horde's dim red (the pull's reach band keeps the violet).
+                    if (e.Tell == "closing") col = ClosingRed;
                     else if (amber) col = Palette.TeleAmber;
                     styleNext = danger ? 1 : amber ? 2 : 0;
                     patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
@@ -1426,9 +1436,24 @@ public partial class BattleFx : Node3D
                     {
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
+                        if (fodderCharge)
+                        {
+                            lm.Soft = true;
+                            double hx0 = e.ByX ?? e.X, hz0 = e.ByZ ?? e.Z;
+                            Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), Palette.TeleDanger, 7, 0.45f, 6);
+                        }
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
-                    else if (e.Shape == TelegraphShape.Ring && !raising) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Ring && !raising)
+                    {
+                        BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
+                        // The closing's way out: a lit lane across the band at the gap, a little past its outer edge.
+                        if (e.Tell == "closing" && e.GapWidth > 0)
+                        {
+                            double ca = Math.Cos(e.GapAngle), sa = Math.Sin(e.GapAngle);
+                            Lane(e.X + ca * Math.Max(0, e.Inner - 0.5), e.Z + sa * Math.Max(0, e.Inner - 0.5), e.X + ca * (e.Radius + 1.5), e.Z + sa * (e.Radius + 1.5), (float)e.GapWidth, Palette.TeleSafe * 0.55f, (float)e.Duration, -e.Id);
+                        }
+                    }
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
                         if (keyed.TryGetValue(e.Id, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
@@ -1842,13 +1867,20 @@ public partial class BattleFx : Node3D
             beams[i] = (m, mat, t, life);
         }
         bossUp = false;
-        foreach (var e in b.Enemies.Living()) if (e.Boss) { bossUp = true; break; }
+        // (one pass: whether a boss is up, and the lights the bosses carry)
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Boss) bossUp = true;
+            if (e.Def.CarriedLight != null) Aura(e, fdt);
+        }
+        StepAuras(fdt);
         Zones(b, now);
         ArtTrails(b, fdt);
         StepRise(b, fdt);
         StepDig(fdt);
         StepDeadfalls(fdt);
         StepPanting(fdt);
+        StepTellStreaks(b, fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
@@ -1903,7 +1935,7 @@ public partial class BattleFx : Node3D
             if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
             buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
             float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
-            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy, 1, fill, m.P1, m.Slot, m.Roof, m.Pattern);
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1), m.Soft ? SoftBed : 1, fill, m.P1, m.Slot, m.Roof, m.Pattern);
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);

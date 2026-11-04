@@ -121,12 +121,18 @@ public sealed class EnemyDef
     /// shared rig reads as itself until it has its own (the model briefs in SKILLS_DESIGN).</summary>
     public (double R, double G, double B)? Tint;
     public double? Glow;
+    /// <summary>A light it carries (a boss's color on the ground round it, H1 item 5): the view draws one light per live
+    /// foe that has one, following it and fading out as it dies. Null: none (every crowd foe).</summary>
+    public EnemyLight? CarriedLight;
     /// <summary>The champion Signs it wears (Content/Signs.cs), if any.</summary>
     public string[] Signs = [];
 
     /// <summary>A copy to change (a signed champion's own def).</summary>
     public EnemyDef Clone() => (EnemyDef)MemberwiseClone();
 }
+
+/// <summary>The light a foe carries (EnemyDef.CarriedLight): its color (hex), energy, range (m) and height over its feet (m).</summary>
+public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5);
 
 public readonly record struct LevelScale(double Health, double Damage, double Xp);
 
@@ -444,23 +450,31 @@ public static class Enemies
         // The arena's bosses (Play/Bosses/ArenaBosses.cs): their people's champion's body made
         // half again as big, so the thing the fight is about is the thing the eye finds; health
         // as the champion's, multiplied by the boss contract (ArenaBoss.HealthMul).
-        new() { Id = "boss_pack", Name = "The Pack-Mother", Family = Family.Wolf, Faction = Faction.Pack, Visual = "wolf_alpha", Scale = 2.15,
+        new() { Id = "boss_pack", Name = "The Pack-Mother", Family = Family.Wolf, Faction = Faction.Pack, Visual = "wolf_alpha", Scale = 2.7,
+            // Frost-white-blue: the biggest thing on the field, and the coldest light on it.
+            Tint = (0.86, 0.96, 1.2), Glow = 0.08, CarriedLight = new("#9fc4ff"),
             Health = 520, Speed = 5.4, Damage = 18, Radius = 1.2, Mass = 14, Xp = 55, Resists = Beast, Behavior = Behavior.Pack,
             Lunge = new(9, 4.8, 0.6, 0.45, 19),
             Elite = true, Loot = "alpha", AttackEvery = 0.8,
             Note = "She does not chase. She howls, the Pack wheels round behind you, and she runs the gap they leave. Go through the wolves, never the gap. Fire stops her howling." },
-        new() { Id = "boss_dead", Name = "The Barrow Lord", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior_elite", Scale = 2.05,
+        new() { Id = "boss_dead", Name = "The Barrow Lord", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior_elite", Scale = 2.5,
+            // Grave green.
+            Tint = (0.78, 1.08, 0.8), Glow = 0.08, CarriedLight = new("#8cff9a"),
             // Not the dead's frost and shadow: every school can lay him down in time; holy twice as fast.
             Health = 420, Speed = 2.6, Damage = 22, Radius = 1.1, Mass = 14, Xp = 40, Gold = 12, Resists = new() { [School.Holy] = -0.5, [School.Fire] = -0.15 }, Behavior = Behavior.Chase,
             Lunge = new(8, 5.5, 0.75, 0.5, 17),
             Elite = true, Loot = "elite", AttackEvery = 1.1,
             Note = "A legion's officer who heard the order to stand and never heard another. He fights in walls of his dead. Put down, he gets up again, unless someone stands over him until he stays down." },
-        new() { Id = "boss_lamplings", Name = "Gutterwick", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 2.2,
+        new() { Id = "boss_lamplings", Name = "Gutterwick", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 2.6,
+            // Fire orange.
+            Tint = (1.2, 0.92, 0.7), Glow = 0.1, CarriedLight = new("#ff8a3a"),
             Health = 460, Speed = 3.3, Damage = 16, Radius = 0.95, Mass = 12, Xp = 40, Gold = 12, Behavior = Behavior.Chase, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.2 },
             Ranged = new() { Range = 11, Cooldown = 4.5, Speed = 8, School = School.Fire, Lob = true, Zone = new(2.2, 3.5, 0.4), Art = "firepot" },
             Elite = true, AttackEvery = 1.2,
             Note = "Foreman of a Dig gang, the biggest of them and the loudest. Where it stands the ground is not to be trusted: it goes under, comes up under you, and leaves holes. Frost catches it in the dirt." },
-        new() { Id = "boss_kerchiefs", Name = "The Red Hand", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_enforcer", Scale = 1.9,
+        new() { Id = "boss_kerchiefs", Name = "The Red Hand", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_enforcer", Scale = 2.4,
+            // Blood red.
+            Tint = (1.2, 0.74, 0.7), Glow = 0.08, CarriedLight = new("#ff3a2a"),
             Health = 480, Speed = 3.4, Damage = 22, Radius = 1.1, Mass = 14, Xp = 45, Gold = 20, Behavior = Behavior.Chase,
             Lunge = new(8.5, 5.0, 0.7, 0.45, 18),
             Elite = true, Loot = "elite", AttackEvery = 1.0,

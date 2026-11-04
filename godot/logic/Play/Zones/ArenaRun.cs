@@ -32,10 +32,14 @@ namespace SurvivorUnchained.Play.Zones;
  * come often. A great blessing is chosen as it begins and another at the
  * fifteenth minute, from all of them, whoever the survivor is. Win or die,
  * the arena is over and the story goes on. */
-public sealed class ArenaRun : ZoneRuntime, IBossArena
+public sealed partial class ArenaRun : ZoneRuntime, IBossArena
 {
     public readonly ArenaSpec Spec;
     readonly MapBuild map;
+    /// <summary>The board the night is played on (Maps/ArenaBoard.cs: the fold, its chokepoints, the lamp, the lanes),
+    /// or null: a table night's at a tier that has one (Content/Boards), never a story night's. (H1 item 6: part B's
+    /// lamp, lit and doused, reads it here.)</summary>
+    public ArenaBoard? Board => map.Board;
     readonly Denizens people;
     readonly List<OathDef> oaths;
     /// <summary>The dark's own oaths, sworn one by one in the long night (and how many
@@ -164,6 +168,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
         sworn = MapOffers.Rules(Spec.Map);
+        LampBegin(b);
+        b.ClosingTeeth = Array.IndexOf(Telegraphs.Waves.Tiers, Spec.Tier) >= 0;
         Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
@@ -495,7 +501,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             // A field mown thin fills twice as fast, so a strong build mows rather than waits.
             bool thin = alive < Target() * 0.6;
             spawnT = thin ? 0.225 : 0.45;
-            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5);
+            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) LampSend(Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5));
         }
         else if (bossUp && spawnT <= 0 && alive < Target() * bossShare)
         {
@@ -548,6 +554,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (makingWay.Count > 0) MakingWay();
         Tells();
+        LampStep(dt);
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -649,8 +656,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
                 {
                     if (rk == "closing")
                     {
-                        foreach (var (x, z) in B.TellClosing(p.X, p.Z, n))
-                            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Spawn(def, x, z) is { } e) B.Closes(e);
+                        Close(def, n);
                         Shout("They close in from every side. Flare!");
                         break;
                     }
@@ -839,19 +845,46 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>When the next ambient tell is due (Seconds); -1: not yet drawn.</summary>
     double tellAt = -1;
 
-    /// <summary>A kit kind cast: a ring or a pull on (x, z), a charge from the foe through it (a charge needs a foe).</summary>
+    /// <summary>A kit kind cast: a ring or a pull on (x, z), a charge from the foe through it (a charge needs a foe).
+    /// Spaced (H1 round 2B): one that would land within the kit's Spacing of another near her, or a fodder lane past
+    /// the kit's FodderLanes near her, waits, and is cast later at the same offset from her.</summary>
     void Cast(string kind, Enemy? from, double x, double z, double scale = 1)
     {
         if (B == null || over || kind == "closing") return;
+        var p = B.Player;
+        double wait = B.KitWait(kind, from);
+        if (wait > 0)
+        {
+            double dx = x - p.X, dz = z - p.Z, seed = from?.Seed ?? 0;
+            held.Add((Seconds + wait, () => { if (from == null || from.Alive && from.State == EnemyState.Active && from.Seed == seed) Cast(kind, from, B!.Player.X + dx, B.Player.Z + dz, scale); }));
+            return;
+        }
         B.Tell(kind, from, x, z, scale);
     }
+
+    /// <summary>The closing ring (the ring turn's kit kind), spaced as Cast is: its ring's foes spawned on its points.</summary>
+    void Close(string def, int n)
+    {
+        if (B == null || over) return;
+        double wait = B.KitWait("closing", null);
+        if (wait > 0) { held.Add((Seconds + wait, () => Close(def, n))); return; }
+        var p = B.Player;
+        foreach (var (x, z) in B.TellClosing(p.X, p.Z, n))
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Spawn(def, x, z) is { } e) B.Closes(e);
+    }
+
+    /// <summary>Kit casts waiting their turn (Battle.KitWait): when, and the cast.</summary>
+    readonly List<(double At, Action Fire)> held = new();
+
 
     /// <summary>The kit between the turns: the champions' repeated charges and the ambient tells.</summary>
     void Tells()
     {
-        if (!TellsOn) return;
+        if (!TellsOn) { held.Clear(); return; }
         var p = B!.Player;
         var w = Telegraphs.Waves;
+        for (int i = 0; i < held.Count; i++)
+            if (Seconds >= held[i].At) { var f = held[i].Fire; held.RemoveAt(i--); f(); }
         for (int i = chargers.Count - 1; i >= 0; i--)
         {
             var c = chargers[i];
@@ -1016,6 +1049,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     void Boss(bool again = false)
     {
         bossUp = true;
+        LampBoss();
         bossShare = 0.4;
         bossBlowsBefore = B!.BossBlowsTaken;
         var p = B!.Player;
@@ -1241,7 +1275,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     }
     bool IBossArena.CanStand(double x, double z) => map.CanStand(x, z) && !B!.Collision.Blocked(x, z, 0.6);
     void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
-    void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
+    void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker, Boss = true });
     double IBossArena.HordeShare { set => bossShare = value; }
     /// <summary>The night won where the survivor stands, its boss passed over (pictures of the long
     /// night, and of a fall after the win: --minute 34 --won --die 40).</summary>

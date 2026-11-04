@@ -71,6 +71,9 @@ uniform float lip_at = 1.8;
 // How hot the lip burns: a story place's edge is its banks, and its lip burns low (a glow
 // in the char, no white thread round every bank).
 uniform float lip_glow = 1.0;
+// H1 round 2C: the lip's burn calmed while a boss is up (PlayerView; 0 none, 1 the most): in the boss's darker
+// grade its red threads crossing the frame read as the foe's hazards (the round-1 judge).
+global uniform float lip_calm;
 // How far in from the edge the ground is heat-killed (metres): a story place is small.
 uniform float scorch_reach = 11.0;
 // How far out past the edge it is heat-killed (metres).
@@ -399,7 +402,7 @@ void fragment() {
 		vec3 white = mix(ember, vec3(1.0, 0.85, 0.55), 0.55);
 		// (A story place's banks burn low, veins and all: lit seams wandering over its banks
 		// read as red worms.)
-		glow += (white * line * 2.4 * lip_glow * lip_glow + ember * (halo * 0.5 * lip_glow + vein * 0.9 * lip_glow * lip_glow + spark * 1.4 * flick)) * breathe * ember_glow;
+		glow += (white * line * 2.4 * lip_glow * lip_glow + ember * (halo * 0.5 * lip_glow + vein * 0.9 * lip_glow * lip_glow + spark * 1.4 * flick)) * breathe * ember_glow * (1.0 - 0.6 * lip_calm);
 	}
 	// A hotter place than the ring (a pit's mouth, char past 0.85) glows whole.
 	float hot = smoothstep(0.87, 1.0, ch);

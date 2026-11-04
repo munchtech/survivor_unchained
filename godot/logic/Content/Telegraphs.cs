@@ -30,6 +30,12 @@ public static class Telegraphs
         public double Pull, Core;
         /// <summary>A closing: its foes, held for the windup, then rush in at x Rush pace for RushFor s.</summary>
         public double Rush = 1, RushFor;
+        /// <summary>A closing's teeth (H1 round 2B): each foe of its ring that reaches her during its rush hits her once
+        /// for this share of her max life (before her armor). 0: the ring is only a crowd.</summary>
+        public double Hit;
+        /// <summary>A closing's way out: a gap this wide (m, along the band's middle) at a seeded bearing, where no foe
+        /// of its ring is spawned (drawn lit). 0: none.</summary>
+        public double Gap;
     }
 
     /// <summary>Where a table night casts the kit (ArenaRun): its tiers, past its minute, how often, and which wave shape casts what.</summary>
@@ -51,6 +57,11 @@ public static class Telegraphs
         public double SwarmOffset = 3;
         /// <summary>Each wave shape's kind (ring, champion, stampede, swarm, signature).</summary>
         public Dictionary<string, string> Turns = new();
+        /// <summary>Two kit tells landing within SpacingNear m of her land at least Spacing s apart: the later one's cast
+        /// waits (H1 round 2B: a ring and a charge 0.12 s apart on her spot left no answer).</summary>
+        public double Spacing = 1.5, SpacingNear = 10;
+        /// <summary>At most this many fodder charge lanes alive at once near her (within SpacingNear); a further one waits.</summary>
+        public int FodderLanes = 2;
     }
 
     sealed class File

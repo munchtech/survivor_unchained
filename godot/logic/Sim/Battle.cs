@@ -86,6 +86,8 @@ public sealed class MapRules
     public double StaggerTaken = 1;
     /// <summary>The ember the dead leave, over the usual (an oath's pay: "half again the ember").</summary>
     public double EmberGain = 1;
+    /// <summary>Over that, the ember of the dead she kills herself (a board's lamp, lit and stood in: Play/Zones/BoardLamp.cs).</summary>
+    public double KillEmber = 1;
     /// <summary>How often the rank and file drop their gold (champions always as usual). An
     /// arena's horde is tens of thousands a night: at the day's rate the Kerchiefs alone paid
     /// 52k-109k gold (docs/CRAFTING_DESIGN.md), so there it is a fiftieth.</summary>
@@ -264,6 +266,11 @@ public sealed partial class Battle
     public readonly SpatialHash Spatial;
     public readonly CollisionWorld Collision;
     public readonly FlowField Flow;
+    /// <summary>The way to a goal other than her (Enemy.Goal: a board's lamp), flooded once by whoever sets one; null
+    /// when none (a goal-walker then walks straight).</summary>
+    public FlowField? GoalFlow;
+    /// <summary>A board's lamp as the HUD reads it (its life bar, its pool's edge), or null: no lamp tonight.</summary>
+    public LampMark? HeldLamp;
     public Func<double, double, double> HeightAt;
     public bool Combat;
     public BattleHooks Hooks = new();
@@ -1028,7 +1035,7 @@ public sealed partial class Battle
         if (e.Disposition != Disposition.Ally)
         {
             // The dead leave a stone with light still in it.
-            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain;
+            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain * (credited ? Rules.KillEmber : 1);
             if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
@@ -1245,9 +1252,16 @@ public sealed partial class Battle
         e.StateT = 3;
         e.Vx = e.Vz = 0;
         Hooks.OnBossStagger?.Invoke(e);
-        Events.Emit(new Ev.Announce { Title = "Staggered", Tone = Tone.Boon });
+        // The banner once a foe and at most every 30 s (H4's judge: ~20 a night read as spam); the shake and the bar's flash every time.
+        if (staggerSaid.Add(e.Seed) && Time - staggerSaidAt >= 30)
+        {
+            staggerSaidAt = Time;
+            Events.Emit(new Ev.Announce { Title = "Staggered", Tone = Tone.Boon });
+        }
         Events.Emit(new Ev.Shake { Amount = 0.25 });
     }
+    readonly HashSet<double> staggerSaid = new();
+    double staggerSaidAt = double.NegativeInfinity;
 
     /* ========================================================= damage out == */
 
@@ -1673,7 +1687,7 @@ public sealed partial class Battle
         e.SlowUntil = e.SlowBy = 0;
         e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
-        e.Decoy = e.Prey = false;
+        e.Decoy = e.Prey = e.Goal = false;
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
@@ -1852,6 +1866,8 @@ public sealed partial class Battle
         public string? Label;
         /// <summary>The telegraph kit's kind (Ev.Telegraph.Tell), and the id its marks were emitted under.</summary>
         public string? Tell; public int MarkId;
+        /// <summary>A closing's way out (Ev.Telegraph.GapAngle, GapWidth).</summary>
+        public double GapAngle, GapWidth;
         /// <summary>When it was marked (the battle's clock).</summary>
         public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
@@ -1930,7 +1946,7 @@ public sealed partial class Battle
         {
             Id = b.MarkId, Tell = b.Tell, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
-            ByX = b.From?.X, ByZ = b.From?.Z,
+            ByX = b.From?.X, ByZ = b.From?.Z, GapAngle = b.GapAngle, GapWidth = b.GapWidth,
         });
         return b;
     }
@@ -1946,7 +1962,7 @@ public sealed partial class Battle
             var p = Player;
             if (b.Tell != null)
                 Events.Emit(new Ev.Telegraph { Id = b.MarkId, Tell = b.Tell, Phase = TellPhase.Land, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1,
-                    Radius = b.Radius, Inner = b.Inner, Hostile = true, Boss = b.From?.Boss == true, Caught = p.Alive && b.Hit(p.X, p.Z, p.Radius) });
+                    Radius = b.Radius, Inner = b.Inner, GapAngle = b.GapAngle, GapWidth = b.GapWidth, Hostile = true, Boss = b.From?.Boss == true, Caught = p.Alive && b.Hit(p.X, p.Z, p.Radius) });
             if (b.Damage > 0 || b.Slow > 0)
             {
                 double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;
@@ -3003,4 +3019,14 @@ sealed class StrikeSpec
     {
         X = x; Z = z; R = r; Dmg = dmg; School = school; Tags = tags; T = t; Delay = t; Weapon = weapon; Owner = owner; Depth = depth;
     }
+}
+
+/// <summary>A board's lamp as the HUD draws it (Play/Zones/ArenaRun.Lamp.cs keeps it): where, its pool's metres, its
+/// life (0 to 1), whether it burns, and whether it has caught yet (cold before its minute).</summary>
+public sealed class LampMark
+{
+    public double X, Z, Pool, Life = 1;
+    /// <summary>The lantern's height in metres (its bar hangs over it).</summary>
+    public double Top = 3.3;
+    public bool Lit, Caught;
 }

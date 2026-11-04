@@ -485,6 +485,7 @@ public partial class Game : Node, IZoneHost
     /* ------------------------------------------------------------ zones -- */
 
     SurvivorUnchained.Maps.MapBuild? currentMap;
+    internal SurvivorUnchained.Maps.MapBuild? CurrentMap => currentMap;
     (float Pitch, float Distance) camHome;
 
     /// <summary>One of the Wayfinder's maps taken: its arena, and back to the table after.</summary>
@@ -1116,6 +1117,12 @@ public partial class Game : Node, IZoneHost
                 if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
+            // --on tells: each kit telegraph (ring, charge, pull, closing) a third and two thirds into its windup and just after it lands.
+            if (Shots.On("tells") && e is Ev.Telegraph kt && kt.Tell is { Length: > 0 } kind)
+            {
+                if (kt.Phase == TellPhase.Warn) { Shots.Want($"tell_{kind}", kt.Duration * 0.33); Shots.Want($"tell_{kind}", kt.Duration * 0.7); }
+                else Shots.Want($"tell_{kind}_land", 0.15);
+            }
             Feel(e, ref crits);
             switch (e)
             {
@@ -1148,7 +1155,7 @@ public partial class Game : Node, IZoneHost
                     // (one of theirs at a time: the next waits for the last to be said).
                     var said = bk.Text;
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
-                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null);
+                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
@@ -1501,6 +1508,7 @@ public partial class Game : Node, IZoneHost
         if (Battle is not { Combat: true } b || Mode != "play" || Overlay != null || scene == null || cine != null || showing || b.Player.Alive == false) { if (Battle != null) Battle.Priority = -1; return; }
         if (b.Priority >= 0 && (b.Priority >= b.Enemies.Items.Length || !b.Targetable(b.Enemies.Items[b.Priority]))) b.Priority = -1;
         if (controls.Captured) return;
+        if (auto != null && Args.Get("pick") == "champion") return; // --pick champion: the autopilot holds it (no pointer to move it)
         Enemy? hit = null;
         if (controls.UsingPad)
         {
