@@ -10,13 +10,14 @@ for each hand-back, reports:
   hud   when the HUD starts and ends its fade, against when the camera lands (control back);
   her   her head's and right hand's worst one-frame jump relative to her root (a pose popping to idle),
         and her root's (a teleport).
-A cut FAILS on: a camera step over 0.5 m or 6 deg that is 4x the median of the frames around it; a lens step
-over 1.5 deg; the HUD starting more than 0.3 s before the camera lands; a pose jump over 0.12 m; a root jump
-over 0.5 m. --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
+A cut FAILS on: a camera frame over 0.3 m or 4 deg moving 4x faster than the frames around it (a new shot
+inside the cinematic is not counted); a lens step over 1.5 deg; the HUD starting more than 0.3 s before the
+camera lands; through the hand-back (to 0.5 s after control), her head or hand moving over 0.12 m, or her
+root over 0.2 m, per 60th of a second (speeds, since a picture run's frames are 0.1 s). --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
 """
 import math, os, re, sys
 
-LINE = re.compile(r"CUTLOG (\S+) t=(\S+) dt=(\S+) phase=(\w+) pos=(\S+) fwd=(\S+) vfov=(\S+) hud=(\S+) cap=(\d)(.*)")
+LINE = re.compile(r"CUTLOG (\S+) t=(\S+) dt=(\S+) phase=(\w+) (?:shot=(-?\d+) )?pos=(\S+) fwd=(\S+) vfov=(\S+) hud=(\S+) cap=(\d)(.*)")
 VEC = lambda s: tuple(float(x) for x in s.split(","))
 
 
@@ -36,9 +37,9 @@ def parse(path):
         t = float(m[2])
         if cur is None or m[1] != cur["id"] or t < cur["frames"][-1]["t"] - 1e-6:
             cur = dict(id=m[1], frames=[], seam=None, seam_t=None, control_t=None); cuts.append(cur)
-        rest = dict(re.findall(r"(\w+)=([-\d.,]+)", m[10]))
-        cur["frames"].append(dict(t=t, dt=float(m[3]), phase=m[4], pos=VEC(m[5]), fwd=VEC(m[6]), vfov=float(m[7]),
-                                  hud=float(m[8]), cap=int(m[9]), root=VEC(rest["root"]) if "root" in rest else None,
+        rest = dict(re.findall(r"(\w+)=([-\d.,]+)", m[11]))
+        cur["frames"].append(dict(t=t, dt=float(m[3]), phase=m[4], shot=int(m[5]) if m[5] else -1, pos=VEC(m[6]), fwd=VEC(m[7]), vfov=float(m[8]),
+                                  hud=float(m[9]), cap=int(m[10]), root=VEC(rest["root"]) if "root" in rest else None,
                                   head=VEC(rest["head"]) if "head" in rest else None, hand=VEC(rest["hand"]) if "hand" in rest else None))
     return cuts
 
@@ -57,17 +58,24 @@ def median(xs):
 
 def check(c):
     f = c["frames"]; out = {"id": c["id"], "fails": []}
-    steps = [(dist(f[i - 1]["pos"], f[i]["pos"]), ang(f[i - 1]["fwd"], f[i]["fwd"]), f[i]["t"], f[i]["dt"]) for i in range(1, len(f))]
+    # Per frame: metres and degrees moved, and as speeds (frames differ in length: a picture's frame is 0.1 s).
+    # A cut inside the cinematic (a new shot) is the film's own and not counted.
+    steps = []
+    for i in range(1, len(f)):
+        a, b = f[i - 1], f[i]
+        if a["phase"] == "cine" and b["phase"] == "cine" and a["shot"] != b["shot"]: continue
+        dt = max(b["dt"], 1e-3); m, d = dist(a["pos"], b["pos"]), ang(a["fwd"], b["fwd"])
+        steps.append((m, d, b["t"], dt, m / dt, d / dt))
     worst = (0, 0, 0, 0, 0)  # score, metres, degrees, t, ratio
-    for i, (m, d, t, dt) in enumerate(steps):
+    for i, (m, d, t, dt, v, w) in enumerate(steps):
         around = [s for j, s in enumerate(steps) if j != i and abs(j - i) <= 4]
-        mm, md = median([s[0] for s in around]) or 1e-3, median([s[1] for s in around]) or 1e-3
-        ratio = max(m / max(mm, 0.02), d / max(md, 0.3))
-        big = m > 0.5 or d > 6
+        mv, mw = median([s[4] for s in around]), median([s[5] for s in around])
+        ratio = max(v / max(mv, 2.0), w / max(mw, 15.0))
+        big = m > 0.3 or d > 4
         if big and ratio > worst[4]: worst = (1, m, d, t, ratio)
-        if big and ratio >= 4: out["fails"].append(f"camera step {m:.2f} m / {d:.1f} deg at t={t:+.2f} ({ratio:.0f}x the frames around)")
-    out["speed"] = max((m / max(dt, 1e-3) for m, d, t, dt in steps), default=0)
-    out["turn"] = max((d / max(dt, 1e-3) for m, d, t, dt in steps), default=0)
+        if big and ratio >= 4: out["fails"].append(f"camera jump {m:.2f} m / {d:.1f} deg at t={t:+.2f} ({ratio:.0f}x the speed around)")
+    out["speed"] = max((s[4] for s in steps), default=0)
+    out["turn"] = max((s[5] for s in steps), default=0)
     out["step"] = worst
     fov = max(((abs(f[i]["vfov"] - f[i - 1]["vfov"]), f[i]["t"]) for i in range(1, len(f))), default=(0, 0))
     out["fov"] = fov
@@ -76,19 +84,22 @@ def check(c):
     land = c["control_t"] if c["control_t"] is not None else next((x["t"] for x in f if x["cap"] == 0), None)
     out.update(hud0=hud0, hud1=hud1, land=land, seam=c["seam"], seam_t=c["seam_t"])
     if hud0 is not None and land is not None and hud0 < land - 0.3: out["fails"].append(f"HUD starts {land - hud0:.2f} s before the camera lands")
+    # Her pose, through the hand-back only (to 0.5 s after control; later it is play, her own attacks).
     pj = (0, 0, ""); rj = (0, 0)
+    end = (land if land is not None else 0) + 0.5
     for i in range(1, len(f)):
         a, b = f[i - 1], f[i]
+        if b["t"] > end: break
         if a["head"] and b["head"]:
             for k in ("head", "hand"):
-                j = dist(a[k], b[k])
+                j = dist(a[k], b[k]) / max(b["dt"], 1e-3) * (1 / 60)  # metres per 60th of a second
                 if j > pj[0]: pj = (j, b["t"], k)
         if a["root"] and b["root"]:
-            j = dist(a["root"], b["root"])
+            j = dist(a["root"], b["root"]) / max(b["dt"], 1e-3) * (1 / 60)
             if j > rj[0]: rj = (j, b["t"])
     out["pose"], out["root"] = pj, rj
-    if pj[0] > 0.12: out["fails"].append(f"her {pj[2]} jumps {pj[0]:.2f} m at t={pj[1]:+.2f}")
-    if rj[0] > 0.5: out["fails"].append(f"her root jumps {rj[0]:.2f} m at t={rj[1]:+.2f}")
+    if pj[0] > 0.12: out["fails"].append(f"her {pj[2]} jumps {pj[0]:.2f} m a 60th at t={pj[1]:+.2f}")
+    if rj[0] > 0.2: out["fails"].append(f"her root jumps {rj[0]:.2f} m a 60th at t={rj[1]:+.2f}")
     return out
 
 

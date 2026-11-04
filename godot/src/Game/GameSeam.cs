@@ -19,7 +19,6 @@ public partial class Game
     sealed class Seam
     {
         public Transform3D From;
-        public Vector3 FromAt;
         public float FromVfov;
         public double T, Dur;
         public bool Hud;
@@ -35,8 +34,9 @@ public partial class Game
     public static double SeamLength(float metres, float degrees, bool skipped)
     {
         if (metres < 0.6f && degrees < 4) return 0.35;
-        double d = Math.Clamp(0.75 + metres / 60.0 + degrees / 240.0, 0.8, 1.35);
-        return skipped ? Math.Min(d, 0.55) : d;
+        // (C01's eye-level frame to play's, 23 m and 60 degrees, takes 1.6 s: 1.35 s swung 180 degrees a second)
+        double d = Math.Clamp(0.7 + metres / 40.0 + degrees / 180.0, 0.8, 1.6);
+        return skipped ? Math.Min(d, 0.6) : d;
     }
 
     /// <summary>The hand-back begun: the camera stands at the cinematic's last frame (from, its vertical
@@ -44,12 +44,9 @@ public partial class Game
     void BeginSeam(Transform3D from, float fromVfov, bool skipped)
     {
         var to = camera.GlobalTransform;
-        var her = scene?.HerDrawn ?? to.Origin;
         float metres = from.Origin.DistanceTo(to.Origin);
         float degrees = Mathf.RadToDeg((-from.Basis.Z).AngleTo(-to.Basis.Z));
-        // Where the last frame looked: along its axis, as far out as she stands from it.
-        float reach = Mathf.Max(1.5f, (her + new Vector3(0, 0.9f, 0) - from.Origin).Dot(-from.Basis.Z));
-        seam = new Seam { From = from, FromAt = from.Origin - from.Basis.Z * reach, FromVfov = fromVfov, Dur = SeamLength(metres, degrees, skipped) };
+        seam = new Seam { From = from, FromVfov = fromVfov, Dur = SeamLength(metres, degrees, skipped) };
         controls.Captured = true;
         if (Args.Has("cutlog")) GD.Print($"CUTSEAM {cineId} dur={seam.Dur:0.00} metres={metres:0.00} degrees={degrees:0.0} skipped={skipped}");
     }
@@ -63,14 +60,11 @@ public partial class Game
         s.T += dt;
         double k = Math.Clamp(s.T / s.Dur, 0, 1);
         float e = (float)SurvivorUnchained.Cinema.CineCamera.Ease("slow", k);
-        // The look turns a little ahead of the move (as the cinematics' own follow blend), so she stays in it.
-        float el = (float)SurvivorUnchained.Cinema.CineCamera.Ease("slow", Math.Min(1, k * 1.2));
+        // Place and turn on the same ease: a turn laid on a look point swung 180 degrees a second at C01 (both
+        // ends frame her, so the frames between do).
         var play = camera.GlobalTransform;
-        var playAt = play.Origin - play.Basis.Z * Mathf.Max(1.5f, (scene?.HerDrawn ?? play.Origin).DistanceTo(play.Origin));
-        var pos = s.From.Origin.Lerp(play.Origin, e);
-        var at = s.FromAt.Lerp(playAt, el);
-        if ((at - pos).LengthSquared() > 1e-4f)
-            camera.GlobalTransform = new Transform3D(Basis.LookingAt(at - pos, Vector3.Up), pos);
+        var q = s.From.Basis.GetRotationQuaternion().Slerp(play.Basis.GetRotationQuaternion(), e);
+        camera.GlobalTransform = new Transform3D(new Basis(q), s.From.Origin.Lerp(play.Origin, e));
         camera.Fov = Mathf.Lerp(s.FromVfov, camera.Fov, e);
         // The HUD comes in as the camera settles (its fade ends just after it lands).
         if (!s.Hud && k >= Math.Max(0, 1 - 0.25 / s.Dur)) { s.Hud = true; hud.ShowPlay(true, 0.5f); }
@@ -102,7 +96,7 @@ public partial class Game
         float vfov = camera.KeepAspect == Camera3D.KeepAspectEnum.Width ? VfovOf(camera.Fov) : camera.Fov;
         var pose = cine?.HerPose() ?? PlayHerPose();
         string her = pose is { } hp ? $"root={hp.Root.X:0.000},{hp.Root.Y:0.000},{hp.Root.Z:0.000} head={hp.Head.X:0.000},{hp.Head.Y:0.000},{hp.Head.Z:0.000} hand={hp.Hand.X:0.000},{hp.Hand.Y:0.000},{hp.Hand.Z:0.000}" : "her=-";
-        GD.Print($"CUTLOG {cineId} t={cutClock:0.000} dt={dt:0.0000} phase={(cine != null ? "cine" : seam != null ? "seam" : "play")} " +
+        GD.Print($"CUTLOG {cineId} t={cutClock:0.000} dt={dt:0.0000} phase={(cine != null ? "cine" : seam != null ? "seam" : "play")} shot={cine?.ShotIndex ?? -1} " +
                  $"pos={c.Origin.X:0.000},{c.Origin.Y:0.000},{c.Origin.Z:0.000} fwd={f.X:0.0000},{f.Y:0.0000},{f.Z:0.0000} vfov={vfov:0.00} " +
                  $"hud={hud.PlayAlpha:0.00} cap={(controls.Captured ? 1 : 0)} {her}");
     }

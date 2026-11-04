@@ -388,6 +388,7 @@ public partial class Game
         Vector3 herVel;
         /// <summary>It hands back to play at its end (not on into another): the cut rule's window (GameSeam).</summary>
         public bool EndsInPlay => file.End.Next == null;
+        public int ShotIndex => player.Shot.Index;
 
         /// <summary>Her drawn body (her double, or her own once handed over): root, head and right hand from it (--cutlog).</summary>
         public (Vector3 Root, Vector3 Head, Vector3 Hand)? HerPose()
