@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Maps;
-using SurvivorUnchained.Play.Zones;
+
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Play.Zones;
 
 /// <summary>The bots' hold of a board's lamp (H1 item 6B; Play/Zones/ArenaRun.Lamp.cs). Each night (its own dice, so the
 /// sim's are never touched) the hands hold it or not, by bot (Content/Boards.LampDef.Hold: deft 1, human 0.6, careless

@@ -482,6 +482,7 @@ public partial class Game : Node, IZoneHost
     /* ------------------------------------------------------------ zones -- */
 
     SurvivorUnchained.Maps.MapBuild? currentMap;
+    internal SurvivorUnchained.Maps.MapBuild? CurrentMap => currentMap;
     (float Pitch, float Distance) camHome;
 
     /// <summary>One of the Wayfinder's maps taken: its arena, and back to the table after.</summary>
@@ -1474,6 +1475,7 @@ public partial class Game : Node, IZoneHost
         if (Battle is not { Combat: true } b || Mode != "play" || Overlay != null || scene == null || cine != null || showing || b.Player.Alive == false) { if (Battle != null) Battle.Priority = -1; return; }
         if (b.Priority >= 0 && (b.Priority >= b.Enemies.Items.Length || !b.Targetable(b.Enemies.Items[b.Priority]))) b.Priority = -1;
         if (controls.Captured) return;
+        if (auto != null && Args.Get("pick") == "champion") return; // --pick champion: the autopilot holds it (no pointer to move it)
         Enemy? hit = null;
         if (controls.UsingPad)
         {

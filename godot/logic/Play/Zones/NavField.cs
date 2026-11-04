@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using SurvivorUnchained.Maps;
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Play.Zones;
 
 /// <summary>Distance to one place over the ground the survivor can stand on, at half a metre, with
 /// what stands on the ground taken from the battle's own collision at her radius: the bots' way

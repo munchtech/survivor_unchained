@@ -234,10 +234,17 @@ public sealed class Autopilot
     void Field(double dt, Battle b)
     {
         var p = b.Player;
+        if (pickChampion) PickChampion(b);
+        if (holdLamp && g.Zone is ArenaRun ar && ar.Lamp != null && g.CurrentMap != null)
+        {
+            if (lampHoldFor != ar) { lampHoldFor = ar; lampHold = LampHold.For(ar, g.CurrentMap, b, 0, "deft"); }
+            lampHold?.Tick(dt);
+        }
+        else lampHold = null;
         var script = g.Zone switch { ArenaRun a => a.BossScript, MapRun m => m.BossScript, StoryNight sn => sn.BossScript, _ => null };
         var boss = script is { } s && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
         // A story night's stage says where it wants her (a fire to light, a foe to find).
-        (double X, double Z)? goal = g.Zone is StoryNight night ? night.Goal : null;
+        (double X, double Z)? goal = g.Zone is StoryNight night ? night.Goal : lampHold?.Goal(b);
         (double X, double Z, double R) home = boss != null ? (boss.E.X, boss.E.Z, 10.0) : goal is var (gx, gz) ? (gx, gz, 4.0) : territory ??= (p.X, p.Z, 18);
         double rx = 0, rz = 0;
         int close = 0;
@@ -279,6 +286,8 @@ public sealed class Autopilot
         double hd = Math.Sqrt((p.X - home.X) * (p.X - home.X) + (p.Z - home.Z) * (p.Z - home.Z));
         if (hd > home.R * 1.5) { mx += (home.X - p.X) / hd * 2; mz += (home.Z - p.Z) / hd * 2; }
         if (boss != null) BossSense.Steer(b, boss, true, 5, ref mx, ref mz);
+        // Holding the lamp: not out past its pool's edge unless something is at her throat.
+        if (goal == null && lampHold != null && close == 0 && lampHold.Leaving(b, mx, mz) && g.Zone is ArenaRun { Lamp: { } lp }) { mx = lp.X - p.X; mz = lp.Z - p.Z; }
         Steer(dt, mx, mz, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }
@@ -316,6 +325,33 @@ public sealed class Autopilot
     // ---- The goals (data/content/goals.json): the loop of a night, followed as a new player would ----
 
     /// <summary>Follow the goals under --auto (not in the idle/toward/away/across/talk modes), unless --no-goals.</summary>
+    static readonly bool holdLamp = Args.Get("hold-lamp") != "no";
+    static readonly bool pickChampion = Args.Get("pick") == "champion";
+    LampHold? lampHold;
+    ArenaRun? lampHoldFor;
+
+    /// <summary>--pick champion: her priority foe (Battle.Priority, as Game.Priority() sets it for a player) is the nearest live
+    /// champion (elite, not the boss) within 14 m, kept until it dies or goes past 20 m.</summary>
+    void PickChampion(Battle b)
+    {
+        var p = b.Player;
+        if (b.Priority >= 0 && b.Priority < b.Enemies.Items.Length)
+        {
+            var cur = b.Enemies.Items[b.Priority];
+            double cd = Math.Sqrt((cur.X - p.X) * (cur.X - p.X) + (cur.Z - p.Z) * (cur.Z - p.Z));
+            if (b.Targetable(cur) && cur.Elite && !cur.Boss && cd <= 20) return;
+            b.Priority = -1;
+        }
+        Enemy? best = null; double bd = 14;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (!e.Elite || e.Boss || e.State == EnemyState.Dying || !b.Targetable(e) || !b.HostileToPlayer(e)) continue;
+            double d = Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z));
+            if (d <= bd) { bd = d; best = e; }
+        }
+        if (best != null) b.Priority = best.Id;
+    }
+
     bool GoalsOn => !Idle && !Toward && !Away && !Across && !Talk && !Args.Has("no-goals");
     bool resultSeen, tableOpen, townShot, leaving, tableEnded;
     int nightsEnded, arenasEntered, backFor;

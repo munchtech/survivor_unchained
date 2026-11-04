@@ -23,6 +23,7 @@ Status page for the combat lead.
 - **The Vault is built** (`Play/Story/Vault.cs`, `Play/Bosses/BarrowLordStory.cs`, 14 tests): the Decurion's shields, the Scorpion's bolts and the hall's cover, the Signifer's three standards; the Barrow Lord's lines, pilum, testudo and its standard, Chid's bane (lift it), the front, the press, the laying down and the hand.
   - Harness (512 nights): night 7.7–12.3 min; way in 4.7–7.7; boss 2:24–3:17 planned, 3:54–5:18 careless; won 86–94% / 80–95%; dips 14–25%.
 - **The autopilot drafts as a player does** (the harness's greedy picker, moved into the logic; `--draft first` for the old first card). With first cards, Greymuzzle and Redcowl ran past seven minutes at 1080 and never reached the knee.
+- **Two autopilot args for the picture run (H1):** `--hold-lamp yes|no` (default yes): on a board with a lamp the autopilot holds it as the deft bot does (shared `logic/Play/Zones/LampHold.cs`, with `NavField.cs`): to the fold when the lamp catches, inside its pool, at snuffers, relights it. `--pick champion|none` (default none): sets `Battle.Priority` to the nearest live champion (elite, not the boss) within 14 m, kept until it dies or passes 20 m, so the bronze ring and her preference show as for a player; the mouse path stands down while it is on.
 - **A story boss is kept in frame:** the camera leans a third of the way toward it, at most 4.5 m. It stood under the HUD at the screen's foot before.
 - **Tests:** 762, all green.
 
