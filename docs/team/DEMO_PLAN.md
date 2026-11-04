@@ -29,6 +29,14 @@ The owner played demo-rc1 start to finish (`DEMO_GATE.md` "Phase 3"). The loop i
 
 **Rough cost before the owner plays rc2:** H1 ~2.5M, H3 ~1M, H4 ~1M, H2 step 1 ~0.3M: about 5M. H2 step 2 and H5: 4-7M after.
 
+### Owner decides: ANSWERED (the owner, 3 Nov, evening)
+1. **Tag:** default (no `demo`; `demo-rc2` after H1/H3/H4).
+2. **Her surfaces:** "agree she should match art style ... the paint for sure is probably a good idea." She takes the painted light ramp and surface treatment. **No remake:** her mesh and forms are untouched; the treatment is a shader and a paint pass over her existing maps. The owner: "she is a very very large number of triangles because we didn't know what we were doing": her triangle count goes to Performance 4's baseline (a decimation pass if it is over budget), not into H2.
+3. **First nights:** default yes (tier 1 at 12 min, 30 from tier 2).
+4. **Click-to-move:** no; hover priority target yes.
+5. **Sound route:** "you may use my elevenlabs, or give me a detailed list of sounds to make": ElevenLabs sound generation on the owner's account (the owner sets the key in the environment; H3 names the variable and never prints it) plus CC0 beds; the audio lead also keeps a list of the sounds it could not get right for the owner to make.
+
+(The questions as asked:)
 ### Owner decides (one line each; the default runs if there is no answer)
 1. **Tag:** no `demo` tag now; `demo-rc2` after H1/H3/H4. Default: as written.
 2. **Her surfaces in the one look:** her forms never change; do her skin, hair and cloth take the same painted light ramp and surface treatment as the world (recommended: yes, she is in every frame, and a realistic her against a painted world is the split the owner saw), or does "she stays realistic" (the 19 Oct rule) stand? Default: the rule stands.
