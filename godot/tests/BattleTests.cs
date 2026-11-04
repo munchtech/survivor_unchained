@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>The fight, headless: the web game's battle tests, ported.</summary>
 public class BattleTests
 {
-    static StatBlock BaseStats()
+    internal static StatBlock BaseStats()
     {
         var s = new StatBlock();
         s.SetBase(new Dictionary<string, double>

@@ -96,6 +96,9 @@ public static class LampBook
 
     static string PostFact(string post) => $"lampposts.{post}";
 
+    /// <summary>Lamps v2: whether a lamp-post has been relit (a world fact: never a zone's state, so never reset).</summary>
+    public static bool PostLit(WorldState? w, string postId) => w != null && w.Fact(PostFact(postId)).Truthy;
+
     /// <summary>Lamps v2: a dark lamp-post is relit (where it stands is the zone's). True the first time; false if it
     /// was lit already, or isn't one of the board's posts (none on v1).</summary>
     public static bool RelightPost(WorldState w, string postId)

@@ -225,7 +225,9 @@ public sealed class LampPointsV2Tests
             w.Facts["lamps.atlas"] = 40;
             Assert.Equal(30, LampBook.AtlasLit(w));
             Assert.Equal(new[] { "act1.post1", "act1.post2", "act1.post3", "act1.post4" }, Lamps.Posts.Select(p => p.Id));
-            Assert.All(Lamps.Posts, p => { Assert.Equal(1, p.Act); Assert.False(string.IsNullOrEmpty(p.Zone)); Assert.True(p.Draft); });
+            Assert.All(Lamps.Posts, p => { Assert.Equal(1, p.Act); Assert.False(string.IsNullOrEmpty(p.Zone)); Assert.Equal(p.Id != "act1.post1", p.Draft); });
+            // (H4 item 10: the first stands on the Low Ford Road's lamp by day)
+            Assert.Equal(("lowford", -0.99, -86.0), (Lamps.Post("act1.post1")!.Zone, Lamps.Post("act1.post1")!.X, Lamps.Post("act1.post1")!.Z));
             Assert.Equal("verge", Lamps.Post("act1.post2")!.Zone);
             Assert.Null(Lamps.Post("act9.post1"));
 

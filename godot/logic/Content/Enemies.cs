@@ -249,6 +249,11 @@ public static class Enemies
             Lunge = new(8.5, 5.0, 0.7, 0.45, 18),
             Elite = true, Loot = "elite", AttackEvery = 1.0,
             Note = "Plants its feet, picks you, and comes straight down the line. Step off the line." },
+        // (H4 item 10: the day road's champion, the one the hover target is taught on. Rallies his footpads like a drummer.)
+        new() { Id = "kerchief_captain", Name = "Kerchief Captain", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_enforcer", Scale = 1.2,
+            Health = 70, Speed = 3.6, Damage = 12, Radius = 0.62, Mass = 3, Xp = 18, Gold = 8, Resists = Kerchief, Behavior = Behavior.Chase,
+            Aura = new(7, 9, 4, Haste: 1.25, Word: "On her!"), Loot = "elite", AttackEvery = 1.0,
+            Note = "Wears the red cloth twice over, which is how you know. While he shouts, the rest come quicker. Put him down first." },
 
         /* ------------------------------------------- the night's other kinds --
          * The owner: "variety of minion types elites and mini bosses instead of all just the

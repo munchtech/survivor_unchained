@@ -816,6 +816,8 @@ public partial class Game : Node, IZoneHost
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
         Perf.Lap("play: the survivor stood up");
         HookBattle(b);
+        // --stage day: the Low Ford Road begun at C04 A's dawn, the day stretch ahead (H4 item 10's proof).
+        if (z is SurvivorUnchained.Play.Zones.Prologue pd && Args.Get("stage") == "day") pd.DayStart = true;
         z.Begin(b);
         Perf.Lap("play: the zone begun (its people, its pieces)");
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));

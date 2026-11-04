@@ -30,7 +30,7 @@ namespace SurvivorUnchained.Play.Zones;
  * Dying here is forgiven: the ember is not done with you, and you get up
  * again at the last place you were safe. That is the only place in the game
  * where that is true. */
-public sealed class Prologue : ZoneRuntime
+public sealed partial class Prologue : ZoneRuntime
 {
     public enum Stage { Wake, Rising, Road, Ambush, Road2, Post, Barrow, ToFord, Intro, Boss, Victory, Dawn, Exit }
 
@@ -40,7 +40,7 @@ public sealed class Prologue : ZoneRuntime
     public override bool Combat => true;
     /// <summary>The night's: the ember burns until the dawn puts it out.</summary>
     public override bool Ember => !F("prologue.done").Truthy;
-    public override IReadOnlyList<string> Creatures { get; } = ["risen", "risen_warrior", "risen_archer", "barrow_knight", "grave_caller", "grimtunnel", "ford_warden"];
+    public override IReadOnlyList<string> Creatures { get; } = ["risen", "risen_warrior", "risen_archer", "barrow_knight", "grave_caller", "grimtunnel", "ford_warden", "boar", "footpad", "pillager", "kerchief_captain", "wolf"];
 
     sealed class WardenAI
     {
@@ -128,6 +128,7 @@ public sealed class Prologue : ZoneRuntime
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
             OnKill = OnKill,
+            OnPickup = OnDayPickup,
             OnHitProp = (tag, _, _, dmg, _, _) =>
             {
                 if (!tag.StartsWith("pylon:") || Now != Stage.Boss || !int.TryParse(tag[6..], out int i) || !litPylons[i]) return;
@@ -173,6 +174,7 @@ public sealed class Prologue : ZoneRuntime
             When = () => Now is Stage.Rising or Stage.Wake,
             Act = () => G.Say("The fire is almost out. It will not hold them back.", null, 3.5),
         });
+        AddDay();
     }
 
     /* ------------------------------------------------------------- helpers -- */
@@ -234,6 +236,8 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         if (G.Teaching != null) wordsFree = Math.Max(wordsFree, B.Time + (G.Teaching.Quiet > 0 ? LessonQuiet : WordsAfterCallout));
         if (Lessons.Any(G.TeachWaiting)) return;
+        // (by day, the road's words wait behind its fights: H4 item 10)
+        if (Now is Stage.Dawn or Stage.Exit && !DayCalm()) { wordsFree = Math.Max(wordsFree, B.Time + 0.5); return; }
         if (G.Saying) wordsFree = Math.Max(wordsFree, B.Time + 1.5);
         while (words.Count > 0 && words.Peek().Still is { } still && !still()) words.Dequeue();
         if (words.Count == 0 || G.Saying || G.Teaching != null || B.Time < wordsFree) return;
@@ -545,10 +549,11 @@ public sealed class Prologue : ZoneRuntime
                     { Gap = 3, Urgent = true, Still = () => !KnightHolds() });
         }
         // F12: the first character level, after her dawn line, at its banner (shown again under it).
-        if (levelDue && levelAnn != null && !finished)
+        if (levelDue && levelAnn != null && !finished && DayCalm())
             G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
+        DayCallouts();
     }
 
     /// <summary>A calm for the tally's lesson: the road before the trap springs, the walks between fights,
@@ -954,6 +959,7 @@ public sealed class Prologue : ZoneRuntime
         B.FoeHitMul = AmbushMul(dt);
         Callouts();
         PaceWords();
+        if (Now is Stage.Dawn or Stage.Exit) DayTick(dt);
         switch (Now)
         {
             case Stage.Wake:
@@ -1436,8 +1442,9 @@ public sealed class Prologue : ZoneRuntime
             G.Say("In the reeds on the far bank, someone is standing very still.", null, 4);
             G.After(4.4, () => G.Say("Gray light, then gold. Up the road, the Waystation's gate is opening.", null, 6));
         }
-        Objective([("Walk up the road to the Waystation", false, false)]);
         W.Time = TimeOfDay.Dawn;
+        StartDay();
+        DayObjective();
     }
 
     /// <summary>The dawn puts the ember out: the cards, the blessing, all it
@@ -1450,6 +1457,7 @@ public sealed class Prologue : ZoneRuntime
         if (!G.Cinematic("c04a", () =>
             {
                 dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); G.Look.SetNight(false); if (!dousedByCine) Douse(false);
+                DayObjective();
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -1502,7 +1510,7 @@ public sealed class Prologue : ZoneRuntime
         // F12 once her dawn line is over (the caption's 14 s; with C04 A it was said in it), and the
         // day's tip after that (game time: a freeze holds it back).
         if (taught > 0) G.After(caption ? 15.4 : 5.2, () => levelDue = true);
-        G.After(caption ? 24.5 : 18.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        G.After(caption ? 24.5 : 18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
     void Finish()
@@ -1562,6 +1570,7 @@ public sealed class Prologue : ZoneRuntime
         startWeapons = b.Weapons.Count;
         // (no great blessing offers to grow a Flare she hasn't met: F8 teaches it, au1 item 3)
         b.FlareGreatsHeld = !G.Taught("art");
+        if (DayStart && !F("prologue.done").Truthy) { BeginDay(b); return; }
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
@@ -1573,6 +1582,9 @@ public sealed class Prologue : ZoneRuntime
             foreach (var p in pylons) G.Look.SetLit(p.Light, false);
             ai.Mode = "dead"; wardenGone = true;
             wardenView.Hide();
+            // The road by day, as today has it (ZoneReset: its packs back each day, the lamp lit for good).
+            StartDay();
+            DayObjective();
             return;
         }
         G.SetAtmosphere(Atmospheres.LowFordNight);
@@ -1630,7 +1642,7 @@ public sealed class Prologue : ZoneRuntime
         var battle = B;
         G.After(2.6, () =>
         {
-            G.Say("The ember will not let you go so easily.", null, 3.5);
+            G.Say(day != null ? "You come to on the road, bruised, with the sun higher." : "The ember will not let you go so easily.", null, 3.5);
             battle.Over = null;
             var p = battle.Player;
             p.Alive = true;
@@ -1676,7 +1688,7 @@ public sealed class Prologue : ZoneRuntime
     {
         ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
-        ["wardenMode"] = ai.Mode, ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
+        ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.Beats.Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
     };
 
     public override void Dispose()

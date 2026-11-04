@@ -1,0 +1,18 @@
+{
+  "about": "The day stretches (H4 item 10, gate N18): free day play between a night's cinematic and the next place, in a permanent zone that resets by data/content/zone_resets.json. Read by logic/Play/Zones/DayStretch.cs: the zone (Prologue for lowford) places and runs it, the balance harness (godot/balance, lowford-day) plays the same fights. Beats in road order. pack: foes resting round (x, z) within spread, waking within wake m of her (Verge's packs), leashed to leash m; tell: the kit kind (data/content/telegraphs.json) its foes cast, first firstAfter s after waking, then every [min, max] s, from within the kind's reach; captain: one more, a champion (elite) that rallies the rest. post: a Lamps v2 lamp-post (lamps_v2.json) on the zone's light, relit by an interact within r. chest: a strongbox. ring: the Flare's save, a closing (Battle.TellClosing) of n of def round her once she comes north past z after being south of armZ; her Flare filled to flareTo of full if short. Foe level: 1 + (her level + day) / 2 + levelUp (the Verge's). Coordinates read off data/zones/lowford/zone.json (paths.ROAD; the road lamps are lights 13 (2,-64) and 14 (-1,-86); the gate at z -112, exitZ -104). C04 A hands back at its 'up' mark (0.45, -63).",
+  "zones": {
+    "lowford": {
+      "from": [0.45, -63],
+      "gateZ": -104,
+      "beats": [
+        { "id": "boars", "kind": "pack", "x": 3, "z": -77, "spread": 2.5, "wake": 8, "leash": 20,
+          "foes": [{ "def": "boar", "n": 2 }], "tell": "charge", "firstAfter": 1.2, "every": [4.5, 6.5] },
+        { "id": "kerchiefs", "kind": "pack", "x": 13, "z": -84, "spread": 3.5, "wake": 10, "leash": 22,
+          "foes": [{ "def": "footpad", "n": 5 }, { "def": "pillager", "n": 1 }], "captain": "kerchief_captain" },
+        { "id": "post", "kind": "post", "post": "act1.post1", "light": 14, "x": -0.99, "z": -86, "r": 2.6 },
+        { "id": "strongbox", "kind": "chest", "x": 15.5, "z": -79.5, "gold": 24 },
+        { "id": "wolves", "kind": "ring", "x": 0.5, "z": -96, "armZ": -90, "def": "wolf", "n": 12, "flareTo": 1 }
+      ]
+    }
+  }
+}

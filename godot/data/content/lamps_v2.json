@@ -11,9 +11,9 @@
    "id": "act1.post1",
    "act": 1,
    "zone": "lowford",
-   "x": 0,
-   "z": 0,
-   "draft": true
+   "x": -0.99,
+   "z": -86,
+   "draft": false
   },
   {
    "id": "act1.post2",

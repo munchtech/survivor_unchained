@@ -192,6 +192,15 @@ public sealed class Autopilot
             }
             case "Victory":
                 break;
+            case "Dawn" or "Exit" when z is Zones.Prologue pd && pd.DayGoal() is { } dg:
+            {
+                // The road by day (H4 item 10): its fights where they wake, the strongbox, the dark lamp, then the gate.
+                if (pickChampion) PickChampion(b);
+                tx = dg.X; tz = dg.Z;
+                interactT -= dt;
+                if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
+                break;
+            }
             case "Dawn":
             {
                 // The night is over: up the road to the Waystation, as the objective says (a run went on standing
