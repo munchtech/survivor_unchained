@@ -31,24 +31,24 @@ ARENA = Q + ["--zone", "arena", "--offer", "0", "--tier", "1"]
 # The runs (several frames may share one). "scout" replaces the run's frame options in --scout mode.
 RUNS = {
     "lk_title": dict(args=["--seconds", "6", "--count", "1"], fresh=True, timeout=300),
-    "lk_sb00": dict(args=["--storybook", "sb00", "--sb-shots", "51.0", "--seconds", "300", "--until", "300"], timeout=400,
+    "lk_sb00": dict(args=["--storybook", "sb00", "--sb-shots", "21.0", "--seconds", "300", "--until", "300"], timeout=400,
                     scout=["--storybook", "sb00", "--sb-shots", "8.0,21.0,30.0,42.0,51.0,64.0,76.0", "--seconds", "300", "--until", "300"]),
-    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "22"], timeout=400),
-    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "35", "--count", "1"], timeout=500,
+    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "30"], timeout=400),
+    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "50", "--count", "1"], timeout=500,
                      scout=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "20", "--every", "15", "--count", "4"]),
-    "lk_ford": dict(args=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "140", "--every", "120", "--count", "2"], timeout=1500,
+    "lk_ford": dict(args=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "100", "--every", "100", "--count", "2"], timeout=1500,
                     scout=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "60", "--every", "20", "--count", "12"]),
-    "lk_town": dict(args=Q + ["--zone", "waystation", "--time", "day", "--seconds", "12", "--count", "1"], timeout=400,
+    "lk_town": dict(args=Q + ["--zone", "waystation", "--time", "day", "--seconds", "18", "--count", "1"], timeout=400,
                     scout=Q + ["--zone", "waystation", "--time", "day", "--seconds", "6", "--every", "6", "--count", "3"]),
     "lk_lamps": dict(args=["--open", "lamps", "--seconds", "6", "--count", "1"], load_snap="fr3_loop:loop_back_1", timeout=400,
                      fallback=Q + ["--zone", "waystation", "--time", "day", "--open", "lamps", "--seconds", "6", "--count", "1"]),
-    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "14", "--seconds", "35", "--count", "1"], timeout=600,
+    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "14", "--seconds", "20", "--count", "1"], timeout=600,
                     scout=ARENA + ["--auto", "--minute", "14", "--seconds", "20", "--every", "15", "--count", "4"]),
-    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "24", "--count", "1"], timeout=600,
+    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "18", "--count", "1"], timeout=600,
                     scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "12", "--every", "6", "--count", "5"]),
-    "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "5", "--count", "1"], timeout=400,
+    "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "7", "--count", "1"], timeout=400,
                       scout=ARENA + ["--open", "result", "--seconds", "3", "--every", "2", "--count", "3"]),
-    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "20", "--seconds", "30", "--count", "1"], timeout=600,
+    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "20", "--seconds", "40", "--count", "1"], timeout=600,
                    scout=ARENA + ["--auto", "--minute", "20", "--seconds", "20", "--every", "10", "--count", "3"]),
     "lk_close": dict(args=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "8", "--count", "1"], timeout=400,
                      scout=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "6", "--every", "3", "--count", "2"]),
@@ -57,7 +57,7 @@ RUNS = {
 # The frames: id, label, run, the file it leaves in godot/.shots.
 FRAMES = [
     ("01", "title", "lk_title", "lk_title.png"),
-    ("02", "sb00", "lk_sb00", "sb_sb00_51.00.png"),
+    ("02", "sb00", "lk_sb00", "sb_sb00_21.00.png"),
     ("03", "c01", "lk_c01", "lk_c01_c01_s12_1.png"),
     ("04", "verge_day", "lk_verge", "lk_verge.png"),
     ("05", "ford_night", "lk_ford", "lk_ford_00.png"),
@@ -146,7 +146,11 @@ def shoot(args):
         e = dict(name=name, timeout=r["timeout"], godot=FPS)
         if r.get("fresh"): e["fresh"] = True
         if r.get("load_snap"):
-            if os.path.isdir(os.path.join(SNAPS, "snap_" + r["load_snap"].replace(":", "_"))): e["load_snap"] = r["load_snap"]
+            snap = "snap_" + r["load_snap"].replace(":", "_")
+            if os.path.isdir(os.path.join(SNAPS, snap)):
+                # (demo_run reads snapshots from its own OUT: a copy of the demo's there)
+                dst = os.path.join(out, "run", snap); shutil.rmtree(dst, ignore_errors=True); shutil.copytree(os.path.join(SNAPS, snap), dst)
+                e["load_snap"] = r["load_snap"]
             else: a = list(r["fallback"]); print(f"[{name}] no snapshot {r['load_snap']}: quick start instead")
         e["args"] = a + extra
         batch.append(e)
