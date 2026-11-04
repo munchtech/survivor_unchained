@@ -1539,10 +1539,33 @@ public partial class Game : Node, IZoneHost
             // The tiers' colours from the one table the tiles and cards use (ItemViews.TierColour).
             var col = tier is LootTier.Material or LootTier.Draught ? Style.InkDim : ItemViews.TierColour(tier);
             int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
+            // The quiet ones (materials, draughts, commons) of one name are told once, at the nearest, with how many
+            // (UI 31: a day's kills laid ~50 "Barrow Dust" over the field, Flare 10 sd127).
+            if (loud == 0)
+            {
+                string key = p.Ref ?? text;
+                int n = p.Payload is ItemInstance ? 1 : Math.Max(1, (int)p.Value);
+                string name = p.Payload is null && p.Ref != null && Items.Find(p.Ref) is { } one ? one.Name : text;
+                if (quietLabels.TryGetValue(key, out var q)) quietLabels[key] = (d2 < q.D2 ? sp : q.At, Math.Min(d2, q.D2), q.Count + n, q.Name, q.Col);
+                else quietLabels[key] = (sp, d2, n, name, col);
+                continue;
+            }
             o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set));
+            labelNear.Add(d2);
         }
-        return o;
+        // The loud first, nearest first; the quiet after them, nearest first: at most LabelsMost, QuietMost of them quiet.
+        var ranked = o.Select((l, i) => (L: l, D2: labelNear[i])).OrderByDescending(x => x.L.Loud).ThenBy(x => x.D2).Select(x => x.L).Take(LabelsMost).ToList();
+        foreach (var q in quietLabels.Values.OrderBy(q => q.D2).Take(Math.Min(QuietMost, LabelsMost - ranked.Count)))
+            ranked.Add(new Ui.GroundLabel(q.At, q.Count > 1 ? $"{q.Name} ×{q.Count}" : q.Name, q.Col, 0, false));
+        quietLabels.Clear();
+        labelNear.Clear();
+        return ranked;
     }
+
+    /// <summary>The most loot names on screen at once, and of them the quiet (merged by name).</summary>
+    const int LabelsMost = 12, QuietMost = 5;
+    readonly Dictionary<string, (Vector2 At, double D2, int Count, string Name, Color Col)> quietLabels = new();
+    readonly List<double> labelNear = new();
 
     /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
     MinimapView? MiniView()

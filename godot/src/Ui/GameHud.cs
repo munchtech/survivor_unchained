@@ -519,6 +519,13 @@ public partial class GameHud : CanvasLayer
     ulong tipHoldUntil;
     Hint? tipHeld;
     bool tipWaiting;
+    /// <summary>When the last Flare handed the screen back, and when the kill count last climbed (real ms).</summary>
+    ulong flareEndMs, lastKillMs;
+    /// <summary>A tip held by a Flare comes back once its aftermath is over: no kill for 2 s (the burning still
+    /// fall for a while after the screen comes back), and never later than 6 s after it (UI 31: THE MAP came
+    /// back over the dying and their drops, Flare 10 sd127). Only a Flare's tip waits for the killing: the
+    /// tutorial's tips are told mid-fight on purpose.</summary>
+    bool FlareAftermath(ulong now) => flareEndMs > 0 && now < flareEndMs + 6000 && now < lastKillMs + 2000;
 
     /// <summary>A Flare holds the frame (FLARE_LOOK §1.5): the play HUD dims to 35% (k 1) but her irons (her health and
     /// the Flare's lamp) and a boss's bar; back at k 0.</summary>
@@ -528,6 +535,7 @@ public partial class GameHud : CanvasLayer
         // A tip waits from the press until three seconds after the Flare hands the screen back (judge 3: "THE MAP"
         // over the BOOM). Real time: the Flare's hitstop must not stretch it.
         tipHoldUntil = k > 0 ? ulong.MaxValue : Time.GetTicksMsec() + 3000;
+        if (k == 0) flareEndMs = Time.GetTicksMsec();
         if (k > 0 && hintView != null)
         {
             // One already up goes and comes back after.
@@ -706,6 +714,7 @@ public partial class GameHud : CanvasLayer
         tallyTime.AddThemeColorOverride(FontColor, arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
         tallyKills.Text = b.KillCount.ToString();
         // The count pops when it climbs, at most ten times a second.
+        if (b.KillCount > killsShown) lastKillMs = Time.GetTicksMsec();
         if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
         killsShown = b.KillCount;
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
@@ -897,11 +906,24 @@ public partial class GameHud : CanvasLayer
                 var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
                 // The step's mark: the house's diamond, open while it waits and filled in gold once done; a
                 // small ring for what may be left (no checkbox: no box).
-                var mark = new StepMark(s.Done, s.Optional, col);
+                // (a goal's line wears its goal's colour on its mark, as its pin and arrow do, UI 31)
+                Color? goalInk = null;
+                if (!s.Done && s.Color is { } gc) try { goalInk = new Color(gc); } catch { }
+                var mark = new StepMark(s.Done, s.Optional, goalInk ?? col);
                 HBoxContainer row;
                 // "Answer the night: hold [[answer]]": the key itself, as the device in hand shows it.
                 var key = System.Text.RegularExpressions.Regex.Match(s.Text, @"\[\[(\w+)\]\]");
-                if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
+                // "Anyone marked ! has something": the mark itself, as it stands over their heads (Voices: the display
+                // face in its gold), not the line's own "!" (UI 31: it read as punctuation).
+                int bang = s.Text.IndexOf(" ! ", StringComparison.Ordinal);
+                if (bang > 0)
+                {
+                    var font = s.Optional ? Style.TextItalic : Style.Ui;
+                    var worldMark = Rimmed(Style.Label("!", Style.Display, 20, new Color("#f3d9a0")));
+                    row = Style.H(4, ShadowIf(s.Optional, Style.Label(s.Text[..bang], font, 16, col)), worldMark,
+                        ShadowIf(s.Optional, Style.Label(s.Text[(bang + 3)..], font, 16, col)), mark);
+                }
+                else if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
                     var font = s.Optional ? Style.TextItalic : Style.Ui;
                     row = Style.H(5, ShadowIf(s.Optional, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
@@ -1108,8 +1130,9 @@ public partial class GameHud : CanvasLayer
 
     public void Hint(Hint? h)
     {
-        if (Args.Has("clean")) h = null;
-        if (Time.GetTicksMsec() < tipHoldUntil && h != null && !(hintView != null && hintView.Id == h.Id)) { tipHeld = h; tipWaiting = true; return; }
+        // (--no-banners pictures nothing over the play: a tip such as THE MAP is a banner's kin, UI 31)
+        if (Args.Has("clean") || Args.Has("no-banners")) h = null;
+        if ((Time.GetTicksMsec() < tipHoldUntil || FlareAftermath(Time.GetTicksMsec())) && h != null && !(hintView != null && hintView.Id == h.Id)) { tipHeld = h; tipWaiting = true; return; }
         if (h == null) { tipHeld = null; tipWaiting = false; }
         bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
@@ -1411,7 +1434,7 @@ public partial class GameHud : CanvasLayer
     public override void _Process(double delta)
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
-        if (tipWaiting && Time.GetTicksMsec() >= tipHoldUntil) { tipWaiting = false; var th = tipHeld; tipHeld = null; Hint(th); }
+        if (tipWaiting && Time.GetTicksMsec() >= tipHoldUntil && !FlareAftermath(Time.GetTicksMsec())) { tipWaiting = false; var th = tipHeld; tipHeld = null; Hint(th); }
         float dt = (float)delta;
         if (sayT > 0)
         {

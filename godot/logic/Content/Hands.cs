@@ -97,9 +97,9 @@ public static class Hands
             {
                 var h = Warden;
                 if (Heavies(tags))
-                    parts.Add($"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; a boss's stagger fills)");
+                    parts.Add($"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)");
                 if (tags.Has(Tag.Holy) || school == School.Holy)
-                    parts.Add($"each champion it strikes lays a Stone; at {h.Stones} the wall rebukes");
+                    parts.Add($"each champion it strikes lays a Stone; {h.Stones} loose a rebuke");
                 break;
             }
             case "reaver":

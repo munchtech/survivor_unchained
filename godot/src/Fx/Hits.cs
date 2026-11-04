@@ -221,6 +221,43 @@ public partial class Hits : Node3D
     {
         var l = numbers[i].Label;
         if (l.Visible) l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
+        Unstack(i);
+    }
+
+    /// <summary>A number's box on screen (its outline included), as AboveHud measures it; null behind the camera.</summary>
+    static Rect2? NumBox(Camera3D cam, Vector3 at, string text, int size)
+    {
+        if (cam.IsPositionBehind(at)) return null;
+        var p = cam.UnprojectPosition(at);
+        float em = (cam.UnprojectPosition(at + cam.GlobalBasis.Y * (size + 2 * NumOutline) * NumPixel) - p).Length();
+        float h = em * 0.8f, w = Mathf.Max(em * 0.8f, text.Length * em * 0.6f);
+        return new Rect2(p.X - w / 2, p.Y - h / 2, w, h);
+    }
+
+    /// <summary>A number laid over another still showing stands on top of it instead, lifted by the overlap
+    /// (UI 31: a "400!" crit printed over a "40!" so neither read; the ground-plane Crowded check misses
+    /// big crits, whose box is wider than its ellipse, and the ones past their youth still on screen).</summary>
+    void Unstack(int i)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        var l = numbers[i].Label;
+        if (cam == null || !l.Visible) return;
+        for (int pass = 0; pass < 4; pass++)
+        {
+            if (NumBox(cam, l.GlobalPosition, l.Text, l.FontSize) is not Rect2 me) return;
+            float lift = 0;
+            for (int j = 0; j < numbers.Count; j++)
+            {
+                var (o, t) = numbers[j];
+                if (j == i || t >= 1 || !o.Visible) continue;
+                if (NumBox(cam, o.GlobalPosition, o.Text, o.FontSize) is Rect2 b && me.Intersects(b))
+                    lift = Mathf.Max(lift, me.End.Y - b.Position.Y + 4);
+            }
+            if (lift <= 0) return;
+            float depth = (l.GlobalPosition - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+            var c = me.GetCenter();
+            l.GlobalPosition = cam.ProjectPosition(new Vector2(c.X, c.Y - lift), depth);
+        }
     }
     /// <summary>The Drowned Girl (UI 17): a number's box keeps its bottom 8 px above the HUD's top at its x.</summary>
     Vector3 AboveHud(Vector3 at, string text, int size)
@@ -258,6 +295,7 @@ public partial class Hits : Node3D
         l.GlobalPosition = at;
         l.Visible = true;
         numbers[i] = (l, 0);
+        Unstack(i);
         return i;
     }
 
