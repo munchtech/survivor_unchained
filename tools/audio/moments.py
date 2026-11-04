@@ -101,7 +101,15 @@ def cmd_sheet(a):
     b, af = load("before"), load("after")
     out = ["# Audio H3 listening sheet\n",
            "Each moment is a recording of the game. BEFORE is the old synth sounds; AFTER is the new bank.",
-           "Peak is in dB (0 is the loudest possible). LUFS is loudness: higher is louder.\n"]
+           "Peak is in dB (0 is the loudest possible). LUFS is loudness: higher is louder.\n",
+           "**Listen on headphones, AFTER first.** Each moment has a master wav and one wav per bus (`<name>_sfx.wav`, `_music`, `_ambience`, `_ui`, `_flare`). "
+           "BEFORE and AFTER run through the same mixer (compressor, makeup gain, -1 dBFS limiter), so loudness differences are the sounds, not the mix.",
+           "",
+           "**The mix (AFTER):** fights about -20 LUFS integrated (target -20), peaks held at -1 dBFS; ambience about 17 dB under a fight; "
+           "the Flare and UI buses above the fight when they fire; calm walks about -25 LUFS. Music is still the generative synth score (docs/team/audio.md 'Music': the next pass).",
+           "",
+           "**Known:** m07 lights no notable lamp (every notable in reach is behind a road gate); m11's telegraphs are drawn by weight, and this tape got the pull (ring, charge and closing are banked too). "
+           "Sounds generation could not get right, for you to make: docs/team/audio.md 'For the owner'.\n"]
     for m in moments():
         n = m["name"]
         out += ["## %s" % n, m["what"], ""]

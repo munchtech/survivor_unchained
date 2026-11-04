@@ -6,10 +6,27 @@ Branch `audio-h3`. Brief: `docs/team/hook/H3_sound.md`. Handoff: `docs/handoff/a
 - **Give any event a sound from a line of data:** `godot/data/content/sounds.json` (buses, ducks, foe materials, events -> layers of recorded takes with gain, pitch spread, gain jitter, delay, gate, falloff, stereo). Every Sfx recipe asks the bank first; the synth plays only where an event has no takes. The table is edited in `tools/audio/events.py` (one line per event) or by hand. Every id a recipe can ask for: `godot/data/content/sounds_ids.txt`.
 - **Make a sound family from a line of prompt data:** `tools/audio/gen.py make <family>` (ElevenLabs sound generation on the owner's account, cached by prompt hash, logged in `tools/audio/gen_log.jsonl` and `docs/legal/audio_generated.md`), trimmed, normalized, and ranked by CLAP text-audio match and onset count (no one can hear, so the machine picks the takes that best match their brief; the owner's ears judge the result).
 - **Record any moment of the game as sound:** `tools/audio/moments.py run <names> --tag <t> [--nobank]` writes master + per-bus stems + the ids fired (`--soundlog`) + loudness numbers to `survivorsunchained_inputs\audio_h3\<t>\`. `--nobank` is the synth-only BEFORE.
-- **Measure:** the master compressor and a -1 dBFS limiter now run inside the mixer, so a tape is what the speakers get. `tools/audio/measure.py` gives peak, true peak, LUFS, short-term max.
+- **Measure:** the master compressor, a makeup gain (`buses.master.makeup`, dB) and a -1 dBFS limiter run inside the mixer, so a tape is what the speakers get. `tools/audio/measure.py` gives peak, true peak, LUFS, short-term max.
+- **Give each zone its recorded room:** `bed.<zone>.<day|night>`, then `bed.<zone>` (`bed.title` on the title) in sounds.json; `Ambience.SetZone` loops the take, crossfades over about 2 s, and halves the made wide beds under it.
+- **End a windup on its blow:** H1's `Ev.Telegraph` plays `telegraph.<kind>.<windup|land>[.boss]`; a windup is cut to the mark's own duration with a short fade (`Clip.Len`, `SoundBank.Play(len:)`), whatever the take's length or pitch.
 
-## Numbers (game tapes, master)
-BEFORE with the old mix peaked at 0.0 dBFS (clipping) in every fight. With the limiter: peaks -2.5 to -5 dBFS, integrated -24 to -26 LUFS in fights (sfx stem -21 to -25), ambience -36 to -41, music -29 to -31. Target for the next pass: fights about -20 LUFS integrated, true peak <= -1.
+## Numbers (game tapes, master; the listening sheet `C:\Users\munch\Desktop\survivorsunchained_inputs\audio_h3\README.md`)
+BEFORE (old synth through today's mixer) and AFTER (the bank), integrated LUFS / peak dBFS:
+
+| moment | before | after | | moment | before | after |
+|---|---|---|---|---|---|---|
+| m01 bandits | -21.3 / -1.0 | -20.3 / -1.0 | | m06 draft pick | -25.2 / -13.4 | -24.1 / -8.8 |
+| m02 dead horde | -21.3 / -1.0 | -19.9 / -1.0 | | m07 lamps | -27.1 / -13.3 | -25.8 / -9.6 |
+| m03 dash | -23.4 / -2.6 | -21.9 / -2.0 | | m08 boss | -20.2 / -1.0 | -17.9 / -1.0 |
+| m04 sunder | -22.3 / -1.0 | -20.0 / -1.0 | | m09 won | -24.2 / -8.6 | -22.9 / -5.9 |
+| m04 groundbreaker | -22.7 / -1.0 | -21.8 / -1.0 | | m09 fell | -23.5 / -7.9 | -22.8 / -1.3 |
+| m04 rebuke | -22.9 / -1.0 | -22.7 / -1.0 | | m10 Low Ford night | -25.1 / -12.0 | -25.0 / -10.5 |
+| m04 watch bell | -22.9 / -1.0 | -20.1 / -1.8 | | m10 Deep Shaw night | -25.6 / -13.9 | -25.0 / -8.3 |
+| m05 Long Cut | -21.6 / -1.0 | -19.0 / -1.0 | | m10 Waystation | -25.6 / -11.6 | -24.8 / -6.0 |
+| m06 embers, level-up | -22.0 / -1.0 | -20.0 / -1.0 | | m10 Verge day | -24.1 / -10.1 | -24.2 / -7.8 |
+| m11 telegraphs | -23.6 / -2.1 | -22.0 / -2.2 | | m12 title | -25.7 / -13.5 | -24.8 / -10.7 |
+
+AFTER stems (pre-master): sfx -18 to -25 in fights, music -29 to -31 (boss -23.5), ambience -35 to -40 (about 17 dB under a fight), the Flare -17.9 over the fight's sfx -22.1, ui -24 where it fires densely. Fights sit at the -20 target with makeup 5 dB.
 
 ## For the owner (sounds generation could not get right; one line each: what, length, character, a reference in words)
 - `lamp_out` (weak match after two prompts): a lamp put out; 0.5 s; a soft breath and a wick's hiss; like blowing out a candle up close.

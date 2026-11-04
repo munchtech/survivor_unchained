@@ -1,6 +1,32 @@
 # Audio (H3 sound): handoff
 
-## Start here (3 November, lead 1 -> successor)
+## Start here (3 November, lead 2: H3 done)
+Status: in progress, item 7 (full suite running; then push)
+
+**H3's fixed list is done.** The owner's exit is still to come: a night with headphones, "it sounds like a game". The listening sheet is `C:\Users\munch\Desktop\survivorsunchained_inputs\audio_h3\README.md`: 20 moments, before and after through the same mixer. Numbers table: `docs/team/audio.md` "Numbers". The owner list: `docs/team/audio.md` "For the owner".
+
+**Lead 2 did:**
+- Merged integration and combat-h1.
+- Wired H1's telegraphs: each windup is cut to its mark's duration (`Clip.Len`).
+- Made SoundHooks.cs byte-identical to seams-h4's.
+- Added zone beds (`Ambience.SetZone`; `bed.verge.day`, `bed.lowford`, `bed.waystation`, `bed.arena`, `bed.title`).
+- Kept takes for `ui_open` and `lamp_lit_big` and wired them.
+- Regenerated six weak families with sharper prompts. Five improved; `lamp_out` kept its first prompt.
+- Added master makeup (+5 dB): fights now sit at -20 LUFS.
+- Fixed the moment recipes, plus two game bugs:
+  - A table boss's arrival rang `stinger.danger`: ArenaRun now sets the boss bar before the announcement.
+  - The crowd limit could drop a boss's kill sound.
+- Added test-only flags: `--bosskill T`, and the `--lamps-moves` moves `go@ID` and `putout`.
+
+**Credits:** 368 spent this pass; about 31,650 left of 40,000 (resets ~6 Nov).
+
+**If the owner's night finds more:**
+1. Music is the synth score: `docs/team/audio.md` "Music" is the next pass.
+2. `lamps.light_notable` is wired but no tape reaches it (every notable is behind a road gate).
+3. m11 got only the pull. Setting SU_TELLS to a telegraphs.json with one kind's weight forces that kind.
+4. Story nights and maps may announce a boss before its bar, as ArenaRun did. Not checked.
+
+## Lead 1 -> successor (3 November; superseded by the section above)
 Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\audio-h3`, branch `audio-h3` (junction `godot/assets` -> own `public/assets`; follow README's junction rule before any merge). Report to main (coordinator b6ad7e4e), short. Read `docs/team/hook/H3_sound.md` (the fixed list), `docs/team/audio.md` (what the app can do, numbers, the owner list, the Music section main asked for), then this.
 
 **Done:** 1 the bank as data (sounds.json, 71 events, SoundBank.cs, stereo takes, buses and ducks from data, `--nobank`, `--soundlog`, stems, compressor+limiter in `Synth.Mix`); 2 the generation tool (`tools/audio/gen.py`, prompts in `prompts.json`, 64 families, CLAP + onset ranking, provenance in `docs/legal/audio_generated.md`); 3 the palette's takes are ALL generated (batches 1 and 2) and most are wired as events (`tools/audio/events.py` is the table; run it to rewrite sounds.json's events); 4 the owner list started in audio.md. Captures: `survivorsunchained_inputs\audio_h3\before\` (all 16, but m01/m02/m04_sunder/m05 re-taken with the new limiter; RE-TAKE THE REST of before with `--nobank` so before and after share the limiter), `after1\` (4 moments, batch 1 only).
