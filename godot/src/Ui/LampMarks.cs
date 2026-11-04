@@ -4,7 +4,7 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>One lamp on the Ford-Warden's bar: an iron cage round a flame, drawn in code. It tracks whether it
 /// should burn and plays LampMarkAnim's flare, fade and bloom when that changes. Drawn on a 16 x 22 grid and
-/// scaled to its size (24 x 32 on the boss bar, 18 x 24 for the off-screen pointers).</summary>
+/// scaled to its size (24 x 32, on the boss bar and for the off-screen pointers).</summary>
 public partial class LampMark : Control
 {
     public const float W = 24, H = 32;
@@ -117,7 +117,8 @@ public partial class LampPointers : Control
 {
     public readonly record struct Pointer(int Id, Vector2 At, Vector2 Dir);
     const float FadeTime = 0.2f;
-    static readonly Color Chevron = new("#c8a060");
+    // (cold, as the lamps burn and the lamps freeze marks them; at 18 x 24 in amber they read as a fleck under the bar)
+    static readonly Color Chevron = new("#7cc4ff");
     sealed class Slot { public LampMark Mark = null!; public Vector2 At, Dir; public float A; public bool Want; }
     readonly System.Collections.Generic.Dictionary<int, Slot> slots = new();
 
@@ -130,7 +131,7 @@ public partial class LampPointers : Control
         {
             if (!slots.TryGetValue(p.Id, out var s))
             {
-                s = new Slot { Mark = new LampMark(18, 24) };
+                s = new Slot { Mark = new LampMark(LampMark.W, LampMark.H) };
                 AddChild(s.Mark);
                 s.Mark.Modulate = new Color(1, 1, 1, 0);
                 slots[p.Id] = s;
@@ -160,9 +161,9 @@ public partial class LampPointers : Control
             if (s.A <= 0) continue;
             var c = Chevron with { A = s.A };
             var d = s.Dir; var side = new Vector2(-d.Y, d.X);
-            var tip = s.At + d * 34; // 12 px of gap beyond the mark's half height at most
-            DrawPolyline(new[] { tip - d * 9 + side * 8, tip, tip - d * 9 - side * 8 }, new Color(0.1f, 0.08f, 0.05f, 0.7f * s.A), 6, true);
-            DrawPolyline(new[] { tip - d * 9 + side * 8, tip, tip - d * 9 - side * 8 }, c, 3, true);
+            var tip = s.At + d * 40; // 12 px of gap beyond the mark's half height at most
+            DrawPolyline(new[] { tip - d * 12 + side * 11, tip, tip - d * 12 - side * 11 }, new Color(0.02f, 0.05f, 0.1f, 0.75f * s.A), 7, true);
+            DrawPolyline(new[] { tip - d * 12 + side * 11, tip, tip - d * 12 - side * 11 }, c, 3.5f, true);
         }
     }
 }

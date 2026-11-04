@@ -24,7 +24,7 @@ public partial class Game
     static ImageTexture? beaconTex;
     /// <summary>--beacon-halo R, --beacon-glow A, --beacon-pool E, --beacon-off: the halo's half size (m), its strength,
     /// the pool light's energy, and the beacons left out (pictures).</summary>
-    static readonly float BeaconHalo = Args.Num("beacon-halo", 2.6f), BeaconGlow = Args.Num("beacon-glow", 0.9f), BeaconPool = Args.Num("beacon-pool", 12f);
+    static readonly float BeaconHalo = Args.Num("beacon-halo", 2.6f), BeaconGlow = Args.Num("beacon-glow", 0.9f), BeaconPool = Args.Num("beacon-pool", 16f);
     static readonly Color BeaconColor = new("#7ab6ff");
 
     /// <summary>A halo with no rim: a hot core round the flame, the lamp's glow in the air, and a faint wide breath of
@@ -59,7 +59,7 @@ public partial class Game
         };
         b.Halo = new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One * BeaconHalo * 2 }, MaterialOverride = b.Mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         // (the pier and the iron kept out of it, as out of the lamp's own light: ZoneView.LampLayer)
-        b.Pool = new OmniLight3D { LightColor = BeaconColor, OmniRange = 8, OmniAttenuation = 1.2f, LightSpecular = 0.25f, ShadowEnabled = false, LightCullMask = ~SurvivorUnchained.View.ZoneView.LampLayer };
+        b.Pool = new OmniLight3D { LightColor = BeaconColor, OmniRange = 10, OmniAttenuation = 0.9f, LightSpecular = 0.25f, ShadowEnabled = false, LightCullMask = ~SurvivorUnchained.View.ZoneView.LampLayer };
         b.Root.AddChild(b.Halo);
         b.Root.AddChild(b.Pool);
         scene!.AddChild(b.Root);
@@ -85,7 +85,8 @@ public partial class Game
             var (x, y, z, lit) = posts[i];
             var b = beacons[i];
             // (relit in the fight: a flare; the fight's first frame comes up with no flare, C02 had them burning)
-            if (lit && !b.Lit && b.Seen) b.Flare = 1;
+            if (lit && !b.Lit && b.Seen) { b.Flare = 1; if (Args.Has("lampcheck")) { Shots.Want("relit_a", 0.25); Shots.Want("relit_b", 1.0); } }
+            if (!lit && b.Lit && b.Seen && Args.Has("lampcheck")) Shots.Want("snuffed", 0.6);
             if (!b.Seen) b.A = lit ? 1 : 0;
             b.Lit = lit; b.Seen = true;
             b.A = Mathf.MoveToward(b.A, lit ? 1 : 0, (float)dt / (lit ? 0.35f : 0.12f));
@@ -100,8 +101,9 @@ public partial class Game
             b.Halo.Scale = Vector3.One * (1 + 0.9f * f);
             var c = BeaconColor.SrgbToLinear() * (BeaconGlow * breath * (1 + 1.5f * f));
             b.Mat.AlbedoColor = new Color(c.R, c.G, c.B, b.A);
-            // (its pool hangs a metre under the pier's top, over the water or the bank: a round of cold light some 5 m across)
-            b.Pool.GlobalPosition = new Vector3((float)x, (float)y - 1.8f, (float)z);
+            // (its pool hangs under the pier's top, 3 m over the water: a round of cold light some 12 m across, so a post just
+            // off the frame still lays its light on the water inside it)
+            b.Pool.GlobalPosition = new Vector3((float)x, (float)y - 1.4f, (float)z);
             b.Pool.LightEnergy = BeaconPool * b.A * breath * (1 + 2f * f);
         }
     }
@@ -114,7 +116,8 @@ public partial class Game
         if (scene == null || zone is not Zones.Prologue pro) return o;
         var size = GetViewport().GetVisibleRect().Size;
         var seen = new Rect2(Vector2.Zero, size).Grow(70);
-        var box = new Rect2(90, 160, size.X - 180, size.Y - 160 - 210);
+        // (172: the 24 x 32 mark and its chevron clear of the bar's channel under the name)
+        var box = new Rect2(90, 172, size.X - 180, size.Y - 172 - 210);
         var mid = size / 2;
         int i = 0;
         foreach (var p in pro.LampPosts)
