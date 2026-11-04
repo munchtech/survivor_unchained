@@ -212,7 +212,10 @@ public sealed class DayStretch
         {
             if (RingAt >= 0 && !followed && b.Time - RingAt >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
-            if (p.Z > bt.ArmZ) armed = true;
+            // (armed on the road south of its line; off the road it disarms, so she comes back to the road to spring it,
+            // with the gate ahead: j08 r2 came along the wall from the wallow and sprang it in the trees)
+            if (Math.Abs(p.X - bt.X) > bt.HalfWidth) armed = false;
+            else if (p.Z > bt.ArmZ) armed = true;
             if (!armed || p.Z > bt.Z || Math.Abs(p.X - bt.X) > bt.HalfWidth || Fighting || Held?.Invoke() == true) continue;
             Ring(bt);
         }

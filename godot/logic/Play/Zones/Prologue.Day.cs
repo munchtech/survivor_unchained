@@ -228,6 +228,9 @@ public sealed partial class Prologue
     /// <summary>Where a sensible player goes next on the stretch (the autopilot's day): DayStretch.Goal's route (the
     /// harness walks the same one): a waking pack fought where it stands, the road's boars, the Kerchiefs' camp and its
     /// strongbox, the dark lamp, the wallow, the ring, the gate. Press: the prompt to answer there.</summary>
+    /// <summary>A day fight is on (the autopilot fights it where it stands).</summary>
+    public bool DayFighting => day?.Fighting == true;
+
     public (double X, double Z, string? Press)? DayGoal()
     {
         if (day == null || B == null) return null;

@@ -85,7 +85,6 @@
                   "n": 1
                 }
               ],
-              "elite": "bruiser",
               "under": 2,
               "out": 9
             }
@@ -151,11 +150,7 @@
               "foes": [
                 {
                   "def": "boar",
-                  "n": 2
-                },
-                {
-                  "def": "boar_slurry",
-                  "n": 1
+                  "n": 3
                 }
               ],
               "under": 1,
@@ -169,7 +164,7 @@
           "x": 0.5,
           "z": -97,
           "armZ": -90,
-          "halfWidth": 12,
+          "halfWidth": 8,
           "def": "wolf",
           "n": 12,
           "flareTo": 1,

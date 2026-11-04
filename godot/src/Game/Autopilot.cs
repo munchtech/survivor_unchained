@@ -197,6 +197,7 @@ public sealed class Autopilot
                 // The road by day (H4 item 10): its fights where they wake, the strongbox, the dark lamp, then the gate.
                 if (pickChampion) PickChampion(b);
                 tx = dg.X; tz = dg.Z;
+                dayFight = pd.DayFighting;
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;
@@ -228,7 +229,12 @@ public sealed class Autopilot
             if (dd < 4.5 && dd > 0.01) { rx += dx / dd * (4.5 - dd); rz += dz / dd * (4.5 - dd); }
             if (dd < 2.2) near++;
         }
-        Steer(dt, tx - p.X + rx * 1.4, tz - p.Z + rz * 1.4, p, tx, tz);
+        // (a day fight is fought where it stands, as a player would: pulled to its foe at least as hard as five metres
+        // off, so the crowd's push does not walk her out of the camp and down to the river, j08 r2)
+        double ax = tx - p.X, az = tz - p.Z, ad = Math.Sqrt(ax * ax + az * az);
+        if (dayFight && ad > 0.01 && ad < 5) { ax *= 5 / ad; az *= 5 / ad; }
+        dayFight = false;
+        Steer(dt, ax + rx * 1.4, az + rz * 1.4, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
         if (near >= 3 && abilityT <= 0 && !g.HoldFlare) { Press(Act.Flare); abilityT = 2; }
@@ -445,6 +451,7 @@ public sealed class Autopilot
     /// once --leave-after S (20) have passed since it was won. True when it has the step.</summary>
     int freeFor;
     List<(double X, double Z)>? route;
+    bool dayFight;
     double routeT;
     (double, double) routeFor;
 
