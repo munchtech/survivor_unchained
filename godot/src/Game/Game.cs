@@ -1275,7 +1275,7 @@ public partial class Game : Node, IZoneHost
     double focusT;
     /// <summary>The boss a Focus event frames with her (its place), and the look it last set.</summary>
     (double X, double Z)? bossFocus;
-    static readonly bool FocusOld = Args.Has("focus-old"), CamLog = Args.Has("camlog");
+    static readonly bool FocusOld = Args.Has("focus-old"), LookLog = Args.Has("looklog");
     double camLogT;
     Vector3? bossFocusSet;
 
@@ -1318,12 +1318,12 @@ public partial class Game : Node, IZoneHost
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;
-        // (--camlog: where the look is against her, 4 times a second, for N35's strips)
-        if (CamLog && (camLogT -= dt) <= 0 && Battle is { } clb)
+        // (--looklog: where the look is against her, 4 times a second, for N35's strips)
+        if (LookLog && (camLogT -= dt) <= 0 && Battle is { } clb)
         {
             camLogT = 0.25;
             var lk = cam.LookAt;
-            GD.Print($"CAMLOG t={clb.Time:0.00} her=({clb.Player.X:0.00},{clb.Player.Z:0.00}) look=({lk.X:0.00},{lk.Z:0.00}) off={Mathf.Sqrt((lk.X - (float)clb.Player.X) * (lk.X - (float)clb.Player.X) + (lk.Z - (float)clb.Player.Z) * (lk.Z - (float)clb.Player.Z)):0.00} focus={(cam.FocusOverride is { } fo ? $"({fo.X:0.0},{fo.Z:0.0})" : "-")} toward={(cam.Toward is { } tw ? $"({tw.X:0.0},{tw.Z:0.0})" : "-")} hud={hudMode ?? "-"} focusT={focusT:0.00}");
+            GD.Print($"LOOKLOG t={clb.Time:0.00} her=({clb.Player.X:0.00},{clb.Player.Z:0.00}) look=({lk.X:0.00},{lk.Z:0.00}) off={Mathf.Sqrt((lk.X - (float)clb.Player.X) * (lk.X - (float)clb.Player.X) + (lk.Z - (float)clb.Player.Z) * (lk.Z - (float)clb.Player.Z)):0.00} focus={(cam.FocusOverride is { } fo ? $"({fo.X:0.0},{fo.Z:0.0})" : "-")} toward={(cam.Toward is { } tw ? $"({tw.X:0.0},{tw.Z:0.0})" : "-")} hud={hudMode ?? "-"} focusT={focusT:0.00}");
         }
         if (FocusOld) { if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null; }
         else { if (focusT > 0) focusT -= dt; BossFocus(); }
