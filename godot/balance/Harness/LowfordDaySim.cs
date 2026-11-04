@@ -81,8 +81,8 @@ public static class LowfordDaySim
                 if (!d.DownAt.ContainsKey(id) || d.DownAt[id] >= b.Time - ArenaSim.Dt) lows[id] = Math.Min(lows.GetValueOrDefault(id, 1), hp);
             if (post != null && !r.PostLit && Math.Sqrt((p.X - post.X) * (p.X - post.X) + (p.Z - post.Z) * (p.Z - post.Z)) < post.R)
                 r.PostLit = true;
-            if (box != null && !r.BoxOpened && (!box.Alive || box.Ref != "day_strongbox")) r.BoxOpened = true;
-            if (p.Z < s.GateZ) { r.Reached = true; break; }
+            if (box != null && !r.BoxOpened && (!box.Alive || box.Ref != "day_strongbox")) { r.BoxOpened = true; d.MarkDone("strongbox"); }
+            if (p.Z < s.GateZ && d.GateOpen) { r.Reached = true; break; }
         }
         r.Seconds = b.Time - t0;
         if (!r.Reached) { var gg = d.Goal(_ => r.PostLit, _ => box is { Alive: true, Ref: "day_strongbox" } bx2 ? (bx2.X, bx2.Z) : null, 0); Console.Error.WriteLine($"  goal ({gg.X:0.0},{gg.Z:0.0}) {gg.For?.Id} foes {string.Join(" ", b.Enemies.Living().Where(e => Math.Abs(e.X - b.Player.X) + Math.Abs(e.Z - b.Player.Z) < 30).Select(e => $"{e.Def.Id}@({e.X:0},{e.Z:0}){e.State}{(e.Roused ? "R" : "")}"))} picks {string.Join(" ", b.Pickups.Living().Where(k => Math.Abs(k.X - b.Player.X) + Math.Abs(k.Z - b.Player.Z) < 12).Select(k => $"{k.Kind}@({k.X:0.0},{k.Z:0.0})"))}"); }
@@ -108,7 +108,7 @@ public static class LowfordDaySim
     /// health (median / worst), and per beat its time (woke to down, median) and her lowest health in it (median / worst).</summary>
     public static string Report(List<LowfordDayResult> rs)
     {
-        var beats = DayStretch.For("lowford")!.Beats.Where(x => x.Kind is "pack" or "ring").Select(x => x.Id).ToList();
+        var beats = DayStretch.For("lowford")!.Beats.Where(x => x.Kind is "pack" or "ring" or "ambush").Select(x => x.Id).ToList();
         var sb = new StringBuilder();
         sb.AppendLine("| Calling | Hands | Runs | Reached | Time s (med / p90) | Falls (runs / total) | Low (med / worst) | " + string.Join(" | ", beats.Select(x => $"{x}: s / low med-worst")) + " | Post, box |");
         sb.AppendLine("|---|---|---|---|---|---|---|" + string.Concat(beats.Select(_ => "---|")) + "---|");

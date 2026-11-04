@@ -75,7 +75,7 @@ public class DayStretchTests
     public void The_stretch_runs_up_the_road_in_order_between_the_handback_and_the_gate()
     {
         var s = DayStretch.For("lowford")!;
-        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "post", "wallow", "wolves" }, s.Beats.Select(b => b.Id));
+        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "road_ambush", "post", "wallow", "wolves" }, s.Beats.Select(b => b.Id));
         foreach (var bt in s.Beats) Assert.InRange(bt.Z, s.GateZ + 4, s.From[1] - 10);
         Assert.Equal("act1.post1", s.Get("post")!.Post);
         Assert.Equal("charge", s.Get("boars")!.Tell);
@@ -133,6 +133,39 @@ public class DayStretchTests
         Assert.True(d.RingAt >= 0);
         Assert.True(d.Standing("wolves").Count >= 6);
         if (b.Flare != null) Assert.True(b.FlareReady);
+        // (r3) The rest of the pack waits for the ring to be down and a breath; the gate holds till they are.
+        Assert.False(d.GateOpen);
+        foreach (var e in d.Standing("wolves")) b.KillEnemy(e, true, null);
+        for (double t = 0; t < 1; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain(); }
+        Assert.Empty(d.Standing("wolves"));
+        Assert.False(d.GateOpen);
+        for (double t = 0; t < ring.FollowAfter + 0.5; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain(); }
+        Assert.True(d.Standing("wolves").Count >= 4);
+        Assert.False(d.GateOpen);
+    }
+
+    [Fact]
+    public void The_road_ambush_springs_on_her_way_back_once_the_strongbox_is_open()
+    {
+        var b = Road(7);
+        var s = DayStretch.For("lowford")!;
+        var am = s.Get("road_ambush")!;
+        var st = s.Beats.Where(x => x.Kind == "pack").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true);
+        var d = new DayStretch(s, b, st, 2, 1);
+        d.Place();
+        b.Player.X = am.X; b.Player.Z = am.Z;
+        d.Tick(Dt);
+        Assert.False(d.Packs.ContainsKey(am.Id));
+        // Its way lies through it once the box is open (the route's next place), and there it springs.
+        d.MarkDone("strongbox");
+        b.Player.X = am.X + 20; b.Player.Z = am.Z;
+        var g = d.Goal(_ => true, _ => null, 0);
+        Assert.Same(am, g.For);
+        b.Player.X = am.X; b.Player.Z = am.Z;
+        d.Tick(Dt);
+        Assert.Equal(am.Foes.Sum(f => f.N), d.Standing(am.Id).Count);
+        Assert.All(d.Standing(am.Id), e => Assert.True(MathX.Dist(e.X, e.Z, am.X, am.Z) >= 5));
+        Assert.True(d.Fighting);
     }
 
     [Fact]
@@ -156,7 +189,8 @@ public class DayStretchTests
         foreach (var bt in s.Beats.Where(x => x.Kind == "pack"))
         {
             Assert.InRange(bt.Foes.Sum(f => f.N) + (bt.Captain != null ? 1 : 0), bt.Id == "boars" ? 3 : 5, bt.Id == "boars" ? 4 : 10);
-            foreach (var w in bt.Waves) Assert.InRange(w.Foes.Sum(f => f.N) + (w.Elite != null ? 1 : 0), 4, 10);
+            // (a pulse after a breath, r3, is a smaller beat: 2-4)
+            foreach (var w in bt.Waves) Assert.InRange(w.Foes.Sum(f => f.N) + (w.Elite != null ? 1 : 0), w.After != null ? 2 : 4, w.After != null ? 4 : 10);
             if (bt.Id != "boars") Assert.NotEmpty(bt.Waves);
         }
         var box = s.Get("strongbox")!; var camp = s.Get(box.Guard!)!;

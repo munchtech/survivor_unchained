@@ -1,5 +1,5 @@
 {
-  "about": "The day stretches (H4 item 10, gate N18): free day play between a night's cinematic and the next place, in a permanent zone that resets by data/content/zone_resets.json. Read by logic/Play/Zones/DayStretch.cs: the zone (Prologue for lowford) places and runs it, the balance harness (godot/balance, lowford-day) plays the same fights. Beats in the order a sensible player takes them (DayStretch.Goal, the autopilot's and the harness's route: each pack's ground, a chest once its keepers are down, the post, the ring, the gate; along GroundPath round the trees): the road's boars, the Kerchiefs' camp 44 m east (its strongbox at its back), the road lamp, the boars' wallow 42 m west, the wolf ring at the gate. Every pack's waking ring stands 20 m or more clear of the next one's (DayStretchTests). pack: foes resting round (x, z) within spread, waking within wake m of her (Verge's packs), leashed to leash m; tell: the kit kind (data/content/telegraphs.json) its foes cast, first firstAfter s after waking, then every [min, max] s, from within the kind's reach; captain: one more of that kind, a champion (elite: three times the life), who leads (a kerchief_captain rallies and calls more out of the trees).  post: a Lamps v2 lamp-post (lamps_v2.json) on the zone's light, relit by an interact within r. chest: a strongbox. ring: the Flare's save, a closing (Battle.TellClosing) of n of def round her once she comes north past z after being south of armZ; her Flare filled to flareTo of full if short; then the rest of the pack (follow: n of def, and one of elite as a champion) comes out of the trees between her and the gate followAfter s later. Foe level: 1 + (her level + day) / 2 + levelUp (the Verge's). Coordinates read off data/zones/lowford/zone.json (paths.ROAD; the road lamps are lights 13 (2,-64) and 14 (-1,-86); the gate at z -112, exitZ -104). C04 A hands back at its 'up' mark (0.45, -63). tellBy: only that kind casts the pack's tell (the wallow's sows do not charge). ring: halfWidth, it springs only within that of its x (a fight at a camp that strays north does not spring it). waves (a pack's): its next wave out of the trees round its ground (out m from it) once under or fewer of it stand, elite one more of that kind as a champion (the camp's sleepers out of the tents, the wallow's from the reeds).",
+  "about": "The day stretches (H4 item 10, gate N18): free day play between a night's cinematic and the next place, in a permanent zone that resets by data/content/zone_resets.json. Read by logic/Play/Zones/DayStretch.cs: the zone (Prologue for lowford) places and runs it, the balance harness (godot/balance, lowford-day) plays the same fights. Beats in the order a sensible player takes them (DayStretch.Goal, the autopilot's and the harness's route: each pack's ground, a chest once its keepers are down, the post, the ring, the gate; along GroundPath round the trees): the road's boars, the Kerchiefs' camp 44 m east (its strongbox at its back), the road lamp, the boars' wallow 42 m west, the wolf ring at the gate. Every pack's waking ring stands 20 m or more clear of the next one's (DayStretchTests). pack: foes resting round (x, z) within spread, waking within wake m of her (Verge's packs), leashed to leash m; tell: the kit kind (data/content/telegraphs.json) its foes cast, first firstAfter s after waking, then every [min, max] s, from within the kind's reach; captain: one more of that kind, a champion (elite: three times the life), who leads (a kerchief_captain rallies and calls more out of the trees).  post: a Lamps v2 lamp-post (lamps_v2.json) on the zone's light, relit by an interact within r. chest: a strongbox. ring: the Flare's save, a closing (Battle.TellClosing) of n of def round her once she comes north past z after being south of armZ; her Flare filled to flareTo of full if short; then the rest of the pack (follow: n of def, and one of elite as a champion) comes out of the trees between her and the gate followAfter s later. Foe level: 1 + (her level + day) / 2 + levelUp (the Verge's). Coordinates read off data/zones/lowford/zone.json (paths.ROAD; the road lamps are lights 13 (2,-64) and 14 (-1,-86); the gate at z -112, exitZ -104). C04 A hands back at its 'up' mark (0.45, -63). tellBy: only that kind casts the pack's tell (the wallow's sows do not charge). ring: halfWidth, it springs only within that of its x (a fight at a camp that strays north does not spring it). waves (a pack's): its next wave out of the trees round its ground (out m from it) once under or fewer of it stand, elite one more of that kind as a champion (the camp's sleepers out of the tents, the wallow's from the reeds). ambush (r3): its foes out of the trees round her (out m) once she comes within r of (x, z), after its guard (a beat's id) is done (the Kerchiefs' rear-guard on the track back from the camp, once the strongbox is open). ring (r3): its follow comes followAfter s after the ring's own foes are down (a breath, two pulses), and the gate holds until it is down (DayStretch.GateOpen). A wave's after (r3, pulses): it comes that many s once the pack is all down (a breath), not at under (the road's boars' pair out of the trees, the wallow's from the reeds).",
   "zones": {
     "lowford": {
       "from": [
@@ -29,6 +29,18 @@
           "every": [
             4.5,
             6.5
+          ],
+          "waves": [
+            {
+              "foes": [
+                {
+                  "def": "boar",
+                  "n": 2
+                }
+              ],
+              "after": 3,
+              "out": 10
+            }
           ]
         },
         {
@@ -42,7 +54,7 @@
           "foes": [
             {
               "def": "footpad",
-              "n": 4
+              "n": 3
             },
             {
               "def": "pillager",
@@ -64,7 +76,7 @@
                 },
                 {
                   "def": "pillager",
-                  "n": 2
+                  "n": 1
                 },
                 {
                   "def": "bruiser",
@@ -72,20 +84,6 @@
                 }
               ],
               "under": 3,
-              "out": 9
-            },
-            {
-              "foes": [
-                {
-                  "def": "footpad",
-                  "n": 4
-                },
-                {
-                  "def": "bruiser",
-                  "n": 1
-                }
-              ],
-              "under": 2,
               "out": 9
             }
           ]
@@ -97,6 +95,27 @@
           "z": -85.0,
           "gold": 24,
           "guard": "kerchiefs"
+        },
+        {
+          "id": "road_ambush",
+          "kind": "ambush",
+          "x": 22,
+          "z": -86.5,
+          "r": 4,
+          "guard": "strongbox",
+          "out": 8,
+          "leash": 18,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 1
+            }
+          ],
+          "levelUp": 0
         },
         {
           "id": "post",
@@ -139,14 +158,14 @@
               "foes": [
                 {
                   "def": "boar",
-                  "n": 3
+                  "n": 2
                 },
                 {
                   "def": "boar_slurry",
                   "n": 1
                 }
               ],
-              "under": 2,
+              "after": 3,
               "out": 9
             }
           ]
@@ -172,7 +191,7 @@
             }
           ],
           "followElite": "wolf_howler",
-          "followAfter": 1.2
+          "followAfter": 2.0
         }
       ]
     }

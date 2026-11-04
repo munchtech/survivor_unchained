@@ -22,7 +22,12 @@ public sealed class DayStretch
 
     /// <summary>A pack's next wave: out of the trees round its ground (Out m from it) once Under or fewer of it stand,
     /// with Elite one more of that kind as a champion.</summary>
-    public sealed class Wave { public List<Foe> Foes = new(); public string? Elite; public int Under = 2; public double Out = 11; }
+    public sealed class Wave
+    {
+        public List<Foe> Foes = new(); public string? Elite; public int Under = 2; public double Out = 11;
+        /// <summary>(r3, pulses) set: the wave comes this many seconds after the pack is all down (a breath), not at Under.</summary>
+        public double? After;
+    }
 
     public sealed class Beat
     {
@@ -37,6 +42,8 @@ public sealed class DayStretch
         /// <summary>A ring's second wave: the rest of the pack, out of the trees toward the gate, FollowAfter s on.</summary>
         public List<Foe> Follow = new();
         public double FollowAfter = 3;
+        /// <summary>An ambush's foes come out of the trees this far round her (and never within 5 m).</summary>
+        public double Out = 8;
         /// <summary>A pack's waves after the first (the camp's sleepers out of the tents, the wallow's from the reeds).</summary>
         public List<Wave> Waves = new();
         public double[] Every = [5, 7];
@@ -175,7 +182,15 @@ public sealed class DayStretch
                         list.Add((o, o.Seed)); up.Add((o, o.Seed));
                     }
             // (its next wave, out of the trees round its ground, when it is thinned to Under)
-            if (WokeAt.ContainsKey(id) && Sent(id) < bt.Waves.Count && up.Count <= bt.Waves[Sent(id)].Under)
+            // (a pulse: the pack down, its next wave After s on; the pack is not down till it has come)
+            bool pulse = WokeAt.ContainsKey(id) && Sent(id) < bt.Waves.Count && bt.Waves[Sent(id)].After is { } aft;
+            if (pulse && up.Count == 0)
+            {
+                if (!quietAt.ContainsKey(id)) quietAt[id] = b.Time;
+                if (b.Time - quietAt[id] < bt.Waves[Sent(id)].After!.Value) continue;
+                quietAt.Remove(id);
+            }
+            if (WokeAt.ContainsKey(id) && Sent(id) < bt.Waves.Count && (pulse ? up.Count == 0 : up.Count <= bt.Waves[Sent(id)].Under))
             {
                 var w = bt.Waves[Sent(id)];
                 sent[id] = Sent(id) + 1;
@@ -208,9 +223,14 @@ public sealed class DayStretch
                 if (blow != null) Told?.Invoke(bt, e, blow);
             }
         }
+        foreach (var bt in Of("ambush"))
+            if (!Done(bt.Id) && !Packs.ContainsKey(bt.Id) && (bt.Guard == null || Done(bt.Guard)) && !Fighting && Held?.Invoke() != true
+                && Dist(p.X, p.Z, bt.X, bt.Z) < bt.R)
+                Spring(bt);
         foreach (var bt in Of("ring"))
         {
-            if (RingAt >= 0 && !followed && b.Time - RingAt >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
+            // (r3: the rest of the pack after a breath, FollowAfter s once the ring's own foes are down: two pulses, not one press)
+            if (RingAt >= 0 && !followed && DownAt.TryGetValue(bt.Id, out var rd) && b.Time - rd >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
             // (armed on the road south of its line; off the road it disarms, so she comes back to the road to spring it,
             // with the gate ahead: j08 r2 came along the wall from the wallow and sprang it in the trees)
@@ -220,6 +240,42 @@ public sealed class DayStretch
             Ring(bt);
         }
     }
+
+    /// <summary>The way out is open: no ring sprung whose second wave is still to come or still on its feet (the wolves
+    /// hold the gate; r3: a player at the ring's line is 7 m from the exit and would walk out in the breath). The last one
+    /// standing does not hold it (the harness's bots were held for good by a howler that kept off behind a tree).</summary>
+    public bool GateOpen => !Of("ring").Any(bt => RingAt >= 0 && (bt.Follow.Count > 0 || bt.FollowElite != null)
+        && (!followed || Standing(bt.Id).Count(e => Dist(e.X, e.Z, b.Player.X, b.Player.Z) < 25) > 1));
+
+    /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands.</summary>
+    void Spring(Beat bt)
+    {
+        var p = b.Player;
+        int lv = Level(level, day, bt);
+        var list = new List<(Enemy, double)>();
+        var kinds = bt.Foes.SelectMany(f => Enumerable.Repeat(f.Def, f.N)).ToList();
+        double a0 = b.Rng.Next() * Math.Tau;
+        for (int i = 0; i < kinds.Count; i++)
+            for (int t = 0; t < 12; t++)
+            {
+                double a = a0 + i * 2.39996 + (b.Rng.Next() - 0.5) * 0.5, d = bt.Out + b.Rng.Next() * 2.5;
+                double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
+                if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
+                var e = b.SpawnEnemy(kinds[i], x, z, new Battle.SpawnOpts
+                {
+                    Level = lv, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash),
+                });
+                if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
+                break;
+            }
+        Packs[bt.Id] = list;
+        WokeAt[bt.Id] = b.Time;
+        Woke?.Invoke(bt);
+    }
+
+    readonly Dictionary<string, double> quietAt = new();
+    /// <summary>A pack between its pulses (all down, its next wave still to come): she holds its ground.</summary>
+    public bool Breath(string beat) => quietAt.ContainsKey(beat);
 
     bool followed;
     readonly Dictionary<string, int> sent = new();
@@ -285,10 +341,16 @@ public sealed class DayStretch
                 }
                 case "chest" when !Done(bt.Id) && (bt.Guard == null || Done(bt.Guard)) && chestAt(bt) is { } c:
                     return Route(c.X, c.Z, bt);
+                // (an ambush lies on her way: through its ground, once what it waits on is done)
+                case "ambush" when !Done(bt.Id) && !Packs.ContainsKey(bt.Id) && (bt.Guard == null || Done(bt.Guard)):
+                    return Route(bt.X, bt.Z, bt);
                 case "post" when !postLit(bt):
                     return Route(bt.X + 1.4, bt.Z, bt);
                 case "ring" when !Done(bt.Id) && RingAt < 0:
                     return armed ? Route(bt.X, bt.Z - 3, bt) : Route(bt.X, bt.ArmZ + 2.5, bt);
+                // (sprung, its second wave still to come: she holds the road and gets her breath)
+                case "ring" when RingAt >= 0 && !GateOpen:
+                    return Route(bt.X, bt.Z - 2, bt);
             }
         }
         return Route(gateX, S.GateZ - 6, null);
@@ -336,11 +398,12 @@ public sealed class DayStretch
         var list = Packs.TryGetValue(bt.Id, out var l) ? l : Packs[bt.Id] = new();
         Enemy? One(string def, bool elite, int i, int n)
         {
-            for (int t = 0; t < 10; t++)
+            for (int t = 0; t < 16; t++)
             {
-                double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * 1.6) + (b.Rng.Next() - 0.5) * 0.4, d = 11 + b.Rng.Next() * 3;
+                // (r3: on this side of the wall, never in it: j08's harness had four stuck in the stones, holding the gate)
+                double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * (1.6 + t * 0.12)) + (b.Rng.Next() - 0.5) * 0.4, d = Math.Max(7, 11 + b.Rng.Next() * 3 - t * 0.3);
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-                if (b.Collision.Blocked(x, z, 0.6) && t < 9) continue;
+                if (b.Collision.Blocked(x, z, 0.6) || z < S.GateZ - 6) continue;
                 var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 return e;

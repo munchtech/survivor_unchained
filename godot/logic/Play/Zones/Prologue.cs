@@ -1164,8 +1164,9 @@ public sealed partial class Prologue : ZoneRuntime
                 break;
             }
             case Stage.Exit:
+                // (and not while the wolf ring's second wave holds it, DayStretch.GateOpen)
                 // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
-                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && !finished) { finished = true; Finish(); }
+                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && !finished) { finished = true; Finish(); }
                 break;
         }
     }
