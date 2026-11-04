@@ -15,7 +15,7 @@
     - `chatgpt\prompts_r1.md`: 9 jobs, frames 09/07/13 x variants V1 restrained, V2 bold, V3 inked storybook, on the r4_2 frames.
     - `chatgpt\prompts_r2_draft.md`: 01/03/04/05/12 plus key art, MB1 her skin and hair, MB2 gear, MB3 town, MB4 wild, MB5 fire and spells, LB light. Its VARIANT line is filled after round 1.
     - Helper briefs to spawn as they are: `brief_gpt.md` (subagent_type `claude`, the Chrome driver on `chatgpt.lock`), and `brief_b1a.md`, `brief_b5.md`, `brief_b0.md` (each `su-lead-high`, effort medium). They share this worktree, and `wtlock.sh` serializes builds.
-- **r0:** the first shoot rendered BLACK (the kit GLBs weren't imported; NRE in `Dressing.PartsOf`). `--import` plus the reshoot were running at handoff (`work\r0b.sh`). If `look_l1\r0\palette.md` is missing or frames are black, re-run `bash work/r0b.sh`, and check `turn.py show` for a stale "look-l1: import + r0 frames" godot turn.
+- **r0 DONE (L1's before, integration b57f73200):** `survivorsunchained_inputs\look_l10\` (13 frames, `sheet.jpg`, `palette.md`). The first try rendered black because the kit GLBs weren't imported (NRE in `Dressing.PartsOf`); after `--import` it is clean, with 0 exceptions, and the godot turn was given back. Numbers (key/pool/gray%): 09 2.94/0.61/29, 12 2.67/0.64/21, 05 1.89/0.28/2, 07 1.22/0.19/8, 13 1.54/0.26/7. The round 1 style frames use r4_2's frames 09/07/13 (same scenes).
 - **Blocker:** `tools/hooks/spawn_guard.py` refuses spawns by a su-lead-max whose brief lacks the line `Spawning: allowed`. **The successor's brief must carry it.**
 - **Next, in order:**
   1. Spawn the ChatGPT driver (round 1) now. Spawn B1a, B5 and B0 once r0 is done: they edit shaders and C#, which would change r0.
