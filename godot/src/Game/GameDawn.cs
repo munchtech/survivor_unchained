@@ -23,6 +23,8 @@ public partial class Game
     public void DawnCard(DawnCard card, Action closed)
     {
         if (scene == null || hudMode != null) { closed(); return; }
+        // (--dawn-skills A,B: those names on the card, for pictures of a full night's from a --quick start that drafted none)
+        if (Args.Get("dawn-skills") is string ds) card = card with { Takes = Play.DawnCard.Build(ds.Split(','), null).Takes };
         hudMode = "dawn";
         dawnClosed = closed;
         dawnAt = Time.GetTicksMsec() / 1000.0;
@@ -37,7 +39,7 @@ public partial class Game
         controls.ClearLatches();
         dawnCard = hud.Dawn(card, DawnDown);
         GD.Print($"DAWNCARD {string.Join(" | ", card.Words())}");
-        if (Args.Has("shot")) Shots.Want("dawn_card", 1.3);
+        if (Args.Has("shot")) Shots.Want("dawn_card", 1.6);
     }
 
     /// <summary>A key while the card is up: Enter, Space or the use key closes it once it listens; every key is spent.</summary>

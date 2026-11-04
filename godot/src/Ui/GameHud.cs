@@ -877,8 +877,9 @@ public partial class GameHud : CanvasLayer
     {
         if (dawn != null && IsInstanceValid(dawn)) dawn.QueueFree();
         dawn = null;
-        // (the HUD goes as the card comes, and comes back as it goes)
-        CreateTween().TweenProperty(play, "modulate:a", c != null ? 0f : 1f, c != null ? DawnCardView.In : DawnCardView.Out);
+        // (the HUD goes as the card comes, and comes back as it goes: held to the card's own fade each frame in
+        // _Process, over anything else fading the HUD, such as a cinematic's hand-back)
+        if (c == null) play.Modulate = Colors.White;
         if (c == null || go == null) return null;
         dawn = new DawnCardView(c, () => { dawn = null; go(); });
         root.AddChild(dawn);
@@ -1479,6 +1480,7 @@ public partial class GameHud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        if (dawn != null && IsInstanceValid(dawn)) { playFade?.Kill(); playFade = null; play.Modulate = new Color(1, 1, 1, 1 - dawn.Modulate.A); }
         using var _ = new Perf.Span(Perf.Part.Hud);
         if (tipWaiting && Time.GetTicksMsec() >= tipHoldUntil && !FlareAftermath(Time.GetTicksMsec())) { tipWaiting = false; var th = tipHeld; tipHeld = null; Hint(th); }
         float dt = (float)delta;
