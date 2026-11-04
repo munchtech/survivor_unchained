@@ -1,0 +1,262 @@
+using System;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using Godot;
+
+namespace SurvivorUnchained.View;
+
+/// <summary>
+/// The ink line (L1 painted cel, B5): a compute pass on the current game camera's Compositor at PostTransparent, on the
+/// linear HDR frame after the MSAA resolve and the transparent pass, before TAA (Godot 4.5.1 runs TAA after the
+/// PostTransparent effects, so the line is jittered with the frame and antialiased by TAA like any edge), the tonemap
+/// and the grade LUT. From the resolved depth: silhouettes on the near side and creases (InkShaders). The ink class
+/// rides each lit material's roughness (cel_tag: n = round(r x 31) x 4 + class, roughness = n/127; Godot stores the
+/// normal_roughness alpha as r x 127/255, 1 - that on a dynamic instance): 0 full, 1 silhouette only, 2 none, 3 full.
+/// out = colour x mix(1, RigInk x k, a): the surface's own tone deepened, tinted by the light rig, never black.
+/// Args: --ink off, --ink-px close,play (2.5,1.5 px at 1080p), --ink-depth a,b (the drop threshold max(a m, b x z)),
+/// --ink-crease deg (45), --ink-fade near,far (30,60 m), --ink-dark k (0.25), --ink-rig r,g,b, --ink-dbg edges|class|code,
+/// --ink-time (the pass's GPU ms), --ink-test S (rows of tagged spheres for the encoding, the static row set at S s).
+/// </summary>
+public partial class InkPass : CompositorEffect
+{
+    /// <summary>The rig's ink colours (the lead wires RigInk to the presets).</summary>
+    public static readonly Color Night = new(0.42f, 0.45f, 0.85f), Day = new(0.85f, 0.6f, 0.5f);
+    /// <summary>The light rig's ink, before the darkness k (--ink-rig pins it; then SetRig is ignored).</summary>
+    public static Color RigInk { get; private set; } = Night;
+    static bool rigPinned;
+    public static void SetRig(Color c) { if (!rigPinned) RigInk = c; }
+
+    public static readonly bool On = Args.Get("ink") is not ("off" or "0");
+    public static float RClose = 2.5f, RPlay = 1.5f, ThA = 0.05f, ThB = 0.025f, CreaseDeg = 45, FadeNear = 30, FadeFar = 60, Dark = 0.25f,
+        LumCut = 2.0f, ZClose = 3f, ZPlay = 16f, CreaseW = 0.5f, SilThin = 0.6f;
+    public static int Dbg;
+    public static readonly bool Time = Args.Has("ink-time");
+
+    static InkPass()
+    {
+        float[]? V(string k, int n)
+        {
+            if (Args.Get(k) is not string s) return null;
+            var p = s.Split(',');
+            if (p.Length != n) { GD.PushWarning($"--{k}: want {n} numbers, got '{s}'"); return null; }
+            var o = new float[n];
+            for (int i = 0; i < n; i++)
+                if (!float.TryParse(p[i], NumberStyles.Float, CultureInfo.InvariantCulture, out o[i])) { GD.PushWarning($"--{k}: bad '{s}'"); return null; }
+            return o;
+        }
+        if (V("ink-px", 2) is [var rc, var rp]) { RClose = rc; RPlay = rp; }
+        if (V("ink-depth", 2) is [var a, var b]) { ThA = a; ThB = b; }
+        if (V("ink-crease", 1) is [var cd]) CreaseDeg = cd;
+        if (V("ink-fade", 2) is [var fn, var ff]) { FadeNear = fn; FadeFar = Mathf.Max(ff, fn + 0.01f); }
+        if (V("ink-dark", 1) is [var k]) Dark = k;
+        if (V("ink-rig", 3) is [var r, var g, var bb]) { RigInk = new Color(r, g, bb); rigPinned = true; }
+        Dbg = Args.Get("ink-dbg") switch { "edges" => 1, "class" => 2, "code" => 3, null => 0, var x => int.TryParse(x, out var d) ? d : 0 };
+    }
+
+    public double GpuMs = -1;
+    /// <summary>The fog as the camera sees it (main thread, each frame): mode (0 none, 1 exponential, 2 depth), density,
+    /// begin, end; curve, the volumetric fog's density and length.</summary>
+    public Vector4 Fog, Fog2;
+
+    RenderingDevice? rd;
+    Rid shader, pipe, sampler, ubo;
+    bool failed;
+
+    public InkPass()
+    {
+        EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
+        AccessResolvedColor = true;
+        AccessResolvedDepth = true;
+        NeedsNormalRoughness = true;
+    }
+
+    void Init()
+    {
+        rd = RenderingServer.GetRenderingDevice();
+        var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = InkShaders.Line });
+        if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError($"ink shader: {spirv.CompileErrorCompute}"); failed = true; return; }
+        shader = rd.ShaderCreateFromSpirV(spirv, "ink_line");
+        pipe = rd.ComputePipelineCreate(shader);
+        sampler = rd.SamplerCreate(new RDSamplerState
+        {
+            MinFilter = RenderingDevice.SamplerFilter.Nearest, MagFilter = RenderingDevice.SamplerFilter.Nearest,
+            RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
+        });
+        ubo = rd.UniformBufferCreate(128);
+    }
+
+    static RDUniform U(RenderingDevice.UniformType t, int binding, params Rid[] ids)
+    {
+        var u = new RDUniform { UniformType = t, Binding = binding };
+        foreach (var id in ids) u.AddId(id);
+        return u;
+    }
+
+    public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
+        if (rd == null) { Init(); if (failed) return; }
+        if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
+        var size = buf.GetInternalSize();
+        if (size.X <= 0 || size.Y <= 0) return;
+        if (Time)
+        {
+            ulong t0 = 0, t1 = 0;
+            for (uint i = 0, n = rd!.GetCapturedTimestampsCount(); i < n; i++)
+            {
+                var nm = rd.GetCapturedTimestampName(i);
+                if (nm == "ink0") t0 = rd.GetCapturedTimestampGpuTime(i);
+                else if (nm == "ink1") t1 = rd.GetCapturedTimestampGpuTime(i);
+            }
+            if (t1 > t0 && t0 > 0) GpuMs = (t1 - t0) / 1e6;
+            rd.CaptureTimestamp("ink0");
+        }
+        var proj = data.GetCamProjection();
+        // (the projection comes depth-corrected, reverse Z 0-1; NDC y taken as 2v - 1, Vulkan's, so an unflipped one is turned over)
+        var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
+        var inv = proj.Inverse() * flipY;
+        var m = new float[28];
+        Vector4[] cols = { inv.X, inv.Y, inv.Z, inv.W };
+        for (int c = 0; c < 4; c++) { m[c * 4] = cols[c].X; m[c * 4 + 1] = cols[c].Y; m[c * 4 + 2] = cols[c].Z; m[c * 4 + 3] = cols[c].W; }
+        var rig = RigInk;
+        m[16] = rig.R; m[17] = rig.G; m[18] = rig.B; m[19] = Dark;
+        m[20] = Fog.X; m[21] = Fog.Y; m[22] = Fog.Z; m[23] = Fog.W;
+        m[24] = Fog2.X; m[25] = Fog2.Y; m[26] = Fog2.Z; m[27] = Fog2.W;
+        rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
+        float scale = size.Y / 1080f;
+        bool hasN = buf.HasTexture("forward_clustered", "normal_roughness");
+        var push = new float[]
+        {
+            size.X, size.Y, RClose * scale, RPlay * scale,
+            ThA, ThB, Mathf.Cos(Mathf.DegToRad(CreaseDeg)), hasN ? 1 : 0,
+            FadeNear, FadeFar, Dbg, LumCut,
+            ZClose, ZPlay, CreaseW, SilThin,
+        };
+        var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
+        for (uint v = 0, nv = buf.GetViewCount(); v < nv; v++)
+        {
+            Rid colour = buf.GetColorLayer(v), depth = buf.GetDepthLayer(v);
+            Rid nr = hasN ? buf.GetTextureSlice("forward_clustered", "normal_roughness", v, 0, 1, 1) : depth;
+            var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+            {
+                U(RenderingDevice.UniformType.Image, 0, colour),
+                U(RenderingDevice.UniformType.SamplerWithTexture, 1, sampler, depth),
+                U(RenderingDevice.UniformType.SamplerWithTexture, 2, sampler, nr),
+                U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
+            });
+            long l = rd.ComputeListBegin();
+            rd.ComputeListBindComputePipeline(l, pipe);
+            rd.ComputeListBindUniformSet(l, set, 0);
+            rd.ComputeListSetPushConstant(l, pb, (uint)pb.Length);
+            rd.ComputeListDispatch(l, (uint)((size.X + 15) / 16), (uint)((size.Y + 15) / 16), 1);
+            rd.ComputeListEnd();
+        }
+        if (Time) rd.CaptureTimestamp("ink1");
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what != NotificationPredelete || rd == null) return;
+        foreach (var r in new[] { shader, sampler, ubo })
+            if (r.IsValid) rd.FreeRid(r);
+    }
+}
+
+/// <summary>Keeps the ink pass first on whichever camera the game draws through (play, close-up, Look, cinematics),
+/// beside the compositors already there (BattleFx's MarkPass inserts itself first; Brush swaps its own in on a camera
+/// change): checked before every frame draws, after their own updates. Feeds the camera's fog. Made by Game unless --ink off.</summary>
+public partial class Ink : Node
+{
+    readonly InkPass effect = new();
+    readonly Compositor own;
+    double gpuSum; int gpuN; ulong frames;
+
+    public Ink()
+    {
+        Name = "Ink";
+        own = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { effect } };
+    }
+
+    public override void _Ready()
+    {
+        // The ink class rides the roughness: the screen-space roughness limiter (specular AA, on by default) would widen
+        // a curved surface's roughness and scramble its code. (project.godot: rendering/anti_aliasing/screen_space_roughness_limiter/enabled=false)
+        RenderingServer.ScreenSpaceRoughnessLimiterSetActive(false, 0.25f, 0.18f);
+        RenderingServer.FramePreDraw += Sync;
+        if (Args.Get("ink-test") is string t) testAt = float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0 ? s : 4;
+    }
+
+    public override void _ExitTree() => RenderingServer.FramePreDraw -= Sync;
+
+    void Sync()
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null) return;
+        var comp = cam.Compositor;
+        if (comp == null) cam.Compositor = own;
+        else
+        {
+            var fx = comp.CompositorEffects;
+            int i = fx.IndexOf(effect);
+            if (i != 0)
+            {
+                var d = fx.Duplicate();
+                if (i > 0) d.RemoveAt(i);
+                d.Insert(0, effect);
+                comp.CompositorEffects = d;
+            }
+        }
+        var env = cam.Environment ?? cam.GetWorld3D()?.Environment;
+        if (env != null && env.FogEnabled)
+            effect.Fog = env.FogMode == Godot.Environment.FogModeEnum.Depth
+                ? new Vector4(2, env.FogDensity, env.FogDepthBegin, env.FogDepthEnd)
+                : new Vector4(1, env.FogDensity, 0, 0);
+        else effect.Fog = Vector4.Zero;
+        effect.Fog2 = new Vector4(env?.FogDepthCurve ?? 1, env is { VolumetricFogEnabled: true } ? env.VolumetricFogDensity : 0, env?.VolumetricFogLength ?? 0, 0);
+        if (testAt > 0) Test(cam);
+        if (InkPass.Time && ++frames > 60 && effect.GpuMs >= 0)
+        {
+            gpuSum += effect.GpuMs; gpuN++;
+            if (gpuN == 120)
+            {
+                GD.Print($"INK gpu {gpuSum / gpuN:0.000} ms (mean of {gpuN} frames, {GetViewport().GetVisibleRect().Size})");
+                gpuSum = 0; gpuN = 0;
+            }
+        }
+    }
+
+    // --ink-test S: two rows of four spheres coded class 0-3 (roughness (16 x 4 + class)/127): the upper row follows the
+    // camera (moved every frame: a dynamic instance), the lower one is set in the world once at S seconds (static).
+    float testAt;
+    Node3D? dynRow, statRow;
+    void Test(Camera3D cam)
+    {
+        if (dynRow == null)
+        {
+            dynRow = Row(true); statRow = Row(false);
+            AddChild(dynRow); AddChild(statRow);
+            statRow.Visible = false;
+        }
+        var basis = cam.GlobalTransform.Basis;
+        var at = cam.GlobalTransform * new Vector3(0, 0.55f, -4.5f);
+        dynRow.GlobalTransform = new Transform3D(basis, at);
+        if (!statRow.Visible && Engine.GetProcessFrames() / 60.0 >= testAt)
+        {
+            statRow.GlobalTransform = new Transform3D(basis, cam.GlobalTransform * new Vector3(0, 0.25f, -4.5f));
+            statRow.Visible = true;
+        }
+    }
+
+    static Node3D Row(bool dyn)
+    {
+        var row = new Node3D { Name = dyn ? "InkTestDyn" : "InkTestStatic" };
+        var sh = new Shader { Code = "shader_type spatial;\nuniform float code;\nvoid fragment() { ALBEDO = vec3(0.5); ROUGHNESS = code / 127.0; }\n" };
+        for (int c = 0; c < 4; c++)
+        {
+            var mat = new ShaderMaterial { Shader = sh };
+            mat.SetShaderParameter("code", 16 * 4 + c);
+            row.AddChild(new MeshInstance3D { Mesh = new SphereMesh { Radius = 0.11f, Height = 0.22f }, MaterialOverride = mat, Position = new Vector3(-0.45f + 0.3f * c, 0, 0) });
+        }
+        return row;
+    }
+}

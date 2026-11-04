@@ -102,6 +102,8 @@ public partial class Game : Node, IZoneHost
         AddChild(camera);
         // --brush: the painterly post-filter (style trial; nothing is made without the flag).
         if (Brush.On is { } brush) AddChild(new Brush(brush));
+        // The ink line (L1 painted cel; --ink off: nothing is made). After Brush, so it is put first on its compositor.
+        if (InkPass.On) AddChild(new Ink());
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
