@@ -1169,6 +1169,14 @@ public partial class Game : Node, IZoneHost
                     // N35: it follows her, half the way to the boss and never past the middle third, and nothing it
                     // set is left once it is over, a panel open or not.)
                     focusT = f.Duration;
+                    // (--on arrival: a strip of the boss's arrival, every 0.5 s for 8 s, for N35)
+                    if (Shots.On("arrival") && !arrivalShot)
+                    {
+                        arrivalShot = true;
+                        for (int i = 0; i < 17; i++) Shots.Want($"arrival_{i:00}", i * 0.5);
+                        // (--draft-at-arrival: a level's draft comes up on the arrival, as one did in the owner's run)
+                        if (Args.Has("draft-at-arrival")) fb.PendingLevels++;
+                    }
                     // (--focus-old: as demo-rc2 had it, for the before strip)
                     if (FocusOld) { cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2); break; }
                     bossFocus = (f.X, f.Z);
@@ -1277,6 +1285,7 @@ public partial class Game : Node, IZoneHost
     (double X, double Z)? bossFocus;
     static readonly bool FocusOld = Args.Has("focus-old"), LookLog = Args.Has("looklog");
     double camLogT;
+    bool arrivalShot;
     Vector3? bossFocusSet;
 
     /// <summary>The boss focus this frame: the look half the way from her to it (capped to the middle third), set
