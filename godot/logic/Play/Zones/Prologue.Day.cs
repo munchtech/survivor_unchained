@@ -240,7 +240,8 @@ public sealed partial class Prologue
         if (box is { Alive: true } bx && kerchiefsDown) return (bx.X, bx.Z, null);
         if (DayBeat("post") is { Post: { } pid } pb && Lamps.V2 && !LampBook.PostLit(W, pid) && p.Z < pb.Z + 14) return (pb.X + 1.4, pb.Z, "post");
         // Up the road (its next point north), then through the gate.
+        // (back onto the road first: the trees east of it stand between the camp and the gate)
         var gate = L("gate");
-        return (gate.X, ExitZ - 6, null);
+        return Math.Abs(p.X - gate.X) > 3 ? (gate.X + 1, p.Z - 1.5, null) : (gate.X, ExitZ - 6, null);
     }
 }

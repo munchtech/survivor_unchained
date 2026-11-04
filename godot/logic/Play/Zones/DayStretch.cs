@@ -25,7 +25,10 @@ public sealed class DayStretch
         public string Id = "", Kind = "";
         public double X, Z, Spread = 3, Wake = 9, Leash = 20, R = 2.4, ArmZ, FlareTo = 1, FirstAfter = 1.2;
         public List<Foe> Foes = new();
-        public string? Tell, Captain, Post, Def;
+        public string? Tell, Captain, Post, Def, FollowElite;
+        /// <summary>A ring's second wave: the rest of the pack, out of the trees toward the gate, FollowAfter s on.</summary>
+        public List<Foe> Follow = new();
+        public double FollowAfter = 3;
         public double[] Every = [5, 7];
         public int N, Light = -1, Gold, LevelUp;
     }
@@ -153,6 +156,14 @@ public sealed class DayStretch
                 foreach (var f in up) f.E.Roused = true;
                 Woke?.Invoke(bt);
             }
+            // Those a captain calls out of the trees are the pack's too.
+            if (Captains.TryGetValue(id, out var cap) && Live(cap) && cap.E.Def.Summon is { } su)
+                foreach (var o in b.Enemies.Living())
+                    if (o.Tag == null && o.LifeT < 0.5 && o.Faction == cap.E.Faction && o.State != EnemyState.Dying && Dist(o.X, o.Z, cap.E.X, cap.E.Z) < su.Range + 2)
+                    {
+                        o.Tag = "day:" + id; o.Roused = true;
+                        list.Add((o, o.Seed)); up.Add((o, o.Seed));
+                    }
             if (up.Count == 0)
             {
                 DownAt[id] = b.Time;
@@ -180,11 +191,41 @@ public sealed class DayStretch
         }
         foreach (var bt in Of("ring"))
         {
+            if (RingAt >= 0 && !followed && b.Time - RingAt >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
             if (p.Z > bt.ArmZ) armed = true;
             if (!armed || p.Z > bt.Z || Held?.Invoke() == true) continue;
             Ring(bt);
         }
+    }
+
+    bool followed;
+
+    /// <summary>The rest of the ring's pack: out of the trees 12 m on toward the gate, hunting her.</summary>
+    void Follow(Beat bt)
+    {
+        var p = b.Player;
+        int lv = Level(level, day, bt);
+        var list = Packs.TryGetValue(bt.Id, out var l) ? l : Packs[bt.Id] = new();
+        Enemy? One(string def, bool elite, int i, int n)
+        {
+            for (int t = 0; t < 10; t++)
+            {
+                double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * 1.6) + (b.Rng.Next() - 0.5) * 0.4, d = 11 + b.Rng.Next() * 3;
+                double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
+                if (b.Collision.Blocked(x, z, 0.6) && t < 9) continue;
+                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
+                if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
+                return e;
+            }
+            return null;
+        }
+        int all = bt.Follow.Sum(f => f.N) + (bt.FollowElite != null ? 1 : 0), k = 0;
+        foreach (var f in bt.Follow) for (int i = 0; i < f.N; i++) One(f.Def, false, k++, all);
+        if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all) is { } c) Captains[bt.Id] = (c, c.Seed);
+        // (a pack put down before its second wave came is up again until the wave is down)
+        DownAt.Remove(bt.Id);
+        state.Remove(DoneKey(bt.Id));
     }
 
     /// <summary>The Flare's save: the closing round her, its foes on the band's points, her Flare filled if short.</summary>

@@ -130,6 +130,7 @@ switch (cmd)
     case "map": Maps(); break;
     case "story": Story(); break;
     case "verge-day": VergeDay(); break;
+    case "lowford-day": LowfordDay(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
     case "board": BoardPlan.Run(opt.Get("people", "pack"), opt.Int("tier", 1), opt.Get("seed", "311").Split(',').Select(int.Parse).ToArray(), opt.Get("out", ""), double.Parse(opt.Get("ppm", "4"), System.Globalization.CultureInfo.InvariantCulture)); break;
@@ -412,6 +413,30 @@ void Place()
  * with what she has learned by then (--learned 0,2,4 a stage), in three setups: old (1/2/3 slots, Hands off), new
  * (2/3/4, Hands on), nohand (new slots, Hands off). --stages 1:1:0,4:2:2,8:4:4 (level:day:learned)
  * --packs wolves,boars,footpads,lamplings,elitewolves --setups old,new,nohand --seeds N --waves N (packs a fight) --bot plain|deft --out PATH */
+// lowford-day: the Low Ford Road by day (H4 item 10), from C04 A's hand-back to the gate, many seeds a pair of hands:
+// --callings warden --levels 3 --bots human,careless --seeds 64.
+void LowfordDay()
+{
+    var levels = opt.List("levels", "3").Select(int.Parse).ToArray();
+    var bots = opt.List("bots", "human,careless");
+    int seeds = opt.Int("seeds", 64), seed0 = opt.Int("seed0", 1);
+    var specs = new List<LowfordDaySpec>();
+    foreach (var c in opt.List("callings", "warden") is ["all"] ? Callers() : opt.List("callings", "warden"))
+        foreach (var lv in levels)
+            foreach (var bot in bots)
+                for (int s = 0; s < seeds; s++) specs.Add(new LowfordDaySpec(seed0 + s, c, lv, bot));
+    Console.WriteLine($"{specs.Count} day walks");
+    var results = new ConcurrentBag<LowfordDayResult>();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        try { results.Add(LowfordDaySim.Play(spec)); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e.Message}"); }
+    });
+    var md = LowfordDaySim.Report(results.ToList());
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "lowford_day.md"), md);
+    Console.WriteLine(md);
+}
+
 void VergeDay()
 {
     var stages = opt.List("stages", "1:1:0,4:2:2,8:4:4").Select(x => x.Split(':').Select(int.Parse).ToArray()).ToArray();
