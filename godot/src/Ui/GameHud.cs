@@ -470,6 +470,9 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>The play's HUD shown or hidden; shown with a fade (seconds),
     /// it comes in over a cinematic's blend into play rather than at once.</summary>
+    /// <summary>How far the play HUD is shown (0 hidden, 1 in), for the cut log.</summary>
+    public float PlayAlpha => play.Visible ? play.Modulate.A : 0;
+
     public void ShowPlay(bool on, float fade = 0)
     {
         playFade?.Kill();

@@ -288,8 +288,9 @@ public partial class Game
             double f = Args.Num("facing", 0) * Math.PI / 180;
             return (Math.Sin(f) * k, Math.Cos(f) * k);
         }
-        if (controls.Captured) return (0, 0);
-        double x = controls.MoveX, z = controls.MoveZ;
+        // (a hand-back easing in, GameSeam: the input is held, the walk she was on carries)
+        if (controls.Captured && seam == null) return (0, 0);
+        double x = seam != null ? 0 : controls.MoveX, z = seam != null ? 0 : controls.MoveZ;
         if (x * x + z * z > 0.01) carryT = 0;
         else if (carryT > 0) { double k = carryT / CarryFade; return (carry.X * k, carry.Z * k); }
         return (x, z);
@@ -385,7 +386,16 @@ public partial class Game
         /// <summary>Where her double was a frame ago, and how fast it was going.</summary>
         Vector3? herWas;
         Vector3 herVel;
-        bool hudIn;
+        /// <summary>It hands back to play at its end (not on into another): the cut rule's window (GameSeam).</summary>
+        public bool EndsInPlay => file.End.Next == null;
+
+        /// <summary>Her drawn body (her double, or her own once handed over): root, head and right hand from it (--cutlog).</summary>
+        public (Vector3 Root, Vector3 Head, Vector3 Hand)? HerPose()
+        {
+            if (handed && g.scene?.Player is { } pv && !pv.Hidden) return PoseOf(pv.GlobalPosition, pv.Person.Skeleton);
+            if (people.TryGetValue("her", out var v) && v.Visible) return PoseOf(v.GlobalPosition, v.Person.Skeleton);
+            return null;
+        }
 
         sealed record Tween(double T0, double T1, Action<double> Apply);
         /// <summary>Free: through the air or the water (an exact place), not along the ground.</summary>
@@ -678,12 +688,7 @@ public partial class Game
                 herWas = at;
             }
             Steer();
-            // The play's HUD comes in as the bars go out, over the blend into the game's camera.
-            if (!hudIn && file.End.Her != null && file.End.Next == null && player.T >= player.S.Length - Math.Max(0.4, file.Bars.Out))
-            {
-                hudIn = true;
-                g.hud.ShowPlay(true, (float)Math.Max(0.4, file.Bars.Out));
-            }
+            // (the play's HUD comes in as the hand-back's camera lands: GameSeam)
             foreach (var v in people.Values) v.Advance(dt);
             foreach (var w in bosses.Values) { w.Shine(dt); if (bossHidden.Contains(w)) w.Visible = false; }
             foreach (var o in orbs.Values) o.Turn(dt);
@@ -2130,6 +2135,9 @@ public partial class Game
         {
             var p = b.Player;
             var cam = g.camera;
+            // The last frame, for the hand-back's ease (GameSeam): where it stood and its vertical lens.
+            var lastFrame = cam.GlobalTransform;
+            float lastVfov = cam.KeepAspect == Camera3D.KeepAspectEnum.Width ? g.VfovOf(cam.Fov) : cam.Fov;
             cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
             Campfire.ClearNear(0);
             CrowdView.Staged = null;
@@ -2149,9 +2157,8 @@ public partial class Game
                 foreach (var t in new[] { 0.5, 1.0, 2.0 }) g.GetTree().CreateTimer(t).Timeout += () => Log(t);
             }
             g.sound.CineMood = null;
-            g.controls.Captured = false;
-            g.controls.ClearLatches();
-            if (!hudIn) g.hud.ShowPlay(true, player.Skipped ? 0.3f : 0.6f);
+            // The one cut rule: the camera eases into play, the HUD comes in as it lands, control after (GameSeam).
+            g.BeginSeam(lastFrame, lastVfov, player.Skipped);
             bars.QueueFree();
         }
     }

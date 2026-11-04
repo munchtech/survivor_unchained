@@ -955,7 +955,8 @@ public partial class Game : Node, IZoneHost
         hud.Hint(CurrentHint = hint);
     }
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
-    public void Capture(bool on) => controls.Captured = on;
+    /// <summary>(during a hand-back's ease the input stays held; a zone's capture then takes effect as it lands, GameSeam)</summary>
+    public void Capture(bool on) { if (seam != null) seam.After = on; else controls.Captured = on; }
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
     // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
@@ -1336,6 +1337,8 @@ public partial class Game : Node, IZoneHost
         else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
+        SeamFrame(dt);
+        CutLog(dt);
         DoubleAhead(dt);
         // Where the game's camera stands, for the see-through window (shaders/kit.gdshader):
         // opened in this view only, never in a light's.
