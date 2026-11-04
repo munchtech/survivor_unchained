@@ -474,6 +474,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         {
             // Owed GreatHold seconds after the arrival's black has lifted; the field stays empty until it is chosen.
             // (A clock set well on, as the probes do, lets go of the hold: the opening blessing is long past.)
+            // (a title banner up holds it: the blessing comes 0.3 s after the banner has faded)
+            if (G.BannerUp) openingSeen = Math.Min(openingSeen, GreatHold - 0.3);
             if (!openingGreatOwed && Seconds < 30 && G.Arrived && (openingSeen += dt) >= GreatHold) { openingGreatOwed = true; B.GreatOwed++; }
             if (Seconds >= 30 || openingGreatOwed && B.GreatOwed == 0) openingGreat = false;
             if (openingGreat) { spawnT = Math.Max(spawnT, 0.5); return; }

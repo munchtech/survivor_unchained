@@ -105,6 +105,8 @@ public interface IZoneHost
     /// <summary>The arrival is over: the black has lifted, so the player can see the place (a host without a fade
     /// is always arrived). What opens with a screen of its own, over the place, waits for it.</summary>
     bool Arrived => true;
+    /// <summary>A title banner (a zone's Announce) is on screen: the first Great Blessing waits for it to clear.</summary>
+    bool BannerUp => false;
     /// <summary>The air (rebuild: the sky's lighting too; not every frame of a blend).</summary>
     void SetAtmosphere(AtmospherePreset p, bool rebuild = true);
     /// <summary>A held camera (a cutscene), or null to go back to the survivor.</summary>

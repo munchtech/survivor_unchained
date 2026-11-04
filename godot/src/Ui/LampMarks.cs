@@ -4,10 +4,10 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>One lamp on the Ford-Warden's bar: an iron cage round a flame, drawn in code. It tracks whether it
 /// should burn and plays LampMarkAnim's flare, fade and bloom when that changes. Drawn on a 16 x 22 grid and
-/// scaled to its size (24 x 32, on the boss bar and for the off-screen pointers).</summary>
+/// scaled to its size (28 x 38 on the boss bar, 30 x 40 for the off-screen pointers).</summary>
 public partial class LampMark : Control
 {
-    public const float W = 24, H = 32;
+    public const float W = 28, H = 38, PW = 30, PH = 40;
     const float GridW = 16, GridH = 22;
     bool lit = true;
     float since = float.PositiveInfinity;
@@ -48,6 +48,13 @@ public partial class LampMark : Control
                 DrawCircle(c, 11.3f * hs * (1f - f * 0.75f), new Color(halo, 0.35f * 0.22f * (1f + f * 1.5f) * Mathf.Min(b, 1.4f)));
             }
         var iron = new Color("6b5434"); var dark = new Color("2a2016");
+        // A 2 px outline round the cage (#0b0e14 at 0.85) so it reads on bright and dark water.
+        {
+            var oc = new Color("0b0e14", 0.85f);
+            float ox = 2f * GridW / Size.X, oy = 2f * GridH / Size.Y;
+            foreach (var r in new[] { new Rect2(2, 2, 12, 3), new Rect2(2, 19, 12, 3), new Rect2(2, 4, 3, 15), new Rect2(11, 4, 3, 15) })
+                DrawRect(new Rect2(r.Position.X - ox, r.Position.Y - oy, r.Size.X + 2 * ox, r.Size.Y + 2 * oy), oc);
+        }
         // The flame: a diamond/teardrop core over a blue body, or dark glass.
         if (b > 0.01f)
         {
@@ -131,7 +138,7 @@ public partial class LampPointers : Control
         {
             if (!slots.TryGetValue(p.Id, out var s))
             {
-                s = new Slot { Mark = new LampMark(LampMark.W, LampMark.H) };
+                s = new Slot { Mark = new LampMark(LampMark.PW, LampMark.PH) };
                 AddChild(s.Mark);
                 s.Mark.Modulate = new Color(1, 1, 1, 0);
                 slots[p.Id] = s;
@@ -161,9 +168,9 @@ public partial class LampPointers : Control
             if (s.A <= 0) continue;
             var c = Chevron with { A = s.A };
             var d = s.Dir; var side = new Vector2(-d.Y, d.X);
-            var tip = s.At + d * 40; // 12 px of gap beyond the mark's half height at most
-            DrawPolyline(new[] { tip - d * 12 + side * 11, tip, tip - d * 12 - side * 11 }, new Color(0.02f, 0.05f, 0.1f, 0.75f * s.A), 7, true);
-            DrawPolyline(new[] { tip - d * 12 + side * 11, tip, tip - d * 12 - side * 11 }, c, 3.5f, true);
+            var tip = s.At + d * 50; // scaled 1.25x with the mark (30 x 40)
+            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, new Color(0.02f, 0.05f, 0.1f, 0.75f * s.A), 9, true);
+            DrawPolyline(new[] { tip - d * 15 + side * 14, tip, tip - d * 15 - side * 14 }, c, 4.5f, true);
         }
     }
 }

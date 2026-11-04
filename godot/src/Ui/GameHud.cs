@@ -1261,6 +1261,8 @@ public partial class GameHud : CanvasLayer
         ground.KeepOut.Clear();
         if (tipLine != null && IsInstanceValid(tipLine)) ground.KeepOut.Add(tipLine.Area.Grow(12));
         if (corner.IsVisibleInTree()) ground.KeepOut.Add(corner.GetGlobalRect().Grow(8));
+        // (the prompt bar too: "Leave" sat over the loot labels at the way out, H4 r2)
+        if (promptBox.Visible) ground.KeepOut.Add(promptBox.GetGlobalRect().Grow(10));
         // (and the instrument along the foot, and the night's tally in its corner)
         ground.KeepOut.Add(Instrument.Bounds);
         if (tally.IsVisibleInTree()) ground.KeepOut.Add(tally.GetGlobalRect().Grow(8));
@@ -1486,6 +1488,7 @@ public partial class GameHud : CanvasLayer
         if (tipLine != null && IsInstanceValid(tipLine))
         {
             tipLine.Held = Banner != null || HoldTip;
+            tipLine.Backed = bossBox.Visible;
             tipLine.Position = new Vector2(960, TipY);
             // (--shot: a tip's picture once it is drawn at full strength, after it has waited for any banner; once per tip)
             if (!tipLine.Held && tipLine.T >= 0.55 && hintView != null && Args.Has("shot") && tipShot.Add(hintView.Id)) Shots.Want("tip_" + hintView.Id, 0.1);

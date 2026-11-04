@@ -475,6 +475,9 @@ public partial class TipLine : Control
     public bool Held;
     /// <summary>The Flare's labels alpha (0 to 1), multiplied into its fade; its children ignore SelfModulate.</summary>
     public float Fade = 1;
+    /// <summary>A boss fight's telegraphs run under the words: a 60% black backing behind them (H4 r2).</summary>
+    public bool Backed;
+    readonly Panel backing;
 
     public TipLine(string title, string text, Control? keys)
     {
@@ -513,6 +516,9 @@ public partial class TipLine : Control
         column.AddChild(line);
         burn = WorldType.Light(new Vector2(760, 150), Style.Ember with { A = 0 });
         AddChild(burn);
+        backing = new Panel { MouseFilter = MouseFilterEnum.Ignore, Visible = false };
+        backing.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.6f), CornerRadiusTopLeft = 12, CornerRadiusTopRight = 12, CornerRadiusBottomLeft = 12, CornerRadiusBottomRight = 12 });
+        AddChild(backing);
         AddChild(column);
         Modulate = Colors.Transparent;
     }
@@ -590,6 +596,9 @@ public partial class TipLine : Control
         // Always at its full size (the owner: no shrinking from big to small).
         column.Position = new Vector2(-s.X / 2, 0);
         burn.Position = new Vector2(-380, s.Y / 2 - 75);
+        backing.Visible = Backed;
+        backing.Position = new Vector2(-s.X / 2 - 16, -8);
+        backing.Size = new Vector2(s.X + 32, s.Y + 16);
         // It burns in: the ember's glow first, the words coming up through it, then the glow cools away.
         float k = (float)Math.Clamp(T / 0.5, 0, 1);
         Modulate = Colors.White with { A = k * Fade };

@@ -180,8 +180,18 @@ public sealed class Prologue : ZoneRuntime
     void Objective((string Text, bool Done, bool Optional)[] steps) =>
         G.SetObjectives([new Tracked("pro", "The Low Ford", TrackTone.Tutorial, steps.Select(s => new Step(s.Text, s.Optional, s.Done)).ToList())]);
 
+    /// <summary>When a lamp last went out or was relit (H4 r2): the lamp tips wait 1.5 s after it.</summary>
+    double lampEventAt = -99;
+    readonly HashSet<string> lampTipWaiting = new();
+
     void Tip(string id, string title, string text, List<string>? keys = null, double life = 9)
     {
+        if ((id == "lamps2" || id == "channel") && B != null && B.Time - lampEventAt < 1.5)
+        {
+            if (!shown.Contains(id) && lampTipWaiting.Add(id))
+                G.After(1.5 - (B.Time - lampEventAt) + 0.02, () => { lampTipWaiting.Remove(id); Tip(id, title, text, keys, life); });
+            return;
+        }
         if (!shown.Add(id)) return;
         if (id == "pack") packAt = B?.Time ?? 0;
         if (id == "elite") eliteAt = B?.Time ?? 0;
@@ -724,6 +734,7 @@ public sealed class Prologue : ZoneRuntime
     {
         if (!litPylons[i] || B == null) return;
         litPylons[i] = false;
+        lampEventAt = B.Time;
         var p = pylons[i];
         G.Look.SetLit(p.Light, false);
         B.Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3.2, School = School.Frost, Power = 1.4 });
@@ -739,6 +750,7 @@ public sealed class Prologue : ZoneRuntime
         int i = Array.IndexOf(litPylons, false);
         if (i < 0) return;
         litPylons[i] = true;
+        if (B != null) lampEventAt = B.Time;
         pylonHp[i] = 200;
         G.Look.SetLit(pylons[i].Light, true);
         B?.Events.Emit(new Ev.Nova { X = pylons[i].X, Z = pylons[i].Z, Radius = 4, School = School.Frost, Duration = 0.8 });

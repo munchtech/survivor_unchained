@@ -46,6 +46,7 @@ public partial class Game : Node, IZoneHost
     public bool InTransit => inTransit;
     /// <summary>Not travelling and the arrival's fade-in has finished (IZoneHost.Arrived).</summary>
     public bool Arrived => !inTransit && !fadingIn;
+    public bool BannerUp => hud.BannerUp;
     /// <summary>What has the screen: the draft, a conversation, or an overlay (null: play).</summary>
     public string? Overlay => hudMode ?? screens.Current?.Kind;
     public string Mode { get; private set; } = "title";

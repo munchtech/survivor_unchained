@@ -132,6 +132,9 @@ public partial class Voices : Node3D
     /// still showing, it waits its turn (the same words again only keep that
     /// one up longer); `shown` runs when it shows (a named voice heard then,
     /// returning how long it speaks).</summary>
+    /// <summary>Most lines standing within 3 m of one another at once.</summary>
+    public int NearCap = 2;
+
     public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null)
     {
         // Whose turn it is: a named speaker's own; else whatever stands there.
@@ -197,6 +200,10 @@ public partial class Voices : Node3D
         if (!w.Alert && w.Speaker == null && Sound.VoiceOver.Instance?.Bark(w.Text, this, w.At, w.Voice) is double said and > 0)
             life = Mathf.Max(life, said + 0.8);
         if (w.Shown?.Invoke() is double spoken and > 0) life = Mathf.Max(life, spoken + 0.6);
+        // At most NearCap lines over one spot (H4 r2: the Warden's three lines and a lamp's piled at center):
+        // a new one drops the oldest within 3 m. (--barks shows three on purpose.)
+        var near = barks.Where(b => new Vector2(b.At.X - w.At.X, b.At.Z - w.At.Z).Length() <= 3f).ToList();
+        for (int n = 0; n <= near.Count - NearCap; n++) { near[n].Box.QueueFree(); barks.Remove(near[n]); }
         barks.Add(new Said { Box = box, Key = key, At = w.At, Text = w.Text, Life = life });
         // Not too many at once: the oldest go first.
         while (barks.Count > 6) { barks[0].Box.QueueFree(); barks.RemoveAt(0); }
