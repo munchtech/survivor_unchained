@@ -74,49 +74,53 @@ void vertex() {
 	vec2 gi = ground_at(lp);
 	VERTEX = vec3(lp.x, gi.x + 0.012, lp.y) + rel;
 	NORMAL = vec3(0.0, 1.0, 0.0);
-	// (H2 R2, bible rules 5 and 6: painted, not photographic.) A drift's colour is the drift's, a few
-	// metres across (rust, ochre, a paler fall), and each leaf only a little off it.
-	float dm = texture(noise_tex, lp * 0.17 + 0.61).r * 0.7 + texture(noise_tex, lp * 0.05 + 0.23).g * 0.3;
-	vec3 dc = mix(mix(rust, ochre, smoothstep(0.3, 0.55, dm)), pale, smoothstep(0.6, 0.8, dm) * 0.6);
-	// (Round 2: the leaves are the litter's brush strokes, so they take the litter's own albedo at
-	// their spot, as its ground draws it, and only their hue from the drift. Coloured by the drift
-	// alone they had none of the blue the moon finds in the litter, and lay on it as near-black chips.)
-	vec2 luv = lp * l_scale;
-	float pk = texture(noise_tex, lp * 0.09).r * 8.0;
-	float ia = floor(pk);
-	vec2 oa = sin(vec2(3.0, 7.0) * ia), ob = sin(vec2(3.0, 7.0) * (ia + 1.0));
-	float pt = smoothstep(0.25, 0.75, fract(pk));
-	// (At a leaf's own size, a few centimetres: the litter's colour there, not its every grain.)
-	const float LOD = 5.5;
-	vec3 a = mix(textureLod(g_alb, vec3(luv + oa, 0.0), LOD).rgb, textureLod(g_alb, vec3(luv + ob, 0.0), LOD).rgb, pt);
-	vec4 arh = mix(textureLod(g_arh, vec3(luv + oa, 0.0), LOD), textureLod(g_arh, vec3(luv + ob, 0.0), LOD), pt);
-	float la = dot(a, vec3(0.2126, 0.7152, 0.0722));
-	a *= pow(max(la, 1e-4) / l_mean, l_con - 1.0);
-	a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, l_sat) * l_tone;
-	vec4 nL = texture(noise_tex, lp * 0.011);
-	vec4 nM = texture(noise_tex, lp * 0.061 + 0.37);
-	vec4 nF = texture(noise_tex, lp * 0.29 + 0.71);
-	a *= 0.78 + 0.3 * nL.r;
-	a = mix(a, a * vec3(1.04, 1.0, 0.9), smoothstep(0.55, 0.8, nL.b) * 0.4);
-	float inside = gi.y;
-	a *= arena_mass(inside, texture(noise_tex, lp * 0.0085 + vec2(0.41, 0.17)), nL);
-	// The hue nudged a quarter of the way to the drift's, at the litter's value.
-	float ly = max(dot(a, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
-	vec3 dn = dc / max(dot(dc, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * ly;
-	vec3 c = mix(a, dn, 0.25) * (0.8 + 0.24 * gh(wp * 9.1 + own * 3.0));
-	// The ground's own terms over the litter (arena_ground.gdshader), so the leaf keeps to it.
-	vec2 suv = (lp + zone_size * 0.5) / zone_size;
-	float trod = texture(splat2, suv).b * (0.8 + 0.4 * nF.r);
-	c *= 1.0 - 0.22 * trod;
-	float inn = inside + (nM.r - 0.5) * 2.2 + (nF.g - 0.5) * 0.25;
-	float scorch = 1.0 - smoothstep(2.0 * scorch_reach / 11.0, scorch_reach, inn + (nL.g - 0.5) * 7.0 * scorch_reach / 11.0);
-	scorch *= smoothstep(-scorch_out - 1.5, -scorch_out, inn);
-	float lum0 = dot(c, vec3(0.2126, 0.7152, 0.0722));
-	c = mix(c, vec3(lum0) * vec3(1.05, 0.9, 0.74) * 0.72, scorch * 0.8);
-	c *= 1.0 - past_dark * (1.0 - smoothstep(0.0, 1.0, smoothstep(-16.0, -3.0, inside)));
-	v_col = c;
-	v_rough = arh.g;
-	v_ao = arh.r;
+	v_col = vec3(0.0); v_rough = 0.9; v_ao = 1.0;
+	// (A leaf not laid, most of them, costs nothing more: its colour is twelve fetches, seven times a leaf.)
+	if (keep > 0.5) {
+		// (H2 R2, bible rules 5 and 6: painted, not photographic.) A drift's colour is the drift's, a few
+		// metres across (rust, ochre, a paler fall), and each leaf only a little off it.
+		float dm = texture(noise_tex, lp * 0.17 + 0.61).r * 0.7 + texture(noise_tex, lp * 0.05 + 0.23).g * 0.3;
+		vec3 dc = mix(mix(rust, ochre, smoothstep(0.3, 0.55, dm)), pale, smoothstep(0.6, 0.8, dm) * 0.6);
+		// (Round 2: the leaves are the litter's brush strokes, so they take the litter's own albedo at
+		// their spot, as its ground draws it, and only their hue from the drift. Coloured by the drift
+		// alone they had none of the blue the moon finds in the litter, and lay on it as near-black chips.)
+		vec2 luv = lp * l_scale;
+		float pk = texture(noise_tex, lp * 0.09).r * 8.0;
+		float ia = floor(pk);
+		vec2 oa = sin(vec2(3.0, 7.0) * ia), ob = sin(vec2(3.0, 7.0) * (ia + 1.0));
+		float pt = smoothstep(0.25, 0.75, fract(pk));
+		// (At a leaf's own size, a few centimetres: the litter's colour there, not its every grain.)
+		const float LOD = 5.5;
+		vec3 a = mix(textureLod(g_alb, vec3(luv + oa, 0.0), LOD).rgb, textureLod(g_alb, vec3(luv + ob, 0.0), LOD).rgb, pt);
+		vec4 arh = textureLod(g_arh, vec3(luv + oa, 0.0), LOD);
+		float la = dot(a, vec3(0.2126, 0.7152, 0.0722));
+		a *= pow(max(la, 1e-4) / l_mean, l_con - 1.0);
+		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, l_sat) * l_tone;
+		vec4 nL = texture(noise_tex, lp * 0.011);
+		vec4 nM = texture(noise_tex, lp * 0.061 + 0.37);
+		vec4 nF = texture(noise_tex, lp * 0.29 + 0.71);
+		a *= 0.78 + 0.3 * nL.r;
+		a = mix(a, a * vec3(1.04, 1.0, 0.9), smoothstep(0.55, 0.8, nL.b) * 0.4);
+		float inside = gi.y;
+		a *= arena_mass(inside, texture(noise_tex, lp * 0.0085 + vec2(0.41, 0.17)), nL);
+		// The hue nudged a quarter of the way to the drift's, at the litter's value.
+		float ly = max(dot(a, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+		vec3 dn = dc / max(dot(dc, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * ly;
+		vec3 c = mix(a, dn, 0.25) * (0.8 + 0.24 * gh(wp * 9.1 + own * 3.0));
+		// The ground's own terms over the litter (arena_ground.gdshader), so the leaf keeps to it.
+		vec2 suv = (lp + zone_size * 0.5) / zone_size;
+		float trod = texture(splat2, suv).b * (0.8 + 0.4 * nF.r);
+		c *= 1.0 - 0.22 * trod;
+		float inn = inside + (nM.r - 0.5) * 2.2 + (nF.g - 0.5) * 0.25;
+		float scorch = 1.0 - smoothstep(2.0 * scorch_reach / 11.0, scorch_reach, inn + (nL.g - 0.5) * 7.0 * scorch_reach / 11.0);
+		scorch *= smoothstep(-scorch_out - 1.5, -scorch_out, inn);
+		float lum0 = dot(c, vec3(0.2126, 0.7152, 0.0722));
+		c = mix(c, vec3(lum0) * vec3(1.05, 0.9, 0.74) * 0.72, scorch * 0.8);
+		c *= 1.0 - past_dark * (1.0 - smoothstep(0.0, 1.0, smoothstep(-16.0, -3.0, inside)));
+		v_col = c;
+		v_rough = arh.g;
+		v_ao = arh.r;
+	}
 	v_t = UV.y;
 }
 
