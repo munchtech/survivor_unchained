@@ -78,17 +78,17 @@ public static class Ground
         mat.SetShaderParameter("splat", splat);
         mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
         mat.SetShaderParameter("mask_texel", z.Size / paint.Mask.GetWidth());
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
-        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>("res://art/ground/normal.jpg"));
-        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "albedo")));
+        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "normal")));
+        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "arh")));
         // The setts' 2K variants: only where the paint lays setts (64 MB of VRAM otherwise idle).
         bool setts = HasSetts(paint.Splat);
         // Style r2 (--setts-paint): the painted setts (env_ground.py --paint; the same sizes and layers) and their mud.
         bool sp = SurvivorUnchained.Args.Has("setts-paint");
         string st = sp ? "res://art/ground/setts_paint_" : "res://art/ground/setts_";
-        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : "res://art/ground/albedo.jpg"));
-        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : "res://art/ground/normal.jpg"));
-        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : "res://art/ground/arh.jpg"));
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : ArenaGround.Sheet("res://art/ground", "albedo")));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : ArenaGround.Sheet("res://art/ground", "normal")));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : ArenaGround.Sheet("res://art/ground", "arh")));
         // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
         mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));
@@ -115,7 +115,10 @@ public static class Ground
                  ("rut_soft", "ground-rut-soft", 0f), ("rut_blur", "ground-rut-blur", 0.3f), ("road_rime", "ground-road-rime", 1f), ("crown_grass", "ground-crown-grass", 0.45f), ("pud_night", "ground-pud-night", 0f), ("pud_mud", "ground-pud-mud", 0f), ("pud_sheen", "ground-pud-sheen", 0f),
                  ("foot_damp", "ground-foot-damp", 0f), ("foot_w", "ground-foot-w", 0.6f),
                  ("camp_scorch", "ground-camp-scorch", 0f), ("scorch_r", "ground-scorch-r", 1f), ("trample", "ground-trample", 0f), ("path_hw", "ground-path-hw", 0.2f), ("path_lift", "ground-path-lift", 0f),
-                 ("mud_night_floor", "setts-mud-night-floor", 0.75f), ("mud_night_wet", "setts-mud-night-wet", 1f), ("road_night", "ground-road-night", 0f), ("verge_litter", "ground-verge-litter", 0f), ("verge_mip", "ground-verge-mip", 5f), ("litter_wood", "ground-litter-wood", 0.5f) })
+                 ("mud_night_floor", "setts-mud-night-floor", 0.75f), ("mud_night_wet", "setts-mud-night-wet", 1f), ("road_night", "ground-road-night", 0f), ("verge_litter", "ground-verge-litter", 0f), ("verge_mip", "ground-verge-mip", 5f), ("litter_wood", "ground-litter-wood", 0.5f),
+                 // (H2 R2 round 2) the road's value masses: ruts cooler, its shoulders lighter; the camp's clearing held under its fire.
+                 ("rut_cool", "ground-rut-cool", 0.6f), ("verge_lift", "ground-verge-lift", 0.06f),
+                 ("camp_dim", "ground-camp-dim", 0f), ("camp_dim_in", "ground-camp-dim-in", 3.2f), ("camp_dim_full", "ground-camp-dim-full", 6.5f), ("camp_dim_out", "ground-camp-dim-out", 22f) })
             mat.SetShaderParameter(u, SurvivorUnchained.Args.Num(sw, zg.TryGetValue(u, out var zv) ? zv : sp && PaintDefaults.TryGetValue(u, out var pv) ? pv : v));
         // (E8 later r2) the zone's footpaths (flora_species.json "ground_paths": polylines of [x, z]), as segments
         var segs = FloraSpecies.PathsFor(z.Id);

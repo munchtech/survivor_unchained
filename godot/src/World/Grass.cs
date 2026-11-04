@@ -148,7 +148,7 @@ public static class Grass
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
         mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
         mat.SetShaderParameter("warm_at", Ground.WarmAt(z));
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(SurvivorUnchained.View.ArenaGround.Sheet("res://art/ground", "albedo")));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());
         mat.SetShaderParameter("zone_size", z.Size);
@@ -288,10 +288,29 @@ public static class Grass
         mat.SetShaderParameter("cell_span", Cell);
         mat.SetShaderParameter("span", radius * 2);
         mat.SetShaderParameter("centre", centre);
+        // (H2 R2 round 2) The litter under them as its ground draws it (ArenaGround.Material's layer 0),
+        // and the ground's terms over it, so each leaf is the litter's stroke, not a chip on it.
+        string dir = $"res://art/arena/{z.Place.Id}";
+        var l0 = ArenaGround.Tones(z.Place.Id)[0];
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(ArenaGround.Sheet(dir, "albedo")));
+        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(ArenaGround.Sheet(dir, "arh")));
+        mat.SetShaderParameter("l_scale", l0.Scale);
+        mat.SetShaderParameter("l_tone", l0.Tone);
+        mat.SetShaderParameter("l_sat", l0.Look.Sat);
+        mat.SetShaderParameter("l_con", l0.Look.Con);
+        mat.SetShaderParameter("l_mean", l0.Mean);
+        if (z.Splat2 != null) mat.SetShaderParameter("splat2", ImageTexture.CreateFromImage(z.Splat2));
+        mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
+        mat.SetShaderParameter("scorch_out", z.Story ? 3f : 1000f);
+        mat.SetShaderParameter("past_dark", z.Story ? 0.25f : 0.6f);
+        // Heights in R and metres inside the ring in G (the ground's CUSTOM0, Ground.Build).
         var g = z.Ground;
-        var hb = new byte[g.Heights.Length * 4];
-        System.Buffer.BlockCopy(g.Heights, 0, hb, 0, hb.Length);
-        mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(g.Res, g.Res, false, Image.Format.Rf, hb)));
+        var inside = z.Inside is double[] ins && ins.Length == g.Heights.Length ? ins : null;
+        var hb = new float[g.Heights.Length * 2];
+        for (int q = 0; q < g.Heights.Length; q++) { hb[2 * q] = g.Heights[q]; hb[2 * q + 1] = inside != null ? (float)inside[q] : 100f; }
+        var bytes = new byte[hb.Length * 4];
+        System.Buffer.BlockCopy(hb, 0, bytes, 0, bytes.Length);
+        mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(g.Res, g.Res, false, Image.Format.Rgf, bytes)));
         mat.SetShaderParameter("h_size", (float)g.Size);
         mat.SetShaderParameter("h_res", (float)g.Res);
         mesh.SurfaceSetMaterial(0, mat);
