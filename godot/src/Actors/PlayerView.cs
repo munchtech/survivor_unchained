@@ -382,6 +382,7 @@ public partial class PlayerView : Node3D
         upperClip = clip;
         upper.Animation = People.Clip(person, clip);
         upperNative = upper.Animation.ToString().StartsWith(own.Prefix);
+        upperHeld = float.NaN;
         tree.Set("parameters/upperScale/scale", speed);
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
@@ -396,6 +397,7 @@ public partial class PlayerView : Node3D
         if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
         upper.Animation = own.Prefix + RunVariant(clip);
         upperNative = true;
+        upperHeld = float.NaN;
         tree.Set("parameters/upperScale/scale", speed);
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
@@ -471,11 +473,20 @@ public partial class PlayerView : Node3D
         tree.Set("parameters/fullX/blend_amount", 1 - k * k * (3 - 2 * k));
         // (the shot's lengthened fade in is left as it is until its next fire: the shot's own clock runs a frame or two
         // behind this one, and putting it back at 0.05 here cut the last of its fade in a frame, the f7 jump of r1)
-        if (k >= 1) { xfadeFrom = -1; tree.Set("parameters/fullX/blend_amount", 0.0); }
+        if (k >= 1) { xfadeFrom = -1; tree.Set("parameters/fullX/blend_amount", 0.0); UpperLetGo(); }
+    }
+
+    /// <summary>The held blow under a crossfade let go on at its own pace (hidden under the whole-body shot by then).</summary>
+    void UpperLetGo()
+    {
+        if (float.IsNaN(upperHeld)) return;
+        tree.Set("parameters/upperScale/scale", upperHeld);
+        upperHeld = float.NaN;
     }
 
     void XfadeStop()
     {
+        UpperLetGo();
         fullShotNode.FadeInTime = FullFadeIn;
         if (xfadeFrom < 0) return;
         xfadeFrom = -1;
@@ -496,7 +507,9 @@ public partial class PlayerView : Node3D
     double artTail = -1;
 
     // A Flare's own clip (FlareDef.Clip): the facing it holds, and the grip that lasts exactly as long as the clip plays.
-    double flareFaceUntil = -1; float flareFaceY;
+    double flareFaceUntil = -1, flareYawAt = -1; float flareFaceY, flareYawFrom;
+    // (the blow she was in, held where it was at the press under the crossfade; NaN: none held)
+    float upperHeld = float.NaN;
     string? flareClipName; double flareClipStart; bool flareClipSeen;
 
     /// <summary>The Flare's press (Ev.Flare, Press): her own full-body clip if its data names one, facing the aim, with
@@ -506,7 +519,8 @@ public partial class PlayerView : Node3D
         if (!mine || dead || Content.Lamps.Flare(e.Id) is not { Clip: { } clip } def || !own.Has(clip)) return;
         // (the sim's line runs TX = X + cos, TZ = Z + sin; her facing for (dx, dz) is atan2(dx, dz))
         float face = Mathf.Atan2((float)System.Math.Cos(e.Angle), (float)System.Math.Sin(e.Angle));
-        Rotation = new Vector3(0, face, 0);
+        // (turned onto its line over the crossfade, not in a frame: r2's press swung her whole body round at once, 0.7 m of wrist)
+        flareYawFrom = Rotation.Y; flareYawAt = time;
         aim = 0;
         flareFaceY = face;
         flareFaceUntil = time + def.ClipFree;
@@ -522,7 +536,25 @@ public partial class PlayerView : Node3D
         if (def.Grip != null && view != null && view.FlareGrip(def.Grip) && view.FlareGripNode is { } gn) { gn.Visible = false; gripShowAt = time + FlareXfade + GripSettle; }
         if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;
         // (from her live pose over 0.1 s, 3 of the clip's frames: no swing dropped in a frame)
-        if (!FullHerFrom(clip, 1, false, FlareXfade)) { gripShowAt = -1; view?.FlareGripEnd(); return; }
+        bool wasLive = (bool)tree.Get("parameters/fullShot/active");
+        if (!FullHerFrom(clip, 1, false, FlareXfade)) { gripShowAt = -1; flareYawAt = -1; view?.FlareGripEnd(); return; }
+        // The blow on her arms (the upper shot) is held at the pose she was drawn in at the press while the Flare's clip fades
+        // in over it, then let go on (hidden): r2's swing ran on under the fade, 0.2-0.35 m of wrist a frame.
+        if ((bool)tree.Get("parameters/upperShot/active"))
+        {
+            upperHeld = (float)tree.Get("parameters/upperScale/scale");
+            tree.Set("parameters/upperScale/scale", 0f);
+        }
+        // The shot's fade from the layers under starts on the press's own frame: the tree takes the request and its fade's first
+        // step now, with the Flare's clip and the held blow still (a one-shot takes the fire on one advance and draws its fade's first step at no weight on the next,
+        // and r2's press held her two frames, then caught up). The layers under step a frame of their own idle, unseen.
+        if (!wasLive)
+        {
+            tree.Set("parameters/fullScale/scale", 0f);
+            tree.Advance(0);   // (the fire taken: the fade's clock set)
+            tree.Advance(1.0 / 60);   // (its first step, which a one-shot draws at no weight)
+            tree.Set("parameters/fullScale/scale", 1f);
+        }
         flareClipName = clip; flareClipStart = time; flareClipSeen = false;
         artTail = time + def.ClipFree;
     }
@@ -534,8 +566,45 @@ public partial class PlayerView : Node3D
     Quaternion probeHq; Vector3 probeHand, probeTip; Vector3? probeTipLocal;
     double fullStart; float fullSpeed = 1;
 
+    // (the body's line: both wrists and elbows, her pelvis height and stance, each frame, the 2 before the press kept)
+    static readonly string[] ProbeBones = ["hand_l", "hand_r", "lowerarm_l", "lowerarm_r"];
+    readonly Vector3[] probeW = new Vector3[4], probeL = new Vector3[4];
+    bool probeWHave;
+    readonly System.Collections.Generic.Queue<string> probePre = new();
+    double probeDt, probeFight;
+
+    string ProbeBody()
+    {
+        var skel = person.Skeleton;
+        var inv = GlobalTransform.AffineInverse();
+        var sb = new System.Text.StringBuilder();
+        float maxW = 0, maxL = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            var w = skel.GlobalTransform * skel.GetBoneGlobalPose(skel.FindBone(ProbeBones[i])).Origin;
+            var l = inv * w;
+            float sw = probeWHave ? (w - probeW[i]).Length() * 1000 : 0, sl = probeWHave ? (l - probeL[i]).Length() * 1000 : 0;
+            sb.Append($"{ProbeBones[i]} {sw:0}/{sl:0} ");
+            maxW = Mathf.Max(maxW, sw); maxL = Mathf.Max(maxL, sl);
+            probeW[i] = w; probeL[i] = l;
+        }
+        probeWHave = true;
+        Vector3 B(string n) => inv * (skel.GlobalTransform * skel.GetBoneGlobalPose(skel.FindBone(n)).Origin);
+        var fl = B("foot_l"); var fr = B("foot_r");
+        float stance = new Vector2(fl.X - fr.X, fl.Z - fr.Z).Length();
+        return $"body: steps world/local mm {sb}(max {maxW:0}/{maxL:0}), pelvis {B("pelvis").Y:0.000} m, stance {stance:0.000} m, dt {probeDt * 1000:0.0} ms, fight {probeFight:0.000}, upper {((bool)tree.Get("parameters/upperShot/active") ? upperClip : "-")}, full {((bool)tree.Get("parameters/fullShot/active") ? fullClip : "-")}";
+    }
+
     void Probe()
     {
+        if (probeN < 0)
+        {
+            probePre.Enqueue(ProbeBody());
+            while (probePre.Count > 2) probePre.Dequeue();
+            return;
+        }
+        if (probeN == 0) { int k = -probePre.Count; foreach (var pl in probePre) GD.Print($"grip probe f{k++} {pl}"); probePre.Clear(); }
+        GD.Print($"grip probe f{probeN} {ProbeBody()}");
         if (probeN < 0 || probeN > 120 || probeN > 12 && fullClip != flareClipName) { probeN = -1; return; }
         var skel = person.Skeleton;
         int hb = skel.FindBone("hand_r");
@@ -576,7 +645,8 @@ public partial class PlayerView : Node3D
         probeN++;
     }
 
-    const double FlareXfade = 0.1;
+    // (--flare-xfade S: a developer's try of another length; 0.1 s, 3 of the clip's frames, by default)
+    static readonly double FlareXfade = Args.Num("flare-xfade", 0.1f);
     // (the crossfade's last frames still turn her hand ~50 degrees a frame, 0.9 m of tip: the blade shows two frames after it ends, in the settled pose)
     const double GripSettle = 2.0 / 60;
     double gripShowAt = -1;
@@ -740,6 +810,7 @@ public partial class PlayerView : Node3D
     public void Update(Battle b, double x, double z, double leap, double dt, double fightTime, System.Func<double, double, double> heightAt)
     {
         time += dt;
+        probeDt = dt; probeFight = fightTime;
         if (GripProbe && mine) Probe();
         if (mine) { Xfade(); tree.Advance(dt); }
         // The arm-hold crossfade, on the frame the tree first shows what Carry set last frame.
@@ -838,7 +909,13 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
-        if (time < flareFaceUntil) Rotation = new Vector3(0, flareFaceY, 0);   // (a Flare's clip holds her on its line until ClipFree)
+        if (time < flareFaceUntil)
+        {
+            // (a Flare's clip holds her on its line until ClipFree; she turns onto it over the press's crossfade)
+            float k = flareYawAt < 0 ? 1 : Mathf.Clamp((float)((time - flareYawAt) / FlareXfade), 0, 1);
+            if (k >= 1) flareYawAt = -1;
+            Rotation = new Vector3(0, Mathf.LerpAngle(flareYawFrom, flareFaceY, k * k * (3 - 2 * k)), 0);
+        }
         else if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
         else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
