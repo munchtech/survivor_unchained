@@ -1325,10 +1325,10 @@ public partial class Game : Node, IZoneHost
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
             if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
-            // The day road's gate kept at the frame's head on its last stretch (Prologue.GateInFrame, H4 r3).
+            // The day road's gate kept at the frame's head on its last stretch (Prologue.GateInFrame, H4 r3): a third of the way, to 2.5 m (at 3.5 her feet sat at 75% down the frame at the ring).
             var gateAt = cam.Toward == null && fordBoss == null && zone is Prologue pg ? pg.GateInFrame : null;
             if (gateAt is { } ga) cam.Toward = new Vector3((float)ga.X, 0, (float)ga.Z);
-            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : gateAt != null ? (0.33f, 3.5f) : (0.33f, 4.5f);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : gateAt != null ? (0.33f, 2.5f) : (0.33f, 4.5f);
             // H4 item 5 (N8, the owner saw one lamp): the fight's frame stays on her and him, 25 m out (23 elsewhere). The
             // three posts read by their lamps burning (GameLampPosts' beacons), the bar's three marks and the pointers to the
             // lit ones off the frame. (Framing the triangle failed twice: a lean to its middle lost her 36% of the fight on
