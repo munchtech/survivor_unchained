@@ -242,6 +242,7 @@ public partial class VoiceOver : Node
         // Music under speech as a mixer would ride it: down under a
         // conversation or the narrator (with the conversation's own dip,
         // about 10 dB in all, measured with --record), a little under a passer-by.
-        Synth.Instance?.DuckForVoice(talking ? 0.6f : barking ? 0.8f : 1, talking ? 0.72f : barking ? 0.88f : 1);
+        Synth.Instance?.DuckForVoice(talking ? SoundBank.Duck("talk", "music", 0.6f) : barking ? SoundBank.Duck("bark", "music", 0.8f) : 1,
+            talking ? SoundBank.Duck("talk", "ambience", 0.72f) : barking ? SoundBank.Duck("bark", "ambience", 0.88f) : 1);
     }
 }

@@ -106,9 +106,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>The night's clock, in minutes of a thirty-minute night: a story's twenty-minute night
     /// runs it half again as fast, so it is the same night (its kinds, levels, heralds, stretches
     /// and great blessing) told quicker. Past the boss, real minutes.</summary>
-    double Minute => Seconds <= End ? Seconds / 60 * Pace : 30 + (Seconds - End) / 60;
-    /// <summary>How much faster than a table's thirty minutes this night runs.</summary>
-    double Pace => 30 / Spec.Minutes;
+    double Minute => Seconds <= End ? Seconds / 60 * Pace : End / 60 * Pace + (Seconds - End) / 60;
+    /// <summary>How much faster than a table's thirty minutes this night runs: a story's night is the same night told
+    /// quicker. A table night shorter than thirty (Content/Teeth: tier 1's twelve) is not: it is the first minutes of
+    /// one, at their own pace, with the boss at their end (STORY_NIGHTS_AND_TIME.md "The shape").</summary>
+    double Pace => Spec.Story ? 30 / Spec.Minutes : 1;
+    /// <summary>The table tier's teeth (Content/Teeth, data/content/teeth.json); none on a story's night.</summary>
+    readonly Teeth.Tier? teeth;
     double End => Spec.Minutes * 60;
     /// <summary>What every night calls the boss's coming and its middle, in the story lead's one
     /// voice (the valley's idioms are plain truth; this one is).</summary>
@@ -122,6 +126,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         people = MapOffers.People(spec.People);
         oaths = spec.Oaths.Select(MapOffers.Oath).ToList();
         pacing = new ArenaPacing(spec.Minutes * 60);
+        teeth = spec.Story ? null : Teeth.For(spec.Tier);
         escalation = new Escalation(people);
         Recount();
         lean = MapOffers.Lean(spec.Map, spec.People);
@@ -236,7 +241,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
     // Before the boss, the night's shape (ArenaPacing) swells and thins the line.
-    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain * (won || bossUp ? 1 : pacing.TargetShare(Seconds)));
+    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain * (won || bossUp ? 1 : pacing.TargetShare(Seconds)) * (teeth?.Crowd ?? 1));
     double Bargain => 1 + 0.15 * (B?.Boons.GetValueOrDefault("dark_bargain") ?? 0);
 
     /// <summary>Throwers and shooters at once: a few behind the crowd, never a
@@ -318,6 +323,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// miniboss's whistle, the ground opening) are the crowd too.</summary>
     void Harden(Enemy e, bool champion)
     {
+        // The tier's teeth (H1): the crowd and its champions as a human should meet them (not the boss: below).
+        if (teeth != null && e.Def.Id != BossDef)
+        {
+            bool big = champion || e.Elite;
+            e.MaxHp = e.Hp = e.MaxHp * (big ? teeth.EliteHp : teeth.FodderHp);
+            e.Damage *= big ? teeth.EliteDamage : teeth.FodderDamage;
+        }
         if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / EaseFor(Math.Min(Minute, 30));
         if (Asks && !champion && !e.Elite) e.Damage *= 1 + Math.Clamp((Math.Min(Minute, 30) - 8) / 22, 0, 1);
         // (Not the boss: its contract sets its own health.)
@@ -520,6 +532,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         Minibosses();
         if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (makingWay.Count > 0) MakingWay();
+        Tells();
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -616,6 +629,18 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
                 // A closing ring: every way out has something in it.
                 int n = 18 + (int)(m * 1.2);
                 string def = Pick();
+                // The kit's night (telegraphs.json "waves"): the ring is the closing, close in and marked, and the Flare its answer.
+                if (TurnTell("ring") is { } rk)
+                {
+                    if (rk == "closing")
+                    {
+                        foreach (var (x, z) in B.TellClosing(p.X, p.Z, n))
+                            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Spawn(def, x, z) is { } e) B.Closes(e);
+                        Shout("They close in from every side. Flare!");
+                        break;
+                    }
+                    Cast(rk, null, p.X, p.Z);
+                }
                 for (int i = 0; i < n; i++)
                 {
                     double a = (double)i / n * Math.PI * 2, rr = 13 + R() * 2;
@@ -638,6 +663,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
                     champ.MaxHp = champ.Hp = champ.MaxHp * 2;
                     Sign(champ, SignsFor(false));
                     chests.Add(champ.Id);
+                    if (TurnTell("champion") is { } ck) chargers.Add(new Charger(champ, ck));
                     Group(Pick(), 5 + (int)(m / 3), x, z, 3);
                 }
                 Shout(n > 1 ? $"Champions of {people.Name}: they carry something." : $"A champion of {people.Name}: it carries something.");
@@ -650,20 +676,38 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
                 double a = R() * Math.PI * 2;
                 double sx = -Math.Sin(a), sz = Math.Cos(a);
                 int n = 12 + (int)(m / 2);
+                Enemy? lead = null;
+                double leadOff = double.MaxValue;
                 for (int i = 0; i < n; i++)
                 {
                     double off = (i - n / 2.0) * 1.3;
                     double x = p.X + Math.Cos(a) * 26 + sx * off, z = p.Z + Math.Sin(a) * 26 + sz * off;
                     if (!map.CanStand(x, z)) continue;
-                    if (Spawn(def, x, z) is { } e) e.Speed *= 1.35;
+                    if (Spawn(def, x, z) is { } e)
+                    {
+                        e.Speed *= 1.35;
+                        if (Math.Abs(off) < leadOff) { leadOff = Math.Abs(off); lead = e; }
+                    }
                 }
+                // The kit's night: the column's lane marked down the middle, through her and past, its lead runner running it.
+                if (lead != null && TurnTell("stampede") is { } sk)
+                    Cast(sk, lead, p.X, p.Z, Telegraphs.Get(sk) is { Length: > 0 } k ? Math.Max(1, (Dist(lead.X, lead.Z, p.X, p.Z) + 6) / k.Length) : 1);
                 Shout("A stampede!");
                 break;
             }
             default:
             {
                 // A swarm from one quarter.
-                if (Around(R() * Math.PI * 2, 22) is var (x, z)) Group(Pick(), 25 + (int)m, x, z, 5);
+                if (Around(R() * Math.PI * 2, 22) is var (x, z))
+                {
+                    Group(Pick(), 25 + (int)m, x, z, 5);
+                    // The kit's night: a pull just off her, toward the swarm (into its mouth).
+                    if (TurnTell("swarm") is { } wk)
+                    {
+                        double dx = x - p.X, dz = z - p.Z, l = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz)), o = Telegraphs.Waves.SwarmOffset;
+                        Cast(wk, null, p.X + dx / l * o, p.Z + dz / l * o);
+                    }
+                }
                 Shout("A swarm, from the dark.");
                 break;
             }
@@ -751,6 +795,91 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         c.MaxHp = c.Hp = c.MaxHp * 2;
         Sign(c, SignsFor(false));
         chests.Add(c.Id);
+        // The kit's night: the captain's blow, on her.
+        if (TurnTell("signature") is { } gk) Cast(gk, c, B.Player.X, B.Player.Z);
+    }
+
+    /* ------------------------------------------------ the telegraph kit -- */
+
+    /* Where a table night casts the kit (data/content/telegraphs.json "waves"; Sim/Tells.cs; H1 item 3): only at the
+     * tiers it lists, past its minute, never on a story night or while the boss is up (the boss has its own). Each wave
+     * shape carries its kind, and between them an ambient tell every so often from a champion near her, else a fodder.
+     * Off those nights nothing here draws from the night's dice: an unlisted tier plays as it did, draw for draw. */
+
+    /// <summary>The kit is cast tonight, now.</summary>
+    bool TellsOn => B != null && !Spec.Story && !bossUp && Array.IndexOf(Telegraphs.Waves.Tiers, Spec.Tier) >= 0 && Minute >= Telegraphs.Waves.From;
+
+    /// <summary>The kind a wave shape casts now, or null (not a kit night, not yet, or the shape casts none).</summary>
+    string? TurnTell(string shape) => TellsOn ? Telegraphs.Turn(shape) : null;
+
+    /// <summary>A champion of the night's champion turn, repeating its kind while it lives.</summary>
+    sealed class Charger(Enemy e, string kind)
+    {
+        public readonly Enemy E = e;
+        public readonly double Seed = e.Seed;
+        public readonly string Kind = kind;
+        public double Next;
+    }
+    readonly List<Charger> chargers = new();
+    /// <summary>When the next ambient tell is due (Seconds); -1: not yet drawn.</summary>
+    double tellAt = -1;
+
+    /// <summary>A kit kind cast: a ring or a pull on (x, z), a charge from the foe through it (a charge needs a foe).</summary>
+    void Cast(string kind, Enemy? from, double x, double z, double scale = 1)
+    {
+        if (B == null || over || kind == "closing") return;
+        B.Tell(kind, from, x, z, scale);
+    }
+
+    /// <summary>The kit between the turns: the champions' repeated charges and the ambient tells.</summary>
+    void Tells()
+    {
+        if (!TellsOn) return;
+        var p = B!.Player;
+        var w = Telegraphs.Waves;
+        for (int i = chargers.Count - 1; i >= 0; i--)
+        {
+            var c = chargers[i];
+            if (!c.E.Alive || c.E.State == EnemyState.Dying || c.E.Seed != c.Seed) { chargers.RemoveAt(i); continue; }
+            if (Seconds < c.Next || c.E.HoldUntil > B.Time) continue;
+            // In reach of her: its lane reaches past her.
+            double reach = Telegraphs.Get(c.Kind) is { Length: > 0 } k ? k.Length - 2 : w.Near;
+            if (Dist(c.E.X, c.E.Z, p.X, p.Z) > reach) { c.Next = Seconds + 1; continue; }
+            Cast(c.Kind, c.E, p.X, p.Z);
+            c.Next = Seconds + w.ChampionEvery;
+        }
+        if (tellAt < 0) { tellAt = Seconds + Between(w); return; }
+        if (Seconds < tellAt) return;
+        tellAt = Seconds + (Ambient(w) ? Between(w) : 4);
+    }
+
+    double Between(Telegraphs.WaveRules w) => w.Every[0] + R() * (w.Every[1] - w.Every[0]);
+
+    /// <summary>One ambient tell, from a champion near her, else the nearest of the crowd. False: none near enough.</summary>
+    bool Ambient(Telegraphs.WaveRules w)
+    {
+        var p = B!.Player;
+        Enemy? from = null, fodder = null;
+        double fd = double.MaxValue;
+        foreach (var e in B.HostilesInRadius(p.X, p.Z, w.Near))
+        {
+            if (e.Boss || e.HoldUntil > B.Time || e.State != EnemyState.Active) continue;
+            if (e.Elite) { from = e; break; }
+            double d = Dist(e.X, e.Z, p.X, p.Z);
+            if (d < fd) { fd = d; fodder = e; }
+        }
+        from ??= fodder;
+        if (from == null || w.Weights.Count == 0) return false;
+        double sum = w.Weights.Values.Sum(), r = R() * sum;
+        string kind = w.Weights.Keys.Last();
+        foreach (var (k, wt) in w.Weights) { if (r < wt) { kind = k; break; } r -= wt; }
+        if (Telegraphs.Get(kind) is { Pull: > 0 })
+        {
+            double dx = from.X - p.X, dz = from.Z - p.Z, l = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
+            Cast(kind, from, p.X + dx / l * w.SwarmOffset, p.Z + dz / l * w.SwarmOffset);
+        }
+        else Cast(kind, from, p.X, p.Z);
+        return true;
     }
 
     /// <summary>A kind of this people already in the field.</summary>
@@ -866,6 +995,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>The run's boss blows taken before this fight (its chest pays for a clean one).</summary>
     int bossBlowsBefore;
 
+    BossBar BarOf(Enemy b) =>
+        script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp);
+
     void Boss(bool again = false)
     {
         bossUp = true;
@@ -887,6 +1019,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             boss.Named = new Named { Title = BossName };
             boss.MaxHp = boss.Hp = boss.MaxHp * (script?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier);
             boss.Damage *= script?.DamageMul ?? 1.3;
+            if (teeth != null) { boss.MaxHp = boss.Hp = boss.MaxHp * teeth.BossHp; boss.Damage *= teeth.BossDamage; }
             // Come again, it is the first fight and a part more each time, by a rule the player
             // can learn, not the night's hardening and its levels on top of the boss's own (that
             // made the first return a wall: the sweep's runs fell to it more than to anything).
@@ -922,6 +1055,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             chests.Add(lieutenant.Id);
         }
         string sworn = script?.Sworn() ?? "";
+        // Its bar up before its name is called, so the arrival is heard as a boss's (stinger.boss, not stinger.danger).
+        if (boss != null) G.SetBoss(BarOf(boss));
         G.Announce(new Announcement(BossName, (script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle) + (sworn.Length > 0 ? $" · Sworn: {sworn}" : ""), "danger", 3.4,
             again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes));
         Objectives();
@@ -1279,7 +1414,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             coreOrb.Light = Math.Min(1, hurt + 0.08 * Math.Sin(ct * 5.1));
         }
         if (boss is { Alive: true } b && b.State != EnemyState.Dying)
-            G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
+            G.SetBoss(BarOf(b));
         else if (CoreUp && core is { } cc)
             G.SetBoss(new BossBar("The ember-core", $"Break it: {Math.Max(0, 60 - (Seconds - kindledAt)):0} s", cc.Hp, cc.MaxHp, IsBoss: false));
         else if (herald is { Alive: true } h && h.State != EnemyState.Dying)

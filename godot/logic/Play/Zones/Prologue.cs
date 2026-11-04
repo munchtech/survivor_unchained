@@ -724,6 +724,7 @@ public sealed class Prologue : ZoneRuntime
         B.Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3.2, School = School.Frost, Power = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.6 });
         B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z, Text = how == "charge" ? "The lamp shatters!" : "The lamp goes dark" });
+        B.Events.Emit(new Ev.Sound { Id = how == "charge" ? "ford.lamp_shatter" : "ford.lamp_out", X = p.X, Z = p.Z });
         int left = LitCount;
         if (left > 0) G.Toast(new Toast(ToastKind.World, $"A lamp goes out — {left} still burn{(left == 1 ? "s" : "")}"));
         else G.Announce(new Announcement("The lamps are dark", "The Warden is laid bare", "boon", 3.2));
@@ -764,6 +765,7 @@ public sealed class Prologue : ZoneRuntime
             ai.Mode = "stun"; ai.T = 0; e.StateT = 0;
             wardenView.SetPose("stunned");
             B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
+            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
         }
         e.State = ai.Mode == "channel" ? EnemyState.Casting : ai.Mode is "windup" or "chargeWind" ? EnemyState.Windup : EnemyState.Active;
 
@@ -782,6 +784,7 @@ public sealed class Prologue : ZoneRuntime
                     if (th is double t1 && hpK < t1) ai.Thresholds.RemoveAt(0);
                     ai.Mode = "channel"; ai.T = 0; ai.ChannelHp = e.Hp; ai.ChannelCd = 34; ai.RaiseT = 0.6;
                     wardenView.SetPose("channel");
+                    B.Events.Emit(new Ev.Sound { Id = "ford.channel", X = e.X, Z = e.Z });
                     // (the tip comes first when it shows, and his cry a beat after it settles, so the two never
                     // land together: round 2 judge)
                     riseBarkIn = ChannelTip() ? 1.3 : 0;
@@ -900,6 +903,8 @@ public sealed class Prologue : ZoneRuntime
                     ai.Mode = "stun"; ai.T = 0;
                     wardenView.SetPose("stunned");
                     B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
+                    B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
+            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
                 }
                 else if (ai.T >= 6)
                 {

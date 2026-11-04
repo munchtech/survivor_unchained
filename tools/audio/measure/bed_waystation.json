@@ -1,0 +1,53 @@
+{
+ "family": "bed_waystation",
+ "kept": 1,
+ "n": 2,
+ "takes": [
+  {
+   "i": 0,
+   "key": "cf32194be9c70e3e145a5274319c21bcf7a820bb4467d2ef9f0fd0ab5dc292fd",
+   "file": null,
+   "dropped": "not among the 1 best-ranked takes",
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -7.710961059903198,
+    "true_peak_dbfs": -7.6924272319329345,
+    "rms_dbfs": -26.861757321907437,
+    "crest_db": 19.15079626200424,
+    "lufs": -28.000000000000014,
+    "lufs_padded": false,
+    "lufs_short_max": -22.032052121322085,
+    "onset_ms": 0.0,
+    "tail_ms": 3809.1156462585036,
+    "centroid_hz": 2116.6015611585394,
+    "clipped": 0,
+    "clap": 0.5841,
+    "clap_neg": 0.0476,
+    "clap_margin": 0.5365
+   }
+  },
+  {
+   "i": 1,
+   "key": "ff7525bed33048048e06aeea94c02b362eaa35543fafd12f3ed9db853db9dac6",
+   "file": "bed_waystation_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -3.181754485857082,
+    "true_peak_dbfs": -2.489374380169192,
+    "rms_dbfs": -28.181516361015554,
+    "crest_db": 24.999761875158473,
+    "lufs": -27.999999999999986,
+    "lufs_padded": false,
+    "lufs_short_max": -27.01855865661016,
+    "onset_ms": 8.798185941043084,
+    "tail_ms": 18295.62358276644,
+    "centroid_hz": 2507.568807812205,
+    "clipped": 0,
+    "clap": 0.6023,
+    "clap_neg": 0.0548,
+    "clap_margin": 0.5476
+   }
+  }
+ ]
+}

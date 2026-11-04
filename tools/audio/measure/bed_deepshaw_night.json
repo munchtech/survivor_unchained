@@ -1,0 +1,53 @@
+{
+ "family": "bed_deepshaw_night",
+ "kept": 1,
+ "n": 2,
+ "takes": [
+  {
+   "i": 0,
+   "key": "8822e658be6876628171f2a048ca8389e25d94b0a51c8cba8ed0911a6c057dd3",
+   "file": null,
+   "dropped": "not among the 1 best-ranked takes",
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -6.819966732773945,
+    "true_peak_dbfs": -6.814439357742874,
+    "rms_dbfs": -20.72732575885429,
+    "crest_db": 13.907359026080343,
+    "lufs": -28.0,
+    "lufs_padded": false,
+    "lufs_short_max": -26.87953841674884,
+    "onset_ms": 4.671201814058957,
+    "tail_ms": 1469.297052154195,
+    "centroid_hz": 946.2001524964766,
+    "clipped": 0,
+    "clap": 0.4711,
+    "clap_neg": 0.2244,
+    "clap_margin": 0.2466
+   }
+  },
+  {
+   "i": 1,
+   "key": "c3352ebe40b8cc5a495109734a57dc627affdca2f557059f4b8a727a28c058e9",
+   "file": "bed_deepshaw_night_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -7.323344138995511,
+    "true_peak_dbfs": -7.3178167639644425,
+    "rms_dbfs": -21.934620143876057,
+    "crest_db": 14.611276004880546,
+    "lufs": -27.999999999999858,
+    "lufs_padded": false,
+    "lufs_short_max": -24.75386980995009,
+    "onset_ms": 0.0,
+    "tail_ms": 14639.410430839001,
+    "centroid_hz": 1201.0010683316857,
+    "clipped": 0,
+    "clap": 0.4214,
+    "clap_neg": 0.1801,
+    "clap_margin": 0.2413
+   }
+  }
+ ]
+}

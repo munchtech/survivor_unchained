@@ -1394,7 +1394,7 @@ public partial class BattleFx : Node3D
                     Hits.Arc(V(e.X, Y(e.X, e.Z) + 1.0, e.Z), (float)(Math.PI / 2 - e.Angle), (float)e.Reach, 0.22f, mirror, pal.Core, pal.Glow);
                     break;
                 }
-                case Ev.Telegraph e:
+                case Ev.Telegraph e when e.Phase == TellPhase.Warn:
                 {
                     if (WayOut(e) || DigMark(e)) break;
                     Winded(e);
