@@ -674,6 +674,8 @@ public partial class LampPage : Control
         if (RealMove(mv)) { if (mv.StartsWith("rhold@") || mv == "xhold") moveT = 1.7; return; }
         double? ang = mv switch { "R" => 0, "DR" => Math.PI / 4, "D" => Math.PI / 2, "DL" => 3 * Math.PI / 4, "L" => Math.PI, "UL" => -3 * Math.PI / 4, "U" => -Math.PI / 2, "UR" => -Math.PI / 4, _ => null };
         if (ang is { } a) StickStep(a);
+        // go@ID: the focus on that lamp, as the keys would bring it (any window size; the listening sheet's lamps).
+        else if (mv.StartsWith("go@") && LampBoard.M.Index.TryGetValue(mv[3..], out var gi)) Board.Focus_(gi, follow: true);
         else switch (mv)
         {
             case "in": Board.ZoomStop(1); break;
@@ -681,6 +683,8 @@ public partial class LampPage : Control
             case "home": Board.Home(); break;
             case "next": Board.NextLamp(1); break;
             case "light": Board.LightFocus(); break;
+            // putout: the focus put out, a hold carried to its end (X held without the pad).
+            case "putout": Board.BeginOut(() => true); break;
             case "lmw": Board.LightMyWay(); break;
             case "find": find.Open(false); SetZone(Zone.Find); find.Toggle(0); break;
             case "wait": moveT = 1; break;

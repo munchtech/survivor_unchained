@@ -105,7 +105,8 @@ public static partial class Sfx
 
     public static void Kill(Family family, bool elite, bool boss, Where w = default, bool burst = false)
     {
-        if (A is not { } a || !a.Gate("kill", 5, 90)) return;
+        // (A boss's fall is never lost to the crowd's gate: it falls with its escort, often in the same blow.)
+        if (A is not { } a || !boss && !a.Gate("kill", 5, 90)) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
         // Recorded: what fell by its material (a burst, if it was one), and on top of it, never in its place, the elite's or the boss's.
         string m = SoundBank.MaterialOf(family);
