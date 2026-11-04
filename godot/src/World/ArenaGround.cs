@@ -79,6 +79,15 @@ public static class ArenaGround
         ["dig"] = (new Color("#3d4228"), 0.22f, 0f),
     };
 
+    /// <summary>A ground's sheet, painted (H2 R2, bible rules 5 and 6: tools/assets/paint_tex.py ground,
+    /// the gravel painted out, two or three value masses, one brush in the world) where it has been;
+    /// --ground-raw shows the scans as they were. Ground.cs uses it for the terrain too.</summary>
+    public static string Sheet(string dir, string k)
+    {
+        string p = $"{dir}/{k}_paint.jpg";
+        return !SurvivorUnchained.Args.Has("ground-raw") && ResourceLoader.Exists(p) ? p : $"{dir}/{k}.jpg";
+    }
+
     public static ShaderMaterial Material(ZoneData z)
     {
         var place = z.Place!;
@@ -98,9 +107,9 @@ public static class ArenaGround
         mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
         mat.SetShaderParameter("past_dark", z.Story ? 0.25f : 0.6f);
         mat.SetShaderParameter("scorch_out", z.Story ? 3f : 1000f);
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
-        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
-        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>($"{dir}/arh.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(Sheet(dir, "albedo")));
+        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(Sheet(dir, "normal")));
+        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(Sheet(dir, "arh")));
         mat.SetShaderParameter("zone_size", z.Size);
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json"));
         var scales = new Godot.Collections.Array<float>();

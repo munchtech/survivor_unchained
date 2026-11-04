@@ -78,17 +78,17 @@ public static class Ground
         mat.SetShaderParameter("splat", splat);
         mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
         mat.SetShaderParameter("mask_texel", z.Size / paint.Mask.GetWidth());
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
-        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>("res://art/ground/normal.jpg"));
-        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "albedo")));
+        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "normal")));
+        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(ArenaGround.Sheet("res://art/ground", "arh")));
         // The setts' 2K variants: only where the paint lays setts (64 MB of VRAM otherwise idle).
         bool setts = HasSetts(paint.Splat);
         // Style r2 (--setts-paint): the painted setts (env_ground.py --paint; the same sizes and layers) and their mud.
         bool sp = SurvivorUnchained.Args.Has("setts-paint");
         string st = sp ? "res://art/ground/setts_paint_" : "res://art/ground/setts_";
-        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : "res://art/ground/albedo.jpg"));
-        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : "res://art/ground/normal.jpg"));
-        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : "res://art/ground/arh.jpg"));
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : ArenaGround.Sheet("res://art/ground", "albedo")));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : ArenaGround.Sheet("res://art/ground", "normal")));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : ArenaGround.Sheet("res://art/ground", "arh")));
         // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
         mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));

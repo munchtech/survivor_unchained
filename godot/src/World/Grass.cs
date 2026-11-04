@@ -148,7 +148,7 @@ public static class Grass
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));
         mat.SetShaderParameter("meadow_amt", SurvivorUnchained.Args.Num("ground-meadow", 1f));
         mat.SetShaderParameter("warm_at", Ground.WarmAt(z));
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>("res://art/ground/albedo.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(SurvivorUnchained.View.ArenaGround.Sheet("res://art/ground", "albedo")));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());
         mat.SetShaderParameter("zone_size", z.Size);
