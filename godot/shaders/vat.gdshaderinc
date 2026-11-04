@@ -62,13 +62,15 @@ global uniform float crowd_amb;
 // which from the play camera covered most of a body and made the pack pale smears); y: the crowd's specular by night;
 // z: Godot's per-light RIM by night (a scale of rim_amount); w: on (arena nights, Atmosphere.Set).
 global uniform vec4 crowd_r4;
+// (whole by 1 - NdotV 0.92: a soft 2-4 px edge on a body at the play camera, not a hairline)
+#define CROWD_EDGE_END 0.92
 // (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
 float crowd_edge(float rim) {
 	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return pow(rim, 3.0);
 #ifdef VAT_CUT
-	return smoothstep(crowd_r4.x, 1.0, rim) * crowd_lamp3.w;
+	return smoothstep(crowd_r4.x, CROWD_EDGE_END, rim) * crowd_lamp3.w;
 #else
-	return smoothstep(crowd_r4.x, 1.0, rim);
+	return smoothstep(crowd_r4.x, CROWD_EDGE_END, rim);
 #endif
 }
 // Moving foes keep about a frame of FSR 2's history, so each frame must be smooth on its own
