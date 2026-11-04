@@ -714,6 +714,9 @@ public sealed class Prologue : ZoneRuntime
     /* ---------------------------------------------------- the Ford-Warden -- */
 
     public int LitCount => litPylons.Count(l => l);
+    /// <summary>The middle of the three lamps' triangle: the Warden fight's camera leans toward it
+    /// with him, so all three posts stand in the play frame (H4 item 5, N8: the owner saw one lamp).</summary>
+    public (double X, double Z) LampsCenter => pylons.Count == 0 ? (0, 0) : (pylons.Average(q => q.X), pylons.Average(q => q.Z));
 
     void Snuff(int i, string how)
     {
