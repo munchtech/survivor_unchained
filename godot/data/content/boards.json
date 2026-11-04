@@ -1,13 +1,13 @@
 {
-  "about": "Boards (H1 combat teeth, docs/team/hook/H1_combat_teeth.md item 6): a table arena made a board to play on rather than an open field. By place id (ArenaPlaces.IdFor), the table-night tiers it applies at; a place or tier with no board is made as it was. Numbers described in logic/Content/Boards.cs; the shape's generation is logic/Maps/ArenaBoard.cs and the place's own (Arenas/Hollow.cs). Check a board with `dotnet balance/bin/<build>/Balance.dll board --people pack --tier 1 --seed N --out plan.png`. First pass, 3 Nov: the owner, after the tier-1 Deep Shaw, 'the arena survivor area is just too big and theres no strategy to it at all'.",
+  "about": "Boards (H1 combat teeth, docs/team/hook/H1_combat_teeth.md item 6): a table arena made a board to play on rather than an open field. By place id (ArenaPlaces.IdFor), the table-night tiers it applies at; a place or tier with no board is made as it was. Numbers described in logic/Content/Boards.cs; the shape's generation is logic/Maps/ArenaBoard.cs and the place's own (Arenas/Hollow.cs). Check a board with `dotnet balance/bin/<build>/Balance.dll board --people pack --tier 1 --seed N --out plan.png`. First pass, 3 Nov: the owner, after the tier-1 Deep Shaw, 'the arena survivor area is just too big and theres no strategy to it at all'. Round 2 (3 Nov): the lamp pays less (Flare fill x1.5, ember x1.25 to x1.1) and is doused faster (12/s, a quarter of the fodder): 3-5 outs a night for holders. Holding still keeps the Pack's tier-1 night from falls (matched seeds, every bot holding against none: 4% against 30-34%), and even with no pay at all it is 5-7%: the fold's position, not the numbers, carries it.",
   "places": {
     "hollow": {
       "tiers": [1],
       "radius": 52,
       "fold": { "offset": [18, 24], "wall": [17, 20], "thick": 3, "gaps": 3, "gapWidth": [5, 6], "jitter": 0.3, "clearEdge": 6 },
       "lamp": { "piece": "halloween/post_lantern", "scale": 1.3, "color": "#ffd07a", "energy": 7, "height": 2.7, "flicker": 0.04, "pool": 8,
-        "litAt": 4.5, "flareFill": 2, "ember": 1.25,
-        "snuffFrom": 5.0, "snuffShare": 0.2, "snuffAggro": 5, "atLamp": 1.6, "life": 100, "douse": 8,
+        "litAt": 4.5, "flareFill": 1.5, "ember": 1.1,
+        "snuffFrom": 5.0, "snuffShare": 0.25, "snuffAggro": 5, "atLamp": 1.6, "life": 100, "douse": 12,
         "relightR": 2.5, "relight": 2, "warnEvery": 15,
         "hold": { "deft": 1.0, "human": 0.6, "careless": 0.3, "plain": 0.7 } },
       "lanes": { "width": [3, 4] },
