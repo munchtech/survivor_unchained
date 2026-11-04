@@ -109,5 +109,29 @@
   "sculpt-chin-narrow": 0.75
  },
  "eyes": "high-poly",
- "ref": "godot/art/people/heroine.glb"
+ "ref": "godot/art/people/heroine.glb",
+ "neck_ease_m": 0.12,
+ "fit_ease_m": 0.1,
+ "ring_blend_m": 0.05,
+ "head_bone_map": {
+  "neck_01": "neck_02",
+  "spine_03": "spine_05"
+ },
+ "bone_scale": {
+  "Head": 1.07
+ },
+ "body_material": {
+  "name": "Material_0.001",
+  "doubleSided": true,
+  "pbrMetallicRoughness": {
+   "baseColorFactor": [
+    0.78,
+    0.6,
+    0.5,
+    1.0
+   ],
+   "metallicFactor": 0.0,
+   "roughnessFactor": 0.6
+  }
+ }
 }

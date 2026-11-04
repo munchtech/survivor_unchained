@@ -58,9 +58,22 @@ def stage_place(base, A, rep):
 
 
 def run(spec, base, out, rep):
+    import stages as st
     A = Glb(os.path.join(REPO, spec["ref"]))
     t = time.time()
     pl = stage_place(base, A, rep)
     rep["timings_s"]["place"] = round(time.time() - t, 2)
-    print(json.dumps(rep, indent=1))
-    raise SystemExit("stop after place (dev)")
+    t = time.time()
+    ti = st.stage_tiers(base, pl, spec, rep)
+    rep["timings_s"]["tiers"] = round(time.time() - t, 2)
+    np.savez(os.path.join(out, "stage", "close.npz"), P=hm.to_gltf(ti["P2"]), F=ti["BF"], U=ti["U2"])
+    t = time.time()
+    sk = st.stage_skeleton(base, ti, rep)
+    rep["timings_s"]["skeleton"] = round(time.time() - t, 2)
+    t = time.time()
+    wt_ = st.stage_weights(base, pl, ti, sk, A, spec, rep)
+    rep["timings_s"]["weights"] = round(time.time() - t, 2)
+    t = time.time()
+    st.stage_export(spec, pl, ti, sk, wt_, A, out, rep)
+    st.write_rig(sk, out)
+    rep["timings_s"]["export"] = round(time.time() - t, 2)

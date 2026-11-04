@@ -1,0 +1,103 @@
+{
+ "about": "The base rig's helper drive (tools/body/base_drive.py), v1. share: the follow bone's turn (from rest, in their common parent's frame) times `amount`, about the joint. counter_twist: its parent's roll about its own Y undone by `amount`. twist: the follow bone's roll about this bone's Y taken by `amount`. Muscle helpers (delt, trap, pec, lat, scap, glute) and breast_tip ride their parents (neutral) until their drivers come.",
+ "helpers": [
+  {
+   "name": "upperarm_share_{s}",
+   "kind": "share",
+   "follow": "upperarm_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "lowerarm_share_{s}",
+   "kind": "share",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "lowerarm_point_{s}",
+   "kind": "share",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5,
+   "why": "v1: the share's twin; its push past 70 degrees comes with the correctives"
+  },
+  {
+   "name": "thigh_share_{s}",
+   "kind": "share",
+   "follow": "thigh_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "calf_share_{s}",
+   "kind": "share",
+   "follow": "calf_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "calf_point_{s}",
+   "kind": "share",
+   "follow": "calf_{s}",
+   "amount": 0.5,
+   "why": "v1: the share's twin (the patella rides the bend)"
+  },
+  {
+   "name": "upperarm_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.7
+  },
+  {
+   "name": "upperarm_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.525
+  },
+  {
+   "name": "upperarm_twist_03_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.35
+  },
+  {
+   "name": "upperarm_twist_04_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.175
+  },
+  {
+   "name": "thigh_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.7
+  },
+  {
+   "name": "thigh_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.35
+  },
+  {
+   "name": "lowerarm_twist_01_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "lowerarm_twist_02_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.8
+  },
+  {
+   "name": "calf_twist_01_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "calf_twist_02_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.8
+  }
+ ]
+}
