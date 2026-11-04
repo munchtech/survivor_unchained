@@ -149,6 +149,11 @@ public sealed class Enemy : Pooled
     public bool Roused;
     /// <summary>A reflection of the survivor: the horde turns on it.</summary>
     public bool Decoy;
+    /// <summary>A goal other than her (H1 item 6B, a board's lamp): it walks to (GoalX, GoalZ) down Battle.GoalFlow and
+    /// stands there (the zone reads who is at it), turning on her for good once she is within GoalAggro of it, or it is
+    /// frightened. False on every spawn.</summary>
+    public bool Goal;
+    public double GoalX, GoalZ, GoalAggro;
     /// <summary>Marked as prey: below the line it dies outright.</summary>
     public bool Prey;
     /// <summary>1, or a quarter when a lamp reflex marked it by night (Classes 20): the execute line scales with it.</summary>

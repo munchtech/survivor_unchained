@@ -44,15 +44,37 @@ public static class Boards
         public double ClearEdge = 6;
     }
 
-    /// <summary>The lamp at the fold's middle (part B lights and douses it: its light index is ArenaBoard.Lamps).</summary>
+    /// <summary>The lamp at the fold's middle: a reason to stand somewhere (Play/Zones/ArenaRun.Lamp.cs). Cold till LitAt;
+    /// lit, it pays her while she stands in its pool; from SnuffFrom the people send some of each wave to put it out,
+    /// and she lights it again by standing at it. Its light index is ArenaBoard.Lamps[k].Light.</summary>
     public sealed class LampDef
     {
         public string Piece = "halloween/post_lantern";
         public double Scale = 1.3;
         public string Color = "#ffd07a";
         public double Energy = 7, Height = 2.7, Flicker = 0.04;
-        /// <summary>Metres of the lamp's pool (where her reward is, part B).</summary>
+        /// <summary>Metres of the lamp's pool, where her reward is (while it is lit).</summary>
         public double Pool = 8;
+        /// <summary>The night's minute it catches (cold and dark before).</summary>
+        public double LitAt = 4.5;
+        /// <summary>While she stands in its lit pool: the Flare fills this many times as fast (Rules.FlareFill), and the
+        /// ember of what she kills there is this many times as much (Rules.KillEmber).</summary>
+        public double FlareFill = 2, Ember = 1.25;
+        /// <summary>From this minute, this share of each wave's rank and file (no champions, no throwers, casters,
+        /// burrowers or rallying voices, none once the boss is up) come for the lamp, not for her.</summary>
+        public double SnuffFrom = 5.0, SnuffShare = 0.2;
+        /// <summary>Metres: a snuffer turns on her for good once she is this close to it.</summary>
+        public double SnuffAggro = 5;
+        /// <summary>Metres from the lamp a snuffer douses it from.</summary>
+        public double AtLamp = 1.6;
+        /// <summary>The lamp's life, and what each snuffer at it takes off it a second. At none it goes out.</summary>
+        public double Life = 100, Douse = 8;
+        /// <summary>Out, she lights it again by standing within RelightR metres of it for Relight seconds, no snuffer at it.</summary>
+        public double RelightR = 2.5, Relight = 2;
+        /// <summary>Seconds at least between two "They are at the lamp!" warnings (said only while she is outside the pool).</summary>
+        public double WarnEvery = 15;
+        /// <summary>The harness's bots (balance/Harness/LampHold.cs): the chance a night's hands hold the lamp, by bot.</summary>
+        public Dictionary<string, double> Hold = new();
     }
 
     /// <summary>The worn runs from each gap out to the edge, kept free of cover.</summary>

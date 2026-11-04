@@ -32,7 +32,7 @@ namespace SurvivorUnchained.Play.Zones;
  * come often. A great blessing is chosen as it begins and another at the
  * fifteenth minute, from all of them, whoever the survivor is. Win or die,
  * the arena is over and the story goes on. */
-public sealed class ArenaRun : ZoneRuntime, IBossArena
+public sealed partial class ArenaRun : ZoneRuntime, IBossArena
 {
     public readonly ArenaSpec Spec;
     readonly MapBuild map;
@@ -163,6 +163,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
         sworn = MapOffers.Rules(Spec.Map);
+        LampBegin(b);
         Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
@@ -484,7 +485,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             // A field mown thin fills twice as fast, so a strong build mows rather than waits.
             bool thin = alive < Target() * 0.6;
             spawnT = thin ? 0.225 : 0.45;
-            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5);
+            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) LampSend(Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5));
         }
         else if (bossUp && spawnT <= 0 && alive < Target() * bossShare)
         {
@@ -537,6 +538,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (makingWay.Count > 0) MakingWay();
         Tells();
+        LampStep(dt);
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -1002,6 +1004,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     void Boss(bool again = false)
     {
         bossUp = true;
+        LampBoss();
         bossShare = 0.4;
         bossBlowsBefore = B!.BossBlowsTaken;
         var p = B!.Player;

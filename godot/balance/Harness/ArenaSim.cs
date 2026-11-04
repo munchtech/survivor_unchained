@@ -97,6 +97,12 @@ public sealed class RunResult
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
     /// its share of the damage done to bosses, clutch casts, and the meter's fill by source.</summary>
     public int FlareCasts, FlareBossCasts, FlareClutches;
+    /// <summary>A board's lamp (H1 item 6B; Harness/LampHold.cs): null with no lamp tonight; else whether the hands held
+    /// it, seconds she stood in its lit pool, its outs and relights, blows landed on her in its pool and out of it after
+    /// it caught (with the seconds of each), and her Flare meter (in casts) as the boss came.</summary>
+    public bool? LampHeld;
+    public double LampPoolSec, LampOutSec, FlareAtBoss = double.NaN;
+    public int LampOuts, LampRelights, LampHitsIn, LampHitsOut;
     /// <summary>Casts whose blows reached a boss; the Flare's damage to bosses, and all damage to bosses.</summary>
     public int FlareCastsOnBoss;
     public int FlareFullBankShots;
@@ -323,15 +329,22 @@ public static class ArenaSim
         int replayed = 0;
         // --bot human|careless: a player's hands, late (Harness/Human.cs).
         var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
+        var hold = LampHold.For(zone, map, b, spec.Seed, spec.Bot != "" ? spec.Bot : spec.Deft ? "deft" : "plain");
         while (t < spec.Cap * 60 && p.Alive && host.Result == null && (fx == null || fx.Span <= 0 || t < fx.Span * 60 - 1e-9))
         {
-            var (mx, mz) = human != null ? human.Steer(b, zone.BossScript) : Pilot.Steer(b, spec.Deft, zone.BossScript);
+            var goal = hold?.Goal(b);
+            var (mx, mz) = human != null ? human.Steer(b, zone.BossScript, goal) : Pilot.Steer(b, spec.Deft, zone.BossScript, goal: goal);
+            // A holder near the pool's edge turns back in rather than step out of it (not while dodging: the boss's
+            // marks and the kit's are read inside Steer, and a goal does not overrule them).
+            if (goal == null && hold != null && hold.Leaving(b, mx, mz) && b.Blows.Count == 0 && b.ActiveTells.Count == 0)
+                (mx, mz) = human != null ? human.Steer(b, zone.BossScript, (zone.Lamp!.X, zone.Lamp.Z)) : Pilot.Steer(b, spec.Deft, zone.BossScript, goal: (zone.Lamp!.X, zone.Lamp.Z));
             if (human != null ? human.Act(b, j, mx, mz, zone.BossScript) : Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
             foreach (var ev in b.Events.Drain())
             {
+                if (hold != null && ev is Ev.PlayerHit { Amount: > 0, Dodged: false } && b.HeldLamp is { Caught: true }) { if (zone.InLampPool) r.LampHitsIn++; else r.LampHitsOut++; }
                 if (ev is Ev.Telegraph { Tell: not null } kt) { if (kt.Phase == TellPhase.Warn) r.KitMarked++; else if (kt.Caught) r.KitCaught++; }
                 switch (ev)
                 {
@@ -385,7 +398,8 @@ public static class ArenaSim
             m.ChargePeak = Math.Max(m.ChargePeak, b.Charges.Live);
             if (b.Charges.Live >= 3) m.Overlap += Dt;
             t += Dt;
-            if (bossUp < 0 && (int)Math.Round(t * 60) % 30 == 0 && b.Enemies.Living().Any(e => e.Boss)) bossUp = b.Time;
+            if (hold != null && b.HeldLamp is { Caught: true }) { if (zone.InLampPool) r.LampPoolSec += Dt; else r.LampOutSec += Dt; }
+            if (bossUp < 0 && (int)Math.Round(t * 60) % 30 == 0 && b.Enemies.Living().Any(e => e.Boss)) { bossUp = b.Time; if (hold != null) r.FlareAtBoss = b.FlareMeter / Battle.FlareFull; }
             if (r.WonAt == null && zone.Won)
             {
                 r.WonAt = t / 60;
@@ -459,6 +473,7 @@ public static class ArenaSim
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
         r.LampIds = string.Join(",", LampBook.Now(j.Ch).Lit);
         r.FlareCasts = b.FlareCasts;
+        if (hold != null) { r.LampHeld = hold.Holds; r.LampOuts = zone.LampOuts; r.LampRelights = zone.LampRelights; }
         r.Blocks = b.Blocks; r.Rebukes = b.Rebukes; r.StonesPeak = b.StonesPeak;
         r.RebukeStrikes = b.RebukeStrikes; r.Tolls = b.Tolls; r.BellBarrier = b.BellBarrier; r.MaxHpEnd = b.MaxHp;
         r.FlareClutches = b.FlareClutches;

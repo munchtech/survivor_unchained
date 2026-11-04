@@ -101,6 +101,9 @@ public static class Ai
 
         if (e.State is EnemyState.Burrowed or EnemyState.Surfacing) { Tunnel(b, e, dt); return; }
 
+        // A goal other than her (a board's lamp): walked to and stood at, till she comes close or it is frightened.
+        if (e.Goal && GoalStep(b, e, dt)) return;
+
         // Choosing a target.
         e.RetargetT -= dt;
         if (e.RetargetT <= 0)
@@ -582,6 +585,40 @@ public static class Ai
         double f = c != null ? Math.Max(0.4, 1 - 0.1 * c.Stacks) : 1;
         if (e.Status[StatusKind.Poison] is { Stacks: >= 5 }) f *= 0.9;
         return f;
+    }
+
+    /// <summary>A goal-walker's step (Enemy.Goal): down Battle.GoalFlow to its goal, standing within 1.2 m of it. False
+    /// once it has turned on her (she came within GoalAggro, or it is frightened): it fights as any of them from then.</summary>
+    static bool GoalStep(Battle b, Enemy e, double dt)
+    {
+        var p = b.Player;
+        if (e.Disposition != Disposition.Hostile || e.Status.Has(StatusKind.Fear) || p.Alive && p.InvisibleT <= 0 && Dist(p.X, p.Z, e.X, e.Z) < e.GoalAggro)
+        {
+            e.Goal = false;
+            e.RetargetT = 0;
+            return false;
+        }
+        double dx = e.GoalX - e.X, dz = e.GoalZ - e.Z, d = Len(dx, dz);
+        if (d <= 1.2)
+        {
+            e.Vx = e.Vz = 0;
+            e.Facing = Math.Atan2(dz, dx);
+            // (Beating at it: a swing each second, as at her.)
+            if (e.Anim != EnemyAnim.Attack || e.AnimT > 1) { e.Anim = EnemyAnim.Attack; e.AnimT = 0; }
+            FinishMove(b, e);
+            return true;
+        }
+        double wx = dx / d, wz = dz / d;
+        if (b.GoalFlow != null && d > 2 && b.GoalFlow.Dir(e.X, e.Z, out double fx, out double fz))
+        {
+            wx = wx * 0.15 + fx * 0.85; wz = wz * 0.15 + fz * 0.85;
+            double m = Len(wx, wz);
+            if (m > 0) { wx /= m; wz /= m; }
+        }
+        e.Facing = Math.Atan2(wz, wx);
+        double speed = e.Speed * SlowFactor(e) * (e.HasteT > 0 ? e.Haste : 1) * b.HamstrungMul(e) * (e.SlowUntil > b.Time ? 1 - e.SlowBy : 1);
+        Move(b, e, wx, wz, speed, dt);
+        return true;
     }
 
     static int ChooseTarget(Battle b, Enemy e)

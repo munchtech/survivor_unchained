@@ -56,6 +56,8 @@ public sealed class BoardLamp
 {
     public double X, Z, Pool;
     public int Light = -1;
+    /// <summary>Its numbers (Content/Boards.LampDef: when it catches, what it pays, who comes to douse it).</summary>
+    public SurvivorUnchained.Content.Boards.LampDef Def = new();
 }
 
 /// <summary>A board's common making (a place's ArenaShape calls it: Plan in its Plan, Raise in its Dress).</summary>
@@ -170,7 +172,7 @@ public static class BoardGen
         b.Piece(l.Piece, fold.X, fold.Z, b.Rng.Range(0, Math.PI * 2), l.Scale);
         b.Block(fold.X, fold.Z, 0.3 * l.Scale);
         int light = b.Glow(fold.X, fold.Z, l.Color, l.Energy, height: l.Height, flicker: l.Flicker);
-        board.Lamps.Add(new BoardLamp { X = fold.X, Z = fold.Z, Pool = l.Pool, Light = light });
+        board.Lamps.Add(new BoardLamp { X = fold.X, Z = fold.Z, Pool = l.Pool, Light = light, Def = l });
     }
 }
 

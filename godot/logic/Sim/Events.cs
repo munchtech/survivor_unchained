@@ -19,6 +19,8 @@ public enum TelegraphKind { Blow, Ground, Safe, Wall }
 /// <summary>A kit telegraph's moment (data/content/telegraphs.json): Warn as it is marked (Duration = its windup),
 /// Land as it lands (Duration 0, Caught = she was in it). Draw only Warn; sound both (H3's bank: telegraph.&lt;tell&gt;.windup/.land).</summary>
 public enum TellPhase { Warn, Land }
+/// <summary>Ev.BoardLamp's moments.</summary>
+public enum BoardLampState { Lit, Dousing, Out, Relit }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
 /// <summary>The Flare's moments (CLASSES.md §3.5): Ready (a charge full), Press (t = 0: the freeze, the grade, the push),
@@ -135,6 +137,10 @@ public static class Ev
         public FlarePhase Phase; public string Id = ""; public double X, Z, Radius, Angle; public bool Clutch, Stand; public int Blow;
         public string Part = ""; public bool Last; public double TX, TZ; public int Target, Hitstop;
     }
+    /// <summary>A board's lamp (H1 item 6B, Play/Zones/ArenaRun.Lamp.cs), for the sound (H3) and the view: its contract.
+    /// State: Lit (it catches at its minute), Dousing (snuffers at it: once as it starts, then once a second while it
+    /// goes on), Out (its life gone; its light off), Relit (she cupped the wick). Life: its life left, 0 to 1.</summary>
+    public sealed class BoardLamp : CombatEvent { public double X, Z; public BoardLampState State; public double Life; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }

@@ -82,11 +82,12 @@ public sealed class Human
     }
 
     /// <summary>The hands' move this step: the deft Pilot's while aware, else the plain Pilot's reading nothing.</summary>
-    public (double X, double Z) Steer(Battle b, ArenaBoss? boss)
+    /// <param name="goal">Where the night wants her (a board's lamp held: Harness/LampHold.cs), or null.</param>
+    public (double X, double Z) Steer(Battle b, ArenaBoss? boss, (double X, double Z)? goal = null)
     {
         bool aware = Aware(b);
         lastAware = aware;
-        return aware ? Pilot.Steer(b, true, boss) : Pilot.Steer(b, false, null, naive: true);
+        return aware ? Pilot.Steer(b, true, boss, goal: goal) : Pilot.Steer(b, false, null, goal: goal, naive: true);
     }
     bool lastAware;
 

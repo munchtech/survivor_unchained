@@ -86,6 +86,8 @@ public sealed class MapRules
     public double StaggerTaken = 1;
     /// <summary>The ember the dead leave, over the usual (an oath's pay: "half again the ember").</summary>
     public double EmberGain = 1;
+    /// <summary>Over that, the ember of the dead she kills herself (a board's lamp, lit and stood in: Play/Zones/BoardLamp.cs).</summary>
+    public double KillEmber = 1;
     /// <summary>How often the rank and file drop their gold (champions always as usual). An
     /// arena's horde is tens of thousands a night: at the day's rate the Kerchiefs alone paid
     /// 52k-109k gold (docs/CRAFTING_DESIGN.md), so there it is a fiftieth.</summary>
@@ -264,6 +266,11 @@ public sealed partial class Battle
     public readonly SpatialHash Spatial;
     public readonly CollisionWorld Collision;
     public readonly FlowField Flow;
+    /// <summary>The way to a goal other than her (Enemy.Goal: a board's lamp), flooded once by whoever sets one; null
+    /// when none (a goal-walker then walks straight).</summary>
+    public FlowField? GoalFlow;
+    /// <summary>A board's lamp as the HUD reads it (its life bar, its pool's edge), or null: no lamp tonight.</summary>
+    public LampMark? HeldLamp;
     public Func<double, double, double> HeightAt;
     public bool Combat;
     public BattleHooks Hooks = new();
@@ -1028,7 +1035,7 @@ public sealed partial class Battle
         if (e.Disposition != Disposition.Ally)
         {
             // The dead leave a stone with light still in it.
-            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain;
+            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain * (credited ? Rules.KillEmber : 1);
             if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
@@ -1673,7 +1680,7 @@ public sealed partial class Battle
         e.SlowUntil = e.SlowBy = 0;
         e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
-        e.Decoy = e.Prey = false;
+        e.Decoy = e.Prey = e.Goal = false;
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
@@ -3003,4 +3010,12 @@ sealed class StrikeSpec
     {
         X = x; Z = z; R = r; Dmg = dmg; School = school; Tags = tags; T = t; Delay = t; Weapon = weapon; Owner = owner; Depth = depth;
     }
+}
+
+/// <summary>A board's lamp as the HUD draws it (Play/Zones/ArenaRun.Lamp.cs keeps it): where, its pool's metres, its
+/// life (0 to 1), whether it burns, and whether it has caught yet (cold before its minute).</summary>
+public sealed class LampMark
+{
+    public double X, Z, Pool, Life = 1;
+    public bool Lit, Caught;
 }

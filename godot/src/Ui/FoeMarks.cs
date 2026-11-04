@@ -19,6 +19,13 @@ public partial class FoeMarks : Control
     float ringR;
     float time;
     readonly Vector2[] ringPts = new Vector2[33];
+    // A board's lamp (H1 item 6B, Battle.HeldLamp): its life bar over it when below full, and its pool's edge on the
+    // ground while she stands outside it. Functional; its look is H2's.
+    bool lampBar, lampRing;
+    Vector2 lampAt;
+    float lampK;
+    readonly Vector2[] poolPts = new Vector2[49];
+    static readonly Color LampFill = new("#ffd07a");
     static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c");
 
     public FoeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
@@ -63,11 +70,32 @@ public partial class FoeMarks : Control
             bool full = !low;
             bars[count++] = new Bar { At = sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = full && !isPri };
         }
+        Lamp(b, cam, vp);
         QueueRedraw();
     }
 
+    void Lamp(Battle b, Camera3D cam, Rect2 vp)
+    {
+        lampBar = lampRing = false;
+        if (b.HeldLamp is not { Caught: true } l) return;
+        float y = (float)b.HeightAt(l.X, l.Z);
+        var top = new Vector3((float)l.X, y + 3.1f, (float)l.Z);
+        if (l.Life < 0.999 && l.Lit && !cam.IsPositionBehind(top)) { lampBar = true; lampAt = cam.UnprojectPosition(top); lampK = (float)Math.Clamp(l.Life, 0, 1); }
+        var p = b.Player;
+        if (!l.Lit || (p.X - l.X) * (p.X - l.X) + (p.Z - l.Z) * (p.Z - l.Z) < l.Pool * l.Pool) return;
+        for (int i = 0; i < poolPts.Length; i++)
+        {
+            double t = i / (double)(poolPts.Length - 1) * Math.Tau;
+            double x = l.X + Math.Cos(t) * l.Pool, z = l.Z + Math.Sin(t) * l.Pool;
+            var w = new Vector3((float)x, (float)b.HeightAt(x, z) + 0.05f, (float)z);
+            if (cam.IsPositionBehind(w)) return;
+            poolPts[i] = cam.UnprojectPosition(w);
+        }
+        lampRing = true;
+    }
+
     /// <summary>Nothing this frame.</summary>
-    public void Show0() { if (count == 0 && !ring) return; count = 0; ring = false; QueueRedraw(); }
+    public void Show0() { if (count == 0 && !ring && !lampBar && !lampRing) return; count = 0; ring = lampBar = lampRing = false; QueueRedraw(); }
 
     public override void _Draw()
     {
@@ -82,6 +110,21 @@ public partial class FoeMarks : Control
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y)), new Color(Danger, a));
             if (b.Elite) DrawRect(r, new Color(Bronze, a), false, Math.Max(1, s));
+        }
+        if (lampRing)
+        {
+            DrawPolyline(poolPts, new Color(Ink, 0.25f), 3.5f * s, true);
+            DrawPolyline(poolPts, new Color(LampFill, 0.3f), 1.5f * s, true);
+        }
+        if (lampBar)
+        {
+            // As a champion's bar, in the lamp's own light.
+            float w = 64 * s, h = 6 * s;
+            var r = new Rect2(lampAt.X - w / 2, lampAt.Y, w, h);
+            DrawRect(r, Ink);
+            var inner = r.Grow(-1 * s);
+            DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * lampK, inner.Size.Y)), LampFill);
+            DrawRect(r, Bronze, false, Math.Max(1, s));
         }
         if (ring)
         {
