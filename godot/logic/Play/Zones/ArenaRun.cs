@@ -36,6 +36,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 {
     public readonly ArenaSpec Spec;
     readonly MapBuild map;
+    /// <summary>The board the night is played on (Maps/ArenaBoard.cs: the fold, its chokepoints, the lamp, the lanes),
+    /// or null: a table night's at a tier that has one (Content/Boards), never a story night's. (H1 item 6: part B's
+    /// lamp, lit and doused, reads it here.)</summary>
+    public ArenaBoard? Board => map.Board;
     readonly Denizens people;
     readonly List<OathDef> oaths;
     /// <summary>The dark's own oaths, sworn one by one in the long night (and how many

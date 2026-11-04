@@ -132,6 +132,7 @@ switch (cmd)
     case "verge-day": VergeDay(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
+    case "board": BoardPlan.Run(opt.Get("people", "pack"), opt.Int("tier", 1), opt.Get("seed", "311").Split(',').Select(int.Parse).ToArray(), opt.Get("out", ""), double.Parse(opt.Get("ppm", "4"), System.Globalization.CultureInfo.InvariantCulture)); break;
     case "suggest": SuggestPath(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");

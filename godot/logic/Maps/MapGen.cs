@@ -43,6 +43,8 @@ public sealed class MapSpec
     /// <summary>An arena made to a story fight's own place (Play/Story: its outline, its gates and
     /// points), by the fight's id; empty, the round ember arena.</summary>
     public string Story = "";
+    /// <summary>A story night (ArenaSpec.Story), with a place of its own or not: never made a board (Content/Boards).</summary>
+    public bool StoryNight;
 }
 
 /// <summary>A Bend: a widening of the way where it turns, with nothing placed in it but the way's own.</summary>
@@ -105,6 +107,8 @@ public sealed class MapBuild
     public List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
     /// <summary>A story place's fires by point id (a deadfall): the light its flames burn with (Meta.Lights).</summary>
     public Dictionary<string, int> FireLights = new();
+    /// <summary>A table arena made a board (ArenaBoard.cs: the fold, its chokepoints, the lamp, the lanes), or null.</summary>
+    public ArenaBoard? Board;
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
     /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point

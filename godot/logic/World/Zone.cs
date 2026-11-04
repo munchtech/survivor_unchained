@@ -177,6 +177,10 @@ public sealed class ZoneMeta
     /// shows them).</summary>
     public List<string> HiddenNodes = new();
     public List<ColliderDef> Colliders = new();
+    /// <summary>A table arena made a board (Maps/ArenaBoard.cs: the fold, its chokepoints, the lamp, the lanes), or
+    /// null; in play only (never written out).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public SurvivorUnchained.Maps.ArenaBoard? Board;
     /// <summary>What the zone's runtime reaches into, zone by zone (the
     /// Verge's brambles and fires, Lowford's pylons, the Waystation's doors).</summary>
     public JsonElement Refs;

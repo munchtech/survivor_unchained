@@ -110,7 +110,9 @@ public static class ArenaGen
         // stands higher over it, or a low moon's shadows of the trees fill it to the brim.
         if (story != null) place = place with { Night = place.Night with { KeyElevation = Math.Max(place.Night.KeyElevation, 62) } };
         var shape = (story != null ? StoryShapeFor(spec.Story) : null) ?? ShapeFor(place.Id);
-        var b = new Builder(spec, place) { Outline = story?.Place, Story = story };
+        // A table night's board (Content/Boards: H1 item 6), where its place has one at its tier; never a story night's.
+        var board = story == null && !spec.StoryNight ? Content.Boards.For(place.Id, spec.Tier) : null;
+        var b = new Builder(spec, place, board) { Outline = story?.Place, Story = story };
         shape.Bind(b);
         b.Edge();
         shape.Plan();
@@ -159,11 +161,19 @@ public static class ArenaGen
         public readonly List<(string Id, double X0, double Z0, double X1, double Z1)> Gates = new();
         public readonly Dictionary<string, int> FireLights = new();
         int cid = 1;
+        /// <summary>The clearing's radius (its edge wanders about it): a board's (Content/Boards), or ArenaGen.R.</summary>
+        public readonly double R;
+        /// <summary>The board the arena is made to (Content/Boards), or null: as it was.</summary>
+        public readonly Content.Boards.Def? BoardDef;
+        /// <summary>The board as its place made it (ArenaBoard.cs: BoardGen.Plan in the shape's Plan).</summary>
+        public ArenaBoard? Board;
 
-        public Builder(MapSpec spec, ArenaPlace place)
+        public Builder(MapSpec spec, ArenaPlace place, Content.Boards.Def? board = null)
         {
             Spec = spec;
             Place = place;
+            BoardDef = board;
+            R = board?.Radius ?? ArenaGen.R;
             Rng = new Rng((uint)spec.Seed ^ 0x5bd1e995u);
             Noise = new Noise2D((uint)spec.Seed);
         }
@@ -484,7 +494,7 @@ public static class ArenaGen
                 Bound = Half - 4,
                 Start = new Start { X = 0, Z = 0, Facing = 0 },
                 Atmosphere = Place.Night,
-                Lights = Lights, Fires = Fires, Colliders = Colliders,
+                Lights = Lights, Fires = Fires, Colliders = Colliders, Board = Board,
                 Refs = JsonSerializer.SerializeToElement(new { }),
                 Places = new Dictionary<string, JsonElement> { ["M"] = JsonSerializer.SerializeToElement(new Dictionary<string, object> { ["start"] = new { x = 0, z = 0 }, ["boss"] = new { x = 0, z = 0 }, ["area0"] = new { x = 0, z = 0 } }) },
                 Paths = new Dictionary<string, double[][]> { ["RIM"] = rim.Select(p => new[] { p.Item1, p.Item2 }).ToArray() },
@@ -498,7 +508,7 @@ public static class ArenaGen
             {
                 Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Splat3 = splat3, Grass = grass, Leaves = leaves, Flora = Flora, Props = new(), Pieces = Pieces,
                 Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Rails = Rails, Vents = Vents, Inside = Inside,
-                Gates = Gates, FireLights = FireLights,
+                Gates = Gates, FireLights = FireLights, Board = Board,
             };
         }
 
