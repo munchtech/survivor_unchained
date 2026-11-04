@@ -1,5 +1,32 @@
 # Handoff: the signature art style (style frames)
 
+## L1 the art direction as a SYSTEM: HANDOFF READY (look-l1 art director 1, 4 Nov; the spawn guard blocked its helpers)
+- **The job (the owner via main, 4 Nov):** "I want art to be...a big deal. not a patch. we are moving in a new direction. cost does not matter - implementation building blocks etc matter." Painted cel, Marvel Rivals as the reference KIND ("a clever, proper art style that we can just build on ... like this style is awesome"), never a copy. For her: "casual badassery and sexyness". Main approved the four-stage plan; **G1 is IN** (the owner sees the target sheet after Stage A, before B scales). Budget is not the limit; the blocks and the direction are.
+- **The plan (~5.5M, GPU 4-6 h, ~20 ChatGPT images):**
+  - **A** (the direction): A1 reference read, A2 style frames, A3 material and lighting boards, A4 the bible rewritten around them, A5 one max judge, then G1.
+  - **B** (the blocks): B1 `shaders/cel.gdshaderinc` in every lit material; B5 an InkPass CompositorEffect; B0 a lookdev stage; B2 the material library (presets as data, plus a loader); B3 texture authoring (procedural painted blocks from form maps, palette and brush, with a bake-off on the setts); B4 lighting rigs; B6 the VFX and UI language as data.
+  - **C:** the 13 frames rebuilt through the blocks, as today | blocks on today's maps | blocks with re-authored maps. Remakes routed: the arena floor and the square are remade through B3 inside C; the Warden goes to R12/P3; the folk to their generator; her surfaces to P1/P2/R10.
+  - **D:** a max judge, then the owner's A|B.
+  - B1, B5 and B0 code during G1.
+- **Done:**
+  - A1, `docs/design/look/REFERENCES.md`.
+  - A4 draft, `docs/design/look/BIBLE_V2_DRAFT.md`: the rules and starting numbers for B1/B5/B2.
+  - **Everything else is staged in `survivorsunchained_inputs\look_l1\work\`:**
+    - `chatgpt\prompts_r1.md`: 9 jobs, frames 09/07/13 x variants V1 restrained, V2 bold, V3 inked storybook, on the r4_2 frames.
+    - `chatgpt\prompts_r2_draft.md`: 01/03/04/05/12 plus key art, MB1 her skin and hair, MB2 gear, MB3 town, MB4 wild, MB5 fire and spells, LB light. Its VARIANT line is filled after round 1.
+    - Helper briefs to spawn as they are: `brief_gpt.md` (subagent_type `claude`, the Chrome driver on `chatgpt.lock`), and `brief_b1a.md`, `brief_b5.md`, `brief_b0.md` (each `su-lead-high`, effort medium). They share this worktree, and `wtlock.sh` serializes builds.
+- **r0:** the first shoot rendered BLACK (the kit GLBs weren't imported; NRE in `Dressing.PartsOf`). `--import` plus the reshoot were running at handoff (`work\r0b.sh`). If `look_l1\r0\palette.md` is missing or frames are black, re-run `bash work/r0b.sh`, and check `turn.py show` for a stale "look-l1: import + r0 frames" godot turn.
+- **Blocker:** `tools/hooks/spawn_guard.py` refuses spawns by a su-lead-max whose brief lacks the line `Spawning: allowed`. **The successor's brief must carry it.**
+- **Next, in order:**
+  1. Spawn the ChatGPT driver (round 1) now. Spawn B1a, B5 and B0 once r0 is done: they edit shaders and C#, which would change r0.
+  2. Look at `a2\r1` as ONE 3x3 sheet at half size and pick the lead variant (lean: V2's bold shadow shapes and rim with V1's restraint on her face; decide on the pictures). Fill r2's VARIANT and run round 2.
+  3. Rewrite `docs/design/LOOK_BIBLE.md` around the frames and boards: one page plus the boards.
+  4. A5: a max judge (`Item: L1 direction`): the whole-frame question, one game, and the reference's kind but not its copy, with the owner's words above.
+  5. The G1 sheet in `look_l1\g1\`: r0 | target per frame, the variants, the boards, the key art, at half size, plus 3 full-size picks. Write `GATE G1 READY look-l1@<commit>` here and SendMessage "main" the same line.
+  6. During G1: B1b (her shaders on the include). Before it, message P1 (body-p1) once: her skin and hair shading and its bake targets (flat clean skin albedo, soft color zones, normals carry big forms only, the band sees 35%), and ask which heroine_* files P1 edits.
+  7. After G1: B2, B3, B4, then B6 (tell H7 once what the ramp does to spells), then C and D.
+- **Cost so far:** lead ~250k (onboarding, the plan, briefs, prompts; its context was full at the plan stage, so keep briefs in files and decide on pictures, not in long reasoning), $0 API, two godot turns (r0 black, the reshoot).
+
 ## H2 step 2, R4 the foes at night: SHIPPED as the step (look-r4 lead, 4 Nov; max judge round 2 SHIP)
 - **What changed (arena nights only, CrowdFill > 0; nothing by day, on the roads or in town):** `vat.gdshaderinc` new global `crowd_r4` (project.godot) and `crowd_edge()`: the moon's rim and her lamp's warm rim on the crowd are a soft edge, smoothstep(1-NdotV 0.5 to 0.92) (`CROWD_EDGE_END`), instead of pow(rim, 3), which from the play camera covered most of a body (the pale smears); by night specular 0.5 to 0.15 and Godot's per-light RIM off; the fur/hair cards take 0.1 of the edge (`crowd_lamp3.w`; they flecked). `Atmosphere.cs`: the edge's strength is the preset's crowd rim x 2.5 (`CrowdRim` 0.2 untouched), the moon's wrap round the body (BACKLIGHT, `--crowd-back`) 1 to 0.15, the fill (`--crowd-moon`) 0.45 to 0.3, its hue (`--crowd-dirt`) 0.7 to 0.3 toward the ground's. Her lamp's term on the crowd unchanged. Trial args: `--crowd-edge`, `--crowd-edge-k`, `--crowd-spec`, `--crowd-grim`, `--crowd-card-edge`; `--crowd-r4 off` gives the r1_2 crowd exactly (A/B, perf). Static order matters: `R4` is declared above the crowd terms whose defaults read it.
 - **frames.py retimed (4a376ffd9, cherry-picked by R2):** H1's teeth made tier 1 ten minutes to its boss, so 09 is minute 8.5 +20 s and 12 minute 6 +35 s (the old 14 and 20 shot past the boss). 09/12 in any ab against r1_2 are different moments; use a same-moment `--crowd-r4 off` shoot for A/B.
