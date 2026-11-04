@@ -714,6 +714,11 @@ public sealed class Prologue : ZoneRuntime
     /* ---------------------------------------------------- the Ford-Warden -- */
 
     public int LitCount => litPylons.Count(l => l);
+
+    /// <summary>The lamp posts (x, lamp height, z) and whether each burns; only while the boss fight is on (the HUD points at the lit ones off screen).</summary>
+    public IEnumerable<(double X, double Y, double Z, bool Lit)> LampPosts =>
+        Now != Stage.Boss ? Enumerable.Empty<(double, double, double, bool)>()
+        : pylons.Select((p, i) => (p.X, lampY[i], p.Z, litPylons[i]));
     /// <summary>The middle of the three lamps' triangle: the Warden fight's camera leans toward it
     /// with him, so all three posts stand in the play frame (H4 item 5, N8: the owner saw one lamp).</summary>
     public (double X, double Z) LampsCenter => pylons.Count == 0 ? (0, 0) : (pylons.Average(q => q.X), pylons.Average(q => q.Z));

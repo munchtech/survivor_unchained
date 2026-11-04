@@ -1087,8 +1087,9 @@ public partial class GameHud : CanvasLayer
         BossName = bar?.Name;
         if (bar == null) return;
         bossName.Text = bar.Name.ToUpperInvariant();
-        // The lamps that guard it (the Ford-Warden's three): marks at the name line's right, 24 px in.
-        bossLamps.Feed(bar.Lamps, bar.LampsLit, BossW - 24, 16);
+        // The lamps that guard it (the Ford-Warden's three): marks 26 px right of the name's text, centered on the name line.
+        float nameW = Style.Display.GetStringSize(bossName.Text, HorizontalAlignment.Left, -1, 26).X;
+        bossLamps.Feed(bar.Lamps, bar.LampsLit, BossW / 2 + nameW / 2 + 26, 16);
         // A boss's Break (the damage past its phase marks) beside its title.
         bossTitle.Text = bar.Break >= 1 ? $"{bar.Title}   ·   Break {Math.Round(bar.Break):N0}" : bar.Title;
         float w = BossW - 4;

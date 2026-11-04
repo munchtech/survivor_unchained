@@ -1434,6 +1434,8 @@ public partial class Game : Node, IZoneHost
             Perf.Begin(Perf.Part.Labels);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
+            hud.Posts(Overlay == null ? PostPointers() : new());
+            LampCheck(fb2.Time);
             Priority();
             hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));
             hud.Ground(Overlay == null && !labelsOff && !Args.Has("clean") ? Labels(fb2) : new());
