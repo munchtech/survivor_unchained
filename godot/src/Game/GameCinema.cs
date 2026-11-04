@@ -323,7 +323,7 @@ public partial class Game
     {
         // (Held to the middle of a hand-back, where the camera moves fastest: switched at its first frame, C02's
         // sun cascades went 4 to 2 on a still frame, H4 solver r2.)
-        bool on = cine != null || (seam is { } sm && sm.T < sm.Dur * 0.5) || Args.Has("dbg-cineshadows");
+        bool on = cine != null || (seam is { } sm && sm.T < sm.Dur * 0.5) || Args.Has("dbg-cineshadows");   // (--dbg-cineshadows: held through play, an A/B for a pop)
         if (ShadowLamp.Suspended == on) return;
         ShadowLamp.Suspended = on;
         Graphics.Sun(air, Graphics.Current);
