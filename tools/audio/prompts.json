@@ -452,7 +452,8 @@
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "ui.open"
+   "note": "ui.open",
+   "max_onsets": 8
   },
   "ui_close": {
    "prompt": "A leather-bound book closed with a soft thump, close-miked, dry, no reverb, no music, no voice",
@@ -504,7 +505,8 @@
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "lamps.light_notable"
+   "note": "lamps.light_notable",
+   "max_onsets": 8
   },
   "lamp_out": {
    "prompt": "A candle flame snuffed out: a soft puff and a short smoky hiss, quiet, close-miked, dry, no reverb, no music, no voice",
@@ -725,7 +727,9 @@
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -50,
-   "note": "telegraph.closing.windup"
+   "note": "telegraph.closing.windup",
+   "max_s": 1.6,
+   "fade_out_ms": 120
   },
   "tg_closing_land": {
    "prompt": "A massive horde surging in at once: a roaring rush of bodies and growls",

@@ -50,6 +50,8 @@ public struct Clip
     public double Pan;
     /// <summary>Play the take's two channels as recorded (when it has them), ignoring Pan.</summary>
     public bool Stereo;
+    /// <summary>Cut the take after this many seconds with a short fade (a windup that must end when its blow lands); null: the whole take.</summary>
+    public double? Len;
 }
 
 /// <summary>
@@ -583,6 +585,8 @@ public partial class Synth : Node
         readonly Biquad? lp, lpR;
         readonly double lpf;
         double pos;
+        readonly double cut = double.MaxValue;
+        const double CutFade = 0.12;
 
         readonly float[]? right;
         public override bool Wide => right != null;
@@ -595,6 +599,7 @@ public partial class Synth : Node
             step = take.Rate / s.Rate * pitch;
             Start = o.T ?? s.Now;
             End = Start + data.Length / (take.Rate * pitch) + 0.01;
+            if (o.Len is double len && Start + len < End) { cut = Start + len; End = cut + 0.01; }
             gain = (float)o.G;
             if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
             Place(o.Bus, o.Pan, o.Verb);
@@ -612,6 +617,7 @@ public partial class Synth : Node
                 Right = (lpR != null ? lpR.Run(xr, lpf) : xr) * gain;
             }
             if (lp != null) x = lp.Run(x, lpf);
+            if (t > cut - CutFade) { float f = (float)Math.Clamp((cut - t) / CutFade, 0, 1); x *= f; Right *= f; }
             return x * gain;
         }
     }

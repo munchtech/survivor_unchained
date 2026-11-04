@@ -78,6 +78,7 @@
  "kill_hide": 4,
  "knifeSlice": 1,
  "lamp_lit": 2,
+ "lamp_lit_big": 2,
  "lamp_out": 2,
  "levelup_big": 2,
  "levelup_swell": 2,
@@ -112,6 +113,7 @@
  "ui_card": 2,
  "ui_close": 2,
  "ui_deny": 2,
+ "ui_open": 3,
  "ui_pick": 2,
  "watch_bell": 2,
  "way_out": 2

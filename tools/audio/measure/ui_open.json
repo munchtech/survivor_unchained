@@ -1,13 +1,13 @@
 {
  "family": "ui_open",
- "kept": 0,
+ "kept": 3,
  "n": 4,
  "takes": [
   {
    "i": 0,
    "key": "51f5c040f1df992c54d62e83e86c52e63656cab82b22bc918111739f8bcc7445",
-   "file": null,
-   "dropped": "onsets 6 > 2",
+   "file": "ui_open_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.4747619047619048,
     "peak_dbfs": -1.1906095816017757,
@@ -29,8 +29,8 @@
   {
    "i": 1,
    "key": "a46c67fb684c3356cee254bec4b31b45f8283b87bd824ce2bb17fb11d18c9607",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "ui_open_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.48909297052154194,
     "peak_dbfs": -1.0055273750310696,
@@ -53,7 +53,7 @@
    "i": 2,
    "key": "30995543409bde2f4eafce38ed775fcad691b1531543e03970ab7a0f410eb688",
    "file": null,
-   "dropped": "onsets 6 > 2",
+   "dropped": "not among the 3 best-ranked takes",
    "measure": {
     "duration_s": 0.5643764172335601,
     "peak_dbfs": -1.0695186686713314,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "7015d8fad3b15862658b70a2ad3334d7946510962583d23cd4372e1a40e4e2fc",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "ui_open_2.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 0.5358049886621316,
     "peak_dbfs": -1.0055273750310696,

@@ -139,6 +139,13 @@ def process_take(raw, fam):
     s = trim_lead(s)
     if kind != "bed":
         s = trim_tail(s, fam["tail_db"])
+    if fam.get("max_s"):  # cut to a game timing (a windup that must end when its blow lands), fading out
+        n = int(fam["max_s"] * RATE)
+        if len(s) > n:
+            s = s[:n].copy()
+            f = int(fam.get("fade_out_ms", 150) * RATE / 1000)
+            ramp = np.linspace(1.0, 0.0, f)
+            s[-f:] *= ramp[:, None] if s.ndim == 2 else ramp
     s = fade_in(s)
     if kind == "bed":
         s = make_loop(s)
@@ -254,7 +261,7 @@ def process_family(name, fam):
         x = process_take(raw, fam)
         m = M.measure(x, RATE)
         takes.append({"i": i, "key": k, "x": x, "m": m, "drop": None})
-    sec = fam["seconds"]
+    sec = min(fam["seconds"], fam.get("max_s") or fam["seconds"])
     for t in takes:
         m = t["m"]
         if fam["kind"] == "oneshot" and m["onset_ms"] > 25:

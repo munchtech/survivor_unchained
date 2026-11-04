@@ -19,10 +19,11 @@ public static partial class Sfx
 
     /// <summary>A boss's or elite's tell as it winds up or lands (telegraph.charge.windup.boss, then telegraph.charge.windup):
     /// recorded only, no synth fallback. The Pack's howl, the dead's horn and the rest still go through Tell.</summary>
-    public static void Telegraph(string tell, bool land, bool boss, Where w = default)
+    public static void Telegraph(string tell, bool land, bool boss, Where w = default, double? windup = null)
     {
         string phase = land ? "land" : "windup";
-        if (boss) SoundBank.PlayFirst(w, 1, 1, true, $"telegraph.{tell}.{phase}.boss", $"telegraph.{tell}.{phase}");
-        else SoundBank.Play($"telegraph.{tell}.{phase}", w);
+        double? len = land ? null : windup; // the windup ends as the blow lands, whatever the take's length or pitch
+        if (boss) SoundBank.PlayFirstFor(len, w, $"telegraph.{tell}.{phase}.boss", $"telegraph.{tell}.{phase}");
+        else SoundBank.PlayFirstFor(len, w, $"telegraph.{tell}.{phase}");
     }
 }

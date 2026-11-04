@@ -1,13 +1,13 @@
 {
  "family": "lamp_lit_big",
- "kept": 0,
+ "kept": 2,
  "n": 4,
  "takes": [
   {
    "i": 0,
    "key": "b8e2cb0d28c2fe35b28ee5127db73f4e83f5ddeb307306437f4ed278462d285d",
    "file": null,
-   "dropped": "onsets 6 > 2",
+   "dropped": "clap margin -0.006 < 0.00",
    "measure": {
     "duration_s": 1.4799773242630385,
     "peak_dbfs": -1.0055273750310696,
@@ -30,7 +30,7 @@
    "i": 1,
    "key": "a2e6f38c43dca1881f696f4b1680d7be318d987dfcc9cf84867843ea09811938",
    "file": null,
-   "dropped": "onsets 7 > 2",
+   "dropped": "clap margin -0.159 < 0.00",
    "measure": {
     "duration_s": 1.48,
     "peak_dbfs": -1.0055273750310705,
@@ -52,8 +52,8 @@
   {
    "i": 2,
    "key": "26341d06d2a6720590760fae902796f385c1076971cf55d26400f5aa97e08382",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "lamp_lit_big_0.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.48,
     "peak_dbfs": -1.0055273750310683,
@@ -75,8 +75,8 @@
   {
    "i": 3,
    "key": "71109fdad7e90d6ac1e9112ca97f5a5629a39874fbad5c0e5d0e9e394ced0652",
-   "file": null,
-   "dropped": "onsets 5 > 2",
+   "file": "lamp_lit_big_1.wav",
+   "dropped": null,
    "measure": {
     "duration_s": 1.1099319727891157,
     "peak_dbfs": -1.0055273750310696,
