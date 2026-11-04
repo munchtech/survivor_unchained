@@ -110,9 +110,10 @@ public sealed class Autopilot
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
         if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
+        // (never during a film: j08 r2's walked her to the road's boars under C04 A, and its hand-back cut on a fight's pose)
         // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
         // the worst player in its first real fight, MR5 item 11); under --spots (pictures of fixed places) it stands where it is set down)
-        if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
+        if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }

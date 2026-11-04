@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
@@ -416,6 +417,15 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet(SurvivorParam, new Vector4((float)hx, y + 1.1f, (float)hz, 1));
             SurvivorUnchained.View.HouseFade.Her = new Vector4((float)hx, y + 1.1f, (float)hz, 1);
+            // (the canopy fade's fight: the roused foes near her, nearest first, so no crown hides the fight she is in)
+            var fight = SurvivorUnchained.View.CanopyFader.Fight;
+            fight.Clear();
+            foreach (var e in b.Enemies.Living()
+                .Where(e => e.Roused && e.State != SurvivorUnchained.Sim.EnemyState.Dying && e.Disposition == SurvivorUnchained.Sim.Disposition.Hostile)
+                .Select(e => (e, d: (e.X - hx) * (e.X - hx) + (e.Z - hz) * (e.Z - hz)))
+                .Where(q => q.d < SurvivorUnchained.View.CanopyFader.FightR * SurvivorUnchained.View.CanopyFader.FightR)
+                .OrderBy(q => q.d).Take(SurvivorUnchained.View.CanopyFader.FightMax))
+                fight.Add(new Vector3((float)e.e.X, (float)HeightAt(e.e.X, e.e.Z) + 1.0f, (float)e.e.Z));
             Wading(b, hx, hz, y);
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)hx, (float)hz);

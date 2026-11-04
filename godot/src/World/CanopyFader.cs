@@ -26,6 +26,12 @@ public partial class CanopyFader : Node
     readonly List<CanopyLog.Tree> live = new();
     readonly HashSet<CanopyLog.Tree> liveSet = new();
     readonly Vector3[] pts = new Vector3[9];
+    /// <summary>(H4 item 10 r3: j08's pines hid the fight round her, not her) the foes she is fighting, at their chests: a crown
+    /// over the sight line to any of them fades as one over her does. Set each frame by the zone's scene (WorldScene: a story
+    /// zone's roused foes within FightR m of her, nearest first, at most FightMax); empty, only her outline counts.</summary>
+    public static readonly List<Vector3> Fight = new();
+    public const float FightR = 9f;
+    public const int FightMax = 8;
     Vector3? lastHer, lastCam;
     int stamp, turn;
     /// <summary>This frame: wants that began, trees tested, copies written, the CPU time (ms).</summary>
@@ -81,6 +87,13 @@ public partial class CanopyFader : Node
         int x0 = Mathf.FloorToInt((Mathf.Min(a.X, b.X) - Reach) / Cell), x1 = Mathf.FloorToInt((Mathf.Max(a.X, b.X) + Reach) / Cell);
         int z0 = Mathf.FloorToInt((Mathf.Min(a.Y, b.Y) - Reach) / Cell), z1 = Mathf.FloorToInt((Mathf.Max(a.Y, b.Y) + Reach) / Cell);
         var ab = b - a;
+        // (the fight's sight lines: their ground tracks too, and the cells round them)
+        int nf = Fight.Count;
+        foreach (var f in Fight)
+        {
+            x0 = Mathf.Min(x0, Mathf.FloorToInt((f.X - Reach) / Cell)); x1 = Mathf.Max(x1, Mathf.FloorToInt((f.X + Reach) / Cell));
+            z0 = Mathf.Min(z0, Mathf.FloorToInt((f.Z - Reach) / Cell)); z1 = Mathf.Max(z1, Mathf.FloorToInt((f.Z + Reach) / Cell));
+        }
         if (judge)
         for (int cx = x0; cx <= x1; cx++)
             for (int cz = z0; cz <= z1; cz++)
@@ -91,6 +104,12 @@ public partial class CanopyFader : Node
                     var p = new Vector2(t.At.X, t.At.Z);
                     float u = Mathf.Clamp((p - a).Dot(ab) / Mathf.Max(ab.Dot(ab), 1e-4f), 0, 1);
                     float dl = (p - (a + ab * u)).Length();
+                    for (int fi = 0; fi < nf; fi++)
+                    {
+                        var fb = new Vector2(Fight[fi].X, Fight[fi].Z) - a;
+                        float fu = Mathf.Clamp((p - a).Dot(fb) / Mathf.Max(fb.Dot(fb), 1e-4f), 0, 1);
+                        dl = Mathf.Min(dl, (p - (a + fb * fu)).Length());
+                    }
                     if (dl > Reach) continue;
                     t.Stamp = stamp; Tested++;
                     Judge(t, eye, view, fd, dl);
@@ -148,7 +167,8 @@ public partial class CanopyFader : Node
         // (her: a sight line's ground track runs from the lens's to hers, 0.3 m either side; a crown whose ground track is
         // further than its radius, the gap, its tilt and lean and 1.6 m from it can't come near)
         float tilt = Mathf.Max(new Vector2(T.X - t.At.X, T.Z - t.At.Z).Length(), new Vector2(C.X - t.At.X, C.Z - t.At.Z).Length());
-        if (dLine - tilt < rb + fd.Y + 1.6f && Covers(eye, pts, B, M, C, T, rb, rm, rc, rt, t.ForHer ? fd.Y : fd.X)) t.HerAt = clock;
+        if (dLine - tilt < rb + fd.Y + 1.6f && (Covers(eye, pts, B, M, C, T, rb, rm, rc, rt, t.ForHer ? fd.Y : fd.X)
+            || CoversFight(eye, B, M, C, T, rb, rm, rc, rt, t.ForHer ? fd.Y : fd.X))) t.HerAt = clock;
         t.ForHer = clock - t.HerAt < Hold;
         t.Want = t.ForHer || t.ForLens;
         if (t.Want && !was) Started++;
@@ -173,6 +193,19 @@ public partial class CanopyFader : Node
         if (nc > m + 1.2f) return false;
         foreach (var q in pts)
             if (Gap(q) < m) return true;
+        return false;
+    }
+
+    /// <summary>Whether a crown comes within m of a sight line from eye to any foe of the fight (a point each, its chest).</summary>
+    static bool CoversFight(Vector3 eye, Vector3 B, Vector3 M, Vector3 C, Vector3 T, float rb, float rm, float rc, float rt, float m)
+    {
+        bool spire = (T - C).LengthSquared() > 0.01f;
+        foreach (var q in Fight)
+        {
+            float g = Mathf.Min(Near(eye, q, B, M, rb, rm), Near(eye, q, M, C, rm, rc));
+            if (spire) g = Mathf.Min(g, Near(eye, q, C, T, rc, rt));
+            if (g < m) return true;
+        }
         return false;
     }
 
