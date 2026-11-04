@@ -1252,9 +1252,16 @@ public sealed partial class Battle
         e.StateT = 3;
         e.Vx = e.Vz = 0;
         Hooks.OnBossStagger?.Invoke(e);
-        Events.Emit(new Ev.Announce { Title = "Staggered", Tone = Tone.Boon });
+        // The banner once a foe and at most every 30 s (H4's judge: ~20 a night read as spam); the shake and the bar's flash every time.
+        if (staggerSaid.Add(e.Seed) && Time - staggerSaidAt >= 30)
+        {
+            staggerSaidAt = Time;
+            Events.Emit(new Ev.Announce { Title = "Staggered", Tone = Tone.Boon });
+        }
         Events.Emit(new Ev.Shake { Amount = 0.25 });
     }
+    readonly HashSet<double> staggerSaid = new();
+    double staggerSaidAt = double.NegativeInfinity;
 
     /* ========================================================= damage out == */
 
