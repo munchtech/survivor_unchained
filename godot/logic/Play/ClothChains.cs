@@ -64,6 +64,14 @@ public sealed class ClothChains
     }
 
     public int Count => x.Length;
+    /// <summary>Another's swing taken over where it stands (a cinematic's double handing its cape to play's body).</summary>
+    public bool CopyFrom(ClothChains o)
+    {
+        if (o.x.Length != x.Length) return false;
+        foreach (var (a, b) in new[] { (o.x, x), (o.xp, xp), (o.tPrev, tPrev), (o.tSub, tSub), (o.tSubPrev, tSubPrev), (o.vel, vel) })
+            System.Array.Copy(a, b, b.Length);
+        return true;
+    }
     public IReadOnlyList<Vector3> Positions => x;
     public int Parent(int i) => parent[i];
     public float Stiffness(int i) => stiff[i];

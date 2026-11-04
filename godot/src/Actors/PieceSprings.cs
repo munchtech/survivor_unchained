@@ -76,6 +76,30 @@ public partial class PieceSprings : SkeletonModifier3D
     /// <summary>Starts the chains afresh on the next frame, at a settled hang (a cinematic's cut).</summary>
     public void Cut() { cut = true; why = "Cut()"; }
 
+    /// <summary>The same piece's swing on another body (a cinematic's double) taken over as it is: no settle, no
+    /// jump (H4 r3: C02's Warden's cape swung anew at the hand-back). Waits for this one's first frame if need be.</summary>
+    public void TakeFrom(PieceSprings o) => from = o;
+    PieceSprings? from;
+    /// <summary>Frames after a take-over in which the body is not taken to have jumped (the double's last frame and this
+    /// body's first differ by a frame's pose: read as a jump it reset the cape to a settled hang, a visible swap).</summary>
+    int tookGrace;
+    void Took()
+    {
+        var o = from!; from = null;
+        if (sim == null || o.sim == null || !IsInstanceValid(o) || !sim.CopyFrom(o.sim)) { GD.Print($"springs: {what}: not taken over"); return; }
+        cut = false; life = Math.Max(life, 1); tookGrace = 3;
+        lastCam = o.lastCam; lastCamAt = o.lastCamAt;
+        if (o.lastRoot.Length == lastRoot.Length) { Array.Copy(o.lastRoot, lastRoot, lastRoot.Length); Array.Copy(o.lastRootBasis, lastRootBasis, lastRootBasis.Length); }
+        GD.Print($"springs: {what}: taken over");
+    }
+
+    /// <summary>Each piece's springs under one node taking over the same piece's under another.</summary>
+    public static void TakeAll(Node to, Node fromRoot)
+    {
+        foreach (var n in to.FindChildren("PieceSprings_*", "", true, false))
+            if (n is PieceSprings ps && fromRoot.FindChildren(n.Name, "", true, false).FirstOrDefault() is PieceSprings src) ps.TakeFrom(src);
+    }
+
     /// <summary>Cut() on every piece's springs under a node.</summary>
     public static void CutAll(Node root)
     {
@@ -300,6 +324,7 @@ public partial class PieceSprings : SkeletonModifier3D
         var sk = GetSkeleton();
         if (sk == null) return;
         if (!setUp) { setUp = true; Setup(sk); }
+        if (from != null) Took();
         if (sim != null) Swing(sk, (float)delta);
         Drive(sk);
     }
@@ -324,12 +349,13 @@ public partial class PieceSprings : SkeletonModifier3D
             var at = Gv(targets[roots[r]]);
             int li = Array.FindIndex(headParticle, h => h == roots[r]);
             var basis = (W.Basis * rigid[li].Basis).Orthonormalized();
-            if (!cut && life > 0 && (at.DistanceTo(lastRoot[r]) > Math.Max(0.35f * scale, 12 * dt)
+            if (!cut && life > 0 && tookGrace <= 0 && (at.DistanceTo(lastRoot[r]) > Math.Max(0.35f * scale, 12 * dt)
                 || basis.GetRotationQuaternion().AngleTo(lastRootBasis[r].GetRotationQuaternion()) > Mathf.DegToRad(40)))
             { cut = true; why = "the body jumped"; }
             lastRoot[r] = at; lastRootBasis[r] = basis;
         }
-        if (dt > 0.25f && !cut) { cut = true; why = $"a {dt:0.00} s frame"; }
+        if (dt > 0.25f && !cut && tookGrace <= 0) { cut = true; why = $"a {dt:0.00} s frame"; }
+        if (tookGrace > 0) tookGrace--;
         var down = Nv(-Vector3.Up);
         float? ground = W.Origin.Y;
         if (cut || dt <= 0)

@@ -174,9 +174,11 @@ public partial class WardenView : Node3D, IBossView
             a.Seek(fa.CurrentAnimationPosition, true);
         }
         filmAt = fb.GlobalPosition;
-        GD.Print($"warden handoff: film clip {cur} at {fa.CurrentAnimationPosition:0.00}, heading {Mathf.RadToDeg((float)heading):0.0}, at {filmAt}");
+        PieceSprings.TakeAll(view, fb);
+        GD.Print($"warden handoff: film clip {cur} at {fa.CurrentAnimationPosition:0.00}, heading {Mathf.RadToDeg((float)heading):0.0}, at {filmAt}, body rot {fb.Rotation} scale {fb.Scale} root {film.GlobalRotation}");
     }
     Vector3? filmAt;
+    int logLeft = 6;
 
     /// <summary>Back to walking after a held pose.</summary>
     public void Release()
@@ -190,7 +192,7 @@ public partial class WardenView : Node3D, IBossView
         time += dt;
         Visible = true;
         Position = new Vector3((float)x, (float)y, (float)z);
-        if (filmAt is { } fa0) { GD.Print($"warden handoff: play at {view.GlobalPosition} (film {fa0}), facing {Mathf.RadToDeg((float)facing):0.0}"); filmAt = null; }
+        if (filmAt is { } fa0 && logLeft-- > 0) { var an = view.Person.Anim; GD.Print($"warden handoff: play at {view.GlobalPosition} (film {fa0}), facing {Mathf.RadToDeg((float)facing):0.0} heading {Mathf.RadToDeg((float)heading):0.0}, clip {an.CurrentAnimation} {an.CurrentAnimationPosition:0.00} body rot {view.Rotation} scale {view.Scale} pose {pose}"); if (logLeft == 0) filmAt = null; }
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
         Rotation = new Vector3(0, (float)heading, 0);
         if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz) * 1.2);
