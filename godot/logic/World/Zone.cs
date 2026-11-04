@@ -122,6 +122,10 @@ public sealed record AtmospherePreset(
     public string MistColor { get; init; } = "#000000";
     /// <summary>Her carried light's strength against its base (play's night lights her pool more, in a darker world).</summary>
     public double Ember { get; init; } = 1;
+    /// <summary>(H2 R1) Her carried light's colour under this air (sRGB hex; "": her own #ffa868), and its reach against
+    /// its base (1: as built). The arena's night: a paler gold, so her pool lights the brown litter amber, not rust.</summary>
+    public string EmberColor { get; init; } = "";
+    public double EmberReach { get; init; } = 1;
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }
     /// <summary>Her lamp and the sky's fill on the crowd in its own paint (vat.gdshaderinc crowd_ember/crowd_fill; 0: none, by day

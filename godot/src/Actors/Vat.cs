@@ -34,6 +34,13 @@ public sealed class VatAsset
     /// second at its own size; 0 when not known (the crowd then plays the
     /// walk at its natural rate at the kind's full speed).</summary>
     public float Pace;
+    /// <summary>Which way each death lays the body (a kit body's die, die2, die3: crowd.py's last keys), as the turn from
+    /// its facing to the line from its feet to its head on the ground, in radians (world heading = facing + this); null
+    /// where it is not known (the beasts, the library's deaths).</summary>
+    public Dictionary<string, double>? FallOff;
+    /// <summary>How far each death's body moves on the ground from its first frame to its last (model space, metres):
+    /// a body that lies along a line shows its fall by it (Vat.Laid).</summary>
+    public Dictionary<string, Vector2> Laid = new();
 
     public Clip For(string role) =>
         Clips.TryGetValue(role, out var c) ? c : Clips.TryGetValue("move", out var m) ? m : Clips["idle"];
@@ -96,6 +103,11 @@ public static class Vat
         var kept = Load(key);
         var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : BakePerson(spec, host);
         if (beast == null) asset.Pace = Pace(spec);
+        if (beast == null) asset.FallOff = Falls(spec, asset);
+        if (Args.Has("crowd-census") && asset.FallOff != null)
+            foreach (var (role, off) in asset.FallOff)
+                GD.Print($"crowd census fall {spec.Key} {role}: {off * 180 / Math.PI:0} deg from facing; its body's middle moved {asset.Laid.GetValueOrDefault(role)} m"
+                    + $" ({(asset.Laid.TryGetValue(role, out var lv) ? Math.Atan2(-lv.X, lv.Y) * 180 / Math.PI : double.NaN):0} deg)");
         cache[key] = asset;
         cache[spec.Key] = asset;
         if (Args.Has("log"))
@@ -274,6 +286,20 @@ public static class Vat
         (person.Kit || person.Package != null) && FolkClips.Crowd(person.Woman, !person.Folk, clip) is string own ? own : People.Resolve(clip);
 
     static bool Armed(World.Held? arms) => arms?.Right != null || arms?.Left != null || arms?.Forearm != null;
+
+    /// <summary>A kit body's three falls (FolkClips.Deaths: crowd.py's die_back, die_front, die_side, model +Z forward,
+    /// +X its left): onto its back along -Z (pi), onto its face along +Z (0), and in a heap on its right side (-X: +pi/2
+    /// from its facing), or, armed (_armed, _pistol: the keys mirrored, the shield arm under it), on its left (+X: -pi/2).
+    /// The model's +Z is drawn along its facing and +X a quarter turn clockwise of it (CrowdView: Basis(Up, pi/2 - facing)).</summary>
+    // A person's one death (a package's, the library's) lies the way its body's middle moved (Laid), where it moved
+    // clearly (a quarter metre or more); otherwise its fall is not known. The beasts' are not known.
+    static Dictionary<string, double>? Falls(Visuals.Spec spec, VatAsset asset)
+    {
+        if (asset.Clips.ContainsKey("die2") && asset.Clips.ContainsKey("die3"))
+            return new() { ["die"] = Math.PI, ["die2"] = 0, ["die3"] = Armed(spec.Arms) ? -Math.PI / 2 : Math.PI / 2 };
+        if (asset.Clips.ContainsKey("die2") || !asset.Laid.TryGetValue("die", out var m) || m.Length() < 0.25f) return null;
+        return new() { ["die"] = Math.Atan2(-m.X, m.Y) };
+    }
 
     /// <summary>How fast a kind's walk carries it at its natural rate, in
     /// metres a second at its own size (0: not known, the library's clips).</summary>
@@ -808,7 +834,33 @@ public static class Vat
         }
         // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
-        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height };
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b) };
+    }
+
+    /// <summary>Each death's lying body against its first frame: the move of the body's middle (all its vertices' mean,
+    /// on the ground plane, model space) from the first frame of the fall to its last.</summary>
+    static Dictionary<string, Vector2> Laid(Baked b)
+    {
+        int total = 0;
+        foreach (var sf in b.Surfs) total = Math.Max(total, sf.Offset + sf.Count);
+        var laid = new Dictionary<string, Vector2>();
+        if (total == 0) return laid;
+        Vector2 Mid(int frame)
+        {
+            double x = 0, z = 0;
+            int at = frame * b.Rows * b.Width;
+            for (int i = 0; i < total; i++)
+            {
+                int o = (at + i) * 8;
+                x += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o));
+                z += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o + 4));
+            }
+            return new Vector2((float)(x / total), (float)(z / total));
+        }
+        foreach (var (role, c) in b.Clips)
+            if (role.StartsWith("die", StringComparison.Ordinal) && c.Frames > 1 && (c.Start + c.Frames) * b.Rows * b.Width * 8 <= b.Pos.Length)
+                laid[role] = Mid(c.Start + c.Frames - 1) - Mid(c.Start);
+        return laid;
     }
 
     /// <summary>
