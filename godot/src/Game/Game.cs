@@ -1943,6 +1943,7 @@ public partial class Game : Node, IZoneHost
         if (!barksDone && Args.Has("barks") && Battle is { } wb && Journey.Playtime >= Args.Num("barks", 1))
         {
             barksDone = true;
+            if (scene != null) scene.Voices.NearCap = 3;
             double x = wb.Player.X, z = wb.Player.Z;
             foreach (var t in new[] { "Lamps are lit... stay where they reach...", "Lie down.", "NONE CROSS AFTER DARK." })
                 wb.Events.Emit(new Ev.Bark { X = x + 2, Z = z - 1, Text = t, Speaker = "The Ford-Warden" });
