@@ -277,7 +277,7 @@ public partial class PlayerView : Node3D
             tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         }
         person.Root.AddChild(tree);
-        Light = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-color") ?? "#ffa868"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
+        Light = new OmniLight3D { LightColor = EmberOwn, LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
         AddChild(Light);
         FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
         AddChild(FolkLight);
@@ -813,7 +813,8 @@ public partial class PlayerView : Node3D
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
         Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
-        Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK;
+        Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
+        Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)
         Light.OmniAttenuation = EmberAtt;
         Light.LightCullMask = (LampOffHer ? 0xFFFFFu & ~2u & ~CrowdLayer & ~HerLayers & ~Brush.MaskLayer : FolkK > 0 ? 0xFFFFFu & ~2u & ~HerLayers & ~Brush.MaskLayer & (EmberCrowd ? 0xFFFFFu : ~CrowdLayer) : 0xFFFFFu) & (CrowdOmni ? 0xFFFFFu : ~CrowdLayer);
         // (the close view by night keeps its own: her lamp off her and off people, as before)
@@ -1134,6 +1135,9 @@ public partial class PlayerView : Node3D
     // Rendering r2 (judge r1 D1, a pale cream disc larger than the camp fire's): 2500K #ffa868, falloff 2, 0.75x the reach,
     // and from shoulder height (1.7, --ember-h) now that the folk light, not the pool, lights her: a tight pool, the fire's the larger.
     static readonly float EmberFlareCap = SurvivorUnchained.Args.Num("ember-flare-cap", 2.2f);
+    /// <summary>Her carried light's own colour; --ember-color C over it and over the air's (pictures).</summary>
+    static readonly Color EmberOwn = new("#ffa868");
+    static readonly Color? EmberArg = SurvivorUnchained.Args.Get("ember-color") is string ec ? new Color(ec) : null;
     static readonly float EmberAtt = SurvivorUnchained.Args.Num("ember-att", 2f), EmberRangeK = SurvivorUnchained.Args.Num("ember-range", 0.75f);
     // --ember-folk K (0: one light on all, as before), --ember-folk-h/-z/-range/-att/-color: the folk light (FolkLight).
     static readonly float FolkK = SurvivorUnchained.Args.Num("ember-folk", 5f), FolkH = SurvivorUnchained.Args.Num("ember-folk-h", 4.5f),

@@ -73,6 +73,9 @@ public partial class Atmosphere : Node3D
     public float Mute = 0.16f;
     /// <summary>Her carried light's gain under the air in force (AtmospherePreset.Ember).</summary>
     public static float EmberGain = 1;
+    /// <summary>Her carried light's colour and reach under the air in force (AtmospherePreset.EmberColor/EmberReach; null: her own).</summary>
+    public static Color? EmberColor;
+    public static float EmberReach = 1;
     /// <summary>The preset's crowd light by night (CrowdFill; 0 by day). --crowd-fill off: none (Rendering 4's A/B);
     /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
     public static float CrowdFill;
@@ -335,6 +338,7 @@ public partial class Atmosphere : Node3D
         Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure * FlareDip;
         SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * ((float)p.KeyIntensity / Mathf.Pi));
         EmberGain = (float)p.Ember;
+        EmberColor = p.EmberColor != "" ? new Color(p.EmberColor) : null; EmberReach = (float)p.EmberReach;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim)));

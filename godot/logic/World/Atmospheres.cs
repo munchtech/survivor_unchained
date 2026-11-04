@@ -92,11 +92,13 @@ public static class Atmospheres
 
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
     /// their colour at the camera that judges them.</summary>
-    public static readonly AtmospherePreset Front = Night with { Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2 } };
+    public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2 } };
     // (H2 R3: the play night's paint grade, its toe whole (Toe 1); the paint terms are the close view's (Atmosphere.Own). The
     // moon's colour faded out by Oklab L 0.6: at the play night's 0.9 it reached her lit skin at the Look (fair skin's C/L
     // under MoonHi) and turned her face and shoulders lilac-white, and the camp ground frost-white with the fire's pool gone;
-    // at the road's 0.44 the camp stayed grey (41% to 38%). Title: grey 41% to 28%, cold 45% to 75%, shade hue 217 to 235.)
+    // at the road's 0.44 the camp stayed grey (41% to 38%). Title: grey 41% to 28%, cold 45% to 75%, shade hue 217 to 235.
+    // Judge r1: the moonlit clearing was nearly as bright as the fire's pool: the moon 3.4 to 2.55, the clearing L 0.48 to 0.45;
+    // her face at the Look held (L 0.583 to 0.574, hue 34.0 to 34.4, C 0.086 to 0.087).)
 
     /// <summary>The close view's paint grade by night (art style round 1's, which kept her copper hair): the view grade
     /// (Atmosphere.ViewGrade) takes it over the preset's as the view closes in. (Round 1's 0.7 vibrance took her shaded side
@@ -248,6 +250,7 @@ public static class Atmospheres
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
+            EmberColor = a.EmberColor != "" && b.EmberColor != "" ? Mix(a.EmberColor, b.EmberColor, t) : t < 0.5 ? a.EmberColor : b.EmberColor, EmberReach = Lerp(a.EmberReach, b.EmberReach, t),
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), CrowdFill = Lerp(a.CrowdFill, b.CrowdFill, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
