@@ -75,7 +75,7 @@ public class DayStretchTests
     public void The_stretch_runs_up_the_road_in_order_between_the_handback_and_the_gate()
     {
         var s = DayStretch.For("lowford")!;
-        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "road_ambush", "post", "wallow", "wolves" }, s.Beats.Select(b => b.Id));
+        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "road_ambush", "post", "wallow", "track_ambush", "wolves" }, s.Beats.Select(b => b.Id));
         foreach (var bt in s.Beats) Assert.InRange(bt.Z, s.GateZ + 4, s.From[1] - 10);
         Assert.Equal("act1.post1", s.Get("post")!.Post);
         Assert.Equal("charge", s.Get("boars")!.Tell);
