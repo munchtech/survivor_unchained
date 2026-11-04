@@ -1,5 +1,5 @@
 """Sound family generator: prompts.json -> ElevenLabs -> cache -> process -> godot/art/sound.
-Commands: make <family...>|--all [--dry] [--max-credits N] [--reserve N]; process <family...>|--all; status.
+Commands: make <family...>|--all [--dry] [--max-credits N] [--reserve N]; process <family...>|--all [--no-import]; import; status.
 The API key is never printed or logged."""
 import sys, os, json, hashlib, datetime, glob, re
 import numpy as np
@@ -148,6 +148,83 @@ def process_take(raw, fam):
     return s
 
 
+# ---------- CLAP + onsets ----------
+BASE_NEG = ["music with a melody", "a person speaking or shouting", "silence"]
+_clap = {}
+
+
+def _clap_model():
+    if not _clap:
+        os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+        os.environ["HF_TOKEN_PATH"] = os.path.join(HERE, "no_such_token")
+        from transformers import ClapModel, ClapProcessor
+        _clap["m"] = ClapModel.from_pretrained("laion/clap-htsat-unfused").eval()
+        _clap["p"] = ClapProcessor.from_pretrained("laion/clap-htsat-unfused")
+    return _clap["m"], _clap["p"]
+
+
+def _emb(o):
+    if hasattr(o, "norm"):
+        return o
+    return o.pooler_output if getattr(o, "pooler_output", None) is not None else o[0]
+
+
+def clap_scores(x, prompt, negs):
+    import torch
+    m, p = _clap_model()
+    mono = x.mean(axis=1) if x.ndim == 2 else x
+    a = signal.resample_poly(mono, 48000, RATE).astype(np.float32)
+    a = a[: 48000 * 10]
+    with torch.no_grad():
+        ai = p(audio=[a], sampling_rate=48000, return_tensors="pt")
+        ae = m.get_audio_features(**ai)
+        ti = p(text=[prompt] + negs, return_tensors="pt", padding=True)
+        te = m.get_text_features(**ti)
+    ae, te = _emb(ae), _emb(te)
+    ae = ae / ae.norm(dim=-1, keepdim=True)
+    te = te / te.norm(dim=-1, keepdim=True)
+    c = (te @ ae[0]).tolist()
+    return float(c[0]), float(max(c[1:]))
+
+
+def count_onsets(x, sr=RATE, n=1024, hop=256):
+    mono = x.mean(axis=1) if x.ndim == 2 else x
+    if len(mono) < n * 2:
+        return 1
+    win = np.hanning(n)
+    fr = np.lib.stride_tricks.sliding_window_view(mono, n)[::hop]
+    sp = np.abs(np.fft.rfft(fr * win, axis=1))
+    flux = np.maximum(np.diff(sp, axis=0), 0).sum(axis=1)
+    env = np.sqrt((fr ** 2).mean(axis=1))[1:]
+    gate = env.max() * 10 ** (-30 / 20)
+    thr = flux.mean() + 1.5 * flux.std()
+    gap = int(0.06 * sr / hop)
+    last, cnt = -10 ** 9, 0
+    for i in range(len(flux)):
+        if flux[i] < thr or env[i] < gate:
+            continue
+        lo, hi = max(0, i - 1), min(len(flux), i + 2)
+        if flux[i] < flux[lo:hi].max():
+            continue
+        if i - last >= gap:
+            cnt += 1
+            last = i
+    return cnt
+
+
+def take_clap(t, fam, negs):
+    cp = os.path.join(CACHE, t["key"] + ".clap.json")
+    sig = [fam["prompt"], negs]
+    if os.path.exists(cp):
+        d = json.load(open(cp, encoding="utf8"))
+        if d.get("sig") == sig:
+            return d["clap"], d["clap_neg"]
+    c, n = clap_scores(t["x"], fam["prompt"], negs)
+    with open(cp, "w", encoding="utf8") as f:
+        json.dump({"sig": sig, "clap": c, "clap_neg": n}, f)
+    return c, n
+
+
 # ---------- families ----------
 def process_family(name, fam):
     fam = defaults(fam)
@@ -188,8 +265,29 @@ def process_family(name, fam):
             t["drop"] = "duration %.2f s outside 40-250%% of %.2f" % (m["duration_s"], sec)
         elif m["rms_dbfs"] < -45:
             t["drop"] = "near-silence rms %.1f" % m["rms_dbfs"]
+    cc0 = "cc0" in fam
+    negs = BASE_NEG + (["several separate hits one after another"] if fam["kind"] == "oneshot" else []) + list(fam.get("neg", []))
+    max_on = fam.get("max_onsets", 2)
+    min_margin = fam.get("min_margin", 0.0)
+    for t in takes:
+        if fam["kind"] == "oneshot":
+            t["m"]["onsets"] = count_onsets(t["x"])
+            if not t["drop"] and t["m"]["onsets"] > max_on:
+                t["drop"] = "onsets %d > %d" % (t["m"]["onsets"], max_on)
+        if not cc0:
+            c, n = take_clap(t, fam, negs)
+            t["m"]["clap"], t["m"]["clap_neg"], t["m"]["clap_margin"] = round(c, 4), round(n, 4), round(c - n, 4)
     ok = [t for t in takes if not t["drop"]]
     keep = fam["keep"]
+    if not cc0 and ok:
+        good = [t for t in ok if t["m"]["clap_margin"] >= min_margin]
+        if len(good) < min(2, len(ok)):
+            good = sorted(ok, key=lambda t: -t["m"]["clap_margin"])[:2]
+            print("WARNING %s: clap margin below %.2f for most takes, keeping best %d by margin" % (name, min_margin, len(good)))
+        for t in ok:
+            if t not in good:
+                t["drop"] = "clap margin %.3f < %.2f" % (t["m"]["clap_margin"], min_margin)
+        ok = good
     if ok:
         mc = float(np.median([t["m"]["centroid_hz"] for t in ok]))
         md = float(np.median([t["m"]["duration_s"] for t in ok]))
@@ -199,9 +297,21 @@ def process_family(name, fam):
             dd = abs(t["m"]["duration_s"] - md) / max(md, 0.01)
             return (round(dc + dd, 3), -t["m"]["crest_db"])
         ok.sort(key=score)
+        if not cc0:
+            ok.sort(key=lambda t: -t["m"]["clap_margin"])
+            # coherence tie-break within 0.02 margin: greedy groups by margin, coherence order inside each
+            rank = {id(t): r for r, t in enumerate(sorted(ok, key=score))}
+            groups, cur = [], []
+            for t in ok:
+                if cur and cur[0]["m"]["clap_margin"] - t["m"]["clap_margin"] > 0.02:
+                    groups.append(cur)
+                    cur = []
+                cur.append(t)
+            groups.append(cur)
+            ok = [t for g in groups for t in sorted(g, key=lambda t: rank[id(t)])]
     kept = ok[:keep]
     for t in ok[keep:]:
-        t["drop"] = "not among the %d most coherent takes" % keep
+        t["drop"] = "not among the %d best-ranked takes" % keep
     if len(kept) < keep:
         print("WARNING %s: only %d of %d wanted takes survive" % (name, len(kept), keep))
     kept.sort(key=lambda t: t["i"])
@@ -234,10 +344,23 @@ def process_family(name, fam):
     write_legal(name, fam, files, [t["key"] for t in kept])
     if kept:
         a = lambda f: float(np.mean([t["m"][f] for t in kept]))
-        print("%s: kept %d/%d, %.2f s, peak %.1f dBFS (tp %.1f), %.1f LUFS, centroid %.0f Hz" % (
-            name, len(kept), len(takes), a("duration_s"), a("peak_dbfs"), a("true_peak_dbfs"), a("lufs"), a("centroid_hz")))
+        drops = {}
+        for t in takes:
+            if t["drop"] and t not in kept:
+                r = t["drop"].split(" ")[0]
+                drops[r] = drops.get(r, 0) + 1
+        cl = ""
+        if not cc0:
+            cl = ", clap %.3f margin %.3f" % (np.mean([t["m"]["clap"] for t in takes]), a_kept("clap_margin", kept))
+        print("%s: kept %d/%d, %.2f s, peak %.1f dBFS (tp %.1f), %.1f LUFS, centroid %.0f Hz%s, drops %s" % (
+            name, len(kept), len(takes), a("duration_s"), a("peak_dbfs"), a("true_peak_dbfs"), a("lufs"), a("centroid_hz"),
+            cl, drops or "none"))
     else:
         print("%s: kept 0/%d" % (name, len(takes)))
+
+
+def a_kept(f, kept):
+    return float(np.mean([t["m"][f] for t in kept]))
 
 
 def update_counts(name, n):
@@ -358,6 +481,18 @@ def cmd_process(args):
     fams = load_families()
     for n in pick(args, fams):
         process_family(n, fams[n])
+    if "--no-import" not in args:
+        cmd_import([])
+
+
+GODOT = "C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"
+
+
+def cmd_import(args):
+    import subprocess
+    r = subprocess.run([GODOT, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"],
+                       capture_output=True, timeout=1800)
+    print("godot import: exit %d" % r.returncode)
 
 
 def cmd_status(args):
@@ -379,9 +514,9 @@ def cmd_status(args):
 
 
 def main(argv):
-    if not argv or argv[0] not in ("make", "process", "status"):
+    if not argv or argv[0] not in ("make", "process", "import", "status"):
         sys.exit(__doc__)
-    {"make": cmd_make, "process": cmd_process, "status": cmd_status}[argv[0]](argv[1:])
+    {"make": cmd_make, "process": cmd_process, "import": cmd_import, "status": cmd_status}[argv[0]](argv[1:])
 
 
 if __name__ == "__main__":

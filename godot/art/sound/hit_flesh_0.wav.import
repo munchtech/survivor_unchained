@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://5uyi34as0v"
+path="res://.godot/imported/hit_flesh_0.wav-cc7ba690000ed57b443d9174fe50b762.sample"
 
 [deps]
 
 source_file="res://art/sound/hit_flesh_0.wav"
+dest_files=["res://.godot/imported/hit_flesh_0.wav-cc7ba690000ed57b443d9174fe50b762.sample"]
 
 [params]
 

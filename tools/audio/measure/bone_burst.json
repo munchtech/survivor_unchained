@@ -1,0 +1,191 @@
+{
+ "family": "bone_burst",
+ "kept": 4,
+ "n": 8,
+ "takes": [
+  {
+   "i": 0,
+   "key": "aa104f0794c3cb4a55d621cdbb574f132fe460af7cea2011ec85be3544349a92",
+   "file": null,
+   "dropped": "clap margin -0.013 < 0.00",
+   "measure": {
+    "duration_s": 0.88,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -20.448635898190844,
+    "crest_db": 19.443108523159776,
+    "lufs": -20.668763117544216,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 378.0498866213152,
+    "centroid_hz": 3951.040869470322,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3786,
+    "clap_neg": 0.3911,
+    "clap_margin": -0.0125
+   }
+  },
+  {
+   "i": 1,
+   "key": "9d4944378db8f8511b63184012af9622fa929969654725477d75cb88ee4fd1b4",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.8798639455782313,
+    "peak_dbfs": -1.051365298998232,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -18.977998235845316,
+    "crest_db": 17.926632936847085,
+    "lufs": -19.58219187535577,
+    "lufs_padded": false,
+    "onset_ms": 0.6802721088435374,
+    "tail_ms": 496.1904761904762,
+    "centroid_hz": 4973.317975927979,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.2806,
+    "clap_neg": 0.0941,
+    "clap_margin": 0.1865
+   }
+  },
+  {
+   "i": 2,
+   "key": "1c225a135391508f76e70298d0da26ca7e75dbc8b8c176f39fbcc6dc41c7bb38",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.88,
+    "peak_dbfs": -1.0522673277204289,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -19.06458474088472,
+    "crest_db": 18.01231741316429,
+    "lufs": -17.595909655697074,
+    "lufs_padded": false,
+    "onset_ms": 0.47619047619047616,
+    "tail_ms": 336.3492063492063,
+    "centroid_hz": 4145.2922029115625,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.4328,
+    "clap_neg": 0.1595,
+    "clap_margin": 0.2733
+   }
+  },
+  {
+   "i": 3,
+   "key": "467adfce183cc003a561eae04a70ecef06526d108c36196fc3aff4fff5e52aa9",
+   "file": "bone_burst_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.5375056689342403,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -23.257709731469312,
+    "crest_db": 22.252182356438244,
+    "lufs": -22.757976112221094,
+    "lufs_padded": false,
+    "onset_ms": 8.00453514739229,
+    "tail_ms": 362.35827664399096,
+    "centroid_hz": 5295.212389651984,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.3935,
+    "clap_neg": 0.0832,
+    "clap_margin": 0.3103
+   }
+  },
+  {
+   "i": 4,
+   "key": "fa5130fc4e1129f800cf2dbb6a382689a71088dd60ff95cbbfec969b6a2347e8",
+   "file": "bone_burst_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.88,
+    "peak_dbfs": -1.2456380485626717,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -20.803208988797923,
+    "crest_db": 19.55757094023525,
+    "lufs": -20.031925426557542,
+    "lufs_padded": false,
+    "onset_ms": 0.47619047619047616,
+    "tail_ms": 615.6235827664399,
+    "centroid_hz": 6086.328263780999,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3299,
+    "clap_neg": 0.214,
+    "clap_margin": 0.1159
+   }
+  },
+  {
+   "i": 5,
+   "key": "22975537e18b029e36aa11d581f136f63cf1f31edf0fb306b1e653e4e3aff712",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.49439909297052154,
+    "peak_dbfs": -1.0187106770954844,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -21.43844511511396,
+    "crest_db": 20.419734438018477,
+    "lufs": -20.765332457144734,
+    "lufs_padded": false,
+    "onset_ms": 5.215419501133787,
+    "tail_ms": 428.3219954648526,
+    "centroid_hz": 5375.607756404475,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.2993,
+    "clap_neg": -0.0171,
+    "clap_margin": 0.3164
+   }
+  },
+  {
+   "i": 6,
+   "key": "b130af30116c32d9b6ede65fb5f8f533179445041021873dc918adf93adf6c81",
+   "file": "bone_burst_2.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.88,
+    "peak_dbfs": -1.0469736482178034,
+    "true_peak_dbfs": -0.9999999999999953,
+    "rms_dbfs": -21.644223158805094,
+    "crest_db": 20.59724951058729,
+    "lufs": -20.56796330857974,
+    "lufs_padded": false,
+    "onset_ms": 0.5895691609977325,
+    "tail_ms": 263.10657596371885,
+    "centroid_hz": 4753.5567142877635,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.2776,
+    "clap_neg": 0.1679,
+    "clap_margin": 0.1097
+   }
+  },
+  {
+   "i": 7,
+   "key": "c15808276dd56f351601c5cd097b0a20a1014060038f463f38674849f7c8b30b",
+   "file": "bone_burst_3.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.88,
+    "peak_dbfs": -1.1145351800652965,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -21.50199757057452,
+    "crest_db": 20.387462390509224,
+    "lufs": -21.018827139663795,
+    "lufs_padded": false,
+    "onset_ms": 1.3605442176870748,
+    "tail_ms": 418.25396825396825,
+    "centroid_hz": 4500.743006458204,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.3914,
+    "clap_neg": 0.1814,
+    "clap_margin": 0.2099
+   }
+  }
+ ]
+}

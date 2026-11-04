@@ -1,0 +1,99 @@
+{
+ "family": "crowdfall",
+ "kept": 1,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "d0bd99dcc9703019a02d433c4bd4cba0dd9e7b54a63a2851b44c4a9565e1f5a3",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.8523809523809524,
+    "peak_dbfs": -1.059140590537911,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -25.398984122049395,
+    "crest_db": 24.339843531511484,
+    "lufs": -27.0137361383062,
+    "lufs_padded": false,
+    "onset_ms": 20.793650793650794,
+    "tail_ms": 691.859410430839,
+    "centroid_hz": 4995.442137943364,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.174,
+    "clap_neg": 0.0901,
+    "clap_margin": 0.0839
+   }
+  },
+  {
+   "i": 1,
+   "key": "51a4d3d1bc40a9b6e3627ff716f26593aaa76f5e66a86d278e15123af60a2d27",
+   "file": "crowdfall_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0460714264534727,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -24.16101390781826,
+    "crest_db": 23.114942481364785,
+    "lufs": -24.8811400759139,
+    "lufs_padded": false,
+    "onset_ms": 0.3854875283446712,
+    "tail_ms": 659.7732426303855,
+    "centroid_hz": 3295.850595163626,
+    "clipped": 0,
+    "onsets": 1,
+    "clap": 0.1894,
+    "clap_neg": 0.1751,
+    "clap_margin": 0.0143
+   }
+  },
+  {
+   "i": 2,
+   "key": "f334d9c6c3d9f15cbac22e1f55c20b8f6badeb4238a84c6460084f2c2eadeb64",
+   "file": null,
+   "dropped": "onset 52 ms > 25",
+   "measure": {
+    "duration_s": 0.8083673469387755,
+    "peak_dbfs": -1.022243389587041,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -22.179517113244724,
+    "crest_db": 21.157273723657685,
+    "lufs": -21.902349368138292,
+    "lufs_padded": false,
+    "onset_ms": 52.40362811791383,
+    "tail_ms": 671.8820861678005,
+    "centroid_hz": 5891.6621719581,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.1745,
+    "clap_neg": 0.1468,
+    "clap_margin": 0.0278
+   }
+  },
+  {
+   "i": 3,
+   "key": "be5a0373960692ebcc8fd4fabf9f7feabb753eb799e9ddc8a533bf6cc1f885ad",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.7275736961451247,
+    "peak_dbfs": -1.0626351421639368,
+    "true_peak_dbfs": -0.9999999999999964,
+    "rms_dbfs": -20.55963285811484,
+    "crest_db": 19.4969977159509,
+    "lufs": -22.814241120776092,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 711.40589569161,
+    "centroid_hz": 4525.855235235996,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.1974,
+    "clap_neg": 0.2237,
+    "clap_margin": -0.0263
+   }
+  }
+ ]
+}

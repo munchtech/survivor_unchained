@@ -1,0 +1,99 @@
+{
+ "family": "explosion_small",
+ "kept": 1,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "f299e7962cceaf67a1181c580a04a6fb5294f52e841ef5a2048c6d178a2335cc",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0055273750310705,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -15.702714204299111,
+    "crest_db": 14.697186829268041,
+    "lufs": -16.812278748589044,
+    "lufs_padded": false,
+    "onset_ms": 0.3854875283446712,
+    "tail_ms": 577.3015873015873,
+    "centroid_hz": 3505.8335378865654,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.3422,
+    "clap_neg": 0.4128,
+    "clap_margin": -0.0706
+   }
+  },
+  {
+   "i": 1,
+   "key": "24b8cb31b9dbcbddc04230bbab49ec7f9fe3463cf8afccce4ac754ab46d11a8f",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 0.9999546485260771,
+    "peak_dbfs": -1.1181422074838776,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.614622904122196,
+    "crest_db": 16.49648069663832,
+    "lufs": -21.11366374837142,
+    "lufs_padded": false,
+    "onset_ms": 0.9750566893424036,
+    "tail_ms": 590.9750566893424,
+    "centroid_hz": 3663.695313252401,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.5652,
+    "clap_neg": 0.428,
+    "clap_margin": 0.1372
+   }
+  },
+  {
+   "i": 2,
+   "key": "1a68035a83acf21a9ba6c3f11da6d6e818fce97b8da2a2ec242a04d2ead60aa2",
+   "file": null,
+   "dropped": "onsets 3 > 2",
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -16.869852985033805,
+    "crest_db": 15.864325610002735,
+    "lufs": -19.06326191563766,
+    "lufs_padded": false,
+    "onset_ms": 1.655328798185941,
+    "tail_ms": 555.3968253968254,
+    "centroid_hz": 1906.46653576925,
+    "clipped": 0,
+    "onsets": 3,
+    "clap": 0.428,
+    "clap_neg": 0.3092,
+    "clap_margin": 0.1188
+   }
+  },
+  {
+   "i": 3,
+   "key": "583f977e966388b3a1739ee05ac0f8791c935f936b0f76544b5229dd53f16d93",
+   "file": "explosion_small_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.02504548260843,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -18.339761701179988,
+    "crest_db": 17.314716218571558,
+    "lufs": -19.941792304183167,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 465.0113378684807,
+    "centroid_hz": 3773.664052119471,
+    "clipped": 0,
+    "onsets": 2,
+    "clap": 0.4873,
+    "clap_neg": 0.4236,
+    "clap_margin": 0.0637
+   }
+  }
+ ]
+}
