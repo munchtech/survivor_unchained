@@ -9,7 +9,8 @@ Output: C:/Users/munch/Desktop/survivorsunchained_inputs/flare_h7/NAME/
   offsets -0.10 .. +4.00 s, sheet.jpg (half-size frames, 4 a row, labelled), sheet_half.jpg, log.txt.
 
 The press frame comes from the game's own `flare press frame N` line (FlareFx.Press, with --clip).
-NOTE: under --shot (the default here, for the seed and the quit) the game is SILENT (Synth.cs); --sound drops it.
+Sound: --shot silences the live mixer, so the game's offline tape (--wav tmp/tape.wav --stems, Dummy audio driver) is cut to the clip
+window and muxed in; tape.wav and flare_stem.wav (same window) are kept. The onset line checks tape vs movie alignment.
 Takes the godot turn around the run (tools/turn.py) and gives it back in a finally.
 GPU frame time for the same setup: run the same command by hand with `--perf` added to
 --godot-args (Perf.cs prints the frame-time report); this tool does not run it.
@@ -42,9 +43,9 @@ avi = tmp / "movie.avi"
 label = f"flare-h7: clip {a.name}"
 frames = int((a.cast + a.pre + a.len + 4) * FPS)  # headroom; the press lands near cast + startup
 gargs = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi),
-         "--fixed-fps", str(FPS), "--quit-after", str(frames), "--",
+         "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", str(frames), "--",
          "--quick", "warden", "--zone", "arena", "--offer", "0", "--auto", a.bot, "--flare", a.flare,
-         "--cast", str(a.cast), "--time", a.time, "--clip"] + ([] if a.sound else ["--shot", "clip", "--seconds", str(a.cast + a.len + 2)]) + a.godot_args.split()
+         "--cast", str(a.cast), "--time", a.time, "--clip"] + ([] if a.sound else ["--shot", "clip", "--seconds", str(a.cast + a.len + 2)]) + (["--wav", str(tmp / "tape.wav"), "--stems"] if not a.sound else []) + a.godot_args.split()
 ov = ROOT / "godot" / "override.cfg"
 if ov.exists(): ov.unlink()
 subprocess.run([sys.executable, TURN, "take", "godot", label, "--wait", "600"], check=True)
@@ -61,9 +62,25 @@ try:
     s = re.search(r"struck down (\d+), standing in reach (\d+)", log.stdout)
     print(f"press frame {pf} ({pf/FPS:.2f}s)", s.group(0) if s else "(no struck-down line)")
     ss = max(0.0, pf / FPS - a.pre)
-    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{ss:.3f}", "-i", str(avi), "-t", str(a.len),
-                    "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
-                    str(out / "clip.mp4")], check=True)
+    import numpy as np, soundfile as sf
+    tape, sr = sf.read(str(tmp / "tape.wav"), dtype="float32", always_2d=True)
+    stem, _ = sf.read(str(tmp / "tape_flare.wav"), dtype="float32", always_2d=True)
+    # The tape adds one sample block per game frame (Synth._Process), so tape time is movie time from the
+    # frame Synth came up; the flare stem's first big onset near the press measures any offset.
+    lo = max(0, int((pf / FPS - 1.0) * sr)); env = np.abs(stem).max(axis=1)
+    pk = env[lo:lo + 6 * sr].max()
+    first = lambda th: (lo + np.nonzero(env[lo:] > th * pk)[0][0]) / sr if (env[lo:] > th * pk).any() else float("nan")
+    onset, swell = first(0.05), first(0.25)  # the cue's first sound; and where the swell passes 25% of its peak
+    print(f"flare stem 25%-of-peak point {swell:.3f}s ({(swell - pf / FPS) * FPS:+.1f} frames: the cue swells, so this is not the onset)")
+    off_frames = (onset - pf / FPS) * FPS
+    print(f"flare stem first onset {onset:.3f}s vs press {pf/FPS:.3f}s: {off_frames:+.1f} frames")
+    a0 = int(ss * sr); a1 = a0 + int(a.len * sr)
+    sf.write(str(out / "tape.wav"), tape[a0:a1], sr); sf.write(str(out / "flare_stem.wav"), stem[a0:a1], sr)
+    mean_db = 20 * np.log10(max(1e-9, float(np.sqrt((tape[a0:a1] ** 2).mean()))))
+    print(f"tape window rms {mean_db:.1f} dBFS")
+    subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{ss:.3f}", "-i", str(avi), "-i", str(out / "tape.wav"),
+                    "-t", str(a.len), "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "192k", "-shortest", str(out / "clip.mp4")], check=True)
     shots = []
     for o in OFFSETS:
         n = f"f{o:+.2f}.png"
