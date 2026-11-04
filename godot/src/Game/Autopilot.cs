@@ -198,7 +198,7 @@ public sealed class Autopilot
                 // The road by day (H4 item 10): its fights where they wake, the strongbox, the dark lamp, then the gate.
                 if (pickChampion) PickChampion(b);
                 tx = dg.X; tz = dg.Z;
-                dayFight = pd.DayFighting;
+                dayFight = pd.DayFighting; dayRoad = true;
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;
@@ -235,6 +235,26 @@ public sealed class Autopilot
         double pullX = tx - p.X, pullZ = tz - p.Z, pullD = Math.Sqrt(pullX * pullX + pullZ * pullZ);
         if (dayFight && pullD > 0.01 && pullD < 5) { pullX *= 5 / pullD; pullZ *= 5 / pullD; }
         dayFight = false;
+        // (the day road, r3: out of a marked lane or ring before it lands, dashing if it is close, as the charge's lesson
+        // teaches; j08 r3 stood in the boars' lanes and fell to 6%)
+        if (dayRoad)
+            foreach (var bl in b.Blows)
+            {
+                if (bl.T > 0.9 || !bl.Hit(p.X, p.Z, p.Radius + 0.6)) continue;
+                double ox, oz;
+                double lx = bl.X1 - bl.X, lz = bl.Z1 - bl.Z, ll = Math.Sqrt(lx * lx + lz * lz);
+                if (bl.Shape == TelegraphShape.Line && ll > 0.1)
+                {
+                    double nx = -lz / ll, nz = lx / ll;
+                    double sd = (p.X - bl.X) * nx + (p.Z - bl.Z) * nz;
+                    ox = nx * (sd >= 0 ? 1 : -1); oz = nz * (sd >= 0 ? 1 : -1);
+                }
+                else { double ax = p.X - bl.X, az = p.Z - bl.Z, al = Math.Max(1e-3, Math.Sqrt(ax * ax + az * az)); ox = ax / al; oz = az / al; }
+                pullX = ox * 10; pullZ = oz * 10; rx = rz = 0;
+                if (bl.T < 0.5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
+                break;
+            }
+        dayRoad = false;
         Steer(dt, pullX + rx * 1.4, pullZ + rz * 1.4, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if (near >= 5 && dashT <= 0) { Press(Act.Dash); dashT = 1.2; }
@@ -452,7 +472,7 @@ public sealed class Autopilot
     /// once --leave-after S (20) have passed since it was won. True when it has the step.</summary>
     int freeFor;
     List<(double X, double Z)>? route;
-    bool dayFight;
+    bool dayFight, dayRoad;
     double routeT;
     (double, double) routeFor;
 
