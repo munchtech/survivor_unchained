@@ -1661,7 +1661,8 @@ public partial class Game
                 case "haze":
                 {
                     // The far haze (Atmosphere.Haze): "begin"/"end" m, "curve", "amount" (0-1), "sky" (0-1, the sky's colour
-                    // in it); "off" back to play's fog. Finish takes it off.
+                    // in it); "off" back to play's fog ("over": seconds, thinned out, Atmosphere.FadeHaze). Finish takes it off.
+                    if (c.Bool("off") && c.Num("over") > 0 && !skipping) { g.air.FadeHaze(c.Num("over")); break; }
                     g.air.Haze = c.Bool("off") ? null : ((float)c.Num("begin", 40), (float)c.Num("end", 160), (float)c.Num("curve", 1), (float)c.Num("amount", 0.8), (float)c.Num("sky", 1), c.Str("color") is string hc ? new Color(hc) : null);
                     break;
                 }
@@ -2046,8 +2047,9 @@ public partial class Game
             g.cineSat = null;
             SurvivorUnchained.View.WardenLook.GlintScale = 1;
             if (g.air.CineGrade != null) g.air.SetCineGrade(null);
-            // The far haze thins out over the hand-back (GameSeam sets its length); at once into a chained cinematic.
-            if (g.air.Haze != null) { if (file.End.Next == null) g.air.FadeHaze(1.0); else g.air.Haze = null; }
+            // The far haze thins out over the hand-back (C02's 0.9 haze off brightens the frame 38%: 1.6 s keeps each
+            // 0.1 s under 8%; a fade a cue began runs on); at once into a chained cinematic.
+            if (g.air.Haze != null) { if (file.End.Next == null) g.air.FadeHaze(1.6); else g.air.Haze = null; }
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hs))
             { SurvivorUnchained.View.People.HerSkyShare(hs.Person, 1); SurvivorUnchained.View.People.HerEarWarmth(hs.Person, 1); }
             skinSky = 1; skinEar = 1;

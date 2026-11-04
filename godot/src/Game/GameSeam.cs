@@ -44,10 +44,10 @@ public partial class Game
         return skipped ? Math.Min(d, 0.6) : d;
     }
 
-    /// <summary>The point the ease turns round: her body 0.9 m up, her middle, so a close frame's head-high
+    /// <summary>The point the ease turns round: her body 0.8 m up, just under her middle, so a close frame's head-high
     /// look does not lift her feet off the bottom while she is still large (H4 solver r2: C01's feet at y 0.88).
     /// Null: she is not drawn.</summary>
-    Vector3? SeamFocus() => scene?.Player is { } pv && !pv.Hidden ? pv.GlobalPosition + Vector3.Up * 0.9f : null;
+    Vector3? SeamFocus() => scene?.Player is { } pv && !pv.Hidden ? pv.GlobalPosition + Vector3.Up * 0.8f : null;
 
     /// <summary>A turn looking from one point straight at another (no roll).</summary>
     static Quaternion LookTurn(Vector3 from, Vector3 at)
@@ -78,7 +78,6 @@ public partial class Game
         // The look eases over the same time: a grade table changed at the hand-back blends in rather than
         // switching (Atmosphere.GlideLuts; the H4 r1 brightness pops).
         air.GlideLuts(Math.Max(0.5, seam.Dur), 0.4);
-        air.FadeHaze(Math.Max(0.6, seam.Dur));
         if (Args.Has("cutlog")) GD.Print($"CUTSEAM {cineId} dur={seam.Dur:0.00} metres={metres:0.00} degrees={degrees:0.0} skipped={skipped} arc={seam.Arc}");
     }
 
@@ -105,8 +104,11 @@ public partial class Game
             var toTurn = LookTurn(play.Origin, f).Inverse() * play.Basis.GetRotationQuaternion();
             // The framing (how far each end turns off her) blends ahead of the move: the film's own framing, held
             // while the camera is still close, put her feet out of frame (C01, H4 solver r2).
+            // The film's turn off her is an angle: kept as she shrinks on screen it carries her off the frame's edge,
+            // so what is left of it also shrinks with her (by how far the camera has pulled back).
             float eLook = 1 - (1 - e) * (1 - e);
-            var q = LookTurn(pos, f) * s.FromTurn.Slerp(toTurn, eLook);
+            float wFrom = (1 - eLook) * Mathf.Min(1, l0 / len);
+            var q = LookTurn(pos, f) * s.FromTurn.Slerp(toTurn, 1 - wFrom);
             camera.GlobalTransform = new Transform3D(new Basis(q.Normalized()), pos);
         }
         else

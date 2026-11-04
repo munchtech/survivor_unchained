@@ -34,15 +34,16 @@ public partial class Atmosphere : Node3D
     (float Begin, float End, float Curve, float Amount, float Sky, Color? Tint)? haze;
 
     /// <summary>The haze let go over seconds rather than at once (the hand-back, H4 solver r2: C02's depth fog dropped
-    /// 0.90 to play's 0.0038 in one frame, a 29% brightness pop): the depth haze thins to nothing over the first half,
-    /// then play's own fog comes up from nothing over the second. A new Haze set cancels it.</summary>
+    /// 0.90 to play's 0.0038 in one frame, a 29% brightness pop): the depth haze thins to nothing over the first 70%
+    /// (it carries nearly all the change), then play's own fog comes up from nothing over the rest. A new Haze set cancels it.</summary>
     public void FadeHaze(double seconds)
     {
-        if (haze == null) return;
+        if (haze == null || hazeFadeDur > 0) return;   // (one running already carries on)
         if (seconds <= 0) { Haze = null; return; }
         hazeFadeT = 0; hazeFadeDur = seconds;
     }
     double hazeFadeT, hazeFadeDur;
+    const double HazeShare = 0.7;
     float hazeScale = 1, fogScale = 1;
     static float Smooth(double k) { k = Math.Clamp(k, 0, 1); return (float)(k * k * (3 - 2 * k)); }
     void HazeFadeTick(double delta)
@@ -52,12 +53,12 @@ public partial class Atmosphere : Node3D
         double k = hazeFadeT / hazeFadeDur;
         if (haze != null)
         {
-            hazeScale = 1 - Smooth(k * 2);
-            if (k < 0.5) { HazeApply(); return; }
+            hazeScale = 1 - Smooth(k / HazeShare);
+            if (k < HazeShare) { HazeApply(); return; }
             haze = null; hazeScale = 1; fogScale = 0;
             HazeApply();
         }
-        fogScale = Smooth((k - 0.5) * 2);
+        fogScale = Smooth((k - HazeShare) / (1 - HazeShare));
         if (k >= 1) { fogScale = 1; hazeFadeDur = 0; }
         Env.FogDensity = (float)(Current.FogDensity * Current.FogDensity * FogMatchDistance) * fogScale;
     }
