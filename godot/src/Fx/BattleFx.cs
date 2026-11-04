@@ -86,8 +86,6 @@ public partial class BattleFx : Node3D
         public float T, Life, Radius;
         /// <summary>Called off (TellPhase.Off): seconds left of its fade out (0: not fading).</summary>
         public float FadeLeft;
-        /// <summary>Its decal box's height (m): the ground's relief under it plus a hand either side (Fit).</summary>
-        public float BoxY = 4;
         public bool Progress, Grow, Sink, Active;
         /// <summary>An elite's or a boss's blow: its colour is in its textures (scarlet light over darkened
         /// ground), so its Modulate stays white and only its alpha and energy move.</summary>
@@ -422,36 +420,11 @@ public partial class BattleFx : Node3D
         d.Position = V(x, heightAt(x, z), z);
         d.Rotation = Vector3.Zero;
         d.Size = new Vector3(radius * 2, 4, radius * 2);
-        Fit(m);
         // (a red mark's decal is MarkPass's data, never drawn; RedMarks shows it again if no pass shape takes it)
         d.Visible = m.Slot < 0;
         if (m.Fill != null) m.Fill.Visible = false;
         return m;
     }
-
-    /// <summary>A ground mark's decal box hugs the ground (H4 r3 judge: a closing's band and its way out, 4 m tall boxes,
-    /// were printed as blue-and-red zigzags over the low fir boughs at the road's edge): from the lowest to the highest
-    /// ground under its footprint, a hand (FitHand m) either side, centred between them.</summary>
-    void Fit(Mark m)
-    {
-        // (a red mark's decal is MarkPass's data, its ground its own heights: left as it was)
-        if (m.Slot >= 0) return;
-        var d = m.Decal;
-        Vector3 c = d.Position, ax = d.Basis.X.Normalized() * (d.Size.X / 2), az = d.Basis.Z.Normalized() * (d.Size.Z / 2);
-        double lo = double.MaxValue, hi = double.MinValue;
-        const int N = 6;
-        for (int j = 0; j <= N; j++)
-            for (int i = 0; i <= N; i++)
-            {
-                var p = c + ax * (-1 + 2f * i / N) + az * (-1 + 2f * j / N);
-                double h = heightAt(p.X, p.Z);
-                lo = Math.Min(lo, h); hi = Math.Max(hi, h);
-            }
-        m.BoxY = (float)(hi - lo) + 2 * FitHand;
-        d.Position = new Vector3(c.X, (float)(lo + hi) / 2, c.Z);
-        d.Size = new Vector3(d.Size.X, m.BoxY, d.Size.Z);
-    }
-    const float FitHand = 0.6f;
 
     void Ring(double x, double z, float radius, Color color, float life, bool progress = false, int? key = null)
     {
@@ -463,7 +436,7 @@ public partial class BattleFx : Node3D
             if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 }; AddChild(m.Fill); }
             m.Fill.Position = m.Decal.Position;
             FillStyle(m, color, false);
-            m.Fill.Size = new Vector3(0.01f, m.BoxY, 0.01f);
+            m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
             m.Fill.Visible = m.Slot < 0;
         }
         if (key is int k2) keyed[k2] = m;
@@ -479,7 +452,6 @@ public partial class BattleFx : Node3D
         var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
         m.Decal.Size = new Vector3(width, 4, (float)len);
         m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
-        Fit(m);
         if (m.Slot >= 0) m.Shape = 0;
         if (progress)
         {
@@ -492,7 +464,7 @@ public partial class BattleFx : Node3D
             FillStyle(m, color, true);
             m.Fill.Rotation = m.Decal.Rotation;
             m.Fill.Position = m.From;
-            m.Fill.Size = new Vector3(width * 0.94f, m.BoxY, 0.01f);
+            m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
             m.Fill.Visible = m.Slot < 0;
         }
         if (key is int k2) keyed[k2] = m;
@@ -1893,10 +1865,10 @@ public partial class BattleFx : Node3D
                     float l = Mathf.Max(0.01f, m.Length * m.T);
                     var mid = m.From + m.Along * (l / 2);
                     m.Fill.Position = new Vector3(mid.X, (float)heightAt(mid.X, mid.Z), mid.Z);
-                    m.Fill.Size = new Vector3(m.Radius * 2 * 0.94f, m.BoxY, l);
+                    m.Fill.Size = new Vector3(m.Radius * 2 * 0.94f, 4, l);
                     FillTexNow(m, true, l);
                 }
-                else if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, m.BoxY, r * 2); FillTexNow(m, false, r); }
+                else if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); FillTexNow(m, false, r); }
                 if (m.OverFill is { Visible: true } ovf && m.Fill != null)
                 {
                     ovf.Position = new Vector3(m.Fill.Position.X, ovf.Position.Y, m.Fill.Position.Z);
