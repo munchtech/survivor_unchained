@@ -270,7 +270,7 @@ public partial class InventoryScreen : Overlay
             return doll;
         }
         dollKey = key;
-        return doll = new Portrait(new Vector2I(w, h)).Of(lo);
+        return doll = new Portrait(new Vector2I(w, h)) { CheckTag = "doll" }.Of(lo);
     }
 
     /* -------------------------------------------------------- the numbers -- */

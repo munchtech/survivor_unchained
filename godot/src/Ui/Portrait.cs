@@ -86,8 +86,74 @@ public partial class Portrait : SubViewportContainer
         return this;
     }
 
+    // The figure is checked whole once it has stood a while (its idle running): the head and the feet must fall
+    // inside this frame, or a figure drawn without its head goes unseen (the owner's "missing head in inventory").
+    int checkIn = -1;
+    string checkTag = "";
+    public string CheckTag { set => checkTag = value; }
+
+    public override void _Process(double delta)
+    {
+        if (checkIn < 0 || --checkIn > 0 || !IsVisibleInTree()) return;
+        checkIn = -1;
+        FigureCheck();
+    }
+
+    void FigureCheck()
+    {
+        Skeleton3D? sk = null;
+        foreach (var c in stage.GetChildren()) if (c is PersonView pv) sk = Find(pv);
+        if (sk == null) return;
+        int head = sk.FindBone("Head"), foot = sk.FindBone("foot_l");
+        if (head < 0 || foot < 0) return;
+        var size = new Vector2(vp.Size.X, vp.Size.Y);
+        Vector2 Frac(int bone, float up)
+        {
+            var at = sk.GlobalTransform * sk.GetBoneGlobalPose(bone).Origin + new Vector3(0, up, 0);
+            if (cam.IsPositionBehind(at)) return new Vector2(-9, -9);
+            return cam.UnprojectPosition(at) / size;
+        }
+        // (the head bone sits at the neck; its crown is about 0.2 m over it)
+        var h = Frac(head, 0.2f); var f = Frac(foot, 0);
+        bool ok = h.X is >= 0 and <= 1 && h.Y is >= 0 and <= 1 && f.X is >= 0 and <= 1 && f.Y is >= 0 and <= 1;
+        // (a head that is in frame but not drawn: its mesh hidden, or flattened to nothing)
+        int seen = 0;
+        foreach (var m in sk.GetParent()?.FindChildren("*", "MeshInstance3D", true, false) ?? new())
+            if (m is MeshInstance3D mi && mi.IsVisibleInTree() && mi.GetSkeletonPath() != null && mi.Name.ToString().Contains("ead")) seen++;
+        if (!ok) GD.PushWarning($"figure: head out of frame {checkTag} head {h} foot {f}");
+        GD.Print($"FIGURECHECK {(ok ? "ok" : "fail")} {checkTag} head {h.X:0.00},{h.Y:0.00} foot {f.X:0.00},{f.Y:0.00} headMeshes {seen}");
+    }
+
+    /// <summary>Her hair, brows and paint carry a last pass that multiplies the picture's alpha by nothing (HairDraw: FSR 2's
+    /// reactive mask, which the world's frame has). Here the frame is a transparent viewport that is laid over the panel:
+    /// the same pass erased her head and hair out of it (the owner's "missing head in inventory"). So it is taken off.</summary>
+    static void EraseNoMore(Node n)
+    {
+        foreach (var c in n.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (c is not MeshInstance3D mi || mi.Mesh == null) continue;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var m = mi.GetSurfaceOverrideMaterial(s);
+                while (m != null)
+                {
+                    if (m.NextPass is ShaderMaterial next && next.Shader?.ResourcePath.EndsWith("_erase.gdshader") == true) m.NextPass = next.NextPass;
+                    else m = m.NextPass;
+                }
+            }
+        }
+    }
+
+    static Skeleton3D? Find(Node n)
+    {
+        foreach (var c in n.GetChildren()) { if (c is Skeleton3D s) return s; if (Find(c) is { } d) return d; }
+        return null;
+    }
+
     void Place(PersonView v, string idle)
     {
+        checkIn = 40;
+        EraseNoMore(v);
         foreach (var c in stage.GetChildren()) if (c is PersonView or BeastPose) c.QueueFree();
         stage.AddChild(v);
         v.Rotation = new Vector3(0, 0.35f, 0);
