@@ -143,9 +143,33 @@ def stage_weights(base, pl, ti, sk, A, spec, rep):
     b = (1 - smooth01(-sd / blend)) * band
     b[ti["ring"]] = 1.0
     W = b[:, None] * Hx + (1 - b[:, None]) * W
+    fixed = np.zeros(len(W), bool)
+    fixed[ti["ring"]] = True
+    moved_all = {}
     J, Wk = wt.cap(W, wt.RULES["cap"])
+    for _ in range(6):                                     # islands on the capped weights, till none are left
+        Wd = np.zeros_like(W)
+        np.put_along_axis(Wd, J, Wk, 1)
+        Wd, moved = wt.islands(Wd, ti["BF"], fixed, wt.RULES["island"])
+        for j, c in moved.items():
+            moved_all[names[j]] = moved_all.get(names[j], 0) + c
+        J, Wk = wt.cap(Wd, wt.RULES["cap"])
+        if not moved:
+            break
+    # and the right side made the left's mirror again (the cleanup's choices are not symmetric): the left's weights,
+    # sides swapped, on each right point with a mirror; the middle's the mean (the seam's ring left as the head's)
+    Wd = np.zeros_like(W)
+    np.put_along_axis(Wd, J, Wk, 1)
+    pr = wt.mirror_pairs(P, 1e-5)
+    sw = np.array([names.index(wt.swap_side(n)) for n in names])
+    right = (P[:, 0] < -1e-7) & (pr >= 0) & ti["inbody"] & ~fixed
+    mid = (np.abs(P[:, 0]) <= 1e-7) & (pr >= 0) & ti["inbody"] & ~fixed
+    Wd[right] = Wd[pr[right]][:, sw]
+    Wd[mid] = 0.5 * (Wd[mid] + Wd[mid][:, sw])
+    J, Wk = wt.cap(Wd, wt.RULES["cap"])
     rep["weights"] = {"mh_bones_mapped": len(owner), "base_mirror_pairs": int((pairs >= 0).sum()),
-                      "max_influences": int((Wk > 0).sum(1).max()), "rules": "tools/body/weights.py RULES"}
+                      "max_influences": int((Wk > 0).sum(1).max()),
+                      "island_points_moved": moved_all, "rules": "tools/body/weights.py RULES"}
     return {"J": J, "W": Wk, "jmap_head": np.maximum(jmap, 0)}
 
 

@@ -20,7 +20,9 @@
            ball round its tail on the skin, its own side only): bound where its parent was, so it moves nothing
            until a driver moves it (neutral at rest and in every pose the v1 poser makes);
 8 breast   the breast's weight shared with breast_tip by t from its base to its tip;
-9 cap      at most 8 influences (the smallest dropped), normalised.
+9 islands  a bone's weight over `island` in more than one connected patch: the patches but the largest given to
+           the bone that leads at each of their points (the seam's ring, which carries the head's, left as it is);
+10 cap     at most 8 influences (the smallest dropped), normalised.
 """
 import fnmatch
 
@@ -47,6 +49,7 @@ RULES = {
                 ("lat", 0.5, 0.04, 0.05), ("scap", 0.5, 0.04, 0.04), ("glute", 0.5, 0.05, 0.05)],
     "breast_tip": [0.2, 0.8],      # t from base to tip: none of it to the tip below 0.2, all above 0.8
     "cap": 8,
+    "island": 0.019,
 }
 
 
@@ -221,3 +224,36 @@ def cap(W, k=8):
     Wk = Wk / np.maximum(Wk.sum(1, keepdims=True), 1e-12)
     J = np.where(Wk > 0, order, 0)
     return J, Wk
+
+
+def islands(W, F, keep_fixed, thr):
+    active = np.zeros(W.shape[0], bool)
+    active[np.unique(F)] = True
+    """Step 9: (W, {bone: stray points moved})."""
+    from scipy.sparse.csgraph import connected_components
+    n = W.shape[0]
+    e = np.concatenate([F[:, [i, (i + 1) % F.shape[1]]] for i in range(F.shape[1])])
+    moved = {}
+    for j in range(W.shape[1]):
+        on = (W[:, j] > thr) & active
+        if on.sum() < 2:
+            continue
+        m = on[e[:, 0]] & on[e[:, 1]]
+        G = sp.coo_matrix((np.ones(int(m.sum())), (e[m, 0], e[m, 1])), shape=(n, n))
+        k, lab = connected_components(G, directed=False)
+        lab = np.where(on, lab, -1)
+        ids, cnt = np.unique(lab[on], return_counts=True)
+        if len(ids) < 2:
+            continue
+        big = ids[np.argmax(cnt)]
+        stray = on & (lab != big) & ~keep_fixed
+        if not stray.any():
+            continue
+        Ws = W[stray].copy()
+        Ws[:, j] = -1
+        lead = np.argmax(Ws, 1)
+        rows = np.where(stray)[0]
+        W[rows, lead] += W[rows, j]
+        W[rows, j] = 0.0
+        moved[j] = int(stray.sum())
+    return W, moved
