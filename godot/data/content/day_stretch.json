@@ -118,7 +118,7 @@
           "foes": [
             {
               "def": "boar",
-              "n": 4
+              "n": 3
             },
             {
               "def": "boar_slurry",
@@ -129,10 +129,10 @@
           "levelUp": 1,
           "tell": "charge",
           "tellBy": "boar",
-          "firstAfter": 1.5,
+          "firstAfter": 2,
           "every": [
-            5,
-            7.5
+            7,
+            10
           ],
           "waves": [
             {
@@ -140,20 +140,13 @@
                 {
                   "def": "boar",
                   "n": 3
-                }
-              ],
-              "elite": "boar_slurry",
-              "under": 2,
-              "out": 9
-            },
-            {
-              "foes": [
+                },
                 {
-                  "def": "boar",
-                  "n": 3
+                  "def": "boar_slurry",
+                  "n": 1
                 }
               ],
-              "under": 1,
+              "under": 2,
               "out": 9
             }
           ]
