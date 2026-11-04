@@ -12,7 +12,7 @@ for each hand-back, reports:
         and her root's (a teleport).
 A cut FAILS on: a camera frame over 0.3 m or 4 deg moving 4x faster than the frames around it (a new shot
 inside the cinematic is not counted); a lens step over 1.5 deg; the HUD starting more than 0.3 s before the
-camera lands; through the hand-back (to 0.5 s after control), her head or hand moving over 0.12 m, or her
+camera lands; through the hand-back (to control), her head or hand moving over 0.12 m, or her
 root over 0.2 m, per 60th of a second (speeds, since a picture run's frames are 0.1 s). --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
 """
 import math, os, re, sys
@@ -77,7 +77,8 @@ def check(c):
     out["speed"] = max((s[4] for s in steps), default=0)
     out["turn"] = max((s[5] for s in steps), default=0)
     out["step"] = worst
-    fov = max(((abs(f[i]["vfov"] - f[i - 1]["vfov"]), f[i]["t"]) for i in range(1, len(f))), default=(0, 0))
+    fov = max(((abs(f[i]["vfov"] - f[i - 1]["vfov"]), f[i]["t"]) for i in range(1, len(f))
+               if not (f[i]["phase"] == "cine" and f[i - 1]["phase"] == "cine" and f[i]["shot"] != f[i - 1]["shot"])), default=(0, 0))
     out["fov"] = fov
     if fov[0] > 1.5: out["fails"].append(f"lens step {fov[0]:.1f} deg at t={fov[1]:+.2f}")
     hud0 = next((x["t"] for x in f if x["hud"] > 0.02), None); hud1 = next((x["t"] for x in f if x["hud"] > 0.98), None)
@@ -86,7 +87,7 @@ def check(c):
     if hud0 is not None and land is not None and hud0 < land - 0.3: out["fails"].append(f"HUD starts {land - hud0:.2f} s before the camera lands")
     # Her pose, through the hand-back only (to 0.5 s after control; later it is play, her own attacks).
     pj = (0, 0, ""); rj = (0, 0)
-    end = (land if land is not None else 0) + 0.5
+    end = (land if land is not None else 0) + 0.05  # (after control her swings are her own: an auto-attack's hand moves 26 m/s)
     for i in range(1, len(f)):
         a, b = f[i - 1], f[i]
         if b["t"] > end: break

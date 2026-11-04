@@ -1,5 +1,7 @@
 # Cinematics: handoff
 
+**H4 seams (3 Nov, seams-h4): every hand-back now goes through one cut rule (`godot/src/Game/GameSeam.cs`, measured by `--cutlog` + `tools/experience/cut_check.py`); C02 s5's swing, C03's walk-up and C04a's steered walk are being restaged there: see `docs/handoff/experience.md` "H4 seams" before touching c02/c03/c04a.**
+
 **Face 49 (1 Nov) changed two shipped shots** (max SHIP; details in docs/handoff/face.md "Face 49"): C02 s8 lost its warm grade cue (zone night grade now), brighter lantern panes, the lantern key moved 25 deg toward the lens; C03 s8 restaged to a 3/4 front with the head nod halved (owner: "the neck looks wild there"), the heart's rigs as her key. C02 s4 stays cut. New cue knobs: `skin` `rim`, `lamp` `light`.
 
 ## MR READY: Cinematics 11 (29 Oct), branch cine-9: the reshoots are done; 3 max judge rounds (cap used)
