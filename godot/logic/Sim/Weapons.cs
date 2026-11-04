@@ -309,7 +309,7 @@ public static partial class Firing
     {
         // A skill that hunts the strongest is aimed at it from the hand, not only in flight.
         var o = At(b);
-        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? Toughest(b, RangeOf(w)) : b.NearestHostile(o.X, o.Z, RangeOf(w));
+        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? b.Prioritized(o.X, o.Z, RangeOf(w)) ?? Toughest(b, RangeOf(w)) : b.NearestHostile(o.X, o.Z, RangeOf(w));
         if (target == null) return false;
         int n = CountOf(b, w);
         // (A Pulse's follow-up or an On-kill echo looses its shots at once, leaving the cast's burst as it is.)
@@ -500,7 +500,7 @@ public static partial class Firing
     static bool FireChain(Battle b, WeaponInst w)
     {
         var p = At(b);
-        var first = (b.Lamps.Board ? b.RodTarget(w, p.X, p.Z, RangeOf(w)) : null) ?? b.NearestHostile(p.X, p.Z, RangeOf(w));
+        var first = b.Prioritized(p.X, p.Z, RangeOf(w)) ?? (b.Lamps.Board ? b.RodTarget(w, p.X, p.Z, RangeOf(w)) : null) ?? b.NearestHostile(p.X, p.Z, RangeOf(w));
         if (first == null) return false;
         int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0) + (w.Wick?.Chains ?? 0);
         double reach = AreaOf(b, w, w.Num(s => s.ChainRange) ?? 6);

@@ -1173,12 +1173,12 @@ public partial class Game : Node, IZoneHost
         bool Big(int id) => Battle != null && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
         switch (e)
         {
-            case Ev.Telegraph t when t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && t.Hostile && t.Id >= 0 && (t.Boss || Big(t.Id)):
                 foreach (var f in TeleFracs) Shots.Want($"tele{t.Id}", t.Duration * f);
                 MarkGeo($"tele{t.Id}", t);
                 break;
             // (and the crowd's marks, one frame of one at most every 6 s)
-            case Ev.Telegraph t when t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && t.Hostile && (Battle?.Time ?? 0) - crowdTeleShot > 6:
                 crowdTeleShot = Battle?.Time ?? 0;
                 Shots.Want("crowd", t.Duration * 0.6);
                 MarkGeo("crowd", t);
@@ -1232,7 +1232,7 @@ public partial class Game : Node, IZoneHost
     {
         switch (e)
         {
-            case Ev.Telegraph t when Shots.On("casts") && t.Id >= 0 && t.Hostile:
+            case Ev.Telegraph t when t.Phase == TellPhase.Warn && Shots.On("casts") && t.Id >= 0 && t.Hostile:
                 for (int i = 0; i * (1 / 15.0) < t.Duration + 1; i++) Shots.Want($"cast{t.Id}", i / 15.0);
                 break;
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
@@ -1423,6 +1423,8 @@ public partial class Game : Node, IZoneHost
             Perf.Begin(Perf.Part.Labels);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
+            Priority();
+            hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));
             hud.Ground(Overlay == null && !labelsOff && !Args.Has("clean") ? Labels(fb2) : new());
             Perf.End(Perf.Part.Labels);
         }
@@ -1472,6 +1474,35 @@ public partial class Game : Node, IZoneHost
         air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : cine != null && cineSat is double cs ? (float)cs : 1f, 1 - Mathf.Exp(-2 * (float)dt));
         Report(dt);
         Tour(dt);
+    }
+
+    /// <summary>Her priority target (H1 item 4): the foe under the mouse, or the pad's right-stick pick; sticky until it dies or another is chosen.</summary>
+    void Priority()
+    {
+        if (Battle is not { Combat: true } b || Mode != "play" || Overlay != null || scene == null || cine != null || showing || b.Player.Alive == false) { if (Battle != null) Battle.Priority = -1; return; }
+        if (b.Priority >= 0 && (b.Priority >= b.Enemies.Items.Length || !b.Targetable(b.Enemies.Items[b.Priority]))) b.Priority = -1;
+        if (controls.Captured) return;
+        Enemy? hit = null;
+        if (controls.UsingPad)
+        {
+            // (the stick is read as the left one is: x east, z south)
+            if (controls.Look.Length() > 0.35f) hit = Targeting.AlongStick(b, controls.Look.X, controls.Look.Y);
+        }
+        else
+        {
+            var vp = GetViewport();
+            var m = vp.GetMousePosition();
+            if (!vp.GetVisibleRect().HasPoint(m)) return;
+            var o = camera.ProjectRayOrigin(m);
+            var d = camera.ProjectRayNormal(m);
+            float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
+            if (Mathf.Abs(d.Y) < 1e-4f) return;
+            float t = (y - o.Y) / d.Y;
+            if (t <= 0) return;
+            var g = o + d * t;
+            hit = Targeting.AtPointer(b, g.X, g.Z);
+        }
+        if (hit != null) b.Priority = hit.Id;
     }
 
     /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>

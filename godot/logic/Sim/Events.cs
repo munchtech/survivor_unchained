@@ -16,6 +16,9 @@ public enum TelegraphShape { Circle, Line, Cone, Ring }
 /// (violet, hatched), stand here (pale blue, dashed), this will be solid (grey,
 /// a hard edge).</summary>
 public enum TelegraphKind { Blow, Ground, Safe, Wall }
+/// <summary>A kit telegraph's moment (data/content/telegraphs.json): Warn as it is marked (Duration = its windup),
+/// Land as it lands (Duration 0, Caught = she was in it). Draw only Warn; sound both (H3's bank: telegraph.&lt;tell&gt;.windup/.land).</summary>
+public enum TellPhase { Warn, Land }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
 /// <summary>The Flare's moments (CLASSES.md §3.5): Ready (a charge full), Press (t = 0: the freeze, the grade, the push),
@@ -89,6 +92,9 @@ public static class Ev
         /// <summary>The pattern inside a red mark, by name (MarkPass.PatternIds: a skill may name its own), and the blow's
         /// school (its pattern by school, godot/data/mark_look.json); none: by its shape.</summary>
         public string? Pattern; public School? School;
+        /// <summary>The telegraph kit's kind (data/content/telegraphs.json: ring, charge, pull, closing); null = a mark
+        /// outside the kit. Phase: Warn (marked) or Land (landed: nothing to draw).</summary>
+        public string? Tell; public TellPhase Phase; public bool Caught;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }

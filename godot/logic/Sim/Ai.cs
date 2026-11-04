@@ -72,6 +72,14 @@ public static class Ai
             return;
         }
 
+        // Held by a kit telegraph (Sim/Tells.cs): planted for its windup, no step and no blow.
+        if (e.HoldUntil > 0 && e.HoldUntil > b.Time)
+        {
+            e.Vx = e.Vz = 0;
+            e.Anim = EnemyAnim.Windup;
+            return;
+        }
+
         // Rising from the ground: helpless for a moment. Hit them while they rise.
         if (e.State == EnemyState.Rising)
         {

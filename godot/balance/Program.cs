@@ -280,7 +280,9 @@ void Arena()
     }
     // --level N|tier: the survivor's character level (tier: 1, 4, 7 by tier, as the story's pace has it).
     string level = opt.Get("level", "1");
-    bool deft = opt.Get("bot", "plain") == "deft";
+    // --bot plain,deft,human,careless (a list: each night played by each; human and careless: Harness/Human.cs).
+    var bots = opt.List("bot", "plain");
+    bool deft = bots[0] == "deft";
     bool allWeapons = opt.Get("weapons", "") == "all";
     var specs = new List<RunSpec>();
     // --type road|both ("" = the calling's first road, key unchanged); --lamps empty|suggested|full.
@@ -309,7 +311,7 @@ void Arena()
                       for (int w = 0; w < nw; w++)
                           specs.Add(new RunSpec(seed0 + s, host, "road:" + ty, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                               opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(host).Weapons.Count,
-                              Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30),
+                              Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Has("minutes") ? opt.Double("minutes", 30) : SurvivorUnchained.Arena.Arenas.TableMinutes(tier),
                               Type: host == c ? ty : Lamps.RoadsOf(host).First().Id, Lamps: lampsOpt, For: ty, Flare: opt.Get("flare", "")));
                   }
     }
@@ -320,12 +322,14 @@ void Arena()
             foreach (int tier in tiers)
                 foreach (var oath in oaths)
                     for (int s = 0; s < seeds; s++)
+                    foreach (var bot in bots)
                     {
                         int nw = allWeapons ? Callings.Archetype(c).Weapons.Count : 1;
                         for (int w = 0; w < nw; w++)
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
-                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", "")));
+                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: bot == "deft", Minutes: opt.Has("minutes") ? opt.Double("minutes", 30) : SurvivorUnchained.Arena.Arenas.TableMinutes(tier), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", ""),
+                                Bot: bot is "human" or "careless" ? bot : ""));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     if (opt.Get("pair", "0") != "0") { HandPairs(specs, outPath); return; }

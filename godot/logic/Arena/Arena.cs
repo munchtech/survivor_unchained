@@ -114,8 +114,12 @@ public static class Arenas
     {
         Id = $"table:{o.Spec.Seed}", Name = o.Spec.Name, Sub = $"Tier {o.Spec.Tier} · held by {MapOffers.People(o.People).Name}",
         Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, Mood = o.Spec.Mood, People = o.People, Oaths = o.Spec.Oaths.ToList(),
-        ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
+        ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing, Minutes = TableMinutes(o.Spec.Tier),
     };
+
+    /// <summary>A table night's minutes to its boss at a tier (Content/Teeth: tier 1 is ten, the boss's fight after it,
+    /// twelve in all; thirty from tier 2).</summary>
+    public static double TableMinutes(int tier) => Content.Teeth.For(tier) is { Minutes: > 0 } t ? t.Minutes : 30;
 
     /// <summary>A story fight lost, to be taken again: the same fight, back to
     /// the table after. The story has already been told it was lost, so a
@@ -138,6 +142,8 @@ public static class Arenas
         // A shorter night is the same night told quicker: its minutes before the boss count as a
         // table night's would, so a story night teaches as much (past the boss, real minutes).
         double end = spec.Minutes * 60, night = Math.Min(seconds, end) * 30 / spec.Minutes + Math.Max(0, seconds - end);
+        // A table night shorter than thirty is the first minutes of one, paid for its own (the same sum at thirty).
+        if (!spec.Story) night = seconds;
         // A story night with its own stages is paid for its own minutes (experience's rule: a twelve
         // minute night is not a thirty minute one).
         if (spec.Story && Play.Story.StoryScripts.Has(spec.Id)) night = seconds;
