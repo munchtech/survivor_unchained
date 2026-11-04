@@ -388,6 +388,8 @@ public partial class GameHud : CanvasLayer
         bossName = Style.Label("", Style.Display, 26, Hex("#ffe0c0"), false, HorizontalAlignment.Center);
         bossName.Size = new Vector2(w, 32);
         bossBox.AddChild(bossName);
+        bossLamps = new LampMarks();
+        bossBox.AddChild(bossLamps);
         var track = new Panel { Position = new Vector2(0, 38), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
         // The groove: near black, edged in the cuffs' iron, a hair of light along its top.
         var groove = Style.Box(Hex("#0d0606"), Cuff.Iron(0.38f), 2, 2, 0);
@@ -1061,6 +1063,7 @@ public partial class GameHud : CanvasLayer
     }
 
     string bossMarks = "";
+    LampMarks bossLamps = null!;
     ColorRect? bossStagger, bossStaggerGroove;
 
     /// <summary>The boss whose bar is up (its world plate stands down meanwhile), or null.</summary>
@@ -1084,6 +1087,8 @@ public partial class GameHud : CanvasLayer
         BossName = bar?.Name;
         if (bar == null) return;
         bossName.Text = bar.Name.ToUpperInvariant();
+        // The lamps that guard it (the Ford-Warden's three): marks at the name line's right, 24 px in.
+        bossLamps.Feed(bar.Lamps, bar.LampsLit, BossW - 24, 16);
         // A boss's Break (the damage past its phase marks) beside its title.
         bossTitle.Text = bar.Break >= 1 ? $"{bar.Title}   ·   Break {Math.Round(bar.Break):N0}" : bar.Title;
         float w = BossW - 4;

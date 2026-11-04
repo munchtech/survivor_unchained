@@ -49,8 +49,10 @@ public sealed record MapMark(double X, double Z, string Label, MarkKind Kind);
 /// is calling up (break it!), whether something is shielding it.</summary>
 /// IsBoss: a boss's (its music); a herald's is not. Break: the damage past
 /// its phase marks; Stagger: its stagger bar (0..1).
+/// Lamps: the lamps that guard the boss (the Ford-Warden's three posts): how many, and how many burn (LampsLit); 0 = none shown.
 public sealed record BossBar(string Name, string Title, double Hp, double MaxHp, double[]? Phases = null,
-    (string Label, double Progress)? Channel = null, bool Shielded = false, bool IsBoss = true, double Break = 0, double Stagger = 0);
+    (string Label, double Progress)? Channel = null, bool Shielded = false, bool IsBoss = true, double Break = 0, double Stagger = 0,
+    int Lamps = 0, int LampsLit = 0);
 
 /// <summary>A tip on screen: its keys, as the player has them bound.</summary>
 public sealed record Hint(string Id, string Title, string Text, List<string> Keys);
