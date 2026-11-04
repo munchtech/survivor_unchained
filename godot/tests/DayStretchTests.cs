@@ -145,6 +145,31 @@ public class DayStretchTests
     }
 
     [Fact]
+    public void A_pack_left_standing_far_off_does_not_hold_the_ring()
+    {
+        // (H4 lead 3, j08 g3: one ambush foe stuck in the trees held the ring, and the gate, for good.)
+        var b = Road(7);
+        var s = DayStretch.For("lowford")!;
+        var d = new DayStretch(s, b, s.Beats.Where(x => x.Kind == "pack" && x.Id != "boars").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true), 2, 1);
+        d.Place();
+        var boars = s.Get("boars")!;
+        b.Player.X = boars.X; b.Player.Z = boars.Z + 7;
+        b.Weapons.Clear();
+        for (double t = 0; t < 4 && !d.Fighting; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain(); }
+        Assert.True(d.Fighting);
+        var ring = s.Get("wolves")!;
+        b.Player.X = ring.X; b.Player.Z = ring.ArmZ + 2;
+        d.Tick(Dt);
+        b.Player.Z = ring.Z - 0.5;
+        for (double t = 0; t < DayStretch.FightGrace + 1 && d.RingAt < 0; t += Dt)
+        {
+            foreach (var e in d.Standing("boars")) { e.X = boars.X + 60; e.Z = boars.Z; }
+            b.Player.Hp = b.MaxHp; b.Player.X = ring.X; b.Player.Z = ring.Z - 0.5; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain();
+        }
+        Assert.True(d.RingAt >= 0);
+    }
+
+    [Fact]
     public void The_road_ambush_springs_on_her_way_back_once_the_strongbox_is_open()
     {
         var b = Road(7);

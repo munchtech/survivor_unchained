@@ -158,8 +158,12 @@ public sealed class DayStretch
     /// <summary>The beat's champion while it stands.</summary>
     public Enemy? Captain(string beat) => Captains.TryGetValue(beat, out var c) && Live(c) ? c.E : null;
 
-    /// <summary>Some pack is awake and on its feet (a fight is on), or the ring's foes still stand.</summary>
-    public bool Fighting => Packs.Any(kv => WokeAt.ContainsKey(kv.Key) && !DownAt.ContainsKey(kv.Key));
+    /// <summary>Some pack is awake and on its feet (a fight is on), or the ring's foes still stand. Only foes within
+    /// FightNear of her count once a pack has been up FightGrace (H4 lead 3: j08 run g3 soft-locked at the ring for
+    /// 4 minutes on one track-ambush foe left standing far off in the trees; the gate held for good).</summary>
+    public bool Fighting => Packs.Any(kv => WokeAt.TryGetValue(kv.Key, out var w) && !DownAt.ContainsKey(kv.Key)
+        && (b.Time - w < FightGrace || kv.Value.Any(f => Live(f) && Dist(f.E.X, f.E.Z, b.Player.X, b.Player.Z) < FightNear)));
+    public const double FightNear = 24, FightGrace = 6;
 
     public void Tick(double dt)
     {
