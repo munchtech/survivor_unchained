@@ -674,6 +674,8 @@ public partial class Game : Node, IZoneHost
             goto Built;
         }
         else { currentMap = null; data = new ZoneData(id); }
+        // (its map drawn on a worker from now: the first open does not draw it on the frame, N25)
+        MapScreen.DrawSoon(data);
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
         Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
