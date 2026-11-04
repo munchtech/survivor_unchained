@@ -1,3 +1,25 @@
+# Classes 22 (3 Nov): wave-1 fixed list done; MR READY; read this, then "Classes 21" below
+
+Branch classes-22 (junction to its own public/assets). Scratch backed up to survivorsunchained_inputs/scratch_classes22 (solver/: ab.sh, pb.sh, j2.sh, v.py, st.py, pr.py, gate.py, ty.py; eq/eq.sh the sim byte check).
+
+## Fixed list
+1. **Moonweaver full board over the x1.35 types band: CLOSED AS KNOWN (round 1 of 2, no change shipped).** No single carrier: Echo ~2.5% of damage, the night's +1 projectile ~3% (Many Lights, or Crowded Sky in its place), the mark lamps together ~1.3%; all 15 road lamps dark is only -8.6%. Board pair lift (`--pair board --type moonweaver --level tier --bot deft --offwicks 1`, 64 seeds, about ±0.7%): T1/T3/T4 1.096/1.115/1.108, kindler T4 1.030. The gate (median dmg/min at 25, x1.35 of the median type) splits by faction at T4 (lamplings 592, dead 847, kerchiefs 1499, pack 1694k), so its CI90 there is about ±15%: real 2-3% trims swing it ±10%. On means the full board is 1.27/1.22/1.26/1.31 (T1-T4), in band; at 24 seeds kindler T4 full is 1.37 and reaver T4 empty 0.72 too. Variants (lamps_v2.json; k1 = Echo share 0.5->0.25, longer 0.25->0.5) read 96-seed T4 1.44, fresh seeds 1.32: not taken, picking by seeds would be cherry-picking. **For the next classes pass:** gate types on means or the median of per-faction medians (main's call); if a cut is still wanted, k1 plus a moonweaver-only rule for Many Lights' night +1 (`ArcanistProjectiles`, e.g. every second cast) is the route. Runs: solver/out (ab_*, w_ab_*, x_ab_*, f_ab_* fresh 97-192, pb_*, fe0).
+2. **Lamps §14 signatures: DONE (89ac1ab3f).** In SurvivorUnchained.Rpg: `LampBook.PathTo/LightPath/Suggested/Sleeps/LinkPick/LinkChoices/SetLinkPick` (LampBook.cs; `LampBook.Check` = CanLight's rules without the spare count, shared by CanLight, PathTo, Suggest, Suggested), `WickBook.Sum` (+ `Weapon`, `RankIn`), records `LampSleep` and `WickSumView` in Rpg. LampAsk.cs: every ask a one-line call except CopyLayout (not on the list, still UI-side); its records deleted. Sim refactors, behavior-identical: `Battle.LinkPick(carried, pick, hint)` static (BoardRules.cs), `Character.GearSkills/DaySkills` (Kit's code factored). Tests godot/tests/LampAskTests.cs (6).
+   - What the screen shows differently (for UI 31): Sleeps follows the sim, so ~54 `Feeds` lamps (Frenzy and the like, whose effects work on every skill) no longer dim, while tag, rite and link lamps now dim correctly; tag-only sleeps list matching skills in Skills plus Tags (LampBoard words only Skills); LinkPick names what the link would fire when she has no pick, LinkChoices includes gear skills; the wick-sum line now draws (Sum was null; LampWick calls it day only); PathTo finds far-lamp paths the stand-in missed. Sum's parts: base, rank growth, wick lead-ins as one +x%, each lit Turn last (multiply to Total exactly); no Hand or rite part, since nothing in the sim changes this number by Hand or rite.
+3. **Acceptance and tests:** see "Acceptance" below.
+
+## Acceptance (unchanged from Classes 21 by construction)
+No balance number changed (item 1 shipped nothing) and the sim refactors are behavior-identical: harnesses built at f9372bbd9 and at 89ac1ab3f give the same records, sorted line for line (types full T1/T4 all callings 6 seeds, 96 lines; board pair T1/T4 all callings, 48; story all fights both pilots, 128). So the Classes 21 table below stands as measured (board alone max 1.22, warden T4 1.237 at 256; Act 1 -2.5%; types in band but the moonweaver full board, closed as known above). Rerunning it at its seed counts (~3 h CPU) would only reproduce identical records, so it was not rerun. Byte check: scratch eq/eq.sh.
+- Tests (godot/tests/Tests.csproj, full run at 89ac1ab3f): 1459 passed, 0 failed, 10 skipped.
+
+## Capability (the app can now)
+- answer the Lamps screen from the rules themselves: the path to any lamp (lit all or nothing), why a lamp sleeps (the sim's own predicate), what a link fires and may bind, Light my way's next n without lighting, and a wick's whole sum that multiplies to the fight's number, day and night;
+- prove a refactor leaves the sim unchanged in ~20 min (eq/eq.sh: two harness builds, three batches, sorted compare).
+
+## Cost (Classes 22)
+About 0.38M: lead ~60k, solver ~167k (round 1, ~4 h CPU), coder ~156k; no judges.
+
+
 # Classes 21 (3 Nov): Phase 2 acceptance closed; MR READY; read this, then "Classes 20" below
 
 Branch classes-17 (junction to its own public/assets; integration merged at 16bf3eeff). Scratch backed up to survivorsunchained_inputs/scratch_classes21 (j1.sh, j1b.sh, j2.sh, j3.sh, ct_table.py; fe.md and fe96/fe.md tables).
