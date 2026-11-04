@@ -715,6 +715,16 @@ public sealed partial class Battle
     /// skills) takes it first while it is within that reach. -1: none (the harness never sets one).</summary>
     public int Priority = -1;
 
+    double executedBarkAt = -1;
+    /// <summary>"Executed" over a kill: only for a champion, a boss or the priority target, and at most one in 0.5 s (six at once was spam).</summary>
+    public void ExecutedBark(Enemy e)
+    {
+        bool pri = Priority >= 0 && Priority < Enemies.Items.Length && ReferenceEquals(Enemies.Items[Priority], e);
+        if (!(e.Elite || e.Boss || pri) || (executedBarkAt >= 0 && Time - executedBarkAt < 0.5)) return;
+        executedBarkAt = Time;
+        Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Executed" });
+    }
+
     /// <summary>The priority target, if it is a foe to hit within r of (x, z) that passes the filter.</summary>
     public Enemy? Prioritized(double x, double z, double r, Func<Enemy, bool>? filter = null)
     {
@@ -2903,7 +2913,7 @@ public sealed partial class Battle
             case Effect.Execute fx:
                 if (ctx.Target is { Alive: true } t && t.Hp / t.MaxHp < fx.Threshold && !t.Boss)
                 {
-                    Events.Emit(new Ev.Bark { X = t.X, Z = t.Z, Text = "Executed" });
+                    ExecutedBark(t);
                     KillEnemy(t, true, ctx.Weapon, depth);
                 }
                 break;

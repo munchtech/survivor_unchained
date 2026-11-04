@@ -269,7 +269,7 @@ public partial class BattleFx
             case "slash_blood": core = Hdr("#ffd0c8", 2.4f); glow = Blood; hue = Hdr("#ff2a1a", 1.15f); depth = 0.34f; break;
             case "slash_heavy": core = Hdr("#fff0dc", 2.2f); glow = Hdr("#d8a070", 1.5f); hue = Hdr("#ff5422", 1.05f); depth = 0.44f; sweep = 0.12f; drain = 0.2f; heavy = true; break;
             case "slash_quake": core = Hdr("#fff0dc", 2.2f); glow = Hdr("#d89060", 1.6f); hue = Hdr("#ff7026", 1.05f); depth = 0.46f; sweep = 0.12f; drain = 0.2f; heavy = true; break;
-            case "slash_spin": core = Hdr("#fff0dc", 2.2f); glow = Hdr("#d8a070", 1.5f); hue = Hdr("#ff5422", 1.05f); depth = 0.36f; sweep = 0.17f; drain = 0.2f; heavy = true; break;
+            case "slash_spin": core = Hdr("#fff0dc", 2.2f); glow = Hdr("#d8a070", 1.5f); hue = Hdr("#ffb85c", 1.05f); depth = 0.36f; sweep = 0.17f; drain = 0.2f; heavy = true; break;
             case "palm" or "palm_temple": core = Hdr("#fff2d0", 2.6f); glow = Hdr("#ffb24a", 1.8f); hue = Hdr("#ffa040", 1.15f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
             case "palm_storm": core = Palette.Of(School.Storm).Core; glow = Palette.Of(School.Storm).Glow; hue = Hdr("#5a96ff", 1.2f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
         }

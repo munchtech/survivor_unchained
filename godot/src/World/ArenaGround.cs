@@ -36,9 +36,11 @@ public static class ArenaGround
         // (Leaves drawn a third larger than the scan's: a leaf must be a few pixels to read as
         // one from the arena camera. Whole red-brown leaves read as leaves; a scan of pale
         // chips on black read as gravel however it was toned.) The rot is black earth.
-        ["hollow"] = [new(0.095f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
+        // (H2 R2: the litter 0.095 to 0.11, the needles 0.085 to 0.095, painted toward ochre-straw: the lit top a step
+        // lighter, so her pool on them reads gold.)
+        ["hollow"] = [new(0.11f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
             // (The mud trodden smooth: at the scan's own contrast the den's floor read as asphalt.)
-            new(0.035f, 0.8f, Con: 0.75f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
+            new(0.035f, 0.8f, Con: 0.75f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.095f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
             new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
@@ -79,6 +81,37 @@ public static class ArenaGround
         ["dig"] = (new Color("#3d4228"), 0.22f, 0f),
     };
 
+    /// <summary>A ground's sheet, painted (H2 R2, bible rules 5 and 6: tools/assets/paint_tex.py ground,
+    /// the gravel painted out, two or three value masses, one brush in the world) where it has been;
+    /// --ground-raw shows the scans as they were. Ground.cs uses it for the terrain too.</summary>
+    public static string Sheet(string dir, string k)
+    {
+        string p = $"{dir}/{k}_paint.jpg";
+        return !SurvivorUnchained.Args.Has("ground-raw") && ResourceLoader.Exists(p) ? p : $"{dir}/{k}.jpg";
+    }
+
+    /// <summary>A place's layers as its ground shader takes them: texture repeats a metre
+    /// (1 / its metres x Look.Size), the tone that brings its photograph's mean (Y, linear) to
+    /// Look.Y, that mean, and its Look. The leaves (Grass.Leaves) take layer 0's from here too.</summary>
+    public readonly record struct LayerTone(float Scale, float Tone, float Mean, Layer Look);
+
+    public static List<LayerTone> Tones(string place)
+    {
+        using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"res://art/arena/{place}/layers.json"));
+        var looks = Looks[place];
+        var list = new List<LayerTone>();
+        int k = 0;
+        foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
+        {
+            var m = l.GetProperty("mean");
+            float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
+            var look = looks[k++];
+            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
+            list.Add(new LayerTone(1f / (l.GetProperty("metres").GetSingle() * look.Size), look.Y / y, y, look));
+        }
+        return list;
+    }
+
     public static ShaderMaterial Material(ZoneData z)
     {
         var place = z.Place!;
@@ -98,11 +131,10 @@ public static class ArenaGround
         mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
         mat.SetShaderParameter("past_dark", z.Story ? 0.25f : 0.6f);
         mat.SetShaderParameter("scorch_out", z.Story ? 3f : 1000f);
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
-        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
-        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>($"{dir}/arh.jpg"));
+        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(Sheet(dir, "albedo")));
+        mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(Sheet(dir, "normal")));
+        mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>(Sheet(dir, "arh")));
         mat.SetShaderParameter("zone_size", z.Size);
-        using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json"));
         var scales = new Godot.Collections.Array<float>();
         var tones = new Godot.Collections.Array<float>();
         var sats = new Godot.Collections.Array<float>();
@@ -110,22 +142,15 @@ public static class ArenaGround
         var means = new Godot.Collections.Array<float>();
         var lifts = new Godot.Collections.Array<float>();
         var bumps = new Godot.Collections.Array<float>();
-        var looks = Looks[place.Id];
-        int k = 0;
-        foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
+        foreach (var t in Tones(place.Id))
         {
-            var m = l.GetProperty("mean");
-            float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
-            var look = looks[k];
-            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
-            scales.Add(1f / (l.GetProperty("metres").GetSingle() * look.Size));
-            tones.Add(look.Y / y);
-            sats.Add(look.Sat);
-            cons.Add(look.Con);
-            means.Add(y);
-            lifts.Add(look.Lift);
-            bumps.Add(look.Bump);
-            k++;
+            scales.Add(t.Scale);
+            tones.Add(t.Tone);
+            sats.Add(t.Look.Sat);
+            cons.Add(t.Look.Con);
+            means.Add(t.Mean);
+            lifts.Add(t.Look.Lift);
+            bumps.Add(t.Look.Bump);
         }
         mat.SetShaderParameter("g_scale", scales);
         mat.SetShaderParameter("g_tone", tones);
@@ -174,7 +199,9 @@ public static class ArenaGround
     static readonly Dictionary<string, LeafLook> LeafLooks = new()
     {
         // The Hollow's: this autumn's, over the litter of years.
-        ["hollow"] = new(1f, 14, 1.35f),
+        // (H2 R2: under half as many and a little larger, 0.4 and 1.6: forty leaves a square metre, each its own
+        // chip, were the litter's gravel noise at the play camera; fewer, they are its brush strokes.)
+        ["hollow"] = new(0.4f, 14, 1.6f),
     };
 
     public static LeafLook? LeavesOf(string place) => LeafLooks.GetValueOrDefault(place);

@@ -107,7 +107,7 @@ def norm(x, lo=2, hi=98):
     return np.clip(x / s, -1, 1).astype(np.float32)
 
 
-def lic(direction, steps=12, step=2.2, seed=7, grain=1.8):
+def lic(direction, steps=12, step=2.2, seed=7, grain=1.8, hp=8):
     """Line-integral convolution of white noise along a unit direction field."""
     h, w = direction.shape[:2]
     rng = np.random.default_rng(seed)
@@ -126,7 +126,7 @@ def lic(direction, steps=12, step=2.2, seed=7, grain=1.8):
             acc += wgt * cv2.remap(noise, px, py, cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
             tot += wgt
     s = acc / tot
-    return norm(s - blur(s, 8))
+    return norm(s - blur(s, hp))
 
 
 def paint(albedo, normal, p):
@@ -138,6 +138,8 @@ def paint(albedo, normal, p):
     # 1. simplify: mean-shift patches at half size (flat value shapes), bilateral at full
     small = cv2.resize(a, (w // 2, h // 2), interpolation=cv2.INTER_AREA)
     sp, sr = p["ms"]
+    tpm = p.get("tpm")  # --texels-per-m: the brush one size in the world (bible rule 5), not one size in texels
+    if tpm: sp = max(2, int(round(p.get("stroke_m", 0.08) * tpm / 4)))
     ms8 = wrap(lambda q: cv2.pyrMeanShiftFiltering(q, sp, sr), (small * 255).astype(np.uint8), 16)
     ms = cv2.resize(ms8.astype(np.float32) / 255, (w, h), interpolation=cv2.INTER_LINEAR)
     bil = a
@@ -174,12 +176,204 @@ def paint(albedo, normal, p):
     # 4. strokes along the dominant direction (perpendicular to the structure's main axis)
     g = cv2.cvtColor(np.clip(simp, 0, 1).astype(np.float32), cv2.COLOR_RGB2GRAY) + 0.5 * hgt / (np.abs(hgt).max() + 1e-6)
     gx, gy = np.gradient(g, axis=1), np.gradient(g, axis=0)
-    jxx, jyy, jxy = blur(gx * gx, 28), blur(gy * gy, 28), blur(gx * gy, 28)
+    sj = 0.6 * p.get("stroke_m", 0.08) * tpm if tpm else 28
+    jxx, jyy, jxy = blur(gx * gx, sj), blur(gy * gy, sj), blur(gx * gy, sj)
     ang = 0.5 * np.arctan2(2 * jxy, jxx - jyy) + np.pi / 2
     direction = np.dstack([np.cos(ang), np.sin(ang)]).astype(np.float32)
-    s = lic(direction)
+    if tpm:
+        ln = p.get("stroke_m", 0.08) * tpm
+        s = lic(direction, step=ln / 24, grain=max(ln * 0.12, 0.8))
+    else:
+        s = lic(direction)
     out = out * (1 + p["stroke"] * s)[..., None]
     return np.clip(out, 0, 1)
+
+
+# --- The ground (bible rules 5 and 6): two or three value masses, the gravel painted out, one brush in the world ---
+# Sizes are in metres and turned into texels by the sheet's texels per metre, so the stroke is one size on
+# every ground whatever its scan's density (a 2 m litter tile at 1024 px and a 4 m road at 1024 px alike).
+GROUND = dict(stroke=0.08, width=0.3, fine=0.02, mass=0.35, mid=0.6, fine_keep=0.05, levels=3, post=0.5, dull=0.8, chroma=1.08,
+              warm=(1.0, 2.5), hue=(0.0, 0.0), pull=0.0, lic=0.12, cavity=0.6, nflat=0.45, nblur=0.03, ao=0.55, hblur=0.5)
+
+# Per ground (the sheets' folder name), per layer: what differs from GROUND. Stone and rock faces keep their scans
+# (chunky planes are rule 6's stone, not the ground's masses; the setts are R8's); the Hollow's litter and needles
+# pulled from red-brown toward ochre, so the pool her ember lights on them reads gold (hue 50-55), not rust.
+# (Judge r2-1 #4: the ember-lit ground read rust, hue 43-48: ember x ground lands gold only on an ochre-straw ground,
+# CIE Lab about (4, 24), so the earths that lie under her pools are pulled there: litter, needles, rot; dirt, mud, leaves.)
+STRAW = (4.0, 24.0)
+GROUND_LAYERS = {
+    # (Judge r2-1 #5: the Verge's day grit was in the normals: the earths' and the grass's relief under the stroke to 20%.)
+    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}, "dirt": {"hue": STRAW, "pull": 0.45, "ndetail": 0.2},
+               "mud": {"hue": STRAW, "pull": 0.3, "ndetail": 0.2}, "leaves": {"hue": STRAW, "pull": 0.35, "ndetail": 0.2},
+               "grass": {"ndetail": 0.2}},
+    "hollow": {"face": {"skip": 1}, "litter": {"hue": STRAW, "pull": 0.55}, "needles": {"hue": STRAW, "pull": 0.45},
+               "rot": {"hue": STRAW, "pull": 0.3}},
+    "ruts": {"face": {"skip": 1}}, "dig": {"face": {"skip": 1}}, "barrow": {"face": {"skip": 1}},
+}
+
+
+def kuwahara(img, r, guide=None):
+    """Generalised Kuwahara (four square sectors, each pixel takes the calmest one's mean): flat patches with
+    their edges kept, the 3D cousin of a loaded brush. img HxWxC float32, wrapped (seamless)."""
+    r = max(int(round(r)), 1)
+    k = r + 1
+    g = guide if guide is not None else cv2.cvtColor(np.clip(img, 0, 1), cv2.COLOR_RGB2GRAY)
+    m = wrap(lambda q: cv2.blur(q, (k, k)), img, k)
+    gm = wrap(lambda q: cv2.blur(q, (k, k)), g, k)
+    gv = wrap(lambda q: cv2.blur(q * q, (k, k)), g, k) - gm * gm
+    s = r // 2
+    best_v = None
+    out = np.zeros_like(img)
+    for dy in (-s, s):
+        for dx in (-s, s):
+            v = np.roll(gv, (dy, dx), axis=(0, 1))
+            mm = np.roll(m, (dy, dx), axis=(0, 1))
+            if best_v is None:
+                best_v, out = v, mm
+            else:
+                sel = v < best_v
+                best_v = np.where(sel, v, best_v)
+                out = np.where(sel[..., None], mm, out)
+    return out
+
+
+def paint_ground(albedo, normal, arh, tpm, p):
+    """One ground sheet: albedo/normal/arh HxWx3 0..1 (arh: AO, roughness, height) at tpm texels per metre.
+    Returns the painted (albedo, normal, arh). The mean linear luminance is kept, so a layer's tone holds."""
+    px = lambda m: max(m * tpm, 0.5)
+    a = albedo.astype(np.float32)
+    lin = lambda c: np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    y0 = (lin(a) @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()
+    # 1. the gravel out: under `fine` (2 cm) the scan is blurred away, keeping only `fine_keep` of it
+    lo = blur(a, px(p["fine"]) * 0.5)
+    # 2. one brush: two Kuwahara passes at the stroke's half and quarter width make flat patches
+    k = kuwahara(lo, px(p["stroke"]) * 0.5)
+    k = kuwahara(k, px(p["stroke"]) * 0.25)
+    # 3. value masses: in Lab, L is the mass (blurred over `mass`) plus the patches pulled toward it (`mid`),
+    # then softly posterised toward `levels` steps across the sheet's own range (flat value shapes)
+    lab = cv2.cvtColor(np.clip(k, 0, 1), cv2.COLOR_RGB2Lab)
+    L, A, B = lab[..., 0], lab[..., 1], lab[..., 2]
+    base = blur(L, px(p["mass"]))
+    L2 = base + p["mid"] * (L - base)
+    if p["levels"]:
+        lo_, hi_ = np.percentile(L2, [3, 97])
+        t = np.clip((L2 - lo_) / max(hi_ - lo_, 1e-3), 0, 1) * (p["levels"] - 1)
+        f = t - np.floor(t)
+        q = np.floor(t) + f * f * (3 - 2 * f)  # smoothstep inside each step: plateaus with soft edges
+        L2 = L2 + p["post"] * (lo_ + q / (p["levels"] - 1) * (hi_ - lo_) - L2)
+    # what is left of the grain, faint
+    La = cv2.cvtColor(np.clip(a, 0, 1), cv2.COLOR_RGB2Lab)[..., 0]
+    L2 = L2 + p["fine_keep"] * (La - blur(La, px(p["fine"])))
+    # 4. local colour: chroma smoothed to the stroke, the dull midtones gain most, a slight warmth
+    A, B = blur(A, px(p["stroke"]) * 0.3), blur(B, px(p["stroke"]) * 0.3)
+    C = np.sqrt(A ** 2 + B ** 2)
+    mid = np.clip(1 - np.abs(L2 - 45) / 45, 0, 1)
+    wgt = mid * (1 + p["dull"] * np.clip(1 - C / 25, 0, 1))
+    A = A * p["chroma"] + p["warm"][0] * wgt
+    B = B * p["chroma"] + p["warm"][1] * wgt
+    A = A + (p["hue"][0] - A) * p["pull"] * mid
+    B = B + (p["hue"][1] - B) * p["pull"] * mid
+    # 5. the form: the height's broad cavities darkened (dark cavities, lit tops), from the arh height
+    h = blur(arh[..., 2].astype(np.float32), px(p["fine"]))
+    cav = norm(h - blur(h, px(p["mass"]) * 0.5))
+    L2 = L2 * (1 + p["cavity"] * 0.25 * cav)
+    out = cv2.cvtColor(np.dstack([np.clip(L2, 0, 100), A, B]).astype(np.float32), cv2.COLOR_Lab2RGB)
+    # 6. strokes: noise smeared along the structure at the stroke's length, one stroke width across
+    g = cv2.cvtColor(np.clip(k, 0, 1), cv2.COLOR_RGB2GRAY)
+    gx, gy = np.gradient(blur(g, px(p["fine"])), axis=1), np.gradient(blur(g, px(p["fine"])), axis=0)
+    sj = px(p["stroke"]) * 0.6
+    jxx, jyy, jxy = blur(gx * gx, sj), blur(gy * gy, sj), blur(gx * gy, sj)
+    ang = 0.5 * np.arctan2(2 * jxy, jxx - jyy) + np.pi / 2
+    direction = np.dstack([np.cos(ang), np.sin(ang)]).astype(np.float32)
+    ln = px(p["stroke"])
+    s = lic(direction, steps=12, step=ln / 24, grain=ln * p["width"], hp=ln)
+    out = out * (1 + p["lic"] * s)[..., None]
+    out = np.clip(out, 0, 1)
+    y1 = (lin(out) @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()
+    out = np.clip(out * (y0 / max(y1, 1e-6)) ** (1 / 2.2), 0, 1)
+    # the normals: the fine bumps smoothed away (they spark under the moon as speckle), the broad ones kept
+    n = normal.astype(np.float32) * 2 - 1
+    nxy = blur(n[..., :2], px(p["nblur"]))
+    # (R2 round 2, frame 04: under the Verge's sun the grit was in the normals) ndetail: the share kept of the relief
+    # finer than the stroke (1: all of it, as before); the swells the stroke's size and up kept whole
+    if p.get("ndetail", 1.0) < 1.0:
+        lo = blur(n[..., :2], px(p["stroke"]))
+        nxy = lo + (nxy - lo) * p["ndetail"]
+    nxy = nxy * p["nflat"]
+    nz = np.sqrt(np.clip(1 - (nxy ** 2).sum(axis=2), 0.04, 1))
+    nn = np.dstack([nxy, nz]) * 0.5 + 0.5
+    # the arh: AO smoothed and lifted (its speckle is the gravel again), roughness smoothed, the height softened
+    ao = blur(arh[..., 0].astype(np.float32), px(p["nblur"]))
+    ao = 1 - (1 - ao) * p["ao"]
+    ro = blur(arh[..., 1].astype(np.float32), px(p["nblur"]))
+    # (the height drives the shader's bump by derivatives and the layers' blend edges: at the stroke's half width, so
+    # under a grazing moon the litter's relief is broad swells, not a scaled hide of 10 cm cells)
+    hh = blur(arh[..., 2].astype(np.float32), px(p["stroke"]) * p["hblur"])
+    return out, np.clip(nn, 0, 1), np.clip(np.dstack([ao, ro, hh]), 0, 1)
+
+
+def array_paths(d: Path):
+    meta = d / "layers.json"
+    if meta.exists():
+        layers = json.loads(meta.read_text())["layers"]
+    else:
+        layers = json.loads((d / "ground.json").read_text())["layers"]
+    return [(l["name"], float(l["metres"])) for l in layers]
+
+
+def paint_array(d: Path, suffix="_paint", only=None, over=None, per=None, preview=None):
+    """A ground's layered sheets (DIR/{albedo,normal,arh}.jpg, one square layer per slice, metres per layer in
+    layers.json or ground.json) through paint_ground, each at its own texels per metre; written beside them
+    as {albedo,normal,arh}SUFFIX.jpg (the raw sheets kept, so the preset can be re-run)."""
+    layers = array_paths(d)
+    if per is None: per = GROUND_LAYERS.get(d.name, {})
+    ims = {k: load(d / f"{k}.jpg") for k in ("albedo", "normal", "arh")}
+    S = ims["albedo"].shape[1]
+    old = {k: load(d / f"{k}{suffix}.jpg") if (d / f"{k}{suffix}.jpg").exists() else ims[k].copy() for k in ims}
+    for i, (name, metres) in enumerate(layers):
+        if only and name not in only: continue
+        p = dict(GROUND, **(over or {}), **((per or {}).get(name, {})))
+        if p.get("skip"):
+            for k in ims: old[k][i * S:(i + 1) * S] = ims[k][i * S:(i + 1) * S]
+            continue
+        sl = {k: ims[k][i * S:(i + 1) * S] for k in ims}
+        tpm = S / metres
+        a, n, h = paint_ground(sl["albedo"], sl["normal"], sl["arh"], tpm, p)
+        old["albedo"][i * S:(i + 1) * S], old["normal"][i * S:(i + 1) * S], old["arh"][i * S:(i + 1) * S] = a, n, h
+        print(f"{d.name}/{name}: {metres} m, {tpm:.0f} texels/m, stroke {p['stroke'] * tpm:.0f} px")
+    if preview:
+        # each layer as the play camera sees it: about 80 px a metre (the bible's 5-8 px a 6-10 cm stroke),
+        # the raw above the painted, 3 m of ground each
+        tiles = []
+        for i, (name, metres) in enumerate(layers):
+            if only and name not in only: continue
+            row = []
+            for src in (ims["albedo"], old["albedo"]):
+                t = src[i * S:(i + 1) * S]
+                reps = int(np.ceil(3.0 / metres)) + 1
+                t = np.tile(t, (reps, reps, 1))
+                side = int(S * 3.0 / metres)
+                t = t[:side, :side]
+                row.append(cv2.resize(t, (240, 240), interpolation=cv2.INTER_AREA))
+            tiles.append(np.vstack(row))
+        save(np.hstack(tiles), Path(preview))
+        return
+    for k, mode in (("albedo", "RGB"), ("normal", "RGB"), ("arh", "RGB")):
+        out = d / f"{k}{suffix}.jpg"
+        Image.fromarray((np.clip(old[k], 0, 1) * 255 + 0.5).astype(np.uint8), mode).save(out, quality=93, subsampling=0)
+        imp = Path(str(out) + ".import")
+        if not imp.exists():
+            src = (d / f"{k}.jpg.import").read_text(encoding="utf-8").splitlines()
+            keep, skip = [], False
+            for line in src:
+                if line.startswith(("uid=", "path.", "dest_files=")): continue
+                if line.startswith("metadata={"): skip = True; continue
+                if skip:
+                    if line.startswith("}"): skip = False
+                    continue
+                keep.append(line.replace(f"/{k}.jpg", f"/{k}{suffix}.jpg"))
+            imp.write_text(chr(10).join(keep) + chr(10), encoding="utf-8")
+        print(out)
 
 
 IMPORT = """[remap]
@@ -312,7 +506,9 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     one = sub.add_parser("sheet", help="paint one sheet")
     one.add_argument("albedo"); one.add_argument("normal"); one.add_argument("out")
-    one.add_argument("--preset", default="plain", choices=sorted(PRESETS))
+    one.add_argument("--preset", default="plain", choices=sorted(PRESETS) + ["ground"])
+    one.add_argument("--texels-per-m", type=float, help="the sheet's texels per metre: the brush is sized in the world (rule 5)")
+    one.add_argument("--arh", help="ground: the AO/roughness/height sheet (else the height from the normals)")
     for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms", "knee"):
         one.add_argument("--" + k)
     vil = sub.add_parser("village", help="paint the well's four village sheets")
@@ -324,9 +520,40 @@ def main():
     pr = sub.add_parser("props", help="paint the set dressing's shared trims (PROPS)")
     pr.add_argument("--out", default=str(ROOT / "godot/art/kit_paint"))
     pr.add_argument("--decode", action="store_true", help="decode missing normals through Godot first")
+    gr = sub.add_parser("ground", help="paint a ground's layered sheets (arena place or terrain) at each layer's texels per metre")
+    gr.add_argument("dir", help="godot/art/arena/<place> or godot/art/ground")
+    gr.add_argument("--only", help="comma-separated layer names")
+    gr.add_argument("--set", help="GROUND overrides, k=v;k=v (warm=1,2.5)")
+    gr.add_argument("--per", help="per-layer overrides as JSON {layer: {k: v}}")
+    gr.add_argument("--preview", help="write a play-camera-scale strip (raw over painted) here instead of the sheets")
+    gr.add_argument("--suffix", default="_paint")
     a = ap.parse_args()
+    if a.cmd == "ground":
+        over = {}
+        for kv in (a.set or "").split(";"):
+            if not kv.strip(): continue
+            k, v = kv.split("=")
+            over[k.strip()] = tuple(float(x) for x in v.split(",")) if "," in v else float(v)
+        per = json.loads(a.per) if a.per else None
+        paint_array(Path(a.dir), a.suffix, a.only.split(",") if a.only else None, over, per, a.preview)
+        return
+    if a.cmd == "sheet" and a.preset == "ground":
+        if not a.texels_per_m: ap.error("--preset ground needs --texels-per-m")
+        alb, nor = load(a.albedo), load(a.normal)
+        if a.arh:
+            arh = load(a.arh)
+        else:
+            n = nor * 2 - 1
+            h = height_from_normals(n / np.maximum(np.linalg.norm(n, axis=2, keepdims=True), 1e-6))
+            h = (h - h.min()) / max(h.max() - h.min(), 1e-6)
+            arh = np.dstack([np.ones_like(h), np.full_like(h, 0.85), h])
+        o, nn, _ = paint_ground(alb, nor, arh, a.texels_per_m, GROUND)
+        save(o, Path(a.out))
+        save(nn, Path(a.out).with_name(Path(a.out).stem + "_normal" + Path(a.out).suffix))
+        return
     if a.cmd == "sheet":
         p = preset(a.preset, {k: getattr(a, k) for k in ("detail", "cavity", "edge", "top", "warm", "dull", "chroma", "hue", "pull", "stroke", "value", "ms", "knee")})
+        if a.texels_per_m: p["tpm"] = a.texels_per_m
         save(paint(load(a.albedo), load(a.normal), p), Path(a.out))
     elif a.cmd == "village":
         out = Path(a.out)

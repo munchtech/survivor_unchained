@@ -870,7 +870,7 @@ public sealed partial class Battle
         if (!e.Prey || e.Boss || e.Hp <= 0 || !e.Status.Has(StatusKind.Mark)) return;
         if (e.Hp < e.MaxHp * (Has("executioner") ? NightCut("executioner", 0.3, 0.2 * e.PreySize) : 0.2 * e.PreySize)) // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
         {
-            Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Executed" });
+            ExecutedBark(e);
             KillEnemy(e, true, null);
         }
     }
