@@ -228,6 +228,15 @@ public sealed partial class Battle
                 tells.RemoveAt(i);
                 continue;
             }
+            // A closing whose ring is all down in its windup (a Flare's save): its band is called off and fades (H4 r3 judge:
+            // the band and its streaks outlived the wolves by 2 s).
+            if (t.K.Inner > 0 && t.Foes.Count > 0 && !t.Foes.Exists(f => Same(f.E, f.Seed)))
+            {
+                blows.Remove(bl);
+                Events.Emit(new Ev.Telegraph { Id = bl.MarkId, Tell = bl.Tell, Phase = TellPhase.Off, Shape = bl.Shape, Kind = bl.Kind, X = bl.X, Z = bl.Z, Radius = bl.Radius, Inner = bl.Inner, Hostile = true });
+                tells.RemoveAt(i);
+                continue;
+            }
             if (!p.Alive || dt <= 0) continue;
             double share = Math.Clamp((bl.Delay - bl.T) / Math.Max(1e-6, bl.Delay), 0, 1);
             double d = Dist(p.X, p.Z, bl.X, bl.Z);

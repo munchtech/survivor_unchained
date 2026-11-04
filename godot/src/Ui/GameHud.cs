@@ -83,6 +83,9 @@ public partial class GameHud : CanvasLayer
     VBoxContainer corner = null!;
     // Discoveries in a burst become one toast that grows.
     (Notice Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    /// <summary>The toasts up by their words: the same words again within 3 s refresh that one, counted (x2, x3),
+    /// not a column of copies (H4 r3: "No draughts left" three times).</summary>
+    readonly Dictionary<string, (Notice Box, int N, double At)> sameToast = new();
     TipLine? tipLine;
     // The chain's heat eased every frame toward its true value (docs/feel S-06): shown, wanted.
     float barShown, barWant;
@@ -994,6 +997,14 @@ public partial class GameHud : CanvasLayer
     {
         // Discoveries and loot in a burst gather into one toast that grows, not a column of them.
         double now = Time.GetTicksMsec() / 1000.0;
+        if (sameToast.TryGetValue(t.Text + "|" + t.Sub, out var st) && now - st.At < 3 && IsInstanceValid(st.Box) && st.Box.GetParent() == toasts)
+        {
+            int n = st.N + 1;
+            st.Box.Title.Text = $"{t.Text}  x{n}";
+            st.Box.T = Math.Min(st.Box.T, 0.5);
+            sameToast[t.Text + "|" + t.Sub] = (st.Box, n, now);
+            return;
+        }
         if (lastToast is { } lt && lt.Kind == t.Kind && t.Kind is ToastKind.Lore or ToastKind.Loot && t.Rarity == null && t.Icon == null
             && now - lt.At < 2.5 && IsInstanceValid(lt.Box) && lt.Names.Count < 5)
         {
@@ -1017,6 +1028,8 @@ public partial class GameHud : CanvasLayer
         // The newest first, the rest stepping down under it.
         toasts.MoveChild(box, 0);
         lastToast = (box, t.Kind, new List<string> { t.Text }, now);
+        foreach (var k in sameToast.Where(kv => now - kv.Value.At >= 3 || !IsInstanceValid(kv.Value.Box)).Select(kv => kv.Key).ToList()) sameToast.Remove(k);
+        sameToast[t.Text + "|" + t.Sub] = (box, 1, now);
         // (five at most: the column keeps clear of the health orb)
         while (toasts.GetChildCount() > 5) toasts.GetChild(toasts.GetChildCount() - 1).Free();
     }

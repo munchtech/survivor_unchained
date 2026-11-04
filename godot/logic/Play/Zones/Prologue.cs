@@ -747,7 +747,13 @@ public sealed partial class Prologue : ZoneRuntime
         B.Events.Emit(new Ev.Shake { Amount = 0.6 });
         // (one line a lamp event: "The Warden reels!" stacked on it at the burst, H4 r3; the tip up steps aside for the burst)
         B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z, Text = how == "charge" ? "The lamp shatters!" : "The lamp goes dark" });
-        G.DuckTip(1.3);
+        // (H4 r3 judge: the lamps tip taught the move she just made: a charge into a lamp clears it, and it stays down 30 s)
+        if (how == "charge" && (G.CurrentHint?.Id == "lamps2" || lampTipWaiting.Contains("lamps2")))
+        {
+            if (G.CurrentHint?.Id == "lamps2") G.SetHint(null);
+            shown.Add("lamps2"); lamps2At = stageT;
+        }
+        else G.DuckTip(1.3);
         B.Events.Emit(new Ev.Sound { Id = how == "charge" ? "ford.lamp_shatter" : "ford.lamp_out", X = p.X, Z = p.Z });
         int left = LitCount;
         if (left > 0) G.Toast(new Toast(ToastKind.World, $"A lamp goes out — {left} still burn{(left == 1 ? "s" : "")}"));
@@ -833,7 +839,7 @@ public sealed partial class Prologue : ZoneRuntime
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 2, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len, Radius = 0, Width = 3, Duration = 1.3, Hostile = true, Boss = true });
                     ai.Travelled = len;
                     wardenView.SetPose("charge-windup");
-                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "It lowers its head..." });
+                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "It lowers its head...", Boss = true });
                     return true;
                 }
                 if (dist > e.Radius + 1.2)

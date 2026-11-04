@@ -17,8 +17,9 @@ public enum TelegraphShape { Circle, Line, Cone, Ring }
 /// a hard edge).</summary>
 public enum TelegraphKind { Blow, Ground, Safe, Wall }
 /// <summary>A kit telegraph's moment (data/content/telegraphs.json): Warn as it is marked (Duration = its windup),
-/// Land as it lands (Duration 0, Caught = she was in it). Draw only Warn; sound both (H3's bank: telegraph.&lt;tell&gt;.windup/.land).</summary>
-public enum TellPhase { Warn, Land }
+/// Land as it lands (Duration 0, Caught = she was in it). Draw only Warn; sound both (H3's bank: telegraph.&lt;tell&gt;.windup/.land).
+/// Off: called off before it landed (a closing whose ring is all down): its mark fades, no sound.</summary>
+public enum TellPhase { Warn, Land, Off }
 /// <summary>Ev.BoardLamp's moments.</summary>
 public enum BoardLampState { Lit, Dousing, Out, Relit }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
