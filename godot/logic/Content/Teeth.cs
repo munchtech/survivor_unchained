@@ -26,9 +26,9 @@ public static class Teeth
     }
 
     /// <summary>The Ford-Warden (H8, N20, numbers H6's; the owner on demo-rc2: "the warden was easy. died in like 8
-    /// seconds didn't have to crash a lamp"): by lamps lit, 0-3, the least of his life he can be brought to (a share
-    /// of it) and the share of a blow he takes; his life's multiplier; and a backstop, a last floor held until he has
-    /// fought this long.</summary>
+    /// seconds didn't have to crash a lamp"): the least of his life he can be brought to (a share of it) by lamps still
+    /// unbroken this fight, 0-3, and the share of a blow he takes by lamps lit; his life's multiplier; a backstop, a
+    /// last floor held until he has fought this long; and how long one floor holds before it cracks a step.</summary>
     public sealed class FordWarden
     {
         public double[] Floors = [0, 0, 0, 0];

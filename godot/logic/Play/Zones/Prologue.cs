@@ -750,7 +750,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     /// <summary>When a floor last turned a blow (game seconds): "Warded" says so at most every WardedEvery s.</summary>
     double wardedAt = -99, overSeen, floorHeldT;
-    int wardCracks;
+    int wardCracks, lampsBroken;
     const double WardedEvery = 4;
 
     /// <summary>The lamps' floor under his life (never above it: a relit lamp does not heal him), and the backstop
@@ -758,7 +758,9 @@ public sealed partial class Prologue : ZoneRuntime
     void WardFloor(Enemy e, Teeth.FordWarden? fw, double dt)
     {
         if (fw == null || B == null) { e.HpFloor = 0; return; }
-        double k = fw.Floors is { Length: 4 } fl ? fl[Math.Max(0, LitCount - wardCracks)] : 0;
+        // (by the lamps broken this fight, never taken back by a relight: H8's b_path had his channels relight them
+        // six times over 338 s; the ward, what a blow does, stays by the lamps lit)
+        double k = fw.Floors is { Length: 4 } fl ? fl[Math.Clamp(pylons.Count - lampsBroken - wardCracks, 0, 3)] : 0;
         if (Now == Stage.Boss && stageT < fw.MinSeconds) k = Math.Max(k, fw.Backstop);
         double floor = k * e.MaxHp;
         // (a floor of 0 is none; a floor over his life now is his life: a relight never heals him)
@@ -767,7 +769,7 @@ public sealed partial class Prologue : ZoneRuntime
         if (e.HpFloor > 0 && e.Hp <= e.HpFloor + 1 && Now == Stage.Boss)
         {
             floorHeldT += dt;
-            if (fw.CrackAfter > 0 && floorHeldT > fw.CrackAfter && LitCount - wardCracks > 0)
+            if (fw.CrackAfter > 0 && floorHeldT > fw.CrackAfter && pylons.Count - lampsBroken - wardCracks > 0)
             {
                 wardCracks++; floorHeldT = 0;
                 B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "The ward cracks", Boss = true });
@@ -790,6 +792,7 @@ public sealed partial class Prologue : ZoneRuntime
     {
         if (!litPylons[i] || B == null) return;
         litPylons[i] = false;
+        if (Now == Stage.Boss) lampsBroken++;
         lampEventAt = B.Time;
         var p = pylons[i];
         G.Look.SetLit(p.Light, false);

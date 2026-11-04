@@ -14,7 +14,7 @@
   },
   "prologue": {
     "fordWarden": {
-      "about": "The Ford-Warden (H8, N20; numbers by H6, 4 Nov, by reason, measured by H8 with --auto --lampcheck): indexed by lamps lit 0-3. floors: the least share of his life he can be brought to (0.67 while three burn, 0.34 while two, none while one or none: two crashes are the way through, the third lamp optional); ward: the share of a blow he takes (each crash a visible jump in damage); hpMul on his 2600; minSeconds: a backstop, the last floor held at backstop until he has fought this long (if it fires in most fights, his charge cadence is wrong, not this). Targets: a human 60-90 s, every calling's careless bot wins, no fall for the deft.",
+      "about": "The Ford-Warden (H8, N20; numbers by H6, 4 Nov; measured by H8 on the first-time path). floors: by lamps still unbroken this fight, 0-3 (3 minus those his charge or her blows broke; a relight never takes one back): the least share of his life he can be brought to, 0.67 with none broken, 0.34 with one, none with two (two crashes are the way through; b_path on lamps lit had his channels relight them six times in 338 s). ward: by lamps lit, the share of a blow he takes. hpMul on his 2600. minSeconds: a backstop, the last floor held at backstop until he has fought this long. crackAfter: seconds held at one floor before it cracks a step (no player held for good). Targets: a human 60-90 s, every calling's careless bot wins, no fall for the deft.",
       "floors": [
         0,
         0,
@@ -27,9 +27,10 @@
         0.55,
         0.4
       ],
-      "hpMul": 2.5,
+      "hpMul": 1.25,
       "minSeconds": 60,
-      "backstop": 0.05
+      "backstop": 0.05,
+      "crackAfter": 45
     }
   }
 }
