@@ -100,10 +100,10 @@ void vertex() {
 	a = mix(a, a * vec3(1.04, 1.0, 0.9), smoothstep(0.55, 0.8, nL.b) * 0.4);
 	float inside = gi.y;
 	a *= arena_mass(inside, texture(noise_tex, lp * 0.0085 + vec2(0.41, 0.17)), nL);
-	// The hue nudged a fifth of the way to the drift's, at the litter's value.
+	// The hue nudged a quarter of the way to the drift's, at the litter's value.
 	float ly = max(dot(a, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 	vec3 dn = dc / max(dot(dc, vec3(0.2126, 0.7152, 0.0722)), 1e-4) * ly;
-	vec3 c = mix(a, dn, 0.2) * (0.9 + 0.2 * gh(wp * 9.1 + own * 3.0));
+	vec3 c = mix(a, dn, 0.25) * (0.88 + 0.24 * gh(wp * 9.1 + own * 3.0));
 	// The ground's own terms over the litter (arena_ground.gdshader), so the leaf keeps to it.
 	vec2 suv = (lp + zone_size * 0.5) / zone_size;
 	float trod = texture(splat2, suv).b * (0.8 + 0.4 * nF.r);
@@ -123,8 +123,8 @@ void vertex() {
 void fragment() {
 	// The curl's crown catches the light; the leaf's edges lie in its own shade.
 	// (A soft curl, 0.88-1.08: with a dark rim each leaf was outlined, and the litter read as chips.)
-	// (Round 2: 0.94-1.04, a stroke's soft body, never a chip's outline.)
-	ALBEDO = v_col * mix(0.94, 1.04, v_t);
+	// (Round 2: 0.92-1.08, a stroke's soft body lit on its crown, never a chip's outline.)
+	ALBEDO = v_col * mix(0.92, 1.08, v_t);
 	// Lit as the litter under it is (arena_ground.gdshader: its roughness and occlusion, specular
 	// 0.35), so the moon finds as much in a leaf as round it. (Round 1 had them matte, 0.88 and
 	// 0.12, against a slate-blue sheen; at the litter's own value and roughness the sheen matches.)

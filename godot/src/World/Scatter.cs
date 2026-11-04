@@ -346,7 +346,7 @@ public static class Scatter
                 // (H2 R2 round 2, frame 01: the pebbles a third as many, 6-10 cm and sunk, at the trodden earth's own value
                 // (the painted dirt's Y 0.052, within about 0.05 L): pale grey 2-5 cm ones were a rash of white specks at the
                 // title camera. The twigs out: 1-2 px black hairlines there.)
-                if (u < 0.12) { float k = U(0.85f, 1.18f); Put(pebbles[rng.Next(4)], lx, lz, U(0.06f, 0.1f), 0.5f, 0.4f, new Color(0.068f * k, 0.054f * k, 0.04f * k, 0), 0); }
+                if (u < 0.12) { float k = U(0.85f, 1.18f); Put(pebbles[rng.Next(4)], lx, lz, U(0.06f, 0.1f), 0.6f, 0.25f, new Color(0.068f * k, 0.054f * k, 0.04f * k, 0), 0, 0.5f); }
                 else if (u < 0.55) continue;
                 else if (u < 0.7) Put(pebbles[rng.Next(4)], lx, lz, U(0.025f, 0.05f), 0.2f, 0.5f, Plant(new(0.16f, 0.11f, 0.07f), new(0.2f, 0.15f, 0.09f), U(0.6f, 1f)), 0, 0.45f);   // a wood chip
                 else if (!OnSetts(lx, lz)) Put(needle, lx, lz, U(0.07f, 0.12f), 0, 0.15f, Plant(new(0.13f, 0.08f, 0.04f), new(0.17f, 0.11f, 0.05f), U(0.6f, 1f)), 0.004f);
