@@ -519,7 +519,7 @@ public partial class PlayerView : Node3D
         }
         gripShowAt = -1;
         // (formed at the press but hidden: the blade shows once her hand is at the coil, FlareXfade on)
-        if (def.Grip != null && view != null && view.FlareGrip(def.Grip) && view.FlareGripNode is { } gn) { gn.Visible = false; gripShowAt = time + FlareXfade; }
+        if (def.Grip != null && view != null && view.FlareGrip(def.Grip) && view.FlareGripNode is { } gn) { gn.Visible = false; gripShowAt = time + FlareXfade + GripSettle; }
         if (armMod != null) armMod.AxisR = armMod.AxisL = Vector3.Zero;
         // (from her live pose over 0.1 s, 3 of the clip's frames: no swing dropped in a frame)
         if (!FullHerFrom(clip, 1, false, FlareXfade)) { gripShowAt = -1; view?.FlareGripEnd(); return; }
@@ -531,7 +531,7 @@ public partial class PlayerView : Node3D
     // (each frame's line is the pose drawn the frame before: measured before the tree is advanced), and each one's step.
     static readonly bool GripProbe = Args.Has("grip-probe");
     int probeN = -1;
-    Vector3 probeHand, probeTip; Vector3? probeTipLocal;
+    Quaternion probeHq; Vector3 probeHand, probeTip; Vector3? probeTipLocal;
     double fullStart; float fullSpeed = 1;
 
     void Probe()
@@ -559,17 +559,26 @@ public partial class PlayerView : Node3D
             }
             tip = g.GlobalTransform * probeTipLocal.Value;
         }
+        if (view?.FlareGripNode is { } gm && probeN is >= 4 and <= 11)
+        {
+            var rel = (skel.GlobalTransform * skel.GetBoneGlobalPose(hb)).AffineInverse() * gm.GlobalTransform;
+            var hq = (skel.GlobalTransform * skel.GetBoneGlobalPose(hb)).Basis.GetRotationQuaternion();
+            GD.Print($"grip seat f{probeN}: hand turn {Mathf.RadToDeg((hq.Inverse() * probeHq).GetAngle()):0.0} deg;"
+            + $" f{probeN}: vis {gm.Visible} local {gm.Transform.Origin} eul {gm.Transform.Basis.GetEuler() * 57.2958f} rel-hand {rel.Origin} eul {rel.Basis.GetEuler() * 57.2958f}");
+        }
         bool fullOn = (bool)tree.Get("parameters/fullShot/active");
         GD.Print($"grip probe f{probeN}: hand_r {hand} step {(probeN > 0 ? (hand - probeHand).Length() * 1000 : 0):0} mm"
             + (tip is { } tp ? $", tip {tp} step {(probeN > probeVisN ? (tp - probeTip).Length() * 1000 : 0):0} mm" : "")
             + (probeN == probeVisN ? " (first visible grip frame)" : "")
             + $", full {(fullOn ? fullClip : "-")} at {(time - fullStart) * fullSpeed:0.000} s, yaw {Mathf.RadToDeg(Rotation.Y):0.0}");
-        probeHand = hand;
+        probeHand = hand; probeHq = (skel.GlobalTransform * skel.GetBoneGlobalPose(hb)).Basis.GetRotationQuaternion();
         if (tip is { } t2) probeTip = t2;
         probeN++;
     }
 
     const double FlareXfade = 0.1;
+    // (the crossfade's last frames still turn her hand ~50 degrees a frame, 0.9 m of tip: the blade shows two frames after it ends, in the settled pose)
+    const double GripSettle = 2.0 / 60;
     double gripShowAt = -1;
     int probeVisN = -1;
 
