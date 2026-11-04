@@ -419,7 +419,7 @@ public partial class Cuff : Control
 }
 
 /// <summary>One of the six places for what fires by itself: a well of dark river glass in the plate's baked bezel
-/// (DrawRing, UI 23): its skill's gold inlay, the well filling as it readies, a flash as it fires, its rank on a
+/// (DrawRing, UI 23): its skill's gold inlay, the well filling as it readies, a soft dulling as it fires, its rank on a
 /// small chip. Ready to evolve, the well's edge breathes gold; evolved, it is rimmed in gold. Empty, a darker, empty
 /// well.</summary>
 public partial class Socket : Control
@@ -434,7 +434,13 @@ public partial class Socket : Control
     string glyphKey = "";
     int rank, max = 8;
     bool evolved, ripe, filled;
-    double ready = 1, lastReady = 1, flash, t, crown = -1;
+    double ready = 1, lastReady = 1, t, crown = -1;
+    // One ready cue, a glow that settles (no blaze on firing, no snap on ready: six seats flashing read as flicker).
+    // cool: 0 lit .. 1 dull (eased); glow: the warm light's alpha; cue: seconds into the ready envelope (-1 none);
+    // waitT: seconds since it fired, while waiting; prevWait: the last wait (-1 not known yet).
+    double cool, glow = 0.42, cue = -1, waitT, prevWait = -1;
+    bool waiting;
+    const double FastWait = 1.5, LongWait = 6, CueLen = 0.7;
 
     public Socket()
     {
@@ -458,7 +464,11 @@ public partial class Socket : Control
         int ws = secs >= 0 ? (int)Math.Ceiling(secs) : -1;
         if (ws != secsShown) { secsShown = ws; dirty = true; }
         waitSecs = secs;
-        if (id != Id || !filled) { Id = id; filled = true; lastReady = ready; }
+        if (id != Id || !filled)
+        {
+            Id = id; filled = true; lastReady = ready;
+            waiting = false; prevWait = -1; cue = -1; cool = ready < 0.98 ? 1 : 0; glow = ready < 0.98 ? 0 : 0.42; waitT = 0;
+        }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
         var newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
         if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
@@ -466,7 +476,15 @@ public partial class Socket : Control
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
-        if (ready < lastReady - 0.4) flash = 1;
+        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; }
+        else if (waiting && ready >= 0.98)
+        {
+            // Ready again: a short wait is not cued (a fast attack stays lit); a longer one gets the envelope, and a
+            // long one its sound.
+            waiting = false; prevWait = waitT;
+            if (waitT >= FastWait) cue = 0;
+            if (waitT >= LongWait) SurvivorUnchained.Sound.SoundHooks.Play("ui.skill_ready");
+        }
         lastReady = ready;
         this.ready = ready;
     }
@@ -481,9 +499,7 @@ public partial class Socket : Control
     public override void _Process(double delta)
     {
         t += delta;
-        double before = flash;
-        flash = Math.Max(0, flash - delta * 4);
-        if (flash != before) dirty = true;
+        if (filled) Settle(delta);
         if (crown >= 0)
         {
             crown += delta;
@@ -494,6 +510,29 @@ public partial class Socket : Control
         }
         // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
         if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
+    }
+
+    /// <summary>A fast cycle (the last wait and this one so far under FastWait): it neither dims nor shows its well.</summary>
+    bool Fast => waiting && prevWait >= 0 && prevWait < FastWait && waitT < FastWait;
+
+    static double Ease(double k) => 1 - (1 - k) * (1 - k);
+
+    /// <summary>The glyph's tone and the warm glow, eased toward what the seat is: dull while it waits, lit when ready.</summary>
+    void Settle(double delta)
+    {
+        if (waiting) waitT += delta;
+        bool dim = ready < 0.98 && !Fast;
+        double c0 = cool, g0 = glow, k0 = cue;
+        cool = Mathf.MoveToward((float)cool, dim ? 1f : 0f, (float)(delta / (dim ? 0.15 : 0.25)));
+        if (cue >= 0)
+        {
+            cue += delta;
+            if (cue >= CueLen) { cue = -1; glow = 0.42; }
+            else if (cue < 0.12) glow = 0.62 * Ease(cue / 0.12);
+            else glow = 0.62 + (0.42 - 0.62) * Mathf.SmoothStep(0, 1, (float)((cue - 0.12) / (CueLen - 0.12)));
+        }
+        else glow = Mathf.MoveToward((float)glow, dim ? 0f : 0.42f, (float)(delta * 0.42 / 0.15));
+        if (cool != c0 || glow != g0 || cue != k0) dirty = true;
     }
 
     public override void _Draw() => DrawRing();
@@ -516,7 +555,7 @@ public partial class Socket : Control
             DrawTextureRect(well, new Rect2(c - ws / 2, ws), false, filled ? Colors.White : new Color(0.7f, 0.7f, 0.7f));
         }
         else DrawCircle(c, hr + 1, new Color(0.03f, 0.06f, 0.065f), true, -1, true);
-        bool cooling = filled && ready < 0.98;
+        bool cooling = filled && ready < 0.98 && !Fast;
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
@@ -529,16 +568,15 @@ public partial class Socket : Control
                 int gi = (int)Mathf.Round(g);
                 var (gold, glowTex) = DgGold.Of(glyphKey, gi);
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
-                bool up = ready >= 0.98;
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
-                if (up || flash > 0) DrawTextureRect(glowTex, gr, false, warm with { A = (up ? 0.42f : 0) + 0.5f * (float)flash });
-                var tone = (up ? Colors.White : new Color(0.66f, 0.60f, 0.52f)).Lerp(new Color(1.5f, 1.4f, 1.25f), (float)flash);
+                if (glow > 0.003) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
+                var tone = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool);
                 DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = 1 });
             }
             else if (art != null)
             {
-                var col2 = ready >= 0.98 ? new Color(1.25f, 1.25f, 1.25f) : Colors.White;
-                DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2.Lerp(new Color(2.2f, 2.0f, 1.7f), (float)flash));
+                var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
+                DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
             if (cooling) DgMeters.Level(this, c, hr + 0.5f, (float)ready, school);
