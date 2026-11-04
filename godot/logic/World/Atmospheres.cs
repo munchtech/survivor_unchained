@@ -188,7 +188,7 @@ public static class Atmospheres
     /// <summary>The day stretch's light k of the way (0 to 1) from LowFordDawn to LowFordMorning: the thaw held at the
     /// dawn's sun while its frost goes (no ground bake a degree).</summary>
     public static AtmospherePreset Morning(double k) =>
-        k <= 0 ? LowFordDawn : Blend(LowFordDawn, LowFordMorning, Math.Min(k, 1)) with { ThawElevation = LowFordDawn.KeyElevation };
+        k <= 0 ? LowFordDawn : k >= 1 ? LowFordMorning : Blend(LowFordDawn, LowFordMorning, k) with { ThawElevation = LowFordDawn.KeyElevation };
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>

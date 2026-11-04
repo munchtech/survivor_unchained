@@ -236,7 +236,7 @@ public class PrologueTests
         var b = s.J.StartBattle(true, s.Meta.Collision(), (_, _) => 0, 0, -100, 0, 9);
         z2.Begin(b);
         Assert.Equal(Prologue.Stage.Exit, z2.Now);
-        Assert.Same(Atmospheres.LowFordDawn, s.Host.Air);
+        Assert.Same(Atmospheres.LowFordMorning, s.Host.Air);   // (the morning's sun, climbed: Prologue.MorningClimbs)
         Assert.DoesNotContain(b.Collision.All(), c => c.Tag == "gate");
     }
 
