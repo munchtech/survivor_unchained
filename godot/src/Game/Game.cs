@@ -1328,12 +1328,12 @@ public partial class Game : Node, IZoneHost
             // The day road's gate kept at the frame's head on its last stretch (Prologue.GateInFrame, H4 r3).
             var gateAt = cam.Toward == null && fordBoss == null && zone is Prologue pg ? pg.GateInFrame : null;
             if (gateAt is { } ga) cam.Toward = new Vector3((float)ga.X, 0, (float)ga.Z);
-            (cam.TowardShare, cam.TowardMax) = fordBoss != null || gateAt != null ? (0.5f, 7f) : (0.33f, 4.5f);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : gateAt != null ? (0.33f, 3.5f) : (0.33f, 4.5f);
             // H4 item 5 (N8, the owner saw one lamp): the fight's frame stays on her and him, 25 m out (23 elsewhere). The
             // three posts read by their lamps burning (GameLampPosts' beacons), the bar's three marks and the pointers to the
             // lit ones off the frame. (Framing the triangle failed twice: a lean to its middle lost her 36% of the fight on
             // --lampcheck, and a wide frame fitted to her and the posts was a dark, empty board at the lamps freeze.)
-            bool fordWideNow = fordBoss != null && hudMode == null && camSaved == null && !Args.Has("cam");
+            bool fordWideNow = (fordBoss != null || gateAt != null) && hudMode == null && camSaved == null && !Args.Has("cam");
             if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 25f : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
