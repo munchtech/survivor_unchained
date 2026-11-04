@@ -55,10 +55,16 @@ void vertex() {
 	vec3 rel = (off - vec3(mid.x, 0.0, mid.y)) * s;
 	VERTEX = vec3(lp.x, ground_at(lp) + 0.012, lp.y) + rel;
 	NORMAL = vec3(0.0, 1.0, 0.0);
+	// (H2 R2, bible rules 5 and 6: painted, not photographic.) A drift's colour is the drift's, a few
+	// metres across (rust, ochre, a paler fall), and each leaf only a little off it: leaf by leaf from
+	// rust to near-black they read at the play camera as gravel noise, a dark fleck per leaf. So the
+	// leaves are the litter's brush strokes, close to its value, and the masses are the drifts'.
+	float dm = texture(noise_tex, lp * 0.17 + 0.61).r * 0.7 + texture(noise_tex, lp * 0.05 + 0.23).g * 0.3;
+	vec3 c = mix(mix(rust, ochre, smoothstep(0.3, 0.55, dm)), pale, smoothstep(0.6, 0.8, dm) * 0.6);
 	float h = gh(wp * 5.3 + own * 17.0);
-	vec3 c = h < 0.35 ? mix(rust, ochre, h / 0.35) : h < 0.7 ? mix(ochre, pale, (h - 0.35) / 0.35) : mix(dark, rust, (h - 0.7) / 0.3);
+	c = mix(c, mix(rust, ochre, h), 0.22);
 	// Older underneath: darker where they lie thickest.
-	v_col = c * (0.7 + 0.5 * gh(wp * 9.1 + own * 3.0)) * mix(1.0, 0.7, smoothstep(0.6, 1.0, paint * drift));
+	v_col = c * (0.86 + 0.24 * gh(wp * 9.1 + own * 3.0)) * mix(1.0, 0.78, smoothstep(0.6, 1.0, paint * drift));
 	v_t = UV.y;
 }
 

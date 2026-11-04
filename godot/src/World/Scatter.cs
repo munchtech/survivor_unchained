@@ -256,12 +256,14 @@ public static class Scatter
                         // Pebbles strewn over the road on this side, small stones on the verge, the odd large one at the edge.
                         // (Judge 3, E3 F: the pebbles at both edges of each rut, 0.55 a 0.25 m step, read as beaded rows along
                         // the ruts' shoulders; now loose across the road's half, no band.)
-                        if (Chance(0.3f))
+                        // (H2 R2, bible rule 5: at the play camera a 3-7 cm pebble is a 3-5 px white fleck in the sun, the
+                        // gravel noise the painted ground leaves out; fewer and a little larger, they are the odd accent.)
+                        if (Chance(0.12f))
                         {
                             var q = c + n * (sg * U(0f, hw)) + dir * U(0, Step);
-                            Stone(q.X, q.Y, U(0.03f, 0.07f), 0);
+                            Stone(q.X, q.Y, U(0.045f, 0.09f), 0.1f);
                         }
-                        if (Chance(0.5f)) { var q = c + n * (sg * (hw + U(-0.2f, 1.2f))) + dir * U(0, Step); Stone(q.X, q.Y, U(0.03f, 0.08f), 0.3f); }
+                        if (Chance(0.2f)) { var q = c + n * (sg * (hw + U(-0.2f, 1.2f))) + dir * U(0, Step); Stone(q.X, q.Y, U(0.045f, 0.1f), 0.3f); }
                         // (Judge 1, E3 fix 9: the odd edge stone sunk 30-50%, flat, dark as the road, dirt up its lower half,
                         // 0.25 m at most; the pale smooth ones read as eggs.)
                         if (Chance(0.04f))

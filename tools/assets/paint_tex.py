@@ -107,7 +107,7 @@ def norm(x, lo=2, hi=98):
     return np.clip(x / s, -1, 1).astype(np.float32)
 
 
-def lic(direction, steps=12, step=2.2, seed=7, grain=1.8):
+def lic(direction, steps=12, step=2.2, seed=7, grain=1.8, hp=8):
     """Line-integral convolution of white noise along a unit direction field."""
     h, w = direction.shape[:2]
     rng = np.random.default_rng(seed)
@@ -126,7 +126,7 @@ def lic(direction, steps=12, step=2.2, seed=7, grain=1.8):
             acc += wgt * cv2.remap(noise, px, py, cv2.INTER_LINEAR, borderMode=cv2.BORDER_WRAP)
             tot += wgt
     s = acc / tot
-    return norm(s - blur(s, 8))
+    return norm(s - blur(s, hp))
 
 
 def paint(albedo, normal, p):
@@ -192,8 +192,17 @@ def paint(albedo, normal, p):
 # --- The ground (bible rules 5 and 6): two or three value masses, the gravel painted out, one brush in the world ---
 # Sizes are in metres and turned into texels by the sheet's texels per metre, so the stroke is one size on
 # every ground whatever its scan's density (a 2 m litter tile at 1024 px and a 4 m road at 1024 px alike).
-GROUND = dict(stroke=0.08, fine=0.02, mass=0.35, mid=0.45, fine_keep=0.08, levels=3, post=0.35, dull=0.8, chroma=1.08,
-              warm=(1.0, 2.5), lic=0.05, cavity=0.35, nflat=0.55, nblur=0.025, ao=0.55)
+GROUND = dict(stroke=0.08, width=0.3, fine=0.02, mass=0.35, mid=0.6, fine_keep=0.05, levels=3, post=0.5, dull=0.8, chroma=1.08,
+              warm=(1.0, 2.5), hue=(0.0, 0.0), pull=0.0, lic=0.12, cavity=0.6, nflat=0.55, nblur=0.025, ao=0.55)
+
+# Per ground (the sheets' folder name), per layer: what differs from GROUND. Stone and rock faces keep their scans
+# (chunky planes are rule 6's stone, not the ground's masses; the setts are R8's); the Hollow's litter and needles
+# pulled from red-brown toward ochre, so the pool her ember lights on them reads gold (hue 50-55), not rust.
+GROUND_LAYERS = {
+    "ground": {"stone": {"skip": 1}, "rock": {"skip": 1}},
+    "hollow": {"face": {"skip": 1}, "litter": {"hue": (14, 30), "pull": 0.3}, "needles": {"hue": (14, 30), "pull": 0.25}},
+    "ruts": {"face": {"skip": 1}}, "dig": {"face": {"skip": 1}}, "barrow": {"face": {"skip": 1}},
+}
 
 
 def kuwahara(img, r, guide=None):
@@ -255,6 +264,8 @@ def paint_ground(albedo, normal, arh, tpm, p):
     wgt = mid * (1 + p["dull"] * np.clip(1 - C / 25, 0, 1))
     A = A * p["chroma"] + p["warm"][0] * wgt
     B = B * p["chroma"] + p["warm"][1] * wgt
+    A = A + (p["hue"][0] - A) * p["pull"] * mid
+    B = B + (p["hue"][1] - B) * p["pull"] * mid
     # 5. the form: the height's broad cavities darkened (dark cavities, lit tops), from the arh height
     h = blur(arh[..., 2].astype(np.float32), px(p["fine"]))
     cav = norm(h - blur(h, px(p["mass"]) * 0.5))
@@ -268,7 +279,7 @@ def paint_ground(albedo, normal, arh, tpm, p):
     ang = 0.5 * np.arctan2(2 * jxy, jxx - jyy) + np.pi / 2
     direction = np.dstack([np.cos(ang), np.sin(ang)]).astype(np.float32)
     ln = px(p["stroke"])
-    s = lic(direction, steps=12, step=ln / 24, grain=px(p["stroke"]) * 0.12)
+    s = lic(direction, steps=12, step=ln / 24, grain=ln * p["width"], hp=ln)
     out = out * (1 + p["lic"] * s)[..., None]
     out = np.clip(out, 0, 1)
     y1 = (lin(out) @ np.array([0.2126, 0.7152, 0.0722], np.float32)).mean()
@@ -300,6 +311,7 @@ def paint_array(d: Path, suffix="_paint", only=None, over=None, per=None, previe
     layers.json or ground.json) through paint_ground, each at its own texels per metre; written beside them
     as {albedo,normal,arh}SUFFIX.jpg (the raw sheets kept, so the preset can be re-run)."""
     layers = array_paths(d)
+    if per is None: per = GROUND_LAYERS.get(d.name, {})
     ims = {k: load(d / f"{k}.jpg") for k in ("albedo", "normal", "arh")}
     S = ims["albedo"].shape[1]
     old = {k: load(d / f"{k}{suffix}.jpg") if (d / f"{k}{suffix}.jpg").exists() else ims[k].copy() for k in ims}
