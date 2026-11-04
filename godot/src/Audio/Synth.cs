@@ -48,6 +48,10 @@ public struct Clip
     public double? T, Pitch, Lp, Verb;
     public Bus Bus;
     public double Pan;
+    /// <summary>Play the take's two channels as recorded (when it has them), ignoring Pan.</summary>
+    public bool Stereo;
+    /// <summary>Cut the take after this many seconds with a short fade (a windup that must end when its blow lands); null: the whole take.</summary>
+    public double? Len;
 }
 
 /// <summary>
@@ -72,8 +76,14 @@ public partial class Synth : Node
     readonly List<Bed> beds = new();
     AudioStreamGeneratorPlayback? dry, wet;
     public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f, 0.85f };
-    static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
+    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order.</summary>
+    List<Vector2>[]? stems;
+    readonly float[] stemAcc = new float[10];
+    /// <summary>Each bus's send to the room; like Level, in Bus order, and set from data/content/sounds.json (SoundBank).</summary>
+    public static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
+    /// <summary>The master's makeup gain after its compressor, before the limiter (sounds.json buses.master.makeup, in dB).</summary>
+    public float Makeup = 1f;
     float duck = 1, duckNow = 1, masterNow;
     /// <summary>The fight's own noise held down under a big moment (the boss's fall, an
     /// evolution, a chest): its depth, until when (seconds on the mixer's clock), and now.</summary>
@@ -112,13 +122,18 @@ public partial class Synth : Node
         {
             tapePath = path;
             tape = new List<Vector2>();
-            Recordings.Load();
+            Dynamics();
+            if (Args.Has("stems")) { stems = new List<Vector2>[5]; for (int i = 0; i < 5; i++) stems[i] = new List<Vector2>(); }
+            SoundBank.Load(this);
+            SoundHooks.Cue = id => Sfx.Cue(id);
             return;
         }
         // Runs without a screen (tools) take no sound, unless asked (--sound).
         if ((DisplayServer.GetName() == "headless" && !Args.Has("sound")) || Args.Has("shot")) return;
-        Recordings.Load();
+        SoundBank.Load(this);
+        SoundHooks.Cue = id => Sfx.Cue(id);
         Rate = AudioServer.GetMixRate();
+        Dynamics();
         int room = AudioServer.GetBusIndex("Room");
         if (room < 0)
         {
@@ -127,7 +142,7 @@ public partial class Synth : Node
             AudioServer.SetBusName(room, "Room");
             AudioServer.SetBusSend(room, "Master");
             AudioServer.AddBusEffect(room, new AudioEffectReverb { RoomSize = 0.86f, Damping = 0.7f, Spread = 1, Dry = 0, Wet = 0.8f, PredelayMsec = 20, Hipass = 0.1f });
-            AudioServer.AddBusEffect(0, new AudioEffectCompressor { Threshold = -16, Ratio = 4, AttackUs = 4000, ReleaseMs = 250, Gain = 0 });
+            // The master's compressor and limiter run in Mix (so tapes measure true); none on Godot's bus.
         }
         dry = Player("Master");
         wet = Player("Room");
@@ -290,8 +305,9 @@ public partial class Synth : Node
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
                 float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
-                float l = s * voice.L * bus, r = s * voice.R * bus;
+                float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
                 dl += l; dr += r;
+                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; }
                 float send = Send[(int)voice.Bus] + voice.Verb;
                 wl += l * send; wr += r * send;
             }
@@ -301,10 +317,24 @@ public partial class Synth : Node
                 if (s == 0 && s2 == 0) continue;
                 float amb = Level[(int)Bus.Amb] * voiceAmbNow, l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
+                if (stems != null) { stemAcc[(int)Bus.Amb * 2] += l; stemAcc[(int)Bus.Amb * 2 + 1] += r; }
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }
-            outDry[i] = new Vector2(dl, dr) * masterNow;
-            outWet[i] = new Vector2(wl, wr) * masterNow;
+            // The master's dynamics, in the mix itself so a tape (--wav) is what the speakers get: the compressor
+            // that sat on Godot's master bus (-16 dB, 4:1, 4 ms, 250 ms), then a limiter at -1 dBFS (instant down,
+            // 80 ms back), on the dry signal plus the room as the tape folds it in.
+            float pk = Math.Max(Math.Abs(dl + wl * 0.35f), Math.Abs(dr + wr * 0.35f)) * masterNow;
+            compEnv += (pk - compEnv) * (pk > compEnv ? compAtk : compRel);
+            float over = compEnv > 1e-6f ? 20 * MathF.Log10(compEnv) - CompThreshold : -120;
+            float dyn = over > 0 ? MathF.Pow(10, -over * (1 - 1 / CompRatio) / 20) : 1;
+            dyn *= Makeup;
+            float post = pk * dyn * limG;
+            if (post > Ceiling) limG = Ceiling / (pk * dyn); else limG += (1 - limG) * limRel;
+            dyn *= limG * masterNow;
+            outDry[i] = new Vector2(dl, dr) * dyn;
+            outWet[i] = new Vector2(wl, wr) * dyn;
+            if (stems != null)
+                for (int k = 0; k < 5; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
         }
         Interlocked.Add(ref clock, n);
         MixCost += (Time.GetTicksUsec() - t0) / 1e6;
@@ -313,23 +343,39 @@ public partial class Synth : Node
 
     public int Voices => voices.Count;
 
+    const float CompThreshold = -16, CompRatio = 4, Ceiling = 0.891f;
+    float compEnv, limG = 1, compAtk, compRel, limRel;
+    void Dynamics() { compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
+
     public override void _ExitTree()
     {
         running = false;
         worker?.Join(200);
+        SoundBank.PrintLog();
         if (tape == null || tapePath == null) return;
-        // 16-bit stereo PCM.
-        using var f = new System.IO.BinaryWriter(System.IO.File.Create(tapePath));
-        int bytes = tape.Count * 4;
+        WriteWav(tapePath, tape);
+        if (stems != null)
+        {
+            string stem = tapePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? tapePath[..^4] : tapePath;
+            string[] names = ["sfx", "music", "ambience", "ui", "flare"];
+            for (int i = 0; i < 5; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
+        }
+        GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
+    }
+
+    /// <summary>16-bit stereo PCM.</summary>
+    void WriteWav(string path, List<Vector2> samples)
+    {
+        using var f = new System.IO.BinaryWriter(System.IO.File.Create(path));
+        int bytes = samples.Count * 4;
         f.Write("RIFF"u8); f.Write(36 + bytes); f.Write("WAVE"u8);
         f.Write("fmt "u8); f.Write(16); f.Write((short)1); f.Write((short)2); f.Write((int)Rate); f.Write((int)Rate * 4); f.Write((short)4); f.Write((short)16);
         f.Write("data"u8); f.Write(bytes);
-        foreach (var v in tape)
+        foreach (var v in samples)
         {
             f.Write((short)Math.Clamp(v.X * 32767, -32768, 32767));
             f.Write((short)Math.Clamp(v.Y * 32767, -32768, 32767));
         }
-        GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
     }
 
     /* ----------------------------------------------------------- voices -- */
@@ -340,6 +386,9 @@ public partial class Synth : Node
         public double Start, End;
         public Bus Bus;
         public float L, R, Verb;
+        /// <summary>A wide voice's right side, set by each Sample (which gives its left); only read when Wide.</summary>
+        public float Right;
+        public virtual bool Wide => false;
         public abstract float Sample(double t, float dt);
 
         protected void Place(Bus bus, double pan, double? verb)
@@ -536,19 +585,26 @@ public partial class Synth : Node
         readonly float[] data;
         readonly double step;
         readonly float gain;
-        readonly Biquad? lp;
+        readonly Biquad? lp, lpR;
         readonly double lpf;
         double pos;
+        readonly double cut = double.MaxValue;
+        const double CutFade = 0.12;
+
+        readonly float[]? right;
+        public override bool Wide => right != null;
 
         public ClipVoice(Synth s, Clip o, Recordings.Take take)
         {
             data = take.Data;
+            if (o.Stereo && take.Left != null && take.Right != null) { data = take.Left; right = take.Right; }
             double pitch = o.Pitch ?? 1;
             step = take.Rate / s.Rate * pitch;
             Start = o.T ?? s.Now;
             End = Start + data.Length / (take.Rate * pitch) + 0.01;
+            if (o.Len is double len && Start + len < End) { cut = Start + len; End = cut + 0.01; }
             gain = (float)o.G;
-            if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpf = f; }
+            if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
             Place(o.Bus, o.Pan, o.Verb);
         }
 
@@ -558,7 +614,13 @@ public partial class Synth : Node
             if (i >= data.Length - 1) return 0;
             float k = (float)(pos - i), x = data[i] + (data[i + 1] - data[i]) * k;
             pos += step;
+            if (right != null)
+            {
+                float xr = right[i] + (right[i + 1] - right[i]) * k;
+                Right = (lpR != null ? lpR.Run(xr, lpf) : xr) * gain;
+            }
             if (lp != null) x = lp.Run(x, lpf);
+            if (t > cut - CutFade) { float f = (float)Math.Clamp((cut - t) / CutFade, 0, 1); x *= f; Right *= f; }
             return x * gain;
         }
     }

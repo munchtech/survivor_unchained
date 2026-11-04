@@ -1,0 +1,53 @@
+{
+ "family": "bed_title",
+ "kept": 1,
+ "n": 2,
+ "takes": [
+  {
+   "i": 0,
+   "key": "6aa6527ef1e4bd039a5dc5fa11018205af9f7749e9d062a0e23c29598f775b90",
+   "file": "bed_title_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -11.356621450159064,
+    "true_peak_dbfs": -11.351094075127994,
+    "rms_dbfs": -24.203433188520318,
+    "crest_db": 12.846811738361254,
+    "lufs": -27.999999999999975,
+    "lufs_padded": false,
+    "lufs_short_max": -26.648744147129634,
+    "onset_ms": 0.0,
+    "tail_ms": 16052.426303854876,
+    "centroid_hz": 154.81027664740006,
+    "clipped": 0,
+    "clap": 0.5782,
+    "clap_neg": 0.2493,
+    "clap_margin": 0.3289
+   }
+  },
+  {
+   "i": 1,
+   "key": "2756d04c373f71552304705ba64a97af405940b95a86192be00da5d4e439414f",
+   "file": null,
+   "dropped": "not among the 1 best-ranked takes",
+   "measure": {
+    "duration_s": 28.5,
+    "peak_dbfs": -11.975225479235478,
+    "true_peak_dbfs": -11.96969810420441,
+    "rms_dbfs": -24.823190316457517,
+    "crest_db": 12.847964837222039,
+    "lufs": -28.00000000000002,
+    "lufs_padded": false,
+    "lufs_short_max": -27.300043753648467,
+    "onset_ms": 0.0,
+    "tail_ms": 24673.42403628118,
+    "centroid_hz": 195.48203799730112,
+    "clipped": 0,
+    "clap": 0.5817,
+    "clap_neg": 0.3009,
+    "clap_margin": 0.2808
+   }
+  }
+ ]
+}

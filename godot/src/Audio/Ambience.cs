@@ -46,6 +46,33 @@ public sealed class Ambience
 
     public void Set(AmbienceMix m) => target = m;
 
+    // The zone's room: a recorded stereo bed from the bank (sounds.json bed.<zone>.<day|night>, then bed.<zone>;
+    // bed.title on the title), crossfaded over about 2 s, under the made and spot beds above (which it partly covers).
+    readonly Dictionary<string, TakeBed> zoneBeds = new();
+    public string? ZoneBed { get; private set; }
+    /// <summary>How much of the made wide beds (wind, leaves, town murmur, crickets, birds) stays under a zone bed.</summary>
+    const double Covered = 0.5;
+    /// <summary>The per-sample glide of a zone bed's level: about 2 s to 95%.</summary>
+    const float ZoneGlide = 3f / (2f * 48000f);
+
+    /// <summary>Play this bank event's take as the zone's bed (null: none). Cheap to call every frame.</summary>
+    public void SetZone(string? id)
+    {
+        if (id == ZoneBed) return;
+        if (ZoneBed != null && zoneBeds.TryGetValue(ZoneBed, out var old)) old.Target = 0;
+        ZoneBed = null;
+        if (id == null) return;
+        if (!zoneBeds.TryGetValue(id, out var b))
+        {
+            if (!SoundBank.Data.Events.TryGetValue(id, out var e) || e.Layers.Count == 0 || Recordings.Pick(e.Layers[0].Take) is not { } take) return;
+            b = new TakeBed(take, a.Rate, (float)e.Layers[0].Gain, ZoneGlide * 48000f / (float)a.Rate);
+            zoneBeds[id] = b;
+            a.Add(b);
+        }
+        b.Target = 1;
+        ZoneBed = id;
+    }
+
     static double Get(AmbienceMix m, string k) => k switch
     {
         "wind" => m.Wind, "leaves" => m.Leaves, "water" => m.Water, "town" => m.Town, "fire" => m.Fire, "hum" => m.Hum,
@@ -60,7 +87,8 @@ public sealed class Ambience
         foreach (var k in Keys)
         {
             double v = level.GetValueOrDefault(k);
-            v += (Get(target, k) - v) * Math.Min(1, dt * 1.2);
+            double want = Get(target, k) * (ZoneBed != null && k is "wind" or "leaves" or "town" or "crickets" or "birds" ? Covered : 1);
+            v += (want - v) * Math.Min(1, dt * 1.2);
             level[k] = v;
             if (beds.TryGetValue(k, out var b)) b.Target = (float)v;
         }
@@ -161,20 +189,24 @@ public sealed class Ambience
     sealed class TakeBed : Synth.Bed
     {
         readonly float[] data;
+        readonly float[]? right;
         readonly double step;
-        readonly float gain;
+        readonly float gain, glide;
         double pos;
 
-        public TakeBed(Recordings.Take take, double rate, float gain)
+        public TakeBed(Recordings.Take take, double rate, float gain, float glide = 0.0002f)
         {
-            data = take.Data;
+            this.glide = glide;
+            // A take recorded in stereo is wide as it was recorded.
+            data = take.Left ?? take.Data;
+            right = take.Right;
             step = take.Rate / rate;
             this.gain = gain;
             pos = rng.NextDouble() * data.Length;
             Wide = true;
         }
 
-        float At(double p)
+        float At(double p, float[] data)
         {
             if (p >= data.Length) p -= data.Length;
             int i = (int)p;
@@ -184,13 +216,13 @@ public sealed class Ambience
 
         public override float Sample(double t, float dt)
         {
-            Level += (Target - Level) * 0.0002f;
+            Level += (Target - Level) * glide;
             if (Level < 1e-4f) { Right = 0; return 0; }
             pos += step;
             if (pos >= data.Length) pos -= data.Length;
             float g = gain * Level;
-            Right = At(pos + data.Length / 2) * g;
-            return At(pos) * g;
+            Right = right != null ? At(pos, right) * g : At(pos + data.Length / 2, data) * g;
+            return At(pos, data) * g;
         }
     }
 

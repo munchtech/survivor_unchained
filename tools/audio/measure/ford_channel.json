@@ -1,0 +1,95 @@
+{
+ "family": "ford_channel",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "e3b9b8c1844164a5b2ce56cb2f254c5579281cf706a282b475cd6066b2df7b4d",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 2.8394331065759637,
+    "peak_dbfs": -1.015557939178783,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -11.553740923146528,
+    "crest_db": 10.538182983967744,
+    "lufs": -8.262324394614861,
+    "lufs_padded": false,
+    "onset_ms": 2.7210884353741496,
+    "tail_ms": 2123.5600907029475,
+    "centroid_hz": 502.10146705442264,
+    "clipped": 0,
+    "clap": 0.3737,
+    "clap_neg": 0.0754,
+    "clap_margin": 0.2983
+   }
+  },
+  {
+   "i": 1,
+   "key": "499b6294b91b3895806ed044663a772880cd3649e8da10112d01c9da482915b9",
+   "file": "ford_channel_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -14.692034196803279,
+    "crest_db": 13.686506821772209,
+    "lufs": -12.393828923403404,
+    "lufs_padded": false,
+    "onset_ms": 2.2675736961451247,
+    "tail_ms": 1650.9977324263039,
+    "centroid_hz": 358.777717948346,
+    "clipped": 0,
+    "clap": 0.4211,
+    "clap_neg": 0.0595,
+    "clap_margin": 0.3616
+   }
+  },
+  {
+   "i": 2,
+   "key": "f99783c7cb0276e99ea8e426784cdda1fc6341b1b94964d8b3cd53c4d548a4af",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 2.9482993197278913,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -14.130288294483208,
+    "crest_db": 13.124760919452138,
+    "lufs": -11.8156207605064,
+    "lufs_padded": false,
+    "onset_ms": 1.3151927437641724,
+    "tail_ms": 2146.893424036281,
+    "centroid_hz": 394.90744227321915,
+    "clipped": 0,
+    "clap": 0.3956,
+    "clap_neg": 0.1077,
+    "clap_margin": 0.2879
+   }
+  },
+  {
+   "i": 3,
+   "key": "089bf862182f5c6e3e6807b7313ffa6216e1ffd75d72da717c78f3c7fe557cbb",
+   "file": "ford_channel_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -12.495715621860713,
+    "crest_db": 11.490188246829645,
+    "lufs": -10.359795287697796,
+    "lufs_padded": false,
+    "onset_ms": 2.4716553287981857,
+    "tail_ms": 1150.0907029478458,
+    "centroid_hz": 388.13172001704595,
+    "clipped": 0,
+    "clap": 0.382,
+    "clap_neg": 0.0386,
+    "clap_margin": 0.3434
+   }
+  }
+ ]
+}

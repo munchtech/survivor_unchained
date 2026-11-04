@@ -23,10 +23,22 @@ public static partial class Sfx
 
     /* ------------------------------------------------------------ combat -- */
 
-    public static void Hit(School school, bool crit, Where w = default)
+    public static void Hit(School school, bool crit, Where w = default, Family? family = null)
     {
         if (A is not { } a || !a.Gate("hit", 7, 70)) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
+        // Recorded blows first: a physical blow by what it struck (hit.bone.crit, hit.bone, hit.flesh), the rest by school.
+        // The crit's ring stays unless hit.crit is banked.
+        string m = SoundBank.MaterialOf(family ?? Family.Human), sch = school.ToString().ToLowerInvariant();
+        string[] chain = school != School.Physical ? [$"hit.{sch}"] : crit ? [$"hit.{m}.crit", $"hit.{m}", "hit.flesh"] : [$"hit.{m}", "hit.flesh"];
+        bool critBanked = crit && SoundBank.Has("hit.crit");
+        if (critBanked) SoundBank.Play("hit.crit", w, gated: false);
+        bool ring = crit && !critBanked;
+        if (SoundBank.PlayFirst(w, 1, 1, false, chain) == Banked.Replace)
+        {
+            if (ring && a.Gate("crit", 3, 90)) a.Play(new Fm { F = R(1100, 1400), Ratio = 2.71, Index = 2.5, D = 0.28, G = 0.05 * g, Pan = pan, Verb = 0.25 });
+            return;
+        }
         switch (school)
         {
             case School.Fire:
@@ -59,12 +71,13 @@ public static partial class Sfx
                 a.Play(new Tone { F = R(130, 160), F2 = 65, D = 0.08, G = 0.1 * g, Pan = pan });
                 break;
         }
-        if (crit && a.Gate("crit", 3, 90)) a.Play(new Fm { F = R(1100, 1400), Ratio = 2.71, Index = 2.5, D = 0.28, G = 0.05 * g, Pan = pan, Verb = 0.25 });
+        if (ring && a.Gate("crit", 3, 90)) a.Play(new Fm { F = R(1100, 1400), Ratio = 2.71, Index = 2.5, D = 0.28, G = 0.05 * g, Pan = pan, Verb = 0.25 });
     }
 
     public static void Blocked(Where w = default)
     {
         if (A is not { } a || !a.Gate("block", 2, 90)) return;
+        if (Bank("block", w, gated: false)) return;
         a.Play(new Clip { Of = "impactMetal_medium", G = 0.35, Pitch = R(0.9, 1.1), Pan = w.Pan, Verb = 0.2 });
         a.Play(new Fm { F = R(520, 640), Ratio = 1.41, Index = 3.5, D = 0.35, G = 0.04, Pan = w.Pan, Verb = 0.3 });
     }
@@ -73,6 +86,7 @@ public static partial class Sfx
     public static void Shatter()
     {
         if (A is not { } a || !a.Gate("shatter", 1, 250)) return;
+        if (Bank("shatter", null, gated: false)) return;
         a.Play(new Clip { Of = "impactGlass_light", G = 0.35, Pitch = R(0.9, 1.1), Verb = 0.3 });
         a.Play(new Fm { F = R(1700, 1900), Ratio = 2.76, Index = 4, D = 0.5, G = 0.05, Verb = 0.45 });
         a.Play(new Fm { T = Now + 0.03, F = R(2500, 2800), Ratio = 3.41, Index = 3, D = 0.6, G = 0.035, Verb = 0.5 });
@@ -83,15 +97,28 @@ public static partial class Sfx
     public static void Heartbeat(double urgency)
     {
         if (A is not { } a) return;
+        if (Bank("heartbeat", null, 0.5 + urgency)) return;
         double g = 0.05 + 0.06 * urgency;
         a.Play(new Tone { F = 58, F2 = 42, D = 0.16, G = g, Lp = 220 });
         a.Play(new Tone { T = Now + 0.24, F = 52, F2 = 38, D = 0.2, G = g * 0.75, Lp = 200 });
     }
 
-    public static void Kill(Family family, bool elite, bool boss, Where w = default)
+    public static void Kill(Family family, bool elite, bool boss, Where w = default, bool burst = false)
     {
-        if (A is not { } a || !a.Gate("kill", 5, 90)) return;
+        // (A boss's fall is never lost to the crowd's gate: it falls with its escort, often in the same blow.)
+        if (A is not { } a || !boss && !a.Gate("kill", 5, 90)) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
+        // Recorded: what fell by its material (a burst, if it was one), and on top of it, never in its place, the elite's or the boss's.
+        string m = SoundBank.MaterialOf(family);
+        bool done = (burst ? SoundBank.PlayFirst(w, 1, 1, false, $"kill.{m}.burst", $"kill.{m}") : SoundBank.PlayFirst(w, 1, 1, false, $"kill.{m}")) == Banked.Replace;
+        bool eliteDone = elite && Bank("kill.elite", w, gated: false), bossDone = boss && Bank("kill.boss", w, gated: false);
+        bool top = boss ? bossDone : eliteDone;
+        if (done)
+        {
+            // (The base is recorded; the elite's or boss's weight is the synth's unless its own is banked.)
+            if ((elite || boss) && !top) KillWeight(a, boss, pan);
+            return;
+        }
         a.Play(new Tone { F = R(95, 115), F2 = 38, D = 0.2, G = 0.14 * g, Pan = pan });
         a.Play(new Hiss { D = 0.14, G = 0.05 * g, Lp = 1100, Lp2 = 200, Pan = pan });
         // What falls: dry bones clattering, or a body.
@@ -108,29 +135,38 @@ public static partial class Sfx
             a.Play(new Tone { F = R(800, 1000), F2 = 420, Type = Wave.Triangle, D = 0.12, G = 0.035 * g, Pan = pan });
         else if (family is Family.Lampling or Family.Kerchief or Family.Human)
             a.Play(new Tone { F = R(260, 320), F2 = 150, Type = Wave.Triangle, D = 0.14, G = 0.03 * g, Lp = 900, Pan = pan });
-        if (elite || boss)
-        {
-            a.Play(new Tone { F = 70, F2 = 28, D = boss ? 1.6 : 0.8, G = boss ? 0.45 : 0.3, Pan = pan });
-            a.Play(new Hiss { D = boss ? 1.4 : 0.7, G = 0.12, Lp = 900, Lp2 = 120, Brown = true });
-            if (boss) Stinger("triumph");
-        }
+        if ((elite || boss) && !top) KillWeight(a, boss, pan);
+    }
+
+    /// <summary>What an elite or a boss falling adds under the kill: a low blow, a rush of dark air, and a boss's triumph.</summary>
+    static void KillWeight(Synth a, bool boss, double pan)
+    {
+        a.Play(new Tone { F = 70, F2 = 28, D = boss ? 1.6 : 0.8, G = boss ? 0.45 : 0.3, Pan = pan });
+        a.Play(new Hiss { D = boss ? 1.4 : 0.7, G = 0.12, Lp = 900, Lp2 = 120, Brown = true });
+        if (boss) Stinger("triumph");
     }
 
     public static void Hurt(double amount)
     {
         if (A is not { } a || !a.Gate("hurt", 2, 160)) return;
+        if (Bank("hurt", null, gated: false)) return;
         double k = Math.Min(1, amount / 30);
         a.Play(new Tone { F = 120, F2 = 55, Type = Wave.Saw, D = 0.22, G = 0.12 + 0.12 * k, Lp = 520 });
         a.Play(new Hiss { D = 0.16, G = 0.08 + 0.06 * k, Lp = 1400, Lp2 = 300 });
     }
 
-    public static void Dodge() => A?.Play(new Hiss { A = 0.02, D = 0.18, G = 0.08, Bp = 900, Bp2 = 3200, Q = 1.4 });
+    public static void Dodge()
+    {
+        if (A is not { } a || Bank("dodge")) return;
+        a.Play(new Hiss { A = 0.02, D = 0.18, G = 0.08, Bp = 900, Bp2 = 3200, Q = 1.4 });
+    }
 
     /// <summary>A blow slipped at the last moment: a bright ring, like a
     /// blade drawn across a bell, over a low whoomph.</summary>
     public static void Perfect()
     {
         if (A is not { } a || !a.Gate("perfect", 1, 200)) return;
+        if (Bank("dodge.perfect", null, gated: false)) return;
         a.Play(new Fm { F = 1318.5, Ratio = 2.76, Index = 2.5, D = 0.9, G = 0.06, Verb = 0.55 });
         a.Play(new Fm { T = Now + 0.04, F = 1975.5, Ratio = 3.01, Index = 1.8, D = 0.8, G = 0.04, Verb = 0.6 });
         a.Play(new Tone { F = 110, F2 = 55, D = 0.35, G = 0.12 });
@@ -144,6 +180,7 @@ public static partial class Sfx
     {
         if (A is not { } a) return;
         a.DuckSfx(0.35f, 1.6);
+        if (Bank(ember ? "rise.ember" : "rise")) return;
         double t = Now;
         a.Play(new Hiss { A = 0.12, D = 0.55, G = 0.05, Bp = 5200, Bp2 = 8000, Q = 2.2, Verb = 0.55 });
         a.Play(new Fm { F = 1567.98, F2 = 1318.5, Ratio = 2.76, Index = 0.9, A = 0.08, D = 0.7, G = 0.025, Verb = 0.7 });
@@ -166,6 +203,7 @@ public static partial class Sfx
     public static void Dash()
     {
         if (A is not { } a) return;
+        if (Bank("dash")) return;
         a.Play(new Hiss { A = 0.02, D = 0.26, G = 0.1, Bp = 500, Bp2 = 2600, Q = 1.1 });
         a.Play(new Tone { F = 180, F2 = 90, D = 0.2, G = 0.05 });
     }
@@ -173,12 +211,14 @@ public static partial class Sfx
     public static void Swing(Where w = default)
     {
         if (A is not { } a || !a.Gate("swing", 3, 110)) return;
+        if (Bank("swing", w, gated: false)) return;
         a.Play(new Hiss { A = 0.01, D = 0.09, G = 0.04, Bp = R(2000, 2600), Bp2 = 800, Q = 2, Pan = w.Pan });
     }
 
     public static void Shoot(School school, Where w = default)
     {
         if (A is not { } a || !a.Gate("shoot", 4, 90)) return;
+        if (Bank("shoot", w, gated: false)) return;
         if (school == School.Physical)
         {
             a.Play(new Tone { F = R(280, 330), F2 = 190, Type = Wave.Triangle, D = 0.08, G = 0.035, Pan = w.Pan });
@@ -190,15 +230,19 @@ public static partial class Sfx
     public static void Explosion(double power, Where w = default)
     {
         if (A is not { } a || !a.Gate("boom", 3, 150)) return;
+        if (Bank("explosion", w, Math.Min(1.4, 0.5 + power * 0.4), gated: false)) return;
         double g = Math.Min(1.4, 0.5 + power * 0.4) * (0.5 + 0.5 * w.Near);
         a.Play(new Tone { F = 80, F2 = 28, D = 0.7, G = 0.35 * g, Pan = w.Pan });
         a.Play(new Hiss { D = 0.9, G = 0.25 * g, Lp = 1600, Lp2 = 140, Brown = true, Pan = w.Pan });
         a.Play(new Hiss { D = 0.25, G = 0.1 * g, Bp = 2400, Q = 0.6, Pan = w.Pan });
     }
 
-    public static void Nova(School school)
+    public static void Nova(School school, string? art = null)
     {
         if (A is not { } a || !a.Gate("nova", 2, 200)) return;
+        // A skill's own ring (art.watch_bell.nova), then the school's.
+        if (art != null && Bank($"art.{art}.nova", null, gated: false)) return;
+        if (Bank($"nova.{school.ToString().ToLowerInvariant()}", null, gated: false)) return;
         a.Play(new Tone { F = 190, F2 = 55, D = 0.4, G = 0.18 });
         a.Play(new Hiss { A = 0.02, D = 0.35, G = 0.08, Bp = 700, Bp2 = 2200, Q = 0.8 });
         if (school == School.Frost) a.Play(new Fm { F = 1800, Ratio = 3.1, Index = 1, D = 0.5, G = 0.03, Verb = 0.4 });
@@ -208,6 +252,7 @@ public static partial class Sfx
     public static void Bash()
     {
         if (A is not { } a) return;
+        if (Bank("bash")) return;
         a.Play(new Tone { F = 140, F2 = 50, D = 0.25, G = 0.28 });
         a.Play(new Fm { F = 420, Ratio = 1.41, Index = 3, D = 0.3, G = 0.05, Verb = 0.25 });
         a.Play(new Hiss { D = 0.18, G = 0.1, Lp = 1800, Lp2 = 300 });
@@ -217,6 +262,7 @@ public static partial class Sfx
     public static void Art(string id)
     {
         if (A is not { } a) return;
+        if (Bank($"art.{id}")) return;
         switch (id)
         {
             case "shield_bash": Bash(); break;
@@ -298,6 +344,7 @@ public static partial class Sfx
     public static void Spawn(SpawnStyle style, Where w = default)
     {
         if (A is not { } a || w.Near < 0.2 || !a.Gate("spawn", 2, 250)) return;
+        if (Bank($"spawn.{style.ToString().ToLowerInvariant()}", w, gated: false)) return;
         if (style == SpawnStyle.Rise) a.Play(new Hiss { A = 0.15, D = 0.5, G = 0.05 * w.Near, Lp = 500, Brown = true, Pan = w.Pan });
         else if (style == SpawnStyle.Burrow) a.Play(new Hiss { A = 0.05, D = 0.35, G = 0.06 * w.Near, Bp = 300, Q = 1.5, Brown = true, Pan = w.Pan });
     }
@@ -317,6 +364,8 @@ public static partial class Sfx
         if (A is not { } a || !a.Gate("xp", 8, 100)) return;
         var ladder = sweep ? HighLadder : Ladder;
         int top = ladder.Length - 1;
+        // (Recorded: the stone's take pitched to its step, so the samples climb the phrase as the made ones do.)
+        if (Bank("pickup.ember", null, Math.Min(2.83, Math.Sqrt(Math.Max(1, merged))), pitch: Semis(ladder[Math.Clamp(step, 0, top)]), gated: false)) return;
         double f = 1174.66 * Semis(ladder[Math.Clamp(step, 0, top)]);
         double g = 0.036 * Math.Min(2.83, Math.Sqrt(Math.Max(1, merged)));
         a.Play(new Fm { F = f, Ratio = 3.0, Index = 0.3, A = 0.002, D = 0.09, G = g });
@@ -330,6 +379,7 @@ public static partial class Sfx
     public static void Lodestone()
     {
         if (A is not { } a) return;
+        if (Bank("pickup.lodestone")) return;
         double t = Now;
         a.Play(new Hiss { T = t, A = 0.55, D = 0.25, G = 0.09, Lp = 300, Lp2 = 3500, Brown = true, Bus = Bus.Ui });
         for (int i = 0; i < 8; i++)
@@ -341,6 +391,7 @@ public static partial class Sfx
     public static void CrowdFall(int n)
     {
         if (A is not { } a || !a.Gate("crowdfall", 1, 70)) return;
+        if (Bank("crowdfall", null, Math.Min(1.5, 0.4 + 0.1 * n), gated: false)) return;
         a.Play(new Hiss { D = 0.18 + 0.02 * Math.Min(8, n), G = Math.Min(0.11, 0.02 + 0.008 * n), Lp = 800, Brown = true });
     }
 
@@ -349,6 +400,7 @@ public static partial class Sfx
     public static void Swell(int tier)
     {
         if (A is not { } a) return;
+        if (BankFirst(null, true, $"swell.{tier}", "swell")) return;
         double t = Now, f = 587.33 * Semis(Ladder[Math.Min(Ladder.Length - 1, 3 + tier * 2)]);
         a.Play(new Tone { T = t, F = 60, F2 = 35, D = 0.12 + 0.03 * tier, G = 0.28 + 0.05 * tier, Bus = Bus.Ui });
         a.Play(new Hiss { T = t, D = 0.3, G = 0.04 + 0.02 * tier, Lp = 800, Brown = true, Bus = Bus.Ui });
@@ -359,6 +411,7 @@ public static partial class Sfx
     public static void Gold()
     {
         if (A is not { } a || !a.Gate("gold", 3, 80)) return;
+        if (Bank("pickup.gold", null, gated: false)) return;
         if (a.Gate("coins", 1, 180)) a.Play(new Clip { Of = "handleCoins", G = 0.22, Pitch = R(0.95, 1.25) });
         a.Play(new Fm { F = R(2400, 2700), Ratio = 1.93, Index = 1.5, D = 0.12, G = 0.035 });
         a.Play(new Fm { T = Now + 0.045, F = R(3100, 3500), Ratio = 1.93, Index = 1.5, D = 0.14, G = 0.03 });
@@ -370,6 +423,7 @@ public static partial class Sfx
     public static void Drop(int tier, Where w = default)
     {
         if (A is not { } a || !a.Gate($"drop{tier}", 1, 500)) return;
+        if (Bank($"drop.{tier}", w, gated: false)) return;
         double pan = w.Pan, g = 0.6 + 0.4 * w.Near;
         switch (tier)
         {
@@ -427,6 +481,7 @@ public static partial class Sfx
         // The hush is the music's and the world's, never the fight's (combat: a warning under a duck is
         // a blow unheard). On the interface's bus, so the toll carries over the horde.
         if (!faint) a.DuckBeds(0.35f, 1.2);
+        if (Bank("toll", null, g, gated: false)) return;
         a.Play(new Tone { F = 55, A = 0.004, D = 0.6, G = 0.12 * g, Lp = 300, Bus = Bus.Ui });
         a.Play(new Fm { F = 98, Ratio = 2.76, Index = 3, A = 0.004, D = 6, G = 0.12 * g, Verb = 0.8, Bus = Bus.Ui });
         a.Play(new Fm { T = Now + 0.02, F = 147, Ratio = 3.01, Index = 1.5, A = 0.004, D = 5, G = 0.06 * g, Verb = 0.8, Bus = Bus.Ui });
@@ -439,6 +494,7 @@ public static partial class Sfx
     public static void Loot(bool rare = false)
     {
         if (A is not { } a) return;
+        if (Bank(rare ? "loot.rare" : "loot")) return;
         a.Play(new Fm { F = 1320, Ratio = 2.01, Index = 0.9, D = 0.7, G = 0.045, Verb = 0.4 });
         a.Play(new Fm { T = Now + 0.06, F = 1980, Ratio = 2.01, Index = 0.9, D = 0.8, G = 0.035, Verb = 0.4 });
         if (rare) a.Play(new Fm { T = Now + 0.14, F = 2640, Ratio = 3.01, Index = 0.7, D = 1.2, G = 0.03, Verb = 0.6 });
@@ -449,6 +505,7 @@ public static partial class Sfx
     public static void Heal()
     {
         if (A is not { } a || !a.Gate("heal", 1, 400)) return;
+        if (Bank("heal", null, gated: false)) return;
         a.Play(new Fm { F = 660, Ratio = 2, Index = 0.5, A = 0.05, D = 0.6, G = 0.04, Verb = 0.5 });
         a.Play(new Fm { T = Now + 0.08, F = 990, Ratio = 2, Index = 0.5, A = 0.05, D = 0.7, G = 0.03, Verb = 0.5 });
     }
@@ -461,6 +518,7 @@ public static partial class Sfx
     public static void LevelUp(bool milestone = false)
     {
         if (A is not { } a) return;
+        if (BankFirst(null, true, milestone ? new[] { "levelup.milestone", "levelup" } : new[] { "levelup" })) return;
         double b = 587.33, t = Now;
         int[] dark = [0, 3, 7];
         for (int i = 0; i < dark.Length; i++) a.Play(new Fm { T = t + i * 0.05, F = b * Semis(dark[i]), Ratio = 3.5, Index = 0.35, D = 0.6, G = 0.045, Verb = 0.5 });
@@ -475,6 +533,7 @@ public static partial class Sfx
     {
         if (A is not { } a) return;
         a.DuckSfx(0.4f, 1.2);
+        if (Bank("evolve")) return;
         double b = 293.66;
         int[] steps = [0, 7, 12, 16, 19, 24];
         for (int i = 0; i < steps.Length; i++) a.Play(new Fm { T = Now + i * 0.09, F = b * Semis(steps[i]), Ratio = 2.01, Index = 0.8, D = 2.2, G = 0.045, Verb = 0.7 });
@@ -489,6 +548,7 @@ public static partial class Sfx
         if (A is not { } a) return;
         double t = Now;
         a.DuckSfx(0.3f, 1.9);
+        if (Bank("result.won")) return;
         a.Play(new Tone { T = t, F = 55, F2 = 22, D = 2.4, G = 0.45, Bus = Bus.Ui });
         a.Play(new Hiss { T = t, D = 1.8, G = 0.15, Lp = 900, Lp2 = 80, Brown = true, Bus = Bus.Ui });
         int[] s = [0, 7, 12, 16, 19, 24];
@@ -511,6 +571,7 @@ public static partial class Sfx
         if (A is not { } a) return;
         double t = Now;
         a.DuckSfx(0.2f, whole);
+        if (Bank("chest.shake")) return;
         a.Play(new Hiss { T = t, A = seconds, D = 0.2, G = 0.07, Lp = 180, Lp2 = 2400, Brown = true, Bus = Bus.Ui });
         a.Play(new Tone { T = t, F = 55, F2 = 98, Glide = seconds, A = seconds, D = 0.25, G = 0.13, Type = Wave.Saw, Lp = 150, Lp2 = 900, Bus = Bus.Ui });
         a.Play(new Clip { T = t, Of = "creak", G = 0.28, Pitch = 0.72, Bus = Bus.Ui });
@@ -524,6 +585,7 @@ public static partial class Sfx
     public static void ChestBurst(int count)
     {
         if (A is not { } a) return;
+        if (Bank("chest.burst")) return;
         double t = Now;
         a.Play(new Tone { T = t, F = 70, F2 = 30, D = 0.5, G = 0.42, Bus = Bus.Ui });
         a.Play(new Clip { T = t, Of = "impactWood_medium", G = 0.45, Pitch = 0.7, Bus = Bus.Ui });
@@ -563,6 +625,7 @@ public static partial class Sfx
     public static void ChestLand(int step, bool evolution)
     {
         if (A is not { } a) return;
+        if (Bank("chest.land", null, pitch: Semis(Ladder[Math.Clamp(step, 0, Ladder.Length - 1)]))) return;
         double t = Now;
         a.Play(new Clip { T = t, Of = "impactMetal_medium", G = 0.14, Pitch = R(0.85, 0.95), Lp = 3000, Bus = Bus.Ui });
         a.Play(new Tone { T = t, F = 140, F2 = 70, D = 0.12, G = 0.14, Bus = Bus.Ui });
@@ -580,6 +643,7 @@ public static partial class Sfx
     public static void ChestTick(double g)
     {
         if (A is not { } a || !a.Gate("chestTick", 3, 60)) return;
+        if (Bank("chest.tick", null, g, gated: false)) return;
         a.Play(new Clip { Of = "tick", G = 0.05 * g, Pitch = R(1.3, 1.5), Bus = Bus.Ui });
     }
 
@@ -593,6 +657,12 @@ public static partial class Sfx
     public static void Anvil(int blows = 1)
     {
         if (A is not { } a) return;
+        if (SoundBank.Has("anvil"))
+        {
+            var made = Banked.None;
+            for (int i = 0; i < blows; i++) made = SoundBank.Play("anvil", Center, 1, Now + i * 0.26, 1 - i * 0.015, gated: false);
+            if (made == Banked.Replace) return;
+        }
         bool rec = Recordings.Pick("anvil") != null;
         for (int i = 0; i < blows; i++)
         {
@@ -607,6 +677,7 @@ public static partial class Sfx
     public static void Cage()
     {
         if (A is not { } a) return;
+        if (Bank("cage")) return;
         a.Play(new Clip { Of = "impactBell_heavy", G = 0.22, Pitch = R(0.8, 0.88), Verb = 0.5, Bus = Bus.Ui });
         a.Play(new Hiss { T = Now + 0.08, D = 0.9, G = 0.07, Bp = 3200, Bp2 = 900, Q = 1.2, Verb = 0.3, Bus = Bus.Ui });
         a.Play(new Fm { T = Now + 0.05, F = 660, Ratio = 3.01, Index = 0.8, D = 1.8, G = 0.03, Verb = 0.8, Bus = Bus.Ui });
@@ -616,6 +687,7 @@ public static partial class Sfx
     public static void Pour()
     {
         if (A is not { } a) return;
+        if (Bank("pour")) return;
         a.Play(new Clip { Of = "impactGlass_light", G = 0.22, Pitch = R(1.05, 1.15), Bus = Bus.Ui });
         a.Play(new Hiss { T = Now + 0.06, D = 0.5, G = 0.06, Bp = 1400, Bp2 = 700, Q = 3, Bus = Bus.Ui });
         for (int i = 0; i < 5; i++) a.Play(new Tone { T = Now + 0.1 + i * 0.07 + R(0, 0.03), F = R(500, 900), F2 = R(900, 1400), D = 0.05, G = 0.02, Bus = Bus.Ui });
@@ -625,6 +697,7 @@ public static partial class Sfx
     public static void Discovery()
     {
         if (A is not { } a) return;
+        if (Bank("discovery")) return;
         int[] steps = [0, 3, 10];
         for (int i = 0; i < steps.Length; i++) a.Play(new Fm { T = Now + i * 0.16, F = 880 * Semis(steps[i]), Ratio = 3.01, Index = 0.5, D = 1.6, G = 0.04, Verb = 0.7, Bus = Bus.Ui });
     }
@@ -634,6 +707,7 @@ public static partial class Sfx
     public static void Stinger(string kind)
     {
         if (A is not { } a) return;
+        if (Bank($"stinger.{kind}")) return;
         double t = Now;
         switch (kind)
         {
@@ -683,6 +757,7 @@ public static partial class Sfx
     public static void Cine(string name, double gain = 1, double pan = 0)
     {
         if (A is not { } a) return;
+        if (Bank($"cine.{name}", new Where(pan, 1), gain)) return;
         double t = Now, g = gain;
         switch (name)
         {
@@ -787,6 +862,8 @@ public static partial class Sfx
     public static void Death()
     {
         if (A is not { } a) return;
+        Bank("result.fell");
+        if (Bank("death")) return;
         a.Play(new Tone { F = 110, F2 = 36, Type = Wave.Saw, A = 0.1, D = 2.8, G = 0.12, Lp = 700, Lp2 = 120, Bus = Bus.Music, Verb = 0.7 });
         a.Play(new Tone { F = 55, F2 = 27, A = 0.1, D = 2.6, G = 0.25 });
         a.Play(new Hiss { A = 1.2, D = 1.2, G = 0.06, Bp = 900, Bp2 = 250, Q = 0.7 });
@@ -795,6 +872,7 @@ public static partial class Sfx
     public static void Quest()
     {
         if (A is not { } a) return;
+        if (Bank("quest")) return;
         a.Play(new Tone { F = 440, Type = Wave.Triangle, A = 0.02, D = 0.35, G = 0.05, Bus = Bus.Ui, Verb = 0.4 });
         a.Play(new Tone { T = Now + 0.14, F = 587.33, Type = Wave.Triangle, A = 0.02, D = 0.7, G = 0.05, Bus = Bus.Ui, Verb = 0.5 });
     }
@@ -802,6 +880,7 @@ public static partial class Sfx
     public static void Rel(bool good)
     {
         if (A is not { } a) return;
+        if (Bank(good ? "rel.good" : "rel.bad")) return;
         double f = good ? 659.25 : 415.3;
         a.Play(new Fm { F = f, Ratio = 2, Index = 0.4, D = 0.6, G = 0.03, Bus = Bus.Ui, Verb = 0.5 });
         a.Play(new Fm { T = Now + 0.1, F = good ? f * Semis(4) : f * Semis(-3), Ratio = 2, Index = 0.4, D = 0.7, G = 0.025, Bus = Bus.Ui, Verb = 0.5 });
@@ -815,6 +894,7 @@ public static partial class Sfx
     public static void Tell(string id)
     {
         if (A is not { } a || !a.Gate("tell", 1, 900)) return;
+        if (Bank("tell." + (id.StartsWith("tell_") ? id[5..] : id), null, gated: false)) return;
         if (Recordings.Has(id))
         {
             // "A horn, twice": each take is one long blast, so a second answers the first, lower.
@@ -852,6 +932,7 @@ public static partial class Sfx
     public static void Door()
     {
         if (A is not { } a) return;
+        if (Bank("door")) return;
         a.Play(new Clip { Of = "doorOpen", G = 0.4, Pitch = R(0.9, 1.05), Verb = 0.2 });
         a.Play(new Clip { Of = "creak", T = Now + 0.05, G = 0.18, Pitch = R(0.9, 1.1), Verb = 0.2 });
     }
@@ -860,29 +941,44 @@ public static partial class Sfx
     public static void Step(string surface, double g = 1)
     {
         if (A is not { } a) return;
+        if (Bank($"step.{surface}", null, g)) return;
         a.Play(new Clip { Of = $"footstep_{surface}", G = 0.16 * g, Pitch = R(0.9, 1.1), Lp = surface == "grass" ? 2600 : null });
     }
 
     /* -------------------------------------------------------- interface --- */
 
-    public static void Hover() { if (A is { } a && a.Gate("hover", 1, 45)) a.Play(new Clip { Of = "tick", G = 0.05, Pitch = R(1.1, 1.25), Bus = Bus.Ui }); }
+    public static void Hover()
+    {
+        if (A is not { } a || !a.Gate("hover", 1, 45) || Bank("ui.hover", null, gated: false)) return;
+        a.Play(new Clip { Of = "tick", G = 0.05, Pitch = R(1.1, 1.25), Bus = Bus.Ui });
+    }
 
     public static void Click()
     {
         if (A is not { } a || !a.Gate("click", 2, 60)) return;
+        if (Bank("ui.click", null, gated: false)) return;
         a.Play(new Clip { Of = "click", G = 0.2, Pitch = R(0.95, 1.05), Bus = Bus.Ui });
     }
 
     public static void Open()
     {
         if (A is not { } a) return;
+        if (Bank("ui.open")) return;
         a.Play(new Clip { Of = "open", G = 0.18, Bus = Bus.Ui });
         a.Play(new Hiss { A = 0.03, D = 0.2, G = 0.025, Bp = 1600, Bp2 = 900, Q = 0.7, Bus = Bus.Ui });
     }
 
-    public static void Close() => A?.Play(new Clip { Of = "close", G = 0.16, Bus = Bus.Ui });
+    public static void Close()
+    {
+        if (A is not { } a || Bank("ui.close")) return;
+        a.Play(new Clip { Of = "close", G = 0.16, Bus = Bus.Ui });
+    }
 
-    public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui }); }
+    public static void Page()
+    {
+        if (A is not { } a || !a.Gate("page", 1, 120) || Bank("ui.page", null, gated: false)) return;
+        a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui });
+    }
 
     /// <summary>An iron ring's bending modes, n(n^2-1)/sqrt(n^2+1) for n = 2..5, relative to the
     /// first: a chain link is a stretched ring, so each is struck as two close partials.</summary>
@@ -920,6 +1016,7 @@ public static partial class Sfx
     public static void ChainSlide(int links = 6, double secs = 0.32)
     {
         if (A is not { } a || !a.Gate("chain", 1, 120)) return;
+        if (Bank("ui.chainslide", null, gated: false)) return;
         int n = Math.Clamp(links, 2, 14);
         double t0 = Now, k = secs / 0.32;
         // Real chain where we have it (art/sound/chainLink_*, chainDrag_*, chainSettle_*: CC0
@@ -967,6 +1064,7 @@ public static partial class Sfx
     public static void Pick()
     {
         if (A is not { } a) return;
+        if (Bank("ui.pick")) return;
         a.Play(new Fm { F = 740, Ratio = 2, Index = 0.7, D = 0.3, G = 0.04, Bus = Bus.Ui, Verb = 0.3 });
         a.Play(new Tone { F = 220, F2 = 180, D = 0.12, G = 0.04, Bus = Bus.Ui });
     }
@@ -974,6 +1072,7 @@ public static partial class Sfx
     public static void Equip()
     {
         if (A is not { } a) return;
+        if (Bank("ui.equip")) return;
         a.Play(new Clip { Of = "cloth", G = 0.25, Pitch = R(0.95, 1.05), Bus = Bus.Ui });
         a.Play(new Fm { F = R(380, 460), Ratio = 1.41, Index = 2.2, D = 0.22, G = 0.04, Bus = Bus.Ui });
         a.Play(new Hiss { D = 0.06, G = 0.03, Bp = 1800, Bus = Bus.Ui });
@@ -982,6 +1081,7 @@ public static partial class Sfx
     public static void Deny()
     {
         if (A is not { } a) return;
+        if (Bank("ui.deny")) return;
         a.Play(new Clip { Of = "error", G = 0.18, Pitch = 0.9, Bus = Bus.Ui });
     }
 }

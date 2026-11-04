@@ -698,7 +698,7 @@ public partial class Game : Node, IZoneHost
         {
             // Panned and distanced from her, as the fight's own sounds (SoundBridge.At).
             double dx = at.X - fl.Her.X, dz = at.Z - fl.Her.Z, d = Math.Sqrt(dx * dx + dz * dz);
-            Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night);
+            Sfx.Flare(cue, new Sfx.Where(Math.Clamp(dx / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32)), k, fl.Night, fl.FlareId);
         };
         CrowdView.FlareDeath = fl.DeathOf;
         CrowdView.FlareStatueLook = fl.StatueLook;
@@ -1646,7 +1646,8 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
+    double? bossSeenAt;
     int toastI;
 
     /// <summary>One of each kind of notice (--toasts), in the words the game uses.</summary>
@@ -1768,6 +1769,13 @@ public partial class Game : Node, IZoneHost
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
             if (Args.Has("won")) mr.WinNow();
+        }
+        // --bosskill T: a table night's boss felled by her hand T seconds after it stands (the listening sheet's
+        // arrival and fall, without a fight that runs long).
+        if (!bossKillDone && Args.Has("bosskill") && zone is ArenaRun && Battle is { } bk && bk.Enemies.Living().FirstOrDefault(e => e.Boss) is { } be)
+        {
+            bossSeenAt ??= bk.Time;
+            if (bk.Time - bossSeenAt >= Args.Num("bosskill", 4)) { bossKillDone = true; be.HpFloor = 0; bk.KillEnemy(be, true, null); GD.Print($"bosskill {be.Def.Id} at {bk.Time:0.0}"); }
         }
         // --clear T: on a map, T seconds in, every pack, keeper and its ruler felled by her hand and the
         // gold drawn in (pictures of what a whole map pays; then --leave).

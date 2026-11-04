@@ -1010,6 +1010,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>The run's boss blows taken before this fight (its chest pays for a clean one).</summary>
     int bossBlowsBefore;
 
+    BossBar BarOf(Enemy b) =>
+        script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp);
+
     void Boss(bool again = false)
     {
         bossUp = true;
@@ -1067,6 +1070,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             chests.Add(lieutenant.Id);
         }
         string sworn = script?.Sworn() ?? "";
+        // Its bar up before its name is called, so the arrival is heard as a boss's (stinger.boss, not stinger.danger).
+        if (boss != null) G.SetBoss(BarOf(boss));
         G.Announce(new Announcement(BossName, (script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle) + (sworn.Length > 0 ? $" · Sworn: {sworn}" : ""), "danger", 3.4,
             again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes));
         Objectives();
@@ -1429,7 +1434,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             coreOrb.Light = Math.Min(1, hurt + 0.08 * Math.Sin(ct * 5.1));
         }
         if (boss is { Alive: true } b && b.State != EnemyState.Dying)
-            G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
+            G.SetBoss(BarOf(b));
         else if (CoreUp && core is { } cc)
             G.SetBoss(new BossBar("The ember-core", $"Break it: {Math.Max(0, 60 - (Seconds - kindledAt)):0} s", cc.Hp, cc.MaxHp, IsBoss: false));
         else if (herald is { Alive: true } h && h.State != EnemyState.Dying)

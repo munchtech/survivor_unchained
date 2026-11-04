@@ -1,0 +1,95 @@
+{
+ "family": "boss_down",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "0bc9c0f12e688c7bc2275d52842e5c83de9090090ef905e70c8fde5e046187ea",
+   "file": "boss_down_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.0382312925170067,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -12.311052152562684,
+    "crest_db": 11.305524777531614,
+    "lufs": -11.185021148716658,
+    "lufs_padded": false,
+    "onset_ms": 74.6938775510204,
+    "tail_ms": 1368.8435374149658,
+    "centroid_hz": 976.6068672516886,
+    "clipped": 0,
+    "clap": 0.5876,
+    "clap_neg": 0.0301,
+    "clap_margin": 0.5576
+   }
+  },
+  {
+   "i": 1,
+   "key": "0b38cc261911c5c9026f15e8ebc855dce5166ebfdb60119cb661056c56d72a03",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.619501133786848,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -12.849112665351727,
+    "crest_db": 11.843585290320657,
+    "lufs": -11.1054369906261,
+    "lufs_padded": false,
+    "onset_ms": 4.875283446712018,
+    "tail_ms": 1707.0068027210884,
+    "centroid_hz": 624.7926743873938,
+    "clipped": 0,
+    "clap": 0.5132,
+    "clap_neg": 0.0963,
+    "clap_margin": 0.4169
+   }
+  },
+  {
+   "i": 2,
+   "key": "14e1ccd285e2b6246886a2c7d65ca5bce67b6238fa486878bfa6a84fc62302ac",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.7136281179138324,
+    "peak_dbfs": -1.0070134683770184,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -11.879877498488614,
+    "crest_db": 10.872864030111597,
+    "lufs": -9.615787529260219,
+    "lufs_padded": false,
+    "onset_ms": 34.69387755102041,
+    "tail_ms": 2433.197278911565,
+    "centroid_hz": 635.1467429566624,
+    "clipped": 0,
+    "clap": 0.5693,
+    "clap_neg": 0.092,
+    "clap_margin": 0.4773
+   }
+  },
+  {
+   "i": 3,
+   "key": "617ab7fdac7ee3d45bcef375fc3dbc28d34e7685580fe959d7d5de7e82a1c2c4",
+   "file": "boss_down_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.63124716553288,
+    "peak_dbfs": -1.0156482032370404,
+    "true_peak_dbfs": -0.9999999999999964,
+    "rms_dbfs": -12.775208367267963,
+    "crest_db": 11.759560164030923,
+    "lufs": -9.000115300328943,
+    "lufs_padded": false,
+    "onset_ms": 1.927437641723356,
+    "tail_ms": 2297.0975056689344,
+    "centroid_hz": 1041.9437659519795,
+    "clipped": 0,
+    "clap": 0.6088,
+    "clap_neg": 0.099,
+    "clap_margin": 0.5099
+   }
+  }
+ ]
+}

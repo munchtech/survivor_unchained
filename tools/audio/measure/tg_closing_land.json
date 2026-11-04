@@ -1,0 +1,95 @@
+{
+ "family": "tg_closing_land",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "ecc78995a9572558dde15997048afb16001d84a6119a6d4fe13a94ffbbefdd38",
+   "file": "tg_closing_land_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.48,
+    "peak_dbfs": -1.0107943416426182,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -9.29818691096131,
+    "crest_db": 8.28739256931869,
+    "lufs": -5.521535294108071,
+    "lufs_padded": false,
+    "onset_ms": 0.5668934240362812,
+    "tail_ms": 793.6961451247165,
+    "centroid_hz": 1807.8114685938654,
+    "clipped": 0,
+    "clap": 0.2481,
+    "clap_neg": 0.1577,
+    "clap_margin": 0.0904
+   }
+  },
+  {
+   "i": 1,
+   "key": "1b8c6c77230203006ad6d86e9904e3d6ef4494904fee276b2db4c1b9941f28c1",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.4799773242630385,
+    "peak_dbfs": -1.0122150739553155,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -9.885144057668523,
+    "crest_db": 8.872928983713207,
+    "lufs": -6.602329897850769,
+    "lufs_padded": false,
+    "onset_ms": 0.31746031746031744,
+    "tail_ms": 1278.5034013605443,
+    "centroid_hz": 1742.0298891083157,
+    "clipped": 0,
+    "clap": 0.2774,
+    "clap_neg": 0.2175,
+    "clap_margin": 0.0599
+   }
+  },
+  {
+   "i": 2,
+   "key": "1dffa9cbf258db3ebe9c34be13cea8d7281b93de68dfcad35161ad6460ea23ba",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.479342403628118,
+    "peak_dbfs": -1.0562806769496993,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -11.803294008411868,
+    "crest_db": 10.747013331462169,
+    "lufs": -6.850350130568029,
+    "lufs_padded": false,
+    "onset_ms": 0.8390022675736961,
+    "tail_ms": 779.4557823129251,
+    "centroid_hz": 2036.3179276543108,
+    "clipped": 0,
+    "clap": 0.2052,
+    "clap_neg": 0.1999,
+    "clap_margin": 0.0053
+   }
+  },
+  {
+   "i": 3,
+   "key": "7dbca22a8e2527136b8ed71f2fccdb18074f89d655a9498be6f066abbb5d980a",
+   "file": "tg_closing_land_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.48,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -10.136372146275077,
+    "crest_db": 9.130844771244007,
+    "lufs": -5.56144985464507,
+    "lufs_padded": false,
+    "onset_ms": 0.3401360544217687,
+    "tail_ms": 913.718820861678,
+    "centroid_hz": 1853.0506524489876,
+    "clipped": 0,
+    "clap": 0.3863,
+    "clap_neg": 0.2138,
+    "clap_margin": 0.1725
+   }
+  }
+ ]
+}

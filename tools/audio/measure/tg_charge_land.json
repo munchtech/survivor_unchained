@@ -1,0 +1,95 @@
+{
+ "family": "tg_charge_land",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "db434e400671d1b05cf732782829434fa16b6f035923a7c4bc12d108eda5d31a",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -15.366293240167167,
+    "crest_db": 14.360765865136099,
+    "lufs": -13.115425966813566,
+    "lufs_padded": false,
+    "onset_ms": 0.3854875283446712,
+    "tail_ms": 705.2154195011337,
+    "centroid_hz": 1275.2281856425254,
+    "clipped": 0,
+    "clap": 0.243,
+    "clap_neg": 0.1294,
+    "clap_margin": 0.1137
+   }
+  },
+  {
+   "i": 1,
+   "key": "026a2cb67600ea283754651b942fab06dbafeec3a82268b9c2cd590a1809581f",
+   "file": "tg_charge_land_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.9994557823129252,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -13.040283500259838,
+    "crest_db": 12.03475612522877,
+    "lufs": -11.82601221160587,
+    "lufs_padded": false,
+    "onset_ms": 0.27210884353741494,
+    "tail_ms": 694.6712018140589,
+    "centroid_hz": 1115.5966308587306,
+    "clipped": 0,
+    "clap": 0.3435,
+    "clap_neg": 0.1443,
+    "clap_margin": 0.1992
+   }
+  },
+  {
+   "i": 2,
+   "key": "bd459c867a01faa807d03eee4965abf7f146621e13dc3a8f9dcbe7f011c5a399",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -11.797970821162412,
+    "crest_db": 10.792443446131344,
+    "lufs": -9.463452080382716,
+    "lufs_padded": false,
+    "onset_ms": 0.4308390022675737,
+    "tail_ms": 851.2698412698413,
+    "centroid_hz": 1001.455698001196,
+    "clipped": 0,
+    "clap": 0.3034,
+    "clap_neg": 0.1347,
+    "clap_margin": 0.1687
+   }
+  },
+  {
+   "i": 3,
+   "key": "77bc61c937fe1fe4c636f503cef8c7ef79c7347ee9b8827e78587b241b3e40b4",
+   "file": "tg_charge_land_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.8313378684807257,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -12.02243868181987,
+    "crest_db": 11.0169113067888,
+    "lufs": -9.877067413740379,
+    "lufs_padded": false,
+    "onset_ms": 1.564625850340136,
+    "tail_ms": 728.2312925170068,
+    "centroid_hz": 681.9668248074953,
+    "clipped": 0,
+    "clap": 0.3368,
+    "clap_neg": 0.1103,
+    "clap_margin": 0.2265
+   }
+  }
+ ]
+}
