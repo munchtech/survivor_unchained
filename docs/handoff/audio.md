@@ -1,7 +1,7 @@
 # Audio (H3 sound): handoff
 
 ## Start here (3 November, lead 2: H3 done)
-Status: in progress, item 7 (full suite running; then push)
+MR READY audio-h3@532d6a41b (suite 1480 passed, 0 failed; the commit on top only writes this line)
 
 **H3's fixed list is done.** The owner's exit is still to come: a night with headphones, "it sounds like a game". The listening sheet is `C:\Users\munch\Desktop\survivorsunchained_inputs\audio_h3\README.md`: 20 moments, before and after through the same mixer. Numbers table: `docs/team/audio.md` "Numbers". The owner list: `docs/team/audio.md` "For the owner".
 
