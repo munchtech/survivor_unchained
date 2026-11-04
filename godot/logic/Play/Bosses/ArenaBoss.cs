@@ -320,6 +320,7 @@ public abstract class ArenaBoss
         E.AnimT = 0;
         if (bark.Length > 0) A.Bark(E.X, E.Z, bark, speaker);
         SignatureCasts++;
+        E.SignatureUntil = B.Time + lead;
         Hold(lead, cast, _ =>
         {
             // Running set it to a windup this tick: the beat is a cast, so the view plays its cast clip.

@@ -97,6 +97,9 @@ public static class Ev
         /// <summary>The telegraph kit's kind (data/content/telegraphs.json: ring, charge, pull, closing); null = a mark
         /// outside the kit. Phase: Warn (marked) or Land (landed: nothing to draw).</summary>
         public string? Tell; public TellPhase Phase; public bool Caught;
+        /// <summary>A closing's way out (H1 round 2B): the bearing (radians, atan2(z, x) from its center) of a gap GapWidth m
+        /// wide along the band's middle where no foe of its ring stands, drawn lit. GapWidth 0: no gap.</summary>
+        public double GapAngle, GapWidth;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }
@@ -141,7 +144,9 @@ public static class Ev
     /// State: Lit (it catches at its minute), Dousing (snuffers at it: once as it starts, then once a second while it
     /// goes on), Out (its life gone; its light off), Relit (she cupped the wick). Life: its life left, 0 to 1.</summary>
     public sealed class BoardLamp : CombatEvent { public double X, Z; public BoardLampState State; public double Life; }
-    public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
+    public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker;
+        /// <summary>A boss's (IBossArena.Bark): shown in a fixed slot under the boss's bar, wherever the boss is.</summary>
+        public bool Boss; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>

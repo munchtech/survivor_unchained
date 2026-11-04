@@ -55,6 +55,9 @@ public sealed class Human
         void Consider(string k, double l) { if (l < left) { left = l; key = k; } }
         foreach (var bl in b.Blows)
             if (bl.Hit(p.X, p.Z, p.Radius + 4)) Consider($"b{bl.MarkId}", bl.T);
+        foreach (var t in b.ActiveTells)
+            if (t.Kind == "closing" && (!t.Landed || t.RushLeft > 0) && Dist(t.Blow.X, t.Blow.Z, p.X, p.Z) < t.Blow.Radius + 1)
+                Consider($"c{t.Blow.MarkId}", t.Landed ? 0.05 : t.Blow.T);
         foreach (var s in b.EnemyStrikes())
             if (Dist(s.X, s.Z, p.X, p.Z) < s.R + p.Radius + 3) Consider($"s{Math.Round(s.X, 1)}:{Math.Round(s.Z, 1)}:{Math.Round(now - (s.Marked - s.Left), 1)}", s.Left);
         foreach (var e in b.Enemies.Living())

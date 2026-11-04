@@ -141,6 +141,8 @@ public sealed class Enemy : Pooled
     /// <summary>Held by a kit telegraph (Sim/Tells.cs: a charger planted in its windup, a closing's ring waiting): until
     /// this time (the battle's clock) it neither moves nor strikes. 0: free.</summary>
     public double HoldUntil;
+    /// <summary>A boss's signature being cast (ArenaBoss.Signature) until this time: the view pulses its off-screen pointer.</summary>
+    public double SignatureUntil;
     /// <summary>Where it was Bound (StatusKind.Bound): it can't move away from here.</summary>
     public double BoundX, BoundZ;
     /// <summary>At rest, it notices the survivor only this close (0: from afar);

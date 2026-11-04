@@ -1866,6 +1866,8 @@ public sealed partial class Battle
         public string? Label;
         /// <summary>The telegraph kit's kind (Ev.Telegraph.Tell), and the id its marks were emitted under.</summary>
         public string? Tell; public int MarkId;
+        /// <summary>A closing's way out (Ev.Telegraph.GapAngle, GapWidth).</summary>
+        public double GapAngle, GapWidth;
         /// <summary>When it was marked (the battle's clock).</summary>
         public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
@@ -1944,7 +1946,7 @@ public sealed partial class Battle
         {
             Id = b.MarkId, Tell = b.Tell, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
-            ByX = b.From?.X, ByZ = b.From?.Z,
+            ByX = b.From?.X, ByZ = b.From?.Z, GapAngle = b.GapAngle, GapWidth = b.GapWidth,
         });
         return b;
     }
@@ -1960,7 +1962,7 @@ public sealed partial class Battle
             var p = Player;
             if (b.Tell != null)
                 Events.Emit(new Ev.Telegraph { Id = b.MarkId, Tell = b.Tell, Phase = TellPhase.Land, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1,
-                    Radius = b.Radius, Inner = b.Inner, Hostile = true, Boss = b.From?.Boss == true, Caught = p.Alive && b.Hit(p.X, p.Z, p.Radius) });
+                    Radius = b.Radius, Inner = b.Inner, GapAngle = b.GapAngle, GapWidth = b.GapWidth, Hostile = true, Boss = b.From?.Boss == true, Caught = p.Alive && b.Hit(p.X, p.Z, p.Radius) });
             if (b.Damage > 0 || b.Slow > 0)
             {
                 double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;
@@ -3024,5 +3026,7 @@ sealed class StrikeSpec
 public sealed class LampMark
 {
     public double X, Z, Pool, Life = 1;
+    /// <summary>The lantern's height in metres (its bar hangs over it).</summary>
+    public double Top = 3.3;
     public bool Lit, Caught;
 }
