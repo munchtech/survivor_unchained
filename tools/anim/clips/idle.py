@@ -933,6 +933,17 @@ _WTH_K, _WTH_B = town_idle._hand((-0.6, -0.6, 0.5), (-0.64, 0.0, -0.77))
 WARDEN_THUMB_L = dict(pos=(0.129, 1.19, 0.118), pole=town_idle._pole(40.0), knuckles=_WTH_K, blade=_WTH_B,
                       fingers=town_idle.graded((9.0, 23.0), (14.0, 29.0), (4.5, 10.5)))
 WARDEN_TOWN_THUMB = town_idle.hang_arms(town_idle.on_hip(WARDEN_THUMB_L, _NONE), r=_WARDEN_TOWN_R())
+# "wrist" (Animation 62 round 2, not the default until a judge; the thumb judge's WRIST-REST): the pommel stays the
+# contact but under her INNER WRIST, not her palm: the wrist laid on the pommel's top just behind its front edge, the
+# hand hanging relaxed over the front (the wrist flexed 47-60 of 75), the fingers loose and down by her thigh, the elbow
+# by her side instead of cocked back. The pommel's top stands 0.22 m under her shoulder, under her elbow's own height
+# with the upper arm hanging (0.253 m), so the forearm can only lie about level onto it: the asked 30-45 deg of slope
+# down needs the pommel 12-15 cm lower, and flexion under 100 needs it further from the shoulder. The wrist rides her
+# pelvis with the sword frame by frame (town_idle.on_hip); fitted in scratch anim62/elbow2 (opt2.py, v7).
+_WW_K, _WW_B = town_idle._hand((-0.005, -0.846, 0.533), (-0.209, -0.52, -0.828))
+WARDEN_WRIST_L = dict(pos=(0.236, 1.288, 0.209), pole=town_idle._pole(88.0), knuckles=_WW_K, blade=_WW_B,
+                      fingers=town_idle._relaxed(0.15))
+WARDEN_TOWN_WRIST = town_idle.hang_arms(town_idle.on_hip(WARDEN_WRIST_L, _NONE), r=_WARDEN_TOWN_R())
 TOWN = {
     # The axe (or two) on the hip loop at her right (and left) hip; her weight on her left hip, its hand on it.
     "reaver_town": town_idle.hang_arms(town_idle.on_hip(town_idle.REAVER_HIP_L, _NONE), r=dict(out=0.21, pole=_P(0.1))),
@@ -1013,7 +1024,7 @@ IDLES = {
     "idle_arcanist_wand": ("Strutting", arcanist_wand, "wand"),
     # In town, weapons sheathed (the game asks for idle_<calling>_town).
     "idle_warden_town": ("WiggleHips", {"side": WARDEN_TOWN, "back": WARDEN_TOWN_BACK, "fist": WARDEN_TOWN_FIST,
-                                       "thumb": WARDEN_TOWN_THUMB}[WARDEN_TOWN_ARM], ""),
+                                       "thumb": WARDEN_TOWN_THUMB, "wrist": WARDEN_TOWN_WRIST}[WARDEN_TOWN_ARM], ""),
     # Each other calling its own (animation 48; the owner, 21 Oct: "having their own is probably better than all the
     # same"): town_idle.STANCES' takes and stances, the arms above (TOWN).
     "idle_reaver_town": ("Proud", TOWN["reaver_town"], ""),
