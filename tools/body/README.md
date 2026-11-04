@@ -29,7 +29,11 @@ Tests: `python -m pytest tools/body` (or `python tools/body/test_check.py`).
   (a bone's weight above `island_weight` in more than one connected patch; stray points beyond the biggest), the
   biggest weight step across one edge per bone.
 - **bends**: elbow and knee flexion, shoulder abduction and flexion, hip flexion, at 0, 90 and 135 degrees, both
-  sides (`bends.py` docstring: how each axis is found from the skeleton, which angle is 0). Per angle:
+  sides (`bends.py` docstring: how each axis is found from the skeleton). Angles are ABSOLUTE anatomical, from the
+  posed bone directions: elbow/knee flexion between the bones (0 = straight), shoulder abduction / flexion and hip
+  flexion from the torso's down axis in the frontal / sagittal plane (0 = hanging, 90 = horizontal). The 0 strip is
+  the rest pose as built; each strip prints `rest_angle_deg`, and each angle `target_deg` and `achieved_deg` (within
+  0.5 deg). Per angle:
   - `girth_mm` / `girth_ratio`: the cross-section's convex-hull perimeter at stations `p<s>` / `d<s>` (s of the
     proximal / distal segment's length from the joint), against rest;
   - `area_ratio`: the cut's enclosed area (oriented, Green's sum) against rest; `null` when the cut is open;

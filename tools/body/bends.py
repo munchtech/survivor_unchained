@@ -3,12 +3,16 @@ degrees, both sides, posed through a poser (posers.py) and measured in the limb'
 
 Nothing assumes her skeleton: bones come by role (ROLES, rig.json "roles" overrides), the body's frame (up, her
 left, her front) from the shoulder and hip heads, each motion's axis from the bones' rest directions:
-  elbow / knee flexion:  the hinge is across the proximal bone and her front (rig.json "hinge": {"elbow": "plane"}
-                         uses the normal of the upper/lower bone plane at rest, "local_x" the bone's own rest X);
-                         the angle is the turn from rest (her rest arm is straight in that plane).
-  shoulder abduction:    about her front, to the arm's angle from hanging (anatomical; 0 = the file's rest);
-  shoulder flexion:      the arm first hung (adducted to 0), then forward about her left-right axis (0 = hung);
-  hip flexion:           the thigh forward about her left-right axis to its angle from hanging (0 = rest).
+  Every strip angle is ABSOLUTE and anatomical, measured from the posed bone directions (0 = the rest pose as built,
+  with each body's own rest angle printed as rest_angle_deg), so bodies with different rest poses compare like for like:
+  elbow / knee flexion:  the angle between the proximal and distal bones (0 = straight); the turn is about the hinge
+                         (across the proximal bone and her front; rig.json "hinge": {"elbow": "plane"} uses the normal
+                         of the upper/lower bone plane at rest, "local_x" the bone's own rest X), solved for the angle;
+  shoulder abduction:    the upper arm's angle from the torso's down axis in the frontal plane (0 = hanging, 90 = out
+                         horizontal), turned about her front; the forearm keeps its rest flexion;
+  shoulder flexion:      the same forward in the sagittal plane (90 = forward horizontal), turned about her left-right axis;
+  hip flexion:           the thigh's angle from the down axis, forward in the sagittal plane (0 = standing).
+  Each turn is solved (bisection) for the target; check.json carries target_deg and achieved_deg per strip angle.
 """
 from __future__ import annotations
 
@@ -59,6 +63,10 @@ def rot(axis, deg):
     return np.eye(3) + math.sin(t) * K + (1 - math.cos(t)) * K @ K
 
 
+def _ang3(a, b):
+    return math.degrees(math.acos(float(np.clip(unit(a) @ unit(b), -1, 1))))
+
+
 def bone(poser, rig, role, s):
     roles = {**ROLES, **rig.get("roles", {})}
     for cand in [roles[role]] + ALIASES.get(role, []):
@@ -104,6 +112,7 @@ class Strip:
             u = unit(self.O - R[jp][:3, 3])
             self.Lp = float(np.linalg.norm(self.O - R[jp][:3, 3]))
             self.p3 = -u
+            self.u_prox = u
             self.b = perp(front if motion == "elbow" else -front, u)
             a = np.cross(u, self.b)
             if hinge == "plane":
@@ -114,31 +123,28 @@ class Strip:
                 x = unit(R[self.j][:3, 0])
                 a = x * np.sign(x @ a)
             self.axis = unit(a)
-            self.rest_deg = 0.0
-            self.turns = lambda deg: [] if deg == 0 else [(self.bone, rot(self.axis, deg))]
+            self.meas = lambda d, u=u: _ang3(u, d)
         elif motion == "shoulder_abd":
             self.prox, self.Lp = None, self.Ld
             self.p3 = -up
             self.b = out
             self.axis = unit(np.cross(out, up))
-            self.rest_deg = math.degrees(math.atan2(u_d @ out, -(u_d @ up)))
-            self.turns = lambda deg: [] if deg == 0 else [(self.bone, rot(self.axis, deg - self.rest_deg))]
+            self.meas = lambda d: math.degrees(math.atan2(d @ out, -(d @ up)))
         elif motion == "shoulder_flex":
             self.prox, self.Lp = None, self.Ld
             self.p3 = -up
             self.b = front
-            a_abd = unit(np.cross(out, up))
-            self.rest_abd = math.degrees(math.atan2(u_d @ out, -(u_d @ up)))
             self.axis = unit(np.cross(front, up))
-            self.rest_deg = 0.0
-            self.turns = lambda deg: [(self.bone, rot(self.axis, deg) @ rot(a_abd, -self.rest_abd))]
+            self.meas = lambda d: math.degrees(math.atan2(d @ front, -(d @ up)))
         else:   # hip_flex
             self.prox, self.Lp = None, self.Ld
             self.p3 = up
             self.b = front
             self.axis = unit(np.cross(front, up))
-            self.rest_deg = math.degrees(math.atan2(u_d @ front, -(u_d @ up)))
-            self.turns = lambda deg: [] if deg == 0 else [(self.bone, rot(self.axis, deg - self.rest_deg))]
+            self.meas = lambda d: math.degrees(math.atan2(d @ front, -(d @ up)))
+        self.u_d0 = u_d
+        self.rest_deg = self.meas(u_d)
+        self.solved = {}
         # the view: image up along the proximal (body up for the shoulder), the bend to one side, the camera on the
         # limb's side of her body
         v = self.axis
@@ -178,9 +184,53 @@ class Strip:
         self.test = body & (np.linalg.norm(poser.P0 - self.O, axis=1) < self.near_m)
         self.cache = {}
 
+    def turn(self, deg):
+        """The rotation about self.axis that takes the distal bone's rest direction to the absolute angle `deg`."""
+        if deg not in self.solved:
+            wrap = lambda x: (x + 180) % 360 - 180
+            signed = self.motion not in ("elbow", "knee")
+            f = lambda t: (wrap(self.meas(rot(self.axis, t) @ self.u_d0) - deg) if signed
+                           else self.meas(rot(self.axis, t) @ self.u_d0) - deg)
+            ts = np.arange(-180, 180.01, 0.5)
+            fs = [f(t) for t in ts]
+            roots = []
+            for i in range(len(ts) - 1):
+                if fs[i] == 0 or fs[i] * fs[i + 1] < 0 and abs(fs[i] - fs[i + 1]) < 90:
+                    lo, hi = ts[i], ts[i + 1]
+                    for _ in range(40):
+                        mid = (lo + hi) / 2
+                        if f(lo) * f(mid) <= 0:
+                            hi = mid
+                        else:
+                            lo = mid
+                    roots.append((lo + hi) / 2)
+            if not roots:
+                raise ValueError(f"{self.motion} {self.s}: no turn reaches {deg} deg")
+            if not signed:      # the flexing direction (the proximal's turn toward the distal about the axis)
+                u = self.u_prox
+                good = [t for t in roots if self.axis @ np.cross(u, rot(self.axis, t) @ self.u_d0) >= 0]
+                roots = good or roots
+            self.solved[deg] = min(roots, key=abs)
+        return self.solved[deg]
+
+    def turns(self, deg):
+        return [] if deg == 0 else [(self.bone, rot(self.axis, self.turn(deg)))]
+
+    def achieved(self, G):
+        d = self.d3(G)
+        return self.meas(d)
+
     def posed(self, deg):
         if deg not in self.cache:
             V, G, info = self.poser.pose(self.turns(deg))
+            if deg:     # a poser that drives the pose further (the game's shoulder correction): chase the target
+                aim = deg
+                for _ in range(8):
+                    err = self.achieved(G) - deg
+                    if abs(err) < 0.1:
+                        break
+                    aim -= err
+                    V, G, info = self.poser.pose([(self.bone, rot(self.axis, self.turn(aim)))])
             self.cache[deg] = (V, G, info)
         return self.cache[deg]
 
@@ -550,6 +600,8 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
         bend2 = math.degrees(math.acos(np.clip(pl.d @ pl0.d, -1, 1)))
         row["bend_in_view_deg"] = round(bend2, 1)
         row["poser"] = info
+        row["target_deg"] = deg
+        row["achieved_deg"] = round(strip.achieved(G), 2)
         spec = load_ref(strip.motion, deg, ref_dir) if deg else None
         ref = build_ref(spec, pl, R, (m0, vw_hi)) if spec else {}
         edge = edge_points(mk, vw_hi)
