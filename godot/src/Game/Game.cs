@@ -944,7 +944,7 @@ public partial class Game : Node, IZoneHost
         if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
     }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
-    float fordWide;
+    bool fordWide;
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
@@ -1309,26 +1309,14 @@ public partial class Game : Node, IZoneHost
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
-            // H4 item 5 (N8, the owner saw one lamp): the fight's camera leans half the way to him (to 7 m), 25 m out;
-            // it opens on the whole triangle with her in it (its first 3 s after C02, and while "The lamps" freeze holds the frame), and eases back after.
-            // (--lampcheck measured a held lean toward the middle in play: her out of frame 36% of the fight; a fixed 34 m frame on
-            // the middle lost her at the start: she comes out of C02 south of the near post.)
-            bool lampsUp = fordBoss != null && zone is Prologue lz && (lz.BossFor < 3.2 || teacher?.Current?.Id == "lamps");
-            float fitDist = 0;
-            if (fordBoss != null && zone is Prologue fz && lampsUp && Battle is { } fb0)
-            {
-                // The frame fitted to her and the three posts: the camera looks north (yaw 0) at 56 deg down with a
-                // 34 deg field, so at distance D the ground shows about 0.30 D toward the camera, 0.46 D away and
-                // 0.54 D to each side of the look point (the far lamps stand 4 m up: 3 m more kept on the far side).
-                double x0 = fb0.Player.X, x1 = x0, z0 = fb0.Player.Z, z1 = z0;
-                foreach (var q in fz.LampPosts) { x0 = Math.Min(x0, q.X); x1 = Math.Max(x1, q.X); z0 = Math.Min(z0, q.Z); z1 = Math.Max(z1, q.Z); }
-                fitDist = (float)Math.Clamp(1.2 * Math.Max((z1 - z0 + 3) / 0.76, ((x1 - x0) / 2 + 2) / 0.54), 25, 42);
-                cam.Toward = new Vector3((float)(x0 + x1) / 2, 0, (float)(z1 - 0.30 * fitDist / 1.2));
-            }
-            else if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
-            (cam.TowardShare, cam.TowardMax) = lampsUp ? (1f, 40f) : fordBoss != null ? (0.5f, 7f) : (0.33f, 4.5f);
-            float fordDist = fordBoss == null || hudMode != null || camSaved != null || Args.Has("cam") ? 0 : lampsUp && fitDist > 0 ? fitDist : 25f;
-            if (Math.Abs(fordDist - fordWide) > 0.5f) { fordWide = fordDist; cam.TargetDistance = fordDist > 0 ? fordDist : 23f; }
+            if (fordBoss != null) cam.Toward = new Vector3((float)fordBoss.X, 0, (float)fordBoss.Z);
+            (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : (0.33f, 4.5f);
+            // H4 item 5 (N8, the owner saw one lamp): the fight's frame stays on her and him, 25 m out (23 elsewhere). The
+            // three posts read by their lamps burning (GameLampPosts' beacons), the bar's three marks and the pointers to the
+            // lit ones off the frame. (Framing the triangle failed twice: a lean to its middle lost her 36% of the fight on
+            // --lampcheck, and a wide frame fitted to her and the posts was a dark, empty board at the lamps freeze.)
+            bool fordWideNow = fordBoss != null && hudMode == null && camSaved == null && !Args.Has("cam");
+            if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 25f : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             UpdateCloseUp(dt);
@@ -1445,6 +1433,7 @@ public partial class Game : Node, IZoneHost
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());
+            LampBeacons(dt);
             LampCheck(fb2.Time);
             Priority();
             hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));

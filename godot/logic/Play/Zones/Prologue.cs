@@ -719,11 +719,6 @@ public sealed class Prologue : ZoneRuntime
     public IEnumerable<(double X, double Y, double Z, bool Lit)> LampPosts =>
         Now != Stage.Boss ? Enumerable.Empty<(double, double, double, bool)>()
         : pylons.Select((p, i) => (p.X, lampY[i], p.Z, litPylons[i]));
-    /// <summary>The middle of the three lamps' triangle: the Warden fight's camera leans toward it
-    /// with him, so all three posts stand in the play frame (H4 item 5, N8: the owner saw one lamp).</summary>
-    /// <summary>Seconds into the Warden fight (-1 outside it): its camera opens wide over the lamps.</summary>
-    public double BossFor => Now == Stage.Boss ? stageT : -1;
-    public (double X, double Z) LampsCenter => pylons.Count == 0 ? (0, 0) : (pylons.Average(q => q.X), pylons.Average(q => q.Z));
 
     void Snuff(int i, string how)
     {
