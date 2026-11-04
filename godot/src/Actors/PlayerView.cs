@@ -90,6 +90,8 @@ public partial class PlayerView : Node3D
         var cam = GetViewport()?.GetCamera3D();
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
+        // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
+        if (k > 0 || want > 0) xray.SetShaderParameter("her_at", GlobalPosition);
         if (k == xrayK) return;
         if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
         bool was = xrayK > 0;

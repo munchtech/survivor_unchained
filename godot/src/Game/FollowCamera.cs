@@ -34,7 +34,13 @@ public sealed class FollowCamera
     public Vector3? Toward;
     /// <summary>The share of the way the look leans toward it, and its most metres (a giant boss: the Ford-Warden).</summary>
     public float TowardShare = 0.33f, TowardMax = 4.5f;
-    float towardX, towardZ;
+    /// <summary>Metres: a boss farther than this from her is not leaned to (the off-screen pointer carries it; H8, N35,
+    /// the owner on demo-rc2: "when the boss spawned my camera went all wonkey to the side and stopped following me").</summary>
+    public float TowardRange = 22f;
+    float towardX, towardZ, towardOn;
+    /// <summary>The share of the frame's half-width and half-height the look may lean off her (a third of the frame
+    /// round its middle: she never leaves the middle third for a boss).</summary>
+    public const float LeanThird = 1 / 3f;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
     public float ScreenShift;
@@ -196,13 +202,22 @@ public sealed class FollowCamera
         leadX = Damp(leadX, vx * Lead * 0.2f * leadK, 3, dt);
         leadZ = Damp(leadZ, vz * Lead * 0.2f * leadK, 3, dt);
         float wx = 0, wz = 0;
+        bool leaning = false;
         if (Toward is Vector3 tw)
         {
             float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
-            if (dl > 0.01f) { float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k; }
+            if (dl > 0.01f && dl <= TowardRange)
+            {
+                float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k;
+                (wx, wz) = CapLean(wx, wz);
+                leaning = true;
+            }
         }
-        towardX = Damp(towardX, wx, 1.5f, dt);
-        towardZ = Damp(towardZ, wz, 1.5f, dt);
+        // (H8, N35: the lean comes in over a second, eased, and goes as gently)
+        towardOn = Mathf.MoveToward(towardOn, leaning ? 1 : 0, dt);
+        float ease = towardOn * towardOn * (3 - 2 * towardOn);
+        towardX = Damp(towardX, wx * ease, 3f, dt);
+        towardZ = Damp(towardZ, wz * ease, 3f, dt);
         var t = new Vector3(x + leadX + towardX, y + 0.8f, z + leadZ + towardZ);
         overrideBlend = Damp(overrideBlend, FocusOverride.HasValue ? 1 : 0, 2.5f, dt);
         var f = FocusOverride is Vector3 o ? t.Lerp(o, overrideBlend) : t;
@@ -220,6 +235,21 @@ public sealed class FollowCamera
         shakeT += dt;
         lastDt = dt;
         Place();
+    }
+
+    /// <summary>A lean off her (world metres on the ground) capped so she stays inside the frame's middle third: its
+    /// part across the screen to a sixth of the frame's width, its part up the screen to a sixth of its height (the
+    /// ground foreshortened by the pitch).</summary>
+    public (float X, float Z) CapLean(float wx, float wz)
+    {
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        var size = Camera.IsInsideTree() ? Camera.GetViewport().GetVisibleRect().Size : new Vector2(1920, 1080);
+        float wide = 1080 * size.X / Mathf.Max(1, size.Y);
+        float capAcross = wide / 2 * LeanThird * perPx, capUp = 1080 / 2f * LeanThird * perPx / Mathf.Max(0.3f, Mathf.Sin(Pitch));
+        // The camera's right and its forward along the ground (it stands at +sin(Yaw), +cos(Yaw) from the look).
+        float rx = Mathf.Cos(Yaw), rz = -Mathf.Sin(Yaw), fx = -Mathf.Sin(Yaw), fz = -Mathf.Cos(Yaw);
+        float a = Mathf.Clamp(wx * rx + wz * rz, -capAcross, capAcross), u = Mathf.Clamp(wx * fx + wz * fz, -capUp, capUp);
+        return (a * rx + u * fx, a * rz + u * fz);
     }
 
     /// <summary>How far the camera stands from where it looks: play's distance, or a panel's framing
