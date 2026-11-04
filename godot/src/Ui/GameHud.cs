@@ -1350,6 +1350,8 @@ public partial class GameHud : CanvasLayer
     /// (a callout waits for them: Teach.cs).</summary>
     public bool SayUp => sayT > 0;
     public bool BannerUp => annT < annLife;
+    /// <summary>A play banner still up when a film starts goes at once (it never reads over a shot).</summary>
+    public void ClearBanner() { annT = annLife; announce.Modulate = Colors.Transparent; }
     public bool PromptUp => promptBox.Visible;
     public bool TipUp => tipLine != null && IsInstanceValid(tipLine) && !tipLine.Held;
     /// <summary>A callout is up: a tip waits under it.</summary>

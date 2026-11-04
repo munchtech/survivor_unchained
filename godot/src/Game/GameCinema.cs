@@ -53,6 +53,7 @@ public partial class Game
         if (chained == null && TakeStoryBars() is { } sb) { chained = new Chain(sb, (camera.Fov, camera.KeepAspect, camera.Near, camera.Attributes), b.Combat); CutStorySeam(file); }
         if (chained == null) ClearKept();
         else file.Bars.In = 0;
+        hud.ClearBanner();
         try { cine = new Cine(this, file, b, done); cineId = id; }
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         finally { chained = null; }

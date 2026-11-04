@@ -12,7 +12,8 @@
     "bank": [1.0, -49.0, 3.1416],
     "road": [0.5, -58.4, 3.1416],
     "shallows": [2.0, -41.0, 1.5708],
-    "top": [0.3, -71.0, 3.1416]
+    "top": [0.3, -71.0, 3.1416],
+    "up": [0.45, -63.0, 3.1416]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "bank"}
@@ -82,7 +83,7 @@
       "note": "Over her right shoulder at shoulder height, looking north up the hill: the road and the open gate are the subject. The face line; she sets off up the road into the light early in it (her own body), and over the last 3 s the camera cranes up over her into the game's view. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
       "cam": {"pos": {"mark": "road", "off": [1.2, 1.65, 4.0]}, "at": [1.0, 4.0, -110.0], "lens": 32, "move": {"start": "end-3.0", "ease": "inout", "follow": true}},
       "fit": ["cin_first_light.face"],
-      "tail": 4.5,
+      "tail": 2.6,
       "cues": [
         {"at": 0.0, "do": "play"},
         {"at": "after:cin_first_light.back+0.3", "do": "music", "mood": "silence"},
@@ -92,10 +93,10 @@
         {"at": "end-3.0", "do": "mist", "name": "road2", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road3", "density": 0, "over": 2.6},
         {"at": "end-3.0", "do": "mist", "name": "road4", "density": 0, "over": 2.6},
-        {"at": "end-12.0", "do": "move", "to": "top", "dur": 12.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"at": "end-4.6", "do": "move", "to": "up", "dur": 4.6, "clip": "Walk_Formal_Loop", "speed": 0.8, "note": "H4 item 3 (the walk-up is clunky): she sets off and the hand-back catches her mid-stride 4.6 m up the road; she walks the rest herself (was a 12 s steered walk to the top)"},
         {"at": "end-3.0", "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0}
       ]
     }
   ],
-  "end": {"her": "top", "camera": "follow"}
+  "end": {"her": "up", "camera": "follow"}
 }

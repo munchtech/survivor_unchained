@@ -1115,6 +1115,8 @@ public partial class Game : Node, IZoneHost
             switch (e)
             {
                 case Ev.Announce an:
+                    // (the fight's own banners stay out of a film: "STAGGERED" over C03's first shot, H4 item 3)
+                    if (InCinematic) break;
                     Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
                     break;
                 case Ev.Discovery d:
