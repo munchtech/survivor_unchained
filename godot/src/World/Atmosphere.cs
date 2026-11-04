@@ -151,7 +151,10 @@ public partial class Atmosphere : Node3D
     /// orange #ffad5c at 0.24 multiplied the chroma of her brightest skin 3.5-4.4x above L .75 and left a flat orange
     /// forehead, which the town close-up already took off (ViewHighlightsNeutral). --front-hi-warm: the tint before it (pictures).</summary>
     static readonly bool FrontHiWarm = SurvivorUnchained.Args.Has("front-hi-warm");
-    static GradeSettings Own(AtmospherePreset p) => FrontPaint && ReferenceEquals(p, Atmospheres.Front) ? p.Grade with
+    /// <summary>(--air-tune) Front as tuned: still the title and the Look's, for Own and the skin guard.</summary>
+    static AtmospherePreset? FrontTuned;
+    static bool IsFront(AtmospherePreset p) => ReferenceEquals(p, Atmospheres.Front) || ReferenceEquals(p, FrontTuned);
+    static GradeSettings Own(AtmospherePreset p) => FrontPaint && IsFront(p) ? p.Grade with
     {
         HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
         PaintVib = Atmospheres.CloseNightPaint.PaintVib, PaintVibDark = Atmospheres.CloseNightPaint.PaintVibDark, PaintHi = Atmospheres.CloseNightPaint.PaintHi,
@@ -255,8 +258,9 @@ public partial class Atmosphere : Node3D
         // play's presets (E1) nudged, for a sweep of pictures in one build.
         if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
             || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay) || ReferenceEquals(p, Atmospheres.NightTown)
-            || p.CrowdFill > 0))   // (H2 R1: an ember arena's night, the only preset with the crowd's fill)
+            || p.CrowdFill > 0 || ReferenceEquals(p, Atmospheres.Front)))   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
         {
+            bool front = ReferenceEquals(p, Atmospheres.Front);
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
             string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
             double[] V(string k, double[] v) => Tune.TryGetValue(k, out var x)
@@ -283,6 +287,7 @@ public partial class Atmosphere : Node3D
                     PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi), PaintShadowSkin = T("pshskin", p.Grade.PaintShadowSkin),
                 },
             };
+            if (front) FrontTuned = p;
         }
         Current = p;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
@@ -549,7 +554,7 @@ public partial class Atmosphere : Node3D
         if (!GradeOff) Env.AdjustmentColorCorrection = lut;
     }
     /// <summary>The skin guard's share for this air (0 to 1): the Look's (Atmospheres.Front) whole, else the close view's (SetViewSkinGuard).</summary>
-    float SkinGuardFor(AtmospherePreset p) => SkinGuardOff ? 0 : ReferenceEquals(p, Atmospheres.Front) ? 1 : ViewSkinGuard;
+    float SkinGuardFor(AtmospherePreset p) => SkinGuardOff ? 0 : IsFront(p) ? 1 : ViewSkinGuard;
     static readonly bool SkinGuardOff = SurvivorUnchained.Args.Has("skin-guard-off");
     /// <summary>The close view's say over the skin guard (0 to 1, in quarter steps, each table made once; GameCloseUp).</summary>
     public float ViewSkinGuard { get; private set; }
