@@ -1,7 +1,8 @@
 {
   "buses": {
     "master": {
-      "level": 0.85
+      "level": 0.85,
+      "makeup": 5
     },
     "sfx": {
       "level": 0.85,

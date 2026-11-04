@@ -14,7 +14,7 @@ namespace SurvivorUnchained.Sound;
 /// </summary>
 public sealed class SoundBankData
 {
-    public sealed class BusDef { public double Level { get; set; } = 1; public double Send { get; set; } }
+    public sealed class BusDef { public double Level { get; set; } = 1; public double Send { get; set; } /** master only: dB of makeup after the compressor. */ public double Makeup { get; set; } }
 
     public sealed class LayerDef
     {

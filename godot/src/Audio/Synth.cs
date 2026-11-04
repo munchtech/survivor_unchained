@@ -82,6 +82,8 @@ public partial class Synth : Node
     /// <summary>Each bus's send to the room; like Level, in Bus order, and set from data/content/sounds.json (SoundBank).</summary>
     public static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
+    /// <summary>The master's makeup gain after its compressor, before the limiter (sounds.json buses.master.makeup, in dB).</summary>
+    public float Makeup = 1f;
     float duck = 1, duckNow = 1, masterNow;
     /// <summary>The fight's own noise held down under a big moment (the boss's fall, an
     /// evolution, a chest): its depth, until when (seconds on the mixer's clock), and now.</summary>
@@ -325,6 +327,7 @@ public partial class Synth : Node
             compEnv += (pk - compEnv) * (pk > compEnv ? compAtk : compRel);
             float over = compEnv > 1e-6f ? 20 * MathF.Log10(compEnv) - CompThreshold : -120;
             float dyn = over > 0 ? MathF.Pow(10, -over * (1 - 1 / CompRatio) / 20) : 1;
+            dyn *= Makeup;
             float post = pk * dyn * limG;
             if (post > Ceiling) limG = Ceiling / (pk * dyn); else limG += (1 - limG) * limRel;
             dyn *= limG * masterNow;

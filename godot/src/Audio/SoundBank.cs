@@ -45,7 +45,7 @@ public static class SoundBank
                 s.Level[i] = (float)b.Level;
                 Synth.Send[i] = (float)b.Send;
             }
-        if (d.Buses.TryGetValue("master", out var m)) s.Master = (float)m.Level;
+        if (d.Buses.TryGetValue("master", out var m)) { s.Master = (float)m.Level; s.Makeup = (float)Math.Pow(10, m.Makeup / 20); }
     }
 
     /// <summary>Whether the event exists and every layer of it has takes.</summary>
