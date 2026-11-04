@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://dbk532jcbcrwo"
-path="res://.godot/imported/crowdfall_1.wav-d0cc342e2fbe7b70b1675dbef39432bf.sample"
 
 [deps]
 
 source_file="res://art/sound/crowdfall_1.wav"
-dest_files=["res://.godot/imported/crowdfall_1.wav-d0cc342e2fbe7b70b1675dbef39432bf.sample"]
 
 [params]
 

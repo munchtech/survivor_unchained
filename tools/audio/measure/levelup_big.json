@@ -1,0 +1,95 @@
+{
+ "family": "levelup_big",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "5ff5c2700816e9f2d60193d66393b9fde955ac9851bd0f32a155ce627118c175",
+   "file": "levelup_big_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.7543990929705213,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -15.277501012790427,
+    "crest_db": 14.271973637759357,
+    "lufs": -12.760733929113103,
+    "lufs_padded": false,
+    "onset_ms": 30.793650793650794,
+    "tail_ms": 2001.859410430839,
+    "centroid_hz": 1072.0424472251027,
+    "clipped": 0,
+    "clap": 0.2094,
+    "clap_neg": -0.0534,
+    "clap_margin": 0.2627
+   }
+  },
+  {
+   "i": 1,
+   "key": "4a044210fb2e98c4cc0e80112ce560eb6c4380ce04f6178e192abe7f6dad7e04",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 2.8371201814058957,
+    "peak_dbfs": -1.0644346138056546,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.19047523986867,
+    "crest_db": 16.126040626063016,
+    "lufs": -16.299157387659204,
+    "lufs_padded": false,
+    "onset_ms": 2.630385487528345,
+    "tail_ms": 2175.986394557823,
+    "centroid_hz": 1765.6858796475462,
+    "clipped": 0,
+    "clap": 0.1008,
+    "clap_neg": 0.0192,
+    "clap_margin": 0.0816
+   }
+  },
+  {
+   "i": 2,
+   "key": "7ee8517947ca8c057c90570034d3d083816e9b65c1c190fce98a8fbd5bdbc326",
+   "file": null,
+   "dropped": "clap margin -0.018 < 0.00",
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -17.023395540018022,
+    "crest_db": 16.017868164986954,
+    "lufs": -14.580233888086592,
+    "lufs_padded": false,
+    "onset_ms": 2.494331065759637,
+    "tail_ms": 1556.984126984127,
+    "centroid_hz": 456.1814901229525,
+    "clipped": 0,
+    "clap": 0.0486,
+    "clap_neg": 0.0667,
+    "clap_margin": -0.0181
+   }
+  },
+  {
+   "i": 3,
+   "key": "e49bb634b61e86c1376978f3f2749d0d9daab4fb4d723ba935270e75a2b1b086",
+   "file": "levelup_big_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.5998185941043084,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -16.42519333692998,
+    "crest_db": 15.41966596189891,
+    "lufs": -14.881983068094065,
+    "lufs_padded": false,
+    "onset_ms": 44.78458049886622,
+    "tail_ms": 1297.437641723356,
+    "centroid_hz": 681.8645111789078,
+    "clipped": 0,
+    "clap": 0.2031,
+    "clap_neg": -0.1056,
+    "clap_margin": 0.3087
+   }
+  }
+ ]
+}

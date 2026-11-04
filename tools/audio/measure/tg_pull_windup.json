@@ -1,0 +1,95 @@
+{
+ "family": "tg_pull_windup",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "019f9d1a5e68ef5a52349a40f001b60218c3dd2b44c226a7c81bc237ca485b88",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.5999773242630386,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -14.94806787166981,
+    "crest_db": 13.94254049663874,
+    "lufs": -9.646424741928682,
+    "lufs_padded": false,
+    "onset_ms": 1.6326530612244898,
+    "tail_ms": 999.5918367346939,
+    "centroid_hz": 2500.881657090835,
+    "clipped": 0,
+    "clap": 0.4142,
+    "clap_neg": -0.0735,
+    "clap_margin": 0.4877
+   }
+  },
+  {
+   "i": 1,
+   "key": "6a49c4c9b15e423914047514bab9b3135e0415f4f25fd3ea38e8f3a8cdb4f121",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.5015419501133787,
+    "peak_dbfs": -1.0309481945164436,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -14.276769999481594,
+    "crest_db": 13.24582180496515,
+    "lufs": -10.789840920812464,
+    "lufs_padded": false,
+    "onset_ms": 0.8163265306122449,
+    "tail_ms": 1197.6190476190475,
+    "centroid_hz": 1086.2627835607977,
+    "clipped": 0,
+    "clap": 0.2749,
+    "clap_neg": -0.0191,
+    "clap_margin": 0.294
+   }
+  },
+  {
+   "i": 2,
+   "key": "5a2e0e96ddc2e093275e91d6e00cccb599ab77d1a87d8a97f8046ecee879bf5b",
+   "file": "tg_pull_windup_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.4531746031746031,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -14.707196574717507,
+    "crest_db": 13.701669199686437,
+    "lufs": -11.351002258670032,
+    "lufs_padded": false,
+    "onset_ms": 1.0657596371882085,
+    "tail_ms": 1028.2312925170068,
+    "centroid_hz": 1957.443255517646,
+    "clipped": 0,
+    "clap": 0.4131,
+    "clap_neg": -0.1098,
+    "clap_margin": 0.5228
+   }
+  },
+  {
+   "i": 3,
+   "key": "1ac3b481fb2986a12e7bb0c07c57e8ba038568ad7453438b0811c2f3ca70769d",
+   "file": "tg_pull_windup_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.4360090702947845,
+    "peak_dbfs": -1.1077097134378147,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -14.840525056701551,
+    "crest_db": 13.732815343263736,
+    "lufs": -9.861888075033738,
+    "lufs_padded": false,
+    "onset_ms": 1.4058956916099772,
+    "tail_ms": 802.5850340136055,
+    "centroid_hz": 3334.955697805423,
+    "clipped": 0,
+    "clap": 0.3727,
+    "clap_neg": -0.1576,
+    "clap_margin": 0.5303
+   }
+  }
+ ]
+}

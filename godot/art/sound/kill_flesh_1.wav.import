@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://3ty7pa2w2hbp"
-path="res://.godot/imported/kill_flesh_1.wav-2e29d00c5d7637e6798d93cbf4e98745.sample"
 
 [deps]
 
 source_file="res://art/sound/kill_flesh_1.wav"
-dest_files=["res://.godot/imported/kill_flesh_1.wav-2e29d00c5d7637e6798d93cbf4e98745.sample"]
 
 [params]
 

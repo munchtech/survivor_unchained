@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://ps4c2gq8c7on"
-path="res://.godot/imported/hit_bone_3.wav-8ccc16b6bc2efe19491ebbadf9033342.sample"
 
 [deps]
 
 source_file="res://art/sound/hit_bone_3.wav"
-dest_files=["res://.godot/imported/hit_bone_3.wav-8ccc16b6bc2efe19491ebbadf9033342.sample"]
 
 [params]
 

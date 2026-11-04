@@ -1,0 +1,95 @@
+{
+ "family": "tg_pull_land",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "98c93bae5edb1cf7dabd0eb97247fe57d344040fbb62093110a5d5476eebffbf",
+   "file": "tg_pull_land_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.8,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -15.817612978141666,
+    "crest_db": 14.812085603110596,
+    "lufs": -17.580388345910848,
+    "lufs_padded": false,
+    "onset_ms": 1.1111111111111112,
+    "tail_ms": 561.9047619047619,
+    "centroid_hz": 112.63233885224334,
+    "clipped": 0,
+    "clap": 0.1514,
+    "clap_neg": 0.0926,
+    "clap_margin": 0.0588
+   }
+  },
+  {
+   "i": 1,
+   "key": "ec2f498a0681d211cc135c3df60af3606a806950680596067986e35247792b82",
+   "file": null,
+   "dropped": "clap margin -0.062 < 0.00",
+   "measure": {
+    "duration_s": 0.8,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -14.768682274235342,
+    "crest_db": 13.763154899204274,
+    "lufs": -18.53364855017441,
+    "lufs_padded": false,
+    "onset_ms": 1.5419501133786848,
+    "tail_ms": 442.9251700680272,
+    "centroid_hz": 133.38953536797354,
+    "clipped": 0,
+    "clap": 0.0094,
+    "clap_neg": 0.0709,
+    "clap_margin": -0.0616
+   }
+  },
+  {
+   "i": 2,
+   "key": "bd4be8eb6de76609842499ced7ea959de1b455f483ba245e1a8d50afc878751d",
+   "file": null,
+   "dropped": "clap margin -0.065 < 0.00",
+   "measure": {
+    "duration_s": 0.8,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -15.624380192209077,
+    "crest_db": 14.61885281717801,
+    "lufs": -17.548493568662263,
+    "lufs_padded": false,
+    "onset_ms": 2.4263038548752833,
+    "tail_ms": 727.8458049886622,
+    "centroid_hz": 133.0229908167908,
+    "clipped": 0,
+    "clap": 0.0427,
+    "clap_neg": 0.1075,
+    "clap_margin": -0.0648
+   }
+  },
+  {
+   "i": 3,
+   "key": "53820f82e5b0b94f24da46084e23d6c9547740b8e4936b3a4139fea6a61c0e95",
+   "file": "tg_pull_land_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.8,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -15.155799824360132,
+    "crest_db": 14.150272449329064,
+    "lufs": -16.99922172511572,
+    "lufs_padded": false,
+    "onset_ms": 1.99546485260771,
+    "tail_ms": 591.0884353741496,
+    "centroid_hz": 107.0151516876561,
+    "clipped": 0,
+    "clap": 0.1151,
+    "clap_neg": 0.1481,
+    "clap_margin": -0.033
+   }
+  }
+ ]
+}

@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://62t3nas3i4yx"
-path="res://.godot/imported/quake_crack_2.wav-6841065efd4e32e43dccc4592a05b1ce.sample"
 
 [deps]
 
 source_file="res://art/sound/quake_crack_2.wav"
-dest_files=["res://.godot/imported/quake_crack_2.wav-6841065efd4e32e43dccc4592a05b1ce.sample"]
 
 [params]
 

@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://dti26lxbaujvm"
-path="res://.godot/imported/longcut_boom_1.wav-bde0dd2003903256db3e59c6818576a5.sample"
 
 [deps]
 
 source_file="res://art/sound/longcut_boom_1.wav"
-dest_files=["res://.godot/imported/longcut_boom_1.wav-bde0dd2003903256db3e59c6818576a5.sample"]
 
 [params]
 

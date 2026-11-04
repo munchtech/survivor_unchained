@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://bjbmp3gwdmdty"
-path="res://.godot/imported/kill_bone_4.wav-4501cb8877d4182c5a9fb23b0b3a9098.sample"
 
 [deps]
 
 source_file="res://art/sound/kill_bone_4.wav"
-dest_files=["res://.godot/imported/kill_bone_4.wav-4501cb8877d4182c5a9fb23b0b3a9098.sample"]
 
 [params]
 

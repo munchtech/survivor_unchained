@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://2g10rx4m43as"
-path="res://.godot/imported/sunder_impact_1.wav-88193af75940a1382ce1992b53f3c274.sample"
 
 [deps]
 
 source_file="res://art/sound/sunder_impact_1.wav"
-dest_files=["res://.godot/imported/sunder_impact_1.wav-88193af75940a1382ce1992b53f3c274.sample"]
 
 [params]
 

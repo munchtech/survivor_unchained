@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://baf0wcjnjhym2"
-path="res://.godot/imported/gore_burst_0.wav-f348a184c257c6b826ebc34c4f0153f5.sample"
 
 [deps]
 
 source_file="res://art/sound/gore_burst_0.wav"
-dest_files=["res://.godot/imported/gore_burst_0.wav-f348a184c257c6b826ebc34c4f0153f5.sample"]
 
 [params]
 

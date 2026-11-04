@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://c45430oa5j6ee"
-path="res://.godot/imported/armor_step_5.wav-b06dfbbac8dbe563e6978407f8d827ea.sample"
 
 [deps]
 
 source_file="res://art/sound/armor_step_5.wav"
-dest_files=["res://.godot/imported/armor_step_5.wav-b06dfbbac8dbe563e6978407f8d827ea.sample"]
 
 [params]
 

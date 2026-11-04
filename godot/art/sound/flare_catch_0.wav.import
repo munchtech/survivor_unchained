@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://ihmfefrp5ed5"
-path="res://.godot/imported/flare_catch_0.wav-c5d59fe7e5d9364d12f4e122451805ec.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_catch_0.wav"
-dest_files=["res://.godot/imported/flare_catch_0.wav-c5d59fe7e5d9364d12f4e122451805ec.sample"]
 
 [params]
 

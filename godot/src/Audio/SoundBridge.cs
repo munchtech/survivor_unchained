@@ -108,6 +108,8 @@ public sealed class SoundBridge
                     break;
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
                 case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
+                // Any other named sound is the bank's (ford.channel, ford.lamp_out...): placed if it has a place.
+                case Ev.Sound snd: Sfx.Cue(snd.Id, snd.X is double sx && snd.Z is double sz ? At(sx, sz) : default); break;
             }
         }
         // A Legendary lying untaken tolls faintly every eight seconds, until it is taken (§8.2).

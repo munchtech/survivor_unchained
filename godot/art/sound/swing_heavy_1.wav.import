@@ -2,13 +2,10 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://b2bbpqrsd1w70"
-path="res://.godot/imported/swing_heavy_1.wav-af20daf28c5f4d1965a49734bb61f91a.sample"
 
 [deps]
 
 source_file="res://art/sound/swing_heavy_1.wav"
-dest_files=["res://.godot/imported/swing_heavy_1.wav-af20daf28c5f4d1965a49734bb61f91a.sample"]
 
 [params]
 
