@@ -55,6 +55,9 @@ public sealed class Autopilot
     public bool Take(Act a) => pressed.Remove(a);
     void Press(Act a) => pressed.Add(a);
 
+    double draftFor;
+    static readonly double DraftHold = Args.Num("draft-hold", 0);
+
     public void Drive(double dt)
     {
         t += dt;
@@ -72,6 +75,9 @@ public sealed class Autopilot
             }
         }
         // Drafted as a player would (the harness's greedy taste), or --draft first|random|path:ID.
+        // (--draft-hold S: a human's pause over the cards, H8's N35 repro: a draft open as a boss arrives)
+        if (g.Overlay == "draft") draftFor += dt; else draftFor = 0;
+        if (g.Overlay == "draft" && draftFor < DraftHold) return;
         if (g.Overlay == "draft" && g.Battle is { } db) { g.Pick(Math.Clamp(picker.Choose(db, g.Offers.ToList(), rng), 0, Math.Max(0, g.Offers.Count - 1))); return; }
         // A line is read at a reader's pace (pictures of conversations need the line on screen).
         if (g.Overlay == "dialogue") { if ((lineT += dt) > 2.4) { lineT = 0; g.Advance(); } return; }

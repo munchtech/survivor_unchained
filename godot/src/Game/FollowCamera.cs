@@ -123,6 +123,8 @@ public sealed class FollowCamera
 
     float overrideBlend, leadX, leadZ, shakeT;
     Vector3 look;
+    /// <summary>Where the view looks now (its eased aim).</summary>
+    public Vector3 LookAt => look;
     bool initialised;
     float lastDt;
     static readonly bool CamLog = Args.Has("camlog");
