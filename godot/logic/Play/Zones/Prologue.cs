@@ -85,6 +85,11 @@ public sealed partial class Prologue : ZoneRuntime
     Enemy? warden, caller, knight, grim;
     /// <summary>The Ford-Warden while the boss fight runs (the play camera keeps him in frame with her).</summary>
     public Enemy? BossInFrame => Now == Stage.Boss && warden is { Alive: true } w && w.State != EnemyState.Dying ? w : null;
+    /// <summary>The day road's last stretch (H4 r3 judge: the player never saw home at the ring): from 28 m short of the
+    /// town gate, on the road, the look leans toward it, so the gate stands at the frame's head through the wolves' ring
+    /// and the walk in (the play camera sees about 11 m past her unleaned).</summary>
+    public (double X, double Z)? GateInFrame => Now == Stage.Exit && !finished && B?.Player is { Alive: true } p
+        && L("gate") is var g && p.Z < g.Z + 28 && Math.Abs(p.X - g.X) < 22 ? (g.X, g.Z) : null;
     bool wardenGone, chestOpened, finished, coreShown, doused;
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
