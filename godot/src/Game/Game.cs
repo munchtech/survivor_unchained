@@ -694,6 +694,8 @@ public partial class Game : Node, IZoneHost
         var fl = scene.Fx.Flare;
         fl.Rumble = (lo, hi, s) => Haptics.Add(lo, hi, s, blow: lo >= 1, peak: lo >= 1);
         fl.HudDim = k => hud.FlareDim(k);
+        // (H7's recovery: her ember's pool brighter for a breath after the main blow)
+        fl.EmberPool = k => { if (scene?.Player is { } pv) pv.FlarePool = k; };
         fl.LabelsAlpha = k => hud.LabelsAlpha(k);
         fl.Dip = k => air.FlareDip = k;
         fl.LightDip = k => air.FlareLight = k;
@@ -709,6 +711,9 @@ public partial class Game : Node, IZoneHost
         CrowdView.FlareCorpseAsh = fl.CorpseAsh;
         CrowdView.FlareStatueFlash = fl.StatueFlash;
 
+        CrowdView.FlareMarkRim = fl.MarkRim;
+        CrowdView.FlareBandRim = fl.BandRim;
+        CrowdView.FlareStatueLift = fl.StatueLift;
         CrowdView.FlareChar = fl.CharAt;
         CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();
@@ -838,6 +843,7 @@ public partial class Game : Node, IZoneHost
         h.OnPlayerDeath = killer =>
         {
             if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
+            if (Args.Has("clip") && Args.Has("flare")) return true; // (a Flare clip: she stands; see --clip above)
             OnDeath(killer == null ? "the dark" : Content.Enemies.Called(killer.Named?.Title, killer.Def.Name));
             return false;
         };
@@ -2000,6 +2006,15 @@ public partial class Game : Node, IZoneHost
             fb0.FlareMeter = Battle.FlareFull * fb0.FlareCharges;
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
+        // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
+        // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
+        if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
+            clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
+        // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
+        // level's title sat over the frame's center through the Flare, its flash a white orb on her after the stop); the
+        // ember's next level is pushed out of reach, nothing else changes. --clip-level keeps the game's own.
+        if (Args.Has("clip") && Args.Has("flare") && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
+            clipE.EmberNext = 1e9;
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {
             flareReadyShot = true;
@@ -2009,6 +2024,33 @@ public partial class Game : Node, IZoneHost
         {
             castDone = true;
             cb.Aim = null;
+            // --flare-hover elite|boss|nearest (pictures only): her hovered target at the press, the nearest such foe in reach.
+            if (Args.Get("flare-hover") is { Length: > 0 } hv && cb.Flare is { } hf)
+            {
+                Enemy? best = null; double bd = hf.Radius;
+                foreach (var e in cb.Enemies.Living())
+                {
+                    if (e.State == EnemyState.Dying || !cb.Targetable(e) || !cb.HostileToPlayer(e)) continue;
+                    if (hv == "elite" && !(e.Elite && !e.Boss) || hv == "boss" && !e.Boss) continue;
+                    double d = Math.Sqrt((e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z));
+                    if (d <= bd) { bd = d; best = e; }
+                }
+                // (elite, none in reach: the toughest foe in reach, so every clip has a hovered target)
+                string how = hv;
+                if (best == null && hv == "elite")
+                {
+                    double hp = -1;
+                    foreach (var e in cb.Enemies.Living())
+                    {
+                        if (e.State == EnemyState.Dying || !cb.Targetable(e) || !cb.HostileToPlayer(e)) continue;
+                        double d = Math.Sqrt((e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z));
+                        if (d <= hf.Radius && e.Hp > hp) { hp = e.Hp; best = e; bd = d; }
+                    }
+                    how = "elite (fallback: toughest)";
+                }
+                cb.Priority = best?.Id ?? -1;
+                GD.Print($"flare hover {how}: {(best == null ? "none in reach" : $"{best.Def.Id} #{best.Id} at {bd:0.0} m")}");
+            }
             cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:

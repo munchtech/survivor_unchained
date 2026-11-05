@@ -2,13 +2,16 @@
 // plays, read from global uniforms the view sets each frame (Fx/Flare/FlareFx.cs), so nothing needs a mask.
 // The drain and the repaint: the world (ground, crowd, props) loses its colour at the press and gets it back
 // from her outward at the Spend; she, the Flare's own light and every danger mark never read these, so they
-// keep theirs. The web: a hairline of ember under the ground in the reach (the Draw), glowing again as the
-// light sinks (the Return). Burns Twice's frost: a growth-time map (distance, low noise, fingers that race
+// keep theirs. (The Draw's web is gone, H7 r2; flare_web now only feeds Burns Twice's char cracks.) Burns Twice's frost: a growth-time map (distance, low noise, fingers that race
 // ahead), its crystal two multiplied layers of our own frost plate so it never visibly repeats; impacts melt
 // it to wet ground and char. Everything here costs one uniform branch while no Flare plays.
 
 global uniform vec4 flare_at;     // xyz: where she stood at the press; w: the reach (m)
 global uniform vec4 flare_look;   // x: drain 0..1; y: repaint radius (m); z: the repaint's cold 0..1; w: kind (0 none, 1 Burns Twice, 2 its Black Ice)
+// The ultimate's grade (H7, data/content/flare_family.json "grade"; FlareFx.Family): x the grade 0..1; y the world's value x;
+// z how much of a material's own colour stays; w its emission x. Her, her ember and the Flare's own light never read it.
+global uniform vec4 flare_grade;
+global uniform vec4 flare_grade_tint; // rgb: the moon-indigo shade (linear, unit luminance)
 global uniform vec4 flare_web;    // x: web light 0..1; y: heat (1 the calling's hue .. 0 dark); z: how far it has lit (m); w: seed
 global uniform vec4 flare_frost;  // x: the front (m); y: frost alive 0..1; z: melted in from the edge (m); w: seconds since the frost
 global uniform vec4 flare_fire;   // xyz: the BOOM's fireball (world); w: its light on the world I(t) 0..1 (0 none)
@@ -27,13 +30,41 @@ const float fire_rim = 0.9;
 vec3 flare_fire_col() {
 	return mix(vec3(1.0, 0.62, 0.30), vec3(1.0, 0.80, 0.45), smoothstep(0.6, 1.0, flare_fire.w));
 }
+global uniform vec4 flare_band;       // xy: its origin (x, z); z: its run's progress x (0 at the blow, 1 at its end); w: its strength 0..1 (0 none)
+global uniform vec4 flare_band_line;  // xy: a line Flare's far end (= the origin: a ring); z: the soft leading edge (m); w: the ground lit behind it (s)
+global uniform vec4 flare_band_col;   // rgb: the front's light (linear, x albedo); a: the lit ground's share of it behind the front
+global uniform vec4 flare_band_shape; // x: its reach (m); y: its run (s); z: its ease; w: a ripple's dust (0: the lit band; > 0 an air and dust ripple, no light)
+// The PEAK at the main blow (H7 r2; Fx/Flare/FlareFx.Peak.cs, flare_family.json "peak"): the blow's lit shape on the world.
+global uniform vec4 flare_peak;       // xy: its heart (x, z); z: a disk's radius or a line's half-width (m); w: its light now 0..1 (0 none)
+global uniform vec4 flare_peak_line;  // xy: a line's far end; z: 1 a line, 0 a disk; w: the hot heart's half-width or radius (m)
+global uniform vec4 flare_peak_col;   // rgb: its light (linear, x albedo, the data's ground gain)
+global uniform vec4 flare_peak_k;     // x: its core's light, z: its wash's light (x rgb); y: the wash's reach (x the shape's size); w: its hot heart (HDR, not x albedo)
 global uniform vec4 flare_hue;    // rgb: the web's hot colour (the calling's); a: night 0..1
 // The Long Cut (Fx/Flare/FlareFx.LongCut.cs): its seam and its sweep.
 global uniform vec4 flare_seam;   // xy: where the cleave starts (x, z); z: its angle (rad); w: its length (m), 0 none
 global uniform vec4 flare_seam_t; // x: seconds since the cleave (Flare time); y: the fuse's speed (m/s); z: fade 1..0 (gone by 6 s); w: night 0..1
 global uniform vec4 flare_sweep;  // x: its leading angle (rad, unwrapped); y: its light 0..1 (0 none); z: the reach (m); w: the angle it began at
+// r3 (judge r2 fix 3, "better still"): a "tear" line Flare's crack tears from her in step with the band (FlareFx.LongCut
+// TearAt): x its reach (m), y its run (s, 0: the plain fuse at flare_seam_t.y m/s), z its ease, w the tip's white-hot (HDR).
+global uniform vec4 flare_tear;
+// How long after the cleave (Flare time) the crack opens this far along it.
+float fl_tear_at(float along) {
+	if (flare_tear.y <= 0.0) return max(along, 0.0) / max(flare_seam_t.y, 1e-3);
+	return flare_tear.y * (1.0 - pow(1.0 - clamp(along / max(flare_tear.x, 1.0), 0.0, 1.0), 1.0 / max(flare_tear.z, 0.2)));
+}
+// How far along the crack's tip has run now (m).
+float fl_tear_front() {
+	float s = max(flare_seam_t.x, 0.0);
+	if (flare_tear.y <= 0.0) return s * flare_seam_t.y;
+	return flare_tear.x * (1.0 - pow(1.0 - clamp(s / flare_tear.y, 0.0, 1.0), max(flare_tear.z, 0.2)));
+}
 global uniform sampler2D flare_crack_a : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 global uniform sampler2D flare_crack_b : filter_linear_mipmap_anisotropic, repeat_disable;
+// The Long Cut's foreshadow in the stop (H7 r2, judge r1 fix 7; FlareFx.LongCut LcForeshadow): the future crack along
+// flare_seam, before its fuse, lit faintly from below. x its light (x albedo); y the spark's head (m along); z its light; w
+// the ember's heat (fl_seam_col). flare_fore_k: x the crack mask's blur (mip); y its wander along; z the spark's tail (m).
+global uniform vec4 flare_fore;
+global uniform vec4 flare_fore_k;
 global uniform vec4 flare_lc;     // x: the Long Cut is live (1); y: the sweep's wash 0..1; z: the core's cap (night); w: the sweep band's light (x albedo)
 global uniform sampler2D flare_plate : filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
@@ -42,11 +73,119 @@ global uniform sampler2D flare_marks : filter_nearest, repeat_disable; // 32x2: 
 const vec3 FL_LUM = vec3(0.2126, 0.7152, 0.0722);
 
 bool flare_live() {
-	return flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
+	return flare_band.w > 0.0 || flare_peak.w > 0.0 || flare_grade.x > 0.0 || flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
+}
+
+// The family's band (H7 beat 3, r2: a lit FRONT; Fx/Flare/FlareFx.Blow.cs, flare_family.json "band"): a soft leading edge
+// of the school's light racing from her (or out from a line Flare's line) past the frame's edges on the main blow, the
+// ground lit behind it for a breath (the time since the front passed each point, from its eased run), then nothing.
+// Brushed by place, never a vector hoop. x: its light (x the front's), y: a ripple's dust lift (Bell's tolls; no light).
+float fl_band_d(vec2 w) {
+	vec2 ab = flare_band_line.xy - flare_band.xy;
+	float l2 = dot(ab, ab);
+	float h = l2 > 1e-4 ? clamp(dot(w - flare_band.xy, ab) / l2, 0.0, 1.0) : 0.0;
+	return length(w - flare_band.xy - ab * h);
+}
+
+// r3 (judge r2 fix 4: "only a faint lift of the floor"): the front is a thin gold-white LEADING EDGE (flare_band_edge.x m
+// deep behind the front, its rise ahead flare_band_line.z m: ~8-14 px at 1080p), part light x albedo, part its own glow
+// (flare_band_edge.w, HDR: a dark floor has little to lift), then a darker TROUGH (the ground's albedo x (1 - z) over y m),
+// then the lit ground behind. x: light (x albedo, the front's and the tail's), y: a ripple's dust, z: the edge's glow, w: the
+// trough's dark (0..1).
+global uniform vec4 flare_band_edge;  // x: the edge's depth behind the front (m); y: the trough's (m); z: its dark 0..1; w: the edge's glow (HDR, x the front's colour)
+// r3 (judge r2 fix 5, the Bell): a band launched from a shock ring: x the ring's radius now (m; 0 none). The front stands at
+// x plus its run, every distance counted from the ring (inside it, the ground lit as the tail; the peak's disk lights it).
+global uniform vec4 flare_band_from;
+vec4 flare_band_at(vec2 w) {
+	if (flare_band.w <= 0.0) return vec4(0.0);
+	// (it wanders a little by place, so the front is a wave of light, not a drawn circle)
+	float n = texture(flare_noise, w * 0.043).g - 0.5;
+	float d = max(fl_band_d(w) + n * 0.9, 0.0) - flare_band_from.x;
+	float R = max(flare_band_shape.x, 1.0), T = max(flare_band_shape.y, 1e-3), e = max(flare_band_shape.z, 0.2);
+	float x = flare_band.z;
+	float F = R * (1.0 - pow(1.0 - clamp(x, 0.0, 1.0), e));
+	float a = F - d;
+	float lead = max(flare_band_line.z, 0.02);
+	if (d > R * 1.02) return vec4(0.0);
+	if (flare_band_shape.w > 0.0) {
+		// (a ripple's dust: the soft front as before r3)
+		float fr = smoothstep(-lead, 0.0, a) * mix(1.0, exp(-max(a, 0.0) / (lead * 0.5)), step(0.0, a));
+		return vec4(0.0, fr * flare_band.w * flare_band_shape.w, 0.0, 0.0);
+	}
+	float ed = max(flare_band_edge.x, 0.02), tr = max(flare_band_edge.y, 0.05);
+	// The edge: a hard rise over the lead ahead, falling fast behind it.
+	float edge = smoothstep(-lead, 0.0, a) * mix(1.0, exp(-max(a, 0.0) / ed), step(0.0, a));
+	// The trough: from just behind the edge, deepest at ~a third of its depth, gone by its end.
+	float ta = a - ed * 1.5;
+	float trough = step(0.0, ta) * smoothstep(0.0, tr * 0.25, ta) * (1.0 - smoothstep(tr * 0.35, tr, ta));
+	// The ground behind it: lit for `after` s from the moment the front passed it (its eased run inverted), rising in past
+	// the trough, falling to nothing.
+	float xd = 1.0 - pow(1.0 - clamp(d / R, 0.0, 1.0), 1.0 / e);
+	float age = (x - xd) * T;
+	float tail = step(0.0, a) * smoothstep(ed * 1.5 + tr * 0.6, ed * 1.5 + tr * 1.2, a) * (1.0 - smoothstep(0.0, max(flare_band_line.w, 1e-3), age)) * flare_band_col.a;
+	// (r3: inside a shock ring's radius the peak's disk lights the ground, never the tail: the whole 8 m disk lit at once
+	// took the Bell's peak from 1.43x to 2.17x the pre-press)
+	tail *= step(0.0, d);
+	float br = 0.75 + 0.5 * texture(flare_noise, w * vec2(0.11, 0.07) + 0.37).b;
+	float k = br * flare_band.w;
+	return vec4(max(edge, tail) * k, 0.0, edge * k * flare_band_edge.w, trough * flare_band.w * flare_band_edge.z);
+}
+
+// The peak's hot heart (H7 r2: FLARE_LOOK §1.6's 2-3% over the knee; light x the graded albedo never clipped, 0.5%): the
+// blow itself burning on the ground, an emitter in the peak's gold (HDR, not x albedo), narrow: the seam's crack along a
+// line's whole length, the disk's middle, flat-topped.
+vec3 flare_peak_hot(vec2 w) {
+	if (flare_peak.w <= 0.0 || flare_peak_k.w <= 0.0) return vec3(0.0);
+	float m = max(flare_peak_col.r, max(flare_peak_col.g, flare_peak_col.b));
+	vec3 hue = m > 1e-5 ? flare_peak_col.rgb / m : vec3(0.0);
+	// (flat-topped, just over the knee, so the most pixels clip for the least light: a peaked core's glow lifted the mean
+	// ~2x as much per pixel over the knee)
+	float k, W = max(flare_peak_line.w, 0.05);
+	// (r3: a line's hot heart is its crack's own core, flare_seam_ground; the flat-topped bar along the line is gone)
+	if (flare_peak_line.z > 0.5) return vec3(0.0);
+	k = 1.0 - smoothstep(0.6 * W, W, length(w - flare_peak.xy));
+	return hue * k * flare_peak_k.w * flare_peak.w;
+}
+
+// The peak's lit shape (x albedo): a disk round the blow's heart with a hot core, or a strip along a line's whole length.
+float flare_peak_at(vec2 w) {
+	if (flare_peak.w <= 0.0) return 0.0;
+	float wob = (texture(flare_noise, w * 0.09 + 0.61).r - 0.5) * 1.2;
+	if (flare_peak_line.z > 0.5) {
+		vec2 ab = flare_peak_line.xy - flare_peak.xy;
+		float l2 = max(dot(ab, ab), 1e-4);
+		float h = dot(w - flare_peak.xy, ab) / l2;
+		float across = length(w - flare_peak.xy - ab * clamp(h, 0.0, 1.0));
+		float ends = smoothstep(-0.04, 0.0, h) * (1.0 - smoothstep(1.0, 1.04, h));
+		float hw = max(flare_peak.z, 0.2);
+		// (r3, judge r2 fix 3: the narrow core term (k.x, a cream bar ~50 px tall) is gone: the crack's own core and spill,
+		// flare_seam_ground, carry the hot light; this is the soft light either side, only where the crack has torn, and
+		// brightest at her)
+		float L = sqrt(l2);
+		float tipH = flare_seam.w > 0.0 ? fl_tear_front() / L : 1.0;
+		ends *= 1.0 - smoothstep(tipH - 0.5 / L, tipH + 0.3 / L, h);
+		float k = exp(-pow(max(across + wob * 0.4, 0.0) / hw, 2.0)) * mix(1.0, 0.45, smoothstep(0.0, 1.0, h));
+		float ww = hw * max(flare_peak_k.y, 1.0);
+		return (k + flare_peak_k.z * exp(-pow(across / ww, 2.0))) * ends * flare_peak.w;
+	}
+	float r = length(w - flare_peak.xy);
+	float R = max(flare_peak.z, 0.5);
+	float disk = (1.0 - smoothstep(R * 0.82, R * 1.02, r + wob)) * mix(1.0, 0.5, clamp(r / R, 0.0, 1.0));
+	// (the wash, as the line's: the field round the disk lit broad and soft)
+	float wash = flare_peak_k.z * exp(-pow(r / (R * max(flare_peak_k.y, 1.0)), 2.0));
+	return (disk + flare_peak_k.x * 1.2 * exp(-r / 1.1) + wash) * flare_peak.w;
 }
 
 // The drain and the repaint, on a world colour.
 void flare_drain(vec3 wp, inout vec3 alb, inout vec3 emi) {
+	// The stop's grade first (bible rows 1-3): the world's colours fall to the moon's indigo shade, lower in value, its
+	// own emission (windows, braziers) dimmed, so her ember is the one warm light. Never gray: the shade keeps its hue.
+	float gr = flare_grade.x;
+	if (gr > 0.0) {
+		vec3 shade = dot(alb, FL_LUM) * flare_grade_tint.rgb;
+		alb = mix(alb, mix(shade, alb, flare_grade.z), gr) * mix(1.0, flare_grade.y, gr);
+		emi *= mix(1.0, flare_grade.w, gr);
+	}
 	float dr = flare_look.x;
 	if (dr <= 0.0) return;
 	float r = length(wp.xz - flare_at.xz);
@@ -147,32 +286,9 @@ float flare_cover(vec2 w, float arr, float crystal) {
 	return c * flare_frost.y;
 }
 
-// The web (the Draw and the Return): hairline cracks of the calling's light under the ground.
-vec3 flare_web_light(vec2 w) {
-	if (flare_web.x <= 0.0) return vec3(0.0);
-	float r = length(w - flare_at.xz);
-	float reach = flare_at.w;
-	vec2 s = vec2(flare_web.w * 3.1, flare_web.w * 1.3);
-	float e1 = texture(flare_noise, w * 0.071 + s).a;
-	float e2 = texture(flare_noise, w * 0.19 + s.yx + 0.5).a;
-	// Hairlines (about a pixel from the arena's height), broken into lengths like embers under ash.
-	float l1 = 1.0 - smoothstep(0.0, 0.012 + fwidth(e1), e1);
-	float l2 = 1.0 - smoothstep(0.0, 0.01 + fwidth(e2), e2);
-	float seg = smoothstep(0.3, 0.72, texture(flare_noise, w * 0.11 + s * 0.7).g);
-	float line = max(l1 * (0.3 + 0.7 * seg), l2 * 0.35 * seg);
-	// Lit from her outward as the Draw begins, fading softly toward the reach's edge (the reach shown with no ring).
-	float lit = 1.0 - smoothstep(flare_web.z - 3.0, flare_web.z, r);
-	float inside = 1.0 - smoothstep(reach * 0.55, reach * 1.02, r + (texture(flare_noise, w * 0.05).r - 0.5) * 4.0);
-	// The light runs inward along the cracks, drawn up into her.
-	float run = 0.62 + 0.38 * sin(r * 0.9 + TIME * 11.0 + e1 * 3.0);
-	float heat = clamp(flare_web.y, 0.0, 1.0);
-	vec3 hot = mix(vec3(0.32, 0.03, 0.01), flare_hue.rgb, smoothstep(0.25, 1.0, heat)) * smoothstep(0.0, 0.25, heat);
-	// A breath of glow along the line's sides keeps a hairline alive from thirty metres up.
-	float halo = (1.0 - smoothstep(0.0, 0.05, e1)) * 0.07 * seg;
-	// Brightest near her, where the light is drawn in; faint toward the reach.
-	float near = mix(1.5, 0.4, smoothstep(2.0, reach, r));
-	return hot * (line + halo) * lit * inside * run * near * flare_web.x * 0.9;
-}
+// (H7 r2, judge r1 fix 4: the Draw's web, a hairline net of the calling's light under the ground, is gone from every
+// Flare: over a packed field it read as a white-gold wireframe over the whole frame. The stop is told by the deeper
+// grade and the hanging dust (FlareFx.Dust); flare_web stays as the Return's heat and seed for Burns Twice's char.)
 
 // The char's cracks (the Return's web): distance to the nearest seam between cells about 0.55 m across (F2-F1
 // of a jittered grid, m), so the burnt ground glows along a joined crust of cracks, never in loose straight lengths
@@ -396,7 +512,7 @@ bool fl_seam_where(vec2 w, out vec4 sw) {
 }
 
 // Seconds since the fuse passed this far along.
-float fl_seam_age(float along) { return flare_seam_t.x - max(along, 0.0) / flare_seam_t.y; }
+float fl_seam_age(float along) { return flare_seam_t.x - fl_tear_at(along); }
 
 // Inside the strip (its edges clamp, so nothing outside it may sample it).
 float fl_in_strip(vec2 uv) { return step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0); }
@@ -426,7 +542,21 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	if (!fl_seam_where(wp.xz, sw)) return;
 	float age = fl_seam_age(sw.x);
 	float open = smoothstep(-0.005, 0.04, age) * step(0.0, sw.x);
-	if (open <= 0.0) return;
+	if (open <= 0.0) {
+		// The foreshadow: the crack still closed, lit faintly from below through the ground along where it will open (its
+		// mask blurred, never a hairline), a spark running out along it with a short tail.
+		if (flare_fore.x > 0.0 && sw.x >= 0.0 && sw.x <= flare_seam.w) {
+			float fi = fl_in_strip(sw.zw);
+			float fm = clamp(textureLod(flare_crack_b, sw.zw, flare_fore_k.x).b * 2.4, 0.0, 1.0) * fi;
+			float ft = clamp(textureLod(flare_crack_b, sw.zw, 1.0).b * 3.0, 0.0, 1.0) * fi;
+			float fw = mix(1.0 - flare_fore_k.y, 1.0, smoothstep(0.25, 0.75, texture(flare_noise, vec2(sw.x * 0.19, 0.61)).r));
+			float fb = flare_fore.y - sw.x;
+			float fh = exp(-fb * fb * 30.0);
+			float fs = flare_fore.z * (fb >= 0.0 ? exp(-fb / max(flare_fore_k.z, 0.01)) : fh);
+			emi += fl_seam_col(flare_fore.w) * alb * (fm * fw * flare_fore.x + ft * fs) + fl_seam_col(0.9) * ft * fh * flare_fore.z * 0.06;
+		}
+		return;
+	}
 	float fade = flare_seam_t.z, night = flare_seam_t.w;
 	vec2 uv = sw.zw;
 	float inb = fl_in_strip(uv);
@@ -483,6 +613,28 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	vec3 glowCol = mix(fl_seam_col(min(h * 0.72, 0.78)), vec3(1.0, 0.55, 0.15), fresh);
 	e += glowCol * lvl * mix(0.08, 0.04, night) * fl_seam_glow(sw) * (1.0 - core);
 	emi = emi * (1.0 - cov * 0.85 * fade) + e;
+	// r3 (judge r2 fix 3): the PEAK as light out of the crack, in its own jagged shape from the blow on: a white-hot core
+	// (the strip's core, ~6-10 px), gold light spilling onto its lips (the core's mask blurred), brightest at her and uneven
+	// along its length; only where it has torn. And the tip: white-hot for a breath as the tear passes (the band's front
+	// along the line). (r2's flat-topped hot bar along the straight line and its even cream fill are gone.)
+	vec3 pk = vec3(0.0);
+	if (open > 0.0 && (flare_peak.w > 0.0 || flare_tear.w > 0.0)) {
+		float pm = max(flare_peak_col.r, max(flare_peak_col.g, flare_peak_col.b));
+		vec3 hue = pm > 1e-5 ? flare_peak_col.rgb / pm : vec3(1.0, 0.72, 0.4);
+		vec3 white = mix(hue, vec3(1.0, 0.95, 0.85), 0.6);
+		float un = 0.55 + 0.9 * smoothstep(0.2, 0.8, mix(texture(flare_noise, vec2(sw.x * 0.29, 0.53)).r, texture(flare_noise, vec2(sw.x * 0.83, 0.17)).g, 0.45));
+		float atHer = mix(0.35, 1.0, exp(-max(sw.x, 0.0) / 7.0));
+		float coreHot = clamp(core * 1.4, 0.0, 1.0);
+		float spill = clamp(textureLod(flare_crack_b, uv, 3.5).b * 2.2, 0.0, 1.0) * inb * (1.0 - coreHot);
+		float tip = flare_tear.w * exp(-max(age, 0.0) / 0.05);
+		if (flare_peak.w > 0.0 && flare_peak_line.z > 0.5) {
+			float env = flare_peak.w * un * atHer;
+			pk += white * coreHot * flare_peak_k.w * env;
+			pk += hue * spill * flare_peak_line.w * env * (alb0 + 0.015);
+		}
+		pk += white * coreHot * tip * un + hue * spill * tip * 0.04 * (alb0 + 0.015);
+	}
+	emi += pk * fade;
 }
 
 // The sweep's light over the ground round her (vfx9 r3b): a knee-height band 1.5-2 m wide behind its leading edge,
@@ -500,11 +652,16 @@ vec3 flare_sweep_at(vec2 w) {
 	float crossed = step(behind, swept + 0.001);
 	float m = behind * r;
 	float wedge = crossed * smoothstep(0.0, 0.12, m) * exp(-max(m - 0.12, 0.0) / 0.7) * flare_sweep.y;
-	float wash = crossed * flare_lc.y * 0.06;
+	// (r3, judge r2 fix 4: the hard straight-edged wedge at the lower right of blowp10 was this wash's sector, cut by a
+	// step at the angle the sweep began and at its held blade: both edges feathered over ~25 degrees now, and the wash
+	// handed to the band on the cleave, gone 0.12 s after it)
+	float soft = smoothstep(swept + 0.001, swept - 0.45, behind) * smoothstep(0.0, 0.45, behind);
+	float handed = flare_seam.w > 0.0 && flare_seam_t.x >= 0.0 ? 1.0 - smoothstep(0.0, 0.12, flare_seam_t.x) : 1.0;
+	float wash = crossed * soft * flare_lc.y * 0.06 * handed;
 	// The afterglow: the last 35 degrees behind the edge keep 60%, 35%, 15% of the band's light, fading with the wash
 	// (gone 0.25 s after the sweep ends).
 	float tail = behind < 0.3054 ? mix(0.6, 0.35, behind / 0.3054) : mix(0.35, 0.15, clamp((behind - 0.3054) / 0.3054, 0.0, 1.0)) * (1.0 - smoothstep(0.6109, 0.69, behind));
-	float after = crossed * flare_lc.y * tail * smoothstep(5.67, 6.0, swept);
+	float after = crossed * smoothstep(swept + 0.001, swept - 0.45, behind) * flare_lc.y * tail * smoothstep(5.67, 6.0, swept) * handed;
 	float wob = (texture(flare_noise, w * 0.09 + 0.3).r - 0.5) * 2.0;
 	float radial = smoothstep(1.6, 3.6, r) * (1.0 - smoothstep(R * 0.88, R * 1.04, r + wob)) * (1.0 - smoothstep(10.0, 12.0, r));
 	// (one continuous band: no streak texture along it, so no hot spots)
@@ -528,7 +685,16 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	vec2 w = wp.xz;
-	vec3 web = flare_web_light(w);
+	if (flare_band.w > 0.0) {
+		vec4 bd = flare_band_at(w);
+		// (a ripple's dust: the ground's value lifted toward a pale dust, no light; the band: light, x albedo, its edge's
+		// glow toward white-gold, its trough's dark)
+		alb = mix(alb, max(alb, vec3(dot(alb, FL_LUM)) * vec3(1.25, 1.18, 1.08) + 0.02), clamp(bd.y, 0.0, 1.0));
+		alb *= 1.0 - bd.w;
+		emi = emi * (1.0 - bd.w) + flare_band_col.rgb * bd.x * alb + mix(flare_band_col.rgb, vec3(dot(flare_band_col.rgb, FL_LUM)), 0.35) * bd.z;
+	}
+	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(w) * alb + flare_peak_hot(w);
+	vec3 web = vec3(0.0);
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
 	if (flare_seam.w > 0.0) flare_seam_ground(wp, inv_view[3].xyz, alb, rough, nrm_view, emi, view);
 	float kind = flare_look.w;
@@ -688,6 +854,8 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
+	// (the shock band lifts what it passes: a breath of its light up the body, on its rim)
+	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * (0.25 + rim) * (alb + 0.03);
 	// (as light: by its paint, so a charred body stays dark and only a pale one takes it)
 	if (flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_longcut_body(wp, nw, rim) * (alb * 1.8 + 0.03);
 	float g = flare_glazed(wp);
@@ -755,6 +923,9 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	flare_drain(wp, alb, emi);
 	// The Long Cut: the sweep's light along the grass, the seam's grass burnt black, lit gold from below at its roots.
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_sweep_at(wp.xz) * (0.3 + 0.7 * tip) * alb;
+	// (H7 r2: the band's front and the peak's lit shape run through the grass as through the ground under it)
+	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * (0.4 + 0.6 * tip) * alb;
+	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(wp.xz) * (0.4 + 0.6 * tip) * alb + flare_peak_hot(wp.xz) * (0.3 + 0.7 * tip);
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float age = fl_seam_age(sw.x);
@@ -793,6 +964,8 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout float rough, inout vec3 emi) {
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
+	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * 0.5 * (alb + 0.03) * smoothstep(1.5, 0.0, wp.y - flare_at.y);
+	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(wp.xz) * 0.6 * alb * smoothstep(2.0, 0.0, wp.y - flare_at.y);
 	if (flare_look.w < 0.5) return;
 	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
 	vec3 p = flare_crystal(wp.xz + wp.y * 0.7);

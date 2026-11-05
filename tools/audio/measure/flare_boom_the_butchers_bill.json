@@ -1,0 +1,95 @@
+{
+ "family": "flare_boom_the_butchers_bill",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "3f35465300f4646824ac2229e3383c36efca6b3289b1751ecb572323be95de43",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -16.012600400282405,
+    "crest_db": 15.007073025251335,
+    "lufs": -13.256812276708084,
+    "lufs_padded": false,
+    "onset_ms": 1.1111111111111112,
+    "tail_ms": 1323.8321995464853,
+    "centroid_hz": 1683.9231463157762,
+    "clipped": 0,
+    "clap": 0.574,
+    "clap_neg": 0.11,
+    "clap_margin": 0.464
+   }
+  },
+  {
+   "i": 1,
+   "key": "b4b6b2e3a08a55d755987cacf51f09146008890307a95eab5ab8547e981cd15a",
+   "file": "flare_boom_the_butchers_bill_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.24,
+    "peak_dbfs": -1.093228154246008,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -15.926534814442215,
+    "crest_db": 14.833306660196207,
+    "lufs": -12.941026758003597,
+    "lufs_padded": false,
+    "onset_ms": 312.29024943310657,
+    "tail_ms": 1806.1451247165533,
+    "centroid_hz": 1303.000320319569,
+    "clipped": 0,
+    "clap": 0.6168,
+    "clap_neg": 0.0935,
+    "clap_margin": 0.5233
+   }
+  },
+  {
+   "i": 2,
+   "key": "7a8d5eefec0dbf8ce1f0e7c4592ae564101c1aed58073ad9ec8c7bfdfff11e84",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0734681367751224,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -14.457356557292417,
+    "crest_db": 13.383888420517295,
+    "lufs": -13.640063582359003,
+    "lufs_padded": false,
+    "onset_ms": 0.8163265306122449,
+    "tail_ms": 935.7369614512472,
+    "centroid_hz": 2001.8051305683255,
+    "clipped": 0,
+    "clap": 0.5081,
+    "clap_neg": 0.108,
+    "clap_margin": 0.4001
+   }
+  },
+  {
+   "i": 3,
+   "key": "5bda689ab0eef5dd263b82f72b30e43784a40ff6cb78c0a0f119df308fc2b9a1",
+   "file": "flare_boom_the_butchers_bill_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.109024943310658,
+    "peak_dbfs": -1.0243860388891426,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -14.58689320829743,
+    "crest_db": 13.562507169408288,
+    "lufs": -13.246435297661685,
+    "lufs_padded": false,
+    "onset_ms": 27.732426303854876,
+    "tail_ms": 1521.0884353741496,
+    "centroid_hz": 3587.4782143399225,
+    "clipped": 0,
+    "clap": 0.551,
+    "clap_neg": -0.1126,
+    "clap_margin": 0.6637
+   }
+  }
+ ]
+}

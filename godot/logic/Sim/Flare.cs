@@ -256,6 +256,7 @@ public sealed partial class Battle
             ? Lamps.Full("flare.low_unseen", "seconds", 2) : 0;
         CrowdPress(p);
         FlareStagedPress(f);
+        FlareMarksPress(f);
         if (Lamps.Board) LinkFire("flare");
         if (stand && f.Blows > 0) FlareBlow();
         return true;
@@ -266,6 +267,7 @@ public sealed partial class Battle
     void FlareBlow()
     {
         var f = Flare!;
+        MarksRecompute(false);
         flareBlow++;
         bool last = f.Kind == FlareKind.Strike && flareBlow == flareAt.Length;
         var was = credit;
@@ -291,6 +293,8 @@ public sealed partial class Battle
             foreach (var e in HostilesInRadius(Player.X, Player.Z, flareReach))
                 if (!e.Boss && !e.Elite && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * FlareRout) KillEnemy(e, true, null);
         credit = was;
+        // The last blow's hits are done: the marks go (The Branding's stay until its bursts are done, FlareMarksTick).
+        if (last && !(f.Staged && f.Id == "the_branding")) FlareMarksEnd();
     }
 
     /// <summary>The harness's crowd count at the press (FlareCrowd); measured a second after the Flare ends.</summary>
@@ -403,7 +407,9 @@ public sealed partial class Battle
         double lend = Math.Clamp(Math.Min(dt, room), 0, dt);
         FlareT -= lend;
         FlareHold = Math.Max(0, FlareHold - lend);
-        if (flareLen - FlareT >= flareKey - 1e-9)
+        // (a key on a blow's own time, the Bell's: the lend stops 1e-6 short of the blow, so the release is let within 1e-5 of
+        // the key; with the world held at 0 (H7) nothing else carried it over, and the stop never ended)
+        if (flareLen - FlareT >= flareKey - 1e-5)
         {
             flareReleased = true;
             var p = Player;

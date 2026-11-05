@@ -164,6 +164,13 @@ public partial class BattleFx : Node3D
         AddChild(Blades);
         AddChild(OathBlades);
         Flare.HeightAt = heightAt;
+        // (H7: the stop hushes what was up, and the grade reaches the blood on the ground: FlareFx.Family)
+        Flare.Hush = k => { Hits.Hush = k; Sparks.Transparency = 1 - k; };
+        Flare.HushDone = () => { Hits.Retire(); Sparks.Clear(); Sparks.Transparency = 0; };
+        Flare.DecalGrade = c => Gore.FlareGrade = c;
+        Flare.FxDim = FlareDimSet;
+        Flare.Number = (tg, at, am, mh, cr) => Hits.Tally(tg, at, am, mh, cr);
+        Flare.Total = (at, am, safe) => Hits.Total(at, am, safe);
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {
@@ -651,6 +658,7 @@ public partial class BattleFx : Node3D
             if (had != null) return had;
             var mi = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1, Mesh = unitPlane ??= new PlaneMesh { Size = Vector2.One } };
             mi.MaterialOverride = new ShaderMaterial { Shader = overShader, RenderPriority = priority };
+            mi.AddToGroup(DangerGroup);
             AddChild(mi);
             return mi;
         }
@@ -1108,8 +1116,13 @@ public partial class BattleFx : Node3D
     int levelHeld;
 
     /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
+    /// <summary>Her ember's own burst for a level (PlayerView.LevelFlare), with the pillar: it waits for a Flare's frame too
+    /// (H7: c_bell's 50 frames at 1.8x after the blast were a level's ember burst landing under the Strike).</summary>
+    public Action OnLevelLight = () => { };
+
     void LevelLight()
     {
+        OnLevelLight();
         var p = PlayerPos;
         if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
         Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
@@ -1222,10 +1235,13 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Hit fh when fh.ByFlare && !fh.Dot:
                 {
-                    // While the Flare holds the frame only champions' and bosses' numbers show (FLARE_LOOK §1.5).
+                    // (H7: a Strike's numbers are held from the press and come in one burst as its band passes each foe:
+                    // FlareFx.Blow. A Stand's: while the Flare holds the frame only champions' and bosses' show, FLARE_LOOK §1.5.)
                     var foe = fh.Target >= 0 && fh.Target < b.Enemies.Capacity ? b.Enemies.Items[fh.Target] : null;
-                    if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
-                        Hits.Tally(fh.Target, V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z), fh.Amount, fh.MaxHp, fh.Crit);
+                    var fat = V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z);
+                    if (Flare.HoldNumber(fh.Target, fat, fh.Amount, fh.MaxHp, fh.Crit)) { }
+                    else if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
+                        Hits.Tally(fh.Target, fat, fh.Amount, fh.MaxHp, fh.Crit);
                     break;
                 }
                 case Ev.Hit e:
@@ -2126,7 +2142,7 @@ public partial class BattleFx : Node3D
             m.Decal.Size = new Vector3((float)z.Radius * 2, 4, (float)z.Radius * 2);
             float fade = (float)Math.Min(1, Math.Min(z.Age / 0.2, (z.Life - z.Age) / 0.4));
             // Faded in its colour (a decal's emission ignores alpha).
-            m.Decal.Modulate = Dim(col, Mathf.Max(0, fade) * (0.85f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)));
+            m.Decal.Modulate = Dim(col, Mathf.Max(0, fade) * (0.85f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)) * (mine ? FlareDim : 1));
             if (R() < 0.3f)
             {
                 float a = R() * Mathf.Tau, d = (float)z.Radius * Mathf.Sqrt(R());

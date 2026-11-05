@@ -88,6 +88,8 @@ public partial class Gore : Node3D
     }
 
     readonly List<Splat> splats = new();
+    /// <summary>H7: the Flare's grade on the blood (FlareFx.Family), a multiply; white none.</summary>
+    public static Color FlareGrade = Colors.White;
     int nextSplat;
 
     void BuildSplats()
@@ -167,6 +169,7 @@ public partial class Gore : Node3D
         float dry = Mathf.SmoothStep(0.1f, 0.7f, k);
         var c = s.Color.Lerp(s.Color * new Color(0.8f, 0.62f, 0.55f), dry);
         c.A = 0.8f * (1 - Mathf.SmoothStep(0.75f, 1, k));
+        c = new Color(c.R * FlareGrade.R, c.G * FlareGrade.G, c.B * FlareGrade.B, c.A);
         if (c != s.SentColor) { s.SentColor = c; s.Decal.Modulate = c; }
         if (k >= 1) { s.Shown = false; s.Decal.Visible = false; }
     }

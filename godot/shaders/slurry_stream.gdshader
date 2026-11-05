@@ -8,6 +8,7 @@
 // bank, 1 in the middle.
 shader_type spatial;
 render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_burley, specular_schlick_ggx;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
@@ -26,8 +27,8 @@ void vertex() {
 }
 
 float wh(vec2 p) {
-	vec2 a = p * vec2(0.09, 0.03) + vec2(0.0, -TIME * speed * 0.06);
-	vec2 b = p * vec2(0.21, 0.08) + vec2(3.7, -TIME * speed * 0.11);
+	vec2 a = p * vec2(0.09, 0.03) + vec2(0.0, -WORLD_TIME * speed * 0.06);
+	vec2 b = p * vec2(0.21, 0.08) + vec2(3.7, -WORLD_TIME * speed * 0.11);
 	return texture(noise_tex, a).g * 0.6 + texture(noise_tex, b).b * 0.4;
 }
 
@@ -58,10 +59,10 @@ void fragment() {
 	float mid = smoothstep(0.1, 0.85, UV2.x);
 	// (Drawn out two to one, no more: stretched further they read from the camera as streaks of
 	// speed, not slurry curling in a slow current.)
-	vec2 tp = vec2(UV.x * 0.4, UV.y * 0.2 - TIME * speed * 0.035);
+	vec2 tp = vec2(UV.x * 0.4, UV.y * 0.2 - WORLD_TIME * speed * 0.035);
 	float thread = texture(noise_tex, tp).r * 0.65 + texture(noise_tex, tp * vec2(2.3, 1.7) + 0.41).g * 0.35;
 	thread = smoothstep(0.55, 0.82, thread);
-	float pulse = 0.75 + 0.25 * sin(TIME * 0.6 + UV.y * 0.08);
+	float pulse = 0.75 + 0.25 * sin(WORLD_TIME * 0.6 + UV.y * 0.08);
 	vec3 sick = light * glow * thread * mid * pulse;
 
 	// Scum where it laps the banks, and in streaks down the current.

@@ -55,6 +55,7 @@ public partial class WorldScene : Node3D, IZoneLook
     double stopDue = -1, stopLen;
     // (--aa-beats: the beats are shot with hitstops on, whatever the saved Motion setting)
     static readonly bool AaBeats = Args.Has("aa-beats");
+    static readonly bool WorldClockLive = Args.Has("world-clock-live");
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
     double dashHeld, artHeld;
@@ -87,6 +88,7 @@ public partial class WorldScene : Node3D, IZoneLook
         AddChild(Crowd);
         Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam, Lines = Voices };
         Fx.OnDamageFlash = v => damageFlash = Math.Max(damageFlash, v);
+        Fx.OnLevelLight = () => Player?.LevelFlare();
         AddChild(Fx);
         AddChild(Voices);
     }
@@ -243,6 +245,8 @@ public partial class WorldScene : Node3D, IZoneLook
         // A Flare holds the world's clock itself (FLARE_LOOK §1.2): 8% from the press to the Spend, its own hitstops.
         var flare = Fx.Flare;
         if (flare.Active) fightDt = dt * flare.WorldRate;
+        // (--world-clock-live: an ablation, the world's materials on the engine's clock through a Flare's stop)
+        SurvivorUnchained.View.MotionClock.WorldRate = flare.Active && !WorldClockLive ? flare.WorldRate : 1;
         fightTime += fightDt;
         if (b != null && !SimPaused) flare.Watch(b);
         // A press kept from before a pause (a draft, a chest) is not spent after it.
@@ -276,8 +280,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 frameEvents.AddRange(evs);
                 foreach (var e in evs)
                 {
-                    if (e is Ev.LevelUp) Player?.LevelFlare();
-                    else if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Knockdown kd) Player?.OnKnockdown(kd.Seconds);
                     else if (e is Ev.Ability ab)

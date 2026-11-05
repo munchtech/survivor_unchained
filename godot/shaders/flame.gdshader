@@ -6,6 +6,7 @@
 // the red edges darken what is behind them a little, as a real flame does.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2DArray sprites : filter_linear_mipmap;
 // The layers of the tongues in the sprites: the first, and how many.
@@ -36,7 +37,7 @@ void vertex() {
 void fragment() {
 	// UV.y is 0 at the tip, 1 at the root: the tip licks most.
 	float tip = 1.0 - UV.y;
-	vec2 n = texture(noise_tex, UV * vec2(0.6, 0.35) + vec2(v_seed, TIME * 0.9 + v_seed)).rg - 0.5;
+	vec2 n = texture(noise_tex, UV * vec2(0.6, 0.35) + vec2(v_seed, WORLD_TIME * 0.9 + v_seed)).rg - 0.5;
 	vec4 t = texture(sprites, vec3(UV + n * vec2(0.22, 0.14) * tip, v_shape));
 	float s = t.a * mix(0.55, 1.0, t.r);
 	// Thinner and cooler as it rises and ages.

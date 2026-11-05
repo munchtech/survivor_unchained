@@ -1,0 +1,95 @@
+{
+ "family": "flare_boom_bell_of_the_morning",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "a383033da92199d8133355f806ac9e5e28f6e7a203b6333989921638ca85f756",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.48,
+    "peak_dbfs": -1.023126025962375,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -19.870739469570818,
+    "crest_db": 18.847613443608445,
+    "lufs": -16.80435966069722,
+    "lufs_padded": false,
+    "onset_ms": 1.0430839002267573,
+    "tail_ms": 3414.7392290249436,
+    "centroid_hz": 533.3746463317352,
+    "clipped": 0,
+    "clap": 0.4034,
+    "clap_neg": 0.1156,
+    "clap_margin": 0.2878
+   }
+  },
+  {
+   "i": 1,
+   "key": "aab8142d11abc1dc578740e0f6705a8c8db739074d9c6e04c2e0c5ad93698e6a",
+   "file": "flare_boom_bell_of_the_morning_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.48,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -19.884728251236016,
+    "crest_db": 18.879200876204948,
+    "lufs": -16.74361751601102,
+    "lufs_padded": false,
+    "onset_ms": 0.8843537414965986,
+    "tail_ms": 2415.260770975057,
+    "centroid_hz": 404.4569595641921,
+    "clipped": 0,
+    "clap": 0.4464,
+    "clap_neg": 0.1688,
+    "clap_margin": 0.2776
+   }
+  },
+  {
+   "i": 2,
+   "key": "a9c09f077bb2fc8be9538257e308d94a313d90479d2a338507a678274f1f19dd",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.48,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -18.60301328720636,
+    "crest_db": 17.59748591217529,
+    "lufs": -14.670477664798733,
+    "lufs_padded": false,
+    "onset_ms": 0.3401360544217687,
+    "tail_ms": 2915.328798185941,
+    "centroid_hz": 317.1518671999539,
+    "clipped": 0,
+    "clap": 0.3821,
+    "clap_neg": 0.1165,
+    "clap_margin": 0.2656
+   }
+  },
+  {
+   "i": 3,
+   "key": "7cde8726fbbaa91a44755d1d9a6ba5e11ea336704db733755bc5894089b18a67",
+   "file": "flare_boom_bell_of_the_morning_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 3.48,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -19.266546595670853,
+    "crest_db": 18.261019220639785,
+    "lufs": -17.73617813941914,
+    "lufs_padded": false,
+    "onset_ms": 0.27210884353741494,
+    "tail_ms": 2691.7913832199547,
+    "centroid_hz": 431.99931234423264,
+    "clipped": 0,
+    "clap": 0.4518,
+    "clap_neg": 0.0566,
+    "clap_margin": 0.3952
+   }
+  }
+ ]
+}
