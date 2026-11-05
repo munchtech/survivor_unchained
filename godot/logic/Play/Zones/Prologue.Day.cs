@@ -144,6 +144,8 @@ public sealed partial class Prologue
         if (gateDown < 0) { gateDown = want; G.Look.Shift("portcullis", gateDown); }
         else if (gateDown != want)
         {
+            // (its sound, by id: none banked yet, so silent; Game's --on gate frames the rise from it)
+            if (gateDown == 1) B.Events.Emit(new Ev.Sound { Id = "gate.portcullis", X = g.X, Z = barZ });
             gateDown = want > gateDown ? Math.Min(want, gateDown + dt / GateRise) : Math.Max(want, gateDown - dt / GateRise);
             G.Look.Shift("portcullis", gateDown * gateDown * (3 - 2 * gateDown));
         }

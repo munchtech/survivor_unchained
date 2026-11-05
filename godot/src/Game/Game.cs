@@ -1154,6 +1154,10 @@ public partial class Game : Node, IZoneHost
                     scene?.Slow(1.1);
                     foreach (var s in new[] { 0.1, 0.5, 0.9, 1.08, 1.16, 1.24, 1.32, 1.45, 2.0, 3.0 }) Shots.Want("rise", s);
                     break;
+                case Ev.Sound { Id: "gate.portcullis" } when Shots.On("gate"):
+                    // (H8 N22, --on gate: the day's portcullis rising, a frame every half second through it and after)
+                    for (int i = 0; i <= 8; i++) Shots.Want("gate_rise", i * 0.5);
+                    break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
                     // (one of theirs at a time: the next waits for the last to be said).

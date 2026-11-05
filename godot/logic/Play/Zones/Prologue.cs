@@ -1235,8 +1235,8 @@ public sealed partial class Prologue : ZoneRuntime
                 MorningClimbs();
                 // (and not while the wolf ring's second wave holds it, DayStretch.GateOpen)
                 // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
-                // (H8 N22: and the portcullis most of the way up, its bar gone: she may wait at it beyond the exit line)
-                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && gateBar == null && !finished) { finished = true; Finish(); }
+                // (H8 N22: and the portcullis all the way up: she may wait at it beyond the exit line, and sees it rise)
+                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && gateBar == null && gateDown <= 0 && !finished) { finished = true; Finish(); }
                 break;
         }
     }
