@@ -1,6 +1,8 @@
-"""Her forms' check: how close a built body B stands to her shipped body A posed into B's rest (her_target.py).
+"""Her forms' check: how close a built body B stands to the target the fit used (A posed into the slider-stage skeleton).
 
-    python tools/body/formcheck.py <B.glb> --out DIR [--ref godot/art/people/heroine.glb]
+    python tools/body/formcheck.py <B.glb> --out DIR [--target tools/body/forms/her_v1_target.npz] [--repose]
+--target: wrap.py's target npz, THE definition (default forms/her_v1_target.npz, made by `wrap.py target
+<slider-stage body.glb> <npz>`, git-ignored); --repose: reference only, A posed into B's own final skeleton.
 Out: forms.json, summary.txt, sheet.png (flat gray clay, orthographic: front, side, back of B beside the posed A).
 - distance per region: B's points to A's surface, p50/p95/max mm; and to "symmetric her" (the mean of the signed
   point-to-plane distances to A and to A mirrored: A is not symmetric, B is by rule, so B's floor against A is half
@@ -39,6 +41,17 @@ def set_weights(m, names):
         sel = np.array([n.startswith(pre) for n in names])
         out[k] = (m.W * sel[np.clip(m.J, 0, nb - 1)]).sum(1)
     return out
+
+
+def load_target(path):
+    """The fit's own target (wrap.make_target's npz): P, T, N, ground, g_<set> per point, b_<bone> (head, tail)."""
+    z = np.load(path)
+    d = {"P": z["P"], "T": z["T"], "N": z["N"], "turns": {}, "path": path}
+    d["bones"] = {k[2:]: z[k] for k in z.files if k.startswith("b_")}
+    for k in z.files:
+        if k.startswith("g_"):
+            d[k] = z[k]
+    return d
 
 
 def regions(P, g):
@@ -86,9 +99,18 @@ def main():
     ap.add_argument("glb")
     ap.add_argument("--ref", default=os.path.join(REPO, "godot", "art", "people", "heroine.glb"))
     ap.add_argument("--out", required=True)
+    ap.add_argument("--target", default=os.path.join(HERE, "forms", "her_v1_target.npz"),
+                    help="the exact target the fit used (wrap.py target <slider-stage glb> <npz>): THE definition of right")
+    ap.add_argument("--repose", action="store_true",
+                    help="reference only: measure against A posed into B's own final skeleton (her_target.py)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    tg = ht.target(a.glb, a.ref)
+    if a.repose:
+        tg = ht.target(a.glb, a.ref)
+        ga = None
+    else:
+        tg = load_target(a.target)
+        ga = {k: tg["g_" + k] for k in ("arm", "hand")}
     gb = Glb(a.glb)
     m = gb.mesh("Heroine")
     fs = gb.skeleton(0)
@@ -104,7 +126,8 @@ def main():
     qm, nm, _, dm = SM.closest(P)
     sym = np.abs(0.5 * (np.einsum("ij,ij->i", P - qa, na) + np.einsum("ij,ij->i", P - qm, nm)))
     _, _, _, asym = SA.closest(tg["P"] * np.array([-1.0, 1, 1]))
-    out = {"glb": os.path.relpath(a.glb, REPO).replace("\\", "/"), "turns_deg": tg["turns"], "regions": {}}
+    out = {"glb": os.path.relpath(a.glb, REPO).replace("\\", "/"), "turns_deg": tg["turns"], "regions": {},
+           "target": "repose (A posed into B's final skeleton)" if a.repose else os.path.relpath(a.target, REPO).replace("\\", "/")}
     for i, k in enumerate(REG):
         s = reg == i
         if s.any():
@@ -114,9 +137,10 @@ def main():
                     "her_asymmetry_mm (A to mirrored A, all her points)": stats(asym)}
     # the arm's girth
     out["arm"] = {}
-    nA = len(tg["names"])
-    ga = {}
-    for k in ("arm", "hand"):
+    if ga is None:
+        ga = {}
+        nA = len(tg["names"])
+    for k in ("arm", "hand") if not ga else ():
         sel = np.array([n.startswith(wrap.A_SETS[k]) for n in tg["names"]] + [False])
         ga[k] = (tg["W"] * sel[np.clip(tg["J"], 0, nA)]).sum(1)
     for sd in "lr":
@@ -143,10 +167,10 @@ def main():
     out["sheet"] = {"path": "sheet.png", "size": [W_, H_], "order": "front B, front A, side B, side A, back B, back A"}
     with open(os.path.join(a.out, "forms.json"), "w") as f:
         json.dump(out, f, indent=1)
-    lines = [f"forms {out['glb']}  (B against her A posed into B's rest)"]
+    lines = [f"forms {out['glb']}  (B against {out['target']})"]
     for k, v in out["regions"].items():
-        lines.append(f"  {k:6s} n {v['points']:6d}  to A p50/p95/max {v['to_A_mm']}  to symmetric her {v['to_symmetric_her_mm']}")
-    lines.append(f"  TIGHT to A {out['tight']['to_A_mm']}  to symmetric her {out['tight']['to_symmetric_her_mm']}  her own asymmetry {out['tight']['her_asymmetry_mm (A to mirrored A, all her points)']}")
+        lines.append(f"  {k:6s} n {v['points']:6d}  to target p50/p95/max {v['to_A_mm']}  to symmetric her {v['to_symmetric_her_mm']}")
+    lines.append(f"  TIGHT to target {out['tight']['to_A_mm']}  to symmetric her {out['tight']['to_symmetric_her_mm']}  her own asymmetry {out['tight']['her_asymmetry_mm (A to mirrored A, all her points)']}")
     for sd in "lr":
         v = out["arm"][sd]
         lines.append(f"  arm {sd} girth err % {v['err_pct']}  segments B {v['segments_B_m']} A {v['segments_A_m']}")
