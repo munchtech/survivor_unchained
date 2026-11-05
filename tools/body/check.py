@@ -299,6 +299,7 @@ def main(argv=None):
     ap.add_argument("--same-head", action="store_true", help="the head meshes must be the ref's in the world at rest (see contract())")
     ap.add_argument("--topo", help="the topology npz of --body (default: its glb extras body_base.topology); play: --play-topo")
     ap.add_argument("--play-topo")
+    ap.add_argument("--hide-far", action="store_true", help="also draw strip_hip_flex_nofar.png: her own side of the midline only")
     ap.add_argument("--only", default="contract,tris,weights,bends,silhouette,topology")
     ap.add_argument("--spec", default=str(HERE / "check_spec.json"))
     ap.add_argument("--out", required=True)
@@ -342,6 +343,11 @@ def main(argv=None):
                                f"{mo} | {kind} poser | rest, 90, 135 | 9.4 px/cm | orange: outline, cyan: reference")
             res["bends"]["strips"][f"{mo}_l"]["sheet"] = str(out / f"strip_{mo}.png")
             res["bends"]["strips"][f"{mo}_l"]["sheet_size"] = list(size)
+            if a.hide_far and mo == "hip_flex":
+                bends.sheet(draws if 2 * h + 20 <= 700 else draws[:1], out / f"strip_{mo}_nofar.png",
+                            f"{mo} | far side hidden | rest, 90, 135 | 9.4 px/cm", hide_far=True)
+        if "hip_flex" in bends.MOTIONS:
+            res["bends"]["both_hips"] = bends.both_hips(poser, rig, fr)
     if "silhouette" in only and A is not None:
         sc = spec.get("silhouette", {})
         res["silhouette"] = silhouette(B, A, {"close": bends.PX_CLOSE, "look": sc.get("look_px_per_cm", 30.0) * 100}, out)
@@ -405,7 +411,19 @@ def summary(res, spec):
                          f"{max(ar, default=float('nan')):.3f} | in {pen['count']} ({s['angles']['0']['penetration']['count']} at rest), "
                          f"{pen['depth_max_mm']} | {ot}"
                          + (" | pit " + " ".join(f"{g[0].upper()}{v}" for g, v in r["pit"]["by_region_mm"].items())
-                            if r.get("pit") else ""))
+                            if r.get("pit") else "")
+                         + (f" | true>2mm {pen['true_over_2mm']} (max {pen['true_max_mm']})" if "true_max_mm" in pen else "")
+                         + (f" | end out {r['crease_end'].get('out', {}).get('gain_mm')} in "
+                            f"{r['crease_end'].get('in', {}).get('gain_mm')} (<{r['crease_end']['limit_mm']})"
+                            if r.get("crease_end") else "")
+                         + (f" | slit {r['slit'].get('slit_mm')}" if r.get("slit") else "")
+                         + (" | kink " + " ".join(f"{k} {v['turn_deg']}@{v['at_mm']} (rest {v['rest_deg']})"
+                                                  for k, v in r["kink"].items()) if r.get("kink") else ""))
+    for deg, r in res.get("bends", {}).get("both_hips", {}).items():
+        L.append(f"  both hips {deg:>3s}: " + " | ".join(
+            f"{s} in {r[s]['penetration']['count']}, {r[s]['penetration']['depth_max_mm']} true>2mm "
+            f"{r[s]['penetration'].get('true_over_2mm')} (max {r[s]['penetration'].get('true_max_mm')}) pit "
+            + " ".join(f"{g[0].upper()}{v}" for g, v in r[s]["pit"].items()) for s in "lr"))
     for tier, t in res.get("topology", {}).items():
         if "error" in t:
             L.append(f"topology {tier}: {t['error']}")

@@ -193,6 +193,11 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         gr = np.zeros(mesh.n, bool)
         gr[mesh.rep[st.rend]] = True
         side = np.where(gr, np.where(gd, -1.0, 1.0), side)
+    # the rotation prior's reach (P1 ek2): "prior_off_contact" keeps it off the skins' footprint (fp at the skinned
+    # pose), so the pressed skins turn freely in the contact and the sides beyond it keep the skin's own turns
+    wpr = np.ones(mesh.n)
+    if sk is not None and jc.get("prior_off_contact"):
+        wpr = 1.0 - fpn(X)
     active = np.zeros(mesh.n, bool)
     log = {"free": int(len(fi)), "iters": []}
     if sk is not None:
@@ -376,7 +381,7 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
             np.add.at(Cv, E[:, 0], Sm)
             np.add.at(Cv, E[:, 1], Sm)
             if cf.get("rot_prior", 0):
-                Cv += cf["rot_prior"] * l2[:, None, None] * np.transpose(R_lbs, (0, 2, 1))
+                Cv += (cf["rot_prior"] * wpr * l2)[:, None, None] * np.transpose(R_lbs, (0, 2, 1))
             U, _, Vt = np.linalg.svd(Cv[fi])
             Rn = np.einsum("nji,nkj->nik", Vt, U)
             bad = np.linalg.det(Rn) < 0

@@ -97,14 +97,17 @@
       "outer",
       "inner"
      ],
-     "pressure": 0.0
+     "pressure": 0.0,
+     "solve": {
+      "rot_prior": 10
+     }
     },
     "135": {
      "surface": "skins",
      "skins": {
       "share": 0.5,
       "sigma": 0.006,
-      "rim": 0.02,
+      "rim": 0.04,
       "close": 0.0,
       "hold": 0.01,
       "area_step": 0.015,
@@ -115,11 +118,14 @@
       "d": 1.0
      },
      "solve": {
-      "margin": 0.00035
-     }
+      "margin": 0.00035,
+      "rot_prior": 3
+     },
+     "prior_off_contact": 1
     }
    },
-   "why": "P1 D (5 Nov), on OUR topology and weights v1 (wide crease band, 4b off). Keys 90 and 135 only: the 5 key (straightening from her 40.4 rest) is dropped, LBS there already holds (inside 0, girth .99-1.05, area .98-1.09), so below the rest the law holds the null. side 'geom': each node's side of the plane by the REST bisector plane (the check's seg_d), not the 0.5 distal weight: with the wide band the 0.5 line sits off the crease and the fold pinned 286 rounded-corner nodes to the wrong side (175 inside at 90 against LBS's 0). 90: the inner and outer curves pulled (cap 30 mm: the inner corner sits up to 27 px off, the sharpening the wide band needs), no pressure. 135: pressure, the section swell as a push along the skin normal (the edge-scaling swell grew girth to 1.2 for area .79: scaling stretches the skin round a pinned face), restoring the rest area per station to p 1.0 / d 0.88 of the rest (the forearm's girth is the bound: d 0.94 pushed d0.1 to 1.09), faded to none within 10 mm of the contact (the corner's normals converge: pushing there folded the skin, 11 inside); clamp: the plane as a hard wall after the last round."
+   "why": "P1 D (5 Nov), on OUR topology and weights v1 (wide crease band, 4b off). Keys 90 and 135 only: the 5 key (straightening from her 40.4 rest) is dropped, LBS there already holds (inside 0, girth .99-1.05, area .98-1.09), so below the rest the law holds the null. side 'geom': each node's side of the plane by the REST bisector plane (the check's seg_d), not the 0.5 distal weight: with the wide band the 0.5 line sits off the crease and the fold pinned 286 rounded-corner nodes to the wrong side (175 inside at 90 against LBS's 0). 90: the inner and outer curves pulled (cap 30 mm: the inner corner sits up to 27 px off, the sharpening the wide band needs), no pressure. 135: pressure, the section swell as a push along the skin normal (the edge-scaling swell grew girth to 1.2 for area .79: scaling stretches the skin round a pinned face), restoring the rest area per station to p 1.0 / d 0.88 of the rest (the forearm's girth is the bound: d 0.94 pushed d0.1 to 1.09), faded to none within 10 mm of the contact (the corner's normals converge: pushing there folded the skin, 11 inside); clamp: the plane as a hard wall after the last round.",
+   "why_ek2": "P1 ek2 (5 Nov): the knee's rule carried to the elbow (the judge's polish: 'the crease ends in a pinch of about 2 cm with a bright streak'): the ARAP's local turns tied to the skin's (rot_prior 90: 10; 135: 3 off the skins' footprint) and the 135 footprint's rim 20 -> 40 mm. bends.py crease_end out/in 3.4/2.9 -> 0.2/0.6 mm at 90, 4.3/4.1 -> 0.6/0.8 at 135; inside by true depth (bends.true_depth) 90: 12 over 2 mm (6.4) -> 0 (1.3), 135: 23 (8.2) -> 2 (2.14); area at 135 .987 -> .952 (the turns held to the skin's keep its LBS thinning near the joint)."
   },
   {
    "name": "knee",
@@ -188,7 +194,27 @@
      "corner_ramp": 0.02,
      "bow": -0.6,
      "solve": {
-      "margin": 0.0005
+      "margin": 0.0005,
+      "rot_prior": 10
+     },
+     "pressure": 3.0,
+     "pressure_to": {
+      "p": 0.97,
+      "d": 1.0
+     },
+     "area": {
+      "p": [
+       0.07,
+       0.095,
+       0.12,
+       0.145
+      ],
+      "d": [
+       0.01,
+       0.02,
+       0.03,
+       0.045
+      ]
      }
     },
     "135": {
@@ -201,18 +227,21 @@
      "skins": {
       "share": 0.5,
       "sigma": 0.006,
-      "rim": 0.02,
+      "rim": 0.04,
       "close": 0.0,
       "hold": 0.01,
       "area_step": 0.015,
       "ramp": 0.04
      },
      "solve": {
-      "margin": 0.00035
-     }
+      "margin": 0.00035,
+      "rot_prior": 3
+     },
+     "prior_off_contact": 1
     }
    },
-   "why": "P1 D (5 Nov), on OUR topology and weights v1. The flatten fold (crease_fold.py) now, not v1's 'plane' solve; keys 90 and 135 (the 45 key dropped: LBS holds there and the 90 key's hat starts at the rest 4.8). side 'geom' as the elbow's. 90: LBS has no crossing but the back of the knee caves to the joint (the inner outline 35 px off the reference corner); the inner and outer curves pulled (cap 30 mm), the contact held through the reference's inner corner, not the joint (corner_shift: a thin back of the thigh against a full calf puts the corner 13 mm toward the thigh; a fold held on the joint's plane dented the crease there), the shift eased in over 20 mm from the joint's axis (a full shift at the axis drove the thigh's skin into the calf beside the joint: 11 inside), margin 0.5 mm (1.5 mm left a 3 mm see-through slit 18 mm deep in the side view) and the contact sagged 1.5 mm at 5 cm across the limb (bow -0.6/m: a flat contact seen edge-on still shows its 1 mm gap as a slit, 19 px; a soft contact is not flat). 135: the elbow's pressure (p 1.0, d 0.88), the outer curve only."
+   "why": "P1 D (5 Nov), on OUR topology and weights v1. The flatten fold (crease_fold.py) now, not v1's 'plane' solve; keys 90 and 135 (the 45 key dropped: LBS holds there and the 90 key's hat starts at the rest 4.8). side 'geom' as the elbow's. 90: LBS has no crossing but the back of the knee caves to the joint (the inner outline 35 px off the reference corner); the inner and outer curves pulled (cap 30 mm), the contact held through the reference's inner corner, not the joint (corner_shift: a thin back of the thigh against a full calf puts the corner 13 mm toward the thigh; a fold held on the joint's plane dented the crease there), the shift eased in over 20 mm from the joint's axis (a full shift at the axis drove the thigh's skin into the calf beside the joint: 11 inside), margin 0.5 mm (1.5 mm left a 3 mm see-through slit 18 mm deep in the side view) and the contact sagged 1.5 mm at 5 cm across the limb (bow -0.6/m: a flat contact seen edge-on still shows its 1 mm gap as a slit, 19 px; a soft contact is not flat). 135: the elbow's pressure (p 1.0, d 0.88), the outer curve only.",
+   "why_ek2": "P1 ek2 (5 Nov), judge on her_ek_final: the crease's end hooked (90: a 3 cm curl at its lower outer end; 135: a 6 cm 'smile' pinched where it turns). Measured (bends.py crease_end: the side's concavity gain over rest at r 15 mm, the contact excluded): 90 out 3.9 mm, 135 out 4.6 mm at the curl's tip (plain LBS 2.1-2.5 there: no fold). The ARAP's free local turns made it: the compressed back-of-knee skin keeps its rest lengths and buckles where the contact ends (local 0: 0.6/0.9 mm). So the turns are tied to the skin's own (rot_prior: 90 at 10, the shape a smoothed LBS; 135 at 3, kept off the skins' footprint by prior_off_contact so the pressed skins still slide and turn in the contact: with the prior on the contact too, 113 inside). The 135 footprint's rim 20 -> 40 mm (the contact's edge eased out along the sides: the inner side's gain 3.0 -> 0.9, inside 102 -> 61, true depth 2.9 -> 2.3 mm). 90's section at p0.25 (118 mm up the thigh) was .935 (LBS .921: the crease band's calf share up the back of the thigh): pressure 3.0 to 0.97 of rest at stations 70-145 mm up the thigh only (stations at 10-45 mm pushed the back of the thigh into the calf: 10 inside, 3.2 mm), .935 -> .960, 6 inside, true depth <= 1.7 mm."
   },
   {
    "name": "hip",

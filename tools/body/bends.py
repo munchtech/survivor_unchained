@@ -398,8 +398,29 @@ def penetration(strip, V, T_all):
             continue
         dep += list(surface_depth(V, To, V[qs]) * 1000)
     dep = np.array(dep)
+    tru = true_depth(strip, V, T_all, q)
     return {"count": int(ins.sum()), "depth_max_mm": round(float(dep.max()) if len(dep) else 0.0, 2),
-            "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx)), "depth_fallback": nfb}
+            "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx)),
+            "depth_fallback": nfb, "true_max_mm": round(float(tru.max()), 2),
+            "true_over_2mm": int((tru > TRUE_LIMIT_MM).sum())}
+
+
+# P1 ek2 (5 Nov): the TRUE depth of an inside point: its distance to the posed surface with the triangles round its own
+# rest place (EXCL_M) dropped, whatever segment they are in (the other-segment depth read 171 mm for knee 135's thigh
+# points 5 mm under the folded thigh-back skin: a self-fold no segment split sees). The acceptance counts those over
+# TRUE_LIMIT_MM 2 mm (under two close-up pixels, 1.06 mm each: a crossing that shallow stays inside the crease's dark
+# line); EXCL_M 12 mm, the point's own ring (two ring steps of the joints' 5-6 mm quads)
+TRUE_LIMIT_MM, EXCL_M = 2.0, 0.012
+
+
+def true_depth(strip, V, T_all, q):
+    P0 = strip.poser.P0
+    cen0 = P0[T_all].mean(1)
+    out = np.zeros(len(q))
+    for i, k in enumerate(q):
+        To = T_all[np.linalg.norm(cen0 - P0[k], axis=1) > EXCL_M]
+        out[i] = surface_depth(V, To, V[k:k + 1])[0] * 1000
+    return out
 
 
 # ------------------------------------------------------------------ outlines --
@@ -683,6 +704,7 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
            "rest_angle_deg": round(strip.rest_deg, 1), "Lp_mm": round(strip.Lp * 1000, 1), "Ld_mm": round(strip.Ld * 1000, 1),
            "angles": {}}
     draw = {}
+    kink0 = {sg: own_profile(strip, V0, G0, sg) for sg in "pd"} if strip.motion in ("elbow", "knee") else None
     extra = tuple(d for d in EXTRA.get(strip.motion, ()) if d not in angles) if tuple(angles) == ANGLES else ()
     for deg in tuple(angles) + extra:
         V, G, info = strip.posed(deg)
@@ -696,6 +718,15 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
         row["penetration"] = penetration(strip, V, T_all)
         if strip.motion == "hip_flex":
             row["pit"] = pit(strip, V)
+        if strip.motion.startswith("shoulder") and deg:
+            # P1 ek2, measure only: the judge's shoulder-135 marks (the V notch at the deltoid's top, the trapezius
+            # pinch, the cap's ring, the fan folds down the trunk's side) as the hip's rest-curvature gain by region
+            # round the joint (front / side = out / back / medial = the trunk), at the hip's scale; no threshold yet
+            row["pit"] = pit(strip, V, reach=0.16)
+        if strip.motion in ("elbow", "knee") and deg:
+            row["crease_end"] = crease_end(strip, V, G)
+            row["slit"] = slit(strip, V, R, Plane2(strip, G))
+            row["kink"] = kink(strip, V, G, kink0)
         if deg in extra:
             row["drawn"] = False
         mk = ray.mask(V, strip.T_rend, vw_hi)
@@ -775,7 +806,7 @@ def shade_steps(img, m, edge_px=3):
     return round(float(np.percentile(g, 99)), 4), round(float(g.max()), 4)
 
 
-def sheet(strips_draw, path, title):
+def sheet(strips_draw, path, title, hide_far=False):
     """One PNG per joint: rows = sides, columns = rest | 90 | 135; clay at the close-up scale, the model's outline
     (orange) and the reference (cyan)."""
     from PIL import Image, ImageDraw
@@ -785,7 +816,10 @@ def sheet(strips_draw, path, title):
         panels = []
         for deg in sorted(draw):
             V, ref = draw[deg]
-            img, m = clay(V, strip.T_rend, vw)
+            Td = strip.T_rend
+            if hide_far:    # P1 ek2 (the judge's check): only her own side of the midline (the far leg and half hidden)
+                Td = Td[strip.poser.P0[Td].mean(1) @ (strip.fr.lat * (1 if strip.s == "l" else -1)) > 0]
+            img, m = clay(V, Td, vw)
             rgb = np.stack([img * 255] * 3, -1).astype(np.uint8)
             e = ray.boundary(m)
             rgb[e] = (235, 120, 30)
@@ -810,3 +844,153 @@ def sheet(strips_draw, path, title):
         y += r[0].height + 4
     out.save(path)
     return out.size
+
+
+# ------------------------------------------------------- crease measures (P1 ek2) --
+# crease_end: the hook at the crease's end (the judge on her_ek_final: knee 90 "curls into a hook of about 3 cm at its
+# lower end, on the outer side"; 135 "a dark, hooked 'smile' fold about 6 cm wide on the side of the knee, pinched
+# where it turns"). The number: the concavity gain over rest, N . (mean of the points within CE_R) - point (mm, + =
+# more concave than at rest), on the joint's sides (the posed angle from e1, into the crease, toward the hinge e2:
+# 'out' her outside 40..130 deg, 'in' -40..-130), points with the other segment's skin within CE_CONTACT dropped (the
+# contact's own fold is the crease, not its end). On her_ek_final it sits on the curl's tip (knee 90 out 3.9 mm, 135
+# out 4.6). CE_LIMIT 2.5 mm: plain LBS's sides at the same radius (2.1-2.5 mm on her knee at 90/135, no fold there):
+# a crease end no more concave than the skinned side reads as a fade
+CE_R, CE_REACH, CE_CONTACT, CE_LIMIT = 0.015, 0.15, 0.008, 2.5
+
+
+def crease_end(strip, V, G):
+    from gl import weld
+    p = strip.poser
+    P0, T = p.P0, p.T
+    if not hasattr(strip, "_ce0"):
+        rep = weld(P0, 1e-6)
+        sel = np.nonzero(strip.rend & (np.linalg.norm(P0 - strip.O, axis=1) < CE_REACH))[0]
+        sel = sel[np.unique(rep[sel], return_index=True)[1]]
+        nb_ = cKDTree(P0).query_ball_point(P0[sel], CE_R)
+        N0 = normals(P0, T)
+        c0 = np.array([N0[i] @ (P0[j].mean(0) - P0[i]) for i, j in zip(sel, nb_)])
+        strip._ce0 = (sel, nb_, c0)
+    sel, nb_, c0 = strip._ce0
+    N = normals(V, T)
+    dv = (np.array([N[i] @ (V[j].mean(0) - V[i]) for i, j in zip(sel, nb_)]) - c0) * 1000
+    a_ = -unit(G[strip.j][:3, 3] - G[p.index[strip.prox]][:3, 3])
+    b_ = strip.d3(G)
+    nb = unit(a_ - b_)
+    wv = unit(a_ + b_)
+    hv = np.cross(nb, wv)
+    out = strip.fr.lat * (1 if strip.s == "l" else -1)
+    hv = hv if hv @ out >= 0 else -hv
+    rel = V[sel] - G[strip.j][:3, 3]
+    th = np.degrees(np.arctan2(rel @ hv, rel @ wv))
+    gd = strip.seg_d[sel]
+    dc = np.where(gd, cKDTree(V[sel][~gd]).query(V[sel])[0], cKDTree(V[sel][gd]).query(V[sel])[0])
+    res = {"limit_mm": CE_LIMIT}
+    for nm, m in (("out", (th > 40) & (th < 130)), ("in", (th < -40) & (th > -130))):
+        m = m & (dc > CE_CONTACT)
+        if m.any():
+            k = int(np.argmax(np.where(m, dv, -1e9)))
+            res[nm] = {"gain_mm": round(float(dv[k]), 2), "at_deg": int(th[k]),
+                       "off_plane_mm": round(float(rel[k] @ nb * 1000), 1)}
+    res["max_mm"] = max(res.get(k, {}).get("gain_mm", 0.0) for k in ("out", "in"))
+    return res
+
+
+# slit (P1 ek, moved from the round's scratch ekm.py): a see-through gap in the crease where the two limbs' rigid inner
+# halves (each limb's rest half-width offset from its own bone) still overlap in the strip's view: the widest gap (mm,
+# twice the distance to the nearest skin pixel, at 2x the close-up scale), its place along the bisector, and the length
+# of its part over 2 mm wide. A closed crease reads 0
+def slit(strip, V, R, pl):
+    from scipy.ndimage import distance_transform_edt
+    vw = strip.view(2 * PX_CLOSE)
+    mk = ray.mask(V, strip.T_rend, vw)
+    h, w = mk.shape
+    jj, ii = np.meshgrid(np.arange(w), np.arange(h))
+    xy = np.stack([vw.x0 + (jj + 0.5) / vw.px, vw.y1 - (ii + 0.5) / vw.px], -1).reshape(-1, 2)
+    ov = np.ones(len(xy), bool)
+    dep = np.full(len(xy), np.inf)
+    for seg in ("p", "d"):
+        r = xy - pl.O
+        a = r @ pl.dir(seg)
+        o = r @ pl.normal(seg, "in")
+        ks = sorted(k[2] for k in R if k[0] == seg and k[1] == "in")
+        vals = np.array([R[(seg, "in", k)] for k in ks], float)
+        ok = np.isfinite(vals)
+        if not ok.any():
+            return {"slit_mm": None}
+        wd = np.interp(np.clip(a / pl.L(seg), 0, 0.8), np.array(ks)[ok], vals[ok])
+        m = (a >= 0) & (o >= 0) & (o <= wd)
+        ov &= m
+        dep = np.minimum(dep, np.where(m, wd - o, -1))
+    sl = ov & ~mk.reshape(-1) & (dep > 1e-3)
+    if not sl.any():
+        return {"slit_mm": 0.0, "at_mm": None, "len_over_2mm": 0.0}
+    width = 2 * distance_transform_edt(~mk).reshape(-1)[sl] / vw.px
+    bis = unit(pl.p + pl.d)
+    along = (xy[sl] - pl.O) @ bis
+    big = width > 2e-3
+    k = int(np.argmax(width))
+    return {"slit_mm": round(float(width.max() * 1000), 2), "at_mm": round(float(along[k] * 1000), 1),
+            "len_over_2mm": round(float((along[big].max() - along[big].min()) * 1000) if big.any() else 0.0, 1)}
+
+
+# kink (P1 ek, moved from ekm.py): each limb's own inner outline in the strip's view (its half-width from its bone,
+# every 1 mm from 2 to 60% of its length) and the outline's turn over +-KINK_WIN (deg); the number is the largest
+# turn, with the rest's own beside it (the judge's knee 135 'calf kink' read 26.7 deg at 14 cm before the skins' surface)
+KINK_WIN = 0.01
+
+
+def own_profile(strip, V, G, seg, step=1e-3):
+    vw = strip.view(2 * PX_CLOSE)
+    sel = strip.seg_d if seg == "d" else strip.seg_p
+    T = strip.T_rend[sel[strip.T_rend].all(1)]
+    mk = ray.mask(V, T, vw)
+    pl = Plane2(strip, G)
+    L = pl.L(seg)
+    ss = np.arange(0.02, 0.6, step / L)
+    wv = [scan(mk, vw, pl.O + s_ * L * pl.dir(seg), pl.normal(seg, "in")) for s_ in ss]
+    return ss * L, np.array(wv, float)
+
+
+def _turning(t, w, win=KINK_WIN):
+    ok = np.isfinite(w)
+    t, w = t[ok], w[ok]
+    th = np.full(len(t), np.nan)
+    for i in range(len(t)):
+        a = np.searchsorted(t, t[i] - win)
+        b = np.searchsorted(t, t[i] + win) - 1
+        if a >= i or b <= i or t[i] - t[a] < 0.8 * win or t[b] - t[i] < 0.8 * win:
+            continue
+        v1 = np.array([t[i] - t[a], w[i] - w[a]])
+        v2 = np.array([t[b] - t[i], w[b] - w[i]])
+        th[i] = math.degrees(math.atan2(v1[0] * v2[1] - v1[1] * v2[0], v1 @ v2))
+    return t, th
+
+
+def kink(strip, V, G, R0):
+    res = {}
+    for sg in "pd":
+        t, th = _turning(*own_profile(strip, V, G, sg))
+        _, th0 = _turning(*R0[sg])
+        if np.isfinite(th).any():
+            k = int(np.nanargmax(np.abs(th)))
+            res[sg] = {"turn_deg": round(float(abs(th[k])), 1), "at_mm": round(float(t[k] * 1000)),
+                       "rest_deg": round(float(np.nanmax(np.abs(th0))), 1) if np.isfinite(th0).any() else None}
+    return res
+
+
+# both hips flexed (P1 ek2, measure only): sitting, crouching and landing flex both thighs at once, and the two hips'
+# folds meet at the midline (the perineum and the belly) where a one-leg strip never looks: both thighs turned to
+# BOTH_DEG together (each by its own strip's solved turn), the inside count and depths and each side's pits
+BOTH_DEG = (90, 120)
+
+
+def both_hips(poser, rig, frame, degs=BOTH_DEG):
+    st = {s: Strip(poser, rig, frame, "hip_flex", s) for s in "lr"}
+    res = {}
+    for deg in degs:
+        V, G, _ = poser.pose(st["l"].turns(deg) + st["r"].turns(deg))
+        row = {"achieved_deg": {s: round(st[s].achieved(G), 2) for s in "lr"}}
+        for s in "lr":
+            row[s] = {"penetration": penetration(st[s], V, poser.T), "pit": pit(st[s], V)["by_region_mm"]}
+        res[str(deg)] = row
+    return res
