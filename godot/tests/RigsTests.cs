@@ -46,6 +46,16 @@ public class RigsTests
     }
 
     [Fact]
+    public void TheDaysFiresAreAGlowAndTheNightsBurnWhole()
+    {
+        var s = Real();
+        Assert.True(s["day_town"]!.FireShare < 0.5);
+        Assert.Equal(s["day_town"]!.FireShare, s["day_wild"]!.FireShare);
+        Assert.Equal(1, s["night_play"]!.FireShare);
+        Assert.Equal(s["day_town"]!.Fill.Sky, s["day_wild"]!.Fill.Sky);   // (one day fill: the sky's hue too)
+    }
+
+    [Fact]
     public void LitTakesTheRigsNumbersOnceAndLeavesAnUnriggedPreset()
     {
         var s = Real();

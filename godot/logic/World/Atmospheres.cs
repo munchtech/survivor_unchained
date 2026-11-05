@@ -310,6 +310,9 @@ public static class Atmospheres
         "night" => NightGrade, "play_night" => PlayNightGrade, "lowford_night" => LowFordNight.Grade, "town_night" => NightTown.Grade,
         "close_night" => CloseNightPaint, "front" => Front.Grade, "play_dawn" => PlayDawnGrade, "dawn" => Dawn.Grade,
         "play_day" => PlayDayGrade, "waystation_day" => WaystationDay.Grade, "day" => Day.Grade, "dusk" => Dusk.Grade,
+        // (B4r2: the night rig's grade, the Low Ford's with the Moon step's chroma up so what the moon lights reads moon-blue,
+        // rule 1's cold 60%+ of the chroma; the lookdev stage's play night cold 28% to 49% at 0.45 with the rig's key)
+        "rig_night" => LowFordNight.Grade with { MoonSat = 0.45 },
         _ => null,
     };
 

@@ -132,7 +132,14 @@ public partial class Game
         // The town's lamps go cold by day (ZoneView.Town); the fire burns in every rig.
         foreach (var f in lookFlames) f.Lit = rig != "day";
         foreach (var l in lookLamps) Lamps.SetLit(l, rig != "day");
-        if (lookFireLight != null) lookFireLight.ShadowEnabled = rig != "day";
+        if (lookFireLight != null)
+        {
+            lookFireLight.ShadowEnabled = rig != "day";
+            // (L1 B4r2: under the rigs the fire's light is the rig's share of it (rigs.json "fires": by day a glow, rule 3; at
+            // night strength by day it was the warm half of her shade at the close view, 6.7 m off). --lookdev-fire K scales it.)
+            double share = SurvivorUnchained.View.Atmosphere.CelRigs && p.Rig != "" && SurvivorUnchained.Look.Rigs.Current[p.Rig] is { } fr ? fr.FireShare : 1;
+            lookFireLight.LightEnergy = 80 / Mathf.Pi * (float)share * (float)Args.Num("lookdev-fire", 1f);
+        }
         GD.Print($"lookdev: rig {rig} ({(rig == "arena" ? "the arena's night" : rig)}) at {Shots.Clock:0.00}s");
     }
 

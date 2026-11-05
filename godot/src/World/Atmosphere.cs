@@ -305,7 +305,7 @@ public partial class Atmosphere : Node3D
         // (L1 B4) Under the cel model the preset's rig lights it (godot/data/look/rigs.json); --cel off: the preset as it is.
         var orig = p;
         if (CelRigs) { RigsLoad(); p = SurvivorUnchained.Look.Rigs.Lit(p); }
-        // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
+        // --air-tune "fillc=#..,fill=..,hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
         // play's presets (E1) nudged, for a sweep of pictures in one build (under cel, the rig's light nudged).
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
             || ReferenceEquals(orig, Atmospheres.WaystationDawn) || ReferenceEquals(orig, Atmospheres.WaystationDay) || ReferenceEquals(orig, Atmospheres.NightTown)
@@ -318,7 +318,7 @@ public partial class Atmosphere : Node3D
                 ? x.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : v;
             p = p with
             {
-                KeyColor = H("keyc", p.KeyColor), HemiSky = H("hemisky", p.HemiSky), HemiGround = H("hemiground", p.HemiGround),
+                KeyColor = H("keyc", p.KeyColor), CelFillColor = H("fillc", p.CelFillColor), CelFill = T("fill", p.CelFill), HemiSky = H("hemisky", p.HemiSky), HemiGround = H("hemiground", p.HemiGround),
                 FogColor = H("fogc", p.FogColor), MistColor = H("mistc", p.MistColor),
                 Sky = p.Sky with { Top = H("skytop", p.Sky.Top), Horizon = H("skyhor", p.Sky.Horizon), Glow = H("skyglow", p.Sky.Glow) },
                 HemiIntensity = T("hemi", p.HemiIntensity), EnvIntensity = T("env", p.EnvIntensity), Exposure = T("exposure", p.Exposure),

@@ -26,7 +26,12 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 /// shadow hardness (cel_rig.x), the grade (a named GradeSettings, Atmospheres.GradeNamed), the exposure and her ember's
 /// strength, and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).</summary>
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
-    double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple);
+    double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null)
+{
+    /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
+    /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
+    public double FireShare => Fires ?? 1;
+}
 
 /// <summary>The lighting rigs as data (L1 B4; docs/design/LOOK_BIBLE.md rules 1-3, 5, 7-9, 11): every scene's light under
 /// the cel model is a rig named by its preset (AtmospherePreset.Rig), so the rig's numbers live in one place. A rig may
@@ -89,7 +94,8 @@ public sealed class RigSet
                 D(f, "hemi", b?.Fill.Hemi), D(f, "env", b?.Fill.Env)),
             new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
-            new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)));
+            new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)),
+            D(e, "fires", b?.Fires));
     }
 }
 
