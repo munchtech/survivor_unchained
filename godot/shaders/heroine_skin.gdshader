@@ -7,6 +7,21 @@
 // fine down on skin catches the light; light through her where she is thin.
 shader_type spatial;
 render_mode sss_mode_skin, cull_disabled;
+// The cel model (cel.gdshaderinc; L1 B1b, from the bible v2 rules 5, 6 and 11 and the MB1/MB2 boards): ink 1 (her
+// silhouette only); a warm half-tone (0.85, 0.45, 0.38 at 0.8) 0.2 past the terminator with a soft edge, a third of
+// Lambert's form kept, a small hard highlight (6 degrees, 0.5, the key's color); the band sees 35% of her normal map,
+// the highlight all of it. Her own light() below: the scatter is the band's half-tone and the light through her in its
+// shade (the screen-space scatter cut to scatter_cel, so it doesn't smear the terminator).
+#define CEL_INK 1
+#define CEL_BAND vec4(0.0, 0.06, 0.2, 0.08)
+#define CEL_MID vec4(0.85, 0.45, 0.38, 0.8)
+#define CEL_FORM 0.3
+#define CEL_SPEC vec4(6.0, 1.0, 0.5, 1.0)
+#define CEL_NMAP 0.35
+#define CEL_OWN_LIGHT
+#include "res://shaders/cel.gdshaderinc"
+// (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)
+uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
 // (both sides drawn for her head alone (mouth_in), and only inside her mouth (mouth_c): its inside, seen through her
 // open mouth, is the dark of her throat; elsewhere (under her jaw) a back face drew a dark red speck (lips B3 sheet);
 // culled, what lay behind it showed through (the smile pass, a2). Every other part's back faces are
@@ -397,10 +412,12 @@ uniform float back_spec = 1.0;
 // the point, shadow and its angle in (ATTENUATION times ndl, times dbg_gate), red the key's path in front of her, green
 // the soft lamps, blue the lamps behind her)
 uniform float dbg_gate = 0.0;
-varying float shade_w;
-varying float lift_w;
-varying float soft_w;
-varying float edge_w;
+// (four in one: Godot's 32 varyings, and the cel model's two (L1 B1b), left none to spare)
+varying vec4 shade_lse;
+#define shade_w shade_lse.x
+#define lift_w shade_lse.y
+#define soft_w shade_lse.z
+#define edge_w shade_lse.w
 varying float back_ao;
 // The inside of her mouth (heroine_mouth.py: her head's vertex colour's alpha, 1 outside, falling to 0 deep in her
 // mouth): her paint there (a lilac-grey island, an orange-brown cheek wall) and every lamp's light, unshadowed at
@@ -758,7 +775,7 @@ void fragment() {
 	AO = ao;
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
-	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
+	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa) * mix(1.0, scatter_cel, cel_on);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
@@ -817,6 +834,8 @@ void fragment() {
 	// (dbg_gate 19: R her model-space height from 1.4 to 1.8 (0 to 1), G the face's paint (features' blue), B her
 	// freckles' map's blue; face 47's neck_pull_y)
 	if (dbg_gate > 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(clamp((model_y - 1.4) / 0.4, 0.0, 1.0), fm.b, fk.b); }
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, her roughness before the ink tag, the tag, debug).
+	CEL_FRAGMENT;
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -836,7 +855,14 @@ void light() {
 	float ndl = dot(dn, LIGHT);
 	float s_ndl = max(dot(NORMAL, LIGHT), 0.0);
 	float c_ndl = max(ndl, 0.0);
-	if (dbg_gate > 0.0) {
+	// (the cel model: its band on her diffuse normal with cel_nmap of its detail; her roughness as fragment() wrote it,
+	// before the ink tag; the model's debug views first)
+	vec3 cb_n = cel_nb(dn);
+	float cb_t = dot(cb_n, LIGHT);
+	float rgh = cel_mat.w;
+	vec3 cb_dbg = vec3(0.0);
+	if (cel_dbg_light(cb_n, cb_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; }
+	else if (dbg_gate > 0.0) {
 		float kw = mix(1.0, smoothstep(shade_from, shade_to, SPECULAR_AMOUNT), shade_by_soft);
 		float bh = step(0.25, dot(-LIGHT, VIEW));
 		DIFFUSE_LIGHT += (dbg_gate > 1.5 ? (dbg_gate - 2.0) * vec3(c_ndl * kw * (1.0 - bh), ATTENUATION * kw * (1.0 - bh), 0.0)
@@ -862,9 +888,21 @@ void light() {
 	vec3 n = vec3(ndl);
 	vec3 t = clamp(n + w, vec3(0.0), 2.0 * w);
 	vec3 soft = mix(t * t / (4.0 * w), n, step(w, n));
-	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
+	float fd90 = 2.0 * c_ldh * c_ldh * rgh - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	vec3 diffuse = soft * burley / PI;
+	// (cel: the band and the hardened key shadow in place of the eased edge, Burley and the soft shadow; the light
+	// through her where the band's light isn't, as Godot's BACKLIGHT is where its diffuse isn't)
+	float cb_sh = ATTENUATION;
+	vec3 cb_lv = vec3(0.0);
+	vec3 cb_d = diffuse * ATTENUATION;
+	vec3 cb_b = max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * ATTENUATION;
+	if (cel_on > 0.0) {
+		cb_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+		cb_lv = cel_level(cb_t);
+		cb_d = mix(cb_d, cb_lv * (cb_sh / PI), cel_on);
+		cb_b = mix(cb_b, (vec3(1.0) - cb_lv) * (cb_sh / PI), cel_on);
+	}
 	vec3 un = 1.0 / (mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
@@ -895,17 +933,20 @@ void light() {
 	}
 	rich = mix(rich, vec3(1.0), paint_w);
 	kt = mix(kt, vec3(1.0), paint_w);
-	DIFFUSE_LIGHT += mouth_lit * lc * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
+	DIFFUSE_LIGHT += mouth_lit * lc * cb_d * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w * (1.0 - paint_w));
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
-	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - ROUGHNESS) * 16.0));
+	float rim_light = pow(max(1e-4, 1.0 - c_ndv), max(0.0, (1.0 - rgh) * 16.0));
 	rim_light *= mix(1.0, smoothstep(0.0, 0.3, ndl), rim_gate);
 	rim_light *= 1.0 - rim_dn;
-	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * lc * ATTENUATION * un;
+	if (cel_on > 0.0) rim_light = mix(rim_light, smoothstep(0.45, 0.55, rim_light), cel_on);   // (cel: stepped, whole past half-way)
+	DIFFUSE_LIGHT += mouth_lit * rim_light * mix(behind, 1.0, front_rim) * rim * mix(vec3(1.0), ALBEDO * un, rim_tint) * lc * cb_sh * un;
 	// light through her where she is thin
-	DIFFUSE_LIGHT += mouth_lit * lc * max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * BACKLIGHT * ATTENUATION * un * mix(1.0, behind, backlight_behind);
+	DIFFUSE_LIGHT += mouth_lit * lc * cb_b * BACKLIGHT * un * mix(1.0, behind, backlight_behind);
+	// (cel: the key's fill where its light doesn't reach)
+	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(LIGHT_COLOR, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un;
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
@@ -917,8 +958,10 @@ void light() {
 		ml = mix(ml, max(ml, mix(1.0, cool_keep, cine_cool)), smoothstep(cool_edge.x, cool_edge.y, soft.r / max(soft.b, 1e-4)));
 		DIFFUSE_LIGHT = cool_d0 + mix(vec3(dot(p, lw)), p, ml) / a1;
 	}
-	if (s_ndl > 0.0 && !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004)) {
-		float a = ROUGHNESS * ROUGHNESS;
+	bool spec_on = !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004);
+	vec3 spec = vec3(0.0);
+	if (s_ndl > 0.0 && spec_on) {
+		float a = rgh * rgh;
 		float da = c_ndh * a;
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
 		float d_ggx = k * k / PI;
@@ -935,7 +978,13 @@ void light() {
 			float k2 = a2 / (1.0 - c_ndh * c_ndh + da2 * da2);
 			lobes += oil_w * (k2 * k2 / PI) * (0.5 / mix(2.0 * s_ndl * s_ndv, s_ndl + s_ndv, a2));
 		}
-		vec3 spec = mouth_lit * s_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		spec = mouth_lit * s_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+	}
+	// (cel: a small hard highlight in the key's color on her full normal, in place of the two GGX lobes; then held
+	// as they are)
+	if (cel_on > 0.0 && spec_on) spec = mix(spec, mouth_lit * cel_spec_add(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(cb_t) * cb_sh, rgh,
+			METALLIC, ALBEDO * un, sheen, SPECULAR_AMOUNT) * mix(1.0, back_spec, behind), cel_on);
+	if (spec_on) {
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
 		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
 		float dk = (1.0 - smoothstep(deep_lum.x, deep_lum.y, alum)) * (1.0 - METALLIC);
@@ -945,5 +994,7 @@ void light() {
 		float cap = mix(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 4.0) < 0.01 ? cine_kick_cap : spec_cap, metal_cap, METALLIC);
 		SPECULAR_LIGHT += sl > cap ? spec * (cap / sl) : spec;
 	}
+	// (cel: the stepped rim on the key's side)
+	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un);
 	}
 }

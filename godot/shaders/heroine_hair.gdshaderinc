@@ -8,6 +8,21 @@
 // and heroine_hair_erase.gdshader drawn last over any of the blended ones, to
 // erase FSR 2's reactive mask under them (ERASE).
 
+// The cel model (cel.gdshaderinc; L1 B1b, from the bible v2 and the MB1/MB2 boards): ink 1 (her silhouette only), no
+// stepped rim (a card's normal is not a silhouette); its own light() below: the band on the wrapped n.l (the wrap kept:
+// the terminator wrap past n.l 0), its half-tone and the key's fill in shade taking the dye's own hue (shade_hue: the
+// shade side colored, never grey), and one hard highlight band per lock in place of the soft sheen (a narrow
+// smoothstep on the same Kajiya-Kay term, its shift and color kept; the secondary gone).
+#define CEL_INK 1
+#define CEL_BAND vec4(0.0, 0.06, 0.25, 0.06)
+#define CEL_MID vec4(0.72, 0.72, 0.72, 1.0)
+#define CEL_FORM 0.3
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#include "res://shaders/cel.gdshaderinc"
+uniform float shade_hue : hint_range(0.0, 1.0) = 0.6;   // (cel: how much the half-tone and fill take the dye's hue)
+uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight band's edges on the sheen term, 0..1)
+
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
 uniform float roots = 0.4;
@@ -347,6 +362,10 @@ void fragment() {
 	ROUGHNESS = 0.7;
 	SPECULAR = 0.15;
 	AO = mix(0.75, 1.0, depth);
+#ifndef ERASE
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug; none on the unshaded erase).
+	CEL_FRAGMENT;
+#endif
 }
 
 float along_strand(vec3 t, vec3 h, float width) {
@@ -355,10 +374,27 @@ float along_strand(vec3 t, vec3 h, float width) {
 }
 
 void light() {
+	float cb_t = (dot(cel_nb(NORMAL), LIGHT) + wrap) / (1.0 + wrap);
+	vec3 cb_dbg = vec3(0.0);
+	if (cel_dbg_light(cel_nb(NORMAL), cb_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; } else {
 	vec3 lc = LIGHT_COLOR * ATTENUATION / PI;
 	float nl = dot(NORMAL, LIGHT);
-	DIFFUSE_LIGHT += lc * clamp((nl + wrap) / (1.0 + wrap), 0.0, 1.0);
-	DIFFUSE_LIGHT += lc * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+	vec3 d_a = lc * clamp((nl + wrap) / (1.0 + wrap), 0.0, 1.0);
+	vec3 t_a = lc * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+	float cb_sh = ATTENUATION;
+	if (cel_on > 0.0) {
+		// (cel: the band, its half-tone and the key's fill in the dye's hue, the hardened key shadow; the glow through
+		// her hair from behind kept, under that shadow)
+		cb_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+		vec3 hue = mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 1e-3), shade_hue);
+		vec3 lb = LIGHT_COLOR * (cb_sh / PI);
+		vec3 d_b = lb * cel_level_mid(cb_t, vec4(cel_mid.rgb * hue, cel_mid.a)) + cel_fill_add(LIGHT_COLOR, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * hue;
+		vec3 t_b = lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+		d_a = mix(d_a, d_b, cel_on);
+		t_a = mix(t_a, t_b, cel_on);
+	}
+	DIFFUSE_LIGHT += d_a;
+	DIFFUSE_LIGHT += t_a;
 	vec3 h = normalize(LIGHT + VIEW);
 	// (each strand's highlight a little up or down it from the next's: the
 	// highlight broken into strands, not one smooth band)
@@ -369,5 +405,16 @@ void light() {
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
 	vec3 lc1 = mix(lc, vec3(dot(lc, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk);
-	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * mix(vec3(1.0, 0.55, 0.35), vec3(0.9, 0.95, 1.0), hl_ashen) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	vec3 s1_col = shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk);
+	vec3 s_a = seen * fibre * fibre * (lc1 * s1_col * s1 + lc * ALBEDO * mix(vec3(1.0, 0.55, 0.35), vec3(0.9, 0.95, 1.0), hl_ashen) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	if (cel_on > 0.0) {
+		// (cel: one hard band per lock: the primary's term by the lock's shift alone (no strand-to-strand jitter, which
+		// broke it into grains), cut hard at shine_band, in its color, under the hardened key shadow)
+		float jl = (lock_n - 0.5) * 2.0 * lock_jitter + dk * (fract(lock_n * 7.31 + 0.21) - 0.5) * 2.0 * dark_card_jitter;
+		float b1 = smoothstep(shine_band.x, shine_band.y, along_strand(normalize(strand + NORMAL * (shift + jl)), h, shine_width * mix(1.0, dark_narrow, dk)));
+		vec3 lcb = mix(LIGHT_COLOR, vec3(dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk) * (cb_sh / PI);
+		s_a = mix(s_a, seen * fibre * fibre * lcb * s1_col * b1 * cel_lit(cb_t), cel_on);
+	}
+	SPECULAR_LIGHT += s_a;
+	}
 }

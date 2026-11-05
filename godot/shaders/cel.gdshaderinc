@@ -14,6 +14,11 @@
 //       #define CEL_NO_RIM         no stepped rim (ground, grass and cards, whose normals are not a silhouette)
 //       #define CEL_BUILTIN_RIM    the shader writes Godot's RIM / RIM_TINT (the crowd, folk): light() reproduces it
 //       #define CEL_OWN_LIGHT      the shader writes its own light() (see 4); the include then defines none
+//       #define CEL_MID / CEL_FORM / CEL_SPEC / CEL_NMAP   the material defaults of cel_mid, cel_form, cel_spec, cel_nmap
+//       #define CEL_EXACT_ROUGH    the default light() lights by the roughness fragment() wrote, not the tagged one
+//                          (cel_mat.w; the tag's step is up to 0.04 rougher): today's look exact at cel_on 0
+//       #define CEL_CLEARCOAT      the shader writes CLEARCOAT: the default light()'s A side adds Godot's clearcoat
+//                          (cel_today_cc; a user light() gets none from the engine); the B side has none (L1 B1b)
 //     then:  #include "res://shaders/cel.gdshaderinc"
 //  2. Make `CEL_FRAGMENT;` the LAST statement of fragment(). It records the geometric normal (NORMAL before
 //     NORMAL_MAP; light() bands on mix(it, the mapped normal, cel_nmap) so detail doesn't crawl the terminator),
@@ -60,13 +65,25 @@
 #ifndef CEL_BAND
 #define CEL_BAND vec4(0.0, 0.06, 0.2, 0.05)
 #endif
+#ifndef CEL_MID
+#define CEL_MID vec4(0.55, 0.55, 0.6, 1.0)
+#endif
+#ifndef CEL_FORM
+#define CEL_FORM 0.3
+#endif
+#ifndef CEL_SPEC
+#define CEL_SPEC vec4(9.0, 1.5, 1.0, 0.85)
+#endif
+#ifndef CEL_NMAP
+#define CEL_NMAP 0.35
+#endif
 
 group_uniforms cel;
 uniform vec4 cel_band = CEL_BAND;
-uniform vec4 cel_mid : source_color = vec4(0.55, 0.55, 0.6, 1.0);
-uniform float cel_form : hint_range(0.0, 1.0) = 0.3;
-uniform vec4 cel_spec = vec4(9.0, 1.5, 1.0, 0.85);
-uniform float cel_nmap : hint_range(0.0, 1.0) = 0.35;
+uniform vec4 cel_mid : source_color = CEL_MID;
+uniform float cel_form : hint_range(0.0, 1.0) = CEL_FORM;
+uniform vec4 cel_spec = CEL_SPEC;
+uniform float cel_nmap : hint_range(0.0, 1.0) = CEL_NMAP;
 uniform int cel_ink : hint_range(0, 3) = CEL_INK;
 group_uniforms;
 
@@ -77,9 +94,12 @@ global uniform vec3 cel_rim;
 global uniform vec4 cel_tune;
 global uniform float cel_dbg;
 
-// (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT)
+// (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 varying vec3 cel_gn;
 varying vec4 cel_mat;
+#ifdef CEL_CLEARCOAT
+varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
+#endif
 
 float cel_tag(float c_r, int c_ink) {
 	return (clamp(round(c_r * 31.0), 0.0, 31.0) * 4.0 + float(clamp(c_ink, 0, 3))) / 127.0;
@@ -89,9 +109,14 @@ vec3 cel_ink_rgb(int c_ink) {
 }
 
 #ifdef CEL_BUILTIN_RIM
-#define CEL_FRAG_MAT cel_mat = vec4(SPECULAR, RIM, RIM_TINT, 0.0)
+#define CEL_FRAG_RIM cel_mat = vec4(SPECULAR, RIM, RIM_TINT, ROUGHNESS)
 #else
-#define CEL_FRAG_MAT cel_mat = vec4(SPECULAR, 0.0, 0.0, 0.0)
+#define CEL_FRAG_RIM cel_mat = vec4(SPECULAR, 0.0, 0.0, ROUGHNESS)
+#endif
+#ifdef CEL_CLEARCOAT
+#define CEL_FRAG_MAT CEL_FRAG_RIM; cel_cc = vec2(CLEARCOAT, CLEARCOAT_ROUGHNESS)
+#else
+#define CEL_FRAG_MAT CEL_FRAG_RIM
 #endif
 // The last statement of fragment(): see the header.
 #define CEL_FRAGMENT cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
@@ -109,24 +134,30 @@ float cel_lit(float c_t) {
 	return smoothstep(cel_band.x - c_hw, cel_band.x + c_hw, c_t);
 }
 // The ramp: lit band x half-tone x form, a multiplier of the light (rgb for the half-tone's tint).
-vec3 cel_level(float c_t) {
+// (cel_level_mid: the same with the half-tone's tint given (rgb its level, a how much): hair's own hue; L1 B1b)
+vec3 cel_level_mid(float c_t, vec4 c_mid) {
 	float c_z = cel_band.z * cel_tune.y;
 	float c_full = c_z > 0.0 ? smoothstep(cel_band.x + c_z - cel_band.w, cel_band.x + c_z + max(cel_band.w, 1e-4), c_t) : 1.0;
-	return mix(vec3(1.0), cel_mid.rgb, cel_mid.a * (1.0 - c_full)) * cel_lit(c_t) * mix(1.0, clamp(c_t, 0.0, 1.0), clamp(cel_form * cel_tune.w, 0.0, 1.0));
+	return mix(vec3(1.0), c_mid.rgb, c_mid.a * (1.0 - c_full)) * cel_lit(c_t) * mix(1.0, clamp(c_t, 0.0, 1.0), clamp(cel_form * cel_tune.w, 0.0, 1.0));
 }
+vec3 cel_level(float c_t) { return cel_level_mid(c_t, cel_mid); }
 // The key's fill where its light doesn't reach (lit_sh: the lit band times the shadow), as DIFFUSE_LIGHT.
 vec3 cel_fill_add(vec3 c_lc, float c_lit_sh, bool c_dir) {
 	return c_dir ? cel_fill * (cel_lum(c_lc) * cel_rig.y * (1.0 - c_lit_sh) / PI) : vec3(0.0);
 }
 // The highlight: a disc of cel_spec.x degrees round N.H, in the light's color, as SPECULAR_LIGHT.
-vec3 cel_spec_add(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_lit_sh, float c_rough, float c_metal, vec3 c_albedo, float c_spec, float c_spec_amount) {
-	float c_k = cel_spec.z * (1.0 - smoothstep(0.55, 0.85, c_rough)) * clamp(c_spec * 2.0, 0.0, 1.0) * c_spec_amount * c_lit_sh;
+// (cel_spec_disc: the same disc by its own cel_spec-style numbers, in the color given (before a metal's tint): a second
+// band (metal's broad one in the sky's hue), or a highlight per material kind; L1 B1b)
+vec3 cel_spec_disc(vec4 c_sp, vec3 c_hc, vec3 c_n, vec3 c_l, vec3 c_v, float c_lit_sh, float c_rough, float c_metal, vec3 c_albedo, float c_spec, float c_spec_amount) {
+	float c_k = c_sp.z * (1.0 - smoothstep(0.55, 0.85, c_rough)) * clamp(c_spec * 2.0, 0.0, 1.0) * c_spec_amount * c_lit_sh;
 	if (c_k <= 0.0) return vec3(0.0);
 	float c_ang = degrees(acos(clamp(dot(c_n, normalize(c_v + c_l)), -1.0, 1.0)));
-	float c_r = cel_spec.x * cel_tune.z;
-	float c_s = 1.0 - smoothstep(c_r - cel_spec.y, c_r + max(cel_spec.y, 1e-3), c_ang);
-	vec3 c_col = mix(vec3(cel_lum(c_lc)), c_lc, cel_spec.w) * mix(vec3(1.0), c_albedo, c_metal);
-	return c_col * (c_s * c_k / PI);
+	float c_r = c_sp.x * cel_tune.z;
+	float c_s = 1.0 - smoothstep(c_r - c_sp.y, c_r + max(c_sp.y, 1e-3), c_ang);
+	return c_hc * mix(vec3(1.0), c_albedo, c_metal) * (c_s * c_k / PI);
+}
+vec3 cel_spec_add(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_lit_sh, float c_rough, float c_metal, vec3 c_albedo, float c_spec, float c_spec_amount) {
+	return cel_spec_disc(cel_spec, mix(vec3(cel_lum(c_lc)), c_lc, cel_spec.w), c_n, c_l, c_v, c_lit_sh, c_rough, c_metal, c_albedo, c_spec, c_spec_amount);
 }
 // The stepped rim on the key's side of a form, as SPECULAR_LIGHT (half its albedo's tint).
 vec3 cel_rim_add(vec3 c_nb, vec3 c_v, vec3 c_lc, float c_t, float c_sh, bool c_dir, vec3 c_albedo) {
@@ -178,6 +209,25 @@ void cel_today(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_dir,
 	}
 }
 
+#ifdef CEL_CLEARCOAT
+// Godot 4.5.1's clearcoat for one light (light_compute's LIGHT_CLEARCOAT_USED: on the geometric normal, its N.L the
+// mapped normal's), as SPECULAR_LIGHT; a shader with a light() gets none from the engine.
+vec3 cel_today_cc(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_dir, float c_spec_amount) {
+	if (cel_cc.x <= 0.0 || !(c_dir || c_att > 1.175494351e-38)) return vec3(0.0);
+	vec3 c_g = normalize(cel_gn);
+	vec3 c_h = normalize(c_v + c_l);
+	float c_lh = clamp(dot(c_l, c_h), 0.0, 1.0);
+	float c_gh = clamp(dot(c_g, c_h), 0.0, 1.0);
+	float c_r = mix(0.001, 0.1, cel_cc.y);
+	float c_a = c_gh * c_r;
+	float c_k = c_r / (1.0 - c_gh * c_gh + c_a * c_a);
+	float c_d = c_k * c_k * (1.0 / PI);
+	float c_gg = 0.25 / (c_lh * c_lh + 1e-4);
+	float c_f = mix(0.04, 1.0, cel_schlick(c_lh));
+	return vec3(cel_cc.x * c_gg * c_f * c_d * max(min(dot(c_n, c_l), 1.0), 0.0)) * c_lc * c_att * c_spec_amount;
+}
+#endif
+
 // The cel model for one light, t = the band's n.l (the caller may wrap it).
 void cel_shade(vec3 c_n, vec3 c_nb, float c_t, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_dir, vec3 c_albedo, float c_metal, float c_rough,
 		float c_spec, float c_spec_amount, vec3 c_backlight, float c_rim, float c_rim_tint, inout vec3 c_dl, inout vec3 c_sl) {
@@ -208,15 +258,25 @@ bool cel_dbg_light(vec3 c_nb, float c_t, float c_att, bool c_dir, inout vec3 c_s
 
 #ifndef CEL_OWN_LIGHT
 void light() {
+#ifdef CEL_EXACT_ROUGH
+	float c_rough = cel_mat.w;
+#else
+	float c_rough = ROUGHNESS;
+#endif
 	vec3 c_nb = cel_nb(NORMAL);
 	float c_t = dot(c_nb, LIGHT);
 	vec3 c_sl = vec3(0.0);
 	if (cel_dbg_light(c_nb, c_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, c_sl)) { SPECULAR_LIGHT += c_sl; }
 	else {
 		vec3 c_da = vec3(0.0), c_sa = vec3(0.0), c_db = vec3(0.0), c_sb = vec3(0.0);
-		if (cel_on < 1.0) cel_today(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, ROUGHNESS,
+		if (cel_on < 1.0) {
+			cel_today(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, c_rough,
 				cel_mat.x, SPECULAR_AMOUNT, BACKLIGHT, cel_mat.y, cel_mat.z, c_da, c_sa);
-		if (cel_on > 0.0) cel_shade(NORMAL, c_nb, c_t, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, ROUGHNESS,
+#ifdef CEL_CLEARCOAT
+			c_sa += cel_today_cc(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, SPECULAR_AMOUNT);
+#endif
+		}
+		if (cel_on > 0.0) cel_shade(NORMAL, c_nb, c_t, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, c_rough,
 				cel_mat.x, SPECULAR_AMOUNT, BACKLIGHT, cel_mat.y, cel_mat.z, c_db, c_sb);
 		DIFFUSE_LIGHT += mix(c_da, c_db, cel_on);
 		SPECULAR_LIGHT += mix(c_sa, c_sb, cel_on);

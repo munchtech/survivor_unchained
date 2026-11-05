@@ -6,6 +6,11 @@
 // dark red where the light can't reach (fill), as the inside of her mouth does (heroine_skin's mouth_fill).
 shader_type spatial;
 render_mode shadows_disabled;
+// The cel model (cel.gdshaderinc; L1 B1b): ink 2 (no line), no stepped rim; its own light() below banded.
+#define CEL_INK 2
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
 uniform vec3 tint : source_color = vec3(0.86, 0.66, 0.6);      // (its paint, a bright salmon, made a muted rose: at
@@ -56,11 +61,22 @@ void fragment() {
 	ROUGHNESS = roughness;
 	SPECULAR = specular * k * dark;
 	EMISSION = inside * fill * (1.0 - 0.5 * k) * dark;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 void light() {
-	DIFFUSE_LIGHT += lamps * shade_k * clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION * LIGHT_COLOR / PI;
+	vec3 cb_n = cel_nb(NORMAL);
+	float cb_t = dot(cb_n, LIGHT);
+	vec3 cb_dbg = vec3(0.0);
+	if (cel_dbg_light(cb_n, cb_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; }
+	else {
+	// (cel: the lamps' share of its shade by the band; its small sheen as it was)
+	vec3 dl = vec3(clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION);
+	if (cel_on > 0.0) dl = mix(dl, cel_level(cb_t) * cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL), cel_on);
+	DIFFUSE_LIGHT += lamps * shade_k * dl * LIGHT_COLOR / PI;
 	vec3 h = normalize(VIEW + LIGHT);
-	float s = pow(clamp(dot(NORMAL, h), 0.0, 1.0), mix(8.0, 128.0, 1.0 - ROUGHNESS));
+	float s = pow(clamp(dot(NORMAL, h), 0.0, 1.0), mix(8.0, 128.0, 1.0 - cel_mat.w));
 	SPECULAR_LIGHT += lamps * shade_k * shine_k * SPECULAR_AMOUNT * s * ATTENUATION * LIGHT_COLOR * clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
+	}
 }

@@ -7,6 +7,12 @@
 // The clear cornea's own patch of the paint is empty: cut away.
 shader_type spatial;
 render_mode depth_draw_opaque;
+// The cel model (cel.gdshaderinc; L1 B1b): ink 2 (no line); her eyes keep their own look and light() (by the
+// roughness fragment() wrote, before the ink tag).
+#define CEL_INK 2
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D eye : source_color, filter_linear_mipmap_anisotropic;
 // The iris alone (its edge at 0.412 of the square, from its middle).
@@ -302,6 +308,8 @@ void fragment() {
 		ALBEDO = vec3(0.0);
 		float lq = length(q); EMISSION = (lq < pupil ? vec3(1.0, 0.0, 0.0) : lq < 0.5 ? vec3(0.0, 0.0, 1.0) : lq < 1.0 ? vec3(0.0, 1.0, 0.0) : vec3(0.0)) * 0.25;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 float schlick(float u) {
@@ -313,17 +321,21 @@ float schlick(float u) {
 // Each light on her eye as Godot's own (Burley's diffuse, GGX's sheen), the
 // sheen at the cornea's own reflectance (`sheen`), not the sky's.
 void light() {
+	vec3 cb_dbg = vec3(0.0);
+	if (cel_dbg_light(cel_nb(NORMAL), dot(cel_nb(NORMAL), LIGHT), ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; }
+	else {
+	float rgh = cel_mat.w;   // (as fragment() wrote it, before the ink tag)
 	float c_ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0);
 	float c_ndv = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 h = normalize(VIEW + LIGHT);
 	float c_ndh = clamp(dot(NORMAL, h), 0.0, 1.0);
 	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
-	float fd90 = 2.0 * c_ldh * c_ldh * ROUGHNESS - 0.5;
+	float fd90 = 2.0 * c_ldh * c_ldh * rgh - 0.5;
 	float burley = (1.0 + fd90 * schlick(c_ndv)) * (1.0 + fd90 * schlick(c_ndl));
 	bool eye_only = abs(SPECULAR_AMOUNT - 31.0) < 0.3 || abs(SPECULAR_AMOUNT - 15.5) < 0.15;
 	if (!eye_only) DIFFUSE_LIGHT += LIGHT_COLOR * (c_ndl * burley / PI) * ATTENUATION;
 	if (c_ndl > 0.0 && !(cine_spec_split > 0.0 && abs(SPECULAR_AMOUNT - 0.62) < 0.004)) {
-		float rough = eye_only ? eye_light_rough : ROUGHNESS;
+		float rough = eye_only ? eye_light_rough : rgh;
 		float a = rough * rough;
 		float da = c_ndh * a;
 		float k = a / (1.0 - c_ndh * c_ndh + da * da);
@@ -332,5 +344,6 @@ void light() {
 		float f0 = 0.16 * sheen * sheen;
 		float f = f0 + (clamp(f0 * 50.0, 0.0, 1.0) - f0) * schlick(c_ldh);
 		SPECULAR_LIGHT += c_ndl * d_ggx * f * v_ggx * LIGHT_COLOR * ATTENUATION * (eye_only ? eye_light_gain * cornea : SPECULAR_AMOUNT);
+	}
 	}
 }

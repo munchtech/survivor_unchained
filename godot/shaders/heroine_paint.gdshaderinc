@@ -1,4 +1,15 @@
 // The body of heroine_paint.gdshader and heroine_paint_mul.gdshader (face 40 r2).
+// The cel model (cel.gdshaderinc; L1 B1b): what it paints is her skin's (brows, face paint), so her skin's class and
+// band (heroine_skin.gdshader: ink 1, the warm half-tone, the small hard highlight); the default light() by the
+// roughness fragment() wrote; none on the unshaded multiply (MUL).
+#define CEL_INK 1
+#define CEL_BAND vec4(0.0, 0.06, 0.2, 0.08)
+#define CEL_MID vec4(0.85, 0.45, 0.38, 0.8)
+#define CEL_FORM 0.3
+#define CEL_SPEC vec4(6.0, 1.0, 0.5, 1.0)
+#define CEL_NMAP 0.35
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
 uniform float rough = 0.7;
 uniform float metal = 0.0;
@@ -221,4 +232,8 @@ void fragment() {
 	ROUGHNESS = rough;
 	METALLIC = metal;
 	SPECULAR = dyed ? 0.0 : 0.5;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+#ifndef MUL
+	CEL_FRAGMENT;
+#endif
 }
