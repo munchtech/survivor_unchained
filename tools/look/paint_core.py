@@ -207,7 +207,7 @@ def paint(forms_dir, out_dir, arm="A", ai=None, albedo_src="albedo"):
     Image.fromarray((dilate(rough, mask) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "rough.png"), pnginfo=info)
     nums = measure(lab, blk, mask, cm, edge, cavity)
     nums.update(colors=block_colors(lab, blk, mask, cls, names, edge, cavity))
-    nums.update(arm=arm, version=VERSION, inputs=inputs_hash(lib, names), albedo_src=sorted(set(used.values())), size=W, ppm=ppm,
+    nums.update(arm=arm, kind=meta["kind"], version=VERSION, inputs=inputs_hash(lib, names), albedo_src=sorted(set(used.values())), size=W, ppm=ppm,
                 brush_cm={n: lib["classes"][n]["paint"]["brush_cm"] for n in names},
                 vram_kb=round(W * H * (0.5 + 1.0 + 0.5) * 4 / 3 / 1024))  # (BC1 albedo, BC5 normal, BC4 rough, + mips)
     json.dump(nums, open(os.path.join(out_dir, "paint.json"), "w", newline=chr(10)), indent=1)
@@ -270,6 +270,7 @@ def check(out_dir, src="albedo"):
     need(P["detail_under_3cm"] <= DETAIL_MAX, f"detail under 3 cm {P['detail_under_3cm']} <= {DETAIL_MAX}")
     bad = []
     for b, n, L, C, hh in P.get("colors", []):
+        if b == 0 and P.get("kind") == "setts": continue  # (a tile's joint bed: the joints' floor, darkened by design)
         m, _ = class_color(lib["classes"][n], src)
         dh = (hh - m["h"][0] + 180) % 360 - 180
         inL = m["L"][0] - 0.03 <= L <= m["L"][2] + 0.03

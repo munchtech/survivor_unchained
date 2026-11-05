@@ -177,7 +177,9 @@ def solve(resp_name, prev_name=None):
                 r = np.array(white[name][key][SIDE[s["role"]]])
                 if name in prev and key in prev[name] and name in prev_alb:
                     a0 = srgb_to_lin(np.array([int(prev_alb[name][i:i + 2], 16) / 255 for i in (1, 3, 5)]))
-                    r = np.array(prev[name][key][SIDE[s["role"]]]) / np.maximum(a0, 1e-4)  # (the drawn color over its albedo)
+                    m = np.array(prev[name][key][SIDE[s["role"]]])
+                    # (the drawn color over its albedo; a channel the grade crushed to black keeps the white run's)
+                    r = np.where(m > 0.01, m / np.maximum(a0, 1e-4), r)
                 rows.append((s["b"], r, 1.0, j))
         if not rows: continue
         B = np.array([x[0] for x in rows]); Rr = np.array([x[1] for x in rows]); wt = np.array([x[2] for x in rows])[:, None]

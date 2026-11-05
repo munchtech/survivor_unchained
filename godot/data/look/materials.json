@@ -1,5 +1,5 @@
 {
- "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure): paint.lit as painted on the board (lit paint), paint.albedo the same with the board's light divided out (lights; B2r2). B3 paints from albedo. shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
+ "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure): paint.lit as painted on the board (lit paint), paint.albedo (v2, B3r2) the board's samples over the game's own response to each class (tools/look/calib.py: the swatch row at albedo 1 under the day and night rigs, solved per channel, then iterated on the swatches redrawn in it). B3 paints from albedo. shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
  "version": 1,
  "boards_root": "survivorsunchained_inputs",
  "boards": {
@@ -66,12 +66,17 @@
      "roles": {"highlight": "#fdc388", "lit": "#ee9962", "transition": "#cb6c4f", "shade": "#684f68"}
     },
     "albedo": {
-     "L": [0.6036, 0.6671, 0.7384],
-     "C": [0.0463, 0.0591, 0.0667],
-     "h": [29.3, -14.3, 20.9],
-     "mid": "#b6877f",
+     "L": [0.682, 0.6867, 0.6903],
+     "C": [0.1358, 0.1369, 0.1382],
+     "h": [37.7, -0.4, 0.4],
+     "mid": "#e17959",
      "n": 512,
-     "roles": {"highlight": "#c6ced6", "lit": "#c3a190", "transition": "#a67275", "shade": "#545499"}
+     "roles": {"highlight": "#ff8b6c", "lit": "#e1795a", "transition": "#e17959", "shade": "#e17959"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.7511, 0.1911, 0.101],
+     "fit_dE": 0.0327
     }
    }
   },
@@ -129,12 +134,17 @@
      "roles": {"highlight": "#fcbd7a", "lit": "#c05f2d", "transition": "#b3542b", "shade": "#533f58"}
     },
     "albedo": {
-     "L": [0.5184, 0.5384, 0.5622],
-     "C": [0.0825, 0.0847, 0.0874],
-     "h": [46.2, -4.0, 4.0],
-     "mid": "#975e43",
+     "L": [0.5046, 0.5103, 0.5151],
+     "C": [0.1457, 0.1472, 0.1488],
+     "h": [34.4, -0.4, 0.3],
+     "mid": "#aa3e25",
      "n": 512,
-     "roles": {"highlight": "#cac9b2", "lit": "#9d6445", "transition": "#925941", "shade": "#434382"}
+     "roles": {"highlight": "#c3472e", "lit": "#aa3e25", "transition": "#aa3e25", "shade": "#a93d24"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.3998, 0.0476, 0.0181],
+     "fit_dE": 0.0702
     }
    }
   },
@@ -234,12 +244,17 @@
      "roles": {"lit": "#542a1b"}
     },
     "albedo": {
-     "L": [0.3092, 0.323, 0.646],
-     "C": [0.0312, 0.0367, 0.0817],
-     "h": [22.9, -28.2, 24.2],
-     "mid": "#452c2b",
+     "L": [0.2635, 0.2766, 0.5598],
+     "C": [0.0626, 0.0686, 0.1438],
+     "h": [41.7, -4.0, 2.8],
+     "mid": "#743516",
      "n": 1152,
-     "roles": {"lit": "#452c2b"}
+     "roles": {"lit": "#431a09"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.1744, 0.035, 0.008],
+     "fit_dE": 0.0124
     }
    }
   },
@@ -285,12 +300,17 @@
      "roles": {"lit": "#4e5588"}
     },
     "albedo": {
-     "L": [0.4055, 0.5102, 0.8182],
-     "C": [0.15, 0.1788, 0.2006],
-     "h": [268.6, -1.2, 0.9],
-     "mid": "#3d59cb",
+     "L": [0.3169, 0.4001, 0.6526],
+     "C": [0.0927, 0.1066, 0.1175],
+     "h": [274.9, -1.2, 1.3],
+     "mid": "#4c5594",
      "n": 4000,
-     "roles": {"lit": "#3d59cb"}
+     "roles": {"lit": "#384080"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.073, 0.0917, 0.2963],
+     "fit_dE": 0.0017
     }
    }
   },
@@ -336,12 +356,17 @@
      "roles": {"lit": "#24233c"}
     },
     "albedo": {
-     "L": [0.2389, 0.2931, 0.3313],
-     "C": [0.0695, 0.0957, 0.1095],
-     "h": [271.0, -1.3, 2.2],
-     "mid": "#1b265b",
+     "L": [0.1694, 0.2047, 0.2323],
+     "C": [0.0153, 0.0251, 0.0295],
+     "h": [286.0, -6.0, 12.5],
+     "mid": "#161622",
      "n": 3922,
-     "roles": {"lit": "#1b265b"}
+     "roles": {"lit": "#161522"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.0083, 0.008, 0.0161],
+     "fit_dE": 0.0313
     }
    }
   },
@@ -387,12 +412,17 @@
      "roles": {"lit": "#373657"}
     },
     "albedo": {
-     "L": [0.3324, 0.3774, 0.4583],
-     "C": [0.1064, 0.1215, 0.1339],
-     "h": [271.2, -2.1, 2.6],
-     "mid": "#2c3981",
+     "L": [0.2414, 0.2745, 0.3348],
+     "C": [0.0679, 0.0776, 0.0854],
+     "h": [282.4, -5.1, 6.2],
+     "mid": "#262452",
      "n": 7721,
-     "roles": {"lit": "#2c3981"}
+     "roles": {"lit": "#23214c"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.0196, 0.018, 0.084],
+     "fit_dE": 0.0007
     }
    }
   },
@@ -447,12 +477,17 @@
      "roles": {"lit": "#9e837e"}
     },
     "albedo": {
-     "L": [0.5088, 0.6427, 0.9748],
-     "C": [0.0661, 0.079, 0.115],
-     "h": [276.2, -15.0, 16.4],
-     "mid": "#8089bd",
+     "L": [0.4395, 0.5448, 0.7688],
+     "C": [0.038, 0.0454, 0.0711],
+     "h": [291.1, -26.5, 31.2],
+     "mid": "#7a7b97",
      "n": 3139,
-     "roles": {"lit": "#8089bd"}
+     "roles": {"lit": "#706c89"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.1949, 0.1984, 0.3103],
+     "fit_dE": 0.0807
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -500,12 +535,17 @@
      "roles": {"lit": "#bb692e"}
     },
     "albedo": {
-     "L": [0.3606, 0.5737, 0.7762],
-     "C": [0.043, 0.0739, 0.092],
-     "h": [60.8, -26.0, 29.4],
-     "mid": "#996e4a",
+     "L": [0.3308, 0.5209, 0.6799],
+     "C": [0.0885, 0.1338, 0.1511],
+     "h": [50.3, -7.2, 11.5],
+     "mid": "#a85717",
      "n": 5851,
-     "roles": {"lit": "#996e4a"}
+     "roles": {"lit": "#a44d08"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.392, 0.0956, 0.0088],
+     "fit_dE": 0.0025
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -554,12 +594,17 @@
      "roles": {"lit": "#f4ac54"}
     },
     "albedo": {
-     "L": [0.7123, 0.7735, 0.8663],
-     "C": [0.0563, 0.0758, 0.0952],
-     "h": [91.6, -15.0, 25.4],
-     "mid": "#c7b47d",
+     "L": [0.6872, 0.738, 0.8036],
+     "C": [0.1349, 0.1456, 0.1535],
+     "h": [64.6, -7.0, 11.8],
+     "mid": "#e9973b",
      "n": 645,
-     "roles": {"lit": "#c7b47d"}
+     "roles": {"lit": "#e89435"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.812, 0.3103, 0.0437],
+     "fit_dE": 0.0076
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -614,12 +659,17 @@
      "roles": {"lit": "#884d41"}
     },
     "albedo": {
-     "L": [0.4075, 0.4753, 0.6687],
-     "C": [0.0427, 0.0536, 0.0916],
-     "h": [333.6, -52.6, 68.7],
-     "mid": "#6f5169",
+     "L": [0.4322, 0.5028, 0.6565],
+     "C": [0.0479, 0.0657, 0.1041],
+     "h": [9.6, -73.2, 33.6],
+     "mid": "#8f6367",
      "n": 12052,
-     "roles": {"lit": "#6f5169"}
+     "roles": {"lit": "#85545c"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.2753, 0.1249, 0.1365],
+     "fit_dE": 0.1021
     }
    }
   },
@@ -674,12 +724,17 @@
      "roles": {"lit": "#785527"}
     },
     "albedo": {
-     "L": [0.3431, 0.4656, 0.6128],
-     "C": [0.0199, 0.0365, 0.1022],
-     "h": [105.7, -168.6, 150.9],
-     "mid": "#5c5b43",
+     "L": [0.2857, 0.4002, 0.5205],
+     "C": [0.0162, 0.0575, 0.0978],
+     "h": [85.3, -44.4, 29.7],
+     "mid": "#584c26",
      "n": 1101,
-     "roles": {"lit": "#5c5b43"}
+     "roles": {"lit": "#564521"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.0975, 0.0726, 0.0194],
+     "fit_dE": 0.0026
     }
    }
   },
@@ -735,12 +790,17 @@
      "roles": {"lit": "#b2826f"}
     },
     "albedo": {
-     "L": [0.5799, 0.6467, 0.7921],
-     "C": [0.0294, 0.052, 0.0673],
-     "h": [300.8, -13.6, 97.0],
-     "mid": "#9387a9",
+     "L": [0.5035, 0.5644, 0.6966],
+     "C": [0.0452, 0.0509, 0.0689],
+     "h": [8.8, -29.8, 42.4],
+     "mid": "#977275",
      "n": 20800,
-     "roles": {"lit": "#9387a9"}
+     "roles": {"lit": "#916a6f"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.311, 0.1685, 0.1773],
+     "fit_dE": 0.004
     }
    }
   },
@@ -795,12 +855,17 @@
      "roles": {"lit": "#836b65"}
     },
     "albedo": {
-     "L": [0.4763, 0.5633, 0.7493],
-     "C": [0.02, 0.0893, 0.1036],
-     "h": [271.9, -3.0, 21.8],
-     "mid": "#6372aa",
+     "L": [0.3975, 0.4745, 0.6389],
+     "C": [0.0218, 0.0523, 0.0651],
+     "h": [292.3, -18.8, 105.8],
+     "mid": "#6c6573",
      "n": 13519,
-     "roles": {"lit": "#6372aa"}
+     "roles": {"lit": "#5d5777"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.1495, 0.13, 0.172],
+     "fit_dE": 0.0024
     }
    }
   },
@@ -856,12 +921,17 @@
      "roles": {"lit": "#fdbb8b"}
     },
     "albedo": {
-     "L": [0.6334, 0.8328, 0.8633],
-     "C": [0.0041, 0.0125, 0.0851],
-     "h": [319.7, -107.8, 124.3],
-     "mid": "#ccc6cd",
+     "L": [0.5921, 0.7918, 0.8155],
+     "C": [0.0719, 0.0814, 0.0944],
+     "h": [36.8, -51.0, 12.7],
+     "mid": "#dfa491",
      "n": 7703,
-     "roles": {"lit": "#ccc6cd"}
+     "roles": {"lit": "#eaa996"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.7402, 0.3721, 0.2824],
+     "fit_dE": 0.004
     }
    }
   },
@@ -917,12 +987,17 @@
      "roles": {"lit": "#a05654"}
     },
     "albedo": {
-     "L": [0.4462, 0.5268, 0.6854],
-     "C": [0.0592, 0.0771, 0.1085],
-     "h": [328.9, -29.8, 60.8],
-     "mid": "#845a81",
+     "L": [0.3828, 0.4602, 0.6057],
+     "C": [0.0813, 0.0986, 0.1277],
+     "h": [10.3, -29.4, 22.2],
+     "mid": "#904850",
      "n": 30001,
-     "roles": {"lit": "#845a81"}
+     "roles": {"lit": "#853e4b"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.2784, 0.0647, 0.0804],
+     "fit_dE": 0.0009
     }
    }
   },
@@ -978,12 +1053,17 @@
      "roles": {"lit": "#b9806c"}
     },
     "albedo": {
-     "L": [0.6044, 0.6457, 0.7252],
-     "C": [0.0338, 0.0462, 0.0711],
-     "h": [319.4, -23.3, 77.5],
-     "mid": "#9b85a0",
+     "L": [0.5263, 0.5646, 0.6439],
+     "C": [0.0626, 0.0708, 0.0937],
+     "h": [15.6, -23.8, 21.3],
+     "mid": "#a0686b",
      "n": 31201,
-     "roles": {"lit": "#9b85a0"}
+     "roles": {"lit": "#9b6568"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.3512, 0.1397, 0.146],
+     "fit_dE": 0.0049
     },
     "layout": {
      "course_m": [0.34, 0.46],
@@ -1046,12 +1126,17 @@
      "roles": {"lit": "#774c3e"}
     },
     "albedo": {
-     "L": [0.4171, 0.453, 0.4608],
-     "C": [0.0254, 0.0281, 0.0357],
-     "h": [326.6, -25.3, 19.2],
-     "mid": "#5f515e",
+     "L": [0.3484, 0.3836, 0.3908],
+     "C": [0.0372, 0.0518, 0.0557],
+     "h": [34.0, -9.3, 3.8],
+     "mid": "#593830",
      "n": 3810,
-     "roles": {"lit": "#5f515e"}
+     "roles": {"lit": "#5c3931"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.0991, 0.0393, 0.0295],
+     "fit_dE": 0.0009
     }
    }
   },
@@ -1108,12 +1193,17 @@
      "roles": {"lit": "#a96847"}
     },
     "albedo": {
-     "L": [0.496, 0.5636, 0.5775],
-     "C": [0.0267, 0.0359, 0.039],
-     "h": [20.1, -38.6, 14.3],
-     "mid": "#8a6d6d",
+     "L": [0.4291, 0.4946, 0.5065],
+     "C": [0.072, 0.0951, 0.0982],
+     "h": [42.4, -3.9, 1.7],
+     "mid": "#884b33",
      "n": 3498,
-     "roles": {"lit": "#8a6d6d"}
+     "roles": {"lit": "#8e4e34"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.2443, 0.0711, 0.0328],
+     "fit_dE": 0.0019
     }
    }
   },
@@ -1168,12 +1258,17 @@
      "roles": {"lit": "#aaa036"}
     },
     "albedo": {
-     "L": [0.5208, 0.6956, 0.7581],
-     "C": [0.0638, 0.1089, 0.1313],
-     "h": [128.2, -13.1, 25.8],
-     "mid": "#89aa5e",
+     "L": [0.459, 0.6131, 0.6694],
+     "C": [0.0483, 0.0883, 0.1076],
+     "h": [125.3, -15.2, 31.7],
+     "mid": "#788955",
      "n": 30003,
-     "roles": {"lit": "#89aa5e"}
+     "roles": {"lit": "#788e51"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.1893, 0.2502, 0.0904],
+     "fit_dE": 0.0035
     }
    }
   },
@@ -1230,12 +1325,17 @@
      "roles": {"lit": "#ae9936"}
     },
     "albedo": {
-     "L": [0.5954, 0.6776, 0.7695],
-     "C": [0.0917, 0.1048, 0.1139],
-     "h": [121.5, -10.1, 10.9],
-     "mid": "#8da255",
+     "L": [0.5182, 0.5915, 0.6731],
+     "C": [0.0778, 0.0906, 0.0979],
+     "h": [115.2, -11.5, 12.1],
+     "mid": "#7e8444",
      "n": 8267,
-     "roles": {"lit": "#8da255"}
+     "roles": {"lit": "#7c8442"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.2093, 0.2326, 0.0577],
+     "fit_dE": 0.0048
     }
    }
   },
@@ -1290,12 +1390,17 @@
      "roles": {"lit": "#46858e"}
     },
     "albedo": {
-     "L": [0.5807, 0.6156, 0.8744],
-     "C": [0.0208, 0.0981, 0.1682],
-     "h": [256.0, -54.2, 3.1],
-     "mid": "#5d87bf",
+     "L": [0.4885, 0.5106, 0.7432],
+     "C": [0.0182, 0.0577, 0.1147],
+     "h": [255.8, -157.6, 2.7],
+     "mid": "#6c7b97",
      "n": 15200,
-     "roles": {"lit": "#5d87bf"}
+     "roles": {"lit": "#506887"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.1487, 0.1972, 0.3116],
+     "fit_dE": 0.0034
     }
    }
   },
@@ -1395,12 +1500,17 @@
      "roles": {"lit": "#121c39"}
     },
     "albedo": {
-     "L": [0.1365, 0.2231, 0.3241],
-     "C": [0.0072, 0.0185, 0.0364],
-     "h": [252.8, -32.8, 107.2],
-     "mid": "#151c24",
+     "L": [0.1021, 0.1762, 0.2437],
+     "C": [0.011, 0.0248, 0.0414],
+     "h": [266.8, -22.6, 54.5],
+     "mid": "#16161e",
      "n": 6400,
-     "roles": {"lit": "#151c24"}
+     "roles": {"lit": "#0c101c"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["night lit"],
+     "linear": [0.008, 0.008, 0.0129],
+     "fit_dE": 0.1243
     }
    },
    "edge": [0.25, 0.04]
@@ -1449,12 +1559,17 @@
      "roles": {"lit": "#ee9962", "transition": "#cb6c4f"}
     },
     "albedo": {
-     "L": [0.6036, 0.6671, 0.7384],
-     "C": [0.0463, 0.0591, 0.0667],
-     "h": [29.3, -14.3, 20.9],
-     "mid": "#b6877f",
+     "L": [0.6825, 0.6872, 0.6907],
+     "C": [0.149, 0.15, 0.1511],
+     "h": [42.8, -0.4, 0.5],
+     "mid": "#e57748",
      "n": 512,
-     "roles": {"lit": "#c3a190", "transition": "#a67275"}
+     "roles": {"lit": "#e57748", "transition": "#e57748"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.7847, 0.1846, 0.0649],
+     "fit_dE": 0.006
     }
    }
   },
@@ -1501,12 +1616,17 @@
      "roles": {"lit": "#4e5588"}
     },
     "albedo": {
-     "L": [0.4055, 0.5102, 0.8182],
-     "C": [0.15, 0.1788, 0.2006],
-     "h": [268.6, -1.2, 0.9],
-     "mid": "#3d59cb",
+     "L": [0.3169, 0.4, 0.6525],
+     "C": [0.0927, 0.1066, 0.1175],
+     "h": [275.3, -1.3, 1.5],
+     "mid": "#4d5594",
      "n": 4000,
-     "roles": {"lit": "#3d59cb"}
+     "roles": {"lit": "#384080"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["day lit"],
+     "linear": [0.0738, 0.0914, 0.296],
+     "fit_dE": 0.0023
     }
    }
   }
