@@ -787,7 +787,7 @@
    }
   },
   "bark": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB4 spruce trunk (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB4 spruce trunk (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
@@ -846,16 +846,16 @@
      "roles": {"lit": "#785527", "lit_night": "#2a2b39", "shade": "#372b28"}
     },
     "albedo": {
-     "L": [0.331, 0.4499, 0.5687],
-     "C": [0.0138, 0.0528, 0.0918],
-     "h": [63.9, -38.7, 30.8],
-     "mid": "#6a4f36",
+     "L": [0.268, 0.3869, 0.5057],
+     "C": [0.0031, 0.0421, 0.0811],
+     "h": [81.3, -38.7, 30.8],
+     "mid": "#50422a",
      "n": 1101,
-     "roles": {"lit": "#6a4727", "shade": "#3a2e2b"},
-     "v": 2,
-     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#392d2b) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #775e33, the base under the key alone #6a4727)",
+     "roles": {"lit": "#8f642b", "shade": "#2d2424"},
+     "v": 3,
+     "method": "L1 W2 wild (hand-set on RIGS FINAL b32bdf7b5, no fit; look_l1/c/w2/wild/colors.py): divisor = the ground helper's measured rock-row response (c/w2/ground/resp/final/response.json, gray 0.181, play camera; one cel model for bark, foliage and rock), day R_lit [3.47, 2.336, 1.051], R_shade [0.326, 0.316, 0.785]; a = sqrt(a_lit a_shade): MB4 day lit #785527 / R_lit and day shade #372b28 / R_shade; -> #50422a (lin [0.0796, 0.0545, 0.0228]): predicted day lit #8f642b, day shade #2d2424, night lit #2d1917 (night is carried by the rig and OWN_FOLIAGE's night terms, not the albedo)",
      "samples": ["day shade"],
-     "linear": [0.1445, 0.0782, 0.0364]
+     "linear": [0.0796, 0.0545, 0.0228]
     }
    }
   },
@@ -936,7 +936,7 @@
    }
   },
   "rock": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (a few big rounded planes, muted moon-blue grey); MB4 rock (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (a few big rounded planes, muted moon-blue grey); MB4 rock (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
@@ -996,16 +996,16 @@
      "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
     },
     "albedo": {
-     "L": [0.4411, 0.5661, 0.6911],
-     "C": [0.0009, 0.0239, 0.0468],
-     "h": [65.1, -60.1, 90.4],
-     "mid": "#807468",
+     "L": [0.3305, 0.4555, 0.5805],
+     "C": [0, 0.013, 0.0359],
+     "h": [283.3, -60.1, 90.4],
+     "mid": "#56565e",
      "n": 13519,
-     "roles": {"lit": "#80684f", "shade": "#494554"},
-     "v": 2,
-     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#464455) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #977a70, the base under the key alone #80684f)",
+     "roles": {"lit": "#998060", "shade": "#303054"},
+     "v": 3,
+     "method": "L1 W2 wild (hand-set on RIGS FINAL b32bdf7b5, no fit; look_l1/c/w2/wild/colors.py): divisor = the ground helper's measured rock-row response (c/w2/ground/resp/final/response.json, gray 0.181, play camera; one cel model for bark, foliage and rock), day R_lit [3.47, 2.336, 1.051], R_shade [0.326, 0.316, 0.785]; a = sqrt(a_lit a_shade) = #58565b, its blue raised 0.104 -> 0.112 by hand (rule 9 moon-blue grey: MB4's lit asks a_lit blue 0.124); -> #56565e (lin [0.092, 0.093, 0.112]): predicted day lit #998060, day shade #303054, night lit #30233a (night is carried by the rig and OWN_FOLIAGE's night terms, not the albedo)",
      "samples": ["day shade"],
-     "linear": [0.2175, 0.1736, 0.138]
+     "linear": [0.092, 0.093, 0.112]
     }
    }
   },
@@ -1447,7 +1447,7 @@
    }
   },
   "foliage": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 1: silhouette), 9 (flat leaf clusters, two or three values; spruce as stacked tiers); no rim (card normals, B1c); MB4 spruce (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 1: silhouette), 9 (flat leaf clusters, two or three values; spruce as stacked tiers); no rim (card normals, B1c); MB4 spruce (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
@@ -1510,16 +1510,16 @@
      "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
     },
     "albedo": {
-     "L": [0.5112, 0.5912, 0.6712],
-     "C": [0.0889, 0.0992, 0.1095],
-     "h": [115.9, -9.3, 9.5],
-     "mid": "#7b853b",
+     "L": [0.3681, 0.4481, 0.5281],
+     "C": [0.0509, 0.0612, 0.0715],
+     "h": [136.6, -9.3, 9.5],
+     "mid": "#455d3a",
      "n": 8267,
-     "roles": {"lit": "#7a782c", "shade": "#46512f"},
-     "v": 2,
-     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#424f2f) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #b19a39, the base under the key alone #7a782c)",
+     "roles": {"lit": "#7d8a3c", "shade": "#263434"},
+     "v": 3,
+     "method": "L1 W2 wild (hand-set on RIGS FINAL b32bdf7b5, no fit; look_l1/c/w2/wild/colors.py): divisor = the ground helper's measured rock-row response (c/w2/ground/resp/final/response.json, gray 0.181, play camera; one cel model for bark, foliage and rock), day R_lit [3.47, 2.336, 1.051], R_shade [0.326, 0.316, 0.785]; a = #7d8a3c / R_lit (the brief's olive, not MB4's yellow #ae9936; sqrt(a_lit a_shade) gave #677433, its lit #b7ab35 h 103: yellow); -> #455d3a (lin [0.0591, 0.1088, 0.043]): predicted day lit #7d8a3c, day shade #263434, night lit #262622 (night is carried by the rig and OWN_FOLIAGE's night terms, not the albedo)",
      "samples": ["day shade"],
-     "linear": [0.1972, 0.2337, 0.0433]
+     "linear": [0.0591, 0.1088, 0.043]
     }
    }
   },
