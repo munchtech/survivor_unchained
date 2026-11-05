@@ -984,6 +984,12 @@
      "mid": "#9b85a0",
      "n": 31201,
      "roles": {"lit": "#9b85a0"}
+    },
+    "layout": {
+     "course_m": [0.34, 0.46],
+     "length_courses": [1.5, 2.0],
+     "joint_m": 0.035,
+     "from": "B3r2: target 13 (13_r4.png, the square by day): the setts beside the woman in purple, at her depth (her 1.7 m = 272 px, so 160 px/m across), measure 100-125 px wide (0.62-0.78 m) and 25-30 px deep, which her camera's foreshortening (about 30 px/m in depth there) makes about as deep as wide or more; MB3's setts panel gives the shape: about 1.5-2 times as long as their course is deep, rounded oblongs, uneven courses. So courses 0.34-0.46 m deep and stones 1.5-2.0 courses long (0.5-0.9 m), against round 1's 0.24-0.34 m and 1.2-2.2. tools/look/bake_forms.py setts reads it."
     }
    }
   },
