@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 4 November 2026, night (coordinator 3bbb9904): the story plan's picks: "Go, defaults"
+The owner read `docs/story/PLAN.md` (story-s1@9fd41e6e0) and took the writer's defaults on all five: ending B (Break the Chain) retired, three endings (she lies down / Corvane takes her place / she carries it home); the fool is Corvane; Corvane is killable in Act 1 and gets up on screen; "He has never burned" retired; Holloway risen at Ashford is decided with Act 2's brief. Same night, three standing rules: remake over patch ("upgrading by redoing if needed"), tools on merit ("if motionbricks etc works better now, or hairdeck etc ... go nuts"), and "make marionette the pipe that we pipeline through" (PIPELINE.md). Standing.
+
 ## 4 November 2026, night (coordinator e05b5408): GATE G1 PICKED. The painted-cel target sheet is the look
 The owner saw L1's G1 sheet (`survivorsunchained_inputs\look_l1\g1\`: the 13 frames and key art as targets, the boards) and answered: "love it". No notes on the three points relayed (09 is drawn at about twice play size; at 13's camera the shield hides her from the shoulders down; 08 and 07 get one last round). So the G1 set is the target every block is built to and judged against: `docs/design/LOOK_BIBLE.md` (14 rules) is law, MB1 is her one face, and L1's Stage B (B2 material library, B3 texture authoring, B4 lighting rigs, B6 FX/UI language), then C (the 13 frames rebuilt) and D (the max judge, the owner's A|B at GATE G2) run. Standing.
 
