@@ -145,6 +145,7 @@ public partial class ZoneView : Node3D
         {
             var ld = meta.Lights[i];
             if (ld.Specular >= 0) lights[i].LightSpecular = (float)ld.Specular;
+            if (ld.Shadow) { lights[i].ShadowEnabled = true; lights[i].ShadowBias = 0.03f; lights[i].ShadowNormalBias = 0.6f; }
             foreach (var h in new[] { ld.Dial, ld.DialOff })
                 if (h != null) { if (!dialLights.TryGetValue(h, out var dl)) dialLights[h] = dl = new(); dl.Add(i); }
             if (ld.Dial != null) DialLevel(i);

@@ -41,6 +41,9 @@ public sealed class LightDef
     public string? DialOff { get; set; }
     /// <summary>Its specular share (below 0: as built, 1): a light a hand from glass-smooth stone shows as a disc in it.</summary>
     public double Specular { get; set; } = -1;
+    /// <summary>(P9 C13) Casts its shadow always (zone lights cast none): the Vault stair's grazing light, whose read is the
+    /// treads' own shadows, each nose a lit line over the dark band of the tread below.</summary>
+    public bool Shadow { get; set; }
 }
 
 public sealed class FireDef
