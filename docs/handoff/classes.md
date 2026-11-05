@@ -1,3 +1,43 @@
+# C2 one build (5 Nov, lead 1): the four deliverables are on the branch; HANDOFF READY at ~285k. Next: the judge, then merge and MR
+
+Brief: `docs/team/hook/C2_one_build.md`; coordinator brief `tools/scratch/coordinator/briefs/C2_lead1.md`.
+- **Branch:** worktree `.claude/worktrees/classes-c2`, branch `classes-c2`, cut from d6b6a8345 (integration not merged in since).
+- **Junction worktree:** `godot\assets` links to its own `public\assets`. Before merging, remove the link (`cmd /c rmdir godot\assets`), merge, then remake it and `git update-index --assume-unchanged godot/assets`.
+- **Report to:** coordinator 88131549, via SendMessage "main".
+
+## State (all committed)
+1. **`docs/design/ONE_BUILD.md`** (d243d83fb, cae5f9a21): the owner's page; the rule; the offer; what dawn takes and the dawn card's memory; the data model; the 14-item migration list (item 1: the wicks' bare-percent lead-ins; item 2: the night draft's full pool, cut); and the harness note (§6).
+   - The coordinator asked for, and got, one paragraph each on a newcomer's first night and a veteran's tier-4 night, in play terms.
+   - Three open questions, each with my pick:
+     - skills open by level (no tomes);
+     - Unions as a shared lamp, both skills firing (Hades' duos), not a merge;
+     - keep the slots (2/3/4/5/6), so a first night has 2-3 skills.
+2. **`godot/data/content/skill_lamps.json`** plus `tools/classes/skill_lamps_check.py` (ed3a9cd4b): the warden's 7 wicks in full (84 lamps), Dawn's Judgement, and two proposed Unions (Broken Country, Curfew). The checker passes. The game doesn't read the file.
+   - The solver's four calls, which I accept:
+     - the evolutions' pure multipliers dropped, since rank carries power;
+     - Reckoning remade as endless climbing ricochets;
+     - the bare-stat v1 lamps dropped or given a mechanic;
+     - Dawn Rhythm adds to the timer rather than replacing it.
+   - Generator: scratch `classes_c2\gen_skill_lamps.py`.
+3. **Harness `--onebuild`** under godot/balance only (cbde3e259). It is unverified that the sim is byte-identical without the flag: a no-flag run was argued from the code, never diffed. The R0-R3 tables are in ONE_BUILD §6.
+   - The 45-60 s rule holds: standing falls on every tier-1 night, at every level.
+   - The bands miss: level 5 is too hard (human 61%; reaver 12%), level 10 too easy (human 100%, idler wins 61%), and a veteran at tier 4 is under the band (human 75%).
+   - Data: scratch `classes_c2\h\` (r0-r3.jsonl, run.sh).
+
+## Next (in order)
+1. **The judge.** One su-lead-max judge in the foreground on ONE_BUILD.md, `Item: C2 design`, round cap 3.
+   - The question: would a PoE veteran and a first-time player both understand this in the game, one system at a time, never a wiki?
+   - Give it the page and `skill_lamps.json`, not my conclusions.
+   - `Marionette/JUDGES_PAUSED` says `allow: judge`, but a foreground subagent suits a text page.
+2. Make the judge's fixes.
+3. Merge `origin/claude/vigilant-galileo-l6jqyx`, under the junction rule.
+4. Run `dotnet test` in godot/tests. The last green was 1565/0/10; nothing under logic/ or src/ changed, but the new data file and the harness must not trip a test.
+5. Push, then put `MR READY classes-c2@<sha>` here and send it to main, with the three questions and the cost.
+6. Back up scratch `classes_c2\` to `survivorsunchained_inputs\scratch_classes_c2\` and clear only that subfolder.
+
+## Cost (lead 1)
+About 0.6M in all: lead ~285k, harness worker 71k, lamps solver 234k. No judges yet.
+
 # Classes 22 (3 Nov): wave-1 fixed list done; MR READY; read this, then "Classes 21" below
 
 Branch classes-22 (junction to its own public/assets). Scratch backed up to survivorsunchained_inputs/scratch_classes22 (solver/: ab.sh, pb.sh, j2.sh, v.py, st.py, pr.py, gate.py, ty.py; eq/eq.sh the sim byte check).
