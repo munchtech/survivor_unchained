@@ -4,7 +4,7 @@
  "conversation": "wenna",
  "zone": "verge",
  "script": "docs/cinematics/shoot/c15.md",
- "draft": "Previs pass 5: ONE shot down the water from the cause (round 4's F3 kept, F1 cut on the judge's fix 1): open on the Dig silent at the head of the stream, one eased crane across and down the reach as the lens widens to the three wolves drinking; Wenna's line over the second half; held past it, the dip hands back. Dawn whatever the hour, pale gold key, lilac shade.",
+ "draft": "Previs pass 4: two shots down the water from the cause (the Dig silent, side-lit by the low sun; the reach at first light under Wenna's line, the three wolves drinking in it). F2 cut (no level shore on the reach for wolves at MLS). Dawn whatever the hour, pale gold key, lilac shade; the dip hands back.",
  "bars": {
   "in": 0.6,
   "out": 0.8
@@ -47,48 +47,46 @@
  },
  "shots": [
   {
-   "id": "1",
+   "id": "3",
    "type": "ELS",
-   "dur": 8.0,
+   "dur": 7.2,
    "fit": [
     "wenna.cb_clean"
    ],
-   "tail": 1.2,
-   "note": "High over the Hollow's reach, the blind's camp behind: opens on the Dig at the head of the stream (the wheel still, no smoke, no glow), then one eased crane across and down the channel, the lens widening, tilting down the clear water to three wolves drinking in the low mist. Wenna's line from off over the second half; held past it, the dip hands back.",
+   "tail": 1.5,
+   "note": "High over the Hollow's reach, the blind's camp behind: first light up the stream, the sky warm in the water, low mist in the channel, three wolves drinking small in it. Wenna's line from off; held past it, the dip hands back.",
    "cam": {
     "pos": {
      "abs": [
-      -14.68,
-      6.57,
-      -30.59
+      -17.16,
+      7.97,
+      -20.26
      ]
     },
     "at": {
      "abs": [
-      6.71,
-      5.26,
-      -43.46
+      10.15,
+      2.27,
+      -41.35
      ]
     },
-    "lens": 50,
+    "lens": 30,
     "move": {
      "pos": {
       "abs": [
-       -12.91,
-       5.97,
-       -31.52
+       -14.32,
+       7.57,
+       -21.3
       ]
      },
      "at": {
       "abs": [
-       8.11,
-       0.68,
-       -43.99
+       12.8,
+       2.27,
+       -42.74
       ]
      },
-     "lens": 32,
-     "ease": "inout",
-     "end": "end-0.8"
+     "ease": "linear"
     }
    },
    "cues": [
@@ -142,26 +140,22 @@
      "sink": 0.0
     },
     {
+     "do": "music",
+     "mood": "explore",
+     "intensity": 0.3,
+     "over": 2.0
+    },
+    {
+     "at": 1.5,
+     "do": "line",
+     "id": "wenna.cb_clean"
+    },
+    {
+     "at": "end-2.0",
      "do": "mist",
-     "name": "near",
-     "where": {
-      "abs": [
-       -5.78,
-       -1.03,
-       -33.0
-      ]
-     },
-     "size": [
-      14,
-      1.5,
-      14
-     ],
-     "density": 0.5,
-     "color": "#e6d6e2",
-     "falloff": 2.0,
-     "grain": 0.15,
-     "sink": 0.0,
-     "edge": 0.7
+     "name": "reach",
+     "density": 0,
+     "over": 2.0
     },
     {
      "do": "lit",
@@ -232,31 +226,6 @@
       2.08,
       -35.63
      ]
-    },
-    {
-     "do": "music",
-     "mood": "explore",
-     "intensity": 0.3,
-     "over": 2.0
-    },
-    {
-     "at": 3.2,
-     "do": "line",
-     "id": "wenna.cb_clean"
-    },
-    {
-     "at": "end-2.0",
-     "do": "mist",
-     "name": "reach",
-     "density": 0,
-     "over": 2.0
-    },
-    {
-     "at": "end-2.0",
-     "do": "mist",
-     "name": "near",
-     "density": 0,
-     "over": 2.0
     }
    ]
   }
