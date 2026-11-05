@@ -2,16 +2,18 @@
   "what": "The lighting rigs (L1 B4; docs/design/LOOK_BIBLE.md rules 1-3, 5, 7-9, 11). Every scene under the cel model is lit by the rig its preset names (AtmospherePreset.Rig; logic/Look/Rigs.cs). A rig changes only what it names; 'base' is the rig it starts from. Play rigs: the key in world degrees (Atmosphere.Set: azimuth round from +x toward +z, elevation up). Camera rigs (the close-up, the Look): the key camera-relative, degrees round from the lens toward its right and up. Colors are sRGB hex; ink is linear rgb (B5's --ink-rig). --cel off lights by the presets as they were (no rig).",
   "rigs": {
     "night_play": {
-      "from": "LB_light NIGHT and targets 09/10: a moon-blue key from the road's far end (Low Ford's corridor, so what stands on the road throws its shadow toward the camera), the sky's indigo fill coloring the shade band (rule 2, h 220-290), her ember the one warm pool in a cold dark (rules 1, 3: key 2.0+, pool 0.35+, Lp50 0.15-0.30, cold 60%+); the moon through the canopy in big leaf shapes (rule 9, 09 and 10). Start: LowFordNight (G1 r3). Tuned (B4r2, the lookdev stage's play night): the moon bluer and up (#80b6f2 1.7 to #6aa8ff 2.4), the fill bluer (#4a5fc0 to #3a6ae0) and the grade's Moon step at chroma 0.45 (rig_night): shade h 314 to 261, cold 28% to 52%, key 2.18, pool 0.42, Lp50 0.27; the stage's camp fire pool (18 m) holds the rest of the chroma.",
-      "key": { "az": 250, "el": 48, "color": "#6aa8ff", "intensity": 2.4, "shadow": 0.8 },
-      "fill": { "color": "#3a6ae0", "strength": 0.12, "sky": "#34507e", "ground": "#1e1a14", "hemi": 1.6, "env": 0.6 },
+      "from": "LB_light NIGHT and targets 09/10: a moon-blue key from the road's far end (Low Ford's corridor, so what stands on the road throws its shadow toward the camera), the sky's indigo fill coloring the shade band (rule 2, h 220-290), her ember the one warm pool in a cold dark (rules 1, 3: key 2.0+, pool 0.35+, Lp50 0.15-0.30, cold 60%+); the moon through the canopy in big leaf shapes (rule 9, 09 and 10). Start: LowFordNight (G1 r3). Tuned (B4r2, the lookdev stage's play night): the moon bluer and up (#80b6f2 1.7 to #6aa8ff 2.4), the fill bluer (#4a5fc0 to #3a6ae0) and the grade's Moon step at chroma 0.45 (rig_night): shade h 314 to 261, cold 28% to 52%, key 2.18, pool 0.42, Lp50 0.27; the stage's camp fire pool (18 m) holds the rest of the chroma. C2 (the Stage B judge on the frames: 09 Lp50 0.13 and 12 0.07, midC 0.05-0.07, black leaf stencils, 05 warm 7%; rules 1, 4, 9): the moon's floor and its chroma from the light, not the surfaces: the key bluer (#5a9cff) and its cast shadow 0.8 to 0.6, the fill bluer (#2c5cf4) at 0.12 to 0.4, the sky #2c4c8c at hemi 1.6 to 2.4; the dapple's dark clamped to the moon-shade band (strength 1.0 to 0.55: under the leaves 45% of the moon, two blues); her ember the pool (3.5 to 8.0, its reach x1.5, #ff8a3a) at exposure 1.3 to 1.15. 05: Lp50 0.20 to 0.21, Lp95 0.38 to 0.45, key 1.96 to 2.17, pool 0.31 to 0.35, midC 0.046 to 0.070, warm 7% to 18% (target 05: 0.20, 0.43, 2.17, 0.35, 0.119, 20%).",
+      "key": { "az": 250, "el": 48, "color": "#5a9cff", "intensity": 2.4, "shadow": 0.6 },
+      "fill": { "color": "#2c5cf4", "strength": 0.4, "sky": "#2c4c8c", "ground": "#1e1a14", "hemi": 2.4, "env": 0.6 },
       "rim": { "color": "#9fc0ff", "strength": 0.35, "width": 0.25 },
       "ink": [0.42, 0.45, 0.85],
       "hardness": 0.85,
       "grade": "rig_night",
-      "exposure": 1.3,
-      "ember": 3.5,
-      "dapple": { "cover": 0.6, "strength": 1.0, "height": 9 }
+      "exposure": 1.15,
+      "ember": 8.0,
+      "ember_reach": 1.5,
+      "ember_color": "#ff8a3a",
+      "dapple": { "cover": 0.6, "strength": 0.55, "height": 9 }
     },
     "night_town": {
       "base": "night_play",
@@ -34,12 +36,14 @@
     },
     "arena_night": {
       "base": "night_play",
-      "from": "LB_light ARENA and target 09: the night rig's fill, rim, ink, hardness and dapple on every arena; each place keeps its own moon, sky and exposure (ArenaPlaces: the barrow's open sky, the Hollow's low broken moon), so one rig and one pack preset (rule 7) under four moons.",
-      "key": { "az": null, "el": null, "color": null, "intensity": null, "shadow": null },
-      "fill": { "sky": null, "ground": null, "hemi": null, "env": null },
-      "grade": null,
+      "from": "LB_light ARENA and target 09: the night rig's fill, rim, ink, hardness and dapple on every arena; each place keeps its own moon, sky and exposure (ArenaPlaces: the barrow's open sky, the Hollow's low broken moon), so one rig and one pack preset (rule 7) under four moons. C2 (09 Lp50 0.13, 12 0.07; rules 1, 4): the moon's hue, its cast shadow, the sky's color and the floor (hemi 2.2) and the grade (rig_night: the moon step's chroma) are the rig's now; each place keeps its moon's way and strength, its ground and exposure. 09: Lp50 0.11 to 0.25, midC 0.064 to 0.089, cold 73% to 86%; 12 (her lamp out): 0.07 to 0.17, midC 0.059 to 0.089 (targets 0.24, 0.118/0.094).",
+      "key": { "az": null, "el": null, "color": "#5a9cff", "intensity": null, "shadow": 0.6 },
+      "fill": { "sky": "#2c4c8c", "ground": null, "hemi": 2.2, "env": null },
+      "grade": "rig_night",
       "exposure": null,
-      "ember": null
+      "ember": null,
+      "ember_reach": null,
+      "ember_color": null
     },
     "day_town": {
       "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C. B3r3 (tools/look/joint.py): the fill solved with every class's albedo over the boards' lit and shade samples (MB2-MB4, 07's shade): #6a5ce0 0.12 to #7789ff 0.1063 (the shade sides at the boards' share of the lit).",

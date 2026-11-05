@@ -24,9 +24,10 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 
 /// <summary>One rig (godot/data/look/rigs.json): what it is FROM, its key, fill, rim, the ink rig color (B5's, linear rgb),
 /// shadow hardness (cel_rig.x), the grade (a named GradeSettings, Atmospheres.GradeNamed), the exposure and her ember's
-/// strength, and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).</summary>
+/// strength (and, L1 C2, its reach and color: ember_reach, ember_color; absent: the preset's), and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).</summary>
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
-    double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null)
+    double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
+    double? EmberReach = null, string? EmberColor = null)
 {
     /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
     /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
@@ -95,7 +96,7 @@ public sealed class RigSet
             new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
             new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)),
-            D(e, "fires", b?.Fires));
+            D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor));
     }
 }
 
@@ -125,6 +126,7 @@ public static class Rigs
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
             Grade = r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
+            EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
             DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.Dapple.Strength ?? p.DappleStrength,
             DappleHeight = r.Dapple.Height ?? p.DappleHeight,
             IsLit = true, CelTwin = null, Source = p,
