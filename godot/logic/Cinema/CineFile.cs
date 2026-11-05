@@ -214,7 +214,7 @@ public sealed class CineCue
     {
         "apply" => true,
         "drop" => false,
-        _ => Do is "place" or "spawn" or "world" or "light" or "lit" or "atmosphere" or "event" or "fire" or "hide" or "prints" or "frost",
+        _ => Do is "place" or "spawn" or "world" or "light" or "lit" or "atmosphere" or "event" or "fire" or "hide" or "prints" or "frost" or "shift",
     };
 
     /// <summary>The kinds of cue the player knows (the tests hold every cue to them).</summary>
@@ -222,6 +222,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "eyes", "lids", "fingers", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
-        "lamp", "head", "play", "rig", "mist", "globe", "water", "stones", "haze", "grade", "skin", "hair",
+        "lamp", "head", "play", "rig", "mist", "globe", "water", "stones", "haze", "grade", "skin", "hair", "shift",
     ];
 }

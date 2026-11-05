@@ -313,7 +313,10 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         open.Add(g.Into);
         // The ember's line across the way goes out (its char stays on the ground).
         G.Look.Show($"gate:{g.Id}", false);
+        Fight.Opened(this, g.Id);
     }
+
+    public void Shift(string kind, double k) => G.Look.Shift(kind, k);
 
     /* ------------------------------------------------------------- the boss -- */
 

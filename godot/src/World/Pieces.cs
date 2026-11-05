@@ -34,6 +34,8 @@ public static partial class Pieces
     {
         // The arenas' own pieces (Pieces.Arena.cs) have no KayKit size: they are made to their own.
         if (pack == "arena") return Arena(name, seed, ground);
+        // (P9 set) a story arena's own preset (OwnProps, props.json), placed like any piece
+        if (pack == "own") return OwnProps.Piece(name);
         if (!Sizes.TryGetValue($"{pack}/{name}", out var s)) return null;
         var box = new Aabb(new Vector3(s[0], s[1], s[2]), new Vector3(s[3] - s[0], s[4] - s[1], s[5] - s[2]));
         Node3D? made = (pack, name) switch

@@ -51,6 +51,11 @@ public static class OwnProps
     /// <summary>(H8 N22) A preset's moving pieces (props.json "moves": node -> its travel to its other end, m in the
     /// preset's frame): the gatehouse's portcullis leaves, drawn up at rest. Their own mesh, no LOD, casting their shadow.</summary>
     static readonly Dictionary<string, Vector3> moves = new();
+    /// <summary>(P9 set) A preset's dial meshes (props.json "dials": mesh name -> kind, glow colour, energy, centre in the
+    /// mesh's model space, radius): a handle (0 dark, 1 awake) the play and films drive; the glow wakes from the centre out.</summary>
+    static readonly Dictionary<string, (string Kind, Color Color, float Energy, Vector3 Center, float Radius)> dials = new();
+    /// <summary>(P9 set) Meshes of black stone smooth as glass (props.json "gloss"): one shared glossy material.</summary>
+    static readonly HashSet<string> glossy = new();
     /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
     /// material on the faces their vertex alpha flags.</summary>
     static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
@@ -203,6 +208,15 @@ public static class OwnProps
                     if (p.Value.TryGetProperty("no_shadow", out var ns) && ns.GetBoolean()) unshadowed.Add(p.Name);
                     if (p.Value.TryGetProperty("moves", out var mv))
                         foreach (var o in mv.EnumerateObject()) moves[o.Name] = new Vector3(o.Value[0].GetSingle(), o.Value[1].GetSingle(), o.Value[2].GetSingle());
+                    if (p.Value.TryGetProperty("dials", out var dl))
+                        foreach (var o in dl.EnumerateObject())
+                        {
+                            var c = o.Value.GetProperty("center");
+                            dials[o.Name] = (o.Value.GetProperty("kind").GetString() ?? "", Color.FromHtml(o.Value.GetProperty("color").GetString() ?? "#ffffff"),
+                                o.Value.GetProperty("energy").GetSingle(), new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()), o.Value.GetProperty("radius").GetSingle());
+                        }
+                    if (p.Value.TryGetProperty("gloss", out var gl))
+                        foreach (var o in gl.EnumerateArray()) glossy.Add(o.GetString() ?? "");
                     if (p.Value.TryGetProperty("runs", out var rn))
                         runs[p.Name] = (rn.GetProperty("top").GetSingle(), rn.GetProperty("drop").GetSingle(), rn.GetProperty("len").GetSingle(),
                             rn.GetProperty("k").GetSingle(), rn.GetProperty("ring").GetBoolean());
@@ -338,6 +352,15 @@ public static class OwnProps
         TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
     };
 
+    static Shader? dialShader;
+    static Shader DialShader => dialShader ??= GD.Load<Shader>("res://shaders/dial_glow.gdshader");
+    static StandardMaterial3D? glossStone;
+    /// <summary>(P9 set) Black stone smooth as glass: no texture, nearly no roughness.</summary>
+    static Material GlossStone => glossStone ??= new StandardMaterial3D
+    {
+        ResourceName = "gloss_stone", AlbedoColor = new Color("0e0e12"), Roughness = 0.07f, Metallic = 0f, MetallicSpecular = 0.75f,
+    };
+
     static StandardMaterial3D? cloth;
     /// <summary>(E9d) The stalls' canvas (tools/assets/env_canvas_tile.py: a tiling linen weave, 0.5 m a tile), times the
     /// vertex colours (the dye, stripes, fading and soiling env_props.py bakes).</summary>
@@ -388,6 +411,21 @@ public static class OwnProps
             if (m.Name.ToString().EndsWith("_shadow")) { m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly; continue; }
             // (H8 N22) a moving piece (the portcullis): the plain material (the runs would slide with it), its own shadow
             // (a shut grate's bars on the passage floor), no LOD; its travel kept on it for Landmarks.Shift
+            bool isDial = dials.TryGetValue(m.Name, out var dial), isGloss = glossy.Contains(m.Name);
+            if (isDial || isGloss)
+            {
+                if (isDial)
+                {
+                    var sm = new ShaderMaterial { Shader = DialShader, ResourceName = "dial_" + dial.Kind };
+                    sm.SetShaderParameter("color", dial.Color); sm.SetShaderParameter("energy", dial.Energy);
+                    sm.SetShaderParameter("center", dial.Center); sm.SetShaderParameter("radius", dial.Radius);
+                    m.MaterialOverride = sm; m.SetMeta("dial", dial.Kind);
+                }
+                else m.MaterialOverride = GlossStone;
+                m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
+                if (moves.TryGetValue(m.Name, out var dtv)) { m.SetMeta("travel", dtv); m.SetMeta("rest", m.Position); }
+                continue;
+            }
             if (moves.TryGetValue(m.Name, out var tv))
             {
                 m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;

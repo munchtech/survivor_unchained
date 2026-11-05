@@ -1245,6 +1245,16 @@ public partial class Game
                     if (c.Has("size")) { g.scene!.View.SetSize(i, (float)c.Num("size")); sized.Add(i); }
                     break;
                 }
+                case "shift":
+                {
+                    // (P9 set) A named handle on the arena's own pieces: {"do":"shift","kind":"vaultdoor","k":1,"from":0,"over":2.5}.
+                    // Not given back at the end (the door stays sunk, the sigil awake).
+                    string kind = c.Str("kind") ?? "";
+                    float from = (float)c.Num("from", 0), to = (float)c.Num("k", 1);
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => g.scene!.View.Shift(kind, Mathf.Lerp(from, to, Mathf.SmoothStep(0, 1, (float)k)))));
+                    else g.scene!.View.Shift(kind, to);
+                    break;
+                }
                 case "lit":
                     g.scene!.View.SetLit((int)c.Num("light"), c.Bool("on", true));
                     break;

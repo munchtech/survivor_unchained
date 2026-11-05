@@ -338,7 +338,52 @@ public partial class ZoneView : Node3D
     /// <summary>A turning piece (the pump's wheel) stops.</summary>
     public void Stop(string node) => stopped.Add(node);
     /// <summary>(H8 N22) A kind of the landmarks' moving parts set k of its way (Landmarks.Shift: the portcullis down).</summary>
-    public void Shift(string kind, float k) => Landmarks.Shift(kind, k);
+    public void Shift(string kind, float k)
+    {
+        shifted[kind] = k;
+        Landmarks.Shift(kind, k);
+        if (dials.TryGetValue(kind, out var ds))
+            foreach (var d in ds) if (GodotObject.IsInstanceValid(d)) d.SetInstanceShaderParameter("k", k);
+        if (dialLights.TryGetValue(kind, out var ls)) foreach (var i in ls) SetLevel(i, k);
+    }
+
+    /// <summary>(P9 set) The last k each handle was set to (a piece adopted later starts there).</summary>
+    readonly Dictionary<string, float> shifted = new();
+    readonly Dictionary<string, List<MeshInstance3D>> dials = new();
+    readonly Dictionary<string, List<int>> dialLights = new();
+
+    /// <summary>(P9 set) A piece set down at runtime (a story arena's own prop, no landmarks.glb): its moving parts
+    /// (meta "travel") join Landmarks.Movers by kind and its dial meshes (meta "dial") the dials, both at the handle's last k.
+    /// Not landed: a vault door sinks into the ground on purpose.</summary>
+    public void Adopt(Node3D piece)
+    {
+        var kinds = new HashSet<string>();
+        var all = new List<Node>(piece.FindChildren("*", "Node3D", true, false)) { piece };
+        foreach (var n in all)
+        {
+            if (n is not Node3D n3) continue;
+            if (n3.HasMeta("travel"))
+            {
+                var nm = n3.Name.ToString();
+                int a = nm.IndexOf("_move_", System.StringComparison.Ordinal);
+                if (a < 0) continue;
+                var kind = nm[(a + 6)..];
+                int e = kind.IndexOf('_');
+                if (e >= 0) kind = kind[..e];
+                if (!Landmarks.Movers.TryGetValue(kind, out var ms)) Landmarks.Movers[kind] = ms = new();
+                ms.Add((n3, (Vector3)n3.GetMeta("rest"), (Vector3)n3.GetMeta("travel")));
+                kinds.Add(kind);
+            }
+            if (n3 is MeshInstance3D mi && mi.HasMeta("dial"))
+            {
+                var kind = mi.GetMeta("dial").AsString();
+                if (!dials.TryGetValue(kind, out var ds)) dials[kind] = ds = new();
+                ds.Add(mi);
+                kinds.Add(kind);
+            }
+        }
+        foreach (var kind in kinds) Shift(kind, shifted.GetValueOrDefault(kind));
+    }
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
     /// <summary>The lights a lamp's flame flickers (not the zone's own formula), and each one's holders' glass.</summary>

@@ -32,6 +32,8 @@ public sealed class LightDef
     public double Core;
     /// <summary>The landmark nodes that glow with it (shown while it is on).</summary>
     public List<string> Glow = new();
+    /// <summary>(P9 set) A handle that drives it (a story piece's dial, "vaultsigil"): its level is the handle's k, dark at 0.</summary>
+    public string? Dial { get; set; }
 }
 
 public sealed class FireDef

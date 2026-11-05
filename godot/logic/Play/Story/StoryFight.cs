@@ -31,6 +31,8 @@ public interface IStoryArena : IBossArena
     IReadOnlyList<Deadfall> Fires { get; }
     /// <summary>A world fact holds (a bane learned by day).</summary>
     bool Fact(string key);
+    /// <summary>(P9 set) A named handle on the arena's own pieces set k (0..1) of its way: a vault door sunk, a sigil awake.</summary>
+    void Shift(string kind, double k) { }
     /// <summary>A world fact as it stands (who is in the cages, where the crates went).</summary>
     SurvivorUnchained.World.Fact FactOf(string key);
     /// <summary>The world told what happened (the story's effects, as a dialogue's are).</summary>
@@ -224,6 +226,8 @@ public abstract class StoryFight
     /// <summary>What the fight itself stands in its place as the night opens (the Vault's cover down the hall),
     /// solid and drawn, before anything moves.</summary>
     public virtual void Furnish(IStoryArena a) { }
+    /// <summary>(P9 set) A gate has just opened (after its stage): the fight's own piece answers it (the Vault's door sinks).</summary>
+    public virtual void Opened(IStoryArena a, string gate) { }
     public virtual double Burns(IStoryArena a) => 20;
 }
 

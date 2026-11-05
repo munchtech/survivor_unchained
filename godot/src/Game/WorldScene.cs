@@ -498,6 +498,7 @@ public partial class WorldScene : Node3D, IZoneLook
         piece.Rotation = new Vector3(0, (float)rot, 0);
         piece.Scale = Vector3.One * (float)scale;
         View.AddChild(piece);
+        View.Adopt(piece);   // (P9 set) its moving parts and dials answer the handles
     }
 
     /// <summary>A piece from a pack not in the Godot game with nothing made
@@ -605,6 +606,7 @@ public partial class WorldScene : Node3D, IZoneLook
         if (node == null) return Orb("#8a5a2a", scale * 0.35);
         var v = new PieceView(node);
         AddChild(v);
+        View.Adopt(node);
         return v;
     }
 }

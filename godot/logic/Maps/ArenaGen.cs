@@ -63,6 +63,8 @@ public abstract class ArenaShape
     public abstract void Plan();
     /// <summary>Metres the ground rises (or sinks) at a point, over the clearing's roll.</summary>
     public virtual double Relief(double x, double z) => 0;
+    /// <summary>The ground's height set outright at a point, after its relief: a paved floor, a cut stair.</summary>
+    public virtual double Level(double x, double z, double h) => h;
     /// <summary>Where the ground cannot be stood on, inside the edge (a pit).</summary>
     public virtual bool Closed(double x, double z) => false;
     /// <summary>How much of the banks rise outside the edge at a point (1 all; less where a stream cuts through).</summary>
@@ -245,7 +247,7 @@ public static class ArenaGen
                 }
             for (int j = 0; j < Res; j++)
                 for (int i = 0; i < Res; i++)
-                    Heights[j * Res + i] += (float)shape.Relief(i - Half, j - Half);
+                    Heights[j * Res + i] = (float)shape.Level(i - Half, j - Half, Heights[j * Res + i] + shape.Relief(i - Half, j - Half));
             Ground = new Heightfield(Size, Res, Heights);
         }
 
