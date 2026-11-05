@@ -1,0 +1,50 @@
+{
+ "about": "topo_corr.py's check (P1 B1 step 1): round trip on the reference, mm.",
+ "replay_mm": {
+  "p50": 0.0,
+  "p95": 0.0,
+  "max": 0.0
+ },
+ "close": {
+  "vertices": 38410,
+  "round_trip_mm": {
+   "p50": 0.0,
+   "p95": 0.0,
+   "max": 0.0
+  },
+  "round_trip_replay_mm": {
+   "p50": 0.0,
+   "p95": 0.0,
+   "max": 0.0
+  },
+  "normal_offset_mm": {
+   "p50": 0.0,
+   "p95": 0.0414,
+   "max": 3.845,
+   "over_1mm": 650
+  },
+  "tangent_offset_max_mm": 0.6229,
+  "pass": true
+ },
+ "play": {
+  "vertices": 10784,
+  "round_trip_mm": {
+   "p50": 0.0,
+   "p95": 0.0,
+   "max": 0.0
+  },
+  "round_trip_replay_mm": {
+   "p50": 0.0,
+   "p95": 0.0,
+   "max": 0.0
+  },
+  "normal_offset_mm": {
+   "p50": 0.0,
+   "p95": 0.222,
+   "max": 3.696,
+   "over_1mm": 293
+  },
+  "tangent_offset_max_mm": 0.505,
+  "pass": true
+ }
+}
