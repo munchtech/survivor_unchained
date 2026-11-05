@@ -37,6 +37,7 @@ public partial class Game
     OmniLight3D? lookFireLight;
     /// <summary>What the stage holds, by row, each with its world box (for the frame check: LookFrame).</summary>
     readonly List<(string Row, string Name, Func<Aabb?> Box)> lookItems = new();
+    readonly List<Enemy> lookWolves = new();
 
     void Lookdev(double dt)
     {
@@ -55,6 +56,13 @@ public partial class Game
         // Her held in her place, whole, facing the camera.
         b.Player.X = lookP.X; b.Player.Z = lookP.Z; b.Player.Vx = b.Player.Vz = 0; b.Player.Hp = b.MaxHp;
         b.Player.Facing = lookFacing;
+        // The wolves held standing in their idle: risen and not yet come on (Ai's Rising, its StateT held up; CrowdView
+        // draws a risen body's idle). Bound alone left them running on the spot (the sim's chase speed, the walk clip).
+        foreach (var w in lookWolves)
+        {
+            w.State = EnemyState.Rising; w.StateT = 1e3; w.AnimT = Math.Max(w.AnimT, 5); w.Anim = EnemyAnim.Idle;
+            w.X = w.BoundX; w.Z = w.BoundZ; w.Vx = w.Vz = 0;
+        }
         double settle = Args.Num("lookdev-settle", 2.5f), per = settle + 4.0, t0 = lookBuiltAt + 1.5;
         if (t < t0) return;
         int k = (int)((t - t0) / per);
@@ -144,6 +152,7 @@ public partial class Game
             var w = W(x, y);
             if (b.SpawnEnemy("wolf", w.X, w.Z) is { } e)
             {
+                lookWolves.Add(e);
                 lookItems.Add(("crowd", $"wolf{lookItems.Count(x => x.Row == "crowd")}", () => new Aabb(new Vector3((float)e.X - 0.6f, (float)s.HeightAt(e.X, e.Z), (float)e.Z - 0.6f), new Vector3(1.2f, 0.85f, 1.2f))));
                 e.BoundX = e.X; e.BoundZ = e.Z;
                 e.Status.Ensure(StatusKind.Bound, 1e6, 1, 1, 0);
@@ -386,6 +395,8 @@ public partial class Game
         if (play && (Mathf.Abs(her.GetCenter().X - 0.5f) > 0.08f || Mathf.Abs(her.GetCenter().Y - 0.5f) > 0.15f)) fails.Add("her-centre");
         // (the close view is her from the waist or chest up: her head in the top half, centred, and her tall in it)
         if (close && (her.Size.Y < 0.6f || her.Position.Y < 0 || her.Position.Y > 0.5f || Mathf.Abs(her.GetCenter().X - 0.5f) > 0.1f)) fails.Add("her-close");
+        // (the held wolves: their state and clip, so a frame shows whether they idle or bite)
+        GD.Print($"lookdev-wolves {tag} " + string.Join(" ", lookWolves.Select(w => $"{w.State}/{w.Anim}/{w.AnimT:0.0}/v{Math.Sqrt(w.Vx * w.Vx + w.Vz * w.Vz):0.00}")));
         GD.Print($"lookdev-frame {tag} {(fails.Count == 0 ? "PASS" : "FAIL " + string.Join(",", fails))} ({rects.Count} items)");
     }
 
