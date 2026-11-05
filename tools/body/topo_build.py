@@ -247,10 +247,11 @@ def trunk_plan(ref, cv, L, plan, tp, SR):
     def blen(a, b, tt):
         return along_k(cv, [TRUNK], a, b, lambda x: np.full_like(np.asarray(x, float), tt), [0, 1])[1]
 
-    n_b = max(2, int(round(SR["len"]["bottom"] / s)))
-    n_t = max(2, int(round(SR["len"]["top"] / s)))
+    rim = tp.get("rim", {})                          # (pass 3c fix 1) the shoulder hole's arcs at their own spacings
+    n_b = max(2, int(round(SR["len"]["bottom"] / rim.get("bottom", s))))
+    n_t = max(2, int(round(SR["len"]["top"] / rim.get("top", s))))
     n_t += (n_t - n_b) % 2
-    n_f = max(2, int(round(0.5 * (SR["len"]["front"] + SR["len"]["back"]) / sr)))
+    n_f = max(2, int(round(0.5 * (SR["len"]["front"] + SR["len"]["back"]) / (rim.get("sides", s) * sr / s))))
     F_L = int(round(max([blen(0, FB, x) for x in [1.08, 1.12, 1.2, 1.3] + list(tp.get("F_L_heights", []))] +
                         [blen(0, float(a), float(b)) for a, b in zip(th[cn["FT"]::12], t[cn["FT"]::12])]) / s))
     B_L = int(round(max([blen(BB, np.pi, x) for x in (1.08, 1.12, 1.2, 1.3, 1.42)] +
@@ -267,6 +268,34 @@ def trunk_plan(ref, cv, L, plan, tp, SR):
             "t_FT": tFT, "t_s0": min(tFB, tBB), "t_s1": max(tFT, tBT), "n_b": n_b, "n_t": n_t, "n_f": n_f,
             "F_L": F_L, "B_L": B_L, "F_N": F_N, "T_N": T_N, "B_N": B_N, "K_low": F_L + n_b + B_L,
             "N_arm_rim": n_b + n_t + 2 * n_f, "shoulder_gap_mm": SR["gap_mm"]}
+
+
+def rows_by_arc(cv, tr, tp, TH, t_R0, p_s0, sr, mer_len, n_th=61, ns=160):
+    """(pass 3c fix 3) The trunk's rows from the leg root R0 to the rim's bottom arc (row i_s0), placed by ARC LENGTH
+    down each meridian (the canvas t is not even in length: at the back the rows bunched to ~5.3 mm at the small of
+    the back and stretched to ~10 mm over the sacrum). Counts: root -> underbust at the tier's low_spacing (the
+    belly and the lower back: gentle surfaces), underbust -> the rim at sr x bust_scale (as before). The front keeps
+    its underbust row (the breast's fold) and blends to one even run over the whole span at the side and the back
+    (the same wf as the pass-2 rows)."""
+    s_lo = tp.get("low_spacing", sr)
+    n_lo = max(1, int(round(mer_len(t_R0, tr["underbust_y"]) / s_lo)))
+    n_c = max(1, int(round(mer_len(tr["underbust_y"], p_s0, ths=(15, 45)) / (sr * tp.get("bust_scale", 1.0)))))
+    N = n_lo + n_c
+    ths = np.linspace(0, np.pi, n_th)
+    out = np.zeros((N, n_th))
+    for j, th in enumerate(ths):
+        ta, tb = float(np.interp(th, TH, t_R0)), float(np.interp(th, TH, p_s0))
+        tt = np.linspace(ta, tb, ns)
+        X = fill_nan(mapk(cv, np.full(ns, th), tt, [TRUNK, LEG]))
+        sc = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(X, axis=0), axis=1))])
+        ev = np.interp(np.arange(N) / N * sc[-1], sc, tt)
+        su = float(np.interp(tr["underbust_y"], tt, sc)) if ta < tr["underbust_y"] < tb else n_lo / N * sc[-1]
+        g = np.where(np.arange(N) < n_lo, np.arange(N) / n_lo * su, su + (np.arange(N) - n_lo) / n_c * (sc[-1] - su))
+        fr = np.interp(g, sc, tt)
+        w = 1 - smooth01((th - np.radians(55)) / np.radians(25))
+        out[:, j] = w * fr + (1 - w) * ev
+    out[0] = np.interp(ths, TH, t_R0)
+    return [{"t": np.interp(TH, ths, out[r]) if r else t_R0, "zone": "low", "f": 0.0} for r in range(N)]
 
 
 def trunk(M, ref, cv, L, plan, tp, C, SR):
@@ -328,13 +357,15 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
 
     rows = []
     p_s0, p_s1 = prof("s0"), prof("s1")
-    n_g = max(1, int(round(mer_len(t_R0, tr["waist_y"]) / (sr * tp.get("glute_scale", 1.0)))))
+    if tp.get("rows_arc"):
+        rows = rows_by_arc(cv, tr, tp, TH, full(t_R0), p_s0, sr, mer_len)
+    n_g = 0 if rows else max(1, int(round(mer_len(t_R0, tr["waist_y"]) / (sr * tp.get("glute_scale", 1.0)))))
     for r in range(n_g):
         rows.append({"t": (1 - r / n_g) * full(t_R0) + (r / n_g) * full(tr["waist_y"]), "zone": "low", "f": 0.0})
     # waist -> the rim's bottom arc: through the underbust at the front (the breast's fold), even at the side and
     # the back (the arc dips to the armpit there: anchoring the underbust would crowd the rows under it)
-    n_a = max(1, int(round(mer_len(tr["waist_y"], tr["underbust_y"]) / sr)))
-    n_c = max(1, int(round(mer_len(tr["underbust_y"], p_s0, ths=(15, 45)) / (sr * tp.get("bust_scale", 1.0)))))
+    n_a = 0 if rows else max(1, int(round(mer_len(tr["waist_y"], tr["underbust_y"]) / sr)))
+    n_c = 0 if rows else max(1, int(round(mer_len(tr["underbust_y"], p_s0, ths=(15, 45)) / (sr * tp.get("bust_scale", 1.0)))))
     wf = 1 - smooth01((TH - np.radians(55)) / np.radians(25))
     for r in range(n_a + n_c):
         t_even = tr["waist_y"] + (p_s0 - tr["waist_y"]) * r / (n_a + n_c)
@@ -566,6 +597,9 @@ def shoulder(M, ref, L, plan, tp, tk, C, SR):
     corner_ids = [tk["corners"][q] for q in ("FB", "BB", "BT", "FT")]
     cpos = [int(np.where(rim == v)[0][0]) for v in corner_ids]
     nl = max(1, int(round(tp["shoulder_gap"] / tp["shoulder_spacing"])) - 1)
+    if tp.get("arm_root_spacing"):                   # (pass 3c fix 1) the root ring's count from its length
+        Xc = np.vstack([Xd, Xd[:1]])
+        Nr = to_parity(np.linalg.norm(np.diff(Xc, axis=0), axis=1).sum() / tp["arm_root_spacing"], N)
     r_tot = (N - Nr) // 2
     assert (N - Nr) % 2 == 0 and r_tot >= 0, (N, Nr)
     order = [0, 1, 2, 3]                                   # FB, BB first (farthest from the deltoid), then BT, FT
@@ -619,7 +653,7 @@ def shoulder(M, ref, L, plan, tp, tk, C, SR):
         new_idx = np.array([cur_idx[a] for a in anchor])
         new_idx = new_idx[0] + np.unwrap((new_idx - new_idx[0]) * 2 * np.pi / m) * m / (2 * np.pi)
         new_c = [anchor.index(cur_c[q] % eL) if cur_c[q] % eL in anchor else None for q in range(4)]
-        w = tp["root_even"] if j == nl + 1 else 0.35
+        w = tp["root_even"] if j == nl + 1 else tp.get("loop_even", 0.35)
         new_idx = even(Q, sq, new_idx, w)
         X = at(Q, new_idx)
         if j == nl + 1:
@@ -1543,18 +1577,50 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
     u_el = float((J - c0) @ d_in)
     u_end = u_el + float(np.linalg.norm(c_end - J))
     us = []
-    n1 = max(1, int(round((u_el - bz) / s_l)))
-    us += [("ring", u) for u in np.linspace(0, u_el - bz, n1 + 1)[1:]]
+    u_rb = tp["root_blend"] * u_el
+    turn_even = jp.get("turn") == "even"
+    u_te = u_el - bz                                 # the even turn's end: the bend zone, or before the upper band
+    if turn_even and band_u is not None and jp.get("turn_before_band"):
+        u_te = band_u - (bands.get("strips_upper", bands["strips"]) + 1) * s_l
+
+    def n_up(u):
+        """The upper segment's ring normal at u: the root's plane held to u_hold, turned to the bone, then (in the
+        bend zone) toward the fan plane P. (pass 3c fix 2) turn "even": the turn spread linearly over the whole
+        segment (u_hold -> the bend zone), so the front / outer side's extra length (the root's tilt) is spread
+        over the thigh instead of piling into the 150 mm under the blend (13 mm front edges against 6.5 at back)."""
+        uh = u - u_hold
+        if turn_even:
+            n = n0 if uh <= 0 else slerp_n(n0, d_in, min(1.0, uh / max(u_te - u_hold, 1e-6)))
+        else:
+            n = n0 if uh <= 0 else (slerp_n(n0, d_in, smooth01(uh / u_rb)) if uh < u_rb else d_in)
+        if u > u_el - bz:
+            n = slerp_n(d_in, n_P, smooth01((u - (u_el - bz)) / (bz - g0)))
+        return n
+
+    if jp.get("even_gap") and ref is not None:
+        # (pass 3c fix 2) the upper segment's rings at an even MAX gap: the planes' surface gap measured round the
+        # ring (32 rays a station), its running sum spaced evenly, so no column runs longer than the spacing where
+        # the planes turn (the plane spacing at the bone alone under-counts the outer side by the radius x the turn)
+        ud = np.linspace(0, u_el - bz, 161)
+        ph = np.linspace(0, 2 * np.pi, 32, endpoint=False)
+        Xs = [T.ring_by_rays(ref, ks, c0 + u * d_in, n_up(u), hinge, ph) for u in ud]
+        gd = np.array([np.nanmax(np.linalg.norm(Xs[i + 1] - Xs[i], axis=1)) for i in range(len(ud) - 1)])
+        Sg = np.concatenate([[0], np.cumsum(np.where(np.isfinite(gd), gd, np.diff(ud)))])
+        n1 = max(1, int(round(Sg[-1] / s_l)))
+        us += [("ring", float(u)) for u in np.interp(np.linspace(0, Sg[-1], n1 + 1)[1:], Sg, ud)]
+        us[-1] = ("ring", u_el - bz)
+    else:
+        n1 = max(1, int(round((u_el - bz) / s_l)))
+        us += [("ring", u) for u in np.linspace(0, u_el - bz, n1 + 1)[1:]]
     n2 = max(1, int(round((bz - g0) / s_b)))
     us += [("bend", u) for u in np.linspace(u_el - bz, u_el - g0, n2 + 1)[1:-1]]
     us += [("fan", u_el - g0), ("crease", u_el), ("fan", u_el + g0)]
     us += [("bend", u) for u in np.linspace(u_el + g0, u_el + bz, n2 + 1)[1:]]
-    n3 = max(1, int(round((u_end - u_el - bz - jp["end_bend"]) / s_l)))
+    n3 = max(1, int(round((u_end - u_el - bz - jp["end_bend"]) / jp.get("lower_spacing", s_l))))
     us += [("ring", u) for u in np.linspace(u_el + bz, u_end - jp["end_bend"], n3 + 1)[1:]]
     n4 = max(1, int(round(jp["end_bend"] / s_b)))
     us += [("ring", u) for u in np.linspace(u_end - jp["end_bend"], u_end, n4 + 1)[1:]]
     st = []
-    u_rb = tp["root_blend"] * u_el
     for kind, u in us:
         if kind == "fan":
             c, n = (J - g0 * nb, n_P) if u < u_el else (J + g0 * nb, n_D)
@@ -1562,10 +1628,7 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
             c, n = J, nb
         elif u < u_el:
             c = c0 + u * d_in
-            uh = u - u_hold                          # (pass 3b) the root's plane held through its blend rings
-            n = n0 if uh <= 0 else (slerp_n(n0, d_in, smooth01(uh / u_rb)) if uh < u_rb else d_in)
-            if u > u_el - bz:
-                n = slerp_n(d_in, n_P, smooth01((u - (u_el - bz)) / (bz - g0)))
+            n = n_up(u)                              # (pass 3b) the root's plane held through its blend rings
         else:
             c = J + (u - u_el) * d_out
             n = d_out
@@ -1953,7 +2016,9 @@ def build(plan, tier, ref, cv, L):
     if tp.get("knee_points"):                        # (pass 3b) the tier's thigh count carried through the knee
         N_kn = int(tp["knee_points"])
     jp = dict(lim["knee"], **tp["knee"])
-    st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, len(fid),
+    n_st = d_in if jp.get("root_plane") == "bone" else -nl   # (pass 3c fix 2) "bone": the stations square to
+    # the thigh's bone from the root down, the root's tilt taken up by the column-by-column blend alone
+    st, joints["knee"] = limb_stations(c_lg, n_st, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, len(fid),
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
                                        lg_bands, ref, kl, u_hold, band_u, tp.get("shin_band_y"))
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",

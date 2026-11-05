@@ -252,7 +252,7 @@
     "glute_scale": 1.0,
     "bust_scale": 0.95,
     "neck_spacing": 0.0045,
-    "shoulder_spacing": 0.0075,
+    "shoulder_spacing": 0.006,
     "root_even": 0.6,
     "breast_loops": 2,
     "breast_cap": 0.8,
@@ -279,7 +279,11 @@
     "knee": {
      "bend": 0.05,
      "end_bend": 0.03,
-     "limb_spacing": 0.0085
+     "limb_spacing": 0.0085,
+     "turn": "even",
+     "even_gap": true,
+     "root_plane": "bone",
+     "lower_spacing": 0.0088
     },
     "relax_iters": 12,
     "relax_lambda": 0.5,
@@ -315,12 +319,20 @@
      "rise": 0.0072,
      "kite_cost": 8
     },
-    "shin_band_y": 0.325,
-    "thigh_band_y": 0.82,
+    "shin_band_y": 0.33,
+    "thigh_band_y": 0.81,
     "thigh_kite_sector": 230,
     "why_pass3b_rims": "(a) the judge (pass 3b items 5 + 9): hand_fit / foot_fit re-fit the templates (c: base/*.obj, our source files) at build time. trim: the plane cut that made them (topo.make_templates) left stair steps on the rim (2-valent rim vertices: the 1.79 mm wrist edge and the forearm / shin slivers, aspect 5.7-8.5); the protruding quads go until the rim is one clean edge loop (hand 22 -> 20). level (foot): the trimmed ankle rim still steps down a whole row over the back between two risers (hm08 poles); one generated row lifts that stretch to the risers tops (strip height 7-26 mm -> 7-11 mm). points 28 (the judge: 26-28 at the ankle): a ring of 28 on the reference, rise 7.2 mm (= ring_spacing) above the levelled rim, bridged by the minimum-cost walk of quads and kites (rim_bridge; kite_cost 8 keeps it to 4 kites, all on the medial / back side, flagged TEMPLATE: they are the foot s rim, the sole and toes unchanged)",
     "why_shin_band": "(a) the judge (pass 3b item 5): the shin reduction band at the inner lower shin; shin_band_y 0.325 centres its 3 strips at y 307-346 (b: the judge s 280-350), the lowest strip held 40 mm clear of the ankle zone (0.315 put 4 poles inside it). knee.limb_spacing 0.0085: the leg s ring step along the bone (thigh and shin, bend zones keep bend_spacing) 7.5 -> 8.5 mm, -1.4k tris (a: the close tri budget; 9.5 put kites inside the knee zone); the arm keeps 7.5 (the brief: coarser arm spacing added folds and elbow poles)",
-    "why_thigh_band": "(a) see why_thigh_band_strips"
+    "why_thigh_band": "(a) see why_thigh_band_strips",
+    "rim": {
+     "sides": 0.0062,
+     "top": 0.0072
+    },
+    "arm_root_spacing": 0.0065,
+    "loop_even": 0.6,
+    "rows_arc": true,
+    "low_spacing": 0.0088
    },
    "play": {
     "spacing": 0.017,
