@@ -181,6 +181,9 @@ public partial class ZoneView : Node3D
             moths.Add((m, p));
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
+        // (P9 C15) A state laid on before the landmarks and lights were made, laid on again whole now they are ("unlit",
+        // "dull": the Dig's slurry glow was still lit at the hand-back of a zone built with its stream already clean).
+        if (states.Count > 0) ApplyStates();
         NightLamps();   // (Env 22 r1f: props_own.json's night lamps, ZoneView.Town; after the zone's own lights, each its own new light)
         SetNight(false);
     }
@@ -815,12 +818,52 @@ public partial class ZoneView : Node3D
             if (st["stop"] is System.Text.Json.Nodes.JsonArray sa)
                 foreach (var n in sa) if (n?.GetValue<string>() is string sn) Stop(sn);
         }
+        // "dull": the landmarks' glowing pieces within r of {x, z} (an emissive material) dulled to "color", unlit, while a
+        // state holds them (the Dig's slurry crusted green down the tank's sides, once the stream runs clean); as built when none does.
+        var dullNow = new Dictionary<(MeshInstance3D, int), Color>();
+        foreach (var (name, node) in StateLooks())
+        {
+            if (!states.Contains(name) || node is not System.Text.Json.Nodes.JsonObject st || st["dull"] is not System.Text.Json.Nodes.JsonArray da || Landmarks == null) continue;
+            foreach (var u in da)
+            {
+                if (u?["x"]?.GetValue<double>() is not double ux || u["z"]?.GetValue<double>() is not double uz) continue;
+                float ur = (float)(u["r"]?.GetValue<double>() ?? 2);
+                var col = new Color(u["color"]?.GetValue<string>() ?? "#3a3228");
+                foreach (var mi in Landmarks.Root.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+                {
+                    if (mi.Mesh == null) continue;
+                    var c = (InLandmarks(mi) * mi.GetAabb()).GetCenter();
+                    if (new Vector2(c.X - (float)ux, c.Z - (float)uz).Length() > ur) continue;
+                    for (int si = 0; si < mi.Mesh.GetSurfaceCount(); si++)
+                        if (((dulled.TryGetValue((mi, si), out var was) ? was : mi.GetSurfaceOverrideMaterial(si)) ?? mi.Mesh.SurfaceGetMaterial(si)) is BaseMaterial3D bm && bm.EmissionEnabled)
+                            dullNow[(mi, si)] = col;
+                }
+            }
+        }
+        foreach (var (key, col) in dullNow)
+        {
+            if (dulled.ContainsKey(key)) continue;
+            var (mi, si) = key;
+            var was = mi.GetSurfaceOverrideMaterial(si);
+            dulled[key] = was;
+            var src = (BaseMaterial3D)(was ?? mi.Mesh.SurfaceGetMaterial(si));
+            var dm = (BaseMaterial3D)src.Duplicate();
+            dm.EmissionEnabled = false; dm.AlbedoColor = col; dm.Roughness = 0.9f;
+            mi.SetSurfaceOverrideMaterial(si, dm);
+        }
+        foreach (var key in dulled.Keys.Where(k => !dullNow.ContainsKey(k)).ToList())
+        {
+            if (GodotObject.IsInstanceValid(key.Item1)) key.Item1.SetSurfaceOverrideMaterial(key.Item2, dulled[key]);
+            dulled.Remove(key);
+        }
         foreach (int i in dark) if (i < lit.Count && lit[i]) { SetLit(i, false); stateDark.Add(i); }
         foreach (int i in stateDark.Where(i => !dark.Contains(i)).ToList()) { if (i < lit.Count) SetLit(i, true); stateDark.Remove(i); }
     }
 
     /// <summary>The lights a state put out (to light again when no state holds them).</summary>
     readonly HashSet<int> stateDark = new();
+    /// <summary>The glowing pieces a state dulled ("dull"), each surface's own override as it was (to give back).</summary>
+    readonly Dictionary<(MeshInstance3D, int), Material?> dulled = new();
 
     /// <summary>The kit pieces of a kind within r of a point, taken away in
     /// play (the strongbox carried off, the crates rolled into the stream):

@@ -792,8 +792,10 @@ public partial class CrowdView : Node3D
         // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
         // the dirt whole.)
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
+        bool stagedRole = false;
         if (Staged?.Invoke(e) is var (stSink, stRole, stT, stFace))
         {
+            stagedRole = stRole != null;
             y -= stSink;
             if (stFace is double fc) g.Facing = fc;
             if (stRole != null && e.State == EnemyState.Active && asset.Clips.ContainsKey(stRole)) { role = stRole; t = stT; }
@@ -815,6 +817,10 @@ public partial class CrowdView : Node3D
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(ex + e.LastDx * f * push), (float)y, (float)(ez + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
+        // (P9 C15) A beast a film stages in a role stands to the slope it is on, pitched with it (most of the way): the
+        // wolves drinking on the stream's banks stood level, their hind legs sunk into the bank and their forefeet in air.
+        if (stagedRole && e.State == EnemyState.Active && Beasts.Of(e.Def.Visual) != null)
+            basis = Godot.Basis.Identity.Slerp(RestTilt(heightAt, ex, ez, null, sc * 1.2), 0.85f) * basis;
         // (a falling body comes down onto the slope it will lie on: THE CORPSE REST RULE, eased in as it goes down)
         if (e.State == EnemyState.Dying && e.Disposition != Disposition.Ally)
         {

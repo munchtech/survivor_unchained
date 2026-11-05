@@ -661,6 +661,8 @@ public partial class Game
         /// <summary>The river's materials a "water" cue scaled (put back to 1 at the end).</summary>
         readonly HashSet<ShaderMaterial> waters = new();
         readonly Dictionary<ShaderMaterial, float> waterFoam = new();
+        readonly Dictionary<(ShaderMaterial, string), Godot.Variant> waterKeys = new();
+        readonly Dictionary<int, bool> litWas = new();
         bool stonesSet;
         readonly Dictionary<ShaderMaterial, float> stoneEdge = new();
 
@@ -1256,8 +1258,14 @@ public partial class Game
                     break;
                 }
                 case "lit":
-                    g.scene!.View.SetLit((int)c.Num("light"), c.Bool("on", true));
+                {
+                    // (P9 C15) A zone light on or off for the film: what it was is put back as the film ends (the blind's
+                    // camp fire out over the dawn reach, the Dig's lamps out, and play gets them back as they were).
+                    int li = (int)c.Num("light");
+                    if (!litWas.ContainsKey(li)) litWas[li] = g.scene!.View.IsLit(li);
+                    g.scene!.View.SetLit(li, c.Bool("on", true));
                     break;
+                }
                 case "fire":
                     // "lift": burnt down, its light raised this far over the coals (C01: from just over them the
                     // ring's stones threw long spokes over the camp and hid her shadow on the bedroll).
@@ -1730,6 +1738,15 @@ public partial class Game
                         if (c.Has("streak")) wsm.SetShaderParameter("streak_shot", (float)c.Num("streak", 1));
                         // ("mirror_cap": the brightest the grazing mirror shows a thing (linear, its brightest channel), for this
                         // shot on: C03 s8's far ford lamp mirrored as a cyan column beside the heart; MIRROR_CAP=v tries a value)
+                        // ("keys": any of the water look's own keys for this shot on (Water.Look's names: "ripple_sheen",
+                        // "moon_rough"...), each put back as built when the film ends: C15 s4's shallows calmed for the close look)
+                        if (c.Get("keys") is { ValueKind: JsonValueKind.Object } wkeys)
+                            foreach (var kv in wkeys.EnumerateObject())
+                            {
+                                if (!waterKeys.ContainsKey((wsm, kv.Name))) waterKeys[(wsm, kv.Name)] = wsm.GetShaderParameter(kv.Name);
+                                wsm.SetShaderParameter(kv.Name, kv.Value.ValueKind == JsonValueKind.String ? new Color(kv.Value.GetString()!)
+                                    : kv.Name == "debug_view" ? kv.Value.GetInt32() : (float)kv.Value.GetDouble());
+                            }
                         if (c.Has("mirror_cap")) wsm.SetShaderParameter("mirror_cap", System.Environment.GetEnvironmentVariable("MIRROR_CAP") is { } mcs && c.Num("mirror_cap", 100) < 100 ? float.Parse(mcs, System.Globalization.CultureInfo.InvariantCulture) : (float)c.Num("mirror_cap", 100));
                         if (!hasLevel) continue;
                         float wfrom = wsm.GetShaderParameter("level").VariantType == Godot.Variant.Type.Float ? (float)wsm.GetShaderParameter("level") : 1f;
@@ -1866,6 +1883,9 @@ public partial class Game
             KeyColor = c.Str("keyColor") ?? p.KeyColor, FogColor = c.Str("fogColor") ?? p.FogColor,
             HemiSky = c.Str("hemiSky") ?? p.HemiSky, HemiGround = c.Str("hemiGround") ?? p.HemiGround, Rim = c.Str("rimColor") ?? p.Rim,
             Sky = c.Has("skySat") ? SkySat(p.Sky, c.Num("skySat")) : p.Sky,
+            // (P9 C15) the river's light, sky and moon-glint share (water_air): "riverMoon" softens a low sun on the water
+            // into the look's moon strokes (moon_*), for a film's dawn
+            RiverLight = c.Num("riverLight", p.RiverLight), RiverSky = c.Num("riverSky", p.RiverSky), RiverMoon = c.Num("riverMoon", p.RiverMoon),
         };
 
         /// <summary>A sky's colours taken toward their own grey ("skySat" 0.6: 40% of the colour out; 1 as it is),
@@ -2167,6 +2187,10 @@ public partial class Game
             foreach (var (wsm, wf) in waterFoam) wsm.SetShaderParameter("foam_amt", wf);
             waters.Clear();
             waterFoam.Clear();
+            foreach (var ((wsm, wk), was) in waterKeys) if (IsInstanceValid(wsm)) wsm.SetShaderParameter(wk, was);
+            waterKeys.Clear();
+            foreach (var (li, was) in litWas) g.scene?.View.SetLit(li, was);
+            litWas.Clear();
             if (stonesSet) foreach (var sm in KitLook.Rocks) if (IsInstanceValid(sm)) { sm.SetShaderParameter("top_level", 1f); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("top_level", 1f); }
             foreach (var (sm, se) in stoneEdge) if (IsInstanceValid(sm)) { sm.SetShaderParameter("edge_light", se); (sm.NextPass as ShaderMaterial)?.SetShaderParameter("edge_light", se); }
             stoneEdge.Clear();
