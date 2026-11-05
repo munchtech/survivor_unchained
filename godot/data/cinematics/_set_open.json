@@ -1,0 +1,54 @@
+{
+ "id": "_set_open",
+ "title": "open",
+ "conversation": "",
+ "zone": "vault",
+ "bars": {
+  "in": 0,
+  "out": 0
+ },
+ "skip": {
+  "from": 0,
+  "hold": 0.8
+ },
+ "world": {
+  "rate": 1,
+  "zoneHeld": false
+ },
+ "marks": {},
+ "cast": {},
+ "shots": [
+  {
+   "id": "A",
+   "dur": 0.2,
+   "cam": {
+    "pos": [
+     0,
+     5,
+     40
+    ],
+    "at": [
+     0,
+     1,
+     30
+    ],
+    "lens": 35
+   },
+   "cues": [
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 1
+    }
+   ]
+  }
+ ],
+ "end": {
+  "camera": "follow"
+ }
+}

@@ -1,0 +1,229 @@
+{
+ "id": "_set_survey",
+ "title": "set survey",
+ "conversation": "",
+ "zone": "vault",
+ "bars": {
+  "in": 0,
+  "out": 0
+ },
+ "skip": {
+  "from": 0,
+  "hold": 0.8
+ },
+ "world": {
+  "rate": 0,
+  "zoneHeld": true
+ },
+ "marks": {
+  "her": [0, 26, 3.1416],
+  "d1": [
+   0.6,
+   27.5,
+   3.1416
+  ],
+  "d3": [
+   0.6,
+   27.5,
+   3.1416
+  ],
+  "d6": [
+   0,
+   26,
+   3.1416
+  ],
+  "e5": [
+   0,
+   -33,
+   3.1416
+  ]
+ },
+ "cast": {
+  "her": {
+   "kind": "survivor",
+   "mark": "d1"
+  }
+ },
+ "shots": [
+  {
+   "id": "D1",
+   "dur": 3.0,
+   "still": 2.0,
+   "note": "door closed, sigil dark",
+   "cam": {
+    "pos": [
+     1.4,
+     1.1,
+     29.6
+    ],
+    "at": [
+     0,
+     2.2,
+     22
+    ],
+    "lens": 35
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d1"
+    }
+   ]
+  },
+  {
+   "id": "D3a",
+   "dur": 1.6,
+   "still": 1.2,
+   "note": "sigil half awake",
+   "cam": {
+    "pos": [
+     0,
+     1.75,
+     24.6
+    ],
+    "at": [
+     0,
+     1.75,
+     22.25
+    ],
+    "lens": 85
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d3"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1,
+     "from": 0,
+     "over": 3
+    }
+   ]
+  },
+  {
+   "id": "D3b",
+   "dur": 4.0,
+   "still": 3.5,
+   "note": "sigil awake",
+   "cam": {
+    "pos": [
+     0,
+     1.75,
+     24.6
+    ],
+    "at": [
+     0,
+     1.75,
+     22.25
+    ],
+    "lens": 85
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d3"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1,
+     "from": 0,
+     "over": 3
+    }
+   ]
+  },
+  {
+   "id": "D6",
+   "dur": 3.5,
+   "still": 3.0,
+   "note": "door sunk",
+   "cam": {
+    "pos": [
+     0.5,
+     1.0,
+     30
+    ],
+    "at": [
+     0,
+     2.0,
+     8
+    ],
+    "lens": 30
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d6"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 1,
+     "from": 0,
+     "over": 2.5
+    }
+   ]
+  },
+  {
+   "id": "E5",
+   "dur": 2.5,
+   "still": 1.5,
+   "note": "landing and stair",
+   "cam": {
+    "pos": [
+     12,
+     7,
+     -27
+    ],
+    "at": [
+     0,
+     -2,
+     -44
+    ],
+    "lens": 28
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "e5"
+    }
+   ]
+  },
+  {
+   "id": "E6",
+   "dur": 2.5,
+   "still": 1.5,
+   "note": "down the stair",
+   "cam": {
+    "pos": [
+     0,
+     1.7,
+     -37.4
+    ],
+    "at": [
+     0,
+     -6.3,
+     -53
+    ],
+    "lens": 135
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "e5"
+    }
+   ]
+  }
+ ],
+ "end": {
+  "her": "her",
+  "camera": "follow"
+ }
+}
