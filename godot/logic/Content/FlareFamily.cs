@@ -30,7 +30,7 @@ public static class FlareFamily
         public Grade Of(bool night) => night ? Night : Day;
     }
 
-    public sealed class MarkLight { public double Gain = 1, Dark, Strip, Cap = 1; }
+    public sealed class MarkLight { public double Gain = 1, Dark, Strip, Cap = 1, Floor; }
 
     public sealed class MarkRules
     {
@@ -85,9 +85,9 @@ public static class FlareFamily
 
     /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
     /// line, its whole length).</summary>
-    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1; }
+    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1, Hot, HotWidth = 0.25; }
 
-    public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3; }
+    public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3, Wash; }
 
     /// <summary>The PEAK at the main blow (H7 r2): Hitstop drawn frames held on the blow frame (the Strike's own on its other
     /// blows); Frames the light's envelope by drawn frame from the blow (real time); Color its dawn gold; Release the
@@ -98,7 +98,7 @@ public static class FlareFamily
         public int Hitstop = 2, Lights = 6;
         public double[] Frames = { 1, 1, 0.7, 0.3 };
         public string Color = "#ffbe6a";
-        public double Release = 0.15, Height = 0.4, Range = 6, Spacing = 4.5;
+        public double Release = 0.15, Height = 0.4, Range = 6, Spacing = 4.5, Wide = 3, Core = 5, HotDay = 1.3;
         public PeakLight Night = new(), Day = new();
         public PeakLight Of(bool night) => night ? Night : Day;
     }

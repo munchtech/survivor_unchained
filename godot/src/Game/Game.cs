@@ -2009,6 +2009,11 @@ public partial class Game : Node, IZoneHost
         // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
         if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
+        // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
+        // level's title sat over the frame's center through the Flare, its flash a white orb on her after the stop); the
+        // ember's next level is pushed out of reach, nothing else changes. --clip-level keeps the game's own.
+        if (Args.Has("clip") && Args.Has("flare") && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
+            clipE.EmberNext = 1e9;
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {
             flareReadyShot = true;

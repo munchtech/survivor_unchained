@@ -41,7 +41,8 @@
   // The marks (r2, judge r1 fixes 3 and 5): a soft radial POOL of the school's light (Palette.Of) on the ground under every
   // foe in Battle.FlareMarks, no stroke and no edge (LOOK_BIBLE row 8: light hugging the feet; FLARE_LOOK §3.5: a gaussian
   // never makes an edge), under her in the read order (§1.6: danger, her, the Flare's front), with light up the body (lift).
-  // size: the pool's radius at a quarter of its light, x the foe's radius (a 0.45 m foe: ~2 m across, ~110 px at 1080p);
+  // size: the pool's radius at a quarter of its light, x the foe's radius: 1.5 makes it 1.5x the footprint across (judge r1
+  // fix 5; 2.3 measured 177 px across on the Warden's wolves, ~115 px now);
   // falloff: its power (2 a gaussian, higher a flatter top); above: the quad's lift over HeightAt (m, depth-tested so the
   // body hides its heart); warm: how far the pool's heart leans to her ember's warmth; ripple: seconds for the pools to
   // appear from her outward; main: the hovered target's size AND light x, with an inner core (core: its radius x the
@@ -50,18 +51,22 @@
   // tightLight: its light then x) from the release (preTight of the way by the blow, easing in over preTime s) up to the
   // moment the band reaches its foe (FlareFx.BandReachesRt), then hands over to the band's rim in hand s; never a swell and
   // fade before the hit. fade: an unhit pool's fade at the cast's end.
-  // gain: an ordinary pool's light by night and day; cap: the most overlapping pools sum to (premultiplied: they converge
-  // on it, never stack to white); dark: the soft shade round a pool (it holds by day over a pale ground); strip: a line
+  // gain: an ordinary pool's light by night and day, as a LIFT of what lies under it (x the graded ground: light, not paint;
+  // r2 after f2e: an additive pool converged on a flat 0.7 gold and the pack's pools merged into one blown-out sheet);
+  // (cap 2: a pack's overlaps sit at about one pool's heart, so a dense pack reads as lit bodies on a lit floor, not a
+  // blob growing toward a sheet; the Main converges on main x it.)
+  // cap: the most overlapping pools lift it (premultiplied: they converge on "the ground x (1 + cap)", never on white);
+  // floor: the light a pool adds at the cap where the ground is near black (linear), so it still reads there; dark: the soft shade round a pool (it holds by day over a pale ground); strip: a line
   // Flare's path seam's light (the Long Cut draws its future crack instead: flares.the_long_cut.path), seamCore/seamGlow
   // its core's and glow's half-widths (m), seamShimmer its shimmer (Hz); rim: the marked foe's rim and uplight (vat's lift).
   "marks": {
-    "size": 2.3, "falloff": 2.4, "above": 0.25, "warm": 0.3,
+    "size": 1.5, "falloff": 2.0, "above": 0.25, "warm": 0.3,
     "ripple": 0.1, "fade": 0.2,
     "main": 2.0, "core": 0.32, "coreGain": 1.4, "pulse": 1.6,
     "tight": 0.64, "tightLight": 1.7, "preTight": 0.3, "preTime": 0.25, "hand": 0.05,
     "seamCore": 0.09, "seamGlow": 0.45, "seamShimmer": 0.8,
-    "night": { "gain": 0.34, "cap": 0.7, "dark": 0.1, "strip": 0.16 },
-    "day":   { "gain": 0.6, "cap": 1.1, "dark": 0.25, "strip": 0.22 },
+    "night": { "gain": 1.3, "cap": 2.0, "floor": 0.025, "dark": 0.1, "strip": 0.6 },
+    "day":   { "gain": 0.7, "cap": 1.0, "floor": 0.04, "dark": 0.25, "strip": 0.5 },
     "rim": 0.7, "lift": 0.9
   },
   // The band (H7 beat 3; r2, judge r1 fix 2: "the band reads as nothing"): on each Flare's main blow a lit FRONT in the
@@ -82,7 +87,7 @@
   // dropLag s after the band passes it, scaled in over dropGrow; a decision-marked hit's death and number wait
   // decisionFrames frames after its mark shows; the Flare's numbers come numberLag s after the band passes each foe.
   // spendLight(Day): the plain Strikes' Spend light on the main blow (an omni's energy, on real time: 2-3 frames at its peak).
-  "beat": { "kickPx": 9, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02, "spendLight": 5, "spendLightDay": 6 },
+  "beat": { "kickPx": 8, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02, "spendLight": 5, "spendLightDay": 6 },
   // The recovery: the grade eases back over grade.out from the main blow; her ember's pool at pool x for hold s, then
   // back over out s.
   "recovery": { "pool": 1.3, "hold": 2.0, "out": 0.4 },
@@ -94,13 +99,18 @@
   // push-in lets go on the blow over this (s, Flare time). height/range: the rig's omnis (m; a line's sit low along it,
   // so the bodies on it are lit from below), spacing along a line (m), lights at most. night/day: light, an omni's energy at
   // the envelope's 1; ground, the lit shape's light (x albedo: the disk or the strip the blow lights); column, a disk's
-  // column of light (HDR). Each Flare's shape is its own ("flares" peak).
+  // column of light (HDR); wash (r2 after f2e: the mean sat at 0.98x pre-press under the deeper grade, its light all in hot
+  // cores that clip the knee before the mean moves): broad soft light round the shape, x albedo, reaching wide x the shape's
+  // size (a line's half-width, a disk's radius; a gaussian); core: the shape's hot heart (x ground: the seam's narrow
+  // core, the disk's middle, lit x albedo); hotDay: a Flare's hot heart by day x its night's. A Flare's own peak: hot, its hot
+  // heart (hotWidth: its half-width along a line, its radius in a disk, m; flat-topped), an emitter (HDR, not x albedo: the graded albedo never clipped, the knee sat at 0.5%) along the line's crack or in
+  // the disk's middle, the few pixels that carry §1.6's 2-3% over the knee. Each Flare's shape is its own ("flares" peak).
   "peak": {
     "hitstop": 2, "frames": [0.8, 1.0, 1.0, 0.7, 0.25, 0.06],
     "color": "#ffbe6a", "release": 0.15,
-    "height": 0.45, "range": 6.5, "spacing": 4.5, "lights": 6,
-    "night": { "light": 3.6, "ground": 0.85, "column": 6 },
-    "day":   { "light": 7, "ground": 0.65, "column": 7 }
+    "height": 0.45, "range": 6.5, "spacing": 4.5, "lights": 6, "wide": 2.5, "core": 5, "hotDay": 1.3,
+    "night": { "light": 1.8, "ground": 0.25, "column": 6, "wash": 0 },
+    "day":   { "light": 3.6, "ground": 0.22, "column": 7, "wash": 0 }
   },
   // An air and dust ripple (Bell's first two tolls, judge r1 fix 2): no light, no whole-frame swing (§1.6: at most two a
   // second): a soft front lifting the ground's value by dust (x), lead m, running reach m in time s, and puffs of dust
@@ -128,8 +138,8 @@
   // (f16.5, 0.545 s). Its fuse at 200 m/s opens the 24 m seam in 0.12 s, so the whole seam erupts on the peak (r1: 60,
   // 0.4 s, a slow fuse read as a gap between mark and hit).
   "flares": {
-    "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "line", "fuse": 200, "path": "crack", "peak": { "shape": "line", "width": 2.5 } },
-    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.55 } },
+    "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "line", "fuse": 200, "path": "crack", "peak": { "shape": "line", "width": 2.5, "gain": 0.75, "hot": 0.8, "hotWidth": 0.36 } },
+    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.25, "hot": 0.8, "hotWidth": 1.85 } },
     "burns_twice":         { "blow": "ember", "last": true },
     "the_roads_toll":      { "blow": "cut", "last": true },
     "the_branding":        { "blow": "burst", "last": true },

@@ -32,6 +32,9 @@ public partial class FlareMarksView : MultiMeshInstance3D
     }
 
     readonly Dictionary<int, M> marks = new();
+    /// <summary>The longest a hit foe's pool waits for a main blow that never comes (s, real): past every staged Strike's
+    /// first-to-main span (a safety net: the main blow comes well inside it).</summary>
+    const double MarkHold = 1.5;
     /// <summary>When each foe's mark was first drawn this cast (real time), for the decision hold (FlareFx.Blow).</summary>
     readonly Dictionary<int, double> shown = new();
 
@@ -74,6 +77,8 @@ public partial class FlareMarksView : MultiMeshInstance3D
         if (mat == null) return;
         var mr = FlareFamily.Marks;
         mat.SetShaderParameter("cap", (float)mr.Of(night).Cap);
+        mat.SetShaderParameter("floor_light", (float)mr.Of(night).Floor);
+        mat.SetShaderParameter("main_cap", (float)mr.Main);
         mat.SetShaderParameter("pool_k", (float)mr.Falloff);
         mat.SetShaderParameter("core", (float)mr.Core);
         mat.SetShaderParameter("core_gain", (float)mr.CoreGain);
@@ -213,8 +218,11 @@ public partial class FlareMarksView : MultiMeshInstance3D
             // The hand-over: as the band reaches its foe (after the main blow), or at once for one hit by an earlier blow
             // (no band yet); a foe the sim still lists is handed over too once the band has passed it.
             if (o.Hand < 0 && blowRt >= 0 && BandRt((float)o.X, (float)o.Z) <= 0 && (!o.Gone || o.Hit)) o.Hand = rt;
-            // (two frames' grace: the main blow's own hits arrive with its event, which may land a frame after the sim's)
-            if (o.Hand < 0 && o.Gone && o.Hit && blowRt < 0 && rt - o.End > 0.034) o.Hand = rt;
+            // A foe hit by an earlier blow (the Long Cut's sweep, Burns' first embers) HOLDS its pool, tightening, until the
+            // main blow's band reaches it (r2 after f2e: handed over at once, the sweep's foes lost their pools 0.13 s before
+            // the cleave, the gap between mark and hit the judge named); only if no main blow comes at all (MarkHold s after
+            // the hit) does it hand over without one.
+            if (o.Hand < 0 && o.Gone && o.Hit && blowRt < 0 && rt - o.End > MarkHold) o.Hand = rt;
             var (size, lit) = Tighten(o, rt);
             if (o.Hand >= 0)
             {

@@ -36,8 +36,9 @@ global uniform vec4 flare_band_col;   // rgb: the front's light (linear, x albed
 global uniform vec4 flare_band_shape; // x: its reach (m); y: its run (s); z: its ease; w: a ripple's dust (0: the lit band; > 0 an air and dust ripple, no light)
 // The PEAK at the main blow (H7 r2; Fx/Flare/FlareFx.Peak.cs, flare_family.json "peak"): the blow's lit shape on the world.
 global uniform vec4 flare_peak;       // xy: its heart (x, z); z: a disk's radius or a line's half-width (m); w: its light now 0..1 (0 none)
-global uniform vec4 flare_peak_line;  // xy: a line's far end; z: 1 a line, 0 a disk
+global uniform vec4 flare_peak_line;  // xy: a line's far end; z: 1 a line, 0 a disk; w: the hot heart's half-width or radius (m)
 global uniform vec4 flare_peak_col;   // rgb: its light (linear, x albedo, the data's ground gain)
+global uniform vec4 flare_peak_k;     // x: its core's light, z: its wash's light (x rgb); y: the wash's reach (x the shape's size); w: its hot heart (HDR, not x albedo)
 global uniform vec4 flare_hue;    // rgb: the web's hot colour (the calling's); a: night 0..1
 // The Long Cut (Fx/Flare/FlareFx.LongCut.cs): its seam and its sweep.
 global uniform vec4 flare_seam;   // xy: where the cleave starts (x, z); z: its angle (rad); w: its length (m), 0 none
@@ -94,6 +95,26 @@ vec2 flare_band_at(vec2 w) {
 	return vec2(max(front, tail) * br * flare_band.w, 0.0);
 }
 
+// The peak's hot heart (H7 r2: FLARE_LOOK §1.6's 2-3% over the knee; light x the graded albedo never clipped, 0.5%): the
+// blow itself burning on the ground, an emitter in the peak's gold (HDR, not x albedo), narrow: the seam's crack along a
+// line's whole length, the disk's middle, flat-topped.
+vec3 flare_peak_hot(vec2 w) {
+	if (flare_peak.w <= 0.0 || flare_peak_k.w <= 0.0) return vec3(0.0);
+	float m = max(flare_peak_col.r, max(flare_peak_col.g, flare_peak_col.b));
+	vec3 hue = m > 1e-5 ? flare_peak_col.rgb / m : vec3(0.0);
+	// (flat-topped, just over the knee, so the most pixels clip for the least light: a peaked core's glow lifted the mean
+	// ~2x as much per pixel over the knee)
+	float k, W = max(flare_peak_line.w, 0.05);
+	if (flare_peak_line.z > 0.5) {
+		vec2 ab = flare_peak_line.xy - flare_peak.xy;
+		float l2 = max(dot(ab, ab), 1e-4);
+		float h = dot(w - flare_peak.xy, ab) / l2;
+		float across = length(w - flare_peak.xy - ab * clamp(h, 0.0, 1.0));
+		k = (1.0 - smoothstep(0.6 * W, W, across)) * smoothstep(-0.04, 0.0, h) * (1.0 - smoothstep(1.0, 1.04, h));
+	} else k = 1.0 - smoothstep(0.6 * W, W, length(w - flare_peak.xy));
+	return hue * k * flare_peak_k.w * flare_peak.w;
+}
+
 // The peak's lit shape (x albedo): a disk round the blow's heart with a hot core, or a strip along a line's whole length.
 float flare_peak_at(vec2 w) {
 	if (flare_peak.w <= 0.0) return 0.0;
@@ -105,13 +126,19 @@ float flare_peak_at(vec2 w) {
 		float across = length(w - flare_peak.xy - ab * clamp(h, 0.0, 1.0));
 		float ends = smoothstep(-0.04, 0.0, h) * (1.0 - smoothstep(1.0, 1.04, h));
 		float hw = max(flare_peak.z, 0.2);
-		float k = exp(-pow(max(across + wob * 0.4, 0.0) / hw, 2.0)) + 5.0 * exp(-across / 0.35);
-		return k * ends * flare_peak.w;
+		float k = exp(-pow(max(across + wob * 0.4, 0.0) / hw, 2.0)) + flare_peak_k.x * exp(-across / 0.35);
+		// The wash (r2 after f2e: the peak's mean 0.98x, its light all in hot cores that clip before the mean moves): broad
+		// soft light thrown wide either side of the whole seam, and a little past its ends.
+		float ww = hw * max(flare_peak_k.y, 1.0);
+		float wends = smoothstep(-ww / sqrt(l2), 0.0, h) * (1.0 - smoothstep(1.0, 1.0 + ww / sqrt(l2), h));
+		return (k * ends + flare_peak_k.z * exp(-pow(across / ww, 2.0)) * wends) * flare_peak.w;
 	}
 	float r = length(w - flare_peak.xy);
 	float R = max(flare_peak.z, 0.5);
 	float disk = (1.0 - smoothstep(R * 0.82, R * 1.02, r + wob)) * mix(1.0, 0.5, clamp(r / R, 0.0, 1.0));
-	return (disk + 6.0 * exp(-r / 1.1)) * flare_peak.w;
+	// (the wash, as the line's: the field round the disk lit broad and soft)
+	float wash = flare_peak_k.z * exp(-pow(r / (R * max(flare_peak_k.y, 1.0)), 2.0));
+	return (disk + flare_peak_k.x * 1.2 * exp(-r / 1.1) + wash) * flare_peak.w;
 }
 
 // The drain and the repaint, on a world colour.
@@ -602,7 +629,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		alb = mix(alb, max(alb, vec3(dot(alb, FL_LUM)) * vec3(1.25, 1.18, 1.08) + 0.02), clamp(bd.y, 0.0, 1.0));
 		emi += flare_band_col.rgb * bd.x * alb;
 	}
-	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(w) * alb;
+	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(w) * alb + flare_peak_hot(w);
 	vec3 web = vec3(0.0);
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
 	if (flare_seam.w > 0.0) flare_seam_ground(wp, inv_view[3].xyz, alb, rough, nrm_view, emi, view);
@@ -834,7 +861,7 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_sweep_at(wp.xz) * (0.3 + 0.7 * tip) * alb;
 	// (H7 r2: the band's front and the peak's lit shape run through the grass as through the ground under it)
 	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * (0.4 + 0.6 * tip) * alb;
-	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(wp.xz) * (0.4 + 0.6 * tip) * alb;
+	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(wp.xz) * (0.4 + 0.6 * tip) * alb + flare_peak_hot(wp.xz) * (0.3 + 0.7 * tip);
 	vec4 sw;
 	if (fl_seam_where(wp.xz, sw)) {
 		float age = fl_seam_age(sw.x);

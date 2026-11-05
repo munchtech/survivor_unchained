@@ -135,6 +135,10 @@ flare_peak_col={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_peak_k={
+"type": "vec4",
+"value": Vector4(5, 3, 0, 0)
+}
 flare_seam_t={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

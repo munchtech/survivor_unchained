@@ -117,6 +117,33 @@ def measure(name, pre):
         ks = [shift(fr[i], fr[i - 1]) for i in range(b0, min(len(fr), b0 + 7))]
         kp = [shift(fr[i], fr[i - 1]) for i in range(1, 6)]
         print(f"     kick: max frame-to-frame shift {max(ks) if ks else 0:.0f} px from the blow (before the press {max(kp):.0f} px; 4 px steps)")
+        # (c4) H7 r2: the kick at FULL resolution (the 480x270 one moves in 4 px steps): blow -2..+4 frames at 1920x1080,
+        # the world's middle only (the HUD's corners, bars and title are still and would pull the match to 0), a Hann window,
+        # phase correlation with a parabolic sub-pixel peak; each frame's offset against blow-2 (the camera's swing) and
+        # frame to frame
+        t0 = max(0, pre + (b0 - 6 - 2) / 60 - 0.5 / 60)
+        rawf = subprocess.run([FFMPEG, "-loglevel", "error", "-ss", f"{t0:.4f}", "-i", str(d / "clip.mp4"), "-frames:v", "7",
+                               "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+        ff = np.frombuffer(rawf, np.uint8).reshape(-1, 1080, 1920, 3)
+        y0, y1, x0, x1 = 170, 820, 360, 1560
+        win = np.outer(np.hanning(y1 - y0), np.hanning(x1 - x0))
+        def fshift(a, c):
+            ga = lum(a[y0:y1, x0:x1]); gc = lum(c[y0:y1, x0:x1])
+            A = np.fft.fft2((ga - ga.mean()) * win); C = np.fft.fft2((gc - gc.mean()) * win)
+            R = A * np.conj(C); R /= np.abs(R) + 1e-9
+            r = np.abs(np.fft.ifft2(R)); H, W = r.shape; y, x = np.unravel_index(r.argmax(), r.shape)
+            def sub(m, c0, p0):
+                d0 = m[0] - 2 * c0 + m[1]
+                return p0 + (0.5 * (m[0] - m[1]) / d0 if abs(d0) > 1e-12 else 0)
+            yy = sub((r[(y - 1) % H, x], r[(y + 1) % H, x]), r[y, x], y)
+            xx = sub((r[y, (x - 1) % W], r[y, (x + 1) % W]), r[y, x], x)
+            yy = yy - H if yy > H / 2 else yy; xx = xx - W if xx > W / 2 else xx
+            return float(xx), float(yy)
+        if len(ff) >= 3:
+            offs = [fshift(ff[i], ff[0]) for i in range(len(ff))]
+            steps = [fshift(ff[i], ff[i - 1]) for i in range(1, len(ff))]
+            print("(c4) kick at 1080p from blow-2 (px, x/y): " + " ".join(f"{i - 2:+d}:{x:+.1f}/{y:+.1f}" for i, (x, y) in enumerate(offs))
+                  + f"; max offset {max(np.hypot(x, y) for x, y in offs):.1f} px, max step {max(np.hypot(x, y) for x, y in steps):.1f} px")
     for line in re.findall(r"flare (?:press frame|peak \S+:|ripple|blow) .*", log)[:6]: print("    log:", line.strip())
     # (a2) the true hold: f+0.12 against the stop's last held frame (two before the release), and the frame-to-frame motion
     # inside the stop over clip.mp4 (480x270, outside 30 px round her, the HUD's bottom 40 px left out)

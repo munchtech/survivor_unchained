@@ -31,7 +31,7 @@ public partial class FlareFx
     Vector2 peakA, peakB;
     bool peakLine;
     float peakColumn;
-    static readonly StringName PeakParam = "flare_peak", PeakLineParam = "flare_peak_line", PeakColParam = "flare_peak_col", BandShapeParam = "flare_band_shape";
+    static readonly StringName PeakParam = "flare_peak", PeakLineParam = "flare_peak_line", PeakColParam = "flare_peak_col", PeakKParam = "flare_peak_k", BandShapeParam = "flare_band_shape";
 
     /// <summary>Whether this Flare's main blow has a peak (its data's shape).</summary>
     bool HasPeak => familyOn && FlareFamily.Of(id).Peak.Shape.Length > 0;
@@ -126,9 +126,11 @@ public partial class FlareFx
             for (int i = 0; i < peakN; i++) { peakLights[i].LightEnergy = (float)pl.Light * gain * env; peakLights[i].Visible = true; }
         else if (peakHeart != null) { peakHeart.LightEnergy = (float)pl.Light * gain * env; peakHeart.Visible = true; }
         RenderingServer.GlobalShaderParameterSet(PeakParam, new Vector4(peakA.X, peakA.Y, peakLine ? (float)FlareFamily.Of(id).Peak.Width : (float)FlareFamily.Of(id).Peak.Radius, env));
-        RenderingServer.GlobalShaderParameterSet(PeakLineParam, new Vector4(peakB.X, peakB.Y, peakLine ? 1 : 0, 0));
+        RenderingServer.GlobalShaderParameterSet(PeakLineParam, new Vector4(peakB.X, peakB.Y, peakLine ? 1 : 0, (float)FlareFamily.Of(id).Peak.HotWidth));
         float g = (float)pl.Ground * gain;
         RenderingServer.GlobalShaderParameterSet(PeakColParam, new Vector4(lin.R * g, lin.G * g, lin.B * g, 0));
+        // (the hot core's and the wash's light over the shape's, so the shader's one colour carries all three; the wash's reach)
+        RenderingServer.GlobalShaderParameterSet(PeakKParam, new Vector4((float)pk.Core, (float)pk.Wide, (float)(pl.Wash / Math.Max(pl.Ground, 1e-3)), (float)(FlareFamily.Of(id).Peak.Hot * (Night ? 1 : pk.HotDay))));
         if (peakColumn > 0 && peakColumnFx != null && peakColumnMesh != null && peakColumnMat != null)
         {
             // (it stands 0.45 m toward the eye from her heart, so her own body never hides its foot: LcColumn's lesson)

@@ -7,7 +7,7 @@
 // w a seed (the seam: its length, m).
 varying flat vec4 mk;
 varying flat vec4 mk_col;
-uniform float cap = 0.75;        // the most the marks sum to (their light's max channel)
+uniform float cap = 3.0;         // the most the pools lift what is under them (x it): they converge on it
 uniform float pool_k = 2.4;      // the pool's falloff's power (2 a gaussian; higher a flatter top, still no edge)
 uniform float core = 0.32;       // the Main's core's radius (x the pool's) ...
 uniform float core_gain = 1.4;   // ... and its light (x the pool's peak)
