@@ -750,6 +750,8 @@ def crotch(M, ref, L, plan, tp, tk, C):
     g = np.linspace(0, sl[-1], b + 1)
     Mx = np.stack([np.interp(g, sl, X[:, k]) for k in range(3)], 1)
     mid = np.concatenate([[R0[0]], M.add(Mx[1:-1], "crotch", 0, 1, MID, REG["pelvis_glutes"], tuple(ks)), [R0[K]]])
+    if "hip_root" in C:
+        return crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl)
     wl = V[R0[1]][0] * 0.5 + V[R0[K - 1]][0] * 0.5
     wl = tp.get("crotch_half_width", wl)
     q, _ = ref.project(ks, Mx[1:-1] + np.array([wl, 0, 0]))
@@ -761,6 +763,41 @@ def crotch(M, ref, L, plan, tp, tk, C):
     C["N_leg"] = int(len(root))
     C["perineum_mm"] = round(float(sl[-1]) * 1000, 1)
     return {"root": root, "mid": mid, "lat": lat}
+
+
+def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
+    """(a, pass 3b items 4 + 8) The crotch strip m quads a side, from the mons (R0's front middle, at the groin
+    crease's top) under the perineum to the cleft's bottom (R0's back middle). Its outer line runs IN the groin
+    crease (b: the reference's concave line, plan hip.root.crotch.line) from R0[m] down to the perineum's lateral edge
+    and back to the fold's inner end R0[K - m], at the middle line's arc fractions; m - 1 lines between. The leg's
+    root ring is R0[m..K-m] and the outer line back to the front."""
+    cp = plan["hip"]["root"]["crotch"]
+    m = int(cp["m"])
+    q, _ = ref.project(ks, np.array(cp["line"], float) / 1000.0)
+    P = np.vstack([V[R0[m]], q, V[R0[K - m]]])
+    a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))])
+    f = g / g[-1]
+    O = np.stack([np.interp(f * a[-1], a, P[:, k]) for k in range(3)], 1)
+    O[1:-1] = ref.project(ks, O[1:-1])[0]
+    lines = [mid]
+    for k in range(1, m + 1):
+        if k < m:
+            X = ref.project(ks, (1 - k / m) * Mx[1:-1] + (k / m) * O[1:-1])[0]
+        else:
+            X = O[1:-1]
+        lines.append(np.concatenate([[R0[k]], M.add(X, "crotch", k, 1, FREE, REG["pelvis_glutes"], tuple(ks)),
+                                     [R0[K - k]]]))
+    for k in range(m):
+        for i in range(b):
+            A, B_ = lines[k], lines[k + 1]
+            M.quad(A[i], A[i + 1], B_[i + 1], B_[i], REG["pelvis_glutes"], "crotch")
+    lat = lines[-1]
+    root = np.concatenate([R0[m:K - m + 1], lat[1:-1][::-1]])
+    C["b"] = int(b)
+    C["crotch_m"] = m
+    C["N_leg"] = int(len(root))
+    C["perineum_mm"] = round(float(sl[-1]) * 1000, 1)
+    return {"root": root, "mid": mid, "lat": lat, "lines": lines}
 
 
 def y_to_t(cv, th, y, ks=(TRUNK, LEG)):
@@ -953,7 +990,58 @@ def kite_starts(phi, sense, psi_h, r, sector, stagger):
     return out
 
 
-def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=0.35, joint=None):
+def plane_ring(ref, ks, c, n, e1, phi_c, sense, w_even):
+    """A station's planar ring at the previous ring's angles phi_c, blended toward even arc length (tube()'s rule)."""
+    N = len(phi_c)
+    ph_d, s_d, _ = dense_ring(ref, ks, c, n, e1, 360)
+    uc = ang_to_u(ph_d, s_d, phi_c)
+    uc = uc[0] + np.unwrap((uc - uc[0]) * 2 * np.pi) / (2 * np.pi)
+    j = np.arange(N)
+    u0 = uc[0] + np.angle(np.mean(np.exp(2j * np.pi * (uc - uc[0] - sense * j / N)))) / (2 * np.pi)
+    u = (1 - w_even) * uc + w_even * (u0 + sense * j / N)
+    phi_new = u_to_ang(ph_d, s_d, u)
+    return T.ring_by_rays(ref, ks, c, U(n), e1, phi_new), phi_new
+
+
+def blend_plan(ref, ks, R, stations, frames, phi, sense, w_even, warp):
+    """(a, pass 3b item 4) The curve root is not planar (the rise and the cleft stand 30-35 mm above its best-fit
+    plane, the fold as far below): the first planar station is the first one fully under the root whose per-column
+    gaps fit n blend rings at steps within [lo, hi] x the limb spacing; the stations before it are dropped. Returns
+    (station index, n blend rings, its ring, its angles)."""
+    lo, hi = warp["step_lo"] * warp["s"], warp["step_hi"] * warp["s"]
+    for k, (c, n, kind, N, r, part, reg) in enumerate(stations, start=1):
+        if kind != "ring" or r > 0:
+            break
+        if np.min(-(R - c) @ n) < lo:
+            continue
+        X, ph = plane_ring(ref, ks, c, n, frames[k][2], phi, sense, w_even)
+        g = np.linalg.norm(X - R, axis=1)
+        nb = int(np.ceil(g.max() / hi)) - 1
+        if g.min() / (nb + 1) >= lo:
+            return k, max(nb, 0), X, ph
+    raise RuntimeError("no planar station fits the root's blend")
+
+
+def blend_rings(ref, ks, R, X, nb, ns=24, iters=3):
+    """nb rings between the warped root R and the planar ring X, column by column: each column a surface curve (the
+    chord's points pulled onto the reference, then re-pulled from their neighbours' mean: the crotch's saddle turns
+    the thigh's surface past the root, where rays from the axis would exit early), sampled at even arc length."""
+    w = np.linspace(0, 1, ns)
+    H = (1 - w)[:, None, None] * R[None] + w[:, None, None] * X[None]
+    sh = H.shape
+    for it in range(iters + 1):
+        if it:
+            H[1:-1] = 0.5 * H[1:-1] + 0.25 * (H[:-2] + H[2:])
+        H[1:-1] = ref.project(ks, H[1:-1].reshape(-1, 3))[0].reshape(sh[0] - 2, sh[1], 3)
+    out = np.zeros((nb, len(R), 3))
+    for j in range(len(R)):
+        a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(H[:, j], axis=0), axis=1))])
+        g = np.arange(1, nb + 1) / (nb + 1) * a[-1]
+        out[:, j] = np.stack([np.interp(g, a, H[:, j, q]) for q in range(3)], 1)
+    return out
+
+
+def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=0.35, joint=None, warp=None):
     """A limb from the ring top = (ids, c, n, e1) through `stations` [(c, n, kind, N, r, part, reg)] (r: kites in
     the strip from the previous ring), ending on the template rim = (ids, c, n) when given. Angles twist-free (the
     frame carried ring to ring), each ring blended toward even arc length; the last rings toward the rim's angles;
@@ -979,8 +1067,27 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
     rings, log, creases = [np.asarray(ids0)], [], []
     prev_c, prev_n, prev_e1 = c0, n0, e1
     nst = len(stations)
+    kb, koff = 0, 0
+    if warp is not None:
+        kb, nbl, Xb, phb = blend_plan(ref, ks, V[ids0], stations, frames, phi, sense, w_even, warp)
+        koff = nbl - (kb - 1)
+        C.setdefault("root_blend", {})[name] = {"station": int(kb), "rings": int(nbl)}
     for k, (c, n, kind, N, r, part, reg) in enumerate(stations, start=1):
         _, _, e1 = frames[k]
+        if k < kb:
+            continue
+        if k == kb:                                  # the root's blend rings, then this planar ring
+            Bx = blend_rings(ref, ks, V[ids0], Xb, nbl)
+            for i in range(nbl):
+                bid = M.add(Bx[i], part, i + 1, 0, FREE, reg, tuple(ks))
+                M.strip(rings[-1], bid, reg, part, closed=True)
+                rings.append(bid)
+            ids = M.add(Xb, part, k + koff, 0, FREE, reg, tuple(ks))
+            M.strip(rings[-1], ids, reg, part, closed=True)
+            rings.append(ids)
+            phi = phb
+            prev_c, prev_n, prev_e1 = c, n, e1
+            continue
         eL = len(phi)
         starts = []
         if r > 0:
@@ -1012,7 +1119,7 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
             phi_new = u_to_ang(ph_d, s_d, u)
             X = T.ring_by_rays(ref, ks, c, U(n), e1, phi_new)
             pl = M.plane(c, n) if kind in ("crease", "fan") else -1
-            ids = M.add(X, part, k, 0, PLANE if pl >= 0 else FREE, reg, tuple(ks), pl)
+            ids = M.add(X, part, k + koff, 0, PLANE if pl >= 0 else FREE, reg, tuple(ks), pl)
         if kind == "crease" or (k >= 2 and stations[k - 2][2] == "crease"):
             assert not starts, (name, k, "kites next to the crease")
             if kind == "crease":
@@ -1095,7 +1202,8 @@ def slerp_n(a, b, w):
     return U((1 - w) * a + w * b)
 
 
-def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands, ref=None, ks=None):
+def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands, ref=None, ks=None,
+                  u_hold=0.0):
     """Stations of a two-segment limb: root (c0, n0) -> joint J -> end (the template rim's centre / normal).
     Spacing: tp limb_spacing, bend_spacing (s_b) inside the joint's bend zone (+-bend). The joint (a, pass 3): the
     crease ring C on the bisector, and either side of it one ring P / D on a plane turned about the hinge so that
@@ -1135,7 +1243,8 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
             c, n = J, nb
         elif u < u_el:
             c = c0 + u * d_in
-            n = slerp_n(n0, d_in, smooth01(u / u_rb)) if u < u_rb else d_in
+            uh = u - u_hold                          # (pass 3b) the root's plane held through its blend rings
+            n = n0 if uh <= 0 else (slerp_n(n0, d_in, smooth01(uh / u_rb)) if uh < u_rb else d_in)
             if u > u_el - bz:
                 n = slerp_n(d_in, n_P, smooth01((u - (u_el - bz)) / (bz - g0)))
         else:
@@ -1493,16 +1602,32 @@ def build(plan, tier, ref, cv, L):
     J = L["knee"]
     d_in, d_out = U(J - L["hip"]), U(fc - J)
     p, nl = L["leg"]["p"], L["leg"]["n"]
+    warp = None
+    if "hip_root" in C:                              # (a, pass 3b item 4) the curve root's best-fit plane
+        Rr = np.asarray(M.V)[cr["root"]]
+        p = Rr.mean(0)
+        nl = np.linalg.svd(Rr - p)[2][2]
+        nl = nl if nl @ d_in < 0 else -nl
+        warp = dict(plan["hip"]["root"]["blend"], s=tp["limb_spacing"])
     c_lg = L["hip"] + ((p - L["hip"]) @ nl) / (d_in @ nl) * d_in
+    u_hold = 0.0
+    if warp is not None:                             # the blend's end estimated on the plane's normal: hold to it
+        dj = (Rr - c_lg) @ -nl
+        lo, hi = warp["step_lo"] * warp["s"], warp["step_hi"] * warp["s"]
+        for u in np.arange(0.0, 0.4, 0.001):
+            g = u * float(d_in @ -nl) - dj
+            if g.min() > 0 and g.min() / np.ceil(g.max() / hi) >= lo:
+                break
+        u_hold = float(u) + 2 * tp["limb_spacing"]
     kl = [TRUNK, LEG, FOOT]
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
     jp = dict(lim["knee"], **tp["knee"])
     st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, 22,
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
-                                       tp["bands"], ref, kl)
+                                       tp["bands"], ref, kl, u_hold)
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
-         joint=joints["knee"])
+         joint=joints["knee"], warp=warp)
     C.update({"N_el": N_el, "N_kn": N_kn})
     # the whole: orient, mirror, relax, the neck's right side, orient outward
     V, Q = M.arrays()

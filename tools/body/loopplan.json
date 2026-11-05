@@ -106,19 +106,11 @@
    "front": [
     [
      0,
-     1.0
+     1.035
     ],
     [
-     24,
-     0.99
-    ],
-    [
-     31,
-     0.99
-    ],
-    [
-     37,
-     1.02
+     28,
+     1.035
     ],
     [
      40,
@@ -160,7 +152,49 @@
    ],
    "lobe_top_rise": 0.03,
    "why": "(a) the judge (pass 3b item 4): the leg's root a CURVE, not a plane: front = the groin crease, read off the reference's front profiles (b: the concave minimum, x 37-70 mm: (37, 0.99) (60, 1.02) (70, 1.05); [theta deg, y] on the trunk canvas) from the pubic mound's lower edge (b: the midline 1.0); side_y = over the hip bone at the greater trochanter (b: our skeleton's hip joint thigh_l 1.067, the trochanter's top just under it), level from the crease to the shoulder band's back edge BB (115 deg); back = down the gluteus' lateral edge to the gluteal fold (b: the back profiles' kink at 0.945-0.95 for x 40-120 mm) and along it into the perineum (b: the cleft's bottom 0.988 on the midline). The buttock above the fold stays trunk: a lobe of the B band whose rows end on the rise (lobe_top_rise: its top climbs 30 mm to the midline so the cleft's column (b: 0.988 -> 1.08 up the floor, ~115 mm) matches the buttock's (0.95 -> 1.05 under the bulge)); the reference is relabelled by the same curve",
-   "why_back": "(b) the gluteal fold as reference landmarks [x, y, z] mm (projected onto the reference, then the canvas's inverse): the back profiles' kink at y 945-950 for x 40-120 mm (faded by x 120: the fold's lateral end, the lobe's miter) and the cleft's bottom (0, 988, -75); given in 3D because the canvas's steep rays under h_lo pass under the buttock and hit the inner thigh (a meridian-and-height lookup put the miter at (4, 983, -39))"
+   "why_back": "(b) the gluteal fold as reference landmarks [x, y, z] mm (projected onto the reference, then the canvas's inverse): the back profiles' kink at y 945-950 for x 40-120 mm (faded by x 120: the fold's lateral end, the lobe's miter) and the cleft's bottom (0, 988, -75); given in 3D because the canvas's steep rays under h_lo pass under the buttock and hit the inner thigh (a meridian-and-height lookup put the miter at (4, 983, -39))",
+   "blend": {
+    "step_lo": 0.4,
+    "step_hi": 1.15,
+    "why": "(a) the curve root stands up to ~35 mm off its best-fit plane (the rise's top and the cleft above, the fold below), so the thigh's first rings are blend rings column by column from the root to the first planar station fully under it: n rings at steps within [step_lo, step_hi] x the limb spacing (lo: no edge under ~3 mm close, aspect under 2.5 at the fold; hi: no step over ~8.6 mm, the trunk's spacing); every column continues, so the blend adds no poles"
+   },
+   "why_front": "(b) the front of the root at the groin crease's top: the reference's concave line per height (rays from the front) runs (20, 990, -4) (25, 1000, 14) (30, 1010, 23) (35, 1020, 30) (40, 1035, 38) mm: near-vertical on the canvas (theta 26-31 deg), which a row profile t(theta) cannot carry (the rows above would collapse onto it), so the crotch strip climbs the mons to y 1.035 at the midline and its outer line takes the crease's lower course; the row is level at 1.035 to theta 28 (the crease's top) and rises to side_y by theta 40 [theta deg, y]",
+   "crotch": {
+    "m": 3,
+    "line": [
+     [
+      30,
+      1010,
+      23
+     ],
+     [
+      25,
+      1000,
+      14
+     ],
+     [
+      21,
+      992,
+      0
+     ],
+     [
+      19,
+      987,
+      -10
+     ],
+     [
+      17,
+      983,
+      -20
+     ],
+     [
+      14,
+      975,
+      -40
+     ]
+    ],
+    "why": "(b) the strip's outer line in the groin crease: the inguinal crease's lower course (rays from the front: the concave minimum per height) and the perineum's lateral edge (rays from below: where the flat perineum, y 983-992, drops onto the inner thigh: x 21 at z 0, 17 at z -20, 14 at z -40), [x, y, z] mm, between R0[m] and the fold's inner end R0[K - m]; (a) m = 3 quads a side: the strip's front edge (F row 0's first m edges, ~10.5 mm) reaches the crease's top (x ~32 of 40) and the perineum (15-17 mm a side) keeps ~5 mm across; the stopgap crotch_half_width is retired"
+   }
   }
  },
  "breast": {
