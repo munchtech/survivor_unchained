@@ -178,6 +178,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     d = np.linalg.norm(mesh.P0 - c0, axis=1)
     f = 1 - smooth01((d - jc["r_in"]) / (jc["r_out"] - jc["r_in"]))
     free = (d < jc["r_out"]) & ~mesh.held
+    rn = np.zeros(mesh.n, bool)
+    rn[mesh.rep[st.rend]] = True
+    if jc.get("free_rend"):                 # a girdle's sphere reaches the other limbs: they stay as posed (obstacles)
+        free &= rn
     fi = np.nonzero(free)[0]
     pos = -np.ones(mesh.n, np.int64)
     pos[fi] = np.arange(len(fi))
@@ -200,6 +204,15 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         Nr = N0[nodes] @ polar(Sb[None, :3, :3])[0].T
         surf[side] = (cKDTree(Pr), Pr, Nr)
     test = {"d": fi[(wd[fi] >= 0.5) & (f[fi] > 0.02)], "p": fi[(wd[fi] < 0.5) & (f[fi] > 0.02)]}
+    if jc.get("obstacles"):                 # the other limbs near the joint (the other thigh at the crotch), as posed
+        oth = "r" if st.s == "l" else "l"
+        ob = np.zeros(mesh.n, bool)
+        for b in jc["obstacles"]:
+            ob |= p.D[:, p.subtree(I[b.replace("{o}", oth)])].sum(1)[mesh.first] >= 0.5
+        ob &= ~free & (d < jc["r_out"] + 0.05)
+        No = bends.normals(X[mesh.rep], p.T)[mesh.first]
+        on_ = np.nonzero(ob)[0]
+        surf["o"] = (cKDTree(X[on_]), X[on_], No[on_])
     # the crease side (rest space): toward where the distal bone turned
     je, jd = I[sub(jc["distal_end"])], I[sub(jc["distal"])]
     d_rest = bends.unit(p.rest[je][:3, 3] - p.rest[jd][:3, 3])
@@ -232,6 +245,12 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         slabs.append({"side": side, "ts": np.asarray(ts, float), "sel": sel, "on": on & free,
                       "tn": (mesh.P0 - O0) @ ax0, "A0": np.asarray(A0), "k": np.ones(len(ts))})
     kap, hist = 0.0, []
+    hm = None
+    if jc.get("hold_mid"):                  # [band m, weight, bone]: nodes within band of x = 0 pulled to that bone's rigid pose
+        band_m, w_m, hb = jc["hold_mid"]
+        Sh = G[I[hb]] @ p.skel.ibm[I[hb]]
+        Xh = mesh.P0 @ Sh[:3, :3].T + Sh[:3, 3]
+        hm = w_m * (1 - smooth01(np.abs(mesh.P0[:, 0]) / band_m)) * (f > 0.02)
     sc_n = np.ones(mesh.n)
     for rnd in range(cf["iters"] + 1):
         Vall = Y[mesh.rep]
@@ -271,6 +290,13 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
             step = ((cf["margin"] - gap[bad]) / g2)[:, None] * gdir
             for node, st_ in zip(nodes[bad], step):
                 cons[node] = Y[node] + st_
+        if "o" in surf:                     # out of the obstacles, along their normal
+            nodes = np.concatenate([test["p"], test["d"]])
+            sd_o, lat_o, n_o = signed(surf["o"], Y[nodes])
+            bad = (sd_o < cf["margin"]) & (sd_o > -cf.get("depth_max_o", 0.06)) & (lat_o < cf["lat_max"])
+            n_hit += int(bad.sum())
+            for node, s_, n_ in zip(nodes[bad], sd_o[bad], n_o[bad]):
+                cons[node] = cons.get(node, Y[node]) + (cf["margin"] - s_) * n_
         # what the parts miss (the crease's own skin, between the parts): points inside the posed surface (ray
         # parity), pushed out half the way along the nearest posed point over 20 mm away at rest (and it back)
         if cf.get("parity", 0) and rnd < cf["iters"]:
@@ -346,6 +372,9 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
             break
         W = a_data.copy()
         tgt = a_data[:, None] * X[fi]
+        if hm is not None:                  # the midline held where its own bone puts it (the perineum)
+            W += hm[fi]
+            tgt += hm[fi, None] * Xh[fi]
         for node, t in cons.items():
             W[pos[node]] += cf["contact"]
             tgt[pos[node]] += cf["contact"] * t
@@ -439,12 +468,22 @@ def run(out, only=None, tier="close", fresh=False):
     body = np.nonzero(poser.piece == "body")[0]
     Pb, Tb = poser.Pb[body], poser.T[(poser.piece[poser.T] == "body").all(1)]
     mir = mirror_map(Pb)
+    tp = os.path.join(HERE, "out", "topo", f"{tier}.npz")       # our topology's own mirror (her forms are not symmetric
+    if os.path.exists(tp):                                       # to 1e-5 m: 3005 points went unmatched by place)
+        mo = np.load(tp)["mirror_of"]
+        if len(mo) == len(Pb):
+            mir = np.full(len(Pb), -1)
+            r_ = np.nonzero(mo >= 0)[0]
+            mir[r_] = mo[r_]
+            mir[mo[r_]] = r_
     old = {}
     if only and os.path.exists(os.path.join(out, "stage", f_shapes)):
         z = np.load(os.path.join(out, "stage", f_shapes))
         old = {k: z[k] for k in z.files}
     shapes, rep = {}, {}
     for jc in conf["joints"]:
+        if jc.get("held"):                  # documented in correctives.json, not shipped (its "why")
+            continue
         if only and jc["name"] not in only:
             for k, v in old.items():
                 if k.startswith(jc["name"] + "_"):

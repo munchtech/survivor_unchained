@@ -34,7 +34,8 @@ Correctives (rig.json "correctives"; shapes are rest-space deltas added before s
                  a partition of one, exact at each key, smooth in-betweens.
   "law": "rbf"   the bone's direction d in its parent's frame; keys k_j (unit, k_0 the rest direction, no shape);
                  phi(d) = exp(-(angle(d, k_j) / sigma)^2); w = clip(phi(d) @ M, 0, 1), M = Phi^-1 (Phi_jk =
-                 phi(k_j, k_k)) times the key-to-shape table: exact at the keys (1 on its own, 0 on the others).
+                 phi(k_j, k_k)) times the key-to-shape table: exact at the keys (1 on its own, 0 on the others);
+                 w < 1e-5 is 0 (the rest exactly unchanged).
   legacy rows    ({"bone", "keys": [lo, at, hi]} or {"from", "to"}): as before (godot/art/people/rig_helpers.json).
 """
 from __future__ import annotations
@@ -351,6 +352,7 @@ def corrective_weights(poser, G, rig):
                 d = direction(poser, G, sub(c["bone"]), sub(c["end"]), sub(c["frame"]))
                 K = np.asarray(c["keys"][s or "l"], float)
                 w = np.clip(rbf_phi(d, K, c["sigma_deg"]) @ np.asarray(c["M"][s or "l"], float), 0.0, 1.0)
+                w = np.where(w < 1e-5, 0.0, w)      # exactly 0 at the rest key (the solve leaves ~1e-7)
                 for nm, x in zip(c["shapes"], w):
                     out[sub(nm)] = float(x)
             else:

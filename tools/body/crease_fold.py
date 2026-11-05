@@ -45,6 +45,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     d = np.linalg.norm(mesh.P0 - c0, axis=1)
     f = 1 - smooth01((d - jc["r_in"]) / (jc["r_out"] - jc["r_in"]))
     free = (d < jc["r_out"]) & ~mesh.held
+    if jc.get("free_rend"):                 # a girdle's sphere reaches the other limbs: solve only this strip's body
+        rn = np.zeros(mesh.n, bool)
+        rn[mesh.rep[st.rend]] = True
+        free &= rn
     fi = np.nonzero(free)[0]
     pos = -np.ones(mesh.n, np.int64)
     pos[fi] = np.arange(len(fi))
@@ -133,6 +137,18 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     pto = jc.get("pressure_to", {"p": 1.0, "d": 1.0})      # the area the push restores, per side (of the rest's)
     cw = cf["contact"]
     m_ = cf["margin"]
+    def across(rel, inwedge, cand, r):
+        """Candidates with the other side's skin within r (m) of them in the plane's own coordinates (e1, e2)."""
+        P2 = np.stack([rel @ wv, rel @ hv], 1)
+        keep = np.zeros(mesh.n, bool)
+        for sg in (1.0, -1.0):
+            opp = np.nonzero(inwedge & (side == -sg))[0]
+            mine = np.nonzero(cand & (side == sg))[0]
+            if len(opp) and len(mine):
+                d_, _ = cKDTree(P2[opp]).query(P2[mine])
+                keep[mine[d_ < r]] = True
+        return keep
+
     for rnd in range(cf["iters"] + 1):
         Vall = Y[mesh.rep]
         N = bends.normals(Vall, p.T)[mesh.first]
@@ -140,6 +156,8 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         s = rel @ nb - offn(Y)
         inwedge = (rel @ wv > cf["wedge"]) & free & (f > 0.02)
         viol = inwedge & (side * s < m_)
+        if jc.get("footprint"):                # a girdle's plane is wide: contact only where the other part is across
+            viol = viol & across(rel, inwedge, viol, jc["footprint"])
         active |= viol
         out_t = {}
         if dense is not None and cf["outline"] > 0:
@@ -201,6 +219,8 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
                 rel = Y - Oj
                 s = rel @ nb - offn(Y)
                 bad = (rel @ wv > cf["wedge"]) & free & (f > 0.02) & (side * s < m_)
+                if jc.get("footprint"):
+                    bad = bad & across(rel, (rel @ wv > cf["wedge"]) & free & (f > 0.02), bad, jc["footprint"])
                 Y[bad] += ((side[bad] * m_ - s[bad]))[:, None] * nb
                 Vall = Y[mesh.rep]
                 N = bends.normals(Vall, p.T)[mesh.first]
