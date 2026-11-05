@@ -63,6 +63,28 @@ def highpass(x, hz=25.0):
     return signal.sosfilt(sos, x, axis=0)
 
 
+def make_far(x, lp_hz, tail_s, wet, lufs):
+    """Place a close take far away: low-pass, then a stone-hall tail (decaying stereo noise IR), then a quiet loudness."""
+    sos = signal.butter(4, lp_hz, "lowpass", fs=RATE, output="sos")
+    x = signal.sosfilt(sos, x, axis=0)
+    if x.ndim == 1:
+        x = np.stack([x, x], axis=1)
+    rng = np.random.default_rng(13)
+    n = int(tail_s * RATE)
+    t = np.arange(n) / RATE
+    env = np.exp(-6.9 * t / tail_s)  # -60 dB at tail_s
+    wetsig = np.zeros((len(x) + n - 1, 2))
+    for c in range(2):
+        ir = rng.standard_normal(n) * env
+        ir = signal.sosfilt(signal.butter(2, lp_hz * 0.7, "lowpass", fs=RATE, output="sos"), ir)
+        ir[: int(0.04 * RATE)] *= np.linspace(0, 1, int(0.04 * RATE))  # pre-delay-ish ramp
+        wetsig[:, c] = signal.fftconvolve(x[:, c], ir / np.sqrt((ir ** 2).sum()))
+    dry = np.zeros_like(wetsig)
+    dry[: len(x)] = x
+    y = (1 - wet) * dry + wet * wetsig * 1.0
+    return norm_lufs(y, lufs)
+
+
 def trim_lead(x, db=-45.0, keep_ms=3.0):
     env = np.abs(x) if x.ndim == 1 else np.abs(x).max(axis=1)
     idx = np.nonzero(env > 10 ** (db / 20))[0]
@@ -147,6 +169,9 @@ def process_take(raw, fam):
             ramp = np.linspace(1.0, 0.0, f)
             s[-f:] *= ramp[:, None] if s.ndim == 2 else ramp
     s = fade_in(s)
+    if fam.get("far"):  # {"lp_hz", "tail_s", "wet", "lufs"}: a sound placed far away (the singer under the stair)
+        f = fam["far"]
+        return trim_tail(make_far(s, f["lp_hz"], f["tail_s"], f["wet"], f["lufs"]), fam["tail_db"])
     if kind == "bed":
         s = make_loop(s)
         s = norm_lufs(s, fam["lufs"])

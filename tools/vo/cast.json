@@ -76,6 +76,22 @@
    ],
    "maya": "Realistic female voice in the 70s age with british accent, a West Country village herbalist. Normal pitch, creaky dry timbre, measured pacing, tart tone."
   },
+  "mother": {
+   "name": "The mother (singer, far under the stair)",
+   "sex": "f",
+   "age": 55,
+   "accent": "none (wordless; a valley hymn)",
+   "design": "An older woman's warm, low alto, unaccompanied, singing a slow simple hymn very softly and far away: wordless or the words 'Lamps are lit... stay where they reach...'. A sound for C13, not a spoken line: no manifest node, no subtitle.",
+   "sound": {
+    "family": "c13_singer",
+    "event": "cine.c13_singer",
+    "file": "godot/art/sound/c13_singer_0.wav",
+    "model": "ElevenLabs eleven_text_to_sound_v2 via tools/audio/gen.py",
+    "prompt": "A lone older woman's low warm alto voice singing a slow, simple hymn melody very softly, unaccompanied, wordless humming and soft vowels, intimate and gentle, a few long phrases, no instruments, no music bed, no other sounds",
+    "settings": {"seconds": 8.0, "prompt_influence": 0.4, "takes": 4, "far": {"lp_hz": 2200, "tail_s": 3.5, "wet": 0.6, "lufs": -20}}
+   },
+   "note": "The owner may recast: a final could be recorded or designed in ElevenLabs by hand; keep the event name and the family, replace the take."
+  },
   "tam": {
    "name": "Tam",
    "sex": "m",

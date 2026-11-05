@@ -1035,6 +1035,33 @@
    "loop": false,
    "tail_db": -55,
    "note": "H7: the marks appear (flare.mark)"
+  },
+  "c13_singer": {
+   "prompt": "A lone older woman's low warm alto voice singing a slow, simple hymn melody very softly, unaccompanied, wordless humming and soft vowels, intimate and gentle, a few long phrases, no instruments, no music bed, no other sounds",
+   "seconds": 8.0,
+   "influence": 0.4,
+   "n": 4,
+   "keep": 1,
+   "kind": "long",
+   "stereo": true,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -50,
+   "neg": [
+    "drums",
+    "percussion",
+    "an orchestra",
+    "a choir",
+    "speech",
+    "a crowd"
+   ],
+   "far": {
+    "lp_hz": 2200,
+    "tail_s": 3.5,
+    "wet": 0.6,
+    "lufs": -20
+   },
+   "note": "C13: the mother singing far under the stair (cine.c13_singer); posted far: low-passed, stone-hall tail"
   }
  }
 }

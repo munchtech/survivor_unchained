@@ -102,6 +102,7 @@ EV = {
     "kill.boss":         E(L("boss_down", 0.75, stereo=True), near=1, duck={"sfx": 0.5, "seconds": 1.5}),
     "ui.way_out":        E(L("way_out", 0.65, stereo=True), bus="ui", near=1),
     "ui.skill_ready":    E(L("skill_ready", 0.18), bus="ui", near=1, gate=[1, 400]),
+    "cine.c13_singer":   E(L("c13_singer", 0.8, stereo=True), bus="ambience", near=1),
     "cine.to_play":      E(L("cine_whoosh", 0.30, stereo=True), bus="ui", near=1),
     "result.won":        E(L("result_won", 0.70, stereo=True), bus="music", near=1),
     "result.fell":       E(L("result_fell", 0.70, stereo=True), bus="music", near=1),
