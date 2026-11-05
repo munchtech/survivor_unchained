@@ -5788,7 +5788,7 @@
        "fact": "chain.two",
        "eq": true
       },
-      "text": "I've the masks out again. Don't ask me why. I don't know why."
+      "text": "I've the masks out again. Don't ask me why."
      },
      {
       "when": {
@@ -6472,6 +6472,29 @@
     "node": "cb_killed_greymuzzle"
    },
    {
+    "when": {
+     "all": [
+      {
+       "fact": "chain.two",
+       "eq": true
+      },
+      {
+       "met": "tam"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "cb:knock",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_knock"
+   },
+   {
     "node": "again"
    }
   ],
@@ -6598,13 +6621,6 @@
    "again": {
     "id": "again",
     "text": [
-     {
-      "when": {
-       "fact": "chain.two",
-       "eq": true
-      },
-      "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP."
-     },
      {
       "when": {
        "fact": "beasts.outcome",
@@ -6843,6 +6859,20 @@
       "end": true
      }
     ]
+   },
+   "cb_knock": {
+    "id": "cb_knock",
+    "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "tam",
+       "key": "cb:knock",
+       "value": true
+      }
+     }
+    ],
+    "next": "again"
    }
   }
  },
@@ -12976,12 +13006,6 @@
        "key": "gave:office",
        "value": true
       }
-     },
-     {
-      "quest": {
-       "id": "vault",
-       "entry": "office_end"
-      }
      }
     ],
     "choices": [
@@ -15193,7 +15217,7 @@
    },
    "keeper": {
     "id": "keeper",
-    "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they cut over the door that they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
+    "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
     "choices": [
      {
       "text": "And what does a chain do to a thing like that?",
@@ -15322,7 +15346,7 @@
    },
    "six": {
     "id": "six",
-    "text": "Seven. One is out. When the six are out, it stops. (She says it the way she says the toll.) The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
+    "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
     "choices": [
      {
       "text": "How do you know it stops?",
@@ -15372,7 +15396,7 @@
    },
    "cost": {
     "id": "cost",
-    "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. It is the second thing I have given you, and I am keeping count.",
+    "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count.",
     "choices": [
      {
       "text": "Why me?",
@@ -15414,7 +15438,18 @@
    },
    "dont": {
     "id": "dont",
-    "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning.",
+    "text": [
+     {
+      "when": {
+       "fact": "warden.answer",
+       "eq": "silent"
+      },
+      "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning."
+     },
+     {
+      "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning."
+     }
+    ],
     "choices": [
      {
       "text": "The door in the Verge.",
@@ -15481,7 +15516,7 @@
    },
    "jessop_in": {
     "id": "jessop_in",
-    "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...Clerks go south, traveler. I told you the direction.",
+    "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...In my book he went south, traveler. Let him.",
     "choices": [
      {
       "text": "Then I'll go.",
@@ -22177,7 +22212,7 @@
    },
    "lie_down": {
     "id": "lie_down",
-    "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly, to a thing that should not be up.) Lie down.",
+    "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly.) Lie down.",
     "choices": [
      {
       "text": "(Raise your weapon.)"
@@ -22221,7 +22256,7 @@
    },
    "heart": {
     "id": "heart",
-    "text": "He goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+    "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
     "choices": [
      {
       "text": "(Continue.)"
@@ -22251,13 +22286,13 @@
   "nodes": {
    "gate": {
     "id": "gate",
-    "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick, nothing to count on. He is looking down the road, the way he does.",
+    "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does.",
     "next": "count",
     "speaker": "narrator"
    },
    "count": {
     "id": "count",
-    "text": "Eleven in. Nobody out. Third night running. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
+    "text": "Eleven in. Nobody out. Night after night. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
     "next": "cup",
     "speaker": "holloway"
    },

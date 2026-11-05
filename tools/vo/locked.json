@@ -1077,12 +1077,12 @@
    "date": "2026-11-05"
   },
   "dlg.door_night.heart.0": {
-   "hash": "2b0d38defddf",
+   "hash": "e1a1f99d19a5",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
   "dlg.door_night.lie_down.0": {
-   "hash": "ed097090dec5",
+   "hash": "d3be4c8ce11b",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -1887,7 +1887,7 @@
    "date": "2026-10-11"
   },
   "dlg.scene_bed.count.0": {
-   "hash": "d6ca90acb4d0",
+   "hash": "7952fa0435fb",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -1897,7 +1897,7 @@
    "date": "2026-11-05"
   },
   "dlg.scene_bed.gate.0": {
-   "hash": "a646f58ac2dd",
+   "hash": "3bfaa1947349",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -2197,32 +2197,37 @@
    "date": "2026-10-11"
   },
   "dlg.tam.again.0": {
-   "hash": "5419a13bee81",
-   "by": "S1 writer 3",
-   "date": "2026-11-05"
-  },
-  "dlg.tam.again.1": {
    "hash": "ff5e9b7c5e0c",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
-  "dlg.tam.again.2": {
+  "dlg.tam.again.1": {
    "hash": "ca6c36d308ad",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
-  "dlg.tam.again.3": {
+  "dlg.tam.again.2": {
    "hash": "835ad0dfcb87",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
-  "dlg.tam.again.4": {
+  "dlg.tam.again.3": {
    "hash": "e8a085a559b4",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.4": {
+   "hash": "cb6183eda30a",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
   "dlg.tam.again.5": {
    "hash": "cb6183eda30a",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.cb_knock.0": {
+   "hash": "5419a13bee81",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -2262,11 +2267,16 @@
    "date": "2026-11-05"
   },
   "dlg.vonnra.cost.0": {
-   "hash": "716f0d0d60cd",
+   "hash": "5e72a6e4f1dc",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
   "dlg.vonnra.dont.0": {
+   "hash": "e5acf96f018a",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.dont.1": {
    "hash": "b2d8dc471998",
    "by": "S1 writer 3",
    "date": "2026-11-05"
@@ -2312,12 +2322,12 @@
    "date": "2026-11-05"
   },
   "dlg.vonnra.jessop_in.0": {
-   "hash": "9c12341af39e",
+   "hash": "d4363810f6d7",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
   "dlg.vonnra.keeper.0": {
-   "hash": "a41bf24f111d",
+   "hash": "8d5087836b24",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -2347,7 +2357,7 @@
    "date": "2026-11-05"
   },
   "dlg.vonnra.six.0": {
-   "hash": "c2c715442274",
+   "hash": "53c1dbf44dc7",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },
@@ -2397,7 +2407,7 @@
    "date": "2026-11-05"
   },
   "dlg.wenna.hub.0": {
-   "hash": "b9a282db5173",
+   "hash": "ce57c7c18e1c",
    "by": "S1 writer 3",
    "date": "2026-11-05"
   },

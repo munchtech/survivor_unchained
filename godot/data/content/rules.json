@@ -1170,6 +1170,25 @@
    ]
   },
   {
+   "id": "office.read",
+   "once": true,
+   "when": {
+    "npcFlag": {
+     "npc": "chid",
+     "key": "gave:office",
+     "eq": true
+    }
+   },
+   "effect": [
+    {
+     "quest": {
+      "id": "vault",
+      "entry": "office_end"
+     }
+    }
+   ]
+  },
+  {
    "id": "vault.watched",
    "once": true,
    "when": {

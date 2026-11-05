@@ -6948,13 +6948,13 @@
    "id": "dlg.wenna.hub.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "I've the masks out again. Don't ask me why. I don't know why.",
+   "text": "I've the masks out again. Don't ask me why.",
    "where": "dialogue.json wenna/hub#0",
-   "hash": "b9a282db5173",
+   "hash": "ce57c7c18e1c",
    "segments": [
     {
      "voice": "wenna",
-     "text": "I've the masks out again. Don't ask me why. I don't know why."
+     "text": "I've the masks out again. Don't ask me why."
     }
    ],
    "direction": {
@@ -7976,13 +7976,13 @@
    "id": "dlg.tam.again.0",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP.",
+   "text": "They came right up to the gate. I heard them. Pa says we're not going home. Not ever, maybe.",
    "where": "dialogue.json tam/again#0",
-   "hash": "5419a13bee81",
+   "hash": "ff5e9b7c5e0c",
    "segments": [
     {
      "voice": "tam",
-     "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP."
+     "text": "They came right up to the gate. I heard them. Pa says we're not going home. Not ever, maybe."
     }
    ],
    "direction": {
@@ -7998,13 +7998,13 @@
    "id": "dlg.tam.again.1",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "They came right up to the gate. I heard them. Pa says we're not going home. Not ever, maybe.",
+   "text": "Pa's at Wenna's. She says he'll keep the arm. The Watch says it was wolves. I SAID it was wolves. Weeks ago.",
    "where": "dialogue.json tam/again#1",
-   "hash": "ff5e9b7c5e0c",
+   "hash": "ca6c36d308ad",
    "segments": [
     {
      "voice": "tam",
-     "text": "They came right up to the gate. I heard them. Pa says we're not going home. Not ever, maybe."
+     "text": "Pa's at Wenna's. She says he'll keep the arm. The Watch says it was wolves. I SAID it was wolves. Weeks ago."
     }
    ],
    "direction": {
@@ -8020,13 +8020,13 @@
    "id": "dlg.tam.again.2",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "Pa's at Wenna's. She says he'll keep the arm. The Watch says it was wolves. I SAID it was wolves. Weeks ago.",
+   "text": "The wolves broke our door and ate all the hens. All of them. Pa says he'd have been in the hens' place if not for you, and then he called you a bad word. He was smiling, though.",
    "where": "dialogue.json tam/again#2",
-   "hash": "ca6c36d308ad",
+   "hash": "835ad0dfcb87",
    "segments": [
     {
      "voice": "tam",
-     "text": "Pa's at Wenna's. She says he'll keep the arm. The Watch says it was wolves. I SAID it was wolves. Weeks ago."
+     "text": "The wolves broke our door and ate all the hens. All of them. Pa says he'd have been in the hens' place if not for you, and then he called you a bad word. He was smiling, though."
     }
    ],
    "direction": {
@@ -8042,13 +8042,13 @@
    "id": "dlg.tam.again.3",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "The wolves broke our door and ate all the hens. All of them. Pa says he'd have been in the hens' place if not for you, and then he called you a bad word. He was smiling, though.",
+   "text": "Pa didn't come in last night. He always comes in.",
    "where": "dialogue.json tam/again#3",
-   "hash": "835ad0dfcb87",
+   "hash": "e8a085a559b4",
    "segments": [
     {
      "voice": "tam",
-     "text": "The wolves broke our door and ate all the hens. All of them. Pa says he'd have been in the hens' place if not for you, and then he called you a bad word. He was smiling, though."
+     "text": "Pa didn't come in last night. He always comes in."
     }
    ],
    "direction": {
@@ -8064,13 +8064,13 @@
    "id": "dlg.tam.again.4",
    "kind": "dialogue",
    "voice": "tam",
-   "text": "Pa didn't come in last night. He always comes in.",
+   "text": "Did you find out what's wrong with them?",
    "where": "dialogue.json tam/again#4",
-   "hash": "e8a085a559b4",
+   "hash": "cb6183eda30a",
    "segments": [
     {
      "voice": "tam",
-     "text": "Pa didn't come in last night. He always comes in."
+     "text": "Did you find out what's wrong with them?"
     }
    ],
    "direction": {
@@ -8079,21 +8079,6 @@
     "pace": "measured",
     "vol": "level"
    },
-   "status": "todo"
-  },
-  {
-   "id": "dlg.tam.again.5",
-   "kind": "dialogue",
-   "voice": "tam",
-   "text": "Did you find out what's wrong with them?",
-   "where": "dialogue.json tam/again#5",
-   "hash": "cb6183eda30a",
-   "segments": [
-    {
-     "voice": "tam",
-     "text": "Did you find out what's wrong with them?"
-    }
-   ],
    "status": "todo"
   },
   {
@@ -8377,6 +8362,21 @@
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "be06bd713852",
    "status": "skip"
+  },
+  {
+   "id": "dlg.tam.cb_knock.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP.",
+   "where": "dialogue.json tam/cb_knock#0",
+   "hash": "5419a13bee81",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP."
+    }
+   ],
+   "status": "todo"
   },
   {
    "id": "dlg.brannoc.first.0",
@@ -20377,9 +20377,9 @@
    "id": "dlg.vonnra.keeper.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they cut over the door that they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
+   "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
    "where": "dialogue.json vonnra/keeper#0",
-   "hash": "a41bf24f111d",
+   "hash": "8d5087836b24",
    "segments": [
     {
      "voice": "vonnra",
@@ -20391,7 +20391,7 @@
     },
     {
      "voice": "vonnra",
-     "text": "The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they cut over the door that they had buried a monster, and marched home, and the valley has believed the door for a thousand years."
+     "text": "The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years."
     }
    ],
    "status": "todo"
@@ -20615,29 +20615,21 @@
    "id": "dlg.vonnra.six.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Seven. One is out. When the six are out, it stops. (She says it the way she says the toll.) The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
+   "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
    "where": "dialogue.json vonnra/six#0",
-   "hash": "c2c715442274",
+   "hash": "53c1dbf44dc7",
    "name_elided": true,
    "segments": [
     {
      "voice": "vonnra",
-     "text": "Seven. One is out. When the six are out, it stops."
-    },
-    {
-     "voice": "narrator",
-     "text": "She says it the way she says the toll."
-    },
-    {
-     "voice": "vonnra",
-     "text": "The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing."
+     "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing."
     },
     {
      "voice": "vonnra",
      "text": "I have had forty years to be wrong, and the ford says I am not."
     }
    ],
-   "name_at": 3,
+   "name_at": 1,
    "status": "todo"
   },
   {
@@ -20762,9 +20754,9 @@
    "id": "dlg.vonnra.cost.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. It is the second thing I have given you, and I am keeping count.",
+   "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count.",
    "where": "dialogue.json vonnra/cost#0",
-   "hash": "716f0d0d60cd",
+   "hash": "5e72a6e4f1dc",
    "segments": [
     {
      "voice": "narrator",
@@ -20772,7 +20764,7 @@
     },
     {
      "voice": "vonnra",
-     "text": "That would be everything I have. This once, no charge. ...Do not make that face. It is the second thing I have given you, and I am keeping count."
+     "text": "That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count."
     }
    ],
    "status": "todo"
@@ -20844,8 +20836,37 @@
    "id": "dlg.vonnra.dont.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning.",
+   "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning.",
    "where": "dialogue.json vonnra/dont#0",
+   "hash": "e5acf96f018a",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Then the ford stays quiet, and nowhere else does."
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not raise her voice. She never has."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The boy's floor goes on knocking, and one night it opens. You will do it."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning."
+    }
+   ],
+   "name_at": 3,
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.dont.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning.",
+   "where": "dialogue.json vonnra/dont#1",
    "hash": "b2d8dc471998",
    "name_elided": true,
    "segments": [
@@ -20959,9 +20980,9 @@
    "id": "dlg.vonnra.jessop_in.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...Clerks go south, traveler. I told you the direction.",
+   "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...In my book he went south, traveler. Let him.",
    "where": "dialogue.json vonnra/jessop_in#0",
-   "hash": "9c12341af39e",
+   "hash": "d4363810f6d7",
    "segments": [
     {
      "voice": "vonnra",
@@ -20973,7 +20994,7 @@
     },
     {
      "voice": "vonnra",
-     "text": "He had a key. He did not have what you have. ...Clerks go south, traveler. I told you the direction."
+     "text": "He had a key. He did not have what you have. ...In my book he went south, traveler. Let him."
     }
    ],
    "status": "todo"
@@ -31233,13 +31254,13 @@
    "id": "dlg.door_night.lie_down.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly, to a thing that should not be up.) Lie down.",
+   "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly.) Lie down.",
    "where": "dialogue.json door_night/lie_down#0",
-   "hash": "ed097090dec5",
+   "hash": "d3be4c8ce11b",
    "segments": [
     {
      "voice": "narrator",
-     "text": "He says it the way the Warden said it in the water: the keepers' word, kindly, to a thing that should not be up."
+     "text": "He says it the way the Warden said it in the water: the keepers' word, kindly."
     },
     {
      "voice": "chid",
@@ -31347,13 +31368,13 @@
    "id": "dlg.door_night.heart.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "He goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+   "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
    "where": "dialogue.json door_night/heart#0",
-   "hash": "2b0d38defddf",
+   "hash": "e1a1f99d19a5",
    "segments": [
     {
      "voice": "narrator",
-     "text": "He goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone."
+     "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone."
     }
    ],
    "status": "todo"
@@ -31397,13 +31418,13 @@
    "id": "dlg.scene_bed.gate.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick, nothing to count on. He is looking down the road, the way he does.",
+   "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does.",
    "where": "dialogue.json scene_bed/gate#0",
-   "hash": "a646f58ac2dd",
+   "hash": "3bfaa1947349",
    "segments": [
     {
      "voice": "narrator",
-     "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick, nothing to count on. He is looking down the road, the way he does."
+     "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does."
     }
    ],
    "status": "todo"
@@ -31412,13 +31433,13 @@
    "id": "dlg.scene_bed.count.0",
    "kind": "dialogue",
    "voice": "holloway",
-   "text": "Eleven in. Nobody out. Third night running. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
+   "text": "Eleven in. Nobody out. Night after night. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
    "where": "dialogue.json scene_bed/count#0",
-   "hash": "d6ca90acb4d0",
+   "hash": "7952fa0435fb",
    "segments": [
     {
      "voice": "holloway",
-     "text": "Eleven in. Nobody out. Third night running."
+     "text": "Eleven in. Nobody out. Night after night."
     },
     {
      "voice": "narrator",
