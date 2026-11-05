@@ -17,13 +17,15 @@ public static class FlareFamily
 
     public sealed class Grade
     {
-        public double Value = 1, Keep = 1, Lights = 1, Emit = 1;
+        /// <summary>Fx: the fight's own lingering light x (BattleFx.FlareDim; danger marks stay full).</summary>
+        public double Value = 1, Keep = 1, Lights = 1, Emit = 1, Fx = 1;
         public string Tint = "#ffffff";
     }
 
     public sealed class GradeRules
     {
-        public double In = 0.066, Out = 0.5;
+        /// <summary>Pool: her ember's pool x through the stop, eased with the grade.</summary>
+        public double In = 0.066, Out = 0.5, Pool = 1;
         public Grade Night = new(), Day = new();
         public Grade Of(bool night) => night ? Night : Day;
     }
@@ -32,12 +34,38 @@ public static class FlareFamily
 
     public sealed class MarkRules
     {
-        public double Scale = 1.5, Ripple = 0.1, Pop = 0.15, Fade = 0.2, Main = 2, Pulse = 1.6, Pillar = 2.4, Rim = 0.7;
-        /// <summary>The ring's band (its width, x the ring's radius), the warm pool inside it (its light x the ring's, and
-        /// how far toward her ember's warmth it leans), the pop's growth (x the ring), the path seam's core and glow widths (m).</summary>
-        public double Band = 0.07, Pool = 0.14, Warm = 0.45, PopGrow = 0.45, SeamCore = 0.09, SeamGlow = 0.45, SeamShimmer = 0.8;
+        /// <summary>The pool (r2): its radius at a quarter light x the foe's, its falloff's power, its lift over HeightAt (m),
+        /// its heart's lean to her ember; the Main's size and light x, its core (radius x the pool's, light x its peak).</summary>
+        public double Size = 2.3, Falloff = 2.4, Above = 0.25, Warm = 0.3, Main = 2, Core = 0.32, CoreGain = 1.4, Pulse = 1.6;
+        public double Ripple = 0.1, Fade = 0.2, Rim = 0.7, Lift = 0.9;
+        /// <summary>The hit (r2 fix 3): the pool's size and light x when the band reaches its foe, the share of that by the
+        /// blow (eased in over PreTime s from the release), and the hand-over to the band's rim (s).</summary>
+        public double Tight = 0.64, TightLight = 1.7, PreTight = 0.3, PreTime = 0.25, Hand = 0.05;
+        public double SeamCore = 0.09, SeamGlow = 0.45, SeamShimmer = 0.8;
         public MarkLight Night = new(), Day = new();
         public MarkLight Of(bool night) => night ? Night : Day;
+    }
+
+    /// <summary>The dust in the stop (r2 fix 4, in the web's place): FlareFx.Dust.</summary>
+    public sealed class DustLight { public double Light = 0.16, Warm = 0.7; }
+    public sealed class DustRules
+    {
+        public int Count = 440;
+        public double Across = 24, Near = 14, Far = 18, Low = 0.2, High = 2.8, Glint = 0.08, GlintSize = 1.6, Drift = 0.025;
+        public double[] Size = { 0.04, 0.1 };
+        public string Color = "#b4c0f0", WarmColor = "#ffa860";
+        public double WarmReach = 5, Gust = 4.5, Up = 1.2, Drag = 2.5, Flash = 2.2, FlashTime = 0.1, Gone = 0.35;
+        public DustLight Night = new(), Day = new();
+        public DustLight Of(bool night) => night ? Night : Day;
+    }
+
+    /// <summary>The foreshadow (r2 fix 7): a "crack" path Flare's future crack lit faintly in the stop, a spark along it.</summary>
+    public sealed class ForeLight { public double Light = 0.5, SparkLight = 2.6; }
+    public sealed class ForeshadowRules
+    {
+        public double Blur = 3, Heat = 0.42, Wander = 0.5, In = 0.08, SparkTime = 0.42, SparkFrom = 0.04, SparkGap = 0.12, SparkTail = 2.2;
+        public ForeLight Night = new(), Day = new();
+        public ForeLight Of(bool night) => night ? Night : Day;
     }
 
     /// <summary>A Flare's own: its stop; its main blow (the Blow event's Part, and when Last only its last such); where
@@ -51,6 +79,8 @@ public static class FlareFamily
         public PeakShape Peak = new();
         /// <summary>The Blow part whose earlier blows are an air and dust ripple, no light (Bell's tolls); "" none.</summary>
         public string Ripple = "";
+        /// <summary>A line Flare's path in the stop: "strip" (the marks' seam) or "crack" (its future crack, FlareFx.LongCut).</summary>
+        public string Path = "strip";
     }
 
     /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
@@ -106,6 +136,8 @@ public static class FlareFamily
         public RecoveryRules Recovery = new();
         public PeakRules Peak = new();
         public RippleRules Ripple = new();
+        public DustRules Dust = new();
+        public ForeshadowRules Foreshadow = new();
         public Dictionary<string, Own> Flares = new();
     }
 
@@ -115,6 +147,8 @@ public static class FlareFamily
     public static RecoveryRules Recovery => F.Recovery;
     public static PeakRules Peak => F.Peak;
     public static RippleRules Ripple => F.Ripple;
+    public static DustRules Dust => F.Dust;
+    public static ForeshadowRules Foreshadow => F.Foreshadow;
     /// <summary>A Flare's own rules (an empty one when it has none).</summary>
     public static Own Of(string flare) => F.Flares.TryGetValue(flare, out var o) ? o : None;
 

@@ -2,8 +2,7 @@
 // plays, read from global uniforms the view sets each frame (Fx/Flare/FlareFx.cs), so nothing needs a mask.
 // The drain and the repaint: the world (ground, crowd, props) loses its colour at the press and gets it back
 // from her outward at the Spend; she, the Flare's own light and every danger mark never read these, so they
-// keep theirs. The web: a hairline of ember under the ground in the reach (the Draw), glowing again as the
-// light sinks (the Return). Burns Twice's frost: a growth-time map (distance, low noise, fingers that race
+// keep theirs. (The Draw's web is gone, H7 r2; flare_web now only feeds Burns Twice's char cracks.) Burns Twice's frost: a growth-time map (distance, low noise, fingers that race
 // ahead), its crystal two multiplied layers of our own frost plate so it never visibly repeats; impacts melt
 // it to wet ground and char. Everything here costs one uniform branch while no Flare plays.
 
@@ -46,6 +45,11 @@ global uniform vec4 flare_seam_t; // x: seconds since the cleave (Flare time); y
 global uniform vec4 flare_sweep;  // x: its leading angle (rad, unwrapped); y: its light 0..1 (0 none); z: the reach (m); w: the angle it began at
 global uniform sampler2D flare_crack_a : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 global uniform sampler2D flare_crack_b : filter_linear_mipmap_anisotropic, repeat_disable;
+// The Long Cut's foreshadow in the stop (H7 r2, judge r1 fix 7; FlareFx.LongCut LcForeshadow): the future crack along
+// flare_seam, before its fuse, lit faintly from below. x its light (x albedo); y the spark's head (m along); z its light; w
+// the ember's heat (fl_seam_col). flare_fore_k: x the crack mask's blur (mip); y its wander along; z the spark's tail (m).
+global uniform vec4 flare_fore;
+global uniform vec4 flare_fore_k;
 global uniform vec4 flare_lc;     // x: the Long Cut is live (1); y: the sweep's wash 0..1; z: the core's cap (night); w: the sweep band's light (x albedo)
 global uniform sampler2D flare_plate : filter_linear_mipmap_anisotropic, repeat_enable;
 global uniform sampler2D flare_noise : filter_linear_mipmap, repeat_enable;
@@ -220,32 +224,9 @@ float flare_cover(vec2 w, float arr, float crystal) {
 	return c * flare_frost.y;
 }
 
-// The web (the Draw and the Return): hairline cracks of the calling's light under the ground.
-vec3 flare_web_light(vec2 w) {
-	if (flare_web.x <= 0.0) return vec3(0.0);
-	float r = length(w - flare_at.xz);
-	float reach = flare_at.w;
-	vec2 s = vec2(flare_web.w * 3.1, flare_web.w * 1.3);
-	float e1 = texture(flare_noise, w * 0.071 + s).a;
-	float e2 = texture(flare_noise, w * 0.19 + s.yx + 0.5).a;
-	// Hairlines (about a pixel from the arena's height), broken into lengths like embers under ash.
-	float l1 = 1.0 - smoothstep(0.0, 0.012 + fwidth(e1), e1);
-	float l2 = 1.0 - smoothstep(0.0, 0.01 + fwidth(e2), e2);
-	float seg = smoothstep(0.3, 0.72, texture(flare_noise, w * 0.11 + s * 0.7).g);
-	float line = max(l1 * (0.3 + 0.7 * seg), l2 * 0.35 * seg);
-	// Lit from her outward as the Draw begins, fading softly toward the reach's edge (the reach shown with no ring).
-	float lit = 1.0 - smoothstep(flare_web.z - 3.0, flare_web.z, r);
-	float inside = 1.0 - smoothstep(reach * 0.55, reach * 1.02, r + (texture(flare_noise, w * 0.05).r - 0.5) * 4.0);
-	// The light runs inward along the cracks, drawn up into her.
-	float run = 0.62 + 0.38 * sin(r * 0.9 + TIME * 11.0 + e1 * 3.0);
-	float heat = clamp(flare_web.y, 0.0, 1.0);
-	vec3 hot = mix(vec3(0.32, 0.03, 0.01), flare_hue.rgb, smoothstep(0.25, 1.0, heat)) * smoothstep(0.0, 0.25, heat);
-	// A breath of glow along the line's sides keeps a hairline alive from thirty metres up.
-	float halo = (1.0 - smoothstep(0.0, 0.05, e1)) * 0.07 * seg;
-	// Brightest near her, where the light is drawn in; faint toward the reach.
-	float near = mix(1.5, 0.4, smoothstep(2.0, reach, r));
-	return hot * (line + halo) * lit * inside * run * near * flare_web.x * 0.9;
-}
+// (H7 r2, judge r1 fix 4: the Draw's web, a hairline net of the calling's light under the ground, is gone from every
+// Flare: over a packed field it read as a white-gold wireframe over the whole frame. The stop is told by the deeper
+// grade and the hanging dust (FlareFx.Dust); flare_web stays as the Return's heat and seed for Burns Twice's char.)
 
 // The char's cracks (the Return's web): distance to the nearest seam between cells about 0.55 m across (F2-F1
 // of a jittered grid, m), so the burnt ground glows along a joined crust of cracks, never in loose straight lengths
@@ -499,7 +480,21 @@ void flare_seam_ground(vec3 wp, vec3 cam, inout vec3 alb, inout float rough, ino
 	if (!fl_seam_where(wp.xz, sw)) return;
 	float age = fl_seam_age(sw.x);
 	float open = smoothstep(-0.005, 0.04, age) * step(0.0, sw.x);
-	if (open <= 0.0) return;
+	if (open <= 0.0) {
+		// The foreshadow: the crack still closed, lit faintly from below through the ground along where it will open (its
+		// mask blurred, never a hairline), a spark running out along it with a short tail.
+		if (flare_fore.x > 0.0 && sw.x >= 0.0 && sw.x <= flare_seam.w) {
+			float fi = fl_in_strip(sw.zw);
+			float fm = clamp(textureLod(flare_crack_b, sw.zw, flare_fore_k.x).b * 2.4, 0.0, 1.0) * fi;
+			float ft = clamp(textureLod(flare_crack_b, sw.zw, 1.0).b * 3.0, 0.0, 1.0) * fi;
+			float fw = mix(1.0 - flare_fore_k.y, 1.0, smoothstep(0.25, 0.75, texture(flare_noise, vec2(sw.x * 0.19, 0.61)).r));
+			float fb = flare_fore.y - sw.x;
+			float fh = exp(-fb * fb * 30.0);
+			float fs = flare_fore.z * (fb >= 0.0 ? exp(-fb / max(flare_fore_k.z, 0.01)) : fh);
+			emi += fl_seam_col(flare_fore.w) * alb * (fm * fw * flare_fore.x + ft * fs) + fl_seam_col(0.9) * ft * fh * flare_fore.z * 0.06;
+		}
+		return;
+	}
 	float fade = flare_seam_t.z, night = flare_seam_t.w;
 	vec2 uv = sw.zw;
 	float inb = fl_in_strip(uv);
@@ -608,7 +603,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 		emi += flare_band_col.rgb * bd.x * alb;
 	}
 	if (flare_peak.w > 0.0) emi += flare_peak_col.rgb * flare_peak_at(w) * alb;
-	vec3 web = flare_web_light(w);
+	vec3 web = vec3(0.0);
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
 	if (flare_seam.w > 0.0) flare_seam_ground(wp, inv_view[3].xyz, alb, rough, nrm_view, emi, view);
 	float kind = flare_look.w;

@@ -25,6 +25,12 @@ public partial class FlareFx
     public Action<Color> DecalGrade = _ => { };
 
     FlareMarksView? marksView;
+    /// <summary>The stop's release on the real clock (-1 not yet): the marks begin to tighten there.</summary>
+    double releaseRt = -1;
+    /// <summary>The fight's own lingering light x (BattleFx.FlareDim: her rune circles, grounds, auras, skill lights;
+    /// danger marks are never touched): 1 none.</summary>
+    public Action<float> FxDim = _ => { };
+    float fxNow = 1;
     float gradeNow, hushNow = 1;
     bool hushing, familyOn;
     readonly List<(Light3D L, Color C)> gradeLights = new();
@@ -43,13 +49,21 @@ public partial class FlareFx
         hushing = true; hushNow = 1;
         gradeRoot = GetParent()?.GetParent();
         GradeLightsTake();
-        if (marksView == null) { marksView = new FlareMarksView { HeightAt = HeightAt }; AddChild(marksView); }
+        if (marksView == null)
+        {
+            marksView = new FlareMarksView { HeightAt = HeightAt, BandRt = BandReachesRt, BlowRt = () => BlowAtRt, ReleaseRt = () => releaseRt };
+            AddChild(marksView);
+        }
+        releaseRt = -1;
         var def = Content.Lamps.Flare(e.Id);
         var school = def?.School ?? School.Holy;
-        marksView.Press(b, school, Night, Her, rt, n => Cue("mark", Her, n));
+        marksView.Press(b, school, Night, Her, rt, n => Cue("mark", Her, n), FlareFamily.Of(e.Id).Path != "crack");
+        DustPress();
+        FxDim(1);
         var g = Palette.Of(school).Glow;
         float gm = Mathf.Max(g.R, Mathf.Max(g.G, g.B));
         RenderingServer.GlobalShaderParameterSet(MarkRimParam, new Vector4(g.R / gm, g.G / gm, g.B / gm, 1));
+        RenderingServer.GlobalShaderParameterSet("flare_mark_lift", (float)FlareFamily.Marks.Lift);
     }
 
     /// <summary>A real-time step of the family: the hush, the grade and its lights, the marks.</summary>
@@ -75,7 +89,9 @@ public partial class FlareFx
             float down = t <= from ? 1 : 1 - Mathf.SmoothStep(0, 1, (float)Math.Min(1, (t - from) / Math.Max(gr.Out, 1e-3)));
             g = up * down;
         }
+        if (familyOn && releaseRt < 0 && releaseAt >= 0) releaseRt = rt;
         if (g != gradeNow || g > 0) GradeSet(g);
+        DustTick(dt, g);
         if (marksView != null) { marksView.Step(dt, rt, b, Active ? id : null); if (!marksView.Live && !marksView.Showing) RenderingServer.GlobalShaderParameterSet(MarkRimParam, Vector4.Zero); }
     }
 
@@ -95,6 +111,9 @@ public partial class FlareFx
         float v = Mathf.Lerp(1, (float)gr.Value, g), keep = Mathf.Lerp(1, (float)gr.Keep, g);
         DecalGrade(new Color(v * Mathf.Lerp(tint.R, 1, keep), v * Mathf.Lerp(tint.G, 1, keep), v * Mathf.Lerp(tint.B, 1, keep)));
         if (g <= 0) GradeLightsGive();
+        // The fight's own lingering light falls with the world (judge r1 fix 6: her rune circles stayed bright on the indigo).
+        float fx = Mathf.Lerp(1, (float)gr.Fx, g);
+        if (fx != fxNow) { fxNow = fx; FxDim(fx); }
         gradeNow = g;
     }
 
@@ -127,6 +146,8 @@ public partial class FlareFx
         if (hushing) { hushing = false; HushDone(); Hush(1); }
         if (gradeNow > 0) GradeSet(0);
         GradeLightsGive();
+        if (fxNow != 1) { fxNow = 1; FxDim(1); }
+        DustClear();
         DecalGrade(Colors.White);
         RenderingServer.GlobalShaderParameterSet(GradeParam, new Vector4(0, 1, 1, 1));
     }

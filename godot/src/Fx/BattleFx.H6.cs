@@ -193,6 +193,7 @@ public partial class BattleFx
                 Mesh = curtainBox ??= new BoxMesh { Size = Vector3.One },
                 MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1,
             };
+            m.Curtain.AddToGroup(DangerGroup);
             AddChild(m.Curtain);
         }
         ((ShaderMaterial)m.Curtain.MaterialOverride).SetShaderParameter("col", Palette.TeleSafe * CurtainK);

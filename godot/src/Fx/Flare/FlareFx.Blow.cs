@@ -234,6 +234,8 @@ public partial class FlareFx
             float down = 1 - Mathf.SmoothStep(0, 1, (s - (float)rc.Hold) / Mathf.Max((float)rc.Out, 1e-3f));
             pool = 1 + ((float)rc.Pool - 1) * up * down;
         }
+        // (r2 fix 6: her ember's pool up through the stop with the grade, grade.pool; the recovery's takes over as it eases out)
+        if (familyOn) pool = Mathf.Max(pool, 1 + ((float)FlareFamily.Grades.Pool - 1) * gradeNow);
         if (pool != poolNow) { poolNow = pool; EmberPool(pool); }
         if (!mainLogged && blowT >= 0 && t > blowT + br.Time + 0.05 && (Args.Has("clip") || Args.Has("shot")))
         {

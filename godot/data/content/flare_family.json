@@ -15,29 +15,54 @@
   // value: the world's albedo x; keep: how much of a material's own color stays (0 all indigo); tint: the shade's hue
   // (sRGB; normalised to unit luminance in the shader); lights: the world's own lamps, fires and windows x;
   // emit: emissive world materials x. in/out: seconds to fall at the press, to ease back after the release.
+  // r2 (judge r1 fix 6: "the stop ~30% deeper in value"): value 0.56 -> 0.39 by night, 0.76 -> 0.53 by day; fx: the fight's
+  // own lingering light (her rune circles, hallowed and burning ground, auras, shockwaves, ribbons, skill lights: BattleFx
+  // FlareDim) x, so nothing of hers stays bright on the indigo (danger marks, group "fx_danger", stay full: §1.6's read
+  // order); pool: her ember's pool x through the stop (bible rule 3: she is the only warm light), eased with the grade.
   "grade": {
-    "in": 0.066, "out": 0.5,
-    "night": { "value": 0.56, "keep": 0.35, "tint": "#7080c8", "lights": 0.25, "emit": 0.3 },
-    "day":   { "value": 0.76, "keep": 0.5,  "tint": "#9aa6d8", "lights": 0.4,  "emit": 0.5 }
+    "in": 0.066, "out": 0.5, "pool": 1.5,
+    "night": { "value": 0.39, "keep": 0.35, "tint": "#7080c8", "lights": 0.18, "emit": 0.21, "fx": 0.3 },
+    "day":   { "value": 0.53, "keep": 0.5,  "tint": "#9aa6d8", "lights": 0.28, "emit": 0.35, "fx": 0.45 }
   },
-  // The marks: a lit ring under every foe in Battle.FlareMarks, in Palette.Of(the Flare's school): light on the ground
-  // hugging the foe's feet (LOOK_BIBLE row 8), under her in the read order (FLARE_LOOK §1.6: danger, her, the Flare's front).
-  // scale: the ring's radius x the foe's; band: its one soft band's width (x the ring); pool: the faint pool inside it (x the
-  // ring's light) and warm: how far the pool leans to her ember's warmth; ripple: seconds for the rings to appear from her
-  // outward; pop: a struck ring's flash, growing popGrow x the ring and gone (no shade left); fade: an unhit ring's fade at the
-  // cast's end; main: the hovered target's light x; pulse: its slow pulse (Hz); pillar: its thin light's height (m);
-  // gain: an ordinary ring's light by night and day; cap: the most overlapping rings sum to (premultiplied: they converge on
-  // it, never stack to white); dark: the soft shade just outside a ring (it holds by day over a pale ground);
-  // strip: a line Flare's path seam's light, seamCore/seamGlow its core's and glow's half-widths (m), seamShimmer the
-  // shimmer running out along it (Hz); rim: the marked foe's rim.
+  // The dust (r2, judge r1 fix 4, in the web's place): motes hanging frozen in the air over the field through the stop
+  // (FlareFx.Dust; FlareBits' mote), told apart by their stillness: count over a box round her along the camera (across
+  // x, near/far m), from low to high m over the ground, size m (min, max; a few glints at glint of them, glintSize x),
+  // drift m/s (near-still, alive); light: a mote's light (a pale moon silver, cold), warm: within warmReach m of her they
+  // take her ember's light (x warm, falling off); the band's front blows them out (gust m/s, up m/s, drag), lit as it
+  // passes (flash x for flashTime s) and gone over gone s. Their light follows the grade in and out.
+  "dust": {
+    "count": 440, "across": 24, "near": 14, "far": 18, "low": 0.2, "high": 2.8,
+    "size": [0.04, 0.1], "glint": 0.08, "glintSize": 1.6, "drift": 0.025,
+    "color": "#b4c0f0", "warmColor": "#ffa860", "warmReach": 5,
+    "night": { "light": 0.16, "warm": 0.7 },
+    "day":   { "light": 0.22, "warm": 0.5 },
+    "gust": 4.5, "up": 1.2, "drag": 2.5, "flash": 2.2, "flashTime": 0.1, "gone": 0.35
+  },
+  // The marks (r2, judge r1 fixes 3 and 5): a soft radial POOL of the school's light (Palette.Of) on the ground under every
+  // foe in Battle.FlareMarks, no stroke and no edge (LOOK_BIBLE row 8: light hugging the feet; FLARE_LOOK §3.5: a gaussian
+  // never makes an edge), under her in the read order (§1.6: danger, her, the Flare's front), with light up the body (lift).
+  // size: the pool's radius at a quarter of its light, x the foe's radius (a 0.45 m foe: ~2 m across, ~110 px at 1080p);
+  // falloff: its power (2 a gaussian, higher a flatter top); above: the quad's lift over HeightAt (m, depth-tested so the
+  // body hides its heart); warm: how far the pool's heart leans to her ember's warmth; ripple: seconds for the pools to
+  // appear from her outward; main: the hovered target's size AND light x, with an inner core (core: its radius x the
+  // pool's, coreGain: its light x the pool's peak) and a slow breath (pulse, Hz), so it reads without a ray.
+  // The hit (fix 3, "no gap between mark and hit"): a pool stays through the blow and TIGHTENS (tight: its size then x,
+  // tightLight: its light then x) from the release (preTight of the way by the blow, easing in over preTime s) up to the
+  // moment the band reaches its foe (FlareFx.BandReachesRt), then hands over to the band's rim in hand s; never a swell and
+  // fade before the hit. fade: an unhit pool's fade at the cast's end.
+  // gain: an ordinary pool's light by night and day; cap: the most overlapping pools sum to (premultiplied: they converge
+  // on it, never stack to white); dark: the soft shade round a pool (it holds by day over a pale ground); strip: a line
+  // Flare's path seam's light (the Long Cut draws its future crack instead: flares.the_long_cut.path), seamCore/seamGlow
+  // its core's and glow's half-widths (m), seamShimmer its shimmer (Hz); rim: the marked foe's rim and uplight (vat's lift).
   "marks": {
-    "scale": 1.15, "band": 0.07, "pool": 0.14, "warm": 0.45,
-    "ripple": 0.1, "pop": 0.15, "popGrow": 0.45, "fade": 0.2,
-    "main": 2.2, "pulse": 1.6, "pillar": 2.4,
+    "size": 2.3, "falloff": 2.4, "above": 0.25, "warm": 0.3,
+    "ripple": 0.1, "fade": 0.2,
+    "main": 2.0, "core": 0.32, "coreGain": 1.4, "pulse": 1.6,
+    "tight": 0.64, "tightLight": 1.7, "preTight": 0.3, "preTime": 0.25, "hand": 0.05,
     "seamCore": 0.09, "seamGlow": 0.45, "seamShimmer": 0.8,
-    "night": { "gain": 0.5, "cap": 0.75, "dark": 0.12, "strip": 0.16 },
-    "day":   { "gain": 0.9, "cap": 1.2, "dark": 0.3, "strip": 0.22 },
-    "rim": 0.7
+    "night": { "gain": 0.34, "cap": 0.7, "dark": 0.1, "strip": 0.16 },
+    "day":   { "gain": 0.6, "cap": 1.1, "dark": 0.25, "strip": 0.22 },
+    "rim": 0.7, "lift": 0.9
   },
   // The band (H7 beat 3; r2, judge r1 fix 2: "the band reads as nothing"): on each Flare's main blow a lit FRONT in the
   // school's glow (Palette.Of) runs from her (a line Flare: out from its line) past the frame's edges: reach m in time s of
@@ -81,16 +106,29 @@
   // second): a soft front lifting the ground's value by dust (x), lead m, running reach m in time s, and puffs of dust
   // thrown out along it.
   "ripple": { "reach": 10, "time": 0.25, "lead": 0.8, "dust": 0.35, "puffs": 28 },
+  // The foreshadow (r2, judge r1 fix 7; a line Flare whose path is "crack"): in the stop its future crack (the very strip the
+  // cleave opens, flare_crack_b, along the marks' line) lit faintly from below, blurred (blur: the mip), in the seam's own
+  // ember (heat: fl_seam_col's 0..1) at light x the ground's albedo by night and day, wandering wander along it; a spark
+  // runs out along it from her (sparkTime s a run, from sparkFrom s after the press, again after sparkGap s), its head
+  // sparkLight, its tail sparkTail m; in over in s, and gone into the cleave. (r1: the marks' seam, a hard laser hairline.)
+  "foreshadow": {
+    "blur": 3.0, "heat": 0.42, "wander": 0.5, "in": 0.08,
+    "sparkTime": 0.42, "sparkFrom": 0.04, "sparkGap": 0.12, "sparkTail": 2.2,
+    "night": { "light": 0.5, "sparkLight": 2.6 },
+    "day":   { "light": 0.7, "sparkLight": 3.2 }
+  },
   // Per Flare: stop (its own seconds), blow (its main blow: the Blow event's Part; last: only its last such), from (where
   // its band runs from: "her", or "line": out from the blow's line); peak: its peak's shape ("disk": radius m round where
   // it lands, a column m tall at its heart; "line": width m either side of its line, its whole length); ripple: the Blow
-  // part whose earlier blows are an air and dust ripple; fuse: the Long Cut's fuse along its seam (m/s).
+  // part whose earlier blows are an air and dust ripple; fuse: the Long Cut's fuse along its seam (m/s); path: how a line
+  // Flare's path shows in the stop ("strip": the marks' seam; "crack": its future crack lit faintly from below with a spark
+  // running along it, FlareFx.LongCut LcForeshadow and "foreshadow" below).
   // The Long Cut: its clip (tools/anim/clips/flare_long_cut.py, 30 fps on her clock) tops its arch at f12-13 (0.40-0.43 s)
   // and the whip starts; the release lands there, so the sweep's blow (0.1 s of Flare time later) meets the clip's contact
   // (f16.5, 0.545 s). Its fuse at 200 m/s opens the 24 m seam in 0.12 s, so the whole seam erupts on the peak (r1: 60,
   // 0.4 s, a slow fuse read as a gap between mark and hit).
   "flares": {
-    "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "line", "fuse": 200, "peak": { "shape": "line", "width": 2.5 } },
+    "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "line", "fuse": 200, "path": "crack", "peak": { "shape": "line", "width": 2.5 } },
     "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.55 } },
     "burns_twice":         { "blow": "ember", "last": true },
     "the_roads_toll":      { "blow": "cut", "last": true },

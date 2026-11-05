@@ -319,6 +319,35 @@ public partial class FlareFx
         return new Vector3(w.X, (float)HeightAt(w.X, w.Y), w.Y);
     }
 
+    /// <summary>The foreshadow (H7 r2, judge r1 fix 7; flare_family.json "foreshadow", the Flare's path "crack"): in the stop
+    /// the future crack, the very strip the cleave opens (flare_crack_b along the marks' line), lit faintly from below in the
+    /// seam's ember, a spark running out along it from her (flare_world's flare_seam_ground, before the fuse). It replaces
+    /// the marks' seam, a hard laser hairline (r1). False when there is no line to draw.</summary>
+    bool foreOn;
+    bool LcForeshadow()
+    {
+        if (Content.FlareFamily.Of(id).Path != "crack" || marksView == null || !marksView.Line(out var s) || s.Length <= 0) return false;
+        var fo = Content.FlareFamily.Foreshadow;
+        var fl = fo.Of(Night);
+        float k = Mathf.SmoothStep(0, 1, (float)Math.Min(1, t / Math.Max(fo.In, 1e-3)));
+        float cyc = (float)(fo.SparkTime + fo.SparkGap), u = (float)(t - fo.SparkFrom);
+        float head = -100, sl = 0;
+        if (u >= 0) { float ph = u % cyc; if (ph <= fo.SparkTime) { head = ph / (float)fo.SparkTime * (float)s.Length; sl = (float)fl.SparkLight; } }
+        RenderingServer.GlobalShaderParameterSet("flare_seam", new Vector4((float)s.X, (float)s.Z, (float)s.Angle, (float)s.Length));
+        RenderingServer.GlobalShaderParameterSet("flare_seam_t", new Vector4(-1, FuseSpeed, 1, Night ? 1 : 0));
+        RenderingServer.GlobalShaderParameterSet("flare_fore", new Vector4((float)fl.Light * k, head, sl * k, (float)fo.Heat));
+        RenderingServer.GlobalShaderParameterSet("flare_fore_k", new Vector4((float)fo.Blur, (float)fo.Wander, (float)fo.SparkTail, 0));
+        if (!foreOn && Args.Has("clip")) GD.Print($"flare foreshadow {id}: crack {s.Length:0.#} m at {Mathf.RadToDeg((float)s.Angle):0} deg");
+        foreOn = true;
+        return true;
+    }
+
+    void LcForeshadowOff()
+    {
+        foreOn = false;
+        RenderingServer.GlobalShaderParameterSet("flare_fore", Vector4.Zero);
+    }
+
     static float H1(float x) { float s = Mathf.Sin(x * 127.1f + 311.7f) * 43758.5453f; return s - Mathf.Floor(s); }
 
     /// <summary>The stand-in crack's offset across the line (m): a jag every 0.55 m over a slow wander.</summary>
@@ -391,10 +420,10 @@ public partial class FlareFx
         // (night: the core's emission capped, so the line wins by its shape and value and the lights carry the glow)
         RenderingServer.GlobalShaderParameterSet("flare_lc", new Vector4(1, wash, 1.6f, LcBandGain));
 
-        if (lcCleaveT >= 0 && lcLen > 0) SeamTick(dt);
+        if (lcCleaveT >= 0 && lcLen > 0) { if (foreOn) LcForeshadowOff(); SeamTick(dt); }
         else
         {
-            RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
+            if (!LcForeshadow()) RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
             if (lcHerLight != null) lcHerLight.Visible = false;
         }
         ChunksStep(dt);
@@ -837,6 +866,7 @@ public partial class FlareFx
         lcSweepT = lcCleaveT = -1;
         lcCleaveRt = -1;
         lcLen = 0;
+        LcForeshadowOff();
         RenderingServer.GlobalShaderParameterSet("flare_seam", Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("flare_sweep", Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("flare_lc", Vector4.Zero);

@@ -7,20 +7,27 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// The ultimate's marks (H7: "no indicator of what it's hitting"): a lit ring on the ground under every foe in
-/// Battle.FlareMarks, in Palette.Of(the Flare's school), as light on the ground (shaders/flare_mark.gdshader), all one
-/// MultiMesh. At the press they ripple out from her by distance; a ring stays until its foe is hit, then flashes and pops;
-/// one never hit fades when the cast ends. The Main (the hovered target) is twice the light, with an inner ring, a slow
-/// breath and a thin light up its body. A line Flare's path (FlareMarkShape Line) lies as a faint strip. Every number is
+/// The ultimate's marks (H7: "no indicator of what it's hitting"): a soft pool of light on the ground under every foe in
+/// Battle.FlareMarks, in Palette.Of(the Flare's school) (shaders/flare_mark.gdshader), all one MultiMesh, with the light up
+/// its body (the marks' rim and lift, vat.gdshaderinc). At the press they ripple out from her by distance. r2 (judge r1
+/// fixes 3 and 5): no stroke, no pop. A pool stays through the blow and tightens, brighter, from the release up to the
+/// moment the band reaches its foe (FlareFx.BandReachesRt), then hands over to the band's rim; one hit by an earlier blow
+/// (no band yet) hands over at once; one never hit fades when the cast ends. The Main (the hovered target) is twice the
+/// pool, size and light, with a hot core and a slow breath (no ray). A line Flare's path (FlareMarkShape Line) lies as a
+/// faint strip unless its data draws a crack (the Long Cut: Line(), for FlareFx.LongCut's foreshadow). Every number is
 /// data/content/flare_family.json "marks". Runs on real time.
 /// </summary>
 public partial class FlareMarksView : MultiMeshInstance3D
 {
     public Func<double, double, double> HeightAt = (_, _) => 0;
+    /// <summary>The band's hooks (FlareFx.Blow): real seconds until the band reaches a point (0 passed; huge before the
+    /// blow), the main blow's real time (-1 none yet), the stop's release (real time, -1 none yet).</summary>
+    public Func<float, float, double> BandRt = (_, _) => 1e9;
+    public Func<double> BlowRt = () => -1, ReleaseRt = () => -1;
 
     sealed class M
     {
-        public double X, Z, R, Born, Delay, End = -1, Seed;
+        public double X, Z, R, Born, Delay, End = -1, Seed, Hand = -1;
         public bool Main, Hit, Gone;
     }
 
@@ -67,10 +74,10 @@ public partial class FlareMarksView : MultiMeshInstance3D
         if (mat == null) return;
         var mr = FlareFamily.Marks;
         mat.SetShaderParameter("cap", (float)mr.Of(night).Cap);
-        mat.SetShaderParameter("band", (float)mr.Band);
-        mat.SetShaderParameter("pool", (float)mr.Pool);
+        mat.SetShaderParameter("pool_k", (float)mr.Falloff);
+        mat.SetShaderParameter("core", (float)mr.Core);
+        mat.SetShaderParameter("core_gain", (float)mr.CoreGain);
         mat.SetShaderParameter("warm", (float)mr.Warm);
-        mat.SetShaderParameter("pop_grow", (float)mr.PopGrow);
         mat.SetShaderParameter("seam_core", (float)(mr.SeamCore / SeamHalf));
         mat.SetShaderParameter("seam_glow", (float)(mr.SeamGlow / SeamHalf));
     }
@@ -78,8 +85,21 @@ public partial class FlareMarksView : MultiMeshInstance3D
     /// <summary>The path seam's strip half-width (m): its glow's falloff fits inside.</summary>
     static double SeamHalf => Math.Max(0.3, FlareFamily.Marks.SeamGlow * 3);
 
-    public void Press(Battle b, School school, bool isNight, Vector3 at, double rt, Action<int> onCue)
+    /// <summary>Whether this cast draws its line's strip (false: the Flare draws its own crack, FlareFamily Own.Path).</summary>
+    bool strip = true;
+
+    /// <summary>The line Flare's path as the marks have it (the Long Cut's foreshadow): false none.</summary>
+    public bool Line(out FlareMarkShape s)
     {
+        s = default!;
+        if (lastLines.Count == 0) return false;
+        s = lastLines[0];
+        return true;
+    }
+
+    public void Press(Battle b, School school, bool isNight, Vector3 at, double rt, Action<int> onCue, bool drawStrip = true)
+    {
+        strip = drawStrip;
         marks.Clear();
         shown.Clear();
         lines.Clear();
@@ -95,6 +115,7 @@ public partial class FlareMarksView : MultiMeshInstance3D
         pressRt = lineBorn = lastRt = rt;
         live = true;
         logged = false;
+        pxStandSum = 0; pxStandN = 0; pxTight = -1; tightSeen = 1; tightLogged = false;
         Take(b, rt, true);
     }
 
@@ -138,14 +159,35 @@ public partial class FlareMarksView : MultiMeshInstance3D
 
     double Dist(double x, double z) => Math.Sqrt((x - her.X) * (x - her.X) + (z - her.Z) * (z - her.Z));
 
-    /// <summary>The marks' rim on a foe while it is marked (CrowdView, through FlareFx.MarkRim): 0 none.</summary>
+    /// <summary>The marks' rim (and its uplight) on a foe while it stands in its pool (CrowdView, through FlareFx.MarkRim):
+    /// 0 none. It brightens with the pool's tightening and goes with the hand-over (the band's rim then).</summary>
     public float RimOf(int enemy)
     {
         if (!marks.TryGetValue(enemy, out var o)) return 0;
         var mr = FlareFamily.Marks;
-        float r = (float)mr.Rim;
-        if (o.Gone) return o.Hit ? r * 1.5f * Mathf.Max(0, 1 - (float)((lastRt - o.End) / Math.Max(mr.Pop, 1e-3))) : 0;
-        return r * Mathf.Clamp((float)((lastRt - o.Born - o.Delay) / 0.05), 0, 1) * (o.Main ? 1.4f : 1);
+        if (o.Hand >= 0 || (o.Gone && !o.Hit)) return 0;
+        var (_, lk) = Tighten(o, lastRt);
+        return (float)mr.Rim * Mathf.Clamp((float)((lastRt - o.Born - o.Delay) / 0.05), 0, 1) * (o.Main ? 1.4f : 1) * Mathf.Min(lk, 1.5f);
+    }
+
+    /// <summary>A pool's tightening now: its size x and its light x (1, 1 standing; Tight, TightLight as the band reaches it).
+    /// From the release it eases a PreTight share of the way; from the main blow the rest, all of it as the band reaches
+    /// its foe.</summary>
+    (float Size, float Light) Tighten(M o, double rt)
+    {
+        var mr = FlareFamily.Marks;
+        double k = 0, rel = ReleaseRt(), blow = BlowRt();
+        if (rel >= 0) k = mr.PreTight * (1 - Math.Exp(-Math.Max(0, rt - rel) / Math.Max(mr.PreTime, 1e-3)));
+        if (blow >= 0)
+        {
+            double left = BandRt((float)o.X, (float)o.Z);
+            double run = Math.Max(1e-3, rt - blow + left);
+            double kb = Math.Clamp((rt - blow) / run, 0, 1);
+            k += (1 - k) * kb;
+            if (left <= 0) k = 1;
+        }
+        float kk = Mathf.SmoothStep(0, 1, (float)k);
+        return (Mathf.Lerp(1, (float)mr.Tight, kk), Mathf.Lerp(1, (float)mr.TightLight, kk));
     }
 
     public void Step(double dt, double rt, Battle? b, string? flare)
@@ -161,50 +203,48 @@ public partial class FlareMarksView : MultiMeshInstance3D
         if (need > cap) Multimesh.InstanceCount = Math.Max(need, cap * 2);
         int drawnLive = 0;
         float pulse = (float)((rt - pressRt) * mr.Pulse % 1);
+        double blowRt = BlowRt();
         foreach (var (id, o) in marks)
         {
             double age = rt - o.Born - o.Delay;
             if (age < 0) continue;
             shown.TryAdd(id, rt);
             float alpha = Mathf.SmoothStep(0, 1, (float)Math.Min(1, age / 0.05));
-            float pop = 0, flash = 1;
-            if (o.Gone)
+            // The hand-over: as the band reaches its foe (after the main blow), or at once for one hit by an earlier blow
+            // (no band yet); a foe the sim still lists is handed over too once the band has passed it.
+            if (o.Hand < 0 && blowRt >= 0 && BandRt((float)o.X, (float)o.Z) <= 0 && (!o.Gone || o.Hit)) o.Hand = rt;
+            // (two frames' grace: the main blow's own hits arrive with its event, which may land a frame after the sim's)
+            if (o.Hand < 0 && o.Gone && o.Hit && blowRt < 0 && rt - o.End > 0.034) o.Hand = rt;
+            var (size, lit) = Tighten(o, rt);
+            if (o.Hand >= 0)
             {
-                double k = rt - o.End;
-                float p = (float)(k / Math.Max(o.Hit ? mr.Pop : mr.Fade, 1e-3));
+                float p = (float)((rt - o.Hand) / Math.Max(mr.Hand, 1e-3));
                 if (p >= 1) { drop.Add(id); continue; }
-                if (o.Hit)
-                {
-                    // A short bright flash that grows out and is gone: quick out, its light falling with it.
-                    pop = 1 - (1 - p) * (1 - p);
-                    flash = 1 + 1.6f * (1 - p);
-                    alpha *= (1 - p) * (1 - p);
-                }
-                else alpha *= 1 - Mathf.SmoothStep(0, 1, p);
+                alpha *= 1 - p;
+            }
+            else if (o.Gone && !o.Hit)
+            {
+                float p = (float)((rt - o.End) / Math.Max(mr.Fade, 1e-3));
+                if (p >= 1) { drop.Add(id); continue; }
+                alpha *= 1 - Mathf.SmoothStep(0, 1, p);
             }
             else drawnLive++;
-            // (a fresh ring comes in a touch bright, then settles)
-            flash *= 1 + 0.4f * Mathf.Max(0, 1 - (float)age / 0.12f);
-            float gain = (float)ml.Gain * flash * (o.Main ? (float)mr.Main : 1) * alpha;
-            // (the quad's half is the popped ring's outer edge: the standing ring sits at 1 / (1.25 + popGrow) of it)
-            float half = (float)(mr.Scale * Math.Max(o.R, 0.3) * (1.25 + mr.PopGrow));
-            var at = new Vector3((float)o.X, (float)HeightAt(o.X, o.Z) + 0.06f, (float)o.Z);
+            // (a fresh pool comes in a touch bright, then settles)
+            float flash = 1 + 0.25f * Mathf.Max(0, 1 - (float)age / 0.12f);
+            float gain = (float)ml.Gain * flash * lit * (o.Main ? (float)mr.Main : 1) * alpha;
+            // (the quad's half is 2.2 sigma of the pool's falloff, ~1.87x its radius at a quarter light)
+            float half = (float)(mr.Size * Math.Max(o.R, 0.3) * 1.87 * size * (o.Main ? mr.Main : 1));
+            var at = new Vector3((float)o.X, (float)(HeightAt(o.X, o.Z) + mr.Above), (float)o.Z);
             Put(n++, new Transform3D(new Godot.Basis(new Vector3(2 * half, 0, 0), new Vector3(0, 0, 2 * half), new Vector3(0, 1, 0)), at),
-                new Color(glow.R * gain, glow.G * gain, glow.B * gain, (float)ml.Dark * alpha), new Color(o.Main ? 1 : 0, pop, pulse, (float)o.Seed));
-            if (o.Main && !o.Gone)
-            {
-                // The Main's thin light up its body.
-                float h = (float)(mr.Pillar * Math.Clamp(o.R / 0.45, 0.8, 3));
-                float pg = gain * 0.5f;
-                Put(n++, new Transform3D(new Godot.Basis(new Vector3(0.35f * h / 2.4f, 0, 0), new Vector3(0, h, 0), new Vector3(0, 0, 1)), at),
-                    new Color(glow.R * pg, glow.G * pg, glow.B * pg, 0), new Color(3, 0, pulse, 0));
-            }
+                new Color(glow.R * gain, glow.G * gain, glow.B * gain, (float)ml.Dark * alpha), new Color(o.Main ? 1 : 0, 0, pulse, (float)o.Seed));
+            if (!o.Main && o.Hand < 0) PxNote(o, half, size, blowRt >= 0);
         }
         foreach (var id in drop) marks.Remove(id);
         // The path of a line Flare: faint, in with the ripple, out over the fade.
-        float la = lineEnd < 0 ? Mathf.SmoothStep(0, 1, (float)Math.Min(1, (rt - lineBorn) / Math.Max(mr.Ripple, 0.05)))
+        float la = !strip ? 0 : lineEnd < 0 ? Mathf.SmoothStep(0, 1, (float)Math.Min(1, (rt - lineBorn) / Math.Max(mr.Ripple, 0.05)))
             : 1 - (float)((rt - lineEnd) / Math.Max(mr.Fade, 1e-3));
-        if (la <= 0) { lineEnd = -1; lastLines.Clear(); }
+        if (!strip) { if (lineEnd >= 0 && rt - lineEnd > mr.Fade) { lineEnd = -1; lastLines.Clear(); } }
+        else if (la <= 0) { lineEnd = -1; lastLines.Clear(); }
         else foreach (var s in lastLines)
         {
             var along = new Vector3((float)Math.Cos(s.Angle), 0, (float)Math.Sin(s.Angle));
@@ -224,8 +264,26 @@ public partial class FlareMarksView : MultiMeshInstance3D
             logged = true;
             int mains = 0;
             foreach (var k in b.FlareMarks) if (k.Main) mains++;
-            GD.Print($"flare marks {flare}: drawn {drawnLive} of FlareMarks.Count {b.FlareMarks.Count} (main {mains}), lines {lastLines.Count}, decision {b.FlareDecisionMarks}, late {b.FlareLateMarks}");
+            GD.Print($"flare marks {flare}: drawn {drawnLive} of FlareMarks.Count {b.FlareMarks.Count} (main {mains}), lines {lastLines.Count}, decision {b.FlareDecisionMarks}, late {b.FlareLateMarks}; pools {(pxStandN > 0 ? pxStandSum / pxStandN : 0):0} px across standing");
         }
+        if (!tightLogged && BlowRt() >= 0 && drawnLive == 0 && Args.Has("clip"))
+        {
+            tightLogged = true;
+            GD.Print($"flare marks {flare}: tightest {tightSeen:0.00}x ({pxTight:0} px across) before the hand-over, {(rt - BlowRt()):0.000} s real after the blow");
+        }
+    }
+
+    // (for the pictures' log: an ordinary pool's quarter-light width at 1080p, standing in the stop and at its tightest)
+    double pxStandSum, pxTight = -1; int pxStandN; float tightSeen = 1; bool tightLogged;
+    void PxNote(M o, float half, float size, bool afterBlow)
+    {
+        if (!Args.Has("clip") || GetViewport()?.GetCamera3D() is not { } cam) return;
+        float rq = half / 1.87f;
+        var at = new Vector3((float)o.X, (float)HeightAt(o.X, o.Z), (float)o.Z);
+        var right = cam.GlobalBasis.X.Normalized();
+        float px = cam.UnprojectPosition(at + right * rq).DistanceTo(cam.UnprojectPosition(at - right * rq)) * 1080f / Mathf.Max(1, GetViewport().GetVisibleRect().Size.Y);
+        if (!afterBlow) { pxStandSum += px; pxStandN++; }
+        else if (size < tightSeen) { tightSeen = size; pxTight = px; }
     }
 
     void Put(int i, Transform3D t, Color c, Color custom)

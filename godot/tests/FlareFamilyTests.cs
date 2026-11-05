@@ -29,9 +29,12 @@ public class FlareFamilyTests
     public void TheGradeIsIndigoAndDarkerByNight()
     {
         var g = FlareFamily.Grades;
-        Assert.InRange(g.Night.Value, 0.5, 0.6);
-        Assert.InRange(g.Day.Value, 0.7, 0.8);
-        Assert.InRange(g.Night.Lights, 0.2, 0.3);
+        // (r2, judge r1 fix 6: ~30% deeper than r1's 0.56 / 0.76; the fight's own light falls with it, under the world's)
+        Assert.InRange(g.Night.Value, 0.35, 0.45);
+        Assert.InRange(g.Day.Value, 0.5, 0.6);
+        Assert.InRange(g.Night.Lights, 0.12, 0.25);
+        Assert.InRange(g.Night.Fx, 0.2, 0.5);
+        Assert.True(g.Pool >= 1.3);
         Assert.StartsWith("#", g.Night.Tint);
         Assert.True(FlareFamily.Marks.Main >= 1.8);
     }

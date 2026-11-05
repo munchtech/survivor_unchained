@@ -47,7 +47,6 @@ public partial class FlareFx : Node3D
 
     readonly FlareBits glow = new(3400, false), bed = new(1400, true), scars = new(700, true);
     readonly FlareShards shards = new(2600);
-    static readonly bool NoWeb = OS.GetEnvironment("FLARE_NOWEB") == "1";
     readonly Random rng = new(71);
     float R() => (float)rng.NextDouble();
 
@@ -297,8 +296,8 @@ public partial class FlareFx : Node3D
             if (!IsLongCut) spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
             if (sl > 0.6f) spendLightT = -1;
             RenderingServer.GlobalShaderParameterSet("flare_look", look);
-            // (FLARE_NOWEB=1, a look-dev switch: the web off, to find what else draws lines on the ground.)
-            RenderingServer.GlobalShaderParameterSet("flare_web", NoWeb ? new Vector4(0, web.Y, web.Z, web.W) : web);
+            // (flare_web: the Draw's web is gone (H7 r2); it carries Burns Twice's char heat and the frost's seed)
+            RenderingServer.GlobalShaderParameterSet("flare_web", web);
             RenderingServer.GlobalShaderParameterSet("flare_frost", frost);
             UploadMarks();
             // (Judge 6 A2's check, for the pictures' log: bodies the ring passed 4+ frames ago, as CrowdView drew them last frame.)

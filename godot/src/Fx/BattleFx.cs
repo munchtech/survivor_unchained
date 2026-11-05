@@ -168,6 +168,7 @@ public partial class BattleFx : Node3D
         Flare.Hush = k => { Hits.Hush = k; Sparks.Transparency = 1 - k; };
         Flare.HushDone = () => { Hits.Retire(); Sparks.Clear(); Sparks.Transparency = 0; };
         Flare.DecalGrade = c => Gore.FlareGrade = c;
+        Flare.FxDim = FlareDimSet;
         Flare.Number = (tg, at, am, mh, cr) => Hits.Tally(tg, at, am, mh, cr);
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
@@ -656,6 +657,7 @@ public partial class BattleFx : Node3D
             if (had != null) return had;
             var mi = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1, Mesh = unitPlane ??= new PlaneMesh { Size = Vector2.One } };
             mi.MaterialOverride = new ShaderMaterial { Shader = overShader, RenderPriority = priority };
+            mi.AddToGroup(DangerGroup);
             AddChild(mi);
             return mi;
         }
@@ -2139,7 +2141,7 @@ public partial class BattleFx : Node3D
             m.Decal.Size = new Vector3((float)z.Radius * 2, 4, (float)z.Radius * 2);
             float fade = (float)Math.Min(1, Math.Min(z.Age / 0.2, (z.Life - z.Age) / 0.4));
             // Faded in its colour (a decal's emission ignores alpha).
-            m.Decal.Modulate = Dim(col, Mathf.Max(0, fade) * (0.85f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)));
+            m.Decal.Modulate = Dim(col, Mathf.Max(0, fade) * (0.85f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)) * (mine ? FlareDim : 1));
             if (R() < 0.3f)
             {
                 float a = R() * Mathf.Tau, d = (float)z.Radius * Mathf.Sqrt(R());

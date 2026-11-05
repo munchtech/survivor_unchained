@@ -75,6 +75,18 @@ flare_mark_rim={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_mark_lift={
+"type": "float",
+"value": 0.0
+}
+flare_fore={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_fore_k={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flare_look={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
