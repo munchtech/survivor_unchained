@@ -311,10 +311,38 @@ def hinge_fill(c, s, joint, dom):
 #   thigh's coronal plane and 0..front_rows in front of it (the crease's band reaches up the belly: ASYM's rule), the
 #   thigh's rings within limb_m of its root (0.09: hip 90 7 points but the thigh's girth 1.34; 0.07: 1.077); trunk_rows
 #   10 (4: girth 1.081 on her right, 2: 1.12, 16: 1.080)
-GIRDLE = {"shoulder": {"limb_m": 0.05, "trunk_m": 0.15}, "hip": {"limb_m": 0.07, "trunk_rows": 10, "front_rows": 24}}
+# hip pin (P1 hip, 5 Nov; the D verdict's fix 3 "pin the midline and perineum seeds to the pelvis"): own-side points
+#   under the joint within pin_m of the crotch strip are trunk seeds (the crotch strip itself already was, the midline
+#   too), and the fill's band reaches reach_m further (pin_m + reach_m from the strip) so the inner thigh's blend is not
+#   squeezed into the 2 cm the medial rings leave (the root curve's rings crowd at the crotch: th1-th13 span 5 cm there
+#   against 9.5 cm at the side). Measured raw LBS, hip 90 (her left): no pin 413 inside / 96 mm (51 at the perineum,
+#   the cleft's bottom and the inner thigh's first rings swung forward into it); pin 2/3/4 cm, no reach: 263/142/90,
+#   inner pits 13-21 mm; pin 4 + reach 6 cm: 30 at 17 mm; pin 4 + reach 10 cm: 0 inside, pits F7.3 S1.9 B6.9 M7.5.
+#   Cost: the thigh's girth at d0.25 1.061 -> 1.096 at 90 on the baseline's selection (check.py's own selection, the
+#   thigh chain >= 0.5, moves with the weights: it reads 1.24 there, see the P1 hip report)
+GIRDLE = {"shoulder": {"limb_m": 0.05, "trunk_m": 0.15},
+          "hip": {"limb_m": 0.07, "trunk_rows": 10, "front_rows": 24, "pin_m": 0.04, "reach_m": 0.10}}
 # 4b's narrow crease band (weights.py RULES "bands") is NOT run here: on our loops under linear blend skinning it puts
 # the crease back inside (elbow 90: 0 -> 133 points, 10 mm; knee 90: 0 -> 185, 21 mm); it is the corrective stage's
 BANDS = False
+
+def perineum_pin(c, s, own):
+    """The hip pin (GIRDLE above): (pin, reach) masks, own side, under the joint; pin = within pin_m of the crotch
+    strip (trunk seeds of the hip's fill), reach = within pin_m + reach_m (added to the fill's free band)."""
+    Gh = GIRDLE["hip"]
+    pin = np.zeros(c.n, bool)
+    if not Gh.get("pin_m"):
+        return pin, pin
+    from scipy.spatial import cKDTree
+    cr = c.part == c.pid("crotch")[0]
+    d, _ = cKDTree(c.P[cr]).query(c.P)
+    O = c.head(f"thigh_{s}")
+    low = c.P[:, 1] < O[1] - Gh.get("pin_below_m", 0.0)
+    pin = own & (d < Gh["pin_m"]) & low
+    reach = own & (d < Gh["pin_m"] + Gh.get("reach_m", 0.0)) & low
+    c.rep[f"hip_pin_{s}"] = int(pin.sum())
+    return pin, reach
+
 
 def girdle_fill(c, s, joint, own, limb, free):
     """The limb's share g of a girdle: 1 on the limb's points (`limb`) outside `free`, 0 on every other point
@@ -388,7 +416,10 @@ def limbs(c, W):
         front = (P - c.head(f"thigh_{s}")) @ (-c.world(f"thigh_{s}")[:3, 2]) > 0      # the crease side (thigh -Z)
         free = own & (c.part == tr) & (c.ring <= np.where(front, Gh["front_rows"], Gh["trunk_rows"]))
         free[np.where(m)[0]] = (c.part[m] == th) & (st - s0 < GIRDLE["hip"]["limb_m"])
-        g = girdle_fill(c, s, "hip", own, m, free)
+        pin, reach = perineum_pin(c, s, own)
+        free |= own & np.isin(c.part, [th, tr]) & reach
+        free &= ~pin
+        g = girdle_fill(c, s, "hip", own, m & ~pin, free)
         Af = np.zeros((c.n, len(c.names)))
         Af[:, c.idx[f"thigh_{s}"]] = 1.0
         Af[m] = Lg
