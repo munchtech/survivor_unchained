@@ -175,7 +175,12 @@
     "shoulder_gap": 0.045,
     "arm_root_n": 40,
     "upper_arm_band": false,
-    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces"
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces",
+    "neck_meet_rows": 8,
+    "neck_ring_smooth": 4,
+    "neck_step_ease": 3,
+    "neck_untwist_rows": 2,
+    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)"
    },
    "play": {
     "spacing": 0.017,
@@ -218,7 +223,12 @@
     "shoulder_gap": 0.045,
     "arm_root_n": 22,
     "upper_arm_band": false,
-    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces"
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces",
+    "neck_meet_rows": 5,
+    "neck_ring_smooth": 4,
+    "neck_step_ease": 3,
+    "neck_untwist_rows": 2,
+    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)"
    }
   },
   "rest_tris": 11300,

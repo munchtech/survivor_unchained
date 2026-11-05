@@ -1210,6 +1210,123 @@ def neck_snap(ref, M, VF, tk, mp, C, n_ease):
     return VF
 
 
+def resample_poly(X, f):
+    """A polyline at arc-length fractions f."""
+    s = arc_fracs(X)
+    return np.stack([np.interp(f, s, X[:, k]) for k in range(3)], 1)
+
+
+def neck_meet(ref, M, VF, QF, tk, mp, C, K, n_smooth, ease_pow, untwist_rows=2):
+    """(a, pass 3b) The neck meets her head's ring one to one. The reference's front neck turns forward under the
+    jaw, where the canvas rays cannot reach it (the rows bunched 15-28 mm below the ring), and the head's ring has
+    3-6 mm steps (its own rows ending, some stepping back along the ring). So the top K rows are re-placed, per
+    side, between the base row (row i_n - K - 1, as built) and the side's own ring points (left R[j], right
+    R[94 - j]): along each column a surface curve (the chord, projected on the reference), the rows at even arc
+    length on it; the rail's top is the ring smoothed (its steps eased out) and sampled at the ring's own arc
+    fractions, so every row runs forward under the ring's back-steps; the steps' rise eases in over the top rows
+    (weight s^ease_pow). The midline columns (shared) carry the head's own 2-3 mm midline offset, easing it to
+    zero at the base row: the field is continuous through the midline and nothing crosses it."""
+    R = ref.ring
+    rows = tk["rows"]
+    i_n = C["i_n"]
+    S = ref._sf[(TRUNK,)][0]
+
+    def row_ids(i):
+        ids = rows[i]["ids"]
+        return np.concatenate([ids["F"], ids["T"][1:], ids["B"][1:]])
+
+    base = row_ids(i_n - K - 1)
+    assert len(base) == 48, ("the neck meet reaches the collar kites", K)
+    band = [row_ids(i_n - m) for m in range(1, K + 1)]
+    assert all(len(b) == 48 for b in band)
+    s_rows = np.array([1 - m / (K + 1) for m in range(1, K + 1)])
+    mirror = np.array([-1.0, 1, 1])
+    out = {}
+    for side in (1, -1):
+        Rs = R[np.arange(48)] if side == 1 else R[(94 - np.arange(48)) % 94] * mirror
+        B = VF[base] if side == 1 else VF[mp[base]] * mirror
+        Z = Rs.copy()                                  # the ring smoothed: umbrella steps, the midline ends fixed
+        for _ in range(n_smooth):
+            Z[1:-1] += 0.5 * (0.5 * (Z[:-2] + Z[2:]) - Z[1:-1])
+        Z = S.closest(Z, k=16)[0]
+        Z[0], Z[-1] = Rs[0], Rs[-1]
+        dense = resample_poly(Z, np.linspace(0, 1, 481))
+        top = resample_poly(dense, arc_fracs(Rs))      # the smooth rail, at the ring's own arc fractions
+        tg = U(np.gradient(top, axis=0))
+        dev = Rs - top
+        dev -= (dev * tg).sum(1, keepdims=True) * tg       # the steps' rise only: never along the row
+        cols = np.zeros((48, K, 3))
+        for j in range(48):
+            ch = B[j] + np.linspace(0, 1, 25)[:, None] * (top[j] - B[j])
+            ch = S.closest(ch, k=16)[0]
+            ch[0], ch[-1] = B[j], top[j]
+            ch = S.closest(resample_poly(ch, np.linspace(0, 1, 25)), k=16)[0]
+            ch[0], ch[-1] = B[j], top[j]
+            cols[j] = resample_poly(ch, s_rows) + (s_rows ** ease_pow)[:, None] * dev[j]
+        for m in range(K):
+            P = S.closest(cols[:, m], k=16)[0]
+            if side == -1:
+                P = P * mirror
+            out[(side, m)] = P
+    for m in range(K):
+        ids = band[m]
+        for j in range(48):
+            if j in (0, 47):
+                VF[ids[j]] = out[(1, m)][j]            # the shared midline: the left's (the same column)
+            else:
+                VF[ids[j]] = out[(1, m)][j]
+                VF[mp[ids[j]]] = out[(-1, m)][j]
+    for j in range(1, 47):
+        VF[mp[row_ids(i_n)[j]]] = R[(94 - j) % 94]
+    mv = [v for m in range(untwist_rows) for v in list(band[m]) + [mp[x] for x in band[m][1:-1]]]
+    VF = untwist(S, VF, QF, mv, 0.0008, 3)
+    C["neck_meet"] = {"rows": int(K), "smooth": int(n_smooth), "ease_pow": float(ease_pow),
+                      "midline_offset_mm": [round(float(R[0][0]) * 1000, 2), round(float(R[47][0]) * 1000, 2)]}
+    return VF
+
+
+def untwist(S, VF, QF, ids, step, iters, e_min=0.0025):
+    """(a, pass 3b) A deterministic local search: each vertex in `ids` (in order) tries the 5 x 5 grid of tangent
+    offsets (+-2 step) on the surface S and keeps the one that lowers the largest fold across its quads' edges
+    (edges under e_min and quad aspect over 3.5 penalised). The neck's top rows under the head ring's steps."""
+    vq = {}
+    for q, quad in enumerate(QF):
+        for v in quad:
+            vq.setdefault(int(v), []).append(q)
+    E, qa, qb = G.edge_pairs(QF)
+    eq = {}
+    for k in range(len(E)):
+        eq.setdefault(int(qa[k]), []).append(k)
+        eq.setdefault(int(qb[k]), []).append(k)
+    grid = np.array([(a, b) for a in range(-2, 3) for b in range(-2, 3)], float) * step
+    for _ in range(iters):
+        for v in ids:
+            v = int(v)
+            qs = vq[v]
+            ks = np.array(sorted({k for q in qs for k in eq[q]}))
+            p0 = VF[v].copy()
+            nrm = U(G.quad_normals(VF, QF[qs]).sum(0))
+            t1 = U(np.cross(nrm, [1.0, 0, 0]) if abs(nrm[0]) < 0.9 else np.cross(nrm, [0, 1.0, 0]))
+            t2 = np.cross(nrm, t1)
+            cand = S.closest(p0 + grid[:, :1] * t1 + grid[:, 1:] * t2, k=16)[0]
+            cand = np.concatenate([p0[None], cand])
+            allq = np.array(sorted(set(qa[ks]) | set(qb[ks])))
+            P = np.broadcast_to(VF[QF[allq]], (len(cand), len(allq), 4, 3)).copy()
+            hit = QF[allq] == v
+            P[:, hit] = cand[:, None, :]
+            n = U(np.cross(P[:, :, 2] - P[:, :, 0], P[:, :, 3] - P[:, :, 1]))
+            loc = {q: i for i, q in enumerate(allq)}
+            ia = np.array([loc[q] for q in qa[ks]])
+            ib = np.array([loc[q] for q in qb[ks]])
+            dih = np.degrees(np.arccos(np.clip((n[:, ia] * n[:, ib]).sum(-1), -1, 1))).max(1)
+            own = np.array([loc[q] for q in qs])
+            L4 = np.linalg.norm(P[:, own] - np.roll(P[:, own], -1, axis=2), axis=-1)
+            pen = (200.0 * np.maximum(0.0, e_min - L4.min(-1)) / e_min
+                   + 10.0 * np.maximum(0.0, L4.max(-1) / L4.min(-1) - 3.5)).sum(1)
+            sc = dih + pen
+            VF[v] = cand[int(np.argmin(sc - 1e-9 * (np.arange(len(sc)) == 0)))]
+    return VF
+
 def part_reg_fn(names, regs):
     def f(kind, u, u_j):
         if kind in ("fan", "crease", "bend") or (kind == "ring" and False):
@@ -1274,7 +1391,11 @@ def build(plan, tier, ref, cv, L):
     QF, nonman = orient(QF)
     C["non_manifold_edges"] = int(nonman)
     VF = relax(ref, M, VF, QF, src, n_left, tp["relax_iters"], tp["relax_lambda"])
-    VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
+    if tp.get("neck_meet_rows"):
+        VF = neck_meet(ref, M, VF, QF, tk, mp, C, tp["neck_meet_rows"], tp["neck_ring_smooth"], tp["neck_step_ease"],
+                       tp.get("neck_untwist_rows", 0))
+    else:
+        VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
     C["_hip_ring"] = VF[cr["root"]].copy()
     fnq = np.cross(VF[QF[:, 2]] - VF[QF[:, 0]], VF[QF[:, 3]] - VF[QF[:, 1]])
     ctr = VF[QF].mean(1)
