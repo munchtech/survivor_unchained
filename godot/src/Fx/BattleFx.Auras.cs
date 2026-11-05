@@ -79,10 +79,12 @@ public partial class BattleFx
         // Its script's moment (Corvane's tell: up to 3x as the lamp is raised, LightLift), and its waver (a flicker of two
         // slow beats and a quick one, never below 70% of itself).
         float fl = def.Flicker > 0 ? (float)(1 - def.Flicker * (0.5 + 0.25 * Math.Sin(time * 7.3 + e.Seed) + 0.15 * Math.Sin(time * 13.1 + e.Seed * 2) + 0.1 * Math.Sin(time * 31))) : 1f;
-        float mul = (float)e.LightMul * fl;
+        // (P9 C13: a film's look on it: its light scaled, out when the film hides the body)
+        var film = SurvivorUnchained.Cinema.FilmFoes.Of(e);
+        float mul = (float)e.LightMul * fl * (film == null ? 1f : film.Hidden ? 0f : (float)film.Light);
         if (!onGlass && !lying && e.LightLift > 0) a.Light.Position += new Vector3(0, (float)e.LightLift, 0);
         a.Light.LightEnergy = a.Energy * a.K * mul;
-        a.Light.Visible = a.K > 0.001f;
+        a.Light.Visible = a.K > 0.001f && mul > 0;
         if (a.Pool != null)
         {
             // (low over the ground where the lamp hangs, its reach its own: the pool the high light alone did not make)
@@ -101,7 +103,7 @@ public partial class BattleFx
             a.Halo.Position = on + toCam;
             a.Halo.Scale = new Vector3(hs, hs, hs);
             if (a.Halo.MaterialOverride is StandardMaterial3D hm) hm.AlbedoColor = new Color(def.Color) with { A = Mathf.Clamp(0.55f * a.K * Mathf.Min(1.6f, mul), 0, 1) };
-            a.Halo.Visible = a.K > 0.001f && def.Halo > 0 && (!lying || onGlass);
+            a.Halo.Visible = a.K > 0.001f && mul > 0 && def.Halo > 0 && (!lying || onGlass);
             if (a.Core != null)
             {
                 // (whiter by Core, brighter as the light is: the raised lamp's glass is the brightest thing on him)

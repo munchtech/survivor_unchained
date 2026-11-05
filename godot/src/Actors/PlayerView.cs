@@ -123,6 +123,12 @@ public partial class PlayerView : Node3D
     /// <summary>The pool light's share (1: as built): ducked with the folk light inside a town lamp's reach by night (the
     /// lantern's wall and ground blown under both, judge j2 D4).</summary>
     public float PoolScale = 1;
+    /// <summary>(P9 C13) A film's say over her carried light (the "ember" cue: 0 out, 1 as play has it), on her lamp, the folk
+    /// light and the crowd's ember alike; given back at the film's end over FilmLightBack's seconds.</summary>
+    public float FilmLight = 1;
+    float filmBackRate;
+    /// <summary>Her light back to play's over <paramref name="seconds"/> (at once at 0).</summary>
+    public void FilmLightBack(float seconds) { if (seconds <= 0) { FilmLight = 1; filmBackRate = 0; } else filmBackRate = Mathf.Max(0.001f, 1 - FilmLight) / seconds; }
     /// <summary>The Flare's recovery (H7, FlareFx.Blow): her ember's pool x this after the main blow.</summary>
     public float FlarePool = 1;
     /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
@@ -1106,7 +1112,8 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
+        if (filmBackRate > 0) { FilmLight = Mathf.MoveToward(FilmLight, 1, filmBackRate * (float)dt); if (FilmLight >= 1) filmBackRate = 0; }
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale * FilmLight;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
         Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)

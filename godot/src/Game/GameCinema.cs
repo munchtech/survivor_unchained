@@ -427,6 +427,43 @@ public partial class Game
         }
 
         sealed record Tween(double T0, double T1, Action<double> Apply);
+        /// <summary>(P9 C13, "ember") Her carried light was set by the film: given back over emberBack s at its end.</summary>
+        bool emberSet;
+        float emberBack = 0.6f;
+        /// <summary>(P9 C13, "eyelights") The eye pairs riding the cast's heads, by actor.</summary>
+        readonly Dictionary<string, EyePair> eyes = new();
+        sealed class EyePair(PersonView v, MeshInstance3D l, MeshInstance3D r, float apart, float fwd, float up)
+        {
+            public readonly MeshInstance3D L = l, R = r;
+            int head = -2;
+            /// <summary>Each frame: on the head bone (its forward and up the bone's axes nearest the body's), or hidden.</summary>
+            public void Place()
+            {
+                if (!IsInstanceValid(v) || !IsInstanceValid(L)) return;
+                var sk = v.Person.Skeleton;
+                if (head == -2) head = sk.FindBone("Head");
+                bool on = head >= 0 && v.IsVisibleInTree();
+                L.Visible = R.Visible = on;
+                if (!on) return;
+                var hx = sk.GlobalTransform * sk.GetBoneGlobalPose(head);
+                Vector3 bodyFwd = v.GlobalBasis.Z.Normalized(), F = Nearest(hx.Basis, bodyFwd), U = Nearest(hx.Basis, Vector3.Up);
+                var side = U.Cross(F).Normalized();
+                var at = hx.Origin + F * fwd + U * up;
+                L.GlobalPosition = at + side * apart / 2;
+                R.GlobalPosition = at - side * apart / 2;
+            }
+            static Vector3 Nearest(Godot.Basis b, Vector3 to)
+            {
+                Vector3 best = to; float d = 0;
+                foreach (var ax in new[] { b.X, b.Y, b.Z })
+                {
+                    var n = ax.Normalized(); float k = n.Dot(to);
+                    if (Mathf.Abs(k) > d) { d = Mathf.Abs(k); best = k < 0 ? -n : n; }
+                }
+                return best;
+            }
+            public void Free() { if (IsInstanceValid(L)) L.QueueFree(); if (IsInstanceValid(R)) R.QueueFree(); }
+        }
         /// <summary>Free: through the air or the water (an exact place), not along the ground.</summary>
         sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading, bool Free = false, string Ease = "inout", double Stop = 0);
 
@@ -731,6 +768,7 @@ public partial class Game
                 foreach (var (hq, hat, hr) in globeHalos)
                     if (GodotObject.IsInstanceValid(hq)) hq.GlobalPosition = hat + (hcam.GlobalPosition - hat).Normalized() * hr;
             PlaceRigs();
+            foreach (var ep in eyes.Values) ep.Place();
             HerLight();
             if ((skinSky != 1 || skinEar != 1) && people.TryGetValue("her", out var hsk))
             { SurvivorUnchained.View.People.HerSkyShare(hsk.Person, skinSky); SurvivorUnchained.View.People.HerEarWarmth(hsk.Person, skinEar); }
@@ -1247,6 +1285,66 @@ public partial class Game
                     if (c.Has("size")) { g.scene!.View.SetSize(i, (float)c.Num("size")); sized.Add(i); }
                     break;
                 }
+                case "ember":
+                {
+                    // (P9 C13) Her own carried light (her play body's lamp, its folk light and the crowd's ember) for the film:
+                    // {"do":"ember","k":0,"over":0.4,"back":0.8}: "k" 0 out, 1 as play has it; given back over "back" s
+                    // (0.6) at the film's end. Her double carries none: this is for the hand-back's shots in her own body
+                    // (C13 D6: her ember washed the facade orange and keyed her warm where the shot wants the sigil's violet).
+                    if (g.scene?.Player is not { } ep) break;
+                    float efrom = ep.FilmLight, eto = (float)c.Num("k", 1);
+                    emberBack = (float)c.Num("back", emberBack);
+                    emberSet = true;
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => ep.FilmLight = Mathf.Lerp(efrom, eto, (float)k)));
+                    else ep.FilmLight = eto;
+                    break;
+                }
+                case "foe":
+                {
+                    // (P9 C13) One of the zone's own living creatures, by "def", "boss": true and/or "near" a place (nearest),
+                    // named "actor" for the film's other cues ("anim": a crowd role), and drawn for the film's length:
+                    // {"do":"foe","actor":"laid","def":"corvane","hidden":true} (a film casting its own double of him),
+                    // {"do":"foe","actor":"lord","boss":true,"glow":0,"tint":[0.35,0.35,0.4],"light":0} (a dark shape).
+                    // Each key kept from its last cue when not given. Cleared after the film's end has run the zone's done.
+                    V3? fnear = c.Has("near") ? places.Resolve(c.Get("near")) : null;
+                    var fe = enemies.TryGetValue(c.Actor, out var known) && known.Alive ? known
+                        : FilmFoes.Pick(b.Enemies.Living(), c.Str("def"), c.Bool("boss"), fnear is V3 fn ? (fn.X, fn.Z) : null);
+                    if (fe == null) { GD.Print($"cinema: foe {c.Actor}: none in the zone"); break; }
+                    enemies[c.Actor] = fe;
+                    var fwas = FilmFoes.Of(fe);
+                    (double, double, double)? ftint = c.Get("tint") is { ValueKind: JsonValueKind.Array } ta && ta.GetArrayLength() == 3
+                        ? (ta[0].GetDouble(), ta[1].GetDouble(), ta[2].GetDouble()) : fwas?.Tint;
+                    FilmFoes.Set(fe, new FilmFoes.Look(c.Bool("hidden", fwas?.Hidden ?? false), c.Has("glow") ? c.Num("glow") : fwas?.Glow, ftint, c.Num("light", fwas?.Light ?? 1)));
+                    break;
+                }
+                case "eyelights":
+                {
+                    // (P9 C13) A pair of small eye-lights in a person's head (an extras crowd: each of them), riding the head
+                    // bone: {"do":"eyelights","actor":"dead","color":"#9a6cff","size":0.05,"energy":3,"apart":0.065,
+                    // "fwd":0.1,"up":0.04,"clear":false}; "energy": 0 takes them off. The crowd's dead draw no eyes of their
+                    // own (vat.gdshaderinc has none), and orbs set by hand did not ride their heads.
+                    if (eyes.Remove(c.Actor, out var olde)) olde.Free();
+                    float een = (float)c.Num("energy", 3);
+                    if (een <= 0 || !people.TryGetValue(c.Actor, out var ev)) break;
+                    var ecol = new Color(c.Str("color") ?? "#9a6cff");
+                    float esize = (float)c.Num("size", 0.05);
+                    bool eclear = c.Bool("clear");
+                    MeshInstance3D Dot() => new()
+                    {
+                        Mesh = new QuadMesh { Size = Vector2.One * esize }, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                        MaterialOverride = new StandardMaterial3D
+                        {
+                            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                            BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                            AlbedoTexture = SoftHalo(), AlbedoColor = new Color(ecol.R * een, ecol.G * een, ecol.B * een, 1), DisableFog = eclear,
+                        },
+                    };
+                    var pair = new EyePair(ev, Dot(), Dot(), (float)c.Num("apart", 0.065), (float)c.Num("fwd", 0.1), (float)c.Num("up", 0.04));
+                    g.scene!.AddChild(pair.L); g.scene.AddChild(pair.R);
+                    eyes[c.Actor] = pair;
+                    pair.Place();
+                    break;
+                }
                 case "shift":
                 {
                     // (P9 set) A named handle on the arena's own pieces: {"do":"shift","kind":"vaultdoor","k":1,"from":0,"over":2.5}.
@@ -1591,7 +1689,9 @@ public partial class Game
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
                     if (c.Has("light"))
-                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f, LightSpecular = (float)c.Num("spec", 0.5) });
+                        // ("shadow": true, it throws its own shadows: C13 D2, Corvane's shadow by his own lamp climbing the stone; "blur" their edge)
+                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f, LightSpecular = (float)c.Num("spec", 0.5),
+                            ShadowEnabled = c.Bool("shadow"), ShadowBlur = (float)c.Num("blur", 1) });
                     // "under": [width, height], the dark of what the light is set in (a tower against the sky).
                     if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
                     {
@@ -2183,6 +2283,8 @@ public partial class Game
             props.Clear();
             foreach (var r in rigs.Values) r.Free();
             rigs.Clear();
+            foreach (var ep in eyes.Values) ep.Free();
+            eyes.Clear();
             HerLightEnd();
             foreach (var gl in globes) if (IsInstanceValid(gl.M)) gl.M.SetSurfaceOverrideMaterial(gl.S, gl.Was);
             globes.Clear();
@@ -2220,12 +2322,15 @@ public partial class Game
                 g.chained = new Chain(bars, saved, combatWas);
                 Seen();
                 done?.Invoke();
+                FilmFoes.Clear();
                 if (g.chained != null) { g.chained = null; Restore(); }
                 return;
             }
             Restore();
             Seen();
             done?.Invoke();
+            // (after the zone's done: P6's takes Corvane's hidden body away, so it is never drawn again)
+            FilmFoes.Clear();
         }
 
         void Seen()
@@ -2246,6 +2351,7 @@ public partial class Game
             CrowdView.Staged = null;
             g.scene!.CameraHeld = false;
             if (g.scene.Player != null) g.scene.Player.Hidden = false;
+            if (emberSet && g.scene.Player is { } eb) eb.FilmLightBack(player.Skipped ? 0 : emberBack);
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
             b.WorldRate = 1; b.WorldRateT = 0;
             b.Combat = combatWas;

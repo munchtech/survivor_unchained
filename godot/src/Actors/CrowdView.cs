@@ -579,6 +579,8 @@ public partial class CrowdView : Node3D
     {
         // Its body already lies where it fell: the fight lets it go shortly.
         if (laidOut.Contains((e.Id, e.Seed))) return;
+        // (P9 C13) A film hides it while it plays (its own double cast in its place: SurvivorUnchained.Cinema.FilmFoes).
+        if (SurvivorUnchained.Cinema.FilmFoes.Of(e) is { Hidden: true }) return;
         // (its body: the kind's, or its second body for a share of copies: Vary.Body)
         var crowd = Crowd(Vary.Body(e.Def.Visual, e.Seed));
         var asset = crowd.Asset;
@@ -891,6 +893,12 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
+        // (P9 C13) A film's look on it: its glow and tint for the film (the Barrow Lord drawn dark, a backlit shape).
+        if (SurvivorUnchained.Cinema.FilmFoes.Of(e) is { } fl)
+        {
+            if (fl.Glow is double fg) glow = (float)fg;
+            if (fl.Tint is var (fr, fgr, fb)) tint *= new Color((float)fr, (float)fgr, (float)fb);
+        }
         // A varied pack's copy (the Low Ford's risen): its own skin value (0.35 to 1: NPC 18 r3, not a crowd of bone-white
         // bodies at night; the drowned woman, painted darker, 0.9 to 1: lower sank her to one dark blob out of firelight) and, for about a third, a coat of river mud: a
         // little browner all over and dark patches over the legs and hem (vat.gdshaderinc's mud, flagged by a negative red

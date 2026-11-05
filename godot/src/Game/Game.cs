@@ -112,7 +112,7 @@ public partial class Game : Node, IZoneHost
         camHome = (cam.Pitch, cam.TargetDistance);
         air = new Atmosphere();
         AddChild(air);
-        hud = new GameHud();
+        hud = new GameHud { Filming = () => InCinematic };
         AddChild(hud);
         screens = new Screens();
         AddChild(screens);
