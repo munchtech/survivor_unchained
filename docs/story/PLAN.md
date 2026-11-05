@@ -1,0 +1,107 @@
+# The plan: Survivor Unchained, the seven chains
+
+The one page a writer opens first. S1, the writer (Fable) with a Haiku editor, 5 November 2026, from the owner's draft `REWORK_EMBER_WATCH.md` and the brief `docs/team/hook/S1_story_rework.md`. **Status:** PROPOSAL (waiting on the owner's pick, section 7). Done: nothing in data. Next: Act 1 in data. Planted and not yet paid: section 5.
+
+## 1. The spine, in our world's words
+
+**For the owner, in one line:** the seven chains are the bible's existing seven-link chain, its heart-stones and its keepers (the Ford-Warden, the Barrow Lord, the Legion's dead), renamed and re-aimed, not a new world; so the cost is in Act 1's beats and the name, not a reset.
+
+Under Thornhollow lies the **Morrow**: everyone who ever died in the valley, held in one thing, alive and bound. The Seventh Legion could not burn it, so it chained it: **seven chains, one at each crossing of the valley**, each anchored in a heart-stone cut with a sigil, each heart given a keeper. (Bible section 1 already says this as "seven links"; the valley's tale says chains, the Order's books say links.) **The law:** a chain holds the Morrow by bleeding it. Its light comes up through the heart and spreads through the ground near the crossing; that light is ember; the valley burns it and sells it, and where it lies thick the dead get up at night and the land sickens. Take the heart out of its notch and the bleeding stops there: the crossing goes quiet, the dead near it lie down, the land mends. What that chain was holding, the other six now hold, and they bleed harder. Nothing is let go; it goes round (rules 1-7 unchanged). **Only the Morrow's own light can lift a heart** (C03: the heart reaching for her), so only an Unchained can break a chain. That is why Vonnra lit the Low Ford's lamps and drowned twenty-six people: she needed one.
+
+**The lie.** Vonnra tells the survivor the tale has it backward. The thing under the hills is the valley's keeper, the morning the old Order prayed for; the Legion bound it by a misunderstanding, and the chains have bled it into the ground ever since, and the bleeding is what gets the dead up. Take the hearts out and the dead stop. The ford proved it: the Warden fell, his heart came out, and the ford road has been quiet since ("The road is quiet tonight. It will not always be.", built). Every proof she offers is real; only the names are reversed. The Order's office, the end of the watch, is her prophecy: *Is it morning? / Not yet. / When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning. Let the one who got up go down, and carry it home.* A promise, read her way. An instruction, read right: the vessel.
+
+**The cast, re-aimed** (everything else in bible sections 3-5 stands):
+- **Vonnra Ash-of-Morrow:** the architect. The last binder's daughter who read the Order's books the cult's way. Lit the lamps, drowned twenty-six, keeps the ledger (all built). New: she is the survivor's guide from mid-Act 1, warm for the first time, and she has known who the survivor is since the ford.
+- **The mother, the narrator:** canon's voice twist, with a body. A disciple of the morning who raised her child in the rites (the call at dusk, "Spark"), read Vonnra's blue lamps as the sign, had Rook write *Come home by the Low Ford. I'll be at the water with a lamp, so you'll see me*, and went into the water on the seventh evening on purpose, to be down there holding on when her child drowned: a risen light comes up muddled with one other, and she made sure it was hers. She has been in her child's ear since "Your bedroll has not been slept in." She says what happens and never what it means because a mother's voice would be known; the dawns take her name and her face out of the child's memory (rule 5) because she is taking them. She stood in the reeds on the far bank at first light (C04, built). And she got up: at the seventh chain she is standing with her lamp, and the narrator's voice comes from a place for the first time: "There you are."
+- **Corvane (Chid, renamed):** the Order's last keeper in the valley, Unchained two hundred years. The Order made the Wardens and kept the chains, and when a Walker learned enough to be reached by the thing below, the Order put them back in the dark and gave their light to a chain (the Vigil's chapter four is the Order's rule in a knight's hand). Corvane has done it, and been wrong. He will not explain: once a Walker knows, the Morrow reaches them easier, and he has watched it. He warns sideways, all built: "guards outlast what they guard against, and then they guard against us"; "the dark's only light that hasn't been found yet. I never liked that one."; the office with "a bit at the end". At the door he stands in the way, and fights, and is killed, and gets up, and next morning has the kettle on.
+- **The keepers:** the Ford-Warden (Tobin), the Barrow Lord and the Legion's dead, the ninety-one under Ashford's lid, the Vigil's cages. "Lie down." "None cross after dark." "Nondum." Every one was guarding the valley from the Morrow, and the player's first mercy, the nod, was the first chain breaking.
+
+## 2. What survives, what is retired
+
+| Item | Verdict | Reason |
+|---|---|---|
+| The toll ("It takes less than it did"; every rising costs a life, the gentle one comes to her light) | **Survives**, canon law; its build stays a combat/story-code slot; reveal at C41 | Sharper under the new law: the one who paid comes home to the vessel and never strikes. Act 1's only cost is one report line, "Up the street, nobody is baking." |
+| "Count's right": Maeca kills Holloway at the rope (C20) | **Survives**, Act 2 | The town's own tragedy, and the law made flesh: the ford's quiet bought the farm's hole. His Act 1 line is the elation it is killed at. |
+| "Not yet": Chid made you (wrote the letter, held her hand at the edge) | **Retired**, the engineering only | The letter is the mother's; Rook still wrote it for her bad hands. Corvane keeps canon's own line: "I couldn't have stopped it. I didn't try. I wanted to see one get up." He watched her go in and get up, and said nothing. The coda's "Is it morning?" / "Not yet." survives as his. |
+| The twenty-six; Vonnra's ledger; line 26 "A woman. No name."; line 27 "From the ford. Got up." | **Survive** word for word | The draft's "she engineered disasters; each death another chance" is our ledger. Vonnra never knew the woman at line 26 was anyone. |
+| The mother's letter, "Come home by the Low Ford." | **Survives**; the hand is now hers | The player walked to the ford on their mother's own sentence. |
+| The voice: the narrator is the mother; reveal A (the voice gone, the face whole, C04) | **Survives**, now with a body at the end | The dawns that take her name and face become her doing. |
+| "You did this." (C09, `vonnra.f_did`) | **Survives** word for word | It now means both: the quiet ford and the knocking farm. She goes on from it to "six left". |
+| The Warden's "Is it morning?", the nod as the first choice, the heart down the hole | **Survive** | The nod is the first chain. "You told him it was morning." (built) is the plan's whole accusation. |
+| Ending B, Break the Chain (the dead let go; no more ember; "It's morning, Spark. Go on.") | **Retired** as an ending (owner's call, section 7) | Rule 4: nothing is let go. The draft's three are canon's A, A's Chid variant (promoted to its own ending) and C. |
+| TREATMENT Act 3: "A link must hold the dead. He has never burned." | **Retired** (not in data) | Corvane burns, and has for two hundred years at the chains. |
+| Holloway, Maeca, Brannoc, Rook, Sella, Harlan, Pell, Rav, Keegan, Redcowl, Wenna, Tam, Snib, Grimtunnel, Greymuzzle; the prologue (SB00, C01-C04); the tutorial copy; the gate scenes; the two troubles | **Survive**, untouched | The spine changes what the player is told the chains are, who Vonnra is to them, what Corvane does at night, and where the mother stands at the end. The town is the town. |
+| The 527 locked lines (`tools/vo/locked.json`; the brief's 424 grew with the blue room and shrank with the romances) | **~495 survive word for word**; ~32 re-lock for the name only; ~8 rewritten | Lines that say "Chid" change their hash and nothing else. No real voice take exists to re-record: 18 placeholder oggs, all prologue. |
+
+## 3. The four acts
+
+**Chains to places:** 1 the Low Ford (Tobin; prologue, built). 2 the Barrow behind the Verge's sealed door (the Barrow Lord; Corvane in the doorway). 3 Ashford's shaft (the ninety-one under the lid and their officer: the commander). 4 the Kiln Ford (the second Unchained's crossing). 5 Silverstair (the Vigil's house stands on a crossing and bleeds it for its silver lamps: Edric's "They bleed us for the silver lamps. Every night."). 6 the north road's crossing, Ashe's forty lamps (broken during the war at the gate). 7 the inner door at the bottom of the stair, the coin stamped VII.
+
+**Act 1, The Waystation (chains 1 and 2).** The prologue as built: the tale, the drowning, the Warden, the nod, the heart down the hole, first light. The town's two troubles play as today. The ford road is quiet for the first time in a year and nobody says why. Mid-act Vonnra sends for her and tells the tale backward, with the ford as proof, and gives her the way to the Barrow's heart. **The WTF (where it lands: the vault's doorway, after dark):** the fool who sang Nell down flat is standing in the door with a keeper's lamp. "Go home." He fights like two hundred years. She kills him. **The narrator: "He gets up."** Behind him the sigil opens; below, the Barrow Lord says "Nondum" and goes down, and his heart comes up to her hand. At dawn the stream runs clear and Wolf Hollow's scar has closed; the Dig goes "ever so QUIET" (built, re-read). Holloway unbars the south gate at dusk for the first time and sits with no count: *the old captain's line, in numbers.* And Corvane has the kettle on: "Sit. The good stool." He won't say. The act closes on the fortune as built: "You stopped the drowning. You also did this." The roof shivers though the Verge sleeps; the farm knocks louder (**the first contradiction**); she explains it: six left, the Barrow's chain was holding the ford's share. The ledger stinger. Corvane gives her the office.
+
+**Act 2, The North Road (chains 3 and 4).** C20 the Ground Opens: the farm goes, the lamplings come up quiet; the rope, and the knife: ★ "Count's right." (HOLY SHIT, canon). Chain 3 under Ashford's shaft, kept by the dead Holloway's lid made, and the commander among them (★ who it is: Act 2's writer, from the Ashford roll). Chain 4 at the Kiln Ford: Low Kiln's chapel, where she grew up and doesn't remember; a woman who kept a lamp in a window (the forgotten childhood). A region's dead stop rising; Vonnra is right again. Keegan reads chapter four to her at the gate; the Vigil wrote the one correct manual. ★ The mother's second fragment: at the lifted heart, a woman singing the call the way it was sung at a door. Silverstair seen on the road.
+
+**Act 3, Silverstair and the War (chains 5 and 6).** Chain 5 at Silverstair: Sallow's cages of bought Unchained; the vision: the Morrow speaks clearly for the first time, out of the caged, in words the player knows. Chain 6 breaks during the war at the gate: ★★ Sallow's army of the risen collapses mid-battle, recalled, and the town thinks she won the war. The valley's first peaceful nights; bonfires. Then the saved settlement: ★ the Kerchiefs' children singing the Warden's call under the water, people gone in the night, "a warm light calling them home". ★ C32 Rook's kitchen: "She was your mam, pet."; the player's own blow replayed; the narrator silent. "Come down with me."
+
+**Act 4, The Morrow (the seventh).** The stair. Vonnra reads the ledger: "A woman. No name." / "...Her name?" ★ The first light that takes nothing back: her ember does not go out at dawn; the dawn card says nothing; the rule the game taught in its first ten minutes breaks on screen. The seventh heart's notch opens from outside (the six keys, the wedge, the coin). ★ Corvane kneeling: "I thought I could stop you before you remembered." The names. ★★ The narrator's voice from a place: "There you are." The mother with her lamp. The choice: she lies down (The Last Watch) / Corvane lies down (The Inheritance) / she carries it home (The Unbound).
+
+## 4. Act 1, beat by beat
+
+Pipelines: **P9** staged cue film; **P10** drawn plates; **scene** a trunk text scene with narrator (the gate-scene kind, stageable later); **data** dialogue, rules, journal. State: built / rewrite / new.
+
+| # | Beat | Pipeline | State | What it does and plants |
+|---|---|---|---|---|
+| 1 | SB00 the tale: L2 becomes "and bound it there with seven chains, in the dark." | P10 (one line; the plate's single chain stands) | rewrite | The number in the player's ear from the first minute. |
+| 2 | C01-C04: the drowning, "No charge, this once", the Warden's song, "Lie down.", the nod, the heart down the hole, the reeds, the face, the baking | P9 | built | Chain 1 broken by the nod. Plants: the mother in the reeds; the dropped lamp; the drowned woman with the dead lamp (owed to Cinematics, unchanged). |
+| 3 | Rook's lie and the word; Holloway's coat; the first dusk call | data | built | "Lamp's lit, Spark." in every player's hands. |
+| 4 | The two troubles, the story nights (Greymuzzle, Redcowl), Brannoc's C07/C14, the burial C08 with Corvane's flat hymn (its words carry "the morning lies a little under") | all | built | The hymn is the cult's prayer, heard at a funeral. |
+| 5 | The quiet ford: Vonnra's "The road is quiet tonight" (built); a dawn report "Nobody stood in the ditch last night."; Holloway's count comes right three dusks running (new barks) | data | new, 6 lines | The local gain the player can see before anyone claims it. |
+| 6 | **Vonnra sends for her** (dusk, day 3-4): the tale backward; the ford as proof; the inscription "what it could not burn" read her way; the office's end as promise; "You can lift one. I watched the first reach for you."; the way to the wedge | scene (the tower; stage later) | new, ~25 lines | The deception, with evidence. Plants: "six left"; Corvane's order "lives off the leak". |
+| 7 | **Corvane in the doorway** (story night `vault_opened`, phase 1): "Go home. ...I can't tell you. I've been wrong before."; the fight; "He gets up."; he walks away into the dark | P9 (C13 reworked) + combat (one new boss: his kit on the existing NPC model) | new, ~14 lines | ★ The WTF. Plants: he knows her ember; "before you remembered" (Act 4). |
+| 8 | Behind the door (phase 2): the Legion's dead; the Barrow Lord's "Nondum"; he goes down; the heart rises to her hand; under the stair a woman sings the call the way it was sung at a door; the dead step back and stand | P9 (C13's end rewritten) | rewrite, ~8 lines | Chain 2. Plants: "Nondum" = "Not yet" (Act 4); the singer (the mother, Act 2's fragment; Act 3's children). |
+| 9 | **The stream runs clear**: dawn over the Hollow, the scar closed, wolves drinking; the Dig's hill silent; Wenna's "It's clean. I don't know why it's clean." | P9 new, ~20 s, "C15" | new, ~6 lines | The blighted wood recovering: the proof. |
+| 10 | **Holloway's bed**: the south gate unbarred at dusk; his stool; eleven in, nobody out; "I had it in my head I'd go on this stool. Now I might go in a bed." Maeca fills his cup | scene | new, ~8 lines | The settlement saved; the line the rope kills (Act 2). |
+| 11 | **The morning after**: Corvane at the shrine, the kettle on, the cut that killed him last night a scar; "Sit. The good stool."; "Which carter?" / "...Don't." ; Vonnra: "His kind live off the leak. He will do that again." | data | new, ~12 lines | The antagonist who comes back, and the lie that explains him. |
+| 12 | Tam: "It knocked. Louder." Wenna's masks. The farm's floor | data | new, 4 lines | The first contradiction, planted before Vonnra explains it. |
+| 13 | **C09 the fortune** as built, plus three lines after `f_did`: "Six left. The Barrow's chain held the ford's share; now the farm holds the Barrow's. Take them out and it stops."; the ledger stinger | P9 (text today) | rewrite, 3 lines | The act closes on belief. |
+| 14 | Corvane's office, the last page shown: the prophecy in the keepers' words (section 1) | data, journal | rewrite, 4 lines | The instruction manual in her pack. |
+| 15 | Every rise: "You get up. It takes less than it did." (built); the first scripted fall's morning: "Up the street, nobody is baking." | data | new, 1 line | The toll's first receipt. |
+
+## 5. Plants Act 1 makes, and where each is paid
+
+1. "Seven chains" in the tale (1) -> the count that runs out, Act 4.
+2. The nod, "You told him it was morning." (2, built) -> Act 4: the first mercy was the first chain.
+3. The woman in the reeds; the dropped lamp; the drowned woman who lifts a lamp (2, built) -> C32 (Act 3), the chamber (Act 4).
+4. "Lamp's lit, Spark." from Rook (3, built) -> the children's song (Act 3); "There you are." (Act 4).
+5. The hymn's "morning lies a little under" (4, built) -> Vonnra's reading (6); the vessel (Act 4).
+6. "He gets up." (7) -> Corvane kneeling at the inner door (Act 4); Ending II.
+7. "I've been wrong before." (7) -> Act 2: the Vigil's chapter four, and whose name Corvane cut once.
+8. The singer under the stair (8) -> Act 2's lifted heart; Act 3's children; Act 4.
+9. "Nondum" (8, built) -> Act 4: "Not yet" was always the right answer.
+10. The Dig "ever so QUIET" (9, built) -> Act 2: the lamplings come up out of the hole quiet: recalled, not beaten.
+11. Holloway's bed (10) -> the rope (Act 2).
+12. "Six left" and "holds the ford's share" (13) -> the farm (Act 2's C20); the war (Act 3).
+13. The office's last page (14) -> the dawn that takes nothing back (Act 4).
+14. "Up the street, nobody is baking." (15) -> C41's ledger past twenty-seven (Act 4).
+15. Vonnra's "live off the leak" (11) -> Ending I/II: an Unchained can hold a chain because the chain holds them.
+
+## 6. Cost and pipeline
+
+- **Lines:** survive ~495 locked word for word; re-lock ~32 (every "Chid" -> "Corvane"; id `chid` kept in data and code, display name and spoken name change); rewritten ~8 (`chid.first`, `cb_vault2`, `vonnra.vault` after the tale, C13's end); new ~110 (beats 5-15); retired 0 in data. Voice re-records: 0 (placeholders only); the lock pass re-locks the name lines and locks the new ones through `tools/vo/lock.py`.
+- **Line items outside the writer's data, each with an owner:**
+  1. **One boss fight, Corvane in the doorway (P6, the combat lead):** his kit (a keeper's lamp and two hundred years of ember) on the existing NPC model, phase 1 of story night `vault_opened`; the door's hall is the arena. "Redo rather than patch": if his model can't carry a boss at the play camera, P3 remakes him with the Warden. ~0.3-0.5M.
+  2. **C13 reworked (P9, the cinematics lead):** two phases, the doorway and the stair; the Barrow Lord's death, the heart rising to her hand, the singer under the stair; cue data on the built pipeline. ~80-120k.
+  3. **C15 "The Stream Runs Clear" (P9, the cinematics lead):** new, ~20 s over the real Verge in its `stream.clear` state at dawn. ~50-80k.
+  4. C09 unchanged but three lines (the writer). Two scenes (6, 10) as text scenes on the trunk (the writer), staged later if Cinematics has a slot. **P10 (the storybook lead):** SB00 L2, one Watchman line; the plate stands.
+- **Tests:** StoryRewriteTests, StoryLint, CinemaTests updated for the name and three facts (`chain.two`, `corvane.rose`, `vonnra.told`); the suite green before MR.
+- **Tokens:** Act 1 in data ~0.6-0.9M (writer ~350k over two sessions incl. this proposal, editor ~150k, a worker for the rename, locks and tests ~100k, runners ~30k). Films ~150k on P9. The boss ~0.3-0.5M on P6.
+
+## 7. The owner's decisions
+
+The first two overrule picks you made on 11 October, so they come first.
+
+1. **"Not yet: Chid made you" shrinks to "he watched."** Retired: Chid wrote the mother's letter and held her hand at the water's edge (the engineering). Kept: his own line, "I couldn't have stopped it. I didn't try. I wanted to see one get up.", and the coda's "Is it morning?" / "Not yet." The letter becomes the mother's; the knife at Rook's kitchen is unchanged. Say "keep" and the engineering stays as a second layer under Corvane.
+2. **Ending B, Break the Chain, retired for "Corvane takes her place."** Three endings as the draft has them: I she lies down (canon A, The Last Watch); II Corvane lies down (canon A's Chid variant, now its own ending, The Inheritance, and the entity works on him); III she carries it home (canon C, The Unbound). Lost with B: the silent epilogue and "It's morning, Spark. Go on." The endless after each keeps canon's rules with B's row gone. Say "keep B" and it stays as a fourth, reached only with the coin.
+3. **The name.** Corvane (default; a raven hides in it, as a rook hides in Rook). Alternatives: **Caedmon** (the monk who sang, for the fool who sings flat) or **Caddock** (an old abbot's name, plain as a kettle). All keep the "C." on the note.
+4. **Corvane is killable in Act 1** and gets up on screen (the coordinator agrees it is the right Act 1 WTF). If you want the fool kept clean of the door, say so; the WTF then moves to Act 2 and Act 1 closes on the fortune alone.
+5. Also retired, in case you want it kept: "He has never burned." (TREATMENT's Act 3 line; Corvane burns.)
