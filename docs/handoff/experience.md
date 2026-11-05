@@ -5,9 +5,9 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## H8 rc2's bugs (seams-h8 lead 1, 4 Nov): HANDOFF READY seams-h8@HEAD_SHA
+## H8 rc2's bugs (seams-h8 lead 1, 4 Nov): HANDOFF READY seams-h8@9c7dc0666
 
-HANDOFF READY seams-h8@HEAD_SHA (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2_bugs.md`. Branched from 0febc5160 (integration; nothing newer to merge at the start). Report to main (the coordinator) only at MR READY or a block. The H6 lead is agent `abf0b8606f7e91474`: it owns the Warden's numbers and H8 wires them. Scratch and sheets: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`shoot1\` runs and sheets, `solver_45\`, `dawn\`). No judge has run yet; round cap 2.
+HANDOFF READY seams-h8@9c7dc0666 (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2_bugs.md`. Branched from 0febc5160 (integration; nothing newer to merge at the start). Report to main (the coordinator) only at MR READY or a block. The H6 lead is agent `abf0b8606f7e91474`: it owns the Warden's numbers and H8 wires them. Scratch and sheets: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`shoot1\` runs and sheets, `solver_45\`, `dawn\`). No judge has run yet; round cap 2.
 **Worktree setup gaps (fixed locally, not committed; the files are untracked in main too):** `public/assets` had no `.import` files (solver 45 copied 408 from main), and 10 `godot/art/**.glb.import` were missing (sunder_blade, castle, curtains, gatehouse, towers, beard_cards). They caused the LampIron.SunderBlade and Waystation.DressStall NREs in b_path 1. All were copied from the main checkout.
 
 **State by item:**
