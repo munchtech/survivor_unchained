@@ -30,7 +30,7 @@ public static partial class Sfx
         {
             // H7, the stop's intake: the take is cut to the stop (k, its length) with a short fade, so the blow lands
             // out of a held silence; the world and the beds are pulled down under it as the synth's riser did.
-            if (SoundBank.PlayFirstFor(Math.Max(0.2, k), w, ids) == Banked.Replace)
+            if (SoundBank.PlayTailFor(Math.Max(0.2, k), w, ids) == Banked.Replace)
             {
                 // (H7 fix: 0.2 left the fight 6.5 dB over the intake in f_longcut; 0.12 with the takes at 2x)
                 a.DuckSfx(0.12f, k + 1.2);

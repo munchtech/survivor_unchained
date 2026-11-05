@@ -52,6 +52,9 @@ public struct Clip
     public bool Stereo;
     /// <summary>Cut the take after this many seconds with a short fade (a windup that must end when its blow lands); null: the whole take.</summary>
     public double? Len;
+    /// <summary>With Len: play the take's loudest Len seconds (a swell's crest, wherever it lies in that take), faded in
+    /// briefly, not its first Len seconds.</summary>
+    public bool Tail;
 }
 
 /// <summary>
@@ -591,9 +594,31 @@ public partial class Synth : Node
         readonly double lpf;
         double pos;
         readonly double cut = double.MaxValue;
-        const double CutFade = 0.12;
+        const double CutFade = 0.12, TailFade = 0.03;
 
         readonly float[]? right;
+        double fadeIn = double.MinValue;
+        static readonly System.Collections.Generic.Dictionary<(float[], int), int> crests = new();
+
+        /// <summary>Where the take's loudest n samples start (by energy), cached per take and length.</summary>
+        static int Crest(float[] d, int n)
+        {
+            n = Math.Clamp(n / 480 * 480, 1, d.Length);
+            lock (crests)
+            {
+                if (crests.TryGetValue((d, n), out int at)) return at;
+                double e = 0, best = -1;
+                for (int i = 0; i < n; i++) e += d[i] * d[i];
+                for (int i = 0; ; i++)
+                {
+                    if (e > best) { best = e; at = i; }
+                    if (i + n >= d.Length) break;
+                    e += d[i + n] * d[i + n] - d[i] * d[i];
+                }
+                crests[(d, n)] = at;
+                return at;
+            }
+        }
         public override bool Wide => right != null;
 
         public ClipVoice(Synth s, Clip o, Recordings.Take take)
@@ -604,7 +629,12 @@ public partial class Synth : Node
             step = take.Rate / s.Rate * pitch;
             Start = o.T ?? s.Now;
             End = Start + data.Length / (take.Rate * pitch) + 0.01;
-            if (o.Len is double len && Start + len < End) { cut = Start + len; End = cut + 0.01; }
+            if (o.Len is double len && Start + len < End)
+            {
+                // (H7 fix2: a swelling intake cut to the stop played only its near-silent start; Tail plays its crest)
+                if (o.Tail) { pos = Crest(data, (int)(len * take.Rate * pitch)); if (pos > 0) fadeIn = Start + TailFade; }
+                cut = Start + len; End = cut + 0.01;
+            }
             gain = (float)o.G;
             if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
             Place(o.Bus, o.Pan, o.Verb);
@@ -623,6 +653,7 @@ public partial class Synth : Node
             }
             if (lp != null) x = lp.Run(x, lpf);
             if (t > cut - CutFade) { float f = (float)Math.Clamp((cut - t) / CutFade, 0, 1); x *= f; Right *= f; }
+            if (t < fadeIn) { float f = (float)Math.Clamp(1 - (fadeIn - t) / TailFade, 0, 1); x *= f; Right *= f; }
             return x * gain;
         }
     }
