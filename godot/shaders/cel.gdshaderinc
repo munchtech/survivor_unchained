@@ -121,9 +121,10 @@ global uniform sampler2D cel_cookie : filter_linear_mipmap, repeat_enable;
 global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
+// (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
+// of its own, because a shader at Godot's 32 varyings (KitLook's roofs) would fail to compile on one more.
 varying vec3 cel_gn;
 varying vec4 cel_mat;
-varying float cel_dap;   // (L1 B4) the key's share through the canopy here (1: open sky)
 #ifdef CEL_CLEARCOAT
 varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
 #endif
@@ -158,16 +159,17 @@ float cel_dapple_at(vec3 c_wp) {
 	float c_w = fwidth(c_f) * 0.5 + 0.01;
 	return mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
 }
-#define CEL_FRAGMENT cel_dap = cel_dapple_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * (1.0 + cel_dapple_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz)); CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
 
 // The band's normal: the geometric one with cel_nmap of the normal map's detail.
-vec3 cel_nb(vec3 c_n) { return normalize(mix(cel_gn, c_n, cel_nmap)); }
+vec3 cel_nb(vec3 c_n) { return normalize(mix(normalize(cel_gn), c_n, cel_nmap)); }
+float cel_dap() { return clamp(length(cel_gn) - 1.0, 0.0, 1.0); }
 // The key's cast shadow hardened (directional lights); omni and spot as they are.
 // (L1 B4: and the canopy's dapple, cel_dap, on the directional key)
-float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap : c_att; }
+float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap() : c_att; }
 // The lit band's coverage (the hard terminator) at n.l t.
 float cel_lit(float c_t) {
 	float c_hw = max(cel_band.y * cel_tune.x, 1e-4);
