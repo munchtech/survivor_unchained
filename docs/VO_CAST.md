@@ -25,7 +25,7 @@ below, plainly.
 | Harlan Coyle (`harlan`) | 55 m, Bristol | c03 | england 0.97 | 111 Hz | 3.1 w/s | - | 59 | 0 | 0 |  |
 | Pell Varrow (`pell`) | 40 m, precise London RP | c08 | england 0.99 | 107 Hz | 3.7 w/s | - | 32 | 0 | 0 |  |
 | Rav Cutwell (`rav`) | 54 m, Glaswegian | c06 | scotland 0.73 | 194 Hz | 4.2 w/s | - | 52 | 0 | 0 | pitch 194 Hz outside 75-150 |
-| Chid (`chid`) | 32 m, Irish-tinged | c09 (from rav) | ireland 0.99 | 159 Hz | 4.4 w/s | - | 40 | 0 | 0 |  |
+| Chid (`chid`; Corvane in the game, S1, 5 Nov 2026) | 32 m, Irish-tinged | c09 (from rav) | ireland 0.99 | 159 Hz | 4.4 w/s | - | 40 | 0 | 0 |  |
 | Vonnra Ash-of-Morrow (`vonnra`) | 66 f, clipped, unplaceable old empire | c05 | england 0.99 | 158 Hz | 2.2 w/s | - | 78 | 0 | 0 | cut off at the head |
 | Dame Keegan Orme (`keegan`) | 24 f, Oxbridge RP | c04 | england 1.00 | 197 Hz | 3.5 w/s | - | 44 | 0 | 0 |  |
 | Sella (`sella`) | 28 f, softened Cockney (London) | c04 | england 1.00 | 170 Hz | 3.6 w/s | - | 95 | 0 | 0 |  |

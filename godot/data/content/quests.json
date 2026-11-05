@@ -112,10 +112,12 @@
    "fragment": "A fragment of a sigil, from the hand of someone who did not make it out. It fits one notch of the door's seven, and after dark the whole sigil wakes to it.",
    "bootprints": "Fresh bootprints in the mud at the door, going in, not coming out. Trodden into one of them, a copper toll-token from the Waystation, stamped with three roads. Someone got inside.",
    "vonnra_refuses": "Vonnra will not talk about the vault. Not for money, which is how you know it matters.",
-   "chid_empire": "Chid says the old empire \"did something here\" before the Watch was founded, and the Watch was founded to keep it done.",
+   "chid_empire": "Corvane says the old empire \"did something here\" before the Watch was founded, and the Watch was founded to keep it done.",
    "whisper": "The bones at the door spoke, to you and no one else: \"It was never locked from the outside.\"",
    "opened": "After dark the sigil woke under your hand and the door let you in, and the Seventh Legion's dead let you out again. Behind it: a stair going down, older than the door.",
-   "shut": "The door took the sigil after dark, and the dead came up out of it. You fell back, and it shut behind them."
+   "shut": "The door took the sigil after dark, and the dead came up out of it. You fell back, and it shut behind them.",
+   "vonnra_told": "Vonnra, after dark, with two cups: the thing under the hills is the valley's keeper, chained by the Legion's mistake. Seven chains bleed it, and the bleeding is what gets the dead up. One is out, at the ford. \"When the six are out, it stops.\" The door in the Verge takes a wedge of black stone; behind it a hall, a stair, a guard, and a heart in its notch. \"Put him down, and it will reach for you. Let it.\"",
+   "office_end": "The last page of Corvane's office, read in the dark as he said. One keeper asks and one answers: \"Is it morning?\" \"Not yet.\" \"When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning. Let the one who got up go down, and carry it home.\""
   }
  },
  "below": {
@@ -158,9 +160,9 @@
   "summary": "A letter found you on the road and brought you home to Thornhollow by the Low Ford. The river has had the ink.",
   "entries": {
    "letter": "The letter that brought you home, run to blue water. One line still reads: \"Come home by the Low Ford.\"",
-   "rook": "Mother Rook says your mother went in her sleep, a week before you came up the road. Chid buried her in the Quiet Garden, behind the shrine.",
+   "rook": "Mother Rook says your mother went in her sleep, a week before you came up the road. Corvane buried her in the Quiet Garden, behind the shrine.",
    "grave": "A plain wooden marker in the Quiet Garden, a few stones along from the old captain's. No name on it yet. The earth on it is dark, and has not settled.",
-   "word": "In your own hand, because Chid asked you to write the names down: \"Spark. What she called me, at dusk.\""
+   "word": "In your own hand, because Corvane asked you to write the names down: \"Spark. What she called me, at dusk.\""
   }
  }
 }
