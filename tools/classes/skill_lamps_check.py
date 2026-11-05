@@ -136,7 +136,7 @@ def check_text(lid, name, rule, banned, seen_names, probs):
     for m in SMALL.finditer(rule):
         if float(m.group(1)) < 2 and not any(float(x) >= 2 for x in CAP.findall(rule)):
             probs.append(f"{lid}: {m.group(1)}% of health is too small to feel (2% or more, or a cap of 2% or more)")
-    if re.search(r"barrier|mends you", rule) and re.search(r"blows? on you|blow reaches you|strikes you", rule) \
+    if re.search(r"gives (?:you )?a barrier|mends you", rule) and re.search(r"blows? on you|blow reaches you|strikes you|\b[Aa] rebuke\b|each rebuke", rule) \
             and not re.search(r"at most every|as often as every|held at most", rule):
         probs.append(f"{lid}: a barrier or mend from blows on her needs 'at most every' or 'held at most'")
     for m in STONES.finditer(rule):

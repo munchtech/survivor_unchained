@@ -52,7 +52,7 @@
     "zero": "with no point burning a skill is rank 0, its first hit (the build lead maps it onto today's weapon rank 1)",
       "runMost": 13,
       "shownIn": "WickBook.Sum",
-      "card": "the skill's hit before and after, with the rank: 'hit 41 -> 45 (rank 4 -> 5)'; a Turn adds two ranks ('41 -> 49')",
+      "card": "the skill's hit before and after, the lamp's own change counted: 'hit 41 -> 45 (rank 4 -> 5)', a Turn '41 -> 49'; a cost lamp's can fall (Hot Iron '41 -> 38'), and a hit that splits shows its parts (Threefold '41 -> 3 x 14')",
       "outOfRunMostSource": "Weapons.MaxRank (today it also caps SkillBook.Rank and the 'at rank 8 it evolves' hint)",
       "runMostIs": "13 from its lamps (nine lead-ins and two Turns), 1 more for each Union it shares, and Hotter adds up to 10 a night across all her skills"
     },
@@ -66,7 +66,7 @@
       "where": "any lamp-post in a town",
       "cost": 0,
       "midRun": false,
-      "lightMyWay": "lights unplanned points each time she comes into a town: the suggested strand, then the header's next strand once it is full"
+      "lightMyWay": "lights unplanned points each time she comes into a town: the dawn card's lamp first, then the suggested strand, then the header's next strand once it is full"
     },
     "offer": {
       "when": "each time the ember rises",
@@ -77,7 +77,7 @@
       ],
       "alwaysDealt": {
         "most": 1,
-        "which": "the ready Turn or Union on the skill that has dealt the most damage tonight (ties: the one ready longest)",
+        "which": "the ready Turn or Union on the skill that has dealt the most damage tonight (ties: the one ready longest, then the skill carried first)",
         "ready": [
           "a Turn whose three lead-ins burn, if the Turn rule allows it",
           "a Union whose two skills each burn a Turn"
@@ -122,7 +122,7 @@
         "secondTurn": "says why it may burn: 'beside Splitting Stroke, lit for good'",
         "union": "shows both glyphs",
         "keywords": "marked on the line, case-sensitive ('Stone' marks, 'standing stones' doesn't); held, each reads its one line (keywords)",
-      "setsAside": "on one skill a Turn's rule wins over a lead-in's on the same thing (a wait, a timer, its targets), and slows and speeds multiply; the card names what it sets aside"
+      "setsAside": "on one skill a Turn's rule wins over a lead-in's on the same thing (a wait, a timer, its targets), and slows and speeds multiply; the card names what it sets aside, and a lead-in offered while that Turn burns says so; two Turns on one skill both hold, and counts multiply (Aegis Wheel beside Threefold throws six small discs)"
       },
       "fewer": "fewer candidates than cards: the surplus fills the rest",
       "wickPanel": {
@@ -184,7 +184,7 @@
     "sear": "Seared things take 30% more from holy light, and the dead burn while seared.",
     "bleed": "A bleed deals its damage over its seconds.",
     "burning": "Burning deals its damage over its seconds.",
-    "barrier": "A barrier takes blows before your health does, and fades in time. 'Held at most' is the most you can hold.",
+    "barrier": "A barrier takes blows before your health does, and fades in time. 'Held at most' counts all your barrier: past it, that lamp gives none.",
     "Stone": "Every blow that reaches you lays a Stone; a dodged one lays none. At six, the wall answers.",
     "the wall answers": "At six Stones the wall answers: a Rebuke 8 m all round you, and the Stones are spent.",
     "block": "Your shield turns some blows on its own. Each turned blow is a block.",
@@ -265,11 +265,11 @@
     {"id": "groundbreaker.upheaval.2", "skill": "groundbreaker", "strand": "upheaval", "n": 2, "parent": "groundbreaker.upheaval.1", "name": "Down They Come", "rule": "What falls from the air lands hard, striking 1.5 m round at 30% of the heave.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "groundbreaker.landing", "args": {"radius": 1.5, "damage": 0.3}}], "engine": "new", "from": "new", "draft": true},
     {"id": "groundbreaker.upheaval.3", "skill": "groundbreaker", "strand": "upheaval", "n": 3, "parent": "groundbreaker.upheaval.2", "name": "Great and Small", "rule": "Groundbreaker comes 20% slower, but champions are thrown up too, for 0.5 s.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "groundbreaker.great_and_small", "args": {"cooldown": 1.2, "championAir": 0.5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "groundbreaker.upheaval.4", "skill": "groundbreaker", "strand": "upheaval", "n": 4, "parent": "groundbreaker.upheaval.3", "name": "Riven Earth", "rule": "The whole crack heaves: everything along it is thrown up 1 s, not only the pack at its end.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "groundbreaker.riven", "args": {"air": 1}}], "engine": "new", "from": "new (the lead's plan: a new Turn)", "draft": true},
-    {"id": "rebuke.morning.1", "skill": "rebuke", "strand": "morning", "n": 1, "parent": null, "name": "Thronged", "rule": "A rebuke that strikes 4 or more gives you a barrier of 2% of health.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.thronged", "args": {"least": 4, "barrier": 0.02}}], "engine": "new", "from": "new", "draft": true},
+    {"id": "rebuke.morning.1", "skill": "rebuke", "strand": "morning", "n": 1, "parent": null, "name": "Thronged", "rule": "A rebuke that strikes 4 or more gives you a barrier of 2% of health, 20% held at most.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.thronged", "args": {"least": 4, "barrier": 0.02, "held": 0.2}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.morning.2", "skill": "rebuke", "strand": "morning", "n": 2, "parent": "rebuke.morning.1", "name": "Broken Ward", "rule": "When your barrier breaks, Rebuke strikes everything within 5 m at once.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.broken_ward", "args": {"radius": 5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.morning.3", "skill": "rebuke", "strand": "morning", "n": 3, "parent": "rebuke.morning.2", "name": "Glare", "rule": "While a barrier holds, Rebuke's light sears what it strikes for 3 s.", "kind": "element", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.glare", "args": {"status": {"kind": "sear", "chance": 1, "power": 1, "duration": 3}}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.morning.4", "skill": "rebuke", "strand": "morning", "n": 4, "parent": "rebuke.morning.3", "name": "Shield of Morning", "rule": "While your barrier holds, Rebuke answers every blow on you, as often as every 0.2 s, and each rebuke gives a barrier of 1% of health for each thing it strikes, 4% at most, 20% held at most.", "kind": "trigger", "turn": true, "cost": 2, "effects": [{"do": "turn", "turn": "rebuke.morning", "barrierEach": 0.01, "barrierMost": 0.04}, {"do": "rule", "rule": "rebuke.morning_open", "args": {"noWaitWhileBarrier": true, "gap": 0.2, "barrierHeld": 0.2}}], "engine": "new", "from": "built Turn rebuke.morning (wicks.json): its barrier keys stay, at 1% a thing and 4% at most (were 0.1% and 0.4%); no wait while a barrier holds is new"},
-    {"id": "rebuke.strong.1", "skill": "rebuke", "strand": "strong", "n": 1, "parent": null, "name": "Rebuke the Strong", "rule": "A champion's blow on you is rebuked at once, even inside the 0.5 s.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.strong", "args": {"championAtOnce": true}}], "engine": "new", "from": "v1 bulwark.rebuke.rebuke_the_strong (twice as hard on champions was a bare bump; now champions are answered at once)"},
+    {"id": "rebuke.strong.1", "skill": "rebuke", "strand": "strong", "n": 1, "parent": null, "name": "Rebuke the Strong", "rule": "A champion's blow on you is rebuked at once, even inside its wait; the same champion once every 5 s.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.strong", "args": {"championAtOnce": true}}], "engine": "new", "from": "v1 bulwark.rebuke.rebuke_the_strong (twice as hard on champions was a bare bump; now champions are answered at once)"},
     {"id": "rebuke.strong.2", "skill": "rebuke", "strand": "strong", "n": 2, "parent": "rebuke.strong.1", "name": "Brought Low", "rule": "A champion Rebuke strikes deals you 25% less for 3 s.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.brought_low", "args": {"weaker": 0.25, "seconds": 3}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.strong.3", "skill": "rebuke", "strand": "strong", "n": 3, "parent": "rebuke.strong.2", "name": "Dazed", "rule": "Rebuke strikes 3 fewer of the nearest, but a champion it strikes is stunned 0.5 s.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.dazed", "args": {"others": -3, "stun": 0.5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.strong.4", "skill": "rebuke", "strand": "strong", "n": 4, "parent": "rebuke.strong.3", "name": "Humbled", "rule": "A rebuke on a champion is a heavy blow, and its light breaks out 4 m round the champion.", "kind": "calling", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "rebuke.humbled", "args": {"radius": 4}}], "engine": "new", "from": "new", "draft": true},
@@ -277,7 +277,7 @@
     {"id": "rebuke.answering.2", "skill": "rebuke", "strand": "answering", "n": 2, "parent": "rebuke.answering.1", "name": "Tidings", "rule": "Rebuke's light leaps on from the one that struck you: 3 leaps, each to the nearest thing within 4 m.", "kind": "shape", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.tidings", "args": {"leaps": 3, "reach": 4}}], "engine": "new", "from": "new (v1 Readier Wall retires: the wall's six Stones stay the calling's)", "draft": true},
     {"id": "rebuke.answering.3", "skill": "rebuke", "strand": "answering", "n": 3, "parent": "rebuke.answering.2", "name": "Slow to Anger", "rule": "Rebuke answers at most every 1 s, not every 0.5 s, but its light leaps 3 more times.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.slow_to_anger", "args": {"gap": 1, "leaps": 3}}], "engine": "new", "from": "new (Salve, a mend, retires)", "draft": true},
     {"id": "rebuke.answering.4", "skill": "rebuke", "strand": "answering", "n": 4, "parent": "rebuke.answering.3", "name": "Open Rebuke", "rule": "Each rebuke breaks out in a ring of light 4 m round you, striking everything in it.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "rebuke.open", "args": {"radius": 4}}], "engine": "new", "from": "new (Grace, a mend capped at 2%, retires)", "draft": true},
-    {"id": "watch_bell.stone.1", "skill": "watch_bell", "strand": "stone", "n": 1, "parent": null, "name": "Alarm", "rule": "When the wall answers, the bell tolls at once and its 6 s starts over.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.alarm"}], "engine": "new", "from": "new", "draft": true},
+    {"id": "watch_bell.stone.1", "skill": "watch_bell", "strand": "stone", "n": 1, "parent": null, "name": "Alarm", "rule": "When the wall answers (at 6 Stones), the bell tolls at once and its timer starts over.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.alarm"}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.stone.2", "skill": "watch_bell", "strand": "stone", "n": 2, "parent": "watch_bell.stone.1", "name": "Millstone", "rule": "While you hold 3 or more Stones, what the bell draws lands stunned 0.5 s.", "kind": "calling", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.millstone", "args": {"stones": 3, "stun": 0.5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.stone.3", "skill": "watch_bell", "strand": "stone", "n": 3, "parent": "watch_bell.stone.2", "name": "Cairn", "rule": "Each toll that draws 5 or more lays a Stone.", "kind": "calling", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.cairn", "args": {"least": 5, "stones": 1}}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.stone.4", "skill": "watch_bell", "strand": "stone", "n": 4, "parent": "watch_bell.stone.3", "name": "Stone Bell", "rule": "Each toll raises a ring of standing stones 5 m round you for 3 s: what the bell drew is shut in with you, and each thing that reaches the ring from outside is held there and lays a Stone, once a toll each.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "watch_bell.stone_ring", "args": {"radius": 5, "seconds": 3, "shutIn": true, "stonePerReach": 1}}], "engine": "new", "from": "built Turn watch_bell.stone (wicks.json: 2 Stones a toll, 1 more a champion, only more Stones on top of Cairn) retires; the nearest built shape is the director's closing ring (Ringed in the harness)"},
