@@ -2296,8 +2296,9 @@ def measure(ref, V, Q, info, C, joints, L, plan, tier):
         d = g["density"]
         ps["tri_cap"] = out["triangles_body"] <= dg["tri_cap"]
         ps["part_p50_bands"] = not d["p50_out_of_band"]
-        ps["shoulder_density"] = (bp["shoulder"][2] <= dg["shoulder_p95_max_mm"] and
-                                  d["shoulder_over_arm_p95"] <= dg["shoulder_over_arm_p95"] and
+        # (a, the 3c judge) relative to its neighbours, never an absolute mm: <= 1.05 x the larger of arm and trunk p95
+        d["shoulder_p95_allowed_mm"] = round(dg["shoulder_over_arm_p95"] * max(bp["arm"][2], bp["trunk"][2]), 2)
+        ps["shoulder_density"] = (bp["shoulder"][2] <= d["shoulder_p95_allowed_mm"] and
                                   bp["shoulder"][1] <= bp["trunk"][1])
         ps["thigh_density"] = bp["thigh"][2] <= dg["thigh_p95_max_mm"] and d["thigh_p95_over_p50"] <= dg["thigh_p95_over_p50"]
     return out

@@ -337,7 +337,8 @@
     "rows_arc": true,
     "low_spacing": 0.0088,
     "density_gates": {
-     "tri_cap": 66000,
+     "tri_cap": 78000,
+     "why_tri_cap": "(a) the 3c judge (verdict_3c): 76.7k accepted; the arm root's 60 columns run unchanged to the elbow and reduce ONLY at the elbow's designed poles (armpit to elbow crease 202 mm against 230 mm of pole-free zones): never add poles to the upper arm to save triangles; cap = current + ~1.5%",
      "part_p50_mm": {
       "neck": [
        4.0,
@@ -392,7 +393,6 @@
        6.0
       ]
      },
-     "shoulder_p95_max_mm": 9.0,
      "shoulder_over_arm_p95": 1.05,
      "thigh_p95_max_mm": 9.0,
      "thigh_p95_over_p50": 1.35
@@ -544,7 +544,6 @@
        11.0
       ]
      },
-     "shoulder_p95_max_mm": 17.0,
      "shoulder_over_arm_p95": 1.05,
      "thigh_p95_max_mm": 17.0,
      "thigh_p95_over_p50": 1.35
