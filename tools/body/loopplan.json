@@ -300,12 +300,10 @@
     ],
     "collar_F_y": 1.5,
     "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)",
-    "why_pass3b_crotch": "(a) crotch_half_width: the perineum strip s lateral line 14 mm off the midline (it was R0 s first points, 4-9 mm: a near-degenerate strip the thigh root folded against); 10-18 mm all clear the strip, 14 the fewest folds (thigh ring 2: 6 -> 2). A stopgap until the hip curve root (item 4) rebuilds this junction",
     "thigh_band_strips": 6,
     "why_thigh_band_strips": "(a) the curve root s longer ring (94 points close) leaves 22 kites to the knee s 50: 6 strips centred at y 0.82 (y 767-852: clear of the hip zone s 40 mm and of the knee zone) with the thigh s own kite sector 230 deg (still the inner / back side) keep every band quad under aspect 4 (5 strips at 0.80: 4.49; 6 at 0.80 put kites inside the knee zone; 6 at 0.82 with 200 deg: 4.26)",
     "crotch_h": 0.5,
     "why_crotch_h": "(a) half a quad (3.75 mm): crotch and groin folds 74 -> under 30 deg (0.47-0.53 measured clean, 0.4 and 0.6 not)",
-    "hip_curve_root": true,
     "why_glute": "(a) the judge (pass 3b item 4): glute density = the torso front's (the lobe's rows at the trunk spacing; was 0.9)",
     "hand_fit": {
      "trim": true
@@ -329,11 +327,11 @@
     "row_scale": 1.0,
     "glute_scale": 1.0,
     "bust_scale": 1.0,
-    "neck_spacing": 0.007,
-    "shoulder_spacing": 0.015,
+    "neck_spacing": 0.0045,
+    "shoulder_spacing": 0.009,
     "root_even": 0.6,
-    "breast_loops": 1,
-    "breast_cap": 0.5,
+    "breast_loops": 2,
+    "breast_cap": 0.8,
     "breast_centre_pull": 0.0,
     "limb_spacing": 0.017,
     "bend_spacing": 0.013,
@@ -361,7 +359,7 @@
     "relax_iters": 8,
     "relax_lambda": 0.5,
     "why": "(a) the play camera (her 40-60 px tall) at ~25k: the same plan at 17 mm; the full 94-point neck ring kept (her head is drawn full at every tier), reduced just below the collarbones",
-    "collar_f": 0.3,
+    "collar_f": 0.2,
     "shoulder_gap": 0.045,
     "arm_root_n": 22,
     "upper_arm_band": false,
@@ -373,11 +371,10 @@
     "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
     "collar_F_y": 1.52,
     "why_pass3b_collar": "(a) collar_F_y: the front collar kites on the upper chest, under the neck base zone (b: the clavicle heads at 1.552); 1.52 is the lowest row above the play breast window",
-    "crotch_m": 1,
-    "why_crotch_m": "(a) the crotch strip 1 quad a side at play (17 mm spacing: the perineum is 15-17 mm a side, the mons front ~30); close keeps hip.root.crotch.m = 3",
-    "crotch_h": 0.0,
-    "why_crotch_h": "(a) 0 at play: at 17 mm quads the held straddle does not lower the crease's folds (h 0.2-0.6: 62-64 deg, vs 63 at 0), so the line lies on the crease",
-    "hip_curve_root": true,
+    "crotch_m": 2,
+    "why_crotch_m": "(a) the crotch strip 2 quads a side at play with crotch_h 0.5 (half a quad, as close): the crotch folds 4 at 63-65 deg -> 2 at 61.5 (m 1: 4-6 at 62-64 for h 0-0.65; m 2, h 0.35-0.8: 2-4 at 61-63); close keeps hip.root.crotch.m = 3",
+    "crotch_h": 0.5,
+    "why_crotch_h": "(a) see why_crotch_m",
     "thigh_band_y": 0.82,
     "thigh_band_strips": 3,
     "why_thigh_band": "(a) play's 17 mm stations: 3 strips centred at y 0.82 (0.80 with 2 strips put a strip's kites within 40 mm of the knee's bend zone; 0.82 x 3 keeps the aspect at the baseline's)",
@@ -398,7 +395,13 @@
     "ankle_points": [
      16,
      18
-    ]
+    ],
+    "F_L_heights": [
+     1.42
+    ],
+    "why_pass3b_templates": "(a) the judge (pass 3b item 9): play s own hand and foot, generated from ours (c: base/*.obj) at build time: trim / level as close (why_pass3b_rims), then quad_reduce: whole quad strips collapsed (each rung merged at its midpoint, put back on the source surface), the open strips first until the rim is at rim_points, then the densest strip first, each collapse kept only if the patch stays a manifold disk of true quads with no new quad over max_aspect: hand 1618 -> 635 quads (39%), foot 1052 -> 472 (45%; its last strips are toe rings whose collapse goes over aspect 5); rim_points: wrist 14 (12 would stop the reduction first), ankle 16 (= the close range 26-28 x sqrt(0.4), the templates linear scale)",
+    "why_pass3b_legs": "(a) the judge (pass 3b item 9): thighs ~32 around at play: the thigh band takes the root s 42 to 32 (y 793-860), and knee_points 32 carries it through the knee (the thigh window between the hip zone and the knee zone, y 0.77-0.83, holds one band only; the knee at 32 = 11.6 mm round it), the shin s band (y 410-443) takes 32 to the ankle s 16. ankle_points [16, 18]: the ankle gate s range at play (see why_pass3b_templates)",
+    "why_pass3b_gates": "(a) play passing the tier-scaled gates: breast_loops 2, breast_cap 0.8, F_L_heights [1.42] (close s, why_pass3b_breast): breast edge p95 21.0 -> 14.6 mm (gate 16.35 = 7.5 mm x 17/7.8), aspect p95 2.53 -> 1.87; shoulder_spacing 0.009 (5 loops in the 45 mm gap, was 2): the 6 shoulder folds (65-75 deg) -> 0; neck_spacing 0.0045 (close s): the 15 neck quads over aspect 4 (the 94-point ring s 3-4 mm steps over 7 mm rows) -> 0; collar_f 0.2: the side / back collar kites one row lower, out of the neck base zone s 40 mm (2 -> 0)"
    }
   },
   "rest_tris": 11300,

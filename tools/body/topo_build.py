@@ -165,27 +165,6 @@ def graded(L, s0, s1):
     return c / c[-1]
 
 
-def t_on_plane(cv, th, p, n, t_lo=0.80, t_hi=1.25, ns=226):
-    """Canvas t where each meridian theta crosses the plane (p, n) going up (the leg crease row R0)."""
-    ts = np.linspace(t_lo, t_hi, ns)
-    TH_, TS = np.meshgrid(th, ts, indexing="ij")
-    X = mapk(cv, TH_, TS, [TRUNK, LEG])
-    s = (X - p) @ n
-    out = np.full(len(th), np.nan)
-    for i in range(len(th)):
-        si = s[i]
-        ok = np.isfinite(si)
-        idx = np.where(ok[:-1] & ok[1:] & (si[:-1] < 0) & (si[1:] >= 0))[0]
-        if len(idx):
-            k = idx[-1]
-            out[i] = ts[k] + (ts[k + 1] - ts[k]) * (-si[k]) / (si[k + 1] - si[k])
-    bad = ~np.isfinite(out)
-    if bad.any():
-        out[bad] = np.interp(np.where(bad)[0], np.where(~bad)[0], out[~bad])
-    return out
-
-
-# ------------------------------------------------------------------------------------------- the shoulder rim --
 def shoulder_rim(ref, cv, L, plan, tp, m=360):
     """(a, pass 3) The trunk's shoulder hole: the arm root ring offset along the trunk's surface by the gap G (each
     root point marched G away from the arm, perpendicular to the ring), so the rim-to-root gap is even all round
@@ -306,8 +285,7 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
     sr = C["sr"]
     tr, bp = plan["trunk"], plan["breast"]
     TH = np.linspace(0, np.pi, 721)
-    t_R0 = (C["hip_root"]["tFS"] if "hip_root" in C    # (pass 3b item 4) the curve root; B: the lobe top
-            else t_on_plane(cv, TH, L["leg"]["p"], L["leg"]["n"]))
+    t_R0 = C["hip_root"]["tFS"]                      # (pass 3b item 4) the curve root; B: the lobe top
     ring = ref.ring[:48]
     thN, tN = cv.inv(ring)
     t_N = np.interp(TH, thN, tN)
@@ -510,11 +488,8 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
     br += [rows[i]["ids"]["F"][j_b1] for i in range(i_b0 + 1, i_b1 + 1)]
     br += list(rows[i_b1]["ids"]["F"][j_b0:j_b1][::-1])
     br += [rows[i]["ids"]["F"][j_b0] for i in range(i_b1 - 1, i_b0, -1)]
-    if "hip_root" in C:
-        lb = hip_lobe(M, cv, L, tp, C, C["hip_root"], rows[0]["ids"]["B"], REG["pelvis_glutes"])
-        R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], lb["root_B"]])
-    else:
-        R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], rows[0]["ids"]["B"][1:]])
+    lb = hip_lobe(M, cv, L, tp, C, C["hip_root"], rows[0]["ids"]["B"], REG["pelvis_glutes"])
+    R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], lb["root_B"]])
     for v in R0:
         M.labs[v] = (TRUNK, LEG)
     return {"rows": rows, "rim": np.array(rim), "corners": corners, "breast_rim": np.array(br),
@@ -750,19 +725,7 @@ def crotch(M, ref, L, plan, tp, tk, C):
     g = np.linspace(0, sl[-1], b + 1)
     Mx = np.stack([np.interp(g, sl, X[:, k]) for k in range(3)], 1)
     mid = np.concatenate([[R0[0]], M.add(Mx[1:-1], "crotch", 0, 1, MID, REG["pelvis_glutes"], tuple(ks)), [R0[K]]])
-    if "hip_root" in C:
-        return crotch_curve(M, ref, plan, tp, R0, K, V, Mx, g, mid, ks, b, C, sl)
-    wl = V[R0[1]][0] * 0.5 + V[R0[K - 1]][0] * 0.5
-    wl = tp.get("crotch_half_width", wl)
-    q, _ = ref.project(ks, Mx[1:-1] + np.array([wl, 0, 0]))
-    lat = np.concatenate([[R0[1]], M.add(q, "crotch", 1, 1, FREE, REG["thighs"], tuple(ks)), [R0[K - 1]]])
-    for i in range(b):
-        M.quad(mid[i], mid[i + 1], lat[i + 1], lat[i], REG["pelvis_glutes"], "crotch")
-    root = np.concatenate([R0[1:K], lat[1:-1][::-1]])
-    C["b"] = int(b)
-    C["N_leg"] = int(len(root))
-    C["perineum_mm"] = round(float(sl[-1]) * 1000, 1)
-    return {"root": root, "mid": mid, "lat": lat}
+    return crotch_curve(M, ref, plan, tp, R0, K, V, Mx, g, mid, ks, b, C, sl)
 
 
 def crotch_curve(M, ref, plan, tp, R0, K, V, Mx, g, mid, ks, b, C, sl):
@@ -1942,9 +1905,8 @@ def build(plan, tier, ref, cv, L):
     c_ar, n_ar, _ = arm_root_plane(L, plan)
     SR = shoulder_rim(ref, cv, L, plan, tp)
     C.update(trunk_plan(ref, cv, L, plan, tp, SR))
-    if tp.get("hip_curve_root"):                     # (pass 3b item 4, WIP: the leg side is not done)
-        C["hip_root"] = hip_root(cv, plan, np.linspace(0, np.pi, 721), C["BB"])
-        relabel_hip(ref, cv, np.linspace(0, np.pi, 721), C["hip_root"]["cut"])
+    C["hip_root"] = hip_root(cv, plan, np.linspace(0, np.pi, 721), C["BB"])   # (pass 3b item 4) the curve root
+    relabel_hip(ref, cv, np.linspace(0, np.pi, 721), C["hip_root"]["cut"])
     tk = trunk(M, ref, cv, L, plan, tp, C, SR)
     sh = shoulder(M, ref, L, plan, tp, tk, C, SR)
     bc = breast(M, ref, L, plan, tp, tk, C)
@@ -1970,26 +1932,21 @@ def build(plan, tier, ref, cv, L):
     fid, fc, fn = template(M, "foot_l", "foot", REG["feet"], ref, tp.get("foot_fit"))
     J = L["knee"]
     d_in, d_out = U(J - L["hip"]), U(fc - J)
-    p, nl = L["leg"]["p"], L["leg"]["n"]
-    warp = None
-    if "hip_root" in C:                              # (a, pass 3b item 4) the curve root's best-fit plane
-        Rr = np.asarray(M.V)[cr["root"]]
-        p = Rr.mean(0)
-        nl = np.linalg.svd(Rr - p)[2][2]
-        nl = nl if nl @ d_in < 0 else -nl
-        warp = dict(plan["hip"]["root"]["blend"], s=tp["limb_spacing"])
+    Rr = np.asarray(M.V)[cr["root"]]                 # (a, pass 3b item 4) the curve root's best-fit plane
+    p = Rr.mean(0)
+    nl = np.linalg.svd(Rr - p)[2][2]
+    nl = nl if nl @ d_in < 0 else -nl
+    warp = dict(plan["hip"]["root"]["blend"], s=tp["limb_spacing"])
     c_lg = L["hip"] + ((p - L["hip"]) @ nl) / (d_in @ nl) * d_in
-    u_hold, band_u, lg_bands = 0.0, None, tp["bands"]
-    if warp is not None:                             # the blend's end estimated on the plane's normal: hold to it
-        dj = (Rr - c_lg) @ -nl
-        lo, hi = warp["step_lo"] * warp["s"], warp["step_hi"] * warp["s"]
-        for u in np.arange(0.0, 0.4, 0.001):
-            g = u * float(d_in @ -nl) - dj
-            if g.min() > 0 and g.min() / np.ceil(g.max() / hi) >= lo:
-                break
-        u_hold = float(u) + 2 * tp["limb_spacing"]
-        band_u = (c_lg[1] - tp.get("thigh_band_y", plan["hip"]["root"]["thigh_band_y"])) / -d_in[1]
-        lg_bands = dict(tp["bands"], strips_upper=tp.get("thigh_band_strips", tp["bands"]["strips"]))
+    dj = (Rr - c_lg) @ -nl                           # the blend's end estimated on the plane's normal: hold to it
+    lo, hi = warp["step_lo"] * warp["s"], warp["step_hi"] * warp["s"]
+    for u in np.arange(0.0, 0.4, 0.001):
+        g = u * float(d_in @ -nl) - dj
+        if g.min() > 0 and g.min() / np.ceil(g.max() / hi) >= lo:
+            break
+    u_hold = float(u) + 2 * tp["limb_spacing"]
+    band_u = (c_lg[1] - tp.get("thigh_band_y", plan["hip"]["root"]["thigh_band_y"])) / -d_in[1]
+    lg_bands = dict(tp["bands"], strips_upper=tp.get("thigh_band_strips", tp["bands"]["strips"]))
     kl = [TRUNK, LEG, FOOT]
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
@@ -2021,18 +1978,18 @@ def build(plan, tier, ref, cv, L):
     else:
         VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
     C["_hip_ring"] = VF[cr["root"]].copy()
-    if "hip_named" in C:                             # (pass 3b item 4) the curve root's measures, after the relax
-        nm = dict(C["hip_named"], **C["hip_named_lobe"])
-        C["hip_named_mm"] = {k: (VF[v] * 1000).round(1).tolist() for k, v in nm.items()}
-        fr = VF[C["fold_row"]]
-        sel = (fr[:, 0] >= 0.04) & (fr[:, 0] <= 0.12)
-        C["fold_row_y_mm"] = [round(float(fr[sel, 1].min()) * 1000, 1), round(float(fr[sel, 1].max()) * 1000, 1)]
-        lat = VF[cr["lat"][1:-1]]
-        q = np.array(plan["hip"]["root"]["crotch"]["line"], float)[:5, :3] / 1000.0
-        seg = np.concatenate([np.linspace(q[k], q[k + 1], 20) for k in range(len(q) - 1)])
-        d = np.linalg.norm(lat[:, None] - seg[None], axis=2).min(1)
-        C["crease_tol_mm"] = round(0.8 * tp["limb_spacing"] * 1000, 1)
-        C["crease_line_dist_mm"] = round(float(d[(lat[:, 1] > 0.985) & (lat[:, 1] < 1.007)].max()) * 1000, 1)
+    # (pass 3b item 4) the curve root's measures, after the relax
+    nm = dict(C["hip_named"], **C["hip_named_lobe"])
+    C["hip_named_mm"] = {k: (VF[v] * 1000).round(1).tolist() for k, v in nm.items()}
+    fr = VF[C["fold_row"]]
+    sel = (fr[:, 0] >= 0.04) & (fr[:, 0] <= 0.12)
+    C["fold_row_y_mm"] = [round(float(fr[sel, 1].min()) * 1000, 1), round(float(fr[sel, 1].max()) * 1000, 1)]
+    lat = VF[cr["lat"][1:-1]]
+    q = np.array(plan["hip"]["root"]["crotch"]["line"], float)[:5, :3] / 1000.0
+    seg = np.concatenate([np.linspace(q[k], q[k + 1], 20) for k in range(len(q) - 1)])
+    d = np.linalg.norm(lat[:, None] - seg[None], axis=2).min(1)
+    C["crease_tol_mm"] = round(0.8 * tp["limb_spacing"] * 1000, 1)
+    C["crease_line_dist_mm"] = round(float(d[(lat[:, 1] > 0.985) & (lat[:, 1] < 1.007)].max()) * 1000, 1)
     Gc = bc["cap"]                                   # (a, pass 3b) the cap corners vs the apex, the wrist / ankle
     cn = [Gc[0, 0], Gc[-1, 0], Gc[-1, -1], Gc[0, -1]]
     C["breast_cap_corner_mm"] = [round(float(np.linalg.norm(VF[v] - L["breast_apex"])) * 1000, 1) for v in cn]
