@@ -191,6 +191,21 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "bark.holloway.said.10": {
+   "hash": "96fa9f9c7737",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "bark.holloway.said.11": {
+   "hash": "58075b3cfd77",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "bark.holloway.said.12": {
+   "hash": "f4885db70e96",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
   "bark.holloway.said.2": {
    "hash": "8645e757e3c8",
    "by": "the story lead",
@@ -677,54 +692,59 @@
    "date": "2026-11-04"
   },
   "dlg.chid.carried_chid.0": {
-   "hash": "b84f08ca88d8",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "8871ea1c2a69",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.1": {
-   "hash": "1ffb1f5b11ba",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "b84f08ca88d8",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.chid.carried_chid.10": {
+   "hash": "e72d753a2546",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.2": {
-   "hash": "340b80671175",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "1ffb1f5b11ba",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.3": {
-   "hash": "309d7ce025af",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "340b80671175",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.4": {
-   "hash": "e0c0a70d8c52",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "309d7ce025af",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.5": {
-   "hash": "113293f6a225",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "e0c0a70d8c52",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.6": {
-   "hash": "efb1e75c5f34",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "113293f6a225",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.7": {
-   "hash": "65de7e4157f3",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "efb1e75c5f34",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.8": {
-   "hash": "03464668e2a3",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "65de7e4157f3",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_chid.9": {
-   "hash": "e72d753a2546",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "03464668e2a3",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.carried_who.0": {
    "hash": "a1ee03f2c7c7",
@@ -757,14 +777,19 @@
    "date": "2026-10-11"
   },
   "dlg.chid.cb_opened_vault.0": {
-   "hash": "e5236e2141fc",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "7dcf368d0828",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.cb_vault2.0": {
-   "hash": "df1d1f634cbc",
-   "by": "the story lead",
-   "date": "2026-10-11"
+   "hash": "cee18156876e",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.chid.cb_vault_up.0": {
+   "hash": "3ac98c9df9c7",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.chid.cut.0": {
    "hash": "1cf195899b48",
@@ -961,11 +986,6 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
-  "dlg.cin_drowned_fire.prints.0": {
-   "hash": "2d8b284f0b0e",
-   "by": "the story lead",
-   "date": "2026-10-11"
-  },
   "dlg.cin_first_light.back.0": {
    "hash": "a9b2d8ab716a",
    "by": "the story lead",
@@ -1030,6 +1050,51 @@
    "hash": "7a9cdb2c49b5",
    "by": "the story lead",
    "date": "2026-10-11"
+  },
+  "dlg.door_night.ask_her.0": {
+   "hash": "fba89159397b",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.gets_up.0": {
+   "hash": "4885b6b08026",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.go.0": {
+   "hash": "3cf830c1d37c",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.go_home.0": {
+   "hash": "89564cc39021",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.gone.0": {
+   "hash": "0577c2867752",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.heart.0": {
+   "hash": "2b0d38defddf",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.lie_down.0": {
+   "hash": "ed097090dec5",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.ranks.0": {
+   "hash": "6490712c2d4c",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.door_night.wrong.0": {
+   "hash": "95fcb174df64",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "dlg.greymuzzle.again.0": {
    "hash": "d3ecadc53d15",
@@ -1821,6 +1886,21 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.scene_bed.count.0": {
+   "hash": "d6ca90acb4d0",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.scene_bed.cup.0": {
+   "hash": "a2ea3ae41680",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.scene_bed.gate.0": {
+   "hash": "a646f58ac2dd",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
   "dlg.scene_did_he.did.0": {
    "hash": "57610b638860",
    "by": "the story lead",
@@ -2116,15 +2196,220 @@
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.tam.again.0": {
+   "hash": "5419a13bee81",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.1": {
+   "hash": "ff5e9b7c5e0c",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.2": {
+   "hash": "ca6c36d308ad",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.3": {
+   "hash": "835ad0dfcb87",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.4": {
+   "hash": "e8a085a559b4",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.tam.again.5": {
+   "hash": "cb6183eda30a",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
   "dlg.tam.fetch.0": {
    "hash": "c94e23739b42",
    "by": "the story lead",
    "date": "2026-10-11"
   },
+  "dlg.vonnra.bleed.0": {
+   "hash": "b2ec5506e9c2",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.burn.0": {
+   "hash": "0565f2416d08",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.cb_opened_vault.0": {
+   "hash": "013b23af1ddd",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.cb_vault2.0": {
+   "hash": "71b579a46284",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.cb_vault2.1": {
+   "hash": "224e273bb96d",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.chains.0": {
+   "hash": "6f303417ef21",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.cost.0": {
+   "hash": "716f0d0d60cd",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.dont.0": {
+   "hash": "b2d8dc471998",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.ford_tale.0": {
+   "hash": "a516c8ccd4c6",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.ford_tale.1": {
+   "hash": "5f7d513bb0ec",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.0": {
+   "hash": "4c294dda66f0",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.1": {
+   "hash": "eb1cad9050ce",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.2": {
+   "hash": "71eeaa3befc8",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.3": {
+   "hash": "7bb4ce0c8eee",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.4": {
+   "hash": "22fbc444d49f",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.hub.5": {
+   "hash": "15dacab66734",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.jessop_in.0": {
+   "hash": "9c12341af39e",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.keeper.0": {
+   "hash": "a41bf24f111d",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.key.0": {
+   "hash": "c527e16381ad",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.key.1": {
+   "hash": "bf233ad9e93b",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.office.0": {
+   "hash": "3c0d5228ef30",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.office_more.0": {
+   "hash": "2ef23f021116",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.order.0": {
+   "hash": "bfa250de066a",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.six.0": {
+   "hash": "c2c715442274",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.tale_end.0": {
+   "hash": "4afccb141a08",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.vault.0": {
+   "hash": "13e70b13e4bd",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.vault.1": {
+   "hash": "cba6117e34d8",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.vault.2": {
+   "hash": "0246658d258d",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.vonnra.why.0": {
+   "hash": "d0177dc691a7",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
   "dlg.warden_answer.wait.0": {
    "hash": "69875509b8ec",
    "by": "the story lead",
    "date": "2026-10-11"
+  },
+  "dlg.wenna.cb_clean.0": {
+   "hash": "078d1461a3e3",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.wenna.cb_clean.1": {
+   "hash": "f51662dcc16d",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.wenna.cb_clean.2": {
+   "hash": "eec85ddc9a64",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.wenna.hub.0": {
+   "hash": "b9a282db5173",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.wenna.hub.1": {
+   "hash": "d877514463f9",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
+  },
+  "dlg.wenna.hub.2": {
+   "hash": "3c349f0c50e2",
+   "by": "S1 writer 3",
+   "date": "2026-11-05"
   },
   "say.005625eee2b8": {
    "hash": "005625eee2b8",
@@ -2433,11 +2718,6 @@
   },
   "say.8f4acfe90f92": {
    "hash": "8f4acfe90f92",
-   "by": "the story lead",
-   "date": "2026-10-11"
-  },
-  "say.93b63298edc0": {
-   "hash": "93b63298edc0",
    "by": "the story lead",
    "date": "2026-10-11"
   },
