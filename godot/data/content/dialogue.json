@@ -5543,6 +5543,29 @@
     "when": {
      "all": [
       {
+       "fact": "chain.two",
+       "eq": true
+      },
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "cb:clean",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_clean"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "wenna"
       },
       {
@@ -6345,6 +6368,38 @@
       "end": true
      }
     ]
+   },
+   "cb_clean": {
+    "id": "cb_clean",
+    "text": [
+     {
+      "when": {
+       "fact": "beasts.outcome",
+       "eq": "cured"
+      },
+      "text": "It's cleaner than I made it. I don't know why."
+     },
+     {
+      "when": {
+       "fact": "hollow.healed",
+       "eq": "scar"
+      },
+      "text": "It's cleaner than it was. I don't know why."
+     },
+     {
+      "text": "It's clean. I don't know why it's clean."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "cb:clean",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },

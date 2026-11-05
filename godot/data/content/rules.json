@@ -1076,6 +1076,57 @@
    "report": null
   },
   {
+   "id": "hollow.healed_clear",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chain.two",
+      "eq": true
+     },
+     {
+      "fact": "stream.clear",
+      "eq": true
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "hollow.healed": "scar"
+     }
+    }
+   ],
+   "report": "The scar on the hillside over the Hollow has closed over in the night. There are wolves drinking at the water in the open, in daylight. On the Dig's hill, nothing moves."
+  },
+  {
+   "id": "hollow.healed",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chain.two",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "stream.clear",
+       "eq": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "stream.clear": true,
+      "hollow.healed": "chain"
+     }
+    }
+   ],
+   "report": "The stream in the Hollow is running clear this morning. The scar on the hillside has closed over in the night, and there are wolves drinking at the water in the open, in daylight. On the Dig's hill, nothing moves."
+  },
+  {
    "id": "holloway.bed",
    "once": true,
    "when": {
