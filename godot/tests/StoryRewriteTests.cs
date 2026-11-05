@@ -460,4 +460,72 @@ public class StoryRewriteTests
         a2.World.Facts["mother.carved"] = true;
         Assert.DoesNotContain(Simulation.AdvanceDay(a2.C, () => 0.5).Lines, l => l.Contains("a tap, and a long wait"));
     }
+
+    /// <summary>S1, the seven chains, Act 1 in data (docs/story/PLAN.md section 4; docs/handoff/story.md):
+    /// Vonnra's tale ends on vonnra.told and never says "vessel" (her lie is the names only); the narrator's
+    /// one line on Corvane's body is exactly "He gets up."; the quiet ford reports on the morning of day 3,
+    /// and Holloway's count comes right at night on days 2 to 4 until chain two; the dawn chain two is set
+    /// the Hollow heals (the stream runs clear, or the scar only when it already ran clear) and his bed is
+    /// queued for dusk; the scene at the south gate sets holloway.bed_seen and never says "Count's right."
+    /// (Act 2's rope does); the toll's first receipt comes the morning after her first real fall, never before.</summary>
+    [Fact]
+    public void The_seven_chains_hold_in_act_one()
+    {
+        var v = Convo("vonnra");
+        string[] tale = ["chains", "keeper", "bleed", "ford_tale", "burn", "order", "six", "office", "office_more", "cost", "why", "dont", "key", "jessop_in", "tale_end"];
+        foreach (var id in tale)
+            Assert.DoesNotContain(v.Nodes[id].Text, t => t.Text.Contains("vessel", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(v.Nodes["tale_end"].Effects!, e => e.Set?.ContainsKey("vonnra.told") == true);
+        Assert.Equal("He gets up.", Convo("door_night").Nodes["gets_up"].Text.Single().Text);
+
+        // The quiet ford: the morning of day 3, before anyone claims it.
+        var q = Q();
+        q.World.Day = 2;
+        Assert.Contains(Simulation.AdvanceDay(q.C, () => 0.5).Lines, l => l.StartsWith("Nobody stood in the ditch"));
+        // Holloway's count at night, days 2 to 4, off once chain two is out.
+        var said = Lore.Person("holloway")!.Said!.Where(l => l.Text.StartsWith("Eleven in.")).ToList();
+        Assert.Equal(3, said.Count);
+        Assert.All(said, l => Assert.True(l.Night == true));
+        for (int day = 2; day <= 4; day++)
+        {
+            var s = Q();
+            s.World.Day = day;
+            Assert.Equal(1, said.Count(l => SurvivorUnchained.World.Rules.Test(l.When, s.C)));
+            s.World.Facts["chain.two"] = true;
+            Assert.DoesNotContain(said, l => SurvivorUnchained.World.Rules.Test(l.When, s.C));
+        }
+
+        // The dawn after the door: chain two, the Hollow healed, the bed queued for dusk.
+        var c = Q();
+        c.World.Facts["vault.opened"] = true;
+        c.World.Facts["holloway.confessed"] = true;
+        var dawn = Simulation.AdvanceDay(c.C, () => 0.5);
+        Assert.True(c.World.Fact("chain.two").Truthy);
+        Assert.Equal("chain", c.World.Fact("hollow.healed").Str);
+        Assert.True(c.World.Fact("stream.clear").Truthy);
+        Assert.Contains(dawn.Lines, l => l.StartsWith("The stream in the Hollow is running clear"));
+        Assert.Equal("scene_bed", c.World.Fact("scene.dusk").Str);
+        var k = Q();
+        k.World.Facts["vault.opened"] = true;
+        k.World.Facts["stream.clear"] = true;
+        var dawn2 = Simulation.AdvanceDay(k.C, () => 0.5);
+        Assert.Equal("scar", k.World.Fact("hollow.healed").Str);
+        Assert.Contains(dawn2.Lines, l => l.StartsWith("The scar on the hillside"));
+        Assert.DoesNotContain(dawn2.Lines, l => l.StartsWith("The stream in the Hollow"));
+
+        // His bed: the scene at the south gate.
+        var b = Q();
+        var (bed, _) = Play("scene_bed", b, "Leave them be");
+        var all = string.Join(" ", bed);
+        Assert.DoesNotContain("Count's right", all);
+        Assert.Contains("Might go in a bed.", all);
+        Assert.Contains("without her crossbow", all);
+        Assert.True(b.World.Fact("holloway.bed_seen").Truthy);
+
+        // The toll's first receipt.
+        var f = Q();
+        Assert.DoesNotContain(Simulation.AdvanceDay(f.C, () => 0.5).Lines, l => l == "Up the street, nobody is baking.");
+        f.World.Facts["player.deaths"] = 1;
+        Assert.Contains(Simulation.AdvanceDay(f.C, () => 0.5).Lines, l => l == "Up the street, nobody is baking.");
+    }
 }

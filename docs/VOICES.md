@@ -147,7 +147,7 @@ oaths from anyone's scripture: when something is unbearable he reaches for
 his mother ("Oh, Mam."), as his brother does. *Casting:* 50s, Glaswegian, wry; the
 bedside calm under the cant.
 
-**Chid** ("the Fool"). Light, breathless, delighted; exclamations; sentences
+**Chid** ("the Fool"). Light, breathless, delighted; exclamations; sentences Renamed Corvane in the game (S1, 5 November 2026); the id stays `chid`.
 that run on and double back. Theology in plain words, and now and then a
 line that is far older than he looks, which he does not notice saying.
 Never cynical; never says how old he is (once, in Act 3, and only if asked who

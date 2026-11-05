@@ -12,6 +12,9 @@ namespace SurvivorUnchained.Sim;
  *   pull     a vortex drags her toward its heart, then the heart lands;
  *   closing  the horde as a ring round her: the zone spawns its foes on the ring's points (TellClosing), they are
  *            held for the windup, then rush in (the Flare is the answer).
+ * H6 (the owner, after demo-rc2: standing in the marks did not kill), each only where its data asks: a caught charge
+ * knocks her down (Knock), a pull's landing marks a slam on its heart (Follow), a closing's band is a wall but for its
+ * gap and crushes her inside it (Crush), and every kit damage scales by the night's tier (KitDamageMul, TierDamage).
  * Every one emits Ev.Telegraph with its Tell (the kind) at Warn and at Land (Caught: she was in it), the keys of H3's
  * sound bank. Nothing here runs until a zone casts one: with none cast the fight is as it was, draw for draw. */
 public sealed partial class Battle
@@ -39,6 +42,21 @@ public sealed partial class Battle
         /// <summary>A closing's rush still running (s): its ring's foes that reach her hit her once each (Kind.Hit).</summary>
         public double RushLeft;
         internal readonly HashSet<double> Bit = new();
+        /// <summary>A closing's wall and crush still running past its landing (s; Kind.CrushAfter + CrushFor).</summary>
+        public double WallLeft;
+        internal bool Wall, WallShown;
+        internal double Since, CrushNext;
+        /// <summary>A closing's band stands as a wall now (Kind.Crush): she cannot cross it outside its gap.</summary>
+        public bool Walled
+        {
+            get
+            {
+                if (!Wall || Foes.Count == 0 || (Landed && WallLeft <= 0)) return false;
+                int live = 0;
+                foreach (var (e, seed) in Foes) if (Same(e, seed)) live++;
+                return live >= K.WallShare * Foes.Count - 1e-9;
+            }
+        }
     }
 
     readonly List<TellOn> tells = new();
@@ -46,6 +64,14 @@ public sealed partial class Battle
     /// <summary>The closing bites and opens (its Hit and Gap, H1 round 2B): set by a zone whose nights carry the kit
     /// (ArenaRun, the kit's tiers). Off, a closing is as it was: a gapless crowd, draw for draw.</summary>
     public bool ClosingTeeth;
+    /// <summary>A pack's far foe held up against cover on its way to its slot round her (the straight line to its slot
+    /// blocked, looked at twice a second) follows the flow field wholly for two seconds (Enemy.FlowUntil): N34's wolves
+    /// stuck behind a rock. Set by the arena's director (H6, ArenaRun.Director.cs); off: as it was.</summary>
+    public bool PackRoundCover;
+
+    /// <summary>Every kit damage times this (H6: the night's tier, the waves' TierDamage; set by the zone with ClosingTeeth).
+    /// 1: as it was.</summary>
+    public double KitDamageMul = 1;
 
     /// <summary>The kit telegraphs alive now (their windups, a charger's run): the hands read a pull's reach here.</summary>
     public IReadOnlyList<TellOn> ActiveTells => tells;
@@ -66,7 +92,7 @@ public sealed partial class Battle
         if (k == null || Over != null || (k.Length > 0 && from == null)) return null;
         var b = new EnemyBlow
         {
-            Tell = kind, From = from, Source = from?.Def.Name ?? kind, Label = null, Delay = k.Windup, Damage = k.Damage * MaxHp,
+            Tell = kind, From = from, Source = from?.Def.Name ?? kind, Label = null, Delay = k.Windup, Damage = k.Damage * MaxHp * KitDamageMul,
         };
         var t = new TellOn { Kind = kind, Blow = b, Scale = scale, K = k, From = from, FromSeed = from?.Seed ?? 0 };
         if (k.Length > 0)
@@ -93,12 +119,16 @@ public sealed partial class Battle
             {
                 double a0 = Rng.Next() * Math.Tau, ro = b.Radius + 2;
                 b.GapAngle = a0;
-                for (int i = 0; i < 8; i++)
-                {
-                    double a = a0 + i * Math.Tau / 8, gx = x + Math.Cos(a) * ro, gz = z + Math.Sin(a) * ro;
-                    if (!Collision.Blocked(gx, gz, 0.6) && (InBounds == null || InBounds(gx, gz))) { b.GapAngle = a; break; }
-                }
+                if (GapOnScreen(x, z, (b.Inner + b.Radius) / 2, ro) is double on) b.GapAngle = on;
+                else
+                    for (int i = 0; i < 8; i++)
+                    {
+                        double a = a0 + i * Math.Tau / 8, gx = x + Math.Cos(a) * ro, gz = z + Math.Sin(a) * ro;
+                        if (!Collision.Blocked(gx, gz, 0.6) && (InBounds == null || InBounds(gx, gz))) { b.GapAngle = a; break; }
+                    }
                 b.GapWidth = k.Gap * scale;
+                // Its wall (H6): the band stands but for the gap while its ring lives.
+                t.Wall = k.Crush > 0;
             }
         }
         else
@@ -119,6 +149,52 @@ public sealed partial class Battle
             });
         tells.Add(t);
         return b;
+    }
+
+    /// <summary>The play camera as the sim sees it (H6 r1 fix 1): its distance (m, the zone's own; ArenaRun sets it each
+    /// frame), pitch (degrees), vertical lens (degrees) and aspect. The camera never yaws and looks from +Z at her (and a
+    /// little ahead of her run), so a closing's gap can be put where the player sees it. ViewDistance 0: not known.</summary>
+    public double ViewDistance, ViewPitch = 64, ViewFov = 34, ViewAspect = 16.0 / 9;
+    /// <summary>The share of the screen a gap must sit in (NDC, y up): x 120-1800, y 120-860 at 1920x1080, clear of the
+    /// HUD's statues along the bottom.</summary>
+    const double SafeX = 0.875, SafeTop = 0.778, SafeBottom = 0.593;
+
+    /// <summary>The app can now tell whether a ground point (gx, gz) is inside the play camera's safe area (the camera
+    /// following her with its lead). True when the view is not known.</summary>
+    public bool OnScreen(double gx, double gz)
+    {
+        if (ViewDistance <= 0) return true;
+        var p = Player;
+        double th = ViewPitch * Math.PI / 180, cp = Math.Cos(th), sp = Math.Sin(th);
+        // (FollowCamera: the look is 0.8 m up on her plus a lead of her speed x Lead x 0.2)
+        double lx = p.X + p.Vx * 0.44, ly = 0.8, lz = p.Z + p.Vz * 0.44;
+        double cx = lx, cy = ly + sp * ViewDistance, cz = lz + cp * ViewDistance;
+        double dx = gx - cx, dy = -cy, dz = gz - cz;
+        double fwd = dy * -sp + dz * -cp, right = dx, up = dy * cp + dz * -sp;
+        if (fwd <= 0.1) return false;
+        double tv = Math.Tan(ViewFov * Math.PI / 360), th2 = tv * ViewAspect;
+        double nx = right / (fwd * th2), ny = up / (fwd * tv);
+        return Math.Abs(nx) <= SafeX && ny <= SafeTop && ny >= -SafeBottom;
+    }
+
+    /// <summary>A closing's gap bearing whose middle (at radius r) is on screen and whose outside (at ro) is open ground,
+    /// nearest the way she is going (her run; standing, her facing). Null: none (the old seeded search then).</summary>
+    double? GapOnScreen(double x, double z, double r, double ro)
+    {
+        if (ViewDistance <= 0) return null;
+        var p = Player;
+        double head = Len(p.Vx, p.Vz) > 0.5 ? Math.Atan2(p.Vz, p.Vx) : p.Facing, best = double.MaxValue;
+        double? pick = null;
+        for (int i = 0; i < 72; i++)
+        {
+            double a = i * Math.Tau / 72, gx = x + Math.Cos(a) * r, gz = z + Math.Sin(a) * r;
+            if (!OnScreen(gx, gz)) continue;
+            double ox = x + Math.Cos(a) * ro, oz = z + Math.Sin(a) * ro;
+            if (Collision.Blocked(ox, oz, 0.6) || (InBounds != null && !InBounds(ox, oz))) continue;
+            double off = Math.Abs(Math.IEEERemainder(a - head, Math.Tau));
+            if (off < best) { best = off; pick = a; }
+        }
+        return pick;
     }
 
     /// <summary>
@@ -173,6 +249,8 @@ public sealed partial class Battle
         var w = Telegraphs.Waves;
         var p = Player;
         double now = Time, land = now + (Telegraphs.Get(kind)?.Windup ?? 0), wait = 0;
+        // (H6 r1 fix 4: nothing new is cast on her while she is down or in her get-up grace; marks already running run on)
+        if (now < knockGraceUntil) wait = knockGraceUntil - now;
         landings.RemoveAll(l => l.At < now - w.Spacing);
         foreach (var (at, bl) in landings)
             if (Near(bl, p.X, p.Z) <= w.SpacingNear && Math.Abs(land + wait - at) < w.Spacing) wait = Math.Max(wait, at + w.Spacing - land);
@@ -215,8 +293,9 @@ public sealed partial class Battle
             var bl = t.Blow;
             if (t.Landed)
             {
+                if (t.WallLeft > 0) Crush(t, dt);
                 if (t.RushLeft > 0) Rush(t, dt); else RunCharge(t, dt);
-                if (t.RunLeft <= 0 && t.RushLeft <= 0) tells.RemoveAt(i);
+                if (t.RunLeft <= 0 && t.RushLeft <= 0 && t.WallLeft <= 0) { ShowWall(t, false); tells.RemoveAt(i); }
                 continue;
             }
             if (!blows.Contains(bl)) { tells.RemoveAt(i); continue; }
@@ -233,6 +312,7 @@ public sealed partial class Battle
             if (t.K.Inner > 0 && t.Foes.Count > 0 && !t.Foes.Exists(f => Same(f.E, f.Seed)))
             {
                 blows.Remove(bl);
+                ShowWall(t, false);
                 Events.Emit(new Ev.Telegraph { Id = bl.MarkId, Tell = bl.Tell, Phase = TellPhase.Off, Shape = bl.Shape, Kind = bl.Kind, X = bl.X, Z = bl.Z, Radius = bl.Radius, Inner = bl.Inner, Hostile = true });
                 tells.RemoveAt(i);
                 continue;
@@ -276,7 +356,101 @@ public sealed partial class Battle
             if (t.K.RushFor > 0) { f.Haste = t.K.Rush; f.HasteT = t.K.RushFor; }
         }
         if (ClosingTeeth && t.K.Hit > 0 && t.Foes.Count > 0) t.RushLeft = Math.Max(0.1, t.K.RushFor);
-        if (t.RunLeft <= 0 && t.RushLeft <= 0) tells.Remove(t);
+        var p = Player;
+        // A caught charge (one that hurt her) knocks her down (H6).
+        if (t.K.Knock > 0 && t.K.Length > 0 && t.Blow.Dealt > 0 && p.Alive) KnockPlayer(t.K.Knock, t.Blow);
+        // A pull's slam (H6): its heart is marked the moment the drag ends, and lands Follow s later.
+        if (t.K.Follow > 0 && Over == null)
+        {
+            var bl = t.Blow;
+            var f = new EnemyBlow
+            {
+                Tell = t.Kind, From = t.From != null && Same(t.From, t.FromSeed) ? t.From : null, Source = bl.Source, Label = null,
+                Shape = TelegraphShape.Circle, X = bl.X, Z = bl.Z, Radius = bl.Radius, Delay = t.K.Follow, Damage = t.K.FollowDamage * MaxHp * KitDamageMul,
+            };
+            Blow(f);
+            landings.Add((Time + t.K.Follow, f));
+        }
+        // A closing's wall and crush run on past its landing (H6).
+        if (t.Wall && t.Foes.Count > 0) { t.WallLeft = t.K.CrushAfter + t.K.CrushFor; t.Since = 0; t.CrushNext = t.K.CrushAfter; }
+        if (t.RunLeft <= 0 && t.RushLeft <= 0 && t.WallLeft <= 0) { ShowWall(t, false); tells.Remove(t); }
+    }
+
+    /// <summary>After a knockdown she is up for this long before another can take her (H6).</summary>
+    public const double KnockGrace = 2.5;
+    double knockGraceUntil = -1;
+    /// <summary>Seconds left of her knockdown and its get-up grace (0: none): no new kit mark is cast on her in it (KitWait).</summary>
+    public double KnockGraceLeft => Math.Max(0, knockGraceUntil - Time);
+
+    /// <summary>The app can now knock her down (the kit's charge, H6): held where she lies for a while (less for the
+    /// tenacious; a dash ends it, as a root does), with Ev.Knockdown for the view.</summary>
+    public void KnockPlayer(double seconds, EnemyBlow? by = null)
+    {
+        var p = Player;
+        if (!p.Alive || Art.SprintT > 0 || Art.Rush != null || p.Leap != null) return;
+        double s = seconds * (1 - Clamp(Stats.Get(Stat.Tenacity), 0, 0.8));
+        if (s <= 0) return;
+        // (a get-up grace: no second knockdown until KnockGrace s after she is up; 4 Nov, lead 2: a stand charge on her
+        // as she rose chained ten knockdowns 1.5 s apart, 24 s held down)
+        if (Time < knockGraceUntil) return;
+        knockGraceUntil = Time + s + KnockGrace;
+        p.RootT = Math.Max(p.RootT, s);
+        p.Vx = p.Vz = 0;
+        var kd = new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s };
+        if (by is { Shape: TelegraphShape.Line }) { kd.FromX = by.X; kd.FromZ = by.Z; kd.ToX = by.X1; kd.ToZ = by.Z1; kd.Width = by.Width; }
+        Events.Emit(kd);
+    }
+
+    /// <summary>A closing's crush (H6): from CrushAfter past its landing, for CrushFor, while its wall stands and she is
+    /// inside its band's inner edge, a blow of Crush x 0.5 each half second (a blow's grace delays it, never skips it).</summary>
+    void Crush(TellOn t, double dt)
+    {
+        t.WallLeft -= dt;
+        t.Since += dt;
+        var p = Player;
+        var bl = t.Blow;
+        if (!p.Alive || t.Since < t.CrushNext || t.Since > t.K.CrushAfter + t.K.CrushFor || !t.Walled) return;
+        if (Dist(p.X, p.Z, bl.X, bl.Z) >= bl.Inner) return;
+        if (p.Iframes > 0 || p.Leap != null) return;
+        t.CrushNext = t.Since + 0.5;
+        HurtPlayer(t.K.Crush * 0.5 * MaxHp * KitDamageMul, School.Physical, "closing", null, telegraphed: true);
+    }
+
+    /// <summary>The closings' walls (H6), after she has moved from (px, pz): outside a standing wall's gap she does not
+    /// cross its band, in or out (walking, dragged or dashing: she stops at its edge and slides along it).</summary>
+    void Walls(double px, double pz)
+    {
+        var p = Player;
+        foreach (var t in tells)
+        {
+            bool up = t.Walled;
+            ShowWall(t, up);
+            if (!up || !p.Alive) continue;
+            var bl = t.Blow;
+            double r0 = Dist(px, pz, bl.X, bl.Z), dx = p.X - bl.X, dz = p.Z - bl.Z, r1 = Len(dx, dz);
+            if (r1 < 1e-6) continue;
+            double mid = (bl.Inner + bl.Radius) / 2;
+            if (bl.GapWidth > 0 && Math.Abs(Math.IEEERemainder(Math.Atan2(dz, dx) - bl.GapAngle, Math.Tau)) * mid <= bl.GapWidth / 2) continue;
+            double inEdge = bl.Inner - p.Radius, outEdge = bl.Radius + p.Radius, to;
+            int side;
+            if (r0 < bl.Inner && r1 > (to = Math.Max(inEdge, r0))) side = 1;
+            else if (r0 > bl.Radius && r1 < (to = Math.Min(outEdge, r0))) side = -1;
+            else continue;
+            double nx = dx / r1, nz = dz / r1;
+            p.X = bl.X + nx * to; p.Z = bl.Z + nz * to;
+            Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            double vr = p.Vx * nx + p.Vz * nz;
+            if (vr * side > 0) { p.Vx -= vr * nx; p.Vz -= vr * nz; }
+        }
+    }
+
+    /// <summary>A closing's wall shown standing or fallen (Ev.ClosingWall, once each way).</summary>
+    void ShowWall(TellOn t, bool up)
+    {
+        if (t.WallShown == up) return;
+        t.WallShown = up;
+        var bl = t.Blow;
+        Events.Emit(new Ev.ClosingWall { Id = bl.MarkId, X = bl.X, Z = bl.Z, Inner = bl.Inner, Radius = bl.Radius, GapAngle = bl.GapAngle, GapWidth = bl.GapWidth, Up = up });
     }
 
     /// <summary>A closing's rush: each of its ring's foes that reaches her hits her once (a dash's frames let it by).</summary>
@@ -289,7 +463,7 @@ public sealed partial class Battle
         {
             if (!Same(f, seed) || t.Bit.Contains(seed) || Dist(f.X, f.Z, p.X, p.Z) > f.Radius + p.Radius + 0.35) continue;
             t.Bit.Add(seed);
-            HurtPlayer(t.K.Hit * MaxHp, School.Physical, f.Def.Name, f, telegraphed: true);
+            HurtPlayer(t.K.Hit * MaxHp * KitDamageMul, School.Physical, f.Def.Name, f, telegraphed: true);
             if (!p.Alive) return;
         }
     }
@@ -321,6 +495,7 @@ public sealed partial class Battle
     {
         foreach (var t in tells)
         {
+            ShowWall(t, false);
             if (t.From != null && Same(t.From, t.FromSeed)) t.From.HoldUntil = 0;
             foreach (var (f, seed) in t.Foes) if (Same(f, seed)) f.HoldUntil = 0;
         }

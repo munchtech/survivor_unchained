@@ -720,11 +720,13 @@ public partial class GameHud : CanvasLayer
         int m = (int)(shown / 60), s = (int)(shown % 60);
         tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
         tallyTime.AddThemeColorOverride(FontColor, arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
-        tallyKills.Text = b.KillCount.ToString();
+        // (H7 r2: a Flare's kills count as its band reaches each, not at the press: FlareFx.KillsHeld)
+        int kills = Math.Max(0, b.KillCount - SurvivorUnchained.View.FlareFx.KillsHeld);
+        tallyKills.Text = kills.ToString();
         // The count pops when it climbs, at most ten times a second.
-        if (b.KillCount > killsShown) lastKillMs = Time.GetTicksMsec();
-        if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
-        killsShown = b.KillCount;
+        if (kills > killsShown) lastKillMs = Time.GetTicksMsec();
+        if (kills > killsShown && killPop <= 0.05) killPop = 0.15;
+        killsShown = kills;
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
     }
     // The chips over the globe and in the boons' row, as last built. They were
@@ -867,6 +869,23 @@ public partial class GameHud : CanvasLayer
         if (risesLeft is not int n || rise == null || letGo == null) return;
         fall = new FallChoices(n, rise, letGo);
         root.AddChild(fall);
+    }
+
+    DawnCardView? dawn;
+
+    /// <summary>The dawn's card over the held world (null takes it down at once); the play's HUD goes
+    /// while it is up, and comes back as it closes. Returns the card, for the keys the game passes it.</summary>
+    public DawnCardView? Dawn(DawnCard? c, Action? go = null)
+    {
+        if (dawn != null && IsInstanceValid(dawn)) dawn.QueueFree();
+        dawn = null;
+        // (the HUD goes as the card comes, and comes back as it goes: held to the card's own fade each frame in
+        // _Process, over anything else fading the HUD, such as a cinematic's hand-back)
+        if (c == null) play.Modulate = Colors.White;
+        if (c == null || go == null) return null;
+        dawn = new DawnCardView(c, () => { dawn = null; go(); });
+        root.AddChild(dawn);
+        return dawn;
     }
 
     StoryChoices? choice;
@@ -1463,6 +1482,7 @@ public partial class GameHud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        if (dawn != null && IsInstanceValid(dawn)) { playFade?.Kill(); playFade = null; play.Modulate = new Color(1, 1, 1, 1 - dawn.Modulate.A); }
         using var _ = new Perf.Span(Perf.Part.Hud);
         if (tipWaiting && Time.GetTicksMsec() >= tipHoldUntil && !FlareAftermath(Time.GetTicksMsec())) { tipWaiting = false; var th = tipHeld; tipHeld = null; Hint(th); }
         float dt = (float)delta;
@@ -1542,7 +1562,7 @@ public partial class GameHud : CanvasLayer
         // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false);
-        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha);
+        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha, irons.Dash.Max, irons.Dash.Count, irons.Dash.Recharge);
         // The art readied: the globe's heart and halo swell once and settle.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;

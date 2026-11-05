@@ -55,6 +55,10 @@ public sealed class Autopilot
     public bool Take(Act a) => pressed.Remove(a);
     void Press(Act a) => pressed.Add(a);
 
+    double draftFor;
+    static readonly double DraftHold = Args.Num("draft-hold", 0);
+    static readonly bool DayRush = Args.Has("day-rush");
+
     public void Drive(double dt)
     {
         t += dt;
@@ -62,6 +66,8 @@ public sealed class Autopilot
         // A callout is read: a freeze answered 1.2 s (real) after it shows, with its answer or the key
         // that goes on, and a panel's words left up as long before a card is taken. (With --shot, not
         // before its frame is taken.)
+        // The dawn's card is read as a freeze is, then clicked through (with --shot, after its frame).
+        if (g.DawnUp) { if (g.DawnFor >= 1.2 && !Shots.Pending("dawn_card")) Controls.Instance.Press(Act.Confirm); return; }
         if (g.Teaching is { } tc && (tc.Kind == CalloutKind.Freeze || tc.Kind == CalloutKind.Panel && g.Overlay == "draft"))
         {
             if (g.TeachingFor < 1.2 || Shots.Pending("teach_" + tc.Id)) return;
@@ -72,6 +78,9 @@ public sealed class Autopilot
             }
         }
         // Drafted as a player would (the harness's greedy taste), or --draft first|random|path:ID.
+        // (--draft-hold S: a human's pause over the cards, H8's N35 repro: a draft open as a boss arrives)
+        if (g.Overlay == "draft") draftFor += dt; else draftFor = 0;
+        if (g.Overlay == "draft" && draftFor < DraftHold) return;
         if (g.Overlay == "draft" && g.Battle is { } db) { g.Pick(Math.Clamp(picker.Choose(db, g.Offers.ToList(), rng), 0, Math.Max(0, g.Offers.Count - 1))); return; }
         // A line is read at a reader's pace (pictures of conversations need the line on screen).
         if (g.Overlay == "dialogue") { if ((lineT += dt) > 2.4) { lineT = 0; g.Advance(); } return; }
@@ -199,6 +208,8 @@ public sealed class Autopilot
                 if (pickChampion) PickChampion(b);
                 tx = dg.X; tz = dg.Z;
                 dayFight = pd.DayFighting; dayRoad = true;
+                // (--day-rush: straight up the road to the gate, past every fight: the owner's run on demo-rc2, N22)
+                if (DayRush) { tx = 0.3; tz = -110; dayFight = false; }
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;

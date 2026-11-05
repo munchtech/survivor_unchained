@@ -1,0 +1,95 @@
+{
+ "family": "flare_boom_one_arrow",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "3202063a43f90baea5beb2bc8be90a8521c65a9b1fe0870387fc0a4364e8e3b6",
+   "file": null,
+   "dropped": "clap margin -0.172 < 0.00",
+   "measure": {
+    "duration_s": 1.824625850340136,
+    "peak_dbfs": -1.0338215370358401,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -28.329779008201225,
+    "crest_db": 27.295957471165384,
+    "lufs": -19.165842199163446,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 1578.2312925170068,
+    "centroid_hz": 4787.759234658715,
+    "clipped": 0,
+    "clap": 0.0289,
+    "clap_neg": 0.2011,
+    "clap_margin": -0.1721
+   }
+  },
+  {
+   "i": 1,
+   "key": "d4b77b50738a5461715fa3a520eb7325c5ebfccbe358858379760ba797071268",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 2.48,
+    "peak_dbfs": -1.0154922801734017,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -22.65409757980543,
+    "crest_db": 21.63860529963203,
+    "lufs": -14.056385080613968,
+    "lufs_padded": false,
+    "onset_ms": 0.5668934240362812,
+    "tail_ms": 1743.310657596372,
+    "centroid_hz": 2736.8914488916716,
+    "clipped": 0,
+    "clap": 0.3073,
+    "clap_neg": 0.1408,
+    "clap_margin": 0.1664
+   }
+  },
+  {
+   "i": 2,
+   "key": "e856abd85082c222a1f30532ea274781beb8424ab3fbfa6bc1d2018c5326b1f6",
+   "file": "flare_boom_one_arrow_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.879047619047619,
+    "peak_dbfs": -1.214836073500434,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -26.707424638338274,
+    "crest_db": 25.492588564837842,
+    "lufs": -20.059238671914528,
+    "lufs_padded": false,
+    "onset_ms": 53.28798185941043,
+    "tail_ms": 1685.7823129251701,
+    "centroid_hz": 3142.507326966256,
+    "clipped": 0,
+    "clap": 0.4138,
+    "clap_neg": 0.0416,
+    "clap_margin": 0.3723
+   }
+  },
+  {
+   "i": 3,
+   "key": "d9912762adf485c57a8916a9876e8bd44cb3fc1fc66f6c378427946066374cf2",
+   "file": "flare_boom_one_arrow_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.48,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -17.157527234873406,
+    "crest_db": 16.151999859842338,
+    "lufs": -12.992679068262406,
+    "lufs_padded": false,
+    "onset_ms": 0.5215419501133787,
+    "tail_ms": 1924.331065759637,
+    "centroid_hz": 615.3670290816206,
+    "clipped": 0,
+    "clap": 0.4162,
+    "clap_neg": 0.1996,
+    "clap_margin": 0.2166
+   }
+  }
+ ]
+}

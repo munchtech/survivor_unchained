@@ -7,6 +7,7 @@
 // sheet's edge, 1 in its middle.
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_linear;
@@ -15,8 +16,8 @@ uniform float opacity = 0.32;
 uniform float drift = 0.02;
 
 void fragment() {
-	vec2 p = vec2(UV.x * 0.06, UV.y * 0.025) + vec2(TIME * drift * 0.3, -TIME * drift);
-	float n = texture(noise_tex, p).g * 0.6 + texture(noise_tex, p * 2.6 + vec2(0.3, TIME * drift * 0.7)).b * 0.4;
+	vec2 p = vec2(UV.x * 0.06, UV.y * 0.025) + vec2(WORLD_TIME * drift * 0.3, -WORLD_TIME * drift);
+	float n = texture(noise_tex, p).g * 0.6 + texture(noise_tex, p * 2.6 + vec2(0.3, WORLD_TIME * drift * 0.7)).b * 0.4;
 	float body = smoothstep(0.35, 0.75, n) * smoothstep(0.0, 0.7, UV2.x);
 	float depth = texture(depth_tex, SCREEN_UV).r;
 	vec4 v = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);

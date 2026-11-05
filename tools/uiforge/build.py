@@ -63,6 +63,11 @@ def g_paper():
     paper.build(UI)
 
 
+def g_dawn_paper():
+    import paper
+    paper.build_card(UI)
+
+
 def g_cards():
     import cards
     cards.build_all(out("frames"))

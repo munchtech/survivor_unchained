@@ -49,10 +49,14 @@ public partial class PlayerView : Node3D
     /// <summary>Her silhouette through what hides her from the play camera (shaders/her_xray.gdshader, H1 round 2C): an
     /// overlay on her solid meshes (no cards, fur, eyes or teeth: an overlay ignores their cut-outs), on only in play
     /// with the camera far (HerLod.InPlay), eased in and out.</summary>
-    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader") };
+    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
+        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } };
+    void XraySet(string k, Variant v) { xray.SetShaderParameter(k, v); ((ShaderMaterial)xray.NextPass).SetShaderParameter(k, v); }
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
+    /// <summary>--xray-old: the x-ray as demo-rc2 had it (her own body hides her too), for the before strip.</summary>
+    static readonly bool XrayOld = SurvivorUnchained.Args.Has("xray-old");
     static bool XraySolid(GeometryInstance3D g)
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return false;
@@ -90,11 +94,13 @@ public partial class PlayerView : Node3D
         var cam = GetViewport()?.GetCamera3D();
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
+        // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
+        if ((k > 0 || want > 0) && !XrayOld) XraySet("her_at", GlobalPosition);
         if (k == xrayK) return;
         if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
         bool was = xrayK > 0;
         xrayK = k;
-        xray.SetShaderParameter("strength", k);
+        XraySet("strength", k);
         if (was != k > 0 && !ghostly) foreach (var g in xrayOn) if (IsInstanceValid(g)) g.MaterialOverlay = k > 0 ? xray : null;
     }
     bool ghostly;
@@ -117,6 +123,8 @@ public partial class PlayerView : Node3D
     /// <summary>The pool light's share (1: as built): ducked with the folk light inside a town lamp's reach by night (the
     /// lantern's wall and ground blown under both, judge j2 D4).</summary>
     public float PoolScale = 1;
+    /// <summary>The Flare's recovery (H7, FlareFx.Blow): her ember's pool x this after the main blow.</summary>
+    public float FlarePool = 1;
     /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
     /// camp's fire, which stood behind the lens and filled her face flat from the front, can be kept off her alone (E1 judge 3).</summary>
     public const uint HerLayer = 1u << 10;
@@ -185,6 +193,8 @@ public partial class PlayerView : Node3D
     bool entered, safeNow, threatNow, actedNow;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
+    // Her velocity this frame and last (the lean reads her travel's curve, not her facing's turn).
+    float velX, velZ, lastVelX, lastVelZ;
     // Standing and running, for her breaks and her breath.
     double stillT, runT, ranFor, breakAt = 9;
     readonly RandomNumberGenerator rng = new();
@@ -976,11 +986,21 @@ public partial class PlayerView : Node3D
         }
         else if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
-        else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
+        // Running, she faces where the stick asks, not where her eased velocity has got to (owner N27, "off when
+        // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
+        // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
+        // --turn-old: the old chase (before/after pictures).
+        else if (sp > 0.4f && p.Leap == null)
+        {
+            bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
+            float want = stick ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
+            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
+        }
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
         Watching(sp < 0.4f && p.AttackAnim == null);
+        StepKnock(p.DashT);
         // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {
@@ -1036,7 +1056,7 @@ public partial class PlayerView : Node3D
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
         // arcs do (the first from her left), the wide arcs her heavy cut.
-        if (p.AttackAnim is { } a && a.T != lastAttack)
+        if (p.AttackAnim is { } a && a.T != lastAttack && !KnockSkip(a.T))
         {
             lastAttack = a.T;
             var swings = mine ? HerClips.Swings(person.Kind) : System.Array.Empty<string>();
@@ -1071,9 +1091,13 @@ public partial class PlayerView : Node3D
             else if (!Busy) Upper("Hit_A", mine && own.Has("hit") ? 1.2 : 1.6);
         }
         hurtSeen -= dt;
-        speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));
+        // The run blend's speed after her ground speed: quick enough that a 180's plant shows in her legs
+        // (at 10 a second they ran on through the stop, 3.6 m/s off her ground speed; at 40, 1.4).
+        speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * (float)dt));
+        velX = (float)p.Vx; velZ = (float)p.Vz;
         if (mine) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
+        if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         else tree.Set(BlendPosition, speed);
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
@@ -1082,7 +1106,7 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
         Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)
@@ -1379,11 +1403,19 @@ public partial class PlayerView : Node3D
         if (carriage == null || dt <= 0) return;
         // Banking into turns: how fast she is turning, times how fast she
         // is going (a runner leans into a curve, a walker hardly at all).
+        // Now from her travel's own curve: the sideways pull (velocity x its change, over her speed), which is
+        // the old turn rate times speed on a steady curve, and nothing on a 180 (a plant, not a bank).
         float rate = Mathf.Wrap(Rotation.Y - heading, -Mathf.Pi, Mathf.Pi) / dt;
         heading = Rotation.Y;
-        turnRate = Mathf.Lerp(turnRate, rate, 1 - Mathf.Exp(-10 * dt));
+        if (!TurnOld)
+        {
+            float v = Mathf.Sqrt(velX * velX + velZ * velZ);
+            rate = v > 0.4f ? (velZ * (velX - lastVelX) - velX * (velZ - lastVelZ)) / dt / (v * Mathf.Max(v, speed)) : 0;
+        }
+        lastVelX = velX; lastVelZ = velZ;
+        turnRate = Mathf.Lerp(turnRate, rate, 1 - Mathf.Exp(-(TurnOld ? 10 : 16) * dt));
         float bank = Mathf.Clamp(-turnRate * speed * 1.6f, -14, 14);
-        carriage.Bank = Mathf.Lerp(carriage.Bank, bank, 1 - Mathf.Exp(-8 * dt));
+        carriage.Bank = Mathf.Lerp(carriage.Bank, bank, 1 - Mathf.Exp(-(TurnOld ? 8 : BankRate) * dt));
         // Into a start, back out of a stop.
         float acc = (sp - lastSpeed) / dt;
         lastSpeed = sp;
@@ -1418,6 +1450,11 @@ public partial class PlayerView : Node3D
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
+    /// <summary>--turn-old: her facing chasing her velocity, the run blend and the lean as before N27 (before/after
+    /// pictures); --face-rate R, --blend-rate R, --bank-rate R: how fast her facing meets the stick, her legs her speed, her lean its curve.</summary>
+    static readonly bool TurnOld = SurvivorUnchained.Args.Has("turn-old");
+    static readonly float FaceRate = SurvivorUnchained.Args.Num("face-rate", 36f), BlendRate = SurvivorUnchained.Args.Num("blend-rate", 40f),
+        BankRate = SurvivorUnchained.Args.Num("bank-rate", 14f);
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }

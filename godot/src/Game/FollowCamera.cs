@@ -34,7 +34,15 @@ public sealed class FollowCamera
     public Vector3? Toward;
     /// <summary>The share of the way the look leans toward it, and its most metres (a giant boss: the Ford-Warden).</summary>
     public float TowardShare = 0.33f, TowardMax = 4.5f;
-    float towardX, towardZ;
+    /// <summary>Metres: a boss farther than this from her is not leaned to (the off-screen pointer carries it; H8, N35,
+    /// the owner on demo-rc2: "when the boss spawned my camera went all wonkey to the side and stopped following me").</summary>
+    public float TowardRange = 22f;
+    float towardX, towardZ, towardOn;
+    /// <summary>The share of the frame's half-width and half-height the look may lean off her (a third of the frame
+    /// round its middle: she never leaves the middle third for a boss).</summary>
+    public const float LeanThird = 1 / 3f;
+    /// <summary>--focus-old: the lean as demo-rc2 had it (no range, no cap, no ease), for the before strip.</summary>
+    public bool LeanOld;
     /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
     /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
     public float ScreenShift;
@@ -115,6 +123,8 @@ public sealed class FollowCamera
 
     float overrideBlend, leadX, leadZ, shakeT;
     Vector3 look;
+    /// <summary>Where the view looks now (its eased aim).</summary>
+    public Vector3 LookAt => look;
     bool initialised;
     float lastDt;
     static readonly bool CamLog = Args.Has("camlog");
@@ -143,6 +153,22 @@ public sealed class FollowCamera
         joltAxis = axis.Normalized();
         joltT = 0;
     }
+
+    /// <summary>The Flare's beat kick (H7): a Jolt whose first swing moves the frame about px pixels at 1080p (the swing's
+    /// first peak is 0.48 of its amount; along the view's axis a move shows only by its share across it).</summary>
+    public void JoltPx(Vector3 axis, float px)
+    {
+        if (axis.LengthSquared() < 1e-6f || px <= 0) return;
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        var a = axis.Normalized();
+        float across = Mathf.Max(0.2f, Mathf.Sqrt(Mathf.Max(0, 1 - Mathf.Pow(a.Dot(-Camera.GlobalBasis.Z), 2))));
+        if (ShakeScale <= 0) return;
+        pxAmt = px * perPx / (0.48f * across) * ShakeScale;
+        pxAxis = a;
+        pxT = 0;
+    }
+    Vector3 pxAxis;
+    float pxAmt, pxT = 9;
 
     Vector3 kick;
     float kickT = 1;
@@ -196,13 +222,22 @@ public sealed class FollowCamera
         leadX = Damp(leadX, vx * Lead * 0.2f * leadK, 3, dt);
         leadZ = Damp(leadZ, vz * Lead * 0.2f * leadK, 3, dt);
         float wx = 0, wz = 0;
+        bool leaning = false;
         if (Toward is Vector3 tw)
         {
             float dx = tw.X - x, dz = tw.Z - z, dl = Mathf.Sqrt(dx * dx + dz * dz);
-            if (dl > 0.01f) { float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k; }
+            if (dl > 0.01f && (dl <= TowardRange || LeanOld))
+            {
+                float k = Mathf.Min(dl * TowardShare, TowardMax) / dl; wx = dx * k; wz = dz * k;
+                if (!LeanOld) (wx, wz) = CapLean(wx, wz);
+                leaning = true;
+            }
         }
-        towardX = Damp(towardX, wx, 1.5f, dt);
-        towardZ = Damp(towardZ, wz, 1.5f, dt);
+        // (H8, N35: the lean comes in over a second, eased, and goes as gently)
+        towardOn = LeanOld ? 1 : Mathf.MoveToward(towardOn, leaning ? 1 : 0, dt);
+        float ease = towardOn * towardOn * (3 - 2 * towardOn);
+        towardX = Damp(towardX, wx * ease, LeanOld ? 1.5f : 3f, dt);
+        towardZ = Damp(towardZ, wz * ease, LeanOld ? 1.5f : 3f, dt);
         var t = new Vector3(x + leadX + towardX, y + 0.8f, z + leadZ + towardZ);
         overrideBlend = Damp(overrideBlend, FocusOverride.HasValue ? 1 : 0, 2.5f, dt);
         var f = FocusOverride is Vector3 o ? t.Lerp(o, overrideBlend) : t;
@@ -211,6 +246,7 @@ public sealed class FollowCamera
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
         kickT += dt;
         joltT += dt;
+        pxT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
         near = Damp(near, ScreenNear, 5, dt);
         if (ScreenFrame is { } sf) frame = sf;
@@ -220,6 +256,21 @@ public sealed class FollowCamera
         shakeT += dt;
         lastDt = dt;
         Place();
+    }
+
+    /// <summary>A lean off her (world metres on the ground) capped so she stays inside the frame's middle third: its
+    /// part across the screen to a sixth of the frame's width, its part up the screen to a sixth of its height (the
+    /// ground foreshortened by the pitch).</summary>
+    public (float X, float Z) CapLean(float wx, float wz)
+    {
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        var size = Camera.IsInsideTree() ? Camera.GetViewport().GetVisibleRect().Size : new Vector2(1920, 1080);
+        float wide = 1080 * size.X / Mathf.Max(1, size.Y);
+        float capAcross = wide / 2 * LeanThird * perPx, capUp = 1080 / 2f * LeanThird * perPx / Mathf.Max(0.3f, Mathf.Sin(Pitch));
+        // The camera's right and its forward along the ground (it stands at +sin(Yaw), +cos(Yaw) from the look).
+        float rx = Mathf.Cos(Yaw), rz = -Mathf.Sin(Yaw), fx = -Mathf.Sin(Yaw), fz = -Mathf.Cos(Yaw);
+        float a = Mathf.Clamp(wx * rx + wz * rz, -capAcross, capAcross), u = Mathf.Clamp(wx * fx + wz * fz, -capUp, capUp);
+        return (a * rx + u * fx, a * rz + u * fz);
     }
 
     /// <summary>How far the camera stands from where it looks: play's distance, or a panel's framing
@@ -260,7 +311,12 @@ public sealed class FollowCamera
         // (The Flare's jolt: a damped swing along its blow, about 13 a second.)
         var jolt = joltT < 1.2f ? joltAxis * joltAmt * 0.55f * Mathf.Exp(-joltT * 7) * Mathf.Sin(joltT * Mathf.Tau * 13) : Vector3.Zero;
         var at = pos + lean + jolt + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
-        var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f;
+        // (JoltPx's swing moves the look point with the eye, so the whole frame swings by it: H7 r2, measured at 1080p, a jolt
+        // on the eye alone turned the view back onto the same point and the frame moved 0.0 px for JoltPx's 9; the older
+        // Jolts keep their eye-only sway)
+        var frameJolt = pxT < 1.2f ? pxAxis * pxAmt * 0.55f * Mathf.Exp(-pxT * 7) * Mathf.Sin(pxT * Mathf.Tau * 13) : Vector3.Zero;
+        at += frameJolt;
+        var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f + frameJolt;
         if (CamLog) GD.Print($"CAMLOG t={shakeT:F3} close={closeNow:F3} room={room:F3} free={logFree:F3} hit={RoomHit ?? "-"} fov={Camera.Fov:F2} d={d:F3} pos={at.X:F2},{at.Y:F2},{at.Z:F2} aim={aim.X:F2},{aim.Y:F2},{aim.Z:F2}");
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);

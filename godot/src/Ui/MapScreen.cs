@@ -55,7 +55,8 @@ public partial class MapScreen : Overlay
     public static ImageTexture Drawing(ZoneData z)
     {
         if (drawings.TryGetValue(z.Id, out var hit)) return hit;
-        var img = drawn.TryRemove(z.Id, out var ahead) ? ahead : Draw(z);
+        // (drawn on a worker since the place was staged: waited for, the rest of it only)
+        var img = drawn.TryRemove(z.Id, out var ahead) ? ahead : soon.TryRemove(z.Id, out var task) ? task.Result : Draw(z);
         var tex = ImageTexture.CreateFromImage(img);
         drawings[z.Id] = tex;
         return tex;
@@ -65,10 +66,21 @@ public partial class MapScreen : Overlay
     /// made a texture when the map first shows it (it took a whole frame of 1.3 s, the Waystation's first).</summary>
     public static void DrawAhead(ZoneData z)
     {
-        if (!drawings.ContainsKey(z.Id) && !drawn.ContainsKey(z.Id)) drawn[z.Id] = Draw(z);
+        if (!drawings.ContainsKey(z.Id) && !drawn.ContainsKey(z.Id) && !soon.ContainsKey(z.Id)) drawn[z.Id] = Draw(z);
+        _ = Sheet.Value;
     }
 
     static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Image> drawn = new();
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Threading.Tasks.Task<Image>> soon = new();
+
+    /// <summary>A place staged where it stands (an arena, a quick start: not built ahead): its drawing made on a
+    /// worker from now, and the fog's sheet with it, so the map's first open does not draw them on the frame
+    /// (N25: 1.4 s for the arena's drawing and 0.95 s for its fog, the sim held still behind it, "my game froze").</summary>
+    public static void DrawSoon(ZoneData z)
+    {
+        if (drawings.ContainsKey(z.Id) || drawn.ContainsKey(z.Id) || soon.ContainsKey(z.Id)) return;
+        soon[z.Id] = System.Threading.Tasks.Task.Run(() => { var img = Draw(z); _ = Sheet.Value; return img; });
+    }
 
     /// <summary>The drawing itself (any thread: it reads only the zone's data).</summary>
     static Image Draw(ZoneData z)
@@ -151,6 +163,8 @@ public partial class MapScreen : Overlay
                 px8[o + 2] = (byte)Math.Clamp(c.Z, 0, 255);
             }
         var img = Image.CreateFromData(W, W, false, Image.Format.Rgb8, px8);
+        // (made the GPU's own format here, on the worker: an RGB image is widened to RGBA as it is uploaded, on the frame)
+        img.Convert(Image.Format.Rgba8);
         img.GenerateMipmaps();
         return img;
     }
@@ -163,11 +177,23 @@ public partial class MapScreen : Overlay
     /// shows through clean. Opaque wherever nothing was walked: no ink shows
     /// through. (Was a flat dark at 94%: the owner, "it needs to look better".)
     /// </summary>
+    /// <summary>The last fog made, and what it was made of: opened again with nothing new walked, it is the same.</summary>
+    static (string Seen, ImageTexture Tex)? lastFog;
+
     static ImageTexture Fog(string seen, int n)
+    {
+        if (lastFog is { } lf && lf.Seen == seen) return lf.Tex;
+        var made = FogFor(seen, n);
+        lastFog = (seen, made);
+        return made;
+    }
+
+    static ImageTexture FogFor(string seen, int n)
     {
         const int F = 600;
         float c = F / (float)n;
         var known = new float[F * F];
+        var fsw = System.Diagnostics.Stopwatch.StartNew();
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++)
             {
@@ -181,46 +207,83 @@ public partial class MapScreen : Overlay
                         known[y * F + x] = Math.Max(known[y * F + x], 1 - Mathf.SmoothStep(0.5f, 1f, d));
                     }
             }
+        double tStamp = fsw.Elapsed.TotalMilliseconds;
         for (int pass = 0; pass < 3; pass++) known = Blur(known, F, 5);
         // How near the known land is, broadly: the sheet is lit round what you know and browns away from it.
         var near = Blur(Blur(known, F, 28), F, 28);
+        double tBlur = fsw.Elapsed.TotalMilliseconds;
+        var sh = Sheet.Value;
+        double tSheet = fsw.Elapsed.TotalMilliseconds;
         var px = new byte[F * F * 4];
-        for (int y = 0; y < F; y++)
+        var browned = new Vector3(0.66f, 0.6f, 0.52f);
+        System.Threading.Tasks.Parallel.For(0, F, y =>
+        {
             for (int x = 0; x < F; x++)
             {
-                float u = x / (float)F, v = y / (float)F;
-                // The edge of the known, made ragged by the brush: a broad wobble and a fine one.
-                float rag = (Fbm(u * 5, v * 5, 3) - 0.5f) * 0.7f + (Fbm(u * 38, v * 38, 2) - 0.5f) * 0.16f;
-                float k = Mathf.Clamp(known[y * F + x] + rag, 0, 1);
+                int q = y * F + x;
+                float k = Mathf.Clamp(known[q] + sh.Rag[q], 0, 1);
                 float cover = 1 - Mathf.SmoothStep(0.34f, 0.5f, k);
                 if (cover <= 0.001f) continue;
-                // The blank sheet: mottled with age, foxed here and there, a fibre grain, browner toward its edge.
-                float mottle = Fbm(u * 5 + 11, v * 5 + 3, 4);
-                float lit = Mathf.SmoothStep(0f, 0.45f, near[y * F + x]);
-                var paper = new Vector3(214, 198, 160).Lerp(new Vector3(178, 154, 112), Mathf.SmoothStep(0.35f, 0.8f, mottle));
-                paper = paper.Lerp(paper * new Vector3(0.66f, 0.6f, 0.52f), (1 - lit) * 0.75f);
-                float fox = Mathf.SmoothStep(0.74f, 0.86f, Fbm(u * 26 + 5, v * 26 + 9, 2));
-                paper = paper.Lerp(new Vector3(150, 104, 58), fox * 0.45f);
-                float grain = (float)(Hash(x, y) - 0.5) * 7 + (float)(Hash(x / 3, y * 2) - 0.5) * 5;
-                float edge = Mathf.Min(Mathf.Min(u, 1 - u), Mathf.Min(v, 1 - v));
-                paper = paper.Lerp(new Vector3(96, 62, 30), (1 - Mathf.SmoothStep(0f, 0.09f, edge)) * 0.6f);
-                // The surveyor's lines across the blank: sixteen rhumbs from the middle and a circle, faint.
-                float du = u - 0.5f, dv = v - 0.5f, rad = Mathf.Sqrt(du * du + dv * dv);
-                float rhumb = rad * F * Mathf.Abs(Mathf.Sin(8 * Mathf.Atan2(dv, du))) / 8;
-                float line = Mathf.Max(1 - Mathf.SmoothStep(0.3f, 1.1f, rhumb), 1 - Mathf.SmoothStep(0.4f, 1.3f, Mathf.Abs(rad - 0.42f) * F));
-                paper = paper.Lerp(new Vector3(110, 76, 42), line * 0.22f * Mathf.SmoothStep(0.02f, 0.1f, rad));
+                // The blank sheet (its mottle, foxing, edge and the surveyor's lines: SheetFor), browned away from what you know.
+                float lit = Mathf.SmoothStep(0f, 0.45f, near[q]);
+                var paper = sh.Paper[q];
+                paper = paper.Lerp(paper * browned, (1 - lit) * 0.75f);
+                paper = paper * sh.Keep[q] + sh.Over[q];
                 // The wash where knowledge ends: sepia bleeding outward, its tide line darkest.
                 float tide = Mathf.Exp(-Mathf.Pow((k - 0.31f) / 0.05f, 2));
                 float bleed = Mathf.SmoothStep(0.06f, 0.33f, k) * (1 - Mathf.SmoothStep(0.33f, 0.4f, k));
                 paper = paper.Lerp(new Vector3(120, 84, 48), bleed * 0.35f).Lerp(new Vector3(74, 46, 22), tide * 0.55f);
+                float grain = sh.Grain[q];
                 paper += new Vector3(grain, grain, grain * 0.8f);
-                int o = (y * F + x) * 4;
+                int o = q * 4;
                 px[o] = (byte)Math.Clamp(paper.X, 0, 255);
                 px[o + 1] = (byte)Math.Clamp(paper.Y, 0, 255);
                 px[o + 2] = (byte)Math.Clamp(paper.Z, 0, 255);
                 px[o + 3] = (byte)Math.Clamp(cover * 255, 0, 255);
             }
-        return ImageTexture.CreateFromImage(Image.CreateFromData(F, F, false, Image.Format.Rgba8, px));
+        });
+        double tPx = fsw.Elapsed.TotalMilliseconds;
+        var fogTex = ImageTexture.CreateFromImage(Image.CreateFromData(F, F, false, Image.Format.Rgba8, px));
+        if (measure) GD.Print($"MAPMEASURE fog: stamp {tStamp:F1} ms, blurs {tBlur - tStamp:F1} ms, sheet {tSheet - tBlur:F1} ms, pixels {tPx - tSheet:F1} ms, texture {fsw.Elapsed.TotalMilliseconds - tPx:F1} ms");
+        return fogTex;
+    }
+
+    /// <summary>What the fog's sheet is whatever was walked, per pixel, made once: the brush's ragged edge, the
+    /// paper mottled, and what lies over it (foxing, the browned edge, the surveyor's lines) as paper * Keep + Over,
+    /// and its grain. (Made on every open, these and the blurs were 0.95 s of the frame, N25.)</summary>
+    sealed record FogSheet(float[] Rag, Vector3[] Paper, float[] Keep, Vector3[] Over, float[] Grain);
+
+    static readonly Lazy<FogSheet> Sheet = new(SheetFor, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+
+    static FogSheet SheetFor()
+    {
+        const int F = 600;
+        var rag = new float[F * F]; var paper = new Vector3[F * F]; var keep = new float[F * F]; var over = new Vector3[F * F]; var grain = new float[F * F];
+        System.Threading.Tasks.Parallel.For(0, F, y =>
+        {
+            for (int x = 0; x < F; x++)
+            {
+                int q = y * F + x;
+                float u = x / (float)F, v = y / (float)F;
+                // The edge of the known, made ragged by the brush: a broad wobble and a fine one.
+                rag[q] = (Fbm(u * 5, v * 5, 3) - 0.5f) * 0.7f + (Fbm(u * 38, v * 38, 2) - 0.5f) * 0.16f;
+                // The blank sheet: mottled with age, foxed here and there, a fibre grain, browner toward its edge.
+                float mottle = Fbm(u * 5 + 11, v * 5 + 3, 4);
+                paper[q] = new Vector3(214, 198, 160).Lerp(new Vector3(178, 154, 112), Mathf.SmoothStep(0.35f, 0.8f, mottle));
+                float fox = Mathf.SmoothStep(0.74f, 0.86f, Fbm(u * 26 + 5, v * 26 + 9, 2)) * 0.45f;
+                grain[q] = (float)(Hash(x, y) - 0.5) * 7 + (float)(Hash(x / 3, y * 2) - 0.5) * 5;
+                float edge = Mathf.Min(Mathf.Min(u, 1 - u), Mathf.Min(v, 1 - v));
+                float brown = (1 - Mathf.SmoothStep(0f, 0.09f, edge)) * 0.6f;
+                // The surveyor's lines across the blank: sixteen rhumbs from the middle and a circle, faint.
+                float du = u - 0.5f, dv = v - 0.5f, rad = Mathf.Sqrt(du * du + dv * dv);
+                float rhumb = rad * F * Mathf.Abs(Mathf.Sin(8 * Mathf.Atan2(dv, du))) / 8;
+                float line = Mathf.Max(1 - Mathf.SmoothStep(0.3f, 1.1f, rhumb), 1 - Mathf.SmoothStep(0.4f, 1.3f, Mathf.Abs(rad - 0.42f) * F)) * 0.22f * Mathf.SmoothStep(0.02f, 0.1f, rad);
+                // The three lerps toward fixed inks, folded: p -> p * keep + over.
+                keep[q] = (1 - fox) * (1 - brown) * (1 - line);
+                over[q] = (new Vector3(150, 104, 58) * fox * (1 - brown) + new Vector3(96, 62, 30) * brown) * (1 - line) + new Vector3(110, 76, 42) * line;
+            }
+        });
+        return new FogSheet(rag, paper, keep, over, grain);
     }
 
     /// <summary>Smooth value noise, summed over octaves (0 to 1).</summary>
@@ -243,25 +306,24 @@ public partial class MapScreen : Overlay
     /// <summary>The table the sheet lies on, past the paper's edge: dark leather, lit a little in the middle.</summary>
     static readonly Color Dark = new(0.075f, 0.058f, 0.048f);
 
-    /// <summary>A box blur of a square field, across then down.</summary>
-    static float[] Blur(float[] a, int n, int r)
+    /// <summary>A box blur of a square field, across then down (each pixel the mean of the 2r+1 inside the field):
+    /// a running sum, so its cost does not grow with r (at r 28 it was most of the fog's 0.95 s, N25).</summary>
+    internal static float[] Blur(float[] a, int n, int r)
     {
         var b = new float[a.Length];
         var c = new float[a.Length];
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                float sum = 0; int k = 0;
-                for (int d = -r; d <= r; d++) { int xx = x + d; if (xx < 0 || xx >= n) continue; sum += a[y * n + xx]; k++; }
-                b[y * n + x] = sum / k;
-            }
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                float sum = 0; int k = 0;
-                for (int d = -r; d <= r; d++) { int yy = y + d; if (yy < 0 || yy >= n) continue; sum += b[yy * n + x]; k++; }
-                c[y * n + x] = sum / k;
-            }
+        System.Threading.Tasks.Parallel.For(0, n, y =>
+        {
+            var pre = new double[n + 1];
+            for (int x = 0; x < n; x++) pre[x + 1] = pre[x] + a[y * n + x];
+            for (int x = 0; x < n; x++) { int lo = Math.Max(0, x - r), hi = Math.Min(n - 1, x + r); b[y * n + x] = (float)((pre[hi + 1] - pre[lo]) / (hi - lo + 1)); }
+        });
+        System.Threading.Tasks.Parallel.For(0, n, x =>
+        {
+            var pre = new double[n + 1];
+            for (int y = 0; y < n; y++) pre[y + 1] = pre[y] + b[y * n + x];
+            for (int y = 0; y < n; y++) { int lo = Math.Max(0, y - r), hi = Math.Min(n - 1, y + r); c[y * n + x] = (float)((pre[hi + 1] - pre[lo]) / (hi - lo + 1)); }
+        });
         return c;
     }
 
@@ -333,9 +395,24 @@ public partial class MapScreen : Overlay
         }
     }
 
+    // (--map-measure: what the open cost, and every frame over 50 ms while it is up, the arena's freeze check)
+    static readonly bool measure = Args.Has("map-measure");
+    ulong lastTick;
+    int frames;
+    double worst;
     public override void _Process(double delta)
     {
         base._Process(delta);
+        if (measure)
+        {
+            ulong now = Time.GetTicksUsec();
+            double d = lastTick == 0 ? 0 : (now - lastTick) / 1000.0;
+            lastTick = now;
+            frames++;
+            if (frames > 2) worst = Math.Max(worst, d);
+            if (d > 50) GD.Print($"MAPMEASURE frame {frames}: {d:F1} ms");
+            if (frames % 60 == 0) GD.Print($"MAPMEASURE {frames} frames open, worst after the first two {worst:F1} ms");
+        }
         t += delta;
         if (gliding)
         {
@@ -355,6 +432,7 @@ public partial class MapScreen : Overlay
     {
         var scene = G.Scene!;
         var zone = G.Zone!;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         extent = Extent(scene.Data.Meta);
         names.Clear();
         // The book's own panel, or the same panel opened across the screen; the place's name over its map.
@@ -385,22 +463,28 @@ public partial class MapScreen : Overlay
         for (int i = 6; i >= 1; i--)
             world.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.09f), Position = new Vector2(-i * 2.5f + 4, -i * 2.5f + 8), Size = new Vector2(F + i * 5, F + i * 5), MouseFilter = MouseFilterEnum.Ignore });
         // The expand mode first: a control is never smaller than its minimum, and the drawing's own is 1600.
-        world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Drawing(scene.Data), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
+        var drawing = Drawing(scene.Data);
+        double drawMs = sw.Elapsed.TotalMilliseconds;
+        world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = drawing, Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
         // Clipped to the paper: a tree on its edge would hang its crown into the dark past it.
         world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, ClipContents = true });
         var zs = G.Journey.World.Zone(zone.Id);
         var seen = zs.TryGetValue("seen", out var f) && f.Str is { } s ? s : new string('0', Journey.FogN * Journey.FogN);
+        double fog0 = sw.Elapsed.TotalMilliseconds;
         world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Fog(seen, Journey.FogN), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
+        double fogMs = sw.Elapsed.TotalMilliseconds - fog0;
         bool Seen(double x, double z)
         {
             int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
             return i >= 0 && j >= 0 && i < Journey.FogN && j < Journey.FogN && seen[j * Journey.FogN + i] == '1';
         }
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * F), (float)((z / extent + 0.5) * F));
+        double mark0 = sw.Elapsed.TotalMilliseconds;
         var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label)).ToList();
         foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Goal, gp.Def.Label));
         if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
         foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind);
+        if (measure) GD.Print($"MAPMEASURE build: drawing {drawMs:F1} ms, fog {fogMs:F1} ms, {entries.Count} marks {sw.Elapsed.TotalMilliseconds - mark0:F1} ms, extent {extent:F0}, zone {zone.Id}");
         // The ring that marks what the list has chosen.
         ring = new Panel { Size = new Vector2(46, 46), PivotOffset = new Vector2(23, 23), MouseFilter = MouseFilterEnum.Ignore, Visible = false };
         var rs = Style.Box(new Color(0, 0, 0, 0), new Color("#a8321e"), 3, 23, 0);
@@ -714,7 +798,77 @@ public partial class MapInk : Control
 
     static double Hash(double x, double y) { double s = Math.Sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.Floor(s); }
 
+    /// <summary>The ink of each place, made once: its shapes as triangles (and the dead trees' hairlines), in the
+    /// order they were drawn, a few calls in all. (A call a shape, thousands of them in an arena, was 50-60 ms of
+    /// the frame after every open, N25.)</summary>
+    sealed class Batch
+    {
+        public bool Thin;
+        public readonly List<Vector2> Pts = new();
+        public readonly List<Color> Cols = new();
+        public readonly List<int> Idx = new();
+    }
+    static readonly Dictionary<string, List<Batch>> inks = new();
+    List<Batch> batches = new();
+
+    Batch Into(bool thin)
+    {
+        if (batches.Count == 0 || batches[^1].Thin != thin) batches.Add(new Batch { Thin = thin });
+        return batches[^1];
+    }
+
+    /// <summary>A filled shape (each drawn here is convex, or star-shaped round its middle: a fan from the middle).</summary>
+    void InkPoly(Vector2[] pts, Color col)
+    {
+        var b = Into(false);
+        var mid = Vector2.Zero;
+        foreach (var p in pts) mid += p;
+        mid /= pts.Length;
+        int o = b.Pts.Count;
+        b.Pts.Add(mid); b.Cols.Add(col);
+        foreach (var p in pts) { b.Pts.Add(p); b.Cols.Add(col); }
+        for (int i = 0; i < pts.Length; i++) { b.Idx.Add(o); b.Idx.Add(o + 1 + i); b.Idx.Add(o + 1 + (i + 1) % pts.Length); }
+    }
+
+    /// <summary>An outline of a width (scaled with the map, as the canvas's own), each stretch a quad squared off at its ends.</summary>
+    void InkLine(Vector2[] pts, Color col, float w)
+    {
+        var b = Into(false);
+        for (int i = 0; i + 1 < pts.Length; i++)
+        {
+            Vector2 a = pts[i], c = pts[i + 1], d = c - a;
+            if (d.LengthSquared() < 1e-8f) continue;
+            d = d.Normalized() * (w / 2);
+            var n = new Vector2(-d.Y, d.X);
+            int o = b.Pts.Count;
+            b.Pts.Add(a - d + n); b.Pts.Add(c + d + n); b.Pts.Add(c + d - n); b.Pts.Add(a - d - n);
+            for (int k = 0; k < 4; k++) b.Cols.Add(col);
+            b.Idx.Add(o); b.Idx.Add(o + 1); b.Idx.Add(o + 2); b.Idx.Add(o); b.Idx.Add(o + 2); b.Idx.Add(o + 3);
+        }
+    }
+
+    /// <summary>A hairline (a pixel whatever the zoom, as the canvas's own).</summary>
+    void InkHair(Vector2 a, Vector2 c, Color col)
+    {
+        var b = Into(true);
+        b.Pts.Add(a); b.Pts.Add(c); b.Cols.Add(col);
+    }
+
     public override void _Draw()
+    {
+        var isw = System.Diagnostics.Stopwatch.StartNew();
+        string key = $"{scene.Data.Id}:{extent}:{size}";
+        if (!inks.TryGetValue(key, out var made)) { batches = new(); Ink(); inks[key] = made = batches; }
+        var item = GetCanvasItem();
+        foreach (var b in made)
+        {
+            if (b.Thin) RenderingServer.CanvasItemAddMultiline(item, b.Pts.ToArray(), b.Cols.ToArray());
+            else if (b.Idx.Count > 0) RenderingServer.CanvasItemAddTriangleArray(item, b.Idx.ToArray(), b.Pts.ToArray(), b.Cols.ToArray());
+        }
+        if (Args.Has("map-measure")) GD.Print($"MAPMEASURE ink drawn in {isw.Elapsed.TotalMilliseconds:F1} ms ({made.Sum(b => b.Thin ? b.Pts.Count / 2 : b.Idx.Count / 3)} pieces, {made.Count} calls)");
+    }
+
+    void Ink()
     {
         var meta = scene.Data.Meta;
         float s = size / extent;
@@ -729,8 +883,8 @@ public partial class MapInk : Control
             float rot = -(float)c.Rot;
             Vector2 R(double x, double z) => at + new Vector2((float)x * s, (float)z * s).Rotated(rot);
             var pts = new[] { R(-c.Hw, -c.Hd), R(c.Hw, -c.Hd), R(c.Hw, c.Hd), R(-c.Hw, c.Hd) };
-            DrawColoredPolygon(pts, c.Soft ? new Color(110 / 255f, 86 / 255f, 58 / 255f, 0.35f) : new Color(84 / 255f, 60 / 255f, 40 / 255f, 0.8f));
-            DrawPolyline(pts.Append(pts[0]).ToArray(), new Color(48 / 255f, 32 / 255f, 20 / 255f, 0.9f), 1);
+            InkPoly(pts, c.Soft ? new Color(110 / 255f, 86 / 255f, 58 / 255f, 0.35f) : new Color(84 / 255f, 60 / 255f, 40 / 255f, 0.8f));
+            InkLine(pts.Append(pts[0]).ToArray(), new Color(48 / 255f, 32 / 255f, 20 / 255f, 0.9f), 1);
         }
         foreach (var bl in meta.Map?.Buildings ?? new())
         {
@@ -739,11 +893,11 @@ public partial class MapInk : Control
             if (!On(at)) continue;
             float r = (float)br * s;
             Vector2[] Hex(Vector2 o, float rr) => Enumerable.Range(0, 6).Select(a => o + new Vector2(Mathf.Cos((float)rot + a * Mathf.Pi / 3 + Mathf.Pi / 6), Mathf.Sin((float)rot + a * Mathf.Pi / 3 + Mathf.Pi / 6)) * rr).ToArray();
-            DrawColoredPolygon(Hex(at + new Vector2(r * 0.18f, r * 0.22f), r), new Color(60 / 255f, 40 / 255f, 22 / 255f, 0.35f));
+            InkPoly(Hex(at + new Vector2(r * 0.18f, r * 0.22f), r), new Color(60 / 255f, 40 / 255f, 22 / 255f, 0.35f));
             var outer = Hex(at, r);
-            DrawColoredPolygon(outer, new Color(128 / 255f, 74 / 255f, 52 / 255f, 0.95f));
-            DrawPolyline(outer.Append(outer[0]).ToArray(), new Color(46 / 255f, 28 / 255f, 16 / 255f, 0.95f), 1.4f);
-            DrawColoredPolygon(Hex(at, r * 0.55f), new Color(160 / 255f, 100 / 255f, 72 / 255f, 0.9f));
+            InkPoly(outer, new Color(128 / 255f, 74 / 255f, 52 / 255f, 0.95f));
+            InkLine(outer.Append(outer[0]).ToArray(), new Color(46 / 255f, 28 / 255f, 16 / 255f, 0.95f), 1.4f);
+            InkPoly(Hex(at, r * 0.55f), new Color(160 / 255f, 100 / 255f, 72 / 255f, 0.9f));
         }
         foreach (var f in meta.Map?.Flora ?? new())
         {
@@ -757,31 +911,31 @@ public partial class MapInk : Control
             {
                 float r = (float)(2.2 * sc) * s;
                 var tri = new[] { p + new Vector2(0, -r * 1.3f), p + new Vector2(r * 0.8f, r * 0.7f), p + new Vector2(-r * 0.8f, r * 0.7f) };
-                DrawColoredPolygon(tri, new Color((70 + jit * 20) / 255f, (88 + jit * 16) / 255f, 62 / 255f, 0.85f));
-                DrawPolyline(tri.Append(tri[0]).ToArray(), new Color(38 / 255f, 44 / 255f, 30 / 255f, 0.9f), 1);
+                InkPoly(tri, new Color((70 + jit * 20) / 255f, (88 + jit * 16) / 255f, 62 / 255f, 0.85f));
+                InkLine(tri.Append(tri[0]).ToArray(), new Color(38 / 255f, 44 / 255f, 30 / 255f, 0.9f), 1);
             }
             else if (kind is "broadleaf" or "autumn" or "sick")
             {
                 float r = (float)(2.6 * sc) * s;
                 var pts = Enumerable.Range(0, 8).Select(a => p + new Vector2(Mathf.Cos(a / 7f * Mathf.Tau), Mathf.Sin(a / 7f * Mathf.Tau)) * r * (0.82f + (float)Hash(x + a, z) * 0.3f)).ToArray();
                 var col = kind == "autumn" ? new Color((176 + jit * 30) / 255f, (110 + jit * 30) / 255f, 60 / 255f, 0.8f) : kind == "sick" ? new Color(140 / 255f, 150 / 255f, 90 / 255f, 0.8f) : new Color((96 + jit * 20) / 255f, (122 + jit * 20) / 255f, 70 / 255f, 0.8f);
-                DrawColoredPolygon(pts[..7], col);
-                DrawPolyline(pts, new Color(46 / 255f, 44 / 255f, 28 / 255f, 0.85f), 1);
+                InkPoly(pts[..7], col);
+                InkLine(pts, new Color(46 / 255f, 44 / 255f, 28 / 255f, 0.85f), 1);
             }
             else if (kind == "dead")
             {
                 float r = (float)(1.8 * sc) * s;
                 var ink = new Color(60 / 255f, 44 / 255f, 30 / 255f, 0.85f);
-                DrawLine(p + new Vector2(0, r), p + new Vector2(0, -r * 0.2f), ink);
-                DrawLine(p + new Vector2(0, -r * 0.2f), p + new Vector2(-r * 0.6f, -r), ink);
-                DrawLine(p + new Vector2(0, -r * 0.2f), p + new Vector2(r * 0.6f, -r * 0.9f), ink);
+                InkHair(p + new Vector2(0, r), p + new Vector2(0, -r * 0.2f), ink);
+                InkHair(p + new Vector2(0, -r * 0.2f), p + new Vector2(-r * 0.6f, -r), ink);
+                InkHair(p + new Vector2(0, -r * 0.2f), p + new Vector2(r * 0.6f, -r * 0.9f), ink);
             }
             else
             {
                 float r = (float)((kind == "cliff" ? 4 : 2.2) * sc) * s;
                 var pts = Enumerable.Range(0, 7).Select(a => p + new Vector2(Mathf.Cos(a / 6f * Mathf.Tau + jit), Mathf.Sin(a / 6f * Mathf.Tau + jit)) * r * (0.7f + (float)Hash(x, z + a) * 0.4f)).ToArray();
-                DrawColoredPolygon(pts[..6], new Color(150 / 255f, 144 / 255f, 130 / 255f, 0.8f));
-                DrawPolyline(pts, new Color(60 / 255f, 56 / 255f, 48 / 255f, 0.9f), 1);
+                InkPoly(pts[..6], new Color(150 / 255f, 144 / 255f, 130 / 255f, 0.8f));
+                InkLine(pts, new Color(60 / 255f, 56 / 255f, 48 / 255f, 0.9f), 1);
             }
         }
     }

@@ -6,7 +6,7 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>
 /// Foe health (H1 combat teeth, item 2) and the priority mark (item 4), drawn in one batch for every foe:
-/// a thin bar just under a foe's feet (crowd foes only once below 70%, champions always, fainter while full),
+/// a thin bar just under a crowd foe's feet (once below 70%, or the priority target's), a champion's bar over its head always (N19),
 /// and an ellipse ring at the feet of the priority foe. No nodes per foe, nothing allocated per frame.
 /// </summary>
 public partial class FoeMarks : Control
@@ -64,10 +64,13 @@ public partial class FoeMarks : Control
             if (cam.IsPositionBehind(p)) continue;
             var sp = cam.UnprojectPosition(p);
             if (sp.X < -80 || sp.Y < -40 || sp.X > vp.Size.X + 80 || sp.Y > vp.Size.Y + 80) continue;
+            // Over its head (a champion's bar, and the snuffer's diamond above that bar when it has one).
+            var overHead = p + Vector3.Up * (float)Math.Max(1.6, e.Radius * 3.2 + 0.8);
+            bool eliteBar = wantBar && e.Elite;
             if (snuff)
             {
                 if (snuffCount == snuffs.Length) Array.Resize(ref snuffs, snuffCount * 2);
-                snuffs[snuffCount++] = cam.UnprojectPosition(p + Vector3.Up * (float)Math.Max(1.6, e.Radius * 3.2 + 0.8));
+                snuffs[snuffCount++] = cam.UnprojectPosition(overHead) - new Vector2(0, eliteBar ? 30 * s : 0);
             }
             if (!wantBar && !isPri) continue;
             if (isPri)
@@ -80,8 +83,10 @@ public partial class FoeMarks : Control
             }
             if (!wantBar || e.Boss) continue;
             if (count == bars.Length) Array.Resize(ref bars, count * 2);
-            bool full = !low;
-            bars[count++] = new Bar { At = sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = full && !isPri };
+            // N19 (H6): a champion's bar is over its head at full strength from its first moment, as an ARPG's elite
+            // bar is; at its feet at 45% it was lost on the night ground and read as no bar at all. The crowd's small
+            // bar stays at the feet (once below 70%, or the priority target's).
+            bars[count++] = new Bar { At = eliteBar ? cam.UnprojectPosition(overHead) : sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = !low && !isPri && !e.Elite };
         }
         Lamp(b, cam, vp);
         QueueRedraw();
@@ -117,19 +122,43 @@ public partial class FoeMarks : Control
     /// <summary>Nothing this frame.</summary>
     public void Show0() { if (count == 0 && snuffCount == 0 && !ring && !lampBar && !lampRing) return; count = snuffCount = 0; ring = lampBar = lampRing = false; QueueRedraw(); }
 
+    /// <summary>A champion's bar over its head: the lamp bar's bronze-framed ink well at a champion's size, its life
+    /// in danger red lit along the top, quarter notches, a dark shadow so it holds on any ground or crowd.</summary>
+    void EliteBar(in Bar b, float s)
+    {
+        float w = 92 * s, h = 9 * s;
+        var r = new Rect2(Mathf.Round(b.At.X - w / 2), Mathf.Round(b.At.Y - h - 6 * s), w, h);
+        DrawRect(r.Grow(2 * s), new Color(0, 0, 0, 0.45f));
+        DrawRect(r, Ink with { A = 0.92f });
+        var inner = r.Grow(-1.5f * s);
+        if (b.K > 0)
+        {
+            var fill = new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y));
+            DrawRect(fill, Danger);
+            DrawRect(new Rect2(fill.Position, new Vector2(fill.Size.X, Math.Max(1, inner.Size.Y * 0.35f))), Danger.Lightened(0.28f));
+        }
+        for (int q = 1; q < 4; q++)
+        {
+            float qx = Mathf.Round(inner.Position.X + inner.Size.X * q / 4f);
+            DrawRect(new Rect2(qx, inner.Position.Y, Math.Max(1, s), inner.Size.Y), new Color(Ink, 0.55f));
+        }
+        DrawRect(r, Bronze, false, Math.Max(1.5f, 1.5f * s));
+        DrawRect(new Rect2(r.Position.X + s, r.Position.Y, r.Size.X - 2 * s, Math.Max(1, s)), BronzeHi);
+    }
+
     public override void _Draw()
     {
         float s = GetViewportRect().Size.Y / 1080f;
         for (int i = 0; i < count; i++)
         {
             ref var b = ref bars[i];
-            float w = (b.Elite ? 64 : 34) * s, h = (b.Elite ? 6 : 4) * s;
+            if (b.Elite) { EliteBar(b, s); continue; }
+            float w = 34 * s, h = 4 * s;
             float a = b.Full ? 0.45f : 1f;
             var r = new Rect2(b.At.X - w / 2, b.At.Y + 3 * s, w, h);
             DrawRect(r, new Color(Ink, Ink.A * a));
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y)), new Color(Danger, a));
-            if (b.Elite) DrawRect(r, new Color(Bronze, a), false, Math.Max(1, s));
         }
         if (lampRing)
         {

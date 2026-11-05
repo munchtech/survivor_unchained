@@ -34,6 +34,7 @@ using SurvivorUnchained.Rpg;
  *          --charges 0 (every charger on its own clock, as before the charge director)
  *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *          --type <road id>|both (the survivor's type)  --lamps empty|suggested|full (the board lit)
+ *          --onebuild (arena: the whole build from minute 0 at --level, sizes in full, a carried-only draft; ONE_BUILD.md 1-2)
  *          --hand 0 (every calling's Hand off, to measure them)
  *          --pair 1 (the Hand measure: each arena twice, Hand off then on, the on run replaying the off run's cards
  *          at their minutes; --nofall 1 stands her up at full health instead of a fall, --span 30 stops both at that
@@ -331,7 +332,7 @@ void Arena()
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
                                 Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: bot == "deft", Minutes: opt.Has("minutes") ? opt.Double("minutes", 30) : SurvivorUnchained.Arena.Arenas.TableMinutes(tier), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", ""),
-                                Bot: bot is "human" or "careless" ? bot : ""));
+                                Bot: bot is "human" or "careless" or "standing" or "camper" or "kiter" or "idler" ? bot : "", OneBuild: opt.Has("onebuild") && opt.Get("onebuild", "1") != "0"));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     if (opt.Get("pair", "0") != "0") { HandPairs(specs, outPath); return; }

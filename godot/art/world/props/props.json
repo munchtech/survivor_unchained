@@ -689,10 +689,22 @@
   }
  },
  "gatehouse": {
-  "tris": 17225,
+  "tris": 17039,
   "lod_m": 45,
   "tris_shadow": 200,
-  "tris_lod1": 7751,
+  "tris_lod1": 7667,
+  "moves": {
+   "gatehouse_move_portcullis_a": [
+    0.0,
+    -4.0,
+    0.0
+   ],
+   "gatehouse_move_portcullis_b": [
+    0.0,
+    -1.4,
+    0.0
+   ]
+  },
   "box": [
    -4.316,
    -1.8,

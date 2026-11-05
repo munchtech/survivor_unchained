@@ -89,7 +89,7 @@
    "base": {
     "maxHealth": 185,
     "moveSpeed": 5.1,
-    "armor": 3,
+    "armor": 4,
     "regen": 0.4,
     "pickupRadius": 2.4,
     "critChance": 0.05
@@ -420,7 +420,7 @@
    "opens": [
     "Shrine rites others cannot perform",
     "The dead speak, a little",
-    "Chid trusts you from the first word"
+    "Corvane trusts you from the first word"
    ]
   }
  },

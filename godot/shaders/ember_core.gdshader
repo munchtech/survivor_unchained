@@ -3,6 +3,7 @@
 // hurt the wider and hotter the fissures (heat 0 to 1).
 shader_type spatial;
 render_mode cull_back;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform float heat : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 crust : source_color = vec3(0.045, 0.038, 0.036);
@@ -58,7 +59,7 @@ void fragment() {
 	float width = (0.032 + 0.06 * heat) * (0.6 + 0.8 * noise(w * 3.1));
 	float fissure = (1.0 - smoothstep(width * 0.4, width, gap)) * open;
 	float hot = (1.0 - smoothstep(0.0, width * 0.35, gap)) * open;
-	float pulse = 0.72 + 0.28 * sin(TIME * 3.2 + obj.y * 5.0 + noise(obj * 3.0) * 4.0);
+	float pulse = 0.72 + 0.28 * sin(WORLD_TIME * 3.2 + obj.y * 5.0 + noise(obj * 3.0) * 4.0);
 	float grain = noise(obj * 13.0) * 0.6 + noise(obj * 31.0) * 0.4;
 	// The crust: dark, with a faint warmth showing through it near the fissures.
 	ALBEDO = crust * (0.55 + 0.8 * grain) + glow * 0.05 * (1.0 - smoothstep(0.0, 0.18, gap)) * open;

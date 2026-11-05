@@ -7,6 +7,7 @@ render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabl
 
 uniform vec4 col = vec4(1.0, 0.85, 0.55, 0.0); // rgb the hue; a its HDR peak
 uniform float column = 0.0;                     // 0 the blade's (both ends faded); 1 the column's (fades up)
+uniform float crown = 0.0;                      // a column's crown: its light near the top, x the column's (r3, the Bell)
 
 void fragment() {
 	float x = abs(UV.x * 2.0 - 1.0);
@@ -15,5 +16,8 @@ void fragment() {
 	// (r3c: the column held its light only near its foot, (1 - y)^1.6, and the play camera's 64-degree pitch
 	// shortens 2.3 m to ~80 px: it merged with the pool at her feet. Now even up its lower half, out over the top.)
 	float along = column > 0.5 ? smoothstep(0.0, 0.06, y) * (1.0 - 0.35 * y) * (1.0 - smoothstep(0.5, 1.0, y)) : smoothstep(0.0, 0.12, y) * (1.0 - smoothstep(0.86, 1.0, y));
+	// (r3, judge r2 fix 5: the Bell's column widens to a crown at its top, lit there as morning pouring over: a soft second
+	// swell over its upper fifth)
+	if (column > 0.5 && crown > 0.0) along += crown * smoothstep(0.62, 0.84, y) * (1.0 - smoothstep(0.86, 1.0, y));
 	ALBEDO = col.rgb * col.a * across * along;
 }

@@ -42,8 +42,21 @@ public partial class Voices : Node3D
         public bool Ambient;
         /// <summary>A boss's line (H1 round 2B): stood in a fixed slot under the boss's bar, wherever he is.</summary>
         public bool Boss;
+        /// <summary>Stood in the fight's fallback band above the HUD (H6 r1 fix 7): it stays there.</summary>
+        public bool InBand;
     }
     static int barkTipShots;
+
+    /// <summary>The fight as the barks must keep off it (H6 r1 fix 7; BattleFx sets these each fight frame): her body on
+    /// the screen (px) and points along every live kit mark's outline and lines (px). Read only while FightFrame is fresh.</summary>
+    public Vector2? HerScreen;
+    public readonly List<Vector2> MarkPts = new();
+    public ulong FightFrame;
+    /// <summary>No bark nearer her on the screen than this (1080p px), nor across a live mark.</summary>
+    const float HerClear = 250;
+    /// <summary>The fallback band's bottom (1080p px): one centred line above the HUD's statues, the newest in it.</summary>
+    const float BandBottom = 860;
+    Said? inBand;
 
     /// <summary>A line waiting for its speaker's last to finish.</summary>
     sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown, bool Boss = false);
@@ -442,9 +455,23 @@ public partial class Voices : Node3D
                     lo = Math.Min(lo, at.Y);
                 }
             }
-            bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= low + 0.5f && !placed.Any(p => p.Intersects(r)); }
+            bool fight = Engine.GetProcessFrames() - FightFrame <= 3;
+            // (the fight: never within HerClear of her, nor across a live mark)
+            bool Fouls(Rect2 r)
+            {
+                if (!fight) return false;
+                if (HerScreen is Vector2 hs)
+                {
+                    float dx = Math.Max(0, Math.Max(r.Position.X - hs.X, hs.X - r.End.X)), dy = Math.Max(0, Math.Max(r.Position.Y - hs.Y, hs.Y - r.End.Y));
+                    if (dx * dx + dy * dy < HerClear * hk * HerClear * hk) return true;
+                }
+                foreach (var mp in MarkPts) if (r.HasPoint(mp)) return true;
+                return false;
+            }
+            bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= low + 0.5f && !placed.Any(p => p.Intersects(r)) && !Fouls(r); }
             float pick = at.Y;
-            if (!Clear(pick))
+            if (b.InBand) { }
+            else if (!Clear(pick))
             {
                 if (b.Pick is float pv && Clear(pv)) pick = pv;
                 else
@@ -455,6 +482,27 @@ public partial class Voices : Node3D
                             if (Clear(y) && Math.Abs(y - at.Y) < best) { best = Math.Abs(y - at.Y); bestY = y; }
                     pick = bestY;
                 }
+            }
+            // Nowhere clear near the speaker in a fight (or only far from him): the band above the HUD, centred, the newest
+            // line in it (an older one there goes at once).
+            if (fight && !b.InBand && (!Clear(pick) || Math.Abs(pick - at.Y) > 220 * hk))
+            {
+                b.InBand = true;
+                if (inBand != null && inBand != b && inBand.T < inBand.Life) { inBand.Life = inBand.T; inBand.Box.Visible = false; }
+                inBand = b;
+                b.Lift = 0;
+            }
+            if (b.InBand)
+            {
+                if (inBand != b) { b.Box.Visible = false; continue; }
+                float bx = (vp.X - size.X) / 2, bb = BandBottom * hk;
+                if (Hits.HudTopOver(bx / hk, (bx + size.X) / hk) is float bht) bb = Math.Min(bb, bht * hk - 8);
+                var bp = new Vector2(bx, bb - size.Y);
+                b.Box.Position = bp;
+                b.Box.Size = size;
+                placed.Add(new Rect2(bp, size).Grow(6));
+                b.Box.Modulate = new Color(1, 1, 1, (float)Mathf.Min(1, Mathf.Min(b.T / 0.2, (b.Life - b.T) / 0.6)) * quiet);
+                continue;
             }
             b.Pick = pick == at.Y ? null : pick;
             float want = at.Y - pick;

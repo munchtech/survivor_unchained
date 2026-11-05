@@ -109,7 +109,10 @@ public class GoalsTests
     public void The_table_leads_and_the_way_out_fades_at_the_ring()
     {
         Assert.True(Goals.All.Single(g => g.Id == "table").First);
-        foreach (var g in Goals.All.Where(g => g.Id != "table")) { Assert.False(g.First); Assert.Equal(6, g.Fade); Assert.Equal("arch", g.Glyph); }
+        foreach (var g in Goals.All.Where(g => g.Id is not ("table" or "day_ring"))) { Assert.False(g.First); Assert.Equal(6, g.Fade); Assert.Equal("arch", g.Glyph); }
+        // (H8, N22: the day road's shut gate points back to the road, in the road's own block)
+        var ring = Goals.All.Single(g => g.Id == "day_ring");
+        Assert.False(ring.First); Assert.Equal("pro", ring.Into); Assert.Equal("ring_line", ring.Pin);
         Assert.Null(Goals.All.Single(g => g.Id == "table").Fade);
         Assert.Equal("chart", Goals.All.Single(g => g.Id == "table").Glyph);
         Assert.True(System.Enum.IsDefined(typeof(MarkKind), "Goal"));
