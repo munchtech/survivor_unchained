@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtk4cb5nsy8wf"
-path="res://.godot/imported/rough.png-90ed1305cf009e6bd90f1d36b167f110.ctex"
+uid="uid://5kje4n5b2my0"
+path="res://.godot/imported/albedo.png-d2a09e6c25def6dcaf13d953d67adf0c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/world/painted/alder/rough.png"
-dest_files=["res://.godot/imported/rough.png-90ed1305cf009e6bd90f1d36b167f110.ctex"]
+source_file="res://art/world/painted/setts/albedo.png"
+dest_files=["res://.godot/imported/albedo.png-d2a09e6c25def6dcaf13d953d67adf0c.ctex"]
 
 [params]
 

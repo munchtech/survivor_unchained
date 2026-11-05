@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8qah8oxbp3ou"
-path="res://.godot/imported/normal.png-54bea74d3269e4cf05a32e40216daf0f.ctex"
+uid="uid://cfvhqkh5ho5sv"
+path="res://.godot/imported/rough.png-e20fbe1bb3723eaf51b961fe269eeee3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/world/painted/alder/normal.png"
-dest_files=["res://.godot/imported/normal.png-54bea74d3269e4cf05a32e40216daf0f.ctex"]
+source_file="res://art/world/painted/boulder/rough.png"
+dest_files=["res://.godot/imported/rough.png-e20fbe1bb3723eaf51b961fe269eeee3.ctex"]
 
 [params]
 

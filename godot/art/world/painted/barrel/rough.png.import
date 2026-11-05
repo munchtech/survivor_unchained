@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bps48wflktthd"
-path="res://.godot/imported/rough.png-42d8a7d62d55271fc9d50541b94f30a1.ctex"
+uid="uid://bj72d1btjvql0"
+path="res://.godot/imported/rough.png-ec6af9f8057f2712366a18f587d17d95.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/world/painted/rocks/rough.png"
-dest_files=["res://.godot/imported/rough.png-42d8a7d62d55271fc9d50541b94f30a1.ctex"]
+source_file="res://art/world/painted/barrel/rough.png"
+dest_files=["res://.godot/imported/rough.png-ec6af9f8057f2712366a18f587d17d95.ctex"]
 
 [params]
 

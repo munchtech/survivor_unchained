@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "764c5dfbd6d6",
+ "inputs": "10f567898350",
  "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "mean": [
-    0.08932,
-    0.10748,
-    0.03434
+    0.23081,
+    0.21711,
+    0.04862
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the churned earth: masses and a few clods)",
    "mean": [
-    0.06154,
-    0.04247,
-    0.02531
+    0.13623,
+    0.09332,
+    0.03704
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road: ruts as long strokes, darker",
    "mean": [
-    0.03415,
-    0.02356,
-    0.01445
+    0.07413,
+    0.0514,
+    0.02142
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the wet earth by the puddles)",
    "mean": [
-    0.0391,
-    0.03207,
-    0.02426
+    0.08694,
+    0.07079,
+    0.03639
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
    "mean": [
-    0.06599,
-    0.04294,
-    0.02383
+    0.14685,
+    0.0948,
+    0.0349
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the metalled way: small rounded stones in masses)",
    "mean": [
-    0.07678,
-    0.06052,
-    0.04486
+    0.16876,
+    0.13191,
+    0.06619
    ]
   },
   {
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the cut bank's earth as big planes)",
    "mean": [
-    0.07471,
-    0.05512,
-    0.03733
+    0.16227,
+    0.11943,
+    0.05514
    ]
   }
  ],

@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "180102ca4497",
+ "inputs": "59439ab52677",
  "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "mean": [
-    0.13474,
-    0.10572,
-    0.08378
+    0.29812,
+    0.23407,
+    0.12398
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "mean": [
-    0.04985,
-    0.04458,
-    0.04051
+    0.10962,
+    0.09794,
+    0.05946
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "mean": [
-    0.06427,
-    0.05237,
-    0.04377
+    0.14186,
+    0.11535,
+    0.0645
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "mean": [
-    0.04065,
-    0.03593,
-    0.03234
+    0.0896,
+    0.07946,
+    0.04754
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
    "mean": [
-    0.12024,
-    0.1188,
-    0.10625
+    0.41723,
+    0.23219,
+    0.20338
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "mean": [
-    0.13478,
-    0.10464,
-    0.07317
+    0.29995,
+    0.23211,
+    0.10815
    ]
   },
   {
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (the banks and steep faces as big planes)",
    "mean": [
-    0.07507,
-    0.07935,
-    0.07181
+    0.16676,
+    0.17522,
+    0.10577
    ]
   }
  ],

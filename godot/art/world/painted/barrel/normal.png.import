@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dvho22xeutnn6"
-path="res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.ctex"
+uid="uid://h3mth4oyi3ir"
+path="res://.godot/imported/normal.png-b130fa734730db64d45e090372ba0402.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/world/painted/spruce/rough.png"
-dest_files=["res://.godot/imported/rough.png-241307bfaad3c821f33b1443a04650cd.ctex"]
+source_file="res://art/world/painted/barrel/normal.png"
+dest_files=["res://.godot/imported/normal.png-b130fa734730db64d45e090372ba0402.ctex"]
 
 [params]
 

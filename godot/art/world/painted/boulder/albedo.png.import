@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ci613maqnpcmi"
-path="res://.godot/imported/albedo.png-7b028a2ce77308ae8a80096622d5adfd.ctex"
+uid="uid://b4eayxck2wasy"
+path="res://.godot/imported/albedo.png-89f0da305e4c3ca151b71126e67d353d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/world/painted/rocks/albedo.png"
-dest_files=["res://.godot/imported/albedo.png-7b028a2ce77308ae8a80096622d5adfd.ctex"]
+source_file="res://art/world/painted/boulder/albedo.png"
+dest_files=["res://.godot/imported/albedo.png-89f0da305e4c3ca151b71126e67d353d.ctex"]
 
 [params]
 
