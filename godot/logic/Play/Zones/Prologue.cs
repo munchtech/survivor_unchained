@@ -749,7 +749,7 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     /// <summary>When a floor last turned a blow (game seconds): "Warded" says so at most every WardedEvery s.</summary>
-    double wardedAt = -99, overSeen, floorHeldT;
+    double wardedAt = -99, overSeen, floorHeldT, wardLogAt = -99;
     int wardCracks, lampsBroken;
     const double WardedEvery = 4;
 
@@ -757,6 +757,11 @@ public sealed partial class Prologue : ZoneRuntime
     /// until he has fought MinSeconds; a blow the floor turns says "Warded" over him.</summary>
     void WardFloor(Enemy e, Teeth.FordWarden? fw, double dt)
     {
+        if (B != null && Now == Stage.Boss && B.Time - wardLogAt >= 1)
+        {
+            wardLogAt = B.Time;
+            PaceNotes.Enqueue($"ford wardlog t={B.Time:0.0} fought={stageT:0.0} fw={(fw == null ? "null" : "set")} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} pylons={pylons.Count} broken={lampsBroken} cracks={wardCracks} lit={LitCount} over={e.Overflow:0} mode={ai.Mode} state={e.State}");
+        }
         if (fw == null || B == null) { e.HpFloor = 0; return; }
         // (by the lamps broken this fight, never taken back by a relight: H8's b_path had his channels relight them
         // six times over 338 s; the ward, what a blow does, stays by the lamps lit)
@@ -1336,6 +1341,7 @@ public sealed partial class Prologue : ZoneRuntime
     void OnWardenDown(Enemy e)
     {
         if (B == null) return;
+        PaceNotes.Enqueue($"ford down t={B.Time:0.0} fought={stageT:0.0} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} over={e.Overflow:0} school={e.LastSchool} weapon={e.LastWeapon ?? "-"} blow={e.LastBlow:0.00} lit={LitCount} broken={lampsBroken} state={e.State}");
         ai.Mode = "dead";
         wardenView.SetPose("dead");
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
