@@ -1368,6 +1368,10 @@
    "rule": "not a GeometryInstance3D material"
   },
   {
+   "what": "FX: the Flares' own shards and particles (rule 13: spells are their own family)",
+   "shader": "flare_"
+  },
+  {
    "what": "water surfaces",
    "shader": "water|river|ford|puddle"
   },

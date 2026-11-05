@@ -189,10 +189,10 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
+            View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(f));   // (--cel-audit, L1 B2)
             GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}{(Ui.HerLight.Live is { } hl ? $" life {hl.LifeNow:0.000}" : "")}");
             // (the camera, so a mark's ground can be found in the frame and measured)
             CamLines();
-            View.CelLib.AuditPrint($"{name}_{tag}_{k}");   // (--cel-audit, L1 B2)
         }
         for (int i = wantedFrames.Count - 1; i >= 0; i--)
         {
@@ -204,6 +204,7 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
+            View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(f));   // (--cel-audit, L1 B2)
             GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
             CamLines();
         }
@@ -215,6 +216,7 @@ public partial class Shots : Node
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
+        View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(file));   // (--cel-audit, L1 B2)
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         CamLines();

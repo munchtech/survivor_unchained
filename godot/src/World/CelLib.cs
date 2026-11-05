@@ -169,7 +169,8 @@ public static class CelLib
         return null;
     }
 
-    static void Bind(BaseMaterial3D b, string cls)
+    /// <summary>Puts one standard material on the model in its class (the loader does it to every one it finds; the lookdev swatches call it).</summary>
+    public static void Bind(BaseMaterial3D b, string cls)
     {
         var key = StdCelCode.Key(b);
         if (!variants.TryGetValue(key, out var sh))
@@ -215,7 +216,7 @@ public static class CelLib
                     if (st != null) { Count(st); continue; }
                     var id = p.GetInstanceId();
                     off[id] = off.TryGetValue(id, out var o) ? (o.Line, o.N + 1)
-                        : ($"{g.GetPath()} | '{p.ResourceName}' {p.GetClass()}{(p.ResourcePath != "" ? " " + p.ResourcePath : "")} | {where}", 1);
+                        : ($"{g.GetPath()} | '{p.ResourceName}' {p.GetClass()}{(p.ResourcePath != "" ? " " + p.ResourcePath : "")}{(p is ShaderMaterial q ? $" shader '{q.Shader?.ResourcePath}'" : "")} | {where}", 1);
                 }
         }
         GD.Print($"cel-audit {tag}: {off.Count} lit materials off the model ({off.Values.Sum(v => v.N)} uses); {live.Count} standard materials converted in {variants.Count} variants");
@@ -239,6 +240,7 @@ public static class CelLib
             if (!Spatial.IsMatch(code)) return "excluded: not spatial";
             if (Unshaded.IsMatch(code)) return "excluded: unshaded";
             if (FxBlend.IsMatch(code)) return "excluded: FX blend";
+            if (Lib.Excluded(s.ResourcePath, sm.ResourceName)) return "excluded: by the library";
             if (UsesCel(s)) return sm.HasMeta(Meta) ? $"cel {(string)sm.GetMeta(Meta)}" : "cel (shader default)";
             if (Water.IsMatch(s.ResourcePath) || Water.IsMatch(sm.ResourceName)) return "excluded: water surface";
             return null;
