@@ -72,6 +72,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
+    Batch? celBolts;
     Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, chakrams = null!, embers = null!, emberHalos = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
@@ -202,6 +203,8 @@ public partial class BattleFx : Node3D
         // The dark under them, drawn first, so a light over the pale dead still shows.
         shades = Add(new Batch(new QuadMesh { Size = Vector2.One }, 600, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_shade.gdshader"), RenderPriority = -1 }));
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, over));
+        // (L1 B6) Under cel the cinder bolt is drawn in the FX language (FxCel; --cel off draws it as before).
+        if (FxCel.On) celBolts = Add(new Batch(new QuadMesh { Size = Vector2.One }, 300, FxCel.Bolt(School.Fire)));
         steel = Add(new Batch(Arrow(), 600, Glowing(0.3f, 0.35f, 0.5f)));
         // What is thrown is the weapon in hand (Arms), not a stick of light.
         axes = Add(new Batch(Weapon("viking_axe", 0.85f), 400, null));
@@ -2144,6 +2147,7 @@ public partial class BattleFx : Node3D
 
     void Projectiles(Battle b, float dt, double now)
     {
+        celBolts?.Begin();
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); chakrams.Begin(); kegs.Begin(); herdCrowd?.Begin();
         DiscsBegin();
         StunGlints(b);
@@ -2224,6 +2228,7 @@ public partial class BattleFx : Node3D
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
         DiscsEnd();
+        celBolts?.End();
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); chakrams.End(); kegs.End(); herdCrowd?.End();
     }
 

@@ -521,6 +521,13 @@ public partial class BattleFx
                 // at all: a cream streak.)
                 bool ice = art == "frostfire", star = art == "star" || ice, small = art == "living_flame";
                 float s = (star ? 1.25f : small ? 0.55f : 0.85f) * g;
+                // (L1 B6) Under cel the cinder is the FX language's bolt (MB5's FIRE): its bands, glow and painted sparks
+                // are the shader's, so none of the soft orbs, coal sprite, ribbon, filmed puffs or round sparks below.
+                if (celBolts != null && art == "cinder")
+                {
+                    celBolts.Add(FxCel.BoltAt(at, fwd, s), new Color((p.Id % 97) / 97f, 0, 0, 1));
+                    return true;
+                }
                 // Its heart yellow-hot, not white: past the tone curve's knee a coal read as a cream pill.
                 Shade(at, s * 2.2f, 0.5f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.3f), at), ice ? Hdr("#9fd4ff", 1.6f) : star ? Hdr("#ffd890", 2.0f) : Hdr("#ffa840", 1.7f));

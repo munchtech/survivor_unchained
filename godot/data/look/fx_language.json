@@ -1,0 +1,602 @@
+{
+ "what": "L1 B6: the language spells are drawn in (docs/design/LOOK_BIBLE.md rule 13). Per school: stepped bands on a 1D heat gradient (edge, mid, core in rising heat; t = the heat a band starts at, from MB5's area shares of the body), each band's color (Oklab L, C, h and hex: the displayed color it is FROM) and emit (the linear gain that lands it there through the night rig's exposure, AgX and grade, calibrated on the lookdev stage); a soft outer glow; painted sparks. Read by logic/Look/FxLanguage.cs; drawn by shaders/fx_cel.gdshaderinc. Written by tools/style/fx_measure.py build (re-run after moving a box); emit and t_tuned are the stage's and survive a rebuild.",
+ "board": "look_l1/a2/r2/MB5_fire.png",
+ "measure": {
+  "fire": {
+   "box": [
+    20,
+    560,
+    510,
+    820
+   ],
+   "bg": [
+    20,
+    500,
+    260,
+    550
+   ],
+   "k": 3,
+   "what": "the FIRE panel's bolt in flight"
+  },
+  "frost": {
+   "box": [
+    560,
+    500,
+    1000,
+    860
+   ],
+   "bg": [
+    540,
+    470,
+    700,
+    500
+   ],
+   "k": 3,
+   "what": "the FROST panel's shard burst"
+  },
+  "holy": {
+   "box": [
+    1040,
+    480,
+    1500,
+    860
+   ],
+   "bg": [
+    1030,
+    900,
+    1200,
+    960
+   ],
+   "k": 3,
+   "what": "the HOLY panel's ring"
+  }
+ },
+ "derive": {
+  "what": "schools MB5 does not draw: edge and mid hue from Palette.Of's glow hue moved toward its core hue by edge_h and mid_h (fitted on MB5 fire: Palette glow 43, core 88 -> MB5 edge 36, mid 55); core hue Palette's core (its glow's where the core is white, C under 0.03); band L MB5's three-school mean; edge and mid C MB5 fire's times the school's glow C over fire's; core C max(core C, glow C / 4) x core_c (MB5 fire core 0.122 over Palette's 0.096); every C at most c_max (MB5's highest band, fire's edge 0.177: no school louder than fire) and inside sRGB at its L and h. Two bands where Palette's core and glow sit within 0.09 L and 0.09 C (physical): a third band would not read (MB5's bands step 0.14+ L).",
+  "c_max": 0.18,
+  "edge_h": -0.15,
+  "mid_h": 0.27,
+  "core_c": 1.27,
+  "two_bands": [
+   "physical"
+  ]
+ },
+ "glow": {
+  "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+  "width": 0.13,
+  "reach": 0.35,
+  "head": 0.65,
+  "tail": 0.3,
+  "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+ },
+ "sparks": {
+  "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56",
+  "L": 0.644,
+  "C": 0.155,
+  "h": 56.0,
+  "count": 23,
+  "length": 0.018,
+  "aspect": 1.6
+ },
+ "schools": {
+  "physical": {
+   "from": "derived: Palette.Of(physical) hues by derive's rules, MB5's band L and fire's chroma ratios",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.561,
+     "C": 0.075,
+     "h": 77.5,
+     "share_of_body": 0.747,
+     "t": 0.0,
+     "hex": "#8d6f40",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.889,
+     "C": 0.032,
+     "h": 77.5,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#e6d8c3",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.039,
+    "h": 77.5,
+    "hex": "#4a3c27",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#a4885e",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "fire": {
+   "from": "MB5 fire box [20, 560, 510, 820] (k-means on L, fx_measure.py board)",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.573,
+     "C": 0.177,
+     "h": 35.9,
+     "share_of_body": 0.342,
+     "t": 0.0,
+     "hex": "#cb451e",
+     "emit": [
+      1.032,
+      0.345,
+      0.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.742,
+     "C": 0.173,
+     "h": 55.1,
+     "share_of_body": 0.405,
+     "t": 0.342,
+     "hex": "#fc8923",
+     "emit": [
+      1.089,
+      0.58,
+      0.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.925,
+     "C": 0.122,
+     "h": 91.4,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#ffe496",
+     "emit": [
+      1.332,
+      0.994,
+      0.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.093,
+    "h": 30.5,
+    "hex": "#67281f",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#d26f0a",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "frost": {
+   "from": "MB5 frost box [560, 500, 1000, 860] (k-means on L, fx_measure.py board)",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.549,
+     "C": 0.129,
+     "h": 253.2,
+     "share_of_body": 0.374,
+     "t": 0.0,
+     "hex": "#3373ba",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.692,
+     "C": 0.131,
+     "h": 249.6,
+     "share_of_body": 0.34,
+     "t": 0.374,
+     "hex": "#56a1e9",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.836,
+     "C": 0.091,
+     "h": 235.1,
+     "share_of_body": 0.286,
+     "t": 0.714,
+     "hex": "#8dd3fc",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.378,
+    "C": 0.078,
+    "h": 252.5,
+    "hex": "#20436a",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#5192d2",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "storm": {
+   "from": "derived: Palette.Of(storm) hues by derive's rules, MB5's band L and fire's chroma ratios",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.561,
+     "C": 0.105,
+     "h": 261.6,
+     "share_of_body": 0.342,
+     "t": 0.0,
+     "hex": "#5274b2",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.713,
+     "C": 0.102,
+     "h": 261.6,
+     "share_of_body": 0.405,
+     "t": 0.342,
+     "hex": "#7fa3e2",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.889,
+     "C": 0.037,
+     "h": 261.6,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#cddbf4",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.055,
+    "h": 261.6,
+    "hex": "#2e3f5c",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#6e8ec5",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "nature": {
+   "from": "derived: Palette.Of(nature) hues by derive's rules, MB5's band L and fire's chroma ratios",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.561,
+     "C": 0.18,
+     "h": 140.3,
+     "share_of_body": 0.342,
+     "t": 0.0,
+     "hex": "#288c04",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.713,
+     "C": 0.18,
+     "h": 136.1,
+     "share_of_body": 0.405,
+     "t": 0.342,
+     "hex": "#6aba3a",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.889,
+     "C": 0.084,
+     "h": 128.8,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#c9e6ab",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.115,
+    "h": 140.3,
+    "hex": "#134c04",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#5ea239",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "arcane": {
+   "from": "derived: Palette.Of(arcane) hues by derive's rules, MB5's band L and fire's chroma ratios",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.561,
+     "C": 0.18,
+     "h": 310.0,
+     "share_of_body": 0.342,
+     "t": 0.0,
+     "hex": "#954ec2",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.713,
+     "C": 0.18,
+     "h": 311.3,
+     "share_of_body": 0.405,
+     "t": 0.342,
+     "hex": "#c77df3",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.889,
+     "C": 0.077,
+     "h": 313.4,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#edccff",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.1,
+    "h": 310.0,
+    "hex": "#4f2d65",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#ac6ed1",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "holy": {
+   "from": "MB5 holy box [1040, 480, 1500, 860] (k-means on L, fx_measure.py board)",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.562,
+     "C": 0.066,
+     "h": 64.3,
+     "share_of_body": 0.43,
+     "t": 0.0,
+     "hex": "#916d4b",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.706,
+     "C": 0.103,
+     "h": 70.6,
+     "share_of_body": 0.351,
+     "t": 0.43,
+     "hex": "#c99555",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.906,
+     "C": 0.114,
+     "h": 90.3,
+     "share_of_body": 0.22,
+     "t": 0.78,
+     "hex": "#fddd84",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.416,
+    "C": 0.031,
+    "h": 59.7,
+    "hex": "#59483b",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#b1834b",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  },
+  "shadow": {
+   "from": "derived: Palette.Of(shadow) hues by derive's rules, MB5's band L and fire's chroma ratios",
+   "bands": [
+    {
+     "name": "edge",
+     "L": 0.561,
+     "C": 0.18,
+     "h": 292.6,
+     "share_of_body": 0.342,
+     "t": 0.0,
+     "hex": "#7b59d3",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "mid",
+     "L": 0.713,
+     "C": 0.167,
+     "h": 294.6,
+     "share_of_body": 0.405,
+     "t": 0.342,
+     "hex": "#ab8aff",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    },
+    {
+     "name": "core",
+     "L": 0.889,
+     "C": 0.062,
+     "h": 298.2,
+     "share_of_body": 0.253,
+     "t": 0.747,
+     "hex": "#dfd2ff",
+     "emit": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ],
+   "glow": {
+    "L": 0.366,
+    "C": 0.117,
+    "h": 292.6,
+    "hex": "#422e76",
+    "from": "MB5 fire: rings of the backdrop's distance from the body (fx_measure.py): at the head L 0.45 at 2 px, 0.35 at 10 px, gone (0.24) by 30 px of an 85 px head radius; along the tail 0.33 at 2 px, gone by 10 px",
+    "width": 0.13,
+    "reach": 0.35,
+    "head": 0.65,
+    "tail": 0.3,
+    "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
+   },
+   "sparks": {
+    "hex": "#9478de",
+    "count": 23,
+    "length": 0.018,
+    "aspect": 1.6,
+    "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
+   }
+  }
+ },
+ "board_mean_L": [
+  0.561,
+  0.713,
+  0.889
+ ]
+}

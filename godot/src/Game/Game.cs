@@ -1401,7 +1401,7 @@ public partial class Game : Node, IZoneHost
             if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 25f : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
-            Lookdev(dt); LookSwatches();   // (L1 B2: --lookdev-swatches)
+            Lookdev(dt); LookSwatches(); LookFx(dt);   // (L1 B2: --lookdev-swatches; B6: --lookdev-fx)
             UpdateCloseUp(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
