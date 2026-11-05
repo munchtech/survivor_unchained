@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
@@ -154,6 +154,8 @@ public partial class CrowdView : Node3D
         public float Char;
         /// <summary>The fallen's enemy id (its struck rim lasts into its fall: most of a crowd her blade strikes dies of it).</summary>
         public int Id = -1;
+        /// <summary>The fallen's seed (with its id, a film's look on the body where it lies: FilmFoes).</summary>
+        public double Seed = double.NaN;
         /// <summary>When it began to burn up with the Long Cut's struck (this view's clock; -1 not burning).</summary>
         public double BurnAt = -1;
         /// <summary>Its Long Cut death is ash (off the drawn seam), not gold.</summary>
@@ -648,6 +650,21 @@ public partial class CrowdView : Node3D
                     return;
                 }
                 if (flareSays < 0) return;
+                // (P9 C13) A film lays it at its fall's end ("foe" "fallen": the world held, its fall's clock stopped at the
+                // first frame): the fall it would take (its turn away from her, its end twist) laid as the fight lays its dead.
+                if (flareSays == 0 && SurvivorUnchained.Cinema.FilmFoes.Of(e) is { Fallen: true })
+                {
+                    if (g.Death == null)
+                    {
+                        g.Away = Math.Atan2(ez - battle!.Player.Z, ex - battle.Player.X);
+                        if (asset.FallOff != null) g.Death = DeathToward(asset, e, g, false);
+                        else Twist(e, g, Hash01(e.Seed, 5.3) < CrumpleShare);
+                    }
+                    role = g.Death ??= DeathOf(asset, e);
+                    if (!double.IsNaN(g.FaceTo)) g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) + g.EndTwist;
+                    LayOut(e, ex, ez, g.Facing, role, g.Char);
+                    return;
+                }
                 if (flareSays > 0)
                 {
                     long key = KeyOf(e);
@@ -871,8 +888,13 @@ public partial class CrowdView : Node3D
         if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
+        // (P9 C13) A body a film has a look on is drawn without the fight's blow on it: the struck flash and rim run on
+        // the world's clock, which the film holds, so the killing blow's white stayed on the Barrow Lord and on Corvane
+        // over the film's tint (they read pale, the tint "not taken").
+        bool filmed = SurvivorUnchained.Cinema.FilmFoes.Of(e) != null;
+        if (filmed) { flare = 0; hk = new Vector2(-1, 0); }
         var xf = new Transform3D(basis, at);
-        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
+        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, !filmed && e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
         // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)
         if (e.Def.CarriedLight != null && asset.GlassAt(role, t) is Vector3 gl) GlassOn[e.Id] = (xf * gl, e.Seed, Engine.GetProcessFrames());
         living++;
@@ -952,7 +974,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad });
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Seed = e.Seed, Rad = cnLastRad });
         cnLastRad = float.NaN;
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
@@ -1035,7 +1057,12 @@ public partial class CrowdView : Node3D
             // ones made the horde twice its size). Then they darken on as they lie.
             float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
             if (FlareChar != null) c.Char = Math.Max(c.Char, FlareChar(c.X, c.Z, false));
-            var tint = Charred(c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
+            // (P9 C13) A film's look on the body where it lies (FilmFoes: hidden, or its tint and glow for the film).
+            var cfl = c.Id >= 0 ? SurvivorUnchained.Cinema.FilmFoes.Of(c.Id, c.Seed) : null;
+            if (cfl is { Hidden: true }) continue;
+            var ctint = cfl?.Tint is var (cr0, cg0, cb0) ? c.Tint * new Color((float)cr0, (float)cg0, (float)cb0) : c.Tint;
+            float cglow = cfl?.Glow is double cgl ? (float)cgl : c.Glow;
+            var tint = Charred(ctint * new Color(k * 0.88f, k * 0.92f, k, 1), c.Char);
             tint.A = 1;
             Audit(c.X, c.Z, c.Char);
             censusCorpse++;
@@ -1053,10 +1080,10 @@ public partial class CrowdView : Node3D
             {
                 var lk = SurvivorUnchained.View.FlareFx.BurnLook((float)(time - c.BurnAt), c.Ash);
                 censusBurn++;
-                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), c.Glow);
+                crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, Math.Max(lk.Z, sink), lk.X, lk.W, Charred(tint, lk.Y), cglow);
                 continue;
             }
-            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, c.Glow, false, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
+            crowd.Push(c.Key, new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink, 0, 0, tint, cglow, false, cfl == null && c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: >= 0 } cr ? Math.Max(cr.Y, 0.001f) : 0, cfl == null && c.Id >= 0 && StruckRim?.Invoke(c.Id) is { X: > 0 } cf ? cf.X : 0);
         }
     }
 

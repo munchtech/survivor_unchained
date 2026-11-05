@@ -39,4 +39,21 @@ public class FilmFoesTests
         FilmFoes.Clear();
         Assert.False(FilmFoes.Any);
     }
+
+    [Fact]
+    public void FallenPicksABodyThatIsDown_AndItsLookFollowsTheBody()
+    {
+        var lord = new EnemyDef { Id = "boss_dead" };
+        // falling (still in the pool) and let go by the fight (its slot free, not yet taken)
+        var falling = new Enemy(4) { Seed = 0.4, Alive = true, Def = lord, Boss = true, State = EnemyState.Dying };
+        var gone = new Enemy(5) { Seed = 0.5, Alive = false, Def = lord, State = EnemyState.Dying };
+        var free = new Enemy(6) { Seed = 0.6, Alive = false, Def = lord };
+        Assert.Same(falling, FilmFoes.Pick(new[] { falling }, null, true, null, down: true));
+        Assert.Null(FilmFoes.Pick(new[] { gone, free }, "boss_dead", false, null));
+        Assert.Same(gone, FilmFoes.Pick(new[] { free, gone }, "boss_dead", false, null, down: true));
+        FilmFoes.Set(falling, new FilmFoes.Look(false, 0, (0.3, 0.3, 0.36), 0, Fallen: true));
+        Assert.True(FilmFoes.Of(4, 0.4)!.Fallen);
+        Assert.Null(FilmFoes.Of(4, 0.9));
+        FilmFoes.Clear();
+    }
 }

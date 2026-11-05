@@ -1327,6 +1327,9 @@ public partial class Game
                     // named "actor" for the film's other cues ("anim": a crowd role), and drawn for the film's length:
                     // {"do":"foe","actor":"laid","def":"corvane","hidden":true} (a film casting its own double of him),
                     // {"do":"foe","actor":"lord","boss":true,"glow":0,"tint":[0.35,0.35,0.4],"light":0} (a dark shape).
+                    // "fallen": true: a body that is down (falling or let go by the fight) is picked too, and drawn at its
+                    // fall's end, laid where it fell, the look kept on it there (C13's end: the Barrow Lord down and dark
+                    // while the film holds the world, his fall's clock stopped at its first frame).
                     // Each key kept from its last cue when not given. Cleared after the film's end has run the zone's done.
                     // ("all": true: every living creature of the zone but its boss takes this look, "hidden" and the rest:
                     // C13's end, the zone's crowd away for the film's own ranks of the dead, put back after the zone's done)
@@ -1339,14 +1342,16 @@ public partial class Game
                         break;
                     }
                     V3? fnear = c.Has("near") ? places.Resolve(c.Get("near")) : null;
-                    var fe = enemies.TryGetValue(c.Actor, out var known) && known.Alive ? known
-                        : FilmFoes.Pick(b.Enemies.Living(), c.Str("def"), c.Bool("boss"), fnear is V3 fn ? (fn.X, fn.Z) : null);
+                    var fwas0 = enemies.TryGetValue(c.Actor, out var known) ? FilmFoes.Of(known) : null;
+                    bool fdown = c.Bool("fallen", fwas0?.Fallen ?? false);
+                    var fe = known != null && (known.Alive || fdown && known.State == EnemyState.Dying) ? known
+                        : FilmFoes.Pick(fdown ? b.Enemies.Items : b.Enemies.Living(), c.Str("def"), c.Bool("boss"), fnear is V3 fn ? (fn.X, fn.Z) : null, fdown);
                     if (fe == null) { GD.Print($"cinema: foe {c.Actor}: none in the zone"); break; }
                     enemies[c.Actor] = fe;
                     var fwas = FilmFoes.Of(fe);
                     (double, double, double)? ftint = c.Get("tint") is { ValueKind: JsonValueKind.Array } ta && ta.GetArrayLength() == 3
                         ? (ta[0].GetDouble(), ta[1].GetDouble(), ta[2].GetDouble()) : fwas?.Tint;
-                    FilmFoes.Set(fe, new FilmFoes.Look(c.Bool("hidden", fwas?.Hidden ?? false), c.Has("glow") ? c.Num("glow") : fwas?.Glow, ftint, c.Num("light", fwas?.Light ?? 1)));
+                    FilmFoes.Set(fe, new FilmFoes.Look(c.Bool("hidden", fwas?.Hidden ?? false), c.Has("glow") ? c.Num("glow") : fwas?.Glow, ftint, c.Num("light", fwas?.Light ?? 1), fdown));
                     break;
                 }
                 case "gates":

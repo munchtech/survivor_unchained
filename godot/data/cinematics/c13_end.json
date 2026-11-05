@@ -221,6 +221,19 @@
      "hidden": true
     },
     {
+     "do": "foe",
+     "actor": "lord",
+     "boss": true,
+     "fallen": true,
+     "tint": [
+      0.3,
+      0.3,
+      0.34
+     ],
+     "glow": 0,
+     "light": 0
+    },
+    {
      "do": "place",
      "actor": "her",
      "where": {
