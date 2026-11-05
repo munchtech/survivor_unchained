@@ -5,7 +5,7 @@ cd "$M"
 SEEN="$M/.claude/worktrees/watch_seen.txt"; touch "$SEEN"
 chk() { grep -v -E "@COMMIT|@<commit>|@<sha>|READY line|never rename" | grep -q -E "$1@[0-9a-f]{7,}|$1 [a-z_/.]+ on ${1##* }@[0-9a-f]{7,}"; }
 while true; do
-  for trip in combat-h6:combat:"MR READY" flare-h7:flare:"MR READY" seams-h8:experience:"MR READY" look-l1:art_style:"GATE G1 READY" body-p1:body:"GATE READY" combat-h6:combat:"HANDOFF READY" flare-h7:flare:"HANDOFF READY" seams-h8:experience:"HANDOFF READY" body-p1:body:"HANDOFF READY" story-s1:story:"MR READY" story-s1:story:"HANDOFF READY" story-s1:story:"PROPOSAL READY"; do
+  for trip in combat-h6:combat:"MR READY" flare-h7:flare:"MR READY" seams-h8:experience:"MR READY" look-l1:art_style:"GATE G1 READY" body-p1:body:"GATE READY" combat-h6:combat:"HANDOFF READY" flare-h7:flare:"HANDOFF READY" seams-h8:experience:"HANDOFF READY" body-p1:body:"HANDOFF READY" story-s1:story:"MR READY" story-s1:story:"HANDOFF READY" story-s1:story:"PROPOSAL READY" motion-a1:animation:"GATE M1 READY" motion-a1:animation:"MR READY" motion-a1:animation:"HANDOFF READY"; do
     b=${trip%%:*}; r=${trip#*:}; h=${r%%:*}; k=${r#*:}
     f="$M/.claude/worktrees/$b/docs/handoff/$h.md"
     hit=""
