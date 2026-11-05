@@ -53,8 +53,9 @@ public partial class BattleFx
         {
             a.Halo = new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One }, MaterialOverride = HaloMat(def.Color), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
             AddChild(a.Halo);
-            // (its core: a small, whiter disc over the glass, so the glass itself reads lit)
-            a.Core = new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One }, MaterialOverride = HaloMat("#ffffff"), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            // (its core: a small, whiter disc over the glass, so the glass itself reads lit; drawn over what stands before it,
+            // so the raised lamp's roof and his own head, between the glass and the camera, do not leave a dark box: r8)
+            a.Core = new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One }, MaterialOverride = CoreMat(), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
             AddChild(a.Core);
         }
         a.Seen = true;
@@ -115,6 +116,13 @@ public partial class BattleFx
     }
 
     static GradientTexture2D? haloTex;
+    static StandardMaterial3D CoreMat()
+    {
+        var m = HaloMat("#ffffff");
+        m.NoDepthTest = true;
+        m.RenderPriority = 1;
+        return m;
+    }
     /// <summary>An additive, unshaded, camera-facing disc with a soft edge (a lamp's glass glow).</summary>
     static StandardMaterial3D HaloMat(string color)
     {

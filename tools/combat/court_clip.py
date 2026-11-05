@@ -88,7 +88,7 @@ try:
     print("sigs", len(sigs), "stepped out:", [k + 1 for k in range(len(sigs)) if knocked(k) is None], "knocked:", [k + 1 for k in range(len(sigs)) if knocked(k) is not None])
     if first("low"): add("low+0.5", first("low") + S(0.5))
     if first("flare"):
-        for s_ in (0.3, 0.6, 1.0): add(f"flare+{s_:.1f}", first("flare") + S(s_))
+        for s_ in (0.3, 0.6, 1.0, 1.5): add(f"flare+{s_:.1f}", first("flare") + S(s_))
     # His fall (the fallback, no film): the hold on his body, "He gets up.", the black, the gone line (P6 r7).
     if first("down"): add("down+1.0", first("down") + S(1.0)); add("down+1.9", first("down") + S(1.9))
     if first("getsup"): add("getsup+0.5", first("getsup") + S(0.5))
