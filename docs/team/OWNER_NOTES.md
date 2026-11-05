@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 5 November 2026, early (coordinator ee735a8d): GATE M1 PICKED: "Yes, go." (motion-a1@3f0f35851)
+The motion bible and the thirteen boards set the direction; MOTION_PLAN.md dispositions (REBUILD 108, RETARGET 10, CUT 37), the MotionBricks + Kimodo pick and the Marionette split are approved. Stage B (her core set rebuilt on P1 new rig, Warden slice first, ~4.3-6.2M) starts after P1 bare-shape gate, as a new brief from MOTION_PLAN.md and the animation handoff top. Before Stage B: Marionette gets a git remote; "swing damage at the clip contact frame" goes to the combat lead with the Warden slice. Taken by: the successor coordinator (local_88131549) when it spawns Stage B.
+
 ## 4 November 2026, night (coordinator 3bbb9904): the story plan's picks: "Go, defaults"
 The owner read `docs/story/PLAN.md` (story-s1@9fd41e6e0) and took the writer's defaults on all five: ending B (Break the Chain) retired, three endings (she lies down / Corvane takes her place / she carries it home); the fool is Corvane; Corvane is killable in Act 1 and gets up on screen; "He has never burned" retired; Holloway risen at Ashford is decided with Act 2's brief. Same night, three standing rules: remake over patch ("upgrading by redoing if needed"), tools on merit ("if motionbricks etc works better now, or hairdeck etc ... go nuts"), and "make marionette the pipe that we pipeline through" (PIPELINE.md). Standing.
 
