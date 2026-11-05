@@ -12,6 +12,10 @@ Out: forms.json, summary.txt, sheet.png (flat gray clay, orthographic: front, si
 - the arm's girth: the plane cut's hull perimeter at 10 stations (upper arm 0.2..0.8, forearm 1.2..1.8 of each
   segment from the shoulder), B against A, per side, and the segments' lengths (joint to joint);
 - height (the top of all meshes) and the lowest skin point, B against A.
+A body on OUR topology (its vertex count one of tools/body/out/topo's tiers, in their order: build_topo.py) is read
+in topology mode: regions by our part and ring ids (wrap_topo.labels: the same regions the fit used; bust = the
+breast part, band = the shoulder patch and the shin's foot ease), the arm's points by our arm zone, not by skin
+weights; plus the topology's health (wrap_topo.quality) and the neck ring against the head's open ring.
 """
 import argparse
 import json
@@ -52,6 +56,15 @@ def load_target(path):
         if k.startswith("g_"):
             d[k] = z[k]
     return d
+
+
+def topo_tier(n):
+    """The tier of our topology with n vertices, or None."""
+    for t in ("close", "play"):
+        f = os.path.join(HERE, "out", "topo", f"{t}.npz")
+        if os.path.exists(f) and len(np.load(f)["V"]) == n:
+            return t
+    return None
 
 
 def regions(P, g):
@@ -120,6 +133,12 @@ def main():
     g = set_weights(m, fs.names)
     g = {k: v[first] for k, v in g.items()}
     reg = regions(P, g)
+    topo = topo_tier(len(m.P))
+    if topo:
+        import wrap_topo as wt
+        z, lab = wt.tier_labels(topo)
+        reg = lab["freg"][first]
+        g["arm"], g["hand"] = lab["arm"][first], np.zeros(len(first))
     SA = surfdist.Surface(tg["P"], tg["T"])
     SM = surfdist.Surface(tg["P"] * np.array([-1.0, 1, 1]), tg["T"][:, ::-1])
     qa, na, _, da = SA.closest(P)
@@ -156,9 +175,22 @@ def main():
                           "err_pct": [round(float(x), 2) for x in (pb / pa - 1) * 100],
                           "segments_B_m": [round(float(np.linalg.norm(jb[1] - jb[0])), 4), round(float(np.linalg.norm(jb[2] - jb[1])), 4)],
                           "segments_A_m": [round(float(np.linalg.norm(ja[1] - ja[0])), 4), round(float(np.linalg.norm(ja[2] - ja[1])), 4)]}
+    if topo:
+        import wrap_topo as wt
+        Pm = m.P.astype(float)
+        hp = gb.mesh("HeroineHead").P.astype(float)
+        from scipy.spatial import cKDTree
+        ring = wt.bt.boundary_ring(z["Q"], len(Pm))
+        out["topology"] = {"tier": topo, **wt.quality(Pm, z["Q"], z),
+                           "ring_to_head_max_m": float(cKDTree(hp).query(Pm[ring])[0].max())}
     ref = Glb(a.ref)
     topB = max(float(mm.P[:, 1].max()) for mm in gb.meshes)
     topA = max(float(mm.P[:, 1].max()) for mm in ref.meshes)
+    if topo:        # (our build's head is A's baked to its world rest: A's height is her world rest's too)
+        import headbake
+        from build_topo import HEADS
+        topA = max([float(b["P"][:, 1].max()) for b in headbake.bake(ref, HEADS).values()] +
+                   [float(ref.mesh("Heroine").P[:, 1].max())])
     lowA = float(ref.mesh("Heroine").P[:, 1].min())
     out["height"] = {"B_top_m": round(topB, 4), "A_top_m": round(topA, 4), "diff_mm": round((topB - topA) * 1000, 2),
                      "B_lowest_m": round(float(P[:, 1].min()), 5), "A_lowest_m": round(lowA, 5),
@@ -175,6 +207,8 @@ def main():
         v = out["arm"][sd]
         lines.append(f"  arm {sd} girth err % {v['err_pct']}  segments B {v['segments_B_m']} A {v['segments_A_m']}")
     lines.append(f"  height {out['height']}")
+    if "topology" in out:
+        lines.append(f"  topology {out['topology']}")
     open(os.path.join(a.out, "summary.txt"), "w").write("\n".join(lines) + "\n")
     print("\n".join(lines))
 

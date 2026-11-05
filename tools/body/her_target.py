@@ -1,6 +1,8 @@
 """Her fit's target: A's shipped body (Mesh_0 in node "Heroine", rest = the sculpt's A-pose) posed through her game
 stack (tools/anim/skin.py Body with helpers: her correctives and helpers as the game drives them) into a base's rest,
-so both stand alike before fitting. Only the posed shape is used.
+so both stand alike before fitting. Only the posed shape is used. world=True (OUR topology's fit, wrap_topo.py): her
+game Head scale and off-rest bind kept, so her neck stands under her head's world rest as our build's does (B2a's
+headbake.py); world=False (v1's): the files' stored space.
 
     target(base_glb) -> dict: P [n,3] welded posed points (glTF), T [m,3], N [n,3], bones {name: (head, tail)} posed,
                               turns {bone: degrees turned}, rest_bones {name: (head, tail)} the base's
@@ -40,7 +42,7 @@ def weld(P, tol=1e-6):
     return first, inv.ravel()
 
 
-def target(base_glb, a_path=A_PATH):
+def target(base_glb, a_path=A_PATH, world=False):
     if ANIM not in sys.path:
         sys.path.insert(0, ANIM)
     import skin
@@ -52,8 +54,9 @@ def target(base_glb, a_path=A_PATH):
     # and the off-rest bind it gives the body's points on Head (heroine_headscale.py) are taken off, so her rest
     # poses to her stored points exactly)
     nb = len(sk.names)
-    body.Jv = np.where(body.Jv >= nb, np.array([j for j, _ in body.vbind] + [0])[np.clip(body.Jv - nb, 0, None)], body.Jv)
-    body.vbind = []
+    if not world:   # (world: OUR topology's build stands under her head baked to its world rest, so does she)
+        body.Jv = np.where(body.Jv >= nb, np.array([j for j, _ in body.vbind] + [0])[np.clip(body.Jv - nb, 0, None)], body.Jv)
+        body.vbind = []
     rot = sk.rest_rot.copy()
     grot0, _ = sk.fk(rot[None])
     turns = {}
@@ -74,7 +77,7 @@ def target(base_glb, a_path=A_PATH):
         rot[j] = qmul(qinv(grot[0, sk.parent[j]]), grot0[0, j])
     clip = skin.Clip("pose", 30.0, rot[None], sk.rest_pos[None].copy(), False)
     G = body.globals(clip, 0, {}, 1 / 30)
-    for j, sc in body.rest_scale.items():
+    for j, sc in ({} if world else body.rest_scale).items():
         G[j, :3, :3] = G[j, :3, :3] / sc
     Pv = body.pose(G)
     first, inv = weld(body.P)

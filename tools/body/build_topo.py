@@ -72,9 +72,14 @@ def boundary_ring(Q, n):
 
 
 # ------------------------------------------------------------------------------------------------- 1 base --
-def stage_base(spec, tier, rep):
-    z = dict(np.load(os.path.join(HERE, "out", "topo", f"{tier}.npz")))
-    sl = OurSliders(os.path.join(HERE, "base", f"sliders_{tier}.npz"))
+def load_tier(tier):
+    """Our topology and its slider bake for a tier (stage 1's inputs; the fit, wrap_topo.py, holds them)."""
+    return (dict(np.load(os.path.join(HERE, "out", "topo", f"{tier}.npz"))),
+            OurSliders(os.path.join(HERE, "base", f"sliders_{tier}.npz")))
+
+
+def stage_base(spec, tier, rep, pre=None):
+    z, sl = pre or load_tier(tier)
     V0 = sl.V0.copy()
     assert np.abs(V0 - z["V"]).max() < 1e-6, "the sliders' reference is not this topology"
     info = {"topology": f"tools/body/out/topo/{tier}.npz", "vertices": int(len(V0)), "quads": int(len(z["Q"]))}
@@ -106,7 +111,7 @@ def stage_base(spec, tier, rep):
         V = V + jw * (hm.to_gltf(to) - V)
         info["stance"] = s_
     if spec.get("forms"):
-        info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; forms on our topology are step C)"
+        info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
     rep["base"] = info
     return z, V
 
@@ -130,6 +135,31 @@ def stage_place(spec, z, V, A, baked, rep):
                     "ease_points": int(zone.sum()), "fit_ease_m": spec["fit_ease_m"],
                     "feet_lowest_m": round(float(V[:, 1].min()), 4)}
     return V, ring, hv
+
+
+# ----------------------------------------------------------------------------------------------- 2b forms --
+def topo_sha(z):
+    """Our topology's identity for a forms file: the reference vertices' and quads' bytes."""
+    return hashlib.sha256(np.ascontiguousarray(z["V"], np.float32).tobytes() +
+                          np.ascontiguousarray(z["Q"], np.int32).tobytes()).hexdigest()[:16]
+
+
+def stage_forms(spec, tier, z, V, ring, rep):
+    """Her residual (spec "forms_topo": a path pattern with {tier}; wrap_topo.py's npz): R per our vertex (glTF m)
+    added to the placed body; R is 0 on the ring and eased in under it, so the seam stays the head's exactly."""
+    f = spec.get("forms_topo")
+    if not f:
+        return V
+    path = os.path.join(REPO, f.format(tier=tier))
+    r = np.load(path)
+    assert str(r["topology"]) == topo_sha(z), ("forms for another topology", path)
+    R = r["R"].astype(np.float64)
+    assert R.shape == V.shape and np.abs(R[ring]).max() == 0.0, "forms must be 0 on the ring"
+    nr = np.linalg.norm(R, axis=1)
+    rep["forms"] = {"file": f.format(tier=tier), "move_p50_mm": round(float(np.percentile(nr, 50)) * 1e3, 2),
+                    "move_p95_mm": round(float(np.percentile(nr, 95)) * 1e3, 2),
+                    "move_max_mm": round(float(nr.max()) * 1e3, 2)}
+    return V + R
 
 
 # --------------------------------------------------------------------------------------------- 3 skeleton --
@@ -235,6 +265,9 @@ def run_tier(spec, tier, A, baked, out, rep):
     t = time.time()
     V, ring, hv = stage_place(spec, z, V, A, baked, rep)
     tim["place"] = round(time.time() - t, 2)
+    t = time.time()
+    V = stage_forms(spec, tier, z, V, ring, rep)
+    tim["forms"] = round(time.time() - t, 2)
     t = time.time()
     sk = stage_skeleton(V, tier, rep)
     tim["skeleton"] = round(time.time() - t, 2)

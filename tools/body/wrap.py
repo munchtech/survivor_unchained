@@ -4,6 +4,7 @@ reads (specs/her.json, forms/her_v1.npz). Authoring only: the build never runs t
     python tools/body/wrap.py target <base.glb> <target.npz>
     python tools/body/wrap.py sliders <stage_dir> <samples.npz> <target.npz> <spec_in> <spec_out>
     python tools/body/wrap.py residual <stage_dir> <target.npz> <spec> <forms_out.npz>
+    python tools/body/wrap.py topo-target|topo-sliders|topo-residual|topo-carry ...   (OUR topology: wrap_topo.py)
 <stage_dir>: a build's stage/ (base.npz: the head's human V and, with sliders, the slider body Vs); <samples.npz>:
 fit_sample.py's; <target.npz>: the posed A (`target`, posed to <base.glb>'s rest).
 
@@ -120,16 +121,16 @@ class Target:
         self.bones = {k[2:]: z[k] for k in z.files if k.startswith("b_")}
 
 
-def make_target(base_glb, out):
+def make_target(base_glb, out, world=False):
     import her_target as ht
-    d = ht.target(base_glb)
+    d = ht.target(base_glb, world=world)
     import skin   # (her_target put tools/anim on the path)
     from rig import Skeleton
     sk = Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
     body = skin.Body(sk, [(A_PATH, lambda n: n == "Heroine", "skin")], None, label="her", helpers=True)
     first, _ = ht.weld(body.P)
     g = a_groups(body)
-    ground = float(body.P[:, 1].min())
+    ground = float(body.P[:, 1].min())      # (her feet are not on Head: stored = world)
     np.savez(out, P=d["P"], T=d["T"], N=d["N"], ground=ground, **{"g_" + k: v[first] for k, v in g.items()},
              **{"b_" + k: np.stack(v) for k, v in d["bones"].items()})
     return d["turns"]
@@ -644,6 +645,9 @@ def detail(ctx, tgt, V, lambdas=DETAIL_LAMBDAS, mu=0.1, pin=10.0, log=print, max
 
 def main():
     a = sys.argv[1:]
+    if a[0].startswith("topo-"):
+        import wrap_topo          # her forms on OUR topology (P1 C): wrap_topo.py's docstring
+        return wrap_topo.main(a)
     if a[0] == "target":
         print(make_target(a[1], a[2]))
     elif a[0] == "sliders":
