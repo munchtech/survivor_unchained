@@ -18,9 +18,14 @@ Tests: `python -m pytest tools/body` (or `python tools/body/test_check.py`).
 ## The numbers
 
 - **contract** (with --ref): node, mesh, material and skinned-mesh names only in one file; blend-shape names per
-  mesh; the skeletons' bone lists (reported, never failed: B's skeleton is meant to differ). `--same-head`: the five
-  head meshes' positions, normals, UVs, triangles and targets equal to the ref's as stored (their bind space), and the
-  body's boundary ring at the neck within 1e-5 m of the head's open boundary (`boundary_ring.max_gap_m`).
+  mesh; the skeletons' bone lists (reported, never failed: B's skeleton is meant to differ). `--same-head` (P1 B2a: the
+  head compared IN THE WORLD AT REST, since our build bakes A's +7% Head rest scale into the meshes): the five head
+  meshes' rest world positions (each file's own rest @ inverse bind, skinned) within 1e-5 m of the ref's
+  (`world_rest_max_diff_m`); normals, UVs and triangles equal as stored; blend-shape names equal, their POSITION moves
+  equal in the world (times each vertex's blended rest scale) within 1e-5 m and their NORMAL moves as stored;
+  `P_bytes_equal` reported only. And the body's boundary ring at the neck within 1e-5 m of the head's open boundary,
+  both at rest in the world (`boundary_ring.max_gap_m`). (The old byte test passed the hm08 build corr_a, whose head
+  is 2.6 cm off A's in the world: its Head bound at our joint with A's scale. The world test fails it.)
 - **tris**: triangles per mesh, body-only (the largest skinned mesh that is not a head part) and whole, per tier.
 - **weights**: per skinned mesh, influences per vertex (max, histogram), the worst |1 - sum|, NaN and negative
   counts. On the body (welded by position): L/R mirror (each vertex against its mirror within `mirror_tol_m`, bone

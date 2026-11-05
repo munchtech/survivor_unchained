@@ -48,6 +48,14 @@ def contract(B: Glb, A: Glb, same_head, heads):
                        "only_in_body": sorted(set(B.skeleton().names) - set(A.skeleton().names)),
                        "only_in_ref": sorted(set(A.skeleton().names) - set(B.skeleton().names))}
     if same_head:
+        # (P1 B2a) the head is the ref's IN THE WORLD AT REST: each head mesh's rest world positions (every vertex
+        # skinned by its file's own rest @ inverse bind: A's Head carries a 1.07 rest scale left out of its bind, ours
+        # bakes it into the mesh and binds plainly) within same_head_tol_m; triangles, UVs and normals as stored, equal;
+        # the blend shapes' names equal and their moves equal in the world (each POSITION move times the vertex's
+        # blended rest scale, NORMAL moves as stored). The stored positions' byte equality is reported, not required.
+        from headbake import rest_world
+        tol = 1e-5
+        skA, skB = A.skeleton(), B.skeleton()
         sh = {}
         for h in heads:
             ma, mb = A.mesh(h), B.mesh(h)
@@ -55,34 +63,48 @@ def contract(B: Glb, A: Glb, same_head, heads):
                 sh[h] = {"ok": False, "why": "missing"}
                 continue
             r = {}
-            for key in ("P", "N", "UV", "T"):
+            for key in ("N", "UV", "T"):
                 x, y = getattr(ma, key), getattr(mb, key)
                 r[key] = bool(x.shape == y.shape and np.array_equal(x, y))
-            tg = set(ma.targets) == set(mb.targets) and all(
-                np.array_equal(ma.targets[k][q], mb.targets[k][q]) for k in ma.targets for q in ("POSITION", "NORMAL"))
-            r["targets"] = bool(tg)
-            r["ok"] = all(r.values())
-            if not r["ok"] and ma.P.shape == mb.P.shape:
-                r["max_pos_diff_m"] = float(np.abs(ma.P - mb.P).max())
+            r["P_bytes_equal"] = bool(ma.P.shape == mb.P.shape and np.array_equal(ma.P, mb.P))
+            if ma.P.shape == mb.P.shape:
+                wa, ca = rest_world(ma, skA)
+                wb, cb = rest_world(mb, skB)
+                r["world_rest_max_diff_m"] = float(np.linalg.norm(wa - wb, axis=1).max())
+                r["world_rest"] = r["world_rest_max_diff_m"] <= tol
+                tg = set(ma.targets) == set(mb.targets)
+                dmax = 0.0
+                if tg:
+                    for k in ma.targets:
+                        dmax = max(dmax, float(np.abs(ma.targets[k]["POSITION"] * ca[:, None]
+                                                      - mb.targets[k]["POSITION"] * cb[:, None]).max()))
+                        tg = tg and np.array_equal(ma.targets[k]["NORMAL"], mb.targets[k]["NORMAL"])
+                r["targets_world_max_diff_m"] = dmax
+                r["targets"] = bool(tg and dmax <= tol)
+            else:
+                r["world_rest"] = r["targets"] = False
+            r["ok"] = all(r[k] for k in ("N", "UV", "T", "world_rest", "targets"))
             sh[h] = r
-        # the body's boundary ring against the head's open boundary
+        # the body's boundary ring against the head's open boundary, both at their rest world positions
         body = B.mesh(guess_body(B))
         head = B.mesh("HeroineHead") or next((m for m in B.meshes if m.node.endswith("Head")), None)
         ring = {}
         if body is not None and head is not None:
             from scipy.spatial import cKDTree
+            bw = rest_world(body, skB)[0]
             bv = np.unique(boundary_edges(np.asarray(weld(body.P, 1e-7))[body.T]))
             rep = weld(body.P, 1e-7)
             first = {}
             for i, r_ in enumerate(rep):
                 first.setdefault(r_, i)
-            bp = body.P[[first[k] for k in bv]].astype(float)
+            bp = bw[[first[k] for k in bv]]
+            hw = rest_world(head, skB)[0]
             hrep = weld(head.P, 1e-7)
             hfirst = {}
             for i, r_ in enumerate(hrep):
                 hfirst.setdefault(r_, i)
             hv = np.unique(boundary_edges(np.asarray(hrep)[head.T]))
-            hp_ = head.P[[hfirst[k] for k in hv]].astype(float)
+            hp_ = hw[[hfirst[k] for k in hv]]
             d, _ = cKDTree(hp_).query(bp)
             near = d < 0.005          # the body's ring at the neck (its other boundaries are elsewhere)
             ring = {"body_ring_points": int(near.sum()), "max_gap_m": float(d[near].max()) if near.any() else None,
@@ -248,7 +270,7 @@ def main(argv=None):
     ap.add_argument("--play")
     ap.add_argument("--far")
     ap.add_argument("--poser", choices=["game", "lbs"])
-    ap.add_argument("--same-head", action="store_true", help="the head meshes must be the ref's, byte for byte")
+    ap.add_argument("--same-head", action="store_true", help="the head meshes must be the ref's in the world at rest (see contract())")
     ap.add_argument("--only", default="contract,tris,weights,bends,silhouette")
     ap.add_argument("--spec", default=str(HERE / "check_spec.json"))
     ap.add_argument("--out", required=True)

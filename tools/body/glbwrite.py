@@ -7,6 +7,9 @@ body:     {"node", "material", "P", "N", "UV", "T", "J", "W"} (J/W [n,8]: JOINTS
 heads:    node names in the ref to copy: their meshes (every attribute, target, extras, default weights), materials,
           textures, samplers and images verbatim; only JOINTS_0 is rewritten (head_joint_map: the ref's joint
           index -> ours), WEIGHTS_0 kept as stored.
+head_override (optional, P1 B2a: the head scale baked, our head weights): {node: {"P" [V,3], "J" [V,k], "W" [V,k]
+          (k 4 or 8), "targets": {name: dP [V,3]}}} over the mesh's primitives in order: POSITION, the joints and
+          weights and those targets' POSITION written from these; everything else still copied verbatim.
 """
 import json
 import struct
@@ -105,7 +108,7 @@ class _Out:
         return len(self.accs) - 1
 
 
-def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None):
+def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None, head_override=None):
     rjs, rbin = _read_glb(ref_path)
     out = _Out()
     names, parents, worlds = skeleton["names"], skeleton["parents"], skeleton["worlds"]
@@ -190,9 +193,38 @@ def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None):
         rm = rjs["meshes"][rnode[h]["mesh"]]
         m = {k: v for k, v in rm.items() if k != "primitives"}
         m["primitives"] = []
+        ov = (head_override or {}).get(h)
+        tnames = rm.get("extras", {}).get("targetNames", [])
+        o0 = 0
         for pr in rm["primitives"]:
             q = {k: v for k, v in pr.items() if k not in ("attributes", "indices", "targets", "material")}
             q["attributes"] = {}
+            if ov is not None:
+                cnt = rjs["accessors"][pr["attributes"]["POSITION"]]["count"]
+                sl = slice(o0, o0 + cnt)
+                o0 += cnt
+                for k, ai in pr["attributes"].items():
+                    if k == "POSITION":
+                        q["attributes"][k] = out.acc(np.asarray(ov["P"][sl], np.float32), "VEC3", 5126, 34962, minmax=True)
+                    elif not k.startswith(("JOINTS_", "WEIGHTS_")):
+                        q["attributes"][k] = out.copy_acc(rjs, rbin, ai)
+                Jo, Wo = np.asarray(ov["J"][sl]), np.asarray(ov["W"][sl])
+                for s_ in range(Jo.shape[1] // 4):
+                    q["attributes"][f"JOINTS_{s_}"] = out.acc(Jo[:, 4 * s_:4 * s_ + 4], "VEC4", 5123, 34962)
+                    q["attributes"][f"WEIGHTS_{s_}"] = out.acc(Wo[:, 4 * s_:4 * s_ + 4], "VEC4", 5126, 34962)
+                q["indices"] = out.copy_acc(rjs, rbin, pr["indices"])
+                if "targets" in pr:
+                    q["targets"] = []
+                    for ti_, t in enumerate(pr["targets"]):
+                        tt = {k: out.copy_acc(rjs, rbin, ai) for k, ai in t.items() if k != "POSITION"}
+                        if "POSITION" in t:
+                            tt["POSITION"] = out.acc(np.asarray(ov["targets"][tnames[ti_]][sl], np.float32), "VEC3", 5126,
+                                                     34962, minmax=True)
+                        q["targets"].append(tt)
+                if "material" in pr:
+                    q["material"] = copy_mat(pr["material"])
+                m["primitives"].append(q)
+                continue
             for k, ai in pr["attributes"].items():
                 if k.startswith("JOINTS_"):
                     a = rjs["accessors"][ai]
