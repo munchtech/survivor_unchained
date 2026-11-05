@@ -47,8 +47,9 @@ public sealed partial class HerLight : Control
 
     /// <summary>A frame. life and trail: as the HUD shows them (0..1); shield (0..1 of her life); fight: her fight
     /// is on and the HUD shown (the bar and the edge show only then); at: her feet on the screen; bar: the
-    /// bar's own fade (the HUD eases it in and out with the night's fight and the "Health under you" setting).</summary>
-    public void Tick(float dt, float life, float trail, float shield, bool fight, Vector2? at, float bar = 1)
+    /// bar's own fade (the HUD eases it in and out with the night's fight and the "Health under you" setting);
+    /// dashMax, dashCount, dashRecharge: her dash charges (N30), shown as pips under the bar.</summary>
+    public void Tick(float dt, float life, float trail, float shield, bool fight, Vector2? at, float bar = 1, int dashMax = 0, int dashCount = 0, float dashRecharge = 0)
     {
         using var _ = new Perf.Span(Perf.Part.Hud);
         LifeNow = life;
@@ -70,7 +71,7 @@ public sealed partial class HerLight : Control
         Under.Visible = show;
         if (show)
         {
-            Under.Set(at!.Value, life, trail, shield, beat, dt);
+            Under.Set(at!.Value, life, trail, shield, beat, dt, dashMax, dashCount, dashRecharge);
             var mod = Colors.White with { A = bar };
             if (Under.Modulate != mod) Under.Modulate = mod;
         }
@@ -94,14 +95,17 @@ public sealed partial class HerLight : Control
     /// sunk well her life in warm red with an ember wick burning at its end (a hot bead, its glow added over the
     /// iron), the recent hit in bone draining after it, the shield in pale silver-blue after her life, quarter
     /// notches over all. At 30% and under a blood glow stands round the strap (there in a still, swelling on
-    /// each beat) and the red warms with the heart.</summary>
+    /// each beat) and the red warms with the heart. Under the strap one copper pip per dash charge (N30): lit
+    /// when ready, a dark socket when spent, the next filling with copper as it recharges.</summary>
     public sealed partial class Bar : Control
     {
         /// <summary>The strap and the well in it (px at 1080), and how far under her feet it hangs.</summary>
         public const float W = 96, H = 14, Wx = 6, Wy = 3, Drop = 21, Collar = 5;
         public static float WellW => W - 2 * Wx;
         public static float WellH => H - 2 * Wy;
-        float life = 1, trail = 1, shield, beat, shown = -1;
+        float life = 1, trail = 1, shield, beat, shown = -1, dashRe;
+        int dashMax, dashCount;
+        const float Pip = 5, PipGap = 3, PipTop = 2;
         bool day;
         static readonly Color Well = new("#120605"), RedTop = new("#e5503a"), RedFoot = new("#7e140e"), Hot = new("#ff8a5c"),
             TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa"),
@@ -117,7 +121,7 @@ public sealed partial class HerLight : Control
             AddChild(glow);
         }
 
-        public void Set(Vector2 feet, float life, float trail, float shield, float beat, float dt)
+        public void Set(Vector2 feet, float life, float trail, float shield, float beat, float dt, int dashMax = 0, int dashCount = 0, float dashRe = 0)
         {
             var at = (feet + new Vector2(-W / 2, Drop)).Round();
             if (Position != at) Position = at;
@@ -126,7 +130,9 @@ public sealed partial class HerLight : Control
             shown += (life - shown) * (1 - Mathf.Exp(-(life < shown ? 24f : 8f) * dt));
             if (Math.Abs(life - shown) < 0.0005f) shown = life;
             trail = Math.Max(trail, shown);
-            if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day) return;
+            if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day
+                && dashMax == this.dashMax && dashCount == this.dashCount && dashRe == this.dashRe) return;
+            this.dashMax = dashMax; this.dashCount = dashCount; this.dashRe = dashRe;
             this.life = shown; this.trail = trail; this.shield = shield; this.beat = beat; day = Cuff.Day;
             QueueRedraw();
             glow.QueueRedraw();
@@ -148,6 +154,11 @@ public sealed partial class HerLight : Control
             // a soft shadow, and at low life a blood glow standing round it, swelling on the beat
             DrawRect(new Rect2(-2, -1, W + 4, H + 4), new Color(0, 0, 0, 0.30f));
             DrawRect(new Rect2(-1, 0, W + 2, H + 2), new Color(0, 0, 0, 0.45f));
+            if (dashMax > 0)
+            {
+                float pw = dashMax * Pip + (dashMax - 1) * PipGap, px = (W - pw) / 2f - 1;
+                DrawRect(new Rect2(px, H, pw + 2, PipTop + Pip + 2), new Color(0, 0, 0, 0.30f));
+            }
             if (low)
                 for (int i = 4; i >= 1; i--)
                     DrawRect(new Rect2(-i - 1, -i, W + 2 * i + 2, H + 2 * i), new Color(0.80f, 0.06f, 0.04f, 0.085f * LowGlow * (5 - i) / 2.5f));
@@ -213,6 +224,31 @@ public sealed partial class HerLight : Control
                 var rv = new Vector2(cx + Collar / 2f, H / 2f);
                 DrawCircle(rv, 1.6f, CopperFoot);
                 DrawCircle(rv - new Vector2(0.4f, 0.5f), 0.8f, CopperLit);
+            }
+            if (dashMax > 0) Pips();
+        }
+
+        void Pips()
+        {
+            float px = (W - (dashMax * Pip + (dashMax - 1) * PipGap)) / 2f, py = H + PipTop, r = Pip / 2f;
+            for (int i = 0; i < dashMax; i++)
+            {
+                var c = new Vector2(px + i * (Pip + PipGap) + r, py + r);
+                DrawCircle(c, r, CopperFoot);
+                if (i < dashCount)
+                {
+                    DrawCircle(c, r - 0.8f, CopperHi);
+                    DrawCircle(c - new Vector2(0.5f, 0.6f), 0.7f, CopperLit);
+                }
+                else
+                {
+                    DrawCircle(c, r - 0.8f, Iron(0.1f));
+                    if (i == dashCount && dashRe > 0.01f)
+                    {
+                        float fh = (Pip - 1.6f) * Math.Clamp(dashRe, 0, 1);
+                        DrawRect(new Rect2(c.X - r + 0.8f, c.Y + r - 0.8f - fh, Pip - 1.6f, fh), CopperMid);
+                    }
+                }
             }
         }
 

@@ -1542,7 +1542,7 @@ public partial class GameHud : CanvasLayer
         // Low, her life's glass beats on its own (Vessel, HUD v2: at 30% and under, never scaled); only in the fight.
         life.Pulse = combat.Visible ? 1 : 0;
         ApplyPin(false);
-        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha);
+        her.Tick(dt, hpShown, trailShown, life.Shield, combat.IsVisibleInTree(), herAt, underAlpha, irons.Dash.Max, irons.Dash.Count, irons.Dash.Recharge);
         // The art readied: the globe's heart and halo swell once and settle.
         artPing = Math.Max(0, artPing - delta / 0.5);
         var art = irons.Art;
