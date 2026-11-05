@@ -1,5 +1,31 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## H6 the player must move: start here (4 November, H6 lead 1; HANDOFF READY at ~250k)
+HANDOFF READY combat-h6@<see the last commit touching this file>
+
+Brief: `docs/team/hook/H6_combat_move.md`. Worktree `.claude/worktrees/combat-h6`, branch `combat-h6` (from 0febc5160; integration had nothing new on 4 Nov). The coordinator that owns merges is session `local_4f5ceed0-79a5-47f5-81d6-a1ce170715d3`: send it MR READY/HANDOFF lines (5b4265e7 only relays).
+
+**Answer to H8 (N20, the Ford-Warden; final for rc3):** teeth.json `prologue.fordWarden`, which H8 wires in Prologue.cs: floors by lamps BROKEN this fight (0 broken = 0.67, 1 = 0.34, 2+ = 0; a relight never takes a break back), ward [1, 0.7, 0.55, 0.4] by lamps lit, hpMul 1.25, minSeconds 60 and crackAfter 45 as backstops only. H8's in-game autopilot fought him 88 s (lamps broke at 27 and 61 s), inside the band (human 60-120 s). There is no Ford harness: careless and deft on the Ford are H8's `--auto` runs only.
+
+**The finding that reframed the gate (approved by the coordinator):** the brief's standing bot (never moves, never dodges) already fell 98% on rc2's numbers. The owner's play is the IDLER (stands at the lamp, steps out only of what it reads; `--bot idler`): it won 41% and survived to the boss ~94% of nights. Healing from drops gave back about 6 lives a night (`HealBy` in the jsonl), and the wolves ran at her own pace (5.3 against her 5-5.6), so moving bought nothing. Gate: standing 80%+ falls; idler 70%+ falls with half before the boss; human 78-85% wins with low 0.27-0.35; deft 95%+; kiter beats standing; callings within 20 points; human ringed 2+ a night. Human read model changed (approved on one condition): kit marks read at 85% (careless 65%), lunge windups at 50/30%. **The condition: the judge must say every big mark that killed the idler is readable at the play camera with a crowd up; if one isn't, make the mark readable; never lower the bot's read rate.**
+
+**State by item:**
+1. DONE. Bots `standing`, `camper`, `kiter`, `idler` (Harness/Bots.cs, Human.cs `Idle`); measures in RunResult: `Surrounds` (4 m, 3 of 6 sectors, 2 s), `Ringed` (inside a walled closing as it rises), `MarksOnHer`/`MarkGapMax`, `HealBy`/`HurtBy`, and the director's counts; danger.py columns. `tools/balance/h6_tune.py` runs a data variant (SU_TEETH/SU_TELLS).
+2. DONE (sim). telegraphs.json: ring 0.70; charge 0.40 + knockdown 0.9 s (`Ev.Knockdown`); pull 0.35 + a marked slam on its heart 0.7 s later (0.45); closing a WALL except at its gap, with a crush of 0.38/s from 0.8 s for 3 s (`Ev.ClosingWall`); kit from 0:45 on tiers 1-4 at x[1, 1.1, 1.2, 1.3] (`Battle.KitDamageMul`). **No view yet** for the wall, the knockdown or the slam's mark beyond the standard blow mark (next, item 10's clip will show it).
+3. DONE (sim). `ArenaRun.Director.cs` + teeth.json `tiers.1.director`: pincer flanks every 60-90 s at +-140 deg of her heading, cut-off leaders, a surround that casts the closing on her (cooldown 12 s), stand charges from foes at 7 m+ (`standFrom`; the nearest died in its windup, so charges never landed), the lamp holder draws a flank after 30 s in the pool, stuck foes recalled (spawns must be reachable: the cause of N34), the snuffer bark + callout (unseen).
+4. DONE (sim). The Ironback (`boar_ironback`, slow 2.6, ~1443 hp, an elite; slams the kit ring on itself at 3.2 m), from 1:30, one at a time, bark + callout once (unseen); wolves feed 2 s on a corpse when she is 8 m+ away (once per wolf per 15 s, 3 per corpse; **no feed animation**, they stand).
+5. Partly: the snuffer is explained (bark, callout); the holder draws flanks; stuck foes fixed at the cause. Unseen in Godot.
+6. NOT STARTED: elite bars (N19). The code path in `FoeMarks.Show` looks right; suspects: a full bar drawn at 0.45 alpha at the foe's feet (`_Draw`, `Full`), or champions flagged `Boss`. Needs one Godot frame.
+7. NOT STARTED: the turn (N27). A solver measures facing lag, the run blend and camera yaw, then fixes; a figure-eight strip before/after.
+8. NOT STARTED: dash pips under her bar (N30). A su-worker job (`GameHud.cs` has the charges).
+9. DONE: the Ford-Warden numbers (above).
+10. Sim gate PASSES at 32 seeds (0f45049ec, tier 1, pack): standing 0/100; idler 25/75 (88 of 96 falls before the boss); kiter 9/91; human 82/18 (low 0.29; by calling 78-91); careless 73/27; deft 96/4. Human ringed 3 a night; the strict `surr` stays at 1 (movers get out in under 2 s). Before (rc2's numbers, 32 seeds): standing 2/98, idler 41/59, kiter 35/65, human 94/6, careless 88/12, deft 97/3. **Still to do:** H1's off-calling gate (`--offcalling --type both --minutes 30`, every calling at most x1.25); the full suite after items 6-8; one Godot look at the new mechanics at the play camera (wall, Ironback, callouts, the recall's jump) before the judge; then the max judge on a tier-1 clip from 0:00 with the human autopilot (the whole-frame question, "would a player have to move, and could they tell why?", and the read condition above); round cap 2.
+
+**Flags for the coordinator:** (a) the tuner raised the Reaver's `armor` 3 to 4 in archetypes.json (every mode: the human Reaver won 47-66% against 91-100% for the others); (b) the tier-1 boss is softer (bossHp 2.5 to 2.0, bossDamage 1.1 to 0.55), because the night now carries the danger; (c) tiers 2-4 with the kit on: human/deft still win 94-100% at 8 seeds, lowest life down 0.15-0.2; (d) the kiter loses because it reads nothing, not because kiting doesn't pay.
+
+Files: `godot/logic/Play/Zones/ArenaRun.Director.cs`, `godot/logic/Sim/Tells.cs`, `godot/logic/Content/Teeth.cs`/`Telegraphs.cs`, `godot/data/content/teeth.json`/`telegraphs.json`, `godot/balance/Harness/{Bots,Human,Pilot,ArenaSim}.cs`, `tools/balance/{danger,h6_tune}.py`. Run data: the shared scratchpad's `combat_h6/v/fin.jsonl` (gate), `base.jsonl` (rc2), `idler.jsonl`. Cost: lead ~250k; helpers ~0.45M (solver A 112k, B 138k, worker 66k, tuner 129k).
+
+
 ## H1 combat teeth: start here (4 November, the H1 successor lead; MR READY after judge round 2)
 MR READY combat-h1@d7b609a69 (code, suite 1498 green, merged with integration on 4 Nov; this handoff commit sits on top)
 
