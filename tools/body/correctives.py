@@ -514,8 +514,10 @@ def run(out, only=None, tier="close", fresh=False):
         names, dirs = [], []
         strips = {}
         chain = {}
-        if jc.get("fold") in ("stepped", "pair"):  # the whole arc marched at once (contact_fold.py, contact_pair.py)
-            if jc["fold"] == "pair":
+        if jc.get("fold") in ("stepped", "pair", "field"):  # the whole arc marched at once (contact_*.py)
+            if jc["fold"] == "field":
+                import contact_field as chain_mod
+            elif jc["fold"] == "pair":
                 import contact_pair as chain_mod
             else:
                 import contact_fold as chain_mod

@@ -343,7 +343,58 @@
      "rim_in": 0.01,
      "vol_r": 0.06
     }
-   }
+   },
+   "field_trial": {
+    "name": "hip",
+    "law": "arc",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "gate_deg": [
+     20.0,
+     60.0
+    ],
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      90
+     ],
+     [
+      "hip_flex",
+      105
+     ],
+     [
+      "hip_flex",
+      120
+     ],
+     [
+      "hip_flex",
+      135
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "fold": "field",
+    "solve": {
+     "step": 7.5,
+     "rounds": 8,
+     "data": 1.0,
+     "anchor": 0.05,
+     "contact": 600,
+     "margin": 0.0008,
+     "release": 0.002,
+     "reach": 0.05,
+     "share_trunk": 0.75,
+     "volume": 1,
+     "rim_in": 0.002,
+     "vol_r": 0.12
+    }
+   },
+   "why_r3": "P1 hip r3 (5 Nov): HELD still. field_trial (contact_field.py: both sides pushed out of each other, the belly 0.75 / the thigh 0.25 of the way, each march angle started from the last one's result re-skinned, the roll's band above the joint, the contacts held in the roll's solve) on her close: inside depth 105/112/120/135 = 2.8/4.4/4.6/5.1 mm (raw 35/44.5/53/66), but the gate is 2 mm and the 135 pits F16 S15 (gate 10; F11 S11 without the roll): ~150-200 nodes per key stay parity-inside within 1 mm of the other skin (the check's depth reads its triangle samples, 3-5 mm off), and the dent's rim on the flank (4-5 cm out, 10-12 cm up, 4-9 cm front of the joint) is concave past the gate. The pivot (Harrington 2007 on her skin ASIS/PSIS) sits 25-35 mm behind the regression, but moving it forward 15/25/35 mm (weights by their rules) made raw 135 deeper (78/81/88 mm), so it is not this fix."
   },
   {
    "name": "shoulder",
