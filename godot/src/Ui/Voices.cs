@@ -182,6 +182,14 @@ public partial class Voices : Node3D
     /// <summary>Most lines standing within 3 m of one another at once.</summary>
     public int NearCap = 2;
 
+    /// <summary>A speaker's line taken down now (fading over a quarter second), and anything of theirs still waiting
+    /// dropped (Ev.Hush: Corvane's "Lie down." as its slam lands).</summary>
+    public void Hush(string speaker)
+    {
+        waiting.Remove(speaker);
+        foreach (var b in barks) if (b.Key == speaker) b.Life = Math.Min(b.Life, b.T + 0.25);
+    }
+
     public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null, bool boss = false)
     {
         // Whose turn it is: a named speaker's own; else whatever stands there.

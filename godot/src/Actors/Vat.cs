@@ -445,7 +445,8 @@ public static class Vat
             anim.Seek(at, true);
             return toModel * skel.GetBoneGlobalPose(still).Origin;
         }
-        bool lifts = skel.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") != null;
+        var lifter = skel.GetNodeOrNull<NpcTorchArm>("NpcTorchArm");
+        bool lifts = lifter != null, liftsRight = lifter?.Right == true;
         var spot = Vector3.Zero;
         if (still >= 0 && roles.Find(x => x.Name == "idle") is { } rest) spot = Travel(rest.Clip, rest.From);
 
@@ -470,7 +471,7 @@ public static class Vat
             }
             // A body carrying a lamp up (PersonView.LampFist added NpcTorchArm): the carry laid over every role but its
             // falls, as the live figure's modifier lays it (no modifier runs in a bake).
-            if (lifts && !r.Name.StartsWith("die")) NpcTorchArm.Lift(skel);
+            if (lifts && !r.Name.StartsWith("die")) NpcTorchArm.Lift(skel, liftsRight);
             var root = Transform3D.Identity;
             if (r.Over?.Invoke(Math.Clamp(t / Math.Max(1e-6, r.Length), 0, 1)) is { } mv)
             {
@@ -1006,7 +1007,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 19;
+    const int Version = 20;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();

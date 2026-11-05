@@ -2,7 +2,7 @@
 
   python tools/combat/court_clip.py NAME [--quick warden] [--fps 30] [--godot-args ""] [--answers 0,0] [--bot idle|play] [--minutes 6]
 
-The game prints `court <event> frame N` under --clip (CourtTrace: talk raise sig pull knock low down cue gone open; the Flare's
+The game prints `court <event> frame N` under --clip (CourtTrace: talk raise sig pull knock low down getsup cue fade gone open, each with `bt` the battle's time; the Flare's
 own `flare press frame N`). The Autopilot answers the door_night choices (--answers; default the first, which is
 go_home -> wrong -> lie_down -> raise). Output: C:/Users/munch/Desktop/survivorsunchained_inputs/combat_p6/NAME/
   clip.mp4 (1 s before talk .. 4 s after open), PNG frames by moment, sheet.jpg (half size, 4 a row), sheet_half.jpg,
@@ -50,10 +50,12 @@ try:
 finally:
     subprocess.run([sys.executable, TURN, "give", "godot", label])
 try:
-    ev = [(m.group(1), int(m.group(2))) for m in re.finditer(r"court (\w+) frame (\d+)", text)]
-    fl = [("flare", int(m.group(1))) for m in re.finditer(r"flare press frame (\d+)", text)]
-    ev = sorted(ev + fl, key=lambda x: x[1])
-    (out / "events.txt").write_text("\n".join(f"{n}\t{f}\t{f / FPS:.2f}s" for n, f in ev) + "\n", encoding="utf-8")
+    # (each with the battle's own time where the game gives it: `bt`, so a gap in frames can be told from one in the fight)
+    ev3 = [(m.group(1), int(m.group(2)), m.group(3)) for m in re.finditer(r"court (\w+) frame (\d+)(?: bt ([\d.]+))?", text)]
+    fl3 = [("flare", int(m.group(1)), m.group(2)) for m in re.finditer(r"flare press frame (\d+)(?: battle_t ([\d.]+))?", text)]
+    ev3 = sorted(ev3 + fl3, key=lambda x: x[1])
+    ev = [(n, f) for n, f, _ in ev3]
+    (out / "events.txt").write_text("\n".join(f"{n}\t{f}\t{f / FPS:.2f}s" + (f"\tbt {b}" if b else "") for n, f, b in ev3) + "\n", encoding="utf-8")
     bad = [l for l in text.splitlines() if re.search(r"court \w+ frame|ERROR|SCRIPT ERROR|NullReference|Exception|flare press", l)]
     (out / "log.txt").write_text("\n".join(bad) + "\n", encoding="utf-8")
     (out / "log_full.txt").write_text(text, encoding="utf-8")
@@ -85,10 +87,14 @@ try:
         if knocked(k) is not None: add(f"{tag}{k + 1}_knock+0.2", knocked(k) + S(0.2))
     print("sigs", len(sigs), "stepped out:", [k + 1 for k in range(len(sigs)) if knocked(k) is None], "knocked:", [k + 1 for k in range(len(sigs)) if knocked(k) is not None])
     if first("low"): add("low+0.5", first("low") + S(0.5))
-    if first("flare"): add("flare+0.3", first("flare") + S(0.3)); add("flare+1.0", first("flare") + S(1.0))
-    if first("down"): add("down+0.5", first("down") + S(0.5)); add("down+2.0", first("down") + S(2.0))
+    if first("flare"):
+        for s_ in (0.3, 0.6, 1.0): add(f"flare+{s_:.1f}", first("flare") + S(s_))
+    # His fall (the fallback, no film): the hold on his body, "He gets up.", the black, the gone line (P6 r7).
+    if first("down"): add("down+1.0", first("down") + S(1.0)); add("down+1.9", first("down") + S(1.9))
+    if first("getsup"): add("getsup+0.5", first("getsup") + S(0.5))
     if first("cue"): add("cue+0.5", first("cue") + S(0.5))
-    if first("gone"): add("gone+0.5", first("gone") + S(0.5))
+    if first("fade"): add("fade+0.25", first("fade") + S(0.25))
+    if first("gone"): add("gone+1.0", first("gone") + S(1.0))
     add("open+2.0", first("open") + S(2))
     t0 = max(0, first("talk") - S(1)) / FPS
     subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{t0:.3f}", "-i", str(avi), "-t", f"{first('open') / FPS + 4 - t0:.3f}",

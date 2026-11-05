@@ -151,6 +151,9 @@ public sealed class Autopilot
             if (Math.Sqrt(bx * bx + bz * bz) > 2.0) Move = (Math.Abs(bx) < 0.3 ? 0 : Math.Sign(bx), Math.Abs(bz) < 0.3 ? 0 : Math.Sign(bz));
             return;
         }
+        // (the court clip: she holds where the ember set her down until Corvane has talked and she has raised her weapon, so
+        // the arrival's frame is the court as a player first sees it, P6 r7)
+        if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;

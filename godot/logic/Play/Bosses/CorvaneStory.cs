@@ -21,6 +21,8 @@ public sealed class CorvaneStory : StoryBoss
     readonly CorvaneTeeth t;
     readonly (double X, double Z) mark, door;
     double holdT, sigT;
+    /// <summary>Seconds into the signature now (its tell, the drag, the slam), -1 between them: his lamp's light and lift.</summary>
+    double tellT = -1;
     bool low;
 
     public CorvaneStory(IStoryArena a, CorvaneTeeth teeth, (double X, double Z) mark, (double X, double Z) door) : base(a)
@@ -55,7 +57,8 @@ public sealed class CorvaneStory : StoryBoss
 
     protected override bool Act(Enemy e, double dt)
     {
-        if (Ending) return Lie(e);
+        if (Ending) { e.LightMul = 1; e.LightLift = 0; return Lie(e); }
+        Lamp(e, dt);
         // Held at his backstop until he has fought MinSeconds (the Ford-Warden's lesson length): no build lays him down
         // sooner, whatever his floor (the Flare cuts that).
         if (FightT < t.MinSeconds) e.HpFloor = Math.Max(e.HpFloor, t.Backstop * MaxHp);
@@ -77,6 +80,7 @@ public sealed class CorvaneStory : StoryBoss
             sigT = (low ? t.EveryLow : t.Every) * Cadence;
             CourtTrace.Say("sig");
             Signature("Lie down.", SignatureLead, Cast, "chid");
+            tellT = 0;
             return true;
         }
         return Keep(e, dt, dx, dz, d);
@@ -101,6 +105,24 @@ public sealed class CorvaneStory : StoryBoss
         });
     }
 
+    /// <summary>His lamp through a signature: its light up from its own to TellLight times across the 0.7 s tell as the cast
+    /// lifts it overhead (TellLift), held through the drag, back down over 0.6 s from the slam (the lamp lowered after the
+    /// cast's follow); the bark taken down as the slam lands.</summary>
+    void Lamp(Enemy e, double dt)
+    {
+        if (tellT < 0) { e.LightMul = 1; e.LightLift = 0; return; }
+        var k = Content.Telegraphs.Get("pull");
+        double lead = SignatureLead, windup = k?.Windup ?? 1.6, follow = k?.Follow ?? 0.7, was = tellT;
+        tellT += dt;
+        double slam = lead + windup, lowered = slam + follow;
+        static double Ease(double x) { x = Math.Clamp(x, 0, 1); return x * x * (3 - 2 * x); }
+        double up = Ease(tellT / lead);
+        e.LightMul = 1 + (t.TellLight - 1) * (tellT < slam ? up : 1 - Ease((tellT - slam) / 0.6));
+        e.LightLift = t.TellLift * (tellT < lowered ? up : 1 - Ease((tellT - lowered) / 0.4));
+        if (was < slam && tellT >= slam) B.Events.Emit(new Ev.Hush { Speaker = "chid" });
+        if (tellT >= lowered + 0.4 && tellT >= slam + 0.6) tellT = -1;
+    }
+
     /// <summary>The lamp burns brighter (its light's energy and reach; his body's glow stays his own: at glowLow 0.3 the
     /// robe went white, P6 r4): the only sign the pull has quickened.</summary>
     void Brighten(Enemy e)
@@ -108,7 +130,8 @@ public sealed class CorvaneStory : StoryBoss
         low = true;
         CourtTrace.Say("low");
         var def = e.Def.Clone();
-        if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2 };
+        // (its pool doubled across, the glass's halo brighter and wider, the light wavering: judge r1 fix 5)
+        if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2, Pool = cl.Pool * 1.6, PoolRange = cl.PoolRange * 2, Halo = cl.Halo * 1.7, Flicker = 0.3 };
         def.Glow = Math.Max(def.Glow ?? 0, t.GlowLow);
         e.Def = def;
     }

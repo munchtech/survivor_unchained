@@ -142,7 +142,7 @@ public partial class Game : Node, IZoneHost
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
-        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
+        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()} bt {Battle?.Time ?? 0:0.000}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
             // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him
             if (ev == "low" && Args.Has("cast-low")) courtCastAt = Journey.Playtime + Args.Num("cast-low", 1); };
         Settings.Current.ApplyWindow();
@@ -1177,6 +1177,9 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
+                    break;
+                case Ev.Hush hu:
+                    scene?.Voices.Hush(hu.Speaker);
                     break;
                 case Ev.Fade fd:
                     // A story beat's cut through black (Corvane's body taken under it): down, held, and back up.

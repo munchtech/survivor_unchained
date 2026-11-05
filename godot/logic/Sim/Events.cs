@@ -155,6 +155,8 @@ public static class Ev
     /// State: Lit (it catches at its minute), Dousing (snuffers at it: once as it starts, then once a second while it
     /// goes on), Out (its life gone; its light off), Relit (she cupped the wick). Life: its life left, 0 to 1.</summary>
     public sealed class BoardLamp : CombatEvent { public double X, Z; public BoardLampState State; public double Life; }
+    /// <summary>A speaker's line taken down now (Corvane's "Lie down." as its slam lands: the bark is the tell, not a caption).</summary>
+    public sealed class Hush : CombatEvent { public string Speaker = ""; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker;
         /// <summary>A boss's (IBossArena.Bark): shown in a fixed slot under the boss's bar, wherever the boss is.</summary>
         public bool Boss; }

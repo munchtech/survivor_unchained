@@ -137,7 +137,11 @@ public sealed class EnemyDef
 /// EnemyAnim.Die while alive) it is set on the ground beside him, LieHeight up. Decay: its falloff (Godot's omni attenuation);
 /// a lamp held at arm's length wants a soft one (0.8, as the town's post lanterns' 0.7): at 1.4 the robe half a metre from
 /// it took ten times the light of the ground three metres off and burned white while the pool stayed dim (P6 r5).</summary>
-public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5, double Forward = 0, double Left = 0, double LieHeight = 0.35, double Decay = 1.4);
+/// <summary>A light a foe carries (the view's BattleFx.Auras). Pool/PoolRange: a second, low light on the ground under it
+/// (its pool, so the carried light reads where the high one falls soft); Flicker: how much its light (and its glass's
+/// halo) wavers, 0 steady; Halo: the glass's glow drawn at the light, metres across (0: none).</summary>
+public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5, double Forward = 0, double Left = 0, double LieHeight = 0.35, double Decay = 1.4,
+    double Pool = 0, double PoolRange = 0, double Flicker = 0, double Halo = 0);
 
 public readonly record struct LevelScale(double Health, double Damage, double Xp);
 
@@ -498,14 +502,16 @@ public static class Enemies
         // the court's key light. Chid's person (npcs.json chid: the npc_chid body, his tint a touch toward violet), a head
         // taller than the crowd. Neutral and still until she raises her weapon; his health and bite are the stage's
         // (teeth.json story.corvane).
-        new() { Id = "corvane", Name = "Corvane", Family = Family.Human, Faction = Faction.Town, Visual = "corvane", Scale = 1.15,
+        new() { Id = "corvane", Name = "Corvane", Family = Family.Human, Faction = Faction.Town, Visual = "corvane", Scale = 1.25,
             // (the violet is the lamp's light, held out ahead of his
-            // left shoulder (Visuals "corvane": NpcTorchArm's carry), a little in front of and above the lamp, pooling on the
-            // ground round him; brighter below half, CorvaneStory.Brighten)
+            // right shoulder (Visuals "corvane": NpcTorchArm's carry), a little in front of and above the lamp, and a low
+            // pool of it on the ground round him (2.6 m: at r6 the high light alone lit almost nothing, judge r1), the
+            // glass's halo at it; up 3x through his tell as the lamp goes overhead, and below half the pool doubled, the
+            // glass brighter and the light flickering, CorvaneStory)
             // (his robe's pale paint, the town's beige by its portrait, went white in the court: AgX folds a pale hue lit
             // by the moon and his own lamp to white; npcs.json chid's #d8ccb0 as a tint keeps it cloth: P6 r6)
             Tint = (0.68, 0.62, 0.53),
-            Glow = 0.05, CarriedLight = new("#a77bff", 1.2, 9, 1.55, Forward: 0.75, Left: 0.3, Decay: 0.8),
+            Glow = 0.05, CarriedLight = new("#a77bff", 1.2, 9, 1.55, Forward: 0.75, Left: -0.3, Decay: 0.8, Pool: 1.6, PoolRange: 2.6, Halo: 0.55),
             Health = 420, Speed = 3.0, Damage = 18, Radius = 0.7, Mass = 14, Xp = 0, Behavior = Behavior.Chase,
             Elite = true, AttackEvery = 1.2 },
 

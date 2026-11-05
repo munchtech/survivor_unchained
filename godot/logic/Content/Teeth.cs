@@ -123,7 +123,7 @@ public static class Teeth
         public double Every = 6.5, EveryLow = 4.5, LowAt = 0.5;
         public double Reach = 7, ReachLow = 8, Slam = 2.5, PullDamage = 1;
         public double Floor = 30, MinSeconds = 60, Backstop = 0.05;
-        public double LampEnergy = 1.2, LampEnergyLow = 2.1, Glow = 0.05, GlowLow = 0.05;
+        public double LampEnergy = 1.2, LampEnergyLow = 2.1, Glow = 0.05, GlowLow = 0.05, TellLight = 3, TellLift = 0.7;
         public int EmberFloor = 4;
     }
 

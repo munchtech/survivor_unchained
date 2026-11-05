@@ -46,6 +46,8 @@ public sealed class Doorway : StoryBeat
     public override BossBar? Bar => script is { Down: false } && Up(corvane, seed) ? script.Bar("Corvane", "") : null;
     /// <summary>For the harness: he has gone down, and when (the fight's seconds from the raise).</summary>
     public bool Fell => fallen;
+    /// <summary>She has raised her weapon (the fight is on).</summary>
+    public bool Raised => raised;
     public double? KillSeconds { get; private set; }
     public CorvaneStory? Boss => script;
     public Enemy? Him => corvane;
