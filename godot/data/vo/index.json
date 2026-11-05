@@ -1,5 +1,37 @@
 {
  "lines": {
+  "dlg.cin_behind_the_door.nondum.0": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.nondum.0.ogg",
+   "hash": "cad83a173168",
+   "placeholder": true,
+   "read": 1.47,
+   "sec": 2.87,
+   "segs": [
+    [
+     0.0,
+     1.475,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
+  "dlg.cin_behind_the_door.nondum.1": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.nondum.1.ogg",
+   "hash": "04cabffa7c4f",
+   "placeholder": true,
+   "read": 1.02,
+   "sec": 2.42,
+   "segs": [
+    [
+     0.0,
+     1.019,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
   "dlg.cin_drowned_fire.bedroll.0": {
    "file": "narrator/dlg.cin_drowned_fire.bedroll.0.ogg",
    "hash": "24c69afd4e5e",

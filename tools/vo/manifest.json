@@ -7813,7 +7813,6 @@
      "text": "It's cleaner than I made it. I don't know why."
     }
    ],
-   "status": "done",
    "take": {
     "file": "wenna/dlg.wenna.cb_clean.0.ogg",
     "hash": "078d1461a3e3",
@@ -7845,7 +7844,7 @@
     "read": 2.73,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "dlg.wenna.cb_clean.1",
@@ -7860,7 +7859,6 @@
      "text": "It's cleaner than it was. I don't know why."
     }
    ],
-   "status": "done",
    "take": {
     "file": "wenna/dlg.wenna.cb_clean.1.ogg",
     "hash": "f51662dcc16d",
@@ -7892,7 +7890,7 @@
     "read": 3.1,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "dlg.wenna.cb_clean.2",
@@ -7907,7 +7905,6 @@
      "text": "It's clean. I don't know why it's clean."
     }
    ],
-   "status": "done",
    "take": {
     "file": "wenna/dlg.wenna.cb_clean.2.ogg",
     "hash": "eec85ddc9a64",
@@ -7939,7 +7936,7 @@
     "read": 3.96,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "dlg.tam.first.0",
@@ -29655,11 +29652,11 @@
    "take": {
     "file": "barrow_lord/dlg.cin_behind_the_door.nondum.0.ogg",
     "hash": "cad83a173168",
-    "sec": 2.52,
+    "sec": 2.87,
     "segs": [
      [
       0.0,
-      1.121,
+      1.475,
       0.0,
       1.0
      ]
@@ -29671,19 +29668,20 @@
       "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_behind_the_door.nondum.0\\p0_vc_r2_97ffd9.wav",
       "seed": 2,
       "score": 0,
-      "similarity": 0.107,
-      "utmos": 1.38,
+      "similarity": 0.142,
+      "utmos": 1.42,
       "accent": "newzealand",
       "wps": 0.0,
-      "said": "Nondam.",
+      "said": "Nandum.",
       "style": "placeholder: Maya1 performance, Seed-VC"
      }
     ],
-    "made": "2026-10-03",
-    "read": 1.12,
+    "made": "2026-11-05",
+    "read": 1.47,
     "placeholder": true
    },
-   "status": "done"
+   "status": "done",
+   "placeholder": true
   },
   {
    "id": "dlg.cin_behind_the_door.nondum.1",
@@ -29707,11 +29705,11 @@
    "take": {
     "file": "barrow_lord/dlg.cin_behind_the_door.nondum.1.ogg",
     "hash": "04cabffa7c4f",
-    "sec": 2.49,
+    "sec": 2.42,
     "segs": [
      [
       0.0,
-      1.092,
+      1.019,
       0.0,
       1.0
      ]
@@ -29720,22 +29718,26 @@
     "parts": [
      {
       "voice": "barrow_lord",
-      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_behind_the_door.nondum.1\\p0_vc_r3_97ffd9.wav",
-      "seed": 3,
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_behind_the_door.nondum.1\\p0_vc_r1_97ffd9.wav",
+      "seed": 1,
       "score": 0,
-      "similarity": 0.47,
-      "utmos": 1.42,
-      "accent": "newzealand",
+      "similarity": 0.428,
+      "utmos": 1.5,
+      "accent": "england",
       "wps": 0.0,
-      "said": "Nondam.",
+      "said": "Nomdom.",
       "style": "placeholder: Maya1 performance, Seed-VC"
      }
     ],
-    "made": "2026-10-03",
-    "read": 1.09,
-    "placeholder": true
+    "made": "2026-11-05",
+    "read": 1.02,
+    "placeholder": true,
+    "faults": [
+     "nondum->nomdom"
+    ]
    },
-   "status": "done"
+   "status": "done",
+   "placeholder": true
   },
   {
    "id": "ply.cin_behind_the_door.nondum.0",
@@ -31317,7 +31319,6 @@
      "text": "He gets up."
     }
    ],
-   "status": "done",
    "take": {
     "file": "narrator/dlg.door_night.gets_up.0.ogg",
     "hash": "4885b6b08026",
@@ -31349,7 +31350,7 @@
     "read": 0.99,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "ply.door_night.gets_up.0",
@@ -31374,7 +31375,6 @@
      "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit."
     }
    ],
-   "status": "done",
    "take": {
     "file": "narrator/dlg.door_night.gone.0.ogg",
     "hash": "0577c2867752",
@@ -31406,7 +31406,7 @@
     "read": 7.16,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "ply.door_night.gone.0",
@@ -31431,7 +31431,6 @@
      "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone."
     }
    ],
-   "status": "done",
    "take": {
     "file": "narrator/dlg.door_night.heart.0.ogg",
     "hash": "e1a1f99d19a5",
@@ -31463,7 +31462,7 @@
     "read": 25.66,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "ply.door_night.heart.0",
@@ -31488,7 +31487,6 @@
      "text": "The dead step back onto the stair, all together, rank by rank, and stand."
     }
    ],
-   "status": "done",
    "take": {
     "file": "narrator/dlg.door_night.ranks.0.ogg",
     "hash": "6490712c2d4c",
@@ -31520,7 +31518,7 @@
     "read": 5.7,
     "placeholder": true
    },
-   "placeholder": true
+   "status": "done"
   },
   {
    "id": "ply.door_night.ranks.0",
