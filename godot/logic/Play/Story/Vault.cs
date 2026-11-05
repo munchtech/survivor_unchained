@@ -57,7 +57,7 @@ public sealed class VaultOpened : StoryFight
             ["hall_in"] = (0, 4), ["hall_w"] = (-8.5, -6), ["hall_e"] = (8.5, -6), ["scorpion"] = (0, -17.5),
             ["std_a"] = (-6, 0), ["std_b"] = (6, -7), ["std_c"] = (0, -14), ["signifer"] = (0, -16),
             ["boss_start"] = (0, -22.5), ["landing"] = (0, -29), ["boss_at"] = (0, -33), ["stair"] = (0, -37),
-            ["court_in"] = (0, 37), ["corvane"] = (0, 25),
+            ["court_in"] = (0, 31), ["corvane"] = (0, 25),
             // (P9 set) Down the stair (out of bounds; for the films): the ranks' treads, every third step from
             // the third, a hand in from each riser (Maps/Arenas/Vault.cs: the ground is cut to the treads), and
             // Jessop far down, on the 23rd.
