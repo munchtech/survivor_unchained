@@ -1,7 +1,7 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
 ## H6 the player must move: start here (4 November, H6 lead 1; HANDOFF READY at ~250k)
-HANDOFF READY combat-h6@<see the last commit touching this file>
+HANDOFF READY combat-h6@3fc102dfc (code at 0f45049ec)
 
 Brief: `docs/team/hook/H6_combat_move.md`. Worktree `.claude/worktrees/combat-h6`, branch `combat-h6` (from 0febc5160; integration had nothing new on 4 Nov). The coordinator that owns merges is session `local_4f5ceed0-79a5-47f5-81d6-a1ce170715d3`: send it MR READY/HANDOFF lines (5b4265e7 only relays).
 
