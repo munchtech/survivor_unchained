@@ -410,7 +410,56 @@ def check(name="check_r1"):
     json.dump(out, open(os.path.join(d, "relit.json"), "w"), indent=1)
 
 
+# ---- apply: the classes (materials.json), the ground (ground.json) -----------------------------------------------------
+WORLD = ("setts", "plaster", "plank", "stone", "roof", "grass", "foliage", "rock", "road", "leather", "cloth")
+CTL = {  # (6) the class marks, through albedo_ctl (cel.gdshaderinc cel_alb: L = min(mix(L, target, pull), cap), ab x chroma)
+    "crowd_fur": ({"target": 0.30, "pull": 0.7, "cap": 0.40, "chroma": 1.0}, "rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12)"),
+    "folk_cloth": ({"target": 0.0, "pull": 0.0, "cap": 0.75, "chroma": 1.0}, "the brief: the folk's white cloth capped at L 0.75"),
+    "cloth": ({"target": 0.0, "pull": 0.0, "cap": 1.0, "chroma": 0.62}, "MB2's navy: the relit check drew cloth's lit C 0.121 against the board's 0.075 (0.62); the gold trim is bronze's, untouched"),
+    "plaster": ({"target": 0.0, "pull": 0.0, "cap": 1.0, "chroma": 0.6}, "plaster lit cream: MB3's lit plaster over the day key leaves a pink albedo (C 0.10 lit on the board, h 61); 0.6 of its chroma keeps the lit side cream, not salmon"),
+}
+
+
+def apply_classes(rep):
+    import re
+    lib = json.load(open(calib.LIB, encoding="utf-8")); gains = {}
+    for c in WORLD:
+        if c not in rep["albedo"]: continue
+        a = np.array(rep["albedo"][c]["linear"]); p = lib["classes"][c]["paint"].setdefault("albedo", {})
+        old = p.get("mid"); gains[c] = a / np.maximum(hex_to_lin(old), 1e-4) if old else None
+        L, C, h = lab(a)
+        wL = (p["L"][2] - p["L"][0]) / 2 if "L" in p else 0.03; wC = (p["C"][2] - p["C"][0]) / 2 if "C" in p else 0.01
+        p["L"] = [round(L - wL, 4), L, round(L + wL, 4)]; p["C"] = [round(max(0, C - wC), 4), C, round(C + wC, 4)]
+        p["h"] = [h] + (p["h"][1:] if "h" in p else [0, 0])
+        p["mid"] = rep["albedo"][c]["hex"]; p["linear"] = rep["albedo"][c]["linear"]; p["v"] = 4
+        p["method"] = (f"L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {rep['albedo'][c]['from']} (swatches.json; per swatch "
+                       f"the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) "
+                       f"-> {p['mid']} (lin {p['linear']}); one albedo serves day and night (the night rigs' moon is solved over it). Was {old}.")
+    for c, (ctl, why) in CTL.items():
+        lib["classes"][c]["albedo_ctl"] = dict(ctl, **{"from": f"L1 W2 C6: {why}"})
+    s = json.dumps(lib, indent=1, ensure_ascii=False)
+    s = re.sub(r'\[\s+([^\[\]{}]*?)\s+\]', lambda mm: '[' + re.sub(r'\s+', ' ', mm.group(1)) + ']', s)
+    s = re.sub(r'"roles": \{\s+([^{}]*?)\s+\}', lambda mm: '"roles": {' + re.sub(r'\s+', ' ', mm.group(1)) + '}', s)
+    open(calib.LIB, "w", encoding="utf-8", newline="\n").write(s + "\n")
+    # the ground: each surface's colors times its class's gain (new albedo / old), so the painters' hand-set relations hold
+    P = os.path.join(DATA, "ground.json"); g = json.load(open(P, encoding="utf-8"))
+    gains["soil"] = gains.get("road")  # (the earth under the crowns takes the road's gain, as mark 6 did)
+    for name, sf in g["surfaces"].items():
+        k = gains.get(sf.get("class"))
+        if k is None: continue
+        def fix(x):
+            if isinstance(x, str) and x.startswith("#") and len(x) == 7: return lin_to_hex(hex_to_lin(x) * k)
+            if isinstance(x, list): return [fix(y) for y in x]
+            if isinstance(x, dict): return {kk: (fix(v) if kk in ("colors", "under", "joint", "color", "lit", "shade") else v) for kk, v in x.items()}
+            return x
+        for kk in ("masses", "cells", "stamps", "patches"):
+            if kk in sf: sf[kk] = fix(sf[kk])
+        sf["c6"] = f"L1 W2 C6 (the color chain): x{np.round(k, 3).tolist()} per channel (linear) = the {sf['class']} class's chain albedo / its old mid (materials.json)."
+    json.dump(g, open(P, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
+    print("classes:", {c: rep["albedo"][c]["hex"] for c in WORLD if c in rep["albedo"]}, "gains:", {c: np.round(v, 2).tolist() for c, v in gains.items() if v is not None})
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit(1)
-    {"measure": lambda: measure(*a[1:3]), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2])}[a[0]]()
+    {"measure": lambda: measure(*a[1:3]), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()
