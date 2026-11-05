@@ -178,7 +178,8 @@ public partial class BattleFx
         for (int i = 0; i < tells.Count; i++)
         {
             var t = tells[i];
-            if (t.Kind == "closing" && t.Blow.T > 0)
+            // (and on past the landing while its wall stands, H6)
+            if (t.Kind == "closing" && (t.Blow.T > 0 || (t.Landed && t.Walled)))
             {
                 var k = t.Blow;
                 float outer = (float)k.Radius, inner = (float)k.Inner, speed = 7f;

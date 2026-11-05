@@ -282,6 +282,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 {
                     if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
+                    else if (e is Ev.Knockdown kd) Player?.OnKnockdown(kd.Seconds);
                     else if (e is Ev.Ability ab)
                     {
                         if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
@@ -481,6 +482,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public bool Shown(string node) => View.Node(node)?.Visible ?? false;
     public void HideProps(string id, double x, double z, double r) => View.HideProps(id, (float)x, (float)z, (float)r);
     public void Stop(string node) => View.Stop(node);
+    public void Shift(string kind, double k) => View.Shift(kind, (float)k);
 
     public void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0)
     {

@@ -45,7 +45,7 @@ public sealed partial class Prologue : ZoneRuntime
     sealed class WardenAI
     {
         public string Mode = "sleep";
-        public double Hold, T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, RaiseT, ContactT, HitX, HitZ;
+        public double Hold, T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, ChannelOver, RaiseT, ContactT, HitX, HitZ;
         public List<double> Thresholds = [0.7, 0.4];
     }
 
@@ -741,10 +741,63 @@ public sealed partial class Prologue : ZoneRuntime
         Now != Stage.Boss ? Enumerable.Empty<(double, double, double, bool)>()
         : pylons.Select((p, i) => (p.X, lampY[i], p.Z, litPylons[i]));
 
+    /// <summary>His life by H6's teeth (Teeth.Ford's hpMul), on each spawn.</summary>
+    void Toothed(Enemy? e)
+    {
+        if (e == null || Teeth.Ford is not { HpMul: > 0 } fw || fw.HpMul == 1) return;
+        e.MaxHp *= fw.HpMul; e.Hp = e.MaxHp;
+    }
+
+    /// <summary>When a floor last turned a blow (game seconds): "Warded" says so at most every WardedEvery s.</summary>
+    double wardedAt = -99, overSeen, floorHeldT, wardLogAt = -99;
+    int wardCracks, lampsBroken;
+    const double WardedEvery = 4;
+
+    /// <summary>The lamps' floor under his life (never above it: a relit lamp does not heal him), and the backstop
+    /// until he has fought MinSeconds; a blow the floor turns says "Warded" over him.</summary>
+    void WardFloor(Enemy e, Teeth.FordWarden? fw, double dt)
+    {
+        if (B != null && Now == Stage.Boss && B.Time - wardLogAt >= 1 && PaceNotes.Count < 64)
+        {
+            wardLogAt = B.Time;
+            PaceNotes.Enqueue($"ford wardlog t={B.Time:0.0} fought={stageT:0.0} fw={(fw == null ? "null" : "set")} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} pylons={pylons.Count} broken={lampsBroken} cracks={wardCracks} lit={LitCount} over={e.Overflow:0} mode={ai.Mode} state={e.State}");
+        }
+        if (fw == null || B == null) { e.HpFloor = 0; return; }
+        // (by the lamps broken this fight, never taken back by a relight: H8's b_path had his channels relight them
+        // six times over 338 s; the ward, what a blow does, stays by the lamps lit)
+        double k = fw.Floors is { Length: 4 } fl ? fl[Math.Clamp(pylons.Count - lampsBroken - wardCracks, 0, 3)] : 0;
+        if (Now == Stage.Boss && stageT < fw.MinSeconds) k = Math.Max(k, fw.Backstop);
+        double floor = k * e.MaxHp;
+        // (a floor of 0 is none; a floor over his life now is his life: a relight never heals him)
+        e.HpFloor = floor <= 0 ? 0 : Math.Min(floor, Math.Max(e.Hp, 1));
+        // Held at a floor too long: it cracks a step, said over him.
+        if (e.HpFloor > 0 && e.Hp <= e.HpFloor + 1 && Now == Stage.Boss)
+        {
+            floorHeldT += dt;
+            if (fw.CrackAfter > 0 && floorHeldT > fw.CrackAfter && pylons.Count - lampsBroken - wardCracks > 0)
+            {
+                wardCracks++; floorHeldT = 0;
+                B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "The ward cracks", Boss = true });
+                PaceNotes.Enqueue($"ford ward cracks t={B.Time:0.0} fought={stageT:0.0} lit={LitCount} cracks={wardCracks}");
+            }
+        }
+        if (e.Overflow > overSeen + 1)
+        {
+            if (B.Time - wardedAt > WardedEvery)
+            {
+                wardedAt = B.Time;
+                B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = LitCount > 0 ? "Warded: the lamps hold him" : "Warded" });
+                PaceNotes.Enqueue($"ford warded t={B.Time:0.0} fought={stageT:0.0} lit={LitCount} hp={e.Hp / e.MaxHp:0.00}");
+            }
+        }
+        overSeen = e.Overflow;
+    }
+
     void Snuff(int i, string how)
     {
         if (!litPylons[i] || B == null) return;
         litPylons[i] = false;
+        if (Now == Stage.Boss) lampsBroken++;
         lampEventAt = B.Time;
         var p = pylons[i];
         G.Look.SetLit(p.Light, false);
@@ -791,8 +844,11 @@ public sealed partial class Prologue : ZoneRuntime
         double dist = Math.Sqrt(dx * dx + dz * dz);
         if (dist == 0) dist = 0.001;
         double hpK = e.Hp / e.MaxHp;
-        // The ward: the lamps take most of every blow.
-        double mul = Ward[LitCount];
+        // The ward: the lamps take most of every blow; and (H8, N20) while two or three burn he can't be brought under
+        // their floor, so the crash is the way through (Teeth.Ford, H6's numbers).
+        var fw = Teeth.Ford;
+        double mul = (fw?.Ward is { Length: 4 } wd ? wd : Ward)[LitCount];
+        WardFloor(e, fw, dt);
         if (ai.Mode == "stun") mul *= 1.5;
         e.TakenMul = mul;
         ai.CleaveCd -= dt; ai.ChargeCd -= dt; ai.ChannelCd -= dt;
@@ -820,7 +876,7 @@ public sealed partial class Prologue : ZoneRuntime
                 if ((th is double t0 && hpK < t0) || ai.ChannelCd <= 0)
                 {
                     if (th is double t1 && hpK < t1) ai.Thresholds.RemoveAt(0);
-                    ai.Mode = "channel"; ai.T = 0; ai.ChannelHp = e.Hp; ai.ChannelCd = 34; ai.RaiseT = 0.6;
+                    ai.Mode = "channel"; ai.T = 0; ai.ChannelHp = e.Hp; ai.ChannelOver = e.Overflow; ai.ChannelCd = 34; ai.RaiseT = 0.6;
                     wardenView.SetPose("channel");
                     B.Events.Emit(new Ev.Sound { Id = "ford.channel", X = e.X, Z = e.Z });
                     // (the tip comes first when it shows, and his cry a beat after it settles, so the two never
@@ -935,7 +991,8 @@ public sealed partial class Prologue : ZoneRuntime
                     }
                 }
                 // Hurt it badly enough and the channel breaks.
-                if (ai.ChannelHp - e.Hp > e.MaxHp * 0.09)
+                // (what a floor held back counts: at a floor his life does not move)
+                if (ai.ChannelHp - e.Hp + e.Overflow - ai.ChannelOver > e.MaxHp * 0.09)
                 {
                     ai.Mode = "stun"; ai.T = 0;
                     wardenView.SetPose("stunned");
@@ -1149,7 +1206,7 @@ public sealed partial class Prologue : ZoneRuntime
                 if (warden is { Alive: true })
                 {
                     int lit = LitCount;
-                    Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, [0.7, 0.4], bar?.Channel, lit > 0, Lamps: pylons.Count, LampsLit: lit));
+                    Bar(new BossBar("The Ford-Warden", "Keeper of the Low Crossing", warden.Hp, warden.MaxHp, Teeth.Ford is { Floors: [_, _, > 0 and var f2, > 0 and var f3] } ? [f3, f2] : [0.7, 0.4], bar?.Channel, lit > 0, Lamps: pylons.Count, LampsLit: lit));
                     if (stageT > 40 && lit == 3 && stageT - lamps2At > 30) { lamps2At = stageT; shown.Remove("lamps2"); Tip("lamps2", "The lamps", "Lure its charge into a lamp: stand before one, and step aside at the last moment.", [Key("dash")], 10); }
                 }
                 break;
@@ -1178,7 +1235,8 @@ public sealed partial class Prologue : ZoneRuntime
                 MorningClimbs();
                 // (and not while the wolf ring's second wave holds it, DayStretch.GateOpen)
                 // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
-                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && !finished) { finished = true; Finish(); }
+                // (H8 N22: and the portcullis all the way up: she may wait at it beyond the exit line, and sees it rise)
+                if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && gateBar == null && gateDown <= 0 && !finished) { finished = true; Finish(); }
                 break;
         }
     }
@@ -1231,6 +1289,7 @@ public sealed partial class Prologue : ZoneRuntime
         // Where the cinematic leaves him (its mark warden_end), facing her.
         var (wx, _, wz, _) = CineFile.Load("c02").Mark("warden_end");
         warden = B.SpawnEnemy("ford_warden", wx, wz, new Battle.SpawnOpts { Level = 1, Tag = "warden" });
+        Toothed(warden);
         if (warden != null)
         {
             warden.Facing = Math.Atan2(p.Z - wz, p.X - wx); ai.Mode = "walk"; ai.T = 0;
@@ -1270,6 +1329,7 @@ public sealed partial class Prologue : ZoneRuntime
             G.Capture(false);
             B.WorldRate = 1; B.WorldRateT = 0;
             warden = B.SpawnEnemy("ford_warden", wardenPos.X, wardenPos.Z, new Battle.SpawnOpts { Level = 1, Tag = "warden" });
+            Toothed(warden);
             if (warden != null) { warden.Facing = Math.PI / 2; ai.Mode = "walk"; ai.T = 0; }
             wardenView.Release();
             Go(Stage.Boss);
@@ -1282,6 +1342,7 @@ public sealed partial class Prologue : ZoneRuntime
     void OnWardenDown(Enemy e)
     {
         if (B == null) return;
+        PaceNotes.Enqueue($"ford down t={B.Time:0.0} fought={stageT:0.0} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} over={e.Overflow:0} school={e.LastSchool} weapon={e.LastWeapon ?? "-"} blow={e.LastBlow:0.00} lit={LitCount} broken={lampsBroken} state={e.State}");
         ai.Mode = "dead";
         wardenView.SetPose("dead");
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
@@ -1463,7 +1524,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     /// <summary>The dawn puts the ember out: the cards, the blessing, all it
     /// built. What the survivor carries, and what they learned, stay.</summary>
-    /// <summary>C04 A: the ember goes out in it (its "douse" event), and the narrator says what Douse's caption did.</summary>
+    /// <summary>C04 A: the ember goes out in it (its "douse" event), the narrator says it, and the dawn's card follows its hand-back.</summary>
     void FirstLight(bool south, bool onward = false)
     {
         doused = true;
@@ -1472,6 +1533,8 @@ public sealed partial class Prologue : ZoneRuntime
             {
                 dawnK = 1; G.SetAtmosphere(Atmospheres.LowFordDawn); G.Look.SetNight(false); if (!dousedByCine) Douse(false);
                 DayObjective();
+                // As the film hands back: the dawn's card, the world held under it (N24).
+                DawnCardUp();
                 // On from C03, she never waded back for what he left: it is hers on the road.
                 if (onward && B != null) { B.Gather(B.Player.X, B.Player.Z); G.After(1.0, TakenToast); }
             }))
@@ -1500,14 +1563,39 @@ public sealed partial class Prologue : ZoneRuntime
         }
     }
 
-    void Douse(bool caption = true)
+    /// <summary>The ember goes out: what it built is taken (Journey.Douse), the night's lessons paid. Out of a
+    /// film (`card`), the dawn's card follows a breath later; in C04 A it waits for the film's hand-back.</summary>
+    void Douse(bool card = true)
     {
         if (B == null) return;
         var p = B.Player;
         B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
+        // What the night gave, by name, read before the dawn takes it.
+        var skills = DawnCard.NightSkills(B, Character.Kit(G.Journey.Ch).Weapons.Select(w => w.Id));
         int taught = G.Journey.Douse(B);
-        G.Announce(new Announcement("The ember goes out", "First light takes back what it lent", "zone", 4.2, "Dawn"));
+        dawnTaught = taught;
+        dawnCard = DawnCard.Build(skills, taught > 0 ? G.Journey.Ch.Level : null);
+        if (card) G.After(1.2, DawnCardUp);
+    }
+
+    DawnCard? dawnCard;
+    int dawnTaught;
+    bool dawnCardShown;
+
+    /// <summary>The dawn's card (N24, in place of the narrator's caption and "The ember goes out" banner): what
+    /// the ember takes and what she keeps, held until a click. Once it closes, the level the night taught, its
+    /// traits, and the day's tip follow in their order (game time: a freeze holds them).</summary>
+    void DawnCardUp()
+    {
+        if (dawnCard == null || dawnCardShown) return;
+        dawnCardShown = true;
+        G.DawnCard(dawnCard, DawnCardClosed);
+    }
+
+    void DawnCardClosed()
+    {
+        int taught = dawnTaught;
         // What the night taught her, paid now the ember has gone: the first character level, on
         // its own, where it can be understood.
         if (taught > 0)
@@ -1519,12 +1607,9 @@ public sealed partial class Prologue : ZoneRuntime
                 G.Announce(levelAnn);
                 G.Journey.Grew();
             });
-        // Without C04 A the narrator's words are a caption; with it, they were said in it.
-        if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"", null, 14));
-        // F12 once her dawn line is over (the caption's 14 s; with C04 A it was said in it), and the
-        // day's tip after that (game time: a freeze holds it back).
-        if (taught > 0) G.After(caption ? 15.4 : 5.2, () => levelDue = true);
-        G.After(caption ? 24.5 : 18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        // F12 just after, and the day's tip after that.
+        if (taught > 0) G.After(5.2, () => levelDue = true);
+        G.After(18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
     void Finish()

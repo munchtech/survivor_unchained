@@ -22,6 +22,8 @@ public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityK
 public sealed class PlayerState
 {
     public double X, Z, Vx, Vz, Facing, Radius = 0.42, Hp;
+    /// <summary>The move asked this tick (the stick or the keys, before her pace and her easing): her view faces it, not her lagging velocity.</summary>
+    public double StickX, StickZ;
     public bool Alive = true;
     public double Iframes, HurtT;
     public int DashCharges;
@@ -438,7 +440,9 @@ public sealed partial class Battle
         RebuildSpatial();
         Charges.Tick(this, wdt);
         if (tells.Count > 0) UpdateTells(dt);
+        double footX = Player.X, footZ = Player.Z;
         UpdatePlayer(dt, moveX, moveZ);
+        if (tells.Count > 0) Walls(footX, footZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
         {
@@ -475,6 +479,7 @@ public sealed partial class Battle
     void UpdatePlayer(double dt, double mx, double mz)
     {
         var p = Player;
+        p.StickX = mx; p.StickZ = mz;
         if (!p.Alive) return;
         var st = Stats;
         p.Iframes = Math.Max(0, p.Iframes - dt);
@@ -1053,7 +1058,7 @@ public sealed partial class Battle
             {
                 double luck = Stats.Get(Stat.Luck);
                 if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Boss || e.Def.Miniboss ? 1 : e.Elite ? Rules.ChampionGold : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
-                if (Rng.Next() < 0.012 * luck + (e.Elite ? 0.4 : 0)) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
+                if (Rng.Next() < (0.012 * luck * FodderHeals + (e.Elite ? 0.4 * EliteHeals : 0))) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
                 if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, e.X, e.Z, 1);
                 if (Hooks.OnLoot != null)
                     foreach (var d in Hooks.OnLoot(e))
@@ -1609,6 +1614,11 @@ public sealed partial class Battle
         return dmg;
     }
 
+    /// <summary>Life she got back, by source (a measuring aid: what keeps a stander standing, H6).</summary>
+    public readonly Dictionary<string, double> HealBy = new();
+    /// <summary>The kills' healing drops, the crowd's and the champions' chance (Teeth.FodderHeals/EliteHeals; 1: as it was).</summary>
+    public double FodderHeals = 1, EliteHeals = 1;
+
     public void HealPlayer(double amount, string source, bool silent = false)
     {
         var p = Player;
@@ -1617,6 +1627,7 @@ public sealed partial class Battle
         double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1) * ReaverMendMul(source);
         double before = p.Hp;
         p.Hp = Math.Min(MendCeiling(), p.Hp + h);
+        if (p.Hp > before) HealBy[source] = HealBy.GetValueOrDefault(source) + (p.Hp - before);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
     }
 
@@ -1699,7 +1710,8 @@ public sealed partial class Battle
         e.SlowUntil = e.SlowBy = 0;
         e.DrawnAt = e.RebukedAt = -99;
         e.LungeX = e.LungeZ = 0;
-        e.Decoy = e.Prey = e.Goal = false;
+        e.Decoy = e.Prey = e.Goal = e.Steer = false;
+        e.FlowUntil = e.CoverCheckAt = 0;
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.FlareTook = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
@@ -1884,6 +1896,8 @@ public sealed partial class Battle
         public double At;
         /// <summary>What it leaves, or does besides, when it lands.</summary>
         public Action<Battle>? After;
+        /// <summary>What it dealt her when it landed (after her armor; 0: missed, slipped, blocked), set before After runs.</summary>
+        public double Dealt;
         public bool Hit(double x, double z, double r)
         {
             double dx = x - X, dz = z - Z, d = Math.Sqrt(dx * dx + dz * dz);
@@ -1982,7 +1996,7 @@ public sealed partial class Battle
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
                     blowLabel = b.Label;
-                    if (b.Damage > 0 && HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true) > 0 && b.From?.Boss == true) BossBlowsTaken++;
+                    if (b.Damage > 0 && (b.Dealt = HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true)) > 0 && b.From?.Boss == true) BossBlowsTaken++;
                     blowLabel = null;
                     if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
                 }

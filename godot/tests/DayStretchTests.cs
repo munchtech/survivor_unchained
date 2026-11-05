@@ -145,6 +145,43 @@ public class DayStretchTests
     }
 
     [Fact]
+    public void A_gate_is_shut_before_the_ring()
+    {
+        // (H8, N22, the owner on demo-rc2: "we are able to just run up to the waystation and skip the whole day time
+        // tutorial". The gate was open until a ring was sprung; a player round by the wall never sprang it.)
+        var b = Road(9);
+        var s = DayStretch.For("lowford")!;
+        var d = new DayStretch(s, b, s.Beats.Where(x => x.Kind == "pack").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true), 2, 1);
+        d.Place();
+        var ring = s.Get("wolves")!;
+        Assert.False(d.GateOpen);
+        Assert.NotNull(d.RingOwed);
+        // Round by the wall, off the road, to the gate's apron: still shut, the ring still owed.
+        b.Player.X = ring.X + ring.HalfWidth + 3; b.Player.Z = s.GateZ + 1;
+        for (double t = 0; t < 0.5; t += Dt) { b.Player.Hp = b.MaxHp; d.Tick(Dt); }
+        Assert.True(d.RingAt < 0);
+        Assert.False(d.GateOpen);
+        // A step onto the road there springs it, armed or not (she never came up the road from the south).
+        b.Player.X = ring.X;
+        d.Tick(Dt);
+        Assert.True(d.RingAt >= 0);
+        Assert.Null(d.RingOwed);
+        Assert.False(d.GateOpen);
+        // Down, and its second wave down: open.
+        for (int k = 0; k < 2; k++)
+        {
+            foreach (var e in d.Standing("wolves")) b.KillEnemy(e, true, null);
+            for (double t = 0; t < ring.FollowAfter + 0.5; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain(); }
+        }
+        foreach (var e in d.Standing("wolves")) b.KillEnemy(e, true, null);
+        b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain();
+        Assert.True(d.GateOpen);
+        // Done before a reload (no ring sprung this run): open.
+        var again = new DayStretch(s, Road(10), new Dictionary<string, Fact>(s.Beats.Where(x => x.Kind is "pack" or "ring").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true)), 2, 1);
+        Assert.True(again.GateOpen);
+    }
+
+    [Fact]
     public void A_pack_left_standing_far_off_does_not_hold_the_ring()
     {
         // (H4 lead 3, j08 g3: one ambush foe stuck in the trees held the ring, and the gate, for good.)

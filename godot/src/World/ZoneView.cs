@@ -114,6 +114,9 @@ public partial class ZoneView : Node3D
         // The camp on the Low Ford road, made for its close-ups (Camp.cs); its logs ours where the data places them.
         if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root, logs: ownProps == null || !ownProps.Places.Exists(p => p.Preset.StartsWith("log"))));
         Perf.Lap("landmarks");
+        // (the rocks take the red marks' rock copy, H6 r1 fix 2: BattleFx.MarkTakeLayer)
+        int rocks = BattleFx.TagRocks(this);
+        if (Shots.On("h6")) GD.Print($"h6 rocks tagged {rocks}");
         yield return "own props";
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
@@ -334,6 +337,8 @@ public partial class ZoneView : Node3D
 
     /// <summary>A turning piece (the pump's wheel) stops.</summary>
     public void Stop(string node) => stopped.Add(node);
+    /// <summary>(H8 N22) A kind of the landmarks' moving parts set k of its way (Landmarks.Shift: the portcullis down).</summary>
+    public void Shift(string kind, float k) => Landmarks.Shift(kind, k);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
     /// <summary>The lights a lamp's flame flickers (not the zone's own formula), and each one's holders' glass.</summary>

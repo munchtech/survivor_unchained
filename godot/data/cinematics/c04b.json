@@ -36,7 +36,7 @@
         {"do": "anim", "actor": "rook", "clip": "Idle_FoldArms_Loop", "blend": 0},
         {"do": "glow", "name": "towerlamp", "where": {"mark": "lamp", "y": 7.12}, "lantern": 1.8, "turn": 30, "color": "#ffd9a0", "size": 0.035, "energy": 2.4, "spread": 7, "halo": 0.35},
         {"do": "music", "mood": "town", "intensity": 0.4},
-        {"do": "move", "to": [0.0, 26.0], "dur": 7.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"do": "move", "to": [0.0, 26.0], "dur": 7.0, "clip": "Walk_Formal_Loop", "speed": 0.8, "ease": "linear"},
         {"at": 0.8, "do": "sfx", "name": "creak", "gain": 0.6},
         {"at": 1.2, "do": "line", "id": "cin_first_light.baking"},
         {"at": "end-3.6", "do": "title", "title": "Chapter One", "sub": "The Waystation", "kind": "zone", "seconds": 3.4}
@@ -52,7 +52,7 @@
       "cam": {"pos": [-5.0, 2.0, 35.8], "at": [-1.0, 1.5, 26.0], "lens": 50},
       "cues": [
         {"at": 0.4, "do": "line", "id": "cin_first_light.dawn"},
-        {"do": "move", "to": [0.0, 21.5], "dur": 3.5, "clip": "Walk_Formal_Loop", "speed": 0.8}
+        {"do": "move", "to": [0.0, 21.5], "dur": 3.5, "clip": "Walk_Formal_Loop", "speed": 0.8, "ease": "linear"}
       ]
     },
     {
@@ -60,9 +60,9 @@
       "type": "MLS",
       "dur": 5.0,
       "note": "Tracking behind her at her pace, over her shoulder, north: ahead of her people stop and look: the man with the ladder turns so it swings; the woman at the well holds the bucket halfway; the child runs. Nobody speaks.",
-      "cam": {"pos": [0.6, 1.7, 26.0], "at": [0.0, 1.4, 10.0], "lens": 35, "move": {"pos": [0.6, 1.7, 13.0], "at": [0.0, 1.4, -2.0], "ease": "linear"}},
+      "cam": {"pos": [0.6, 1.7, 26.0], "at": [0.0, 1.4, 10.0], "lens": 35, "move": {"pos": [0.6, 1.7, 17.5], "at": [0.0, 1.4, 2.5], "ease": "linear"}},
       "cues": [
-        {"do": "move", "to": "square", "dur": 5.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
+        {"do": "move", "to": "square", "dur": 8.5, "clip": "Walk_Formal_Loop", "speed": 0.8, "ease": "settle", "settle": 0.8, "note": "N23: one pace through B3 and into B4 (1.8 m/s, her town walk at 1.4x), and she stops at the square's edge 3.5 s into B4 (was 5 s on an inout: 4.35 m/s at its peak, her feet clamped to 2 m/s, and still to a stand, the walk treading on the spot through B4 to B4b)"},
         {"at": 1.4, "do": "sfx", "name": "creak", "gain": 0.5},
         {"at": 2.6, "do": "sfx", "name": "impactMetal_light", "gain": 0.3}
       ]
@@ -75,6 +75,7 @@
       "cam": {"pos": [-11.1, 1.5, 13.1], "at": [-1.64, 1.6, 5.71], "lens": 35, "focus": 1.1, "fstop": 2.8, "move": {"focus": 12.5, "start": 0.8, "end": 2.2, "ease": "inout"}},
       "cues": [
         {"at": 2.6, "do": "music", "mood": "silence"},
+        {"at": 2.7, "do": "anim", "actor": "her", "clip": "@idle", "blend": 0.8, "note": "N23: as her walk settles to a stand (B3's move)"},
         {"at": 2.6, "do": "head", "actor": "rook", "where": {"mark": "lamp", "y": 7.12}, "over": 0.7}
       ]
     },

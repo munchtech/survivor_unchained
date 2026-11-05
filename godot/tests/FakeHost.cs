@@ -41,6 +41,9 @@ sealed class FakeHost : IZoneHost
     public bool Saying => sayLeft > 0;
     public void Toast(Toast t) => Toasts.Add(t);
     public void Announce(Announcement a) => Announced.Add(a);
+    /// <summary>The dawn's cards shown (each clicked through at once).</summary>
+    public readonly List<DawnCard> Dawns = new();
+    public void DawnCard(DawnCard card, Action closed) { Dawns.Add(card); closed(); }
     public void Talk(string npc) => Talked.Add(npc);
     public void Travel(string zone, string? caption = null, string? sub = null) => Travelled = (zone, caption);
     public Arena.ArenaResult? ArenaResult;
@@ -116,6 +119,8 @@ sealed class FakeLook : IZoneLook
     public void Show(string node, bool visible) { if (visible) Hidden.Remove(node); else Hidden.Add(node); }
     public bool Shown(string node) => !Hidden.Contains(node);
     public void Stop(string node) => Stopped.Add(node);
+    public readonly Dictionary<string, double> Moved = new();
+    public void Shift(string kind, double k) => Moved[kind] = k;
     public readonly List<(string Id, double X, double Z, double R)> PropsHidden = new();
     public void HideProps(string id, double x, double z, double r) => PropsHidden.Add((id, x, z, r));
     public void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0) => Props.Add(id);

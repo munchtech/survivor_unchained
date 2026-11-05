@@ -126,3 +126,33 @@ def build(ui):
     F.save(F.to_pil(make(512, 512, (32, 32, 32, 32), 3, PAPER_PROMPT, "#e4d6b6", "paper")), os.path.join(ui, "frames", "paper.png"))
     F.save(F.to_pil(make(512, 256, (40, 40, 40, 40), 5, HINT_PROMPT, "#e6d6b0", "hint", corners=False, nail=True, wax=True)),
            os.path.join(ui, "frames", "hint.png"))
+
+
+CARD_PROMPT = ("an old sheet of ledger parchment, warm cream, foxed and browned at the deckled edges, small blackened iron corner "
+               "caps riveted on the four corners, the middle clean and even, one continuous sheet, flat lay, isolated on black")
+
+
+def make_card(W, H, margins, seed, prompt, tone, name, feather=75, **kw):
+    """Like make(), but not tiled, and the middle calmed through a wide soft mask (a rounded
+    block well inside the deckle, blurred), so no straight edge or tone step shows."""
+    import paintover as PO
+    import painted as P
+    base = sheet(W, H, margins, seed=seed, tone=tone, **kw)
+    out = PO.paint(base, prompt, name, denoise=0.38, seed=21, keep_light=0.4)
+    inset = max(margins) * 2 + 40
+    region = np.zeros((H, W), np.float32)
+    r = max(60, min(W, H) // 4)
+    x0, y0, x1, y1 = inset, inset, W - inset, H - inset
+    region[y0 + r:y1 - r, x0:x1] = 1
+    region[y0:y1, x0 + r:x1 - r] = 1
+    for cx, cy in ((x0 + r, y0 + r), (x1 - r, y0 + r), (x0 + r, y1 - r), (x1 - r, y1 - r)):
+        cv2.circle(region, (cx, cy), r, 1.0, -1)
+    region = cv2.GaussianBlur(region, (0, 0), feather * 0.5)
+    out[..., :3] = P.calm(out[..., :3], region, tone, keep=0.7, low=0.05, sigma=10, feather=feather * 0.5)
+    return out
+
+
+def build_card(ui):
+    import os
+    F.save(F.to_pil(make_card(760, 480, (24, 24, 24, 24), 7, CARD_PROMPT, "#e4d6b6", "dawn_paper")),
+           os.path.join(ui, "frames", "dawn_paper.png"))

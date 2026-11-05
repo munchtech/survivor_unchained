@@ -674,6 +674,8 @@ public partial class Game : Node, IZoneHost
             goto Built;
         }
         else { currentMap = null; data = new ZoneData(id); }
+        // (its map drawn on a worker from now: the first open does not draw it on the frame, N25)
+        MapScreen.DrawSoon(data);
         // The kit's textures it is built from, decoded side by side first.
         Perf.Lap("prefetch", true);
         Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
@@ -1123,6 +1125,7 @@ public partial class Game : Node, IZoneHost
                 if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
+            if (Shots.On("h6")) H6Shot(e);
             // --on tells: each kit telegraph (ring, charge, pull, closing) a third and two thirds into its windup and just after it lands.
             if (Shots.On("tells") && e is Ev.Telegraph kt && kt.Tell is { Length: > 0 } kind)
             {
@@ -1156,6 +1159,10 @@ public partial class Game : Node, IZoneHost
                     scene?.Slow(1.1);
                     foreach (var s in new[] { 0.1, 0.5, 0.9, 1.08, 1.16, 1.24, 1.32, 1.45, 2.0, 3.0 }) Shots.Want("rise", s);
                     break;
+                case Ev.Sound { Id: "gate.portcullis" } when Shots.On("gate"):
+                    // (H8 N22, --on gate: the day's portcullis rising, a frame every half second through it and after)
+                    for (int i = 0; i <= 8; i++) Shots.Want("gate_rise", i * 0.5);
+                    break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
                     // (one of theirs at a time: the next waits for the last to be said).
@@ -1167,9 +1174,22 @@ public partial class Game : Node, IZoneHost
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
                     break;
                 case Ev.Focus f when scene != null && Battle is { } fb:
-                    // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back.
-                    cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2);
+                    // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back. (H8,
+                    // N35: it follows her, half the way to the boss and never past the middle third, and nothing it
+                    // set is left once it is over, a panel open or not.)
                     focusT = f.Duration;
+                    // (--on arrival: a strip of the boss's arrival, every 0.5 s for 8 s, for N35)
+                    if (Shots.On("arrival") && !arrivalShot)
+                    {
+                        arrivalShot = true;
+                        for (int i = 0; i < 17; i++) Shots.Want($"arrival_{i:00}", i * 0.5);
+                        // (--draft-at-arrival: a level's draft comes up on the arrival, as one did in the owner's run)
+                        if (Args.Has("draft-at-arrival")) fb.PendingLevels++;
+                    }
+                    // (--focus-old: as demo-rc2 had it, for the before strip)
+                    if (FocusOld) { cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2); break; }
+                    bossFocus = (f.X, f.Z);
+                    BossFocus();
                     break;
             }
         }
@@ -1270,6 +1290,35 @@ public partial class Game : Node, IZoneHost
     bool seeListed;
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
+    /// <summary>The boss a Focus event frames with her (its place), and the look it last set.</summary>
+    (double X, double Z)? bossFocus;
+    static readonly bool FocusOld = Args.Has("focus-old"), LookLog = Args.Has("looklog");
+    double camLogT;
+    bool arrivalShot;
+    Vector3? bossFocusSet;
+
+    /// <summary>The boss focus this frame: the look half the way from her to it (capped to the middle third), set
+    /// while its time runs and no panel holds the camera; once over, the look it set is taken back, now or as soon
+    /// as a panel that held it (the draft, a chest) gives it back. (demo-rc2: a draft open as a boss arrived kept the
+    /// look on the arrival's midpoint for good.)</summary>
+    void BossFocus()
+    {
+        if (bossFocus is { } bf && focusT > 0 && hudMode == null && scene != null && Battle is { } b)
+        {
+            var (ax, az) = cam.CapLean((float)(bf.X - b.Player.X) / 2, (float)(bf.Z - b.Player.Z) / 2);
+            float px = (float)b.Player.X + ax, pz = (float)b.Player.Z + az;
+            cam.FocusOverride = bossFocusSet = new Vector3(px, (float)scene.HeightAt(b.Player.X, b.Player.Z) + 1, pz);
+        }
+        else if (focusT <= 0 && bossFocusSet != null)
+        {
+            bossFocus = null;
+            if (hudMode == null)
+            {
+                if (cam.FocusOverride == bossFocusSet) cam.FocusOverride = null;
+                bossFocusSet = null;
+            }
+        }
+    }
 
     public override void _Process(double delta)
     {
@@ -1287,7 +1336,15 @@ public partial class Game : Node, IZoneHost
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         playedT += delta;
-        if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
+        // (--looklog: where the look is against her, 4 times a second, for N35's strips)
+        if (LookLog && (camLogT -= dt) <= 0 && Battle is { } clb)
+        {
+            camLogT = 0.25;
+            var lk = cam.LookAt;
+            GD.Print($"LOOKLOG t={clb.Time:0.00} her=({clb.Player.X:0.00},{clb.Player.Z:0.00}) look=({lk.X:0.00},{lk.Z:0.00}) off={Mathf.Sqrt((lk.X - (float)clb.Player.X) * (lk.X - (float)clb.Player.X) + (lk.Z - (float)clb.Player.Z) * (lk.Z - (float)clb.Player.Z)):0.00} focus={(cam.FocusOverride is { } fo ? $"({fo.X:0.0},{fo.Z:0.0})" : "-")} toward={(cam.Toward is { } tw ? $"({tw.X:0.0},{tw.Z:0.0})" : "-")} hud={hudMode ?? "-"} focusT={focusT:0.00}");
+        }
+        if (FocusOld) { if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null; }
+        else { if (focusT > 0) focusT -= dt; BossFocus(); }
         if (Mode == "play" && zone != null)
         {
             Perf.Begin(Perf.Part.Auto);
@@ -1333,6 +1390,9 @@ public partial class Game : Node, IZoneHost
             var gateAt = cam.Toward == null && fordBoss == null && zone is Prologue pg ? pg.GateInFrame : null;
             if (gateAt is { } ga) cam.Toward = new Vector3((float)ga.X, 0, (float)ga.Z);
             (cam.TowardShare, cam.TowardMax) = fordBoss != null ? (0.5f, 7f) : gateAt != null ? (0.33f, 2.5f) : (0.33f, 4.5f);
+            // (H8, N35: a boss farther off than this is left to the pointer; the gate leans from its 28 m)
+            cam.TowardRange = gateAt != null ? 40f : fordBoss != null ? 26f : 22f;
+            cam.LeanOld = FocusOld;
             // H4 item 5 (N8, the owner saw one lamp): the fight's frame stays on her and him, 25 m out (23 elsewhere). The
             // three posts read by their lamps burning (GameLampPosts' beacons), the bar's three marks and the pointers to the
             // lit ones off the frame. (Framing the triangle failed twice: a lean to its middle lost her 36% of the fight on
@@ -1399,6 +1459,7 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            if (Shots.On("h6")) H6Frame(fb2);
             // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
             // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
             // faded all the time)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
@@ -33,6 +34,9 @@ public sealed partial class Prologue
 
     void AddDay()
     {
+        // The ring's line, while the gate waits on it: the goal arrow's pin (never a prompt: no reach).
+        if (DayStretch.For(Id)?.Beats.FirstOrDefault(x => x.Kind == "ring") is { } rb)
+            Interactables.Add(new() { Id = "ring_line", X = rb.X, Z = rb.Z + 2, R = 0, Name = "The road", When = () => day?.RingOwed != null && B?.Player is { } q && q.Z < ExitZ + 9 });
         if (DayBeat("post") is not { Post: { } postId } pb) return;
         Interactables.Add(new()
         {
@@ -94,7 +98,7 @@ public sealed partial class Prologue
     /// <summary>The day's tracker: the road, and the stretch's optional lines.</summary>
     void DayObjective()
     {
-        var steps = new List<Step> { new("Walk up the road to the Waystation") };
+        var steps = new List<Step> { new(gateAsk ? GateTask : "Walk up the road to the Waystation") };
         if (DayBeat("post") is { Post: { } pid } && Lamps.V2) steps.Add(new("Relight the road lamp", true, LampBook.PostLit(W, pid)));
         if (day != null && DayBeat("strongbox") != null) steps.Add(new("Find the Kerchiefs' strongbox", true, day.Done("strongbox")));
         if (day != null && DayBeat("wallow") != null) steps.Add(new("Drive the boars from the west wallow", true, day.Done("wallow")));
@@ -113,10 +117,83 @@ public sealed partial class Prologue
         return true;
     }
 
+    /// <summary>The gate shut across its passage while the day's ring is owed or its wolves stand (H8, N22): a bar only
+    /// she meets, at the portcullis's line, which is down while it holds (drawn up at rest, every other visit) and rises
+    /// over GateRise s, eased, once the ring is down; she passes once it is most of the way up. A watchman stands
+    /// behind the bars and says so, turned to her; once she has heard him the tracker's first line names the task, and
+    /// the arrow (goals.json "day_ring", pinned to "ring_line") points back at the ring's line.</summary>
+    Collider? gateBar;
+    double gateBarkAt = -99, gateDown = -1, gateWatchYaw;
+    const double GateBarkEvery = 7, GateRise = 2.6, GatePassAt = 0.4;
+    INpcView? gateWatch;
+    int gateTorch = -1;
+    bool gateTold, gateAsk;
+    /// <summary>The tracker's first line while the shut gate holds her (after the watchman's word).</summary>
+    public const string GateTask = "The watch won't raise the gate: clear the wolves on the road";
+    public const string GateBark = "Wolves on the road behind you! Clear them, and we'll raise the gate.";
+    /// <summary>How far down the portcullis is (1 shut, 0 drawn up; -1 before the day's first tick).</summary>
+    public double GateDown => gateDown;
+
+    void DayGate(double dt)
+    {
+        if (day == null || B == null) return;
+        var g = L("gate");
+        bool shut = Now is Stage.Dawn or Stage.Exit && !finished && !day.GateOpen;
+        double barZ = day.S.PortcullisZ != 0 ? day.S.PortcullisZ + 0.3 : ExitZ - 0.6;
+        // The portcullis: down at once if the day starts shut (it was never seen up), then eased to the gate's state.
+        double want = shut ? 1 : 0;
+        if (gateDown < 0) { gateDown = want; G.Look.Shift("portcullis", gateDown); }
+        else if (gateDown != want)
+        {
+            // (its sound, by id: none banked yet, so silent; Game's --on gate frames the rise from it)
+            if (gateDown == 1) B.Events.Emit(new Ev.Sound { Id = "gate.portcullis", X = g.X, Z = barZ });
+            gateDown = want > gateDown ? Math.Min(want, gateDown + dt / GateRise) : Math.Max(want, gateDown - dt / GateRise);
+            G.Look.Shift("portcullis", gateDown * gateDown * (3 - 2 * gateDown));
+        }
+        if (shut && gateBar == null) gateBar = B.Collision.AddBox(g.X, barZ, 9.5, 0.5, 0, new ColliderOpts("gate_shut", PlayerOnly: true));
+        else if (!shut && gateBar != null && gateDown <= GatePassAt) { B.Collision.Remove(gateBar.Id); gateBar = null; }
+        var p = B.Player;
+        // The watchman behind the bars (Folk's Watch), a step aside of the way, turned to her when she is near: close
+        // behind the grate (N22 r2: 1.6 m back he stood in the vault's dark, above the bars at the play camera's pitch)
+        // with the Watch's lit torch in his left hand and its light (Folk's: short, shadowed), lighting him and the
+        // passage behind the bars.
+        double line = day.S.PortcullisZ != 0 ? day.S.PortcullisZ : barZ - 0.3;
+        double wx = g.X + 0.8, wz = line - 0.85;
+        if (shut && gateWatch == null)
+        {
+            gateWatch = G.Look.Walker(Folk.Person(FolkRole.Watch, Lore.WatchLook, G.Rng), 0.8);
+            gateWatch.Locomotion(0);
+            gateWatch.Hold("handslot.l", "dungeon", "torch_lit");
+            gateTorch = G.Look.AddLight(wx, G.Look.HeightAt(wx, wz) + 1.3, wz, "#ffa050", 2.75, 3.5, 0.22, 0);
+            G.Look.SetShadow(gateTorch, true);
+        }
+        if (gateWatch != null)
+        {
+            double to = Dist(p.X, p.Z, wx, wz) < 14 ? Math.Atan2(p.X - wx, p.Z - wz) : 0;
+            gateWatchYaw = MathX.DampAngle(gateWatchYaw, to, 4, dt);
+            double wy = G.Look.HeightAt(wx, wz);
+            gateWatch.Place(wx, wy, wz, gateWatchYaw, true);
+            if (gateTorch >= 0)
+            {
+                if (gateWatch.HeldAt("handslot.l") is { } fl) G.Look.MoveLight(gateTorch, fl.X, fl.Y, fl.Z);
+                else G.Look.MoveLight(gateTorch, wx + Math.Cos(gateWatchYaw) * 0.25 + Math.Sin(gateWatchYaw) * 0.2, wy + 1.3, wz - Math.Sin(gateWatchYaw) * 0.25 + Math.Cos(gateWatchYaw) * 0.2);
+            }
+        }
+        if (shut && p.Z < ExitZ + 2.5 && Math.Abs(p.X - g.X) < 10 && B.Time - gateBarkAt > GateBarkEvery)
+        {
+            gateBarkAt = B.Time;
+            gateTold = true;
+            B.Events.Emit(new Ev.Bark { X = wx, Z = wz, Text = GateBark, Speaker = "The gate watch" });
+            PaceNotes.Enqueue($"day gate shut t={B.Time:0.0} ring={(day.RingAt >= 0 ? "up" : "owed")} at=({p.X:0.0},{p.Z:0.0})");
+        }
+        if ((gateTold && shut) != gateAsk) { gateAsk = gateTold && shut; DayObjective(); }
+    }
+
     void DayTick(double dt)
     {
         if (day == null || B == null) return;
         day.Tick(dt);
+        DayGate(dt);
         // The strongbox, once the cinematic's gather has been (it would have brought it to her feet).
         if (box == null && dawnK >= 1 && !day.Done("strongbox") && DayBeat("strongbox") is { } sb)
         {
