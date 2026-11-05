@@ -3,7 +3,7 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 6/7/8/11 in; HANDOFF READY story-s1@4f554a619 (writer 2 at ~300k; this commit follows)
+## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 6/7/8/11 in; HANDOFF READY story-s1@38cbc88b6 (writer 2 at ~300k)
 
 **The pick (the owner, 5 Nov:
 "Go, defaults."):** ending B retired, three endings (she lies down / Corvane
@@ -12,15 +12,15 @@ in Act 1 and getting up on screen; "He has never burned." retired; Holloway
 risen as Ashford's commander waits for Act 2's brief. The proposal was
 PROPOSAL READY story-s1@9fd41e6e0, editor PASS WITH FIXES applied.
 
-**HANDOFF READY story-s1@4f554a619** (writer 2, Fable, at ~300k; the
+**HANDOFF READY story-s1@38cbc88b6** (writer 2, Fable, at ~300k; the
 owner's pick stands as the paragraph above has it). Slice 1 DONE
 (dba76d016). **Slice 2, in data so far:** (1) beat 6 at 567a1477e; (2)
 beats 7, 8 and 11 at 4f554a619. Integration merged at e2bdeed4d (the
 junction removed and remade). The story test subset (StoryLint,
-StoryRewrite, Quest, Cinema, Verge, StoryNight) was launched at the
-handoff: its tail is in `scratchpad\story_s1\tests_story.txt` (backed up to
-`survivorsunchained_inputs\scratch_story_s1\`); if it did not finish, run it
-first. `tools/vo/lines.py` and the locks have NOT been run on the new lines
+StoryRewrite, Quest, Cinema, Verge, StoryNight) is green at 38cbc88b6: 111/0
+(the two StoryLint marks it found, the `door_night` entry rows and the
+`vonnra.asked_jessop` seed, were fixed there). The full suite has not run
+since slice 1. `tools/vo/lines.py` and the locks have NOT been run on the new lines
 (step 7). Nothing is pushed since dba76d016 until this handoff's push.
 
 **What is in, by node (so nothing is re-derived):**
