@@ -598,11 +598,13 @@ def cut(V, F, z):
 PLANES = {
     # crown: (z of its normal low, high); sh: shoulders (count, normal z low, high); sides: (count, z low, high);
     # fd: planes set in (share of the support, low, high); k: rounding (share of the smallest half size); tris: lod0, lod2
-    'boulder': dict(crown=(0.88, 0.97), sh=(3, 0.45, 0.68), sides=(5, -0.05, 0.22), fd=(0.8, 0.9), k=0.16, tris=(700, 180)),
-    'fieldrock': dict(crown=(0.85, 0.96), sh=(3, 0.4, 0.62), sides=(5, -0.1, 0.2), fd=(0.74, 0.86), k=0.1, tris=(600, 150)),
-    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.7, 0.84), k=0.07, tris=(900, 250)),
-    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.8, 0.9), k=0.14, tris=(300, 90)),
-    'pebbles': dict(crown=(0.9, 0.98), sh=(2, 0.45, 0.7), sides=(3, -0.1, 0.2), fd=(0.78, 0.9), k=0.2, tris=(240, 80)),
+    # (round 1 at k 0.1-0.2 and fd 0.74-0.9: the log-sum-exp of ten planes rounded a boulder into a smooth egg at play; now
+    # the planes cut deeper and meet in a bevel of a few cm, rule 10's "bigger bevels" the band can catch)
+    'boulder': dict(crown=(0.88, 0.97), sh=(3, 0.45, 0.68), sides=(5, -0.05, 0.22), fd=(0.68, 0.8), k=0.05, tris=(700, 180)),
+    'fieldrock': dict(crown=(0.85, 0.96), sh=(3, 0.4, 0.62), sides=(5, -0.1, 0.2), fd=(0.66, 0.8), k=0.04, tris=(600, 150)),
+    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.66, 0.8), k=0.035, tris=(900, 250)),
+    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.72, 0.85), k=0.05, tris=(300, 90)),
+    'pebbles': dict(crown=(0.9, 0.98), sh=(2, 0.45, 0.7), sides=(3, -0.1, 0.2), fd=(0.72, 0.86), k=0.08, tris=(240, 80)),
 }
 
 

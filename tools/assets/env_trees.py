@@ -1575,26 +1575,35 @@ def pack_into(dst, src, alpha):
 # keep each tier's rim and lose only rings, sample the same painted tier.
 TIER = {
     # n: tiers; hs: the lowest tier's foot (share of H); prof: the cone's curve; drop: a tier's rim below its foot
-    # (share of its radius); th: its underside's rise at the trunk (share of its drop); notch: a notch's radius share
-    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.6),
-    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.62),
-    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.6),
+    # (share of its radius); th: its underside's rise at the trunk (share of its drop); notch: a notch's radius share;
+    # w: the crown's width over E4's R (MB4's spruce is 0.45 as wide as tall: 0.8 takes E4's 0.33 R / H to 0.26);
+    # lap: a tier's rim hangs at least this share of the step to the next tier down (MB4: each skirt over the next, no sky
+    # between them; round 1's upper tiers stood as thin plates on a bare stick)
+    # ridge: each frond's spine raised over its notches (share of the tier's radius, at the rim): target 04's tiers are
+    # rings of separate pointed fronds, each a lit spine and a shaded flank from above (round 1's flat star discs took one
+    # light over the whole tier)
+    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.5, w=0.8, lap=1.15, ridge=0.16),
+    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.52, w=0.8, lap=1.15, ridge=0.16),
+    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.5, w=0.8, lap=1.15, ridge=0.16),
 }
 BARK_V = 8.0      # bark v: metres of trunk over the strip's height
-TIER_LOBES = (5, 11)
+TIER_LOBES = (6, 12)
 
 
 def tier_plan(H, R, seed, tf):
     """Each tier's foot height, radius, drop, lobes and the rim's points (angle, radius share, height share, tip)."""
     rng = np.random.default_rng(seed * 7 + 3)
     n, hs = tf['n'], tf['hs'] * H
+    R = R * tf.get('w', 1.0)
     top = H - 0.55
     tiers = []
+    zf = lambda t: hs + (top - hs) * (1 - (1 - t) ** 1.18)   # closer toward the top
     for i in range(n):
         t = i / (n - 1)
-        z = hs + (top - hs) * (1 - (1 - t) ** 1.18)          # closer toward the top
+        z = zf(t)
         r = R * ((1 - t) ** tf['prof'] * 0.9 + 0.1) * rng.uniform(0.93, 1.05)
-        drop = min(r * tf['drop'] * rng.uniform(0.9, 1.1), z - 0.32)
+        step = z - zf(max(t - 1 / (n - 1), 0.0)) if i else 0.0
+        drop = min(max(r * tf['drop'], tf.get('lap', 0.0) * step, 0.0) * rng.uniform(0.9, 1.1), z - 0.32, 1.1 * r)
         K = int(np.clip(round(TIER_LOBES[0] + (TIER_LOBES[1] - TIER_LOBES[0]) * r / R), *TIER_LOBES))
         a0 = rng.uniform(0, 2 * math.pi)
         rim = []
@@ -1605,7 +1614,8 @@ def tier_plan(H, R, seed, tf):
             hz = rng.uniform(0.92, 1.08) if tip else 0.7    # a notch hangs less: the rim zig-zags in height too
             rim.append((a, rs, hz, tip))
         ext = 2.0 * r * max(x[1] for x in rim) * 1.03     # (an island spans the rim's real extent, not a guess)
-        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85, ext=ext))
+        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85, ext=ext,
+                          ridge=tf.get('ridge', 0.0)))
     return tiers
 
 
@@ -1623,20 +1633,22 @@ def tier_point(T, k, s, under=False, flick=0.07):
     if not under:
         # the top hangs (a curve bending down outward), its fronds' tips flicked up
         dz = -T['drop'] * hz * (0.55 * s + 0.45 * s * s) + flick * T['r'] * tipness * float(smooth(0.72, 1.0, s))
+        # (each frond's spine over its notches: a crease from the trunk out, so a frond's two flanks take two lights)
+        dz += T.get('ridge', 0.0) * T['r'] * (tipness - 0.5) * min(1.0, 1.6 * s)
     else:
         # the underside: from the rim straight back up to the trunk, th of the drop under the foot
-        rim_dz = -T['drop'] * hz + flick * T['r'] * tipness
+        rim_dz = -T['drop'] * hz + flick * T['r'] * tipness + T.get('ridge', 0.0) * T['r'] * (tipness - 0.5)
         dz = rim_dz * s + (-T['th'] * T['drop']) * (1 - s)
     return np.array([math.cos(a) * rr, math.sin(a) * rr, T['z'] + dz])
 
 
 def tier_mesh(b, T, lod, isl_top, isl_under):
-    """One tier into Build b. lod 0: top rings at s .5 and .82, underside one at .5; 1: trunk and rim only; 2 (and the
-    shadow): its top alone."""
+    """One tier into Build b. lod 0: top rings at s .5 and .82, its underside a band from the rim to the trunk; 1: the
+    rim to the axis, top and underside; 2 (and the shadow): its top alone."""
     n = len(T['rim'])
     K = n // 2
     rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
-    rings_under = {0: [1.0, 0.5, 0.0], 1: [1.0, 0.0], 2: []}[lod]
+    rings_under = {0: [1.0, 0.0], 1: [1.0, 0.0], 2: []}[lod]
     ext = T['ext']
 
     def uv_of(p, isl, under):
@@ -1661,7 +1673,7 @@ def tier_mesh(b, T, lod, isl_top, isl_under):
             continue
         rows = []
         for s in rings:
-            cnt = (1 if lod == 2 else K) if s == 0.0 else n    # the trunk ring: one point a lobe (lod 2: the axis)
+            cnt = (K if lod == 0 else 1) if s == 0.0 else n    # the trunk ring: one point a lobe (lod 1, 2: the axis)
             row = []
             for i in range(cnt):
                 k = i * n / cnt
@@ -1765,8 +1777,10 @@ def spruce_tiered(H, R, seed, lod, tf, isl, strip, shadow=False):
     b = Build()
     tiers = tier_plan(H, R, seed, tf)
     rb = 0.022 * H + 0.05
-    z1 = tiers[min(3, len(tiers) - 1)]['z'] if lod < 2 and not shadow else tiers[0]['z'] + 0.2
-    bark_tube(b, H, rb, z1, 4 if shadow else (6, 5, 4)[lod], 1 if shadow else (4, 2, 1)[lod], strip)
+    # (the trunk up to the top tier, thin above the lower ones: MB4's spruce shows it between its tiers; round 1's stopped at
+    # the fourth tier, so the upper tiers floated)
+    z1 = tiers[-1]['z'] if lod < 2 and not shadow else tiers[0]['z'] + 0.2
+    bark_tube(b, H, rb, z1, 4 if shadow else (6, 5, 4)[lod], 1 if shadow else (5, 3, 1)[lod], strip)
     b.nbark = len(b.f)
     for i, T in enumerate(tiers):
         if lod == 2 and not shadow and i % 2 and i != len(tiers) - 1:

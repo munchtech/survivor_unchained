@@ -33,14 +33,10 @@
 			"doubleSided":true,
 			"name":"Stone_OwnPebbles",
 			"pbrMetallicRoughness":{
-				"baseColorFactor":[
-					0.30000001192092896,
-					0.28999999165534973,
-					0.27000001072883606,
-					1
-				],
-				"metallicFactor":0,
-				"roughnessFactor":0.8500000238418579
+				"baseColorTexture":{
+					"index":0
+				},
+				"metallicFactor":0
 			}
 		}
 	],
@@ -70,7 +66,7 @@
 						"TEXCOORD_0":7,
 						"COLOR_0":8
 					},
-					"indices":9,
+					"indices":4,
 					"material":0
 				}
 			]
@@ -80,225 +76,244 @@
 			"primitives":[
 				{
 					"attributes":{
-						"POSITION":10,
-						"NORMAL":11,
-						"TEXCOORD_0":12,
-						"COLOR_0":13
+						"POSITION":9,
+						"NORMAL":10,
+						"TEXCOORD_0":11,
+						"COLOR_0":12
 					},
-					"indices":9,
+					"indices":13,
 					"material":0
 				}
 			]
+		}
+	],
+	"textures":[
+		{
+			"sampler":0,
+			"source":0
+		}
+	],
+	"images":[
+		{
+			"mimeType":"image/png",
+			"name":"rock_atlas.png",
+			"uri":"rock_atlas.png"
 		}
 	],
 	"accessors":[
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":1236,
+			"count":1545,
 			"max":[
-				0.4387752115726471,
-				0.058672018349170685,
-				0.21536657214164734
+				0.2263423651456833,
+				0.055552948266267776,
+				0.2688368260860443
 			],
 			"min":[
-				-0.3253653347492218,
-				-0.026743600144982338,
-				-0.21490560472011566
+				-0.18392978608608246,
+				-0.02457348071038723,
+				-0.4432700574398041
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":1236,
+			"count":1545,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":1236,
+			"count":1545,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5123,
-			"count":1236,
+			"count":1545,
 			"normalized":true,
 			"type":"VEC4"
 		},
 		{
 			"bufferView":4,
 			"componentType":5123,
-			"count":7200,
+			"count":2880,
 			"type":"SCALAR"
 		},
 		{
 			"bufferView":5,
 			"componentType":5126,
-			"count":436,
+			"count":1545,
 			"max":[
-				0.4396824836730957,
-				0.05935192108154297,
-				0.21574941277503967
+				0.2263423651456833,
+				0.055552948266267776,
+				0.2688368260860443
 			],
 			"min":[
-				-0.32446375489234924,
-				-0.02811361849308014,
-				-0.21531370282173157
+				-0.18392978608608246,
+				-0.02457348071038723,
+				-0.4432700574398041
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":6,
 			"componentType":5126,
-			"count":436,
+			"count":1545,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":7,
 			"componentType":5126,
-			"count":436,
+			"count":1545,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":8,
 			"componentType":5123,
-			"count":436,
+			"count":1545,
 			"normalized":true,
 			"type":"VEC4"
 		},
 		{
 			"bufferView":9,
-			"componentType":5123,
-			"count":2400,
-			"type":"SCALAR"
+			"componentType":5126,
+			"count":877,
+			"max":[
+				0.228058323264122,
+				0.05760489031672478,
+				0.2691296637058258
+			],
+			"min":[
+				-0.18108566105365753,
+				-0.024793244898319244,
+				-0.4423274099826813
+			],
+			"type":"VEC3"
 		},
 		{
 			"bufferView":10,
 			"componentType":5126,
-			"count":436,
-			"max":[
-				0.4396824836730957,
-				0.05935192108154297,
-				0.21574941277503967
-			],
-			"min":[
-				-0.32446375489234924,
-				-0.02811361849308014,
-				-0.21531370282173157
-			],
+			"count":877,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":11,
 			"componentType":5126,
-			"count":436,
-			"type":"VEC3"
+			"count":877,
+			"type":"VEC2"
 		},
 		{
 			"bufferView":12,
-			"componentType":5126,
-			"count":436,
-			"type":"VEC2"
+			"componentType":5123,
+			"count":877,
+			"normalized":true,
+			"type":"VEC4"
 		},
 		{
 			"bufferView":13,
 			"componentType":5123,
-			"count":436,
-			"normalized":true,
-			"type":"VEC4"
+			"count":1320,
+			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":14832,
+			"byteLength":18540,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":14832,
-			"byteOffset":14832,
+			"byteLength":18540,
+			"byteOffset":18540,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":9888,
-			"byteOffset":29664,
+			"byteLength":12360,
+			"byteOffset":37080,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":9888,
-			"byteOffset":39552,
-			"target":34962
-		},
-		{
-			"buffer":0,
-			"byteLength":14400,
+			"byteLength":12360,
 			"byteOffset":49440,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":5760,
+			"byteOffset":61800,
 			"target":34963
 		},
 		{
 			"buffer":0,
-			"byteLength":5232,
-			"byteOffset":63840,
+			"byteLength":18540,
+			"byteOffset":67560,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5232,
-			"byteOffset":69072,
+			"byteLength":18540,
+			"byteOffset":86100,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":3488,
-			"byteOffset":74304,
+			"byteLength":12360,
+			"byteOffset":104640,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":3488,
-			"byteOffset":77792,
+			"byteLength":12360,
+			"byteOffset":117000,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":4800,
-			"byteOffset":81280,
+			"byteLength":10524,
+			"byteOffset":129360,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":10524,
+			"byteOffset":139884,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":7016,
+			"byteOffset":150408,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":7016,
+			"byteOffset":157424,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":2640,
+			"byteOffset":164440,
 			"target":34963
-		},
+		}
+	],
+	"samplers":[
 		{
-			"buffer":0,
-			"byteLength":5232,
-			"byteOffset":86080,
-			"target":34962
-		},
-		{
-			"buffer":0,
-			"byteLength":5232,
-			"byteOffset":91312,
-			"target":34962
-		},
-		{
-			"buffer":0,
-			"byteLength":3488,
-			"byteOffset":96544,
-			"target":34962
-		},
-		{
-			"buffer":0,
-			"byteLength":3488,
-			"byteOffset":100032,
-			"target":34962
+			"magFilter":9729,
+			"minFilter":9987
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":103520,
+			"byteLength":167080,
 			"uri":"pebbles.bin"
 		}
 	]
