@@ -1,9 +1,9 @@
 """The wild kit's one command (L1 C3a: LOOK_BIBLE rules 9 and 10; docs/design/look/TEXTURE_AUTHORING.md's contract).
 
-    python tools/look/wild.py spruce|rocks|all [--no-mesh] [--no-caps]
+    python tools/look/wild.py spruce|alder|rocks|all [--no-mesh] [--no-caps]
 
 Per kind: (1) its generator in Blender (the blender turn taken and given back) builds the game's files in place,
-godot/art/world/flora/ (spruce_a-c.gltf: tools/assets/env_trees.py's tiers; boulder, fieldrock, cliff, pebbles,
+godot/art/world/flora/ (spruce_a-c.gltf: tools/assets/env_trees.py's tiers; alder_a-c.gltf: its leaf clusters; boulder, fieldrock, cliff, pebbles,
 stepping .gltf: tools/assets/env_rocks.py's planes) with uvs laid by the generator, and the painter's sheet
 (godot/art/world/painted/_src/<kind>_sheet.glb: every size or variant once, materials named by class);
 (2) tools/look/bake_forms.py prop SHEET --keep-uv SIZE --class-mat 1 bakes the form maps on those uvs;
@@ -23,6 +23,7 @@ PAINTED = os.path.join(ROOT, "godot", "art", "world", "painted")
 FLORA = os.path.join(ROOT, "godot", "art", "world", "flora")
 KINDS = {
     "spruce": dict(gen=["tools/assets/env_trees.py", "mesh", "--species", "spruce"], size=2048, atlas="spruce_atlas.png", caps="spruce"),
+    "alder": dict(gen=["tools/assets/env_trees.py", "mesh", "--species", "alder"], size=2048, atlas="alder_atlas.png", caps="alder"),
     "rocks": dict(gen=["tools/assets/env_rocks.py", "mesh", "--form", "planes"], size=2048, atlas="rock_atlas.png", caps=None),
 }
 

@@ -1150,8 +1150,8 @@ class Oval:
         return 0.35 + 0.65 * float(smooth(0.25, 0.95, np.linalg.norm(self.rel(p))))
 
 
-def tube(b, pts, radii, sides, occ=0.6):
-    """A bark tube along pts (its radius at each), the bark strip round it, v along it."""
+def tube(b, pts, radii, sides, occ=0.6, strip=(BU, 1.0)):
+    """A bark tube along pts (its radius at each), the bark strip (or its sub-strip, strip) round it, v along it."""
     pts = [np.asarray(p, np.float64) for p in pts]
     P, N, UV = [], [], []
     Ltot = sum(np.linalg.norm(pts[k] - pts[k - 1]) for k in range(1, len(pts)))
@@ -1169,7 +1169,7 @@ def tube(b, pts, radii, sides, occ=0.6):
             a = i / sides * 2 * math.pi
             nr = a1 * math.cos(a) + a2 * math.sin(a)
             rowP.append(p + nr * radii[k]); rowN.append(nr)
-            rowU.append((BU + (1 - BU) * i / sides * 0.995, 0.01 + 0.98 * L / max(Ltot, 1e-6)))
+            rowU.append((strip[0] + (strip[1] - strip[0]) * i / sides * 0.995, 0.01 + 0.98 * L / max(Ltot, 1e-6)))
         P.append(rowP); N.append(rowN); UV.append(rowU)
     b.quad_grid(P, N, UV, sides, len(pts) - 1, [[(occ, 0.0, 0.0)] * (sides + 1)] * len(pts))
 
@@ -1604,7 +1604,8 @@ def tier_plan(H, R, seed, tf):
             rs = rng.uniform(0.9, 1.06) if tip else tf['notch'] * rng.uniform(0.92, 1.08)
             hz = rng.uniform(0.92, 1.08) if tip else 0.7    # a notch hangs less: the rim zig-zags in height too
             rim.append((a, rs, hz, tip))
-        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85))
+        ext = 2.0 * r * max(x[1] for x in rim) * 1.03     # (an island spans the rim's real extent, not a guess)
+        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85, ext=ext))
     return tiers
 
 
@@ -1636,7 +1637,7 @@ def tier_mesh(b, T, lod, isl_top, isl_under):
     K = n // 2
     rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
     rings_under = {0: [1.0, 0.5, 0.0], 1: [1.0, 0.0], 2: []}[lod]
-    ext = 2.3 * T['r']
+    ext = T['ext']
 
     def uv_of(p, isl, under):
         u0, v0, sz = isl
@@ -1680,6 +1681,8 @@ def tier_mesh(b, T, lod, isl_top, isl_under):
                     tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
                 else:
                     tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+                if len(set(tri)) < 3:
+                    continue    # (a one-point ring's closing step: no face)
                 # (wound so the top's front faces up and the underside's down: FRONT_FACING turns the normal)
                 b.f.append((tri[0], tri[2], tri[1]))
 
@@ -1717,15 +1720,22 @@ def leader(b, H, z0, r, isl):
         b.f.append((base + i, base + (i + 1) % 5, base + 5))
 
 
-def tier_atlas(plans, A=2048, umax=BU, gap=10):
-    """Islands for every size's tiers (tops at full density, undersides at half) and leaders, shelf-packed into
-    u < umax at the largest density that fits. Returns ({(size, tier, part): (u0, v0, (du, dv))}, px per metre)."""
+def tier_atlas(plans, A=2048, umax=BU, gap=10, under=0.35):
+    """Islands for every size's tiers (tops at full density, undersides at `under` of it: the play camera sees a tier's
+    top and only its underside's rim) and leaders, shelf-packed into u < umax at the largest density that fits.
+    Returns ({(size, tier, part): (u0, v0, (du, dv))}, px per metre)."""
     items = []
     for sz, tiers in plans.items():
         for i, T in enumerate(tiers):
-            items.append((sz, i, 'top', 2.3 * T['r'], 1.0))
-            items.append((sz, i, 'under', 2.3 * T['r'], 0.5))
+            items.append((sz, i, 'top', T['ext'], 1.0))
+            items.append((sz, i, 'under', T['ext'], under))
         items.append((sz, -1, 'leader', 0.5, 1.0))
+    return shelf_pack(items, A, umax, gap)
+
+
+def shelf_pack(items, A=2048, umax=BU, gap=10):
+    """Square islands (key..., side in m, density share) shelf-packed into u < umax at the largest px per metre that
+    fits (a bisection). Returns ({key: (u0, v0, (du, dv))}, px per metre)."""
     W, Hh = umax * A - gap, A - gap
 
     def pack(ppm):
@@ -1775,6 +1785,7 @@ def to_blender(bpy, name, b, mats, mat_of=None):
     """A Build as a Blender object (its uvs, normals and colours as built); mat_of(face index) picks a material slot."""
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(p) for p in b.v], [], b.f)
+    assert len(me.polygons) == len(b.f), name    # (no face dropped: material slots and the bark count index them)
     uvl = me.uv_layers.new(name='UV')
     for poly in me.polygons:
         for li in poly.loop_indices:
@@ -1858,10 +1869,234 @@ def mesh_spruce_tiers():
     print('REPORT', json.dumps(dict(spruce=report, ppm=round(ppm, 1))))
 
 
+# ---------------------------------------------------------------- the clustered alder (L1 C3a: LOOK_BIBLE rule 9)
+# FROM (b) LOOK_BIBLE rule 9 ("foliage is flat leaf clusters in two or three values, silhouette ink only"), MB4's grass
+# panel's broad leaf masses and targets 04, 09 and 10's broadleaf crowns (a crown of a dozen chunky rounded masses, each
+# a lit top over a dark underside, scalloped edges against the sky); (a) the play camera (23 m, 34 degrees down: a
+# cluster 1-1.5 m across is 30-45 px at 1080, so its scallops and its two values read); (c) the sizes, the stems, the
+# crown's oval (0.62 H, 0.38 H: flora_species.json's crown_lo/hi stay true), the bark strip (u > .75) and the material
+# Leaves_OwnAlder are env_trees.py's own (E4). Each cluster is a closed flattened dome: a scalloped rim of 6-9 rounded
+# lobes, its top domed up, its underside sagging under it, a hard rim between (the ink's silhouette and the painter's
+# bevel stroke catch it). Every cluster of the three sizes has its own island (its top from above, its underside from
+# below at 0.35 of the density), so lod1 and lod2, which keep a cluster's rim and lose only rings (lod2 the smaller
+# clusters too), sample the same painted cluster. tools/look/wild.py alder bakes and paints the atlas.
+CLUSTER = {
+    # n: clusters; rc: a cluster's radius (share of R); hc: its dome's rise, hu: its underside's sag (shares of its radius);
+    # notch: the scallops' cusp radius share; f: the cluster centres' place out in the crown's oval (share)
+    'a': dict(n=13, rc=0.52, hc=0.34, hu=0.22, notch=0.76, f=(0.5, 0.74)),
+    'b': dict(n=11, rc=0.56, hc=0.34, hu=0.22, notch=0.76, f=(0.5, 0.74)),
+    'c': dict(n=14, rc=0.52, hc=0.32, hu=0.22, notch=0.76, f=(0.5, 0.74)),
+}
+CL_LOBES = (5, 7)
+CL_SUB = 3          # rim points a lobe (its cusp, then two round its crown)
+CL_DROOP = 0.12     # the rim under the dome's foot (share of the radius): a cluster hangs at its edge
+
+
+def cluster_plan(H, R, seed, cf):
+    """The crown's clusters: each a centre, a frame (its up tilted out from the crown), a radius, a rim."""
+    rng = np.random.default_rng(seed * 11 + 5)
+    zc, hz = 0.62 * H, 0.38 * H
+    n = cf['n']
+    out = []
+    for i in range(n):
+        # a golden-angle spiral down the oval from its top, the bottom left open (the stems show under the crown)
+        zf = 0.92 - 1.62 * (i + 0.5) / n
+        a = i * 2.39996 + rng.normal(0, 0.2)
+        rxy = math.sqrt(max(0.0, 1 - zf * zf))
+        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+        f = rng.uniform(*cf['f'])
+        c = np.array([0, 0, zc]) + o * np.array([R, R, hz]) * f
+        # (the masses at the crown's middle the biggest, its top and its foot smaller: the oval's silhouette)
+        r = cf['rc'] * R * (0.78 + 0.32 * rxy) * rng.uniform(0.88, 1.12)
+        w = np.array([0, 0, 1.0]) + np.array([o[0], o[1], 0.0]) * 0.75 * rxy
+        w /= np.linalg.norm(w)
+        u = np.cross(w, np.array([math.cos(a + 1.3), math.sin(a + 1.3), 0.0])); u /= np.linalg.norm(u)
+        v = np.cross(w, u)
+        K = int(rng.integers(CL_LOBES[0], CL_LOBES[1] + 1))
+        a0 = rng.uniform(0, 2 * math.pi)
+        lob = rng.uniform(0.9, 1.08, K)
+        wid = rng.uniform(0.75, 1.25, K); wid /= wid.sum() / K
+        rim, acc = [], a0
+        for k in range(K):
+            span = 2 * math.pi / K * wid[k]
+            for j in range(CL_SUB):
+                ph = j / CL_SUB
+                rs = cf['notch'] + (lob[k] - cf['notch']) * math.sin(math.pi * ph) ** 0.55 if j else cf['notch']
+                rim.append((acc + span * ph, rs, 0.0, j > 0))
+            acc += span
+        ext = 2.0 * r * max(x[1] for x in rim) * 1.03
+        out.append(dict(c=c, u=u, v=v, w=w, r=r, hc=cf['hc'], hu=cf['hu'], rim=rim, ext=ext, rxy=rxy))
+    return out
+
+
+def cluster_point(C, k, s, under=False):
+    """A point of cluster C at rim index k (fractional), s 0 at its middle to 1 at its rim; and its local (x, y)."""
+    rim = C['rim']; n = len(rim)
+    k0 = int(math.floor(k)) % n; k1 = (k0 + 1) % n; wgt = k - math.floor(k)
+    a0 = rim[k0][0]
+    a1 = rim[k1][0] + (2 * math.pi if k1 == 0 else 0)
+    a = a0 + (a1 - a0) * wgt
+    rs = rim[k0][1] * (1 - wgt) + rim[k1][1] * wgt
+    rr = C['r'] * rs * s
+    x, y = math.cos(a) * rr, math.sin(a) * rr
+    s2 = s * s
+    rimz = -CL_DROOP * C['r'] * rs
+    z = rimz * s2 + (C['hc'] if not under else -C['hu']) * C['r'] * (1 - s2) ** (0.8 if not under else 1.0)
+    return C['c'] + C['u'] * x + C['v'] * y + C['w'] * z, x, y
+
+
+def cluster_mesh(b, C, lod, isl_top, isl_under):
+    """One cluster into Build b. lod 0: top rings at s .5 and .82 and its underside a fan to the middle; 1: its top fan
+    alone; 2: its top fan on one rim point a lobe (each lobe's crown)."""
+    n = len(C['rim'])
+    rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
+    rings_under = {0: [1.0, 0.0], 1: [], 2: []}[lod]
+    ext = C['ext']
+
+    def nrm_at(k, s, under):
+        s = min(max(s, 0.05), 0.95)
+        du = cluster_point(C, k + 0.03, s, under)[0] - cluster_point(C, k - 0.03, s, under)[0]
+        ds = cluster_point(C, k, s + 0.05, under)[0] - cluster_point(C, k, s - 0.05, under)[0]
+        nn = np.cross(ds, du); nn /= np.linalg.norm(nn) + 1e-9
+        if (np.dot(nn, C['w']) < 0) != under:
+            nn = -nn
+        return nn
+
+    for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
+        if not rings:
+            continue
+        u0, v0, sz = isl
+        rows = []
+        for s in rings:
+            cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 else n)
+            row = []
+            for i in range(cnt):
+                k = i * n / cnt + (1.5 if lod == 2 else 0.0)     # (lod 2: midway between a lobe's two crown points)
+                p, x, y = cluster_point(C, k, s, under)
+                if under:
+                    x = -x
+                row.append(len(b.v))
+                b.v.append(p)
+                b.n.append(C['w'] * (1 if not under else -1) if s == 0.0 else nrm_at(k, s, under))
+                b.uv.append((u0 + (x / ext + 0.5) * sz[0], v0 + (y / ext + 0.5) * sz[1]))
+                # (r how open: the crown's outer masses 1, its inner 0.75, an underside 0.7 of it; g out to the rim)
+                op = (0.75 + 0.25 * C['rxy']) * (0.7 if under else 1.0)
+                b.c.append((op, s if not under else 0.25 * s, 0.0))
+            rows.append(row)
+        for ra, rb_ in zip(rows[:-1], rows[1:]):
+            na, nb_ = len(ra), len(rb_)
+            i = j = 0
+            while i < na or j < nb_:
+                fa = (i + 1) / na if i < na else 9
+                fb = (j + 1) / nb_ if j < nb_ else 9
+                if fa <= fb:
+                    tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
+                else:
+                    tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+                if len(set(tri)) < 3:
+                    continue    # (the middle's one-point ring's closing step: no face)
+                # (wound so the top's front faces out along w, the underside's against it)
+                fn = np.cross(b.v[tri[1]] - b.v[tri[0]], b.v[tri[2]] - b.v[tri[0]])
+                if (np.dot(fn, C['w']) < 0) != under:
+                    tri = (tri[0], tri[2], tri[1])
+                b.f.append(tri)
+
+
+def alder_clustered(H, R, seed, lod, stems, cf, isl, strip):
+    """The clustered alder at lod 0, 1, 2: its stems and main branches (as E4's, in this size's bark sub-strip), its
+    clusters (lod2: the bigger two thirds, each a little bigger)."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    zc, hz = 0.62 * H, 0.38 * H
+    sts = alder_stems(H, seed, stems)
+    for pts, rad in sts:
+        tube(b, pts, rad, (6, 5, 4)[lod], strip=strip)
+    for pts, rad in sts:
+        for i in range((int(rng.integers(3, 5)), 2, 0)[lod]):
+            f = rng.uniform(0.42, 0.72)
+            k = min(int(f * 7), 6); g = f * 7 - k
+            p0 = pts[k] * (1 - g) + pts[k + 1] * g
+            az, el = rng.uniform(0, 6.28), math.radians(rng.uniform(25, 50))
+            d = np.array([math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el)])
+            rr = R * math.sqrt(max(0.05, 1 - ((p0[2] - zc) / hz) ** 2))
+            L = max(0.6, rr * rng.uniform(0.55, 0.75))
+            r = 0.05 * math.sqrt(H / 8)
+            tube(b, [p0, p0 + d * L * 0.5 + np.array([0, 0, 0.08 * L]), p0 + d * L], [r, r * 0.6, r * 0.3], (4, 3, 3)[lod],
+                 occ=0.5, strip=strip)
+    b.nbark = len(b.f)
+    cl = cluster_plan(H, R, seed, cf)
+    keep = sorted(range(len(cl)), key=lambda i: -cl[i]['r'])[:max(4, (2 * len(cl)) // 3)] if lod == 2 else range(len(cl))
+    for i in sorted(keep):
+        C = cl[i]
+        if lod == 2:
+            # (the kept masses a little bigger to close the gaps; the uvs are x / ext, so ext grows with them)
+            C = dict(C, r=C['r'] * 1.12, ext=C['ext'] * 1.12)
+        cluster_mesh(b, C, lod, isl[i][0], isl[i][1])
+    return b
+
+
+def mesh_alder_clusters():
+    """The three clustered alders (lod0-2; the shadow caster stays E4's lumpy proxy, alder_proxy) on one material,
+    Leaves_OwnAlder on alder_atlas.png, and the painter's sheet godot/art/world/painted/_src/alder_sheet.glb (every
+    size's lod0 16 m apart, materials 'foliage' and 'bark', the same uvs)."""
+    import bpy, json
+    os.makedirs(OUT, exist_ok=True); os.makedirs(PAINT_SRC, exist_ok=True)
+    plans = {sz: cluster_plan(p['H'], p['R'], p['seed'], CLUSTER[sz]) for sz, p in ALDER.items()}
+    items = []
+    for sz, cl in plans.items():
+        for i, C in enumerate(cl):
+            items.append((sz, i, 'top', C['ext'], 1.0))
+            items.append((sz, i, 'under', C['ext'], 0.35))
+    isl_all, ppm = shelf_pack(items)
+    print(f'alder clusters: atlas {ppm:.1f} px/m (tops; undersides 0.35)')
+    strips = {sz: (BU + (k + 0.03) * (1 - BU) / 3, BU + (k + 0.97) * (1 - BU) / 3) for k, sz in enumerate(ALDER)}
+    isls = {sz: [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] for sz in ALDER}
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mf, mb = bpy.data.materials.new('foliage'), bpy.data.materials.new('bark')
+    obs = []
+    for k, (sz, p) in enumerate(ALDER.items()):
+        b = alder_clustered(p['H'], p['R'], p['seed'], 0, p['stems'], CLUSTER[sz], isls[sz], strips[sz])
+        b.v = [v + np.array([16.0 * k, 0.0, 0.0]) for v in b.v]
+        ob, _ = to_blender(bpy, f'sheet_{k}', b, [mf, mb], lambda fi, nb=b.nbark: 1 if fi < nb else 0)
+        obs.append(ob)
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in obs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = obs[0]
+    bpy.ops.object.join()
+    obs[0].name = 'lod0'
+    export_gltf(bpy, os.path.join(PAINT_SRC, 'alder_sheet.glb'), glb=True)
+    img_path = os.path.join(OUT, 'alder_atlas.png')
+    report = {}
+    for k, (sz, p) in enumerate(ALDER.items()):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        img = bpy.data.images.load(img_path)
+        mat = bpy.data.materials.new('Leaves_OwnAlder'); mat.use_nodes = True
+        nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
+        ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = img
+        nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        mat.use_backface_culling = False
+        tris = []
+        for lod in range(4):
+            if lod < 3:
+                b = alder_clustered(p['H'], p['R'], p['seed'], lod, p['stems'], CLUSTER[sz], isls[sz], strips[sz])
+            else:
+                b = alder_proxy(p['H'], p['R'], p['seed'], p['stems'])
+            _, t = to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])
+            tris.append(t)
+        export_gltf(bpy, os.path.join(OUT, f'alder_{sz}.gltf'))
+        report[sz] = tris
+        print(f'alder_{sz}.gltf tris lod0/1/2/shadow: {tris}')
+    print('REPORT', json.dumps(dict(alder=report, ppm=round(ppm, 1))))
+
+
 def mesh(species):
     import bpy
     if species == 'spruce' and arg('--form', 'tiers') == 'tiers':
         return mesh_spruce_tiers()   # (L1 C3a; --form real: E4's whorls of spray cards, kept to compare)
+    if species == 'alder' and arg('--form', 'clusters') == 'clusters':
+        return mesh_alder_clusters()   # (L1 C3a; --form real: E4's leaf-clump cards, kept to compare)
     os.makedirs(OUT, exist_ok=True)
     img_path = os.path.join(OUT, f'{species}_atlas.png')
     # (a packed species: one file, its pieces told apart by COLOR.a; else a file per piece)
