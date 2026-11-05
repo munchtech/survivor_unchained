@@ -394,7 +394,11 @@
      "rim_points": 16,
      "max_aspect": 5.0
     },
-    "knee_points": 32
+    "knee_points": 32,
+    "ankle_points": [
+     16,
+     18
+    ]
    }
   },
   "rest_tris": 11300,

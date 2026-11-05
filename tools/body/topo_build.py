@@ -1936,7 +1936,9 @@ def part_reg_fn(names, regs):
 def build(plan, tier, ref, cv, L):
     tp = tier_params(plan, tier)
     M = QM()
-    C = {"tier": tier, "kite_sector": tp["kite_sector"], "thigh_kite_sector": tp.get("thigh_kite_sector", tp["kite_sector"])}
+    C = {"tier": tier, "gate_scale": {"spacing": tp["spacing"], "close_spacing": plan["build"]["tiers"]["close"]["spacing"],
+                                      "ankle_points": tp.get("ankle_points", [26, 28])},
+         "kite_sector": tp["kite_sector"], "thigh_kite_sector": tp.get("thigh_kite_sector", tp["kite_sector"])}
     c_ar, n_ar, _ = arm_root_plane(L, plan)
     SR = shoulder_rim(ref, cv, L, plan, tp)
     C.update(trunk_plan(ref, cv, L, plan, tp, SR))
@@ -2045,6 +2047,8 @@ def build(plan, tier, ref, cv, L):
     keep = np.where(used)[0]
     remap = -np.ones(len(VF), np.int64)
     remap[keep] = np.arange(len(keep))
+    if C.get("shoulder_kite_verts"):                 # (pass 3b) the gates read the kept vertices' numbering
+        C["shoulder_kite_verts"] = [int(remap[v]) for v in C["shoulder_kite_verts"]]
     nr = len(src)
     info = {
         "part": np.concatenate([np.array(M.part), np.array(M.part)[src]]),
@@ -2174,7 +2178,9 @@ def measure(ref, V, Q, info, C, joints, L, plan, tier):
     out["triangles_templates"] = int(2 * tmpl_q.sum())
     out["triangles_body_without_templates"] = int(2 * len(Q) - 2 * tmpl_q.sum())
     out["gates"] = G.gates(ref, V, Q, info, C, joints, L, out["poles"], poles, C["_hip_ring"], PARTS)
-    out["gates"]["pass"]["surface_p95_0.5mm"] = out["surface_mm_quad_centres"][1] <= 0.5
+    gs = C["gate_scale"]                             # (a) the chord's sag grows with the edge squared
+    out["gates"]["surface_p95_tol_mm"] = round(0.5 * (gs["spacing"] / gs["close_spacing"]) ** 2, 2)
+    out["gates"]["pass"]["surface_p95_0.5mm"] = out["surface_mm_quad_centres"][1] <= out["gates"]["surface_p95_tol_mm"]
     return out
 
 

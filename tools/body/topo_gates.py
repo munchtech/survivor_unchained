@@ -25,6 +25,9 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 FOLD_DEG, ASPECT_MAX, EDGE_MIN, POLE_MARGIN = 60.0, 4.0, 0.002, 0.040
+# (pass 3b) the tier-dependent gates, set at close (a: the judge) and scaled by the tier's spacing over close's (a: the
+# play camera: the same counts of quads, so a pole's pinch and a mound's facets read alike at each tier's distance)
+BREAST_P95, KITE_CLEAR = 0.0075, 0.060
 
 
 def U(v):
@@ -190,16 +193,21 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
     if bcm:
         g["breast_cap_corner_mm"] = bcm
     g["ankle_points"] = C.get("ankle_points")
+    gs = C.get("gate_scale") or {"spacing": 0.0078, "close_spacing": 0.0078, "ankle_points": [26, 28]}
+    k_s = gs["spacing"] / gs["close_spacing"]        # (a) the play camera: the tier's own spacing over close's
+    g["tier_scale"] = {"spacing_ratio": round(k_s, 3), "breast_p95_max_mm": round(BREAST_P95 * k_s * 1000, 2),
+                       "kite_clear_min_mm": round(KITE_CLEAR * k_s * 1000, 1), "ankle_points": gs["ankle_points"]}
     g["pass"] = {
         "fold": mq["fold_edges_over_60"] == 0,
         "aspect": mq["aspect_over_4"] == 0,
         "min_edge": mq["edges_under_2mm"] == 0,
         "poles_vs_zones": len(fail) == 0,
         "shoulder_gap_ratio": bool(gap) and g["shoulder_rim_gap_ratio"] <= 1.5,
-        "shoulder_kites_vs_deltoid": g.get("shoulder_kites_min_dist_to_deltoid_mm", 0) >= 60,
-        "breast": ("breast_edge_mm_p95" in g and g["breast_edge_mm_p95"] <= 7.5 and g["breast_aspect_p95"] <= 2.0),
+        "shoulder_kites_vs_deltoid": g.get("shoulder_kites_min_dist_to_deltoid_mm", 0) >= g["tier_scale"]["kite_clear_min_mm"],
+        "breast": ("breast_edge_mm_p95" in g and g["breast_edge_mm_p95"] <= g["tier_scale"]["breast_p95_max_mm"]
+                   and g["breast_aspect_p95"] <= 2.0),
         "breast_cap_corners": bool(bcm) and all(d <= 20 or d >= 60 for d in bcm),
-        "ankle_26_28": 26 <= (g["ankle_points"] or 0) <= 28,
+        "ankle_26_28": gs["ankle_points"][0] <= (g["ankle_points"] or 0) <= gs["ankle_points"][1],
     }
     hr = g.get("hip_root")
     if hr:
