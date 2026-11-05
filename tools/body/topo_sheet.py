@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""The topology sheet: front, back, side, 3/4 of a tier (flat gray clay, the wireframe over it) and two crops at a
-larger scale (her left shoulder and armpit, her hip and groin). Under 1800 x 1000.
+"""The topology sheet: front, back, side, 3/4 of a tier (flat gray clay, the wireframe over it) and four crops at a
+larger scale (her left shoulder and armpit, hip and groin, the back of the knee, the inner elbow). Under 1800 x 1000.
 
     python tools/body/topo_sheet.py [--tier close] [--out tools/body/out/topo/sheet_close.png]
 """
@@ -63,19 +63,21 @@ def main():
     px = 400
     views = [((0, 0, 1), -0.56, 0.56), ((0, 0, -1), -0.56, 0.56), ((1, 0, 0), -0.24, 0.30), ((0.7, 0, 0.7), -0.5, 0.5)]
     tiles = [render(V, Q, view(c, px, x0, x1, 0.12, 1.66), edges, eq) for c, x0, x1 in views]
-    crops = [render(V, Q, view((0.55, -0.1, 0.83), 1100, 0.02, 0.26, 1.30, 1.70), edges, eq),
-             render(V, Q, view((0.25, -0.25, 0.93), 1100, -0.10, 0.14, 0.86, 1.26), edges, eq)]
-    W = sum(t.width for t in tiles) + max(c.width for c in crops) + 10
-    H = max(max(t.height for t in tiles), sum(c.height for c in crops) + 6)
+    cs = [((0.55, -0.1, 0.83), 0.06, 0.28, 1.36, 1.66),          # her left shoulder and armpit
+          ((0.25, -0.25, 0.93), -0.08, 0.14, 0.86, 1.16),        # hip and groin
+          ((0.25, 0.0, -0.97), -0.25, -0.03, 0.56, 0.86),        # the back of the left knee
+          ((0.0, 0.2, 1.0), 0.24, 0.46, 1.21, 1.51)]             # the inner left elbow
+    crops = [render(V, Q, view(c, 1000, x0, x1, y0, y1), edges, eq) for c, x0, x1, y0, y1 in cs]
+    cw, ch = crops[0].width, crops[0].height
+    W = sum(t.width for t in tiles) + 2 * cw + 16
+    H = max(max(t.height for t in tiles), 2 * ch + 6)
     sheet = Image.new("RGB", (W, H), (255, 255, 255))
     x = 0
     for t in tiles:
         sheet.paste(t, (x, 0))
         x += t.width
-    y = 0
-    for c in crops:
-        sheet.paste(c, (x + 10, y))
-        y += c.height + 6
+    for k, c in enumerate(crops):
+        sheet.paste(c, (x + 10 + (k % 2) * (cw + 6), (k // 2) * (ch + 6)))
     out = a.out or os.path.join(HERE, "out", "topo", f"sheet_{a.tier}.png")
     sheet.save(out)
     print(out, sheet.size)
