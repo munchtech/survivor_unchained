@@ -498,6 +498,14 @@ public partial class Atmosphere : Node3D
         Env.AdjustmentColorCorrection = blendTex;
     }
 
+    /// <summary>The grade's table at its target at once: a glide's blend running ends now and none starts for a while
+    /// (a dip hand-back's light restored while the picture is black, GameSeam).</summary>
+    public void SnapGrade()
+    {
+        glideWindow = 0;
+        if (blendTarget != null) { Env.AdjustmentColorCorrection = blendTarget; blendTarget = null; }
+    }
+
     /// <summary>Once a frame: a glide's blend moves on.</summary>
     public void GradeTick(double dt)
     {

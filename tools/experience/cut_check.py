@@ -16,7 +16,12 @@ camera lands; through the hand-back (to control), her head or hand moving over 0
 root over 0.2 m, per 60th of a second (speeds, since a picture run's frames are 0.1 s). In frame: over the seam and play frames to 3 s after control, her head and feet must stay inside
 x 0.25..0.75, y 0.20..0.72 of the screen (the scr= field); when her on-screen height is over 0.52 the feet are
 exempt (a close frame crops her legs) and the exempt frames are counted and reported. Logs without scr print
-"no data" and do not fail. --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
+"no data" and do not fail.
+A dip hand-back (a film whose last shot does not hold her: the picture dips to black, the play camera is placed at
+black, the picture rises; GameSeam.cs, the dip= field, 0..1 how black): a step into or out of a frame at dip >= 0.95
+is not seen and is exempt from the camera, lens and pose steps; the HUD rule takes the camera as landed at the rise
+(the first frame after the black with dip under 0.5), and the in-frame window starts there. Its summary says "dip"
+(the black's start and the rise). Logs without dip= read as 0 (an ease). --csv writes each cut's frames to DIR/<cine>_<n>.csv for plotting.
 """
 import math, os, re, sys
 
@@ -29,7 +34,7 @@ def parse(path):
     for raw in open(path, encoding="utf-8", errors="replace"):
         if "CUTSEAM " in raw and cur is not None:
             m = re.search(r"dur=(\S+) metres=(\S+) degrees=(\S+) skipped=(\w+)", raw)
-            cur["seam"] = dict(dur=float(m[1]), metres=float(m[2]), degrees=float(m[3]), skipped=m[4] == "True")
+            cur["seam"] = dict(dur=float(m[1]), metres=float(m[2]), degrees=float(m[3]), skipped=m[4] == "True", dip="dip=True" in raw)
             cur["seam_t"] = cur["frames"][-1]["t"] if cur["frames"] else 0
             continue
         if "CUTCONTROL " in raw and cur is not None:
@@ -42,7 +47,7 @@ def parse(path):
             cur = dict(id=m[1], frames=[], seam=None, seam_t=None, control_t=None); cuts.append(cur)
         rest = dict(re.findall(r"(\w+)=([-\d.,]+)", m[11]))
         cur["frames"].append(dict(t=t, dt=float(m[3]), phase=m[4], shot=int(m[5]) if m[5] else -1, pos=VEC(m[6]), fwd=VEC(m[7]), vfov=float(m[8]),
-                                  hud=float(m[9]), cap=int(m[10]), root=VEC(rest["root"]) if "root" in rest else None,
+                                  hud=float(m[9]), cap=int(m[10]), dip=float(rest.get("dip", 0)), root=VEC(rest["root"]) if "root" in rest else None,
                                   head=VEC(rest["head"]) if "head" in rest else None, hand=VEC(rest["hand"]) if "hand" in rest else None,
                                   scr=tuple(float(x) for x in rest["scr"].split(",")) if rest.get("scr", "").count(",") == 3 else None))
     return cuts
@@ -60,14 +65,23 @@ def median(xs):
     xs = sorted(xs); return xs[len(xs) // 2] if xs else 0
 
 
+def dark(a, b): return a["dip"] >= 0.95 or b["dip"] >= 0.95  # (a step into or out of black is not seen)
+
+
 def check(c):
     f = c["frames"]; out = {"id": c["id"], "fails": []}
+    # A dip: where the picture went black and where it has risen over half way (the camera landed for the HUD
+    # and in-frame rules).
+    b0 = next((i for i, x in enumerate(f) if x["dip"] >= 0.95), None)
+    rise = next((x["t"] for x in f[b0:] if x["dip"] < 0.5), None) if b0 is not None else None
+    out["dip"] = (f[b0]["t"], rise) if b0 is not None else None
     # Per frame: metres and degrees moved, and as speeds (frames differ in length: a picture's frame is 0.1 s).
     # A cut inside the cinematic (a new shot) is the film's own and not counted.
     steps = []
     for i in range(1, len(f)):
         a, b = f[i - 1], f[i]
         if a["phase"] == "cine" and b["phase"] == "cine" and a["shot"] != b["shot"]: continue
+        if dark(a, b): continue
         dt = max(b["dt"], 1e-3); m, d = dist(a["pos"], b["pos"]), ang(a["fwd"], b["fwd"])
         steps.append((m, d, b["t"], dt, m / dt, d / dt))
     worst = (0, 0, 0, 0, 0)  # score, metres, degrees, t, ratio
@@ -82,19 +96,22 @@ def check(c):
     out["turn"] = max((s[5] for s in steps), default=0)
     out["step"] = worst
     fov = max(((abs(f[i]["vfov"] - f[i - 1]["vfov"]), f[i]["t"]) for i in range(1, len(f))
-               if not (f[i]["phase"] == "cine" and f[i - 1]["phase"] == "cine" and f[i]["shot"] != f[i - 1]["shot"])), default=(0, 0))
+               if not (f[i]["phase"] == "cine" and f[i - 1]["phase"] == "cine" and f[i]["shot"] != f[i - 1]["shot"]) and not dark(f[i - 1], f[i])), default=(0, 0))
     out["fov"] = fov
     if fov[0] > 1.5: out["fails"].append(f"lens step {fov[0]:.1f} deg at t={fov[1]:+.2f}")
     hud0 = next((x["t"] for x in f if x["hud"] > 0.02), None); hud1 = next((x["t"] for x in f if x["hud"] > 0.98), None)
     land = c["control_t"] if c["control_t"] is not None else next((x["t"] for x in f if x["cap"] == 0), None)
     out.update(hud0=hud0, hud1=hud1, land=land, seam=c["seam"], seam_t=c["seam_t"])
-    if hud0 is not None and land is not None and hud0 < land - 0.3: out["fails"].append(f"HUD starts {land - hud0:.2f} s before the camera lands")
+    lands = rise if out["dip"] else land  # (a dip's camera lands at black; seen landed at the rise)
+    if hud0 is not None and lands is not None and hud0 < lands - 0.3:
+        out["fails"].append(f"HUD starts {lands - hud0:.2f} s before the {'picture rises' if out['dip'] else 'camera lands'}")
     # Her pose, through the hand-back only (to 0.5 s after control; later it is play, her own attacks).
     pj = (0, 0, ""); rj = (0, 0)
     end = (land if land is not None else 0) + 0.05  # (after control her swings are her own: an auto-attack's hand moves 26 m/s)
     for i in range(1, len(f)):
         a, b = f[i - 1], f[i]
         if b["t"] > end: break
+        if dark(a, b): continue
         if a["head"] and b["head"]:
             for k in ("head", "hand"):
                 j = dist(a[k], b[k]) / max(b["dt"], 1e-3) * (1 / 60)  # metres per 60th of a second
@@ -107,7 +124,8 @@ def check(c):
     if rj[0] > 0.2: out["fails"].append(f"her root jumps {rj[0]:.2f} m a 60th at t={rj[1]:+.2f}")
     # In frame: her head and feet inside the middle of the picture, seam and play, to 3 s after control.
     X0, X1, Y0, Y1 = 0.25, 0.75, 0.20, 0.72
-    win = [x for x in f if x["phase"] in ("seam", "play") and x.get("scr") and (land is None or x["t"] <= land + 3.0)]
+    win = [x for x in f if x["phase"] in ("seam", "play") and x.get("scr") and (land is None or x["t"] <= land + 3.0)
+           and (out["dip"] is None or (rise is not None and x["t"] >= rise))]
     out["frame"] = None
     if win:
         fr = dict(n=len(win), exempt=0, bad=[], hx=(min(x["scr"][0] for x in win), max(x["scr"][0] for x in win)),
@@ -141,7 +159,8 @@ def main():
             print(f"{'PASS' if ok else 'FAIL'} {r['id']} ({os.path.basename(path)} #{n}) frames={len(c['frames'])}"
                   f" seam={'%.2fs from %.1f m/%.0f deg' % (s['dur'], s['metres'], s['degrees']) if s else '-'}"
                   f" land={r['land'] if r['land'] is None else '%+.2f' % r['land']}"
-                  f" hud={'-' if r['hud0'] is None else '%+.2f' % r['hud0']}..{'-' if r['hud1'] is None else '%+.2f' % r['hud1']}")
+                  f" hud={'-' if r['hud0'] is None else '%+.2f' % r['hud0']}..{'-' if r['hud1'] is None else '%+.2f' % r['hud1']}"
+                  + (f" dip black={r['dip'][0]:+.2f} rise={'-' if r['dip'][1] is None else '%+.2f' % r['dip'][1]}" if r["dip"] else ""))
             st = r["step"]
             print(f"     cam worst step {st[1]:.2f} m / {st[2]:.1f} deg at t={st[3]:+.2f} ({st[4]:.1f}x); peak {r['speed']:.1f} m/s, {r['turn']:.0f} deg/s;"
                   f" lens {r['fov'][0]:.2f} deg; her pose {r['pose'][0]:.3f} m ({r['pose'][2]} t={r['pose'][1]:+.2f}), root {r['root'][0]:.2f} m")

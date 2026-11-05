@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Sound;
+using SurvivorUnchained.Ui;
 
 namespace SurvivorUnchained.Play;
 
@@ -14,6 +15,12 @@ namespace SurvivorUnchained.Play;
  *  2. her body carries what it was doing (a walk eases out, no pop to idle; the input is held, the carry is not);
  *  3. the HUD fades in as the camera lands, never over the move;
  *  4. control returns when the camera has landed (SoundHooks "cine.to_play").
+ * A film whose last shot does not hold her (C15, places in the Verge without her, ends 126 m off) cannot ease: the arc
+ * would sweep the zone with her off the screen. It DIPS instead (its end says "camera": "dip", or CineHandover.Dips
+ * finds its last camera over 25 m from her or her body outside its last frame): the bars go out as the picture dips
+ * to black over 0.4 s (ease in), the play camera is placed at black (no arc, no ease), the zone's play light and grade
+ * set while black (held 0.1 s and two frames), the picture rises over 0.5 s, the HUD's fade starts 0.15 s into the
+ * rise (the camera landed at black), control as the rise ends.
  * --cutlog prints each frame from 2.5 s before a cinematic ends to 2.5 s after control: the camera, the
  * HUD, control and her pose, for tools/experience/cut_check.py (the numbers every cut is held to). */
 public partial class Game
@@ -31,7 +38,18 @@ public partial class Game
         public Vector3 FromOff;
         public Quaternion FromTurn;
         public bool Arc;
+        /// <summary>A dip hand-back: the film's bars (freed at its end), how far in they were, how black the picture is
+        /// (0..1), whether the camera is placed (black reached) and how many frames it has stood black.</summary>
+        public CinemaBars? Bars;
+        public float Bars0, Black;
+        public bool Placed;
+        public int BlackFrames;
+        public bool Dip => Bars != null;
     }
+    /// <summary>The dip's parts (seconds): down to black, held black (and at least two frames), back up.</summary>
+    public const double DipDown = 0.4, DipHold = 0.1, DipUp = 0.5, DipHud = 0.15;
+    /// <summary>How black the picture is now (0..1; 0 without a dip), for --cutlog.</summary>
+    float SeamBlack => seam?.Black ?? 0;
     Seam? seam;
     /// <summary>A cinematic's hand-back still easing into play (the camera moving, control not yet given).</summary>
     public bool InSeam => seam != null;
@@ -61,8 +79,9 @@ public partial class Game
 
     /// <summary>The hand-back begun: the camera stands at the cinematic's last frame (from, its vertical
     /// field of view), play's camera already placed where it will land; her own body at her mark.</summary>
-    void BeginSeam(Transform3D from, float fromVfov, bool skipped)
+    void BeginSeam(Transform3D from, float fromVfov, bool skipped, CinemaBars? dipBars = null)
     {
+        if (dipBars != null) { BeginDip(from, fromVfov, skipped, dipBars); return; }
         var to = camera.GlobalTransform;
         float metres = from.Origin.DistanceTo(to.Origin);
         float degrees = Mathf.RadToDeg((-from.Basis.Z).AngleTo(-to.Basis.Z));
@@ -83,12 +102,65 @@ public partial class Game
         if (Args.Has("cutlog")) GD.Print($"CUTSEAM {cineId} dur={seam.Dur:0.00} metres={metres:0.00} degrees={degrees:0.0} skipped={skipped} arc={seam.Arc}");
     }
 
+    /// <summary>The dip begun: the film's last frame held, its bars still up (see the top of this file).</summary>
+    void BeginDip(Transform3D from, float fromVfov, bool skipped, CinemaBars bars)
+    {
+        float metres = from.Origin.DistanceTo(camera.GlobalTransform.Origin);
+        float degrees = Mathf.RadToDeg((-from.Basis.Z).AngleTo(-camera.GlobalTransform.Basis.Z));
+        bars.Hush();
+        bars.Skip(0);
+        seam = new Seam { From = from, FromVfov = fromVfov, Dur = DipDown + DipHold + DipUp, Bars = bars, Bars0 = bars.BarsK };
+        controls.Captured = true;
+        camera.GlobalTransform = from;
+        camera.Fov = fromVfov;
+        if (Args.Has("cutlog")) GD.Print($"CUTSEAM {cineId} dur={seam.Dur:0.00} metres={metres:0.00} degrees={degrees:0.0} skipped={skipped} arc=False dip=True");
+    }
+
+    /// <summary>A dip's frame: down to black on the film's last frame, the play camera and light placed at black, back up.</summary>
+    void DipFrame(Seam s, double dt)
+    {
+        s.T += dt;
+        if (!s.Placed && s.T < DipDown)
+        {
+            double k = s.T / DipDown;
+            s.Black = (float)(k * k);
+            camera.GlobalTransform = s.From;
+            camera.Fov = s.FromVfov;
+            s.Bars!.Frame(s.Bars0 * (1 - s.Black), s.Black);
+            return;
+        }
+        s.Black = 1;
+        if (!s.Placed)
+        {
+            // At black: play's camera stands where the world put it (no arc, no ease); the zone's light and grade at
+            // once, as the film's "play" cue would reach them (a glide, a haze fade or a blend running end here).
+            s.Placed = true;
+            s.T = DipDown;
+            air.GlideLuts(0, 0);
+            air.Haze = null;
+            if (zone != null) air.Set(zone.AtmosphereFor(zone.TimeOf(World)));
+            air.SnapGrade();
+        }
+        s.Bars!.Frame(0, 1);
+        if (s.BlackFrames < 2 || s.T < DipDown + DipHold) { s.BlackFrames++; return; }
+        double r = Math.Clamp((s.T - DipDown - DipHold) / DipUp, 0, 1);
+        s.Black = 1 - Mathf.SmoothStep(0, 1, (float)r);
+        s.Bars.Frame(0, s.Black);
+        // The HUD's fade after the rise begins (the camera landed at black, H4: never over the move).
+        if (!s.Hud && s.T >= DipDown + DipHold + DipHud) { s.Hud = true; hud.ShowPlay(true, 0.5f); }
+        if (r < 1) return;
+        s.Bars.QueueFree();
+        s.Black = 0;
+        Landed(s);
+    }
+
     /// <summary>Each frame after the world (play's camera placed): the camera laid between the two.</summary>
     void SeamFrame(double dt)
     {
         if (seam is not { } s) return;
         // Another cinematic or a held view took the camera: the ease gives way at once (its HUD and control too).
-        if (cine != null || showing) { seam = null; if (cine == null) { controls.Captured = s.After; hud.ShowPlay(true, 0.3f); } return; }
+        if (cine != null || showing) { seam = null; s.Bars?.QueueFree(); if (cine == null) { controls.Captured = s.After; hud.ShowPlay(true, 0.3f); } return; }
+        if (s.Dip) { DipFrame(s, dt); return; }
         s.T += dt;
         double k = Math.Clamp(s.T / s.Dur, 0, 1);
         float e = (float)SurvivorUnchained.Cinema.CineCamera.Ease("slow", k);
@@ -123,6 +195,12 @@ public partial class Game
         // The HUD comes in as the camera settles (its fade ends just after it lands).
         if (!s.Hud && k >= Math.Max(0, 1 - 0.25 / s.Dur)) { s.Hud = true; hud.ShowPlay(true, 0.5f); }
         if (k < 1) return;
+        Landed(s);
+    }
+
+    /// <summary>The hand-back done: control back.</summary>
+    void Landed(Seam s)
+    {
         seam = null;
         controls.Captured = s.After;
         controls.ClearLatches();
@@ -152,7 +230,7 @@ public partial class Game
         string her = pose is { } hp ? $"root={hp.Root.X:0.000},{hp.Root.Y:0.000},{hp.Root.Z:0.000} head={hp.Head.X:0.000},{hp.Head.Y:0.000},{hp.Head.Z:0.000} hand={hp.Hand.X:0.000},{hp.Hand.Y:0.000},{hp.Hand.Z:0.000}" : "her=-";
         GD.Print($"CUTLOG {cineId} t={cutClock:0.000} dt={dt:0.0000} phase={(cine != null ? "cine" : seam != null ? "seam" : "play")} shot={cine?.ShotIndex ?? -1} " +
                  $"pos={c.Origin.X:0.000},{c.Origin.Y:0.000},{c.Origin.Z:0.000} fwd={f.X:0.0000},{f.Y:0.0000},{f.Z:0.0000} vfov={vfov:0.00} " +
-                 $"hud={hud.PlayAlpha:0.00} cap={(controls.Captured ? 1 : 0)} {her}{Scr(pose)}{AirLog()}");
+                 $"hud={hud.PlayAlpha:0.00} cap={(controls.Captured ? 1 : 0)} dip={SeamBlack:0.00} {her}{Scr(pose)}{AirLog()}");
     }
 
     double dbgAirT;

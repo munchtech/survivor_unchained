@@ -38,6 +38,9 @@ public partial class CinemaBars : CanvasLayer
         Layout(0);
     }
 
+    /// <summary>How far in the bars are now (0..1).</summary>
+    public float BarsK => barsK;
+
     /// <summary>How far in the bars are (0..1); a fully black picture (0..1).</summary>
     public void Frame(float bars, float blackK)
     {

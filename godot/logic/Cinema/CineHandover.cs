@@ -69,4 +69,38 @@ public static class CineHandover
         if (d < -Math.PI) d += 2 * Math.PI;
         return Math.Abs(d) * 180 / Math.PI;
     }
+    /// <summary>The farthest the film's last camera may stand from her and still ease into play (the one cut rule's
+    /// arc); farther, the hand-back dips to black (GameSeam).</summary>
+    public const double DipMetres = 25;
+
+    /// <summary>Whether a hand-back dips to black rather than easing (GameSeam, the dip): the end says
+    /// <c>"camera": "dip"</c>, or the film's last camera stands more than <see cref="DipMetres"/> from her, or her
+    /// body (the arc's pivot, 0.8 m over her feet) is outside its last frame (behind the lens, or its projection
+    /// off the picture). The camera at <paramref name="cam"/> looks along <paramref name="fwd"/> with
+    /// <paramref name="up"/> its up, a vertical lens of <paramref name="vfovDeg"/> on a picture
+    /// <paramref name="aspect"/> wide to 1 high. Her: null when she is not drawn (no dip forced by the test).</summary>
+    public static bool Dips(string? endCamera, System.Numerics.Vector3 cam, System.Numerics.Vector3 fwd, System.Numerics.Vector3 up,
+                            double vfovDeg, double aspect, System.Numerics.Vector3? her)
+    {
+        if (endCamera == "dip") return true;
+        if (her is not { } h) return false;
+        var d = h - cam;
+        if (d.Length() > DipMetres) return true;
+        return !InFrame(d, fwd, up, vfovDeg, aspect);
+    }
+
+    /// <summary>Whether a point d (from the camera) lands inside the picture.</summary>
+    public static bool InFrame(System.Numerics.Vector3 d, System.Numerics.Vector3 fwd, System.Numerics.Vector3 up, double vfovDeg, double aspect)
+    {
+        var f = System.Numerics.Vector3.Normalize(fwd);
+        var r = System.Numerics.Vector3.Cross(f, up);
+        if (r.LengthSquared() < 1e-9f) return false;
+        r = System.Numerics.Vector3.Normalize(r);
+        var u = System.Numerics.Vector3.Cross(r, f);
+        double z = System.Numerics.Vector3.Dot(d, f);
+        if (z <= 0.05) return false;
+        double t = Math.Tan(vfovDeg * Math.PI / 360);
+        double x = System.Numerics.Vector3.Dot(d, r) / z, y = System.Numerics.Vector3.Dot(d, u) / z;
+        return Math.Abs(y) <= t && Math.Abs(x) <= t * aspect;
+    }
 }

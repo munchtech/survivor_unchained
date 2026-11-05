@@ -95,7 +95,9 @@ public sealed class CineEnd
 {
     /// <summary>The survivor's mark when play resumes (skip or not).</summary>
     public string? Her;
-    /// <summary>"follow": the game's camera; the last shot's move blends into it.</summary>
+    /// <summary>"follow": the game's camera; the last shot's move blends into it (the one cut rule's ease). "dip": the
+    /// picture dips to black and rises on the play camera (GameSeam; taken on its own when the last shot does not hold her,
+    /// CineHandover.Dips).</summary>
     public string Camera = "follow";
     /// <summary>Cast whose bodies stay where it leaves them, still, after it hands
     /// back (the Warden face down in the ford after C03), until the next

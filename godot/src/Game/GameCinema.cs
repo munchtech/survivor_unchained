@@ -2222,20 +2222,28 @@ public partial class Game
             g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
             b.WorldRate = 1; b.WorldRateT = 0;
             b.Combat = combatWas;
+            var size = g.GetViewport().GetVisibleRect().Size;
+            static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
+            System.Numerics.Vector3? herAt = g.scene.Player is { } hv && !hv.Hidden
+                ? new System.Numerics.Vector3((float)p.X, (float)g.scene.HeightAt(p.X, p.Z) + 0.8f, (float)p.Z) : null;
+            bool dip = CineHandover.Dips(file.End.Camera, N(lastFrame.Origin), N(-lastFrame.Basis.Z), N(lastFrame.Basis.Y),
+                                         lastVfov, size.X / Math.Max(1f, size.Y), herAt);
             if (Args.Has("shot"))
             {
                 // Shoot runs: every staged enemy's state at control and for 2 s after (is anything killed on the first frames?).
                 var bb = b; var tags = enemies.ToDictionary(kv => kv.Value, kv => kv.Key);
                 void Log(double t) { foreach (var (e, n) in tags) GD.Print($"cinema control+{t:0.0}s {n}: alive={e.Alive} state={e.State} hp={e.Hp:0} at=({e.X:0.0},{e.Z:0.0}) her=({bb.Player.X:0.0},{bb.Player.Z:0.0})"); }
                 Log(0);
-                // --afterstills: a picture at the play camera 0.5 s and 2 s after control (the hand-over's first looks).
-                if (Args.Has("afterstills")) { Shots.Want($"{file.Id}_play_1", 0.5); Shots.Want($"{file.Id}_play_2", 2.0); }
+                // --afterstills: a picture at the play camera 0.5 s and 2 s after control (the hand-over's first looks; a dip's
+                // control comes after its rise).
+                if (Args.Has("afterstills")) { double ad = dip ? Game.DipDown + Game.DipHold + Game.DipUp : 0; Shots.Want($"{file.Id}_play_1", ad + 0.5); Shots.Want($"{file.Id}_play_2", ad + 2.0); }
                 foreach (var t in new[] { 0.5, 1.0, 2.0 }) g.GetTree().CreateTimer(t).Timeout += () => Log(t);
             }
             g.sound.CineMood = null;
-            // The one cut rule: the camera eases into play, the HUD comes in as it lands, control after (GameSeam).
-            g.BeginSeam(lastFrame, lastVfov, player.Skipped);
-            bars.QueueFree();
+            // The one cut rule: the camera eases into play, the HUD comes in as it lands, control after (GameSeam);
+            // or, from a last shot that does not hold her, a dip to black (the bars go with the seam, which frees them).
+            g.BeginSeam(lastFrame, lastVfov, player.Skipped, dip ? bars : null);
+            if (!dip) bars.QueueFree();
         }
     }
 }
