@@ -174,7 +174,8 @@
     "collar_f": 0.3,
     "shoulder_gap": 0.045,
     "arm_root_n": 40,
-    "upper_arm_band": false
+    "upper_arm_band": false,
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces"
    },
    "play": {
     "spacing": 0.017,
@@ -216,7 +217,8 @@
     "collar_f": 0.3,
     "shoulder_gap": 0.045,
     "arm_root_n": 22,
-    "upper_arm_band": false
+    "upper_arm_band": false,
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces"
    }
   },
   "rest_tris": 11300,
