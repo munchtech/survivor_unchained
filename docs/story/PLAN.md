@@ -88,7 +88,7 @@ Pipelines: **P9** staged cue film; **P10** drawn plates; **scene** a trunk text 
 
 ## 6. Cost and pipeline
 
-- **Lines:** survive ~495 locked word for word; re-lock ~32 (every "Chid" -> "Corvane"; id `chid` kept in data and code, display name and spoken name change); rewritten ~8 (`chid.first`, `cb_vault2`, `vonnra.vault` after the tale, C13's end); new ~105 (beats 5-14); retired 0 in data. Voice re-records: 0 (placeholders only); the lock pass re-locks the name lines and locks the new ones through `tools/vo/lock.py`.
+- **Lines (measured at slice 2's lock pass, `tools/vo/locked.json` 527 -> 583):** survived word for word 498; re-locked 27 (15 for the name, writer 1; 12 rewritten or re-indexed, writer 2); new voiced lines 58 (the tale, the door night, the morning after, the bed, Wenna, Tam, the barks), plus 5 dawn reports and 2 journal pages unvoiced; retired 2 (`dlg.cin_drowned_fire.prints.0`, `say.93b63298edc0`, gone before S1). Voice re-records: 0 (placeholders only).
 - **Line items outside the writer's data, each with an owner:**
   1. **One boss fight, Corvane in the doorway (P6, the combat lead):** his kit (a keeper's lamp and two hundred years of ember) on the existing NPC model, phase 1 of story night `vault_opened`; the door's hall is the arena. "Redo rather than patch": if his model can't carry a boss at the play camera, P3 remakes him with the Warden. ~0.3-0.5M.
   2. **C13 reworked (P9, the cinematics lead):** two phases, the doorway and the stair; the Barrow Lord's death, the heart rising to her hand, the singer under the stair; cue data on the built pipeline. ~80-120k.

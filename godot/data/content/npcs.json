@@ -2060,6 +2060,16 @@
    "name": "An old Watchman",
    "title": "The Watch",
    "glyph": "flame"
+  },
+  "door_night": {
+   "name": "The Door in the Verge",
+   "title": "Night",
+   "glyph": "moon"
+  },
+  "scene_bed": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
   }
  },
  "guards": [

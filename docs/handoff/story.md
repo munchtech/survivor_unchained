@@ -3,7 +3,7 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 6/7/8/11 in; HANDOFF READY story-s1@38cbc88b6 (writer 2 at ~300k)
+## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 5-14 in; <STATE_LINE> (writer 3)
 
 **The pick (the owner, 5 Nov:
 "Go, defaults."):** ending B retired, three endings (she lies down / Corvane
@@ -12,16 +12,24 @@ in Act 1 and getting up on screen; "He has never burned." retired; Holloway
 risen as Ashford's commander waits for Act 2's brief. The proposal was
 PROPOSAL READY story-s1@9fd41e6e0, editor PASS WITH FIXES applied.
 
-**HANDOFF READY story-s1@38cbc88b6** (writer 2, Fable, at ~300k; the
-owner's pick stands as the paragraph above has it). Slice 1 DONE
-(dba76d016). **Slice 2, in data so far:** (1) beat 6 at 567a1477e; (2)
-beats 7, 8 and 11 at 4f554a619. Integration merged at e2bdeed4d (the
-junction removed and remade). The story test subset (StoryLint,
-StoryRewrite, Quest, Cinema, Verge, StoryNight) is green at 38cbc88b6: 111/0
-(the two StoryLint marks it found, the `door_night` entry rows and the
-`vonnra.asked_jessop` seed, were fixed there). The full suite has not run
-since slice 1. `tools/vo/lines.py` and the locks have NOT been run on the new lines
-(step 7). Nothing is pushed since dba76d016 until this handoff's push.
+**Writer 3 (Fable, 5 Nov): slice 2 steps (3)-(7) in, one commit each:** (3)
+46194f681 beat 10 `scene_bed` + rule `holloway.bed`, beat 5 `ford.ditch` +
+Holloway's three night barks; (4) c78179037 beat 9 `hollow.healed` /
+`hollow.healed_clear` + Wenna `cb_clean`; (5) 25dd39fe2 beat 12 Tam's and
+Wenna's `chain.two` variants; (6) dced34449 beat 13 journal
+`vault.office_end` + beat 14 `toll.baking`; (7) ead3d777f `lines.py` run,
+the two gone locks removed, 70 lines locked by prefix (583 locks, 0 broken;
+`tests.test_lock tests.test_lines` OK), `StoryRewriteTests.
+The_seven_chains_hold_in_act_one`, StoryLint seed `holloway.bed_seen`. The
+story subset (StoryLint, StoryRewrite, Quest, Cinema, Verge, StoryNight) was
+green at every step (110/0). Full suite: <SUITE>. Editor (8): <EDITOR>.
+**Counts since dba76d016** (`tools/vo/locked.json` 527 -> 583): survived
+word for word 498; re-locked 27 (15 for the name by writer 1; 12 rewritten or
+re-indexed by writer 2: `chid.carried_chid.0-9`, `chid.cb_opened_vault.0`,
+`chid.cb_vault2.0`); new voiced lines 58 (plus 5 dawn reports and 2 journal
+pages, unvoiced); retired 2 (`dlg.cin_drowned_fire.prints.0`,
+`say.93b63298edc0`). Voice re-records 0. Slice 1 DONE (dba76d016);
+integration merged at e2bdeed4d <MERGE>.
 
 **What is in, by node (so nothing is re-derived):**
 - *Beat 6, Vonnra's tale* (`vonnra`): rule `vonnra.sends` (day >= 3,
@@ -58,60 +66,60 @@ since slice 1. `tools/vo/lines.py` and the locks have NOT been run on the new li
   `shut`) and `chain.two` (fact `vault.opened`, the fight's OnWin), read by
   the lines above. When P6 builds the boss it sets `corvane.rose` at the
   kill itself and must not set `shut` on a phase-1 loss.
+- *Beat 5, the quiet ford:* once rule `ford.ditch` (day >= 3, `prologue.done`;
+  after `dawn.face`): "Nobody stood in the ditch on the Low Ford road last
+  night, or the night before. The Watch has stopped sending a man down to
+  look."; Holloway's `said` night barks (npcs.json, not once, days 2/3/4 by
+  `day eq`, off when `chain.two`): "Eleven in. Nobody out." / "Eleven in.
+  Second night." / "Eleven in. Nobody out. I've stopped writing it down."
+- *Beat 9, the stream runs clear:* two once rules right after `chain.two` in
+  rules.json (rules read live facts in file order, so they fire the same dawn
+  chain.two is set): `hollow.healed_clear` first (chain.two and `stream.clear`
+  already: the scar only; sets `hollow.healed` = "scar"), then `hollow.healed`
+  (chain.two and not `stream.clear`: the stream clear, the scar closed, wolves
+  drinking in daylight, the Dig's hill silent; sets `stream.clear` so the
+  Verge, Tam's `happy` and Wenna's craft gate agree with the words, and
+  `hollow.healed` = "chain"). Wenna `cb_clean` (entry on chain.two, once by
+  npcFlag `cb:clean`, then hub): cured "It's cleaner than I made it. I don't
+  know why." / `hollow.healed` "scar" "It's cleaner than it was. I don't know
+  why." / else "It's clean. I don't know why it's clean."
+- *Beat 10, Holloway's bed:* `scene_bed` (narrator `gate` -> holloway `count`
+  -> narrator `cup`, one exit "(Leave them be.)"; sets `holloway.bed_seen`,
+  seeded in StoryLint for Act 2's rope); rule `holloway.bed` (after
+  `hollow.healed`): chain.two and no `scene.dusk` -> `scene.dusk` =
+  `scene_bed` (it waits for a free dusk like `maeca.cup`). Maeca comes
+  without her crossbow (Act 2's plant) and says nothing.
+- *Beat 12:* `tam.again` front variant on chain.two ("It knocked. Louder. Pa
+  says it's the ground settling. Things don't settle UP."); `wenna.hub` front
+  variant on chain.two ("I've the masks out again. Don't ask me why. I don't
+  know why."). Neither explains it.
+- *Beat 13:* `chid.office` (he gives the book) adds journal `vault.office_end`:
+  the whole page in the keepers' words, with the sentence Vonnra withheld.
+  *Beat 14:* once rule `toll.baking` (`player.deaths` >= 1, `prologue.done`;
+  after `dawn.word`): "Up the street, nobody is baking." `player.deaths`
+  counts real falls only (Journey.cs: a zone fall, a lost story night), never
+  the prologue's drowning. Re-key it on `toll.rises` when TOLL_SPEC 3's
+  scripted fall is built.
+- Rule reports and journal pages are not voiced lines (`lines.py` lists
+  dialogue and barks only), so they carry no locks.
 
-**Next, in order (one commit each; the design is decided, write the words):**
-(3) beat 10 `scene_bed`: a conversation like `scene_his_cup` (speakers
-narrator / holloway / maeca), queued by a rule `holloway.bed` into
-`scene.dusk` when `chain.two` and no `scene.dusk` exists; the narrator: the
-south gate unbarred at dusk for the first time, his stool, no tally in his
-hand; Holloway in his own counts: "Eleven in. Nobody out. Third night
-running. ...I'd had it down I'd go on this stool. (He looks at the gatehouse
-cot.) Might go in a bed."; Maeca fills his cup and says nothing; the scene
-sets `holloway.bed_seen` (add it to StoryLint's `Seeds`: Act 2's rope reads
-it). Never "Count's right." (the built gate-dawn line and bark keep theirs).
-Beat 5: a once rule `ford.ditch` (day >= 3, `prologue.done`): "Nobody stood
-in the ditch on the Low Ford road last night, or the night before. The Watch
-has stopped sending a man down to look."; three Holloway `said` night barks
-in `npcs.json` (`"night": true`) for days 2, 3, 4 ("Eleven in. Nobody out.",
-"Eleven in. Second night.", "Eleven in. Nobody out. I've stopped writing it
-down."), keyed `day` and not `chain.two`.
-(4) beat 9: two once rules on `chain.two`, `hollow.healed` (not
-`stream.clear`: the stream running clear and the scar on Wolf Hollow closed
-over in a night, wolves drinking at it, the Dig's hill silent) and
-`hollow.healed_clear` (`stream.clear` already: the scar only); Wenna's
-callback `cb_clean` on `chain.two`: "It's clean. I don't know why it's
-clean." (variant when she cleaned it herself, `beasts.outcome` cured: "It's
-cleaner than I made it. I don't know why."). The C15 film is P9's (below).
-(5) beat 12: `tam.again` variant on `chain.two`: "It knocked. Louder. Pa says
-it's the ground settling. Things don't settle UP."; Wenna's hub variant on
-`chain.two`: "I've the masks out again. Don't ask me why. I don't know why."
-Both read `chain.two`; neither explains it.
-(6) beat 13: `chid.office` gains a journal entry `vault.office_end` (the
-page, in the keepers' words, the whole of it: "Is it morning? / Not yet. /
-When the seven are loosed, and a lamp lit at dark still burns at first
-light, it is morning. Let the one who got up go down, and carry it home.");
-beat 14: a once rule `toll.baking` (`player.deaths` >= 1, `prologue.done`):
-"Up the street, nobody is baking." (re-key it on `toll.rises` when the
-toll's scripted fall is built, TOLL_SPEC section 3).
-(7) `python tools/vo/lines.py`; lock through Python: prefixes
-`dlg.vonnra.chains dlg.vonnra.keeper dlg.vonnra.bleed dlg.vonnra.ford_tale
-dlg.vonnra.burn dlg.vonnra.order dlg.vonnra.six dlg.vonnra.office
-dlg.vonnra.office_more dlg.vonnra.cost dlg.vonnra.why dlg.vonnra.dont
-dlg.vonnra.key dlg.vonnra.jessop_in dlg.vonnra.tale_end dlg.door_night.
-dlg.chid.cb_opened_vault dlg.chid.cb_vault2 dlg.chid.cb_vault_up
-dlg.chid.carried_chid dlg.vonnra.cb_opened_vault dlg.vonnra.cb_vault2
-dlg.vonnra.vault dlg.vonnra.hub` plus the new scene and rule lines (`say.`
-ids: check `lines.py --report`); remove the two gone locks
-(`dlg.cin_drowned_fire.prints.0`, `say.93b63298edc0`); `lock.py --check`
-exit 0; `python -m unittest tests.test_lock tests.test_lines` in tools/vo;
-tests in `StoryRewriteTests.cs`: the tale ends on `vonnra.told` and never
-says "vessel"; `door_night.gets_up` is exactly "He gets up."; `scene_bed`
-never says "Count's right."; StoryLint seeds. Full `dotnet test` before MR.
-(8) a fresh Haiku `su-lead-max` editor at xhigh on `git diff dba76d016..HEAD`
-(brief from `docs/handoff/story_editor.md` 1-2 and 4, PLAN.md as the canon,
-the WTF question on beat 7); PASS WITH FIXES applied. (9) `MR READY
-story-s1@<sha>` here and to main: the editor's verdict in two lines, the
-counts (survived / rewritten / new / retired), re-locks, cost.
+**Next, in order:** (8) the editor pass: a fresh Haiku `su-lead-max` at
+xhigh on the slice (brief `scratchpad\story_s1\editor_brief.md`, the lines
+as text in `editor_pack.txt`, PLAN.md as the canon, the WTF question on beat
+7); PASS WITH FIXES applied as one commit, the touched lines re-locked
+(`lock.py --prefix`, then `--check` exit 0). **The spawn guard
+(`tools/hooks/spawn_guard.py`) denies every spawn by a `su-lead-max` writer
+whose own spawn prompt lacks the literal line `Spawning: allowed`** (it reads
+the transcript's first message only, never a brief file it points at):
+writer 3 was spawned on a pointer and could spawn nothing; the coordinator
+spawned the editor from the brief file, with the verdict sent to the writer
+by SendMessage. A successor's spawn prompt must carry the line itself. (9)
+merge `origin/claude/vigilant-galileo-l6jqyx` under the junction rule (`cmd
+/c rmdir godot\assets`, merge, remake the junction to this worktree's own
+`public\assets`, `git update-index --assume-unchanged godot/assets`), the
+suite green, push, `MR READY story-s1@<sha>` here and to main with the
+editor's verdict in two lines, the counts above, the re-lock count and the
+cost.
 
 **Line items for other leads (PLAN section 6), each a paragraph a lead can
 start from:**
@@ -144,17 +152,25 @@ start from:**
 - *P9: C15 "The Stream Runs Clear".* New, ~20 s, over the real Verge in its
   `stream.clear` state at dawn: the scar on Wolf Hollow closed, wolves
   drinking, the Dig's hill silent; Wenna's line from beat 9 over the last
-  shot. Plays the morning `hollow.healed` fires. ~50-80k.
+  shot. Plays the morning the fact `hollow.healed` appears ("chain": the
+  stream cleared with the scar; "scar": the stream ran clear already, the scar
+  only), set by the dawn rules `hollow.healed` / `hollow.healed_clear`; the
+  words over the last shot are Wenna's `cb_clean` variants. ~50-80k.
 
-**Scratch (`scratchpad\story_s1\`, backed up to
-`survivorsunchained_inputs\scratch_story_s1\`):** `lib.py` (round-trip-safe
-load/save of the content JSON: dialogue.json is LF, rules/quests/npcs are
-CRLF; `node`, `choice`, `set_text_variant`), `dumpc.py <dialogue.json> conv
-[--nodes a,b]` (a compact text dump of a conversation), `beat6.py`,
-`beat7.py` (the two scripts that made the commits, as the pattern for 3-6).
-Node ids and `once` keys are per conversation and must not collide
-(`vonnra.jessop` and `vonnra.ford` were taken: hence `jessop_in`,
-`ford_tale`). Text variants are checked in order: the specific `when` first.
+**Scratch (`scratchpad\story_s1\` of the session that runs you, backed up
+to `survivorsunchained_inputs\scratch_story_s1\`; restore the subfolder if
+the scratchpad was cleared):** `lib.py` (round-trip-safe load/save of the
+content JSON: dialogue.json is LF, rules/quests/npcs are CRLF, npcs.json has
+no trailing newline and lib keeps it that way; `node`, `choice`,
+`set_text_variant`), `dumpc.py <dialogue.json> conv [--nodes a,b]` (a compact
+text dump of a conversation), `beat6.py`, `beat7.py` (writer 2), `beat10.py`,
+`beat9.py`, `beat12.py`, `beat13.py` (writer 3: steps 3-6, the pattern for
+any later beat), `editor_pack.txt` + `editor_brief.md` (step 8),
+`handoff_edit.py`, `tests_full.txt` (the full suite's tail). Node ids and
+`once` keys are per conversation and must not collide (`vonnra.jessop` and
+`vonnra.ford` were taken: hence `jessop_in`, `ford_tale`). Text variants are
+checked in order: the specific `when` first (a front variant re-indexes the
+ids under it: re-lock the node's prefix).
 
 **Slice 1, DONE (a `su-worker`, commit dba76d016 on story-s1):** every
 player-facing "Chid" -> "Corvane" with the id `chid` kept (dialogue.json 28
@@ -387,7 +403,7 @@ mother.chisel` to Chid's hub choice "The marker. It's come to me."
   `spec_fix*.py` are this session's edits.
 - After any data or direction edit: `python tools/vo/lines.py`, then
   `elevenlabs.py`, `lock.py --check`, `check_ids.py`, the voice tests
-  (`python -m unittest tests.test_door tests.test_lock tests.test_lines` in
+  (`python -m unittest tests.test_lock tests.test_lines` in
   tools/vo; `test_import_takes` needs librosa, which isn't installed here) and
   `cd godot/tests && dotnet test` (about 4 minutes, 795 pass).
 
