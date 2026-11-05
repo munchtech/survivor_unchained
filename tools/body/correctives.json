@@ -107,7 +107,8 @@
       "rim": 0.02,
       "close": 0.0,
       "hold": 0.01,
-      "area_step": 0.015
+      "area_step": 0.015,
+      "ramp": 0.04
      },
      "pressure_to": {
       "p": 1.0,
@@ -203,7 +204,8 @@
       "rim": 0.02,
       "close": 0.0,
       "hold": 0.01,
-      "area_step": 0.015
+      "area_step": 0.015,
+      "ramp": 0.04
      },
      "solve": {
       "margin": 0.00035

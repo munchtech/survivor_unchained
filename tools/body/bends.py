@@ -47,7 +47,10 @@ MOTIONS = {
     "shoulder_flex": ("upperarm", None, "lowerarm", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
     "hip_flex":     ("thigh", None, "calf", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
 }
-NEAR_M = {"elbow": 0.08, "knee": 0.10, "shoulder_abd": 0.12, "shoulder_flex": 0.12, "hip_flex": 0.14}
+# the inside test's sphere about the joint (m). P1 ek (5 Nov): the elbow's and the knee's reach the whole contact at
+# 135 (crease_fold.skins_surface's reach on her: elbow 0.116, knee 0.239, + 15 mm): at 0.10 the knee's test stopped
+# 10 cm along a contact that runs 24 cm, and the skinned calf sat up to 36 mm inside the thigh past it, unread
+NEAR_M = {"elbow": 0.13, "knee": 0.255, "shoulder_abd": 0.12, "shoulder_flex": 0.12, "hip_flex": 0.14}
 
 
 def unit(v):
@@ -377,7 +380,11 @@ def penetration(strip, V, T_all):
     # distance (surface_depth, exact point-to-triangle), not the nearest of the triangles' samples (vertices, edge
     # middles, centres): a node pressed onto the other skin within 1 mm read 3-5 mm there (a measuring fix).
     q = idx[ins]
-    sd = strip.seg_d
+    # the sides by the rest geometry where the strip has it (the hip's seg_g: her own side of the hips' midpoint,
+    # past the rest bisector plane between the trunk's up and the thigh), not by the weights: P1 ek (5 Nov), the
+    # hip's crease folds inside the trunk's weight region, and a split by thigh >= 0.5 read its deepest points 10-20
+    # mm to the thigh's skin while they sat 0-3 mm under the folded trunk's (a measuring fix)
+    sd = getattr(strip, "seg_g", strip.seg_d)
     T = strip.T_rend
     tri_d = sd[T].sum(1) >= 2
     dep, nfb = [], 0

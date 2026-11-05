@@ -113,7 +113,10 @@ def skins_surface(mesh, st, G, X, sk):
         r_ = Yc - Oj
         q = np.stack([(r_ @ wv) / c - 0.5, (r_ @ hv - lo2) / c - 0.5])
         return map_coordinates(grid, q, order=1, mode=mode, cval=cval)
-    return {"h": lambda Yc: look(Yc, h, "nearest"), "fp": lambda Yc: look(Yc, fp, "constant"), "reach": reach,
+    ramp = sk.get("ramp", 0.0)    # eased in from the joint's axis (the knee 90 corner shift's finding: a full shift at
+    # the axis drives one limb's crease skin into the other beside the joint)
+    hl = lambda Yc: look(Yc, h, "nearest") * (smooth01(((Yc - Oj) @ wv) / ramp) if ramp > 0 else 1.0)
+    return {"h": hl, "fp": lambda Yc: look(Yc, fp, "constant"), "reach": reach,
             "core_cells": int(core.sum()), "rim_cells": int(((fp > 0) & ~core).sum()),
             "ov_max_mm": round(float(ov[core].max() * 1000) if core.any() else 0.0, 1)}
 
@@ -255,9 +258,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         rel = Y - Oj
         s = rel @ nb - offn(Y)
         inwedge = (rel @ wv > cf["wedge"]) & free & (f > 0.02)
-        if sk is not None:                    # in the footprint: past the surface, or within `close` of it in the rim
+        if sk is not None:                    # past the surface anywhere in the wedge (held off it, as the plane was), or
+                                              # within `close` of it in the footprint's rim (closing the gap)
             fpY = fpn(Y)
-            viol = inwedge & (fpY > 0) & (side * s < m_ + close * (fpY < 1))
+            viol = inwedge & (side * s < m_ + close * ((fpY > 0) & (fpY < 1)))
         else:
             viol = inwedge & (side * s < m_)
         if jc.get("footprint"):                # a girdle's plane is wide: contact only where the other part is across
@@ -323,8 +327,6 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
                 rel = Y - Oj
                 s = rel @ nb - offn(Y)
                 bad = (rel @ wv > cf["wedge"]) & free & (f > 0.02) & (side * s < m_)
-                if sk is not None:            # the wall over the footprint, its rim too: no skin crosses the surface
-                    bad &= fpn(Y) > 0
                 if jc.get("footprint"):
                     bad = bad & across(rel, (rel @ wv > cf["wedge"]) & free & (f > 0.02), bad, jc["footprint"])
                 Y[bad] += ((side[bad] * m_ - s[bad]))[:, None] * nb
