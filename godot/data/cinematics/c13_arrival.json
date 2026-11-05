@@ -2,7 +2,7 @@
  "id": "c13_arrival",
  "title": "Nondum",
  "conversation": "cin_behind_the_door",
- "zone": "vault",
+ "zone": "arena",
  "script": "docs/cinematics/shoot/c13.md",
  "draft": "Build round 1: the Barrow Lord (placeholder: never MS or closer, backlit, two eye-lights) on the landing, the world at 0.3; Nondum, the title, hand back to the fight.",
  "bars": {

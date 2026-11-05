@@ -24,6 +24,8 @@ public class CinePathsTests
             if (Path.GetFileName(f).StartsWith('_')) continue;
             var cine = CineFile.Parse(File.ReadAllText(f));
             if (string.IsNullOrEmpty(cine.Zone)) continue;
+            // Arena films (C13 on the Vault): the arena is built from code (ArenaGen, the place's Ground), no zone file.
+            if (!File.Exists(Path.Combine(DataFiles.Dir, "zones", cine.Zone, "zone.json"))) continue;
             var zone = ZoneMeta.Load(cine.Zone);
             if (zone.Colliders.Count == 0) continue;
             foreach (var h in CinePaths.Blockers(cine, zone.Colliders))

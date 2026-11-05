@@ -66,9 +66,8 @@ public class VaultTests
     {
         Assert.True(StoryScripts.Has("vault_opened"));
         var n = Vault();
-        // She comes in to the court, and (without P6's Corvane fight) the door is open at once.
-        var (cx, cz) = VaultOpened.Ground["court_in"];
-        Assert.True(Dist(n.B.Player.X, n.B.Player.Z, cx, cz) < 0.1);
+        var (sx, sz) = VaultOpened.Ground["start"];
+        Assert.True(Dist(n.B.Player.X, n.B.Player.Z, sx, sz) < 0.1);
         Assert.Equal("Bring down the Decurion", n.Zone.Beat!.Goal);
         var g = VaultOpened.Ground.Gates.First(x => x.Id == "south");
         Assert.True(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));

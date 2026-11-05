@@ -2,7 +2,7 @@
  "id": "c13_door",
  "title": "He Gets Up",
  "conversation": "door_night",
- "zone": "vault",
+ "zone": "arena",
  "script": "docs/cinematics/shoot/c13.md",
  "draft": "Build round 1: the kill held on his body, his shadow up the door's black face as he rises out of frame, the sigil wakes, she turns back, the lamp stands where he stood, the door sinks; hands back facing north, the way open.",
  "bars": {
