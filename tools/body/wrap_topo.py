@@ -25,12 +25,14 @@ topo-residual: R per our vertex (glTF m, added after the ring snap: build_topo s
                hands: no residual (the template; the sliders give her size); feet: one move per side (the ankle
                band's mean TIGHT move, its height so the sole stands on her ground), the template's shape kept;
                hold: 0 on the head's ring, full 8 mm under SPLIT (the seam is the head's, her neck under it hers);
-               relax: the TIGHT points slid along the fitted skin back to the slider stage's spacing (`relax`);
-               seam: the rows between the ring and 15 mm under it: R lerped ring -> anchor, onto her skin (`restrip`).
+               then `finish` (P1 H): the midline on x = 0; C's relax (the TIGHT points slid along the fitted skin
+               to the slider stage's spacing); the seam rows (the ring to 15 mm under it) by arc length on her skin
+               (`restrip`); a local ARAP slide on her skin toward each quad's designed shape (`arap`, the named floors
+               ON her floor, her creases no floor carries held); the seam rows again.
 topo-carry:    the play tier's R = close's R at each play vertex's closest point on close's reference surface
                (barycentric on close's triangles, the two tiers' rest surfaces are the same reference's, topo_corr):
                one shape for both tiers (no LOD pop), no second fit; mirror-averaged, 0 on the ring;
-               play's own seam rows re-laid (`restrip`, with the spec and target).
+               play's own loops finished on her skin (`finish`, with the spec and target).
 Derivation: (a) the game's need (her approved sculpt as data on our base); (b) the named reference A
 (godot/art/people/heroine.glb, Mesh_0 "Heroine"), posed by her own game stack; (c) the method inherited from wrap.py
 (its v1 fit on hm08, TIGHT p95 ~1.7 mm), every MakeHuman id replaced by our topology's labels.
@@ -389,17 +391,132 @@ def residual(md, tgt, sliders, stance, lambdas=LAMBDAS, arm_passes=4, log=print)
         Darm = Darm + dA
         log(f"arm pass {ap}: {info}")
     R = R_of(Ut, Darm, tf)
-    R = relax(md, Vc, R)
-    X, seam = restrip(md, mt.S_all, Vc, Vc + R)
-    R = X - Vc
-    R[md.ring] = 0.0
-    return R, {"seam": seam, "icp": hist, "feet_move_m": {k: [round(float(x), 5) for x in v] for k, v in tf.items()}}
+    if os.environ.get("WRAP_TOPO_RAW"):         # authoring aid: the fit before `finish` (its rules re-run alone)
+        np.save(os.environ["WRAP_TOPO_RAW"], R)
+    R, fin = finish(md, tgt, Vc, R, log=log)
+    return R, {"seam": fin["seam"], "finish": fin, "icp": hist,
+               "feet_move_m": {k: [round(float(x), 5) for x in v] for k, v in tf.items()}}
+
+
+# ------------------------------------------------------------------------------------- finish: our loops --
+CREASE_DEG = 30.0       # her crease edges: valley edges whose faces turn over this (her inframammary fold's: 30-90+)
+CREASE_KEEP_M = 0.008   # our points within this of a crease of hers no named floor carries stay where the relax put them
+FLOOR_REACH_M = 0.010   # a crease within this of a named floor's loop is that floor's (the loop carries it)
+
+
+class Skin:
+    """Her skin (the target's surface): closest points with her interpolated vertex normals, and her midline section
+    (her triangles cut by x = 0: the curve the midline column lies on)."""
+
+    def __init__(self, tgt):
+        import surfdist
+        from scipy.spatial import cKDTree
+        self.P, self.T = np.asarray(tgt.P, float), np.asarray(tgt.T)
+        N = np.asarray(tgt.N, float)
+        self.N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-20)
+        self.S = surfdist.Surface(self.P, self.T)
+        cut, X, Nx = [], [], []
+        for k in range(3):
+            i, j = self.T[:, k], self.T[:, (k + 1) % 3]
+            xi, xj = self.P[i, 0], self.P[j, 0]
+            c = (xi >= 0) != (xj >= 0)
+            t = np.where(c, xi / np.where(c, xi - xj, 1.0), 0.0)[:, None]
+            cut.append(c)
+            X.append(self.P[i] + t * (self.P[j] - self.P[i]))
+            Nx.append(self.N[i] + t * (self.N[j] - self.N[i]))
+        c = np.stack(cut, 1)
+        r = np.where(c.sum(1) == 2)[0]
+        first = np.argmax(c[r], 1)
+        last = 2 - np.argmax(c[r, ::-1], 1)
+        Xs, Ns = np.stack(X, 1)[r], np.stack(Nx, 1)[r]
+        ar = np.arange(len(r))
+        self.A, self.B = Xs[ar, first], Xs[ar, last]
+        self.A[:, 0] = self.B[:, 0] = 0.0
+        self.NA, self.NB = Ns[ar, first], Ns[ar, last]
+        self.mtree = cKDTree(0.5 * (self.A + self.B))
+
+    def closest(self, X):
+        q, _, ti, _ = self.S.closest(X)
+        tri = self.T[ti]
+        a, b, c = self.P[tri[:, 0]], self.P[tri[:, 1]], self.P[tri[:, 2]]
+        v0, v1, v2 = b - a, c - a, q - a
+        d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+        d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = d00 * d11 - d01 * d01
+        den = np.where(np.abs(den) < 1e-30, 1e-30, den)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        n = ((1 - bv - bw)[:, None] * self.N[tri[:, 0]] + bv[:, None] * self.N[tri[:, 1]]
+             + bw[:, None] * self.N[tri[:, 2]])
+        return q, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-20)
+
+    def creases(self, min_deg=CREASE_DEG, away_from=None):
+        """Her sculpt's own creases: her mesh's concave (valley) edges whose faces turn over `min_deg`, as segments."""
+        from scipy.spatial import cKDTree
+        T = self.T
+        e = np.sort(np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]), 1)
+        ti = np.tile(np.arange(len(T)), 3)
+        o = np.lexsort((e[:, 1], e[:, 0]))
+        e, ti = e[o], ti[o]
+        i = np.where((e[1:] == e[:-1]).all(1))[0]
+        E, ta, tb = e[i], ti[i], ti[i + 1]
+        FN, cent = self.S.FN, self.S.cent
+        dih = np.degrees(np.arccos(np.clip((FN[ta] * FN[tb]).sum(1), -1, 1)))
+        valley = ((cent[tb] - cent[ta]) * FN[ta]).sum(1) > 0
+        k = valley & (dih > min_deg)
+        if away_from is not None and len(away_from):
+            mpt = 0.5 * (self.P[E[:, 0]] + self.P[E[:, 1]])
+            k &= cKDTree(away_from).query(mpt)[0] > FLOOR_REACH_M
+        self.CA, self.CB = self.P[E[k, 0]], self.P[E[k, 1]]
+        self.ctree = cKDTree(0.5 * (self.CA + self.CB))
+        return int(k.sum())
+
+    def on_crease(self, X, k=8):
+        """The closest point on her creases (`creases` first) and its distance."""
+        _, cand = self.ctree.query(X, k=k)
+        best = np.full(len(X), np.inf)
+        q = np.zeros_like(X)
+        for j in range(k):
+            s = cand[:, j]
+            A, B = self.CA[s], self.CB[s]
+            AB = B - A
+            t = np.clip(((X - A) * AB).sum(1) / np.maximum((AB * AB).sum(1), 1e-20), 0, 1)
+            Y = A + t[:, None] * AB
+            d = np.linalg.norm(X - Y, axis=1)
+            m = d < best
+            best[m], q[m] = d[m], Y[m]
+        return q, best
+
+    def mid(self, X, k=8):
+        """The closest point on her midline section, and her normal there (its x dropped)."""
+        _, cand = self.mtree.query(X, k=k)
+        best = np.full(len(X), np.inf)
+        q = np.zeros_like(X)
+        n = np.zeros_like(X)
+        for j in range(k):
+            s = cand[:, j]
+            A, B = self.A[s], self.B[s]
+            AB = B - A
+            t = np.clip(((X - A) * AB).sum(1) / np.maximum((AB * AB).sum(1), 1e-20), 0, 1)
+            Y = A + t[:, None] * AB
+            d = np.linalg.norm(X - Y, axis=1)
+            m = d < best
+            best[m], q[m] = d[m], Y[m]
+            n[m] = (self.NA[s] + t[:, None] * (self.NB[s] - self.NA[s]))[m]
+        n[:, 0] = 0.0
+        return q, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-20)
+
+
+def floors(md, V):
+    """The named floors (topo_check.FLOORS) on the fit: vertex masks of the topology's midline (mirror_of itself)."""
+    import topo_check
+    en = md.ends(V)
+    return topo_check.floor_masks(V, md.z, lambda b: np.asarray(en[b][0], float), mid=md.pr == np.arange(md.n))
 
 
 RELAX_ITERS, RELAX_STEP = 30, 0.5
 
 
-def relax(md, Vc, R, iters=RELAX_ITERS, alpha=RELAX_STEP):
+def relax(md, Vc, R, iters=RELAX_ITERS, alpha=RELAX_STEP, fixed=None):
     """Our loops after the fit: the TIGHT points slid along the fitted skin (projected back onto it each step) toward
     the slider stage's own spacing (its graph-Laplacian coordinates' tangential part), so her shape stays and our
     rows and columns keep their designed spacing (the ICP pinches them where she is narrower: her cleavage, her
@@ -410,6 +527,8 @@ def relax(md, Vc, R, iters=RELAX_ITERS, alpha=RELAX_STEP):
     w = md.lab["tight"] * md.lab["hold"]
     free = w > 0.5
     free[md.ring] = False
+    if fixed is not None:
+        free[fixed] = False
     deg = md.L.diagonal()[:, None]
     Lb = md.L @ Vc
     V = Vf.copy()
@@ -424,18 +543,137 @@ def relax(md, Vc, R, iters=RELAX_ITERS, alpha=RELAX_STEP):
     return V - Vc
 
 
+ARAP_ITERS = 60
+FREE_W = 0.99           # the slide moves the fully TIGHT points only (the shoulder's and neck's blends stay C's relax's)
+PAIRS = ((0, 1), (1, 2), (2, 3), (3, 0), (0, 2), (1, 3))
+
+
+GOOD_ASPECT, BAD_ASPECT = 2.5, 4.0
+
+
+def designed_quads(md, Vc):
+    """Each quad's target shape [nq, 4, 3]: the slider stage's quad (her sliders' local shape), turned toward the
+    base rest V0's quad (the designed shape, laid onto it by the best similarity) where the slider stage's own quad
+    is thin (its aspect from GOOD_ASPECT to BAD_ASPECT: the gate's 4): her sliders' shear is kept where it is mild and
+    dropped where it breaks the gate (the slider stage under her bust: aspect up to 7.7)."""
+    Q = md.Q
+    C = Vc[Q]
+    Cc = C - C.mean(1, keepdims=True)
+    D = md.V0[Q]
+    Dc = D - D.mean(1, keepdims=True)
+    H = np.einsum("qki,qkj->qij", Dc, Cc)
+    U, Sg, Wt = np.linalg.svd(H)
+    d = np.sign(np.linalg.det(U @ Wt))
+    U[:, :, 2] *= d[:, None]
+    Dl = np.einsum("qki,qij->qkj", Dc, U @ Wt)
+    Dl *= np.sqrt((Cc * Cc).sum((1, 2)) / np.maximum((Dc * Dc).sum((1, 2)), 1e-20))[:, None, None]
+    Lq = np.stack([np.linalg.norm(C[:, k] - C[:, (k + 1) % 4], axis=1) for k in range(4)], 1)
+    asp = Lq.max(1) / np.maximum(Lq.min(1), 1e-12)
+    b = s01((asp - GOOD_ASPECT) / (BAD_ASPECT - GOOD_ASPECT))[:, None, None]
+    return C.mean(1, keepdims=True) + (1 - b) * Cc + b * Dl
+
+
+def arap(md, skin, Vc, Vf, fl, fixed=None, iters=ARAP_ITERS, conformal=False, ref=None, size_smooth=3, mu=0.0,
+         jacobi=0.7):
+    """Our loops slid along her skin to the topology's designed quads (P1 H). Each quad's target: the base rest V0's
+    quad (the designed shape, clean by the check: folds, aspect and short edges 0) scaled to the slider stage's local
+    size (sqrt of its area over V0's, smoothed over the quad's neighbourhood: her sliders' size, not their shear);
+    local/global ARAP over each quad's 6 vertex pairs (edges and diagonals, each quad weighted by 1 / its target's
+    squared size: every quad's misfit relative), then each free point back on her skin at the fit's own offset from
+    it (h, kept per point: the fit's distance to her stays), the midline on her midline section at x = 0, the named
+    floors' points ON her floor (h = 0). Free: tight * hold > 0.5 off the ring and `fixed` (the seam rows), the move
+    eased in from 0 at 0.5 to full at 1 (the shoulder's and neck's blends); mirror-averaged as the fit."""
+    n, Q = md.n, md.Q
+    w = md.lab["tight"] * md.lab["hold"]
+    free = w > FREE_W
+    free[md.ring] = False
+    if fixed is not None:
+        free[fixed] = False
+    mid = md.pr == np.arange(n)
+    onf = np.zeros(n, bool)
+    for m in fl.values():
+        onf |= m
+    q, nn = skin.closest(Vf)
+    h = ((Vf - q) * nn).sum(1)
+    qm, nm = skin.mid(Vf[mid])
+    h[mid] = ((Vf[mid] - qm) * nm).sum(1)
+    h[onf] = 0.0
+
+    def area(X):
+        return 0.5 * np.linalg.norm(np.cross(X[:, 2] - X[:, 0], X[:, 3] - X[:, 1]), axis=1)
+
+    Rq = designed_quads(md, Vc) if ref is None else ref[Q]
+    s = area(Vf[Q]) / np.maximum(area(Rq), 1e-12)          # her local size over the reference quad's, smoothed
+    cnt = np.bincount(Q.ravel(), minlength=n)
+    for _ in range(size_smooth):
+        sv = np.bincount(Q.ravel(), np.repeat(s, 4), minlength=n) / np.maximum(cnt, 1)
+        s = sv[Q].mean(1)
+    s = np.sqrt(s)
+    act = np.where(free[Q].any(1))[0]
+    Qa = Q[act]
+    T = (Rq[act] - Rq[act].mean(1, keepdims=True)) * s[act, None, None]
+    TT = (T * T).sum((1, 2))
+    e2 = np.mean([((T[:, a] - T[:, b]) ** 2).sum(1) for a, b in PAIRS[:4]], 0)
+    wq = 1.0 / np.maximum(e2, 1e-12)
+    r_, c_, v_ = [], [], []
+    for a, b in PAIRS:
+        ia, ib = Qa[:, a], Qa[:, b]
+        r_ += [ia, ib, ia, ib]
+        c_ += [ia, ib, ib, ia]
+        v_ += [wq, wq, -wq, -wq]
+    L = sp.csr_matrix((np.concatenate(v_), (np.concatenate(r_), np.concatenate(c_))), shape=(n, n))
+    F, C = np.where(free)[0], np.where(~free)[0]
+    LFF, LFC = L[F][:, F], L[F][:, C]
+    tw = mu * np.asarray(LFF.diagonal())                     # the tether to the fit (relative to each point's stiffness)
+    LFF = (LFF + sp.diags(tw)).tocsc()
+    solve = None if jacobi else spl.factorized(LFF)
+    dg = np.asarray(L.diagonal())[F]
+    fmid = mid[F]
+    X = Vf.copy()
+    nprev = nn[F]
+    for _ in range(iters):
+        Xq = X[Qa]
+        H = np.einsum("qki,qkj->qij", T, Xq - Xq.mean(1, keepdims=True))
+        U, Sg, Wt = np.linalg.svd(H)
+        d = np.sign(np.linalg.det(U @ Wt))
+        U[:, :, 2] *= d[:, None]
+        Rt = np.einsum("qki,qij->qkj", T, U @ Wt)            # each target quad rotated onto ours (Kabsch)
+        if conformal:                                        # and scaled: the best similarity (its size free)
+            Rt *= ((Sg[:, 0] + Sg[:, 1] + d * Sg[:, 2]) / TT)[:, None, None]
+        b = np.zeros((n, 3))
+        for a, c in PAIRS:
+            r = wq[:, None] * (Rt[:, a] - Rt[:, c])
+            np.add.at(b, Qa[:, a], r)
+            np.add.at(b, Qa[:, c], -r)
+        if jacobi:                                           # local: one damped Jacobi sweep of the same system
+            Y = X[F] + jacobi * (b[F] - L[F] @ X) / dg[:, None]
+        else:
+            rhs = b[F] - LFC @ X[C] + tw[:, None] * Vf[F]
+            Y = np.stack([solve(rhs[:, k]) for k in range(3)], 1)
+        q, nn = skin.closest(Y)
+        P_ = q + h[F, None] * nn
+        if fmid.any():
+            qm, nm = skin.mid(Y[fmid])
+            P_[fmid] = qm + h[F][fmid, None] * nm
+        jump = (nn * nprev).sum(1) < 0.7                   # landed on another sheet (the armpit, a crease's far wall):
+        D = Y[jump] - X[F][jump]                              # that point only slides in its own tangent plane
+        P_[jump] = X[F][jump] + D - (D * nprev[jump]).sum(1)[:, None] * nprev[jump]
+        nprev = np.where(jump[:, None], nprev, nn)
+        X[F] = P_
+        X = Vf + symmetrize(X - Vf, md.pr, md.symw)
+    move = np.linalg.norm(X - Vf, axis=1)
+    return X, {"free": int(len(F)), "move_mm_p95_max": [round(float(np.percentile(move[F], 95)) * 1e3, 2),
+                                                        round(float(move.max()) * 1e3, 2)],
+               "floors": {k: int(m.sum()) for k, m in fl.items()}}
+
+
 SEAM_M = 0.015
+SEAM_SUB = 6        # samples per row step along each column's path on her skin
 
 
-def restrip(md, S, Vc, V, seam_m=SEAM_M):
-    """The seam rows: between the head's ring and the first neck row at least `seam_m` under SPLIT (the anchor),
-    each column's residual laid again: R lerped from the ring's (0) to the anchor's at the slider stage's own
-    arc-length fractions down the column, then the points onto her skin (S). P1 N: the topology now meets the baked
-    ring by construction (topo.neck_carry), so the slider stage's seam rows are clean (folds 0, aspect max 3.6);
-    pulled point by point by the ICP her top rows still cross (fit with no seam rule: 6 neck folds over 60 deg), and
-    C's old rule (the points re-laid along the chord ring -> anchor, then projected) now folds 14 (179 deg: the chord
-    cuts under her neck's curve and the projection lands rows out of order). Lerping R keeps the rows' order from
-    the slider stage: 0 neck folds (her close fit on spec3, folds over the body: C's rule 27, none 19, this 13)."""
+def seam_band(md, seam_m=SEAM_M):
+    """The seam rows: the neck columns from the head's ring (row 0 of the band) down to the first row at least
+    `seam_m` under SPLIT (the anchor): C [rows, columns] vertex ids, and the rows."""
     z = md.z
     m = z["part"] == pidx(z, "neck")
     rows = z["ring"]
@@ -450,15 +688,73 @@ def restrip(md, S, Vc, V, seam_m=SEAM_M):
         sel = np.where(m & (rows == r))[0]
         C[i, np.searchsorted(cols, key[sel])] = sel
     assert (C >= 0).all(), "the neck's seam rows are not whole columns"
+    return C, band
+
+
+def restrip(md, skin, Vc, V, seam_m=SEAM_M):
+    """The seam rows, laid again column by column BY ARC LENGTH ON HER SKIN (P1 H): each column's path from the head's
+    ring (on her skin: the ring meets her neck's top, 0.0 mm) to the anchor = the slider stage's column carried by
+    the lerp of R (0 at the ring, the anchor's at the anchor: N's rule, it keeps the rows' order), sampled SEAM_SUB
+    times per row step and put on her skin; the rows then at the slider stage's own arc-length fractions down that
+    path, on her skin. N's lerp-then-project bunched the rows where her skin goes straight up and our slider stage's
+    back neck runs in under the skull (the projection put a 10-14 mm span of rows on a few mm: aspect up to 9.4)."""
+    C, band = seam_band(md, seam_m)
+    nc = C.shape[1]
     seg = np.linalg.norm(np.diff(Vc[C], axis=0), axis=2)
-    t = np.concatenate([np.zeros((1, len(cols))), np.cumsum(seg, 0)]) / seg.sum(0)
-    R = V - Vc
+    t = np.concatenate([np.zeros((1, nc)), np.cumsum(seg, 0)]) / seg.sum(0)
+    Ra = V[C[-1]] - Vc[C[-1]]
+    k = SEAM_SUB * (len(band) - 1)
+    u = np.linspace(0, 1, k + 1)
+    path = np.stack([np.stack([np.interp(u, t[:, j], Vc[C[:, j], c]) for c in range(3)], 1) for j in range(nc)], 1)
+    path = path + u[:, None, None] * Ra[None]                 # [k+1, cols, 3]: ring (R 0) -> anchor (its R)
+    path[1:-1] = skin.closest(path[1:-1].reshape(-1, 3))[0].reshape(k - 1, nc, 3)
+    path[0], path[-1] = V[C[0]], V[C[-1]]
+    al = np.concatenate([np.zeros((1, nc)), np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=2), 0)])
+    al = al / al[-1]
     X = V.copy()
     for i in range(1, len(band) - 1):
-        X[C[i]] = Vc[C[i]] + t[i][:, None] * R[C[-1]]       # the ring's R is 0 (the head's, kept): never the ICP's
-    inner = C[1:-1].ravel()
-    X[inner] = S.closest(X[inner])[0]
-    return X, {"rows": [int(band[1]), int(band[-2])], "anchor_row": int(anchor), "points": int(len(inner))}
+        for j in range(nc):
+            X[C[i, j]] = [np.interp(t[i, j], al[:, j], path[:, j, c]) for c in range(3)]
+    ins = C[1:-1].ravel()
+    X[ins] = skin.closest(X[ins])[0]
+    return X, {"rows": [int(band[1]), int(band[-2])], "anchor_row": int(band[-1]), "points": int(len(ins))}
+
+
+def finish(md, tgt, Vc, R, log=print, arap_iters=ARAP_ITERS):
+    """After the fit (P1 H): our loops clean on her skin. (1) the midline on x = 0 (the topology's midline columns;
+    the slider stage leaves them up to 0.6 mm off at the cleft, so the cleft's floor folds read as off-floor);
+    (2) C's relax (the TIGHT points slid along the fitted skin to the slider stage's Laplacian spacing: it unfolds
+    the crossings the ICP leaves, the shoulder's); (3) the seam rows by arc length on her skin (`restrip`); (4) the
+    local ARAP slide on her skin (`arap`: it opens the bunched columns a Laplacian cannot, the cleavage's: a uniform
+    squeeze has no Laplacian) with the seam rows held, and our points within CREASE_KEEP_M of a crease of hers that
+    no named floor carries held too (her own mesh's valley edges over CREASE_DEG, farther than FLOOR_REACH_M from
+    every floor point: sliding our quads across her inframammary fold re-cuts it, folds 8 -> 20); (5) the seam rows
+    once more from the slid anchor row. The ring keeps 0."""
+    skin = Skin(tgt)
+    Vf = Vc + R
+    mid = (md.pr == np.arange(md.n)) & (md.symw >= 1.0)
+    Vf[mid, 0] = 0.0
+    fl = floors(md, Vf)
+    pin = np.zeros(md.n, bool)
+    snap = {}
+    onf = np.zeros(md.n, bool)
+    for m in fl.values():
+        onf |= m
+    if skin.creases(away_from=Vf[onf]):     # her creases no named floor carries: the slide keeps off them
+        pin = skin.on_crease(Vf)[1] < CREASE_KEEP_M
+        snap = {"held_by_her_creases": int(pin.sum()), "crease_edges": int(len(skin.CA))}
+    X = Vc + relax(md, Vc, Vf - Vc)
+    X, _ = restrip(md, skin, Vc, X)
+    C, _ = seam_band(md)
+    hold = pin.copy()
+    hold[C[:-1].ravel()] = True
+    X, ainfo = arap(md, skin, Vc, X, fl, fixed=np.where(hold)[0], iters=arap_iters)
+    X[mid, 0] = 0.0
+    X, seam = restrip(md, skin, Vc, X)
+    R = X - Vc
+    R[md.ring] = 0.0
+    log(f"finish: snap {snap} arap {ainfo} seam {seam}")
+    return R, {"seam": seam, "arap": ainfo, "snap": snap}
 
 
 # ---------------------------------------------------------------------------------------- topology quality --
@@ -481,7 +777,8 @@ def write_forms(path, z, R, tier, about):
 
 def carry(close_npz, play_npz, spec_path=None, tnpz=None):
     """topo-carry: close's R onto play's vertices through close's reference surface (barycentric); with the spec and
-    the target, play's own seam rows laid again on her skin (restrip)."""
+    the target, play's own loops finished on her skin (`finish`: midline, seam rows, the ARAP slide on play's own
+    designed quads)."""
     import surfdist
     rc = np.load(close_npz)
     zc, _ = bt.load_tier("close")
@@ -510,8 +807,7 @@ def carry(close_npz, play_npz, spec_path=None, tnpz=None):
         mp = Model(load_spec(spec_path), "play")
         tg = wrap.Target(tnpz)
         Vc = mp.body(load_spec(spec_path)["sliders"], load_spec(spec_path)["stance"])
-        X, info = restrip(mp, surfdist.Surface(tg.P, tg.T), Vc, Vc + Rp)
-        Rp = X - Vc
+        Rp, info = finish(mp, tg, Vc, Rp, log=lambda *x: None)
     Rp[bt.boundary_ring(zp["Q"], len(Vp))] = 0.0
     write_forms(play_npz, zp, Rp, "play", "tools/body/wrap.py topo-carry: her residual R per our play vertex (glTF m), "
                 "close's carried through close's reference surface; build_topo.py stage 2b adds it after the ring snap")

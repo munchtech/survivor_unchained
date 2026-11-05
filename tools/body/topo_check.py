@@ -11,6 +11,8 @@ limb parts (npz `parts`) inside the zone's slab, left side (the right is folded 
 Hip: within 60 mm of the thigh root seam's front/back curve; shoulder: the arm side to 110 mm below the armpit
 (the armpit = the lowest arm vertex that shares an edge with the trunk); neck base: neck + upper trunk above the
 clavicle line out to 75 mm.  Nothing is keyed to a MakeHuman vertex id.
+Folds: an edge over 60 deg is a defect unless it lies ON a named floor (FLOORS: a real crease carried by one of our
+loops, each with its why; P1 H generalised the cleft's floor rule, every midline edge, to named floors).
 """
 from __future__ import annotations
 
@@ -106,6 +108,31 @@ def _zones(V, z, sk):
     return Zs, joints
 
 
+# Named floors (P1 H): a real crease of the body is carried by one of our loops on its floor; a fold over 60 deg ON
+# that loop is the crease itself, not a defect. Each floor: its why, and its loop on a built body (vertices of our
+# topology, chosen by our labels and the body's own skeleton; edges whose two ends are on the same floor).
+FLOORS = {
+    "gluteal_cleft": "(b) the gluteal cleft: topo_gates.cleft_mask (the reference's midline edges over 60 deg up to "
+                     "y 1.109, 27 mm over its pelvis joint) and her sculpt (her normals 130-135 deg apart across it at "
+                     "our quads, P1 H step 1); the floor = our back midline column from the crotch strip to 30 mm over "
+                     "the pelvis joint (the topology's cleft floor: topo_gates' cleft rule)",
+    "cleavage": "(b) her sculpt: her breasts' inner faces meet in a valley on the midline (her normals 117-140 deg "
+                "apart across it at our quads, P1 H step 1); the floor = our front midline column over the breasts' "
+                "height (the breast part's lowest to highest vertex)",
+}
+
+
+def floor_masks(V, z, J, mid=None):
+    """Per named floor, the vertex mask of its loop on body V (J(bone) -> the bone's head; mid: the midline vertices,
+    default |x| < 0.1 mm)."""
+    P = list(map(str, z["parts"]))
+    mid = (np.abs(V[:, 0]) < 1e-4) if mid is None else mid
+    pel = np.asarray(J("pelvis"), float)
+    br = V[z["part"] == P.index("breast"), 1]
+    return {"gluteal_cleft": mid & (V[:, 2] < pel[2]) & (V[:, 1] <= pel[1] + 0.030),
+            "cleavage": mid & (V[:, 2] > pel[2]) & (V[:, 1] >= br.min()) & (V[:, 1] <= br.max())}
+
+
 def measure(V, z, sk):
     """V: the built body mesh's rest vertices (topology order); z: the topology npz arrays; sk: the glb skeleton."""
     V = np.asarray(V, float)
@@ -117,8 +144,11 @@ def measure(V, z, sk):
     E, qa, qb = G.edge_pairs(Q)
     dih = np.degrees(np.arccos(np.clip((n[qa] * n[qb]).sum(1), -1, 1)))
     body_e = ~(tmpl_q[qa] | tmpl_q[qb])
-    mid_v = np.abs(V[:, 0]) < 1e-4
-    on_floor = mid_v[E[:, 0]] & mid_v[E[:, 1]]
+    fm = floor_masks(V, z, lambda b: sk.rest[sk.names.index(b)][:3, 3])
+    fl_e = {k: m[E[:, 0]] & m[E[:, 1]] for k, m in fm.items()}
+    on_floor = np.zeros(len(E), bool)
+    for m in fl_e.values():
+        on_floor |= m
     m = 0.5 * (V[E[:, 0]] + V[E[:, 1]])
     ty = float(sk.rest[sk.names.index("thigh_l")][1, 3])       # (b) topo_gates' thigh-gap box, relative to the thigh joint
     gap = (np.abs(m[:, 0]) <= 0.040) & (m[:, 1] >= ty - 0.092) & (m[:, 1] <= ty - 0.067) & (np.abs(m[:, 2]) <= 0.015)
@@ -130,6 +160,8 @@ def measure(V, z, sk):
     out = {"vertices": len(V), "quads": len(Q),
            "fold_over_60": int((bad & ~exc).sum()), "fold_over_60_crotch_exception": int(exc.sum()),
            "fold_on_floor_loop_over_60": int((body_e & on_floor & (dih > G.FOLD_DEG)).sum()),
+           "floors": {k: {"edges": int(m.sum()), "over_60": int((body_e & m & (dih > G.FOLD_DEG)).sum()),
+                          "max_deg": round(float(dih[m].max()), 1) if m.any() else None} for k, m in fl_e.items()},
            "fold_max_deg_off_floor": round(float(dih[body_e & ~on_floor].max()), 1),
            "aspect_over_4": int((asp[~tmpl_q] > G.ASPECT_MAX).sum()),
            "aspect_max": round(float(asp[~tmpl_q].max()), 2),
