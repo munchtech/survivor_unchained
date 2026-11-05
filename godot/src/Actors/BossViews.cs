@@ -377,6 +377,9 @@ public partial class OrbView : Node3D, IOrb
     /// <summary>Its light's share of the glow (1 as built; a cinematic's "lamp" cue "light": the stone as bright, less of its light
     /// on what is near it, C03 s8: her face keyed by the shot's own rigs, the stone's pale light greyed her skin).</summary>
     public float LightShare = 1;
+    /// <summary>A dry stone (P9 C13: the Barrow Lord's heart out of the vault's floor, not the river's): no soak, no drips, no
+    /// drop on its underside (a cinematic's "lamp" cue "dry": true).</summary>
+    public bool Dry;
     const float FistK = 0.002f;
 
     static Mesh? heartMesh;
@@ -561,7 +564,7 @@ public partial class OrbView : Node3D, IOrb
     {
         if (bead == null) return;
         // (while it is wet: soaked to 40 s shown)
-        bead.Visible = Visible && shownT < 40;
+        bead.Visible = Visible && shownT < 40 && !Dry;
         if (!bead.Visible) return;
         double ph = t % (BeadGather + BeadFall);
         float r = size * 0.02f;
@@ -622,11 +625,11 @@ public partial class OrbView : Node3D, IOrb
         light.LightEnergy = (float)(lightIn * lightK * sizeK * LightShare * (1 + lightAmp * (2 * b - 1)));
         light.Visible = lightIn > 0.01;
         // Wet from the water: soaked for its first 20 s shown, drying to a damp sheen by 60 s; the drips thin out by 25 s.
-        float wet = (float)Math.Clamp(1 - (shownT - 20) / 40, 0.35, 1);
+        float wet = Dry ? 0 : (float)Math.Clamp(1 - (shownT - 20) / 40, 0.35, 1);
         heart.SetShaderParameter("wet", wet);
         if (drips != null)
         {
-            double ratio = Math.Clamp(1 - (shownT - 12) / 13, 0, 1);
+            double ratio = Dry ? 0 : Math.Clamp(1 - (shownT - 12) / 13, 0, 1);
             drips.Emitting = ratio > 0.02;
             drips.AmountRatio = (float)ratio;
         }

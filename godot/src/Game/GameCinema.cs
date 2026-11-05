@@ -1084,6 +1084,8 @@ public partial class Game
                         if (c.Has("lit")) o.Visible = c.Bool("lit", true);
                         // ("light": its light's share of the glow, OrbView.LightShare; 1 gives it back)
                         if (c.Has("light") && o is OrbView ov) ov.LightShare = (float)c.Num("light");
+                        // ("dry": true: no soak, drips or drop, OrbView.Dry: P9 C13's heart out of the vault floor)
+                        if (c.Has("dry") && o is OrbView dv) dv.Dry = c.Bool("dry");
                         if (!c.Has("glow")) break;
                         double from = orbLight[c.Actor], to = 6 * c.Num("glow");
                         void Set(double l) { orbLight[c.Actor] = l; ((IOrb)o).Light = l; }
@@ -1306,6 +1308,16 @@ public partial class Game
                     // {"do":"foe","actor":"laid","def":"corvane","hidden":true} (a film casting its own double of him),
                     // {"do":"foe","actor":"lord","boss":true,"glow":0,"tint":[0.35,0.35,0.4],"light":0} (a dark shape).
                     // Each key kept from its last cue when not given. Cleared after the film's end has run the zone's done.
+                    // ("all": true: every living creature of the zone but its boss takes this look, "hidden" and the rest:
+                    // C13's end, the zone's crowd away for the film's own ranks of the dead, put back after the zone's done)
+                    if (c.Bool("all"))
+                    {
+                        (double, double, double)? atint = c.Get("tint") is { ValueKind: JsonValueKind.Array } aa && aa.GetArrayLength() == 3
+                            ? (aa[0].GetDouble(), aa[1].GetDouble(), aa[2].GetDouble()) : null;
+                        foreach (var ae in b.Enemies.Living())
+                            if (!ae.Boss) FilmFoes.Set(ae, new FilmFoes.Look(c.Bool("hidden"), c.Has("glow") ? c.Num("glow") : null, atint, c.Num("light", 1)));
+                        break;
+                    }
                     V3? fnear = c.Has("near") ? places.Resolve(c.Get("near")) : null;
                     var fe = enemies.TryGetValue(c.Actor, out var known) && known.Alive ? known
                         : FilmFoes.Pick(b.Enemies.Living(), c.Str("def"), c.Bool("boss"), fnear is V3 fn ? (fn.X, fn.Z) : null);

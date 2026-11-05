@@ -1899,8 +1899,8 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("won")) mr.WinNow();
         }
         // --bosskill T: a table night's boss felled by her hand T seconds after it stands (the listening sheet's
-        // arrival and fall, without a fight that runs long).
-        if (!bossKillDone && Args.Has("bosskill") && zone is ArenaRun && Battle is { } bk && bk.Enemies.Living().FirstOrDefault(e => e.Boss) is { } be)
+        // arrival and fall, without a fight that runs long; a story night's too: P9 C13's end film on the real fall).
+        if (!bossKillDone && Args.Has("bosskill") && zone is ArenaRun or StoryNight && Battle is { } bk && bk.Enemies.Living().FirstOrDefault(e => e.Boss) is { } be)
         {
             bossSeenAt ??= bk.Time;
             if (bk.Time - bossSeenAt >= Args.Num("bosskill", 4)) { bossKillDone = true; be.HpFloor = 0; bk.KillEnemy(be, true, null); GD.Print($"bosskill {be.Def.Id} at {bk.Time:0.0}"); }

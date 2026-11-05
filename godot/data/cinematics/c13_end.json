@@ -1,0 +1,1475 @@
+{
+ "id": "c13_end",
+ "title": "The Heart Under the Stair",
+ "conversation": "door_night",
+ "zone": "arena",
+ "script": "docs/cinematics/shoot/c13.md",
+ "draft": "Build round 1: he stays down, the heart comes up violet and goes cold in her hands, the singer under the stair, the ranks step back, Jessop far down with his violet lantern; dips into the reckoning.",
+ "bars": {
+  "in": 0.6,
+  "out": 0.8
+ },
+ "skip": {
+  "from": 1.5,
+  "hold": 0.8
+ },
+ "world": {
+  "rate": 0,
+  "zoneHeld": true
+ },
+ "marks": {
+  "boss": [
+   0,
+   -33,
+   0
+  ],
+  "her": [
+   0.45,
+   -30,
+   3.1416
+  ],
+  "jessop": [
+   0.6,
+   -52.76,
+   3.1416
+  ],
+  "offstage": [
+   0,
+   -90,
+   0
+  ]
+ },
+ "cast": {
+  "her": {
+   "kind": "survivor",
+   "mark": "her"
+  },
+  "stone": {
+   "kind": "orb",
+   "mark": "offstage",
+   "color": "#a77bff",
+   "size": 0.06,
+   "glow": 0.0
+  },
+  "sink": {
+   "kind": "orb",
+   "mark": "offstage",
+   "color": "#a77bff",
+   "size": 0.02,
+   "glow": 0.0
+  },
+  "dead": {
+   "kind": "extras",
+   "visual": [
+    "skeleton_warrior",
+    "skeleton_warrior",
+    "skeleton_rogue",
+    "skeleton_warrior",
+    "skeleton_warrior_elite"
+   ],
+   "heading": 0.0,
+   "idle": "Idle",
+   "at": [
+    [
+     -1.67,
+     0,
+     -34.9
+    ],
+    [
+     0.06,
+     0,
+     -34.78
+    ],
+    [
+     1.49,
+     0,
+     -34.66
+    ],
+    [
+     -1.55,
+     0,
+     -36.64
+    ],
+    [
+     -0.12,
+     0,
+     -36.52
+    ],
+    [
+     1.61,
+     0,
+     -36.76
+    ],
+    [
+     -1.43,
+     0,
+     -38.38
+    ],
+    [
+     0.0,
+     0,
+     -38.62
+    ],
+    [
+     1.43,
+     0,
+     -38.5
+    ],
+    [
+     -1.61,
+     0,
+     -40.48
+    ],
+    [
+     0.12,
+     0,
+     -40.36
+    ],
+    [
+     1.55,
+     0,
+     -40.24
+    ],
+    [
+     -1.49,
+     0,
+     -42.22
+    ],
+    [
+     -0.06,
+     0,
+     -42.1
+    ],
+    [
+     1.67,
+     0,
+     -42.34
+    ],
+    [
+     -1.67,
+     0,
+     -43.96
+    ],
+    [
+     0.06,
+     0,
+     -44.2
+    ],
+    [
+     1.49,
+     0,
+     -44.08
+    ],
+    [
+     -1.55,
+     0,
+     -46.06
+    ],
+    [
+     -0.12,
+     0,
+     -45.94
+    ],
+    [
+     1.61,
+     0,
+     -45.82
+    ]
+   ]
+  },
+  "jessop": {
+   "kind": "npc",
+   "def": "jory",
+   "mark": "jessop"
+  }
+ },
+ "shots": [
+  {
+   "id": "E1",
+   "type": "MLS",
+   "dur": 5.65,
+   "note": "Her side, 3/4 behind her at shoulder height, her at the frame's left edge; him down on the landing beyond, the ranks of the dead frozen before the stair, their eye-lights on her. Music cut. The heart line begins.",
+   "cam": {
+    "pos": {
+     "mark": "boss",
+     "off": [
+      2.35,
+      1.5,
+      5.3
+     ]
+    },
+    "at": {
+     "mark": "boss",
+     "off": [
+      -0.4,
+      0.5,
+      -0.6
+     ]
+    },
+    "lens": 35
+   },
+   "cues": [
+    {
+     "do": "music",
+     "mood": "silence",
+     "intensity": 0
+    },
+    {
+     "do": "foe",
+     "actor": "crowd",
+     "all": true,
+     "hidden": true
+    },
+    {
+     "do": "place",
+     "actor": "her",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       0.0,
+       3.0
+      ]
+     },
+     "heading": 3.1416
+    },
+    {
+     "do": "anim",
+     "actor": "her",
+     "clip": "@idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0
+    },
+    {
+     "do": "head",
+     "actor": "her",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0,
+       0.5,
+       0.6
+      ]
+     },
+     "amount": 0.45
+    },
+    {
+     "do": "place",
+     "actor": "stone",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.0,
+       -0.08,
+       0.75
+      ]
+     }
+    },
+    {
+     "do": "lamp",
+     "actor": "stone",
+     "dry": true,
+     "glow": 0.0
+    },
+    {
+     "do": "eyelights",
+     "actor": "dead",
+     "color": "#9a6cff",
+     "size": 0.05,
+     "energy": 3
+    },
+    {
+     "do": "hide",
+     "actor": "jessop"
+    },
+    {
+     "at": 0.5,
+     "do": "line",
+     "id": "door_night.heart"
+    }
+   ]
+  },
+  {
+   "id": "E2",
+   "type": "MCU",
+   "dur": 7.65,
+   "note": "Low on the floor by his chest, 50 mm: under him, in its notch, the stone comes up violet, its light on the flagstones and the edge of his dark armour; it lifts, turning, and rises out of the top of the frame; the camera tilts a little after it.",
+   "cam": {
+    "pos": {
+     "mark": "boss",
+     "off": [
+      1.25,
+      0.32,
+      1.75
+     ]
+    },
+    "at": {
+     "mark": "boss",
+     "off": [
+      0.0,
+      0.12,
+      0.75
+     ]
+    },
+    "lens": 50,
+    "focus": {
+     "actor": "stone"
+    },
+    "fstop": 2.8,
+    "move": {
+     "start": 4.6,
+     "end": 7.65,
+     "at": {
+      "mark": "boss",
+      "off": [
+       0.05,
+       0.75,
+       0.8
+      ]
+     },
+     "ease": "inout"
+    }
+   },
+   "cues": [
+    {
+     "do": "hold",
+     "actor": "her",
+     "slot": "all",
+     "piece": null
+    },
+    {
+     "do": "lamp",
+     "actor": "stone",
+     "lit": true,
+     "glow": 0.15
+    },
+    {
+     "at": 0.45,
+     "do": "lamp",
+     "actor": "stone",
+     "glow": 1.6,
+     "over": 2.6
+    },
+    {
+     "at": 0.45,
+     "do": "move",
+     "actor": "stone",
+     "to": {
+      "mark": "boss",
+      "off": [
+       0.0,
+       0.1,
+       0.75
+      ]
+     },
+     "dur": 2.6
+    },
+    {
+     "at": 0.5,
+     "do": "sfx",
+     "name": "heart_hum",
+     "gain": 0.6
+    },
+    {
+     "at": 0.45,
+     "do": "rig",
+     "name": "pool",
+     "world": true,
+     "from": {
+      "actor": "stone",
+      "off": [
+       0,
+       0.25,
+       0
+      ]
+     },
+     "aim": {
+      "mark": "boss",
+      "off": [
+       0,
+       0,
+       0.75
+      ]
+     },
+     "color": "#a77bff",
+     "energy": 2.2,
+     "angle": 70,
+     "falloff": 1.2,
+     "range": 3.0,
+     "spec": 0.4,
+     "over": 2.6
+    },
+    {
+     "at": 3.3,
+     "do": "sfx",
+     "name": "heart_hum",
+     "gain": 0.85
+    },
+    {
+     "at": 5.0,
+     "do": "move",
+     "actor": "stone",
+     "to": {
+      "mark": "boss",
+      "off": [
+       0.05,
+       1.25,
+       0.85
+      ]
+     },
+     "dur": 2.6
+    },
+    {
+     "at": 6.1,
+     "do": "sfx",
+     "name": "heart_hum",
+     "gain": 1.0
+    }
+   ]
+  },
+  {
+   "id": "E3",
+   "type": "MCU",
+   "dur": 14.2,
+   "note": "Side-on, close (C03 s8's grammar): the stone drifts down into her cupped hands, its violet on her face from below. 'It is warm, and then it is not': its light sinks through her palms and down out of frame to the floor; the stone only a stone, dull, unlit. Face still, her gaze on it.",
+   "cam": {
+    "pos": {
+     "mark": "boss",
+     "off": [
+      1.95,
+      1.42,
+      2.3
+     ]
+    },
+    "at": {
+     "mark": "boss",
+     "off": [
+      0.5,
+      1.3,
+      2.7
+     ]
+    },
+    "lens": 50,
+    "focus": {
+     "actor": "her",
+     "bone": "eyes"
+    },
+    "fstop": 5.6,
+    "move": {
+     "push": 0.25,
+     "ease": "slow"
+    }
+   },
+   "cues": [
+    {
+     "do": "hold",
+     "actor": "her",
+     "slot": "all",
+     "piece": null
+    },
+    {
+     "do": "skin",
+     "sky": 0.35,
+     "ear": 1.0,
+     "off": "key,cool,cap"
+    },
+    {
+     "do": "anim",
+     "actor": "her",
+     "clip": "her/cup_hands",
+     "from": 0.6,
+     "speed": 0.45,
+     "blend": 0.3
+    },
+    {
+     "do": "gaze",
+     "look": [
+      0,
+      0.6
+     ],
+     "wander": 0.02
+    },
+    {
+     "do": "place",
+     "actor": "stone",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.55,
+       1.75,
+       2.25
+      ]
+     }
+    },
+    {
+     "do": "lamp",
+     "actor": "stone",
+     "glow": 1.8,
+     "light": 0.2
+    },
+    {
+     "do": "move",
+     "actor": "stone",
+     "to": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       1.32,
+       2.58
+      ]
+     },
+     "dur": 1.5
+    },
+    {
+     "do": "rig",
+     "name": "warm",
+     "from": {
+      "lens": [
+       -0.9,
+       0.5,
+       -0.6
+      ]
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "head"
+     },
+     "color": "#ffe6c7",
+     "energy": 0.6,
+     "angle": 30,
+     "range": 6
+    },
+    {
+     "do": "rig",
+     "name": "chin",
+     "from": {
+      "actor": "stone"
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "head"
+     },
+     "color": "#a77bff",
+     "energy": 0.7,
+     "angle": 40,
+     "range": 2.5
+    },
+    {
+     "do": "rig",
+     "name": "spill",
+     "from": {
+      "actor": "stone"
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "hand_l",
+      "off": [
+       0,
+       0,
+       -0.05
+      ]
+     },
+     "color": "#a77bff",
+     "energy": 2.4,
+     "angle": 22,
+     "range": 3
+    },
+    {
+     "do": "sfx",
+     "name": "heart_hum",
+     "gain": 1.1
+    },
+    {
+     "at": 0.6,
+     "do": "head",
+     "actor": "her",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       1.32,
+       2.58
+      ]
+     },
+     "amount": 0.5,
+     "over": 1.0
+    },
+    {
+     "at": 4.4,
+     "do": "lamp",
+     "actor": "stone",
+     "glow": 0.0,
+     "over": 3.2
+    },
+    {
+     "at": 4.4,
+     "do": "place",
+     "actor": "sink",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       1.27,
+       2.58
+      ]
+     }
+    },
+    {
+     "at": 4.4,
+     "do": "lamp",
+     "actor": "sink",
+     "lit": true,
+     "glow": 1.4
+    },
+    {
+     "at": 4.5,
+     "do": "move",
+     "actor": "sink",
+     "to": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       0.02,
+       2.58
+      ]
+     },
+     "dur": 3.6
+    },
+    {
+     "at": 5.6,
+     "do": "lamp",
+     "actor": "sink",
+     "glow": 0.0,
+     "over": 2.6
+    },
+    {
+     "at": 4.4,
+     "do": "rig",
+     "name": "chin",
+     "from": {
+      "actor": "sink"
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "head"
+     },
+     "color": "#a77bff",
+     "energy": 0.0,
+     "fade": true,
+     "over": 2.0
+    },
+    {
+     "at": 4.4,
+     "do": "rig",
+     "name": "spill",
+     "from": {
+      "actor": "sink"
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "hand_l"
+     },
+     "color": "#a77bff",
+     "energy": 0.0,
+     "fade": true,
+     "over": 3.0
+    },
+    {
+     "at": 4.4,
+     "do": "rig",
+     "name": "warm",
+     "from": {
+      "lens": [
+       -0.9,
+       0.5,
+       -0.6
+      ]
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "head"
+     },
+     "color": "#ffe6c7",
+     "energy": 0.35,
+     "fade": true,
+     "over": 3.0
+    },
+    {
+     "at": 4.6,
+     "do": "rig",
+     "name": "floor",
+     "world": true,
+     "from": {
+      "actor": "sink"
+     },
+     "aim": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       0,
+       2.58
+      ]
+     },
+     "color": "#a77bff",
+     "energy": 1.6,
+     "angle": 50,
+     "range": 2.5,
+     "over": 1.5
+    },
+    {
+     "at": 7.0,
+     "do": "rig",
+     "name": "floor",
+     "world": true,
+     "from": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       0.8,
+       2.58
+      ]
+     },
+     "aim": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       0,
+       2.58
+      ]
+     },
+     "color": "#a77bff",
+     "energy": 0.0,
+     "fade": true,
+     "angle": 50,
+     "range": 2.5,
+     "over": 2.0
+    },
+    {
+     "at": 4.4,
+     "do": "rig",
+     "name": "moonface",
+     "from": {
+      "lens": [
+       0.6,
+       1.2,
+       0.2
+      ]
+     },
+     "aim": {
+      "actor": "her",
+      "bone": "head"
+     },
+     "color": "#7894d6",
+     "energy": 0.35,
+     "angle": 30,
+     "range": 6,
+     "over": 3.0
+    }
+   ]
+  },
+  {
+   "id": "E4",
+   "type": "LS",
+   "dur": 5.5,
+   "note": "From behind her at shoulder height, her at the frame's right edge, down the landing to the stair's mouth: far under the stair a woman's voice singing the Warden's melody, very faint. No subtitle. She lifts her head toward the stair. Nothing on the stair moves.",
+   "cam": {
+    "pos": {
+     "mark": "boss",
+     "off": [
+      1.3,
+      1.55,
+      5.4
+     ]
+    },
+    "at": {
+     "abs": [
+      -0.4,
+      0.0,
+      -40.0
+     ]
+    },
+    "lens": 50
+   },
+   "cues": [
+    {
+     "do": "lamp",
+     "actor": "stone",
+     "glow": 0.0
+    },
+    {
+     "do": "lamp",
+     "actor": "sink",
+     "lit": false
+    },
+    {
+     "do": "head",
+     "actor": "her",
+     "where": {
+      "mark": "boss",
+      "off": [
+       0.45,
+       1.32,
+       2.58
+      ]
+     },
+     "amount": 0.5
+    },
+    {
+     "at": 0.4,
+     "do": "sfx",
+     "name": "c13_singer",
+     "gain": 1.0
+    },
+    {
+     "at": 1.9,
+     "do": "head",
+     "actor": "her",
+     "where": {
+      "abs": [
+       0.0,
+       -0.6,
+       -41.0
+      ]
+     },
+     "amount": 0.85,
+     "over": 1.4
+    }
+   ]
+  },
+  {
+   "id": "E5",
+   "type": "LS",
+   "dur": 6.6,
+   "note": "Static, high over the landing's east side above the north wall: the dead step back down the stair together, rank by rank (one sound of armour), and stand; she alone on the landing.",
+   "cam": {
+    "pos": {
+     "abs": [
+      7.5,
+      8.5,
+      -31.5
+     ]
+    },
+    "at": {
+     "abs": [
+      -0.5,
+      -2.0,
+      -44.0
+     ]
+    },
+    "lens": 28
+   },
+   "cues": [
+    {
+     "do": "head",
+     "actor": "her",
+     "where": {
+      "abs": [
+       0.0,
+       -0.6,
+       -41.0
+      ]
+     },
+     "amount": 0.85
+    },
+    {
+     "at": 0.3,
+     "do": "line",
+     "id": "door_night.ranks"
+    },
+    {
+     "at": 4.85,
+     "do": "sfx",
+     "name": "c13_ranks",
+     "gain": 1.0
+    },
+    {
+     "at": 1.27,
+     "do": "move",
+     "actor": "dead.0",
+     "to": [
+      -1.67,
+      0,
+      -40.48
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.37,
+     "do": "anim",
+     "actor": "dead.0",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.27,
+     "do": "move",
+     "actor": "dead.1",
+     "to": [
+      0.06,
+      0,
+      -40.36
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.37,
+     "do": "anim",
+     "actor": "dead.1",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.27,
+     "do": "move",
+     "actor": "dead.2",
+     "to": [
+      1.49,
+      0,
+      -40.24
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.37,
+     "do": "anim",
+     "actor": "dead.2",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.15,
+     "do": "move",
+     "actor": "dead.3",
+     "to": [
+      -1.55,
+      0,
+      -42.22
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.25,
+     "do": "anim",
+     "actor": "dead.3",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.15,
+     "do": "move",
+     "actor": "dead.4",
+     "to": [
+      -0.12,
+      0,
+      -42.1
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.25,
+     "do": "anim",
+     "actor": "dead.4",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.15,
+     "do": "move",
+     "actor": "dead.5",
+     "to": [
+      1.61,
+      0,
+      -42.34
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.25,
+     "do": "anim",
+     "actor": "dead.5",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.03,
+     "do": "move",
+     "actor": "dead.6",
+     "to": [
+      -1.43,
+      0,
+      -43.96
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.13,
+     "do": "anim",
+     "actor": "dead.6",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.03,
+     "do": "move",
+     "actor": "dead.7",
+     "to": [
+      0.0,
+      0,
+      -44.2
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.13,
+     "do": "anim",
+     "actor": "dead.7",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 1.03,
+     "do": "move",
+     "actor": "dead.8",
+     "to": [
+      1.43,
+      0,
+      -44.08
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.13,
+     "do": "anim",
+     "actor": "dead.8",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.91,
+     "do": "move",
+     "actor": "dead.9",
+     "to": [
+      -1.61,
+      0,
+      -46.06
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.01,
+     "do": "anim",
+     "actor": "dead.9",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.91,
+     "do": "move",
+     "actor": "dead.10",
+     "to": [
+      0.12,
+      0,
+      -45.94
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.01,
+     "do": "anim",
+     "actor": "dead.10",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.91,
+     "do": "move",
+     "actor": "dead.11",
+     "to": [
+      1.55,
+      0,
+      -45.82
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 5.01,
+     "do": "anim",
+     "actor": "dead.11",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.79,
+     "do": "move",
+     "actor": "dead.12",
+     "to": [
+      -1.49,
+      0,
+      -47.8
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.89,
+     "do": "anim",
+     "actor": "dead.12",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.79,
+     "do": "move",
+     "actor": "dead.13",
+     "to": [
+      -0.06,
+      0,
+      -47.68
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.89,
+     "do": "anim",
+     "actor": "dead.13",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.79,
+     "do": "move",
+     "actor": "dead.14",
+     "to": [
+      1.67,
+      0,
+      -47.92
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.89,
+     "do": "anim",
+     "actor": "dead.14",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.67,
+     "do": "move",
+     "actor": "dead.15",
+     "to": [
+      -1.67,
+      0,
+      -49.54
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.77,
+     "do": "anim",
+     "actor": "dead.15",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.67,
+     "do": "move",
+     "actor": "dead.16",
+     "to": [
+      0.06,
+      0,
+      -49.78
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.77,
+     "do": "anim",
+     "actor": "dead.16",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.67,
+     "do": "move",
+     "actor": "dead.17",
+     "to": [
+      1.49,
+      0,
+      -49.66
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.77,
+     "do": "anim",
+     "actor": "dead.17",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.55,
+     "do": "move",
+     "actor": "dead.18",
+     "to": [
+      -1.55,
+      0,
+      -51.64
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.65,
+     "do": "anim",
+     "actor": "dead.18",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.55,
+     "do": "move",
+     "actor": "dead.19",
+     "to": [
+      -0.12,
+      0,
+      -51.52
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.65,
+     "do": "anim",
+     "actor": "dead.19",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    },
+    {
+     "at": 0.55,
+     "do": "move",
+     "actor": "dead.20",
+     "to": [
+      1.61,
+      0,
+      -51.4
+     ],
+     "dur": 4.1,
+     "heading": 0.0,
+     "clip": "Walking_Backwards",
+     "speed": 0.9,
+     "ease": "settle",
+     "settle": 0.5
+    },
+    {
+     "at": 4.65,
+     "do": "anim",
+     "actor": "dead.20",
+     "clip": "Idle",
+     "from": 0,
+     "speed": 1,
+     "blend": 0.25
+    }
+   ]
+  },
+  {
+   "id": "E6",
+   "type": "ELS",
+   "dur": 4.0,
+   "note": "Static, 135 mm from the stair's head down the flight, compressed: far down, below the last of the light, a man in a clerk's coat stands on a step with his back to her, quite still, holding up a little lantern with violet glass. He does not turn. Hold. Silence and a draught.",
+   "cam": {
+    "pos": {
+     "abs": [
+      0.0,
+      1.9,
+      -36.6
+     ]
+    },
+    "at": {
+     "abs": [
+      0.45,
+      -5.2,
+      -52.76
+     ]
+    },
+    "lens": 135
+   },
+   "cues": [
+    {
+     "do": "hide",
+     "actor": "jessop",
+     "hidden": false
+    },
+    {
+     "do": "place",
+     "actor": "jessop",
+     "mark": "jessop",
+     "heading": 3.1416
+    },
+    {
+     "do": "glow",
+     "name": "jlamp",
+     "where": {
+      "mark": "jessop",
+      "off": [
+       0.32,
+       1.42,
+       -0.18
+      ]
+     },
+     "color": "#9a6cff",
+     "size": 0.025,
+     "energy": 2.0,
+     "lantern": 0.55,
+     "glass": 0.6,
+     "light": 1.6,
+     "range": 4.0,
+     "halo": 0.3,
+     "spread": 7,
+     "soft": true
+    }
+   ]
+  }
+ ],
+ "end": {
+  "camera": "dip"
+ }
+}

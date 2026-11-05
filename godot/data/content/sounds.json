@@ -72,6 +72,7 @@
     "bed.waystation": {"bus": "ambience", "layers": [{"take": "bed_waystation", "gain": 0.45, "stereo": true}]},
     "block": {"bus": "sfx", "layers": [{"take": "block_shield", "gain": 0.38, "pitch": [0.92, 1.08]}]},
     "cine.c13_singer": {"bus": "ambience", "near": 1, "layers": [{"take": "c13_singer", "gain": 0.8, "stereo": true}]},
+    "cine.c13_ranks": {"bus": "sfx", "near": 1, "layers": [{"take": "armor_step", "gain": 0.55, "pitch": [0.62, 0.66], "verb": 0.5, "lp": 2600}, {"take": "armor_step", "gain": 0.45, "pitch": [0.74, 0.78], "vary": 2, "delay": 0.035, "verb": 0.5, "lp": 2600, "pan": -0.35}, {"take": "armor_step", "gain": 0.45, "pitch": [0.7, 0.73], "vary": 4, "delay": 0.06, "verb": 0.5, "lp": 2600, "pan": 0.35}, {"take": "armor_step", "gain": 0.35, "pitch": [0.84, 0.88], "vary": 1, "delay": 0.09, "verb": 0.6, "lp": 2200}, {"take": "armor_step", "gain": 0.3, "pitch": [0.55, 0.58], "vary": 3, "delay": 0.12, "verb": 0.7, "lp": 1600}]},
     "cine.to_play": {"bus": "ui", "near": 1, "layers": [{"take": "cine_whoosh", "gain": 0.3, "stereo": true}]},
     "dash": {"bus": "sfx", "near": 1, "layers": [{"take": "dash", "gain": 0.4, "pitch": [0.95, 1.05]}]},
     "explosion": {"bus": "sfx", "layers": [{"take": "explosion_small", "gain": 0.4, "pitch": [0.9, 1.05]}]},
