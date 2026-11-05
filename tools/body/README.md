@@ -4,7 +4,7 @@
 cannot say. Pure Python (numpy, scipy, embreex, Pillow); no Blender or Godot.
 
     python tools/body/check.py <body.glb> [--ref A.glb] [--rig rig.json] [--play play.glb] [--far far.glb]
-                               [--poser game|lbs] [--same-head] [--only contract,tris,weights,bends,silhouette] --out DIR
+                               [--poser game|lbs] [--same-head] [--topo NPZ] [--only contract,tris,weights,bends,silhouette,topology] --out DIR
 
 Baseline (the shipped body A against itself, the game poser), about a minute:
 
@@ -54,6 +54,14 @@ Tests: `python -m pytest tools/body` (or `python tools/body/test_check.py`).
   Sheets: clay at 9.4 px/cm, orange the model's outline, cyan the reference; both sides when under 700 px tall.
 - **silhouette** (with --ref): rest-pose front, side, back masks of every mesh at the close-up (9.4 px/cm) and the
   Look (`look_px_per_cm`, 30 by the brief's fallback): XOR pixels and the max outline distance (px, both ways).
+- **topology** (any body built on our topology; `topo_check.py`, limits imported from `topo_gates.py`): the build's topology
+  gates measured on the glb's rest body mesh, close and `--play`. The quads come from the npz the glb names
+  (`extras.body_base.topology`; `--topo` / `--play-topo` override; the glb body mesh is that npz's vertices, same order). Per tier:
+  folds over 60 deg (templates and the cleft's midline floor loop apart; the play crotch's thigh-gap edges up to 65 deg counted
+  as `fold_over_60_crotch_exception`), quads over aspect 4, edges under 2 mm, non-designed poles (valence != 4, interior,
+  not template) within 40 mm of a bend zone, and the elbow / knee crease loop's plane against the rest bisector plane (deg).
+  Zones are the body's own vertices in slabs set by the glb's skeleton joints (elbow 40 mm, knee 50 mm, wrist 25, ankle 30,
+  shoulder, hip, neck base as in topo_gates.zone_points). Targets 0 (report-only). `topo_b2a`: close 19 folds, 2 aspect, 6 short edges, all at the neck ring.
 
 ## Posers (posers.py)
 

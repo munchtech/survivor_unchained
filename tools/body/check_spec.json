@@ -5,7 +5,13 @@
   "influences_max": 8,
   "why": "NaN or negative weights, sums off 1 and more than 8 influences are broken exports (Godot 4.5 skins 8). The same head (--same-head) is the face's contract: the head the owner approved stays byte-identical."
  },
- "same_head_meshes": ["HeroineHead", "HeroineEyes", "HeroineLashes", "HeroineTeeth", "HeroineTongue"],
+ "same_head_meshes": [
+  "HeroineHead",
+  "HeroineEyes",
+  "HeroineLashes",
+  "HeroineTeeth",
+  "HeroineTongue"
+ ],
  "weights": {
   "mirror_tol_m": 0.004,
   "far_m": 0.18,
@@ -13,15 +19,25 @@
   "why": "far_m: a vertex weighted > 0.05 to a bone more than 18 cm from its segment is a stray (her breast and glute helpers reach about 12 cm); island_weight: a bone's weight above 0.02 should be one connected patch."
  },
  "targets": {
-  "girth_ratio": [0.92, 1.1],
-  "area_ratio": [0.85, 1.15],
+  "girth_ratio": [
+   0.92,
+   1.1
+  ],
+  "area_ratio": [
+   0.85,
+   1.15
+  ],
   "penetration_count_over_rest": 50,
   "penetration_depth_mm": 3.0,
   "outline_mean_mm": 2.0,
   "outline_max_mm": 5.0,
   "mirror_p95": 0.01,
   "silhouette_max_outline_px": 3,
-  "why": "Girth and area: a joint keeps its flesh (volume loss is the candy-wrapper and the pinch; gain past 10 percent is a balloon). Penetration: skin folding through itself shows at the close-up once deeper than about 3 mm (3 px at 9.4 px/cm); the rest pose's count is the leak floor of an open mesh. Outline: 2 mm mean is 2 px at the close-up, 5 mm max a visible shape error. Silhouette: within 3 px at the close-up and the Look (PIPELINE P1)."
+  "why": "Girth and area: a joint keeps its flesh (volume loss is the candy-wrapper and the pinch; gain past 10 percent is a balloon). Penetration: skin folding through itself shows at the close-up once deeper than about 3 mm (3 px at 9.4 px/cm); the rest pose's count is the leak floor of an open mesh. Outline: 2 mm mean is 2 px at the close-up, 5 mm max a visible shape error. Silhouette: within 3 px at the close-up and the Look (PIPELINE P1). Topology (report-only): folds over 60 deg off templates and the cleft floor loop, quads over aspect 4, edges under 2 mm and non-designed poles within 40 mm of a bend zone, all 0 (topo_gates.py's limits).",
+  "topology_fold_over_60": 0,
+  "topology_aspect_over_4": 0,
+  "topology_edges_under_2mm": 0,
+  "topology_poles_in_bend_zone": 0
  },
  "silhouette": {
   "look_px_per_cm": 30.0,

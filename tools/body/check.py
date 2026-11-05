@@ -1,7 +1,7 @@
 """The body's CHECK command (docs/team/PIPELINE.md): every number a judge should not have to eyeball.
 
     python tools/body/check.py <body.glb> [--ref A.glb] [--rig rig.json] [--play play.glb] [--far far.glb]
-                               [--poser game|lbs] [--same-head] [--only contract,tris,weights,bends,silhouette] --out DIR
+                               [--poser game|lbs] [--same-head] [--topo NPZ] [--only contract,tris,weights,bends,silhouette,topology] --out DIR
 
 Writes DIR/check.json, DIR/summary.txt and DIR/strip_<joint>.png (+ DIR/sil_*.png); exits 1 when a hard threshold
 in tools/body/check_spec.json fails. See tools/body/README.md for what each number is.
@@ -20,6 +20,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import bends  # noqa: E402
 import ray  # noqa: E402
+import topo_check  # noqa: E402
 from gl import Glb, boundary_edges, dense_weights, edges, weld  # noqa: E402
 from posers import HEAD_PARTS, guess_body, make_poser  # noqa: E402
 
@@ -125,6 +126,28 @@ def tris(files):
         per = {m.node: int(len(m.T)) for m in g.meshes}
         body = guess_body(g) if any(m.J is not None for m in g.meshes) else max(per, key=per.get)
         out[tier] = {"file": str(path), "per_mesh": per, "body_only": per[body], "whole": int(sum(per.values()))}
+    return out
+
+
+# ------------------------------------------------------------------ topology --
+def topology(files):
+    """topo_check.measure on each tier's rest body mesh (its quads from the topology npz the glb names)."""
+    out = {}
+    for tier, (path, over) in files.items():
+        if not path:
+            continue
+        g = Glb(path)
+        tp = topo_check.topo_path(g, over)
+        if tp is None or not Path(tp).exists():
+            out[tier] = {"error": f"no topology npz for {path} (glb extras body_base.topology missing; pass --topo)"}
+            continue
+        z = dict(np.load(tp, allow_pickle=True))
+        per = {m.node: m for m in g.meshes}
+        body = "Heroine" if "Heroine" in per else guess_body(g)
+        if len(per[body].P) != len(z["V"]):
+            out[tier] = {"error": f"{body} has {len(per[body].P)} vertices, {tp} has {len(z['V'])}"}
+            continue
+        out[tier] = dict(topo_check.measure(per[body].P, z, g.skeleton()), topology=str(tp))
     return out
 
 
@@ -271,7 +294,9 @@ def main(argv=None):
     ap.add_argument("--far")
     ap.add_argument("--poser", choices=["game", "lbs"])
     ap.add_argument("--same-head", action="store_true", help="the head meshes must be the ref's in the world at rest (see contract())")
-    ap.add_argument("--only", default="contract,tris,weights,bends,silhouette")
+    ap.add_argument("--topo", help="the topology npz of --body (default: its glb extras body_base.topology); play: --play-topo")
+    ap.add_argument("--play-topo")
+    ap.add_argument("--only", default="contract,tris,weights,bends,silhouette,topology")
     ap.add_argument("--spec", default=str(HERE / "check_spec.json"))
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
@@ -317,6 +342,8 @@ def main(argv=None):
     if "silhouette" in only and A is not None:
         sc = spec.get("silhouette", {})
         res["silhouette"] = silhouette(B, A, {"close": bends.PX_CLOSE, "look": sc.get("look_px_per_cm", 30.0) * 100}, out)
+    if "topology" in only:
+        res["topology"] = topology({"close": (a.body, a.topo), "play": (a.play, a.play_topo)})
     fails = gate(res, spec)
     res["fails"] = fails
     (out / "check.json").write_text(json.dumps(res, indent=1, default=float))
@@ -374,6 +401,16 @@ def summary(res, spec):
                 L.append(f"  {k:16s} {deg:>3s}: g {min(g):.3f}..{max(g):.3f} | a {min(ar, default=float('nan')):.3f}.."
                          f"{max(ar, default=float('nan')):.3f} | in {pen['count']} ({s['angles']['0']['penetration']['count']} at rest), "
                          f"{pen['depth_max_mm']} | {ot}")
+    for tier, t in res.get("topology", {}).items():
+        if "error" in t:
+            L.append(f"topology {tier}: {t['error']}")
+            continue
+        cp = t["crease_plane_vs_bisector"]
+        L.append(f"topology {tier}: fold>60 {t['fold_over_60']} (+{t['fold_over_60_crotch_exception']} crotch exception; "
+                 f"max {t['fold_max_deg_off_floor']} deg), aspect>4 {t['aspect_over_4']} (max {t['aspect_max']}), "
+                 f"edges<2mm {t['edges_under_2mm']} (min {t['edge_min_mm']} mm), poles in bend zone {t['poles_in_bend_zone_40mm']}"
+                 f"/{t['poles_total']} {t['poles_in_bend_zone_by_zone'] or ''}, crease plane vs bisector "
+                 + " ".join(f"{k} {v['deg'] if v else None} deg" for k, v in cp.items()))
     sl = res.get("silhouette")
     if sl:
         L.append("silhouette (xor px / max outline px): " + "  ".join(f"{k} {v['xor_px']}/{v['max_outline_px']}" for k, v in sl.items()))
