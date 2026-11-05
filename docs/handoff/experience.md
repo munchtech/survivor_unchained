@@ -5,7 +5,7 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## H8 rc2's bugs (seams-h8 lead 3, 4-5 Nov): MR READY seams-h8@COMMIT
+## H8 rc2's bugs (seams-h8 lead 3, 4-5 Nov): MR READY seams-h8@5a5514f25 (the code at 2df6a1a7c; this line's own commit follows)
 
 All seven items pass. Brief: `docs/team/hook/H8_rc2_bugs.md`. Integration merged at d9ab02f6d (docs only; the junction was removed and remade to our own `public\assets`). Sheets, runs and verdicts: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`r2\` judge round 2, `r3\` and `r4\` the x-ray, `r5\` the final b_path and suite).
 
