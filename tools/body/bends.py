@@ -35,6 +35,9 @@ ALIASES = {"upperarm": ["upper_arm.{S}", "UpperArm_{S}", "upperarm.{S}", "uppera
            "calf": ["shin.{S}", "lowerleg01_{s}", "lowerleg01.{S}", "Leg_{S}"],
            "foot": ["foot.{S}", "Foot_{S}"]}
 ANGLES = (0, 90, 135)
+# measured but not drawn (the sheet keeps its three panels): the hip's in-between, where the D verdict asks the
+# corrective to hold between 90 and 135 (fix 1: "an in-between at about 112")
+EXTRA = {"hip_flex": (112,)}
 PX_CLOSE = 940.0        # px per metre at the close-up (9.4 px/cm)
 MOTIONS = {
     #               bone        proximal    distal end  stations (seg, s of that segment's length)
@@ -584,6 +587,47 @@ def load_ref(motion, deg, ref_dir=HERE / "ref"):
     return json.loads(f.read_text()) if f.exists() else None
 
 
+def pit(strip, V, r=0.025, reach=0.22):
+    """hip_flex: the rest-curvature deviation at the r scale over the hip band (rend points within `reach` of the
+    joint), posed minus rest, mm (+ = more concave than at rest: a dent), by region round the joint at rest (the
+    angle in the lat-front plane: front |a| <= 45 deg, side 45..135 outward, back >= 135, medial the rest); fold
+    contacts left out (points within 6 mm of a posed point that was over 4 cm away at rest: a crease is meant to
+    change curvature). Derivation: (a) the D verdict's fix 2 (a pit facing the camera, which no outline sees); D2's
+    harness (5 Nov) promoted: the same scale, band and exclusion, by region so the side of the hip reads on its own."""
+    P0, T = strip.poser.P0, strip.poser.T
+    if not hasattr(strip, "_pit0"):
+        from gl import weld
+        rep = weld(P0, 1e-6)
+        sel = np.nonzero(strip.rend & (np.linalg.norm(P0 - strip.O, axis=1) < reach))[0]
+        sel = sel[np.unique(rep[sel], return_index=True)[1]]
+        nb = cKDTree(P0).query_ball_point(P0[sel], r)
+        N0 = normals(P0, T)
+        c0 = np.array([N0[i] @ (P0[j].mean(0) - P0[i]) for i, j in zip(sel, nb)])
+        rel = P0[sel] - strip.O
+        fr = strip.fr
+        la = (rel @ fr.lat) * (1 if strip.s == "l" else -1)
+        ang = np.degrees(np.arctan2(la, rel @ fr.front))
+        reg = np.where(np.abs(ang) <= 45, "front", np.where(np.abs(ang) >= 135, "back", np.where(ang > 0, "side", "medial")))
+        strip._pit0 = (sel, nb, c0, reg, np.stack([la, rel @ fr.up, rel @ fr.front], 1))
+    sel, nb, c0, reg, at = strip._pit0
+    N = normals(V, T)
+    c1 = np.array([N[i] @ (V[j].mean(0) - V[i]) for i, j in zip(sel, nb)])
+    dv = (c1 - c0) * 1000
+    dd, ii = cKDTree(V).query(V[sel], k=48)
+    far = np.linalg.norm(P0[ii] - P0[sel][:, None], axis=2) > 0.04
+    fold = (np.where(far, dd, 9) < 0.006).any(1)
+    out = {"pit_mm": None, "by_region_mm": {}, "at_cm": {}, "fold_points": int(fold.sum())}
+    for g in ("front", "side", "back", "medial"):
+        m = (reg == g) & ~fold
+        if m.any():
+            k = int(np.argmax(np.where(m, dv, -1e9)))
+            out["by_region_mm"][g] = round(float(dv[k]), 2)
+            out["at_cm"][g] = np.round(at[k] * 100, 1).tolist()   # out, up, front of the joint at rest (cm)
+    if out["by_region_mm"]:
+        out["pit_mm"] = max(out["by_region_mm"].values())
+    return out
+
+
 # ------------------------------------------------------------------ the run --
 def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
     """Every number of one strip, and what its sheet draws."""
@@ -599,7 +643,8 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
            "rest_angle_deg": round(strip.rest_deg, 1), "Lp_mm": round(strip.Lp * 1000, 1), "Ld_mm": round(strip.Ld * 1000, 1),
            "angles": {}}
     draw = {}
-    for deg in angles:
+    extra = tuple(d for d in EXTRA.get(strip.motion, ()) if d not in angles) if tuple(angles) == ANGLES else ()
+    for deg in tuple(angles) + extra:
         V, G, info = strip.posed(deg)
         sec = strip.sections(V, G)
         row = {"girth_mm": {}, "girth_ratio": {}, "area_ratio": {}}
@@ -609,6 +654,10 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
             row["girth_ratio"][k] = round(per / per0, 4) if np.isfinite(per) and np.isfinite(per0) and per0 > 0 else None
             row["area_ratio"][k] = round(area / area0, 4) if np.isfinite(area) and np.isfinite(area0) and area0 > 0 else None
         row["penetration"] = penetration(strip, V, T_all)
+        if strip.motion == "hip_flex":
+            row["pit"] = pit(strip, V)
+        if deg in extra:
+            row["drawn"] = False
         mk = ray.mask(V, strip.T_rend, vw_hi)
         pl = Plane2(strip, G)
         bend2 = math.degrees(math.acos(np.clip(pl.d @ pl0.d, -1, 1)))
@@ -622,7 +671,8 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
         row["outline_vs_ref"] = deviation(ref, edge) if ref else None
         row["outline_mm"] = outline_samples(mk, vw_hi, pl)
         res["angles"][str(deg)] = row
-        draw[deg] = (V, ref)
+        if deg not in extra:
+            draw[deg] = (V, ref)
     return res, draw
 
 

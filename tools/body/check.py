@@ -403,7 +403,9 @@ def summary(res, spec):
                 pen = r["penetration"]
                 L.append(f"  {k:16s} {deg:>3s}: g {min(g):.3f}..{max(g):.3f} | a {min(ar, default=float('nan')):.3f}.."
                          f"{max(ar, default=float('nan')):.3f} | in {pen['count']} ({s['angles']['0']['penetration']['count']} at rest), "
-                         f"{pen['depth_max_mm']} | {ot}")
+                         f"{pen['depth_max_mm']} | {ot}"
+                         + (" | pit " + " ".join(f"{g[0].upper()}{v}" for g, v in r["pit"]["by_region_mm"].items())
+                            if r.get("pit") else ""))
     for tier, t in res.get("topology", {}).items():
         if "error" in t:
             L.append(f"topology {tier}: {t['error']}")
