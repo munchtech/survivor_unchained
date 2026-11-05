@@ -1,5 +1,5 @@
 {
- "about": "Her body from OUR sliders alone (5 Nov, owner: 'a perfect copy is not needed if it makes a better pipeline going forward'): her_topo.json's sliders and stance with NO per-vertex copy of A (forms_topo off); shape set by design, not solved against A. Set by eye on the clay sheet (5 Nov, slider lead): shoulders in (0.99 -> 0.3), waist in, hips and glutes up, belly flat, full high breasts (bust_lift, ours) and a full round butt (glute_lift, ours); athletic limbs (calves, arm girth, thighs up).",
+ "about": "Her body from OUR sliders alone (5 Nov, owner: 'a perfect copy is not needed if it makes a better pipeline going forward'): her_topo.json's sliders and stance with NO per-vertex copy of A (forms_topo off); shape set by design, not solved against A. Set by eye on the clay sheet (5 Nov, slider lead): shoulders in (0.99 -> 0.3), waist in, hips up, glutes 0.5 (MakeHuman's buttock target folds the cleft past 0.5: 178 deg at 1, 12-14 points inside at rest) with glute_lift's fill (ours, off the midline) carrying the rest, belly flat, full high breasts (bust_lift, ours) and a full round butt (glute_lift, ours); athletic limbs (calves, arm girth, thighs up).",
  "base": "tools/body/specs/her_topo.json",
  "forms_topo": null,
  "sliders": {
@@ -17,7 +17,7 @@
   "forearm_girth": 0.666,
   "forearm_length": -0.4374,
   "glute_lift": 1.0,
-  "glutes": 1.0,
+  "glutes": 0.5,
   "hand_size": -0.1764,
   "height": 0.0953,
   "hips": 0.4,

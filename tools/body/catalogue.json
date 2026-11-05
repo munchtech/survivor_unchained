@@ -32,6 +32,6 @@
  },
  "designed": {
   "bust_lift": {"range": [0, 1], "rule": "growth_turn", "field": "bust_size", "turn_deg": 25, "turn_low_deg": 30, "lean_deg": [0, 40], "scale": 1.0, "why": "OURS (5 Nov, the owner: 'perfect breasts ... very well done'): MakeHuman's cup grows the breast mostly DOWN (its full cup hangs into a deep flat shelf, the upper pole hollows; firmness +1 moves 8 mm, set is a 19 mm slide): the cup's own growth turned up toward forward (25 deg where it leans forward, 30 where it points straight down): the upper pole fills, the point comes forward and up, the lower pole rounds forward instead of hanging; smooth as the cup's target, 0 where the cup does not move; the volume rises (keep bust_size about 0.1 lower for the same size)"},
-  "glute_lift": {"range": [0, 1], "rule": "mass_lift", "field": "glutes", "field_v": 1.0, "floor": 0.1, "lift_m": 0.025, "out_m": 0.012, "fill": 0.25, "root_pct": 98, "why": "OURS (5 Nov, the owner: 'breast and butt are very important'): MakeHuman's buttock volume tops out at 22 mm and sits low: the buttock turns up about its root and fills at its core: full, round, high"}
+  "glute_lift": {"range": [0, 1], "rule": "mass_lift", "field": "glutes", "field_v": 1.0, "floor": 0.1, "lift_m": 0.025, "out_m": 0.012, "fill": 0.6, "root_pct": 98, "midline_m": 0.035, "why": "OURS (5 Nov, the owner: 'breast and butt are very important'): MakeHuman's buttock volume tops out at 22 mm and sits low: the buttock turns up about its root and fills at its core: full, round, high"}
  }
 }

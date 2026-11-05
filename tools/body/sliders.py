@@ -140,6 +140,12 @@ class OurSliders:
             d[:, 2] = fz * v * c.get("out_m", 0.0) * ws * g
             if c.get("fill"):
                 d += src[s] * (v * c["fill"] * ws * ws)[:, None]
+            if c.get("midline_m"):
+                # nothing moves toward the midline and the move fades out at it: the two buttocks' fill met in the
+                # cleft (12-14 points inside at rest, quads folded to 178 deg; check 5 Nov)
+                d[:, 0] = np.where(side * d[:, 0] < 0.0, 0.0, d[:, 0])
+                m = np.clip(np.abs(P[:, 0]) / c["midline_m"], 0.0, 1.0)
+                d *= (m * m * (3.0 - 2.0 * m))[:, None]
             out[s] = P + d
         return out
 
