@@ -5785,6 +5785,13 @@
     "text": [
      {
       "when": {
+       "fact": "chain.two",
+       "eq": true
+      },
+      "text": "I've the masks out again. Don't ask me why. I don't know why."
+     },
+     {
+      "when": {
        "fact": "beasts.outcome",
        "eq": "cured"
       },
@@ -6591,6 +6598,13 @@
    "again": {
     "id": "again",
     "text": [
+     {
+      "when": {
+       "fact": "chain.two",
+       "eq": true
+      },
+      "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP."
+     },
      {
       "when": {
        "fact": "beasts.outcome",
