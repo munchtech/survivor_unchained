@@ -126,6 +126,7 @@ public sealed partial class Prologue
     double gateBarkAt = -99, gateDown = -1, gateWatchYaw;
     const double GateBarkEvery = 7, GateRise = 2.6, GatePassAt = 0.4;
     INpcView? gateWatch;
+    int gateTorch = -1;
     bool gateTold, gateAsk;
     /// <summary>The tracker's first line while the shut gate holds her (after the watchman's word).</summary>
     public const string GateTask = "The watch won't raise the gate: clear the wolves on the road";
@@ -152,18 +153,31 @@ public sealed partial class Prologue
         if (shut && gateBar == null) gateBar = B.Collision.AddBox(g.X, barZ, 9.5, 0.5, 0, new ColliderOpts("gate_shut", PlayerOnly: true));
         else if (!shut && gateBar != null && gateDown <= GatePassAt) { B.Collision.Remove(gateBar.Id); gateBar = null; }
         var p = B.Player;
-        // The watchman behind the bars (Folk's Watch), a step aside of the way, turned to her when she is near.
-        double wx = g.X + 1.1, wz = barZ - 1.6;
+        // The watchman behind the bars (Folk's Watch), a step aside of the way, turned to her when she is near: close
+        // behind the grate (N22 r2: 1.6 m back he stood in the vault's dark, above the bars at the play camera's pitch)
+        // with the Watch's lit torch in his left hand and its light (Folk's: short, shadowed), lighting him and the
+        // passage behind the bars.
+        double line = day.S.PortcullisZ != 0 ? day.S.PortcullisZ : barZ - 0.3;
+        double wx = g.X + 0.8, wz = line - 0.85;
         if (shut && gateWatch == null)
         {
             gateWatch = G.Look.Walker(Folk.Person(FolkRole.Watch, Lore.WatchLook, G.Rng), 0.8);
             gateWatch.Locomotion(0);
+            gateWatch.Hold("handslot.l", "dungeon", "torch_lit");
+            gateTorch = G.Look.AddLight(wx, G.Look.HeightAt(wx, wz) + 1.3, wz, "#ffa050", 2.75, 3.5, 0.22, 0);
+            G.Look.SetShadow(gateTorch, true);
         }
         if (gateWatch != null)
         {
             double to = Dist(p.X, p.Z, wx, wz) < 14 ? Math.Atan2(p.X - wx, p.Z - wz) : 0;
             gateWatchYaw = MathX.DampAngle(gateWatchYaw, to, 4, dt);
-            gateWatch.Place(wx, G.Look.HeightAt(wx, wz), wz, gateWatchYaw, true);
+            double wy = G.Look.HeightAt(wx, wz);
+            gateWatch.Place(wx, wy, wz, gateWatchYaw, true);
+            if (gateTorch >= 0)
+            {
+                if (gateWatch.HeldAt("handslot.l") is { } fl) G.Look.MoveLight(gateTorch, fl.X, fl.Y, fl.Z);
+                else G.Look.MoveLight(gateTorch, wx + Math.Cos(gateWatchYaw) * 0.25 + Math.Sin(gateWatchYaw) * 0.2, wy + 1.3, wz - Math.Sin(gateWatchYaw) * 0.25 + Math.Cos(gateWatchYaw) * 0.2);
+            }
         }
         if (shut && p.Z < ExitZ + 2.5 && Math.Abs(p.X - g.X) < 10 && B.Time - gateBarkAt > GateBarkEvery)
         {

@@ -3428,12 +3428,15 @@ def gatehouse(p):
     # leaf's teeth under the crown, the back leaf behind it in the masonry; shut (the day's gate, Prologue.DayGate) the
     # front leaf drops to the cobbles and the back one over it up into the vault. Two leaves, not one grate: a grate as
     # tall as the passage, drawn up, would stand 2 m out of the wall walk (HG 7.6 m, the crown 5.15).
+    # (N22 r2) The back leaf 3.2 m (its top 7.45 drawn up, under the walk): the gatehouse stands on a kit tile whose
+    # floor is not the road's (Low Ford: the road 0.78 m under it), so Landmarks lands the lattice on the ground and
+    # both leaves drop that much further; 3.2 m keeps the back one up past the crown with up to ~0.9 m of it.
     zp = zf - F / 2 - 0.35
     bars, crown = 9, spring + r
     yr = crown - 0.95                   # the leaves' foot, drawn up
     tint = [wood * 0.55 * (1 + rng(-0.1, 0.1)) for i in range(bars)]  # (the rng drawn as the drawn-up grate's was)
     for key, z, h, foot, rails, teeth in (('portcullis_a', zp, 2.75, 0.2, (0.25, 0.7, 1.15, 1.6, 2.05, 2.5), True),
-                                          ('portcullis_b', zp - 0.14, 2.6, 2.85, (0.1, 0.55, 1.0, 1.45, 1.9, 2.35), False)):
+                                          ('portcullis_b', zp - 0.14, 3.2, 2.85, (0.1, 0.55, 1.0, 1.45, 1.9, 2.35, 2.8), False)):
         mp = []
         y0 = yr + (0.0 if teeth else 0.05)
         for i in range(bars):
