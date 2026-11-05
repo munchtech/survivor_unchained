@@ -35,9 +35,14 @@ The layout (the left half, x >= 0; the right half is the left's MIRRORED COPY, o
   density  each island scaled to the json's texel_density (body 1.0, hands 1.5, feet 0.75) of one common scale,
            then packed (raster packer: FFT collision test, bottom-left, 0/90 degree turns so limbs stay on U or V)
            at the largest common scale that fits, with an 8 px gutter at 2k.
-  play     the same islands by the same rules on play's topology; its UVs are CLOSE's, carried by projection onto
-           close's reference surface within the same island (each seam copy from its own side), so one texture set
-           serves both tiers.
+  play     (E2) ONE texture set for both tiers. Play's cuts (arm, leg, foot top) by the rules on play's own edges
+           (play_guide), close's cuts drawn along them (cut_path guide: play's edges are twice as long, so play could
+           never follow a cut drawn on close's); play's islands from close's (play_islands: each quad the close island
+           most of it lies on, within its region group, so the rings stay play's own); each play UV vertex close's UV
+           at its closest point on close's island, its own side of a cut (its faces' UVs pick it), clamped on close's
+           triangles; then relaxed on play's surface by an ARAP held to that by a spring (arap_fit, lam 1). Checked by
+           agreement(): play's UV against close's at the same body point (2k texels), and how far play reads off its
+           own close island (within half the 8 px gutter it reads its own border texels).
 Output per tier: corner UVs and the glb vertex split: src[k] (our topology vertex of glb vertex k; the first n are our
 vertices in order, the seam/mirror copies appended), UV[k] (glTF: v down), the export's triangles over glb vertices,
 the island and region of each quad, and the numbers (stretch, density, overlaps, flips, packing).
@@ -313,25 +318,37 @@ def boundary_between(Q, n, quads_a, quads_b):
     return np.unique(np.r_[k // n, k % n]), k
 
 
-def cut_path(V, Q, n, quads, starts, targets, d_in, avoid=None, k_in=12.0):
+def cut_path(V, Q, n, quads, starts, targets, d_in, avoid=None, k_in=12.0, guide=None):
     """The cheapest edge path inside the island from one of `starts` to one of `targets`, each edge costing its
-    length times (1 + k_in * (1 - n.d_in)/2): it hugs the side facing d_in (the inner arm / inside leg). Returns the
-    path's edge keys."""
+    length times (1 + k_in * (1 - n.d_in)/2): it hugs the side facing d_in (the inner arm / inside leg). With a guide
+    (a polyline from the start side to the target side: play's cut, E2), each edge costs its length times
+    1 + (d / 2 mm)^2 instead (d: the farthest of its ends and middle from the guide) and the ends are the start and
+    target nearest the guide's ends: close redraws play's cut on its finer edges. Returns the path's edge keys and
+    its vertices."""
     Qi = Q[quads]
-    vs = np.unique(Qi)
     vn = vertex_normals(V, Qi)
     e = np.unique(np.sort(np.concatenate([Qi[:, [k, (k + 1) % 4]] for k in range(4)]), 1), axis=0)
     if avoid is not None:        # never along the island's own boundary edges (the path must stay inside)
         ek = edge_key(e[:, 0], e[:, 1], n)
         e = e[~np.isin(ek, avoid)]
     L = np.linalg.norm(V[e[:, 0]] - V[e[:, 1]], axis=1)
-    din = d_in(V)
-    f = 1 + k_in * (1 - 0.5 * ((vn[e[:, 0]] * din[e[:, 0]]).sum(1) + (vn[e[:, 1]] * din[e[:, 1]]).sum(1))) / 2
+    if guide is None:
+        din = d_in(V)
+        f = 1 + k_in * (1 - 0.5 * ((vn[e[:, 0]] * din[e[:, 0]]).sum(1) + (vn[e[:, 1]] * din[e[:, 1]]).sum(1))) / 2
+        s = starts[np.argmax((vn[starts] * din[starts]).sum(1))]
+    else:
+        t_ = np.linspace(0, 1, 9)[:, None, None]
+        tree = cKDTree((guide[:-1][None] * (1 - t_) + guide[1:][None] * t_).reshape(-1, 3))
+        d = np.max([tree.query(V[e[:, 0]] * (1 - a) + V[e[:, 1]] * a)[0] for a in (0.0, 0.5, 1.0)], 0)
+        f = 1 + (d / 0.002) ** 2
+        s = starts[np.argmin(np.linalg.norm(V[starts] - guide[0], axis=1))]
     w = L * f
     G = sp.coo_matrix((np.r_[w, w], (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
-    s = starts[np.argmax((vn[starts] * din[starts]).sum(1))]
     dist, pred = dijkstra(G, indices=int(s), return_predecessors=True)
-    t = targets[np.argmin(dist[targets])]
+    if guide is None:
+        t = targets[np.argmin(dist[targets])]
+    else:
+        t = targets[np.argmin(np.linalg.norm(V[targets] - guide[-1], axis=1))]
     assert np.isfinite(dist[t]), "no cut path"
     path = [int(t)]
     while path[-1] != s:
@@ -414,8 +431,9 @@ def torso_cuts(V, Q, n, z, isl, left, seam, bnd, info, tq, qi):
                           "front_quads": int((cc == front).sum()), "back_quads": int((cc != front).sum())}
 
 
-def seams(z, isl, left):
-    """Every seam edge of the left half: island borders, and the limb and foot-top cuts."""
+def seams(z, isl, left, guide=None):
+    """Every seam edge of the left half: island borders, and the limb and foot-top cuts (guide: play's cut polylines
+    by name, close redraws them; info["_paths"] the cuts' polylines)."""
     V, Q = z["V"].astype(float), z["Q"]
     n = len(V)
     K = quad_edge_keys(Q, n)
@@ -443,13 +461,13 @@ def seams(z, isl, left):
     wrist, _ = boundary_between(Q, n, qi["ARM"], hand_q)
     rim, _ = boundary_between(Q, n, qi["ARM"], trunk_side)
     din = limb_inner(V[np.unique(Q[qi["ARM"]])])
-    k_arm, p_arm = cut_path(V, Q, n, qi["ARM"], wrist, rim, din, avoid=bnd(qi["ARM"]))
+    k_arm, p_arm = cut_path(V, Q, n, qi["ARM"], wrist, rim, din, avoid=bnd(qi["ARM"]), guide=(guide or {}).get("arm"))
     seam |= set(k_arm.tolist())
     # LEG: ankle ring (leg|foot) -> leg root (torso|leg)
     ankle, _ = boundary_between(Q, n, qi["LEG"], foot_q)
     root, _ = boundary_between(Q, n, qi["LEG"], trunk_side)
     din_l = limb_inner(V[np.unique(Q[qi["LEG"]])])
-    k_leg, p_leg = cut_path(V, Q, n, qi["LEG"], ankle, root, din_l, avoid=bnd(qi["LEG"]))
+    k_leg, p_leg = cut_path(V, Q, n, qi["LEG"], ankle, root, din_l, avoid=bnd(qi["LEG"]), guide=(guide or {}).get("leg"))
     seam |= set(k_leg.tolist())
     # FOOT_TOP: from the leg cut's ankle point to the sole's rim, inner side
     # (only when the top is a ring around the ankle: when the sole's half reaches the ankle ring it is a disc already)
@@ -459,13 +477,17 @@ def seams(z, isl, left):
     k_ft = np.zeros(0, np.int64)
     if chi == 0:
         solerim, _ = boundary_between(Q, n, qi["FOOT_TOP"], qi["FOOT_SOLE"])
-        k_ft, p_ft = cut_path(V, Q, n, qi["FOOT_TOP"], np.array([p_leg[0]]), solerim, din_l, avoid=bnd(qi["FOOT_TOP"]))
+        k_ft, p_ft = cut_path(V, Q, n, qi["FOOT_TOP"], np.array([p_leg[0]]), solerim, din_l, avoid=bnd(qi["FOOT_TOP"]),
+                              guide=(guide or {}).get("foot_top"))
         seam |= set(k_ft.tolist())
     info["cuts"] = {"arm": {"from": "the wrist ring's inner point", "to": "the shoulder rim", "edges": int(len(k_arm)),
                             "length_m": round(float(np.linalg.norm(np.diff(V[p_arm], axis=0), axis=1).sum()), 3)},
                     "leg": {"from": "the ankle ring's inner point", "to": "the leg root", "edges": int(len(k_leg)),
                             "length_m": round(float(np.linalg.norm(np.diff(V[p_leg], axis=0), axis=1).sum()), 3)},
                     "foot_top": {"from": "the leg cut's ankle point", "to": "the sole's rim", "edges": int(len(k_ft))}}
+    info["_paths"] = {"arm": p_arm, "leg": p_leg}
+    if len(k_ft):
+        info["_paths"]["foot_top"] = p_ft
     return seam, info
 
 
@@ -631,83 +653,43 @@ def arap(P, T, UV0, nv, iters=40, rounds=4, power=6.0):
     return UVc
 
 
-def sd_refine(P, T, UV0, q=3.0, iters=400):
-    """(E2) the tail pass after ARAP: minimise sum area * (SD / 4)^q over the UVs (SD the symmetric Dirichlet
-    s1^2 + s2^2 + s1^-2 + s2^-2, 4 at an isometry; Smith & Schaefer 2015) by L-BFGS. SD is infinite at a fold, so no
-    step can flip a face (a step that would is refused by the line search); the power q weights the worst triangles
-    (ARAP's mean-square energy leaves the tail the stretch p95 reads)."""
-    from scipy.optimize import minimize
-    L0 = np.sqrt(tri_frames(P, T)[1].sum())       # unit size (the optimiser's tolerances are absolute)
-    P, UV0 = P / L0, UV0 / L0
-    X, area = tri_frames(P, T)
-    area = area / area.sum()
-    Dx = np.stack([X[:, 1], X[:, 2]], 2)
-    Di = np.linalg.inv(Dx)
-    nv = len(UV0)
-
-    def f(x):
-        Uv = x.reshape(nv, 2)
-        Du = np.stack([Uv[T[:, 1]] - Uv[T[:, 0]], Uv[T[:, 2]] - Uv[T[:, 0]]], 2)
-        J = Du @ Di
-        a, b, c, d = J[:, 0, 0], J[:, 0, 1], J[:, 1, 0], J[:, 1, 1]
-        det = a * d - b * c
-        if (det <= 1e-12).any():
-            return 1e30, np.zeros_like(x)
-        fr = a * a + b * b + c * c + d * d
-        sd = fr * (1 + 1 / det ** 2)
-        e = (sd / 4) ** q
-        E = float((area * e).sum())
-        # dSD/dJ = 2J (1 + 1/det^2) - 2 fr / det^3 * cof(J)
-        cof = np.stack([np.stack([d, -c], 1), np.stack([-b, a], 1)], 1)
-        g = 2 * J * (1 + 1 / det ** 2)[:, None, None] - (2 * fr / det ** 3)[:, None, None] * cof
-        g = g * (area * q * (sd / 4) ** (q - 1) / 4)[:, None, None]
-        gDu = g @ np.transpose(Di, (0, 2, 1))          # dE/dDu
-        G = np.zeros((nv, 2))
-        np.add.at(G, T[:, 1], gDu[:, :, 0])
-        np.add.at(G, T[:, 2], gDu[:, :, 1])
-        np.add.at(G, T[:, 0], -gDu[:, :, 0] - gDu[:, :, 1])
-        return E, G.ravel()
-    x = UV0.ravel().astype(float)
-    E, G = f(x)
-    S, Y = [], []
-    for it in range(iters):          # L-BFGS (two-loop), backtracking that refuses any step that folds a face
-        qv = G.copy()
-        al = []
-        for s_, y_ in reversed(list(zip(S, Y))):
-            a_ = (s_ @ qv) / (y_ @ s_)
-            al.append(a_)
-            qv -= a_ * y_
-        if S:
-            qv *= (S[-1] @ Y[-1]) / (Y[-1] @ Y[-1])
-        else:
-            qv /= max(np.abs(qv).max(), 1e-20) * 1e3
-        for (s_, y_), a_ in zip(zip(S, Y), reversed(al)):
-            b_ = (y_ @ qv) / (y_ @ s_)
-            qv += s_ * (a_ - b_)
-        d = -qv
-        if d @ G >= 0:
-            d, S, Y = -G / max(np.abs(G).max(), 1e-20) * 1e-3, [], []
-        t = 1.0
-        while t > 1e-10:
-            xn = x + t * d
-            En, Gn = f(xn)
-            if En <= E + 1e-4 * t * (d @ G):
-                break
-            t *= 0.5
-        else:
-            break
-        sv_, yv_ = xn - x, Gn - G
-        if sv_ @ yv_ > 1e-20:
-            S.append(sv_)
-            Y.append(yv_)
-            if len(S) > 20:
-                S.pop(0)
-                Y.pop(0)
-        conv = E - En < 1e-9 * max(abs(E), 1)
-        x, E, G = xn, En, Gn
-        if conv:
-            break
-    return x.reshape(nv, 2) * L0
+def arap_fit(P, T, UVt, k, lam, iters=12):
+    """(E2) ARAP on (P, T) at scale k (UV units per metre) held to target UVs UVt by a per-vertex spring lam
+    (relative to the cotan weights): the target's layout kept where it is a fair map of this surface, its folds and
+    slivers relaxed (play's projection of close's UVs folds where play's coarse toes and neck slivers sit a few mm
+    off close's surface)."""
+    X, _ = tri_frames(P, T)
+    X = X * k
+    W = np.maximum(cot_weights(X), 1e-4)
+    nv = len(UVt)
+    I, J, Vv = [], [], []
+    for i in range(3):
+        a, b = T[:, i], T[:, (i + 1) % 3]
+        w = W[:, i]
+        I += [a, b, a, b]
+        J += [b, a, a, b]
+        Vv += [-w, -w, w, w]
+    L = sp.coo_matrix((np.concatenate(Vv), (np.concatenate(I), np.concatenate(J))), shape=(nv, nv)).tocsc()
+    Lf = spl.splu((L + sp.diags(np.broadcast_to(lam, nv).astype(float))).tocsc())
+    UVc = UVt.copy()
+    for _ in range(iters):
+        S = np.zeros((len(T), 2, 2))
+        for i in range(3):
+            a, b = T[:, i], T[:, (i + 1) % 3]
+            S += W[:, i, None, None] * (UVc[a] - UVc[b])[:, :, None] * (X[:, i] - X[:, (i + 1) % 3])[:, None, :]
+        Uu, _, Vt = np.linalg.svd(S)
+        neg = np.linalg.det(Uu @ Vt) < 0
+        Uu[neg, :, 1] *= -1
+        R = Uu @ Vt
+        rhs = np.zeros((nv, 2))
+        for i in range(3):
+            a, b = T[:, i], T[:, (i + 1) % 3]
+            r = W[:, i, None] * np.einsum("tij,tj->ti", R, X[:, i] - X[:, (i + 1) % 3])
+            np.add.at(rhs, a, r)
+            np.add.at(rhs, b, -r)
+        rhs += np.broadcast_to(lam, nv)[:, None] * UVt
+        UVc = np.stack([Lf.solve(rhs[:, 0]), Lf.solve(rhs[:, 1])], 1)
+    return UVc
 
 
 def jac_sv(P, T, UV):
@@ -855,15 +837,27 @@ def pack(islands, res=1024, gutter_cells=4):
 
 
 # ------------------------------------------------------------------------------------------------- build --
-def build_close(z):
-    """The close tier's layout from its topology. Returns the dict saved in base/uv_close.npz."""
+def play_guide(zp):
+    """Play's cuts by the rules on its own topology (the arm's, the leg's, the foot top's polylines): close redraws
+    them (E2: (a) play's edges are twice as long, so a cut drawn on close's lay up to 10 mm off any play edge path,
+    and play could not follow it; close follows play's within half its own quad)."""
+    isl, left = assign_islands(zp)
+    _, info = seams(zp, isl, left)
+    return info["_paths"]           # name -> play's vertex path
+
+
+def build_close(z, guide=None):
+    """The close tier's layout from its topology (its cuts along play's: guide). Returns the dict saved in
+    base/uv_close.npz."""
     t0 = time.time()
     V, Q = z["V"].astype(np.float64), z["Q"]
     n, nq = len(V), len(Q)
     dens = regions_json()["uv_rules"]["texel_density"]
     isl, left = assign_islands(z)
     dg = quad_diag(V, Q)
-    seam, info = seams(z, isl, left)
+    gpts = None if guide is None else {k: guide["V"][v] for k, v in guide["paths"].items()}
+    seam, info = seams(z, isl, left, gpts)
+    info.pop("_paths")
     cls, cv, nc = corner_classes(Q, n, left, seam)
     # per class: island
     cisl = np.zeros(nc, np.int64)
@@ -1074,54 +1068,274 @@ def fill_tris_rev(P, T, w, h):
 
 
 # ---------------------------------------------------------------------------------------------- play tier --
-def build_play(zp, zc, oc):
-    """Play's layout: its islands and seams by the same rules on its own topology; each of its UV vertices takes
-    close's UV at its position on close's reference surface, found inside the same island and on the same side of a
-    cut (the copy's own faces, nudged a third of the way to their middle, pick close's triangle)."""
+GROUP = {4: 0, 5: 0, 6: 0, 10: 0, 7: 1, 8: 1, 11: 2, 12: 2, 9: 3, 13: 4}     # the region groups islands never cross
+
+
+def close_tris(zc, oc, quads):
+    """Close's triangles over its glb vertices for the given (left) quads, their positions on close's reference
+    surface, and the triangle -> quad map."""
+    dg = quad_diag(zc["V"].astype(np.float64), zc["Q"])
+    T = quad_tris(oc["corner"][quads], dg[quads])
+    return T, zc["V"].astype(np.float64)[oc["src"]], np.r_[quads, quads]
+
+
+def closest_uvsafe(P, T, tree, X, k=24, uv=None, target=None, tol=None):
+    """The closest point of each X on the triangles (P, T) among the k nearest by centroid: (tri, bary on the
+    triangle, distance). With a target UV, only triangles whose UV centroid lies within tol of it count (a point by
+    a cut takes its own side's copy); none: the one nearest in UV (distance 1e3 + its UV miss)."""
     import surfdist
+    _, cand = tree.query(X, k=min(k, len(T)))
+    best = np.full(len(X), np.inf)
+    bt = np.zeros(len(X), np.int64)
+    bq = np.zeros_like(X)
+    for j in range(cand.shape[1]):
+        t = cand[:, j]
+        q = surfdist.closest_on_tris(X, P[T[t, 0]], P[T[t, 1]], P[T[t, 2]])
+        d = np.linalg.norm(X - q, axis=1)
+        if target is not None:
+            duv = np.linalg.norm(uv[T[t]].mean(1) - target, axis=1)
+            d = np.where(duv <= tol, d, 1e3 + duv)
+        m = d < best
+        best[m], bt[m], bq[m] = d[m], t[m], q[m]
+    w = np.clip(bary(bq, P[T[bt, 0]], P[T[bt, 1]], P[T[bt, 2]]), 0, None)
+    w /= w.sum(1, keepdims=True)
+    return bt, w, best
+
+
+def play_islands(zp, zc, oc):
+    """Play's islands FROM CLOSE: each left quad takes the close island most of it lies on (9 points over the quad,
+    each on close's surface within the same region group: the structural rings stay play's own), stray pieces then
+    joined to their neighbours. (a) Play's own rules drew its splits up to 31 mm off close's (the palm | back on its
+    coarse half-height), and a texel can only serve both tiers where both put it on the same island."""
+    from scipy.spatial import cKDTree
+    V, Q = zp["V"].astype(np.float64), zp["Q"]
+    left = zp["side"][Q].max(1) == 1
+    leftc = zc["side"][zc["Q"]].max(1) == 1
+    gp = np.array([GROUP.get(int(r), -1) for r in zp["qreg"]])
+    gc = np.array([GROUP.get(int(r), -1) for r in zc["qreg"]])
+    isl = -np.ones(len(Q), np.int64)
+    C = V[Q].mean(1)
+    S = [C] + [C + 0.6 * (V[Q[:, k]] - C) for k in range(4)] + \
+        [C + 0.6 * (0.5 * (V[Q[:, k]] + V[Q[:, (k + 1) % 4]]) - C) for k in range(4)]
+    for g in range(5):
+        qc = np.nonzero(leftc & (gc == g))[0]
+        T, P, tq = close_tris(zc, oc, qc)
+        tree = cKDTree(P[T].mean(1))
+        qp = np.nonzero(left & (gp == g))[0]
+        votes = np.stack([oc["isl"][tq[closest_uvsafe(P, T, tree, s[qp])[0]]] for s in S], 1)
+        lab = votes[:, 0].copy()
+        for i in range(len(qp)):
+            u, c = np.unique(votes[i], return_counts=True)
+            if c.max() * 2 > len(S):
+                lab[i] = u[np.argmax(c)]
+        isl[qp] = lab
+    assert (isl[left] >= 0).all(), "a play quad with no island"
+    # stray pieces (each island one piece): to the label most of their neighbours carry
+    n = len(V)
+    pairs, _ = quad_adjacency(Q, n, left)
+    for _ in range(4):
+        moved = 0
+        for ii in np.unique(isl[left]):
+            m = left & (isl == ii)
+            qi = np.nonzero(m)[0]
+            loc = -np.ones(len(Q), np.int64)
+            loc[qi] = np.arange(len(qi))
+            pm = m[pairs[:, 0]] & m[pairs[:, 1]]
+            A = sp.coo_matrix((np.ones(pm.sum()), (loc[pairs[pm, 0]], loc[pairs[pm, 1]])), shape=(len(qi),) * 2)
+            nc_, cc = connected_components(A, directed=False)
+            if nc_ < 2:
+                continue
+            big = np.argmax(np.bincount(cc))
+            for c_ in range(nc_):
+                if c_ == big:
+                    continue
+                piece = np.zeros(len(Q), bool)
+                piece[qi[cc == c_]] = True
+                ea = piece[pairs[:, 0]] & ~piece[pairs[:, 1]]
+                eb = piece[pairs[:, 1]] & ~piece[pairs[:, 0]]
+                nb = np.r_[isl[pairs[ea, 1]], isl[pairs[eb, 0]]]
+                if len(nb):
+                    u, c = np.unique(nb, return_counts=True)
+                    isl[piece] = u[np.argmax(c)]
+                    moved += 1
+        if not moved:
+            break
+    return isl, left
+
+
+def close_cuts(zc, oc):
+    """Close's cuts inside an island (the arm's, the leg's, the foot top's), read from its saved layout: the edges two
+    left quads of one island share whose corners take different UV vertices. Per island: the cut edges (topology
+    ids) and the cut's two ends."""
+    Qc, corner = zc["Q"], oc["corner"]
+    n = len(zc["V"])
+    leftc = zc["side"][Qc].max(1) == 1
+    rec = {}
+    for q in np.nonzero(leftc)[0]:
+        for k in range(4):
+            a, b = int(Qc[q, k]), int(Qc[q, (k + 1) % 4])
+            key = (min(a, b), max(a, b))
+            ga, gb = int(corner[q, k]), int(corner[q, (k + 1) % 4])
+            rec.setdefault(key, []).append((q, {a: ga, b: gb}))
+    out = {}
+    for key, lst in rec.items():
+        if len(lst) != 2:
+            continue
+        (q1, m1), (q2, m2) = lst
+        if oc["isl"][q1] == oc["isl"][q2] and m1 != m2:
+            out.setdefault(int(oc["isl"][q1]), []).append(key)
+    res = {}
+    for ii, e in out.items():
+        e = np.array(e)
+        u, c = np.unique(e, return_counts=True)
+        res[ii] = {"edges": e, "ends": u[c == 1]}
+    return res
+
+
+def play_seams(zp, zc, oc, isl, left, paths):
+    """Play's seams: its island borders, and its own cuts (paths: play_guide's, by the rules on play), which close's
+    cuts were drawn along. Reported: how far each lies from close's cut (the farthest of each edge's ends and
+    middle)."""
+    from scipy.spatial import cKDTree
+    V, Q = zp["V"].astype(np.float64), zp["Q"]
+    n = len(V)
+    K = quad_edge_keys(Q, n)
+    Kf = K.ravel()
+    owner = np.repeat(np.arange(len(Q)), 4)
+    o = np.argsort(Kf, kind="stable")
+    Ks, ow = Kf[o], owner[o]
+    same = Ks[1:] == Ks[:-1]
+    a, b = ow[:-1][same], ow[1:][same]
+    both = left[a] & left[b]
+    seam = set(Ks[:-1][same][both & (isl[a] != isl[b])].tolist())
+    Vc = zc["V"].astype(np.float64)
+    info = {"cuts": {}}
+    cuts = close_cuts(zc, oc)
+    for name, nm in (("arm", "ARM"), ("leg", "LEG"), ("foot_top", "FOOT_TOP")):
+        if name not in paths:
+            continue
+        path = np.asarray(paths[name])
+        seam |= set(edge_key(path[:-1], path[1:], n).tolist())
+        cut = cuts.get(ISL.index(nm))
+        if cut is None:
+            info["cuts"][nm] = {"edges": int(len(path) - 1), "close_cut": "none"}
+            continue
+        t_ = np.linspace(0, 1, 9)[:, None, None]
+        tree = cKDTree((Vc[cut["edges"][:, 0]][None] * (1 - t_) + Vc[cut["edges"][:, 1]][None] * t_).reshape(-1, 3))
+        dd = np.max([tree.query(V[path[:-1]] * (1 - s_) + V[path[1:]] * s_)[0] for s_ in (0.0, 0.5, 1.0)], 0)
+        info["cuts"][nm] = {"edges": int(len(path) - 1),
+                            "off_close_cut_mm_p95": round(float(np.percentile(dd, 95)) * 1e3, 2),
+                            "off_close_cut_mm_max": round(float(dd.max()) * 1e3, 2)}
+    return seam, info
+
+
+def build_play(zp, zc, oc, paths=None):
+    """Play's layout carried from close, so ONE texture set serves both tiers: its islands from close's (play_islands),
+    its cuts redrawn on close's (play_seams), and each of its UV vertices close's UV at its closest point on close's
+    island, on its own side of a cut (the copy's faces' UVs pick the side), on close's triangles (clamped: a play
+    seam a few mm off close's takes close's border texels, never a gutter's or a neighbour island's)."""
+    from scipy.spatial import cKDTree
     t0 = time.time()
     V, Q = zp["V"].astype(np.float64), zp["Q"]
     n = len(V)
-    isl, left = assign_islands(zp)
-    seam, info = seams(zp, isl, left)
+    isl, left = play_islands(zp, zc, oc)
+    seam, info = play_seams(zp, zc, oc, isl, left, play_guide(zp) if paths is None else paths)
     cls, cv, nc = corner_classes(Q, n, left, seam)
-    Vc, Qc = zc["V"].astype(np.float64), zc["Q"]
-    dgc = quad_diag(Vc, Qc)
-    leftc = zc["side"][Qc].max(1) == 1
+    leftc = zc["side"][zc["Q"]].max(1) == 1
     UVc = np.zeros((nc, 2))
-    cpos = np.zeros((nc, 3))
-    ccount = np.zeros(nc)
-    # each class's faces' middle (its side of a cut)
-    qi = np.nonzero(left)[0]
-    mid = V[Q[qi]].mean(1)
-    for k in range(4):
-        np.add.at(cpos, cls[qi, k], mid)
-        np.add.at(ccount, cls[qi, k], 1)
-    cpos /= ccount[:, None]
-    cisl = np.zeros(nc, np.int64)
-    cisl[cls[qi].ravel()] = np.repeat(isl[qi], 4)
+    uv = oc["uv_math"]
     rep = {"islands": {}, "carried_from": "close"}
     for ii, nm in enumerate(ISL):
         qc = np.nonzero(leftc & (oc["isl"] == ii))[0]
-        Tq = oc["corner"][qc]
-        Tc = quad_tris(Tq, dgc[qc])
-        Pc = Vc[oc["src"]]
-        S = surfdist.Surface(Pc, Tc)
-        cs = np.nonzero(cisl == ii)[0]
-        x = V[cv[cs]]
-        probe = x + (cpos[cs] - x) / 3.0
-        _, _, t, d = S.closest(probe, k=16)
-        # barycentric of x's projection on that triangle (extrapolated: a seam copy just across close's cut)
-        a, b, c = Pc[Tc[t, 0]], Pc[Tc[t, 1]], Pc[Tc[t, 2]]
-        w = bary(x, a, b, c)
-        uv = oc["uv_math"]
-        UVc[cs] = (w[:, :1] * uv[Tc[t, 0]] + w[:, 1:2] * uv[Tc[t, 1]] + w[:, 2:] * uv[Tc[t, 2]])
-        rep["islands"][nm] = {"uv_vertices": int(len(cs)), "probe_dist_p95_mm": round(float(np.percentile(d, 95)) * 1e3, 2)}
+        qp = np.nonzero(left & (isl == ii))[0]
+        if not len(qp):
+            continue
+        T, P, _ = close_tris(zc, oc, qc)
+        tree = cKDTree(P[T].mean(1))
+        k_isl = np.sqrt(np.abs(jac_sv(P, T, uv)[1]).sum() / tri_frames(P, T)[1].sum())     # UV units per metre
+        # each play face's middle on close's island (a face's middle sits inside its own side of a cut)
+        tf, wf, _ = closest_uvsafe(P, T, tree, V[Q[qp]].mean(1))
+        uvf = (wf[:, :, None] * uv[T[tf]]).sum(1)
+        acc = np.zeros((nc, 2))
+        cnt = np.zeros(nc)
+        for k in range(4):
+            np.add.at(acc, cls[qp, k], uvf)
+            np.add.at(cnt, cls[qp, k], 1)
+        cs = np.unique(cls[qp])
+        tgt = acc[cs] / cnt[cs, None]
+        tv, wv, dv = closest_uvsafe(P, T, tree, V[cv[cs]], uv=uv, target=tgt, tol=0.02 * k_isl)
+        UVc[cs] = (wv[:, :, None] * uv[T[tv]]).sum(1)
+        # then relaxed on play's own surface, held to it by a spring (lam 1: 0 flips against 10 on the bare
+        # projection; at 0.1 / 0.01 the layout drifts 1.6 / 2.5 px p95 from close's; the seams held harder (30)
+        # kept the folds' stretch: measured)
+        loc = -np.ones(nc, np.int64)
+        loc[cs] = np.arange(len(cs))
+        Tp = quad_tris(loc[cls[qp]], quad_diag(V, Q)[qp])
+        UVc[cs] = arap_fit(V[cv[cs]], Tp, UVc[cs], k_isl, 1.0)
+        rep["islands"][nm] = {"quads": int(len(qp)), "uv_vertices": int(len(cs)),
+                              "off_close_mm_p95": round(float(np.percentile(np.minimum(dv, 1e3), 95)) * 1e3, 2),
+                              "side_fallbacks": int((dv >= 1e3).sum())}
     out = assemble(zp, cls, cv, nc, UVc, isl, left)
     out["isl"] = isl
     rep.update(info)
     rep["solve_s"] = round(time.time() - t0, 2)
     return out, rep
+
+
+def agreement(zp, op, zc, oc, size=TEX, per_tri=3, seed=3):
+    """One texture set, both tiers: points on play's left triangles (random, per_tri each), play's UV there against
+    close's UV at the point's closest place on close's same island (its own side: within 2 cm in UV of play's), in
+    2k texels; and the share of those play UVs that fall off close's islands (into a gutter)."""
+    from scipy.spatial import cKDTree
+    V, Q = zp["V"].astype(np.float64), zp["Q"]
+    left = zp["side"][Q].max(1) == 1
+    leftc = zc["side"][zc["Q"]].max(1) == 1
+    dg = quad_diag(V, Q)
+    rng = np.random.default_rng(seed)
+    uvp, uvq = op["uv_math"], oc["uv_math"]
+    cover = fill_tris(uvq * size, quad_tris(oc["corner"][leftc], quad_diag(zc["V"].astype(np.float64), zc["Q"])[leftc]),
+                      size, size)
+    from scipy import ndimage
+    errs, off, tot, out, offd = [], 0, 0, {}, []
+    for ii, nm in enumerate(ISL):
+        qp = np.nonzero(left & (op["isl"] == ii))[0]
+        if not len(qp):
+            continue
+        Tp = quad_tris(op["corner"][qp], dg[qp])
+        Pp = V[op["src"]]
+        r = rng.random((len(Tp), per_tri, 2))
+        r = np.where(r.sum(2, keepdims=True) > 1, 1 - r, r)
+        wb = np.stack([1 - r[..., 0] - r[..., 1], r[..., 0], r[..., 1]], 2)
+        X = np.einsum("tsk,tkd->tsd", wb, Pp[Tp]).reshape(-1, 3)
+        Up = np.einsum("tsk,tkd->tsd", wb, uvp[Tp]).reshape(-1, 2)
+        qc = np.nonzero(leftc & (oc["isl"] == ii))[0]
+        T, P, _ = close_tris(zc, oc, qc)
+        tree = cKDTree(P[T].mean(1))
+        k_isl = np.sqrt(np.abs(jac_sv(P, T, uvq)[1]).sum() / tri_frames(P, T)[1].sum())
+        t, w, _ = closest_uvsafe(P, T, tree, X, uv=uvq, target=Up, tol=0.02 * k_isl)
+        Uc = (w[:, :, None] * uvq[T[t]]).sum(1)
+        e = np.linalg.norm(Up - Uc, axis=1) * size
+        px = np.clip((Up * size).astype(int), 0, size - 1)
+        o = ~cover[px[:, 1], px[:, 0]]
+        # how far off its own island (texels): the gutter takes the nearest island texel, so within half a gutter
+        # (4 px at 2k) a play texel still reads its own island's border
+        lo = np.maximum(px.min(0) - 16, 0)
+        hi = np.minimum(px.max(0) + 17, size)
+        own = fill_tris(uvq * size - lo, T, int(hi[0] - lo[0]), int(hi[1] - lo[1]))
+        dist = ndimage.distance_transform_edt(~own)
+        od = dist[px[:, 1] - lo[1], px[:, 0] - lo[0]]
+        out[nm] = {"px_p95": round(float(np.percentile(e, 95)), 2), "px_max": round(float(e.max()), 2),
+                   "off_islands_pct": round(float(o.mean() * 100), 3), "off_own_px_max": round(float(od.max()), 2)}
+        offd.append(od)
+        errs.append(e)
+        off += int(o.sum())
+        tot += len(e)
+    e = np.concatenate(errs)
+    return {"px_p50": round(float(np.percentile(e, 50)), 3), "px_p95": round(float(np.percentile(e, 95)), 2),
+            "px_p99": round(float(np.percentile(e, 99)), 2), "px_max": round(float(e.max()), 2),
+            "off_islands_pct": round(off / tot * 100, 3),
+            "off_own_px_p99": round(float(np.percentile(np.concatenate(offd), 99)), 2),
+            "off_own_px_max": round(float(np.concatenate(offd).max()), 2), "islands": out}
 
 
 def bary(p, a, b, c):
@@ -1183,14 +1397,18 @@ def load(tier, z):
 def run(tiers=("close", "play")):
     zc = dict(np.load(os.path.join(HERE, "out", "topo", "close.npz")), _tier="close")
     allrep = {}
-    oc, rc = build_close(zc)
-    rc["measure"] = measure(zc, oc)
-    save("close", zc, oc, rc)
-    allrep["close"] = rc
+    zp = dict(np.load(os.path.join(HERE, "out", "topo", "play.npz")), _tier="play")
+    if "close" in tiers:
+        oc, rc = build_close(zc, {"V": zp["V"].astype(np.float64), "paths": play_guide(zp)})
+        rc["measure"] = measure(zc, oc)
+        save("close", zc, oc, rc)
+        allrep["close"] = rc
+    else:                       # play alone: carried from the saved close layout
+        oc, _ = load("close", zc)
     if "play" in tiers:
-        zp = dict(np.load(os.path.join(HERE, "out", "topo", "play.npz")), _tier="play")
         op, rp = build_play(zp, zc, oc)
         rp["measure"] = measure(zp, op)
+        rp["agreement"] = agreement(zp, op, zc, oc)
         save("play", zp, op, rp)
         allrep["play"] = rp
     return allrep
