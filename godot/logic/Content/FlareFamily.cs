@@ -42,22 +42,56 @@ public static class FlareFamily
 
     /// <summary>A Flare's own: its stop; its main blow (the Blow event's Part, and when Last only its last such); where
     /// its band runs from ("her", or "line": out from the blow's line, X/Z to TX/TZ).</summary>
-    public sealed class Own { public double? Stop; public string Blow = ""; public bool Last; public string From = "her"; }
+    public sealed class Own
+    {
+        public double? Stop; public string Blow = ""; public bool Last; public string From = "her";
+        /// <summary>The Long Cut's fuse along its seam (m/s; 0: the view's own).</summary>
+        public double Fuse;
+        /// <summary>Its peak's shape (the light at the main blow): "disk" round where it lands, or "line" along its line.</summary>
+        public PeakShape Peak = new();
+        /// <summary>The Blow part whose earlier blows are an air and dust ripple, no light (Bell's tolls); "" none.</summary>
+        public string Ripple = "";
+    }
 
-    public sealed class BandLight { public double Gain = 0.5, Wake = 0.3; }
+    /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
+    /// line, its whole length).</summary>
+    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column; }
 
-    /// <summary>The shock band on the main blow: its front runs Reach m in Time s (Flare time, eased out by Ease), its soft
-    /// lead and its wake (m), and its fade over the last share of its run (Fade).</summary>
+    public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3; }
+
+    /// <summary>The PEAK at the main blow (H7 r2): Hitstop drawn frames held on the blow frame (the Strike's own on its other
+    /// blows); Frames the light's envelope by drawn frame from the blow (real time); Color its dawn gold; Release the
+    /// push-in's release from the blow (s); the rig's lights' Height (m), Range (m), Spacing along a line (m) and most
+    /// Lights; Night/Day: Light (an omni's energy at the envelope's 1), Ground (the lit shape's light, x albedo), Column (HDR).</summary>
+    public sealed class PeakRules
+    {
+        public int Hitstop = 2, Lights = 6;
+        public double[] Frames = { 1, 1, 0.7, 0.3 };
+        public string Color = "#ffbe6a";
+        public double Release = 0.15, Height = 0.4, Range = 6, Spacing = 4.5;
+        public PeakLight Night = new(), Day = new();
+        public PeakLight Of(bool night) => night ? Night : Day;
+    }
+
+    /// <summary>An air and dust ripple (Bell's first tolls): its front runs Reach m in Time s (Flare time), Lead m soft, a
+    /// Dust lift of the ground's value (x, no light), Puffs dust puffs thrown out along it.</summary>
+    public sealed class RippleRules { public double Reach = 10, Time = 0.25, Lead = 0.8, Dust = 0.35; public int Puffs = 28; }
+
+    public sealed class BandLight { public double Front = 1, Tail = 0.45; }
+
+    /// <summary>The band on the main blow, a lit FRONT: it runs Reach m in Time s (Flare time, eased out by Ease: at x of
+    /// its run it stands at Reach (1 - (1 - x)^Ease)), its soft leading edge Lead m, the ground lit behind it for After s;
+    /// its fade over the last share of its run (Fade). Night/Day: Front its light (x albedo), Tail the lit ground's share.</summary>
     public sealed class BandRules
     {
-        public double Reach = 30, Time = 0.3, Ease = 1.6, Lead = 1.4, Wake = 3, Fade = 0.35;
+        public double Reach = 22, Time = 0.28, Ease = 1.35, Lead = 0.55, After = 0.15, Fade = 0.3;
         public BandLight Night = new(), Day = new();
         public BandLight Of(bool night) => night ? Night : Day;
     }
 
     /// <summary>The beat: the camera's kick (px at 1080p), a drop's landing after the band (s) and its scale-in, a
     /// decision-marked hit's hold after its mark shows (frames), the numbers' wait after the band (s).</summary>
-    public sealed class BeatRules { public double KickPx = 3, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02, SpendLight = 8, SpendLightDay = 8; }
+    public sealed class BeatRules { public double KickPx = 9, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02, SpendLight = 8, SpendLightDay = 8; }
 
     /// <summary>The recovery: her ember's pool x Pool for Hold s from the main blow, then back over Out s.</summary>
     public sealed class RecoveryRules { public double Pool = 1.3, Hold = 2, Out = 0.4; }
@@ -70,6 +104,8 @@ public static class FlareFamily
         public BandRules Band = new();
         public BeatRules Beat = new();
         public RecoveryRules Recovery = new();
+        public PeakRules Peak = new();
+        public RippleRules Ripple = new();
         public Dictionary<string, Own> Flares = new();
     }
 
@@ -77,6 +113,8 @@ public static class FlareFamily
     public static BandRules Band => F.Band;
     public static BeatRules Beat => F.Beat;
     public static RecoveryRules Recovery => F.Recovery;
+    public static PeakRules Peak => F.Peak;
+    public static RippleRules Ripple => F.Ripple;
     /// <summary>A Flare's own rules (an empty one when it has none).</summary>
     public static Own Of(string flare) => F.Flares.TryGetValue(flare, out var o) ? o : None;
 

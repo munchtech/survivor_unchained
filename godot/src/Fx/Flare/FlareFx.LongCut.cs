@@ -30,8 +30,8 @@ public partial class FlareFx
     const string LongCutId = "the_long_cut";
     bool IsLongCut => id == LongCutId;
 
-    /// <summary>The seam's fuse: metres a second (24 m in 0.4 s).</summary>
-    const float FuseSpeed = 60f;
+    /// <summary>The fuse along the seam (m/s): the family data's (flare_family.json flares.the_long_cut.fuse, H7 r2), else 60.</summary>
+    float FuseSpeed => Content.FlareFamily.Of(id).Fuse is > 0 and var fu ? (float)fu : 60f;
     /// <summary>A body's burn-up (Flare time): charred, burnt away in gold.</summary>
     const float BurnLen = 0.5f;
     const float SweepLen = 0.35f;

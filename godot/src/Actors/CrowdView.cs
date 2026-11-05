@@ -340,6 +340,9 @@ public partial class CrowdView : Node3D
     public static Func<int, Vector2>? StruckRim;
     /// <summary>H7: a marked foe's rim in the Flare's school (FlareFx.MarkRim; the hue is flare_mark_rim): 0 none.</summary>
     public static Func<int, float>? FlareMarkRim;
+    /// <summary>H7 r2: a struck body's rim for 2 frames as the Flare's band crosses it (FlareFx.BandRim): 0 none. Over the
+    /// marks' rim, under the hit kit's.</summary>
+    public static Func<int, float>? FlareBandRim;
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
@@ -829,6 +832,7 @@ public partial class CrowdView : Node3D
         g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
+        if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(flare, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
@@ -883,7 +887,7 @@ public partial class CrowdView : Node3D
             Audit(st.X, st.Z, 0, 1);
             censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, FlareBandRim?.Invoke(st.Id) ?? 0);
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);

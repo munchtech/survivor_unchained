@@ -14,6 +14,11 @@ namespace SurvivorUnchained.View;
 /// kills (the held pose, then the fall: DeathOf), its damage numbers (held from the press, one burst), its loot (DropFresh).
 /// A decision-marked hit holds its death and number until its mark has shown a few frames. Then the grade eases back from
 /// the main blow and her ember's pool stands brighter for a breath. Each Flare's own shape is left as it was.
+/// H7 r2 (judge r1 fixes 1-3): the PEAK on the main blow (FlareFx.Peak), its 2-frame hitstop and the push-in let go on it;
+/// the band a lit FRONT (the ground lit behind it for a breath, no dark wake); each struck body a 2-frame rim in the hue as
+/// the band crosses it (BandRim), then its number; the HUD's kill count waits for the band (KillsHeld).
+/// For the marks (FlareMarksView): BandReaches(x, z) is when the band reaches a point (Flare time; Held before the blow),
+/// BandReachesRt the same in real seconds from now, BlowAtRt the main blow's real time (-1 none).
 /// </summary>
 public partial class FlareFx
 {
@@ -28,6 +33,12 @@ public partial class FlareFx
     static readonly bool BandOff = Args.Has("flare-band-off");
     float poolNow = 1;
     readonly List<(int Target, Vector3 At, double Amount, double MaxHp, bool Crit, double BornRt)> held = new();
+    /// <summary>The struck bodies the band will rim: where each stands, and the drawn frame the band reached it (-1 not yet).</summary>
+    readonly Dictionary<int, (Vector2 At, long Frame)> bandStruck = new();
+    /// <summary>The Flare's kills the HUD's count does not show yet: their band (or their own moment) has not come.</summary>
+    public static int KillsHeld { get; private set; }
+    /// <summary>The struck rim's drawn frames as the band crosses a body (FLARE_LOOK §1.6: "a 2-frame rim in the calling's hue").</summary>
+    const int BandRimFrames = 2;
     static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col";
 
     void BlowPress()
@@ -60,13 +71,15 @@ public partial class FlareFx
         Rumble(1, 0.6f, 0.14f);
         // The plain Strikes' Spend (its light, the world's ring) on this same frame (FLARE_LOOK §1.2), sized with the
         // band so the frame stays in §1.6's budget (flare_family.json beat.spendLight).
-        if (id != "burns_twice" && !IsLongCut)
+        if (HasPeak) PeakStart(o, end);
+        else if (id != "burns_twice" && !IsLongCut)
         {
             spendLightReal = true;
             spendAt = t;
             var bt = FlareFamily.Beat;
             SpendLight(cueAt + Vector3.Up * 2.5f, new Color(1f, 0.75f, 0.4f), (float)(Night ? bt.SpendLight : bt.SpendLightDay));
         }
+        if (HasPeak) spendAt = t;
         Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
         ResolvePending();
         if (Perf.On) GD.Print($"flare perf blow t {Perf.Now:0.0000}");
@@ -92,6 +105,39 @@ public partial class FlareFx
         float d = Mathf.Clamp(BandDist(x, z) / (float)Math.Max(1, br.Reach), 0, 1);
         double k = 1 - Math.Pow(1 - d, 1 / Math.Max(0.2, br.Ease));
         return blowT + br.Time * k;
+    }
+
+    /// <summary>For the marks (FlareMarksView): when the band reaches this point, Flare time (Held before the main blow).</summary>
+    public double BandReaches(float x, float z) => BandTime(x, z);
+
+    /// <summary>For the marks: real seconds from now until the band reaches this point (0 passed; Held before the main blow).
+    /// Flare time runs at a tenth through the blow's hitstop, so this is the clock's own estimate.</summary>
+    public double BandReachesRt(float x, float z)
+    {
+        double bt = BandTime(x, z);
+        if (bt >= Held) return Held;
+        double left = bt - t;
+        if (left <= 0) return 0;
+        double stopFlare = Stop * 0.1;
+        return left <= stopFlare ? left / 0.1 : Stop + (left - stopFlare);
+    }
+
+    /// <summary>For the marks: the main blow's real time on the Flare's real clock (FlareFx rt), -1 before it.</summary>
+    public double BlowAtRt => blowRt;
+
+    /// <summary>For CrowdView: a struck body's band rim (0 none): on for BandRimFrames drawn frames from the band reaching it.</summary>
+    public float BandRim(int enemy)
+    {
+        if (!Active || !bandStruck.TryGetValue(enemy, out var s) || s.Frame < 0) return 0;
+        long age = (long)Engine.GetFramesDrawn() - s.Frame;
+        return age >= 0 && age < BandRimFrames ? (age == 0 ? 1f : 0.75f) * (Night ? 0.8f : 1f) : 0;
+    }
+
+    /// <summary>A struck body for the band's rim (its first place).</summary>
+    void BandStrike(int target, float x, float z)
+    {
+        if (!familyOn || target < 0 || bandStruck.ContainsKey(target)) return;
+        bandStruck[target] = (new Vector2(x, z), -1);
     }
 
     /// <summary>The plain Flares' kills not yet given a moment: at the main blow (and after it) the band's, before it
@@ -123,6 +169,7 @@ public partial class FlareFx
     {
         if (!Active || !familyOn) return false;
         held.Add((target, at, amount, maxHp, crit, rt));
+        BandStrike(target, at.X, at.Z);
         return true;
     }
 
@@ -137,20 +184,34 @@ public partial class FlareFx
         var br = FlareFamily.Band;
         if (bandOn)
         {
+            // The front: its progress over its run (Flare time), its light the school's glow x the data's (x albedo), the
+            // ground lit behind it for `after` s, faded over the run's last share.
             float x = (float)((t - blowT) / Math.Max(br.Time, 1e-3));
             if (x > 1.05f) { bandOn = false; RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero); }
             else
             {
-                float xc = Mathf.Clamp(x, 0, 1);
-                float front = (float)br.Reach * (1 - Mathf.Pow(1 - xc, (float)br.Ease));
                 float k = 1 - Mathf.SmoothStep(1 - (float)br.Fade, 1.05f, x);
                 var bl = br.Of(Night);
-                var c = BandHue() * (float)bl.Gain;
-                RenderingServer.GlobalShaderParameterSet(BandParam, new Vector4(bandA.X, bandA.Y, front, k));
-                RenderingServer.GlobalShaderParameterSet(BandLineParam, new Vector4(bandB.X, bandB.Y, (float)br.Lead, (float)br.Wake));
-                RenderingServer.GlobalShaderParameterSet(BandColParam, new Vector4(c.R, c.G, c.B, (float)bl.Wake));
+                var c = BandHue().SrgbToLinear() * (float)bl.Front * (LessFlash ? 0.6f : 1f);
+                RenderingServer.GlobalShaderParameterSet(BandParam, new Vector4(bandA.X, bandA.Y, x, k));
+                RenderingServer.GlobalShaderParameterSet(BandLineParam, new Vector4(bandB.X, bandB.Y, (float)br.Lead, (float)br.After));
+                RenderingServer.GlobalShaderParameterSet(BandColParam, new Vector4(c.R, c.G, c.B, (float)bl.Tail));
+                RenderingServer.GlobalShaderParameterSet(BandShapeParam, new Vector4((float)br.Reach, (float)br.Time, (float)br.Ease, 0));
             }
         }
+        RippleTick();
+        PeakTick();
+        // The struck bodies' rims as the band reaches each, and the kills the HUD's count holds back.
+        if (blowT >= 0 && bandStruck.Count > 0)
+        {
+            long now = (long)Engine.GetFramesDrawn();
+            foreach (var kv in new List<KeyValuePair<int, (Vector2 At, long Frame)>>(bandStruck))
+                if (kv.Value.Frame < 0 && t >= BandTime(kv.Value.At.X, kv.Value.At.Y)) bandStruck[kv.Key] = (kv.Value.At, now);
+        }
+        int kh = 0;
+        foreach (var kv in doomed)
+            if (DeathOf(kv.Key) == 1 && (kv.Value.Pending || t < kv.Value.At || MarkHolds(kv.Key, kv.Value.BornRt))) kh++;
+        KillsHeld = kh;
         // The numbers: one burst, each as the band passes its foe (and a decision's after its mark has shown).
         if (held.Count > 0 && blowT >= 0)
         {
@@ -199,6 +260,10 @@ public partial class FlareFx
         held.Clear();
         blowT = blowRt = -1;
         bandOn = false;
+        rippleT = -1;
+        bandStruck.Clear();
+        KillsHeld = 0;
+        PeakOff();
         RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero);
         if (poolNow != 1) { poolNow = 1; EmberPool(1); }
     }

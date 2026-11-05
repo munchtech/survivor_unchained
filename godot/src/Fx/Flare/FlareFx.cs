@@ -153,11 +153,12 @@ public partial class FlareFx : Node3D
                 if (id == "burns_twice") BurnsBlow(e, b);
                 else if (IsLongCut)
                 {
-                    Hitstop(e.Hitstop);
+                    Hitstop(main ? MainHitstop(e.Hitstop) : e.Hitstop);
                     if (e.Part == "sweep") LongSweep(e);
                     else if (e.Part == "cleave") LongCleave(e);
                 }
-                else { Hitstop(e.Hitstop); StalkerBlow(e); if (e.Last && !familyOn) Spend(e.TX, e.TZ, 1); }
+                else { Hitstop(main ? MainHitstop(e.Hitstop) : e.Hitstop); StalkerBlow(e); if (e.Last && !familyOn) Spend(e.TX, e.TZ, 1); }
+                if (!main && IsRipple(e)) RippleStart(e);
                 if (main && id != "burns_twice") MainBlow(e);
                 else ResolvePending();
                 break;
@@ -170,7 +171,7 @@ public partial class FlareFx : Node3D
     void Press(Ev.Flare e, Battle b)
     {
         Clear();
-        if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)}");
+        if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)} {PressCount(e, b)}");
         // (--perf: the beats on the recording's clock, for tools/fx/flare_gpu.py --live)
         if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
         id = e.Id;
@@ -210,6 +211,7 @@ public partial class FlareFx : Node3D
         Rumble(0, 0.5f, 0.04f);
         HudDim(1); LabelsAlpha(0);
         FamilyPress(e, b, calling);
+        PeakMake();
         if (Args.Has("clip") && GetViewport()?.GetCamera3D() is { } pc)
         {
             var vs = GetViewport().GetVisibleRect().Size;
@@ -351,6 +353,9 @@ public partial class FlareFx : Node3D
         if (Cam == null) return;
         float k = Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0;
         double sinceSpend = spendAt < 0 ? -1 : t - spendAt;
+        // (H7 r2: a Flare with a peak holds its push through the stop and lets go on the main blow, over the data's release)
+        bool peaked = HasPeak;
+        if (peaked) sinceSpend = blowT < 0 ? -1 : (t - blowT) * 0.25 / Math.Max(Content.FlareFamily.Peak.Release, 1e-3);
         float push = Mathf.SmoothStep(0, 1, (float)Math.Min(1, t / 0.18)) * 0.12f, pitch = Mathf.DegToRad(4) * Mathf.SmoothStep(0, 1, (float)Math.Min(1, t / 0.18));
         if (sinceSpend >= 0)
         {
@@ -359,7 +364,7 @@ public partial class FlareFx : Node3D
             push = Mathf.Lerp(push, up ? -0.15f : 0, o);
             pitch = Mathf.Lerp(pitch, up ? -Mathf.DegToRad(8) : 0, o);
         }
-        double settleFrom = IsLongCut ? (lcCleaveT >= 0 ? lcCleaveT + 0.35 : -1) : id == "burns_twice" ? (lastAt > 0 ? lastAt + 0.3 : -1) : (spendAt >= 0 ? spendAt + 0.3 : -1);
+        double settleFrom = peaked ? -1 : IsLongCut ? (lcCleaveT >= 0 ? lcCleaveT + 0.35 : -1) : id == "burns_twice" ? (lastAt > 0 ? lastAt + 0.3 : -1) : (spendAt >= 0 ? spendAt + 0.3 : -1);
         if (settleFrom > 0 && t > settleFrom)
         {
             float s = 1 - Mathf.SmoothStep(0, 1, (float)Math.Min(1, (t - settleFrom) / 0.6));
@@ -599,6 +604,31 @@ public partial class FlareFx : Node3D
     float ringMax = 16;
     int audited;
     static readonly double[] AuditAfter = { 0, 0.3, 0.55 };
+
+    /// <summary>For the clip's log (H7 r2, the 30+ shoot): live foes at the press within the Flare's radius, within a line
+    /// Flare's line (its Strike's args line/lineWidth, the cleave's), and on the 1920x1080 screen.</summary>
+    string PressCount(Ev.Flare e, Battle b)
+    {
+        var f = Content.Lamps.Flare(e.Id);
+        double line = f?.Args.TryGetValue("line", out var lv) == true ? lv : 0, half = f?.Args.TryGetValue("lineWidth", out var hv) == true ? hv : 0;
+        var cam = GetViewport()?.GetCamera3D();
+        var vs = GetViewport()?.GetVisibleRect().Size ?? new Vector2(1920, 1080);
+        int r = 0, l = 0, scr = 0;
+        double ca = Math.Cos(e.Angle), sa = Math.Sin(e.Angle);
+        foreach (var x in b.Enemies.Items)
+        {
+            if (!x.Alive) continue;
+            double dx = x.X - e.X, dz = x.Z - e.Z;
+            if (dx * dx + dz * dz < e.Radius * e.Radius) r++;
+            if (line > 0) { double al = dx * ca + dz * sa, ac = -dx * sa + dz * ca; if (al > -1 && al < line && Math.Abs(ac) < half + 1.5) l++; }
+            if (cam != null)
+            {
+                var wp = new Vector3((float)x.X, (float)HeightAt(x.X, x.Z) + 1, (float)x.Z);
+                if (!cam.IsPositionBehind(wp)) { var sp = cam.UnprojectPosition(wp); if (sp.X >= 0 && sp.Y >= 0 && sp.X < vs.X && sp.Y < vs.Y) scr++; }
+            }
+        }
+        return $"in_reach {r} (radius {e.Radius:0}){(line > 0 ? $" on_line {l}" : "")} on_screen {scr}";
+    }
 
     int StandingIn(Battle b)
     {
