@@ -172,6 +172,9 @@ public interface IZoneLook
     bool Shown(string node);
     /// <summary>A named piece that turns (a pump's wheel) stops.</summary>
     void Stop(string node);
+    /// <summary>(H8 N22) The landmarks' moving parts of a kind set k of the way from their rest (0) to their other
+    /// end (1): "portcullis", the gatehouse's, lowered (drawn up at rest).</summary>
+    void Shift(string kind, double k) { }
     /// <summary>A kit piece set down now (a grave marker); lift raises it off the ground (onto a table).</summary>
     void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0);
     /// <summary>The zone's own pieces of a kind (id) within r of (x, z) taken

@@ -48,6 +48,9 @@ public static class OwnProps
     /// <summary>(E8 later) Presets that cast no shadow (props.json "no_shadow": the camp's ground dressing, what the
     /// open gate shows beyond it).</summary>
     static readonly HashSet<string> unshadowed = new();
+    /// <summary>(H8 N22) A preset's moving pieces (props.json "moves": node -> its travel to its other end, m in the
+    /// preset's frame): the gatehouse's portcullis leaves, drawn up at rest. Their own mesh, no LOD, casting their shadow.</summary>
+    static readonly Dictionary<string, Vector3> moves = new();
     /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
     /// material on the faces their vertex alpha flags.</summary>
     static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
@@ -198,6 +201,8 @@ public static class OwnProps
                     if (p.Value.TryGetProperty("axis", out var ax)) axes[p.Name] = new Vector2(ax[0].GetSingle(), ax[1].GetSingle());
                     if (p.Value.TryGetProperty("lod_m", out var lm)) lods[p.Name] = lm.GetSingle();
                     if (p.Value.TryGetProperty("no_shadow", out var ns) && ns.GetBoolean()) unshadowed.Add(p.Name);
+                    if (p.Value.TryGetProperty("moves", out var mv))
+                        foreach (var o in mv.EnumerateObject()) moves[o.Name] = new Vector3(o.Value[0].GetSingle(), o.Value[1].GetSingle(), o.Value[2].GetSingle());
                     if (p.Value.TryGetProperty("runs", out var rn))
                         runs[p.Name] = (rn.GetProperty("top").GetSingle(), rn.GetProperty("drop").GetSingle(), rn.GetProperty("len").GetSingle(),
                             rn.GetProperty("k").GetSingle(), rn.GetProperty("ring").GetBoolean());
@@ -381,6 +386,14 @@ public static class OwnProps
         {
             if (n is not MeshInstance3D m || m.Mesh == null) continue;
             if (m.Name.ToString().EndsWith("_shadow")) { m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly; continue; }
+            // (H8 N22) a moving piece (the portcullis): the plain material (the runs would slide with it), its own shadow
+            // (a shut grate's bars on the passage floor), no LOD; its travel kept on it for Landmarks.Shift
+            if (moves.TryGetValue(m.Name, out var tv))
+            {
+                m.MaterialOverride = Material; m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
+                m.SetMeta("travel", tv); m.SetMeta("rest", m.Position);
+                continue;
+            }
             // (E8) the far castle: its own material (the atlas, its own haze, its lit windows), no shadow, no LOD
             if (m.Name.ToString().EndsWith("_far"))
             {

@@ -34,6 +34,61 @@ public class PrologueTests
         return new Setup(j, host, zone, b, meta);
     }
 
+    [Fact]
+    public void The_shut_gate_drops_its_portcullis_and_raises_it_once_the_ring_is_down()
+    {
+        // (H8 N22, the judge on the N22 frames: "the arch looks open ... the player walks into an invisible wall")
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice
+        {
+            Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
+            Ability = a.Abilities[0],
+        }, 42);
+        var meta = ZoneMeta.Load("lowford");
+        var host = new FakeHost(j, meta);
+        var zone = new Prologue(host, meta) { DayStart = true };
+        var at = zone.ArrivalFrom(null);
+        var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 5, ember: zone.Ember);
+        b.Hooks = zone.Hooks;
+        host.Battle = b;
+        zone.Begin(b);
+        var s = new Setup(j, host, zone, b, meta);
+        Run(s, 0.1);
+        // The day starts shut: the portcullis down at once (never seen up), the bar on its line, a watchman behind it.
+        Assert.Equal(1, host.FakeLook.Moved["portcullis"]);
+        var spec = Play.Zones.DayStretch.For("lowford")!;
+        var bar = Assert.Single(b.Collision.All(), c => c.Tag == "gate_shut");
+        Assert.InRange(bar.Z, spec.PortcullisZ, spec.PortcullisZ + 0.6);
+        Run(s, 12);
+        Assert.Equal(Prologue.Stage.Exit, zone.Now);
+        // Up to the bars, past the exit line: held, told why, and the tracker names the task in one line.
+        var gate = meta.Place("LOWFORD", "gate");
+        // (by the wall's side of the apron, off the ring's line: the ring is not sprung, still owed)
+        double exitZ = meta.Places["LOWFORD"].GetProperty("exitZ").GetDouble();
+        Stand(s, gate.X + 8.7, exitZ - 1);
+        Run(s, 0.2);
+        Assert.False(j.World.Fact("prologue.done").Truthy);
+        var steps = host.Tracked.Single(t => t.Id == "pro").Steps;
+        Assert.Equal(Prologue.GateTask, steps[0].Text);
+        Assert.DoesNotContain(steps, x => x.Text.StartsWith("Walk up the road"));
+        Assert.Equal(1, host.FakeLook.Moved["portcullis"]);
+        // (near the gate the goal's line takes the first line's place, in the same words: one line, not two)
+        var ring = Goals.All.Single(g => g.Id == "day_ring");
+        var merged = Goals.Merge(host.Tracked, [new ActiveGoal(ring, 0, 0, 0, true)], _ => null).Single(t => t.Id == "pro").Steps;
+        Assert.Equal(steps.Count, merged.Count);
+        Assert.Equal(Prologue.GateTask, merged[0].Text);
+        // The ring down: the portcullis rises over a few seconds, eased; she goes through once it is most of the way up.
+        j.World.Zone("lowford")[Play.Zones.DayStretch.DoneKey("wolves")] = true;
+        Stand(s, gate.X, exitZ - 1);
+        Run(s, 1.0);
+        Assert.InRange(host.FakeLook.Moved["portcullis"], 0.3, 0.95);
+        Assert.False(j.World.Fact("prologue.done").Truthy);
+        Run(s, 2.0);
+        Assert.Equal(0, host.FakeLook.Moved["portcullis"]);
+        Assert.DoesNotContain(b.Collision.All(), c => c.Tag == "gate_shut");
+        Assert.True(j.World.Fact("prologue.done").Truthy);
+    }
+
     static void Run(Setup s, double seconds, bool safe = true)
     {
         for (double t = 0; t < seconds; t += 1 / 60.0)
@@ -216,7 +271,8 @@ public class PrologueTests
         // (the day's wolf ring at the gate put down today: H4 item 10 r3's ring holds the gate till its second wave is down)
         s.J.World.Zone("lowford")[Play.Zones.DayStretch.DoneKey("wolves")] = true;
         Stand(s, gate.X, gate.Z + 6);
-        Run(s, 0.1);
+        // (H8 N22: the portcullis, down while the ring was owed, rises first: she goes through once it is most of the way up)
+        Run(s, 2.6);
         Assert.True(s.J.World.Fact("prologue.done").Truthy);
         Assert.Equal("waystation", s.Host.Travelled?.Zone);
     }

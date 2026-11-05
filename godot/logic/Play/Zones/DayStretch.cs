@@ -57,6 +57,8 @@ public sealed class DayStretch
     {
         public double[] From = [0, 0];
         public double GateZ;
+        /// <summary>(H8 N22) The portcullis's line (z), where the shut gate bars her (0: none, the bar on the exit line).</summary>
+        public double PortcullisZ;
         public List<Beat> Beats = new();
         public Beat? Get(string id) => Beats.FirstOrDefault(b => b.Id == id);
     }

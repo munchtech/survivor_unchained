@@ -25,6 +25,17 @@ public sealed class Landmarks
     public readonly Dictionary<string, Node3D> Nodes = new();
     /// <summary>The lamp holders put in KayKit lamps' places (Lamps.cs): the zone lights their flames.</summary>
     public readonly List<Node3D> Holders = new();
+    /// <summary>(H8 N22) Own pieces' moving parts by kind (a node <preset>_move_<kind>_<leaf>: "portcullis"), each with
+    /// its rest and its travel to its other end (OwnProps "moves").</summary>
+    public readonly Dictionary<string, List<(Node3D Node, Vector3 At, Vector3 Travel)>> Movers = new();
+
+    /// <summary>(H8 N22) A kind of moving part set k of the way from its rest (0) to its other end (1): the portcullis
+    /// lowered. A zone without one is unchanged.</summary>
+    public void Shift(string kind, float k)
+    {
+        if (!Movers.TryGetValue(kind, out var ms)) return;
+        foreach (var (n, rest, travel) in ms) if (GodotObject.IsInstanceValid(n)) n.Position = rest + travel * k;
+    }
 
     readonly ZoneData zone;
 
@@ -88,6 +99,14 @@ public sealed class Landmarks
         foreach (var c in kk.GetChildren()) { kk.RemoveChild(c); c.QueueFree(); }
         kk.AddChild(piece);
         if (piece.HasMeta("lamp")) Holders.Add(piece);
+        foreach (var c in piece.FindChildren("*_move_*", "Node3D", true, false))
+        {
+            if (c is not Node3D mv || !mv.HasMeta("travel")) continue;
+            var nm = mv.Name.ToString();
+            var kind = nm[(nm.IndexOf("_move_") + 6)..].Split('_')[0];
+            if (!Movers.TryGetValue(kind, out var ms)) Movers[kind] = ms = new();
+            ms.Add((mv, (Vector3)mv.GetMeta("rest"), (Vector3)mv.GetMeta("travel")));
+        }
         return true;
     }
 
