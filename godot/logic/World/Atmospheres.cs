@@ -359,6 +359,13 @@ public static class Atmospheres
         // the panel; the stage's play dawn 1.50 to 1.6 with the rig's key; the panel's top sky, which the play camera never sees,
         // holds the rest))
         "rig_dawn" => PlayDawnGrade with { Contrast = 1.4 },
+        // (L1 W2 C6, the color chain: the day rigs' grades with the highlight tint neutral (#bcbcbc: linear 0.5, the tint adds
+        // tint - 0.5). The warm-source term (WarmKeep) was never on by day; the warmth past the sun's own was the paint grade's
+        // highlight tint (#ffd49a at 0.25; the wild's #ffd9a0 at 0.2), which pushed every lit surface warm as if the sun were a
+        // warm source: a neutral 0.18 card under the town's sun read R/B 3.1 against the pale-gold sun's own 2.5 (#f3d9a0,
+        // rule 3). Warm belongs to sources (rule 3): the sun's color is the rig's key, not the grade's.)
+        "rig_day" => WaystationDay.Grade with { HighlightTint = "#bcbcbc" },
+        "rig_day_wild" => Day.Grade with { HighlightTint = "#bcbcbc" },
         _ => null,
     };
 
