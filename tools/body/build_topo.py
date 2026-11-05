@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """P1 B2a: the base build on OUR topology, both tiers, no Blender, no MakeHuman at build time. docs/team/body.md P1.
 
-    python tools/body/build_topo.py tools/body/specs/base_woman.json <out_dir> [--tiers close,play]
+    python tools/body/build_topo.py tools/body/specs/base_woman.json <out_dir> [--tiers close,play] [--no-correctives]
 
 Writes <out>/body.glb + <out>/rig.json (close), <out>/play.glb + <out>/play_rig.json (play), <out>/build.json (counts,
 timings, checks) and <out>/stage/<tier>.npz (each stage's arrays). Check it:
@@ -29,6 +29,11 @@ Stages (each a function, no hand steps):
               from our faces, the ring's from the head so the seam lights as one; TEXCOORD_0 a placeholder front
               projection: UVs are a later step), the head meshes with the bake and our weights written over A's; and
               rig.json (stages.write_rig: the poser's drivers, base_drive.json).
+  6 correctives  correctives.py on each tier's own export (tools/body/correctives.json: per joint and key pose a
+              smooth-skin solve with the crease's contact, shapes stored before skinning, weight laws into the tier's
+              rig "correctives" for rig_drive.py); solved on play's own mesh, not carried from close: the solve is
+              the same command on any mesh, and play's shapes then meet play's own posed surface exactly (a carried
+              shape inherits close's contacts on a coarser skin). --no-correctives skips it.
 No subdivision: the topology is the tier. Derivation: (a) the game's need (one build command per tier on our own
 topology, every input ours but the CC0 reference surface the topology and sliders were derived from); (c) the head
 inherited from A (approved), baked.
@@ -279,7 +284,7 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
     np.savez(os.path.join(out, "stage", f"{tier}.npz"), V=V, J=wts["J"], W=wts["W"], worlds=sk["worlds"])
 
 
-def run_tier(spec, tier, A, baked, out, rep):
+def run_tier(spec, tier, A, baked, out, rep, correct=True):
     t = time.time()
     tim = rep["timings_s"]
     z, V = stage_base(spec, tier, rep)
@@ -299,6 +304,11 @@ def run_tier(spec, tier, A, baked, out, rep):
     t = time.time()
     stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep)
     tim["export"] = round(time.time() - t, 2)
+    if correct:
+        t = time.time()
+        import correctives
+        rep["correctives"] = correctives.run(out, tier=tier, fresh=True)
+        tim["correctives"] = round(time.time() - t, 2)
     with open(os.path.join(out, GLB[tier][0]), "rb") as f:
         rep["glb_sha256"] = hashlib.sha256(f.read()).hexdigest()
 
@@ -308,6 +318,7 @@ def main():
     ap.add_argument("spec")
     ap.add_argument("out")
     ap.add_argument("--tiers", default="close,play")
+    ap.add_argument("--no-correctives", action="store_true", help="skip stage 6 (the export without shapes)")
     a = ap.parse_args()
     out = os.path.abspath(a.out)
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
@@ -318,7 +329,7 @@ def main():
     full = {"spec": os.path.relpath(os.path.abspath(a.spec), REPO).replace("\\", "/"), "tiers": {}}
     for tier in a.tiers.split(","):
         rep = {"spec": full["spec"], "timings_s": {}}
-        run_tier(spec, tier, A, baked, out, rep)
+        run_tier(spec, tier, A, baked, out, rep, correct=not a.no_correctives)
         full["tiers"][tier] = rep
         print("BUILD", tier, os.path.join(out, GLB[tier][0]), rep["glb_sha256"][:16], rep["timings_s"])
     full["total_s"] = round(time.time() - t0, 2)

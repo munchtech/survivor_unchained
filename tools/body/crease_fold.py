@@ -16,6 +16,27 @@ import bends, ray
 from correctives import smooth01, polar, parts, prox_dir
 
 
+def corner_shift(st, G, deg, nb):
+    """How far (m, along nb) the reference's inner corner (tools/body/ref/<motion>_<deg>.json, its "corner" point:
+    where the two limbs' inner lines, each offset by the body's own rest half-width from its bone, meet) sits off
+    the bisector plane through the joint. Equal half-widths put it on that plane; the knee's (a thin back of the
+    thigh against a full calf) put it 24 mm toward the thigh at 90, and a fold held on the joint's plane dents the
+    crease there. The hinge is the view's axis, so nb lies in the view plane and the 2D offset is exact."""
+    spec = bends.load_ref(st.motion, int(round(deg)))
+    pts = [c for c in spec["curves"]["inner"] if "corner" in c]
+    if not pts:
+        return 0.0
+    vw = st.view(2 * bends.PX_CLOSE)
+    V0, G0, _ = st.posed(0)
+    R = bends.radii(st, ray.mask(V0, st.T_rend, vw), vw, bends.Plane2(st, G0))
+    pl = bends.Plane2(st, G)
+    q = bends.build_ref({"curves": {"c": [pts[0], pts[0]]}}, pl, R).get("c")
+    if q is None:
+        return 0.0
+    off = q[0] - pl.O
+    return float((off[0] * vw.ex + off[1] * vw.ey) @ nb)
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     p = mesh.p
     I = p.index
@@ -49,6 +70,12 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     hv = np.cross(nb, wv)
     Fr = np.stack([wv, hv, nb])            # rows: world -> plane frame
     Oj = G[st.j][:3, 3]
+    if jc.get("plane_at") == "corner":     # the plane through the inner corner, not the joint (see corner_shift)
+        shift = corner_shift(st, G, jc["_deg"], nb)
+    else:
+        shift = 0.0
+    ramp = jc.get("corner_ramp", 0.0)       # the shift eased in from the joint's axis into the crease (m along e1)
+    offn = lambda Yc: shift * (smooth01(((Yc - Oj) @ wv) / ramp) if ramp > 0 else np.ones(len(Yc)))
     # rest-space sideways: the swell's room (the sides, not the crease or the outer)
     je, jd = I[sub(jc["distal_end"])], I[sub(jc["distal"])]
     d_rest = bends.unit(p.rest[je][:3, 3] - p.rest[jd][:3, 3])
@@ -57,6 +84,12 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     crease_side = smooth01(((mesh.P0 - c0) @ bdir + cf["band_in"]) / cf["band_w"])
     Y = X.copy()
     side = np.where(wd >= 0.5, -1.0, 1.0)          # +1 proximal (stays at s >= margin), -1 distal
+    if jc.get("side") == "geom":                  # by the rest bisector plane (the check's seg_d), not the 0.5 weight
+        gd = np.zeros(mesh.n, bool)
+        gd[mesh.rep[st.seg_d]] = True
+        gr = np.zeros(mesh.n, bool)
+        gr[mesh.rep[st.rend]] = True
+        side = np.where(gr, np.where(gd, -1.0, 1.0), side)
     active = np.zeros(mesh.n, bool)
     log = {"free": int(len(fi)), "iters": []}
     vw = st.view(2 * bends.PX_CLOSE) if ref else None
@@ -75,13 +108,33 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         slabs.append({"side": sd_, "ts": np.asarray(ts, float), "sel": sel, "on": on & free,
                       "tn": (mesh.P0 - O0) @ ax0, "A0": np.asarray(A0), "k": np.ones(len(ts))})
     sc_n = np.ones(mesh.n)
+    # mitre: the crease filled to where the two limbs, each rigid with its own bone, meet on the plane
+    m_ = cf["margin"]
+    mi_w = jc.get("mitre", 0.0)
+    mi_t = None
+    if mi_w:
+        Xr = np.zeros_like(X)
+        for sg, bn in ((1.0, sub(jc["proximal"])), (-1.0, sub(jc["distal"]))):
+            Sb = G[I[bn]] @ p.skel.ibm[I[bn]]
+            k_ = side == sg
+            Xr[k_] = mesh.P0[k_] @ Sb[:3, :3].T + Sb[:3, 3]
+        relr = Xr - Oj
+        sr = relr @ nb - offn(Xr)
+        Xr = Xr + np.maximum(side * m_ - side * sr, 0.0)[:, None] * side[:, None] * nb[None, :]
+        band = jc.get("mitre_band", 0.04)          # the crease's reach off the plane (m), eased out
+        on_m = free & (relr @ wv > cf["wedge"]) & (np.abs(sr) < band)
+        wm = mi_w * f * (1 - smooth01(np.abs(sr) / band))
+        mi_t = (np.nonzero(on_m)[0], Xr, wm)
+    pr_w = jc.get("pressure", 0.0)
+    pr_t = {}
+    pto = jc.get("pressure_to", {"p": 1.0, "d": 1.0})      # the area the push restores, per side (of the rest's)
     cw = cf["contact"]
     m_ = cf["margin"]
     for rnd in range(cf["iters"] + 1):
         Vall = Y[mesh.rep]
         N = bends.normals(Vall, p.T)[mesh.first]
         rel = Y - Oj
-        s = rel @ nb
+        s = rel @ nb - offn(Y)
         inwedge = (rel @ wv > cf["wedge"]) & free & (f > 0.02)
         viol = inwedge & (side * s < m_)
         active |= viol
@@ -114,9 +167,41 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
                 s_area = np.where(sl["on"], np.maximum(s_area, kk), s_area)
             s_area = 1.0 + (s_area - 1.0) * (1.0 - crease_side)
             s_area[active] = 1.0
+            if pr_w:                                   # pressure: the swell as a push along the skin's normal
+                s_area[:] = 1.0
             sc_n = s_area
+        if slabs and rnd > 0 and pr_w:
+            O = G[st.j][:3, 3]
+            push = np.zeros(mesh.n)
+            for sl in slabs:
+                ax = st.p3 if sl["side"] == "p" else st.d3(G)
+                inc = np.zeros(len(sl["ts"]))
+                for k_, t in enumerate(sl["ts"]):
+                    per, A = bends.section(Vall, p.T, sl["sel"], O + t * ax, ax, rend=st.rend)
+                    if np.isfinite(A) and np.isfinite(per) and per > 0:
+                        inc[k_] = np.clip(cf.get("pressure_gain", 0.7) * (pto[sl["side"]] * sl["A0"][k_] - A) / per,
+                                          -cf.get("pressure_step", 0.002), cf.get("pressure_step", 0.002))
+                ts = sl["ts"]
+                ii = np.interp(sl["tn"], np.r_[ts[0] - cf["area_fade"], ts, ts[-1] + cf["area_fade"]],
+                               np.r_[0.0, inc, 0.0], left=0.0, right=0.0)
+                push = np.where(sl["on"] & (np.abs(ii) > np.abs(push)), ii, push)
+            push[active] = np.minimum(push[active], 0.0)
+            if cf.get("pressure_band", 0) > 0:          # none at the contact's edge: the corner's normals converge
+                sw = side * ((Y - Oj) @ nb - offn(Y)) - m_
+                fade = np.where((Y - Oj) @ wv > cf["wedge"], smooth01(sw / cf["pressure_band"]), 1.0)
+                push = np.where(push > 0, push * fade, push)
+            pr_t = {i: Y[i] + push[i] * N[i] for i in np.nonzero(np.abs(push) > 1e-7)[0]}
+            log.setdefault("push_mm", []).append(round(float(np.abs(push).max() * 1000), 2))
             log.setdefault("area_k", []).append([np.round(sl["k"], 3).tolist() for sl in slabs])
         if rnd == cf["iters"]:
+            if jc.get("clamp"):                    # the plane as a hard wall at the end: no node in the wedge past it
+                rel = Y - Oj
+                s = rel @ nb - offn(Y)
+                bad = (rel @ wv > cf["wedge"]) & free & (f > 0.02) & (side * s < m_)
+                Y[bad] += ((side[bad] * m_ - s[bad]))[:, None] * nb
+                Vall = Y[mesh.rep]
+                N = bends.normals(Vall, p.T)[mesh.first]
+                log["clamped"] = int(bad.sum())
             sc = ray.scene(Vall, p.T)
             near = fi[f[fi] > 0.02]
             log["iters"].append({"inside_parity": int(ray.inside(sc, Y[near] + 3e-4 * N[near]).sum()),
@@ -124,6 +209,13 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
             break
         Wi = a_data.copy()
         tgt = a_data[:, None] * X[fi]
+        if mi_t is not None:
+            nodes_m, Xr_, wm_ = mi_t
+            np.add.at(Wi, pos[nodes_m], wm_[nodes_m])
+            np.add.at(tgt, pos[nodes_m], wm_[nodes_m, None] * Xr_[nodes_m])
+        for node, t in pr_t.items():
+            Wi[pos[node]] += pr_w
+            tgt[pos[node]] += pr_w * t
         for node, t in out_t.items():
             wo = cf["outline"] * f[node]
             Wi[pos[node]] += wo
@@ -132,7 +224,7 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         Wn = np.zeros(len(fi))
         ai = pos[np.nonzero(active & free)[0]]
         Wn[ai] = cw
-        tgtF[ai, 2] += cw * (side[fi[ai]] * m_ + (Oj @ nb))
+        tgtF[ai, 2] += cw * (side[fi[ai]] * m_ + (Oj @ nb) + offn(Y)[fi[ai]])
         lus = [splu((Lg + sp.diags(Wi)).tocsc()), splu((Lg + sp.diags(Wi + Wn)).tocsc())]
         XfixF = Xfix @ Fr.T
         for _ in range(cf["arap"]):
@@ -164,7 +256,7 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
             R[fi] = Rn
         # release: an active node the plane holds back (pulls toward it: adhesion, not contact) goes free
         if cf.get("release", 1):
-            sa = side * ((Y - Oj) @ nb) - m_
+            sa = side * ((Y - Oj) @ nb - offn(Y)) - m_
             rel_ = active & (sa > cf.get("release_tol", 2e-5))
             active &= ~rel_
         else:

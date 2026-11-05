@@ -1,6 +1,7 @@
 """Stage 7: the correctives, computed (never sculpted), as a build step for any slider body.
 
-    python tools/body/correctives.py <out_dir> [--only elbow,knee]     (build.py runs it after the export)
+    python tools/body/correctives.py <out_dir> [--only elbow,knee] [--tier close|play]
+           (build.py and build_topo.py run it after the export, each tier on its own mesh)
 
 Reads <out>/stage/body_lbs.glb (the export without shapes; made from <out>/body.glb the first time) and <out>/rig.json;
 writes <out>/body.glb with the shapes on the body mesh, rig.json "correctives" (each shape's weight law,
@@ -416,14 +417,20 @@ def shape_name(jc, motion, deg):
     return f"{jc['name']}_{tag}{int(round(abs(deg)))}_{{s}}"
 
 
-def run(out, only=None):
+TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correctives.json"),
+         "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
+
+
+def run(out, only=None, tier="close", fresh=False):
+    """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base."""
     t0 = time.time()
     conf = json.load(open(CONF))
     cf = conf["solve"]
-    base = os.path.join(out, "stage", "body_lbs.glb")
-    if not os.path.exists(base):
-        shutil.copyfile(os.path.join(out, "body.glb"), base)
-    rig_path = os.path.join(out, "rig.json")
+    f_glb, f_rig, f_base, f_shapes, f_rep = TIERS[tier]
+    base = os.path.join(out, "stage", f_base)
+    if fresh or not os.path.exists(base):
+        shutil.copyfile(os.path.join(out, f_glb), base)
+    rig_path = os.path.join(out, f_rig)
     rig = json.load(open(rig_path))
     rig["correctives"] = [c for c in rig.get("correctives", []) if only and c.get("joint") not in only]
     poser = LbsPoser(base, dict(rig, correctives=[]))
@@ -433,8 +440,8 @@ def run(out, only=None):
     Pb, Tb = poser.Pb[body], poser.T[(poser.piece[poser.T] == "body").all(1)]
     mir = mirror_map(Pb)
     old = {}
-    if only and os.path.exists(os.path.join(out, "stage", "shapes.npz")):
-        z = np.load(os.path.join(out, "stage", "shapes.npz"))
+    if only and os.path.exists(os.path.join(out, "stage", f_shapes)):
+        z = np.load(os.path.join(out, "stage", f_shapes))
         old = {k: z[k] for k in z.files}
     shapes, rep = {}, {}
     for jc in conf["joints"]:
@@ -451,20 +458,23 @@ def run(out, only=None):
             strips[motion] = st
             nm = shape_name(jc, motion, deg)
             V, G = key_pose(st, deg)
+            pk = jc.get("per_key", {}).get(str(int(round(deg))), {})               # a key's own settings
+            jk = dict(jc, **pk, _deg=deg)
             spec = bends.load_ref(motion, deg) if motion in bends.MOTIONS else None
             ref = None
-            if spec and jc.get("pull"):
+            if spec and jk.get("pull"):
                 V0, G0, _ = st.posed(0)
                 vw_hi = st.view(2 * bends.PX_CLOSE)
                 m0 = ray.mask(V0, st.T_rend, vw_hi)
                 pl0 = bends.Plane2(st, G0)
                 ref = bends.build_ref(spec, bends.Plane2(st, G), bends.radii(st, m0, vw_hi, pl0), (m0, vw_hi))
             t = time.time()
-            if jc.get("fold") == "flatten":
+            cfk = {**cf, **jc.get("solve", {}), **pk.get("solve", {})}
+            if jk.get("fold") == "flatten":
                 import crease_fold
-                Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jc, cf, ref)
+                Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jk, cfk, ref)
             else:
-                Y, f, free, M, lg = solve_key(mesh, st, V, G, jc, cf, ref)
+                Y, f, free, M, lg = solve_key(mesh, st, V, G, jk, cfk, ref)
             D = rest_delta(mesh, Y, f, free, M)
             DL = D.copy()
             if jc.get("one_side", True):               # a limb's shape stays on its side
@@ -505,16 +515,16 @@ def run(out, only=None):
         for s in ("l", "r"):
             order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
     tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n]).astype(np.float32)) for n in order}
-    glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, "body.glb"))
-    np.savez_compressed(os.path.join(out, "stage", "shapes.npz"), **shapes)
+    glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
+    np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:
         json.dump(rig, fh, indent=1)
     rep["shapes"] = len(order)
     rep["mirror_unmatched_body_points"] = int((mir < 0).sum())
     rep["seconds"] = round(time.time() - t0, 1)
-    with open(os.path.join(out, "stage", "correctives.json"), "w") as fh:
+    with open(os.path.join(out, "stage", f_rep), "w") as fh:
         json.dump(rep, fh, indent=1)
-    print("CORRECTIVES", len(order), "shapes", rep["seconds"], "s")
+    print("CORRECTIVES", tier, len(order), "shapes", rep["seconds"], "s")
     return rep
 
 
@@ -524,4 +534,6 @@ if __name__ == "__main__":
     if "--only" in sys.argv:
         only = sys.argv[sys.argv.index("--only") + 1].split(",")
         a = [x for x in a if x != sys.argv[sys.argv.index("--only") + 1]]
-    run(os.path.abspath(a[0]), only)
+    tier = sys.argv[sys.argv.index("--tier") + 1] if "--tier" in sys.argv else "close"
+    a = [x for x in a if x != tier]
+    run(os.path.abspath(a[0]), only, tier)
