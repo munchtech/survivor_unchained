@@ -8,7 +8,9 @@ placed, still horde (--horde 25 --dist 4 --spread 8 --no-spawn, as tools/audio/m
                                 [--quick warden|arcanist|stalker|reaver] [--godot-args "--horde 25 --seed 7"]
 
 Output: C:/Users/munch/Desktop/survivorsunchained_inputs/flare_h7/NAME/
-  clip.mp4 (H.264+AAC, `pre` s before the press, `len` s long), f+0.32.png style frames at press
+  clip.mp4 (H.264+AAC, `pre` s before the press, `len` s long), long.wav + long_flare.wav (the tape and the flare stem from
+  4 s before the press to the clip's end; long.txt: the press's second in them; the log's [soundlog] lines count the cue ids),
+  f+0.32.png style frames at press
   offsets -0.10 .. +4.00 s, sheet.jpg (half-size frames, 4 a row, labelled), sheet_half.jpg, log.txt.
 
 The press frame comes from the game's own `flare press frame N` line (FlareFx.Press, with --clip).
@@ -52,7 +54,7 @@ frames = int((a.cast + a.pre + a.len + 4) * FPS)  # headroom; the press lands ne
 gargs = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--write-movie", str(avi),
          "--fixed-fps", str(FPS), "--audio-driver", "Dummy", "--quit-after", str(frames), "--",
          "--quick", a.quick, "--zone", ZONE, "--offer", "0", "--auto", a.bot, "--flare", a.flare,
-         "--cast", str(a.cast), "--time", a.time, "--clip"] + ([] if a.sound else ["--shot", "clip", "--seconds", str(a.cast + a.len + 2)]) + (["--wav", str(tmp / "tape.wav"), "--stems"] if not a.sound else []) + a.godot_args.split()
+         "--cast", str(a.cast), "--time", a.time, "--clip"] + ([] if a.sound else ["--shot", "clip", "--seconds", str(a.cast + a.len + 2)]) + (["--wav", str(tmp / "tape.wav"), "--stems", "--soundlog"] if not a.sound else []) + a.godot_args.split()
 ov = ROOT / "godot" / "override.cfg"
 if ov.exists(): ov.unlink()
 subprocess.run([sys.executable, TURN, "take", "godot", label, "--wait", "600"], check=True)
@@ -83,6 +85,10 @@ try:
     print(f"flare stem first onset {onset:.3f}s vs press {pf/FPS:.3f}s: {off_frames:+.1f} frames")
     a0 = int(ss * sr); a1 = a0 + int(a.len * sr)
     sf.write(str(out / "tape.wav"), tape[a0:a1], sr); sf.write(str(out / "flare_stem.wav"), stem[a0:a1], sr)
+    # (for flare_measure's loudness: 4 s of the fight before the press to the clip's end, the tape and the flare stem)
+    l0 = max(0, int((pf / FPS - 4.0) * sr))
+    sf.write(str(out / "long.wav"), tape[l0:a1], sr); sf.write(str(out / "long_flare.wav"), stem[l0:a1], sr)
+    (out / "long.txt").write_text(f"press_s {(pf / FPS) - l0 / sr:.4f}\n", encoding="utf-8")
     mean_db = 20 * np.log10(max(1e-9, float(np.sqrt((tape[a0:a1] ** 2).mean()))))
     print(f"tape window rms {mean_db:.1f} dBFS")
     subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-ss", f"{ss:.3f}", "-i", str(avi), "-i", str(out / "tape.wav"),
@@ -94,6 +100,11 @@ try:
         subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", str(avi), "-vf", f"select=eq(n\\,{max(0, pf + round(o*FPS))})",
                         "-frames:v", "1", "-vsync", "0", str(out / n)], check=True)
         shots.append((o, out / n))
+    # The stop's last held frame (two before the release, the log's 'flare release frame N'): flare_measure's true-hold pair.
+    rm = re.search(r"flare release frame (\d+)", log.stdout)
+    if rm:
+        subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", str(avi), "-vf", f"select=eq(n\\,{int(rm.group(1)) - 2})",
+                        "-frames:v", "1", "-vsync", "0", str(out / "f_stop_end.png")], check=True)
     W, H = 960, 540
     sheet = Image.new("RGB", (W * 4, H * 4), "black"); d = ImageDraw.Draw(sheet)
     try: font = ImageFont.truetype("arial.ttf", 28)

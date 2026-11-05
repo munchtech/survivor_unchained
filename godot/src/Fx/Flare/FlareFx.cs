@@ -139,6 +139,7 @@ public partial class FlareFx : Node3D
                 Frozen = false;
                 ramp = 0.08;
                 releaseAt = t;
+                if (Args.Has("clip")) GD.Print($"flare release frame {Engine.GetFramesDrawn()} at +{t:0.000} s real");
                 if (id != "burns_twice" && !IsLongCut) Spend(e.X, e.Z, 1);
                 break;
             case FlarePhase.Blow:

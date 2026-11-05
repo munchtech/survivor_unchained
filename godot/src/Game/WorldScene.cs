@@ -87,6 +87,7 @@ public partial class WorldScene : Node3D, IZoneLook
         AddChild(Crowd);
         Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam, Lines = Voices };
         Fx.OnDamageFlash = v => damageFlash = Math.Max(damageFlash, v);
+        Fx.OnLevelLight = () => Player?.LevelFlare();
         AddChild(Fx);
         AddChild(Voices);
     }
@@ -276,8 +277,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 frameEvents.AddRange(evs);
                 foreach (var e in evs)
                 {
-                    if (e is Ev.LevelUp) Player?.LevelFlare();
-                    else if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Ability ab)
                     {

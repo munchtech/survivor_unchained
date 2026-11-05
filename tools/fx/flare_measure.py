@@ -93,6 +93,59 @@ def measure(name, pre):
     worst = max((sum(1 for s in swings if i <= s < i + 60) for i in range(len(means))), default=0)
     print(f"(c) budget over {len(fr)} frames: peak mean lum {ratio.max():.2f}x pre-press (frames over 1.5x: {over}); "
           f"worst over-knee share {knee.max():.2%} (frame {int(knee.argmax())}); swings {len(swings)}, worst 1 s {worst}")
+    # (c2) which frames are over: offsets from the press (frames), so a bright frame can be laid against the log's beats
+    bright = [i - 6 for i in range(len(ratio)) if ratio[i] > 1.5]
+    knees = [i - 6 for i in range(len(knee)) if knee[i] > 0.03]
+    bm = re.search(r"flare blow \S+: main \S+ at \+([\d.]+) s real", log)
+    rl = re.search(r"flare release frame (\d+) at \+([\d.]+) s", log)
+    print(f"    over 1.5x at press+{bright[:12]}{'...' if len(bright) > 12 else ''} frames; over knee 3% at {knees[:12]}; "
+          f"release +{float(rl.group(2)) * 60 if rl else float('nan'):.0f} f, main blow +{float(bm.group(1)) * 60 if bm else float('nan'):.0f} f")
+    # (a2) the true hold: f+0.12 against the stop's last held frame (two before the release), and the frame-to-frame motion
+    # inside the stop over clip.mp4 (480x270, outside 30 px round her, the HUD's bottom 40 px left out)
+    if (d / "f_stop_end.png").exists() and rl:
+        fe = np.asarray(Image.open(d / "f_stop_end.png").convert("RGB")).astype(np.int16)
+        span = float(rl.group(2)) - 2 / 60 - 0.12
+        print(f"(a2) true hold: mean |stop end - f+0.12| outside 120 px = {np.abs(fe - f1).mean(axis=2)[out120].mean():.2f} over {span:.2f} s")
+        hh = outside((h, w), (her[0] / 4, her[1] / 4), 30)
+        hh[h - 40:] = False
+        r0, r1 = 6 + 7, 6 + int(round(float(rl.group(2)) * 60)) - 2
+        steps = [np.abs(fr[i].astype(np.int16) - fr[i - 1]).mean(axis=2)[hh].mean() for i in range(r0 + 1, min(r1 + 1, len(fr)))]
+        if steps: print(f"     frame-to-frame in the stop (press+8..release-2): mean {np.mean(steps):.2f}, max {np.max(steps):.2f}")
+    # (e) loudness (long.wav: 4 s of fight before the press): short-term (3 s) LUFS max of the fight before the press against
+    # the blow's (windows starting from the press), the stop's momentary (0.4 s) loudness of the flare stem and of the rest,
+    # and the sample peak from the press on
+    if (d / "long.wav").exists():
+        import soundfile as sf, pyloudnorm as pyln
+        tape, sr = sf.read(str(d / "long.wav"), dtype="float64", always_2d=True)
+        stem, _ = sf.read(str(d / "long_flare.wav"), dtype="float64", always_2d=True)
+        ps = float((d / "long.txt").read_text().split()[1])
+        meter = pyln.Meter(sr)
+        def lufs(x, a0, a1):
+            a0, a1 = max(0, int(a0 * sr)), min(len(x), int(a1 * sr))
+            if a1 - a0 < int(0.4 * sr): return float("nan")
+            with np.errstate(divide="ignore"):
+                v = meter.integrated_loudness(x[a0:a1]) if a1 - a0 >= int(0.4 * sr) else float("nan")
+            return v
+        def st_max(x, t0, t1, win):
+            vals = [lufs(x, s, s + win) for s in np.arange(t0, t1 - win + 1e-6, 0.1)]
+            vals = [v for v in vals if np.isfinite(v)]
+            return max(vals) if vals else float("nan")
+        fight = st_max(tape, max(0, ps - 3.0 - 0.95), ps, 3.0)
+        tb = (float(bm.group(1)) if bm else 0.5)
+        blow = st_max(tape, ps, min(len(tape) / sr, ps + tb + 3.0), 3.0)
+        blow_m = st_max(tape, ps + tb - 0.1, ps + tb + 0.8, 0.4)
+        fight_m = st_max(tape, ps - 3.0, ps, 0.4)
+        stopl = float(rl.group(2)) if rl else 0.35
+        world = tape - stem
+        w_pre = lufs(world, ps - 0.5, ps - 0.05)
+        w_stop = lufs(world, ps + 0.05, ps + max(0.45, stopl))
+        s_stop = lufs(stem, ps + 0.05, ps + max(0.45, stopl))
+        peak = 20 * np.log10(max(1e-9, np.abs(tape[int(ps * sr):]).max()))
+        print(f"(e) loudness: short-term max fight {fight:.1f} LUFS, blow {blow:.1f} (blow - fight {blow - fight:+.1f} dB); momentary max "
+              f"fight {fight_m:.1f}, blow {blow_m:.1f}; the stop: flare stem {s_stop:.1f}, the rest {w_stop:.1f} (before the press "
+              f"{w_pre:.1f}: ducked {w_stop - w_pre:+.1f} dB); sample peak from the press {peak:.1f} dBFS")
+    ids = re.findall(r"\[soundlog\] (flare\.\S+) (\d+) (\w+)", log)
+    if ids: print("(f) flare cues:", ", ".join(f"{i} x{n} {k}" for i, n, k in ids))
     # (d)
     for line in re.findall(r"flare marks .*", log) + re.findall(r"flare hover .*", log) + re.findall(r"flare grade: .*", log):
         print("(d)", line.strip())

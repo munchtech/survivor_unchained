@@ -1076,8 +1076,13 @@ public partial class BattleFx : Node3D
     int levelHeld;
 
     /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
+    /// <summary>Her ember's own burst for a level (PlayerView.LevelFlare), with the pillar: it waits for a Flare's frame too
+    /// (H7: c_bell's 50 frames at 1.8x after the blast were a level's ember burst landing under the Strike).</summary>
+    public Action OnLevelLight = () => { };
+
     void LevelLight()
     {
+        OnLevelLight();
         var p = PlayerPos;
         if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
         Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);

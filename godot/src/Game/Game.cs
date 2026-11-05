@@ -839,6 +839,7 @@ public partial class Game : Node, IZoneHost
         h.OnPlayerDeath = killer =>
         {
             if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
+            if (Args.Has("clip") && Args.Has("flare")) return true; // (a Flare clip: she stands; see --clip above)
             OnDeath(killer == null ? "the dark" : Content.Enemies.Called(killer.Named?.Title, killer.Def.Name));
             return false;
         };
@@ -1942,6 +1943,10 @@ public partial class Game : Node, IZoneHost
             fb0.FlareMeter = Battle.FlareFull * fb0.FlareCharges;
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
+        // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
+        // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
+        if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
+            clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {
             flareReadyShot = true;
