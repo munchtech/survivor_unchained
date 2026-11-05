@@ -279,6 +279,63 @@
       "fact": "holloway.confessed",
       "eq": true
      }
+    },
+    {
+     "text": "Eleven in. Nobody out.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 2
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Eleven in. Second night.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 3
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Eleven in. Nobody out. I've stopped writing it down.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 4
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
     }
    ]
   },
@@ -506,7 +563,7 @@
   },
   "chid": {
    "id": "chid",
-   "name": "Chid",
+   "name": "Corvane",
    "title": "\"The Fool\", of the Morning Light",
    "role": "Priest",
    "model": "mage",
@@ -1935,7 +1992,7 @@
    "glyph": "flame"
   },
   "cin_iron_marker": {
-   "name": "Chid",
+   "name": "Corvane",
    "title": "At Nell's grave",
    "glyph": "moon"
   },
@@ -2003,6 +2060,16 @@
    "name": "An old Watchman",
    "title": "The Watch",
    "glyph": "flame"
+  },
+  "door_night": {
+   "name": "The Door in the Verge",
+   "title": "Night",
+   "glyph": "moon"
+  },
+  "scene_bed": {
+   "name": "The South Gate",
+   "title": "Dusk",
+   "glyph": "moon"
   }
  },
  "guards": [

@@ -209,7 +209,7 @@ public class StoryLint
     static readonly string[] Seeds =
     [
         "brannoc.waits_buyer", "chid.note_asked", "harlan.told_dig", "jory.told_knew",
-        "redcowl.birds", "redcowl.gave_charge", "sella.sleeptalk", "vonnra.asked_jessop", "wayfinder.name",
+        "redcowl.birds", "redcowl.gave_charge", "sella.sleeptalk", "wayfinder.name",
         // The romances' Act 1 seeds (docs/romance/ARCS.md section 7): what each lover
         // learned of the survivor, read in Act 2 ("what you are") and Act 3.
         "maeca.heard_heart", "maeca.heard_past", "rav.came_back", "sella.cold_sold", "sella.heard_past",
@@ -221,6 +221,9 @@ public class StoryLint
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
+        // S1, the seven chains (docs/story/PLAN.md section 5): Holloway's bed at the south gate, the night
+        // his count came right and he thought of sleeping in one (Act 2's rope reads it).
+        "holloway.bed_seen",
     ];
 
     [Fact]

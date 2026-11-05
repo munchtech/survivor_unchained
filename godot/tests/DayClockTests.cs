@@ -83,7 +83,7 @@ public class DayClockTests
         Assert.Equal(TimeOfDay.Dawn, j.World.Time);
         Assert.Equal("dig_boils", j.World.Fact("player.carried_home").Str);
         Assert.True(j.World.Fact("player.just_died").Truthy);
-        Assert.DoesNotContain(lines, l => l.Contains("Chid"));
+        Assert.DoesNotContain(lines, l => l.Contains("Corvane"));
         Assert.Equal("carried", new DialogueRunner(Dialogue.Find("chid")!, j.Ctx).Start()!.Node.Id);
     }
 
