@@ -1251,13 +1251,13 @@
    }
   },
   "soil": {
-   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9; MB4 the road's earth verge (day)",
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9; MB4 the road's earth verge (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
    "cel": {
     "band": [0.0, 0.15, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 0.0, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.0,
     "ink": 2,
     "rim_k": 0.0
    },
@@ -1318,13 +1318,13 @@
    }
   },
   "road": {
-   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (two or three value masses); MB4 road (day)",
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (two or three value masses); MB4 road (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
    "cel": {
     "band": [0.0, 0.15, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 0.0, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.0,
     "ink": 2,
     "rim_k": 0.0
    },
@@ -1385,13 +1385,13 @@
    }
   },
   "grass": {
-   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (big flat clumps); MB4 grass (day)",
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (big flat clumps); MB4 grass (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
    "cel": {
     "band": [0.0, 0.15, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 0.0, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.0,
     "ink": 2,
     "rim_k": 0.0
    },
