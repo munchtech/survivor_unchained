@@ -184,16 +184,31 @@
   },
   {
    "name": "hip",
-   "law": "rbf",
+   "law": "arc",
    "bone": "thigh_{s}",
    "end": "calf_{s}",
    "frame": "pelvis",
-   "sigma_deg": 40.0,
+   "gate_deg": [
+    20.0,
+    60.0
+   ],
    "center": "thigh_{s}",
    "keys": [
     [
      "hip_flex",
      90
+    ],
+    [
+     "hip_flex",
+     105
+    ],
+    [
+     "hip_flex",
+     120
+    ],
+    [
+     "hip_flex",
+     135
     ]
    ],
    "r_in": 0.12,
@@ -201,25 +216,66 @@
    "proximal": "pelvis",
    "distal": "thigh_{s}",
    "distal_end": "calf_{s}",
-   "helpers": [
-    "thigh_share_{s}",
-    "glute_{s}"
-   ],
-   "fold": "contact",
-   "pull": [
-    "outer",
-    "inner"
-   ],
-   "free_rend": 1,
-   "cap": 0.03,
+   "fold": "field",
    "solve": {
-    "outline": 10
+    "step": 7.5,
+    "rounds": 12,
+    "data": 1.0,
+    "op": "membrane",
+    "anchor_m": 0.05,
+    "bend_m": 0.008,
+    "contact": 600,
+    "margin": 0.0008,
+    "release": 0.002,
+    "reach": 0.05,
+    "far_m": 0.025,
+    "share_trunk": 0.75,
+    "share_trunk_low": 0.1,
+    "share_w": 0.02,
+    "volume": 0,
+    "rim_in": 0.002,
+    "vol_r": 0.12
    },
-   "hold_mid": [
-    0.04,
-    1.0,
-    "pelvis"
-   ],
+   "one_side": false,
+   "why_r4": "P1 hip r4 (5 Nov): SHIPPED as the best-known (short of the 2 mm gate at close 112/135 and play 112; see the r4 report), the field fold (contact_field.py) on the skel2 base with: op 'membrane' (the offset's energy the membrane's Dirichlet sum over edges + bend_m 8 mm of |LU|^2 + anchor_m 50 mm of |U|^2, in metres over the local edge length: (c) the check's pit is ~ (r^2/4) lap(u_n), a harmonic offset reads 0 off the contacts where r3's bi-Laplacian rang concave; (a) soft tissue round a contact stays convex, the membrane's obstacle problem leaves the other skin tangentially); far_m 25 mm (a node's partner face must be over 25 mm from it at rest: the skin it is joined to across the crease is the same sheet folding, not the other body); the trunk's give by what is under it, share_trunk_low 0.1 below the joint's transverse plane (the mons and groin on the pubic bone, the pubic tubercle at the hip joint centre's level) and 0.75 above (the abdominal wall), smoothstep +-20 mm, a thigh node the rest of its partner's; one_side false (each thigh's shape crosses the midline: the cut left a 22-50 mm step there at 135, the front pit 17 mm at x -14 mm; both hips flexed sum the two, linear superposition); volume 0 (the roll's response with the contacts held dug a moat round them: the flank pit F13.6 S10.3 at 135 with it, F8.2 S5.4 without); rounds 12 (8: depth 21.7/30.8 mm close 135/112; 24: an 83 mm runaway at close 112). The depth is now the true surface distance (bends.surface_depth). Not shipped from r4: partners on any sheet (contact_field.partner_any: close 135 depth 63 mm), a 3.75 deg march (S 10.8 at 135).",
+   "rbf_r2": {
+    "law": "rbf",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "sigma_deg": 40.0,
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      90
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "helpers": [
+     "thigh_share_{s}",
+     "glute_{s}"
+    ],
+    "fold": "contact",
+    "pull": [
+     "outer",
+     "inner"
+    ],
+    "free_rend": 1,
+    "cap": 0.03,
+    "solve": {
+     "outline": 10
+    },
+    "hold_mid": [
+     0.04,
+     1.0,
+     "pelvis"
+    ]
+   },
    "why": "P1 hip r2 (5 Nov): HELD (no hip shape ships). On the r2 weights (the perineum pin, the trunk side) raw skinning passes hip 90 but for the front pit: 0 inside, girth 1.057 (the geometric selection), pits F7.3 S1.9 B6.9 M7.5 mm; this 90 key, re-solved on them, made the judge's side pit back (S 1.9 -> 7.0, F 8.2, M 14.6) while 0 inside, so it is held; its spillover helped 112 (no key 386 inside / 44 mm, key 173 / 31) and not 135 (644 / 66 either way). 112-135 need the two-body contact (pair_trial below: contact_pair.py, fold 'pair', law 'arc', keys 90-135, not shipped: at 105 it leaves ~90 belly nodes inside although each sits on the thigh's surface + 0.8 mm, so the gap itself tests inside: the draped belly does not yet separate the two bodies; cause open). Earlier: P1 D (5 Nov), SHORT of the acceptance (see the P1 D report). Key flex 90 only, by direction (rbf over the thigh's direction in the pelvis frame, sigma 40: the rest key no shape, so 0 at rest). The hinge's flatten fold does not carry to the hip: the bisector plane through the joint (8-10 cm behind the groin) cut the belly, through the reference corner it still flattened the whole lower trunk across the midline (180 inside), so the pairwise contact (solve_key: the rigid parts' signed distances + ray parity) with the strip's body only (free_rend: the other leg and the arms are held as posed), the inner and outer curves pulled, and the midline held to the pelvis within 4 cm (hold_mid: LBS swings the perineum's left half with the left thigh through the right half; held, its depth fell 87 -> 24 mm). Flex 135 is held back: the thigh meets the belly there (652 inside under LBS) and this solve left 502 with girth 1.13; it needs a two-body contact solve, not a hinge fold. D2 (5 Nov): the rebuild the D verdict asks for (contact_fold.py, fold 'stepped', law 'arc') was tried and is NOT shipped: its trial settings are kept under 'd2_trial' (held). Findings: the smooth-skin ARAP over a 25 cm sphere drifts off the skeleton's pivot (p95 4.9 mm, -75 cm3 at 7.5 deg flexion, no contact; the rest-umbrella and full-matrix Laplacian targets the same: 12.7 mm p95 at 45 deg), so the correction must be U = Y - X on the skinned surface (min |L U|^2 + an anchor >= 0.3: a 0.0016 anchor spread one 2 cm push over 10+ cm, +372 cm3); a rigid capped thigh solid as the obstacle pushes the buttock (behind) and the root's blend, and the posed-surface contacts leave 220 points at ~100 mm (check depth) at 135 against LBS's 652 at 75 mm: neither beats D's 90 key (14 at 24 mm). The 15 deg in-between keys need the 'arc' law (rig_drive.py): the Gaussian rbf rings with dense keys (5 keys 15 deg apart summed to 2.0 at 45).",
    "d2_trial": {
     "name": "hip",
@@ -293,7 +349,6 @@
      "probe": 0.0
     }
    },
-   "held": true,
    "pair_trial": {
     "name": "hip",
     "law": "arc",

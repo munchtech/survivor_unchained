@@ -32,6 +32,7 @@ from scipy.spatial import cKDTree
 
 import bends
 import ray
+from contact_fold import closest_on_tris
 from contact_pair import nearest_face, vol_grad
 from correctives import key_pose, rest_delta, smooth01, volume
 
@@ -51,6 +52,63 @@ def carried(mesh, D, M):
     m = fb >= 0
     U[m] = Ub[fb[m]]
     return U
+
+
+def node_len(mesh):
+    """Each welded node's mean rest edge length (m): the local mesh scale h, so the solve's weights are physical
+    lengths, the same on close and play (a per-node weight w reads as w / h^2 per area)."""
+    e = mesh.E
+    ln = np.linalg.norm(mesh.P0[e[:, 0]] - mesh.P0[e[:, 1]], axis=1)
+    s, c = np.zeros(mesh.n), np.zeros(mesh.n)
+    for k in (0, 1):
+        np.add.at(s, e[:, k], ln)
+        np.add.at(c, e[:, k], 1.0)
+    return s / np.maximum(c, 1.0)
+
+
+def partner(Y, Tc, Q, P0, Q0, far_m, k=64):
+    """Closest points on the other side's posed triangles Tc (welded ids into Y) to Q, among the triangles whose rest
+    centre is over far_m from the node's rest place Q0 (the skin it is joined to across the crease is the same sheet
+    folding, not the other body: r4). Returns q, unit face normal, the face's row in Tc, found."""
+    A, B, C = Y[Tc[:, 0]], Y[Tc[:, 1]], Y[Tc[:, 2]]
+    c0 = P0[Tc].mean(1)
+    _, cand = cKDTree((A + B + C) / 3).query(Q, k=min(k, len(Tc)))
+    cand = cand.reshape(len(Q), -1)
+    best = np.full(len(Q), np.inf)
+    qb = np.zeros_like(Q)
+    fb = np.zeros(len(Q), np.int64)
+    for j in range(cand.shape[1]):
+        t = cand[:, j]
+        q, _ = closest_on_tris(Q, A[t], B[t], C[t])
+        d = np.linalg.norm(Q - q, axis=1)
+        m = (d < best) & (np.linalg.norm(c0[t] - Q0, axis=1) > far_m)
+        best[m], qb[m], fb[m] = d[m], q[m], t[m]
+    n = np.cross(B[fb] - A[fb], C[fb] - A[fb])
+    return qb, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12), fb, np.isfinite(best)
+
+
+def partner_any(Y, Tc, Q, P0, Q0, hq, ratio=0.5, k=64):
+    """Closest points on ANY of the strip's posed triangles Tc to Q, among those the pose brought together with the
+    node: rest distance (the triangle's rest centre to the node's rest place) over 2 h (beyond its own 1-ring) and
+    the posed distance under `ratio` of it. r4: the crease folds within one weight side (the front of the hip at
+    112: trunk nodes 1 mm inside the trunk's own folded skin, 10-16 mm from the thigh's), so the other skin is the
+    one that came to it, whichever side. Returns q, unit face normal, the face's row in Tc, found."""
+    A, B, C = Y[Tc[:, 0]], Y[Tc[:, 1]], Y[Tc[:, 2]]
+    c0 = P0[Tc].mean(1)
+    _, cand = cKDTree((A + B + C) / 3).query(Q, k=min(k, len(Tc)))
+    cand = cand.reshape(len(Q), -1)
+    best = np.full(len(Q), np.inf)
+    qb = np.zeros_like(Q)
+    fb = np.zeros(len(Q), np.int64)
+    for j in range(cand.shape[1]):
+        t = cand[:, j]
+        q, _ = closest_on_tris(Q, A[t], B[t], C[t])
+        d = np.linalg.norm(Q - q, axis=1)
+        r0 = np.linalg.norm(c0[t] - Q0, axis=1)
+        m = (d < best) & (r0 > 2 * hq) & (d < ratio * r0)
+        best[m], qb[m], fb[m] = d[m], q[m], t[m]
+    n = np.cross(B[fb] - A[fb], C[fb] - A[fb])
+    return qb, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12), fb, np.isfinite(best)
 
 
 def solve_chain(mesh, st, jc, cf):
@@ -83,9 +141,37 @@ def solve_chain(mesh, st, jc, cf):
     Lg = mesh.Lg
     rows = np.nonzero(np.asarray(abs(Lg[:, fi]).sum(1)).ravel() > 0)[0]
     Lrf = Lg[rows][:, fi]
-    LtL = (Lrf.T @ Lrf).tocsc()
-    base_w = cf["data"] * (1 - f[fi]) ** 2 + cf["anchor"]
-    share = np.where(sd_n, 1.0 - cf["share_trunk"], cf["share_trunk"])
+    if cf.get("op", "bilap") == "membrane":
+        # r4: the offset's energy is the membrane's (Dirichlet: the sum over edges of |U_i - U_j|^2, harmonic off
+        # the contacts) + a bending length's |LU|^2 + an anchor length's |U|^2, each in metres over the local mesh
+        # scale h (node_len), so close and play solve the same surface. Derivation: (c) the check's pit is the change
+        # of the 25 mm curvature, ~ (r^2/4) lap(u_n): a harmonic offset reads 0 off the contacts, where the
+        # bi-Laplacian alone (|LU|^2, r3) rings concave round every push (the flank's rim, F16 S15 at 135); (a) soft
+        # tissue under a contact: the free skin round it stays convex (the membrane's obstacle problem: C^1,1, it
+        # leaves the other skin tangentially, the soft fold)
+        h = node_len(mesh)
+        lb = cf.get("bend_m", 0.0)
+        K = Lg[fi][:, fi]
+        if lb > 0:
+            K = K + Lrf.T @ sp.diags((lb / h[rows]) ** 2) @ Lrf
+        LtL = sp.csc_matrix(K)
+        base_w = cf["data"] * (1 - f[fi]) ** 2 + (h[fi] / cf["anchor_m"]) ** 2
+    else:
+        LtL = (Lrf.T @ Lrf).tocsc()
+        base_w = cf["data"] * (1 - f[fi]) ** 2 + cf["anchor"]
+    h_n = node_len(mesh)
+    give = None
+    sh_t = np.full(mesh.n, float(cf["share_trunk"]))
+    if "share_trunk_low" in cf:
+        # r4: the trunk's give by what lies under it: below the joint's transverse plane the mons and the groin are
+        # on the pubic bone (the pubic tubercle at the level of the hip joint centre), above it the abdominal wall
+        # (no bone): share_trunk_low below, share_trunk above, a smoothstep over +-share_w. A thigh node takes the
+        # rest of its trunk partner's (the firmness of what it presses on).
+        hw = cf.get("share_w", 0.02)
+        lo, hi = cf["share_trunk_low"], cf["share_trunk"]
+        give = lambda P: lo + (hi - lo) * smooth01(((P - c0) @ st.fr.up + hw) / (2 * hw))
+        sh_t = give(mesh.P0)
+    share = np.where(sd_n, 1.0 - sh_t, sh_t)
     TW = mesh.Tw
     n0 = np.cross(mesh.P0[TW[:, 1]] - mesh.P0[TW[:, 0]], mesh.P0[TW[:, 2]] - mesh.P0[TW[:, 0]])
     tid = {tuple(t): i for i, t in enumerate(TW.tolist())}
@@ -129,23 +215,54 @@ def solve_chain(mesh, st, jc, cf):
             wc = np.zeros(len(fi))
             tgt = np.zeros((len(fi), 3))
             n_act, far = 0, 0
-            for side_d, Tc in ((False, T_thigh), (True, T_trunk)):
-                c_ = cn[sd_n[cn] == side_d]
+            if cf.get("partners") == "any":
+                # r4: every contact node against whichever skin the pose brought to it (partner_any); who gives:
+                # a trunk node on the thigh by the trunk's give, a thigh node on the trunk the rest of its partner's,
+                # a skin on its own side (the crease folding onto itself) half each
+                pairs = ((None, Tr),)
+            else:
+                pairs = ((False, T_thigh), (True, T_trunk))
+            for side_d, Tc in pairs:
+                c_ = cn if side_d is None else cn[sd_n[cn] == side_d]
                 if not len(c_) or not len(Tc):
+                    continue
+                if side_d is None:
+                    q, nq, fb, ok = partner_any(Y, Tc, Y[c_], mesh.P0, mesh.P0[c_], h_n[c_], cf.get("pair_ratio", 0.5))
+                    s = np.einsum("ij,ij->i", Y[c_] - q, nq)
+                    dist = np.linalg.norm(Y[c_] - q, axis=1)
+                    act = ok & (s < cf["release"]) & (dist < cf["reach"])
+                    far += int((ok & (s < cf["release"]) & (dist >= cf["reach"])).sum())
+                    contacts[c_[~act]] = False
+                    c_, q, nq, s, fb = c_[act], q[act], nq[act], s[act], fb[act]
+                    n_act += len(c_)
+                    k = pos[c_]
+                    th_n, th_p = sd_n[c_], tri_d[fb]
+                    giv_n = give(mesh.P0[c_]) if give is not None else np.full(len(c_), cf["share_trunk"])
+                    giv_p = give(mesh.P0[Tc[fb]].mean(1)) if give is not None else np.full(len(c_), cf["share_trunk"])
+                    shr = np.where(th_n == th_p, 0.5, np.where(th_n, 1.0 - giv_p, giv_n))
+                    mv = np.where(s < 0, shr, 1.0)[:, None] * (q - Y[c_]) + cf["margin"] * nq
+                    wc[k] = cf["contact"]
+                    tgt[k] = Y[c_] + mv - X[c_]
                     continue
                 if cf.get("upright") is not None:
                     Tc = Tc[upright(Y, Tc, not side_d)]
-                q, nq = nearest_face(Y, Tc, Y[c_])
+                if cf.get("far_m") is not None:
+                    q, nq, fb, ok = partner(Y, Tc, Y[c_], mesh.P0, mesh.P0[c_], cf["far_m"])
+                else:
+                    (q, nq), fb, ok = nearest_face(Y, Tc, Y[c_]), None, np.ones(len(c_), bool)
                 s = np.einsum("ij,ij->i", Y[c_] - q, nq)
                 dist = np.linalg.norm(Y[c_] - q, axis=1)
-                act = (s < cf["release"]) & (dist < cf["reach"])
-                far += int(((s < cf["release"]) & (dist >= cf["reach"])).sum())
+                act = ok & (s < cf["release"]) & (dist < cf["reach"])
+                far += int((ok & (s < cf["release"]) & (dist >= cf["reach"])).sum())
                 contacts[c_[~act]] = False
                 c_, q, nq, s = c_[act], q[act], nq[act], s[act]
                 n_act += len(c_)
                 k = pos[c_]
+                shr = share[c_]
+                if give is not None and side_d and fb is not None:
+                    shr = 1.0 - give(mesh.P0[Tc[fb[act]]].mean(1))
                 # inside (s < 0): its share of the way to q, then the margin out; touching: held at the margin
-                mv = np.where(s < 0, share[c_], 1.0)[:, None] * (q - Y[c_]) + cf["margin"] * nq
+                mv = np.where(s < 0, shr, 1.0)[:, None] * (q - Y[c_]) + cf["margin"] * nq
                 wc[k] = cf["contact"]
                 tgt[k] = Y[c_] + mv - X[c_]
             A = (LtL + sp.diags(base_w + wc)).tocsc()
