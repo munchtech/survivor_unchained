@@ -1,6 +1,6 @@
 {
   "clear": {
-    "_doc": "P9 C15: the Verge with its stream run clean (Verge.StreamClean: stream.clear, or the beasts cured), play and film alike. The ground's blight drawn back (its paint, veins and glow, the grass's too) and the water clear over its bed in the zone's own light; sick is the look as built (water.json). Game.LookStates tests the when; ZoneView.SetState lays it on. \"unlit\": the pump's slurry glow (zone light 7, #8aff5a) out.",
+    "_doc": "P9 C15: the Verge with its stream run clean (Verge.StreamClean: stream.clear, or the beasts cured), play and film alike. The ground's blight drawn back (its paint, veins and glow, the grass's too) and the water clear over its bed in the zone's own light; sick is the look as built (water.json). Game.LookStates tests the when; ZoneView.SetState lays it on. \"unlit\": the pump's slurry glow (zone light 7, #8aff5a) out; \"dull\": the slurry crusted down the tank's sides, its glow out (ZoneView \"dull\"). The water's sky in broad soft strokes down the flow (sky_bands, sky_calm: water.gdshader), not on each ripple.",
     "when": {
       "any": [
         {
@@ -22,14 +22,17 @@
         "shallow": "#9a9478",
         "foam": "#d0d8d4",
         "glow": 0,
-        "clarity": 0.9,
+        "clarity": 1.6,
         "deep": 1.4,
         "band_amt": 0.4,
         "band_size": 6,
-        "flow_lines": 0.2,
+        "flow_lines": 0,
         "flow_line_size": 2.5,
-        "ripple_shade": 0.3,
-        "ripple_sheen": 0.5,
+        "ripple_shade": 0.2,
+        "ripple_sheen": 0.35,
+        "sky_bands": 1,
+        "sky_band_size": 2,
+        "sky_calm": 0.8,
         "bed": {
           "pebbles": 0.85,
           "silt": 0.8,
@@ -44,6 +47,14 @@
       {
         "x": 94,
         "z": -94
+      }
+    ],
+    "dull": [
+      {
+        "x": 94,
+        "z": -94,
+        "r": 3.5,
+        "color": "#40382c"
       }
     ]
   },

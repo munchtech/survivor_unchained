@@ -175,6 +175,14 @@ uniform float flow_line_size = 2.5;
 // away from any light; ripple_sheen: the sky's colour added on the lit facets. 0: none.
 uniform float ripple_shade = 0.0;
 uniform float ripple_sheen = 0.0;
+// (P9 C15, the Verge's stream run clean: ripple_shade/ripple_sheen's shade, the swell's slope x 7 clamped, laid the
+// bright sky as pale cloud-blotches over the navy body (the CU's half its light), and the sky's fresnel on the rippled
+// normal speckled the far ribbon white) sky_bands: that shade taken from broad soft strokes down the flow instead (noise
+// cells sky_band_size m across, 4x that along, drifting with it, never thresholded); sky_calm: the sky's fresnel read
+// off the surface calmed to the flat by this share. 0, 0: as before.
+uniform float sky_bands = 0.0;
+uniform float sky_band_size = 2.0;
+uniform float sky_calm = 0.0;
 // wake_foam: how much foam a wake carries (was a fixed 0.5; held under 0.9).
 uniform float wake_foam = 0.5;
 // near_diffuse: how much a near light (a lamp, her ember) lights the body itself, as against glinting on it (1: as
@@ -295,7 +303,7 @@ void fragment() {
 	crest = smoothstep(0.4, 1.2, length(chop));
 	glint_n = normalize((VIEW_MATRIX * vec4(normalize(vec3(-gg.x, 1.0, -gg.y)), 0.0)).xyz);
 	vec3 vdir = normalize(-VERTEX);
-	float ndv = clamp(dot(vdir, NORMAL), 0.0, 1.0);
+	float ndv = clamp(dot(vdir, sky_calm > 0.0 ? normalize(mix(NORMAL, normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz), sky_calm)) : NORMAL), 0.0, 1.0);
 	float fres = 0.02 + 0.98 * pow(1.0 - ndv, 5.0);
 	flat_n = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	graze = mirror * (1.0 - smoothstep(mirror_to, mirror_from, abs(dot(vdir, flat_n))));
@@ -446,7 +454,15 @@ void fragment() {
 		// (the swell's slope (and the rings') toward the camera: facets tipped to it show the sky low behind her, brighter)
 		vec2 cdir = normalize((INV_VIEW_MATRIX[3].xyz - wv).xz + vec2(1e-5));
 		vec2 sg = (ga.rg - 0.5) * 0.6 + (gb.rg - 0.5) * 0.4 + (gc.ba - 0.5) * 0.25 + wg * 0.2;
-		float shade = clamp(dot(sg, cdir) * 7.0, -1.0, 1.0) * in_k * (1.0 - foam);
+		float sraw = clamp(dot(sg, cdir) * 7.0, -1.0, 1.0);
+		if (sky_bands > 0.0) {
+			// (stream mode: along and across the stream's own frame, as the ripples run)
+			vec2 sb = stream ? vec2(rp.y, rp.x) : fp;
+			vec2 sbp = vec2((sb.x - t * fspeed * 0.8) / (sky_band_size * 16.0), sb.y / (sky_band_size * 4.0));
+			float sbn = texture(noise_tex, sbp + vec2(0.13, 0.47)).r * 0.7 + texture(noise_tex, sbp * 2.3 + vec2(0.71, 0.05)).g * 0.3;
+			sraw = mix(sraw, clamp((sbn - 0.5) * 5.0, -1.0, 1.0), sky_bands);
+		}
+		float shade = sraw * in_k * (1.0 - foam);
 		rshade = shade;
 		ALBEDO *= 1.0 + ripple_shade * shade;
 		EMISSION *= 1.0 + ripple_shade * shade;
