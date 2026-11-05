@@ -114,6 +114,9 @@ public partial class ZoneView : Node3D
         // The camp on the Low Ford road, made for its close-ups (Camp.cs); its logs ours where the data places them.
         if (z.Id == "lowford") AddChild(Camp.Dress(Landmarks.Root, logs: ownProps == null || !ownProps.Places.Exists(p => p.Preset.StartsWith("log"))));
         Perf.Lap("landmarks");
+        // (the rocks take the red marks' rock copy, H6 r1 fix 2: BattleFx.MarkTakeLayer)
+        int rocks = BattleFx.TagRocks(this);
+        if (Shots.On("h6")) GD.Print($"h6 rocks tagged {rocks}");
         yield return "own props";
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)

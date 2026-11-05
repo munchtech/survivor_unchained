@@ -119,11 +119,13 @@ public sealed partial class Battle
             {
                 double a0 = Rng.Next() * Math.Tau, ro = b.Radius + 2;
                 b.GapAngle = a0;
-                for (int i = 0; i < 8; i++)
-                {
-                    double a = a0 + i * Math.Tau / 8, gx = x + Math.Cos(a) * ro, gz = z + Math.Sin(a) * ro;
-                    if (!Collision.Blocked(gx, gz, 0.6) && (InBounds == null || InBounds(gx, gz))) { b.GapAngle = a; break; }
-                }
+                if (GapOnScreen(x, z, (b.Inner + b.Radius) / 2, ro) is double on) b.GapAngle = on;
+                else
+                    for (int i = 0; i < 8; i++)
+                    {
+                        double a = a0 + i * Math.Tau / 8, gx = x + Math.Cos(a) * ro, gz = z + Math.Sin(a) * ro;
+                        if (!Collision.Blocked(gx, gz, 0.6) && (InBounds == null || InBounds(gx, gz))) { b.GapAngle = a; break; }
+                    }
                 b.GapWidth = k.Gap * scale;
                 // Its wall (H6): the band stands but for the gap while its ring lives.
                 t.Wall = k.Crush > 0;
@@ -147,6 +149,52 @@ public sealed partial class Battle
             });
         tells.Add(t);
         return b;
+    }
+
+    /// <summary>The play camera as the sim sees it (H6 r1 fix 1): its distance (m, the zone's own; ArenaRun sets it each
+    /// frame), pitch (degrees), vertical lens (degrees) and aspect. The camera never yaws and looks from +Z at her (and a
+    /// little ahead of her run), so a closing's gap can be put where the player sees it. ViewDistance 0: not known.</summary>
+    public double ViewDistance, ViewPitch = 64, ViewFov = 34, ViewAspect = 16.0 / 9;
+    /// <summary>The share of the screen a gap must sit in (NDC, y up): x 120-1800, y 120-860 at 1920x1080, clear of the
+    /// HUD's statues along the bottom.</summary>
+    const double SafeX = 0.875, SafeTop = 0.778, SafeBottom = 0.593;
+
+    /// <summary>The app can now tell whether a ground point (gx, gz) is inside the play camera's safe area (the camera
+    /// following her with its lead). True when the view is not known.</summary>
+    public bool OnScreen(double gx, double gz)
+    {
+        if (ViewDistance <= 0) return true;
+        var p = Player;
+        double th = ViewPitch * Math.PI / 180, cp = Math.Cos(th), sp = Math.Sin(th);
+        // (FollowCamera: the look is 0.8 m up on her plus a lead of her speed x Lead x 0.2)
+        double lx = p.X + p.Vx * 0.44, ly = 0.8, lz = p.Z + p.Vz * 0.44;
+        double cx = lx, cy = ly + sp * ViewDistance, cz = lz + cp * ViewDistance;
+        double dx = gx - cx, dy = -cy, dz = gz - cz;
+        double fwd = dy * -sp + dz * -cp, right = dx, up = dy * cp + dz * -sp;
+        if (fwd <= 0.1) return false;
+        double tv = Math.Tan(ViewFov * Math.PI / 360), th2 = tv * ViewAspect;
+        double nx = right / (fwd * th2), ny = up / (fwd * tv);
+        return Math.Abs(nx) <= SafeX && ny <= SafeTop && ny >= -SafeBottom;
+    }
+
+    /// <summary>A closing's gap bearing whose middle (at radius r) is on screen and whose outside (at ro) is open ground,
+    /// nearest the way she is going (her run; standing, her facing). Null: none (the old seeded search then).</summary>
+    double? GapOnScreen(double x, double z, double r, double ro)
+    {
+        if (ViewDistance <= 0) return null;
+        var p = Player;
+        double head = Len(p.Vx, p.Vz) > 0.5 ? Math.Atan2(p.Vz, p.Vx) : p.Facing, best = double.MaxValue;
+        double? pick = null;
+        for (int i = 0; i < 72; i++)
+        {
+            double a = i * Math.Tau / 72, gx = x + Math.Cos(a) * r, gz = z + Math.Sin(a) * r;
+            if (!OnScreen(gx, gz)) continue;
+            double ox = x + Math.Cos(a) * ro, oz = z + Math.Sin(a) * ro;
+            if (Collision.Blocked(ox, oz, 0.6) || (InBounds != null && !InBounds(ox, oz))) continue;
+            double off = Math.Abs(Math.IEEERemainder(a - head, Math.Tau));
+            if (off < best) { best = off; pick = a; }
+        }
+        return pick;
     }
 
     /// <summary>
@@ -201,6 +249,8 @@ public sealed partial class Battle
         var w = Telegraphs.Waves;
         var p = Player;
         double now = Time, land = now + (Telegraphs.Get(kind)?.Windup ?? 0), wait = 0;
+        // (H6 r1 fix 4: nothing new is cast on her while she is down or in her get-up grace; marks already running run on)
+        if (now < knockGraceUntil) wait = knockGraceUntil - now;
         landings.RemoveAll(l => l.At < now - w.Spacing);
         foreach (var (at, bl) in landings)
             if (Near(bl, p.X, p.Z) <= w.SpacingNear && Math.Abs(land + wait - at) < w.Spacing) wait = Math.Max(wait, at + w.Spacing - land);
@@ -308,7 +358,7 @@ public sealed partial class Battle
         if (ClosingTeeth && t.K.Hit > 0 && t.Foes.Count > 0) t.RushLeft = Math.Max(0.1, t.K.RushFor);
         var p = Player;
         // A caught charge (one that hurt her) knocks her down (H6).
-        if (t.K.Knock > 0 && t.K.Length > 0 && t.Blow.Dealt > 0 && p.Alive) KnockPlayer(t.K.Knock);
+        if (t.K.Knock > 0 && t.K.Length > 0 && t.Blow.Dealt > 0 && p.Alive) KnockPlayer(t.K.Knock, t.Blow);
         // A pull's slam (H6): its heart is marked the moment the drag ends, and lands Follow s later.
         if (t.K.Follow > 0 && Over == null)
         {
@@ -329,10 +379,12 @@ public sealed partial class Battle
     /// <summary>After a knockdown she is up for this long before another can take her (H6).</summary>
     public const double KnockGrace = 2.5;
     double knockGraceUntil = -1;
+    /// <summary>Seconds left of her knockdown and its get-up grace (0: none): no new kit mark is cast on her in it (KitWait).</summary>
+    public double KnockGraceLeft => Math.Max(0, knockGraceUntil - Time);
 
     /// <summary>The app can now knock her down (the kit's charge, H6): held where she lies for a while (less for the
     /// tenacious; a dash ends it, as a root does), with Ev.Knockdown for the view.</summary>
-    public void KnockPlayer(double seconds)
+    public void KnockPlayer(double seconds, EnemyBlow? by = null)
     {
         var p = Player;
         if (!p.Alive || Art.SprintT > 0 || Art.Rush != null || p.Leap != null) return;
@@ -344,7 +396,9 @@ public sealed partial class Battle
         knockGraceUntil = Time + s + KnockGrace;
         p.RootT = Math.Max(p.RootT, s);
         p.Vx = p.Vz = 0;
-        Events.Emit(new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s });
+        var kd = new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s };
+        if (by is { Shape: TelegraphShape.Line }) { kd.FromX = by.X; kd.FromZ = by.Z; kd.ToX = by.X1; kd.ToZ = by.Z1; kd.Width = by.Width; }
+        Events.Emit(kd);
     }
 
     /// <summary>A closing's crush (H6): from CrushAfter past its landing, for CrushFor, while its wall stands and she is

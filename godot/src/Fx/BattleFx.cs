@@ -120,6 +120,13 @@ public partial class BattleFx : Node3D
         public bool Roof, HeightsDue;
         /// <summary>A fodder charger's lane (H1 round 2B): the danger style at a lower strength (SoftEnergy, SoftBed).</summary>
         public bool Soft;
+        /// <summary>Its fade's length (s; FadeOff but for a caught lane's, CaughtFade).</summary>
+        public float FadeFor = FadeOff;
+        /// <summary>A caught charge's lane shown again over the hit (H6 r1 fix 3): full, at its landing's flare, fading.</summary>
+        public bool Caught;
+        /// <summary>A closing's way out (H6 r1 fix 8): its curtain of light (BattleFx.H6.cs).</summary>
+        public bool Gap;
+        public MeshInstance3D? Curtain;
     }
 
     /// <summary>The red marks' pass (one, shared by every BattleFx) and its slots' ground heights.</summary>
@@ -382,6 +389,11 @@ public partial class BattleFx : Node3D
         var d = m.Decal;
         if (m.Slot >= 0) { slotUsed[m.Slot] = false; m.Slot = -1; }
         m.Shape = -1; m.P1 = 0; m.Roof = false; m.HeightsDue = false; m.Soft = false;
+        m.FadeFor = FadeOff; m.Caught = false; m.Gap = false;
+        if (m.Curtain != null) m.Curtain.Visible = false;
+        // (a red mark's decal is the rocks' copy while the pass draws it: back to the ground's layer when reused)
+        d.CullMask = 1;
+        if (m.Fill != null) m.Fill.CullMask = 1;
         m.Danger = styleNext == 1;
         if (m.Danger && !MarkPassOff)
         {
@@ -531,7 +543,7 @@ public partial class BattleFx : Node3D
 
     /// <summary>The closings whose walls stand now (Ev.ClosingWall, by mark Id).</summary>
     readonly HashSet<int> wallsUp = new();
-    static float Fk(Mark m) => m.FadeLeft > 0 ? Mathf.Clamp(m.FadeLeft / FadeOff, 0, 1) : 1;
+    static float Fk(Mark m) => m.FadeLeft > 0 ? Mathf.Clamp(m.FadeLeft / m.FadeFor, 0, 1) : 1;
 
     /// <summary>A styled bed's surface: occluded (no ambient or sky reflection), fully rough, not metal.</summary>
     static Texture2D BedOrm()
@@ -905,6 +917,9 @@ public partial class BattleFx : Node3D
                 // its leading end (both ends: the one under the foe is hidden) and only a breath behind.
                 else if (kind == 6) a = Mathf.Clamp((0.9f - Mathf.Abs(u)) / 0.12f, 0, 1) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.03f, 0, 1)
                     * (0.06f + 0.8f * Mathf.SmoothStep(0.84f, 0.96f, Mathf.Abs(v)));
+                // The closing's way out (H6 r1 fix 8): a lit floor strip, the lane's two bright edges with a soft glow
+                // between (brighter down its middle), no hatch.
+                else if (kind == 8) { float e = Mathf.Abs(u), mid = Mathf.Clamp(1 - e / 0.86f, 0, 1); a = (Mathf.Clamp(1 - Mathf.Abs(e - 0.88f) / 0.08f, 0, 1) + (e < 0.86f ? 0.14f + 0.22f * mid * mid : 0)) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.12f, 0, 1); }
                 // This will be solid: a hard, thick edge.
                 else a = (r < 0.97f ? 0.2f : 0) + Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.09f, 0, 1);
                 a = Mathf.Clamp(a, 0, 1);
@@ -1426,6 +1441,9 @@ public partial class BattleFx : Node3D
                     Hits.Arc(V(e.X, Y(e.X, e.Z) + 1.0, e.Z), (float)(Math.PI / 2 - e.Angle), (float)e.Reach, 0.22f, mirror, pal.Core, pal.Glow);
                     break;
                 }
+                case Ev.Knockdown kd:
+                    Caught(kd);
+                    break;
                 case Ev.ClosingWall w:
                     // A closing's wall (H6): its band and its lit way out stand on past the landing while the wall is up,
                     // and fade the moment it falls (a wall that falls in the windup leaves the band to land as it would).
@@ -1500,7 +1518,9 @@ public partial class BattleFx : Node3D
                         if (e.Tell == "closing" && e.GapWidth > 0)
                         {
                             double ca = Math.Cos(e.GapAngle), sa = Math.Sin(e.GapAngle);
-                            Lane(e.X + ca * Math.Max(0, e.Inner - 0.5), e.Z + sa * Math.Max(0, e.Inner - 0.5), e.X + ca * (e.Radius + 1.5), e.Z + sa * (e.Radius + 1.5), (float)e.GapWidth, Palette.TeleSafe * 0.55f, (float)e.Duration, -e.Id);
+                            var gm = Lane(e.X + ca * Math.Max(0, e.Inner - 0.5), e.Z + sa * Math.Max(0, e.Inner - 0.5), e.X + ca * (e.Radius + 1.5), e.Z + sa * (e.Radius + 1.5), (float)e.GapWidth, Palette.TeleSafe * 0.55f, (float)e.Duration, -e.Id);
+                            gm.Gap = true;
+                            GapLook(gm);
                         }
                         if (e.Tell == "closing" && wallsUp.Contains(e.Id))
                             foreach (int key in (int[])[e.Id, -e.Id])
@@ -1869,8 +1889,8 @@ public partial class BattleFx : Node3D
             if (m.FadeLeft > 0)
             {
                 m.FadeLeft -= fdt;
-                fk = Mathf.Max(0, m.FadeLeft / FadeOff);
-                m.T = m.FadeLeft <= 0 ? 1 : Mathf.Min(m.T, 0.84f);
+                fk = Mathf.Max(0, m.FadeLeft / m.FadeFor);
+                m.T = m.FadeLeft <= 0 ? 1 : m.Caught ? HeldAt : Mathf.Min(m.T, 0.84f);
             }
             // (a closing's wall standing: its band past the landing's flare, held at its windup look)
             bool stand = m.Held && m.FadeLeft <= 0 && m.T >= HeldAt;
@@ -1920,6 +1940,7 @@ public partial class BattleFx : Node3D
             }
         }
         RedMarks();
+        StepH6();
         for (int i = 0; i < beams.Count; i++)
         {
             var (m, mat, t, life) = beams[i];
@@ -1978,10 +1999,10 @@ public partial class BattleFx : Node3D
         {
             if (m.Slot < 0) continue;
             if (!m.Active) { slotUsed[m.Slot] = false; m.Slot = -1; m.Shape = -1; continue; }
-            if (m.Shape < 0) { slotUsed[m.Slot] = false; m.Slot = -1; m.Decal.Visible = true; continue; }
+            if (m.Shape < 0) { slotUsed[m.Slot] = false; m.Slot = -1; m.Decal.CullMask = 1; if (m.Fill != null) m.Fill.CullMask = 1; m.Decal.Visible = true; continue; }
             var d = m.Decal;
-            if (d.Visible) d.Visible = false;
-            if (m.Fill is { Visible: true } f) f.Visible = false;
+            // (the pass draws it on the ground; its decal, culled to the rocks, lays it on a boulder's top: H6 r1 fix 2)
+            OnRocks(m);
             float hx = d.Size.X / 2, hz = d.Size.Z / 2;
             Vector3 ax = d.Basis.X.Normalized(), az = d.Basis.Z.Normalized();
             if (m.HeightsDue)

@@ -117,7 +117,12 @@ public static class Ev
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>She is knocked down (the kit's charge caught her, Battle.KnockPlayer): held for Seconds (after her tenacity).</summary>
-    public sealed class Knockdown : CombatEvent { public double X, Z, Seconds; }
+    public sealed class Knockdown : CombatEvent
+    {
+        public double X, Z, Seconds;
+        /// <summary>The lane that caught her (a charge's, from its foe to its end, its width; Width 0: none).</summary>
+        public double FromX, FromZ, ToX, ToZ, Width;
+    }
     /// <summary>A closing's band stands as a wall (Up) or falls (H6, Sim/Tells.cs): she cannot cross it outside its gap.
     /// Id is the band's mark (Ev.Telegraph.Id); the band runs Inner to Radius round (X, Z), its gap at GapAngle, GapWidth m wide.</summary>
     public sealed class ClosingWall : CombatEvent { public int Id; public double X, Z, Inner, Radius, GapAngle, GapWidth; public bool Up; }

@@ -1458,6 +1458,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (bossUp) want = Math.Max(want, CameraFar + 2);
         else if (won) want = Math.Min(34, Math.Max(want, CameraFar));
         CameraDistance += (want - CameraDistance) * Math.Min(1, dt / 2.5);
+        B.ViewDistance = CameraDistance;
         // The way out, pulsing on the ground where the boss fell.
         if (way is var (wx, wz) && (pulseT -= dt) <= 0)
         {

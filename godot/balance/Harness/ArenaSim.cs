@@ -107,6 +107,8 @@ public sealed class RunResult
     /// <summary>Times she stood inside a closing's walled ring as it rose (ringed by the pack, the gap her way out).</summary>
     public int Ringed;
     public double SurroundSec, MarkGapMax;
+    /// <summary>Kit marks laid on her in each minute of the night (from 0:00, to the night's end).</summary>
+    public List<int> MarksPerMin = new();
     public List<double> SurroundAt = new();
     /// <summary>Life she got back, by source (Battle.HealBy), and the damage that landed on her, by source.</summary>
     public Dictionary<string, double> HealBy = new(), HurtBy = new();
@@ -522,6 +524,7 @@ public static class ArenaSim
         double last = 45, gap = 0;
         foreach (var x in on) { gap = Math.Max(gap, x - last); last = x; }
         r.MarkGapMax = Math.Max(gap, until - last);
+        for (int mi = 0; mi * 60 < t; mi++) r.MarksPerMin.Add(marksOn.Count(x => x >= mi * 60 && x < mi * 60 + 60));
         r.HitsFodder = hitsFodder.Count == 0 ? double.NaN : Median(hitsFodder);
         r.HitsElite = hitsElite.Count == 0 ? double.NaN : Median(hitsElite);
         r.Build = Describe(b);

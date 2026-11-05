@@ -276,12 +276,45 @@ public class TellTests
             b.Tell("charge", foes[1], p.X, p.Z);
             Assert.True(b.KitWait("charge", foes[2]) > 1);
             Run(b, 1.5);
-            Assert.Equal(0, b.KitWait("charge", foes[2]));
+            // (the two lanes caught her: what is left to wait is only her knockdown's grace, H6 r1 fix 4)
+            Assert.Equal(b.KnockGraceLeft, b.KitWait("charge", foes[2]), 6);
         }
         finally { w.Spacing = keep; }
     }
     /* H6 (the owner after demo-rc2: standing in the marks did not kill): the knockdown, the pull's slam, the closing's
      * wall and crush, the kit's bite by tier. */
+
+    [Fact]
+    public void A_closings_gap_lands_on_screen_nearest_her_heading()
+    {
+        foreach (var (vx, vz) in new[] { (5.0, 0.0), (-5.0, 0.0), (0.0, -5.0), (0.0, 0.0) })
+        {
+            var b = Fresh();
+            b.ClosingTeeth = true;
+            b.ViewDistance = 22;
+            var p = b.Player;
+            p.Vx = vx; p.Vz = vz;
+            var bl = b.Tell("closing", null, p.X, p.Z)!;
+            double r = (bl.Inner + bl.Radius) / 2;
+            Assert.True(b.OnScreen(bl.X + Math.Cos(bl.GapAngle) * r, bl.Z + Math.Sin(bl.GapAngle) * r), $"heading {vx},{vz}");
+            // (the camera looks from +Z: the ring's far south is off screen, never the gap)
+            Assert.False(b.OnScreen(p.X, p.Z + r));
+            if (vx > 0) Assert.True(Math.Cos(bl.GapAngle) > 0.5);
+            if (vx < 0) Assert.True(Math.Cos(bl.GapAngle) < -0.5);
+        }
+    }
+
+    [Fact]
+    public void No_new_kit_mark_is_cast_on_her_while_she_is_down_or_getting_up()
+    {
+        var b = Fresh();
+        var p = b.Player;
+        b.KnockPlayer(0.8);
+        Assert.True(b.KnockGraceLeft > Battle.KnockGrace);
+        foreach (var kind in new[] { "ring", "closing", "pull" }) Assert.True(b.KitWait(kind, null) >= b.KnockGraceLeft - 1e-9);
+        Run(b, 0.8 + Battle.KnockGrace + 0.1);
+        Assert.Equal(0, b.KnockGraceLeft);
+    }
 
     [Fact]
     public void A_caught_charge_knocks_her_down()
