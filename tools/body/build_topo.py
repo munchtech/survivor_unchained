@@ -14,11 +14,13 @@ Stages (each a function, no hand steps):
               OurSliders (base/sliders_<tier>.npz): the slider body joined under the head as forms.join does (its
               mean move at the neck under SPLIT taken off; none within 1.5 cm of SPLIT, all of it 6 cm lower), then
               the spec's "stance" (forms.stance's rule: a pitch about the neck's middle and a move, eased in the same
-              way); "forms" (her residual, per MakeHuman point) is NOT applied: forms on our topology are step C;
+              way); "forms" (v1's residual, per MakeHuman point) is NOT applied: ours are "forms_topo" (2b);
   2 place     her shipped head, baked to its world rest (headbake.py: A's +7% Head scale and off-rest bind folded into
               the meshes); our open neck ring (94 points, one to one with the head's open ring by construction)
               snapped onto the baked head ring, the move eased harmonically into the body over `fit_ease_m` under
               SPLIT (stages.harmonic on our quads' graph Laplacian);
+  2b forms    the spec's "forms_topo" (a path pattern with {tier}: wrap_topo.py's R per our vertex, 0 on the ring)
+              added to the placed body; the npz names our topology's hash (stage_forms asserts it);
   3 skeleton  tools/body/skeleton.json placed from OUR vertices alone (skeleton.place_skeleton_ours,
               base/landmarks.json "tiers"[tier]) on the placed body;
   4 weights   v0 (weights_topo.py: our topology's primary weights, then weights.py's rules 2 and 4-10), and the
