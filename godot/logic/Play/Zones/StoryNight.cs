@@ -384,7 +384,18 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             b.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = rise ? 1.0 : 1.6 });
         }
         b.Events.Emit(new Ev.Bark { X = x, Z = z, Text = rise ? script.ReEntry : Fight.Sign });
-        if (!rise) Cinematic("arrival");
+        // The arrival's film (C13's nondum) with the marks where things really are: him where he stands, her where she
+        // is and as she faces (cinema heading = atan2(dx, dz)); a film without marks takes its own.
+        if (!rise && boss != null)
+        {
+            var p = b.Player;
+            Cinematic("arrival", () => { }, new Dictionary<string, double[]>
+            {
+                ["boss"] = [x, z, Math.Atan2(p.X - x, p.Z - z)],
+                ["her"] = [p.X, p.Z, Math.Atan2(x - p.X, z - p.Z)],
+            });
+        }
+        else if (!rise) Cinematic("arrival");
         if (Fight.Place.Points.ContainsKey("fire:c") && Fact("bane.fires"))
             foreach (var f in fires.Where(f => !f.Burning)) b.Mark(TelegraphKind.Safe, f.X, f.Z, 1.4, 30);
         Now = Stage.Boss;

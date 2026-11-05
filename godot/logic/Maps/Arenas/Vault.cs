@@ -184,7 +184,9 @@ public sealed class Vault : ArenaShape
         B.Lights[sigil].Specular = 0;   // (round 3: at 0.15 its bulb still sat on the glass-black face as a violet dot under the sigil)
         // The cut letters over the door catch the violet only as the wake reaches the arms' ends.
         // (Round 3: from 5.2 m, under the lines at 5.7-6.1, at 2.0 they barely showed, and its bulb sat on the glass door.)
-        int letters = B.Glow(0, 23.2, "#9a6cff", 3.6, height: 5.5, flicker: 0, range: 3.2);
+        // (C13 build: at 1.2 m out and 3.2 m of range its falloff left a pink hotspot on the face over the door; now well
+        // out from the wall and above the lines, broader and softer, so the letters take an even wash, not a spot.)
+        int letters = B.Glow(0, 25.0, "#9a6cff", 5.5, height: 7.2, flicker: 0, range: 6.5);
         B.Lights[letters].Dial = "vaultsigil";
         B.Lights[letters].DialFrom = 0.8;
         B.Lights[letters].DialOff = "vaultdoor";

@@ -1,0 +1,127 @@
+{
+ "id": "c13_arrival",
+ "title": "Nondum",
+ "conversation": "cin_behind_the_door",
+ "zone": "vault",
+ "script": "docs/cinematics/shoot/c13.md",
+ "draft": "Build round 1: the Barrow Lord (placeholder: never MS or closer, backlit, two eye-lights) on the landing, the world at 0.3; Nondum, the title, hand back to the fight.",
+ "bars": {
+  "in": 0.6,
+  "out": 0.8
+ },
+ "skip": {
+  "from": 1.0,
+  "hold": 0.8
+ },
+ "world": {
+  "rate": 0.3,
+  "zoneHeld": false
+ },
+ "marks": {
+  "her": [
+   0,
+   -21,
+   3.1416
+  ],
+  "boss": [
+   0,
+   -33,
+   0
+  ]
+ },
+ "cast": {
+  "her": {
+   "kind": "survivor",
+   "mark": "her"
+  }
+ },
+ "shots": [
+  {
+   "id": "A1",
+   "type": "LS",
+   "dur": 4.0,
+   "note": "Low behind her, the landing ahead, the world at 0.3: the dead part; their officer, taller than they are, a dark shape backlit by the moon on the far wall, two eye-lights. He stops and looks at her.",
+   "cam": {
+    "pos": {
+     "mark": "her",
+     "off": [
+      0.9,
+      0.85,
+      3.2
+     ]
+    },
+    "at": {
+     "mark": "boss",
+     "off": [
+      0,
+      2.2,
+      0
+     ]
+    },
+    "lens": 35
+   },
+   "cues": [
+    {
+     "do": "music",
+     "mood": "boss",
+     "intensity": 0.25,
+     "over": 2.0
+    }
+   ]
+  },
+  {
+   "id": "A2",
+   "type": "MS",
+   "dur": 3.5,
+   "note": "Over her left shoulder, him in the middle distance: \"Nondum.\" He raises his sword, and the dead come on. Title lower-left. Hands back to the fight.",
+   "cam": {
+    "pos": {
+     "mark": "her",
+     "off": [
+      -0.55,
+      1.6,
+      1.25
+     ]
+    },
+    "at": {
+     "mark": "boss",
+     "off": [
+      0,
+      2.4,
+      0
+     ]
+    },
+    "lens": 50
+   },
+   "cues": [
+    {
+     "do": "play"
+    },
+    {
+     "at": 0.3,
+     "do": "line",
+     "id": "cin_behind_the_door.nondum"
+    },
+    {
+     "at": 1.2,
+     "do": "title",
+     "title": "THE BARROW LORD",
+     "sub": "Of the Seventh Legion",
+     "place": "lower-left",
+     "seconds": 3.0
+    },
+    {
+     "at": 0.4,
+     "do": "music",
+     "mood": "boss",
+     "intensity": 0.8,
+     "over": 1.5
+    }
+   ]
+  }
+ ],
+ "end": {
+  "her": "her",
+  "camera": "follow"
+ }
+}
