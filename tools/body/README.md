@@ -101,9 +101,27 @@ her approved head) at placement time:
   from the crown. neck_02 halfway (C4); Head's tail = the crown.
 - Head weights: unchanged by rule (weights_topo.head: the ring's points copy the body ring, Head 3.5 cm past it,
   harmonic between); the spine/neck chain's weights re-derive from the joints' heights (weights_topo T).
-Audit of the rest (P1 skel round, its report): knee and the spine's depth are off by more than 1 cm
-and wait for their own round; the clavicle's head follows the game-rig convention (near the spine), not the
-sternoclavicular joint.
+- **Spine depth (spine_02..05's heads, joint-spine-4..1): (b) Grünwald et al. 2024** (BMC Med Imaging, doi
+  10.1186/s12880-024-01293-6, Table 1 "mild" group: the vertebral body centre -> spinous tip, the distance the paper
+  finds similar across patients of one sex) + 8 mm over the spinous tips ((a) estimate for a lean young woman, 1:1),
+  in front of the midline back skin at the joint's (inherited, (c)) height. Level by **(b) Gray's Anatomy's** column
+  lengths (thoracic ~28 cm, lumbar ~18 cm) between the pelvis joint (s 0) and C7/T1 (s 1). Was z -65, -46, +23, -31
+  (13% / 49% of the depth from the back); now -9, +21, +8, -47: her back's own lordosis/kyphosis, no zigzag. The
+  pelvis joint (spine_01's head) and the pec/lat muscle helpers keep the inherited cube (c).
+- **Knee (thigh's tail, calf's head and its helpers): (b) Hollister et al. 1993** (Clin Orthop 290:259: the flexion
+  axis passes through the posterior femoral condyles' circle centres, near the epicondyles; ISB knee centre = the
+  epicondyles' midpoint, Wu et al. 2002). On our skin: the left leg's section (quad edges, either tier) by the plane
+  through the inherited joint (its height kept, (c)) normal to hip -> ankle; medial/lateral: the section's middle;
+  depth: `back_frac` 0.41 of the knee's depth from the back skin ((a) from typical dimensions: condyle radius ~21 of
+  ~60 mm femoral AP, ~26 mm behind / ~30 mm in front of the bone; 0.5 = the section's centre). Was z 0 (16 mm from
+  the back skin; and play's inherited knee 13 mm off close's), now 31 mm, both tiers within 1 mm.
+- **Shoulder (glenohumeral centre): kept (c)**, checked: her shoulder cap's skin is 67-71 mm from the joint in every
+  up-lateral direction (63-66 front/back): the joint sits at the cap's centre, so her shoulder is uniformly thick
+  (stylized), and the acromion rule (skin top ~45 mm above the GH centre: humeral head radius ~22-24 mm, Iannotti
+  1992; acromiohumeral gap 7-14 mm, Petersson & Redlund-Johnell 1984; acromion ~7 mm, skin ~5) does not hold on her
+  skin: raising it 25 mm would put the hinge at the top of the arm's mass.
+- **Clavicle's head: (b) the game-rig convention** (A's rig and UE-style rigs: near the spine), not the
+  sternoclavicular joint.
 
 ## Base topology (topo.py, WIP)
 

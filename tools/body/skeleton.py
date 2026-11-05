@@ -105,7 +105,7 @@ def place_skeleton(skel, base, mh_rig, mh_weights, to_world):
 # ------------------------------------------------------------------------ anatomical rules (P1 skel round) --
 # Rules that run on OUR body (and her approved head) at placement time, each from a named reference; they replace
 # MakeHuman landmarks that put a joint off its anatomy (undone: inherited from MakeHuman). README "skeleton".
-ANAT_RULES = ("harrington", "cervical", "occiput", "crown")
+ANAT_RULES = ("harrington", "cervical", "occiput", "crown", "knee_tea", "spine_body")
 MM = 0.001
 _TOPO, _HEAD = {}, {}
 
@@ -117,7 +117,7 @@ def topo_for(n):
         here = os.path.dirname(os.path.abspath(__file__))
         for tier in ("close", "play"):
             z = np.load(os.path.join(here, "out", "topo", f"{tier}.npz"), allow_pickle=True)
-            _TOPO[len(z["V"])] = {k: z[k] for k in ("part", "side", "parts")}
+            _TOPO[len(z["V"])] = {k: z[k] for k in ("part", "side", "parts", "Q")}
     return _TOPO[n]
 
 
@@ -242,6 +242,65 @@ def occiput_joint(H, r):
                "joint_mm": np.round(p / MM, 1).tolist()}
 
 
+# Grünwald et al. 2024 (BMC Med Imaging 24:110, doi 10.1186/s12880-024-01293-6) Table 1, the "mild" (least deformed)
+# group: the vertebral body centre -> the spinous process tip, transverse (mm), T1..T12, L1..L5. The paper: this
+# distance is "rather similar across different patients of the same gender" (the skin distance is not).
+GRUNWALD_L12_MM = [65, 63, 59, 57, 56, 55, 55, 58, 59, 60, 60, 62, 68, 71, 73, 73, 68]
+GRAYS_LUMBAR = 18.0 / (18.0 + 28.0)       # Gray's Anatomy: the thoracic column ~28 cm, the lumbar ~18 cm
+
+
+def spine_body_joint(V, y, y0, y1, r):
+    """A spine joint's depth: the vertebral column's centre line behind the midline back skin at the joint's
+    (inherited) height y. Level: s = (y - y0) / (y1 - y0) from L5/S1 (y0, the pelvis joint) to C7/T1 (y1, the cervical
+    rule), the lumbar the lowest GRAYS_LUMBAR of it, five equal levels, the thoracic twelve; each body's centre at its
+    level's middle. Depth = the back skin (midline, max behind) + soft tissue over the spinous tips r["soft_m"] (a lean
+    young woman: (a) an estimate, 1:1 sensitivity) + Grünwald's body centre -> spinous tip at s (linear between the
+    levels' centres, held past L5's and T1's). Smooth by construction (the skin is; the table is): lordosis and
+    kyphosis are her back's own curve."""
+    s = (y - y0) / (y1 - y0)
+    sl = [(4.5 - k) / 5 * GRAYS_LUMBAR for k in range(5)]                  # L1..L5 body centres (L1 highest)
+    st = [GRAYS_LUMBAR + (11.5 - k) / 12 * (1 - GRAYS_LUMBAR) for k in range(12)]   # T1..T12
+    ss = np.array(st + sl)
+    d = float(np.interp(s, ss[::-1], np.array(GRUNWALD_L12_MM, float)[::-1])) * MM
+    yb, zb = _midline_profile(V, -1, y - 0.012, y + 0.012)
+    zback = float(np.interp(y, yb, zb))
+    p = np.array([0.0, y, zback + r["soft_m"] + d])
+    return p, {"s": round(s, 3), "spinous_to_body_mm": round(d / MM, 1), "back_skin_z_mm": round(zback / MM, 1),
+               "joint_mm": np.round(p / MM, 1).tolist()}
+
+
+def _plane_section(V, Q, keep, o, n):
+    """The points where our quads' edges (all four vertices in keep) cross the plane (o, n): a section that is
+    continuous on either tier."""
+    Qk = Q[keep[Q].all(1)]
+    E = np.concatenate([Qk[:, [0, 1]], Qk[:, [1, 2]], Qk[:, [2, 3]], Qk[:, [3, 0]]])
+    h = (V - o) @ n
+    a, b = h[E[:, 0]], h[E[:, 1]]
+    m = (a * b < 0)
+    t = a[m] / (a[m] - b[m])
+    return V[E[m, 0]] + t[:, None] * (V[E[m, 1]] - V[E[m, 0]])
+
+
+def knee_tea_joint(V, topo, k0, hip, ankle, back_frac=0.5):
+    """The knee's flexion axis centre: the midpoint of the femoral epicondyles ((b) Grood & Suntay 1983 / ISB, Wu et
+    al. 2002: the knee joint centre; Churchill et al. 1998: the transepicondylar axis approximates the knee's flexion
+    axis). On our skin: the epicondyles are the knee's medial and lateral extremes at the joint line, and they sit at
+    the knee's mid-depth (surface anatomy: palpated at the middle of the knee's side, between the patella's edge and
+    the hamstring tendons). Rule: the left leg's section (thigh, knee, shin) by the plane through the inherited joint
+    (its height kept, (c)) normal to the leg axis hip -> ankle; the joint = the section's centre (mid of its medial /
+    lateral and its front / back extremes in that plane)."""
+    part, side, parts = topo["part"], topo["side"], list(topo["parts"])
+    keep = np.isin(part, [parts.index(x) for x in ("thigh", "knee", "shin")]) & (side == 1)
+    n = unit(ankle - hip)
+    S = _plane_section(V, topo["Q"], keep, k0, n)
+    ex, ez = unit(perp(LEFT, n)), unit(perp(FRONT, n))
+    u, w = (S - k0) @ ex, (S - k0) @ ez
+    p = k0 + ex * (u.max() + u.min()) / 2 + ez * (w.min() + back_frac * (w.max() - w.min()))
+    return p, {"section_pts": int(len(S)), "width_mm": round((u.max() - u.min()) / MM, 1),
+               "depth_mm": round((w.max() - w.min()) / MM, 1), "inherited_mm": np.round(k0 / MM, 1).tolist(),
+               "joint_mm": np.round(p / MM, 1).tolist()}
+
+
 class OurLandmarks:
     """skeleton.json's points on OUR vertices (P1 B1): each atomic rule (cube / mh / weights_base, keyed by its
     canonical json) is landmarks.json's sparse weighted sum of our vertices (landmarks_fit.py); skin_out is its rule
@@ -276,6 +335,19 @@ class OurLandmarks:
             return c
         if "occiput" in p:
             c, self.info["occiput"] = occiput_joint(self._head(), p["occiput"])
+            return c
+        if "knee_tea" in p:
+            r = p["knee_tea"]
+            c, self.info["knee_tea"] = knee_tea_joint(self.V, topo_for(len(self.V)), self.point(r["height"]),
+                                                      self.point(r["hip"]), self.point(r["ankle"]),
+                                                      r.get("back_frac", 0.5))
+            return c
+        if "spine_body" in p:
+            r = p["spine_body"]
+            y = float(self.point(r["height"])[1])
+            c, i = spine_body_joint(self.V, y, float(self.point(r["base"])[1]), float(self.point(r["top"])[1]), r)
+            import json
+            self.info.setdefault("spine_body", {})[json.dumps(r["height"])] = i
             return c
         if "crown" in p:                                  # the head's top (the vertex), on the midline
             H = self._head()
