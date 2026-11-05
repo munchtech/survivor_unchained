@@ -101,14 +101,15 @@ public sealed class CorvaneStory : StoryBoss
         });
     }
 
-    /// <summary>The lamp burns brighter (his light's energy and his glow): the only sign the pull has quickened.</summary>
+    /// <summary>The lamp burns brighter (its light's energy and reach; his body's glow stays his own: at glowLow 0.3 the
+    /// robe went white, P6 r4): the only sign the pull has quickened.</summary>
     void Brighten(Enemy e)
     {
         low = true;
         CourtTrace.Say("low");
         var def = e.Def.Clone();
         if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2 };
-        def.Glow = t.GlowLow;
+        def.Glow = Math.Max(def.Glow ?? 0, t.GlowLow);
         e.Def = def;
     }
 

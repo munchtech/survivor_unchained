@@ -445,6 +445,7 @@ public static class Vat
             anim.Seek(at, true);
             return toModel * skel.GetBoneGlobalPose(still).Origin;
         }
+        bool lifts = skel.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") != null;
         var spot = Vector3.Zero;
         if (still >= 0 && roles.Find(x => x.Name == "idle") is { } rest) spot = Travel(rest.Clip, rest.From);
 
@@ -467,6 +468,9 @@ public static class Vat
                 var parentG = parent >= 0 ? skel.GetBoneGlobalPose(parent) : Transform3D.Identity;
                 skel.SetBonePosePosition(still, parentG.AffineInverse() * (toSkel * want));
             }
+            // A body carrying a lamp up (PersonView.LampFist added NpcTorchArm): the carry laid over every role but its
+            // falls, as the live figure's modifier lays it (no modifier runs in a bake).
+            if (lifts && !r.Name.StartsWith("die")) NpcTorchArm.Lift(skel);
             var root = Transform3D.Identity;
             if (r.Over?.Invoke(Math.Clamp(t / Math.Max(1e-6, r.Length), 0, 1)) is { } mv)
             {
@@ -678,6 +682,14 @@ public static class Vat
             s.Roughness = sm.GetShaderParameter("roughness").AsSingle();
             // Metal where a texture says so is detail a crowd figure cannot show: matte.
             s.Metallic = sm.GetShaderParameter("use_metal").AsBool() ? 0 : sm.GetShaderParameter("metallic").AsSingle();
+            // A lit lamp's glass (keeper_glass.gdshader: its glow colour, lit): its own light as the surface's glow, a pane
+            // of colour over its iron (read as nothing, Corvane's violet lamp baked dark: no lamp to see, P6 r4).
+            if (sm.Shader?.ResourcePath?.EndsWith("keeper_glass.gdshader") == true && sm.GetShaderParameter("lit").AsSingle() is > 0 and var lit)
+            {
+                var gl = sm.GetShaderParameter("glow").AsVector3() * lit * GlassGlow;
+                s.Glow = new Color(gl.X, gl.Y, gl.Z);
+                s.Albedo = new Color(gl.X, gl.Y, gl.Z) * 0.25f;
+            }
             if (sm.GetShaderParameter("use_dye").AsBool())
             {
                 s.Dyed = true;
@@ -700,6 +712,10 @@ public static class Vat
         }
         return s;
     }
+
+    /// <summary>A lit lamp glass's glow in a bake, over its colour (linear): bright enough to read as a lit pane from the
+    /// play camera, under the bloom's white.</summary>
+    const float GlassGlow = 2.2f;
 
     static int[] Seq(int n) { var a = new int[n]; for (int i = 0; i < n; i++) a[i] = i; return a; }
 
@@ -990,7 +1006,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 18;
+    const int Version = 19;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();

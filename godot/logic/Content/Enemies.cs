@@ -131,8 +131,11 @@ public sealed class EnemyDef
     public EnemyDef Clone() => (EnemyDef)MemberwiseClone();
 }
 
-/// <summary>The light a foe carries (EnemyDef.CarriedLight): its color (hex), energy, range (m) and height over its feet (m).</summary>
-public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5);
+/// <summary>The light a foe carries (EnemyDef.CarriedLight): its color (hex), energy, range (m) and height over its feet (m),
+/// and where it is held from his middle: Forward along his facing and Left of it (m; a lamp held out in a hand, not a light
+/// on his chest: Corvane's sat 2.2 m up in his middle and burned his robe white, P6 r4). Lying (a story's body held down,
+/// EnemyAnim.Die while alive) it is set on the ground beside him, LieHeight up.</summary>
+public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5, double Forward = 0, double Left = 0, double LieHeight = 0.35);
 
 public readonly record struct LevelScale(double Health, double Damage, double Xp);
 
@@ -494,7 +497,10 @@ public static class Enemies
         // taller than the crowd. Neutral and still until she raises her weapon; his health and bite are the stage's
         // (teeth.json story.corvane).
         new() { Id = "corvane", Name = "Corvane", Family = Family.Human, Faction = Faction.Town, Visual = "corvane", Scale = 1.15,
-            Tint = (0.88, 0.79, 0.8), Glow = 0.05, CarriedLight = new("#a77bff", 3.4, 11, 2.2),
+            // (his robe keeps the town NPC's own colors: no tint over it; the violet is the lamp's light, held out ahead of his
+            // left shoulder (Visuals "corvane": NpcTorchArm's carry), a little in front of and above the lamp, pooling on the
+            // ground round him; brighter below half, CorvaneStory.Brighten)
+            Glow = 0.05, CarriedLight = new("#a77bff", 2.4, 9, 1.55, Forward: 0.75, Left: 0.3),
             Health = 420, Speed = 3.0, Damage = 18, Radius = 0.7, Mass = 14, Xp = 0, Behavior = Behavior.Chase,
             Elite = true, AttackEvery = 1.2 },
 

@@ -37,6 +37,31 @@ public partial class NpcTorchArm : SkeletonModifier3D
         if (sk == null) return;
         if (sk != found) Find(sk);
         if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || ur < 0) return;
+        Lift(sk, up, lo, hand, spine, neck, ur);
+    }
+
+    /// <summary>The same arm laid on a skeleton as posed now, outside the modifier pass (Vat's bake of a crowd body that
+    /// carries a lamp: the bake seeks the clip and reads the bones, so no modifier runs there).</summary>
+    public static bool Lift(Skeleton3D sk)
+    {
+        int up = sk.FindBone("upperarm_l"), lo = sk.FindBone("lowerarm_l"), hand = sk.FindBone("hand_l");
+        int ur = sk.FindBone("upperarm_r"), spine = sk.FindBone("spine_01"), neck = sk.FindBone("neck_01");
+        if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || ur < 0) return false;
+        Lift(sk, up, lo, hand, spine, neck, ur);
+        return true;
+    }
+
+    /// <summary>The fist's frame in the chest's (up, right, forward): fingers along Lay's fist line, the palm toward
+    /// the body. A thing held in it is turned by this frame's inverse to stand upright in the chest's frame.</summary>
+    public static Basis FistIn(Vector3 u, Vector3 r, Vector3 f)
+    {
+        var dH = Lay(u, r, f).Fist;
+        var palm = (r - dH * r.Dot(dH)).Normalized();
+        return new Basis(dH.Cross(palm).Normalized(), dH, palm);
+    }
+
+    static void Lift(Skeleton3D sk, int up, int lo, int hand, int spine, int neck, int ur)
+    {
         var gU = sk.GetBoneGlobalPose(up);
         var u = (sk.GetBoneGlobalPose(neck).Origin - sk.GetBoneGlobalPose(spine).Origin).Normalized();
         var across = sk.GetBoneGlobalPose(ur).Origin - gU.Origin;

@@ -177,6 +177,9 @@ public abstract class StoryBeat
     public virtual string? EndLost => null;
     /// <summary>The boss script the stage runs, if it is one (the harness's hands read its marks).</summary>
     public virtual ArenaBoss? Script => null;
+    /// <summary>What the play camera keeps in frame with her while the stage runs (FollowCamera.Toward, as a story
+    /// boss's): its named one where he stands or lies. Null: her alone.</summary>
+    public virtual (double X, double Z)? Focus => null;
 
     public void Begin(IStoryArena a)
     {

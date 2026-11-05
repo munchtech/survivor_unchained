@@ -52,6 +52,8 @@ public partial class CrowdView : Node3D
     sealed class Gait
     {
         public double Seed, Phase, Facing;
+        /// <summary>When a body still in the fight's hands was laid down by its story (EnemyAnim.Die while alive), or -1.</summary>
+        public double LieAt = -1;
         public bool Walking;
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
@@ -734,6 +736,17 @@ public partial class CrowdView : Node3D
                 t = time * 1.8 + e.Seed * 5;
                 break;
             default:
+                // Laid down by its story, still in the fight's hands (Corvane down in the doorway, CorvaneStory.Lie: alive at
+                // one, through gets_up and gone until the door's Close lets him go): his fall played once and held on its last
+                // pose where he lies. (Drawn standing in his idle, or not at all, he read as gone or getting up: P6 r4.)
+                if (e.Anim == EnemyAnim.Die && asset.Clips.ContainsKey("die"))
+                {
+                    if (g.LieAt < 0) g.LieAt = time;
+                    role = g.Death ??= "die";
+                    t = Math.Min((time - g.LieAt) * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62)), asset.Duration(role) * 0.999);
+                    break;
+                }
+                g.LieAt = -1;
                 // After a slam, the rest of it: the blow held on the ground, then the get-up (its
                 // clock runs on until a strike starts it again).
                 if (g.Slam > 0 && e.Anim != EnemyAnim.Attack && SlamImpact + e.AnimT - g.Slam < asset.Duration("slam"))

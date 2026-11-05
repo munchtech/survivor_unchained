@@ -28,7 +28,7 @@
   },
   "story": {
     "corvane": {
-      "about": "Corvane in the doorway (vault_opened's first stage, Play/Story/Corvane.cs, Play/Bosses/CorvaneStory.cs; P6, 5 Nov). A lesson the Ford-Warden's length (prologue.fordWarden: a human 60-90 s, his minSeconds 60 backstop) under H1's boss rules (one signature behind its 0.7 s tell, the kit's marks read at 85% by H6's human). hpMul: his life over his def's at his level (as a story boss's HealthMul, eased by tier). teeth: his blow as a share of her calling's own health (StoryBoss.Teeth). cuffMul/cuffEvery: the lamp swing at what stands across his path, a share of his blow and its seconds. tether: metres he may stand from his mark, holding the door. talkAfter: seconds after the arrival before door_night opens. holdAfterRaise: seconds he does nothing after she raises her weapon (hers strike first). firstAfter: seconds from the raise to the first signature. every/everyLow: seconds between signatures, and below lowAt of his life. reach/reachLow: the kit pull's reach in metres (it drags her toward him), and below lowAt. slam: the pull's heart in metres (its blow and its slam, which knocks her down). pullDamage: the pull's damage over the kit's. floor: his one phase's floor in seconds (the Flare cuts it). minSeconds/backstop: held at backstop of his life until he has fought this long. lampEnergy/lampEnergyLow, glow/glowLow: his lamp's light and glow, brighter below lowAt (the only sign). emberFloor: the ember she has at least when the court ends. Measured with `story --fight vault --stage court --bot standing,human,deft`; targets: standing falls on most nights, human wins with no kill under 60 s (median 70-100), deft wins 95%+.",
+      "about": "Corvane in the doorway (vault_opened's first stage, Play/Story/Corvane.cs, Play/Bosses/CorvaneStory.cs; P6, 5 Nov). A lesson the Ford-Warden's length (prologue.fordWarden: a human 60-90 s, his minSeconds 60 backstop) under H1's boss rules (one signature behind its 0.7 s tell, the kit's marks read at 85% by H6's human). hpMul: his life over his def's at his level (as a story boss's HealthMul, eased by tier). teeth: his blow as a share of her calling's own health (StoryBoss.Teeth). cuffMul/cuffEvery: the lamp swing at what stands across his path, a share of his blow and its seconds. tether: metres he may stand from his mark, holding the door. talkAfter: seconds after the arrival before door_night opens. holdAfterRaise: seconds he does nothing after she raises her weapon (hers strike first). firstAfter: seconds from the raise to the first signature. every/everyLow: seconds between signatures, and below lowAt of his life. reach/reachLow: the kit pull's reach in metres (it drags her toward him), and below lowAt. slam: the pull's heart in metres (its blow and its slam, which knocks her down). pullDamage: the pull's damage over the kit's. floor: his one phase's floor in seconds (the Flare cuts it). minSeconds/backstop: held at backstop of his life until he has fought this long. lampEnergy/lampEnergyLow: his lamp's light (Enemies.cs corvane's CarriedLight, held out at the lamp), brighter below lowAt (the only sign); glow/glowLow: his body's glow, kept low (0.3 burned the robe white, r4). emberFloor: the ember she has at least when the court ends. Measured with `story --fight vault --stage court --bot standing,human,deft`; targets: standing falls on most nights, human wins with no kill under 60 s (median 70-100), deft wins 95%+.",
       "hpMul": 12,
       "teeth": 0.3,
       "cuffMul": 0.25,
@@ -47,10 +47,10 @@
       "floor": 30,
       "minSeconds": 60,
       "backstop": 0.05,
-      "lampEnergy": 3.4,
-      "lampEnergyLow": 5.5,
+      "lampEnergy": 2.4,
+      "lampEnergyLow": 4.2,
       "glow": 0.05,
-      "glowLow": 0.3,
+      "glowLow": 0.05,
       "emberFloor": 4
     }
   }

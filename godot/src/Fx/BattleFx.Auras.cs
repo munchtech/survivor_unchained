@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Sim;
@@ -46,7 +47,14 @@ public partial class BattleFx
         a.Light.OmniRange = (float)def.Range;
         bool dying = e.State == EnemyState.Dying;
         a.K = dying ? Mathf.Max(0, a.K - fdt / AuraFadeOut) : Mathf.Min(1, a.K + fdt / AuraFadeIn);
-        a.Light.Position = new Vector3((float)e.X, Y(e.X, e.Z) + (float)def.Height, (float)e.Z);
+        // Held where it is carried (EnemyLight Forward/Left: a lamp held out, not a light in his middle), on his drawn
+        // facing; a story's body held down (EnemyAnim.Die while alive: Corvane lying where he fell) has it set on the ground
+        // beside him.
+        bool lying = e.Anim == EnemyAnim.Die && !dying;
+        double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing), lx = fz, lz = -fx;
+        double ox = lying ? fx * 0.6 + lx * 0.5 : fx * def.Forward + lx * def.Left, oz = lying ? fz * 0.6 + lz * 0.5 : fz * def.Forward + lz * def.Left;
+        double px = e.X + ox, pz = e.Z + oz;
+        a.Light.Position = new Vector3((float)px, Y(px, pz) + (float)(lying ? def.LieHeight : def.Height), (float)pz);
         a.Light.LightEnergy = a.Energy * a.K;
         a.Light.Visible = a.K > 0.001f;
     }

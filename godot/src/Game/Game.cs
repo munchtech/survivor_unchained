@@ -142,7 +142,9 @@ public partial class Game : Node, IZoneHost
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
-        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn(); };
+        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
+            // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him
+            if (ev == "low" && Args.Has("cast-low")) courtCastAt = Journey.Playtime + Args.Num("cast-low", 1); };
         Settings.Current.ApplyWindow();
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
@@ -1384,7 +1386,9 @@ public partial class Game : Node, IZoneHost
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
             // A story night's boss kept in frame with her (FollowCamera.Toward).
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
-                ? new Vector3((float)be.X, 0, (float)be.Z) : null;
+                ? new Vector3((float)be.X, 0, (float)be.Z)
+                // (a story stage's own named one too: Corvane in the doorway, from the arrival to the door's Close)
+                : zone is StoryNight bs && bs.Now == StoryNight.Stage.Beat && bs.Beat?.Focus is var (fx, fz) ? new Vector3((float)fx, 0, (float)fz) : null;
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
@@ -2027,7 +2031,7 @@ public partial class Game : Node, IZoneHost
             flareReadyShot = true;
             Shots.Want("ready", 0);
         }
-        if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
+        if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= (courtCastAt > 0 ? courtCastAt : Args.Num("cast", 1)))
         {
             castDone = true;
             cb.Aim = null;
@@ -2222,6 +2226,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--log S: a line every S seconds of how it is going (for runs
     /// without a screen: Godot's --headless, --quit-after).</summary>
     int courtOpen;
+    double courtCastAt;
     ulong costFrom;
     int costFrames;
 

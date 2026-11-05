@@ -41,6 +41,9 @@ public sealed class Doorway : StoryBeat
     public double? KillSeconds { get; private set; }
     public CorvaneStory? Boss => script;
     public Enemy? Him => corvane;
+    /// <summary>He is kept in frame with her from the arrival to the door's Close (standing in the door, fighting, lying
+    /// where he fell): the court is his and the door's.</summary>
+    public override (double X, double Z)? Focus => !closed && corvane is { Alive: true } e && e.Seed == seed ? (e.X, e.Z) : null;
 
     protected override void Open()
     {

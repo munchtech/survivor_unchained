@@ -54,7 +54,9 @@ public sealed class VaultOpened : StoryFight
         ],
         Points = new()
         {
-            ["court_in"] = (0, 37), ["corvane"] = (0, 25),
+            // (she comes in 6 m south of his mark: from 37, 12 m out, he and the door were off the top of the play camera's
+            // frame at her arrival; the story's rule is both on screen from where she arrives, P6 r4)
+            ["court_in"] = (0, 31), ["corvane"] = (0, 25),
             ["start"] = (0, 19), ["door"] = (0, 22),
             ["south_w"] = (-8, 8.5), ["south_e"] = (8, 8.5), ["line"] = (0, 9.5),
             ["hall_in"] = (0, 4), ["hall_w"] = (-8.5, -6), ["hall_e"] = (8.5, -6), ["scorpion"] = (0, -17.5),
