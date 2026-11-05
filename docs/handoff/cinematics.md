@@ -1,5 +1,87 @@
 # Cinematics: handoff
 
+## HANDOFF: P9 lead 2 (5 Nov, the coordinator's week-end stop; no successor this week), branch films-p9: C15 PASSED WITH KNOWN; C13's three films WIP, unjudged, far from the bar
+
+Coordinator: `local_6d561d13-50ec-4fb6-82c8-1d75710bfa18` (the last this week; report to "main"). Brief: lead 1's `tools/scratch/coordinator/briefs/P9_lead1.md` + lead 2's list (C15 r2, the three C13 films, VO, merge, MR). The "C15 build" round cap was raised to 5 (all 5 used). Scratch below: S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\966fa900-db78-4e15-be60-12e1c65035a2\scratchpad\films_p9\` (scripts backed up to `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_films_p9\lead2\`).
+
+**Step one next week:** fresh C13 staging on the fixed blockers, ONE film at a time, with a `su-lead-max` staging director, not a high solver. Four high solvers each burned about 220k on two or three shoot runs and returned frames far from the bar. Start with c13_end (the most built), then the door, then the arrival. Before it, fix three things:
+- (a) the door face (item 2 below);
+- (b) the Barrow Lord still reads pale under a dark tint (a debug print shows the tint arrives, so it is the shader or lighting, not the cue);
+- (c) `--stage-at` / `--at` do not move her (the set solver's finding; needed for play-camera stills of the stair).
+
+Rethink the shot list around the placeholders. Corvane (`chid`, a pale coat) and the Barrow Lord (`boss_dead`, pale low-poly) wreck every frame they are in. Her, the dead, the violet sources and the set must carry the films. Rear cameras go at shoulder height with her at the frame's edge: the round 1-2 stills put the camera on her backside, which the owner has objected to before. Lead 2's quarter-size state sheet is `S\lead2_c13_state.jpg`.
+
+Raise with main whether the C13 door and arrival films should wait for P3's remakes of the two. In play, P6's fallback already shows the door beats: the hold, the captions, the sigil cue and the fade. Without a film, Victory runs the finish and the reckoning. Lead 2's pick: build c13_end now (the dead, her, the heart stone and Jessop carry it), and keep the door and the arrival on P6's fallback until P3.
+
+**Done and committed (films-p9, pushed):**
+- **C15 PASS WITH KNOWN.**
+  - Judges (API xhigh): r3 PASS WITH KNOWN ($0.32); r2 FAIL ($0.25): F1 medium, cut on its fix 1. F2 was cut in round 4 because the reach has no level shore.
+  - The film (a202df2bd): one 7.2 s shot. It is round 4's south-bank wide at 30 mm with its slow drift; Wenna's line starts at 1.5 s, then a 1.5 s tail and the dip hand-back. A lilac shade cue brings grey to 0%. The measuring script now crops the subtitle bar.
+  - cut_check: `PASS c15 ... dip black=+0.39 rise=+0.79`.
+  - Knowns (in `docs/cinematics/shoot/c15.md`): the near-right rock's slab shadow, little near mist, the Dig small in the haze, a thin sky band, and the surfaces, which are L1's.
+  - The MAP card in the after-still is the test save's first Verge visit (Verge.cs 970-976). It won't stack on the hand-back in a real save.
+  - Verdicts: `S\judge_c15_r2\verdict.md`, `S\judge_c15_r3\verdict.md`.
+- **VO.**
+  - Placeholders (Maya1 + Seed-VC, the same route as the 64 shipped narrator lines) for `door_night.gets_up/gone/heart/ranks` and `wenna.cb_clean.0-2` (60b8e8972).
+  - nondum.0/.1 restored: they had never been committed (6cf518c01). Both takes are weak (similarity 0.14 / 0.43).
+  - The owner's ElevenLabs packets refreshed (00a0aae79). `lock --check`: 584 ok, 0 broken.
+  - The voice toolchain is now installed at `C:\Users\munch\vo-tools\`: the analysis, orpheus and seedvc venvs, about 14 GB plus the model cache.
+  - The singer: `mother` in `tools/vo/cast.json`; sound family `c13_singer` (ElevenLabs sound generation, 4 takes, 320 credits, CLAP-ranked).
+    - A new data-driven `far` step in tools/audio/gen.py places it far away: 2.2 kHz low-pass, a 3.5 s stone tail, -20 LUFS.
+    - File `godot/art/sound/c13_singer_0.wav`, 8.9 s; cue `{"do":"sfx","name":"c13_singer"}` (23a9a8611). Nobody has listened to it yet.
+- **Integration merged twice,** including P6's Corvane at 758fecd38.
+  - P6's `Doorway` beat and door hook won; the `--door-kill` stand-in is gone (c968154b9).
+  - The C13 films are keyed `"zone": "arena"`, and CinePaths skips films with no zone file (0ad8a2109).
+  - The reckoning's quote is fixed in c13_behind_the_door.md, STORY_BIBLE.md and WRITING_PASS.md (2c22f6ee7). In WRITING_PASS the bootprints note now points at Jessop: tell the story lead.
+- **The app can now** (film knobs and fixes, committed and tested):
+  - `foe` cue: picks a zone creature by def, boss or nearest; `hidden`, `glow`, `tint`, `light`, `all`, and `fallen` (laid at its fall's last pose).
+  - `ember`: her carried light per shot, given back at the end. `eyelights`: eye pairs on film-cast people and on a `foe` actor. `gates`: hides the shut-gate fire lines for a film.
+  - `glow` takes `shadow`/`blur`; the orb `lamp` takes `dry`. New sound `cine.c13_ranks`.
+  - The level-up banner and blast are held during films. `--bosskill` now works on story nights.
+  - Long subtitles are paged by sentence, at most two lines, on the take's segments (`CineLines.Pages`, 6f642ac20).
+  - **The cast-ahead deadlock is fixed.** The main thread waited on People.Build's lock while the worker waited on the render queue. Fix: `Core.MainWait` / `View.MainPump` (b2ede4112; MainWaitTests). It was a ship blocker for every C13 film.
+  - Headless paths are in `docs/cinematics/shoot/c13.md` "Headless runs": door `--auto --bosskill 3 --cines`; arrival `--stage 4 --cines`; end `--stage 9 --bosskill 3`.
+- **The Vault set.**
+  - The stair is rebuilt: walls, three moonlit arches, treads going to black, one shadowed grazing light, and `Vault.Level` raised to the treads. A set judge PASSED it in film shots; the play camera is unproven.
+  - Film positions, in world y (`{"abs": ...}`):
+    - head: (0, 2.2, -36.8) -> (0, -3, -48), 35 mm;
+    - E6: (0, 1.9, -36.6), with Jessop on tread 23 at mark (0.6, -52.76), top y -6.22;
+    - E5: (1.4, 6.2, -32.0) -> (0, -3.2, -46.5), 30 mm.
+  - The sigil is cut as V-grooves with a depth glow (unjudged). It still reads lavender (hue 258 against about 272), and violet does not reach the letters. The pink hotspot is gone; a pale chip sits over "NON".
+
+**Unjudged or not passing (WIP commits):**
+- `c13_door.json` (6237802b0). cut_check PASS. D1-D5 are restaged in the generator but unfilmed.
+  - D1: his laid body pale.
+  - D2: taken as a hold on his body over "He gets up." after the shadow failed twice.
+  - D3: cut to a static sigil.
+  - D4: head cut off.
+  - D5: rear 3/4, the lamp only a dot.
+  - D6: the sigil floats.
+- `c13_arrival.json`: not shot since round 1. The boss glowed then; the `foe` cue can now darken him.
+- `c13_end.json` (bd6c1b587): a 43.6 s draft. cut_check FAIL: her root jumps 1.53 m before the black.
+  - E3's camera is mirrored onto her back.
+  - E5 is 42% black.
+  - E6 cuts Jessop at the waist (fixed positions above).
+- The door face (2d16eea3d) renders fully black after round 2 (a reflection probe plus roughness 0.16). Next: debug the probe with one shot capturing every frame and one with the gloss off.
+- Generators: `S\c13door2\make_c13.py` (`--d2b`, runs_k4.json), `S\c13end\make_end.py`; the set's tools are in `S\set2\`.
+
+**Suite:** 1590/0/10 after the blocker fixes. **Build warnings:** 60, the same count before and after P9's last code changes. 21 of the 29 files with warnings are in the branch's diff, but no warning is on a line P9 touched (`S\c13fix\build.log`). Integration's own count was not measured.
+
+**Incident (tell the owner):** the blocker solver force-closed every Godot process BY NAME after a thread dump, while it held the godot turn, so any other lead's Godot run at that moment was killed. It also installed `dotnet-stack` globally.
+
+**Cost (lead 2):**
+- Lead: about 200k.
+- Helpers: about 2.4M.
+  - C15: r4 203k, r5 140k, the one-shot retime 41k.
+  - VO: 158k.
+  - C13: door r1 223k, r2 226k; end r1 232k; the film knobs 189k; the blockers 219k.
+  - The set: 740k, including its two solvers and a judge.
+- API $0.57 (the C15 judges r2 and r3); ElevenLabs 320 credits.
+
+**P9 total:** about 4.9M + $0.89 (lead 1 about 270k + 2.0M + $0.32).
+
+**P9 ledger line:** "P9: the app can now page long subtitles by sentence, darken, hide or lay down a zone's foes for a film, put eye-lights on the dead, hold play UI out of films, and make the cast ahead of a film without deadlocking. C15 cost about 0.9M across two leads. The next zone film on a built zone costs about 0.3-0.5M; a film on a new set with placeholder antagonists costs much more (C13 has cost about 2.2M so far and is not yet near the bar)."
+
 ## HANDOFF: P9 lead 1 (5 Nov), branch films-p9: C13's set and hooks built, C15 built (judge r1 below); the C13 films NOT built yet
 
 Brief: `tools/scratch/coordinator/briefs/P9_lead1.md` (binding). Staging (the lead's, binding for helpers and judges): `docs/cinematics/shoot/c13.md`, `docs/cinematics/shoot/c15.md`. Coordinator approvals (5 Nov): the Vault set is P9's (P5 data, judged on forms, light and read; L1 re-runs its surfaces through the new kit after look-l1 merges, so no hand-painted surfaces); the clean-water state as P5 data; C15's trigger = her first daytime Verge entry after `hollow.healed` (or that dawn if she is there); a NEW voice `mother` in `tools/vo/cast.json` for the singer under the stair (warm low alto, W1's words "Lamps are lit... stay where they reach..." sung soft and far, no subtitle, no node; keep the prompt and settings in the cast entry; the owner may recast). Record at MR: the two gaps and the casting pick here and in PIPELINE's P5 row ("the Vault set and the clean-water state as data").
