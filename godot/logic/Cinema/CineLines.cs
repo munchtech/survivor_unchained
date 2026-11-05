@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.World;
@@ -93,6 +93,61 @@ public static class CineLines
             }
         }
         return bestSentence ?? best ?? text;
+    }
+
+    /// <summary>A line too long for two lines under the picture, paged across its take (C13's narrator, 5 Nov: a
+    /// 25.7 s line stood as one three-line block for the whole take). Whole sentences are packed into pages of at
+    /// most two lines (Break); a sentence too long alone is split at its clauses (, ; : and dashes), then at words.
+    /// Each page comes up as the voice reaches its first word: through the take's segments (where in the text the
+    /// voice is, by time: VoTake.Segs) less the reveal's 0.25 s lead, else evenly by letters over `voiced` seconds;
+    /// the last page runs to `seconds` (the linger). A line that fits two lines, or whose script breaks it ('/'),
+    /// is one page as it was. The words never change: the pages joined by spaces are the line.</summary>
+    public static List<(string Text, double At)> Pages(string text, Func<string, double> width, double max, double voiced,
+        IReadOnlyList<double[]>? segs = null)
+    {
+        bool Fits(string s) => width(s) <= max || Break(s, width, max).Contains('\n');
+        if (text.Contains('/') || text.Contains('\n') || Fits(text)) return [(text, 0)];
+        var pieces = new List<string>();
+        foreach (var sentence in Split(text, ".!?…"))
+            if (Fits(sentence)) pieces.Add(sentence);
+            else foreach (var clause in Split(sentence, ",;:—–"))
+                if (Fits(clause)) pieces.Add(clause);
+                else pieces.AddRange(clause.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        var pages = new List<string>();
+        foreach (var piece in pieces)
+            if (pages.Count > 0 && Fits(pages[^1] + " " + piece)) pages[^1] += " " + piece;
+            else pages.Add(piece);
+        var shown = new List<(string, double)>();
+        int from = 0;
+        double total = Math.Max(1, string.Join(" ", pages).Length);
+        foreach (var page in pages)
+        {
+            double f = from / total, at = voiced * f;
+            if (segs is { Count: > 0 })
+                foreach (var g in segs)
+                    if (f >= g[2] && f <= g[3]) { at = g[0] + (g[1] - g[0]) * (f - g[2]) / Math.Max(1e-6, g[3] - g[2]); break; }
+                    else if (f > g[3]) at = g[1];
+            shown.Add((page, from == 0 ? 0 : Math.Max(shown[^1].Item2, at - 0.25)));
+            from += page.Length + 1;
+        }
+        return shown;
+    }
+
+    /// <summary>The text cut after each of `ends` where a space follows (a closing quote or bracket kept with
+    /// it), the pieces trimmed, none empty.</summary>
+    static IEnumerable<string> Split(string text, string ends)
+    {
+        int start = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (ends.IndexOf(text[i]) < 0) continue;
+            int j = i + 1;
+            while (j < text.Length && "\"'”’)".IndexOf(text[j]) >= 0) j++;
+            if (j < text.Length && text[j] != ' ') continue;
+            var piece = text[start..j].Trim();
+            if (piece.Length > 0) { yield return piece; start = j; }
+        }
+        if (text[start..].Trim() is { Length: > 0 } rest) yield return rest;
     }
 
     public static double Reading(string text)

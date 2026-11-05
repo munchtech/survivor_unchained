@@ -20,6 +20,9 @@ public partial class CinemaBars : CanvasLayer
     readonly Label who, words;
     readonly SkipRing ring = new();
     double sayT, sayFull, sayFade = 0.25;
+    /// <summary>The line's pages (one, unless it is longer than two lines) and when each comes up, and the one shown.</summary>
+    System.Collections.Generic.List<(string Text, double At)> pages = new();
+    int page;
     float barsK;
 
     public CinemaBars()
@@ -71,8 +74,11 @@ public partial class CinemaBars : CanvasLayer
 
     /// <summary>A line under the picture for this long: the narrator's in italics,
     /// unnamed; a sung line in italics under its singer's name. `italics` says
-    /// so outright (the storybook's teller is unnamed but in roman).</summary>
-    public void Say(string text, string? speaker, double seconds, bool sung = false, bool? italics = null, double fade = 0.25)
+    /// so outright (the storybook's teller is unnamed but in roman). A line longer than two lines is paged
+    /// (CineLines.Pages): whole sentences, two lines at most, each up as the voice reaches it (`segs`, the take's
+    /// VoTake.Segs; else evenly over `voiced` seconds, by default the whole time shown).</summary>
+    public void Say(string text, string? speaker, double seconds, bool sung = false, bool? italics = null, double fade = 0.25,
+        double? voiced = null, System.Collections.Generic.IReadOnlyList<double[]>? segs = null)
     {
         var font = italics ?? (speaker == null || sung) ? Style.TextItalic : Style.Text;
         words.AddThemeFontOverride("font", font);
@@ -80,8 +86,11 @@ public partial class CinemaBars : CanvasLayer
         // best (a sentence's end when balanced, never one word alone: CineLines.Break).
         int px = words.GetThemeFontSize("font_size");
         float wide = Mathf.Min(1100, (GetViewport()?.GetVisibleRect().Size.X ?? 1920) - 120);
-        text = CineLines.Break(text, s => font.GetStringSize(s, HorizontalAlignment.Left, -1, px).X, wide - 8);
-        words.Text = text.Replace(" / ", "\n").Replace("/", "\n");
+        double Width(string s) => font.GetStringSize(s, HorizontalAlignment.Left, -1, px).X;
+        pages = CineLines.Pages(text, Width, wide - 8, voiced ?? seconds, segs);
+        for (int i = 0; i < pages.Count; i++) pages[i] = (CineLines.Break(pages[i].Text, Width, wide - 8).Replace(" / ", "\n").Replace("/", "\n"), pages[i].At);
+        page = 0;
+        words.Text = pages[0].Text;
         sayFade = Mathf.Clamp(fade, 0.05, Mathf.Max(0.05, seconds));
         who.Text = speaker?.ToUpperInvariant() ?? "";
         who.Visible = speaker != null;
@@ -89,7 +98,7 @@ public partial class CinemaBars : CanvasLayer
         words.Modulate = who.Modulate = Colors.White;
     }
 
-    public void Hush() { sayT = 0; words.Text = ""; who.Text = ""; }
+    public void Hush() { sayT = 0; words.Text = ""; who.Text = ""; pages.Clear(); }
 
     /// <summary>The skip ring: how far the hold has got (0 hides it).</summary>
     public void Skip(float k) { ring.K = k; ring.QueueRedraw(); }
@@ -99,6 +108,7 @@ public partial class CinemaBars : CanvasLayer
         if (sayT > 0)
         {
             sayT -= delta;
+            while (page + 1 < pages.Count && sayFull - sayT >= pages[page + 1].At) words.Text = pages[++page].Text;
             // Out over the last quarter second (or with the picture's own fade to black).
             float a = (float)Mathf.Clamp(sayT / sayFade, 0, 1);
             words.Modulate = who.Modulate = new Color(1, 1, 1, a);

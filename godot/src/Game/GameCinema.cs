@@ -1047,7 +1047,8 @@ public partial class Game
                     var take = g.voice.Say(l.VoId, l.Raw);
                     // Narration (the file says whose) reads unnamed, in italics, whoever voices it.
                     // "as": the name the bars show instead (a voice not yet seen: "A VOICE IN THE WATER").
-                    bars.Say(l.Text, c.Str("as") is string shownAs ? shownAs : file.Narrators.Contains(l.SpeakerId ?? "") ? null : l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7), l.Sung);
+                    bars.Say(l.Text, c.Str("as") is string shownAs ? shownAs : file.Narrators.Contains(l.SpeakerId ?? "") ? null : l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7), l.Sung,
+                        voiced: take is { } vt ? (vt.Read > 0 ? vt.Read : vt.Sec) : CineLines.Reading(l.Text), segs: take?.Segs);
                     break;
                 }
                 case "music":
