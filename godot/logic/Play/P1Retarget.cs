@@ -47,10 +47,13 @@ public sealed class P1Retarget
     public readonly double LegScale;
     /// <summary>For each A bone, the B bone that plays its part (by name, or the chain's bone at its midpoint); -1 none.</summary>
     public readonly int[] BFor;
+    readonly string[] aNames;
+    readonly int[] aParent, aChainB, bChainB;
+    readonly Dictionary<string, int> aIndexB;
 
     public P1Retarget(string[] aNames, int[] aParent, P1M4[] aRest, P1Rig b)
     {
-        this.b = b; this.aRest = aRest;
+        this.b = b; this.aRest = aRest; this.aNames = aNames; this.aParent = aParent;
         aRestRot = aRest.Select(Rot).ToArray();
         int n = b.Names.Length;
         kind = new Kind[n]; src0 = new int[n]; src1 = new int[n]; frac = new double[n];
@@ -64,6 +67,8 @@ public sealed class P1Retarget
         bLocal = Enumerable.Range(0, n).Select(j => b.Parent[j] < 0 ? b.Rest[j] : b.Rest[b.Parent[j]].Inverse() * b.Rest[j]).ToArray();
         var aChain = Chain(aNames, aParent, aRest, aIndex);
         var bChain = Chain(b.Names, b.Parent, b.Rest, b.Index);
+        aChainB = aChain; bChainB = bChain; aIndexB = aIndex;
+        var aChainSet = new HashSet<int>(aChain);
         var aMid = Mids(aChain, aRest);
         var bMid = Mids(bChain, b.Rest);
         for (int j = 0; j < n; j++)
@@ -72,10 +77,12 @@ public sealed class P1Retarget
             if (ci > 0 && ci < bChain.Length - 1)
             {
                 double t = bMid[ci];
-                int k = 1;
+                // bracketed over the whole chain, its ends too (the pelvis's midpoint low, the Head's at 1): B's bones below
+                // A's spine_01 midpoint blend from A's pelvis (they took spine_01 whole: the pelvis's sway lost there, 5-6 deg)
+                int k = 0;
                 while (k < aChain.Length - 2 && aMid[k + 1] < t) k++;
-                double lo = aMid[k], hi = aMid[Math.Min(k + 1, aChain.Length - 2)];
-                kind[j] = Kind.Chain; src0[j] = aChain[k]; src1[j] = aChain[Math.Min(k + 1, aChain.Length - 2)];
+                double lo = aMid[k], hi = aMid[k + 1];
+                kind[j] = Kind.Chain; src0[j] = aChain[k]; src1[j] = aChain[k + 1];
                 frac[j] = hi > lo ? Math.Clamp((t - lo) / (hi - lo), 0, 1) : 0;
             }
             else if (!b.Helpers.Contains(j) && aIndex.TryGetValue(b.Names[j], out int a)) { kind[j] = Kind.Direct; src0[j] = a; }
@@ -85,20 +92,17 @@ public sealed class P1Retarget
         // onto its A bone's, so a clip's limb turns, relative to A's rest, start from A's rest limb. B's rest differs
         // there (her arms forward, hands 19 cm off A's; feet 11 cm forward); the torso, neck and head keep B's own
         // rest (built standing as A stands; the head is A's own, baked in place). A bone's direction: its head to the
-        // mean of its nearest descendants matched by name (through B's own carried and helper bones: the metacarpals, the twist chain); a limb's
+        // mean of its A bone's children's heads (A's hierarchy, the names B has: through B's own metacarpals); a limb's
         // last bone takes its parent's turn.
         align = Enumerable.Range(0, n).Select(_ => P1M3.Id).ToArray();
         foreach (int j in order)
         {
             if (kind[j] != Kind.Direct || !Limb(b.Names[j])) continue;
-            var tips = new List<int>();
-            var st = new Queue<int>(Enumerable.Range(0, n).Where(k => b.Parent[k] == j));
-            while (st.Count > 0)
-            {
-                int k = st.Dequeue();
-                if (kind[k] == Kind.Direct && !b.Helpers.Contains(k)) tips.Add(k);
-                else foreach (var c in Enumerable.Range(0, n).Where(q => b.Parent[q] == k)) st.Enqueue(c);   // (through B's carried and helper bones: B's lowerarm hangs under its twist chain)
-            }
+            // the tips by A's own hierarchy (A's children of j's A bone that B has by name, off the spine-to-head chain), so
+            // B's segment aims where A's does: B's clavicle at A's shoulder joint, not at the mean with B's scapula
+            int aj = src0[j];
+            var tips = Enumerable.Range(0, aNames.Length).Where(k => aParent[k] == aj && !aChainSet.Contains(k)
+                && b.Index.TryGetValue(aNames[k], out int bk) && kind[bk] == Kind.Direct).Select(k => b.Index[aNames[k]]).ToList();
             if (tips.Count == 0) { if (b.Parent[j] >= 0) align[j] = align[b.Parent[j]]; continue; }
             var tb = tips.Aggregate(new P1V(0, 0, 0), (acc, k) => acc + b.Rest[k].T()) / tips.Count;
             var ta = tips.Aggregate(new P1V(0, 0, 0), (acc, k) => acc + aRest[src0[k]].T()) / tips.Count;
@@ -186,5 +190,43 @@ public sealed class P1Retarget
             G[j] = P1M4.From(turn * align[j] * Rot(b.Rest[j]), pos);
         }
         return G;
+    }
+
+    /// <summary>(the probe) Per matched bone, the angle (deg) between A's posed segment direction and B's, the bodies'
+    /// proportions out: a limb bone's segment is its head to the mean of its A children's heads that B has by name
+    /// (the same names on B; leaves skipped); the spine-to-head chain by role, rest-relative (B keeps its own torso
+    /// rest): B's chain polyline between the length fractions of A's segment k, at rest turned by A's bone k's turn,
+    /// against the same posed; "Head" the angle between the
+    /// two Heads' whole turns from rest. Group "limb" or "chain".</summary>
+    public List<(string Name, string Group, double Deg)> Directions(P1M4[] aPose, P1M4[] bG)
+    {
+        var o = new List<(string, string, double)>();
+        static double Ang(P1V u, P1V v) => Math.Acos(Math.Clamp(P1V.Dot(u, v) / (u.Len() * v.Len()), -1, 1)) * 180 / Math.PI;
+        var chainSet = new HashSet<int>(aChainB);
+        for (int i = 0; i < aNames.Length; i++)
+        {
+            if (chainSet.Contains(i) || !b.Index.TryGetValue(aNames[i], out int j) || b.Helpers.Contains(j)) continue;
+            var kids = Enumerable.Range(0, aNames.Length).Where(k => aParent[k] == i && !chainSet.Contains(k) && b.Index.TryGetValue(aNames[k], out int bk) && !b.Helpers.Contains(bk)).ToList();
+            if (kids.Count == 0) continue;
+            var ta = kids.Aggregate(new P1V(0, 0, 0), (acc, k) => acc + aPose[k].T()) / kids.Count - aPose[i].T();
+            var tb = kids.Aggregate(new P1V(0, 0, 0), (acc, k) => acc + bG[b.Index[aNames[k]]].T()) / kids.Count - bG[j].T();
+            o.Add((aNames[i], "limb", Ang(ta, tb)));
+        }
+        double[] Cum(int[] c, P1M4[] g) { var cu = new double[c.Length]; for (int k = 1; k < c.Length; k++) cu[k] = cu[k - 1] + (g[c[k]].T() - g[c[k - 1]].T()).Len(); return cu.Select(x => x / cu[^1]).ToArray(); }
+        var fa = Cum(aChainB, aRest); var fb = Cum(bChainB, b.Rest);
+        P1V At(double f, P1M4[] g)
+        {
+            int k = 1; while (k < fb.Length - 1 && fb[k] < f) k++;
+            double t = fb[k] > fb[k - 1] ? (f - fb[k - 1]) / (fb[k] - fb[k - 1]) : 0;
+            return g[bChainB[k - 1]].T() * (1 - t) + g[bChainB[k]].T() * t;
+        }
+        var bRestSeg = new P1V[aChainB.Length];
+        for (int k = 0; k < aChainB.Length - 1; k++) bRestSeg[k] = At(fa[k + 1], b.Rest) - At(fa[k], b.Rest);
+        for (int k = 0; k < aChainB.Length - 1; k++)
+            o.Add((aNames[aChainB[k]], "chain", Ang(Rot(aPose[aChainB[k]]) * aRestRot[aChainB[k]].T() * bRestSeg[k], At(fa[k + 1], bG) - At(fa[k], bG))));
+        int ah = aIndexB["Head"], bh = b.Index["Head"];
+        var dA = Rot(aPose[ah]) * aRestRot[ah].T(); var dB = Rot(bG[bh]) * Rot(b.Rest[bh]).T();
+        o.Add(("Head", "chain", P1Rig.RotVec(dA.T() * dB).Len() * 180 / Math.PI));
+        return o;
     }
 }

@@ -20,7 +20,8 @@ public sealed class P1Rig
     public readonly Dictionary<string, int> Index;
     readonly int[][] subtree;
     readonly JsonElement rig;
-    /// <summary>The bones the rig's helper rows set (never keyed: carried at rest before Drive).</summary>
+    /// <summary>The bones the rig's helper rows set (never keyed: carried at rest before Drive). Not the "unroll" rows'
+    /// bones (lowerarm, calf): those are keyed limb bones whose roll the rig moves on to the child.</summary>
     public readonly HashSet<int> Helpers = new();
 
     public P1Rig(string[] names, int[] parent, P1M4[] rest, JsonElement rig)
@@ -39,7 +40,7 @@ public sealed class P1Rig
         if (rig.TryGetProperty("helpers", out var hs))
             foreach (var h in hs.EnumerateArray())
                 foreach (var s in Sides(h.GetProperty("name").GetString()!))
-                    if (Index.TryGetValue(h.GetProperty("name").GetString()!.Replace("{s}", s), out var j)) Helpers.Add(j);
+                    if (h.GetProperty("kind").GetString() != "unroll" && Index.TryGetValue(h.GetProperty("name").GetString()!.Replace("{s}", s), out var j)) Helpers.Add(j);
     }
 
     static string[] Sides(string text) => text.Contains("{s}") ? new[] { "l", "r" } : new[] { "" };

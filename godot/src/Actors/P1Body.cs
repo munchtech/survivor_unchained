@@ -138,6 +138,16 @@ public partial class P1Follow : Node
 
     public override void _ExitTree() { a.SkeletonUpdated -= Follow; }
 
+    (P1M4[] A, P1M4[] G)? last;
+    int calls; ulong callsFrame;
+
+    public override void _Process(double delta)
+    {
+        if (!Args.Has("p1-probe") || Name != "P1Follow" || last is not { } l || Engine.GetProcessFrames() % 120 != 0) return;
+        GD.Print($"p1: probe frame {Engine.GetProcessFrames()}: {calls} follows in the last frame");
+        Joints(l.A, l.G);
+    }
+
     void Follow()
     {
         if (Name == "P1PlayFollow" && body is { Visible: false }) return;   // (the play tier only while it draws)
@@ -169,7 +179,14 @@ public partial class P1Follow : Node
             foreach (var kv in w)
                 if (mi.FindBlendShapeByName(kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
         if (Name != "P1Follow") return;
-        if (Args.Has("p1-probe") && Engine.GetProcessFrames() % 120 == 0) Joints(aPose, G);
+        if (Args.Has("p1-probe"))
+        {
+            // (the last call of a frame is the pose drawn: A's SkeletonUpdated comes more than once a frame, some with A
+            // not yet posed; _Process prints the previous frame's last)
+            ulong f = Engine.GetProcessFrames();
+            calls = f == callsFrame ? calls + 1 : 1; callsFrame = f;
+            last = (aPose, G);
+        }
         Rebind();
         PlaySwitch();
     }
@@ -268,6 +285,22 @@ public partial class P1Follow : Node
         string top = string.Join(", ", Enumerable.Range(0, aNames.Length).Where(i => rig.Index.ContainsKey(aNames[i]) && !rig.Helpers.Contains(rig.Index[aNames[i]]))
             .OrderByDescending(i => (G[rig.Index[aNames[i]]].T() - aPose[i].T()).Len() - (restB[rig.Index[aNames[i]]].T() - aRest[i].T()).Len()).Take(4)
             .Select(i => $"{aNames[i]} {(G[rig.Index[aNames[i]]].T() - aPose[i].T()).Len() * 1000:F0}/{(restB[rig.Index[aNames[i]]].T() - aRest[i].T()).Len() * 1000:F0}"));
+        foreach (var (tag, gg) in new[] { ("map", map.Map(aPose)), ("driven", G) })
+        {
+            var d = map.Directions(aPose, gg);
+            foreach (var grp in new[] { "limb", "chain" })
+            {
+                var x = d.Where(q => q.Group == grp).Select(q => q.Deg).ToList();
+                GD.Print($"p1: dirs {tag} {grp} n={x.Count} p95 {P(x, 0.95):F2} max {x.Max():F2} deg; worst " +
+                         string.Join(", ", d.Where(q => q.Group == grp).OrderByDescending(q => q.Deg).Take(5).Select(q => $"{q.Name} {q.Deg:F1}")));
+            }
+        }
+        {
+            // B's head meshes hang on A's Head: where A's Head carries B's Head joint (its rest point) against B's posed Head
+            int ah = System.Array.IndexOf(aNames, "Head"), bh = rig.Index["Head"], an = System.Array.IndexOf(aNames, "neck_01");
+            var onA = aPose[ah] * (aRest[ah].Inverse() * rig.Rest[bh].T());
+            GD.Print($"p1: head seam: B's Head joint carried by A's Head vs B's posed Head {(onA - G[bh].T()).Len() * 1000:F1} mm (A Head {aRest[ah].T()}, B Head {rig.Rest[bh].T()})");
+        }
         GD.Print($"p1: joints t={Time.GetTicksMsec() / 1000.0:F1}s {posed.Count} bones: posed p95 {P(posed, 0.95):F1} max {posed.Max():F1} mm; rest p95 {P(rest, 0.95):F1} max {rest.Max():F1} mm; " +
                  $"worst grown (posed/rest mm): {top}; shear residual {Residual:E1}; weights {string.Join(" ", Weights.Where(k => k.Value > 0.001).Select(k => $"{k.Key}={k.Value:F2}"))}");
     }
