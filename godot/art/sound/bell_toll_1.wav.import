@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://ddoms1sv1dl8b"
+path="res://.godot/imported/bell_toll_1.wav-4c275982107f6e6eddb4b8484a2e614b.sample"
 
 [deps]
 
 source_file="res://art/sound/bell_toll_1.wav"
+dest_files=["res://.godot/imported/bell_toll_1.wav-4c275982107f6e6eddb4b8484a2e614b.sample"]
 
 [params]
 

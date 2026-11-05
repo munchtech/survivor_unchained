@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dkjse1rge7kn4"
+path="res://.godot/imported/flare_mark_tick_1.wav-372a1a6274c809cdbbf3ed1a066e739f.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_mark_tick_1.wav"
+dest_files=["res://.godot/imported/flare_mark_tick_1.wav-372a1a6274c809cdbbf3ed1a066e739f.sample"]
 
 [params]
 

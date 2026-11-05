@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://smdnf3ca7a8e"
+path="res://.godot/imported/flare_boom_drag_them_under_1.wav-8d9b65618a2ce26ee439236e6c371a72.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_drag_them_under_1.wav"
+dest_files=["res://.godot/imported/flare_boom_drag_them_under_1.wav-8d9b65618a2ce26ee439236e6c371a72.sample"]
 
 [params]
 

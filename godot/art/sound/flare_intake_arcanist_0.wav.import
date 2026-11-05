@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cfbtgxfqiwc7y"
+path="res://.godot/imported/flare_intake_arcanist_0.wav-ead0c0f43c827a3fe4b2fde09be86782.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_intake_arcanist_0.wav"
+dest_files=["res://.godot/imported/flare_intake_arcanist_0.wav-ead0c0f43c827a3fe4b2fde09be86782.sample"]
 
 [params]
 

@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://d2phb38nbh23u"
+path="res://.godot/imported/flare_boom_burns_twice_1.wav-8f3f8a4c63709bbdbfb17628f8c77ed0.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_burns_twice_1.wav"
+dest_files=["res://.godot/imported/flare_boom_burns_twice_1.wav-8f3f8a4c63709bbdbfb17628f8c77ed0.sample"]
 
 [params]
 

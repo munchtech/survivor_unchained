@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://5y7bj14hylk8"
+path="res://.godot/imported/flare_boom_the_long_cut_1.wav-9b322b92d68ae1be5338faa9ef094072.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_the_long_cut_1.wav"
+dest_files=["res://.godot/imported/flare_boom_the_long_cut_1.wav-9b322b92d68ae1be5338faa9ef094072.sample"]
 
 [params]
 

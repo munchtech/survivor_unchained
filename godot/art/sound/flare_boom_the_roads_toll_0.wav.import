@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cgbxu51jedprx"
+path="res://.godot/imported/flare_boom_the_roads_toll_0.wav-f254f9094b2db73a35ef58c65f9b7dae.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_the_roads_toll_0.wav"
+dest_files=["res://.godot/imported/flare_boom_the_roads_toll_0.wav-f254f9094b2db73a35ef58c65f9b7dae.sample"]
 
 [params]
 

@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://d0b8dr3mtnab6"
+path="res://.godot/imported/flare_intake_stalker_0.wav-611193aba3ffae20ae753b705cdef04a.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_intake_stalker_0.wav"
+dest_files=["res://.godot/imported/flare_intake_stalker_0.wav-611193aba3ffae20ae753b705cdef04a.sample"]
 
 [params]
 

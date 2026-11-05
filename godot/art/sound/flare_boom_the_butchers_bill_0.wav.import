@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c0p70mhl3v0dt"
+path="res://.godot/imported/flare_boom_the_butchers_bill_0.wav-f2ec78eb46e7aee20a9f7348252f7487.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_the_butchers_bill_0.wav"
+dest_files=["res://.godot/imported/flare_boom_the_butchers_bill_0.wav-f2ec78eb46e7aee20a9f7348252f7487.sample"]
 
 [params]
 

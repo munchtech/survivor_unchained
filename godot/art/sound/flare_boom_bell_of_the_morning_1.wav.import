@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dngu5i0xi5j37"
+path="res://.godot/imported/flare_boom_bell_of_the_morning_1.wav-af48bdaf21309bc022889a2b83dafc9a.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_bell_of_the_morning_1.wav"
+dest_files=["res://.godot/imported/flare_boom_bell_of_the_morning_1.wav-af48bdaf21309bc022889a2b83dafc9a.sample"]
 
 [params]
 

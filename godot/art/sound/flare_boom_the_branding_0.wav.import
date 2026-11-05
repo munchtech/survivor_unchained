@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dupgcq7u5uqfr"
+path="res://.godot/imported/flare_boom_the_branding_0.wav-c380889b00039710eb0ce3175c831390.sample"
 
 [deps]
 
 source_file="res://art/sound/flare_boom_the_branding_0.wav"
+dest_files=["res://.godot/imported/flare_boom_the_branding_0.wav-c380889b00039710eb0ce3175c831390.sample"]
 
 [params]
 
