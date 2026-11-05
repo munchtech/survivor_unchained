@@ -96,7 +96,7 @@ class OurSliders:
             v = values.get(n, 0.0)
             if v:
                 lo, hi = c["range"]
-                V = self._designed(c, min(max(float(v), lo), hi), V)
+                V = self._designed(c, min(max(float(v), lo), hi), V, values)
         return V
 
     def field(self, c):
@@ -111,7 +111,9 @@ class OurSliders:
             self._fields[key] = t * t * (3.0 - 2.0 * t)
         return self._fields[key]
 
-    def _designed(self, c, v, V):
+    def _designed(self, c, v, V, values=None):
+        if c["rule"] == "growth_turn":
+            return V + v * self._growth_turn(c, float((values or {}).get(c["field"], 0.0)))
         """rule "mass_lift": each side's mass (the field) is carried up toward its root, more the lower it sits (0 at
         the field's top, full at its bottom, smoothstepped): the mass shortens and rounds, its under-curve rises
         off the fold it hung into, the root never moves; the lower part also comes out from the wall it hangs
@@ -139,4 +141,32 @@ class OurSliders:
             if c.get("fill"):
                 d += src[s] * (v * c["fill"] * ws * ws)[:, None]
             out[s] = P + d
+        return out
+
+    def _growth_turn(self, c, sv):
+        """rule "growth_turn" (bust_lift): MakeHuman's cup grows the breast mostly DOWN (bust_size +1: 91 mm at the
+        lower pole, its mean move 70 deg below forward): its mass slides down the chest, the lower pole hangs past the
+        fold into a deep flat shelf and the upper pole hollows. Ours turns that same growth (the source slider's move
+        at its current value, positive only) up toward forward about the left-right axis, each move by its own angle:
+        "turn_deg" where the growth already leans forward (the upper pole and the point: it fills the upper pole and
+        brings the point forward and up) to "turn_low_deg" where it points straight down (the lower pole: it rounds
+        out forward instead of hanging, the shelf tilts up into a curve); "scale" sizes the turned growth (1: each move
+        keeps its length, so the breast grows forward by what it hung: the volume rises). The move is the slider's own
+        smooth field turned, so it is as smooth as MakeHuman's target (no hinge, no ramp edge, no rim: 0 where the
+        cup does not move); mirrored sides alike (a turn about x). Returns the change at v = 1."""
+        np = self.np
+        if sv <= 0:
+            return np.zeros_like(self.V0)
+        g = self.delta(c["field"], sv)
+        dn, fw = -g[:, 1], g[:, 2]
+        a = np.degrees(np.arctan2(fw, np.maximum(dn, 1e-9)))            # the move's lean from straight down
+        lo, hi = c.get("lean_deg", [0.0, 40.0])
+        t = np.clip((hi - a) / (hi - lo), 0.0, 1.0)
+        t = t * t * (3.0 - 2.0 * t)                                        # 1 where it points down, 0 leaning fwd
+        th = np.radians(c["turn_deg"] + (c["turn_low_deg"] - c["turn_deg"]) * t)
+        k = c.get("scale", 1.0)
+        out = np.zeros_like(g)
+        out[:, 0] = (k - 1.0) * g[:, 0]
+        out[:, 1] = k * (g[:, 1] * np.cos(th) + g[:, 2] * np.sin(th)) - g[:, 1]
+        out[:, 2] = k * (-g[:, 1] * np.sin(th) + g[:, 2] * np.cos(th)) - g[:, 2]
         return out
