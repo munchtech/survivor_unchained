@@ -246,11 +246,12 @@
  },
  "blocks": {
   "bronze": {
-   "field": "#733b2d",
-   "highlight": "#c56535",
+   "field": "#684422",
+   "highlight": "#b68852",
    "ink": "#090910",
-   "band": 0.214,
-   "from": "the frame's body and highlight band (08's left side, 11's top: measure bronze_body, bronze_hi, ink); band = the highlight's 3 px of the 14 px frame"
+   "band": 0.27,
+   "from": "the frame's body and highlight band (08's left side, 11's top: measure bronze_body, bronze_hi, ink); band = the highlight's 3 px of the 14 px frame",
+   "w2": "L1 W2 C5 (the Stage B verdict B6: 'the frame is thin and copper-red; make bronze the targets' brown bronze with one lit bevel band plus the ink edge, about 20-24 px wide at 1080'; bible rule 12): the body from Oklab L 0.42 (the measured frame's, kept) C 0.07 h 62 (#684422; the measured #733b2d sat at h 35, copper; h 62 = the Drowned Girl's bronze h 52 moved a third of the way to the gold line #d9b56a's h ~80; C between hers 0.047 and the measured 0.082), the lit bevel band L 0.66 C 0.09 h 70 (#b68852: one step up toward the gold); the frame 22 px (the verdict's 20-24) of which the band is 6 (0.27), the ink edge 2.9 px kept"
   },
   "iron": {
    "field": "#0a1214",
@@ -313,13 +314,14 @@
   "from": "08's lamp panel and 11's result panel: measure field (its median and its L10 for the deep edges), bronze_body, ink; frame 14 px of the targets (ink 2-3, highlight 2-3, body 8, inner ink 2-3), corner plates about 50 px",
   "field": "#2d2122",
   "field_deep": "#291d1e",
-  "frame": "#733b2d",
-  "frame_hi": "#c56535",
+  "frame": "#684422",
+  "frame_hi": "#b68852",
   "ink": "#090910",
-  "frame_px": 16.1,
+  "frame_px": 22.0,
   "line_px": 2.9,
   "corner_px": 57.4,
-  "grain": 0.054
+  "grain": 0.054,
+  "w2": "L1 W2 C5 (the Stage B verdict B6: 'the frame is thin and copper-red; make bronze the targets' brown bronze with one lit bevel band plus the ink edge, about 20-24 px wide at 1080'; bible rule 12): the body from Oklab L 0.42 (the measured frame's, kept) C 0.07 h 62 (#684422; the measured #733b2d sat at h 35, copper; h 62 = the Drowned Girl's bronze h 52 moved a third of the way to the gold line #d9b56a's h ~80; C between hers 0.047 and the measured 0.082), the lit bevel band L 0.66 C 0.09 h 70 (#b68852: one step up toward the gold); the frame 22 px (the verdict's 20-24) of which the band is 6 (0.27), the ink edge 2.9 px kept"
  },
  "line": {
   "px": 2.9,

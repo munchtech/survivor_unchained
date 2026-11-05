@@ -160,6 +160,7 @@ public static class Water
         m.SetShaderParameter("mode", mode);
         m.SetShaderParameter("bands", new Vector4(F(b, "deep"), F(b, "depth_w"), F(b, "view_w"), F(b, "shallow_alpha")));
         m.SetShaderParameter("cuts", new Vector2(A(b, "cuts", 0), A(b, "cuts", 1)));
+        m.SetShaderParameter("stream_depth", F(b, "stream_depth"));
         m.SetShaderParameter("reflect", new Vector3(A(b, "reflect", 0), A(b, "reflect", 1), A(b, "reflect", 2)));
         m.SetShaderParameter("tint", new Color(b.GetProperty("tint").GetString()!));
         m.SetShaderParameter("strokes", new Vector4(A(s, "size", 0), A(s, "size", 1), F(s, "cover"), F(s, "lift")));

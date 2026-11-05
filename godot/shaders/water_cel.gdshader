@@ -21,6 +21,8 @@ uniform bool stream = false;
 // deep (m), depth_w, view_w, shallow_alpha
 uniform vec4 bands = vec4(1.6, 1.0, 0.8, 0.55);
 uniform vec2 cuts = vec2(0.22, 0.6);
+// mode 1: its 0..1 across read as this much depth
+uniform float stream_depth = 0.55;
 // shallow, mid, deep reflectance of the sky's light
 uniform vec3 reflect = vec3(1.0, 0.62, 0.33);
 uniform vec3 tint : source_color = vec3(0.83, 0.89, 1.0);
@@ -67,7 +69,7 @@ void fragment() {
 	vec3 b_w = cross(t_w, n_w);
 	vec2 pq = vec2(dot(w_pos, t_w), dot(w_pos, b_w));
 	// the depth from the bank (0..1)
-	float d01 = mode == 1 ? clamp(w_bank, 0.0, 1.0) : clamp(w_bank / max(bands.x, 1e-3), 0.0, 1.0);
+	float d01 = mode == 1 ? clamp(w_bank, 0.0, 1.0) * stream_depth : clamp(w_bank / max(bands.x, 1e-3), 0.0, 1.0);
 	float s = d01 * bands.y + (1.0 - ndv) * bands.z * (1.0 - d01 * 0.5);
 	// the flow's drift (world x z), for the strokes
 	vec2 flow = mode == 0 && !stream ? w_uv : vec2(0.0, 0.0);
