@@ -1035,6 +1035,120 @@ def rim_level(ref, V, F, loop, n0, ks):
     return V, F, rim_loop(F)
 
 
+def quad_strips(F):
+    """Every quad strip of a quad patch: quads joined across opposite edges. Returns [(quads, rungs, closed)],
+    rungs the crossed edges (vertex pairs, the strip's ends included); a strip through a quad twice is marked
+    (quads None)."""
+    E = {}
+    for qi, q in enumerate(F):
+        for k in range(4):
+            E.setdefault((min(q[k], q[(k + 1) % 4]), max(q[k], q[(k + 1) % 4])), []).append((qi, k))
+    seen = set()
+    out = []
+    def walk(qi, k):
+        """From quad qi, leaving across its edge k: [(quad, entry k)], rungs, closed."""
+        qs, rungs = [], []
+        q0 = qi
+        while True:
+            q = F[qi]
+            e = (min(q[k], q[(k + 1) % 4]), max(q[k], q[(k + 1) % 4]))
+            rungs.append(e)
+            nxt = [x for x in E[e] if x[0] != qi]
+            if not nxt:
+                return qs, rungs, False
+            qi, kin = nxt[0]
+            if qi == q0:
+                return qs, rungs, True
+            qs.append((qi, kin % 2))
+            k = (kin + 2) % 4
+    for qi in range(len(F)):
+        for d in (0, 1):
+            if (qi, d) in seen:
+                continue
+            fq, fr, closed = walk(qi, d + 2)
+            if closed:
+                qs = [(qi, d)] + fq
+                rungs = fr
+            else:
+                bq, br, _ = walk(qi, d)
+                qs = [(x, y) for x, y in bq[::-1]] + [(qi, d)] + fq
+                rungs = br[::-1] + fr
+            for x in qs:
+                seen.add(x)
+            ids = [x for x, _ in qs]
+            out.append((ids if len(set(ids)) == len(ids) else None, rungs, closed))
+    return out
+
+
+def quad_reduce(V, F, frac, rim_target, max_aspect=4.0):
+    """(pass 3b item 9) a quad-preserving reduction (a template for a lighter tier, generated from ours): whole quad
+    strips collapsed (each rung's two ends merged at their midpoint, then put back on the source surface). Open
+    strips (they reach the rim, two rim points each) first while the rim is over rim_target, then the strip with
+    the shortest mean rung (the densest), until the quads are frac of the source's. A collapse is kept only if every
+    quad stays a quad (4 distinct corners), the patch stays one manifold disk with one rim, and no quad it touches
+    goes over max_aspect (or over its own aspect before, where the source is already longer). Deterministic."""
+    from surfdist import Surface
+    S = Surface(V, np.concatenate([F[:, [0, 1, 2]], F[:, [0, 2, 3]]]))
+    V = V.copy()
+    n_goal = int(round(frac * len(F)))
+    def asp(P):
+        Lq = np.linalg.norm(np.roll(P, -1, 1) - P, axis=2)
+        return Lq.max(1) / np.maximum(Lq.min(1), 1e-9)
+    while len(F) > n_goal:
+        n_rim = len(rim_loop(F))
+        cand = []
+        for qs, rungs, closed in quad_strips(F):
+            if qs is None or (not closed and n_rim - 2 < rim_target):
+                continue
+            L = float(np.mean([np.linalg.norm(V[a] - V[b]) for a, b in rungs]))
+            cand.append(((0 if (not closed and n_rim > rim_target) else 1, L, min(qs)), qs, rungs))
+        cand.sort(key=lambda x: x[0])
+        done = False
+        for _, qs, rungs in cand:
+            par = np.arange(len(V))
+            def find(x):
+                while par[x] != x:
+                    par[x] = par[par[x]]
+                    x = par[x]
+                return x
+            for a, b in rungs:
+                ra, rb = find(a), find(b)
+                if ra != rb:
+                    par[max(ra, rb)] = min(ra, rb)
+            rep = np.array([find(x) for x in range(len(V))])
+            keepq = np.ones(len(F), bool)
+            keepq[qs] = False
+            Fn = rep[F[keepq]]
+            if not all(len(set(q)) == 4 for q in Fn.tolist()):
+                continue
+            e = np.sort(np.concatenate([Fn[:, [k, (k + 1) % 4]] for k in range(4)]), 1)
+            u, c = np.unique(e, axis=0, return_counts=True)
+            if c.max() > 2 or len(np.unique(Fn)) - len(u) + len(Fn) != 1 or len(np.unique(np.sort(Fn, 1), axis=0)) != len(Fn):
+                continue
+            try:
+                if len(rim_loop(Fn)) != int((c == 1).sum()):
+                    continue
+            except (AssertionError, KeyError):
+                continue
+            Vn = V.copy()
+            moved = np.unique(rep[np.concatenate(rungs)])
+            for r in moved:
+                Vn[r] = V[rep == r].mean(0)
+            Vn[moved] = S.closest(Vn[moved])[0]
+            touch = np.isin(Fn, moved).any(1)
+            a_new, a_old = asp(Vn[Fn[touch]]), asp(V[F[keepq][touch]])
+            if (a_new > np.maximum(max_aspect, a_old)).any():
+                continue
+            V, F, done = Vn, Fn, True
+            break
+        if not done:
+            break
+    used = np.unique(F)
+    remap = -np.ones(len(V), np.int64)
+    remap[used] = np.arange(len(used))
+    return V[used], remap[F]
+
+
 def quad_cost(P):
     """A quad's shape cost: its corners' squared deviation from 90 deg (in units of 90 deg) + (aspect - 1)."""
     e = np.roll(P, -1, 0) - P
@@ -1109,6 +1223,12 @@ def template(M, name, part, reg, ref=None, fit=None):
         loop = rim_loop(F)
     if fit.get("level"):
         V, F, loop = rim_level(ref, V, F, loop, n0, [TRUNK, LEG, FOOT] if part == "foot" else [TRUNK, ARM, HAND])
+    if fit.get("reduce"):
+        nq0 = len(F)
+        V, F = quad_reduce(V, F, fit["reduce"], fit["rim_points"], fit.get("max_aspect", 4.0))
+        loop = rim_loop(F)
+        M.reduced = getattr(M, "reduced", {})
+        M.reduced[name] = {"quads": [int(nq0), int(len(F))], "rim": int(len(loop))}
     ids = M.add(V, part, -1, 0, TEMPLATE, reg, ())
     for q in F:
         M.quad(*ids[q], reg, part)
@@ -1196,6 +1316,21 @@ def kite_starts(phi, sense, psi_h, r, sector, stagger):
         tgt = psi_h + (q - (r - 1) / 2) * d + stagger * d
         m = int(np.argmin(np.abs(np.angle(np.exp(1j * (phi - tgt))))))
         out.append(min(max(m - 1, 0), n - 2))
+    o2 = sorted(set(out))
+    for q in range(1, len(o2)):
+        o2[q] = max(o2[q], o2[q - 1] + 3)
+    if len(o2) != r or o2[-1] > n - 2 or o2[0] + n - o2[-1] < 3:
+        # (pass 3b) the sector across the ring's start: the same starts unwrapped along the sector, then shifted
+        # as one inside 0 .. n-2 (the clamp above would stack them)
+        m = [int(np.argmin(np.abs(np.angle(np.exp(1j * (phi - (psi_h + (q - (r - 1) / 2) * d + stagger * d))))))) - 1
+             for q in range(r)]
+        sgn = 1 if sense > 0 else -1
+        m = [m[0]] + [m[0] + sgn * (((x - m[0]) * sgn) % n) for x in m[1:]]
+        m = sorted(m)
+        for q in range(1, r):
+            m[q] = max(m[q], m[q - 1] + 3)
+        sh = max(0, -m[0]) - max(0, m[-1] - (n - 2))
+        out = [x + sh for x in m]
     out = sorted(set(out))
     for q in range(1, len(out)):
         out[q] = max(out[q], out[q - 1] + 3)
@@ -1483,19 +1618,25 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
     N = [N0] * len(st)
     R = [0] * len(st)
     u_all = np.array([x[3] for x in st])
-    for (ua, ub, Nf, Nt) in ((0.0, u_el - bz, N0, N_mid), (u_el + bz, u_end - jp["end_bend"], N_mid, N_end)):
+    segs = []                                        # (from, to count, band centre u, strips)
+    uc_up = bands["at"] * (u_el - bz) if band_u is None else band_u
+    n_up = bands.get("strips_upper", bands["strips"])
+    segs.append((N0, N_mid, uc_up, n_up))
+    ua, ub = u_el + bz, u_end - jp["end_bend"]
+    uc_lo = ua + bands["at"] * (ub - ua)
+    if band_y_lower is not None:                     # (pass 3b) the lower band centred at a named height
+        uc_lo = u_el + (band_y_lower - J[1]) / d_out[1]
+    segs.append((N_mid, N_end, uc_lo, bands["strips"]))
+    for (Nf, Nt, uc, n_s) in segs:
         r_tot = (Nf - Nt) // 2
         if r_tot <= 0:
             continue
-        n_s = bands.get("strips_upper", bands["strips"]) if ua == 0 else bands["strips"]
         nstr = int(min(n_s, max(1, r_tot // bands["min_per_strip"])))
-        uc = ua + bands["at"] * (ub - ua) if (band_u is None or ua > 0) else band_u
-        if ua > 0 and band_y_lower is not None:      # (pass 3b) the lower band centred at a named height
-            uc = u_el + (band_y_lower - J[1]) / d_out[1]
         kc = int(np.argmin(np.abs(u_all - uc)))
         ksel = [kc + 2 * (q - (nstr - 1) // 2) for q in range(nstr)]
         per = [r_tot // nstr + (1 if q < r_tot % nstr else 0) for q in range(nstr)]
         for kk, rr in zip(ksel, per):
+            assert R[kk] == 0, "two bands on one ring"
             R[kk] = rr
     cur = N0
     for k in range(len(st)):
@@ -1850,13 +1991,16 @@ def build(plan, tier, ref, cv, L):
     kl = [TRUNK, LEG, FOOT]
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
+    if tp.get("knee_points"):                        # (pass 3b) the tier's thigh count carried through the knee
+        N_kn = int(tp["knee_points"])
     jp = dict(lim["knee"], **tp["knee"])
     st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, len(fid),
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
                                        lg_bands, ref, kl, u_hold, band_u, tp.get("shin_band_y"))
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
          joint=joints["knee"], warp=warp)
-    C.update({"N_el": N_el, "N_kn": N_kn, "rim_fit": getattr(M, "rim_fit", {})})
+    C.update({"N_el": N_el, "N_kn": N_kn, "rim_fit": getattr(M, "rim_fit", {}),
+              "template_reduced": getattr(M, "reduced", {})})
     # the whole: orient, mirror, relax, the neck's right side, orient outward
     V, Q = M.arrays()
     n_left = len(V)

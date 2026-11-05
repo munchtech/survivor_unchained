@@ -380,7 +380,21 @@
     "hip_curve_root": true,
     "thigh_band_y": 0.82,
     "thigh_band_strips": 3,
-    "why_thigh_band": "(a) play's 17 mm stations: 3 strips centred at y 0.82 (0.80 with 2 strips put a strip's kites within 40 mm of the knee's bend zone; 0.82 x 3 keeps the aspect at the baseline's)"
+    "why_thigh_band": "(a) play's 17 mm stations: 3 strips centred at y 0.82 (0.80 with 2 strips put a strip's kites within 40 mm of the knee's bend zone; 0.82 x 3 keeps the aspect at the baseline's)",
+    "hand_fit": {
+     "trim": true,
+     "reduce": 0.4,
+     "rim_points": 14,
+     "max_aspect": 4.0
+    },
+    "foot_fit": {
+     "trim": true,
+     "level": true,
+     "reduce": 0.4,
+     "rim_points": 16,
+     "max_aspect": 5.0
+    },
+    "knee_points": 32
    }
   },
   "rest_tris": 11300,
