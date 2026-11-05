@@ -44,9 +44,9 @@
   // first), its soft lead and dark wake (m), fading over the last fade share of its run. gain: its light (x the school's
   // glow, linear); wake: how much the ground behind it darkens. Through flare_world's ground hook: no draw of its own.
   "band": {
-    "reach": 30, "time": 0.3, "ease": 1.6, "lead": 1.4, "wake": 3.0, "fade": 0.35,
-    "night": { "gain": 0.5, "wake": 0.3 },
-    "day":   { "gain": 0.7, "wake": 0.22 }
+    "reach": 30, "time": 0.3, "ease": 1.6, "lead": 0.9, "wake": 2.4, "fade": 0.35,
+    "night": { "gain": 0.3, "wake": 0.3 },
+    "day":   { "gain": 0.45, "wake": 0.22 }
   },
   // The beat: the camera's kick on the main blow (px at 1080p, the first swing, FollowCamera.JoltPx); a drop lands
   // dropLag s after the band passes it, scaled in over dropGrow; a decision-marked hit's death and number wait

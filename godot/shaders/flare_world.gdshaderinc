@@ -570,7 +570,7 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 	if (flare_band.w > 0.0) {
 		vec2 bd = flare_band_at(w);
 		alb *= 1.0 - flare_band_col.a * bd.y;
-		emi += flare_band_col.rgb * bd.x * (0.2 + alb);
+		emi += flare_band_col.rgb * bd.x * (0.3 + 0.6 * alb);
 	}
 	vec3 web = flare_web_light(w);
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
