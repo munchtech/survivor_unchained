@@ -37,7 +37,8 @@ Each pipeline below has: source, stages, the check at each stage, the state toda
 1. Name the pipeline before touching anything. If the asset's pipeline is SOUP, the first task is the pipeline, not the asset.
 2. Change the source or the build step; rebuild; run the check; then one judge on what the check can't measure. A judge's note goes back to the source or the build, never to a patch on the output.
 3. The report says: "P<n>: the app can now X; this asset cost Y; the next of its kind costs about Z."
-4. This page is the ledger. The coordinator updates the state column and the last cost at every merge, so the owner can see which pipelines got cheaper and which did not.
+4. **Derivation (the owner, 4 Nov evening: "was the skeleton built around hacked together mesh and vice versa back and forth? that is a concern you know? for a lot of our stuff. we have a direction and stuff but we got there haphazardly."):** each part of a pipeline states what it was derived FROM, one of (a) the game's need, (b) a reference (named), or (c) inherited (named: the file, the lead, the date). Anything found to be designed around an old hack is undone and reported, never kept. Every brief carries this rule. For L1 especially: the cel shading model, the material library and the lighting rigs are built from the references and the game's cameras, never fitted to today's maps or scenes; the frames get rebuilt to the blocks, not the blocks bent to the frames. (P1's skeleton verified by 5b4265e7: a spec placed by landmarks; only the core bone names inherited.)
+5. This page is the ledger. The coordinator updates the state column and the last cost at every merge, so the owner can see which pipelines got cheaper and which did not.
 
 ## The order
 
