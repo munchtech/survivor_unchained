@@ -233,8 +233,11 @@ public partial class Game
         LookLamp(root, "post_lantern", At(3.6f, 4.6f, 180), "town");
         // The wild: a boulder, a spruce, a young alder, pebbles and branches (the arena's own grass round them).
         Put(Dressing.OwnTree("boulder_b"), At(6.8f, 4.1f, 30), "boulder", "wild");
-        Put(Dressing.OwnTree("spruce_b"), At(5.7f, 7.4f), "spruce", "wild");
-        Put(Dressing.OwnTree("alder_c"), At(3.8f, 7.8f, 0, 0.6f), "alder", "wild");
+        // (L1 W2 wild: the tiered spruce, denser than E4's, stood behind the lantern and in front of the alder, both hidden at
+        // play, and ran off the frame's top: the spruce to the open ground at the play frame's lower left, at 0.65 of its size,
+        // clear of the house and the wolves; the alder to its right edge, clear of the boulder)
+        Put(Dressing.OwnTree("spruce_b"), At(-9.0f, -5.0f, 0, 0.65f), "spruce", "wild");
+        Put(Dressing.OwnTree("alder_c"), At(10.8f, -0.9f, 0, 0.6f), "alder", "wild");
         Put(Dressing.OwnTree("pebbles_a"), At(5.2f, 2.5f), "pebbles", "wild");
         Put(OwnProps.Piece("branches_a"), At(6.5f, 1.5f, 40), "branches", "wild");
         // The zones' own grass (the arena grows its tussocks only where its paint says, a few here): a round patch of the

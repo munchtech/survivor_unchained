@@ -1456,9 +1456,14 @@ TIER = {
     # ridge: each frond's spine raised over its notches (share of the tier's radius, at the rim): target 04's tiers are
     # rings of separate pointed fronds, each a lit spine and a shaded flank from above (round 1's flat star discs took one
     # light over the whole tier)
-    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.5, w=0.8, lap=1.15, ridge=0.16),
-    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.52, w=0.8, lap=1.15, ridge=0.16),
-    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.5, w=0.8, lap=1.15, ridge=0.16),
+    # (L1 W2 wild, rule 5 "two bands, lit and shade" and the wave-1 judge: at the title camera, 01 and 03, the tiers showed
+    # triangle facets with grey speckle and by day, 04, each frond's underside striped the tier) bend: the tier top's normals
+    # are the tier's smooth cone (no lobe, no ridge) bent up by this (+bend x up, then normalised), so each top takes one
+    # light; ubend: the underside's bent down the same way, so it is one shade; ridge 0.16 -> 0.04 (the fronds' jags stay
+    # on the rim, the notches 0.5 deep, not as creases across the faces the painter's bevel and cavity striped)
+    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.5, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
+    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.52, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
+    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.5, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
 }
 BARK_V = 8.0      # bark v: metres of trunk over the strip's height
 TIER_LOBES = (6, 12)
@@ -1489,7 +1494,7 @@ def tier_plan(H, R, seed, tf):
             rim.append((a, rs, hz, tip))
         ext = 2.0 * r * max(x[1] for x in rim) * 1.03     # (an island spans the rim's real extent, not a guess)
         tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85, ext=ext,
-                          ridge=tf.get('ridge', 0.0)))
+                          ridge=tf.get('ridge', 0.0), bend=tf.get('bend', 0.0), ubend=tf.get('ubend', 0.0)))
     return tiers
 
 
@@ -1532,15 +1537,23 @@ def tier_mesh(b, T, lod, isl_top, isl_under):
             x = -x
         return (u0 + (x / ext + 0.5) * sz[0], v0 + (y / ext + 0.5) * sz[1])
 
+    rsm = float(np.mean([x[1] for x in T['rim']])); hzm = float(np.mean([x[2] for x in T['rim']]))
+
     def nrm_at(k, s, under):
-        s = min(max(s, 0.04), 0.96)
-        du = tier_point(T, k + 0.02, s, under) - tier_point(T, k - 0.02, s, under)
-        ds = tier_point(T, k, s + 0.04, under) - tier_point(T, k, s - 0.04, under)
-        nn = np.cross(ds, du)
-        nn /= np.linalg.norm(nn) + 1e-9
-        if (nn[2] < 0) != under:
-            nn = -nn
-        return nn
+        """(L1 W2 wild) The tier's smooth cone at this angle (the rim's mean radius and hang: no lobe, ridge or flick), bent
+        up (the top) or down (the underside) by T's bend: one light a top, one shade an underside (rule 5)."""
+        p = tier_point(T, k, s, under)
+        ax = np.array([p[0], p[1], 0.0]); ax /= np.linalg.norm(ax) + 1e-9
+        run = max(T['r'] * rsm - T['rin'], 1e-3)
+        if not under:
+            slope = -T['drop'] * hzm * (0.55 + 0.9 * min(max(s, 0.0), 1.0)) / run    # dz / d(radius)
+            nn = np.array([-slope * ax[0], -slope * ax[1], 1.0]); nn /= np.linalg.norm(nn)
+            nn = nn + np.array([0.0, 0.0, T.get('bend', 0.0)])
+        else:
+            slope = (-T['drop'] * hzm + T['th'] * T['drop']) / run
+            nn = -np.array([-slope * ax[0], -slope * ax[1], 1.0]); nn /= np.linalg.norm(nn)
+            nn = nn - np.array([0.0, 0.0, T.get('ubend', 0.0)])
+        return nn / (np.linalg.norm(nn) + 1e-9)
 
     for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
         if not rings:

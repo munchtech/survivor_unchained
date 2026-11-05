@@ -600,10 +600,11 @@ PLANES = {
     # fd: planes set in (share of the support, low, high); k: rounding (share of the smallest half size); tris: lod0, lod2
     # (round 1 at k 0.1-0.2 and fd 0.74-0.9: the log-sum-exp of ten planes rounded a boulder into a smooth egg at play; now
     # the planes cut deeper and meet in a bevel of a few cm, rule 10's "bigger bevels" the band can catch)
-    'boulder': dict(crown=(0.88, 0.97), sh=(3, 0.45, 0.68), sides=(5, -0.05, 0.22), fd=(0.68, 0.8), k=0.05, tris=(700, 180)),
-    'fieldrock': dict(crown=(0.85, 0.96), sh=(3, 0.4, 0.62), sides=(5, -0.1, 0.2), fd=(0.66, 0.8), k=0.04, tris=(600, 150)),
-    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.66, 0.8), k=0.035, tris=(900, 250)),
-    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.72, 0.85), k=0.05, tris=(300, 90)),
+    # crease (L1 W2 wild): a plane face's normal is this share its plane's, the rest its smooth normal (crease_normals)
+    'boulder': dict(crown=(0.88, 0.97), sh=(3, 0.45, 0.68), sides=(5, -0.05, 0.22), fd=(0.68, 0.8), k=0.05, tris=(700, 180), crease=0.75),
+    'fieldrock': dict(crown=(0.85, 0.96), sh=(3, 0.4, 0.62), sides=(5, -0.1, 0.2), fd=(0.66, 0.8), k=0.04, tris=(600, 150), crease=0.75),
+    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.66, 0.8), k=0.035, tris=(900, 250), crease=0.75),
+    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.72, 0.85), k=0.05, tris=(300, 90), crease=0.75),
     'pebbles': dict(crown=(0.9, 0.98), sh=(2, 0.45, 0.7), sides=(3, -0.1, 0.2), fd=(0.72, 0.86), k=0.08, tris=(240, 80)),
 }
 
@@ -636,7 +637,36 @@ def sculpt_planes(ax, center, spec, rng, sub=5):
     k = spec['k'] * ax.min()
     r = softmin(R, k)
     V = D * r[:, None] + np.asarray(center, float)
-    return V, F, Np
+    return V, F, Np, dict(center=np.asarray(center, float), ax=ax, Np=Np, d=d, k=k)
+
+
+def crease_weights(V, pl):
+    """(L1 W2 wild) Each point's share of the ellipsoid (column 0) and of each plane (1..), the softmin's own weights at its
+    rounding k: one-hot inside a plane, shared only across the bevel of a few cm between two."""
+    P = V - pl['center']
+    D = P / np.maximum(np.linalg.norm(P, axis=1, keepdims=True), 1e-9)
+    re = 1.0 / np.sqrt(((D / pl['ax']) ** 2).sum(1))
+    cosv = D @ pl['Np'].T
+    T = np.where(cosv > 1e-3, pl['d'][None, :] / np.maximum(cosv, 1e-3), 1e3)
+    R = np.concatenate([re[:, None], np.minimum(T, 1e3)], 1)
+    e = np.exp(-(R - R.min(1, keepdims=True)) / pl['k'])
+    return e / e.sum(1, keepdims=True)
+
+
+def crease_normals(V0, F0, Vd, Wd, Nd, kd, Np, idx, rnd):
+    """(L1 W2 wild: rule 9 "a few big rounded planes", the wave-1 judge "the planes don't step in the band") Per face corner
+    (len(F0) x 3 x 3): a face on a plane (its centre's plane share over a half, from the dense mesh's nearest point) takes
+    that plane's normal, rnd of its corners' smooth normals kept (rounded planes, never flat facets); a face on the
+    ellipsoid's round keeps the smooth normals. So two planes meet in a step the band can catch, not a smooth roll."""
+    cen = V0[F0].mean(1)
+    j = np.array([kd.find(c)[1] for c in cen])
+    W = Wd[j]
+    Nv = Nd[idx][F0]                                  # the corners' smooth normals
+    Nf = W[:, 1:] @ Np + W[:, :1] * Nd[j]
+    Nf /= np.maximum(np.linalg.norm(Nf, axis=1, keepdims=True), 1e-9)
+    on_plane = (W[:, 1:].max(1) > 0.5)[:, None, None]
+    Nc = np.where(on_plane, (1 - rnd) * Nf[:, None, :] + rnd * Nv, Nv)
+    return Nc / np.maximum(np.linalg.norm(Nc, axis=2, keepdims=True), 1e-9)
 
 
 def charts_for(Np):
@@ -749,14 +779,16 @@ def mesh_planes(only=None):
         for vi, prm in enumerate(pre['variants']):
             rng = np.random.default_rng(prm['seed'] + 7)
             parts = pebble_stones(prm, rng) if name == 'pebbles' else [(prm['ax'], (0.0, 0.0, prm.get('cz', 0.6)))]
-            Vs, Fs, Cs, o = [], [], [], 0
+            Vs, Fs, Cs, o, pls = [], [], [], 0, []
             for ax, cen in parts:
-                V, F, Np = sculpt_planes(ax, cen, spec, rng, sub=5 if name != 'pebbles' else 4)
+                V, F, Np, pl = sculpt_planes(ax, cen, spec, rng, sub=5 if name != 'pebbles' else 4)
                 if prm.get('cut') is not None:
                     V, F = cut(V, F, prm['cut'])
-                Vs.append(V); Fs.append(F + o); Cs.append(Np); o += len(V)
+                Vs.append(V); Fs.append(F + o); Cs.append(Np); o += len(V); pls.append(pl)
             V, F = np.concatenate(Vs), np.concatenate(Fs)
             Np = np.concatenate(Cs)
+            # (the creases: one piece's planes; a pebble cluster's stones stay smooth, 2-9 cm, under rule 9's 3 cm read)
+            Wd = crease_weights(V, pls[0]) if len(pls) == 1 and spec.get('crease', 0) else None
             col, N = bake(V, F)
             from mathutils import kdtree
             kd = kdtree.KDTree(len(V))
@@ -767,7 +799,7 @@ def mesh_planes(only=None):
             L0 = decimate(V, F, per)
             L2 = decimate(V, F, max(spec['tris'][1], 24 * len(parts)))
             C = charts_for(Np)
-            vs.append(dict(dense=(V, F, col, N, kd), L=[L0, L0, L2, L2], C=C))
+            vs.append(dict(dense=(V, F, col, N, kd), L=[L0, L0, L2, L2], C=C, W=Wd, Np=Np, rnd=spec.get('crease', 0)))
             print(f'  {name} {vi}: planes {len(Np)}, charts {len(C)}, size {np.ptp(V, 0).round(2)}, lod0 {len(L0[1])} lod2 {len(L2[1])} tris')
         built[name] = vs
     atlas, ppm = rock_atlas([((nm, vi), d['L'][0][0], d['L'][0][1], d['C']) for nm, vs in built.items() for vi, d in enumerate(vs)])
@@ -783,7 +815,10 @@ def mesh_planes(only=None):
         me.from_pydata(V.tolist(), [], F.tolist())
         for p in me.polygons:
             p.use_smooth = True
-        me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
+        if N.ndim == 3:     # (per face corner: the creased planes)
+            me.normals_split_custom_set([tuple(n) for n in N.reshape(-1, 3)])
+        else:
+            me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
         ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
         ca.data.foreach_set('color', col.astype(np.float32).ravel())
         me.color_attributes.active_color = ca
@@ -801,7 +836,8 @@ def mesh_planes(only=None):
         idx = np.array([kd.find(p)[1] for p in V0])
         UV = corner_uvs(V0, F0, d['C'], (nm, vi), atlas)
         C4 = np.concatenate([col[idx], np.full((len(V0), 1), (vi + 0.5) / 8)], 1)
-        return (V0 + (off if off is not None else 0), F0, UV, N[idx], C4)
+        Nout = N[idx][F0] if d['W'] is None else crease_normals(V0, F0, Vd, d['W'], N, kd, d['Np'], idx, 1 - d['rnd'])
+        return (V0 + (off if off is not None else 0), F0, UV, Nout, C4)
 
     # the sheet: every piece's lod0 on a grid, 8 m apart (no piece's AO reaches another)
     bpy.ops.wm.read_factory_settings(use_empty=True)

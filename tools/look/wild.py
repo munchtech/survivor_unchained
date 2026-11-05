@@ -32,12 +32,13 @@ def turn(*a): subprocess.run([sys.executable, os.path.join(ROOT, "tools", "turn.
 
 
 def blender(args, job):
-    turn("take", "blender", f"L1 C3a: {job}", "--wait", "90")
+    turn("take", "blender", f"L1 wild: {job}", "--wait", "90")
     try:
         r = subprocess.run([BLENDER, "-b", "--factory-startup", "-P", *args], cwd=ROOT, capture_output=True, text=True)
     finally:
         turn("give", "blender")
-    if r.returncode != 0:
+    # (Blender exits 0 on a script's exception: a Traceback in its output is a failure too, L1 W2 wild)
+    if r.returncode != 0 or "Traceback (most recent call last)" in (r.stdout + r.stderr):
         sys.stderr.write(r.stdout[-4000:] + r.stderr[-3000:]); raise SystemExit(f"blender failed: {job}")
     return r.stdout
 

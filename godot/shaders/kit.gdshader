@@ -237,6 +237,9 @@ uniform float wrap = 1.0;
 uniform float sky_amb = 0.45;
 // (its sun-facing half lifted by this much by day, the shade side as it was: judge E4 r3, the town alder darker and cooler than the square)
 uniform float sun_lift = 0.1;
+// (L1 W2 wild) how far a broadleaf's leaf normals are bent up to the sky (judge E4c's dome, 0.6: the bush and the
+// bracken as before); the clustered alder's own normals are its clusters' domes, so it takes its own (flora_species.json)
+uniform float up_bend = 0.6;
 #endif
 
 float hue_of(vec3 c) {
@@ -1015,7 +1018,7 @@ void fragment() {
 #ifdef OWN_BROADLEAF
 	// (an alder's crown is a dome of leaves facing every way: its normals bent up toward the sky, so its
 	// top takes the sun whole and its sides most of it; judge E4c: its sun-side half alone read lit)
-	if (UV.x < 0.75) NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz * 0.6);
+	if (UV.x < 0.75) NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz * up_bend);
 #endif
 	float night = flora_light.x, low_sun = flora_light.y;
 	float open_ = mix(1.0, COLOR.r, core);
