@@ -105,7 +105,7 @@ public sealed partial class HerLight : Control
         public static float WellH => H - 2 * Wy;
         float life = 1, trail = 1, shield, beat, shown = -1, dashRe;
         int dashMax, dashCount;
-        const float Pip = 5, PipGap = 3, PipTop = 2;
+        const float Pip = 8, PipGap = 4, PipTop = 3;
         bool day;
         static readonly Color Well = new("#120605"), RedTop = new("#e5503a"), RedFoot = new("#7e140e"), Hot = new("#ff8a5c"),
             TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa"),
@@ -233,21 +233,23 @@ public sealed partial class HerLight : Control
             float px = (W - (dashMax * Pip + (dashMax - 1) * PipGap)) / 2f, py = H + PipTop, r = Pip / 2f;
             for (int i = 0; i < dashMax; i++)
             {
-                var c = new Vector2(px + i * (Pip + PipGap) + r, py + r);
-                DrawCircle(c, r, CopperFoot);
+                var c = new Vector2(Mathf.Round(px + i * (Pip + PipGap)) + r, py + r);
                 if (i < dashCount)
                 {
-                    DrawCircle(c, r - 0.8f, CopperHi);
-                    DrawCircle(c - new Vector2(0.5f, 0.6f), 0.7f, CopperLit);
+                    // ready: a lit copper bead, warm at its edge, a hot point up-left
+                    DrawCircle(c, r + 1.5f, WickHot with { A = 0.22f });
+                    DrawCircle(c, r, CopperFoot);
+                    DrawCircle(c, r - 1, CopperHi);
+                    DrawCircle(c - new Vector2(0.6f, 0.7f), r - 2.2f, CopperLit);
+                    DrawCircle(c - new Vector2(1.1f, 1.2f), 0.9f, WickCore);
                 }
                 else
                 {
-                    DrawCircle(c, r - 0.8f, Iron(0.1f));
+                    // spent: an empty socket in the iron, its copper rim still there; the next one fills from its heart
+                    DrawCircle(c, r, CopperMid);
+                    DrawCircle(c, r - 1, Iron(0.1f));
                     if (i == dashCount && dashRe > 0.01f)
-                    {
-                        float fh = (Pip - 1.6f) * Math.Clamp(dashRe, 0, 1);
-                        DrawRect(new Rect2(c.X - r + 0.8f, c.Y + r - 0.8f - fh, Pip - 1.6f, fh), CopperMid);
-                    }
+                        DrawCircle(c, (r - 1) * Math.Clamp(dashRe, 0, 1), CopperHi with { A = 0.85f });
                 }
             }
         }
