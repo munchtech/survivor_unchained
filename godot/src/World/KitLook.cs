@@ -368,6 +368,8 @@ public static class KitLook
         var m = new ShaderMaterial { Shader = ownRock };
         m.SetShaderParameter("stone_tex", stoneTex);
         m.SetShaderParameter("stone_nor", stoneNor);
+        // (L1 C3a: a piece with its own map, env_rocks.py's plane rocks on rock_atlas.png, B3's painter, is drawn from it, OWN_ROCK's painted)
+        if (s.AlbedoTexture != null) { m.SetShaderParameter("albedo_tex", s.AlbedoTexture); m.SetShaderParameter("painted", 1f); }
         m.SetShaderParameter("use_vcolor", false);
         m.SetShaderParameter("jitter", 0f);
         m.SetShaderParameter("wind", 0f);

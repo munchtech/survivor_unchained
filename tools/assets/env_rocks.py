@@ -2,6 +2,7 @@
 
     python tools/assets/env_rocks.py tex                               the stone sheet (painted, paint_tex 'rock')
     blender -b -P tools/assets/env_rocks.py -- mesh [--preset boulder]   the pieces (every preset if none named)
+                                                                         (L1 C3a: the plane rocks, below; --form sculpt E5's)
     then  Godot_console --headless --path godot --import               (frames.py does not reimport)
 
 Out: godot/art/world/flora/stone_albedo.png (RGBA: the painted stone, its alpha the moss's breakup) and
@@ -584,6 +585,258 @@ def cut(V, F, z):
     return V[used], remap[F]
 
 
+# ---------------------------------------------------------------- the plane rocks (L1 C3a: LOOK_BIBLE rules 9 and 10)
+# FROM (b) MB4's rock panel and targets 10 and 12's boulders: a few big rounded planes (a crown, two to four shoulders,
+# four to six sides), muted moon-blue grey, rims rounded so the band catches them, no small facets, chips or noise;
+# (a) the play camera (a plane must be 6+ px: no plane under about a sixth of the piece); (c) each preset's sizes,
+# heights, cuts, variants and LOD scheme are E5's (PRESETS above), so the zones' placements keep their sizes.
+# A piece is the smooth minimum (k m, its rounding) of its ellipsoid and its planes, each plane set in at fd of the
+# ellipsoid's support. Its uvs: one island per plane chart (the planes' normals, and fill directions where none is
+# within 50 degrees) and variant, each face projected onto its chart, all presets in one atlas (rock_atlas.png, the
+# painter's: tools/look/wild.py rocks). lod0 and lod1 are one mesh (it is already cheaper than E5's lod1); lod2 and the
+# shadow are decimated, their faces charted the same way.
+PLANES = {
+    # crown: (z of its normal low, high); sh: shoulders (count, normal z low, high); sides: (count, z low, high);
+    # fd: planes set in (share of the support, low, high); k: rounding (share of the smallest half size); tris: lod0, lod2
+    'boulder': dict(crown=(0.88, 0.97), sh=(3, 0.45, 0.68), sides=(5, -0.05, 0.22), fd=(0.8, 0.9), k=0.16, tris=(700, 180)),
+    'fieldrock': dict(crown=(0.85, 0.96), sh=(3, 0.4, 0.62), sides=(5, -0.1, 0.2), fd=(0.74, 0.86), k=0.1, tris=(600, 150)),
+    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.7, 0.84), k=0.07, tris=(900, 250)),
+    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.8, 0.9), k=0.14, tris=(300, 90)),
+    'pebbles': dict(crown=(0.9, 0.98), sh=(2, 0.45, 0.7), sides=(3, -0.1, 0.2), fd=(0.78, 0.9), k=0.2, tris=(240, 80)),
+}
+
+
+def plane_set(spec, rng):
+    """The planes' normals (z up): one crown, the shoulders and sides spread round the piece."""
+    N = []
+    a = rng.uniform(0, 2 * math.pi)
+    z = rng.uniform(*spec['crown']); N.append((math.cos(a) * math.sqrt(1 - z * z), math.sin(a) * math.sqrt(1 - z * z), z))
+    for cnt, lo, hi, off in ((spec['sh'][0], spec['sh'][1], spec['sh'][2], 0.3), (spec['sides'][0], spec['sides'][1], spec['sides'][2], 0.0)):
+        a0 = rng.uniform(0, 2 * math.pi)
+        for i in range(cnt):
+            a = a0 + (i + rng.uniform(-0.18, 0.18)) * 2 * math.pi / cnt
+            z = rng.uniform(lo, hi)
+            N.append((math.cos(a) * math.sqrt(1 - z * z), math.sin(a) * math.sqrt(1 - z * z), z))
+    return np.array(N)
+
+
+def sculpt_planes(ax, center, spec, rng, sub=5):
+    """One piece: (V, F, plane normals). The smooth minimum of the ellipsoid's radius and each plane's along each ray."""
+    D, F = icosphere(sub)
+    ax = np.asarray(ax, float)
+    Np = plane_set(spec, rng)
+    re = 1.0 / np.sqrt(((D / ax) ** 2).sum(1))
+    sup = np.sqrt(((Np * ax) ** 2).sum(1))
+    d = sup * rng.uniform(*spec['fd'], len(Np))
+    cosv = D @ Np.T
+    T = np.where(cosv > 1e-3, d[None, :] / np.maximum(cosv, 1e-3), 1e3)
+    R = np.concatenate([re[:, None], np.minimum(T, 1e3)], 1)
+    k = spec['k'] * ax.min()
+    r = softmin(R, k)
+    V = D * r[:, None] + np.asarray(center, float)
+    return V, F, Np
+
+
+def charts_for(Np):
+    """Chart directions: the planes' normals, then fill directions (the 14 of a cube's faces and corners, and straight
+    down) wherever none is within 50 degrees."""
+    C = [n / np.linalg.norm(n) for n in Np]
+    fill = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)] + [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
+    for f in fill:
+        f = np.array(f, float); f /= np.linalg.norm(f)
+        if max(float(np.dot(f, c)) for c in C) < math.cos(math.radians(50)):
+            C.append(f)
+    return np.array(C)
+
+
+def chart_frame(c):
+    up = np.array([0.0, 0.0, 1.0]) if abs(c[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    u = np.cross(up, c); u /= np.linalg.norm(u)
+    return u, np.cross(c, u)
+
+
+def face_charts(V, F, C):
+    fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
+    fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-12)
+    return np.argmax(fn @ C.T, 1)
+
+
+def rock_atlas(pieces, A=2048, gap=8):
+    """pieces: [(key, V, F, C)] (lod0). Each (key, chart)'s projected box, shelf-packed at the largest density that fits.
+    Returns ({(key, chart): (u0, v0, scale, (pu0, pv0))}, px per metre)."""
+    boxes = []
+    for key, V, F, C in pieces:
+        fc = face_charts(V, F, C)
+        for ci in np.unique(fc):
+            u, v = chart_frame(C[ci])
+            P = V[np.unique(F[fc == ci])]
+            pu, pv = P @ u, P @ v
+            pad = 0.06 * max(np.ptp(pu), np.ptp(pv)) + 0.02
+            boxes.append(((key, int(ci)), pu.min() - pad, pv.min() - pad, np.ptp(pu) + 2 * pad, np.ptp(pv) + 2 * pad))
+
+    def pack(ppm):
+        order = sorted(boxes, key=lambda b: (-b[4], -b[3], str(b[0])))
+        x = y = gap; rowh = 0; out = {}
+        for key, pu0, pv0, w, h in order:
+            W, Hh = math.ceil(w * ppm), math.ceil(h * ppm)
+            if x + W > A - gap:
+                x, y, rowh = gap, y + rowh + gap, 0
+            if y + Hh > A - gap:
+                return None
+            out[key] = (x / A, y / A, ppm / A, (pu0, pv0))
+            x += W + gap; rowh = max(rowh, Hh)
+        return out
+    lo, hi = 5.0, 600.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if pack(mid):
+            lo = mid
+        else:
+            hi = mid
+    return pack(lo), lo
+
+
+def corner_uvs(V, F, C, key, atlas):
+    """Per face corner (len(F) x 3 x 2): each face's vertices projected onto its chart, placed in the chart's island
+    (a chart this LOD has but lod0 had not: its nearest chart that lod0 has)."""
+    fc = face_charts(V, F, C)
+    UV = np.zeros((len(F), 3, 2))
+    have = [ci for ci in range(len(C)) if (key, ci) in atlas]
+    for ci in np.unique(fc):
+        cj = ci if (key, int(ci)) in atlas else max(have, key=lambda h: float(np.dot(C[h], C[ci])))
+        u0, v0, s, (pu0, pv0) = atlas[(key, int(cj))]
+        u, v = chart_frame(C[cj])
+        P = V[F[fc == ci]]
+        UV[fc == ci, :, 0] = u0 + (P @ u - pu0) * s
+        UV[fc == ci, :, 1] = 1 - (v0 + (P @ v - pv0) * s)
+    return UV
+
+
+def pebble_stones(prm, rng):
+    """A pebble cluster's stones (ax, centre): E5's sizes and spacing (anchor, middling, small), each flat and sunk."""
+    sizes = [rng.uniform(0.08, 0.095) for _ in range(prm['n'][0])] + [rng.uniform(0.045, 0.055) for _ in range(prm['n'][1])] \
+        + [rng.uniform(0.022, 0.03) for _ in range(prm['n'][2])]
+    placed = []
+    for rad in sizes:
+        c = np.zeros(2)
+        if placed:
+            for _ in range(200):
+                q, qr = placed[rng.integers(len(placed))]
+                gap = rng.uniform(1.0, 2.0) * 2 * min(rad, qr)
+                a = rng.uniform(0, 2 * math.pi)
+                c = q + (rad + qr + gap) * np.array([math.cos(a), math.sin(a)])
+                if all(np.linalg.norm(c - p2) >= rad + r2 + 2 * min(rad, r2) - 1e-6 for p2, r2 in placed):
+                    break
+        placed.append((c, rad))
+    mid = np.mean([c for c, _ in placed], 0)
+    return [((rad, rad * rng.uniform(0.7, 0.9), rad * 0.45), (c[0] - mid[0], c[1] - mid[1], rad * 0.45 * 0.4)) for c, rad in placed]
+
+
+def mesh_planes(only=None):
+    """Every preset as plane rocks into flora/<preset>.gltf (lod0 = lod1, lod2, shadow), one material per preset
+    (Stone_Own<Preset>) on rock_atlas.png; the painter's sheet godot/art/world/painted/_src/rocks_sheet.glb (every
+    preset's every variant's lod0, side by side, material 'rock')."""
+    import bpy
+    ROOTP = os.path.join(ROOT, 'godot', 'art', 'world', 'painted', '_src')
+    os.makedirs(OUT, exist_ok=True); os.makedirs(ROOTP, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    built = {}
+    for name, pre in PRESETS.items():
+        spec = PLANES[name]
+        vs = []
+        for vi, prm in enumerate(pre['variants']):
+            rng = np.random.default_rng(prm['seed'] + 7)
+            parts = pebble_stones(prm, rng) if name == 'pebbles' else [(prm['ax'], (0.0, 0.0, prm.get('cz', 0.6)))]
+            Vs, Fs, Cs, o = [], [], [], 0
+            for ax, cen in parts:
+                V, F, Np = sculpt_planes(ax, cen, spec, rng, sub=5 if name != 'pebbles' else 4)
+                if prm.get('cut') is not None:
+                    V, F = cut(V, F, prm['cut'])
+                Vs.append(V); Fs.append(F + o); Cs.append(Np); o += len(V)
+            V, F = np.concatenate(Vs), np.concatenate(Fs)
+            Np = np.concatenate(Cs)
+            col, N = bake(V, F)
+            from mathutils import kdtree
+            kd = kdtree.KDTree(len(V))
+            for i, q in enumerate(V):
+                kd.insert(q, i)
+            kd.balance()
+            per = spec['tris'][0] * len(parts) if name != 'pebbles' else spec['tris'][0]
+            L0 = decimate(V, F, per)
+            L2 = decimate(V, F, max(spec['tris'][1], 24 * len(parts)))
+            C = charts_for(Np)
+            vs.append(dict(dense=(V, F, col, N, kd), L=[L0, L0, L2, L2], C=C))
+            print(f'  {name} {vi}: planes {len(Np)}, charts {len(C)}, size {np.ptp(V, 0).round(2)}, lod0 {len(L0[1])} lod2 {len(L2[1])} tris')
+        built[name] = vs
+    atlas, ppm = rock_atlas([((nm, vi), d['L'][0][0], d['L'][0][1], d['C']) for nm, vs in built.items() for vi, d in enumerate(vs)])
+    print(f'rocks: atlas {ppm:.1f} px/m')
+
+    def obj(nm, parts, mats):
+        """parts: [(V, F, UV corners, N, colour)]: one object, corner uvs, the dense normals and colours."""
+        Vs, Fs, UVs, Ns, Cs, o = [], [], [], [], [], 0
+        for V, F, UV, N, col in parts:
+            Vs.append(V); Fs.append(F + o); UVs.append(UV); Ns.append(N); Cs.append(col); o += len(V)
+        V, F, UV, N, col = np.concatenate(Vs), np.concatenate(Fs), np.concatenate(UVs), np.concatenate(Ns), np.concatenate(Cs)
+        me = bpy.data.meshes.new(nm)
+        me.from_pydata(V.tolist(), [], F.tolist())
+        for p in me.polygons:
+            p.use_smooth = True
+        me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
+        ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+        ca.data.foreach_set('color', col.astype(np.float32).ravel())
+        me.color_attributes.active_color = ca
+        uvl = me.uv_layers.new(name='UVMap')
+        uvl.data.foreach_set('uv', UV.reshape(-1, 2).astype(np.float32).ravel())
+        for m in mats:
+            me.materials.append(m)
+        ob = bpy.data.objects.new(nm, me)
+        bpy.context.scene.collection.objects.link(ob)
+        return ob
+
+    def piece(nm, vi, d, li, off=None):
+        V0, F0 = d['L'][li]
+        Vd, Fd, col, N, kd = d['dense']
+        idx = np.array([kd.find(p)[1] for p in V0])
+        UV = corner_uvs(V0, F0, d['C'], (nm, vi), atlas)
+        C4 = np.concatenate([col[idx], np.full((len(V0), 1), (vi + 0.5) / 8)], 1)
+        return (V0 + (off if off is not None else 0), F0, UV, N[idx], C4)
+
+    # the sheet: every piece's lod0 on a grid, 8 m apart (no piece's AO reaches another)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mr = bpy.data.materials.new('rock')
+    parts, k = [], 0
+    for nm, vs in built.items():
+        for vi, d in enumerate(vs):
+            parts.append(piece(nm, vi, d, 0, np.array([8.0 * (k % 6), 8.0 * (k // 6), 0.0]))); k += 1
+    obj('lod0', parts, [mr])
+    bpy.ops.export_scene.gltf(filepath=os.path.join(ROOTP, 'rocks_sheet.glb'), export_format='GLB', export_normals=True,
+                              export_tangents=False, export_materials='EXPORT', export_yup=True, export_apply=True,
+                              export_vertex_color='ACTIVE')
+    img_path = os.path.join(OUT, 'rock_atlas.png')
+    report = {}
+    for nm, vs in built.items():
+        if only and nm != only:
+            continue
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        mat = bpy.data.materials.new(f'Stone_Own{nm.capitalize()}'); mat.use_nodes = True
+        bsdf = mat.node_tree.nodes['Principled BSDF']
+        if os.path.exists(img_path):
+            ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
+            mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if PRESETS[nm]['shadow'] else [])
+        tris = []
+        for li, on in enumerate(names):
+            obj(on, [piece(nm, vi, d, min(li, 3)) for vi, d in enumerate(vs)], [mat])
+            tris.append(sum(len(d['L'][min(li, 3)][1]) for d in vs) // len(vs))
+        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'{nm}.gltf'), export_format='GLTF_SEPARATE', export_texture_dir='',
+                                  export_normals=True, export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
+                                  export_keep_originals=True, export_yup=True, export_apply=True, export_vertex_color='ACTIVE')
+        report[nm] = dict(zip(names, tris))
+        print(f'{nm}.gltf tris per variant {report[nm]}')
+    print('REPORT', json.dumps(dict(rocks=report, ppm=round(ppm, 1))))
+
+
 def mesh(only=None):
     import bpy
     from mathutils import kdtree
@@ -669,6 +922,8 @@ if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
     if argv and argv[0] == 'tex':
         tex()
+    elif argv and argv[0] == 'mesh' and arg('--form', 'planes') == 'planes':
+        mesh_planes(arg('--preset', None))   # (L1 C3a; --form sculpt: E5's sculpted pieces on the triplanar sheet, kept to compare)
     elif argv and argv[0] == 'mesh':
         mesh(arg('--preset', None))
     else:

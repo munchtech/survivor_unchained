@@ -68,6 +68,11 @@ uniform bool packed = false;
 // grime from the foot, and under the water's height a dark wet band (flora_species.json "stone": every value here).
 uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D stone_nor : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// (L1 C3a, the plane rocks: painted > 0.5 draws the piece's own painted map (albedo_tex at its uvs: tools/look/wild.py,
+// B3's painter, the light painted in) in place of the triplanar sheet, its bump, rims, macro patches, lichen, litter, foot
+// soil and grime, which the painter's blocks, bevel stroke and cavity replace; moss caps, the wet band and the sky's
+// shade stay)
+uniform float painted = 0.0;
 // (where the zone's water stands: x its height, w 1 if it has any; ZoneView sets it)
 global uniform vec4 water_level;
 uniform float tile = 1.9;
@@ -1130,6 +1135,12 @@ void fragment() {
 		vec2 nx = texture(stone_nor, ux).rg * 2.0 - 1.0, ny = texture(stone_nor, uy).rg * 2.0 - 1.0, nz = texture(stone_nor, uz).rg * 2.0 - 1.0;
 		vec3 bn = normalize(wn + bump * (vec3(0.0, nx.y, nx.x) * bw.x + vec3(ny.x, 0.0, ny.y) * bw.y + vec3(nz.x, nz.y, 0.0) * bw.z));
 		vec3 col = st.rgb * stone_tint;
+		bool pnt = painted > 0.5;
+		if (pnt) {
+			col = texture(albedo_tex, UV).rgb * (1.0 + inst_val * (2.0 * v_jit - 1.0));
+			st = vec4(col, 0.5);
+			bn = wn;
+		} else {
 		// (a broad value patch over many repeats, so a cliff's sheet does not read as tiles; each copy its own shade)
 		float mac = texture(stone_tex, wp.xz / (tile * 7.3) + vec2(0.37, 0.11)).a;
 		col *= mix(1.0 - macro, 1.0 + macro, mac) * (1.0 + inst_val * (2.0 * v_jit - 1.0));
@@ -1142,6 +1153,7 @@ void fragment() {
 		col *= (1.0 + edge_light * COLOR.r) * (1.0 - cavity_dark * COLOR.g) * (1.0 - occl_dark * COLOR.b);
 		// grime from the foot up, its line broken by the sheet's patches
 		if (grime_h > 0.0) col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, v_foot + 0.3 * grime_h * (st.a - 0.5)));
+		}
 		if (sky_dark > 0.0) col *= mix(1.0 - sky_dark, 1.0, smoothstep(0.42, 0.82, textureLod(expo_tex, (wp.xz + zone_size * 0.5) / zone_size, 0.0).r));
 		// moss on what faces up (and toward moss_side), in patches, more in the hollows, less on worn rims
 		vec2 ms = moss_side / max(length(moss_side), 1e-4);
@@ -1149,7 +1161,7 @@ void fragment() {
 		float mz = smoothstep(moss_face.x, moss_face.y, face) * smoothstep(0.35, 0.75, st.a + 0.3 * COLOR.g + 0.2 * COLOR.b - moss_edge * COLOR.r);
 		// lichen: pale spots on its tops and sides
 		float lich = texture(stone_tex, wp.zx / (tile * 0.37) + 0.5).a;
-		float lz = smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
+		float lz = pnt ? 0.0 : smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
 		// wet: under the water's height + wet_above, dark and glossy, its edge ragged; no moss or lichen there
 		float wy = water_level.w > 0.5 ? water_level.x : -1e5;
 		float w0 = wet_share > 0.0 ? wy + wet_share * mix(0.45, 1.35, fract(v_jit * 7.13)) * (v_top - wy) - 0.02 : wy + wet_above * 0.5;
@@ -1159,12 +1171,12 @@ void fragment() {
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
-		if (litter > 0.0) {
+		if (litter > 0.0 && !pnt) {
 			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
 			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
 			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
 		}
-		if (foot_soil > 0.0) {
+		if (foot_soil > 0.0 && !pnt) {
 			float fl = texture(stone_tex, wp.xz / (tile * 0.61) + vec2(0.43, 0.19)).a;
 			float fs = 1.0 - smoothstep(0.35 * foot_soil_h, foot_soil_h, v_foot + 0.6 * foot_soil_h * (fl - 0.5) + 0.3 * foot_soil_h * (st.a - 0.5));
 			float gz = smoothstep(1.0 - foot_grass - 0.08, 1.0 - foot_grass + 0.08, texture(stone_tex, wp.zx / (tile * 0.29) + vec2(0.17, 0.71)).a);

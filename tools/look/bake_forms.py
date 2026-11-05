@@ -2,6 +2,7 @@
 painter's inputs. Deterministic (fixed samples and seed, no AA on the ID maps, a fixed unwrap).
 
     blender -b --factory-startup -P tools/look/bake_forms.py -- prop  MESH.glb OUT [--node lod0] [--variant 1] [--ppm 256]
+                                                                      [--keep-uv SIZE] [--class-mat 1]
     blender -b --factory-startup -P tools/look/bake_forms.py -- char  MESH.glb OUT [--ppm 256]
     blender -b --factory-startup -P tools/look/bake_forms.py -- setts OUT [--tile 4] [--ppm 256] [--seed 7]
 
@@ -10,6 +11,10 @@ prop: the mesh (one node, or one variant of a packed flora file by COLOR.a = (v 
 part's vertex tint: warm = wood/plank, neutral = iron, a flora rock file = rock), a fresh unwrap at one texel density
 (ppm px per metre), written as OUT/mesh.glb (one material per class, named <asset>_<class> so the material library's
 assign rules give that class) and OUT/forms.npz.
+--keep-uv SIZE (L1 C3a, the wild kit): the source's own UVs kept (no re-unwrap; they must not overlap) and baked at SIZE, so
+a generator that lays its own atlas (env_trees.py's tiers, env_rocks.py's planes: one sheet for every size, LOD and
+variant) gets maps that fit its game meshes as they are. --class-mat 1: each loose part's class from its source material's
+name (the name, or its part after the last "_", if it is a class of materials.json: "foliage", "bark", "rock"), else as above.
 setts: a laid-stone layout (courses of chunky setts, wrapped so the tile repeats), each stone a bevelled block with a
 slightly tilted top (rule 9 "chunky planes"), baked top-down onto a tile of T x T m (UV = world xz / T).
 
@@ -35,6 +40,8 @@ def opt(name, default, cast=str):
 
 
 PPM = opt("--ppm", 256, float)
+KEEP_UV = opt("--keep-uv", 0, int)
+CLASS_MAT = opt("--class-mat", 0, int)
 SEED = opt("--seed", 7, int)
 T0 = time.time()
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
@@ -222,11 +229,17 @@ def prop(mesh_path, out, node, variant, asset):
         bmesh.ops.delete(bm, geom=[f for f in bm.faces if abs(fcol(f)[3] - want) > 0.05], context='FACES')
     bm.faces.ensure_lookup_table()
     rocky = 'flora' in mesh_path.replace('\\', '/')
+    lib = set(json.load(open(LIB, encoding="utf-8"))["classes"]) if CLASS_MAT else set()
+    src_cls = []
+    for m in me.materials:
+        n = (m.name if m else "").lower().split(".")[0]
+        src_cls.append(n if n in lib else n.rsplit("_", 1)[-1] if n.rsplit("_", 1)[-1] in lib else None)
     classes = []
     blk_of, cls_of = {}, {}
     for part in loose_parts(bm):
         c = np.mean([fcol(f)[:3] for f in part], axis=0)
-        cname = 'rock' if rocky else ('plank' if c[0] > c[2] * 1.15 else 'wrought')  # (B3r3: a prop's iron is the world's, wrought)
+        named = [src_cls[f.material_index] for f in part if f.material_index < len(src_cls) and src_cls[f.material_index]]
+        cname = max(sorted(set(named)), key=named.count) if named else             'rock' if rocky else ('plank' if c[0] > c[2] * 1.15 else 'wrought')  # (B3r3: a prop's iron is the world's, wrought)
         if cname not in classes: classes.append(cname)
         groups = planes(part) if cname == 'rock' else [part]
         for g in groups:
@@ -240,19 +253,23 @@ def prop(mesh_path, out, node, variant, asset):
     for f in bm.faces: f[lb] = blk_of[f.index]; f[lc] = cls_of[f.index]
     area3 = sum(f.calc_area() for f in bm.faces)
     bm.to_mesh(me); bm.free()
-    # the unwrap at one texel density
-    while me.uv_layers: me.uv_layers.remove(me.uv_layers[0])
-    me.uv_layers.new(name="UVMap")
-    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.smart_project(angle_limit=math.radians(55), island_margin=0.006, area_weight=0.0, scale_to_bounds=False)
-    bpy.ops.object.mode_set(mode='OBJECT')
+    # the unwrap at one texel density (or the source's own, --keep-uv)
+    if not KEEP_UV:
+        while me.uv_layers: me.uv_layers.remove(me.uv_layers[0])
+        me.uv_layers.new(name="UVMap")
+        bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.uv.smart_project(angle_limit=math.radians(55), island_margin=0.006, area_weight=0.0, scale_to_bounds=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
+    else:
+        while len(me.uv_layers) > 1: me.uv_layers.remove(me.uv_layers[1])
+        me.uv_layers.active_index = 0
     uv = np.zeros(len(me.loops) * 2, np.float32); me.uv_layers[0].data.foreach_get("uv", uv); uv = uv.reshape(-1, 2)
     uva = 0.0
     for p in me.polygons:
         pts = uv[p.loop_start:p.loop_start + p.loop_total]
         x, y = pts[:, 0], pts[:, 1]; uva += 0.5 * abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
     need = math.sqrt(area3 / max(uva, 1e-6)) * PPM
-    size = int(2 ** round(math.log2(max(64, need))))  # (the nearest power of two: ppm lands within x0.7-1.4)
+    size = KEEP_UV or int(2 ** round(math.log2(max(64, need))))  # (the nearest power of two: ppm lands within x0.7-1.4)
     ppm_real = size * math.sqrt(uva / area3)
     # export the mesh (re-UV'd, per-class materials) before the bake materials go on
     keep_mats = [m for m in me.materials]

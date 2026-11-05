@@ -1562,8 +1562,306 @@ def pack_into(dst, src, alpha):
     dst.f += [tuple(i + o for i in f) for f in src.f]
 
 
+# ---------------------------------------------------------------- the tiered spruce (L1 C3a: LOOK_BIBLE rules 9 and 10)
+# FROM (b) MB4's spruce panel (day and night: stacked flat tiers, each a skirt of jagged pointed fronds whose tips
+# flick up, a lit top and a darker underside, the trunk seen only under the lowest tier) and target 04's and 09's tree
+# masses (11-14 short tiers to a spruce, each tier one value block); (a) the play camera (34 degrees down, 23 m: a
+# tier must read as a band of 6+ px, so a tier is 0.45-0.9 m high and never thinner); (c) the sizes, the trunk, the
+# material and the shader's conventions (u > .75 the bark strip; COLOR r open, g out along the branch, b card) are
+# env_trees.py's own (E4). Each tier is a closed wedge: its top from the trunk out to the jagged rim, its underside back
+# up to the trunk, a hard rim between (the ink's silhouette and the painter's bevel stroke catch it). The atlas is the
+# painter's (tools/look/wild.py: bake_forms.py --keep-uv, paint_core.py): every tier of the three sizes has its own
+# island (its top seen from above, its underside from below at half the density), so lod1, lod2 and the shadow, which
+# keep each tier's rim and lose only rings, sample the same painted tier.
+TIER = {
+    # n: tiers; hs: the lowest tier's foot (share of H); prof: the cone's curve; drop: a tier's rim below its foot
+    # (share of its radius); th: its underside's rise at the trunk (share of its drop); notch: a notch's radius share
+    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.6),
+    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.62),
+    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.6),
+}
+BARK_V = 8.0      # bark v: metres of trunk over the strip's height
+TIER_LOBES = (5, 11)
+
+
+def tier_plan(H, R, seed, tf):
+    """Each tier's foot height, radius, drop, lobes and the rim's points (angle, radius share, height share, tip)."""
+    rng = np.random.default_rng(seed * 7 + 3)
+    n, hs = tf['n'], tf['hs'] * H
+    top = H - 0.55
+    tiers = []
+    for i in range(n):
+        t = i / (n - 1)
+        z = hs + (top - hs) * (1 - (1 - t) ** 1.18)          # closer toward the top
+        r = R * ((1 - t) ** tf['prof'] * 0.9 + 0.1) * rng.uniform(0.93, 1.05)
+        drop = min(r * tf['drop'] * rng.uniform(0.9, 1.1), z - 0.32)
+        K = int(np.clip(round(TIER_LOBES[0] + (TIER_LOBES[1] - TIER_LOBES[0]) * r / R), *TIER_LOBES))
+        a0 = rng.uniform(0, 2 * math.pi)
+        rim = []
+        for k in range(2 * K):
+            tip = k % 2 == 0
+            a = a0 + (k + (rng.uniform(-0.22, 0.22) if tip else rng.uniform(-0.1, 0.1))) * math.pi / K
+            rs = rng.uniform(0.9, 1.06) if tip else tf['notch'] * rng.uniform(0.92, 1.08)
+            hz = rng.uniform(0.92, 1.08) if tip else 0.7    # a notch hangs less: the rim zig-zags in height too
+            rim.append((a, rs, hz, tip))
+        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85))
+    return tiers
+
+
+def tier_point(T, k, s, under=False, flick=0.07):
+    """A point of tier T at rim index k (fractional: between rim points), s 0 at the trunk to 1 at the rim."""
+    rim = T['rim']; n = len(rim)
+    k0 = int(math.floor(k)) % n; k1 = (k0 + 1) % n; w = k - math.floor(k)
+    a0 = rim[k0][0]
+    a1 = rim[k1][0] + (2 * math.pi if k1 == 0 else 0)
+    a = a0 + (a1 - a0) * w
+    rs = rim[k0][1] * (1 - w) + rim[k1][1] * w
+    hz = rim[k0][2] * (1 - w) + rim[k1][2] * w
+    tipness = (1 - w) if rim[k0][3] else w
+    rr = T['rin'] + (T['r'] * rs - T['rin']) * s
+    if not under:
+        # the top hangs (a curve bending down outward), its fronds' tips flicked up
+        dz = -T['drop'] * hz * (0.55 * s + 0.45 * s * s) + flick * T['r'] * tipness * float(smooth(0.72, 1.0, s))
+    else:
+        # the underside: from the rim straight back up to the trunk, th of the drop under the foot
+        rim_dz = -T['drop'] * hz + flick * T['r'] * tipness
+        dz = rim_dz * s + (-T['th'] * T['drop']) * (1 - s)
+    return np.array([math.cos(a) * rr, math.sin(a) * rr, T['z'] + dz])
+
+
+def tier_mesh(b, T, lod, isl_top, isl_under):
+    """One tier into Build b. lod 0: top rings at s .5 and .82, underside one at .5; 1: trunk and rim only; 2 (and the
+    shadow): its top alone."""
+    n = len(T['rim'])
+    K = n // 2
+    rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
+    rings_under = {0: [1.0, 0.5, 0.0], 1: [1.0, 0.0], 2: []}[lod]
+    ext = 2.3 * T['r']
+
+    def uv_of(p, isl, under):
+        u0, v0, sz = isl
+        x, y = p[0], p[1]
+        if under:
+            x = -x
+        return (u0 + (x / ext + 0.5) * sz[0], v0 + (y / ext + 0.5) * sz[1])
+
+    def nrm_at(k, s, under):
+        s = min(max(s, 0.04), 0.96)
+        du = tier_point(T, k + 0.02, s, under) - tier_point(T, k - 0.02, s, under)
+        ds = tier_point(T, k, s + 0.04, under) - tier_point(T, k, s - 0.04, under)
+        nn = np.cross(ds, du)
+        nn /= np.linalg.norm(nn) + 1e-9
+        if (nn[2] < 0) != under:
+            nn = -nn
+        return nn
+
+    for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
+        if not rings:
+            continue
+        rows = []
+        for s in rings:
+            cnt = (1 if lod == 2 else K) if s == 0.0 else n    # the trunk ring: one point a lobe (lod 2: the axis)
+            row = []
+            for i in range(cnt):
+                k = i * n / cnt
+                p = tier_point(T, k, s, under)
+                row.append(len(b.v))
+                b.v.append(p); b.n.append(nrm_at(k, s, under)); b.uv.append(uv_of(p, isl, under))
+                b.c.append((1.0, s if not under else 0.25 * s, 0.0))
+            rows.append(row)
+        for ra, rb_ in zip(rows[:-1], rows[1:]):
+            # two rings stitched round the tier by angle (their counts may differ)
+            na, nb_ = len(ra), len(rb_)
+            i = j = 0
+            while i < na or j < nb_:
+                fa = (i + 1) / na if i < na else 9
+                fb = (j + 1) / nb_ if j < nb_ else 9
+                if fa <= fb:
+                    tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
+                else:
+                    tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+                # (wound so the top's front faces up and the underside's down: FRONT_FACING turns the normal)
+                b.f.append((tri[0], tri[2], tri[1]))
+
+
+def bark_tube(b, H, rb, z1, sides, rings, strip):
+    """The trunk: a tapered tube from under the ground to z1 (inside the crown), its uvs in this size's bark strip."""
+    u0, u1 = strip
+    P, N, UV = [], [], []
+    for k in range(rings + 1):
+        t = k / rings
+        z = -0.25 + (z1 + 0.25) * t
+        rad = max(0.03, rb * (1 - 0.75 * z / H))
+        flare = 1 + 0.45 * math.exp(-max(z, 0) / 0.3)
+        rowP, rowN, rowU = [], [], []
+        for i in range(sides + 1):
+            a = i / sides * 2 * math.pi
+            rowP.append(np.array([math.cos(a) * rad * flare, math.sin(a) * rad * flare, z]))
+            rowN.append(np.array([math.cos(a), math.sin(a), 0.1]) / 1.005)
+            rowU.append((u0 + (u1 - u0) * i / sides, min(0.995, 0.005 + (z + 0.25) / BARK_V)))
+        P.append(rowP); N.append(rowN); UV.append(rowU)
+    b.quad_grid(P, N, UV, sides, rings, [[(1.0, 0.0, 0.0)] * (sides + 1)] * (rings + 1))
+
+
+def leader(b, H, z0, r, isl):
+    """The leader: a five-sided spike over the top tier (its own small island)."""
+    base = len(b.v)
+    u0, v0, sz = isl
+    for i in range(5):
+        a = i / 5 * 2 * math.pi
+        b.v.append(np.array([math.cos(a) * r, math.sin(a) * r, z0])); b.n.append(np.array([math.cos(a), math.sin(a), 0.5]) / 1.118)
+        b.uv.append((u0 + (0.5 + 0.45 * math.cos(a)) * sz[0], v0 + (0.5 + 0.45 * math.sin(a)) * sz[1])); b.c.append((1.0, 0.6, 0.0))
+    b.v.append(np.array([0.0, 0.0, H])); b.n.append(np.array([0.0, 0.0, 1.0]))
+    b.uv.append((u0 + 0.5 * sz[0], v0 + 0.5 * sz[1])); b.c.append((1.0, 1.0, 0.0))
+    for i in range(5):
+        b.f.append((base + i, base + (i + 1) % 5, base + 5))
+
+
+def tier_atlas(plans, A=2048, umax=BU, gap=10):
+    """Islands for every size's tiers (tops at full density, undersides at half) and leaders, shelf-packed into
+    u < umax at the largest density that fits. Returns ({(size, tier, part): (u0, v0, (du, dv))}, px per metre)."""
+    items = []
+    for sz, tiers in plans.items():
+        for i, T in enumerate(tiers):
+            items.append((sz, i, 'top', 2.3 * T['r'], 1.0))
+            items.append((sz, i, 'under', 2.3 * T['r'], 0.5))
+        items.append((sz, -1, 'leader', 0.5, 1.0))
+    W, Hh = umax * A - gap, A - gap
+
+    def pack(ppm):
+        order = sorted(items, key=lambda it: (-it[3] * it[4], it[:3]))
+        x = y = gap; rowh = 0; out = {}
+        for it in order:
+            side = math.ceil(it[3] * it[4] * ppm)
+            if x + side > W:
+                x, y, rowh = gap, y + rowh + gap, 0
+            if y + side > Hh:
+                return None
+            out[it[:3]] = (x / A, 1 - (y + side) / A, (side / A, side / A))
+            x += side + gap; rowh = max(rowh, side)
+        return out
+    lo, hi = 10.0, 400.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if pack(mid):
+            lo = mid
+        else:
+            hi = mid
+    return pack(lo), lo
+
+
+def spruce_tiered(H, R, seed, lod, tf, isl, strip, shadow=False):
+    """The tiered spruce at lod 0, 1, 2 (or its shadow caster: every tier's top and a short trunk)."""
+    b = Build()
+    tiers = tier_plan(H, R, seed, tf)
+    rb = 0.022 * H + 0.05
+    z1 = tiers[min(3, len(tiers) - 1)]['z'] if lod < 2 and not shadow else tiers[0]['z'] + 0.2
+    bark_tube(b, H, rb, z1, 4 if shadow else (6, 5, 4)[lod], 1 if shadow else (4, 2, 1)[lod], strip)
+    b.nbark = len(b.f)
+    for i, T in enumerate(tiers):
+        if lod == 2 and not shadow and i % 2 and i != len(tiers) - 1:
+            continue
+        if lod == 2 and not shadow:
+            T = dict(T, drop=T['drop'] * 1.5)    # (every other tier, hung lower to close the gaps; uvs are x, y: unchanged)
+        tier_mesh(b, T, 2 if shadow else lod, isl[i][0], isl[i][1])
+    leader(b, H, tiers[-1]['z'] - 0.1, 0.12, isl[-1])
+    return b, tiers
+
+
+PAINT_SRC = os.path.join(ROOT, 'godot', 'art', 'world', 'painted', '_src')
+
+
+def to_blender(bpy, name, b, mats, mat_of=None):
+    """A Build as a Blender object (its uvs, normals and colours as built); mat_of(face index) picks a material slot."""
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(p) for p in b.v], [], b.f)
+    uvl = me.uv_layers.new(name='UV')
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            uvl.data[li].uv = b.uv[me.loops[li].vertex_index]
+    me.normals_split_custom_set_from_vertices([tuple(n / (np.linalg.norm(n) + 1e-9)) for n in b.n])
+    ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+    for i, c in enumerate(b.c):
+        ca.data[i].color = (c[0], c[1], c[2], c[3] if len(c) > 3 else 1.0)
+    me.color_attributes.active_color = ca
+    for m in mats:
+        me.materials.append(m)
+    if mat_of is not None:
+        for p in me.polygons:
+            p.material_index = mat_of(p.index)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob, sum(len(p.vertices) - 2 for p in me.polygons)
+
+
+def export_gltf(bpy, out, glb=False, select=None):
+    if select is not None:
+        bpy.ops.object.select_all(action='DESELECT')
+        for o in select:
+            o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=out, export_format='GLB' if glb else 'GLTF_SEPARATE', export_texture_dir='',
+                              export_normals=True, export_tangents=False, export_materials='EXPORT',
+                              export_image_format='AUTO', export_keep_originals=True, export_yup=True, export_apply=True,
+                              export_vertex_color='ACTIVE', use_selection=select is not None)
+
+
+def mesh_spruce_tiers():
+    """The three tiered spruces (lod0-2 and the shadow caster, one material, Leaves_OwnSpruce, on spruce_atlas.png) and
+    the painter's sheet (every size's lod0 side by side, materials 'foliage' and 'bark', the same uvs):
+    godot/art/world/painted/_src/spruce_sheet.glb (tools/look/wild.py bakes and paints it into spruce_atlas.png)."""
+    import bpy, json
+    os.makedirs(OUT, exist_ok=True); os.makedirs(PAINT_SRC, exist_ok=True)
+    plans = {sz: tier_plan(p['H'], p['R'], p['seed'], TIER[sz]) for sz, p in SPRUCE.items()}
+    isl_all, ppm = tier_atlas(plans)
+    print(f'spruce tiers: atlas {ppm:.1f} px/m (tops; undersides half)')
+    strips = {sz: (BU + (k + 0.03) * (1 - BU) / 3, BU + (k + 0.97) * (1 - BU) / 3) for k, sz in enumerate(SPRUCE)}
+    sheet = []
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for k, (sz, p) in enumerate(SPRUCE.items()):
+        isl = [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] + [isl_all[(sz, -1, 'leader')]]
+        b, _ = spruce_tiered(p['H'], p['R'], p['seed'], 0, TIER[sz], isl, strips[sz])
+        nbark = b.nbark
+        b.v = [v + np.array([16.0 * k, 0.0, 0.0]) for v in b.v]
+        sheet.append((b, nbark))
+    mf, mb = bpy.data.materials.new('foliage'), bpy.data.materials.new('bark')
+    obs = []
+    for k, (b, nbark) in enumerate(sheet):
+        ob, _ = to_blender(bpy, f'sheet_{k}', b, [mf, mb], lambda fi, nb=nbark: 1 if fi < nb else 0)
+        obs.append(ob)
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in obs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = obs[0]
+    bpy.ops.object.join()
+    obs[0].name = 'lod0'
+    export_gltf(bpy, os.path.join(PAINT_SRC, 'spruce_sheet.glb'), glb=True)
+    img_path = os.path.join(OUT, 'spruce_atlas.png')
+    report = {}
+    for k, (sz, p) in enumerate(SPRUCE.items()):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        img = bpy.data.images.load(img_path)
+        mat = bpy.data.materials.new('Leaves_OwnSpruce'); mat.use_nodes = True
+        nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
+        ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = img
+        nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        mat.use_backface_culling = False
+        isl = [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] + [isl_all[(sz, -1, 'leader')]]
+        tris = []
+        for lod in range(4):
+            b, _ = spruce_tiered(p['H'], p['R'], p['seed'], min(lod, 2), TIER[sz], isl, strips[sz], shadow=lod == 3)
+            _, t = to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])
+            tris.append(t)
+        export_gltf(bpy, os.path.join(OUT, f'spruce_{sz}.gltf'))
+        report[sz] = tris
+        print(f'spruce_{sz}.gltf tris lod0/1/2/shadow: {tris}')
+    print('REPORT', json.dumps(dict(spruce=report, ppm=round(ppm, 1))))
+
+
 def mesh(species):
     import bpy
+    if species == 'spruce' and arg('--form', 'tiers') == 'tiers':
+        return mesh_spruce_tiers()   # (L1 C3a; --form real: E4's whorls of spray cards, kept to compare)
     os.makedirs(OUT, exist_ok=True)
     img_path = os.path.join(OUT, f'{species}_atlas.png')
     # (a packed species: one file, its pieces told apart by COLOR.a; else a file per piece)
