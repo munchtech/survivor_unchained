@@ -10,7 +10,10 @@
             hip (the groin crease and the gluteal fold +-60 mm: the leg root curve's front and back), neck base
             (the neck above its base line, the clavicle heads to C7, b: our skeleton). The joints' own termination
             poles at the epicondyles (fix 1: on the hinge axis, where the skin moves least) are listed apart.
-  shoulder  the rim-to-root gap ratio (max / min) <= 1.5; the trunk-side kites >= 60 mm outside the deltoid
+  shoulder  the rim-to-root gap ratio (max / min) <= 1.5; (pass 3c) the 8 chain-end 5-poles designed, >= 10 mm (close) /
+            one edge (play) off the armpit crease (the arm / trunk seam)
+  fold      (pass 3c) the play crotch's thigh-gap edges a named exception <= 65 deg; the cleft's edges over 60 deg
+            all on its midline floor loop, one unbroken chain from the sacrum to the crotch strip's back corner
   breast    breast edge p95 <= 7.5 mm, quad aspect p95 <= 2.0; (pass 3b) the cap's 4 corners (its 3-poles) <= 20 mm
             from the apex or >= 60 mm out (on the chest wall, past the mound)                          (a: the judge)
   ankle     (pass 3b) the shin's last ring (the foot template's rim) 26-28 points                     (a: the judge)
@@ -28,6 +31,8 @@ FOLD_DEG, ASPECT_MAX, EDGE_MIN, POLE_MARGIN = 60.0, 4.0, 0.002, 0.040
 # (pass 3b) the tier-dependent gates, set at close (a: the judge) and scaled by the tier's spacing over close's (a: the
 # play camera: the same counts of quads, so a pole's pinch and a mound's facets read alike at each tier's distance)
 BREAST_P95, KITE_CLEAR = 0.0075, 0.060
+CROTCH_FOLD_CAP = 65.0      # (pass 3c fix 4) the play crotch's named exception (a: the judge, ruling (d))
+CREASE_CLEAR = 0.010        # (pass 3c fix 4) the shoulder's designed corner poles off the armpit crease, close (a: the judge)
 
 
 def U(v):
@@ -87,7 +92,7 @@ def mesh_quality(V, Q, tmpl_q):
         "edge_min_mm_body": round(float(el[body_e].min()) * 1000, 2),
         "short_edges": [{"pos_mm": [int(round(c * 1000)) for c in mid[k]], "mm": round(float(el[k]) * 1000, 2)}
                         for k in short],
-        "_asp": asp, "_dih": dih,
+        "_asp": asp, "_dih": dih, "_E": E, "_qa": qa, "_qb": qb, "_bad": bad, "_cl": cl & body_e,
     }
 
 
@@ -116,6 +121,12 @@ def zone_points(ref, L, joints, hip_ring):
     u_ap = float((L["armpit"] - L["shoulder"]) @ d_up)
     Z["shoulder"] = P[((lab == ARM) & (u <= u_ap + 0.110)) | (np.linalg.norm(P - L["armpit"], axis=1) < 0.035)]
     Z["deltoid"] = P[(lab == ARM) & (u <= u_ap + 0.110) & (P[:, 1] > L["armpit"][1])]
+    tl = np.where(ref.lab >= 5, ref.lab - 5, ref.lab)
+    on_t, on_a = np.zeros(len(P), bool), np.zeros(len(P), bool)
+    for k in range(3):
+        on_t[ref.T[tl == 0, k]] = True
+        on_a[ref.T[tl == ARM, k]] = True
+    Z["armpit_crease"] = P[on_t & on_a]               # (pass 3c) the arm / trunk seam, both sides folded to x >= 0
     R = np.asarray(hip_ring)
     Rd = np.concatenate([np.linspace(R[k], R[(k + 1) % len(R)], 6, endpoint=False) for k in range(len(R))])
     lat = Rd[:, 0] - R[:, 0].min()
@@ -135,7 +146,7 @@ def pole_zones(V, poles, Z):
     X = V[poles] * np.where(V[poles][:, :1] < 0, [-1.0, 1, 1], 1.0)
     D = {}
     for nm, P in Z.items():
-        if len(P) == 0 or nm == "deltoid":
+        if len(P) == 0 or nm in ("deltoid", "armpit_crease"):
             continue
         d = cKDTree(P).query(X)[0]
         D[nm] = np.where(d < 0.004, 0.0, d)            # within the reference's own vertex spacing: inside
@@ -149,7 +160,31 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
     tmpl_q = np.isin(info["qpart"], [parts.index("hand"), parts.index("foot")])
     mq = mesh_quality(V, Q, tmpl_q)
     asp = mq.pop("_asp")
-    mq.pop("_dih")
+    dih, E, qa, qb, bad, cl = (mq.pop(k) for k in ("_dih", "_E", "_qa", "_qb", "_bad", "_cl"))
+    # (pass 3c fix 4) the play crotch's edges over 60 deg inside the thigh gap: a named exception capped at 65 deg
+    # (a: the judge, ruling (d): in self-shadow, about a pixel at the play camera); every other fold edge still fails
+    m = 0.5 * (V[E[:, 0]] + V[E[:, 1]])              # the thigh gap under the perineum (the judge's (+-25, 986, 3))
+    gap = (np.abs(m[:, 0]) <= 0.040) & (m[:, 1] >= 0.975) & (m[:, 1] <= 1.000) & (np.abs(m[:, 2]) <= 0.015)
+    exc = bad & gap & (dih <= CROTCH_FOLD_CAP)
+    mq["fold_edges_over_60_crotch_exception"] = int(exc.sum())
+    mq["fold_edges_over_60"] = int((bad & ~exc).sum())
+    # (pass 3c fix 4) the cleft rule: no edge over 60 deg off the cleft's floor loop (the midline), and the floor loop
+    # one continuous chain of midline edges from the sacrum (the cleft's top) to the crotch strip's back corner
+    mid_v = np.abs(V[:, 0]) < 1e-7
+    on_floor = mid_v[E[:, 0]] & mid_v[E[:, 1]]
+    hot = cl & (dih > FOLD_DEG)
+    mq["cleft_edges_over_60_off_floor"] = int((hot & ~on_floor).sum())
+    sb = (C.get("hip_named_mm") or {}).get("strip_back")
+    if sb is not None:
+        y_lo = sb[1] / 1000.0
+        back = np.where(mid_v & (V[:, 2] < -0.05) & (V[:, 1] >= y_lo - 0.012) & (V[:, 1] <= 1.115))[0]
+        back = back[np.argsort(V[back, 1])]
+        es = set(map(tuple, np.sort(E[on_floor], 1).tolist()))
+        gaps = [int(i) for i in range(len(back) - 1) if (min(back[i], back[i + 1]), max(back[i], back[i + 1])) not in es]
+        hy = 0.5 * (V[E[hot, 0], 1] + V[E[hot, 1], 1])
+        mq["cleft_floor"] = {"verts": int(len(back)), "breaks": len(gaps), "strip_back_y_mm": sb[1],
+                             "y_mm": [round(float(V[back[0], 1]) * 1000, 1), round(float(V[back[-1], 1]) * 1000, 1)],
+                             "hot_y_mm": [round(float(hy.min()) * 1000, 1), round(float(hy.max()) * 1000, 1)] if len(hy) else []}
     Z = zone_points(ref, L, joints, hip_ring)
     designed = info["designed_pole"].astype(bool) if "designed_pole" in info else np.zeros(len(V), bool)
     for p, (zn, zd), v in zip(poles_out, pole_zones(V, poles, Z), poles):
@@ -182,6 +217,12 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
     if kv:
         dd = cKDTree(Z["deltoid"]).query(V[kv])[0]
         g["shoulder_kites_min_dist_to_deltoid_mm"] = round(float(dd.min()) * 1000, 1)
+        # (pass 3c fix 4) the 8 corner poles (4 a side) are designed (ruling (a): the deltoid loop's textbook ends at
+        # the armpit folds and the shoulder top); their clearance from the armpit crease: the reference's arm / trunk
+        # boundary (b: hm08's arm group, which runs through the armpit's fold)
+        g["poles_designed_shoulder"] = int(sum(p["designed"] and dv[v] == 3 for p, v in zip(poles_out, poles)))
+        cd = cKDTree(Z["armpit_crease"]).query(V[kv] * np.where(V[kv][:, :1] < 0, [-1.0, 1, 1], 1.0))[0]
+        g["shoulder_poles_crease_mm"] = [round(float(x) * 1000, 1) for x in cd]
     bq = info["qpart"] == parts.index("breast")
     if bq.any():
         qb = Q[bq]
@@ -196,14 +237,18 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
     gs = C.get("gate_scale") or {"spacing": 0.0078, "close_spacing": 0.0078, "ankle_points": [26, 28]}
     k_s = gs["spacing"] / gs["close_spacing"]        # (a) the play camera: the tier's own spacing over close's
     g["tier_scale"] = {"spacing_ratio": round(k_s, 3), "breast_p95_max_mm": round(BREAST_P95 * k_s * 1000, 2),
-                       "kite_clear_min_mm": round(KITE_CLEAR * k_s * 1000, 1), "ankle_points": gs["ankle_points"]}
+                       "kite_clear_min_mm": round(KITE_CLEAR * k_s * 1000, 1), "ankle_points": gs["ankle_points"],
+                       # (a: the judge) 10 mm at close, at least one edge at the lighter tiers
+                       "crease_clear_min_mm": round(max(CREASE_CLEAR, gs["spacing"] if k_s > 1 else 0) * 1000, 1)}
     g["pass"] = {
         "fold": mq["fold_edges_over_60"] == 0,
         "aspect": mq["aspect_over_4"] == 0,
         "min_edge": mq["edges_under_2mm"] == 0,
         "poles_vs_zones": len(fail) == 0,
         "shoulder_gap_ratio": bool(gap) and g["shoulder_rim_gap_ratio"] <= 1.5,
-        "shoulder_kites_vs_deltoid": g.get("shoulder_kites_min_dist_to_deltoid_mm", 0) >= g["tier_scale"]["kite_clear_min_mm"],
+        "shoulder_poles_designed_8": g.get("poles_designed_shoulder", 0) == 8,
+        "shoulder_poles_vs_crease": min(g.get("shoulder_poles_crease_mm") or [0]) >= g["tier_scale"]["crease_clear_min_mm"],
+        "cleft_on_floor": mq["cleft_edges_over_60_off_floor"] == 0 and (mq.get("cleft_floor") or {}).get("breaks", 1) == 0,
         "breast": ("breast_edge_mm_p95" in g and g["breast_edge_mm_p95"] <= g["tier_scale"]["breast_p95_max_mm"]
                    and g["breast_aspect_p95"] <= 2.0),
         "breast_cap_corners": bool(bcm) and all(d <= 20 or d >= 60 for d in bcm),

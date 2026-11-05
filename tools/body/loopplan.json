@@ -280,7 +280,6 @@
      "bend": 0.05,
      "end_bend": 0.03,
      "limb_spacing": 0.0085,
-     "turn": "even",
      "even_gap": true,
      "root_plane": "bone",
      "lower_spacing": 0.0088
@@ -317,7 +316,11 @@
      "level": true,
      "points": 28,
      "rise": 0.0072,
-     "kite_cost": 8
+     "kite_cost": 8,
+     "split_max": 0.009,
+     "split_rim_max": 26,
+     "split_share": 0.3,
+     "split_winding": false
     },
     "shin_band_y": 0.33,
     "thigh_band_y": 0.81,
@@ -332,7 +335,69 @@
     "arm_root_spacing": 0.0065,
     "loop_even": 0.6,
     "rows_arc": true,
-    "low_spacing": 0.0088
+    "low_spacing": 0.0088,
+    "density_gates": {
+     "tri_cap": 66000,
+     "part_p50_mm": {
+      "neck": [
+       4.0,
+       6.5
+      ],
+      "trunk": [
+       6.0,
+       8.5
+      ],
+      "breast": [
+       4.5,
+       6.5
+      ],
+      "shoulder": [
+       5.0,
+       7.0
+      ],
+      "arm": [
+       5.0,
+       8.0
+      ],
+      "elbow": [
+       3.5,
+       7.0
+      ],
+      "forearm": [
+       5.5,
+       8.5
+      ],
+      "hand": [
+       3.0,
+       6.0
+      ],
+      "crotch": [
+       6.0,
+       8.5
+      ],
+      "thigh": [
+       6.0,
+       8.5
+      ],
+      "knee": [
+       5.0,
+       7.5
+      ],
+      "shin": [
+       6.0,
+       8.5
+      ],
+      "foot": [
+       3.0,
+       6.0
+      ]
+     },
+     "shoulder_p95_max_mm": 9.0,
+     "shoulder_over_arm_p95": 1.05,
+     "thigh_p95_max_mm": 9.0,
+     "thigh_p95_over_p50": 1.35
+    },
+    "why_pass3c": "(pass 3c, the xhigh re-judge of 3b, fixes 1-5) rim {sides, top}: the shoulder hole's front/back and top arcs at their own spacings (a: the judge: the deltoid patch at the trunk's density; the rim's 8.1 mm edges capped the patch; the bottom arc stays at the trunk spacing, since its columns run down the side into the thigh); arm_root_spacing: the arm root ring's count from its length (388 mm / 6.5 = 60; a: every count a length over a spacing); loop_even: the loops blended 60% to even arc length (the corner chains left 13 mm edges); shoulder_spacing 6 mm: 7 loops; rows_arc + low_spacing: the trunk rows by arc length down each meridian (a: the waist bunching, 5.3 mm at the small of the back against 7.6 at the front), root to underbust at 8.8 mm (a: the judge ruling (b): the belly and the lower back are gentle); knee.root_plane bone + even_gap: the thigh's stations square to the bone, the root's 38 deg tilt taken by the column blend alone, then spaced by the max surface gap (a: fix 2, the front/outer columns ran 13 mm against 6.5 at the back); knee.limb_spacing 8.5 / lower_spacing 8.8: mid-thigh and mid-shin along the limb (a: the judge, ~8.5 mm); thigh_band_y 0.81 / shin_band_y 0.33: the bands 5 mm down / up so their poles keep 40 mm off the hip and ankle zones after the re-spacing (a: the zones gate); foot_fit split_*: the foot template re-stripped by loop cuts where its top/side rungs run over 9 mm (a: fix 5; b: the MakeHuman base foot, low-poly over the heel and instep), strips through mostly short quads (the toes) and strips winding through a quad twice skipped (cost), the rim to 26; density_gates: per-part p50 bands and the tri cap (a: the judge, fix 3: the total gate replaced)"
    },
    "play": {
     "spacing": 0.017,
@@ -366,7 +431,9 @@
     },
     "knee": {
      "bend": 0.05,
-     "end_bend": 0.03
+     "end_bend": 0.03,
+     "even_gap": true,
+     "limb_spacing": 0.0155
     },
     "relax_iters": 8,
     "relax_lambda": 0.5,
@@ -413,7 +480,76 @@
     ],
     "why_pass3b_templates": "(a) the judge (pass 3b item 9): play s own hand and foot, generated from ours (c: base/*.obj) at build time: trim / level as close (why_pass3b_rims), then quad_reduce: whole quad strips collapsed (each rung merged at its midpoint, put back on the source surface), the open strips first until the rim is at rim_points, then the densest strip first, each collapse kept only if the patch stays a manifold disk of true quads with no new quad over max_aspect: hand 1618 -> 635 quads (39%), foot 1052 -> 472 (45%; its last strips are toe rings whose collapse goes over aspect 5); rim_points: wrist 14 (12 would stop the reduction first), ankle 16 (= the close range 26-28 x sqrt(0.4), the templates linear scale)",
     "why_pass3b_legs": "(a) the judge (pass 3b item 9): thighs ~32 around at play: the thigh band takes the root s 42 to 32 (y 793-860), and knee_points 32 carries it through the knee (the thigh window between the hip zone and the knee zone, y 0.77-0.83, holds one band only; the knee at 32 = 11.6 mm round it), the shin s band (y 410-443) takes 32 to the ankle s 16. ankle_points [16, 18]: the ankle gate s range at play (see why_pass3b_templates)",
-    "why_pass3b_gates": "(a) play passing the tier-scaled gates: breast_loops 2, breast_cap 0.8, F_L_heights [1.42] (close s, why_pass3b_breast): breast edge p95 21.0 -> 14.6 mm (gate 16.35 = 7.5 mm x 17/7.8), aspect p95 2.53 -> 1.87; shoulder_spacing 0.009 (5 loops in the 45 mm gap, was 2): the 6 shoulder folds (65-75 deg) -> 0; neck_spacing 0.0045 (close s): the 15 neck quads over aspect 4 (the 94-point ring s 3-4 mm steps over 7 mm rows) -> 0; collar_f 0.2: the side / back collar kites one row lower, out of the neck base zone s 40 mm (2 -> 0)"
+    "why_pass3b_gates": "(a) play passing the tier-scaled gates: breast_loops 2, breast_cap 0.8, F_L_heights [1.42] (close s, why_pass3b_breast): breast edge p95 21.0 -> 14.6 mm (gate 16.35 = 7.5 mm x 17/7.8), aspect p95 2.53 -> 1.87; shoulder_spacing 0.009 (5 loops in the 45 mm gap, was 2): the 6 shoulder folds (65-75 deg) -> 0; neck_spacing 0.0045 (close s): the 15 neck quads over aspect 4 (the 94-point ring s 3-4 mm steps over 7 mm rows) -> 0; collar_f 0.2: the side / back collar kites one row lower, out of the neck base zone s 40 mm (2 -> 0)",
+    "rows_arc": true,
+    "low_spacing": 0.019,
+    "rim": {
+     "sides": 0.0125,
+     "top": 0.017
+    },
+    "arm_root_spacing": 0.0145,
+    "density_gates": {
+     "tri_cap": 22000,
+     "part_p50_mm": {
+      "neck": [
+       4.5,
+       8.5
+      ],
+      "trunk": [
+       11.0,
+       17.0
+      ],
+      "breast": [
+       8.5,
+       13.0
+      ],
+      "shoulder": [
+       10.0,
+       15.0
+      ],
+      "arm": [
+       10.0,
+       16.0
+      ],
+      "elbow": [
+       7.0,
+       13.0
+      ],
+      "forearm": [
+       10.0,
+       16.0
+      ],
+      "hand": [
+       5.0,
+       9.0
+      ],
+      "crotch": [
+       11.0,
+       17.0
+      ],
+      "thigh": [
+       11.0,
+       17.0
+      ],
+      "knee": [
+       9.0,
+       15.0
+      ],
+      "shin": [
+       11.0,
+       17.0
+      ],
+      "foot": [
+       6.0,
+       11.0
+      ]
+     },
+     "shoulder_p95_max_mm": 17.0,
+     "shoulder_over_arm_p95": 1.05,
+     "thigh_p95_max_mm": 17.0,
+     "thigh_p95_over_p50": 1.35
+    },
+    "why_pass3c": "(pass 3c) the close tier's 3c rules at play's spacing: rim sides 12.5 mm (top at the trunk spacing: a finer top arc left a 4.3 aspect quad at the neck), arm root 14.5 mm (26: a finer root folded the armpit at 60.4 deg), trunk rows by arc length with the root-underbust run at 19 mm, the thigh stations by the max gap at 15.5 mm (the bone-square planes put a thigh band pole 27 mm off the hip zone at play); density bands scaled from close by the spacing ratio (a: the play camera)"
    }
   },
   "rest_tris": 11300,

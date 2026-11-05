@@ -665,6 +665,8 @@ def shoulder(M, ref, L, plan, tp, tk, C, SR):
                 ends[q] = int(ids[new_c[q]])
         prev, cur_idx, cur_c = ids, new_idx, [x if x is not None else 0 for x in new_c]
     assert len(prev) == Nr, (len(prev), Nr)
+    for v in ends.values():                          # (pass 3c fix 4) the chains' end 5-poles: designed (ruling (a))
+        M.designed[v] = 3
     C["shoulder_kite_verts"] = sorted(ends.values())
     C["N_arm"] = Nr
     return {"root": prev, "c": c, "n": n, "e1": e1}
@@ -1032,7 +1034,76 @@ def rim_level(ref, V, F, loop, n0, ks):
     return V, F, rim_loop(F)
 
 
-def quad_strips(F):
+def quad_split(V, F, max_len, rim_max, sole_ny=-0.6, max_cuts=400, min_share=0.0, winding=True):
+    """(pass 3c fix 5) the template's long edges re-stripped: a loop cut (every crossed rung of one quad strip split
+    at its midpoint, put back on the source surface; each quad of the strip becomes two) through the strip with the
+    longest rung off the sole (the rung's normal y > sole_ny), until no such rung is over max_len. A strip that
+    reaches the rim adds 2 rim points; those only while the rim stays <= rim_max. Quads only, deterministic."""
+    from surfdist import Surface
+    S = Surface(V, np.concatenate([F[:, [0, 1, 2]], F[:, [0, 2, 3]]]))
+    V, F = V.copy(), F.copy()
+    for _ in range(max_cuts):
+        n = np.cross(V[F[:, 2]] - V[F[:, 0]], V[F[:, 3]] - V[F[:, 1]])
+        Vn = np.zeros_like(V)
+        for k in range(4):
+            np.add.at(Vn, F[:, k], n)
+        Vn = Vn / np.maximum(np.linalg.norm(Vn, axis=1, keepdims=True), 1e-12)
+        n_rim = len(rim_loop(F))
+        best = None
+        for qs, rungs, closed, par, raw in quad_strips(F, with_parity=True):
+            if (not closed and n_rim + 2 > rim_max) or (qs is None and not winding):
+                continue
+            qpar = {}
+            for qi, d in zip(raw, par):
+                qpar.setdefault(qi, set()).add(d)
+            if any(len(v) != len(set(v)) for v in [[d for q2, d in zip(raw, par) if q2 == qi] for qi in qpar]):
+                continue                             # through a quad twice the same way: no clean cut
+            L = [float(np.linalg.norm(V[a] - V[b])) if (Vn[a] + Vn[b])[1] / 2 > sole_ny else 0.0 for a, b in rungs]
+            if np.mean(np.array(L) > max_len) < min_share:
+                continue                             # a cut through mostly short quads (the toes) costs more than it fixes
+            key = (max(L), -min(raw))
+            if max(L) > max_len and (best is None or key > best[0]):
+                best = (key, qpar)
+        if best is None:
+            break
+        _, qpar = best
+        mid = {}
+
+        def m(a, b):
+            e = (min(a, b), max(a, b))
+            if e not in mid:
+                mid[e] = len(V) + len(mid)
+            return mid[e]
+        newq, cen = [], []
+        for qi in sorted(qpar):
+            v = [int(x) for x in F[qi]]
+            if len(qpar[qi]) == 2:                   # crossed both ways (the strip winds back): 4 quads round a centre
+                a, b, c, d = m(v[0], v[1]), m(v[1], v[2]), m(v[2], v[3]), m(v[3], v[0])
+                cen.append(v)
+                o = -len(cen)
+                newq.append((qi, [[v[0], a, o, d], [a, v[1], b, o], [o, b, v[2], c], [d, o, c, v[3]]]))
+                continue
+            dd = next(iter(qpar[qi]))
+            v = v[dd:] + v[:dd]                      # crossed edges (v0, v1) and (v2, v3)
+            a, b = m(v[0], v[1]), m(v[2], v[3])
+            newq.append((qi, [[v[0], a, b, v[3]], [a, v[1], v[2], b]]))
+        P = np.zeros((len(mid) + len(cen), 3))
+        for (x, y), i in mid.items():
+            P[i - len(V)] = 0.5 * (V[x] + V[y])
+        for k, v in enumerate(cen):
+            P[len(mid) + k] = V[v].mean(0)
+        base = len(V) + len(mid)
+        V = np.vstack([V, S.closest(P)[0]])
+        F = F.tolist()
+        for qi, qq in newq:
+            qq = [[x if x >= 0 else base + (-x - 1) for x in q] for q in qq]
+            F[qi] = qq[0]
+            F.extend(qq[1:])
+        F = np.array(F, np.int64)
+    return V, F
+
+
+def quad_strips(F, with_parity=False):
     """Every quad strip of a quad patch: quads joined across opposite edges. Returns [(quads, rungs, closed)],
     rungs the crossed edges (vertex pairs, the strip's ends included); a strip through a quad twice is marked
     (quads None)."""
@@ -1073,7 +1144,8 @@ def quad_strips(F):
             for x in qs:
                 seen.add(x)
             ids = [x for x, _ in qs]
-            out.append((ids if len(set(ids)) == len(ids) else None, rungs, closed))
+            row = (ids if len(set(ids)) == len(ids) else None, rungs, closed)
+            out.append(row + ([d for _, d in qs], ids) if with_parity else row)
     return out
 
 
@@ -1220,6 +1292,13 @@ def template(M, name, part, reg, ref=None, fit=None):
         loop = rim_loop(F)
     if fit.get("level"):
         V, F, loop = rim_level(ref, V, F, loop, n0, [TRUNK, LEG, FOOT] if part == "foot" else [TRUNK, ARM, HAND])
+    if fit.get("split_max"):
+        nq0 = len(F)
+        V, F = quad_split(V, F, fit["split_max"], fit.get("split_rim_max", len(loop)), min_share=fit.get("split_share", 0.0),
+                      winding=fit.get("split_winding", True))
+        loop = rim_loop(F)
+        M.split = getattr(M, "split", {})
+        M.split[name] = {"quads": [int(nq0), int(len(F))], "rim": int(len(loop))}
     if fit.get("reduce"):
         nq0 = len(F)
         V, F = quad_reduce(V, F, fit["reduce"], fit["rim_points"], fit.get("max_aspect", 4.0))
@@ -1231,7 +1310,7 @@ def template(M, name, part, reg, ref=None, fit=None):
         M.quad(*ids[q], reg, part)
     rim = ids[loop]
     nP = int(fit.get("points", 0))
-    if nP > len(loop):
+    if nP and nP != len(loop):                       # (pass 3c) a re-stripped rim can run over the ring's count
         J = V[loop]
         cJ = J.mean(0)
         if fit.get("tilt", True):                        # the trimmed rim's own best-fit plane
@@ -2024,7 +2103,7 @@ def build(plan, tier, ref, cv, L):
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
          joint=joints["knee"], warp=warp)
     C.update({"N_el": N_el, "N_kn": N_kn, "rim_fit": getattr(M, "rim_fit", {}),
-              "template_reduced": getattr(M, "reduced", {})})
+              "template_reduced": getattr(M, "reduced", {}), "template_split": getattr(M, "split", {})})
     # the whole: orient, mirror, relax, the neck's right side, orient outward
     V, Q = M.arrays()
     n_left = len(V)
@@ -2203,6 +2282,24 @@ def measure(ref, V, Q, info, C, joints, L, plan, tier):
     gs = C["gate_scale"]                             # (a) the chord's sag grows with the edge squared
     out["gates"]["surface_p95_tol_mm"] = round(0.5 * (gs["spacing"] / gs["close_spacing"]) ** 2, 2)
     out["gates"]["pass"]["surface_p95_0.5mm"] = out["surface_mm_quad_centres"][1] <= out["gates"]["surface_p95_tol_mm"]
+    dg = tier_params(plan, tier).get("density_gates")
+    if dg:                                           # (pass 3c fix 3) the budget as density: per-part p50 bands + a cap
+        bp = out["edge_mm_by_part"]
+        g, ps = out["gates"], out["gates"]["pass"]
+        g["density"] = {"triangles_body": out["triangles_body"], "cap": dg["tri_cap"],
+                        "p50_out_of_band": {k: [bp[k][1], b] for k, b in dg["part_p50_mm"].items()
+                                            if not b[0] <= bp[k][1] <= b[1]},
+                        "shoulder_p95_mm": bp["shoulder"][2], "arm_p95_mm": bp["arm"][2],
+                        "shoulder_over_arm_p95": round(bp["shoulder"][2] / bp["arm"][2], 3),
+                        "shoulder_p50_vs_trunk_p50": [bp["shoulder"][1], bp["trunk"][1]],
+                        "thigh_p95_mm": bp["thigh"][2], "thigh_p95_over_p50": round(bp["thigh"][2] / bp["thigh"][1], 3)}
+        d = g["density"]
+        ps["tri_cap"] = out["triangles_body"] <= dg["tri_cap"]
+        ps["part_p50_bands"] = not d["p50_out_of_band"]
+        ps["shoulder_density"] = (bp["shoulder"][2] <= dg["shoulder_p95_max_mm"] and
+                                  d["shoulder_over_arm_p95"] <= dg["shoulder_over_arm_p95"] and
+                                  bp["shoulder"][1] <= bp["trunk"][1])
+        ps["thigh_density"] = bp["thigh"][2] <= dg["thigh_p95_max_mm"] and d["thigh_p95_over_p50"] <= dg["thigh_p95_over_p50"]
     return out
 
 
