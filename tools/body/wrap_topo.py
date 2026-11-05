@@ -26,7 +26,7 @@ topo-residual: R per our vertex (glTF m, added after the ring snap: build_topo s
                band's mean TIGHT move, its height so the sole stands on her ground), the template's shape kept;
                hold: 0 on the head's ring, full 8 mm under SPLIT (the seam is the head's, her neck under it hers);
                relax: the TIGHT points slid along the fitted skin back to the slider stage's spacing (`relax`);
-               seam: the rows between the ring and 15 mm under it laid again in order on her skin (`restrip`).
+               seam: the rows between the ring and 15 mm under it: R lerped ring -> anchor, onto her skin (`restrip`).
 topo-carry:    the play tier's R = close's R at each play vertex's closest point on close's reference surface
                (barycentric on close's triangles, the two tiers' rest surfaces are the same reference's, topo_corr):
                one shape for both tiers (no LOD pop), no second fit; mirror-averaged, 0 on the ring;
@@ -429,10 +429,13 @@ SEAM_M = 0.015
 
 def restrip(md, S, Vc, V, seam_m=SEAM_M):
     """The seam rows: between the head's ring and the first neck row at least `seam_m` under SPLIT (the anchor),
-    each column's points laid again on her skin (S) at the slider stage's own arc-length fractions along the chord
-    ring -> anchor, then onto her surface. Our first rows are 3-5 mm apart and the ring is hers (baked, 7% larger
-    than the stored one): pulled point by point they cross (B2a's snap alone folds 19 seam quads); laid in order
-    along her own smooth neck (her dihedrals there under 26 deg) they cannot."""
+    each column's residual laid again: R lerped from the ring's (0) to the anchor's at the slider stage's own
+    arc-length fractions down the column, then the points onto her skin (S). P1 N: the topology now meets the baked
+    ring by construction (topo.neck_carry), so the slider stage's seam rows are clean (folds 0, aspect max 3.6);
+    pulled point by point by the ICP her top rows still cross (fit with no seam rule: 6 neck folds over 60 deg), and
+    C's old rule (the points re-laid along the chord ring -> anchor, then projected) now folds 14 (179 deg: the chord
+    cuts under her neck's curve and the projection lands rows out of order). Lerping R keeps the rows' order from
+    the slider stage: 0 neck folds (her close fit on spec3, folds over the body: C's rule 27, none 19, this 13)."""
     z = md.z
     m = z["part"] == pidx(z, "neck")
     rows = z["ring"]
@@ -449,11 +452,12 @@ def restrip(md, S, Vc, V, seam_m=SEAM_M):
     assert (C >= 0).all(), "the neck's seam rows are not whole columns"
     seg = np.linalg.norm(np.diff(Vc[C], axis=0), axis=2)
     t = np.concatenate([np.zeros((1, len(cols))), np.cumsum(seg, 0)]) / seg.sum(0)
-    a, b = V[C[0]], V[C[-1]]
+    R = V - Vc
     X = V.copy()
+    for i in range(1, len(band) - 1):
+        X[C[i]] = Vc[C[i]] + t[i][:, None] * R[C[-1]]       # the ring's R is 0 (the head's, kept): never the ICP's
     inner = C[1:-1].ravel()
-    P = (a[None] + t[1:-1, :, None] * (b - a)[None]).reshape(-1, 3)
-    X[inner] = S.closest(P)[0]
+    X[inner] = S.closest(X[inner])[0]
     return X, {"rows": [int(band[1]), int(band[-2])], "anchor_row": int(anchor), "points": int(len(inner))}
 
 
