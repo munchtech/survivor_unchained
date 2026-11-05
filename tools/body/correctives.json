@@ -83,7 +83,7 @@
     0.1,
     0.9
    ],
-   "fold": "plane"
+   "fold": "flatten"
   },
   {
    "name": "knee",

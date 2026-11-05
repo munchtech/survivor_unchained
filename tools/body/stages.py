@@ -118,6 +118,7 @@ def stage_weights(base, pl, ti, sk, A, spec, rep):
     tails = {n: sk["ends"][n][1] for n in names}
     for side in ("l", "r"):
         W = wt.chain_split(W, P, names, sk["ends"], side)
+        W = wt.bands(W, P, names, frames, side)
         W = wt.shares(W, P, names, frames, side)
         W = wt.points(W, P, names, frames, side)
         W = wt.muscles(W, P, names, par, tails, side)

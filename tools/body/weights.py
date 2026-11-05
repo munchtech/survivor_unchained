@@ -9,6 +9,12 @@
 3 subdiv   through the subdivision (the same sparse matrix as the points);
 4 chains   a chain bone's weight shared along its chain by each point's parameter t along the bone (0 head,
            1 tail), smooth hats over the nodes (smoothstep between neighbours: a partition of one);
+4b bands  at the elbow and knee, the blend between the chains above and below re-made by the angle round the
+           joint: on the crease (the side the bend folds into) a NARROW band, `half` metres either side of the joint's
+           rest bisector plane (smoothstep), so each limb's skin stays its own and the two meet along one fold line;
+           MakeHuman's own wide blend kept on the sides and the outer side (the share and point bones' room). The
+           crease sector is full within `full` degrees of the crease direction (the lower bone's Z times its sign),
+           eased out by `fade`; nothing changes past `reach` metres from the plane or `radius` from the joint;
 5 shares   at the shoulder, elbow, hip and knee: of a point's blend between the bones above and below the joint
            (a above, b below, r = b / (a + b)), the share takes f = 4 r (1 - r) of it (all at an even blend, none
            where one side has it all), both sides giving in proportion; at the elbow, hip and knee none on the
@@ -41,6 +47,10 @@ RULES = {
                ("elbow", "upperarm", "lowerarm", "lowerarm_share", ("lowerarm", 1.0), 0.035),
                ("hip", ["pelvis"], "thigh", "thigh_share", ("thigh", -1.0), 0.035),
                ("knee", "thigh", "calf", "calf_share", ("calf", 1.0), 0.035)],
+    # band: (joint, above chain, below chain, crease sign of the below bone's Z, half m, full deg, fade deg,
+    #        reach m, radius m)
+    # (the knee is held back: its flatten fold breaks; MakeHuman's band and the plane fold kept there for now)
+    "bands": [("elbow", "upperarm", "lowerarm", 1.0, 0.0075, 30.0, 50.0, 0.08, 0.10)],
     # point: (bone, its share, the joint's lower bone, side (+1 the crease's, -1 away), half deg, fade deg, feather m)
     "points": [("lowerarm_point", "lowerarm_share", "lowerarm", -1.0, 20.0, 40.0, 0.03),
                ("calf_point", "calf_share", "calf", -1.0, 25.0, 45.0, 0.04)],
@@ -151,6 +161,43 @@ def chain_cols(names, chain, side):
     if isinstance(chain, list):
         return [names.index(f"{c}_{side}" if f"{c}_{side}" in names else c) for c in chain]
     return [names.index(f"{n}_{side}") for n, _ in RULES[chain]]
+
+
+def bands(W, P, names, frames, side, rules=None):
+    """Step 4b."""
+    for joint, above, below, sign, half, full, fade, reach, radius in (rules or RULES["bands"]):
+        A, B = chain_cols(names, above, side), chain_cols(names, below, side)
+        a_end = names.index(f"{above}_{side}")          # each chain's node at the joint (t = 1 above, t = 0 below)
+        b_end = names.index(f"{below}_{side}")
+        G, Gu = frames[f"{below}_{side}"], frames[f"{above}_{side}"]
+        O = G[:3, 3]
+        d = G[:3, 1] / np.linalg.norm(G[:3, 1])
+        u = Gu[:3, 3] - O
+        u = u / np.linalg.norm(u)
+        nb = u - d
+        nb = nb / np.linalg.norm(nb)                    # the rest bisector plane's normal, toward the bone above
+        rel = P - O
+        s_ = rel @ nb
+        rad = rel - s_[:, None] * nb
+        cz = sign * G[:3, 2]
+        cz = cz - nb * (cz @ nb)
+        cz = cz / np.linalg.norm(cz)
+        cosang = (rad @ cz) / np.maximum(np.linalg.norm(rad, axis=1), 1e-9)
+        ang = np.degrees(np.arccos(np.clip(cosang, -1, 1)))
+        k = (1 - smooth01((ang - full) / fade)) * (1 - smooth01((np.abs(s_) - 0.5 * reach) / (0.5 * reach)))
+        k = k * (1 - smooth01((np.linalg.norm(rel, axis=1) - 0.7 * radius) / (0.3 * radius)))
+        a, b = W[:, A].sum(1), W[:, B].sum(1)
+        m = a + b
+        k = np.where(m > 1e-6, k, 0.0)
+        r_old = np.where(m > 1e-9, b / np.maximum(m, 1e-12), 0.0)
+        r_new = r_old + k * (smooth01((half - s_) / (2 * half)) - r_old)
+        ka = np.where(a > 1e-9, m * (1 - r_new) / np.maximum(a, 1e-12), 0.0)
+        kb = np.where(b > 1e-9, m * r_new / np.maximum(b, 1e-12), 0.0)
+        W[:, A] *= ka[:, None]
+        W[:, B] *= kb[:, None]
+        W[:, a_end] += np.where(a > 1e-9, 0.0, m * (1 - r_new))
+        W[:, b_end] += np.where(b > 1e-9, 0.0, m * r_new)
+    return W
 
 
 def shares(W, P, names, frames, side):

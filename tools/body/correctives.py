@@ -460,7 +460,11 @@ def run(out, only=None):
                 pl0 = bends.Plane2(st, G0)
                 ref = bends.build_ref(spec, bends.Plane2(st, G), bends.radii(st, m0, vw_hi, pl0), (m0, vw_hi))
             t = time.time()
-            Y, f, free, M, lg = solve_key(mesh, st, V, G, jc, cf, ref)
+            if jc.get("fold") == "flatten":
+                import crease_fold
+                Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jc, cf, ref)
+            else:
+                Y, f, free, M, lg = solve_key(mesh, st, V, G, jc, cf, ref)
             D = rest_delta(mesh, Y, f, free, M)
             DL = D.copy()
             if jc.get("one_side", True):               # a limb's shape stays on its side
