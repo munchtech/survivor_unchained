@@ -2,6 +2,7 @@
 painter's inputs. Deterministic (fixed samples and seed, no AA on the ID maps, a fixed unwrap).
 
     blender -b --factory-startup -P tools/look/bake_forms.py -- prop  MESH.glb OUT [--node lod0] [--variant 1] [--ppm 256]
+    blender -b --factory-startup -P tools/look/bake_forms.py -- char  MESH.glb OUT [--ppm 256]
     blender -b --factory-startup -P tools/look/bake_forms.py -- setts OUT [--tile 4] [--ppm 256] [--seed 7]
 
 prop: the mesh (one node, or one variant of a packed flora file by COLOR.a = (v + 0.5) / 8), each loose part a block
@@ -225,7 +226,7 @@ def prop(mesh_path, out, node, variant, asset):
     blk_of, cls_of = {}, {}
     for part in loose_parts(bm):
         c = np.mean([fcol(f)[:3] for f in part], axis=0)
-        cname = 'rock' if rocky else ('plank' if c[0] > c[2] * 1.15 else 'iron')
+        cname = 'rock' if rocky else ('plank' if c[0] > c[2] * 1.15 else 'wrought')  # (B3r3: a prop's iron is the world's, wrought)
         if cname not in classes: classes.append(cname)
         groups = planes(part) if cname == 'rock' else [part]
         for g in groups:
@@ -272,6 +273,106 @@ def prop(mesh_path, out, node, variant, asset):
     maps['convex'] = 1 - bake(ob, size, emit_mat("cvx", ao_socket(0.03, True)), samples=24)[..., 0]
     maps['thick'] = bake(ob, size, emit_mat("thk", ao_socket(0.4, True)), samples=24)[..., 0]
     return finish(out, maps, dict(kind="prop", asset=asset, source=mesh_path, node=node, variant=variant, classes=classes,
+                                  size=size, ppm=round(ppm_real, 1), area_m2=round(area3, 3)))
+
+
+# ---------------------------------------------------------------------------------------------------------------- char
+REGIONS = os.path.join(ROOT, "docs", "design", "look", "her_paint_regions.json")
+SKIN_MESHES = ("Heroine", "HeroineHead")  # (her_paint_regions.json own_materials stay out: eyes, teeth, tongue, lashes, brows, hair cards)
+
+
+def region_of(c, n, bb, head):
+    """A landmark stand-in for P1's region ID map: id 1-13 from a face's centre c and normal n. Z up, front = -Y (the nose is
+    at the head's min Y), arms out along +-X (rest T-pose). bb = (lo, hi) of the whole figure, head = (lo, hi) of the head mesh."""
+    H = bb[1][2] - bb[0][2]; h = (c[2] - bb[0][2]) / H; ax = abs(c[0])
+    if head is not None:
+        lo, hi = head; hh = hi[2] - lo[2]; hz = (c[2] - lo[2]) / hh; hw = (hi[0] - lo[0]) / 2
+        if hz < 0.18: return 4  # neck
+        if ax > 0.88 * hw and 0.3 < hz < 0.62 and abs(n[0]) > 0.6: return 3  # ears
+        return 1 if (n[1] < -0.15 and hz < 0.78) else 2  # face (brow to chin, front) / scalp
+    if ax > 0.22 and h > 0.45:  # an arm (hangs ~30 deg below the shoulder line), by distance out from the shoulder
+        t = (ax - 0.22) / (bb[1][0] - 0.22)
+        return 7 if t < 0.45 else (8 if t < 0.75 else 9)
+    if h < 0.05: return 13
+    if h < 0.27: return 12
+    if h < 0.47: return 11
+    if h < 0.55: return 10
+    if h > 0.85: return 4
+    if h > 0.78 and n[1] < 0: return 4
+    return 5 if n[1] < 0 else 6
+
+
+def char(mesh_path, out, asset):
+    sc = reset()
+    bpy.ops.import_scene.gltf(filepath=mesh_path)
+    keep = [o for o in bpy.context.scene.objects if o.type == 'MESH' and o.name in SKIN_MESHES]
+    for o in list(bpy.context.scene.objects):
+        if o not in keep and o.type != 'ARMATURE': bpy.data.objects.remove(o)
+    for o in keep:
+        o.modifiers.clear()
+        mw = o.matrix_world.copy(); o.parent = None; o.matrix_world = mw
+    for o in list(bpy.context.scene.objects):
+        if o.type == 'ARMATURE': bpy.data.objects.remove(o)
+    head_ob = next(o for o in keep if o.name == "HeroineHead")
+    # her UVs are one 0-1 layout per mesh (body, head): kept, only packed side by side (u/2) so the two don't overlap
+    for o in keep:
+        uvl = o.data.uv_layers[0]; uv = np.zeros(len(o.data.loops) * 2, np.float32); uvl.data.foreach_get("uv", uv)
+        uv = uv.reshape(-1, 2); uv[:, 0] = uv[:, 0] * 0.5 + (0.5 if o is head_ob else 0.0); uvl.data.foreach_set("uv", uv.ravel())
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in keep: o.select_set(True)
+    bpy.context.view_layer.objects.active = head_ob
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    hv = np.array([v.co[:] for v in head_ob.data.vertices]); head = (hv.min(0), hv.max(0))
+    body_ob = next(o for o in keep if o is not head_ob)
+    n_body = len(body_ob.data.polygons)
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in keep: o.select_set(True)
+    bpy.context.view_layer.objects.active = body_ob
+    bpy.ops.object.join()  # (body first, then the head: the faces keep that order)
+    ob = bpy.context.view_layer.objects.active; me = ob.data
+    while len(me.uv_layers) > 1: me.uv_layers.remove(me.uv_layers[1])
+    reg = json.load(open(REGIONS, encoding="utf-8"))["regions"]
+    names = {r["id"]: r["name"] for r in reg}
+    allv = np.array([v.co[:] for v in me.vertices]); bb = (allv.min(0), allv.max(0))
+    bm = bmesh.new(); bm.from_mesh(me); bm.faces.ensure_lookup_table()
+    lb = bm.faces.layers.float.new("blk"); lc = bm.faces.layers.float.new("cls")
+    counts = {i: 0 for i in names}
+    for f in bm.faces:
+        r = region_of(f.calc_center_median(), f.normal, bb, head if f.index >= n_body else None)
+        f[lb] = r; f[lc] = 0; counts[r] += 1
+    area3 = sum(f.calc_area() for f in bm.faces)
+    bm.to_mesh(me); bm.free()
+    uv = np.zeros(len(me.loops) * 2, np.float32); me.uv_layers[0].data.foreach_get("uv", uv); uv = uv.reshape(-1, 2)
+    uva = uvb = areab = 0.0  # (the size follows the BODY's density, the spec's 1.0; the head's own island is x2 on top, as the spec says)
+    for p in me.polygons:
+        pts = uv[p.loop_start:p.loop_start + p.loop_total]
+        x, y = pts[:, 0], pts[:, 1]; a = 0.5 * abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1))); uva += a
+        if p.index < n_body: uvb += a; areab += p.area
+    need = math.sqrt(areab / max(uvb, 1e-6)) * PPM
+    size = min(2048, int(2 ** math.ceil(math.log2(max(64, need)))))
+    ppm_real = size * math.sqrt(uvb / areab)  # (the body's; u is halved by the side-by-side pack, so this is the geometric mean)
+    print("B3 char faces per region:", json.dumps({names[i]: counts[i] for i in names}), "size", size, flush=True)
+    target_material(ob)
+    maps = {}
+    maps['blk'] = bake(ob, size, emit_mat("ids", attr_socket("blk")), samples=1)[..., 0]
+    maps['cls'] = bake(ob, size, emit_mat("cls", attr_socket("cls")), samples=1)[..., 0]
+    maps['mask'] = bake(ob, size, emit_mat("one", one_socket), samples=1)[..., 0]
+    maps['pos'] = bake(ob, size, emit_mat("pos", geo_socket('Position')), samples=1)
+    maps['nrm'] = bake(ob, size, emit_mat("nrm", geo_socket('Normal')), samples=1)
+    maps['ao'] = bake(ob, size, emit_mat("ao", ao_socket(0.35, False)), samples=24)[..., 0]
+    maps['cavity'] = 1 - bake(ob, size, emit_mat("cav", ao_socket(0.03, False)), samples=24)[..., 0]
+    maps['convex'] = 1 - bake(ob, size, emit_mat("cvx", ao_socket(0.03, True)), samples=24)[..., 0]
+    maps['thick'] = bake(ob, size, emit_mat("thk", ao_socket(0.4, True)), samples=24)[..., 0]
+    # OUT/regions.png: the id map in her UV space, one flat colour per region, black outside
+    import colorsys
+    from PIL import Image
+    m = maps['mask'] > 0.5; ids = np.where(m, np.round(maps['blk']), 0).astype(int).clip(0, 13)
+    pal = np.zeros((14, 3), np.uint8)
+    for i in range(1, 14): pal[i] = [int(255 * c) for c in colorsys.hsv_to_rgb(((i * 5) % 13) / 13, 0.85, 0.95)]
+    Image.fromarray(pal[ids]).save(os.path.join(out, "regions.png"))
+    return finish(out, maps, dict(kind="char", asset=asset, source=mesh_path, classes=["skin"],
+                                  regions={str(i): names[i] for i in names}, face_counts={names[i]: counts[i] for i in names},
+                                  note="regions are a landmark stand-in (position and normal rules) for P1's region ID map; body and head UV sets packed side by side (u/2) for the stand-in; no art ships from it",
                                   size=size, ppm=round(ppm_real, 1), area_m2=round(area3, 3)))
 
 
@@ -377,5 +478,9 @@ if MODE == "prop":
     node, var = opt("--node", None), opt("--variant", None, int)
     asset = opt("--asset", os.path.splitext(os.path.basename(mesh))[0])
     os.makedirs(out, exist_ok=True); prop(os.path.abspath(mesh), out, node, var, asset)
+elif MODE == "char":
+    mesh, out = argv.pop(0), argv.pop(0)
+    asset = opt("--asset", "heroine_standin"); opt("--node", None)
+    os.makedirs(out, exist_ok=True); char(os.path.abspath(mesh), out, asset)
 elif MODE == "setts":
     out = argv.pop(0); os.makedirs(out, exist_ok=True); setts(out, opt("--tile", 4.0, float))

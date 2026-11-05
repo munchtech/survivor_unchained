@@ -33,7 +33,7 @@ OUT = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3r2\calib"
 LIB = os.path.join(ROOT, "godot", "data", "look", "materials.json")
 RIGS = ("day", "night")
 PANEL_RIG = {"day": "day", "moon": "night"}  # (the boards' lights the game's rigs stand for; lantern and arena pools are fires)
-TOWN = ("plank", "stone", "plaster", "roof", "setts", "road", "soil", "rock", "bark", "iron")  # (rule 4's surfaces)
+TOWN = ("plank", "stone", "plaster", "roof", "setts", "road", "soil", "rock", "bark", "wrought")  # (rule 4's surfaces)
 
 
 def shoot(name, albedo=None):
@@ -184,6 +184,20 @@ def solve(resp_name, prev_name=None):
         if not rows: continue
         B = np.array([x[0] for x in rows]); Rr = np.array([x[1] for x in rows]); wt = np.array([x[2] for x in rows])[:, None]
         a = (wt * B * Rr).sum(0) / np.maximum((wt * Rr * Rr).sum(0), 1e-9)
+        m, rp = finish(name, p, a, rows, S[name], "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least "
+                       "squares over the samples (rig_cam: side)")
+        if m is None: continue
+        alb_hex[name], report[name] = m["mid"], rp
+    write_lib(lib)
+    json.dump(alb_hex, open(os.path.join(OUT, "albedo.json"), "w"), indent=1)
+    json.dump(report, open(os.path.join(OUT, f"solve_{prev_name or resp_name}.json"), "w"), indent=1)
+    for k, v in report.items(): print(f"{k:11s} board {v['board']} old {v['old']} new {v['new']} fit {v['fit_dE']} {v['clamp'] or ''}")
+
+
+def finish(name, p, a, rows, S, method):
+    """One class's albedo (linear a, solved over rows: (board mean, response, weight, index into S, the class's samples))
+    clamped by the bible and written into its paint as albedo v2 with its distribution: (paint.albedo, the report's line)."""
+    if True:
         a = np.clip(a, 0.008, 0.9)  # (an albedo is reflectance: under 1, and nothing black)
         clamp = []
         # rule 4: the town's surfaces stay weathered by day (the relit day lit side at C 0.07 or under, unless the board's
@@ -191,7 +205,7 @@ def solve(resp_name, prev_name=None):
         lab = lin_to_oklab(a)
         Cmax = 0.14 if name not in ("cloth", "satin", "gloss", "folk_cloth", "crowd_fur", "glass", "water", "skin", "folk_skin", "hair", "gold", "bronze") else 0.3
         if name in TOWN:
-            dayr = [x for x in rows if S[name][x[3]]["rig"] == "day" and SIDE[S[name][x[3]]["role"]] == "lit"]
+            dayr = [x for x in rows if S[x[3]]["rig"] == "day" and SIDE[S[x[3]]["role"]] == "lit"]
             if dayr:
                 drawn = lin_to_oklab(np.mean([a * x[1] for x in dayr], 0)); bC = max(float(np.hypot(*lin_to_oklab(np.mean([x[0] for x in dayr], 0))[1:])), 0.07)
                 dC = float(np.hypot(*drawn[1:]))
@@ -203,37 +217,35 @@ def solve(resp_name, prev_name=None):
         a2 = np.clip(oklab_to_lin(lab), 0.008, 0.9)
         # the distribution: each lit box's kept pixels scaled so its mean lands on the albedo (its own spread kept)
         pool, roles = [], {}
-        for s in S[name]:
+        for s in S:
             if s["role"] not in ("lit", "transition", "highlight", "shade"): continue
             if s["rig"] is None and not p.get("emissive"): continue
             ax = bm.lin_to_lab5(s["px"][5] * (a2 / np.maximum(s["b"], 1e-6)) if s["role"] in ("lit", "transition") else s["px"][5] * (a2 / np.maximum(s["b"], 1e-6)))
             roles.setdefault(s["role"], []).append(ax)
             if s["role"] in ("lit", "transition"): pool.append(ax)
-        if not pool: continue
+        if not pool: return None, None
         cat = lambda ps: [np.concatenate([q[i] for q in ps]) for i in range(5)]
         m = bm.stats(*cat(pool))
         m["mid"] = bm.oklab_to_hex(*[float(v) for v in (lin_to_oklab(a2)[0], np.hypot(*lin_to_oklab(a2)[1:]), np.degrees(np.arctan2(lin_to_oklab(a2)[2], lin_to_oklab(a2)[1])) % 360)])
         m["roles"] = {r: bm.stats(*cat(ps))["mid"] for r, ps in roles.items()}
         resid = [float(np.linalg.norm(lin_to_oklab(a2 * x[1]) - lin_to_oklab(x[0]))) for x in rows]
         m["v"] = 2
-        m["method"] = ("B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least "
-                       "squares over the samples (rig_cam: side)" + (f"; clamped: {'; '.join(clamp)}" if clamp else ""))
-        m["samples"] = sorted({f"{S[name][x[3]]['rig']} {S[name][x[3]]['role']}" for x in rows})
+        m["method"] = method + (f"; clamped: {'; '.join(clamp)}" if clamp else "")
+        m["samples"] = sorted({f"{S[x[3]]['rig']} {S[x[3]]['role']}" for x in rows})
         m["linear"] = [round(float(v), 4) for v in a2]
         m["fit_dE"] = round(float(np.sqrt(np.mean(np.square(resid)))), 4)
         old = p.get("albedo", {}).get("mid")
         p["albedo"] = m
-        alb_hex[name] = m["mid"]
-        report[name] = dict(board=p.get("lit", {}).get("mid"), old=old, new=m["mid"], fit_dE=m["fit_dE"], clamp=clamp, samples=m["samples"])
+        return m, dict(board=p.get("lit", {}).get("mid"), old=old, new=m["mid"], fit_dE=m["fit_dE"], clamp=clamp, samples=m["samples"])
+
+
+def write_lib(lib):
     lib["what"] = lib["what"].replace("paint.albedo the same with the board's light divided out (lights; B2r2)",
                                       "paint.albedo (v2, B3r2) the board's samples over the game's own response to each class (tools/look/calib.py: the swatch row at albedo 1 under the day and night rigs, solved per channel, then iterated on the swatches redrawn in it)")
     s = json.dumps(lib, indent=1)
     s = re.sub(r'\[\s+([^\[\]{}]*?)\s+\]', lambda mm: '[' + re.sub(r'\s+', ' ', mm.group(1)) + ']', s)
     s = re.sub(r'"roles": \{\s+([^{}]*?)\s+\}', lambda mm: '"roles": {' + re.sub(r'\s+', ' ', mm.group(1)) + '}', s)
     open(LIB, "w", encoding="utf-8", newline="\n").write(s + "\n")
-    json.dump(alb_hex, open(os.path.join(OUT, "albedo.json"), "w"), indent=1)
-    json.dump(report, open(os.path.join(OUT, f"solve_{prev_name or resp_name}.json"), "w"), indent=1)
-    for k, v in report.items(): print(f"{k:11s} board {v['board']} old {v['old']} new {v['new']} fit {v['fit_dE']} {v['clamp'] or ''}")
 
 
 def check(name):

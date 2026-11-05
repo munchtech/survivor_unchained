@@ -121,7 +121,9 @@ def shoot(args):
     bp = os.path.join(out, "batch.json"); json.dump(run, open(bp, "w", encoding="utf-8"), indent=1)
     shots = os.path.join(root, "godot", ".shots")
     t0 = time.time() - 5
-    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root]).returncode
+    # --stale-ok (as frames.py): passed to demo_run's turn, for a measure that needs no newer art (B3r3's swatch row)
+    stale = ["--stale-ok"] if "--stale-ok" in args else []
+    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root] + stale).returncode
     if rc != 0: print("demo_run failed", rc); sys.exit(rc)
     got = {}
     for r in rigs:

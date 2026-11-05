@@ -47,7 +47,7 @@ public partial class Game
             // (B3r2: a class given in --b3-albedo is drawn as B3's painted maps draw it (B3Maps.Mat): metallic 0, its roughness)
             var b3 = B3Albedo.TryGetValue(cls, out var bh) ? bh.Split(' ') : null;
             var tint = Args.Has("b3-white") ? Colors.White : b3 != null ? new Color(b3[0]) : new Color(CelLib.Lib.Classes[cls].Mid!);
-            var mat = new StandardMaterial3D { AlbedoColor = tint, Roughness = RoughFor(cls), Metallic = cls is "iron" or "bronze" or "gold" ? 1f : 0f };
+            var mat = new StandardMaterial3D { AlbedoColor = tint, Roughness = RoughFor(cls), Metallic = cls is "iron" or "wrought" or "bronze" or "gold" ? 1f : 0f };
             if (b3 is { Length: > 1 }) { mat.Roughness = float.Parse(b3[1], System.Globalization.CultureInfo.InvariantCulture); mat.Metallic = 0; }
             var mi = new MeshInstance3D { Name = "Swatch_" + cls, Mesh = mesh, MaterialOverride = mat };
             root.AddChild(mi);
@@ -78,7 +78,7 @@ public partial class Game
 
     static float RoughFor(string cls) => cls switch
     {
-        "iron" or "bronze" or "gold" => 0.35f,
+        "iron" or "wrought" or "bronze" or "gold" => 0.35f,
         "gloss" or "glass" => 0.2f,
         "satin" => 0.4f,
         "skin" or "folk_skin" or "leather" => 0.5f,

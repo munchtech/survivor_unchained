@@ -8,7 +8,8 @@
   "MB3": "look_l1/a2/r2/MB3_town.png",
   "MB4": "look_l1/a2/r2/MB4_wild_r3.png",
   "T09": "look_l1/a2/r1/09_v2.png",
-  "LB": "look_l1/a2/r2/LB_light.png"
+  "LB": "look_l1/a2/r2/LB_light.png",
+  "T07": "look_l1/a2/r5/07_r5.png"
  },
  "fallback": "stone",
  "classes": {
@@ -289,6 +290,15 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "shade",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "the folds' shade"
      }
     ],
     "lit": {
@@ -297,7 +307,7 @@
      "h": [277.3, -2.0, 2.1],
      "mid": "#4e5588",
      "n": 4000,
-     "roles": {"lit": "#4e5588"}
+     "roles": {"lit": "#4e5588", "shade": "#2c315a"}
     },
     "albedo": {
      "L": [0.3169, 0.4001, 0.6526],
@@ -427,7 +437,7 @@
    }
   },
   "iron": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day); B3r3: the gear's polished iron only (weapons, armor, the shield's boss); the world's iron is 'wrought' (MB3)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
@@ -466,6 +476,15 @@
        "C": [0, 0.05],
        "lit": true
       }
+     },
+     {
+      "board": "MB2",
+      "box": [1342, 672, 1358, 706],
+      "role": "shade",
+      "mask": {
+       "L": [0.42, 0.6]
+      },
+      "what": "the shield boss's shade half"
      }
     ],
     "lit": {
@@ -474,7 +493,7 @@
      "h": [30.4, -28.3, 29.3],
      "mid": "#9e837e",
      "n": 3139,
-     "roles": {"lit": "#9e837e"}
+     "roles": {"lit": "#9e837e", "shade": "#7d6066"}
     },
     "albedo": {
      "L": [0.4395, 0.5448, 0.7688],
@@ -488,6 +507,86 @@
      "samples": ["day lit"],
      "linear": [0.1949, 0.1984, 0.3103],
      "fit_dE": 0.0807
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "wrought": {
+   "from": "B3r3: world iron, wrought (rule 6 as iron; MB3's barrel hoops and fittings, dark and matte-edged); the gear's polished iron is 'iron' (MB2). Split because one iron measured off MB2's polished boss came out near-white on MB3's dark hoops.",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [1560, 174, 1590, 198],
+      "role": "lit",
+      "mask": {
+       "L": [0.4, 0.56]
+      },
+      "what": "the barrel's upper hoop, lit"
+     },
+     {
+      "board": "MB3",
+      "box": [1560, 318, 1590, 342],
+      "role": "lit",
+      "mask": {
+       "L": [0.4, 0.56]
+      },
+      "what": "the barrel's lower hoop, lit"
+     },
+     {
+      "board": "MB3",
+      "box": [1455, 186, 1475, 206],
+      "role": "shade",
+      "mask": {
+       "L": [0.26, 0.36]
+      },
+      "what": "the upper hoop's shade side"
+     },
+     {
+      "board": "MB3",
+      "box": [1455, 326, 1475, 350],
+      "role": "shade",
+      "mask": {
+       "L": [0.22, 0.32]
+      },
+      "what": "the lower hoop's shade side"
+     }
+    ],
+    "lit": {
+     "L": [0.4087, 0.4556, 0.5173],
+     "C": [0.0389, 0.0451, 0.0627],
+     "h": [2.5, -25.5, 22.3],
+     "mid": "#6d4c55",
+     "n": 1037,
+     "roles": {"lit": "#6d4c55", "shade": "#29233a"}
+    },
+    "albedo": {
+     "L": [0.4196, 0.46, 0.5162],
+     "C": [0.0531, 0.0744, 0.0857],
+     "h": [290.6, -7.7, 17.1],
+     "mid": "#58507f",
+     "n": 1037,
+     "roles": {"lit": "#58507f", "shade": "#202658"}
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -648,6 +747,15 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB3",
+      "box": [1452, 222, 1478, 314],
+      "role": "shade",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "the barrel's shade side, between its hoops"
      }
     ],
     "lit": {
@@ -656,7 +764,7 @@
      "h": [32.6, -56.2, 14.9],
      "mid": "#884d41",
      "n": 12052,
-     "roles": {"lit": "#884d41"}
+     "roles": {"lit": "#884d41", "shade": "#432a37"}
     },
     "albedo": {
      "L": [0.4322, 0.5028, 0.6565],
@@ -713,6 +821,15 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [555, 330, 575, 440],
+      "role": "shade",
+      "mask": {
+       "L": [0.27, 0.36]
+      },
+      "what": "the trunk's shade side"
      }
     ],
     "lit": {
@@ -721,7 +838,7 @@
      "h": [72.0, -45.9, 35.2],
      "mid": "#785527",
      "n": 1101,
-     "roles": {"lit": "#785527"}
+     "roles": {"lit": "#785527", "lit_night": "#2a2b39", "shade": "#372b28"}
     },
     "albedo": {
      "L": [0.2857, 0.4002, 0.5205],
@@ -779,6 +896,16 @@
        "lit": true,
        "h": [195, 320]
       }
+     },
+     {
+      "board": "MB3",
+      "box": [1000, 290, 1100, 400],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.5],
+       "h": [260, 330]
+      },
+      "what": "the wall's lower right in shade"
      }
     ],
     "lit": {
@@ -787,7 +914,7 @@
      "h": [41.3, -20.9, 20.6],
      "mid": "#b2826f",
      "n": 20800,
-     "roles": {"lit": "#b2826f"}
+     "roles": {"lit": "#b2826f", "lit_night": "#3b3f64", "shade": "#47405d"}
     },
     "albedo": {
      "L": [0.5035, 0.5644, 0.6966],
@@ -844,6 +971,16 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [720, 290, 790, 380],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.47],
+       "h": [250, 330]
+      },
+      "what": "the boulder's shade face"
      }
     ],
     "lit": {
@@ -852,7 +989,7 @@
      "h": [32.9, -97.0, 26.8],
      "mid": "#836b65",
      "n": 13519,
-     "roles": {"lit": "#836b65"}
+     "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
     },
     "albedo": {
      "L": [0.3975, 0.4745, 0.6389],
@@ -910,6 +1047,12 @@
        "lit": true,
        "h": [195, 320]
       }
+     },
+     {
+      "board": "MB3",
+      "box": [440, 100, 480, 200],
+      "role": "shade",
+      "what": "the upper-left panel in the beam's shade"
      }
     ],
     "lit": {
@@ -918,7 +1061,7 @@
      "h": [57.0, -44.7, 11.1],
      "mid": "#fdbb8b",
      "n": 7703,
-     "roles": {"lit": "#fdbb8b"}
+     "roles": {"lit": "#fdbb8b", "lit_night": "#635370", "shade": "#7b6176"}
     },
     "albedo": {
      "L": [0.5921, 0.7918, 0.8155],
@@ -976,6 +1119,25 @@
        "lit": true,
        "h": [195, 320]
       }
+     },
+     {
+      "board": "MB3",
+      "box": [1150, 140, 1400, 380],
+      "role": "shade",
+      "mask": {
+       "L": [0.27, 0.38]
+      },
+      "what": "the tiles' shaded under-sides"
+     },
+     {
+      "board": "T07",
+      "box": [1500, 650, 1620, 800],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "07: the right house's roof in its own shade"
      }
     ],
     "lit": {
@@ -984,7 +1146,7 @@
      "h": [22.8, -32.5, 20.4],
      "mid": "#a05654",
      "n": 30001,
-     "roles": {"lit": "#a05654"}
+     "roles": {"lit": "#a05654", "lit_night": "#29376b", "shade": "#452a42"}
     },
     "albedo": {
      "L": [0.3828, 0.4602, 0.6057],
@@ -1042,6 +1204,16 @@
        "lit": true,
        "h": [195, 320]
       }
+     },
+     {
+      "board": "T07",
+      "box": [745, 615, 775, 672],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.33, 0.45]
+      },
+      "what": "07: the setts in her cast shadow"
      }
     ],
     "lit": {
@@ -1050,7 +1222,7 @@
      "h": [39.5, -17.9, 11.6],
      "mid": "#b9806c",
      "n": 31201,
-     "roles": {"lit": "#b9806c"}
+     "roles": {"lit": "#b9806c", "lit_night": "#3e4575", "shade": "#4a3c64"}
     },
     "albedo": {
      "L": [0.5263, 0.5646, 0.6439],
@@ -1247,6 +1419,26 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [100, 220, 400, 420],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.45],
+       "h": [110, 170]
+      },
+      "what": "the blades' shaded sides"
+     },
+     {
+      "board": "T07",
+      "box": [1150, 350, 1350, 500],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.27, 0.36]
+      },
+      "what": "07: the grass in the house's shadow"
      }
     ],
     "lit": {
@@ -1255,7 +1447,7 @@
      "h": [104.1, -15.0, 19.5],
      "mid": "#aaa036",
      "n": 30003,
-     "roles": {"lit": "#aaa036"}
+     "roles": {"lit": "#aaa036", "lit_night": "#286770", "shade": "#1c374f"}
     },
     "albedo": {
      "L": [0.459, 0.6131, 0.6694],
@@ -1314,6 +1506,17 @@
        "C": [0.05, 1],
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [460, 200, 640, 440],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.5],
+       "h": [90, 160],
+       "C": [0.03, 1]
+      },
+      "what": "the spruce's shaded tiers"
      }
     ],
     "lit": {
@@ -1322,7 +1525,7 @@
      "h": [97.5, -11.8, 13.0],
      "mid": "#ae9936",
      "n": 8267,
-     "roles": {"lit": "#ae9936"}
+     "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
     },
     "albedo": {
      "L": [0.5182, 0.5915, 0.6731],
@@ -1387,7 +1590,7 @@
      "h": [207.3, -132.5, 37.9],
      "mid": "#46858e",
      "n": 15200,
-     "roles": {"lit": "#46858e"}
+     "roles": {"lit": "#46858e", "lit_night": "#06497b"}
     },
     "albedo": {
      "L": [0.4885, 0.5106, 0.7432],
@@ -1721,8 +1924,14 @@
    "class": "bronze"
   },
   {
-   "material": "(?i)iron|steel|metal|chain|nail|hoop|rivet|blade|sword|axe|hinge|anvil",
-   "class": "iron"
+   "material": "(?i)blade|sword|axe|steel|armou?r|helm|gauntlet|greave|mail|boss|weapon",
+   "class": "iron",
+   "what": "B3r3: gear iron (polished, MB2)"
+  },
+  {
+   "material": "(?i)wrought|iron|metal|chain|nail|hoop|rivet|hinge|anvil|bracket|fitting",
+   "class": "wrought",
+   "what": "B3r3: world iron (wrought, MB3: the barrel's hoops, fittings)"
   },
   {
    "material": "(?i)leather|strap|belt|boot|saddle",
@@ -1964,6 +2173,12 @@
     "y": [0, 2000],
     "panel": "moon",
     "what": "frame 09, the arena at night: the crowd's lit sides are the moon's (their lit color is moon-blue)"
+   },
+   {
+    "board": "T07",
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "frame 07 (07_r5), the town by day: its shade color is the day rig's target (rule 1: its share of shade and its violet-blue shade, not its key), so only its shade boxes are read (B3r3's joint solve)"
    }
   ]
  }

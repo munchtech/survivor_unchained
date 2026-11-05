@@ -133,8 +133,11 @@ public partial class Game
         scene.Fx.Flare.Night = night;
         scene.View.SetDusk(false);
         // The town's lamps go cold by day (ZoneView.Town); the fire burns in every rig.
-        foreach (var f in lookFlames) f.Lit = rig != "day";
-        foreach (var l in lookLamps) Lamps.SetLit(l, rig != "day");
+        // (L1 B3r3: --lookdev-lamps 0 keeps the stage's lamps dark in every rig: the swatch row's night relit check, the
+        // moon alone, as the boards' moonlit panels are read away from their lanterns.)
+        bool lampsOn = rig != "day" && Args.Num("lookdev-lamps", 1f) > 0;
+        foreach (var f in lookFlames) f.Lit = lampsOn;
+        foreach (var l in lookLamps) Lamps.SetLit(l, lampsOn);
         if (lookFireLight != null)
         {
             lookFireLight.ShadowEnabled = rig != "day";
