@@ -7813,7 +7813,39 @@
      "text": "It's cleaner than I made it. I don't know why."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "wenna/dlg.wenna.cb_clean.0.ogg",
+    "hash": "078d1461a3e3",
+    "sec": 2.98,
+    "segs": [
+     [
+      0.0,
+      2.728,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "wenna",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.wenna.cb_clean.0\\p0_vc_r1_0d842c.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.563,
+      "utmos": 3.21,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "It's cleaner than I made it. I don't know why.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 2.73,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "dlg.wenna.cb_clean.1",
@@ -7828,7 +7860,39 @@
      "text": "It's cleaner than it was. I don't know why."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "wenna/dlg.wenna.cb_clean.1.ogg",
+    "hash": "f51662dcc16d",
+    "sec": 3.35,
+    "segs": [
+     [
+      0.0,
+      3.104,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "wenna",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.wenna.cb_clean.1\\p0_vc_r1_7016a7.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.606,
+      "utmos": 3.68,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "\"'It's cleaner than it was. I don't know why.'",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 3.1,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "dlg.wenna.cb_clean.2",
@@ -7843,7 +7907,39 @@
      "text": "It's clean. I don't know why it's clean."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "wenna/dlg.wenna.cb_clean.2.ogg",
+    "hash": "eec85ddc9a64",
+    "sec": 4.21,
+    "segs": [
+     [
+      0.0,
+      3.961,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "wenna",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.wenna.cb_clean.2\\p0_vc_r1_922422.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.619,
+      "utmos": 3.22,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "It's clean. I don't know why it's clean.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 3.96,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "dlg.tam.first.0",
@@ -31221,7 +31317,39 @@
      "text": "He gets up."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.door_night.gets_up.0.ogg",
+    "hash": "4885b6b08026",
+    "sec": 0.99,
+    "segs": [
+     [
+      0.0,
+      0.99,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.door_night.gets_up.0\\p0_vc_r1_935418.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.453,
+      "utmos": 3.66,
+      "accent": "newzealand",
+      "wps": 0.0,
+      "said": "He gets up.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 0.99,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "ply.door_night.gets_up.0",
@@ -31246,7 +31374,39 @@
      "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.door_night.gone.0.ogg",
+    "hash": "0577c2867752",
+    "sec": 7.16,
+    "segs": [
+     [
+      0.0,
+      7.158,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.door_night.gone.0\\p0_vc_r1_07ecfb.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.804,
+      "utmos": 4.02,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 7.16,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "ply.door_night.gone.0",
@@ -31271,7 +31431,39 @@
      "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.door_night.heart.0.ogg",
+    "hash": "e1a1f99d19a5",
+    "sec": 25.66,
+    "segs": [
+     [
+      0.0,
+      25.661,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.door_night.heart.0\\p0_vc_r1_72cc28.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.814,
+      "utmos": 3.89,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "The guard goes down and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet and lifts and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 25.66,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "ply.door_night.heart.0",
@@ -31296,7 +31488,39 @@
      "text": "The dead step back onto the stair, all together, rank by rank, and stand."
     }
    ],
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.door_night.ranks.0.ogg",
+    "hash": "6490712c2d4c",
+    "sec": 5.7,
+    "segs": [
+     [
+      0.0,
+      5.7,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.door_night.ranks.0\\p0_vc_r1_d91810.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.824,
+      "utmos": 3.85,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "The dead step back onto the stair, all together, rank by rank, and stand.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-11-05",
+    "read": 5.7,
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "ply.door_night.ranks.0",

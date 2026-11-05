@@ -192,6 +192,118 @@
    ],
    "voice": "warden"
   },
+  "dlg.door_night.gets_up.0": {
+   "file": "narrator/dlg.door_night.gets_up.0.ogg",
+   "hash": "4885b6b08026",
+   "placeholder": true,
+   "read": 0.99,
+   "sec": 0.99,
+   "segs": [
+    [
+     0.0,
+     0.99,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.door_night.gone.0": {
+   "file": "narrator/dlg.door_night.gone.0.ogg",
+   "hash": "0577c2867752",
+   "placeholder": true,
+   "read": 7.16,
+   "sec": 7.16,
+   "segs": [
+    [
+     0.0,
+     7.158,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.door_night.heart.0": {
+   "file": "narrator/dlg.door_night.heart.0.ogg",
+   "hash": "e1a1f99d19a5",
+   "placeholder": true,
+   "read": 25.66,
+   "sec": 25.66,
+   "segs": [
+    [
+     0.0,
+     25.661,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.door_night.ranks.0": {
+   "file": "narrator/dlg.door_night.ranks.0.ogg",
+   "hash": "6490712c2d4c",
+   "placeholder": true,
+   "read": 5.7,
+   "sec": 5.7,
+   "segs": [
+    [
+     0.0,
+     5.7,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.wenna.cb_clean.0": {
+   "file": "wenna/dlg.wenna.cb_clean.0.ogg",
+   "hash": "078d1461a3e3",
+   "placeholder": true,
+   "read": 2.73,
+   "sec": 2.98,
+   "segs": [
+    [
+     0.0,
+     2.728,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "wenna"
+  },
+  "dlg.wenna.cb_clean.1": {
+   "file": "wenna/dlg.wenna.cb_clean.1.ogg",
+   "hash": "f51662dcc16d",
+   "placeholder": true,
+   "read": 3.1,
+   "sec": 3.35,
+   "segs": [
+    [
+     0.0,
+     3.104,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "wenna"
+  },
+  "dlg.wenna.cb_clean.2": {
+   "file": "wenna/dlg.wenna.cb_clean.2.ogg",
+   "hash": "eec85ddc9a64",
+   "placeholder": true,
+   "read": 3.96,
+   "sec": 4.21,
+   "segs": [
+    [
+     0.0,
+     3.961,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "wenna"
+  },
   "say.178e6dd0ad78": {
    "file": "narrator/say.178e6dd0ad78.ogg",
    "hash": "178e6dd0ad78",
@@ -237,21 +349,6 @@
    ],
    "voice": "narrator"
   },
-  "say.b81f9a1e8df8": {
-   "file": "watchman/say.b81f9a1e8df8.ogg",
-   "hash": "b81f9a1e8df8",
-   "placeholder": true,
-   "sec": 6.37,
-   "segs": [
-    [
-     0.0,
-     6.369,
-     0.0,
-     1.0
-    ]
-   ],
-   "voice": "watchman"
-  },
   "say.8caf4a838291": {
    "file": "narrator/say.8caf4a838291.ogg",
    "hash": "8caf4a838291",
@@ -266,6 +363,21 @@
     ]
    ],
    "voice": "narrator"
+  },
+  "say.b81f9a1e8df8": {
+   "file": "watchman/say.b81f9a1e8df8.ogg",
+   "hash": "b81f9a1e8df8",
+   "placeholder": true,
+   "sec": 6.37,
+   "segs": [
+    [
+     0.0,
+     6.369,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "watchman"
   }
  }
 }
