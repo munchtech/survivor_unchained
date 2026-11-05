@@ -7,6 +7,7 @@ shader_type spatial;
 render_mode cull_disabled;
 // (the material library, godot/data/look/materials.json: this shader's default class, iron: a thrown steel blade; L1 B2r2)
 #define CEL_SPEC vec4(7.0, 1.0, 1.0, 1.0)
+#define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
 #define CEL_EXACT_ROUGH
 #include "res://shaders/cel.gdshaderinc"
 

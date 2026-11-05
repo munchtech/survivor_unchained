@@ -18,7 +18,7 @@ render_mode sss_mode_skin, cull_disabled;
 #define CEL_MID vec4(0.85, 0.45, 0.38, 0.8)
 #define CEL_FORM 0.3
 #define CEL_SPEC vec4(6.0, 1.0, 0.5, 0.85)   // (rule 6: 85% key color; the library's skin)
-#define CEL_NMAP 0.35
+#define CEL_NMAP 0.10
 #define CEL_OWN_LIGHT
 #include "res://shaders/cel.gdshaderinc"
 // (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)

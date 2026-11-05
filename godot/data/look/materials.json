@@ -14,13 +14,13 @@
  "fallback": "stone",
  "classes": {
   "skin": {
-   "from": "rules 5 (skin half-tone 0.85,0.45,0.38 at 0.8; edge 0.08 B1b, judged), 6 (6 deg at 0.5, 85% key color), 8 (class 1), 11; MB1 chips",
+   "from": "rules 5 (skin half-tone 0.85,0.45,0.38 at 0.8; edge 0.08 B1b, judged), 6 (6 deg at 0.5, 85% key color), 8 (class 1), 11; MB1 chips (C2: cel_nmap 0.1; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.08],
     "mid": [0.85, 0.45, 0.38, 0.8],
     "form": 0.3,
     "spec": [6.0, 1.0, 0.5, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.1,
     "ink": 1,
     "rim_k": 1.0
    },
@@ -204,13 +204,13 @@
    }
   },
   "leather": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (9 deg at 0.6), 7, 8 (class 0: gear), 9 (two-tone, sheen on the lit edge); MB2 leather (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (9 deg at 0.6), 7, 8 (class 0: gear), 9 (two-tone, sheen on the lit edge); MB2 leather (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 0.6, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -325,13 +325,13 @@
    }
   },
   "satin": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (a hard streak: no number in the bible, so the leather disc hardened to a 0.75 deg edge), 7, 8; MB2 her skirt (day, navy)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (a hard streak: no number in the bible, so the leather disc hardened to a 0.75 deg edge), 7, 8; MB2 her skirt (day, navy) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 0.75, 0.6, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -381,13 +381,13 @@
    }
   },
   "gloss": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard shaped highlight; no number, so skin's 6 deg at full strength, 0.75 edge), 7, 8; MB2 the pauldron's lacquered plate (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard shaped highlight; no number, so skin's 6 deg at full strength, 0.75 edge), 7, 8; MB2 the pauldron's lacquered plate (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [6.0, 0.75, 1.0, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -437,13 +437,13 @@
    }
   },
   "iron": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day); B3r3: the gear's polished iron only (weapons, armor, the shield's boss); the world's iron is 'wrought' (MB3)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day); B3r3: the gear's polished iron only (weapons, armor, the shield's boss); the world's iron is 'wrought' (MB3) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [7.0, 1.0, 1.0, 1.0],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -597,13 +597,13 @@
    "sheen": [20.0, 4.0, 0.35, 1.0]
   },
   "bronze": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 the pauldron's trim (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 the pauldron's trim (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [7.0, 1.0, 1.0, 1.0],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -655,13 +655,13 @@
    "sheen": [20.0, 4.0, 0.35, 1.0]
   },
   "gold": {
-   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 her outfit's trim and studs (day)",
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 her outfit's trim and studs (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
    "cel": {
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [7.0, 1.0, 1.0, 1.0],
-    "nmap": 0.35,
+    "nmap": 0.2,
     "ink": 0,
     "rim_k": 1.0
    },

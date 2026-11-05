@@ -12,11 +12,13 @@
 #define CEL_OWN_LIGHT
 // (the library's leather, rule 6: the fallback only; her own light draws each kind's highlight, outfit_hl)
 #define CEL_SPEC vec4(9.0, 1.5, 0.6, 0.85)
+#define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
 #if !defined(OUTFIT_METAL_LIGHT) && !defined(OUTFIT_SATIN_LIGHT)
 #define OUTFIT_BASE_LIGHT
 #define CEL_CLEARCOAT
 #endif
 #include "res://shaders/cel.gdshaderinc"
+#define OUTFIT_HL_ROUGH 0.3
 
 uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin
 uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -610,6 +612,10 @@ void fragment() {
 
 // The cel model's highlight by kind (see the header), as SPECULAR_LIGHT; lit_sh the lit band times the key's shadow.
 vec3 outfit_hl(vec3 n, vec3 l, vec3 v, vec3 lc, float lit_sh, float r, float mt, vec3 alb, float sp, float amt) {
+	// (L1 C2, rule 6 and the Stage B judge: her metal's highlight was a white smear: the disc's strength faded with the
+	// roughness map, pixel by pixel. Metal and gloss draw theirs by the kind's fixed roughness (OUTFIT_HL_ROUGH: under the
+	// fade, so the 20 degree sky band at 0.35 and the 7 degree key highlight at 1.0 are whole shapes); leather keeps its map)
+	if (kind == 1 || kind == 3) r = OUTFIT_HL_ROUGH;
 	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_fill * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
 		+ cel_spec_disc(vec4(7.0, 1.0, 1.0, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	if (kind == 0) return cel_spec_disc(vec4(9.0, 1.5, 0.6, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
