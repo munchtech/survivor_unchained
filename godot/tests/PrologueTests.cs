@@ -5,6 +5,7 @@ using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
+using SurvivorUnchained.Content;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
@@ -125,6 +126,38 @@ public class PrologueTests
         s.B.KillEnemy(s.B.Enemies.Living().Single(e => e.Tag == "caller"), true, null);
         Run(s, 1.2);
         Assert.Equal(Prologue.Stage.ToFord, s.Zone.Now);
+    }
+
+    [Fact]
+    public void The_Ford_Warden_holds_at_his_floor_until_two_lamps_are_broken()
+    {
+        // (H8, N20, the owner on demo-rc2: "the warden was easy. died in like 8 seconds didn't have to crash a lamp")
+        var s = Make();
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 0.1);
+        Run(s, 7);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var warden = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var fw = Teeth.Ford!;
+        Assert.Equal(2600 * fw.HpMul, warden.MaxHp, 0);
+        void Pound() { for (int i = 0; i < 40; i++) { s.B.HitEnemy(warden, 5000, School.Physical, []); Run(s, 0.02); } }
+        Pound();
+        Assert.True(warden.Alive);
+        Assert.InRange(warden.Hp / warden.MaxHp, fw.Floors[3] - 0.01, fw.Floors[3] + 0.05);
+        // One lamp broken: down to the next floor, no further.
+        var p0 = s.Meta.Colliders.First(c => c.Tag == "pylon:0");
+        s.Zone.Hooks.OnHitProp!("pylon:0", p0.Id, School.Physical, 300, p0.X, p0.Z);
+        Pound();
+        Assert.True(warden.Alive);
+        Assert.InRange(warden.Hp / warden.MaxHp, fw.Floors[2] - 0.01, fw.Floors[2] + 0.05);
+        // Two broken: he can fall (after the backstop's minute).
+        var p1 = s.Meta.Colliders.First(c => c.Tag == "pylon:1");
+        s.Zone.Hooks.OnHitProp!("pylon:1", p1.Id, School.Physical, 300, p1.X, p1.Z);
+        Run(s, fw.MinSeconds);
+        if (warden.Alive) Pound();
+        Assert.False(warden.Alive);
     }
 
     [Fact]
