@@ -80,7 +80,8 @@ public partial class ZoneView : Node3D
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         yield return "ground";
-        AddChild(Water.Build(z));
+        AddChild(water = Water.Build(z));
+        if (states.Count > 0) ApplyStates();
         yield return "water";
         if (MistLayers.Build(z) is { } mist) AddChild(mist);
         Perf.Lap("ground and water");
@@ -747,6 +748,79 @@ public partial class ZoneView : Node3D
     }
 
     float healed;
+
+    WaterRoot? water;
+    /// <summary>The story states on (the zone's states.json, in its order), and the file once read.</summary>
+    readonly List<string> states = new();
+    System.Text.Json.Nodes.JsonObject? stateLooks;
+
+    /// <summary>A story state of the zone's look on or off (data/zones/ZONE/states.json: each state its ground's "heal"
+    /// (0..1, the blight's paint, veins and glow drawn back, the grass's too) and its "water" (one object a body, in
+    /// water.json's order, keys as water_look.json's over the look as built)): the Verge's "clear" when the stream runs
+    /// clean. Off, the look is as built. Several on: later states' keys over earlier ones', the most heal.</summary>
+    public void SetState(string state, bool on)
+    {
+        if (on == states.Contains(state)) return;
+        if (on) states.Add(state); else states.Remove(state);
+        ApplyStates();
+    }
+
+    /// <summary>The zone's states and each one's "when" (a rules condition over the world's facts, as JSON; the host
+    /// tests it and calls SetState: Game.LookStates).</summary>
+    public IEnumerable<(string State, string When)> StateWhens()
+    {
+        foreach (var (name, node) in StateLooks())
+            if (node is System.Text.Json.Nodes.JsonObject st && st["when"] is { } w) yield return (name, w.ToJsonString());
+    }
+
+    System.Text.Json.Nodes.JsonObject StateLooks()
+    {
+        string path = $"{Data.Dir}/states.json";
+        stateLooks ??= FileAccess.FileExists(path) ? System.Text.Json.Nodes.JsonNode.Parse(FileAccess.GetFileAsString(path)) as System.Text.Json.Nodes.JsonObject : null;
+        return stateLooks ??= new();
+    }
+
+    void ApplyStates()
+    {
+        float heal = 0;
+        System.Text.Json.Nodes.JsonArray? over = null;
+        foreach (var (name, node) in StateLooks())
+        {
+            if (!states.Contains(name) || node is not System.Text.Json.Nodes.JsonObject st) continue;
+            if (st["heal"] is System.Text.Json.Nodes.JsonValue hv && hv.TryGetValue<double>(out var h)) heal = Mathf.Max(heal, (float)h);
+            if (st["water"] is System.Text.Json.Nodes.JsonArray wa)
+            {
+                over ??= new();
+                for (int i = 0; i < wa.Count; i++)
+                {
+                    while (over.Count <= i) over.Add(new System.Text.Json.Nodes.JsonObject());
+                    if (wa[i] is System.Text.Json.Nodes.JsonObject wo && over[i] is System.Text.Json.Nodes.JsonObject oo)
+                        foreach (var (k, v) in wo) oo[k] = v?.DeepClone();
+                }
+            }
+        }
+        if (ground != null) SetHeal(heal);
+        water?.Relook(over);
+        // "unlit": the zone's lights at these places ({x, z}, within a metre) put out while a state holds them (the Dig's
+        // slurry glow, once the stream runs clean), lit again when none does; "stop": landmark pieces that turn, stilled.
+        var dark = new HashSet<int>();
+        foreach (var (name, node) in StateLooks())
+        {
+            if (!states.Contains(name) || node is not System.Text.Json.Nodes.JsonObject st) continue;
+            if (st["unlit"] is System.Text.Json.Nodes.JsonArray ua)
+                foreach (var u in ua)
+                    if (u?["x"]?.GetValue<double>() is double ux && u["z"]?.GetValue<double>() is double uz)
+                        for (int i = 0; i < Data.Meta.Lights.Count; i++)
+                            if (Mathf.Abs(Data.Meta.Lights[i].X - ux) < 1 && Mathf.Abs(Data.Meta.Lights[i].Z - uz) < 1) dark.Add(i);
+            if (st["stop"] is System.Text.Json.Nodes.JsonArray sa)
+                foreach (var n in sa) if (n?.GetValue<string>() is string sn) Stop(sn);
+        }
+        foreach (int i in dark) if (i < lit.Count && lit[i]) { SetLit(i, false); stateDark.Add(i); }
+        foreach (int i in stateDark.Where(i => !dark.Contains(i)).ToList()) { if (i < lit.Count) SetLit(i, true); stateDark.Remove(i); }
+    }
+
+    /// <summary>The lights a state put out (to light again when no state holds them).</summary>
+    readonly HashSet<int> stateDark = new();
 
     /// <summary>The kit pieces of a kind within r of a point, taken away in
     /// play (the strongbox carried off, the crates rolled into the stream):

@@ -688,7 +688,7 @@ public partial class Game : Node, IZoneHost
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
             : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
-        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
+        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); LookStates(dt); };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
         var fl = scene.Fx.Flare;
@@ -826,6 +826,8 @@ public partial class Game : Node, IZoneHost
         // --stage day: the Low Ford Road begun at C04 A's dawn, the day stretch ahead (H4 item 10's proof).
         if (z is SurvivorUnchained.Play.Zones.Prologue pd && Args.Get("stage") == "day") pd.DayStart = true;
         z.Begin(b);
+        statesT = 0;
+        LookStates(0);
         Perf.Lap("play: the zone begun (its people, its pieces)");
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));

@@ -1,0 +1,60 @@
+{
+  "clear": {
+    "_doc": "P9 C15: the Verge with its stream run clean (Verge.StreamClean: stream.clear, or the beasts cured), play and film alike. The ground's blight drawn back (its paint, veins and glow, the grass's too) and the water clear over its bed in the zone's own light; sick is the look as built (water.json). Game.LookStates tests the when; ZoneView.SetState lays it on. \"unlit\": the pump's slurry glow (zone light 7, #8aff5a) out.",
+    "when": {
+      "any": [
+        {
+          "fact": "stream.clear",
+          "eq": true
+        },
+        {
+          "fact": "beasts.outcome",
+          "eq": "cured"
+        }
+      ]
+    },
+    "heal": 1,
+    "water": [
+      {
+        "color": "#2a4650",
+        "murk": "#0e1c20",
+        "sky": "#6a8296",
+        "shallow": "#9a9478",
+        "foam": "#d0d8d4",
+        "glow": 0,
+        "clarity": 0.9,
+        "deep": 1.4,
+        "band_amt": 0.4,
+        "band_size": 6,
+        "flow_lines": 0.2,
+        "flow_line_size": 2.5,
+        "ripple_shade": 0.3,
+        "ripple_sheen": 0.5,
+        "bed": {
+          "pebbles": 0.85,
+          "silt": 0.8,
+          "silt_color": "#6a5a40",
+          "wet": 0.3,
+          "wet_dark": 0.3,
+          "relief": 0.1
+        }
+      }
+    ],
+    "unlit": [
+      {
+        "x": 94,
+        "z": -94
+      }
+    ]
+  },
+  "still": {
+    "_doc": "P9 C15: the morning after the second chain (hollow.healed): \"On the Dig's hill, nothing moves.\" The pump's wheel stands still (it turns until dig.pump says otherwise, Verge.Begin).",
+    "when": {
+      "fact": "hollow.healed",
+      "exists": true
+    },
+    "stop": [
+      "pump_wheel"
+    ]
+  }
+}

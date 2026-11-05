@@ -73,9 +73,9 @@ public static class Water
             if (r.GetRef().Obj is ShaderMaterial m) { m.SetShaderParameter("streak_at", at); m.SetShaderParameter("streak_tint", tint); }
     }
 
-    public static Node3D Build(ZoneData z)
+    public static WaterRoot Build(ZoneData z)
     {
-        var root = new Node3D { Name = "Water" };
+        var root = new WaterRoot { Name = "Water" };
         var dir = z.Dir;
         // A zone with no bed of its own keeps a dry ground (the globals outlive the zone).
         RenderingServer.GlobalShaderParameterSet("water_bed", Vector4.Zero);
@@ -128,6 +128,7 @@ public static class Water
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
             Look(mat, look);
             Bed(look);
+            root.Bodies.Add((mat, look.Clone()));
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             mats.RemoveAll(r => r.GetRef().Obj == null);
             mats.Add(GodotObject.WeakRef(mat));
@@ -135,6 +136,10 @@ public static class Water
         }
         return root;
     }
+
+    /// <summary>The keys Look sets only when the look has them, put back to the shader's own before a look goes on again
+    /// (a state's keys taken off: WaterRoot.Relook).</summary>
+    static string[] Optional => ["moon_tint", .. Keys];
 
     static ImageTexture? grad;
 
@@ -171,6 +176,12 @@ public static class Water
         var n = look.ValueKind == JsonValueKind.Object ? JsonNode.Parse(look.GetRawText()) as JsonObject ?? new JsonObject() : new JsonObject();
         foreach (var (k, v) in o) n[k] = v?.DeepClone();
         return JsonSerializer.SerializeToElement(n);
+    }
+
+    /// <summary>The optional keys back to the shader's own (a null parameter is the shader's default).</summary>
+    internal static void Reset(ShaderMaterial mat)
+    {
+        foreach (var k in Optional) mat.SetShaderParameter(k, new Variant());
     }
 
     /// <summary>The water's colours as the zone gives them (WaterOpts: sRGB
