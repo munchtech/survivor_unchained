@@ -331,7 +331,7 @@ void Arena()
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
                                 Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: bot == "deft", Minutes: opt.Has("minutes") ? opt.Double("minutes", 30) : SurvivorUnchained.Arena.Arenas.TableMinutes(tier), Type: ty, Lamps: lampsOpt, Flare: opt.Get("flare", ""),
-                                Bot: bot is "human" or "careless" ? bot : ""));
+                                Bot: bot is "human" or "careless" or "standing" or "camper" or "kiter" or "idler" ? bot : ""));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     if (opt.Get("pair", "0") != "0") { HandPairs(specs, outPath); return; }

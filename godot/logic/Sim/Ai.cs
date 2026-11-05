@@ -119,7 +119,15 @@ public static class Ai
         var def = e.Def;
         double speed = e.Speed * SlowFactor(e) * (e.HasteT > 0 ? e.Haste : 1) * b.HamstrungMul(e) * (e.SlowUntil > b.Time ? 1 - e.SlowBy : 1); // butcher.hamstrung; the bell's iron
         double wantX = dx / dist, wantZ = dz / dist;
-        e.Facing = Math.Atan2(dz, dx);
+        // A steer point (Enemy.Steer, the arena's director): a hunter of hers walks there instead (a leader cutting her off).
+        // (only while its way there is clear: behind cover it comes round by the flow field as the rest do)
+        bool steer = e.Steer && tgt.Player && b.Collision.Raycast(e.X, e.Z, e.SteerX, e.SteerZ, 0.3) == null;
+        if (steer)
+        {
+            double sx = e.SteerX - e.X, sz = e.SteerZ - e.Z, sl = Len(sx, sz);
+            if (sl > 0.3) { wantX = sx / sl; wantZ = sz / sl; }
+        }
+        e.Facing = steer ? Math.Atan2(wantZ, wantX) : Math.Atan2(dz, dx);
 
         // Fear: away from the survivor.
         if (s.Has(StatusKind.Fear))
@@ -297,10 +305,20 @@ public static class Ai
                 // Fan out to a slot around the target, then close together.
                 if (dist > 5.5 && tgt.Player)
                 {
-                    double ox = tgt.X + Math.Cos(e.Slot) * 4, oz = tgt.Z + Math.Sin(e.Slot) * 4;
-                    double d2 = Dist(ox, oz, e.X, e.Z);
-                    if (d2 == 0) d2 = 1;
-                    wantX = (ox - e.X) / d2; wantZ = (oz - e.Z) / d2;
+                    // (held up against cover on the way to its slot: round it by the flow field, Battle.PackRoundCover)
+                    if (b.PackRoundCover && !steer && e.FlowUntil <= b.Time && b.Time >= e.CoverCheckAt)
+                    {
+                        e.CoverCheckAt = b.Time + 0.5;
+                        if (b.Collision.Raycast(e.X, e.Z, tgt.X + Math.Cos(e.Slot) * 4, tgt.Z + Math.Sin(e.Slot) * 4, 0.3) != null) e.FlowUntil = b.Time + 2;
+                    }
+                    // (not a leader on its steer point: it cuts her off instead)
+                    if (!steer && e.FlowUntil <= b.Time)
+                    {
+                        double ox = tgt.X + Math.Cos(e.Slot) * 4, oz = tgt.Z + Math.Sin(e.Slot) * 4;
+                        double d2 = Dist(ox, oz, e.X, e.Z);
+                        if (d2 == 0) d2 = 1;
+                        wantX = (ox - e.X) / d2; wantZ = (oz - e.Z) / d2;
+                    }
                     speed *= 1.1;
                 }
                 break;
@@ -347,11 +365,12 @@ public static class Ai
         }
 
         // Follow the flow field around obstacles when chasing the survivor.
-        if (tgt.Player && def.Behavior != Behavior.Ranged && def.Behavior != Behavior.Caster && dist > 1.2)
+        if (tgt.Player && !steer && def.Behavior != Behavior.Ranged && def.Behavior != Behavior.Caster && dist > 1.2)
         {
             if (b.Flow.Dir(e.X, e.Z, out double fx, out double fz))
             {
-                double flowW = def.Behavior == Behavior.Pack && dist > 5.5 ? 0.35 : 0.85;
+                // (a recalled foe stuck behind cover follows the field wholly for a while: Enemy.FlowUntil)
+                double flowW = e.FlowUntil > b.Time ? 1 : def.Behavior == Behavior.Pack && dist > 5.5 ? 0.35 : 0.85;
                 wantX = wantX * (1 - flowW) + fx * flowW;
                 wantZ = wantZ * (1 - flowW) + fz * flowW;
                 double m = Len(wantX, wantZ);
@@ -611,7 +630,9 @@ public static class Ai
         double wx = dx / d, wz = dz / d;
         if (b.GoalFlow != null && d > 2 && b.GoalFlow.Dir(e.X, e.Z, out double fx, out double fz))
         {
-            wx = wx * 0.15 + fx * 0.85; wz = wz * 0.15 + fz * 0.85;
+            // (a recalled walker stuck on cover follows the field wholly for a while: Enemy.FlowUntil)
+            double fw = e.FlowUntil > b.Time ? 1 : 0.85;
+            wx = wx * (1 - fw) + fx * fw; wz = wz * (1 - fw) + fz * fw;
             double m = Len(wx, wz);
             if (m > 0) { wx /= m; wz /= m; }
         }

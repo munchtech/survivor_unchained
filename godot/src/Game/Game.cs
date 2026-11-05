@@ -1119,6 +1119,7 @@ public partial class Game : Node, IZoneHost
                 if (tg.Kind != TelegraphKind.Safe) marks.Add(new Ui.HudMark(tg, playedT + tg.Duration));
             if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             if (Shots.On("elite")) EliteShot(e);
+            if (Shots.On("h6")) H6Shot(e);
             // --on tells: each kit telegraph (ring, charge, pull, closing) a third and two thirds into its windup and just after it lands.
             if (Shots.On("tells") && e is Ev.Telegraph kt && kt.Tell is { Length: > 0 } kind)
             {
@@ -1395,6 +1396,7 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            if (Shots.On("h6")) H6Frame(fb2);
             // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
             // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
             // faded all the time)

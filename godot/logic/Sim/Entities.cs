@@ -156,6 +156,14 @@ public sealed class Enemy : Pooled
     /// frightened. False on every spawn.</summary>
     public bool Goal;
     public double GoalX, GoalZ, GoalAggro;
+    /// <summary>A steer point (H6, the arena's director, Play/Zones/ArenaRun.Director.cs): while Steer, a hunter of hers walks
+    /// to (SteerX, SteerZ) rather than straight at her; the zone moves the point (a pack's leader cutting her off ahead) and
+    /// lets go of it. FlowUntil: until this time (the battle's clock) it follows the battle's flow field to her wholly (a
+    /// foe stuck behind cover, recalled). False and 0 on every spawn.</summary>
+    public bool Steer;
+    public double SteerX, SteerZ, FlowUntil;
+    /// <summary>When a pack's far foe next looks whether cover stands between it and its slot (Battle.PackRoundCover).</summary>
+    public double CoverCheckAt;
     /// <summary>Marked as prey: below the line it dies outright.</summary>
     public bool Prey;
     /// <summary>1, or a quarter when a lamp reflex marked it by night (Classes 20): the execute line scales with it.</summary>
