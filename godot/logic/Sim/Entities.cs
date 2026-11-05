@@ -151,6 +151,12 @@ public sealed class Enemy : Pooled
     public bool Roused;
     /// <summary>A reflection of the survivor: the horde turns on it.</summary>
     public bool Decoy;
+    /// <summary>Laid down by its story while still alive (Corvane down in the doorway, CorvaneStory.Lie): drawn lying in
+    /// its fall's last pose whatever its Anim, until it is released.</summary>
+    public bool Laid;
+    /// <summary>Its carried light (EnemyDef.CarriedLight) scaled and lifted by its script for a moment (Corvane's lamp burning up
+    /// through his tell as it is raised overhead): 1 and 0 on every spawn.</summary>
+    public double LightMul = 1, LightLift;
     /// <summary>A goal other than her (H1 item 6B, a board's lamp): it walks to (GoalX, GoalZ) down Battle.GoalFlow and
     /// stands there (the zone reads who is at it), turning on her for good once she is within GoalAggro of it, or it is
     /// frightened. False on every spawn.</summary>

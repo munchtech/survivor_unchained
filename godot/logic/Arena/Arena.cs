@@ -65,6 +65,9 @@ public sealed class ArenaSpec
     public string? OnSpare, EndSpared, SpareVerb;
     /// <summary>Won by sparing him: the result reads EndSpared.</summary>
     public bool Spared;
+    /// <summary>Neither won nor fallen: she walked away (StoryNight.LetNightGo). No lost outcome is told, and the
+    /// result reads EndLost under "The night let go".</summary>
+    public bool WalkedAway;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new()
@@ -245,7 +248,7 @@ public static class Arenas
         var w = j.World;
         if (!won)
         {
-            if (spec.OnLose != null) j.Apply(spec.OnLose);
+            if (spec.OnLose != null && !spec.WalkedAway) j.Apply(spec.OnLose);
             // A story fight lost waits for another night at its own place, where the night calls it
             // by name (the owner's decision); the table no longer keeps a second copy of it.
             w.Rematches.RemoveAll(r => r.Id == spec.Id);

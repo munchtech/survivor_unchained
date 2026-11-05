@@ -2,6 +2,12 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 5 November 2026, late (P1 gate runner c88e97d2): P1: "no budget. finish the body pipeline. use api credits when available"
+After the slider route's first lead (body-p1@33f3801ee: our sliders, designed bust_lift/glute_lift, knob and throat fixed; open: the in-game shoulder dome, the breast ledge/fold) the owner said "Keep going now", then: "no budget. finish the body pipeline. use api credits when available". So the P1 leads run with no token cap down the whole P1 list (shoulder dome, breasts, the gate sheet to the owner, then hip soft tissue FEM, shoulder 135 + refs, the girdle law, HairSway/TeethDrop on B's Head, breast jiggle, neck poles), judges and solvers on the API credits (tools/ai/api_agent.cjs) when the cap has room. Leads hand off at ~300k context.
+
+## 5 November 2026 (P1 gate runner c88e97d2): GATE P1 PICKED: B's route, built from our sliders (A stays in the game until it passes)
+The owner read the judged sheet (body-p1@ead154119; the judge said A: B was A's sculpt copied onto our base, with a deltoid knob, high wide shoulders, a throat seam) and decided: "a perfect copy is not needed if it makes a better pipeline going forward. lets do all 3 steps". So: (1) her shape from OUR sliders, the per-vertex copy of A dropped (spec setting, no hand edits), shoulders and breasts set by design; (2) the throat seam and the skin tone as build/bake settings; (3) the gate again with one max judge. The breasts: "perfect breasts, not exactly a perfect copy, but very well done"; if the slider targets cannot reach it, a designed breast target of our own (made once, for every body). Cost said: ~0.35-0.45M + ~$1 judge (+0.1-0.2M if the knob is in the base, +0.1-0.2M for a designed breast target). Runs in body-p1 now.
+
 ## 5 November 2026, early (coordinator ee735a8d): GATE M1 PICKED: "Yes, go." (motion-a1@3f0f35851)
 The motion bible and the thirteen boards set the direction; MOTION_PLAN.md dispositions (REBUILD 108, RETARGET 10, CUT 37), the MotionBricks + Kimodo pick and the Marionette split are approved. Stage B (her core set rebuilt on P1 new rig, Warden slice first, ~4.3-6.2M) starts after P1 bare-shape gate, as a new brief from MOTION_PLAN.md and the animation handoff top. Before Stage B: Marionette gets a git remote; "swing damage at the clip contact frame" goes to the combat lead with the Warden slice. Taken by: the successor coordinator (local_88131549) when it spawns Stage B.
 

@@ -28,7 +28,9 @@ public sealed class HeadlessHost : IZoneHost
     }
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) { }
+    /// <summary>The captions said (the narrator's lines), with the battle's time and how long each is held (for the tests).</summary>
+    public readonly List<(double T, string Text, double Seconds)> Said = new();
+    public void Say(string text, string? who = null, double seconds = 4) => Said.Add((Battle?.Time ?? 0, text, seconds));
     public void Toast(Toast t) { }
     public void Announce(Announcement a) { }
     public void Talk(string npc) { }
@@ -43,6 +45,9 @@ public sealed class HeadlessHost : IZoneHost
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) { }
     public void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default) { }
     public void Capture(bool on) { }
+    /// <summary>The play's holds (HoldOn), with the battle's time: a spot, or null as it is given back (for the tests).</summary>
+    public readonly List<(double T, (double X, double Z)? At)> Holds = new();
+    public void HoldOn((double X, double Z)? at) => Holds.Add((Battle?.Time ?? 0, at));
     public void SetDraftTip(string tip) { }
     public void Revived(double x, double z) { }
     public string KeyLabel(string action) => action;

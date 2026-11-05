@@ -25,5 +25,38 @@
       "backstop": 0.05,
       "crackAfter": 45
     }
+  },
+  "story": {
+    "corvane": {
+      "about": "Corvane in the doorway (vault_opened's first stage, Play/Story/Corvane.cs, Play/Bosses/CorvaneStory.cs; P6, 5 Nov). A lesson the Ford-Warden's length (prologue.fordWarden: a human 60-90 s, his minSeconds 60 backstop) under H1's boss rules (one signature behind its 0.7 s tell, the kit's marks read at 85% by H6's human). hpMul: his life over his def's at his level (as a story boss's HealthMul, eased by tier). teeth: his blow as a share of her calling's own health (StoryBoss.Teeth). cuffMul/cuffEvery: the lamp swing at what stands across his path, a share of his blow and its seconds. tether: metres he may stand from his mark, holding the door. talkAfter: seconds after the arrival before door_night opens. holdAfterRaise: seconds he does nothing after she raises her weapon (hers strike first). firstAfter: seconds from the raise to the first signature. every/everyLow: seconds between signatures, and below lowAt of his life. reach/reachLow: the kit pull's reach in metres (it drags her toward him), and below lowAt. slam: the pull's heart in metres (its blow and its slam, which knocks her down). pullDamage: the pull's damage over the kit's. floor: his one phase's floor in seconds (the Flare cuts it). minSeconds/backstop: held at backstop of his life until he has fought this long. lampEnergy/lampEnergyLow: his lamp's light (Enemies.cs corvane's CarriedLight, held out at the lamp), brighter below lowAt (the only sign); glow/glowLow: his body's glow, kept low (0.3 burned the robe white, r4). tellLight/tellLift: his lamp's light through the tell, times its own, and how far it is lifted (m) as the cast raises the lamp overhead; back down after the slam (judge r1 fix 4). haloLow/poolLow/coreLow: below lowAt, the lamp's glow across and its ground pool's reach times their own, and its core's whiteness (0 its color, 1 white; its own 0.3, Enemies.cs) (judge r2 fix 6). emberFloor: the ember she has at least when the court ends (0: no EMBER banners or arsenal toasts bury the door's line; SouthEnd's own floor 10 covers her build). Measured with `story --fight vault --stage court --bot standing,human,deft`; targets: standing falls on most nights, human wins with no kill under 60 s (median 70-100), deft wins 95%+.",
+      "hpMul": 12,
+      "teeth": 0.3,
+      "cuffMul": 0.25,
+      "cuffEvery": 1.6,
+      "tether": 4.5,
+      "talkAfter": 1.5,
+      "holdAfterRaise": 2.5,
+      "firstAfter": 4,
+      "every": 6.5,
+      "everyLow": 4.5,
+      "lowAt": 0.5,
+      "reach": 7,
+      "reachLow": 7.5,
+      "slam": 2.5,
+      "pullDamage": 1.1,
+      "floor": 30,
+      "minSeconds": 60,
+      "backstop": 0.05,
+      "lampEnergy": 1.2,
+      "lampEnergyLow": 2.1,
+      "glow": 0.05,
+      "glowLow": 0.05,
+      "tellLight": 3,
+      "tellLift": 0.7,
+      "haloLow": 1.5,
+      "poolLow": 1.5,
+      "coreLow": 0.75,
+      "emberFloor": 0
+    }
   }
 }
