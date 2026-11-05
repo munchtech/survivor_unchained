@@ -35,7 +35,11 @@ public sealed class P1Retarget
     readonly int aRoot, aPelvis, bRoot, bPelvis;
     readonly P1M3[] align;
 
-    static bool Limb(string n) => new[] { "clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "thigh", "calf", "foot", "ball" }.Any(n.StartsWith);
+    // (not the clavicle: its rest slope is each body's own anatomy, B's sternoclavicular-to-acromion line about 3 deg
+    // down, A's game-rig convention 15 deg; standing B's clavicle in A's dropped B's shoulder joint 31 mm in every pose,
+    // the arm rode it down while the neck and trapezius held: the dome over her shoulders at the Look and close-up
+    // cameras. The clip's clavicle turns still apply, from B's own rest; the upper arm's own stand aims her arm as A's.)
+    static bool Limb(string n) => new[] { "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "thigh", "calf", "foot", "ball" }.Any(n.StartsWith);
 
     static P1M3 Arc(P1V a, P1V c)
     {
@@ -88,7 +92,7 @@ public sealed class P1Retarget
             else if (!b.Helpers.Contains(j) && aIndex.TryGetValue(b.Names[j], out int a)) { kind[j] = Kind.Direct; src0[j] = a; }
             else kind[j] = Kind.Carried;
         }
-        // B's limbs stood in A's rest first: each limb bone's rest direction turned (the shortest turn, in the world)
+        // B's limbs (from the upper arm and the thigh down) stood in A's rest first: each limb bone's rest direction turned (the shortest turn, in the world)
         // onto its A bone's, so a clip's limb turns, relative to A's rest, start from A's rest limb. B's rest differs
         // there (her arms forward, hands 19 cm off A's; feet 11 cm forward); the torso, neck and head keep B's own
         // rest (built standing as A stands; the head is A's own, baked in place). A bone's direction: its head to the
@@ -99,7 +103,7 @@ public sealed class P1Retarget
         {
             if (kind[j] != Kind.Direct || !Limb(b.Names[j])) continue;
             // the tips by A's own hierarchy (A's children of j's A bone that B has by name, off the spine-to-head chain), so
-            // B's segment aims where A's does: B's clavicle at A's shoulder joint, not at the mean with B's scapula
+            // B's segment aims where A's does: B's upper arm at A's elbow, not at the mean with B's share and twist helpers
             int aj = src0[j];
             var tips = Enumerable.Range(0, aNames.Length).Where(k => aParent[k] == aj && !aChainSet.Contains(k)
                 && b.Index.TryGetValue(aNames[k], out int bk) && kind[bk] == Kind.Direct).Select(k => b.Index[aNames[k]]).ToList();
