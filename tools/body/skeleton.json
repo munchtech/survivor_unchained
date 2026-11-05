@@ -1,5 +1,5 @@
 {
- "about": "Her new skeleton (P1 base v1), as data: each bone's head and tail placed from MakeHuman landmarks (MPFB rigs/standard/rig.default.json's rules: cube = a joint-* group's centre, mh = a MakeHuman bone's head/tail by its own rule, mean, lerp; skin_out = the skin's furthest point out from a point that way; weights_base = the centre of a MakeHuman bone's weight boundary (the breast's base on the chest wall); leaf = the parent's tail, a third of its length on). Only the left side ({s}=l, MakeHuman's {S}=l / {X}=L) is placed; the right is its true mirror. Frames: Y head to tail; front = Z toward her front (up where the bone runs front-back); elbow_upper/elbow_lower: X the elbow's hinge (the normal of the rest arm's bend plane), flexion = +X; knee: X across her, Z behind, flexion = +X; hand: X the elbow's hinge; palm/thumb: Z toward the palm (the fingers' rest curl). mh: MakeHuman bones whose CC0 weights this bone takes (weights.py; chains split along by helper 'twist').",
+ "about": "Her new skeleton (P1 base v1), as data: each bone's head and tail placed from MakeHuman landmarks (MPFB rigs/standard/rig.default.json's rules: cube = a joint-* group's centre, mh = a MakeHuman bone's head/tail by its own rule, mean, lerp; skin_out = the skin's furthest point out from a point that way; weights_base = the centre of a MakeHuman bone's weight boundary (the breast's base on the chest wall); leaf = the parent's tail, a third of its length on). Only the left side ({s}=l, MakeHuman's {S}=l / {X}=L) is placed; the right is its true mirror. Frames: Y head to tail; front = Z toward her front (up where the bone runs front-back); elbow_upper/elbow_lower: X the elbow's hinge (the normal of the rest arm's bend plane), flexion = +X; knee: X across her, Z behind, flexion = +X; hand: X the elbow's hinge; palm/thumb: Z toward the palm (the fingers' rest curl). mh: MakeHuman bones whose CC0 weights this bone takes (weights.py; chains split along by helper 'twist'). Anatomical rules (P1 skel round; skeleton.py ANAT_RULES, run on OUR body and her approved head at placement, undone: inherited from MakeHuman): harrington = the hip joint centre by Harrington et al. 2007 from our skin ASIS/PSIS (soft tissue stated), its height kept from the inherited cube; cervical = neck_01's head at C7/T1 (the cervicale = the nape's corner on the back midline, the joint 0.40 of the neck's depth forward); occiput = Head's head at the occipital condyles (midline, the earlobe's level, under the ear) on her head mesh; neck_02 halfway between; crown = the head's top. tools/body/README.md 'skeleton'.",
  "bones": [
   {
    "name": "root",
@@ -19,14 +19,16 @@
     "cube": "joint-pelvis"
    },
    "tail": {
-    "mean": [
-     {
+    "harrington": {
+     "height": {
       "cube": "joint-l-upper-leg"
      },
-     {
-      "cube": "joint-r-upper-leg"
-     }
-    ]
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
    },
    "frame": "front",
    "mh": [
@@ -98,7 +100,9 @@
     "cube": "joint-spine-1"
    },
    "tail": {
-    "cube": "joint-neck"
+    "cervical": {
+     "depth": 0.4
+    }
    },
    "frame": "front",
    "mh": [
@@ -109,12 +113,24 @@
    "name": "neck_01",
    "parent": "spine_05",
    "head": {
-    "mh": "neck01",
-    "end": "head"
+    "cervical": {
+     "depth": 0.4
+    }
    },
    "tail": {
-    "mh": "neck02",
-    "end": "tail"
+    "lerp": [
+     {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     {
+      "occiput": {
+       "ear_band_m": 0.008
+      }
+     },
+     0.5
+    ]
    },
    "frame": "front",
    "mh": [
@@ -126,12 +142,24 @@
    "name": "neck_02",
    "parent": "neck_01",
    "head": {
-    "mh": "neck03",
-    "end": "head"
+    "lerp": [
+     {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     {
+      "occiput": {
+       "ear_band_m": 0.008
+      }
+     },
+     0.5
+    ]
    },
    "tail": {
-    "mh": "neck03",
-    "end": "tail"
+    "occiput": {
+     "ear_band_m": 0.008
+    }
    },
    "frame": "front",
    "mh": [
@@ -142,12 +170,12 @@
    "name": "Head",
    "parent": "neck_02",
    "head": {
-    "mh": "head",
-    "end": "head"
+    "occiput": {
+     "ear_band_m": 0.008
+    }
    },
    "tail": {
-    "mh": "head",
-    "end": "tail"
+    "crown": true
    },
    "frame": "front",
    "mh": "face"
@@ -996,7 +1024,16 @@
    "name": "thigh_{s}",
    "parent": "pelvis",
    "head": {
-    "cube": "joint-{S}-upper-leg"
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
    },
    "tail": {
     "cube": "joint-{S}-knee"
@@ -1014,7 +1051,16 @@
    "head": {
     "lerp": [
      {
-      "cube": "joint-{S}-upper-leg"
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
      },
      {
       "cube": "joint-{S}-knee"
@@ -1025,7 +1071,16 @@
    "tail": {
     "lerp": [
      {
-      "cube": "joint-{S}-upper-leg"
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
      },
      {
       "cube": "joint-{S}-knee"
@@ -1043,7 +1098,16 @@
    "head": {
     "lerp": [
      {
-      "cube": "joint-{S}-upper-leg"
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
      },
      {
       "cube": "joint-{S}-knee"
@@ -1054,7 +1118,16 @@
    "tail": {
     "lerp": [
      {
-      "cube": "joint-{S}-upper-leg"
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
      },
      {
       "cube": "joint-{S}-knee"
@@ -1070,12 +1143,30 @@
    "name": "thigh_share_{s}",
    "parent": "pelvis",
    "head": {
-    "cube": "joint-{S}-upper-leg"
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
    },
    "tail": {
     "lerp": [
      {
-      "cube": "joint-{S}-upper-leg"
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
      },
      {
       "cube": "joint-{S}-knee"
@@ -1090,14 +1181,32 @@
    "name": "glute_{s}",
    "parent": "pelvis",
    "head": {
-    "cube": "joint-{S}-upper-leg"
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
    },
    "tail": {
     "skin_out": [
      {
       "lerp": [
        {
-        "cube": "joint-{S}-upper-leg"
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
        },
        {
         "cube": "joint-{S}-knee"

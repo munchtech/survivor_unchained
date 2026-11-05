@@ -81,6 +81,30 @@ Parametric, scaled to the body's own rest half-widths, so away from the joint th
 and only the joint's anatomy is authored (each file's `why` and `grammar`). Not yet authored: the armpit and front
 axillary fold at shoulder abduction (the A-pose hides the trunk side), the trunk under the arm.
 
+## Skeleton: joint derivation (skeleton.json, skeleton.py ANAT_RULES)
+
+Most joints are placed by MakeHuman CC0 landmarks fitted onto our vertices (landmarks_fit.py, (c) inherited). Where
+that put a joint off its anatomy, the landmark is undone (inherited from MakeHuman) and a rule runs on OUR body (and
+her approved head) at placement time:
+- **Hip (thigh head, its twists/share/glute, the pelvis's tail): (b) Harrington et al. 2007** (J Biomech 40:595, the
+  pelvic width/depth regression) from our skin ASIS (the trunk's front-left support point 35 deg off the front) and
+  PSIS (back skin at x 45 mm, its height by a 12 deg standing pelvic tilt: women's neutral ~12 deg, palpation-meter
+  studies), skin -> bone 15 mm (ASIS) / 10 mm (PSIS): (a) estimates, no measured source found; sensitivity: the joint's
+  depth moves 0.76 mm per mm of ASIS tissue, 0.24 per mm of PSIS. The height is kept (the inherited one; Harrington's
+  own vertical term agrees within 5 mm). Was 19 mm too far back.
+- **neck_01 (C7/T1): (b) surface anatomy**: the cervicale = the knee of the back midline profile (a degree-6 fit
+  from the upper back's furthest-back point to the head ring: the nape's corner), the joint 0.40 of the neck's depth
+  forward of it. ANSUR II women's cervicale/stature 0.857 would put it 11 mm higher: her proportions are stylized (8
+  heads tall, long legs, the +7% head), so a stature ratio does not transfer; the rule reads her own neck.
+- **Head (occipital condyles): (b) surface anatomy** on her head mesh: midline, at the earlobe's lowest point, at the
+  ear's mean depth (below and just in front of the mastoid). Was 1867 mm, above the head's top (1849): the head turned
+  from the crown. neck_02 halfway (C4); Head's tail = the crown.
+- Head weights: unchanged by rule (weights_topo.head: the ring's points copy the body ring, Head 3.5 cm past it,
+  harmonic between); the spine/neck chain's weights re-derive from the joints' heights (weights_topo T).
+Audit of the rest (P1 skel round, its report): knee and the spine's depth are off by more than 1 cm
+and wait for their own round; the clavicle's head follows the game-rig convention (near the spine), not the
+sternoclavicular joint.
+
 ## Base topology (topo.py, WIP)
 
 `topo.py` builds OUR base topology from `loopplan.json` (rows, rings and junction patterns placed by our skeleton on

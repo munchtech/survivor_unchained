@@ -191,13 +191,13 @@ def stage_forms(spec, tier, z, V, ring, rep):
 
 
 # --------------------------------------------------------------------------------------------- 3 skeleton --
-def stage_skeleton(V, tier, rep):
+def stage_skeleton(V, tier, rep, head=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
     with open(os.path.join(HERE, "base", "landmarks.json")) as f:
         table = json.load(f)["tiers"][tier]
-    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table)
+    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head)   # head: her baked head (Head joint)
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 
@@ -363,7 +363,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True):
     V = stage_forms(spec, tier, z, V, ring, rep)
     tim["forms"] = round(time.time() - t, 2)
     t = time.time()
-    sk = stage_skeleton(V, tier, rep)
+    sk = stage_skeleton(V, tier, rep, baked["HeroineHead"]["P"])
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
     wts = stage_weights(z, V, ring, hv, sk, A, baked, rep)
