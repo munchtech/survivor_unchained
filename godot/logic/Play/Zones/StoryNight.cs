@@ -777,7 +777,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public bool Fact(string key) => F(key).Truthy;
     public (double X, double Z)? Goal { get; set; }
     public void Script(Enemy e, Func<Enemy, double, bool> tick) { e.Scripted = true; scripted[e.Id] = (e.Seed, tick); }
-    public void Line(string text, string? speaker = null) => G.Say(text, speaker);
+    public void Line(string text, string? speaker = null, double seconds = 4) => G.Say(text, speaker, seconds);
     public Fact FactOf(string key) => F(key);
     public void Apply(string effectsJson) => G.Apply(effectsJson);
     /// <summary>The spared ending is chosen in the fight when the story's spec carries both outcomes

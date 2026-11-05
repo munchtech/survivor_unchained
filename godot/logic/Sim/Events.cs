@@ -163,6 +163,9 @@ public static class Ev
     /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's
     /// body gets up and goes): a name the set reads, nothing more.</summary>
     public sealed class Cue : CombatEvent { public string Id = ""; }
+    /// <summary>A cut through black (a story beat's fallback for a film: Corvane's body taken away under it): the view
+    /// fades to black over Seconds, holds it Hold seconds, and fades back over Seconds.</summary>
+    public sealed class Fade : CombatEvent { public double Seconds = 0.25, Hold = 0.5; }
     /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>
     public sealed class Focus : CombatEvent { public double X, Z, Duration; }
     /// <summary>What ruled the night has fallen where it stood: the night's peak (the view

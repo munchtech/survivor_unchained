@@ -97,6 +97,48 @@ public class CorvaneTests
         Assert.Equal("Bring down the Decurion", n.Zone.Beat!.Goal);
     }
 
+    /// <summary>No film: the fall's fallback. A hold on his body with nothing said; "He gets up." captioned (no panel) while
+    /// he still lies there; the sigil's cue; a cut through black that takes his body; the gone line captioned out of it and
+    /// held to be read; only then the door.</summary>
+    [Fact]
+    public void His_fall_holds_on_him_then_captions_gets_up_the_cue_the_black_and_gone_before_the_door()
+    {
+        var n = Court();
+        var log = new List<(double T, CombatEvent E)>();
+        var g = VaultOpened.Ground.Gates.First(x => x.Id == "door");
+        double mx = (g.X0 + g.X1) / 2, mz = (g.Z0 + g.Z1) / 2;
+        ToRaise(n, log);
+        var him = Him(n);
+        Run(n, log, 62, each: _ => { n.B.Player.X = him.X - 1.5; n.B.Player.Z = him.Z; });
+        him.HpFloor = 0;
+        him.Hp = 1;
+        Run(n, log, 20, each: _ => { n.B.Player.X = him.X - 1.5; n.B.Player.Z = him.Z; him.Hp = Math.Min(him.Hp, 1); }, until: () => Fact(n, "corvane.rose"));
+        Assert.True(Fact(n, "corvane.rose"));
+        double down = n.B.Time;
+        n.Host.Said.Clear();
+        double opened = -1;
+        Run(n, log, 30, until: () =>
+        {
+            if (opened < 0 && !n.B.Collision.Blocked(mx, mz, 0.5)) opened = n.B.Time;
+            return opened >= 0;
+        });
+        Assert.True(opened > 0);
+        string getsUp = Dialogue.Find("door_night")!.Nodes["gets_up"].Text[0].Text, gone = Dialogue.Find("door_night")!.Nodes["gone"].Text[0].Text;
+        var said = n.Host.Said.Where(x => x.Text == getsUp || x.Text == gone).ToList();
+        Assert.Equal([getsUp, gone], said.Select(x => x.Text).ToArray());
+        // The hold: nothing said over his body for its 2 s, and a Focus on him as he goes down.
+        Assert.InRange(said[0].T - down, Doorway.HoldOnBody - 0.1, Doorway.HoldOnBody + 0.2);
+        Assert.DoesNotContain(n.Host.Said, x => x.T < said[0].T);
+        Assert.Contains(log, x => x.E is Ev.Focus && x.T >= down - 0.1 && x.T <= down + 0.1);
+        // The cue between them, the black after the cue and before the gone line, his body gone under it.
+        double cue = log.First(x => x.E is Ev.Cue c && c.Id == "door_sigil").T, fade = log.First(x => x.E is Ev.Fade && x.T >= down).T;
+        Assert.True(said[0].T < cue && cue < fade && fade < said[1].T);
+        Assert.DoesNotContain(n.B.Enemies.Items, e => e.Alive && e.Def.Id == "corvane");
+        // The gone line held to be read (15 characters a second, at least 3 s), and the door opens only after it.
+        Assert.True(said[1].Seconds >= Math.Max(3, gone.Length / 15.0) - 1e-9);
+        Assert.True(opened >= said[1].T + said[1].Seconds - 0.1);
+    }
+
     [Fact]
     public void The_walk_away_lets_the_night_go_without_a_mark()
     {

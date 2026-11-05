@@ -1178,6 +1178,11 @@ public partial class Game : Node, IZoneHost
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
                     break;
+                case Ev.Fade fd:
+                    // A story beat's cut through black (Corvane's body taken under it): down, held, and back up.
+                    hud.Fade(1, fd.Seconds);
+                    After(fd.Seconds + fd.Hold, () => hud.Fade(0, fd.Seconds * 1.6));
+                    break;
                 case Ev.Focus f when scene != null && Battle is { } fb:
                     // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back. (H8,
                     // N35: it follows her, half the way to the boss and never past the middle third, and nothing it

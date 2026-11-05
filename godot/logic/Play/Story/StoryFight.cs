@@ -57,8 +57,9 @@ public interface IStoryArena : IBossArena
     /// answer on its own key, until she answers or it is taken back (Unask).</summary>
     void Ask(string who, string title, double x, double z, params ChoiceAnswer[] answers);
     void Unask();
-    /// <summary>The narrator's words (the story lead's), or someone's, said aloud.</summary>
-    void Line(string text, string? speaker = null);
+    /// <summary>The narrator's words (the story lead's), or someone's, said aloud: the lower-third caption, up at least
+    /// `seconds` (and as long as the voice, or the words' reading).</summary>
+    void Line(string text, string? speaker = null, double seconds = 4);
     /// <summary>A spared ending can be chosen in this fight (its outcome is in the spec).</summary>
     bool CanSpare { get; }
     /// <summary>The prompt beside "Finish it" ("Let him go", "Spare him").</summary>

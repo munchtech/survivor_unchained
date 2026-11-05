@@ -28,7 +28,9 @@ public sealed class HeadlessHost : IZoneHost
     }
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) { }
+    /// <summary>The captions said (the narrator's lines), with the battle's time and how long each is held (for the tests).</summary>
+    public readonly List<(double T, string Text, double Seconds)> Said = new();
+    public void Say(string text, string? who = null, double seconds = 4) => Said.Add((Battle?.Time ?? 0, text, seconds));
     public void Toast(Toast t) { }
     public void Announce(Announcement a) { }
     public void Talk(string npc) { }

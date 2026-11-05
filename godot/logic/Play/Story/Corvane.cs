@@ -9,7 +9,8 @@ namespace SurvivorUnchained.Play.Story;
 /// Corvane in the doorway (vault_opened's first stage, phase 1 of the night; P6): the court before the Sealed Door. He
 /// stands in it with the keeper's lamp held up, and talks (door_night from go_home). Lowered, she walks away and the night
 /// lets her go. Raised, he turns, and the fight is his one signature (CorvaneStory) until he goes down; then the door's
-/// film plays (c13_door), or its lines are said (gets_up, the sigil's cue, gone), his lamp is left lit where he stood,
+/// film plays (c13_door), or its fallback (a hold on his body, "He gets up." captioned, the sigil's cue, a cut through
+/// black that takes his body, then the gone line), his lamp is left lit where he stood,
 /// and the door opens on the hall. Lost here, he carries her home (corvane.carried; the Vault is not shut). Every number
 /// is teeth.json story.corvane.
 /// </summary>
@@ -25,13 +26,20 @@ public sealed class Doorway : StoryBeat
     Enemy? corvane;
     double seed, talkT;
     CorvaneStory? script;
-    bool raised, talking, fallen, closed;
+    bool raised, talking, fallen, closed, vanished;
+    /// <summary>The fallback's clock (no film): seconds since he went down, and the next of its steps.</summary>
+    double fallT = -1;
+    int fallStep;
 
     public override string Goal => raised ? "Bring down Corvane" : "Corvane stands in the door";
     public override string? Gate => "door";
     public override double Minute => 0;
     public override string Start => "court_in";
     public override int EmberFloor => t.EmberFloor;
+    /// <summary>The fallback's steps (no film), in seconds from his fall: the camera holds on his body with nothing over
+    /// it; "He gets up." is captioned (he still lies there); the door's sigil is cued; a cut through black takes his
+    /// body and sets his lit lamp at his mark; out of the black, the gone line, held to be read; then the door opens.</summary>
+    public const double HoldOnBody = 2.0, GetsUpFor = 2.6, CueAfter = 1.2, FadeAfter = 1.5, FadeIn = 0.25, FadeHold = 0.5, FadeOut = 0.4;
     public override string? OnLose => """[{ "set": { "corvane.carried": true } }]""";
     public override string? EndLost => Carried;
     public override ArenaBoss? Script => script is { Down: false } ? script : null;
@@ -83,7 +91,7 @@ public sealed class Doorway : StoryBeat
             A.Converse("door_night", "go_home", Answered);
             return;
         }
-        if (fallen) return;
+        if (fallen) { Fallback(dt); return; }
         if (script is { Down: true } || !Up(corvane, seed)) { Fallen(); return; }
         A.Goal = (corvane!.X, corvane.Z);
     }
@@ -128,27 +136,77 @@ public sealed class Doorway : StoryBeat
             ["corvane"] = [e.X, e.Z, Math.PI / 2 - e.Facing],
             ["her"] = [p.X, p.Z, p.Facing],
         };
-        if (!A.Cinematic("door", Close, marks))
-            A.Converse("door_night", "gets_up", _ =>
-            {
-                B.Events.Emit(new Ev.Cue { Id = "door_sigil" });
-                CourtTrace.Say("cue");
-                CourtTrace.Say("gone");
-                A.Converse("door_night", "gone", _ => Close());
-            });
+        if (A.Cinematic("door", Close, marks)) return;
+        // No film: the camera holds on his body, nothing said over it (Victory's turn to it).
+        B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = HoldOnBody });
+        fallT = 0;
     }
 
-    /// <summary>He is gone: his lamp set down where he stood, still lit, and the door opens.</summary>
-    void Close()
+    /// <summary>The door_night line (the story lead's words, read from the dialogue, not retyped).</summary>
+    static string Words(string node) => SurvivorUnchained.World.Dialogue.Find("door_night") is { } c && c.Nodes.TryGetValue(node, out var n) && n.Text.Count > 0 ? n.Text[0].Text : "";
+
+    /// <summary>The fall told without its film, step by step on the stage's clock (HoldOnBody and after).</summary>
+    void Fallback(double dt)
     {
-        if (closed) return;
-        closed = true;
+        if (fallT < 0 || closed) return;
+        fallT += dt;
+        double getsUp = HoldOnBody, cue = getsUp + CueAfter, fade = cue + FadeAfter, black = fade + FadeIn + FadeHold * 0.5, gone = fade + FadeIn + FadeHold;
+        switch (fallStep)
+        {
+            case 0 when fallT >= getsUp:
+                fallStep++;
+                CourtTrace.Say("getsup");
+                A.Line(Words("gets_up"), null, GetsUpFor);
+                break;
+            case 1 when fallT >= cue:
+                fallStep++;
+                B.Events.Emit(new Ev.Cue { Id = "door_sigil" });
+                CourtTrace.Say("cue");
+                break;
+            case 2 when fallT >= fade:
+                fallStep++;
+                CourtTrace.Say("fade");
+                B.Events.Emit(new Ev.Fade { Seconds = FadeIn, Hold = FadeHold });
+                break;
+            case 3 when fallT >= black:
+                fallStep++;
+                Vanish();
+                break;
+            case 4 when fallT >= gone:
+                fallStep++;
+                CourtTrace.Say("gone");
+                var words = Words("gone");
+                goneFor = Math.Max(3, words.Length / 15.0);
+                A.Line(words, null, goneFor);
+                break;
+            case 5 when fallT >= gone + goneFor:
+                fallStep++;
+                Close();
+                break;
+        }
+    }
+
+    double goneFor = 3;
+
+    /// <summary>His body gone, his lamp set down where he stood, still lit.</summary>
+    void Vanish()
+    {
+        if (vanished) return;
+        vanished = true;
         if (corvane is { Alive: true } e && e.Seed == seed) B.Enemies.Release(e);
         var (x, z) = A.Place["corvane"];
         var lamp = A.Piece("halloween/lantern_standing", 1);
         lamp.Place(x, A.HeightAt(x, z), z, 0, 1);
         lamp.Visible = true;
         A.Look.AddLight(x, 0.9, z, "#a77bff", 2.6, 9, 0.08, 0.1, "#c9a8ff");
+    }
+
+    /// <summary>He is gone (his lamp set down where he stood, still lit, if it is not yet), and the door opens.</summary>
+    void Close()
+    {
+        if (closed) return;
+        Vanish();
+        closed = true;
         Done = true;
         CourtTrace.Say("open");
     }
