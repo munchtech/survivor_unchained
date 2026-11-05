@@ -185,42 +185,112 @@ def t_on_plane(cv, th, p, n, t_lo=0.80, t_hi=1.25, ns=226):
     return out
 
 
+# ------------------------------------------------------------------------------------------- the shoulder rim --
+def shoulder_rim(ref, cv, L, plan, tp, m=360):
+    """(a, pass 3) The trunk's shoulder hole: the arm root ring offset along the trunk's surface by the gap G (each
+    root point marched G away from the arm, perpendicular to the ring), so the rim-to-root gap is even all round
+    (the rectangle of pass 2 ran 19-87 mm). Returns the dense rim and root (same index = same root angle) in the
+    lattice's order (canvas counter-clockwise: bottom front -> back, up the back, top back -> front, down the
+    front), rolled so index 0 is the front-bottom corner, and the four corners (the diagonal extremes)."""
+    c, n, _ = arm_root_plane(L, plan)
+    e1 = ring_frame(c, n, np.array([0, 1.0, 0]))[0]
+    X = dense_ring(ref, [TRUNK, ARM], c, n, e1, m)[2][:-1]
+    G = tp["shoulder_gap"]
+    S = ref._sf.get((TRUNK,))
+    if S is None:
+        ref.project([TRUNK], X[:1])
+        S = ref._sf[(TRUNK,)]
+    S = S[0]
+    tang = np.roll(X, -1, 0) - np.roll(X, 1, 0)
+    _, N0, _, _ = S.closest(X, k=16)
+    w = U(np.cross(N0, tang))
+    w = np.where(((w @ n) > 0)[:, None], -w, w)
+    Y = X.copy()
+    k = max(1, int(round(G / 0.003)))
+    for _ in range(k):
+        Y = Y + (G / k) * w
+        Y, Nn, _, _ = S.closest(Y, k=16)
+        w = U(w - (w * Nn).sum(1, keepdims=True) * Nn)
+    th, t = cv.inv(Y)
+    area = np.sum(th * np.roll(t, -1) - np.roll(th, -1) * t)
+    if area < 0:
+        X, Y, th, t = X[::-1], Y[::-1], th[::-1], t[::-1]
+    uu = (th - th.mean()) / np.ptp(th)
+    vv = (t - t.mean()) / np.ptp(t)
+    cn = {"FB": int(np.argmax(-uu - vv)), "BB": int(np.argmax(uu - vv)), "BT": int(np.argmax(uu + vv)),
+          "FT": int(np.argmax(-uu + vv))}
+    r0 = cn["FB"]
+    X, Y, th, t = (np.roll(a, -r0, 0) for a in (X, Y, th, t))
+    cn = {q: (i - r0) % m for q, i in cn.items()}
+    assert 0 == cn["FB"] < cn["BB"] < cn["BT"] < cn["FT"] < m, cn
+    Yc = np.vstack([Y, Y[:1]])
+    sc = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(Yc, axis=0), axis=1))])
+    arcs = {"bottom": (cn["FB"], cn["BB"]), "back": (cn["BB"], cn["BT"]), "top": (cn["BT"], cn["FT"]),
+            "front": (cn["FT"], m)}
+    gap = np.linalg.norm(Y - X, axis=1)
+    return {"X": X, "Y": Y, "th": th, "t": t, "s": sc, "corners": cn, "arcs": arcs, "m": m,
+            "len": {a: float(sc[b] - sc[a_]) for a, (a_, b) in arcs.items()},
+            "gap_mm": [round(float(gap.min()) * 1000, 1), round(float(np.median(gap)) * 1000, 1),
+                       round(float(gap.max()) * 1000, 1)]}
+
+
+def rim_arc(SR, name, n):
+    """n + 1 points at even arc length along one of the rim's four arcs, with their dense index (fractional)."""
+    a, b = SR["arcs"][name]
+    m, sc = SR["m"], SR["s"]
+    g = np.linspace(sc[a], sc[b], n + 1)
+    idx = np.interp(g, sc, np.arange(m + 1))
+    Yc = np.vstack([SR["Y"], SR["Y"][:1]])
+    P = np.stack([np.interp(idx, np.arange(m + 1), Yc[:, k]) for k in range(3)], 1)
+    return P, idx
+
+
+def arc_profile(SR, name):
+    """The arc's canvas t as a function of theta (sorted), for the rows that run along it."""
+    a, b = SR["arcs"][name]
+    th = np.concatenate([SR["th"], SR["th"][:1]])[a:b + 1]
+    t = np.concatenate([SR["t"], SR["t"][:1]])[a:b + 1]
+    o = np.argsort(th)
+    return th[o], t[o]
+
+
 # ------------------------------------------------------------------------------------------------- the trunk --
-def trunk_plan(ref, cv, L, plan, tp, root_th, root_t):
+def trunk_plan(ref, cv, L, plan, tp, SR):
     """Every trunk count from a length (a: the spacings), rounded to what the junctions need:
     the collar kites in F and B need F_L + n_t + B_L odd (the head's half ring has 47 edges); the arm root
-    (n_b + n_t + 2 n_f) even (the wrist rim has 22); so K_low = F_L + n_b + B_L is odd and the crotch strip b odd."""
+    (n_b + n_t + 2 n_f) even; so K_low = F_L + n_b + B_L is odd and the crotch strip b odd. The hole is the
+    shoulder rim (shoulder_rim): its corners FB, BB, BT, FT (theta, t) and its four arcs set n_b, n_t, n_f."""
     s, sr = tp["spacing"], tp["spacing"] * tp.get("row_scale", 1.0)
-    ho = plan["shoulder"]["hole"]                     # (a) the rim one band of loops out from the root ring, all round
-    FB = FT = float(root_th.min()) - np.radians(ho["front_deg"])
-    BB = BT = float(root_th.max()) + np.radians(ho["back_deg"])
-    t_s0 = float(root_t.min()) - ho["below"]
-    t_s1 = float(root_t.max()) + ho["above"]
+    cn, th, t = SR["corners"], SR["th"], SR["t"]
+    FB, BB, BT, FT = (float(th[cn[q]]) for q in ("FB", "BB", "BT", "FT"))
+    tFB, tBB, tBT, tFT = (float(t[cn[q]]) for q in ("FB", "BB", "BT", "FT"))
 
-    def blen(a, b, t):
-        return along_k(cv, [TRUNK], a, b, lambda th: np.full_like(np.asarray(th, float), t), [0, 1])[1]
+    def blen(a, b, tt):
+        return along_k(cv, [TRUNK], a, b, lambda x: np.full_like(np.asarray(x, float), tt), [0, 1])[1]
 
-    n_b = max(2, int(round(blen(FB, BB, t_s0) / s)))
-    n_t = max(2, int(round(blen(FT, BT, t_s1) / s)))
-    n_t += (n_t - n_b) % 2                                            # n_t + n_b even
-    th = np.linspace(FB, FT, 60)                                      # the hole's front side (FB, t_s0) -> (FT, t_s1)
-    X = fill_nan(mapk(cv, th, np.linspace(t_s0, t_s1, 60), [TRUNK]))
-    n_f = max(2, int(round(np.linalg.norm(np.diff(X, axis=0), axis=1).sum() / sr)))
-    F_L = int(round(max(blen(0, FB, t) for t in (1.08, 1.12, 1.2, 1.3)) / s))
-    B_L = int(round(max(blen(BB, np.pi, t) for t in (1.08, 1.12, 1.2, 1.3, 1.42, t_s0)) / s))
+    n_b = max(2, int(round(SR["len"]["bottom"] / s)))
+    n_t = max(2, int(round(SR["len"]["top"] / s)))
+    n_t += (n_t - n_b) % 2
+    n_f = max(2, int(round(0.5 * (SR["len"]["front"] + SR["len"]["back"]) / sr)))
+    F_L = int(round(max([blen(0, FB, x) for x in (1.08, 1.12, 1.2, 1.3)] +
+                        [blen(0, float(a), float(b)) for a, b in zip(th[cn["FT"]::12], t[cn["FT"]::12])]) / s))
+    B_L = int(round(max([blen(BB, np.pi, x) for x in (1.08, 1.12, 1.2, 1.3, 1.42)] +
+                        [blen(float(a), np.pi, float(b)) for a, b in zip(th[cn["BB"]:cn["BT"]:12],
+                                                                         t[cn["BB"]:cn["BT"]:12])]) / s))
     if (F_L + n_t + B_L) % 2 == 0:
         B_L += 1
-    tot = F_L + n_t + B_L                             # (a) the collar row scales every band by the same 47 / tot
+    tot = F_L + n_t + B_L
     F_N = to_parity(47 * F_L / tot, F_L)
     T_N = to_parity(47 * n_t / tot, n_t)
     B_N = 47 - F_N - T_N
     assert (B_N - B_L) % 2 == 0 and min(F_N, T_N, B_N) >= 4, (F_N, T_N, B_N)
-    return {"s": s, "sr": sr, "FB": FB, "BB": BB, "FT": FT, "BT": BT, "t_s0": t_s0, "t_s1": t_s1, "n_b": n_b,
-            "n_t": n_t, "n_f": n_f, "F_L": F_L, "B_L": B_L, "F_N": F_N, "T_N": T_N, "B_N": B_N, "K_low": F_L + n_b + B_L,
-            "N_arm": n_b + n_t + 2 * n_f}
+    return {"s": s, "sr": sr, "FB": FB, "BB": BB, "FT": FT, "BT": BT, "t_FB": tFB, "t_BB": tBB, "t_BT": tBT,
+            "t_FT": tFT, "t_s0": min(tFB, tBB), "t_s1": max(tFT, tBT), "n_b": n_b, "n_t": n_t, "n_f": n_f,
+            "F_L": F_L, "B_L": B_L, "F_N": F_N, "T_N": T_N, "B_N": B_N, "K_low": F_L + n_b + B_L,
+            "N_arm_rim": n_b + n_t + 2 * n_f, "shoulder_gap_mm": SR["gap_mm"]}
 
 
-def trunk(M, ref, cv, L, plan, tp, C):
+def trunk(M, ref, cv, L, plan, tp, C, SR):
     """The trunk's left half: rows from R0 (the leg crease) to the head's ring.
 
         head ring (47 edges: F_N | n_t | B_N, the head's own points)
@@ -240,7 +310,30 @@ def trunk(M, ref, cv, L, plan, tp, C):
     ring = ref.ring[:48]
     thN, tN = cv.inv(ring)
     t_N = np.interp(TH, thN, tN)
-    FB, BB, FT, BT, t_s0, t_s1 = C["FB"], C["BB"], C["FT"], C["BT"], C["t_s0"], C["t_s1"]
+    FB, BB, FT, BT = C["FB"], C["BB"], C["FT"], C["BT"]
+    tFB, tBB, tBT, tFT = C["t_FB"], C["t_BB"], C["t_BT"], C["t_FT"]
+    n_f = C["n_f"]
+    P_bot, _ = rim_arc(SR, "bottom", C["n_b"])                    # FB -> BB
+    P_back, _ = rim_arc(SR, "back", n_f)                          # BB -> BT  (row k from the bottom)
+    P_top, _ = rim_arc(SR, "top", C["n_t"])                       # BT -> FT
+    P_front, _ = rim_arc(SR, "front", n_f)                        # FT -> FB
+    P_front = P_front[::-1]                                       # row k from the bottom
+    thF, tF = cv.inv(P_front)
+    thB, tB = cv.inv(P_back)
+    tb_th, tb_t = arc_profile(SR, "bottom")
+    tt_th, tt_t = arc_profile(SR, "top")
+
+    def prof(kind):
+        """Row i_s0 (the rim's bottom arc between FB and BB) or i_s1 (its top arc between FT and BT)."""
+        if kind == "s0":
+            return np.where(TH <= FB, tFB, np.where(TH >= BB, tBB, np.interp(TH, tb_th, tb_t)))
+        return np.where(TH <= FT, tFT, np.where(TH >= BT, tBT, np.interp(TH, tt_th, tt_t)))
+
+    def prof_A(k):
+        """Zone A row k: the front midline to the rim's front arc point k, the back arc point k to the back middle."""
+        f = k / n_f
+        tm, tb_ = (1 - f) * tFB + f * tFT, (1 - f) * tBB + f * tBT
+        return np.interp(TH, [0.0, thF[k], thB[k], np.pi], [tm, tF[k], tB[k], tb_])
 
     def full(v):
         return np.full_like(TH, v) if np.isscalar(v) else np.asarray(v, float)
@@ -255,20 +348,27 @@ def trunk(M, ref, cv, L, plan, tp, C):
         return float(np.mean(out)) if avg else max(out)
 
     rows = []
-    keys = [t_R0, tr["waist_y"], tr["underbust_y"], t_s0]
-    scales = [tp.get("glute_scale", 1.0), 1.0, tp.get("bust_scale", 1.0)]
-    for (ta, tb), sc in zip(zip(keys[:-1], keys[1:]), scales):
-        n = max(1, int(round(mer_len(ta, tb) / (sr * sc))))
-        for r in range(n):
-            rows.append({"t": (1 - r / n) * full(ta) + (r / n) * full(tb), "zone": "low", "f": 0.0})
+    p_s0, p_s1 = prof("s0"), prof("s1")
+    n_g = max(1, int(round(mer_len(t_R0, tr["waist_y"]) / (sr * tp.get("glute_scale", 1.0)))))
+    for r in range(n_g):
+        rows.append({"t": (1 - r / n_g) * full(t_R0) + (r / n_g) * full(tr["waist_y"]), "zone": "low", "f": 0.0})
+    # waist -> the rim's bottom arc: through the underbust at the front (the breast's fold), even at the side and
+    # the back (the arc dips to the armpit there: anchoring the underbust would crowd the rows under it)
+    n_a = max(1, int(round(mer_len(tr["waist_y"], tr["underbust_y"]) / sr)))
+    n_c = max(1, int(round(mer_len(tr["underbust_y"], p_s0, ths=(15, 45)) / (sr * tp.get("bust_scale", 1.0)))))
+    wf = 1 - smooth01((TH - np.radians(55)) / np.radians(25))
+    for r in range(n_a + n_c):
+        t_even = tr["waist_y"] + (p_s0 - tr["waist_y"]) * r / (n_a + n_c)
+        t_fr = (tr["waist_y"] + (tr["underbust_y"] - tr["waist_y"]) * r / n_a if r <= n_a
+                else tr["underbust_y"] + (p_s0 - tr["underbust_y"]) * (r - n_a) / n_c)
+        rows.append({"t": wf * t_fr + (1 - wf) * t_even, "zone": "low", "f": 0.0})
     i_s0 = len(rows)
-    for k in range(C["n_f"] + 1):
-        f = k / C["n_f"]
-        rows.append({"t": full(t_s0 + (t_s1 - t_s0) * f), "zone": "A", "f": f})
+    for k in range(n_f + 1):
+        rows.append({"t": p_s0 if k == 0 else (p_s1 if k == n_f else prof_A(k)), "zone": "A", "f": k / n_f, "k": k})
     i_s1 = len(rows) - 1
-    g = graded(mer_len(t_s1, t_N, avg=True), C["s"], tp["neck_spacing"])
+    g = graded(mer_len(p_s1, t_N, avg=True), C["s"], tp["neck_spacing"])
     for f in g[1:]:
-        rows.append({"t": (1 - f) * full(t_s1) + f * t_N, "zone": "U", "f": float(f)})
+        rows.append({"t": (1 - f) * p_s1 + f * t_N, "zone": "U", "f": float(f)})
     i_n = len(rows) - 1
     for r in rows:
         r["t_of"] = (lambda tt: (lambda th: np.interp(th, TH, tt)))(r["t"])
@@ -288,8 +388,7 @@ def trunk(M, ref, cv, L, plan, tp, C):
         if r["zone"] == "low" or i == i_s0:
             r["bands"] = [("F", 0.0, FB, nF), ("S", FB, BB, C["n_b"]), ("B", BB, np.pi, nB)]
         elif r["zone"] == "A" and i < i_s1:
-            f = r["f"]
-            r["bands"] = [("F", 0.0, (1 - f) * FB + f * FT, nF), ("B", (1 - f) * BB + f * BT, np.pi, nB)]
+            r["bands"] = [("F", 0.0, float(thF[r["k"]]), nF), ("B", float(thB[r["k"]]), np.pi, nB)]
         else:                                          # i_s1 and zone U
             f = r["f"] if i > i_s1 else 0.0
             a = (1 - f) * FT + f * thN[C["F_N"]]
@@ -346,8 +445,16 @@ def trunk(M, ref, cv, L, plan, tp, C):
             if nm == "F" and i in th_cols:
                 tc = th_cols[i]
                 X = fill_nan(mapk(cv, tc, r["t_of"](tc), [TRUNK]))
+            elif nm == "S" and i == i_s0:
+                X = P_bot.copy()
+            elif nm == "T" and i == i_s1:
+                X = P_top[::-1].copy()
             else:
                 X, _ = along_k(cv, [TRUNK], a, b, r["t_of"], gfr)
+            if i_s0 <= i <= i_s1 and nm == "F":
+                X[-1] = P_front[r["k"]]
+            if i_s0 <= i <= i_s1 and nm == "B":
+                X[0] = P_back[r["k"]]
             if prev is not None and r["bands"][0][0] == "F" and len(r["bands"]) == 3:
                 ids[nm] = np.concatenate([ids[prev][-1:], M.add(X[1:], part, i, col + 1)])
             else:
@@ -454,40 +561,97 @@ def arm_root_plane(L, plan):
     return L["shoulder"] + t * d_up, n, d_up
 
 
-def shoulder(M, ref, L, plan, tp, tk, C):
-    """The shoulder hole's rim (N = n_b + n_t + 2 n_f) -> k loops -> the arm root ring (N points). The root ring's
-    points: each rim point's angle about the arm's axis, blended with even arc length (root_even); the loops are
-    straight blends rim -> root, put back on the reference (closest point) and relaxed later."""
-    rim = tk["rim"]
+def shoulder(M, ref, L, plan, tp, tk, C, SR):
+    """(a, pass 3) The rim (N = n_b + n_t + 2 n_f, on the even-gap rim) -> nl loops -> the arm root ring (the plan's
+    arm_root_n, ~40 close). The count is shed on the TRUNK side by four corner chains: kites stacked loop after loop
+    at the rim's corners (front-bottom: the pectoral's fold; back-bottom: the lat; back-top: the scapula; front-top:
+    the trapezius), each kite's middle on the previous kite's short vertex, so a chain is one diagonal seam: its
+    first kite cancels the lattice's corner 5-pole and only its last leaves a 5-pole. Loops are blends rim -> root
+    at the same root angle (dense index), put back on the reference, their points blended toward even arc length."""
+    rim = np.roll(np.asarray(tk["rim"]), -(C["n_b"] // 2))   # start mid-bottom: no corner kite wraps
     N = len(rim)
+    Nr = int(tp["arm_root_n"])
+    m = SR["m"]
     c, n, _ = arm_root_plane(L, plan)
     e1 = ring_frame(c, n, np.array([0, 1.0, 0]))[0]
-    Xr = np.asarray(M.V)[rim]
-    phr = ring_angles(Xr, c, n, e1)
-    sense = 1.0 if phr[-1] > phr[0] else -1.0
-    ph, s, _ = dense_ring(ref, [TRUNK, ARM], c, n, e1)
-    ur = ang_to_u(ph, s, phr)
-    ur = ur[0] + np.unwrap((ur - ur[0]) * 2 * np.pi) / (2 * np.pi)
-    k = np.arange(N)
-    u0 = ur[0] + np.angle(np.mean(np.exp(2j * np.pi * (ur - ur[0] - sense * k / N)))) / (2 * np.pi)
-    b = tp["root_even"]
-    u = (1 - b) * ur + b * (u0 + sense * k / N)
-    X0 = T.ring_by_rays(ref, [TRUNK, ARM], c, n, e1, u_to_ang(ph, s, u))
-    root = M.add(X0, "shoulder", 0, 0, FREE, REG["upper_arms"], (TRUNK, ARM))
-    gap = np.linalg.norm(X0 - Xr, axis=1)
-    nl = max(1, int(round(np.percentile(gap, 75) / tp["shoulder_spacing"])) - 1)
+    Xd, Yd = SR["X"], SR["Y"]
+    V = np.asarray(M.V)
+    Yc = np.vstack([Yd, Yd[:1]])
+    sY = SR["s"]
+    # each rim vertex's dense index: nearest dense rim point, then refined by arc length; unwrapped monotone
+    j0 = cKDTree(Yd).query(V[rim])[1].astype(float)
+    idx = j0[0] + np.unwrap((j0 - j0[0]) * 2 * np.pi / m) * m / (2 * np.pi)
+    corner_ids = [tk["corners"][q] for q in ("FB", "BB", "BT", "FT")]
+    cpos = [int(np.where(rim == v)[0][0]) for v in corner_ids]
+    nl = max(1, int(round(tp["shoulder_gap"] / tp["shoulder_spacing"])) - 1)
+    r_tot = (N - Nr) // 2
+    assert (N - Nr) % 2 == 0 and r_tot >= 0, (N, Nr)
+    order = [0, 1, 2, 3]                                   # FB, BB first (farthest from the deltoid), then BT, FT
+    kq = [r_tot // 4 + (1 if q < r_tot % 4 else 0) for q in order]
+    assert max(kq) <= nl + 1, ("chains longer than the loops", kq, nl)
     C["shoulder_loops"] = nl
-    C["shoulder_gap_mm"] = [round(float(gap.min()) * 1000, 1), round(float(np.median(gap)) * 1000, 1),
-                            round(float(gap.max()) * 1000, 1)]
-    prev = rim
-    for j in range(1, nl + 1):
+    C["shoulder_chains"] = {q: k for q, k in zip(("FB", "BB", "BT", "FT"), kq)}
+
+    def curve(f):
+        Q = (1 - f) * Yd + f * Xd
+        if 0 < f < 1:
+            Q, _ = ref.project([TRUNK, ARM], Q)
+        Q = np.vstack([Q, Q[:1]])
+        sq = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(Q, axis=0), axis=1))])
+        return Q, sq
+
+    def at(Q, ii):
+        return np.stack([np.interp(np.mod(ii, m), np.arange(m + 1), Q[:, k]) for k in range(3)], 1)
+
+    def even(Q, sq, ii, w):
+        a = np.interp(np.mod(ii, m), np.arange(m + 1), sq) / sq[-1]
+        a = a[0] + np.unwrap((a - a[0]) * 2 * np.pi) / (2 * np.pi)
+        k = np.arange(len(ii))
+        a0 = a[0] + np.angle(np.mean(np.exp(2j * np.pi * (a - a[0] - k / len(ii))))) / (2 * np.pi)
+        a2 = (1 - w) * a + w * (a0 + k / len(ii))
+        kk = np.floor(a2)
+        out = np.interp((a2 - kk) * sq[-1], sq, np.arange(m + 1)) + m * kk
+        return out
+
+    prev, cur_idx, cur_c = rim, idx, list(cpos)
+    ends = {}
+    for j in range(1, nl + 2):
         f = j / (nl + 1)
-        q, _ = ref.project([TRUNK, ARM], (1 - f) * Xr + f * X0)
-        ids = M.add(q, "shoulder", j, 0, FREE, REG["upper_arms"] if f > 0.5 else REG["torso_front"], (TRUNK, ARM))
-        M.strip(prev, ids, REG["upper_arms"], "shoulder", closed=True)
-        prev = ids
-    M.strip(prev, root, REG["upper_arms"], "shoulder", closed=True)
-    return {"root": root, "c": c, "n": n, "e1": e1}
+        Q, sq = curve(f)
+        act = [q for q in range(4) if j - 1 < kq[q]]
+        starts = sorted((cur_c[q] - 1) % len(prev) for q in act)
+        eL = len(prev)
+        kset = set(starts)
+        anchor, i = [0], 0
+        while i < eL:
+            if i in kset:
+                anchor[-1] = i + 1
+                i += 2
+            else:
+                anchor.append(i + 1)
+                i += 1
+        last = anchor.pop()
+        if last != eL:
+            anchor[0] = last
+        anchor = [a % eL for a in anchor]
+        new_idx = np.array([cur_idx[a] for a in anchor])
+        new_idx = new_idx[0] + np.unwrap((new_idx - new_idx[0]) * 2 * np.pi / m) * m / (2 * np.pi)
+        new_c = [anchor.index(cur_c[q] % eL) if cur_c[q] % eL in anchor else None for q in range(4)]
+        w = tp["root_even"] if j == nl + 1 else 0.35
+        new_idx = even(Q, sq, new_idx, w)
+        X = at(Q, new_idx)
+        if j == nl + 1:
+            X = T.ring_by_rays(ref, [TRUNK, ARM], c, n, e1, ring_angles(X, c, n, e1))
+        ids = M.add(X, "shoulder", j, 0, FREE, REG["upper_arms"] if f > 0.5 else REG["torso_front"], (TRUNK, ARM))
+        M.strip(prev, ids, REG["upper_arms"], "shoulder", closed=True, kites=starts)
+        for q in act:
+            if j == kq[q]:
+                ends[q] = int(ids[new_c[q]])
+        prev, cur_idx, cur_c = ids, new_idx, [x if x is not None else 0 for x in new_c]
+    assert len(prev) == Nr, (len(prev), Nr)
+    C["shoulder_kite_verts"] = sorted(ends.values())
+    C["N_arm"] = Nr
+    return {"root": prev, "c": c, "n": n, "e1": e1}
 
 
 # ------------------------------------------------------------------------------------------------ the breast --
@@ -1059,11 +1223,10 @@ def build(plan, tier, ref, cv, L):
     M = QM()
     C = {"tier": tier, "kite_sector": tp["kite_sector"]}
     c_ar, n_ar, _ = arm_root_plane(L, plan)
-    e1a = ring_frame(c_ar, n_ar, np.array([0, 1.0, 0]))[0]
-    Xd = dense_ring(ref, [TRUNK, ARM], c_ar, n_ar, e1a, 360)[2]
-    C.update(trunk_plan(ref, cv, L, plan, tp, *cv.inv(Xd[:-1])))
-    tk = trunk(M, ref, cv, L, plan, tp, C)
-    sh = shoulder(M, ref, L, plan, tp, tk, C)
+    SR = shoulder_rim(ref, cv, L, plan, tp)
+    C.update(trunk_plan(ref, cv, L, plan, tp, SR))
+    tk = trunk(M, ref, cv, L, plan, tp, C, SR)
+    sh = shoulder(M, ref, L, plan, tp, tk, C, SR)
     breast(M, ref, L, plan, tp, tk, C)
     cr = crotch(M, ref, L, plan, tp, tk, C)
     lim = plan["limbs"]
@@ -1075,6 +1238,8 @@ def build(plan, tier, ref, cv, L):
     ka = [TRUNK, ARM, HAND]
     circ = circ_len(ref, ka, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_el = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_arm"]), 22, C["N_arm"]))
+    if not tp.get("upper_arm_band", True):
+        N_el = C["N_arm"]          # (a) no window for poles between the shoulder zone and the elbow zone
     jp = dict(lim["elbow"], **tp["elbow"])
     st, joints["elbow"] = limb_stations(c_ar, n_ar, J, d_in, d_out, hc, hn, jp, tp, C["N_arm"], N_el, 22,
                                         part_reg_fn(("arm", "elbow", "forearm"), (REG["upper_arms"], REG["forearms"])),

@@ -140,7 +140,7 @@
     "glute_scale": 0.9,
     "bust_scale": 0.95,
     "neck_spacing": 0.0045,
-    "shoulder_spacing": 0.0055,
+    "shoulder_spacing": 0.0075,
     "root_even": 0.6,
     "breast_loops": 3,
     "breast_cap": 0.55,
@@ -171,7 +171,10 @@
     "relax_iters": 12,
     "relax_lambda": 0.5,
     "why": "(a) the close-up at 9.4 px/cm: 7-8 mm on trunk and limbs (a 7 px chord), 5-6 mm over the breasts, shoulder caps, glutes and each joint's bend zone, so the cel terminator stays a curve (the old arm's 12 px chords failed); the neck graded to the head ring's ~4 mm; kites (reduction poles) on the inner/back side, mid-segment",
-    "collar_f": 0.3
+    "collar_f": 0.3,
+    "shoulder_gap": 0.045,
+    "arm_root_n": 40,
+    "upper_arm_band": false
    },
    "play": {
     "spacing": 0.017,
@@ -179,7 +182,7 @@
     "glute_scale": 1.0,
     "bust_scale": 1.0,
     "neck_spacing": 0.007,
-    "shoulder_spacing": 0.014,
+    "shoulder_spacing": 0.015,
     "root_even": 0.6,
     "breast_loops": 1,
     "breast_cap": 0.5,
@@ -210,7 +213,10 @@
     "relax_iters": 8,
     "relax_lambda": 0.5,
     "why": "(a) the play camera (her 40-60 px tall) at ~25k: the same plan at 17 mm; the full 94-point neck ring kept (her head is drawn full at every tier), reduced just below the collarbones",
-    "collar_f": 0.3
+    "collar_f": 0.3,
+    "shoulder_gap": 0.045,
+    "arm_root_n": 22,
+    "upper_arm_band": false
    }
   },
   "rest_tris": 11300,
