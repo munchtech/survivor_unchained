@@ -1311,6 +1311,46 @@
    "report": "Two of the Watch went down the Low Ford road yesterday with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
   },
   {
+   "id": "vonnra.sends",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "day": {
+       "gte": 3
+      }
+     },
+     {
+      "fact": "prologue.done",
+      "eq": true
+     },
+     {
+      "met": "vonnra"
+     },
+     {
+      "quest": {
+       "id": "vault",
+       "entry": "seen"
+      }
+     },
+     {
+      "not": {
+       "fact": "vonnra.told",
+       "eq": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "vonnra.sent": true
+     }
+    }
+   ],
+   "report": "A note under your door, in violet ink: \"The ford is quiet. You know who to thank. Come up to the Tower after dark, and I will tell you what you did. — V.\""
+  },
+  {
    "id": "chapter.ready",
    "once": true,
    "when": {

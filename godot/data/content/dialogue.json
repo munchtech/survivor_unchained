@@ -13169,6 +13169,36 @@
     "when": {
      "all": [
       {
+       "fact": "vonnra.sent",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "vonnra.told",
+        "eq": true
+       }
+      },
+      {
+       "met": "vonnra"
+      },
+      {
+       "any": [
+        {
+         "time": "dusk"
+        },
+        {
+         "time": "night"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "chains"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "vonnra"
       },
       {
@@ -13408,6 +13438,23 @@
    "hub": {
     "id": "hub",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "vonnra.sent",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "vonnra.told",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "text": "(The ledger is open, and she does not look up from it.) After dark, traveler. I do not say this one by daylight. Payment, always."
+     },
      {
       "when": {
        "all": [
@@ -13918,7 +13965,32 @@
    },
    "vault": {
     "id": "vault",
-    "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
+    "text": [
+     {
+      "when": {
+       "fact": "vonnra.told",
+       "eq": true
+      },
+      "text": "(She does not look up.) I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "vonnra.told",
+         "eq": true
+        },
+        {
+         "hasItem": "sigil_fragment"
+        }
+       ]
+      },
+      "text": "(She does not look up.) I have told you what is behind it, and the key to it is in your coat. After dark, traveler."
+     },
+     {
+      "text": "Not for any price. That is the only thing I will ever say to you without charging for it."
+     }
+    ],
     "effects": [
      {
       "quest": {
@@ -14983,6 +15055,348 @@
     "id": "f_did",
     "text": "When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks. (She lays her hand flat on the cup.) You stopped the drowning, traveler. You also did this.",
     "next": "f_below"
+   },
+   "chains": {
+    "id": "chains",
+    "text": "(Two cups on the table, and the ledger shut. You have never seen it shut.) Sit. ...No. Sit, {name}. The toll is paid tonight; I paid it. (She pours, and the second cup is for you.) Everyone in this town has told you who to thank for the quiet at the ford. Not one of them has told you what you did there. I am going to.",
+    "choices": [
+     {
+      "text": "I put the Warden down.",
+      "goto": "keeper"
+     },
+     {
+      "text": "Go on, then.",
+      "goto": "keeper"
+     }
+    ]
+   },
+   "keeper": {
+    "id": "keeper",
+    "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they cut over the door that they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
+    "choices": [
+     {
+      "text": "And what does a chain do to a thing like that?",
+      "goto": "bleed"
+     },
+     {
+      "text": "The dead. Why do they get up?",
+      "goto": "bleed"
+     }
+    ]
+   },
+   "bleed": {
+    "id": "bleed",
+    "text": "It bleeds. A chain holds the morning by cutting it, and what runs out of the cut runs up through the ground. You have a word for that, traveler. The valley burns it in its lamps and cooks it in the Dig and sells it by the sack, and where it lies thick the dead get up at night with nothing behind their faces. (She does not look at the lamp-iron at your belt. She has already looked.) You have burned it every night since the ford. You know what it smells like.",
+    "choices": [
+     {
+      "text": "The ford.",
+      "goto": "ford_tale"
+     }
+    ]
+   },
+   "ford_tale": {
+    "id": "ford_tale",
+    "text": [
+     {
+      "when": {
+       "fact": "warden.answer",
+       "eq": "silent"
+      },
+      "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You asked him nothing. You did not even answer him. He let go of it anyway, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+     },
+     {
+      "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You nodded to him. He let go, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "The words over the door say the Legion buried what it could not burn.",
+      "show": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "script"
+         }
+        }
+       ]
+      },
+      "once": "burn",
+      "goto": "burn"
+     },
+     {
+      "text": "Corvane says the Watch was founded to keep it done.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "order",
+      "goto": "order"
+     }
+    ]
+   },
+   "burn": {
+    "id": "burn",
+    "text": "Read it again. Not what it could not kill: what it could not burn. (She lays one finger flat on the table, like a word.) Fire was the only thing the Legion trusted, and the morning would not take it, because the morning is what fire is for. So they bled it, and called the bleeding a burial. Soldiers write a very honest kind of lie, traveler. They tell you what they did, and let you supply the monster.",
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "Corvane says the Watch was founded to keep it done.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "order",
+      "goto": "order"
+     }
+    ]
+   },
+   "order": {
+    "id": "order",
+    "text": "Corvane. (For a moment she almost smiles, and it is worse than the ledger.) The Order made the guards. The Order kept the chains. And the Order lit its lamps off what ran out of the cut, and called the smell a prayer. They lived off the leak. Of course the Watch was founded to keep it done; the Watch is the Order with its collar off. Ask him what his lamps burned, traveler, and watch him light a candle.",
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "The words over the door say the Legion buried what it could not burn.",
+      "show": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "script"
+         }
+        }
+       ]
+      },
+      "once": "burn",
+      "goto": "burn"
+     }
+    ]
+   },
+   "six": {
+    "id": "six",
+    "text": "Seven. One is out. When the six are out, it stops. (She says it the way she says the toll.) The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
+    "choices": [
+     {
+      "text": "How do you know it stops?",
+      "goto": "office"
+     },
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "office": {
+    "id": "office",
+    "text": "Because the people who made the guards wrote down when it would be over, and I can read. (She says it without looking at anything, the way you say a thing learned as a child.) \"Is it morning?\" \"Not yet.\" \"When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning.\" The end of the Order's office. The keepers said it every night for a thousand years to a thing they had chained, and meant it as a promise. A lamp lit at dark that still burns at first light. You have watched what you carry go out at every dawn, traveler. One morning it will not. That is the whole of the prophecy, and it is kinder than the tale.",
+    "choices": [
+     {
+      "text": "Is that all of it?",
+      "goto": "office_more"
+     },
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "office_more": {
+    "id": "office_more",
+    "text": "There is a little after. It concerns the keeper, and it is in the keepers' words, and I will not stand in a dead man's mouth tonight. Corvane has the book. He will show you the end when he thinks you are ready, which is never. ...Ask him anyway. I should like to see his face.",
+    "choices": [
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "cost": {
+    "id": "cost",
+    "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. It is the second thing I have given you, and I am keeping count.",
+    "choices": [
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "why": {
+    "id": "why",
+    "text": "Because only a thing's own light can lift its heart. The Legion could not; they could only bury. My family could not; we kept the keys, and watched. A living hand goes up to a heart-stone and comes away empty. (She turns her palm up on the table, and leaves it there.) You can lift one. I watched the first reach for you. A light going out at the crossing, and a little after, another one coming on: I told you it is not often the second thing happens. I did not tell you what it meant.",
+    "choices": [
+     {
+      "text": "And if I don't?",
+      "goto": "dont"
+     },
+     {
+      "text": "The door in the Verge.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "seen"
+       }
+      },
+      "goto": "key"
+     },
+     {
+      "text": "Where do I start?",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "vault",
+         "entry": "seen"
+        }
+       }
+      },
+      "goto": "key"
+     }
+    ]
+   },
+   "dont": {
+    "id": "dont",
+    "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning.",
+    "choices": [
+     {
+      "text": "The door in the Verge.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "seen"
+       }
+      },
+      "goto": "key"
+     },
+     {
+      "text": "Where do I start?",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "vault",
+         "entry": "seen"
+        }
+       }
+      },
+      "goto": "key"
+     }
+    ]
+   },
+   "key": {
+    "id": "key",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "hasItem": "sigil_fragment"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "fragment"
+         }
+        }
+       ]
+      },
+      "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. You have the last. I thought you might. (She does not ask where you found it.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+     },
+     {
+      "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. The last man who carried one did not come out. He is at the door still, what the birds left of him. Look in his hand. (A beat.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Jessop went in.",
+      "show": {
+       "fact": "vonnra.asked_jessop",
+       "eq": true
+      },
+      "once": "jessop_in",
+      "goto": "jessop_in"
+     },
+     {
+      "text": "Then I'll go.",
+      "goto": "tale_end"
+     }
+    ]
+   },
+   "jessop_in": {
+    "id": "jessop_in",
+    "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...Clerks go south, traveler. I told you the direction.",
+    "choices": [
+     {
+      "text": "Then I'll go.",
+      "goto": "tale_end"
+     }
+    ]
+   },
+   "tale_end": {
+    "id": "tale_end",
+    "text": "Go, then. (She picks up the cup you did not drink from, and drinks it herself.) Come back through my gate, {name}. ...That is not a toll. I have never said it to anyone, and I find I do not know the price.",
+    "effects": [
+     {
+      "set": {
+       "vonnra.told": true
+      }
+     },
+     {
+      "quest": {
+       "id": "vault",
+       "status": "active",
+       "entry": "vonnra_told"
+      }
+     },
+     {
+      "rel": {
+       "npc": "vonnra",
+       "trust": 10,
+       "affection": 10
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Vonnra."
+     }
+    ]
    }
   }
  },
