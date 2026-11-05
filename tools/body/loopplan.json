@@ -142,8 +142,8 @@
     "neck_spacing": 0.0045,
     "shoulder_spacing": 0.0075,
     "root_even": 0.6,
-    "breast_loops": 3,
-    "breast_cap": 0.55,
+    "breast_loops": 2,
+    "breast_cap": 0.8,
     "breast_centre_pull": 0.0,
     "limb_spacing": 0.0075,
     "bend_spacing": 0.0055,
@@ -180,7 +180,13 @@
     "neck_ring_smooth": 4,
     "neck_step_ease": 3,
     "neck_untwist_rows": 2,
-    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)"
+    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
+    "breast_cap_on_loop": true,
+    "F_L_heights": [
+     1.42
+    ],
+    "collar_F_y": 1.5,
+    "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)"
    },
    "play": {
     "spacing": 0.017,

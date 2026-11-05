@@ -272,7 +272,7 @@ def trunk_plan(ref, cv, L, plan, tp, SR):
     n_t = max(2, int(round(SR["len"]["top"] / s)))
     n_t += (n_t - n_b) % 2
     n_f = max(2, int(round(0.5 * (SR["len"]["front"] + SR["len"]["back"]) / sr)))
-    F_L = int(round(max([blen(0, FB, x) for x in (1.08, 1.12, 1.2, 1.3)] +
+    F_L = int(round(max([blen(0, FB, x) for x in [1.08, 1.12, 1.2, 1.3] + list(tp.get("F_L_heights", []))] +
                         [blen(0, float(a), float(b)) for a, b in zip(th[cn["FT"]::12], t[cn["FT"]::12])]) / s))
     B_L = int(round(max([blen(BB, np.pi, x) for x in (1.08, 1.12, 1.2, 1.3, 1.42)] +
                         [blen(float(a), np.pi, float(b)) for a, b in zip(th[cn["BB"]:cn["BT"]:12],
@@ -378,6 +378,8 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
     yback = np.array([r["y"][170] for r in rows])
     fz = np.array([r["f"] if r["zone"] == "U" else -1.0 for r in rows])
     F_tr = B_tr = T_tr = int(np.argmax(fz >= tp["collar_f"]))         # the collar row: the neck's base all round
+    if tp.get("collar_F_y"):                         # (a, pass 3b) the front's collar kites down on the upper chest
+        F_tr = int(np.argmin(np.abs(yfront[:i_s1] - tp["collar_F_y"])))
     C["rows_y_front"] = [round(float(y), 3) for y in yfront]
     C["rows_y_back"] = [round(float(y), 3) for y in yback]
     C.update({"i_s0": i_s0, "i_s1": i_s1, "i_n": i_n, "F_tr": F_tr, "B_tr": B_tr, "T_tr": T_tr, "rows": len(rows)})
@@ -686,7 +688,7 @@ def breast(M, ref, L, plan, tp, tk, C):
         ids = M.add(to3(o2 + (P2 - o2) * (1 - f)), "breast", j, 0, FREE, REG["torso_front"])
         M.strip(prev, ids, REG["torso_front"], "breast", closed=True)
         prev = ids
-    B2 = o2 + (P2 - o2) * cr
+    B2 = o2 + (P2 - o2) * (cr if not tp.get("breast_cap_on_loop") else (1 - k / (k + 1) * (1 - cr)))
     bot, rgt = B2[0:w + 1], B2[w:w + h + 1]
     top = B2[w + h:2 * w + h + 1][::-1]
     lft = np.vstack([B2[2 * w + h:], B2[:1]])[::-1]
