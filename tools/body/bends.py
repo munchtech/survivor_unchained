@@ -337,6 +337,29 @@ def normals(P, T):
     return N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
 
 
+def surface_depth(V, To, Q, chunk=400_000):
+    """The true distance (m) from each point Q to the surface of the triangles To (indices into V): exact
+    point-to-triangle (surfdist.closest_on_tris, Ericson's regions) over every triangle that can hold the closest
+    point. Bound: the nearest of each triangle's samples (vertices, edge middles, centre) is an upper bound d_s on the
+    true distance, and a triangle's closest point lies within its circumradius about its centre R_t <= R_max, so every
+    triangle whose centre is within d_s + R_max is tested (no k-nearest guess)."""
+    from surfdist import closest_on_tris
+    A, B, C = V[To[:, 0]], V[To[:, 1]], V[To[:, 2]]
+    S = np.concatenate([A, B, C, (A + B) / 2, (B + C) / 2, (C + A) / 2, (A + B + C) / 3])
+    ds, _ = cKDTree(S).query(Q)
+    cen = (A + B + C) / 3
+    rmax = float(np.sqrt(np.max([((X - cen) ** 2).sum(1).max() for X in (A, B, C)])))
+    cand = cKDTree(cen).query_ball_point(Q, ds + rmax + 1e-9)
+    qi = np.concatenate([np.full(len(c), i, np.int64) for i, c in enumerate(cand)])
+    ti = np.concatenate([np.asarray(c, np.int64) for c in cand])
+    best = ds.copy()
+    for a in range(0, len(qi), chunk):
+        q_, t_ = qi[a:a + chunk], ti[a:a + chunk]
+        x = closest_on_tris(Q[q_], A[t_], B[t_], C[t_])
+        np.minimum.at(best, q_, np.linalg.norm(Q[q_] - x, axis=1))
+    return best
+
+
 def penetration(strip, V, T_all):
     """Posed body points near the joint inside the posed surface (the whole posed body and its closing head):
     count, and depth (mm) under the other segment's posed skin (the far side of the rest bisector plane)."""
@@ -350,7 +373,9 @@ def penetration(strip, V, T_all):
     # depth: how far the point sits under the OTHER segment's skin. A fold presses the distal skin into the proximal
     # (or the reverse), so the surface it must leave by is the other side of the rest bisector plane (seg_d / seg_p).
     # Rays read the whole other limb (95-134 mm), and a rest-neighbour exclusion skipped the skin across the crease
-    # (14-18 mm): the nearest point on the other side's posed triangles (vertices, edge middles, centres) is the depth.
+    # (14-18 mm): the distance to the other side's posed triangles is the depth. P1 hip r4 (5 Nov): the true surface
+    # distance (surface_depth, exact point-to-triangle), not the nearest of the triangles' samples (vertices, edge
+    # middles, centres): a node pressed onto the other skin within 1 mm read 3-5 mm there (a measuring fix).
     q = idx[ins]
     sd = strip.seg_d
     T = strip.T_rend
@@ -364,10 +389,7 @@ def penetration(strip, V, T_all):
         if not len(To):
             nfb += len(qs)
             continue
-        A, B, C = V[To[:, 0]], V[To[:, 1]], V[To[:, 2]]
-        S = np.concatenate([A, B, C, (A + B) / 2, (B + C) / 2, (C + A) / 2, (A + B + C) / 3])
-        dd, _ = cKDTree(S).query(V[qs])
-        dep += list(dd * 1000)
+        dep += list(surface_depth(V, To, V[qs]) * 1000)
     dep = np.array(dep)
     return {"count": int(ins.sum()), "depth_max_mm": round(float(dep.max()) if len(dep) else 0.0, 2),
             "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx)), "depth_fallback": nfb}
