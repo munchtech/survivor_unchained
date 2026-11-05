@@ -35,6 +35,18 @@ public static class Beasts
     public sealed record Prop(string Bone, string Tip, Func<Node3D> Make, Vector3 Offset);
 
     static double Ease(double t, double rate) { double k = Math.Min(1, t * rate); return 1 - (1 - k) * (1 - k); }
+    static double Smooth(double t, double a, double b) { double k = Math.Clamp((t - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); }
+
+    /// <summary>A wolf drinking, `down` of the way (0 its idle's head, 1 at the water: the chest dipped, the neck and head
+    /// lowered, the jaw lapping), its head turned `look` of the way off to its right as it lifts.</summary>
+    static Vat.Moves Drink(double t, double down, double look)
+    {
+        double lap = 0.5 + 0.5 * Math.Sin(t * Math.Tau * 3);
+        return new Vat.Moves()
+            .Bone(Chest, 0.16 * down)
+            .Bone(Neck, 0.72 * down, 0.22 * look).Bone(Head, (0.42 + 0.05 * lap) * down - 0.08 * look, 0.3 * look)
+            .Bone(Jaw, (0.05 + 0.09 * lap) * down).Bone(Tail, 0.12 * down);
+    }
 
     /* -------------------------------------------------------------- wolf -- */
 
@@ -44,11 +56,22 @@ public static class Beasts
         ForeLowL = "Unterarm_L_Wolf_Skeleton", ForeLowR = "Unterarm_R_Wolf_Skeleton",
         HindLowL = "Unterschenkel_L_Wolf_Skeleton", HindLowR = "Unterschenkel_R_Wolf_Skeleton";
 
-    static readonly Def Wolf = new("beast_wolf", "res://art/beasts/wolf.glb", 0.95f, Hips, Head, new()
+    // (its key names what the bake holds: "_d" since the drink roles, so a bake kept on disk from before them, shared
+    // by every checkout's user://vat, is never read for this one)
+    static readonly Def Wolf = new("beast_wolf_d", "res://art/beasts/wolf.glb", 0.95f, Hips, Head, new()
     {
         new("move", "Wolf_Run_", 0, 0.6),
         new("idle", "Wolf_Idle_", 2.0, 3.0, Seam: true),
         new("rise", "Wolf_Idle_", 2.0, 3.0, Seam: true),
+        // (P9 C15) At the water, drinking: the forequarters and the head down to it, lapping (no clip of its own: over
+        // the idle). A loop, the lapping nine times in its three seconds. Staged by a film (CrowdView.Staged).
+        new("drink", "Wolf_Idle_", 2.0, 3.0, t => Drink(t, 1, 0), Seam: true),
+        // One lifts its head from the water and looks off, then drinks again: 4 s, from the drink and back to it.
+        new("drink_look", "Wolf_Idle_", 2.0, 4.0, t =>
+        {
+            double up = Smooth(t, 0.4, 1.3) - Smooth(t, 2.7, 3.6);
+            return Drink(t, 1 - up, up);
+        }, Hold: true),
         // Stalking in, low, lips back.
         new("windup", "Wolf_creep", 0, 1.33, t => new Vat.Moves().Bone(Jaw, 0.25 + 0.06 * Math.Sin(t * Math.Tau * 6))),
         // The lunge: in off the back legs, head up, jaws wide.

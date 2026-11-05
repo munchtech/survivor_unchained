@@ -81,7 +81,7 @@ public static class Vat
     static Shader? shader, cutShader;
 
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
-    static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
+    static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast" or "drink";
 
     /// <summary>Whether a kind is to hand without a bake: made this session, or kept on disk.</summary>
     public static bool Ready(Visuals.Spec spec)

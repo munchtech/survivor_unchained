@@ -1,0 +1,333 @@
+{
+ "id": "c15",
+ "title": "The Stream Runs Clear",
+ "conversation": "wenna",
+ "zone": "verge",
+ "script": "docs/cinematics/shoot/c15.md",
+ "draft": "Previs pass 1: surveyed on the Verge's stream nearest the Hollow (the reach at -12,-28; the Hollow's den itself has no water), at dawn whatever the hour. No her. The wolves are the crowd's own (spawned neutral, staged drinking).",
+ "bars": {
+  "in": 0.6,
+  "out": 0.8
+ },
+ "skip": {
+  "from": 1.5,
+  "hold": 0.8
+ },
+ "world": {
+  "rate": 0,
+  "zoneHeld": true
+ },
+ "marks": {
+  "w1": [
+   -16.51,
+   -30.65
+  ],
+  "w2": [
+   -15.01,
+   -31.43
+  ],
+  "w3": [
+   -13.5,
+   -32.22
+  ],
+  "w4": [
+   -12.0,
+   -33.01
+  ]
+ },
+ "cast": {
+  "w1": {
+   "kind": "enemy",
+   "def": "wolf"
+  },
+  "w2": {
+   "kind": "enemy",
+   "def": "wolf"
+  },
+  "w3": {
+   "kind": "enemy",
+   "def": "wolf"
+  },
+  "w4": {
+   "kind": "enemy",
+   "def": "wolf"
+  }
+ },
+ "shots": [
+  {
+   "id": "1",
+   "type": "ELS",
+   "dur": 5.0,
+   "note": "High over the reach, looking upstream into the low sun: the stream clear, a band of sky in it, mist lifting off the water, the wood dark at the edges.",
+   "cam": {
+    "pos": [
+     22.24,
+     16,
+     -39.79
+    ],
+    "at": [
+     -15.94,
+     0.0,
+     -26.54
+    ],
+    "lens": 30,
+    "move": {
+     "pos": [
+      16.93,
+      15,
+      -37.01
+     ],
+     "at": [
+      -19.94,
+      0.0,
+      -25.57
+     ],
+     "ease": "linear"
+    }
+   },
+   "cues": [
+    {
+     "do": "atmosphere",
+     "preset": "dawn",
+     "keyColor": "#f3d9a0",
+     "azimuth": -25,
+     "elevation": 14,
+     "hemiSky": "#9a8fc0",
+     "fogColor": "#b8aac8"
+    },
+    {
+     "do": "grade",
+     "shade": "#7a6a9a",
+     "shadeK": 0.5
+    },
+    {
+     "do": "mist",
+     "name": "reach",
+     "where": [
+      -12.4,
+      0.0,
+      -28.4
+     ],
+     "size": [
+      60,
+      1.4,
+      60
+     ],
+     "density": 0.18,
+     "color": "#d8d0e0",
+     "falloff": 2.5,
+     "grain": 0.12,
+     "sink": 0.1
+    },
+    {
+     "do": "music",
+     "mood": "explore",
+     "intensity": 0.3,
+     "over": 2.0
+    },
+    {
+     "do": "spawn",
+     "actor": "w1",
+     "mark": "w1",
+     "neutral": true
+    },
+    {
+     "do": "spawn",
+     "actor": "w2",
+     "mark": "w2",
+     "neutral": true
+    },
+    {
+     "do": "spawn",
+     "actor": "w3",
+     "mark": "w3",
+     "neutral": true
+    },
+    {
+     "do": "spawn",
+     "actor": "w4",
+     "mark": "w4",
+     "neutral": true
+    },
+    {
+     "do": "anim",
+     "actor": "w1",
+     "clip": "drink",
+     "where": [
+      -14.7,
+      -27.19
+     ]
+    },
+    {
+     "do": "anim",
+     "actor": "w2",
+     "clip": "drink",
+     "where": [
+      -13.2,
+      -27.98
+     ]
+    },
+    {
+     "do": "anim",
+     "actor": "w3",
+     "clip": "drink",
+     "where": [
+      -11.69,
+      -28.77
+     ]
+    },
+    {
+     "do": "anim",
+     "actor": "w4",
+     "clip": "drink",
+     "where": [
+      -10.19,
+      -29.56
+     ]
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "type": "MLS",
+   "dur": 5.0,
+   "note": "Low on the south bank, across the water: the wolves drinking on the far edge; one lifts its head and looks off, then drinks again.",
+   "cam": {
+    "pos": [
+     -9.85,
+     0.9,
+     -23.53
+    ],
+    "at": [
+     -14.07,
+     0.5,
+     -31.59
+    ],
+    "lens": 50
+   },
+   "cues": [
+    {
+     "do": "atmosphere",
+     "preset": "dawn",
+     "keyColor": "#f3d9a0",
+     "azimuth": -25,
+     "elevation": 14,
+     "hemiSky": "#9a8fc0",
+     "fogColor": "#b8aac8"
+    },
+    {
+     "at": 0.9,
+     "do": "anim",
+     "actor": "w2",
+     "clip": "drink_look",
+     "where": [
+      -13.2,
+      -27.98
+     ]
+    },
+    {
+     "at": 4.9,
+     "do": "anim",
+     "actor": "w2",
+     "clip": "drink",
+     "where": [
+      -13.2,
+      -27.98
+     ]
+    }
+   ]
+  },
+  {
+   "id": "3",
+   "type": "LS",
+   "dur": 4.0,
+   "note": "From the stream up toward the Dig's hill: the pump still, no smoke, no lamps, nothing moving on the spoil.",
+   "cam": {
+    "pos": [
+     58.0,
+     1.6,
+     -58.0
+    ],
+    "at": [
+     98.0,
+     4.0,
+     -98.0
+    ],
+    "lens": 40
+   },
+   "cues": [
+    {
+     "do": "atmosphere",
+     "preset": "dawn",
+     "keyColor": "#f3d9a0",
+     "azimuth": -25,
+     "elevation": 14,
+     "hemiSky": "#9a8fc0",
+     "fogColor": "#b8aac8"
+    }
+   ]
+  },
+  {
+   "id": "4",
+   "type": "CU",
+   "dur": 5.0,
+   "fit": [
+    "wenna.cb_clean"
+   ],
+   "tail": 2.2,
+   "note": "Close and low over the shallows, looking upstream into the sun: the water clear over the stones of its bed, the sun on it in soft bands. Wenna's line from off. Hold past it; hand back.",
+   "cam": {
+    "pos": {
+     "abs": [
+      -14.95,
+      -0.08000000000000007,
+      -26.38
+     ]
+    },
+    "at": {
+     "abs": [
+      -12.12,
+      -1.03,
+      -27.87
+     ]
+    },
+    "lens": 85,
+    "focus": 3.3,
+    "fstop": 4
+   },
+   "cues": [
+    {
+     "do": "atmosphere",
+     "preset": "dawn",
+     "keyColor": "#f3d9a0",
+     "azimuth": -25,
+     "elevation": 14,
+     "hemiSky": "#9a8fc0",
+     "fogColor": "#b8aac8"
+    },
+    {
+     "at": 1.0,
+     "do": "line",
+     "id": "wenna.cb_clean"
+    },
+    {
+     "at": "end-2.0",
+     "do": "atmosphere",
+     "preset": "play",
+     "from": "now",
+     "over": 2.0
+    },
+    {
+     "at": "end-2.0",
+     "do": "mist",
+     "name": "reach",
+     "density": 0,
+     "over": 2.0
+    }
+   ]
+  }
+ ],
+ "end": {
+  "camera": "follow"
+ }
+}
