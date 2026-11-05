@@ -44,6 +44,11 @@ public sealed class LightDef
     /// <summary>(P9 C13) Casts its shadow always (zone lights cast none): the Vault stair's grazing light, whose read is the
     /// treads' own shadows, each nose a lit line over the dark band of the tread below.</summary>
     public bool Shadow { get; set; }
+    /// <summary>(P9 C13) Its falloff (OmniAttenuation; below 0: as built, 1.7): the stair's grazing light falls off slower, so
+    /// its nose lines run the flight's length and fade to black at its foot rather than burning out the first steps.</summary>
+    public double Attenuation { get; set; } = -1;
+    /// <summary>(P9 C13) A shadowed light's normal bias (below 0: 0.6): lower keeps the thin shadow of each nose.</summary>
+    public double ShadowNormal { get; set; } = -1;
 }
 
 public sealed class FireDef

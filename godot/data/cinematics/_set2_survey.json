@@ -77,23 +77,23 @@
    "id": "E5",
    "dur": 2.5,
    "still": 1.5,
-   "note": "E5: high on the landing's east side",
+   "note": "E5: high over the landing near the axis, down the flight under the arches",
    "cam": {
     "pos": {
      "abs": [
-      7.5,
-      8.5,
-      -31.5
+      1.4,
+      6.2,
+      -32.0
      ]
     },
     "at": {
      "abs": [
-      -0.5,
-      -2.0,
-      -44
+      0.0,
+      -3.2,
+      -46.5
      ]
     },
-    "lens": 28
+    "lens": 30
    },
    "cues": [
     {
@@ -106,23 +106,23 @@
    "id": "E5b",
    "dur": 2.5,
    "still": 1.5,
-   "note": "E5 alt: high over the landing's middle, down the flight",
+   "note": "E5b: higher, from the landing's middle",
    "cam": {
     "pos": {
      "abs": [
-      -5.5,
-      9.5,
-      -30.0
+      -1.6,
+      8.6,
+      -29.5
      ]
     },
     "at": {
      "abs": [
-      0.5,
-      -3.0,
-      -47.0
+      0.0,
+      -3.8,
+      -47.5
      ]
     },
-    "lens": 28
+    "lens": 30
    },
    "cues": [
     {
@@ -209,6 +209,12 @@
    },
    "cues": [
     {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
+    {
      "do": "place",
      "mark": "d1"
     },
@@ -243,6 +249,12 @@
     "lens": 35
    },
    "cues": [
+    {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
     {
      "do": "place",
      "mark": "d1"
@@ -279,6 +291,12 @@
    },
    "cues": [
     {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
+    {
      "do": "place",
      "mark": "d1"
     },
@@ -313,6 +331,12 @@
     "lens": 85
    },
    "cues": [
+    {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
     {
      "do": "place",
      "mark": "d1"
@@ -349,6 +373,12 @@
    },
    "cues": [
     {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
+    {
      "do": "place",
      "mark": "d1"
     },
@@ -383,6 +413,12 @@
     "lens": 40
    },
    "cues": [
+    {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
     {
      "do": "place",
      "mark": "d1"
@@ -419,6 +455,12 @@
    },
    "cues": [
     {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
+    {
      "do": "place",
      "mark": "d1"
     },
@@ -453,6 +495,12 @@
     "lens": 28
    },
    "cues": [
+    {
+     "do": "foe",
+     "actor": "cv",
+     "def": "corvane",
+     "hidden": true
+    },
     {
      "do": "place",
      "mark": "d1"

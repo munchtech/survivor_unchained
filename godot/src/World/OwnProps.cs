@@ -56,6 +56,10 @@ public static class OwnProps
     static readonly Dictionary<string, (string Kind, Color Color, float Energy, Vector3 Center, float Radius, float Inner)> dials = new();
     /// <summary>(P9 set) Meshes of black stone smooth as glass (props.json "gloss"): one shared glossy material.</summary>
     static readonly HashSet<string> glossy = new();
+    /// <summary>(P9 C13) A preset's own gloss (props.json "gloss_mat": albedo, roughness, specular, clearcoat, clearcoat_roughness)
+    /// for its gloss meshes: the Vault door's black stone, smooth but not glass (at roughness 0.07 it took no light but the
+    /// bulbs' dots: a black hole in every frame), its clearcoat the sky's and the violet's soft sheen.</summary>
+    static readonly Dictionary<string, Material> glossMats = new();
     /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
     /// material on the faces their vertex alpha flags.</summary>
     static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
@@ -217,7 +221,20 @@ public static class OwnProps
                                 o.Value.TryGetProperty("inner", out var inn) ? inn.GetSingle() : 0f);
                         }
                     if (p.Value.TryGetProperty("gloss", out var gl))
-                        foreach (var o in gl.EnumerateArray()) glossy.Add(o.GetString() ?? "");
+                    {
+                        StandardMaterial3D? gm = null;
+                        if (p.Value.TryGetProperty("gloss_mat", out var gmj))
+                        {
+                            float G(string k, float d) => gmj.TryGetProperty(k, out var v) ? v.GetSingle() : d;
+                            gm = new StandardMaterial3D
+                            {
+                                ResourceName = "gloss_" + p.Name, AlbedoColor = new Color(gmj.TryGetProperty("albedo", out var al) ? al.GetString() ?? "0e0e12" : "0e0e12"),
+                                Roughness = G("roughness", 0.3f), Metallic = 0f, MetallicSpecular = G("specular", 0.6f),
+                            };
+                            if (G("clearcoat", 0f) > 0) { gm.ClearcoatEnabled = true; gm.Clearcoat = G("clearcoat", 0f); gm.ClearcoatRoughness = G("clearcoat_roughness", 0.15f); }
+                        }
+                        foreach (var o in gl.EnumerateArray()) { glossy.Add(o.GetString() ?? ""); if (gm != null) glossMats[o.GetString() ?? ""] = gm; }
+                    }
                     if (p.Value.TryGetProperty("runs", out var rn))
                         runs[p.Name] = (rn.GetProperty("top").GetSingle(), rn.GetProperty("drop").GetSingle(), rn.GetProperty("len").GetSingle(),
                             rn.GetProperty("k").GetSingle(), rn.GetProperty("ring").GetBoolean());
@@ -423,7 +440,7 @@ public static class OwnProps
                     sm.SetShaderParameter("center", dial.Center); sm.SetShaderParameter("radius", dial.Radius); sm.SetShaderParameter("inner", dial.Inner);
                     m.MaterialOverride = sm; m.SetMeta("dial", dial.Kind);
                 }
-                else m.MaterialOverride = GlossStone;
+                else m.MaterialOverride = glossMats.GetValueOrDefault(m.Name.ToString()) ?? GlossStone;
                 m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
                 if (moves.TryGetValue(m.Name, out var dtv)) { m.SetMeta("travel", dtv); m.SetMeta("rest", m.Position); }
                 continue;

@@ -33,26 +33,36 @@ public sealed class Vault : ArenaShape
 
     /// <summary>The stair's mouth, and its numbers (vault_stair's, binding both ways): a threshold a metre
     /// deep, then 26 treads 0.62 m deep, each 0.28 m down; the bottom floor; its walls from 2.9 m out.</summary>
-    public const double MouthZ = -38, Tread = 0.62, Rise = 0.28, Threshold = 1.0, InnerX = 2.9, OuterX = 4.4, WallTop = 2.2;
+    public const double MouthZ = -38, Tread = 0.62, Rise = 0.28, Threshold = 1.0, InnerX = 2.9, OuterX = 4.4, WallTop = 2.6;
     public const int Steps = 26;
-    /// <summary>(Round 3) The cut open to the sky down its first OpenLen m (vault_stair's "open", "kerb", "arch_at"): its
-    /// walls' tops a kerb over the mouth's floor there, rising to WallTop by the arch across the flight at ArchAt.</summary>
-    public const double OpenLen = 12.0, Kerb = 0.45, ArchAt = 12.4;
+    /// <summary>(C13 set) The transverse arches across the flight (vault_stair's "arches", m down from the mouth; each 1.4 m
+    /// through, springing ArchClear over its tread, segmental, to the walls' top). The first steps open to the moon to the
+    /// first; past it the treads lie in the arches' moon shadow, each next arch's ring and face lit over the one before
+    /// (16.4 the last, so Jessop's tread, the 23rd, lies in the gap before it, seen from the head); the walls stand to
+    /// WallTop from the mouth on (round 3's kerb, the open stretch, read from every camera as a strip in a field).</summary>
+    public static readonly double[] Arches = { 5.0, 9.0, 16.4 };
+    public const double ArchClear = 2.6;
     /// <summary>(Round 3) The barrow outside the walls: a shelf ShelfH m over the floor out to ShelfTo m, then rising BankRise a metre.</summary>
     public const double ShelfH = 0.9, ShelfTo = 6.5, BankRise = 0.4;
     /// <summary>The side walls' top (m over the mouth's floor) at a distance down the flight (sz under 0).</summary>
-    public static double CutTop(double sz) => Kerb + (WallTop - Kerb) * MathX.Smoothstep(OpenLen - 1.4, OpenLen + 0.3, -sz);
+    public static double CutTop(double sz) => WallTop;
     /// <summary>A tread's top under the mouth's floor, and the z (world) of its back edge (the riser above it).</summary>
     public static double TreadY(int k) => -Rise * k;
     public static double TreadBack(int k) => MouthZ - Threshold - (k - 1) * Tread;
-    /// <summary>The line through the treads' inner corners (under every tread, by up to a riser), m under the
-    /// mouth's floor, at a distance down the flight.</summary>
+    /// <summary>The ground under the treads, m under the mouth's floor, at a distance down the flight: (C13 set) the line
+    /// through each tread's top a fifth of a tread in from its riser, so what stands a hand in from a riser (the stair's
+    /// points) stands on the tread, not 6 cm into it (round 3: the line through the inner corners); the sliver it leaves
+    /// over each inner corner is hidden behind the nose above from the head, and painted as grit (Paint).</summary>
     static double UnderTreads(double sz)
     {
         if (sz > -Threshold) return 0;
         double k = 1 + (-Threshold - sz) / Tread;
-        return Math.Max(-Rise * k, -Rise * Steps);
+        return Math.Max(-Rise * (k - 0.2), -Rise * Steps);
     }
+
+    /// <summary>(C13 set) The grazing light's intensity (three.js units; under 8, so the one-shadow arbiter never offers or
+    /// takes its shadow) and its falloff (ZoneView's 1.7 burnt out the first steps and left the 23rd unlit).</summary>
+    const double GrazeI = 5.0, GrazeAtt = 0.7;
 
     bool NearPoint(double x, double z, double r) => P.Points.Values.Any(p => MathX.Dist(p.X, p.Z, x, z) < r);
 
@@ -76,13 +86,14 @@ public sealed class Vault : ArenaShape
         double sz = z - MouthZ;
         // The stair: the ground cut to the line under its treads, its walls' cores at their tops' height.
         double ax = Math.Abs(x);
-        if (sz <= 0.5 && sz > -26 && ax <= InnerX + 0.5) return floor + UnderTreads(sz) - 0.01;
+        // (C13 set: to inside the end wall, 22.5 m, no longer 26: the pit it left over the recess showed from above)
+        if (sz <= 0.5 && sz > -22.5 && ax <= InnerX + 0.5) return floor + UnderTreads(sz) - 0.01;
         // (From a metre in: the ground cells at the mouth stay the landing's, so no earth rises before the jambs.)
         if (sz <= -0.9 && sz > -26)
         {
             double top = floor + CutTop(sz) - 0.2;
             if (ax <= OuterX + 0.4) return top;
-            // (Round 3) The barrow falls to the cut's walls' tops (the kerb down the open stretch) no steeper than BankRise, under
+            // (Round 3) The barrow falls to the cut's walls' tops (C13: whole, WallTop, from the mouth on) no steeper than BankRise, under
             // the moon's 42 degrees, so it throws no shadow into the cut and catches the light itself.
             return Math.Max(top, Math.Min(h, top + BankRise * (ax - OuterX - 0.4)));
         }
@@ -102,6 +113,12 @@ public sealed class Vault : ArenaShape
     {
         double n1 = Noise.Noise(x * 0.09, z * 0.09), n2 = Noise.Noise(x * 0.23 + 4, z * 0.23), n3 = Noise.Noise(x * 0.5 + 11, z * 0.5 - 3);
         p.Open = 1;
+        // (C13 set) In the stair's cut (the ground there is only the sliver over each tread's inner corner): grit, no turf.
+        if (z - MouthZ < 0 && z - MouthZ > -22.5 && Math.Abs(x) < InnerX + 0.6)
+        {
+            p.L5 = 1; p.L2 = 0; p.BaseB = 0; p.Grass = 0; p.Moss = 0; p.Trod = 0; p.Char = 0.35; p.Leaves = 0;
+            return;
+        }
         if (inn > -0.4)
         {
             // The Legion's paving (layer 2, the way's slabs), whole down the middle; at the walls' feet the
@@ -181,7 +198,9 @@ public sealed class Vault : ArenaShape
         int sigil = B.Glow(0, 22.75, "#9a6cff", 2.4, height: 1.25, flicker: 0, range: 3.2);
         B.Lights[sigil].Dial = "vaultsigil";
         B.Lights[sigil].DialOff = "vaultdoor";
-        B.Lights[sigil].Specular = 0;   // (round 3: at 0.15 its bulb still sat on the glass-black face as a violet dot under the sigil)
+        // (round 3: at 0.15 its bulb sat on the glass-black face as a violet dot under the sigil; C13: the face rough enough now,
+        // vault_door's gloss_mat, that it lies on it as a soft violet sheen)
+        B.Lights[sigil].Specular = 0.5;
         // The cut letters over the door catch the violet only as the wake reaches the arms' ends.
         // (Round 3: from 5.2 m, under the lines at 5.7-6.1, at 2.0 they barely showed, and its bulb sat on the glass door.)
         // (C13 build: at 1.2 m out and 3.2 m of range its falloff left a pink hotspot on the face over the door; now well
@@ -214,11 +233,15 @@ public sealed class Vault : ArenaShape
         Run(16.0, -38.6, 4.6, -38.6, new[] { "vault_wall_c", "vault_wall_b" });
         // The stair, and its mouth's jambs standing into the landing.
         B.Piece("own/vault_stair", 0, MouthZ, 0);
-        // The sky's cold light down the flight, fading as it goes (the moon reaches its head; below, only what the
-        // cut's walls let down): the treads' lit edges step down into the dark, the last of it 10-15 m down.
-        // (Round 3: the moon now lights the open stretch itself; the fill is only a lift, the most of it past the arch.)
-        foreach (var (k, e) in new[] { (3, 0.5), (8, 0.45), (13, 0.5), (18, 0.3) })
-            B.Glow(0, TreadBack(k) + Tread / 2, "#7894d6", e, height: 2.2, flicker: 0, range: 5.5);
+        // (C13 set) The flight's read: one cold light grazing down it from just inside the threshold, a hand over the noses'
+        // line, casting (LightDef.Shadow): each nose a lit line over the dark band of the tread below, down the flight and
+        // falling to black at its foot. (Round 3's four fill glows down the flight went: they lifted every shadow, so the
+        // moon, straight down the cut's axis, lit the treads as one even surface.)
+        int graze = B.Glow(0, MouthZ - 1.6, "#a3b8e6", GrazeI, flicker: 0, range: 18);
+        B.Lights[graze].Y = floor + 0.02;
+        B.Lights[graze].Shadow = true;
+        B.Lights[graze].Attenuation = GrazeAtt;
+        B.Lights[graze].ShadowNormal = 0.3;
         B.Slab(-3.75, MouthZ + 0.1, 0.85, 0.7, 0);
         B.Slab(3.75, MouthZ + 0.1, 0.85, 0.7, 0);
     }

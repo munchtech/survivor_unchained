@@ -4641,13 +4641,53 @@ def sarcophagus(p):
     return parts
 
 
+def seg_voussoirs(parts, rng, ra, spring, rise, S, top, zc, depth, stone, n=11):
+    """(C13 set) A segmental arch's ring of wedge stones: its intrados the arc through (-ra, spring), (0, spring + rise) and
+    (ra, spring), each stone cut on a radius of the arc's centre and carried out to the square |x| = S, y = top (the coursed
+    face's opening), the two end stones taking the skewbacks down to (+-S, spring), the keystone stood a little proud."""
+    R_ = (ra * ra + rise * rise) / (2 * rise)
+    cy = spring + rise - R_
+    th = math.atan2(spring - cy, ra)
+    span = math.pi - 2 * th
+
+    def hit(a):
+        c, s = math.cos(a), math.sin(a)
+        t = min(S / abs(c) if abs(c) > 1e-6 else 1e9, (top - cy) / s if s > 1e-6 else 1e9)
+        return (c * t, cy + s * t)
+    ca = math.atan2(top - cy, S)
+    for i in range(n):
+        a0, a1 = math.pi - th - span * i / n, math.pi - th - span * (i + 1) / n
+        am = (a0 + a1) / 2
+        inner = [(R_ * math.cos(a), cy + R_ * math.sin(a)) for a in (a0, am, a1)]
+        outer = [(a1, hit(a1)), (a0, hit(a0))]
+        for cn in (ca, math.pi - ca):
+            if a1 < cn < a0:
+                outer.append((cn, (S if cn < math.pi / 2 else -S, top)))
+        outer = [q for _, q in sorted(outer)]
+        if i == n - 1:
+            outer = [(S, spring)] + outer
+        if i == 0:
+            outer = outer + [(-S, spring)]
+        poly = inner + outer
+        key = i == n // 2
+        cx = sum(q[0] for q in poly) / len(poly)
+        cyy = sum(q[1] for q in poly) / len(poly)
+        sh = 0.022
+        poly = [(q[0] - sh * (q[0] - cx) / max(0.05, math.hypot(q[0] - cx, q[1] - cyy)), q[1] - sh * (q[1] - cyy) / max(0.05, math.hypot(q[0] - cx, q[1] - cyy))) for q in poly]
+        bm = prism(poly, depth + (0.08 if key else 0.0), bevel=0.025)
+        parts.append(Part(bm, 'stone', st(stone, rng) * (1.06 if key else 1.0), T(0, 0, zc + (0.04 if key else 0.0)), cap='stone', jitter=0.0))
+
+
 def stair(p):
     """(P9 set) The stair down into the dark, cut in black stone. Origin: the mouth's floor centre; the flight goes DOWN
     toward -z. Binding (the game cuts the terrain to them and stands the dead on the treads): a threshold z 0..-1 at
     y 0; steps k = 1..26, tread top -0.28 k, spanning z -1-(k-1) 0.62 .. -1-k 0.62, x +-2.9; the floor z -17.12..-21.5
-    at y -7.28. Side walls (inner x +-2.9, outer +-4.4) coursed along z from the treads up to +2.2, their tops broken
-    (never under +1.0); the end wall z -21.5..-22.9 with an arched doorway x +-1.5 (springing y -5.3) and a dark recess
-    3 m deep behind it; at the mouth two jamb pylons and a cracked lintel."""
+    at y -7.28. Side walls (inner x +-2.9, outer +-4.4) coursed along z from the treads up to "top" (C13: 2.6 over the
+    landing's floor from the mouth on, the barrow banked to them outside), a coping course along their tops ("coping"),
+    their tops whole unless the preset gives "notches"; transverse arches across the flight ("arches": m down, each a
+    coursed wall to "top" with a segmental opening the flight's full width, springing "arch_clear" over its tread and
+    rising "arch_rise", its ring of voussoirs; Maps/Arenas/Vault.Arches); the end wall z -21.5..-22.9 with an arched
+    doorway x +-1.5 (springing y -5.3) and a dark recess 3 m deep behind it; at the mouth two jamb pylons."""
     rng = Rng(p['seed'])
     stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
     parts = []
@@ -4689,34 +4729,39 @@ def stair(p):
     slab_row(zt, zm, -7.28, 0.5, 3)
     slab_row(zm, zb, -7.28, 0.5, 3)
     sblock(parts, (3.0, 0.5, 1.5), T(0, -7.28 - 0.25, -22.1), stone, rng, bevel=0.03, chip=0.3, drop=('-y',))
-    # the side walls, in courses along z: a course exists where its top is above the tread
-    TOP, BOT, NR = 2.2, -7.4, 19
-    chh = (TOP - BOT) / NR
+    # the side walls, in courses along z: a course exists where its top is above the tread. (C13 set) Their top "top" (the
+    # coping's), the coursed wall under the coping to TOPc; below "buried" the outer faces are in the barrow's earth.
+    TOP = p.get('top', 2.2)
+    cop = p.get('coping') or {}
+    cop_h, cop_o = cop.get('h', 0.0), cop.get('over', 0.06)
+    TOPc = TOP - cop_h
+    BOT, NR = -7.4, 19
+    chh = (TOPc - BOT) / NR
     ZE = 21.5
+    buried = p.get('buried', 0.3)
 
     def keep_for(notches):
         def keep(t):
-            h = TOP
+            h = TOPc
             for tc, w, hn in notches:
                 d = abs(t - tc)
                 if d < w / 2:
-                    h = min(h, hn + (d / (w / 2)) * (TOP - hn) * 0.9)
+                    h = min(h, hn + (d / (w / 2)) * (TOPc - hn) * 0.9)
             return h
         return keep
-    # (P9 set, round 3) Open to the sky down its first `open` m: the side walls' tops come down to a kerb `kerb` over the
-    # landing's floor there (the ground beside it the same: Vault.Level), so the moon rakes the first flights and lights
-    # the treads' top edges and the walls' rims; past it they stand to TOP again, the arch across (below), the dark.
-    open_, kerb = p.get('open', 0.0), p.get('kerb', TOP)
+    # (round 3) open to the sky down its first "open" m (the walls' tops a kerb there); C13: 0, the walls whole from the mouth
+    open_, kerb = p.get('open', 0.0), p.get('kerb', TOPc)
 
     def opened(keep):
         if open_ <= 0:
             return keep
-        return lambda t: min(keep(t), kerb + (TOP - kerb) * smooth01(open_ - 1.4, open_ + 0.3, t))
-    for s, notches in ((-1, [(4.0, 2.4, 1.25), (9.5, 3.0, 1.7), (16.0, 2.2, 1.25)]), (1, [(6.6, 2.6, 1.25), (13.0, 3.4, 1.75)])):
+        return lambda t: min(keep(t), kerb + (TOPc - kerb) * smooth01(open_ - 1.4, open_ + 0.3, t))
+    notch_sets = p.get('notches', [[(4.0, 2.4, 1.25), (9.5, 3.0, 1.7), (16.0, 2.2, 1.25)], [(6.6, 2.6, 1.25), (13.0, 3.4, 1.75)]])
+    for s, notches in ((-1, notch_sets[0]), (1, notch_sets[1])):
         keep = opened(keep_for(notches))
         prow = []
         for i in range(NR):
-            y1, y0 = TOP - i * chh, TOP - (i + 1) * chh
+            y1, y0 = TOPc - i * chh, TOPc - (i + 1) * chh
             if y1 > 0.001:
                 ts = 0.0
             else:
@@ -4737,28 +4782,45 @@ def stair(p):
             for a, b in runs:   # mortar behind the runs
                 parts.append(Part(box(1.43, y1 - y0 - 0.01, b - a - 0.05), 'stone', mortar, T(s * (XW + 0.75), (y0 + y1) / 2, -(a + b) / 2), cap='stone', jitter=0.03))
         for i, row in enumerate(prow):
-            y1, y0 = TOP - i * chh, TOP - (i + 1) * chh
+            y1, y0 = TOPc - i * chh, TOPc - (i + 1) * chh
             nxt = prow[i - 1] if i > 0 else []
             for j, (a, b) in enumerate(row):
                 drop = ['-y']
-                if y1 < 0.3:
+                if y1 < buried:
                     drop.append('+x' if s > 0 else '-x')   # the outer face, underground
                 if j > 0 and abs(row[j - 1][1] - a) < 1e-4:
                     drop.append('+z')
                 if j + 1 < len(row) and abs(row[j + 1][0] - b) < 1e-4:
                     drop.append('-z')
-                if nxt and sum(max(0.0, min(b, q1) - max(a, q0)) for q0, q1 in nxt) > (b - a) * 0.98:
+                if (nxt and sum(max(0.0, min(b, q1) - max(a, q0)) for q0, q1 in nxt) > (b - a) * 0.98) or (i == 0 and cop_h > 0):
                     drop.append('+y')
                 sblock(parts, (1.5 - 0.02, y1 - y0 - 0.02, b - a - 0.024), T(s * (XW + 0.75), (y0 + y1) / 2, -(a + b) / 2), stone * (1 + rng(-0.09, 0.09)), rng,
                        bevel=0.03, chip=0.4, jag=0.01, drop=tuple(drop))
-    # the end wall with the arched doorway (voussoirs, as the gatehouse's)
+        # (C13 set) the coping along the wall's top: long dressed stones a hand proud of both faces, laid end to end from the
+        # mouth to the end wall's back, a few settled or chipped (the walls' line from above, and their lit rim from the head)
+        if cop_h > 0:
+            xs_ = lay_course(0.0, ZE + 1.4, cop.get('len', 1.3), rng, False)
+            for a, b in zip(xs_, xs_[1:]):
+                tilt = rng(-0.012, 0.012) if rng() < 0.35 else 0.0
+                sblock(parts, (1.5 + 2 * cop_o, cop_h - 0.012, b - a - 0.02),
+                       T(s * (XW + 0.75), TOPc + cop_h / 2 + rng(-0.008, 0.004), -(a + b) / 2) @ R('Z', tilt) @ R('Y', rng(-0.01, 0.01)),
+                       stone * cop.get('tint', 1.04) * (1 + rng(-0.06, 0.06)), rng, bevel=0.035, chip=cop.get('chip', 0.5), jag=0.008, drop=('-y',))
+    # the end wall with the arched doorway (voussoirs, as the gatehouse's), up to the walls' top, its coping across
     r, spring, vd = 1.5, -5.3, 0.6
     S_ = r + vd
     yb_ = (spring - BOT) + S_ - 0.55
-    rows = wall_parts(parts, rng, 8.8, 9.6, 1.4, 0.5, 1.05, stone * 0.95, mortar, lambda x: 99.0, -4.4, at=T(0, BOT, -22.2),
+    rows = wall_parts(parts, rng, 8.8, TOPc - BOT, 1.4, 0.5, 1.05, stone * 0.95, mortar, lambda x: 99.0, -4.4, at=T(0, BOT, -22.2),
                       holes=[(-r, r, -1.0, spring - BOT), (-S_, S_, spring - BOT, yb_)], sink=0.0)
     ytop = min([y1 for (k, a, b, y0, y1) in rows if y0 < yb_ <= y1 + 1e-6] or [yb_]) + BOT
     voussoirs(parts, rng, r, spring, S_, ytop, -22.2, 1.4, stone * 1.03, n=9)
+
+    def coping_across(zc, depth, half):
+        xs_ = lay_course(-half, half, 1.9, rng, False)
+        for a, b in zip(xs_, xs_[1:]):
+            sblock(parts, (b - a - 0.02, cop_h - 0.012, depth + 2 * cop_o), T((a + b) / 2, TOPc + cop_h / 2 + rng(-0.006, 0.003), zc),
+                   stone * cop.get('tint', 1.04) * (1 + rng(-0.06, 0.06)), rng, bevel=0.035, chip=cop.get('chip', 0.5), jag=0.008, drop=('-y',))
+    if cop_h > 0:
+        coping_across(-22.2, 1.4, XW - 0.09)
     # the recess behind the doorway: 3 m deep, inward-facing, near black (so no sky shows through)
     pts = [(r, -7.28), (r, spring)] + [(r * math.cos(a), spring + r * math.sin(a)) for a in [math.pi * i / 12 for i in range(1, 12)]] + [(-r, spring), (-r, -7.28)]
     rb = prism(pts, 3.0, bevel=0.0)
@@ -4767,24 +4829,38 @@ def stair(p):
     bmesh.ops.delete(rb, geom=[cap], context='FACES_ONLY')
     bmesh.ops.reverse_faces(rb, faces=rb.faces[:])
     parts.append(Part(rb, 'stone', hexlin('#08080a'), T(0, 0, -22.9 - 1.5 + 0.05), cap='stone', jitter=0.0))
-    # (round 3) The arch across the flight where the open cut ends (`arch_at` m down): a coursed wall from the treads to
-    # TOP with an arched opening the flight's full width (its ring springing off the side walls' faces, `arch_clear` m over
-    # the tread at its face), lit square by the moon down the open cut; past it the dark.
-    if p.get('arch_at'):
-        za, ra = -p['arch_at'], XW
 
-        def tread_y(t):
-            return -0.28 * (math.floor(max(t - 1.0, 0.0) / 0.62 + 1e-9) + 1)
-        base = tread_y(p['arch_at'] + 1.4) - 0.05
-        spring_a = tread_y(p['arch_at']) + p.get('arch_clear', 2.6)
-        Sa = ra + 0.6
-        yb_a = (spring_a - base) + Sa - 0.55
-        rows_a = wall_parts(parts, rng, 8.8, TOP - base, 1.4, 0.5, 1.05, stone * 0.97, mortar, lambda x: 99.0, -4.4, at=T(0, base, za - 0.7),
+    def tread_y(t):
+        return -0.28 * min(26, math.floor(max(t - 1.0, 0.0) / 0.62 + 1e-9) + 1)
+    # (C13 set) The transverse arches across the flight ("arches", m down; round 3's one "arch_at" kept as a list of one):
+    # each a coursed wall from the treads to TOPc, "arch_d" through, its opening the flight's width less a pilaster's step
+    # ("arch_step" proud of the side walls, so the arch reads as its own rib and no face lies in theirs), springing
+    # "arch_clear" over the tread at its face and rising "arch_rise" (segmental: the moon past one arch's top falls on the
+    # next one's ring and face, not through its opening onto the treads), its ring of voussoirs, its coping across.
+    arches = p.get('arches') or ([p['arch_at']] if p.get('arch_at') else [])
+    ra = XW - p.get('arch_step', 0.0)
+    rise, vda, AD = p.get('arch_rise', 0.0), p.get('arch_ring', 0.55), p.get('arch_d', 1.4)
+    for at_ in arches:
+        za = -at_
+        base = tread_y(at_ + AD) - 0.05
+        spring_a = tread_y(at_) + p.get('arch_clear', 2.6)
+        if rise > 0:
+            Sa = ra + 0.45
+            yb_a = (spring_a - base) + rise + vda
+        else:
+            Sa = ra + 0.6
+            yb_a = (spring_a - base) + Sa - 0.55
+        rows_a = wall_parts(parts, rng, 8.8, TOPc - base, AD, 0.5, 1.05, stone * 0.97, mortar, lambda x: 99.0, -4.4, at=T(0, base, za - AD / 2),
                             holes=[(-ra, ra, -1.0, spring_a - base), (-Sa, Sa, spring_a - base, yb_a)], sink=0.0)
         ytop_a = min([y1 for (k, a, b, y0, y1) in rows_a if y0 < yb_a <= y1 + 1e-6] or [yb_a]) + base
-        voussoirs(parts, rng, ra, spring_a, Sa, ytop_a, za - 0.7, 1.4, stone * 1.05, n=11)
-    # the mouth: two jamb pylons (round 3: `jamb_h`, lower, so their shadows stay off the first treads), and a cracked
-    # lintel (a chip out of it) over them unless the preset opens the cut to the sky (`lintel` false)
+        if rise > 0:
+            seg_voussoirs(parts, rng, ra, spring_a, rise, Sa, ytop_a, za - AD / 2, AD, stone * 1.05, n=p.get('arch_n', 11))
+        else:
+            voussoirs(parts, rng, ra, spring_a, Sa, ytop_a, za - AD / 2, AD, stone * 1.05, n=11)
+        if cop_h > 0:
+            coping_across(za - AD / 2, AD, XW - 0.09)
+    # the mouth: two jamb pylons (round 3: "jamb_h", lower, so their shadows stay off the first treads), and a cracked
+    # lintel (a chip out of it) over them unless the preset opens the cut to the sky ("lintel" false)
     jh = p.get('jamb_h', 5.0)
     for s in (-1, 1):
         wall_parts(parts, rng, 1.7, jh, 1.4, 0.5, 1.05, stone, mortar, lambda x: 99.0, -0.85, at=T(s * 3.75, 0, -0.1))
@@ -4935,7 +5011,7 @@ def main():
         for o in obs[1:]:
             if o.name.endswith(('_cloth', '_wool', '_glow')):
                 meta['tris_' + o.name.rsplit('_', 1)[1]] = tris(o)
-        for kk in ('dials', 'gloss'):
+        for kk in ('dials', 'gloss', 'gloss_mat'):
             if p.get(kk):
                 meta[kk] = p[kk]  # (P9 set) the door's glow and gloss handles, for OwnProps
         if p.get('no_shadow'):

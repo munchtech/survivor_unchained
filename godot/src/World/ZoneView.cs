@@ -145,7 +145,9 @@ public partial class ZoneView : Node3D
         {
             var ld = meta.Lights[i];
             if (ld.Specular >= 0) lights[i].LightSpecular = (float)ld.Specular;
-            if (ld.Shadow) { lights[i].ShadowEnabled = true; lights[i].ShadowBias = 0.03f; lights[i].ShadowNormalBias = 0.6f; }
+            // (P9 C13) its shadow kept to 60 m (the stair's from the top-down and the films' far cameras, not faded at 28)
+            if (ld.Shadow) { lights[i].ShadowEnabled = true; lights[i].ShadowBias = 0.03f; lights[i].ShadowNormalBias = (float)(ld.ShadowNormal >= 0 ? ld.ShadowNormal : 0.6); lights[i].DistanceFadeShadow = 60; }
+            if (ld.Attenuation >= 0) lights[i].OmniAttenuation = (float)ld.Attenuation;
             foreach (var h in new[] { ld.Dial, ld.DialOff })
                 if (h != null) { if (!dialLights.TryGetValue(h, out var dl)) dialLights[h] = dl = new(); dl.Add(i); }
             if (ld.Dial != null) DialLevel(i);
