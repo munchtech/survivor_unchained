@@ -113,6 +113,7 @@ public partial class FlareFx
         float env = f >= 0 && f < pk.Frames.Length ? (float)pk.Frames[f] : 0;
         env *= LessFlash ? 0.5f : 1f;
         var pl = pk.Of(Night);
+        float gain = (float)FlareFamily.Of(id).Peak.Gain;
         var col = Color.FromHtml(pk.Color);
         // (linear, for the ground's light: x albedo)
         var lin = col.SrgbToLinear();
@@ -122,11 +123,11 @@ public partial class FlareFx
             return;
         }
         if (peakLine)
-            for (int i = 0; i < peakN; i++) { peakLights[i].LightEnergy = (float)pl.Light * env; peakLights[i].Visible = true; }
-        else if (peakHeart != null) { peakHeart.LightEnergy = (float)pl.Light * env; peakHeart.Visible = true; }
+            for (int i = 0; i < peakN; i++) { peakLights[i].LightEnergy = (float)pl.Light * gain * env; peakLights[i].Visible = true; }
+        else if (peakHeart != null) { peakHeart.LightEnergy = (float)pl.Light * gain * env; peakHeart.Visible = true; }
         RenderingServer.GlobalShaderParameterSet(PeakParam, new Vector4(peakA.X, peakA.Y, peakLine ? (float)FlareFamily.Of(id).Peak.Width : (float)FlareFamily.Of(id).Peak.Radius, env));
         RenderingServer.GlobalShaderParameterSet(PeakLineParam, new Vector4(peakB.X, peakB.Y, peakLine ? 1 : 0, 0));
-        float g = (float)pl.Ground;
+        float g = (float)pl.Ground * gain;
         RenderingServer.GlobalShaderParameterSet(PeakColParam, new Vector4(lin.R * g, lin.G * g, lin.B * g, 0));
         if (peakColumn > 0 && peakColumnFx != null && peakColumnMesh != null && peakColumnMat != null)
         {
@@ -136,7 +137,7 @@ public partial class FlareFx
             toEye.Y = 0;
             if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * 0.45f;
             float h = peakColumn * Mathf.Clamp(0.45f + 0.55f * (f + 1) / 2f, 0, 1);
-            peakColumnMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.6f, (float)pl.Column * env));
+            peakColumnMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.6f, (float)pl.Column * gain * env));
             LcStripDraw(peakColumnMesh, peakColumnMat, foot, foot + Vector3.Up * h, 0.38f);
             peakColumnFx.Visible = true;
         }

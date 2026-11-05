@@ -55,7 +55,7 @@ public static class FlareFamily
 
     /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
     /// line, its whole length).</summary>
-    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column; }
+    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1; }
 
     public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3; }
 

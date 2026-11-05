@@ -71,11 +71,11 @@
   // the envelope's 1; ground, the lit shape's light (x albedo: the disk or the strip the blow lights); column, a disk's
   // column of light (HDR). Each Flare's shape is its own ("flares" peak).
   "peak": {
-    "hitstop": 2, "frames": [0.85, 1.0, 1.0, 0.8, 0.4, 0.15],
+    "hitstop": 2, "frames": [0.8, 1.0, 1.0, 0.7, 0.25, 0.06],
     "color": "#ffbe6a", "release": 0.15,
     "height": 0.45, "range": 6.5, "spacing": 4.5, "lights": 6,
-    "night": { "light": 7, "ground": 1.4, "column": 3.5 },
-    "day":   { "light": 14, "ground": 1.0, "column": 4.5 }
+    "night": { "light": 3.6, "ground": 0.85, "column": 6 },
+    "day":   { "light": 7, "ground": 0.65, "column": 7 }
   },
   // An air and dust ripple (Bell's first two tolls, judge r1 fix 2): no light, no whole-frame swing (§1.6: at most two a
   // second): a soft front lifting the ground's value by dust (x), lead m, running reach m in time s, and puffs of dust
@@ -91,7 +91,7 @@
   // 0.4 s, a slow fuse read as a gap between mark and hit).
   "flares": {
     "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "line", "fuse": 200, "peak": { "shape": "line", "width": 2.5 } },
-    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7 } },
+    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.55 } },
     "burns_twice":         { "blow": "ember", "last": true },
     "the_roads_toll":      { "blow": "cut", "last": true },
     "the_branding":        { "blow": "burst", "last": true },

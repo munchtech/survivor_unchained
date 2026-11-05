@@ -101,13 +101,13 @@ float flare_peak_at(vec2 w) {
 		float across = length(w - flare_peak.xy - ab * clamp(h, 0.0, 1.0));
 		float ends = smoothstep(-0.04, 0.0, h) * (1.0 - smoothstep(1.0, 1.04, h));
 		float hw = max(flare_peak.z, 0.2);
-		float k = exp(-pow(max(across + wob * 0.4, 0.0) / hw, 2.0)) + 1.6 * exp(-across / 0.35);
+		float k = exp(-pow(max(across + wob * 0.4, 0.0) / hw, 2.0)) + 5.0 * exp(-across / 0.35);
 		return k * ends * flare_peak.w;
 	}
 	float r = length(w - flare_peak.xy);
 	float R = max(flare_peak.z, 0.5);
 	float disk = (1.0 - smoothstep(R * 0.82, R * 1.02, r + wob)) * mix(1.0, 0.5, clamp(r / R, 0.0, 1.0));
-	return (disk + 2.2 * exp(-r / 1.1)) * flare_peak.w;
+	return (disk + 6.0 * exp(-r / 1.1)) * flare_peak.w;
 }
 
 // The drain and the repaint, on a world colour.
