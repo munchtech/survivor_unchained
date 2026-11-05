@@ -1,7 +1,7 @@
 """The twelve frames (H2, one look): the demo's whole look shot in one Godot batch, so every restyle
 round re-shoots the same frames with one command and is judged against the same twelve (plus her close-up).
 
-    python tools/style/frames.py shoot [--out DIR] [--only 04,09] [--extra "--grade-try vib=1.1"] [--scout] [--root WT]
+    python tools/style/frames.py shoot [--out DIR] [--only 04,09] [--extra "--grade-try vib=1.1"] [--scout] [--root WT] [--stale-ok]
     python tools/style/frames.py sheet DIR                 -> DIR/sheet.jpg from DIR/frames/*.png (+ _half.jpg copies)
     python tools/style/frames.py compare BEFORE AFTER OUT  -> OUT/NN_id_ab.jpg (before | after, 1:1 halves) + OUT/ab_sheet.jpg
 
@@ -140,6 +140,8 @@ def shoot(args):
     only = opt(args, "--only", None)
     extra = opt(args, "--extra", "").split()
     scout = "--scout" in args
+    # --stale-ok: passed to demo_run's turn (an A/B in one tree that needs no newer art; say so on the sheet)
+    stale = ["--stale-ok"] if "--stale-ok" in args else []
     frames = [f for f in FRAMES if only is None or f[0] in only.split(",") or f[1] in only.split(",")]
     runs = sorted({f[2] for f in frames}, key=list(RUNS).index)
     batch = []
@@ -162,7 +164,7 @@ def shoot(args):
     json.dump(batch, open(bp, "w", encoding="utf-8"), indent=1)
     shots = os.path.join(root, "godot", ".shots")
     t0 = time.time() - 5
-    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root]).returncode
+    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root] + stale).returncode
     if rc != 0: print("demo_run failed", rc); sys.exit(rc)
     fresh = lambda f: os.path.exists(os.path.join(shots, f)) and os.path.getmtime(os.path.join(shots, f)) >= t0
     if scout:

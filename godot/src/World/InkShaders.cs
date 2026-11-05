@@ -140,4 +140,18 @@ public static class InkShaders
             imageStore(colour, px, col);
         }
         """;
+
+    /// <summary>(--ink-test) the normal_roughness alpha bytes into a buffer, one uint per pixel, for a readback.</summary>
+    public const string Probe = """
+        #version 450
+        layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+        layout(set = 0, binding = 0) uniform sampler2D nr_tex;
+        layout(set = 0, binding = 1, std430) restrict writeonly buffer B { uint px[]; } ob;
+        layout(push_constant, std430) uniform P { vec2 size; vec2 pad; } pc;
+        void main() {
+            ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+            if (p.x >= int(pc.size.x) || p.y >= int(pc.size.y)) return;
+            ob.px[p.y * int(pc.size.x) + p.x] = uint(round(texelFetch(nr_tex, p, 0).a * 255.0));
+        }
+        """;
 }

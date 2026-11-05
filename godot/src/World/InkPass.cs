@@ -54,6 +54,10 @@ public partial class InkPass : CompositorEffect
     }
 
     public double GpuMs = -1;
+    /// <summary>(--ink-test) a request for the normal_roughness buffer's bytes, filled on the render thread.</summary>
+    public volatile bool DumpReq;
+    public volatile byte[]? Dump;
+    public Vector2I DumpSize;
     /// <summary>The fog as the camera sees it (main thread, each frame): mode (0 none, 1 exponential, 2 depth), density,
     /// begin, end; curve, the volumetric fog's density and length.</summary>
     public Vector4 Fog, Fog2;
@@ -152,6 +156,33 @@ public partial class InkPass : CompositorEffect
             rd.ComputeListEnd();
         }
         if (Time) rd.CaptureTimestamp("ink1");
+        if (DumpReq && hasN)
+        {
+            DumpReq = false; DumpSize = size;
+            // (the buffer has no copy-from bit: a probe pass writes its alpha bytes to a storage buffer, read back once)
+            var ps = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = InkShaders.Probe });
+            var psh = rd.ShaderCreateFromSpirV(ps, "ink_probe");
+            var ppipe = rd.ComputePipelineCreate(psh);
+            uint bytes = (uint)(size.X * size.Y * 4);
+            var sb = rd.StorageBufferCreate(bytes);
+            var pset = rd.UniformSetCreate(new Godot.Collections.Array<RDUniform>
+            {
+                U(RenderingDevice.UniformType.SamplerWithTexture, 0, sampler, buf.GetTextureSlice("forward_clustered", "normal_roughness", 0, 0, 1, 1)),
+                U(RenderingDevice.UniformType.StorageBuffer, 1, sb),
+            }, psh, 0);
+            var pp = MemoryMarshal.AsBytes(new float[] { size.X, size.Y, 0, 0 }.AsSpan()).ToArray();
+            long l = rd.ComputeListBegin();
+            rd.ComputeListBindComputePipeline(l, ppipe);
+            rd.ComputeListBindUniformSet(l, pset, 0);
+            rd.ComputeListSetPushConstant(l, pp, (uint)pp.Length);
+            rd.ComputeListDispatch(l, (uint)((size.X + 15) / 16), (uint)((size.Y + 15) / 16), 1);
+            rd.ComputeListEnd();
+            var raw = rd.BufferGetData(sb);
+            var outb = new byte[size.X * size.Y * 4];
+            for (int i = 0; i < size.X * size.Y; i++) outb[i * 4 + 3] = raw[i * 4];
+            Dump = outb;
+            rd.FreeRid(sb); rd.FreeRid(psh);
+        }
     }
 
     public override void _Notification(int what)
@@ -228,6 +259,8 @@ public partial class Ink : Node
     // --ink-test S: two rows of four spheres coded class 0-3 (roughness (16 x 4 + class)/127): the upper row follows the
     // camera (moved every frame: a dynamic instance), the lower one is set in the world once at S seconds (static).
     float testAt;
+    int frame, shown;
+    bool dumped;
     Node3D? dynRow, statRow;
     void Test(Camera3D cam)
     {
@@ -239,7 +272,26 @@ public partial class Ink : Node
         }
         var basis = cam.GlobalTransform.Basis;
         var at = cam.GlobalTransform * new Vector3(0, 0.55f, -4.5f);
-        dynRow.GlobalTransform = new Transform3D(basis, at);
+        // (a hair's turn each frame: an unchanged transform is not "moved", so the row would read static)
+        dynRow.GlobalTransform = new Transform3D(basis.Rotated(basis.Z.Normalized(), (frame++ & 1) * 1e-3f), at);
+        if (statRow!.Visible && ++shown == 30) effect.DumpReq = true;
+        if (effect.Dump is { } bytes && !dumped)
+        {
+            dumped = true;
+            var sz = effect.DumpSize; var vs = GetViewport().GetVisibleRect().Size;
+            foreach (var row in new[] { dynRow, statRow })
+                for (int c = 0; c < 4; c++)
+                {
+                    var sp = cam.UnprojectPosition(((Node3D)row.GetChild(c)).GlobalPosition);
+                    int x = (int)(sp.X * sz.X / vs.X), y = (int)(sp.Y * sz.Y / vs.Y);
+                    if (x < 0 || y < 0 || x >= sz.X || y >= sz.Y) { GD.Print($"INK test {row.Name} c{c}: off screen"); continue; }
+                    int b = bytes[(y * sz.X + x) * 4 + 3], n = b <= 127 ? b : 255 - b;
+                    GD.Print($"INK test {row.Name} class {c} (code {16 * 4 + c}): byte {b} -> n {n}, {(b > 127 ? "dynamic" : "static")}, class {n & 3} at ({x},{y})");
+                }
+            var hist = new int[8];
+            for (int i = 3; i < bytes.Length; i += 4) { int b = bytes[i], n = b <= 127 ? b : 255 - b; hist[(n & 3) + (b > 127 ? 4 : 0)]++; }
+            GD.Print($"INK test frame classes static 0-3: {hist[0]} {hist[1]} {hist[2]} {hist[3]}, dynamic 0-3: {hist[4]} {hist[5]} {hist[6]} {hist[7]}");
+        }
         if (!statRow.Visible && Engine.GetProcessFrames() / 60.0 >= testAt)
         {
             statRow.GlobalTransform = new Transform3D(basis, cam.GlobalTransform * new Vector3(0, 0.25f, -4.5f));
