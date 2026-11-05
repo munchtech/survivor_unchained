@@ -249,6 +249,18 @@ public partial class InkSnap : CompositorEffect
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf) return;
         var size = buf.GetInternalSize();
         if (size.X <= 0 || size.Y <= 0) return;
+        if (InkPass.Time)
+        {
+            ulong t0 = 0, t1 = 0;
+            for (uint i = 0, n = rd.GetCapturedTimestampsCount(); i < n; i++)
+            {
+                var nm = rd.GetCapturedTimestampName(i);
+                if (nm == "snap0") t0 = rd.GetCapturedTimestampGpuTime(i);
+                else if (nm == "snap1") t1 = rd.GetCapturedTimestampGpuTime(i);
+            }
+            if (t1 > t0 && t0 > 0) GpuMs = (t1 - t0) / 1e6;
+            rd.CaptureTimestamp("snap0");
+        }
         uint nv = buf.GetViewCount();
         // (unique, kept: the buffers free and remake it on a resize)
         if (!buf.HasTexture(Ctx, Name))
@@ -268,6 +280,7 @@ public partial class InkSnap : CompositorEffect
             rd.ComputeListDispatch(l, (uint)((size.X + 15) / 16), (uint)((size.Y + 15) / 16), 1);
             rd.ComputeListEnd();
         }
+        if (InkPass.Time) rd.CaptureTimestamp("snap1");
         Size = size;
         Fresh = true;
     }
@@ -291,7 +304,7 @@ public partial class Ink : Node
     readonly InkPass effect = new();
     readonly InkSnap snap = new();
     readonly Compositor own;
-    double gpuSum; int gpuN; ulong frames;
+    double gpuSum, snapSum, vpSum; int gpuN; ulong frames;
 
     public Ink()
     {
@@ -305,6 +318,7 @@ public partial class Ink : Node
         // a curved surface's roughness and scramble its code. (project.godot: rendering/anti_aliasing/screen_space_roughness_limiter/enabled=false)
         RenderingServer.ScreenSpaceRoughnessLimiterSetActive(false, 0.25f, 0.18f);
         RenderingServer.FramePreDraw += Sync;
+        if (InkPass.Time) RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
         if (Args.Get("ink-test") is string t) testAt = float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0 ? s : 4;
     }
 
@@ -339,11 +353,12 @@ public partial class Ink : Node
         if (testAt > 0) Test(cam);
         if (InkPass.Time && ++frames > 60 && effect.GpuMs >= 0)
         {
-            gpuSum += effect.GpuMs; gpuN++;
+            gpuSum += effect.GpuMs; snapSum += Math.Max(snap.GpuMs, 0); gpuN++;
+            vpSum += RenderingServer.ViewportGetMeasuredRenderTimeGpu(GetViewport().GetViewportRid());
             if (gpuN == 120)
             {
-                GD.Print($"INK gpu {gpuSum / gpuN:0.000} ms (mean of {gpuN} frames, {GetViewport().GetVisibleRect().Size})");
-                gpuSum = 0; gpuN = 0;
+                GD.Print($"INK gpu {gpuSum / gpuN:0.000} ms, snap {snapSum / gpuN:0.000} ms, viewport {vpSum / gpuN:0.000} ms (mean of {gpuN} frames, {GetViewport().GetVisibleRect().Size}, mask {(InkPass.Mask ? "on" : "off")})");
+                gpuSum = 0; snapSum = 0; vpSum = 0; gpuN = 0;
             }
         }
     }
