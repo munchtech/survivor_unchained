@@ -60,6 +60,9 @@ public interface IStoryArena : IBossArena
     /// <summary>The narrator's words (the story lead's), or someone's, said aloud: the lower-third caption, up at least
     /// `seconds` (and as long as the voice, or the words' reading).</summary>
     void Line(string text, string? speaker = null, double seconds = 4);
+    /// <summary>The play held on a spot (his body where it fell): the camera on it, her controls held, the HUD away
+    /// (captions stay); null gives it back (IZoneHost.HoldOn).</summary>
+    void HoldOn((double X, double Z)? at);
     /// <summary>A spared ending can be chosen in this fight (its outcome is in the spec).</summary>
     bool CanSpare { get; }
     /// <summary>The prompt beside "Finish it" ("Let him go", "Spare him").</summary>

@@ -139,9 +139,10 @@ public sealed class EnemyDef
 /// it took ten times the light of the ground three metres off and burned white while the pool stayed dim (P6 r5).</summary>
 /// <summary>A light a foe carries (the view's BattleFx.Auras). Pool/PoolRange: a second, low light on the ground under it
 /// (its pool, so the carried light reads where the high one falls soft); Flicker: how much its light (and its glass's
-/// halo) wavers, 0 steady; Halo: the glass's glow drawn at the light, metres across (0: none).</summary>
+/// halo) wavers, 0 steady; Halo: the glass's glow drawn at the light, metres across (0: none); Core: its small core over
+/// the glass, how far from its color to white (0: none).</summary>
 public sealed record EnemyLight(string Color, double Energy = 2.5, double Range = 8, double Height = 2.5, double Forward = 0, double Left = 0, double LieHeight = 0.35, double Decay = 1.4,
-    double Pool = 0, double PoolRange = 0, double Flicker = 0, double Halo = 0);
+    double Pool = 0, double PoolRange = 0, double Flicker = 0, double Halo = 0, double Core = 0);
 
 public readonly record struct LevelScale(double Health, double Damage, double Xp);
 
@@ -511,7 +512,7 @@ public static class Enemies
             // (his robe's pale paint, the town's beige by its portrait, went white in the court: AgX folds a pale hue lit
             // by the moon and his own lamp to white; npcs.json chid's #d8ccb0 as a tint keeps it cloth: P6 r6)
             Tint = (0.68, 0.62, 0.53),
-            Glow = 0.05, CarriedLight = new("#a77bff", 1.2, 9, 1.55, Forward: 0.75, Left: -0.3, Decay: 0.8, Pool: 1.6, PoolRange: 2.6, Halo: 0.55),
+            Glow = 0.05, CarriedLight = new("#a77bff", 1.2, 9, 1.55, Forward: 0.75, Left: -0.3, Decay: 0.8, Pool: 1.6, PoolRange: 2.6, Halo: 0.55, Core: 0.3),
             Health = 420, Speed = 3.0, Damage = 18, Radius = 0.7, Mass = 14, Xp = 0, Behavior = Behavior.Chase,
             Elite = true, AttackEvery = 1.2 },
 

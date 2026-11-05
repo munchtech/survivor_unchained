@@ -316,6 +316,8 @@ public partial class CrowdView : Node3D
     int living;
 
     public CrowdView() { Name = "Crowd"; Placed = DrawnAt; }
+    /// <summary>A carried lamp's glass in the world as last drawn (a foe's id: where, whose seed, the process frame).</summary>
+    public static readonly Dictionary<int, (Vector3 At, double Seed, ulong Frame)> GlassOn = new();
 
     /// <summary>The live crowd's DrawnAt (the fx that sit on a body: its stun glint; the beats' throw log).</summary>
     public static Func<Enemy, (double X, double Z)>? Placed;
@@ -861,7 +863,10 @@ public partial class CrowdView : Node3D
         if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
+        var xf = new Transform3D(basis, at);
+        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
+        // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)
+        if (e.Def.CarriedLight != null && asset.GlassAt(role, t) is Vector3 gl) GlassOn[e.Id] = (xf * gl, e.Seed, Engine.GetProcessFrames());
         living++;
     }
 

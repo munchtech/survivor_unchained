@@ -778,6 +778,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public (double X, double Z)? Goal { get; set; }
     public void Script(Enemy e, Func<Enemy, double, bool> tick) { e.Scripted = true; scripted[e.Id] = (e.Seed, tick); }
     public void Line(string text, string? speaker = null, double seconds = 4) => G.Say(text, speaker, seconds);
+    public void HoldOn((double X, double Z)? at) => G.HoldOn(at);
     public Fact FactOf(string key) => F(key);
     public void Apply(string effectsJson) => G.Apply(effectsJson);
     /// <summary>The spared ending is chosen in the fight when the story's spec carries both outcomes
@@ -910,6 +911,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (Choice == null) G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     }
     public void Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
+    public void SignatureBark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker, Signature = true });
     double IBossArena.HordeShare { set { } }
     bool IBossArena.HordeReturns => false;
     void IBossArena.Won(double x, double z) => Victory(x, z, spared: false);
@@ -936,7 +938,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var steps = new List<Step>();
         switch (Now)
         {
-            case Stage.Beat: steps.Add(new Step(beat!.Goal)); break;
+            // (an empty goal: none shown, a beat's last moments after its end is told: Corvane's gone line)
+            case Stage.Beat: if (beat!.Goal != "") steps.Add(new Step(beat.Goal)); break;
             case Stage.Between: steps.Add(new Step("Go on")); break;
             case Stage.Boss: steps.Add(new Step($"{BossName} has come: end it")); break;
             default: steps.Add(new Step(won ? $"{BossName}: it is over" : "The night is lost", Done: won)); break;

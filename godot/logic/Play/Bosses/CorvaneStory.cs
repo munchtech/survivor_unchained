@@ -130,8 +130,8 @@ public sealed class CorvaneStory : StoryBoss
         low = true;
         CourtTrace.Say("low");
         var def = e.Def.Clone();
-        // (its pool doubled across, the glass's halo brighter and wider, the light wavering: judge r1 fix 5)
-        if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2, Pool = cl.Pool * 1.6, PoolRange = cl.PoolRange * 2, Halo = cl.Halo * 1.7, Flicker = 0.3 };
+        // (its pool and the glass's glow 1.5x across, its core whiter, the light wavering: judge r1 fix 5, r2 fix 6)
+        if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2, Pool = cl.Pool * 1.6, PoolRange = cl.PoolRange * t.PoolLow, Halo = cl.Halo * t.HaloLow, Core = t.CoreLow, Flicker = 0.3 };
         def.Glow = Math.Max(def.Glow ?? 0, t.GlowLow);
         e.Def = def;
     }

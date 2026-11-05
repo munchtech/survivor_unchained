@@ -116,10 +116,14 @@ public class CorvaneTests
         Assert.True(Fact(n, "corvane.rose"));
         double down = n.B.Time;
         n.Host.Said.Clear();
+        // The objective tells it at once; after the black, none (the hall's first goal follows the door).
+        Assert.Equal(Doorway.Fallen_, n.Zone.Beat?.Goal);
+        string? afterBlack = null;
         double opened = -1;
         Run(n, log, 30, until: () =>
         {
             if (opened < 0 && !n.B.Collision.Blocked(mx, mz, 0.5)) opened = n.B.Time;
+            if (afterBlack == null && !n.B.Enemies.Items.Any(e => e.Alive && e.Def.Id == "corvane")) afterBlack = n.Zone.Beat?.Goal ?? "-";
             return opened >= 0;
         });
         Assert.True(opened > 0);
@@ -129,7 +133,16 @@ public class CorvaneTests
         // The hold: nothing said over his body for its 2 s, and a Focus on him as he goes down.
         Assert.InRange(said[0].T - down, Doorway.HoldOnBody - 0.1, Doorway.HoldOnBody + 0.2);
         Assert.DoesNotContain(n.Host.Said, x => x.T < said[0].T);
-        Assert.Contains(log, x => x.E is Ev.Focus && x.T >= down - 0.1 && x.T <= down + 0.1);
+        // The hold: the play held on his body from his fall (the camera on him, her controls and the HUD held), given
+        // back as the gone line comes, and only once.
+        var holds = n.Host.Holds.Where(h => h.T >= down - 0.1).ToList();
+        Assert.Equal(2, holds.Count);
+        Assert.NotNull(holds[0].At);
+        Assert.InRange(holds[0].T - down, -0.1, 0.1);
+        Assert.InRange(Math.Abs(holds[0].At!.Value.X - him.X) + Math.Abs(holds[0].At!.Value.Z - him.Z), 0, 0.01);
+        Assert.Null(holds[1].At);
+        Assert.InRange(holds[1].T - said[1].T, -0.05, 0.05);
+        Assert.Equal("", afterBlack);
         // The cue between them, the black after the cue and before the gone line, his body gone under it.
         double cue = log.First(x => x.E is Ev.Cue c && c.Id == "door_sigil").T, fade = log.First(x => x.E is Ev.Fade && x.T >= down).T;
         Assert.True(said[0].T < cue && cue < fade && fade < said[1].T);

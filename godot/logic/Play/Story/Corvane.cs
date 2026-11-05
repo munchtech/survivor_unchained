@@ -31,7 +31,9 @@ public sealed class Doorway : StoryBeat
     double fallT = -1;
     int fallStep;
 
-    public override string Goal => raised ? "Bring down Corvane" : "Corvane stands in the door";
+    /// <summary>(fallen: told as done until the black takes his body; after it, none, until the hall's first goal)</summary>
+    public override string Goal => vanished ? "" : fallen ? Fallen_ : raised ? "Bring down Corvane" : "Corvane stands in the door";
+    public const string Fallen_ = "Corvane has fallen";
     public override string? Gate => "door";
     public override double Minute => 0;
     public override string Start => "court_in";
@@ -139,8 +141,10 @@ public sealed class Doorway : StoryBeat
             ["her"] = [p.X, p.Z, p.Facing],
         };
         if (A.Cinematic("door", Close, marks)) return;
-        // No film: the camera holds on his body, nothing said over it (Victory's turn to it).
-        B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = HoldOnBody });
+        // No film: the play holds on his body, nothing said over it: the camera's look on him (his body at the screen's
+        // middle), her controls held and the HUD away, until the gone line. (r7's Ev.Focus only leaned the camera off her,
+        // capped to the middle third, and she walked on: his body went to the screen's edge.)
+        A.HoldOn((e.X, e.Z));
         fallT = 0;
     }
 
@@ -177,6 +181,7 @@ public sealed class Doorway : StoryBeat
             case 4 when fallT >= gone:
                 fallStep++;
                 CourtTrace.Say("gone");
+                A.HoldOn(null);
                 var words = Words("gone");
                 goneFor = Math.Max(3, words.Length / 15.0);
                 A.Line(words, null, goneFor);
@@ -208,6 +213,7 @@ public sealed class Doorway : StoryBeat
     {
         if (closed) return;
         Vanish();
+        if (fallT >= 0 && fallStep <= 4) A.HoldOn(null);
         closed = true;
         Done = true;
         CourtTrace.Say("open");

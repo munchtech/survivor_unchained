@@ -41,6 +41,18 @@ public sealed class VatAsset
     /// <summary>How far each death's body moves on the ground from its first frame to its last (model space, metres):
     /// a body that lies along a line shows its fall by it (Vat.Laid).</summary>
     public Dictionary<string, Vector2> Laid = new();
+    /// <summary>Where its glowing glass is (a carried lamp's: Corvane's), model space, at each frame row; null: it has none
+    /// (Vat.Glass). The view sets a carried light and its glow on it, in every pose (P6 judge r2 fix 2).</summary>
+    public Vector3[]? Glass;
+
+    /// <summary>Its glass `t` seconds into a role, model space (null: none).</summary>
+    public Vector3? GlassAt(string role, double t)
+    {
+        if (Glass == null) return null;
+        var (f0, f1, k) = Frame(role, t);
+        if (f0 >= Glass.Length || f1 >= Glass.Length) return null;
+        return Glass[f0].Lerp(Glass[f1], k);
+    }
 
     public Clip For(string role) =>
         Clips.TryGetValue(role, out var c) ? c : Clips.TryGetValue("move", out var m) ? m : Clips["idle"];
@@ -851,11 +863,41 @@ public static class Vat
         }
         // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
-        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b) };
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Glass = Glass(b) };
     }
 
     /// <summary>Each death's lying body against its first frame: the move of the body's middle (all its vertices' mean,
     /// on the ground plane, model space) from the first frame of the fall to its last.</summary>
+    /// <summary>The glass's middle at each frame: the mean of the vertices of its glowing surfaces (a lamp's glass is the
+    /// one surface a body has with a glow of its own: those at least half the brightest's, and bright enough to be one).</summary>
+    static Vector3[]? Glass(Baked b)
+    {
+        static float Lum(Color c) => Math.Max(c.R, Math.Max(c.G, c.B));
+        float top = 0;
+        foreach (var sf in b.Surfs) top = Math.Max(top, Lum(sf.Glow));
+        if (top < 0.2f) return null;
+        var glass = b.Surfs.FindAll(sf => Lum(sf.Glow) >= top * 0.5f && sf.Count > 0);
+        if (glass.Count == 0) return null;
+        var at = new Vector3[b.FrameCount];
+        for (int fr = 0; fr < b.FrameCount; fr++)
+        {
+            double x = 0, y = 0, z = 0;
+            int n = 0, row = fr * b.Rows * b.Width;
+            foreach (var sf in glass)
+                for (int i = sf.Offset; i < sf.Offset + sf.Count; i++)
+                {
+                    int o = (row + i) * 8;
+                    if (o + 6 > b.Pos.Length) break;
+                    x += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o));
+                    y += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o + 2));
+                    z += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, o + 4));
+                    n++;
+                }
+            at[fr] = n > 0 ? new Vector3((float)(x / n), (float)(y / n), (float)(z / n)) : Vector3.Zero;
+        }
+        return at;
+    }
+
     static Dictionary<string, Vector2> Laid(Baked b)
     {
         int total = 0;

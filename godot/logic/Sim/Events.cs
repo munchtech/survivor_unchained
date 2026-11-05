@@ -159,7 +159,10 @@ public static class Ev
     public sealed class Hush : CombatEvent { public string Speaker = ""; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker;
         /// <summary>A boss's (IBossArena.Bark): shown in a fixed slot under the boss's bar, wherever the boss is.</summary>
-        public bool Boss; }
+        public bool Boss;
+        /// <summary>A boss's signature line naming its own next mark (ArenaBoss.Signature): it keeps its slot over the speaker
+        /// while that mark is live (not sent to the fight's band above the HUD), lifted a little clear of the mark's rim.</summary>
+        public bool Signature; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's

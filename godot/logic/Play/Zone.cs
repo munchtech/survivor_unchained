@@ -119,6 +119,10 @@ public interface IZoneHost
     void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default);
     /// <summary>The survivor's controls held (a cutscene), or given back.</summary>
     void Capture(bool on);
+    /// <summary>A beat held on a spot in play (a story boss's body where it fell): the play camera's look on it, at play's
+    /// own angle and distance; her controls held and the play HUD away (its captions stay); null gives it all back.
+    /// (Not a Showcase: that is a cutscene's camera of its own.)</summary>
+    void HoldOn((double X, double Z)? at) { }
     /// <summary>What the level-up draft says, the first times it opens.</summary>
     void SetDraftTip(string tip);
     /// <summary>A callout at its moment (Teach.cs): shown once a profile, one at a time, when the
