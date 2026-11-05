@@ -654,6 +654,15 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [555, 720, 575, 830],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true
+      }
      }
     ],
     "lit": {
@@ -705,6 +714,16 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB3",
+      "box": [920, 510, 1080, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
      }
     ],
     "lit": {
@@ -753,6 +772,15 @@
       "board": "MB4",
       "box": [780, 250, 960, 400],
       "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [780, 640, 960, 790],
+      "role": "lit_night",
+      "panel": "moon",
       "mask": {
        "lit": true
       }
@@ -807,6 +835,16 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB3",
+      "box": [590, 630, 700, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
      }
     ],
     "lit": {
@@ -857,6 +895,16 @@
       "role": "lit",
       "mask": {
        "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1150, 530, 1400, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
       }
      }
     ],
@@ -909,6 +957,16 @@
       "mask": {
        "lit": true
       }
+     },
+     {
+      "board": "MB3",
+      "box": [120, 510, 360, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
      }
     ],
     "lit": {
@@ -957,6 +1015,16 @@
       "board": "MB4",
       "box": [1030, 330, 1110, 450],
       "role": "lit",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [1030, 720, 1110, 840],
+      "role": "lit_night",
+      "panel": "moon",
       "mask": {
        "lit": true,
        "h": [20, 100]
@@ -1013,6 +1081,16 @@
        "lit": true,
        "h": [20, 100]
       }
+     },
+     {
+      "board": "MB4",
+      "box": [1110, 590, 1200, 670],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
      }
     ],
     "lit": {
@@ -1061,6 +1139,15 @@
       "board": "MB4",
       "box": [100, 220, 400, 420],
       "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [100, 610, 400, 810],
+      "role": "lit_night",
+      "panel": "moon",
       "mask": {
        "lit": true
       }
@@ -1116,6 +1203,16 @@
        "C": [0.05, 1],
        "lit": true
       }
+     },
+     {
+      "board": "MB4",
+      "box": [460, 590, 640, 830],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "C": [0.05, 1],
+       "lit": true
+      }
      }
     ],
     "lit": {
@@ -1164,6 +1261,15 @@
       "board": "MB4",
       "box": [1450, 240, 1640, 400],
       "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [1450, 630, 1640, 790],
+      "role": "lit_night",
+      "panel": "moon",
       "mask": {
        "lit": true
       }

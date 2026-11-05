@@ -2,6 +2,7 @@
 form maps (tools/look/bake_forms.py). The one core both sides call (the game's world build, Marionette's paint stage).
 
     python tools/look/paint_core.py FORMS_DIR OUT_DIR [--arm A|B|C] [--ai AI.png] [--albedo-src albedo|lit]
+    python tools/look/paint_core.py --check OUT_DIR      (exit 1 on a fail; tools/look/build.py runs it)
 
 Inputs, and what each part is FROM (PIPELINE.md rule 4):
   forms.npz / forms.json   the asset's own forms (blocks, classes, world position and normal, AO, cavity, convexity)
@@ -26,7 +27,9 @@ from scipy.spatial import cKDTree
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LIB = os.path.join(ROOT, "godot", "data", "look", "materials.json")
-VERSION = 1  # (bumped on any change to the painting: outputs carry it, and the check refuses a stale one)
+VERSION = 2  # (bumped on any change to the painting: outputs carry it, and the check refuses a stale one)
+# 2 (B3r2): paint.json carries the classes' inputs hash (a map painted from an older albedo fails the check too); the
+# PNGs carry the version in a text chunk; timings go to timing.json, so two runs are byte-identical
 TOP_SHARE, BRUSH_SHARE = 0.4, 0.6  # (the spread's split: the top-lit gradient and the brush, inside +-spread_L)
 
 
@@ -196,17 +199,85 @@ def paint(forms_dir, out_dir, arm="A", ai=None, albedo_src="albedo"):
         n_out = n * 0.5 + 0.5
     rough = np.where(np.vectorize(lambda c: lib["classes"][names[c]]["cel"]["spec"][2] > 0)(cls), 0.45, 1.0)
     os.makedirs(out_dir, exist_ok=True)
+    from PIL.PngImagePlugin import PngInfo
+    info = PngInfo(); info.add_text("b3_version", str(VERSION)); info.add_text("b3_inputs", inputs_hash(lib, names))
     rgbd = np.stack([dilate(rgb[..., i], mask) for i in range(3)], -1)
-    Image.fromarray((np.clip(rgbd, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "albedo.png"))
-    Image.fromarray((np.clip(np.stack([dilate(n_out[..., i], mask) for i in range(3)], -1), 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "normal.png"))
-    Image.fromarray((dilate(rough, mask) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "rough.png"))
+    Image.fromarray((np.clip(rgbd, 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "albedo.png"), pnginfo=info)
+    Image.fromarray((np.clip(np.stack([dilate(n_out[..., i], mask) for i in range(3)], -1), 0, 1) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "normal.png"), pnginfo=info)
+    Image.fromarray((dilate(rough, mask) * 255 + 0.5).astype(np.uint8)).save(os.path.join(out_dir, "rough.png"), pnginfo=info)
     nums = measure(lab, blk, mask, cm, edge, cavity)
-    nums.update(arm=arm, version=VERSION, albedo_src=sorted(set(used.values())), size=W, ppm=ppm, seconds=round(time.time() - t0, 1),
+    nums.update(colors=block_colors(lab, blk, mask, cls, names, edge, cavity))
+    nums.update(arm=arm, version=VERSION, inputs=inputs_hash(lib, names), albedo_src=sorted(set(used.values())), size=W, ppm=ppm,
                 brush_cm={n: lib["classes"][n]["paint"]["brush_cm"] for n in names},
                 vram_kb=round(W * H * (0.5 + 1.0 + 0.5) * 4 / 3 / 1024))  # (BC1 albedo, BC5 normal, BC4 rough, + mips)
-    json.dump(nums, open(os.path.join(out_dir, "paint.json"), "w"), indent=1)
-    print("B3 paint:", json.dumps(nums))
+    json.dump(nums, open(os.path.join(out_dir, "paint.json"), "w", newline=chr(10)), indent=1)
+    json.dump({"paint_s": round(time.time() - t0, 1)}, open(os.path.join(out_dir, "timing.json"), "w"))
+    print("B3 paint:", json.dumps({k: v for k, v in nums.items() if k != "colors"}))
     return nums
+
+
+def inputs_hash(lib, names):
+    """The classes' painting inputs (paint minus its boxes, and cel.spec), hashed: a map records it, the check compares."""
+    keep = {n: [{k: v for k, v in lib["classes"][n]["paint"].items() if k not in ("boxes", "lit")}, lib["classes"][n]["cel"]["spec"]] for n in sorted(names)}
+    return "%08x" % zlib.crc32(json.dumps(keep, sort_keys=True).encode())
+
+
+def block_colors(lab, blk, mask, cls, names, edge, cavity):
+    """Each block's middle color (its interior's median Oklab L, C, h), for the check against its class's range."""
+    inner = mask & (edge < 0.1) & (cavity < 0.1)
+    out = []
+    for b in np.unique(blk[mask]):
+        k = inner & (blk == b)
+        if k.sum() < 50: continue
+        L, a, bb = (float(np.median(lab[..., i][k])) for i in range(3))
+        out.append([int(b), names[int(cls[k][0])], round(L, 4), round(float(np.hypot(a, bb)), 4), round(float(np.degrees(np.arctan2(bb, a)) % 360), 1)])
+    return out
+
+
+# ---- the check ----------------------------------------------------------------------------------------------------
+DETAIL_MAX = 0.15  # (the share of in-block value detail under 3 cm: see check())
+PLAY_PX_PER_M = 73.3  # (the play camera at the stage's setts patch, 6 m across: tools/look/bakeoff.py's numbers.json)
+
+
+def check(out_dir, src="albedo"):
+    """A painted asset's check (rule 9 and the stage's contract), from its paint.json and the library now:
+    - the core's VERSION and the classes' inputs hash on paint.json and every PNG (stale maps fail);
+    - each block's interior value spread within its class's spread_L (+-0.06 Oklab L);
+    - the brush at 6-10 cm (and its px at the play camera, 5-8 wanted; reported);
+    - the share of in-block detail under 3 cm at most DETAIL_MAX (0.15: round 1's procedural painter gave 0.03-0.14,
+      its dab edges softened at 1.2 cm; the AI arms' grain 0.30-0.35 was what the art director saw at 1:1 at the close
+      view, about 9 px per cm there, as detail under 3 cm; so 0.15 holds the soft dab edges and refuses grain);
+    - each block's middle color inside its class's range (L and C between their 10th and 90th percentiles, widened by
+      0.03 and 0.015 for the painted light and the brush; h within the class's deviation, widened by 8 degrees).
+    Returns (ok, lines)."""
+    lib = json.load(open(LIB, encoding="utf-8"))
+    P = json.load(open(os.path.join(out_dir, "paint.json")))
+    names = sorted(P["brush_cm"])
+    lines, ok = [], True
+    def need(c, what):
+        nonlocal ok
+        ok &= bool(c); lines.append(("PASS " if c else "FAIL ") + what)
+    need(P.get("version") == VERSION, f"version {P.get('version')} (core {VERSION})")
+    h = inputs_hash(lib, names)
+    need(P.get("inputs") == h, f"inputs {P.get('inputs')} (library now {h})")
+    for m in ("albedo", "normal", "rough"):
+        t = Image.open(os.path.join(out_dir, f"{m}.png")).text
+        need(t.get("b3_version") == str(VERSION) and t.get("b3_inputs") == h, f"{m}.png carries version {t.get('b3_version')} inputs {t.get('b3_inputs')}")
+    sl = min(lib["classes"][n]["paint"]["spread_L"] for n in names)
+    need(P["spread_L_max"] <= sl + 1e-4, f"block spread max {P['spread_L_max']} (median {P['spread_L_med']}) <= {sl}")
+    for n, cm in P["brush_cm"].items():
+        need(6 <= cm <= 10, f"brush {n} {cm} cm ({cm / 100 * PLAY_PX_PER_M:.1f} px at play; 5-8 wanted)")
+    need(P["detail_under_3cm"] <= DETAIL_MAX, f"detail under 3 cm {P['detail_under_3cm']} <= {DETAIL_MAX}")
+    bad = []
+    for b, n, L, C, hh in P.get("colors", []):
+        m, _ = class_color(lib["classes"][n], src)
+        dh = (hh - m["h"][0] + 180) % 360 - 180
+        inL = m["L"][0] - 0.03 <= L <= m["L"][2] + 0.03
+        inC = m["C"][0] - 0.015 <= C <= m["C"][2] + 0.015
+        inH = C < 0.02 or m["h"][1] - 8 <= dh <= m["h"][2] + 8
+        if not (inL and inC and inH): bad.append(f"{n}#{b} L{L} C{C} h{hh}")
+    need(not bad, f"block colors in their class's range ({len(P.get('colors', []))} blocks{'; out: ' + ', '.join(bad[:6]) if bad else ''})")
+    return ok, lines
 
 
 def joints(blk, mask, pos, nrm, k=24, far=0.06):
@@ -272,5 +343,7 @@ if __name__ == "__main__":
     def opt(n, d):
         if n in a: i = a.index(n); v = a[i + 1]; del a[i:i + 2]; return v
         return d
+    if a and a[0] == "--check":
+        ok, lines = check(a[1]); print(chr(10).join(lines)); sys.exit(0 if ok else 1)
     arm, ai, src = opt("--arm", "A"), opt("--ai", None), opt("--albedo-src", "albedo")
     paint(a[0], a[1], arm, ai, src)

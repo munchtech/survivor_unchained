@@ -17,7 +17,9 @@ gives E, the mean linear color of its lit neutral references (gray setts and lim
 the lit side of each box), scaled to luminance 1: the light's color is divided out, its strength stays the rig's (B4).
 Each board row names its panel ("rows"); a row with neutral references of its own ("refs") takes the panel of its kind
 ("candidates": a sun row the sun panels) whose E is nearest its own (the log-chromaticity distance, printed), so the
-match is measured. A class with "emissive" (a light
+match is measured. A box may name its panel ("panel") and a role of its own ("lit_night": a class's moonlit side, for
+tools/look/calib.py's solve; not pooled into paint.lit). Albedo v2 (B3r2, through the game's own rig: tools/look/calib.py)
+is kept when present (--v1 rewrites the old division). A class with "emissive" (a light
 source) keeps albedo = lit. Nothing is measured by eye or from the game's textures; re-run this after moving a box. --sheet draws every box on its
 board crop (magenta) with the measured middle color beside it, for checking the boxes sit on their swatches.
 """
@@ -147,13 +149,15 @@ def main():
         pool, roles, apool, aroles = [], {}, [], {}
         for bx in p["boxes"]:
             px = pixels(boards[bx["board"]], bx)
-            e = None if p.get("emissive") else E[panel_of(lib, bx["board"], bx["box"])]
+            e = None if p.get("emissive") else E[bx.get("panel") or panel_of(lib, bx["board"], bx["box"])]
             ax = px[:5] if e is None else lin_to_lab5(px[5] / e)
             roles.setdefault(bx["role"], []).append(px); aroles.setdefault(bx["role"], []).append(ax)
             if bx["role"] in ("lit", "transition"): pool.append(px); apool.append(ax)
             tiles.append((name, bx))
         cat = lambda ps: [np.concatenate([q[i] for q in ps]) for i in range(5)]
         for key, pl, rl in (("lit", pool, roles), ("albedo", apool, aroles)):
+            if key == "albedo" and (p.get("albedo") or {}).get("v") == 2 and "--v1" not in sys.argv:
+                continue  # (albedo v2 is tools/look/calib.py's, through the game's rig: kept; --v1 rewrites the old light division)
             if pl:
                 m = stats(*cat(pl))
                 m["roles"] = {r: stats(*cat(ps))["mid"] for r, ps in rl.items() if stats(*cat(ps))}
