@@ -96,8 +96,63 @@ def place_skeleton(skel, base, mh_rig, mh_weights, to_world):
     # to the world (glTF)
     W = {}
     for n, (h, t) in ends.items():
-        hw = np.zeros(3) if h is None else to_world(h[None])[0]
-        tw = to_world(t[None])[0]
+        W[n] = [np.zeros(3) if h is None else to_world(h[None])[0], to_world(t[None])[0]]
+    return _place_from_world(defs, W)
+
+
+class OurLandmarks:
+    """skeleton.json's points on OUR vertices (P1 B1): each atomic rule (cube / mh / weights_base, keyed by its
+    canonical json) is landmarks.json's sparse weighted sum of our vertices (landmarks_fit.py); skin_out is its rule
+    run on our skin (its inner point from the table); mean and lerp compose them in our frame (glTF); origin is none.
+    No MakeHuman data at placement time."""
+
+    def __init__(self, V, table):
+        self.V, self.t = np.asarray(V, float), table
+
+    def point(self, p):
+        if "origin" in p:
+            return None
+        if "mean" in p:
+            return np.mean([self.point(q) for q in p["mean"]], 0)
+        if "lerp" in p:
+            a, b, t = p["lerp"]
+            return (1 - t) * self.point(a) + t * self.point(b)
+        import json
+        r = self.t[json.dumps(p, sort_keys=True, separators=(",", ":"))]
+        if r.get("rule") == "skin_out":                  # the rule itself, on our skin (glTF directions)
+            q, way = p["skin_out"]
+            o = self.point(q)
+            d = {"lateral": LEFT, "up": UP, "front": FRONT, "back": -FRONT}[way].copy()
+            if way == "lateral" and o[0] < 0:
+                d = -d
+            rel = self.V - o
+            along = rel @ d
+            off = np.linalg.norm(rel - along[:, None] * d, axis=1)
+            m = (off < r.get("tube_m", 0.02)) & (along > 0)
+            return o + d * along[m].max()
+        return np.asarray(r["w"]) @ self.V[r["ids"]]
+
+
+def place_skeleton_ours(skel, V, table):
+    """place_skeleton on OUR vertices V (glTF, our topology's order) with landmarks.json's table for that tier
+    (tools/body/base/landmarks.json "tiers"[tier]); the same returns."""
+    lm = OurLandmarks(V, table)
+    defs = skel["bones"]
+    W = {}
+    for d in defs:
+        if d.get("leaf"):
+            continue
+        e = expand(d, "l", "l", "L")
+        h = lm.point(e["head"])
+        W[e["name"]] = [np.zeros(3) if h is None else h, lm.point(e["tail"])]
+    return _place_from_world(defs, W)
+
+
+def _place_from_world(defs, W):
+    """The left side's (and the middle's) bone ends in the world (glTF) -> the skeleton: leaves, frames, mirror."""
+    for n, (hw, tw) in W.items():
+        hw, tw = np.array(hw, float), np.array(tw, float)
+        W[n] = [hw, tw]
         if not n.endswith("_l"):
             hw[0] = 0.0
             tw[0] = 0.0
