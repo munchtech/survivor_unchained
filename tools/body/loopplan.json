@@ -186,7 +186,9 @@
      1.42
     ],
     "collar_F_y": 1.5,
-    "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)"
+    "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)",
+    "crotch_half_width": 0.014,
+    "why_pass3b_crotch": "(a) crotch_half_width: the perineum strip s lateral line 14 mm off the midline (it was R0 s first points, 4-9 mm: a near-degenerate strip the thigh root folded against); 10-18 mm all clear the strip, 14 the fewest folds (thigh ring 2: 6 -> 2). A stopgap until the hip curve root (item 4) rebuilds this junction"
    },
    "play": {
     "spacing": 0.017,

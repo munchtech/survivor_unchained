@@ -746,6 +746,7 @@ def crotch(M, ref, L, plan, tp, tk, C):
     Mx = np.stack([np.interp(g, sl, X[:, k]) for k in range(3)], 1)
     mid = np.concatenate([[R0[0]], M.add(Mx[1:-1], "crotch", 0, 1, MID, REG["pelvis_glutes"], tuple(ks)), [R0[K]]])
     wl = V[R0[1]][0] * 0.5 + V[R0[K - 1]][0] * 0.5
+    wl = tp.get("crotch_half_width", wl)
     q, _ = ref.project(ks, Mx[1:-1] + np.array([wl, 0, 0]))
     lat = np.concatenate([[R0[1]], M.add(q, "crotch", 1, 1, FREE, REG["thighs"], tuple(ks)), [R0[K - 1]]])
     for i in range(b):
