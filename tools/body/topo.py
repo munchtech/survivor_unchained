@@ -136,7 +136,7 @@ def label(ref, L):
     """(a) the cuts that split the reference into the parts our pieces lie on (left rules, mirrored for the right)."""
     C = ref.C
     side = C[:, 0] < 0
-    Cm = C * np.where(side, -1, 1)[:, None]
+    Cm = C * np.where(side[:, None], [-1.0, 1, 1], 1.0)
     lab = np.full(len(C), TRUNK)
     a = L["arm_root"]
     arm = ((Cm - a["p"]) @ a["n"] > 0) & (seg_dist(Cm, L["shoulder"], L["hand_tip"]) < 0.13) & (Cm[:, 0] > 0.07)
@@ -158,13 +158,14 @@ def landmarks_ref(ref, plan):
     L = {"shoulder": J["upperarm_l"], "elbow": J["lowerarm_l"], "wrist": J["hand_l"], "hip": J["thigh_l"],
          "knee": J["calf_l"], "ankle": J["foot_l"], "hand_tip": J["middle_04_leaf_l"], "ball": J["ball_leaf_l"]}
     P = ref.P
-    xs, zs = np.linspace(0.13, 0.26, 66), np.linspace(-0.07, 0.01, 41)   # the armpit's dome: rays straight up
-    X, Z = np.meshgrid(xs, zs)
+    xs, zs = np.linspace(0.15, 0.26, 111), np.linspace(-0.08, 0.01, 91)   # the armpit's dome: rays straight up
+    X, Z = np.meshgrid(xs, zs)                                              # (x >= 0.15: no ray starts in the trunk)
     O = np.stack([X.ravel(), np.full(X.size, 1.25), Z.ravel()], 1)
     pid, tf = ray.hits(ray.scene(P, ref.T), O, np.tile([0, 1.0, 0], (len(O), 1)))
-    y = np.where(pid >= 0, tf, -1)
-    i = int(np.argmax(y))
-    L["armpit"] = O[i] + [0, tf[i], 0]
+    y = np.where(pid >= 0, tf, -1).reshape(X.shape)
+    hi, ix = y.max(1), y.argmax(1)                  # per depth the vault's top; the dome = the saddle, the lowest top
+    k = int(np.argmin(np.where(hi > 0, hi, 9)))     # (the highest point lands on the front fold: pass 1's bug)
+    L["armpit"] = np.array([xs[ix[k]], 1.25 + hi[k], zs[k]])
     d_up = U(L["elbow"] - L["shoulder"])
     sh = plan["shoulder"]
     L["arm_root"] = {"p": L["armpit"], "n": U((1 - sh["root_tilt"]) * d_up + sh["root_tilt"] * np.array([1.0, 0, 0]))}
