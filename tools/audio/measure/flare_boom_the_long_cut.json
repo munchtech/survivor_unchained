@@ -1,0 +1,95 @@
+{
+ "family": "flare_boom_the_long_cut",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "60446cc252ae5be82aafe693b26daee9f69be4046cfcf960acecd72eff4122e3",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.083411796947897,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -10.781533329568537,
+    "crest_db": 9.69812153262064,
+    "lufs": -10.48247434159723,
+    "lufs_padded": false,
+    "onset_ms": 0.6802721088435374,
+    "tail_ms": 2230.340136054422,
+    "centroid_hz": 1465.9774845274624,
+    "clipped": 0,
+    "clap": 0.3298,
+    "clap_neg": 0.1283,
+    "clap_margin": 0.2015
+   }
+  },
+  {
+   "i": 1,
+   "key": "ec145412f51bba4ef9fe3581ada1f0fb89da38225eeb00198e1716b6ba04220e",
+   "file": "flare_boom_the_long_cut_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.9999773242630385,
+    "peak_dbfs": -1.6221523712201025,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -13.185871188023665,
+    "crest_db": 11.563718816803561,
+    "lufs": -12.254922253747944,
+    "lufs_padded": false,
+    "onset_ms": 0.6122448979591837,
+    "tail_ms": 1992.721088435374,
+    "centroid_hz": 1199.9337840614878,
+    "clipped": 0,
+    "clap": 0.4843,
+    "clap_neg": 0.0347,
+    "clap_margin": 0.4495
+   }
+  },
+  {
+   "i": 2,
+   "key": "7a1367a0fbabb7ab2781b9d75a3e00b9bc034f6175aa6ca2da5460470d086a99",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 3.0,
+    "peak_dbfs": -1.0776338963390881,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -14.8317601720947,
+    "crest_db": 13.754126275755612,
+    "lufs": -13.594152930162236,
+    "lufs_padded": false,
+    "onset_ms": 0.9070294784580499,
+    "tail_ms": 2273.9909297052154,
+    "centroid_hz": 1164.6772259082527,
+    "clipped": 0,
+    "clap": 0.4831,
+    "clap_neg": 0.061,
+    "clap_margin": 0.4221
+   }
+  },
+  {
+   "i": 3,
+   "key": "1afa315b2cc2ef9a8e36c3cd64874aedbfc9bc168ee17f35188ce484777589da",
+   "file": "flare_boom_the_long_cut_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.7699773242630386,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -13.933452456150189,
+    "crest_db": 12.92792508111912,
+    "lufs": -11.368061540963494,
+    "lufs_padded": false,
+    "onset_ms": 5.1020408163265305,
+    "tail_ms": 2407.7097505668935,
+    "centroid_hz": 1317.792532414835,
+    "clipped": 0,
+    "clap": 0.5272,
+    "clap_neg": -0.0162,
+    "clap_margin": 0.5434
+   }
+  }
+ ]
+}

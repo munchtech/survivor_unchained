@@ -1,0 +1,95 @@
+{
+ "family": "flare_mark_tick",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "6412501d26fc348e8501d71fd511be1dc6c1f8d108d7ccf4123c5e5f7711c57b",
+   "file": "flare_mark_tick_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.3816086853615726,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -15.923709739841216,
+    "crest_db": 14.542101054479645,
+    "lufs": -10.853732959726328,
+    "lufs_padded": false,
+    "onset_ms": 0.40816326530612246,
+    "tail_ms": 546.1451247165533,
+    "centroid_hz": 10118.84774990214,
+    "clipped": 0,
+    "clap": 0.0451,
+    "clap_neg": 0.0801,
+    "clap_margin": -0.035
+   }
+  },
+  {
+   "i": 1,
+   "key": "ea305c7314508b851325a6dced8d68d5850328e57bb451830af49b5fa0500c68",
+   "file": null,
+   "dropped": "clap margin -0.060 < 0.00",
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.127608189061858,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -14.498927563401816,
+    "crest_db": 13.371319374339958,
+    "lufs": -8.900793804828526,
+    "lufs_padded": false,
+    "onset_ms": 0.6122448979591837,
+    "tail_ms": 552.7210884353741,
+    "centroid_hz": 9470.800951603904,
+    "clipped": 0,
+    "clap": 0.0916,
+    "clap_neg": 0.1515,
+    "clap_margin": -0.06
+   }
+  },
+  {
+   "i": 2,
+   "key": "83e453db9932dac3cea6af97abe6ea35f13a7c192b224e738728878360de6367",
+   "file": null,
+   "dropped": "clap margin -0.066 < 0.00",
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.475132630384408,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -13.608584593484835,
+    "crest_db": 12.133451963100427,
+    "lufs": -8.058898464821125,
+    "lufs_padded": false,
+    "onset_ms": 0.36281179138321995,
+    "tail_ms": 519.7052154195011,
+    "centroid_hz": 9147.683011568637,
+    "clipped": 0,
+    "clap": 0.0105,
+    "clap_neg": 0.0766,
+    "clap_margin": -0.0661
+   }
+  },
+  {
+   "i": 3,
+   "key": "42e72ec71418562ad482ed4a69ccea936ddc51110d07a879fa083245d7676518",
+   "file": "flare_mark_tick_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.6,
+    "peak_dbfs": -1.254547684042594,
+    "true_peak_dbfs": -1.0000000000000018,
+    "rms_dbfs": -20.173130059581055,
+    "crest_db": 18.91858237553846,
+    "lufs": -14.834193537167883,
+    "lufs_padded": false,
+    "onset_ms": 0.8616780045351474,
+    "tail_ms": 408.1179138321995,
+    "centroid_hz": 9723.2138655808,
+    "clipped": 0,
+    "clap": 0.1357,
+    "clap_neg": -0.0368,
+    "clap_margin": 0.1725
+   }
+  }
+ ]
+}

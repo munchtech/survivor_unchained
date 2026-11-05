@@ -1,0 +1,95 @@
+{
+ "family": "flare_boom_the_roads_toll",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "7d470f757074c31e5bb8fddcf20e69788d1cb5f6e0d4acd17a4529fe7c7ee839",
+   "file": "flare_boom_the_roads_toll_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.2008843537414964,
+    "peak_dbfs": -1.0913342661768424,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.0273532625129,
+    "crest_db": 15.936018996336058,
+    "lufs": -12.229040094452332,
+    "lufs_padded": false,
+    "onset_ms": 27.09750566893424,
+    "tail_ms": 1777.800453514739,
+    "centroid_hz": 3274.4539723823036,
+    "clipped": 0,
+    "clap": 0.5939,
+    "clap_neg": -0.0742,
+    "clap_margin": 0.6681
+   }
+  },
+  {
+   "i": 1,
+   "key": "27f0fd89e805eb717db60618163bc582ce1dc2f14374e9c11a100fa32e56c149",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.6596145124716553,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -15.66775674114763,
+    "crest_db": 14.662229366116561,
+    "lufs": -12.810401478285948,
+    "lufs_padded": false,
+    "onset_ms": 89.97732426303854,
+    "tail_ms": 1153.1972789115646,
+    "centroid_hz": 3548.825399676088,
+    "clipped": 0,
+    "clap": 0.5866,
+    "clap_neg": 0.0111,
+    "clap_margin": 0.5755
+   }
+  },
+  {
+   "i": 2,
+   "key": "d6cd0439e287808ea32daead864ab9a26b2f5a3229dc4974562e16462180ba34",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 2.051496598639456,
+    "peak_dbfs": -1.0260389138890436,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.994009192076227,
+    "crest_db": 16.967970278187185,
+    "lufs": -11.646968975473657,
+    "lufs_padded": false,
+    "onset_ms": 2.2675736961451247,
+    "tail_ms": 1726.077097505669,
+    "centroid_hz": 5900.577060865588,
+    "clipped": 0,
+    "clap": 0.532,
+    "clap_neg": 0.0134,
+    "clap_margin": 0.5185
+   }
+  },
+  {
+   "i": 3,
+   "key": "85e09b3080264d41ce2e4aa401bc90d91ede1abb70e00d18282de5d029c757ff",
+   "file": "flare_boom_the_roads_toll_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 2.48,
+    "peak_dbfs": -1.0280443279455902,
+    "true_peak_dbfs": -0.9999999999999987,
+    "rms_dbfs": -17.811354253245412,
+    "crest_db": 16.78330992529982,
+    "lufs": -11.925755289656031,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 1183.5827664399092,
+    "centroid_hz": 4544.6621465583075,
+    "clipped": 0,
+    "clap": 0.634,
+    "clap_neg": 0.0222,
+    "clap_margin": 0.6118
+   }
+  }
+ ]
+}
