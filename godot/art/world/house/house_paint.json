@@ -1,0 +1,41 @@
+{
+ "by": "tools/look/town.py (L1 W2 town)",
+ "from": "the walls' trim sheet (E9b1's regions), repainted from nothing (the rubble's CC0 photo source retired)",
+ "regions": {
+  "rubble": {
+   "class": "stone",
+   "L50": 0.415,
+   "C50": 0.049
+  },
+  "plaster": {
+   "class": "plaster",
+   "L50": 0.607,
+   "C50": 0.022
+  },
+  "timber": {
+   "class": "plank",
+   "L50": 0.264,
+   "C50": 0.029
+  },
+  "ashlar": {
+   "class": "stone",
+   "L50": 0.446,
+   "C50": 0.049
+  },
+  "iron": {
+   "class": "wrought",
+   "L50": 0.37,
+   "C50": 0.04
+  },
+  "glass": {
+   "class": "wrought",
+   "L50": 0.324,
+   "C50": 0.039
+  },
+  "planks": {
+   "class": "plank",
+   "L50": 0.295,
+   "C50": 0.038
+  }
+ }
+}

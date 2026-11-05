@@ -1,0 +1,61 @@
+{
+ "by": "tools/look/town.py (L1 W2 town)",
+ "from": "the roof trim sheet (E9b2's regions), repainted from nothing",
+ "regions": {
+  "pantile": {
+   "class": "roof",
+   "L50": 0.385,
+   "C50": 0.056
+  },
+  "shingle": {
+   "class": "roof",
+   "L50": 0.349,
+   "C50": 0.049
+  },
+  "ridge": {
+   "class": "roof",
+   "L50": 0.39,
+   "C50": 0.055
+  },
+  "boards": {
+   "class": "plank",
+   "L50": 0.324,
+   "C50": 0.029
+  },
+  "soffit": {
+   "class": "plank",
+   "L50": 0.34,
+   "C50": 0.03
+  },
+  "brick": {
+   "class": "roof",
+   "L50": 0.332,
+   "C50": 0.056
+  },
+  "stone": {
+   "class": "stone",
+   "L50": 0.405,
+   "C50": 0.049
+  },
+  "endgrain": {
+   "class": "plank",
+   "L50": 0.33,
+   "C50": 0.038
+  },
+  "iron": {
+   "class": "wrought",
+   "L50": 0.37,
+   "C50": 0.04
+  },
+  "lead": {
+   "class": "stone",
+   "L50": 0.394,
+   "C50": 0.057
+  },
+  "pot": {
+   "class": "roof",
+   "L50": 0.399,
+   "C50": 0.055
+  }
+ }
+}

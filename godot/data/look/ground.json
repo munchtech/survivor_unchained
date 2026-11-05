@@ -241,6 +241,31 @@
     "shade": "#263b2a",
     "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
    }
+  },
+  "setts": {
+   "dir": "godot/art/ground",
+   "prefix": "setts_",
+   "from": "(c) the town's setts arrays (terrain.gdshader s_alb/s_nor/s_arh, three variants of 4 m: Ground.cs and the terrain manifest's 'setts' entry); L1 W2 town replaces the photo setts (env_ground.py)",
+   "layers": [
+    {
+     "name": "setts_a",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 0
+    },
+    {
+     "name": "setts_b",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 1
+    },
+    {
+     "name": "setts_c",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 2
+    }
+   ]
   }
  },
  "surfaces": {
@@ -1215,6 +1240,30 @@
     ],
     "scale_m": 2.0
    }
+  },
+  "setts": {
+   "class": "setts",
+   "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
+   "courses": {
+    "row_cm": 20,
+    "row_jit": 0.12,
+    "len_cm": 30,
+    "len_jit": 0.28,
+    "joint_cm": 3.0,
+    "corner_cm": 3.5,
+    "bevel_cm": 4.0,
+    "wobble_cm": 0.8,
+    "tilt": 0.5,
+    "lit": 0.06,
+    "colors": [
+     "#5a4962",
+     "#5f495d",
+     "#574866",
+     "#604e69"
+    ],
+    "joint": "#382d46"
+   },
+   "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's)."
   }
  },
  "grass_atlas": {

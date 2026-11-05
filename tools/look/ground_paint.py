@@ -201,6 +201,68 @@ def cells(cv, c, rng, patches=None):
     cv.rough = np.where(stone, 0.85, cv.rough).astype(np.float32)
 
 
+def courses(cv, c, rng):
+    """(L1 W2 town) Coursed setts: rows of rounded-rectangle stones in a running bond (MB3 SETTS: chunky planes, warm
+    tops, cool joints; rule 10: big-medium-small as the stones, their bevels and the joints), wrapped so the tile repeats.
+    Each stone one color of its list (+-spread), its top a slightly tilted plane (+-tilt of the spread across it), a lit
+    bevel on the light's side and a cool, darker one on the other, the joints one deep cool tone; every size >= 3 cm."""
+    W = cv.W
+    nr = max(int(round(cv.metres * 100 / c["row_cm"])), 1)
+    rh = rng.uniform(1 - c["row_jit"], 1 + c["row_jit"], nr); rb = np.concatenate([[0], np.cumsum(rh / rh.sum() * W)])
+    yy, xx = np.mgrid[0:W, 0:W].astype(np.float32)
+    row = np.clip(np.searchsorted(rb, yy, side="right") - 1, 0, nr - 1)
+    y0, y1 = rb[row], rb[row + 1]
+    nst = max(int(round(cv.metres * 100 / c["len_cm"])), 1)
+    sid = np.zeros((W, W), np.int64); x0 = np.zeros((W, W), np.float32); x1 = np.zeros((W, W), np.float32)
+    for r in range(nr):
+        ln = rng.uniform(1 - c["len_jit"], 1 + c["len_jit"], nst); cb = np.concatenate([[0], np.cumsum(ln / ln.sum() * W)])
+        off = (0.5 * (r % 2) + rng.uniform(-0.2, 0.2)) * W / nst
+        k = row == r
+        lx = (xx[k] - off) % W
+        j = np.clip(np.searchsorted(cb, lx, side="right") - 1, 0, nst - 1)
+        sid[k] = r * nst + j; x0[k] = cb[j] + off; x1[k] = cb[j + 1] + off
+        xx_k = xx[k]; xx_k = np.where(xx_k < x0[k], xx_k + W, xx_k); xx_k = np.where(xx_k >= x1[k], xx_k - W, xx_k)
+        xx[k] = xx_k
+    cx, cy = (x0 + x1) * 0.5, (y0 + y1) * 0.5
+    hx, hy = (x1 - x0) * 0.5, (y1 - y0) * 0.5
+    px, py = xx - cx, yy - cy
+    jh, rad = cv.px(c["joint_cm"]) * 0.5, cv.px(c["corner_cm"])
+    # (each stone's outline wobbles a little, at the stone's own scale: a periodic noise, +-wobble_cm)
+    wob = pnoise(W, max(1.0, cv.metres * 100 / c["len_cm"] * 0.7), cv.metres * 100 / c["len_cm"] * 2.0, rng)
+    wob = (wob - wob.mean()) / (wob.std() + 1e-6) * cv.px(c["wobble_cm"]) * 0.5
+    qx, qy = np.abs(px) - (hx - jh - rad), np.abs(py) - (hy - jh - rad)
+    d = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - rad + wob
+    stone = d < 0
+    e = -d
+    bevel = cv.px(c["bevel_cm"])
+    gy, gx = np.gradient(d)
+    gl = np.maximum(np.hypot(gx, gy), 1e-6)
+    facing = -(gx / gl * cv.light[0] + gy / gl * cv.light[1])  # (the bevel's outward normal toward the light: lit)
+    labs = np.array([lab(h) for h in c["colors"]])
+    h = rng.random(nr * nst)
+    pick = np.minimum((h * len(labs)).astype(int), len(labs) - 1)
+    o = labs[pick][sid].copy()
+    o[..., 0] += ((np.modf(h * 7.31)[0] - 0.5) * 2 * cv.spread * 0.9)[sid]
+    tilt = rng.uniform(-1, 1, (nr * nst, 2))
+    o[..., 0] += (tilt[sid, 0] * px / np.maximum(hx, 1) + tilt[sid, 1] * py / np.maximum(hy, 1)) * cv.spread * c["tilt"]
+    rim = stone & (e < bevel)
+    lit = c["lit"]
+    w = 1 - np.clip(e / bevel, 0, 1)
+    o[..., 0] += np.where(rim & (facing > 0.2), lit * smoothstep01(facing) * np.sqrt(w), 0.0)
+    cool = rim & (facing < -0.2)
+    o[..., 0] -= np.where(cool, lit * 0.8 * smoothstep01(-facing) * np.sqrt(w), 0.0)
+    o[..., 2] -= np.where(cool, 0.012, 0.0)
+    rgb = lin_to_srgb(oklab_to_lin(o.reshape(-1, 3))).reshape(W, W, 3).astype(np.float32)
+    jcol = np.array(rgb8(lab(c["joint"])), np.float32) / 255
+    cv.col = np.where(stone[..., None], rgb, jcol)
+    cv.hgt = np.where(stone, 0.55 + 0.45 * (1 - w ** 2), 0.12).astype(np.float32)
+    cv.rough = np.where(stone, 0.85, 0.95).astype(np.float32)
+
+
+def smoothstep01(x):
+    t = np.clip((x - 0.2) / 0.6, 0, 1); return t * t * (3 - 2 * t)
+
+
 def rot(pts, a, c):
     ca, sa = math.cos(a), math.sin(a)
     p = np.asarray(pts, float)
@@ -290,13 +352,15 @@ def stamps(cv, st, rng):
             raise ValueError(f"unknown shape {sh}")
 
 
-def paint_surface(name, surf, metres, data, salt):
-    rng = np.random.default_rng(seed_of(salt, name, metres, VERSION))
+def paint_surface(name, surf, metres, data, salt, variant=None):
+    rng = np.random.default_rng(seed_of(salt, name, metres, VERSION) if variant is None else seed_of(salt, name, metres, VERSION, variant))
     cv = Canvas(metres, data["light"], data["spread_L"])
     if "masses" in surf:
         masses(cv, surf["masses"], rng, data["mass_sizes"])
     if "cells" in surf:
         cells(cv, surf["cells"], rng, surf.get("patches"))
+    if "courses" in surf:
+        courses(cv, surf["courses"], rng)
     if surf.get("stamps"):
         cv.begin_stamps()
         for st in surf["stamps"]:
@@ -329,8 +393,9 @@ def inputs_hash(data, set_name):
     return hashlib.sha1(blob.encode()).hexdigest()[:12]
 
 
-def manifest_path(set_name, out):
-    return os.path.join(out, "ground.json" if set_name == "terrain" else "layers.json")
+def manifest_path(set_name, out, data=None):
+    pre = ((data or {}).get("sets", {}).get(set_name) or {}).get("prefix", "")  # (L1 W2 town: the setts' arrays beside the terrain's)
+    return os.path.join(out, pre + ("ground.json" if set_name == "terrain" else "layers.json"))
 
 
 def build_set(data, set_name, out=None):
@@ -341,21 +406,21 @@ def build_set(data, set_name, out=None):
     layers = []
     for l in s["layers"]:
         surf = data["surfaces"][l["surface"]]
-        a, n, h = paint_surface(l["surface"], surf, l["metres"], data, set_name)
+        a, n, h = paint_surface(l["surface"], surf, l["metres"], data, set_name, l.get("variant"))
         for m, x in zip(maps, (a, n, h)):
             m.append(x)
         mean = srgb_to_lin(a.reshape(-1, 3) / 255.0).mean(0)
         layers.append({"name": l["name"], "surface": l["surface"], "metres": l["metres"], "source": "painted (tools/look/ground_paint.py)",
                        "from": surf["from"], "mean": [round(float(v), 5) for v in mean]})
     for f, m in zip(FILES, maps):
-        Image.fromarray(np.concatenate(m, 0)).save(os.path.join(out, f), optimize=False, compress_level=6)
+        Image.fromarray(np.concatenate(m, 0)).save(os.path.join(out, s.get("prefix", "") + f), optimize=False, compress_level=6)
     man = {"by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)", "painted": VERSION,
            "inputs": inputs_hash(data, set_name), "from": s["from"], "layers": layers}
     if s.get("moss"):  # (the arena's moss cushions, drawn by arena_ground.gdshader: ArenaGround.cs reads them here)
         man["moss"] = {k: s["moss"][k] for k in ("lit", "shade", "from")}
     if set_name == "terrain":  # (the setts' own maps are wave 2's; Ground.cs reads their size here)
         man["setts"] = {"metres": 4.0, "variants": 3, "px": 1024}
-    with open(manifest_path(set_name, out), "w", encoding="utf-8") as fh:
+    with open(manifest_path(set_name, out, data), "w", encoding="utf-8") as fh:
         json.dump(man, fh, indent=1)
     print(f"{set_name}: {len(layers)} layers -> {out}")
     return out
@@ -447,12 +512,12 @@ def check_set(data, set_name, old=False):
     out = os.path.join(ROOT, s["dir"])
     ok = True
     if not old:
-        man = json.load(open(manifest_path(set_name, out), encoding="utf-8"))
+        man = json.load(open(manifest_path(set_name, out, data), encoding="utf-8"))
         if man.get("painted") != VERSION or man.get("inputs") != inputs_hash(data, set_name):
             print(f"{set_name}: STALE (version {man.get('painted')} inputs {man.get('inputs')}; rebuild)"); ok = False
-        if any(not os.path.exists(os.path.join(out, f)) for f in FILES):
+        if any(not os.path.exists(os.path.join(out, s.get("prefix", "") + f)) for f in FILES):
             print(f"{set_name}: missing maps"); return False
-    src = os.path.join(out, "albedo_paint.jpg" if old else "albedo.png")
+    src = os.path.join(out, "albedo_paint.jpg" if old else s.get("prefix", "") + "albedo.png")
     if not os.path.exists(src):
         print(f"{set_name}: no {src}"); return ok
     a = np.asarray(Image.open(src).convert("RGB"))
@@ -477,7 +542,7 @@ def main(a):
             for n_ in names:
                 d1, d2 = tempfile.mkdtemp(), tempfile.mkdtemp()
                 build_set(data, n_, d1); build_set(data, n_, d2)
-                for f in FILES + (os.path.basename(manifest_path(n_, d1)),):
+                for f in tuple(data["sets"][n_].get("prefix", "") + f_ for f_ in FILES) + (os.path.basename(manifest_path(n_, d1, data)),):
                     eq = open(os.path.join(d1, f), "rb").read() == open(os.path.join(d2, f), "rb").read()
                     same &= eq
                     print(f"  {n_}/{f}: {'same' if eq else 'DIFFERENT'}")

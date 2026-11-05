@@ -921,17 +921,18 @@
      "roles": {"lit": "#b2826f", "lit_night": "#3b3f64", "shade": "#47405d"}
     },
     "albedo": {
-     "L": [0.4997, 0.5606, 0.6929],
-     "C": [0.0444, 0.0516, 0.0738],
-     "h": [16.9, -28.9, 36.6],
-     "mid": "#98716f",
+     "L": [0.3708, 0.4317, 0.564],
+     "C": [0.0417, 0.0489, 0.0711],
+     "h": [301.8, -28.9, 36.6],
+     "mid": "#554a67",
      "n": 20800,
-     "roles": {"lit": "#91696a", "shade": "#906c6a"},
+     "roles": {"lit": "#554a67", "shade": "#554a67"},
      "v": 2,
      "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.070 -> 0.070",
      "samples": ["day lit", "day shade"],
      "linear": [0.3131, 0.1642, 0.1591],
-     "fit_dE": 0.0106
+     "fit_dE": 0.0106,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_stone_day all_lin [0.3003, 0.1575, 0.1429] / day lit [3.2966, 2.2805, 1.0513] = [0.0911, 0.0691, 0.1359] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
    }
   },
@@ -1067,17 +1068,18 @@
      "roles": {"lit": "#fdbb8b", "lit_night": "#635370", "shade": "#7b6176"}
     },
     "albedo": {
-     "L": [0.5873, 0.7869, 0.8106],
-     "C": [0.072, 0.0819, 0.0946],
-     "h": [43.9, -51.5, 12.6],
-     "mid": "#dda48a",
+     "L": [0.4072, 0.6068, 0.6305],
+     "C": [0.0121, 0.022, 0.0347],
+     "h": [358.1, -51.5, 12.6],
+     "mid": "#8e7d82",
      "n": 7703,
-     "roles": {"lit": "#e7a98f", "shade": "#daa48b"},
+     "roles": {"lit": "#8e7d82", "shade": "#8e7d82"},
      "v": 2,
      "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.102 -> 0.092",
      "samples": ["day lit", "day shade"],
      "linear": [0.7196, 0.3711, 0.2534],
-     "fit_dE": 0.0132
+     "fit_dE": 0.0132,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_plaster_day all_lin [0.9078, 0.4722, 0.2376] / day lit [3.3332, 2.2838, 1.0617] = [0.2724, 0.2068, 0.2238] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
    }
   },
@@ -1088,7 +1090,7 @@
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 0.0, 0.85],
-    "nmap": 0.35,
+    "nmap": 0.0,
     "ink": 0,
     "rim_k": 1.0
    },
@@ -1152,19 +1154,21 @@
      "roles": {"lit": "#a05654", "lit_night": "#29376b", "shade": "#452a42"}
     },
     "albedo": {
-     "L": [0.3781, 0.4555, 0.6006],
-     "C": [0.0805, 0.0999, 0.1316],
-     "h": [14.2, -27.7, 19.6],
-     "mid": "#90464a",
+     "L": [0.3213, 0.3987, 0.5438],
+     "C": [0.0361, 0.0555, 0.0872],
+     "h": [345.3, -27.7, 19.6],
+     "mid": "#5d3b4e",
      "n": 30001,
-     "roles": {"lit": "#853c45", "shade": "#8b4549"},
+     "roles": {"lit": "#5d3b4e", "shade": "#5d3b4e"},
      "v": 2,
      "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit", "day shade"],
      "linear": [0.2779, 0.0611, 0.0687],
-     "fit_dE": 0.0171
+     "fit_dE": 0.0171,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_roof_day all_lin [0.3662, 0.1001, 0.0796] / day lit [3.3087, 2.2805, 1.0575] = [0.1107, 0.0439, 0.0753] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
-   }
+   },
+   "w2_cel": "L1 W2 town: cel nmap 0.35 -> 0 (the verdict: the roofs stripe; the band carried by the roof's planes and courses)"
   },
   "setts": {
    "from": "rule 5 (ground: half-width 0.15), rule 6 (matte: no highlight), 8 (class 2: ground), 9 (chunky planes, warm tops, cool joints); MB3 setts (day)",
@@ -1228,17 +1232,18 @@
      "roles": {"lit": "#b9806c", "lit_night": "#3e4575", "shade": "#4a3c64"}
     },
     "albedo": {
-     "L": [0.5225, 0.5604, 0.638],
-     "C": [0.0619, 0.07, 0.089],
-     "h": [9.9, -24.9, 24.3],
-     "mid": "#9d686e",
+     "L": [0.3946, 0.4325, 0.5101],
+     "C": [0.0376, 0.0457, 0.0647],
+     "h": [314.8, -24.9, 24.3],
+     "mid": "#5a4962",
      "n": 31201,
-     "roles": {"lit": "#99636b", "shade": "#9d676e"},
+     "roles": {"lit": "#5a4962", "shade": "#5a4962"},
      "v": 2,
      "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit", "day shade"],
      "linear": [0.3362, 0.1371, 0.1565],
-     "fit_dE": 0.0165
+     "fit_dE": 0.0165,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] / the terrain's day lit [3.3006, 2.274, 1.0575] = [0.1024, 0.0666, 0.1218] (ground.json setts) (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     },
     "layout": {
      "course_m": [0.34, 0.46],
