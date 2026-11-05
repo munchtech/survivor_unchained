@@ -32,6 +32,20 @@ Each pipeline below has: source, stages, the check at each stage, the state toda
 | P11 | **UI** | `Style.cs` + bible rule 8 (one screen language) | screens | a judge on the screens; no numbers yet | SOUP (every screen its own look: "vibe coded") | R9: one language as data in Style.cs, screens built from it, after the style answer |
 | P12 | **The look** (gate for all) | `LOOK_BIBLE.md` (14 rules with derivations), the G1 targets (`look_l1\g1\`, ChatGPT), `shaders/cel.gdshaderinc` + her shaders, `src/World/InkPass.cs`, `tools/style/lookdev.py` | `frames.py shoot`, `lookdev.py shoot/check`; `--cel off` / `--ink off` = today's frame | `palette.py` rules 1-4, the lookdev numbers, one judge on "the same game?" at the play zoom | **HALF**: Stage A BUILT (GATE G1 READY look-l1@ad67062b3, 4 Nov; the owner's pick pending); B2-B6, C, D next | L1 Stage A cost ~2.4M (helpers 1.76M, leads 1-2 540k, a round-6 driver 105k), $5.11 API judges (A5 closed PASS WITH KNOWN, 4 Nov 21:55), 45 ChatGPT images: the app can now shade the world, crowd, folk and her with one cel model (+0.10-0.13 ms) and draw an ink line in a post pass (0.07-0.22 ms), with a lookdev stage to tune on. Next: B2 material library, B3 texture authoring, B4 lighting rigs, B6 FX/UI language, then the 13 frames rebuilt. Inherited hack to undo in B2: R4's crowd edge. L1 lead 3 (4 Nov 21:45): Stage B-D estimate ~2.6-3.2M + $15-25 API to GATE G2. |
 
+## Marionette is the pipe (the owner, 4 Nov night: "and of course make marionette the pipe that we pipeline through")
+
+The character pipelines are built as Marionette tools (`C:\Users\munch\Desktop\Marionette`, its `HANDOFF.md` "Start here") and run through the app, not as loose scripts one lead drives. Per pipeline:
+
+| # | Runs in Marionette | What moves there |
+|---|---|---|
+| P1 her base | **planned** (P1's gate first; then the body stage) | `loopplan.json` + `topo_build.py`, `check.py`, `wrap.py`, the sliders, correctives and the base rig become Marionette's body stage: the app builds a slider body and her as its first target |
+| P2 gear | planned | the slot-shell fit on the base, tuck and tier data, dye, export |
+| P3 NPCs | **yes** (generation + the fixer live there) | the base rig and the bend check from P1 |
+| P4 animation | planned (A1 designs it) | the clip build on Marionette's base rig, foot lock, pack |
+| hair cards | planned | the hair re-attach after P1 as a Marionette tool (tools on merit, rule 6) |
+| the bakes | planned | normal and skin maps for P1-P3 through one bake stage |
+| P5-P12 | no | world, combat, sound, cinematics, storybook, UI, the look stay in the game repo |
+
 ## How a lead works from now
 
 1. Name the pipeline before touching anything. If the asset's pipeline is SOUP, the first task is the pipeline, not the asset.
