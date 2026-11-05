@@ -147,7 +147,7 @@ public static class ArenaPlaces
             KeyColor = "#8fa8ec", KeyIntensity = 3.3, KeyElevation = 52, KeyAzimuth = 140, ShadowStrength = 0.78,
             HemiSky = "#3c4c68", HemiGround = "#1c1a18", HemiIntensity = 1.15, EnvIntensity = 0.8,
             FogColor = "#141c28", FogDensity = 0.004, Exposure = 1.62, Rim = "#a8c0f0", RimStrength = 0.8,
-            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3,
+            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3, Rig = "arena_night",
         }, new ArenaAir("#8a96a8", 0.05, 0.9, 1.6, 1.0, "#1c2430", 0, "#ff5a22", 1.0)),
         // The Hollow: old wood all round, the moon low and broken by the canopy
         // into pools; black litter, grey wolves, cold mist down by the water.
@@ -158,7 +158,7 @@ public static class ArenaPlaces
             // (The sky's light carries under the crowns: the leaves there are dim, never a hole.)
             HemiSky = "#2a3c48", HemiGround = "#16140e", HemiIntensity = 2.0, EnvIntensity = 0.85,
             FogColor = "#0e1818", FogDensity = 0.005, Exposure = 1.65, Rim = "#a0c8e0", RimStrength = 0.9,
-            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3,
+            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3, Rig = "arena_night",
         }, new ArenaAir("#7c9490", 0.06, 1.1, 1.4, 1.0, "#14201e", 0.55, "#ff5420", 0.9)),
         // The ruts: a road in a ravine, a warmer grey moon, the camp's fires and
         // their smoke hanging over the mud.
@@ -168,7 +168,7 @@ public static class ArenaPlaces
             KeyColor = "#9aaee6", KeyIntensity = 3.1, KeyElevation = 44, KeyAzimuth = 60, ShadowStrength = 0.78,
             HemiSky = "#3a4258", HemiGround = "#221a12", HemiIntensity = 1.1, EnvIntensity = 0.8,
             FogColor = "#1a1614", FogDensity = 0.0045, Exposure = 1.62, Rim = "#b4c0e0", RimStrength = 0.78,
-            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3,
+            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3, Rig = "arena_night",
         }, new ArenaAir("#8c8478", 0.025, 0.6, 1.8, 1.3, "#2a221c", 0, "#ff5a22", 1.0)),
         // The Dig: dust in the air, the moon dimmed by it, lamps everywhere and
         // the pit's glow; ember-stained clay, black spoil.
@@ -178,7 +178,7 @@ public static class ArenaPlaces
             KeyColor = "#94a4dc", KeyIntensity = 2.7, KeyElevation = 48, KeyAzimuth = 300, ShadowStrength = 0.74,
             HemiSky = "#383c4c", HemiGround = "#24180e", HemiIntensity = 1.05, EnvIntensity = 0.75,
             FogColor = "#1e1610", FogDensity = 0.005, Exposure = 1.6, Rim = "#b0bce0", RimStrength = 0.78,
-            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3,
+            Grade = Grade, Ember = 4.5, EmberColor = "#ffcc9c", EmberReach = 1.3, Rig = "arena_night",
         }, new ArenaAir("#8a7a68", 0.02, 0.5, 2.0, 1.6, "#2e2218", 0, "#ff6a24", 1.1)),
         _ => throw new ArgumentException($"no arena place {place}"),
     };

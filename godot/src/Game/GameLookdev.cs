@@ -54,6 +54,8 @@ public partial class Game
         var dir = ((back * Mathf.Cos(az) + right * Mathf.Sin(az)) * Mathf.Cos(el) + Vector3.Up * Mathf.Sin(el)).Normalized();
         air.Key.Basis = Basis.LookingAt(-dir, Mathf.Abs(dir.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
         air.Key.ShadowEnabled = k.Length > 2 && k[2] > 0.5f;
+        // (L1 B4: the fixture's key is the lens's, so no canopy dapple along it)
+        RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(dir.X, dir.Y, dir.Z, 0));
     }
 
     /// <summary>What the stage holds, by row, each with its world box (for the frame check: LookFrame).</summary>

@@ -39,7 +39,8 @@ public static class ArenaEdge
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
         // (A story place is a cut under the wood's edge: more of its sky is open. At 0.7 of the
         // wood's cover a quarter of its opening frame was flat black.)
-        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
+        // (L1 B4: under the cel rigs the canopy's dapple is the leaf cookie on the key, CanopyCookie; this sheet's shadow is today's)
+        if (place.Air.Dapple > 0 && z.Splat3 != null && !Atmosphere.CelRigs) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
         return root;
     }
 

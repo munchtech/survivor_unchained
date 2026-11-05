@@ -200,7 +200,7 @@ public partial class Atmosphere : Node3D
     static readonly bool FrontHiWarm = SurvivorUnchained.Args.Has("front-hi-warm");
     /// <summary>(--air-tune) Front as tuned: still the title and the Look's, for Own and the skin guard.</summary>
     static AtmospherePreset? FrontTuned;
-    static bool IsFront(AtmospherePreset p) => ReferenceEquals(p, Atmospheres.Front) || ReferenceEquals(p, FrontTuned);
+    static bool IsFront(AtmospherePreset p) => ReferenceEquals(p, Atmospheres.Front) || ReferenceEquals(p, FrontTuned) || ReferenceEquals(p.Source, Atmospheres.Front);
     static GradeSettings Own(AtmospherePreset p) => FrontPaint && IsFront(p) ? p.Grade with
     {
         HighlightTint = FrontHiWarm ? p.Grade.HighlightTint : "#bcbcbc",
@@ -302,13 +302,16 @@ public partial class Atmosphere : Node3D
         // --air-old: play's presets (E1) back to the ones before them, for before-and-after pictures.
         if (OldAir) p = ReferenceEquals(p, Atmospheres.LowFordNight) ? Atmospheres.Night : ReferenceEquals(p, Atmospheres.LowFordDawn) ? Atmospheres.Dawn
             : ReferenceEquals(p, Atmospheres.WaystationDawn) ? Atmospheres.Dawn : ReferenceEquals(p, Atmospheres.WaystationDay) ? Atmospheres.Day : p;
+        // (L1 B4) Under the cel model the preset's rig lights it (godot/data/look/rigs.json); --cel off: the preset as it is.
+        var orig = p;
+        if (CelRigs) { RigsLoad(); p = SurvivorUnchained.Look.Rigs.Lit(p); }
         // --air-tune "hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
-        // play's presets (E1) nudged, for a sweep of pictures in one build.
-        if (Tune != null && (ReferenceEquals(p, Atmospheres.LowFordNight) || ReferenceEquals(p, Atmospheres.LowFordDawn)
-            || ReferenceEquals(p, Atmospheres.WaystationDawn) || ReferenceEquals(p, Atmospheres.WaystationDay) || ReferenceEquals(p, Atmospheres.NightTown)
-            || p.CrowdFill > 0 || ReferenceEquals(p, Atmospheres.Front)))   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
+        // play's presets (E1) nudged, for a sweep of pictures in one build (under cel, the rig's light nudged).
+        if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
+            || ReferenceEquals(orig, Atmospheres.WaystationDawn) || ReferenceEquals(orig, Atmospheres.WaystationDay) || ReferenceEquals(orig, Atmospheres.NightTown)
+            || p.CrowdFill > 0 || ReferenceEquals(orig, Atmospheres.Front)))   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
         {
-            bool front = ReferenceEquals(p, Atmospheres.Front);
+            bool front = ReferenceEquals(orig, Atmospheres.Front);
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
             string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
             double[] V(string k, double[] v) => Tune.TryGetValue(k, out var x)
@@ -426,6 +429,7 @@ public partial class Atmosphere : Node3D
         // nothing and read as rubber (look bible, armor metal; metal round 3).
         var key = C(p.KeyColor).SrgbToLinear() * (Key.LightEnergy * Mathf.Max(dir.Y, 0f) * 0.18f);
         RenderingServer.GlobalShaderParameterSet("ground_bounce", new Vector4(key.R, key.G, key.B, 0f));
+        keyToward = dir;
         SetCel(p);
         if (grade) { var lut = LutFor(p); if (GradeOff) Env.AdjustmentColorCorrection = null; else ShowLut(lut); }
     }
@@ -442,10 +446,45 @@ public partial class Atmosphere : Node3D
     /// <summary>--cel-dbg band|ink|skin: the key's band level as gray, each material's ink class unlit (0 white, 1 yellow, 2 blue, 3 red), or her skin white (CEL_SKIN; the mask for measuring, L1 B1c).</summary>
     static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, "skin" => 3f, _ => 0f };
 
-    /// <summary>The cel model's globals (shaders/cel.gdshaderinc) from the preset: its hues taken at luminance 1, so
-    /// CelFill and CelRim are how much of the key's light they are.</summary>
-    static void SetCel(AtmospherePreset p)
+    /// <summary>(L1 B4) The rigs light the presets: cel on (not --cel off). --cel-rigs off: cel on, the presets' own light.</summary>
+    public static readonly bool CelRigs = (CelArg ?? 1f) > 0f && SurvivorUnchained.Args.Get("cel-rigs") is not ("off" or "0");
+    static bool rigsLoaded;
+    /// <summary>godot/data/look/rigs.json into Rigs.Current, once.</summary>
+    public static void RigsLoad()
     {
+        if (rigsLoaded) return;
+        rigsLoaded = true;
+        SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString("res://data/look/rigs.json"));
+    }
+    /// <summary>(L1 B4) A camera rig in force (the close-up, the Look: GameCloseUp, GameFront): its fill and rim over the
+    /// air's while it is, and the canopy's dapple held off (its key is the lens's, not the moon's). Null: the air's.</summary>
+    public SurvivorUnchained.Look.LightRig? CameraRig { get; private set; }
+    public void HoldCameraRig(SurvivorUnchained.Look.LightRig? r)
+    {
+        if (ReferenceEquals(r, CameraRig)) return;
+        CameraRig = r;
+        SetCel(Current, r);
+    }
+    /// <summary>(L1 B4) The world key's direction toward the light and the dapple's strength (cel_key; cel.gdshaderinc).</summary>
+    Vector3 keyToward = Vector3.Up;
+
+    /// <summary>The cel model's globals (shaders/cel.gdshaderinc) from the preset: its hues taken at luminance 1, so
+    /// CelFill and CelRim are how much of the key's light they are. (L1 B4: a camera rig's fill and rim over them; the ink
+    /// rig's color (InkPass.SetRig); the canopy's dapple along the key, cel_key and cel_dapple, where a canopy mask stands.)</summary>
+    void SetCel(AtmospherePreset p) => SetCel(p, CameraRig);
+    void SetCel(AtmospherePreset p, SurvivorUnchained.Look.LightRig? cam)
+    {
+        if (cam != null && CelRigs)
+            p = p with
+            {
+                CelFillColor = cam.Fill.Color ?? p.CelFillColor, CelFill = cam.Fill.Strength ?? p.CelFill,
+                CelRimColor = cam.Rim.Color ?? p.CelRimColor, CelRim = cam.Rim.Strength ?? p.CelRim, CelRimWidth = cam.Rim.Width ?? p.CelRimWidth,
+                CelShadow = cam.Hardness ?? p.CelShadow, CelInk = cam.Ink ?? p.CelInk,
+            };
+        if (CelRigs) InkPass.SetRig(p.CelInk is [var ir, var ig, var ib] ? new Color((float)ir, (float)ig, (float)ib) : InkPass.Night);
+        float dap = CelRigs && cam == null && CanopyCookie.Shown && p.DappleCover > 0 ? (float)p.DappleStrength : 0f;
+        RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
+        RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, CanopyCookie.Tile, 0));
         static Vector3 Hue(Color c)
         {
             float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);

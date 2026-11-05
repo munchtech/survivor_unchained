@@ -1,0 +1,165 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using SurvivorUnchained.World;
+
+namespace SurvivorUnchained.Look;
+
+/// <summary>(L1 B4) A lighting rig's key: where it comes from (world azimuth and elevation in degrees for the play rigs,
+/// as Atmosphere.Set reads them; for a camera rig, degrees round from the lens toward its right and up), its color
+/// (sRGB hex), intensity and cast-shadow opacity. Null: the preset's own.</summary>
+public sealed record RigKey(double? Az = null, double? El = null, string? Color = null, double? Intensity = null, double? Shadow = null);
+
+/// <summary>The fill: the cel model's colored fill in the key's shade band (cel_fill's hue, cel_rig.y its share of the
+/// key) and the sky's light (the hemisphere's sky and ground hues, its intensity and the environment's).</summary>
+public sealed record RigFill(string? Color = null, double? Strength = null, string? Sky = null, string? Ground = null, double? Hemi = null, double? Env = null);
+
+/// <summary>The stepped rim: its color (sRGB hex), strength (cel_rig.z) and width in 1 - n.v (cel_rig.w; a material
+/// class's own step and width multiply it: B2).</summary>
+public sealed record RigRim(string? Color = null, double? Strength = null, double? Width = null);
+
+/// <summary>The moon through a canopy (bible rule 9): how much of the sky the crowns close where the canopy stands (0: no
+/// dapple), how dark a leaf's shadow is (1: the key wholly off), and the crowns' height over the ground (m).</summary>
+public sealed record RigDapple(double? Cover = null, double? Strength = null, double? Height = null);
+
+/// <summary>One rig (godot/data/look/rigs.json): what it is FROM, its key, fill, rim, the ink rig color (B5's, linear rgb),
+/// shadow hardness (cel_rig.x), the grade (a named GradeSettings, Atmospheres.GradeNamed), the exposure and her ember's
+/// strength, and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).</summary>
+public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
+    double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple);
+
+/// <summary>The lighting rigs as data (L1 B4; docs/design/LOOK_BIBLE.md rules 1-3, 5, 7-9, 11): every scene's light under
+/// the cel model is a rig named by its preset (AtmospherePreset.Rig), so the rig's numbers live in one place. A rig may
+/// name a base and change only what differs ("base"). Lit applies a preset's rig under cel; --cel off lights by the preset
+/// as it is (Atmosphere.Set never calls it).</summary>
+public sealed class RigSet
+{
+    public readonly Dictionary<string, LightRig> Rigs = new();
+    /// <summary>Crown radius (m) and cover (0..1) per flora kind: the canopy mask's trees (CanopyMask).</summary>
+    public readonly Dictionary<string, (double R, double Cover)> Crowns = new();
+
+    public LightRig? this[string id] => Rigs.TryGetValue(id, out var r) ? r : null;
+
+    public static RigSet Parse(string json)
+    {
+        var set = new RigSet();
+        using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        var root = doc.RootElement;
+        var raw = new Dictionary<string, JsonElement>();
+        foreach (var p in root.GetProperty("rigs").EnumerateObject()) raw[p.Name] = p.Value.Clone();
+        LightRig Resolve(string id, int depth)
+        {
+            if (set.Rigs.TryGetValue(id, out var done)) return done;
+            if (depth > 8 || !raw.TryGetValue(id, out var e)) throw new FormatException($"rigs.json: no rig {id} (or a base loop)");
+            LightRig? b = e.TryGetProperty("base", out var be) ? Resolve(be.GetString()!, depth + 1) : null;
+            var r = Read(id, e, b);
+            set.Rigs[id] = r;
+            return r;
+        }
+        foreach (var id in raw.Keys) Resolve(id, 0);
+        if (root.TryGetProperty("crowns", out var cr))
+            foreach (var p in cr.EnumerateObject())
+                set.Crowns[p.Name] = (p.Value[0].GetDouble(), p.Value[1].GetDouble());
+        return set;
+    }
+
+    // (a value: the rig's; null: not the rig's, the preset keeps its own (an arena place's moon); absent: the base's)
+    static double? D(JsonElement e, string k, double? b) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v)
+        ? v.ValueKind == JsonValueKind.Number ? v.GetDouble() : v.ValueKind == JsonValueKind.Null ? null : throw new FormatException($"rigs.json: {k} is not a number")
+        : b;
+    static string? S(JsonElement e, string k, string? b) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(k, out var v)
+        ? v.ValueKind == JsonValueKind.String ? v.GetString() : v.ValueKind == JsonValueKind.Null ? null : throw new FormatException($"rigs.json: {k} is not a string")
+        : b;
+    static JsonElement O(JsonElement e, string k) => e.TryGetProperty(k, out var v) ? v : default;
+
+    static LightRig Read(string id, JsonElement e, LightRig? b)
+    {
+        var k = O(e, "key"); var f = O(e, "fill"); var r = O(e, "rim"); var d = O(e, "dapple");
+        double[]? ink = b?.Ink;
+        if (e.TryGetProperty("ink", out var ie))
+        {
+            ink = new double[3];
+            for (int i = 0; i < 3; i++) ink[i] = ie[i].GetDouble();
+        }
+        return new LightRig(id,
+            S(e, "from", null) ?? throw new FormatException($"rigs.json: {id} names no 'from'"),
+            e.TryGetProperty("camera", out var ce) ? ce.GetBoolean() : b?.Camera ?? false,
+            new RigKey(D(k, "az", b?.Key.Az), D(k, "el", b?.Key.El), S(k, "color", b?.Key.Color), D(k, "intensity", b?.Key.Intensity), D(k, "shadow", b?.Key.Shadow)),
+            new RigFill(S(f, "color", b?.Fill.Color), D(f, "strength", b?.Fill.Strength), S(f, "sky", b?.Fill.Sky), S(f, "ground", b?.Fill.Ground),
+                D(f, "hemi", b?.Fill.Hemi), D(f, "env", b?.Fill.Env)),
+            new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
+            ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
+            new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)));
+    }
+}
+
+public static class Rigs
+{
+    /// <summary>The rigs the game lights by (the Godot side loads godot/data/look/rigs.json at start; tests set their own).</summary>
+    public static RigSet Current { get; set; } = new();
+
+    /// <summary>The preset as its rig lights it under the cel model: the rig's key, fill, rim, ink, hardness, grade,
+    /// exposure, ember and dapple over the preset's own; what is not the rig (sky, fog, air, river, frost) stays the
+    /// preset's. A preset naming no rig (or one not in the set) is returned as it is; so is one already lit.</summary>
+    public static AtmospherePreset Lit(AtmospherePreset p) => Lit(p, Current);
+
+    public static AtmospherePreset Lit(AtmospherePreset p, RigSet set)
+    {
+        if (p.IsLit) return p;
+        if (p.CelTwin is { } twin) return twin;
+        if (p.Rig == "" || set[p.Rig] is not { } r || r.Camera) return p;
+        var k = r.Key; var f = r.Fill; var m = r.Rim;
+        return p with
+        {
+            KeyAzimuth = k.Az ?? p.KeyAzimuth, KeyElevation = k.El ?? p.KeyElevation, KeyColor = k.Color ?? p.KeyColor,
+            KeyIntensity = k.Intensity ?? p.KeyIntensity, ShadowStrength = k.Shadow ?? p.ShadowStrength,
+            CelFillColor = f.Color ?? p.CelFillColor, CelFill = f.Strength ?? p.CelFill,
+            HemiSky = f.Sky ?? p.HemiSky, HemiGround = f.Ground ?? p.HemiGround, HemiIntensity = f.Hemi ?? p.HemiIntensity, EnvIntensity = f.Env ?? p.EnvIntensity,
+            CelRimColor = m.Color ?? p.CelRimColor, CelRim = m.Strength ?? p.CelRim, CelRimWidth = m.Width ?? p.CelRimWidth,
+            CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
+            Grade = r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade,
+            Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
+            DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.Dapple.Strength ?? p.DappleStrength,
+            DappleHeight = r.Dapple.Height ?? p.DappleHeight,
+            IsLit = true, CelTwin = null, Source = p,
+        };
+    }
+
+    /// <summary>A camera rig's key direction in the camera's frame: (right, up, back) of the unit vector toward the light,
+    /// for az degrees round from the lens toward its right and el up (GameLookdev's --lookdev-key convention).</summary>
+    public static (double Right, double Up, double Back) CameraKey(double az, double el)
+    {
+        double a = az * Math.PI / 180, e = el * Math.PI / 180;
+        return (Math.Sin(a) * Math.Cos(e), Math.Sin(e), Math.Cos(a) * Math.Cos(e));
+    }
+
+    /// <summary>The canopy's mask over a zone (L1 B4, bible rule 9): res x res bytes, row by row from -z, each the share of
+    /// the sky the crowns close there (0..255), from the trees' placement (x, z, kind, scale) and RigSet.Crowns' radius and
+    /// cover per kind; a crown is a disc with a soft metre-wide edge, and crowns overlapping take the larger.</summary>
+    public static byte[] CanopyMask(IEnumerable<(double X, double Z, string Kind, double Scale)> trees, RigSet set, double size, int res)
+    {
+        var m = new float[res * res];
+        double px = size / res, half = size / 2;
+        foreach (var (x, z, kind, scale) in trees)
+        {
+            if (!set.Crowns.TryGetValue(kind, out var c) || c.Cover <= 0) continue;
+            double r = c.R * Math.Max(scale, 0.1), edge = 1.0;
+            int i0 = Math.Max(0, (int)((x + half - r - edge) / px)), i1 = Math.Min(res - 1, (int)((x + half + r + edge) / px));
+            int j0 = Math.Max(0, (int)((z + half - r - edge) / px)), j1 = Math.Min(res - 1, (int)((z + half + r + edge) / px));
+            for (int j = j0; j <= j1; j++)
+                for (int i = i0; i <= i1; i++)
+                {
+                    double dx = (i + 0.5) * px - half - x, dz = (j + 0.5) * px - half - z;
+                    double t = Math.Clamp((r + edge * 0.5 - Math.Sqrt(dx * dx + dz * dz)) / edge, 0, 1);
+                    float v = (float)(c.Cover * t * t * (3 - 2 * t));
+                    if (v > m[j * res + i]) m[j * res + i] = v;
+                }
+        }
+        var b = new byte[res * res];
+        for (int i = 0; i < b.Length; i++) b[i] = (byte)Math.Round(m[i] * 255);
+        return b;
+    }
+
+    /// <summary>sRGB hex to linear rgb (the ink rig's and the tests' colors).</summary>
+    public static (double R, double G, double B) Linear(string hex) => Atmospheres.Linear(hex);
+}

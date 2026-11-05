@@ -1,0 +1,118 @@
+{
+  "what": "The lighting rigs (L1 B4; docs/design/LOOK_BIBLE.md rules 1-3, 5, 7-9, 11). Every scene under the cel model is lit by the rig its preset names (AtmospherePreset.Rig; logic/Look/Rigs.cs). A rig changes only what it names; 'base' is the rig it starts from. Play rigs: the key in world degrees (Atmosphere.Set: azimuth round from +x toward +z, elevation up). Camera rigs (the close-up, the Look): the key camera-relative, degrees round from the lens toward its right and up. Colors are sRGB hex; ink is linear rgb (B5's --ink-rig). --cel off lights by the presets as they were (no rig).",
+  "rigs": {
+    "night_play": {
+      "from": "LB_light NIGHT and targets 09/10: a moon-blue key from the road's far end (Low Ford's corridor, so what stands on the road throws its shadow toward the camera), the sky's indigo fill coloring the shade band (rule 2, h 220-290), her ember the one warm pool in a cold dark (rules 1, 3: key 2.0+, pool 0.35+, Lp50 0.15-0.30, cold 60%+); the moon through the canopy in big leaf shapes (rule 9, 09 and 10). Start: LowFordNight (G1 r3).",
+      "key": { "az": 250, "el": 48, "color": "#80b6f2", "intensity": 1.7, "shadow": 0.8 },
+      "fill": { "color": "#4a5fc0", "strength": 0.12, "sky": "#34507e", "ground": "#1e1a14", "hemi": 1.6, "env": 0.6 },
+      "rim": { "color": "#9fc0ff", "strength": 0.35, "width": 0.25 },
+      "ink": [0.42, 0.45, 0.85],
+      "hardness": 0.85,
+      "grade": "lowford_night",
+      "exposure": 1.3,
+      "ember": 3.5,
+      "dapple": { "cover": 0.6, "strength": 1.0, "height": 9 }
+    },
+    "night_town": {
+      "base": "night_play",
+      "from": "LB_light NIGHT (the square): the same moon and sky as the wild's night; inside walls the lamps and windows carry the warm (rule 3), the moon a cold wash from the town's south-east (the square's shadows as the town's buildings stand). Start: NightTown (E9d r2, Rendering r1-r2).",
+      "key": { "az": 128, "el": 48, "color": "#a4b8ec", "intensity": 1.8, "shadow": 0.55 },
+      "fill": { "sky": "#3a4a7c", "ground": "#1e1812", "hemi": 0.82, "env": 0.52 },
+      "rim": { "color": "#86a4e8" },
+      "grade": "town_night",
+      "exposure": 1.32,
+      "ember": 3.0
+    },
+    "night_wild": {
+      "base": "night_play",
+      "from": "the night rig on the generic wild's night (the Verge by night, the cinematics' 'night'): its moon high in the south-east as the preset has it, the night rig's fill, rim, ink and dapple. Start: Night.",
+      "key": { "az": 128, "el": 50, "color": "#a9c4ff", "intensity": 3.4, "shadow": 0.7 },
+      "fill": { "sky": "#4a6699", "ground": "#2a241c", "hemi": 1.25, "env": 0.8 },
+      "grade": "night",
+      "exposure": 1.6,
+      "ember": 1.0
+    },
+    "arena_night": {
+      "base": "night_play",
+      "from": "LB_light ARENA and target 09: the night rig's fill, rim, ink, hardness and dapple on every arena; each place keeps its own moon, sky and exposure (ArenaPlaces: the barrow's open sky, the Hollow's low broken moon), so one rig and one pack preset (rule 7) under four moons.",
+      "key": { "az": null, "el": null, "color": null, "intensity": null, "shadow": null },
+      "fill": { "sky": null, "ground": null, "hemi": null, "env": null },
+      "grade": null,
+      "exposure": null,
+      "ember": null
+    },
+    "day_town": {
+      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2).",
+      "key": { "az": 330, "el": 28, "color": "#f3d9a0", "intensity": 6.6, "shadow": 0.95 },
+      "fill": { "color": "#6a5ce0", "strength": 0.12, "sky": "#a9a9e5", "ground": "#605245", "hemi": 0.7, "env": 0.55 },
+      "rim": { "color": "#f3d9a0", "strength": 0.3, "width": 0.25 },
+      "ink": [0.85, 0.6, 0.5],
+      "hardness": 0.85,
+      "grade": "waystation_day",
+      "exposure": 1.05,
+      "ember": 0.5,
+      "dapple": { "cover": 0 }
+    },
+    "day_wild": {
+      "base": "day_town",
+      "from": "the day rig in the wild (the Verge, 04): the same pale-gold sun and violet-blue sky, the sun where the Verge's stands (its north-east, as the preset has it). Start: Day.",
+      "key": { "az": 55, "el": 46, "intensity": 3.8, "shadow": 0.82 },
+      "fill": { "sky": "#9cb2cc", "ground": "#463626", "hemi": 1.0, "env": 0.85 },
+      "grade": "day",
+      "exposure": 1.0
+    },
+    "dawn": {
+      "from": "LB_light DAWN: a low warm sun (pale gold toward peach, rule 3) from the Low Ford's east, long shadows, the shade lilac (rule 2); the dawn's frost and thaw stay the preset's air. Start: LowFordDawn (G1 r2-r3).",
+      "key": { "az": -60, "el": 18, "color": "#ffd6b0", "intensity": 10.0, "shadow": 0.95 },
+      "fill": { "color": "#8a6ad0", "strength": 0.1, "sky": "#7b91c0", "ground": "#2c3446", "hemi": 1.08, "env": 0.7 },
+      "rim": { "color": "#ffd8b0", "strength": 0.3, "width": 0.25 },
+      "ink": [0.7, 0.55, 0.7],
+      "hardness": 0.85,
+      "grade": "play_dawn",
+      "exposure": 1.25,
+      "ember": 0.5,
+      "dapple": { "cover": 0 }
+    },
+    "dawn_morning": {
+      "base": "dawn",
+      "from": "the dawn rig an hour on (Atmospheres.Morning's end): the sun higher and paler. Start: LowFordMorning.",
+      "key": { "el": 34, "color": "#ffdfc2", "intensity": 6.6 }
+    },
+    "dawn_waystation": {
+      "base": "dawn",
+      "from": "the dawn rig over the Waystation: the sun low in the town's north-east, as the town's buildings stand. Start: WaystationDawn.",
+      "key": { "az": -10, "el": 14 }
+    },
+    "close_night": {
+      "camera": true,
+      "from": "rule 11 and MB1 NIGHT: one key from the front three-quarter (35 round, 40 up), so her face and front carry the band; moon-cold, warmed toward her ember's or a near fire's color (the scene's source); the night rig's colored fill in her shade (rule 2: night h 220-290) and its stepped moon rim on her lit edge (rule 7). One key, one fill, one rim (rule 3).",
+      "key": { "az": 35, "el": 40, "color": "#c8d4ff", "intensity": 1.0 },
+      "rim": { "strength": 0.35 }
+    },
+    "close_day": {
+      "camera": true,
+      "from": "rule 11 and MB1 DAY: one pale-gold key (#f3d9a0) from the front three-quarter (35, 40); the day rig's violet-blue fill turns her skin's shade mauve (MB1 h about 325, rule 2) by its color alone; the pale-gold rim on her lit edge.",
+      "key": { "az": 35, "el": 40, "color": "#f3d9a0", "intensity": 1.0 },
+      "rim": { "strength": 0.3 }
+    },
+    "look": {
+      "camera": true,
+      "from": "rule 11 at the Look camera (the title's camp at night): her key from the front three-quarter (35, 40) in the camp fire's warmth, the night rig's indigo fill in her shade and its moon rim; KA and 08 follow MB1's face.",
+      "key": { "az": 35, "el": 40, "color": "#ffd2a8", "intensity": 1.0 },
+      "rim": { "strength": 0.35 }
+    },
+    "look_day": {
+      "base": "look",
+      "from": "rule 11 at the Look by day (--look-time day): the close-up's day key (#f3d9a0, 35, 40) and the day rig's violet-blue fill.",
+      "key": { "color": "#f3d9a0" }
+    }
+  },
+  "crowns": {
+    "pine": [3.2, 0.9],
+    "broadleaf": [4.2, 0.95],
+    "autumn": [4.0, 0.85],
+    "dead": [3.0, 0.35],
+    "spruce": [3.0, 0.9],
+    "alder": [3.6, 0.9]
+  }
+}

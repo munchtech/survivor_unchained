@@ -165,6 +165,22 @@ public sealed record AtmospherePreset(
     public double CelRimWidth { get; init; } = 0.25;
     public string CelFillColor { get; init; } = "";
     public string CelRimColor { get; init; } = "";
+    /// <summary>(L1 B4) The lighting rig this air is lit by under the cel model (godot/data/look/rigs.json; logic/Look/Rigs.cs;
+    /// "": none, the preset's own light). The rig's numbers replace the preset's key, fill, rim, ink, hardness, grade,
+    /// exposure, ember and dapple under cel; --cel off lights by the preset as it is.</summary>
+    public string Rig { get; init; } = "";
+    /// <summary>(L1 B4) The ink rig color (linear rgb, B5's InkPass.SetRig; null: the night's).</summary>
+    public double[]? CelInk { get; init; }
+    /// <summary>(L1 B4) The moon through the canopy (bible rule 9; cel.gdshaderinc cel_dapple): how much of the sky the crowns
+    /// close where the canopy stands (0: none), how dark a leaf's shadow is, and the crowns' height (m).</summary>
+    public double DappleCover { get; init; }
+    public double DappleStrength { get; init; } = 1;
+    public double DappleHeight { get; init; } = 9;
+    /// <summary>(L1 B4) This air is already its rig's light (Rigs.Lit's output); Source is the preset it came from.</summary>
+    public bool IsLit { get; init; }
+    public AtmospherePreset? Source { get; init; }
+    /// <summary>(L1 B4) A blend's light under cel: the blend of its two presets' rigs (Atmospheres.Blend sets it).</summary>
+    public AtmospherePreset? CelTwin { get; init; }
 }
 
 public sealed class ZoneMeta

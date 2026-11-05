@@ -118,6 +118,8 @@ public partial class ZoneView : Node3D
         int rocks = BattleFx.TagRocks(this);
         if (Shots.On("h6")) GD.Print($"h6 rocks tagged {rocks}");
         yield return "own props";
+        // (L1 B4) The canopy's mask for the moon's dapple under cel (CanopyCookie; cel.gdshaderinc).
+        CanopyCookie.For(z);
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
         {

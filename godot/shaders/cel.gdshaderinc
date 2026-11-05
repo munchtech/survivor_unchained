@@ -110,10 +110,20 @@ global uniform vec3 cel_fill;
 global uniform vec3 cel_rim;
 global uniform vec4 cel_tune;
 global uniform float cel_dbg;
+// (L1 B4) The moon through the canopy (bible rule 9): cel_key xyz the world key's way toward the light, w the dapple's
+// strength (0: none); cel_dapple x how much of the sky the crowns close where the canopy is whole, y the crowns' world
+// height, z the leaf cookie's tile (m); cel_canopy the canopy's mask over the zone (from the trees' placement,
+// CanopyCookie), cel_canopy_r its world origin (xy) and 1/size (zw); cel_cookie the leaf shapes (a rank per leaf cluster).
+global uniform vec4 cel_key;
+global uniform vec4 cel_dapple;
+global uniform vec4 cel_canopy_r;
+global uniform sampler2D cel_cookie : filter_linear_mipmap, repeat_enable;
+global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 varying vec3 cel_gn;
 varying vec4 cel_mat;
+varying float cel_dap;   // (L1 B4) the key's share through the canopy here (1: open sky)
 #ifdef CEL_CLEARCOAT
 varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
 #endif
@@ -136,7 +146,19 @@ vec3 cel_ink_rgb(int c_ink) {
 #define CEL_FRAG_MAT CEL_FRAG_RIM
 #endif
 // The last statement of fragment(): see the header.
-#define CEL_FRAGMENT cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+// (L1 B4) The key's light through the canopy at a world point: the point carried up the key's way to the crowns' height,
+// the canopy's cover there, and the leaf cookie's cluster ranks under it: shade where a cluster's rank is under the cover,
+// two values (rule 9), the edge one pixel wide.
+float cel_dapple_at(vec3 c_wp) {
+	if (cel_key.w <= 0.0) return 1.0;
+	vec2 c_p = c_wp.xz + cel_key.xz * (max(cel_dapple.y - c_wp.y, 0.0) / max(cel_key.y, 0.2));
+	float c_cov = texture(cel_canopy, (c_p - cel_canopy_r.xy) * cel_canopy_r.zw).r * cel_dapple.x;
+	if (c_cov <= 0.004) return 1.0;
+	float c_f = texture(cel_cookie, c_p / cel_dapple.z).r;
+	float c_w = fwidth(c_f) * 0.5 + 0.01;
+	return mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
+}
+#define CEL_FRAGMENT cel_dap = cel_dapple_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
@@ -144,7 +166,8 @@ float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; re
 // The band's normal: the geometric one with cel_nmap of the normal map's detail.
 vec3 cel_nb(vec3 c_n) { return normalize(mix(cel_gn, c_n, cel_nmap)); }
 // The key's cast shadow hardened (directional lights); omni and spot as they are.
-float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) : c_att; }
+// (L1 B4: and the canopy's dapple, cel_dap, on the directional key)
+float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap : c_att; }
 // The lit band's coverage (the hard terminator) at n.l t.
 float cel_lit(float c_t) {
 	float c_hw = max(cel_band.y * cel_tune.x, 1e-4);

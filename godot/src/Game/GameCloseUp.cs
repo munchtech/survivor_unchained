@@ -149,6 +149,7 @@ public partial class Game
     {
         if (scene?.Player is not { } pv || screens.Current != null)
         {
+            if (Mode != "create") CelRigOff();
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.FolkScale = 1; pv0.PoolScale = 1; pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
             if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
@@ -379,6 +380,59 @@ public partial class Game
             closeBodyRim.LookAt(arms);
         }
         FolkTwins(pv.OwnLayer && CloseFolkOn, pv.GlobalPosition + new Vector3(0, 1.62f, 0));
+        if (lit) CelRig(night ? "close_night" : "close_day", day, cam.Camera, pv.GlobalPosition + new Vector3(0, 1.55f, 0)); else CelRigOff();
+        if (CelRigHeld)
+        {
+            // (L1 B4, rule 3: under cel the close view is one key, one colored fill and one rim; the seven spots split by layer
+            // (key, key gear, key hair, rim, rim gear, fill, body rim) are off, and her skin keeps the sky's whole share)
+            foreach (var l in new Light3D?[] { closeKey, closeKeyGear, closeKeyHair, closeRim, closeRimGear, closeFill, closeBodyRim, keyFolk, rimFolk, coolFolk })
+                if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+            if (skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv.Person, 1); }
+        }
+    }
+
+    /* ------------------------------------------------ the camera rigs under cel (L1 B4) -- */
+
+    // One directional key on her (people's layer, her own layers), camera-relative from the rig (rigs.json close_*, look*:
+    // the front three-quarter, rule 11), at the rig's intensity times the world key's light; the world key off her layers
+    // while it is, so she has one key; the rig's fill and rim hold the cel globals (Atmosphere.HoldCameraRig). --cel off and
+    // --cel-rigs off: never (the spots as they were).
+    DirectionalLight3D? celKey;
+    uint celKeyMask, celWorldMask;
+    bool CelRigHeld => celKey != null && celKey.Visible;
+    const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
+        | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
+
+    void CelRig(string id, float k, Camera3D lens, Vector3 at)
+    {
+        if (!SurvivorUnchained.View.Atmosphere.CelRigs || LookKeyHeld || scene == null) { CelRigOff(); return; }
+        SurvivorUnchained.View.Atmosphere.RigsLoad();
+        if (SurvivorUnchained.Look.Rigs.Current[id] is not { Camera: true } r) { CelRigOff(); return; }
+        if (celKey == null || !IsInstanceValid(celKey) || celKey.GetParent() != scene)
+        {
+            celKey = new DirectionalLight3D { Name = "CelRigKey", ShadowEnabled = true, DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal,
+                DirectionalShadowMaxDistance = 6, ShadowBias = 0.03f, LightCullMask = CelHerMask, LightSpecular = 0.5f };
+            scene.AddChild(celKey);
+        }
+        var cb = lens.GlobalTransform.Basis;
+        var back = new Vector3(cb.Z.X, 0, cb.Z.Z).Normalized();
+        var right = new Vector3(cb.X.X, 0, cb.X.Z).Normalized();
+        var (kr, ku, kb) = SurvivorUnchained.Look.Rigs.CameraKey(r.Key.Az ?? 35, r.Key.El ?? 40);
+        var dir = (right * (float)kr + Vector3.Up * (float)ku + back * (float)kb).Normalized();
+        celKey.Basis = Basis.LookingAt(-dir, Vector3.Up);
+        celKey.LightColor = new Color(r.Key.Color ?? "#ffffff");
+        celKey.LightEnergy = (float)(r.Key.Intensity ?? 1) * Mathf.Max(air.Key.LightEnergy, 0.05f) * Mathf.Clamp(k, 0, 1);
+        celKey.Visible = k > 0.01f;
+        if (!celKey.Visible) { CelRigOff(); return; }
+        if (celKeyMask == 0) { celWorldMask = air.Key.LightCullMask; celKeyMask = CelHerMask; air.Key.LightCullMask = celWorldMask & ~CelHerMask; }
+        air.HoldCameraRig(r);
+    }
+
+    void CelRigOff()
+    {
+        if (celKey != null && IsInstanceValid(celKey)) celKey.Visible = false;
+        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (air.CameraRig != null) air.HoldCameraRig(null);
     }
 
     // Rendering 2: the people beside her, and an NPC the close view frames (CloseStandIn), take the rig's lights through twins of

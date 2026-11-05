@@ -458,6 +458,16 @@ public partial class Game
             Aim(lookBodyRim, eyes - dir * 1.6f - camLeft * Args.Num("look-body-rim-side", 1.6f) + Vector3.Up * (fireSide ? LookNightBodyRimUp : Args.Num("look-body-rim-up", 0.3f)), eyes + Vector3.Down * (fireSide ? LookNightBodyRimAim : 0.45f),
                 LookBodyRim * Mathf.Clamp(p / 0.74f, 0, 1));   // (as judged at zoom 0.45 (p 0.74) and closer; it fades with the rig toward her whole figure)
         }
+        // (L1 B4, rule 3: under cel the Look is one key from the front three-quarter (rigs.json look, look_day), the rig's
+        // colored fill and its rim: the nine lights split by layer (key, body key, fill, edge, rim, bounce, body rim) are off,
+        // and the cel key takes over from head and shoulders in. --cel off: the rig as it was.)
+        if (SurvivorUnchained.View.Atmosphere.CelRigs && camera != null)
+        {
+            CelRig(scene?.View.Night == false ? "look_day" : "look", p, camera, eyes);
+            if (CelRigHeld)
+                foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim })
+                    if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+        }
         // The sky's own light (the moon) off her from head and shoulders in: the
         // portrait's lights are hers there. Left on, it was a fourth light, cold
         // and flat across her face, and its reflection a white blob as big as her
@@ -503,6 +513,7 @@ public partial class Game
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
         foreach (var l in new Light3D?[] { keyLight, bodyKey, fillLight, edgeLight, rimLight, bounceLight, lookBodyRim, herFire }) l?.QueueFree();
+        CelRigOff();
         keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
         air.Key.LightCullMask |= 2u;                       // (the sky's light on her again)
         if (figure?.Person is { } herRig) { People.HerLookRig(herRig, 0); People.HerSkinGain(herRig, 1); }
