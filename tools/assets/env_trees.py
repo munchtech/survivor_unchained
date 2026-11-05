@@ -1784,9 +1784,9 @@ def mesh_spruce_tiers():
 CLUSTER = {
     # n: clusters; rc: a cluster's radius (share of R); hc: its dome's rise, hu: its underside's sag (shares of its radius);
     # notch: the scallops' cusp radius share; f: the cluster centres' place out in the crown's oval (share)
-    'a': dict(n=13, rc=0.52, hc=0.34, hu=0.22, notch=0.76, f=(0.5, 0.74)),
-    'b': dict(n=11, rc=0.56, hc=0.34, hu=0.22, notch=0.76, f=(0.5, 0.74)),
-    'c': dict(n=14, rc=0.52, hc=0.32, hu=0.22, notch=0.76, f=(0.5, 0.74)),
+    'a': dict(n=13, rc=0.52, hc=0.34, hu=0.22, notch=0.58, f=(0.5, 0.74)),
+    'b': dict(n=11, rc=0.56, hc=0.34, hu=0.22, notch=0.58, f=(0.5, 0.74)),
+    'c': dict(n=14, rc=0.52, hc=0.32, hu=0.22, notch=0.58, f=(0.5, 0.74)),
 }
 CL_LOBES = (5, 7)
 CL_SUB = 3          # rim points a lobe (its cusp, then two round its crown)
@@ -1808,7 +1808,9 @@ def cluster_plan(H, R, seed, cf):
         f = rng.uniform(*cf['f'])
         c = np.array([0, 0, zc]) + o * np.array([R, R, hz]) * f
         # (the masses at the crown's middle the biggest, its top and its foot smaller: the oval's silhouette)
-        r = cf['rc'] * R * (0.78 + 0.32 * rxy) * rng.uniform(0.88, 1.12)
+        # (L1 W2 wild, rule 10 "big-medium-small" and the wave-2 crop of 05: equal clusters with shallow scallops read as hex
+        # plates at play) every third cluster big, medium or small (1.25 / 0.95 / 0.7), the scallops cut to 0.58 of the radius
+        r = cf['rc'] * R * (0.78 + 0.32 * rxy) * rng.uniform(0.92, 1.08) * (1.25, 0.95, 0.7)[i % 3]
         w = np.array([0, 0, 1.0]) + np.array([o[0], o[1], 0.0]) * 0.75 * rxy
         w /= np.linalg.norm(w)
         u = np.cross(w, np.array([math.cos(a + 1.3), math.sin(a + 1.3), 0.0])); u /= np.linalg.norm(u)
