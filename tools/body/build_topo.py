@@ -248,7 +248,38 @@ def wt_cap(Wd, k=8):
 
 
 # ----------------------------------------------------------------------------------------------- 5 export --
-def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
+def stage_uv(z, tier, rep):
+    """(P1 E2) The tier's UV layout (tools/body/topo_uv.py -> base/uv_<tier>.npz), asserted to be for this topology
+    (its hash). Close and play share one texture set (topo_uv's play rules)."""
+    import topo_uv
+    uv, urep = topo_uv.load(tier, z)
+    m = urep.get("measure", {})
+    rep["uv"] = {"file": f"tools/body/base/uv_{tier}.npz", "version": topo_uv.VERSION, "glb_vertices": int(len(uv["src"])),
+                 "flipped": m.get("flipped_left"), "overlap_cells_4k": m.get("overlap_cells_4k"),
+                 "stretch_p95": {k: v["stretch_p95"] for k, v in m.get("islands", {}).items()}}
+    return uv
+
+
+def stage_bake(spec, tier, out, rep):
+    """(P1 E2, stage 7) The maps on our UVs (topo_bake.py: baked from the close build; play shares them), then
+    attached to every export of the tier (body / body_lbs, play / play_lbs), after the correctives."""
+    import glbwrite
+    import topo_bake
+    maps = os.path.join(REPO, spec["bake"]["maps"])
+    if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
+        rep["bake"] = topo_bake.run(out, maps, size=int(spec["bake"].get("size", 2048)))
+    att = {"baseColor": os.path.join(maps, "albedo.png"), "normal": os.path.join(maps, "normal.png"),
+           "metallicRoughness": os.path.join(maps, "roughness.png")}
+    stem = os.path.splitext(GLB[tier][0])[0]
+    done = []
+    for f in (f"{stem}.glb", f"{stem}_lbs.glb"):
+        if os.path.exists(os.path.join(out, f)):
+            glbwrite.attach_maps(os.path.join(out, f), "Heroine", att)
+            done.append(f)
+    rep["maps"] = {"dir": spec["bake"]["maps"], "files": sorted(os.listdir(maps)), "attached_to": done}
+
+
+def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=None):
     import glbwrite
     Q = z["Q"]
     T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
@@ -261,9 +292,20 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
     UV = np.stack([(V[:, 0] + 0.6) / 1.2, 1.0 - V[:, 1] / 1.8], 1)      # placeholder (UVs are a later step)
     Pv = V.astype(np.float32)
     Pv[ring] = np.asarray(baked["HeroineHead"]["P"][hv], np.float32)
+    Jp = np.pad(wts["J"], ((0, 0), (0, 8 - wts["J"].shape[1])))
+    Wp = np.pad(wts["W"], ((0, 0), (0, 8 - wts["W"].shape[1])))
+    split = {}
+    if uv is not None:
+        # (E2) the glb vertices split at the UV seams and the mirror line: glb vertex k is our topology vertex src[k]
+        # (the first n are ours in order); its position, normal, joints and weights are src's; the UVs and the
+        # triangles the layout's; the tangent from the UVs (topo_bake.tangent_frames)
+        import topo_bake
+        src = uv["src"]
+        Pv, N, Jp, Wp, T, UV = Pv[src], N[src], Jp[src], Wp[src], uv["T"], uv["UV"]
+        tan, tw = topo_bake.tangent_frames(Pv.astype(np.float64), N, UV, T)
+        split = {"Tan": np.concatenate([tan, tw[:, None]], 1).astype(np.float32)}
     body = {"node": "Heroine", "material": spec["body_material"], "P": Pv, "N": N, "UV": UV, "T": T,
-            "J": np.pad(wts["J"], ((0, 0), (0, 8 - wts["J"].shape[1]))),
-            "W": np.pad(wts["W"], ((0, 0), (0, 8 - wts["W"].shape[1])))}
+            "J": Jp, "W": Wp, **split}
     skel = {"names": sk["names"], "parents": sk["parents"], "worlds": sk["worlds"], "scale": {}}
     ov = {h: {"P": baked[h]["P"], "J": wts["heads"][h][0], "W": wts["heads"][h][1], "targets": baked[h]["targets"]}
           for h in HEADS}
@@ -272,7 +314,9 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
                    np.zeros(len(A.skeleton().names), np.int64), head_override=ov,
                    extras={"body_base": {"spec": rep["spec"], "tier": tier, "topology": f"tools/body/out/topo/{tier}.npz",
                                          "skeleton": "tools/body/skeleton.json", "weights": f"{wtp.VERSION} tools/body/weights_topo.py",
-                                         "head": "A's, the Head scale baked (tools/body/headbake.py)", "version": 2}})
+                                         "head": "A's, the Head scale baked (tools/body/headbake.py)", "version": 2,
+                                         **({"split": {"n_topology": int(len(V)), "src": f"stage/{tier}.npz:src",
+                                                       "uv": f"tools/body/base/uv_{tier}.npz"}} if uv is not None else {})}})
     tmp = os.path.join(out, "stage", tier)
     os.makedirs(tmp, exist_ok=True)
     st.write_rig(sk, tmp)
@@ -281,7 +325,8 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
     rep["export"] = {"file": glb, "body_vertices": int(len(V)), "tris_body": int(len(T)), "head_tris": ht,
                      "tris_whole": int(len(T)) + ht, "signed_volume_l": round(vol * 1e3, 2),
                      "flipped_edges": twice}
-    np.savez(os.path.join(out, "stage", f"{tier}.npz"), V=V, J=wts["J"], W=wts["W"], worlds=sk["worlds"])
+    np.savez(os.path.join(out, "stage", f"{tier}.npz"), V=V, J=wts["J"], W=wts["W"], worlds=sk["worlds"],
+             **({"src": uv["src"], "T": uv["T"]} if uv is not None else {}))
 
 
 def run_tier(spec, tier, A, baked, out, rep, correct=True):
@@ -302,13 +347,18 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True):
     wts = stage_weights(z, V, ring, hv, sk, A, baked, rep)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
-    stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep)
+    uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
+    stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv)
     tim["export"] = round(time.time() - t, 2)
     if correct:
         t = time.time()
         import correctives
         rep["correctives"] = correctives.run(out, tier=tier, fresh=True)
         tim["correctives"] = round(time.time() - t, 2)
+    if uv is not None and spec.get("bake"):
+        t = time.time()
+        stage_bake(spec, tier, out, rep)
+        tim["bake"] = round(time.time() - t, 2)
     with open(os.path.join(out, GLB[tier][0]), "rb") as f:
         rep["glb_sha256"] = hashlib.sha256(f.read()).hexdigest()
 

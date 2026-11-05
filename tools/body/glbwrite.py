@@ -3,7 +3,8 @@
     write(path, ref_path, skeleton, body, heads, head_joint_map, extras)
 skeleton: {"names", "parents", "worlds" [B,4,4] rest worlds (glTF), "scale": {bone: s} (a rest scale left out of the
           inverse binds, as heroine_headscale.py does her Head)}
-body:     {"node", "material", "P", "N", "UV", "T", "J", "W"} (J/W [n,8]: JOINTS_0/1, WEIGHTS_0/1)
+body:     {"node", "material", "P", "N", "UV", "T", "J", "W"} (J/W [n,8]: JOINTS_0/1, WEIGHTS_0/1); optional "Tan"
+          [n,4] (TANGENT: xyz, w the bitangent's sign; P1 E2)
 heads:    node names in the ref to copy: their meshes (every attribute, target, extras, default weights), materials,
           textures, samplers and images verbatim; only JOINTS_0 is rewritten (head_joint_map: the ref's joint
           index -> ours), WEIGHTS_0 kept as stored.
@@ -182,7 +183,8 @@ def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None, he
         "JOINTS_0": out.acc(body["J"][:, :4], "VEC4", 5123, 34962),
         "WEIGHTS_0": out.acc(body["W"][:, :4], "VEC4", 5126, 34962),
         "JOINTS_1": out.acc(body["J"][:, 4:8], "VEC4", 5123, 34962),
-        "WEIGHTS_1": out.acc(body["W"][:, 4:8], "VEC4", 5126, 34962)},
+        "WEIGHTS_1": out.acc(body["W"][:, 4:8], "VEC4", 5126, 34962),
+        **({"TANGENT": out.acc(np.asarray(body["Tan"], np.float32), "VEC4", 5126, 34962)} if "Tan" in body else {})},
         "indices": out.acc(body["T"].reshape(-1), "SCALAR", 5125, 34963), "material": 0}
     meshes.append({"name": body["node"], "primitives": [prim]})
     mesh_nodes = [{"name": body["node"], "mesh": 0, "skin": 0}]
@@ -291,6 +293,52 @@ def set_targets(path, node, targets, out_path=None):
         m.pop("weights", None)
         if "extras" in m:
             m["extras"].pop("targetNames", None)
+    while len(out.bin) % 4:
+        out.bin += b"\0"
+    js["buffers"][0]["byteLength"] = len(out.bin)
+    j = json.dumps(js, separators=(",", ":")).encode()
+    j += b" " * ((4 - len(j) % 4) % 4)
+    blob = (struct.pack("<III", 0x46546C67, 2, 12 + 8 + len(j) + 8 + len(out.bin)) + struct.pack("<II", len(j), 0x4E4F534A)
+            + j + struct.pack("<II", len(out.bin), 0x004E4942) + bytes(out.bin))
+    with open(out_path or path, "wb") as f:
+        f.write(blob)
+
+
+def attach_maps(path, node, maps, out_path=None):
+    """(P1 E2) Embed PNG maps in a glb we wrote and point its node's primitive-0 material at them: maps {"baseColor":
+    png, "normal": png, "metallicRoughness": png} (any subset; each a bufferView image, one linear-mip sampler).
+    Run after the correctives (stage 6) so every export carries them; the material's factors are kept, the
+    roughness factor set to 1 when a metallicRoughness map comes (the map holds it)."""
+    js, b = _read_glb(path)
+    out = _Out()
+    out.bin = bytearray(b)
+    out.views, out.accs = js["bufferViews"], js["accessors"]
+    mi = next(n["mesh"] for n in js["nodes"] if n.get("name") == node and "mesh" in n)
+    pr = js["meshes"][mi]["primitives"][0]
+    imgs, texs, samps = js.setdefault("images", []), js.setdefault("textures", []), js.setdefault("samplers", [])
+    samps.append({"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071})
+    si = len(samps) - 1
+    mat = dict(js["materials"][pr["material"]])
+    pbr = dict(mat.get("pbrMetallicRoughness", {}))
+    for key, png in maps.items():
+        with open(png, "rb") as f:
+            data = f.read()
+        imgs.append({"bufferView": out.view(data), "mimeType": "image/png", "name": os.path.basename(png)})
+        texs.append({"source": len(imgs) - 1, "sampler": si})
+        ti = {"index": len(texs) - 1}
+        if key == "baseColor":
+            pbr["baseColorTexture"] = ti
+        elif key == "metallicRoughness":
+            pbr["metallicRoughnessTexture"] = ti
+            pbr["roughnessFactor"] = 1.0
+            pbr["metallicFactor"] = 1.0
+        elif key == "normal":
+            mat["normalTexture"] = ti
+        else:
+            raise ValueError(key)
+    mat["pbrMetallicRoughness"] = pbr
+    js["materials"].append(mat)
+    pr["material"] = len(js["materials"]) - 1
     while len(out.bin) % 4:
         out.bin += b"\0"
     js["buffers"][0]["byteLength"] = len(out.bin)
