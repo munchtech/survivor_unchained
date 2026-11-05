@@ -31,28 +31,37 @@ ARENA = Q + ["--zone", "arena", "--offer", "0", "--tier", "1"]
 # The runs (several frames may share one). (H2 R4, 3 Nov: the arena minutes since H1's teeth, tier 1 ten minutes to its
 # boss (Content/Teeth, Pace 1): 09 at 8.5 +20 s (the pack streaming at her) and 12 at 6 +35 s
 # (a pack at her lower left), picked from a scout; the old 14 and 20 of thirty were past the boss; 10 keeps 29.9.)
+# (L1 Stage C wave 2, staging, 5 Nov: each moment picked from two scouts, look_l1\c\w2\stage\s1, s2, against its G1 target.
+# 03: C01 shot 12 at 0.5 of the shot (--stills 5, the 3rd), the grade come up and the bars still in, as 03's.
+# 04: on the road at (30,-2) by day (--spots, the play camera): the road and its ruts across, the verge, spruce at the
+#   top edge (the canopy was ~55% of the frame at --auto 50 s). 09 and 12: --auto stand (Autopilot: she plants and
+#   fights, never kites, dashes or Flares), 09 at minute 5 +6 s, 12 at minute 6 +4 s: the pack rings her in her
+#   own pool off the lamp, nothing over her (under --auto she kited, the pack streamed far off, a ring lay on her).
+# 10: --auto at 29.9 +6 s, the Pack-Mother to her right in her pool, the fold's kit boulders in shot (boards.json
+#   fold.rocks, FROM target 10).)
 # The runs (several frames may share one). "scout" replaces the run's frame options in --scout mode.
+SPOTS04 = "-110,10;-95,9;-80,7;-60,9;-45,13;-25,12;-10,10;8,4;30,-2;45,-5"
 RUNS = {
     "lk_title": dict(args=["--seconds", "6", "--count", "1"], fresh=True, timeout=300),
     "lk_sb00": dict(args=["--storybook", "sb00", "--sb-shots", "21.0", "--seconds", "300", "--until", "300"], timeout=400,
                     scout=["--storybook", "sb00", "--sb-shots", "8.0,21.0,30.0,42.0,51.0,64.0,76.0", "--seconds", "300", "--until", "300"]),
-    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "30"], timeout=400),
-    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "50", "--count", "1"], timeout=500,
-                     scout=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "20", "--every", "15", "--count", "4"]),
+    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "30", "--stills", "5"], timeout=400),
+    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--spots", "30,-2", "--spots-from", "2", "--seconds", "5", "--count", "1"], timeout=500,
+                     scout=Q + ["--zone", "verge", "--time", "day", "--spots", SPOTS04, "--spots-from", "2", "--spots-every", "5", "--seconds", "5", "--every", "5", "--count", "10"]),
     "lk_ford": dict(args=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "100", "--every", "100", "--count", "2"], timeout=1500,
                     scout=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "60", "--every", "20", "--count", "12"]),
     "lk_town": dict(args=Q + ["--zone", "waystation", "--time", "day", "--seconds", "18", "--count", "1"], timeout=400,
                     scout=Q + ["--zone", "waystation", "--time", "day", "--seconds", "6", "--every", "6", "--count", "3"]),
     "lk_lamps": dict(args=["--open", "lamps", "--seconds", "6", "--count", "1"], load_snap="fr3_loop:loop_back_1", timeout=400,
                      fallback=Q + ["--zone", "waystation", "--time", "day", "--open", "lamps", "--seconds", "6", "--count", "1"]),
-    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--every", "15", "--count", "4"]),
-    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "18", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "12", "--every", "6", "--count", "5"]),
+    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--seconds", "6", "--count", "1"], timeout=600,
+                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--seconds", "2", "--every", "2", "--count", "6"]),
+    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "6", "--count", "1"], timeout=600,
+                    scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "4", "--every", "2", "--count", "12"]),
     "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "7", "--count", "1"], timeout=400,
                       scout=ARENA + ["--open", "result", "--seconds", "3", "--every", "2", "--count", "3"]),
-    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "6", "--seconds", "35", "--count", "1"], timeout=600,
-                   scout=ARENA + ["--auto", "--minute", "6", "--seconds", "25", "--every", "10", "--count", "3"]),
+    "lk_hud": dict(args=ARENA + ["--auto", "stand", "--minute", "6", "--seconds", "4", "--count", "1"], timeout=600,
+                   scout=ARENA + ["--auto", "stand", "--minute", "6", "--seconds", "2", "--every", "2", "--count", "6"]),
     "lk_close": dict(args=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "8", "--count", "1"], timeout=400,
                      scout=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "6", "--every", "3", "--count", "2"]),
 }
@@ -61,7 +70,7 @@ RUNS = {
 FRAMES = [
     ("01", "title", "lk_title", "lk_title.png"),
     ("02", "sb00", "lk_sb00", "sb_sb00_21.00.png"),
-    ("03", "c01", "lk_c01", "lk_c01_c01_s12_1.png"),
+    ("03", "c01", "lk_c01", "lk_c01_c01_s12_3.png"),
     ("04", "verge_day", "lk_verge", "lk_verge.png"),
     ("05", "ford_night", "lk_ford", "lk_ford_00.png"),
     ("06", "warden", "lk_ford", "lk_ford_01.png"),
