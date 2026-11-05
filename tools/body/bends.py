@@ -641,6 +641,50 @@ def outline_samples(mask, vw, pl):
     return out
 
 
+def clay(V, T, view, light=None):
+    """The sheets' clay, lambert, SMOOTH: each pixel's normal interpolated from its triangle's welded point normals
+    (barycentrics of the hit point), as the game's renderer shades the body. ray.clay shades each triangle flat and
+    two-sided: on a strip it drew the quad rings as bands (the deltoid's loops, the hip's seam row: the D verdict's
+    "split shading at seams") and a non-planar quad's two triangles as crosshatching (the right shoulder: its quads
+    split on the other diagonal from the left's); neither is in the mesh's own normals. Two-sided, as ray.clay (a
+    strip's dropped parts show the body's inside through their hole)."""
+    sc = ray.scene(V, T)
+    pid, tf = view.cast(sc)
+    m = pid >= 0
+    img = np.ones(pid.shape)
+    if light is None:
+        light = 0.75 * view.cam + 0.45 * view.ey - 0.3 * view.ex
+    light = light / np.linalg.norm(light)
+    x, y = view.grid()
+    org = view.o + x[..., None] * view.ex + y[..., None] * view.ey + 5.0 * view.cam
+    hit = (org - np.where(m, tf, 0.0)[..., None] * view.cam)[m]
+    tri = T[pid[m]]
+    A, B, C = V[tri[:, 0]], V[tri[:, 1]], V[tri[:, 2]]
+    v0, v1, v2 = B - A, C - A, hit - A
+    d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+    d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+    den = np.maximum(d00 * d11 - d01 * d01, 1e-30)
+    b1 = (d11 * d20 - d01 * d21) / den
+    b2 = (d00 * d21 - d01 * d20) / den
+    b0 = 1 - b1 - b2
+    Nv = normals(V, T)
+    n = b0[:, None] * Nv[tri[:, 0]] + b1[:, None] * Nv[tri[:, 1]] + b2[:, None] * Nv[tri[:, 2]]
+    n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    n = np.where((n @ view.cam)[:, None] < 0, -n, n)
+    img[m] = 0.18 + 0.62 * np.clip(n @ light, 0, 1) + 0.08 * np.clip(n @ view.cam, 0, 1)
+    return img, m
+
+
+def shade_steps(img, m, edge_px=3):
+    """The clay's pixel-to-pixel shading step inside the mask, the outline's edge_px dropped: p99 and max (0..1)."""
+    from scipy.ndimage import binary_erosion
+    core = binary_erosion(m, iterations=edge_px)
+    gx = np.abs(np.diff(img, axis=1))[core[:, 1:] & core[:, :-1]]
+    gy = np.abs(np.diff(img, axis=0))[core[1:] & core[:-1]]
+    g = np.concatenate([gx, gy])
+    return round(float(np.percentile(g, 99)), 4), round(float(g.max()), 4)
+
+
 def sheet(strips_draw, path, title):
     """One PNG per joint: rows = sides, columns = rest | 90 | 135; clay at the close-up scale, the model's outline
     (orange) and the reference (cyan)."""
@@ -651,7 +695,7 @@ def sheet(strips_draw, path, title):
         panels = []
         for deg in sorted(draw):
             V, ref = draw[deg]
-            img, m = ray.clay(V, strip.T_rend, vw)
+            img, m = clay(V, strip.T_rend, vw)
             rgb = np.stack([img * 255] * 3, -1).astype(np.uint8)
             e = ray.boundary(m)
             rgb[e] = (235, 120, 30)
