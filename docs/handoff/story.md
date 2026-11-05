@@ -12,14 +12,21 @@ in Act 1 and getting up on screen; "He has never burned." retired; Holloway
 risen as Ashford's commander waits for Act 2's brief. The proposal was
 PROPOSAL READY story-s1@9fd41e6e0, editor PASS WITH FIXES applied.
 
-**Slice 1, running when this was written (a `su-worker`, Sonnet, background):**
-every player-facing "Chid" -> "Corvane" (the id `chid`, node keys, facts,
-flags, lock ids and code identifiers unchanged), SB00's L2 -> "and bound it
-there with seven chains, in the dark.", `tools/vo/lines.py`, the changed
-lines re-locked (527 stays 527), the vo unit tests and the dotnet suite,
-one commit on story-s1 and a one-line SendMessage to main. If its commit is
-not on the branch, check `git log` and `git status` before anything else;
-finish or redo it from this paragraph.
+**Slice 1, DONE (a `su-worker`, commit dba76d016 on story-s1):** every
+player-facing "Chid" -> "Corvane" with the id `chid` kept (dialogue.json 28
+lines, rules.json 6, folk.json 5, quests.json 3, npcs.json 2,
+archetypes.json 1, items.json 1, `tools/vo/cast.json` display name 1, two
+test assertions in `VergeTests.cs` and `DayClockTests.cs`; one sentence each
+in STORY_BIBLE sections 3 and 5, VOICES and VO_CAST); SB00's L2 "and bound it
+there with seven chains, in the dark." in dialogue.json and the sb00 script;
+15 locks re-locked, `locked.json` 527 before and after; suite 1534/0/10.
+Left on purpose: C# comments and test method names still say Chid (not
+player-facing); `cast.json` `ref_text` "I'm Chid" (the audio reference
+script; change it only with a re-record). **Owed to the successor's lock
+pass:** `lock.py --check` reports two locks "gone" that predate S1
+(`dlg.cin_drowned_fire.prints.0`, `say.93b63298edc0`): remove them as retired
+lines. The tools note in "Tools" below is stale: `tests.test_door` no longer
+exists (it left with the romances); run `tests.test_lock tests.test_lines`.
 
 **Slice 2, the successor's (the writer, Fable):** PLAN section 4, beats 5-14,
 in this order so each commit stands alone: (1) beat 6 Vonnra's tale (new
