@@ -51,6 +51,7 @@ class QM:
 
     def __init__(self):
         self.V, self.part, self.ring, self.col, self.flag, self.aux, self.reg, self.labs = ([] for _ in range(8))
+        self.designed = []
         self.Q, self.qreg, self.qpart = [], [], []
         self.planes = []
 
@@ -65,6 +66,7 @@ class QM:
         self.aux += [aux] * n
         self.reg += [reg] * n
         self.labs += [tuple(labs)] * n
+        self.designed += [0] * n
         return np.arange(i0, i0 + n)
 
     def plane(self, p, n):
@@ -665,7 +667,7 @@ def kite_starts(phi, sense, psi_h, r, sector, stagger):
     return out
 
 
-def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=0.35):
+def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=0.35, joint=None):
     """A limb from the ring top = (ids, c, n, e1) through `stations` [(c, n, kind, N, r, part, reg)] (r: kites in
     the strip from the previous ring), ending on the template rim = (ids, c, n) when given. Angles twist-free (the
     frame carried ring to ring), each ring blended toward even arc length; the last rings toward the rim's angles;
@@ -688,7 +690,7 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
             pr = ring_angles(V[rids], fc, fn, fe)
         sh = int(np.argmin(np.abs(np.angle(np.exp(1j * (pr - phi[0]))))))
         rim_ids = np.roll(rids, -sh)
-    rings, log = [np.asarray(ids0)], []
+    rings, log, creases = [np.asarray(ids0)], [], []
     prev_c, prev_n, prev_e1 = c0, n0, e1
     nst = len(stations)
     for k, (c, n, kind, N, r, part, reg) in enumerate(stations, start=1):
@@ -725,12 +727,77 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
             X = T.ring_by_rays(ref, ks, c, U(n), e1, phi_new)
             pl = M.plane(c, n) if kind in ("crease", "fan") else -1
             ids = M.add(X, part, k, 0, PLANE if pl >= 0 else FREE, reg, tuple(ks), pl)
-        M.strip(rings[-1], ids, reg, part, closed=True, kites=starts)
+        if kind == "crease" or (k >= 2 and stations[k - 2][2] == "crease"):
+            assert not starts, (name, k, "kites next to the crease")
+            if kind == "crease":
+                creases.append((len(rings), part, reg))
+        else:
+            M.strip(rings[-1], ids, reg, part, closed=True, kites=starts)
         rings.append(ids)
         phi = phi_new
         prev_c, prev_n, prev_e1 = c, n, e1
+    for kc, part, reg in creases:
+        joint_patch(M, ref, ks, rings[kc - 1], rings[kc], rings[kc + 1], joint, C, name, part, reg)
     C.setdefault("bands", {})[name] = log
     return rings
+
+
+def joint_patch(M, ref, ks, P, Cr, D, j, C, name, part, reg):
+    """(a, pass 3) The joint between the rings P, C (the crease) and D (same count, columns aligned):
+
+        flexor side (the fossa)          extensor side (olecranon / patella), columns 0..m (0, m: the epicondyles)
+        P ---- P ---- P                  P ---- P ---- P ---- P
+        |      |      |                  |  A ---- A ---- A  |      A: halfway P -> C, from c_0 to c_m
+        C ---- C ---- C                  C ---- C ---- C ---- C      A-C sheared one column (a 3-pole at A_1)
+        |      |      |                  |  B ---- B ---- B  |      B: halfway C -> D, from c_1 to c_m-1
+        D ---- D ---- D                  D ---- D ---- D ---- D      C-B sheared the other way (a 3-pole at c_2)
+    The fossa keeps one gap a side (s_b), the extensor side two (s_b each); the loops end in 5-3 pairs at the
+    epicondyles (c_0 5, A_1 3, c_1 5, c_2 3; c_m 5, B_m-2 3), on the hinge axis where the skin moves least."""
+    V = np.asarray(M.V)
+    N = len(Cr)
+    side = (V[Cr] - j["J"]) @ j["ext"]
+    on = side >= 0
+    assert 0 < on.sum() < N
+    e0 = int(np.where(on & ~np.roll(on, 1))[0][0])
+    m = int(on.sum()) - 1
+    assert m >= 5, (name, m)
+    idx = [(e0 + k) % N for k in range(N)]
+    p = [int(P[i]) for i in idx]
+    c = [int(Cr[i]) for i in idx]
+    d = [int(D[i]) for i in idx]
+    qa, _ = ref.project(ks, 0.5 * (V[p[1:m]] + V[c[1:m]]))
+    qb, _ = ref.project(ks, 0.5 * (V[c[2:m - 1]] + V[d[2:m - 1]]))
+    a_ids = M.add(np.asarray(qa), part, -2, 0, FREE, reg, tuple(ks))
+    b_ids = M.add(np.asarray(qb), part, -3, 0, FREE, reg, tuple(ks))
+    A = [c[0]] + [int(x) for x in a_ids] + [c[m]]
+    B = {k: int(b_ids[k - 2]) for k in range(2, m - 1)}
+    B[1], B[m - 1] = c[1], c[m - 1]
+    for k in range(m):
+        M.quad(p[k], p[k + 1], A[k + 1], A[k], reg, part)
+    M.quad(c[0], A[1], A[2], c[1], reg, part)
+    for k in range(2, m - 1):
+        M.quad(c[k - 1], A[k], A[k + 1], c[k], reg, part)
+    M.quad(c[m - 2], A[m - 1], c[m], c[m - 1], reg, part)
+    for k in range(m, N):
+        M.quad(p[k], p[(k + 1) % N], c[(k + 1) % N], c[k], reg, part)
+    M.quad(c[1], c[2], c[3], B[2], reg, part)
+    for i in range(2, m - 3):
+        M.quad(B[i], c[i + 1], c[i + 2], B[i + 1], reg, part)
+    M.quad(B[m - 3], c[m - 2], c[m - 1], B[m - 2], reg, part)
+    for k in range(1, m - 1):
+        M.quad(B[k], B[k + 1], d[k + 1], d[k], reg, part)
+    for k in list(range(m - 1, N)) + [0]:
+        M.quad(c[k % N], c[(k + 1) % N], d[(k + 1) % N], d[k % N], reg, part)
+    poles = [c[0], A[1], c[1], c[2], c[m], B[m - 2]]
+    for v in poles:
+        M.designed[v] = 1
+    V = np.asarray(M.V)
+    ep = V[[c[0], c[m]]]
+    dist = max(float(np.min(np.linalg.norm(ep - V[v], axis=1))) for v in poles)
+    C["joint_pole_hinge_mm"] = max(C.get("joint_pole_hinge_mm", 0.0), round(dist * 1000, 1))
+    C.setdefault("joint_patch", {})[name] = {"m": m, "N": N, "r_e_mm": round(j["r_e"] * 1000, 1),
+                                             "r_f_mm": round(j["r_f"] * 1000, 1), "g0_mm": round(j["g0"] * 1000, 2),
+                                             "tilt_deg": round(j["tau_deg"], 2)}
 
 
 def joint_loops(J, d_in, d_out, fan_deg, off):
@@ -742,43 +809,54 @@ def slerp_n(a, b, w):
     return U((1 - w) * a + w * b)
 
 
-def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands):
+def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands, ref=None, ks=None):
     """Stations of a two-segment limb: root (c0, n0) -> joint J -> end (the template rim's centre / normal).
-    Spacing: tp limb_spacing, bend_spacing inside the joint's bend zone (+-bend), the joint's 3 loops (fan, crease,
-    fan) on the bisector. Ring counts N0 -> N_mid (band 1, mid upper segment) -> N_end (band 2, mid lower)."""
+    Spacing: tp limb_spacing, bend_spacing (s_b) inside the joint's bend zone (+-bend). The joint (a, pass 3): the
+    crease ring C on the bisector, and either side of it one ring P / D on a plane turned about the hinge so that
+    it sits s_b from C in the fossa and 2 s_b over the olecranon / patella, where the partial loops A / B (built in
+    tube(): joint_patch) halve the gap and end at the epicondyles. Ring counts N0 -> N_mid -> N_end by `bands`."""
     s_l, s_b, bz = tp["limb_spacing"], tp["bend_spacing"], jp["bend"]
-    loops, hinge = joint_loops(J, d_in, d_out, jp["fan_deg"], jp["offset"])
+    nb = U(d_in + d_out)
+    hinge = U(np.cross(d_in, d_out))
+    flex = U(d_out - d_in)
+    ext = -flex
+    r_f = r_e = 0.035
+    if ref is not None:
+        X = T.ring_by_rays(ref, ks, J, nb, flex, np.array([0.0, np.pi]))
+        r_f, r_e = [float(np.linalg.norm(x - J)) for x in X]
+    tau = s_b / (r_e + r_f)
+    g0 = s_b + r_f * tau
+    n_P, n_D = U(nb + tau * ext), U(nb - tau * ext)
     u_el = float((J - c0) @ d_in)
     u_end = u_el + float(np.linalg.norm(c_end - J))
     us = []
     n1 = max(1, int(round((u_el - bz) / s_l)))
     us += [("ring", u) for u in np.linspace(0, u_el - bz, n1 + 1)[1:]]
-    n2 = max(1, int(round((bz - jp["offset"] * 1.6) / s_b)))
-    us += [("bend", u) for u in np.linspace(u_el - bz, u_el - jp["offset"] * 1.6, n2 + 1)[1:]]
-    us += [("fan", u_el - jp["offset"]), ("crease", u_el), ("fan", u_el + jp["offset"])]
-    us += [("bend", u) for u in np.linspace(u_el + jp["offset"] * 1.6, u_el + bz, n2 + 1)]
+    n2 = max(1, int(round((bz - g0) / s_b)))
+    us += [("bend", u) for u in np.linspace(u_el - bz, u_el - g0, n2 + 1)[1:-1]]
+    us += [("fan", u_el - g0), ("crease", u_el), ("fan", u_el + g0)]
+    us += [("bend", u) for u in np.linspace(u_el + g0, u_el + bz, n2 + 1)[1:]]
     n3 = max(1, int(round((u_end - u_el - bz - jp["end_bend"]) / s_l)))
     us += [("ring", u) for u in np.linspace(u_el + bz, u_end - jp["end_bend"], n3 + 1)[1:]]
     n4 = max(1, int(round(jp["end_bend"] / s_b)))
     us += [("ring", u) for u in np.linspace(u_end - jp["end_bend"], u_end, n4 + 1)[1:]]
     st = []
     u_rb = tp["root_blend"] * u_el
-    fan_p, crease, fan_d = loops
     for kind, u in us:
         if kind == "fan":
-            c, n = (fan_p if u < u_el else fan_d)[:2]
+            c, n = (J - g0 * nb, n_P) if u < u_el else (J + g0 * nb, n_D)
         elif kind == "crease":
-            c, n = crease[:2]
+            c, n = J, nb
         elif u < u_el:
             c = c0 + u * d_in
             n = slerp_n(n0, d_in, smooth01(u / u_rb)) if u < u_rb else d_in
             if u > u_el - bz:
-                n = slerp_n(d_in, fan_p[1], smooth01((u - (u_el - bz)) / (bz - jp["offset"] * 1.6)))
+                n = slerp_n(d_in, n_P, smooth01((u - (u_el - bz)) / (bz - g0)))
         else:
             c = J + (u - u_el) * d_out
             n = d_out
             if u < u_el + bz:
-                n = slerp_n(fan_d[1], d_out, smooth01((u - u_el - jp["offset"] * 1.6) / (bz - jp["offset"] * 1.6)))
+                n = slerp_n(n_D, d_out, smooth01((u - u_el - g0) / (bz - g0)))
             ue = u_end - jp["end_bend"] - 2 * s_l
             if u > ue:
                 n = slerp_n(d_out, n_end, smooth01((u - ue) / (u_end - ue)))
@@ -809,8 +887,9 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
     for (c, n, kind, u), Nk, Rk in zip(st, N, R):
         part, reg = part_reg(kind, u, u_el)
         out.append((c, n, kind, Nk, Rk, part, reg))
-    return out, {"u_joint": u_el, "u_end": u_end, "hinge": hinge, "bisector": crease[1], "J": J, "d_in": d_in,
-                 "d_out": d_out, "bend": bz, "end_bend": jp["end_bend"], "c_end": c_end, "n_end": n_end}
+    return out, {"u_joint": u_el, "u_end": u_end, "hinge": hinge, "bisector": nb, "J": J, "d_in": d_in,
+                 "d_out": d_out, "bend": bz, "end_bend": jp["end_bend"], "c_end": c_end, "n_end": n_end, "ext": ext,
+                 "r_e": r_e, "r_f": r_f, "g0": g0, "tau_deg": float(np.degrees(np.arctan(tau)))}
 
 
 # ------------------------------------------------------------------------------------------------- assembly --
@@ -999,9 +1078,9 @@ def build(plan, tier, ref, cv, L):
     jp = dict(lim["elbow"], **tp["elbow"])
     st, joints["elbow"] = limb_stations(c_ar, n_ar, J, d_in, d_out, hc, hn, jp, tp, C["N_arm"], N_el, 22,
                                         part_reg_fn(("arm", "elbow", "forearm"), (REG["upper_arms"], REG["forearms"])),
-                                        tp["bands"])
+                                        tp["bands"], ref, ka)
     hidden = U(np.array(tp["hidden"]))
-    tube(M, ref, ka, (sh["root"], c_ar, n_ar, sh["e1"]), st, (hid, hc, hn), hidden, C, "arm")
+    tube(M, ref, ka, (sh["root"], c_ar, n_ar, sh["e1"]), st, (hid, hc, hn), hidden, C, "arm", joint=joints["elbow"])
     # the leg: root ring (R0 + the crotch strip's side) -> knee -> the foot's rim
     fid, fc, fn = template(M, "foot_l", "foot", REG["feet"])
     J = L["knee"]
@@ -1014,8 +1093,9 @@ def build(plan, tier, ref, cv, L):
     jp = dict(lim["knee"], **tp["knee"])
     st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, 22,
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
-                                       tp["bands"])
-    tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg")
+                                       tp["bands"], ref, kl)
+    tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
+         joint=joints["knee"])
     C.update({"N_el": N_el, "N_kn": N_kn})
     # the whole: orient, mirror, relax, the neck's right side, orient outward
     V, Q = M.arrays()
@@ -1052,6 +1132,7 @@ def build(plan, tier, ref, cv, L):
         "qreg": np.concatenate([np.array(M.qreg), np.array(M.qreg)]),
         "qpart": np.concatenate([np.array(M.qpart), np.array(M.qpart)]),
         "mirror_of": np.concatenate([np.full(n_left, -1), src]),
+        "designed_pole": np.concatenate([np.array(M.designed), np.array(M.designed)[src]]),
     }
     info["side"][shared] = 0
     info["mirror_of"] = np.where(info["mirror_of"] >= 0, remap[np.maximum(info["mirror_of"], 0)], -1)
