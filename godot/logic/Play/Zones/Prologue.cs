@@ -757,7 +757,7 @@ public sealed partial class Prologue : ZoneRuntime
     /// until he has fought MinSeconds; a blow the floor turns says "Warded" over him.</summary>
     void WardFloor(Enemy e, Teeth.FordWarden? fw, double dt)
     {
-        if (B != null && Now == Stage.Boss && B.Time - wardLogAt >= 1)
+        if (B != null && Now == Stage.Boss && B.Time - wardLogAt >= 1 && PaceNotes.Count < 64)
         {
             wardLogAt = B.Time;
             PaceNotes.Enqueue($"ford wardlog t={B.Time:0.0} fought={stageT:0.0} fw={(fw == null ? "null" : "set")} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} pylons={pylons.Count} broken={lampsBroken} cracks={wardCracks} lit={LitCount} over={e.Overflow:0} mode={ai.Mode} state={e.State}");
