@@ -89,7 +89,7 @@ He does not turn round.
 | 2 | CU | 85 | Static, on the gauntlet on her breastbone, then tilting up to his helm | Line B2. He pushes, once, not hard: she steps back. | 3.0 |
 | 3 | LS | 28 | Static | The dead step back onto the stair, all together, rank by rank, and stand at attention on its steps; the Barrow Lord last, two steps down, facing her. They are not beaten. They are letting her go. Behind her the hall runs back to the door, open to the moon, and nothing stands in it. | 4.0 |
 | 4 | ELS | 135 | Static, from the stair's head, looking down it, compressed | Far down the stair, below the last of the light, a man in a clerk's coat is standing on a step with his back to her, quite still, holding up a little lantern with violet glass in it. He does not turn. Hold. | 4.0 |
-| 5 | to the reckoning | | | Into the reckoning. Its words: "The dead stand on the stair in their ranks, and let you go. At the door, yours are the only bootprints coming out." | 1.0 |
+| 5 | to the reckoning | | | Into the reckoning. Its words: "The dead stand on the stair in their ranks, and let you go. The stone in your hand is cold." (S1, 5 Nov; the films are `docs/cinematics/shoot/c13.md`) | 1.0 |
 
 ## Lines
 

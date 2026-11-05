@@ -1420,7 +1420,7 @@ the story's view of them, so that the nights tell the story the days write.
     - little hands lifting her;
     - the dead carrying her back down the hall under the moon, in step (she
       fights at the head of the stair and never goes down it; won, the dead
-      let her go, and at the door hers are the only bootprints coming out).
+      let her go, and the stone in her hand is cold).
   - She wakes the next morning on Chid's bench (`Journey.CarriedHome`). The
     waking is a quiet seed of what she is:
     - a wolf's spit dried on her collar (something carried her out);

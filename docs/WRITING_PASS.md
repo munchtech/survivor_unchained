@@ -2020,9 +2020,9 @@ The Signifer's "Signa!" is his def's word. The broken standard shows Chid's
 **The Door's ends, rewritten for the place** (`StoryFights.Spec`, done). She
 fights at the head of the stair and never goes down it, so nobody lets her up
 it, and nobody carries her up it:
-- `EndWon`: "The dead stand on the stair in their ranks, and let you go. At
-  the door, yours are the only bootprints coming out." (It pays the bootprints
-  going in and none coming out: Jessop's.)
+- `EndWon`: "The dead stand on the stair in their ranks, and let you go. The
+  stone in your hand is cold." (S1, 5 Nov; the bootprints' payoff is Jessop on
+  the stair in C13's last shot.)
 - `EndLost`: "The last thing you know is the moon going by over the broken
   roof, and the dead carrying you under it, in step." (The hall's roof is
   fallen in and open to the moon. They carry her back down it, to the door.)
