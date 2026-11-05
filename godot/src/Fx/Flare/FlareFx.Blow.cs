@@ -191,7 +191,7 @@ public partial class FlareFx
     /// their own blow's.</summary>
     void ResolvePending()
     {
-        if (IsLongCut || id == "burns_twice") return;
+        if (IsLongCut || id == "burns_twice" || (Tableau && blowT < 0)) return;
         foreach (var d in doomed.Values)
         {
             if (!d.Pending) continue;

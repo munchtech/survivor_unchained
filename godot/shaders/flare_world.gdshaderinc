@@ -123,6 +123,9 @@ vec4 flare_band_at(vec2 w) {
 	float xd = 1.0 - pow(1.0 - clamp(d / R, 0.0, 1.0), 1.0 / e);
 	float age = (x - xd) * T;
 	float tail = step(0.0, a) * smoothstep(ed * 1.5 + tr * 0.6, ed * 1.5 + tr * 1.2, a) * (1.0 - smoothstep(0.0, max(flare_band_line.w, 1e-3), age)) * flare_band_col.a;
+	// (r3: inside a shock ring's radius the peak's disk lights the ground, never the tail: the whole 8 m disk lit at once
+	// took the Bell's peak from 1.43x to 2.17x the pre-press)
+	tail *= step(0.0, d);
 	float br = 0.75 + 0.5 * texture(flare_noise, w * vec2(0.11, 0.07) + 0.37).b;
 	float k = br * flare_band.w;
 	return vec4(max(edge, tail) * k, 0.0, edge * k * flare_band_edge.w, trough * flare_band.w * flare_band_edge.z);
