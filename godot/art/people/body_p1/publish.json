@@ -1,0 +1,20 @@
+{
+ "source": "tools/body/out/her_hip2_final",
+ "files": {
+  "body.glb": "d21ea3357888f574a9f33d28301e4b7c5a729f39",
+  "play.glb": "edb797e0391c53380d11ede87719b0cf001c6fe0",
+  "rig.json": "ff86230e5514161a9d6f3df0ac0f5fdbc242609e",
+  "play_rig.json": "45636caa825fdf8d0b71506990bb4e6303ca6720",
+  "albedo.png": "5a5ff63f4ec4d5a51cd4e1d9cd2aacccac188e8c",
+  "ao.png": "93610177619448abee76248ba57f0c24b9d66bed",
+  "bake.json": "8a8d95a21f65a7789b9d8bbee50317ea66d6eca5",
+  "curvature.png": "24d4b372c94062f59be47c42d6c45b61820c18ea",
+  "form_normal.png": "3f84c2946e09c4d6c76473a60a46b81aff76a4cb",
+  "freckles.png": "fe88f446a539ddd9ef12caf5516d23ff225c17b8",
+  "normal.png": "231d2ea041b257c8fd1f1957dd348fac478128d4",
+  "region_id.png": "e374f6e86782fe8b838dd6d2f39875c3ec6c503e",
+  "roughness.png": "44785f58186cd66996701ae8632f427d14cda5f1",
+  "thickness.png": "034f81504c01cbe14079d344261f833afb09bcdd"
+ },
+ "spec": "tools/body/specs/her_topo.json"
+}

@@ -175,6 +175,7 @@ public static class People
         if (body == "heroine")
         {
             yield return "res://art/people/heroine.glb";
+            if (P1Body.On) { yield return P1Body.Dir + "body.glb"; yield return P1Body.Dir + "play.glb"; }
             if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
             yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
             yield break;
@@ -391,6 +392,8 @@ public static class People
         // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
         // bones (the delt is twist_02's child; shoulder_rig_post.py).
         skel.AddChild(new HerShoulder());
+        // --body p1: P1's body B drawn in her place, A's skeleton still playing everything and B's following it (P1Body).
+        if (P1Body.On) P1Body.Swap(skel);
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);

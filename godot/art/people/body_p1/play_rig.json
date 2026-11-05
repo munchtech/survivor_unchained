@@ -1,0 +1,341 @@
+{
+ "poser": "tools.body.rig_drive",
+ "body_mesh": "Heroine",
+ "close_meshes": [
+  "HeroineHead"
+ ],
+ "roles": {
+  "upperarm": "upperarm_{s}",
+  "lowerarm": "lowerarm_{s}",
+  "hand": "hand_{s}",
+  "thigh": "thigh_{s}",
+  "calf": "calf_{s}",
+  "foot": "foot_{s}"
+ },
+ "hinge": {
+  "elbow": "local_x",
+  "knee": "local_x"
+ },
+ "axes": {
+  "lowerarm_l": {
+   "x": [
+    -0.696245,
+    -0.717012,
+    -0.033717
+   ],
+   "flexion": "+X"
+  },
+  "lowerarm_r": {
+   "x": [
+    -0.696245,
+    0.717012,
+    0.033717
+   ],
+   "flexion": "+X"
+  },
+  "calf_l": {
+   "x": [
+    0.998661,
+    0.051723,
+    0.0
+   ],
+   "flexion": "+X"
+  },
+  "calf_r": {
+   "x": [
+    0.998661,
+    -0.051723,
+    -0.0
+   ],
+   "flexion": "+X"
+  }
+ },
+ "correctives": [
+  {
+   "joint": "elbow",
+   "law": "flex",
+   "bones": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "keys": [
+    39.397,
+    90.0,
+    135.0
+   ],
+   "shapes": [
+    null,
+    "elbow_flex90_{s}",
+    "elbow_flex135_{s}"
+   ]
+  },
+  {
+   "joint": "knee",
+   "law": "flex",
+   "bones": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "keys": [
+    3.142,
+    90.0,
+    135.0
+   ],
+   "shapes": [
+    null,
+    "knee_flex90_{s}",
+    "knee_flex135_{s}"
+   ]
+  }
+ ],
+ "girdle": {
+  "why": "Scapulohumeral rhythm: past ~30 deg of arm elevation about 1 deg of scapular upward rotation per 2 of the humerus (capped at 60), the clavicle up 16 deg by overhead (a smoothstep over 30..180), the scapula gliding forward 15 mm as the arm goes from hanging to forward; all relative to the rest (MakeHuman's A-pose, 43 deg), so the rest is neutral and a hanging arm turns the blade back down.",
+  "arm": "upperarm_{s}",
+  "arm_end": "lowerarm_{s}",
+  "torso": "spine_05",
+  "down": [
+   0.0,
+   -1.0,
+   0.0
+  ],
+  "front": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "clavicle": "clavicle_{s}",
+  "scap": "scap_{s}",
+  "clav_A": [
+   30.0,
+   180.0
+  ],
+  "clav_max": 16.0,
+  "scap_per_deg": 0.5,
+  "scap_from": 30.0,
+  "scap_ease": 20.0,
+  "scap_max": 60.0,
+  "scap_axis": [
+   0.5736,
+   0.0,
+   0.8192
+  ],
+  "glide_m": 0.015
+ },
+ "helpers": [
+  {
+   "name": "lowerarm_{s}",
+   "kind": "unroll",
+   "child": "hand_{s}",
+   "why": "the ulna is a hinge: its roll goes to the hand"
+  },
+  {
+   "name": "calf_{s}",
+   "kind": "unroll",
+   "child": "foot_{s}"
+  },
+  {
+   "name": "upperarm_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "upperarm_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.375
+  },
+  {
+   "name": "upperarm_twist_03_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.25
+  },
+  {
+   "name": "upperarm_twist_04_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.125
+  },
+  {
+   "name": "thigh_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.7
+  },
+  {
+   "name": "thigh_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.35
+  },
+  {
+   "name": "lowerarm_twist_01_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "lowerarm_twist_02_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.8
+  },
+  {
+   "name": "calf_twist_01_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "calf_twist_02_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.8
+  },
+  {
+   "name": "upperarm_share_{s}",
+   "kind": "share",
+   "follow": "upperarm_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "lowerarm_share_{s}",
+   "kind": "share",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "pivot": 0.0,
+   "turn_pivot": 0.0,
+   "bulge": 0.0,
+   "bulge_max": 1.0
+  },
+  {
+   "name": "lowerarm_point_{s}",
+   "kind": "point",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "flex": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "push": 0.01,
+   "from": 70.0,
+   "to": 145.0
+  },
+  {
+   "name": "thigh_share_{s}",
+   "kind": "share",
+   "follow": "thigh_{s}",
+   "amount": 0.5,
+   "crease": -1.0
+  },
+  {
+   "name": "calf_share_{s}",
+   "kind": "share",
+   "follow": "calf_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "pivot": 0.0,
+   "turn_pivot": 0.0,
+   "bulge": 0.0,
+   "bulge_max": 1.0
+  },
+  {
+   "name": "calf_point_{s}",
+   "kind": "point",
+   "follow": "calf_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "flex": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "push": 0.006,
+   "from": 60.0,
+   "to": 140.0
+  },
+  {
+   "name": "delt_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    60.0,
+    130.0
+   ],
+   "aim_m": 0.3,
+   "turn": 0.0,
+   "sa": -0.05,
+   "sp": 0.15,
+   "why": "the deltoid bunches (wider across, shorter along) as the arm rises"
+  },
+  {
+   "name": "trap_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    60.0,
+    150.0
+   ],
+   "off": [
+    0.0,
+    0.012,
+    0.0
+   ],
+   "why": "the outer trapezius lifts"
+  },
+  {
+   "name": "pec_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    45.0,
+    120.0
+   ],
+   "aim_m": 0.08,
+   "turn": 0.2,
+   "why": "the front axillary fold follows the arm"
+  },
+  {
+   "name": "lat_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    45.0,
+    120.0
+   ],
+   "aim_m": 0.07,
+   "turn": 0.15,
+   "why": "the back of the armpit follows the arm"
+  },
+  {
+   "name": "glute_{s}",
+   "kind": "aim",
+   "read": "hip",
+   "on": "thigh_{s}",
+   "on_end": "calf_{s}",
+   "torso": "pelvis",
+   "down": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "A": [
+    20.0,
+    110.0
+   ],
+   "aim_m": 0.15,
+   "turn": 0.25,
+   "why": "the glute's lower edge follows the thigh as it flexes (the fold rides with it)"
+  }
+ ]
+}
