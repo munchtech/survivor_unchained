@@ -1,7 +1,7 @@
 # Handoff: the signature art style (style frames)
 
-## L1 the art direction as a SYSTEM (look-l1 art director 2, 4 Nov)
-STATUS: A5 judge running; G1 sheet built.
+## L1 the art direction as a SYSTEM: GATE G1 READY look-l1@19d3a0a60 (look-l1 art director 2, 4 Nov)
+GATE G1 READY look-l1@19d3a0a60. The sheet: `survivorsunchained_inputs\look_l1\g1\`. A5 round 1 (`g1\verdict_a5.md`, $2.68): PASS WITH FIXES, all fixes made in round 4. A5 round 2 (`g1\verdict_a5_r2.md`): R2VERDICT. Waiting on the owner's pick; B2-B6 and C stay closed until the coordinator relays it.
 - **The job:** painted cel built as a system. The owner, 4 Nov: "art is a big deal, not a patch", "cost does not matter - implementation building blocks etc matter"; Marvel Rivals is the reference KIND, never a copy; her look is "casual badassery and sexyness"; "if they need to be redone so be it". Rule 4 of PIPELINE.md "How a lead works" applies: each block names what it is derived FROM, and no block is fitted to today's maps; the frames are rebuilt to the blocks. The plan, approved: A direction, G1 (the owner picks), B blocks, C the 13 frames rebuilt, D a judge and the owner's A|B.
 - **Stage A, done:**
   - A1: `docs/design/look/REFERENCES.md`.
@@ -10,6 +10,7 @@ STATUS: A5 judge running; G1 sheet built.
     - the lead is V2, with the ground kept quiet and the saturation in the light (`work\chatgpt\prompts_r2.md` VARIANT);
     - round 2: 17 images, every frame plus the key art and the boards MB1 her, MB2 gear, MB3 town, MB4 wild, MB5 fire, LB light;
     - round 3: 5 edits in their own chats: 05 and 12 had HUD ornaments painted as people, 10 gained the pack mother, MB1 got clean skin, MB4 was simplified.
+    - round 4 (`a2\r4\`, `work\chatgpt\prompts_r4.md`): the A5 judge's 11 fixes. 08 was redone in a new chat; KA's edit was refused in its own chat and remade in a new chat from the image; the rest were edits. 06 is the Grave-Caller moment, not the Warden (my round-2 line had invented an armored brute). STYLE CORE and VARIANT now ink buildings too. The G1 picks are KA, 09 and 13.
   - A4: `docs/design/LOOK_BIBLE.md` is rewritten: 14 rules with their as-built numbers, carriers and derivation. The v2 draft was folded in and removed.
   - The G1 sheet is in `look_l1\g1\`: `00_targets_overview`, `01_variants_r1`, `02_boards`, `pairs\NN_id.jpg` (today | target, half size), and `full\` (the 3 picks: the key art, 09 the arena night, 07 the square).
 - **Blocks built during Stage A** (each tested with `--cel off` / `--ink off`, which give today's frame):
@@ -18,6 +19,7 @@ STATUS: A5 judge running; G1 sheet built.
     - args `--cel off|on|0-1`, `--cel-rig`, `--cel-tune`, `--cel-dbg band|ink`;
     - cost +0.10-0.13 ms.
   - B1b, her shaders (694a339b7): skin, hair, outfit (leather, metal, satin), eye, teeth, tongue, cards, paint, with her ink classes.
+  - B1c, the shade band stays the shade (f8cbbb39e): transmission is held to the terminator's thin edge (capped at 0.15 of the key); omni and spot lights get a soft band on skin; kit foliage is matte with no rim. The fixture `--lookdev-key AZ,EL[,1]` exists. Night shade passes (h 279, 0.30 L under the lit band). Open: her day shade hue is h 24 against MB1's mauve h about 325, which is B4's colored day fill.
   - B5 `src/World/InkPass.cs` (fc546bff5):
     - a compute pass at PostTransparent, before TAA;
     - the ink class lives in the roughness byte (`cel_tag`), verified by readback;
@@ -38,16 +40,19 @@ STATUS: A5 judge running; G1 sheet built.
 - **Sent once:**
   - To P1: the bake targets and `docs/design/look/her_paint_regions.json` v1. P1's answer: it never touches heroine_* shaders (L1's); it lays the zones as data; the face paint stays as-is for its gate (flat face albedo is R10's); hair cards belong to the hair lead.
   - To H7: what the ramp does to spells.
-- **Next:**
+- **Next** (the specs are staged in `survivorsunchained_inputs\look_l1\work\post_g1_specs.md`; turn each into a brief like `work\brief_b1c.md`):
   1. Wait for the owner's G1 pick. B2-B6 and C stay closed until the coordinator relays it.
   2. Then B2 the material library (presets as data plus a loader for every StandardMaterial3D), B3 texture authoring (painted-block maps from form maps; confirm the regions v1 for P1), B4 the lighting rigs, B6 the VFX and UI language as data (tell H7 when its band rules exist).
   3. Then C: the 13 frames rebuilt through the blocks (today | blocks on today's maps | blocks with re-authored maps), with remakes routed: the arena floor and the square through B3, the Warden to R12, the folk to their generator, her surfaces to P1/P2/R10.
   4. Then D: a max judge, then the owner's A|B.
 - **Cost so far:**
   - helpers about 1.37M: the ChatGPT driver 150k + 234k, B1a 188k, B5 205k, B0 185k, B0b 176k, B1b 227k;
-  - lead 1 about 250k, lead 2 about 190k;
-  - API: the A5 judge (capped at $8);
-  - ChatGPT: 31 images on the owner's subscription.
+  - plus B1c 191k and the driver's rounds 3-4 (about 55k more);
+  - lead 1 about 250k, lead 2 about 290k (it hands off at the gate);
+  - API: A5 round 1 $2.68, round 2 R2COST;
+  - ChatGPT: 42 images on the owner's subscription.
+
+HANDOFF READY: docs/handoff/art_style.md on look-l1 (the successor takes B2 onward once the owner's pick is relayed).
 
 ## H2 step 2, R4 the foes at night: SHIPPED as the step (look-r4 lead, 4 Nov; max judge round 2 SHIP)
 - **What changed (arena nights only, CrowdFill > 0; nothing by day, on the roads or in town):** `vat.gdshaderinc` new global `crowd_r4` (project.godot) and `crowd_edge()`: the moon's rim and her lamp's warm rim on the crowd are a soft edge, smoothstep(1-NdotV 0.5 to 0.92) (`CROWD_EDGE_END`), instead of pow(rim, 3), which from the play camera covered most of a body (the pale smears); by night specular 0.5 to 0.15 and Godot's per-light RIM off; the fur/hair cards take 0.1 of the edge (`crowd_lamp3.w`; they flecked). `Atmosphere.cs`: the edge's strength is the preset's crowd rim x 2.5 (`CrowdRim` 0.2 untouched), the moon's wrap round the body (BACKLIGHT, `--crowd-back`) 1 to 0.15, the fill (`--crowd-moon`) 0.45 to 0.3, its hue (`--crowd-dirt`) 0.7 to 0.3 toward the ground's. Her lamp's term on the crowd unchanged. Trial args: `--crowd-edge`, `--crowd-edge-k`, `--crowd-spec`, `--crowd-grim`, `--crowd-card-edge`; `--crowd-r4 off` gives the r1_2 crowd exactly (A/B, perf). Static order matters: `R4` is declared above the crowd terms whose defaults read it.
