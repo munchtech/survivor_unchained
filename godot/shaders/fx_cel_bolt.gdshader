@@ -9,10 +9,24 @@ render_mode unshaded, blend_mix, depth_draw_never, depth_test_disabled, cull_dis
 #include "res://shaders/hero_clear.gdshaderinc"
 #include "res://shaders/fx_cel.gdshaderinc"
 
-// the head's radius (in half-widths), the tongues' strength at the tail and at the head, their scroll (units a second)
-uniform vec4 bolt_shape = vec4(0.55, 0.5, 0.08, 4.0);
-// the bias that puts the core at the head: heat += (along - x) * y inside the body
-uniform vec2 bolt_bias = vec2(0.62, 0.55);
+// The shape (B6 round 2: tools/style/fx_bolt_proto.py's field, designed beside MB5's FIRE bolt): in the quad's units
+// (x 0 at the tail to span at the front, y -1..1 across) a round white-gold ball near the front, a body that fans out
+// behind it, flame tongues along flow lanes that converge on the head (gradient noise stretched along the flight and
+// swept back toward the outside), long dark gaps that split the tail into tongues and dark smoke bites; all scrolled
+// back down the bolt. One heat field, cut into the school's stepped bands by fx_cel().
+// head radius, the body's half-width at the tail (of the head's), its taper power, the heat's rise toward the head (power)
+uniform vec4 bolt_shape = vec4(0.6, 1.45, 0.8, 2.0);
+// heat at the tail, at the head; the cross profile's power; the sweep (noise sheared back by |lane|)
+uniform vec4 bolt_heat = vec4(0.7, 0.95, 2.0, 0.9);
+// the ball: its centre back from the head's, its stretch along, its radius (of the head's), its heat
+uniform vec4 bolt_ball = vec4(0.25, 1.6, 0.72, 0.7);
+// the tongues: frequency along, across (per lane), strength at the tail, at the head
+uniform vec4 bolt_licks = vec4(0.8, 2.6, 0.6, 0.12);
+// the gaps: frequency along, across, strength, power of its fall toward the head; the bites' frequency along, across
+uniform vec4 bolt_gaps = vec4(0.45, 3.2, 2.0, 0.7);
+uniform vec4 bolt_bites = vec4(1.0, 3.2, 3.0, 2.0);
+// the bites' threshold at the tail, at the head; the lanes' bend; the scroll (units a second)
+uniform vec4 bolt_flow = vec4(-0.05, 1.0, 0.5, 3.0);
 // sparks: cell (units), density (of cells), length (of the bolt), aspect
 uniform vec4 bolt_sparks = vec4(0.35, 0.4, 0.018, 1.6);
 
@@ -38,26 +52,33 @@ void vertex() {
 void fragment() {
 	float R = bolt_shape.x;
 	float x = UV.x * span, y = (UV.y - 0.5) * 2.0;
-	float hx = span - 1.0, x0 = 0.12;
+	float hx = span - 1.0, x0 = 0.15;
 	float along = clamp((x - x0) / (hx - x0), 0.0, 1.0);
-	float w = R * pow(along, 0.6);
-	float d = min(abs(y) - w, length(vec2(x - hx, y)) - R);
-	if (x > hx) d = length(vec2(x - hx, y)) - R;
-	float t = TIME * bolt_shape.w + seed;
-	// the tongues: gradient noise stretched along the flight, its domain warped, scrolled back down it
-	vec2 q = vec2(x * 0.85 + t, y * 2.1 + seed);
-	q += 0.45 * vec2(fx_gnoise(vec2(x * 0.5 + t * 0.6, y * 1.2 - seed)), fx_gnoise(vec2(x * 0.7 - seed, y * 1.5 + t * 0.4)));
-	float n = fx_gnoise(q) * 0.7 + fx_gnoise(q * 2.3 + 5.1) * 0.3;
-	float heat = -d / R + n * mix(bolt_shape.y, bolt_shape.z, along);
-	if (heat > 0.0) heat = heat + (along - bolt_bias.x) * bolt_bias.y;
+	float t = TIME * bolt_flow.w;
+	float w = R * mix(bolt_shape.y, 1.0, pow(along, bolt_shape.z));
+	float v = y / w;
+	v += bolt_flow.z * (1.0 - along) * fx_gnoise(vec2(x * 0.35 + 2.0, 0.5 + seed));
+	float inside = x < hx ? abs(v) : length(vec2(x - hx, y)) / R;
+	float hot = mix(bolt_heat.x, bolt_heat.y, pow(along, bolt_shape.w));
+	float heat = (inside < 1.0 ? 1.0 - pow(inside, bolt_heat.z) : (1.0 - inside) * bolt_heat.z) * hot;
+	float ball = length(vec2((x - (hx - bolt_ball.x)) / bolt_ball.y, y)) / (R * bolt_ball.z);
+	heat += bolt_ball.w * sqrt(clamp(1.0 - ball, 0.0, 1.0));
+	// the noise's domain, swept back toward the outside
+	float xs = x + bolt_heat.w * abs(v);
+	float n = fx_gnoise(vec2((xs + t) * bolt_licks.x, v * bolt_licks.y + seed)) * 0.65
+		+ fx_gnoise(vec2((xs + t) * bolt_licks.x * 2.3 + 5.1, v * bolt_licks.y * 2.1 - seed)) * 0.35;
+	heat += n * mix(bolt_licks.z, bolt_licks.w, along);
+	float g = fx_gnoise(vec2((xs + t * 0.8) * bolt_gaps.x + 3.7, v * bolt_gaps.y + seed * 0.7));
+	heat -= bolt_gaps.z * pow(1.0 - along, bolt_gaps.w) * max(g, 0.0);
+	float b = fx_gnoise(vec2((xs + t * 0.6) * bolt_bites.x + 11.0, v * bolt_bites.y + seed * 1.3));
+	heat = min(heat, (mix(bolt_flow.x, bolt_flow.y, pow(along, bolt_bites.w)) - b) * bolt_bites.z);
 	// the tail ends in the licks, never at the quad's edge
 	heat -= (1.0 - smoothstep(0.0, 0.9, x)) * 1.2;
-	// (the bias can push the tail's body under the cut: those are the dark gaps between its tongues, as MB5's)
 	vec4 c = fx_cel(heat, along);
 	// painted sparks, shed behind the head, off the hot bands; at least two pixels long whatever the zoom
 	float len = max(bolt_sparks.z * span, 2.5 * fwidth(x));
 	float s = fx_sparks(vec2(x + t * 0.8, y), vec2(1.0, 0.0), bolt_sparks.x, bolt_sparks.y, len, bolt_sparks.w, seed);
-	s *= (1.0 - step(fx_t.y, heat)) * smoothstep(hx + 0.2, hx - 0.4, x) * smoothstep(0.0, 0.5, x) * (1.0 - smoothstep(0.8, 0.98, abs(y)));
+	s *= (1.0 - step(fx_t.x, heat)) * smoothstep(hx + 0.2, hx - 0.4, x) * smoothstep(0.0, 0.5, x) * (1.0 - smoothstep(0.8, 0.98, abs(y)));
 	c.rgb = mix(c.rgb, fx_spark_color, s);
 	c.a = max(c.a, s);
 	ALBEDO = c.rgb;

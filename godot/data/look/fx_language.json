@@ -129,7 +129,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
   },
   "fire": {
    "from": "MB5 fire box [20, 560, 510, 820] (k-means on L, fx_measure.py board)",
@@ -195,7 +196,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "measured from MB5 and charted on the lookdev stage at night (round 1: chart1, chart2): edge dE 0.012, mid 0.028, core 0.010"
   },
   "frost": {
    "from": "MB5 frost box [560, 500, 1000, 860] (k-means on L, fx_measure.py board)",
@@ -209,10 +211,11 @@
      "t": 0.0,
      "hex": "#3373ba",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      0.985,
+      0.603,
+      0.723
+     ],
+     "calib_dE": 0.0103
     },
     {
      "name": "mid",
@@ -223,10 +226,11 @@
      "t": 0.374,
      "hex": "#56a1e9",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      1.007,
+      0.684,
+      0.828
+     ],
+     "calib_dE": 0.0138
     },
     {
      "name": "core",
@@ -237,10 +241,11 @@
      "t": 0.714,
      "hex": "#8dd3fc",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      0.904,
+      0.777,
+      0.994
+     ],
+     "calib_dE": 0.005
     }
    ],
    "glow": {
@@ -261,7 +266,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "measured from MB5; emit charted on the lookdev stage at night (round 2: look_l1/lookdev/b6r2/chartA, chartB; each band's calib_dE)"
   },
   "storm": {
    "from": "derived: Palette.Of(storm) hues by derive's rules, MB5's band L and fire's chroma ratios",
@@ -327,7 +333,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
   },
   "nature": {
    "from": "derived: Palette.Of(nature) hues by derive's rules, MB5's band L and fire's chroma ratios",
@@ -393,7 +400,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
   },
   "arcane": {
    "from": "derived: Palette.Of(arcane) hues by derive's rules, MB5's band L and fire's chroma ratios",
@@ -459,7 +467,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
   },
   "holy": {
    "from": "MB5 holy box [1040, 480, 1500, 860] (k-means on L, fx_measure.py board)",
@@ -473,10 +482,11 @@
      "t": 0.0,
      "hex": "#916d4b",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      0.865,
+      0.766,
+      0.511
+     ],
+     "calib_dE": 0.0087
     },
     {
      "name": "mid",
@@ -487,10 +497,11 @@
      "t": 0.43,
      "hex": "#c99555",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      0.89,
+      0.786,
+      0.372
+     ],
+     "calib_dE": 0.009
     },
     {
      "name": "core",
@@ -501,10 +512,11 @@
      "t": 0.78,
      "hex": "#fddd84",
      "emit": [
-      1.0,
-      1.0,
-      1.0
-     ]
+      1.073,
+      0.992,
+      0.334
+     ],
+     "calib_dE": 0.0049
     }
    ],
    "glow": {
@@ -525,7 +537,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "measured from MB5; emit charted on the lookdev stage at night (round 2: look_l1/lookdev/b6r2/chartA, chartB; each band's calib_dE)"
   },
   "shadow": {
    "from": "derived: Palette.Of(shadow) hues by derive's rules, MB5's band L and fire's chroma ratios",
@@ -591,7 +604,8 @@
     "length": 0.018,
     "aspect": 1.6,
     "from": "MB5 fire: 23 small parts off the body (4-150 px, scipy label of L > 0.5, C > 0.08), median 8 x 5 px on a 438 px bolt, L 0.64 C 0.155 h 56"
-   }
+   },
+   "calibration": "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
   }
  },
  "board_mean_L": [

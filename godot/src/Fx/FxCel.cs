@@ -7,7 +7,7 @@ namespace SurvivorUnchained.View;
 /// <summary>
 /// (L1 B6) The FX language in the game: data/look/fx_language.json (logic/Look/FxLanguage.cs) set on a material of
 /// shaders/fx_cel.gdshaderinc. On with --fx-cel on under cel (never at --cel off: today's effects exactly); opt-in until
-/// the proof passes its judge, then the default (B6, 5 Nov: the bolt's shape is not yet MB5's). The proof is
+/// the proof passes its judge, then the default (B6 round 2, 6 Nov: flow-lane tongues, a round head, dark gaps and bites, from tools/style/fx_bolt_proto.py; still opt-in, its judge next). The proof is
 /// the cinder bolt (BattleFx.Flight, shaders/fx_cel_bolt.gdshader); other effects adopt the include school by school.
 /// </summary>
 public static class FxCel
@@ -47,8 +47,8 @@ public static class FxCel
         return m;
     }
 
-    /// <summary>The quad's length over its half-width (the shader's span): MB5's bolt body is 2.56 times as long as tall.</summary>
-    public const float BoltSpan = 3.4f;
+    /// <summary>The quad's length over its half-width (the shader's span): MB5's bolt body is 2.56 times as long as tall (5.2 / 2 = 2.6).</summary>
+    public const float BoltSpan = 5.2f;
 
     /// <summary>A bolt's instance: its head at `head`, flying along `fwd`, `size` its width (m); the quad laid along the
     /// flight (basis X its length, Y its width) and centred so the head sits on the projectile.</summary>

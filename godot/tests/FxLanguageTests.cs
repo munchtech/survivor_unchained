@@ -59,4 +59,28 @@ public class FxLanguageTests
         Assert.Throws<InvalidDataException>(() => FxLanguage.Parse("{\"schools\":{\"x\":{\"bands\":[]}}}"));
         Assert.Throws<InvalidDataException>(() => FxLanguage.Parse("{"));
     }
+
+    [Fact]
+    public void FrostAndHolyAreChartedTheDerivedSchoolsSaySo()
+    {
+        var l = Real();
+        foreach (var s in new[] { "frost", "holy" })
+            Assert.Contains(l[s]!.Bands, b => b.Emit.Any(e => Math.Abs(e - 1f) > 0.01f));
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "data", "look", "fx_language.json")));
+        foreach (var s in new[] { "physical", "storm", "nature", "arcane", "shadow" })
+            Assert.StartsWith("DERIVED AND UNCALIBRATED", doc.RootElement.GetProperty("schools").GetProperty(s).GetProperty("calibration").GetString());
+    }
+
+    [Fact]
+    public void TheUiLanguageReadsWithItsBlocksTextAndPanel()
+    {
+        var u = UiLanguage.Parse(File.ReadAllText(Path.Combine(Root(), "data", "look", "ui_language.json")));
+        foreach (var b in new[] { "bronze", "iron", "parchment", "statue_bronze" }) Assert.True(u.Blocks.ContainsKey(b));
+        Assert.StartsWith("DERIVED", u.Blocks["parchment"].From);
+        Assert.Equal("#e8dcc0", u.Text["cream"]);
+        Assert.Equal("#d9b56a", u.Text["gold"]);
+        foreach (var a in new[] { "skill", "level", "hostile" }) Assert.True(u.Accents.ContainsKey(a));
+        Assert.InRange(u.Panel.FrameWidth, 12f, 20f);
+        Assert.InRange(u.Line, 1.5f, 4f);
+    }
 }
