@@ -4360,6 +4360,331 @@ def waystone(p):
     return parts
 
 
+# ------------------------------------------------------------------ P9 set: the Vault --
+# The Seventh Legion's hall (a roofless hall at night; godot/logic/Play/Story/Vault.cs). Every kind below is derived
+# from (a) the game's need (the sizes the arena code places them by, its colliders: Vault.Cover) and (b) the E7b
+# stone kit above (stone_block, broken_block, chunk, lay_course, wall_parts, fallen_heap, profile_fn, voussoirs,
+# MOVES), inherited. Game frame: x right, y up, +z each piece's front (toward the court and the play camera).
+
+MOVE_MAT = {}  # (P9 set) a moving piece's own material by its key: {key: material name} (the sigil's "dial": the game's glow)
+
+
+def tess_tris(polys, z):
+    """Triangles (3 points each, at depth z) of a polygon given with its holes: polys[0] the outline, the rest holes."""
+    from mathutils import geometry
+    flat = [(x, y) for poly in polys for (x, y) in poly]
+    out = geometry.tessellate_polygon([[Vector((x, y, 0.0)) for (x, y) in poly] for poly in polys])
+    return [tuple((flat[i][0], flat[i][1], z) for i in tri) for tri in out]
+
+
+def face_toward(bm, pts, want):
+    """A face on these points (3+), flipped to look along `want`."""
+    f = bm.faces.new([bm.verts.new(q) for q in pts])
+    f.normal_update()
+    if f.normal.dot(Vector(want)) < 0:
+        f.normal_flip()
+    return f
+
+
+def sigil_polys(cx, cy, R_, r0, hw, vlen, arms=7, sock=0.10, segs=20):
+    """The seven arms' outlines (a groove from r0 to R_, pointed over its last vlen: the V notch) and the socket's circle."""
+    arm = []
+    for k in range(arms):
+        a = math.radians(90 + k * 360.0 / arms)
+        d, n = (math.cos(a), math.sin(a)), (-math.sin(a), math.cos(a))
+        rv = R_ - vlen
+        pl = [(r0, -hw), (rv, -hw), (R_, 0.0), (rv, hw), (r0, hw)]
+        arm.append([(cx + d[0] * r + n[0] * w, cy + d[1] * r + n[1] * w) for r, w in pl])
+    cir = [(cx + sock * math.cos(2 * math.pi * i / segs), cy + sock * math.sin(2 * math.pi * i / segs)) for i in range(segs)]
+    return arm, cir
+
+
+def door(p):
+    """(P9 set) The Vault's door: black stone smooth as glass, one slab with the sigil cut into its +z face (seven
+    arms, each a groove ending in a V notch, and the socket at the centre: inset faces in the slab's mesh), and the
+    sigil's lining as a second moving piece (own material "dial": the game gives it a glow). Both move together
+    (MOVES: down 4.8 m into the floor when the door opens). The preset's own mesh is only the threshold stone."""
+    rng = Rng(p['seed'])
+    stone = hexlin(p['stone'])
+    parts = []
+    sblock(parts, (3.5, 0.05, 0.6), T(0, -0.025, 0), hexlin(p.get('sill', '#2a2a2c')), rng, drop=('-y',), chip=0.0)
+    W, H, Dp = 3.44, 4.72, 0.5
+    bm = box(W, H, Dp, 0.01)
+    bmesh.ops.translate(bm, vec=(0, H / 2, 0), verts=bm.verts)
+    bm.normal_update()
+    front = [f for f in bm.faces if f.normal.z > 0.99 and abs(f.calc_center_median().z - Dp / 2) < 1e-4][0]
+    outline = [(v.co.x, v.co.y) for v in front.verts]
+    bmesh.ops.delete(bm, geom=[front], context='FACES_ONLY')
+    cx, cy, zf = 0.0, 1.75, Dp / 2
+    arm, cir = sigil_polys(cx, cy, 0.62, 0.14, 0.0225, 0.05)
+    dg, ds = 0.02, 0.05
+    for t in tess_tris([outline] + arm + [cir], zf):
+        face_toward(bm, t, (0, 0, 1))
+    for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
+        for t in tess_tris([poly], zf - depth):
+            face_toward(bm, t, (0, 0, 1))
+        ctr = (sum(q[0] for q in poly) / len(poly), sum(q[1] for q in poly) / len(poly))
+        for i in range(len(poly)):
+            a, b = poly[i], poly[(i + 1) % len(poly)]
+            mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+            face_toward(bm, [(a[0], a[1], zf), (b[0], b[1], zf), (b[0], b[1], zf - depth), (a[0], a[1], zf - depth)], (ctr[0] - mid[0], ctr[1] - mid[1], 0))
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-6)
+    bm.normal_update()
+    MOVES.append(('vaultdoor_slab', [Part(bm, 'stone', stone, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
+    sg = bmesh.new()
+    for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
+        for t in tess_tris([poly], zf - depth + 0.002):
+            face_toward(sg, t, (0, 0, 1))
+    r_ = 0.10 - 0.002
+    for i in range(20):
+        a0, a1 = 2 * math.pi * i / 20, 2 * math.pi * (i + 1) / 20
+        pa, pb = (cx + r_ * math.cos(a0), cy + r_ * math.sin(a0)), (cx + r_ * math.cos(a1), cy + r_ * math.sin(a1))
+        face_toward(sg, [(pa[0], pa[1], zf), (pb[0], pb[1], zf), (pb[0], pb[1], zf - ds + 0.002), (pa[0], pa[1], zf - ds + 0.002)],
+                    (cx - (pa[0] + pb[0]) / 2, cy - (pa[1] + pb[1]) / 2, 0))
+    MOVES.append(('vaultsigil', [Part(sg, 'stone', stone * 4, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
+    MOVE_MAT['vaultsigil'] = 'dial'
+    return parts
+
+
+def vault_letters(parts, text_lines, cap, yc, pitch, z_back, depth, tint):
+    """Cut capitals as mesh (depth proud of z_back): the lines centred on x = 0, the first line's centre at yc, pitch
+    apart downward; Blender's own default font (a block capital), cap height `cap` measured off the first line."""
+    k = None
+    for li, text in enumerate(text_lines):
+        cu = bpy.data.curves.new('vl%d' % li, 'FONT')
+        cu.body = text
+        cu.size = 1.0
+        cu.align_x = 'CENTER'
+        cu.extrude = 0.01
+        ob = bpy.data.objects.new('vl%d' % li, cu)
+        bpy.context.scene.collection.objects.link(ob)
+        dgr = bpy.context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(ob.evaluated_get(dgr))
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+        bpy.data.objects.remove(ob)
+        bpy.data.curves.remove(cu)
+        if k is None:
+            k = cap / max(v.co.y for v in bm.verts)
+        xs = [v.co.x for v in bm.verts]
+        xm = (min(xs) + max(xs)) / 2
+        print('LETTERS', text, 'width', round((max(xs) - min(xs)) * k, 3), 'k', round(k, 4))
+        for v in bm.verts:
+            v.co = Vector(((v.co.x - xm) * k, v.co.y * k + yc - cap / 2 - li * pitch, z_back + depth / 2 + v.co.z * (depth / 2 / 0.01)))
+        bm.normal_update()
+        parts.append(Part(bm, 'stone', tint, Matrix.Identity(4), cap='stone', jitter=0.0))
+
+
+def facade(p):
+    """(P9 set) The court's north wall with the door in it: coursed like the walls (wall_parts), the top broken to
+    p['top'] (the middle whole over the door), fallen blocks only on the hall's side (-z) and only at |x| > 4; the doorway
+    framed in black dressed stone (two pilasters, a lintel, a panel over it carrying the cut capitals)."""
+    rng = Rng(p['seed'])
+    L, H, D = p['len'], p['h'], p['d']
+    ch, bl = p.get('course', 0.5), p.get('block', 1.05)
+    stone, mortar, black = hexlin(p['stone']), hexlin(p['mortar']), hexlin(p['black'])
+    x0 = -L / 2
+    dw, dh = p.get('door_w', 1.75), p.get('door_h', 4.75)
+    parts = []
+    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05))
+    wall_parts(parts, rng, L, H, D, ch, bl, stone, mortar, keep, x0, holes=[(-dw, dw, 0.0, dh)])
+    unit = p.get('unit', 1.0 / 0.85)
+    for xa in (x0, L / 2 - 8.0):
+        fallen_heap(parts, rng, keep, xa, 8.0, -1, D, ch, bl, stone, n=p.get('fallen', 3), chips=p.get('chips', 6), unit=unit)
+    zc, dz = 0.125, D + 0.25          # the pilasters: through the wall, 0.25 proud of the +z face
+    for s in (-1, 1):
+        for i in range(5):
+            sblock(parts, (0.6 - 0.01, 1.0 - 0.008, dz), T(s * (dw + 0.3), 0.5 + i, zc), black * (1 + rng(-0.05, 0.05)), rng, chip=0.15, jag=0.004, drop=('-y',) if i == 0 else ())
+    sblock(parts, (4.8, 0.6, D + 0.2), T(0, dh + 0.3, 0.1), black * 1.05, rng, chip=0.1, jag=0.004)     # the lintel, 0.2 proud
+    pz0, pz1 = -D / 2 - 0.01, D / 2 + 0.08                                                               # the panel, 0.08 proud
+    pbm = box(8.4, 0.85, pz1 - pz0, 0.01)
+    parts.append(Part(pbm, 'stone', black * 0.95, T(0, 5.825, (pz0 + pz1) / 2), cap='stone', jitter=0.0))
+    vault_letters(parts, ['HIC LEGIO SEPTIMA SEPELIVIT', 'QUOD URERE NON POTUIT'], 0.2, 5.825 + 0.16, 0.32, pz1 - 0.001, 0.004, black * 0.25)
+    return parts
+
+
+def beam(p):
+    """(P9 set) A fallen stone architrave lying along x: two broken pieces (the second tilted, its high end on a
+    chunk), rough ends, chips about. Within x +-2.1, z +-0.6, its top under 0.85 (the cover Vault.Cover's beams)."""
+    rng = Rng(p['seed'])
+    stone = hexlin(p['stone'])
+    parts = []
+    H, Dp = 0.7, 0.75
+    b1 = broken_block(2.3, H, Dp, rng, cuts=2, chip=0.9)
+    parts.append(Part(b1, 'stone', stone * 0.95, bedded(b1, T(-0.93, H / 2, -0.06) @ R('Y', rng(-0.06, 0.06)), 0.03), cap='stone', jitter=0.0))
+    b2 = broken_block(1.9, H, Dp, rng, cuts=2, chip=0.9)
+    parts.append(Part(b2, 'stone', stone * 0.9, bedded(b2, T(1.13, H / 2, 0.1) @ R('Y', rng(-0.05, 0.05)) @ R('Z', math.radians(8)), 0.14), cap='stone', jitter=0.0))
+    for (x, z, s) in ((1.75, 0.0, 0.3), (-0.35, 0.42, 0.18), (0.45, -0.42, 0.16), (-1.6, -0.42, 0.14)):
+        cb = chunk(s, rng)
+        parts.append(Part(cb, 'stone', stone * rng(0.75, 0.95), bedded(cb, T(x, 0, z) @ R('Y', rng(0, 6.28)), s * 0.12 if s < 0.25 else -0.04), cap='stone', jitter=0.0))
+    return parts
+
+
+def sarcophagus(p):
+    """(P9 set) A stone sarcophagus: a plinth, a chest with three inset panels on each long face (a frame standing proud
+    of a recessed field), the lid. (a) the lid slid off askew and turned, a corner broken off; (b) the lid down beside
+    it at +z, broken in two. Within x +-1.3, z +-0.6 (the lid to 0.75), top 1.05 (Vault.Cover's sarcophagi)."""
+    rng = Rng(p['seed'])
+    stone = hexlin(p['stone'])
+    parts = []
+    PL, PH, PD, CL, CH, CD, LH = 2.5, 0.12, 1.15, 2.3, 0.80, 1.0, 0.14
+    root = T(0, -0.02, 0)
+    sblock(parts, (PL, PH, PD), root @ T(0, PH / 2, 0), stone * 0.88, rng, chip=0.4, drop=('-y',))
+    sblock(parts, (CL, CH, CD - 0.06), root @ T(0, PH + CH / 2, 0), stone, rng, chip=0.2, drop=('-y',))
+    for sz in (-1, 1):
+        for y in (PH + 0.06, PH + CH - 0.06):
+            sblock(parts, (CL, 0.12, 0.04), root @ T(0, y, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
+        x = -CL / 2
+        for i in range(4):
+            sblock(parts, (0.14, CH - 0.2, 0.04), root @ T(x + 0.07, PH + CH / 2, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
+            x += 0.14 + (CL - 0.56) / 3
+    ly = PH + CH + LH / 2
+    if p.get('lid') == 'off':
+        sx, sz = p.get('slide', [0.07, 0.085])
+        lid = broken_block(2.35, LH, 1.05, rng, cuts=1, chip=0.9)
+        parts.append(Part(lid, 'stone', stone * 0.97, root @ T(sx, ly, sz) @ R('Y', math.radians(7)), cap='stone', jitter=0.0))
+        fr = chunk(0.2, rng)
+        parts.append(Part(fr, 'stone', stone * 0.85, bedded(fr, T(0.95, 0, 0.55) @ R('Y', 0.7), 0.04), cap='stone', jitter=0.0))
+    else:
+        sblock(parts, (2.35, LH, 1.05), root @ T(0, ly, 0), stone * 0.97, rng, chip=0.3)
+    if p.get('lid') == 'floor':
+        # the lid down at +z, broken in two across: halves lying flat, the break rough, a spall or two
+        for sgn, (cx, ln) in ((-1, (-0.62, 1.15)), (1, (0.62, 1.15))):
+            hb = broken_block(ln, LH, 1.05, rng, cuts=1, chip=0.9)
+            parts.append(Part(hb, 'stone', stone * 0.95, bedded(hb, T(cx + sgn * 0.04, 0, 0.5 + 0.1 + 0.53) @ R('Y', math.radians(sgn * 4 + 3)), 0.02), cap='stone', jitter=0.0))
+        for xx in (-0.1, 0.1):
+            sp = gravel(0.12, rng)
+            parts.append(Part(sp, 'stone', stone * 0.8, bedded(sp, T(xx, 0, 1.4) @ R('Y', rng(0, 6)), 0.02), cap='stone', jitter=0.0))
+    return parts
+
+
+def stair(p):
+    """(P9 set) The stair down into the dark, cut in black stone. Origin: the mouth's floor centre; the flight goes DOWN
+    toward -z. Binding (the game cuts the terrain to them and stands the dead on the treads): a threshold z 0..-1 at
+    y 0; steps k = 1..26, tread top -0.28 k, spanning z -1-(k-1) 0.62 .. -1-k 0.62, x +-2.9; the floor z -17.12..-21.5
+    at y -7.28. Side walls (inner x +-2.9, outer +-4.4) coursed along z from the treads up to +2.2, their tops broken
+    (never under +1.0); the end wall z -21.5..-22.9 with an arched doorway x +-1.5 (springing y -5.3) and a dark recess
+    3 m deep behind it; at the mouth two jamb pylons and a cracked lintel."""
+    rng = Rng(p['seed'])
+    stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
+    parts = []
+    XW, XT = 2.9, 3.0
+    prev = []
+
+    def joints(n):
+        for _ in range(8):
+            js = [-XW + 2 * XW * (i + 1) / n + rng(-0.5, 0.5) for i in range(n - 1)]
+            if all(abs(j - q) > 0.45 for j in js for q in prev):
+                break
+        return js
+
+    def slab_row(z0, z1, y1, thick, n=None):
+        """A row of dressed blocks across (x +-2.9, running into the walls), top y1, z0 > z1."""
+        nonlocal prev
+        n = n or (2 if rng() < 0.45 else 3)
+        js = joints(n)
+        prev = js
+        xs = [-XT] + js + [XT]
+        for i in range(n):
+            a, b = xs[i], xs[i + 1]
+            drop = ['-y', '+z']
+            if i == 0:
+                drop.append('-x')
+            if i == n - 1:
+                drop.append('+x')
+            sblock(parts, (b - a - 0.012, thick, abs(z0 - z1) + 0.01), T((a + b) / 2, y1 - thick / 2, (z0 + z1) / 2),
+                   stone * (1 + rng(-0.07, 0.07)), rng, bevel=0.03, chip=0.55, jag=0.006, drop=tuple(drop))
+
+    # the threshold (a slab at the mouth) and the steps
+    slab_row(0.0, -1.0, 0.0, 0.8)
+    for k in range(1, 27):
+        z1 = -1.0 - (k - 1) * 0.62
+        slab_row(z1, z1 - 0.62, -0.28 * k, 0.8)
+    # the floor at the bottom (flags in two rows), running through the doorway
+    zt, zb = -17.12, -21.5
+    zm = zt + (zb - zt) * rng(0.42, 0.55)
+    slab_row(zt, zm, -7.28, 0.5, 3)
+    slab_row(zm, zb, -7.28, 0.5, 3)
+    sblock(parts, (3.0, 0.5, 1.5), T(0, -7.28 - 0.25, -22.1), stone, rng, bevel=0.03, chip=0.3, drop=('-y',))
+    # the side walls, in courses along z: a course exists where its top is above the tread
+    TOP, BOT, NR = 2.2, -7.4, 19
+    chh = (TOP - BOT) / NR
+    ZE = 21.5
+
+    def keep_for(notches):
+        def keep(t):
+            h = TOP
+            for tc, w, hn in notches:
+                d = abs(t - tc)
+                if d < w / 2:
+                    h = min(h, hn + (d / (w / 2)) * (TOP - hn) * 0.9)
+            return h
+        return keep
+    for s, notches in ((-1, [(4.0, 2.4, 1.25), (9.5, 3.0, 1.7), (16.0, 2.2, 1.25)]), (1, [(6.6, 2.6, 1.25), (13.0, 3.4, 1.75)])):
+        keep = keep_for(notches)
+        prow = []
+        for i in range(NR):
+            y1, y0 = TOP - i * chh, TOP - (i + 1) * chh
+            if y1 > 0.001:
+                ts = 0.0
+            else:
+                kmin = int(math.floor(-y1 / 0.28 + 1e-9)) + 1
+                ts = 1.0 + (kmin - 1) * 0.62
+            if ts >= ZE - 0.3:
+                prow.append([])
+                continue
+            xs_ = lay_course(ts, ZE, 1.25, rng, i % 2 == 1)
+            row = [(a, b) for a, b in zip(xs_, xs_[1:]) if y1 <= keep((a + b) / 2) + 0.25]
+            prow.append(row)
+            runs = []
+            for a, b in row:
+                if runs and abs(runs[-1][1] - a) < 1e-4:
+                    runs[-1][1] = b
+                else:
+                    runs.append([a, b])
+            for a, b in runs:   # mortar behind the runs
+                parts.append(Part(box(1.43, y1 - y0 - 0.01, b - a - 0.05), 'stone', mortar, T(s * (XW + 0.75), (y0 + y1) / 2, -(a + b) / 2), cap='stone', jitter=0.03))
+        for i, row in enumerate(prow):
+            y1, y0 = TOP - i * chh, TOP - (i + 1) * chh
+            nxt = prow[i - 1] if i > 0 else []
+            for j, (a, b) in enumerate(row):
+                drop = ['-y']
+                if y1 < 0.3:
+                    drop.append('+x' if s > 0 else '-x')   # the outer face, underground
+                if j > 0 and abs(row[j - 1][1] - a) < 1e-4:
+                    drop.append('+z')
+                if j + 1 < len(row) and abs(row[j + 1][0] - b) < 1e-4:
+                    drop.append('-z')
+                if nxt and sum(max(0.0, min(b, q1) - max(a, q0)) for q0, q1 in nxt) > (b - a) * 0.98:
+                    drop.append('+y')
+                sblock(parts, (1.5 - 0.02, y1 - y0 - 0.02, b - a - 0.024), T(s * (XW + 0.75), (y0 + y1) / 2, -(a + b) / 2), stone * (1 + rng(-0.09, 0.09)), rng,
+                       bevel=0.03, chip=0.4, jag=0.01, drop=tuple(drop))
+    # the end wall with the arched doorway (voussoirs, as the gatehouse's)
+    r, spring, vd = 1.5, -5.3, 0.6
+    S_ = r + vd
+    yb_ = (spring - BOT) + S_ - 0.55
+    rows = wall_parts(parts, rng, 8.8, 9.6, 1.4, 0.5, 1.05, stone * 0.95, mortar, lambda x: 99.0, -4.4, at=T(0, BOT, -22.2),
+                      holes=[(-r, r, -1.0, spring - BOT), (-S_, S_, spring - BOT, yb_)], sink=0.0)
+    ytop = min([y1 for (k, a, b, y0, y1) in rows if y0 < yb_ <= y1 + 1e-6] or [yb_]) + BOT
+    voussoirs(parts, rng, r, spring, S_, ytop, -22.2, 1.4, stone * 1.03, n=9)
+    # the recess behind the doorway: 3 m deep, inward-facing, near black (so no sky shows through)
+    pts = [(r, -7.28), (r, spring)] + [(r * math.cos(a), spring + r * math.sin(a)) for a in [math.pi * i / 12 for i in range(1, 12)]] + [(-r, spring), (-r, -7.28)]
+    rb = prism(pts, 3.0, bevel=0.0)
+    rb.normal_update()
+    cap = max(rb.faces, key=lambda f: f.normal.z)
+    bmesh.ops.delete(rb, geom=[cap], context='FACES_ONLY')
+    bmesh.ops.reverse_faces(rb, faces=rb.faces[:])
+    parts.append(Part(rb, 'stone', hexlin('#08080a'), T(0, 0, -22.9 - 1.5 + 0.05), cap='stone', jitter=0.0))
+    # the mouth: two jamb pylons, and a cracked lintel (a chip out of it) over them
+    for s in (-1, 1):
+        wall_parts(parts, rng, 1.7, 5.0, 1.4, 0.5, 1.05, stone, mortar, lambda x: 99.0, -0.85, at=T(s * 3.75, 0, -0.1))
+    parts.append(Part(stone_block(4.56, 0.7, 1.4, rng, chip=0.5), 'stone', stone * 1.0, T(-2.3, 4.75, -0.1), cap='stone', jitter=0.0))
+    lb = broken_block(4.56, 0.7, 1.4, rng, cuts=1, chip=0.9)
+    parts.append(Part(lb, 'stone', stone * 0.96, T(2.3, 4.73, -0.1) @ R('Z', -0.006), cap='stone', jitter=0.0))
+    return parts
+
+
 KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'saddlebags': saddlebags, 'bedroll_rolled': bedroll_rolled, 'pack': pack, 'chest': chest,
          'crate': crate, 'barrel': barrel, 'log': log, 'wagon': wagon,
          'wall': wall, 'pillar': pillar, 'rubble': rubble, 'banner': banner, 'table': table, 'chair': chair, 'bed': bed,
@@ -4367,7 +4692,8 @@ KINDS = {'pylon': pylon, 'bedroll_open': bedroll_open, 'saddlebags': saddlebags,
          'stall': stall, 'notice_board': notice_board, 'handcart': handcart, 'trough': trough, 'market_heap': market_heap, 'brazier': brazier,
          'curtain': curtain, 'gatehouse': gatehouse, 'tower': tower, 'castle': castle,
          'beyond_house': beyond_house, 'beyond_lamp': beyond_lamp, 'camp_ground': camp_ground,
-         'fallen': fallen, 'branches': branches, 'roots': roots, 'waystone': waystone}
+         'fallen': fallen, 'branches': branches, 'roots': roots, 'waystone': waystone,
+         'facade': facade, 'door': door, 'beam': beam, 'sarcophagus': sarcophagus, 'stair': stair}
 
 
 # ---------------------------------------------------------------- build --
@@ -4426,6 +4752,7 @@ def main():
         OLD.update(p.get('old', {}))
         SHADOW.clear()
         MOVES.clear()
+        MOVE_MAT.clear()
         parts = KINDS[p['kind']](p)
         if p.get('dress'):
             parts = dress(parts, p['dress'], p['seed'])
@@ -4498,6 +4825,9 @@ def main():
         for o in obs[1:]:
             if o.name.endswith(('_cloth', '_wool', '_glow')):
                 meta['tris_' + o.name.rsplit('_', 1)[1]] = tris(o)
+        for kk in ('dials', 'gloss'):
+            if p.get(kk):
+                meta[kk] = p[kk]  # (P9 set) the door's glow and gloss handles, for OwnProps
         if p.get('no_shadow'):
             meta['no_shadow'] = True  # (E8 later) OwnProps casts no shadow from it (cheap dressing, backdrops)
         if p['kind'] == 'log':
@@ -4513,6 +4843,9 @@ def main():
         for key, mparts, travel in MOVES:
             # (H8 N22) a moving piece (the gatehouse's portcullis): its own mesh, at rest where it was drawn
             mo = finish(name + '_move_' + key, mparts, mat, p['seed'])
+            if key in MOVE_MAT:
+                mo.data.materials.clear()
+                mo.data.materials.append(bpy.data.materials.get(MOVE_MAT[key]) or bpy.data.materials.new(MOVE_MAT[key]))
             obs.append(mo)
             meta.setdefault('moves', {})[mo.name] = [round(v, 4) for v in travel]
         if p['kind'] == 'notice_board':
