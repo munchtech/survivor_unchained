@@ -60,6 +60,11 @@ public static class OwnProps
     /// for its gloss meshes: the Vault door's black stone, smooth but not glass (at roughness 0.07 it took no light but the
     /// bulbs' dots: a black hole in every frame), its clearcoat the sky's and the violet's soft sheen.</summary>
     static readonly Dictionary<string, Material> glossMats = new();
+    /// <summary>(P9 C13 r2) The visual layer the gloss meshes carry besides the world's: a zone's reflection probes reflect on
+    /// it alone (ZoneMeta.Probes: the Vault door's black stone shows the court, her and the embers; nothing else changes).</summary>
+    public const uint GlossLayer = 1u << 5;
+    /// <summary>(P9 C13 r2) A dial's own shader numbers (props.json dials "params": the sigil's cut depths).</summary>
+    static readonly Dictionary<string, Dictionary<string, float>> dialParams = new();
     /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
     /// material on the faces their vertex alpha flags.</summary>
     static readonly Dictionary<string, (float Top, float Drop, float Len, float K, bool Ring)> runs = new();
@@ -219,6 +224,8 @@ public static class OwnProps
                             dials[o.Name] = (o.Value.GetProperty("kind").GetString() ?? "", Color.FromHtml(o.Value.GetProperty("color").GetString() ?? "#ffffff"),
                                 o.Value.GetProperty("energy").GetSingle(), new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()), o.Value.GetProperty("radius").GetSingle(),
                                 o.Value.TryGetProperty("inner", out var inn) ? inn.GetSingle() : 0f);
+                            if (o.Value.TryGetProperty("params", out var dpj))
+                                dialParams[o.Name] = dpj.EnumerateObject().ToDictionary(q => q.Name, q => q.Value.GetSingle());
                         }
                     if (p.Value.TryGetProperty("gloss", out var gl))
                     {
@@ -438,9 +445,10 @@ public static class OwnProps
                     var sm = new ShaderMaterial { Shader = DialShader, ResourceName = "dial_" + dial.Kind };
                     sm.SetShaderParameter("color", dial.Color); sm.SetShaderParameter("energy", dial.Energy);
                     sm.SetShaderParameter("center", dial.Center); sm.SetShaderParameter("radius", dial.Radius); sm.SetShaderParameter("inner", dial.Inner);
+                    if (dialParams.TryGetValue(m.Name.ToString(), out var dps)) foreach (var (dk, dv) in dps) sm.SetShaderParameter(dk, dv);
                     m.MaterialOverride = sm; m.SetMeta("dial", dial.Kind);
                 }
-                else m.MaterialOverride = glossMats.GetValueOrDefault(m.Name.ToString()) ?? GlossStone;
+                else { m.MaterialOverride = glossMats.GetValueOrDefault(m.Name.ToString()) ?? GlossStone; m.Layers |= GlossLayer; }
                 m.CastShadow = GeometryInstance3D.ShadowCastingSetting.On;
                 if (moves.TryGetValue(m.Name, out var dtv)) { m.SetMeta("travel", dtv); m.SetMeta("rest", m.Position); }
                 continue;

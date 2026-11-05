@@ -51,6 +51,17 @@ public sealed class LightDef
     public double ShadowNormal { get; set; } = -1;
 }
 
+/// <summary>(P9 C13 r2) A box-projected reflection probe: what the gloss meshes in its box (OwnProps.GlossLayer: the Vault
+/// door's polished black stone) reflect, the place round it captured from a point (Ox..Oz, world); only those meshes take
+/// it. Captured once in play, every frame while a film plays (her and the embers in the stone).</summary>
+public sealed class ProbeDef
+{
+    /// <summary>The box's centre and size (world, m): the walls its reflections are projected on.</summary>
+    public double X, Y, Z, Sx, Sy, Sz;
+    public double Ox, Oy, Oz;
+    public double Intensity { get; set; } = 1;
+}
+
 public sealed class FireDef
 {
     public double X, Y, Z, Size;
@@ -190,6 +201,8 @@ public sealed class ZoneMeta
     /// <summary>The zone's air by day (the runtime changes it with the hour).</summary>
     public AtmospherePreset Atmosphere = null!;
     public List<LightDef> Lights = new();
+    /// <summary>(P9 C13 r2) Its reflection probes (ProbeDef).</summary>
+    public List<ProbeDef> Probes = new();
     public List<FireDef> Fires = new();
     public List<Point3> Chimneys = new();
     /// <summary>Lights moths gather round after dark (indices into the lights).</summary>

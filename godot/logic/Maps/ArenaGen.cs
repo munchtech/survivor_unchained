@@ -153,6 +153,7 @@ public static class ArenaGen
         public readonly List<PropPlace> Pieces = new();
         public readonly List<ColliderDef> Colliders = new();
         public readonly List<LightDef> Lights = new();
+        public readonly List<ProbeDef> Probes = new();
         public readonly List<FireDef> Fires = new();
         public readonly List<(double X, double Z, double R)> Taken = new();
         public readonly List<(double X, double Z, double Hw)[]> Streams = new();
@@ -500,7 +501,7 @@ public static class ArenaGen
                 Bound = Half - 4,
                 Start = new Start { X = 0, Z = 0, Facing = 0 },
                 Atmosphere = Place.Night,
-                Lights = Lights, Fires = Fires, Colliders = Colliders, Board = Board,
+                Lights = Lights, Probes = Probes, Fires = Fires, Colliders = Colliders, Board = Board,
                 Refs = JsonSerializer.SerializeToElement(new { }),
                 Places = new Dictionary<string, JsonElement> { ["M"] = JsonSerializer.SerializeToElement(new Dictionary<string, object> { ["start"] = new { x = 0, z = 0 }, ["boss"] = new { x = 0, z = 0 }, ["area0"] = new { x = 0, z = 0 } }) },
                 Paths = new Dictionary<string, double[][]> { ["RIM"] = rim.Select(p => new[] { p.Item1, p.Item2 }).ToArray() },

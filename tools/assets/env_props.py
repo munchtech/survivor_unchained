@@ -589,7 +589,7 @@ def dress(parts, d, seed):
     u = d.get('unit', 1.0)
     out = list(parts)
     for pt in parts:
-        if pt.region != 'stone' or pt.bm is None:
+        if pt.region != 'stone' or pt.bm is None or getattr(pt, 'nodress', False):
             continue
         rot = pt.at.to_3x3()
         pt.bm.normal_update()
@@ -4416,42 +4416,61 @@ def door(p):
     sl = p.get('sill_size', [3.5, 0.05, 0.6])
     sblock(parts, (sl[0], sl[1], sl[2]), T(0, sl[1] / 2 - 0.05 + p.get('sill_up', 0.0), p.get('sill_z', 0.0)), hexlin(p.get('sill', '#2a2a2c')), rng, drop=('-y',), chip=0.0)
     W, H, Dp = 3.44, 4.72, 0.5
-    bm = box(W, H, Dp, 0.01)
+    # (C13 set r2) its edges rounded 2 cm (three segments): the top line and the jambs' sides catch the sky and the court
+    # (round 1: a 1 cm flat chamfer, unseen; D6h's half-sunk slab a flat black cutout with no top edge)
+    bm = box(W, H, Dp, 0.0)
+    bmesh.ops.bevel(bm, geom=bm.edges[:], offset=p.get('bevel', 0.02), segments=p.get('bevel_segs', 3), affect='EDGES', profile=0.5)
     bmesh.ops.translate(bm, vec=(0, H / 2, 0), verts=bm.verts)
     bm.normal_update()
     front = [f for f in bm.faces if f.normal.z > 0.99 and abs(f.calc_center_median().z - Dp / 2) < 1e-4][0]
     outline = [(v.co.x, v.co.y) for v in front.verts]
     bmesh.ops.delete(bm, geom=[front], context='FACES_ONLY')
-    # The sigil (round 2, P9 set: the arms 2-3 cm wide, 40-60 cm long, the notch 20-25 cm across, at chest to head):
-    # its numbers are the preset's (and its dial's centre and radius in env_props.json with them).
+    # The sigil: its numbers are the preset's (and its dial's centre and radius in env_props.json with them).
+    # (C13 set r2) Cut, not inlaid: each arm a V (its walls from the lips to the floor line at `groove` deep, the V's point
+    # shallowing to the face over the last vlen), the notch at the centre a concave bowl `socket` deep. The slab keeps only
+    # the face round the cuts; the cuts' walls are the dial mesh (lit stone with the glow's emission by depth).
     sg_ = p.get('sigil', {})
     cx, cy, zf = 0.0, sg_.get('cy', 1.75), Dp / 2
-    sock = sg_.get('sock', 0.10)
-    arm, cir = sigil_polys(cx, cy, sg_.get('R', 0.62), sg_.get('r0', 0.14), sg_.get('hw', 0.0225), sg_.get('vlen', 0.05), sock=sock)
+    sock, segs = sg_.get('sock', 0.10), sg_.get('segs', 48)
+    R_, r0, hw, vlen = sg_.get('R', 0.62), sg_.get('r0', 0.14), sg_.get('hw', 0.0225), sg_.get('vlen', 0.05)
+    arm, cir = sigil_polys(cx, cy, R_, r0, hw, vlen, sock=sock, segs=segs)
     dg, ds = sg_.get('groove', 0.02), sg_.get('socket', 0.05)
     for t in tess_tris([outline] + arm + [cir], zf):
         face_toward(bm, t, (0, 0, 1))
-    for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
-        for t in tess_tris([poly], zf - depth):
-            face_toward(bm, t, (0, 0, 1))
-        ctr = (sum(q[0] for q in poly) / len(poly), sum(q[1] for q in poly) / len(poly))
-        for i in range(len(poly)):
-            a, b = poly[i], poly[(i + 1) % len(poly)]
-            mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-            face_toward(bm, [(a[0], a[1], zf), (b[0], b[1], zf), (b[0], b[1], zf - depth), (a[0], a[1], zf - depth)], (ctr[0] - mid[0], ctr[1] - mid[1], 0))
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-6)
     bm.normal_update()
     MOVES.append(('vaultdoor_slab', [Part(bm, 'stone', stone, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
     sg = bmesh.new()
-    for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
-        for t in tess_tris([poly], zf - depth + 0.002):
-            face_toward(sg, t, (0, 0, 1))
-    r_ = sock - 0.002
-    for i in range(20):
-        a0, a1 = 2 * math.pi * i / 20, 2 * math.pi * (i + 1) / 20
-        pa, pb = (cx + r_ * math.cos(a0), cy + r_ * math.sin(a0)), (cx + r_ * math.cos(a1), cy + r_ * math.sin(a1))
-        face_toward(sg, [(pa[0], pa[1], zf), (pb[0], pb[1], zf), (pb[0], pb[1], zf - ds + 0.002), (pa[0], pa[1], zf - ds + 0.002)],
-                    (cx - (pa[0] + pb[0]) / 2, cy - (pa[1] + pb[1]) / 2, 0))
+    def W3(r, w, z, d, n):
+        return (cx + d[0] * r + n[0] * w, cy + d[1] * r + n[1] * w, z)
+    for k in range(7):
+        a = math.radians(90 + k * 360.0 / 7)
+        d, n = (math.cos(a), math.sin(a)), (-math.sin(a), math.cos(a))
+        rv, rf = R_ - vlen, r0 + hw * 0.5      # where the point starts narrowing; the floor's inner end (the inner end's slope)
+        fl0, fl1 = W3(rf, 0, zf - dg, d, n), W3(rv, 0, zf - dg, d, n)
+        tip = W3(R_, 0, zf, d, n)
+        for sd in (-1, 1):
+            l0, l1 = W3(r0, sd * hw, zf, d, n), W3(rv, sd * hw, zf, d, n)
+            out = (n[0] * -sd, n[1] * -sd, 0.0)    # the wall looks across the groove, and up out of it
+            face_toward(sg, [l0, l1, fl1, fl0], (out[0], out[1], 0.5))
+            face_toward(sg, [l1, tip, fl1], (out[0], out[1], 0.5))
+        face_toward(sg, [W3(r0, -hw, zf, d, n), W3(r0, hw, zf, d, n), fl0], (d[0], d[1], 0.5))
+    # the notch: a spherical bowl, its rim the slab's circle
+    rs = (sock * sock + ds * ds) / (2 * ds)
+    rings = [sock * (1 - j / 6.0) for j in range(6)]
+    def bz(r):
+        return zf - (math.sqrt(max(rs * rs - r * r, 0.0)) - (rs - ds))
+    for j in range(len(rings)):
+        r1, r2 = rings[j], rings[j + 1] if j + 1 < len(rings) else 0.0
+        for i in range(segs):
+            a0, a1 = 2 * math.pi * i / segs, 2 * math.pi * (i + 1) / segs
+            q = [(cx + r1 * math.cos(a0), cy + r1 * math.sin(a0), bz(r1)), (cx + r1 * math.cos(a1), cy + r1 * math.sin(a1), bz(r1))]
+            if r2 > 0:
+                q += [(cx + r2 * math.cos(a1), cy + r2 * math.sin(a1), bz(r2)), (cx + r2 * math.cos(a0), cy + r2 * math.sin(a0), bz(r2))]
+            else:
+                q += [(cx, cy, zf - ds)]
+            face_toward(sg, q, (0, 0, 1))
+    bmesh.ops.remove_doubles(sg, verts=sg.verts[:], dist=1e-6)
     MOVES.append(('vaultdoor_sigil', [Part(sg, 'stone', stone * 4, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
     MOVE_MAT['vaultdoor_sigil'] = 'dial'
     return parts
@@ -4511,8 +4530,11 @@ def facade(p):
     pz0, pz1 = -D / 2 - 0.01, D / 2 + 0.08                                                               # the panel, 0.08 proud
     pbm = box(8.4, 0.85, pz1 - pz0, 0.01)
     parts.append(Part(pbm, 'stone', black * 0.95, T(0, 5.825, (pz0 + pz1) / 2), cap='stone', jitter=0.0))
+    n0 = len(parts) - 1
     # (Round 2: the letters a value band on the panel, not black speckle: their tint near the panel's, p['letters'].)
     vault_letters(parts, ['HIC LEGIO SEPTIMA SEPELIVIT', 'QUOD URERE NON POTUIT'], 0.2, 5.825 + 0.16, 0.32, pz1 - 0.001, 0.004, black * p.get('letters', 0.25))
+    for pt in parts[n0:]:
+        pt.nodress = True    # (C13 set r2) no lichen crust on the inscription (a pale chip lay over NON)
     return parts
 
 

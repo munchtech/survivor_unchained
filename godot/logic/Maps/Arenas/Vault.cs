@@ -195,12 +195,19 @@ public sealed class Vault : ArenaShape
         // The sigil's light on the stone round it, out until it wakes (the handle "vaultsigil" sets its level) and gone
         // down with the door ("vaultdoor"); a little under the sigil and a hand out, its specular low, so the glass-black
         // face shows violet light, not the bulb's disc (round 1: 7 at 0.75 m, always on, a disc as wide as the arms).
-        int sigil = B.Glow(0, 22.75, "#9a6cff", 2.4, height: 1.25, flicker: 0, range: 3.2);
+        // (C13 set r2) The notch's own light: at the sigil's heart a quarter metre out, about 2 m of reach, casting, up as the
+        // sigil wakes and gone down with the door: the face round the cut takes violet (and the bloom over it something to
+        // lie on), the jambs' insides and the sill too (round 1's, under the sigil, sat on the gloss as a hot spot below the
+        // notch: the "glossy marble").
+        int sigil = B.Glow(0, 22.5, "#9355ff", 3.0, height: 1.6, flicker: 0, range: 2.2);
         B.Lights[sigil].Dial = "vaultsigil";
         B.Lights[sigil].DialOff = "vaultdoor";
-        // (round 3: at 0.15 its bulb sat on the glass-black face as a violet dot under the sigil; C13: the face rough enough now,
-        // vault_door's gloss_mat, that it lies on it as a soft violet sheen)
         B.Lights[sigil].Specular = 0.5;
+        B.Lights[sigil].Shadow = true;
+        // (C13 set r2) The court as the door's polished stone reflects it (ZoneMeta.Probes, on the gloss alone): the box the
+        // court's floor, walls and sky, captured from the doorway's recess at her chest.
+        double fy = B.HeightAt(0, 23.0);
+        B.Probes.Add(new SurvivorUnchained.World.ProbeDef { X = 0, Y = fy + 3.975, Z = 31.55, Sx = 29.6, Sy = 8.05, Sz = 19.7, Ox = 0, Oy = fy + 1.6, Oz = 22.6 });
         // (C13 set) A cold light raking the door's face from its east jamb, low and close: the black stone takes a soft sheen
         // falling across it and its edges catch, so the face reads as a slab, not a hole (round 3: glass-black, no light but
         // the bulbs' dots); out with the door as it sinks.
@@ -211,7 +218,8 @@ public sealed class Vault : ArenaShape
         // (Round 3: from 5.2 m, under the lines at 5.7-6.1, at 2.0 they barely showed, and its bulb sat on the glass door.)
         // (C13 build: at 1.2 m out and 3.2 m of range its falloff left a pink hotspot on the face over the door; now well
         // out from the wall and above the lines, broader and softer, so the letters take an even wash, not a spot.)
-        int letters = B.Glow(0, 25.0, "#9a6cff", 5.5, height: 7.2, flicker: 0, range: 6.5);
+        // (C13 set r2: at 5.5 the moon outlit it on the near-black panel tenfold; the letters showed no violet at k1)
+        int letters = B.Glow(0, 25.0, "#9a6cff", 22, height: 7.2, flicker: 0, range: 6.5);
         B.Lights[letters].Dial = "vaultsigil";
         B.Lights[letters].DialFrom = 0.8;
         B.Lights[letters].DialOff = "vaultdoor";

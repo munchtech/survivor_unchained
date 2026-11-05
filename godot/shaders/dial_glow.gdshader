@@ -11,28 +11,32 @@
 // its lips (the perpendicular distance to the nearest of the seven arms' axes over the groove's half-width, narrowing over
 // the V notch), and the socket at the centre hot at its heart, falling to its rim; saturated violet (round 3's flat fill
 // read lavender through AgX at the night's exposure), the cores bright enough to bloom.
+// (C13 set r2) A cut lit from within, not a rod: the mesh is the cut's own walls (door(): each arm a V, the notch a concave
+// bowl), lit stone (the moon and the notch light on its walls, no specular: no gloss on the notch) with the glow as
+// emission by depth under the face: hot at the floor, dark at the lips, the walls that face up a little hotter (the glow
+// pooled in the cut; the crater cue that reads a hollow). Saturated violet at a low energy: the bloom carries the brightness
+// (round 1: a hot core across each arm read as an emissive rod, the notch's hot centre as a glossy marble; lavender).
 shader_type spatial;
-render_mode unshaded, cull_back;
+render_mode cull_back, specular_disabled;
 
-uniform vec4 color : source_color = vec4(0.45, 0.16, 1.0, 1.0);
-uniform float energy = 3.5;
+uniform vec4 color : source_color = vec4(0.54, 0.11, 1.0, 1.0);
+uniform float energy = 1.0;
 uniform vec3 center = vec3(0.0);
 uniform float radius = 1.0;
 uniform float inner = 0.0;
 uniform float notch_k = 0.12;
-uniform float arms = 7.0;
-uniform float hw = 0.0125;
-uniform float vlen = 0.04;
+uniform float groove = 0.025;
+uniform float socket = 0.05;
 uniform float sock = 0.11;
-uniform float lip = 0.2;
-uniform float core = 0.9;
-uniform float heart = 1.15;
+uniform vec4 stone : source_color = vec4(0.03, 0.03, 0.036, 1.0);
 instance uniform float k = 0.0;
 
 varying vec3 local;
+varying vec3 lnorm;
 
 void vertex() {
 	local = VERTEX;
+	lnorm = NORMAL;
 }
 
 void fragment() {
@@ -44,17 +48,12 @@ void fragment() {
 	float reach = k < notch_k ? kn * inner : mix(inner, 1.04, ka);
 	float lit = smoothstep(dist - 0.04, dist, reach) * step(0.0005, k);
 	float front = exp(-pow((reach - dist) / 0.06, 2.0)) * step(0.001, k) * (1.0 - smoothstep(0.94, 1.0, k));
-	// across the nearest arm: 0 on its axis, 1 at its lips (the half-width narrowing to the V's point)
-	float step_a = 6.2831853 / arms;
-	float a = 1.5707963 + round((atan(p.y, p.x) - 1.5707963) / step_a) * step_a;
-	vec2 d = vec2(cos(a), sin(a));
-	float along = dot(p, d);
-	float across = abs(d.x * p.y - d.y * p.x);
-	float hwl = max(hw * clamp((radius - along) / max(vlen, 0.001), 0.0, 1.0), 0.0015);
-	float u = clamp(across / hwl, 0.0, 1.0);
-	float arm = mix(lip, core, exp(-u * u * 5.0));
-	// the socket: hot at its heart, falling to its rim (its walls at the rim's level)
-	float s = mix(lip * 0.9, heart, exp(-pow(rr / max(sock, 0.001), 2.0) * 5.5));
-	float prof = rr < sock + 0.003 ? s : arm;
-	ALBEDO = vec3(0.008, 0.007, 0.011) + color.rgb * energy * prof * (lit * 0.8 + front * 0.7);
+	// depth under the face, as a share of the cut's own (the arms' V, the notch's bowl)
+	float full = rr < sock + 0.004 ? socket : groove;
+	float d = clamp((center.z - local.z) / max(full, 0.0001), 0.0, 1.0);
+	float ramp = d * d * (3.0 - 2.0 * d);
+	float up = mix(0.75, 1.15, clamp(lnorm.y * 0.5 + 0.5, 0.0, 1.0));
+	ALBEDO = stone.rgb;
+	ROUGHNESS = 1.0;
+	EMISSION = color.rgb * energy * ramp * up * (lit * 0.8 + front * 0.6);
 }

@@ -152,6 +152,21 @@ public partial class ZoneView : Node3D
                 if (h != null) { if (!dialLights.TryGetValue(h, out var dl)) dialLights[h] = dl = new(); dl.Add(i); }
             if (ld.Dial != null) DialLevel(i);
         }
+        // (P9 C13 r2) The zone's reflection probes, on the gloss meshes only (OwnProps.GlossLayer).
+        foreach (var pd in meta.Probes)
+        {
+            var pat = new Vector3((float)pd.X, (float)pd.Y, (float)pd.Z);
+            var pr = new ReflectionProbe
+            {
+                Name = "Probe" + probes.Count, Position = pat, Size = new Vector3((float)pd.Sx, (float)pd.Sy, (float)pd.Sz),
+                OriginOffset = new Vector3((float)pd.Ox, (float)pd.Oy, (float)pd.Oz) - pat, BoxProjection = true, Interior = false,
+                Intensity = (float)pd.Intensity, MaxDistance = 60, ReflectionMask = OwnProps.GlossLayer,
+                CullMask = 0xFFFFFu & ~OwnProps.GlossLayer, AmbientMode = ReflectionProbe.AmbientModeEnum.Disabled,
+                UpdateMode = ReflectionProbe.UpdateModeEnum.Once,
+            };
+            AddChild(pr);
+            probes.Add(pr);
+        }
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
         foreach (var f in meta.Fires)
@@ -1010,8 +1025,17 @@ public partial class ZoneView : Node3D
         leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
     }
 
+    /// <summary>(P9 C13 r2) The zone's reflection probes, and whether they are capturing every frame (a film playing).</summary>
+    readonly List<ReflectionProbe> probes = new();
+    bool probesLive;
+
     public override void _Process(double delta)
     {
+        if (probes.Count > 0 && (SurvivorUnchained.View.BattleFx.Filming?.Invoke() == true) != probesLive)
+        {
+            probesLive = !probesLive;
+            foreach (var pr in probes) pr.UpdateMode = probesLive ? ReflectionProbe.UpdateModeEnum.Always : ReflectionProbe.UpdateModeEnum.Once;
+        }
         time += delta;
         float t = (float)time;
         TownTick();
