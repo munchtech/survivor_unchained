@@ -11,13 +11,14 @@
    0.6
   ],
   "reflect": [
-   1.0,
-   0.62,
-   0.33
+   0.42,
+   0.26,
+   0.14
   ],
   "tint": "#d4e4ff",
   "shallow_alpha": 0.55,
-  "stream_depth": 0.55
+  "stream_depth": 0.55,
+  "w2b": "L1 W2 C5b: the color chain's new night sky lifted the water to L 0.40 over its bank's 0.30 (r5, frame 10); target 10's river sits at its bank's lightness (water 0.223, bank 0.221: ratio 1.01, ours 1.35): every band's reflectance x (1.01 / 1.35)^3 = 0.42 (1.0/0.62/0.33 -> 0.42/0.26/0.14; the board's deep-over-mid 0.53 kept)"
  },
  "strokes": {
   "what": "a few soft painted strokes: long dashes across the view (the board's are horizontal on the picture), a step lighter than the band under them (lift, of the band's reflectance), in a share 'cover' of the water; they drift with the flow",
