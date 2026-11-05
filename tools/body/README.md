@@ -1,5 +1,19 @@
 # tools/body: the body's check
 
+> **`tools/body/out/` is a git-ignored CACHE: never delete it by hand; if it is lost, restore it in this order
+> (5 Nov restore: every output matched byte for byte or to 0.0 mm).**
+> 1. The MakeHuman reference `out/run_a` (needs the pre-22494f355 placement, which HEAD's `skeleton.place_skeleton`
+>    now refuses), from the last code that built it, in a scratch tree, output pointed at this checkout:
+>    `git archive d48cf240c tools/body tools/anim tools/assets/heroine_face/targets godot/art/people/heroine.glb | tar -x -C <scratch>/oldtree`,
+>    then in `<scratch>/oldtree`: `python tools/body/build.py tools/body/specs/base_woman.json <repo>/tools/body/out/run_a`
+>    (takes and gives back the Blender turn itself; ~2 min).
+> 2. `python tools/body/topo_build.py --check-determinism` -> `out/topo/{close,play}.npz` (topo_sha close
+>    2f3fff29b655fbfb, play a7f5aacfdd6e4cea = the `topology` stored in `base/uv_*.npz` and `forms/her_topo_*.npz`).
+>    Proof: `topo_corr.Reference().close(None)` vs run_a close.npz 0.0 mm; `topo_corr.evaluate(base/topo_corr_<tier>, ref)`
+>    and `base/sliders_<tier>.npz` V0 vs out/topo V 0.0 mm.
+> 3. Her build: `python tools/body/build_topo.py tools/body/specs/her_topo.json tools/body/out/her_ek2_final` (no
+>    slider_bake cache needed) -> body.glb/play.glb/rigs/maps byte-identical to `godot/art/people/body_p1/`.
+
 `check.py` is the CHECK command for her body (docs/team/PIPELINE.md P1): numbers first, a judge only on what they
 cannot say. Pure Python (numpy, scipy, embreex, Pillow); no Blender or Godot.
 
