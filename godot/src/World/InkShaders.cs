@@ -1,6 +1,7 @@
 namespace SurvivorUnchained.View;
 
-/// <summary>The ink line's compute shader (InkPass): one pass on the linear HDR frame after the transparent pass,
+/// <summary>The ink line's compute shader (InkPass): one pass on the linear HDR frame after the transparent pass (its darkening the
+/// frame's before that pass, InkSnap's copy, so effects carry none: rule 8),
 /// before TAA, the tonemap and the grade. A 16 x 16 tile loads its view-space positions (and the ink class) with a
 /// 6 px apron into shared memory and reconstructs normals from depth; then each pixel takes its silhouette (a
 /// neighbor within the line's radius lying behind this pixel's tangent plane: drawn on the near side only) and its
@@ -14,7 +15,8 @@ public static class InkShaders
         layout(set = 0, binding = 0, rgba16f) uniform image2D colour;
         layout(set = 0, binding = 1) uniform sampler2D depth_tex;
         layout(set = 0, binding = 2) uniform sampler2D nr_tex;
-        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; } mt;
+        layout(set = 0, binding = 3, std140) uniform M { mat4 inv_proj; vec4 rig; vec4 fog; vec4 fog2; vec4 opt; } mt;
+        layout(set = 0, binding = 4) uniform sampler2D pre_tex; // the frame before the transparent pass (InkSnap; opt.x 1)
         layout(push_constant, std430) uniform P {
             vec2 size; float r_close; float r_play;
             float th_a; float th_b; float crease_cos; float has_nr;
@@ -46,7 +48,7 @@ public static class InkShaders
                     // Godot 4.5.1 (scene_forward_clustered.glsl): alpha = roughness x 127/255, 1 - that on a dynamic instance.
                     uint b = uint(round(texelFetch(nr_tex, p, 0).a * 255.0));
                     uint n = b <= 127u ? b : 255u - b;
-                    cls = pc.dbg > 2.5 ? float(n) + (b > 127u ? 128.0 : 0.0) : float(n & 3u);
+                    cls = (pc.dbg > 2.5 && pc.dbg < 3.5) ? float(n) + (b > 127u ? 128.0 : 0.0) : float(n & 3u);
                 }
                 sp[i] = vec4(v.xyz, d <= 0.0 ? -1.0 : cls);
             }
@@ -70,7 +72,7 @@ public static class InkShaders
             vec4 c = P_(q);
             vec4 col = imageLoad(colour, px);
             if (c.w < 0.0) { if (pc.dbg > 0.5) imageStore(colour, px, vec4(0.0, 0.0, 0.0, col.a)); return; }
-            if (pc.dbg > 2.5) { // the raw code: n/127 grey, red where the instance is dynamic
+            if (pc.dbg > 2.5 && pc.dbg < 3.5) { // the raw code: n/127 grey, red where the instance is dynamic
                 float n = mod(c.w, 128.0);
                 imageStore(colour, px, vec4(c.w >= 128.0 ? 1.0 : n / 127.0, n / 127.0, c.w >= 128.0 ? 0.0 : n / 127.0, col.a));
                 return;
@@ -81,7 +83,7 @@ public static class InkShaders
                 vec4 s = P_(q + ivec2(x, y));
                 if (s.w >= 0.0 && s.z > best) { best = s.z; cls = s.w; }
             }
-            if (pc.dbg > 1.5) {
+            if (pc.dbg > 1.5 && pc.dbg < 2.5) {
                 vec3 k = cls < 0.5 ? vec3(1.0) : cls < 1.5 ? vec3(1.0, 1.0, 0.0) : cls < 2.5 ? vec3(0.0, 0.2, 1.0) : vec3(1.0, 0.0, 0.0);
                 imageStore(colour, px, vec4(k, col.a));
                 return;
@@ -134,9 +136,20 @@ public static class InkShaders
             a *= (1.0 - clamp(fogk, 0.0, 1.0)) * exp(-min(dist, mt.fog2.z) * mt.fog2.y);
             float lum = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));
             a *= 1.0 - smoothstep(pc.lum_cut * 0.75, pc.lum_cut * 1.25, lum);
-            if (pc.dbg > 0.5) { imageStore(colour, px, vec4(vec3(a), col.a)); return; }
+            if (pc.dbg > 3.5) { imageStore(colour, px, vec4(vec3(a), col.a)); return; } // "lines": before the effects' mask
+            vec3 ink = mix(vec3(1.0), mt.rig.rgb * mt.rig.w, a);
+            vec3 outc = col.rgb * ink;
+            // Under the effects (rule 8): the darkening is the opaque frame's (pre x (1 - ink)), taken off the final
+            // frame, never more than today's multiply. Opaque pixels (post = pre) are as before; an additive effect is
+            // exact (pre x ink + fx); her blended hair over its own solid core (post ~ pre) keeps its line.
+            if (mt.opt.x > 0.5) outc = max(col.rgb - texelFetch(pre_tex, px, 0).rgb * (1.0 - ink), outc);
+            if (pc.dbg > 0.5) { // "edges": the line as drawn (the darkening's share of a full line)
+                float full = dot(col.rgb * (1.0 - ink), vec3(0.2126, 0.7152, 0.0722));
+                float got = dot(col.rgb - outc, vec3(0.2126, 0.7152, 0.0722));
+                imageStore(colour, px, vec4(vec3(full > 1e-6 ? a * clamp(got / full, 0.0, 1.0) : a), col.a)); return;
+            }
             if (a <= 0.0) return;
-            col.rgb *= mix(vec3(1.0), mt.rig.rgb * mt.rig.w, a);
+            col.rgb = outc;
             imageStore(colour, px, col);
         }
         """;

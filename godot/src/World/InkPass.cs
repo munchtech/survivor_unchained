@@ -9,12 +9,15 @@ namespace SurvivorUnchained.View;
 /// The ink line (L1 painted cel, B5): a compute pass on the current game camera's Compositor at PostTransparent, on the
 /// linear HDR frame after the MSAA resolve and the transparent pass, before TAA (Godot 4.5.1 runs TAA after the
 /// PostTransparent effects, so the line is jittered with the frame and antialiased by TAA like any edge), the tonemap
-/// and the grade LUT. From the resolved depth: silhouettes on the near side and creases (InkShaders). The ink class
+/// and the grade LUT. Its darkening is taken from the frame as it stood before the transparent pass (InkSnap, at
+/// PreTransparent, copies it): out = max(post - pre x (1 - ink), post x ink), so the effects (spells, sparks, smoke, the
+/// Flare) carry no line of what stands behind them (bible rule 8), while opaque pixels and her blended hair over its own
+/// solid core keep theirs (--ink-mask off: today's multiply over everything). From the resolved depth: silhouettes on the near side and creases (InkShaders). The ink class
 /// rides each lit material's roughness (cel_tag: n = round(r x 31) x 4 + class, roughness = n/127; Godot stores the
 /// normal_roughness alpha as r x 127/255, 1 - that on a dynamic instance): 0 full, 1 silhouette only, 2 none, 3 full.
 /// out = colour x mix(1, RigInk x k, a): the surface's own tone deepened, tinted by the light rig, never black.
 /// Args: --ink off, --ink-px close,play (2.5,1.5 px at 1080p), --ink-depth a,b (the drop threshold max(a m, b x z)),
-/// --ink-crease deg (45), --ink-fade near,far (30,60 m), --ink-dark k (0.25), --ink-rig r,g,b, --ink-dbg edges|class|code,
+/// --ink-crease deg (45), --ink-fade near,far (30,60 m), --ink-dark k (0.25), --ink-rig r,g,b, --ink-dbg edges|class|code|lines (edges: as drawn; lines: before the effects' mask),
 /// --ink-time (the pass's GPU ms), --ink-test S (rows of tagged spheres for the encoding, the static row set at S s).
 /// </summary>
 public partial class InkPass : CompositorEffect
@@ -27,6 +30,7 @@ public partial class InkPass : CompositorEffect
     public static void SetRig(Color c) { if (!rigPinned) RigInk = c; }
 
     public static readonly bool On = Args.Get("ink") is not ("off" or "0");
+    public static readonly bool Mask = Args.Get("ink-mask") is not ("off" or "0");
     public static float RClose = 2.5f, RPlay = 1.5f, ThA = 0.05f, ThB = 0.025f, CreaseDeg = 45, FadeNear = 30, FadeFar = 60, Dark = 0.25f,
         LumCut = 2.0f, ZClose = 3f, ZPlay = 16f, CreaseW = 0.5f, SilThin = 0.6f;
     public static int Dbg;
@@ -50,7 +54,7 @@ public partial class InkPass : CompositorEffect
         if (V("ink-fade", 2) is [var fn, var ff]) { FadeNear = fn; FadeFar = Mathf.Max(ff, fn + 0.01f); }
         if (V("ink-dark", 1) is [var k]) Dark = k;
         if (V("ink-rig", 3) is [var r, var g, var bb]) { RigInk = new Color(r, g, bb); rigPinned = true; }
-        Dbg = Args.Get("ink-dbg") switch { "edges" => 1, "class" => 2, "code" => 3, null => 0, var x => int.TryParse(x, out var d) ? d : 0 };
+        Dbg = Args.Get("ink-dbg") switch { "edges" => 1, "class" => 2, "code" => 3, "lines" => 4, null => 0, var x => int.TryParse(x, out var d) ? d : 0 };
     }
 
     public double GpuMs = -1;
@@ -119,13 +123,17 @@ public partial class InkPass : CompositorEffect
         // (the projection comes depth-corrected, reverse Z 0-1; NDC y taken as 2v - 1, Vulkan's, so an unflipped one is turned over)
         var flipY = Projection.Identity; if (proj.Y.Y > 0) flipY.Y = new Vector4(0, -1, 0, 0);
         var inv = proj.Inverse() * flipY;
-        var m = new float[28];
+        var m = new float[32];
         Vector4[] cols = { inv.X, inv.Y, inv.Z, inv.W };
         for (int c = 0; c < 4; c++) { m[c * 4] = cols[c].X; m[c * 4 + 1] = cols[c].Y; m[c * 4 + 2] = cols[c].Z; m[c * 4 + 3] = cols[c].W; }
         var rig = RigInk;
         m[16] = rig.R; m[17] = rig.G; m[18] = rig.B; m[19] = Dark;
         m[20] = Fog.X; m[21] = Fog.Y; m[22] = Fog.Z; m[23] = Fog.W;
         m[24] = Fog2.X; m[25] = Fog2.Y; m[26] = Fog2.Z; m[27] = Fog2.W;
+        // (the pre-transparent copy, when InkSnap made it this frame at this size)
+        bool hasPre = Mask && InkSnap.Fresh && buf.HasTexture(InkSnap.Ctx, InkSnap.Name) && InkSnap.Size == size;
+        InkSnap.Fresh = false;
+        m[28] = hasPre ? 1 : 0;
         rd!.BufferUpdate(ubo, 0, (uint)(m.Length * 4), MemoryMarshal.AsBytes(m.AsSpan()).ToArray());
         float scale = size.Y / 1080f;
         bool hasN = buf.HasTexture("forward_clustered", "normal_roughness");
@@ -141,12 +149,14 @@ public partial class InkPass : CompositorEffect
         {
             Rid colour = buf.GetColorLayer(v), depth = buf.GetDepthLayer(v);
             Rid nr = hasN ? buf.GetTextureSlice("forward_clustered", "normal_roughness", v, 0, 1, 1) : depth;
+            Rid pre = hasPre ? buf.GetTextureSlice(InkSnap.Ctx, InkSnap.Name, v, 0, 1, 1) : depth;
             var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
             {
                 U(RenderingDevice.UniformType.Image, 0, colour),
                 U(RenderingDevice.UniformType.SamplerWithTexture, 1, sampler, depth),
                 U(RenderingDevice.UniformType.SamplerWithTexture, 2, sampler, nr),
                 U(RenderingDevice.UniformType.UniformBuffer, 3, ubo),
+                U(RenderingDevice.UniformType.SamplerWithTexture, 4, sampler, pre),
             });
             long l = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l, pipe);
@@ -193,19 +203,100 @@ public partial class InkPass : CompositorEffect
     }
 }
 
+/// <summary>The ink's copy of the frame before the transparent pass (PreTransparent, the resolved colour into the scene
+/// buffers' ink/pre, one layer per view): InkPass takes its darkening from it, so effects drawn after carry no line.</summary>
+public partial class InkSnap : CompositorEffect
+{
+    public static readonly StringName Ctx = "ink", Name = "pre";
+    /// <summary>Set on the render thread when the copy is made; InkPass consumes it the same frame.</summary>
+    public static volatile bool Fresh;
+    public static Vector2I Size;
+    public double GpuMs = -1;
+
+    const string Copy = """
+        #version 450
+        layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+        layout(set = 0, binding = 0, rgba16f) uniform restrict readonly image2D src;
+        layout(set = 0, binding = 1, rgba16f) uniform restrict writeonly image2D dst;
+        void main() {
+            ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+            if (any(greaterThanEqual(p, imageSize(src)))) return;
+            imageStore(dst, p, imageLoad(src, p));
+        }
+        """;
+
+    RenderingDevice? rd;
+    Rid shader, pipe;
+    bool failed;
+
+    public InkSnap()
+    {
+        EffectCallbackType = EffectCallbackTypeEnum.PreTransparent;
+        AccessResolvedColor = true;
+    }
+
+    public override void _RenderCallback(int effectCallbackType, RenderData renderData)
+    {
+        if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PreTransparent) return;
+        if (rd == null)
+        {
+            rd = RenderingServer.GetRenderingDevice();
+            var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Copy });
+            if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError($"ink snap shader: {spirv.CompileErrorCompute}"); failed = true; return; }
+            shader = rd.ShaderCreateFromSpirV(spirv, "ink_snap");
+            pipe = rd.ComputePipelineCreate(shader);
+        }
+        if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf) return;
+        var size = buf.GetInternalSize();
+        if (size.X <= 0 || size.Y <= 0) return;
+        uint nv = buf.GetViewCount();
+        // (unique, kept: the buffers free and remake it on a resize)
+        if (!buf.HasTexture(Ctx, Name))
+            buf.CreateTexture(Ctx, Name, RenderingDevice.DataFormat.R16G16B16A16Sfloat,
+                (uint)(RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit),
+                RenderingDevice.TextureSamples.Samples1, size, nv, 1, true, false);
+        for (uint v = 0; v < nv; v++)
+        {
+            var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform>
+            {
+                new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 0, }.With(buf.GetColorLayer(v)),
+                new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 1, }.With(buf.GetTextureSlice(Ctx, Name, v, 0, 1, 1)),
+            });
+            long l = rd.ComputeListBegin();
+            rd.ComputeListBindComputePipeline(l, pipe);
+            rd.ComputeListBindUniformSet(l, set, 0);
+            rd.ComputeListDispatch(l, (uint)((size.X + 15) / 16), (uint)((size.Y + 15) / 16), 1);
+            rd.ComputeListEnd();
+        }
+        Size = size;
+        Fresh = true;
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what == NotificationPredelete && rd != null && shader.IsValid) rd.FreeRid(shader);
+    }
+}
+
+static class RDUniformX
+{
+    public static RDUniform With(this RDUniform u, Rid id) { u.AddId(id); return u; }
+}
+
 /// <summary>Keeps the ink pass first on whichever camera the game draws through (play, close-up, Look, cinematics),
 /// beside the compositors already there (BattleFx's MarkPass inserts itself first; Brush swaps its own in on a camera
 /// change): checked before every frame draws, after their own updates. Feeds the camera's fog. Made by Game unless --ink off.</summary>
 public partial class Ink : Node
 {
     readonly InkPass effect = new();
+    readonly InkSnap snap = new();
     readonly Compositor own;
     double gpuSum; int gpuN; ulong frames;
 
     public Ink()
     {
         Name = "Ink";
-        own = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { effect } };
+        own = new Compositor { CompositorEffects = InkPass.Mask ? new Godot.Collections.Array<CompositorEffect> { snap, effect } : new Godot.Collections.Array<CompositorEffect> { effect } };
     }
 
     public override void _Ready()
@@ -228,12 +319,13 @@ public partial class Ink : Node
         else
         {
             var fx = comp.CompositorEffects;
-            int i = fx.IndexOf(effect);
-            if (i != 0)
+            int i = fx.IndexOf(effect), j = InkPass.Mask ? fx.IndexOf(snap) : 0;
+            if (i != 0 || (InkPass.Mask && j != 1))
             {
                 var d = fx.Duplicate();
-                if (i > 0) d.RemoveAt(i);
+                d.Remove(effect); d.Remove(snap);
                 d.Insert(0, effect);
+                if (InkPass.Mask) d.Insert(1, snap);
                 comp.CompositorEffects = d;
             }
         }
