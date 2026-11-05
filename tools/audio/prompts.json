@@ -985,7 +985,7 @@
    "note": "H7: the blow, The Branding"
   },
   "flare_boom_one_arrow": {
-   "prompt": "A single enormous arrow released: a deep bowstring thrum, a supersonic whistling crack tearing through the air, a heavy piercing impact boom and an echoing tail, epic finisher, cinematic",
+   "prompt": "A huge arrow fired from a giant war bow: a deep bowstring thrum, a sharp whistling shriek through the air, then a massive piercing impact boom and a long echoing tail, epic finisher, cinematic",
    "seconds": 2.5,
    "influence": 0.6,
    "n": 4,
@@ -1024,8 +1024,8 @@
    "note": "H7: the blow, The Butcher's Bill"
   },
   "flare_mark_tick": {
-   "prompt": "A quick cascade of tiny bright crystalline ticks and one soft high bell ping, like targets being locked on, magical, short",
-   "seconds": 0.6,
+   "prompt": "A short bright magical chime ping with a soft shimmering sparkle, a target locking on, clean and crisp",
+   "seconds": 0.5,
    "influence": 0.6,
    "n": 4,
    "keep": 2,

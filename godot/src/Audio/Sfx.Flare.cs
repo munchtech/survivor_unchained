@@ -25,7 +25,24 @@ public static partial class Sfx
     {
         if (A is not { } a) return;
         // Recorded first: this Flare's own (flare.<id>.<cue>), then the cue's for all of them (flare.<cue>).
-        if (BankFirst(w, true, flareId != null ? new[] { $"flare.{flareId}.{cue}", $"flare.{cue}" } : new[] { $"flare.{cue}" })) return;
+        var ids = flareId != null ? new[] { $"flare.{flareId}.{cue}", $"flare.{cue}" } : new[] { $"flare.{cue}" };
+        if (cue == "inhale")
+        {
+            // H7, the stop's intake: the take is cut to the stop (k, its length) with a short fade, so the blow lands
+            // out of a held silence; the world and the beds are pulled down under it as the synth's riser did.
+            if (SoundBank.PlayFirstFor(Math.Max(0.2, k), w, ids) == Banked.Replace)
+            {
+                a.DuckSfx(0.2f, k + 1.2);
+                a.DuckBeds(0.355f, k + 1.6);
+                return;
+            }
+        }
+        else if (BankFirst(w, true, ids))
+        {
+            // H7, the blow: the beds stay under it while its tail rings.
+            if (cue == "boom") a.DuckBeds(0.45f, 1.4);
+            return;
+        }
         double p = w.Pan, t = Now, near = 0.55 + 0.45 * w.Near;
         switch (cue)
         {
