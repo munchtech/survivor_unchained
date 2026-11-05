@@ -1,6 +1,6 @@
-"""Weights v0 on OUR topology (P1 B2a): weights.py's rule 1 (MakeHuman's map) and rule 3 (through the subdivision)
-replaced by primary weights read off our topology's own structure; weights.py's rules 2 and 4-10 then run unchanged.
-A later solver designs v1; this is the simplest honest rule that passes the check's weight numbers.
+"""Weights v1 on OUR topology (P1 B2b): primary weights read off our topology's own structure (seeds by rule where one
+bone owns the skin, a bounded biharmonic fill across each joint's band: F, G below), then weights.py's rules 2, 4 and
+5-10 (4b is not run: BANDS). v0 (B2a) blended by smoothsteps over the joint parts' loops.
 
     body(P, topo, sk) -> (J [n,8], W [n,8], rep)      P: our vertices (glTF), topo: out/topo/<tier>.npz's arrays,
                                                       sk: build_topo's skeleton (names, parents, worlds, ends)
@@ -16,27 +16,34 @@ Primary weights (each a partition of one; smooth01 = smoothstep):
             breast (the breast part only): b = smooth01(d / 5 cm), d its distance from the breast hole's rim.
  A arm      (shoulder, arm, elbow, forearm, hand) the station s along upper arm -> forearm (arc length; a ring's
             station is its centroid's, so a loop moves as one; the few off-ring kite points their own): upper arm ->
-            forearm by smoothstep across the elbow part's designed loops (its first ring's station to its last's),
-            forearm -> hand over +-1.5 cm about the wrist. Shoulder: the part's concentric loops blend the trunk into
-            the arm, h = smooth01(ring / (rings + 1)) (the rim the trunk's, the arm root ring nearly all the arm's).
+            forearm by the hinge fill F, forearm -> hand over +-1.5 cm about the wrist; the trunk into the arm by the
+            girdle fill G.
  H hand     (where the wrist blend gives the hand any) per finger, the polyline hand -> metacarpal -> 01 -> 02 -> 03
             (thumb: hand -> 01 -> 02 -> 03); a point's fingers by a soft minimum of its distance to each finger's
             polyline (exp(-(d - dmin) / 2 mm), shares under 1% dropped: webbing blends, fingers stay their own);
             along a finger, smooth hats at each joint over +-min(8 mm, 0.3 x the shorter neighbouring bone); then
             HAND_SMOOTH Jacobi steps of the umbrella operator over the hand part (the soft minimum's switches, e.g.
             the thumb's root against the index metacarpal, made a blend a few edges wide).
- L leg      (thigh, knee, shin, foot; the crotch strip is the trunk's) the station along thigh -> calf: the hip blends
-            trunk -> thigh over the first 7 cm of the thigh's rings, thigh -> calf across the knee part's designed loops;
+ L leg      (thigh, knee, shin, foot; the crotch strip is the trunk's) the station along thigh -> calf: trunk -> thigh by
+            the girdle fill G, thigh -> calf by the hinge fill F;
             calf -> foot by height over the ankle (all foot 2 cm under the ankle joint, all calf 3 cm over it, along
             the calf); foot -> ball along the foot bone (t 0.85 -> 1.15).
-Then weights.py: 4 chains (twists), 4b bands (the elbow's crease), 5 shares, 6 points, 7 muscles, 8 breast tip,
+ F hinge    (elbow, knee: hinge_fill) seeds by the rest bisector plane, the band's width by the angle a round the joint
+            from the crease, w_c at the crease (the crease skins' crossing distance at the design flexion), w_o on the
+            outer side (the joint part's designed loops), (1 +- ASYM) up / down; the fill between.
+ G girdle   (shoulder, hip: girdle_fill) the limb's share 0 on the trunk's seeds, 1 on the limb's, the fill on the band
+            GIRDLE names (the deltoid loops and the cap; the glute lobe, the crease's rows up the belly).
+ fill       min sum M (L x)^2 (L the edge Laplacian weighted 1 / length^2, M the points' areas) with the seeds fixed:
+            C1 into the seeds round the band (no kink where a band ends), even in arc length, clipped to [0, 1].
+Then weights.py: 4 chains (twists), 5 shares, 6 points, 7 muscles, 8 breast tip,
 9 islands (on our quads), 10 cap; and 2 mirror exactly, by OUR topology's mirror_of (each right point the left's,
 sides swapped; the midline the mean of itself and its swap).
 Head (the approved undo (ii)): its open ring's points take the body ring's final weights exactly (a seam with no
 step); points over 3.5 cm from the ring are Head; between, harmonic on the head's own mesh (the face is rigid on
 Head: A's face has no bones of its own, its blend shapes are inherited unchanged).
-Derivation: (a) the game's need (bones move skin by our loops, nothing keyed to MakeHuman ids); (b) no reference
-weights; the numbers here are v0 choices, each named above.
+Derivation: (a) the game's need (bones move skin by our loops, nothing keyed to MakeHuman ids; linear blend skinning
+with no correctives passing the check's bends); (b) MakeHuman's CC0 crease and cap profiles, MEASURED on corr_a (no
+weight or vertex id read), for ASYM and the girdle bands; each number named at its constant (the sweep that set it).
 """
 import numpy as np
 import scipy.sparse as sp
@@ -97,6 +104,44 @@ def ring_station(X, part, ring, side, pts, parts_sel):
     return s
 
 
+def U(v):
+    v = np.asarray(v, float)
+    return v / max(float(np.linalg.norm(v)), 1e-12)
+
+
+def biharmonic_ops(P, Q):
+    """K = L^T M L on our quads: L the edge Laplacian weighted 1 / length^2 (on a rectangular grid the finite-difference
+    Laplacian, so a fill runs even in arc length, not in ring count: our bend zones' loops are denser), M each point's
+    area (a quarter of each of its quads'). The energy sum M (L x)^2 is the discrete integral of the squared Laplacian."""
+    n = len(P)
+    e = np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]])
+    e = np.unique(np.sort(e, 1), axis=0)
+    w = 1.0 / np.maximum(((P[e[:, 0]] - P[e[:, 1]]) ** 2).sum(1), 1e-10)
+    A = sp.coo_matrix((np.r_[w, w], (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+    L = (sp.diags(np.asarray(A.sum(1)).ravel()) - A).tocsr()
+    qa = 0.5 * np.linalg.norm(np.cross(P[Q[:, 2]] - P[Q[:, 0]], P[Q[:, 3]] - P[Q[:, 1]]), axis=1)
+    M = np.zeros(n)
+    for k in range(4):
+        np.add.at(M, Q[:, k], 0.25 * qa)
+    return (L.T @ sp.diags(M) @ L).tocsr()
+
+
+def fill(K, x, free):
+    """x [n, k] with the known values set; the `free` points' values replaced by the bounded fill: the biharmonic
+    (min sum M (L x)^2, C1 into the known values round them), clipped to [0, 1]."""
+    import scipy.sparse.linalg as spl
+    x = np.array(x, float)
+    if not len(free):
+        return x
+    isf = np.zeros(len(x), bool)
+    isf[free] = True
+    Kff = K[free][:, free].tocsc()
+    rhs = -(K[free][:, ~isf] @ x[~isf])
+    solve = spl.factorized(Kff)
+    x[free] = np.stack([solve(np.ascontiguousarray(rhs[:, k])) for k in range(x.shape[1])], 1)
+    return np.clip(x, 0, 1)
+
+
 class Ctx:
     def __init__(self, P, topo, sk):
         self.P = np.asarray(P, float)
@@ -106,7 +151,19 @@ class Ctx:
         self.names = sk["names"]
         self.idx = {n: i for i, n in enumerate(self.names)}
         self.ends = sk["ends"]
+        self.worlds = sk["worlds"]
         self.n = len(P)
+        self._K = None
+        self.rep = {}
+
+    @property
+    def K(self):
+        if self._K is None:
+            self._K = biharmonic_ops(self.P, self.Q)
+        return self._K
+
+    def world(self, b):
+        return np.asarray(self.worlds[self.idx[b]], float)
 
     def pid(self, *names):
         return [self.parts.index(x) for x in names]
@@ -187,6 +244,86 @@ def hand_chain(c, s, X):
     return out
 
 
+# hinge joints: upper bone, lower bone, the joint's part, the crease's sign on the lower bone's Z (weights.py's bands)
+HINGES = {"elbow": ("upperarm", "lowerarm", "elbow", 1.0), "knee": ("thigh", "calf", "knee", 1.0)}
+# (a) the check's deepest test (135): F_d 130 is the design flexion; the sweep (F_d 80-145, the asymmetry 0-0.95, the
+# outer width 1-2x) on base_woman: the elbow is fold-free at 135 from here, 115 leaves 231 points inside at 135
+F_DESIGN = {"elbow": 130.0, "knee": 130.0}
+# (b) MakeHuman's CC0 crease profile, measured on corr_a (0.5 at the plane, 0.9 by 10 mm distal, the ramp 40+ mm into
+# the upper arm) and (a) the same sweep: the crease band reaches (1 + ASYM) w_c up the proximal bone and
+# (1 - ASYM) w_c down the distal: the distal limb's skin stays its own to the plane (0.6: 277 points at 135, 0.9: 28)
+ASYM = {"elbow": 0.9, "knee": 0.9}
+WO_SCALE = {"elbow": 1.0, "knee": 1.0}  # 2x (the part's whole span) doubled the outer outline's error (1.8 -> 4.4 mm)
+CREASE_SAMPLE = (0.006, 15.0)        # the crease radius: our points within 6 mm of the bisector plane, 15 deg of the crease
+
+
+def hinge_fill(c, s, joint, dom):
+    """The lower bone's share r of a hinge joint's two bones on the points `dom` (bool), by the fill: seeds by rule,
+    biharmonic between. The rest bisector plane through the joint (normal nb toward the upper bone, sd a point's
+    signed distance); round the joint the angle a from the crease direction (the lower bone's Z times the sign, in
+    the plane). The upper bone owns sd > h(a), the lower sd < -h(a), the band between is filled:
+      h(a) = w_c + (w_o - w_c) (1 - cos a) / 2
+      w_c (the crease) = r_c tan((F_d - F_rest) / 2): under linear blend skinning the crease skins of two rigid
+            segments first cross r_c tan(phi / 2) from the plane (phi the turn from rest, r_c the crease skin's
+            distance from the joint): a band this wide keeps them apart up to the design flexion F_d;
+      w_o (the outer side, the share and point bones' room) = half the joint part's span along nb: its designed loops.
+    """
+    up, lo, part, sign = HINGES[joint]
+    P = c.P
+    O = c.head(f"{lo}_{s}")
+    u = U(c.head(f"{up}_{s}") - O)
+    d = U(c.tail(f"{lo}_{s}") - O)
+    nb = U(u - d)
+    cz = sign * c.world(f"{lo}_{s}")[:3, 2]
+    cz = U(cz - nb * (cz @ nb))
+    rel = P - O
+    sd = rel @ nb
+    rad = rel - sd[:, None] * nb
+    R = np.linalg.norm(rad, axis=1)
+    ca = (rad @ cz) / np.maximum(R, 1e-9)
+    ang = np.degrees(np.arccos(np.clip(ca, -1, 1)))
+    jp = dom & (c.part == c.pid(part)[0])
+    f_rest = float(np.degrees(np.arccos(np.clip(-u @ d, -1, 1))))
+    near = jp & (np.abs(sd) < CREASE_SAMPLE[0]) & (ang < CREASE_SAMPLE[1])
+    r_c = float(np.median(R[near]))
+    w_c = r_c * np.tan(np.radians(max(F_DESIGN[joint] - f_rest, 0.0)) / 2)
+    w_o = WO_SCALE[joint] * 0.5 * float(sd[jp].max() - sd[jp].min())
+    h = w_c + (w_o - w_c) * (1 - ca) / 2
+    a_ = ASYM[joint] * (1 + ca) / 2
+    h_up, h_lo = h * (1 + a_), h * (1 - a_)
+    x = (sd < 0).astype(float)[:, None]
+    free = np.where(dom & (sd <= h_up) & (sd >= -h_lo))[0]
+    x = fill(c.K, x, free)[:, 0]
+    c.rep[f"{joint}_{s}"] = {"rest_flexion_deg": round(f_rest, 1), "crease_r_mm": round(r_c * 1e3, 1),
+                             "w_crease_mm": round(float(w_c) * 1e3, 1), "w_outer_mm": round(w_o * 1e3, 1),
+                             "band_points": int(len(free))}
+    return x
+
+
+# girdles (the fill's free band; the trunk's seeds hold the trunk's own weights T, the limb's the limb chain's):
+# shoulder: the shoulder part (its concentric deltoid loops), the arm's rings within limb_m of the arm root, the trunk
+#   within trunk_m of the shoulder joint (corr_a's cap is the share's up to 96 mm from the joint: the arm's turn shared
+#   over the trapezius and the back of the shoulder); the sweep (trunk_m 0-0.15, limb_m 0.03-0.08): 0.15 / 0.05 the
+#   only pair with abduction and flexion 135 both <= 3 points, no depth (0.13 / 0.03: 11; 0.09: 6 at 40 mm)
+# hip: the glute lobe (the trunk's rows under row 0, the hip curve root), the trunk's rows 0..trunk_rows behind the
+#   thigh's coronal plane and 0..front_rows in front of it (the crease's band reaches up the belly: ASYM's rule), the
+#   thigh's rings within limb_m of its root (0.09: hip 90 7 points but the thigh's girth 1.34; 0.07: 1.077); trunk_rows
+#   10 (4: girth 1.081 on her right, 2: 1.12, 16: 1.080)
+GIRDLE = {"shoulder": {"limb_m": 0.05, "trunk_m": 0.15}, "hip": {"limb_m": 0.07, "trunk_rows": 10, "front_rows": 24}}
+# 4b's narrow crease band (weights.py RULES "bands") is NOT run here: on our loops under linear blend skinning it puts
+# the crease back inside (elbow 90: 0 -> 133 points, 10 mm; knee 90: 0 -> 185, 21 mm); it is the corrective stage's
+BANDS = False
+
+def girdle_fill(c, s, joint, own, limb, free):
+    """The limb's share g of a girdle: 1 on the limb's points (`limb`) outside `free`, 0 on every other point
+    (the trunk's, the other side's), the bounded biharmonic fill on `free`."""
+    x = (limb & ~free).astype(float)[:, None]
+    fr = np.where(free & own)[0]
+    g = fill(c.K, x, fr)[:, 0]
+    c.rep[f"{joint}_{s}"] = {"band_points": int(len(fr)), **GIRDLE[joint]}
+    return g
+
+
 def limbs(c, W):
     P = c.P
     arm_parts = c.pid("shoulder", "arm", "elbow", "forearm", "hand")
@@ -202,18 +339,25 @@ def limbs(c, W):
         L1, L2 = np.linalg.norm(pts[1] - pts[0]), np.linalg.norm(pts[2] - pts[1])
         ie = (c.part[m] == el) & (c.ring[m] >= 0)
         lo, hi = st[ie].min(), st[ie].max()
-        ce = s01((st - lo) / (hi - lo))
+        ce = hinge_fill(c, s, "elbow", own & np.isin(c.part, c.pid("arm", "elbow", "forearm")))[m]
+        ce = np.where(np.isin(c.part[m], c.pid("hand")), 1.0, np.where(c.part[m] == sh, 0.0, ce))
         cw = s01((st - (L1 + L2 - 0.015)) / 0.03)
         A = np.zeros((m.sum(), len(c.names)))
         A[:, c.idx[f"upperarm_{s}"]] = 1 - ce
         A[:, c.idx[f"lowerarm_{s}"]] = ce * (1 - cw)
         hm_ = cw > 0
         A[hm_] += cw[hm_, None] * hand_chain(c, s, P[m][hm_])
-        rsh = c.ring[m]
-        R = c.ring[c.part == sh].max()
-        h = np.where(c.part[m] == sh, s01(rsh / (R + 1.0)), 1.0)
-        ids = np.where(m)[0]
-        W[ids] = (1 - h)[:, None] * W[ids] + h[:, None] * A
+        ia = (c.part[m] == c.pid("arm")[0]) & (c.ring[m] >= 0)
+        free = np.zeros(c.n, bool)
+        free[np.where(m)[0]] = (c.part[m] == sh) | (ia & (st - st[ia].min() < GIRDLE["shoulder"]["limb_m"]))
+        Gs = GIRDLE["shoulder"]
+        free |= own & (c.part == c.pid("trunk")[0]) & (np.linalg.norm(P - c.head(f"upperarm_{s}"), axis=1) < Gs["trunk_m"])
+        g = girdle_fill(c, s, "shoulder", own, m, free)
+        Af = np.zeros((c.n, len(c.names)))
+        Af[:, c.idx[f"upperarm_{s}"]] = 1.0
+        Af[m] = A
+        ids = np.where(m | (g > 0))[0]
+        W[ids] = (1 - g[ids])[:, None] * W[ids] + g[ids, None] * Af[ids]
         rep[f"elbow_blend_{s}_m"] = [round(float(lo), 4), round(float(hi), 4), round(float(L1), 4)]
         # the leg
         m = own & np.isin(c.part, leg_parts)
@@ -221,7 +365,8 @@ def limbs(c, W):
         st = ring_station(P[m], c.part[m], c.ring[m], c.side[m], pts, c.pid("thigh", "knee", "shin"))
         ik = (c.part[m] == kn) & (c.ring[m] >= 0)
         lo, hi = st[ik].min(), st[ik].max()
-        ck = s01((st - lo) / (hi - lo))
+        ck = hinge_fill(c, s, "knee", own & np.isin(c.part, c.pid("thigh", "knee", "shin")))[m]
+        ck = np.where(c.part[m] == c.pid("foot")[0], 1.0, ck)
         ank = c.head(f"foot_{s}")
         up = c.head(f"calf_{s}") - ank
         up /= np.linalg.norm(up)
@@ -236,9 +381,17 @@ def limbs(c, W):
         Lg[:, c.idx[f"ball_{s}"]] = ck * ca * cb
         it = (c.part[m] == th) & (c.ring[m] >= 0)
         s0 = st[it].min()
-        h = np.where(c.part[m] == th, s01((st - s0) / 0.07), 1.0)
-        ids = np.where(m)[0]
-        W[ids] = (1 - h)[:, None] * W[ids] + h[:, None] * Lg
+        tr = c.pid("trunk")[0]
+        Gh = GIRDLE["hip"]
+        front = (P - c.head(f"thigh_{s}")) @ (-c.world(f"thigh_{s}")[:3, 2]) > 0      # the crease side (thigh -Z)
+        free = own & (c.part == tr) & (c.ring <= np.where(front, Gh["front_rows"], Gh["trunk_rows"]))
+        free[np.where(m)[0]] = (c.part[m] == th) & (st - s0 < GIRDLE["hip"]["limb_m"])
+        g = girdle_fill(c, s, "hip", own, m, free)
+        Af = np.zeros((c.n, len(c.names)))
+        Af[:, c.idx[f"thigh_{s}"]] = 1.0
+        Af[m] = Lg
+        ids = np.where(m | (g > 0))[0]
+        W[ids] = (1 - g[ids])[:, None] * W[ids] + g[ids, None] * Af[ids]
         rep[f"knee_blend_{s}_m"] = [round(float(lo), 4), round(float(hi), 4)]
     return W, rep
 
@@ -280,7 +433,8 @@ def body(P, topo, sk):
     Pg = c.P
     for side in ("l", "r"):
         W = wt.chain_split(W, Pg, names, sk["ends"], side)
-        W = wt.bands(W, Pg, names, frames, side)
+        if BANDS:
+            W = wt.bands(W, Pg, names, frames, side)
         W = wt.shares(W, Pg, names, frames, side)
         W = wt.points(W, Pg, names, frames, side)
         W = wt.muscles(W, Pg, names, par, tails, side)
@@ -305,6 +459,7 @@ def body(P, topo, sk):
     np.put_along_axis(Wd, J, Wk, 1)
     Wd = mirror(Wd, topo, names)
     J, Wk = wt.cap(Wd, wt.RULES["cap"])
+    rep.update(c.rep)
     rep.update({"max_influences": int((Wk > 0).sum(1).max()), "island_points_moved": moved_all,
                 "rules": "tools/body/weights_topo.py (primary) + tools/body/weights.py RULES 2, 4-10"})
     return J, Wk, rep
