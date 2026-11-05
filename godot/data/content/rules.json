@@ -53,6 +53,24 @@
    "report": "This morning it takes you a moment to find her word. It is there."
   },
   {
+   "id": "toll.baking",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "player.deaths",
+      "gte": 1
+     },
+     {
+      "fact": "prologue.done",
+      "eq": true
+     }
+    ]
+   },
+   "effect": [],
+   "report": "Up the street, nobody is baking."
+  },
+  {
    "id": "mother.carved",
    "once": true,
    "when": {

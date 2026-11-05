@@ -12976,6 +12976,12 @@
        "key": "gave:office",
        "value": true
       }
+     },
+     {
+      "quest": {
+       "id": "vault",
+       "entry": "office_end"
+      }
      }
     ],
     "choices": [
