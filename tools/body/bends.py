@@ -178,14 +178,19 @@ class Strip:
             self.seg_p = np.zeros_like(rend)
         else:
             arms = chain(bone(poser, rig, "upperarm", "l")) + chain(bone(poser, rig, "upperarm", "r"))
-            rend = body & (chain(bone(poser, rig, "thigh", other)) < 0.5) & (arms < 0.5)
+            # the other leg by the rest geometry too (seg_g's rule, mirrored): a weights change moved it (the hip
+            # pin's trunk-weighted inner thigh of the other leg drew under this hip's corner at 90, 'outer' +40 mm)
+            Oo = R[I[bone(poser, rig, "thigh", other)]][:3, 3]
+            uo = unit(R[I[bone(poser, rig, "calf", other)]][:3, 3] - Oo)
+            hips = 0.5 * (self.O + Oo)
+            leg_o = (((poser.P0 - Oo) @ unit(up - uo)) < 0) & (((poser.P0 - hips) @ out) < 0)
+            rend = body & ~leg_o & (arms < 0.5)
             self.seg_d = rend & (chain(self.bone) >= 0.5)
             self.seg_p = np.zeros_like(rend)
             # the girth's thigh by the rest geometry, not by weights (a weights change moved what was measured: the
             # hip pin took the inner thigh's top out of the thigh chain >= 0.5, rest girth d0.25 633 -> 547 mm, 90's
             # ratio 1.10 -> 1.24): her own side of the hips' midpoint, beyond the rest bisector plane at the joint
             # between the trunk's up and the thigh's rest direction (the knee and elbow's rule carried to the hip)
-            hips = 0.5 * (self.O + R[I[bone(poser, rig, "thigh", other)]][:3, 3])
             self.seg_g = rend & (((poser.P0 - self.O) @ unit(up - u_d)) < 0) & (((poser.P0 - hips) @ out) > 0)
         T = poser.T
         self.rend = rend
