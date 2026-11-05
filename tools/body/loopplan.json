@@ -128,32 +128,39 @@
    "side_y": 1.05,
    "back": [
     [
-     118,
-     0.95
+     120,
+     950,
+     -101
     ],
     [
-     123,
-     0.945
+     100,
+     945,
+     -100
     ],
     [
-     128,
-     0.945
+     80,
+     945,
+     -98
     ],
     [
-     134,
-     0.95
+     60,
+     950,
+     -94
     ],
     [
-     138,
-     0.95
+     40,
+     950,
+     -81
     ],
     [
-     180,
-     0.988
+     0,
+     988,
+     -75
     ]
    ],
    "lobe_top_rise": 0.03,
-   "why": "(a) the judge (pass 3b item 4): the leg's root a CURVE, not a plane: front = the groin crease, read off the reference's front profiles (b: the concave minimum, x 37-70 mm: (37, 0.99) (60, 1.02) (70, 1.05); [theta deg, y] on the trunk canvas) from the pubic mound's lower edge (b: the midline 1.0); side_y = over the hip bone at the greater trochanter (b: our skeleton's hip joint thigh_l 1.067, the trochanter's top just under it), level from the crease to the shoulder band's back edge BB (115 deg); back = down the gluteus' lateral edge to the gluteal fold (b: the back profiles' kink at 0.945-0.95 for x 40-120 mm) and along it into the perineum (b: the cleft's bottom 0.988 on the midline). The buttock above the fold stays trunk: a lobe of the B band whose rows end on the rise (lobe_top_rise: its top climbs 30 mm to the midline so the cleft's column (b: 0.988 -> 1.08 up the floor, ~115 mm) matches the buttock's (0.95 -> 1.05 under the bulge)); the reference is relabelled by the same curve"
+   "why": "(a) the judge (pass 3b item 4): the leg's root a CURVE, not a plane: front = the groin crease, read off the reference's front profiles (b: the concave minimum, x 37-70 mm: (37, 0.99) (60, 1.02) (70, 1.05); [theta deg, y] on the trunk canvas) from the pubic mound's lower edge (b: the midline 1.0); side_y = over the hip bone at the greater trochanter (b: our skeleton's hip joint thigh_l 1.067, the trochanter's top just under it), level from the crease to the shoulder band's back edge BB (115 deg); back = down the gluteus' lateral edge to the gluteal fold (b: the back profiles' kink at 0.945-0.95 for x 40-120 mm) and along it into the perineum (b: the cleft's bottom 0.988 on the midline). The buttock above the fold stays trunk: a lobe of the B band whose rows end on the rise (lobe_top_rise: its top climbs 30 mm to the midline so the cleft's column (b: 0.988 -> 1.08 up the floor, ~115 mm) matches the buttock's (0.95 -> 1.05 under the bulge)); the reference is relabelled by the same curve",
+   "why_back": "(b) the gluteal fold as reference landmarks [x, y, z] mm (projected onto the reference, then the canvas's inverse): the back profiles' kink at y 945-950 for x 40-120 mm (faded by x 120: the fold's lateral end, the lobe's miter) and the cleft's bottom (0, 988, -75); given in 3D because the canvas's steep rays under h_lo pass under the buttock and hit the inner thigh (a meridian-and-height lookup put the miter at (4, 983, -39))"
   }
  },
  "breast": {

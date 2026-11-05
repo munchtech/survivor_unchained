@@ -788,9 +788,11 @@ def hip_root(cv, plan, TH, BB):
     tB0 = float(np.interp(BB, TH, tFS))
     top = tB0 + hr["lobe_top_rise"] * smooth01((TH - BB) / (np.pi - BB))
     tFS = np.where(TH > BB, top, tFS)
-    bk = [(np.radians(a), y_to_t(cv, np.radians(a), y)) for a, y in hr["back"]]
-    Bth = np.array([BB] + [a for a, _ in bk])
-    Bt = np.array([tB0] + [t for _, t in bk])
+    q, _ = cv.ref.project([TRUNK, LEG], np.array(hr["back"], float) / 1000.0)   # (b) the fold's landmarks, 3D
+    bth, bt = cv.inv(q)                              # (steep canvas rays pass under the buttock: no y_to_t here)
+    o = np.argsort(bth)
+    Bth = np.concatenate([[BB], bth[o]])
+    Bt = np.concatenate([[tB0], bt[o]])
     cut = np.where(TH <= BB, tFS, np.interp(TH, Bth, Bt))
     return {"tFS": tFS, "Bth": Bth, "Bt": Bt, "miter": 1, "cut": cut, "BB": BB, "t_side": tB0}
 
