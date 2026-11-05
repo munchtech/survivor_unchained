@@ -77,8 +77,10 @@
     },
     "dawn_morning": {
       "base": "dawn",
-      "from": "the dawn rig an hour on (Atmospheres.Morning's end): the sun higher and paler. Start: LowFordMorning.",
-      "key": { "el": 34, "color": "#ffdfc2", "intensity": 6.6 }
+      "from": "the dawn rig an hour on (Atmospheres.Morning's end): the sun higher and paler. Start: LowFordMorning. B4r3: the dawn rig's key 14 at its old share (6.6 of 10: 9.5), the fill a step bluer (#9068d6; the higher sun warms the shade: h 354 to 332, LB DAWN 333), fires 0.3 (toward the day's 0.2).",
+      "key": { "el": 34, "color": "#ffdfc2", "intensity": 9.5 },
+      "fill": { "color": "#9068d6" },
+      "fires": 0.3
     },
     "dawn_waystation": {
       "base": "dawn",
