@@ -31,6 +31,9 @@ uniform bool procedural = false;
 uniform vec3 flame_cut = vec3(0.2, 1.5, 0.12);
 // sparks: cell (of the card's height), density (of cells), length (of the card's height), aspect
 uniform vec4 flame_sparks = vec4(0.09, 0.12, 0.035, 2.2);
+// (W2 C5b) the heat where the mid and core bands start (x, y) mapped onto the school's t (z, w), piecewise linear, 0 and 1
+// kept (fx_language.json campfire "steps"); x = z, y = w: no change
+uniform vec4 flame_steps = vec4(0.34, 0.75, 0.34, 0.75);
 
 varying float cam_d;
 
@@ -84,6 +87,9 @@ void fragment() {
 	// units (its e-fold fx_glow.x of the body's heat range)
 	float cut = flame_cut.x;
 	float heat = h >= cut ? (h - cut) / (1.0 - cut) : -(cut - h) / max(flame_cut.z, 1e-3) * fx_glow.y;
+	if (heat > 0.0) heat = heat < flame_steps.x ? heat / flame_steps.x * flame_steps.z
+		: heat < flame_steps.y ? mix(flame_steps.z, flame_steps.w, (heat - flame_steps.x) / (flame_steps.y - flame_steps.x))
+		: mix(flame_steps.w, 1.0, (heat - flame_steps.y) / max(1.0 - flame_steps.y, 1e-3));
 	vec4 c = fx_cel(heat, up);
 	// painted sparks rising off the tongues: small hard tears in the card's upper half, never on the body
 	float ar = cell_px.x / cell_px.y;

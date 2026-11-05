@@ -621,6 +621,11 @@
   "lod": 1.5,
   "glow": 0.12,
   "sparks": 6,
-  "spark_length": 0.035
+  "spark_length": 0.035,
+  "steps": [
+   0.449,
+   0.667
+  ],
+  "w2b": "L1 W2 C5b: steps FROM MB5 CAMPFIRE's band shares (edge 0.32, mid 0.27, core 0.21 of the flame: 0.40/0.34/0.26 of its bands) over 01 r4's (after the grade, under the title's UI shade: 0.23/0.64/0.12 at the school's t 0.34/0.75): the r4 heat's share curve read through its two points (F(0.34) = 0.23, F(0.75) = 0.87, linear between) gives F = 0.40 at 0.449 and F = 0.74 at 0.667: those heats now start the mid and core bands"
  }
 }

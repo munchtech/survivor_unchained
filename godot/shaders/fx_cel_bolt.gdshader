@@ -21,11 +21,12 @@ render_mode unshaded, blend_mix, depth_draw_never, depth_test_disabled, cull_dis
 // verdict's 10-12; e/m/c shares 0.47/0.30/0.23 to 0.44/0.32/0.24, MB5 0.34/0.41/0.25))
 uniform vec4 bolt_shape = vec4(0.36, 2.4, 0.8, 2.0);
 // heat at the tail, at the head; the cross profile's power; the sweep (noise sheared back by |lane|)
-uniform vec4 bolt_heat = vec4(0.7, 1.05, 2.0, 0.9);
+// (W2 C5b r4: the ball at 0.5 moved the core 0.193 -> 0.189 only: the head's own heat 1.05 -> 0.95, the ball 0.4)
+uniform vec4 bolt_heat = vec4(0.7, 0.95, 2.0, 0.9);
 // the ball: its centre back from the head's, its stretch along, its radius (of the head's), its heat
 // (W2 C5b) its heat 0.7 -> 0.5: at the play camera (a 110-140 px bolt) the tail's thin tongues fall under a pixel and the
 // head's ball held 0.37 of the bands against MB5's 0.25 (lookdev r3, fx_measure shot: e/m/c 0.25/0.38/0.37; MB5 0.34/0.41/0.25)
-uniform vec4 bolt_ball = vec4(0.25, 2.2, 1.0, 0.5);
+uniform vec4 bolt_ball = vec4(0.25, 2.2, 1.0, 0.4);
 // the tongues: frequency along, across (per lane), strength at the tail, at the head
 uniform vec4 bolt_licks = vec4(0.8, 2.6, 0.6, 0.12);
 // the gaps: frequency along, across, strength, power of its fall toward the head; the bites' frequency along, across

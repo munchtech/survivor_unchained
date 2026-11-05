@@ -30,7 +30,8 @@ public sealed record FxSchool(string Name, string From, IReadOnlyList<FxBand> Ba
 /// simulated heat (0..1, flame_mv's atlas) becomes the language's heat: Cut the sim heat where the body starts, Lod the
 /// mip the shape is read at (a coarser one: big graphic tongues, not the sim's wisps), Glow the sim heat below the cut the
 /// soft glow reaches over; Sparks painted sparks rising off it (count per card), SparkLength their length (of the card's height).</summary>
-public sealed record FxFlame(string From, string School, float Cut, float Lod, float Glow, int Sparks, float SparkLength);
+/// (W2 C5b) Steps: the flame's heat where its mid and core bands start (piecewise remap onto the school's t; 0 and 1 kept).
+public sealed record FxFlame(string From, string School, float Cut, float Lod, float Glow, int Sparks, float SparkLength, float[] Steps);
 
 /// <summary>data/look/fx_language.json as plain data; no Godot types.</summary>
 public sealed class FxLanguage
@@ -67,7 +68,8 @@ public sealed class FxLanguage
             {
                 camp = new FxFlame(c.GetProperty("from").GetString() ?? "", c.GetProperty("school").GetString() ?? "fire",
                     c.GetProperty("cut").GetSingle(), c.GetProperty("lod").GetSingle(), c.GetProperty("glow").GetSingle(),
-                    c.GetProperty("sparks").GetInt32(), c.GetProperty("spark_length").GetSingle());
+                    c.GetProperty("sparks").GetInt32(), c.GetProperty("spark_length").GetSingle(),
+                    c.TryGetProperty("steps", out var st) ? new[] { st[0].GetSingle(), st[1].GetSingle() } : new[] { 0f, 0f });
                 if (!schools.ContainsKey(camp.School)) throw new InvalidDataException($"fx_language.json: campfire's school '{camp.School}' is not one");
                 if (!(camp.Cut > 0 && camp.Cut < 1)) throw new InvalidDataException("fx_language.json: campfire's cut is outside 0..1");
             }

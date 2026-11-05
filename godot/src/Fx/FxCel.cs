@@ -59,6 +59,7 @@ public static class FxCel
         // (W2 C5b) after the grade (Campfire adopts the cards to FxAfter): the board's colors, no emit
         Apply(m, System.Enum.Parse<School>(f.School, true), FxAfter.On);
         m.SetShaderParameter("flame_cut", new Vector3(f.Cut, f.Lod, f.Glow));
+        if (f.Steps[1] > f.Steps[0] && f.Steps[0] > 0) m.SetShaderParameter("flame_steps", new Vector4(f.Steps[0], f.Steps[1], s.Mid.T, s.Core.T));
         // the sparks' region: the card's upper half, about 0.6 wide by 0.6 tall in card-height units; cells of 0.09
         float cell = 0.09f, cells = 0.6f * 0.6f / (cell * cell);
         m.SetShaderParameter("flame_sparks", new Vector4(cell, Mathf.Clamp(f.Sparks / cells, 0.02f, 0.9f), f.SparkLength, 2.2f));
