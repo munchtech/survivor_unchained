@@ -846,17 +846,16 @@
      "roles": {"lit": "#785527", "lit_night": "#2a2b39", "shade": "#372b28"}
     },
     "albedo": {
-     "L": [0.2896, 0.4073, 0.5273],
-     "C": [0.0203, 0.0627, 0.0983],
-     "h": [81.4, -38.7, 30.8],
-     "mid": "#5c4d25",
+     "L": [0.331, 0.4499, 0.5687],
+     "C": [0.0138, 0.0528, 0.0918],
+     "h": [63.9, -38.7, 30.8],
+     "mid": "#6a4f36",
      "n": 1101,
-     "roles": {"lit": "#5b461e", "shade": "#584a23"},
+     "roles": {"lit": "#6a4727", "shade": "#3a2e2b"},
      "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.083 -> 0.070",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.1075, 0.074, 0.0187],
-     "fit_dE": 0.0397
+     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#392d2b) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #775e33, the base under the key alone #6a4727)",
+     "samples": ["day shade"],
+     "linear": [0.1445, 0.0782, 0.0364]
     }
    }
   },
@@ -997,17 +996,16 @@
      "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
     },
     "albedo": {
-     "L": [0.3983, 0.4777, 0.6483],
-     "C": [0.0151, 0.035, 0.061],
-     "h": [336.8, -60.1, 90.4],
-     "mid": "#716767",
+     "L": [0.4411, 0.5661, 0.6911],
+     "C": [0.0009, 0.0239, 0.0468],
+     "h": [65.1, -60.1, 90.4],
+     "mid": "#807468",
      "n": 13519,
-     "roles": {"lit": "#6a5664", "shade": "#645a5a"},
+     "roles": {"lit": "#80684f", "shade": "#494554"},
      "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.1665, 0.1358, 0.1359],
-     "fit_dE": 0.0287
+     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#464455) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #977a70, the base under the key alone #80684f)",
+     "samples": ["day shade"],
+     "linear": [0.2175, 0.1736, 0.138]
     }
    }
   },
@@ -1533,17 +1531,16 @@
      "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
     },
     "albedo": {
-     "L": [0.527, 0.6035, 0.687],
-     "C": [0.1058, 0.118, 0.1264],
-     "h": [111.8, -9.3, 9.5],
-     "mid": "#868828",
+     "L": [0.5112, 0.5912, 0.6712],
+     "C": [0.0889, 0.0992, 0.1095],
+     "h": [115.9, -9.3, 9.5],
+     "mid": "#7b853b",
      "n": 8267,
-     "roles": {"lit": "#848825", "shade": "#808123"},
+     "roles": {"lit": "#7a782c", "shade": "#46512f"},
      "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.2386, 0.2458, 0.021],
-     "fit_dE": 0.0204
+     "method": "L1 C3a (hand-set, the Stage B judge's order 3): MB4's day shade sample (#424f2f) over the day rig's shade response (B3r3's model, shade = a (S0 + M phi), day fill #7789ff 0.1063; the mean of the play and close cameras), no fit to the painted-in light; the painter's top gradient and bevel stroke carry the lit side (the board's lit #b19a39, the base under the key alone #7a782c)",
+     "samples": ["day shade"],
+     "linear": [0.1972, 0.2337, 0.0433]
     }
    }
   },
