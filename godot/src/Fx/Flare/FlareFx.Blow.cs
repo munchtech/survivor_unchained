@@ -69,6 +69,7 @@ public partial class FlareFx
         }
         Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
         ResolvePending();
+        if (Perf.On) GD.Print($"flare perf blow t {Perf.Now:0.0000}");
         if (Args.Has("clip") || Args.Has("shot"))
             GD.Print($"flare blow {id}: main {part} at +{rt - pressRt:0.000} s real from the press (Flare time {t:0.000}), band from ({o.X:0.0},{o.Y:0.0}){(end != o ? $" along to ({end.X:0.0},{end.Y:0.0})" : "")}, kick {FlareFamily.Beat.KickPx:0.#} px");
     }

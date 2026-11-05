@@ -140,6 +140,7 @@ public partial class FlareFx : Node3D
                 ramp = 0.08;
                 releaseAt = t;
                 if (Args.Has("clip")) GD.Print($"flare release frame {Engine.GetFramesDrawn()} at +{t:0.000} s real");
+                if (Perf.On) GD.Print($"flare perf release t {Perf.Now:0.0000}");
                 // (H7: a Strike's Spend, its light and the world's ring, lands on its main blow, FLARE_LOOK §1.2: FlareFx.Blow)
                 if (id != "burns_twice" && !IsLongCut && !familyOn) Spend(e.X, e.Z, 1);
                 break;
@@ -170,6 +171,8 @@ public partial class FlareFx : Node3D
     {
         Clear();
         if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)}");
+        // (--perf: the beats on the recording's clock, for tools/fx/flare_gpu.py --live)
+        if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
         id = e.Id;
         pressWorld = b.Time;
         dropLogged = false;

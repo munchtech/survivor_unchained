@@ -34,14 +34,15 @@ public static partial class Sfx
             {
                 // (H7 fix: 0.2 left the fight 6.5 dB over the intake in f_longcut; 0.12 with the takes at 2x)
                 a.DuckSfx(0.12f, k + 1.2);
-                a.DuckBeds(0.355f, k + 1.6);
+                // (H7 fix2: the beds (the music) to 0.15: at 0.355 they sat level with the intake through the stop)
+                a.DuckBeds(0.15f, k + 1.6);
                 return;
             }
         }
         else if (BankFirst(w, true, ids))
         {
             // H7, the blow: the beds stay under it while its tail rings.
-            if (cue == "boom") a.DuckBeds(0.45f, 1.4);
+            if (cue == "boom") a.DuckBeds(0.3f, 1.4);
             return;
         }
         double p = w.Pan, t = Now, near = 0.55 + 0.45 * w.Near;
