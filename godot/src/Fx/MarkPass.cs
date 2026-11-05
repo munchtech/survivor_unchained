@@ -44,6 +44,7 @@ public partial class MarkPass : CompositorEffect
         // families in the mark's own metres (hx 1 crossed, 0 one family), period hp m, half width hw m (never under half a
         // pixel: thinner lines lose their light instead of shimmering), light hl x the rims'; hu of it ahead of the running
         // fill (the filled part a step brighter); over the still water hwat of it (the river: the hatch read as a net)
+        ["lw"] = 0.25f,    // a running lane's wash ahead of its front (x its chevrons' lit red)
         ["hl"] = 0.35f, ["hp"] = 0.16f, ["hw"] = 0.014f, ["hu"] = 0.3f, ["hwat"] = 0f, ["hx"] = 1f,
         // every mark's pattern forced (hs, for shots; -1 each mark's own): 0 the crossed grid, 1 the half hatch, 2 chevrons,
         // 3 molten, 4 cracks, 5 lattice, 6 none (the bed, rims and cast line alone) (PatternIds)
@@ -173,7 +174,7 @@ public partial class MarkPass : CompositorEffect
     void Init()
     {
         rd = RenderingServer.GetRenderingDevice();
-        var defs = string.Join("\n", new[] { "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
+        var defs = string.Join("\n", new[] { "lw", "s0", "s1", "sb0", "sb1", "tol", "rs0", "rs1", "hl", "hp", "hw", "hu", "hwat", "hx", "hs", "cap", "ld", "ht", "eg", "ew", "kg", "kw", "fl", "fw", "tt", "cd", "cp", "cs", "cw", "bo", "bf" }.Select(k => $"#define T_{k.ToUpperInvariant()} {Tune[k].ToString("0.0####", CultureInfo.InvariantCulture)}"));
         var spirv = rd.ShaderCompileSpirVFromSource(new RDShaderSource { Language = RenderingDevice.ShaderLanguage.Glsl, SourceCompute = Src.Replace("#version 450", "#version 450\n" + defs) });
         if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("MarkPass shader: " + spirv.CompileErrorCompute); failed = true; return; }
         shader = rd.ShaderCreateFromSpirV(spirv, "mark_pass");
@@ -640,6 +641,9 @@ public partial class MarkPass : CompositorEffect
                 else if (pp == 4) pl = pcrack(l) * T_HL * 1.4 * (1.0 + 0.6 * exp(-abs(dm) / 0.4));
                 else if (pp == 5) pl = plattice(l) * T_HL * 1.2;
                 // 6 none: no pattern (the owner, 29 Oct: no chevrons on the round marks)
+                // (a running lane, H6 r1 fix 6: ahead of its front a wash at a quarter of its chevrons' lit red from the
+                // windup's first frame, so the lane reads under the crowd before the fill comes; its outline alone was lost)
+                if (kind == 0 && e.x >= 0.0) pl = max(pl, T_LW * T_HL * 1.4 * (1.0 - filled) / max(lit, 1e-3));
                 pl *= inside * lit * ghw;
                 pd *= inside * ghw;
             }

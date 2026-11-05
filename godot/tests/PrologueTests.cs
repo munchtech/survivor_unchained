@@ -5,6 +5,7 @@ using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
+using SurvivorUnchained.Content;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
@@ -31,6 +32,61 @@ public class PrologueTests
         host.Battle = b;
         zone.Begin(b);
         return new Setup(j, host, zone, b, meta);
+    }
+
+    [Fact]
+    public void The_shut_gate_drops_its_portcullis_and_raises_it_once_the_ring_is_down()
+    {
+        // (H8 N22, the judge on the N22 frames: "the arch looks open ... the player walks into an invisible wall")
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice
+        {
+            Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
+            Ability = a.Abilities[0],
+        }, 42);
+        var meta = ZoneMeta.Load("lowford");
+        var host = new FakeHost(j, meta);
+        var zone = new Prologue(host, meta) { DayStart = true };
+        var at = zone.ArrivalFrom(null);
+        var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 5, ember: zone.Ember);
+        b.Hooks = zone.Hooks;
+        host.Battle = b;
+        zone.Begin(b);
+        var s = new Setup(j, host, zone, b, meta);
+        Run(s, 0.1);
+        // The day starts shut: the portcullis down at once (never seen up), the bar on its line, a watchman behind it.
+        Assert.Equal(1, host.FakeLook.Moved["portcullis"]);
+        var spec = Play.Zones.DayStretch.For("lowford")!;
+        var bar = Assert.Single(b.Collision.All(), c => c.Tag == "gate_shut");
+        Assert.InRange(bar.Z, spec.PortcullisZ, spec.PortcullisZ + 0.6);
+        Run(s, 12);
+        Assert.Equal(Prologue.Stage.Exit, zone.Now);
+        // Up to the bars, past the exit line: held, told why, and the tracker names the task in one line.
+        var gate = meta.Place("LOWFORD", "gate");
+        // (by the wall's side of the apron, off the ring's line: the ring is not sprung, still owed)
+        double exitZ = meta.Places["LOWFORD"].GetProperty("exitZ").GetDouble();
+        Stand(s, gate.X + 8.7, exitZ - 1);
+        Run(s, 0.2);
+        Assert.False(j.World.Fact("prologue.done").Truthy);
+        var steps = host.Tracked.Single(t => t.Id == "pro").Steps;
+        Assert.Equal(Prologue.GateTask, steps[0].Text);
+        Assert.DoesNotContain(steps, x => x.Text.StartsWith("Walk up the road"));
+        Assert.Equal(1, host.FakeLook.Moved["portcullis"]);
+        // (near the gate the goal's line takes the first line's place, in the same words: one line, not two)
+        var ring = Goals.All.Single(g => g.Id == "day_ring");
+        var merged = Goals.Merge(host.Tracked, [new ActiveGoal(ring, 0, 0, 0, true)], _ => null).Single(t => t.Id == "pro").Steps;
+        Assert.Equal(steps.Count, merged.Count);
+        Assert.Equal(Prologue.GateTask, merged[0].Text);
+        // The ring down: the portcullis rises over a few seconds, eased; she goes through once it is most of the way up.
+        j.World.Zone("lowford")[Play.Zones.DayStretch.DoneKey("wolves")] = true;
+        Stand(s, gate.X, exitZ - 1);
+        Run(s, 1.0);
+        Assert.InRange(host.FakeLook.Moved["portcullis"], 0.3, 0.95);
+        Assert.False(j.World.Fact("prologue.done").Truthy);
+        Run(s, 2.0);
+        Assert.Equal(0, host.FakeLook.Moved["portcullis"]);
+        Assert.DoesNotContain(b.Collision.All(), c => c.Tag == "gate_shut");
+        Assert.True(j.World.Fact("prologue.done").Truthy);
     }
 
     static void Run(Setup s, double seconds, bool safe = true)
@@ -128,6 +184,38 @@ public class PrologueTests
     }
 
     [Fact]
+    public void The_Ford_Warden_holds_at_his_floor_until_two_lamps_are_broken()
+    {
+        // (H8, N20, the owner on demo-rc2: "the warden was easy. died in like 8 seconds didn't have to crash a lamp")
+        var s = Make();
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 0.1);
+        Run(s, 7);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var warden = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var fw = Teeth.Ford!;
+        Assert.Equal(2600 * fw.HpMul, warden.MaxHp, 0);
+        void Pound() { for (int i = 0; i < 40; i++) { s.B.HitEnemy(warden, 5000, School.Physical, []); Run(s, 0.02); } }
+        Pound();
+        Assert.True(warden.Alive);
+        Assert.InRange(warden.Hp / warden.MaxHp, fw.Floors[3] - 0.01, fw.Floors[3] + 0.05);
+        // One lamp broken: down to the next floor, no further.
+        var p0 = s.Meta.Colliders.First(c => c.Tag == "pylon:0");
+        s.Zone.Hooks.OnHitProp!("pylon:0", p0.Id, School.Physical, 300, p0.X, p0.Z);
+        Pound();
+        Assert.True(warden.Alive);
+        Assert.InRange(warden.Hp / warden.MaxHp, fw.Floors[2] - 0.01, fw.Floors[2] + 0.05);
+        // Two broken: he can fall (after the backstop's minute).
+        var p1 = s.Meta.Colliders.First(c => c.Tag == "pylon:1");
+        s.Zone.Hooks.OnHitProp!("pylon:1", p1.Id, School.Physical, 300, p1.X, p1.Z);
+        Run(s, fw.MinSeconds);
+        if (warden.Alive) Pound();
+        Assert.False(warden.Alive);
+    }
+
+    [Fact]
     public void The_warden_wakes_behind_its_lamps_falls_and_the_gate_opens_at_dawn()
     {
         var s = Make();
@@ -171,14 +259,20 @@ public class PrologueTests
         Assert.Equal(1, s.B.EmberLevel);
         Assert.Empty(s.B.Boons);
         Assert.Equal(Character.Kit(s.J.Ch).Weapons.Select(w => w.Id), s.B.Weapons.Select(w => w.Id));
-        Assert.Contains(s.Host.Announced, a => a.Title == "The ember goes out");
+        // (said on the dawn's card, held until a click: N24; no banner and no caption say it again)
+        var dawn = Assert.Single(s.Host.Dawns);
+        Assert.Equal("The ember goes out", dawn.Title);
+        Assert.Contains("The Lamps' light", dawn.Takes);
+        Assert.DoesNotContain(s.Host.Announced, a => a.Title == "The ember goes out");
+        Assert.DoesNotContain(s.Host.Said, l => l.Contains("the ember goes out of you"));
         Run(s, 7);
         Assert.Equal(Prologue.Stage.Exit, s.Zone.Now);
         var gate = s.Meta.Place("LOWFORD", "gate");
         // (the day's wolf ring at the gate put down today: H4 item 10 r3's ring holds the gate till its second wave is down)
         s.J.World.Zone("lowford")[Play.Zones.DayStretch.DoneKey("wolves")] = true;
         Stand(s, gate.X, gate.Z + 6);
-        Run(s, 0.1);
+        // (H8 N22: the portcullis, down while the ring was owed, rises first: she goes through once it is most of the way up)
+        Run(s, 2.6);
         Assert.True(s.J.World.Fact("prologue.done").Truthy);
         Assert.Equal("waystation", s.Host.Travelled?.Zone);
     }

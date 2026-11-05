@@ -5,6 +5,187 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## H8 rc2's bugs (seams-h8 lead 3, 4-5 Nov): MR READY seams-h8@5a5514f25 (the code at 2df6a1a7c; this line's own commit follows)
+
+All seven items pass. Brief: `docs/team/hook/H8_rc2_bugs.md`. Integration merged at d9ab02f6d (docs only; the junction was removed and remade to our own `public\assets`). Sheets, runs and verdicts: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`r2\` judge round 2, `r3\` and `r4\` the x-ray, `r5\` the final b_path and suite).
+
+**Judges** (API, xhigh):
+- Round 2 (`r2\verdict.md`, $0.86): 4 PASS. N22, N24 and N23 B1 (her feet are never in frame; planted drift at most 5.7 cm). N36's PASS stood, but it still needed a frame with her actually hidden.
+- N36 closing frame (`r3\verdict.md`, $0.14): self-overdraw gone. But the x-ray's own look FAILED at 1:1: an opaque cream blob with grainy edges.
+- x-ray look round 2 (`r4\verdict.md`, $0.35): PASS.
+- Round 1 (lead 2) passed N20, N23, N25, N35 and N36.
+
+**What lead 3 built:**
+- **N22, the shut gate** (e07607b37, solver aab7f549):
+  - Leaf A was not lost. The gatehouse's kit tile stands 0.76 m over Low Ford's road, so the teeth stopped short.
+  - `Landmarks.Land` (from `Swap`) drops every portcullis leaf by the measured distance to the lowest ground under it (9 samples), converted into each leaf's parent space.
+  - Leaf B is now 3.2 m (`env_props.py gatehouse()`, re-exported), so the crown stays covered.
+  - The watchman stands 0.85 m behind the bars with the Watch's lit torch (`Prologue.Day.cs DayGate`).
+  - `Landmarks.Shift` logs the leaf positions (bounded).
+  - The rise runs 32.4-35.05 s; the exit waits for it.
+- **N24, the dawn card** (6f93abf46, worker ab019460):
+  - `tools/uiforge/paper.py make_card/build_card` writes `godot/art/ui/frames/dawn_paper.png` (760x480): untiled, the middle calmed through a soft mask, no step over 0.26 levels/px. Build group `dawn_paper`, separate from `paper`.
+  - `DawnCardView` uses it (falling back to paper.png), margins 44.
+  - "Your traits".
+  - No "The ember's skills" line when nothing was lent.
+- **N36, the x-ray look** (2df6a1a7c, solver a3478067):
+  - The grain came from her body and outfit layers each blending the overlay, 2-4 times per pixel.
+  - Now a stencil keeps one layer per pixel. The fill is dark slate at 50% (`her_xray.gdshader`), plus a thin moonlight outline as its next pass (`her_xray_rim.gdshader`, `rim_px` 1.6).
+  - The her_at capsule is kept. `PlayerView.XraySet` drives both passes.
+
+**Checks:**
+- Suite 1525/0/10 (r2, and again in r5 after the x-ray).
+- b_path: h8b_path4 1304 s, 0 exceptions, Warden fought 113 s, dawn card shot. After the x-ray: h8b_path5 1366 s, 0 exceptions, Warden fought 112 s, dawn card shot.
+- Day harness (64 seeds): human 61/64 reached, careless 63/64, 0 falls, median 120 s / 119 s. 4 stuck runs, at the road ambush and the gold, none at the gate.
+
+**Later lists (not H8):**
+- Sound: `gate.portcullis` is not banked (the rise is silent).
+- Combat/VFX:
+  - The wolves' howl telegraph ring is a flat, unshaded yellow screen line; the judge called it "a debug gizmo".
+  - The HOWL label is clipped behind the right HUD statue.
+- E8 art:
+  - The portcullis leaves read as rust-brown timber.
+  - The shut watchman is a pale smudge (a brighter torch).
+  - In C04b B1 the right-hand wall has blue marbled plaster.
+- UI:
+  - The dawn card's divider is a 70 px stub.
+  - "Q READY" blazes right after "The ember goes out".
+  - "Put out the lamps" should be the white main line in the Warden fight.
+- Cinematics: the b4a lantern cutaway.
+- Code:
+  - `Landmarks.Swap`'s `Ground()` assumes a kit piece is a direct child of the root (the same wrong frame Land hit).
+  - `demo_run`'s freshness check missed a stale import after a glb re-export.
+  - The gate shoot is luck-dependent (about 2 of 6 runs catch her in the passage).
+
+**PIPELINE ledger:** P6/P9: the app can now:
+- bar a day stretch with the zone's own moving pieces (props.json `moves`; `Landmarks.Movers/Shift/Land`: a kit mover landed on the terrain, driven by one 0-1 k);
+- give the dawn its own click-through card on an untiled painted parchment (`paper.make_card`);
+- draw her through occluders as a clean ARPG x-ray (stencil fill plus a rim pass).
+
+This item cost about 0.4M for lead 3's part (lead 2's ~0.52M and lead 1's before it), plus $2.67 of API judges. The next gate or mover costs about 30-50k: a props.json `moves` entry and a beat's bar line.
+
+**Derivation:**
+- Land: the game's need (a shut portcullis meets the road), computed from the terrain, no hand-tuned offset.
+- Leaf B, 3.2 m: the game's need; the look inherited from the E8 gatehouse.
+- The watchman's torch: inherited (Folk's Watch role).
+- dawn_paper: inherited (`paper.py` sheet plus the Krea paint-over, UI art 3 Oct), made for the card.
+- The x-ray: a named reference (the Diablo IV / Path of Exile wall x-ray) on H1 round 2C's overlay.
+- Undone, not kept: the stacked per-layer blend (the grain), and lead 2's invisible bar 5 m out.
+
+**Spend (lead 3):**
+- Lead ~130k.
+- Solvers: N22 ~108k, x-ray ~81k.
+- Worker ~36k; runner ~35k.
+- API $1.35 (round 2 $0.86, N36 $0.14, x-ray $0.35).
+
+## H8 rc2's bugs (seams-h8 lead 2, 4 Nov): history (lead 3 above closed the list)
+
+HANDOFF READY at ~245k (lead 2). Brief: `docs/team/hook/H8_rc2_bugs.md`. Report to main (the coordinator) only at MR READY, a HANDOFF or a block. Integration merged at d36a4cd19: the ten .import files are tracked now, and the junction was remade to our own `public\assets` (assume-unchanged). Sheets and runs are in `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\`: `n20\` (runs and strip), `judge1\` (the judge's inputs, brief and `verdict.md`), `n22\` (the gate solver's shots).
+**Note:** lead 1 woke after its handoff and committed 7588aef92 (two lines in its section). Its "88 s misread" is wrong: the 88 s run is real (n20a, on d36a4cd19).
+
+**N20, the Warden: DONE.** Lead 1's "fell in 11.2 s" came from a run in the MAIN checkout: its log's paths are `survivorsunchained\godot\...`, which has no N20 code and no dawn card. In seams-h8 the ward and floors hold. `WardFloor` logs `ford wardlog` once a second under `--pace` (bounded), plus `ford down`. H6's numbers are FINAL for rc3 (via the coordinator): teeth.json as it stands, band human 60-120 s. Measured on the first-time path with `--auto`:
+- n20a: 88.3 s. Crashes at 26.9 s, 61.1 s and about 72 s; the 0.67 floor was never reached.
+- b_path3: 111.8 s. The 0.34 floor held from 70 s to about 100 s (4 Warded barks, 531 hp turned). 0 exceptions, dawn card shot.
+- H6's proof 1 (SU_TEETH=`n20\teeth_floor067.json`, 0.67 everywhere, no crack): the 0.67 floor held from 10 s to the end of the run (86 s and more), turning 5112 hp.
+- H6's proof 2 (`n20\teeth_backstop.json`, floors 0): the 0.05 backstop held him until 60 s; he fell at 70.8 s.
+- The strip: `n20\warden_strip.jpg` (88 s, a frame every 3 s, crashes labelled).
+
+**Judge 1** (API, xhigh, $1.32; `judge1\verdict.md`): 5 PASS, 2 FAIL.
+- PASS: N20, N23, N25, N35, N36.
+- FAIL N22: at 1:1 the arch looks open (an invisible wall), and nothing names the ring.
+- FAIL N24: an inner rectangle in the paper; the "Click to go on" font.
+- To close before MR: N36 needs one 1:1 town frame (pick one in `godot/.shots/h8xw_*.png` with her under the eaves). N23 needs a motion check of its 1.56x shot: a dense strip (0.1 s apart) of that shot's feet, for foot-skate.
+- For later lists (not ours): make "Put out the lamps" the white main line during the fight; the b4a lantern cutaway; the town bark printing over the tracker.
+
+**N22 fix: BUILT, one bug left** (solver a07675ec, ~188k; commits 50119828f and c40d4b969, both WIP).
+- The gatehouse portcullis is two moving leaves inside `gatehouse.glb` (`env_props.py` MOVES; props.json "moves"; `OwnProps`, `Landmarks.Movers`, `IZoneLook.Shift`). It drops while the gate is shut and rises over 2.6 s once the ring is down; the exit waits for the full rise.
+- The bar sits on the portcullis line (`day_stretch.json portcullisZ`). The old invisible bar 5 m out was undone as a hack.
+- A watchman (the Folk Watch spec) stands behind the bars, with the bark on him.
+- The tracker's first line reads "The watch won't raise the gate: clear the wolves on the road" (`Goals.Replace`).
+- Suite 1525/0/10.
+- **Bug: in `n22\n22_shut_full.png` the grate covers only the crown down to the springing, and the lower passage looks open: leaf A (travel -4.0 m) isn't seen.** Suspects:
+  1. The travel applied in a scaled parent's space (kit scale 0.192; `Position = rest + travel*k` is local).
+  2. The occluder cutaway or x-ray near her.
+  3. A terrain gap of about 0.75 m under the teeth.
+- Next for N22: log the leaves' global positions in `Landmarks.Shift`, fix, re-shoot `n22\batch.json` (h8n22a = h8g2 + `--on gate`), make the watchman visible (light, or stand him nearer), and check the rise is complete before the travel fade.
+- No gate sound is banked (`gate.portcullis` plays nothing): route it to sound.
+
+**N24 fix: half done.**
+- Done (3938813a2): "Click to go on" in the serif, 19 px, Ink.
+- The inner rectangle is painted into `frames/paper.png`. That is the ledger's TILING sheet: `tools/uiforge/paper.py make()` calms a hard rectangle and makes it tileable.
+- The decided remake: a new `paper.make_card()`, not tiled, the middle calmed through a soft blurred mask, written to `frames/dawn_paper.png` at 760x480; DawnCardView uses it, falling back to paper.png. Never rebuild the `paper` group: it remakes the UI lead's paper.png and hint.png.
+- Worker a2f402ac9e2a43c8e has the full brief and waits: **ComfyUI is DOWN at 127.0.0.1:8188**, and the paint-over needs it. Ask the coordinator to bring it up, then SendMessage the worker "ComfyUI is up, go".
+- The studs stay (the judge called them acceptable).
+
+**Next, in order:**
+1. N22's leaf A (a fresh su-lead-high solver at medium, given the suspects above). N24's paper once ComfyUI is up.
+2. Judge round 2 (`Item: H8 changed moments`, round 2 of 2, API route, `judge1\brief.md` as the model) on N22's new frames, the new dawn card (shoot `--stage day` as h8g2 did, giving `godot/.shots/h8g2_dawn_card_1.png`), the N36 town frame and the N23 dense strip.
+3. Then:
+   - the suite;
+   - b_path (`n20\batch_final.json` h8b_path3);
+   - the day harness again, since the bar moved to the portcullis line. It runs on a runner: in `godot/balance`, `dotnet run -c Release -- lowford-day --callings warden --levels 3 --bots human,careless --seeds 64`. Last result: human 61/64 reached, careless 63/64, 0 falls, median 120 s, none stuck at the gate.
+   - push, then MR READY.
+**Derivation (the owner's rule):**
+- The ward log: the game's need.
+- The portcullis: the game's need, its look inherited from the E8 gatehouse (`env_props.py`).
+- The bar on the portcullis line: the game's need; it replaces the stand-in.
+- The watchman: inherited (Folk Watch).
+- The dawn paper: inherited (`tools/uiforge/paper.py`, UI art, 3 Oct), made specifically for the card.
+**Spend (lead 2):** lead ~245k; solver a07675ec ~188k; workers ~32k + ~24k; runner ~30k; API judge $1.32.
+
+## H8 rc2's bugs (seams-h8 lead 1, 4 Nov): HANDOFF READY seams-h8@9c7dc0666
+
+HANDOFF READY seams-h8@9c7dc0666 (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2_bugs.md`. Branched from 0febc5160 (integration; nothing newer to merge at the start). Report to main (the coordinator) only at MR READY or a block. The H6 lead is agent `abf0b8606f7e91474`: it owns the Warden's numbers and H8 wires them. Scratch and sheets: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`shoot1\` runs and sheets, `solver_45\`, `dawn\`). No judge has run yet; round cap 2.
+**Worktree setup gaps (fixed locally, not committed; the files are untracked in main too):** `public/assets` had no `.import` files (solver 45 copied 408 from main), and 10 `godot/art/**.glb.import` were missing (sunder_blade, castle, curtains, gatehouse, towers, beard_cards). They caused the LampIron.SunderBlade and Waystation.DressStall NREs in b_path 1. All were copied from the main checkout.
+
+**State by item:**
+1. **N22, the gate: DONE, measured.**
+   - `DayStretch.GateOpen` now needs every ring sprung (or done before a reload) and its follow wave come and down. `RingOwed` is new.
+   - The ring springs on the road one metre past its line, armed or not (`DayStretch.Tick`).
+   - `Prologue.Day.cs DayGate()`: while the gate is shut, a player-only bar sits across it (tag `gate_shut`), the watch barks "Not with that behind you!" every 7 s, and goal `day_ring` (goals.json, pin `ring_line`, glyph boot) points back to the road.
+   - Test: `A_gate_is_shut_before_the_ring`.
+   - Repro with `--day-rush` (the autopilot runs straight to the gate): "day gate shut" at t 42.3 with the boars behind her. Sheet `shoot1\gate_sheet.jpg`.
+   - Day harness, 64 seeds: human and careless 0 falls, median ~2:00; 61/64 and 63/64 reach the gate. The stuck seeds (human s6, s7, s15; careless s7) look like the known howler bot limit. Check that none is stuck at the new bar.
+2. **N20, the Warden: WIRED, NOT PASSING IN GAME.**
+   - Data: teeth.json `prologue.fordWarden`. Floors 0/0/0.34/0.67, indexed by lamps still UNBROKEN this fight (3 - broken - cracks). Ward by lamps lit. hpMul 1.25. minSeconds 60 (backstop floor 0.05). crackAfter 45.
+   - Code: `Teeth.Ford`, `Prologue.WardFloor`/`Toothed`, `lampsBroken` (counted in `Snuff`), bar ticks at the floors, a "Warded" bark at most every 4 s, and a channel break that counts Overflow.
+   - Tests pass: `FordWardenTeethTests`, `PrologueTests.The_Ford_Warden_holds_at_his_floor_until_two_lamps_are_broken`.
+   - b_path 1 (floors by lamps LIT, hpMul 2.5): the Boss stage ran 338 s, because his channel kept relighting the lamps. That is why the floors now count broken lamps.
+   - **b_path 2 (current code): he fell in 11.2 s with all three lamps lit, and there were 0 "ford warded" lines. The floor did not hold in game, though the logic test holds. FIRST NEXT STEP: find why.** Suspects: a damage path in game that is not `Battle.HitEnemy` (her Bull Rush or another ability, DoTs, the Flare), or `HpFloor` reset each tick after BossTick. To find it, add a PaceNotes line per second in WardFloor with Hp, HpFloor and TakenMul, then run b_path or `--quick warden --zone lowford --cine c02 --auto --lampcheck --pace`. Note that `--quick warden` has no drafts: it never killed him even on the old numbers.
+   - H6's targets: human 60-90 s, careless wins, deft no fall. H6 has been told about hpMul 1.25 and floors by broken lamps; send it the measured numbers.
+3. **N24, the dawn card: BUILT, not judged** (solver a0a901e1).
+   - Files: `logic/Play/DawnCard.cs`, `src/Ui/DawnCardView.cs`, `src/Game/GameDawn.cs`, `IZoneHost.DawnCard`. Tests: `DawnCardTests`.
+   - Stills: `dawn\dawn4_dawn_card_1.png` (skill names set with `--dawn-skills`). b_path 1's real card is `godot/.shots/h8b_path_dawn_card_1.png`.
+   - b_path 2 took no dawn_card frame and never reached the Waystation. Check why; maybe the 440-frame count ended the run at Exit.
+   - My look: it reads well. The judge decides its size and the iron studs at the corners.
+4. **N23, C04b: DONE, not judged** (solver a41eff2e, 16299e545).
+   - A move now takes an `ease` of linear or settle (`CineCamera.Settle`). B3's walk runs on into B4 and settles into her idle. cut_check PASS.
+   - Strips: `solver_45\n23_strip_*.jpg`; before: `before_rook.jpg`.
+   - Left: her pace changes across the cuts (1.56x, 1.01x, 1.40x).
+5. **N25, the map: DONE, not judged** (64a2ed272).
+   - The drawing is made ahead on a worker (`MapScreen.DrawSoon`), the fog is cached and the ink batched. The first open costs 196 ms (was 2.4 s); no later frame is over 32 ms.
+   - Stills: `solver_45\n25_map_after_half.jpg` against `_before_`.
+   - Separate finding: the first ember draft in an arena costs ~0.5 s in the HUD. Route it to UI or perf.
+6. **N35, the boss camera: DONE, measured.**
+   - Cause: `Ev.Focus` set a fixed midpoint, and Game.cs cleared it only if no panel was open when its time ran out. A draft open at the boss's arrival parked the look there for good.
+   - Fix: `Game.BossFocus()` follows her, half the way to the boss, capped to the middle third (`FollowCamera.CapLean`), and takes back what it set once the panel closes. The `Toward` lean eases in over 1 s, takes the same cap, and is off past `TowardRange` (22 m; the Ford 26; the gate 40).
+   - Repro flags: `--focus-old`, `--draft-at-arrival`, `--draft-hold`, `--looklog`, `--on arrival`.
+   - Measured: before, the look stayed 6-46 m off her for 44 s after the focus ended. After, it came back under 3 m.
+   - Sheets: `shoot1\arrival_before.jpg`, `arrival_after.jpg`; table `shoot1\lookog_table.txt`.
+7. **N36, the x-ray: DONE, not judged.**
+   - `her_xray.gdshader` drops an occluder whose world point lies inside her capsule (`her_at` from `PlayerView.XrayStep`, r 0.8, top 2.2). `--xray-old` gives the before.
+   - Sheets: `shoot1\xray_toward.jpg` and `xray_across.jpg` (old rows, then new); `xray_town.jpg` (the Waystation, the roof case: check she shows under the eaves).
+
+**H6 (abf0b8606f7e91474), 4 Nov, final for rc3:** floors by lamps BROKEN (0.67/0.34/0) and hpMul 1.25 are final; ward by lit; minSeconds 60 and crackAfter 45 stay as backstops only. Its band: up to ~120 s for a slower human. It asks for one --auto run with crashes disabled (the 0.67 floor holds) and one at the 60 s backstop. Its "88 s autopilot run" is a misread: no current-code run lasted 88 s (the 84 s was demo-1, on the old numbers; the current code fell in 11 s). Quote the measured numbers once N20 holds in game.
+
+**Next, in order:**
+1. N20's in-game cause (above): fix it, re-measure with b_path (`shoot1\batch_b.json` style, `--lampcheck`), and agree the numbers with H6.
+2. One su-lead-max xhigh judge (`Item: H8 changed moments`) on: gate_sheet; a 60 s Warden strip (a frame every 3 s across the Boss stage, the crash in it); the dawn card at full size; solver_45's C04b strips; arrival before/after; the x-ray sheets; the map still. The whole-frame question first, then "is the mark gone, and is nothing new clunky?"
+3. The judge's fixes; a round 2 only if it fails.
+4. The full suite (the dawn solver's last run: 1522/0/10), b_path with 0 exceptions, the day harness; push; then `MR READY seams-h8@<sha>` here and to main, with the sheet paths, the verdict in two lines and the cost.
+
+**Spend (lead 1):** lead ~280k; helpers: solver 45 ~185k, dawn solver ~148k, runners ~57k + 41k + 48k; API $0.
+
 ## H4 seams (seams-h4 lead 3, 4 Nov): MR READY seams-h4@5d84747a7
 
 MR READY seams-h4@5d84747a7 (the code; this doc commit follows it). Round 3 (the coordinator's one extra round: the four marks folded into item 10, one xhigh judge on both, no further round). Integration (to ac691b510: H1, R4, audio-h3) and combat-h1's round 2 are merged in. Suite 1517/0/10.

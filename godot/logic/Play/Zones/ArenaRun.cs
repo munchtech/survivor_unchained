@@ -170,6 +170,8 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         sworn = MapOffers.Rules(Spec.Map);
         LampBegin(b);
         b.ClosingTeeth = Array.IndexOf(Telegraphs.Waves.Tiers, Spec.Tier) >= 0;
+        b.KitDamageMul = Spec.Story ? 1 : Telegraphs.Waves.DamageAt(Spec.Tier);
+        if (teeth != null) { b.FodderHeals = teeth.FodderHeals; b.EliteHeals = teeth.EliteHeals; }
         Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
@@ -296,7 +298,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         {
             double a = angle + (t == 0 ? 0 : (R() - 0.5) * 2.4), d = dist * (t < 5 ? 1 : 0.7);
             double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.7)) return (x, z);
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.7) && Reaches(x, z)) return (x, z);
         }
         return null;
     }
@@ -340,6 +342,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
             bool big = champion || e.Elite;
             e.MaxHp = e.Hp = e.MaxHp * (big ? teeth.EliteHp : teeth.FodderHp);
             e.Damage *= big ? teeth.EliteDamage : teeth.FodderDamage;
+            if (!big) e.Speed *= teeth.FodderSpeed;
         }
         if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / EaseFor(Math.Min(Minute, 30));
         if (Asks && !champion && !e.Elite) e.Damage *= 1 + Math.Clamp((Math.Min(Minute, 30) - 8) / 22, 0, 1);
@@ -437,7 +440,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         {
             double a = R() * Math.PI * 2, d = R() * spread;
             double sx = x + Math.Cos(a) * d, sz = z + Math.Sin(a) * d;
-            if (!map.CanStand(sx, sz) || B!.Collision.Blocked(sx, sz, 0.6)) continue;
+            if (!map.CanStand(sx, sz) || B!.Collision.Blocked(sx, sz, 0.6) || !Reaches(sx, sz)) continue;
             // Now and then one of them a champion (more under the oath of champions, and as the minutes go).
             if (Spawn(def, sx, sz, R() < 0.012 * elites * (1 + Minute / 12)) is { } e)
             {
@@ -446,6 +449,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
                 o.Add(e);
             }
         }
+        Led(o);
         return o;
     }
 
@@ -555,6 +559,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (makingWay.Count > 0) MakingWay();
         Tells();
         LampStep(dt);
+        Direct(dt);
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -870,7 +875,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (wait > 0) { held.Add((Seconds + wait, () => Close(def, n))); return; }
         var p = B.Player;
         foreach (var (x, z) in B.TellClosing(p.X, p.Z, n))
-            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Spawn(def, x, z) is { } e) B.Closes(e);
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.6) && Reaches(x, z) && Spawn(def, x, z) is { } e) B.Closes(e);
     }
 
     /// <summary>Kit casts waiting their turn (Battle.KitWait): when, and the cast.</summary>
@@ -1350,6 +1355,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
 
     void OnKill(Enemy e, bool byPlayer)
     {
+        Corpse(e);
         // (Let go of the fallen: the pool gives the same body to the next of the horde.)
         if (e == herald) herald = null;
         if (e == boss && !over)
@@ -1452,6 +1458,7 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (bossUp) want = Math.Max(want, CameraFar + 2);
         else if (won) want = Math.Min(34, Math.Max(want, CameraFar));
         CameraDistance += (want - CameraDistance) * Math.Min(1, dt / 2.5);
+        B.ViewDistance = CameraDistance;
         // The way out, pulsing on the ground where the boss fell.
         if (way is var (wx, wz) && (pulseT -= dt) <= 0)
         {

@@ -1,5 +1,96 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## H6 the player must move: MR READY (4 November, H6 lead 2)
+MR READY combat-h6@d7b977945 (code at 59ef5fc13)
+
+**Judge (max, API, 2 rounds, $4.29):** round 1 FAILED on 8 exact fixes (the closing's gap off screen, marks under rocks, the knockdown's cause unread, a ring cast on her as she rose, small pips, the lane's outline-only start, barks across the fight, the gap's grid look). All 8 were made. Round 2 gave **PASS WITH KNOWN (8)**: every mark that killed the idler reads at the play camera at 1:1 with a crowd up (the ring, the charge lane + knockdown, the pull + red slam, the closing + wall + gap, the Ironback's slam), and "would a player have to move, and could they tell why? Yes, and yes." The whole frame is not yet AAA, but only for other leads' reasons. Verdicts: `survivorsunchained_inputs\combat_h6\verdict_r1.md`, `verdict_r2.md`.
+
+**Gate (sim, 32 seeds x 4 callings, tier 1, the Pack's board; won/fell %):**
+| bot | rc2 before | after |
+|---|---|---|
+| standing (never moves) | 2/98 | 0/100 |
+| idler (the owner's play) | 41/59 | 28/72 (most falls before the boss) |
+| kiter (reads nothing) | 35/65 | 9/91 |
+| human | 94/6 | 84/16, lowest life median 0.27 |
+| careless | 88/12 | 74/26 |
+| deft | 97/3 | 97/3 |
+
+The human is ringed 3 times a night. Strict "surrounded" (4 m, 3 of 6 sectors, 2 s) stays at 1, because movers get out in under 2 s. From minute 3 to the boss the human takes a median of ~30 kit marks a minute (`MarksPerMin` in the harness). Off-calling gate (`--offcalling --type both --minutes 30`, 8 seeds): dmg/min at 25 min is at most x1.14 (sunderer); PASS. The signature column shows inf/2.67 only where a road's skills can't be carried off-calling (carry rules, by design). Suite: 1526/0/10.
+
+**Lead 2 did, beyond lead 1's sim items 1-5 and 9:**
+- **6 Elite bars (N19):**
+  - Cause: the code path was right, but a champion's bar sat at its FEET at 45% alpha while it had over 70% life, and read as no bar.
+  - Now it sits over its head, bronze-framed, at full strength from spawn (`FoeMarks.EliteBar`).
+- **8 Dash pips (N30):** 11 px copper beads under her bar, ready or spent, with a flare when a charge comes back (`HerLight.Bar.Pips`).
+- **7 The turn (N27):**
+  - Cause: her facing followed her eased velocity, not the stick.
+  - Facing time on a 90/180 went from 250/267 ms to 67/100 ms. The lean now comes from her travel's curve, so there is none on a 180's plant, and the run blend follows her ground speed. The camera never yawed.
+  - Code: `PlayerView.Update/Carry`, `PlayerState.StickX/Z`, plus `--fig8` and `tools/combat/turn_measure.py`. Strip: `combat_h6\turn\`.
+- **5 Views for lead 1's mechanics:**
+  - The closing's wall stands for its life.
+  - The knockdown plays her `death_back` fast, then `get_up_back`. The caught lane is held and faded over 0.5 s, with dust along it and "Knocked down!".
+  - The pull's slam is marked in the ring's danger red.
+  - The closing's gap is placed on screen nearest her heading (the sim models the play camera: `Battle.OnScreen`/`GapOnScreen`). It has a cyan edge chevron when off screen, and a lit floor strip with a light curtain.
+  - Red marks' decals also land on rocks. A charge lane shows a 25% wash from its first frame. Barks stay clear of her and of live marks, else they go to a band above the HUD.
+  - Files: `BattleFx.cs`, `BattleFx.H6.cs`, `MarkPass.cs`, `Voices.cs`, `PlayerView.Knock.cs`, `Game.H6Shots.cs` (`--on h6` frames).
+- **Sim fixes:**
+  - A stand charge on her while she lay down chained 10 knockdowns 1.5 s apart. There is now a 2.5 s get-up grace and no stand clock while she is held (`Tells.KnockPlayer`, `Director.Standing`).
+  - No new kit mark is aimed at her during a knockdown and its grace (`KitWait`). Boss scripts that call `Tell` directly are not covered.
+
+**Derivation (PIPELINE rule 4):**
+- From the game's need, the owner's demo-rc2 notes: the bars over the head, the pips, the knockdown and slam reads, the wall's view, the gap on screen, the bark placement.
+- From a named reference, Hades and Diablo IV: the turn (facing within ~100 ms, the body after it, no camera yaw). The ARPG convention: the elite bar over the head.
+- Inherited, each named: H1's telegraph kit and styles (`BattleFx`, `TelegraphRead`, 3 Nov); her bar's iron and copper (UI 15, `HerLight.Bar`); her `death_back`/`get_up_back` clips standing in for a knockdown clip (a stand-in, flagged below).
+- Nothing was found built around an old hack.
+
+**Flags for the coordinator (kept):**
+- Accepted: the Reaver's armor 3 to 4 (every mode) and the softer tier-1 boss (bossHp 2.5 to 2.0, bossDamage 1.1 to 0.55).
+- Known for rc3: tiers 2-4 are tuned at tier 1 only, and human/deft win 94-100% there.
+- The kiter loses because it reads nothing, not because kiting doesn't pay.
+
+**Known (judge r2, round cap):**
+- H6's own:
+  - Raised objects (a ledge, a log) still cover strips of a lane; both lanes still read end to end.
+  - "Knocked down!" is salmon on a salmon lane and relies on its outline.
+  - Unverified in stills: the edge chevron, the refill flare, the 2.5 s window with no new mark (a unit test covers the window).
+- Other owners: the EMBER banner across rings and gaps (UI); crit numbers over the bark band (combat text); the HUD statues over the bottom ~190 px (HUD); an unlit black foreground shape (world/camera); the Flare's purple ring brighter than the closing band (Flare/H7).
+- Animation items: a real knockdown clip (hers is a stand-in), a wolf feed clip (feeding wolves stand).
+- Not covered: recalls from 14 m may be on screen; the two seen were off screen at both ends.
+
+**Worktree note:** this worktree's `public/assets` had NO `.import` files (it had never rendered). Its 408 were copied from the main checkout's untracked ones and `--import` was run. Other fresh worktrees may lack them too.
+
+**Sheets:** `survivorsunchained_inputs\combat_h6\` `night\` (r1 night), `look\` (each mechanic), `turn\`, `r2\` (r2 night + fix frames), `eb\`.
+
+**Cost:** about 1.0M in all. Lead 2 ~165k. Helpers ~0.52M: worker 33k, turn solver 115k, views solver 168k, fix solver 204k. API judges $4.29. Off-calling and gate runs were CPU only.
+
+## H6 the player must move: start here (4 November, H6 lead 1; HANDOFF READY at ~250k)
+HANDOFF READY combat-h6@8191d7b41 (code at 0f45049ec)
+
+Brief: `docs/team/hook/H6_combat_move.md`. Worktree `.claude/worktrees/combat-h6`, branch `combat-h6` (from 0febc5160; integration had nothing new on 4 Nov). The coordinator that owns merges is session `local_4f5ceed0-79a5-47f5-81d6-a1ce170715d3`: send it MR READY/HANDOFF lines (5b4265e7 only relays).
+
+**Answer to H8 (N20, the Ford-Warden; final for rc3):** teeth.json `prologue.fordWarden`, which H8 wires in Prologue.cs: floors by lamps BROKEN this fight (0 broken = 0.67, 1 = 0.34, 2+ = 0; a relight never takes a break back), ward [1, 0.7, 0.55, 0.4] by lamps lit, hpMul 1.25, minSeconds 60 and crackAfter 45 as backstops only. Band: human 60-120 s. **Not yet true in game:** H8 lead 1's last word: on the current code he fell in 11 s with three lamps lit; the unit test holds the floor, so H8's successor is finding the damage path that gets past it, then runs my two checks (an --auto run with crashes off to prove the 0.67 floor, and one at the 60 s backstop) and sends the measured times here. Check them against the band. (An "88 s" figure relayed earlier was not a run on the current code.) There is no Ford harness: careless and deft on the Ford are H8's `--auto` runs only.
+
+**H7 (flare-h7, agent ab0d00104fc429aae) agreed:** a Flare that thins a closing's ring below 40% drops the wall ("break the ring"); the sim keeps it as is, and H7 adds no rule. Its Flare marks come from its own target queries, so the ring's foes get marked. After both merge, H7 times the wall's drop look (`Ev.ClosingWall {Up=false}` inside a Flare cast) to its shock band; nothing new to expose. Merge order: H6, H8, then H7.
+
+**The finding that reframed the gate (approved by the coordinator):** the brief's standing bot (never moves, never dodges) already fell 98% on rc2's numbers. The owner's play is the IDLER (stands at the lamp, steps out only of what it reads; `--bot idler`): it won 41% and survived to the boss ~94% of nights. Healing from drops gave back about 6 lives a night (`HealBy` in the jsonl), and the wolves ran at her own pace (5.3 against her 5-5.6), so moving bought nothing. Gate: standing 80%+ falls; idler 70%+ falls with half before the boss; human 78-85% wins with low 0.27-0.35; deft 95%+; kiter beats standing; callings within 20 points; human ringed 2+ a night. Human read model changed (approved on one condition): kit marks read at 85% (careless 65%), lunge windups at 50/30%. **The condition: the judge must say every big mark that killed the idler is readable at the play camera with a crowd up; if one isn't, make the mark readable; never lower the bot's read rate.**
+
+**State by item:**
+1. DONE. Bots `standing`, `camper`, `kiter`, `idler` (Harness/Bots.cs, Human.cs `Idle`); measures in RunResult: `Surrounds` (4 m, 3 of 6 sectors, 2 s), `Ringed` (inside a walled closing as it rises), `MarksOnHer`/`MarkGapMax`, `HealBy`/`HurtBy`, and the director's counts; danger.py columns. `tools/balance/h6_tune.py` runs a data variant (SU_TEETH/SU_TELLS).
+2. DONE (sim). telegraphs.json: ring 0.70; charge 0.40 + knockdown 0.9 s (`Ev.Knockdown`); pull 0.35 + a marked slam on its heart 0.7 s later (0.45); closing a WALL except at its gap, with a crush of 0.38/s from 0.8 s for 3 s (`Ev.ClosingWall`); kit from 0:45 on tiers 1-4 at x[1, 1.1, 1.2, 1.3] (`Battle.KitDamageMul`). **No view yet** for the wall, the knockdown or the slam's mark beyond the standard blow mark (next, item 10's clip will show it).
+3. DONE (sim). `ArenaRun.Director.cs` + teeth.json `tiers.1.director`: pincer flanks every 60-90 s at +-140 deg of her heading, cut-off leaders, a surround that casts the closing on her (cooldown 12 s), stand charges from foes at 7 m+ (`standFrom`; the nearest died in its windup, so charges never landed), the lamp holder draws a flank after 30 s in the pool, stuck foes recalled (spawns must be reachable: the cause of N34), the snuffer bark + callout (unseen).
+4. DONE (sim). The Ironback (`boar_ironback`, slow 2.6, ~1443 hp, an elite; slams the kit ring on itself at 3.2 m), from 1:30, one at a time, bark + callout once (unseen); wolves feed 2 s on a corpse when she is 8 m+ away (once per wolf per 15 s, 3 per corpse; **no feed animation**, they stand).
+5. Partly: the snuffer is explained (bark, callout); the holder draws flanks; stuck foes fixed at the cause. Unseen in Godot.
+6. NOT STARTED: elite bars (N19). The code path in `FoeMarks.Show` looks right; suspects: a full bar drawn at 0.45 alpha at the foe's feet (`_Draw`, `Full`), or champions flagged `Boss`. Needs one Godot frame.
+7. NOT STARTED: the turn (N27). A solver measures facing lag, the run blend and camera yaw, then fixes; a figure-eight strip before/after.
+8. NOT STARTED: dash pips under her bar (N30). A su-worker job (`GameHud.cs` has the charges).
+9. DONE: the Ford-Warden numbers (above).
+10. Sim gate PASSES at 32 seeds (0f45049ec, tier 1, pack): standing 0/100; idler 25/75 (88 of 96 falls before the boss); kiter 9/91; human 82/18 (low 0.29; by calling 78-91); careless 73/27; deft 96/4. Human ringed 3 a night; the strict `surr` stays at 1 (movers get out in under 2 s). Before (rc2's numbers, 32 seeds): standing 2/98, idler 41/59, kiter 35/65, human 94/6, careless 88/12, deft 97/3. **Still to do:** H1's off-calling gate (`--offcalling --type both --minutes 30`, every calling at most x1.25); the full suite after items 6-8; one Godot look at the new mechanics at the play camera (wall, Ironback, callouts, the recall's jump) before the judge; then the max judge on a tier-1 clip from 0:00 with the human autopilot (the whole-frame question, "would a player have to move, and could they tell why?", and the read condition above); round cap 2.
+
+**Flags for the coordinator:** (a) the tuner raised the Reaver's `armor` 3 to 4 in archetypes.json (every mode: the human Reaver won 47-66% against 91-100% for the others); (b) the tier-1 boss is softer (bossHp 2.5 to 2.0, bossDamage 1.1 to 0.55), because the night now carries the danger; (c) tiers 2-4 with the kit on: human/deft still win 94-100% at 8 seeds, lowest life down 0.15-0.2; (d) the kiter loses because it reads nothing, not because kiting doesn't pay.
+
+Files: `godot/logic/Play/Zones/ArenaRun.Director.cs`, `godot/logic/Sim/Tells.cs`, `godot/logic/Content/Teeth.cs`/`Telegraphs.cs`, `godot/data/content/teeth.json`/`telegraphs.json`, `godot/balance/Harness/{Bots,Human,Pilot,ArenaSim}.cs`, `tools/balance/{danger,h6_tune}.py`. Run data: the shared scratchpad's `combat_h6/v/fin.jsonl` (gate), `base.jsonl` (rc2), `idler.jsonl`. Cost: lead ~250k; helpers ~0.45M (solver A 112k, B 138k, worker 66k, tuner 129k).
+
+
 ## H1 combat teeth: start here (4 November, the H1 successor lead; MR READY after judge round 2)
 MR READY combat-h1@d7b609a69 (code, suite 1498 green, merged with integration on 4 Nov; this handoff commit sits on top)
 
