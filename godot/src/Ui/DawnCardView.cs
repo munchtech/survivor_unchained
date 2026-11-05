@@ -57,7 +57,7 @@ public partial class DawnCardView : Control
         page.AddChild(Gap(26));
         page.AddChild(Words(c.Last, Style.TextItalic, 22, Ink, HorizontalAlignment.Center));
         page.AddChild(Gap(18));
-        more = Words(c.Go, Style.Ui, Style.Small, InkSoft, HorizontalAlignment.Center);
+        more = Words(c.Go, Style.Text, 19, Ink, HorizontalAlignment.Center);   // (judge 1: the card's serif, 19 px, in the darker ink)
         more.Modulate = Colors.Transparent;
         page.AddChild(more);
 
