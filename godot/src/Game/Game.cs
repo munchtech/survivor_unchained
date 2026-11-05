@@ -120,6 +120,7 @@ public partial class Game : Node, IZoneHost
         AddChild(screens);
         AddChild(new Shots());
         CelLib.Install(GetTree());   // (the material library's loader: every lit standard material on the cel model, L1 B2)
+        B3Maps.Install(GetTree());   // (--b3-maps: B3 texture authoring's bake-off, a painter arm's maps on named stage items)
         synth = new Synth();
         AddChild(synth);
         if (Perf.On) MeasureWith(new Perf());
