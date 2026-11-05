@@ -4,7 +4,7 @@
  "conversation": "cin_behind_the_door",
  "zone": "arena",
  "script": "docs/cinematics/shoot/c13.md",
- "draft": "Build round 1: the Barrow Lord (placeholder: never MS or closer, backlit, two eye-lights) on the landing, the world at 0.3; Nondum, the title, hand back to the fight.",
+ "draft": "Build round 2: the Barrow Lord (placeholder: never MS or closer) a dark shape backlit by the moon, two violet eye-lights, the world at 0.3; Nondum, the title lower-left, hand back to the fight.",
  "bars": {
   "in": 0.6,
   "out": 0.8
@@ -40,22 +40,20 @@
    "id": "A1",
    "type": "LS",
    "dur": 4.0,
-   "note": "Low behind her, the landing ahead, the world at 0.3: the dead part; their officer, taller than they are, a dark shape backlit by the moon on the far wall, two eye-lights. He stops and looks at her.",
+   "note": "Rear at shoulder height, her at the frame's right edge, the landing ahead, the world at 0.3: the dead part; their officer, taller than they are, a dark shape backlit by the moon on the far wall, two eye-lights. He stops and looks at her.",
    "cam": {
     "pos": {
-     "mark": "her",
-     "off": [
-      0.9,
-      0.85,
-      3.2
+     "abs": [
+      1.0,
+      1.55,
+      -19.6
      ]
     },
     "at": {
-     "mark": "boss",
-     "off": [
-      0,
-      2.2,
-      0
+     "abs": [
+      -0.6,
+      1.6,
+      -33.0
      ]
     },
     "lens": 35
@@ -66,32 +64,98 @@
      "mood": "boss",
      "intensity": 0.25,
      "over": 2.0
+    },
+    {
+     "do": "foe",
+     "actor": "lord",
+     "boss": true,
+     "glow": 0,
+     "tint": [
+      0.35,
+      0.35,
+      0.4
+     ],
+     "light": 0
+    },
+    {
+     "do": "eyelights",
+     "actor": "lord",
+     "color": "#9a6cff",
+     "size": 0.09,
+     "energy": 5,
+     "apart": 0.1,
+     "fwd": 0.16,
+     "up": 2.45,
+     "clear": true
+    },
+    {
+     "do": "rig",
+     "name": "back",
+     "world": true,
+     "hold": true,
+     "from": {
+      "abs": [
+       1.5,
+       5.5,
+       -39.0
+      ]
+     },
+     "aim": {
+      "abs": [
+       0.0,
+       1.6,
+       -33.0
+      ]
+     },
+     "color": "#7f97d8",
+     "energy": 3.0,
+     "angle": 22,
+     "range": 14,
+     "falloff": 0.4,
+     "spec": 0.6
     }
    ]
   },
   {
    "id": "A2",
    "type": "MS",
-   "dur": 3.5,
-   "note": "Over her left shoulder, him in the middle distance: \"Nondum.\" He raises his sword, and the dead come on. Title lower-left. Hands back to the fight.",
+   "dur": 3.9,
+   "note": "Over her left shoulder, him in the middle distance (a full figure, never closer): \"Nondum.\" He raises his sword, and the dead come on. Title lower-left. The camera rises off her shoulder and hands back to the fight.",
    "cam": {
     "pos": {
-     "mark": "her",
-     "off": [
-      -0.55,
-      1.6,
-      1.25
+     "abs": [
+      -0.5,
+      1.62,
+      -21.95
      ]
     },
     "at": {
-     "mark": "boss",
-     "off": [
-      0,
-      2.4,
-      0
+     "abs": [
+      0.9,
+      1.9,
+      -33.0
      ]
     },
-    "lens": 50
+    "lens": 50,
+    "move": {
+     "start": 2.4,
+     "pos": {
+      "abs": [
+       -1.4,
+       2.6,
+       -19.6
+      ]
+     },
+     "at": {
+      "abs": [
+       0.0,
+       1.2,
+       -26.0
+      ]
+     },
+     "ease": "inout",
+     "follow": true
+    }
    },
    "cues": [
     {
@@ -103,12 +167,12 @@
      "id": "cin_behind_the_door.nondum"
     },
     {
-     "at": 1.2,
+     "at": 1.0,
      "do": "title",
      "title": "THE BARROW LORD",
      "sub": "Of the Seventh Legion",
      "place": "lower-left",
-     "seconds": 3.0
+     "seconds": 2.9
     },
     {
      "at": 0.4,

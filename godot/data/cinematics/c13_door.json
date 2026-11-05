@@ -4,7 +4,7 @@
  "conversation": "door_night",
  "zone": "arena",
  "script": "docs/cinematics/shoot/c13.md",
- "draft": "Build round 1: the kill held on his body, his shadow up the door's black face as he rises out of frame, the sigil wakes, she turns back, the lamp stands where he stood, the door sinks; hands back facing north, the way open.",
+ "draft": "Build round 2: held on his real body, \"He gets up.\", the sigil wakes and its light finds the letters, she turns back, the lamp stands where he stood, the door sinks; the dead's eyes come up the stair; hands back facing north, the way open.",
  "bars": {
   "in": 0.6,
   "out": 0.8
@@ -34,24 +34,24 @@
    0
   ],
   "sig": [
-   1.25,
-   24.1,
-   -2.6047
+   1.5,
+   24.0,
+   -2.4859
+  ],
+  "over": [
+   0,
+   26.4,
+   3.1416
   ],
   "stand": [
-   1.25,
-   24.1,
+   1.5,
+   24.0,
    3.1416
   ],
   "offstage": [
    0,
    -90,
    0
-  ],
-  "north": [
-   1.25,
-   24.1,
-   3.1416
   ]
  },
  "cast": {
@@ -62,119 +62,80 @@
   "corvane": {
    "kind": "npc",
    "def": "chid",
-   "mark": "corvane"
+   "mark": "offstage"
   },
-  "eye0": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye1": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye2": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye3": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye4": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye5": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye6": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye7": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye8": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye9": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye10": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye11": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye12": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye13": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye14": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
-  },
-  "eye15": {
-   "kind": "orb",
-   "mark": "offstage",
-   "color": "#9a6cff",
-   "size": 0.035,
-   "glow": 0.06
+  "dead": {
+   "kind": "extras",
+   "visual": [
+    "skeleton_minion",
+    "risen_ally"
+   ],
+   "heading": 0.0,
+   "at": [
+    {
+     "abs": [
+      -1.5,
+      -0.0,
+      -37.2
+     ]
+    },
+    {
+     "abs": [
+      0.0,
+      -0.0,
+      -37.2
+     ]
+    },
+    {
+     "abs": [
+      1.5,
+      -0.0,
+      -37.2
+     ]
+    },
+    {
+     "abs": [
+      -1.5,
+      -0.0,
+      -39.1
+     ]
+    },
+    {
+     "abs": [
+      0.0,
+      -0.0,
+      -39.1
+     ]
+    },
+    {
+     "abs": [
+      1.5,
+      -0.0,
+      -39.1
+     ]
+    },
+    {
+     "abs": [
+      -1.5,
+      -0.0,
+      -41.0
+     ]
+    },
+    {
+     "abs": [
+      0.0,
+      -0.0,
+      -41.0
+     ]
+    },
+    {
+     "abs": [
+      1.5,
+      -0.0,
+      -41.0
+     ]
+    }
+   ]
   }
  },
  "shots": [
@@ -182,22 +143,22 @@
    "id": "D1",
    "type": "MS",
    "dur": 3.0,
-   "note": "Rear 3/4, low behind her right shoulder: she stands over him, weapon low; he lies on his face, his lamp on its side by his hand, still lit, its violet pool the key; the door's black face behind him, the sigil dark. Still: the wind.",
+   "note": "Rear 3/4 at shoulder height behind her right shoulder, her at the frame's left edge: she stands over him (his real laid body, drawn low), his lamp lit by his hand, its violet pool the key; the door behind him read by a moon kick across its stone. Still: the wind.",
    "cam": {
     "pos": {
-     "mark": "her",
+     "mark": "corvane",
      "off": [
-      1.9,
-      1.3,
-      3.4
+      0.6,
+      1.5,
+      6.0
      ]
     },
     "at": {
      "mark": "corvane",
      "off": [
-      0.3,
-      0.55,
-      -0.6
+      -0.6,
+      0.9,
+      -1.0
      ]
     },
     "lens": 35
@@ -207,6 +168,11 @@
      "do": "music",
      "mood": "silence",
      "intensity": 0
+    },
+    {
+     "do": "ember",
+     "k": 0,
+     "back": 0.8
     },
     {
      "do": "shift",
@@ -219,318 +185,97 @@
      "k": 0
     },
     {
+     "do": "gates",
+     "lit": false
+    },
+    {
      "do": "place",
-     "actor": "corvane",
-     "mark": "corvane"
+     "actor": "her",
+     "mark": "over"
     },
     {
-     "do": "anim",
-     "actor": "corvane",
-     "clip": "Death01",
-     "from": 2.38,
-     "speed": 0,
-     "blend": 0
+     "do": "foe",
+     "actor": "laid",
+     "def": "corvane",
+     "tint": [
+      0.3,
+      0.3,
+      0.36
+     ],
+     "glow": 0.4
     },
     {
-     "do": "prop",
-     "name": "lamp",
-     "piece": "keeper_lamp",
-     "where": {
-      "mark": "corvane",
-      "off": [
-       0.55,
-       0.12,
-       1.05
+     "do": "rig",
+     "name": "doorkick",
+     "world": true,
+     "from": {
+      "abs": [
+       -6.5,
+       4.2,
+       25.2
       ]
      },
-     "rot": [
-      0,
-      35,
-      90
-     ]
-    },
-    {
-     "do": "glow",
-     "name": "flame",
-     "where": {
-      "mark": "corvane",
-      "off": [
-       0.55,
-       0.14,
-       1.05
+     "aim": {
+      "abs": [
+       0.8,
+       2.4,
+       22.1
       ]
      },
-     "color": "#a77bff",
-     "size": 0.035,
+     "color": "#7f97d8",
      "energy": 2.2,
-     "light": 2.6,
-     "range": 6.0,
-     "halo": 0.35,
-     "spread": 7,
-     "soft": true
-    },
-    {
-     "do": "place",
-     "actor": "eye0",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye1",
-     "where": {
-      "abs": [
-       0.0,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye2",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye3",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye4",
-     "where": {
-      "abs": [
-       0.0,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye5",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye6",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye7",
-     "where": {
-      "abs": [
-       0.0,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye8",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye9",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye10",
-     "where": {
-      "abs": [
-       0.0,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye11",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye12",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye13",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye14",
-     "where": {
-      "abs": [
-       -1.4,
-       -60,
-       -90
-      ]
-     }
-    },
-    {
-     "do": "place",
-     "actor": "eye15",
-     "where": {
-      "abs": [
-       1.4,
-       -60,
-       -90
-      ]
-     }
+     "angle": 26,
+     "range": 14,
+     "falloff": 0.5,
+     "spec": 0.5
     }
    ]
   },
   {
    "id": "D2",
    "type": "MLS",
-   "dur": 2.5,
-   "note": "Low by the door's east jamb, along its black face: his shadow, thrown by his own lamp on the stones behind him, climbs the door as he rises out of frame. Only the shadow and the lamp's light. \"He gets up.\"",
+   "dur": 2.4,
+   "note": "Held on his body, still, from his head's side and a little above: the picture does not move; his lamp's light only. \"He gets up.\"",
    "cam": {
     "pos": {
-     "abs": [
-      3.1,
-      0.75,
-      23.4
+     "mark": "corvane",
+     "off": [
+      3.0,
+      2.2,
+      3.7
      ]
     },
     "at": {
-     "abs": [
-      -0.3,
-      0.45,
-      23.0
+     "mark": "corvane",
+     "off": [
+      -0.2,
+      0.3,
+      -0.2
      ]
     },
     "lens": 50
    },
    "cues": [
     {
+     "do": "foe",
+     "actor": "laid",
+     "def": "corvane",
+     "hidden": false,
+     "tint": [
+      0.3,
+      0.3,
+      0.36
+     ],
+     "glow": 0.4
+    },
+    {
+     "do": "hide",
+     "actor": "corvane"
+    },
+    {
      "do": "glow",
      "name": "flame",
      "remove": true
-    },
-    {
-     "do": "glow",
-     "name": "flame",
-     "where": {
-      "mark": "corvane",
-      "off": [
-       0.55,
-       0.14,
-       1.05
-      ]
-     },
-     "color": "#a77bff",
-     "size": 0.035,
-     "energy": 2.2,
-     "light": 0.8,
-     "range": 3.0,
-     "halo": 0.35,
-     "spread": 7,
-     "soft": true
-    },
-    {
-     "do": "rig",
-     "name": "shadow",
-     "world": true,
-     "shadow": true,
-     "size": 0.04,
-     "from": {
-      "mark": "corvane",
-      "off": [
-       0.55,
-       0.16,
-       1.15
-      ]
-     },
-     "aim": {
-      "abs": [
-       0,
-       0.4,
-       22.6
-      ]
-     },
-     "color": "#a77bff",
-     "energy": 14,
-     "angle": 38,
-     "falloff": 0.6,
-     "range": 9,
-     "spec": 0.1
-    },
-    {
-     "at": 0.25,
-     "do": "anim",
-     "actor": "corvane",
-     "clip": "Lie_StandUp",
-     "from": 0,
-     "speed": 0.75,
-     "blend": 0.15
     },
     {
      "at": 0.35,
@@ -543,44 +288,31 @@
    "id": "D3",
    "type": "CU",
    "dur": 4.0,
-   "note": "Square to the door: the sigil wakes violet from the notch out along the seven arms, like an eye opening; the camera tilts up after its light to the cut letters. The Mystery bell once, the sigil's hum.",
+   "note": "Square to the door: the sigil wakes violet from the notch out along the seven arms; the camera tilts up after its light and ends on the cut letters, washed violet. The Mystery bell once, the sigil's hum.",
    "cam": {
     "pos": {
      "abs": [
       0,
-      1.9,
-      27.2
+      1.95,
+      27.0
      ]
     },
     "at": {
      "abs": [
       0,
-      1.6,
+      1.85,
       22.1
      ]
     },
-    "lens": 85,
-    "move": {
-     "start": 1.6,
-     "end": 4.0,
-     "pos": {
-      "abs": [
-       0,
-       2.4,
-       27.6
-      ]
-     },
-     "at": {
-      "abs": [
-       0,
-       5.6,
-       22.1
-      ]
-     },
-     "ease": "inout"
-    }
+    "lens": 85
    },
    "cues": [
+    {
+     "do": "foe",
+     "actor": "laid",
+     "def": "corvane",
+     "hidden": true
+    },
     {
      "do": "hide",
      "actor": "corvane"
@@ -595,17 +327,40 @@
      "remove": true
     },
     {
-     "do": "prop",
-     "name": "lamp",
-     "remove": true
-    },
-    {
      "at": 0.2,
      "do": "shift",
      "kind": "vaultsigil",
      "k": 1,
      "from": 0,
      "over": 2.6
+    },
+    {
+     "at": 0.3,
+     "do": "rig",
+     "name": "panel",
+     "world": true,
+     "shadow": true,
+     "from": {
+      "abs": [
+       0,
+       2.4,
+       25.2
+      ]
+     },
+     "aim": {
+      "abs": [
+       0,
+       4.2,
+       22.0
+      ]
+     },
+     "color": "#9a6cff",
+     "energy": 4.5,
+     "over": 1.6,
+     "angle": 34,
+     "range": 7,
+     "falloff": 0.6,
+     "spec": 0.05
     },
     {
      "at": 0.2,
@@ -626,22 +381,20 @@
    "id": "D4",
    "type": "MCU",
    "dur": 2.0,
-   "note": "Side-on from the door's side: her face lit violet from the sigil; she turns back to the court, head first, then the body. Nothing on the face. Cut on the turn. The gone line begins.",
+   "note": "Side-on from her left-front: her face lit violet from the sigil; she turns back to the court, head first, then the body. Nothing on the face. Cut on the turn. The gone line begins.",
    "cam": {
     "pos": {
-     "mark": "north",
-     "off": [
-      1.85,
-      1.55,
-      -0.15
+     "abs": [
+      -0.4067125508649947,
+      1.82,
+      24.603694664854597
      ]
     },
     "at": {
-     "mark": "north",
-     "off": [
-      0.0,
+     "abs": [
       1.5,
-      -0.1
+      1.78,
+      24.0
      ]
     },
     "lens": 50,
@@ -660,16 +413,16 @@
     {
      "do": "place",
      "actor": "her",
-     "mark": "north"
+     "mark": "sig"
     },
     {
      "do": "head",
      "actor": "her",
      "where": {
       "abs": [
-       0,
+       0.0,
        1.6,
-       22.1
+       22.05
       ]
      },
      "amount": 0.5
@@ -695,25 +448,6 @@
      "color": "#9a6cff",
      "energy": 1.6,
      "angle": 28,
-     "range": 5
-    },
-    {
-     "do": "rig",
-     "name": "warm",
-     "from": {
-      "lens": [
-       -0.6,
-       0.3,
-       0.2
-      ]
-     },
-     "aim": {
-      "actor": "her",
-      "bone": "head"
-     },
-     "color": "#ffe6d0",
-     "energy": 0.2,
-     "angle": 30,
      "range": 5
     },
     {
@@ -754,20 +488,20 @@
    "id": "D5",
    "type": "MLS",
    "dur": 6.1,
-   "note": "From behind her, looking south where he lay: nobody. The lamp stands upright on the stones where he stood, still lit, its violet pool on the empty court.",
+   "note": "To her side at shoulder height: she looks where he lay; nobody. The lamp stands upright on the stones where he stood, still lit, its violet pool on the empty court.",
    "cam": {
     "pos": {
      "abs": [
-      2.1,
-      1.72,
-      23.25
+      -2.2,
+      1.55,
+      28.6
      ]
     },
     "at": {
      "abs": [
-      -0.5,
-      0.2,
-      27.2
+      0.9,
+      1.0,
+      24.3
      ]
     },
     "lens": 35
@@ -777,7 +511,7 @@
      "do": "place",
      "actor": "her",
      "mark": "sig",
-     "heading": -0.6947
+     "heading": -0.9828
     },
     {
      "do": "head",
@@ -815,9 +549,9 @@
      "color": "#a77bff",
      "size": 0.035,
      "energy": 2.2,
-     "light": 2.6,
+     "light": 3.6,
      "range": 9.0,
-     "halo": 0.35,
+     "halo": 0.9,
      "spread": 7,
      "soft": true
     }
@@ -827,24 +561,23 @@
    "id": "D6",
    "type": "LS",
    "dur": 4.6,
-   "note": "Low behind her, the door ahead: stone on stone, deep, the door sinks into the ground; behind it the long hall open to the moon, and at its far end the head of the stair, eye-lights coming up it in step. Her own body from the cut; the camera hands back.",
+   "note": "Rear at shoulder height, her at the right third, the door ahead: stone on stone, deep, the door sinks into the ground; behind it the long hall open to the moon, and at its far end the head of the stair, eye-lights coming up it in step. Her own body from the cut; the camera hands back.",
    "cam": {
     "pos": {
-     "mark": "stand",
-     "off": [
-      -1.3,
-      1.45,
-      5.6
+     "abs": [
+      0.6,
+      1.6,
+      31.6
      ]
     },
     "at": {
      "abs": [
-      0.6,
-      1.5,
-      4.0
+      -0.10000000000000009,
+      0.8,
+      22.0
      ]
     },
-    "lens": 32
+    "lens": 28
    },
    "cues": [
     {
@@ -854,6 +587,32 @@
     },
     {
      "do": "play"
+    },
+    {
+     "do": "rig",
+     "name": "slab",
+     "world": true,
+     "from": {
+      "abs": [
+       0.6,
+       5.8,
+       29.5
+      ]
+     },
+     "aim": {
+      "abs": [
+       0,
+       2.4,
+       22.0
+      ]
+     },
+     "color": "#7f97d8",
+     "energy": 5.0,
+     "angle": 16,
+     "range": 16,
+     "size": 1.5,
+     "spec": 1.0,
+     "falloff": 0.3
     },
     {
      "at": 0.3,
@@ -883,499 +642,141 @@
      "over": 1.0
     },
     {
-     "do": "place",
-     "actor": "eye0",
-     "where": {
-      "abs": [
-       -1.4,
-       0.7100000000000001,
-       -40.36
-      ]
-     }
+     "at": 0.9,
+     "do": "eyelights",
+     "actor": "dead",
+     "color": "#9a6cff",
+     "size": 0.13,
+     "energy": 6,
+     "apart": 0.09,
+     "fwd": 0.12,
+     "up": 0.05,
+     "clear": true
     },
     {
-     "do": "lamp",
-     "actor": "eye0",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye0",
+     "actor": "dead.0",
      "to": {
       "abs": [
-       -1.4,
-       1.83,
-       -37.88
+       -1.5,
+       0,
+       -34.2
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye1",
-     "where": {
-      "abs": [
-       0.0,
-       0.7100000000000001,
-       -40.36
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye1",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye1",
+     "actor": "dead.1",
      "to": {
       "abs": [
        0.0,
-       1.83,
-       -37.88
+       0,
+       -34.2
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye2",
-     "where": {
-      "abs": [
-       1.4,
-       0.7100000000000001,
-       -40.36
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye2",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye2",
+     "actor": "dead.2",
      "to": {
       "abs": [
-       1.4,
-       1.83,
-       -37.88
+       1.5,
+       0,
+       -34.2
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye3",
-     "where": {
-      "abs": [
-       -1.4,
-       -0.1299999999999999,
-       -42.22
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye3",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye3",
+     "actor": "dead.3",
      "to": {
       "abs": [
-       -1.4,
-       0.9900000000000002,
-       -39.74
+       -1.5,
+       0,
+       -36.1
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye4",
-     "where": {
-      "abs": [
-       0.0,
-       -0.1299999999999999,
-       -42.22
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye4",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye4",
+     "actor": "dead.4",
      "to": {
       "abs": [
        0.0,
-       0.9900000000000002,
-       -39.74
+       0,
+       -36.1
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye5",
-     "where": {
-      "abs": [
-       1.4,
-       -0.1299999999999999,
-       -42.22
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye5",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye5",
+     "actor": "dead.5",
      "to": {
       "abs": [
-       1.4,
-       0.9900000000000002,
-       -39.74
+       1.5,
+       0,
+       -36.1
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye6",
-     "where": {
-      "abs": [
-       -1.4,
-       -0.97,
-       -44.08
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye6",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye6",
+     "actor": "dead.6",
      "to": {
       "abs": [
-       -1.4,
-       0.15000000000000013,
-       -41.6
+       -1.5,
+       0,
+       -38.0
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye7",
-     "where": {
-      "abs": [
-       0.0,
-       -0.97,
-       -44.08
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye7",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye7",
+     "actor": "dead.7",
      "to": {
       "abs": [
        0.0,
-       0.15000000000000013,
-       -41.6
+       0,
+       -38.0
       ]
      },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     },
     {
-     "do": "place",
-     "actor": "eye8",
-     "where": {
-      "abs": [
-       1.4,
-       -0.97,
-       -44.08
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye8",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
+     "at": 0.6,
      "do": "move",
-     "actor": "eye8",
+     "actor": "dead.8",
      "to": {
       "abs": [
-       1.4,
-       0.15000000000000013,
-       -41.6
+       1.5,
+       0,
+       -38.0
       ]
      },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye9",
-     "where": {
-      "abs": [
-       -1.4,
-       -1.8099999999999998,
-       -45.94
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye9",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye9",
-     "to": {
-      "abs": [
-       -1.4,
-       -0.6899999999999997,
-       -43.46
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye10",
-     "where": {
-      "abs": [
-       0.0,
-       -1.8099999999999998,
-       -45.94
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye10",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye10",
-     "to": {
-      "abs": [
-       0.0,
-       -0.6899999999999997,
-       -43.46
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye11",
-     "where": {
-      "abs": [
-       1.4,
-       -1.8099999999999998,
-       -45.94
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye11",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye11",
-     "to": {
-      "abs": [
-       1.4,
-       -0.6899999999999997,
-       -43.46
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye12",
-     "where": {
-      "abs": [
-       -1.4,
-       -2.6500000000000004,
-       -47.8
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye12",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye12",
-     "to": {
-      "abs": [
-       -1.4,
-       -1.5300000000000002,
-       -45.32
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye13",
-     "where": {
-      "abs": [
-       1.4,
-       -2.6500000000000004,
-       -47.8
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye13",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye13",
-     "to": {
-      "abs": [
-       1.4,
-       -1.5300000000000002,
-       -45.32
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye14",
-     "where": {
-      "abs": [
-       -1.4,
-       -3.49,
-       -49.66
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye14",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye14",
-     "to": {
-      "abs": [
-       -1.4,
-       -2.37,
-       -47.18
-      ]
-     },
-     "dur": 3.8,
-     "ease": "linear"
-    },
-    {
-     "do": "place",
-     "actor": "eye15",
-     "where": {
-      "abs": [
-       1.4,
-       -3.49,
-       -49.66
-      ]
-     }
-    },
-    {
-     "do": "lamp",
-     "actor": "eye15",
-     "glow": 1.4,
-     "light": 0
-    },
-    {
-     "at": 0.8,
-     "do": "move",
-     "actor": "eye15",
-     "to": {
-      "abs": [
-       1.4,
-       -2.37,
-       -47.18
-      ]
-     },
-     "dur": 3.8,
+     "dur": 3.9,
      "ease": "linear"
     }
    ]

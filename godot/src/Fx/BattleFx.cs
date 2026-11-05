@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
@@ -1114,6 +1114,10 @@ public partial class BattleFx : Node3D
 
 
     int levelHeld;
+    /// <summary>(P9 C13) True while a film plays (Game.InCinematic): the level's pillar, flash and ground blast wait for play
+    /// (round 1: the kill's level-up drew a white disc round her feet in C13's arrival), as they wait for the Flare.</summary>
+    public static Func<bool>? Filming;
+    bool HoldLevel => Flare.HoldsFrame || Filming?.Invoke() == true;
 
     /// <summary>A level: a pillar and a flash at her, sparks rising.</summary>
     /// <summary>Her ember's own burst for a level (PlayerView.LevelFlare), with the pillar: it waits for a Flare's frame too
@@ -1596,7 +1600,7 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.LevelUp:
                     // While the Flare has the frame, the level's pillar and flash wait for it (FlareFx.HoldsFrame).
-                    if (Flare.HoldsFrame) levelHeld++; else LevelLight();
+                    if (HoldLevel) levelHeld++; else LevelLight();
                     break;
                 case Ev.Victory v:
                 {
@@ -1983,7 +1987,7 @@ public partial class BattleFx : Node3D
         StepTellStreaks(b, fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
-        if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
+        if (levelHeld > 0 && !HoldLevel) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         StepWardenHoly(fdt);
         if (Flare.HushesSwings) { Blades.Clear(); OathBlades.Clear(); }

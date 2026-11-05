@@ -46,6 +46,7 @@ public partial class Game
         catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
         // Where things really are (a boss falls where the fight leaves him).
         if (marks != null) foreach (var (k, v) in marks) file.Marks[k] = v.ToArray();
+        if (marks != null && Args.Has("cutlog")) GD.Print($"cinema: {id} marks " + string.Join(" ", marks.Select(kv => $"{kv.Key}=[{string.Join(",", kv.Value.Select(d => d.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)))}]")));
         // A timeline that cannot be laid out is not played (its schedule is built
         // before anything on screen changes), and the zone does without.
         // Run on from the one before (its end.next): the bars stay in and what it left stays.
@@ -432,14 +433,30 @@ public partial class Game
         float emberBack = 0.6f;
         /// <summary>(P9 C13, "eyelights") The eye pairs riding the cast's heads, by actor.</summary>
         readonly Dictionary<string, EyePair> eyes = new();
-        sealed class EyePair(PersonView v, MeshInstance3D l, MeshInstance3D r, float apart, float fwd, float up)
+        /// <summary>(P9 C13) The story place's shut gates the film hid ("gates" cue), shown again before the zone's done.</summary>
+        readonly List<Node3D> gatesHid = new();
+        void GatesBack() { foreach (var n in gatesHid) if (IsInstanceValid(n)) n.Visible = true; gatesHid.Clear(); }
+        sealed class EyePair(PersonView? v, MeshInstance3D l, MeshInstance3D r, float apart, float fwd, float up, Func<(Vector3 At, Vector3 F)?>? foe = null)
         {
             public readonly MeshInstance3D L = l, R = r;
             int head = -2;
-            /// <summary>Each frame: on the head bone (its forward and up the bone's axes nearest the body's), or hidden.</summary>
+            /// <summary>Each frame: on the head bone (its forward and up the bone's axes nearest the body's), or hidden. A zone
+            /// creature's ("foe" cue; its body drawn on the card, no bone to read): "up" metres over its feet, "fwd" along its facing.</summary>
             public void Place()
             {
-                if (!IsInstanceValid(v) || !IsInstanceValid(L)) return;
+                if (!IsInstanceValid(L)) return;
+                if (foe != null)
+                {
+                    var q = foe();
+                    L.Visible = R.Visible = q != null;
+                    if (q is not var (fat, ff)) return;
+                    var fside = Vector3.Up.Cross(ff).Normalized();
+                    var fpos = fat + ff * fwd + Vector3.Up * up;
+                    L.GlobalPosition = fpos + fside * apart / 2;
+                    R.GlobalPosition = fpos - fside * apart / 2;
+                    return;
+                }
+                if (!IsInstanceValid(v)) return;
                 var sk = v.Person.Skeleton;
                 if (head == -2) head = sk.FindBone("Head");
                 bool on = head >= 0 && v.IsVisibleInTree();
@@ -1329,6 +1346,16 @@ public partial class Game
                     FilmFoes.Set(fe, new FilmFoes.Look(c.Bool("hidden", fwas?.Hidden ?? false), c.Has("glow") ? c.Num("glow") : fwas?.Glow, ftint, c.Num("light", fwas?.Light ?? 1)));
                     break;
                 }
+                case "gates":
+                {
+                    // (P9 C13) The story place's shut gates (ArenaEdge.Gate: the ember burning across the way, "not yet") out of the
+                    // picture for the film: {"do":"gates","lit":false}. C13 D6 looks down the hall to the stair, and the next stage's
+                    // fire across the hall read as warm fires at its far end; they are shown again as play takes the frame.
+                    if (c.Bool("lit", true)) { GatesBack(); break; }
+                    foreach (var (gk, gn) in g.scene!.View.Landmarks.Nodes)
+                        if (gk.StartsWith("gate:") && gn.Visible) { gn.Visible = false; gatesHid.Add(gn); }
+                    break;
+                }
                 case "eyelights":
                 {
                     // (P9 C13) A pair of small eye-lights in a person's head (an extras crowd: each of them), riding the head
@@ -1337,7 +1364,14 @@ public partial class Game
                     // own (vat.gdshaderinc has none), and orbs set by hand did not ride their heads.
                     if (eyes.Remove(c.Actor, out var olde)) olde.Free();
                     float een = (float)c.Num("energy", 3);
-                    if (een <= 0 || !people.TryGetValue(c.Actor, out var ev)) break;
+                    // (a "foe" actor too: the Barrow Lord drawn dark for C13's arrival, his two eyes over his feet at "up")
+                    people.TryGetValue(c.Actor, out var ev);
+                    Func<(Vector3 At, Vector3 F)?>? efoe = null;
+                    if (ev == null && enemies.TryGetValue(c.Actor, out var efe))
+                        efoe = () => efe.Alive && FilmFoes.Of(efe)?.Hidden != true
+                            ? (new Vector3((float)efe.X, (float)g.scene!.HeightAt(efe.X, efe.Z), (float)efe.Z), new Vector3((float)Math.Cos(efe.Facing), 0, (float)Math.Sin(efe.Facing)))
+                            : null;
+                    if (een <= 0 || (ev == null && efoe == null)) break;
                     var ecol = new Color(c.Str("color") ?? "#9a6cff");
                     float esize = (float)c.Num("size", 0.05);
                     bool eclear = c.Bool("clear");
@@ -1351,7 +1385,7 @@ public partial class Game
                             AlbedoTexture = SoftHalo(), AlbedoColor = new Color(ecol.R * een, ecol.G * een, ecol.B * een, 1), DisableFog = eclear,
                         },
                     };
-                    var pair = new EyePair(ev, Dot(), Dot(), (float)c.Num("apart", 0.065), (float)c.Num("fwd", 0.1), (float)c.Num("up", 0.04));
+                    var pair = new EyePair(ev, Dot(), Dot(), (float)c.Num("apart", 0.065), (float)c.Num("fwd", 0.1), (float)c.Num("up", 0.04), efoe);
                     g.scene!.AddChild(pair.L); g.scene.AddChild(pair.R);
                     eyes[c.Actor] = pair;
                     pair.Place();
@@ -2333,6 +2367,7 @@ public partial class Game
                 if (!player.Skipped) g.HoldFrame(2);
                 g.chained = new Chain(bars, saved, combatWas);
                 Seen();
+                GatesBack();
                 done?.Invoke();
                 FilmFoes.Clear();
                 if (g.chained != null) { g.chained = null; Restore(); }
@@ -2340,6 +2375,7 @@ public partial class Game
             }
             Restore();
             Seen();
+            GatesBack();
             done?.Invoke();
             // (after the zone's done: P6's takes Corvane's hidden body away, so it is never drawn again)
             FilmFoes.Clear();

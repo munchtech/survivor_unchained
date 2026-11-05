@@ -113,6 +113,7 @@ public partial class Game : Node, IZoneHost
         air = new Atmosphere();
         AddChild(air);
         hud = new GameHud { Filming = () => InCinematic };
+        SurvivorUnchained.View.BattleFx.Filming = () => InCinematic;
         AddChild(hud);
         screens = new Screens();
         AddChild(screens);
@@ -1926,6 +1927,12 @@ public partial class Game : Node, IZoneHost
         if (!minuteDone && Args.Has("stage") && zone is StoryNight sn2 && Battle != null)
         {
             minuteDone = true;
+            // (P9 C13: and before it too, so a stage begun there (the boss's arrival film's marks: where she is) sees her at that spot)
+            if (Args.Get("stage-at") is string sa0 && sa0.Split(',') is [var sx0, var sz0])
+            {
+                Battle.Player.X = double.Parse(sx0, System.Globalization.CultureInfo.InvariantCulture);
+                Battle.Player.Z = double.Parse(sz0, System.Globalization.CultureInfo.InvariantCulture);
+            }
             sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
             // --stage-at X,Z: then her at that spot in the stage's ground (pictures of a place down a stage's length).
             if (Args.Get("stage-at") is string sa && sa.Split(',') is [var sx, var sz])

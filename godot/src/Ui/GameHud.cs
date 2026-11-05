@@ -649,7 +649,10 @@ public partial class GameHud : CanvasLayer
         // (UI 18: the light runs on a gain; a level-up lights all of her and, by night, names the ember through the
         // banner, its sound the ember's own level-up (SoundBridge, Ev.LevelUp); by day Journey names the level)
         xpLight.Feed(e, lv, ember);
-        if (xpLight.Rose && ember && !HudPin.Active) Announce(new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6));
+        // (P9 C13: a level-up while a film plays (the kill's ember on the door film's first frame, a stage's) is held, and
+        // named when play is back: "EMBER 28" stood over C13's arrival)
+        if (xpLight.Rose && ember && !HudPin.Active) { var lu = new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6); if (Filming?.Invoke() == true) heldRise = lu; else Announce(lu); }
+        if (heldRise != null && Filming?.Invoke() != true) { Announce(heldRise); heldRise = null; }
         xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
         xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
         xpHave = ember ? b.EmberXp : level.K * xpNeed;
@@ -1104,6 +1107,10 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <param name="place">null: the usual upper banner; "lower": the lower third, just above the subtitles (a cinematic title kept off a face). "lower-left": the same, centred on the frame's left third (C02 s11: ended before his body).</param>
+    /// <summary>(P9 C13) True while a film plays (Game.InCinematic): play's own banners wait for it.</summary>
+    public Func<bool>? Filming;
+    Announcement? heldRise;
+
     public void Announce(Announcement a, string? place = null)
     {
         // --clean: no title cards over the picture (previs stills taken as storyboard staging).
