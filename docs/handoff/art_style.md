@@ -1,7 +1,7 @@
 # Handoff: the signature art style (style frames)
 
 ## L1 the art direction as a SYSTEM: GATE G1 READY look-l1@19d3a0a60 (look-l1 art director 2, 4 Nov)
-GATE G1 READY look-l1@19d3a0a60. The sheet: `survivorsunchained_inputs\look_l1\g1\`. A5 round 1 (`g1\verdict_a5.md`, $2.68): PASS WITH FIXES, all fixes made in round 4. A5 round 2 (`g1\verdict_a5_r2.md`): R2VERDICT. Waiting on the owner's pick; B2-B6 and C stay closed until the coordinator relays it.
+GATE G1 READY look-l1@19d3a0a60. The sheet: `survivorsunchained_inputs\look_l1\g1\`. A5 round 1 (`g1\verdict_a5.md`, $2.68): PASS WITH FIXES, all fixes made in round 4. A5 round 2 (`g1\verdict_a5_r2.md`, $1.78): PASS WITH FIXES, 9 of 11 in. Round 5 (`a2\r5\`) fixed 08 (leaner, no lines inside the skin) and 07 (the long shadows). KA's face edit failed (ChatGPT edited the attached MB1 instead), so KA stays KA_r4 by the judge's own fallback. MB1 is the face law (rule 11) for P1 and the Look camera. Round cap: one A5 round left. Waiting on the owner's pick; B2-B6 and C stay closed until the coordinator relays it.
 - **The job:** painted cel built as a system. The owner, 4 Nov: "art is a big deal, not a patch", "cost does not matter - implementation building blocks etc matter"; Marvel Rivals is the reference KIND, never a copy; her look is "casual badassery and sexyness"; "if they need to be redone so be it". Rule 4 of PIPELINE.md "How a lead works" applies: each block names what it is derived FROM, and no block is fitted to today's maps; the frames are rebuilt to the blocks. The plan, approved: A direction, G1 (the owner picks), B blocks, C the 13 frames rebuilt, D a judge and the owner's A|B.
 - **Stage A, done:**
   - A1: `docs/design/look/REFERENCES.md`.
@@ -49,8 +49,9 @@ GATE G1 READY look-l1@19d3a0a60. The sheet: `survivorsunchained_inputs\look_l1\g
   - helpers about 1.37M: the ChatGPT driver 150k + 234k, B1a 188k, B5 205k, B0 185k, B0b 176k, B1b 227k;
   - plus B1c 191k and the driver's rounds 3-4 (about 55k more);
   - lead 1 about 250k, lead 2 about 290k (it hands off at the gate);
-  - API: A5 round 1 $2.68, round 2 R2COST;
-  - ChatGPT: 42 images on the owner's subscription.
+  - plus the round-5 driver 138k;
+  - API: A5 round 1 $2.68, round 2 $1.78;
+  - ChatGPT: 45 images on the owner's subscription.
 
 HANDOFF READY: docs/handoff/art_style.md on look-l1 (the successor takes B2 onward once the owner's pick is relayed).
 
