@@ -15,5 +15,16 @@
       "lanes": { "width": [3, 4] },
       "cover": { "count": [6, 8], "spacing": 13, "from": 10, "edge": 9 }
     }
+  },
+  "story": {
+    "vault_court": {
+      "about": "The court before the Sealed Door (vault_opened's first stage, Corvane in the doorway; P6 and the films lead, agreed 5 Nov): the outline the set is built to, in the Vault's own ground (Play/Story/Vault.cs, north is -z). width/depth: the court's metres across and from the door out; door: the door's middle [x, z] (the gate into the south end); corvane: his mark in it; arrive: where she comes in; clear: metres round his mark kept free of anything solid (his tether and the pull's drag). Until the set lands, Vault.cs's stand-in space is Band(40.5, 21.5, 11).",
+      "width": 22,
+      "depth": 18,
+      "door": [0, 22],
+      "corvane": [0, 25],
+      "arrive": [0, 31],
+      "clear": 9
+    }
   }
 }

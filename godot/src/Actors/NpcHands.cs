@@ -16,7 +16,7 @@ public partial class NpcHands : SkeletonModifier3D
     /// <summary>Share of the way to the curled pose (0 the clip, 1 the curl alone).</summary>
     public float Blend = 0.85f;
     /// <summary>The left hand closed round a held shaft (a torch: NpcTorchArm), FistCurl's angles, fully.</summary>
-    public bool FistL;
+    public bool FistL, FistR;
     /// <summary>A fist's curl per joint (01, 02, 03), degrees, for index, middle, ring and pinky.</summary>
     public static readonly float[][] FistCurl =
     {
@@ -68,6 +68,6 @@ public partial class NpcHands : SkeletonModifier3D
         if (sk == null) return;
         if (sk != found) Find(sk);
         for (int k = 0; k < bones.Length; k++)
-            sk.SetBonePoseRotation(bones[k], FistL && left[k] ? fist[k] : sk.GetBonePoseRotation(bones[k]).Slerp(target[k], Blend));
+            sk.SetBonePoseRotation(bones[k], (left[k] ? FistL : FistR) ? fist[k] : sk.GetBonePoseRotation(bones[k]).Slerp(target[k], Blend));
     }
 }

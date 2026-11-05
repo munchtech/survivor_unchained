@@ -142,6 +142,9 @@ public partial class Game : Node, IZoneHost
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
+        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()} bt {Battle?.Time ?? 0:0.000}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn();
+            // --cast-low S (the court clip): the Flare pressed S seconds after he passes half his life (court low), so it lands on him
+            if (ev == "low" && Args.Has("cast-low")) courtCastAt = Journey.Playtime + Args.Num("cast-low", 1); };
         Settings.Current.ApplyWindow();
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
@@ -582,7 +585,7 @@ public partial class Game : Node, IZoneHost
         "verge" => new Verge(this, meta),
         // A story fight with its own stages and boss is a story night; the rest are the table's.
         "arena" => World.Arena!.Story && SurvivorUnchained.Play.Story.StoryScripts.For(World.Arena.Id) is { } fight
-            ? new StoryNight(this, currentMap!, World.Arena, fight) { BossStartsAt = Args.Num("bosshp", 1), DoorKill = Args.Has("door-kill") } : new ArenaRun(this, currentMap!, World.Arena!),
+            ? new StoryNight(this, currentMap!, World.Arena, fight) { BossStartsAt = Args.Num("bosshp", 1) } : new ArenaRun(this, currentMap!, World.Arena!),
         "map" => StartMap(),
         _ => throw new ArgumentException($"no zone {id}"),
     };
@@ -684,10 +687,11 @@ public partial class Game : Node, IZoneHost
         AddChild(scene);
         Built:
         // (a story night let go stands still until its result: StoryNight.StandDown)
-        scene.Move = () => zone is StoryNight { Over: true } ? (0, 0) : auto?.Move ?? PlayMove();
+        // (and a beat held on a spot, HoldOn: the autopilot's hands are held as hers are)
+        scene.Move = () => zone is StoryNight { Over: true } || heldOn != null ? (0, 0) : auto?.Move ?? PlayMove();
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
-            : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
+            : heldOn != null ? false : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); LookStates(dt); };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
@@ -979,6 +983,33 @@ public partial class Game : Node, IZoneHost
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     /// <summary>(during a hand-back's ease the input stays held; a zone's capture then takes effect as it lands, GameSeam)</summary>
     public void Capture(bool on) { if (seam != null) seam.After = on; else controls.Captured = on; }
+    (double X, double Z)? heldOn;
+    Vector3? heldLook;
+    /// <summary>A story beat held on a spot in play (Corvane's body, from his fall to the gone line): the play camera's
+    /// own look set on it (its angle and distance kept, so his body comes to the screen's middle and stays there), her
+    /// controls held, the play HUD away but its captions. Null gives it all back.</summary>
+    public void HoldOn((double X, double Z)? at)
+    {
+        if (at is { } p && scene != null)
+        {
+            heldOn = p;
+            cam.FocusOverride = heldLook = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.4f, (float)p.Z);
+            // (a boss's lean, if one was running, is let go: it would set the look back off him each frame)
+            focusT = 0; bossFocus = null;
+            Capture(true);
+            hud.Held(true);
+            if (Args.Has("shot") || Args.Has("clip")) GD.Print($"hold on=({p.X:0.00},{p.Z:0.00}) t={Battle?.Time ?? 0:0.00}");
+        }
+        else if (heldOn != null)
+        {
+            heldOn = null;
+            if (cam.FocusOverride == heldLook) cam.FocusOverride = null;
+            heldLook = null;
+            Capture(false);
+            hud.Held(false);
+            if (Args.Has("shot") || Args.Has("clip")) GD.Print($"hold off t={Battle?.Time ?? 0:0.00}");
+        }
+    }
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
     // --cine (pictures of a cinematic, played at once): no name card over its first shots; in play a fight comes first.
@@ -1172,10 +1203,18 @@ public partial class Game : Node, IZoneHost
                     // (one of theirs at a time: the next waits for the last to be said).
                     var said = bk.Text;
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
-                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss);
+                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss, signature: bk.Signature);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
+                    break;
+                case Ev.Hush hu:
+                    scene?.Voices.Hush(hu.Speaker);
+                    break;
+                case Ev.Fade fd:
+                    // A story beat's cut through black (Corvane's body taken under it): down, held, and back up.
+                    hud.Fade(1, fd.Seconds);
+                    After(fd.Seconds + fd.Hold, () => hud.Fade(0, fd.Seconds * 1.6));
                     break;
                 case Ev.Focus f when scene != null && Battle is { } fb:
                     // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back. (H8,
@@ -1385,7 +1424,9 @@ public partial class Game : Node, IZoneHost
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
             // A story night's boss kept in frame with her (FollowCamera.Toward).
             cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
-                ? new Vector3((float)be.X, 0, (float)be.Z) : null;
+                ? new Vector3((float)be.X, 0, (float)be.Z)
+                // (a story stage's own named one too: Corvane in the doorway, from the arrival to the door's Close)
+                : zone is StoryNight bs && bs.Now == StoryNight.Stage.Beat && bs.Beat?.Focus is var (fx, fz) ? new Vector3((float)fx, 0, (float)fz) : null;
             // The Prologue's Ford-Warden too (he cast from behind the HUD's bottom-left, off frame).
             // He stands 2.6 times her height, so the look leans half the way to him (to 7 m): at a third, he stood under the hotbar.
             var fordBoss = cam.Toward == null && zone is Prologue pz ? pz.BossInFrame : null;
@@ -2014,8 +2055,14 @@ public partial class Game : Node, IZoneHost
             fb0.FlareMeter = Battle.FlareFull * fb0.FlareCharges;
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
+        // --court-tail N: the court clip quits N frames after the door opens (the movie then closes whole).
+        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) GetTree().Quit();
         // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
         // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
+        // --court-hold (the court clip, pictures only): the same, so the standing bot lives to the fight's end (the pull and the slam
+        // still land and knock her down; only her health is held).
+        if (Args.Has("clip") && Args.Has("court-hold") && Battle is { } holdB && holdB.Player.Alive)
+            holdB.Player.Hp = Math.Max(holdB.Player.Hp, holdB.MaxHp);
         if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
@@ -2028,7 +2075,7 @@ public partial class Game : Node, IZoneHost
             flareReadyShot = true;
             Shots.Want("ready", 0);
         }
-        if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
+        if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= (courtCastAt > 0 ? courtCastAt : Args.Num("cast", 1)))
         {
             castDone = true;
             cb.Aim = null;
@@ -2059,7 +2106,16 @@ public partial class Game : Node, IZoneHost
                 cb.Priority = best?.Id ?? -1;
                 GD.Print($"flare hover {how}: {(best == null ? "none in reach" : $"{best.Def.Id} #{best.Id} at {bd:0.0} m")}");
             }
-            cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
+            // (--cast-low, the court clip: pressed facing him, as a player would: the Long Cut runs along her facing, and the
+            // test press's east pointed it away from him in r7)
+            if (courtCastAt > 0 && cb.Enemies.Living().Where(e => e.Boss && e.State != EnemyState.Dying).OrderBy(e => (e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z)).FirstOrDefault() is { } boss)
+            {
+                double dx = boss.X - cb.Player.X, dz = boss.Z - cb.Player.Z;
+                cb.Player.Facing = Math.Atan2(dx, dz);
+                GD.Print($"flare press faces {boss.Def.Id} at ({dx:0.0},{dz:0.0})");
+                cb.UseFlare(dx, dz);
+            }
+            else cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:
         // at her back) fells her where she stands (a picture of her fall).
@@ -2222,6 +2278,8 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
     /// without a screen: Godot's --headless, --quit-after).</summary>
+    int courtOpen;
+    double courtCastAt;
     ulong costFrom;
     int costFrames;
 

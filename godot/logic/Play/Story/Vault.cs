@@ -38,26 +38,30 @@ public sealed class VaultOpened : StoryFight
     {
         Spaces =
         [
+            // The court before the door (Corvane's, the first stage): a stand-in to boards.json story.vault_court until
+            // the films lead's set lands (its identical lines win at the merge).
+            new("court", Band(40.5, 21.5, 11)),
             new("south", Band(22.5, 5.5)),
             new("hall", Band(6.5, -20.5)),
             // The head of the stair: a landing 30 m wide before the stair's mouth in the north wall.
             new("stair", Band(-19.5, -38, 12)),
-            new("court", Band(40.5, 21.5, 11)),
         ],
         Gates =
         [
+            new("door", -11, 22, 11, 22, "south"),
             new("south", -11, 6, 11, 6, "hall"),
             new("hall", -11, -20, 11, -20, "stair"),
-            new("door", -11, 22, 11, 22, "south"),
         ],
         Points = new()
         {
+            // (she comes in 6 m south of his mark: from 37, 12 m out, he and the door were off the top of the play camera's
+            // frame at her arrival; the story's rule is both on screen from where she arrives, P6 r4)
+            ["court_in"] = (0, 31), ["corvane"] = (0, 25),
             ["start"] = (0, 19), ["door"] = (0, 22),
             ["south_w"] = (-8, 8.5), ["south_e"] = (8, 8.5), ["line"] = (0, 9.5),
             ["hall_in"] = (0, 4), ["hall_w"] = (-8.5, -6), ["hall_e"] = (8.5, -6), ["scorpion"] = (0, -17.5),
             ["std_a"] = (-6, 0), ["std_b"] = (6, -7), ["std_c"] = (0, -14), ["signifer"] = (0, -16),
             ["boss_start"] = (0, -22.5), ["landing"] = (0, -29), ["boss_at"] = (0, -33), ["stair"] = (0, -37),
-            ["court_in"] = (0, 31), ["corvane"] = (0, 25),
             // (P9 set) Down the stair (out of bounds; for the films): the ranks' treads, every third step from
             // the third, a hand in from each riser (Maps/Arenas/Vault.cs: the ground is cut to the treads), and
             // Jessop far down, on the 23rd.
@@ -86,10 +90,13 @@ public sealed class VaultOpened : StoryFight
         a.Shift("vaultdoor", 1);
     }
     public override string Arrive => "court_in";
-    public override Func<StoryBeat>[] Beats => [() => new SouthEnd(), () => new HallLength(), () => new Standards()];
+    public override Func<StoryBeat>[] Beats => [() => new Doorway(), () => new SouthEnd(), () => new HallLength(), () => new Standards()];
     public override string Pull => "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step.";
+    /// <summary>The night opens on Corvane in the door: the pull is the court's Between sight, once he is down.</summary>
+    public override bool PullAtStart => false;
     public override string[] Between =>
     [
+        Pull,
         "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow.",
         "Down the hall, three standards go up one after another, and the dead turn to face them.",
         "The last standard goes down. Along the walls, the dead stand to attention, all at once, with one sound.",

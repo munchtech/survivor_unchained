@@ -161,6 +161,16 @@ public sealed class DialogueRunner
         return p;
     }
 
+    /// <summary>The conversation opened at a node of its own, whatever its entries say (a scene's line, a story
+    /// night's talk: door_night at go_home or gets_up). Null: no such node.</summary>
+    public Presented? StartAt(string node)
+    {
+        var s = ctx.World.Npc(Convo.Npc);
+        var p = Enter(node);
+        if (p != null) s.Flags["met"] = true;
+        return p;
+    }
+
     Presented? Enter(string id)
     {
         if (!Convo.Nodes.TryGetValue(id, out var n)) return null;
@@ -219,5 +229,38 @@ public sealed class DialogueRunner
         if (n.Next != null) return Enter(n.Next);
         Node = null;
         return null;
+    }
+}
+
+/// <summary>
+/// The app can now run a conversation from a node with no screen (IZoneHost.Converse's default: the harness, the tests):
+/// each line is taken as read, and where a line asks something the chooser answers (a harness's or a test's choice), or
+/// with none, the first answer that ends the conversation, as a player who says least would (door_night's lie_down: she
+/// raises her weapon). Its result is the id of the last node shown, which is how a story night reads what she chose.
+/// </summary>
+public static class SceneTalk
+{
+    /// <summary>Picks a node's answer (convo, node, the answers shown): an answer's Index, or null for the default.
+    /// Per thread: the harness runs nights side by side.</summary>
+    [ThreadStatic] public static Func<string, string, IReadOnlyList<PresentedChoice>, int?>? Chooser;
+
+    /// <summary>The conversation from `node` to its end: the last node shown (null: it would not open).</summary>
+    public static string? Run(Ctx ctx, string convo, string node)
+    {
+        var c = Dialogue.Find(convo);
+        if (c == null) return null;
+        var r = new DialogueRunner(c, ctx);
+        var p = r.StartAt(node);
+        string? last = null;
+        for (int guard = 0; p != null && guard < 200; guard++)
+        {
+            last = p.Node.Id;
+            if (p.Choices.Count == 0) { p = r.Advance(); continue; }
+            var shown = p.Choices.Where(x => x.Enabled).ToList();
+            if (shown.Count == 0) break;
+            int pick = Chooser?.Invoke(convo, p.Node.Id, shown) is int i && shown.Exists(x => x.Index == i) ? i : (shown.FirstOrDefault(x => x.Ends) ?? shown[0]).Index;
+            p = r.Choose(pick).Next;
+        }
+        return last;
     }
 }

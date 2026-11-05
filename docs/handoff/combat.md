@@ -1,5 +1,59 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## P6 Corvane in the doorway: MR READY (5 November, P6 lead 1)
+Brief: `tools/scratch/coordinator/briefs/P6_lead1.md`; story: `docs/handoff/story.md` "Line items" (P6). Phase 1 of story night `vault_opened`: a new first stage, the court, in front of the door.
+
+**Judge** (xhigh, API, 3 rounds, $2.50): r1 and r2 FAILED; **r3 gave PASS WITH KNOWN**. "The fight now reads at 1:1. The tell, pull, slam, knockdown, the Flare and the fall all land, and the round-2 failures are fixed." Verdicts: `survivorsunchained_inputs\combat_p6\verdict_r1..3.md`. Clips and frames: `r4`-`r8` (r8 is the one that passed).
+
+**Harness** (`story --fight vault --stage court --bot standing,human,deft`, tier 1, 8 seeds x 4 callings):
+| bot | result | kill time |
+|---|---|---|
+| standing | falls 100% | – |
+| human | wins 100% | median 96 s, min 61 s, none under 60 s |
+| deft | wins 100% | median 80 s |
+
+The human Warden is slow (median 188 s). Scratch tools: `court.py`, `sum.py`.
+
+**What is built (all numbers are data):**
+- **The stage and the boss:** the stage is `Doorway` (`logic/Play/Story/Corvane.cs`); his script is `CorvaneStory` (`Bosses/`). His numbers are in `teeth.json story.corvane`; the court outline is in `boards.json story.vault_court`.
+- **The talk and the choice:**
+  - The engine can now open a conversation at a node and report the node it ended on: `IGame.Converse`.
+  - `door_night` plays from `go_home`. "(Raise your weapon.)" starts the fight; he does not strike for 2.5 s after it. `go` lets the night go (`LetNightGo`, ArenaSpec.WalkedAway, the header "The night let go").
+- **His one signature, "Lie down.":**
+  - A 0.7 s tell: the lamp is raised, its light ramps up, and the bark stays over his head (signature barks are exempt from the bark band).
+  - Then the kit pull (7 m, 7.5 below half life) and the heart slam, which knocks her down.
+  - Below half life the only sign is the lamp burning brighter.
+  - Between signatures he holds the doorway with lamp-swing cuffs. One bar, no phase bar.
+- **The kill:**
+  - `corvane.rose` is set.
+  - Then the film, through P9's contract: `StoryNight.Cinematic("door", done, marks{corvane, her})`.
+  - Without a film, the fallback runs: a 2 s hold on his body (`HoldOn`: the camera on him, no HUD, her controls held), "He gets up." as a caption, `Ev.Cue "door_sigil"`, `Ev.Fade`, the body gone and his lamp left lit at his mark, the gone caption, then the door opens.
+- **A loss here:** the stage's OnLose sets `corvane.carried`, with no `shut` and no `corvane.rose`. `chid.carried_chid` now keys on rose OR carried.
+- **Ground (agreed with P9):** the stand-in space `court`, gate `door` and points `court_in` (0,31) and `corvane` (0,25) are P9's lines too. P9's `--door-kill` `if` in `StoryNight.Begin` is removed when both branches meet.
+- **Tests:** `godot/tests/CorvaneTests.cs`.
+- **Tooling:**
+  - The clip tool `tools/combat/court_clip.py`.
+  - The autopilot answers dialogue choices (`--answers`).
+  - `--cast-low` aims the Flare at the boss.
+
+**Flags:**
+- **Corvane's model, for P3:** the judge's distance is medium (about her height, no boss silhouette, a stiff raise). P3 remakes him with the Warden; the fight ships on the town model at 1.25 (PIPELINE P3).
+- **For the C2 build lead:** "swing damage at the clip's contact frame" (A1's routing) is not in this item.
+
+**Known (round cap):**
+- Narrator captions are small and dim (the UI lead's caption style).
+- The left-behind lamp is dimmer in the gone frame than in the hold.
+- Damage numbers sit on his lamp during the tell (UI).
+- The below-half change is modest (no pulse).
+- The ring's top crosses the boss bar.
+- The heart's brown-red under the night grade (H6's kit look).
+- The arrival title card is drawn over him (UI).
+- The Long Cut has no per-boss hit flash (H7).
+- The talk portrait has no lamp.
+- The set (door, sigil, court) is P9's.
+
+**Cost:** about 1.1M tokens: lead ~270k; helpers code 239k, clip 86k, views 202k + 194k, r1 fixes 198k, r2 fixes 183k. API judges: $2.50.
+
 ## H6 the player must move: MR READY (4 November, H6 lead 2)
 MR READY combat-h6@d7b977945 (code at 59ef5fc13)
 

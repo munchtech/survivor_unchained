@@ -22,7 +22,7 @@ namespace SurvivorUnchained.Tests;
 [Collection("Balance")]
 public class VaultTests
 {
-    static StoryNightTests.Night Vault(int seed = 3, int tier = 1, Action<Journey>? before = null, bool unarmed = false)
+    static StoryNightTests.Night Vault(int seed = 3, int tier = 1, Action<Journey>? before = null, bool unarmed = false, bool court = false)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice
@@ -42,6 +42,7 @@ public class VaultTests
         host.Battle = b;
         if (unarmed) foreach (var w in b.Weapons.ToList()) b.RemoveWeapon(w.Id);
         zone.Begin(b);
+        if (!court) zone.SkipTo(1);
         b.GreatOwed = 0;
         return new StoryNightTests.Night(j, host, zone, b, spec);
     }
@@ -69,11 +70,8 @@ public class VaultTests
         var (cx, cz) = VaultOpened.Ground["court_in"];
         Assert.True(Dist(n.B.Player.X, n.B.Player.Z, cx, cz) < 0.1);
         Assert.Equal("Bring down the Decurion", n.Zone.Beat!.Goal);
-        var g = VaultOpened.Ground.Gates.First(x => x.Id == "door");
-        Assert.False(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));
-        // The gate into the hall is shut yet.
-        var hall = VaultOpened.Ground.Gates[0];
-        Assert.True(n.B.Collision.Blocked((hall.X0 + hall.X1) / 2, (hall.Z0 + hall.Z1) / 2, 0.5));
+        var g = VaultOpened.Ground.Gates.First(x => x.Id == "south");
+        Assert.True(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));
         // The hall's cover stands from the first, solid.
         Assert.Equal(VaultOpened.Cover.Length, n.B.Collision.ByTag("cover").Count);
     }
@@ -106,7 +104,7 @@ public class VaultTests
         for (int k = 0; k < 16; k++)
         {
             var n = Vault(unarmed: true);
-            n.Zone.SkipTo(stage);
+            n.Zone.SkipTo(stage + 1);
             foreach (var e in n.B.Enemies.Living().Where(e => !e.Scripted).ToList()) n.B.Enemies.Release(e);
             double mx = Math.Cos(k * Math.PI / 8), mz = Math.Sin(k * Math.PI / 8);
             var p = n.B.Player;
@@ -126,7 +124,7 @@ public class VaultTests
         var n = Vault(unarmed: true);
         var g = VaultOpened.Ground;
         var map = MapGen.Generate(n.Spec.Map);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         foreach (var (from, to) in new[] { ("start", "line"), ("south_w", "hall_in"), ("hall_in", "scorpion"), ("std_a", "std_c"), ("hall_e", "boss_start"), ("boss_start", "boss_at") })
         {
             var nav = new NavField(map, n.B, g[to].X, g[to].Z, g.Bounds());
@@ -162,7 +160,7 @@ public class VaultTests
     public void The_Scorpions_bolts_stop_at_cover_and_she_must_close_on_him()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(1);
+        n.Zone.SkipTo(2);
         Step(n, 0.5);
         var s = Named(n, "mb_old_quarrel")!;
         Assert.NotNull(s);
@@ -192,7 +190,7 @@ public class VaultTests
     public void The_Signifer_falls_with_the_last_standard()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(2);
+        n.Zone.SkipTo(3);
         Step(n, 0.5);
         Assert.Equal("Break the standards (0 of 3)", n.Zone.Beat!.Goal);
         var standards = n.B.Enemies.Living().Where(e => e.Def.Id == "legion_standard").ToList();
@@ -208,7 +206,7 @@ public class VaultTests
         }
         Step(n, 4);
         Assert.False(sig.Alive && sig.State != EnemyState.Dying);
-        Assert.True(n.Zone.BeatIx > 2 || n.Zone.Now != StoryNight.Stage.Beat);
+        Assert.True(n.Zone.BeatIx > 3 || n.Zone.Now != StoryNight.Stage.Beat);
     }
 
     /// <summary>The floors hold: an absurd build still sees all three of his phases. Spent, he goes down and will
@@ -218,7 +216,7 @@ public class VaultTests
     public void An_absurd_build_cannot_skip_the_Barrow_Lord_and_he_must_be_laid_down()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         Step(n, 0.2);
         var boss = Boss(n);
         var script = Assert.IsType<BarrowLordStory>(n.Zone.BossScript);
@@ -246,7 +244,7 @@ public class VaultTests
     public void Not_stood_over_he_gets_up_again()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         Step(n, 0.2);
         var boss = Boss(n);
         var script = (BarrowLordStory)n.Zone.BossScript!;
@@ -269,7 +267,7 @@ public class VaultTests
     public void The_testudos_standard_breaks_the_ring_and_with_the_bane_can_be_lifted()
     {
         var n = Vault(unarmed: true, before: j => j.World.Facts["bane.pole"] = true);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         Step(n, 0.2);
         var boss = Boss(n);
         var script = (BarrowLordStory)n.Zone.BossScript!;
@@ -301,7 +299,7 @@ public class VaultTests
     public void Without_the_bane_the_standard_cannot_be_lifted()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         Step(n, 0.2);
         var boss = Boss(n);
         var script = (BarrowLordStory)n.Zone.BossScript!;
@@ -318,7 +316,7 @@ public class VaultTests
     public void The_front_closes_and_holy_drives_it_back()
     {
         var n = Vault(unarmed: true);
-        n.Zone.SkipTo(3);
+        n.Zone.SkipTo(4);
         Step(n, 0.2);
         var boss = Boss(n);
         var script = (BarrowLordStory)n.Zone.BossScript!;
