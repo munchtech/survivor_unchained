@@ -2,8 +2,9 @@
 
 importer="2d_array_texture"
 type="CompressedTexture2DArray"
-path.bptc="res://.godot/imported/setts_arh.png-29acfb4a079f6458293f02443fd9895a.bptc.ctexarray"
-path.astc="res://.godot/imported/setts_arh.png-29acfb4a079f6458293f02443fd9895a.astc.ctexarray"
+uid="uid://0cdfi6naig0p"
+path.bptc="res://.godot/imported/setts_arh.png-5edb44d733f7cfa883657d942c225e0b.bptc.ctexarray"
+path.astc="res://.godot/imported/setts_arh.png-5edb44d733f7cfa883657d942c225e0b.astc.ctexarray"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -12,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://art/ground/setts_arh.png"
-dest_files=["res://.godot/imported/setts_arh.png-29acfb4a079f6458293f02443fd9895a.bptc.ctexarray", "res://.godot/imported/setts_arh.png-29acfb4a079f6458293f02443fd9895a.astc.ctexarray"]
+dest_files=["res://.godot/imported/setts_arh.png-5edb44d733f7cfa883657d942c225e0b.bptc.ctexarray", "res://.godot/imported/setts_arh.png-5edb44d733f7cfa883657d942c225e0b.astc.ctexarray"]
 
 [params]
 

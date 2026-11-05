@@ -1,5 +1,59 @@
 # Handoff: the signature art style (style frames)
 
+## L1 the art direction as a SYSTEM: Stage C wave 2 BUILT as WIP, unjudged (look-l1 art director 5, 5 Nov; HANDOFF READY look-l1, the commit that adds this section)
+The coordinator (`local_6d561d13-50ec-4fb6-82c8-1d75710bfa18`, the last one this week) called the hand-off at the next clean commit; no successor runs this week. Wave 2's eight helpers all finished; everything is committed and pushed, nothing is judged since wave 1 (lead 5 ran no judge, $0 API). The branch is WIP: its latest 13 frames are `survivorsunchained_inputs\look_l1\c\w2\chain\r1\` (pairs `pairs_sheet_half.jpg`). **The art director's read of that sheet against G1:** structure moved toward the targets (04's road and verge, 09/12 ringed and lit, 07's painted setts and tiled roofs, 06's water banded, 01's flame stepped), but the color is not yet the targets'. By day a mauve-lilac cast sits on every warm surface (13's walls, 07/08's setts) and 04 is murky olive camo, not a sunlit meadow. By night the pool is brown-orange, not ember, and the campfire's light barely lands (01). The pack still reads pale silver (09, 12). Only 02 would ship.
+- **Start here (lead 6):**
+  1. Merge integration (the junction rule: `cmd /c rmdir godot\assets`, merge, remake it to OUR `public\assets`, `git update-index --assume-unchanged godot/assets`; `git ls-tree` 120000), `--import`, suite (last green 1593/0/10 at 6ea1df233).
+  2. **The day key's warm cast, at its root (one solver, medium; the chain's brief `look_l1\work\brief_w2_chain.md` steps 2-3 and 8).** After the chain, a neutral 0.18 card under the day key reads R/B 2.86 against the sun's own linear 2.55 (#f3d9a0). The chain divided the boards' lit sides by that warm response, so its day albedos came out pink-mauve: setts #8e7588, plaster #e09393, stone #91727b, roof #79565e. Trace the rest of the warm cast through the grade (`rig_day`/`rig_day_wild` in `Atmospheres.cs`, the tone curve, any tint), make the key's measured response the sun's own color, wire `color_chain.py all`, then re-solve, apply and rebuild the kits (`ground_paint.py build all`, `wild.py all --no-mesh`, `town.py all --no-mesh`).
+  3. **The chain's undone steps:** step 5, the warm sources: her ember, torches, lamps and the campfire. Today the pool is 0.23 against 0.35+, the night key 1.6-1.7 against 2.0+, and the pool brown-orange. Step 6: dawn (scope the dawn grade's Moon step first) and her skin shade h 325. The pack's fur: `crowd_fur`'s `albedo_ctl` says L 0.30, but 09 and 12 still show pale silver bodies, so check that the VAT crowd's emission reads it.
+  4. **`ground_paint.py check all` FAILS** on the Hollow and the Barrow since the chain's gains (the values90 counts). Fix it at the source (the gains or the check's band), never by hand.
+  5. **Then the kits' open marks:**
+     - The alder, medium-far: round lobes (3-5 rim points per lobe, about +10% tris) and a lit top at night.
+     - The props (`env_props` barrel, crate, cart): not started; `town.py` has no `props` yet.
+     - The setts' bright top-left lip (MB3).
+     - The river's strokes x1.5 (10), with 06 and 05 reshot after the water's x0.42.
+     - The rock at night in 10 reads saturated blue (rule 9).
+     - The lookdev side camera: the spruce covers the boulder.
+     - 03's lake is P9's (the line below).
+  6. **Then the plan as lead 4 wrote it:** one 13-frame shoot, the judge (Item: Stage C wave 1 has rounds 2-3 left; xhigh API, `node tools/ai/api_agent.cjs`), Stage D (one max judge, "the same game?", the whole-frame gate, each frame at 1:1 against G1), `GATE G2 READY` with the owner's A|B at half size in `look_l1\g2\`.
+- **Lead 5 did** (every commit `L1 W2 <block>:`, WIP and unjudged; the briefs are `look_l1\work\brief_w2_*.md`, the common one first, each a model for the next):
+  - **Merge:** integration at 662132e20 (the C2 design; PIPELINE P4 theirs, P5 ours). Import 0 errors; suite 1589/0/10.
+  - **Light** (b32bdf7b5, RIGS FINAL):
+    - What it built: `grade_curve` (the grade's tone curve on Oklab L, FROM LB DAY's ground: lit 0.77, shade 0.34), `warm_keep` (the grade keeps a warm light's chroma, 0 by day), `ember_give` (inside her reach the moon gives way, 75% of its key, fill and rim), and `albedo_ctl` (a class's albedo as data, the crowd's paint too).
+    - The arena ember went from #ffcc9c 4.5 to #ff8a3a 8.0 x1.5. The peach one was the beige pools.
+    - Open: the day key; torches and lamps don't give way yet.
+  - **Ground** (25edf7306, 14090271e):
+    - What it built: the meadow's photo-era multiply removed; masses at three sizes; 09's leaves halved; 03's rime a bounded lift; the moss in two flat values.
+    - Open: 03's frost ground (far; the 03 rig's moon on it) and 04's camo (medium).
+  - **Wild** (802295eb5, a659b707b, 6bf0d56a9, 7cc9d4a11):
+    - What it built: `env_trees.py`'s grass atlas runs `ground_paint.py atlas`; spruce tier normals (close: one olive top, jagged rim, no zebra); rock planes creased (medium); the alder re-meshed big-medium-small (medium-far); `kit.gdshader` OWN_BROADLEAF `up_bend` as a uniform. `wild.py` now fails when Blender errors.
+    - Known: the spruce's lod2 is 15-45 tris over budget, as in wave 1.
+  - **Staging** (369d04252, 1d595b3fa):
+    - What it built: `--auto stand` (pictures only: she plants and fights); the Hollow's fold-wall kit boulders as board data (`boards.json` fold.rocks, FROM target 10; this changes the tier-1 Hollow's layout); the moments for 03, 04, 09, 10 and 12.
+    - Distance: 04 and 09 close; 10 and 12 medium; 03 far (no C01 camera shows a lake).
+    - Known: the 09 run saves its frame and then idles to the 600 s timeout; under stand she dies about 25 s in.
+  - **Town** (8a2df483e, d576feac4):
+    - What it built: `python tools/look/town.py setts|houses|roofs|all [--no-mesh]`. Painted coursed setts as a `ground_paint.py` set (the photo setts `git rm`'d; `terrain.gdshader`'s `setts_painted` gates the photo-era layers). The walls' and roofs' trim sheets painted from nothing, per region (`town.json`). Timbers x1.35. The roof's `cel_nmap` is 0.
+    - Distance: walls far (the lilac fronts, step 2 above); setts and roofs medium; props not started.
+  - **FX** (7bf962808, 97218983d, 20f6c5483, 01047e5a0, 7c241fdb2):
+    - What it built: `FxAfter.cs` (spells and the campfire drawn after the grade in the boards' own hex; the flame behind its logs as depth); the bolt (head 0.6x, sparks 5-35, bites 3-11); the stepped campfire (`fx_cel_flame`, `campfire.steps` from MB5's shares); water as bands of the sky (`water_cel`, `godot/data/look/water.json`, `Water.Cover`); the UI panel's bronze as data in `ui_language.json` (#684422, bevel #b68852, 22 px, band 0.27; a swatch for the UI lead at `c\w2\fx\ui\panel.png`).
+    - `FxCel` is on by default under cel (lead 5 confirmed). Frame time is 0.10-0.42 ms per 100 bolts.
+    - Distance: the flame close, the bolt close-medium, the water medium, the UI data close.
+    - Known: a character in front of the campfire draws behind the flame.
+  - **Chain** (a1eba49e2, 8206e2814, 6ea1df233):
+    - What it built: `python tools/look/color_chain.py measure|boards|solve|check|apply` with `godot/data/look/swatches.json` (the boards' lit and shade patches). It measures grey cards on the lookdev stage with her ember off. The day fill comes FROM the boards' median shade/lit (#beb5ff 0.098, sky #dce6ff, hemi 0.28), the night moon FROM the boards' night sides over the albedos (key #70b3ff 2.0, sky #c3ebff 0.55), and the day grade's highlight tint is neutral. It writes the class albedos (v4) and the class marks through `albedo_ctl`.
+    - The relit check's median dE is 0.109. MB4's night grass and spruce are painted teal, which no light gives an olive albedo; the rule wins.
+- **For P9 (via main):** target 03 needs a C01 shot from her rear left looking north at the water and the moon, with the fire low right. The camp (z about 90) is about 130 m from the ford's water (z about -40), so it needs a shore camera there or water near the camp.
+- **Machine:** `turn.py give` without its label refuses when several turns are held, so give every turn back by its label. On 5 Nov, three stale wild turns blocked P9 for up to 95 minutes; they are freed.
+- **Housekeeping done:** the two stray 1 Nov `info.info.json` files (the path slip under `C:\c\Users\munch\Desktop\survivorsunchained_inputs\vfx_refs\`) went to the Recycle Bin with their empty folders; lead 5's scratch is backed up to `survivorsunchained_inputs\scratch_look_l1\` and cleared.
+- **Not committed, on purpose:** Godot's own `.uid` files and the line-ending-only `.import` changes, as lead 4 left them.
+- **Cost, lead 5:**
+  - Helpers ~1.81M: light 219k, ground 202k, wild 365k (with its resume), staging 175k, town 223k, FX 205k + 186k, chain 231k.
+  - Lead 5 ~0.23M.
+  - $0 API.
+  - Stage C so far is about 3.2M + $2.13 API, over the accepted 2.2-3.0M.
+  - Left to GATE G2 about 1.0M + $12-17: the warm cast and the chain's warm sources ~0.25M; the alder, props and setts ~0.3M; a shoot, the wave judge and a fix round ~0.3M; D ~0.1M + $10-15.
+
 ## L1 the art direction as a SYSTEM: Stage C wave 1 BUILT, wave 2 next (look-l1 art director 4, 5 Nov; HANDOFF READY look-l1, the commit that adds this section)
 Stage B's judge FAILED B3 at its source, so Stage C rebuilds the world from shape. Wave 1 is built: the painted ground, eight of the eleven marks, and the wild kit. **The wave-1 judge (xhigh API, $0.96, `c\w1\verdict_w1_r1.md`): ON TRACK WITH FIXES.** The painted ground, the spruce, the alder and the rocks are the right sources (medium, marks): no photo noise, night no longer murky, the spruce reads as spruce. What is left is color (the kit's colors were set before C2's rigs: day reads acid yellow and lime, her pool salmon or beige, not ember orange) and staging (09, 10, 12, 03 shot at the wrong moment or camera). Only 02 would ship today; 01, 04, 05, 09 moved far -> medium. Paths are under `survivorsunchained_inputs\look_l1\`.
 - **Start here (lead 5):** (1) Read the wave-1 verdict `c\w1\verdict_w1_r1.md`. Its per-frame table and wave 2's order are your list, along with wave 1's knowns below. (2) Wave 1b: the knowns first, one solver each, through the briefs here. (3) Wave 2. (4) One 13-frame shoot, a judge, then Stage D. Report to main (coordinator 88131549 relays) at a judge, a block, `GATE G2 READY` or a handoff.
