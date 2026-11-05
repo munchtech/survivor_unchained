@@ -29642,117 +29642,11 @@
    "status": "done"
   },
   {
-   "id": "dlg.cin_behind_the_door.redi.0",
-   "kind": "dialogue",
-   "voice": "barrow_lord",
-   "text": "Redi. (Go back.)",
-   "where": "dialogue.json cin_behind_the_door/redi#0",
-   "hash": "752675633e10",
-   "segments": [
-    {
-     "voice": "barrow_lord",
-     "text": "Redi."
-    }
-   ],
-   "direction": {
-    "emo": "ancient, final",
-    "intent": "go back",
-    "pace": "very slow",
-    "vol": "quiet",
-    "say": "Redi.",
-    "note": "Latin: RED-ee."
-   },
-   "take": {
-    "file": "barrow_lord/dlg.cin_behind_the_door.redi.0.ogg",
-    "hash": "752675633e10",
-    "sec": 2.34,
-    "segs": [
-     [
-      0.0,
-      0.938,
-      0.0,
-      1.0
-     ]
-    ],
-    "model": "maya1 performance + seed-vc",
-    "parts": [
-     {
-      "voice": "barrow_lord",
-      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_behind_the_door.redi.0\\p0_vc_r1_cc3f3c.wav",
-      "seed": 1,
-      "score": 0,
-      "similarity": 0.385,
-      "utmos": 1.35,
-      "accent": "us",
-      "wps": 0.0,
-      "said": "Ready.",
-      "style": "placeholder: Maya1 performance, Seed-VC"
-     }
-    ],
-    "made": "2026-10-03",
-    "read": 0.94,
-    "placeholder": true
-   },
-   "status": "done"
-  },
-  {
-   "id": "dlg.cin_behind_the_door.redi.1",
-   "kind": "dialogue",
-   "voice": "barrow_lord",
-   "text": "Redi.",
-   "where": "dialogue.json cin_behind_the_door/redi#1",
-   "hash": "dd9f960807f3",
-   "segments": [
-    {
-     "voice": "barrow_lord",
-     "text": "Redi."
-    }
-   ],
-   "direction": {
-    "emo": "ancient, final",
-    "intent": "go back",
-    "pace": "very slow",
-    "vol": "quiet"
-   },
-   "take": {
-    "file": "barrow_lord/dlg.cin_behind_the_door.redi.1.ogg",
-    "hash": "dd9f960807f3",
-    "sec": 2.33,
-    "segs": [
-     [
-      0.0,
-      0.934,
-      0.0,
-      1.0
-     ]
-    ],
-    "model": "maya1 performance + seed-vc",
-    "parts": [
-     {
-      "voice": "barrow_lord",
-      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_behind_the_door.redi.1\\p0_vc_r1_cc3f3c.wav",
-      "seed": 1,
-      "score": 0,
-      "similarity": 0.315,
-      "utmos": 1.41,
-      "accent": "england",
-      "wps": 0.0,
-      "said": "Ready.",
-      "style": "placeholder: Maya1 performance, Seed-VC"
-     }
-    ],
-    "made": "2026-10-03",
-    "read": 0.93,
-    "placeholder": true
-   },
-   "status": "done"
-  },
-  {
-   "id": "ply.cin_behind_the_door.redi.0",
+   "id": "ply.cin_behind_the_door.nondum.0",
    "kind": "choice",
    "voice": "survivor",
    "text": "(Continue.)",
-   "where": "dialogue.json cin_behind_the_door/redi choice 0",
+   "where": "dialogue.json cin_behind_the_door/nondum choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "b1fc71d10ad5",
    "status": "skip"

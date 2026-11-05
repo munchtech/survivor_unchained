@@ -16,6 +16,8 @@ public partial class Game
 
     /// <summary>The dawn's card is up (the autopilot clicks it through).</summary>
     public bool DawnUp => hudMode == "dawn";
+    /// <summary>IZoneHost: a dialogue, a card or a menu is over the world.</summary>
+    public bool ScreenUp => hudMode != null || screens.Current != null;
     /// <summary>Real seconds the dawn's card has been up.</summary>
     public double DawnFor => DawnUp ? Time.GetTicksMsec() / 1000.0 - dawnAt : 0;
 

@@ -118,6 +118,10 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public bool Won => won;
     /// <summary>The share of its health the boss is made with (1; less only for pictures of its end).</summary>
     public double BossStartsAt { get; set; } = 1;
+    /// <summary>(--door-kill) The Vault's door waits for its film (c13_door) and the great blessing with it, until P6's
+    /// Corvane fight replaces it; off, the door is open at once and the night is playable.</summary>
+    public bool DoorKill { get; set; }
+    bool doorWait, doorBlessing;
     public bool Over => over;
     public ArenaBoss? BossScript => script;
     public int Falls => falls;
@@ -171,9 +175,35 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
             fires.Add(f);
         }
         // The first great blessing, before anything moves (another as the boss's ground opens).
-        b.GreatOwed = 1;
+        // P9 stand-in until P6's Corvane fight (combat-p6) replaces it: remove with the fight.
+        if (Fight.Id == "vault_opened")
+        {
+            doorBlessing = DoorKill;
+            doorWait = true;
+        }
+        else b.GreatOwed = 1;
         G.Announce(new Announcement(Spec.Name, Region, "zone", 3.4, "Story night"));
         G.Say(Fight.Pull);
+        // P9 stand-in until P6's Corvane fight (combat-p6) replaces it: remove with the fight.
+        if (Fight.Id == "vault_opened")
+        {
+            if (!DoorKill) OpenDoor();
+            else G.After(0.5, () =>
+            {
+                var marks = new Dictionary<string, double[]> { ["corvane"] = [0, 25, 0], ["her"] = [0, 29.5, Math.PI] };
+                if (!Cinematic("door", OpenDoor, marks)) OpenDoor();
+            });
+        }
+        else StartBeat(0);
+    }
+
+    /// <summary>The Vault's door opens (P9 stand-in, see Begin): the south end is hers, the blessing is owed and the first stage begins.</summary>
+    void OpenDoor()
+    {
+        if (B == null || !doorWait) return;
+        doorWait = false;
+        Open("door");
+        if (doorBlessing) B.GreatOwed = 1;
         StartBeat(0);
     }
 
@@ -369,6 +399,10 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (Fight.Cinematic is { } c && G.CanCinematic($"{c}_{part}")) G.Cinematic($"{c}_{part}");
     }
 
+    /// <summary>The same with a hand-back and the marks where things really are; true only when the film plays.</summary>
+    bool Cinematic(string part, Action done, IReadOnlyDictionary<string, double[]>? marks) =>
+        Fight.Cinematic is { } c && G.CanCinematic($"{c}_{part}") && G.Cinematic($"{c}_{part}", done, marks);
+
     /* ------------------------------------------------------------- each step -- */
 
     public override void Step(double dt)
@@ -377,6 +411,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var p = B.Player;
         Burn(dt);
         if (falling) { p.Iframes = Math.Max(p.Iframes, 1); return; }
+        if (doorWait) return;
         stageLow = Math.Min(stageLow, p.Hp / Math.Max(1, B.MaxHp));
         switch (Now)
         {
@@ -673,18 +708,26 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         StageEnded("boss");
         if (boss != null) foreach (var l in Hoard()) B.Spill(l, x, z);
         script?.Clear();
+        // (the boss's facing as a cinematic's heading: the sim's is atan2(dz, dx), a heading's atan2(dx, dz))
+        double bossHeading = Math.PI / 2 - (boss?.Facing ?? 0);
         boss = null;
         // The outcome told first: the end's cinematic reads it (redcowl = spared picks its words).
         Arenas.Won(G.Journey, Spec, spared);
         foreach (var e in B.Enemies.Living().ToList())
             if (e.Disposition != Disposition.Ally && !e.Boss) e.Status[StatusKind.Fear] = new StatusSlot(4, 1, 1, 0);
-        Cinematic(spared ? "spared" : "end");
+        // The film hands into the reckoning (done: Finish); without it, the card and the clock as ever.
+        var pl = B.Player;
+        bool film = Cinematic(spared ? "spared" : "end", () => { if (won && !over) Finish(); },
+            new Dictionary<string, double[]> { ["boss"] = [x, z, bossHeading], ["her"] = [pl.X, pl.Z, Math.PI / 2 - pl.Facing] });
         B.Events.Emit(new Ev.Victory { X = x, Z = z });
         B.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = 2.2 });
         B.Events.Emit(new Ev.Shake { Amount = 0.35 });
         G.After(2.4, () => { if (B != null && !over) foreach (var k in B.Pickups.Items) if (k.Alive) k.Pulled = true; });
-        G.After(7, () => { if (won && !over) Finish(); });
-        G.After(0.8, () => G.Announce(new Announcement($"{Spec.Name} is won", "The night lets you go.", "reward", 4, "Victory")));
+        if (!film)
+        {
+            G.After(7, () => { if (won && !over) Finish(); });
+            G.After(0.8, () => G.Announce(new Announcement($"{Spec.Name} is won", "The night lets you go.", "reward", 4, "Victory")));
+        }
         Objectives();
     }
 

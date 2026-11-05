@@ -979,9 +979,19 @@ public sealed class Verge : ZoneRuntime
         G.SetObjectives(Objectives.Of(C));
     }
 
+    double c15T;
+
     public override void Step(double dt)
     {
         Approach();
+        // C15 (the Hollow healed, seen from the Verge by day): once, when nothing else is on the screen.
+        if ((c15T -= dt) <= 0)
+        {
+            c15T = 1;
+            if (W.Time is TimeOfDay.Dawn or TimeOfDay.Day && F("hollow.healed").Truthy && !F("c15.seen").Truthy
+                && !G.DawnUp && !G.ScreenUp && G.CanCinematic("c15"))
+                G.Cinematic("c15", () => W.Facts["c15.seen"] = true);
+        }
         // Bluffed ("PACK IT UP!"): the camp empties into the trees, Redcowl
         // with it, and nobody is left to call you a thief or watch the crates.
         if (F("redcowl").Str == "tricked" && (roostCrew.Any(Up) || Actors.ContainsKey("redcowl")))

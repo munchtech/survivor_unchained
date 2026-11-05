@@ -109,6 +109,10 @@ public interface IZoneHost
     bool Arrived => true;
     /// <summary>A title banner (a zone's Announce) is on screen: the first Great Blessing waits for it to clear.</summary>
     bool BannerUp => false;
+    /// <summary>The dawn's card is up (a zone's film waits for it to close).</summary>
+    bool DawnUp => false;
+    /// <summary>A screen is over the world: a dialogue, a menu, a card (what plays on its own waits).</summary>
+    bool ScreenUp => false;
     /// <summary>The air (rebuild: the sky's lighting too; not every frame of a blend).</summary>
     void SetAtmosphere(AtmospherePreset p, bool rebuild = true);
     /// <summary>A held camera (a cutscene), or null to go back to the survivor.</summary>

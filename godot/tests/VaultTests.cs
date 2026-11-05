@@ -9,6 +9,7 @@ using SurvivorUnchained.Play.Story;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
+using SurvivorUnchained.World;
 using Xunit;
 
 namespace SurvivorUnchained.Tests;
@@ -64,13 +65,34 @@ public class VaultTests
     {
         Assert.True(StoryScripts.Has("vault_opened"));
         var n = Vault();
-        var (sx, sz) = VaultOpened.Ground["start"];
-        Assert.True(Dist(n.B.Player.X, n.B.Player.Z, sx, sz) < 0.1);
+        // She comes in to the court, and (without P6's Corvane fight) the door is open at once.
+        var (cx, cz) = VaultOpened.Ground["court_in"];
+        Assert.True(Dist(n.B.Player.X, n.B.Player.Z, cx, cz) < 0.1);
         Assert.Equal("Bring down the Decurion", n.Zone.Beat!.Goal);
-        var g = VaultOpened.Ground.Gates[0];
-        Assert.True(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));
+        var g = VaultOpened.Ground.Gates.First(x => x.Id == "door");
+        Assert.False(n.B.Collision.Blocked((g.X0 + g.X1) / 2, (g.Z0 + g.Z1) / 2, 0.5));
+        // The gate into the hall is shut yet.
+        var hall = VaultOpened.Ground.Gates[0];
+        Assert.True(n.B.Collision.Blocked((hall.X0 + hall.X1) / 2, (hall.Z0 + hall.Z1) / 2, 0.5));
         // The hall's cover stands from the first, solid.
         Assert.Equal(VaultOpened.Cover.Length, n.B.Collision.ByTag("cover").Count);
+    }
+
+    [Fact]
+    public void The_reckoning_lets_her_go_with_the_stone_cold()
+    {
+        var n = Vault();
+        Assert.Contains("The dead stand on the stair in their ranks, and let you go. The stone in your hand is cold.", n.Spec.EndWon);
+        Assert.DoesNotContain("bootprints", n.Spec.EndWon);
+    }
+
+    [Fact]
+    public void The_door_dialogue_has_no_redi()
+    {
+        var d = Dialogue.Find("cin_behind_the_door")!;
+        Assert.False(d.Nodes.ContainsKey("redi"));
+        Assert.Null(d.Nodes["nondum"].Next);
+        Assert.NotEmpty(d.Nodes["nondum"].Choices!);
     }
 
     /// <summary>Walking and dashing every way from each stage's start (and the boss's), she never leaves the place.</summary>

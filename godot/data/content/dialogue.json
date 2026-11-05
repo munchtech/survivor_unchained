@@ -21589,29 +21589,6 @@
       "text": "Nondum."
      }
     ],
-    "next": "redi"
-   },
-   "redi": {
-    "id": "redi",
-    "speaker": "barrow_lord",
-    "text": [
-     {
-      "when": {
-       "any": [
-        {
-         "knows": "arcana"
-        },
-        {
-         "hasTag": "scholar_lens"
-        }
-       ]
-      },
-      "text": "Redi. (Go back.)"
-     },
-     {
-      "text": "Redi."
-     }
-    ],
     "choices": [
      {
       "text": "(Continue.)",

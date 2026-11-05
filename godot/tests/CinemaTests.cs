@@ -179,7 +179,7 @@ public class CinemaTests
         var grateful = CineLines.Find("cin_heart_goes_down.grateful", ctx);
         Assert.Equal("Finders keepers, surface-m— ...Downstairs'll be ever so grateful.", grateful.Text);
         Assert.False(grateful.Sung);
-        foreach (var node in new[] { "nondum", "redi" })
+        foreach (var node in new[] { "nondum" })
         {
             // The reader's variant: the Latin and its translation.
             var latin = Dialogue.Find("cin_behind_the_door")!.Nodes[node].Text[0].Text;
