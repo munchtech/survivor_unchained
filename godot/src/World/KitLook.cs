@@ -170,6 +170,7 @@ public static class KitLook
         m.SetShaderParameter("jitter", mine ? 0f : foliage ? 0.14f : 0.08f);  // (ours: OWN_FOLIAGE jitters each tree itself)
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
+        if (foliage && !mine) m.SetShaderParameter("cel_ink", 1);  // (kit foliage: silhouette ink only, as our own trees; L1 B1a)
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         // (our own trees have none: the canopy fade, the whole tree faded, in its own pass; E3 au1-5)

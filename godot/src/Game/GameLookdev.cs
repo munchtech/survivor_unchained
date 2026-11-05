@@ -35,11 +35,15 @@ public partial class Game
     readonly List<Flame> lookFlames = new();
     readonly List<Node3D> lookLamps = new();
     OmniLight3D? lookFireLight;
+    /// <summary>What the stage holds, by row, each with its world box (for the frame check: LookFrame).</summary>
+    readonly List<(string Row, string Name, Func<Aabb?> Box)> lookItems = new();
 
     void Lookdev(double dt)
     {
         if (Args.Get("lookdev") is not string spec || Battle is not { } b || scene == null || zone == null) return;
         lookRigs ??= spec == "all" || spec == "1" ? LookRigs : spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(r => LookRigs.Contains(r)).ToArray();
+        // No drafts on the stage (the arena's opening Great Blessing would cover every frame).
+        b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0; draftWait = 0;
         double t = Shots.Clock;
         if (lookBuiltAt < 0)
         {
@@ -72,9 +76,9 @@ public partial class Game
             cam.Camera.MakeCurrent();
             cam.Snap(lookP.X, lookP.Y, lookP.Z);
         }
-        else if (step == 1) { Shots.Want($"{rig}_play", 0); spotClose = 1; }
-        else if (step == 2) { Shots.Want($"{rig}_close", 0); spotClose = null; lookCam?.MakeCurrent(); }
-        else Shots.Want($"{rig}_side", 0);
+        else if (step == 1) { Shots.Want($"{rig}_play", 0); LookFrame($"{rig}_play"); spotClose = 1; }
+        else if (step == 2) { Shots.Want($"{rig}_close", 0); LookFrame($"{rig}_close"); spotClose = null; lookCam?.MakeCurrent(); }
+        else { Shots.Want($"{rig}_side", 0); LookFrame($"{rig}_side"); }
         lookStep = id;
     }
 
@@ -119,12 +123,16 @@ public partial class Game
             new(basis * new Basis(Vector3.Up, Mathf.DegToRad(yawDeg)).Scaled(Vector3.One * scale), W(x, y, lift));
         var root = new Node3D { Name = "Lookdev" };
         s.AddChild(root);
-        void Put(Node3D? n, Transform3D at, string what)
+        lookItems.Clear();
+        void Item(string row, string name, Node3D n) => lookItems.Add((row, name, () => LookBox(n)));
+        void Put(Node3D? n, Transform3D at, string what, string row)
         {
             if (n == null) { GD.PushWarning($"lookdev: no {what}"); return; }
             root.AddChild(n);
             n.GlobalTransform = at;
+            Item(row, what, n);
         }
+        lookItems.Add(("her", "her", () => new Aabb(new Vector3((float)b.Player.X - 0.3f, (float)s.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z - 0.2f), new Vector3(0.6f, 1.76f, 0.4f))));
         // Her, idle, facing the camera.
         b.Player.Facing = lookFacing;
         s.Player?.Face(lookFacing, lookP);
@@ -136,6 +144,7 @@ public partial class Game
             var w = W(x, y);
             if (b.SpawnEnemy("wolf", w.X, w.Z) is { } e)
             {
+                lookItems.Add(("crowd", $"wolf{lookItems.Count(x => x.Row == "crowd")}", () => new Aabb(new Vector3((float)e.X - 0.6f, (float)s.HeightAt(e.X, e.Z), (float)e.Z - 0.6f), new Vector3(1.2f, 0.85f, 1.2f))));
                 e.BoundX = e.X; e.BoundZ = e.Z;
                 e.Status.Ensure(StatusKind.Bound, 1e6, 1, 1, 0);
             }
@@ -148,8 +157,9 @@ public partial class Game
             var person = Folk.Person(FolkRole.Adult, look, new Random(31 + i * 17));
             var v = new PersonView(person, null, 0.8 * (look.Scale ?? 1)) { Name = $"LookFolk{i}" };
             root.AddChild(v);
-            v.GlobalTransform = new Transform3D(new Basis(Vector3.Up, lookFacing + (i == 0 ? -0.35f : 0.3f)), i == 0 ? W(3.2f, 1.3f) : W(4.4f, -0.9f));
+            v.GlobalTransform = new Transform3D(new Basis(Vector3.Up, lookFacing + (i == 0 ? -0.35f : 0.3f)), i == 0 ? W(2.6f, 0.3f) : W(4.5f, -1.1f));
             v.Loop("Idle");
+            Item("folk", $"folk{i}", v);
         }
         // The town: the Waystation's small plaster house (house 25: our own walls and roof over the kit's plan), its door to the camera.
         var wz = new ZoneData("waystation");
@@ -167,28 +177,35 @@ public partial class Game
         }
         if (walls != null) foreach (var _ in walls.Build(house)) { }
         root.AddChild(house);
-        house.GlobalTransform = new Transform3D(basis, W(-7.5f, 8.5f)) * new Transform3D(Basis.Identity, -hc);
+        house.GlobalTransform = new Transform3D(basis, W(-7.2f, 7.3f)) * new Transform3D(Basis.Identity, -hc);
+        Item("town", "house", house);
         // The square's setts: the town's terrain material, its paint as it lies on the square, on a patch of this ground.
         LookSetts(root, wz, W);
-        Put(OwnProps.Piece("barrel"), At(0.9f, 5.2f, 20), "barrel");
-        Put(OwnProps.Piece("crate"), At(2.1f, 5.9f, -12), "crate");
-        LookLamp(root, "post_lantern", At(3.6f, 4.6f, 180));
+        Put(OwnProps.Piece("barrel"), At(0.1f, 5.3f, 20), "barrel", "town");
+        Put(OwnProps.Piece("crate"), At(1.9f, 4.8f, -12), "crate", "town");
+        LookLamp(root, "post_lantern", At(3.6f, 4.6f, 180), "town");
         // The wild: a boulder, a spruce, a young alder, pebbles and branches (the arena's own grass round them).
-        Put(Dressing.OwnTree("boulder_b"), At(6.6f, 4.4f, 30), "boulder");
-        Put(Dressing.OwnTree("spruce_b"), At(9.8f, 8.5f), "spruce");
-        Put(Dressing.OwnTree("alder_c"), At(6.2f, 9.5f, 0, 0.6f), "alder");
-        Put(Dressing.OwnTree("pebbles_a"), At(5.4f, 2.4f), "pebbles");
-        Put(OwnProps.Piece("branches_a"), At(6.6f, 1.6f, 40), "branches");
+        Put(Dressing.OwnTree("boulder_b"), At(6.8f, 4.1f, 30), "boulder", "wild");
+        Put(Dressing.OwnTree("spruce_b"), At(5.7f, 7.4f), "spruce", "wild");
+        Put(Dressing.OwnTree("alder_c"), At(3.8f, 7.8f, 0, 0.6f), "alder", "wild");
+        Put(Dressing.OwnTree("pebbles_a"), At(5.2f, 2.5f), "pebbles", "wild");
+        Put(OwnProps.Piece("branches_a"), At(6.5f, 1.5f, 40), "branches", "wild");
+        // The zones' own grass (the arena grows its tussocks only where its paint says, a few here): a round patch of the
+        // Low Ford's meadow (Grass.Build, grass_own.gdshader), its paint held open (no setts, mud or blight) and its
+        // heights this ground's, so it stands on the arena's soil.
+        LookGrass(root, W(Args.Num("lookdev-grass-x", 4.6f), Args.Num("lookdev-grass-y", 3.0f)), Args.Num("lookdev-grass-r", 1.8f));
         // Light sources: the camp's fire (the Low Ford's: 80 over 18 m, three.js's units) and a standing lantern.
-        var fat = W(5.6f, -3.0f);
-        root.AddChild(Campfire.Build(fat, 1));
+        var fat = W(6.1f, -2.9f);
+        var fire = Campfire.Build(fat, 1);
+        root.AddChild(fire);
+        Item("light", "fire", fire);
         lookFireLight = new OmniLight3D
         {
             Name = "LookFire", Position = fat + Vector3.Up * 1.1f, LightColor = new Color("#ff9a48"), LightEnergy = 80 / Mathf.Pi,
             OmniRange = 18, OmniAttenuation = 1.7f, ShadowEnabled = true,
         };
         root.AddChild(lookFireLight);
-        LookLamp(root, "lantern_standing", At(1.9f, -2.3f, 200));
+        LookLamp(root, "lantern_standing", At(1.9f, -2.4f, 200), "light");
         // The library's base classes on spheres (0.6 m).
         var shader = GD.Load<Shader>("res://tools_scenes/lookdev_sphere.gdshader");
         var balls = new (string Name, Color C, float Rough, float Metal)[]
@@ -206,12 +223,15 @@ public partial class Game
             var mi = new MeshInstance3D { Name = "Sphere_" + balls[i].Name, Mesh = new SphereMesh { Radius = 0.3f, Height = 0.6f, RadialSegments = 48, Rings = 24 }, MaterialOverride = m };
             root.AddChild(mi);
             mi.GlobalPosition = W(-3.2f + i * 1.6f, -5.0f, 0.3f);
+            Item("spheres", balls[i].Name, mi);
         }
-        // The side view: 15 degrees of pitch, three-quarters from the camera's right, across the rows.
-        var c = W(0, 2.5f, 1.0f);
-        var dir = (-lookF * 0.75f + lookR * 0.66f).Normalized();
-        float d = (float)Args.Num("lookdev-side-dist", 24f), pitch = Mathf.DegToRad((float)Args.Num("lookdev-side-pitch", 15f));
-        lookCam = new Camera3D { Name = "LookSide", Fov = (float)Args.Num("lookdev-side-fov", 42f), Far = 600 };
+        // The side view: 15 degrees of pitch, 25 degrees round from the play camera's side to its right, across the rows
+        // (the layout and this pose were searched together, by numbers, so no row covers another: LookFrame).
+        var c = W(0, (float)Args.Num("lookdev-side-y", 7.0f), 1.0f);
+        float az = Mathf.DegToRad((float)Args.Num("lookdev-side-az", 25f));
+        var dir = (-lookF * Mathf.Cos(az) + lookR * Mathf.Sin(az)).Normalized();
+        float d = (float)Args.Num("lookdev-side-dist", 22.2f), pitch = Mathf.DegToRad((float)Args.Num("lookdev-side-pitch", 15f));
+        lookCam = new Camera3D { Name = "LookSide", Fov = (float)Args.Num("lookdev-side-fov", 50f), Far = 600 };
         s.AddChild(lookCam);
         lookCam.GlobalPosition = c + dir * d * Mathf.Cos(pitch) + Vector3.Up * d * Mathf.Sin(pitch);
         lookCam.LookAt(c, Vector3.Up);
@@ -221,12 +241,13 @@ public partial class Game
         GD.Print($"lookdev: stage at {lookP} right {lookR} away {lookF}; house 25 {pieces} pieces; 30x20 m heights {lo:0.00}..{hi:0.00}; rigs {string.Join(",", lookRigs!)}");
     }
 
-    void LookLamp(Node3D root, string kind, Transform3D at)
+    void LookLamp(Node3D root, string kind, Transform3D at, string row)
     {
         if (Lamps.Holder(kind) is not Node3D holder || Lamps.Of(kind) is not Lamps.Info info) { GD.PushWarning($"lookdev: no {kind}"); return; }
         root.AddChild(holder);
         holder.GlobalTransform = at;
         lookLamps.Add(holder);
+        lookItems.Add((row, kind, () => LookBox(holder)));
         lookFlames.Add(FlameKit.Add(holder, info.Flame, FlameKind.Lamp, false, 1.6f, light: true));
         Lamps.SetLit(holder, true);
     }
@@ -253,7 +274,7 @@ public partial class Game
             GD.Print($"lookdev: setts {p} = {im.GetPixel(px, pz)}");
         }
         int nx = 24, ny = 16;
-        float x0 = -3, x1 = 3, y0 = 3.5f, y1 = 7.5f;
+        float x0 = -3.2f, x1 = 2.8f, y0 = 3.4f, y1 = 7.4f;
         var verts = new List<Vector3>();
         for (int j = 0; j <= ny; j++)
             for (int i = 0; i <= nx; i++)
@@ -278,6 +299,117 @@ public partial class Game
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         mesh.SurfaceSetMaterial(0, mat);
-        root.AddChild(new MeshInstance3D { Name = "LookSetts", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        var setts = new MeshInstance3D { Name = "LookSetts", Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        root.AddChild(setts);
+        lookItems.Add(("town", "setts", () => LookBox(setts)));
+    }
+
+    /// <summary>A node's world box: its meshes' boxes merged (a box over 40 m, a culling stand-in, left out).</summary>
+    static Aabb? LookBox(Node n)
+    {
+        Aabb? a = null;
+        void Walk(Node x)
+        {
+            if (x is GeometryInstance3D g and (MeshInstance3D or MultiMeshInstance3D) && g.IsVisibleInTree())
+            {
+                var bb = g.GlobalTransform * g.GetAabb();
+                if (bb.Size.X < 40 && bb.Size.Y < 40 && bb.Size.Z < 40) a = a is Aabb h ? h.Merge(bb) : bb;
+            }
+            foreach (var c in x.GetChildren()) Walk(c);
+        }
+        Walk(n);
+        return a;
+    }
+
+    /// <summary>The frame check, by numbers (lookdev.py check reads these lines): each item's box projected through the
+    /// camera now drawing, as a screen rectangle (fractions of the frame), how much of it is inside the frame and how much
+    /// of it nearer items' rectangles cover. A frame passes when every item is at least half in frame and at most half
+    /// covered (play and side), her rectangle near the middle (play), and her tall in the frame (close).</summary>
+    void LookFrame(string tag)
+    {
+        var c = GetViewport().GetCamera3D();
+        if (c == null) { GD.Print($"lookdev-frame {tag} no camera"); return; }
+        var vs = GetViewport().GetVisibleRect().Size;
+        var rects = new List<(string Row, string Name, Rect2 R, float Depth, bool Behind, float Foot)>();
+        Vector2 Scr(Vector3 p) => c.UnprojectPosition(p) / vs;
+        foreach (var (row, name, box) in lookItems)
+        {
+            if (box() is not Aabb bb) { rects.Add((row, name, new Rect2(), 0, true, 0)); continue; }
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            bool behind = false;
+            for (int k = 0; k < 8; k++)
+            {
+                var p = bb.GetEndpoint(k);
+                if (c.IsPositionBehind(p)) { behind = true; continue; }
+                var q = c.UnprojectPosition(p);
+                x0 = Mathf.Min(x0, q.X / vs.X); x1 = Mathf.Max(x1, q.X / vs.X); y0 = Mathf.Min(y0, q.Y / vs.Y); y1 = Mathf.Max(y1, q.Y / vs.Y);
+            }
+            // Its foot: a tall piece's (house, tree) the middle of its base on the ground, the rest their whole footprint.
+            float foot;
+            var ctr = bb.GetCenter();
+            if (name is "house" or "spruce" or "alder")
+            {
+                var bp = new Vector3(ctr.X, (float)scene!.HeightAt(ctr.X, ctr.Z), ctr.Z);
+                foot = !c.IsPositionBehind(bp) && new Rect2(0, 0, 1, 1).HasPoint(Scr(bp)) ? 1 : 0;
+            }
+            else
+            {
+                var fr = new Rect2(Scr(bb.Position), Vector2.Zero);
+                foreach (var e in new[] { new Vector3(bb.Size.X, 0, 0), new Vector3(0, 0, bb.Size.Z), new Vector3(bb.Size.X, 0, bb.Size.Z) }) fr = fr.Expand(Scr(bb.Position + e));
+                foot = fr.Intersects(new Rect2(0, 0, 1, 1)) ? fr.Intersection(new Rect2(0, 0, 1, 1)).Area / Mathf.Max(fr.Area, 1e-6f) : 0;
+            }
+            rects.Add((row, name, x0 > x1 ? new Rect2() : new Rect2(x0, y0, x1 - x0, y1 - y0), c.GlobalPosition.DistanceTo(ctr), behind, foot));
+        }
+        var frame = new Rect2(0, 0, 1, 1);
+        bool close = tag.EndsWith("_close"), play = tag.EndsWith("_play");
+        var fails = new List<string>();
+        foreach (var it in rects)
+        {
+            float area = Mathf.Max(it.R.Area, 1e-6f);
+            float inside = it.R.Intersects(frame) ? it.R.Intersection(frame).Area / area : 0;
+            float hidden = 0;
+            foreach (var o in rects)
+                if (o.Name != it.Name && o.Name is not ("setts" or "grass" or "branches") && o.Depth < it.Depth - 0.3f && o.R.Intersects(it.R)) hidden += o.R.Intersection(it.R).Area / area;
+            hidden = Mathf.Min(hidden, 1);
+            var r = it.R;
+            GD.Print($"lookdev-frame {tag} {it.Row} {it.Name} rect {r.Position.X:0.000} {r.Position.Y:0.000} {r.End.X:0.000} {r.End.Y:0.000} in {inside:0.00} hidden {hidden:0.00} depth {it.Depth:0.0} foot {it.Foot:0.00}{(it.Behind ? " behind" : "")}");
+            if (tag.EndsWith("_play") && lookItems.First(x => x.Name == it.Name).Box() is Aabb wb)
+                GD.Print($"lookdev-box {it.Name} {wb.Position.X:0.00} {wb.Position.Y:0.00} {wb.Position.Z:0.00} {wb.Size.X:0.00} {wb.Size.Y:0.00} {wb.Size.Z:0.00}");
+            if (close) continue;
+            // (the play camera crops what stands tall, as in play: of the house and the trees a third in frame and their
+            // base is enough; what lies flat may lie under the props standing on it)
+            bool tall = it.Name is "house" or "spruce" or "alder";
+            float needIn = play && tall ? 0.3f : 0.5f, maxHid = it.Name is "setts" or "grass" or "branches" or "pebbles" ? 0.8f : 0.5f;
+            if (inside < needIn || it.Foot < 0.9f || hidden > maxHid) fails.Add(it.Name);
+        }
+        var her = rects.First(x => x.Name == "her").R;
+        if (play && (Mathf.Abs(her.GetCenter().X - 0.5f) > 0.08f || Mathf.Abs(her.GetCenter().Y - 0.5f) > 0.15f)) fails.Add("her-centre");
+        // (the close view is her from the waist or chest up: her head in the top half, centred, and her tall in it)
+        if (close && (her.Size.Y < 0.6f || her.Position.Y < 0 || her.Position.Y > 0.5f || Mathf.Abs(her.GetCenter().X - 0.5f) > 0.1f)) fails.Add("her-close");
+        GD.Print($"lookdev-frame {tag} {(fails.Count == 0 ? "PASS" : "FAIL " + string.Join(",", fails))} ({rects.Count} items)");
+    }
+
+    /// <summary>A round patch of the zones' own meadow grass at <paramref name="at"/> (radius r): the Low Ford's kind built as
+    /// the zones build it, its paint held open and its heights this ground's.</summary>
+    void LookGrass(Node3D root, Vector3 at, float r)
+    {
+        var lf = new ZoneData("lowford");
+        var g = Grass.Build(lf, new Vector2(at.X, at.Z), r);
+        if (g.Multimesh?.Mesh?.SurfaceGetMaterial(0) is not ShaderMaterial mat) { GD.PushWarning("lookdev: no meadow grass"); return; }
+        ImageTexture One(Color c) { var im = Image.CreateEmpty(4, 4, false, Image.Format.Rgbaf); im.Fill(c); return ImageTexture.CreateFromImage(im); }
+        mat.SetShaderParameter("splat", One(new Color(0, 0, 0, 0)));
+        mat.SetShaderParameter("paint_mask", One(new Color(0, 0, 0, 0)));
+        mat.SetShaderParameter("expo_tex", One(new Color(1, 1, 1, 1)));
+        mat.SetShaderParameter("meadow_amt", 0f);
+        var hf = scene!.Data.Ground;
+        var hb = new byte[hf.Heights.Length * 4];
+        Buffer.BlockCopy(hf.Heights, 0, hb, 0, hb.Length);
+        mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(hf.Res, hf.Res, false, Image.Format.Rf, hb)));
+        mat.SetShaderParameter("h_size", (float)hf.Size);
+        mat.SetShaderParameter("h_res", (float)hf.Res);
+        g.Name = "LookGrass";
+        root.AddChild(g);
+        lookItems.Add(("wild", "grass", () => new Aabb(at - new Vector3(r, 0, r), new Vector3(2 * r, 0.5f, 2 * r))));
+        GD.Print($"lookdev: grass patch at {at} r {r}: {g.Multimesh!.InstanceCount} cells");
     }
 }

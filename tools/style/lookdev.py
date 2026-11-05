@@ -6,7 +6,8 @@ and five material spheres (skin, leather, cloth, iron, bronze).
 
     python tools/style/lookdev.py shoot --out DIR [--rigs night,day,dawn,arena] [--extra "--cel off"] [--root WT]
     python tools/style/lookdev.py sheet DIR    -> DIR/lookdev_sheet.jpg (+ _half.jpg copies of every frame and the sheet)
-    python tools/style/lookdev.py check DIR    -> each frame's mean luma and how much of it differs from the ground (numbers)
+    python tools/style/lookdev.py check DIR    -> each frame's mean luma, how much of it differs from the ground, and the
+                                                  stage's own frame check (every item's box in frame, not covered; her centred)
 
 Rigs: night (the Low Ford's play night), day (the town's day), dawn (the Low Ford's dawn), arena (the arena's own night);
 all is the four. Cameras per rig: play (FollowCamera's play pose), close (the close view at its nearest, --close 1's),
@@ -67,6 +68,15 @@ def check(out_dir):
     """Numbers only: mean luma (0-255), and the share of pixels off the frame's ground (the median colour of its lowest
     tenth) by more than 24 levels, as a stand-in for 'the rows are in frame' (a bare-ground frame scores near 0)."""
     import numpy as np
+    # The stage's own frame check (GameLookdev.LookFrame): each item's box on screen, in frame and covered, per frame.
+    stage, items = {}, {}
+    log = os.path.join(out_dir, "run", "logs", "lookdev.log")
+    if os.path.exists(log):
+        for ln in open(log, encoding="utf-8", errors="replace"):
+            w = ln.split()
+            if len(w) < 3 or w[0] != "lookdev-frame": continue
+            if w[2] in ("PASS", "FAIL"): stage[w[1]] = " ".join(w[2:4]) if w[2] == "FAIL" else "PASS"
+            elif len(w) >= 17: items.setdefault(w[1], []).append(dict(row=w[2], name=w[3], rect=[float(v) for v in w[5:9]], inside=float(w[10]), hidden=float(w[12]), foot=float(w[16])))
     rows = []
     for r in RIGS:
         for c in CAMS:
@@ -76,12 +86,27 @@ def check(out_dir):
             luma = (a @ np.array([0.2126, 0.7152, 0.0722], np.float32))
             ground = np.median(a[int(a.shape[0] * 0.9):].reshape(-1, 3), axis=0)
             off = (np.abs(a - ground).max(axis=2) > 24).mean()
+            # The setts' mask check: the middle of their rectangle against a band of ground round it (mean RGB difference;
+            # a culled or unpainted patch reads as the ground, near 0).
+            setts = None
+            for it in items.get(f"{r}_{c}", []):
+                if it["name"] != "setts": continue
+                H, Wd = a.shape[:2]; x0, y0, x1, y1 = it["rect"]
+                ix = [int(max(0, min(1, v)) * n) for v, n in ((x0 + (x1 - x0) * .3, Wd), (y0 + (y1 - y0) * .3, H), (x1 - (x1 - x0) * .3, Wd), (y1 - (y1 - y0) * .3, H))]
+                ox = [int(max(0, min(1, v)) * n) for v, n in ((x0 - (x1 - x0) * .25, Wd), (y0 - (y1 - y0) * .25, H), (x1 + (x1 - x0) * .25, Wd), (y1 + (y1 - y0) * .25, H))]
+                ring = np.ones(a.shape[:2], bool); ring[:ox[1]] = ring[ox[3]:] = False; ring[:, :ox[0]] = ring[:, ox[2]:] = False
+                ring[int(y0 * H):int(y1 * H), int(x0 * Wd):int(x1 * Wd)] = False
+                inner = a[ix[1]:ix[3], ix[0]:ix[2]].reshape(-1, 3)
+                if inner.size and ring.any(): setts = round(float(np.abs(inner.mean(0) - a[ring].mean(0)).mean()), 1)
             mid = luma[a.shape[0] // 3: 2 * a.shape[0] // 3, a.shape[1] // 3: 2 * a.shape[1] // 3].std()
             rows.append(dict(frame=f"{r}_{c}", mean=round(float(luma.mean()), 1), p01=round(float(np.percentile(luma, 1)), 1),
                              p99=round(float(np.percentile(luma, 99)), 1), off_ground=round(float(off), 3), centre_std=round(float(mid), 1),
-                             black=bool(luma.mean() < 4)))
+                             black=bool(luma.mean() < 4), stage=stage.get(f"{r}_{c}", "no check"), setts_vs_ground=setts,
+                             min_inside=min((i["inside"] for i in items.get(f"{r}_{c}", [])), default=None),
+                             max_hidden=max((i["hidden"] for i in items.get(f"{r}_{c}", []) if i["name"] not in ("setts", "grass", "branches", "pebbles")), default=None)))
     for x in rows: print(x)
     json.dump(rows, open(os.path.join(out_dir, "check.json"), "w"), indent=1)
+    json.dump(items, open(os.path.join(out_dir, "check_items.json"), "w"), indent=1)
     return rows
 
 
