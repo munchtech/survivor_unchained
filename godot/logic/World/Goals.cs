@@ -25,6 +25,9 @@ public sealed class GoalDef
     /// <summary>The Tracked block to put the steps into, at index At; none: a block of its own.</summary>
     public string? Into;
     public int At = 1;
+    /// <summary>(H8 N22) Its steps take the place of the block's step at At (the day's shut gate: "walk up the road"
+    /// becomes the task that holds her), not go in before it.</summary>
+    public bool Replace;
     public bool Edge = true;
     /// <summary>Metres: the on-screen pin hides when she is closer than this.</summary>
     public double Near = 4;
@@ -68,7 +71,9 @@ public static class Goals
             if (i >= 0)
             {
                 var into = new List<Step>(o[i].Steps);
-                into.InsertRange(Math.Clamp(a.Def.At, 0, into.Count), steps);
+                int at = Math.Clamp(a.Def.At, 0, into.Count);
+                if (a.Def.Replace && at < into.Count) into.RemoveAt(at);
+                into.InsertRange(at, steps);
                 o[i] = o[i] with { Steps = into };
             }
             else

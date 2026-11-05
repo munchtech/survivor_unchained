@@ -93,9 +93,31 @@ public static class Teeth
         public int FeedMax = 3;
     }
 
+    /// <summary>The Ford-Warden (H8, N20, numbers H6's; the owner on demo-rc2: "the warden was easy. died in like 8
+    /// seconds didn't have to crash a lamp"): the least of his life he can be brought to (a share of it) by lamps still
+    /// unbroken this fight, 0-3, and the share of a blow he takes by lamps lit; his life's multiplier; a backstop, a
+    /// last floor held until he has fought this long; and how long one floor holds before it cracks a step.</summary>
+    public sealed class FordWarden
+    {
+        public double[] Floors = [0, 0, 0, 0];
+        public double[] Ward = [1, 0.7, 0.55, 0.4];
+        public double HpMul = 1;
+        public double MinSeconds;
+        public double Backstop = 0.05;
+        /// <summary>Seconds held at one floor before it cracks a step (a player who can't bring a lamp down is never
+        /// held for good: H8's runs had the autopilot's lamps relit by his channel over and over).</summary>
+        public double CrackAfter = 45;
+    }
+
+    public sealed class PrologueTeeth
+    {
+        public FordWarden? FordWarden;
+    }
+
     sealed class File
     {
         public Dictionary<string, Tier> Tiers = new();
+        public PrologueTeeth? Prologue;
     }
 
     static File? file;
@@ -103,6 +125,9 @@ public static class Teeth
 
     /// <summary>A tier's teeth, or null (as it was).</summary>
     public static Tier? For(int tier) => F.Tiers.TryGetValue(tier.ToString(), out var t) ? t : null;
+
+    /// <summary>The Ford-Warden's teeth, or null (as it was: the ward alone).</summary>
+    public static FordWarden? Ford => F.Prologue?.FordWarden;
 
     // SU_TEETH=<path>: a variant of the file for a measuring run (the harness tunes several at once).
     /// <summary>Read the file again (a test or a variant that changed it).</summary>

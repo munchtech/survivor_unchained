@@ -3198,6 +3198,8 @@ PRESETS = {}
 # its lit windows flagged in the vertex alpha (0: a window, its colour its glow; OwnProps' far material).
 
 SHADOW = []  # (E8) the preset's shadow proxy: [(bmesh, matrix)], built by main() as <name>_shadow
+MOVES = []  # (H8 N22) the preset's moving pieces: [(key, parts, travel (x, y, z) m to their other end)], built by main()
+            # as <name>_move_<key>, unmerged and without LOD; props.json "moves" {node: travel}
 
 
 def shadow_box(sx, sy, sz, at):
@@ -3420,19 +3422,33 @@ def gatehouse(p):
         if sg > 0:
             pts.reverse()
         parts.append(Part(prism(pts, DG - F - 0.04, bevel=0.0), 'stone', mortar * 0.42, T(0, 0, -F / 2 - 0.02), cap='stone', jitter=0.0))
-    # the portcullis drawn up (its teeth under the crown), in its slot behind the face
+    # (H8 N22) the portcullis, a moving piece of its own (MOVES: main() exports it unmerged as <name>_move_portcullis_a
+    # and _b, props.json "moves" its travel down; OwnProps and Landmarks hand it to the zone, IZoneLook.Shift): one
+    # lattice in two leaves in the slot behind the face. Drawn up (at rest, every visit) it looks as it did, the front
+    # leaf's teeth under the crown, the back leaf behind it in the masonry; shut (the day's gate, Prologue.DayGate) the
+    # front leaf drops to the cobbles and the back one over it up into the vault. Two leaves, not one grate: a grate as
+    # tall as the passage, drawn up, would stand 2 m out of the wall walk (HG 7.6 m, the crown 5.15).
+    # (N22 r2) The back leaf 3.2 m (its top 7.45 drawn up, under the walk): the gatehouse stands on a kit tile whose
+    # floor is not the road's (Low Ford: the road 0.78 m under it), so Landmarks lands the lattice on the ground and
+    # both leaves drop that much further; 3.2 m keeps the back one up past the crown with up to ~0.9 m of it.
     zp = zf - F / 2 - 0.35
-    bars = 9
-    ylo = spring + r - 0.75
-    for i in range(bars):
-        x = -r * 0.9 + 2 * r * 0.9 * i / (bars - 1)
-        yl = ylo - (0.22 if i % 2 == 0 else 0.1)
-        hh = spring + r + 0.25 - yl
-        parts.append(Part(box(0.1, hh, 0.1), 'wood', wood * 0.55 * (1 + rng(-0.1, 0.1)), T(x, yl + hh / 2, zp), jitter=0.0))
-        parts.append(Part(lathe([(0.07, 0.0), (0.0, -0.22)], 4), 'iron', iron, T(x, yl, zp), jitter=0.0))
-    for yy in (ylo + 0.12, ylo + 0.5):
-        hw = math.sqrt(max(0.0, r * r - (yy - spring) ** 2)) if yy > spring else r
-        parts.append(Part(box(2 * hw - 0.05, 0.09, 0.13), 'wood', wood * 0.5, T(0, yy, zp + 0.07), jitter=0.0))
+    bars, crown = 9, spring + r
+    yr = crown - 0.95                   # the leaves' foot, drawn up
+    tint = [wood * 0.55 * (1 + rng(-0.1, 0.1)) for i in range(bars)]  # (the rng drawn as the drawn-up grate's was)
+    for key, z, h, foot, rails, teeth in (('portcullis_a', zp, 2.75, 0.2, (0.25, 0.7, 1.15, 1.6, 2.05, 2.5), True),
+                                          ('portcullis_b', zp - 0.14, 3.2, 2.85, (0.1, 0.55, 1.0, 1.45, 1.9, 2.35, 2.8), False)):
+        mp = []
+        y0 = yr + (0.0 if teeth else 0.05)
+        for i in range(bars):
+            x = -r * 0.92 + 2 * r * 0.92 * i / (bars - 1)
+            yl = y0 + (0.0 if i % 2 == 0 or not teeth else 0.12)
+            mp.append(Part(box(0.12, h - (yl - y0), 0.12), 'wood', tint[i], T(x, yl + (h - (yl - y0)) / 2, z), jitter=0.0))
+            if teeth:
+                mp.append(Part(lathe([(0.075, 0.0), (0.0, -0.22)], 4), 'iron', iron, T(x, yl, z), jitter=0.0))
+        for yy in rails:
+            # full width, into the jambs' grooves: below the springing they meet the passage walls, above it the stone
+            mp.append(Part(box(2 * r + 0.16, 0.1, 0.13), 'wood', wood * 0.5, T(0, y0 + yy, z + 0.07), jitter=0.0))
+        MOVES.append((key, mp, (0.0, foot - y0, 0.0)))
     # the leaves swung back against the passage walls at its inner end
     for s in (-1, 1):
         lw, lh = r * 0.98, spring + r * 0.62
@@ -4409,6 +4425,7 @@ def main():
         OLD.clear()
         OLD.update(p.get('old', {}))
         SHADOW.clear()
+        MOVES.clear()
         parts = KINDS[p['kind']](p)
         if p.get('dress'):
             parts = dress(parts, p['dress'], p['seed'])
@@ -4493,6 +4510,11 @@ def main():
             lo = lod1(ob, p.get('lod1', 0.45))
             obs.insert(1, lo)
             meta['tris_lod1'] = tris(lo)
+        for key, mparts, travel in MOVES:
+            # (H8 N22) a moving piece (the gatehouse's portcullis): its own mesh, at rest where it was drawn
+            mo = finish(name + '_move_' + key, mparts, mat, p['seed'])
+            obs.append(mo)
+            meta.setdefault('moves', {})[mo.name] = [round(v, 4) for v in travel]
         if p['kind'] == 'notice_board':
             # (E9d) the notices: their own mesh and material ("paper": OwnProps gives it notice_paper.png)
             pm = bpy.data.materials.get('paper') or bpy.data.materials.new('paper')

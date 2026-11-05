@@ -337,6 +337,8 @@ public partial class ZoneView : Node3D
 
     /// <summary>A turning piece (the pump's wheel) stops.</summary>
     public void Stop(string node) => stopped.Add(node);
+    /// <summary>(H8 N22) A kind of the landmarks' moving parts set k of its way (Landmarks.Shift: the portcullis down).</summary>
+    public void Shift(string kind, float k) => Landmarks.Shift(kind, k);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
     /// <summary>The lights a lamp's flame flickers (not the zone's own formula), and each one's holders' glass.</summary>

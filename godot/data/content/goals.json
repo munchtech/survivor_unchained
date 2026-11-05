@@ -1,5 +1,21 @@
 [
   {
+    "id": "day_ring",
+    "zone": "lowford",
+    "pin": "ring_line",
+    "title": "The Road North",
+    "_doc": "(H8 N22) near the shut gate, the tracker's first line ('Walk up the road to the Waystation') becomes the task that holds her (replace; Prologue.Day.cs GateTask, the same words once the watchman has said it)",
+    "steps": [ { "text": "The watch won't raise the gate: clear the wolves on the road" } ],
+    "into": "pro",
+    "at": 0,
+    "replace": true,
+    "label": "Back to the road",
+    "glyph": "boot",
+    "color": "#e8c070",
+    "edge": true,
+    "near": 3
+  },
+  {
     "id": "table",
     "zone": "waystation",
     "when": { "fact": "prologue.done", "eq": true },

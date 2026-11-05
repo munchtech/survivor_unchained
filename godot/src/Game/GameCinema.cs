@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -428,7 +428,7 @@ public partial class Game
 
         sealed record Tween(double T0, double T1, Action<double> Apply);
         /// <summary>Free: through the air or the water (an exact place), not along the ground.</summary>
-        sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading, bool Free = false);
+        sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading, bool Free = false, string Ease = "inout", double Stop = 0);
 
         public Cine(Game g, CineFile file, Battle b, Action? done)
         {
@@ -707,7 +707,7 @@ public partial class Game
             foreach (var m in moves.ToList())
             {
                 double k = Math.Clamp((t - m.T0) / Math.Max(0.01, m.T1 - m.T0), 0, 1);
-                var p = m.From.Lerp(m.To, (float)CineCamera.Ease("inout", k));
+                var p = m.From.Lerp(m.To, (float)(m.Ease == "settle" ? CineCamera.Settle(k, m.Stop) : CineCamera.Ease(m.Ease, k)));
                 if (people.TryGetValue(m.Actor, out var v)) v.Place(p.X, m.Free ? p.Y : g.scene!.HeightAt(p.X, p.Z), p.Z, m.Heading, true);
                 else if (orbs.TryGetValue(m.Actor, out var o)) o.Position = p;
                 if (k >= 1) moves.Remove(m);
@@ -1093,7 +1093,12 @@ public partial class Game
                     double heading = c.Has("heading") ? c.Num("heading") : Math.Atan2(dest.X - from.X, dest.Z - from.Z);
                     // An exact place ("abs") is gone to through the air or the water; anything else along the ground.
                     bool free = orbs.ContainsKey(c.Actor) || (toEl.ValueKind == JsonValueKind.Object && toEl.TryGetProperty("abs", out _));
-                    moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading, free));
+                    // ("ease": linear for a walk through the shot, settle for one that arrives; inout, the default, for the rest)
+                    // ("settle": SECONDS, the stand it slows to over its last seconds, 0.8 if not said: about a step)
+                    string ease = c.Str("ease") ?? "inout";
+                    double stop = ease == "settle" ? Math.Clamp(c.Num("settle", 0.8) / Math.Max(0.01, c.Num("dur", 1)), 0, 1) : 0;
+                    double cruise = ease == "settle" ? CineCamera.Cruise(stop) : 1;
+                    moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading, free, ease, stop));
                     if (c.Str("clip") is string mc && n is PersonView v)
                     {
                         double pace = c.Num("speed", 1);
@@ -1102,7 +1107,9 @@ public partial class Game
                         if (v.Person.Own is { } own && own.Owns(resolved) && own.Speed(resolved[own.Prefix.Length..]) is float sp && sp > 0)
                         {
                             double dist = new Vector2(dest.X - from.X, dest.Z - from.Z).Length(), dur = Math.Max(0.01, c.Num("dur", 1));
-                            pace = Math.Clamp(dist / dur / (sp * v.Person.Root.Scale.X), 0.5, 1.6);
+                            pace = Math.Clamp(dist / dur * cruise / (sp * v.Person.Root.Scale.X), 0.5, 1.6);
+                            // (--cutlog: what the walk asks of her feet; over the clamp, they slide)
+                            if (Args.Has("cutlog")) GD.Print($"CINEWALK {file.Id} {c.Actor} {resolved} t0={t0:F2} dist={dist:F2} dur={dur:F2} ask={dist / dur * cruise:F2}m/s ({ease}) clip={sp * v.Person.Root.Scale.X:F2}m/s pace={pace:F2}");
                         }
                         v.Cue(mc, 0, pace, 0.25);
                     }

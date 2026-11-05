@@ -4,5 +4,26 @@
     "1": { "fodderHp": 3, "fodderDamage": 1.15, "fodderHeals": 0.35, "eliteHeals": 0.35, "fodderSpeed": 0.65, "eliteHp": 3.4, "eliteDamage": 1.15, "crowd": 1, "bossHp": 2.0, "bossDamage": 0.55, "minutes": 10,
       "director": { "flank": true, "flankFrom": 60, "flankEvery": [60, 90], "flankDist": [15, 18], "flankBearing": 140, "flankBase": 4, "flankPerMinutes": 3, "cutOff": true, "lead": 5, "leadUntil": 6, "surround": true, "surroundNear": 4, "surroundSectors": 3, "surroundFor": 1.5, "surroundCooldown": 12, "closeBase": 18, "closePerMinute": 1.2, "stand": true, "standMoved": 0.6, "standFor": 1.5, "standNear": 14, "standScale": 2.2, "standPair": 2,
         "standFrom": 7, "standCooldown": 1.5, "pool": true, "poolFor": 30, "poolEvery": 30, "recall": true, "stuckMoved": 0.6, "stuckFor": 6, "stuckNear": 3, "recallFar": 14, "recallDist": 24, "flowFor": 4, "explain": true, "snufferNear": 12, "ironback": true, "ironFrom": 90, "ironEvery": [70, 90], "ironMax": 1, "ironDist": [14, 17], "slamNear": 3.2, "slamCooldown": 3.0, "slamScale": 0.5, "feed": true, "feedFor": 2.0, "feedNear": 2.2, "feedFar": 8, "corpseLife": 6 } }
+  },
+  "prologue": {
+    "fordWarden": {
+      "about": "The Ford-Warden (H8, N20; numbers by H6, 4 Nov; measured by H8 on the first-time path). floors: by lamps still unbroken this fight, 0-3 (3 minus those his charge or her blows broke; a relight never takes one back): the least share of his life he can be brought to, 0.67 with none broken, 0.34 with one, none with two (two crashes are the way through; b_path on lamps lit had his channels relight them six times in 338 s). ward: by lamps lit, the share of a blow he takes. hpMul on his 2600. minSeconds: a backstop, the last floor held at backstop until he has fought this long. crackAfter: seconds held at one floor before it cracks a step (no player held for good). Targets: a human 60-90 s, every calling's careless bot wins, no fall for the deft.",
+      "floors": [
+        0,
+        0,
+        0.34,
+        0.67
+      ],
+      "ward": [
+        1,
+        0.7,
+        0.55,
+        0.4
+      ],
+      "hpMul": 1.25,
+      "minSeconds": 60,
+      "backstop": 0.05,
+      "crackAfter": 45
+    }
   }
 }

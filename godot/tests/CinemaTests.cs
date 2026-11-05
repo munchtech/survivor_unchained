@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -263,5 +263,21 @@ public class CinemaTests
         bool Casts(string calling) => Lay(f, calling).Cues.Any(c => c.Cue.Do == "anim" && c.Cue.Str("clip") == "Spell_Simple_Enter");
         Assert.True(Casts("arcanist"));
         Assert.False(Casts("warden"));
+    }
+
+    /// <summary>N23: a walk that arrives keeps one pace and slows evenly to a stand: no jump in its speed, none at
+    /// its start (the inout's swell and die were her walk treading on the spot).</summary>
+    [Fact]
+    public void SettleKeepsOnePaceThenStands()
+    {
+        const double a = 0.1;
+        double Speed(double k) => (CineCamera.Settle(k + 1e-4, a) - CineCamera.Settle(k - 1e-4, a)) / 2e-4;
+        Assert.Equal(0, CineCamera.Settle(0, a), 9);
+        Assert.Equal(1, CineCamera.Settle(1, a), 9);
+        double cruise = CineCamera.Cruise(a);
+        foreach (var k in new[] { 0.05, 0.3, 0.6, 0.89 }) Assert.Equal(cruise, Speed(k), 3);
+        Assert.Equal(cruise / 2, Speed(0.95), 2);
+        Assert.True(Speed(0.9999) < 0.01 * cruise);
+        for (double k = 0.001; k < 1; k += 0.001) Assert.True(CineCamera.Settle(k, a) >= CineCamera.Settle(k - 0.001, a));
     }
 }

@@ -25,6 +25,29 @@ public sealed class Landmarks
     public readonly Dictionary<string, Node3D> Nodes = new();
     /// <summary>The lamp holders put in KayKit lamps' places (Lamps.cs): the zone lights their flames.</summary>
     public readonly List<Node3D> Holders = new();
+    /// <summary>(H8 N22) Own pieces' moving parts by kind (a node <preset>_move_<kind>_<leaf>: "portcullis"), each with
+    /// its rest and its travel to its other end (OwnProps "moves").</summary>
+    public readonly Dictionary<string, List<(Node3D Node, Vector3 At, Vector3 Travel)>> Movers = new();
+
+    /// <summary>(H8 N22) A kind of moving part set k of the way from its rest (0) to its other end (1): the portcullis
+    /// lowered. A zone without one is unchanged.</summary>
+    public void Shift(string kind, float k)
+    {
+        if (!Movers.TryGetValue(kind, out var ms)) return;
+        foreach (var (n, rest, travel) in ms) if (GodotObject.IsInstanceValid(n)) n.Position = rest + travel * k;
+        // (N22) once per quarter of the travel: where each leaf stands in the world, and its frame's scale
+        int step = (int)Mathf.Round(k * 4);
+        if (shiftLogged.TryGetValue(kind, out var was) && was == step) return;
+        shiftLogged[kind] = step;
+        foreach (var (n, rest, travel) in ms)
+        {
+            if (!GodotObject.IsInstanceValid(n) || !n.IsInsideTree()) continue;
+            var box = n is MeshInstance3D mi ? mi.GlobalTransform * mi.GetAabb() : new Aabb(n.GlobalPosition, Vector3.Zero);
+            var ps = n.GetParent() is Node3D pa ? pa.GlobalTransform.Basis.Scale : Vector3.One;
+            GD.Print($"(N22) shift {kind} k {k:0.00} {n.Name}: at {n.GlobalPosition} local {n.Position} parent scale {ps} box y {box.Position.Y:0.00}..{box.End.Y:0.00} x {box.Position.X:0.00}..{box.End.X:0.00} z {box.Position.Z:0.00}..{box.End.Z:0.00} visible {n.IsVisibleInTree()} ground {zone.HeightAt(box.GetCenter().X, box.GetCenter().Z):0.00}");
+        }
+    }
+    readonly Dictionary<string, int> shiftLogged = new();
 
     readonly ZoneData zone;
 
@@ -88,7 +111,56 @@ public sealed class Landmarks
         foreach (var c in kk.GetChildren()) { kk.RemoveChild(c); c.QueueFree(); }
         kk.AddChild(piece);
         if (piece.HasMeta("lamp")) Holders.Add(piece);
+        Land(piece);
         return true;
+    }
+
+    /// <summary>(H8 N22) A piece's moving parts handed to Shift, each kind's set landed on the ground: the preset's
+    /// travel takes its lowest leaf to the preset's own floor (y 0), but the kit tile it stands on need not be at the
+    /// road's height (Low Ford's gatehouse: the road 0.78 m under it), so the kind's leaves all go on by the one drop,
+    /// in world metres, that sets the lowest leaf's foot on the lowest ground under it (the teeth meet the cobbles,
+    /// sinking where the road is higher). Each leaf's drop is converted into its own parent's frame (the kit's scale).</summary>
+    void Land(Node3D piece)
+    {
+        var kinds = new Dictionary<string, List<(Node3D Node, Vector3 At, Vector3 Travel, Transform3D Frame)>>();
+        foreach (var c in piece.FindChildren("*_move_*", "Node3D", true, false))
+        {
+            if (c is not Node3D mv || !mv.HasMeta("travel")) continue;
+            var nm = mv.Name.ToString();
+            var kind = nm[(nm.IndexOf("_move_") + 6)..].Split('_')[0];
+            // its parent's frame in the landmarks' (they stand at the world's origin): up the whole chain to the root
+            // (the kit piece is not the root's child: the export's nodes between carry its height)
+            var frame = Transform3D.Identity;
+            for (var p = mv.GetParent(); p is Node3D p3 && p3 != Root; p = p3.GetParent()) frame = p3.Transform * frame;
+            if (!kinds.TryGetValue(kind, out var ks)) kinds[kind] = ks = new();
+            ks.Add((mv, (Vector3)mv.GetMeta("rest"), (Vector3)mv.GetMeta("travel"), frame));
+        }
+        foreach (var (kind, ks) in kinds)
+        {
+            // the lowest leaf's foot at its other end, across its width, against the ground under it
+            float foot = float.MaxValue, drop = 0;
+            foreach (var (n, rest, travel, frame) in ks)
+            {
+                if (n is not MeshInstance3D mi || mi.Mesh == null) continue;
+                var box = mi.Mesh.GetAabb();
+                var at = new Transform3D(n.Transform.Basis, rest + travel);
+                float low = float.MaxValue, d = float.MaxValue;
+                for (int i = 0; i <= 8; i++)
+                {
+                    var w = frame * (at * new Vector3(box.Position.X + box.Size.X * i / 8f, box.Position.Y, box.GetCenter().Z));
+                    low = Mathf.Min(low, w.Y);
+                    d = Mathf.Min(d, zone.HeightAt(w.X, w.Z) - w.Y);
+                }
+                if (low < foot) { foot = low; drop = d; }
+            }
+            if (!Movers.TryGetValue(kind, out var ms)) Movers[kind] = ms = new();
+            foreach (var (n, rest, travel, frame) in ks)
+            {
+                var more = frame.Basis.Inverse() * new Vector3(0, drop, 0);
+                ms.Add((n, rest, travel + more));
+            }
+            GD.Print($"(N22) {kind} landed: foot {foot:0.00} m, ground {foot + drop:0.00} m, drop {drop:0.00} m (world), {ks.Count} leaves");
+        }
     }
 
     /// <summary>--kit-paint (style r2): the cloth stall (zone refs' stalls, kind "cloth": the

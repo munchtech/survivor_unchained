@@ -43,6 +43,8 @@ public partial class Game
         if (hudMode == "chest") { chestShown?.Skip(); return true; }
         // A fall in a story night: get up, or let the night go (GameFall).
         if (hudMode == "fall") return FallKey(a);
+        // The dawn's card: it closes on a key once it listens (GameDawn).
+        if (hudMode == "dawn") return DawnKey(a);
         if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {
