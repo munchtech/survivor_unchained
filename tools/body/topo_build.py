@@ -34,6 +34,7 @@ from scipy.spatial import cKDTree
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import topo as T  # noqa: E402
+import topo_gates as G  # noqa: E402
 from topo import ARM, FOOT, HAND, LEG, TRUNK, U, fill_nan, frame, rot, smooth01  # noqa: E402
 
 REPO = T.REPO
@@ -1029,6 +1030,7 @@ def build(plan, tier, ref, cv, L):
     C["non_manifold_edges"] = int(nonman)
     VF = relax(ref, M, VF, QF, src, n_left, tp["relax_iters"], tp["relax_lambda"])
     VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
+    C["_hip_ring"] = VF[cr["root"]].copy()
     fnq = np.cross(VF[QF[:, 2]] - VF[QF[:, 0]], VF[QF[:, 3]] - VF[QF[:, 1]])
     ctr = VF[QF].mean(1)
     vol = float((fnq * ctr).sum())
@@ -1160,9 +1162,14 @@ def measure(ref, V, Q, info, C, joints, L, plan, tier):
     out["quad_area_mm2_min"] = round(float(a.min()) * 1e6, 3)
     out["degenerate_quads"] = int((a < 1e-7).sum())
     out["counts"] = {k: (round(float(v), 4) if isinstance(v, (float, np.floating)) else v) for k, v in C.items()
-                     if k not in ("rows_y_front", "rows_y_back", "kites", "bands")}
+                     if k not in ("rows_y_front", "rows_y_back", "kites", "bands") and not k.startswith("_")}
+    tmpl_q = np.isin(info["qpart"], [PARTS.index("hand"), PARTS.index("foot")])
     out["collar_and_trunk_kites"] = [[k[0], int(k[1]), len(k[2])] for k in C["kites"]]
     out["limb_bands"] = C["bands"]
+    out["triangles_templates"] = int(2 * tmpl_q.sum())
+    out["triangles_body_without_templates"] = int(2 * len(Q) - 2 * tmpl_q.sum())
+    out["gates"] = G.gates(ref, V, Q, info, C, joints, L, out["poles"], poles, C["_hip_ring"], PARTS)
+    out["gates"]["pass"]["surface_p95_0.5mm"] = out["surface_mm_quad_centres"][1] <= 0.5
     return out
 
 
@@ -1221,6 +1228,12 @@ def main():
                                                   "non_manifold_edges", "open_boundary_is_head_ring",
                                                   "poles_in_bend_zone", "valence_hist_body", "surface_mm_quad_centres",
                                                   "hash")}))
+        g = m["gates"]
+        print("  gates", json.dumps({k: g[k] for k in ("fold_edges_over_60", "fold_deg_p99_max_body", "aspect_over_4",
+                                                         "aspect_p95_max", "edges_under_2mm", "edge_min_mm_body",
+                                                         "poles_within_40mm_of_a_zone", "poles_within_40mm_by_zone",
+                                                         "poles_designed_at_epicondyles", "cleft_edges_over_60")
+                                     if k in g}), json.dumps(g["pass"]))
     os.makedirs(a.out, exist_ok=True)
     with open(os.path.join(a.out, "topo.json"), "w") as f:
         json.dump(rep, f, indent=1, default=str)

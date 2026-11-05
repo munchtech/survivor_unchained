@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+"""P1 pass 3: the topology gates (measured on a built tier; topo_build.measure() calls gates()).
+
+  fold      neighbour dihedral (the angle between two quads' normals across their shared edge) <= 60 deg everywhere
+            outside the hand and foot templates and the one named cleft (the gluteal cleft: the reference's own
+            crease, b); quad aspect (longest edge / shortest) <= 4; every edge >= 2 mm                    (a: the judge)
+  zones     every pole >= 40 mm outside every bend zone (a): elbow and knee (+-bend about the crease plane), wrist
+            and ankle (+-end_bend about the template rim's plane), shoulder (the armpit + 110 mm down the arm: the
+            arm side of the root ring to 110 mm below the armpit along the upper arm, and the armpit's hollow),
+            hip (the groin crease and the gluteal fold +-60 mm: the leg root curve's front and back), neck base
+            (the neck above its base line, the clavicle heads to C7, b: our skeleton). The joints' own termination
+            poles at the epicondyles (fix 1: on the hinge axis, where the skin moves least) are listed apart.
+  shoulder  the rim-to-root gap ratio (max / min) <= 1.5; the trunk-side kites >= 60 mm outside the deltoid
+  breast    breast edge p95 <= 7.5 mm, quad aspect p95 <= 2.0
+"""
+import numpy as np
+from scipy.spatial import cKDTree
+
+FOLD_DEG, ASPECT_MAX, EDGE_MIN, POLE_MARGIN = 60.0, 4.0, 0.002, 0.040
+
+
+def U(v):
+    v = np.asarray(v, float)
+    return v / np.maximum(np.linalg.norm(v, axis=-1, keepdims=True), 1e-12)
+
+
+def quad_normals(V, Q):
+    return U(np.cross(V[Q[:, 2]] - V[Q[:, 0]], V[Q[:, 3]] - V[Q[:, 1]]))
+
+
+def edge_pairs(Q):
+    """Interior edges: (a, b) and their two quads."""
+    e = np.concatenate([np.stack([Q[:, k], Q[:, (k + 1) % 4]], 1) for k in range(4)])
+    qi = np.tile(np.arange(len(Q)), 4)
+    es = np.sort(e, 1)
+    key = es[:, 0] * (int(es.max()) + 1) + es[:, 1]
+    o = np.argsort(key, kind="stable")
+    key, es, qi = key[o], es[o], qi[o]
+    i = np.where(key[1:] == key[:-1])[0]
+    return es[i], qi[i], qi[i + 1]
+
+
+def cleft_mask(X):
+    """(b) the gluteal cleft on the reference: the midline crease between the buttocks."""
+    return (np.abs(X[:, 0]) < 0.035) & (X[:, 2] < -0.07) & (X[:, 1] > 0.88) & (X[:, 1] < 1.10)
+
+
+def mesh_quality(V, Q, tmpl_q):
+    """Fold, aspect and edge-length measures on the body (template quads apart)."""
+    n = quad_normals(V, Q)
+    E, qa, qb = edge_pairs(Q)
+    dih = np.degrees(np.arccos(np.clip((n[qa] * n[qb]).sum(1), -1, 1)))
+    body_e = ~(tmpl_q[qa] | tmpl_q[qb])
+    mid = 0.5 * (V[E[:, 0]] + V[E[:, 1]])
+    cl = cleft_mask(mid)
+    bad = body_e & ~cl & (dih > FOLD_DEG)
+    Lq = np.stack([np.linalg.norm(V[Q[:, k]] - V[Q[:, (k + 1) % 4]], axis=1) for k in range(4)], 1)
+    asp = Lq.max(1) / np.maximum(Lq.min(1), 1e-12)
+    bq = ~tmpl_q
+    el = np.linalg.norm(V[E[:, 0]] - V[E[:, 1]], axis=1)
+    worst = np.argsort(-np.where(bad, dih, 0))[:12]
+    short = np.where(body_e & (el < EDGE_MIN))[0][:8]
+    return {
+        "fold_edges_over_60": int(bad.sum()),
+        "fold_deg_p99_max_body": [round(float(np.percentile(dih[body_e & ~cl], 99)), 1),
+                                  round(float(dih[body_e & ~cl].max()), 1)],
+        "fold_worst": [{"pos_mm": [int(round(c * 1000)) for c in mid[k]], "deg": round(float(dih[k]), 1)}
+                       for k in worst if bad[k]],
+        "cleft_edges_over_60": int((body_e & cl & (dih > FOLD_DEG)).sum()),
+        "aspect_over_4": int((asp[bq] > ASPECT_MAX).sum()),
+        "aspect_p95_max": [round(float(np.percentile(asp[bq], 95)), 2), round(float(asp[bq].max()), 2)],
+        "aspect_worst": [{"pos_mm": [int(round(c * 1000)) for c in V[Q[k]].mean(0)], "aspect": round(float(asp[k]), 2)}
+                         for k in np.where(bq)[0][np.argsort(-asp[bq])][:8] if asp[k] > ASPECT_MAX],
+        "edges_under_2mm": int((el[body_e] < EDGE_MIN).sum()),
+        "edge_min_mm_body": round(float(el[body_e].min()) * 1000, 2),
+        "short_edges": [{"pos_mm": [int(round(c * 1000)) for c in mid[k]], "mm": round(float(el[k]) * 1000, 2)}
+                        for k in short],
+        "_asp": asp, "_dih": dih,
+    }
+
+
+def vertex_labels(ref):
+    lab = np.zeros(len(ref.P), np.int64)
+    for k in range(3):
+        lab[ref.T[:, k]] = ref.lab
+    return np.where(lab >= 5, lab - 5, lab)
+
+
+def zone_points(ref, L, joints, hip_ring):
+    """Each bend zone as the reference's own vertices (b), left side (x >= 0; the right is its mirror)."""
+    P = ref.P * np.where(ref.P[:, :1] < 0, [-1.0, 1, 1], 1.0)
+    lab = vertex_labels(ref)
+    ARM, LEG, HAND, FOOT = 1, 2, 3, 4
+    Z = {}
+    for nm, ks in (("elbow", (ARM, HAND)), ("knee", (LEG, FOOT))):
+        j = joints[nm]
+        near = np.linalg.norm(P - j["J"], axis=1) < j["bend"] + 0.12
+        Z[nm] = P[near & np.isin(lab, ks) & (np.abs((P - j["J"]) @ j["bisector"]) <= j["bend"])]
+        nm2 = "wrist" if nm == "elbow" else "ankle"
+        near = np.linalg.norm(P - j["c_end"], axis=1) < j["end_bend"] + 0.12
+        Z[nm2] = P[near & np.isin(lab, ks) & (np.abs((P - j["c_end"]) @ j["n_end"]) <= j["end_bend"])]
+    d_up = U(L["elbow"] - L["shoulder"])
+    u = (P - L["shoulder"]) @ d_up
+    u_ap = float((L["armpit"] - L["shoulder"]) @ d_up)
+    Z["shoulder"] = P[((lab == ARM) & (u <= u_ap + 0.110)) | (np.linalg.norm(P - L["armpit"], axis=1) < 0.035)]
+    Z["deltoid"] = P[(lab == ARM) & (u <= u_ap + 0.110) & (P[:, 1] > L["armpit"][1])]
+    R = np.asarray(hip_ring)
+    Rd = np.concatenate([np.linspace(R[k], R[(k + 1) % len(R)], 6, endpoint=False) for k in range(len(R))])
+    lat = Rd[:, 0] - R[:, 0].min()
+    Rd = Rd[lat < 0.6 * lat.max()]                     # the groin crease (front, inner) and the gluteal fold (back)
+    Z["hip"] = P[cKDTree(Rd).query(P)[0] <= 0.060]
+    ring = ref.ring
+    zax = 0.5 * (ring[:, 2].max() + ring[:, 2].min())
+    th = np.arctan2(np.abs(P[:, 0]), P[:, 2] - zax)
+    yb = 1.55 + 0.04 * (1 - np.cos(th)) / 2           # (b) the clavicle heads (1.552) to C7 (neck_01 - 0.04)
+    r = np.hypot(P[:, 0], P[:, 2] - zax)
+    Z["neck_base"] = P[(lab == 0) & (P[:, 1] >= yb) & (r < 0.075) & (P[:, 1] < ring[:, 1].max() + 0.01)]
+    return Z
+
+
+def pole_zones(V, poles, Z):
+    """Each pole's distance (m) to every zone (0 inside); the nearest zone and its distance."""
+    X = V[poles] * np.where(V[poles][:, :1] < 0, [-1.0, 1, 1], 1.0)
+    D = {}
+    for nm, P in Z.items():
+        if len(P) == 0 or nm == "deltoid":
+            continue
+        d = cKDTree(P).query(X)[0]
+        D[nm] = np.where(d < 0.004, 0.0, d)            # within the reference's own vertex spacing: inside
+    names = list(D)
+    M = np.stack([D[k] for k in names], 1)
+    k = M.argmin(1)
+    return [(names[k[i]], round(float(M[i, k[i]]) * 1000, 1)) for i in range(len(poles))]
+
+
+def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
+    tmpl_q = np.isin(info["qpart"], [parts.index("hand"), parts.index("foot")])
+    mq = mesh_quality(V, Q, tmpl_q)
+    asp = mq.pop("_asp")
+    mq.pop("_dih")
+    Z = zone_points(ref, L, joints, hip_ring)
+    designed = info["designed_pole"].astype(bool) if "designed_pole" in info else np.zeros(len(V), bool)
+    for p, (zn, zd), v in zip(poles_out, pole_zones(V, poles, Z), poles):
+        p.update({"zone": zn, "zone_dist_mm": zd, "designed": bool(designed[v])})
+    fail = [p for p in poles_out if not p["designed"] and p["zone_dist_mm"] < POLE_MARGIN * 1000]
+    by_zone = {}
+    for p in fail:
+        by_zone[p["zone"]] = by_zone.get(p["zone"], 0) + 1
+    g = dict(mq)
+    g["zone_points"] = {k: int(len(v)) for k, v in Z.items()}
+    g["poles_total"] = len(poles_out)
+    g["poles_designed_at_epicondyles"] = int(sum(p["designed"] for p in poles_out))
+    g["poles_designed_max_dist_to_hinge_exit_mm"] = C.get("joint_pole_hinge_mm")
+    g["poles_within_40mm_of_a_zone"] = len(fail)
+    g["poles_within_40mm_by_zone"] = by_zone
+    g["poles_within_40mm_left"] = [{"pos_mm": p["pos_mm"], "val": p["valence"], "part": p["part"],
+                                    "zone": p["zone"], "mm": p["zone_dist_mm"]} for p in fail if p["pos_mm"][0] >= 0]
+    gap = C.get("shoulder_gap_mm")
+    if gap:
+        g["shoulder_rim_gap_mm"] = gap
+        g["shoulder_rim_gap_ratio"] = round(gap[2] / max(gap[0], 1e-6), 2)
+    kv = C.get("shoulder_kite_verts")
+    if kv:
+        dd = cKDTree(Z["deltoid"]).query(V[kv])[0]
+        g["shoulder_kites_min_dist_to_deltoid_mm"] = round(float(dd.min()) * 1000, 1)
+    bq = info["qpart"] == parts.index("breast")
+    if bq.any():
+        qb = Q[bq]
+        e = np.unique(np.sort(np.concatenate([qb[:, [k, (k + 1) % 4]] for k in range(4)]), 1), axis=0)
+        el = np.linalg.norm(V[e[:, 0]] - V[e[:, 1]], axis=1)
+        g["breast_edge_mm_p95"] = round(float(np.percentile(el, 95)) * 1000, 2)
+        g["breast_aspect_p95"] = round(float(np.percentile(asp[bq], 95)), 2)
+    g["pass"] = {
+        "fold": mq["fold_edges_over_60"] == 0,
+        "aspect": mq["aspect_over_4"] == 0,
+        "min_edge": mq["edges_under_2mm"] == 0,
+        "poles_vs_zones": len(fail) == 0,
+        "shoulder_gap_ratio": bool(gap) and g["shoulder_rim_gap_ratio"] <= 1.5,
+        "shoulder_kites_vs_deltoid": g.get("shoulder_kites_min_dist_to_deltoid_mm", 0) >= 60,
+        "breast": ("breast_edge_mm_p95" in g and g["breast_edge_mm_p95"] <= 7.5 and g["breast_aspect_p95"] <= 2.0),
+    }
+    return g
