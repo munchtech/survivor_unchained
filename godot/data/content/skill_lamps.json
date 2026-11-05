@@ -11,7 +11,7 @@
       "20": 6,
       "source": "SkillBook.SlotsAt"
     },
-    "opens": "Each skill opens at a level per type (skills[].opens): her type's signatures at 1-3, the other type's at 4-6; she carries any open skill her calling may carry, swapped at a lamp-post in town.",
+    "opens": "Each skill opens at a level per type (skills[].opens): Oathblade and Judgment Disc at 1, her type's signatures at 1-3, the other type's at 4-6; she carries any open skill her calling may carry, swapped at a lamp-post in town.",
     "points": {
       "formula": "1 + floor((level - 1) / 3)",
       "most": 8,
@@ -27,7 +27,7 @@
       },
       "per": "carried skill",
       "source": "SkillBook.Rank",
-      "lit": "a point burns once she lights it at a lamp-post; Light my way places her unplanned points there, so a new character's first run (the Ford) has none lit"
+      "lit": "a point burns once it is lit: Light my way lights the points she leaves to it each time she comes into a town, and a lamp-post is where she lights or changes them herself; a new character's first run (the Ford) has none lit"
     },
     "costs": {
       "leadIn": 1,
@@ -48,15 +48,16 @@
         "watch_bell": 0.16
       },
       "growthSource": "skills.json growth; absent (oathblade) it is Weapons.DamageStep, 0.2",
-      "dayMost": 8,
+      "outOfRunMost": 8,
+    "zero": "with no point burning a skill is rank 0, its first hit (the build lead maps it onto today's weapon rank 1)",
       "runMost": 13,
       "shownIn": "WickBook.Sum",
-      "card": "the skill's hit before and after, with the rank: 'hit 34 -> 39 (rank 4 -> 5)'; a Turn adds two ranks",
-      "dayMostSource": "Weapons.MaxRank (today it also caps SkillBook.Rank and the 'at rank 8 it evolves' hint)",
+      "card": "the skill's hit before and after, with the rank: 'hit 41 -> 45 (rank 4 -> 5)'; a Turn adds two ranks ('41 -> 49')",
+      "outOfRunMostSource": "Weapons.MaxRank (today it also caps SkillBook.Rank and the 'at rank 8 it evolves' hint)",
       "runMostIs": "13 from its lamps (nine lead-ins and two Turns), 1 more for each Union it shares, and Hotter adds up to 10 a night across all her skills"
     },
     "turnRule": {
-      "byDay": 1,
+      "outOfRun": 1,
       "inARun": 2,
       "secondNeeds": "a Turn on the same skill lit with oil",
       "never": 3
@@ -65,7 +66,7 @@
       "where": "any lamp-post in a town",
       "cost": 0,
       "midRun": false,
-      "lightMyWay": "places unplanned points at a lamp-post: the suggested strand, then the header's next strand once it is full"
+      "lightMyWay": "lights unplanned points each time she comes into a town: the suggested strand, then the header's next strand once it is full"
     },
     "offer": {
       "when": "each time the ember rises",
@@ -120,11 +121,12 @@
         "turn": "drawn larger; one that takes over a lead-in's effect says so: 'takes Third Blow's place' (the lead-in keeps its rank)",
         "secondTurn": "says why it may burn: 'beside Splitting Stroke, lit for good'",
         "union": "shows both glyphs",
-        "keywords": "marked on the line; held, each reads its one line (keywords)"
+        "keywords": "marked on the line, case-sensitive ('Stone' marks, 'standing stones' doesn't); held, each reads its one line (keywords)",
+      "setsAside": "on one skill a Turn's rule wins over a lead-in's on the same thing (a wait, a timer, its targets), and slows and speeds multiply; the card names what it sets aside"
       },
       "fewer": "fewer candidates than cards: the surplus fills the rest",
       "wickPanel": {
-        "darkTurn": "one Turn on this skill by day; a second in a run, beside one lit for good"
+        "darkTurn": "one Turn on this skill; a second only in a run, beside one lit for good"
       }
     },
     "surplus": {
@@ -173,7 +175,7 @@
   },
   "keywords": {
     "rank": "Each rank adds the skill's growth to its hit (16% of its first hit for most skills). Each lamp lit adds a rank, a Turn two.",
-    "Turn": "A Turn changes what a skill is. One burns on a skill by day; in a run a second may burn beside one lit for good, never a third.",
+    "Turn": "A Turn ends a strand and changes what the skill is.",
     "oil": "Lit with oil: a point spent at a lamp-post. It burns for good, in every fight.",
     "ember": "Lit by the ember: free in a run, and out at first light.",
     "rise": "Each time the ember rises it deals three cards, four with luck. A rise is not a level.",
@@ -195,7 +197,7 @@
   },
   "skills": [
     {"id": "oathblade", "name": "Oathblade", "circle": "valley", "access": ["warden", "reaver", "arcanist", "stalker"], "opens": {"sunderer": 1, "bulwark": 1}, "strands": [{"id": "oathkeeper", "name": "Oathkeeper", "kind": "shape"}, {"id": "graveedge", "name": "Grave-Edge", "kind": "element"}, {"id": "answer", "name": "The Answer", "kind": "trigger"}], "suggested": "oathkeeper"},
-    {"id": "judgement_disc", "name": "Judgement Disc", "circle": "kindred", "access": ["warden", "stalker"], "opens": {"sunderer": 1, "bulwark": 1}, "strands": [{"id": "reckoning", "name": "Reckoning", "kind": "shape"}, {"id": "aegis", "name": "Aegis Wheel", "kind": "trigger"}, {"id": "threefold", "name": "Threefold", "kind": "shape"}], "suggested": "reckoning"},
+    {"id": "judgement_disc", "name": "Judgment Disc", "circle": "kindred", "access": ["warden", "stalker"], "opens": {"sunderer": 1, "bulwark": 1}, "strands": [{"id": "reckoning", "name": "Reckoning", "kind": "shape"}, {"id": "aegis", "name": "Aegis Wheel", "kind": "trigger"}, {"id": "threefold", "name": "Threefold", "kind": "shape"}], "suggested": "reckoning"},
     {"id": "dawnpulse", "name": "Dawnpulse", "circle": "kindred", "access": ["warden", "arcanist"], "opens": {"sunderer": 3, "bulwark": 6}, "strands": [{"id": "dawn", "name": "Circle of Dawn", "kind": "trigger"}, {"id": "sunbreak", "name": "Sunbreak", "kind": "shape"}, {"id": "rhythm", "name": "The Rhythm", "kind": "trigger"}], "suggested": "rhythm"},
     {"id": "sunder", "name": "Sunder", "circle": "sunderer", "access": ["warden"], "opens": {"sunderer": 1, "bulwark": 4}, "strands": [{"id": "stroke", "name": "The Stroke", "kind": "calling"}, {"id": "furrow", "name": "The Furrow", "kind": "shape"}, {"id": "edge", "name": "The Edge", "kind": "element"}], "suggested": "stroke"},
     {"id": "groundbreaker", "name": "Groundbreaker", "circle": "sunderer", "access": ["warden"], "opens": {"sunderer": 2, "bulwark": 5}, "strands": [{"id": "heave", "name": "The Heave", "kind": "calling"}, {"id": "cracks", "name": "The Cracks", "kind": "shape"}, {"id": "upheaval", "name": "Upheaval", "kind": "shape"}], "suggested": "heave"},
@@ -246,7 +248,7 @@
     {"id": "sunder.furrow.1", "skill": "sunder", "strand": "furrow", "n": 1, "parent": null, "name": "Wide Swing", "rule": "Sunder sweeps 300°, not 220°, and what it strikes at your back is thrown round in front of you.", "kind": "shape", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.wide_swing"}, {"do": "rule", "rule": "sunder.wide_swing_gather"}], "engine": "new", "from": "v1 sunderer.sunder.wide_swing (the 300° is built; the throw round in front is new, so it is a shape and not more area)"},
     {"id": "sunder.furrow.2", "skill": "sunder", "strand": "furrow", "n": 2, "parent": "sunder.furrow.1", "name": "Back Furrow", "rule": "The heavy line also runs 4 m behind you.", "kind": "shape", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.back_furrow", "args": {"behind": 4}}], "engine": "new", "from": "new (C2 lead 2: Two Furrows, a smaller Three Furrows, retires)", "draft": true},
     {"id": "sunder.furrow.3", "skill": "sunder", "strand": "furrow", "n": 3, "parent": "sunder.furrow.2", "name": "Plowshare", "rule": "Sunder swings 10% slower, but its heavy line throws what it strikes aside, opening a lane 2 m wide.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.plowshare", "args": {"cooldown": 1.1, "lane": 2}}], "engine": "new", "from": "new", "draft": true},
-    {"id": "sunder.furrow.4", "skill": "sunder", "strand": "furrow", "n": 4, "parent": "sunder.furrow.3", "name": "Three Furrows", "rule": "The heavy line splits in three, 25° apart, each running its full 7 m.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "sunder.three_furrows", "args": {"lines": 3, "spread": 25}}], "engine": "new", "from": "new (the lead's plan)", "supersedes": ["sunder.furrow.2"], "draft": true},
+    {"id": "sunder.furrow.4", "skill": "sunder", "strand": "furrow", "n": 4, "parent": "sunder.furrow.3", "name": "Three Furrows", "rule": "The heavy line splits in three, 25° apart, each running its full 7 m.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "sunder.three_furrows", "args": {"lines": 3, "spread": 25}}], "engine": "new", "from": "new (the lead's plan)", "draft": true},
     {"id": "sunder.edge.1", "skill": "sunder", "strand": "edge", "n": 1, "parent": null, "name": "Burning Edge", "rule": "Sunder's heavy line sears what it strikes for 3 s.", "kind": "element", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.burning_edge"}], "engine": "rule", "from": "v1 sunderer.sunder.burning_edge"},
     {"id": "sunder.edge.2", "skill": "sunder", "strand": "edge", "n": 2, "parent": "sunder.edge.1", "name": "Hot Iron", "rule": "Sunder strikes 15% softer, but every swing sears, not only the heavy line.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.hot_iron", "args": {"damage": 0.85, "status": {"kind": "sear", "chance": 1, "power": 1, "duration": 3}}}], "engine": "new", "from": "new", "draft": true},
     {"id": "sunder.edge.3", "skill": "sunder", "strand": "edge", "n": 3, "parent": "sunder.edge.2", "name": "Tinder", "rule": "A heavy blow on a seared thing sets it burning 3 s, at 25% of the blow a second.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "sunder.tinder", "args": {"burn": {"kind": "burn", "chance": 1, "power": 0.25, "duration": 3}}}], "engine": "new", "from": "new", "draft": true},
@@ -266,7 +268,7 @@
     {"id": "rebuke.morning.1", "skill": "rebuke", "strand": "morning", "n": 1, "parent": null, "name": "Thronged", "rule": "A rebuke that strikes 4 or more gives you a barrier of 2% of health.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.thronged", "args": {"least": 4, "barrier": 0.02}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.morning.2", "skill": "rebuke", "strand": "morning", "n": 2, "parent": "rebuke.morning.1", "name": "Broken Ward", "rule": "When your barrier breaks, Rebuke strikes everything within 5 m at once.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.broken_ward", "args": {"radius": 5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.morning.3", "skill": "rebuke", "strand": "morning", "n": 3, "parent": "rebuke.morning.2", "name": "Glare", "rule": "While a barrier holds, Rebuke's light sears what it strikes for 3 s.", "kind": "element", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.glare", "args": {"status": {"kind": "sear", "chance": 1, "power": 1, "duration": 3}}}], "engine": "new", "from": "new", "draft": true},
-    {"id": "rebuke.morning.4", "skill": "rebuke", "strand": "morning", "n": 4, "parent": "rebuke.morning.3", "name": "Shield of Morning", "rule": "While your barrier holds, Rebuke answers every blow on you with no wait between, and each rebuke gives a barrier of 1% of health for each thing it strikes, 4% at most.", "kind": "trigger", "turn": true, "cost": 2, "effects": [{"do": "turn", "turn": "rebuke.morning", "barrierEach": 0.01, "barrierMost": 0.04}, {"do": "rule", "rule": "rebuke.morning_open", "args": {"noWaitWhileBarrier": true}}], "engine": "new", "from": "built Turn rebuke.morning (wicks.json): its barrier keys stay, at 1% a thing and 4% at most (were 0.1% and 0.4%); no wait while a barrier holds is new"},
+    {"id": "rebuke.morning.4", "skill": "rebuke", "strand": "morning", "n": 4, "parent": "rebuke.morning.3", "name": "Shield of Morning", "rule": "While your barrier holds, Rebuke answers every blow on you, as often as every 0.2 s, and each rebuke gives a barrier of 1% of health for each thing it strikes, 4% at most, 20% held at most.", "kind": "trigger", "turn": true, "cost": 2, "effects": [{"do": "turn", "turn": "rebuke.morning", "barrierEach": 0.01, "barrierMost": 0.04}, {"do": "rule", "rule": "rebuke.morning_open", "args": {"noWaitWhileBarrier": true, "gap": 0.2, "barrierHeld": 0.2}}], "engine": "new", "from": "built Turn rebuke.morning (wicks.json): its barrier keys stay, at 1% a thing and 4% at most (were 0.1% and 0.4%); no wait while a barrier holds is new"},
     {"id": "rebuke.strong.1", "skill": "rebuke", "strand": "strong", "n": 1, "parent": null, "name": "Rebuke the Strong", "rule": "A champion's blow on you is rebuked at once, even inside the 0.5 s.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.strong", "args": {"championAtOnce": true}}], "engine": "new", "from": "v1 bulwark.rebuke.rebuke_the_strong (twice as hard on champions was a bare bump; now champions are answered at once)"},
     {"id": "rebuke.strong.2", "skill": "rebuke", "strand": "strong", "n": 2, "parent": "rebuke.strong.1", "name": "Brought Low", "rule": "A champion Rebuke strikes deals you 25% less for 3 s.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.brought_low", "args": {"weaker": 0.25, "seconds": 3}}], "engine": "new", "from": "new", "draft": true},
     {"id": "rebuke.strong.3", "skill": "rebuke", "strand": "strong", "n": 3, "parent": "rebuke.strong.2", "name": "Dazed", "rule": "Rebuke strikes 3 fewer of the nearest, but a champion it strikes is stunned 0.5 s.", "kind": "cost", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "rebuke.dazed", "args": {"others": -3, "stun": 0.5}}], "engine": "new", "from": "new", "draft": true},
@@ -278,7 +280,7 @@
     {"id": "watch_bell.stone.1", "skill": "watch_bell", "strand": "stone", "n": 1, "parent": null, "name": "Alarm", "rule": "When the wall answers, the bell tolls at once and its 6 s starts over.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.alarm"}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.stone.2", "skill": "watch_bell", "strand": "stone", "n": 2, "parent": "watch_bell.stone.1", "name": "Millstone", "rule": "While you hold 3 or more Stones, what the bell draws lands stunned 0.5 s.", "kind": "calling", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.millstone", "args": {"stones": 3, "stun": 0.5}}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.stone.3", "skill": "watch_bell", "strand": "stone", "n": 3, "parent": "watch_bell.stone.2", "name": "Cairn", "rule": "Each toll that draws 5 or more lays a Stone.", "kind": "calling", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.cairn", "args": {"least": 5, "stones": 1}}], "engine": "new", "from": "new", "draft": true},
-    {"id": "watch_bell.stone.4", "skill": "watch_bell", "strand": "stone", "n": 4, "parent": "watch_bell.stone.3", "name": "Stone Bell", "rule": "Each toll raises a ring of standing stones 5 m round you for 3 s: what the bell drew is shut in with you, and each blow on the ring from outside lays a Stone.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "watch_bell.stone_ring", "args": {"radius": 5, "seconds": 3, "shutIn": true, "stonePerBlowOutside": 1}}], "engine": "new", "from": "built Turn watch_bell.stone (wicks.json: 2 Stones a toll, 1 more a champion, only more Stones on top of Cairn) retires; the nearest built shape is the director's closing ring (Ringed in the harness)"},
+    {"id": "watch_bell.stone.4", "skill": "watch_bell", "strand": "stone", "n": 4, "parent": "watch_bell.stone.3", "name": "Stone Bell", "rule": "Each toll raises a ring of standing stones 5 m round you for 3 s: what the bell drew is shut in with you, and each thing that reaches the ring from outside is held there and lays a Stone, once a toll each.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "watch_bell.stone_ring", "args": {"radius": 5, "seconds": 3, "shutIn": true, "stonePerReach": 1}}], "engine": "new", "from": "built Turn watch_bell.stone (wicks.json: 2 Stones a toll, 1 more a champion, only more Stones on top of Cairn) retires; the nearest built shape is the director's closing ring (Ringed in the harness)"},
     {"id": "watch_bell.loud.1", "skill": "watch_bell", "strand": "loud", "n": 1, "parent": null, "name": "Loud Bell", "rule": "The bell tolls twice, 1 s apart: the second draws from 11 m and gives no barrier.", "kind": "shape", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.loud", "args": {"second": 1, "range": 11, "barrier": false}}], "engine": "new", "from": "v1 bulwark.watch_bell.loud_bell (drew from 10 m: bare reach; now a second, farther toll)"},
     {"id": "watch_bell.loud.2", "skill": "watch_bell", "strand": "loud", "n": 2, "parent": "watch_bell.loud.1", "name": "Arm's Length", "rule": "What the bell draws stops 2 m from you, in a ring, not at your feet.", "kind": "shape", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.arms_length", "args": {"stand": 2}}], "engine": "new", "from": "new", "draft": true},
     {"id": "watch_bell.loud.3", "skill": "watch_bell", "strand": "loud", "n": 3, "parent": "watch_bell.loud.2", "name": "In Their Wake", "rule": "Each champion the bell draws drags the 3 nearest lesser things with it.", "kind": "trigger", "turn": false, "cost": 1, "effects": [{"do": "rule", "rule": "watch_bell.wake", "args": {"drags": 3}}], "engine": "new", "from": "new", "draft": true},
@@ -289,7 +291,7 @@
     {"id": "watch_bell.iron.4", "skill": "watch_bell", "strand": "iron", "n": 4, "parent": "watch_bell.iron.3", "name": "Long Toll", "rule": "For 3 s after each toll, whatever comes within 6 m is drawn in and slowed too.", "kind": "shape", "turn": true, "cost": 2, "effects": [{"do": "rule", "rule": "watch_bell.long_toll", "args": {"seconds": 3, "range": 6}}], "engine": "new", "from": "new (the lead's plan: a new Turn)", "draft": true}
   ],
   "unions": [
-    {"id": "union.dawns_judgement", "skills": ["dawnpulse", "judgement_disc"], "parent": [["dawnpulse.dawn.4", "dawnpulse.sunbreak.4", "dawnpulse.rhythm.4"], ["judgement_disc.reckoning.4", "judgement_disc.aegis.4", "judgement_disc.threefold.4"]], "needs": "a Turn burning on each of its two skills (any one of each list); both skills keep firing", "name": "Dawn's Judgement", "rule": "The disc carries the dawn: it sears for 3 s, and wherever it strikes it breaks into light 2.2 m round, at 35% of the strike.", "kind": "union", "turn": false, "cost": 2, "costFrom": {"dawnpulse": 1, "judgement_disc": 1}, "effects": [{"do": "set", "skill": "judgement_disc", "status": {"kind": "sear", "chance": 1, "power": 1, "duration": 3}}, {"do": "trigger", "on": "hit", "icd": 0.15, "when": {"weapon": "judgement_disc"}, "effects": [{"do": "nova", "radius": 2.2, "damage": 0.35, "basis": "hit", "school": "holy", "knockback": 0.4}]}], "engine": "built", "from": "union dawns_judgement (the merge into the dawns_judgement weapon and its freed slot go; that weapon's sear and its on-hit burst, the trigger as written in skills.json, become this lamp)"},
+    {"id": "union.dawns_judgement", "skills": ["dawnpulse", "judgement_disc"], "parent": [["dawnpulse.dawn.4", "dawnpulse.sunbreak.4", "dawnpulse.rhythm.4"], ["judgement_disc.reckoning.4", "judgement_disc.aegis.4", "judgement_disc.threefold.4"]], "needs": "a Turn burning on each of its two skills (any one of each list); both skills keep firing", "name": "Dawn's Judgment", "rule": "The disc carries the dawn: it sears for 3 s, and wherever it strikes it breaks into light 2.2 m round, at 35% of the strike.", "kind": "union", "turn": false, "cost": 2, "costFrom": {"dawnpulse": 1, "judgement_disc": 1}, "effects": [{"do": "set", "skill": "judgement_disc", "status": {"kind": "sear", "chance": 1, "power": 1, "duration": 3}}, {"do": "trigger", "on": "hit", "icd": 0.15, "when": {"weapon": "judgement_disc"}, "effects": [{"do": "nova", "radius": 2.2, "damage": 0.35, "basis": "hit", "school": "holy", "knockback": 0.4}]}], "engine": "built", "from": "union dawns_judgement (the merge into the dawns_judgement weapon and its freed slot go; that weapon's sear and its on-hit burst, the trigger as written in skills.json, become this lamp)"},
     {"id": "union.broken_country", "skills": ["sunder", "groundbreaker"], "parent": [["sunder.stroke.4", "sunder.furrow.4", "sunder.edge.4"], ["groundbreaker.heave.4", "groundbreaker.cracks.4", "groundbreaker.upheaval.4"]], "needs": "a Turn burning on each of its two skills (any one of each list); both skills keep firing", "name": "Broken Country", "rule": "Sunder's heavy line ends in Groundbreaker's heave: the earth rises there at 40%, stunning 0.4 s.", "kind": "union", "turn": false, "cost": 2, "costFrom": {"sunder": 1, "groundbreaker": 1}, "effects": [{"do": "rule", "rule": "union.broken_country", "args": {"heaveDamage": 0.4, "stun": 0.4}}], "engine": "new", "from": "proposed (C2 solver)", "draft": true},
     {"id": "union.curfew", "skills": ["rebuke", "watch_bell"], "parent": [["rebuke.morning.4", "rebuke.strong.4", "rebuke.answering.4"], ["watch_bell.stone.4", "watch_bell.loud.4", "watch_bell.iron.4"]], "needs": "a Turn burning on each of its two skills (any one of each list); both skills keep firing", "name": "Curfew", "rule": "Each toll rebukes what it draws: Rebuke's light strikes everything the bell pulls in, at 100% of a rebuke, once a toll.", "kind": "union", "turn": false, "cost": 2, "costFrom": {"rebuke": 1, "watch_bell": 1}, "effects": [{"do": "rule", "rule": "union.curfew", "args": {"perToll": 1}}], "engine": "new", "from": "proposed (C2 solver)", "draft": true}
   ]

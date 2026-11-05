@@ -21,7 +21,7 @@ SMALL = re.compile(r"(?:barrier of|mends you) (\d+(?:\.\d+)?)% of health")
 CAP = re.compile(r"(\d+(?:\.\d+)?)%(?: held)? at most")
 # Stones: the wall answers at six and the count starts over, so a line can never ask for six or more held.
 STONES = re.compile(r"(\d+) or more Stones")
-BRITISH = re.compile(r"\b(armour|colour|honour|favour|behaviour|grey|metre|centre|defence|plough|whilst|towards|ardour|valour|splendour)\b", re.I)
+BRITISH = re.compile(r"\b(armour|colour|honour|favour|behaviour|grey|metre|centre|defence|plough|whilst|judgement|towards|ardour|valour|splendour)\b", re.I)
 
 
 def main():
@@ -117,7 +117,7 @@ def main():
         for p in probs:
             print("  " + p)
         return 1
-    print(f"skill_lamps_check: OK: {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, Stones reachable, keywords")
+    print(f"skill_lamps_check: OK: {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, blow-fed barriers bounded, Stones reachable, keywords")
     return 0
 
 
@@ -136,6 +136,9 @@ def check_text(lid, name, rule, banned, seen_names, probs):
     for m in SMALL.finditer(rule):
         if float(m.group(1)) < 2 and not any(float(x) >= 2 for x in CAP.findall(rule)):
             probs.append(f"{lid}: {m.group(1)}% of health is too small to feel (2% or more, or a cap of 2% or more)")
+    if re.search(r"barrier|mends you", rule) and re.search(r"blows? on you|blow reaches you|strikes you", rule) \
+            and not re.search(r"at most every|as often as every|held at most", rule):
+        probs.append(f"{lid}: a barrier or mend from blows on her needs 'at most every' or 'held at most'")
     for m in STONES.finditer(rule):
         if int(m.group(1)) >= 6:
             probs.append(f"{lid}: {m.group(1)} or more Stones can never be held (the wall answers at six)")
