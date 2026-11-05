@@ -3,14 +3,158 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (5 November, S1 the story rework, branch `story-s1`): the owner said GO; Act 1's data started; HANDOFF READY story-s1@e13c94a6c (this commit follows; the worker's rename commit may follow it on the branch)
+## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 6/7/8/11 in; HANDOFF READY story-s1@4f554a619 (writer 2 at ~300k; this commit follows)
 
-**HANDOFF READY** (the writer S1 at ~300k). **The pick (the owner, 5 Nov:
+**The pick (the owner, 5 Nov:
 "Go, defaults."):** ending B retired, three endings (she lies down / Corvane
 lies down / she carries it home); the name is **Corvane**; Corvane killable
 in Act 1 and getting up on screen; "He has never burned." retired; Holloway
 risen as Ashford's commander waits for Act 2's brief. The proposal was
 PROPOSAL READY story-s1@9fd41e6e0, editor PASS WITH FIXES applied.
+
+**HANDOFF READY story-s1@4f554a619** (writer 2, Fable, at ~300k; the
+owner's pick stands as the paragraph above has it). Slice 1 DONE
+(dba76d016). **Slice 2, in data so far:** (1) beat 6 at 567a1477e; (2)
+beats 7, 8 and 11 at 4f554a619. Integration merged at e2bdeed4d (the
+junction removed and remade). The story test subset (StoryLint,
+StoryRewrite, Quest, Cinema, Verge, StoryNight) was launched at the
+handoff: its tail is in `scratchpad\story_s1\tests_story.txt` (backed up to
+`survivorsunchained_inputs\scratch_story_s1\`); if it did not finish, run it
+first. `tools/vo/lines.py` and the locks have NOT been run on the new lines
+(step 7). Nothing is pushed since dba76d016 until this handoff's push.
+
+**What is in, by node (so nothing is re-derived):**
+- *Beat 6, Vonnra's tale* (`vonnra`): rule `vonnra.sends` (day >= 3,
+  `prologue.done`, met, vault `seen`, not told) sets `vonnra.sent` with the
+  violet-note report; her entry at dusk/night goes to `chains`; nodes
+  `chains, keeper, bleed, ford_tale, burn, order, six, office, office_more,
+  cost, why, dont, key, jessop_in, tale_end` (sets `vonnra.told`, journal
+  `vault.vonnra_told`, rel +10/+10); by day the hub says "After dark";
+  `vault` has two told-variants (key in hand / the dead man's hand). Her
+  lie is the names only: every mechanism she gives is bible rule 1-5. She
+  quotes the office's end and withholds its last sentence ("Let the one who
+  got up go down, and carry it home"): the ledger's own words "Got up." are
+  the office's subject, for the reader who puts them together (beat 13).
+- *Beats 7-8, the door night* (`door_night`, a plain conversation, not
+  `cin_`, so CinemaTests asks no cues; the P6 boss and the P9 C13 rework play
+  its nodes): `go_home` -> `wrong` | `ask_her` -> `lie_down` ("(Raise your
+  weapon.)" exits into the fight; "(Lower your weapon, and go.)" -> `go`, the
+  night let go, he says he'll see her in the morning); `gets_up` (the
+  narrator's one line, held on his body); `gone` (she turns back from the
+  waking sigil); `heart` and `ranks` (C13's end: he stays down, the heart to
+  her hand and out through it, the dead step back and stand). The singer
+  under the stair is sound only: no node, by the editor's rule.
+  `cin_behind_the_door.redi` (the hand at the gate) is retired when P9
+  reworks the timeline; until then it stays, with its lock and cue.
+- *Beat 11, the morning after:* `chid.cb_opened_vault` (the scar, the kettle,
+  "Sit. The good stool."), `chid.cb_vault2` ("(He pours.) ...Don't." to
+  "Which carter, Corvane?"), new `chid.cb_vault_up`; a `chid.carried_chid`
+  variant when she fell that night (`corvane.rose`, "A carter, I expect.
+  ...Don't ask me anything this morning. Please."); `vonnra.cb_opened_vault`
+  ("What stood in the door?"), `vonnra.cb_vault2` ("His kind live off the
+  leak. He will do that again."; "Two. Five, and the valley sleeps." on
+  `chain.two`); `vonnra.cb_vault3` survives.
+- *Facts:* rules `corvane.rose` (history `opened_vault` or quest vault
+  `shut`) and `chain.two` (fact `vault.opened`, the fight's OnWin), read by
+  the lines above. When P6 builds the boss it sets `corvane.rose` at the
+  kill itself and must not set `shut` on a phase-1 loss.
+
+**Next, in order (one commit each; the design is decided, write the words):**
+(3) beat 10 `scene_bed`: a conversation like `scene_his_cup` (speakers
+narrator / holloway / maeca), queued by a rule `holloway.bed` into
+`scene.dusk` when `chain.two` and no `scene.dusk` exists; the narrator: the
+south gate unbarred at dusk for the first time, his stool, no tally in his
+hand; Holloway in his own counts: "Eleven in. Nobody out. Third night
+running. ...I'd had it down I'd go on this stool. (He looks at the gatehouse
+cot.) Might go in a bed."; Maeca fills his cup and says nothing; the scene
+sets `holloway.bed_seen` (add it to StoryLint's `Seeds`: Act 2's rope reads
+it). Never "Count's right." (the built gate-dawn line and bark keep theirs).
+Beat 5: a once rule `ford.ditch` (day >= 3, `prologue.done`): "Nobody stood
+in the ditch on the Low Ford road last night, or the night before. The Watch
+has stopped sending a man down to look."; three Holloway `said` night barks
+in `npcs.json` (`"night": true`) for days 2, 3, 4 ("Eleven in. Nobody out.",
+"Eleven in. Second night.", "Eleven in. Nobody out. I've stopped writing it
+down."), keyed `day` and not `chain.two`.
+(4) beat 9: two once rules on `chain.two`, `hollow.healed` (not
+`stream.clear`: the stream running clear and the scar on Wolf Hollow closed
+over in a night, wolves drinking at it, the Dig's hill silent) and
+`hollow.healed_clear` (`stream.clear` already: the scar only); Wenna's
+callback `cb_clean` on `chain.two`: "It's clean. I don't know why it's
+clean." (variant when she cleaned it herself, `beasts.outcome` cured: "It's
+cleaner than I made it. I don't know why."). The C15 film is P9's (below).
+(5) beat 12: `tam.again` variant on `chain.two`: "It knocked. Louder. Pa says
+it's the ground settling. Things don't settle UP."; Wenna's hub variant on
+`chain.two`: "I've the masks out again. Don't ask me why. I don't know why."
+Both read `chain.two`; neither explains it.
+(6) beat 13: `chid.office` gains a journal entry `vault.office_end` (the
+page, in the keepers' words, the whole of it: "Is it morning? / Not yet. /
+When the seven are loosed, and a lamp lit at dark still burns at first
+light, it is morning. Let the one who got up go down, and carry it home.");
+beat 14: a once rule `toll.baking` (`player.deaths` >= 1, `prologue.done`):
+"Up the street, nobody is baking." (re-key it on `toll.rises` when the
+toll's scripted fall is built, TOLL_SPEC section 3).
+(7) `python tools/vo/lines.py`; lock through Python: prefixes
+`dlg.vonnra.chains dlg.vonnra.keeper dlg.vonnra.bleed dlg.vonnra.ford_tale
+dlg.vonnra.burn dlg.vonnra.order dlg.vonnra.six dlg.vonnra.office
+dlg.vonnra.office_more dlg.vonnra.cost dlg.vonnra.why dlg.vonnra.dont
+dlg.vonnra.key dlg.vonnra.jessop_in dlg.vonnra.tale_end dlg.door_night.
+dlg.chid.cb_opened_vault dlg.chid.cb_vault2 dlg.chid.cb_vault_up
+dlg.chid.carried_chid dlg.vonnra.cb_opened_vault dlg.vonnra.cb_vault2
+dlg.vonnra.vault dlg.vonnra.hub` plus the new scene and rule lines (`say.`
+ids: check `lines.py --report`); remove the two gone locks
+(`dlg.cin_drowned_fire.prints.0`, `say.93b63298edc0`); `lock.py --check`
+exit 0; `python -m unittest tests.test_lock tests.test_lines` in tools/vo;
+tests in `StoryRewriteTests.cs`: the tale ends on `vonnra.told` and never
+says "vessel"; `door_night.gets_up` is exactly "He gets up."; `scene_bed`
+never says "Count's right."; StoryLint seeds. Full `dotnet test` before MR.
+(8) a fresh Haiku `su-lead-max` editor at xhigh on `git diff dba76d016..HEAD`
+(brief from `docs/handoff/story_editor.md` 1-2 and 4, PLAN.md as the canon,
+the WTF question on beat 7); PASS WITH FIXES applied. (9) `MR READY
+story-s1@<sha>` here and to main: the editor's verdict in two lines, the
+counts (survived / rewritten / new / retired), re-locks, cost.
+
+**Line items for other leads (PLAN section 6), each a paragraph a lead can
+start from:**
+- *P6, the combat lead: Corvane in the doorway.* Phase 1 of story night
+  `vault_opened`, before the door opens: his kit (a keeper's lamp, violet
+  glass; two hundred years of ember) on the existing NPC model; the door's
+  forecourt is the arena. He stands in the way and does not strike first:
+  `door_night.go_home` plays on arrival, `wrong`/`ask_her` by the player's
+  choice, then `lie_down`; "(Raise your weapon.)" starts the fight, "(Lower
+  your weapon, and go.)" lets the night go (`go`). On the kill: hold on his
+  body, play `gets_up` (narrator), then the sigil wakes (C13's door shots) and
+  when she turns back `gone`; no boss-phase bar, no second health bar. Set
+  `corvane.rose` at the kill; a phase-1 loss sets no quest entry `shut`
+  (he carries her home: `chid.carried_chid`'s `corvane.rose` variant). If his
+  model can't carry a boss at the play camera, P3 remakes him with the
+  Warden. ~0.3-0.5M.
+- *P9, the cinematics lead: C13 reworked.* Two phases on the built pipeline:
+  the doorway (above, with the P6 hooks) and the stair. The end changes:
+  `redi` and the hand at the gate go; after `nondum` and the fight the
+  Barrow Lord goes down and stays down (`door_night.heart`: the heart comes
+  up violet to her hand, warm then not, and goes down through it; the stone
+  is only a stone), then, far under the stair, the Warden's call in a
+  woman's voice, sound only, no subtitle, no narrator line, then
+  `door_night.ranks` (the dead step back and stand), then the reckoning
+  (its words in `StoryFights.cs` line 133 change to: "The dead stand on the
+  stair in their ranks, and let you go. The stone in your hand is cold."). Keep
+  shot 4 (Jessop with the violet lantern, Act 3's plant). The `door_night`
+  nodes may move into `cin_behind_the_door` when the cues exist; re-lock
+  them then. ~80-120k.
+- *P9: C15 "The Stream Runs Clear".* New, ~20 s, over the real Verge in its
+  `stream.clear` state at dawn: the scar on Wolf Hollow closed, wolves
+  drinking, the Dig's hill silent; Wenna's line from beat 9 over the last
+  shot. Plays the morning `hollow.healed` fires. ~50-80k.
+
+**Scratch (`scratchpad\story_s1\`, backed up to
+`survivorsunchained_inputs\scratch_story_s1\`):** `lib.py` (round-trip-safe
+load/save of the content JSON: dialogue.json is LF, rules/quests/npcs are
+CRLF; `node`, `choice`, `set_text_variant`), `dumpc.py <dialogue.json> conv
+[--nodes a,b]` (a compact text dump of a conversation), `beat6.py`,
+`beat7.py` (the two scripts that made the commits, as the pattern for 3-6).
+Node ids and `once` keys are per conversation and must not collide
+(`vonnra.jessop` and `vonnra.ford` were taken: hence `jessop_in`,
+`ford_tale`). Text variants are checked in order: the specific `when` first.
 
 **Slice 1, DONE (a `su-worker`, commit dba76d016 on story-s1):** every
 player-facing "Chid" -> "Corvane" with the id `chid` kept (dialogue.json 28
@@ -28,19 +172,7 @@ pass:** `lock.py --check` reports two locks "gone" that predate S1
 lines. The tools note in "Tools" below is stale: `tests.test_door` no longer
 exists (it left with the romances); run `tests.test_lock tests.test_lines`.
 
-**Slice 2, the successor's (the writer, Fable):** PLAN section 4, beats 5-14,
-in this order so each commit stands alone: (1) beat 6 Vonnra's tale (new
-`vonnra` nodes off her hub, `vonnra.told` fact; the cold lines stay); (2)
-beats 7-8 and 11, Corvane's door and the morning after (barks for story night
-`vault_opened` phase 1, `chid.rose`, the `cb_vault2`/`chid.first` variants,
-`corvane.rose` fact); (3) beat 10 `scene_bed` and beat 5's reports and barks;
-(4) beat 9's report and Wenna's line (the C15 film is the cinematics lead's);
-(5) beat 12 Tam and Wenna; (6) beat 13's office page (`chid.office`,
-`quests.json`) and beat 14's one report line; (7) StoryLint facts written and
-read, tests, locks for the new lines; (8) a fresh Haiku editor at xhigh on the
-diff (PASS WITH FIXES applied); (9) `MR READY story-s1@<sha>` here and to
-main with the editor's verdict in two lines, the line counts (survived,
-rewritten, new, retired), the re-lock count and the cost.
+**Slice 2's original step list** is superseded by the state and the next steps above.
 
 Writer = Fable (S1, `docs/team/hook/S1_story_rework.md`); editor = a Haiku
 `su-lead-max` at xhigh (agent `ad7c24ae2324594d3`, ~136k of its 150k used:
