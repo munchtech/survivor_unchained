@@ -439,6 +439,32 @@ def normal_delta(P, T, D):
     return n1 - n0
 
 
+def topo_mirror(mo, Pb, stage_npz=None):
+    """The body points' mirror by OUR topology: mo[i] (topology vertex i's mirror, -1 on one side's listing) both
+    ways, the midline (no pair: |x| <= 5 mm on her) its own mirror (it was -1: 212 points, the right shapes lost
+    the perineum's and the spine's share). When the export appends seam copies after our n vertices (the UV split),
+    each maps through its source vertex: mir[k] = mirror(src[k]) (src from the stage npz's "src" if it has one,
+    else the copy's coincident point among the first n), so the right side never falls back to a position mirror."""
+    n = len(mo)
+    m = np.full(n, -1)
+    r_ = np.nonzero(mo >= 0)[0]
+    m[r_] = mo[r_]
+    m[mo[r_]] = r_
+    m[m < 0] = np.nonzero(m < 0)[0]
+    if len(Pb) == n:
+        return m
+    src = None
+    if stage_npz and os.path.exists(stage_npz):
+        z = np.load(stage_npz)
+        if "src" in z.files and len(z["src"]) == len(Pb):
+            src = z["src"].astype(np.int64)
+    if src is None:
+        src = np.arange(len(Pb))
+        _, k = cKDTree(Pb[:n]).query(Pb[n:])
+        src[n:] = k
+    return m[src]
+
+
 # ----------------------------------------------------------------------- run --
 def shape_name(jc, motion, deg):
     tag = {"shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
@@ -470,12 +496,7 @@ def run(out, only=None, tier="close", fresh=False):
     mir = mirror_map(Pb)
     tp = os.path.join(HERE, "out", "topo", f"{tier}.npz")       # our topology's own mirror (her forms are not symmetric
     if os.path.exists(tp):                                       # to 1e-5 m: 3005 points went unmatched by place)
-        mo = np.load(tp)["mirror_of"]
-        if len(mo) == len(Pb):
-            mir = np.full(len(Pb), -1)
-            r_ = np.nonzero(mo >= 0)[0]
-            mir[r_] = mo[r_]
-            mir[mo[r_]] = r_
+        mir = topo_mirror(np.load(tp)["mirror_of"], Pb, os.path.join(out, "stage", f"{tier}.npz"))
     old = {}
     if only and os.path.exists(os.path.join(out, "stage", f_shapes)):
         z = np.load(os.path.join(out, "stage", f_shapes))
@@ -492,14 +513,23 @@ def run(out, only=None, tier="close", fresh=False):
         row = {"joint": jc["name"], "law": jc["law"]}
         names, dirs = [], []
         strips = {}
+        chain = {}
+        if jc.get("fold") == "stepped":          # the whole arc marched at once (contact_fold.py), stored per key
+            import contact_fold
+            st = key_strip(poser, rig, frame, jc["keys"][0][0], "l")
+            strips[jc["keys"][0][0]] = st
+            t = time.time()
+            for k_, Y, f, free, M, G, lg in contact_fold.solve_chain(mesh, st, jc, {**cf, **jc.get("solve", {})}):
+                chain[k_] = (Y, f, free, M, G, lg)
+            print(f"  {jc['name']} march {round(time.time() - t, 1)} s", flush=True)
         for motion, deg in jc["keys"]:
             st = strips.get(motion) or key_strip(poser, rig, frame, motion, "l")
             strips[motion] = st
             nm = shape_name(jc, motion, deg)
-            V, G = key_pose(st, deg)
+            V, G = key_pose(st, deg) if not chain else (None, chain[float(deg)][4])
             pk = jc.get("per_key", {}).get(str(int(round(deg))), {})               # a key's own settings
             jk = dict(jc, **pk, _deg=deg)
-            spec = bends.load_ref(motion, deg) if motion in bends.MOTIONS else None
+            spec = bends.load_ref(motion, deg) if motion in bends.MOTIONS and not chain else None
             ref = None
             if spec and jk.get("pull"):
                 V0, G0, _ = st.posed(0)
@@ -509,7 +539,10 @@ def run(out, only=None, tier="close", fresh=False):
                 ref = bends.build_ref(spec, bends.Plane2(st, G), bends.radii(st, m0, vw_hi, pl0), (m0, vw_hi))
             t = time.time()
             cfk = {**cf, **jc.get("solve", {}), **pk.get("solve", {})}
-            if jk.get("fold") == "flatten":
+            if chain:
+                Y, f, free, M, _, lg = chain[float(deg)]
+                lg = dict(lg, iters=[{"inside_parity": lg["march"]["inside"]}])
+            elif jk.get("fold") == "flatten":
                 import crease_fold
                 Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jk, cfk, ref)
             else:
@@ -527,7 +560,7 @@ def run(out, only=None, tier="close", fresh=False):
                       moved=int((np.linalg.norm(DL, axis=1) > 1e-4).sum()), s=round(time.time() - t, 1))
             row.setdefault("keys", []).append(lg)
             names.append(nm)
-            if jc["law"] == "rbf":
+            if jc["law"] in ("rbf", "arc"):
                 dirs.append(rig_drive.direction(poser, G, jc["bone"].replace("{s}", "l"), jc["end"].replace("{s}", "l"),
                                                 jc["frame"].replace("{s}", "l")))
             print(f"  {nm} {deg}: {lg['iters'][-1]} max {lg['max_mm']} mm, {lg['s']} s", flush=True)
@@ -538,6 +571,14 @@ def run(out, only=None, tier="close", fresh=False):
             keys = sorted([(float(k[1]), n) for k, n in zip(jc["keys"], names)] + [(rest_F, None)])
             rig["correctives"].append({"joint": jc["name"], "law": "flex", "bones": bones,
                                        "keys": [round(k, 3) for k, _ in keys], "shapes": [n for _, n in keys]})
+        elif jc["law"] == "arc":
+            d0 = rig_drive.direction(poser, poser.rest, jc["bone"].replace("{s}", "l"), jc["end"].replace("{s}", "l"),
+                                     jc["frame"].replace("{s}", "l"))
+            K = np.stack([d0] + dirs)
+            mx = np.array([-1.0, 1, 1])
+            rig["correctives"].append({"joint": jc["name"], "law": "arc", "bone": jc["bone"], "end": jc["end"],
+                                       "frame": jc["frame"], "gate_deg": jc["gate_deg"], "shapes": names,
+                                       "keys": {"l": np.round(K, 6).tolist(), "r": np.round(K * mx, 6).tolist()}})
         else:
             d0 = rig_drive.direction(poser, poser.rest, jc["bone"].replace("{s}", "l"), jc["end"].replace("{s}", "l"),
                                      jc["frame"].replace("{s}", "l"))

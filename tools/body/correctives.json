@@ -220,7 +220,79 @@
     1.0,
     "pelvis"
    ],
-   "why": "P1 D (5 Nov), SHORT of the acceptance (see the P1 D report). Key flex 90 only, by direction (rbf over the thigh's direction in the pelvis frame, sigma 40: the rest key no shape, so 0 at rest). The hinge's flatten fold does not carry to the hip: the bisector plane through the joint (8-10 cm behind the groin) cut the belly, through the reference corner it still flattened the whole lower trunk across the midline (180 inside), so the pairwise contact (solve_key: the rigid parts' signed distances + ray parity) with the strip's body only (free_rend: the other leg and the arms are held as posed), the inner and outer curves pulled, and the midline held to the pelvis within 4 cm (hold_mid: LBS swings the perineum's left half with the left thigh through the right half; held, its depth fell 87 -> 24 mm). Flex 135 is held back: the thigh meets the belly there (652 inside under LBS) and this solve left 502 with girth 1.13; it needs a two-body contact solve, not a hinge fold."
+   "why": "P1 D (5 Nov), SHORT of the acceptance (see the P1 D report). Key flex 90 only, by direction (rbf over the thigh's direction in the pelvis frame, sigma 40: the rest key no shape, so 0 at rest). The hinge's flatten fold does not carry to the hip: the bisector plane through the joint (8-10 cm behind the groin) cut the belly, through the reference corner it still flattened the whole lower trunk across the midline (180 inside), so the pairwise contact (solve_key: the rigid parts' signed distances + ray parity) with the strip's body only (free_rend: the other leg and the arms are held as posed), the inner and outer curves pulled, and the midline held to the pelvis within 4 cm (hold_mid: LBS swings the perineum's left half with the left thigh through the right half; held, its depth fell 87 -> 24 mm). Flex 135 is held back: the thigh meets the belly there (652 inside under LBS) and this solve left 502 with girth 1.13; it needs a two-body contact solve, not a hinge fold. D2 (5 Nov): the rebuild the D verdict asks for (contact_fold.py, fold 'stepped', law 'arc') was tried and is NOT shipped: its trial settings are kept under 'd2_trial' (held). Findings: the smooth-skin ARAP over a 25 cm sphere drifts off the skeleton's pivot (p95 4.9 mm, -75 cm3 at 7.5 deg flexion, no contact; the rest-umbrella and full-matrix Laplacian targets the same: 12.7 mm p95 at 45 deg), so the correction must be U = Y - X on the skinned surface (min |L U|^2 + an anchor >= 0.3: a 0.0016 anchor spread one 2 cm push over 10+ cm, +372 cm3); a rigid capped thigh solid as the obstacle pushes the buttock (behind) and the root's blend, and the posed-surface contacts leave 220 points at ~100 mm (check depth) at 135 against LBS's 652 at 75 mm: neither beats D's 90 key (14 at 24 mm). The 15 deg in-between keys need the 'arc' law (rig_drive.py): the Gaussian rbf rings with dense keys (5 keys 15 deg apart summed to 2.0 at 45).",
+   "d2_trial": {
+    "name": "hip",
+    "law": "arc",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "gate_deg": [
+     20.0,
+     60.0
+    ],
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      45
+     ],
+     [
+      "hip_flex",
+      90
+     ],
+     [
+      "hip_flex",
+      105
+     ],
+     [
+      "hip_flex",
+      120
+     ],
+     [
+      "hip_flex",
+      135
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "fold": "stepped",
+    "free_rend": 1,
+    "soft": {
+     "p": 1.0,
+     "d": 0.2,
+     "mid": [
+      0.1,
+      0.025,
+      0.015,
+      0.03
+     ]
+    },
+    "solve": {
+     "step": 7.5,
+     "start": 0.0,
+     "rounds": 4,
+     "far_m": 0.015,
+     "release": 0.002,
+     "margin": 0.0005,
+     "contact": 200,
+     "volume": 1,
+     "kap_step": 0.002,
+     "kap_max": 0.015,
+     "rim_in": 0.01,
+     "vol_r": 0.06,
+     "anchor": 0.3,
+     "vol_w": 2.0,
+     "firm": 0,
+     "firm_r": 0.03,
+     "root_m": 0.03,
+     "obstacle": "posed",
+     "probe": 0.0
+    }
+   }
   },
   {
    "name": "shoulder",

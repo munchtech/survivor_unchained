@@ -36,6 +36,11 @@ Correctives (rig.json "correctives"; shapes are rest-space deltas added before s
                  phi(d) = exp(-(angle(d, k_j) / sigma)^2); w = clip(phi(d) @ M, 0, 1), M = Phi^-1 (Phi_jk =
                  phi(k_j, k_k)) times the key-to-shape table: exact at the keys (1 on its own, 0 on the others);
                  w < 1e-5 is 0 (the rest exactly unchanged).
+  "law": "arc"   the "rbf" law's direction d; keys k_0 (the rest, no shape) .. k_n along ONE swing (the hip's flexion
+                 arc, keyed every 15 deg): d's angle in the keys' plane (axis k_0 x k_n) from k_0 through the "flex"
+                 smoothstep hats over the keys' angles (exact at each key, a partition of one, held past the last:
+                 dense keys never ring as the Gaussian rbf's do: 5 keys 15 deg apart summed to 2.0 at 45 deg), times
+                 a gate on d's angle out of that plane (1 within gate_deg[0], 0 past gate_deg[1], smoothstep).
   legacy rows    ({"bone", "keys": [lo, at, hi]} or {"from", "to"}): as before (godot/art/people/rig_helpers.json).
 """
 from __future__ import annotations
@@ -331,6 +336,24 @@ def rbf_solve(K, sigma_deg):
     return np.linalg.solve(Phi, Y)
 
 
+def arc_weights(d, K, gate_deg):
+    """The "arc" law: keys K [n+1, 3] (unit, K[0] the rest direction, no shape) along one swing (their plane's axis
+    a = K[0] x K[n]); d's angle theta in that plane from K[0] (deg) through flex_weights' smoothstep hats over the
+    keys' own angles (exact at each key, a partition of one along the arc, held past the last), times a gate on d's
+    angle beta out of the plane: 1 within gate_deg[0], 0 past gate_deg[1], smoothstep between."""
+    K = np.asarray(K, float)
+    a = _n(np.cross(K[0], K[-1]))
+    e1 = _n(K[0] - (K[0] @ a) * a)
+    e2 = np.cross(a, e1)
+    th = lambda v: math.degrees(math.atan2(float(v @ e2), float(v @ e1)))
+    tk = [th(k) for k in K]
+    tk[0] = 0.0
+    w = flex_weights(th(d), tk)[1:]
+    beta = abs(math.degrees(math.asin(float(np.clip(d @ a, -1, 1)))))
+    g0, g1 = gate_deg
+    return w * (1.0 - smooth((beta - g0) / (g1 - g0)))
+
+
 def corrective_weights(poser, G, rig):
     out = {}
     for c in rig.get("correctives", []):
@@ -353,6 +376,14 @@ def corrective_weights(poser, G, rig):
                 K = np.asarray(c["keys"][s or "l"], float)
                 w = np.clip(rbf_phi(d, K, c["sigma_deg"]) @ np.asarray(c["M"][s or "l"], float), 0.0, 1.0)
                 w = np.where(w < 1e-5, 0.0, w)      # exactly 0 at the rest key (the solve leaves ~1e-7)
+                for nm, x in zip(c["shapes"], w):
+                    out[sub(nm)] = float(x)
+            elif law == "arc":
+                if sub(c["bone"]) not in poser.index:
+                    continue
+                d = direction(poser, G, sub(c["bone"]), sub(c["end"]), sub(c["frame"]))
+                w = arc_weights(d, c["keys"][s or "l"], c["gate_deg"])
+                w = np.where(w < 1e-5, 0.0, w)
                 for nm, x in zip(c["shapes"], w):
                     out[sub(nm)] = float(x)
             else:
