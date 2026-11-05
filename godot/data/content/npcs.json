@@ -279,6 +279,63 @@
       "fact": "holloway.confessed",
       "eq": true
      }
+    },
+    {
+     "text": "Eleven in. Nobody out.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 2
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Eleven in. Second night.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 3
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Eleven in. Nobody out. I've stopped writing it down.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "day": {
+         "eq": 4
+        }
+       },
+       {
+        "not": {
+         "fact": "chain.two",
+         "eq": true
+        }
+       }
+      ]
+     }
     }
    ]
   },

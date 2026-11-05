@@ -221,6 +221,9 @@ public class StoryLint
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
         "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
+        // S1, the seven chains (docs/story/PLAN.md section 5): Holloway's bed at the south gate, the night
+        // his count came right and he thought of sleeping in one (Act 2's rope reads it).
+        "holloway.bed_seen",
     ];
 
     [Fact]

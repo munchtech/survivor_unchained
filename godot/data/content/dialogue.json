@@ -22165,5 +22165,45 @@
     "speaker": "narrator"
    }
   }
+ },
+ "scene_bed": {
+  "npc": "scene_bed",
+  "entry": [
+   {
+    "node": "gate"
+   }
+  ],
+  "nodes": {
+   "gate": {
+    "id": "gate",
+    "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick, nothing to count on. He is looking down the road, the way he does.",
+    "next": "count",
+    "speaker": "narrator"
+   },
+   "count": {
+    "id": "count",
+    "text": "Eleven in. Nobody out. Third night running. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
+    "next": "cup",
+    "speaker": "holloway"
+   },
+   "cup": {
+    "id": "cup",
+    "text": "Maeca comes down the street without her crossbow, and fills his cup from her flask, and says nothing. She stands a while with a hand on his shoulder, and then she goes back up the street, and the gate stays open behind her.",
+    "effects": [
+     {
+      "set": {
+       "holloway.bed_seen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Leave them be.)",
+      "end": true
+     }
+    ],
+    "speaker": "narrator"
+   }
+  }
  }
 }

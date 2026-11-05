@@ -23,6 +23,25 @@
    "report": "Her face is going the way her voice went. The brows first. You still have the word."
   },
   {
+   "id": "ford.ditch",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "day": {
+       "gte": 3
+      }
+     },
+     {
+      "fact": "prologue.done",
+      "eq": true
+     }
+    ]
+   },
+   "effect": [],
+   "report": "Nobody stood in the ditch on the Low Ford road last night, or the night before. The Watch has stopped sending a man down to look."
+  },
+  {
    "id": "dawn.word",
    "once": true,
    "when": {
@@ -1055,6 +1074,31 @@
     }
    ],
    "report": null
+  },
+  {
+   "id": "holloway.bed",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chain.two",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "scene.dusk",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "scene.dusk": "scene_bed"
+     }
+    }
+   ]
   },
   {
    "id": "vault.watched",
