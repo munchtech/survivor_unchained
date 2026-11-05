@@ -9,8 +9,19 @@ namespace SurvivorUnchained.Play;
 /// second. A recall is found by its jump (no event carries it): printed with whether each end was on screen.</summary>
 public partial class Game
 {
-    readonly Dictionary<int, (double Seed, double X, double Z)> h6Was = new();
+    readonly Dictionary<int, (double Seed, double X, double Z, double T)> h6Was = new();
+    readonly Dictionary<string, double> h6Last = new();
+
+    /// <summary>One shot of a kind each `every` s of the fight at most (a pack feeds at every corpse).</summary>
+    bool H6Due(string kind, double every)
+    {
+        double now = Battle?.Time ?? 0;
+        if (h6Last.TryGetValue(kind, out var t) && now - t < every) return false;
+        h6Last[kind] = now;
+        return true;
+    }
     string? h6Callout;
+    int h6Recalls;
 
     string H6Tag(string what) => $"{what}_{Battle?.Time ?? 0:0}s";
 
@@ -23,7 +34,7 @@ public partial class Game
                 break;
             case Ev.ClosingWall w:
                 GD.Print($"h6 wall {(w.Up ? "up" : "down")} id {w.Id} at {Battle?.Time:0.00}");
-                if (!w.Up) Shots.Want(H6Tag("walldown"), 0.1);
+                if (!w.Up) { Shots.Want(H6Tag("walldown"), 0.1); Shots.Want(H6Tag("walldown"), 0.7); }
                 break;
             case Ev.Knockdown k:
                 GD.Print($"h6 knockdown {k.Seconds:0.00}s at {Battle?.Time:0.00}");
@@ -40,11 +51,11 @@ public partial class Game
                 && System.Linq.Enumerable.Any(Battle.Enemies.Living(), x => x.Def.Id == "boar_ironback" && System.Math.Abs(x.X - t.X) < 0.5 && System.Math.Abs(x.Z - t.Z) < 0.5):
                 foreach (var s in (double[])[t.Duration * 0.5, t.Duration * 0.9]) Shots.Want(H6Tag("ironslam"), s);
                 break;
-            case Ev.Sound snd when snd.Id == "pack.feed":
+            case Ev.Sound snd when snd.Id == "pack.feed" && H6Due("feed", 25):
                 GD.Print($"h6 feed at {Battle?.Time:0.00}");
                 foreach (var s in (double[])[0.3, 1.0, 1.8]) Shots.Want(H6Tag("feed"), s);
                 break;
-            case Ev.Bark b:
+            case Ev.Bark b when b.Text.Length > 12 && H6Due("bark", 8):
                 GD.Print($"h6 bark '{b.Text}' at {Battle?.Time:0.00}");
                 foreach (var s in (double[])[0.3, 1.2]) Shots.Want(H6Tag("bark"), s);
                 break;
@@ -56,6 +67,10 @@ public partial class Game
     {
         if (Teaching is { } c && c.Id != h6Callout) { h6Callout = c.Id; Shots.Want(H6Tag("callout_" + c.Id), 0.4); }
         else if (Teaching == null) h6Callout = null;
+        // (the director's own count says a recall happened this frame; the foe that jumped furthest is it)
+        int rc = zone is Zones.ArenaRun ar ? ar.Recalls : 0;
+        bool recalled = rc > h6Recalls;
+        h6Recalls = rc;
         var rect = camera.GetViewport().GetVisibleRect();
         bool On(double x, double z)
         {
@@ -66,14 +81,15 @@ public partial class Game
         {
             if (h6Was.TryGetValue(e.Id, out var was) && was.Seed == e.Seed)
             {
-                double dx = e.X - was.X, dz = e.Z - was.Z;
-                if (dx * dx + dz * dz > 36)
+                // (a recall jumps from 14 m+ off to 24 m off; a charge between two slow frames is no jump: 25 m/s at most)
+                double dx = e.X - was.X, dz = e.Z - was.Z, d = System.Math.Sqrt(dx * dx + dz * dz);
+                if (recalled && d > 6)
                 {
                     GD.Print($"h6 recall {e.Def.Id} #{e.Id} at {b.Time:0.00}: from ({was.X:0.0}, {was.Z:0.0}) on screen {On(was.X, was.Z)} to ({e.X:0.0}, {e.Z:0.0}) on screen {On(e.X, e.Z)}");
                     Shots.Want(H6Tag("recall"), 0.05);
                 }
             }
-            h6Was[e.Id] = (e.Seed, e.X, e.Z);
+            h6Was[e.Id] = (e.Seed, e.X, e.Z, b.Time);
         }
     }
 }

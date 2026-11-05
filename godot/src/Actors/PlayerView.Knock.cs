@@ -16,7 +16,8 @@ public partial class PlayerView
         if (!mine || dead || fallen || seconds <= 0 || !own.Has("death_back") || !own.Has("get_up_back")) return;
         // (death_back is 1.33 s, get_up_back 1.67 s; a knock is 0.9 s at most: both run fast, the fall the faster)
         double fall = Mathf.Clamp(0.55 * seconds, 0.25, 0.5), up = Mathf.Clamp(seconds - fall + 0.2, 0.35, 0.8);
-        FullHer("death_back", 1.333 / fall, false);
+        bool fell = FullHer("death_back", 1.333 / fall, false);
+        if (Shots.On("h6")) GD.Print($"h6 knock fall: {fell} {fall:0.00}s, up {up:0.00}s");
         if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
         aim = 0;
         knockUpAt = time + fall;
@@ -38,6 +39,7 @@ public partial class PlayerView
         {
             knockUpAt = -1;
             FullHer("get_up_back", knockUpSpeed, true);
+            if (Shots.On("h6")) GD.Print($"h6 knock get-up: full shot {fullClip} active {(bool)tree.Get("parameters/fullShot/active")}");
         }
         if (time >= knockEnd) knockEnd = -1;
     }
