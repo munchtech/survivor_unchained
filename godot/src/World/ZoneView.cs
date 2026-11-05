@@ -224,7 +224,7 @@ public partial class ZoneView : Node3D
         {
             Name = $"Light{i}", Position = l.At, LightColor = l.Color,
             // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
-            LightEnergy = l.Intensity / Mathf.Pi,
+            LightEnergy = l.Intensity / Mathf.Pi * shareShown,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
             // The big lights (fires, lanterns) cast shadows near the camera, at dusk and by night (Shadows).
             ShadowEnabled = false, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
@@ -294,7 +294,7 @@ public partial class ZoneView : Node3D
         if (light < 0 || light >= lights.Count) return;
         levels[light] = (level, flickerRate);
         if (color is Color c) lights[light].LightColor = c;
-        if (specs[light].Flicker <= 0 || driven.Contains(light)) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level;
+        if (specs[light].Flicker <= 0 || driven.Contains(light)) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level * shareShown;
     }
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
@@ -479,7 +479,7 @@ public partial class ZoneView : Node3D
                 specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
                 if (own.Day < 1) dayDim[li] = own.Day;
             }
-            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0);
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0) * shareShown;
             glowLight.Remove(best);
         }
         // (E9d) the wall lanterns by the doors: a flame and glass in the kit's cage, its light moved into it (ZoneView.Town)
@@ -545,7 +545,7 @@ public partial class ZoneView : Node3D
                 lights[li].OmniAttenuation = FordAtt;
                 specs[li] = specs[li] with { At = at + Vector3.Up * FordLightUp, Intensity = specs[li].Intensity * FordEnergy };
                 lights[li].Position = specs[li].At;
-                lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+                lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * shareShown;
             }
         }
     }
@@ -642,6 +642,25 @@ public partial class ZoneView : Node3D
         return best;
     }
 
+    /// <summary>(L1 B4r3) The rig's share of the zone's fire and lamp light (rigs.json "fires"; rule 3, one warm light a
+    /// scene: by day the sun, a fire or lamp a glow at 0.2). Atmosphere.Set sets it from the air's rig (1 for a rig without
+    /// one, every night rig, and under --cel off or --cel-rigs off); each zone takes it on its next frame, its steady lights
+    /// here and its flickering ones in the flicker (a lamp's flame drives from the energy set here: Flame.Drive).</summary>
+    public static float FireShare = 1;
+    float shareShown = 1;
+
+    void ShareFires()
+    {
+        shareShown = FireShare;
+        for (int i = 0; i < lights.Count && i < specs.Count; i++)
+        {
+            if (specs[i].Flicker > 0 && !driven.Contains(i)) continue;
+            float level = levels.TryGetValue(i, out var lv) ? lv.Level : 1f;
+            lights[i].LightEnergy = specs[i].Intensity / Mathf.Pi * level * (Night || !dayDim.TryGetValue(i, out var dd) ? 1 : dd) * shareShown;
+        }
+        if (bakery != null) bakery.LightEnergy = BakeryEnergy * shareShown;
+    }
+
     /// <summary>After dark or not: night-only pieces show, moths come to the
     /// lamps, chimney smoke goes dark.</summary>
     public void SetNight(bool on)
@@ -651,7 +670,7 @@ public partial class ZoneView : Node3D
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) PlumeLook(c, on);
         foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
-        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk);
+        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk) * shareShown;
         Shadows();
     }
 
@@ -814,6 +833,7 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
+        if (shareShown != FireShare) ShareFires();
         TownTick();
         if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())
         {
@@ -883,7 +903,7 @@ public partial class ZoneView : Node3D
             var (level, rate) = levels.TryGetValue(i, out var lv) ? lv : (1f, 1f);
             float ft = t * rate;
             float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
-            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
+            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level * shareShown;
             // Energy only, never position (look bible 10: the light bobbed 4 mm and the shadows swam), unless a
             // cinematic asks a burnt-down fire to sway (SetFire). --fire-trace: the fire's light per frame.
             lights[i].Position = l.At + Vector3.Down * lightDrop.GetValueOrDefault(i);

@@ -30,6 +30,8 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     static readonly string[] LookRigs = { "night", "day", "dawn", "arena" };
+    /// <summary>(B4r3) Named only, never in "all": the dawn rig an hour on (morning: LowFordMorning) and over the town (wdawn: WaystationDawn).</summary>
+    static readonly string[] MoreRigs = { "morning", "wdawn" };
     string[]? lookRigs;
     double lookBuiltAt = -1;
     int lookStep = -1;
@@ -65,7 +67,7 @@ public partial class Game
     void Lookdev(double dt)
     {
         if (Args.Get("lookdev") is not string spec || Battle is not { } b || scene == null || zone == null) return;
-        lookRigs ??= spec == "all" || spec == "1" ? LookRigs : spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(r => LookRigs.Contains(r)).ToArray();
+        lookRigs ??= spec == "all" || spec == "1" ? LookRigs : spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(r => LookRigs.Contains(r) || MoreRigs.Contains(r)).ToArray();
         // No drafts on the stage (the arena's opening Great Blessing would cover every frame).
         b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0; draftWait = 0;
         double t = Shots.Clock;
@@ -120,10 +122,11 @@ public partial class Game
         var p = rig switch
         {
             "night" => Atmospheres.LowFordNight, "day" => Atmospheres.WaystationDay, "dawn" => Atmospheres.LowFordDawn,
+            "morning" => Atmospheres.LowFordMorning, "wdawn" => Atmospheres.WaystationDawn,
             _ => zone!.AtmosphereFor(TimeOfDay.Night),
         };
         bool night = rig is "night" or "arena";
-        World.Time = rig switch { "day" => TimeOfDay.Day, "dawn" => TimeOfDay.Dawn, _ => TimeOfDay.Night };
+        World.Time = rig switch { "day" => TimeOfDay.Day, "dawn" or "morning" or "wdawn" => TimeOfDay.Dawn, _ => TimeOfDay.Night };
         air.Air(rig == "arena" ? scene!.Data.Place?.Air : null);
         air.Set(p);
         scene!.View.SetNight(night);

@@ -305,6 +305,8 @@ public partial class Atmosphere : Node3D
         // (L1 B4) Under the cel model the preset's rig lights it (godot/data/look/rigs.json); --cel off: the preset as it is.
         var orig = p;
         if (CelRigs) { RigsLoad(); p = SurvivorUnchained.Look.Rigs.Lit(p); }
+        // (L1 B4r3) the zones' fires and lamps at the rig's share (rigs.json "fires": by day a glow; ZoneView.FireShare)
+        ZoneView.FireShare = CelRigs && orig.Rig != "" && SurvivorUnchained.Look.Rigs.Current[orig.Rig] is { } fr ? (float)fr.FireShare : 1f;
         // --air-tune "fillc=#..,fill=..,hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
         // play's presets (E1) nudged, for a sweep of pictures in one build (under cel, the rig's light nudged).
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
@@ -449,12 +451,13 @@ public partial class Atmosphere : Node3D
     /// <summary>(L1 B4) The rigs light the presets: cel on (not --cel off). --cel-rigs off: cel on, the presets' own light.</summary>
     public static readonly bool CelRigs = (CelArg ?? 1f) > 0f && SurvivorUnchained.Args.Get("cel-rigs") is not ("off" or "0");
     static bool rigsLoaded;
-    /// <summary>godot/data/look/rigs.json into Rigs.Current, once.</summary>
+    /// <summary>godot/data/look/rigs.json into Rigs.Current, once. --rigs-file PATH: another rig file in its place (a sweep of
+    /// rig variants in one build; B4r3).</summary>
     public static void RigsLoad()
     {
         if (rigsLoaded) return;
         rigsLoaded = true;
-        SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString("res://data/look/rigs.json"));
+        SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString(SurvivorUnchained.Args.Get("rigs-file") ?? "res://data/look/rigs.json"));
     }
     /// <summary>(L1 B4) A camera rig in force (the close-up, the Look: GameCloseUp, GameFront): its fill and rim over the
     /// air's while it is, and the canopy's dapple held off (its key is the lens's, not the moon's). Null: the air's.</summary>

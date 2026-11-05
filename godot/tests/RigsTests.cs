@@ -102,4 +102,18 @@ public class RigsTests
         Assert.True(r > 0 && u > 0 && b > 0);
         Assert.Equal(1, r * r + u * u + b * b, 9);
     }
+
+    /// <summary>(B4r3) By day and at dawn the zones' fires and lamps take the rig's share (rule 3); the night rigs keep
+    /// theirs whole; the Look by day has a fill of its own; every grade a rig names exists.</summary>
+    [Fact]
+    public void FiresShareByDayAndDawnOnly()
+    {
+        var s = Real();
+        Assert.Equal(0.2, s["day_town"]!.FireShare, 6);
+        Assert.Equal(0.2, s["day_wild"]!.FireShare, 6);
+        Assert.Equal(0.5, s["dawn_waystation"]!.FireShare, 6);
+        foreach (var id in new[] { "night_play", "night_town", "night_wild", "arena_night" }) Assert.Equal(1, s[id]!.FireShare, 6);
+        Assert.NotNull(s["look_day"]!.Fill.Color);
+        foreach (var r in s.Rigs.Values) if (r.Grade is string g) Assert.NotNull(SurvivorUnchained.World.Atmospheres.GradeNamed(g));
+    }
 }

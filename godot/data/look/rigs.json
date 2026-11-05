@@ -63,15 +63,16 @@
       "exposure": 1.0
     },
     "dawn": {
-      "from": "LB_light DAWN: a low warm sun (pale gold toward peach, rule 3) from the Low Ford's east, long shadows, the shade lilac (rule 2); the dawn's frost and thaw stay the preset's air. Start: LowFordDawn (G1 r2-r3).",
-      "key": { "az": -60, "el": 18, "color": "#ffd6b0", "intensity": 10.0, "shadow": 0.95 },
-      "fill": { "color": "#8a6ad0", "strength": 0.1, "sky": "#7b91c0", "ground": "#2c3446", "hemi": 1.08, "env": 0.7 },
+      "from": "LB_light DAWN: a low warm sun (pale gold toward peach, rule 3) from the Low Ford's east, long shadows, the shade lilac (rule 2); the dawn's frost and thaw stay the preset's air. Start: LowFordDawn (G1 r2-r3). B4r3, from LB_light DAWN (measured: Lp50 0.44, key 1.76, shC 0.046, shH 333, midC 0.079, warm 55%, cold 5%): the key 10 to 14, the fill bluer-lilac and up (#8a6ad0 0.10 to #9a64d2 0.18: shC 0.034 to 0.042, the lilac shade held at h 335), the grade's contrast 1.14 to 1.4 (rig_dawn: key 1.55 to 1.6; the panel's sunrise sky, out of the play camera's view, holds the rest), fires 0.5 (rule 3: the low sun is the warm light; the stage's camp fire at night strength took warm to 76% of chroma, the panel's 55).",
+      "key": { "az": -60, "el": 18, "color": "#ffd6b0", "intensity": 14.0, "shadow": 0.95 },
+      "fill": { "color": "#9a64d2", "strength": 0.18, "sky": "#7b91c0", "ground": "#2c3446", "hemi": 1.08, "env": 0.7 },
       "rim": { "color": "#ffd8b0", "strength": 0.3, "width": 0.25 },
       "ink": [0.7, 0.55, 0.7],
       "hardness": 0.85,
-      "grade": "play_dawn",
+      "grade": "rig_dawn",
       "exposure": 1.25,
       "ember": 0.5,
+      "fires": 0.5,
       "dapple": { "cover": 0 }
     },
     "dawn_morning": {
@@ -104,8 +105,9 @@
     },
     "look_day": {
       "base": "look",
-      "from": "rule 11 at the Look by day (--look-time day): the close-up's day key (#f3d9a0, 35, 40) and the day rig's violet-blue fill.",
-      "key": { "color": "#f3d9a0" }
+      "from": "rule 11 at the Look by day (--look-time day) and MB1 (the face board, the Look camera's law): the close-up's day key (#f3d9a0, 35, 40) and a fill of its own, so her skin's shade band reads MB1's mauve (h about 325). B4r3: the day rig's fill (#6a5ce0, h 283, at 0.12) left her shade h 275 here (the close view h 322): the Look's day is the open-sky Day (the Verge's air, not the town's) and its camp fire is culled off her at the portrait (GameFront: the stand-in fades to 0), so no warm source reaches her shade and the sky's cold light is most of it (her shade L 0.46 to the lit 0.71); by toggles the grade (waystation_day), the sky share (hemi 0.7, env 0.55, ground #605245) and the sky reflections each moved that hue under 1 degree; only the fill's own hue moves it. A magenta-mauve fill (#c848b8, h 333) at 0.08, and the key at 1.15 so the band holds 0.25 L over the cold sky light: shade h 315, C 0.034, dL 0.262 (at 0.12-0.18 the fill reached the hue but lifted the shade to dL 0.20-0.23).",
+      "key": { "color": "#f3d9a0", "intensity": 1.15 },
+      "fill": { "color": "#c848b8", "strength": 0.08 }
     }
   },
   "crowns": {

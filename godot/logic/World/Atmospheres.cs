@@ -313,6 +313,10 @@ public static class Atmospheres
         // (B4r2: the night rig's grade, the Low Ford's with the Moon step's chroma up so what the moon lights reads moon-blue,
         // rule 1's cold 60%+ of the chroma; the lookdev stage's play night cold 28% to 49% at 0.45 with the rig's key)
         "rig_night" => LowFordNight.Grade with { MoonSat = 0.45 },
+        // (B4r3: the dawn rig's grade, the Low Ford's dawn with its contrast 1.14 to 1.4, from LB_light's DAWN panel (key 1.76 on
+        // the panel; the stage's play dawn 1.50 to 1.6 with the rig's key; the panel's top sky, which the play camera never sees,
+        // holds the rest))
+        "rig_dawn" => PlayDawnGrade with { Contrast = 1.4 },
         _ => null,
     };
 
