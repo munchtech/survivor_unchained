@@ -385,3 +385,11 @@ cel_canopy={
 "type": "sampler2D",
 "value": "res://art/fx/flare/flare_noise.png"
 }
+cel_ember={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_give={
+"type": "vec4",
+"value": Vector4(0, 0, 0.25, 0.6)
+}

@@ -504,6 +504,9 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_rim", rim);
         RenderingServer.GlobalShaderParameterSet("cel_tune", new Vector4(CelTune[0], CelTune[1], CelTune[2], CelTune[3]));
         RenderingServer.GlobalShaderParameterSet("cel_dbg", CelDbg);
+        // (L1 W2) how the moon gives way to her light (the rig's ember_give; her light's point and reach are PlayerView's); not under a camera rig: at the close view by night her lamp is off her, so the moon is her light (r1: night close Lp95 0.49 to 0.34 with it)
+        var give = CelRigs && cam == null && p.EmberGive is [var gk, var gs, var g0, var g1] ? new Vector4((float)gk, (float)gs, (float)g0, (float)g1) : Vector4.Zero;
+        RenderingServer.GlobalShaderParameterSet("cel_give", give);
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */
@@ -619,6 +622,13 @@ public partial class Atmosphere : Node3D
         float toe = SurvivorUnchained.Args.Has("grade-toe") ? SurvivorUnchained.Args.Num("grade-toe", 1f) : (float)g.Toe;
         var paint = new Paint(g, Try);
         float tint = (float)g.TintStrength, sat = (float)g.Saturation, vibr = (float)g.Vibrance, con = (float)g.Contrast;
+        // (L1 W2: the tone curve on Oklab L, tabled once per grade)
+        float[]? tone = null;
+        if (g.Curve is { Length: >= 4 } gc)
+        {
+            tone = new float[257];
+            for (int i = 0; i <= 256; i++) tone[i] = (float)SurvivorUnchained.World.Atmospheres.ToneCurve(gc, i / 256.0);
+        }
         // (The table is worked out on the worker threads, a blue slice each, into bytes, then made one image per slice:
         // 32^3 Image.SetPixel calls and the sums on the main thread held a frame ~100 ms when a cinematic's
         // atmosphere moved the grade (C04 A at 9 s). Each byte is what SetPixel wrote for RGB8: the channel times 255, clamped, truncated.)
@@ -664,6 +674,8 @@ public partial class Atmosphere : Node3D
                     if (skinGuard > 0) outLin = SkinGuard(outLin, skinGuard);
                     if (shadeHue > 0) outLin = ShadeHue(outLin, shadeHue);
                     if (skinCool > 0) outLin = SkinCool(c, outLin, skinCool);
+                    if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
+                    if (tone != null) outLin = Tone(outLin, tone);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
@@ -839,6 +851,47 @@ public partial class Atmosphere : Node3D
     }
 
     /// <summary>GradeSettings.Moon: the moon's (or the dawn shade's) cool colour over what is weakly coloured.</summary>
+    /// <summary>(L1 W2, bible rules 1, 3, 4) The warm-source term: what a warm light lit (input hue WarmHue +-WarmWidth, its
+    /// chroma over 0.10-0.18 of its L, not black) keeps WarmKeep of the chroma (as a share of its L) and the hue the renderer
+    /// gave it, at the lightness the grade gave it: her pool, a lamp's and a fire's keep the light's own color past the
+    /// grade's mute, moon step and vibrance clamp. The surfaces' dull colors are not touched (no vibrance raise).</summary>
+    static Vector3 WarmSource(Vector3 inLin, Vector3 outLin, GradeSettings g)
+    {
+        var i = Oklab(inLin);
+        float dh = Mathf.Abs(Mathf.PosMod(i.Z - (float)g.WarmHue + 180f, 360f) - 180f), wid = (float)g.WarmWidth;
+        float w = (float)g.WarmKeep * (1 - Smooth(wid * 0.6f, wid, dh)) * Smooth(0.10f, 0.18f, i.Y / Mathf.Max(i.X, 1e-4f)) * Smooth(0.04f, 0.12f, i.X);
+        if (w <= 0) return outLin;
+        var o = Oklab(outLin);
+        float ct = i.Y * o.X / Mathf.Max(i.X, 1e-4f), c1 = Mathf.Lerp(o.Y, Mathf.Max(o.Y, ct), w);
+        float dz = Mathf.PosMod(i.Z - o.Z + 180f, 360f) - 180f, h = Mathf.DegToRad(o.Z + dz * w);
+        return InGamut(o.X, c1 * Mathf.Cos(h), c1 * Mathf.Sin(h));
+    }
+
+    /// <summary>(L1 W2) The tone curve on Oklab L (GradeSettings.Curve, tabled): a darkened pixel keeps its chroma's share of
+    /// its L, a lightened one its chroma.</summary>
+    static Vector3 Tone(Vector3 outLin, float[] tone)
+    {
+        var o = Oklab(outLin);
+        float x = Mathf.Clamp(o.X, 0, 1) * 256; int k = Mathf.Min((int)x, 255);
+        float l1 = Mathf.Lerp(tone[k], tone[k + 1], x - k);
+        float c1 = l1 < o.X ? o.Y * l1 / Mathf.Max(o.X, 1e-4f) : o.Y, h = Mathf.DegToRad(o.Z);
+        return InGamut(l1, c1 * Mathf.Cos(h), c1 * Mathf.Sin(h));
+    }
+
+    /// <summary>Oklab (L, a, b) to linear rgb, its chroma taken in (hue and L kept) until it is inside the gamut.</summary>
+    static Vector3 InGamut(float L, float a, float b)
+    {
+        static bool In(Vector3 v) => v.X >= -1e-5f && v.Y >= -1e-5f && v.Z >= -1e-5f && v.X <= 1 + 1e-5f && v.Y <= 1 + 1e-5f && v.Z <= 1 + 1e-5f;
+        var rgb = FromOklab(L, a, b);
+        if (!In(rgb))
+        {
+            float lo = 0, hi = 1;
+            for (int n = 0; n < 12; n++) { float mid = (lo + hi) * 0.5f; if (In(FromOklab(L, a * mid, b * mid))) lo = mid; else hi = mid; }
+            rgb = FromOklab(L, a * lo, b * lo);
+        }
+        return rgb.Clamp(Vector3.Zero, Vector3.One);
+    }
+
     static Vector3 Moonlight(Vector3 inLin, Vector3 outLin, GradeSettings g)
     {
         var i = Oklab(inLin); var o = Oklab(outLin);

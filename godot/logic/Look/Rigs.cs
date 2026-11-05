@@ -24,10 +24,13 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 
 /// <summary>One rig (godot/data/look/rigs.json): what it is FROM, its key, fill, rim, the ink rig color (B5's, linear rgb),
 /// shadow hardness (cel_rig.x), the grade (a named GradeSettings, Atmospheres.GradeNamed), the exposure and her ember's
-/// strength (and, L1 C2, its reach and color: ember_reach, ember_color; absent: the preset's), and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).</summary>
+/// strength (and, L1 C2, its reach and color: ember_reach, ember_color; absent: the preset's), and the canopy's dapple. Camera: the key is camera-relative (the close-up and the Look).
+/// (L1 W2) grade_curve: the grade's tone curve on Oklab L ([in, out] pairs; GradeSettings.Curve); warm_keep: the grade's
+/// warm-source term (GradeSettings.WarmKeep); ember_give: how the moon gives way to her light in its reach
+/// ([key, sky, fade start, gone] as shares; AtmospherePreset.EmberGive).</summary>
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
-    double? EmberReach = null, string? EmberColor = null)
+    double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null)
 {
     /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
     /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
@@ -77,6 +80,18 @@ public sealed class RigSet
         ? v.ValueKind == JsonValueKind.String ? v.GetString() : v.ValueKind == JsonValueKind.Null ? null : throw new FormatException($"rigs.json: {k} is not a string")
         : b;
     static JsonElement O(JsonElement e, string k) => e.TryGetProperty(k, out var v) ? v : default;
+    // (a list of numbers, or of [x, y] pairs flattened; null: none; absent: the base's)
+    static double[]? A(JsonElement e, string k, double[]? b)
+    {
+        if (!e.TryGetProperty(k, out var v)) return b;
+        if (v.ValueKind == JsonValueKind.Null) return null;
+        if (v.ValueKind != JsonValueKind.Array) throw new FormatException($"rigs.json: {k} is not a list");
+        var r = new List<double>();
+        foreach (var x in v.EnumerateArray())
+            if (x.ValueKind == JsonValueKind.Array) foreach (var y in x.EnumerateArray()) r.Add(y.GetDouble());
+            else r.Add(x.GetDouble());
+        return r.ToArray();
+    }
 
     static LightRig Read(string id, JsonElement e, LightRig? b)
     {
@@ -96,7 +111,8 @@ public sealed class RigSet
             new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
             new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)),
-            D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor));
+            D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor),
+            A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive));
     }
 }
 
@@ -124,7 +140,8 @@ public static class Rigs
             HemiSky = f.Sky ?? p.HemiSky, HemiGround = f.Ground ?? p.HemiGround, HemiIntensity = f.Hemi ?? p.HemiIntensity, EnvIntensity = f.Env ?? p.EnvIntensity,
             CelRimColor = m.Color ?? p.CelRimColor, CelRim = m.Strength ?? p.CelRim, CelRimWidth = m.Width ?? p.CelRimWidth,
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
-            Grade = r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade,
+            Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
+            EmberGive = r.EmberGive ?? p.EmberGive,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
             DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.Dapple.Strength ?? p.DappleStrength,
@@ -133,6 +150,9 @@ public static class Rigs
         };
     }
 
+    /// <summary>(L1 W2) The rig's grade with its tone curve and warm-source term over it (absent: the grade's own).</summary>
+    static GradeSettings Graded(GradeSettings g, LightRig r) =>
+        r.Curve == null && r.WarmKeep == null ? g : g with { Curve = r.Curve ?? g.Curve, WarmKeep = r.WarmKeep ?? g.WarmKeep };
     /// <summary>A camera rig's key direction in the camera's frame: (right, up, back) of the unit vector toward the light,
     /// for az degrees round from the lens toward its right and el up (GameLookdev's --lookdev-key convention).</summary>
     public static (double Right, double Up, double Back) CameraKey(double az, double el)

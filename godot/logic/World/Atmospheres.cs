@@ -281,10 +281,13 @@ public static class Atmospheres
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
             PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
             PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
+            Curve = CurveMix(a.Grade.Curve, b.Grade.Curve, t), WarmKeep = Lerp(a.Grade.WarmKeep, b.Grade.WarmKeep, t),
+            WarmHue = Lerp(a.Grade.WarmHue, b.Grade.WarmHue, t), WarmWidth = Lerp(a.Grade.WarmWidth, b.Grade.WarmWidth, t),
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             EmberColor = a.EmberColor != "" && b.EmberColor != "" ? Mix(a.EmberColor, b.EmberColor, t) : t < 0.5 ? a.EmberColor : b.EmberColor, EmberReach = Lerp(a.EmberReach, b.EmberReach, t),
+            EmberGive = a.EmberGive is { Length: 4 } ga && b.EmberGive is { Length: 4 } gb ? Lerp3x(ga, gb, t) : t < 0.5 ? a.EmberGive : b.EmberGive,
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), CrowdFill = Lerp(a.CrowdFill, b.CrowdFill, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
@@ -303,6 +306,41 @@ public static class Atmospheres
 
     /// <summary>(L1 B4) A preset as the cel model lights it, marked lit even when it names no rig (a blend's twin).</summary>
     public static AtmospherePreset LitAsIs(AtmospherePreset p) => Rigs.Lit(p) is { IsLit: true } l ? l : p with { IsLit = true, Source = p, CelTwin = null };
+
+    /// <summary>(L1 W2) Two tone curves blended: each sampled at 17 points of L and the outputs lerped (none: the identity).</summary>
+    public static double[]? CurveMix(double[]? a, double[]? b, double t)
+    {
+        if (a == null && b == null) return null;
+        if (t <= 0) return a; if (t >= 1) return b;
+        var r = new double[34];
+        for (int i = 0; i <= 16; i++) { double x = i / 16.0; r[2 * i] = x; r[2 * i + 1] = Lerp(ToneCurve(a, x), ToneCurve(b, x), t); }
+        return r;
+    }
+    static double[] Lerp3x(double[] a, double[] b, double t) { var r = new double[a.Length]; for (int i = 0; i < a.Length; i++) r[i] = Lerp(a[i], b[i], t); return r; }
+
+    /// <summary>(L1 W2) A tone curve at x: the monotone cubic (Fritsch-Carlson) through its (in, out) pairs; null or empty, x.
+    /// Outside the first and last points, the line from (0, 0) or to (1, 1).</summary>
+    public static double ToneCurve(double[]? c, double x)
+    {
+        if (c == null || c.Length < 4) return x;
+        int n = c.Length / 2;
+        double X(int i) => c[2 * i]; double Y(int i) => c[2 * i + 1];
+        if (x <= X(0)) return X(0) > 0 ? Y(0) * x / X(0) : Y(0);
+        if (x >= X(n - 1)) return X(n - 1) < 1 ? Y(n - 1) + (1 - Y(n - 1)) * (x - X(n - 1)) / (1 - X(n - 1)) : Y(n - 1);
+        var d = new double[n - 1]; var m = new double[n];
+        for (int i = 0; i < n - 1; i++) d[i] = (Y(i + 1) - Y(i)) / Math.Max(X(i + 1) - X(i), 1e-9);
+        m[0] = d[0]; m[n - 1] = d[n - 2];
+        for (int i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+        for (int i = 0; i < n - 1; i++)
+        {
+            if (d[i] == 0) { m[i] = m[i + 1] = 0; continue; }
+            double al = m[i] / d[i], be = m[i + 1] / d[i], s = al * al + be * be;
+            if (s > 9) { double k = 3 / Math.Sqrt(s); m[i] = k * al * d[i]; m[i + 1] = k * be * d[i]; }
+        }
+        int j = 0; while (j < n - 2 && x > X(j + 1)) j++;
+        double h = X(j + 1) - X(j), u = (x - X(j)) / h, u2 = u * u, u3 = u2 * u;
+        return (2 * u3 - 3 * u2 + 1) * Y(j) + (u3 - 2 * u2 + u) * h * m[j] + (-2 * u3 + 3 * u2) * Y(j + 1) + (u3 - u2) * h * m[j + 1];
+    }
 
     /// <summary>(L1 B4) The grades a rig names (rigs.json "grade"): the presets' own, by name.</summary>
     /// <summary>(L1 C2) "name@K": the named grade with its contrast times K (a rig's own contrast, as data).</summary>

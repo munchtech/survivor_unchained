@@ -59,6 +59,8 @@ public static class CelLib
         yield return ("cel_ink", e.Ink);
         yield return ("cel_rim_k", e.RimK);
         if (c.Edge is { } ed) yield return ("cel_edge", new Vector2(ed[0], ed[1]));
+        var al = c.AlbUniform;
+        yield return ("cel_alb", new Vector4(al[0], al[1], al[2], al[3]));
     }
 
     static readonly Dictionary<ulong, bool> celShaders = new();

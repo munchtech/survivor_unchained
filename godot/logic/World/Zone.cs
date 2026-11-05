@@ -111,6 +111,17 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public double PaintShadowSkin { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
+    /// <summary>(L1 W2) The tone curve on Oklab L, last in the grade: (in, out) pairs from 0 to 1, flattened, through which a
+    /// monotone cubic runs (null: none). Lightness only: a darkened pixel keeps its chroma's share of its L (C x L'/L), a
+    /// lightened one its chroma, so the curve's contrast never raises the surfaces' chroma (the per-channel Contrast did:
+    /// by day x1.6 took midC 0.065 to 0.090). From a rig's "grade_curve".</summary>
+    public double[]? Curve { get; init; }
+    /// <summary>(L1 W2) The warm-source term (0: none): what a warm light lit (Oklab hue WarmHue +-WarmWidth, chroma over
+    /// 0.10-0.18 of its L: her ember's pool, a lamp's, a fire's) keeps WarmKeep of the chroma and hue the renderer gave it,
+    /// past the grade's mute, moon step and vibrance; the light's own color, not a vibrance raise on the surfaces.</summary>
+    public double WarmKeep { get; init; }
+    public double WarmHue { get; init; } = 58;
+    public double WarmWidth { get; init; } = 32;
 }
 
 public sealed record AtmospherePreset(
@@ -130,6 +141,10 @@ public sealed record AtmospherePreset(
     /// its base (1: as built). The arena's night: a paler gold, so her pool lights the brown litter amber, not rust.</summary>
     public string EmberColor { get; init; } = "";
     public double EmberReach { get; init; } = 1;
+    /// <summary>(L1 W2) How the moon gives way to her light within its reach under the cel model (cel.gdshaderinc cel_give): the
+    /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and the share of her
+    /// light's reach where the giving starts to fade and where it is gone. Null: none (the rig's rigs.json "ember_give").</summary>
+    public double[]? EmberGive { get; init; }
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }
     /// <summary>Her lamp and the sky's fill on the crowd in its own paint (vat.gdshaderinc crowd_ember/crowd_fill; 0: none, by day

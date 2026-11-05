@@ -102,6 +102,9 @@ uniform vec4 cel_spec = CEL_SPEC;
 uniform float cel_nmap : hint_range(0.0, 1.0) = CEL_NMAP;
 uniform int cel_ink : hint_range(0, 3) = CEL_INK;
 uniform float cel_rim_k : hint_range(0.0, 1.0) = 1.0;   // (the stepped rim's share: 0 none, card normals; L1 B1c)
+// (L1 W2, B2) the class's albedo control (materials.json "albedo"; never a repaint): x a target Oklab L and y how far the
+// albedo's L is pulled to it (0 none), z a cap on its L, w its chroma's scale. (0, 0, 1, 1): the albedo as painted.
+uniform vec4 cel_alb = vec4(0.0, 0.0, 1.0, 1.0);
 group_uniforms;
 
 global uniform float cel_on;
@@ -119,14 +122,45 @@ global uniform vec4 cel_dapple;
 global uniform vec4 cel_canopy_r;
 global uniform sampler2D cel_cookie : filter_linear_mipmap, repeat_enable;
 global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
+// (L1 W2) Her light over the moon (bible rules 1, 3, 4: her pool is the night's warm lit mass, so within its reach the moon
+// gives way to it): cel_ember xyz her light's world point, w its reach (m, the omni's range; 0: none); cel_give x how much of
+// the moon's key, its fill and its rim give way at the pool's heart, y how much of the sky's light (the ambient, through AO),
+// z and w the share of the reach where the giving starts to fade and where it is gone (smooth between). Set by the rig
+// (rigs.json "ember_give"; Atmosphere.SetCel) and her light (PlayerView, each frame). A shader may define CEL_NO_GIVE.
+global uniform vec4 cel_ember;
+global uniform vec4 cel_give;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
 // of its own, because a shader at Godot's 32 varyings (KitLook's roofs) would fail to compile on one more.
+// (L1 W2: and the moon's share after her light, cel_gv(): length = 1.01 + 0.98 dapple + 2 round(1000 share); fragment() to
+// light() is not interpolated, so the packing is exact to about 1e-4)
 varying vec3 cel_gn;
 varying vec4 cel_mat;
 #ifdef CEL_CLEARCOAT
 varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
+#endif
+
+// (L1 W2) The class's albedo control on a linear albedo (cel_alb), in Oklab; at cel_on 0 the albedo as it is.
+vec3 cel_alb_apply(vec3 c_c) {
+	if (cel_on <= 0.0 || (cel_alb.y <= 0.0 && cel_alb.z >= 1.0 && cel_alb.w == 1.0)) return c_c;
+	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
+		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
+	vec3 c_o = mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662),
+		vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
+	float c_l = min(mix(c_o.x, cel_alb.x, cel_alb.y), cel_alb.z);
+	vec2 c_ab = c_o.yz * cel_alb.w;
+	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
+		* vec3(c_l, c_ab);
+	c_m = c_m * c_m * c_m;
+	vec3 c_r = mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147),
+		vec3(0.2309699292, -0.3413193965, 1.7076147010)) * c_m;
+	return mix(c_c, clamp(c_r, vec3(0.0), vec3(1.0)), cel_on);
+}
+#ifdef CEL_OWN_ALB
+#define CEL_FRAG_ALB
+#else
+#define CEL_FRAG_ALB ALBEDO = cel_alb_apply(ALBEDO)
 #endif
 
 float cel_tag(float c_r, int c_ink) {
@@ -159,14 +193,29 @@ float cel_dapple_at(vec3 c_wp) {
 	float c_w = fwidth(c_f) * 0.5 + 0.01;
 	return mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
 }
-#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * (1.0 + cel_dapple_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz)); CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+// (L1 W2) The moon's share at a world point under her light: 1 out of its reach, 1 - cel_give.x (key) or .y (sky) at its heart.
+float cel_give_at(vec3 c_wp, float c_k) {
+#ifdef CEL_NO_GIVE
+	return 1.0;
+#else
+	if (cel_ember.w <= 0.0 || c_k <= 0.0) return 1.0;
+	float c_d = length(c_wp - cel_ember.xyz) / cel_ember.w;
+	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
+#endif
+}
+float cel_pack(vec3 c_wp) { return 1.01 + 0.98 * cel_dapple_at(c_wp) + 2.0 * round(1000.0 * cel_give_at(c_wp, cel_give.x)); }
+#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * cel_pack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); AO *= cel_give_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_give.y); CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
 
 // The band's normal: the geometric one with cel_nmap of the normal map's detail.
 vec3 cel_nb(vec3 c_n) { return normalize(mix(normalize(cel_gn), c_n, cel_nmap)); }
-float cel_dap() { return clamp(length(cel_gn) - 1.0, 0.0, 1.0); }
+float cel_gq() { return floor((length(cel_gn) - 1.0) * 0.5); }
+// (the canopy's dapple times the moon's share after her light: the key's light here)
+float cel_dap() { float c_q = cel_gq(); return clamp((length(cel_gn) - 1.01 - 2.0 * c_q) / 0.98, 0.0, 1.0) * (c_q * 0.001); }
+// (the moon's share after her light alone: the key's fill)
+float cel_gv() { return clamp(cel_gq() * 0.001, 0.0, 1.0); }
 // The key's cast shadow hardened (directional lights); omni and spot as they are.
 // (L1 B4: and the canopy's dapple, cel_dap, on the directional key)
 float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap() : c_att; }
@@ -203,7 +252,7 @@ vec3 cel_level_soft(float c_t) {
 }
 // The key's fill where its light doesn't reach (lit_sh: the lit band times the shadow), as DIFFUSE_LIGHT.
 vec3 cel_fill_add(vec3 c_lc, float c_lit_sh, bool c_dir) {
-	return c_dir ? cel_fill * (cel_lum(c_lc) * cel_rig.y * (1.0 - c_lit_sh) / PI) : vec3(0.0);
+	return c_dir ? cel_fill * (cel_lum(c_lc) * cel_rig.y * cel_gv() * (1.0 - c_lit_sh) / PI) : vec3(0.0);
 }
 // The highlight: a disc of cel_spec.x degrees round N.H, in the light's color, as SPECULAR_LIGHT.
 // (cel_spec_disc: the same disc by its own cel_spec-style numbers, in the color given (before a metal's tint): a second

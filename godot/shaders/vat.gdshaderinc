@@ -8,6 +8,8 @@
 // (L1 B2: the crowd fur class's own rim, godot/data/look/materials.json "edge": x its width in 1 - n.v, y its step;
 // LOOK_BIBLE rule 7: one preset for every pack. Its color and strength are the rigs': crowd_rim, crowd_lamp2.w.)
 #define CEL_CROWD_EDGE vec2(0.25, 0.04)
+// (L1 W2: the class's albedo control goes on the crowd's paint below, so its own night light (the emission) takes it too)
+#define CEL_OWN_ALB
 #include "res://shaders/cel.gdshaderinc"
 uniform vec2 cel_edge = CEL_CROWD_EDGE;
 // (H7: a marked foe's rim takes the Flare's school hue while the marks are up: FlareFx.Family; a 0 none)
@@ -234,6 +236,9 @@ void fragment() {
 		vec3 cn_dirt = crowd_fill.rgb / max(dot(crowd_fill.rgb, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
 		c = mix(c, cn_dirt * cn_t, CROWD_DUST * clamp(1.0 - cn_l / max(cn_t, 1e-4), 0.0, 1.0));
 	}
+	// (L1 W2, B2: the crowd fur class's albedo control, materials.json "albedo", after the night lift and before the copy's own
+	// tint, so the dead's darkening and the mud still read; LOOK_BIBLE rule 7: mid-dark bodies, never pale silver)
+	c = cel_alb_apply(c);
 	c *= abs(COLOR.rgb);
 	if (COLOR.r < 0.0) {
 		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);

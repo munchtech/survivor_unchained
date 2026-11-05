@@ -1137,6 +1137,10 @@ public partial class PlayerView : Node3D
             RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
+            // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;
+            // the rig's ember_give says how much): none while her lamp is out or hidden.
+            var lp = Light.GlobalPosition;
+            RenderingServer.GlobalShaderParameterSet("cel_ember", new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
         }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);

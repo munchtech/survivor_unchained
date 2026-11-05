@@ -11,8 +11,14 @@ namespace SurvivorUnchained.Look;
 public sealed record CelPreset(float[] Band, float[] Mid, float Form, float[] Spec, float Nmap, int Ink, float RimK);
 
 /// <summary>One cel class of data/look/materials.json. Mid = paint.albedo.mid ("#rrggbb", the board's light divided out:
-/// what a surface's albedo is), LitMid = paint.lit.mid (as painted on the board, lit); either null if not measured.</summary>
-public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid, string? LitMid = null);
+/// what a surface's albedo is), LitMid = paint.lit.mid (as painted on the board, lit); either null if not measured.
+/// (L1 W2) Alb: the class's albedo control (materials.json "albedo_ctl": target, pull, cap, chroma; cel.gdshaderinc cel_alb):
+/// the albedo's Oklab L pulled toward target by pull, capped at cap, its chroma scaled by chroma; null: as painted.</summary>
+public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid, string? LitMid = null, float[]? Alb = null)
+{
+    /// <summary>cel_alb's four numbers (as painted: 0, 0, 1, 1).</summary>
+    public float[] AlbUniform => Alb ?? [0f, 0f, 1f, 1f];
+}
 
 /// <summary>One assign rule: every given pattern must match.</summary>
 public sealed record AssignRule(string Class, Regex? Shader, Regex? Material, Regex? Path);
@@ -50,8 +56,15 @@ public sealed class MaterialLibrary
                 float[]? edge = c.TryGetProperty("edge", out var ed) ? Floats(ed, -1, p.Name + ".edge") : null;
                 string? MidOf(string key) => c.TryGetProperty("paint", out var paint) && paint.TryGetProperty(key, out var ms)
                     && ms.TryGetProperty("mid", out var mv) && mv.ValueKind == JsonValueKind.String ? mv.GetString() : null;
+                float[]? alb = null;
+                if (c.TryGetProperty("albedo_ctl", out var ac))
+                {
+                    float G(string k, float d) => ac.TryGetProperty(k, out var v) ? v.GetSingle() : d;
+                    alb = [G("target", 0f), G("pull", 0f), G("cap", 1f), G("chroma", 1f)];
+                    if (alb[1] < 0 || alb[1] > 1 || alb[2] <= 0 || alb[3] < 0) throw new FormatException($"{p.Name}.albedo_ctl: pull 0..1, cap over 0, chroma 0+");
+                }
                 classes[p.Name] = new LookClass(p.Name, c.TryGetProperty("from", out var f) ? f.GetString() ?? "" : "", preset, sheen, edge,
-                    MidOf("albedo"), MidOf("lit"));
+                    MidOf("albedo"), MidOf("lit"), alb);
             }
             var shaders = new Dictionary<string, string>();
             foreach (var p in root.GetProperty("shaders").EnumerateObject()) shaders[p.Name] = p.Value.GetString() ?? "";
