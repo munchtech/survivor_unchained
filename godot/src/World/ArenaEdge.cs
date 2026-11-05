@@ -524,8 +524,10 @@ public static class ArenaEdge
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         // The Dig's slurry in it (shaders/slurry_stream.gdshader).
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slurry_stream.gdshader") };
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>(Water.CelOn ? Water.CelPath : "res://shaders/slurry_stream.gdshader") };
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        // (L1 W2 C5) under cel: water as bands of the sky, the slurry as long soft strokes (water_cel mode 1)
+        if (Water.CelOn) Water.Cel(mat, 1);
         return new MeshInstance3D { Name = "Stream", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
     }
 }

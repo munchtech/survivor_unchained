@@ -26,11 +26,19 @@ public sealed record FxSchool(string Name, string From, IReadOnlyList<FxBand> Ba
     public FxBand Mid => Bands.Count == 3 ? Bands[1] : Bands[^1];
 }
 
+/// <summary>(L1 W2 C5) The camp fire's stepped flame (bible rule 13; MB5 CAMPFIRE): its school, and how the flame kit's
+/// simulated heat (0..1, flame_mv's atlas) becomes the language's heat: Cut the sim heat where the body starts, Lod the
+/// mip the shape is read at (a coarser one: big graphic tongues, not the sim's wisps), Glow the sim heat below the cut the
+/// soft glow reaches over; Sparks painted sparks rising off it (count per card), SparkLength their length (of the card's height).</summary>
+public sealed record FxFlame(string From, string School, float Cut, float Lod, float Glow, int Sparks, float SparkLength);
+
 /// <summary>data/look/fx_language.json as plain data; no Godot types.</summary>
 public sealed class FxLanguage
 {
     public IReadOnlyDictionary<string, FxSchool> Schools { get; private init; } = new Dictionary<string, FxSchool>();
     public FxSchool? this[string school] => Schools.TryGetValue(school.ToLowerInvariant(), out var s) ? s : null;
+    /// <summary>The camp fire's stepped flame ("campfire"), or none.</summary>
+    public FxFlame? Campfire { get; private init; }
 
     public static FxLanguage Parse(string json)
     {
@@ -54,7 +62,16 @@ public sealed class FxLanguage
                     new FxGlow(Hex(g, p.Name), g.GetProperty("width").GetSingle(), g.GetProperty("reach").GetSingle(), g.GetProperty("head").GetSingle(), g.GetProperty("tail").GetSingle()),
                     new FxSparks(Hex(sp, p.Name), sp.GetProperty("count").GetInt32(), sp.GetProperty("length").GetSingle(), sp.GetProperty("aspect").GetSingle()));
             }
-            return new FxLanguage { Schools = schools };
+            FxFlame? camp = null;
+            if (doc.RootElement.TryGetProperty("campfire", out var c))
+            {
+                camp = new FxFlame(c.GetProperty("from").GetString() ?? "", c.GetProperty("school").GetString() ?? "fire",
+                    c.GetProperty("cut").GetSingle(), c.GetProperty("lod").GetSingle(), c.GetProperty("glow").GetSingle(),
+                    c.GetProperty("sparks").GetInt32(), c.GetProperty("spark_length").GetSingle());
+                if (!schools.ContainsKey(camp.School)) throw new InvalidDataException($"fx_language.json: campfire's school '{camp.School}' is not one");
+                if (!(camp.Cut > 0 && camp.Cut < 1)) throw new InvalidDataException("fx_language.json: campfire's cut is outside 0..1");
+            }
+            return new FxLanguage { Schools = schools, Campfire = camp };
         }
         catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
         {

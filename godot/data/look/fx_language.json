@@ -612,5 +612,15 @@
   0.561,
   0.713,
   0.889
- ]
+ ],
+ "campfire": {
+  "what": "L1 W2 C5: the camp fire's stepped flame (bible rule 13; shaders/fx_cel_flame.gdshader on the flame kit's cards, Campfire.FilmedFlames, under cel): the kit's simulated heat read at a coarser mip and cut into the school's bands, its glow below the cut, painted sparks rising off it. The light it throws on the logs and ground stays the rig's (rigs.json fires).",
+  "from": "MB5 CAMPFIRE (fx_measure.py shot MB5_fire.png 150,20,360,300 --bg 30,20,120,120): edge L 0.59 C 0.188 h 36 #d54519 (0.32 of the flame), mid L 0.745 C 0.174 h 58 #fc8b16 (0.27), core L 0.94 C 0.096 h 93 #ffebaa (0.21), glow #672b22 (0.20); the fire school's bands within dE 0.02 (edge #cb451e, mid #fc8923, core #ffe496), so school fire; saturated share 0.64",
+  "school": "fire",
+  "cut": 0.2,
+  "lod": 1.5,
+  "glow": 0.12,
+  "sparks": 6,
+  "spark_length": 0.035
+ }
 }

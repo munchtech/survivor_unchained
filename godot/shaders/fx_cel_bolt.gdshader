@@ -15,11 +15,15 @@ render_mode unshaded, blend_mix, depth_draw_never, depth_test_disabled, cull_dis
 // swept back toward the outside), long dark gaps that split the tail into tongues and dark smoke bites; all scrolled
 // back down the bolt. One heat field, cut into the school's stepped bands by fx_cel().
 // head radius, the body's half-width at the tail (of the head's), its taper power, the heat's rise toward the head (power)
-uniform vec4 bolt_shape = vec4(0.6, 1.45, 0.8, 2.0);
+// (L1 W2 C5, the B6 verdict "shrink the head to about 0.6x": R 0.6 to 0.36, the tail's half-width held at 0.87 (1.45 x 0.6
+// = 2.4 x 0.36); the ball 1.0 of the head and stretched 2.2 along, the head's heat 1.05, so the core keeps its share of the
+// body (fx_bolt_proto.py with fx_measure.py bolt: head 0.172 to 0.133 of the length, MB5 0.156; bites 11 to 12, the
+// verdict's 10-12; e/m/c shares 0.47/0.30/0.23 to 0.44/0.32/0.24, MB5 0.34/0.41/0.25))
+uniform vec4 bolt_shape = vec4(0.36, 2.4, 0.8, 2.0);
 // heat at the tail, at the head; the cross profile's power; the sweep (noise sheared back by |lane|)
-uniform vec4 bolt_heat = vec4(0.7, 0.95, 2.0, 0.9);
+uniform vec4 bolt_heat = vec4(0.7, 1.05, 2.0, 0.9);
 // the ball: its centre back from the head's, its stretch along, its radius (of the head's), its heat
-uniform vec4 bolt_ball = vec4(0.25, 1.6, 0.72, 0.7);
+uniform vec4 bolt_ball = vec4(0.25, 2.2, 1.0, 0.7);
 // the tongues: frequency along, across (per lane), strength at the tail, at the head
 uniform vec4 bolt_licks = vec4(0.8, 2.6, 0.6, 0.12);
 // the gaps: frequency along, across, strength, power of its fall toward the head; the bites' frequency along, across
@@ -81,6 +85,7 @@ void fragment() {
 	s *= (1.0 - step(fx_t.x, heat)) * smoothstep(hx + 0.2, hx - 0.4, x) * smoothstep(0.0, 0.5, x) * (1.0 - smoothstep(0.8, 0.98, abs(y)));
 	c.rgb = mix(c.rgb, fx_spark_color, s);
 	c.a = max(c.a, s);
-	ALBEDO = c.rgb;
-	ALPHA = clamp(c.a * fade, 0.0, 1.0) * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
+	float a = clamp(c.a * fade, 0.0, 1.0) * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
+	ALBEDO = fx_out(c.rgb, a);
+	ALPHA = a;
 }

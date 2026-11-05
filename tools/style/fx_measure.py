@@ -14,6 +14,11 @@ rule 4's night surfaces at 0.09-0.12).
     python tools/style/fx_measure.py build            -> writes fx_language.json "schools": MB5's measured schools (fire,
                                                       frost, holy) and the others derived from Palette.Of by the rules in
                                                       "derive" (keeps each band's calibrated "emit")
+    python tools/style/fx_measure.py bolt PNG X0,Y0,X1,Y1 [--bg X0,Y0,X1,Y1]
+                                                      -> (L1 W2 C5) a bolt's marks against MB5's (B6 verdict): its bites
+                                                      (dark holes inside the body), sparks (small hot parts off it, 4-150 px
+                                                      at MB5's 438 px bolt length, scaled), head (the core band's thickest
+                                                      column over the body's length) and saturated share; no PNG: MB5's FIRE
 Nothing here is read by eye: re-run after moving a box.
 """
 import json, math, os, sys
@@ -116,6 +121,46 @@ def bands(img, box, bg, k):
 def box(s): return [int(v) for v in s.split(",")]
 
 
+def bolt_marks(img, b, bg):
+    """(L1 W2 C5) The bolt's marks MB5 sets (B6 verdict): bites, sparks, head, saturated share."""
+    from scipy import ndimage
+    a = np.asarray(img.convert("RGB"))
+    crop = a[b[1]:b[3], b[0]:b[2]]
+    L, C, h, _, _ = oklab(crop.reshape(-1, 3))
+    L = L.reshape(crop.shape[:2]); C = C.reshape(crop.shape[:2])
+    bL = float(np.median(oklab(a[bg[1]:bg[3], bg[0]:bg[2]].reshape(-1, 3))[0]))
+    body = (L >= bL + 0.25) & (C >= 0.04)
+    lab, n = ndimage.label(body)
+    if n == 0: return dict(error="no body")
+    sizes = ndimage.sum(body, lab, range(1, n + 1))
+    main = lab == (1 + int(np.argmax(sizes)))
+    ys, xs = np.nonzero(main)
+    length = int(xs.max() - xs.min() + 1)
+    k = length / 438.0
+    # bites: the dark cut into the body, enclosed or open at its edge: what a disk of 3% of the length closes over
+    r = max(2, int(round(0.03 * length)))
+    yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
+    disk = xx * xx + yy * yy <= r * r
+    pad = np.pad(main, r + 1)
+    shut = ndimage.binary_erosion(ndimage.binary_dilation(pad, disk), disk)[r + 1:-r - 1, r + 1:-r - 1]
+    holes = (ndimage.binary_fill_holes(main) | shut) & ~main
+    hl, hn = ndimage.label(holes)
+    hs = ndimage.sum(holes, hl, range(1, hn + 1)) if hn else []
+    bites = int(sum(1 for v in hs if v >= max(4, 40 * k * k)))
+    hot = (L > 0.5) & (C > 0.08) & ~ndimage.binary_dilation(main, iterations=2)
+    sl, sn = ndimage.label(hot)
+    ss = ndimage.sum(hot, sl, range(1, sn + 1)) if sn else []
+    sparks = int(sum(1 for v in ss if 4 * k * k <= v <= 150 * k * k)) if k >= 0.25 else int(sum(1 for v in ss if 1 <= v <= 150 * k * k + 2))
+    Lm = L[main]
+    cs = kmeans1(Lm, 3)
+    core = main & (L >= (cs[1] + cs[2]) / 2)
+    head = float(core.sum(0).max() / length)
+    fx = (C >= 0.06) | (L >= bL + 0.12)
+    sat = float((C >= 0.15)[fx].mean())
+    return dict(box=list(b), length_px=length, bites=bites, sparks=sparks, head=round(head, 3),
+                saturated_share_of_fx=round(sat, 3), core_L=round(float(np.median(L[core])), 3))
+
+
 def board(quiet=False):
     d = json.load(open(FX, encoding="utf-8"))
     img = Image.open(os.path.join(INPUTS, d["board"]))
@@ -126,6 +171,19 @@ def board(quiet=False):
     res["board_saturated_share"] = round(float(sat.mean()), 4)
     if not quiet: print(json.dumps(res, indent=1))
     return res
+
+
+def bolt(args):
+    d = json.load(open(FX, encoding="utf-8"))
+    if not args or not os.path.exists(args[0]):
+        m = d["measure"]["fire"]
+        r = bolt_marks(Image.open(os.path.join(INPUTS, d["board"])), m["box"], m["bg"])
+    else:
+        b = box(args[1])
+        bg = box(args[args.index("--bg") + 1]) if "--bg" in args else [b[0], max(0, b[1] - 60), b[2], b[1]]
+        r = bolt_marks(Image.open(args[0]), b, bg)
+    print(json.dumps(r))
+    return r
 
 
 def shot(args):
@@ -333,4 +391,4 @@ def chart_apply(args):
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit(1)
-    {"board": lambda: board(), "build": lambda: build(), "shot": lambda: shot(a[1:]), "ui": lambda: ui(), "ui-build": lambda: ui_build(), "chart-make": lambda: chart_make(a[1:]), "chart-fit": lambda: chart_fit(a[1:]), "chart-apply": lambda: chart_apply(a[1:])}[a[0]]()
+    {"board": lambda: board(), "build": lambda: build(), "shot": lambda: shot(a[1:]), "bolt": lambda: bolt(a[1:]), "ui": lambda: ui(), "ui-build": lambda: ui_build(), "chart-make": lambda: chart_make(a[1:]), "chart-fit": lambda: chart_fit(a[1:]), "chart-apply": lambda: chart_apply(a[1:])}[a[0]]()

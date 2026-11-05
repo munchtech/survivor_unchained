@@ -74,6 +74,7 @@ void fragment() { ALBEDO = tint; ALPHA = 1.0; }";
         {
             lookBolts = new Batch(new QuadMesh { Size = Vector2.One }, 400, FxCel.Bolt(School.Fire)) { Name = "LookBolts" };
             scene.AddChild(lookBolts);
+            if (FxAfter.On) FxAfter.Adopt(lookBolts);
             var spec = Args.Get("lookdev-fx-at") ?? "0.75,-0.35,1.35;4.4,-1.6,1.2";
             foreach (var one in spec.Split(';'))
             {

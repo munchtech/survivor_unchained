@@ -84,7 +84,7 @@ public static class Water
         var bin = FileAccess.GetFileAsBytes($"{dir}/water.bin");
         int at = 0;
         float[] Floats(int n) { var f = new float[n]; System.Buffer.BlockCopy(bin, at, f, 0, n * 4); at += n * 4; return f; }
-        var shader = GD.Load<Shader>("res://shaders/water.gdshader");
+        var shader = GD.Load<Shader>(CelOn ? CelPath : "res://shaders/water.gdshader");
         // The hand-set look (water_look.json, one object a body of water, in water.json's order) over the exported one: the
         // exporter rewrites water.json, never this.
         var over = FileAccess.FileExists($"{dir}/water_look.json") ? JsonNode.Parse(FileAccess.GetFileAsString($"{dir}/water_look.json")) as JsonArray : null;
@@ -124,9 +124,13 @@ public static class Water
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
             var mat = new ShaderMaterial { Shader = shader };
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
-            mat.SetShaderParameter("grad_tex", Grad());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
-            Look(mat, look);
+            if (CelOn) Cel(mat, 0);
+            else
+            {
+                mat.SetShaderParameter("grad_tex", Grad());
+                Look(mat, look);
+            }
             Bed(look);
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
             mats.RemoveAll(r => r.GetRef().Obj == null);
@@ -134,6 +138,39 @@ public static class Water
             PushTints();
         }
         return root;
+    }
+
+    /// <summary>(L1 W2 C5) Under cel the water is bands of the sky (shaders/water_cel.gdshader, data/look/water.json);
+    /// --cel off: water.gdshader as before (its looks, glints, mirror and streaks).</summary>
+    public static readonly bool CelOn = SurvivorUnchained.Args.Get("cel") != "off" && SurvivorUnchained.Args.Get("water-cel") != "off";
+    public const string CelPath = "res://shaders/water_cel.gdshader";
+    static JsonDocument? celData;
+
+    /// <summary>A water_cel material's numbers from data/look/water.json; mode 0 a zone's water (Water.Build), 1 the arena's
+    /// stream (ArenaEdge).</summary>
+    public static ShaderMaterial Cel(ShaderMaterial m, int mode)
+    {
+        celData ??= JsonDocument.Parse(FileAccess.GetFileAsString("res://data/look/water.json"));
+        var r = celData.RootElement;
+        float F(JsonElement e, string k) => e.GetProperty(k).GetSingle();
+        float A(JsonElement e, string k, int i) => e.GetProperty(k)[i].GetSingle();
+        var b = r.GetProperty("bands"); var s = r.GetProperty("strokes"); var f = r.GetProperty("foam");
+        var k = r.GetProperty("key"); var l = r.GetProperty("lights"); var sl = r.GetProperty("slurry");
+        m.SetShaderParameter("noise_tex", NoiseTex.Get());
+        m.SetShaderParameter("mode", mode);
+        m.SetShaderParameter("bands", new Vector4(F(b, "deep"), F(b, "depth_w"), F(b, "view_w"), F(b, "shallow_alpha")));
+        m.SetShaderParameter("cuts", new Vector2(A(b, "cuts", 0), A(b, "cuts", 1)));
+        m.SetShaderParameter("reflect", new Vector3(A(b, "reflect", 0), A(b, "reflect", 1), A(b, "reflect", 2)));
+        m.SetShaderParameter("tint", new Color(b.GetProperty("tint").GetString()!));
+        m.SetShaderParameter("strokes", new Vector4(A(s, "size", 0), A(s, "size", 1), F(s, "cover"), F(s, "lift")));
+        m.SetShaderParameter("drift", F(s, "drift"));
+        m.SetShaderParameter("foam", new Vector3(F(f, "depth"), F(f, "reflect"), F(f, "key")));
+        m.SetShaderParameter("key_lobe", new Vector4(F(k, "across"), F(k, "along"), A(k, "size", 0), A(k, "size", 1)));
+        m.SetShaderParameter("key_k", new Vector4(F(k, "cover"), F(k, "gain"), F(l, "across"), F(l, "along")));
+        m.SetShaderParameter("light_gain", F(l, "gain"));
+        m.SetShaderParameter("slurry", new Color(sl.GetProperty("color").GetString()!));
+        m.SetShaderParameter("slurry_k", new Vector4(F(sl, "glow"), F(sl, "cover"), A(sl, "size", 0), A(sl, "size", 1)));
+        return m;
     }
 
     static ImageTexture? grad;

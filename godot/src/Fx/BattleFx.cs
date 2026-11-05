@@ -212,6 +212,8 @@ public partial class BattleFx : Node3D
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, over));
         // (L1 B6) Under cel the cinder bolt is drawn in the FX language (FxCel; --cel off draws it as before).
         if (FxCel.On) celBolts = Add(new Batch(new QuadMesh { Size = Vector2.One }, 300, FxCel.Bolt(School.Fire)));
+        // (L1 W2 C5) drawn after the grade (FxAfter: its bands the board's colors on every rig)
+        if (celBolts != null && FxAfter.On) FxAfter.Adopt(celBolts);
         steel = Add(new Batch(Arrow(), 600, Glowing(0.3f, 0.35f, 0.5f)));
         // What is thrown is the weapon in hand (Arms), not a stick of light.
         axes = Add(new Batch(Weapon("viking_axe", 0.85f), 400, null));

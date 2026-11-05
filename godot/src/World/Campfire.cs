@@ -407,7 +407,8 @@ public static class Campfire
     static Node3D? FilmedFlames(float size)
     {
         var root = new Node3D { Name = "Flames" };
-        FlameKit.Add(root, Vector3.Zero, FlameKind.Camp, scale: size, light: false);
+        // (L1 W2 C5) under cel the stepped flame of the FX language (FxCel.Flame; MB5 CAMPFIRE); --cel off, --fx-cel off: as before
+        FlameKit.Add(root, Vector3.Zero, FlameKind.Camp, scale: size, light: false, cel: FxCel.On && FxCel.Lang.Campfire != null ? FxCel.Flame : null);
         return root;
     }
 

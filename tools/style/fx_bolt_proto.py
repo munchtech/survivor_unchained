@@ -5,7 +5,7 @@ OUT = sys.argv[1]
 P = dict(sh=0.0, bo=0.25, bx=1.6, br=0.85, bb=0.6, wv=0.0, bp=2.0, wt=0.3, hs=1.0, hp=1.0, ip=1.0, gf=(0.5, 3.0), gk=1.5, gp=0.7, g0=0.1, span=5.2, R=0.66, W=0.80, x0=0.15, t=0.0, seed=7.0,
          base_tail=0.55, base_head=1.15, lf=(1.0, 1.9), la=(0.55, 0.12), bf=(1.5, 2.6), bthr=(0.05, 0.55), bk=2.5,
          te=0.0, tm=0.34, tc=0.75, wpow=0.5)
-P.update(json.loads('{"R":0.6,"wt":1.45,"wpow":0.8,"lf":[0.8,2.6],"la":[0.6,0.12],"gf":[0.45,3.2],"gk":2.0,"g0":0.0,"bf":[1.0,3.2],"bthr":[-0.05,1.0],"bp":2.0,"bk":3,"base_tail":0.7,"base_head":0.95,"hp":2.0,"ip":2.0,"bb":0.7,"br":0.72,"wv":0.5,"sh":0.9}'))  # the shader's defaults (fx_cel_bolt.gdshader's uniforms)
+P.update(json.loads('{"R":0.36,"wt":2.4,"bx":2.2,"wpow":0.8,"lf":[0.8,2.6],"la":[0.6,0.12],"gf":[0.45,3.2],"gk":2.0,"g0":0.0,"bf":[1.0,3.2],"bthr":[-0.05,1.0],"bp":2.0,"bk":3,"base_tail":0.7,"base_head":1.05,"hp":2.0,"ip":2.0,"bb":0.7,"br":1.0,"wv":0.5,"sh":0.9}'))  # the shader's defaults (fx_cel_bolt.gdshader's uniforms)
 P.update(json.loads(sys.argv[2]) if len(sys.argv) > 2 else {})
 span = P['span']; H = 260; W = int(round(H * span / 2))
 x = (np.arange(W) + 0.5) / W * span; y = ((np.arange(H) + 0.5) / H - 0.5) * 2

@@ -6,38 +6,41 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// (L1 B6) The FX language in the game: data/look/fx_language.json (logic/Look/FxLanguage.cs) set on a material of
-/// shaders/fx_cel.gdshaderinc. On with --fx-cel on under cel (never at --cel off: today's effects exactly); opt-in until
-/// the proof passes its judge, then the default (B6 round 2, 6 Nov: flow-lane tongues, a round head, dark gaps and bites, from tools/style/fx_bolt_proto.py; still opt-in, its judge next). The proof is
+/// shaders/fx_cel.gdshaderinc. On under cel by default from Stage C wave 2 (L1 W2 C5; --fx-cel off: the old effects; never at --cel off: today's
+/// effects exactly); it was opt-in until the proof passed its judge (B6 round 2, 6 Nov: flow-lane tongues, a round head, dark gaps and bites, from tools/style/fx_bolt_proto.py; still opt-in, its judge next). The proof is
 /// the cinder bolt (BattleFx.Flight, shaders/fx_cel_bolt.gdshader); other effects adopt the include school by school.
 /// </summary>
 public static class FxCel
 {
-    public static readonly bool On = SurvivorUnchained.Args.Get("cel") != "off" && SurvivorUnchained.Args.Get("fx-cel") == "on";
+    public static readonly bool On = SurvivorUnchained.Args.Get("cel") != "off" && SurvivorUnchained.Args.Get("fx-cel") != "off";
     static FxLanguage? lang;
     public static FxLanguage Lang => lang ??= FxLanguage.Parse(Godot.FileAccess.GetFileAsString("res://data/look/fx_language.json"));
 
     static Vector3 V(float[] a) => new(a[0], a[1], a[2]);
 
     /// <summary>Sets a material's fx_cel uniforms from its school's family (--fx-gain K scales every band, for calibrating).</summary>
-    public static ShaderMaterial Apply(ShaderMaterial m, School school)
+    public static ShaderMaterial Apply(ShaderMaterial m, School school, bool after = false)
     {
         if (Lang[school.ToString()] is not { } s) return m;
         float k = (float)SurvivorUnchained.Args.Num("fx-gain", 1f);
-        Vector3 Band(FxBand b) => V(FxLanguage.Linear(b.Hex, b.Emit)) * k;
+        // (L1 W2 C5) After the grade (FxAfter) a band is its board color itself: no emit.
+        float[]? E(float[] e) => after ? null : e;
+        Vector3 Band(FxBand b) => V(FxLanguage.Linear(b.Hex, E(b.Emit))) * k;
+        m.SetShaderParameter("fx_after", after ? 1f : 0f);
         m.SetShaderParameter("fx_edge", Band(s.Edge));
         m.SetShaderParameter("fx_mid", Band(s.Mid));
         m.SetShaderParameter("fx_core", Band(s.Core));
         m.SetShaderParameter("fx_t", new Vector4(s.Edge.T, s.Mid.T, s.Core.T, 0));
-        m.SetShaderParameter("fx_glow_color", V(FxLanguage.Linear(s.Glow.Hex, s.Edge.Emit)) * k);
+        m.SetShaderParameter("fx_glow_color", V(FxLanguage.Linear(s.Glow.Hex, E(s.Edge.Emit))) * k);
         m.SetShaderParameter("fx_glow", new Vector4(s.Glow.Width, s.Glow.Reach, s.Glow.Head, s.Glow.Tail));
-        m.SetShaderParameter("fx_spark_color", V(FxLanguage.Linear(s.Sparks.Hex, s.Mid.Emit)) * k);
+        m.SetShaderParameter("fx_spark_color", V(FxLanguage.Linear(s.Sparks.Hex, E(s.Mid.Emit))) * k);
         return m;
     }
 
     /// <summary>The cel bolt's material for a school; its sparks' density from the family's count (one quad's cells).</summary>
     public static ShaderMaterial Bolt(School school)
     {
-        var m = Apply(new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fx_cel_bolt.gdshader") }, school);
+        var m = Apply(new ShaderMaterial { Shader = GD.Load<Shader>(BoltPath) }, school, FxAfter.On);
         if (Lang[school.ToString()] is { } s)
         {
             // the quad behind the head is about (span - 1) x 2 units at span 3.4: its cells of 0.35 units
@@ -46,6 +49,21 @@ public static class FxCel
         }
         return m;
     }
+
+    /// <summary>(L1 W2 C5) A camp fire card's stepped flame (fx_cel_flame.gdshader; fx_language.json "campfire"): its school's
+    /// bands in the frame (with their emit: the flame stands in the scene, behind her and the logs, so it takes the grade),
+    /// the cut, the shape's mip and the glow's reach, and its sparks (count per card over the card's cells).</summary>
+    public static void Flame(ShaderMaterial m)
+    {
+        if (Lang.Campfire is not { } f || Lang[f.School] is not { } s) return;
+        Apply(m, System.Enum.Parse<School>(f.School, true));
+        m.SetShaderParameter("flame_cut", new Vector3(f.Cut, f.Lod, f.Glow));
+        // the sparks' region: the card's upper half, about 0.6 wide by 0.6 tall in card-height units; cells of 0.09
+        float cell = 0.09f, cells = 0.6f * 0.6f / (cell * cell);
+        m.SetShaderParameter("flame_sparks", new Vector4(cell, Mathf.Clamp(f.Sparks / cells, 0.02f, 0.9f), f.SparkLength, 2.2f));
+    }
+
+    const string BoltPath = "res://shaders/fx_cel_bolt.gdshader";
 
     /// <summary>The quad's length over its half-width (the shader's span): MB5's bolt body is 2.56 times as long as tall (5.2 / 2 = 2.6).</summary>
     public const float BoltSpan = 5.2f;

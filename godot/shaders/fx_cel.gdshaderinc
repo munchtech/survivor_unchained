@@ -16,6 +16,15 @@ uniform vec3 fx_glow_color = vec3(0.13, 0.02, 0.013);
 // width (e-fold), reach (where it ends), strength at the head, strength at the tail (the effect's own 0..1 along it)
 uniform vec4 fx_glow = vec4(0.13, 0.35, 0.65, 0.30);
 uniform vec3 fx_spark_color = vec3(0.64, 0.16, 0.003);
+// (L1 W2 C5) 1: drawn after the grade (src/Fx/FxAfter.cs): the colors above are the board's displayed colors (linear, no
+// emit), and fx_out() hands the pass each one premultiplied in display space.
+uniform float fx_after = 0.0;
+
+vec3 fx_srgb(vec3 c) { c = clamp(c, 0.0, 1.0); return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+vec3 fx_lin(vec3 s) { return mix(s / 12.92, pow((s + 0.055) / 1.055, vec3(2.4)), step(0.04045, s)); }
+// What ALBEDO takes for a color c at coverage a: c itself in the frame; after the grade, linear(srgb(c) x a) / a, so the
+// pass's linear blend over the clear (c x a) stores srgb(c) x a, the premultiplied display color FxAfter composites.
+vec3 fx_out(vec3 c, float a) { return fx_after < 0.5 ? c : fx_lin(fx_srgb(c) * a) / max(a, 1e-4); }
 
 // A band edge: hard, antialiased over a pixel of the heat's own slope.
 float fx_step(float t, float heat) {
