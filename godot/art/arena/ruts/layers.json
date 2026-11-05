@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
- "painted": 1,
- "inputs": "7162e5142817",
+ "painted": 2,
+ "inputs": "811bc386f527",
  "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "mean": [
-    0.08852,
-    0.10668,
-    0.03414
+    0.08932,
+    0.10748,
+    0.03434
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the churned earth: masses and a few clods)",
    "mean": [
-    0.06147,
-    0.04243,
-    0.02528
+    0.06154,
+    0.04247,
+    0.02531
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road: ruts as long strokes, darker",
    "mean": [
-    0.03456,
-    0.02386,
-    0.01465
+    0.03415,
+    0.02356,
+    0.01445
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the wet earth by the puddles)",
    "mean": [
-    0.03927,
-    0.03221,
-    0.02436
+    0.0391,
+    0.03207,
+    0.02426
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
    "mean": [
-    0.06596,
-    0.04293,
-    0.02381
+    0.06599,
+    0.04294,
+    0.02383
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the metalled way: small rounded stones in masses)",
    "mean": [
-    0.07531,
-    0.05925,
-    0.0439
+    0.07678,
+    0.06052,
+    0.04486
    ]
   },
   {
@@ -83,10 +83,15 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the cut bank's earth as big planes)",
    "mean": [
-    0.06751,
-    0.05038,
-    0.03392
+    0.07471,
+    0.05512,
+    0.03733
    ]
   }
- ]
+ ],
+ "moss": {
+  "lit": "#49522f",
+  "shade": "#263b2a",
+  "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+ }
 }

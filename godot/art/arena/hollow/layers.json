@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
- "painted": 1,
- "inputs": "194cfba193d9",
+ "painted": 2,
+ "inputs": "99434a6cc91d",
  "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "mean": [
-    0.17766,
-    0.13103,
-    0.0885
+    0.17105,
+    0.12794,
+    0.08804
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "mean": [
-    0.06311,
+    0.06314,
     0.05326,
-    0.04282
+    0.0428
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "mean": [
-    0.08168,
-    0.0631,
-    0.04636
+    0.0816,
+    0.06287,
+    0.04608
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "mean": [
-    0.05153,
-    0.04268,
-    0.03334
+    0.05196,
+    0.043,
+    0.03355
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
    "mean": [
-    0.1226,
-    0.12114,
-    0.10836
+    0.12024,
+    0.1188,
+    0.10625
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "mean": [
-    0.17065,
-    0.12558,
-    0.07703
+    0.17096,
+    0.12578,
+    0.07711
    ]
   },
   {
@@ -83,10 +83,15 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (the banks and steep faces as big planes)",
    "mean": [
-    0.09768,
-    0.09828,
-    0.07825
+    0.09562,
+    0.0962,
+    0.07558
    ]
   }
- ]
+ ],
+ "moss": {
+  "lit": "#49522f",
+  "shade": "#263b2a",
+  "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+ }
 }

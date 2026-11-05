@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
- "painted": 1,
- "inputs": "1cbd0ea50a8b",
+ "painted": 2,
+ "inputs": "480868968dc2",
  "from": "(c) the Barrow's layers (turf, bare, way, grave, ash, rubble, face); (b) MB4 night, rock and grass",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass (night: the barrow's grey-green turf as flat clumps)",
    "mean": [
-    0.06496,
-    0.07189,
-    0.03759
+    0.06518,
+    0.07211,
+    0.03775
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the barrow's bare earth: masses",
    "mean": [
-    0.06839,
-    0.05611,
-    0.0433
+    0.06915,
+    0.05673,
+    0.04373
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock and MB3 setts (the old way's slabs: chunky planes, warm tops, cool joints)",
    "mean": [
-    0.09835,
-    0.0947,
-    0.08349
+    0.0979,
+    0.09427,
+    0.08291
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the graves' turned earth, dark",
    "mean": [
-    0.03422,
-    0.02838,
-    0.02314
+    0.03431,
+    0.02844,
+    0.02318
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) ash, grey masses",
    "mean": [
-    0.0513,
-    0.04772,
-    0.04375
+    0.05106,
+    0.04747,
+    0.04354
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (rubble as rounded flat stones)",
    "mean": [
-    0.07563,
-    0.07287,
-    0.06392
+    0.07509,
+    0.07232,
+    0.06341
    ]
   },
   {
@@ -83,10 +83,15 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (steep faces as big planes)",
    "mean": [
-    0.04912,
-    0.04676,
-    0.04083
+    0.04719,
+    0.04487,
+    0.03927
    ]
   }
- ]
+ ],
+ "moss": {
+  "lit": "#49522f",
+  "shade": "#263b2a",
+  "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+ }
 }

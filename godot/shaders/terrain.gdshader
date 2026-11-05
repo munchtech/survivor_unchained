@@ -74,6 +74,12 @@ global uniform vec4 water_silt;
 uniform float frost_tone = 1.7;
 uniform float frost_cap = 0.1;
 uniform float frost_reach = 0.5;
+// (L1 W2 ground, mark 4: FROM target 03, where the moonlit ground is mid-dark blue (Oklab L50 about 0.28) and the
+// fire's pool is the light, and rule 1 (the brightest area is a source or what it lights, never bare ground): the rime
+// is the ground's own color lifted at most frost_lift times, keeping frost_own of its hue, so under the moon it never
+// outshines the pool. (The 3 Nov rime went to a neutral white at frost_cap, which a blue moon lit as the brightest thing.)
+uniform float frost_lift = 1.2;
+uniform float frost_own = 0.65;
 // The fires' warmth: no frost within z metres of (x, y); radius 0 is unused.
 uniform vec4 warm_at[4];
 // The meadow's three scales (look bible 1f): the land's lie and patches over 10-40 m, clumps and bare
@@ -153,8 +159,6 @@ uniform float night_spec = 0.12;
 uniform float lane_lift = 0.32;
 uniform float edge_drop = 0.6;
 uniform float weeds = 1.0;
-// The meadow's value over 4-10 m (plus or minus this).
-uniform float meadow_val = 0.13;
 // Frost as speckle on the tops (1: crisp; 0: B's soft ramp), and the dawn's stricter threshold (tops only).
 uniform float frost_crisp = 1.0;
 uniform float frost_dawn = 0.12;
@@ -170,10 +174,6 @@ uniform float rut_sun = 0.35;
 uniform float pud_rim = 0.45;
 uniform float mirror_amt = 1.0;
 uniform float mirror_rut = 1.0;
-// The meadow by night: frost and value from the tufts' density (grass.gdshader's clumps and bare patches), bare soil dark.
-uniform float night_tuft = 1.0;
-// ... and its value over 4-10 m by night, set after the rime (the frost's cap levelled the day's meadow_val into felt).
-uniform float night_val = 0.7;
 // Judge 3's setts restage (E3 F): the street's mud by what stands (the joints fill and the stones' edges are buried, by
 // the tile's own height; out to setts_reach metres from the well, the stalls, the posts, less far from a wall), stones
 // sunk and missing at their foot, moss in the shaded joints. 0 turns each off.
@@ -511,30 +511,9 @@ void fragment() {
 	// Macro: colour and value drift every 30-60 m, so a field is not one colour.
 	float mv = mix(1.0, 0.8 + 0.3 * nC.r + 0.08 * (nL.r - 0.5), macro_amt);
 	albedo *= mv;
-	// The meadow over 10-40 m: damp lows greener and darker, rises and open patches gone to straw, worn
-	// stretches browner; then clumps over a metre or two, darker hearts and lighter crowns.
-	float low = ex4.b * 2.0 - 1.0;
-	float lush = clamp(smoothstep(0.08, 0.6, low + (nM.r - 0.5) * 0.3), 0.0, 1.0);
-	float dry = smoothstep(0.46, 0.72, nL.g * 0.5 + nC.r * 0.3 + nM.r * 0.2 + max(-low, 0.0) * 0.45) * (1.0 - lush);
-	float brown = smoothstep(0.55, 0.78, nL.b * 0.5 + nC.g * 0.5) * (1.0 - lush) * (1.0 - dry * 0.6);
-	float clump = nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2;
-	// The tufts' density over 2-5 m, as grass.gdshader thins them (bare patches, clumps): 0 bare soil, 1 the thickest.
-	float tuft = (1.0 - bare) * smoothstep(0.32, 0.68, clump);
-	float night0 = ground_frost.x * (1.0 - clamp(ground_frost.y * 4.0, 0.0, 1.0));
-	float nt = night0 * night_tuft * w_meadow;
-	vec3 mm = albedo;
-	mm = mix(mm, mm * vec3(1.36, 1.14, 0.66) * 1.22, dry);
-	mm = mix(mm, mm * vec3(1.1, 0.93, 0.78) * 0.9, brown * 0.8);
-	mm = mix(mm, mm * vec3(0.76, 1.0, 0.78) * 0.68, lush);
-	mm *= (0.64 + 0.72 * clump) * mix(vec3(1.12, 1.0, 0.76), vec3(0.88, 1.04, 0.9), smoothstep(0.3, 0.7, clump));
-	vec3 straw = albedo * vec3(1.07, 1.03, 0.86);
-	vec3 green = albedo * vec3(0.95, 1.03, 0.94);
-	vec3 old = mix(green, straw, smoothstep(0.3, 0.7, nC.g));
-	// Its value over 4-10 m (judge 1, E3 fix 8: the shaded meadow read as felt).
-	mm *= 1.0 + meadow_val * 2.0 * ((nC.g - 0.5) * 1.2 + (nL.b - 0.5) * 0.8);
-	albedo = mix(albedo, mix(old, mm, meadow_amt), w_meadow * mix(0.6, 1.0, meadow_amt) * macro_amt);
-	// By night the bare soil between the tufts dark, the thick clumps lighter (judge 2, E3 fix 4: the moonlit meadow read as felt).
-	albedo *= mix(1.0, mix(0.8, 1.06, tuft), nt);
+	// (L1 W2 ground, mark 1: the meadow's photo-era tone layers are removed, not tuned: the dry/brown/lush tints, the
+	// clump multiply, meadow_val's 4-10 m value noise and the night tufts' darkening (E3/E9e, (c) inherited) multiplied
+	// the albedo by noise over C1's painted masses (04's khaki verge). Rule 9: the masses are painted in the map.)
 	// Setts: the world's own tone over the tile, so no two copies match.
 	// (E9e r2, fix 1: that was a 0.9 m blotch, tone noise at the stones' own scale. Now a 2-6 m layer, +-10% in value with a
 	// slight warm-cool drift; the stones' own tones within 10% of their course's.)
@@ -793,22 +772,19 @@ void fragment() {
 		float vb = smoothstep(0.02, 0.3, pm.r) + verge * 0.6;
 		float ridge = smoothstep(0.04, 0.25, rut) * (1.0 - smoothstep(0.3, 0.65, rut));
 		top = mix(top, 0.5 + (cen * 0.25 + ridge * 0.35 - rut * 0.45) * road_rime + (hgt - hb) * 0.5, rd);
-		// By night the frost on the tufts, not the bare soil between.
-		top += (tuft - 0.5) * 0.5 * nt;
 		// At dawn only the tops: the threshold raised with the thaw (judge 1, E3 fix 2: no pale blotches in the shade).
 		float thr = mix(1.0, 1.0 - frost_reach, cover) + ground_frost.y * frost_dawn;
 		float fw = mix(mix(0.11, 0.025, frost_crisp), 0.14, clamp(vb, 0.0, 1.0));
 		float fr = smoothstep(thr - fw, thr + fw, top) * smoothstep(0.02, 0.2, cover);
 		fr *= (1.0 - smoothstep(0.12, 0.4, wet)) * (1.0 - pud);
 		float fstr = min(mix(0.8, frost_soft, w_soft), mix(0.8, 0.3, clamp(vb, 0.0, 1.0)));
-		// (By night on the meadow: thick on the tufts, thin on the bare soil between.)
-		frost_k = fr * fstr * mix(1.0, mix(0.3, 1.0, tuft), nt);
-		float fl = min(dot(albedo, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap * mix(1.0, mix(0.7, 1.1, tuft), nt));
-		// Neutral rime (judge 1: blue rime under a lilac dawn read as mould), keeping a trace of the ground's own hue.
+		frost_k = fr * fstr;
+		float fl0 = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+		float fl = min(min(fl0 * frost_tone, frost_cap), fl0 * frost_lift);
+		// Neutral rime (judge 1: blue rime under a lilac dawn read as mould), keeping frost_own of the ground's own hue.
 		vec3 own = albedo / max(dot(albedo, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
-		albedo = mix(albedo, mix(vec3(1.0), own, 0.25) * fl, frost_k);
+		albedo = mix(albedo, mix(vec3(1.0), own, frost_own) * fl, frost_k);
 		rough = mix(rough, 0.88, fr);
-		albedo *= 1.0 + night_val * ((nC.g - 0.5) * 1.2 + (nM.r - 0.5) * 0.8) * nt;
 		n_w = normalize(mix(n_w, n_geo, fr * 0.3));
 	}
 

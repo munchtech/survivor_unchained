@@ -8,6 +8,14 @@
  "light_what": "the painted-in light's direction in the texture (u = world +x, v = world +z): from the screen's top, a little left (rule 9: the top-lit side, the lit bevel)",
  "spread_L": 0.05,
  "min_cm": 3.0,
+ "mass_sizes": {
+  "from": "rule 10 (shape language: big-medium-small) and the wave-1 judge (04, 05: one size of camo blob); the big masses at 1.6 x a surface's scale_m, islands of the next value at 0.6 x (16% of the tile) and 0.3 x (10%)",
+  "big": 1.6,
+  "medium": 0.6,
+  "small": 0.3,
+  "medium_share": 0.16,
+  "small_share": 0.1
+ },
  "sets": {
   "terrain": {
    "dir": "godot/art/ground",
@@ -89,7 +97,12 @@
      "surface": "bank",
      "metres": 6.0
     }
-   ]
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
   },
   "ruts": {
    "dir": "godot/art/arena/ruts",
@@ -130,7 +143,12 @@
      "surface": "cut_bank",
      "metres": 6.0
     }
-   ]
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
   },
   "barrow": {
    "dir": "godot/art/arena/barrow",
@@ -171,7 +189,12 @@
      "surface": "barrow_face",
      "metres": 6.0
     }
-   ]
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
   },
   "dig": {
    "dir": "godot/art/arena/dig",
@@ -212,7 +235,12 @@
      "surface": "clay_face",
      "metres": 6.0
     }
-   ]
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
   }
  },
  "surfaces": {
@@ -448,7 +476,7 @@
    "stamps": [
     {
      "shape": "leaf",
-     "per_m2": 20,
+     "per_m2": 10,
      "size_cm": [
       9,
       17
@@ -462,7 +490,8 @@
      "height": 0.7
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.09 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "calib": "r1 (L1 C1, 5 Nov): +0.09 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
+   "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)"
   },
   "rot": {
    "class": "soil",

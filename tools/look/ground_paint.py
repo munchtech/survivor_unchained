@@ -6,8 +6,9 @@
 
 Reads godot/data/look/ground.json (sets: which surface each of a set's seven layers is, at how many metres a tile;
 surfaces: each FROM its board or target). A surface is drawn at 2x and box-reduced to one 1K layer, tileable:
-  masses   two or three value masses from a periodic noise at the surface's world scale (scale_m), each one color
-           with a slow +-0.02 L drift inside it (rule 9: one color varied inside its class's range);
+  masses   two or three value masses at three sizes (rule 10, big-medium-small; ground.json "mass_sizes"): big ones from a
+           periodic noise at the surface's world scale (scale_m x big), islands a value up or down at the medium and
+           small sizes, each one color with a slow +-0.02 L drift inside it (rule 9: one color varied inside its range);
   cells    chunky planes (setts, slabs, stones, rock): a periodic jittered Voronoi, each cell one color, a lit bevel on the
            light's side and a cool, darker bevel on the other, joints in a deeper tone (rule 9: warm tops, cool joints);
   stamps   big flat shapes: grass clumps (blade-cluster silhouettes, a cool dark underside, blades facing the light lit),
@@ -19,7 +20,7 @@ edges along the shapes; the normal map is the heights blurred at 2.5 cm (big for
 Deterministic (seeded by set, layer and surface name); the manifest (ground.json for the terrain, layers.json for an arena)
 carries VERSION and the inputs' hash, and `check` refuses a stale or hand-touched output.
 """
-import hashlib, json, math, os, sys, tempfile, zlib
+import hashlib, json, math, os, shutil, sys, tempfile, zlib
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -30,7 +31,7 @@ sys.path.insert(0, HERE)
 from paint_core import srgb_to_lin, lin_to_srgb, lin_to_oklab, oklab_to_lin  # noqa: E402
 
 DATA = os.path.join(ROOT, "godot", "data", "look", "ground.json")
-VERSION = 1  # (bumped on any change to the painting: the manifests carry it, and the check refuses a stale one)
+VERSION = 2  # (bumped on any change to the painting: the manifests carry it, and the check refuses a stale one)
 N = 1024     # a layer's side in the output
 S = 2        # drawn at S x, box-reduced (the shapes' edges anti-aliased, never blurred)
 FILES = ("albedo.png", "normal.png", "arh.png")
@@ -115,18 +116,28 @@ class Canvas:
             self.dh.line(q, fill=int(h * 255), width=max(int(round(width)), 1), joint="curve")
 
 
-def masses(cv, m, rng):
+def masses(cv, m, rng, sizes):
+    """Big, medium and small masses (rule 10): the big ones a periodic noise at sizes' big x the surface's scale_m, cut at
+    its split into the surface's colors; then islands of the next value up or down at the medium and the small size,
+    each over its share of the tile (half up, half down), so a surface is never one size of camo blob (wave 2, 04/05)."""
     W, T = cv.W, cv.metres
-    f0 = max(T / m["scale_m"], 1.0)
-    field = pnoise(W, max(1.0, 0.6 * f0), 1.4 * f0, rng) + 0.22 * pnoise(W, 3 * f0, 6 * f0, rng)
-    cuts = np.quantile(field, m["split"])
-    lvl = np.digitize(field, cuts)
-    drift = pnoise(W, max(1.0, 0.5 * f0), f0, rng) * 0.02 / 2.5  # (+-0.02 L inside a mass, at its own scale)
+    n = len(m["colors"])
+    s0 = m["scale_m"]
+    fb = max(T / (s0 * sizes["big"]), 1.0)
+    field = pnoise(W, max(1.0, 0.7 * fb), 1.3 * fb, rng) + 0.15 * pnoise(W, 3 * fb, 6 * fb, rng)
+    lvl = np.digitize(field, np.quantile(field, m["split"]))
+    for k in ("medium", "small"):
+        f = max(T / (s0 * sizes[k]), 1.0)
+        g = pnoise(W, max(1.0, 0.7 * f), 1.3 * f, rng) + 0.15 * pnoise(W, 3 * f, 6 * f, rng)
+        sh = sizes[k + "_share"] * 0.5
+        up, dn = g > np.quantile(g, 1.0 - sh), g < np.quantile(g, sh)
+        lvl = np.where(up, np.minimum(lvl + 1, n - 1), np.where(dn, np.maximum(lvl - 1, 0), lvl))
+    drift = pnoise(W, max(1.0, 0.5 * fb), fb, rng) * 0.02 / 2.5  # (+-0.02 L inside a mass, at the big scale)
     labs = np.array([lab(c) for c in m["colors"]])
     o = labs[lvl]
     o[..., 0] += np.clip(drift, -0.02, 0.02)
     cv.col = lin_to_srgb(oklab_to_lin(o.reshape(-1, 3))).reshape(W, W, 3).astype(np.float32)
-    cv.hgt = (0.3 + 0.12 * lvl / max(len(m["colors"]) - 1, 1)).astype(np.float32)
+    cv.hgt = (0.3 + 0.12 * lvl / max(n - 1, 1)).astype(np.float32)
 
 
 def cells(cv, c, rng, patches=None):
@@ -283,7 +294,7 @@ def paint_surface(name, surf, metres, data, salt):
     rng = np.random.default_rng(seed_of(salt, name, metres, VERSION))
     cv = Canvas(metres, data["light"], data["spread_L"])
     if "masses" in surf:
-        masses(cv, surf["masses"], rng)
+        masses(cv, surf["masses"], rng, data["mass_sizes"])
     if "cells" in surf:
         cells(cv, surf["cells"], rng, surf.get("patches"))
     if surf.get("stamps"):
@@ -312,7 +323,8 @@ def paint_surface(name, surf, metres, data, salt):
 def inputs_hash(data, set_name):
     s = data["sets"][set_name]
     used = {l["surface"]: data["surfaces"][l["surface"]] for l in s["layers"]}
-    blob = json.dumps([VERSION, data["light"], data["spread_L"], data["min_cm"], s["layers"], used], sort_keys=True)
+    blob = json.dumps([VERSION, data["light"], data["spread_L"], data["min_cm"], data["mass_sizes"], s["layers"], used, s.get("moss")],
+                      sort_keys=True)
     blob += open(__file__, "rb").read().decode("utf-8")
     return hashlib.sha1(blob.encode()).hexdigest()[:12]
 
@@ -339,6 +351,8 @@ def build_set(data, set_name, out=None):
         Image.fromarray(np.concatenate(m, 0)).save(os.path.join(out, f), optimize=False, compress_level=6)
     man = {"by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)", "painted": VERSION,
            "inputs": inputs_hash(data, set_name), "from": s["from"], "layers": layers}
+    if s.get("moss"):  # (the arena's moss cushions, drawn by arena_ground.gdshader: ArenaGround.cs reads them here)
+        man["moss"] = {k: s["moss"][k] for k in ("lit", "shade", "from")}
     if set_name == "terrain":  # (the setts' own maps are wave 2's; Ground.cs reads their size here)
         man["setts"] = {"metres": 4.0, "variants": 3, "px": 1024}
     with open(manifest_path(set_name, out), "w", encoding="utf-8") as fh:
@@ -467,6 +481,8 @@ def main(a):
                     eq = open(os.path.join(d1, f), "rb").read() == open(os.path.join(d2, f), "rb").read()
                     same &= eq
                     print(f"  {n_}/{f}: {'same' if eq else 'DIFFERENT'}")
+                for d_ in (d1, d2):
+                    shutil.rmtree(d_, ignore_errors=True)
             print("twice:", "byte-identical" if same else "NOT identical")
             return 0 if same else 1
         for n_ in names:

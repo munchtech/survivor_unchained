@@ -121,6 +121,14 @@ public static class ArenaGround
         if (z.Splat3 != null) mat.SetShaderParameter("splat3", Mipped(z.Splat3));
         var (moss, slurry, fox) = Growth[place.Id];
         mat.SetShaderParameter("moss_color", moss);
+        mat.SetShaderParameter("moss_shade", moss * 0.6f);
+        // (L1 W2 ground: the painted ground's moss, lit top and cool crease, from ground.json's set via layers.json, FROM MB4.)
+        using (var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json")))
+            if (meta.RootElement.TryGetProperty("moss", out var mj))
+            {
+                mat.SetShaderParameter("moss_color", new Color(mj.GetProperty("lit").GetString()!));
+                mat.SetShaderParameter("moss_shade", new Color(mj.GetProperty("shade").GetString()!));
+            }
         mat.SetShaderParameter("slurry_glow", slurry);
         mat.SetShaderParameter("slurry_body", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("fox_glow", fox);
