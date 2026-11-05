@@ -67,3 +67,11 @@ tried too), `hinge` (`{"elbow": "front"|"plane"|"local_x"}`), `near_m` per joint
 Parametric, scaled to the body's own rest half-widths, so away from the joint the reference is the limb held rigid
 and only the joint's anatomy is authored (each file's `why` and `grammar`). Not yet authored: the armpit and front
 axillary fold at shoulder abduction (the A-pose hides the trunk side), the trunk under the arm.
+
+## Base topology (topo.py, WIP)
+
+`topo.py` builds OUR base topology from `loopplan.json` (rows, rings and junction patterns placed by our skeleton on
+run_a's close surface, which is only the shape reference). `base/hand_l.obj` and `base/foot_l.obj` are **(b) converted
+from MakeHuman** (hm08 CC0 base mesh, cut once at a clean 22-point wrist / ankle loop by `topo.py --make-templates`);
+they are our source files from here on, mirrored for the right. `python tools/body/topo.py --probe` checks the plan's
+count ties and part 1 on the reference. Assembly, relaxation, UVs, landmarks, measures and the sheet are not built yet.
