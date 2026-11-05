@@ -306,7 +306,8 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
     sr = C["sr"]
     tr, bp = plan["trunk"], plan["breast"]
     TH = np.linspace(0, np.pi, 721)
-    t_R0 = t_on_plane(cv, TH, L["leg"]["p"], L["leg"]["n"])
+    t_R0 = (C["hip_root"]["tFS"] if "hip_root" in C    # (pass 3b item 4) the curve root; B: the lobe top
+            else t_on_plane(cv, TH, L["leg"]["p"], L["leg"]["n"]))
     ring = ref.ring[:48]
     thN, tN = cv.inv(ring)
     t_N = np.interp(TH, thN, tN)
@@ -509,7 +510,11 @@ def trunk(M, ref, cv, L, plan, tp, C, SR):
     br += [rows[i]["ids"]["F"][j_b1] for i in range(i_b0 + 1, i_b1 + 1)]
     br += list(rows[i_b1]["ids"]["F"][j_b0:j_b1][::-1])
     br += [rows[i]["ids"]["F"][j_b0] for i in range(i_b1 - 1, i_b0, -1)]
-    R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], rows[0]["ids"]["B"][1:]])
+    if "hip_root" in C:
+        lb = hip_lobe(M, cv, L, tp, C, C["hip_root"], rows[0]["ids"]["B"], REG["pelvis_glutes"])
+        R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], lb["root_B"]])
+    else:
+        R0 = np.concatenate([rows[0]["ids"]["F"], rows[0]["ids"]["S"][1:], rows[0]["ids"]["B"][1:]])
     for v in R0:
         M.labs[v] = (TRUNK, LEG)
     return {"rows": rows, "rim": np.array(rim), "corners": corners, "breast_rim": np.array(br),
@@ -756,6 +761,118 @@ def crotch(M, ref, L, plan, tp, tk, C):
     C["N_leg"] = int(len(root))
     C["perineum_mm"] = round(float(sl[-1]) * 1000, 1)
     return {"root": root, "mid": mid, "lat": lat}
+
+
+def y_to_t(cv, th, y, ks=(TRUNK, LEG)):
+    """Canvas t on the meridian theta where the surface reaches height y (below h_lo the rays tilt down)."""
+    ts = np.linspace(0.84, 1.26, 211)
+    X = mapk(cv, np.full_like(ts, th), ts, list(ks))
+    ok = np.isfinite(X[:, 1])
+    yy = np.maximum.accumulate(X[ok, 1])
+    return float(np.interp(y, yy, ts[ok]))
+
+
+def hip_root(cv, plan, TH, BB):
+    """(a, pass 3b item 4) The leg's root as a curve on the trunk canvas: the groin crease (F), level over the hip
+    bone (to BB, the shoulder band's back edge), down the rise to the gluteal fold's lateral end (the lobe's miter) and
+    along the fold into the perineum (B). Returns the F+S profile on TH (beyond BB: the lobe's top), the B polyline and
+    the leg cut over all of TH (the reference's relabel)."""
+    hr = plan["hip"]["root"]
+    fr = [(np.radians(a), y_to_t(cv, np.radians(a), y)) for a, y in hr["front"]]
+    ts = hr["side_y"]
+    th_f = np.array([a for a, _ in fr] + [BB])
+    t_f = np.array([t for _, t in fr] + [ts])
+    tFS = np.interp(TH, th_f, t_f)
+    k = 9                                            # a light smoothing: no kinks for the rows to inherit
+    tFS = np.convolve(np.pad(tFS, k, mode="edge"), np.ones(2 * k + 1) / (2 * k + 1), "valid")
+    tB0 = float(np.interp(BB, TH, tFS))
+    top = tB0 + hr["lobe_top_rise"] * smooth01((TH - BB) / (np.pi - BB))
+    tFS = np.where(TH > BB, top, tFS)
+    bk = [(np.radians(a), y_to_t(cv, np.radians(a), y)) for a, y in hr["back"]]
+    Bth = np.array([BB] + [a for a, _ in bk])
+    Bt = np.array([tB0] + [t for _, t in bk])
+    cut = np.where(TH <= BB, tFS, np.interp(TH, Bth, Bt))
+    return {"tFS": tFS, "Bth": Bth, "Bt": Bt, "miter": 1, "cut": cut, "BB": BB, "t_side": tB0}
+
+
+def relabel_hip(ref, cv, TH, cut):
+    """(b) the reference's trunk / leg split by the same curve (the canvas sees the buttock down to the fold)."""
+    C = ref.C
+    side = C[:, 0] < 0
+    Cm = C * np.where(side[:, None], [-1.0, 1, 1], 1.0)
+    base = ref.lab - np.where(ref.lab > 4, 5, 0)
+    m = np.isin(base, [TRUNK, LEG]) & (Cm[:, 1] < 1.15)
+    th, t = cv.inv(Cm[m])
+    leg = t < np.interp(np.clip(th, 0, np.pi), TH, cut)
+    lab = np.where(leg, LEG, TRUNK)
+    ref.lab[m] = np.where(side[m] & (lab > 0), lab + 5, lab)
+    ref._sc, ref._sf = {}, {}
+
+
+def canvas_poly(cv, ks, th, t, ns=400):
+    """A canvas polyline (theta_i, t_i) densely on the surface, with its arc length."""
+    s = np.concatenate([[0], np.cumsum(np.hypot(np.diff(th), np.diff(t)))])
+    g = np.linspace(0, s[-1], ns)
+    TH_, T_ = np.interp(g, s, th), np.interp(g, s, t)
+    X = fill_nan(mapk(cv, TH_, T_, ks))
+    a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(X, axis=0), axis=1))])
+    return TH_, T_, X, a
+
+
+def hip_lobe(M, cv, L, tp, C, hr, top_ids, i_reg):
+    """(a, pass 3b item 4) The buttock kept in the trunk: a lobe of the B band under row 0's B part, its rows ending on
+    the rise (the root's lateral back), its columns on the gluteal fold. A Coons patch on the canvas between the rise,
+    the fold (B_L edges from the miter to the midline), the cleft's floor (the midline) and row 0's B part (its top);
+    rows at the torso front's spacing. Poles: the rise's top (5: row 0, BB) and the miter (3: the fold's lateral end)."""
+    V = np.asarray(M.V)
+    s = C["s"] * tp.get("glute_scale", 1.0)
+    Bth, Bt, mi = hr["Bth"], hr["Bt"], hr["miter"]
+    ks = [TRUNK]
+    rth, rt, rX, ra = canvas_poly(cv, [TRUNK, LEG], Bth[:mi + 1][::-1], Bt[:mi + 1][::-1])   # the rise: miter -> top
+    fth, ft, fX, fa = canvas_poly(cv, [TRUNK, LEG], Bth[mi:], Bt[mi:])                        # the fold: miter -> midline
+    tth, tt = cv.inv(V[top_ids])
+    tth[0], tth[-1] = hr["BB"], np.pi
+    t_mid = np.linspace(Bt[-1], tt[-1], 60)
+    Xm = fill_nan(mapk(cv, np.full(60, np.pi), t_mid, ks))
+    am = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(Xm, axis=0), axis=1))])
+    cols = [ra[-1], am[-1], float(np.mean([ra[-1], am[-1]]))]
+    n_L = max(2, int(round(max(cols) / s)))
+    nB = len(top_ids) - 1
+    v = np.linspace(0, 1, n_L + 1)
+    ub = np.linspace(0, 1, nB + 1)                                  # the fold's columns: even arc length
+    ut = arc_fracs(V[top_ids])                                      # the top's own
+    def on(th_, t_, a, f):
+        g = f * a[-1]
+        return np.interp(g, a, th_), np.interp(g, a, t_)
+    L0 = np.stack(on(rth, rt, ra, v), 1)                            # lateral (v: 0 miter -> 1 top)
+    L1 = np.stack([np.full(n_L + 1, np.pi), np.interp(v * am[-1], am, t_mid)], 1)
+    rows = []
+    for l in range(n_L):
+        u = (1 - v[l]) * ub + v[l] * ut
+        B0 = np.stack(on(fth, ft, fa, u), 1)
+        B1 = np.stack([np.interp(u, ut, tth), np.interp(u, ut, tt)], 1)
+        P = ((1 - v[l]) * B0 + v[l] * B1 + (1 - u)[:, None] * L0[l] + u[:, None] * L1[l]
+             - ((1 - u) * (1 - v[l]))[:, None] * L0[0] - (u * (1 - v[l]))[:, None] * L1[0]
+             - ((1 - u) * v[l])[:, None] * L0[-1] - (u * v[l])[:, None] * L1[-1])
+        P[0], P[-1] = L0[l], L1[l]
+        if l == 0:
+            P = B0
+        X = fill_nan(mapk(cv, P[:, 0], P[:, 1], [TRUNK, LEG] if l == 0 else ks))
+        ids = M.add(X, "trunk", -(n_L - l), C["F_L"] + C["n_b"], FREE, i_reg)
+        M.flag[ids[-1]] = MID
+        rows.append(ids)
+    rows.append(np.asarray(top_ids))
+    for l in range(n_L):
+        a, b = rows[l], rows[l + 1]
+        for j in range(nB):
+            M.quad(a[j], a[j + 1], b[j + 1], b[j], i_reg, "trunk")
+    rise = [rows[l][0] for l in range(n_L - 1, -1, -1)]             # top-1 -> miter
+    root_B = np.concatenate([rise, rows[0][1:]])
+    for v_ in root_B:
+        M.labs[v_] = (TRUNK, LEG)
+    C["lobe"] = {"rows": int(n_L), "cols": int(nB), "rise_mm": round(float(ra[-1]) * 1000, 1),
+                 "cleft_floor_mm": round(float(am[-1]) * 1000, 1)}
+    return {"rows": rows, "root_B": root_B, "miter": rows[0][0], "rise_top": top_ids[0]}
 
 
 # ---------------------------------------------------------------------------------------------- the templates --
@@ -1345,6 +1462,9 @@ def build(plan, tier, ref, cv, L):
     c_ar, n_ar, _ = arm_root_plane(L, plan)
     SR = shoulder_rim(ref, cv, L, plan, tp)
     C.update(trunk_plan(ref, cv, L, plan, tp, SR))
+    if tp.get("hip_curve_root"):                     # (pass 3b item 4, WIP: the leg side is not done)
+        C["hip_root"] = hip_root(cv, plan, np.linspace(0, np.pi, 721), C["BB"])
+        relabel_hip(ref, cv, np.linspace(0, np.pi, 721), C["hip_root"]["cut"])
     tk = trunk(M, ref, cv, L, plan, tp, C, SR)
     sh = shoulder(M, ref, L, plan, tp, tk, C, SR)
     bc = breast(M, ref, L, plan, tp, tk, C)
