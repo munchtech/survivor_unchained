@@ -12,7 +12,9 @@
 >    Proof: `topo_corr.Reference().close(None)` vs run_a close.npz 0.0 mm; `topo_corr.evaluate(base/topo_corr_<tier>, ref)`
 >    and `base/sliders_<tier>.npz` V0 vs out/topo V 0.0 mm.
 > 3. Her build: `python tools/body/build_topo.py tools/body/specs/her_topo.json tools/body/out/her_ek2_final` (no
->    slider_bake cache needed) -> body.glb/play.glb/rigs/maps byte-identical to `godot/art/people/body_p1/`.
+>    slider_bake cache needed) -> body.glb/play.glb/rig.json/play_rig.json byte-identical to `godot/art/people/body_p1/`.
+>    CAUTION: the spec's `"maps"` IS `godot/art/people/body_p1`, so the bake rewrites the published maps in place
+>    (they came back equal to git HEAD; only bake.json's timing `"s"` changed: restore it from HEAD).
 
 `check.py` is the CHECK command for her body (docs/team/PIPELINE.md P1): numbers first, a judge only on what they
 cannot say. Pure Python (numpy, scipy, embreex, Pillow); no Blender or Godot.
