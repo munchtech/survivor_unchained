@@ -221,9 +221,9 @@
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "masses": {
     "colors": [
-     "#3c4424",
-     "#4c5529",
-     "#5b6030"
+     "#474f2e",
+     "#576034",
+     "#666b3b"
     ],
     "split": [
      0.35,
@@ -244,22 +244,23 @@
       11
      ],
      "colors": [
-      "#56602c",
-      "#6e7536"
+      "#616b37",
+      "#7a8142"
      ],
-     "under": "#333c26",
+     "under": "#3d4730",
      "height": 0.85
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "litter_day": {
    "class": "soil",
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#3e3326",
-     "#4b3d2b",
-     "#57462f"
+     "#493d30",
+     "#564835",
+     "#62513a"
     ],
     "split": [
      0.35,
@@ -276,23 +277,24 @@
       15
      ],
      "colors": [
-      "#6a4a2e",
-      "#78593a",
-      "#5b432b",
-      "#7c6a40"
+      "#765539",
+      "#846445",
+      "#664e36",
+      "#88764b"
      ],
      "height": 0.7
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "road": {
    "class": "road",
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "masses": {
     "colors": [
-     "#5f4635",
-     "#6d523e",
-     "#7a5f47"
+     "#705645",
+     "#7f634e",
+     "#8c7058"
     ],
     "split": [
      0.3,
@@ -309,28 +311,30 @@
       11
      ],
      "colors": [
-      "#7a6e60",
-      "#6a6052"
+      "#8c8071",
+      "#7b7163"
      ],
      "height": 0.8
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "mud": {
    "class": "road",
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "masses": {
     "colors": [
-     "#3a2e23",
-     "#45372a",
-     "#4e3f30"
+     "#45382d",
+     "#504134",
+     "#594a3a"
     ],
     "split": [
      0.4,
      0.78
     ],
     "scale_m": 1.3
-   }
+   },
+   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "cobble": {
    "class": "road",
@@ -431,9 +435,9 @@
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#4a4034",
-     "#574a3b",
-     "#635442"
+     "#63584c",
+     "#716353",
+     "#7d6d5b"
     ],
     "split": [
      0.33,
@@ -450,23 +454,24 @@
       17
      ],
      "colors": [
-      "#6e4e32",
-      "#7a5c3c",
-      "#5e4630",
-      "#7e6c48"
+      "#89674b",
+      "#957655",
+      "#785f48",
+      "#998762"
      ],
      "height": 0.7
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.09 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "rot": {
    "class": "soil",
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "masses": {
     "colors": [
-     "#2c2823",
-     "#35302a",
-     "#3d362e"
+     "#3e3a34",
+     "#47423c",
+     "#504840"
     ],
     "split": [
      0.4,
@@ -483,20 +488,21 @@
       14
      ],
      "colors": [
-      "#4a3c2c",
-      "#544430"
+      "#5d4f3e",
+      "#685742"
      ],
      "height": 0.6
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.07 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "roots": {
    "class": "soil",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "masses": {
     "colors": [
-     "#342d25",
-     "#3e352b"
+     "#463f37",
+     "#51473d"
     ],
     "split": [
      0.5
@@ -516,29 +522,31 @@
       160
      ],
      "colors": [
-      "#5a4a38",
-      "#4e4030"
+      "#6e5d4b",
+      "#615342"
      ],
      "lit_edge": 0.05,
      "height": 0.9
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.07 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "den_mud": {
    "class": "soil",
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "masses": {
     "colors": [
-     "#2a2620",
-     "#322c25",
-     "#39322a"
+     "#39352f",
+     "#423b34",
+     "#494239"
     ],
     "split": [
      0.4,
      0.8
     ],
     "scale_m": 1.4
-   }
+   },
+   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "stream_bed": {
    "class": "rock",
@@ -546,34 +554,35 @@
    "cells": {
     "size_cm": 22,
     "colors": [
-     "#5c5c56",
-     "#696860",
-     "#52524d"
+     "#6d6d67",
+     "#7a7971",
+     "#63635e"
     ],
-    "joint": "#2e2c28",
+    "joint": "#3d3b37",
     "joint_cm": 4.0,
     "lit": 0.06,
     "round": 0.55
    },
    "masses": {
     "colors": [
-     "#2e2c28",
-     "#36332e"
+     "#3d3b37",
+     "#46433d"
     ],
     "split": [
      0.5
     ],
     "scale_m": 1.0
-   }
+   },
+   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "needles": {
    "class": "soil",
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "masses": {
     "colors": [
-     "#4f4232",
-     "#5b4c38",
-     "#665640"
+     "#655847",
+     "#72624e",
+     "#7d6d56"
     ],
     "split": [
      0.35,
@@ -594,13 +603,14 @@
       8
      ],
      "colors": [
-      "#77623f",
-      "#6a5638"
+      "#8f7955",
+      "#816d4e"
      ],
-     "under": "#463a2c",
+     "under": "#5c4f41",
      "height": 0.7
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.08 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "bank": {
    "class": "soil",
@@ -608,34 +618,35 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#4a4a40",
-     "#545446",
-     "#3f3f37"
+     "#5a5a50",
+     "#656556",
+     "#4f4f47"
     ],
-    "joint": "#302f2a",
+    "joint": "#3f3e39",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#302f2a",
-     "#3a382f"
+     "#3f3e39",
+     "#4a483e"
     ],
     "split": [
      0.5
     ],
     "scale_m": 2.0
-   }
+   },
+   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "verge": {
    "class": "grass",
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "masses": {
     "colors": [
-     "#383e22",
-     "#465028",
-     "#545a2e"
+     "#42492c",
+     "#515b33",
+     "#5f6539"
     ],
     "split": [
      0.35,
@@ -656,13 +667,14 @@
       11
      ],
      "colors": [
-      "#4f5a2a",
-      "#666e34"
+      "#5a6535",
+      "#717a40"
      ],
-     "under": "#2e3622",
+     "under": "#38402c",
      "height": 0.85
     }
-   ]
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
   },
   "churn": {
    "class": "road",

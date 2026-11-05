@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 1,
- "inputs": "7bbd8292e86e",
+ "inputs": "44f1b2766d40",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "mean": [
-    0.07969,
-    0.09545,
-    0.02423
+    0.1038,
+    0.12218,
+    0.03664
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "mean": [
-    0.0826,
-    0.0532,
-    0.0261
+    0.10719,
+    0.07198,
+    0.0385
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "mean": [
-    0.155,
-    0.08745,
-    0.04952
+    0.21348,
+    0.12766,
+    0.07849
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "mean": [
-    0.05644,
-    0.0365,
-    0.02212
+    0.07644,
+    0.0511,
+    0.03296
    ]
   },
   {

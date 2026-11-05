@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 1,
- "inputs": "7a6b03aeab8e",
+ "inputs": "7f72ef75b44f",
  "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
  "layers": [
   {
