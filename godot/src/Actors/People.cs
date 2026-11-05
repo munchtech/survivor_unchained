@@ -2550,6 +2550,9 @@ public static class People
         {
             "skin_head" => "res://art/people/head_tex/heroine_freckles.png",
             "skin_graft" => "res://art/people/head_tex/heroine_freckles_graft.png",
+            // (P1's body B is one surface on our UVs: its bake carries the graft's layer onto them, blue = her neck's
+            // mask (neck_pull, grain, edge), so her throat under the head's seam takes the graft's treatment, as A's)
+            "Material_0.001" when P1Body.On => P1Body.Dir + "freckles.png",
             _ => null,
         };
         return f != null && ResourceLoader.Exists(f) ? f : null;

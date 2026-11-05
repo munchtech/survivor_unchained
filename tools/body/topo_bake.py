@@ -392,7 +392,13 @@ def mirror_vertex(z, i):
 
 
 # ------------------------------------------------------------------------------------------------------ run --
-def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None):
+def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None):
+    """carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
+    built): A's paint, relief, roughness and freckles are read at each texel's point on the CARRIER, so every texel
+    keeps the anatomical point it was painted at whatever shape the sliders give this body (our UVs are shared; the
+    maps are a per-UV asset); B's own maps (AO, thickness, curvature, zones) are this build's surface. Without it a
+    body far from A (the sliders: up to 5 cm at the bust and glutes) read A's paint by a 3 cm ray and the closest
+    point: a shifted throat mask and lost arm paint."""
     t0 = time.time()
     os.makedirs(maps_dir, exist_ok=True)
     z = z or dict(np.load(os.path.join(HERE, "out", "topo", f"{tier}.npz")))
@@ -420,17 +426,32 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     Xr = (w[:, :, None] * Pv[vr]).sum(1)
     Nl = U((w[:, :, None] * Nv[vl]).sum(1))
     Nr = U((w[:, :, None] * Nv[vr]).sum(1))
+    src_out, Vc, Nvc, Tan_c, wsg_c = build_out, Vb, Nv, Tan, wsg
+    if carrier:
+        src_out = carrier if os.path.isabs(carrier) else os.path.join(REPO, carrier)
+        Vc = np.load(os.path.join(src_out, "stage", f"{tier}.npz"))["V"].astype(np.float64)
+        assert Vc.shape == Vb.shape, "the carrier is not this topology"
+        _, mc, _ = body_of(src_out, tier)
+        assert len(mc.P) == len(src), "the carrier's glb is not this UV split"
+        Nvc = np.zeros_like(Vc)
+        Nvc[src] = mc.N.astype(np.float64)
+        Tan_c, wsg_c = tangent_frames(mc.P.astype(np.float64), mc.N.astype(np.float64), uvd["UV"], Tg)
+        rep["carrier"] = os.path.relpath(src_out, REPO).replace("\\", "/")
+    Cl = (w[:, :, None] * Vc[vl]).sum(1)
+    Cr = (w[:, :, None] * Vc[vr]).sum(1)
+    CNl = U((w[:, :, None] * Nvc[vl]).sum(1))
+    CNr = U((w[:, :, None] * Nvc[vr]).sum(1))
     gl_ = Tl[tri]
-    Tt = U((w[:, :, None] * Tan[gl_]).sum(1))
-    Tt = U(Tt - Nl * (Tt * Nl).sum(1, keepdims=True))
-    wl = np.sign((w * wsg[gl_]).sum(1))
-    Bt = np.cross(Nl, Tt) * wl[:, None]
+    Tt = U((w[:, :, None] * Tan_c[gl_]).sum(1))
+    Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
+    wl = np.sign((w * wsg_c[gl_]).sum(1))
+    Bt = np.cross(CNl, Tt) * wl[:, None]
     # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
     TtR, BtR = Tt * MIRROR, Bt * MIRROR
     print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-    A = Source(os.path.join(build_out, "body.glb"), pose)
+    A = Source(os.path.join(src_out, "body.glb"), pose)
     res = {}
-    for side, X, Nn, Tf, Bf in (("l", Xl, Nl, Tt, Bt), ("r", Xr, Nr, TtR, BtR)):
+    for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
         t, bw, d, miss = A.project(X, Nn)
         s = A.sample(t, bw)
         ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
@@ -502,7 +523,7 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
-    rep["gates"] = gates(z, uvd, Vb, Nv, A, alb, covered)
+    rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered)
     print("BAKE gates", rep["gates"]["pass"], round(time.time() - t0, 1), flush=True)
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
@@ -689,8 +710,9 @@ def main():
     ap.add_argument("maps_dir")
     ap.add_argument("--size", type=int, default=2048)
     ap.add_argument("--pose", default="tools/body/forms/her_topo_target_bones.json")
+    ap.add_argument("--carrier", default=None, help="a build on A of the same topology: the paint's points (run's doc)")
     a = ap.parse_args()
-    rep, _ = run(a.build_out, a.maps_dir, a.size, pose=a.pose)
+    rep, _ = run(a.build_out, a.maps_dir, a.size, pose=a.pose, carrier=a.carrier)
     print(json.dumps(rep, indent=1))
 
 

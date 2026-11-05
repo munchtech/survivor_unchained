@@ -31,5 +31,11 @@
   "waist": -0.6,
   "weight": -0.2762
  },
- "bake": null
+ "bake": {
+  "maps": "godot/art/people/body_p1",
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json",
+  "carrier": "tools/body/out/her_ek2_final",
+  "carrier_why": "A's paint read on her_topo.json's fit build (python tools/body/build_topo.py tools/body/specs/her_topo.json tools/body/out/her_ek2_final), the surface on A; this body's own maps from its own surface (topo_bake.run)"
+ }
 }

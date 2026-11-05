@@ -264,7 +264,7 @@ def stage_uv(z, tier, rep):
 
 
 def stage_bake(spec, tier, out, rep):
-    """(P1 E2, stage 7; spec "bake": {"maps", "size", "pose"}) The maps on our UVs (topo_bake.py: baked from the close
+    """(P1 E2, stage 7; spec "bake": {"maps", "size", "pose", "carrier"}) The maps on our UVs (topo_bake.py: baked from the close
     build into <out>/maps; play shares them), gated (topo_bake.gates: albedo dE, seam step, frames; written into
     <out>/maps/bake.json), published to spec "maps" only when the gates pass (a failing bake never reaches godot/),
     then attached to every export of the tier (body / body_lbs, play / play_lbs), after the correctives.
@@ -277,7 +277,7 @@ def stage_bake(spec, tier, out, rep):
     maps = os.path.join(out, "maps")
     pub = os.path.join(REPO, b["maps"])
     if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
-        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"))
+        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"))
         r["files"] = sorted(f for f in os.listdir(maps) if f.endswith((".png", ".json")))
         with open(os.path.join(maps, "bake.json"), "w") as f:
             json.dump(r, f, indent=1, default=float)
