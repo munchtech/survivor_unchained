@@ -1,5 +1,5 @@
 {
- "about": "Stage 7's data (tools/body/correctives.py). keys: [motion, absolute deg] posed as the check poses them (bends.Strip; hip_abd: the hip turned about her front). Regions: spheres round the joint's rest head, full within r_in, none past r_out (m). pull: the reference curves (tools/body/ref) the outline is pulled to (the joint's own anatomy: olecranon, patella plane, deltoid cap, folds); cap: the farthest an outline point is pulled (m); outline: that term's weight multiplier. Elbow keys within 8 deg of the rest angle (MakeHuman's 39.7) are dropped: a 45 key there would be a null shape.",
+ "about": "Stage 7's data (tools/body/correctives.py). keys: [motion, absolute deg] posed as the check poses them (bends.Strip; hip_abd: the hip turned about her front). Regions: spheres round the joint's rest head, full within r_in, none past r_out (m). pull: the reference curves (tools/body/ref) the outline is pulled to (the joint's own anatomy: olecranon, patella plane, deltoid cap, folds); cap: the farthest an outline point is pulled (m); outline: that term's weight multiplier. Elbow keys within 8 deg of the rest angle (MakeHuman's 39.7) are dropped: a 45 key there would be a null shape. v1 (4 Nov): the shoulder's solve is held back (it lost area and outline against LBS: see the P1 report), as are knee 135 and hip 135 (the last key holds past it).",
  "solve": {
   "iters": 12,
   "arap": 8,
@@ -102,10 +102,6 @@
     [
      "knee",
      90
-    ],
-    [
-     "knee",
-     135
     ]
    ],
    "r_in": 0.08,
@@ -142,66 +138,6 @@
    "fold": "plane"
   },
   {
-   "name": "shoulder",
-   "law": "rbf",
-   "bone": "upperarm_{s}",
-   "end": "lowerarm_{s}",
-   "frame": "clavicle_{s}",
-   "sigma_deg": 40.0,
-   "center": "upperarm_{s}",
-   "keys": [
-    [
-     "shoulder_abd",
-     0
-    ],
-    [
-     "shoulder_abd",
-     90
-    ],
-    [
-     "shoulder_abd",
-     135
-    ],
-    [
-     "shoulder_flex",
-     90
-    ],
-    [
-     "shoulder_flex",
-     135
-    ],
-    [
-     "shoulder_flex",
-     -45
-    ]
-   ],
-   "r_in": 0.1,
-   "r_out": 0.22,
-   "proximal": "spine_05",
-   "distal": "upperarm_{s}",
-   "distal_end": "lowerarm_{s}",
-   "helpers": [
-    "upperarm_share_{s}",
-    "clavicle_{s}",
-    "scap_{s}",
-    "delt_{s}",
-    "trap_{s}",
-    "pec_{s}",
-    "lat_{s}"
-   ],
-   "area": {
-    "d": [
-     0.03,
-     0.05,
-     0.07
-    ]
-   },
-   "part_cut": [
-    0.1,
-    0.9
-   ]
-  },
-  {
    "name": "hip",
    "law": "rbf",
    "bone": "thigh_{s}",
@@ -217,10 +153,6 @@
     [
      "hip_flex",
      90
-    ],
-    [
-     "hip_flex",
-     135
     ],
     [
      "hip_abd",
