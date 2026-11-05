@@ -12375,7 +12375,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You went through the door! You went through— what was on the stair? No, don't tell me. Yes, tell me. No.",
+    "text": "(The kettle is on. There is a line across his throat, pale and closed, a week old by the look of it, and it was not there yesterday. He sees you see it.) Sit. The good stool. ...You'll have slept badly. I did.",
     "effects": [
      {
       "npcFlag": {
@@ -12387,8 +12387,12 @@
     ],
     "choices": [
      {
-      "text": "A stair going down. And the dead, coming up it.",
+      "text": "Which carter, Corvane?",
       "goto": "cb_vault2"
+     },
+     {
+      "text": "You got up.",
+      "goto": "cb_vault_up"
      },
      {
       "text": "I'd rather not say.",
@@ -12398,15 +12402,14 @@
    },
    "cb_vault2": {
     "id": "cb_vault2",
-    "text": "Then they're still keeping it. Good. Good, I think. ...I'm going to light every candle I've got.",
+    "text": "(He pours.) ...Don't.",
     "choices": [
      {
       "text": "Something else.",
       "goto": "hub"
      },
      {
-      "text": "Goodbye.",
-      "end": true
+      "text": "Goodbye."
      }
     ]
    },
@@ -12650,6 +12653,25 @@
    "carried_chid": {
     "id": "carried_chid",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "dead"
+        },
+        {
+         "fact": "corvane.rose",
+         "eq": true
+        },
+        {
+         "fact": "arena.last.ago",
+         "eq": 0
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. (He doesn't look at you. His collar is buttoned to the top, badly, over something.) Somebody brought you in from the old door. A carter, I expect. ...Sit. The good stool. Don't ask me anything this morning. Please."
+     },
      {
       "when": {
        "all": [
@@ -13076,6 +13098,19 @@
     "id": "cut_still",
     "text": "(He waits, and puts it away again.) It'll keep.",
     "next": "hub"
+   },
+   "cb_vault_up": {
+    "id": "cb_vault_up",
+    "text": "(He puts the cup in your hands.) So did you, once. I didn't ask you how. ...Drink that. It's only hot water.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye."
+     }
+    ]
    }
   }
  },
@@ -13968,13 +14003,6 @@
     "text": [
      {
       "when": {
-       "fact": "vonnra.told",
-       "eq": true
-      },
-      "text": "(She does not look up.) I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate."
-     },
-     {
-      "when": {
        "all": [
         {
          "fact": "vonnra.told",
@@ -13986,6 +14014,13 @@
        ]
       },
       "text": "(She does not look up.) I have told you what is behind it, and the key to it is in your coat. After dark, traveler."
+     },
+     {
+      "when": {
+       "fact": "vonnra.told",
+       "eq": true
+      },
+      "text": "(She does not look up.) I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate."
      },
      {
       "text": "Not for any price. That is the only thing I will ever say to you without charging for it."
@@ -14670,7 +14705,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?",
+    "text": "(She is standing, and the ledger is open at a page with one line on it. You cannot read it from the door.) You opened it. ...Do not sit, traveler. I would rather you stood. What stood in the door?",
     "effects": [
      {
       "npcFlag": {
@@ -14682,7 +14717,7 @@
     ],
     "choices": [
      {
-      "text": "A stair going down. The dead coming up it.",
+      "text": "Corvane. With a lamp.",
       "goto": "cb_vault2"
      },
      {
@@ -14693,7 +14728,18 @@
    },
    "cb_vault2": {
     "id": "cb_vault2",
-    "text": "Then it is still there. That is all. I will say it again, because it bears repeating: that is all.",
+    "text": [
+     {
+      "when": {
+       "fact": "chain.two",
+       "eq": true
+      },
+      "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Did it reach for you? (She does not wait for the answer. She has it from your face.) Two. Five, and the valley sleeps. Go and eat something, {name}."
+     },
+     {
+      "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Go and eat something, {name}."
+     }
+    ],
     "choices": [
      {
       "text": "Goodbye.",
@@ -22000,6 +22046,111 @@
       "end": true
      }
     ]
+   }
+  }
+ },
+ "door_night": {
+  "npc": "door_night",
+  "entry": [
+   {
+    "node": "go_home"
+   }
+  ],
+  "nodes": {
+   "go_home": {
+    "id": "go_home",
+    "text": "(He is standing in front of the door with a lamp of the old make held up, violet glass in it, and for once his shoes are on the right feet.) Go home, {name}. ...I can't tell you. I've been wrong before.",
+    "choices": [
+     {
+      "text": "Get out of the door, Corvane.",
+      "goto": "wrong"
+     },
+     {
+      "text": "What are you?",
+      "goto": "wrong"
+     },
+     {
+      "text": "Vonnra told me what's behind it.",
+      "goto": "ask_her"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "wrong": {
+    "id": "wrong",
+    "text": "(The lamp doesn't shake. His voice does, a little, and then it stops.) Ask her what the Legion couldn't burn. Ask her why they tried.",
+    "next": "lie_down",
+    "speaker": "chid"
+   },
+   "ask_her": {
+    "id": "ask_her",
+    "text": "Did she. (He doesn't ask what.) Ask her what the Legion couldn't burn. Ask her why they tried. ...I can't tell you. I've been wrong before.",
+    "next": "lie_down",
+    "speaker": "chid"
+   },
+   "lie_down": {
+    "id": "lie_down",
+    "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly, to a thing that should not be up.) Lie down.",
+    "choices": [
+     {
+      "text": "(Raise your weapon.)"
+     },
+     {
+      "text": "(Lower your weapon, and go.)",
+      "goto": "go"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "go": {
+    "id": "go",
+    "text": "Good. ...Good. Go on. I'll see you in the morning. I always do.",
+    "choices": [
+     {
+      "text": "(Go.)"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "gets_up": {
+    "id": "gets_up",
+    "text": "He gets up.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "gone": {
+    "id": "gone",
+    "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "heart": {
+    "id": "heart",
+    "text": "He goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "ranks": {
+    "id": "ranks",
+    "text": "The dead step back onto the stair, all together, rank by rank, and stand.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
    }
   }
  }

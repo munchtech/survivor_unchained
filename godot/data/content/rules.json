@@ -1016,6 +1016,47 @@
    "report": "The hill over the Dig stayed dark after you came down from it. At first light Snib was sitting on an upturned bucket at the pit mouth, with his chin in his hands, waiting for somebody to tell him what to do."
   },
   {
+   "id": "corvane.rose",
+   "once": true,
+   "when": {
+    "any": [
+     {
+      "history": "opened_vault"
+     },
+     {
+      "quest": {
+       "id": "vault",
+       "entry": "shut"
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "corvane.rose": true
+     }
+    }
+   ],
+   "report": null
+  },
+  {
+   "id": "chain.two",
+   "once": true,
+   "when": {
+    "fact": "vault.opened",
+    "eq": true
+   },
+   "effect": [
+    {
+     "set": {
+      "chain.two": true
+     }
+    }
+   ],
+   "report": null
+  },
+  {
    "id": "vault.watched",
    "once": true,
    "when": {
