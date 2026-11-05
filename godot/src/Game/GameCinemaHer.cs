@@ -142,6 +142,8 @@ public partial class Game
             public readonly SpotLight3D L; public readonly System.Text.Json.JsonElement From, Aim; public readonly int Shot;
             public float E, Spec;
             public SpotLight3D? Hair, Gear, Skin;
+            /// <summary>(P9 C15) Lights the world too, not her alone (the "rig" cue's "world"): no skin, hair or gear twins.</summary>
+            public bool World;
             /// <summary>A catchlight: narrow (8 degrees or under) and aimed at her eyes bone; its sheen stays whole on her under her key.</summary>
             public readonly bool Catch;
             public Rig(SpotLight3D l, System.Text.Json.JsonElement from, System.Text.Json.JsonElement aim, int shot, float e)
@@ -253,6 +255,7 @@ public partial class Game
                 float kk = on[r] > 0.01f * sum ? cap : 1;
                 r.L.LightEnergy = r.E * kk;
                 r.L.LightSpecular = HerPart("spec") ? Mathf.Min(r.Spec, HerSkinSpec) : r.Spec;
+                if (r.World) { r.L.LightCullMask = 0xFFFFFu; continue; }
                 // Under her key the rig leaves her skin (people's layer, which in a cinematic is hers alone: the cast are on
                 // CastLayer) for its skin twin, at HerRigShare of itself (a catchlight whole).
                 // (a catchlight's diffuse on her face takes the share too: C01 s8's 6-degree "eyes" rig from the lens was 40% of the

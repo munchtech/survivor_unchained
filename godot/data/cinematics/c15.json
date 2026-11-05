@@ -4,7 +4,7 @@
  "conversation": "wenna",
  "zone": "verge",
  "script": "docs/cinematics/shoot/c15.md",
- "draft": "Previs pass 2: the reach ~20 m upstream of pass 1 (the blind's camp behind every camera, its fire out for the film), the wolves spawned neutral and staged drinking on the sunlit north bank (pitched to it), the Dig from its own reach with its lamps out, the CU on the far waterline. Dawn whatever the hour; the dip hands back.",
+ "draft": "Previs pass 3: three shots down the water from the cause (the Dig silent, the wolves drinking, the reach at first light under Wenna's line). Dawn whatever the hour, the sun low from the east-north-east, lilac shade, the water's sky warm; the dip hands back.",
  "bars": {
   "in": 0.6,
   "out": 0.8
@@ -19,20 +19,16 @@
  },
  "marks": {
   "w1": [
-   2.85,
-   -39.33
+   3.22,
+   -34.11
   ],
   "w2": [
-   4.07,
-   -39.8
+   4.64,
+   -40.02
   ],
   "w3": [
-   5.24,
-   -40.58
-  ],
-  "w4": [
-   6.4,
-   -40.74
+   1.98,
+   -38.63
   ]
  },
  "cast": {
@@ -47,84 +43,57 @@
   "w3": {
    "kind": "enemy",
    "def": "wolf"
-  },
-  "w4": {
-   "kind": "enemy",
-   "def": "wolf"
   }
  },
  "shots": [
   {
    "id": "1",
-   "type": "ELS",
-   "dur": 5.0,
-   "note": "High over the reach, looking up it with the low sun across from the right: the stream clear, a band of sky in it, mist lifting off the water, the wood dark at the edges.",
+   "type": "LS",
+   "dur": 4.0,
+   "note": "From the Dig's reach up toward its hill, the low sun behind it: the wheel still, no smoke, no lamps, nothing moving on the spoil, the water bright in front.",
    "cam": {
     "pos": {
      "abs": [
-      -17.16,
-      7.97,
-      -20.26
+      76.0,
+      1.55,
+      -80.0
      ]
     },
     "at": {
      "abs": [
-      10.15,
-      -0.73,
-      -41.35
+      97.0,
+      2.6,
+      -97.0
      ]
     },
-    "lens": 30,
-    "move": {
-     "pos": {
-      "abs": [
-       -14.32,
-       7.57,
-       -21.3
-      ]
-     },
-     "at": {
-      "abs": [
-       12.8,
-       -0.73,
-       -42.74
-      ]
-     },
-     "ease": "linear"
-    }
+    "lens": 35
    },
    "cues": [
     {
      "do": "atmosphere",
      "preset": "dawn",
      "keyColor": "#f3d9a0",
-     "azimuth": 15,
-     "elevation": 12,
-     "hemiSky": "#9a8fc0",
-     "fogColor": "#b8aac8"
+     "azimuth": -35,
+     "elevation": 14,
+     "hemiSky": "#8c7cc8",
+     "fogColor": "#e2c6ae",
+     "exposure": 1.3,
+     "fog": 0.5,
+     "hemi": 0.75,
+     "env": 0.65,
+     "key": 1.25
     },
     {
      "do": "grade",
-     "shade": "#7a6a9a",
-     "shadeK": 0.5
+     "shade": "#5e4ea8",
+     "shadeK": 0.25,
+     "shadowTint": "#6a50c0"
     },
     {
-     "do": "mist",
-     "name": "reach",
-     "where": [
-      5.3,
-      -37.68
-     ],
-     "size": [
-      70,
-      1.4,
-      70
-     ],
-     "density": 0.18,
-     "color": "#d8d0e0",
-     "falloff": 2.5,
-     "grain": 0.12,
-     "sink": 0.1
+     "do": "water",
+     "keys": {
+      "sky": "#e8c8a0"
+     }
     },
     {
      "do": "music",
@@ -176,18 +145,12 @@
      "neutral": true
     },
     {
-     "do": "spawn",
-     "actor": "w4",
-     "mark": "w4",
-     "neutral": true
-    },
-    {
      "do": "anim",
      "actor": "w1",
      "clip": "drink",
      "where": [
-      3.25,
-      -36.36
+      0.58,
+      -35.51
      ]
     },
     {
@@ -195,8 +158,8 @@
      "actor": "w2",
      "clip": "drink",
      "where": [
-      6.08,
-      -37.57
+      6.75,
+      -37.89
      ]
     },
     {
@@ -204,17 +167,8 @@
      "actor": "w3",
      "clip": "drink",
      "where": [
-      6.22,
-      -37.75
-     ]
-    },
-    {
-     "do": "anim",
-     "actor": "w4",
-     "clip": "drink",
-     "where": [
-      8.72,
-      -38.84
+      2.08,
+      -35.63
      ]
     }
    ]
@@ -223,20 +177,20 @@
    "id": "2",
    "type": "MLS",
    "dur": 5.0,
-   "note": "Low on the south bank, across the water: the wolves drinking at the far edge, the sun on their backs; one lifts its head and looks off, then drinks again.",
+   "note": "A 3/4 across the water from the south bank: three wolves drinking at different depths, one on our bank; the one across lifts its head and looks off, then drinks again. The sun on their backs, a pool of it on the far bank.",
    "cam": {
     "pos": {
      "abs": [
-      4.08,
-      1.77,
-      -31.4
+      -1.88,
+      3.54,
+      -27.71
      ]
     },
     "at": {
      "abs": [
-      4.72,
-      -0.33,
-      -39.86
+      2.95,
+      -0.63,
+      -36.79
      ]
     },
     "lens": 50
@@ -246,104 +200,154 @@
      "do": "atmosphere",
      "preset": "dawn",
      "keyColor": "#f3d9a0",
-     "azimuth": 15,
-     "elevation": 12,
-     "hemiSky": "#9a8fc0",
-     "fogColor": "#b8aac8"
+     "azimuth": -10,
+     "elevation": 18,
+     "hemiSky": "#8c7cc8",
+     "fogColor": "#e2c6ae",
+     "exposure": 1.15,
+     "riverSky": 0.7,
+     "riverLight": 0.8,
+     "fog": 0.5,
+     "hemi": 0.75,
+     "env": 0.65,
+     "key": 1.25
+    },
+    {
+     "do": "rig",
+     "name": "sunpool",
+     "world": true,
+     "shadow": true,
+     "size": 0.4,
+     "color": "#f3d9a0",
+     "angle": 16,
+     "falloff": 0.6,
+     "spec": 0.4,
+     "energy": 14,
+     "from": {
+      "abs": [
+       17.67,
+       6.08,
+       -40.12
+      ]
+     },
+     "aim": {
+      "abs": [
+       3.28,
+       -0.43,
+       -37.59
+      ]
+     }
+    },
+    {
+     "do": "water",
+     "keys": {
+      "sky": "#c8a888"
+     }
     },
     {
      "at": 0.9,
      "do": "anim",
-     "actor": "w2",
+     "actor": "w3",
      "clip": "drink_look",
      "where": [
-      6.08,
-      -37.57
+      2.08,
+      -35.63
      ]
     },
     {
      "at": 4.9,
      "do": "anim",
-     "actor": "w2",
+     "actor": "w3",
      "clip": "drink",
      "where": [
-      6.08,
-      -37.57
+      2.08,
+      -35.63
      ]
     }
    ]
   },
   {
    "id": "3",
-   "type": "LS",
-   "dur": 4.0,
-   "note": "From the Dig's reach up toward its hill: the pump wheel still, no smoke, no lamps, nothing moving on the spoil.",
-   "cam": {
-    "pos": {
-     "abs": [
-      76.0,
-      1.55,
-      -80.0
-     ]
-    },
-    "at": {
-     "abs": [
-      97.0,
-      0.8,
-      -97.0
-     ]
-    },
-    "lens": 35
-   },
-   "cues": [
-    {
-     "do": "atmosphere",
-     "preset": "dawn",
-     "keyColor": "#f3d9a0",
-     "azimuth": 15,
-     "elevation": 12,
-     "hemiSky": "#9a8fc0",
-     "fogColor": "#b8aac8"
-    }
-   ]
-  },
-  {
-   "id": "4",
-   "type": "CU",
-   "dur": 5.0,
+   "type": "ELS",
+   "dur": 6.0,
    "fit": [
     "wenna.cb_clean"
    ],
    "tail": 2.2,
-   "note": "Close and low over the water, across to the sunlit far waterline: the water in soft bands of the sky. Wenna's line from off. Hold past it; the dip hands back.",
+   "note": "High over the Hollow's reach, the blind's camp behind: first light up the stream, the sky warm in the water, mist on it, the grass raked gold. Wenna's line from off; held past it, the dip hands back.",
    "cam": {
     "pos": {
      "abs": [
-      2.92,
-      0.17,
-      -35.76
+      -17.16,
+      7.97,
+      -20.26
      ]
     },
     "at": {
      "abs": [
-      2.26,
-      -0.98,
-      -37.89
+      10.15,
+      2.27,
+      -41.35
      ]
     },
-    "lens": 85,
-    "focus": 2.6,
-    "fstop": 4
+    "lens": 30,
+    "move": {
+     "pos": {
+      "abs": [
+       -14.32,
+       7.57,
+       -21.3
+      ]
+     },
+     "at": {
+      "abs": [
+       12.8,
+       2.27,
+       -42.74
+      ]
+     },
+     "ease": "linear"
+    }
    },
    "cues": [
     {
      "do": "atmosphere",
      "preset": "dawn",
      "keyColor": "#f3d9a0",
-     "azimuth": 15,
+     "azimuth": -35,
      "elevation": 12,
-     "hemiSky": "#9a8fc0",
-     "fogColor": "#b8aac8"
+     "hemiSky": "#8c7cc8",
+     "fogColor": "#e2c6ae",
+     "exposure": 1.15,
+     "riverSky": 1.3,
+     "fog": 0.5,
+     "hemi": 0.75,
+     "env": 0.65,
+     "key": 1.25
+    },
+    {
+     "do": "water",
+     "keys": {
+      "sky": "#f0d0a8"
+     }
+    },
+    {
+     "do": "mist",
+     "name": "reach",
+     "where": [
+      5.3,
+      -37.68
+     ],
+     "size": [
+      70,
+      1.4,
+      70
+     ],
+     "density": 0.8,
+     "color": "#f4e2cc",
+     "falloff": 2.5,
+     "grain": 0.12,
+     "sink": 0.1
     },
     {
      "at": 1.0,

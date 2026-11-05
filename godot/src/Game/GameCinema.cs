@@ -1475,6 +1475,8 @@ public partial class Game
                     // layer only, no shadow ("shadow": true casts one, "size" its source in metres: C02 s8's hard lantern), from "from" ({"lens": [right, up, back]} in the
                     // camera's frame, or a place) onto "aim" (a place, a bone tracked), "range", "energy"
                     // faded in "over". It lasts its shot unless "hold"; "energy": 0 takes it down.
+                    // ("world": true lights the world's layers too, the ground and the crowd's beasts: P9 C15's sun pool on the
+                    // wolves' bank, a film's own bounce where the low dawn sun leaves a bank in its own shade)
                     string name = c.Str("name") ?? "rig";
                     // ("fade": true: from the light's energy now to "energy" over "over", 0 included: C03 s8y, the heart's
                     // blue from below dying as it goes under, not cut off)
@@ -1489,11 +1491,12 @@ public partial class Game
                     var l = new SpotLight3D
                     {
                         Name = "Rig_" + name, LightColor = new Color(c.Str("color") ?? "#fff3e6"), SpotAngle = (float)c.Num("angle", 14),
-                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = c.Bool("shadow"), LightSize = (float)c.Num("size", 0), LightCullMask = 2 | PlayerView.CastLayer,
+                        SpotAttenuation = (float)c.Num("falloff", 0.4), ShadowEnabled = c.Bool("shadow"), LightSize = (float)c.Num("size", 0), LightCullMask = c.Bool("world") ? 0xFFFFFu : 2 | PlayerView.CastLayer,
                         LightSpecular = (float)c.Num("spec", 0.3), LightEnergy = over > 0 && !skipping ? e0 : e, SpotRange = (float)c.Num("range", 5),
                     };
                     g.scene!.AddChild(l);
                     var rig = new Rig(l, c.Get("from").Clone(), c.Get("aim").Clone(), c.Bool("hold") ? -1 : tc.Shot.Index, l.LightEnergy);
+                    rig.World = c.Bool("world");
                     rigs[name] = rig;
                     // (its authored energy: HerLight sets the light's own from it each frame, Face 48)
                     if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => { rig.E = Mathf.Lerp(e0, e, (float)k); }));
