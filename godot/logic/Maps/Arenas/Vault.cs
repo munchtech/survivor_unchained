@@ -201,6 +201,12 @@ public sealed class Vault : ArenaShape
         // (round 3: at 0.15 its bulb sat on the glass-black face as a violet dot under the sigil; C13: the face rough enough now,
         // vault_door's gloss_mat, that it lies on it as a soft violet sheen)
         B.Lights[sigil].Specular = 0.5;
+        // (C13 set) A cold light raking the door's face from its east jamb, low and close: the black stone takes a soft sheen
+        // falling across it and its edges catch, so the face reads as a slab, not a hole (round 3: glass-black, no light but
+        // the bulbs' dots); out with the door as it sinks.
+        int rake = B.Glow(2.1, 22.5, "#93a6d8", 2.6, height: 3.4, flicker: 0, range: 4.6);
+        B.Lights[rake].DialOff = "vaultdoor";
+        B.Lights[rake].Specular = 0.3;   // (r2: at 1 its bulb sat in the clearcoat as a white dot from the side)
         // The cut letters over the door catch the violet only as the wake reaches the arms' ends.
         // (Round 3: from 5.2 m, under the lines at 5.7-6.1, at 2.0 they barely showed, and its bulb sat on the glass door.)
         // (C13 build: at 1.2 m out and 3.2 m of range its falloff left a pink hotspot on the face over the door; now well

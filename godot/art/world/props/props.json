@@ -913,8 +913,8 @@
   "dials": {
    "vault_door_move_vaultdoor_sigil": {
     "kind": "vaultsigil",
-    "color": "#7c48ff",
-    "energy": 0.85,
+    "color": "#7426ff",
+    "energy": 1.6,
     "center": [
      0,
      1.6,
@@ -927,6 +927,13 @@
   "gloss": [
    "vault_door_move_vaultdoor_slab"
   ],
+  "gloss_mat": {
+   "albedo": "#101015",
+   "roughness": 0.32,
+   "specular": 0.6,
+   "clearcoat": 0.85,
+   "clearcoat_roughness": 0.18
+  },
   "moves": {
    "vault_door_move_vaultdoor_slab": [
     0.0,
@@ -1008,16 +1015,16 @@
   ]
  },
  "vault_stair": {
-  "tris": 27923,
+  "tris": 38069,
   "lod_m": 45,
-  "tris_lod1": 12565,
+  "tris_lod1": 17130,
   "box": [
    -4.602,
    -8.083,
    -25.85,
-   4.604,
-   3.394,
-   0.618
+   4.602,
+   3.395,
+   0.625
   ]
  },
  "vault_wall_a": {

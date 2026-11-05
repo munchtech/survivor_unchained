@@ -24,9 +24,9 @@ uniform float arms = 7.0;
 uniform float hw = 0.0125;
 uniform float vlen = 0.04;
 uniform float sock = 0.11;
-uniform float lip = 0.22;
-uniform float core = 1.0;
-uniform float heart = 1.7;
+uniform float lip = 0.2;
+uniform float core = 0.9;
+uniform float heart = 1.15;
 instance uniform float k = 0.0;
 
 varying vec3 local;
@@ -42,7 +42,7 @@ void fragment() {
 	float kn = clamp(k / max(notch_k, 0.001), 0.0, 1.0);
 	float ka = clamp((k - notch_k) / max(1.0 - notch_k, 0.001), 0.0, 1.0);
 	float reach = k < notch_k ? kn * inner : mix(inner, 1.04, ka);
-	float lit = smoothstep(dist - 0.04, dist, reach);
+	float lit = smoothstep(dist - 0.04, dist, reach) * step(0.0005, k);
 	float front = exp(-pow((reach - dist) / 0.06, 2.0)) * step(0.001, k) * (1.0 - smoothstep(0.94, 1.0, k));
 	// across the nearest arm: 0 on its axis, 1 at its lips (the half-width narrowing to the V's point)
 	float step_a = 6.2831853 / arms;
@@ -54,7 +54,7 @@ void fragment() {
 	float u = clamp(across / hwl, 0.0, 1.0);
 	float arm = mix(lip, core, exp(-u * u * 5.0));
 	// the socket: hot at its heart, falling to its rim (its walls at the rim's level)
-	float s = mix(lip * 1.6, heart, exp(-pow(rr / max(sock, 0.001), 2.0) * 2.6));
+	float s = mix(lip * 0.9, heart, exp(-pow(rr / max(sock, 0.001), 2.0) * 5.5));
 	float prof = rr < sock + 0.003 ? s : arm;
 	ALBEDO = vec3(0.008, 0.007, 0.011) + color.rgb * energy * prof * (lit * 0.8 + front * 0.7);
 }
