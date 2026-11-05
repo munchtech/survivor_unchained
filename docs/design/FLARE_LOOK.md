@@ -120,7 +120,7 @@ Real time at 60 fps, for a Strike (Stands: §1.8).
 
 What must read, in order, every frame: danger marks, then her, then the Flare's front, then the dead, then the ground.
 - **The front travels.** Every Spend crosses its reach in 0.25 to 0.4 s. A clear never happens in one frame.
-- **The deaths ripple.** They fall behind the front at its speed, each falling away from the source. This is view only: the game logic may kill everything at once, and the crowd's view holds each body in its hit pose for up to 0.3 s.
+- **The deaths ripple.** They fall behind the front at its speed, each falling away from the source. This is view only: the game logic may kill everything at once, and the crowd's view holds each body in its hit pose for up to 0.3 s. The one exception is Bell of the Morning's tableau: what its first tolls kill stands in its pose, rimmed in gold, until the third toll's band reaches it (up to about 0.8 s), so nothing is seen dying before the blast.
 - **A crowd is told by its first few.** The white-flash cap still holds (two elites and three ordinary bodies). Every other struck body takes a 2-frame rim in the calling's hue, shaded, never a cut-out. This answers the skills page's open question about white, for Flares.
 - **The last word:** when a boss or champion is in reach, the Flare's last beat lands on it with the main hitstop, so the player sees the Flare choose it.
 - **The luminance budget** (the skills lead measures it from recorded frames):

@@ -153,10 +153,14 @@ public partial class FlareFx
             var foot = new Vector3(peakA.X, (float)HeightAt(peakA.X, peakA.Y) + 0.02f, peakA.Y);
             var toEye = EyeAt() - foot;
             toEye.Y = 0;
-            if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * 0.45f;
+            // (r3, judge r2 fix 5: a disk's data may stand it behind her, ColumnToEye < 0, so she is drawn over its core and her
+            // silhouette and shield read against it; its foot ColumnHalf m wide either side, widening to a crown at its top)
+            var sh = FlareFamily.Of(id).Peak;
+            if (toEye.LengthSquared() > 1e-4f) foot += toEye.Normalized() * (float)sh.ColumnToEye;
             float h = peakColumn * Mathf.Clamp(0.45f + 0.55f * (f + 1) / 2f, 0, 1);
-            peakColumnMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.6f, (float)pl.Column * gain * env));
-            LcStripDraw(peakColumnMesh, peakColumnMat, foot, foot + Vector3.Up * h, 0.38f);
+            peakColumnMat.SetShaderParameter("col", new Color(1f, 0.86f, 0.6f, (float)pl.Column * gain * (float)sh.ColumnGain * env));
+            peakColumnMat.SetShaderParameter("crown", (float)sh.CrownLight);
+            LcStripDraw(peakColumnMesh, peakColumnMat, foot, foot + Vector3.Up * h, (float)sh.ColumnHalf, (float)(sh.ColumnHalf * sh.Crown));
             peakColumnFx.Visible = true;
         }
         if (Args.Has("clip") && f < fr.Length) GD.Print($"flare peak frame {f}: light {env:0.00}, drawn {Engine.GetFramesDrawn()}");
@@ -176,6 +180,8 @@ public partial class FlareFx
 
     double rippleT = -1;
     Vector2 rippleO;
+    /// <summary>The struck bodies a toll's ripple has touched, and the drawn frame it passed each (BandRim's gold touch).</summary>
+    readonly Dictionary<int, long> rippleTouched = new();
 
     /// <summary>Whether this Blow event is one of a Flare's ripples (its data's part, before the main blow).</summary>
     bool IsRipple(Ev.Flare e) => familyOn && blowT < 0 && FlareFamily.Of(id).Ripple is { Length: > 0 } r && e.Part == r;
@@ -186,19 +192,25 @@ public partial class FlareFx
         var rp = FlareFamily.Ripple;
         rippleT = t;
         rippleO = new Vector2((float)e.X, (float)e.Z);
+        rippleTouched.Clear();
         // The dust: puffs thrown out in a ring at her feet, slowing as they spread, a dark dust by night, a sunlit one by day.
+        DustRing(rippleO, 1.1f, rp.Puffs, (float)(rp.Reach / Math.Max(rp.Time, 1e-3)) * 0.55f);
+        if (Args.Has("clip") || Args.Has("shot")) GD.Print($"flare ripple {id}: {e.Part} at +{rt - pressRt:0.000} s real, {rp.Reach:0} m in {rp.Time:0.00} s, {rp.Puffs} puffs");
+    }
+
+    /// <summary>Dust puffs thrown outward in a ring r m round o (the tolls' at her feet; the Bell's shock ring at its edge).</summary>
+    void DustRing(Vector2 o, float r, int n, float speed)
+    {
         var dust = Night ? new Color(0.17f, 0.16f, 0.16f, 0.42f) : new Color(0.45f, 0.38f, 0.3f, 0.42f);
-        float speed = (float)(rp.Reach / Math.Max(rp.Time, 1e-3)) * 0.55f;
-        for (int i = 0; i < rp.Puffs; i++)
+        for (int i = 0; i < n; i++)
         {
-            float a = (i + R() * 0.6f) / rp.Puffs * Mathf.Tau;
+            float a = (i + R() * 0.6f) / n * Mathf.Tau;
             var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-            var p = new Vector3(rippleO.X, 0, rippleO.Y) + dir * (1.1f + R() * 0.4f);
+            var p = new Vector3(o.X, 0, o.Y) + dir * (r + R() * 0.4f);
             p.Y = (float)HeightAt(p.X, p.Z) + 0.2f + R() * 0.15f;
             bed.Spawn(FlareBits.Kind.Puff, p, dir * speed * (0.8f + R() * 0.4f) + Vector3.Up * 0.3f, 0.55f + R() * 0.2f, 0.45f + R() * 0.15f,
                 dust, new Color(dust.R, dust.G, dust.B, 0), sizeEnd: 1.3f, drag: 4.5f);
         }
-        if (Args.Has("clip") || Args.Has("shot")) GD.Print($"flare ripple {id}: {e.Part} at +{rt - pressRt:0.000} s real, {rp.Reach:0} m in {rp.Time:0.00} s, {rp.Puffs} puffs");
     }
 
     /// <summary>The ripple's step (Flare time), while the main band is not running.</summary>
@@ -209,7 +221,14 @@ public partial class FlareFx
         float x = (float)((t - rippleT) / Math.Max(rp.Time, 1e-3));
         if (x > 1.05f) { rippleT = -1; RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero); return; }
         float k = 1 - Mathf.SmoothStep(0.6f, 1.05f, x);
+        // (r3, judge r2 fix 1: each struck body's rim touched with gold the frame the ripple's front passes it; the shader's
+        // front, ease 1.2 below)
+        float front = (float)rp.Reach * (1 - Mathf.Pow(1 - Mathf.Clamp(x, 0, 1), 1.2f));
+        long now = (long)Engine.GetFramesDrawn();
+        foreach (var kv in bandStruck)
+            if (!rippleTouched.ContainsKey(kv.Key) && (kv.Value.At - rippleO).Length() <= front) rippleTouched[kv.Key] = now;
         RenderingServer.GlobalShaderParameterSet(BandParam, new Vector4(rippleO.X, rippleO.Y, x, k));
+        RenderingServer.GlobalShaderParameterSet(BandFromParam, Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet(BandLineParam, new Vector4(rippleO.X, rippleO.Y, (float)rp.Lead, 0));
         RenderingServer.GlobalShaderParameterSet(BandColParam, Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet(BandShapeParam, new Vector4((float)rp.Reach, (float)rp.Time, 1.2f, (float)rp.Dust));

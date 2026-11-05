@@ -82,6 +82,20 @@ public static class FlareFamily
         public string Ripple = "";
         /// <summary>A line Flare's path in the stop: "strip" (the marks' seam) or "crack" (its future crack, FlareFx.LongCut).</summary>
         public string Path = "strip";
+        /// <summary>r3 (judge r2 fix 1; FLARE_LOOK Bell: "it stops in its pose, a tableau"): the kills of its blows before the
+        /// main one stand held in their pose until the main blow's band reaches them (no fall, no number, no count before).</summary>
+        public bool Tableau;
+        /// <summary>r3 (judge r2 fix 5): its own band, launched from a shock ring (null: the family's).</summary>
+        public BandOwn? Band;
+    }
+
+    /// <summary>A Flare's own band (r3, the Bell): Start the shock ring's radius (m) it launches from, the ring reaching it
+    /// from her over Ring s (Flare time), its edge's glow x RingGlow on the ring and easing to the family's over RingFade s,
+    /// RingPuffs dust puffs thrown outward from the ring; Reach, Time, Ease its run past the ring (null: the family's).</summary>
+    public sealed class BandOwn
+    {
+        public double Start, Ring, RingGlow = 1, RingFade = 0.1; public int RingPuffs;
+        public double? Reach, Time, Ease;
     }
 
     /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
@@ -89,7 +103,11 @@ public static class FlareFamily
     /// <summary>r3: a line's Hot is its crack's white-hot core (HDR) and Spill its gold on the crack's lips (x albedo); Tip
     /// the tear's white-hot tip (HDR, a "tear" Flare); its rig's lights weighted Along[0] at her to Along[1] at the far end,
     /// each lit as the tear reaches it; Frames its own envelope by drawn frame (null: the family's).</summary>
-    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1, Hot, HotWidth = 0.25, Spill, Tip; public double[] Along = { 1, 1 }; public double[]? Frames; }
+    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1, Hot, HotWidth = 0.25, Spill, Tip;
+        /// <summary>r3 (judge r2 fix 5): a disk's column: its half-width at the foot (m), its crown's half-width at the top x the
+        /// foot's and the crown's light (x the column's), how far toward the eye its foot stands from her (m; less than 0 behind
+        /// her, so she is drawn over its core), and its light x the family's.</summary>
+        public double ColumnHalf = 0.38, Crown = 1, CrownLight, ColumnToEye = 0.45, ColumnGain = 1; public double[] Along = { 1, 1 }; public double[]? Frames; }
 
     public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3, Wash; }
 
@@ -109,7 +127,7 @@ public static class FlareFamily
 
     /// <summary>An air and dust ripple (Bell's first tolls): its front runs Reach m in Time s (Flare time), Lead m soft, a
     /// Dust lift of the ground's value (x, no light), Puffs dust puffs thrown out along it.</summary>
-    public sealed class RippleRules { public double Reach = 10, Time = 0.25, Lead = 0.8, Dust = 0.35; public int Puffs = 28; }
+    public sealed class RippleRules { public double Reach = 10, Time = 0.25, Lead = 0.8, Dust = 0.35, Rim = 0.6; public int Puffs = 28, RimFrames = 3; }
 
     /// <summary>Glow: the leading edge's own light (HDR, x the front's colour), r3.</summary>
     public sealed class BandLight { public double Front = 1, Tail = 0.45, Glow; }
@@ -126,11 +144,19 @@ public static class FlareFamily
         public string RimColor = "#ffb84a";
         public BandLight Night = new(), Day = new();
         public BandLight Of(bool night) => night ? Night : Day;
+        /// <summary>A Flare's own band (r3): the shock ring it launches from (Start m, Ring s) and its run past it.</summary>
+        public double Start, Ring, RingGlow = 1, RingFade = 0.1; public int RingPuffs;
+        public BandRules With(BandOwn? o) => o == null ? this : new BandRules
+        {
+            Reach = o.Reach ?? Reach, Time = o.Time ?? Time, Ease = o.Ease ?? Ease, Lead = Lead, After = After, Fade = Fade,
+            Edge = Edge, Trough = Trough, Dark = Dark, RimColor = RimColor, Night = Night, Day = Day,
+            Start = o.Start, Ring = o.Ring, RingGlow = o.RingGlow, RingFade = o.RingFade, RingPuffs = o.RingPuffs,
+        };
     }
 
     /// <summary>The beat: the camera's kick (px at 1080p), a drop's landing after the band (s) and its scale-in, a
     /// decision-marked hit's hold after its mark shows (frames), the numbers' wait after the band (s).</summary>
-    public sealed class BeatRules { public double KickPx = 9, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02, SpendLight = 8, SpendLightDay = 8; }
+    public sealed class BeatRules { public double KickPx = 9, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02, SpendLight = 8, SpendLightDay = 8, TotalSafe = 0.05; }
 
     /// <summary>The recovery: her ember's pool x Pool for Hold s from the main blow, then back over Out s.</summary>
     public sealed class RecoveryRules { public double Pool = 1.3, Hold = 2, Out = 0.4; }
@@ -161,6 +187,14 @@ public static class FlareFamily
     /// <summary>A Flare's own rules (an empty one when it has none).</summary>
     public static Own Of(string flare) => F.Flares.TryGetValue(flare, out var o) ? o : None;
 
+    static readonly Dictionary<string, BandRules> bands = new();
+    /// <summary>A Flare's band: the family's with its own (r3, the Bell's shock ring) over it.</summary>
+    public static BandRules BandOf(string flare)
+    {
+        if (!bands.TryGetValue(flare, out var b)) bands[flare] = b = F.Band.With(Of(flare).Band);
+        return b;
+    }
+
     /// <summary>Whether this Blow event is the Flare's main blow (its data's part, its last when the data says so).</summary>
     public static bool IsMain(string flare, string part, bool last)
     {
@@ -187,5 +221,5 @@ public static class FlareFamily
         return Math.Clamp(t, s.Min, s.Max);
     }
 
-    public static void Reload() => file = null;
+    public static void Reload() { file = null; bands.Clear(); }
 }

@@ -93,11 +93,14 @@ float fl_band_d(vec2 w) {
 // then the lit ground behind. x: light (x albedo, the front's and the tail's), y: a ripple's dust, z: the edge's glow, w: the
 // trough's dark (0..1).
 global uniform vec4 flare_band_edge;  // x: the edge's depth behind the front (m); y: the trough's (m); z: its dark 0..1; w: the edge's glow (HDR, x the front's colour)
+// r3 (judge r2 fix 5, the Bell): a band launched from a shock ring: x the ring's radius now (m; 0 none). The front stands at
+// x plus its run, every distance counted from the ring (inside it, the ground lit as the tail; the peak's disk lights it).
+global uniform vec4 flare_band_from;
 vec4 flare_band_at(vec2 w) {
 	if (flare_band.w <= 0.0) return vec4(0.0);
 	// (it wanders a little by place, so the front is a wave of light, not a drawn circle)
 	float n = texture(flare_noise, w * 0.043).g - 0.5;
-	float d = max(fl_band_d(w) + n * 0.9, 0.0);
+	float d = max(fl_band_d(w) + n * 0.9, 0.0) - flare_band_from.x;
 	float R = max(flare_band_shape.x, 1.0), T = max(flare_band_shape.y, 1e-3), e = max(flare_band_shape.z, 0.2);
 	float x = flare_band.z;
 	float F = R * (1.0 - pow(1.0 - clamp(x, 0.0, 1.0), e));

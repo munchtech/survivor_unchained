@@ -25,7 +25,7 @@ public partial class FlareFx
     /// <summary>A Flare's damage number, released (BattleFx: Hits.Tally).</summary>
     public Action<int, Vector3, double, double, bool> Number = (_, _, _, _, _) => { };
     /// <summary>One big number past the caps (Hits.Total): the Long Cut's line as one total at its far end (r3).</summary>
-    public Action<Vector3, double> Total = (_, _) => { };
+    public Action<Vector3, double, float> Total = (_, _, _) => { };
     double lineTotal, lineTotalDue = double.MaxValue;
     int lineTotalN;
     float lineTotalAlong;
@@ -45,7 +45,7 @@ public partial class FlareFx
     public static int KillsHeld { get; private set; }
     /// <summary>The struck rim's drawn frames as the band crosses a body (FLARE_LOOK §1.6: "a 2-frame rim in the calling's hue").</summary>
     const int BandRimFrames = 2;
-    static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col", BandEdgeParam = "flare_band_edge";
+    static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col", BandEdgeParam = "flare_band_edge", BandFromParam = "flare_band_from";
 
     void BlowPress()
     {
@@ -53,6 +53,12 @@ public partial class FlareFx
         pressRt = rt;
         mainLogged = false;
     }
+
+    /// <summary>This Flare's band: the family's, its own over it (r3: the Bell's shock ring, FlareFamily.BandOf).</summary>
+    FlareFamily.BandRules Br => FlareFamily.BandOf(id);
+
+    /// <summary>Whether its kills before the main blow stand as a tableau until the band reaches them (r3, the Bell).</summary>
+    bool Tableau => familyOn && FlareFamily.Of(id).Tableau;
 
     /// <summary>Whether this Blow event is the cast's main blow (the family's, a Strike's, once).</summary>
     bool IsMainBlow(Ev.Flare e) => familyOn && blowT < 0 && FlareFamily.IsMain(id, e.Part, e.Last);
@@ -95,6 +101,9 @@ public partial class FlareFx
             SpendLight(cueAt + Vector3.Up * 2.5f, new Color(1f, 0.75f, 0.4f), (float)(Night ? bt.SpendLight : bt.SpendLightDay));
         }
         if (HasPeak) spendAt = t;
+        // (r3, judge r2 fix 5: a band launched from a shock ring throws dust outward from it on the hitstop frame)
+        var brr = Br;
+        if (brr.Start > 0 && brr.RingPuffs > 0 && bandOn) DustRing(o, (float)brr.Start, brr.RingPuffs, (float)(brr.Reach * brr.Ease / Math.Max(brr.Time, 1e-3)) * 0.4f);
         Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
         ResolvePending();
         if (Perf.On) GD.Print($"flare perf blow t {Perf.Now:0.0000}");
@@ -116,19 +125,26 @@ public partial class FlareFx
     double BandTime(float x, float z) => blowT < 0 ? Held : blowT + BandAfter(BandDist(x, z));
 
     /// <summary>How long after the main blow (Flare time) the band's front stands this far out (m).</summary>
-    static double BandAfter(float dist)
+    /// (r3, the Bell: a band launched from a shock ring Start m round her: the ring reaches it over Ring s, then the run
+    /// goes on from the ring.)
+    double BandAfter(float dist)
     {
-        var br = FlareFamily.Band;
-        float d = Mathf.Clamp(dist / (float)Math.Max(1, br.Reach), 0, 1);
-        return br.Time * (1 - Math.Pow(1 - d, 1 / Math.Max(0.2, br.Ease)));
+        var br = Br;
+        float s0 = (float)br.Start;
+        if (s0 > 0 && dist < s0) return br.Ring * dist / s0;
+        float d = Mathf.Clamp((dist - s0) / (float)Math.Max(1, br.Reach), 0, 1);
+        return (s0 > 0 ? br.Ring : 0) + br.Time * (1 - Math.Pow(1 - d, 1 / Math.Max(0.2, br.Ease)));
     }
 
     /// <summary>How far out the band's front stands this long after the main blow (Flare time, m).</summary>
-    static float BandFront(double since)
+    float BandFront(double since)
     {
-        var br = FlareFamily.Band;
+        var br = Br;
+        float s0 = (float)br.Start;
+        if (s0 > 0 && since < br.Ring) return s0 * (float)(since / Math.Max(br.Ring, 1e-3));
+        if (s0 > 0) since -= br.Ring;
         double x = Math.Clamp(since / Math.Max(br.Time, 1e-3), 0, 1);
-        return (float)(br.Reach * (1 - Math.Pow(1 - x, Math.Max(0.2, br.Ease))));
+        return s0 + (float)(br.Reach * (1 - Math.Pow(1 - x, Math.Max(0.2, br.Ease))));
     }
 
     /// <summary>The main blow's hitstop lets the Flare's clock run (r3): set on the blow, cleared when the stop ends.</summary>
@@ -156,8 +172,11 @@ public partial class FlareFx
     /// <summary>For CrowdView: a struck body's band rim (0 none): on for BandRimFrames drawn frames from the band reaching it.</summary>
     public float BandRim(int enemy)
     {
-        if (!Active || !bandStruck.TryGetValue(enemy, out var s) || s.Frame < 0) return 0;
-        long age = (long)Engine.GetFramesDrawn() - s.Frame;
+        if (!Active || !bandStruck.TryGetValue(enemy, out var s)) return 0;
+        long now = (long)Engine.GetFramesDrawn();
+        // (r3, judge r2 fix 1: a toll's ripple touches each struck body's rim with gold as it passes, FLARE_LOOK Bell)
+        if (s.Frame < 0) return rippleTouched.TryGetValue(enemy, out var rf) && now - rf >= 0 && now - rf < FlareFamily.Ripple.RimFrames ? (float)FlareFamily.Ripple.Rim * (Night ? 0.8f : 1f) : 0;
+        long age = now - s.Frame;
         return age >= 0 && age < BandRimFrames ? (age == 0 ? 1f : 0.75f) * (Night ? 0.8f : 1f) : 0;
     }
 
@@ -206,16 +225,23 @@ public partial class FlareFx
     {
         if (!Active) return;
         // The kills no blow event resolved last frame (a rout, a kill between blows): their moment now.
-        if (doomed.Count > 0 && !IsLongCut && id != "burns_twice")
+        // (r3, judge r2 fix 1: a tableau Flare's kills before its main blow stand in their pose until its band reaches them)
+        if (doomed.Count > 0 && !IsLongCut && id != "burns_twice" && !(Tableau && blowT < 0))
             foreach (var d in doomed.Values)
                 if (d.Pending && d.BornRt < rt - 1e-6) { d.Pending = false; d.At = blowT >= 0 ? Math.Max(t + 0.02, BandTime(d.Where.X, d.Where.Z)) : t + 0.02; }
-        var br = FlareFamily.Band;
+        var br = Br;
         if (bandOn)
         {
             // The front: its progress over its run (Flare time), its light the school's glow x the data's (x albedo), the
-            // ground lit behind it for `after` s, faded over the run's last share.
-            float x = (float)((t - blowT) / Math.Max(br.Time, 1e-3));
-            if (x > 1.05f) { bandOn = false; RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero); }
+            // ground lit behind it for `after` s, faded over the run's last share. (r3, the Bell: launched from its shock
+            // ring: while the ring runs out to Start, the run stands at 0 with its origin's ring at the ring's front; the
+            // edge's glow x RingGlow on the ring, easing to the family's over RingFade s after it.)
+            double since = t - blowT;
+            float s0 = (float)br.Start, ringNow = s0;
+            if (s0 > 0) { ringNow = since < br.Ring ? s0 * (float)(since / Math.Max(br.Ring, 1e-3)) : s0; since = Math.Max(0, since - br.Ring); }
+            float ringK = s0 > 0 ? 1 + ((float)br.RingGlow - 1) * (1 - Mathf.SmoothStep(0, 1, (float)(since / Math.Max(br.RingFade, 1e-3)))) : 1;
+            float x = (float)(since / Math.Max(br.Time, 1e-3));
+            if (x > 1.05f) { bandOn = false; RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero); RenderingServer.GlobalShaderParameterSet(BandFromParam, Vector4.Zero); }
             else
             {
                 float k = 1 - Mathf.SmoothStep(1 - (float)br.Fade, 1.05f, x);
@@ -225,7 +251,8 @@ public partial class FlareFx
                 RenderingServer.GlobalShaderParameterSet(BandLineParam, new Vector4(bandB.X, bandB.Y, (float)br.Lead, (float)br.After));
                 RenderingServer.GlobalShaderParameterSet(BandColParam, new Vector4(c.R, c.G, c.B, (float)bl.Tail));
                 RenderingServer.GlobalShaderParameterSet(BandShapeParam, new Vector4((float)br.Reach, (float)br.Time, (float)br.Ease, 0));
-                RenderingServer.GlobalShaderParameterSet(BandEdgeParam, new Vector4((float)br.Edge, (float)br.Trough, (float)br.Dark, (float)bl.Glow * (LessFlash ? 0.6f : 1f)));
+                RenderingServer.GlobalShaderParameterSet(BandEdgeParam, new Vector4((float)br.Edge, (float)br.Trough, (float)br.Dark, (float)bl.Glow * ringK * (LessFlash ? 0.6f : 1f)));
+                RenderingServer.GlobalShaderParameterSet(BandFromParam, new Vector4(ringNow, 0, 0, 0));
             }
         }
         RippleTick();
@@ -269,7 +296,7 @@ public partial class FlareFx
             foreach (var h in held) if (doomed.TryGetValue(h.Target, out var dm) && !dm.Ash && !h.Crit) { more = true; break; }
             if (!more)
             {
-                Total(lineTotalAt + Vector3.Up * 1.2f, lineTotal);
+                Total(lineTotalAt + Vector3.Up * 1.2f, lineTotal, (float)FlareFamily.Beat.TotalSafe);
                 if (Args.Has("clip") || Args.Has("shot")) GD.Print($"flare line total {id}: {lineTotal:0} over {lineTotalN} on the line at +{rt - blowRt:0.000} s real from the blow, drawn {Engine.GetFramesDrawn()}");
                 lineTotalN = 0; lineTotal = 0;
             }
@@ -316,9 +343,11 @@ public partial class FlareFx
         lineTotal = 0; lineTotalN = 0; lineTotalAt = Vector3.Zero; lineTotalDue = Held;
         rippleT = -1;
         bandStruck.Clear();
+        rippleTouched.Clear();
         KillsHeld = 0;
         PeakOff();
         RenderingServer.GlobalShaderParameterSet(BandParam, Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet(BandFromParam, Vector4.Zero);
         if (poolNow != 1) { poolNow = 1; EmberPool(1); }
     }
 }

@@ -145,8 +145,9 @@ public partial class Hits
     }
 
     /// <summary>One big number past the caps (H7 r3: the Long Cut's line, told as one total at its far end once the band
-    /// has crossed it, its victims past the twelve on screen): heavy, white-gold, a size over a heavy blow's.</summary>
-    public void Total(Vector3 at, double amount)
+    /// has crossed it, its victims past the twelve on screen): heavy, white-gold, a size over a heavy blow's. Its box is kept
+    /// inside the screen's safe area (safe: the margin's share of each side; r3, it could land past the right edge).</summary>
+    public void Total(Vector3 at, double amount, float safe = 0.05f)
     {
         int i = Show(at, "", Colors.White, 60);
         var t = new Tallied { Target = int.MinValue + 1, Sum = amount, Born = clock, Heavy = true };
@@ -156,6 +157,23 @@ public partial class Hits
         var l = numbers[i].Label;
         l.FontSize = 96;
         l.Modulate = new Color(1.25f, 1.05f, 0.7f);
+        l.GlobalPosition = InSafe(l.GlobalPosition, l.Text, l.FontSize, safe);
+    }
+
+    /// <summary>A number's box moved inside the screen's safe area (safe: the margin's share of each side), at its depth.</summary>
+    Vector3 InSafe(Vector3 at, string text, int size, float safe)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || NumBox(cam, at, text, size) is not Rect2 b) return at;
+        var vs = GetViewport().GetVisibleRect().Size;
+        float mx = vs.X * safe, my = vs.Y * safe;
+        var c = b.GetCenter();
+        float x = Mathf.Clamp(c.X, mx + b.Size.X / 2, Mathf.Max(mx + b.Size.X / 2, vs.X - mx - b.Size.X / 2));
+        float y = Mathf.Clamp(c.Y, Mathf.Max(my, SurvivorUnchained.Ui.GameHud.TopClear + 34) + b.Size.Y / 2, Mathf.Max(my + b.Size.Y / 2, vs.Y - my - b.Size.Y / 2));
+        if (Mathf.IsEqualApprox(x, c.X) && Mathf.IsEqualApprox(y, c.Y)) return at;
+        GD.Print($"hits: total '{text}' kept in the safe area: ({c.X:0},{c.Y:0}) -> ({x:0},{y:0}) of {vs.X:0}x{vs.Y:0}");
+        float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+        return AboveHud(cam.ProjectPosition(new Vector2(x, y), depth), text, size);
     }
 
     readonly List<Vector3> young = new();

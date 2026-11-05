@@ -170,7 +170,7 @@ public partial class BattleFx : Node3D
         Flare.DecalGrade = c => Gore.FlareGrade = c;
         Flare.FxDim = FlareDimSet;
         Flare.Number = (tg, at, am, mh, cr) => Hits.Tally(tg, at, am, mh, cr);
-        Flare.Total = (at, am) => Hits.Total(at, am);
+        Flare.Total = (at, am, safe) => Hits.Total(at, am, safe);
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {

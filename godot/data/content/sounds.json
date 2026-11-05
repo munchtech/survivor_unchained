@@ -74,7 +74,7 @@
     "cine.to_play": {"bus": "ui", "near": 1, "layers": [{"take": "cine_whoosh", "gain": 0.3, "stereo": true}]},
     "dash": {"bus": "sfx", "near": 1, "layers": [{"take": "dash", "gain": 0.4, "pitch": [0.95, 1.05]}]},
     "explosion": {"bus": "sfx", "layers": [{"take": "explosion_small", "gain": 0.4, "pitch": [0.9, 1.05]}]},
-    "flare.bell_of_the_morning.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_bell_of_the_morning", "gain": 3.2, "stereo": true}]},
+    "flare.bell_of_the_morning.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_bell_of_the_morning", "gain": 3.9, "stereo": true}]},
     "flare.bell_of_the_morning.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_intake_warden", "gain": 1.6, "stereo": true}]},
     "flare.bell_of_the_morning.toll": {"bus": "flare", "near": 1, "layers": [{"take": "bell_toll", "gain": 0.55, "stereo": true}]},
     "flare.burns_twice.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_burns_twice", "gain": 1.23, "stereo": true}]},

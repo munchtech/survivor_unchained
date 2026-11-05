@@ -93,7 +93,8 @@
   // dropLag s after the band passes it, scaled in over dropGrow; a decision-marked hit's death and number wait
   // decisionFrames frames after its mark shows; the Flare's numbers come numberLag s after the band passes each foe.
   // spendLight(Day): the plain Strikes' Spend light on the main blow (an omni's energy, on real time: 2-3 frames at its peak).
-  "beat": { "kickPx": 8, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02, "spendLight": 5, "spendLightDay": 6 },
+  // totalSafe (r3): a line total's box stays inside the screen's safe area, this share of each side (title-safe 5%).
+  "beat": { "kickPx": 8, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02, "spendLight": 5, "spendLightDay": 6, "totalSafe": 0.05 },
   // The recovery: the grade eases back over grade.out from the main blow; her ember's pool at pool x for hold s, then
   // back over out s.
   "recovery": { "pool": 1.3, "hold": 2.0, "out": 0.4 },
@@ -120,8 +121,9 @@
   },
   // An air and dust ripple (Bell's first two tolls, judge r1 fix 2): no light, no whole-frame swing (§1.6: at most two a
   // second): a soft front lifting the ground's value by dust (x), lead m, running reach m in time s, and puffs of dust
-  // thrown out along it.
-  "ripple": { "reach": 10, "time": 0.25, "lead": 0.8, "dust": 0.35, "puffs": 28 },
+  // thrown out along it. rim, rimFrames (r3, judge r2 fix 1; FLARE_LOOK Bell "each lesser thing's rim catches gold as the
+  // wave passes"): each struck body's rim touched at rim (the band rim's scale) for rimFrames drawn frames as the front passes.
+  "ripple": { "reach": 10, "time": 0.25, "lead": 0.8, "dust": 0.35, "puffs": 28, "rim": 0.6, "rimFrames": 3 },
   // The foreshadow (r2, judge r1 fix 7; a line Flare whose path is "crack"): in the stop its future crack (the very strip the
   // cleave opens, flare_crack_b, along the marks' line) lit faintly from below, blurred (blur: the mip), in the seam's own
   // ember (heat: fl_seam_col's 0..1) at light x the ground's albedo by night and day, wandering wander along it; a spark
@@ -148,9 +150,21 @@
   // along its rig's lights from her to the far end, each lit as the tear reaches it; frames its own envelope (the tear is
   // short on +1, so +1 and +3 carry more: 1.3-1.45x on +1..+3). (r2: hot 0.8 over a flat-topped bar
   // hotWidth 0.36 m either side of the straight line, a cream strip ~50 px tall.)
+  // Bell of the Morning, r3 (judge r2 fixes 1, 4, 5): tableau, its tolls' kills stand in their pose until the blast's band
+  // reaches them (FLARE_LOOK Bell "it stops in its pose, a tableau"; §1.6's exception); band, its own: launched from a gold
+  // shock ring at the blast's 8 m edge (start m, reached from her in ring s of Flare time, the hitstop's 2 frames; the edge's
+  // glow x ringGlow there, easing to the family's over ringFade s; ringPuffs dust puffs thrown outward from it), then its run
+  // past the ring, reach m in time s at ease 1 (even: from the ring to the frame's edge, ~5 m, in ~8 frames; the family's
+  // 22 m in 0.28 s at ease 1.1 crossed it in 3). Its column (judge r2: "a thin flame ~50x260 px that whites her out"):
+  // columnHalf m either side at the foot (~120 px wide at 1080p, 2.5x the 0.38), widening to crown x at its top where
+  // crownLight swells it, its foot columnToEye m toward the eye (behind her, so she is drawn over its core and the shield
+  // catches it), its light x columnGain (half: the same light over a wider shaft, so its bloom no longer erases her).
   "flares": {
     "the_long_cut":        { "stop": 0.40, "blow": "cleave", "from": "tear", "fuse": 200, "path": "crack", "peak": { "shape": "line", "width": 2.5, "gain": 1.2, "hot": 2.5, "spill": 8, "tip": 2.0, "along": [4.5, 1.2], "frames": [0.85, 1.3, 1.0, 0.9, 0.3, 0.06] } },
-    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.25, "hot": 0.8, "hotWidth": 1.85 } },
+    "bell_of_the_morning": { "blow": "blast", "ripple": "toll", "tableau": true,
+                             "band": { "start": 8, "ring": 0.04, "ringGlow": 3, "ringFade": 0.1, "ringPuffs": 40, "reach": 14, "time": 0.38, "ease": 1.0 },
+                             "peak": { "shape": "disk", "radius": 8, "column": 7, "gain": 1.25, "hot": 0.8, "hotWidth": 1.85,
+                                       "columnHalf": 0.95, "crown": 1.7, "crownLight": 0.5, "columnToEye": -0.5, "columnGain": 0.5 } },
     "burns_twice":         { "blow": "ember", "last": true },
     "the_roads_toll":      { "blow": "cut", "last": true },
     "the_branding":        { "blow": "burst", "last": true },
