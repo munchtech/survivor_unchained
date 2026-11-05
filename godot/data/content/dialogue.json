@@ -228,7 +228,7 @@
       "when": {
        "history": "ford_warden_slain"
       },
-      "text": "Well. The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
+      "text": "Well. The one who walked up from the Low Ford at dawn. Corvane came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
      },
      {
       "text": "Another one off the Low Ford road. I'm Rook, and this is the Last Lamp: bed, bread, a bath if you ask nicely, and a strongroom for what you'd rather not carry about."
@@ -599,7 +599,7 @@
    },
    "lamp": {
     "id": "lamp",
-    "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Chid. He needs somebody who knows what the light's for. Lord knows he doesn't.",
+    "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Corvane. He needs somebody who knows what the light's for. Lord knows he doesn't.",
     "effects": [
      {
       "rel": {
@@ -676,7 +676,7 @@
    },
    "cb_shrine_lit": {
     "id": "cb_shrine_lit",
-    "text": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
+    "text": "Corvane came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
     "effects": [
      {
       "npcFlag": {
@@ -739,7 +739,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You smell of cold stone. Don't tell me where you've been. Chid'll tell me anyway, and get it wrong.",
+    "text": "You smell of cold stone. Don't tell me where you've been. Corvane'll tell me anyway, and get it wrong.",
     "effects": [
      {
       "npcFlag": {
@@ -856,7 +856,7 @@
    },
    "mother2": {
     "id": "mother2",
-    "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Chid brought her down and saw to her. I sat with her, after.",
+    "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Corvane brought her down and saw to her. I sat with her, after.",
     "next": "mother_word"
    },
    "mother_word": {
@@ -879,7 +879,7 @@
    },
    "mother_where": {
     "id": "mother_where",
-    "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.",
+    "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Corvane what to cut.",
     "next": "mother_room"
    },
    "mother_short": {
@@ -6250,7 +6250,7 @@
    },
    "cb_shrine_lit": {
     "id": "cb_shrine_lit",
-    "text": "Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.",
+    "text": "Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet.",
     "effects": [
      {
       "npcFlag": {
@@ -6306,7 +6306,7 @@
    },
    "say_woman": {
     "id": "say_woman",
-    "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.",
+    "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane.",
     "effects": [
      {
       "npcFlag": {
@@ -11810,10 +11810,10 @@
       "when": {
        "bg": "devout"
       },
-      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      },
      {
-      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      }
     ],
     "choices": [
@@ -11843,7 +11843,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -11956,7 +11956,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -12080,7 +12080,7 @@
     ],
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12092,7 +12092,7 @@
       "end": true
      },
      {
-      "text": "Which carter, Chid?",
+      "text": "Which carter, Corvane?",
       "show": {
        "fact": "player.deaths",
        "gte": 3
@@ -12148,7 +12148,7 @@
    "relight": {
     "id": "relight",
     "speaker": "narrator",
-    "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Chid makes a sound like a kettle.",
+    "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Corvane makes a sound like a kettle.",
     "effects": [
      {
       "set": {
@@ -12216,7 +12216,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -12571,7 +12571,7 @@
     "text": "...You know, I never asked his name. I should ask his name. Next time. (He puts a cup in your hands.) Drink that. It's only hot water. There's nothing in it but hot.",
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "end": true
      },
      {
@@ -12610,31 +12610,31 @@
        "fact": "arena.last.people",
        "eq": "pack"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "kerchiefs"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "lamplings"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "dead"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
      },
      {
-      "text": "You wake on the bench in Chid's shrine, and it is morning."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning."
      }
     ],
     "effects": [
@@ -12772,7 +12772,7 @@
     ],
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12859,7 +12859,7 @@
     "text": "Oh, somebody kind. There are more of them about at night than you'd think. (He busies himself with the kettle.) ...Eat something. The day's yours.",
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12899,7 +12899,7 @@
       "goto": "office_who"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12922,7 +12922,7 @@
       "goto": "office_who"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12945,7 +12945,7 @@
       "goto": "office_end"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -14734,7 +14734,7 @@
    },
    "risen": {
     "id": "risen",
-    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
+    "text": "You came back. Most do not, the first time. ...Do not thank Corvane. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
     "effects": [
      {
       "npcFlag": {
@@ -21537,7 +21537,7 @@
    "chained": {
     "id": "chained",
     "speaker": "watchman",
-    "text": "and chained it there, in the dark.",
+    "text": "and bound it there with seven chains, in the dark.",
     "next": "ember"
    },
    "ember": {

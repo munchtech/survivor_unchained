@@ -506,7 +506,7 @@
   },
   "chid": {
    "id": "chid",
-   "name": "Chid",
+   "name": "Corvane",
    "title": "\"The Fool\", of the Morning Light",
    "role": "Priest",
    "model": "mage",
@@ -1935,7 +1935,7 @@
    "glyph": "flame"
   },
   "cin_iron_marker": {
-   "name": "Chid",
+   "name": "Corvane",
    "title": "At Nell's grave",
    "glyph": "moon"
   },

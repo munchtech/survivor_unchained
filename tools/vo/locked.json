@@ -652,29 +652,29 @@
    "date": "2026-10-11"
   },
   "dlg.chid.carried.0": {
-   "hash": "3acf78554ab8",
+   "hash": "88287e22f6f2",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.carried.1": {
-   "hash": "a287b669f181",
+   "hash": "f07ca5c85fa3",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.carried.2": {
-   "hash": "c2822424b4ee",
+   "hash": "705d3c33cc50",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.carried.3": {
-   "hash": "2c3f2277bdf8",
+   "hash": "5f4408576c96",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.carried.4": {
-   "hash": "7b7b1326e36a",
+   "hash": "0f6f46a0a646",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.carried_chid.0": {
    "hash": "b84f08ca88d8",
@@ -797,14 +797,14 @@
    "date": "2026-10-11"
   },
   "dlg.chid.first.0": {
-   "hash": "19bacd2c5510",
+   "hash": "59fdc4e66e28",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.first.1": {
-   "hash": "59c96678d876",
+   "hash": "7f90acbcdcea",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.hub.0": {
    "hash": "b29dc632c9e7",
@@ -862,9 +862,9 @@
    "date": "2026-10-11"
   },
   "dlg.chid.relight.0": {
-   "hash": "a0ef88db0a35",
+   "hash": "452a41a19dea",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.chid.say_calling.0": {
    "hash": "a16b2b1a4052",
@@ -1637,14 +1637,14 @@
    "date": "2026-10-11"
   },
   "dlg.rook.cb_opened_vault.0": {
-   "hash": "450afc5c6c12",
+   "hash": "be23596d7f71",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.cb_shrine_lit.0": {
-   "hash": "14f9fba3db7d",
+   "hash": "f9b0da5dd16c",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.cb_told_brannoc.0": {
    "hash": "2cfcc50ab6dd",
@@ -1657,9 +1657,9 @@
    "date": "2026-10-11"
   },
   "dlg.rook.first.0": {
-   "hash": "ab138606fcd5",
+   "hash": "84df17311d62",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.first.1": {
    "hash": "72f8af6d9303",
@@ -1697,9 +1697,9 @@
    "date": "2026-10-11"
   },
   "dlg.rook.lamp.0": {
-   "hash": "0d0953135dd4",
+   "hash": "ee4f48055a0e",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.mother.0": {
    "hash": "78bb7d7084d0",
@@ -1707,9 +1707,9 @@
    "date": "2026-10-11"
   },
   "dlg.rook.mother2.0": {
-   "hash": "8e67ec8dd0d9",
+   "hash": "afe5348832fe",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.mother_quiet.0": {
    "hash": "c877f1f725f1",
@@ -1727,9 +1727,9 @@
    "date": "2026-10-11"
   },
   "dlg.rook.mother_where.0": {
-   "hash": "df543ab12b16",
+   "hash": "0ba243a968a8",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.rumours.0": {
    "hash": "d0f6c6dafee7",
@@ -1807,9 +1807,9 @@
    "date": "2026-10-11"
   },
   "dlg.rook.town.0": {
-   "hash": "af6dc3cb4e65",
+   "hash": "1a3224bbd956",
    "by": "the story lead",
-   "date": "2026-10-11"
+   "date": "2026-11-04"
   },
   "dlg.rook.valley.0": {
    "hash": "006ee63d998c",
