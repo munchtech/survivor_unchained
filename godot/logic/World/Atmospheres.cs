@@ -305,7 +305,11 @@ public static class Atmospheres
     public static AtmospherePreset LitAsIs(AtmospherePreset p) => Rigs.Lit(p) is { IsLit: true } l ? l : p with { IsLit = true, Source = p, CelTwin = null };
 
     /// <summary>(L1 B4) The grades a rig names (rigs.json "grade"): the presets' own, by name.</summary>
-    public static GradeSettings? GradeNamed(string name) => name switch
+    /// <summary>(L1 C2) "name@K": the named grade with its contrast times K (a rig's own contrast, as data).</summary>
+    public static GradeSettings? GradeNamed(string name) => name.IndexOf('@') is var at and > 0
+        && double.TryParse(name[(at + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var k)
+        && GradeNamed(name[..at]) is { } g ? g with { Contrast = g.Contrast * k } : GradeNamed0(name);
+    static GradeSettings? GradeNamed0(string name) => name switch
     {
         "night" => NightGrade, "play_night" => PlayNightGrade, "lowford_night" => LowFordNight.Grade, "town_night" => NightTown.Grade,
         "close_night" => CloseNightPaint, "front" => Front.Grade, "play_dawn" => PlayDawnGrade, "dawn" => Dawn.Grade,

@@ -46,13 +46,13 @@
       "ember_color": null
     },
     "day_town": {
-      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C. B3r3 (tools/look/joint.py): the fill solved with every class's albedo over the boards' lit and shade samples (MB2-MB4, 07's shade): #6a5ce0 0.12 to #7789ff 0.1063 (the shade sides at the boards' share of the lit).",
-      "key": { "az": 330, "el": 28, "color": "#f3d9a0", "intensity": 6.6, "shadow": 0.95 },
-      "fill": { "color": "#7789ff", "strength": 0.1063, "sky": "#a9a9e5", "ground": "#605245", "hemi": 0.7, "env": 0.55 },
+      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C. B3r3 (tools/look/joint.py): the fill solved with every class's albedo over the boards' lit and shade samples (MB2-MB4, 07's shade): #6a5ce0 0.12 to #7789ff 0.1063 (the shade sides at the boards' share of the lit). C2 (the Stage B judge: 07 key 1.21, Lp95 0.57; rule 1 day key 1.6+, about Lp95 0.70; the sun where the game's stands, rule 5): the sun 6.6 to 11, the sky's floor down (hemi 0.7 to 0.4, env 0.55 to 0.3) and the violet fill up (0.1063 to 0.14) so the shade keeps its share, and the grade's contrast x1.6 ('name@K', Atmospheres.GradeNamed: by day the key held at 1.19 across sun 6.6-11, the grade's curve, not the light). 07: Lp95 0.62 to 0.72, key 1.22 to 1.30, midC 0.065 to 0.090; 13: Lp95 0.68 to 0.77 (targets 07 0.71/1.37, 13 0.76/1.62). The rest of the key is the surfaces' (the lit setts are the median: C1).",
+      "key": { "az": 330, "el": 28, "color": "#f3d9a0", "intensity": 11.0, "shadow": 0.95 },
+      "fill": { "color": "#7789ff", "strength": 0.14, "sky": "#a9a9e5", "ground": "#605245", "hemi": 0.4, "env": 0.3 },
       "rim": { "color": "#f3d9a0", "strength": 0.3, "width": 0.25 },
       "ink": [0.85, 0.6, 0.5],
       "hardness": 0.85,
-      "grade": "waystation_day",
+      "grade": "waystation_day@1.6",
       "exposure": 1.05,
       "ember": 0.5,
       "fires": 0.2,
@@ -60,10 +60,10 @@
     },
     "day_wild": {
       "base": "day_town",
-      "from": "the day rig in the wild (the Verge, 04): the same pale-gold sun and violet-blue sky, the sun where the Verge's stands (its north-east, as the preset has it). Start: Day.",
-      "key": { "az": 55, "el": 46, "intensity": 3.8, "shadow": 0.82 },
-      "fill": { "ground": "#463626", "hemi": 1.0, "env": 0.85 },
-      "grade": "day",
+      "from": "the day rig in the wild (the Verge, 04): the same pale-gold sun and violet-blue sky, the sun where the Verge's stands (its north-east, as the preset has it). Start: Day. C2 (04 key 1.46, shade h 146; rules 1, 2): the sun 3.8 to 6.5, the sky's floor down (hemi 1.0 to 0.55, env 0.85 to 0.45), the violet fill 0.1063 to 0.24 into the shade, the grade's contrast x1.6. 04: Lp95 0.60 to 0.69, key 1.30 to 1.38, midC 0.060 to 0.093 (target 0.66/1.55); its shade stays green (h 141): under the foliage the shade is the leaves' own green albedo (C3a's kit), not the light.",
+      "key": { "az": 55, "el": 46, "intensity": 6.5, "shadow": 0.82 },
+      "fill": { "strength": 0.24, "ground": "#463626", "hemi": 0.55, "env": 0.45 },
+      "grade": "day@1.6",
       "exposure": 1.0
     },
     "dawn": {
