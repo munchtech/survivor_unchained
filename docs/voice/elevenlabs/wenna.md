@@ -1,6 +1,8 @@
 # Old Wenna: ElevenLabs packet
 
-Voice id in the game: `wenna`. 34 takes to record (4,069 characters; about 12,207 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `wenna`. 38 takes to record (4,245 characters; about 12,735 credits at three tries a line). Status: **draft, except the 6 takes marked LOCKED FOR RECORDING** (S1 writer 3, 2026-11-05): record those now.
+
+**6 takes are LOCKED FOR RECORDING** (marked below).
 
 ## Who they are
 
@@ -52,9 +54,9 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Note:* Rapid appraisal. Scornful on 'catalogue it'. 'What d'you want?' snappish.
 
 ```
-[brisk, rude, curious] A Cloister lens, and a Cloister squint. Scholar? Then don't touch anything, you'll only want to catalogue it. I'm Wenna. What d'you want?
+[brisk, rude, curious] A Cloister lens, and a Cloister squint. Scholar? Then don't touch anything, you'll only want to catalog it. I'm Wenna. What d'you want?
 ```
-Subtitle: A Cloister lens, and a Cloister squint. Scholar? Then don't touch anything, you'll only want to catalogue it. I'm Wenna. What d'you want?
+Subtitle: A Cloister lens, and a Cloister squint. Scholar? Then don't touch anything, you'll only want to catalog it. I'm Wenna. What d'you want?
 
 ### 2. `dlg.wenna.first.1.wav`
 
@@ -67,29 +69,38 @@ Subtitle: A Cloister lens, and a Cloister squint. Scholar? Then don't touch anyt
 ```
 Subtitle: Don't touch that. Or that. Or— yes, that too. I'm Wenna. I make things that stop you dying, and a few that don't. What d'you want?
 
-### 3. `dlg.wenna.hub.0.wav`
+### 3. `dlg.wenna.hub.0.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json wenna/hub#0
 *Played:* triumphant delight; doing: the stream is clean; pace: quick; volume: raised.
 *Note:* Bossy and flustered with joy. 'Clean.' repeated, softer, relieved.
 
 ```
-[triumphant delight, loudly] You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.
+[triumphant delight, loudly] I've the masks out again. Don't ask me why.
 ```
-Subtitle: You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.
+Subtitle: I've the masks out again. Don't ask me why.
 
-### 4. `dlg.wenna.hub.1.wav`
+### 4. `dlg.wenna.hub.1.wav`  **LOCKED FOR RECORDING**
 
 *Where:* dialogue.json wenna/hub#1
 *Played:* impatient; doing: busy; pace: brisk; volume: level.
 *Note:* Snappish.
 
 ```
-[impatient] Well? I've roots on the boil.
+[impatient] You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.
+```
+Subtitle: You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.
+
+### 5. `dlg.wenna.hub.2.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json wenna/hub#2
+
+```
+Well? I've roots on the boil.
 ```
 Subtitle: Well? I've roots on the boil.
 
-### 5. `dlg.wenna.animals.0.wav`
+### 6. `dlg.wenna.animals.0.wav`
 
 *Where:* dialogue.json wenna/animals#0
 *Played:* troubled, then businesslike; doing: the water's wrong; pace: measured; volume: level.
@@ -100,7 +111,7 @@ Subtitle: Well? I've roots on the boil.
 ```
 Subtitle: The animals were never like this. Never. And the water's tasted wrong all year: metal, and smoke. Bring me some from the Thornhollow stream, above the blight if you can, below it if you must, and I'll tell you what's in it.
 
-### 6. `dlg.wenna.tamsays.0.wav`
+### 7. `dlg.wenna.tamsays.0.wav`
 
 *Where:* dialogue.json wenna/tamsays#0
 *Played:* sharp, then uneasy; doing: takes Tam seriously; pace: measured; volume: level.
@@ -111,7 +122,7 @@ Subtitle: The animals were never like this. Never. And the water's tasted wrong 
 ```
 Subtitle: Tam. Course Tam saw it; nobody watches the ground like a boy with nothing to do. Drank and fell down. Not fought, not starved: drank. ...Bring me that water. A bottle, from where he saw them. I've been smelling metal in the well for a month and telling myself I was old.
 
-### 7. `dlg.wenna.analyse.0.wav`
+### 8. `dlg.wenna.analyse.0.wav`
 
 *Where:* dialogue.json wenna/analyse#0
 *Played:* absorbed, then alarmed; doing: identifies the poison; pace: quick; volume: level.
@@ -122,7 +133,7 @@ Subtitle: Tam. Course Tam saw it; nobody watches the ground like a boy with noth
 ```
 Subtitle: Green water, and— what's this? From a pipe? Ember. Ember slurry: the dust of the stones, cooked and watered down. Rots the belly of anything that drinks it. And nobody spills this much by accident. Someone upstream's getting rid of it.
 
-### 8. `dlg.wenna.analyse.1.wav`
+### 9. `dlg.wenna.analyse.1.wav`
 
 *Where:* dialogue.json wenna/analyse#1
 *Played:* absorbed, grim; doing: identifies the poison; pace: measured; volume: level.
@@ -133,7 +144,7 @@ Subtitle: Green water, and— what's this? From a pipe? Ember. Ember slurry: the
 ```
 Subtitle: Green. Warm. Smells like a chapel lamp. Ember slurry, child: the dust of the stones, cooked and watered. Rots the belly of anything that drinks it. Nobody spills this much by accident. Someone upstream's getting rid of it.
 
-### 9. `dlg.wenna.analyse_arcana.0.wav`
+### 10. `dlg.wenna.analyse_arcana.0.wav`
 
 *Where:* dialogue.json wenna/analyse_arcana#0
 *Played:* approving, absorbed; doing: works it out with you; pace: quick; volume: level.
@@ -144,7 +155,7 @@ Subtitle: Green. Warm. Smells like a chapel lamp. Ember slurry, child: the dust 
 ```
 Subtitle: You know your salts. Yes, precipitate it, there, and— ember. Slurry, and fresh. Look at the grain: it's been through a pump. Nobody pumps ember but the lamplings, and the lamplings answer to Grimtunnel.
 
-### 10. `dlg.wenna.who.0.wav`
+### 11. `dlg.wenna.who.0.wav`
 
 *Where:* dialogue.json wenna/who#0
 *Played:* sharp, warning; doing: tells you who and how to stay safe; pace: brisk; volume: level.
@@ -155,7 +166,7 @@ Subtitle: You know your salts. Yes, precipitate it, there, and— ember. Slurry,
 ```
 Subtitle: Who digs? Who burns ember by the barrow-load? The lamplings. Find where it goes into the water and you'll find their pipe. Take an antidote or two, and don't drink anything out there. Not even if it's clear. Especially not if it's clear.
 
-### 11. `dlg.wenna.root.0.wav`
+### 12. `dlg.wenna.root.0.wav`
 
 *Where:* dialogue.json wenna/root#0
 *Played:* pleased, brisk; doing: takes the bitterroot; pace: brisk; volume: level.
@@ -166,7 +177,7 @@ Subtitle: Who digs? Who burns ember by the barrow-load? The lamplings. Find wher
 ```
 Subtitle: Good. Fat ones, too. Here. Come back with more; I'm always short.
 
-### 12. `dlg.wenna.mask.0.wav`
+### 13. `dlg.wenna.mask.0.wav`
 
 *Where:* dialogue.json wenna/mask#0
 *Played:* proud, then rueful; doing: gives you the mask; pace: measured; volume: level.
@@ -177,7 +188,7 @@ Subtitle: Good. Fat ones, too. Here. Come back with more; I'm always short.
 ```
 Subtitle: My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. You cleaned my stream, child. Take it. ...Something down there's still cooking, and I'm too old to go where it's needed.
 
-### 13. `dlg.wenna.mask.1.wav`
+### 14. `dlg.wenna.mask.1.wav`
 
 *Where:* dialogue.json wenna/mask#1
 *Played:* brisk, matter-of-fact; doing: gives you her plague mask; pace: measured; volume: level.
@@ -189,7 +200,7 @@ Subtitle: My blightward. I made it the fever year. Stuff the beak with bitterroo
 ```
 Subtitle: My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed.
 
-### 14. `dlg.wenna.fever.0.wav`
+### 15. `dlg.wenna.fever.0.wav`
 
 *Where:* dialogue.json wenna/fever#0
 *Played:* haunted, brusque; doing: remembers the fever year; pace: slow; volume: quiet.
@@ -201,7 +212,7 @@ Subtitle: My blightward. I made it the fever year. Stuff the beak with bitterroo
 ```
 Subtitle: The year after Ashford went into the ground. Coughing green, then the sweats, then the— well. "Gone to the Morrow," they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.
 
-### 15. `dlg.wenna.cb_sold_dig.0.wav`
+### 16. `dlg.wenna.cb_sold_dig.0.wav`
 
 *Where:* dialogue.json wenna/cb_sold_dig#0
 *Played:* disgusted, spiteful; doing: you sold out the stream; pace: measured; volume: level.
@@ -212,7 +223,7 @@ Subtitle: The year after Ashford went into the ground. Coughing green, then the 
 ```
 Subtitle: You sold it. The stream, the Pack, all of it, to Pell, for forty. I tested that water for you, child. ...I'll still sell you an antidote. I'll charge you double, and I'll enjoy it.
 
-### 16. `dlg.wenna.cb_broke_pump.0.wav`
+### 17. `dlg.wenna.cb_broke_pump.0.wav`
 
 *Where:* dialogue.json wenna/cb_broke_pump#0
 *Played:* pleased, stubborn; doing: the pump is stopped; pace: brisk; volume: level.
@@ -223,18 +234,18 @@ Subtitle: You sold it. The stream, the Pack, all of it, to Pell, for forty. I te
 ```
 Subtitle: You stopped their pump. I can smell the difference already. Don't argue; I can.
 
-### 17. `dlg.wenna.cb_shrine_lit.0.wav`
+### 18. `dlg.wenna.cb_shrine_lit.0.wav`
 
 *Where:* dialogue.json wenna/cb_shrine_lit#0
 *Played:* dry amusement; doing: Chid's joy; pace: measured; volume: level.
 *Note:* Fond scorn.
 
 ```
-[dry amusement] Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.
+[dry amusement] Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet.
 ```
-Subtitle: Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.
+Subtitle: Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet.
 
-### 18. `dlg.wenna.say_calling.0.wav`
+### 19. `dlg.wenna.say_calling.0.wav`
 
 *Where:* dialogue.json wenna/say_calling#0
 *Played:* scolding; doing: your diet; pace: brisk; volume: level.
@@ -245,7 +256,7 @@ Subtitle: Chid's lamp's lit. He came to tell me with his shoes on the wrong feet
 ```
 Subtitle: Steel all over and not a scrap of sense in your diet. When did you last eat a green thing? Don't lie; I can see your gums.
 
-### 19. `dlg.wenna.say_calling.1.wav`
+### 20. `dlg.wenna.say_calling.1.wav`
 
 *Where:* dialogue.json wenna/say_calling#1
 *Played:* professional scorn, impatient; doing: your shoulder; pace: quick; volume: level.
@@ -256,7 +267,7 @@ Subtitle: Steel all over and not a scrap of sense in your diet. When did you las
 ```
 Subtitle: You've had that shoulder put back by somebody who didn't know what they were doing. Twice. Sit, I'll— no, you won't sit. Fine. Limp, then.
 
-### 20. `dlg.wenna.say_calling.2.wav`
+### 21. `dlg.wenna.say_calling.2.wav`
 
 *Where:* dialogue.json wenna/say_calling#2
 *Played:* irritable; doing: no fire near the racks; pace: brisk; volume: level.
@@ -267,7 +278,7 @@ Subtitle: You've had that shoulder put back by somebody who didn't know what the
 ```
 Subtitle: Your hands smell of hot iron, child, and you've not been near a forge. I don't want to know. Comfrey, twice a day, and keep them off my drying racks.
 
-### 21. `dlg.wenna.say_calling.3.wav`
+### 22. `dlg.wenna.say_calling.3.wav`
 
 *The same words are also* `dlg.wenna.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json wenna/say_calling#3
@@ -279,18 +290,18 @@ Subtitle: Your hands smell of hot iron, child, and you've not been near a forge.
 ```
 Subtitle: You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is.
 
-### 22. `dlg.wenna.say_woman.0.wav`
+### 23. `dlg.wenna.say_woman.0.wav`
 
 *Where:* dialogue.json wenna/say_woman#0
 *Played:* frank, kind; doing: a woman's medicine; pace: measured; volume: quiet.
 *Note:* Low and matter-of-fact, woman to woman; dry about Chid.
 
 ```
-[frank, kind, quietly] If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.
+[frank, kind, quietly] If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane.
 ```
-Subtitle: If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.
+Subtitle: If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane.
 
-### 23. `dlg.wenna.t_wenna.0.wav`
+### 24. `dlg.wenna.t_wenna.0.wav`
 
 *Where:* dialogue.json wenna/t_wenna#0
 *Played:* wry, unsentimental; doing: her husbands; pace: measured; volume: level.
@@ -301,7 +312,7 @@ Subtitle: If you're ever carrying, child, there's a tea for keeping it and a tea
 ```
 Subtitle: Three husbands. Buried two, lost one at cards. The one I lost at cards was the best of them, and I've never forgiven the man who won him.
 
-### 24. `dlg.wenna.tallow.0.wav`
+### 25. `dlg.wenna.tallow.0.wav`
 
 *Where:* dialogue.json wenna/tallow#0
 *Played:* tart, dry; doing: her candles are honest; pace: measured; volume: level.
@@ -312,9 +323,36 @@ Subtitle: Three husbands. Buried two, lost one at cards. The one I lost at cards
 ```
 Subtitle: I burn fat, child. Fat's honest. Fat was a pig.
 
+### 26. `dlg.wenna.cb_clean.0.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json wenna/cb_clean#0
+
+```
+It's cleaner than I made it. I don't know why.
+```
+Subtitle: It's cleaner than I made it. I don't know why.
+
+### 27. `dlg.wenna.cb_clean.1.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json wenna/cb_clean#1
+
+```
+It's cleaner than it was. I don't know why.
+```
+Subtitle: It's cleaner than it was. I don't know why.
+
+### 28. `dlg.wenna.cb_clean.2.wav`  **LOCKED FOR RECORDING**
+
+*Where:* dialogue.json wenna/cb_clean#2
+
+```
+It's clean. I don't know why it's clean.
+```
+Subtitle: It's clean. I don't know why it's clean.
+
 ## Said in passing
 
-### 25. `bark.wenna.day.0.wav`
+### 29. `bark.wenna.day.0.wav`
 
 *Where:* npcs.json wenna.barks[0]
 *Played:* irritable; pace: brisk; volume: level.
@@ -324,7 +362,7 @@ Subtitle: I burn fat, child. Fat's honest. Fat was a pig.
 ```
 Subtitle: Bitterroot, bitterroot. Always need more.
 
-### 26. `bark.wenna.night.0.wav`
+### 30. `bark.wenna.night.0.wav`
 
 *Where:* npcs.json wenna.nightBarks[0]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -334,7 +372,7 @@ Subtitle: Bitterroot, bitterroot. Always need more.
 ```
 Subtitle: Moon's up. Good for picking. Bad for knees.
 
-### 27. `bark.wenna.night.1.wav`
+### 31. `bark.wenna.night.1.wav`
 
 *Where:* npcs.json wenna.nightBarks[1]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -344,7 +382,7 @@ Subtitle: Moon's up. Good for picking. Bad for knees.
 ```
 Subtitle: Mind the nettles in the dark.
 
-### 28. `bark.wenna.night.2.wav`
+### 32. `bark.wenna.night.2.wav`
 
 *Where:* npcs.json wenna.nightBarks[2]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -354,7 +392,7 @@ Subtitle: Mind the nettles in the dark.
 ```
 Subtitle: Night air's full of things. Some of them are herbs.
 
-### 29. `bark.wenna.night.3.wav`
+### 33. `bark.wenna.night.3.wav`
 
 *Where:* npcs.json wenna.nightBarks[3]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -364,7 +402,7 @@ Subtitle: Night air's full of things. Some of them are herbs.
 ```
 Subtitle: Nightshade's out. So are the idiots.
 
-### 30. `bark.wenna.said.0.wav`
+### 34. `bark.wenna.said.0.wav`
 
 *Where:* npcs.json wenna.said[0]
 *Played:* uneasy; doing: the animals are wrong; pace: measured; volume: level.
@@ -375,7 +413,7 @@ Subtitle: Nightshade's out. So are the idiots.
 ```
 Subtitle: The animals were never like this. Never.
 
-### 31. `bark.wenna.said.1.wav`
+### 35. `bark.wenna.said.1.wav`
 
 *Where:* npcs.json wenna.said[1]
 *Played:* suspicious; doing: the water; pace: measured; volume: level.
@@ -386,7 +424,7 @@ Subtitle: The animals were never like this. Never.
 ```
 Subtitle: The water tastes wrong this year.
 
-### 32. `bark.wenna.said.2.wav`
+### 36. `bark.wenna.said.2.wav`
 
 *Where:* npcs.json wenna.said[2]
 *Played:* delighted; doing: the water is sweet again; pace: measured; volume: raised.
@@ -397,7 +435,7 @@ Subtitle: The water tastes wrong this year.
 ```
 Subtitle: Water's sweet again. I'd forgotten it could be.
 
-### 33. `bark.wenna.said.3.wav`
+### 37. `bark.wenna.said.3.wav`
 
 *Where:* npcs.json wenna.said[3]
 *Played:* bitter, dry; doing: clean water, no wolves; pace: slow; volume: level.
@@ -408,7 +446,7 @@ Subtitle: Water's sweet again. I'd forgotten it could be.
 ```
 Subtitle: Clean water, and nothing left in the wood to drink it.
 
-### 34. `bark.wenna.said.4.wav`
+### 38. `bark.wenna.said.4.wav`
 
 *Where:* npcs.json wenna.said[4]
 
