@@ -18,7 +18,7 @@ public class DawnCardTests
         Assert.Equal("The ember takes", c.TakesHead);
         Assert.Equal(["Ember Lance", "Cinderwake", "The Lamps' light"], c.Takes);
         Assert.Equal("You keep", c.KeepsHead);
-        Assert.Equal(["Your gear", "Your gold", "What you learned", "Level 5"], c.Keeps);
+        Assert.Equal(["Your gear", "Your gold", "Your traits", "Level 5"], c.Keeps);
         Assert.Equal("When the dark comes again, it will burn again.", c.Last);
         Assert.Equal("Click to go on", c.Go);
     }
@@ -30,7 +30,7 @@ public class DawnCardTests
         Assert.Equal(["A", "B", "C", "And 4 more", "The Lamps' light"], c.Takes);
         Assert.True(c.Takes.Count <= DawnCard.MaxLines);
         Assert.DoesNotContain(c.Keeps, k => k.StartsWith("Level"));
-        Assert.Equal(["The ember's skills", "The Lamps' light"], DawnCard.Build([], null).Takes);
+        Assert.Equal(["The Lamps' light"], DawnCard.Build([], null).Takes);
     }
 
     [Fact]

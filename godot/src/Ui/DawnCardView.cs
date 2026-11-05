@@ -61,10 +61,10 @@ public partial class DawnCardView : Control
         more.Modulate = Colors.Transparent;
         page.AddChild(more);
 
-        var tex = UiArt.Tex("frames/paper.png");
+        var tex = UiArt.Tex("frames/dawn_paper.png") ?? UiArt.Tex("frames/paper.png");   // (the card's own untiled sheet; judge: no tone step inside)
         StyleBox box = tex == null ? Style.Paper(40) : new StyleBoxTexture
         {
-            Texture = tex, TextureMarginLeft = 32, TextureMarginTop = 32, TextureMarginRight = 32, TextureMarginBottom = 32,
+            Texture = tex, TextureMarginLeft = 44, TextureMarginTop = 44, TextureMarginRight = 44, TextureMarginBottom = 44,
             AxisStretchHorizontal = StyleBoxTexture.AxisStretchMode.Stretch, AxisStretchVertical = StyleBoxTexture.AxisStretchMode.Stretch,
             ContentMarginLeft = 64, ContentMarginRight = 64, ContentMarginTop = 46, ContentMarginBottom = 34,
         };

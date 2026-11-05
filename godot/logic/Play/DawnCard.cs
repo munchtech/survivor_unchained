@@ -37,9 +37,8 @@ public sealed record DawnCard(string Title, string TakesHead, IReadOnlyList<stri
         int room = MaxLines - 1;
         if (skills.Count <= room) takes.AddRange(skills);
         else { takes.AddRange(skills.Take(room - 1)); takes.Add($"And {skills.Count - (room - 1)} more"); }
-        if (skills.Count == 0) takes.Add("The ember's skills");
         takes.Add("The Lamps' light");
-        var keeps = new List<string> { "Your gear", "Your gold", "What you learned" };
+        var keeps = new List<string> { "Your gear", "Your gold", "Your traits" };
         if (level is int l) keeps.Add($"Level {l}");
         return new DawnCard("The ember goes out", "The ember takes", takes, "You keep", keeps,
             "When the dark comes again, it will burn again.", "Click to go on");
