@@ -1,5 +1,5 @@
 {
- "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure). shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
+ "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure): paint.lit as painted on the board (lit paint), paint.albedo the same with the board's light divided out (lights; B2r2). B3 paints from albedo. shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
  "version": 1,
  "boards_root": "survivorsunchained_inputs",
  "boards": {
@@ -7,7 +7,8 @@
   "MB2": "look_l1/a2/r4/MB2_gear_r4.png",
   "MB3": "look_l1/a2/r2/MB3_town.png",
   "MB4": "look_l1/a2/r2/MB4_wild_r3.png",
-  "T09": "look_l1/a2/r1/09_v2.png"
+  "T09": "look_l1/a2/r1/09_v2.png",
+  "LB": "look_l1/a2/r2/LB_light.png"
  },
  "fallback": "stone",
  "classes": {
@@ -56,13 +57,21 @@
       "role": "shade"
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.6314, 0.6931, 0.7597],
      "C": [0.1238, 0.1265, 0.1282],
      "h": [45.2, -7.5, 7.9],
      "mid": "#dc8156",
      "n": 512,
      "roles": {"highlight": "#fdc388", "lit": "#ee9962", "transition": "#cb6c4f", "shade": "#684f68"}
+    },
+    "albedo": {
+     "L": [0.6036, 0.6671, 0.7384],
+     "C": [0.0463, 0.0591, 0.0667],
+     "h": [29.3, -14.3, 20.9],
+     "mid": "#b6877f",
+     "n": 512,
+     "roles": {"highlight": "#c6ced6", "lit": "#c3a190", "transition": "#a67275", "shade": "#545499"}
     }
    }
   },
@@ -111,13 +120,21 @@
       "role": "shade"
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5528, 0.5728, 0.597],
      "C": [0.134, 0.137, 0.1401],
      "h": [44.2, -1.6, 1.7],
      "mid": "#b8592b",
      "n": 512,
      "roles": {"highlight": "#fcbd7a", "lit": "#c05f2d", "transition": "#b3542b", "shade": "#533f58"}
+    },
+    "albedo": {
+     "L": [0.5184, 0.5384, 0.5622],
+     "C": [0.0825, 0.0847, 0.0874],
+     "h": [46.2, -4.0, 4.0],
+     "mid": "#975e43",
+     "n": 512,
+     "roles": {"highlight": "#cac9b2", "lit": "#9d6445", "transition": "#925941", "shade": "#434382"}
     }
    }
   },
@@ -208,13 +225,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.3211, 0.3366, 0.6784],
      "C": [0.0594, 0.0668, 0.1455],
      "h": [40.5, -7.8, 6.2],
      "mid": "#542a1b",
      "n": 1152,
      "roles": {"lit": "#542a1b"}
+    },
+    "albedo": {
+     "L": [0.3092, 0.323, 0.646],
+     "C": [0.0312, 0.0367, 0.0817],
+     "h": [22.9, -28.2, 24.2],
+     "mid": "#452c2b",
+     "n": 1152,
+     "roles": {"lit": "#452c2b"}
     }
    }
   },
@@ -251,13 +276,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.368, 0.4661, 0.7712],
      "C": [0.0671, 0.0835, 0.0954],
      "h": [277.3, -2.0, 2.1],
      "mid": "#4e5588",
      "n": 4000,
      "roles": {"lit": "#4e5588"}
+    },
+    "albedo": {
+     "L": [0.4055, 0.5102, 0.8182],
+     "C": [0.15, 0.1788, 0.2006],
+     "h": [268.6, -1.2, 0.9],
+     "mid": "#3d59cb",
+     "n": 4000,
+     "roles": {"lit": "#3d59cb"}
     }
    }
   },
@@ -294,13 +327,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.2237, 0.2709, 0.3066],
      "C": [0.0306, 0.0461, 0.0535],
      "h": [284.2, -3.7, 8.4],
      "mid": "#24233c",
      "n": 3922,
      "roles": {"lit": "#24233c"}
+    },
+    "albedo": {
+     "L": [0.2389, 0.2931, 0.3313],
+     "C": [0.0695, 0.0957, 0.1095],
+     "h": [271.0, -1.3, 2.2],
+     "mid": "#1b265b",
+     "n": 3922,
+     "roles": {"lit": "#1b265b"}
     }
    }
   },
@@ -337,13 +378,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.3075, 0.3498, 0.4285],
      "C": [0.0489, 0.0568, 0.0642],
      "h": [284.8, -7.6, 10.9],
      "mid": "#373657",
      "n": 7721,
      "roles": {"lit": "#373657"}
+    },
+    "albedo": {
+     "L": [0.3324, 0.3774, 0.4583],
+     "C": [0.1064, 0.1215, 0.1339],
+     "h": [271.2, -2.1, 2.6],
+     "mid": "#2c3981",
+     "n": 7721,
+     "roles": {"lit": "#2c3981"}
     }
    }
   },
@@ -389,13 +438,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5, 0.6346, 0.949],
      "C": [0.0183, 0.0334, 0.0477],
      "h": [30.4, -28.3, 29.3],
      "mid": "#9e837e",
      "n": 3139,
      "roles": {"lit": "#9e837e"}
+    },
+    "albedo": {
+     "L": [0.5088, 0.6427, 0.9748],
+     "C": [0.0661, 0.079, 0.115],
+     "h": [276.2, -15.0, 16.4],
+     "mid": "#8089bd",
+     "n": 3139,
+     "roles": {"lit": "#8089bd"}
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -434,13 +491,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.3811, 0.6028, 0.7976],
      "C": [0.0837, 0.127, 0.1456],
      "h": [53.0, -10.9, 15.2],
      "mid": "#bb692e",
      "n": 5851,
      "roles": {"lit": "#bb692e"}
+    },
+    "albedo": {
+     "L": [0.3606, 0.5737, 0.7762],
+     "C": [0.043, 0.0739, 0.092],
+     "h": [60.8, -26.0, 29.4],
+     "mid": "#996e4a",
+     "n": 5851,
+     "roles": {"lit": "#996e4a"}
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -480,13 +545,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.7398, 0.7966, 0.874],
      "C": [0.119, 0.1333, 0.1447],
      "h": [69.1, -8.3, 13.7],
      "mid": "#f4ac54",
      "n": 645,
      "roles": {"lit": "#f4ac54"}
+    },
+    "albedo": {
+     "L": [0.7123, 0.7735, 0.8663],
+     "C": [0.0563, 0.0758, 0.0952],
+     "h": [91.6, -15.0, 25.4],
+     "mid": "#c7b47d",
+     "n": 645,
+     "roles": {"lit": "#c7b47d"}
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -532,13 +605,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.4035, 0.4881, 0.6908],
      "C": [0.0418, 0.0823, 0.1309],
      "h": [32.6, -56.2, 14.9],
      "mid": "#884d41",
      "n": 12052,
      "roles": {"lit": "#884d41"}
+    },
+    "albedo": {
+     "L": [0.4075, 0.4753, 0.6687],
+     "C": [0.0427, 0.0536, 0.0916],
+     "h": [333.6, -52.6, 68.7],
+     "mid": "#6f5169",
+     "n": 12052,
+     "roles": {"lit": "#6f5169"}
     }
    }
   },
@@ -575,13 +656,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.3381, 0.4777, 0.6137],
      "C": [0.0269, 0.077, 0.1089],
      "h": [72.0, -45.9, 35.2],
      "mid": "#785527",
      "n": 1101,
      "roles": {"lit": "#785527"}
+    },
+    "albedo": {
+     "L": [0.3431, 0.4656, 0.6128],
+     "C": [0.0199, 0.0365, 0.1022],
+     "h": [105.7, -168.6, 150.9],
+     "mid": "#5c5b43",
+     "n": 1101,
+     "roles": {"lit": "#5c5b43"}
     }
    }
   },
@@ -618,13 +707,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5774, 0.6489, 0.8051],
      "C": [0.0509, 0.0665, 0.1048],
      "h": [41.3, -20.9, 20.6],
      "mid": "#b2826f",
      "n": 20800,
      "roles": {"lit": "#b2826f"}
+    },
+    "albedo": {
+     "L": [0.5799, 0.6467, 0.7921],
+     "C": [0.0294, 0.052, 0.0673],
+     "h": [300.8, -13.6, 97.0],
+     "mid": "#9387a9",
+     "n": 20800,
+     "roles": {"lit": "#9387a9"}
     }
    }
   },
@@ -661,13 +758,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.4541, 0.5486, 0.7519],
      "C": [0.0269, 0.0319, 0.0978],
      "h": [32.9, -97.0, 26.8],
      "mid": "#836b65",
      "n": 13519,
      "roles": {"lit": "#836b65"}
+    },
+    "albedo": {
+     "L": [0.4763, 0.5633, 0.7493],
+     "C": [0.02, 0.0893, 0.1036],
+     "h": [271.9, -3.0, 21.8],
+     "mid": "#6372aa",
+     "n": 13519,
+     "roles": {"lit": "#6372aa"}
     }
    }
   },
@@ -704,13 +809,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.6257, 0.8419, 0.8675],
      "C": [0.0652, 0.0988, 0.1099],
      "h": [57.0, -44.7, 11.1],
      "mid": "#fdbb8b",
      "n": 7703,
      "roles": {"lit": "#fdbb8b"}
+    },
+    "albedo": {
+     "L": [0.6334, 0.8328, 0.8633],
+     "C": [0.0041, 0.0125, 0.0851],
+     "h": [319.7, -107.8, 124.3],
+     "mid": "#ccc6cd",
+     "n": 7703,
+     "roles": {"lit": "#ccc6cd"}
     }
    }
   },
@@ -747,13 +860,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.4488, 0.54, 0.7132],
      "C": [0.075, 0.0976, 0.1349],
      "h": [22.8, -32.5, 20.4],
      "mid": "#a05654",
      "n": 30001,
      "roles": {"lit": "#a05654"}
+    },
+    "albedo": {
+     "L": [0.4462, 0.5268, 0.6854],
+     "C": [0.0592, 0.0771, 0.1085],
+     "h": [328.9, -29.8, 60.8],
+     "mid": "#845a81",
+     "n": 30001,
+     "roles": {"lit": "#845a81"}
     }
    }
   },
@@ -790,13 +911,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.6073, 0.6519, 0.7458],
      "C": [0.0631, 0.0773, 0.1144],
      "h": [39.5, -17.9, 11.6],
      "mid": "#b9806c",
      "n": 31201,
      "roles": {"lit": "#b9806c"}
+    },
+    "albedo": {
+     "L": [0.6044, 0.6457, 0.7252],
+     "C": [0.0338, 0.0462, 0.0711],
+     "h": [319.4, -23.3, 77.5],
+     "mid": "#9b85a0",
+     "n": 31201,
+     "roles": {"lit": "#9b85a0"}
     }
    }
   },
@@ -834,13 +963,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.419, 0.4613, 0.4701],
      "C": [0.0444, 0.0627, 0.0674],
      "h": [38.9, -7.3, 3.2],
      "mid": "#774c3e",
      "n": 3810,
      "roles": {"lit": "#774c3e"}
+    },
+    "albedo": {
+     "L": [0.4171, 0.453, 0.4608],
+     "C": [0.0254, 0.0281, 0.0357],
+     "h": [326.6, -25.3, 19.2],
+     "mid": "#5f515e",
+     "n": 3810,
+     "roles": {"lit": "#5f515e"}
     }
    }
   },
@@ -878,13 +1015,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5056, 0.5809, 0.5952],
      "C": [0.0699, 0.0959, 0.0997],
      "h": [46.8, -4.8, 2.1],
      "mid": "#a96847",
      "n": 3498,
      "roles": {"lit": "#a96847"}
+    },
+    "albedo": {
+     "L": [0.496, 0.5636, 0.5775],
+     "C": [0.0267, 0.0359, 0.039],
+     "h": [20.1, -38.6, 14.3],
+     "mid": "#8a6d6d",
+     "n": 3498,
+     "roles": {"lit": "#8a6d6d"}
     }
    }
   },
@@ -921,13 +1066,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5119, 0.6946, 0.7664],
      "C": [0.0791, 0.1256, 0.1357],
      "h": [104.1, -15.0, 19.5],
      "mid": "#aaa036",
      "n": 30003,
      "roles": {"lit": "#aaa036"}
+    },
+    "albedo": {
+     "L": [0.5208, 0.6956, 0.7581],
+     "C": [0.0638, 0.1089, 0.1313],
+     "h": [128.2, -13.1, 25.8],
+     "mid": "#89aa5e",
+     "n": 30003,
+     "roles": {"lit": "#89aa5e"}
     }
    }
   },
@@ -965,13 +1118,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5934, 0.6834, 0.7829],
      "C": [0.1017, 0.1195, 0.1339],
      "h": [97.5, -11.8, 13.0],
      "mid": "#ae9936",
      "n": 8267,
      "roles": {"lit": "#ae9936"}
+    },
+    "albedo": {
+     "L": [0.5954, 0.6776, 0.7695],
+     "C": [0.0917, 0.1048, 0.1139],
+     "h": [121.5, -10.1, 10.9],
+     "mid": "#8da255",
+     "n": 8267,
+     "roles": {"lit": "#8da255"}
     }
    }
   },
@@ -1008,13 +1169,21 @@
       }
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.5571, 0.5782, 0.8689],
      "C": [0.0138, 0.0657, 0.0847],
      "h": [207.3, -132.5, 37.9],
      "mid": "#46858e",
      "n": 15200,
      "roles": {"lit": "#46858e"}
+    },
+    "albedo": {
+     "L": [0.5807, 0.6156, 0.8744],
+     "C": [0.0208, 0.0981, 0.1682],
+     "h": [256.0, -54.2, 3.1],
+     "mid": "#5d87bf",
+     "n": 15200,
+     "roles": {"lit": "#5d87bf"}
     }
    }
   },
@@ -1051,7 +1220,16 @@
       }
      }
     ],
-    "measured": {
+    "emissive": true,
+    "lit": {
+     "L": [0.6622, 0.7958, 0.9506],
+     "C": [0.1028, 0.1559, 0.1724],
+     "h": [72.9, -20.2, 29.3],
+     "mid": "#f8aa30",
+     "n": 1067,
+     "roles": {"lit": "#f8aa30"}
+    },
+    "albedo": {
      "L": [0.6622, 0.7958, 0.9506],
      "C": [0.1028, 0.1559, 0.1724],
      "h": [72.9, -20.2, 29.3],
@@ -1096,13 +1274,21 @@
       "role": "lit"
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.1377, 0.2338, 0.3335],
      "C": [0.029, 0.0592, 0.0842],
      "h": [268.1, -8.2, 16.0],
      "mid": "#121c39",
      "n": 6400,
      "roles": {"lit": "#121c39"}
+    },
+    "albedo": {
+     "L": [0.1365, 0.2231, 0.3241],
+     "C": [0.0072, 0.0185, 0.0364],
+     "h": [252.8, -32.8, 107.2],
+     "mid": "#151c24",
+     "n": 6400,
+     "roles": {"lit": "#151c24"}
     }
    },
    "edge": [0.25, 0.04]
@@ -1142,13 +1328,21 @@
       "role": "transition"
      }
     ],
-    "measured": {
+    "lit": {
      "L": [0.6314, 0.6931, 0.7597],
      "C": [0.1238, 0.1265, 0.1282],
      "h": [45.2, -7.5, 7.9],
      "mid": "#dc8156",
      "n": 512,
      "roles": {"lit": "#ee9962", "transition": "#cb6c4f"}
+    },
+    "albedo": {
+     "L": [0.6036, 0.6671, 0.7384],
+     "C": [0.0463, 0.0591, 0.0667],
+     "h": [29.3, -14.3, 20.9],
+     "mid": "#b6877f",
+     "n": 512,
+     "roles": {"lit": "#c3a190", "transition": "#a67275"}
     }
    }
   },
@@ -1186,13 +1380,21 @@
      }
     ],
     "note": "held to rule 4's midC 0.07 or below by B3 (folk are weathered)",
-    "measured": {
+    "lit": {
      "L": [0.368, 0.4661, 0.7712],
      "C": [0.0671, 0.0835, 0.0954],
      "h": [277.3, -2.0, 2.1],
      "mid": "#4e5588",
      "n": 4000,
      "roles": {"lit": "#4e5588"}
+    },
+    "albedo": {
+     "L": [0.4055, 0.5102, 0.8182],
+     "C": [0.15, 0.1788, 0.2006],
+     "h": [268.6, -1.2, 0.9],
+     "mid": "#3d59cb",
+     "n": 4000,
+     "roles": {"lit": "#3d59cb"}
     }
    }
   }
@@ -1397,5 +1599,139 @@
    "what": "particles (FX)",
    "rule": "GPUParticles3D / CPUParticles3D draw passes"
   }
- ]
+ ],
+ "lights": {
+  "what": "B2r2: the boards' own light, divided out of paint.lit to give paint.albedo (tools/style/board_measure.py's docstring). Each LB panel's E is the mean linear color of its lit neutral references (gray setts, limewashed plaster), the lit side of each box (pixels at or over its median luminance), scaled to luminance 1: the light's color divided out, its strength left to the rig (B4). A board row with refs of its own takes the nearest panel by measurement (match); the others name theirs by the board's own label. First row that holds a box's center wins.",
+  "board": "LB",
+  "panels": {
+   "day": {
+    "refs": [
+     {
+      "box": [180, 805, 300, 845],
+      "what": "sunlit setts, foreground"
+     },
+     {
+      "box": [782, 545, 798, 560],
+      "what": "the right house's sunlit plaster"
+     }
+    ],
+    "E": [1.5605, 0.8902, 0.4371]
+   },
+   "dawn": {
+    "refs": [
+     {
+      "box": [1000, 335, 1100, 375],
+      "what": "sunlit setts, foreground"
+     },
+     {
+      "box": [1602, 65, 1618, 95],
+      "what": "the right house's sunlit plaster"
+     }
+    ],
+    "E": [2.2269, 0.7202, 0.1587]
+   },
+   "night": {
+    "refs": [
+     {
+      "box": [150, 322, 290, 352],
+      "what": "setts in the lantern's pool (the night's warm light)"
+     }
+    ],
+    "E": [1.9098, 0.7844, 0.4568]
+   },
+   "arena": {
+    "refs": [
+     {
+      "box": [1180, 770, 1300, 800],
+      "what": "the clearing's ground in the ember pool"
+     }
+    ],
+    "E": [2.4402, 0.6386, 0.3392]
+   },
+   "moon": {
+    "refs": [
+     {
+      "box": [180, 400, 300, 440],
+      "what": "the night panel's moonlit setts, out of the lantern's pool"
+     }
+    ],
+    "E": [0.6693, 0.9531, 2.4386]
+   }
+  },
+  "rows": [
+   {
+    "board": "MB1",
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "her chips and day portrait (labelled 'Sunlight (warm, above-left)')"
+   },
+   {
+    "board": "MB2",
+    "x": [0, 230],
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "her figure (sunlit like the day row)"
+   },
+   {
+    "board": "MB2",
+    "y": [0, 500],
+    "panel": "moon",
+    "what": "'NIGHT - MOONLIGHT + EMBER' (moonlight)"
+   },
+   {
+    "board": "MB2",
+    "y": [500, 2000],
+    "panel": "day",
+    "what": "'DAY - SUNLIGHT + VIOLET SHADE'"
+   },
+   {
+    "board": "MB3",
+    "y": [0, 445],
+    "panel": "day",
+    "what": "the sun row",
+    "refs": [
+     {
+      "box": [590, 240, 700, 380],
+      "what": "plaster"
+     },
+     {
+      "box": [120, 120, 360, 380],
+      "what": "setts"
+     }
+    ],
+    "match": {
+     "own_E": [1.7114, 0.8406, 0.4839],
+     "distance": {
+      "day": 0.149,
+      "dawn": 1.156
+     }
+    },
+    "candidates": ["day", "dawn"]
+   },
+   {
+    "board": "MB3",
+    "y": [445, 2000],
+    "panel": "night",
+    "what": "the moon row (its lantern glass, a light source, keeps albedo = lit)"
+   },
+   {
+    "board": "MB4",
+    "y": [0, 470],
+    "panel": "day",
+    "what": "'DAY'"
+   },
+   {
+    "board": "MB4",
+    "y": [470, 2000],
+    "panel": "moon",
+    "what": "'NIGHT' (moonlight)"
+   },
+   {
+    "board": "T09",
+    "y": [0, 2000],
+    "panel": "moon",
+    "what": "frame 09, the arena at night: the crowd's lit sides are the moon's (their lit color is moon-blue)"
+   }
+  ]
+ }
 }

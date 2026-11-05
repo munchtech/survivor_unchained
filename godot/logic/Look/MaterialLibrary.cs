@@ -10,8 +10,9 @@ namespace SurvivorUnchained.Look;
 /// <summary>A class's cel numbers (the per-material uniforms of shaders/cel.gdshaderinc).</summary>
 public sealed record CelPreset(float[] Band, float[] Mid, float Form, float[] Spec, float Nmap, int Ink, float RimK);
 
-/// <summary>One cel class of data/look/materials.json. Mid = paint.measured.mid ("#rrggbb") or null.</summary>
-public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid);
+/// <summary>One cel class of data/look/materials.json. Mid = paint.albedo.mid ("#rrggbb", the board's light divided out:
+/// what a surface's albedo is), LitMid = paint.lit.mid (as painted on the board, lit); either null if not measured.</summary>
+public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid, string? LitMid = null);
 
 /// <summary>One assign rule: every given pattern must match.</summary>
 public sealed record AssignRule(string Class, Regex? Shader, Regex? Material, Regex? Path);
@@ -47,10 +48,10 @@ public sealed class MaterialLibrary
                     cel.GetProperty("rim_k").GetSingle());
                 float[]? sheen = c.TryGetProperty("sheen", out var sh) ? Floats(sh, -1, p.Name + ".sheen") : null;
                 float[]? edge = c.TryGetProperty("edge", out var ed) ? Floats(ed, -1, p.Name + ".edge") : null;
-                string? mid = null;
-                if (c.TryGetProperty("paint", out var paint) && paint.TryGetProperty("measured", out var ms)
-                    && ms.TryGetProperty("mid", out var mv) && mv.ValueKind == JsonValueKind.String) mid = mv.GetString();
-                classes[p.Name] = new LookClass(p.Name, c.TryGetProperty("from", out var f) ? f.GetString() ?? "" : "", preset, sheen, edge, mid);
+                string? MidOf(string key) => c.TryGetProperty("paint", out var paint) && paint.TryGetProperty(key, out var ms)
+                    && ms.TryGetProperty("mid", out var mv) && mv.ValueKind == JsonValueKind.String ? mv.GetString() : null;
+                classes[p.Name] = new LookClass(p.Name, c.TryGetProperty("from", out var f) ? f.GetString() ?? "" : "", preset, sheen, edge,
+                    MidOf("albedo"), MidOf("lit"));
             }
             var shaders = new Dictionary<string, string>();
             foreach (var p in root.GetProperty("shaders").EnumerateObject()) shaders[p.Name] = p.Value.GetString() ?? "";

@@ -8,8 +8,8 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>
 /// --lookdev-swatches (L1 B2): on the lookdev stage, one 0.5 m rounded block per class of the material library (file order,
-/// classes without a measured Mid skipped) in two rows in front of the sphere row. Each is a StandardMaterial3D of the class's
-/// board-measured middle color put on the model in its class by CelLib.Bind; a Label3D names it. Without the flag nothing is built.
+/// classes without a measured albedo skipped) in two rows in front of the sphere row. Each is a StandardMaterial3D of the class's
+/// board-measured albedo (its middle color with the board's light divided out) put on the model in its class by CelLib.Bind; a Label3D names it. Without the flag nothing is built.
 /// --lookdev-swatch-y Y (2.8), --lookdev-swatch-gap G (1.0): the front row's depth and the row spacing, in stage meters.
 /// </summary>
 public partial class Game

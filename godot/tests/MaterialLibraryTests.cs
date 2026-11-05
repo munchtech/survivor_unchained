@@ -37,6 +37,16 @@ public class MaterialLibraryTests
         }
     }
 
+    /// <summary>(B2r2) Every class measured on a board carries both colors: lit (as painted) and albedo (its light divided out).</summary>
+    [Fact]
+    public void MeasuredClassesCarryLitAndAlbedo()
+    {
+        var lib = Real();
+        foreach (var (name, c) in lib.Classes)
+            Assert.True((c.Mid == null) == (c.LitMid == null), $"{name}: lit {c.LitMid ?? "none"} but albedo {c.Mid ?? "none"}");
+        Assert.True(lib.Classes.Values.Count(c => c.Mid != null) >= 20, "fewer than 20 classes have an albedo");
+    }
+
     [Fact]
     public void ReferencesResolve()
     {
