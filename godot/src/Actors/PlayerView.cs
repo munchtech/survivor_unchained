@@ -992,6 +992,7 @@ public partial class PlayerView : Node3D
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
         Watching(sp < 0.4f && p.AttackAnim == null);
+        StepKnock(p.DashT);
         // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {
@@ -1047,7 +1048,7 @@ public partial class PlayerView : Node3D
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
         // arcs do (the first from her left), the wide arcs her heavy cut.
-        if (p.AttackAnim is { } a && a.T != lastAttack)
+        if (p.AttackAnim is { } a && a.T != lastAttack && !KnockSkip(a.T))
         {
             lastAttack = a.T;
             var swings = mine ? HerClips.Swings(person.Kind) : System.Array.Empty<string>();

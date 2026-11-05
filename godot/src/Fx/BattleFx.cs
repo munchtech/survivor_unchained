@@ -86,6 +86,9 @@ public partial class BattleFx : Node3D
         public float T, Life, Radius;
         /// <summary>Called off (TellPhase.Off): seconds left of its fade out (0: not fading).</summary>
         public float FadeLeft;
+        /// <summary>A closing's band or way out while its wall stands (Ev.ClosingWall Up, H6): past its landing it is held
+        /// standing, in its windup look, until the wall falls (then it fades over FadeOff).</summary>
+        public bool Held;
         public bool Progress, Grow, Sink, Active;
         /// <summary>An elite's or a boss's blow: its colour is in its textures (scarlet light over darkened
         /// ground), so its Modulate stays white and only its alpha and energy move.</summary>
@@ -373,6 +376,7 @@ public partial class BattleFx : Node3D
         m.Color = color;
         m.Progress = m.Grow = m.Sink = false;
         m.FadeLeft = 0;
+        m.Held = false;
         m.Length = 0;
         if (m.Over != null) m.Over.Visible = false;
         var d = m.Decal;
@@ -509,6 +513,24 @@ public partial class BattleFx : Node3D
     const float MarkNormalFade = 0.5f;
     /// <summary>A called-off mark's fade out, seconds (H4 r3: the closing's band within 0.5 s of its ring going down).</summary>
     const float FadeOff = 0.4f;
+    /// <summary>Where a held mark stands (at the end of its life: past the landing's flare).</summary>
+    const float HeldAt = 0.995f;
+    /// <summary>The kit pulls' hearts marked and when each lands (time): a pull's mark that comes at a landed pull's heart is
+    /// its slam (Tells.cs, "A pull's slam").</summary>
+    readonly List<(double X, double Z, double Lands)> pullHearts = new();
+
+    bool PullSlam(Ev.Telegraph e)
+    {
+        if (e.Tell != "pull" || !e.Hostile || e.Shape != TelegraphShape.Circle) return false;
+        pullHearts.RemoveAll(h => time > h.Lands + 1.5);
+        int i = pullHearts.FindIndex(h => time >= h.Lands - 0.1 && Math.Abs(h.X - e.X) < 0.05 && Math.Abs(h.Z - e.Z) < 0.05);
+        if (i >= 0) { pullHearts.RemoveAt(i); return true; }
+        pullHearts.Add((e.X, e.Z, time + e.Duration));
+        return false;
+    }
+
+    /// <summary>The closings whose walls stand now (Ev.ClosingWall, by mark Id).</summary>
+    readonly HashSet<int> wallsUp = new();
     static float Fk(Mark m) => m.FadeLeft > 0 ? Mathf.Clamp(m.FadeLeft / FadeOff, 0, 1) : 1;
 
     /// <summary>A styled bed's surface: occluded (no ambient or sky reflection), fully rough, not metal.</summary>
@@ -1404,6 +1426,17 @@ public partial class BattleFx : Node3D
                     Hits.Arc(V(e.X, Y(e.X, e.Z) + 1.0, e.Z), (float)(Math.PI / 2 - e.Angle), (float)e.Reach, 0.22f, mirror, pal.Core, pal.Glow);
                     break;
                 }
+                case Ev.ClosingWall w:
+                    // A closing's wall (H6): its band and its lit way out stand on past the landing while the wall is up,
+                    // and fade the moment it falls (a wall that falls in the windup leaves the band to land as it would).
+                    if (w.Up) wallsUp.Add(w.Id); else wallsUp.Remove(w.Id);
+                    foreach (int key in (int[])[w.Id, -w.Id])
+                        if (keyed.TryGetValue(key, out var wm) && wm.Active)
+                        {
+                            wm.Held = w.Up;
+                            if (!w.Up && wm.T >= HeldAt && wm.FadeLeft <= 0) wm.FadeLeft = FadeOff;
+                        }
+                    break;
                 case Ev.Telegraph e when e.Phase == TellPhase.Off:
                     // A closing called off (its ring all down): its band and its way out fade over FadeOff.
                     foreach (int key in (int[])[e.Id, -e.Id])
@@ -1432,6 +1465,9 @@ public partial class BattleFx : Node3D
                     if (fodderCharge) look = TelegraphRead.TeleLook.Danger;
                     // The kit's ring (a hostile circle): the full danger red, never the amber the lamp's hold ring was read as.
                     if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.TeleLook.Danger;
+                    // A pull's slam (H6: marked on its heart as the drag ends, landing 0.7 s later): a blow about to land, so the
+                    // kit ring's red, not the pull's look it carries in the sim.
+                    if (PullSlam(e)) look = TelegraphRead.TeleLook.Danger;
                     bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
@@ -1466,6 +1502,9 @@ public partial class BattleFx : Node3D
                             double ca = Math.Cos(e.GapAngle), sa = Math.Sin(e.GapAngle);
                             Lane(e.X + ca * Math.Max(0, e.Inner - 0.5), e.Z + sa * Math.Max(0, e.Inner - 0.5), e.X + ca * (e.Radius + 1.5), e.Z + sa * (e.Radius + 1.5), (float)e.GapWidth, Palette.TeleSafe * 0.55f, (float)e.Duration, -e.Id);
                         }
+                        if (e.Tell == "closing" && wallsUp.Contains(e.Id))
+                            foreach (int key in (int[])[e.Id, -e.Id])
+                                if (keyed.TryGetValue(key, out var hm) && hm.Active) hm.Held = true;
                     }
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
@@ -1833,6 +1872,9 @@ public partial class BattleFx : Node3D
                 fk = Mathf.Max(0, m.FadeLeft / FadeOff);
                 m.T = m.FadeLeft <= 0 ? 1 : Mathf.Min(m.T, 0.84f);
             }
+            // (a closing's wall standing: its band past the landing's flare, held at its windup look)
+            bool stand = m.Held && m.FadeLeft <= 0 && m.T >= HeldAt;
+            if (stand) m.T = HeldAt;
             if (m.T >= 1) { m.FadeLeft = 0; m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; if (m.OverFill != null) m.OverFill.Visible = false; continue; }
             if (m.Sink)
             {
@@ -1849,10 +1891,11 @@ public partial class BattleFx : Node3D
             else
             {
                 // Telegraphs: steady, a quick flare at the end.
-                m.Decal.Modulate = m.Color with { A = fk * (m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
+                bool flare = m.T > 0.85f && !stand;
+                m.Decal.Modulate = m.Color with { A = fk * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
                 // (the raising breathes slowly, +-15% at 0.5 Hz on the mark's own age; the rest keep the fast flicker)
-                if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (m.T > 0.85f ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
+                if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (flare ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
                 var oc = m.Danger ? Palette.TeleDanger * DangerOver : m.Color * 2.4f;
                 if (m.Over is { Visible: true } ov && ov.MaterialOverride is ShaderMaterial om)
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });

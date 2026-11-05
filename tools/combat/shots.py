@@ -41,5 +41,9 @@ saved = [l for l in text.splitlines() if "saved" in l]
 print(f"{len(saved)} frames")
 for l in saved:
     print(l.split("/")[-1])
+# (--on h6: the mechanics' own lines, godot/src/Game/Game.H6Shots.cs)
+for l in text.splitlines():
+    if l.startswith("h6 "):
+        print(l)
 for l in [l for l in text.splitlines() if ("ERROR" in l or "Exception" in l) and "saved" not in l][:20]:
     print("ERR", l[:300])
