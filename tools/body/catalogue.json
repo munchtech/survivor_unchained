@@ -1,0 +1,33 @@
+{
+ "about": "Our body sliders (tools/body/sliders.py): each a named combination of MakeHuman CC0 macros (offsets on the spec's own macros, MPFB evaluates them as its nonlinear blends) and targets (MPFB data/targets; a 'pair' [decr, incr] takes the slider's magnitude on the side of its sign; 'lr' lays the l- and r- target alike). A slider's value is clipped to its range; macros to 0..1. Spec: \"sliders\": {name: value}.",
+ "sliders": {
+  "height":          {"range": [-1, 1], "macros": {"height": 0.5}, "why": "stature: MakeHuman's height macro (whole body, its own nonlinear blend); the head ring is held, so it lengthens her below the neck"},
+  "leg_length":      {"range": [-1, 1], "pairs": [["upperlegs-height-decr", "upperlegs-height-incr", 1.0], ["lowerlegs-height-decr", "lowerlegs-height-incr", 1.0]], "why": "legs against torso, thigh and shin together (her height is mostly leg)"},
+  "thigh_length":    {"range": [-1, 1], "pairs": [["measure-upperleg-height-decr", "measure-upperleg-height-incr", 1.0]], "why": "thigh against shin"},
+  "torso_length":    {"range": [-1, 1], "pairs": [["torso-scale-vert-decr", "torso-scale-vert-incr", 1.0]], "why": "the trunk's height between hips and shoulders"},
+  "shoulder_width":  {"range": [-1, 1], "pairs": [["measure-shoulder-dist-decr", "measure-shoulder-dist-incr", 1.0]], "why": "the shoulders' span (the arms ride on it)"},
+  "build":           {"range": [-1, 1], "macros": {"muscle": 0.25}, "why": "muscle: MakeHuman's muscle macro about the spec's (0.75: athletic)"},
+  "weight":          {"range": [-1, 1], "macros": {"weight": 0.5}, "why": "body mass: MakeHuman's weight macro"},
+  "bust_size":       {"range": [-1, 1], "macros": {"cupsize": 0.5}, "why": "breast volume: MakeHuman's cup macro"},
+  "bust_firmness":   {"range": [-1, 1], "macros": {"firmness": 0.5}, "why": "how the breast holds its shape (low: it hangs)"},
+  "bust_set":        {"range": [-1, 1], "pairs": [["breast-trans-down", "breast-trans-up", 1.0]], "why": "the breasts' height on the chest"},
+  "bust_spacing":    {"range": [-1, 1], "pairs": [["breast-dist-decr", "breast-dist-incr", 1.0]], "why": "how far apart they sit (the cleavage)"},
+  "bust_point":      {"range": [-1, 1], "pairs": [["breast-point-decr", "breast-point-incr", 1.0]], "why": "the breast's projection to its point"},
+  "underbust":       {"range": [-1, 1], "pairs": [["measure-underbust-circ-decr", "measure-underbust-circ-incr", 1.0]], "why": "the rib cage under the bust"},
+  "waist":           {"range": [-1, 1], "pairs": [["measure-waist-circ-decr", "measure-waist-circ-incr", 1.0]], "why": "the waist's girth"},
+  "belly":           {"range": [-1, 0.4], "pairs": [["stomach-pregnant-decr", "stomach-pregnant-incr", 1.0]], "why": "the belly's projection (flat to soft)"},
+  "hips":            {"range": [-1, 1], "pairs": [["measure-hips-circ-decr", "measure-hips-circ-incr", 1.0]], "why": "the hips' girth"},
+  "glutes":          {"range": [-1, 1], "pairs": [["buttocks-volume-decr", "buttocks-volume-incr", 1.0]], "why": "the glutes' volume"},
+  "thighs":          {"range": [-1, 1], "pairs": [["measure-thigh-circ-decr", "measure-thigh-circ-incr", 1.0]], "why": "the thighs' girth"},
+  "calves":          {"range": [-1, 1], "pairs": [["measure-calf-circ-decr", "measure-calf-circ-incr", 1.0]], "why": "the calves' girth"},
+  "upperarm_length": {"range": [-1, 1], "pairs": [["measure-upperarm-length-decr", "measure-upperarm-length-incr", 1.0]], "why": "shoulder to elbow"},
+  "forearm_length":  {"range": [-1, 1], "pairs": [["measure-lowerarm-length-decr", "measure-lowerarm-length-incr", 1.0]], "why": "elbow to wrist"},
+  "arm_length":      {"range": [-1, 1], "pairs": [["measure-upperarm-length-decr", "measure-upperarm-length-incr", 1.0], ["measure-lowerarm-length-decr", "measure-lowerarm-length-incr", 1.0]], "why": "the whole arm (both segments)"},
+  "arm_girth":       {"range": [-1, 1], "pairs": [["measure-upperarm-circ-decr", "measure-upperarm-circ-incr", 1.0]], "why": "the upper arm's girth (MakeHuman's deltoid, biceps and triceps flow kept)"},
+  "forearm_girth":   {"range": [-1, 1], "pairs": [["lowerarm-scale-horiz-decr", "lowerarm-scale-horiz-incr", 1.0], ["lowerarm-scale-depth-decr", "lowerarm-scale-depth-incr", 1.0]], "lr": true, "why": "the forearm's girth"},
+  "hand_size":       {"range": [-1, 1], "pairs": [["hand-scale-decr", "hand-scale-incr", 1.0]], "lr": true, "why": "the hands, MakeHuman's own, scaled"},
+  "foot_size":       {"range": [-1, 1], "pairs": [["foot-scale-decr", "foot-scale-incr", 1.0]], "lr": true, "why": "the feet, MakeHuman's own, scaled"},
+  "heavy":           {"range": [0, 1], "macros": {"weight": 0.3}, "pairs": [["measure-hips-circ-decr", "measure-hips-circ-incr", 0.6], ["measure-thigh-circ-decr", "measure-thigh-circ-incr", 0.6], ["buttocks-volume-decr", "buttocks-volume-incr", 0.6], ["measure-waist-circ-decr", "measure-waist-circ-incr", 0.2], ["stomach-pregnant-decr", "stomach-pregnant-incr", -0.3]], "why": "thick-and-curvy, never obese (the owner's taste): mass to the hips, glutes and thighs, the waist barely, the belly held in"},
+  "male":            {"range": [0, 1], "macros": {"gender": 1.0}, "why": "male build for NPCs later: MakeHuman's gender macro (its male blends; no genitals: the game's Steam rule)"}
+ }
+}

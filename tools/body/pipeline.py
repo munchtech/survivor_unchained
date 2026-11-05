@@ -63,6 +63,8 @@ def run(spec, base, out, rep):
     t = time.time()
     pl = stage_place(base, A, rep)
     rep["timings_s"]["place"] = round(time.time() - t, 2)
+    import forms
+    base = forms.compose(base, pl, spec, rep)              # her sliders and residual (forms.py), the head held
     t = time.time()
     ti = st.stage_tiers(base, pl, spec, rep)
     rep["timings_s"]["tiers"] = round(time.time() - t, 2)

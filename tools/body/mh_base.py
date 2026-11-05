@@ -7,8 +7,9 @@
       U [M,4,2] each face corner's UV;
       inbody [N] bool;  groups: {"joint-...": indices} (MPFB's joint cubes, for the skeleton);
       eyes [E,3] the eyes proxy's points, fitted to her (their middles weigh the head's smoothing, as heroine_head.py).
+      Vs [N,3] with "sliders": the slider body (sliders.py: the catalogue's macros and targets on top), same topology.
 Spec keys: macros, targets (name -> weight, sides already expanded), build (the same, laid after), sculpts
-(name -> weight), eyes (MakeHuman's eyes asset).
+(name -> weight), eyes (MakeHuman's eyes asset), sliders (catalogue.json name -> value).
 """
 import os
 import sys
@@ -47,20 +48,21 @@ def grab(o):
     return V, F, U
 
 
-def make_base(spec):
+def human(spec, macros, targets):
+    """One MakeHuman human from macros and targets (the spec's face and neck targets, then `targets`), its arrays."""
     from bl_ext.user_default.mpfb.services.humanservice import HumanService
     from bl_ext.user_default.mpfb.services.targetservice import TargetService
-    sys.path.insert(0, HERE)
     import sculpts
     for o in list(bpy.data.objects):
         bpy.data.objects.remove(o, do_unlink=True)
-    macros = spec["macros"]
     hm = HumanService.create_human(mask_helpers=True, detailed_helpers=True, extra_vertex_groups=True,
                                    feet_on_ground=True, scale=0.1, macro_detail_dict=macros)
     paths = target_paths()
     for key in ("targets", "build"):
         for n, w in spec.get(key, {}).items():
             TargetService.load_target(hm, paths[n], weight=float(w))
+    for n, w in targets.items():
+        TargetService.load_target(hm, paths[n], weight=float(w))
     data = os.path.join(bpy.utils.user_resource("EXTENSIONS"), ".user", "user_default", "mpfb", "data")   # (MPFB keeps its assets here)
     eyes = HumanService.add_mhclo_asset(os.path.join(data, "eyes", spec["eyes"], spec["eyes"] + ".mhclo"), hm,
                                         asset_type="eyes", subdiv_levels=0, material_type="NONE", set_up_rigging=False,
@@ -73,6 +75,15 @@ def make_base(spec):
     V0 = V.copy()
     for n, w in spec.get("sculpts", {}).items():
         V = V + float(w) * sculpts.SCULPTS[n](V0, sculpts.anatomy(V0))
+    return hm, V, F, U, EV
+
+
+def make_base(spec):
+    """The head's human (the spec's macros and targets: v1's woman, whose head A carries) as V; with "sliders", the
+    slider body (sliders.py) too, as Vs, on the same topology (forms.compose joins them under the head)."""
+    sys.path.insert(0, HERE)
+    import sliders
+    hm, V, F, U, EV = human(spec, spec["macros"], {})
     body = hm.vertex_groups["body"].index
     inbody = np.array([any(g.group == body for g in v.groups) for v in hm.data.vertices])
     keep = [i for i, f in enumerate(F) if inbody[f].all()]
@@ -84,5 +95,9 @@ def make_base(spec):
             nm = names[g.group]
             if nm.startswith("joint-") and g.weight > 0:
                 groups.setdefault(nm, []).append(v.index)
-    return {"V": V, "F": np.array([F[i] for i in keep], np.int64), "U": np.array([U[i] for i in keep]),
-            "inbody": inbody, "groups": {k: np.array(v, np.int64) for k, v in sorted(groups.items())}, "eyes": EV}
+    out = {"V": V, "F": np.array([F[i] for i in keep], np.int64), "U": np.array([U[i] for i in keep]),
+           "inbody": inbody, "groups": {k: np.array(v, np.int64) for k, v in sorted(groups.items())}, "eyes": EV}
+    if spec.get("sliders"):
+        macros, targets = sliders.resolve(spec)
+        out["Vs"] = human(spec, macros, targets)[1]
+    return out

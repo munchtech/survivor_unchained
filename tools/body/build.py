@@ -2,6 +2,7 @@
 exported in A's contract (godot/art/people/heroine.glb) with her shipped head copied verbatim. docs/team/body.md P1.
 
     python tools/body/build.py tools/body/specs/base_woman.json <out_dir>            # takes a blender turn, runs:
+    (her: tools/body/specs/her.json, base_woman.json with her sliders, stance and residual: wrap.py made them)
     blender -b --python tools/body/build.py -- tools/body/specs/base_woman.json <out_dir>
 
 Writes <out>/body.glb, <out>/rig.json (the check's poser: hinge axes, helpers, correctives), <out>/build.json
@@ -9,9 +10,11 @@ Writes <out>/body.glb, <out>/rig.json (the check's poser: hinge axes, helpers, c
 Check it: python tools/body/check.py <out>/body.glb --ref godot/art/people/heroine.glb --rig <out>/rig.json
           --poser lbs --same-head --out <dir>
 Stages (each a function, no hand steps):
-  1 base      MakeHuman's woman from the spec (mh_base.py, in Blender);
+  1 base      MakeHuman's woman from the spec (mh_base.py, in Blender), and with "sliders" the slider body
+              (sliders.py, catalogue.json);
   2 place     the similarity laying our subdivided head on A's HeroineHead and the 1:1 head correspondence
-              (headmatch.py);
+              (headmatch.py); then her forms (forms.py: the slider body joined under the head, her stance and
+              residual from "stance" and "forms");
   3 tiers     close = every skin face subdivided once (subdiv.py, her head's scheme), the head's faces dropped (the
               body ends at SPLIT; its ring is the head's, snapped exactly, the fit's move eased into the body below);
   4 skeleton  tools/body/skeleton.json placed from MakeHuman's landmarks (skeleton.py);
@@ -57,7 +60,8 @@ def stage_base(spec, out):
 def run(spec_path, out):
     import pipeline
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
-    spec = json.load(open(spec_path))
+    from sliders import load_spec
+    spec = load_spec(spec_path)
     t0 = time.time()
     rep = {"spec": os.path.relpath(os.path.abspath(spec_path), REPO).replace("\\", "/"), "timings_s": {}}
     base = stage_base(spec, out)

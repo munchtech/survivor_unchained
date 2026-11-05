@@ -73,6 +73,8 @@ def stage_tiers(base, pl, spec, rep):
     zone = inbody & (hm.s_split(P2) > -spec["fit_ease_m"])
     zone[ring] = False
     P2 = P2 + harmonic(L, ring, D, np.where(zone)[0])
+    if "E" in base:                                        # her residual's detail, per close point (forms.py)
+        P2 = P2 + base["E"]
     P2[ring] = pl["HPw"][ring_A]
     G = hm.to_gltf(P2[inbody])
     rep["tiers"] = {"close_tris_body": int(2 * len(BF)), "ring_points": int(len(ring)),
