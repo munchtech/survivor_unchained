@@ -43,7 +43,7 @@
       "reach": 8,
       "reachLow": 9,
       "slam": 2.5,
-      "pullDamage": 0.6,
+      "pullDamage": 1.1,
       "floor": 30,
       "minSeconds": 60,
       "backstop": 0.05,
