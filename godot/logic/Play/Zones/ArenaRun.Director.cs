@@ -275,14 +275,18 @@ public sealed partial class ArenaRun
         // (a full window behind her, all of it within StandMoved of where she is)
         if (herTrail.Peek().T > Seconds - d.StandFor) return;
         foreach (var (_, x, z) in herTrail) if (Dist(x, z, p.X, p.Z) >= d.StandMoved) return;
-        Enemy? near = null;
-        double nd = double.MaxValue;
+        // The nearest fodder at least StandFrom off (one at her elbow dies in its windup to the stander's own weapons,
+        // and a felled charger's lane is called off); none that far, the nearest.
+        Enemy? near = null, close = null;
+        double nd = double.MaxValue, cd = double.MaxValue;
         foreach (var e in B.HostilesInRadius(p.X, p.Z, d.StandNear))
         {
             if (e.Boss || e.Elite || e.Scripted || e.HoldUntil > B.Time || e.State != EnemyState.Active) continue;
             double dd = Dist(e.X, e.Z, p.X, p.Z);
-            if (dd < nd) { nd = dd; near = e; }
+            if (dd >= d.StandFrom && dd < nd) { nd = dd; near = e; }
+            if (dd < cd) { cd = dd; close = e; }
         }
+        near ??= close;
         if (near == null) return;
         standReady = Seconds + d.StandCooldown;
         StandCharges++;
@@ -297,6 +301,7 @@ public sealed partial class ArenaRun
             double da = Math.Abs(Math.Atan2(Math.Sin(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0), Math.Cos(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0)));
             if (da < Math.PI / 2) continue;
             double dd = Dist(e.X, e.Z, p.X, p.Z);
+            if (dd < d.StandFrom) dd += 1000;
             if (dd < od) { od = dd; other = e; }
         }
         if (other != null) Cast("charge", other, p.X, p.Z, scale: d.StandScale);

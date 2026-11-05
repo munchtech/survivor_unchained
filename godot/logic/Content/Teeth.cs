@@ -61,6 +61,9 @@ public static class Teeth
         public double StandMoved = 1.2, StandFor = 3, StandNear = 7, StandScale = 0.6, StandCooldown = 3.5;
         /// <summary>Chargers at a stander at once (1 or 2; the second from at least a quarter turn round from the first).</summary>
         public int StandPair = 1;
+        /// <summary>A stander's chargers are the nearest fodder at least StandFrom m off (the nearest if none is): one at her
+        /// elbow died in its windup to her own weapons, its lane called off, so standing drew no charge that landed (H6 tuning).</summary>
+        public double StandFrom;
         /// <summary>The lamp's holder draws a flank: PoolFor s in the lit pool without leaving it brings the next flank
         /// now, and again each PoolEvery s while she stays.</summary>
         public bool Pool = true;
