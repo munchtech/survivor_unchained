@@ -1,0 +1,1379 @@
+{
+ "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure). shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
+ "version": 1,
+ "boards_root": "survivorsunchained_inputs",
+ "boards": {
+  "MB1": "look_l1/a2/r2/MB1_her_r3.png",
+  "MB2": "look_l1/a2/r4/MB2_gear_r4.png",
+  "MB3": "look_l1/a2/r2/MB3_town.png",
+  "MB4": "look_l1/a2/r2/MB4_wild_r3.png",
+  "T09": "look_l1/a2/r1/09_v2.png"
+ },
+ "fallback": "stone",
+ "classes": {
+  "skin": {
+   "from": "rules 5 (skin half-tone 0.85,0.45,0.38 at 0.8; edge 0.08 B1b, judged), 6 (6 deg at 0.5, 85% key color), 8 (class 1), 11; MB1 chips",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.08],
+    "mid": [0.85, 0.45, 0.38, 0.8],
+    "form": 0.3,
+    "spec": [6.0, 1.0, 0.5, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [254, 708, 270, 724],
+      "role": "highlight"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 776, 270, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 844, 270, 860],
+      "role": "transition"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 912, 270, 928],
+      "role": "shade"
+     }
+    ],
+    "measured": {
+     "L": [0.6314, 0.6931, 0.7597],
+     "C": [0.1238, 0.1265, 0.1282],
+     "h": [45.2, -7.5, 7.9],
+     "mid": "#dc8156",
+     "n": 512,
+     "roles": {"highlight": "#fdc388", "lit": "#ee9962", "transition": "#cb6c4f", "shade": "#684f68"}
+    }
+   }
+  },
+  "hair": {
+   "from": "rules 6 (one hard band per clump, its own light), 8 (class 1), 11; band and half-tone B1b (heroine_hair, judged); MB1 chips",
+   "cel": {
+    "band": [0.0, 0.06, 0.25, 0.06],
+    "mid": [0.72, 0.72, 0.72, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [1032, 708, 1048, 724],
+      "role": "highlight"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 776, 1048, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 844, 1048, 860],
+      "role": "transition"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 912, 1048, 928],
+      "role": "shade"
+     }
+    ],
+    "measured": {
+     "L": [0.5528, 0.5728, 0.597],
+     "C": [0.134, 0.137, 0.1401],
+     "h": [44.2, -1.6, 1.7],
+     "mid": "#b8592b",
+     "n": 512,
+     "roles": {"highlight": "#fcbd7a", "lit": "#c05f2d", "transition": "#b3542b", "shade": "#533f58"}
+    }
+   }
+  },
+  "eye": {
+   "from": "rule 8 (class 2: eyes, teeth, tongue), their own light (B1b); added: her eye, teeth and tongue shaders need a class to own their fallbacks",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [],
+    "note": "her shaders paint these; no board block"
+   }
+  },
+  "lash": {
+   "from": "rule 8 (class 2: lashes), rule 5 ground-soft band so thin cards never stripe (B1b); added: her brow and lash cards",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [],
+    "note": "her shaders paint these; no board block"
+   }
+  },
+  "leather": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (9 deg at 0.6), 7, 8 (class 0: gear), 9 (two-tone, sheen on the lit edge); MB2 leather (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.6, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [395, 630, 465, 662],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.3211, 0.3366, 0.6784],
+     "C": [0.0594, 0.0668, 0.1455],
+     "h": [40.5, -7.8, 6.2],
+     "mid": "#542a1b",
+     "n": 1152,
+     "roles": {"lit": "#542a1b"}
+    }
+   }
+  },
+  "cloth": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 0), 9 (soft planes); MB2 cloth (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.368, 0.4661, 0.7712],
+     "C": [0.0671, 0.0835, 0.0954],
+     "h": [277.3, -2.0, 2.1],
+     "mid": "#4e5588",
+     "n": 4000,
+     "roles": {"lit": "#4e5588"}
+    }
+   }
+  },
+  "satin": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (a hard streak: no number in the bible, so the leather disc hardened to a 0.75 deg edge), 7, 8; MB2 her skirt (day, navy)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 0.75, 0.6, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [60, 395, 170, 470],
+      "role": "lit",
+      "mask": {
+       "h": [240, 300]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.2237, 0.2709, 0.3066],
+     "C": [0.0306, 0.0461, 0.0535],
+     "h": [284.2, -3.7, 8.4],
+     "mid": "#24233c",
+     "n": 3922,
+     "roles": {"lit": "#24233c"}
+    }
+   }
+  },
+  "gloss": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard shaped highlight; no number, so skin's 6 deg at full strength, 0.75 edge), 7, 8; MB2 the pauldron's lacquered plate (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [6.0, 0.75, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [990, 620, 1110, 700],
+      "role": "lit",
+      "mask": {
+       "h": [240, 300]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.3075, 0.3498, 0.4285],
+     "C": [0.0489, 0.0568, 0.0642],
+     "h": [284.8, -7.6, 10.9],
+     "mid": "#373657",
+     "n": 7721,
+     "roles": {"lit": "#373657"}
+    }
+   }
+  },
+  "iron": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [1300, 660, 1370, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB2",
+      "box": [1205, 620, 1225, 760],
+      "role": "lit",
+      "mask": {
+       "C": [0, 0.05],
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5, 0.6346, 0.949],
+     "C": [0.0183, 0.0334, 0.0477],
+     "h": [30.4, -28.3, 29.3],
+     "mid": "#9e837e",
+     "n": 3139,
+     "roles": {"lit": "#9e837e"}
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "bronze": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 the pauldron's trim (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [960, 600, 1170, 800],
+      "role": "lit",
+      "mask": {
+       "h": [40, 90],
+       "C": [0.06, 1]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.3811, 0.6028, 0.7976],
+     "C": [0.0837, 0.127, 0.1456],
+     "h": [53.0, -10.9, 15.2],
+     "mid": "#bb692e",
+     "n": 5851,
+     "roles": {"lit": "#bb692e"}
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "gold": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 her outfit's trim and studs (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [40, 380, 200, 480],
+      "role": "lit",
+      "mask": {
+       "h": [60, 100],
+       "C": [0.06, 1],
+       "L": [0.6, 1]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.7398, 0.7966, 0.874],
+     "C": [0.119, 0.1333, 0.1447],
+     "h": [69.1, -8.3, 13.7],
+     "mid": "#f4ac54",
+     "n": 645,
+     "roles": {"lit": "#f4ac54"}
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "plank": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 0: props), 9 (a few long strokes); MB2 shield boards, MB3 wood (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [1235, 620, 1265, 690],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1460, 140, 1560, 360],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.4035, 0.4881, 0.6908],
+     "C": [0.0418, 0.0823, 0.1309],
+     "h": [32.6, -56.2, 14.9],
+     "mid": "#884d41",
+     "n": 12052,
+     "roles": {"lit": "#884d41"}
+    }
+   }
+  },
+  "bark": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB4 spruce trunk (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [555, 330, 575, 440],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.3381, 0.4777, 0.6137],
+     "C": [0.0269, 0.077, 0.1089],
+     "h": [72.0, -45.9, 35.2],
+     "mid": "#785527",
+     "n": 1101,
+     "roles": {"lit": "#785527"}
+    }
+   }
+  },
+  "stone": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0: buildings), 9; MB3 stone (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [920, 120, 1080, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5774, 0.6489, 0.8051],
+     "C": [0.0509, 0.0665, 0.1048],
+     "h": [41.3, -20.9, 20.6],
+     "mid": "#b2826f",
+     "n": 20800,
+     "roles": {"lit": "#b2826f"}
+    }
+   }
+  },
+  "rock": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (a few big rounded planes, muted moon-blue grey); MB4 rock (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [780, 250, 960, 400],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.4541, 0.5486, 0.7519],
+     "C": [0.0269, 0.0319, 0.0978],
+     "h": [32.9, -97.0, 26.8],
+     "mid": "#836b65",
+     "n": 13519,
+     "roles": {"lit": "#836b65"}
+    }
+   }
+  },
+  "plaster": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (plaster and beams flat); MB3 plaster (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [590, 240, 700, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.6257, 0.8419, 0.8675],
+     "C": [0.0652, 0.0988, 0.1099],
+     "h": [57.0, -44.7, 11.1],
+     "mid": "#fdbb8b",
+     "n": 7703,
+     "roles": {"lit": "#fdbb8b"}
+    }
+   }
+  },
+  "roof": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB3 roof (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [1150, 140, 1400, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.4488, 0.54, 0.7132],
+     "C": [0.075, 0.0976, 0.1349],
+     "h": [22.8, -32.5, 20.4],
+     "mid": "#a05654",
+     "n": 30001,
+     "roles": {"lit": "#a05654"}
+    }
+   }
+  },
+  "setts": {
+   "from": "rule 5 (ground: half-width 0.15), rule 6 (matte: no highlight), 8 (class 2: ground), 9 (chunky planes, warm tops, cool joints); MB3 setts (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [120, 120, 360, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.6073, 0.6519, 0.7458],
+     "C": [0.0631, 0.0773, 0.1144],
+     "h": [39.5, -17.9, 11.6],
+     "mid": "#b9806c",
+     "n": 31201,
+     "roles": {"lit": "#b9806c"}
+    }
+   }
+  },
+  "soil": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9; MB4 the road's earth verge (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1030, 330, 1110, 450],
+      "role": "lit",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.419, 0.4613, 0.4701],
+     "C": [0.0444, 0.0627, 0.0674],
+     "h": [38.9, -7.3, 3.2],
+     "mid": "#774c3e",
+     "n": 3810,
+     "roles": {"lit": "#774c3e"}
+    }
+   }
+  },
+  "road": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (two or three value masses); MB4 road (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1110, 200, 1200, 280],
+      "role": "lit",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5056, 0.5809, 0.5952],
+     "C": [0.0699, 0.0959, 0.0997],
+     "h": [46.8, -4.8, 2.1],
+     "mid": "#a96847",
+     "n": 3498,
+     "roles": {"lit": "#a96847"}
+    }
+   }
+  },
+  "grass": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (big flat clumps); MB4 grass (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [100, 220, 400, 420],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5119, 0.6946, 0.7664],
+     "C": [0.0791, 0.1256, 0.1357],
+     "h": [104.1, -15.0, 19.5],
+     "mid": "#aaa036",
+     "n": 30003,
+     "roles": {"lit": "#aaa036"}
+    }
+   }
+  },
+  "foliage": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 1: silhouette), 9 (flat leaf clusters, two or three values; spruce as stacked tiers); no rim (card normals, B1c); MB4 spruce (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [460, 200, 640, 440],
+      "role": "lit",
+      "mask": {
+       "C": [0.05, 1],
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5934, 0.6834, 0.7829],
+     "C": [0.1017, 0.1195, 0.1339],
+     "h": [97.5, -11.8, 13.0],
+     "mid": "#ae9936",
+     "n": 8267,
+     "roles": {"lit": "#ae9936"}
+    }
+   }
+  },
+  "water": {
+   "from": "rule 5 (ground), rule 6 (bands of the sky, never a disc), 8 (class 2), 9; MB4 water (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1450, 240, 1640, 400],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.5571, 0.5782, 0.8689],
+     "C": [0.0138, 0.0657, 0.0847],
+     "h": [207.3, -132.5, 37.9],
+     "mid": "#46858e",
+     "n": 15200,
+     "roles": {"lit": "#46858e"}
+    }
+   }
+  },
+  "glass": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard highlight; skin's 6 deg at full strength), 8 (off on light sources: class 2); MB3 the night lantern",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [6.0, 0.75, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [700, 590, 740, 650],
+      "role": "lit",
+      "mask": {
+       "L": [0.6, 1]
+      }
+     }
+    ],
+    "measured": {
+     "L": [0.6622, 0.7958, 0.9506],
+     "C": [0.1028, 0.1559, 0.1724],
+     "h": [72.9, -20.2, 29.3],
+     "mid": "#f8aa30",
+     "n": 1067,
+     "roles": {"lit": "#f8aa30"}
+    }
+   }
+  },
+  "crowd_fur": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (its strength is the crowd's night specular, B4), 7 (mid-dark bodies, the rim their own edge: width 0.25, a 0.04 step; color and strength B4's rigs), 8 (class 1); target 09 (the pack)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "T09",
+      "box": [150, 620, 230, 660],
+      "role": "lit"
+     },
+     {
+      "board": "T09",
+      "box": [300, 840, 380, 880],
+      "role": "lit"
+     }
+    ],
+    "measured": {
+     "L": [0.1377, 0.2338, 0.3335],
+     "C": [0.029, 0.0592, 0.0842],
+     "h": [268.1, -8.2, 16.0],
+     "mid": "#121c39",
+     "n": 6400,
+     "roles": {"lit": "#121c39"}
+    }
+   },
+   "edge": [0.25, 0.04]
+  },
+  "folk_skin": {
+   "from": "as skin (rules 5, 6, 8 class 1) on folk; MB1 chips",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.08],
+    "mid": [0.85, 0.45, 0.38, 0.8],
+    "form": 0.3,
+    "spec": [6.0, 1.0, 0.5, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [254, 776, 270, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 844, 270, 860],
+      "role": "transition"
+     }
+    ],
+    "measured": {
+     "L": [0.6314, 0.6931, 0.7597],
+     "C": [0.1238, 0.1265, 0.1282],
+     "h": [45.2, -7.5, 7.9],
+     "mid": "#dc8156",
+     "n": 512,
+     "roles": {"lit": "#ee9962", "transition": "#cb6c4f"}
+    }
+   }
+  },
+  "folk_cloth": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 1: folk); MB2 cloth (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "note": "held to rule 4's midC 0.07 or below by B3 (folk are weathered)",
+    "measured": {
+     "L": [0.368, 0.4661, 0.7712],
+     "C": [0.0671, 0.0835, 0.0954],
+     "h": [277.3, -2.0, 2.1],
+     "mid": "#4e5588",
+     "n": 4000,
+     "roles": {"lit": "#4e5588"}
+    }
+   }
+  }
+ },
+ "shaders": {
+  "res://shaders/kit.gdshader": "stone",
+  "res://shaders/kit.gdshader#OWN_FOLIAGE": "foliage",
+  "res://shaders/terrain.gdshader": "soil",
+  "res://shaders/arena_ground.gdshader": "soil",
+  "res://shaders/grass.gdshader": "grass",
+  "res://shaders/grass_own.gdshader": "grass",
+  "res://shaders/arena_grass.gdshader": "grass",
+  "res://shaders/arena_leaves.gdshader": "soil",
+  "res://shaders/scatter.gdshader": "soil",
+  "res://shaders/campfire_wood.gdshader": "bark",
+  "res://shaders/endgrain.gdshader": "plank",
+  "res://shaders/floor_cloth.gdshader": "cloth",
+  "res://shaders/props_runs.gdshader": "stone",
+  "res://shaders/person.gdshader": "folk_cloth",
+  "res://shaders/npc_dye.gdshader": "folk_cloth",
+  "res://shaders/vat.gdshaderinc": "crowd_fur",
+  "res://shaders/std_cel.gdshaderinc": "stone",
+  "res://shaders/heroine_skin.gdshader": "skin",
+  "res://shaders/heroine_paint.gdshaderinc": "skin",
+  "res://shaders/heroine_hair.gdshaderinc": "hair",
+  "res://shaders/heroine_outfit.gdshaderinc": "leather",
+  "res://shaders/heroine_eye.gdshader": "eye",
+  "res://shaders/heroine_teeth.gdshader": "eye",
+  "res://shaders/heroine_teeth_shell.gdshader": "eye",
+  "res://shaders/heroine_tongue.gdshader": "eye",
+  "res://shaders/heroine_cards.gdshader": "lash",
+  "res://shaders/heroine_cards_blend.gdshader": "lash"
+ },
+ "assign": [
+  {
+   "shader": "person|npc_dye",
+   "material": "(?i)skin|body|head|face|hand|arm|leg",
+   "class": "folk_skin"
+  },
+  {
+   "shader": "person|npc_dye",
+   "class": "folk_cloth"
+  },
+  {
+   "shader": "vat",
+   "class": "crowd_fur"
+  },
+  {
+   "material": "(?i)^Stone_Own",
+   "class": "rock"
+  },
+  {
+   "material": "(?i)^Wall_Own",
+   "class": "plaster"
+  },
+  {
+   "material": "(?i)^Roof_Own",
+   "class": "roof"
+  },
+  {
+   "material": "(?i)^Leaves_Own",
+   "class": "foliage"
+  },
+  {
+   "material": "(?i)glass|window|lantern|glow|ember|flame|candle",
+   "class": "glass"
+  },
+  {
+   "material": "(?i)gold|coin|gilt",
+   "class": "gold"
+  },
+  {
+   "material": "(?i)bronze|brass|copper",
+   "class": "bronze"
+  },
+  {
+   "material": "(?i)iron|steel|metal|chain|nail|hoop|rivet|blade|sword|axe|hinge|anvil",
+   "class": "iron"
+  },
+  {
+   "material": "(?i)leather|strap|belt|boot|saddle",
+   "class": "leather"
+  },
+  {
+   "material": "(?i)silk|satin",
+   "class": "satin"
+  },
+  {
+   "material": "(?i)cloth|fabric|canvas|rug|banner|curtain|sack|rope|wool|linen|tent|awning",
+   "class": "cloth"
+  },
+  {
+   "material": "(?i)roundtiles|roof|thatch|shingle",
+   "class": "roof"
+  },
+  {
+   "material": "(?i)plaster|daub|render",
+   "class": "plaster"
+  },
+  {
+   "material": "(?i)bark|trunk|stump|root",
+   "class": "bark"
+  },
+  {
+   "material": "(?i)leaf|leaves|needle|flower|petal|bush|fern|plant|clover|ivy|moss|vine",
+   "class": "foliage"
+  },
+  {
+   "material": "(?i)grass",
+   "class": "grass"
+  },
+  {
+   "material": "(?i)wood|plank|barrel|crate|beam|cart|stall|post|log|board|shield",
+   "class": "plank"
+  },
+  {
+   "material": "(?i)rock|boulder|cliff",
+   "class": "rock"
+  },
+  {
+   "material": "(?i)brick|stone|cobble|masonry|wall",
+   "class": "stone"
+  },
+  {
+   "material": "(?i)sett",
+   "class": "setts"
+  },
+  {
+   "material": "(?i)road|path",
+   "class": "road"
+  },
+  {
+   "material": "(?i)soil|dirt|earth|mud|ground",
+   "class": "soil"
+  },
+  {
+   "material": "(?i)water",
+   "class": "water"
+  },
+  {
+   "material": "(?i)skin|body|head|face",
+   "class": "folk_skin"
+  },
+  {
+   "material": "(?i)hair|fur",
+   "class": "crowd_fur"
+  },
+  {
+   "path": "(?i)/weapons/",
+   "class": "iron"
+  }
+ ],
+ "exclude": [
+  {
+   "what": "her materials, already on the model (B1b)",
+   "material": "^heroine_",
+   "shader": "heroine_"
+  },
+  {
+   "what": "unshaded (lights nothing)",
+   "rule": "shading_mode unshaded or render_mode unshaded"
+  },
+  {
+   "what": "FX: additive, subtractive, multiply or premultiplied blending, or billboards",
+   "rule": "blend_mode != mix or billboard_mode != disabled"
+  },
+  {
+   "what": "UI viewports (item models, portraits)",
+   "rule": "inside a SubViewport other than the root"
+  },
+  {
+   "what": "sky and fog",
+   "rule": "not a GeometryInstance3D material"
+  },
+  {
+   "what": "water surfaces",
+   "shader": "water|river|ford|puddle"
+  },
+  {
+   "what": "particles (FX)",
+   "rule": "GPUParticles3D / CPUParticles3D draw passes"
+  }
+ ]
+}

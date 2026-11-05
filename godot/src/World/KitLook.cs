@@ -105,6 +105,9 @@ public static class KitLook
     /// <summary>A kit material as the web game shades it.</summary>
     /// <param name="foot">Darker toward the piece's foot (the village kit
     /// and the game's own models).</param>
+    /// <summary>Our own rocks, walls and roofs take their class (and their window passes with them), when the library acts.</summary>
+    static ShaderMaterial Lib(ShaderMaterial m, string cls) => CelLib.On ? CelLib.Apply(m, cls) : m;
+
     public static Material For(Material src, Look look, bool foot = false)
     {
         if (src is not StandardMaterial3D s) return src;
@@ -114,11 +117,11 @@ public static class KitLook
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         // (our own rocks, tools/assets/env_rocks.py: Stone_Own<Species>, the one stone, OWN_ROCK)
-        if (s.ResourceName.StartsWith("Stone_Own")) return cache[key] = Rock(s, look);
+        if (s.ResourceName.StartsWith("Stone_Own")) return cache[key] = Lib(Rock(s, look), "rock");
         // (our own town walls, tools/assets/env_house.py: Wall_Own, the trim sheet, OWN_WALL)
-        if (s.ResourceName.StartsWith("Wall_Own")) return cache[key] = Wall();
+        if (s.ResourceName.StartsWith("Wall_Own")) return cache[key] = Lib(Wall(), "plaster");
         // (our own roofs, tools/assets/env_roof.py: Roof_Own, the roof sheet, OWN_ROOF)
-        if (s.ResourceName.StartsWith("Roof_Own")) return cache[key] = Roof();
+        if (s.ResourceName.StartsWith("Roof_Own")) return cache[key] = Lib(Roof(), "roof");
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
@@ -170,10 +173,12 @@ public static class KitLook
         m.SetShaderParameter("jitter", mine ? 0f : foliage ? 0.14f : 0.08f);  // (ours: OWN_FOLIAGE jitters each tree itself)
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
-        if (foliage && !mine) m.SetShaderParameter("cel_ink", 1);  // (kit foliage: silhouette ink only, as our own trees; L1 B1a)
-        // (kit foliage, as our own trees: no highlight (rule 6: matte) and no stepped rim (its card normals are no silhouette:
-        // by day the rim lit the far spruces' needle cards white, 48k pixels of the lookdev close view; L1 B1c)
-        if (foliage && !mine) { m.SetShaderParameter("cel_spec", new Vector4(9f, 1.5f, 0f, 0.85f)); m.SetShaderParameter("cel_rim_k", 0f); }
+        // The cel model's per-material numbers from the material library (L1 B2, godot/data/look/materials.json): the
+        // class by the material's name (foliage: ink 1, matte, no rim; RoundTiles roof; Wood plank ...), the kit's default
+        // class (stone) otherwise. (Replaces B1a/B1c's foliage lines, which set the same three numbers here by hand.)
+        // At --cel off nothing of the library is set: B1's lines stand, so today's frames are exact.
+        if (CelLib.On) CelLib.Apply(m, CelLib.ClassOf("res://shaders/kit.gdshader" + (mine ? "#OWN_FOLIAGE" : ""), s.ResourceName, s.ResourcePath));
+        else if (foliage && !mine) { m.SetShaderParameter("cel_ink", 1); m.SetShaderParameter("cel_spec", new Vector4(9f, 1.5f, 0f, 0.85f)); m.SetShaderParameter("cel_rim_k", 0f); }
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         // (our own trees have none: the canopy fade, the whole tree faded, in its own pass; E3 au1-5)

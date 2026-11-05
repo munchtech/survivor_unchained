@@ -14,6 +14,8 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 // The cel model (cel.gdshaderinc, L1 B1a): ink 0 (full) on kit pieces, walls, roofs and rocks; the foliage ink 1
 // (silhouette only), its own light() (below) banded with its wrap and back light kept, and no rim (card normals).
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #if defined(OWN_FOLIAGE)
 #define CEL_INK 1
 #define CEL_NO_RIM

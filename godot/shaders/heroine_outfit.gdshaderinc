@@ -10,6 +10,8 @@
 #define CEL_BUILTIN_RIM
 #define CEL_EXACT_ROUGH
 #define CEL_OWN_LIGHT
+// (the library's leather, rule 6: the fallback only; her own light draws each kind's highlight, outfit_hl)
+#define CEL_SPEC vec4(9.0, 1.5, 0.6, 0.85)
 #if !defined(OUTFIT_METAL_LIGHT) && !defined(OUTFIT_SATIN_LIGHT)
 #define OUTFIT_BASE_LIGHT
 #define CEL_CLEARCOAT

@@ -7,6 +7,8 @@
 // and UV2.y is the face's own seed (Camp.cs).
 shader_type spatial;
 render_mode blend_mix, cull_back;
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
 
 uniform float rings_per_m = 150.0;

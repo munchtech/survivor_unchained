@@ -119,6 +119,7 @@ public partial class Game : Node, IZoneHost
         screens = new Screens();
         AddChild(screens);
         AddChild(new Shots());
+        CelLib.Install(GetTree());   // (the material library's loader: every lit standard material on the cel model, L1 B2)
         synth = new Synth();
         AddChild(synth);
         if (Perf.On) MeasureWith(new Perf());

@@ -1,10 +1,14 @@
 #include "res://shaders/flare_world.gdshaderinc"
 // The cel model (L1 B1a): the crowd's ink class is 1 (silhouette only); Godot's RIM reproduced and, under cel, stepped;
-// the cel rim is the crowd's own edge (crowd_edge, hardened below), so the global one is off here.
+// the cel rim is the crowd's own edge (crowd_edge below), so the global one is off here.
 #define CEL_INK 1
 #define CEL_BUILTIN_RIM
 #define CEL_NO_RIM
+// (L1 B2: the crowd fur class's own rim, godot/data/look/materials.json "edge": x its width in 1 - n.v, y its step;
+// LOOK_BIBLE rule 7: one preset for every pack. Its color and strength are the rigs': crowd_rim, crowd_lamp2.w.)
+#define CEL_CROWD_EDGE vec2(0.25, 0.04)
 #include "res://shaders/cel.gdshaderinc"
+uniform vec2 cel_edge = CEL_CROWD_EDGE;
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -74,12 +78,13 @@ global uniform vec4 crowd_r4;
 // (whole by 1 - NdotV 0.92: a soft 2-4 px edge on a body at the play camera, not a hairline)
 #define CROWD_EDGE_END 0.92
 // (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
-// (L1 B1a: under the cel model (cel_on) the edge is the cel rim: whole past the old ramp's half-way, over a 0.04 step
-// of 1 - NdotV, not a soft glow; its strength and where it sits are R4's)
+// (L1 B2: under the cel model (cel_on) the edge is the crowd fur class's rim, cel_edge: whole from 1 - width over its
+// step, the same for every pack and every night. It replaces B1a's, which sat where R4's soft ramp was half-way
+// (crowd_r4.x, an atmosphere tuning: 0.71 at R4's 0.5) or at 0.79 off R4. At cel_on 0 the edge is R4's exactly.)
 float crowd_edge(float rim) {
-	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return mix(pow(rim, 3.0), smoothstep(0.77, 0.81, rim), cel_on);
-	float m = 0.5 * (crowd_r4.x + CROWD_EDGE_END);
-	float e = mix(smoothstep(crowd_r4.x, CROWD_EDGE_END, rim), smoothstep(m - 0.02, m + 0.02, rim), cel_on);
+	float c_e = smoothstep(1.0 - cel_edge.x - 0.5 * cel_edge.y, 1.0 - cel_edge.x + 0.5 * cel_edge.y, rim);
+	if (!(crowd_night.w > 0.5 && crowd_r4.w > 0.5 && crowd_r4.x > 0.0)) return mix(pow(rim, 3.0), c_e, cel_on);
+	float e = mix(smoothstep(crowd_r4.x, CROWD_EDGE_END, rim), c_e, cel_on);
 #ifdef VAT_CUT
 	return e * crowd_lamp3.w;
 #else

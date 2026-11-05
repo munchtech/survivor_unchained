@@ -6,6 +6,8 @@
 // leaves out (Campfire.CoalLayer), gets a warm wash from the fire over it.
 shader_type spatial;
 render_mode blend_mix, cull_back;
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;

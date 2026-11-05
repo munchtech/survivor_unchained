@@ -8,6 +8,8 @@ shader_type spatial;
 render_mode cull_disabled;
 #define CEL_INK 1
 #define CEL_BUILTIN_RIM
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
 
 uniform vec4 albedo : source_color = vec4(1.0);

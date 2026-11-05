@@ -11,6 +11,8 @@ render_mode cull_disabled, diffuse_burley, world_vertex_coords;
 #define CEL_INK 2
 #define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
 #define CEL_NO_RIM
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
