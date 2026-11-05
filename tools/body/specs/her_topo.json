@@ -36,5 +36,10 @@
    -0.04071
   ]
  },
- "forms_topo": "tools/body/forms/her_topo_{tier}.npz"
+ "forms_topo": "tools/body/forms/her_topo_{tier}.npz",
+ "bake": {
+  "maps": "godot/art/people/body_p1",
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json"
+ }
 }

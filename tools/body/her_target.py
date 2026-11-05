@@ -42,14 +42,16 @@ def weld(P, tol=1e-6):
     return first, inv.ravel()
 
 
-def target(base_glb, a_path=A_PATH, world=False):
+def target(base_glb, a_path=A_PATH, world=False, want=None):
+    """(want: the chain bones {name: (head, tail)} to pose A to, instead of base_glb's rest; only their directions
+    are used, so a target's own posed bones ("bones") re-pose A to that target exactly)"""
     if ANIM not in sys.path:
         sys.path.insert(0, ANIM)
     import skin
     from rig import Skeleton, qbetween, qinv, qmul
     sk = Skeleton.load(skin.SKELETONS / "heroine_skeleton.json")
     body = skin.Body(sk, [(a_path, lambda n: n == "Heroine", "skin")], None, label="her", helpers=True)
-    want = base_bones(base_glb)
+    want = want if want is not None else base_bones(base_glb)
     # (the fit is in the files' stored space, where her head and ring and B's coincide: the game's Head scale (1.07)
     # and the off-rest bind it gives the body's points on Head (heroine_headscale.py) are taken off, so her rest
     # poses to her stored points exactly)

@@ -13,6 +13,7 @@ head_override (optional, P1 B2a: the head scale baked, our head weights): {node:
           weights and those targets' POSITION written from these; everything else still copied verbatim.
 """
 import json
+import os
 import struct
 
 import numpy as np

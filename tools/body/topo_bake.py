@@ -12,7 +12,8 @@ the surface her fit was made to, B within ~1.7 mm of it):
   albedo.png      A's paint at the point each texel's body point lands on (a ray along our normal, both ways, 6 mm;
                   else the closest point); the left and right halves averaged (the UVs mirror: one texel, two points)
   normal.png      A's SHADING normal (its map decoded in its own tangent frame) re-expressed in OURS (the TANGENT the
-                  glb carries; glTF convention, +Y = up the texture), so B lights as A does over B's own shape
+                  glb carries; glTF convention, +Y = up the texture), so B lights as A does over B's own shape where
+                  A's form is a correction of ours; A's map detail alone where A's form is another shape (carry_normal)
   roughness.png   glTF metallicRoughness (G = A's roughness, B = 0 metal)
   freckles.png    the graft's freckles layer (RGBA as People.cs reads it), 0 off the graft
 L1's data maps (B3's inputs, docs/design/look/her_paint_regions.json via base/her_paint_regions.json):
@@ -48,7 +49,13 @@ A_PATH = os.path.join(REPO, "godot", "art", "people", "heroine.glb")
 FRECKLES = os.path.join(REPO, "godot", "art", "people", "head_tex", "heroine_freckles_graft.png")
 ROUGH = {0: 0.8, 1: 0.5}          # A's primitives' roughnessFactor (no roughness texture)
 MIRROR = np.array([-1.0, 1, 1])
-VERSION = "bake1"
+VERSION = "bake2"
+# A's point for each of ours: a ray along our normal reaches REACH both ways (derivation: (c) the fit's own residual,
+# measured: our close body to the fit's target p99 25 mm on the LOOSE arms, the template hands and feet; 4 mm on the
+# TIGHT trunk) and takes a face of A's that looks our way (cos > FACING: no hit through to the inner thigh or a finger
+# behind); the rest take the closest point on A
+REACH = 0.03
+FACING = 0.5
 
 
 def U(v):
@@ -80,12 +87,19 @@ def tangent_frames(P, N, UV, T):
 class Source:
     """A's body posed into our build's rest, unwelded (its UVs), with its textures and frames."""
 
-    def __init__(self, build_glb):
+    def __init__(self, build_glb, pose=None):
         import her_target
-        t = her_target.target(build_glb, A_PATH, world=True)
+        # (pose: the fit's posed bones (forms/her_topo_target_bones.json): A on the surface our points were wrapped
+        # onto. The built body's own skeleton (landmarks on the fitted points) poses A up to 4 cm off it: the bake read
+        # 53% of its texels by the closest-point fallback, p95 33 mm)
+        want = None
+        if pose:
+            with open(pose if os.path.isabs(pose) else os.path.join(REPO, pose)) as f:
+                want = {k: (np.asarray(v[0], float), np.asarray(v[1], float)) for k, v in json.load(f)["bones"].items()}
+        t = her_target.target(build_glb, A_PATH, world=True, want=want)
         A = Glb(A_PATH)
         m = A.mesh("Heroine")
-        first, inv = her_target.weld(m.P)
+        first, inv = her_target.weld(m.P.astype(np.float64))   # (float64 as skin.Body reads it: a float32 P / tol rounds 183 tris' keys apart)
         Tw = inv[m.T]
         Tw = Tw[(Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 0] != Tw[:, 2])]
         assert len(Tw) == len(t["T"]) and (Tw == t["T"]).all(), "A's welded order differs from her_target's"
@@ -121,24 +135,28 @@ class Source:
         self.fit_note = {"surface": "her_target.target(world=True)", "points": int(len(self.P)),
                          "materials": [self.tex[k]["name"] for k in sorted(self.tex)]}
 
-    def project(self, X, Nx, reach=0.006):
-        """(tri, bary, dist) of each point on A: the nearer of the rays along +/-N within `reach`, else the closest."""
+    def project(self, X, Nx, reach=REACH):
+        """(tri, bary, dist, fallback) of each point on A: the nearer hit of the rays along +/-N within `reach` whose
+        face agrees with our normal (cos > FACING), else the closest point."""
         n = len(X)
         best_t = np.full(n, -1, np.int64)
         best_d = np.full(n, np.inf)
+        best_q = np.zeros_like(X)
+        fn = U(np.cross(self.P[self.T[:, 1]] - self.P[self.T[:, 0]], self.P[self.T[:, 2]] - self.P[self.T[:, 0]]))
         for sgn in (1.0, -1.0):
             org = X - sgn * Nx * reach
             pid, tf = ray.hits(self.scene, org, sgn * Nx)
             d = np.abs(tf - reach)
             ok = (pid >= 0) & (tf <= 2 * reach) & (d < best_d)
+            ok[ok] &= (fn[pid[ok]] * Nx[ok]).sum(1) > FACING
             best_t[ok], best_d[ok] = pid[ok], d[ok]
+            best_q[ok] = org[ok] + sgn * Nx[ok] * tf[ok, None]
         miss = best_t < 0
         if miss.any():
-            _, _, t, d = self.surf.closest(X[miss], k=16)
-            best_t[miss], best_d[miss] = t, d
+            q, _, t, d = self.surf.closest(X[miss], k=16)
+            best_t[miss], best_d[miss], best_q[miss] = t, d, q
         a, b, c = (self.P[self.T[best_t, k]] for k in range(3))
-        Xp = X if True else None
-        w = tu.bary(Xp, a, b, c)
+        w = tu.bary(best_q, a, b, c)
         w = np.clip(w, 0, None)
         w /= w.sum(1, keepdims=True)
         return best_t, w, best_d, miss
@@ -172,6 +190,26 @@ class Source:
             g = pr == 1
             fr[g] = bilinear(self.freckles, uv[g])
         return {"albedo": alb, "normal": Ns, "form": Ng, "rough": rough, "freckles": fr, "graft": pr == 1}
+
+
+FORM_DEG = (8.0, 16.0)
+# A's normal on ours: A's shading normal Ns (its map in its own frame) turned by the rotation that takes A's geometric
+# normal Ng onto ours, by the part of that angle A's form does not carry: below FORM_DEG[0] none (A's form is a
+# correction of ours: B lights as A), above FORM_DEG[1] all of it (only A's map detail, on our shape), smooth between.
+# Derivation: (c) the fit's TIGHT tolerance (measured on bake1: the trunk, pelvis and thighs' form angle p99 5-11 deg);
+# (a) beyond it A's form is another shape (the LOOSE arms p95 40 deg: girth only, no roll; the template hands and feet
+# 90+ deg), whose lighting on ours inverted 7% of the hands' and 6% of the feet's texels.
+
+
+def carry_normal(Ns, Ng, Nn, deg=FORM_DEG):
+    ax = np.cross(Ng, Nn)
+    sn = np.linalg.norm(ax, axis=1)
+    th = np.arctan2(sn, (Ng * Nn).sum(1))
+    t = np.clip((np.degrees(th) - deg[0]) / (deg[1] - deg[0]), 0, 1)
+    a = th * t * t * (3 - 2 * t)
+    k = ax / np.maximum(sn, 1e-12)[:, None]
+    c, s_ = np.cos(a)[:, None], np.sin(a)[:, None]
+    return U(Ns * c + np.cross(k, Ns) * s_ + k * (k * Ns).sum(1, keepdims=True) * (1 - c))
 
 
 def bilinear(img, uv):
@@ -354,7 +392,7 @@ def mirror_vertex(z, i):
 
 
 # ------------------------------------------------------------------------------------------------------ run --
-def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None):
+def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None):
     t0 = time.time()
     os.makedirs(maps_dir, exist_ok=True)
     z = z or dict(np.load(os.path.join(HERE, "out", "topo", f"{tier}.npz")))
@@ -390,13 +428,14 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None)
     # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
     TtR, BtR = Tt * MIRROR, Bt * MIRROR
     print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-    A = Source(os.path.join(build_out, "body.glb"))
+    A = Source(os.path.join(build_out, "body.glb"), pose)
     res = {}
     for side, X, Nn, Tf, Bf in (("l", Xl, Nl, Tt, Bt), ("r", Xr, Nr, TtR, BtR)):
         t, bw, d, miss = A.project(X, Nn)
         s = A.sample(t, bw)
         ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
-        res[side] = {"albedo": s["albedo"], "normal": U(ts(s["normal"])), "form": U(ts(s["form"])),
+        res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn))),
+                     "form": U(ts(s["form"])),
                      "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
     print("BAKE carried", round(time.time() - t0, 1), flush=True)
     rep["projection"] = {"dist_p95_mm": round(float(np.percentile(np.r_[res["l"]["dist"], res["r"]["dist"]], 95)) * 1e3, 2),
@@ -416,6 +455,7 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None)
     save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
     nrm = U(avg("normal"))
     rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
+    rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
     save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
     fnm = U(avg("form"))
     save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
@@ -462,6 +502,9 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None)
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
+    rep["gates"] = gates(z, uvd, Vb, Nv, A, alb, covered)
+    print("BAKE gates", rep["gates"]["pass"], round(time.time() - t0, 1), flush=True)
+    rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
     return rep, {"alb": alb, "covered": covered, "A": A, "Vb": Vb}
 
@@ -474,13 +517,180 @@ def frame_mismatch(UV, T, w):
     return int((w[T] != sgn[:, None]).any(1).sum())
 
 
+# ------------------------------------------------------------------------------------------------ gates --
+GATES = {"albedo_dE_p95": 3.0, "seam_step_dE_p95": 4.0, "frame_mismatch": 0}
+# (derivation: (a) the game's need: dE00 about 2-3 is the just-noticeable step on skin at the close camera, 1:1; the
+# bake must carry A's paint unseen (3), an island's edge must not read as a line (4: a seam pair is two texels side by
+# side, seen together); an inverted tangent frame lights a triangle inside out (0))
+AWAY_PX = 4          # "away from seams": the point's texel more than 4 texels from its island's edge (bilinear + mips)
+
+
+def srgb_lab(c):
+    c = np.clip(c, 0, 1)
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    M = np.array([[0.4124564, 0.3575761, 0.1804375], [0.2126729, 0.7151522, 0.0721750],
+                  [0.0193339, 0.1191920, 0.9503041]])
+    xyz = lin @ M.T / np.array([0.95047, 1.0, 1.08883])
+    f = np.where(xyz > (6 / 29) ** 3, np.cbrt(xyz), xyz / (3 * (6 / 29) ** 2) + 4 / 29)
+    return np.stack([116 * f[:, 1] - 16, 500 * (f[:, 0] - f[:, 1]), 200 * (f[:, 1] - f[:, 2])], 1)
+
+
+def de2000(a, b):
+    """CIEDE2000 between Lab arrays (Sharma, Wu, Dalal 2005)."""
+    L1, a1, b1 = a.T
+    L2, a2, b2 = b.T
+    C1, C2 = np.hypot(a1, b1), np.hypot(a2, b2)
+    Cm = 0.5 * (C1 + C2)
+    G = 0.5 * (1 - np.sqrt(Cm ** 7 / (Cm ** 7 + 25.0 ** 7)))
+    a1p, a2p = a1 * (1 + G), a2 * (1 + G)
+    C1p, C2p = np.hypot(a1p, b1), np.hypot(a2p, b2)
+    h1p, h2p = np.degrees(np.arctan2(b1, a1p)) % 360, np.degrees(np.arctan2(b2, a2p)) % 360
+    dLp, dCp = L2 - L1, C2p - C1p
+    dh = h2p - h1p
+    dh = np.where(C1p * C2p == 0, 0, np.where(dh > 180, dh - 360, np.where(dh < -180, dh + 360, dh)))
+    dHp = 2 * np.sqrt(C1p * C2p) * np.sin(np.radians(dh / 2))
+    Lm, Cmp = 0.5 * (L1 + L2), 0.5 * (C1p + C2p)
+    hs = h1p + h2p
+    hm = np.where(C1p * C2p == 0, hs, np.where(np.abs(h1p - h2p) <= 180, hs / 2,
+                                               np.where(hs < 360, (hs + 360) / 2, (hs - 360) / 2)))
+    Tt = (1 - 0.17 * np.cos(np.radians(hm - 30)) + 0.24 * np.cos(np.radians(2 * hm))
+          + 0.32 * np.cos(np.radians(3 * hm + 6)) - 0.20 * np.cos(np.radians(4 * hm - 63)))
+    dth = 30 * np.exp(-(((hm - 275) / 25) ** 2))
+    Rc = 2 * np.sqrt(Cmp ** 7 / (Cmp ** 7 + 25.0 ** 7))
+    Sl = 1 + 0.015 * (Lm - 50) ** 2 / np.sqrt(20 + (Lm - 50) ** 2)
+    Sc, Sh = 1 + 0.045 * Cmp, 1 + 0.015 * Cmp * Tt
+    Rt = -np.sin(np.radians(2 * dth)) * Rc
+    return np.sqrt((dLp / Sl) ** 2 + (dCp / Sc) ** 2 + (dHp / Sh) ** 2 + Rt * (dCp / Sc) * (dHp / Sh))
+
+
+def _pct(x, q=95):
+    return round(float(np.percentile(x, q)), 3) if len(x) else 0.0
+
+
+def uv_seams(T, src, n, left):
+    """Each UV seam edge's two copies: (a1, b1, a2, b2) glb vertices, a* at the lower topology end. A seam: a topology
+    edge whose two triangles hold it through different glb vertices (one of them a left triangle)."""
+    e = np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])
+    et = np.tile(np.arange(len(T)), 3)
+    sw = src[e[:, 0]] > src[e[:, 1]]
+    lo, hi = np.where(sw, e[:, 1], e[:, 0]), np.where(sw, e[:, 0], e[:, 1])
+    key = src[lo] * n + src[hi]
+    o = np.argsort(key, kind="stable")
+    ks = key[o]
+    same = np.nonzero(ks[1:] == ks[:-1])[0]
+    i1, i2 = o[same], o[same + 1]
+    keep = ((lo[i1] != lo[i2]) | (hi[i1] != hi[i2])) & (left[et[i1]] | left[et[i2]])
+    i1, i2 = i1[keep], i2[keep]
+    return lo[i1], hi[i1], lo[i2], hi[i2]
+
+
+def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
+    """The bake's three gate numbers, measured on the SAVED albedo (8-bit, gutters filled, as the game reads it):
+    albedo: random points on our left triangles (area-weighted on our body) and their mirrors; ours = the albedo at
+      the point's UV (bilinear), A's = A's paint at the point's own projection (Source.project); dE00 per side (the
+      UVs mirror, so one texel carries both sides: A's own left/right difference is in it, reported apart as
+      mirror_part), on points away from seams (AWAY_PX).
+    seam: every UV seam edge (uv_seams), 8 points along it, the albedo at the edge's UV on each side: dE00 between.
+    frames: the export's triangles whose tangent handedness disagrees with their UV winding (frame_mismatch)."""
+    size = alb.shape[0]
+    q8 = np.round(np.clip(alb, 0, 1) * 255) / 255
+    T, src, UV = uvd["T"], uvd["src"], uvd["UV"]
+    left = ~uvd["is_right"][T].all(1)
+    Tl = T[left]
+    rng = np.random.default_rng(seed)
+    P3 = Vb[src]
+    ar = 0.5 * np.linalg.norm(np.cross(P3[Tl[:, 1]] - P3[Tl[:, 0]], P3[Tl[:, 2]] - P3[Tl[:, 0]]), axis=1)
+    ti = rng.choice(len(Tl), n, p=ar / ar.sum())
+    r1, r2 = rng.random(n), rng.random(n)
+    s1 = np.sqrt(r1)
+    w = np.stack([1 - s1, s1 * (1 - r2), s1 * r2], 1)
+    uv = (w[:, :, None] * UV[Tl[ti]]).sum(1)
+    ours = srgb_lab(bilinear(q8, uv))
+    inv_m = np.arange(len(Vb))
+    mo = z["mirror_of"]
+    inv_m[mo[mo >= 0]] = np.nonzero(mo >= 0)[0]
+    vl = src[Tl[ti]]
+    edge = ndimage.distance_transform_edt(covered)
+    px = np.clip((uv * size).astype(int), 0, size - 1)
+    away = edge[px[:, 1], px[:, 0]] > AWAY_PX
+    sides = {}
+    for nm, vv in (("l", vl), ("r", inv_m[vl])):
+        X = (w[:, :, None] * Vb[vv]).sum(1)
+        Nn = U((w[:, :, None] * Nv[vv]).sum(1))
+        t, bw, _, _ = A.project(X, Nn)
+        sides[nm] = srgb_lab(A.sample(t, bw)["albedo"])
+    dl, dr = de2000(ours, sides["l"]), de2000(ours, sides["r"])
+    de = np.r_[dl[away], dr[away]]
+    mirror_part = de2000(sides["l"], sides["r"])[away]
+    a1, b1, a2, b2 = uv_seams(T, src, len(Vb), left)
+    tt = (np.arange(8) + 0.5) / 8
+    u1 = (UV[a1][:, None] * (1 - tt[None, :, None]) + UV[b1][:, None] * tt[None, :, None]).reshape(-1, 2)
+    u2 = (UV[a2][:, None] * (1 - tt[None, :, None]) + UV[b2][:, None] * tt[None, :, None]).reshape(-1, 2)
+    step = de2000(srgb_lab(bilinear(q8, u1)), srgb_lab(bilinear(q8, u2)))
+    moved = (np.abs(u1 - u2).max(1) * size) > 0.5          # (the mirror line's copies share their UV: no step to see)
+    _, wsg = tangent_frames(P3, Nv[src], UV, T)
+    fm = int(frame_mismatch(UV, T, wsg))
+    res = {"what": "dE = CIEDE2000 on the saved 8-bit albedo (sRGB -> Lab D65)",
+           "albedo_dE_p95": _pct(de), "albedo_dE_p50": _pct(de, 50), "albedo_dE_p99": _pct(de, 99),
+           "albedo_points_away": int(len(de)), "away_px": AWAY_PX,
+           "albedo_dE_p95_near_seams": _pct(np.r_[dl[~away], dr[~away]]),
+           "mirror_part_dE_p95": _pct(mirror_part), "mirror_part_dE_p50": _pct(mirror_part, 50),
+           "seam_step_dE_p95": _pct(step[moved]), "seam_step_dE_p99": _pct(step[moved], 99),
+           "seam_step_dE_max": round(float(step[moved].max()), 3) if moved.any() else 0.0,
+           "seam_edges": int(len(a1)), "seam_samples": int(moved.sum()), "frame_mismatch": fm, "limits": GATES}
+    res["pass"] = bool(res["albedo_dE_p95"] <= GATES["albedo_dE_p95"]
+                       and res["seam_step_dE_p95"] <= GATES["seam_step_dE_p95"] and fm <= GATES["frame_mismatch"])
+    return res
+
+
+# ------------------------------------------------------------------------------------------------ sheet --
+SHEET = ["albedo", "normal", "roughness", "freckles", "ao", "curvature", "thickness", "region_id"]
+
+
+def uv_sheet(maps_dir, uvd, out_png, panel=1024):
+    """One sheet: each map (SHEET, 4 x 2 panels) at `panel` px with the UV layout over it (the left triangles' edges
+    faint, the UV seams bright), the gate numbers in bake.json beside it."""
+    from PIL import ImageDraw
+    T, UV, src = uvd["T"], uvd["UV"], uvd["src"]
+    left = ~uvd["is_right"][T].all(1)
+    a1, b1, a2, b2 = uv_seams(T, src, int(src.max()) + 1, left)
+    Tl = T[left]
+    e = np.unique(np.sort(np.concatenate([Tl[:, [0, 1]], Tl[:, [1, 2]], Tl[:, [2, 0]]]), 1), axis=0)
+    seam = np.unique(np.sort(np.r_[np.c_[a1, b1], np.c_[a2, b2]], 1), axis=0)
+    pal = np.random.default_rng(5).integers(40, 255, (256, 3))
+    pal[0] = 0
+    W = np.zeros((panel * 2, panel * 4, 3), np.uint8)
+    for i, k in enumerate(SHEET):
+        im = Image.open(os.path.join(maps_dir, f"{k}.png"))
+        if k == "region_id":
+            im = Image.fromarray(pal[np.asarray(im)].astype(np.uint8), "RGB")
+        elif k == "roughness":
+            im = Image.fromarray(np.repeat(np.asarray(im.convert("RGB"))[:, :, 1:2], 3, 2), "RGB")
+        elif k == "freckles":
+            a = np.asarray(im.convert("RGBA"), np.float64) / 255
+            im = Image.fromarray(np.round(255 * (a[:, :, :3] * a[:, :, 3:] + 0.5 * (1 - a[:, :, 3:]))).astype(np.uint8))
+        im = im.convert("RGB").resize((panel, panel), Image.LANCZOS)
+        d = ImageDraw.Draw(im, "RGBA")
+        xy = UV * panel
+        for (p, q) in e:
+            d.line([tuple(xy[p]), tuple(xy[q])], fill=(255, 255, 255, 28))
+        for (p, q) in seam:
+            d.line([tuple(xy[p]), tuple(xy[q])], fill=(255, 40, 200, 255))
+        d.text((8, 8), k, fill=(255, 255, 0, 255))
+        r, c = divmod(i, 4)
+        W[r * panel:(r + 1) * panel, c * panel:(c + 1) * panel] = np.asarray(im)
+    Image.fromarray(W).save(out_png, optimize=True)
+    return out_png
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("build_out")
     ap.add_argument("maps_dir")
     ap.add_argument("--size", type=int, default=2048)
+    ap.add_argument("--pose", default="tools/body/forms/her_topo_target_bones.json")
     a = ap.parse_args()
-    rep, _ = run(a.build_out, a.maps_dir, a.size)
+    rep, _ = run(a.build_out, a.maps_dir, a.size, pose=a.pose)
     print(json.dumps(rep, indent=1))
 
 

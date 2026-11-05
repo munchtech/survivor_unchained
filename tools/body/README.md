@@ -88,3 +88,26 @@ run_a's close surface, which is only the shape reference). `base/hand_l.obj` and
 from MakeHuman** (hm08 CC0 base mesh, cut once at a clean 22-point wrist / ankle loop by `topo.py --make-templates`);
 they are our source files from here on, mirrored for the right. `python tools/body/topo.py --probe` checks the plan's
 count ties and part 1 on the reference. Assembly, relaxation, UVs, landmarks, measures and the sheet are not built yet.
+
+## Bake (topo_bake.py, build_topo stage 7)
+
+Her maps on OUR topology's UVs (`topo_uv.py`; close and play share one texture set), baked from A (the shipped
+`godot/art/people/heroine.glb`: its albedo, normal, roughness factors, the graft's freckles) by numpy + embree rays,
+no Blender. A stage of the build, not a separate command: the spec's `"bake": {"maps", "size", "pose"}` block turns it
+on (`specs/her_topo.json`), so a rebuild that moves her surface, UVs or frames rebakes in the same command
+(`python tools/body/build_topo.py tools/body/specs/her_topo.json <out>`, about 95 s of the build). It bakes into
+`<out>/maps/` (with `bake.json`), writes `<out>/uv_sheet.png` (the maps over the UV layout), and publishes to the
+spec's `maps` (`godot/art/people/body_p1/`) only when its gates pass. Alone: `python tools/body/topo_bake.py <out>
+<maps_dir>` on a built `<out>`.
+
+- Source: A posed by the fit's own bones (`forms/her_topo_target_bones.json`, from wrap_topo's target.npz), the surface
+  our points were wrapped onto; each texel's point takes A's point along our normal (30 mm, facing faces only), else the
+  closest point. Posing A to the built body's skeleton instead missed by up to 4 cm (half the texels fell back).
+- Normal: A's shading normal in our tangent frame where A's form is a correction of ours (under 8 deg), A's map detail
+  alone on our shape where it is another shape (over 16 deg: the loose arms, the template hands and feet).
+- Areolas: A's shipped maps have them painted out (the apex's 15 mm disk matches the ring around it within 0.3 L*,
+  the normal map flat there); the bake carries only the shipped maps, so the rule is inherited, never re-derived.
+- Gates (`topo_bake.GATES`, in bake.json): albedo dE00 p95 <= 3 away from seams (ours at the point's UV vs A at the
+  point), seam step dE00 p95 <= 4 (the two sides of every UV seam), 0 inverted tangent frames.
+- The triangulation mirrors: a right quad splits on its left mirror's diagonal (`topo_uv.mirror_diag`), checked in
+  build.json `uv.tri_mirror.share` (1.0, asserted).

@@ -256,18 +256,40 @@ def stage_uv(z, tier, rep):
     m = urep.get("measure", {})
     rep["uv"] = {"file": f"tools/body/base/uv_{tier}.npz", "version": topo_uv.VERSION, "glb_vertices": int(len(uv["src"])),
                  "flipped": m.get("flipped_left"), "overlap_cells_4k": m.get("overlap_cells_4k"),
-                 "stretch_p95": {k: v["stretch_p95"] for k, v in m.get("islands", {}).items()}}
+                 "stretch_p95": {k: v["stretch_p95"] for k, v in m.get("islands", {}).items()},
+                 # (D2) the export's triangles mirror left/right: each right quad's diagonal, mirrored, its left's (1.0)
+                 "tri_mirror": topo_uv.mirror_share(z, uv["T"], uv["src"])}
+    assert rep["uv"]["tri_mirror"]["share"] == 1.0, ("the triangulation does not mirror: run tools/body/topo_uv.py", tier)
     return uv
 
 
 def stage_bake(spec, tier, out, rep):
-    """(P1 E2, stage 7) The maps on our UVs (topo_bake.py: baked from the close build; play shares them), then
-    attached to every export of the tier (body / body_lbs, play / play_lbs), after the correctives."""
+    """(P1 E2, stage 7; spec "bake": {"maps", "size", "pose"}) The maps on our UVs (topo_bake.py: baked from the close
+    build into <out>/maps; play shares them), gated (topo_bake.gates: albedo dE, seam step, frames; written into
+    <out>/maps/bake.json), published to spec "maps" only when the gates pass (a failing bake never reaches godot/),
+    then attached to every export of the tier (body / body_lbs, play / play_lbs), after the correctives.
+    A stage, not a separate command: the maps are a function of this build's surface, UVs and frames (the bake reads
+    stage/close.npz and the export's normals), so a rebuild that changes any of them rebakes in the same command."""
+    import shutil
     import glbwrite
     import topo_bake
-    maps = os.path.join(REPO, spec["bake"]["maps"])
+    b = spec["bake"]
+    maps = os.path.join(out, "maps")
+    pub = os.path.join(REPO, b["maps"])
     if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
-        rep["bake"] = topo_bake.run(out, maps, size=int(spec["bake"].get("size", 2048)))
+        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"))
+        r["files"] = sorted(f for f in os.listdir(maps) if f.endswith((".png", ".json")))
+        with open(os.path.join(maps, "bake.json"), "w") as f:
+            json.dump(r, f, indent=1, default=float)
+        rep["bake"] = {k: v for k, v in r.items() if k != "files"}
+        if r["gates"]["pass"]:
+            os.makedirs(pub, exist_ok=True)
+            for f in os.listdir(maps):
+                shutil.copy2(os.path.join(maps, f), os.path.join(pub, f))
+            rep["bake"]["published"] = b["maps"]
+        else:
+            rep["bake"]["published"] = None
+            print("BAKE gates FAILED (not published):", r["gates"], flush=True)
     att = {"baseColor": os.path.join(maps, "albedo.png"), "normal": os.path.join(maps, "normal.png"),
            "metallicRoughness": os.path.join(maps, "roughness.png")}
     stem = os.path.splitext(GLB[tier][0])[0]
