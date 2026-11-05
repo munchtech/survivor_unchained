@@ -3,13 +3,42 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (5 November, S1 the story rework, branch `story-s1`): PROPOSAL READY story-s1@9fd41e6e0
+## Now (5 November, S1 the story rework, branch `story-s1`): the owner said GO; Act 1's data started; HANDOFF READY story-s1@e13c94a6c (this commit follows; the worker's rename commit may follow it on the branch)
 
-**PROPOSAL READY story-s1@9fd41e6e0** (the plan's commit; this handoff's own
-commit follows it). Writer = Fable (S1, `docs/team/hook/S1_story_rework.md`);
-editor = a Haiku `su-lead-max` at xhigh (agent `ad7c24ae2324594d3`, ~136k of
-its 150k used: spawn a fresh one for the data pass, from this page's brief
-shape and `docs/handoff/story_editor.md` sections 1-2 and 4).
+**HANDOFF READY** (the writer S1 at ~300k). **The pick (the owner, 5 Nov:
+"Go, defaults."):** ending B retired, three endings (she lies down / Corvane
+lies down / she carries it home); the name is **Corvane**; Corvane killable
+in Act 1 and getting up on screen; "He has never burned." retired; Holloway
+risen as Ashford's commander waits for Act 2's brief. The proposal was
+PROPOSAL READY story-s1@9fd41e6e0, editor PASS WITH FIXES applied.
+
+**Slice 1, running when this was written (a `su-worker`, Sonnet, background):**
+every player-facing "Chid" -> "Corvane" (the id `chid`, node keys, facts,
+flags, lock ids and code identifiers unchanged), SB00's L2 -> "and bound it
+there with seven chains, in the dark.", `tools/vo/lines.py`, the changed
+lines re-locked (527 stays 527), the vo unit tests and the dotnet suite,
+one commit on story-s1 and a one-line SendMessage to main. If its commit is
+not on the branch, check `git log` and `git status` before anything else;
+finish or redo it from this paragraph.
+
+**Slice 2, the successor's (the writer, Fable):** PLAN section 4, beats 5-14,
+in this order so each commit stands alone: (1) beat 6 Vonnra's tale (new
+`vonnra` nodes off her hub, `vonnra.told` fact; the cold lines stay); (2)
+beats 7-8 and 11, Corvane's door and the morning after (barks for story night
+`vault_opened` phase 1, `chid.rose`, the `cb_vault2`/`chid.first` variants,
+`corvane.rose` fact); (3) beat 10 `scene_bed` and beat 5's reports and barks;
+(4) beat 9's report and Wenna's line (the C15 film is the cinematics lead's);
+(5) beat 12 Tam and Wenna; (6) beat 13's office page (`chid.office`,
+`quests.json`) and beat 14's one report line; (7) StoryLint facts written and
+read, tests, locks for the new lines; (8) a fresh Haiku editor at xhigh on the
+diff (PASS WITH FIXES applied); (9) `MR READY story-s1@<sha>` here and to
+main with the editor's verdict in two lines, the line counts (survived,
+rewritten, new, retired), the re-lock count and the cost.
+
+Writer = Fable (S1, `docs/team/hook/S1_story_rework.md`); editor = a Haiku
+`su-lead-max` at xhigh (agent `ad7c24ae2324594d3`, ~136k of its 150k used:
+spawn a fresh one for the data pass, from `docs/handoff/story_editor.md`
+sections 1-2 and 4, with PLAN.md as the canon).
 
 **What is done:** `docs/story/PLAN.md`, the proposal: the owner's seven-chains
 draft (`docs/story/REWORK_EMBER_WATCH.md`) put on the bible's existing
