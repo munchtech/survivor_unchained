@@ -65,12 +65,13 @@ class Ref:
         r = plan["reference"]
         z = np.load(os.path.join(REPO, r["close"]))
         self.P = z["P"].astype(float)
+        self.ring_stored, self.ring = head_rings(os.path.join(REPO, r["head"]), r["head_mesh"])
+        self.P, self.carry = neck_carry(self.P, self.ring_stored, self.ring, r["neck_carry_m"])
         self.Fq = z["F"].astype(np.int64)
         self.T = np.concatenate([self.Fq[:, [0, 1, 2]], self.Fq[:, [0, 2, 3]]])
         self.C = self.P[self.T].mean(1)
         sk = gl.Glb(os.path.join(REPO, r["skeleton"])).skeleton()
         self.J = {n: sk.head(i).astype(float) for i, n in enumerate(sk.names)}
-        self.ring = head_ring(os.path.join(REPO, r["head"]), r["head_mesh"])
         self.lab = np.zeros(len(self.T), np.int64)
         self._sc, self._sf = {}, {}
 
@@ -102,8 +103,20 @@ class Ref:
 
 
 def head_ring(path, name):
-    """Her head's open boundary, ordered: index 0 the front middle point (max z), then over her left (x > 0)."""
-    h = gl.Glb(path).mesh(name)
+    """Her head's open boundary where the build places it (head_rings' second)."""
+    return head_rings(path, name)[1]
+
+
+def head_rings(path, name):
+    """Her head's open boundary, stored and where the build places it: its baked world rest (headbake.rest_world,
+    A's +7% Head scale and off-rest bind folded in; build_topo.py stage_place snaps onto the same positions, so the
+    move there is 0), ordered on the stored ring: index 0 the front middle point (max z), then over her left (x > 0).
+    (P1 N: the stored-space ring sits 25 mm above and 6% smaller than the head the build draws; the build's snap
+    crossed the neck's top rows.)"""
+    import headbake
+    g = gl.Glb(path)
+    h = g.mesh(name)
+    Pw, _ = headbake.rest_world(h, g.skeleton())
     rep = gl.weld(h.P.astype(float), 1e-7)
     first = {}
     for i, r_ in enumerate(rep):
@@ -119,11 +132,38 @@ def head_ring(path, name):
         if nx[0] == loop[0]:
             break
         loop.append(nx[0])
-    R = h.P[[first[k] for k in loop]].astype(float)
-    R = np.roll(R, -int(np.argmax(R[:, 2])), 0)
+    ids = np.array([first[k] for k in loop])
+    R = h.P[ids].astype(float)
+    ids = np.roll(ids, -int(np.argmax(R[:, 2])), 0)
+    R = h.P[ids].astype(float)
     if R[1, 0] < R[-1, 0]:
-        R = np.concatenate([R[:1], R[1:][::-1]])
-    return R
+        ids = np.concatenate([ids[:1], ids[1:][::-1]])
+    return h.P[ids].astype(float), Pw[ids].astype(float)
+
+
+def neck_carry(P, Rs, Rb, ease_m):
+    """(c, P1 N) The reference's neck carried onto her head where the build places it. The reference (run_a) was made
+    against the head's stored ring Rs; the head is drawn at Rb (its baked world rest: 25 mm lower, 6% larger). Each
+    reference point takes the ring's own move d = Rb - Rs at its angle about the stored ring's centre (y axis; the
+    ring is star-shaped about it, read off the points' order), linear between ring points, times a weight: 1 at and
+    above the ring (at that angle), under it smooth01(1 - h / ease_m) with h its distance to the ring, 0 from ease_m
+    off. So the ring meets the surface exactly (the move at a ring point is its own) and the neck under it
+    shortens evenly into the shoulders; nothing else moves. Returns (P', info)."""
+    c = Rs.mean(0)
+    th_r = np.arctan2(Rs[:, 0] - c[0], Rs[:, 2] - c[2])
+    o = np.argsort(th_r)
+    th_s = np.concatenate([th_r[o] - 2 * np.pi, th_r[o], th_r[o] + 2 * np.pi])
+    D = Rb - Rs
+    th = np.arctan2(P[:, 0] - c[0], P[:, 2] - c[2])
+    d = np.stack([np.interp(th, th_s, np.tile(D[o, k], 3)) for k in range(3)], 1)
+    y_r = np.interp(th, th_s, np.tile(Rs[o, 1], 3))
+    dense = np.concatenate([Rs + f * (np.roll(Rs, -1, 0) - Rs) for f in np.linspace(0, 1, 8, endpoint=False)])
+    h = np.where(P[:, 1] >= y_r, 0.0, cKDTree(dense).query(P)[0])   # under the ring: the distance to it (the
+    w = smooth01(1 - h / ease_m)                                    # trapezius sloping off sideways is far)
+    Pn = P + w[:, None] * d
+    mv = np.linalg.norm(w[:, None] * d, axis=1)
+    return Pn, {"ease_m": ease_m, "points_moved": int((w > 0).sum()), "move_max_mm": round(float(mv.max()) * 1e3, 2),
+                "ring_move_mean_mm": round(float(np.linalg.norm(D, axis=1).mean()) * 1e3, 2)}
 
 
 def seg_dist(P, a, b):

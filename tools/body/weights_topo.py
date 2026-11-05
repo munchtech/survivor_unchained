@@ -51,6 +51,8 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
+VERSION = "v1"  # written into each built glb's extras (build_topo.py stage_export); bump with the rules
+
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
 HMAX = 0.04

@@ -7,6 +7,8 @@
   "head": "godot/art/people/heroine.glb",
   "head_mesh": "HeroineHead",
   "head_tris": 33696,
+  "neck_carry_m": 0.06,
+  "why_neck_carry": "(c) P1 N: the reference was made against the head's stored ring; the build draws the head at its baked world rest (headbake.rest_world: 25 mm lower, 6% larger), so the reference neck is carried onto it (topo.neck_carry: each point the ring's own move at its angle, 1 above the ring, smooth01 over 0.06 m of distance under it) and the topology's ring IS the baked ring: stage_place moves 0.0 mm. (a) 0.06 m = the ring to the clavicle heads at the front (b: 1.552); 0.10 (the build's fit_ease_m) reached the trapezius and shoulder rim and changed the plan's counts (n_t 25 -> 23)",
   "why": "(b) the base woman's close surface (MakeHuman hm08, CC0) only as the shape; (a) OUR skeleton's bones place every station; (c) her approved head's open ring (94 points) is the neck's top, kept vertex for vertex"
  },
  "tiers": {
@@ -295,7 +297,8 @@
     "neck_meet_rows": 8,
     "neck_ring_smooth": 4,
     "neck_step_ease": 3,
-    "neck_untwist_rows": 2,
+    "neck_untwist_rows": 3,
+    "why_neck_untwist_n": "(a) P1 N: with the neck carried onto the baked ring (reference.why_neck_carry) the meet span is 25 mm shorter; the untwist search over the top 3 rows (was 2) takes the last short edge (close 1.8 mm at the front, row 86) and the last aspect (play 4.23) out; every other neck_meet number swept (step_ease 2/4, ring_smooth 8, meet_rows 4-7) left one",
     "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
     "breast_cap_on_loop": true,
     "F_L_heights": [
@@ -327,7 +330,7 @@
     "thigh_kite_sector": 230,
     "why_pass3b_rims": "(a) the judge (pass 3b items 5 + 9): hand_fit / foot_fit re-fit the templates (c: base/*.obj, our source files) at build time. trim: the plane cut that made them (topo.make_templates) left stair steps on the rim (2-valent rim vertices: the 1.79 mm wrist edge and the forearm / shin slivers, aspect 5.7-8.5); the protruding quads go until the rim is one clean edge loop (hand 22 -> 20). level (foot): the trimmed ankle rim still steps down a whole row over the back between two risers (hm08 poles); one generated row lifts that stretch to the risers tops (strip height 7-26 mm -> 7-11 mm). points 28 (the judge: 26-28 at the ankle): a ring of 28 on the reference, rise 7.2 mm (= ring_spacing) above the levelled rim, bridged by the minimum-cost walk of quads and kites (rim_bridge; kite_cost 8 keeps it to 4 kites, all on the medial / back side, flagged TEMPLATE: they are the foot s rim, the sole and toes unchanged)",
     "why_shin_band": "(a) the judge (pass 3b item 5): the shin reduction band at the inner lower shin; shin_band_y 0.325 centres its 3 strips at y 307-346 (b: the judge s 280-350), the lowest strip held 40 mm clear of the ankle zone (0.315 put 4 poles inside it). knee.limb_spacing 0.0085: the leg s ring step along the bone (thigh and shin, bend zones keep bend_spacing) 7.5 -> 8.5 mm, -1.4k tris (a: the close tri budget; 9.5 put kites inside the knee zone); the arm keeps 7.5 (the brief: coarser arm spacing added folds and elbow poles)",
-    "why_thigh_band": "(a) see why_thigh_band_strips",
+    "why_thigh_band": "(a) see why_thigh_band_strips; P1 N: 0.80 was tried (check.py found the band's top 3-pole at (83, 848, -84) 39.4 mm from its hip zone): the poles sit on the thigh stations (8.5 mm), so 0.808-0.80 drops the band one station and its bottom poles land 25-39 mm from the knee zone (6-12 poles, both gates); 0.81-0.815 is the one station that clears the knee, the hip pole stays 39.4 (check) / 42.9 (topo_gates)",
     "rim": {
      "sides": 0.0062,
      "top": 0.0072
@@ -446,7 +449,8 @@
     "neck_meet_rows": 5,
     "neck_ring_smooth": 4,
     "neck_step_ease": 3,
-    "neck_untwist_rows": 2,
+    "neck_untwist_rows": 3,
+    "why_neck_untwist_n": "(a) P1 N: with the neck carried onto the baked ring (reference.why_neck_carry) the meet span is 25 mm shorter; the untwist search over the top 3 rows (was 2) takes the last short edge (close 1.8 mm at the front, row 86) and the last aspect (play 4.23) out; every other neck_meet number swept (step_ease 2/4, ring_smooth 8, meet_rows 4-7) left one",
     "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
     "collar_F_y": 1.52,
     "why_pass3b_collar": "(a) collar_F_y: the front collar kites on the upper chest, under the neck base zone (b: the clavicle heads at 1.552); 1.52 is the lowest row above the play breast window",

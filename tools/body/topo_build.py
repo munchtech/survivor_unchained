@@ -842,6 +842,8 @@ def hip_root(cv, plan, TH, BB):
     tFS = np.where(TH > BB, top, tFS)
     q, _ = cv.ref.project([TRUNK, LEG], np.array(hr["back"], float) / 1000.0)   # (b) the fold's landmarks, 3D
     bth, bt = cv.inv(q)                              # (steep canvas rays pass under the buttock: no y_to_t here)
+    bth = np.abs(bth)                                # the left half's canvas, theta in [0, pi]: a midline landmark
+    #                                                  projected a hair over x = 0 read -pi (P1 N: a KD tie flipped it)
     o = np.argsort(bth)
     Bth = np.concatenate([[BB], bth[o]])
     Bt = np.concatenate([[tB0], bt[o]])
@@ -2348,6 +2350,7 @@ def main():
         V, Q, info, C, joints, M, tk = build(plan, tier, ref, cv, L)
         m = measure(ref, V, Q, info, C, joints, L, plan, tier)
         m["hash"] = mesh_hash(V, Q)
+        m["neck_carry"] = ref.carry
         if a.check_determinism:
             V2, Q2 = build(plan, tier, ref, cv, L)[:2]
             m["hash_second_run"] = mesh_hash(V2, Q2)

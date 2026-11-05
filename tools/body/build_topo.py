@@ -16,15 +16,15 @@ Stages (each a function, no hand steps):
               the spec's "stance" (forms.stance's rule: a pitch about the neck's middle and a move, eased in the same
               way); "forms" (v1's residual, per MakeHuman point) is NOT applied: ours are "forms_topo" (2b);
   2 place     her shipped head, baked to its world rest (headbake.py: A's +7% Head scale and off-rest bind folded into
-              the meshes); our open neck ring (94 points, one to one with the head's open ring by construction)
-              snapped onto the baked head ring, the move eased harmonically into the body over `fit_ease_m` under
-              SPLIT (stages.harmonic on our quads' graph Laplacian);
+              the meshes); our open neck ring (94 points) IS the baked head ring by construction (topo.head_ring
+              uses the same headbake.rest_world; asserted to 1e-6 m), so the snap, eased harmonically into the body
+              over `fit_ease_m` under SPLIT (stages.harmonic on our quads' graph Laplacian), moves nothing (P1 N);
   2b forms    the spec's "forms_topo" (a path pattern with {tier}: wrap_topo.py's R per our vertex, 0 on the ring)
               added to the placed body; the npz names our topology's hash (stage_forms asserts it);
   3 skeleton  tools/body/skeleton.json placed from OUR vertices alone (skeleton.place_skeleton_ours,
               base/landmarks.json "tiers"[tier]) on the placed body;
-  4 weights   v0 (weights_topo.py: our topology's primary weights, then weights.py's rules 2 and 4-10), and the
-              head's: its ring = the body ring's weights, Head above, harmonic between;
+  4 weights   weights_topo.py (its VERSION in the glb extras; v1: seeds by rule + a bounded biharmonic fill, then
+              weights.py's rules 2 and 4-10), and the head's: its ring = the body ring's weights, Head above, harmonic between;
   5 export    glbwrite.py: our skeleton (no rest scale, plain binds), the body (our quads as triangle pairs, normals
               from our faces, the ring's from the head so the seam lights as one; TEXCOORD_0 a placeholder front
               projection: UVs are a later step), the head meshes with the bake and our weights written over A's; and
@@ -49,6 +49,7 @@ sys.path.insert(0, HERE)
 import headbake  # noqa: E402
 import headmatch as hm  # noqa: E402
 import stages as st  # noqa: E402
+import weights_topo as wtp  # noqa: E402
 from gl import Glb, weld  # noqa: E402
 from sliders import OurSliders, load_spec  # noqa: E402
 
@@ -62,9 +63,27 @@ def s01(x):
     return x * x * (3 - 2 * x)
 
 
+_SPLIT_DROP = []
+
+
+def split_drop():
+    """(c, P1 N) SPLIT carried with the head: headmatch.s_split was drawn on the head's stored ring; the head is built
+    at its baked world rest (25 mm lower), so the plane moves down by the baked ring's mean depth under it (25.9 mm;
+    the ring's points then sit -7.8..+4.4 mm about it, inside HOLD_M), and every join/hold under SPLIT keeps its
+    meaning against the ring the body actually meets."""
+    if not _SPLIT_DROP:
+        import topo
+        with open(os.path.join(HERE, "loopplan.json")) as f:
+            r = json.load(f)["reference"]
+        R = topo.head_ring(os.path.join(REPO, r["head"]), r["head_mesh"])
+        _SPLIT_DROP.append(float(np.mean(-hm.s_split(hm.to_blender(R)))))
+    return _SPLIT_DROP[0]
+
+
 def split_depth(V):
-    """How far under SPLIT (headmatch.s_split) each point is, m, positive below; V in glTF, our placed frame."""
-    return -hm.s_split(hm.to_blender(V))
+    """How far under SPLIT (headmatch.s_split, carried down with the head: split_drop) each point is, m, positive
+    below; V in glTF, our placed frame."""
+    return -hm.s_split(hm.to_blender(V)) - split_drop()
 
 
 def boundary_ring(Q, n):
@@ -122,9 +141,11 @@ def stage_base(spec, tier, rep, pre=None):
 def stage_place(spec, z, V, A, baked, rep):
     Q = z["Q"]
     ring = boundary_ring(Q, len(V))
-    head = A.mesh("HeroineHead")
-    d, hv = cKDTree(head.P.astype(float)).query(V[ring])
+    # our ring IS the baked head's ring (topo.head_ring: the same headbake.rest_world), so the lookup is on the baked
+    # rest; the move left is the slider/stance join's at the ring (0 for both: held over HOLD_M under SPLIT)
+    d, hv = cKDTree(baked["HeroineHead"]["P"]).query(V[ring])
     assert len(ring) == 94 and d.max() < 1e-6, ("the open ring is not the head's", len(ring), d.max())
+    assert len(np.unique(hv)) == 94, "the ring's head points are not one to one"
     tgt = baked["HeroineHead"]["P"][hv]
     D = tgt - V[ring]
     L = st.laplacian(Q, len(V))
@@ -178,7 +199,6 @@ def stage_skeleton(V, tier, rep):
 
 # ---------------------------------------------------------------------------------------------- 4 weights --
 def stage_weights(z, V, ring, hv, sk, A, baked, rep):
-    import weights_topo as wtp
     J, W, info = wtp.body(V, z, sk)
     names = sk["names"]
     nb = len(names)
@@ -246,7 +266,7 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep):
     glbwrite.write(os.path.join(out, glb), os.path.join(REPO, spec["ref"]), skel, body, HEADS,
                    np.zeros(len(A.skeleton().names), np.int64), head_override=ov,
                    extras={"body_base": {"spec": rep["spec"], "tier": tier, "topology": f"tools/body/out/topo/{tier}.npz",
-                                         "skeleton": "tools/body/skeleton.json", "weights": "v0 tools/body/weights_topo.py",
+                                         "skeleton": "tools/body/skeleton.json", "weights": f"{wtp.VERSION} tools/body/weights_topo.py",
                                          "head": "A's, the Head scale baked (tools/body/headbake.py)", "version": 2}})
     tmp = os.path.join(out, "stage", tier)
     os.makedirs(tmp, exist_ok=True)
