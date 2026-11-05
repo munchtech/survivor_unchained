@@ -181,6 +181,12 @@ class Strip:
             rend = body & (chain(bone(poser, rig, "thigh", other)) < 0.5) & (arms < 0.5)
             self.seg_d = rend & (chain(self.bone) >= 0.5)
             self.seg_p = np.zeros_like(rend)
+            # the girth's thigh by the rest geometry, not by weights (a weights change moved what was measured: the
+            # hip pin took the inner thigh's top out of the thigh chain >= 0.5, rest girth d0.25 633 -> 547 mm, 90's
+            # ratio 1.10 -> 1.24): her own side of the hips' midpoint, beyond the rest bisector plane at the joint
+            # between the trunk's up and the thigh's rest direction (the knee and elbow's rule carried to the hip)
+            hips = 0.5 * (self.O + R[I[bone(poser, rig, "thigh", other)]][:3, 3])
+            self.seg_g = rend & (((poser.P0 - self.O) @ unit(up - u_d)) < 0) & (((poser.P0 - hips) @ out) > 0)
         T = poser.T
         self.rend = rend
         self.T_rend = T[rend[T].all(1)]
@@ -254,7 +260,7 @@ class Strip:
                 n, c, sel = self.p3, O + s * self.Lp * self.p3, self.seg_p
             else:
                 d = self.d3(G)
-                n, c, sel = d, O + s * self.Ld * d, self.seg_d
+                n, c, sel = d, O + s * self.Ld * d, getattr(self, "seg_g", self.seg_d)
             out[f"{seg}{s}"] = section(V, self.poser.T, sel, c, n, rend=self.rend)
         return out
 
