@@ -44,9 +44,19 @@ public partial class Game
             root.AddChild(mi);
             mi.GlobalPosition = W(0, 0.25f);
             if (CelLib.On) CelLib.Bind(mat, cls);
-            var lab = new Label3D { Name = "SwatchLabel_" + cls, Text = cls, PixelSize = 0.0035f, FontSize = 40, Modulate = new Color(1, 0.95f, 0.8f), OutlineSize = 10, OutlineModulate = Colors.Black, Billboard = BaseMaterial3D.BillboardModeEnum.FixedY, NoDepthTest = true };
+            var lab = new Label3D { Name = "SwatchLabel_" + cls, Text = cls, PixelSize = 0.0035f, FontSize = 40, Modulate = new Color(1, 0.95f, 0.8f), OutlineSize = 10, OutlineModulate = Colors.Black, Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true };
             root.AddChild(lab);
             lab.GlobalPosition = W(-0.38f, 0.07f);
+        }
+        // (B2r2) No wolf in front of the rows: a held wolf standing within 1.5 m of a row's depth is moved behind the others
+        // (the stage holds each at its BoundX/BoundZ every frame).
+        foreach (var w in lookWolves)
+        {
+            var d = new Vector3((float)w.BoundX, 0, (float)w.BoundZ) - lookP;
+            float wy = d.Dot(lookF), wx = d.Dot(lookR);
+            if (wy > y0 + 1.5f || wy < y0 - gap - 1.5f) continue;
+            var to = lookP + lookR * wx + lookF * 3.6f;
+            w.BoundX = to.X; w.BoundZ = to.Z;
         }
         GD.Print($"lookdev: {classes.Count} swatches in 2 rows of {perRow}");
     }

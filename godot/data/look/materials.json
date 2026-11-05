@@ -76,9 +76,9 @@
    }
   },
   "hair": {
-   "from": "rules 6 (one hard band per clump, its own light), 8 (class 1), 11; band and half-tone B1b (heroine_hair, judged); MB1 chips",
+   "from": "rules 5 (the half-tone narrower than skin's 0.2: 0.12, the terminator's own full soft width 2 x 0.06 (about 7 deg of n.l), so the copper keeps one warm turn at each clump's terminator and no second band; B1b's 0.25 was wider than skin's, against rule 5; B2r2), 6 (one hard band per clump, its own light), 8 (class 1), 11; MB1 chips",
    "cel": {
-    "band": [0.0, 0.06, 0.25, 0.06],
+    "band": [0.0, 0.06, 0.12, 0.06],
     "mid": [0.72, 0.72, 0.72, 1.0],
     "form": 0.3,
     "spec": [9.0, 1.5, 1.0, 0.85],
@@ -1588,8 +1588,9 @@
    "rule": "not a GeometryInstance3D material"
   },
   {
-   "what": "FX: the Flares' own shards and particles (rule 13: spells are their own family)",
-   "shader": "flare_"
+   "what": "FX: the Flares' own shards and particles (rule 13: spells are their own family; by shader path, or by material name where the shader is an inline copy: FlareBits' mixed batch)",
+   "shader": "flare_",
+   "material": "^flare_"
   },
   {
    "what": "water surfaces (the Hollow's slurry stream too: a transparent water surface, like the river and the ford)",

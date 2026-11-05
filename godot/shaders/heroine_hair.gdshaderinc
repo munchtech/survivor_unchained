@@ -14,7 +14,8 @@
 // shade side colored, never grey), and one hard highlight band per lock in place of the soft sheen (a narrow
 // smoothstep on the same Kajiya-Kay term, its shift and color kept; the secondary gone).
 #define CEL_INK 1
-#define CEL_BAND vec4(0.0, 0.06, 0.25, 0.06)
+// (the half-tone 0.12: rule 5, narrower than skin's 0.2; the library's hair, B2r2)
+#define CEL_BAND vec4(0.0, 0.06, 0.12, 0.06)
 #define CEL_MID vec4(0.72, 0.72, 0.72, 1.0)
 #define CEL_FORM 0.3
 #define CEL_NO_RIM
