@@ -78,7 +78,7 @@ EV = {
     "flare.the_branding.inhale": E(L("flare_intake_arcanist", 1.10, stereo=True), bus="flare", near=1),
     "flare.the_branding.boom": E(L("flare_boom_the_branding", 1.9, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.one_arrow.inhale": E(L("flare_intake_stalker", 1.62, stereo=True), bus="flare", near=1),
-    "flare.one_arrow.boom": E(L("flare_boom_one_arrow", 4.5, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
+    "flare.one_arrow.boom": E(L("flare_boom_one_arrow", 4.0, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.drag_them_under.inhale": E(L("flare_intake_reaver", 2.5, stereo=True), bus="flare", near=1),
     "flare.drag_them_under.boom": E(L("flare_boom_drag_them_under", 2.0, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.the_butchers_bill.inhale": E(L("flare_intake_reaver", 2.5, stereo=True), bus="flare", near=1),

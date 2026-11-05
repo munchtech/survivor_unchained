@@ -84,7 +84,7 @@
     "flare.drag_them_under.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_intake_reaver", "gain": 2.5, "stereo": true}]},
     "flare.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_inhale", "gain": 0.55, "stereo": true}]},
     "flare.mark": {"bus": "flare", "near": 1, "gate": [1, 120], "layers": [{"take": "flare_mark_tick", "gain": 0.35, "stereo": true}]},
-    "flare.one_arrow.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_one_arrow", "gain": 4.5, "stereo": true}]},
+    "flare.one_arrow.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_one_arrow", "gain": 4.0, "stereo": true}]},
     "flare.one_arrow.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_intake_stalker", "gain": 1.62, "stereo": true}]},
     "flare.the_branding.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_the_branding", "gain": 1.9, "stereo": true}]},
     "flare.the_branding.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_intake_arcanist", "gain": 1.1, "stereo": true}]},
