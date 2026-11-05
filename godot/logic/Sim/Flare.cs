@@ -407,7 +407,9 @@ public sealed partial class Battle
         double lend = Math.Clamp(Math.Min(dt, room), 0, dt);
         FlareT -= lend;
         FlareHold = Math.Max(0, FlareHold - lend);
-        if (flareLen - FlareT >= flareKey - 1e-9)
+        // (a key on a blow's own time, the Bell's: the lend stops 1e-6 short of the blow, so the release is let within 1e-5 of
+        // the key; with the world held at 0 (H7) nothing else carried it over, and the stop never ended)
+        if (flareLen - FlareT >= flareKey - 1e-5)
         {
             flareReleased = true;
             var p = Player;

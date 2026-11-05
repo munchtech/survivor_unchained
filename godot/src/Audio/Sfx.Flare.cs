@@ -32,7 +32,8 @@ public static partial class Sfx
             // out of a held silence; the world and the beds are pulled down under it as the synth's riser did.
             if (SoundBank.PlayFirstFor(Math.Max(0.2, k), w, ids) == Banked.Replace)
             {
-                a.DuckSfx(0.2f, k + 1.2);
+                // (H7 fix: 0.2 left the fight 6.5 dB over the intake in f_longcut; 0.12 with the takes at 2x)
+                a.DuckSfx(0.12f, k + 1.2);
                 a.DuckBeds(0.355f, k + 1.6);
                 return;
             }
