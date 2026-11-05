@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "480868968dc2",
+ "inputs": "d9ca204ff4ae",
  "from": "(c) the Barrow's layers (turf, bare, way, grave, ash, rubble, face); (b) MB4 night, rock and grass",
  "layers": [
   {

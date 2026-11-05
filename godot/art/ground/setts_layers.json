@@ -1,0 +1,44 @@
+{
+ "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
+ "painted": 2,
+ "inputs": "f0370441637d",
+ "from": "(c) the town's setts arrays (terrain.gdshader s_alb/s_nor/s_arh, three variants of 4 m: Ground.cs and the terrain manifest's 'setts' entry); L1 W2 town replaces the photo setts (env_ground.py)",
+ "layers": [
+  {
+   "name": "setts_a",
+   "surface": "setts",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
+   "mean": [
+    0.09134,
+    0.05979,
+    0.11692
+   ]
+  },
+  {
+   "name": "setts_b",
+   "surface": "setts",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
+   "mean": [
+    0.09158,
+    0.0597,
+    0.11626
+   ]
+  },
+  {
+   "name": "setts_c",
+   "surface": "setts",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
+   "mean": [
+    0.09108,
+    0.05934,
+    0.11537
+   ]
+  }
+ ]
+}

@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "312bf0fea5fb",
+ "inputs": "2c838a29f1ed",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
