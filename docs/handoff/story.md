@@ -3,7 +3,66 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (29 October, Story 13, branch `story-wtf`): list DONE, MR1 + MR2 sent
+## Now (5 November, S1 the story rework, branch `story-s1`): PROPOSAL READY story-s1@9fd41e6e0
+
+**PROPOSAL READY story-s1@9fd41e6e0** (the plan's commit; this handoff's own
+commit follows it). Writer = Fable (S1, `docs/team/hook/S1_story_rework.md`);
+editor = a Haiku `su-lead-max` at xhigh (agent `ad7c24ae2324594d3`, ~136k of
+its 150k used: spawn a fresh one for the data pass, from this page's brief
+shape and `docs/handoff/story_editor.md` sections 1-2 and 4).
+
+**What is done:** `docs/story/PLAN.md`, the proposal: the owner's seven-chains
+draft (`docs/story/REWORK_EMBER_WATCH.md`) put on the bible's existing
+seven-link chain, hearts and keepers (renames and re-aims, not a new world);
+what survives and what is retired item by item; the four acts at a paragraph
+each with the WTF moments marked; Act 1 beat by beat (chains 1 and 2: the Low
+Ford as built, the Barrow behind the Verge's sealed door) with every plant for
+Acts 2-4; the cost and the pipelines. The editor's one pass: PASS WITH FIXES,
+distance medium, all fixes applied (commit 9fd41e6e0's message lists them).
+Nothing is in data yet.
+
+**Waiting on the owner (PLAN section 7):** (1) ending B "Break the Chain"
+retired for "Corvane takes her place"; (2) the name: Corvane (default),
+Caedmon or Caddock; (3) Corvane killable in Act 1 and getting up on screen;
+(4) "He has never burned." retired. "Not yet: Chid made you" is KEPT (he held
+her hand not knowing what she was): nothing to decide. Holloway risen as the
+Act 2 commander is proposed for Act 2's brief, not now.
+
+**After the pick, Act 1 in data (PLAN section 4, beats 5-14):**
+- `godot/data/content/dialogue.json`: the NPC id `chid` stays; the display
+  name and every spoken "Chid" become the chosen name (a worker's job: list
+  the lines first with a grep, since each changed line drops its lock to HOLD
+  and must be re-locked unchanged in meaning); new conversations `vonnra`
+  nodes for the tale (`chains`...), `scene_bed` (Holloway), Corvane's door
+  barks and the morning after (`chid.rose`...), Tam's and Wenna's lines;
+  `cb_vault2` and `chid.first` variants; `chid.office` shows the last page.
+- `godot/data/content/rules.json`: the quiet-ford report, the stream report,
+  "Up the street, nobody is baking."; `quests.json`: the office's page.
+- Facts: `chain.two`, `corvane.rose`, `vonnra.told` (StoryLint: written and
+  read); tests in `godot/tests/StoryRewriteTests.cs`, `StoryLint.cs`,
+  `CinemaTests.cs`.
+- Story night `vault_opened` gains phase 1 (Corvane) before the Barrow Lord;
+  the C13 end changes (the heart lifted, the singer as sound only): cue data
+  for the cinematics lead (P9), the boss for the combat lead (P6): both are
+  line items in PLAN section 6 with owners, not the writer's.
+- SB00 L2 (`sb_stay_where_they_reach.chained`): "and bound it there with seven
+  chains, in the dark." (P10: the line only; the plate stands).
+- Locks: `python tools/vo/lines.py`, then `lock.py` through Python (prefixes
+  match by `startswith`); the count today is 527 (`tools/vo/locked.json`
+  `lines`), not the brief's 424; ~495 should survive untouched.
+- Tests green (`dotnet test godot/tests/Tests.csproj`) before `MR READY`.
+
+**Scratch:** `scratchpad\story_s1\` (`dump.py` prints a conversation's
+nodes as text; commit messages). Back it up to
+`survivorsunchained_inputs\scratch_story_s1\` and clear only that subfolder.
+
+**Gotchas:** read PLAN first, then TREATMENT section 0 (still the canon for
+the town); `vonnra.f_did` and C09 stay word for word (the editor: the fortune
+must not explain its own knife); never "Count's right." before the rope; the
+narrator never says what it means ("He gets up." is the model); the junction
+rule before any merge of integration (README, DANGER).
+
+## Earlier (29 October, Story 13, branch `story-wtf`): list DONE, MR1 + MR2 sent
 
 The owner's 28 October direction (romances out, the reveal, the WTF pass) and
 his notes (reveal A with "where you left it" reworded; the C01 empty-bedroll
