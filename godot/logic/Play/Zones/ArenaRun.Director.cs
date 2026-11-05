@@ -272,6 +272,8 @@ public sealed partial class ArenaRun
     {
         if (Seconds < standReady || !TellsOn || herTrail.Count == 0) return;
         var p = B!.Player;
+        // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
+        if (p.RootT > 0) { standReady = Seconds + d.StandFor; return; }
         // (a full window behind her, all of it within StandMoved of where she is)
         if (herTrail.Peek().T > Seconds - d.StandFor) return;
         foreach (var (_, x, z) in herTrail) if (Dist(x, z, p.X, p.Z) >= d.StandMoved) return;

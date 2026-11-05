@@ -326,6 +326,10 @@ public sealed partial class Battle
         if (t.RunLeft <= 0 && t.RushLeft <= 0 && t.WallLeft <= 0) { ShowWall(t, false); tells.Remove(t); }
     }
 
+    /// <summary>After a knockdown she is up for this long before another can take her (H6).</summary>
+    public const double KnockGrace = 2.5;
+    double knockGraceUntil = -1;
+
     /// <summary>The app can now knock her down (the kit's charge, H6): held where she lies for a while (less for the
     /// tenacious; a dash ends it, as a root does), with Ev.Knockdown for the view.</summary>
     public void KnockPlayer(double seconds)
@@ -334,6 +338,10 @@ public sealed partial class Battle
         if (!p.Alive || Art.SprintT > 0 || Art.Rush != null || p.Leap != null) return;
         double s = seconds * (1 - Clamp(Stats.Get(Stat.Tenacity), 0, 0.8));
         if (s <= 0) return;
+        // (a get-up grace: no second knockdown until KnockGrace s after she is up; 4 Nov, lead 2: a stand charge on her
+        // as she rose chained ten knockdowns 1.5 s apart, 24 s held down)
+        if (Time < knockGraceUntil) return;
+        knockGraceUntil = Time + s + KnockGrace;
         p.RootT = Math.Max(p.RootT, s);
         p.Vx = p.Vz = 0;
         Events.Emit(new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s });
