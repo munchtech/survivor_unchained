@@ -105,7 +105,8 @@ public sealed partial class HerLight : Control
         public static float WellH => H - 2 * Wy;
         float life = 1, trail = 1, shield, beat, shown = -1, dashRe;
         int dashMax, dashCount;
-        const float Pip = 8, PipGap = 4, PipTop = 3;
+        float pipFlash;
+        const float Pip = 11, PipGap = 3, PipTop = 3, PipFlash = 0.15f;
         bool day;
         static readonly Color Well = new("#120605"), RedTop = new("#e5503a"), RedFoot = new("#7e140e"), Hot = new("#ff8a5c"),
             TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa"),
@@ -131,7 +132,10 @@ public sealed partial class HerLight : Control
             if (Math.Abs(life - shown) < 0.0005f) shown = life;
             trail = Math.Max(trail, shown);
             if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day
-                && dashMax == this.dashMax && dashCount == this.dashCount && dashRe == this.dashRe) return;
+                && dashMax == this.dashMax && dashCount == this.dashCount && dashRe == this.dashRe && pipFlash <= 0) return;
+            // a charge back: its bead flares for PipFlash s
+            if (dashCount > this.dashCount && this.dashMax == dashMax) pipFlash = PipFlash;
+            else pipFlash = Math.Max(0, pipFlash - dt);
             this.dashMax = dashMax; this.dashCount = dashCount; this.dashRe = dashRe;
             this.life = shown; this.trail = trail; this.shield = shield; this.beat = beat; day = Cuff.Day;
             QueueRedraw();
@@ -236,20 +240,22 @@ public sealed partial class HerLight : Control
                 var c = new Vector2(Mathf.Round(px + i * (Pip + PipGap)) + r, py + r);
                 if (i < dashCount)
                 {
-                    // ready: a lit copper bead, warm at its edge, a hot point up-left
-                    DrawCircle(c, r + 1.5f, WickHot with { A = 0.22f });
+                    // ready: a bead in the collars' copper, lit across its top, a bright 2 px core; the newest flares as it comes back
+                    float f = i == dashCount - 1 && pipFlash > 0 ? pipFlash / PipFlash : 0;
+                    DrawCircle(c, r + 1.5f + 2 * f, WickHot with { A = 0.22f + 0.4f * f });
                     DrawCircle(c, r, CopperFoot);
-                    DrawCircle(c, r - 1, CopperHi);
-                    DrawCircle(c - new Vector2(0.6f, 0.7f), r - 2.2f, CopperLit);
-                    DrawCircle(c - new Vector2(1.1f, 1.2f), 0.9f, WickCore);
+                    DrawCircle(c, r - 1, CopperMid);
+                    DrawCircle(c - new Vector2(0, 0.8f), r - 2, CopperHi);
+                    DrawCircle(c - new Vector2(0.4f, 1.4f), r - 3.6f, CopperLit);
+                    DrawCircle(c - new Vector2(0.4f, 0.9f), 1.1f, WickCore);
                 }
                 else
                 {
-                    // spent: an empty socket in the iron, its copper rim still there; the next one fills from its heart
+                    // spent: an empty socket in the well's dark, a 1 px copper rim; the next one fills from its heart
                     DrawCircle(c, r, CopperMid);
-                    DrawCircle(c, r - 1, Iron(0.1f));
+                    DrawCircle(c, r - 1, Well);
                     if (i == dashCount && dashRe > 0.01f)
-                        DrawCircle(c, (r - 1) * Math.Clamp(dashRe, 0, 1), CopperHi with { A = 0.85f });
+                        DrawCircle(c, (r - 1.5f) * Math.Clamp(dashRe, 0, 1), CopperHi with { A = 0.8f });
                 }
             }
         }
