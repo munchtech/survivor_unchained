@@ -6,6 +6,8 @@ from PIL import Image, ImageDraw, ImageFont
 WT = Path(r"C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\body-p1\godot\.shots")
 L3 = Path(r"C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body_p1\lead3\ek2\final")
 cap = json.load(open(sys.argv[1], encoding="utf-8"))
+SC = Path(cap["strips"]["close"]) if "strips" in cap else L3 / "close" / "strip_hip_flex.png"
+SPL = (Path(cap["strips"]["play"]) if cap["strips"].get("play") else None) if "strips" in cap else L3 / "play" / "strip_hip_flex.png"
 out = Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
 F = lambda s: ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", s)
 f_t, f_c, f_s = F(60), F(40), F(34)
@@ -39,11 +41,15 @@ for k in ["look_look", "close_town", "play_town", "play_play"]:
 # the hip, OPEN
 blocks.append(bar(["HIP 112 / 135: OPEN (not part of this pick's pass; shipped best-known, 4 of 4 rounds)", cap["hip"]],
                   124, [f_c, f_s], [RED, DIM]))
-sc = Image.open(L3 / "close" / "strip_hip_flex.png").convert("RGB")
-sp = Image.open(L3 / "play" / "strip_hip_flex.png").convert("RGB")
-row = Image.new("RGB", (W, max(sc.height, sp.height) + 50), BG); d = ImageDraw.Draw(row)
-d.text((12, 4), "close tier (B)", font=f_s, fill=DIM); d.text((sc.width + 40, 4), "play tier (B)", font=f_s, fill=DIM)
-row.paste(sc, (0, 50)); row.paste(sp.resize((min(sp.width, W - sc.width - 16), round(sp.height * min(sp.width, W - sc.width - 16) / sp.width))), (sc.width + 16, 50))
+sc = Image.open(SC).convert("RGB")
+sp = Image.open(SPL).convert("RGB") if SPL and SPL.name else None
+pw = min(sp.width, W - sc.width - 16) if sp else 0
+row = Image.new("RGB", (W, max(sc.height, sp.height if sp else 0) + 50), BG); d = ImageDraw.Draw(row)
+d.text((12, 4), "close tier (B)", font=f_s, fill=DIM)
+row.paste(sc, (0, 50))
+if sp:
+    d.text((sc.width + 40, 4), "play tier (B)", font=f_s, fill=DIM)
+    row.paste(sp.resize((pw, round(sp.height * pw / sp.width))), (sc.width + 16, 50))
 d.rectangle([0, 0, W - 1, row.height - 1], outline=RED, width=6); d.text((W - 220, 2), "OPEN", font=f_t, fill=RED)
 blocks.append(row)
 if cap.get("judge", {}).get("overall"): blocks.append(bar([f"JUDGE (max, overall): {cap['judge']['overall']}"], 64, [f_c], [(240, 200, 90)]))
