@@ -1,0 +1,46 @@
+{
+ "about": "P1's loop plan: our own base topology as data (tools/body/topo.py builds it). Every number says what it is derived FROM: (a) the game's need, (b) a reference, (c) inherited. Lengths in metres, angles in degrees, counts in edges. The trunk lattice counts are tied: K_top = c_f + n_t + c_k (the neck half ring), K = c_f + n_b + c_k (the trunk's half ring below the arm), N_arm = 2 n_f + n_t + n_b (the arm root = the wrist template's ring), N_leg = K - 2 + b (the leg root = the ankle template's ring); topo.py checks them.",
+ "reference": {
+  "close": "tools/body/out/run_a/stage/close.npz",
+  "base": "tools/body/out/run_a/stage/base.npz",
+  "skeleton": "tools/body/out/run_a/body.glb",
+  "head": "godot/art/people/heroine.glb",
+  "head_mesh": "HeroineHead",
+  "head_tris": 33696,
+  "why": "(b) the base woman's close surface (MakeHuman hm08, CC0) only as the shape; (a) OUR skeleton's bones place every station; (c) her approved head's open ring (94 points) is the neck's top, kept vertex for vertex"
+ },
+ "tiers": {
+  "close": {"neck": "all", "spacing": 0.0085, "c_f": 19, "n_t": 12, "n_b": 6, "n_f": 13, "b": 5, "template": "sub",
+            "k_shoulder": 2, "k_hip": 2, "breast": {"w": 8, "h": 10, "k": 3}, "joint_loops": 3, "neck_ease_rows": 4,
+            "why": "(a) the close-up: the cel terminator a smooth curve across breasts, shoulders, buttocks, thighs and calves (L1); 8.5 mm keeps a thigh's facet under 0.4 px at 9.4 px/cm; arm and leg 44 = the subdivided templates' wrist and ankle"},
+  "play": {"neck": 24, "spacing": 0.017, "c_f": 10, "n_t": 6, "n_b": 2, "n_f": 7, "b": 4, "template": "base",
+           "k_shoulder": 1, "k_hip": 1, "breast": {"w": 4, "h": 5, "k": 1}, "joint_loops": 3, "neck_ease_rows": 2,
+           "why": "(a) the play camera (her 40-60 px tall) at ~25k: arm and leg 22 = the templates' rings; the neck keeps 25 of the head ring's 48 points a side (a head LOD's ring)"},
+  "far": {"neck": 16, "spacing": 0.034, "c_f": 7, "n_t": 6, "n_b": 2, "n_f": 7, "b": 4, "template": "base",
+          "k_shoulder": 1, "k_hip": 0, "breast": null, "joint_loops": 1, "neck_ease_rows": 1,
+          "why": "(a) crowds at ~8k; v1 still carries the base templates (generated far hands and feet are open)"}
+ },
+ "canvas": {"h_lo": 1.04, "h_hi": 1.50, "R_lo": 0.10, "R_hi": 0.11,
+            "why": "(a) a capsule chart for the trunk: horizontal rays from the trunk's middle, tilting up over the shoulders and neck and down under the hips, so every trunk point is hit once"},
+ "trunk": {
+  "waist_y": 1.20, "underbust_y": 1.375,
+  "hip_line_row": 0.55, "decollete_y": 1.53, "small_of_back_row": 0.62,
+  "why": "(b) heights read off the reference's midline and the skeleton (spine_02 1.155, the breast's fold 1.37)"
+ },
+ "shoulder": {
+  "root_tilt": 0.5, "root_through": "armpit",
+  "FB": [80, -0.013], "BB": [104, -0.013], "FT": [62, 0.03], "BT": [128, 0.03],
+  "why": "(a) the arm root ring through the armpit's dome and over the deltoid (tilted half-way from the arm's axis to lateral); the outer loop's four corners (canvas theta deg, t offset below the armpit / above the root's top) hold the four 5-poles: in front on the pectoral and behind on the scapula, both above the armpit, and two under it on the ribs, all a shoulder-loop band out of the deltoid and the axillary folds"
+ },
+ "hip": {
+  "y_c": 0.995, "beta": 30, "gamma": 9,
+  "why": "(b) the leg crease plane: through the crotch's midline at y_c, rising 30 deg laterally (the groin crease to the hip's side) and 9 deg toward the front (the groin above the glute fold)"
+ },
+ "breast": {"cap_ratio": 0.42, "why": "(a) concentric rings out to the breast's base, a small grid cap at the apex"},
+ "limbs": {
+  "elbow": {"fan_deg": 14, "offset": 0.009, "why": "(a) three loops on the bend's bisector planes: the crease loop on the bisector, two fanned 14 deg about the hinge so they meet the crease on the flexor side and spread over the olecranon"},
+  "knee": {"fan_deg": 14, "offset": 0.011, "why": "(a) the same at the knee: spread over the patella, met in the popliteal crease"},
+  "root_blend": 0.4, "wrist_cut": 0.004, "ankle_cut": 0.03,
+  "why": "(a) rings at the tier's spacing along each bone, perpendicular to it; the arm's first rings turn from the tilted root to the bone over 40% of the upper arm"
+ }
+}
