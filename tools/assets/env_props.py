@@ -4703,8 +4703,17 @@ def stair(p):
                     h = min(h, hn + (d / (w / 2)) * (TOP - hn) * 0.9)
             return h
         return keep
+    # (P9 set, round 3) Open to the sky down its first `open` m: the side walls' tops come down to a kerb `kerb` over the
+    # landing's floor there (the ground beside it the same: Vault.Level), so the moon rakes the first flights and lights
+    # the treads' top edges and the walls' rims; past it they stand to TOP again, the arch across (below), the dark.
+    open_, kerb = p.get('open', 0.0), p.get('kerb', TOP)
+
+    def opened(keep):
+        if open_ <= 0:
+            return keep
+        return lambda t: min(keep(t), kerb + (TOP - kerb) * smooth01(open_ - 1.4, open_ + 0.3, t))
     for s, notches in ((-1, [(4.0, 2.4, 1.25), (9.5, 3.0, 1.7), (16.0, 2.2, 1.25)]), (1, [(6.6, 2.6, 1.25), (13.0, 3.4, 1.75)])):
-        keep = keep_for(notches)
+        keep = opened(keep_for(notches))
         prow = []
         for i in range(NR):
             y1, y0 = TOP - i * chh, TOP - (i + 1) * chh
@@ -4758,12 +4767,31 @@ def stair(p):
     bmesh.ops.delete(rb, geom=[cap], context='FACES_ONLY')
     bmesh.ops.reverse_faces(rb, faces=rb.faces[:])
     parts.append(Part(rb, 'stone', hexlin('#08080a'), T(0, 0, -22.9 - 1.5 + 0.05), cap='stone', jitter=0.0))
-    # the mouth: two jamb pylons, and a cracked lintel (a chip out of it) over them
+    # (round 3) The arch across the flight where the open cut ends (`arch_at` m down): a coursed wall from the treads to
+    # TOP with an arched opening the flight's full width (its ring springing off the side walls' faces, `arch_clear` m over
+    # the tread at its face), lit square by the moon down the open cut; past it the dark.
+    if p.get('arch_at'):
+        za, ra = -p['arch_at'], XW
+
+        def tread_y(t):
+            return -0.28 * (math.floor(max(t - 1.0, 0.0) / 0.62 + 1e-9) + 1)
+        base = tread_y(p['arch_at'] + 1.4) - 0.05
+        spring_a = tread_y(p['arch_at']) + p.get('arch_clear', 2.6)
+        Sa = ra + 0.6
+        yb_a = (spring_a - base) + Sa - 0.55
+        rows_a = wall_parts(parts, rng, 8.8, TOP - base, 1.4, 0.5, 1.05, stone * 0.97, mortar, lambda x: 99.0, -4.4, at=T(0, base, za - 0.7),
+                            holes=[(-ra, ra, -1.0, spring_a - base), (-Sa, Sa, spring_a - base, yb_a)], sink=0.0)
+        ytop_a = min([y1 for (k, a, b, y0, y1) in rows_a if y0 < yb_a <= y1 + 1e-6] or [yb_a]) + base
+        voussoirs(parts, rng, ra, spring_a, Sa, ytop_a, za - 0.7, 1.4, stone * 1.05, n=11)
+    # the mouth: two jamb pylons (round 3: `jamb_h`, lower, so their shadows stay off the first treads), and a cracked
+    # lintel (a chip out of it) over them unless the preset opens the cut to the sky (`lintel` false)
+    jh = p.get('jamb_h', 5.0)
     for s in (-1, 1):
-        wall_parts(parts, rng, 1.7, 5.0, 1.4, 0.5, 1.05, stone, mortar, lambda x: 99.0, -0.85, at=T(s * 3.75, 0, -0.1))
-    parts.append(Part(stone_block(4.56, 0.7, 1.4, rng, chip=0.5), 'stone', stone * 1.0, T(-2.3, 4.75, -0.1), cap='stone', jitter=0.0))
-    lb = broken_block(4.56, 0.7, 1.4, rng, cuts=1, chip=0.9)
-    parts.append(Part(lb, 'stone', stone * 0.96, T(2.3, 4.73, -0.1) @ R('Z', -0.006), cap='stone', jitter=0.0))
+        wall_parts(parts, rng, 1.7, jh, 1.4, 0.5, 1.05, stone, mortar, lambda x: 99.0, -0.85, at=T(s * 3.75, 0, -0.1))
+    if p.get('lintel', True):
+        parts.append(Part(stone_block(4.56, 0.7, 1.4, rng, chip=0.5), 'stone', stone * 1.0, T(-2.3, 4.75, -0.1), cap='stone', jitter=0.0))
+        lb = broken_block(4.56, 0.7, 1.4, rng, cuts=1, chip=0.9)
+        parts.append(Part(lb, 'stone', stone * 0.96, T(2.3, 4.73, -0.1) @ R('Z', -0.006), cap='stone', jitter=0.0))
     return parts
 
 

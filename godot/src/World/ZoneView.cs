@@ -358,6 +358,21 @@ public partial class ZoneView : Node3D
         if (dials.TryGetValue(kind, out var ds))
             foreach (var d in ds) if (GodotObject.IsInstanceValid(d)) d.SetInstanceShaderParameter("k", k);
         if (dialLights.TryGetValue(kind, out var ls)) foreach (var i in ls) DialLevel(i);
+        if (DialDebug) DialReport(kind, k);
+    }
+
+    /// <summary>--dial-debug: what each handle's dial meshes render with (their material, k) and its lights' levels.</summary>
+    static readonly bool DialDebug = SurvivorUnchained.Args.Has("dial-debug");
+    void DialReport(string kind, float k)
+    {
+        var ds = dials.GetValueOrDefault(kind);
+        GD.Print($"(dial) {kind} k {k:0.###}: {ds?.Count ?? 0} mesh(es), lights [{string.Join(",", dialLights.GetValueOrDefault(kind) ?? new())}]");
+        foreach (var d in ds ?? new())
+        {
+            if (!GodotObject.IsInstanceValid(d)) { GD.Print("(dial)   freed"); continue; }
+            var m = d.MaterialOverride;
+            GD.Print($"(dial)   {d.GetPath()} vis {d.IsVisibleInTree()} at {d.GlobalPosition} mat {m?.ResourceName} shader {(m as ShaderMaterial)?.Shader?.ResourcePath} k {d.GetInstanceShaderParameter("k")} surf0 {d.GetActiveMaterial(0)?.ResourceName} lod_bias {d.LodBias}");
+        }
     }
 
     /// <summary>(P9 set) A dial-driven light's level from its handles' last k: up from DialFrom to 1 on its dial, put out
@@ -407,6 +422,7 @@ public partial class ZoneView : Node3D
                 kinds.Add(kind);
             }
         }
+        if (DialDebug && kinds.Count > 0) GD.Print($"(dial) adopt {piece.Name}: kinds [{string.Join(",", kinds)}]");
         foreach (var kind in kinds) Shift(kind, shifted.GetValueOrDefault(kind));
     }
 

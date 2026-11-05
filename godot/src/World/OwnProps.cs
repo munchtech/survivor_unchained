@@ -53,7 +53,7 @@ public static class OwnProps
     static readonly Dictionary<string, Vector3> moves = new();
     /// <summary>(P9 set) A preset's dial meshes (props.json "dials": mesh name -> kind, glow colour, energy, centre in the
     /// mesh's model space, radius): a handle (0 dark, 1 awake) the play and films drive; the glow wakes from the centre out.</summary>
-    static readonly Dictionary<string, (string Kind, Color Color, float Energy, Vector3 Center, float Radius)> dials = new();
+    static readonly Dictionary<string, (string Kind, Color Color, float Energy, Vector3 Center, float Radius, float Inner)> dials = new();
     /// <summary>(P9 set) Meshes of black stone smooth as glass (props.json "gloss"): one shared glossy material.</summary>
     static readonly HashSet<string> glossy = new();
     /// <summary>(E8 later r2) Presets with grime runs (props.json "runs": top, drop, len, k, ring): drawn by the runs
@@ -213,7 +213,8 @@ public static class OwnProps
                         {
                             var c = o.Value.GetProperty("center");
                             dials[o.Name] = (o.Value.GetProperty("kind").GetString() ?? "", Color.FromHtml(o.Value.GetProperty("color").GetString() ?? "#ffffff"),
-                                o.Value.GetProperty("energy").GetSingle(), new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()), o.Value.GetProperty("radius").GetSingle());
+                                o.Value.GetProperty("energy").GetSingle(), new Vector3(c[0].GetSingle(), c[1].GetSingle(), c[2].GetSingle()), o.Value.GetProperty("radius").GetSingle(),
+                                o.Value.TryGetProperty("inner", out var inn) ? inn.GetSingle() : 0f);
                         }
                     if (p.Value.TryGetProperty("gloss", out var gl))
                         foreach (var o in gl.EnumerateArray()) glossy.Add(o.GetString() ?? "");
@@ -412,13 +413,14 @@ public static class OwnProps
             // (H8 N22) a moving piece (the portcullis): the plain material (the runs would slide with it), its own shadow
             // (a shut grate's bars on the passage floor), no LOD; its travel kept on it for Landmarks.Shift
             bool isDial = dials.TryGetValue(m.Name, out var dial), isGloss = glossy.Contains(m.Name);
+            if (isDial && SurvivorUnchained.Args.Has("dial-debug")) GD.Print($"(dial) {preset}: {m.Name} -> dial {dial.Kind} centre {dial.Center} radius {dial.Radius}, aabb {m.GetAabb()}");
             if (isDial || isGloss)
             {
                 if (isDial)
                 {
                     var sm = new ShaderMaterial { Shader = DialShader, ResourceName = "dial_" + dial.Kind };
                     sm.SetShaderParameter("color", dial.Color); sm.SetShaderParameter("energy", dial.Energy);
-                    sm.SetShaderParameter("center", dial.Center); sm.SetShaderParameter("radius", dial.Radius);
+                    sm.SetShaderParameter("center", dial.Center); sm.SetShaderParameter("radius", dial.Radius); sm.SetShaderParameter("inner", dial.Inner);
                     m.MaterialOverride = sm; m.SetMeta("dial", dial.Kind);
                 }
                 else m.MaterialOverride = GlossStone;

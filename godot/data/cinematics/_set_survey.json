@@ -120,6 +120,41 @@
    ]
   },
   {
+   "id": "D3o",
+   "dur": 1.6,
+   "still": 1.2,
+   "note": "sigil dark, k 0 (the wake proven from here)",
+   "cam": {
+    "pos": [
+     0,
+     1.6,
+     25.1
+    ],
+    "at": [
+     0,
+     1.6,
+     22.25
+    ],
+    "lens": 50
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d3"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 0
+    }
+   ]
+  },
+  {
    "id": "D3a",
    "dur": 1.6,
    "still": 1.2,
@@ -206,6 +241,41 @@
      22.25
     ],
     "lens": 50
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d3"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1.0
+    }
+   ]
+  },
+  {
+   "id": "D3L",
+   "dur": 1.6,
+   "still": 1.2,
+   "note": "sigil at k 1, the tilt end: the letters catch the violet",
+   "cam": {
+    "pos": [
+     0,
+     1.8,
+     28.0
+    ],
+    "at": [
+     0,
+     5.2,
+     22.3
+    ],
+    "lens": 40
    },
    "cues": [
     {

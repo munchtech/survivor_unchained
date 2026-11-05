@@ -913,14 +913,15 @@
   "dials": {
    "vault_door_move_vaultdoor_sigil": {
     "kind": "vaultsigil",
-    "color": "#a070ff",
-    "energy": 4.0,
+    "color": "#7c48ff",
+    "energy": 0.85,
     "center": [
      0,
      1.6,
      0.25
     ],
-    "radius": 0.57
+    "radius": 0.57,
+    "inner": 0.22
    }
   },
   "gloss": [
@@ -1007,15 +1008,15 @@
   ]
  },
  "vault_stair": {
-  "tris": 27515,
+  "tris": 27923,
   "lod_m": 45,
-  "tris_lod1": 12381,
+  "tris_lod1": 12565,
   "box": [
-   -4.605,
+   -4.602,
    -8.083,
    -25.85,
-   4.602,
-   5.103,
+   4.604,
+   3.394,
    0.618
   ]
  },

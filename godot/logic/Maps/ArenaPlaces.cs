@@ -164,10 +164,14 @@ public static class ArenaPlaces
         // left one moonlit blue field, key 1.4-1.7 at any moon; a lower moon from the south-west (42 degrees) puts the west
         // walls' shadows across the floors, the sky's fill 0.95 keeps that shade off flat black, and her ember 16 against
         // a moon of 3.2 makes her pool the brightest thing in the frame: key 2.0-2.2, pool 0.40-0.57, Lp50 0.23-0.25.)
-        KeyColor = "#94acee", KeyIntensity = 3.2, KeyElevation = 42, KeyAzimuth = 135, ShadowStrength = 0.82,
+        // (Round 3, measured with --air-tune sweeps on the hall, court and stair frames: from 135 at 42 the west walls' shadows
+        // were 4.2 m of the hall's floor under them and, the grade's toe crushing them, a quarter of each hall frame flat black;
+        // from 100 at 48, 10 degrees west of south, they are about 0.8 m and the moon runs down the hall and the open stair cut;
+        // azimuth 115 left hall_in at 20.9%, 108 at 20.3%, shadow 0.82 to 0.74 moved nothing: the rest is the west wall's inner face.)
+        KeyColor = "#94acee", KeyIntensity = 2.8, KeyElevation = 48, KeyAzimuth = 100, ShadowStrength = 0.74,
         HemiSky = "#36486c", HemiGround = "#1a1a1e", HemiIntensity = 0.95, EnvIntensity = 0.75,
         FogColor = "#121a28", FogDensity = 0.004, Exposure = 1.62, Rim = "#a8c0f0", RimStrength = 0.8,
-        Grade = Grade, Ember = 16, EmberColor = "#ffcc9c", EmberReach = 1.35,
+        Grade = Grade, Ember = 20, EmberColor = "#ffcc9c", EmberReach = 1.35,   // (round 3: moon 3.2 to 2.8, ember 16 to 20: the key 2.0+ over the higher moon)
     };
 
     static (AtmospherePreset, ArenaAir) Light(string place) => place switch

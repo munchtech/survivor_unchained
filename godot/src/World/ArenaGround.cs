@@ -32,8 +32,10 @@ public static class ArenaGround
             new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
         // (P9 set) The Vault (ArenaPlace.Ground "vault"): the barrow's, its way the Legion's flags at their own size
         // (the scan's 3 m holds three: a metre a flag), a step lighter than the field road's cobbles so the moon lies on them.
-        ["vault"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.105f, 0.45f, Con: 1.15f, Lift: 0.02f, Bump: 0.07f), new(0.035f, 0.7f, Lift: -0.02f),
-            new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
+        // (Round 3) The barrow's bare ground the chalk it is (pale under the moon where the turf slid off the banks) and its
+        // fallen stone a step over the flags, chunkier, so the banks outside the walls read as moonlit earth and rubble.
+        ["vault"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.13f, 0.4f, Con: 1.35f), new(0.105f, 0.45f, Con: 1.15f, Lift: 0.02f, Bump: 0.07f), new(0.035f, 0.7f, Lift: -0.02f),
+            new(0.04f, 0.6f, Lift: -0.01f), new(0.11f, 0.45f, Con: 1.45f, Lift: 0.02f, Bump: 0.09f), new(0.05f, 0.6f)],
         // litter, rot, roots, mud, bed, needles, face: the leaves warm and
         // red-brown against the cold night, the runs and banks black, the
         // stream's stones the palest thing on the ground (moss is the shader's)

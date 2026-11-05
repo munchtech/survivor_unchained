@@ -35,6 +35,13 @@ public sealed class Vault : ArenaShape
     /// deep, then 26 treads 0.62 m deep, each 0.28 m down; the bottom floor; its walls from 2.9 m out.</summary>
     public const double MouthZ = -38, Tread = 0.62, Rise = 0.28, Threshold = 1.0, InnerX = 2.9, OuterX = 4.4, WallTop = 2.2;
     public const int Steps = 26;
+    /// <summary>(Round 3) The cut open to the sky down its first OpenLen m (vault_stair's "open", "kerb", "arch_at"): its
+    /// walls' tops a kerb over the mouth's floor there, rising to WallTop by the arch across the flight at ArchAt.</summary>
+    public const double OpenLen = 12.0, Kerb = 0.45, ArchAt = 12.4;
+    /// <summary>(Round 3) The barrow outside the walls: a shelf ShelfH m over the floor out to ShelfTo m, then rising BankRise a metre.</summary>
+    public const double ShelfH = 0.9, ShelfTo = 6.5, BankRise = 0.4;
+    /// <summary>The side walls' top (m over the mouth's floor) at a distance down the flight (sz under 0).</summary>
+    public static double CutTop(double sz) => Kerb + (WallTop - Kerb) * MathX.Smoothstep(OpenLen - 1.4, OpenLen + 0.3, -sz);
     /// <summary>A tread's top under the mouth's floor, and the z (world) of its back edge (the riser above it).</summary>
     public static double TreadY(int k) => -Rise * k;
     public static double TreadBack(int k) => MouthZ - Threshold - (k - 1) * Tread;
@@ -73,15 +80,22 @@ public sealed class Vault : ArenaShape
         // (From a metre in: the ground cells at the mouth stay the landing's, so no earth rises before the jambs.)
         if (sz <= -0.9 && sz > -26)
         {
-            if (ax <= OuterX + 0.4) return floor + WallTop - 0.2;
-            if (ax <= OuterX + 3) return Math.Max(h, floor + WallTop - 0.2);
+            double top = floor + CutTop(sz) - 0.2;
+            if (ax <= OuterX + 0.4) return top;
+            // (Round 3) The barrow falls to the cut's walls' tops (the kerb down the open stretch) no steeper than BankRise, under
+            // the moon's 42 degrees, so it throws no shadow into the cut and catches the light itself.
+            return Math.Max(top, Math.Min(h, top + BankRise * (ax - OuterX - 0.4)));
         }
         // The place's floor is paved and level; just outside it the walls stand on it; then the barrow's
         // earth banked against them, never under the floor.
         double d = P.Dist(x, z);
         if (d < 0.3) return floor;
-        if (d < 8) return Math.Max(h, floor + MathX.Smoothstep(0.3, 2.5, d) * 0.6);
-        return h;
+        // (Round 3, measured: the barrow rose from the walls' feet at 37 degrees to 6 m by |x| 20, so the west bank faced away
+        // from the south-west moon and the east lay in its wall's shadow: a quarter of every hall frame flat black.) Now the
+        // earth banked against the walls is a shelf ShelfH over the floor, then the barrow rising no steeper than BankRise
+        // (about 22 degrees), so the moon lies on the shelf and the slope and the walls' outer faces stand in it.
+        double shelf = floor + MathX.Smoothstep(0.3, 2.5, d) * ShelfH;
+        return Math.Max(shelf, Math.Min(h, floor + ShelfH + BankRise * Math.Max(0, d - ShelfTo)));
     }
 
     public override void Paint(double x, double z, double inn, ref ArenaPaint p)
@@ -97,7 +111,8 @@ public sealed class Vault : ArenaShape
             double foot = MathX.Smoothstep(3.2, 0.8, inn + n1 * 0.8);
             p.L5 = Math.Max(foot * (0.55 + 0.45 * MathX.Smoothstep(-0.2, 0.3, n3)), broken * 0.5);
             p.L2 *= 1 - p.L5 * 0.6;
-            p.BaseB = 0.75;
+            // (Round 3: the bare ground is the barrow's chalk now, pale; inside, where the flags are lost, mostly the turf.)
+            p.BaseB = 0.3;
             // The court is the forecourt, older and more open: more of its paving lost to the turf.
             if (z > 22.5) p.L2 *= 0.75 + 0.25 * MathX.Smoothstep(0.1, 0.5, n1);
             // Worn down the middle, where the files came and went.
@@ -166,13 +181,14 @@ public sealed class Vault : ArenaShape
         int sigil = B.Glow(0, 22.75, "#9a6cff", 2.4, height: 1.25, flicker: 0, range: 3.2);
         B.Lights[sigil].Dial = "vaultsigil";
         B.Lights[sigil].DialOff = "vaultdoor";
-        B.Lights[sigil].Specular = 0.15;
+        B.Lights[sigil].Specular = 0;   // (round 3: at 0.15 its bulb still sat on the glass-black face as a violet dot under the sigil)
         // The cut letters over the door catch the violet only as the wake reaches the arms' ends.
-        int letters = B.Glow(0, 23.3, "#9a6cff", 2.0, height: 5.2, flicker: 0, range: 3.0);
+        // (Round 3: from 5.2 m, under the lines at 5.7-6.1, at 2.0 they barely showed, and its bulb sat on the glass door.)
+        int letters = B.Glow(0, 23.2, "#9a6cff", 3.6, height: 5.5, flicker: 0, range: 3.2);
         B.Lights[letters].Dial = "vaultsigil";
         B.Lights[letters].DialFrom = 0.8;
         B.Lights[letters].DialOff = "vaultdoor";
-        B.Lights[letters].Specular = 0.2;
+        B.Lights[letters].Specular = 0;
         // Its sides: the forecourt's enclosure, low and fallen, outside its floor.
         Run(-14.8, 22.8, -14.8, 41.2, new[] { "vault_wall_low" });
         Run(14.8, 22.8, 14.8, 41.2, new[] { "vault_wall_low" });
@@ -198,7 +214,8 @@ public sealed class Vault : ArenaShape
         B.Piece("own/vault_stair", 0, MouthZ, 0);
         // The sky's cold light down the flight, fading as it goes (the moon reaches its head; below, only what the
         // cut's walls let down): the treads' lit edges step down into the dark, the last of it 10-15 m down.
-        foreach (var (k, e) in new[] { (3, 1.6), (8, 1.1), (13, 0.7), (18, 0.35) })
+        // (Round 3: the moon now lights the open stretch itself; the fill is only a lift, the most of it past the arch.)
+        foreach (var (k, e) in new[] { (3, 0.5), (8, 0.45), (13, 0.5), (18, 0.3) })
             B.Glow(0, TreadBack(k) + Tread / 2, "#7894d6", e, height: 2.2, flicker: 0, range: 5.5);
         B.Slab(-3.75, MouthZ + 0.1, 0.85, 0.7, 0);
         B.Slab(3.75, MouthZ + 0.1, 0.85, 0.7, 0);
