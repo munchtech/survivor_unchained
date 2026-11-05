@@ -325,7 +325,7 @@ def normals(P, T):
 
 def penetration(strip, V, T_all):
     """Posed body points near the joint inside the posed surface (the whole posed body and its closing head):
-    count, and depth (mm) as the distance out along the point's normal to the surface it must leave by."""
+    count, and depth (mm) under the other segment's posed skin (the far side of the rest bisector plane)."""
     sc = ray.scene(V, T_all)
     idx = np.nonzero(strip.test)[0]
     N = normals(V, T_all)[idx]
@@ -333,19 +333,27 @@ def penetration(strip, V, T_all):
     ins = ray.inside(sc, P)
     if not ins.any():
         return {"count": 0, "depth_max_mm": 0.0, "depth_p95_mm": 0.0, "tested": int(len(idx))}
-    # depth: first-hit ray from the point along its outward normal = how far under the surface it sits
+    # depth: how far the point sits under the OTHER segment's skin. A fold presses the distal skin into the proximal
+    # (or the reverse), so the surface it must leave by is the other side of the rest bisector plane (seg_d / seg_p).
+    # Rays read the whole other limb (95-134 mm), and a rest-neighbour exclusion skipped the skin across the crease
+    # (14-18 mm): the nearest point on the other side's posed triangles (vertices, edge middles, centres) is the depth.
     q = idx[ins]
-    Nq = N[ins]
-    _, tfar = ray.hits(sc, V[q] + 3e-4 * Nq, Nq)
-    hit = np.isfinite(tfar)
-    dep = list(tfar[hit] * 1000)
-    nfb = int((~hit).sum())
-    if nfb:
-        k = min(96, len(V))
-        dd, ii = cKDTree(V).query(V[q[~hit]], k=k)
-        far = np.linalg.norm(strip.poser.P0[ii] - strip.poser.P0[q[~hit]][:, None], axis=2) > 0.02
-        dd = np.where(far, dd, np.inf).min(1)
-        dep += list(dd[np.isfinite(dd)] * 1000)
+    sd = strip.seg_d
+    T = strip.T_rend
+    tri_d = sd[T].sum(1) >= 2
+    dep, nfb = [], 0
+    for side_d in (True, False):
+        qs = q[sd[q] == side_d]
+        if not len(qs):
+            continue
+        To = T[tri_d != side_d]
+        if not len(To):
+            nfb += len(qs)
+            continue
+        A, B, C = V[To[:, 0]], V[To[:, 1]], V[To[:, 2]]
+        S = np.concatenate([A, B, C, (A + B) / 2, (B + C) / 2, (C + A) / 2, (A + B + C) / 3])
+        dd, _ = cKDTree(S).query(V[qs])
+        dep += list(dd * 1000)
     dep = np.array(dep)
     return {"count": int(ins.sum()), "depth_max_mm": round(float(dep.max()) if len(dep) else 0.0, 2),
             "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx)), "depth_fallback": nfb}
