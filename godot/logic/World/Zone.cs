@@ -34,6 +34,13 @@ public sealed class LightDef
     public List<string> Glow = new();
     /// <summary>(P9 set) A handle that drives it (a story piece's dial, "vaultsigil"): its level is the handle's k, dark at 0.</summary>
     public string? Dial { get; set; }
+    /// <summary>(P9 set) Where on its dial it starts to come up (0: from the first; 0.8: only as the dial nears its end,
+    /// at full at 1): the letters over the Vault's door catch the violet as the sigil's wake reaches its arms' ends.</summary>
+    public double DialFrom { get; set; }
+    /// <summary>(P9 set) A second handle that puts it out as it goes 0 -> 1 (the sigil's light goes down with the door).</summary>
+    public string? DialOff { get; set; }
+    /// <summary>Its specular share (below 0: as built, 1): a light a hand from glass-smooth stone shows as a disc in it.</summary>
+    public double Specular { get; set; } = -1;
 }
 
 public sealed class FireDef

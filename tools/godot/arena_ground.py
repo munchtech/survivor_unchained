@@ -46,6 +46,19 @@ PLACES = {
         ('rubble', 'rocky_trail'),          # chalk and stone round the ruins
         ('face', 'dark_rock'),
     ],
+    # (P9 set) The Vault (the Seventh Legion's roofless hall in the barrow field, Maps/Arenas/Vault.cs): the barrow's
+    # layers, its way the Legion's flags, worn squares of about a metre with dark joints (not the field road's cobbles:
+    # from the play camera they read as noise). The input that matters is the flag's size (about 0.8-1.2 m), for
+    # whichever painter makes the set.
+    'vault': [
+        ('turf', 'withered_grass'),
+        ('bare', 'ground_grey'),
+        ('way', 'large_grey_tiles', 200),   # the Legion's flags, about a metre, worn, the joints dark
+        ('grave', 'brown_mud_02'),
+        ('ash', 'burned_ground_01'),
+        ('rubble', 'rocky_trail'),
+        ('face', 'dark_rock'),
+    ],
     # The Pack's Hollow: a sunk bowl of old wood, the leaf litter of years, roots
     # breaking through, the stream the Dig's slurry runs in.
     'hollow': [

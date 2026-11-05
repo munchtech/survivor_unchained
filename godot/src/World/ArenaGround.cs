@@ -30,6 +30,10 @@ public static class ArenaGround
         // turf, bare, way, grave, ash, rubble, face
         ["barrow"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.095f, 0.5f, Lift: 0.02f, Bump: 0.06f, Size: 1.7f), new(0.035f, 0.7f, Lift: -0.02f),
             new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
+        // (P9 set) The Vault (ArenaPlace.Ground "vault"): the barrow's, its way the Legion's flags at their own size
+        // (the scan's 3 m holds three: a metre a flag), a step lighter than the field road's cobbles so the moon lies on them.
+        ["vault"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.105f, 0.45f, Con: 1.15f, Lift: 0.02f, Bump: 0.07f), new(0.035f, 0.7f, Lift: -0.02f),
+            new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
         // litter, rot, roots, mud, bed, needles, face: the leaves warm and
         // red-brown against the cold night, the runs and banks black, the
         // stream's stones the palest thing on the ground (moss is the shader's)
@@ -115,7 +119,7 @@ public static class ArenaGround
     public static ShaderMaterial Material(ZoneData z)
     {
         var place = z.Place!;
-        string dir = $"res://art/arena/{place.Id}";
+        string dir = $"res://art/arena/{place.GroundId}";
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/arena_ground.gdshader") };
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", Mipped(z.Splat));
@@ -129,7 +133,9 @@ public static class ArenaGround
         mat.SetShaderParameter("lip_glow", z.Story ? 0.3f : 1f);
         mat.SetShaderParameter("face_skip_b", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
-        mat.SetShaderParameter("past_dark", z.Story ? 0.25f : 0.6f);
+        // (P9 set: the Vault's barrow banked outside its walls is the frame's sides in every hall shot; darkened as a story
+        // place's, it was a quarter of each frame flat black.)
+        mat.SetShaderParameter("past_dark", place.GroundId == "vault" ? 0.05f : z.Story ? 0.25f : 0.6f);
         mat.SetShaderParameter("scorch_out", z.Story ? 3f : 1000f);
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>(Sheet(dir, "albedo")));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>(Sheet(dir, "normal")));
@@ -142,7 +148,7 @@ public static class ArenaGround
         var means = new Godot.Collections.Array<float>();
         var lifts = new Godot.Collections.Array<float>();
         var bumps = new Godot.Collections.Array<float>();
-        foreach (var t in Tones(place.Id))
+        foreach (var t in Tones(place.GroundId))
         {
             scales.Add(t.Scale);
             tones.Add(t.Tone);

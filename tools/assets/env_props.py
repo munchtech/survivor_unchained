@@ -4411,7 +4411,10 @@ def door(p):
     rng = Rng(p['seed'])
     stone = hexlin(p['stone'])
     parts = []
-    sblock(parts, (3.5, 0.05, 0.6), T(0, -0.025, 0), hexlin(p.get('sill', '#2a2a2c')), rng, drop=('-y',), chip=0.0)
+    # The threshold: a dressed slab a hand proud of the court's floor, its front edge inside the facade's recess (round 2:
+    # flush and dark, it never caught the moon; the play camera reads the door by its sill and its frame).
+    sl = p.get('sill_size', [3.5, 0.05, 0.6])
+    sblock(parts, (sl[0], sl[1], sl[2]), T(0, sl[1] / 2 - 0.05 + p.get('sill_up', 0.0), p.get('sill_z', 0.0)), hexlin(p.get('sill', '#2a2a2c')), rng, drop=('-y',), chip=0.0)
     W, H, Dp = 3.44, 4.72, 0.5
     bm = box(W, H, Dp, 0.01)
     bmesh.ops.translate(bm, vec=(0, H / 2, 0), verts=bm.verts)
@@ -4419,9 +4422,13 @@ def door(p):
     front = [f for f in bm.faces if f.normal.z > 0.99 and abs(f.calc_center_median().z - Dp / 2) < 1e-4][0]
     outline = [(v.co.x, v.co.y) for v in front.verts]
     bmesh.ops.delete(bm, geom=[front], context='FACES_ONLY')
-    cx, cy, zf = 0.0, 1.75, Dp / 2
-    arm, cir = sigil_polys(cx, cy, 0.62, 0.14, 0.0225, 0.05)
-    dg, ds = 0.02, 0.05
+    # The sigil (round 2, P9 set: the arms 2-3 cm wide, 40-60 cm long, the notch 20-25 cm across, at chest to head):
+    # its numbers are the preset's (and its dial's centre and radius in env_props.json with them).
+    sg_ = p.get('sigil', {})
+    cx, cy, zf = 0.0, sg_.get('cy', 1.75), Dp / 2
+    sock = sg_.get('sock', 0.10)
+    arm, cir = sigil_polys(cx, cy, sg_.get('R', 0.62), sg_.get('r0', 0.14), sg_.get('hw', 0.0225), sg_.get('vlen', 0.05), sock=sock)
+    dg, ds = sg_.get('groove', 0.02), sg_.get('socket', 0.05)
     for t in tess_tris([outline] + arm + [cir], zf):
         face_toward(bm, t, (0, 0, 1))
     for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
@@ -4439,7 +4446,7 @@ def door(p):
     for poly, depth in [(a, dg) for a in arm] + [(cir, ds)]:
         for t in tess_tris([poly], zf - depth + 0.002):
             face_toward(sg, t, (0, 0, 1))
-    r_ = 0.10 - 0.002
+    r_ = sock - 0.002
     for i in range(20):
         a0, a1 = 2 * math.pi * i / 20, 2 * math.pi * (i + 1) / 20
         pa, pb = (cx + r_ * math.cos(a0), cy + r_ * math.sin(a0)), (cx + r_ * math.cos(a1), cy + r_ * math.sin(a1))
@@ -4504,7 +4511,8 @@ def facade(p):
     pz0, pz1 = -D / 2 - 0.01, D / 2 + 0.08                                                               # the panel, 0.08 proud
     pbm = box(8.4, 0.85, pz1 - pz0, 0.01)
     parts.append(Part(pbm, 'stone', black * 0.95, T(0, 5.825, (pz0 + pz1) / 2), cap='stone', jitter=0.0))
-    vault_letters(parts, ['HIC LEGIO SEPTIMA SEPELIVIT', 'QUOD URERE NON POTUIT'], 0.2, 5.825 + 0.16, 0.32, pz1 - 0.001, 0.004, black * 0.25)
+    # (Round 2: the letters a value band on the panel, not black speckle: their tint near the panel's, p['letters'].)
+    vault_letters(parts, ['HIC LEGIO SEPTIMA SEPELIVIT', 'QUOD URERE NON POTUIT'], 0.2, 5.825 + 0.16, 0.32, pz1 - 0.001, 0.004, black * p.get('letters', 0.25))
     return parts
 
 

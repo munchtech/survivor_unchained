@@ -107,16 +107,19 @@ public sealed class Vault : ArenaShape
         }
         else
         {
-            // The barrow's turf, banked against the walls: dead grass over chalk, bare where it slid.
+            // The barrow's turf, banked against the walls: dead grass over chalk, bare where it slid; (round 2) the chalk
+            // and fallen stone come through it in drifts, so the banks at the frame's sides read as ground, not flat black.
             p.BaseB = MathX.Smoothstep(-0.2, 0.45, Noise.Noise(x * 0.04 + 40, z * 0.04 - 13) + n2 * 0.3);
-            p.L5 = MathX.Smoothstep(-0.5, -2.5, inn) * (1 - MathX.Smoothstep(-2.5, -5, inn)) * 0.6;
+            p.L5 = Math.Max(MathX.Smoothstep(-0.5, -2.5, inn) * (1 - MathX.Smoothstep(-2.5, -5, inn)) * 0.6,
+                0.55 * MathX.Smoothstep(-0.15, 0.35, n1 + 0.4 * n3));
             p.Grass = MathX.Smoothstep(-1.5, -4, inn) * (0.55 + 0.45 * MathX.Smoothstep(-0.3, 0.3, n1));
         }
         // The ember's char where each gate burns.
         foreach (var g in P.Gates)
         {
             double d = MathX.DistToSegment(x, z, g.X0, g.Z0, g.X1, g.Z1) + n2 * 0.4;
-            p.Char = Math.Max(p.Char, (1 - MathX.Smoothstep(0.6, 2.2, d)) * 0.8);
+            // (Round 2: at 0.8 the char was a 4 m band of flat black across the hall and the court in every play frame.)
+            p.Char = Math.Max(p.Char, (1 - MathX.Smoothstep(0.6, 1.8, d)) * 0.4);
         }
         p.Leaves = 0;
     }
@@ -157,9 +160,19 @@ public sealed class Vault : ArenaShape
         B.Slab(-8.2, 22, 6.45, 0.65, 0);
         B.Slab(8.2, 22, 6.45, 0.65, 0);
         B.Piece("own/vault_door", 0, 22, 0);
-        // The sigil's light, out until it wakes (the handle "vaultsigil" sets its level).
-        int sigil = B.Glow(0, 23.0, "#9a6cff", 7, height: 1.75, flicker: 0, range: 10);
+        // The sigil's light on the stone round it, out until it wakes (the handle "vaultsigil" sets its level) and gone
+        // down with the door ("vaultdoor"); a little under the sigil and a hand out, its specular low, so the glass-black
+        // face shows violet light, not the bulb's disc (round 1: 7 at 0.75 m, always on, a disc as wide as the arms).
+        int sigil = B.Glow(0, 22.75, "#9a6cff", 2.4, height: 1.25, flicker: 0, range: 3.2);
         B.Lights[sigil].Dial = "vaultsigil";
+        B.Lights[sigil].DialOff = "vaultdoor";
+        B.Lights[sigil].Specular = 0.15;
+        // The cut letters over the door catch the violet only as the wake reaches the arms' ends.
+        int letters = B.Glow(0, 23.3, "#9a6cff", 2.0, height: 5.2, flicker: 0, range: 3.0);
+        B.Lights[letters].Dial = "vaultsigil";
+        B.Lights[letters].DialFrom = 0.8;
+        B.Lights[letters].DialOff = "vaultdoor";
+        B.Lights[letters].Specular = 0.2;
         // Its sides: the forecourt's enclosure, low and fallen, outside its floor.
         Run(-14.8, 22.8, -14.8, 41.2, new[] { "vault_wall_low" });
         Run(14.8, 22.8, 14.8, 41.2, new[] { "vault_wall_low" });
@@ -183,6 +196,10 @@ public sealed class Vault : ArenaShape
         Run(16.0, -38.6, 4.6, -38.6, new[] { "vault_wall_c", "vault_wall_b" });
         // The stair, and its mouth's jambs standing into the landing.
         B.Piece("own/vault_stair", 0, MouthZ, 0);
+        // The sky's cold light down the flight, fading as it goes (the moon reaches its head; below, only what the
+        // cut's walls let down): the treads' lit edges step down into the dark, the last of it 10-15 m down.
+        foreach (var (k, e) in new[] { (3, 1.6), (8, 1.1), (13, 0.7), (18, 0.35) })
+            B.Glow(0, TreadBack(k) + Tread / 2, "#7894d6", e, height: 2.2, flicker: 0, range: 5.5);
         B.Slab(-3.75, MouthZ + 0.1, 0.85, 0.7, 0);
         B.Slab(3.75, MouthZ + 0.1, 0.85, 0.7, 0);
     }

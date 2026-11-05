@@ -112,6 +112,7 @@ public static class ArenaGen
         // A story place is small and walled by its banks and the wood over them: the moon
         // stands higher over it, or a low moon's shadows of the trees fill it to the brim.
         if (story != null) place = place with { Night = place.Night with { KeyElevation = Math.Max(place.Night.KeyElevation, 62) } };
+        if (story != null) place = ArenaPlaces.ForStory(place, spec.Story);
         var shape = (story != null ? StoryShapeFor(spec.Story) : null) ?? ShapeFor(place.Id);
         // A table night's board (Content/Boards: H1 item 6), where its place has one at its tier; never a story night's.
         var board = story == null && !spec.StoryNight ? Content.Boards.For(place.Id, spec.Tier) : null;

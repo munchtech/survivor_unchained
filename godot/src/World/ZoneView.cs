@@ -140,6 +140,15 @@ public partial class ZoneView : Node3D
         AddChild(lightRoot);
         for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(z.Lights[i]); yield return null; }
         for (int i = 0; i < meta.Lights.Count; i++) if (meta.Lights[i].Core > 0) Core(i, meta.Lights[i]);
+        // (P9 set) The lights a handle drives (LightDef.Dial, DialOff): dark until their dial says, as their pieces' glow.
+        for (int i = 0; i < meta.Lights.Count; i++)
+        {
+            var ld = meta.Lights[i];
+            if (ld.Specular >= 0) lights[i].LightSpecular = (float)ld.Specular;
+            foreach (var h in new[] { ld.Dial, ld.DialOff })
+                if (h != null) { if (!dialLights.TryGetValue(h, out var dl)) dialLights[h] = dl = new(); dl.Add(i); }
+            if (ld.Dial != null) DialLevel(i);
+        }
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
         foreach (var f in meta.Fires)
@@ -348,7 +357,19 @@ public partial class ZoneView : Node3D
         Landmarks.Shift(kind, k);
         if (dials.TryGetValue(kind, out var ds))
             foreach (var d in ds) if (GodotObject.IsInstanceValid(d)) d.SetInstanceShaderParameter("k", k);
-        if (dialLights.TryGetValue(kind, out var ls)) foreach (var i in ls) SetLevel(i, k);
+        if (dialLights.TryGetValue(kind, out var ls)) foreach (var i in ls) DialLevel(i);
+    }
+
+    /// <summary>(P9 set) A dial-driven light's level from its handles' last k: up from DialFrom to 1 on its dial, put out
+    /// by its DialOff.</summary>
+    void DialLevel(int i)
+    {
+        var ld = Data.Meta.Lights[i];
+        if (ld.Dial == null) return;
+        float k = shifted.GetValueOrDefault(ld.Dial), from = (float)ld.DialFrom;
+        float up = from >= 1 ? (k >= 1 ? 1 : 0) : Mathf.Clamp((k - from) / (1 - from), 0, 1);
+        float off = ld.DialOff != null ? 1 - shifted.GetValueOrDefault(ld.DialOff) : 1;
+        SetLevel(i, up * up * (3 - 2 * up) * off);
     }
 
     /// <summary>(P9 set) The last k each handle was set to (a piece adopted later starts there).</summary>

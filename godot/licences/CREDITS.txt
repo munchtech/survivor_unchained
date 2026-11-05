@@ -345,6 +345,8 @@ Their authors, per Poly Haven:
     https://polyhaven.com/a/leaves_forest_ground
 * forest_ground_06: Poly Haven, CC0
     https://polyhaven.com/a/forest_ground_06
+* large_grey_tiles: Poly Haven, CC0
+    https://polyhaven.com/a/large_grey_tiles
 
 Poly Haven models
 ------------------------------------------------------------------------

@@ -16,7 +16,11 @@
   "zoneHeld": true
  },
  "marks": {
-  "her": [0, 26, 3.1416],
+  "her": [
+   0,
+   26,
+   3.1416
+  ],
   "d1": [
    0.6,
    27.5,
@@ -67,6 +71,51 @@
     {
      "do": "place",
      "mark": "d1"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 0
+    }
+   ]
+  },
+  {
+   "id": "D2",
+   "dur": 2.0,
+   "still": 1.5,
+   "note": "sigil awake, wide: the letters catch the violet",
+   "cam": {
+    "pos": [
+     1.4,
+     1.1,
+     29.6
+    ],
+    "at": [
+     0,
+     2.2,
+     22
+    ],
+    "lens": 35
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d1"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1
     }
    ]
   },
@@ -74,19 +123,19 @@
    "id": "D3a",
    "dur": 1.6,
    "still": 1.2,
-   "note": "sigil half awake",
+   "note": "sigil at k 0.25",
    "cam": {
     "pos": [
      0,
-     1.75,
-     24.6
+     1.6,
+     25.1
     ],
     "at": [
      0,
-     1.75,
+     1.6,
      22.25
     ],
-    "lens": 85
+    "lens": 50
    },
    "cues": [
     {
@@ -95,30 +144,33 @@
     },
     {
      "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
      "kind": "vaultsigil",
-     "k": 1,
-     "from": 0,
-     "over": 3
+     "k": 0.25
     }
    ]
   },
   {
    "id": "D3b",
-   "dur": 4.0,
-   "still": 3.5,
-   "note": "sigil awake",
+   "dur": 1.6,
+   "still": 1.2,
+   "note": "sigil at k 0.5",
    "cam": {
     "pos": [
      0,
-     1.75,
-     24.6
+     1.6,
+     25.1
     ],
     "at": [
      0,
-     1.75,
+     1.6,
      22.25
     ],
-    "lens": 85
+    "lens": 50
    },
    "cues": [
     {
@@ -127,10 +179,48 @@
     },
     {
      "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
      "kind": "vaultsigil",
-     "k": 1,
-     "from": 0,
-     "over": 3
+     "k": 0.5
+    }
+   ]
+  },
+  {
+   "id": "D3c",
+   "dur": 1.6,
+   "still": 1.2,
+   "note": "sigil at k 1.0",
+   "cam": {
+    "pos": [
+     0,
+     1.6,
+     25.1
+    ],
+    "at": [
+     0,
+     1.6,
+     22.25
+    ],
+    "lens": 50
+   },
+   "cues": [
+    {
+     "do": "place",
+     "mark": "d3"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
+    },
+    {
+     "do": "shift",
+     "kind": "vaultsigil",
+     "k": 1.0
     }
    ]
   },
@@ -156,6 +246,11 @@
     {
      "do": "place",
      "mark": "d6"
+    },
+    {
+     "do": "shift",
+     "kind": "vaultdoor",
+     "k": 0
     },
     {
      "do": "shift",
@@ -210,7 +305,7 @@
     "at": [
      0,
      -6.3,
-     -53
+     -50.7
     ],
     "lens": 135
    },

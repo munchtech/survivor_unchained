@@ -26,6 +26,10 @@ public sealed record ArenaAir(
 public sealed record ArenaPlace(string Id, string People, string Mood, AtmospherePreset Night, ArenaAir Air)
 {
     public bool HasMood(string mood) => Mood == mood;
+    /// <summary>(P9 set) The ground's set (godot/art/arena/GROUND: its layers, their sizes and looks), when not its people's
+    /// place's: a story place paved its own way (the Vault's flags). Everything else (grass, moss, water) stays the place's.</summary>
+    public string Ground { get; init; } = "";
+    public string GroundId => Ground != "" ? Ground : Id;
 }
 
 public static class ArenaPlaces
@@ -109,6 +113,14 @@ public static class ArenaPlaces
         return new ArenaPlace(id, spec.People, mood, night with { CrowdFill = 0.65, CrowdRim = 0.2 }, air);
     }
 
+    /// <summary>(P9 set) A story place's own ground and night, where it has them (its people's place otherwise): the
+    /// Vault's flags and its moon over the roofless hall (VaultNight).</summary>
+    public static ArenaPlace ForStory(ArenaPlace place, string story) => story switch
+    {
+        "vault_opened" => place with { Ground = "vault", Night = VaultNight with { CrowdFill = place.Night.CrowdFill, CrowdRim = place.Night.CrowdRim } },
+        _ => place,
+    };
+
     /* ------------------------------------------------------------ nights -- */
 
     // An arena's night is seen from thirty metres up: the moon has to show the
@@ -135,6 +147,27 @@ public static class ArenaPlaces
         // paint shade keeps them coloured (shade chroma 0.025 to 0.034, grey 9% to 5%); vibrance 0.55 to 0.3.)
         ShadowTint = "#2c4870", TintStrength = 0.15, Toe = 0.5,
         PaintVib = 0.3, PaintShadow = "#1c3060", PaintShadowK = 0.95, PaintLift = 0, PaintShadowSkin = 1,
+    };
+
+    /// <summary>(P9 set) The Vault by night (the story place's own, ForStory): a high moon over the roofless hall from the
+    /// south-west, so it lights the facade's south face and the walls' tops and rakes the court's and the hall's
+    /// flags, the west wall's broken top throwing its shadow across the hall's floor in bands with the moon's pools
+    /// between, and it shines a way down the cut stair (it runs north, toward the moon's back); her ember the warm
+    /// source; the shade the play night's moon indigo (Grade). Derived from (a) the look bible's night (rules 1-3:
+    /// key 2.0+, pool 0.35+, Lp50 0.15-0.30, flat black 20% or less), the shots (docs/cinematics/shoot/c13.md), the
+    /// play camera (pitch 64, 22-27 m); (c) inherited: the barrow's night (Light("barrow")), whose moon from the
+    /// south-west (140) filled the narrow stair with its wall's shadow.</summary>
+    public static readonly AtmospherePreset VaultNight = Atmospheres.Night with
+    {
+        Sky = Atmospheres.Night.Sky with { Glow = "#3a5070" },
+        // (Round 2, measured on the play frames, court, hall and landing, --air-tune sweeps: the barrow's key 3.3 and sky 1.15
+        // left one moonlit blue field, key 1.4-1.7 at any moon; a lower moon from the south-west (42 degrees) puts the west
+        // walls' shadows across the floors, the sky's fill 0.95 keeps that shade off flat black, and her ember 16 against
+        // a moon of 3.2 makes her pool the brightest thing in the frame: key 2.0-2.2, pool 0.40-0.57, Lp50 0.23-0.25.)
+        KeyColor = "#94acee", KeyIntensity = 3.2, KeyElevation = 42, KeyAzimuth = 135, ShadowStrength = 0.82,
+        HemiSky = "#36486c", HemiGround = "#1a1a1e", HemiIntensity = 0.95, EnvIntensity = 0.75,
+        FogColor = "#121a28", FogDensity = 0.004, Exposure = 1.62, Rim = "#a8c0f0", RimStrength = 0.8,
+        Grade = Grade, Ember = 16, EmberColor = "#ffcc9c", EmberReach = 1.35,
     };
 
     static (AtmospherePreset, ArenaAir) Light(string place) => place switch

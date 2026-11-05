@@ -1886,6 +1886,12 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
+            // --stage-at X,Z: then her at that spot in the stage's ground (pictures of a place down a stage's length).
+            if (Args.Get("stage-at") is string sa && sa.Split(',') is [var sx, var sz])
+            {
+                Battle.Player.X = double.Parse(sx, System.Globalization.CultureInfo.InvariantCulture);
+                Battle.Player.Z = double.Parse(sz, System.Globalization.CultureInfo.InvariantCulture);
+            }
         }
         // --lit [S]: a story night's deadfalls all burning (pictures of them alight); for S seconds
         // only, if given (pictures of a fed fire taking, guttering and going out).

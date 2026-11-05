@@ -1068,6 +1068,14 @@
                 "https://polyhaven.com/a/forest_ground_06"
               ],
               "lines": []
+            },
+            {
+              "work": false,
+              "text": "large_grey_tiles: Poly Haven, CC0",
+              "links": [
+                "https://polyhaven.com/a/large_grey_tiles"
+              ],
+              "lines": []
             }
           ]
         },

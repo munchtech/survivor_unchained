@@ -209,6 +209,7 @@ GROUND_LAYERS = {
     "hollow": {"face": {"skip": 1}, "litter": {"hue": STRAW, "pull": 0.55}, "needles": {"hue": STRAW, "pull": 0.45},
                "rot": {"hue": STRAW, "pull": 0.3}},
     "ruts": {"face": {"skip": 1}}, "dig": {"face": {"skip": 1}}, "barrow": {"face": {"skip": 1}},
+    "vault": {"face": {"skip": 1}},   # (P9 set: the barrow's set, its way the Legion's flags)
 }
 
 

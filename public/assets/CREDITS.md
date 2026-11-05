@@ -208,6 +208,7 @@ The arenas' grounds (`godot/art/arena/<place>`, by `tools/godot/arena_ground.py`
 - gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0
 - leaves_forest_ground: Poly Haven (https://polyhaven.com/a/leaves_forest_ground), CC0
 - forest_ground_06: Poly Haven (https://polyhaven.com/a/forest_ground_06), CC0
+- large_grey_tiles: Poly Haven (https://polyhaven.com/a/large_grey_tiles), CC0
 
 ## Poly Haven models (CC0)
 
