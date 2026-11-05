@@ -11,7 +11,9 @@
             (the neck above its base line, the clavicle heads to C7, b: our skeleton). The joints' own termination
             poles at the epicondyles (fix 1: on the hinge axis, where the skin moves least) are listed apart.
   shoulder  the rim-to-root gap ratio (max / min) <= 1.5; the trunk-side kites >= 60 mm outside the deltoid
-  breast    breast edge p95 <= 7.5 mm, quad aspect p95 <= 2.0
+  breast    breast edge p95 <= 7.5 mm, quad aspect p95 <= 2.0; (pass 3b) the cap's 4 corners (its 3-poles) <= 20 mm
+            from the apex or >= 60 mm out (on the chest wall, past the mound)                          (a: the judge)
+  ankle     (pass 3b) the shin's last ring (the foot template's rim) 26-28 points                     (a: the judge)
 """
 import numpy as np
 from scipy.spatial import cKDTree
@@ -170,6 +172,10 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
         el = np.linalg.norm(V[e[:, 0]] - V[e[:, 1]], axis=1)
         g["breast_edge_mm_p95"] = round(float(np.percentile(el, 95)) * 1000, 2)
         g["breast_aspect_p95"] = round(float(np.percentile(asp[bq], 95)), 2)
+    bcm = C.get("breast_cap_corner_mm")
+    if bcm:
+        g["breast_cap_corner_mm"] = bcm
+    g["ankle_points"] = C.get("ankle_points")
     g["pass"] = {
         "fold": mq["fold_edges_over_60"] == 0,
         "aspect": mq["aspect_over_4"] == 0,
@@ -178,5 +184,7 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
         "shoulder_gap_ratio": bool(gap) and g["shoulder_rim_gap_ratio"] <= 1.5,
         "shoulder_kites_vs_deltoid": g.get("shoulder_kites_min_dist_to_deltoid_mm", 0) >= 60,
         "breast": ("breast_edge_mm_p95" in g and g["breast_edge_mm_p95"] <= 7.5 and g["breast_aspect_p95"] <= 2.0),
+        "breast_cap_corners": bool(bcm) and all(d <= 20 or d >= 60 for d in bcm),
+        "ankle_26_28": 26 <= (g["ankle_points"] or 0) <= 28,
     }
     return g

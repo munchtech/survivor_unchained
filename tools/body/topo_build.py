@@ -1346,7 +1346,7 @@ def build(plan, tier, ref, cv, L):
     C.update(trunk_plan(ref, cv, L, plan, tp, SR))
     tk = trunk(M, ref, cv, L, plan, tp, C, SR)
     sh = shoulder(M, ref, L, plan, tp, tk, C, SR)
-    breast(M, ref, L, plan, tp, tk, C)
+    bc = breast(M, ref, L, plan, tp, tk, C)
     cr = crotch(M, ref, L, plan, tp, tk, C)
     lim = plan["limbs"]
     joints = {}
@@ -1399,6 +1399,10 @@ def build(plan, tier, ref, cv, L):
     else:
         VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
     C["_hip_ring"] = VF[cr["root"]].copy()
+    Gc = bc["cap"]                                   # (a, pass 3b) the cap corners vs the apex, the wrist / ankle
+    cn = [Gc[0, 0], Gc[-1, 0], Gc[-1, -1], Gc[0, -1]]
+    C["breast_cap_corner_mm"] = [round(float(np.linalg.norm(VF[v] - L["breast_apex"])) * 1000, 1) for v in cn]
+    C["ankle_points"], C["wrist_points"] = int(len(fid)), int(len(hid))
     fnq = np.cross(VF[QF[:, 2]] - VF[QF[:, 0]], VF[QF[:, 3]] - VF[QF[:, 1]])
     ctr = VF[QF].mean(1)
     vol = float((fnq * ctr).sum())
