@@ -165,7 +165,8 @@ class Strip:
         other = "r" if s == "l" else "l"
         if motion in ("elbow", "knee"):
             rend = body & (chain(self.prox) >= 0.5)
-            self.seg_d = rend & (chain(self.bone) >= 0.5)
+            # the distal side by the rest geometry: the bisector plane at the joint
+            self.seg_d = rend & (((poser.P0 - self.O) @ unit(-self.u_prox - self.u_d0)) < 0)
             self.seg_p = rend & ~self.seg_d
         elif motion.startswith("shoulder"):
             legs = chain(bone(poser, rig, "thigh", "l")) + chain(bone(poser, rig, "thigh", "r"))
@@ -292,7 +293,7 @@ def section(V, T, sel, c, n, rmax=0.15, rend=None):
     # a closed cut only: every end shared by two pieces (an open cut, the selection's edge, has no area)
     ends = np.round(q2.reshape(-1, 3), 6)
     _, cnt_e = np.unique(ends, axis=0, return_counts=True)
-    closed = (cnt_e == 1).sum() <= max(2, 0.02 * len(cnt_e))
+    closed = (cnt_e == 1).sum() == 0
     tn = np.cross(P[:, 1] - P[:, 0], P[:, 2] - P[:, 0])
     tau = q2[:, 1] - q2[:, 0]
     flip = (np.cross(tau, n) * tn).sum(1) < 0
@@ -332,17 +333,22 @@ def penetration(strip, V, T_all):
     ins = ray.inside(sc, P)
     if not ins.any():
         return {"count": 0, "depth_max_mm": 0.0, "depth_p95_mm": 0.0, "tested": int(len(idx))}
-    # depth: the distance to the nearest posed point of the body that was not this point's neighbour at rest
-    # (more than 20 mm away at rest): how far it sits under the skin it has gone into (vertex spacing bounds it)
+    # depth: first-hit ray from the point along its outward normal = how far under the surface it sits
     q = idx[ins]
-    k = min(96, len(V))
-    tr = cKDTree(V)
-    dd, ii = tr.query(V[q], k=k)
-    far = np.linalg.norm(strip.poser.P0[ii] - strip.poser.P0[q][:, None], axis=2) > 0.02
-    dd = np.where(far, dd, np.inf).min(1)
-    dep = dd[np.isfinite(dd)] * 1000
+    Nq = N[ins]
+    _, tfar = ray.hits(sc, V[q] + 3e-4 * Nq, Nq)
+    hit = np.isfinite(tfar)
+    dep = list(tfar[hit] * 1000)
+    nfb = int((~hit).sum())
+    if nfb:
+        k = min(96, len(V))
+        dd, ii = cKDTree(V).query(V[q[~hit]], k=k)
+        far = np.linalg.norm(strip.poser.P0[ii] - strip.poser.P0[q[~hit]][:, None], axis=2) > 0.02
+        dd = np.where(far, dd, np.inf).min(1)
+        dep += list(dd[np.isfinite(dd)] * 1000)
+    dep = np.array(dep)
     return {"count": int(ins.sum()), "depth_max_mm": round(float(dep.max()) if len(dep) else 0.0, 2),
-            "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx))}
+            "depth_p95_mm": round(float(np.percentile(dep, 95)) if len(dep) else 0.0, 2), "tested": int(len(idx)), "depth_fallback": nfb}
 
 
 # ------------------------------------------------------------------ outlines --
