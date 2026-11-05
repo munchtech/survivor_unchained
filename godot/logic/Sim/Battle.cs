@@ -22,6 +22,8 @@ public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityK
 public sealed class PlayerState
 {
     public double X, Z, Vx, Vz, Facing, Radius = 0.42, Hp;
+    /// <summary>The move asked this tick (the stick or the keys, before her pace and her easing): her view faces it, not her lagging velocity.</summary>
+    public double StickX, StickZ;
     public bool Alive = true;
     public double Iframes, HurtT;
     public int DashCharges;
@@ -475,6 +477,7 @@ public sealed partial class Battle
     void UpdatePlayer(double dt, double mx, double mz)
     {
         var p = Player;
+        p.StickX = mx; p.StickZ = mz;
         if (!p.Alive) return;
         var st = Stats;
         p.Iframes = Math.Max(0, p.Iframes - dt);
