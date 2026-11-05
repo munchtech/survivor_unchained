@@ -1,3 +1,14 @@
+# C2 one build (5 Nov, lead 2): MR READY classes-c2@f83bb3878 (judge PASS WITH KNOWN, the known list closed)
+
+Branch `classes-c2` (junction to its own `public\assets`), integration merged at e3fcfb760, pushed. Suite 1565/0/10 after the merge. Report to coordinator cd68c87d via SendMessage "main".
+
+- **The judge (Item: C2 design, 3 of 3 rounds, all max, foreground):** r1 FAIL, distance close (the JSON medium: Rebuke's answering strand at source, about six Turns that didn't transform); r2 FAIL, close (ten line marks); r3 **PASS WITH KNOWN, close**, its eight known items closed in f83bb3878. What changed: Rebuke's answering strand remade (the light travels: The Long Answer, Tidings, Slow to Anger, Open Rebuke); Shield of Morning, Circle of Dawn, Stone Bell, Crow's Foot rewritten as true Turns; Back Furrow, Morning Road, Turned Aside replace lead-ins that were smaller copies of their Turns; points burn once lit (Light my way on coming into a town, the dawn card's lamp first), so the Ford starts with nothing lit; one card an offer always dealt; the card shows the hit; keywords; the honest price line; Union shared is a decided line (two owner questions left); 11 migration items added (16 in all); §6 in seconds.
+- **The harness switch is inert:** it wrote `"OneBuild":false` and `"Kit":[]` into every line without the flag; both are now left out when off (bf959efa7). Base d243d83fb vs head, no flag, sorted-line compare: arena 36/36, types 32/32, pair 16/16, story 64/64 identical; with `--onebuild` 8/8 lines carry Kit and /onebuild. Script: `survivorsunchained_inputs\scratch_classes_c2\lead2\eq\eq.sh`.
+- **The JSON is the source now** (lead 1's generator retired; backed up in `scratch_classes_c2\lead1\`). The checker adds: no barrier or mend under 2% of health an event without a cap, blow-fed barriers bounded, Stones a line can reach (the wall answers at six), keywords, "judgement".
+- **For the owner (two questions, the picks):** skills open by level (a schedule the story can teach; loot stays gear); keep the slots 2/3/4/5/6. Decided by design: a Union is one shared lamp, both skills firing (a merge only loses a skill mid-run).
+- **For the C2 build lead:** ONE_BUILD §5 (16 items; item 14 is A1's "swing damage at the clip's contact frame"; item 16 renames Judgement to Judgment in skills.json); §6's misses are numbers only (level 5 too hard, level 10 too easy, the tier-4 veteran under the band; re-run the standing bot with the four blow-fed Turns lit, each and together).
+- **Cost:** lead 2 ~0.29M; judges 139k + 124k + 120k = 0.38M; $0 API. Lead 1 ~0.6M. C2 design in all ~1.27M.
+
 # C2 one build (5 Nov, lead 1): the four deliverables are on the branch; HANDOFF READY at ~285k. Next: the judge, then merge and MR
 
 Brief: `docs/team/hook/C2_one_build.md`; coordinator brief `tools/scratch/coordinator/briefs/C2_lead1.md`.
