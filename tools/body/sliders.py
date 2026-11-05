@@ -48,3 +48,38 @@ def resolve(spec, cat=None):
             for n in ([f"l-{t}", f"r-{t}"] if c.get("lr") else [t]):
                 targets[n] = targets.get(n, 0.0) + w
     return macros, targets
+
+
+class OurSliders:
+    """The catalogue's sliders on OUR topology (P1 B1: slider_bake.py's tools/body/base/sliders_{tier}.npz), numpy only:
+    no MakeHuman, no Blender. evaluate({name: v}) -> our vertices [n, 3] (glTF, the reference's frame) = the reference
+    (V0) plus, per slider, the piecewise-linear blend of its stored samples (0 at v = 0; v clipped to the stored
+    samples' span, which is the catalogue's range), the sliders summed. delta(name, v) -> that slider's move alone."""
+
+    def __init__(self, path):
+        import numpy as np
+        self.np = np
+        z = np.load(path)
+        self.V0 = z["V0"].astype(np.float64)
+        self.names = [str(n) for n in z["names"]]
+        self.knots, self.D = {}, {}
+        for n in self.names:
+            v, d = z[f"v:{n}"], z[f"d:{n}"].astype(np.float64) * (float(z["d_unit_m"]) if "d_unit_m" in z.files else 1.0)
+            k = np.argsort(np.append(v, 0.0))
+            self.knots[n] = np.append(v, 0.0)[k]
+            self.D[n] = np.concatenate([d, np.zeros((1,) + d.shape[1:])])[k]
+
+    def delta(self, name, v):
+        np = self.np
+        x = self.knots[name]
+        v = float(min(max(v, x[0]), x[-1]))
+        i = int(np.clip(np.searchsorted(x, v) - 1, 0, len(x) - 2))
+        t = (v - x[i]) / (x[i + 1] - x[i])
+        return (1 - t) * self.D[name][i] + t * self.D[name][i + 1]
+
+    def evaluate(self, values):
+        V = self.V0.copy()
+        for n, v in values.items():
+            if v:
+                V += self.delta(n, v)
+        return V
