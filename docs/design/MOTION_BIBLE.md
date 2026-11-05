@@ -252,3 +252,14 @@ The motion judge then rules on what the numbers can't: the whole-frame question 
 - F1: the Flare press.
 
 Each board's caption names its references and what is taken from each. The boards show intent (poses and rhythm), not final art. The outfits are indicative.
+
+## Where a board and this text disagree, the text governs (judge round 2, 5 Nov)
+
+- The knees never touch or cross. Faults: I1 poses 3-4, I2 pose 3, I4 pose 4, A1 poses 1 and 4 (in A1, feet at shoulder width and a soft rear knee).
+- R1: the head line moves about 15 cm on the board. R7.2's 5 cm governs, and the down pose's knee is 40-45 deg, not 90.
+- R2: the dash skims the ground with the trailing toe. It is not a dive.
+- A2 pose 3 is superseded: a long, deep lunge, the lead knee over the toe, the rear leg long, the torso pitched 30 deg with a flat back, shoulders down, the axes biting the ground outside the lead foot.
+- A4 pose 3: the chin level, the eyes along the blade.
+- H1 pose 3: the chin drops and the knees fall apart, never a head-back swoon.
+- I3 pose 5: the staff stays in her right hand.
+- F1: a full-length sword stays in her right hand throughout, the point back along the forearm at impact.
