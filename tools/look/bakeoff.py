@@ -15,7 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 B3 = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3"
 BOARDS = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\a2\r2"
-ARMS = ["today", "A", "B", "C"]
+ARMS = ["today", "A", "B", "C"]  # (and "Alit": A from the boards' lit color, for the albedo question)
 ASSETS = {"barrel": dict(node="own_barrel", item="barrel"), "boulder": dict(node="own_boulder_b", item="boulder"),
           "setts": dict(node="LookSetts", item="setts", tile=4.0, name="setts_b3")}
 # board crops for each asset (board, box in board px, the board's size of the thing in cm across the box)
@@ -93,8 +93,31 @@ def sheet():
             D.text((bx0 + 4, 3), f"{bfile[:-4]} (to the close row's scale)", fill=(255, 230, 120), font=f)
             S.paste(bscaled, (bx0, lab))
             p = os.path.join(B3, "bakeoff", f"sheet_{a}_{rig}.png"); S.save(p); print(p)
-    for arm in ARMS[1:]:
-        nums[arm] = {a: json.load(open(os.path.join(B3, arm, a, "paint.json"))) for a in ASSETS if os.path.exists(os.path.join(B3, arm, a, "paint.json"))}
+    sys.path.insert(0, os.path.join(ROOT, "tools", "style")); import palette
+    for arm in ARMS:
+        d = os.path.join(B3, "bakeoff", arm)
+        items = json.load(open(os.path.join(d, "check_items.json"))) if os.path.exists(os.path.join(d, "check_items.json")) else {}
+        nums[arm] = {}
+        # the play camera's scale: the setts patch is 6 m across (GameLookdev.LookSetts)
+        sr = next((i["rect"] for i in items.get("day_play", []) if i["name"] == "setts"), None)
+        ppm_play = (sr[2] - sr[0]) * 1920 / 6.0 if sr else None
+        for a, it in ASSETS.items():
+            pj = os.path.join(B3, arm, a, "paint.json")
+            n = json.load(open(pj)) if os.path.exists(pj) else {}
+            fj = os.path.join(B3, "forms", a, "forms.json")
+            if n and os.path.exists(fj): n["build_s"] = round(json.load(open(fj))["seconds"] + n["seconds"] + (40 if arm in ("B", "C") else 0), 1)
+            if ppm_play and n: n["brush_px_play"] = {c: round(v / 100 * ppm_play, 1) for c, v in n["brush_cm"].items()}
+            for rig in ("day", "night"):
+                for cam in ("play", "close"):
+                    box = next((i["rect"] for i in items.get(f"{rig}_{cam}", []) if i["name"] == it["item"]), None)
+                    fr = os.path.join(d, f"lookdev_{rig}_{cam}.png")
+                    if not box or not os.path.exists(fr): continue
+                    im = Image.open(fr).convert("RGB"); W, H = im.size
+                    c = im.crop((int(box[0] * W), int(box[1] * H), int(box[2] * W), int(box[3] * H)))
+                    t = os.path.join(B3, "bakeoff", "_crop.png"); c.save(t)
+                    n[f"midC_{rig}_{cam}"] = round(float(palette.stats(t, False)[0]["midC"]), 4)
+            nums[arm][a] = n
+        nums[arm]["play_px_per_m"] = round(ppm_play, 1) if ppm_play else None
     json.dump(nums, open(os.path.join(B3, "bakeoff", "numbers.json"), "w"), indent=1)
 
 
@@ -102,4 +125,5 @@ if __name__ == "__main__":
     cmd = sys.argv[1]
     if cmd == "manifest": print(manifest(sys.argv[2]))
     elif cmd == "shoot": shoot(sys.argv[2].split(",") if len(sys.argv) > 2 else ARMS)
+    elif cmd == "sheet" and len(sys.argv) > 2: ARMS[:] = sys.argv[2].split(","); sheet()
     elif cmd == "sheet": sheet()

@@ -60,7 +60,7 @@ def class_color(cls, src):
     paint.albedo (same shape as paint.measured), else the boards' lit color."""
     p = cls["paint"]
     if src == "albedo" and "albedo" in p: return p["albedo"], "albedo"
-    return p["measured"], "lit"
+    return p.get("lit") or p["measured"], "lit"
 
 
 def block_lab(m, b, salt):
