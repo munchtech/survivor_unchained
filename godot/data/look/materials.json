@@ -67,17 +67,17 @@
      "roles": {"highlight": "#fdc388", "lit": "#ee9962", "transition": "#cb6c4f", "shade": "#684f68"}
     },
     "albedo": {
-     "L": [0.682, 0.6867, 0.6903],
-     "C": [0.1358, 0.1369, 0.1382],
-     "h": [37.7, -0.4, 0.4],
-     "mid": "#e17959",
+     "L": [0.678, 0.6828, 0.6862],
+     "C": [0.1503, 0.1512, 0.1523],
+     "h": [42.6, -0.4, 0.4],
+     "mid": "#e47546",
      "n": 512,
-     "roles": {"highlight": "#ff8b6c", "lit": "#e1795a", "transition": "#e17959", "shade": "#e17959"},
+     "roles": {"highlight": "#ff8854", "lit": "#e47546", "transition": "#e57546", "shade": "#e47546"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.7511, 0.1911, 0.101],
-     "fit_dE": 0.0327
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.7775, 0.1784, 0.0616],
+     "fit_dE": 0.0058
     }
    }
   },
@@ -135,17 +135,17 @@
      "roles": {"highlight": "#fcbd7a", "lit": "#c05f2d", "transition": "#b3542b", "shade": "#533f58"}
     },
     "albedo": {
-     "L": [0.5046, 0.5103, 0.5151],
-     "C": [0.1457, 0.1472, 0.1488],
-     "h": [34.4, -0.4, 0.3],
-     "mid": "#aa3e25",
+     "L": [0.5028, 0.5085, 0.5133],
+     "C": [0.1456, 0.147, 0.1486],
+     "h": [39.5, -0.3, 0.3],
+     "mid": "#a83f16",
      "n": 512,
-     "roles": {"highlight": "#c3472e", "lit": "#aa3e25", "transition": "#aa3e25", "shade": "#a93d24"},
+     "roles": {"highlight": "#c1491a", "lit": "#a83f16", "transition": "#a83f16", "shade": "#a83f16"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.3998, 0.0476, 0.0181],
-     "fit_dE": 0.0702
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.3909, 0.0501, 0.008],
+     "fit_dE": 0.0225
     }
    }
   },
@@ -245,17 +245,17 @@
      "roles": {"lit": "#542a1b"}
     },
     "albedo": {
-     "L": [0.2635, 0.2766, 0.5598],
-     "C": [0.0626, 0.0686, 0.1438],
-     "h": [41.7, -4.0, 2.8],
-     "mid": "#743516",
+     "L": [0.2638, 0.2768, 0.5602],
+     "C": [0.0603, 0.0663, 0.1395],
+     "h": [43.6, -4.2, 2.9],
+     "mid": "#723616",
      "n": 1152,
-     "roles": {"lit": "#431a09"},
+     "roles": {"lit": "#421b09"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.1744, 0.035, 0.008],
-     "fit_dE": 0.0124
+     "linear": [0.1698, 0.0372, 0.008],
+     "fit_dE": 0.0135
     }
    }
   },
@@ -310,17 +310,17 @@
      "roles": {"lit": "#4e5588", "shade": "#2c315a"}
     },
     "albedo": {
-     "L": [0.3169, 0.4001, 0.6526],
-     "C": [0.0927, 0.1066, 0.1175],
-     "h": [274.9, -1.2, 1.3],
-     "mid": "#4c5594",
+     "L": [0.3046, 0.3853, 0.6346],
+     "C": [0.0697, 0.0802, 0.0908],
+     "h": [277.8, -1.9, 2.5],
+     "mid": "#4f5381",
      "n": 4000,
-     "roles": {"lit": "#384080"},
+     "roles": {"lit": "#3a3e6e", "shade": "#4c507f"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.073, 0.0917, 0.2963],
-     "fit_dE": 0.0017
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.0773, 0.0863, 0.2186],
+     "fit_dE": 0.0336
     }
    }
   },
@@ -366,17 +366,17 @@
      "roles": {"lit": "#24233c"}
     },
     "albedo": {
-     "L": [0.1694, 0.2047, 0.2323],
-     "C": [0.0153, 0.0251, 0.0295],
-     "h": [286.0, -6.0, 12.5],
-     "mid": "#161622",
+     "L": [0.1715, 0.2078, 0.2352],
+     "C": [0.0235, 0.0353, 0.0411],
+     "h": [283.0, -4.0, 8.2],
+     "mid": "#161627",
      "n": 3922,
-     "roles": {"lit": "#161522"},
+     "roles": {"lit": "#161527"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.0083, 0.008, 0.0161],
-     "fit_dE": 0.0313
+     "linear": [0.008, 0.008, 0.0206],
+     "fit_dE": 0.0307
     }
    }
   },
@@ -422,17 +422,17 @@
      "roles": {"lit": "#373657"}
     },
     "albedo": {
-     "L": [0.2414, 0.2745, 0.3348],
-     "C": [0.0679, 0.0776, 0.0854],
-     "h": [282.4, -5.1, 6.2],
-     "mid": "#262452",
+     "L": [0.2396, 0.2724, 0.3323],
+     "C": [0.0697, 0.0798, 0.0879],
+     "h": [282.9, -5.2, 6.3],
+     "mid": "#262352",
      "n": 7721,
-     "roles": {"lit": "#23214c"},
+     "roles": {"lit": "#23204c"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.0196, 0.018, 0.084],
-     "fit_dE": 0.0007
+     "linear": [0.0195, 0.0171, 0.0845],
+     "fit_dE": 0.0005
     }
    }
   },
@@ -496,17 +496,17 @@
      "roles": {"lit": "#9e837e", "shade": "#7d6066"}
     },
     "albedo": {
-     "L": [0.4395, 0.5448, 0.7688],
-     "C": [0.038, 0.0454, 0.0711],
-     "h": [291.1, -26.5, 31.2],
-     "mid": "#7a7b97",
+     "L": [0.4787, 0.5938, 0.8387],
+     "C": [0.0406, 0.0488, 0.0774],
+     "h": [286.8, -25.6, 31.4],
+     "mid": "#888baa",
      "n": 3139,
-     "roles": {"lit": "#706c89"},
+     "roles": {"lit": "#7c7a9b", "shade": "#878bac"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.1949, 0.1984, 0.3103],
-     "fit_dE": 0.0807
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2446, 0.2601, 0.4028],
+     "fit_dE": 0.1066
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -581,12 +581,17 @@
      "roles": {"lit": "#6d4c55", "shade": "#29233a"}
     },
     "albedo": {
-     "L": [0.4196, 0.46, 0.5162],
-     "C": [0.0531, 0.0744, 0.0857],
-     "h": [290.6, -7.7, 17.1],
-     "mid": "#58507f",
+     "L": [0.3432, 0.3607, 0.4072],
+     "C": [0.0356, 0.0396, 0.0511],
+     "h": [352.0, -17.9, 23.5],
+     "mid": "#513741",
      "n": 1037,
-     "roles": {"lit": "#58507f", "shade": "#202658"}
+     "roles": {"lit": "#4e353f", "shade": "#513742"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.0821, 0.0379, 0.0533],
+     "fit_dE": 0.0304
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -634,17 +639,17 @@
      "roles": {"lit": "#bb692e"}
     },
     "albedo": {
-     "L": [0.3308, 0.5209, 0.6799],
-     "C": [0.0885, 0.1338, 0.1511],
-     "h": [50.3, -7.2, 11.5],
-     "mid": "#a85717",
+     "L": [0.3319, 0.5228, 0.6827],
+     "C": [0.0885, 0.1341, 0.1513],
+     "h": [51.0, -7.3, 11.7],
+     "mid": "#a95816",
      "n": 5851,
-     "roles": {"lit": "#a44d08"},
+     "roles": {"lit": "#a44e05"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.392, 0.0956, 0.0088],
-     "fit_dE": 0.0025
+     "linear": [0.3944, 0.0977, 0.008],
+     "fit_dE": 0.0099
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -693,17 +698,17 @@
      "roles": {"lit": "#f4ac54"}
     },
     "albedo": {
-     "L": [0.6872, 0.738, 0.8036],
-     "C": [0.1349, 0.1456, 0.1535],
-     "h": [64.6, -7.0, 11.8],
-     "mid": "#e9973b",
+     "L": [0.6864, 0.7369, 0.8015],
+     "C": [0.1382, 0.1482, 0.1557],
+     "h": [64.4, -7.0, 11.8],
+     "mid": "#e99637",
      "n": 645,
-     "roles": {"lit": "#e89435"},
+     "roles": {"lit": "#e99331"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.812, 0.3103, 0.0437],
-     "fit_dE": 0.0076
+     "linear": [0.818, 0.3053, 0.0379],
+     "fit_dE": 0.0078
     }
    },
    "sheen": [20.0, 4.0, 0.35, 1.0]
@@ -767,17 +772,17 @@
      "roles": {"lit": "#884d41", "shade": "#432a37"}
     },
     "albedo": {
-     "L": [0.4322, 0.5028, 0.6565],
-     "C": [0.0479, 0.0657, 0.1041],
-     "h": [9.6, -73.2, 33.6],
-     "mid": "#8f6367",
+     "L": [0.3738, 0.4419, 0.5775],
+     "C": [0.0383, 0.0668, 0.1053],
+     "h": [30.0, -69.6, 16.2],
+     "mid": "#7e5046",
      "n": 12052,
-     "roles": {"lit": "#85545c"},
+     "roles": {"lit": "#74443d", "shade": "#7a4e45"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.2753, 0.1249, 0.1365],
-     "fit_dE": 0.1021
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.084 -> 0.071",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2094, 0.0801, 0.0618],
+     "fit_dE": 0.0961
     }
    }
   },
@@ -841,17 +846,17 @@
      "roles": {"lit": "#785527", "lit_night": "#2a2b39", "shade": "#372b28"}
     },
     "albedo": {
-     "L": [0.2857, 0.4002, 0.5205],
-     "C": [0.0162, 0.0575, 0.0978],
-     "h": [85.3, -44.4, 29.7],
-     "mid": "#584c26",
+     "L": [0.2896, 0.4073, 0.5273],
+     "C": [0.0203, 0.0627, 0.0983],
+     "h": [81.4, -38.7, 30.8],
+     "mid": "#5c4d25",
      "n": 1101,
-     "roles": {"lit": "#564521"},
+     "roles": {"lit": "#5b461e", "shade": "#584a23"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.0975, 0.0726, 0.0194],
-     "fit_dE": 0.0026
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.083 -> 0.070",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1075, 0.074, 0.0187],
+     "fit_dE": 0.0397
     }
    }
   },
@@ -917,17 +922,17 @@
      "roles": {"lit": "#b2826f", "lit_night": "#3b3f64", "shade": "#47405d"}
     },
     "albedo": {
-     "L": [0.5035, 0.5644, 0.6966],
-     "C": [0.0452, 0.0509, 0.0689],
-     "h": [8.8, -29.8, 42.4],
-     "mid": "#977275",
+     "L": [0.4997, 0.5606, 0.6929],
+     "C": [0.0444, 0.0516, 0.0738],
+     "h": [16.9, -28.9, 36.6],
+     "mid": "#98716f",
      "n": 20800,
-     "roles": {"lit": "#916a6f"},
+     "roles": {"lit": "#91696a", "shade": "#906c6a"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.311, 0.1685, 0.1773],
-     "fit_dE": 0.004
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.070 -> 0.070",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.3131, 0.1642, 0.1591],
+     "fit_dE": 0.0106
     }
    }
   },
@@ -992,17 +997,17 @@
      "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
     },
     "albedo": {
-     "L": [0.3975, 0.4745, 0.6389],
-     "C": [0.0218, 0.0523, 0.0651],
-     "h": [292.3, -18.8, 105.8],
-     "mid": "#6c6573",
+     "L": [0.3983, 0.4777, 0.6483],
+     "C": [0.0151, 0.035, 0.061],
+     "h": [336.8, -60.1, 90.4],
+     "mid": "#716767",
      "n": 13519,
-     "roles": {"lit": "#5d5777"},
+     "roles": {"lit": "#6a5664", "shade": "#645a5a"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.1495, 0.13, 0.172],
-     "fit_dE": 0.0024
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1665, 0.1358, 0.1359],
+     "fit_dE": 0.0287
     }
    }
   },
@@ -1064,17 +1069,17 @@
      "roles": {"lit": "#fdbb8b", "lit_night": "#635370", "shade": "#7b6176"}
     },
     "albedo": {
-     "L": [0.5921, 0.7918, 0.8155],
-     "C": [0.0719, 0.0814, 0.0944],
-     "h": [36.8, -51.0, 12.7],
-     "mid": "#dfa491",
+     "L": [0.5873, 0.7869, 0.8106],
+     "C": [0.072, 0.0819, 0.0946],
+     "h": [43.9, -51.5, 12.6],
+     "mid": "#dda48a",
      "n": 7703,
-     "roles": {"lit": "#eaa996"},
+     "roles": {"lit": "#e7a98f", "shade": "#daa48b"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.7402, 0.3721, 0.2824],
-     "fit_dE": 0.004
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras; clamped: rule 4: day C 0.102 -> 0.092",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.7196, 0.3711, 0.2534],
+     "fit_dE": 0.0132
     }
    }
   },
@@ -1149,17 +1154,17 @@
      "roles": {"lit": "#a05654", "lit_night": "#29376b", "shade": "#452a42"}
     },
     "albedo": {
-     "L": [0.3828, 0.4602, 0.6057],
-     "C": [0.0813, 0.0986, 0.1277],
-     "h": [10.3, -29.4, 22.2],
-     "mid": "#904850",
+     "L": [0.3781, 0.4555, 0.6006],
+     "C": [0.0805, 0.0999, 0.1316],
+     "h": [14.2, -27.7, 19.6],
+     "mid": "#90464a",
      "n": 30001,
-     "roles": {"lit": "#853e4b"},
+     "roles": {"lit": "#853c45", "shade": "#8b4549"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.2784, 0.0647, 0.0804],
-     "fit_dE": 0.0009
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2779, 0.0611, 0.0687],
+     "fit_dE": 0.0171
     }
    }
   },
@@ -1225,17 +1230,17 @@
      "roles": {"lit": "#b9806c", "lit_night": "#3e4575", "shade": "#4a3c64"}
     },
     "albedo": {
-     "L": [0.5263, 0.5646, 0.6439],
-     "C": [0.0626, 0.0708, 0.0937],
-     "h": [15.6, -23.8, 21.3],
-     "mid": "#a0686b",
+     "L": [0.5225, 0.5604, 0.638],
+     "C": [0.0619, 0.07, 0.089],
+     "h": [9.9, -24.9, 24.3],
+     "mid": "#9d686e",
      "n": 31201,
-     "roles": {"lit": "#9b6568"},
+     "roles": {"lit": "#99636b", "shade": "#9d676e"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.3512, 0.1397, 0.146],
-     "fit_dE": 0.0049
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.3362, 0.1371, 0.1565],
+     "fit_dE": 0.0165
     },
     "layout": {
      "course_m": [0.34, 0.46],
@@ -1298,17 +1303,17 @@
      "roles": {"lit": "#774c3e"}
     },
     "albedo": {
-     "L": [0.3484, 0.3836, 0.3908],
-     "C": [0.0372, 0.0518, 0.0557],
-     "h": [34.0, -9.3, 3.8],
-     "mid": "#593830",
+     "L": [0.3502, 0.3855, 0.3928],
+     "C": [0.0368, 0.0514, 0.0554],
+     "h": [33.8, -9.6, 3.9],
+     "mid": "#593831",
      "n": 3810,
-     "roles": {"lit": "#5c3931"},
+     "roles": {"lit": "#5c3a32"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.0991, 0.0393, 0.0295],
-     "fit_dE": 0.0009
+     "linear": [0.1, 0.0401, 0.0303],
+     "fit_dE": 0.0022
     }
    }
   },
@@ -1365,17 +1370,17 @@
      "roles": {"lit": "#a96847"}
     },
     "albedo": {
-     "L": [0.4291, 0.4946, 0.5065],
-     "C": [0.072, 0.0951, 0.0982],
-     "h": [42.4, -3.9, 1.7],
-     "mid": "#884b33",
+     "L": [0.4275, 0.4929, 0.5047],
+     "C": [0.0723, 0.0953, 0.0984],
+     "h": [43.0, -3.7, 1.6],
+     "mid": "#874b32",
      "n": 3498,
-     "roles": {"lit": "#8e4e34"},
+     "roles": {"lit": "#8e4d32"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.2443, 0.0711, 0.0328],
-     "fit_dE": 0.0019
+     "linear": [0.2422, 0.0703, 0.0315],
+     "fit_dE": 0.003
     }
    }
   },
@@ -1450,17 +1455,17 @@
      "roles": {"lit": "#aaa036", "lit_night": "#286770", "shade": "#1c374f"}
     },
     "albedo": {
-     "L": [0.459, 0.6131, 0.6694],
-     "C": [0.0483, 0.0883, 0.1076],
-     "h": [125.3, -15.2, 31.7],
-     "mid": "#788955",
+     "L": [0.4408, 0.5928, 0.6495],
+     "C": [0.0545, 0.0956, 0.1094],
+     "h": [116.7, -15.0, 23.1],
+     "mid": "#7b8144",
      "n": 30003,
-     "roles": {"lit": "#788e51"},
+     "roles": {"lit": "#7a853f", "shade": "#7a8043"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.1893, 0.2502, 0.0904],
-     "fit_dE": 0.0035
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1964, 0.2203, 0.0583],
+     "fit_dE": 0.0658
     }
    }
   },
@@ -1528,17 +1533,17 @@
      "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
     },
     "albedo": {
-     "L": [0.5182, 0.5915, 0.6731],
-     "C": [0.0778, 0.0906, 0.0979],
-     "h": [115.2, -11.5, 12.1],
-     "mid": "#7e8444",
+     "L": [0.527, 0.6035, 0.687],
+     "C": [0.1058, 0.118, 0.1264],
+     "h": [111.8, -9.3, 9.5],
+     "mid": "#868828",
      "n": 8267,
-     "roles": {"lit": "#7c8442"},
+     "roles": {"lit": "#848825", "shade": "#808123"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
-     "samples": ["day lit"],
-     "linear": [0.2093, 0.2326, 0.0577],
-     "fit_dE": 0.0048
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2386, 0.2458, 0.021],
+     "fit_dE": 0.0204
     }
    }
   },
@@ -1593,17 +1598,17 @@
      "roles": {"lit": "#46858e", "lit_night": "#06497b"}
     },
     "albedo": {
-     "L": [0.4885, 0.5106, 0.7432],
-     "C": [0.0182, 0.0577, 0.1147],
-     "h": [255.8, -157.6, 2.7],
-     "mid": "#6c7b97",
+     "L": [0.489, 0.5113, 0.7438],
+     "C": [0.0166, 0.0594, 0.1169],
+     "h": [257.0, -161.1, 3.1],
+     "mid": "#6c7b99",
      "n": 15200,
-     "roles": {"lit": "#506887"},
+     "roles": {"lit": "#506889"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.1487, 0.1972, 0.3116],
-     "fit_dE": 0.0034
+     "linear": [0.1493, 0.1971, 0.318],
+     "fit_dE": 0.0029
     }
    }
   },
@@ -1762,17 +1767,17 @@
      "roles": {"lit": "#ee9962", "transition": "#cb6c4f"}
     },
     "albedo": {
-     "L": [0.6825, 0.6872, 0.6907],
-     "C": [0.149, 0.15, 0.1511],
-     "h": [42.8, -0.4, 0.5],
-     "mid": "#e57748",
+     "L": [0.675, 0.6798, 0.6831],
+     "C": [0.1557, 0.1566, 0.1577],
+     "h": [42.1, -0.4, 0.4],
+     "mid": "#e67242",
      "n": 512,
-     "roles": {"lit": "#e57748", "transition": "#e57748"},
+     "roles": {"lit": "#e67242", "transition": "#e67242"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.7847, 0.1846, 0.0649],
-     "fit_dE": 0.006
+     "linear": [0.7886, 0.1688, 0.0546],
+     "fit_dE": 0.0115
     }
    }
   },
@@ -1819,17 +1824,17 @@
      "roles": {"lit": "#4e5588"}
     },
     "albedo": {
-     "L": [0.3169, 0.4, 0.6525],
-     "C": [0.0927, 0.1066, 0.1175],
-     "h": [275.3, -1.3, 1.5],
+     "L": [0.3168, 0.4, 0.6526],
+     "C": [0.0922, 0.1059, 0.1169],
+     "h": [275.2, -1.3, 1.4],
      "mid": "#4d5594",
      "n": 4000,
      "roles": {"lit": "#384080"},
      "v": 2,
-     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
      "samples": ["day lit"],
-     "linear": [0.0738, 0.0914, 0.296],
-     "fit_dE": 0.0023
+     "linear": [0.0738, 0.0916, 0.2945],
+     "fit_dE": 0.0022
     }
    }
   }

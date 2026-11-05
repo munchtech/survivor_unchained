@@ -2,8 +2,11 @@
 albedo (tools/look/build.py's maps, --b3-painted), at 1:1, the play frame and the per-item close camera (--b3-cams,
 GameLookdev.Items.cs), beside the board crop at the close row's scale. One sheet per asset (day and night rows).
 
-    bash wtlock.sh python tools/look/sheets_r2.py shoot      -> b3r2/{today,A}/ (frames, logs)
-    python tools/look/sheets_r2.py sheet                     -> b3r2/sheet_<asset>.png
+    bash wtlock.sh python tools/look/sheets_r2.py shoot [--round N]    -> b3r<N>/{today,A}/ (frames, logs)
+    python tools/look/sheets_r2.py sheet [--round N]                   -> b3r<N>/sheet_<asset>.png
+
+--round: the round's folder (2 by default; round 3 re-shot the same sheets after the joint solve of the albedos and the
+day fill, rigs.json as written, so both arms stand under the new fill).
 """
 import json, os, shutil, subprocess, sys
 
@@ -13,7 +16,8 @@ HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.pat
 sys.path.insert(0, HERE)
 import bakeoff  # noqa: E402
 
-OUT = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3r2"
+_a = sys.argv[1:]
+OUT = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3r" + (_a[_a.index("--round") + 1] if "--round" in _a else "2")
 ITEMS = ["barrel", "boulder", "setts"]
 RIGS = ["day", "night"]
 
@@ -22,7 +26,7 @@ def shoot():
     for arm, maps in (("today", bakeoff.manifest("today")), ("A", None)):
         out = os.path.join(OUT, arm)
         extra = f"--b3-cams {','.join(ITEMS)} " + (f"--b3-maps {maps}" if maps else "--b3-painted")
-        subprocess.run([sys.executable, os.path.join(ROOT, "tools", "style", "lookdev.py"), "shoot", "--out", out, "--rigs", ",".join(RIGS), "--extra", extra], check=False)
+        subprocess.run([sys.executable, os.path.join(ROOT, "tools", "style", "lookdev.py"), "shoot", "--out", out, "--rigs", ",".join(RIGS), "--extra", extra, "--stale-ok"], check=False)  # (the items only: her art needn't be current)
         for r in RIGS:
             for it in ITEMS:
                 f = os.path.join(ROOT, "godot", ".shots", f"lookdev_{r}_item_{it}_1.png")
@@ -65,7 +69,7 @@ def sheet():
                 D.text((x + 4, y + 3), t, fill=(255, 230, 120), font=f); S.paste(im, (x, y + lab)); x += im.width + 12
             y += max(im.height for _, im in r) + lab
         bx = Wt - board.width
-        D.text((bx + 4, 3), f"{bfile[:-4]} (height to the close crop's)", fill=(255, 230, 120), font=f); S.paste(board, (bx, lab))
+        D.text((bx + 4, 3), f"{bfile[:-4]} (height to the close crop's); shot --stale-ok (the items, not her art)", fill=(255, 230, 120), font=f); S.paste(board, (bx, lab))
         p = os.path.join(OUT, f"sheet_{item}.png"); S.save(p); print(p)
 
 

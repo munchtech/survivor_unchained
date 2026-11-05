@@ -33,6 +33,7 @@ OUT = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3r2\calib"
 LIB = os.path.join(ROOT, "godot", "data", "look", "materials.json")
 RIGS = ("day", "night")
 PANEL_RIG = {"day": "day", "moon": "night"}  # (the boards' lights the game's rigs stand for; lantern and arena pools are fires)
+LOOK_BOARDS = ("MB1",)  # (the Look camera's board: her chips under look_day)
 TOWN = ("plank", "stone", "plaster", "roof", "setts", "road", "soil", "rock", "bark", "wrought")  # (rule 4's surfaces)
 
 
@@ -248,9 +249,12 @@ def write_lib(lib):
     open(LIB, "w", encoding="utf-8", newline="\n").write(s + "\n")
 
 
-def check(name):
-    """The relit check: each class's swatch drawn in its albedo, its lit side against the board's lit sample under the
-    same light (Oklab, L a b), per rig (both cameras: the worse)."""
+def check(name, faces_of=None):
+    """The relit check: each class's swatch drawn in its albedo against the board's samples under the same light (Oklab,
+    L a b), per rig and side, both cameras (the worse counts): the lit side against the lit boxes (by day; the moonlit
+    lit_night boxes at night) and, where a board paints the class's shade side (shade boxes, all on day panels: no board
+    has a moonlit shade; MB1's are the Look camera's, left out), the shade side against them. faces_of: a swatches.json (the white run's, the solve's model)
+    naming each class's lit and shade face per rig and camera; else each drawn run's own brightest and darkest face."""
     lib = json.load(open(LIB, encoding="utf-8"))
     boards = {k: Image.open(os.path.join(bm.INPUTS, v)) for k, v in lib["boards"].items()}
     drawn = json.load(open(os.path.join(OUT, name, "swatches.json")))
@@ -259,21 +263,38 @@ def check(name):
     for cls, ss in S.items():
         if cls not in drawn: continue
         for rig in RIGS:
-            bl = [s["b"] for s in ss if s["rig"] == rig and s["role"] in ("lit", "lit_night")]
-            if not bl: continue
-            b = lin_to_oklab(np.mean(bl, 0))
-            for camk in ("play", "close"):
-                k = f"{rig}_{camk}"
-                if k not in drawn[cls]: continue
-                g = lin_to_oklab(np.array(drawn[cls][k]["lit"]))
-                out.setdefault(cls, {})[k] = dict(dE=round(float(np.linalg.norm(g - b)), 4), dL=round(float(g[0] - b[0]), 3),
-                                                  dC=round(float(np.hypot(*g[1:]) - np.hypot(*b[1:])), 3))
+            for side, roles in (("lit", ("lit", "lit_night")), ("shade", ("shade",))):
+                # (MB1's shade chips are the Look camera's, under look_day's own fill: not the play rig's to match)
+                bl = [s["b"] for s in ss if s["rig"] == rig and s["role"] in roles and not (side == "shade" and s["box"]["board"] in LOOK_BOARDS)]
+                if not bl: continue
+                b = lin_to_oklab(np.mean(bl, 0))
+                for camk in ("play", "close"):
+                    k = f"{rig}_{camk}"
+                    if k not in drawn[cls]: continue
+                    d = drawn[cls][k]
+                    fn = ((faces_of or {}).get(cls, {}).get(k) or {}).get(f"{side}_face")
+                    g = lin_to_oklab(np.array(d["faces"][fn] if fn in d["faces"] else d[side]))
+                    out.setdefault(cls, {})[k + ("" if side == "lit" else "_shade")] = dict(
+                        dE=round(float(np.linalg.norm(g - b)), 4), dL=round(float(g[0] - b[0]), 3),
+                        dC=round(float(np.hypot(*g[1:]) - np.hypot(*b[1:])), 3))
     json.dump(out, open(os.path.join(OUT, name, "relit.json"), "w"), indent=1)
     worst = {c: max(v.values(), key=lambda x: x["dE"]) for c, v in out.items()}
-    n = sum(w["dE"] <= 0.04 for w in worst.values())
     for c, v in sorted(out.items(), key=lambda kv: -worst[kv[0]]["dE"]):
         print(f"{c:11s} " + "  ".join(f"{k} {x['dE']:.3f} (dL {x['dL']:+.3f} dC {x['dC']:+.3f})" for k, x in v.items()))
-    print(f"relit: {n}/{len(worst)} classes within 0.04 at every rig and camera")
+    summary = {}
+    for rig in RIGS:
+        for side in ("lit", "shade"):
+            g = {}
+            for c, v in out.items():
+                xs = [(k, x) for k, x in v.items() if k.startswith(rig + "_") and k.endswith("_shade") == (side == "shade")]
+                if xs: g[c] = max(xs, key=lambda kx: kx[1]["dE"])
+            if not g: continue
+            n = sum(x["dE"] <= 0.04 for _, x in g.values())
+            w3 = sorted(g.items(), key=lambda kv: -kv[1][1]["dE"])[:3]
+            summary[f"{rig} {side}"] = dict(within=n, of=len(g), worst=[[c, k, x["dE"], x["dL"], x["dC"]] for c, (k, x) in w3])
+            print(f"relit {rig} {side}: {n}/{len(g)} classes within 0.04 at both cameras; worst " +
+                  ", ".join(f"{c} {x['dE']:.3f} (dL {x['dL']:+.3f} dC {x['dC']:+.3f})" for c, (k, x) in w3))
+    json.dump(summary, open(os.path.join(OUT, name, "relit_summary.json"), "w"), indent=1)
     return out
 
 

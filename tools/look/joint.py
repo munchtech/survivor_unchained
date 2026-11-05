@@ -20,6 +20,7 @@ the solved colors under the solved fill, each face's drawn/predicted ratio kept 
                                                                 (day; night with the stage's lamps off), measured and checked
     bash wtlock.sh python tools/look/joint.py her NAME       -> her close-up day bands under the solved fill (rigs.json as written)
     python tools/look/joint.py write                         -> the solved fill into godot/data/look/rigs.json (day_town)
+    python tools/look/joint.py sane [ITER]                   -> M per class (near-diagonal, positive) and the sky alone's ratio
 """
 import json, os, re, subprocess, sys
 
@@ -42,6 +43,10 @@ BASIS = {"f0": ("#6a5ce0", 0.0), "fr": ("#ff4a4a", 0.12), "fg": ("#4aff4a", 0.12
 WORLD = ("plank", "wrought", "stone", "plaster", "roof", "setts", "road", "soil", "rock", "bark", "grass", "foliage")
 KEYS = ("day_play", "day_close")
 LUM = np.array([0.2126, 0.7152, 0.0722])
+LOOK_BOARDS = calib.LOOK_BOARDS
+# her skin's shade hue band in the solve: rule 2's 300-340 with a margin for the model's error (her h1, the fill solved
+# at the bound 340.0: drawn 340.9)
+HER_H = (302, 337)
 
 
 def hex_lin(h): return srgb_to_lin(np.array([int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]))
@@ -160,27 +165,33 @@ def solve(iters=()):
     boards = {k: Image.open(os.path.join(bm.INPUTS, v)) for k, v in lib["boards"].items()}
     S = calib.board_samples(lib, boards)
     m, her = model()
-    # the corrections from relit runs (drawn / predicted, per face), the last run's
+    # the correction from the last relit run (fixed-point: drawn over the uncorrected model at that run's colors and fill,
+    # per face; the colors as drawn, the albedo.json hex, not the solve's unquantized linear)
     corr = {}
-    for it in iters:
+    for it in iters[-1:]:
         drawn = json.load(open(os.path.join(OUT, it, "swatches.json")))
         sol = json.load(open(os.path.join(OUT, it, "solved.json")))
+        spec = json.load(open(os.path.join(OUT, it, "swatch_colors.json")))
         ph = np.array(sol["phi"])
         for cls, d in drawn.items():
-            if cls not in m or cls not in sol["albedo"]: continue
-            a = np.array(sol["albedo"][cls])
+            if cls not in m or cls not in spec: continue
+            a = hex_lin(spec[cls].split()[0])
             for key in KEYS:
                 if key not in d or key not in m[cls]: continue
                 mm = m[cls][key]; f = d[key]["faces"]
                 for side, face, pred in (("lit", mm["lit_face"], a * mm["lit"]), ("shade", mm["shade_face"], a * (mm["S0"] + mm["M"] @ ph))):
                     if face in f:
-                        k0 = corr.get((cls, key, side), np.ones(3))
-                        corr[(cls, key, side)] = k0 * np.where(pred > 1e-3, np.array(f[face]) / np.maximum(pred, 1e-6), 1.0)
-    classes = [c for c in lib["classes"] if c in S and c in m and not lib["classes"][c]["paint"].get("emissive")]
+                        corr[(cls, key, side)] = np.where(pred > 1e-3, np.array(f[face]) / np.maximum(pred, 1e-6), 1.0)
+    # (the classes with a day lit or shade sample; glass and crowd_fur have none, night or unlit only: they keep round 2's)
+    classes = [c for c in lib["classes"] if c in S and c in m and not lib["classes"][c]["paint"].get("emissive")
+               and any(s["rig"] == "day" and s["role"] in ("lit", "shade") for s in S[c])]
     rows = []  # (class index, key, side, board mean, weight, box index)
     for ci, c in enumerate(classes):
         for j, s in enumerate(S[c]):
             if s["rig"] != "day" or s["role"] not in ("lit", "shade"): continue
+            # (MB1 is the Look camera's board, painted under look_day's own fill: its lit sides set her classes' albedos,
+            # its shade sides don't set the play fill; her skin's shade enters as rule 2's constraint instead)
+            if s["role"] == "shade" and s["box"]["board"] in LOOK_BOARDS: continue
             for key in KEYS:
                 if key in m[c]: rows.append((ci, key, s["role"], s["b"], 1.0, j))
     ph0 = phi_of("#6a5ce0", 0.12)
@@ -197,7 +208,7 @@ def solve(iters=()):
         out = []
         hs = lab(her["H0"] + her["M"] @ ph); hl = lab(her["lit"])
         h = hue_of(hs)
-        out += [max(0, 300 - h) / 10, max(0, h - 340) / 10, max(0, 0.02 - float(np.hypot(*hs[1:]))) * 50, max(0, 0.25 - (hl[0] - hs[0])) * 20]
+        out += [max(0, HER_H[0] - h) / 10, max(0, h - HER_H[1]) / 10, max(0, 0.02 - float(np.hypot(*hs[1:]))) * 50, max(0, 0.25 - (hl[0] - hs[0])) * 20]
         # the world's day shade: the world classes' modelled shade at the play camera, chroma-weighted hue
         ws = [lab(A[ci] * resp(ci, "day_play", "shade", ph)) for ci, c in enumerate(classes) if c in WORLD and "day_play" in m[c]]
         a_, b_ = sum(w[1] for w in ws), sum(w[2] for w in ws)
@@ -256,6 +267,45 @@ def solve(iters=()):
 def _lch(l): return float(l[0]), float(np.hypot(*l[1:])), hue_of(l)
 
 
+def sane(it=None):
+    """The model's sanity: M (the fill's response; near-diagonal and positive wanted) per class at each camera, and the
+    shade-to-lit luminance ratio the sky alone gives (fill 0) against the board's. Without IT: the white swatches' (an
+    albedo of the board's lit color; the white lit face sits in the tonemap's shoulder, so this overstates the ratio).
+    With IT (a relit run): the colors as drawn, the sky alone's shade as a * S0 times that run's shade correction, beside
+    the drawn ratio under the solved fill."""
+    lib = json.load(open(calib.LIB, encoding="utf-8"))
+    boards = {k: Image.open(os.path.join(bm.INPUTS, v)) for k, v in lib["boards"].items()}
+    S = calib.board_samples(lib, boards)
+    m, her = model()
+    if it:
+        drawn = json.load(open(os.path.join(OUT, it, "swatches.json")))
+        spec = json.load(open(os.path.join(OUT, it, "swatch_colors.json")))
+        ph = np.array(json.load(open(os.path.join(OUT, it, "solved.json")))["phi"])
+    np.set_printoptions(precision=3, suppress=True)
+    for c in m:
+        lit = [s_["b"] for s_ in S.get(c, []) if s_["rig"] == "day" and s_["role"] == "lit"]
+        sh = [s_["b"] for s_ in S.get(c, []) if s_["rig"] == "day" and s_["role"] == "shade" and s_["box"]["board"] not in LOOK_BOARDS]
+        if it and not sh: continue
+        for key, mm in m[c].items():
+            rb = float(np.mean(sh, 0) @ LUM / max(np.mean(lit, 0) @ LUM, 1e-9)) if sh and lit else None
+            if it:
+                if c not in drawn or key not in drawn[c] or c not in spec: continue
+                a = hex_lin(spec[c].split()[0]); f = drawn[c][key]["faces"]
+                dl, ds = np.array(f[mm["lit_face"]]), np.array(f[mm["shade_face"]])
+                ksh = ds / np.maximum(a * (mm["S0"] + mm["M"] @ ph), 1e-6)
+                r0, rf = float((a * mm["S0"] * ksh) @ LUM / (dl @ LUM)), float(ds @ LUM / (dl @ LUM))
+                print(f"{c:10s} {key:9s} sky-alone shade/lit {r0:.3f}  with the fill {rf:.3f}  board {rb:.3f}{'  SKY OVER' if r0 > rb else ''}")
+                continue
+            a = np.mean(lit, 0) / np.maximum(mm["lit"], 1e-6) if lit else np.ones(3)
+            r0 = float((a * mm["S0"]) @ LUM / max((a * mm["lit"]) @ LUM, 1e-9))
+            M = mm["M"]; off = np.abs(M - np.diag(np.diag(M))).max() / max(np.abs(np.diag(M)).max(), 1e-9)
+            print(f"{c:10s} {key:9s} sky-alone shade/lit {r0:.3f}" + (f" board {rb:.3f}{'  SKY OVER' if r0 > rb else ''}" if rb else "") +
+                  f"  M diag {np.diag(M)} min {M.min():+.3f} off/diag {off:.2f}")
+    if it: return
+    hl, hs = lab(her["lit"]), lab(her["H0"])
+    print(f"her close (fill 0): lit L {hl[0]:.3f} shade L {hs[0]:.3f} h {hue_of(hs):.1f} C {np.hypot(*hs[1:]):.3f}; Mh diag {np.diag(her['M'])} min {her['M'].min():+.3f}")
+
+
 def relit(name):
     """The swatches in the solved colors under the solved fill: day (the solve's correction run and the check) and night
     (the stage's lamps off); then calib's relit check with the shade side."""
@@ -264,7 +314,7 @@ def relit(name):
     alb = json.load(open(os.path.join(OUT, "albedo.json")))
     shoot_swatches(name, rf, colors=alb, rigs="day,night")
     json.dump(sol, open(os.path.join(OUT, name, "solved.json"), "w"), indent=1)
-    calib.check(name)
+    calib.check(name, faces_of=json.load(open(os.path.join(OUT, "f0", "swatches.json"))))  # (the faces the solve modelled)
 
 
 def her(name):
@@ -305,4 +355,5 @@ if __name__ == "__main__":
     elif a[0] == "relit": relit(a[1])
     elif a[0] == "her": her(a[1])
     elif a[0] == "write": write()
+    elif a[0] == "sane": sane(a[1] if len(a) > 1 else None)
     else: print(__doc__)

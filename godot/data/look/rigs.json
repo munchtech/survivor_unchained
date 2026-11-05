@@ -42,9 +42,9 @@
       "ember": null
     },
     "day_town": {
-      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C.",
+      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C. B3r3 (tools/look/joint.py): the fill solved with every class's albedo over the boards' lit and shade samples (MB2-MB4, 07's shade): #6a5ce0 0.12 to #7789ff 0.1063 (the shade sides at the boards' share of the lit).",
       "key": { "az": 330, "el": 28, "color": "#f3d9a0", "intensity": 6.6, "shadow": 0.95 },
-      "fill": { "color": "#6a5ce0", "strength": 0.12, "sky": "#a9a9e5", "ground": "#605245", "hemi": 0.7, "env": 0.55 },
+      "fill": { "color": "#7789ff", "strength": 0.1063, "sky": "#a9a9e5", "ground": "#605245", "hemi": 0.7, "env": 0.55 },
       "rim": { "color": "#f3d9a0", "strength": 0.3, "width": 0.25 },
       "ink": [0.85, 0.6, 0.5],
       "hardness": 0.85,

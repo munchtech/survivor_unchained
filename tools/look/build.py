@@ -30,7 +30,8 @@ def bake(asset, forms):
         if "variant" in c: cmd += ["--variant", str(c["variant"])]
     else:
         cmd += ["setts", forms, "--tile", str(c["tile"])]
-    turn("take", "blender", f"look-l1: B3r2 build {asset}")
+    # (--stale-ok: the bake reads only the asset's own mesh, never her art, shaders or clips)
+    turn("take", "blender", f"look-l1: B3 build {asset}", "--stale-ok")
     t = time.time()
     try:
         r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
