@@ -171,6 +171,9 @@ public static class KitLook
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
         if (foliage && !mine) m.SetShaderParameter("cel_ink", 1);  // (kit foliage: silhouette ink only, as our own trees; L1 B1a)
+        // (kit foliage, as our own trees: no highlight (rule 6: matte) and no stepped rim (its card normals are no silhouette:
+        // by day the rim lit the far spruces' needle cards white, 48k pixels of the lookdev close view; L1 B1c)
+        if (foliage && !mine) { m.SetShaderParameter("cel_spec", new Vector4(9f, 1.5f, 0f, 0.85f)); m.SetShaderParameter("cel_rim_k", 0f); }
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         // (our own trees have none: the canopy fade, the whole tree faded, in its own pass; E3 au1-5)

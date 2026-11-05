@@ -1214,7 +1214,9 @@ void light() {
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) * (1.0 - flora_light.y) : 1.0;
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
-	DIFFUSE_LIGHT += LIGHT_COLOR * att * (dd * lift + BACKLIGHT * (1.0 - dd)) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
+	// (B1c: under cel the light through the leaves only at the terminator's thin edge, capped: cel_trans)
+	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, tw, 0.0), cel_on);
+	DIFFUSE_LIGHT += LIGHT_COLOR * att * (dd * lift + tr) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 	}
 }
@@ -1236,7 +1238,9 @@ void light() {
 	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
 	vec3 dd = cel_on > 0.0 ? mix(vec3(d), cel_level(t), cel_on) : vec3(d);
 	float att = mix(ATTENUATION, sh, cel_on);
-	DIFFUSE_LIGHT += lc * att * (dd + BACKLIGHT * (1.0 - dd)) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
+	// (B1c: under cel the light through the needles only at the terminator's thin edge, capped: cel_trans)
+	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, t, 0.0), cel_on);
+	DIFFUSE_LIGHT += lc * att * (dd + tr) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
 	}
 }
 #endif

@@ -40,13 +40,15 @@
 //   cel_spec  x highlight radius (degrees around N.H), y edge softness (degrees), z strength, w light color vs white;
 //             the strength fades out with roughness (smoothstep 0.55-0.85) and with SPECULAR (0.5 = whole)
 //   cel_nmap  the normal-map strength the band sees (the highlight keeps the full mapped normal)
+//   cel_rim_k the stepped rim's share (0: none; kit foliage, whose card normals are no silhouette)
 //   cel_ink   the ink class (0 full: silhouette + creases, 1 silhouette only, 2 none, 3 full = unconverted)
 // GLOBALS (project.godot [shader_globals]; Atmosphere.cs sets them from the preset):
 //   cel_on 0..1 (0 = today exactly), cel_rig (x cast-shadow hardness: 0 PCF, 1 smoothstep(0.42, 0.58) on the key's
 //   shadow; y the key's fill in the shadow band 0..0.25, tinted cel_fill, at the key's luminance; z rim strength;
 //   w rim width in 1-n.v), cel_fill rgb, cel_rim rgb (linear), cel_tune (multipliers: band half-width, half-tone
 //   width, spec radius, form; 1 = as authored), cel_dbg (0 off, 1 band: the key's band level as gray, 2 ink: the
-//   class unlit, 0 white 1 yellow 2 blue 3 red).
+//   class unlit, 0 white 1 yellow 2 blue 3 red; 3 skin: white where the shader defines CEL_SKIN, else black, the
+//   skin mask for measuring; --cel-dbg skin).
 //
 // THE INK TAG (B5 reads it), verified against Godot 4.5.1-stable scene_forward_clustered.glsl (MODE_RENDER_NORMAL_ROUGHNESS):
 //   the engine writes normal_roughness.a = roughness * 127/255, then 1 - that for instances flagged DYNAMIC
@@ -59,6 +61,20 @@
 //   An unconverted material at roughness 1.0 gives n 127: class 3 (full). Lighting sees the tagged roughness
 //   (a step of 1/31 plus up to 3/127): under 0.04 rougher at most.
 
+#ifdef CEL_SKIN
+#define CEL_SKIN_V 1.0
+#else
+#define CEL_SKIN_V 0.0
+#endif
+#ifndef CEL_TRANS_WRAP
+#define CEL_TRANS_WRAP 0.25
+#endif
+#ifndef CEL_TRANS_CAP
+#define CEL_TRANS_CAP 0.15
+#endif
+#ifndef CEL_SOFT_TURN
+#define CEL_SOFT_TURN 0.5
+#endif
 #ifndef CEL_INK
 #define CEL_INK 0
 #endif
@@ -85,6 +101,7 @@ uniform float cel_form : hint_range(0.0, 1.0) = CEL_FORM;
 uniform vec4 cel_spec = CEL_SPEC;
 uniform float cel_nmap : hint_range(0.0, 1.0) = CEL_NMAP;
 uniform int cel_ink : hint_range(0, 3) = CEL_INK;
+uniform float cel_rim_k : hint_range(0.0, 1.0) = 1.0;   // (the stepped rim's share: 0 none, card normals; L1 B1c)
 group_uniforms;
 
 global uniform float cel_on;
@@ -119,7 +136,7 @@ vec3 cel_ink_rgb(int c_ink) {
 #define CEL_FRAG_MAT CEL_FRAG_RIM
 #endif
 // The last statement of fragment(): see the header.
-#define CEL_FRAGMENT cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+#define CEL_FRAGMENT cel_gn = NORMAL; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
@@ -141,6 +158,24 @@ vec3 cel_level_mid(float c_t, vec4 c_mid) {
 	return mix(vec3(1.0), c_mid.rgb, c_mid.a * (1.0 - c_full)) * cel_lit(c_t) * mix(1.0, clamp(c_t, 0.0, 1.0), clamp(cel_form * cel_tune.w, 0.0, 1.0));
 }
 vec3 cel_level(float c_t) { return cel_level_mid(c_t, cel_mid); }
+// The light through a form (BACKLIGHT) under the cel model: a thin edge on the shade side of the terminator (CEL_TRANS_WRAP
+// of n.l past it) and the thin parts (c_thin 0..1), never across the shade band, which keeps the fill's cool tint; capped at
+// CEL_TRANS_CAP of the light. As a multiplier of the light (L1 B1c: rules 2 and 5, MB1's cool colored shade; before it the
+// shade band took (1 - level) x BACKLIGHT whole, lifting her front to near the lit level with the key behind her).
+// (cel_trans_w: where it shows, 0..1, for a shader that multiplies by BACKLIGHT itself, then by cel_trans_k's cap)
+float cel_trans_w(float c_t, float c_thin) {
+	float c_hw = max(cel_band.y * cel_tune.x, 1e-4);
+	float c_edge = smoothstep(cel_band.x - c_hw - CEL_TRANS_WRAP, cel_band.x - c_hw, c_t);
+	return max(c_edge, clamp(c_thin, 0.0, 1.0)) * (1.0 - cel_lit(c_t));
+}
+float cel_trans_k(vec3 c_backlight) { return min(1.0, CEL_TRANS_CAP / max(max(c_backlight.r, max(c_backlight.g, c_backlight.b)), 1e-4)); }
+vec3 cel_trans(vec3 c_backlight, float c_t, float c_thin) { return c_backlight * (cel_trans_k(c_backlight) * cel_trans_w(c_t, c_thin)); }
+// An omni or spot light on a form it should model, not flatten (skin): Lambert's gradient, no flat band, the half-tone's
+// tint over its first CEL_SOFT_TURN of n.l; never brighter than Lambert (L1 B1c: rules 5 and 11; the campfire's banded
+// n.l lit her whole front at one level).
+vec3 cel_level_soft(float c_t) {
+	return mix(vec3(1.0), cel_mid.rgb, cel_mid.a * (1.0 - smoothstep(0.0, CEL_SOFT_TURN, c_t))) * clamp(c_t, 0.0, 1.0);
+}
 // The key's fill where its light doesn't reach (lit_sh: the lit band times the shadow), as DIFFUSE_LIGHT.
 vec3 cel_fill_add(vec3 c_lc, float c_lit_sh, bool c_dir) {
 	return c_dir ? cel_fill * (cel_lum(c_lc) * cel_rig.y * (1.0 - c_lit_sh) / PI) : vec3(0.0);
@@ -164,11 +199,11 @@ vec3 cel_rim_add(vec3 c_nb, vec3 c_v, vec3 c_lc, float c_t, float c_sh, bool c_d
 #ifdef CEL_NO_RIM
 	return vec3(0.0);
 #else
-	if (!c_dir || cel_rig.z <= 0.0) return vec3(0.0);
+	if (!c_dir || cel_rig.z * cel_rim_k <= 0.0) return vec3(0.0);
 	float c_e = 1.0 - max(dot(c_nb, c_v), 0.0);
 	float c_edge = 1.0 - cel_rig.w;
 	float c_r = smoothstep(c_edge - 0.02, c_edge + 0.02, c_e) * smoothstep(-0.35, -0.15, c_t) * c_sh;
-	return cel_rim * mix(vec3(1.0), c_albedo, 0.5) * (cel_lum(c_lc) * cel_rig.z * c_r / PI);
+	return cel_rim * mix(vec3(1.0), c_albedo, 0.5) * (cel_lum(c_lc) * cel_rig.z * cel_rim_k * c_r / PI);
 #endif
 }
 
@@ -236,7 +271,7 @@ void cel_shade(vec3 c_n, vec3 c_nb, float c_t, vec3 c_l, vec3 c_v, vec3 c_lc, fl
 	float c_lit_sh = cel_lit(c_t) * c_sh;
 	if (c_metal < 1.0) {
 		c_dl += c_lc * c_lv * (c_sh / PI);
-		c_dl += c_lc * (vec3(1.0) - c_lv) * c_backlight * (c_sh / PI);
+		c_dl += c_lc * cel_trans(c_backlight, c_t, 0.0) * (c_sh / PI);
 	}
 	c_dl += cel_fill_add(c_lc, c_lit_sh, c_dir);
 	if (c_rim > 0.0) {

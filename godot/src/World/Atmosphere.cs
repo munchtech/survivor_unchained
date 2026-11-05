@@ -439,8 +439,8 @@ public partial class Atmosphere : Node3D
     /// <summary>--cel-rig hardness,fill,rim,width and --cel-tune band,halftone,spec,form (multipliers): sweeps without edits.</summary>
     static readonly float[]? CelRigArg = SurvivorUnchained.Args.Get("cel-rig") is string ? Floats("cel-rig", 0, 0, 0, 0) : null;
     static readonly float[] CelTune = Floats("cel-tune", 1, 1, 1, 1);
-    /// <summary>--cel-dbg band|ink: the key's band level as gray, or each material's ink class unlit (0 white, 1 yellow, 2 blue, 3 red).</summary>
-    static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, _ => 0f };
+    /// <summary>--cel-dbg band|ink|skin: the key's band level as gray, each material's ink class unlit (0 white, 1 yellow, 2 blue, 3 red), or her skin white (CEL_SKIN; the mask for measuring, L1 B1c).</summary>
+    static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, "skin" => 3f, _ => 0f };
 
     /// <summary>The cel model's globals (shaders/cel.gdshaderinc) from the preset: its hues taken at luminance 1, so
     /// CelFill and CelRim are how much of the key's light they are.</summary>

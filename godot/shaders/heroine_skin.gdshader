@@ -13,6 +13,7 @@ render_mode sss_mode_skin, cull_disabled;
 // the highlight all of it. Her own light() below: the scatter is the band's half-tone and the light through her in its
 // shade (the screen-space scatter cut to scatter_cel, so it doesn't smear the terminator).
 #define CEL_INK 1
+#define CEL_SKIN
 #define CEL_BAND vec4(0.0, 0.06, 0.2, 0.08)
 #define CEL_MID vec4(0.85, 0.45, 0.38, 0.8)
 #define CEL_FORM 0.3
@@ -792,7 +793,10 @@ void fragment() {
 	// (the sky's light on her as before: ambient_tint takes her body's tone out of it already)
 	float cool_r = cool_sat(ALBEDO) / max(cool_sat(cool_med * tone) * cool_ref, 1e-4);
 	float cool_wv = cine_cool > 0.0 ? smoothstep(cool_win.x, cool_win.y, cool_r) : 0.0;
-	ALBEDO *= mix(ambient_tint / body_back, vec3(1.0), pa);
+	// (B1c: under cel the sky's light in her shade band keeps its own hue, none of ambient_tint's reddening: the bible's
+	// cool colored shade, MB1's mauve (Oklab h 325, C 0.05); ambient_tint was fitted for today's soft light, where the
+	// sky's blue greyed her neck)
+	ALBEDO *= mix(mix(ambient_tint / body_back, vec3(1.0), pa), vec3(1.0), cel_on);
 	mouth_f = FRONT_FACING ? mouth_c : 1.0;
 	if (mouth_f > 0.0) {
 		float mc = smoothstep(0.0, 0.35, mouth_f), mo = smoothstep(0.1, 1.0, mouth_f);
@@ -899,11 +903,13 @@ void light() {
 	vec3 cb_b = max(vec3(1.0 / PI) - diffuse, vec3(0.0)) * ATTENUATION;
 	if (cel_on > 0.0) {
 		cb_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
-		cb_lv = cel_level(cb_t);
+		// (B1c: the omni and spot lights (fire, lamps, her ember) model her with the soft half-tone, the key alone bands;
+		// the light through her only at the terminator's thin edge, capped, so her shade band keeps the fill's cool tint)
+		cb_lv = LIGHT_IS_DIRECTIONAL ? cel_level(cb_t) : cel_level_soft(cb_t);
 		cb_d = mix(cb_d, cb_lv * (cb_sh / PI), cel_on);
-		cb_b = mix(cb_b, (vec3(1.0) - cb_lv) * (cb_sh / PI), cel_on);
+		cb_b = mix(cb_b, vec3(cel_trans_w(cb_t, 0.0) * cel_trans_k(BACKLIGHT)) * (cb_sh / PI), cel_on);
 	}
-	vec3 un = 1.0 / (mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
+	vec3 un = 1.0 / (mix(mix(max(ambient_tint, vec3(1e-3)) / body_back, vec3(1.0), paint_w), vec3(1.0), cel_on) * max(sky_w, 1e-3));        // (the lamps' light on her as without the tint)
 	vec3 rich = vec3(1.0);
 	vec3 st = shade_tint / body_back;        // (where her body's tone is taken out, none to take out of her shade)
 	if (shade_w > 0.0 && any(notEqual(st, vec3(1.0)))) {

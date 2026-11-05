@@ -22,6 +22,10 @@ namespace SurvivorUnchained.Play;
 /// night) is set, settles, and is shot three ways: play (FollowCamera's play pose), close (the close view at its
 /// nearest, as --close 1) and side (a wider view at 15 degrees of pitch). Frames: godot/.shots/NAME_RIG_CAM_1.png.
 /// --lookdev-settle S: seconds a rig settles before its first frame (2.5).
+/// --lookdev-key AZ,EL (L1 B1c): a test fixture, not a rig (B4 makes those): the key held at AZ degrees round from the
+/// lens toward its right and EL up, relative to whichever camera shoots, every frame and at every view (front three-quarter
+/// about 35,40), and the close view's own key and rim spots held off, so the one key models her and the stage's forms.
+/// Its cast shadow is off (the arena's canopy shades her stand at most keys) unless a third value is 1: AZ,EL,1.
 /// </summary>
 public partial class Game
 {
@@ -35,6 +39,23 @@ public partial class Game
     readonly List<Flame> lookFlames = new();
     readonly List<Node3D> lookLamps = new();
     OmniLight3D? lookFireLight;
+    static readonly float[]? LookKeyArg = Args.Get("lookdev-key") is string lk
+        ? lk.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : null;
+    /// <summary>--lookdev-key is holding the key (GameCloseUp holds its key and rim spots off).</summary>
+    bool LookKeyHeld => LookKeyArg != null && lookBuiltAt >= 0;
+
+    void LookKey()
+    {
+        if (LookKeyArg is not { Length: >= 2 } k || GetViewport().GetCamera3D() is not { } c) return;
+        var cb = c.GlobalTransform.Basis;
+        var back = new Vector3(cb.Z.X, 0, cb.Z.Z).Normalized();
+        var right = new Vector3(cb.X.X, 0, cb.X.Z).Normalized();
+        float az = Mathf.DegToRad(k[0]), el = Mathf.DegToRad(k[1]);
+        var dir = ((back * Mathf.Cos(az) + right * Mathf.Sin(az)) * Mathf.Cos(el) + Vector3.Up * Mathf.Sin(el)).Normalized();
+        air.Key.Basis = Basis.LookingAt(-dir, Mathf.Abs(dir.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
+        air.Key.ShadowEnabled = k.Length > 2 && k[2] > 0.5f;
+    }
+
     /// <summary>What the stage holds, by row, each with its world box (for the frame check: LookFrame).</summary>
     readonly List<(string Row, string Name, Func<Aabb?> Box)> lookItems = new();
     readonly List<Enemy> lookWolves = new();
@@ -53,6 +74,7 @@ public partial class Game
             lookBuiltAt = t;
             return;
         }
+        LookKey();
         // Her held in her place, whole, facing the camera.
         b.Player.X = lookP.X; b.Player.Z = lookP.Z; b.Player.Vx = b.Player.Vz = 0; b.Player.Hp = b.MaxHp;
         b.Player.Facing = lookFacing;
@@ -80,6 +102,7 @@ public partial class Game
         if (step == 0)
         {
             LookRig(rig);
+            LookKey();
             spotClose = null;
             cam.Camera.MakeCurrent();
             cam.Snap(lookP.X, lookP.Y, lookP.Z);

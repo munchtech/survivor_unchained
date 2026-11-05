@@ -225,7 +225,7 @@ public partial class Game
             scene.AddChild(closeRimGear);
         }
         closeKey.LightColor = night ? carried != null ? CloseKeyColourNight.Lerp(carried.LightColor, warmTo) : CloseKeyColourNight : CloseKeyColourDay;
-        float want = lit ? (night ? CloseKeyNight : CloseKey) * day * share : 0;
+        float want = lit && !LookKeyHeld ? (night ? CloseKeyNight : CloseKey) * day * share : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
         closeKey.ShadowEnabled = night && CloseKeyShadow; closeKey.LightSize = 0.15f;
@@ -339,7 +339,7 @@ public partial class Game
         if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0, !night && CloseDayHiTint);
         // (Rendering 2: the grade's skin guard (Atmosphere.SkinGuard) by night, dawn and dusk, where warm keys turned deep skin copper.)
         if (!InCinematic) air.SetViewSkinGuard(lit && (night || SurvivorUnchained.View.Atmosphere.TownLit > 0.5f) ? day : 0);
-        float wantRim = lit && night ? CloseRimNight * day : 0;
+        float wantRim = lit && night && !LookKeyHeld ? CloseRimNight * day : 0;
         closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
         if (closeRim.Visible)
