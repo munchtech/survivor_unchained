@@ -49,7 +49,9 @@ public partial class PlayerView : Node3D
     /// <summary>Her silhouette through what hides her from the play camera (shaders/her_xray.gdshader, H1 round 2C): an
     /// overlay on her solid meshes (no cards, fur, eyes or teeth: an overlay ignores their cut-outs), on only in play
     /// with the camera far (HerLod.InPlay), eased in and out.</summary>
-    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader") };
+    readonly ShaderMaterial xray = new() { Shader = GD.Load<Shader>("res://shaders/her_xray.gdshader"),
+        NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/her_xray_rim.gdshader"), RenderPriority = 1 } };
+    void XraySet(string k, Variant v) { xray.SetShaderParameter(k, v); ((ShaderMaterial)xray.NextPass).SetShaderParameter(k, v); }
     readonly List<GeometryInstance3D> xrayOn = new();
     float xrayK = -1;
     static readonly float XrayStrength = SurvivorUnchained.Args.Num("xray", 0.6f);
@@ -93,12 +95,12 @@ public partial class PlayerView : Node3D
         float want = HerLod.InPlay && !Hidden && !Still && !LampOffHer && !OwnLayer && Visible && cam != null && cam.GlobalPosition.DistanceTo(GlobalPosition) > 14 ? XrayStrength : 0;
         float k = xrayK < 0 ? want : Mathf.MoveToward(xrayK, want, dt * 2.5f);
         // (H8, N36: where she stands, so the x-ray never takes her own body for what hides her)
-        if ((k > 0 || want > 0) && !XrayOld) xray.SetShaderParameter("her_at", GlobalPosition);
+        if ((k > 0 || want > 0) && !XrayOld) XraySet("her_at", GlobalPosition);
         if (k == xrayK) return;
         if (xrayK < 0) foreach (var g in skin) if (IsInstanceValid(g) && XraySolid(g)) xrayOn.Add(g);
         bool was = xrayK > 0;
         xrayK = k;
-        xray.SetShaderParameter("strength", k);
+        XraySet("strength", k);
         if (was != k > 0 && !ghostly) foreach (var g in xrayOn) if (IsInstanceValid(g)) g.MaterialOverlay = k > 0 ? xray : null;
     }
     bool ghostly;
