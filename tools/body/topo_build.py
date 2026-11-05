@@ -751,7 +751,7 @@ def crotch(M, ref, L, plan, tp, tk, C):
     Mx = np.stack([np.interp(g, sl, X[:, k]) for k in range(3)], 1)
     mid = np.concatenate([[R0[0]], M.add(Mx[1:-1], "crotch", 0, 1, MID, REG["pelvis_glutes"], tuple(ks)), [R0[K]]])
     if "hip_root" in C:
-        return crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl)
+        return crotch_curve(M, ref, plan, tp, R0, K, V, Mx, g, mid, ks, b, C, sl)
     wl = V[R0[1]][0] * 0.5 + V[R0[K - 1]][0] * 0.5
     wl = tp.get("crotch_half_width", wl)
     q, _ = ref.project(ks, Mx[1:-1] + np.array([wl, 0, 0]))
@@ -765,18 +765,18 @@ def crotch(M, ref, L, plan, tp, tk, C):
     return {"root": root, "mid": mid, "lat": lat}
 
 
-def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
+def crotch_curve(M, ref, plan, tp, R0, K, V, Mx, g, mid, ks, b, C, sl):
     """(a, pass 3b items 4 + 8) The crotch strip m quads a side, from the mons (R0's front middle, at the groin
     crease's top) under the perineum to the cleft's bottom (R0's back middle). Its outer line runs IN the groin
     crease (b: the reference's concave line, plan hip.root.crotch.line) from R0[m] down to the perineum's lateral edge
     and back to the fold's inner end R0[K - m], at the middle line's arc fractions; m - 1 lines between. The leg's
     root ring is R0[m..K-m] and the outer line back to the front."""
     cp = plan["hip"]["root"]["crotch"]
-    m = int(cp["m"])
+    m = int(tp.get("crotch_m", cp["m"]))
     ln = np.array(cp["line"], float)
     q, _ = ref.project(ks, ln[:, :3] / 1000.0)
     P = np.vstack([V[R0[m]], q, V[R0[K - m]]])
-    off = np.concatenate([[0.0], ln[:, 3] / 1000.0, [0.0]])
+    off = np.concatenate([[0.0], ln[:, 3] * tp.get("crotch_h", 0.0) * tp["limb_spacing"], [0.0]])
     a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))])
     f = g / g[-1]
     O = np.stack([np.interp(f * a[-1], a, P[:, k]) for k in range(3)], 1)
@@ -790,7 +790,7 @@ def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
     lines = [mid]
     for k in range(1, m + 1):
         if k < m:
-            fk = cp["fracs"][k - 1]
+            fk = cp["fracs"][k - 1] if m == 3 else k / m
             X = ref.project(ks, (1 - fk) * Mx[1:-1] + fk * O[1:-1])[0]
         else:
             X = O[1:-1]
@@ -802,8 +802,11 @@ def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
             M.quad(A[i], A[i + 1], B_[i + 1], B_[i], REG["pelvis_glutes"], "crotch")
     lat = lines[-1]
     root = np.concatenate([R0[m:K - m + 1], lat[1:-1][::-1]])
-    if cp.get("hold"):                               # the sharp crease's two loops hold their places (relax evens)
-        lo_ = np.where(np.interp(f[1:-1] * a[-1], a, off) > 0)[0]
+    for v in (R0[m], R0[K - m]):                     # the strip's outer corners: designed (named) hip poles
+        M.designed[v] = 2
+    C["hip_named"] = {"strip_front": int(R0[m]), "strip_back": int(R0[K - m])}
+    if cp.get("hold") and off.max() > 0:             # the sharp crease's two loops hold their places (relax evens)
+        lo_ = np.where(np.interp(f[1:-1] * a[-1], a, off) >= 0.5 * off.max())[0]
         M.hold = getattr(M, "hold", set()) | set(int(lat[1:-1][j]) for j in lo_)
         C["crotch_hold_cols"] = {len(root) - 1 - int(j): T1[j] for j in lo_}
     C["b"] = int(b)
@@ -925,6 +928,10 @@ def hip_lobe(M, cv, L, tp, C, hr, top_ids, i_reg):
     root_B = np.concatenate([rise, rows[0][1:]])
     for v_ in root_B:
         M.labs[v_] = (TRUNK, LEG)
+    M.designed[rows[0][0]] = 2                        # the miter (3) and the rise's top (5): designed hip poles
+    M.designed[top_ids[0]] = 2
+    C["hip_named_lobe"] = {"miter": int(rows[0][0]), "rise_top": int(top_ids[0])}
+    C["fold_row"] = [int(v) for v in rows[0]]
     C["lobe"] = {"rows": int(n_L), "cols": int(nB), "rise_mm": round(float(ra[-1]) * 1000, 1),
                  "cleft_floor_mm": round(float(am[-1]) * 1000, 1)}
     return {"rows": rows, "root_B": root_B, "miter": rows[0][0], "rise_top": top_ids[0]}
@@ -1643,8 +1650,8 @@ def build(plan, tier, ref, cv, L):
             if g.min() > 0 and g.min() / np.ceil(g.max() / hi) >= lo:
                 break
         u_hold = float(u) + 2 * tp["limb_spacing"]
-        band_u = (c_lg[1] - plan["hip"]["root"]["thigh_band_y"]) / -d_in[1]
-        lg_bands = dict(tp["bands"], strips_upper=plan["hip"]["root"]["thigh_band_strips"])
+        band_u = (c_lg[1] - tp.get("thigh_band_y", plan["hip"]["root"]["thigh_band_y"])) / -d_in[1]
+        lg_bands = dict(tp["bands"], strips_upper=tp.get("thigh_band_strips", tp["bands"]["strips"]))
     kl = [TRUNK, LEG, FOOT]
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
@@ -1673,6 +1680,18 @@ def build(plan, tier, ref, cv, L):
     else:
         VF = neck_snap(ref, M, VF, tk, mp, C, tp["neck_ease_rows"])
     C["_hip_ring"] = VF[cr["root"]].copy()
+    if "hip_named" in C:                             # (pass 3b item 4) the curve root's measures, after the relax
+        nm = dict(C["hip_named"], **C["hip_named_lobe"])
+        C["hip_named_mm"] = {k: (VF[v] * 1000).round(1).tolist() for k, v in nm.items()}
+        fr = VF[C["fold_row"]]
+        sel = (fr[:, 0] >= 0.04) & (fr[:, 0] <= 0.12)
+        C["fold_row_y_mm"] = [round(float(fr[sel, 1].min()) * 1000, 1), round(float(fr[sel, 1].max()) * 1000, 1)]
+        lat = VF[cr["lat"][1:-1]]
+        q = np.array(plan["hip"]["root"]["crotch"]["line"], float)[:5, :3] / 1000.0
+        seg = np.concatenate([np.linspace(q[k], q[k + 1], 20) for k in range(len(q) - 1)])
+        d = np.linalg.norm(lat[:, None] - seg[None], axis=2).min(1)
+        C["crease_tol_mm"] = round(0.8 * tp["limb_spacing"] * 1000, 1)
+        C["crease_line_dist_mm"] = round(float(d[(lat[:, 1] > 0.985) & (lat[:, 1] < 1.007)].max()) * 1000, 1)
     Gc = bc["cap"]                                   # (a, pass 3b) the cap corners vs the apex, the wrist / ankle
     cn = [Gc[0, 0], Gc[-1, 0], Gc[-1, -1], Gc[0, -1]]
     C["breast_cap_corner_mm"] = [round(float(np.linalg.norm(VF[v] - L["breast_apex"])) * 1000, 1) for v in cn]

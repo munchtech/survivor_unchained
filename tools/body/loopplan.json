@@ -173,19 +173,19 @@
       25.5,
       999.3,
       12.7,
-      3.75
+      1
      ],
      [
       22.2,
       993.8,
       3.8,
-      3.75
+      1
      ],
      [
       19.3,
       989.3,
       -5.6,
-      3.75
+      1
      ],
      [
       13.8,
@@ -207,11 +207,10 @@
     ],
     "why_fracs": "(a) the strip's two inner lines at 0.45 and 0.8 of the way from the midline to the outer line: the outer one the crease's support loop on the strip side (3-6 mm from the crease)",
     "hold": true,
-    "why_offset": "(b) the reference's crease is a polygon edge at its lower course (hm08 dihedral 77.6 deg (19.3, 989.3, -5.6)-(22.2, 993.8, 3.8) and 75.5 deg on to (25.5, 999.3, 12.7); <= 48 deg elsewhere on the groin and perineum): a loop on that edge carries the whole turn, so there (h > 0, mm, interpolated along the line, 0 at its ends) the outer line steps h onto the perineum and the thigh's first ring h down the inner thigh's face, both held through the relax (hold): the edge lies mid-quad, its turn shared by two edges (close: crotch and groin folds 74 -> under 40 deg; h 3.5-4 measured clean, 3 and 4.5 not)"
+    "why_offset": "(b) the reference's crease is a polygon edge at its lower course (hm08 dihedral 77.6 deg (19.3, 989.3, -5.6)-(22.2, 993.8, 3.8) and 75.5 deg on to (25.5, 999.3, 12.7); <= 48 deg elsewhere on the groin and perineum; the line's 4th value marks those points, interpolated along it): a loop on that edge carries the whole turn, so there the outer line steps h onto the perineum and the thigh's first ring h down the inner thigh's face, both held through the relax: the edge lies mid-quad, its turn shared by two edges; h = the tier's crotch_h x its limb spacing"
    },
    "thigh_band_y": 0.8,
-   "why_thigh_band": "(a) the judge (pass 3b item 4): the thigh's reduction band (the kite strips, centred here) at the inner mid-thigh, y 780-820, clear of the hip zone's 40 mm and of the knee's bend zone (from y ~725); thigh_band_strips: the curve root's longer ring (~94 points close) leaves ~23 kites to the knee's 50, 4 strips keep them under 6 a strip inside the hidden sector",
-   "thigh_band_strips": 4,
+   "why_thigh_band": "(a) the judge (pass 3b item 4): the thigh's reduction band (the kite strips, centred here) at the inner mid-thigh, y 780-820, clear of the hip zone's 40 mm and of the knee's bend zone (from y ~725)",
    "lobe_support_step": 0.5,
    "why_lobe_support": "(a) the judge's support loop for the buttock: the lobe's row 1 at half a row's spacing over the gluteal fold (row 0), so the fold reads as a crease"
   }
@@ -250,7 +249,7 @@
    "close": {
     "spacing": 0.0078,
     "row_scale": 1.0,
-    "glute_scale": 0.9,
+    "glute_scale": 1.0,
     "bust_scale": 0.95,
     "neck_spacing": 0.0045,
     "shoulder_spacing": 0.0075,
@@ -300,8 +299,13 @@
     ],
     "collar_F_y": 1.5,
     "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)",
-    "crotch_half_width": 0.014,
-    "why_pass3b_crotch": "(a) crotch_half_width: the perineum strip s lateral line 14 mm off the midline (it was R0 s first points, 4-9 mm: a near-degenerate strip the thigh root folded against); 10-18 mm all clear the strip, 14 the fewest folds (thigh ring 2: 6 -> 2). A stopgap until the hip curve root (item 4) rebuilds this junction"
+    "why_pass3b_crotch": "(a) crotch_half_width: the perineum strip s lateral line 14 mm off the midline (it was R0 s first points, 4-9 mm: a near-degenerate strip the thigh root folded against); 10-18 mm all clear the strip, 14 the fewest folds (thigh ring 2: 6 -> 2). A stopgap until the hip curve root (item 4) rebuilds this junction",
+    "thigh_band_strips": 5,
+    "why_thigh_band_strips": "(a) the curve root's longer ring (94 points close) leaves 22 kites to the knee's 50: 5 strips (y ~770-830) keep them at 4-5 a strip inside the hidden sector (3 strips: quad aspect 6.7 at the band, 4: 5.2)",
+    "crotch_h": 0.5,
+    "why_crotch_h": "(a) half a quad (3.75 mm): crotch and groin folds 74 -> under 30 deg (0.47-0.53 measured clean, 0.4 and 0.6 not)",
+    "hip_curve_root": true,
+    "why_glute": "(a) the judge (pass 3b item 4): glute density = the torso front's (the lobe's rows at the trunk spacing; was 0.9)"
    },
    "play": {
     "spacing": 0.017,
@@ -351,7 +355,15 @@
     "neck_untwist_rows": 2,
     "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
     "collar_F_y": 1.52,
-    "why_pass3b_collar": "(a) collar_F_y: the front collar kites on the upper chest, under the neck base zone (b: the clavicle heads at 1.552); 1.52 is the lowest row above the play breast window"
+    "why_pass3b_collar": "(a) collar_F_y: the front collar kites on the upper chest, under the neck base zone (b: the clavicle heads at 1.552); 1.52 is the lowest row above the play breast window",
+    "crotch_m": 1,
+    "why_crotch_m": "(a) the crotch strip 1 quad a side at play (17 mm spacing: the perineum is 15-17 mm a side, the mons front ~30); close keeps hip.root.crotch.m = 3",
+    "crotch_h": 0.0,
+    "why_crotch_h": "(a) 0 at play: at 17 mm quads the held straddle does not lower the crease's folds (h 0.2-0.6: 62-64 deg, vs 63 at 0), so the line lies on the crease",
+    "hip_curve_root": true,
+    "thigh_band_y": 0.82,
+    "thigh_band_strips": 3,
+    "why_thigh_band": "(a) play's 17 mm stations: 3 strips centred at y 0.82 (0.80 with 2 strips put a strip's kites within 40 mm of the knee's bend zone; 0.82 x 3 keeps the aspect at the baseline's)"
    }
   },
   "rest_tris": 11300,

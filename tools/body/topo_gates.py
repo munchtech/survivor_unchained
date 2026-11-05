@@ -14,6 +14,12 @@
   breast    breast edge p95 <= 7.5 mm, quad aspect p95 <= 2.0; (pass 3b) the cap's 4 corners (its 3-poles) <= 20 mm
             from the apex or >= 60 mm out (on the chest wall, past the mound)                          (a: the judge)
   ankle     (pass 3b) the shin's last ring (the foot template's rim) 26-28 points                     (a: the judge)
+  hip       (pass 3b item 4, the curve root) the 4 named hip poles a side and no others in the hip zone (the crotch
+            strip's front and back outer corners, 5-poles where strip, trunk and thigh meet; the lobe's miter, 3, at
+            the fold's lateral end; the rise's top, 5, over the hip); the fold row (the lobe's row 0) at y 930-965 for
+            x 40-120 and the miter within 12 mm of x 120 (b: the fold's kink 945-950, faded by x 120); the strip's
+            outer line within 0.8 x the tier's limb spacing of the reference's crease edges (b: hm08) where it runs on them; the lobe's
+            rise 90-130 mm (b: fold to hip side, ~108)                                                 (a: the judge)
 """
 import numpy as np
 from scipy.spatial import cKDTree
@@ -43,8 +49,9 @@ def edge_pairs(Q):
 
 
 def cleft_mask(X):
-    """(b) the gluteal cleft on the reference: the midline crease between the buttocks."""
-    return (np.abs(X[:, 0]) < 0.035) & (X[:, 2] < -0.07) & (X[:, 1] > 0.88) & (X[:, 1] < 1.10)
+    """(b) the gluteal cleft on the reference: the midline crease between the buttocks (its top: hm08's midline
+    edges stay over 60 deg up to the one at y 1.098 (65.3 deg); the next, at 1.109, is 40.7 deg)."""
+    return (np.abs(X[:, 0]) < 0.035) & (X[:, 2] < -0.07) & (X[:, 1] > 0.88) & (X[:, 1] < 1.109)
 
 
 def mesh_quality(V, Q, tmpl_q):
@@ -151,7 +158,14 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
     g = dict(mq)
     g["zone_points"] = {k: int(len(v)) for k, v in Z.items()}
     g["poles_total"] = len(poles_out)
-    g["poles_designed_at_epicondyles"] = int(sum(p["designed"] for p in poles_out))
+    dv = info["designed_pole"] if "designed_pole" in info else np.zeros(len(V), int)
+    g["poles_designed_at_epicondyles"] = int(sum(p["designed"] and dv[v] == 1 for p, v in zip(poles_out, poles)))
+    hipn = [p for p, v in zip(poles_out, poles) if dv[v] == 2]
+    if hipn or "hip_named_mm" in C:                  # (pass 3b item 4) the curve root's designed poles and rules
+        g["hip_named_poles"] = [{"pos_mm": p["pos_mm"], "val": p["valence"]} for p in hipn if p["pos_mm"][0] >= 0]
+        g["hip_root"] = {"named_mm": C.get("hip_named_mm"), "lobe": C.get("lobe"), "fold_row_y_mm": C.get("fold_row_y_mm"),
+                         "crease_line_dist_mm": C.get("crease_line_dist_mm"), "crease_tol_mm": C.get("crease_tol_mm"), "crotch_m": C.get("crotch_m"),
+                         "blend": C.get("root_blend"), "N_leg": C.get("N_leg")}
     g["poles_designed_max_dist_to_hinge_exit_mm"] = C.get("joint_pole_hinge_mm")
     g["poles_within_40mm_of_a_zone"] = len(fail)
     g["poles_within_40mm_by_zone"] = by_zone
@@ -187,4 +201,13 @@ def gates(ref, V, Q, info, C, joints, L, poles_out, poles, hip_ring, parts):
         "breast_cap_corners": bool(bcm) and all(d <= 20 or d >= 60 for d in bcm),
         "ankle_26_28": 26 <= (g["ankle_points"] or 0) <= 28,
     }
+    hr = g.get("hip_root")
+    if hr:
+        nmm, fy, lb = hr["named_mm"] or {}, hr["fold_row_y_mm"] or [0, 0], hr["lobe"] or {}
+        g["pass"]["hip_named_poles_4"] = len(g["hip_named_poles"]) == 4 and all(
+            any(np.allclose(p["pos_mm"], x, atol=1.0) for x in nmm.values()) for p in g["hip_named_poles"])
+        g["pass"]["hip_fold_on_landmarks"] = (930 <= fy[0] and fy[1] <= 965           # (b) the fold y 945-950, x 40-120
+                                              and abs(nmm.get("miter", [0, 0, 0])[0] - 120) <= 12)
+        g["pass"]["hip_crotch_on_crease"] = (hr["crease_line_dist_mm"] or 99) <= (hr["crease_tol_mm"] or 0)   # 0.8 x spacing
+        g["pass"]["hip_lobe_rise"] = 90 <= lb.get("rise_mm", 0) <= 130 and lb.get("rows", 0) >= 3
     return g
