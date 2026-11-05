@@ -4,6 +4,43 @@ For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Worki
 
 **Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
 
+## 0000000000000000000000000000000000. GATE M1 READY motion-a1@aca5d54b6 (A1 motion director, 5 Nov): her motion direction as a system. Stage B waits for P1's bare-shape gate
+Brief `docs/team/hook/A1_motion_direction.md`; worktree `.claude/worktrees/motion-a1`, branch motion-a1 (pushed). **Read first:** `docs/design/MOTION_BIBLE.md`, then `docs/design/MOTION_PLAN.md`. They are the handoff; this section only points at them.
+
+**For the owner's pick:**
+- The sheet is `survivorsunchained_inputs\motion_a1\boards\GATE_M1_sheet_half.jpg`: 13 boards at half size, captioned with numbers and references.
+- The 1:1 crops are `GATE_M1_crops_1to1_1.png` and `_2.png` in the same folder.
+- The full boards are in `boards\final\`, the raw images in `boards\raw\` (round 1 in `raw\r1\`).
+- ChatGPT on the owner's account, 24 images. Provenance is in `raw\PROVENANCE.txt` and the prompts in `prompts_a1.md` and `_r2.md`.
+
+**Judge (xhigh, 2 rounds of 3, item "M1 boards").**
+- Round 1: medium. Seven boards had 1-3 poses re-rolled.
+- Round 2: close. 12 of 13 boards direct the rebuild as they stand; what's left is local and settled in the bible's text (its last section: "the text governs").
+- Its gate line: "Thirteen boards set her motion: an easy, cocky weight on the hip in each calling's own town idle, snap attacks that end in real stillness, and a Flare press that is a BOOM. The stray details (a few crossed knees, a swapped staff hand, a vanishing sword, the Reaver heavy's pose 3) are settled in the bible's text."
+- Open and optional: A2 pose 3, which ChatGPT refused twice as an edit. The judge's wording for one try as a standalone figure in a new chat is in its round-2 verdict (relayed to main), and is summarized in the bible. If it is refused again, the pose stays marked "superseded by the text". Also optional: I3 pose 5 (the staff into her right hand).
+
+**The four callings are Warden, Reaver, Arcanist and Stalker.** The brief's "Ranger" is the Stalker's outfit.
+
+**Counts:** REBUILD 108 (10 of them new), RETARGET 10, CUT 37. 16 clips are 100STYLE CC BY (every idle): rebuilt or cut under the no-credit rule.
+
+**Tool pick:** MotionBricks (in-betweens through our own key poses, locomotion) and Kimodo (constraints: falls, get-ups, cinematic actions). Both are under the NVIDIA Open Model Agreement, with no claim on outputs and no credit. No purchases. MotionBricks' sample clips are evaluation-only and never steer a shipped clip.
+
+**Pipeline:** one spec per clip in the game repo (`tools/anim/specs`, `poses`). One motion core in Marionette `tools/motion/`, used by the app and by the batch CLI. `build.py` and `check.py` stay as the game-side fronts; pack, shots and tests stay game-side. Runtime springs per bible R6.2.
+- Risk: Marionette has no remote. Give it one before Stage B.
+- Combat change to route with the Warden slice: swing damage at the clip's contact frame. Today no C# reads "contact".
+
+**Stage B estimate: ~4.3-6.2M.**
+- Pipeline and the idle_warden_town proof: 1.2-1.6M.
+- The Warden slice: 1.0-1.4M.
+- The three other callings: 1.8-2.7M.
+- The long tail: 0.2-0.35M.
+
+**Cost of Stage A: ~1.11M, API $0.**
+- Helpers 0.83M: ChatGPT drivers 181k and 182k, the inventory worker 149k, the licence researcher 107k, judges 108k and 105k.
+- Lead ~0.28M.
+
+**Scratch:** the plan, board and contact scripts are backed up to `survivorsunchained_inputs\motion_a1\`. The coordinator scratchpad's `motion_a1\` holds only copies.
+
 ## 000000000000000000000000000000000. MR READY (Animation 62, 3 Nov, closeout wave 2): crowd deaths + Long Cut entry SHIP (max r2); the warden town elbow CLOSED AS KNOWN (OLD ships)
 **The app can now:**
 - **Lay the crowd's dead as a fight, not a starburst.** 2 in 5 crumple any way; the rest fall within +-75 deg of the blow (the knockback, else away from her); every fall ends with a seeded +-30 deg twist; no two radial neighbours lie within 1.8 m (CrowdView DeathToward/Twist/SpokeNear). Each rig's fall heading is read from its bake (Vat.Laid, VatAsset.FallOff).
