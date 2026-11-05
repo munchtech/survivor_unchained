@@ -25,6 +25,7 @@ public partial class FlareFx
     double blowT = -1, blowRt = -1, pressRt = -1;
     Vector2 bandA, bandB;
     bool bandOn, mainLogged;
+    static readonly bool BandOff = Args.Has("flare-band-off");
     float poolNow = 1;
     readonly List<(int Target, Vector3 At, double Amount, double MaxHp, bool Crit, double BornRt)> held = new();
     static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col";
@@ -54,7 +55,7 @@ public partial class FlareFx
     {
         if (!familyOn || blowT >= 0) return;
         blowT = t; blowRt = rt;
-        bandA = o; bandB = end; bandOn = true;
+        bandA = o; bandB = end; bandOn = !BandOff; // (--flare-band-off: an ablation, the band never drawn)
         Cue("boom", cueAt, 1);
         Rumble(1, 0.6f, 0.14f);
         Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
