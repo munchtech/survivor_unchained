@@ -29,5 +29,9 @@
   "foot_size":       {"range": [-1, 1], "pairs": [["foot-scale-decr", "foot-scale-incr", 1.0]], "lr": true, "why": "the feet, MakeHuman's own, scaled"},
   "heavy":           {"range": [0, 1], "macros": {"weight": 0.3}, "pairs": [["measure-hips-circ-decr", "measure-hips-circ-incr", 0.6], ["measure-thigh-circ-decr", "measure-thigh-circ-incr", 0.6], ["buttocks-volume-decr", "buttocks-volume-incr", 0.6], ["measure-waist-circ-decr", "measure-waist-circ-incr", 0.2], ["stomach-pregnant-decr", "stomach-pregnant-incr", -0.3]], "why": "thick-and-curvy, never obese (the owner's taste): mass to the hips, glutes and thighs, the waist barely, the belly held in"},
   "male":            {"range": [0, 1], "macros": {"gender": 1.0}, "why": "male build for NPCs later: MakeHuman's gender macro (its male blends; no genitals: the game's Steam rule)"}
+ },
+ "designed": {
+  "bust_lift": {"range": [0, 1], "rule": "mass_lift", "field": "bust_size", "field_v": 1.0, "floor": 0.1, "lift_m": 0.03, "out_m": 0.012, "fill": 0.0, "root_pct": 98, "why": "OURS (5 Nov, the owner: 'perfect breasts ... very well done'): MakeHuman's cup at full size hangs (firmness +1 moves 8 mm, set is a 19 mm slide): the breast turns up about its root, the lower pole lifts, the point comes forward; full, high, round, natural weight"},
+  "glute_lift": {"range": [0, 1], "rule": "mass_lift", "field": "glutes", "field_v": 1.0, "floor": 0.1, "lift_m": 0.025, "out_m": 0.012, "fill": 0.25, "root_pct": 98, "why": "OURS (5 Nov, the owner: 'breast and butt are very important'): MakeHuman's buttock volume tops out at 22 mm and sits low: the buttock turns up about its root and fills at its core: full, round, high"}
  }
 }
