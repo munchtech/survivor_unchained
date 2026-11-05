@@ -144,6 +144,17 @@ public sealed class FollowCamera
         joltT = 0;
     }
 
+    /// <summary>The Flare's beat kick (H7): a Jolt whose first swing moves the frame about px pixels at 1080p (the swing's
+    /// first peak is 0.48 of its amount; along the view's axis a move shows only by its share across it).</summary>
+    public void JoltPx(Vector3 axis, float px)
+    {
+        if (axis.LengthSquared() < 1e-6f || px <= 0) return;
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        var a = axis.Normalized();
+        float across = Mathf.Max(0.2f, Mathf.Sqrt(Mathf.Max(0, 1 - Mathf.Pow(a.Dot(-Camera.GlobalBasis.Z), 2))));
+        Jolt(a, px * perPx / (0.48f * across));
+    }
+
     Vector3 kick;
     float kickT = 1;
 

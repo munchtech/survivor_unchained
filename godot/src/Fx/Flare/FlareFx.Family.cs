@@ -39,6 +39,7 @@ public partial class FlareFx
         familyOn = false;
         if (e.Stand) return;
         familyOn = true;
+        BlowPress();
         hushing = true; hushNow = 1;
         gradeRoot = GetParent()?.GetParent();
         GradeLightsTake();
@@ -62,12 +63,14 @@ public partial class FlareFx
             Hush(hushNow);
             if (hushNow <= 0) { hushing = false; HushDone(); Hush(1); }
         }
-        // The grade: in over the data's frames from the press, held to the first blow (or a little past the release), then out.
+        // The grade: in over the data's frames from the press, held to the main blow (FlareFx.Blow; without one, the first
+        // blow's or a little past the release once the marks are done), then out.
         float g = 0;
         if (Active && familyOn)
         {
             var gr = FlareFamily.Grades;
-            double from = spendAt >= 0 ? spendAt : lastAt >= 0 ? lastAt : releaseAt >= 0 ? releaseAt + 0.2 : double.MaxValue;
+            double from = blowT >= 0 ? blowT : marksView?.Live == true ? double.MaxValue
+                : spendAt >= 0 ? spendAt : lastAt >= 0 ? lastAt : releaseAt >= 0 ? releaseAt + 0.2 : double.MaxValue;
             float up = Mathf.SmoothStep(0, 1, (float)Math.Min(1, t / Math.Max(gr.In, 1e-3)));
             float down = t <= from ? 1 : 1 - Mathf.SmoothStep(0, 1, (float)Math.Min(1, (t - from) / Math.Max(gr.Out, 1e-3)));
             g = up * down;

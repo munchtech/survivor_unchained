@@ -692,6 +692,8 @@ public partial class Game : Node, IZoneHost
         var fl = scene.Fx.Flare;
         fl.Rumble = (lo, hi, s) => Haptics.Add(lo, hi, s, blow: lo >= 1, peak: lo >= 1);
         fl.HudDim = k => hud.FlareDim(k);
+        // (H7's recovery: her ember's pool brighter for a breath after the main blow)
+        fl.EmberPool = k => { if (scene?.Player is { } pv) pv.FlarePool = k; };
         fl.LabelsAlpha = k => hud.LabelsAlpha(k);
         fl.Dip = k => air.FlareDip = k;
         fl.LightDip = k => air.FlareLight = k;
@@ -1960,8 +1962,21 @@ public partial class Game : Node, IZoneHost
                     double d = Math.Sqrt((e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z));
                     if (d <= bd) { bd = d; best = e; }
                 }
+                // (elite, none in reach: the toughest foe in reach, so every clip has a hovered target)
+                string how = hv;
+                if (best == null && hv == "elite")
+                {
+                    double hp = -1;
+                    foreach (var e in cb.Enemies.Living())
+                    {
+                        if (e.State == EnemyState.Dying || !cb.Targetable(e) || !cb.HostileToPlayer(e)) continue;
+                        double d = Math.Sqrt((e.X - cb.Player.X) * (e.X - cb.Player.X) + (e.Z - cb.Player.Z) * (e.Z - cb.Player.Z));
+                        if (d <= hf.Radius && e.Hp > hp) { hp = e.Hp; best = e; bd = d; }
+                    }
+                    how = "elite (fallback: toughest)";
+                }
                 cb.Priority = best?.Id ?? -1;
-                GD.Print($"flare hover {hv}: {(best == null ? "none in reach" : $"{best.Def.Id} #{best.Id} at {bd:0.0} m")}");
+                GD.Print($"flare hover {how}: {(best == null ? "none in reach" : $"{best.Def.Id} #{best.Id} at {bd:0.0} m")}");
             }
             cb.UseFlare(Args.Has("still") ? 0 : 1, 0);
         }

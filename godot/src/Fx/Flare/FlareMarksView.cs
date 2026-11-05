@@ -25,6 +25,11 @@ public partial class FlareMarksView : MultiMeshInstance3D
     }
 
     readonly Dictionary<int, M> marks = new();
+    /// <summary>When each foe's mark was first drawn this cast (real time), for the decision hold (FlareFx.Blow).</summary>
+    readonly Dictionary<int, double> shown = new();
+
+    /// <summary>The real time this foe's mark was first drawn this cast; -1 never (not yet).</summary>
+    public double ShownAt(int enemy) => shown.TryGetValue(enemy, out var r) ? r : -1;
     readonly List<int> drop = new();
     readonly List<FlareMarkShape> lines = new(), lastLines = new();
     double lineEnd = -1, pressRt, lineBorn, lastRt;
@@ -47,20 +52,36 @@ public partial class FlareMarksView : MultiMeshInstance3D
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
             InstanceCount = 192, VisibleInstanceCount = 0, Mesh = new QuadMesh { Size = Vector2.One },
         };
-        // (the soft shade first, the light over it: two passes of one batch)
-        MaterialOverride = new ShaderMaterial
-        {
-            Shader = GD.Load<Shader>("res://shaders/flare_mark_shade.gdshader"),
-            NextPass = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_mark.gdshader") },
-        };
+        // (one premultiplied pass: the light, its cap and its shade together, so no shade outlives its light)
+        MaterialOverride = mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flare_mark.gdshader") };
         // (the rings span the field: the batch's own box is the arena, no per-instance culling)
         CustomAabb = new Aabb(new Vector3(-400, -50, -400), new Vector3(800, 100, 800));
         Visible = false;
     }
 
+    ShaderMaterial? mat;
+
+    /// <summary>The marks' look from the data (flare_mark.gdshaderinc's uniforms), at each press.</summary>
+    void Look()
+    {
+        if (mat == null) return;
+        var mr = FlareFamily.Marks;
+        mat.SetShaderParameter("cap", (float)mr.Of(night).Cap);
+        mat.SetShaderParameter("band", (float)mr.Band);
+        mat.SetShaderParameter("pool", (float)mr.Pool);
+        mat.SetShaderParameter("warm", (float)mr.Warm);
+        mat.SetShaderParameter("pop_grow", (float)mr.PopGrow);
+        mat.SetShaderParameter("seam_core", (float)(mr.SeamCore / SeamHalf));
+        mat.SetShaderParameter("seam_glow", (float)(mr.SeamGlow / SeamHalf));
+    }
+
+    /// <summary>The path seam's strip half-width (m): its glow's falloff fits inside.</summary>
+    static double SeamHalf => Math.Max(0.3, FlareFamily.Marks.SeamGlow * 3);
+
     public void Press(Battle b, School school, bool isNight, Vector3 at, double rt, Action<int> onCue)
     {
         marks.Clear();
+        shown.Clear();
         lines.Clear();
         lastLines.Clear();
         lineEnd = -1;
@@ -68,6 +89,7 @@ public partial class FlareMarksView : MultiMeshInstance3D
         float m = Mathf.Max(g.R, Mathf.Max(g.G, g.B));
         glow = m > 0 ? new Color(g.R / m, g.G / m, g.B / m) : Colors.White;
         night = isNight;
+        Look();
         her = at;
         cue = onCue;
         pressRt = lineBorn = lastRt = rt;
@@ -143,6 +165,7 @@ public partial class FlareMarksView : MultiMeshInstance3D
         {
             double age = rt - o.Born - o.Delay;
             if (age < 0) continue;
+            shown.TryAdd(id, rt);
             float alpha = Mathf.SmoothStep(0, 1, (float)Math.Min(1, age / 0.05));
             float pop = 0, flash = 1;
             if (o.Gone)
@@ -152,17 +175,19 @@ public partial class FlareMarksView : MultiMeshInstance3D
                 if (p >= 1) { drop.Add(id); continue; }
                 if (o.Hit)
                 {
-                    pop = Mathf.SmoothStep(0, 1, p);
-                    flash = 1 + 2.2f * (1 - p) * (1 - p);
-                    alpha *= 1 - Mathf.SmoothStep(0.3f, 1, p);
+                    // A short bright flash that grows out and is gone: quick out, its light falling with it.
+                    pop = 1 - (1 - p) * (1 - p);
+                    flash = 1 + 1.6f * (1 - p);
+                    alpha *= (1 - p) * (1 - p);
                 }
-                else alpha *= 1 - p;
+                else alpha *= 1 - Mathf.SmoothStep(0, 1, p);
             }
             else drawnLive++;
             // (a fresh ring comes in a touch bright, then settles)
             flash *= 1 + 0.4f * Mathf.Max(0, 1 - (float)age / 0.12f);
             float gain = (float)ml.Gain * flash * (o.Main ? (float)mr.Main : 1) * alpha;
-            float half = (float)(mr.Scale * Math.Max(o.R, 0.3) / 0.66);
+            // (the quad's half is the popped ring's outer edge: the standing ring sits at 1 / (1.25 + popGrow) of it)
+            float half = (float)(mr.Scale * Math.Max(o.R, 0.3) * (1.25 + mr.PopGrow));
             var at = new Vector3((float)o.X, (float)HeightAt(o.X, o.Z) + 0.06f, (float)o.Z);
             Put(n++, new Transform3D(new Godot.Basis(new Vector3(2 * half, 0, 0), new Vector3(0, 0, 2 * half), new Vector3(0, 1, 0)), at),
                 new Color(glow.R * gain, glow.G * gain, glow.B * gain, (float)ml.Dark * alpha), new Color(o.Main ? 1 : 0, pop, pulse, (float)o.Seed));
@@ -184,12 +209,12 @@ public partial class FlareMarksView : MultiMeshInstance3D
         {
             var along = new Vector3((float)Math.Cos(s.Angle), 0, (float)Math.Sin(s.Angle));
             var across = new Vector3(-along.Z, 0, along.X);
-            float len = (float)s.Length, w = (float)(s.Radius * 2 * 1.6);
+            float len = (float)s.Length, w = (float)(SeamHalf * 2);
             double mx = s.X + along.X * len / 2, mz = s.Z + along.Z * len / 2;
             var mid = new Vector3((float)mx, (float)HeightAt(mx, mz) + 0.05f, (float)mz);
             float g = (float)ml.Strip * la;
             Put(n++, new Transform3D(new Godot.Basis(across * w, -along * len, Vector3.Up), mid), new Color(glow.R * g, glow.G * g, glow.B * g, 0),
-                new Color(2, 0, (float)((rt - pressRt) * 0.6 % 1), len * 0.8f));
+                new Color(2, 0, (float)((rt - pressRt) * mr.SeamShimmer % 1), len));
         }
         Multimesh.VisibleInstanceCount = n;
         Visible = n > 0;

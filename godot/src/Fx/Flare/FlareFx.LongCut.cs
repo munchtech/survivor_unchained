@@ -203,7 +203,8 @@ public partial class FlareFx
         spendAt = t;
         LcSpend();
         Cam?.Jolt(Vector3.Up, 0.25f * Motion);
-        Cue("boom", at, 0.6f);
+        // (H7: the boom is the cleave's, the main blow's: FlareFx.Blow; the sweep has its own cue)
+        Cue("sweep", at, 0.6f);
         Rumble(0.6f, 0.4f, 0.08f);
         ResolveDooms();
     }
@@ -219,10 +220,14 @@ public partial class FlareFx
         lcHalf = (float)e.Radius;
         lastAt = t;
         lcCleaveRt = lcRt;
-        Cam?.Jolt(new Vector3(lcDir.X, 0, lcDir.Y) * 0.4f + Vector3.Up, 0.7f * Motion);
-        Cam?.AddTrauma(0.32f * Motion);
-        Cue("boom", at, 1);
-        Rumble(1, 0.6f, 0.14f);
+        // (H7: the boom, the kick and the rumble are the main blow's, FlareFx.Blow, right after this)
+        if (!familyOn)
+        {
+            Cam?.Jolt(new Vector3(lcDir.X, 0, lcDir.Y) * 0.4f + Vector3.Up, 0.7f * Motion);
+            Cam?.AddTrauma(0.32f * Motion);
+            Cue("boom", at, 1);
+            Rumble(1, 0.6f, 0.14f);
+        }
         ResolveDooms();
     }
 

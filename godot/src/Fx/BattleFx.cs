@@ -158,6 +158,7 @@ public partial class BattleFx : Node3D
         Flare.Hush = k => { Hits.Hush = k; Sparks.Transparency = 1 - k; };
         Flare.HushDone = () => { Hits.Retire(); Sparks.Clear(); Sparks.Transparency = 0; };
         Flare.DecalGrade = c => Gore.FlareGrade = c;
+        Flare.Number = (tg, at, am, mh, cr) => Hits.Tally(tg, at, am, mh, cr);
         AddChild(Flare);
         for (int i = 0; i < 8; i++)
         {
@@ -1189,10 +1190,13 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Hit fh when fh.ByFlare && !fh.Dot:
                 {
-                    // While the Flare holds the frame only champions' and bosses' numbers show (FLARE_LOOK §1.5).
+                    // (H7: a Strike's numbers are held from the press and come in one burst as its band passes each foe:
+                    // FlareFx.Blow. A Stand's: while the Flare holds the frame only champions' and bosses' show, FLARE_LOOK §1.5.)
                     var foe = fh.Target >= 0 && fh.Target < b.Enemies.Capacity ? b.Enemies.Items[fh.Target] : null;
-                    if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
-                        Hits.Tally(fh.Target, V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z), fh.Amount, fh.MaxHp, fh.Crit);
+                    var fat = V(fh.X, Y(fh.X, fh.Z) + 1.0, fh.Z);
+                    if (Flare.HoldNumber(fh.Target, fat, fh.Amount, fh.MaxHp, fh.Crit)) { }
+                    else if (!Flare.Quiet || foe is { Elite: true } or { Boss: true })
+                        Hits.Tally(fh.Target, fat, fh.Amount, fh.MaxHp, fh.Crit);
                     break;
                 }
                 case Ev.Hit e:

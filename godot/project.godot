@@ -87,6 +87,18 @@ flare_seam={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_band={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_line={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_col={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flare_seam_t={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

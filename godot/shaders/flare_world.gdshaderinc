@@ -31,6 +31,9 @@ const float fire_rim = 0.9;
 vec3 flare_fire_col() {
 	return mix(vec3(1.0, 0.62, 0.30), vec3(1.0, 0.80, 0.45), smoothstep(0.6, 1.0, flare_fire.w));
 }
+global uniform vec4 flare_band;      // xy: its origin (x, z); z: its front (m out); w: its strength 0..1 (0 none)
+global uniform vec4 flare_band_line; // xy: a line Flare's far end (= the origin: a ring); z: the soft lead (m); w: the wake (m)
+global uniform vec4 flare_band_col;  // rgb: its light (linear, the data's gain); a: the wake's darkening 0..1
 global uniform vec4 flare_hue;    // rgb: the web's hot colour (the calling's); a: night 0..1
 // The Long Cut (Fx/Flare/FlareFx.LongCut.cs): its seam and its sweep.
 global uniform vec4 flare_seam;   // xy: where the cleave starts (x, z); z: its angle (rad); w: its length (m), 0 none
@@ -46,7 +49,31 @@ global uniform sampler2D flare_marks : filter_nearest, repeat_disable; // 32x2: 
 const vec3 FL_LUM = vec3(0.2126, 0.7152, 0.0722);
 
 bool flare_live() {
-	return flare_grade.x > 0.0 || flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
+	return flare_band.w > 0.0 || flare_grade.x > 0.0 || flare_look.x > 0.0 || flare_look.w > 0.5 || flare_web.x > 0.0 || flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.x > 0.0;
+}
+
+// The family's shock band (H7 beat 3; Fx/Flare/FlareFx.Blow.cs, data/content/flare_family.json "band"): one soft band of
+// the school's light racing from her (or out from a line Flare's line) past the frame's edges on the main blow, a darker
+// wake behind it. Light on the ground, brushed by place, never a vector hoop. x: its light, y: its wake.
+float fl_band_d(vec2 w) {
+	vec2 ab = flare_band_line.xy - flare_band.xy;
+	float l2 = dot(ab, ab);
+	float h = l2 > 1e-4 ? clamp(dot(w - flare_band.xy, ab) / l2, 0.0, 1.0) : 0.0;
+	return length(w - flare_band.xy - ab * h);
+}
+
+vec2 flare_band_at(vec2 w) {
+	if (flare_band.w <= 0.0) return vec2(0.0);
+	float d = fl_band_d(w);
+	// (it wanders 1-2 m by place and breaks into strokes along its length: a wave of light, not a circle)
+	float n = texture(flare_noise, w * 0.043).g - 0.5;
+	float n2 = texture(flare_noise, w * 0.19 + vec2(0.0, TIME * 0.35)).r - 0.5;
+	float a = flare_band.z - d + n * 1.6 + n2 * 0.4;
+	float lead = flare_band_line.z, wake = flare_band_line.w;
+	float front = smoothstep(-lead, 0.0, a) * exp(-max(a, 0.0) / max(lead * 0.7, 0.05));
+	float sh = smoothstep(0.0, lead * 1.2, a) * (1.0 - smoothstep(lead, lead + wake, a));
+	float br = 0.6 + 0.8 * texture(flare_noise, w * vec2(0.11, 0.07) + 0.37).b;
+	return vec2(front * br, sh) * flare_band.w;
 }
 
 // The drain and the repaint, on a world colour.
@@ -540,6 +567,11 @@ void flare_ground(vec3 wp, inout vec3 alb, inout float rough, inout float spec, 
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	vec2 w = wp.xz;
+	if (flare_band.w > 0.0) {
+		vec2 bd = flare_band_at(w);
+		alb *= 1.0 - flare_band_col.a * bd.y;
+		emi += flare_band_col.rgb * bd.x * (0.2 + alb);
+	}
 	vec3 web = flare_web_light(w);
 	if (flare_sweep.y > 0.0 || flare_lc.y > 0.0) web += flare_sweep_at(w) * alb;
 	if (flare_seam.w > 0.0) flare_seam_ground(wp, inv_view[3].xyz, alb, rough, nrm_view, emi, view);
@@ -700,6 +732,8 @@ void flare_body(vec3 wp, vec3 nrm_view, mat4 inv_view, float rim, inout vec3 alb
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
 	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
+	// (the shock band lifts what it passes: a breath of its light up the body, on its rim)
+	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * (0.25 + rim) * (alb + 0.05);
 	// (as light: by its paint, so a charred body stays dark and only a pale one takes it)
 	if (flare_seam.w > 0.0 || flare_sweep.y > 0.0 || flare_lc.y > 0.0) emi += flare_longcut_body(wp, nw, rim) * (alb * 1.8 + 0.03);
 	float g = flare_glazed(wp);
@@ -805,6 +839,7 @@ void flare_blade(vec3 wp, float tip, inout vec3 alb, inout float rough, inout ve
 void flare_prop(vec3 wp, vec3 nrm_view, mat4 inv_view, inout vec3 alb, inout float rough, inout vec3 emi) {
 	if (!flare_live()) return;
 	flare_drain(wp, alb, emi);
+	if (flare_band.w > 0.0) emi += flare_band_col.rgb * flare_band_at(wp.xz).x * 0.5 * (alb + 0.05) * smoothstep(1.5, 0.0, wp.y - flare_at.y);
 	if (flare_look.w < 0.5) return;
 	vec3 nw = (inv_view * vec4(nrm_view, 0.0)).xyz;
 	vec3 p = flare_crystal(wp.xz + wp.y * 0.7);

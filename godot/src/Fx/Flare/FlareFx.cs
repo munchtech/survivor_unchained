@@ -142,7 +142,11 @@ public partial class FlareFx : Node3D
                 if (id != "burns_twice" && !IsLongCut) Spend(e.X, e.Z, 1);
                 break;
             case FlarePhase.Blow:
+            {
                 if (!Active) break;
+                // (H7: the family's main blow, once: the boom, the kick, the band; Burns Twice's at its last word's landing)
+                bool main = IsMainBlow(e);
+                if (e.Part == "toll") Cue("toll", Her, 1);
                 if (id == "burns_twice") BurnsBlow(e, b);
                 else if (IsLongCut)
                 {
@@ -151,7 +155,10 @@ public partial class FlareFx : Node3D
                     else if (e.Part == "cleave") LongCleave(e);
                 }
                 else { Hitstop(e.Hitstop); StalkerBlow(e); if (e.Last) Spend(e.TX, e.TZ, 1); }
+                if (main && id != "burns_twice") MainBlow(e);
+                else ResolvePending();
                 break;
+            }
         }
     }
 
@@ -221,6 +228,8 @@ public partial class FlareFx : Node3D
     {
         spendAt = t;
         SpendLight(new Vector3((float)x, (float)HeightAt(x, z) + 2.5f, (float)z), new Color(1f, 0.75f, 0.4f), 8 * k);
+        // (H7: a Strike's boom, kick and rumble are its main blow's (FlareFx.Blow); a Stand keeps them here)
+        if (familyOn) return;
         Cam?.Jolt(Vector3.Up, 0.6f * Motion);
         Cue("boom", at, 1);
         Rumble(1, 0.6f, 0.12f);
@@ -268,6 +277,7 @@ public partial class FlareFx : Node3D
         {
             t += Stop > 0 ? dt * 0.1 : dt;
             Envelope();
+            BlowTick();
             if (id == "burns_twice") BurnsTick(fdt);
             else if (IsLongCut) LongTick(fdt);
             else Plain();
@@ -309,7 +319,8 @@ public partial class FlareFx : Node3D
         shards.Step(fdt, HeightAt);
     }
 
-    bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : IsLongCut ? lcCleaveT >= 0 && t > lcCleaveT + 6.2 || t > 12 : spendAt >= 0 && t > spendAt + 2.5 || t > 8;
+    bool Done() => id == "burns_twice" ? lastAt > 0 && t > lastAt + 4.6 : IsLongCut ? lcCleaveT >= 0 && t > lcCleaveT + 6.2 || t > 12
+        : spendAt >= 0 && t > spendAt + 2.5 && (blowT < 0 || t > blowT + Content.FlareFamily.Recovery.Hold + Content.FlareFamily.Recovery.Out + 0.2) || t > 8;
 
     /// <summary>Ready (FLARE_LOOK §1.2): the staff's head breathes in the calling's light, a curl of wick-smoke lifts.</summary>
     double readyT;
@@ -388,6 +399,7 @@ public partial class FlareFx : Node3D
         Stop = 0;
         ramp = 1;
         releaseAt = spendAt = lastAt = -1;
+        BlowClear();
         audited = 0;
         colT = -1;
         BoomClear();
@@ -422,6 +434,8 @@ public partial class FlareFx : Node3D
         /// <summary>The Long Cut's: killed, its moment not yet known (its blow's event comes after its Ev.Kill).</summary>
         public bool Pending;
         public double Born;
+        /// <summary>Real seconds at its kill (the decision hold: FlareFx.Blow MarkHolds).</summary>
+        public double BornRt;
         /// <summary>The Long Cut's: real seconds (its lcRt) when its moment came, for its flash.</summary>
         public double Rt;
         /// <summary>The Long Cut's: when its rim comes (Flare time: the sweep passing it, or the fuse), and the real time it came (-1 not yet).</summary>
@@ -443,6 +457,8 @@ public partial class FlareFx : Node3D
     public int DeathOf(int enemy)
     {
         if (!doomed.TryGetValue(enemy, out var d)) return 0;
+        // (H7: a decision-marked hit's death waits until its mark has shown)
+        if (MarkHolds(enemy, d.BornRt)) return 1;
         // The Long Cut's: standing till the fuse reaches it, then its burn-up, then gone (no corpse: it burnt).
         if (IsLongCut) return d.Pending || t < d.At + BurnLen ? 1 : -1;
         if (t < d.At) return 1;
@@ -459,10 +475,13 @@ public partial class FlareFx : Node3D
         if (id == "burns_twice")
         {
             double when = lastAt > 0 ? Math.Max(t + 0.02, lastAt + RingTime(w.DistanceTo(boomAt)) + CrackHold()) : Held;
-            doomed[e.Enemy] = new Doom { At = when, Shatter = true, Where = w, From = lastAt > 0 ? boomAt : at, Scale = e.Elite || e.Boss ? 1.6f : (float)e.Scale };
+            doomed[e.Enemy] = new Doom { At = when, Shatter = true, Where = w, From = lastAt > 0 ? boomAt : at, Scale = e.Elite || e.Boss ? 1.6f : (float)e.Scale, BornRt = rt };
         }
-        else if (IsLongCut) doomed[e.Enemy] = new Doom { At = Held, Pending = true, Born = t, Where = w, Scale = (float)e.Scale };
-        else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w };
+        else if (IsLongCut) doomed[e.Enemy] = new Doom { At = Held, Pending = true, Born = t, BornRt = rt, Where = w, Scale = (float)e.Scale };
+        // (H7: the rest wait for their blow's event: before the main blow they fall at it, from the main blow on as the band
+        // reaches them: FlareFx.Blow ResolvePending)
+        else if (familyOn) doomed[e.Enemy] = new Doom { At = Held, Pending = true, Born = t, BornRt = rt, Where = w };
+        else doomed[e.Enemy] = new Doom { At = t + 0.02, Where = w, BornRt = rt };
     }
 
     /// <summary>How long after its statue breaks a body's ember shows: the ring and its char read first (s1b: the
@@ -475,7 +494,7 @@ public partial class FlareFx : Node3D
     {
         if (!Active || doomed.Count == 0) return false;
         foreach (var d in doomed.Values)
-            if (t < (id == "burns_twice" ? Math.Max(d.At + 0.05, DropsShow(d.Where)) : Math.Max(d.At + DropAfter, DropsShow(d.Where))) && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
+            if (t < (id == "burns_twice" ? Math.Max(d.At + 0.05, DropsShow(d.Where)) : familyOn ? DropsShow(d.Where) : Math.Max(d.At + DropAfter, DropsShow(d.Where))) && (d.Where.X - x) * (d.Where.X - x) + (d.Where.Z - z) * (d.Where.Z - z) < 1.44) return true;
         return false;
     }
 
@@ -486,6 +505,8 @@ public partial class FlareFx : Node3D
     double DropsShow(Vector3 w)
     {
         // (the Long Cut's wait until the seam has cooled to red, rippling out from the line: r1's hundred orbs buried it)
+        // (H7: every Strike's loot lands on the beat, as the band passes it; the Long Cut's held dim until its seam cools: DropFresh)
+        if (familyOn && id != "burns_twice") return BandDropAt(w.X, w.Z);
         if (IsLongCut) return lcCleaveT < 0 ? Held : lcCleaveT + 3.5 + 0.05 * Math.Min(12, Math.Abs(SeamAcross(w)));
         if (id != "burns_twice") return 0;
         if (lastAt <= 0) return Held;
@@ -502,6 +523,16 @@ public partial class FlareFx : Node3D
     /// until the Return ends, then full by +4.3 s, before the Flare clears at +4.6 s). (1, 1) otherwise.</summary>
     public (float Scale, float Light) DropFresh(double x, double z, double bornWorld)
     {
+        if (Active && familyOn && id != "burns_twice" && blowT >= 0 && bornWorld >= pressWorld - 1e-6)
+        {
+            // (H7: every Strike's: scaled in as the band passes it; the Long Cut's held at the settle's dim until its seam
+            // has cooled, as r1's hundred orbs over the seam asked)
+            var bt = Content.FlareFamily.Beat;
+            double sh = BandDropAt((float)x, (float)z);
+            float kk = Mathf.SmoothStep(0, 1, (float)((t - sh) / Math.Max(bt.DropGrow, 1e-3)));
+            float lt = IsLongCut ? Mathf.Lerp(DropSettle, 1, Mathf.SmoothStep((float)lcCleaveT + 3.0f, (float)lcCleaveT + 3.8f, (float)t)) : 1;
+            return (0.35f + 0.65f * kk, kk * lt);
+        }
         if (!Active || id != "burns_twice" || lastAt <= 0 || bornWorld < pressWorld - 1e-6) return (1, 1);
         double show = lastAt + RingTime(new Vector2((float)x - boomAt.X, (float)z - boomAt.Z).Length()) + DropRingLag;
         float k = Mathf.SmoothStep(0, 1, (float)((t - show) / DropGrow));
