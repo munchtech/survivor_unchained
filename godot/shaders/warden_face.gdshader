@@ -7,6 +7,13 @@
 // The LOD has no data map (has_data false): the grade only.
 shader_type spatial;
 render_mode cull_back, depth_draw_opaque;
+// (the material library, godot/data/look/materials.json: this shader's default class, folk_skin: a person's face (rule 8 class 1); L1 B2r2)
+#define CEL_INK 1
+#define CEL_BAND vec4(0.0, 0.06, 0.2, 0.08)
+#define CEL_MID vec4(0.85, 0.45, 0.38, 0.8)
+#define CEL_SPEC vec4(6.0, 1.0, 0.5, 0.85)
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_disable;
@@ -102,4 +109,5 @@ void fragment() {
 		vec3 dc = debug_view > 1.5 ? vec3(d.a) : vec3(d.r * 2.0 - 0.5, d.g, d.b);
 		ALBEDO = vec3(0.0); EMISSION = dc * 0.6; ROUGHNESS = 1.0; SPECULAR = 0.0;
 	}
+	CEL_FRAGMENT;
 }

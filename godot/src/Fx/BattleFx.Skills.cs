@@ -1111,10 +1111,11 @@ public partial class BattleFx
     readonly System.Collections.Generic.List<Spike> spikes = new();
     Batch? iceSpikes, thornSpikes, stoneSpikes;
 
-    /// <summary>The cut-crystal look (shaders/crystal.gdshader): ice at facet 1, stone and thorn near 0.</summary>
-    static Material Crystal(float emit, float rim, float gloss, float facet)
+    /// <summary>The cut-crystal look (shaders/crystal.gdshader): ice at facet 1, stone and thorn near 0. The name picks
+    /// its class in the material library (godot/data/look/materials.json: crystal_stone rock, crystal_thorn bark, else glass).</summary>
+    static Material Crystal(float emit, float rim, float gloss, float facet, string name = "crystal_ice")
     {
-        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader") };
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader"), ResourceName = name };
         m.SetShaderParameter("emit", emit);
         m.SetShaderParameter("rim", rim);
         m.SetShaderParameter("gloss", gloss);
@@ -1207,8 +1208,8 @@ public partial class BattleFx
         // A five-sided point (ice), a four-sided hook of a thorn, a blunt shard of stone; each one unit tall about its origin.
         Mesh Point(int sides, float top) => new CylinderMesh { TopRadius = top, BottomRadius = 0.5f, Height = 1, RadialSegments = sides, Rings = 1, CapBottom = false };
         iceSpikes = Add(new Batch(Point(5, 0), 400, Crystal(0.35f, 1.6f, 0.05f, 1f), true));
-        thornSpikes = Add(new Batch(Point(4, 0), 400, Crystal(0.12f, 1.4f, 0.5f, 0.15f), true));
-        stoneSpikes = Add(new Batch(Point(5, 0.12f), 200, Crystal(0.02f, 0.4f, 0.8f, 0.25f), true));
+        thornSpikes = Add(new Batch(Point(4, 0), 400, Crystal(0.12f, 1.4f, 0.5f, 0.15f, "crystal_thorn"), true));
+        stoneSpikes = Add(new Batch(Point(5, 0.12f), 200, Crystal(0.02f, 0.4f, 0.8f, 0.25f, "crystal_stone"), true));
     }
 
     /// <summary>A ring of spikes round (x, z) between radii r0 and r1, leaning out.</summary>

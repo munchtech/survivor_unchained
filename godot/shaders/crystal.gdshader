@@ -7,6 +7,12 @@
 // glows (it fades as it sinks). The mesh is one unit tall about its origin.
 shader_type spatial;
 render_mode cull_back;
+// (the material library, godot/data/look/materials.json: this shader's default class, glass: a skill's cut ice, glowing from its root (rule 8: no ink on a source); stone and thorn spikes take rock at the spawn; L1 B2r2)
+#define CEL_INK 2
+#define CEL_SPEC vec4(6.0, 0.75, 1.0, 0.85)
+#define CEL_NO_RIM
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform float emit = 0.4;
 uniform float rim = 2.4;
@@ -38,4 +44,5 @@ void fragment() {
 	vec3 edge = mix(col, vec3(1.0), 0.45 * facet) * fres * rim;
 	vec3 tip = vec3(0.9, 0.97, 1.0) * smoothstep(0.75, 1.0, v_up) * facet * 0.8;
 	EMISSION = (col * emit * root + faces * facet + edge + tip) * COLOR.a;
+	CEL_FRAGMENT;
 }

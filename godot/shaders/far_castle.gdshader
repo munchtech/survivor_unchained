@@ -5,6 +5,10 @@
 // thickens below mist_top (world y) so the ridge under it fades into the air and the castle stands clear of the gate.
 shader_type spatial;
 render_mode fog_disabled;
+// (the material library, godot/data/look/materials.json: this shader's default class, stone: a castle's masonry, far off; L1 B2r2)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic;
 uniform vec3 haze_color : source_color = vec3(0.13, 0.17, 0.27);
@@ -30,4 +34,5 @@ void fragment() {
 	ROUGHNESS = 0.92;
 	float m = clamp((mist_top - wy) / mist_depth, 0.0, 1.0);
 	EMISSION = mix(haze_color, mist_color, m) * h * (1.0 - win) + COLOR.rgb * win * glow_energy;
+	CEL_FRAGMENT;
 }

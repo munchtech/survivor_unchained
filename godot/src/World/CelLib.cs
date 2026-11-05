@@ -79,7 +79,15 @@ public static class CelLib
     static readonly HashSet<ulong> seen = new();
     static readonly Dictionary<string, Shader> variants = new();
     static readonly List<(BaseMaterial3D M, string Key, string Cls)> live = new();
-    static int sweep;
+    static int sweep, watchAt;
+    // (B2r2) The late-assigned: a mesh whose material (or mesh) is set after it entered the tree and was first visited.
+    // Each visited mesh is looked at again every frame for its first YoungFrames frames (a spawn site's material set a
+    // frame or two late), then joins the watch, a few of which are looked at again each frame (a pooled piece re-dressed
+    // later). Visit is cheap on what it has seen (one id lookup per material), so neither scans the tree.
+    const int YoungFrames = 30, WatchPerFrame = 24;
+    static readonly List<(GeometryInstance3D G, ulong Id, int Left)> young = new();
+    static readonly List<(GeometryInstance3D G, ulong Id)> watch = new();
+    static readonly HashSet<ulong> tracked = new();
 
     /// <summary>Hooks the tree (once): every world mesh added from now on, and those already there.</summary>
     public static void Install(SceneTree t)
@@ -99,7 +107,26 @@ public static class CelLib
             queue.Clear();
             foreach (var g in q)
                 if (GodotObject.IsInstanceValid(g) && g.IsInsideTree() && g.GetViewport() == tree!.Root)
+                {
                     foreach (var (m, _) in Slots(g)) Visit(m, g);
+                    var id = g.GetInstanceId();
+                    if (tracked.Add(id)) young.Add((g, id, YoungFrames));
+                }
+        }
+        for (int i = young.Count - 1; i >= 0; i--)
+        {
+            var (g, id, left) = young[i];
+            if (!GodotObject.IsInstanceValid(g)) { young.RemoveAt(i); tracked.Remove(id); continue; }
+            if (g.IsInsideTree()) foreach (var (m, _) in Slots(g)) Visit(m, g);
+            if (left > 1) young[i] = (g, id, left - 1);
+            else { young.RemoveAt(i); watch.Add((g, id)); }
+        }
+        for (int i = 0; i < WatchPerFrame && watch.Count > 0; i++)
+        {
+            watchAt = (watchAt + 1) % watch.Count;
+            var (g, id) = watch[watchAt];
+            if (!GodotObject.IsInstanceValid(g)) { tracked.Remove(id); watch[watchAt] = watch[^1]; watch.RemoveAt(watch.Count - 1); continue; }
+            if (g.IsInsideTree() && g.IsVisibleInTree()) foreach (var (m, _) in Slots(g)) Visit(m, g);
         }
         // (a converted material whose feature set changed since: the engine bound its own shader for the new set)
         for (int i = 0; i < 4 && live.Count > 0; i++)

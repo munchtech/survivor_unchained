@@ -1224,9 +1224,27 @@
   "res://shaders/heroine_teeth_shell.gdshader": "eye",
   "res://shaders/heroine_tongue.gdshader": "eye",
   "res://shaders/heroine_cards.gdshader": "lash",
-  "res://shaders/heroine_cards_blend.gdshader": "lash"
+  "res://shaders/heroine_cards_blend.gdshader": "lash",
+  "res://shaders/glowing.gdshader": "glass",
+  "res://shaders/crystal.gdshader": "glass",
+  "res://shaders/keeper_iron.gdshader": "iron",
+  "res://shaders/chakram.gdshader": "iron",
+  "res://shaders/far_castle.gdshader": "stone",
+  "res://shaders/warden_wet.gdshader": "folk_cloth",
+  "res://shaders/warden_face.gdshader": "folk_skin",
+  "res://shaders/sunder_steel.gdshader": "iron"
  },
  "assign": [
+  {
+   "shader": "crystal",
+   "material": "(?i)thorn",
+   "class": "bark"
+  },
+  {
+   "shader": "crystal",
+   "material": "(?i)stone",
+   "class": "rock"
+  },
   {
    "shader": "person|npc_dye",
    "material": "(?i)skin|body|head|face|hand|arm|leg",
@@ -1372,8 +1390,8 @@
    "shader": "flare_"
   },
   {
-   "what": "water surfaces",
-   "shader": "water|river|ford|puddle"
+   "what": "water surfaces (the Hollow's slurry stream too: a transparent water surface, like the river and the ford)",
+   "shader": "water|river|ford|puddle|slurry_stream"
   },
   {
    "what": "particles (FX)",
