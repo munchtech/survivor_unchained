@@ -9,39 +9,40 @@ Classes design (C2), 5 November 2026. The owner's decision of 4 November is lock
 **The ember lights lamps on her own skills.** Each time it rises she gets three cards, and every card is a dark lamp on a skill she carries. She lights one. It costs nothing and burns until first light. No card is power from nowhere: each one is a lamp she could light for good in town.
 
 **Every lamp changes how a skill plays.** A wick is twelve lamps in three strands, and each strand ends in a **Turn** that transforms the skill. A lamp is one of four things:
-- an element swap: Sunder's edge takes holy fire;
+- an element swap: Sunder takes holy fire, and what it sears burns;
 - a shape: the heavy line splits in three;
 - a trigger: a block swings Oathblade at once;
-- a cost with its pay-off: Sunder swings slower, but every second swing is heavy.
+- a cost with its pay-off: Sunder strikes softer, but every swing sears.
 
-No lamp is a bare "+10%". Each lamp also adds a rank to its skill, and rank is how the skill hits harder. The card shows the rank going up, so nothing is hidden.
+No lamp is a bare "+10%". Each lamp also adds a rank to its skill (a Turn adds two), and rank is how a skill hits harder. The card shows the hit itself rising (Sunder's hit 34 → 39), so nothing is hidden.
 
-**Lit for good.** Each skill earns a point every third level, eight by level 22. At a lamp-post in town a point lights a lamp with oil. From then on it burns from the first second of every fight, by day too, and the ember never offers it again. A Turn takes two points. Changing them stays free in town.
+**Lit for good.** Each skill she carries has its own points, not a shared pool: one at level 1 and one more every third level, eight by level 22. At a lamp-post in town a point lights a lamp with oil. From then on it burns from the first second of every fight, by day too, and the ember never offers it again. A Turn takes two points. Changing them stays free in town, and *Light my way* places any points she leaves to it.
 
-**Try before you buy.** First light puts out what the ember lit, and nothing else. Her own lamps, skills, level, gear and gold stay. Losing a night costs that night's loot and the time spent. The dawn card remembers: *"You lit Splitting Stroke three nights running. Light it for good at the lamp-post: 2 points."* The lamp-post glows on that lamp when she gets back.
+**Try before you buy.** First light puts out what the ember lit, and nothing else. Her own lamps, skills, level, gear and gold stay, and so do the levels the night taught her. Losing a night costs that night's loot and the time spent. The dawn card remembers, and its price is honest. When the strand's three lead-ins already burn for good it reads *"You lit Splitting Stroke three times running. Light it for good at the lamp-post: 2 points."* For a newcomer who can't afford it yet, it names the first step: *"Start it: light Third Blow for good, 1 point."* The lamp-post glows on that lamp when she gets back.
 
 **One rule that scales.** Lamps she has lit for good are already burning, so the ember only offers what she hasn't lit. A newcomer's cards are first lamps and a first Turn. A veteran's are the deep end:
 - a **second Turn** (one may burn beside a Turn she has lit for good);
 - the last lamps of her strands;
 - **Unions**, a lamp two of her skills share once each burns a Turn.
 
-**A newcomer's first night.** She walks into the Low Ford with her sword and her greatsword cleave, and almost nothing lit. The first kill spills ember. When it rises, the fight freezes on three cards and one line explains what a card is. She takes *Third Blow*: every third cleave lands heavy and cracks the ground. Three cards later the strand's Turn is waiting, because a finished strand always deals its Turn. *Splitting Stroke*: every second swing splits the earth. By the time the Warden comes, her sword throws crescents of light and the ground breaks wherever she turns. At first light the lamps go out over the dawn card. It shows what the ember lit, what she keeps (four levels, her gear) and one line telling her what to light for good. Her second and third nights start with that lamp already burning, the Turns she liked come sooner, and a third skill opens at level 4 to light.
+**A newcomer's first night.** She walks into the Low Ford with her greatsword's cleave (Sunder) and Oathblade, the blade that swings on its own. Nothing is lit for good: she has never stood at a lamp-post. The first kill spills ember. When it rises, the fight freezes on three cards and one line explains what a card is. She takes *Third Blow*: every third cleave lands heavy and cracks the ground. Two more cards finish the strand, and the next rise deals its Turn, because a finished strand's Turn is always dealt: *Splitting Stroke*, every second swing heavy, splitting the earth. By the time the Warden comes, her blade throws crescents of light and the ground breaks wherever she turns. At first light the lamps go out over the dawn card. It shows what the ember lit, what she keeps (her gear, the four levels the night taught) and one line telling her what to light for good. At the Waystation's lamp-post her points light for the first time, on that line or on *Light my way*'s. Her second and third nights start with those lamps burning, the Turns she liked come sooner, and a third slot opens at level 4.
 
-**A veteran's tier-4 night.** She queues tier 4 at level 30 with six skills, each already burning eight lamps. From the first second, every other swing splits the ground in three, the bell drags the pack onto her shield, and every blow that lands on her answers in light. Her cards are the deep end. Sunder's heavy line takes holy fire beside the Turn she lit for good. A strand gets its last lamp. Then a Union lights: with Dawnpulse and Judgement Disc each burning a Turn, the disc carries the dawn and breaks into light wherever it strikes. By midnight she has lit everything she can reach, and the horde is what keeps growing. The last cards burn a skill hotter for the endless dark.
+**A veteran's tier-4 night.** She queues tier 4 at level 30 with six skills, eight points burning on each, a Turn among them. From the first second every other swing splits the ground, the bell drags the pack onto her shield, and every blow that lands on her answers in light. Her cards are the deep end, and each rise deals one of them for certain. Sunder's heavy line splits in three, a second Turn beside the one she lit for good. With Dawnpulse and Judgement Disc each burning a Turn, a Union lights: the disc carries the dawn and breaks into light wherever it strikes. Strands take their last lamps. By the boss most of her strands are full. Only the endless runs the ember out of lamps, and then the cards burn a skill hotter.
 
 **Cut:**
 - the day skill book (tomes, "every third level teaches", attribute needs);
 - separate day and night slots;
-- the random draft (new skills at night, passives, blessings, "+X%" rank cards);
+- the random draft (new skills at night, passives, blessings, "+X%" rank cards; a rank comes back only as *Hotter*, when nothing is left to light);
 - CLASSES §2.10's quarter sizes by night;
 - the separate night kit.
 
 **Kept:** a pick every time the ember rises, evolutions (now Turns), Unions, the Flare, the Lamps and Wicks, the table's tier pick, and the endless.
 
-**Three questions for you (my pick first):**
-1. **Where do skills come from, now that tomes go?** *Pick: each skill her calling may carry opens at a level (her type's first), and she chooses what to carry at a lamp-post.* Gear can still lend one. The alternatives are skills found as loot, as with PoE's gems, or every skill open from level 1.
-2. **A Union is one lamp that two skills share, and both keep firing.** Today's merge replaces two skills with one and frees a slot. *Pick: shared (Hades' duo blessings).* A merge at night only loses a skill, because nothing can fill the freed slot until dawn.
-3. **A newcomer's first nights carry two or three skills, not the old night's six.** *Pick: keep the slots (two at level 1, three at 4, six by 20). Her Turns fill the screen.* The alternative is three slots from level 1.
+**Decided here:** a Union is one lamp two skills share, and both keep firing (Hades' duo blessings). Today's merge frees a slot that nothing can fill until dawn, so in a run it only loses a skill. Say if you want the merge back.
+
+**Two questions for you (my pick first):**
+1. **Where do skills come from, now that tomes go?** *Pick: each skill her calling may carry opens at a level (her type's first), and she chooses what to carry at a lamp-post.* Skills come on a schedule the story can teach, and loot stays gear: PoE's gem hunt is its least approachable part. Gear can still lend a skill. The alternatives are skills found as loot, as PoE's gems are, or every skill open from level 1.
+2. **A newcomer's first nights carry two or three skills, not the old night's six.** *Pick: keep the slots (two at level 1, three at 4, six by 20).* One count everywhere, each new slot is a moment, and her Turns fill the screen. The alternative is three slots from level 1.
 
 ---
 
@@ -50,38 +51,40 @@ No lamp is a bare "+10%". Each lamp also adds a rank to its skill, and rank is h
 | | The world (town, the Verge, story zones by day) | A run (table nights, maps, story nights, the prologue's Ford) |
 |---|---|---|
 | Her build | whole: the board, carried skills at their rank, oil lamps, Hand, Flare, gear | the same, whole, from the first second |
-| The ember | does not burn | burns: kills spill it, it rises (about 23 times in a 12-minute tier-1 night, measured on rc3), each rise deals three cards |
+| The ember | does not burn | burns: kills spill it, it rises (about 23 times in a tier-1 night of 10 minutes, measured on rc3), each rise deals three cards |
 | Lamp sizes | in full | in full (CLASSES §2.10's quarter is struck) |
-| At the end | nothing to take | first light puts out the ember's lamps and levels |
+| At the end | nothing to take | first light puts out the ember's lamps; the ember sinks back to nothing |
 
+- **A rise is not a level.** The night also teaches her levels, as today, and those stay. The ember's rises are only the night's cards.
 - **Slots:** two at level 1 (her grip and her type's first skill), three at 4, four at 8, five at 14, six at 20 (CLASS_IDENTITY §3.7, already `SkillBook.SlotsAt`). One count everywhere; the night's six combat slots go.
 - **Skills open by level** (question 1). Each skill record carries `opens` (the warden's in the JSON): her type's signatures at 1-3, the other type's at 4-6, then kindred and valley skills as she grows. She carries any open skill her calling may carry, swapped at a lamp-post in town. Gear that grants a skill is unchanged.
-- **Points and rank:** a carried skill has one point at level 1 and one more every third level (eight at 22: today's `SkillBook.Rank`). A lead-in costs 1, a Turn 2, a Union 2 (one from each of its skills). **A skill's rank is the points burning on its wick**, oil and ember together, and each rank is its growth (+16% damage for most skills, `growth` in skills.json), shown in the skill's sum (`WickBook.Sum`). By day rank is at most 8; a run can take it to 13.
+- **Points:** each carried skill has its own points: one at level 1 and one more every third level (eight at 22: today's `SkillBook.Rank`). A lead-in costs 1, a Turn 2, a Union 2 (one from each of its skills). **A point burns once she lights it at a lamp-post.** *Light my way* places the points she leaves to it there, so a new character's first run (the Ford) has nothing lit for good.
+- **Rank:** a skill's rank is the points burning on its wick, oil and ember together. Each rank is its growth (+16% damage for most skills, `growth` in skills.json), shown as the skill's hit on every card and in its sum (`WickBook.Sum`). By day rank is at most 8 (`Weapons.MaxRank`). In a run it reaches 13 from her lamps (nine lead-ins and two Turns), one more for each Union the skill shares, and *Hotter* adds up to ten a night across all her skills.
 - **The Turn rule:** one Turn per skill by day. In a run a second Turn may burn **beside a Turn lit with oil**. Never a third.
-- **Respec:** free at any lamp-post in a town, never mid-run (§3.5 stands). Light my way spends unplanned points on the suggested strand, so a player who never plans still has every point burning.
+- **Respec:** free at any lamp-post in a town, never mid-run (§3.5 stands). *Light my way* places unplanned points on the suggested strand, then the skill's next strand once that is full, so a player who never plans still has every point burning.
 
 ## 2. The offer (each time the ember rises)
 
 1. **Candidates:** for every carried skill, the first dark lamp of each strand whose parent burns; a Turn only if the Turn rule allows it; every Union whose two skills each burn a Turn.
-2. **Always dealt, never left to chance** (as evolutions are today): a Turn whose three lead-ins burn, and a ready Union. If more are ready than there are cards, the ones on the skill that has dealt the most damage tonight come first.
-3. **The rest, drawn by weight:** ×3 a lamp that continues a strand already burning (oil or ember), ×1.5 Light my way's suggested strand, ×1 any other; a card just shown ×0.15 (a reroll looks again).
-4. **Spread:** at most two of the three cards from one skill, while two or more skills have candidates.
-5. **Never:** a burning lamp, a lamp whose parent is dark, a Turn the rule forbids, a banished lamp (banished for the night).
-6. **Count:** three, a fourth with luck (today's `LevelUp.Count`). Skip, reroll and banish stay.
-7. **Nothing left to light:** the ember's surplus, three cards: *Hotter* (one skill +1 rank tonight, ten at most a night; this is the endless's honing), *Banked* (a third of a Flare), *A draught* (mend 30%).
+2. **One card is always dealt** when anything is ready: the ready Turn or Union on the skill that has dealt the most damage tonight (ties: the one ready longest). A Turn is ready when its three lead-ins burn; a Union when both its skills burn a Turn. The other ready ones are drawn at ×6. (Today's draft deals one weapon's evolutions at a time, and a Union only when no evolution is ready.)
+3. **The rest, drawn by weight:** ×3 a lamp that continues a strand already burning (oil or ember), ×1.5 *Light my way*'s suggested strand, ×1 any other, ×6 a ready Turn or Union not dealt; a card just shown ×0.15 (a reroll looks again). Weights multiply: the next lamp on the suggested strand, already burning, is ×4.5.
+4. **Spread:** at most two cards from one skill, of three or four, while two or more skills have candidates.
+5. **Never:** a burning lamp, a lamp whose parent is dark, a Turn the rule forbids, a banished lamp. A banish closes that strand for the night, and the card says so.
+6. **Count:** three, a fourth with luck (today's `LevelUp.Count`). Skip, reroll and banish stay. With fewer candidates than cards, the surplus fills the rest.
+7. **Nothing left to light:** the ember's surplus, three cards: *Hotter* (the skill that has dealt the most tonight burns one rank hotter until first light, its hit shown rising; ten a night in all; this is the endless's honing), *Banked* (a third of a Flare), *A draught* (mend 30%).
 
-The card: the lamp's name, the skill's glyph, its strand's pips (which lamp of four), the one line, and "rank 4 → 5" (a Turn "→ 6"). A Turn's card is drawn larger. A Union shows both glyphs.
+**The card:** the lamp's name, the skill's glyph, its strand's pips (which lamp of four), the one line, and the skill's hit rising with its rank: "34 → 39 (rank 4 → 5)", a Turn two ranks. A Turn's card is drawn larger, and one that takes over a lead-in says so ("takes Third Blow's place"; the lead-in keeps its rank). A second Turn's card says why it may burn ("beside Splitting Stroke, lit for good"). A Union shows both glyphs. The line's keywords (heavy, sear, bleed, barrier, Stone, the wall answers, champion, lesser things, daylight and the rest) are marked, and holding the card reads each in one line (the JSON's `keywords`). On the wick panel, a dark Turn on a skill that already burns one reads "one Turn on this skill by day; a second in a run, beside one lit for good".
 
 ## 3. What dawn takes, and what the dawn card remembers
 
-- **First light takes:** every lamp the ember lit and the ranks they brought, and the ember's levels. **On a loss** it also takes the run's loot (today's rule), and the time (story nights wake her in town).
-- **Never:** oil lamps, the board, her skills, her level, her gear, gold already banked, traits.
-- **The card** (H8's `DawnCard`, re-worded by the build lead when the rule lands; not touched here): the ember's lamps by name (Turns first, then "and N more"); "You keep": your lamps, your gear, your gold, the level the night taught; and **one memory line**, the first that applies:
-  1. a lamp lit three or more runs running: *"You lit Splitting Stroke three nights running. Light it for good at the lamp-post: 2 points."*
-  2. else the Turn on the skill that dealt the most damage: *"Splitting Stroke did most of your killing tonight."* plus the same price;
-  3. else the first Turn she lit.
-- **The price** is the lamp's cost plus any dark lamps under it. If the skill hasn't the points yet, the line names the first lamp of that strand she can light now: *"Start it: light Third Blow for good (1 point)."*
-- **The save keeps** each lamp's runs lit and the last run's number. The lamp-post glows that lamp until she lights it or dismisses it.
+- **First light takes:** every lamp the ember lit and the ranks they brought, and the ember sinks back to nothing. **On a loss** it also takes the run's loot (today's rule) and the time (story nights wake her in town).
+- **Never:** oil lamps, the board, her skills, her level and the levels the night taught, her gear, gold already banked, traits.
+- **The card** (H8's `DawnCard`, re-worded by the build lead when the rule lands; not touched here): the ember's lamps by name (Turns first, then "and N more"); "You keep": your lamps, your gear, your gold, the levels the night taught; and **one memory line**, the first that applies:
+  1. a lamp lit three or more runs running: *"You lit Splitting Stroke three times running."*;
+  2. else the Turn on the skill that dealt the most damage: *"Splitting Stroke did most of your killing tonight."*;
+  3. else the first lamp she lit.
+- **The price line** follows the memory line. The price is the lamp's cost plus the dark lamps under it (its strand's lead-ins not yet lit for good). If the skill has that many points in all (respec is free, so spent points count): *"Light it for good at the lamp-post: 2 points."* If it hasn't, the line names the first lamp of that strand she can light now: *"Start it: light Third Blow for good, 1 point."*
+- **The save keeps** each lamp's count of runs lit in a row and the last run's number. The lamp-post glows that lamp until she lights it or dismisses it.
 
 ## 4. The data model (`godot/data/content/skill_lamps.json`)
 
@@ -92,9 +95,10 @@ The card: the lamp's name, the skill's glyph, its strand's pips (which lamp of f
 - `turn`, `cost`, `effects` (engine keys);
 - `engine`: `built` (the sim does it today), `rule` (a named rule exists), `new` (to build);
 - `from` (what it replaces: an evolution, a v1 skill lamp, a built Turn);
+- `supersedes` (the lead-ins whose effect a Turn takes over; they keep their rank);
 - `draft: true` where the name waits for the story writer.
 
-Each skill's header lists its strands, the suggested strand (Light my way) and `opens`.
+Each skill's header lists its strands, the suggested strand (*Light my way*) and `opens`. The top-level `keywords` holds the card's one-line explanations. `tools/classes/skill_lamps_check.py` checks the file: parents, Turns, costs, kinds, unique names, no bare-percent line, no barrier or mend under 2% of health an event unless the line holds a cap of 2% or more, Stones a line can reach, and the keywords.
 
 ## 5. The migration list (for the build lead)
 
@@ -104,34 +108,42 @@ Each skill's header lists its strands, the suggested strand (Light my way) and `
    - rank cards ("+16% damage");
    - the passives and their catalysts;
    - great and milestone blessings;
-   - the Flare's four blessings (`bright_hour`, `ember_answers_twice`, `short_wick`, `called_shot`): the Flare lead folds them into Flare lamps or retires them.
+   - `LevelUp.Respite` (Second Wind 35%, Scavenged Coin): §2's surplus replaces it;
+   - the Flare's four blessings (`bright_hour`, `ember_answers_twice`, `short_wick`, `called_shot`): the Flare lead folds them into Flare lamps or retires them;
+   - **chests** (`ChestItemKind` Evolution, Rank and Passive): a chest lights the top 1, 3 or 5 of tonight's candidates by weight, a ready Turn first.
 
    §2's offer replaces it. Kept: `Count`, skip, reroll, banish.
-3. **Evolutions become Turns.** Two per base skill, on its wick (the warden's six are in the JSON). `Battle.Evolve` becomes lighting a Turn; catalysts go.
+3. **Evolutions become Turns.** Each evolution becomes a Turn on its skill's wick (the warden's are in the JSON, named in `from`). `Battle.Evolve` becomes lighting a Turn. Catalysts go, and with them gear's `stand:` keys (gear that stands in for a catalyst, `kit.Stands` in `Character.cs`; the loot lead).
 4. **Unions become shared lamps.** Each needs a Turn burning on both skills; both keep firing; the union weapon's behavior becomes the lamp's effect. The merge and the freed slot go.
 5. **`SkillBook` retired.**
    - `Learn`, `Tome`, `Calling()`, `Meets`, `Attribute`, `Need`, `NightRank`, `Attuned` and `Familiar` go.
    - `SlotsAt` stays as the one slot count; `Rank` stays as points by level.
    - `opens` replaces learning.
+   - `Weapons.MaxRank` (8) caps `SkillBook.Rank` and drives the "at rank 8 it evolves" hint. It stays the day's cap; a run's is §1's (13, plus Unions and *Hotter*); the hint goes.
    - Tomes leave the loot tables, shops and quest rewards (the loot lead).
    - Saves: known skills open, slotted skills carried, discovered dropped.
-6. **`WickBook`:** from "a plan, and rank lights its first r" to a lit set: oil lamps (paid with points) and ember lamps (tonight). `Battle.Relight` goes. Rank = points burning.
+6. **`WickBook`:** from "a plan, and rank lights its first r" to a lit set: oil lamps (paid with points at a lamp-post) and ember lamps (tonight). `Battle.Relight` goes. Rank = points burning. The `night` flag on `WickBook.Sum` and the `Content.Wicks` loader go; `Sum` reads the lit set.
 7. **`Journey.StartBattle` and `Journey.Douse`:**
    - A run starts with the whole build: `Character.Kit(ch)` as by day, sizes in full.
    - `EmberOn` is set only in a run. `b.Night` becomes mood only.
-   - `Douse` puts out ember lamps and ember levels and leaves the carried skills as they are; it no longer rebuilds the kit from gear.
+   - `Douse` puts out the ember's lamps and sinks the ember, and leaves the carried skills as they are; it no longer rebuilds the kit from gear.
+   - `kit.StartLevels` (the `spark` trait, the `ember_start` tag) stays as rises at minute 0, each dealing its offer.
    - The two gear kits (`Kits`, CRAFTING_DESIGN 20.2) fold into one, and coals and Marks work in every run (the crafting lead).
-8. **CLASSES §2.10 struck.** `LampLoadout.Night`, `Lamps.NightSize`, `NightCut`, `GiftSize`, `ReflexSize` and the smalls' road lean go. Every lamp works in full everywhere, and the board's smalls give their own numbers.
+8. **CLASSES §2.10 struck.** `LampLoadout.Night`, `Lamps.NightSize`, `NightCut`, `GiftSize`, `ReflexSize` and the smalls' road lean go. Every lamp works in full everywhere, and the board's smalls give their own numbers. `LampBook.Switch` is gated on "not `TimeOfDay.Night`" (LAMPS_V2_RULES): the gate becomes "not in a run".
 9. **The Lamps screen and wick panel** (UI lead):
    - an ember lamp is drawn as an ember (ember color, a slow flicker), an oil lamp burns steady, a dark lamp is dark;
    - no points are shown or spent during a run, and an ember lamp reads "until first light";
-   - the lamp-post glows the dawn's suggestion;
-   - a skill's rank reads as the points burning.
-10. **The dawn card** (`DawnCard.Build`): H8's words are re-worded to §3 ("The ember takes" becomes the ember's lamps by name), plus the memory line. `CharacterData` gains each lamp's runs lit and last run.
+   - points are lit only at a lamp-post, and the lamp-post glows the dawn's suggestion;
+   - a skill's rank reads as the points burning, and its hit as a number;
+   - the card's keywords and its Turn lines (§2).
+10. **The dawn card** (`DawnCard.Build`): H8's words are re-worded to §3 ("The ember takes" becomes the ember's lamps by name), plus the memory line and the price line. `CharacterData` gains each lamp's runs lit in a row and the last run.
 11. **The tutorial** (`docs/story/TUTORIAL_COPY.md`; the story lead owns the words):
     - F4 "A skill" becomes one card explained at the first rise: a freeze, the arrow on the card's skill glyph and strand pips. *"The ember lights a lamp on one of your skills. Choose one. It burns until first light."*
+    - F5 ("First light takes it back") is cut: she starts with her skills, and nothing she carries is lent.
     - F3 (the great blessing) is cut.
     - F12's middle line becomes *"The ember's lamps went out at first light. Light the ones you liked for good at a lamp-post."*
+    - New, at her first lamp-post: *"Each skill has its own points. A point lights a lamp for good; a Turn takes two. Change them free here."*
+    - F9 ("Three lamps guard the Warden"): the boss's lamps share the word with her skill lamps in the same prologue. The story lead checks the two can't be confused, and renames the boss's if they can.
 12. **The harness:**
     - The bots play a full build from minute 0 (`--onebuild`, §6).
     - One balance band for all replaces "a full board at night within ×1.25 of an empty one" and the ×1.25 night lean. At each tier, for every level band that plays it, the human wins 78-85%, deft 95%+, standing falls 80%+ and idler 70%+.
@@ -145,30 +157,31 @@ Each skill's header lists its strands, the suggested strand (Light my way) and `
 
 Numbers only. No retuning here; that is the build lead's job.
 
-**The setup.** The harness switch `--onebuild` lives under godot/balance only (commit cbde3e259). It approximates the rule until the offer exists:
-- She starts with her slots' worth of her calling's skills at day rank, wicks lit by Light my way, and the board lit for her level.
+**The setup.** The harness switch `--onebuild` lives under godot/balance only (commit cbde3e259; without the flag a run writes the same lines as before it, checked by sorted-line compare on arena, types, pair and story batches). It approximates the rule until the offer exists:
+- She starts with her slots' worth of her calling's skills at day rank, wicks lit by *Light my way*, and the board lit for her level.
 - Lamp sizes are in full by night.
 - The draft can only rank or hone what she carries. A rank still lights the next wick lamp, so the night still climbs.
 
-It is the Pack's board, tier 1 (a 10-minute table night). The numbers are won/fell %, across the four callings.
+It is the Pack's board, tier 1 (a table night of 10 minutes). The numbers are won/fell %, across the four callings; "standing falls at" is the standing bot's median time to fall, and "longest quiet" the human's median longest stretch, from 0:45 to the boss, without a mark laid on her.
 
-| Run | Seeds | standing | idler | kiter | human (lowest life) | careless | deft | human's boss s |
-|---|---|---|---|---|---|---|---|---|
-| R0 rc3 at HEAD, level 1, the old draft | 16 | 0/100 | 28/72 | 9/91 | 84/16 (0.27) | 67/33 | 98/2 | 138 |
-| R1 one build, level 5 (3 skills, rank 2) | 32 | 0/100 | 3/97 | 4/96 | **61/39** (0.22) | 39/61 | **76/24** | 230 |
-| R2 one build, level 10 (4 skills, rank 4) | 16 | 0/100 | **61/39** | 27/73 | **100/0** (0.35) | 98/2 | 100/0 | 142 |
-| R3 one build, level 30, full board, tier 1 | 16 | 5/95 | | | 100/0 (0.54) | | 100/0 | 58 |
-| R3 the same, **tier 4** | 16 | **23/77** | | | **75/25** (0.41) | | **83/17** | 65 |
+| Run | Seeds | standing | standing falls at | idler | kiter | human (lowest life) | longest quiet | careless | deft | human's boss s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| R0 rc3 at HEAD, level 1, the old draft | 16 | 0/100 | 74 s | 28/72 | 9/91 | 84/16 (0.27) | 23 s | 67/33 | 98/2 | 138 |
+| R1 one build, level 5 (3 skills, rank 2) | 32 | 0/100 | 97 s | 3/97 | 4/96 | **61/39** (0.22) | 23 s | 39/61 | **76/24** | 230 |
+| R2 one build, level 10 (4 skills, rank 4) | 16 | 0/100 | 113 s | **61/39** | 27/73 | **100/0** (0.35) | 24 s | 98/2 | 100/0 | 142 |
+| R3 one build, level 30, full board, tier 1 | 16 | 5/95 | 165 s | | | 100/0 (0.54) | 28 s | | 100/0 | 58 |
+| R3 the same, **tier 4** | 16 | **23/77** | 131 s | | | **75/25** (0.41) | 24 s | | **83/17** | 65 |
 
-Read against H6's gate (standing falls 80%+, idler 70%+, human wins 78-85%, deft 95%+):
-- **The 45-60 s rule holds on a full build.** Standing still falls on every tier-1 night at every level, even at level 30 with the full board (95%). Marks on her before the boss stay at 22-28 a night (R0: 23).
+Read against H6's gate (something to dodge every 45-60 s; standing falls 80%+, idler 70%+, human wins 78-85%, deft 95%+):
+- **The 45-60 s rule holds on a full build.** The human's longest stretch without a mark laid on her is 23-28 s at every level (rc3: 23 s), inside 45-60 s. Standing still falls on every tier-1 night at every level, 95% even at level 30 with the full board, though later as her build grows: a median of 74 s on rc3, 97 s at level 5, 113 s at level 10 and 165 s at level 30.
 - **The bands don't hold yet**, and they miss in both directions:
   - At level 5 the first table night is too hard: human 61%, deft 76%. The reaver's human wins only 12%, against the warden's 91%, the stalker's 75% and the arcanist's 66%.
   - At level 10 it is too easy: the human wins every night, and the idler wins 61%.
   - A veteran at tier 4 sits under the band (human 75%, deft 83%), with standing just under the gate (falls 77%).
+  - R3's tier 1 (human 100%) is not a level-30 player's tier: it is there for the standing check, and the band applies to the level bands that play a tier.
   - The old night evened out every level by drafting from nothing. One build has to be tuned per level band and tier, which is §5 item 12's single balance band.
 - **What it doesn't measure:**
-  - the real offer (a choice of lamp, the new lead-ins, Turns always dealt, second Turns, Unions);
+  - the real offer (a choice of lamp, the new lead-ins, the one card always dealt, second Turns, Unions);
   - chests, which still open by the old rules.
   - The human's ember still reaches 25 by the end of a tier-1 night, so about 23-25 rises a night stands.
 - **The data:** scratch `classes_c2\h\r0-r3.jsonl` (backed up to `survivorsunchained_inputs\scratch_classes_c2\`), `run.sh`; `python tools/balance/danger.py <file> --by tier` or `--by calling`.

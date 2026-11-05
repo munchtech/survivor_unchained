@@ -15,6 +15,12 @@ STAT = r"(?:damage|area|cooldown|speed|reach|size|range|radius|duration|harder|w
 ONLY_PERCENT = re.compile(
     r"^\s*(?:[A-Z][\w' -]*?\s+(?:is|are|has|gets|deals|strikes|reaches|swings|hits|lasts|comes|runs|flies)\s+)?"
     r"[+-]?\d+(?:\.\d+)?%\s+(?:" + STAT + r"\s*){1,2}(?:\s+(?:damage|area|cooldown|speed|reach|size|range))?\s*\.?\s*$", re.I)
+# A barrier or a mend too small to feel (the judge, 5 Nov): under 2% of health an event, unless the line holds
+# a cap of 2% or more ("1% for each thing it strikes, 8% at most"; "0.5%, 15% held at most").
+SMALL = re.compile(r"(?:barrier of|mends you) (\d+(?:\.\d+)?)% of health")
+CAP = re.compile(r"(\d+(?:\.\d+)?)%(?: held)? at most")
+# Stones: the wall answers at six and the count starts over, so a line can never ask for six or more held.
+STONES = re.compile(r"(\d+) or more Stones")
 BRITISH = re.compile(r"\b(armour|colour|honour|favour|behaviour|grey|metre|centre|defence|plough|whilst|towards|ardour|valour|splendour)\b", re.I)
 
 
@@ -22,7 +28,7 @@ def main():
     probs = []
     txt = (CONTENT / "skill_lamps.json").read_text(encoding="utf-8")
     d = json.loads(txt)  # strict JSON: no comments
-    for k in ("about", "rules", "skills", "lamps", "unions"):
+    for k in ("about", "rules", "keywords", "skills", "lamps", "unions"):
         if k not in d:
             probs.append(f"missing top-level '{k}'")
     costs = d["rules"]["costs"]
@@ -102,13 +108,16 @@ def main():
             probs.append(f"{uid}: engine '{u.get('engine')}'")
         check_text(uid, u["name"], u["rule"], banned, seen_names, probs)
 
+    kw = d.get("keywords", {})
+    if not kw or not all(isinstance(v, str) and v and "\n" not in v for v in kw.values()):
+        probs.append("keywords: needs one line for each keyword")
     nl = len(d["lamps"])
     if probs:
         print(f"skill_lamps_check: {len(probs)} problem(s) in {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions")
         for p in probs:
             print("  " + p)
         return 1
-    print(f"skill_lamps_check: OK: {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line")
+    print(f"skill_lamps_check: OK: {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, Stones reachable, keywords")
     return 0
 
 
@@ -124,6 +133,12 @@ def check_text(lid, name, rule, banned, seen_names, probs):
         probs.append(f"{lid}: rule has no number")
     if ONLY_PERCENT.match(rule):
         probs.append(f"{lid}: rule is only a percent: '{rule}'")
+    for m in SMALL.finditer(rule):
+        if float(m.group(1)) < 2 and not any(float(x) >= 2 for x in CAP.findall(rule)):
+            probs.append(f"{lid}: {m.group(1)}% of health is too small to feel (2% or more, or a cap of 2% or more)")
+    for m in STONES.finditer(rule):
+        if int(m.group(1)) >= 6:
+            probs.append(f"{lid}: {m.group(1)} or more Stones can never be held (the wall answers at six)")
     if BRITISH.search(rule) or BRITISH.search(name):
         probs.append(f"{lid}: British spelling in '{name}: {rule}'")
 
