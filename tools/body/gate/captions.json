@@ -1,10 +1,17 @@
 {
  "title": "P1 GATE: her bare shape, A = the shipped body, B = ours (her_ek2_final, body-p1). Pick A or B.",
- "sub": "B tris: close body 76,088, play 21,284. Same head, same game cameras, no judge (the owner's eyes are the pick). Defects are captioned, not fixed.",
+ "sub": "B tris: close body 76,088, play 21,284. Same head, same game cameras. ONE max judge (API, $0.87), its line per pair below; the owner's eyes are the pick. Defects are captioned, not fixed.",
  "look_look": "Look camera. B: shoulders higher and wider; a lumpy bump at her left deltoid/armpit (screen right); breasts sit lower with a deep underbust fold; bluish patch at the throat. A's arm band (paint) does not show on B.",
  "close_town": "Close-up, town idle. B: squarer, wider shoulders; a notch at her left deltoid (screen right); a faint line across the base of the throat; breasts lower, belly smoother. No arm band on B.",
  "play_town": "Play camera, town. B reads close to A at this distance; shoulders a touch higher and squarer.",
  "play_play": "Play camera, arena idle. B reads close to A; skin a shade lighter, shoulders a touch squarer.",
  "hip": "Hip flex strips at 0 / 90 / 135 (B, close and play); 112 is measured only (close: 122 verts inside, max 37 mm; 135: 215 inside, max 25 mm). judge_E: 135 a hard dark straight line, the belly never rolls over the thigh. Planned route (after the pick): an offline FEM soft-tissue solve baked into the 105/120/135 keys + a designed groin crease loop.",
- "foot": "MakeHuman (CC0) = the reference surface, slider shape samples, hand/foot templates, landmark targets, the head's ancestry. Ours = topology, correspondence, sliders, skeleton (hip, knee, spine, neck/head rules by anatomy), weights, correctives, UVs, the check."
+ "foot": "MakeHuman (CC0) = the reference surface, slider shape samples, hand/foot templates, landmark targets, the head's ancestry. Ours = topology, correspondence, sliders, skeleton (hip, knee, spine, neck/head rules by anatomy), weights, correctives, UVs, the check.",
+ "judge": {
+  "look_look": "A YES, B NO; A better: B's left-deltoid knob breaks her shoulder silhouette, on top of shrugged, boxy shoulders.",
+  "close_town": "A YES, B NO; A better: B has a hard light seam across the front of the throat, plus the deltoid knob.",
+  "play_town": "A YES, B YES; A better, barely: at ~100 px they match; B's shoulders a touch wider and squarer from behind.",
+  "play_play": "A NO, B NO (the arena floor and rock shards, both bodies clean); A better, barely: B's underbust fold reads as a dark band.",
+  "overall": "A for the bare shape; if B, the one fix: shoulders down and in to A's line, the deltoid knob gone (then the throat seam, a bake fix). Also: B's torso pinker than the head, waxier skin, a stiff splayed idle hand."
+ }
 }

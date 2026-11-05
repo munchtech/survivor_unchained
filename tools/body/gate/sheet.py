@@ -31,7 +31,9 @@ for k in ["look_look", "close_town", "play_town", "play_play"]:
     a = Image.open(WT / f"{k}_A.png").convert("RGB"); b = Image.open(WT / f"{k}_B.png").convert("RGB")
     pair = Image.new("RGB", (a.width + b.width, a.height)); pair.paste(a, (0, 0)); pair.paste(b, (a.width, 0))
     pair.save(out / f"GATE_{k}_1to1.png")
-    blocks.append(bar([f"{k}   A = shipped (left)  |  B = ours (right)", cap[k]], 124, [f_c, f_s], [FG, DIM]))
+    jl = cap.get("judge", {}).get(k)
+    blocks.append(bar([f"{k}   A = shipped (left)  |  B = ours (right)", cap[k]] + ([f"JUDGE (max): {jl}"] if jl else []),
+                      124, [f_c, f_s, f_s], [FG, DIM, (240, 200, 90)]))
     blocks.append(pair.resize((W, round(pair.height * W / pair.width)), Image.LANCZOS))
 
 # the hip, OPEN
@@ -44,6 +46,7 @@ d.text((12, 4), "close tier (B)", font=f_s, fill=DIM); d.text((sc.width + 40, 4)
 row.paste(sc, (0, 50)); row.paste(sp.resize((min(sp.width, W - sc.width - 16), round(sp.height * min(sp.width, W - sc.width - 16) / sp.width))), (sc.width + 16, 50))
 d.rectangle([0, 0, W - 1, row.height - 1], outline=RED, width=6); d.text((W - 220, 2), "OPEN", font=f_t, fill=RED)
 blocks.append(row)
+if cap.get("judge", {}).get("overall"): blocks.append(bar([f"JUDGE (max, overall): {cap['judge']['overall']}"], 64, [f_c], [(240, 200, 90)]))
 blocks.append(bar([cap["foot"]], 64, [f_s], [DIM]))
 
 H = sum(b.height for b in blocks); s = Image.new("RGB", (W, H), BG); y = 0
