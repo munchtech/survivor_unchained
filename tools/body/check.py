@@ -144,10 +144,13 @@ def topology(files):
         z = dict(np.load(tp, allow_pickle=True))
         per = {m.node: m for m in g.meshes}
         body = "Heroine" if "Heroine" in per else guess_body(g)
-        if len(per[body].P) != len(z["V"]):
-            out[tier] = {"error": f"{body} has {len(per[body].P)} vertices, {tp} has {len(z['V'])}"}
+        P = per[body].P
+        if ((g.js.get("extras") or {}).get("body_base") or {}).get("split"):     # E2: UV seam copies appended
+            P = P[:len(z["V"])]
+        if len(P) != len(z["V"]):
+            out[tier] = {"error": f"{body} has {len(P)} vertices, {tp} has {len(z['V'])}"}
             continue
-        out[tier] = dict(topo_check.measure(per[body].P, z, g.skeleton()), topology=str(tp))
+        out[tier] = dict(topo_check.measure(P, z, g.skeleton()), topology=str(tp))
     return out
 
 
