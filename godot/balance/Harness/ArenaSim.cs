@@ -18,7 +18,8 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty", string For = "", string Flare = "", string Bot = "", bool OneBuild = false)
+    string Type = "", string Lamps = "empty", string For = "", string Flare = "", string Bot = "",
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)] bool OneBuild = false)
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
@@ -92,8 +93,10 @@ public sealed class RunResult
     /// <summary>The survivor's type (road) and the lamps lit (free ones too) at the start.</summary>
     public string Road = "";
     public int LampsLit;
-    /// <summary>--onebuild: the skills carried from minute 0 (docs/design/ONE_BUILD.md).</summary>
-    public string[] Kit = [];
+    /// <summary>--onebuild: the skills carried from minute 0 (docs/design/ONE_BUILD.md). Null, and left out of the line, without the flag,
+    /// so a run without it writes the same bytes as before the switch.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string[]? Kit;
     /// <summary>The lit lamp ids (a measuring aid: which lamps a board carries).</summary>
     public string LampIds = "";
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
@@ -284,7 +287,7 @@ public static class ArenaSim
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new ArenaRun(host, map, arena);
         var at = zone.ArrivalFrom(null);
-        string[] onebuildKit = [];
+        string[]? onebuildKit = null;
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
         if (fx is { NoWicks: true }) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }

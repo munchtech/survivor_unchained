@@ -138,7 +138,8 @@ Each skill's header lists its strands, the suggested strand (Light my way) and `
 13. **Maps and story nights:**
     - The ember burns in maps too.
     - Story nights stop "starting with nothing"; their ember floors and great blessings go, and their stages are re-measured.
-14. **Docs:** CLASSES §2.10, CLASS_IDENTITY §3.2 "By night" and §3.3 "Points" are marked superseded by this page.
+14. **Her swings land on the clip's contact frame** (A1's routing, GATE M1). Today a swing's damage lands on the sim's own timer, and no C# reads the clip's contact frame. In the Warden slice a melee blow (her grip's swings, Sunder, Oathblade, Groundbreaker's heave) deals its damage on its clip's contact frame, so the lamps that count swings and heavy blows (*Third Blow*, *Splitting Stroke*, *Crescent*) land on the frame the player sees. The combat lead, with A1's Stage B clips.
+15. **Docs:** CLASSES §2.10, CLASS_IDENTITY §3.2 "By night" and §3.3 "Points" are marked superseded by this page.
 
 ## 6. The harness note (H6's 45-60 s rule, on a full build)
 
