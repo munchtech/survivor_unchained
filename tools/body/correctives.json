@@ -114,11 +114,11 @@
    "keys": [
     [
      "knee",
-     45
+     90
     ],
     [
      "knee",
-     90
+     135
     ]
    ],
    "r_in": 0.08,
@@ -126,7 +126,7 @@
    "pull": [
     "outer"
    ],
-   "cap": 0.015,
+   "cap": 0.03,
    "proximal": "thigh_{s}",
    "distal": "calf_{s}",
    "distal_end": "foot_{s}",
@@ -152,7 +152,35 @@
     0.1,
     0.9
    ],
-   "fold": "plane"
+   "fold": "flatten",
+   "side": "geom",
+   "clamp": 1,
+   "solve": {
+    "outline": 10,
+    "pressure_band": 0.01
+   },
+   "per_key": {
+    "90": {
+     "pull": [
+      "outer",
+      "inner"
+     ],
+     "plane_at": "corner",
+     "corner_ramp": 0.02,
+     "bow": -0.6,
+     "solve": {
+      "margin": 0.0005
+     }
+    },
+    "135": {
+     "pressure": 3.0,
+     "pressure_to": {
+      "p": 1.0,
+      "d": 0.88
+     }
+    }
+   },
+   "why": "P1 D (5 Nov), on OUR topology and weights v1. The flatten fold (crease_fold.py) now, not v1's 'plane' solve; keys 90 and 135 (the 45 key dropped: LBS holds there and the 90 key's hat starts at the rest 4.8). side 'geom' as the elbow's. 90: LBS has no crossing but the back of the knee caves to the joint (the inner outline 35 px off the reference corner); the inner and outer curves pulled (cap 30 mm), the contact held through the reference's inner corner, not the joint (corner_shift: a thin back of the thigh against a full calf puts the corner 13 mm toward the thigh; a fold held on the joint's plane dented the crease there), the shift eased in over 20 mm from the joint's axis (a full shift at the axis drove the thigh's skin into the calf beside the joint: 11 inside), margin 0.5 mm (1.5 mm left a 3 mm see-through slit 18 mm deep in the side view) and the contact sagged 1.5 mm at 5 cm across the limb (bow -0.6/m: a flat contact seen edge-on still shows its 1 mm gap as a slit, 19 px; a soft contact is not flat). 135: the elbow's pressure (p 1.0, d 0.88), the outer curve only."
   }
  ]
 }

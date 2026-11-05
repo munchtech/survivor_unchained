@@ -75,7 +75,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     else:
         shift = 0.0
     ramp = jc.get("corner_ramp", 0.0)       # the shift eased in from the joint's axis into the crease (m along e1)
-    offn = lambda Yc: shift * (smooth01(((Yc - Oj) @ wv) / ramp) if ramp > 0 else np.ones(len(Yc)))
+    bow = jc.get("bow", 0.0)                 # the contact surface's sag across the limb (1/m): a flesh contact, not a plane
+    hv0 = np.cross(bends.unit(a_ - b_), bends.unit(a_ + b_))
+    offn = lambda Yc: (shift * (smooth01(((Yc - Oj) @ wv) / ramp) if ramp > 0 else np.ones(len(Yc)))
+                       + bow * ((Yc - Oj) @ hv0) ** 2)
     # rest-space sideways: the swell's room (the sides, not the crease or the outer)
     je, jd = I[sub(jc["distal_end"])], I[sub(jc["distal"])]
     d_rest = bends.unit(p.rest[je][:3, 3] - p.rest[jd][:3, 3])
