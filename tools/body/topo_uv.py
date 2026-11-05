@@ -15,8 +15,16 @@ The layout (the left half, x >= 0; the right half is the left's MIRRORED COPY, o
            LEG    regions 11 12 (parts thigh knee shin): leg root -> ankle ring (shin|foot), cut along the inside leg.
            HAND_BACK, HAND_PALM  region 9 (part hand): split on the hand's sides (each quad by its normal against
                   the hand's thin axis, smoothed), so the knuckles and the palm are each whole.
-           FOOT_TOP, FOOT_SOLE   region 13 (part foot): the sole (normals down) apart; the top cut from the ankle's
-                  inner point (the leg's cut, continued) down to the sole's rim, on the inner side.
+           THUMB_BACK, THUMB_PALM  (E2) the hand's quads nearest our thumb's bones past thumb_02 (the opposed thumb
+                  folded over the palm's sheet), each half from its side of the back | palm split.
+           FOOT_TOP, FOOT_SOLE   region 13 (part foot) behind the toes: the sole (normals within 75 degrees of down)
+                  apart; the top cut from the ankle's inner point (the leg's cut, continued) down to the sole's rim.
+           TOES_TOP, TOES_SOLE   (E2) the toes ahead of our ball_l plane (the crease the toes bend on), split by
+                  half height. Floors (checked, pieces solved alone): each toe half alone p95 1.16-1.17, the thumb's
+                  pad alone 1.25: the templates' own caps; joined they read 1.18 / 1.26 / 1.22, kept joined (an island per
+                  toe still misses 1.15 and seams every toe).
+  triangles each quad split on its shorter diagonal, or a concave quad on its inside one (quad_diag: fixed per
+                  topology; the export, the solves and the bake share it).
   mirror   overlapping copies (why: L1's "a painted half mirrors clean" holds by construction, every texel of the
            2k map serves both halves, so her body's texel density doubles; asymmetric marks are not in her look
            (clean painted skin). The center vertices are split left|right (same UV) so each half keeps its own
@@ -50,9 +58,10 @@ from scipy.spatial import cKDTree
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 VERSION = "uv1"
-ISL = ["TORSO_FRONT", "TORSO_BACK", "ARM", "LEG", "HAND_BACK", "HAND_PALM", "FOOT_TOP", "FOOT_SOLE"]
+ISL = ["TORSO_FRONT", "TORSO_BACK", "ARM", "LEG", "HAND_BACK", "HAND_PALM", "FOOT_TOP", "FOOT_SOLE", "TOES_TOP", "TOES_SOLE", "THUMB_BACK", "THUMB_PALM"]
 DENS_KEY = {"TORSO_FRONT": "body", "TORSO_BACK": "body", "ARM": "body", "LEG": "body", "HAND_BACK": "hands", "HAND_PALM": "hands",
-            "FOOT_TOP": "feet", "FOOT_SOLE": "feet"}
+            "FOOT_TOP": "feet", "FOOT_SOLE": "feet", "TOES_TOP": "feet", "TOES_SOLE": "feet",
+            "THUMB_BACK": "hands", "THUMB_PALM": "hands"}
 REGION_ISLAND = {4: "TORSO_FRONT", 5: "TORSO_FRONT", 6: "TORSO_FRONT", 10: "TORSO_FRONT", 7: "ARM", 8: "ARM", 11: "LEG", 12: "LEG",
                  9: "HAND", 13: "FOOT"}
 TEX = 2048
@@ -83,6 +92,28 @@ def vertex_normals(V, Q):
     for k in range(4):
         np.add.at(n, Q[:, k], fn)
     return U(n)
+
+
+def quad_diag(V, Q):
+    """(E2) per quad, True where it splits along 1-3 (else 0-2). (a) A concave or folded quad (its two splits' areas
+    more than 2% apart) takes the diagonal whose triangles cover the least area: the outside diagonal folds the two
+    triangles over each other (the nape's thin kite at the center line flipped in UV and stretched 21x on 0-2).
+    Otherwise the shorter diagonal (the better-shaped pair: the measured best of min-area, shorter, max-min-angle on
+    the toes, palm and torso). Fixed per topology from its reference V, so every body on it splits the same way."""
+    P = V[Q]
+
+    def ar(a, b, c):
+        return 0.5 * np.linalg.norm(np.cross(P[:, b] - P[:, a], P[:, c] - P[:, a]), axis=1)
+    a02, a13 = ar(0, 1, 2) + ar(0, 2, 3), ar(1, 2, 3) + ar(1, 3, 0)
+    short13 = np.linalg.norm(P[:, 3] - P[:, 1], axis=1) < np.linalg.norm(P[:, 2] - P[:, 0], axis=1)
+    return np.where(np.abs(a13 - a02) > 0.02 * a02, a13 < a02, short13)
+
+
+def quad_tris(C, diag):
+    """The triangles of quads C [m,4] (corner indices), first triangles then second (row t and t + m: quad t)."""
+    a = np.where(diag[:, None], C[:, [1, 2, 3]], C[:, [0, 1, 2]])
+    b = np.where(diag[:, None], C[:, [1, 3, 0]], C[:, [0, 2, 3]])
+    return np.concatenate([a, b])
 
 
 def cross2(a, b):
@@ -135,6 +166,13 @@ def split_two(V, Q, z, quads, axis_fn, smooth_iter=6, mid_r=0.0, mid_zone=None, 
         fn = quad_normals(V, Q[quads])
         by_n = (fn @ a) > cos_min
         lab = by_n if not mid_r else np.where(mid_zone, lab, by_n)
+    return smooth_label(Q, n, quads, lab, smooth_iter)
+
+
+def smooth_label(Q, n, quads, lab, smooth_iter=6):
+    """A two-way label over a part's quads, majority-smoothed over edge neighbours and each side kept as one piece
+    (stray pieces go to the other side). Returns the bool per quad of `quads`."""
+    lab = np.asarray(lab, bool).copy()
     sel = np.zeros(len(Q), bool)
     sel[quads] = True
     pairs, _ = quad_adjacency(Q, n, sel)
@@ -163,9 +201,9 @@ def principal(P):
     return c, Vt
 
 
-def ball_plane(z):
-    """Our skeleton's ball_l joint (skeleton.place_skeleton_ours on the topology's own vertices) and the foot's
-    forward direction (foot_l -> ball_l, level)."""
+def joints(z):
+    """Our skeleton's joint positions (skeleton.place_skeleton_ours on the topology's own vertices: (c) B1's
+    landmarks, nothing keyed to MakeHuman), name -> world head position."""
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
@@ -176,11 +214,42 @@ def ball_plane(z):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         names, _, worlds, _, _ = sk.place_skeleton_ours(skel, z["V"].astype(float), lm[tier])
-    b = worlds[names.index("ball_l")][:3, 3]
-    f_ = worlds[names.index("foot_l")][:3, 3]
+    return {nm: worlds[i][:3, 3].copy() for i, nm in enumerate(names)}
+
+
+def ball_plane(z):
+    """Our skeleton's ball_l joint and the foot's forward direction (foot_l -> ball_l, level)."""
+    j = joints(z)
+    b, f_ = j["ball_l"], j["foot_l"]
     d = b - f_
     d[1] = 0
     return b, U(d)
+
+
+def seg_dist(X, a, b):
+    """Distance of points X to the segment a-b, and the segment parameter t (unclamped)."""
+    ab = b - a
+    t = ((X - a) @ ab) / max(float(ab @ ab), 1e-20)
+    return np.linalg.norm(X - (a + np.clip(t, 0, 1)[:, None] * ab), axis=1), t
+
+
+def thumb_quads(z, hand):
+    """The hand's quads nearest our thumb's bones past its first joint (thumb_02_l -> thumb_04_leaf_l) among every
+    hand bone (the hand, the metacarpals, the finger chains), smoothed to one piece: the thumb's own pair of islands."""
+    j = joints(z)
+    V, Q = z["V"].astype(float), z["Q"]
+    C = V[Q[hand]].mean(1)
+    chains = {"thumb": ["thumb_02_l", "thumb_03_l", "thumb_04_leaf_l"], "thumb0": ["thumb_01_l", "thumb_02_l"]}
+    for f in ("index", "middle", "ring", "pinky"):
+        chains[f] = [f"{f}_metacarpal_l", f"{f}_01_l", f"{f}_02_l", f"{f}_03_l", f"{f}_04_leaf_l"]
+    chains["hand"] = ["hand_l", "middle_metacarpal_l"]
+    D = {}
+    for k, ch in chains.items():
+        D[k] = np.min([seg_dist(C, j[a], j[b])[0] for a, b in zip(ch[:-1], ch[1:])], 0)
+    names = list(D)
+    near = np.argmin(np.stack([D[k] for k in names]), 0)
+    lab = near == names.index("thumb")
+    return smooth_label(Q, len(V), hand, lab)
 
 
 def assign_islands(z):
@@ -205,17 +274,33 @@ def assign_islands(z):
     back = split_two(V, Q, z, hand, thin_axis, mid_r=0.004)
     isl[hand[back]] = ISL.index("HAND_BACK")
     isl[hand[~back]] = ISL.index("HAND_PALM")
+    # the thumb its own pair (E2): (a) in the palm's sheet the opposed thumb folded over the palm in UV (42 overlap
+    # cells at 4k) and held its p95 at 1.18; cut at our thumb_02 joint's nearest-bone border, each half its side's
+    th = thumb_quads(z, hand)
+    isl[hand[th & back]] = ISL.index("THUMB_BACK")
+    isl[hand[th & ~back]] = ISL.index("THUMB_PALM")
     # the sole: the foot's lower half (normals below its middle plane), smoothed, as the hand's palm is split from
     # its back: the toes' gaps then fall on the seam, not folded inside one island
     # the sole: the quads facing within 60 degrees of straight down; but in the toes (ahead of the ball, our skeleton's
     # ball_l placed from our vertices, less 1 cm) by half height, as the hand (a toe's walls face sideways)
     ball, fwd = ball_plane(z)
     C = V[Q[foot]].mean(1)
-    toes = (C - ball) @ fwd > -0.01
-    sole = split_two(V, Q, z, foot, lambda P: np.array([0.0, -1.0, 0.0]), mid_r=0.004, mid_zone=toes,
-                     cos_min=np.cos(np.radians(60)))
-    isl[foot[sole]] = ISL.index("FOOT_SOLE")
-    isl[foot[~sole]] = ISL.index("FOOT_TOP")
+    # E2: the toes are their own pair of islands (TOES_TOP | TOES_SOLE), cut from the foot at our ball_l plane (the
+    # quads whose middle lies ahead of it, smoothed to one clean loop): (a) one sheet of a foot and its five toes
+    # cannot lie flat inside the stretch target (p95 1.24 top / 1.32 sole as one island, the toes' tubes folded over
+    # its rim); the ball joint is where the toes bend, so the seam sits on the crease the toes' motion already makes
+    toe = smooth_label(Q, len(V), foot, (C - ball) @ fwd > 0.0)
+    rest, toes_q = foot[~toe], foot[toe]
+    down = lambda P: np.array([0.0, -1.0, 0.0])         # noqa: E731
+    # the sole: the quads facing within 75 degrees of straight down (60 left the foot's outer wall by the ball on the
+    # top island, its p95 1.18 against 1.12 here; 85 takes the wall's top too: the sole 1.14)
+    sole = split_two(V, Q, z, rest, down, cos_min=np.cos(np.radians(75)))
+    isl[rest[sole]] = ISL.index("FOOT_SOLE")
+    isl[rest[~sole]] = ISL.index("FOOT_TOP")
+    # the toes by half height (a toe's walls face sideways: a normal's sign there is noise)
+    tsole = split_two(V, Q, z, toes_q, down, mid_r=0.004)
+    isl[toes_q[tsole]] = ISL.index("TOES_SOLE")
+    isl[toes_q[~tsole]] = ISL.index("TOES_TOP")
     assert (isl[left] >= 0).all(), "a left quad with no island"
     return isl, left
 
@@ -546,6 +631,85 @@ def arap(P, T, UV0, nv, iters=40, rounds=4, power=6.0):
     return UVc
 
 
+def sd_refine(P, T, UV0, q=3.0, iters=400):
+    """(E2) the tail pass after ARAP: minimise sum area * (SD / 4)^q over the UVs (SD the symmetric Dirichlet
+    s1^2 + s2^2 + s1^-2 + s2^-2, 4 at an isometry; Smith & Schaefer 2015) by L-BFGS. SD is infinite at a fold, so no
+    step can flip a face (a step that would is refused by the line search); the power q weights the worst triangles
+    (ARAP's mean-square energy leaves the tail the stretch p95 reads)."""
+    from scipy.optimize import minimize
+    L0 = np.sqrt(tri_frames(P, T)[1].sum())       # unit size (the optimiser's tolerances are absolute)
+    P, UV0 = P / L0, UV0 / L0
+    X, area = tri_frames(P, T)
+    area = area / area.sum()
+    Dx = np.stack([X[:, 1], X[:, 2]], 2)
+    Di = np.linalg.inv(Dx)
+    nv = len(UV0)
+
+    def f(x):
+        Uv = x.reshape(nv, 2)
+        Du = np.stack([Uv[T[:, 1]] - Uv[T[:, 0]], Uv[T[:, 2]] - Uv[T[:, 0]]], 2)
+        J = Du @ Di
+        a, b, c, d = J[:, 0, 0], J[:, 0, 1], J[:, 1, 0], J[:, 1, 1]
+        det = a * d - b * c
+        if (det <= 1e-12).any():
+            return 1e30, np.zeros_like(x)
+        fr = a * a + b * b + c * c + d * d
+        sd = fr * (1 + 1 / det ** 2)
+        e = (sd / 4) ** q
+        E = float((area * e).sum())
+        # dSD/dJ = 2J (1 + 1/det^2) - 2 fr / det^3 * cof(J)
+        cof = np.stack([np.stack([d, -c], 1), np.stack([-b, a], 1)], 1)
+        g = 2 * J * (1 + 1 / det ** 2)[:, None, None] - (2 * fr / det ** 3)[:, None, None] * cof
+        g = g * (area * q * (sd / 4) ** (q - 1) / 4)[:, None, None]
+        gDu = g @ np.transpose(Di, (0, 2, 1))          # dE/dDu
+        G = np.zeros((nv, 2))
+        np.add.at(G, T[:, 1], gDu[:, :, 0])
+        np.add.at(G, T[:, 2], gDu[:, :, 1])
+        np.add.at(G, T[:, 0], -gDu[:, :, 0] - gDu[:, :, 1])
+        return E, G.ravel()
+    x = UV0.ravel().astype(float)
+    E, G = f(x)
+    S, Y = [], []
+    for it in range(iters):          # L-BFGS (two-loop), backtracking that refuses any step that folds a face
+        qv = G.copy()
+        al = []
+        for s_, y_ in reversed(list(zip(S, Y))):
+            a_ = (s_ @ qv) / (y_ @ s_)
+            al.append(a_)
+            qv -= a_ * y_
+        if S:
+            qv *= (S[-1] @ Y[-1]) / (Y[-1] @ Y[-1])
+        else:
+            qv /= max(np.abs(qv).max(), 1e-20) * 1e3
+        for (s_, y_), a_ in zip(zip(S, Y), reversed(al)):
+            b_ = (y_ @ qv) / (y_ @ s_)
+            qv += s_ * (a_ - b_)
+        d = -qv
+        if d @ G >= 0:
+            d, S, Y = -G / max(np.abs(G).max(), 1e-20) * 1e-3, [], []
+        t = 1.0
+        while t > 1e-10:
+            xn = x + t * d
+            En, Gn = f(xn)
+            if En <= E + 1e-4 * t * (d @ G):
+                break
+            t *= 0.5
+        else:
+            break
+        sv_, yv_ = xn - x, Gn - G
+        if sv_ @ yv_ > 1e-20:
+            S.append(sv_)
+            Y.append(yv_)
+            if len(S) > 20:
+                S.pop(0)
+                Y.pop(0)
+        conv = E - En < 1e-9 * max(abs(E), 1)
+        x, E, G = xn, En, Gn
+        if conv:
+            break
+    return x.reshape(nv, 2) * L0
+
+
 def jac_sv(P, T, UV):
     """Each triangle's singular values (s1 >= s2) of the 3D -> UV map, and its UV signed area."""
     X, area = tri_frames(P, T)
@@ -698,6 +862,7 @@ def build_close(z):
     n, nq = len(V), len(Q)
     dens = regions_json()["uv_rules"]["texel_density"]
     isl, left = assign_islands(z)
+    dg = quad_diag(V, Q)
     seam, info = seams(z, isl, left)
     cls, cv, nc = corner_classes(Q, n, left, seam)
     # per class: island
@@ -713,7 +878,7 @@ def build_close(z):
         loc = -np.ones(nc, np.int64)
         loc[vs] = np.arange(len(vs))
         Cl = loc[C]
-        T = np.concatenate([Cl[:, [0, 1, 2]], Cl[:, [0, 2, 3]]])
+        T = quad_tris(Cl, dg[qs])
         P = V[cv[vs]]
         # topology of the cut island: V - E + F
         e = np.unique(np.sort(np.concatenate([Cl[:, [k, (k + 1) % 4]] for k in range(4)]), 1), axis=0)
@@ -840,7 +1005,7 @@ def assemble(z, cls, cv, nc, UVc, isl, left):
     assert (corner >= 0).all() and (src[corner] == Q).all(), "a corner's glb vertex is not its topology vertex"
     is_right = np.zeros(nxt, bool)
     is_right[gl_right] = True
-    T = np.concatenate([corner[:, [0, 1, 2]], corner[:, [0, 2, 3]]])
+    T = quad_tris(corner, quad_diag(z["V"].astype(float), Q))
     gUV = UV.copy()
     gUV[:, 1] = 1.0 - gUV[:, 1]                       # glTF: v down (our math frame: y up)
     return {"src": src, "UV": gUV, "uv_math": UV, "corner": corner, "T": T, "is_right": is_right,
@@ -858,7 +1023,7 @@ def measure(z, out, V=None):
     corner = out["corner"]
     P = V[src]
     res = {"islands": {}, "regions": {}}
-    Tl = np.concatenate([corner[left][:, [0, 1, 2]], corner[left][:, [0, 2, 3]]])
+    Tl = quad_tris(corner[left], quad_diag(z["V"].astype(float), Q)[left])
     il = np.r_[isl[left], isl[left]]
     rg = np.r_[z["qreg"][left], z["qreg"][left]]
     s, sa, area = jac_sv(P, Tl, UV)
@@ -921,6 +1086,7 @@ def build_play(zp, zc, oc):
     seam, info = seams(zp, isl, left)
     cls, cv, nc = corner_classes(Q, n, left, seam)
     Vc, Qc = zc["V"].astype(np.float64), zc["Q"]
+    dgc = quad_diag(Vc, Qc)
     leftc = zc["side"][Qc].max(1) == 1
     UVc = np.zeros((nc, 2))
     cpos = np.zeros((nc, 3))
@@ -938,7 +1104,7 @@ def build_play(zp, zc, oc):
     for ii, nm in enumerate(ISL):
         qc = np.nonzero(leftc & (oc["isl"] == ii))[0]
         Tq = oc["corner"][qc]
-        Tc = np.concatenate([Tq[:, [0, 1, 2]], Tq[:, [0, 2, 3]]])
+        Tc = quad_tris(Tq, dgc[qc])
         Pc = Vc[oc["src"]]
         S = surfdist.Surface(Pc, Tc)
         cs = np.nonzero(cisl == ii)[0]
