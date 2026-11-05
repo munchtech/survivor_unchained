@@ -34,6 +34,28 @@ public partial class FxAfter : CanvasLayer
         if (Engine.GetMainLoop() is SceneTree t) t.Root.CallDeferred(Node.MethodName.AddChild, one);
     }
 
+    static ShaderMaterial? hole;
+
+    /// <summary>(W2 C5b) What stands in front of an after-grade effect, as depth only: every mesh under <paramref name="root"/>
+    /// (but <paramref name="skip"/>) gets a twin on the after-grade layer that writes depth and no color, drawn before the
+    /// effects (render priority -128), so a camp fire's flame drawn after the grade still sits behind its own front logs and
+    /// stones and fades into them (fx_cel_flame's soft edge reads this layer's depth). Static meshes only (the twin shares
+    /// the mesh and follows its parent).</summary>
+    public static void Occlude(Node root, Node? skip = null)
+    {
+        hole ??= new ShaderMaterial
+        {
+            Shader = new Shader { Code = "shader_type spatial; render_mode unshaded, blend_mix, depth_draw_always, cull_back, shadows_disabled, fog_disabled; void fragment() { ALBEDO = vec3(0.0); ALPHA = 0.0; }" },
+            RenderPriority = (int)Material.RenderPriorityMin,
+        };
+        foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (n is not MeshInstance3D mi || mi.Mesh == null || (mi.Layers & RenderLayer) != 0) continue;
+            if (skip != null && (n == skip || skip.IsAncestorOf(n))) continue;
+            mi.AddChild(new MeshInstance3D { Mesh = mi.Mesh, Layers = RenderLayer, MaterialOverride = hole, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = "FxAfterHole" });
+        }
+    }
+
     public override void _Ready()
     {
         Layer = -1;

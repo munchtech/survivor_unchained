@@ -25,9 +25,15 @@
    3.2,
    0.32
   ],
-  "cover": 0.1,
-  "lift": 0.55,
-  "drift": 0.35
+  "cover": 0.12,
+  "lift": 5.1,
+  "drift": 0.35,
+  "w2b": "L1 W2 C5b: FROM target 10 (a2/r4/10_r4.png, its river [5,40,125,900], water_board.py): body L 0.230 (85%), strokes L 0.441 C 0.07 h 217 (12%), glints L 0.866 (3%); our r2 river's body L 0.233 is on it, its strokes were absent (the cover bug, Water.Cover). cover 0.1 -> 0.12 (the target's share); lift 0.55 -> 6.0: a stroke is a ripple's face turned to the brighter sky toward the horizon, (0.441 / 0.230)^3 = 7.05x the body's light in linear = 1 + 6.05; r3 (frame 10): body L 0.252, strokes 0.503 (10%) at 8.1x: lift 6.0 -> 5.1 (7 x 7.05 / 8.1 - 1). On a stream they run along the flow, 0.15 x 1.2 m (target 10's streaks: 2-3 x 10-25 px on a river about 120 px = 6 m wide at its 20 px/m; r3 across the view at the top-down camera drew long diagonal slashes), drifting 0.5 m/s",
+  "stream_size": [
+   0.15,
+   1.2
+  ],
+  "stream_flow": 0.5
  },
  "foam": {
   "what": "the shore's foam: one flat band where the water is under 'depth' m deep in front of what breaks it (the scene's depth), lit by the key in one step; board: the pale rim at the stones (day L ~0.8, night ~0.55); r1: at 0.09 m the Low Ford's whole shallow ford went foam (06: L 0.85-0.99 over a third of the water): 0.03 m, reflect 0.9 to 0.45 (the night board's rim L ~0.55)",
@@ -43,14 +49,22 @@
    1.6,
    0.16
   ],
-  "cover": 0.12,
-  "gain": 0.9
+  "cover": 0.03,
+  "gain": 1.4,
+  "floor": 0.8,
+  "w2b": "L1 W2 C5b: FROM target 10's glints (L 0.866, 3% of the river, scattered down its whole length under the top-down camera) and MB4 night's cyan dashes (L 0.79, 6%): cover 0.12 -> 0.03 (now a true share, Water.Cover); floor 0.6: the dashes take 0.6 of the key off its lobe (a painted river's moon glints, not a mirror's); gain 0.9 -> 2.0 to reach L ~0.85 over the body (set on the r3 shot's numbers); r3: glints 7% at L 0.93 in a chain down the middle (the lobe): gain 2.0 -> 1.4 ((0.866/0.931)^3 = 0.80 of the light, the rest for the overlap), floor 0.6 -> 0.8 (scattered as the target's, the lobe a mild lift); on a stream 0.08 x 0.5 m along the flow",
+  "stream_size": [
+   0.08,
+   0.5
+  ]
  },
  "lights": {
   "what": "warm lights (her ember, a fire, a lamp) on the water: soft vertical strokes, a column of dashes toward the viewer; no diffuse pool (the W1 verdict: her pool reads salmon on the water in 05 and 06). The column 'across' narrow and 'along' long (half-vector units); 'gain' of the light at the water",
   "across": 0.06,
-  "along": 0.5,
-  "gain": 0.5
+  "along": 0.35,
+  "gain": 0.5,
+  "cover": 0.4,
+  "w2b": "L1 W2 C5b: r3's columns (06: her ember, the Warden's lamps) were solid bars and beams across the whole ford (a 0.35 floor between the key's sparse dashes): now broken into their own dashes, 'cover' 0.4 of the column (rule 6: soft vertical strokes, never a sheet; MB4 night's dashes), shorter: along 0.5 -> 0.35"
  },
  "slurry": {
   "what": "the arena's stream carries the Dig's slurry (slurry_stream.gdshader's story: warm, faintly glowing, 'a little like a wound'): under cel two or three long soft strokes down its deep middle in the slurry's hue, not flecks; 'glow' its light",

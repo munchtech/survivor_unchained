@@ -8,6 +8,7 @@
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
+#include "res://shaders/world_clock.gdshaderinc"
 #include "res://shaders/fx_cel.gdshaderinc"
 
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;

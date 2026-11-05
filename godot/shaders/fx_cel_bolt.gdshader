@@ -23,7 +23,9 @@ uniform vec4 bolt_shape = vec4(0.36, 2.4, 0.8, 2.0);
 // heat at the tail, at the head; the cross profile's power; the sweep (noise sheared back by |lane|)
 uniform vec4 bolt_heat = vec4(0.7, 1.05, 2.0, 0.9);
 // the ball: its centre back from the head's, its stretch along, its radius (of the head's), its heat
-uniform vec4 bolt_ball = vec4(0.25, 2.2, 1.0, 0.7);
+// (W2 C5b) its heat 0.7 -> 0.5: at the play camera (a 110-140 px bolt) the tail's thin tongues fall under a pixel and the
+// head's ball held 0.37 of the bands against MB5's 0.25 (lookdev r3, fx_measure shot: e/m/c 0.25/0.38/0.37; MB5 0.34/0.41/0.25)
+uniform vec4 bolt_ball = vec4(0.25, 2.2, 1.0, 0.5);
 // the tongues: frequency along, across (per lane), strength at the tail, at the head
 uniform vec4 bolt_licks = vec4(0.8, 2.6, 0.6, 0.12);
 // the gaps: frequency along, across, strength, power of its fall toward the head; the bites' frequency along, across
@@ -33,6 +35,10 @@ uniform vec4 bolt_bites = vec4(1.0, 3.2, 3.0, 2.0);
 uniform vec4 bolt_flow = vec4(-0.05, 1.0, 0.5, 3.0);
 // sparks: cell (units), density (of cells), length (of the bolt), aspect
 uniform vec4 bolt_sparks = vec4(0.35, 0.4, 0.018, 1.6);
+// (W2 C5b) the quad's room across for the sparks, in body half-widths: MB5's sparks fly up to about 1.5x the tail's
+// half-height off its axis (the board crop: tail 0.86 of the quad, sparks to its rim and past it); at 1 the tail filled the
+// quad and left the sparks a strip under a pixel (B6r2: 0-1 sparks). The body's size on screen is unchanged.
+uniform float bolt_room = 1.5;
 
 varying float span;
 varying float seed;
@@ -47,7 +53,7 @@ void vertex() {
 	vec3 to_cam = normalize(CAMERA_POSITION_WORLD - o);
 	vec3 side = cross(to_cam, ax);
 	side = length(side) < 1e-3 ? vec3(0.0, 1.0, 0.0) : normalize(side);
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(ax * len, 0.0), vec4(side * wid, 0.0), vec4(cross(ax, side), 0.0), vec4(o, 1.0));
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(ax * len, 0.0), vec4(side * wid * bolt_room, 0.0), vec4(cross(ax, side), 0.0), vec4(o, 1.0));
 	span = len / max(wid, 1e-5) * 2.0;
 	seed = COLOR.r * 61.0;
 	fade = COLOR.a;
@@ -55,7 +61,7 @@ void vertex() {
 
 void fragment() {
 	float R = bolt_shape.x;
-	float x = UV.x * span, y = (UV.y - 0.5) * 2.0;
+	float x = UV.x * span, y = (UV.y - 0.5) * 2.0 * bolt_room;
 	float hx = span - 1.0, x0 = 0.15;
 	float along = clamp((x - x0) / (hx - x0), 0.0, 1.0);
 	float t = TIME * bolt_flow.w;
@@ -82,7 +88,7 @@ void fragment() {
 	// painted sparks, shed behind the head, off the hot bands; at least two pixels long whatever the zoom
 	float len = max(bolt_sparks.z * span, 2.5 * fwidth(x));
 	float s = fx_sparks(vec2(x + t * 0.8, y), vec2(1.0, 0.0), bolt_sparks.x, bolt_sparks.y, len, bolt_sparks.w, seed);
-	s *= (1.0 - step(fx_t.x, heat)) * smoothstep(hx + 0.2, hx - 0.4, x) * smoothstep(0.0, 0.5, x) * (1.0 - smoothstep(0.8, 0.98, abs(y)));
+	s *= (1.0 - step(fx_t.x, heat)) * smoothstep(hx + 0.2, hx - 0.4, x) * smoothstep(0.0, 0.5, x) * (1.0 - smoothstep(0.8 * bolt_room, 0.98 * bolt_room, abs(y)));
 	c.rgb = mix(c.rgb, fx_spark_color, s);
 	c.a = max(c.a, s);
 	float a = clamp(c.a * fade, 0.0, 1.0) * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);

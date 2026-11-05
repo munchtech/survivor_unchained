@@ -37,6 +37,18 @@ uniform vec4 key_lobe = vec4(0.35, 0.6, 1.6, 0.16);
 uniform vec4 key_k = vec4(0.12, 0.9, 0.06, 0.5);
 // the lights' gain
 uniform float light_gain = 0.5;
+// (W2 C5b) the key's dashes lit off its lobe too, this share of their gain (target 10: the moon's glints scattered down the
+// whole river under the top-down play camera, 3% of the water at L 0.87); the dashes' soft edge in noise units (Water.CoverSoft)
+uniform float key_floor = 0.0;
+uniform float dash_soft = 0.02;
+// (W2 C5b) a stream's dashes run along its flow (target 10: the river's strokes and glints are thin streaks down its
+// length under the top-down camera; across the view made long diagonal slashes there): strokes across, along, the key's
+// across, along (m), and the flow's speed (m/s)
+uniform vec4 stream_sizes = vec4(0.15, 1.2, 0.08, 0.5);
+uniform float stream_flow = 0.5;
+// (W2 C5b) the lights' columns broken into strokes: their dashes' threshold (Water.Cover of lights.cover); r3's columns
+// were solid bars (the 0.35 floor between sparse dashes)
+uniform float col_th = 0.5;
 uniform vec3 slurry : source_color = vec3(0.48, 0.58, 0.07);
 // slurry: glow, cover, size across, size along (m)
 uniform vec4 slurry_k = vec4(0.12, 0.22, 0.9, 9.0);
@@ -46,6 +58,7 @@ varying vec2 w_uv;
 varying float w_bank;
 varying float wv_foam;
 varying float wv_dash;
+varying float wv_col;
 
 void vertex() {
 	w_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -53,11 +66,12 @@ void vertex() {
 	w_bank = UV2.x;
 }
 
-// soft dashes of noise (its features an eighth of its tile: q in dash sizes x 0.125): long across the view (t), thin along it (b), a share `cover` of the water, edges soft
-float dashes(vec2 q, float cover, float soft) {
+// soft dashes of noise (its features an eighth of its tile: q in dash sizes x 0.125): long across the view (t), thin along it (b);
+// th the noise's quantile that leaves the data's cover above it (Water.Cover), edges dash_soft x soft wide
+float dashes(vec2 q, float th, float soft) {
 	float n = texture(noise_tex, q).r * 0.7 + texture(noise_tex, q * 2.3 + 0.37).r * 0.3;
-	float th = 1.0 - cover;
-	return smoothstep(th - soft, th + soft, n);
+	float e = dash_soft * soft;
+	return smoothstep(th - e, th + e, n);
 }
 
 void fragment() {
@@ -74,17 +88,19 @@ void fragment() {
 	// the flow's drift (world x z), for the strokes
 	vec2 flow = mode == 0 && !stream ? w_uv : vec2(0.0, 0.0);
 	vec2 dq = vec2(dot(vec3(flow.x, 0.0, flow.y), t_w), dot(vec3(flow.x, 0.0, flow.y), b_w)) * TIME * drift;
-	if (mode != 0 || stream) dq = vec2(0.0, TIME * 0.05);
+	vec4 sz = vec4(strokes.xy, key_lobe.zw);
+	if (mode != 0 || stream) { pq = w_uv; dq = vec2(0.0, -TIME * stream_flow); sz = stream_sizes; }
 	// the bands: shallow (the bed through it), mid, deep
 	float aa = max(fwidth(s), 1e-4);
 	float b1 = smoothstep(cuts.x - aa, cuts.x + aa, s), b2 = smoothstep(cuts.y - aa, cuts.y + aa, s);
 	float r = mix(mix(reflect.x, reflect.y, b1), reflect.z, b2);
 	float alpha = mix(bands.w, 1.0, b1);
 	// a few soft strokes a step lighter
-	float st = dashes((pq + dq) / vec2(strokes.x, strokes.y) * 0.125, strokes.z, 0.06);
+	float st = dashes((pq + dq) / sz.xy * 0.125, strokes.z, 1.0);
 	r *= 1.0 + strokes.w * st;
 	// the key's dashes (for light()): a finer pattern of the same kind
-	wv_dash = dashes((pq + dq * 1.6) / vec2(key_lobe.z, key_lobe.w) * 0.125 + 0.5, key_k.x, 0.05);
+	wv_dash = dashes((pq + dq * 1.6) / sz.zw * 0.125 + 0.5, key_k.x, 0.6);
+	wv_col = dashes((pq + dq * 0.6) / (sz.zw * vec2(1.5, 0.6)) * 0.125 + 0.25, col_th, 0.8);
 	// the shore's foam: within foam.x m of what is behind the surface
 	float zd = textureLod(depth_tex, SCREEN_UV, 0.0).r;
 	vec4 behind = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, zd, 1.0);
@@ -96,7 +112,7 @@ void fragment() {
 	vec3 body = tint * r;
 	if (mode == 1) {
 		// the slurry's long soft strokes down the deep middle (UV: across, along)
-		float sl = dashes(vec2(w_uv.x / slurry_k.z, (w_uv.y - TIME * 0.25) / slurry_k.w) * 0.125, slurry_k.y, 0.08) * smoothstep(0.4, 0.75, d01);
+		float sl = dashes(vec2(w_uv.x / slurry_k.z, (w_uv.y - TIME * 0.25) / slurry_k.w) * 0.125, slurry_k.y, 1.3) * smoothstep(0.4, 0.75, d01);
 		body = mix(body, slurry * r, sl * 0.6);
 		EMISSION = slurry * slurry_k.x * sl;
 	}
@@ -117,9 +133,9 @@ void light() {
 		// the foam takes the key in one step
 		DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * facing * wv_foam * foam.z;
 		float lobe = exp(-(dt * dt) / (key_lobe.x * key_lobe.x) - (db * db) / (key_lobe.y * key_lobe.y));
-		SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * key_k.y * smoothstep(0.25, 0.45, lobe) * wv_dash * (1.0 - wv_foam);
+		SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * key_k.y * max(smoothstep(0.25, 0.45, lobe), key_floor) * wv_dash * (1.0 - wv_foam);
 	} else {
 		float lobe = exp(-(dt * dt) / (key_k.z * key_k.z) - (db * db) / (key_k.w * key_k.w));
-		SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * light_gain * smoothstep(0.2, 0.5, lobe) * mix(0.35, 1.0, wv_dash) * (1.0 - wv_foam);
+		SPECULAR_LIGHT += LIGHT_COLOR * ATTENUATION * light_gain * smoothstep(0.2, 0.5, lobe) * wv_col * (1.0 - wv_foam);
 	}
 }

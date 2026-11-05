@@ -49,9 +49,17 @@ public static class Campfire
         parts = System.Environment.GetEnvironmentVariable("CAMPFIRE_PARTS") ?? parts;
         if (ring) Ring(root, size);
         if (parts.Contains("coals")) root.AddChild(Wood(size) ?? Coals(size));
-        if (parts.Contains("flames")) root.AddChild(FilmedFlames(size) ?? Flames(size));
+        var flames = FilmedFlames(size);
+        if (parts.Contains("flames")) root.AddChild(flames ?? Flames(size));
         if (parts.Contains("embers")) root.AddChild(Embers(size));
         if (parts.Contains("smoke")) root.AddChild(Smoke(size));
+        // (L1 W2 C5b) under cel the flame is drawn after the grade (FxAfter: MB5's colors on every rig; in the frame the night's
+        // grade and AgX took it to C 0.08 against MB5's 0.17-0.19, 01 r3), its ring, logs and coals standing in front as depth
+        if (flames != null && parts.Contains("flames") && FxAfter.On)
+        {
+            foreach (var n in flames.FindChildren("*", "MeshInstance3D", true, false)) if (n is MeshInstance3D mi) FxAfter.Adopt(mi);
+            FxAfter.Occlude(root, flames);
+        }
         if (SurvivorUnchained.Args.Has("fire-probe")) root.TreeEntered += () => root.GetTree().CreateTimer(13).Timeout += () => Probe(root);
         return root;
     }

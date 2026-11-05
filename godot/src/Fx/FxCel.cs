@@ -44,19 +44,20 @@ public static class FxCel
         if (Lang[school.ToString()] is { } s)
         {
             // the quad behind the head is about (span - 1) x 2 units at span 3.4: its cells of 0.35 units
-            float cells = (BoltSpan - 1) * 2 / (0.35f * 0.35f);
+            float cells = (BoltSpan - 1) * 2 * BoltRoom / (0.35f * 0.35f);
             m.SetShaderParameter("bolt_sparks", new Vector4(0.35f, Mathf.Clamp(s.Sparks.Count / cells, 0.05f, 0.9f), s.Sparks.Length, s.Sparks.Aspect));
         }
         return m;
     }
 
     /// <summary>(L1 W2 C5) A camp fire card's stepped flame (fx_cel_flame.gdshader; fx_language.json "campfire"): its school's
-    /// bands in the frame (with their emit: the flame stands in the scene, behind her and the logs, so it takes the grade),
+    /// bands after the grade (W2 C5b: FxAfter, its logs and stones in front as depth; --fx-after off: in the frame with their emit),
     /// the cut, the shape's mip and the glow's reach, and its sparks (count per card over the card's cells).</summary>
     public static void Flame(ShaderMaterial m)
     {
         if (Lang.Campfire is not { } f || Lang[f.School] is not { } s) return;
-        Apply(m, System.Enum.Parse<School>(f.School, true));
+        // (W2 C5b) after the grade (Campfire adopts the cards to FxAfter): the board's colors, no emit
+        Apply(m, System.Enum.Parse<School>(f.School, true), FxAfter.On);
         m.SetShaderParameter("flame_cut", new Vector3(f.Cut, f.Lod, f.Glow));
         // the sparks' region: the card's upper half, about 0.6 wide by 0.6 tall in card-height units; cells of 0.09
         float cell = 0.09f, cells = 0.6f * 0.6f / (cell * cell);
@@ -67,6 +68,8 @@ public static class FxCel
 
     /// <summary>The quad's length over its half-width (the shader's span): MB5's bolt body is 2.56 times as long as tall (5.2 / 2 = 2.6).</summary>
     public const float BoltSpan = 5.2f;
+    /// <summary>(W2 C5b) The quad's room across for the sparks (the shader's bolt_room; the body keeps its size).</summary>
+    public const float BoltRoom = 1.5f;
 
     /// <summary>A bolt's instance: its head at `head`, flying along `fwd`, `size` its width (m); the quad laid along the
     /// flight (basis X its length, Y its width) and centred so the head sits on the projectile.</summary>

@@ -80,7 +80,8 @@ public class FxLanguageTests
         Assert.Equal("#e8dcc0", u.Text["cream"]);
         Assert.Equal("#d9b56a", u.Text["gold"]);
         foreach (var a in new[] { "skill", "level", "hostile" }) Assert.True(u.Accents.ContainsKey(a));
-        Assert.InRange(u.Panel.FrameWidth, 12f, 20f);
+        // Stage B verdict B6 (bible rule 12): the frame is the targets' brown bronze, one lit bevel band plus the ink edge, 20-24 px at 1080 (was the measured 14-16 px, judged thin)
+        Assert.InRange(u.Panel.FrameWidth, 20f, 24f);
         Assert.InRange(u.Line, 1.5f, 4f);
     }
 }
