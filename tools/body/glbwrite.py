@@ -233,3 +233,38 @@ def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None):
             + j + struct.pack("<II", len(out.bin), 0x004E4942) + bytes(out.bin))
     with open(path, "wb") as f:
         f.write(blob)
+
+
+def set_targets(path, node, targets, out_path=None):
+    """Write blend shapes onto one mesh of a glb we wrote (its primitive 0): `targets` {name: (dP [V,3], dN [V,3])},
+    in order; any targets the mesh had are replaced (their old bytes stay as unused views: harmless). The mesh gets
+    extras.targetNames and default weights 0."""
+    js, b = _read_glb(path)
+    out = _Out()
+    out.bin = bytearray(b)
+    out.views, out.accs = js["bufferViews"], js["accessors"]
+    mi = next(n["mesh"] for n in js["nodes"] if n.get("name") == node and "mesh" in n)
+    m = js["meshes"][mi]
+    pr = m["primitives"][0]
+    tg = []
+    for nm, (dP, dN) in targets.items():
+        tg.append({"POSITION": out.acc(np.asarray(dP, np.float32), "VEC3", 5126, 34962, minmax=True),
+                   "NORMAL": out.acc(np.asarray(dN, np.float32), "VEC3", 5126, 34962)})
+    if tg:
+        pr["targets"] = tg
+        m["extras"] = dict(m.get("extras", {}), targetNames=list(targets))
+        m["weights"] = [0.0] * len(tg)
+    else:
+        pr.pop("targets", None)
+        m.pop("weights", None)
+        if "extras" in m:
+            m["extras"].pop("targetNames", None)
+    while len(out.bin) % 4:
+        out.bin += b"\0"
+    js["buffers"][0]["byteLength"] = len(out.bin)
+    j = json.dumps(js, separators=(",", ":")).encode()
+    j += b" " * ((4 - len(j) % 4) % 4)
+    blob = (struct.pack("<III", 0x46546C67, 2, 12 + 8 + len(j) + 8 + len(out.bin)) + struct.pack("<II", len(j), 0x4E4F534A)
+            + j + struct.pack("<II", len(out.bin), 0x004E4942) + bytes(out.bin))
+    with open(out_path or path, "wb") as f:
+        f.write(blob)

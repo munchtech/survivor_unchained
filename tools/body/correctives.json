@@ -1,0 +1,250 @@
+{
+ "about": "Stage 7's data (tools/body/correctives.py). keys: [motion, absolute deg] posed as the check poses them (bends.Strip; hip_abd: the hip turned about her front). Regions: spheres round the joint's rest head, full within r_in, none past r_out (m). pull: the reference curves (tools/body/ref) the outline is pulled to (the joint's own anatomy: olecranon, patella plane, deltoid cap, folds); cap: the farthest an outline point is pulled (m); outline: that term's weight multiplier. Elbow keys within 8 deg of the rest angle (MakeHuman's 39.7) are dropped: a 45 key there would be a null shape.",
+ "solve": {
+  "iters": 12,
+  "arap": 8,
+  "data": 1.0,
+  "floor": 0.0005,
+  "contact": 200,
+  "margin": 0.0015,
+  "depth_max": 0.04,
+  "lat_max": 0.006,
+  "outline": 3.0,
+  "volume": 0,
+  "kap_step": 0.05,
+  "kap_max": 1.0,
+  "band_in": 0.01,
+  "band_w": 0.03,
+  "rim": 0.015,
+  "band_r": [
+   0.02,
+   0.06
+  ],
+  "area_relax": 0.6,
+  "area_kmax": 1.25,
+  "area_fade": 0.015,
+  "parity": 1,
+  "parity_give": 0,
+  "wedge": 0.0,
+  "crease_wd": 0.0
+ },
+ "joints": [
+  {
+   "name": "elbow",
+   "law": "flex",
+   "bones": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "center": "lowerarm_{s}",
+   "keys": [
+    [
+     "elbow",
+     5
+    ],
+    [
+     "elbow",
+     90
+    ],
+    [
+     "elbow",
+     135
+    ]
+   ],
+   "r_in": 0.06,
+   "r_out": 0.13,
+   "pull": [
+    "outer"
+   ],
+   "cap": 0.015,
+   "proximal": "upperarm_{s}",
+   "distal": "lowerarm_{s}",
+   "distal_end": "hand_{s}",
+   "helpers": [
+    "lowerarm_share_{s}",
+    "lowerarm_point_{s}"
+   ],
+   "area": {
+    "p": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ],
+    "d": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ],
+   "fold": "plane"
+  },
+  {
+   "name": "knee",
+   "law": "flex",
+   "bones": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "center": "calf_{s}",
+   "keys": [
+    [
+     "knee",
+     45
+    ],
+    [
+     "knee",
+     90
+    ],
+    [
+     "knee",
+     135
+    ]
+   ],
+   "r_in": 0.08,
+   "r_out": 0.16,
+   "pull": [
+    "outer"
+   ],
+   "cap": 0.015,
+   "proximal": "thigh_{s}",
+   "distal": "calf_{s}",
+   "distal_end": "foot_{s}",
+   "helpers": [
+    "calf_share_{s}",
+    "calf_point_{s}"
+   ],
+   "area": {
+    "p": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ],
+    "d": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ],
+   "fold": "plane"
+  },
+  {
+   "name": "shoulder",
+   "law": "rbf",
+   "bone": "upperarm_{s}",
+   "end": "lowerarm_{s}",
+   "frame": "clavicle_{s}",
+   "sigma_deg": 40.0,
+   "center": "upperarm_{s}",
+   "keys": [
+    [
+     "shoulder_abd",
+     0
+    ],
+    [
+     "shoulder_abd",
+     90
+    ],
+    [
+     "shoulder_abd",
+     135
+    ],
+    [
+     "shoulder_flex",
+     90
+    ],
+    [
+     "shoulder_flex",
+     135
+    ],
+    [
+     "shoulder_flex",
+     -45
+    ]
+   ],
+   "r_in": 0.1,
+   "r_out": 0.22,
+   "proximal": "spine_05",
+   "distal": "upperarm_{s}",
+   "distal_end": "lowerarm_{s}",
+   "helpers": [
+    "upperarm_share_{s}",
+    "clavicle_{s}",
+    "scap_{s}",
+    "delt_{s}",
+    "trap_{s}",
+    "pec_{s}",
+    "lat_{s}"
+   ],
+   "area": {
+    "d": [
+     0.03,
+     0.05,
+     0.07
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ]
+  },
+  {
+   "name": "hip",
+   "law": "rbf",
+   "bone": "thigh_{s}",
+   "end": "calf_{s}",
+   "frame": "pelvis",
+   "sigma_deg": 40.0,
+   "center": "thigh_{s}",
+   "keys": [
+    [
+     "hip_flex",
+     45
+    ],
+    [
+     "hip_flex",
+     90
+    ],
+    [
+     "hip_flex",
+     135
+    ],
+    [
+     "hip_abd",
+     45
+    ]
+   ],
+   "r_in": 0.12,
+   "r_out": 0.25,
+   "one_side": false,
+   "proximal": "pelvis",
+   "distal": "thigh_{s}",
+   "distal_end": "calf_{s}",
+   "helpers": [
+    "thigh_share_{s}",
+    "glute_{s}"
+   ],
+   "fold": "plane",
+   "area": {
+    "d": [
+     0.03,
+     0.05,
+     0.07
+    ]
+   }
+  }
+ ]
+}

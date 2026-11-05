@@ -19,7 +19,10 @@ Stages (each a function, no hand steps):
               body ends at SPLIT; its ring is the head's, snapped exactly, the fit's move eased into the body below);
   4 skeleton  tools/body/skeleton.json placed from MakeHuman's landmarks (skeleton.py);
   5 weights   MakeHuman's CC0 weights mapped onto ours, split along chains, helpers, capped (weights.py);
-  6 export    body.glb (glbwrite.py) + rig.json.
+  6 export    body.glb (glbwrite.py) + rig.json (the drivers' data from base_drive.json, rig_drive.py's laws);
+  7 correctives  the pose-space shapes, computed (correctives.py, correctives.json): run by this wrapper after the
+              Blender stages (it needs embreex), and by --no-blender; the shapes go onto body.glb, their weight laws
+              into rig.json. --no-correctives skips it (body.glb then has none).
 """
 import hashlib
 import json
@@ -84,6 +87,7 @@ def main():
     spec, out = a[0], os.path.abspath(a[1])
     if "--no-blender" in sys.argv:          # (stages 2-6 only, from <out>/stage/base.npz: for working on them)
         run(spec, out)
+        stage_correctives(out)
         return
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
     subprocess.run([sys.executable, TURN, "take", "blender", "body-p1: base build", "--wait", "10"], check=True)
@@ -91,7 +95,30 @@ def main():
         r = subprocess.run([BLENDER, "-b", "--python-exit-code", "1", "--python", os.path.abspath(__file__), "--", os.path.abspath(spec), out])
     finally:
         subprocess.run([sys.executable, TURN, "give", "blender"])
+    if r.returncode == 0:
+        stage_correctives(out)
     sys.exit(r.returncode)
+
+
+def stage_correctives(out):
+    """7: the correctives onto the fresh export (stage/body_lbs.glb is that export), build.json updated."""
+    if "--no-correctives" in sys.argv:
+        return
+    import correctives
+    lbs = os.path.join(out, "stage", "body_lbs.glb")
+    if os.path.exists(lbs):
+        os.remove(lbs)
+    t = time.time()
+    rep_c = correctives.run(out)
+    with open(os.path.join(out, "build.json")) as f:
+        rep = json.load(f)
+    rep["timings_s"]["correctives"] = round(time.time() - t, 2)
+    rep["correctives"] = {k: (v if not isinstance(v, dict) else {"keys": len(v.get("keys", []))}) for k, v in rep_c.items()}
+    with open(os.path.join(out, "body.glb"), "rb") as f:
+        rep["glb_sha256"] = hashlib.sha256(f.read()).hexdigest()
+    with open(os.path.join(out, "build.json"), "w") as f:
+        json.dump(rep, f, indent=1)
+    print("BUILD+CORRECTIVES", out, rep["glb_sha256"][:16])
 
 
 if __name__ == "__main__":

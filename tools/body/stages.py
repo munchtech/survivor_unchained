@@ -221,9 +221,10 @@ def write_rig(sk, out):
             for n in ("lowerarm_l", "lowerarm_r", "calf_l", "calf_r")}
     with open(os.path.join(HERE, "base_drive.json")) as f:
         drive = json.load(f)
-    rig = {"poser": "tools.body.base_drive", "body_mesh": "Heroine", "close_meshes": ["HeroineHead"],
+    rig = {"poser": "tools.body.rig_drive", "body_mesh": "Heroine", "close_meshes": ["HeroineHead"],
            "roles": {"upperarm": "upperarm_{s}", "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}",
                      "calf": "calf_{s}", "foot": "foot_{s}"},
-           "hinge": {"elbow": "local_x", "knee": "local_x"}, "axes": axes, "correctives": [], "helpers": drive["helpers"]}
+           "hinge": {"elbow": "local_x", "knee": "local_x"}, "axes": axes, "correctives": [], "girdle": drive["girdle"],
+           "helpers": drive["helpers"]}
     with open(os.path.join(out, "rig.json"), "w") as f:
         json.dump(rig, f, indent=1)
