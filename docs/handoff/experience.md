@@ -5,6 +5,61 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## H8 rc2's bugs (seams-h8 lead 2, 4 Nov): HANDOFF READY (lead 3 takes the list below)
+
+HANDOFF READY at ~245k (lead 2). Brief: `docs/team/hook/H8_rc2_bugs.md`. Report to main (the coordinator) only at MR READY, a HANDOFF or a block. Integration merged at d36a4cd19: the ten .import files are tracked now, and the junction was remade to our own `public\assets` (assume-unchanged). Sheets and runs are in `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\`: `n20\` (runs and strip), `judge1\` (the judge's inputs, brief and `verdict.md`), `n22\` (the gate solver's shots).
+**Note:** lead 1 woke after its handoff and committed 7588aef92 (two lines in its section). Its "88 s misread" is wrong: the 88 s run is real (n20a, on d36a4cd19).
+
+**N20, the Warden: DONE.** Lead 1's "fell in 11.2 s" came from a run in the MAIN checkout: its log's paths are `survivorsunchained\godot\...`, which has no N20 code and no dawn card. In seams-h8 the ward and floors hold. `WardFloor` logs `ford wardlog` once a second under `--pace` (bounded), plus `ford down`. H6's numbers are FINAL for rc3 (via the coordinator): teeth.json as it stands, band human 60-120 s. Measured on the first-time path with `--auto`:
+- n20a: 88.3 s. Crashes at 26.9 s, 61.1 s and about 72 s; the 0.67 floor was never reached.
+- b_path3: 111.8 s. The 0.34 floor held from 70 s to about 100 s (4 Warded barks, 531 hp turned). 0 exceptions, dawn card shot.
+- H6's proof 1 (SU_TEETH=`n20\teeth_floor067.json`, 0.67 everywhere, no crack): the 0.67 floor held from 10 s to the end of the run (86 s and more), turning 5112 hp.
+- H6's proof 2 (`n20\teeth_backstop.json`, floors 0): the 0.05 backstop held him until 60 s; he fell at 70.8 s.
+- The strip: `n20\warden_strip.jpg` (88 s, a frame every 3 s, crashes labelled).
+
+**Judge 1** (API, xhigh, $1.32; `judge1\verdict.md`): 5 PASS, 2 FAIL.
+- PASS: N20, N23, N25, N35, N36.
+- FAIL N22: at 1:1 the arch looks open (an invisible wall), and nothing names the ring.
+- FAIL N24: an inner rectangle in the paper; the "Click to go on" font.
+- To close before MR: N36 needs one 1:1 town frame (pick one in `godot/.shots/h8xw_*.png` with her under the eaves). N23 needs a motion check of its 1.56x shot: a dense strip (0.1 s apart) of that shot's feet, for foot-skate.
+- For later lists (not ours): make "Put out the lamps" the white main line during the fight; the b4a lantern cutaway; the town bark printing over the tracker.
+
+**N22 fix: BUILT, one bug left** (solver a07675ec, ~188k; commits 50119828f and c40d4b969, both WIP).
+- The gatehouse portcullis is two moving leaves inside `gatehouse.glb` (`env_props.py` MOVES; props.json "moves"; `OwnProps`, `Landmarks.Movers`, `IZoneLook.Shift`). It drops while the gate is shut and rises over 2.6 s once the ring is down; the exit waits for the full rise.
+- The bar sits on the portcullis line (`day_stretch.json portcullisZ`). The old invisible bar 5 m out was undone as a hack.
+- A watchman (the Folk Watch spec) stands behind the bars, with the bark on him.
+- The tracker's first line reads "The watch won't raise the gate: clear the wolves on the road" (`Goals.Replace`).
+- Suite 1525/0/10.
+- **Bug: in `n22\n22_shut_full.png` the grate covers only the crown down to the springing, and the lower passage looks open: leaf A (travel -4.0 m) isn't seen.** Suspects:
+  1. The travel applied in a scaled parent's space (kit scale 0.192; `Position = rest + travel*k` is local).
+  2. The occluder cutaway or x-ray near her.
+  3. A terrain gap of about 0.75 m under the teeth.
+- Next for N22: log the leaves' global positions in `Landmarks.Shift`, fix, re-shoot `n22\batch.json` (h8n22a = h8g2 + `--on gate`), make the watchman visible (light, or stand him nearer), and check the rise is complete before the travel fade.
+- No gate sound is banked (`gate.portcullis` plays nothing): route it to sound.
+
+**N24 fix: half done.**
+- Done (3938813a2): "Click to go on" in the serif, 19 px, Ink.
+- The inner rectangle is painted into `frames/paper.png`. That is the ledger's TILING sheet: `tools/uiforge/paper.py make()` calms a hard rectangle and makes it tileable.
+- The decided remake: a new `paper.make_card()`, not tiled, the middle calmed through a soft blurred mask, written to `frames/dawn_paper.png` at 760x480; DawnCardView uses it, falling back to paper.png. Never rebuild the `paper` group: it remakes the UI lead's paper.png and hint.png.
+- Worker a2f402ac9e2a43c8e has the full brief and waits: **ComfyUI is DOWN at 127.0.0.1:8188**, and the paint-over needs it. Ask the coordinator to bring it up, then SendMessage the worker "ComfyUI is up, go".
+- The studs stay (the judge called them acceptable).
+
+**Next, in order:**
+1. N22's leaf A (a fresh su-lead-high solver at medium, given the suspects above). N24's paper once ComfyUI is up.
+2. Judge round 2 (`Item: H8 changed moments`, round 2 of 2, API route, `judge1\brief.md` as the model) on N22's new frames, the new dawn card (shoot `--stage day` as h8g2 did, giving `godot/.shots/h8g2_dawn_card_1.png`), the N36 town frame and the N23 dense strip.
+3. Then:
+   - the suite;
+   - b_path (`n20\batch_final.json` h8b_path3);
+   - the day harness again, since the bar moved to the portcullis line. It runs on a runner: in `godot/balance`, `dotnet run -c Release -- lowford-day --callings warden --levels 3 --bots human,careless --seeds 64`. Last result: human 61/64 reached, careless 63/64, 0 falls, median 120 s, none stuck at the gate.
+   - push, then MR READY.
+**Derivation (the owner's rule):**
+- The ward log: the game's need.
+- The portcullis: the game's need, its look inherited from the E8 gatehouse (`env_props.py`).
+- The bar on the portcullis line: the game's need; it replaces the stand-in.
+- The watchman: inherited (Folk Watch).
+- The dawn paper: inherited (`tools/uiforge/paper.py`, UI art, 3 Oct), made specifically for the card.
+**Spend (lead 2):** lead ~245k; solver a07675ec ~188k; workers ~32k + ~24k; runner ~30k; API judge $1.32.
+
 ## H8 rc2's bugs (seams-h8 lead 1, 4 Nov): HANDOFF READY seams-h8@9c7dc0666
 
 HANDOFF READY seams-h8@9c7dc0666 (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2_bugs.md`. Branched from 0febc5160 (integration; nothing newer to merge at the start). Report to main (the coordinator) only at MR READY or a block. The H6 lead is agent `abf0b8606f7e91474`: it owns the Warden's numbers and H8 wires them. Scratch and sheets: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`shoot1\` runs and sheets, `solver_45\`, `dawn\`). No judge has run yet; round cap 2.
