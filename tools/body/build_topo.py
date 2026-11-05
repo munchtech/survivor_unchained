@@ -14,7 +14,8 @@ Stages (each a function, no hand steps):
               OurSliders (base/sliders_<tier>.npz): the slider body joined under the head as forms.join does (its
               mean move at the neck under SPLIT taken off; none within 1.5 cm of SPLIT, all of it 6 cm lower), then
               the spec's "stance" (forms.stance's rule: a pitch about the neck's middle and a move, eased in the same
-              way); "forms" (v1's residual, per MakeHuman point) is NOT applied: ours are "forms_topo" (2b);
+              way); spec "join": "ring" eases both by the distance to the seam as well (join_weight: a body with no
+              forms copy); "forms" (v1's residual, per MakeHuman point) is NOT applied: ours are "forms_topo" (2b);
   2 place     her shipped head, baked to its world rest (headbake.py: A's +7% Head scale and off-rest bind folded into
               the meshes); our open neck ring (94 points) IS the baked head ring by construction (topo.head_ring
               uses the same headbake.rest_world; asserted to 1e-6 m), so the snap, eased harmonically into the body
@@ -97,6 +98,28 @@ def boundary_ring(Q, n):
     return np.unique(u[c == 1])
 
 
+JOINS = ("split", "ring")
+
+
+def join_weight(spec, Q, V0):
+    """Stage 1's join: how much of the sliders' and the stance's move each point takes (0 at the head's seam, 1 well
+    under it). "split" (the default; forms.py's join): by the depth under SPLIT, none within HOLD_M, all of it EASE_M
+    lower. "ring" (spec "join": "ring"): the larger of that and the same ease on the point's distance to our open neck
+    ring (the seam itself). Why: SPLIT's depth holds every point near the plane, and the plane runs level with the
+    ring's high back, so the trapezius and the shoulder's top (2-12 cm out from the ring, 0.4-2.5 cm under SPLIT) kept
+    the reference's shape, the shrug of MakeHuman's short neck under her head: the stance's 41 mm drop reached the arm
+    but not the shoulder's top (jw 0.00-0.05 at x 6-18 cm), a 26-45 mm yoke over her ek2 body (5 Nov, arms down). A
+    body with a forms copy (her_topo) was reshaped there by its residual, so "split" stays its join, byte for byte."""
+    mode = spec.get("join", "split")
+    assert mode in JOINS, ("join", mode)
+    jw = s01((split_depth(V0) - HOLD_M) / EASE_M)
+    if mode == "ring":
+        ring = boundary_ring(Q, len(V0))
+        dr, _ = cKDTree(V0[ring]).query(V0)
+        jw = np.maximum(jw, s01((dr - HOLD_M) / EASE_M))
+    return jw
+
+
 # ------------------------------------------------------------------------------------------------- 1 base --
 def load_tier(tier):
     """Our topology and its slider bake for a tier (stage 1's inputs; the fit, wrap_topo.py, holds them)."""
@@ -110,7 +133,9 @@ def stage_base(spec, tier, rep, pre=None):
     assert np.abs(V0 - z["V"]).max() < 1e-6, "the sliders' reference is not this topology"
     info = {"topology": f"tools/body/out/topo/{tier}.npz", "vertices": int(len(V0)), "quads": int(len(z["Q"]))}
     V = V0.copy()
-    jw = s01((split_depth(V0) - HOLD_M) / EASE_M)[:, None]
+    jw = join_weight(spec, z["Q"], V0)[:, None]
+    if spec.get("join", "split") != "split":
+        info["join"] = spec["join"]
     sliders = {k: v for k, v in spec.get("sliders", {}).items() if v}
     if sliders:
         unknown = sorted(set(sliders) - set(sl.names))
