@@ -139,7 +139,10 @@ def label(ref, L):
     Cm = C * np.where(side[:, None], [-1.0, 1, 1], 1.0)
     lab = np.full(len(C), TRUNK)
     a = L["arm_root"]
-    arm = ((Cm - a["p"]) @ a["n"] > 0) & (seg_dist(Cm, L["shoulder"], L["hand_tip"]) < 0.13) & (Cm[:, 0] > 0.07)
+    bone = np.minimum.reduce([seg_dist(Cm, L["shoulder"], L["elbow"]), seg_dist(Cm, L["elbow"], L["wrist"]),
+                              seg_dist(Cm, L["wrist"], L["hand_tip"])])
+    arm = ((Cm - a["p"]) @ a["n"] > 0) & (bone < 0.08) & (Cm[:, 0] > 0.07)   # (the trunk's side under the armpit
+    #                                                    is on the plane's arm side: the bone distance keeps it trunk)
     lab[arm] = ARM
     lg = L["leg"]
     leg = ((Cm - lg["p"]) @ lg["n"] < 0) & (Cm[:, 1] < 1.15)

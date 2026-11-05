@@ -1034,6 +1034,11 @@ def build(plan, tier, ref, cv, L):
     vol = float((fnq * ctr).sum())
     if vol < 0:
         QF = QF[:, ::-1]
+    used = np.zeros(len(VF), bool)                   # drop the vertices left inside the breast window
+    used[QF.ravel()] = True
+    keep = np.where(used)[0]
+    remap = -np.ones(len(VF), np.int64)
+    remap[keep] = np.arange(len(keep))
     nr = len(src)
     info = {
         "part": np.concatenate([np.array(M.part), np.array(M.part)[src]]),
@@ -1047,7 +1052,9 @@ def build(plan, tier, ref, cv, L):
         "mirror_of": np.concatenate([np.full(n_left, -1), src]),
     }
     info["side"][shared] = 0
-    return VF, QF, info, C, joints, M, tk
+    info["mirror_of"] = np.where(info["mirror_of"] >= 0, remap[np.maximum(info["mirror_of"], 0)], -1)
+    info = {k: (v[keep] if k not in ("qreg", "qpart") else v) for k, v in info.items()}
+    return VF[keep], remap[QF], info, C, joints, M, tk
 
 
 # ------------------------------------------------------------------------------------------------- measures --

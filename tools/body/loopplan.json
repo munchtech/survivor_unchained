@@ -137,8 +137,8 @@
    "close": {
     "spacing": 0.0078,
     "row_scale": 1.0,
-    "glute_scale": 0.78,
-    "bust_scale": 0.85,
+    "glute_scale": 0.9,
+    "bust_scale": 0.95,
     "neck_spacing": 0.0045,
     "shoulder_spacing": 0.0055,
     "root_even": 0.6,
