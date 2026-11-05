@@ -197,7 +197,8 @@ public partial class FlareFx
         float draw = Mathf.Min(1, (float)t / 0.22f);
         if (sinceSpend < 0)
         {
-            look.X = Mathf.Min(1, (float)t / 0.12f);
+            // (H7: before its release the family's indigo grade holds the world, FlareFx.Family; its cold repaint after is its own)
+            look.X = 0;
             web.X = draw;
             web.Y = 1;
             web.Z = draw * (reach + 3);
@@ -442,8 +443,13 @@ public partial class FlareFx
         }
         SpendLight(p + Vector3.Up * 3f, new Color(1f, 0.6f, 0.25f), 11 * (banked ? 1.25f : 1)); // (15: 1.8x arena, 2.2x an empty field; §1.6 wants <= 1.6x)
         spendLight.OmniRange = reach * 1.3f;
-        Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
-        Cue("ember_last", p, 1);
+        // (H7: the last word is the main blow: the boom, the kick and the band from where it lands, FlareFx.Blow)
+        if (familyOn) MainBlowAt(new Vector2(p.X, p.Z), new Vector2(p.X, p.Z), p, Vector3.Up, "ember");
+        else
+        {
+            Cam?.Jolt(Vector3.Up, (0.6f + (banked ? 0.1f : 0)) * Motion);
+            Cue("ember_last", p, 1);
+        }
         Rumble(1, 0.6f, 0.4f);
         HudDim(0); LabelsAlpha(1);
     }

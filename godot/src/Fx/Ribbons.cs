@@ -36,7 +36,7 @@ public partial class Ribbons : MeshInstance3D
     {
         public Vector3[] Pts;
         public float[] Widths;
-        public float Width, Life, Age, Energy, Jag, Regen;
+        public float Width, Life, Age, Energy, Jag, Regen, Flick;
         public Color Color;
         public Style Style;
         public Vector3 A, B;
@@ -185,11 +185,13 @@ public partial class Ribbons : MeshInstance3D
     /// <summary>The narrowest a ribbon is drawn, in pixels at its head: from the
     /// game's high camera a trail of true width is a hairline.</summary>
     public float MinPixels = 6;
+    static readonly bool DebugBolts = Args.Has("ribbons-log");
     float perPxAtUnit;
 
     public void Step(float dt, Camera3D? cam)
     {
         now += dt;
+        if (DebugBolts) { int nb = 0; float age = -1; foreach (var q in strokes) if (q.Bolt) { nb++; age = q.Age; } if (nb > 0) GD.Print($"[ribbons] frame {Engine.GetFramesDrawn()} dt {dt:0.0000} bolts {nb} age {age:0.000}"); }
         var eye = cam?.GlobalPosition ?? new Vector3(0, 30, 10);
         float fov = cam?.Fov ?? 34;
         float h = cam?.GetViewport()?.GetVisibleRect().Size.Y ?? 1080;
@@ -221,7 +223,10 @@ public partial class Ribbons : MeshInstance3D
             strokes[i] = s;
             float k = s.Age / s.Life;
             // A bolt is at full strength and then gone, with a flicker; the rest fade.
-            float fade = s.Bolt ? (k < 0.6f ? 1 : 1 - (k - 0.6f) / 0.4f) * (0.75f + 0.25f * Rf()) : (1 - k) * (1 - k);
+            // (the flicker is drawn afresh only while the clock runs: a held world, a Flare's stop, holds the bolt still)
+            if (dt > 0 || s.Flick <= 0) s.Flick = 0.75f + 0.25f * Rf();
+            strokes[i] = s;
+            float fade = s.Bolt ? (k < 0.6f ? 1 : 1 - (k - 0.6f) / 0.4f) * s.Flick : (1 - k) * (1 - k);
             DrawLine(s.Pts, s.Widths, s.Width, s.Color, s.Energy * fade, s.Style, eye);
             if (s.Forks != null)
                 foreach (var fk in s.Forks) DrawLine(fk, ForkWidths, s.Width * 0.5f, s.Color, s.Energy * fade * 0.7f, s.Style, eye);

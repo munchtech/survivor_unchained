@@ -11,6 +11,7 @@ render_mode cull_disabled, diffuse_burley, world_vertex_coords;
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -106,8 +107,8 @@ void vertex() {
 	v_t = t;
 	vec3 p = vec3(off.x * wid, off.y * hgt, off.z * wid);
 	// Wind: a slow travelling swell and gusts; the survivor parts it.
-	float swell = sin(TIME * 1.6 + dot(wp, wind.xy) * 0.55 + nz.a * 5.0) * 0.5 + 0.5;
-	float gust = texture(noise_tex, wp * 0.018 - TIME * vec2(0.035, 0.012)).r;
+	float swell = sin(WORLD_TIME * 1.6 + dot(wp, wind.xy) * 0.55 + nz.a * 5.0) * 0.5 + 0.5;
+	float gust = texture(noise_tex, wp * 0.018 - WORLD_TIME * vec2(0.035, 0.012)).r;
 	vec2 bend = normalize(wind.xy) * (swell * 0.3 + gust * gust * 0.9) * wind.z;
 	vec2 a = wp - pusher.xy;
 	float pd = length(a);

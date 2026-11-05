@@ -74,7 +74,7 @@ stinger.<boss|danger|triumph|story|pull|zone>  Sfx.Stinger
 cine.<name>  Sfx.Cine
 door  Sfx.Door
 step.<grass|dirt|concrete|...>  Sfx.Step
-flare.<flareId>.<cue>  Sfx.Flare   (then flare.<cue>; cues: catch confirm inhale frost ember_fall ember_land ember_last boom)
+flare.<flareId>.<cue>  Sfx.Flare   (then flare.<cue>; cues: catch confirm inhale frost ember_fall ember_land ember_last boom; H7: mark toll sweep)
 flare.<cue>  Sfx.Flare
 lamps.<cue>  Sfx.Lamps   (cues: open close focus_small focus_notable focus_blue light light_notable path_tick blue_lit gate_open put_out denied layout wick_plan wick_turn)
 # interface

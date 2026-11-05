@@ -5,13 +5,13 @@
    "id": "dlg.rook.first.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Well. The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down.",
+   "text": "Well. The one who walked up from the Low Ford at dawn. Corvane came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down.",
    "where": "dialogue.json rook/first#0",
-   "hash": "ab138606fcd5",
+   "hash": "84df17311d62",
    "segments": [
     {
      "voice": "rook",
-     "text": "Well. The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
+     "text": "Well. The one who walked up from the Low Ford at dawn. Corvane came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
     }
    ],
    "direction": {
@@ -55,7 +55,7 @@
     "read": 15.77,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "dlg.rook.first.1",
@@ -930,13 +930,13 @@
    "id": "dlg.rook.town.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
+   "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge, and the Wayfinder's table on it, before the gate: she sells maps to worse nights than the one you've had, and somebody always buys. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not.",
    "where": "dialogue.json rook/town#0",
-   "hash": "af6dc3cb4e65",
+   "hash": "1a3224bbd956",
    "segments": [
     {
      "voice": "rook",
-     "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not."
+     "text": "Three roads meet here, and everyone on them stops at my door. South's the Low Ford. East's the Old Road and the Verge, and the Wayfinder's table on it, before the gate: she sells maps to worse nights than the one you've had, and somebody always buys. North's shut, and a girl in shiny armor will tell you why, at length. Everybody else you'll meet whether you want to or not."
     }
    ],
    "direction": {
@@ -977,7 +977,7 @@
     "read": 14.63,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "ply.rook.town.0",
@@ -1382,13 +1382,13 @@
    "id": "dlg.rook.lamp.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Chid. He needs somebody who knows what the light's for. Lord knows he doesn't.",
+   "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Corvane. He needs somebody who knows what the light's for. Lord knows he doesn't.",
    "where": "dialogue.json rook/lamp#0",
-   "hash": "0d0953135dd4",
+   "hash": "ee4f48055a0e",
    "segments": [
     {
      "voice": "rook",
-     "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Chid. He needs somebody who knows what the light's for. Lord knows he doesn't."
+     "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Corvane. He needs somebody who knows what the light's for. Lord knows he doesn't."
     }
    ],
    "direction": {
@@ -1429,7 +1429,7 @@
     "read": 15.49,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "ply.rook.lamp.0",
@@ -1598,13 +1598,13 @@
    "id": "dlg.rook.cb_shrine_lit.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
+   "text": "Corvane came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
    "where": "dialogue.json rook/cb_shrine_lit#0",
-   "hash": "14f9fba3db7d",
+   "hash": "f9b0da5dd16c",
    "segments": [
     {
      "voice": "rook",
-     "text": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it."
+     "text": "Corvane came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it."
     }
    ],
    "direction": {
@@ -1646,7 +1646,7 @@
     "read": 12.54,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "dlg.rook.cb_freed_teamsters.0",
@@ -1811,13 +1811,13 @@
    "id": "dlg.rook.cb_opened_vault.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "You smell of cold stone. Don't tell me where you've been. Chid'll tell me anyway, and get it wrong.",
+   "text": "You smell of cold stone. Don't tell me where you've been. Corvane'll tell me anyway, and get it wrong.",
    "where": "dialogue.json rook/cb_opened_vault#0",
-   "hash": "450afc5c6c12",
+   "hash": "be23596d7f71",
    "segments": [
     {
      "voice": "rook",
-     "text": "You smell of cold stone. Don't tell me where you've been. Chid'll tell me anyway, and get it wrong."
+     "text": "You smell of cold stone. Don't tell me where you've been. Corvane'll tell me anyway, and get it wrong."
     }
    ],
    "direction": {
@@ -1858,7 +1858,7 @@
     "read": 9.81,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "dlg.rook.say_calling.0",
@@ -2450,9 +2450,9 @@
    "id": "dlg.rook.mother2.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Chid brought her down and saw to her. I sat with her, after.",
+   "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Corvane brought her down and saw to her. I sat with her, after.",
    "where": "dialogue.json rook/mother2#0",
-   "hash": "8e67ec8dd0d9",
+   "hash": "afe5348832fe",
    "segments": [
     {
      "voice": "rook",
@@ -2464,7 +2464,7 @@
     },
     {
      "voice": "rook",
-     "text": "Chid brought her down and saw to her. I sat with her, after."
+     "text": "Corvane brought her down and saw to her. I sat with her, after."
     }
    ],
    "direction": {
@@ -2530,13 +2530,13 @@
    "id": "dlg.rook.mother_where.0",
    "kind": "dialogue",
    "voice": "rook",
-   "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.",
+   "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Corvane what to cut.",
    "where": "dialogue.json rook/mother_where#0",
-   "hash": "df543ab12b16",
+   "hash": "0ba243a968a8",
    "segments": [
     {
      "voice": "rook",
-     "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut."
+     "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Corvane what to cut."
     }
    ],
    "direction": {
@@ -6948,13 +6948,13 @@
    "id": "dlg.wenna.hub.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.",
+   "text": "I've the masks out again. Don't ask me why.",
    "where": "dialogue.json wenna/hub#0",
-   "hash": "d877514463f9",
+   "hash": "ce57c7c18e1c",
    "segments": [
     {
      "voice": "wenna",
-     "text": "You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean."
+     "text": "I've the masks out again. Don't ask me why."
     }
    ],
    "direction": {
@@ -6970,13 +6970,13 @@
    "id": "dlg.wenna.hub.1",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "Well? I've roots on the boil.",
+   "text": "You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean.",
    "where": "dialogue.json wenna/hub#1",
-   "hash": "3c349f0c50e2",
+   "hash": "d877514463f9",
    "segments": [
     {
      "voice": "wenna",
-     "text": "Well? I've roots on the boil."
+     "text": "You! Sit. No, don't sit, you'll squash the feverfew. The stream's clean, child. Clean."
     }
    ],
    "direction": {
@@ -6986,6 +6986,21 @@
     "vol": "level",
     "note": "Snappish."
    },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.wenna.hub.2",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "Well? I've roots on the boil.",
+   "where": "dialogue.json wenna/hub#2",
+   "hash": "3c349f0c50e2",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "Well? I've roots on the boil."
+    }
+   ],
    "status": "todo"
   },
   {
@@ -7550,13 +7565,13 @@
    "id": "dlg.wenna.cb_shrine_lit.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.",
+   "text": "Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet.",
    "where": "dialogue.json wenna/cb_shrine_lit#0",
-   "hash": "9d95b18ec3ae",
+   "hash": "7ec0fba17a25",
    "segments": [
     {
      "voice": "wenna",
-     "text": "Chid's lamp's lit. He came to tell me with his shoes on the wrong feet."
+     "text": "Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet."
     }
    ],
    "direction": {
@@ -7682,13 +7697,13 @@
    "id": "dlg.wenna.say_woman.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.",
+   "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane.",
    "where": "dialogue.json wenna/say_woman#0",
-   "hash": "8fc55137a7fd",
+   "hash": "437e8a392720",
    "segments": [
     {
      "voice": "wenna",
-     "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid."
+     "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane."
     }
    ],
    "direction": {
@@ -7784,6 +7799,51 @@
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "619bc388fc15",
    "status": "skip"
+  },
+  {
+   "id": "dlg.wenna.cb_clean.0",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "It's cleaner than I made it. I don't know why.",
+   "where": "dialogue.json wenna/cb_clean#0",
+   "hash": "078d1461a3e3",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "It's cleaner than I made it. I don't know why."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.wenna.cb_clean.1",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "It's cleaner than it was. I don't know why.",
+   "where": "dialogue.json wenna/cb_clean#1",
+   "hash": "f51662dcc16d",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "It's cleaner than it was. I don't know why."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.wenna.cb_clean.2",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "It's clean. I don't know why it's clean.",
+   "where": "dialogue.json wenna/cb_clean#2",
+   "hash": "eec85ddc9a64",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "It's clean. I don't know why it's clean."
+    }
+   ],
+   "status": "todo"
   },
   {
    "id": "dlg.tam.first.0",
@@ -8302,6 +8362,21 @@
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "be06bd713852",
    "status": "skip"
+  },
+  {
+   "id": "dlg.tam.cb_knock.0",
+   "kind": "dialogue",
+   "voice": "tam",
+   "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP.",
+   "where": "dialogue.json tam/cb_knock#0",
+   "hash": "5419a13bee81",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP."
+    }
+   ],
+   "status": "todo"
   },
   {
    "id": "dlg.brannoc.first.0",
@@ -13999,9 +14074,9 @@
    "id": "dlg.chid.first.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work.",
+   "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work.",
    "where": "dialogue.json chid/first#0",
-   "hash": "19bacd2c5510",
+   "hash": "59fdc4e66e28",
    "segments": [
     {
      "voice": "chid",
@@ -14013,7 +14088,7 @@
     },
     {
      "voice": "chid",
-     "text": "Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+     "text": "Oh, sit down, sit, sit. I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
     }
    ],
    "direction": {
@@ -14063,9 +14138,9 @@
    "id": "dlg.chid.first.1",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work.",
+   "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work.",
    "where": "dialogue.json chid/first#1",
-   "hash": "59c96678d876",
+   "hash": "7f90acbcdcea",
    "segments": [
     {
      "voice": "chid",
@@ -14077,7 +14152,7 @@
     },
     {
      "voice": "chid",
-     "text": "I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+     "text": "I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
     }
    ],
    "direction": {
@@ -14147,10 +14222,10 @@
    "id": "ply.chid.first.2",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Bless me, Chid.",
+   "text": "Bless me, Corvane.",
    "where": "dialogue.json chid/first choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "c6c00f9ace74",
+   "hash": "d405f2c37549",
    "status": "skip"
   },
   {
@@ -14353,10 +14428,10 @@
    "id": "ply.chid.hub.3",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Bless me, Chid.",
+   "text": "Bless me, Corvane.",
    "where": "dialogue.json chid/hub choice 3",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "c6c00f9ace74",
+   "hash": "d405f2c37549",
    "status": "skip"
   },
   {
@@ -14856,20 +14931,20 @@
    "id": "ply.chid.woke.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/woke choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
    "id": "ply.chid.woke.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Which carter, Chid?",
+   "text": "Which carter, Corvane?",
    "where": "dialogue.json chid/woke choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "5828610d9d77",
+   "hash": "d1d256c0c480",
    "status": "skip"
   },
   {
@@ -15096,13 +15171,13 @@
    "id": "dlg.chid.relight.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Chid makes a sound like a kettle.",
+   "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Corvane makes a sound like a kettle.",
    "where": "dialogue.json chid/relight#0",
-   "hash": "a0ef88db0a35",
+   "hash": "452a41a19dea",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Chid makes a sound like a kettle."
+     "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Corvane makes a sound like a kettle."
     }
    ],
    "direction": {
@@ -15143,7 +15218,7 @@
     "read": 19.23,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "dlg.chid.lit.0",
@@ -15223,10 +15298,10 @@
    "id": "ply.chid.lit.2",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Bless me, Chid.",
+   "text": "Bless me, Corvane.",
    "where": "dialogue.json chid/lit choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "c6c00f9ace74",
+   "hash": "d405f2c37549",
    "status": "skip"
   },
   {
@@ -15658,13 +15733,17 @@
    "id": "dlg.chid.cb_opened_vault.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "You went through the door! You went through— what was on the stair? No, don't tell me. Yes, tell me. No.",
+   "text": "(The kettle is on. There is a line across his throat, pale and closed, a week old by the look of it, and it was not there yesterday. He sees you see it.) Sit. The good stool. ...You'll have slept badly. I did.",
    "where": "dialogue.json chid/cb_opened_vault#0",
-   "hash": "e5236e2141fc",
+   "hash": "7dcf368d0828",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "The kettle is on. There is a line across his throat, pale and closed, a week old by the look of it, and it was not there yesterday. He sees you see it."
+    },
+    {
      "voice": "chid",
-     "text": "You went through the door! You went through— what was on the stair? No, don't tell me. Yes, tell me. No."
+     "text": "Sit. The good stool. ...You'll have slept badly. I did."
     }
    ],
    "direction": {
@@ -15705,24 +15784,34 @@
     "read": 11.79,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "ply.chid.cb_opened_vault.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "A stair going down. And the dead, coming up it.",
+   "text": "Which carter, Corvane?",
    "where": "dialogue.json chid/cb_opened_vault choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "2623c73d9b86",
+   "hash": "d1d256c0c480",
    "status": "skip"
   },
   {
    "id": "ply.chid.cb_opened_vault.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "I'd rather not say.",
+   "text": "You got up.",
    "where": "dialogue.json chid/cb_opened_vault choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "54f2e14b16a4",
+   "status": "skip"
+  },
+  {
+   "id": "ply.chid.cb_opened_vault.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "I'd rather not say.",
+   "where": "dialogue.json chid/cb_opened_vault choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "7564558669c4",
    "status": "skip"
@@ -15731,13 +15820,17 @@
    "id": "dlg.chid.cb_vault2.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "Then they're still keeping it. Good. Good, I think. ...I'm going to light every candle I've got.",
+   "text": "(He pours.) ...Don't.",
    "where": "dialogue.json chid/cb_vault2#0",
-   "hash": "df1d1f634cbc",
+   "hash": "cee18156876e",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "He pours."
+    },
+    {
      "voice": "chid",
-     "text": "Then they're still keeping it. Good. Good, I think. ...I'm going to light every candle I've got."
+     "text": "...Don't."
     }
    ],
    "direction": {
@@ -15778,7 +15871,7 @@
     "read": 9.64,
     "placeholder": true
    },
-   "status": "done"
+   "status": "stale"
   },
   {
    "id": "ply.chid.cb_vault2.0",
@@ -16826,10 +16919,10 @@
    "id": "ply.chid.carter.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/carter choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -16888,13 +16981,13 @@
    "id": "dlg.chid.carried.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You wake on the bench in Chid's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home.",
+   "text": "You wake on the bench in Corvane's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home.",
    "where": "dialogue.json chid/carried#0",
-   "hash": "3acf78554ab8",
+   "hash": "88287e22f6f2",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You wake on the bench in Chid's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
+     "text": "You wake on the bench in Corvane's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
     }
    ],
    "direction": {
@@ -16910,13 +17003,13 @@
    "id": "dlg.chid.carried.1",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You wake on the bench in Chid's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them.",
+   "text": "You wake on the bench in Corvane's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them.",
    "where": "dialogue.json chid/carried#1",
-   "hash": "a287b669f181",
+   "hash": "f07ca5c85fa3",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You wake on the bench in Chid's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
+     "text": "You wake on the bench in Corvane's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
     }
    ],
    "direction": {
@@ -16932,13 +17025,13 @@
    "id": "dlg.chid.carried.2",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You wake on the bench in Chid's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down.",
+   "text": "You wake on the bench in Corvane's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down.",
    "where": "dialogue.json chid/carried#2",
-   "hash": "c2822424b4ee",
+   "hash": "705d3c33cc50",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You wake on the bench in Chid's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
+     "text": "You wake on the bench in Corvane's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
     }
    ],
    "direction": {
@@ -16954,13 +17047,13 @@
    "id": "dlg.chid.carried.3",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You wake on the bench in Chid's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand.",
+   "text": "You wake on the bench in Corvane's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand.",
    "where": "dialogue.json chid/carried#3",
-   "hash": "2c3f2277bdf8",
+   "hash": "5f4408576c96",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You wake on the bench in Chid's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
+     "text": "You wake on the bench in Corvane's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
     }
    ],
    "direction": {
@@ -16976,13 +17069,13 @@
    "id": "dlg.chid.carried.4",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "You wake on the bench in Chid's shrine, and it is morning.",
+   "text": "You wake on the bench in Corvane's shrine, and it is morning.",
    "where": "dialogue.json chid/carried#4",
-   "hash": "7b7b1326e36a",
+   "hash": "0f6f46a0a646",
    "segments": [
     {
      "voice": "narrator",
-     "text": "You wake on the bench in Chid's shrine, and it is morning."
+     "text": "You wake on the bench in Corvane's shrine, and it is morning."
     }
    ],
    "direction": {
@@ -16998,8 +17091,38 @@
    "id": "dlg.chid.carried_chid.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in. A carter, I expect. (He has a small book in both hands, held the way you hold a bird.) I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please.",
+   "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. (He doesn't look at you. His collar is buttoned to the top, badly, over something.) Somebody brought you in from the old door. A carter, I expect. ...Sit. The good stool. Don't ask me anything this morning. Please.",
    "where": "dialogue.json chid/carried_chid#0",
+   "hash": "8871ea1c2a69",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night."
+    },
+    {
+     "voice": "narrator",
+     "text": "He doesn't look at you. His collar is buttoned to the top, badly, over something."
+    },
+    {
+     "voice": "chid",
+     "text": "Somebody brought you in from the old door. A carter, I expect. ...Sit. The good stool. Don't ask me anything this morning. Please."
+    }
+   ],
+   "direction": {
+    "emo": "relieved, fussing",
+    "intent": "you're back; gives you the office",
+    "pace": "quick",
+    "vol": "level",
+    "note": "Bright and breathless; the narrator's asides plain. 'Please.' at the end small and serious."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.chid.carried_chid.1",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in. A carter, I expect. (He has a small book in both hands, held the way you hold a bird.) I was keeping this for you. It's only an old office, what the keepers said at night. There's a bit at the end. ...Read it before you go out again. Please.",
+   "where": "dialogue.json chid/carried_chid#1",
    "hash": "b84f08ca88d8",
    "segments": [
     {
@@ -17025,19 +17148,19 @@
    ],
    "direction": {
     "emo": "relieved, fussing",
-    "intent": "you're back; gives you the office",
+    "intent": "you're back",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright and breathless; the narrator's asides plain. 'Please.' at the end small and serious."
+    "note": "Bright and breathless; the narrator plain. 'A carter, I expect.' too quick. Maeca's visit said as news he's pleased to give."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.1",
+   "id": "dlg.chid.carried_chid.2",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in off the Hollow road. A carter, I expect. ...Maeca was at the door at first light, asking after you. She wouldn't come in. If anybody knows those wolves, it's Maeca.",
-   "where": "dialogue.json chid/carried_chid#1",
+   "where": "dialogue.json chid/carried_chid#2",
    "hash": "1ffb1f5b11ba",
    "segments": [
     {
@@ -17058,16 +17181,16 @@
     "intent": "you're back",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright and breathless; the narrator plain. 'A carter, I expect.' too quick. Maeca's visit said as news he's pleased to give."
+    "note": "Bright; 'A carter, I expect.' too quick; the last line a little joke to cover it."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.2",
+   "id": "dlg.chid.carried_chid.3",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, carters.",
-   "where": "dialogue.json chid/carried_chid#2",
+   "where": "dialogue.json chid/carried_chid#3",
    "hash": "340b80671175",
    "segments": [
     {
@@ -17088,16 +17211,16 @@
     "intent": "you're back",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright; 'A carter, I expect.' too quick; the last line a little joke to cover it."
+    "note": "Bright; Rav's visit as gossip he approves of."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.3",
+   "id": "dlg.chid.carried_chid.4",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him. He knows that camp, you know. He's stitched up half of it.",
-   "where": "dialogue.json chid/carried_chid#3",
+   "where": "dialogue.json chid/carried_chid#4",
    "hash": "309d7ce025af",
    "segments": [
     {
@@ -17118,16 +17241,16 @@
     "intent": "you're back",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright; Rav's visit as gossip he approves of."
+    "note": "Bright; Rav's quiet noted fondly."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.4",
+   "id": "dlg.chid.carried_chid.5",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him.",
-   "where": "dialogue.json chid/carried_chid#4",
+   "where": "dialogue.json chid/carried_chid#5",
    "hash": "e0c0a70d8c52",
    "segments": [
     {
@@ -17144,20 +17267,20 @@
     }
    ],
    "direction": {
-    "emo": "relieved, fussing",
-    "intent": "you're back",
+    "emo": "relieved, puzzled",
+    "intent": "you're back; your lamp was lit",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright; Rav's quiet noted fondly."
+    "note": "Bright; the lamp a small mystery he finds charming."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.5",
+   "id": "dlg.chid.carried_chid.6",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of yours was lit when you came in. I didn't light it. Those little fellows must have been very taken with it.",
-   "where": "dialogue.json chid/carried_chid#5",
+   "where": "dialogue.json chid/carried_chid#6",
    "hash": "113293f6a225",
    "segments": [
     {
@@ -17174,20 +17297,20 @@
     }
    ],
    "direction": {
-    "emo": "relieved, puzzled",
-    "intent": "you're back; your lamp was lit",
+    "emo": "relieved, fussing",
+    "intent": "you're back",
     "pace": "quick",
     "vol": "level",
-    "note": "Bright; the lamp a small mystery he finds charming."
+    "note": "Bright; the kettle as comfort."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.6",
+   "id": "dlg.chid.carried_chid.7",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on.",
-   "where": "dialogue.json chid/carried_chid#6",
+   "where": "dialogue.json chid/carried_chid#7",
    "hash": "efb1e75c5f34",
    "segments": [
     {
@@ -17204,20 +17327,20 @@
     }
    ],
    "direction": {
-    "emo": "relieved, fussing",
-    "intent": "you're back",
-    "pace": "quick",
+    "emo": "relieved, then sober",
+    "intent": "you're back from the old door",
+    "pace": "measured",
     "vol": "level",
-    "note": "Bright; the kettle as comfort."
+    "note": "Bright, then the narrator's quiet; 'I've read about the ones behind that door.' lower and older."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.7",
+   "id": "dlg.chid.carried_chid.8",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in from the old door. A carter, I expect. (He's quiet a moment, which isn't like him.) I've read about the ones behind that door. In a very old book. Ask me, when you've eaten.",
-   "where": "dialogue.json chid/carried_chid#7",
+   "where": "dialogue.json chid/carried_chid#8",
    "hash": "65de7e4157f3",
    "segments": [
     {
@@ -17242,20 +17365,20 @@
     }
    ],
    "direction": {
-    "emo": "relieved, then sober",
+    "emo": "relieved, then far off",
     "intent": "you're back from the old door",
     "pace": "measured",
     "vol": "level",
-    "note": "Bright, then the narrator's quiet; 'I've read about the ones behind that door.' lower and older."
+    "note": "Bright, then quiet; 'Always the pole.' half to himself."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.8",
+   "id": "dlg.chid.carried_chid.9",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in from the old door. A carter, I expect. (He's quiet a moment, which isn't like him.) They followed the pole, you know. Always the pole.",
-   "where": "dialogue.json chid/carried_chid#8",
+   "where": "dialogue.json chid/carried_chid#9",
    "hash": "03464668e2a3",
    "segments": [
     {
@@ -17280,20 +17403,20 @@
     }
    ],
    "direction": {
-    "emo": "relieved, then far off",
-    "intent": "you're back from the old door",
-    "pace": "measured",
+    "emo": "relieved, fussing",
+    "intent": "you're back",
+    "pace": "quick",
     "vol": "level",
-    "note": "Bright, then quiet; 'Always the pole.' half to himself."
+    "note": "Bright; 'A carter, I expect.' too quick."
    },
    "status": "todo"
   },
   {
-   "id": "dlg.chid.carried_chid.9",
+   "id": "dlg.chid.carried_chid.10",
    "kind": "dialogue",
    "voice": "chid",
    "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in. A carter, I expect.",
-   "where": "dialogue.json chid/carried_chid#9",
+   "where": "dialogue.json chid/carried_chid#10",
    "hash": "e72d753a2546",
    "segments": [
     {
@@ -17309,23 +17432,16 @@
      "text": "Somebody brought you in. A carter, I expect."
     }
    ],
-   "direction": {
-    "emo": "relieved, fussing",
-    "intent": "you're back",
-    "pace": "quick",
-    "vol": "level",
-    "note": "Bright; 'A carter, I expect.' too quick."
-   },
    "status": "todo"
   },
   {
    "id": "ply.chid.carried_chid.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/carried_chid choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -17372,10 +17488,10 @@
    "id": "ply.chid.carried_who.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/carried_who choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -17440,10 +17556,10 @@
    "id": "ply.chid.office.2",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/office choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -17486,10 +17602,10 @@
    "id": "ply.chid.office_end.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/office_end choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -17528,10 +17644,10 @@
    "id": "ply.chid.office_who.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Thank you, Chid.",
+   "text": "Thank you, Corvane.",
    "where": "dialogue.json chid/office_who choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "f07989822f7d",
+   "hash": "ba47accae33c",
    "status": "skip"
   },
   {
@@ -17782,6 +17898,45 @@
    "status": "todo"
   },
   {
+   "id": "dlg.chid.cb_vault_up.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "(He puts the cup in your hands.) So did you, once. I didn't ask you how. ...Drink that. It's only hot water.",
+   "where": "dialogue.json chid/cb_vault_up#0",
+   "hash": "3ac98c9df9c7",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He puts the cup in your hands."
+    },
+    {
+     "voice": "chid",
+     "text": "So did you, once. I didn't ask you how. ...Drink that. It's only hot water."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.chid.cb_vault_up.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Something else.",
+   "where": "dialogue.json chid/cb_vault_up choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "002c896f4190",
+   "status": "skip"
+  },
+  {
+   "id": "ply.chid.cb_vault_up.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json chid/cb_vault_up choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "619bc388fc15",
+   "status": "skip"
+  },
+  {
    "id": "dlg.vonnra.first.0",
    "kind": "dialogue",
    "voice": "vonnra",
@@ -17943,17 +18098,19 @@
    "id": "dlg.vonnra.hub.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "{name}. Your chapter is written. The next one is not. ...Payment, always.",
+   "text": "(The ledger is open, and she does not look up from it.) After dark, traveler. I do not say this one by daylight. Payment, always.",
    "where": "dialogue.json vonnra/hub#0",
-   "hash": "eb1cad9050ce",
-   "name_elided": true,
+   "hash": "4c294dda66f0",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "The ledger is open, and she does not look up from it."
+    },
+    {
      "voice": "vonnra",
-     "text": "Your chapter is written. The next one is not. ...Payment, always."
+     "text": "After dark, traveler. I do not say this one by daylight. Payment, always."
     }
    ],
-   "name_at": 0,
    "direction": {
     "emo": "calm finality, a new intimacy",
     "intent": "uses your name now",
@@ -17967,15 +18124,17 @@
    "id": "dlg.vonnra.hub.1",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Your chapter is written. The next one is not. Payment, always.",
+   "text": "{name}. Your chapter is written. The next one is not. ...Payment, always.",
    "where": "dialogue.json vonnra/hub#1",
-   "hash": "71eeaa3befc8",
+   "hash": "eb1cad9050ce",
+   "name_elided": true,
    "segments": [
     {
      "voice": "vonnra",
-     "text": "Your chapter is written. The next one is not. Payment, always."
+     "text": "Your chapter is written. The next one is not. ...Payment, always."
     }
    ],
+   "name_at": 0,
    "direction": {
     "emo": "calm finality",
     "intent": "the chapter is closed",
@@ -17989,17 +18148,13 @@
    "id": "dlg.vonnra.hub.2",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveler. The road is quiet tonight. It will not always be. Payment, always.",
+   "text": "Your chapter is written. The next one is not. Payment, always.",
    "where": "dialogue.json vonnra/hub#2",
-   "hash": "7bb4ce0c8eee",
+   "hash": "71eeaa3befc8",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Her lamp is lit, and she is looking south, toward the ford."
-    },
-    {
      "voice": "vonnra",
-     "text": "Traveler. The road is quiet tonight. It will not always be. Payment, always."
+     "text": "Your chapter is written. The next one is not. Payment, always."
     }
    ],
    "direction": {
@@ -18015,13 +18170,17 @@
    "id": "dlg.vonnra.hub.3",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's business but their own. Payment, always.",
+   "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveler. The road is quiet tonight. It will not always be. Payment, always.",
    "where": "dialogue.json vonnra/hub#3",
-   "hash": "22fbc444d49f",
+   "hash": "7bb4ce0c8eee",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "Her lamp is lit, and she is looking south, toward the ford."
+    },
+    {
      "voice": "vonnra",
-     "text": "Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's business but their own. Payment, always."
+     "text": "Traveler. The road is quiet tonight. It will not always be. Payment, always."
     }
    ],
    "direction": {
@@ -18037,13 +18196,13 @@
    "id": "dlg.vonnra.hub.4",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Payment, always.",
+   "text": "Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's business but their own. Payment, always.",
    "where": "dialogue.json vonnra/hub#4",
-   "hash": "15dacab66734",
+   "hash": "22fbc444d49f",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "Payment, always."
+     "text": "Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone's business but their own. Payment, always."
     }
    ],
    "direction": {
@@ -18053,6 +18212,21 @@
     "vol": "quiet",
     "note": "Two words, perfectly level."
    },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.hub.5",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Payment, always.",
+   "where": "dialogue.json vonnra/hub#5",
+   "hash": "15dacab66734",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Payment, always."
+    }
+   ],
    "status": "todo"
   },
   {
@@ -18455,13 +18629,17 @@
    "id": "dlg.vonnra.vault.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
+   "text": "(She does not look up.) I have told you what is behind it, and the key to it is in your coat. After dark, traveler.",
    "where": "dialogue.json vonnra/vault#0",
-   "hash": "0246658d258d",
+   "hash": "13e70b13e4bd",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "She does not look up."
+    },
+    {
      "voice": "vonnra",
-     "text": "Not for any price. That is the only thing I will ever say to you without charging for it."
+     "text": "I have told you what is behind it, and the key to it is in your coat. After dark, traveler."
     }
    ],
    "direction": {
@@ -18471,6 +18649,40 @@
     "vol": "quiet",
     "note": "'Not for any price.' immovable. The second sentence almost gracious, which is worse."
    },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.vault.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "(She does not look up.) I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate.",
+   "where": "dialogue.json vonnra/vault#1",
+   "hash": "cba6117e34d8",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She does not look up."
+    },
+    {
+     "voice": "vonnra",
+     "text": "I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.vault.2",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
+   "where": "dialogue.json vonnra/vault#2",
+   "hash": "0246658d258d",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Not for any price. That is the only thing I will ever say to you without charging for it."
+    }
+   ],
    "status": "todo"
   },
   {
@@ -19317,13 +19529,17 @@
    "id": "dlg.vonnra.cb_opened_vault.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?",
+   "text": "(She is standing, and the ledger is open at a page with one line on it. You cannot read it from the door.) You opened it. ...Do not sit, traveler. I would rather you stood. What stood in the door?",
    "where": "dialogue.json vonnra/cb_opened_vault#0",
-   "hash": "ff7f0f83efc3",
+   "hash": "013b23af1ddd",
    "segments": [
     {
+     "voice": "narrator",
+     "text": "She is standing, and the ledger is open at a page with one line on it. You cannot read it from the door."
+    },
+    {
      "voice": "vonnra",
-     "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?"
+     "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What stood in the door?"
     }
    ],
    "direction": {
@@ -19339,10 +19555,10 @@
    "id": "ply.vonnra.cb_opened_vault.0",
    "kind": "choice",
    "voice": "survivor",
-   "text": "A stair going down. The dead coming up it.",
+   "text": "Corvane. With a lamp.",
    "where": "dialogue.json vonnra/cb_opened_vault choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "b79c0cc9073f",
+   "hash": "7f5914b55367",
    "status": "skip"
   },
   {
@@ -19359,15 +19575,29 @@
    "id": "dlg.vonnra.cb_vault2.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "Then it is still there. That is all. I will say it again, because it bears repeating: that is all.",
+   "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Did it reach for you? (She does not wait for the answer. She has it from your face.) Two. Five, and the valley sleeps. Go and eat something, {name}.",
    "where": "dialogue.json vonnra/cb_vault2#0",
-   "hash": "fc00bb0c6121",
+   "hash": "71b579a46284",
+   "name_elided": true,
    "segments": [
     {
+     "voice": "narrator",
+     "text": "She writes nothing down."
+    },
+    {
      "voice": "vonnra",
-     "text": "Then it is still there. That is all. I will say it again, because it bears repeating: that is all."
+     "text": "His kind live off the leak. He will do that again. ...Did it reach for you?"
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not wait for the answer. She has it from your face."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Two. Five, and the valley sleeps. Go and eat something."
     }
    ],
+   "name_at": 4,
    "direction": {
     "emo": "relief hidden as finality",
     "intent": "the dead still hold",
@@ -19375,6 +19605,27 @@
     "vol": "quiet",
     "note": "'Then it is still there.' Repeat 'that is all' exactly the same both times; the repetition is the tell."
    },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.cb_vault2.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Go and eat something, {name}.",
+   "where": "dialogue.json vonnra/cb_vault2#1",
+   "hash": "224e273bb96d",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She writes nothing down."
+    },
+    {
+     "voice": "vonnra",
+     "text": "His kind live off the leak. He will do that again. ...Go and eat something."
+    }
+   ],
+   "name_at": 2,
    "status": "todo"
   },
   {
@@ -19618,13 +19869,13 @@
    "id": "dlg.vonnra.risen.0",
    "kind": "dialogue",
    "voice": "vonnra",
-   "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
+   "text": "You came back. Most do not, the first time. ...Do not thank Corvane. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
    "where": "dialogue.json vonnra/risen#0",
-   "hash": "6491e5be638a",
+   "hash": "42a3501d75e6",
    "segments": [
     {
      "voice": "vonnra",
-     "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note."
+     "text": "You came back. Most do not, the first time. ...Do not thank Corvane. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note."
     }
    ],
    "direction": {
@@ -20068,6 +20319,734 @@
     }
    ],
    "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.chains.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "(Two cups on the table, and the ledger shut. You have never seen it shut.) Sit. ...No. Sit, {name}. The toll is paid tonight; I paid it. (She pours, and the second cup is for you.) Everyone in this town has told you who to thank for the quiet at the ford. Not one of them has told you what you did there. I am going to.",
+   "where": "dialogue.json vonnra/chains#0",
+   "hash": "6f303417ef21",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Two cups on the table, and the ledger shut. You have never seen it shut."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Sit. ...No. Sit."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The toll is paid tonight; I paid it."
+    },
+    {
+     "voice": "narrator",
+     "text": "She pours, and the second cup is for you."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Everyone in this town has told you who to thank for the quiet at the ford. Not one of them has told you what you did there. I am going to."
+    }
+   ],
+   "name_at": 2,
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.chains.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "I put the Warden down.",
+   "where": "dialogue.json vonnra/chains choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "bf8ad6802b49",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.chains.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Go on, then.",
+   "where": "dialogue.json vonnra/chains choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "371fb3fdddbc",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.keeper.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
+   "where": "dialogue.json vonnra/keeper#0",
+   "hash": "8d5087836b24",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "You put down a guard."
+    },
+    {
+     "voice": "narrator",
+     "text": "She says it the way she says a price."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.keeper.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "And what does a chain do to a thing like that?",
+   "where": "dialogue.json vonnra/keeper choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "9365700c2cd3",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.keeper.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The dead. Why do they get up?",
+   "where": "dialogue.json vonnra/keeper choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "5787a65783f8",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.bleed.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "It bleeds. A chain holds the morning by cutting it, and what runs out of the cut runs up through the ground. You have a word for that, traveler. The valley burns it in its lamps and cooks it in the Dig and sells it by the sack, and where it lies thick the dead get up at night with nothing behind their faces. (She does not look at the lamp-iron at your belt. She has already looked.) You have burned it every night since the ford. You know what it smells like.",
+   "where": "dialogue.json vonnra/bleed#0",
+   "hash": "b2ec5506e9c2",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "It bleeds. A chain holds the morning by cutting it, and what runs out of the cut runs up through the ground. You have a word for that, traveler. The valley burns it in its lamps and cooks it in the Dig and sells it by the sack, and where it lies thick the dead get up at night with nothing behind their faces."
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not look at the lamp-iron at your belt. She has already looked."
+    },
+    {
+     "voice": "vonnra",
+     "text": "You have burned it every night since the ford. You know what it smells like."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.bleed.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The ford.",
+   "where": "dialogue.json vonnra/bleed choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "0d228f0d98bc",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.ford_tale.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You asked him nothing. You did not even answer him. He let go of it anyway, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me.",
+   "where": "dialogue.json vonnra/ford_tale#0",
+   "hash": "a516c8ccd4c6",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You asked him nothing. You did not even answer him. He let go of it anyway, and his heart came up out of the river, and the road has been quiet every night since."
+    },
+    {
+     "voice": "narrator",
+     "text": "She turns the shut ledger a quarter turn, the way she turns a cup."
+    },
+    {
+     "voice": "vonnra",
+     "text": "No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.ford_tale.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You nodded to him. He let go, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me.",
+   "where": "dialogue.json vonnra/ford_tale#1",
+   "hash": "5f7d513bb0ec",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You nodded to him. He let go, and his heart came up out of the river, and the road has been quiet every night since."
+    },
+    {
+     "voice": "narrator",
+     "text": "She turns the shut ledger a quarter turn, the way she turns a cup."
+    },
+    {
+     "voice": "vonnra",
+     "text": "No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.ford_tale.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Seven. One is out.",
+   "where": "dialogue.json vonnra/ford_tale choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "2b9b3a656f38",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.ford_tale.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The words over the door say the Legion buried what it could not burn.",
+   "where": "dialogue.json vonnra/ford_tale choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "d67fbb725c4e",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.ford_tale.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Corvane says the Watch was founded to keep it done.",
+   "where": "dialogue.json vonnra/ford_tale choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "c8482fed1d8a",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.burn.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Read it again. Not what it could not kill: what it could not burn. (She lays one finger flat on the table, like a word.) Fire was the only thing the Legion trusted, and the morning would not take it, because the morning is what fire is for. So they bled it, and called the bleeding a burial. Soldiers write a very honest kind of lie, traveler. They tell you what they did, and let you supply the monster.",
+   "where": "dialogue.json vonnra/burn#0",
+   "hash": "0565f2416d08",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Read it again. Not what it could not kill: what it could not burn."
+    },
+    {
+     "voice": "narrator",
+     "text": "She lays one finger flat on the table, like a word."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Fire was the only thing the Legion trusted, and the morning would not take it, because the morning is what fire is for. So they bled it, and called the bleeding a burial. Soldiers write a very honest kind of lie, traveler. They tell you what they did, and let you supply the monster."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.burn.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Seven. One is out.",
+   "where": "dialogue.json vonnra/burn choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "2b9b3a656f38",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.burn.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Corvane says the Watch was founded to keep it done.",
+   "where": "dialogue.json vonnra/burn choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "c8482fed1d8a",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.order.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Corvane. (For a moment she almost smiles, and it is worse than the ledger.) The Order made the guards. The Order kept the chains. And the Order lit its lamps off what ran out of the cut, and called the smell a prayer. They lived off the leak. Of course the Watch was founded to keep it done; the Watch is the Order with its collar off. Ask him what his lamps burned, traveler, and watch him light a candle.",
+   "where": "dialogue.json vonnra/order#0",
+   "hash": "bfa250de066a",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Corvane."
+    },
+    {
+     "voice": "narrator",
+     "text": "For a moment she almost smiles, and it is worse than the ledger."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The Order made the guards. The Order kept the chains. And the Order lit its lamps off what ran out of the cut, and called the smell a prayer. They lived off the leak. Of course the Watch was founded to keep it done; the Watch is the Order with its collar off. Ask him what his lamps burned, traveler, and watch him light a candle."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.order.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Seven. One is out.",
+   "where": "dialogue.json vonnra/order choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "2b9b3a656f38",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.order.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The words over the door say the Legion buried what it could not burn.",
+   "where": "dialogue.json vonnra/order choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "d67fbb725c4e",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.six.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
+   "where": "dialogue.json vonnra/six#0",
+   "hash": "53c1dbf44dc7",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing."
+    },
+    {
+     "voice": "vonnra",
+     "text": "I have had forty years to be wrong, and the ford says I am not."
+    }
+   ],
+   "name_at": 1,
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.six.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "How do you know it stops?",
+   "where": "dialogue.json vonnra/six choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "041ae32846c9",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.six.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why tell me? Payment, always.",
+   "where": "dialogue.json vonnra/six choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "15590bb591a7",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.six.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why me?",
+   "where": "dialogue.json vonnra/six choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e28cd6ffa89e",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.office.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Because the people who made the guards wrote down when it would be over, and I can read. (She says it without looking at anything, the way you say a thing learned as a child.) \"Is it morning?\" \"Not yet.\" \"When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning.\" The end of the Order's office. The keepers said it every night for a thousand years to a thing they had chained, and meant it as a promise. A lamp lit at dark that still burns at first light. You have watched what you carry go out at every dawn, traveler. One morning it will not. That is the whole of the prophecy, and it is kinder than the tale.",
+   "where": "dialogue.json vonnra/office#0",
+   "hash": "3c0d5228ef30",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Because the people who made the guards wrote down when it would be over, and I can read."
+    },
+    {
+     "voice": "narrator",
+     "text": "She says it without looking at anything, the way you say a thing learned as a child."
+    },
+    {
+     "voice": "vonnra",
+     "text": "\"Is it morning?\" \"Not yet.\" \"When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning.\" The end of the Order's office. The keepers said it every night for a thousand years to a thing they had chained, and meant it as a promise. A lamp lit at dark that still burns at first light. You have watched what you carry go out at every dawn, traveler. One morning it will not. That is the whole of the prophecy, and it is kinder than the tale."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.office.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Is that all of it?",
+   "where": "dialogue.json vonnra/office choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3a8e4932e82f",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.office.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why tell me? Payment, always.",
+   "where": "dialogue.json vonnra/office choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "15590bb591a7",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.office.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why me?",
+   "where": "dialogue.json vonnra/office choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e28cd6ffa89e",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.office_more.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "There is a little after. It concerns the keeper, and it is in the keepers' words, and I will not stand in a dead man's mouth tonight. Corvane has the book. He will show you the end when he thinks you are ready, which is never. ...Ask him anyway. I should like to see his face.",
+   "where": "dialogue.json vonnra/office_more#0",
+   "hash": "2ef23f021116",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "There is a little after. It concerns the keeper, and it is in the keepers' words, and I will not stand in a dead man's mouth tonight. Corvane has the book. He will show you the end when he thinks you are ready, which is never. ...Ask him anyway. I should like to see his face."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.office_more.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why tell me? Payment, always.",
+   "where": "dialogue.json vonnra/office_more choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "15590bb591a7",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.office_more.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why me?",
+   "where": "dialogue.json vonnra/office_more choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e28cd6ffa89e",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.cost.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count.",
+   "where": "dialogue.json vonnra/cost#0",
+   "hash": "5e72a6e4f1dc",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "She looks at the two cups."
+    },
+    {
+     "voice": "vonnra",
+     "text": "That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.cost.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Why me?",
+   "where": "dialogue.json vonnra/cost choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e28cd6ffa89e",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.why.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Because only a thing's own light can lift its heart. The Legion could not; they could only bury. My family could not; we kept the keys, and watched. A living hand goes up to a heart-stone and comes away empty. (She turns her palm up on the table, and leaves it there.) You can lift one. I watched the first reach for you. A light going out at the crossing, and a little after, another one coming on: I told you it is not often the second thing happens. I did not tell you what it meant.",
+   "where": "dialogue.json vonnra/why#0",
+   "hash": "d0177dc691a7",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Because only a thing's own light can lift its heart. The Legion could not; they could only bury. My family could not; we kept the keys, and watched. A living hand goes up to a heart-stone and comes away empty."
+    },
+    {
+     "voice": "narrator",
+     "text": "She turns her palm up on the table, and leaves it there."
+    },
+    {
+     "voice": "vonnra",
+     "text": "You can lift one. I watched the first reach for you. A light going out at the crossing, and a little after, another one coming on: I told you it is not often the second thing happens. I did not tell you what it meant."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.why.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "And if I don't?",
+   "where": "dialogue.json vonnra/why choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "cdc838539c3a",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.why.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The door in the Verge.",
+   "where": "dialogue.json vonnra/why choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "06129d3c283c",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.why.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Where do I start?",
+   "where": "dialogue.json vonnra/why choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "356c2571c269",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.dont.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning.",
+   "where": "dialogue.json vonnra/dont#0",
+   "hash": "e5acf96f018a",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Then the ford stays quiet, and nowhere else does."
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not raise her voice. She never has."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The boy's floor goes on knocking, and one night it opens. You will do it."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning."
+    }
+   ],
+   "name_at": 3,
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.dont.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning.",
+   "where": "dialogue.json vonnra/dont#1",
+   "hash": "b2d8dc471998",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Then the ford stays quiet, and nowhere else does."
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not raise her voice. She never has."
+    },
+    {
+     "voice": "vonnra",
+     "text": "The boy's floor goes on knocking, and one night it opens. You will do it."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning."
+    }
+   ],
+   "name_at": 3,
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.dont.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "The door in the Verge.",
+   "where": "dialogue.json vonnra/dont choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "06129d3c283c",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.dont.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Where do I start?",
+   "where": "dialogue.json vonnra/dont choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "356c2571c269",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.key.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. You have the last. I thought you might. (She does not ask where you found it.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it.",
+   "where": "dialogue.json vonnra/key#0",
+   "hash": "c527e16381ad",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. You have the last. I thought you might."
+    },
+    {
+     "voice": "narrator",
+     "text": "She does not ask where you found it."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.vonnra.key.1",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. The last man who carried one did not come out. He is at the door still, what the birds left of him. Look in his hand. (A beat.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it.",
+   "where": "dialogue.json vonnra/key#1",
+   "hash": "bf233ad9e93b",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. The last man who carried one did not come out. He is at the door still, what the birds left of him. Look in his hand."
+    },
+    {
+     "voice": "narrator",
+     "text": "A beat."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.key.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Jessop went in.",
+   "where": "dialogue.json vonnra/key choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b0b30da0eeac",
+   "status": "skip"
+  },
+  {
+   "id": "ply.vonnra.key.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Then I'll go.",
+   "where": "dialogue.json vonnra/key choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3d4f534d0d99",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.jessop_in.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...In my book he went south, traveler. Let him.",
+   "where": "dialogue.json vonnra/jessop_in#0",
+   "hash": "d4363810f6d7",
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "He did."
+    },
+    {
+     "voice": "narrator",
+     "text": "The ledger stays shut."
+    },
+    {
+     "voice": "vonnra",
+     "text": "He had a key. He did not have what you have. ...In my book he went south, traveler. Let him."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.jessop_in.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Then I'll go.",
+   "where": "dialogue.json vonnra/jessop_in choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3d4f534d0d99",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.vonnra.tale_end.0",
+   "kind": "dialogue",
+   "voice": "vonnra",
+   "text": "Go, then. (She picks up the cup you did not drink from, and drinks it herself.) Come back through my gate, {name}. ...That is not a toll. I have never said it to anyone, and I find I do not know the price.",
+   "where": "dialogue.json vonnra/tale_end#0",
+   "hash": "4afccb141a08",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "vonnra",
+     "text": "Go, then."
+    },
+    {
+     "voice": "narrator",
+     "text": "She picks up the cup you did not drink from, and drinks it herself."
+    },
+    {
+     "voice": "vonnra",
+     "text": "Come back through my gate."
+    },
+    {
+     "voice": "vonnra",
+     "text": "...That is not a toll. I have never said it to anyone, and I find I do not know the price."
+    }
+   ],
+   "name_at": 3,
+   "status": "todo"
+  },
+  {
+   "id": "ply.vonnra.tale_end.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodnight, Vonnra.",
+   "where": "dialogue.json vonnra/tale_end choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "0934d020e2fe",
+   "status": "skip"
   },
   {
    "id": "dlg.keegan.first.0",
@@ -27012,70 +27991,6 @@
    "status": "done"
   },
   {
-   "id": "dlg.cin_drowned_fire.prints.0",
-   "kind": "dialogue",
-   "voice": "narrator",
-   "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
-   "where": "dialogue.json cin_drowned_fire/prints#0",
-   "hash": "2d8b284f0b0e",
-   "segments": [
-    {
-     "voice": "narrator",
-     "text": "Prints in the frost, your own. They come up from the river. None go down to it."
-    }
-   ],
-   "direction": {
-    "emo": "plain",
-    "intent": "your own prints come from the river",
-    "pace": "slow",
-    "vol": "quiet",
-    "note": "Two plain facts; a pause, then 'None go down to it.' on its own.",
-    "beats": "Prints in the frost, your own. They come up from the river. [beat] None go down to it.",
-    "time_note": "about 0.7 s of pause before 'None go down to it.'",
-    "time": [
-     6.0,
-     7.0
-    ]
-   },
-   "take": {
-    "file": "narrator/dlg.cin_drowned_fire.prints.0.ogg",
-    "hash": "2d8b284f0b0e",
-    "sec": 6.95,
-    "segs": [
-     [
-      0.0,
-      6.953,
-      0.0,
-      1.0
-     ]
-    ],
-    "model": "maya1 performance + seed-vc",
-    "parts": [
-     {
-      "voice": "narrator",
-      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_drowned_fire.prints.0\\p0_vc_r3_08fc47.wav",
-      "seed": 3,
-      "score": 0,
-      "similarity": 0.828,
-      "utmos": 4.07,
-      "accent": "england",
-      "wps": 0.0,
-      "said": "Prints in the frost, your own, they come up from the river, none go down to it.",
-      "style": "placeholder: Maya1 performance, Seed-VC"
-     }
-    ],
-    "made": "2026-10-04",
-    "read": 6.95,
-    "time": [
-     6.0,
-     7.0
-    ],
-    "pauses_capped": 0.75,
-    "placeholder": true
-   },
-   "status": "done"
-  },
-  {
    "id": "dlg.cin_drowned_fire.lamp.0",
    "kind": "dialogue",
    "voice": "narrator",
@@ -27662,6 +28577,21 @@
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "b1fc71d10ad5",
    "status": "skip"
+  },
+  {
+   "id": "dlg.cin_first_light.lamp_out.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "On the stones at the water's edge, a lamp lies on its side. It has gone out.",
+   "where": "dialogue.json cin_first_light/lamp_out#0",
+   "hash": "f28f45595950",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "On the stones at the water's edge, a lamp lies on its side. It has gone out."
+    }
+   ],
+   "status": "todo"
   },
   {
    "id": "dlg.cin_first_light.reeds.0",
@@ -30102,13 +31032,13 @@
    "id": "dlg.sb_stay_where_they_reach.chained.0",
    "kind": "dialogue",
    "voice": "watchman",
-   "text": "and chained it there, in the dark.",
+   "text": "and bound it there with seven chains, in the dark.",
    "where": "dialogue.json sb_stay_where_they_reach/chained#0",
-   "hash": "2249e2a8640f",
+   "hash": "f9c3dad1def6",
    "segments": [
     {
      "voice": "watchman",
-     "text": "and chained it there, in the dark."
+     "text": "and bound it there with seven chains, in the dark."
     }
    ],
    "status": "todo"
@@ -30226,6 +31156,333 @@
    "where": "dialogue.json sb_stay_where_they_reach/lamps choice 0",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "b1fc71d10ad5",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.go_home.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "(He is standing in front of the door with a lamp of the old make held up, violet glass in it, and for once his shoes are on the right feet.) Go home, {name}. ...I can't tell you. I've been wrong before.",
+   "where": "dialogue.json door_night/go_home#0",
+   "hash": "89564cc39021",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He is standing in front of the door with a lamp of the old make held up, violet glass in it, and for once his shoes are on the right feet."
+    },
+    {
+     "voice": "chid",
+     "text": "Go home. ...I can't tell you. I've been wrong before."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.go_home.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Get out of the door, Corvane.",
+   "where": "dialogue.json door_night/go_home choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "38b35929af0a",
+   "status": "skip"
+  },
+  {
+   "id": "ply.door_night.go_home.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "What are you?",
+   "where": "dialogue.json door_night/go_home choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "11e84c992704",
+   "status": "skip"
+  },
+  {
+   "id": "ply.door_night.go_home.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Vonnra told me what's behind it.",
+   "where": "dialogue.json door_night/go_home choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "1b5645aab211",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.wrong.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "(The lamp doesn't shake. His voice does, a little, and then it stops.) Ask her what the Legion couldn't burn. Ask her why they tried.",
+   "where": "dialogue.json door_night/wrong#0",
+   "hash": "95fcb174df64",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The lamp doesn't shake. His voice does, a little, and then it stops."
+    },
+    {
+     "voice": "chid",
+     "text": "Ask her what the Legion couldn't burn. Ask her why they tried."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.door_night.ask_her.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "Did she. (He doesn't ask what.) Ask her what the Legion couldn't burn. Ask her why they tried. ...I can't tell you. I've been wrong before.",
+   "where": "dialogue.json door_night/ask_her#0",
+   "hash": "fba89159397b",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "Did she."
+    },
+    {
+     "voice": "narrator",
+     "text": "He doesn't ask what."
+    },
+    {
+     "voice": "chid",
+     "text": "Ask her what the Legion couldn't burn. Ask her why they tried. ...I can't tell you. I've been wrong before."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.door_night.lie_down.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly.) Lie down.",
+   "where": "dialogue.json door_night/lie_down#0",
+   "hash": "d3be4c8ce11b",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He says it the way the Warden said it in the water: the keepers' word, kindly."
+    },
+    {
+     "voice": "chid",
+     "text": "Lie down."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.lie_down.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Raise your weapon.)",
+   "where": "dialogue.json door_night/lie_down choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "d75ac7288730",
+   "status": "skip"
+  },
+  {
+   "id": "ply.door_night.lie_down.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Lower your weapon, and go.)",
+   "where": "dialogue.json door_night/lie_down choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "db6824ad9e9b",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.go.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "Good. ...Good. Go on. I'll see you in the morning. I always do.",
+   "where": "dialogue.json door_night/go#0",
+   "hash": "3cf830c1d37c",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "Good. ...Good. Go on. I'll see you in the morning. I always do."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.go.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Go.)",
+   "where": "dialogue.json door_night/go choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "a1b6da8bad7f",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.gets_up.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "He gets up.",
+   "where": "dialogue.json door_night/gets_up#0",
+   "hash": "4885b6b08026",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "He gets up."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.gets_up.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Continue.)",
+   "where": "dialogue.json door_night/gets_up choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b1fc71d10ad5",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.gone.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit.",
+   "where": "dialogue.json door_night/gone#0",
+   "hash": "0577c2867752",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.gone.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Continue.)",
+   "where": "dialogue.json door_night/gone choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b1fc71d10ad5",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.heart.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+   "where": "dialogue.json door_night/heart#0",
+   "hash": "e1a1f99d19a5",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.heart.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Continue.)",
+   "where": "dialogue.json door_night/heart choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b1fc71d10ad5",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.door_night.ranks.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "The dead step back onto the stair, all together, rank by rank, and stand.",
+   "where": "dialogue.json door_night/ranks#0",
+   "hash": "6490712c2d4c",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The dead step back onto the stair, all together, rank by rank, and stand."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.door_night.ranks.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Continue.)",
+   "where": "dialogue.json door_night/ranks choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "b1fc71d10ad5",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.scene_bed.gate.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does.",
+   "where": "dialogue.json scene_bed/gate#0",
+   "hash": "3bfaa1947349",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_bed.count.0",
+   "kind": "dialogue",
+   "voice": "holloway",
+   "text": "Eleven in. Nobody out. Night after night. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
+   "where": "dialogue.json scene_bed/count#0",
+   "hash": "7952fa0435fb",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Eleven in. Nobody out. Night after night."
+    },
+    {
+     "voice": "narrator",
+     "text": "He turns the cup in his hands, and doesn't drink."
+    },
+    {
+     "voice": "holloway",
+     "text": "...I'd had it down I'd go on this stool."
+    },
+    {
+     "voice": "narrator",
+     "text": "He looks at the gatehouse cot."
+    },
+    {
+     "voice": "holloway",
+     "text": "Might go in a bed."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "dlg.scene_bed.cup.0",
+   "kind": "dialogue",
+   "voice": "narrator",
+   "text": "Maeca comes down the street without her crossbow, and fills his cup from her flask, and says nothing. She stands a while with a hand on his shoulder, and then she goes back up the street, and the gate stays open behind her.",
+   "where": "dialogue.json scene_bed/cup#0",
+   "hash": "a2ea3ae41680",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Maeca comes down the street without her crossbow, and fills his cup from her flask, and says nothing. She stands a while with a hand on his shoulder, and then she goes back up the street, and the gate stays open behind her."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "ply.scene_bed.cup.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "(Leave them be.)",
+   "where": "dialogue.json scene_bed/cup choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "1a95ba74ddd0",
    "status": "skip"
   },
   {
@@ -30856,6 +32113,51 @@
     "vol": "quiet",
     "note": "Two words to himself, flat."
    },
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.10",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Eleven in. Nobody out.",
+   "where": "npcs.json holloway.said[10]",
+   "hash": "96fa9f9c7737",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Eleven in. Nobody out."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.11",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Eleven in. Second night.",
+   "where": "npcs.json holloway.said[11]",
+   "hash": "58075b3cfd77",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Eleven in. Second night."
+    }
+   ],
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.12",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Eleven in. Nobody out. I've stopped writing it down.",
+   "where": "npcs.json holloway.said[12]",
+   "hash": "f4885db70e96",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Eleven in. Nobody out. I've stopped writing it down."
+    }
+   ],
    "status": "todo"
   },
   {
@@ -34174,13 +35476,13 @@
    "id": "folk.9.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "Chid rang the bell twice this morning. Nobody's told him once does it.",
+   "text": "Corvane rang the bell twice this morning. Nobody's told him once does it.",
    "where": "folk.json lines[9]",
-   "hash": "951514eb1715",
+   "hash": "6beb79e3fcd3",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "Chid rang the bell twice this morning. Nobody's told him once does it."
+     "text": "Corvane rang the bell twice this morning. Nobody's told him once does it."
     }
    ],
    "sex": "f",
@@ -34195,13 +35497,13 @@
    "id": "folk.9.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "Chid rang the bell twice this morning. Nobody's told him once does it.",
+   "text": "Corvane rang the bell twice this morning. Nobody's told him once does it.",
    "where": "folk.json lines[9]",
-   "hash": "951514eb1715",
+   "hash": "6beb79e3fcd3",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "Chid rang the bell twice this morning. Nobody's told him once does it."
+     "text": "Corvane rang the bell twice this morning. Nobody's told him once does it."
     }
    ],
    "sex": "m",
@@ -36400,13 +37702,13 @@
    "id": "folk.63.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "Chid says you died. You look well on it.",
+   "text": "Corvane says you died. You look well on it.",
    "where": "folk.json lines[63]",
-   "hash": "d45faf510ef6",
+   "hash": "055293fe09b5",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "Chid says you died. You look well on it."
+     "text": "Corvane says you died. You look well on it."
     }
    ],
    "sex": "f",
@@ -36421,13 +37723,13 @@
    "id": "folk.63.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "Chid says you died. You look well on it.",
+   "text": "Corvane says you died. You look well on it.",
    "where": "folk.json lines[63]",
-   "hash": "d45faf510ef6",
+   "hash": "055293fe09b5",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "Chid says you died. You look well on it."
+     "text": "Corvane says you died. You look well on it."
     }
    ],
    "sex": "m",
@@ -37030,13 +38332,13 @@
    "id": "folk.78.f",
    "kind": "folk",
    "voice": "folk_f2",
-   "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?",
+   "text": "Corvane's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?",
    "where": "folk.json lines[78]",
-   "hash": "1d8a5a124451",
+   "hash": "c340b6fca6d9",
    "segments": [
     {
      "voice": "folk_f2",
-     "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
+     "text": "Corvane's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
     }
    ],
    "sex": "f",
@@ -37051,13 +38353,13 @@
    "id": "folk.78.m",
    "kind": "folk",
    "voice": "folk_m1",
-   "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?",
+   "text": "Corvane's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?",
    "where": "folk.json lines[78]",
-   "hash": "1d8a5a124451",
+   "hash": "c340b6fca6d9",
    "segments": [
     {
      "voice": "folk_m1",
-     "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
+     "text": "Corvane's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
     }
    ],
    "sex": "m",
@@ -37786,13 +39088,13 @@
    "id": "folk.97.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Corvane sang. Corvane can't sing. Nobody minded.",
    "where": "folk.json lines[97]",
-   "hash": "55afb9228f12",
+   "hash": "ca7188ae4e61",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded."
+     "text": "They buried Brannoc's girl behind the shrine. Corvane sang. Corvane can't sing. Nobody minded."
     }
    ],
    "sex": "f",
@@ -37807,13 +39109,13 @@
    "id": "folk.97.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Corvane sang. Corvane can't sing. Nobody minded.",
    "where": "folk.json lines[97]",
-   "hash": "55afb9228f12",
+   "hash": "ca7188ae4e61",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded."
+     "text": "They buried Brannoc's girl behind the shrine. Corvane sang. Corvane can't sing. Nobody minded."
     }
    ],
    "sex": "m",
@@ -38403,22 +39705,6 @@
    "status": "todo"
   },
   {
-   "id": "cbark.da46ba3f8245",
-   "kind": "combat",
-   "voice": "barrow_lord",
-   "text": "\"Iungite!\"",
-   "who": "The Barrow Lord",
-   "where": "godot/logic/Play/Bosses/ArenaBosses.cs",
-   "hash": "da46ba3f8245",
-   "segments": [
-    {
-     "voice": "barrow_lord",
-     "text": "\"Iungite!\""
-    }
-   ],
-   "status": "todo"
-  },
-  {
    "id": "cbark.bf64f42d30a8",
    "kind": "combat",
    "voice": "barrow_lord",
@@ -38467,22 +39753,6 @@
    "status": "todo"
   },
   {
-   "id": "cbark.9515915472c5",
-   "kind": "combat",
-   "voice": "red_hand",
-   "text": "\"Toll's due.\"",
-   "who": "The Red Hand",
-   "where": "godot/logic/Play/Bosses/ArenaBosses.cs",
-   "hash": "9515915472c5",
-   "segments": [
-    {
-     "voice": "red_hand",
-     "text": "\"Toll's due.\""
-    }
-   ],
-   "status": "todo"
-  },
-  {
    "id": "cbark.f40206dc73f8",
    "kind": "combat",
    "voice": "red_hand",
@@ -38524,6 +39794,28 @@
    "where": "godot/logic/Play/Story/Roost.cs",
    "skip": "no voice cast for A Kerchief",
    "hash": "f9e66100c50e",
+   "status": "skip"
+  },
+  {
+   "id": "cbark.f3dbe5e4d07e",
+   "kind": "combat",
+   "voice": null,
+   "text": "Ironback. Don't stand and trade with it. Keep moving.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/ArenaRun.Director.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "f3dbe5e4d07e",
+   "status": "skip"
+  },
+  {
+   "id": "cbark.c520145b7715",
+   "kind": "combat",
+   "voice": null,
+   "text": "They're putting out the lamp. Kill them at the wick.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/ArenaRun.Director.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "c520145b7715",
    "status": "skip"
   },
   {
@@ -39247,25 +40539,6 @@
    "status": "done"
   },
   {
-   "id": "say.93b63298edc0",
-   "kind": "say",
-   "voice": "narrator",
-   "text": "As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\"",
-   "who": null,
-   "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "93b63298edc0",
-   "segments": [
-    {
-     "voice": "narrator",
-     "text": "As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again. You try to call up your mother's face, and find it is not quite where you left it. Her voice is still there. \"Lamp's lit, Spark. Stay where it reaches.\""
-    }
-   ],
-   "direction": {
-    "vol": "quiet"
-   },
-   "status": "todo"
-  },
-  {
    "id": "say.24c69afd4e5e",
    "kind": "say",
    "voice": "narrator",
@@ -39470,6 +40743,22 @@
    "status": "done"
   },
   {
+   "id": "say.1da8441372f2",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "You come to on the road, bruised, with the sun higher.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "1da8441372f2",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "You come to on the road, bruised, with the sun higher."
+    }
+   ],
+   "status": "todo"
+  },
+  {
    "id": "say.c4d495431666",
    "kind": "say",
    "voice": "narrator",
@@ -39547,6 +40836,39 @@
    "status": "todo"
   },
   {
+   "id": "cbark.de963b2bd196",
+   "kind": "combat",
+   "voice": null,
+   "text": "The ward cracks",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "de963b2bd196",
+   "status": "skip"
+  },
+  {
+   "id": "cbark.5ef607eaad81",
+   "kind": "combat",
+   "voice": null,
+   "text": "Warded: the lamps hold him",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "5ef607eaad81",
+   "status": "skip"
+  },
+  {
+   "id": "cbark.bddb0c1c0e65",
+   "kind": "combat",
+   "voice": null,
+   "text": "Warded",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "bddb0c1c0e65",
+   "status": "skip"
+  },
+  {
    "id": "cbark.5ea9c348e59f",
    "kind": "combat",
    "voice": null,
@@ -39588,17 +40910,6 @@
    "where": "godot/logic/Play/Zones/Prologue.cs",
    "skip": "a fight's caption, not a voice",
    "hash": "b40ba000be56",
-   "status": "skip"
-  },
-  {
-   "id": "cbark.0d3764749222",
-   "kind": "combat",
-   "voice": null,
-   "text": "The Warden reels!",
-   "who": null,
-   "where": "godot/logic/Play/Zones/Prologue.cs",
-   "skip": "a fight's caption, not a voice",
-   "hash": "0d3764749222",
    "status": "skip"
   },
   {
@@ -42486,17 +43797,6 @@
    "status": "skip"
   },
   {
-   "id": "cbark.04632d0dc4ce",
-   "kind": "combat",
-   "voice": null,
-   "text": "Executed",
-   "who": null,
-   "where": "godot/logic/Sim/Arts.cs",
-   "skip": "a fight's caption, not a voice",
-   "hash": "04632d0dc4ce",
-   "status": "skip"
-  },
-  {
    "id": "cbark.7141901aa56e",
    "kind": "combat",
    "voice": null,
@@ -42505,6 +43805,17 @@
    "where": "godot/logic/Sim/Battle.cs",
    "skip": "a fight's caption, not a voice",
    "hash": "7141901aa56e",
+   "status": "skip"
+  },
+  {
+   "id": "cbark.04632d0dc4ce",
+   "kind": "combat",
+   "voice": null,
+   "text": "Executed",
+   "who": null,
+   "where": "godot/logic/Sim/Battle.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "04632d0dc4ce",
    "status": "skip"
   },
   {

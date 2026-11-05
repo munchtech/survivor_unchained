@@ -1,0 +1,95 @@
+{
+ "family": "flare_intake_warden",
+ "kept": 2,
+ "n": 4,
+ "takes": [
+  {
+   "i": 0,
+   "key": "17088d7c6387a9ed0c779851979ece2cf6e8a75240a6cbb2c981c7f11816c3b9",
+   "file": "flare_intake_warden_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.9962358276643991,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -14.18915716926776,
+    "crest_db": 13.183629794236692,
+    "lufs": -15.521534015376064,
+    "lufs_padded": false,
+    "onset_ms": 386.0770975056689,
+    "tail_ms": 26.666666666666668,
+    "centroid_hz": 134.28127702204972,
+    "clipped": 0,
+    "clap": 0.4878,
+    "clap_neg": 0.0587,
+    "clap_margin": 0.429
+   }
+  },
+  {
+   "i": 1,
+   "key": "5fb77d70db4a0f85ba7d3be4a2af75b44ffc9fa734acc5b10bec0048e10ee5d8",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 0.9043310657596372,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -15.411906790812814,
+    "crest_db": 14.406379415781744,
+    "lufs": -15.72148034042738,
+    "lufs_padded": false,
+    "onset_ms": 362.35827664399096,
+    "tail_ms": 68.59410430839003,
+    "centroid_hz": 144.83886622895392,
+    "clipped": 0,
+    "clap": 0.4406,
+    "clap_neg": 0.0726,
+    "clap_margin": 0.3679
+   }
+  },
+  {
+   "i": 2,
+   "key": "e4af28211a94b100b42ccac716e4c5e9bb96e917464a4e5dfb41a34dc84af54b",
+   "file": "flare_intake_warden_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 0.9331746031746032,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -16.30240766903885,
+    "crest_db": 15.296880294007781,
+    "lufs": -16.22420755621229,
+    "lufs_padded": false,
+    "onset_ms": 301.65532879818596,
+    "tail_ms": 291.4512471655329,
+    "centroid_hz": 132.05529649824507,
+    "clipped": 0,
+    "clap": 0.3815,
+    "clap_neg": -0.01,
+    "clap_margin": 0.3915
+   }
+  },
+  {
+   "i": 3,
+   "key": "9e29c00aa773211b64afcec7ed094ccd8b28b525153e21703f328db61d7fce44",
+   "file": null,
+   "dropped": "not among the 2 best-ranked takes",
+   "measure": {
+    "duration_s": 1.0,
+    "peak_dbfs": -1.0055273750310683,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -11.45719380760183,
+    "crest_db": 10.451666432570761,
+    "lufs": -14.900744172346304,
+    "lufs_padded": false,
+    "onset_ms": 33.673469387755105,
+    "tail_ms": 131.83673469387756,
+    "centroid_hz": 108.7659798378926,
+    "clipped": 0,
+    "clap": 0.3432,
+    "clap_neg": 0.0663,
+    "clap_margin": 0.2768
+   }
+  }
+ ]
+}

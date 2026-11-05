@@ -163,7 +163,7 @@ public sealed partial class Battle
         if (flareBlow == 1)
         {
             var at = billOn != null && billOn.Id == billOnId && billOn.Alive && billOn.State != EnemyState.Dying ? billOn : BillPick(billX, billZ, f.Arg("vault", 6) * FlareGrow(f));
-            if (at != billOn) { billOn = at; billOnId = at?.Id ?? -1; }
+            if (at != billOn) { billOn = at; billOnId = at?.Id ?? -1; BillDecide(f, at); }
             BillLand(f, billOn, billX, billZ, "land");
         }
         var on = billOn != null && billOn.Id == billOnId && billOn.Alive && billOn.State != EnemyState.Dying ? billOn : null;
@@ -175,6 +175,7 @@ public sealed partial class Battle
                 billVaults++;
                 billOn = on = next;
                 billOnId = next.Id;
+                BillDecide(f, next);
                 BillLand(f, next, 0, 0, "vault");
             }
             else billOn = null;
@@ -194,6 +195,14 @@ public sealed partial class Battle
             });
         }
         FlareBlowEvent(f, "chop", last, cx, cz, on, on != null ? f.Arg("splash", 2) * FlareGrow(f) : 0);
+    }
+
+    /// <summary>The marks: a landing or a vault re-picked at the chop itself, when no earlier tick could show it (Wide Chops: what it splashes).</summary>
+    void BillDecide(FlareDef f, Enemy? on)
+    {
+        if (on == null) return;
+        FlareDecide(on);
+        if (FlareMod("bill.wide_chops")) FlareDecideAround(on.X, on.Z, f.Arg("splash", 2) * FlareGrow(f), e => e != on && !e.Boss);
     }
 
     /// <summary>The Bill's kills: Feast mends 10% for each while it plays.</summary>

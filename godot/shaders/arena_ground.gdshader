@@ -16,6 +16,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 #include "res://shaders/arena_masses.gdshaderinc"
@@ -364,7 +365,7 @@ void fragment() {
 	albedo = mix(albedo, vec3(lum0) * vec3(1.05, 0.9, 0.74) * 0.72, scorch * 0.8);
 	float charred = smoothstep(0.15, 0.6, ch + (nF.b - 0.5) * 0.3);
 	vec3 glow = vec3(0.0);
-	float breathe = 0.65 + 0.35 * sin(TIME * 0.9 + nL.r * 9.0) * sin(TIME * 0.37 + nM.b * 5.0);
+	float breathe = 0.65 + 0.35 * sin(WORLD_TIME * 0.9 + nL.r * 9.0) * sin(WORLD_TIME * 0.37 + nM.b * 5.0);
 	// (Sampled and differentiated before the branch: neither is defined inside one.)
 	float px = max(fwidth(w.x), fwidth(w.y)) * 0.62;
 	float n_on = texture(noise_tex, w * 0.045 + 0.13).g;
@@ -413,7 +414,7 @@ void fragment() {
 		float cd = length(fract(w * 1.7) - 0.25 - ch2 * 0.5);
 		float spark = step(0.88, hash2(cg + 1.9).x) * (1.0 - smoothstep(0.03, 0.08 + px, cd / 1.7))
 			* (1.0 - smoothstep(-1.0, 0.0, d)) * exp(min(d, 0.0) * 0.35);
-		float flick = 0.6 + 0.4 * sin(TIME * (1.5 + ch2.x * 2.0) + ch2.y * 30.0);
+		float flick = 0.6 + 0.4 * sin(WORLD_TIME * (1.5 + ch2.x * 2.0) + ch2.y * 30.0);
 		vec3 white = mix(ember, vec3(1.0, 0.85, 0.55), 0.55);
 		// (A story place's banks burn low, veins and all: lit seams wandering over its banks
 		// read as red worms.)
@@ -426,7 +427,7 @@ void fragment() {
 
 	// Moon through the leaves, in pools.
 	if (dapple > 0.0) {
-		float leaves = texture(noise_tex, w * 0.022 + vec2(TIME * 0.002, TIME * 0.0012)).g * 0.75 + texture(noise_tex, w * 0.09 - vec2(TIME * 0.004, 0.0)).b * 0.25;
+		float leaves = texture(noise_tex, w * 0.022 + vec2(WORLD_TIME * 0.002, WORLD_TIME * 0.0012)).g * 0.75 + texture(noise_tex, w * 0.09 - vec2(WORLD_TIME * 0.004, 0.0)).b * 0.25;
 		// In a clearing (splat3 A) the moon comes down whole: a pool of it, the canopy's
 		// shade all round.
 		albedo *= mix(mix(1.0, mix(0.45, 1.4, smoothstep(0.4, 0.62, leaves)), dapple), 1.35, s3.a);
@@ -449,12 +450,12 @@ void fragment() {
 	SPECULAR = mix(0.35, 0.6, pool);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
 	// Standing water gives the sky back, broken by the wind on it.
-	float ripple = texture(noise_tex, w * 0.35 + vec2(TIME * 0.02, -TIME * 0.013)).g;
+	float ripple = texture(noise_tex, w * 0.35 + vec2(WORLD_TIME * 0.02, -WORLD_TIME * 0.013)).g;
 	glow += sheen * sheen_amount * pool * (0.55 + 0.9 * ripple) * (1.0 - charred);
 	// The slurry's own light, faint, swirling slowly in it.
-	float swirl = texture(noise_tex, w * 0.16 + vec2(TIME * 0.006, -TIME * 0.009)).r;
+	float swirl = texture(noise_tex, w * 0.16 + vec2(WORLD_TIME * 0.006, -WORLD_TIME * 0.009)).r;
 	// Drawn out in threads and curls, not laid flat: a flat sheet of it reads as paint.
-	float rn = texture(noise_tex, w * 0.23 + vec2(TIME * 0.008, -TIME * 0.011) + swirl * 0.35).r;
+	float rn = texture(noise_tex, w * 0.23 + vec2(WORLD_TIME * 0.008, -WORLD_TIME * 0.011) + swirl * 0.35).r;
 	float thr = pow(1.0 - abs(rn * 2.0 - 1.0), 10.0) * (0.35 + 0.65 * smoothstep(0.4, 0.7, swirl));
 	glow += slurry * slurry_glow * s3.g * smoothstep(0.3, 0.8, wet) * (0.05 + 1.4 * thr) * (1.0 - charred);
 	// Foxfire: specks of cold light on rotting wood and roots, a few in a cluster, each
@@ -466,7 +467,7 @@ void fragment() {
 		float fd = length(fract(w * 4.0) - 0.2 - fh * 0.6);
 		float speck = step(0.62, hash2(fc + 8.1).x) * (1.0 - smoothstep(0.04, 0.12 + px * 4.0, fd));
 		float clump = smoothstep(0.45, 0.7, nM.r * 0.6 + nF.b * 0.4);
-		float pulse = 0.55 + 0.45 * sin(TIME * (0.4 + fh.x * 0.5) + fh.y * 20.0);
+		float pulse = 0.55 + 0.45 * sin(WORLD_TIME * (0.4 + fh.x * 0.5) + fh.y * 20.0);
 		glow += fox_color * fox_glow * speck * clump * pulse * smoothstep(0.1, 0.6, s3.b);
 	}
 	EMISSION = glow;

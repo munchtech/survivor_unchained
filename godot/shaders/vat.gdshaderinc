@@ -1,3 +1,4 @@
+#include "res://shaders/world_clock.gdshaderinc"
 #include "res://shaders/flare_world.gdshaderinc"
 // The cel model (L1 B1a): the crowd's ink class is 1 (silhouette only); Godot's RIM reproduced and, under cel, stepped;
 // the cel rim is the crowd's own edge (crowd_edge below), so the global one is off here.
@@ -9,6 +10,10 @@
 #define CEL_CROWD_EDGE vec2(0.25, 0.04)
 #include "res://shaders/cel.gdshaderinc"
 uniform vec2 cel_edge = CEL_CROWD_EDGE;
+// (H7: a marked foe's rim takes the Flare's school hue while the marks are up: FlareFx.Family; a 0 none)
+global uniform vec4 flare_mark_rim;
+// H7 r2: a marked foe's light from its pool below (FlareMarksView; flare_family.json marks.lift), x its rim strength.
+global uniform float flare_mark_lift;
 // The crowd's vertex animation, shared by vat.gdshader (solid bodies, one
 // side) and vat_cut.gdshader (fur and hair cards: two sides, cut by alpha).
 // See vat.gdshader for what it does.
@@ -265,14 +270,14 @@ void fragment() {
 		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fz * 0.3);
 		c = mix(c, ice, rime * 0.85);
 		rough = mix(rough, 0.22, rime);
-		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(TIME * 3.0)));
+		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(WORLD_TIME * 3.0)));
 		e += vec3(0.28, 0.62, 1.0) * fz * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
 	}
 	if (fx.w > 0.0) {
 		// Burning: thin tongues of fire licking up the body from its edges over char, soot where
 		// they have been; the flame is deep orange over near-black, so it stays orange (over a pale
 		// body's own light it read as peach). The rest of the body is its own colour.
-		float lick = vat_noise(vec3(vat_local.x * 4.5, vat_local.y * 1.6 - TIME * 3.4, vat_local.z * 4.5));
+		float lick = vat_noise(vec3(vat_local.x * 4.5, vat_local.y * 1.6 - WORLD_TIME * 3.4, vat_local.z * 4.5));
 		float tongue = smoothstep(0.52, 0.8, lick * 0.75 + rim * 0.5) * fx.w;
 		float soot = smoothstep(0.28, 0.56, lick * 0.75 + rim * 0.35) * fx.w;
 		if (flare_lc.x > 0.0) {
@@ -368,7 +373,10 @@ void fragment() {
 	// (tight: at rim^2 x3.4 from the play camera every struck body went a white ghost, r4)
 	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
-	e += vec3(1.0, 0.479, 0.069) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	// (H7 r2, judge r1 fix 5: the foe stands in its mark's pool, so the pool lights it from below: its lower body and the
+	// faces turned from the sky, in the school's light, x its own paint (light, not paint: a dark body stays dark))
+	e += flare_mark_rim.rgb * flare_mark_rim.a * flare_mark_lift * fx_rim * c * exp(-max(vat_local.y, 0.0) / 0.8) * (0.35 + 0.65 * (1.0 - up));
 	e += c * COLOR.a;
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {

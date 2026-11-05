@@ -46,7 +46,7 @@ Times are from the first frame of black. Each plate is one painting in layers, a
 - **Drawn:** a chain whose links stand as tall as a man runs down into the dark. At the cut's lip the Legion's smiths close a link on an anvil. At the bottom of the cut the chain runs in through a great stone door, and the door is closing on it. Nobody goes in. Letters in an old hand are carved over it; nobody can read them at this speed (the vault's "Here the Seventh Legion buried what it could not burn").
 - **Move:** down the chain, from the anvil to the door.
 - **Living touches:** sparks from the hammer; the door's slow close. The pale glow inside narrows to a line, then goes out.
-- **Line L2:** "and chained it there, in the dark."
+- **Line L2:** "and bound it there with seven chains, in the dark."
 - **Sound:** the hammer on the beat; the door's close lands as one low hit that ends the phrase.
 
 ### P3 · Ember (0:15.5-0:25.5)
@@ -119,7 +119,7 @@ Conversation `sb_stay_where_they_reach`, speaker `watchman`. New: 9 lines, 144 w
 | VO id | Plate | Line |
 |---|---|---|
 | `.legion` | P1 | Long ago, the Seventh Legion found something under these hills that wouldn't die, |
-| `.chained` | P2 | and chained it there, in the dark. |
+| `.chained` | P2 | and bound it there with seven chains, in the dark. |
 | `.ember` | P3 | Its light still seeps up through the ground. We call it ember. It burns. It sells. The valley lives by it. |
 | `.dead` | P4 | Where it lies thick, the dead get up after dark. Not them. Just the bodies, full of its light. Put one down and it spills out. |
 | `.dawn` | P5 | At first light it sinks into the ground and takes back what it lent. No more than that. |

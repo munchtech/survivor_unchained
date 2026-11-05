@@ -4,6 +4,7 @@
 // (0..1, the thread at the middle).
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform vec3 ember : source_color = vec3(1.0, 0.35, 0.13);
@@ -29,8 +30,8 @@ void fragment() {
 	vec2 h = hash2(cell + 4.1);
 	float cd = length(fract(vec2(x, y) * 3.0) - 0.3 - h * 0.4);
 	float coal = step(0.82, hash2(cell + 9.7).x) * (1.0 - smoothstep(0.04, 0.09 + px * 3.0, cd / 3.0)) * exp(-abs(y) * 2.5);
-	float breathe = 0.7 + 0.3 * sin(TIME * 1.1 + x * 0.7) * sin(TIME * 0.43 + x * 0.21);
-	float flick = 0.6 + 0.4 * sin(TIME * (1.7 + h.x * 2.0) + h.y * 30.0);
+	float breathe = 0.7 + 0.3 * sin(WORLD_TIME * 1.1 + x * 0.7) * sin(WORLD_TIME * 0.43 + x * 0.21);
+	float flick = 0.6 + 0.4 * sin(WORLD_TIME * (1.7 + h.x * 2.0) + h.y * 30.0);
 	// Faded to nothing at the strip's long edges.
 	float edge = 1.0 - smoothstep(0.55, 0.75, abs(y));
 	vec3 white = mix(ember, vec3(1.0, 0.86, 0.6), 0.6);

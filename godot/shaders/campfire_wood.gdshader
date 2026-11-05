@@ -9,6 +9,7 @@ render_mode blend_mix, cull_back;
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_disable;
@@ -51,7 +52,7 @@ void fragment() {
 	NORMAL_MAP = texture(normal_tex, UV).rgb;
 	ROUGHNESS = 0.9;
 	float m = texture(ember_tex, UV).r;
-	float t = TIME;
+	float t = WORLD_TIME;
 	// Slow patches that come and go (a few seconds), and a little faster shimmer.
 	float breath = noise3(lp * 7.0 + vec3(0.0, t * 0.22, t * 0.13)) * 0.6 + noise3(lp * 15.0 - vec3(t * 0.31, 0.0, t * 0.17)) * 0.4;
 	breath = 0.45 + 0.75 * smoothstep(0.25, 0.75, breath);

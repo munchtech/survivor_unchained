@@ -1350,7 +1350,7 @@ public partial class BattleFx
         // drawn over hers), and half that while a boss is up, so the eye goes to his marks first.
         // (At full strength her thickets' and rots' rims, two or three at once, were the loudest
         // thing at Greymuzzle.) A thicket reads by its thorns, a rot by its stain, not their rims.
-        float hush = bossUp ? 0.5f : 1f;
+        float hush = (bossUp ? 0.5f : 1f) * FlareDim;
         // (Scaled in its colour: a decal's emission ignores its alpha, so an alpha of a fifth left
         // the rims at full strength.)
         g.Edge.Decal.Modulate = Dim(edgeCol, fade * breathe * (inside is Inside.Roots or Inside.Veins ? 0.22f : 0.34f) * hush);

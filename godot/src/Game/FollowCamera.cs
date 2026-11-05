@@ -154,6 +154,22 @@ public sealed class FollowCamera
         joltT = 0;
     }
 
+    /// <summary>The Flare's beat kick (H7): a Jolt whose first swing moves the frame about px pixels at 1080p (the swing's
+    /// first peak is 0.48 of its amount; along the view's axis a move shows only by its share across it).</summary>
+    public void JoltPx(Vector3 axis, float px)
+    {
+        if (axis.LengthSquared() < 1e-6f || px <= 0) return;
+        float perPx = 2 * Reach() * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        var a = axis.Normalized();
+        float across = Mathf.Max(0.2f, Mathf.Sqrt(Mathf.Max(0, 1 - Mathf.Pow(a.Dot(-Camera.GlobalBasis.Z), 2))));
+        if (ShakeScale <= 0) return;
+        pxAmt = px * perPx / (0.48f * across) * ShakeScale;
+        pxAxis = a;
+        pxT = 0;
+    }
+    Vector3 pxAxis;
+    float pxAmt, pxT = 9;
+
     Vector3 kick;
     float kickT = 1;
 
@@ -230,6 +246,7 @@ public sealed class FollowCamera
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
         kickT += dt;
         joltT += dt;
+        pxT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
         near = Damp(near, ScreenNear, 5, dt);
         if (ScreenFrame is { } sf) frame = sf;
@@ -294,7 +311,12 @@ public sealed class FollowCamera
         // (The Flare's jolt: a damped swing along its blow, about 13 a second.)
         var jolt = joltT < 1.2f ? joltAxis * joltAmt * 0.55f * Mathf.Exp(-joltT * 7) * Mathf.Sin(joltT * Mathf.Tau * 13) : Vector3.Zero;
         var at = pos + lean + jolt + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
-        var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f;
+        // (JoltPx's swing moves the look point with the eye, so the whole frame swings by it: H7 r2, measured at 1080p, a jolt
+        // on the eye alone turned the view back onto the same point and the frame moved 0.0 px for JoltPx's 9; the older
+        // Jolts keep their eye-only sway)
+        var frameJolt = pxT < 1.2f ? pxAxis * pxAmt * 0.55f * Mathf.Exp(-pxT * 7) * Mathf.Sin(pxT * Mathf.Tau * 13) : Vector3.Zero;
+        at += frameJolt;
+        var target = new Vector3(aim.X + N(4) * s * 0.25f, aim.Y, aim.Z + N(5) * s * 0.25f) + lean * 1.3f + frameJolt;
         if (CamLog) GD.Print($"CAMLOG t={shakeT:F3} close={closeNow:F3} room={room:F3} free={logFree:F3} hit={RoomHit ?? "-"} fov={Camera.Fov:F2} d={d:F3} pos={at.X:F2},{at.Y:F2},{at.Z:F2} aim={aim.X:F2},{aim.Y:F2},{aim.Z:F2}");
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);

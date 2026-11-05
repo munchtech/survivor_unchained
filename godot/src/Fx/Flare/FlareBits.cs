@@ -33,6 +33,10 @@ public partial class FlareBits : MultiMeshInstance3D
         /// <summary>A puff's own light (0 none): its colour times this, glowing (the Return's wisps lit amber from
         /// the cracks under them, judge 4 fix 6). Sent in the transform's unused basis.y.x.</summary>
         public float Glow;
+        /// <summary>Its caller keeps its alpha (no fade in or out by its life: FlareFx.Dust drives it), and two numbers of
+        /// the caller's own (the dust: when the band reaches it, real time; its base light).</summary>
+        public bool OwnFade;
+        public float Tag, Tag2;
     }
 
     readonly List<P> live = new();
@@ -128,7 +132,7 @@ public partial class FlareBits : MultiMeshInstance3D
             var c = p.Color.Lerp(p.ColorEnd, k);
             // Fade in over the first tenth, out over the last third (a puff thins as it spreads; a scar is burnt
             // in at once).
-            float fade = Mathf.Clamp(k / (p.Kind == Kind.Scar ? 0.005f : 0.08f), 0, 1) * (1 - Mathf.SmoothStep(0.62f, 1, k));
+            float fade = p.OwnFade ? 1 : Mathf.Clamp(k / (p.Kind == Kind.Scar ? 0.005f : 0.08f), 0, 1) * (1 - Mathf.SmoothStep(0.62f, 1, k));
             c.A *= fade;
             // (One buffer for the whole batch: thousands of calls a frame, one per instance and field, cost
             // milliseconds.)
@@ -145,6 +149,12 @@ public partial class FlareBits : MultiMeshInstance3D
         if (n > 0 || shown > 0) RenderingServer.MultimeshSetBuffer(mm.GetRid(), buf);
         shown = n;
         mm.VisibleInstanceCount = n;
+    }
+
+    /// <summary>Steer every live bit (its caller's own: FlareFx.Dust's gust and light); a bit given Age >= Life goes.</summary>
+    public void Each(Func<P, P> f)
+    {
+        for (int i = 0; i < live.Count; i++) live[i] = f(live[i]);
     }
 
     public void Clear()

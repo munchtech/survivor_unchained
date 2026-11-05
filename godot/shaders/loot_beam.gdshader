@@ -21,6 +21,7 @@
 //   8 Band: a band of light lying on the ground at its reach (the way out), breathing.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled, skip_vertex_transform;
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
@@ -65,7 +66,7 @@ float pool(float r) {
 
 // Motes of light climbing it: a few at a time, each in its own lane, `size` across.
 float motes_of(float spread, float speed, float gap, float size) {
-	float y = at.y - TIME * speed;
+	float y = at.y - WORLD_TIME * speed;
 	float cell = floor(y / gap);
 	float fy = fract(y / gap);
 	float mx = (hash(cell) - 0.5) * spread;
@@ -80,7 +81,7 @@ void fragment() {
 	float u = clamp(y / H, 0.0, 1.0);
 	// Born out of the ground with no line where it meets it.
 	float rise = smoothstep(-0.04, 0.12, y);
-	float shimmer = 0.86 + 0.14 * sin(y * 1.9 - TIME * 2.6 + seed * 6.28);
+	float shimmer = 0.86 + 0.14 * sin(y * 1.9 - WORLD_TIME * 2.6 + seed * 6.28);
 	// Coloured light is palest at its heart and deepest where it thins: the line in its band's
 	// colour, the glow and the pool round it deeper still (a pale glow by day reads as haze).
 	float top = max(max(tint.r, tint.g), max(tint.b, 1e-3));
@@ -105,7 +106,7 @@ void fragment() {
 		// reads as a twist and not as two lines), a faint glow between them.
 		float fade = rise * pow(1.0 - u, 1.1);
 		float amp = 0.15 * (1.0 - 0.45 * u) * smoothstep(-0.05, 0.35, y);
-		float ph = y * 3.3 - TIME * 2.1 + seed * 6.28;
+		float ph = y * 3.3 - WORLD_TIME * 2.1 + seed * 6.28;
 		float s1 = amp * sin(ph);
 		float front = cos(ph);
 		float w1 = 0.45 + 0.55 * front, w2 = 0.45 - 0.55 * front;
@@ -153,7 +154,7 @@ void fragment() {
 		// light within it. (A decal's band with a hard edge read as a cream hoop.)
 		vec2 e = vec2(x / half_w, y / (half_w * 0.83));
 		float r = length(e);
-		float breath = 0.72 + 0.28 * sin(TIME * 2.2 + seed * 6.28);
+		float breath = 0.72 + 0.28 * sin(WORLD_TIME * 2.2 + seed * 6.28);
 		float band = exp(-pow((r - 0.92) / 0.075, 2.0)) * breath;
 		float within = smoothstep(1.0, 0.2, r) * 0.1;
 		light = mix(tint, deep, 0.35) * band + deep * within;

@@ -6,6 +6,7 @@
 // place's open sky, splat3 A) are cut out where their shadow would fall.
 shader_type spatial;
 render_mode unshaded, cull_disabled, depth_draw_opaque;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 uniform sampler2D open_tex : filter_linear, repeat_disable;
@@ -23,7 +24,7 @@ void vertex() {
 
 void fragment() {
 	vec2 p = w_pos.xz;
-	vec2 sway = vec2(sin(TIME * 0.35 + p.y * 0.05), cos(TIME * 0.29 + p.x * 0.05)) * 0.25;
+	vec2 sway = vec2(sin(WORLD_TIME * 0.35 + p.y * 0.05), cos(WORLD_TIME * 0.29 + p.x * 0.05)) * 0.25;
 	// Crowns a few metres across, their edges torn into leaf clusters. (No finer: clusters
 	// under a metre are finer than the moon's shadow map draws, and the pools' edges came
 	// out stepped. Their soft rim is the moon's own breadth, Atmosphere.Set.)

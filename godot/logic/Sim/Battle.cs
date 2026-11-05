@@ -463,6 +463,8 @@ public sealed partial class Battle
         UpdatePickups(dt);
         UpdateBuffs(dt);
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
+        // The Flare's marks the view shows until the next tick, from where things stand now (FlareMarks.cs).
+        FlareMarksTick(dt);
     }
 
     void RebuildSpatial()

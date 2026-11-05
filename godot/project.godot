@@ -52,7 +52,39 @@ anti_aliasing/screen_space_roughness_limiter/enabled=false
 
 [shader_globals]
 
+world_time={
+"type": "float",
+"value": 0.0
+}
+world_time_was={
+"type": "float",
+"value": 0.0
+}
 flare_at={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_grade={
+"type": "vec4",
+"value": Vector4(0, 1, 1, 1)
+}
+flare_grade_tint={
+"type": "vec4",
+"value": Vector4(1, 1, 1, 0)
+}
+flare_mark_rim={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_mark_lift={
+"type": "float",
+"value": 0.0
+}
+flare_fore={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_fore_k={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
@@ -75,6 +107,50 @@ flare_frost={
 flare_seam={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
+}
+flare_band={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_line={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_col={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_shape={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_edge={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_band_from={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_tear={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_peak={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_peak_line={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_peak_col={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_peak_k={
+"type": "vec4",
+"value": Vector4(5, 3, 0, 0)
 }
 flare_seam_t={
 "type": "vec4",

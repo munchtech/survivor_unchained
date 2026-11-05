@@ -18,6 +18,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -837,7 +838,7 @@ void fragment() {
 	vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
 	// Only true blight glows (the Verge's paint runs to 0.55): a faint wash (Low Ford's graveyard, 0.35 at most) is dead
 	// ground, not neon veins (its few noise-tipped patches drew a hard green squiggle by the crypt; judge 2, item 6).
-	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b);
+	EMISSION = blight_glow * vein * w_blight * (0.55 + 0.45 * sin(WORLD_TIME * 1.3 + nL.r * 12.0)) * 1.6 * smoothstep(0.38, 0.46, sp.b);
 
 	// E6: the river's bed (silt with river stones lying in it, under the water) and its wet bank (a darker, slicker
 	// strip above the waterline), both wobbling so the waterline never runs straight.

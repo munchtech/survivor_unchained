@@ -95,16 +95,19 @@ public partial class FlareFx
     }
 
     /// <summary>A strip from a to b, facing the eye about its own axis, half as wide as `half` (m).</summary>
-    void LcStripDraw(ImmediateMesh m, ShaderMaterial mat, Vector3 a, Vector3 b, float half)
+    /// (halfB: its half-width at b, a taper or a crown; less than 0 the same as at a.)
+    void LcStripDraw(ImmediateMesh m, ShaderMaterial mat, Vector3 a, Vector3 b, float half, float halfB = -1)
     {
         var axis = b - a;
         var side = axis.Cross(EyeAt() - (a + b) * 0.5f);
-        side = side.LengthSquared() > 1e-8f ? side.Normalized() * half : Vector3.Right * half;
+        side = side.LengthSquared() > 1e-8f ? side.Normalized() : Vector3.Right;
+        var sa = side * half;
+        var sb = side * (halfB < 0 ? half : halfB);
         m.ClearSurfaces();
         m.SurfaceBegin(Mesh.PrimitiveType.Triangles, mat);
         void V(Vector3 p, float u, float v) { m.SurfaceSetUV(new Vector2(u, v)); m.SurfaceAddVertex(p); }
-        V(a - side, 0, 0); V(a + side, 1, 0); V(b + side, 1, 1);
-        V(a - side, 0, 0); V(b + side, 1, 1); V(b - side, 0, 1);
+        V(a - sa, 0, 0); V(a + sa, 1, 0); V(b + sb, 1, 1);
+        V(a - sa, 0, 0); V(b + sb, 1, 1); V(b - sb, 0, 1);
         m.SurfaceEnd();
     }
 

@@ -8,6 +8,7 @@
 // still as the camera moves.
 shader_type spatial;
 render_mode blend_mix, cull_back;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform float heat : hint_range(0.0, 2.0) = 1.0;
 uniform float size = 1.0;
@@ -57,7 +58,7 @@ void fragment() {
 	float r = length(lp.xz);
 	// How burnt: all of it near the middle, none past the stones' inner edge.
 	float burnt = 1.0 - smoothstep(0.24, 0.4, r + (noise3(lp * 9.0) - 0.5) * 0.08);
-	float t = TIME;
+	float t = WORLD_TIME;
 	// Where the air reaches: slow patches that come and go, and a faster shimmer.
 	float breath = smoothstep(0.3, 0.75, fbm3(lp * 8.0 + vec3(0.0, t * 0.18, t * 0.11)));
 	float shimmer = 0.85 + 0.15 * noise3(lp * 30.0 + vec3(t * 1.7, 0.0, t * 1.1));

@@ -50,6 +50,14 @@ public sealed class Settings
         // --quality Q: a run at that quality whatever was saved (measuring, pictures).
         if (Args.Get("quality") is { } q) s.Quality = q;
         if (Args.Get("scale") is { } sc) s.Scale = sc;
+        // --clip (a Flare clip, tools/fx/flare_clip.py): shot at the game's defaults for what it measures, whatever was saved
+        // (4 Nov: the saved motion "off" (no shake, no hitstop) and sound "quiet" ran every H7 clip with no stop held, no kick
+        // and a quieter mix); never written back.
+        if (Args.Has("clip"))
+        {
+            var d = new Settings();
+            s.Motion = d.Motion; s.Sound = d.Sound; s.VoiceVolume = d.VoiceVolume;
+        }
         // (12 s was the old default, never offered in the menu: a true idle is a minute now, the owner 17 October)
         if (s.IdleCloseAfter == 12) s.IdleCloseAfter = 60;
         return s;
@@ -69,7 +77,7 @@ public sealed class Settings
     public void Save()
     {
         // (a picture of the notice never unsets the owner's own answer)
-        if (Args.Has("adults")) return;
+        if (Args.Has("adults") || Args.Has("clip")) return;
         using var f = FileAccess.Open(File, FileAccess.ModeFlags.Write);
         f?.StoreString(Core.Json.Write(this));
     }

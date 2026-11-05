@@ -342,7 +342,7 @@ What we do instead (C01, the prologue's captions, C09):
 |---|---|---|---|
 | The survivor | A lucky traveller | Unchained: drowned at the Low Ford, risen with their mind | Act 2 (the Vigil's ledger, Keegan, Chid) |
 | Vonnra Ash-of-Morrow | Toll-keeper, far seer | Last binder. Lit the lamps and drowned the twenty-six, and believes that made the survivor; let the caravan go; sent her clerk through the door; keeps the ledger of what every rising since has cost. Her "sight" is old lore and bought talk. | Act 3 (sooner, and in her own words, if accused in Act 1); the ledger past twenty-seven, C41 |
-| Chid | A cheerful fool of a priest | An Unchained of the Order's day, near two hundred years old; "C." of the note in Ashe's trunk; goes to the ford when the lamps are lit, and was there the night the survivor rose. Wrote the mother's letter and walked her to the water's edge, so she would be down there first (canon "Not yet") | Act 3 (C42; his hand in it, C43) |
+| Chid | A cheerful fool of a priest | An Unchained of the Order's day, near two hundred years old; "C." of the note in Ashe's trunk; goes to the ford when the lamps are lit, and was there the night the survivor rose. Wrote the mother's letter and walked her to the water's edge, so she would be down there first (canon "Not yet") | Act 3 (C42; his hand in it, C43) Renamed Corvane in the game (S1, 5 November 2026); the id stays `chid`. |
 | Jessop | Vonnra's toll clerk, gone south | Bought by Pell to turn the Coyle wagons; Vonnra let it happen, then sent him through the sealed door to see if a living man could pass. His are the bootprints going in. | Act 3 (on the stair) |
 | Nell | Brannoc's girl, safe at Low Kiln | Drowned at the ford a fortnight before the survivor; rose in the ditch; the survivor put her down | Act 1 (if Brannoc is told), or Act 2 |
 | Wat | A carter | Drowned on toll work, the "quick crossing" | Act 1 hint, Act 3 |
@@ -503,7 +503,7 @@ None of them says it.
   all of it and will do it again. *Ends:* stays the town's doctor; takes the
   red hat when his brother dies, and leads the Kerchiefs as the army they have
   become; hanged for the tip-off.
-- **Chid.** *Face:* the Fool, a priest of a dead order. *Secret:* an Unchained
+- **Chid.** *Face:* the Fool, a priest of a dead order. *Secret:* an Unchained Renamed Corvane in the game (S1, 5 November 2026); the id stays `chid`.
   of the Order's day, near two hundred years old, who cannot stay dead and does
   not age. He wrote the note in Ashe's trunk ("Keep the lights lit. — C.") to a
   friend. He has seen the dead get up before; he knows what the survivor is, and
