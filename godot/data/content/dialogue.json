@@ -12760,8 +12760,16 @@
          "eq": "dead"
         },
         {
-         "fact": "corvane.rose",
-         "eq": true
+         "any": [
+          {
+           "fact": "corvane.rose",
+           "eq": true
+          },
+          {
+           "fact": "corvane.carried",
+           "eq": true
+          }
+         ]
         },
         {
          "fact": "arena.last.ago",

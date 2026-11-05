@@ -481,7 +481,7 @@ void Story()
                     foreach (var h in hands)
                         for (int s = 0; s < seeds; s++)
                             specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
-                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned"), opt.Has("banes"), opt.Get("type", "")));
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned"), opt.Has("banes"), opt.Get("type", ""), h is "standing" or "human" ? h : "", opt.Get("stage", "")));
     Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<StoryRunResult>();
     var sw = Stopwatch.StartNew();
@@ -501,7 +501,7 @@ void Story()
             Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Won ? $"won {r.Minutes:0.0}" : $"lost {r.Minutes:0.0} ({r.KilledBy}) [{r.Where}]")} falls {r.Falls} way in {r.WayIn:0.0} boss {(r.BossSeconds is double bs ? $"{bs:0}s" : $"phase {r.BossPhase}")} low {r.LowWayIn:0.00}  {r.Build}");
         }
     });
-    var md = StorySim.Report(results.OrderBy(r => r.Spec.Key).ToList());
+    var md = opt.Get("stage", "") == "court" ? StorySim.CourtReport(results.OrderBy(r => r.Spec.Key).ToList()) : StorySim.Report(results.OrderBy(r => r.Spec.Key).ToList());
     if (opt.Has("out")) File.WriteAllText(Path.ChangeExtension(opt.Get("out", "story.jsonl"), ".md"), md);
     Console.WriteLine(md);
 }

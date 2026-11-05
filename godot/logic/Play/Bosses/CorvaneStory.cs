@@ -128,14 +128,14 @@ public sealed class CorvaneStory : StoryBoss
         double gx = door.X + ux / ul * across, gz = door.Z + uz / ul * across;
         double mx = p.X - mark.X, mz = p.Z - mark.Z, ml = Math.Max(0.01, Math.Sqrt(mx * mx + mz * mz));
         double step = Math.Clamp(ml - 2.5, 0, t.Tether);
-        gx += mx / ml * step * 0.8; gz += mz / ml * step * 0.8;
+        gx += mx / ml * step; gz += mz / ml * step;
         double ox = gx - mark.X, oz = gz - mark.Z, ol = Math.Sqrt(ox * ox + oz * oz);
         if (ol > t.Tether) { gx = mark.X + ox / ol * t.Tether; gz = mark.Z + oz / ol * t.Tether; }
         double vx = gx - e.X, vz = gz - e.Z, vl = Math.Sqrt(vx * vx + vz * vz);
         if (vl < 0.25)
         {
+            // (standing his ground, he swings at nothing: only what stands across his path is struck)
             Stand(e, dx, dz);
-            Cuff(e, dt, 0, 0, dx, dz, d, false, t.CuffMul, t.CuffEvery);
             return true;
         }
         double sp = Math.Min(e.Speed * 0.8, vl / Math.Max(dt, 1e-4));
