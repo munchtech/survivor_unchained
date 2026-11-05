@@ -957,19 +957,209 @@ def load_template(name):
     return V, F, np.array(loop)
 
 
-def template(M, name, part, reg):
-    """(b) a hand / foot template at its base level, joined by its rim (22 points). Returns the rim's ids, its
-    centre and plane normal (pointing out of the limb, toward the hand / foot)."""
+def rim_loop(F):
+    """The one open boundary of a quad patch, as an ordered vertex loop."""
+    he = {(int(a), int(b)) for q in F for a, b in zip(q, np.roll(q, -1))}
+    nxt = {a: b for (a, b) in he if (b, a) not in he}
+    start = min(nxt)
+    loop = [start]
+    while nxt[loop[-1]] != start:
+        loop.append(nxt[loop[-1]])
+    assert len(loop) == len(nxt), "the template has more than one open boundary"
+    return np.array(loop)
+
+
+def valence(F, n):
+    e = np.unique(np.sort(np.concatenate([F[:, [k, (k + 1) % 4]] for k in range(4)]), 1), axis=0)
+    return np.bincount(e.ravel(), minlength=n)
+
+
+def rim_trim(V, F):
+    """(pass 3b) the rim re-cut: the plane cut that made the template (topo.make_templates) left stair steps (rim
+    vertices in one quad only, 2-valent); those protruding quads are removed until the rim is one edge loop with no
+    2-valent vertex. Unused vertices dropped, order kept."""
+    while True:
+        loop = rim_loop(F)
+        val = valence(F, len(V))
+        v2 = loop[val[loop] == 2]
+        if not len(v2):
+            break
+        F = F[~np.isin(F, v2).any(1)]
+    used = np.unique(F)
+    remap = -np.ones(len(V), np.int64)
+    remap[used] = np.arange(len(used))
+    return V[used], remap[F]
+
+
+def rim_level(ref, V, F, loop, n0, ks):
+    """(pass 3b) the rim levelled: after the trim a rim can still step down a whole row between two risers (rim
+    edges along the limb, ending in a 4-valent rim vertex: hm08's own poles). The lower stretch gets one generated
+    row up to the risers' tops (its points over the stretch's own, at heights eased between the two tops, on the
+    reference: plane sections through the limb's axis), so the rim runs at one level; the 4-valent vertices go
+    inside (4-valent), the risers' tops carry the step. No risers: unchanged."""
+    val = valence(F, len(V))
+    n = len(loop)
+    cJ = V[loop].mean(0)
+    conc = [i for i in range(n) if val[loop[i]] == 4]
+    if len(conc) != 2:
+        return V, F, loop
+    def riser(i, j):
+        d = V[loop[j]] - V[loop[i]]
+        return abs(U(d) @ n0) > 0.7
+    a, b = conc
+    for s0, s1 in ((a, b), (b, a)):
+        if riser(s0, (s0 - 1) % n) and riser(s1, (s1 + 1) % n):
+            break
+    else:
+        return V, F, loop
+    back = [(s0 + k) % n for k in range((s1 - s0) % n + 1)]
+    top0, top1 = loop[(s0 - 1) % n], loop[(s1 + 1) % n]
+    Xb = V[loop[back]]
+    t = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(Xb, axis=0), axis=1))])
+    t /= t[-1]
+    h0, h1 = (V[top0] - cJ) @ n0, (V[top1] - cJ) @ n0
+    e1 = frame(n0, np.array([1.0, 0, 0]))[0]
+    ang = ring_angles(Xb, cJ, n0, e1)
+    K = []
+    for k in range(1, len(back) - 1):
+        hk = h0 + (h1 - h0) * smooth01(t[k])
+        K.append(T.ring_by_rays(ref, ks, cJ + n0 * hk, n0, e1, np.array([ang[k]]))[0])
+    kid = len(V) + np.arange(len(K))
+    V = np.vstack([V, np.array(K)])
+    up = np.concatenate([[top0], kid, [top1]])
+    Fn = [[loop[back[k]], loop[back[k + 1]], up[k + 1], up[k]] for k in range(len(back) - 1)]
+    he = {(int(x), int(y)) for q in F for x, y in zip(q, np.roll(q, -1))}
+    if (int(loop[back[0]]), int(loop[back[1]])) in he:   # the template's own winding: the new quads follow it
+        Fn = [q[::-1] for q in Fn]
+    F = np.vstack([F, np.array(Fn, np.int64)])
+    return V, F, rim_loop(F)
+
+
+def quad_cost(P):
+    """A quad's shape cost: its corners' squared deviation from 90 deg (in units of 90 deg) + (aspect - 1)."""
+    e = np.roll(P, -1, 0) - P
+    L = np.linalg.norm(e, axis=1)
+    c = 0.0
+    for k in range(4):
+        a, b = -e[k - 1], e[k]
+        ang = np.arccos(np.clip(a @ b / max(np.linalg.norm(a) * np.linalg.norm(b), 1e-12), -1, 1))
+        c += ((ang - np.pi / 2) / (np.pi / 2)) ** 2
+    return c + L.max() / max(L.min(), 1e-9) - 1.0
+
+
+def rim_bridge(J, valJ, Mx, kite_cost):
+    """The strip between the template's rim J (n_J, ordered) and the new ring Mx (n_M, same sense, Mx[0] the
+    closest to J[0]): a minimum-cost monotone walk of quads (one J edge to one M edge) and kites (two M edges over
+    one J vertex, or two J edges under one M vertex). Each kite costs kite_cost, unless it absorbs a rim pole (two
+    M edges over a 2-valent J vertex, or two J edges over a 4-valent one, leave that vertex 4-valent).
+    Returns the quads as [(kind, J ids, M ids)]."""
+    nJ, nM = len(J), len(Mx)
+    INF = 1e18
+    D = np.full((nJ + 1, nM + 1), INF)
+    B = {}
+    D[0, 0] = 0.0
+    for i in range(nJ + 1):
+        for j in range(nM + 1):
+            if D[i, j] >= INF:
+                continue
+            ji, jn, jnn = i % nJ, (i + 1) % nJ, (i + 2) % nJ
+            mj, mn, mnn = j % nM, (j + 1) % nM, (j + 2) % nM
+            if i < nJ and j < nM:
+                c = D[i, j] + quad_cost(np.array([J[ji], J[jn], Mx[mn], Mx[mj]]))
+                if c < D[i + 1, j + 1]:
+                    D[i + 1, j + 1], B[(i + 1, j + 1)] = c, (i, j, "q")
+            if j + 2 <= nM:
+                pen = 0.0 if valJ[ji] == 2 else kite_cost
+                c = D[i, j] + pen + quad_cost(np.array([Mx[mj], Mx[mn], Mx[mnn], J[ji]]))
+                if c < D[i, j + 2]:
+                    D[i, j + 2], B[(i, j + 2)] = c, (i, j, "m")
+            if i + 2 <= nJ:
+                pen = 0.0 if valJ[jn] == 4 else kite_cost
+                c = D[i, j] + pen + quad_cost(np.array([J[ji], J[jn], J[jnn], Mx[mj]]))
+                if c < D[i + 2, j]:
+                    D[i + 2, j], B[(i + 2, j)] = c, (i, j, "j")
+    out, s = [], (nJ, nM)
+    while s != (0, 0):
+        i, j, k = B[s]
+        if k == "q":
+            out.append(("q", [i % nJ, (i + 1) % nJ], [(j + 1) % nM, j % nM]))
+        elif k == "m":
+            out.append(("m", [i % nJ], [j % nM, (j + 1) % nM, (j + 2) % nM]))
+        else:
+            out.append(("j", [i % nJ, (i + 1) % nJ, (i + 2) % nJ], [j % nM]))
+        s = (i, j)
+    return out[::-1], float(D[nJ, nM])
+
+
+def template(M, name, part, reg, ref=None, fit=None):
+    """(b) a hand / foot template at its base level, joined by its rim. fit (pass 3b, the tier's): "trim" re-cuts
+    the rim to one clean edge loop (rim_trim); "points" > the rim's count adds the rim strip: a ring of that many
+    points (even arc length, the reference's plane section `rise` above the rim's highest point, on the rim's own
+    plane normal) bridged to the trimmed rim by rim_bridge (its kites the strip's only poles, flagged TEMPLATE: the
+    template's rim re-fit). Returns the rim's ids, its centre and plane normal (pointing out of the limb)."""
     V, F, loop = load_template(name)
+    R0 = V[loop]
+    c0 = R0.mean(0)
+    n0 = np.linalg.svd(R0 - c0)[2][2]
+    if (V.mean(0) - c0) @ n0 < 0:
+        n0 = -n0
+    fit = fit or {}
+    if fit.get("trim"):
+        V, F = rim_trim(V, F)
+        loop = rim_loop(F)
+    if fit.get("level"):
+        V, F, loop = rim_level(ref, V, F, loop, n0, [TRUNK, LEG, FOOT] if part == "foot" else [TRUNK, ARM, HAND])
     ids = M.add(V, part, -1, 0, TEMPLATE, reg, ())
     for q in F:
         M.quad(*ids[q], reg, part)
-    R = V[loop]
+    rim = ids[loop]
+    nP = int(fit.get("points", 0))
+    if nP > len(loop):
+        J = V[loop]
+        cJ = J.mean(0)
+        if fit.get("tilt", True):                        # the trimmed rim's own best-fit plane
+            n1 = np.linalg.svd(J - cJ)[2][2]
+            n0 = n1 if n1 @ n0 > 0 else -n1
+        h = (J - cJ) @ n0
+        cM = cJ + n0 * (h.min() - fit["rise"])
+        e1 = frame(n0, np.array([1.0, 0, 0]))[0]
+        ks = [TRUNK, LEG, FOOT] if part == "foot" else [TRUNK, ARM, HAND]
+        ph, s, _ = dense_ring(ref, ks, cM, n0, e1, 720)
+        aJ = ring_angles(J, cM, n0, e1)
+        sense = 1.0 if np.median(np.diff(aJ)) > 0 else -1.0
+        u0 = ang_to_u(ph, s, aJ[0])
+        phM = u_to_ang(ph, s, u0 + sense * np.arange(nP) / nP)
+        Mx = T.ring_by_rays(ref, ks, cM, n0, e1, phM)
+        quads, cost = rim_bridge(J, valence(F, len(V))[loop], Mx, fit.get("kite_cost", 1.0))
+        mid = M.add(Mx, part, -1, 0, TEMPLATE, reg, ())
+        for kind, a, b in quads:
+            if kind == "q":
+                M.quad(rim[a[0]], rim[a[1]], mid[b[0]], mid[b[1]], reg, part)
+            elif kind == "m":
+                M.quad(mid[b[0]], mid[b[1]], mid[b[2]], rim[a[0]], reg, part)
+            else:
+                M.quad(rim[a[0]], rim[a[1]], rim[a[2]], mid[b[0]], reg, part)
+        M.rim_fit = getattr(M, "rim_fit", {})
+        asp = []
+        for kind, a, b in quads:
+            P = np.array([J[a[0]], J[a[1]], Mx[b[0]], Mx[b[1]]]) if kind == "q" else (
+                np.array([Mx[b[0]], Mx[b[1]], Mx[b[2]], J[a[0]]]) if kind == "m" else np.array([J[a[0]], J[a[1]], J[a[2]], Mx[b[0]]]))
+            Lq = np.linalg.norm(np.roll(P, -1, 0) - P, axis=1)
+            asp.append(Lq.max() / Lq.min())
+        M.rim_fit[name] = {"rim_before_strip": int(len(loop)), "points": nP, "kites": [k for k, _, _ in quads if k != "q"],
+                           "strip_height_mm": [round(float(fit["rise"]) * 1000, 1), round(float(h.max() - h.min() + fit["rise"]) * 1000, 1)],
+                           "strip_aspect_max": round(float(max(asp)), 2), "cost": round(cost, 2),
+                           "kite_pos_mm": [(J[a[0]] * 1000).round().astype(int).tolist() if k == "m" else (Mx[b[0]] * 1000).round().astype(int).tolist()
+                                           for k, a, b in quads if k != "q"]}
+        rim = mid
+        R = Mx
+    else:
+        R = V[loop]
     c = R.mean(0)
     n = np.linalg.svd(R - c)[2][2]
-    if (V.mean(0) - c) @ n < 0:
+    if n @ n0 < 0:
         n = -n
-    return ids[loop], c, n
+    return rim, c, n
 
 
 # ---------------------------------------------------------------------------------------------------- limbs --
@@ -1123,9 +1313,12 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
             hp = hidden - (hidden @ prev_n) * prev_n
             psi = np.arctan2(hp @ e2p, hp @ e1p)
             stag = (len(log) % 3 - 1) / 3.0
-            starts = kite_starts(phi, sense, psi, r, np.radians(C["kite_sector"]), stag)
+            sec = C["kite_sector"]
+            if name == "leg" and part == "thigh":   # (pass 3b) the thigh band's own sector
+                sec = C.get("thigh_kite_sector", sec)
+            starts = kite_starts(phi, sense, psi, r, np.radians(sec), stag)
             phi_c = walk_anchor(phi, starts, eL, sense)
-            log.append({"ring": k, "kites": len(starts), "from": eL, "to": eL - 2 * len(starts)})
+            log.append({"ring": k, "kites": len(starts), "from": eL, "to": eL - 2 * len(starts), "y_mm": int(round(c[1] * 1000))})
         else:
             phi_c = phi
         assert len(phi_c) == N, (name, k, len(phi_c), N)
@@ -1231,13 +1424,13 @@ def slerp_n(a, b, w):
 
 
 def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands, ref=None, ks=None,
-                  u_hold=0.0, band_u=None):
+                  u_hold=0.0, band_u=None, band_y_lower=None):
     """Stations of a two-segment limb: root (c0, n0) -> joint J -> end (the template rim's centre / normal).
     Spacing: tp limb_spacing, bend_spacing (s_b) inside the joint's bend zone (+-bend). The joint (a, pass 3): the
     crease ring C on the bisector, and either side of it one ring P / D on a plane turned about the hinge so that
     it sits s_b from C in the fossa and 2 s_b over the olecranon / patella, where the partial loops A / B (built in
     tube(): joint_patch) halve the gap and end at the epicondyles. Ring counts N0 -> N_mid -> N_end by `bands`."""
-    s_l, s_b, bz = tp["limb_spacing"], tp["bend_spacing"], jp["bend"]
+    s_l, s_b, bz = jp.get("limb_spacing", tp["limb_spacing"]), tp["bend_spacing"], jp["bend"]
     nb = U(d_in + d_out)
     hinge = U(np.cross(d_in, d_out))
     flex = U(d_out - d_in)
@@ -1297,6 +1490,8 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
         n_s = bands.get("strips_upper", bands["strips"]) if ua == 0 else bands["strips"]
         nstr = int(min(n_s, max(1, r_tot // bands["min_per_strip"])))
         uc = ua + bands["at"] * (ub - ua) if (band_u is None or ua > 0) else band_u
+        if ua > 0 and band_y_lower is not None:      # (pass 3b) the lower band centred at a named height
+            uc = u_el + (band_y_lower - J[1]) / d_out[1]
         kc = int(np.argmin(np.abs(u_all - uc)))
         ksel = [kc + 2 * (q - (nstr - 1) // 2) for q in range(nstr)]
         per = [r_tot // nstr + (1 if q < r_tot % nstr else 0) for q in range(nstr)]
@@ -1600,7 +1795,7 @@ def part_reg_fn(names, regs):
 def build(plan, tier, ref, cv, L):
     tp = tier_params(plan, tier)
     M = QM()
-    C = {"tier": tier, "kite_sector": tp["kite_sector"]}
+    C = {"tier": tier, "kite_sector": tp["kite_sector"], "thigh_kite_sector": tp.get("thigh_kite_sector", tp["kite_sector"])}
     c_ar, n_ar, _ = arm_root_plane(L, plan)
     SR = shoulder_rim(ref, cv, L, plan, tp)
     C.update(trunk_plan(ref, cv, L, plan, tp, SR))
@@ -1614,7 +1809,7 @@ def build(plan, tier, ref, cv, L):
     lim = plan["limbs"]
     joints = {}
     # the arm: root ring -> elbow -> the hand's rim
-    hid, hc, hn = template(M, "hand_l", "hand", REG["hands"])
+    hid, hc, hn = template(M, "hand_l", "hand", REG["hands"], ref, tp.get("hand_fit"))
     J = L["elbow"]
     d_in, d_out = U(J - L["shoulder"]), U(hc - J)
     ka = [TRUNK, ARM, HAND]
@@ -1623,13 +1818,13 @@ def build(plan, tier, ref, cv, L):
     if not tp.get("upper_arm_band", True):
         N_el = C["N_arm"]          # (a) no window for poles between the shoulder zone and the elbow zone
     jp = dict(lim["elbow"], **tp["elbow"])
-    st, joints["elbow"] = limb_stations(c_ar, n_ar, J, d_in, d_out, hc, hn, jp, tp, C["N_arm"], N_el, 22,
+    st, joints["elbow"] = limb_stations(c_ar, n_ar, J, d_in, d_out, hc, hn, jp, tp, C["N_arm"], N_el, len(hid),
                                         part_reg_fn(("arm", "elbow", "forearm"), (REG["upper_arms"], REG["forearms"])),
                                         tp["bands"], ref, ka)
     hidden = U(np.array(tp["hidden"]))
     tube(M, ref, ka, (sh["root"], c_ar, n_ar, sh["e1"]), st, (hid, hc, hn), hidden, C, "arm", joint=joints["elbow"])
     # the leg: root ring (R0 + the crotch strip's side) -> knee -> the foot's rim
-    fid, fc, fn = template(M, "foot_l", "foot", REG["feet"])
+    fid, fc, fn = template(M, "foot_l", "foot", REG["feet"], ref, tp.get("foot_fit"))
     J = L["knee"]
     d_in, d_out = U(J - L["hip"]), U(fc - J)
     p, nl = L["leg"]["p"], L["leg"]["n"]
@@ -1656,12 +1851,12 @@ def build(plan, tier, ref, cv, L):
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
     jp = dict(lim["knee"], **tp["knee"])
-    st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, 22,
+    st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, len(fid),
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
-                                       lg_bands, ref, kl, u_hold, band_u)
+                                       lg_bands, ref, kl, u_hold, band_u, tp.get("shin_band_y"))
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
          joint=joints["knee"], warp=warp)
-    C.update({"N_el": N_el, "N_kn": N_kn})
+    C.update({"N_el": N_el, "N_kn": N_kn, "rim_fit": getattr(M, "rim_fit", {})})
     # the whole: orient, mirror, relax, the neck's right side, orient outward
     V, Q = M.arrays()
     n_left = len(V)
