@@ -119,7 +119,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | UI design (the HUD keystone; portraits wait on the face) | — (handoff ready) | docs/team/ui_design.md |
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
-| Gameplay experience director | H4 SEAMS MERGED 377ca86da (4 Nov): C02/C04a/C04b cuts, snuff, the Low Ford day stretch (N18); demo-rc2 TAGGED at 377ca86da, the owner plays; not-H4 list in docs/handoff/experience.md top | docs/handoff/experience.md |
+| Gameplay experience director | H8 RC2 BUGS MERGED (5 Nov): the shut gate (portcullis), the Warden fight 88-112 s, the dawn card, C04b, the arena map, the boss camera, the x-ray; H4 seams merged 377ca86da; later lists in docs/handoff/experience.md top | docs/handoff/experience.md |
 | Skills look and feel (VFX, under the main session) | HANDED OFF 14 Oct early (restart from RESUME): Flare lead 6 ade7c2d0af7e2dbf3, flare-1 @ b24624ca in worktree agent-af0782e2e3f51bc1f, not merged; judge 4 NOT READY (BOOM, shards, Return FAIL) | docs/team/skills.md |
 | Cinematics production | aece7b87e89b13f19 | docs/team/cinematics.md |
 | Storybook cinematics (drawn, Diablo III style: the format, the player, the look; SB00 first) | storybook 1, worktree storybook-1 (19 Oct) | docs/team/storybook.md |
