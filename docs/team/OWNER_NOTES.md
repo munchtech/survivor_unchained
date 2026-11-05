@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 4 November 2026, night (coordinator e05b5408): GATE G1 PICKED. The painted-cel target sheet is the look
+The owner saw L1's G1 sheet (`survivorsunchained_inputs\look_l1\g1\`: the 13 frames and key art as targets, the boards) and answered: "love it". No notes on the three points relayed (09 is drawn at about twice play size; at 13's camera the shield hides her from the shoulders down; 08 and 07 get one last round). So the G1 set is the target every block is built to and judged against: `docs/design/LOOK_BIBLE.md` (14 rules) is law, MB1 is her one face, and L1's Stage B (B2 material library, B3 texture authoring, B4 lighting rigs, B6 FX/UI language), then C (the 13 frames rebuilt) and D (the max judge, the owner's A|B at GATE G2) run. Standing.
+
 ## 4 November 2026, evening (via 5b4265e7, recorded by coordinator 43290bea): remake over patch, everywhere
 The owner: "I don't even know if makehuman is the standard. or if we should make our own. or what. I really don't want you to feel like you have to patch things, if they need to be redone so be it." For P1: MakeHuman's topology is one replaceable input (mesh + landmarks); everything else (sliders, skeleton, weights, correctives, LODs, the check) is ours; if hm08 cannot carry her at the close-up, retopo our own and report the cost; the gate message says which parts are MakeHuman-derived and which are ours. For every lead: a remake is approved wherever a patch would be the alternative; `PIPELINE.md` records the cost. Standing.
 
