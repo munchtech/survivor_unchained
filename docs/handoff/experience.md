@@ -48,6 +48,8 @@ HANDOFF READY seams-h8@9c7dc0666 (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2
    - `her_xray.gdshader` drops an occluder whose world point lies inside her capsule (`her_at` from `PlayerView.XrayStep`, r 0.8, top 2.2). `--xray-old` gives the before.
    - Sheets: `shoot1\xray_toward.jpg` and `xray_across.jpg` (old rows, then new); `xray_town.jpg` (the Waystation, the roof case: check she shows under the eaves).
 
+**H6 (abf0b8606f7e91474), 4 Nov, final for rc3:** floors by lamps BROKEN (0.67/0.34/0) and hpMul 1.25 are final; ward by lit; minSeconds 60 and crackAfter 45 stay as backstops only. Its band: up to ~120 s for a slower human. It asks for one --auto run with crashes disabled (the 0.67 floor holds) and one at the 60 s backstop. Its "88 s autopilot run" is a misread: no current-code run lasted 88 s (the 84 s was demo-1, on the old numbers; the current code fell in 11 s). Quote the measured numbers once N20 holds in game.
+
 **Next, in order:**
 1. N20's in-game cause (above): fix it, re-measure with b_path (`shoot1\batch_b.json` style, `--lampcheck`), and agree the numbers with H6.
 2. One su-lead-max xhigh judge (`Item: H8 changed moments`) on: gate_sheet; a 60 s Warden strip (a frame every 3 s across the Boss stage, the crash in it); the dawn card at full size; solver_45's C04b strips; arrival before/after; the x-ray sheets; the map still. The whole-frame question first, then "is the mark gone, and is nothing new clunky?"
