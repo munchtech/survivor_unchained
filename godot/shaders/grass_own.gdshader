@@ -8,6 +8,7 @@
 // night (`night`). Wind, her pushing through, frost and the Flare as the kit grass (grass.gdshader).
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -195,8 +196,8 @@ void vertex() {
 	// (its foot a hair behind, toward the camera's far side, so it stands in the ground, not on it)
 	p.xz -= f * 0.03 * sz;
 	// Wind: a slow travelling swell and gusts; the survivor parts it.
-	float swell = sin(TIME * 1.6 + dot(wp, wind.xy) * 0.55 + nz.a * 5.0) * 0.5 + 0.5;
-	float gust = texture(noise_tex, wp * 0.018 - TIME * vec2(0.035, 0.012)).r;
+	float swell = sin(WORLD_TIME * 1.6 + dot(wp, wind.xy) * 0.55 + nz.a * 5.0) * 0.5 + 0.5;
+	float gust = texture(noise_tex, wp * 0.018 - WORLD_TIME * vec2(0.035, 0.012)).r;
 	vec2 bend = normalize(wind.xy) * (swell * 0.3 + gust * gust * 0.9) * wind.z;
 	vec2 a = wp - pusher.xy;
 	float pd = length(a);

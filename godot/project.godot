@@ -51,6 +51,14 @@ anti_aliasing/quality/use_taa=true
 
 [shader_globals]
 
+world_time={
+"type": "float",
+"value": 0.0
+}
+world_time_was={
+"type": "float",
+"value": 0.0
+}
 flare_at={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

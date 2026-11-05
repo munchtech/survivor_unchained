@@ -57,7 +57,7 @@ public static class FlareFamily
 
     /// <summary>The beat: the camera's kick (px at 1080p), a drop's landing after the band (s) and its scale-in, a
     /// decision-marked hit's hold after its mark shows (frames), the numbers' wait after the band (s).</summary>
-    public sealed class BeatRules { public double KickPx = 3, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02; }
+    public sealed class BeatRules { public double KickPx = 3, DropLag = 0.05, DropGrow = 0.3, DecisionFrames = 2, NumberLag = 0.02, SpendLight = 8, SpendLightDay = 8; }
 
     /// <summary>The recovery: her ember's pool x Pool for Hold s from the main blow, then back over Out s.</summary>
     public sealed class RecoveryRules { public double Pool = 1.3, Hold = 2, Out = 0.4; }

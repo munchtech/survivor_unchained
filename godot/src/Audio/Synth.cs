@@ -315,7 +315,9 @@ public partial class Synth : Node
             {
                 float s = b.Sample(t, dt), s2 = b.Wide ? b.Right : s;
                 if (s == 0 && s2 == 0) continue;
-                float amb = Level[(int)Bus.Amb] * voiceAmbNow, l = s * amb, r = s2 * amb;
+                // (H7 fix: the beds under DuckBeds too, as its summary says: they were left out, so a Flare's
+                // intake sat under the world's noise it ducked)
+                float amb = Level[(int)Bus.Amb] * voiceAmbNow * bedDuckNow, l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
                 if (stems != null) { stemAcc[(int)Bus.Amb * 2] += l; stemAcc[(int)Bus.Amb * 2 + 1] += r; }
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];

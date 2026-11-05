@@ -12,6 +12,7 @@
 // and UV2.x is the bank's distance; the rest is the same.
 shader_type spatial;
 render_mode blend_mix, depth_draw_never, cull_disabled, diffuse_lambert, specular_schlick_ggx, shadows_disabled;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D noise_tex : filter_linear_mipmap, repeat_enable;
 // The noise's slopes (Water.Grad: RG the swell's (noise R), BA the chop's (noise B), 0.5 flat), so a ripple's normal is one look.
@@ -252,7 +253,7 @@ void fragment() {
 	// The ripples' frame: the world (x, z), or the stream's (across, along).
 	vec2 rp = stream ? vec2(UV.x, -UV.y) : wv.xz;
 	vec2 v = flow;
-	float t = TIME;
+	float t = WORLD_TIME;
 	// The surface's slope (per m), drifting downstream: a swell, a quicker cross-swell, and a finer chop that breaks the
 	// lights' glints. (The noise is tiled ripple_size x 4 m, so a texel is 2 cm: its facets stay under a pixel.)
 	float s = 1.0 / (ripple_size * 4.0);

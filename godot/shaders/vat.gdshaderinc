@@ -1,3 +1,4 @@
+#include "res://shaders/world_clock.gdshaderinc"
 #include "res://shaders/flare_world.gdshaderinc"
 // (H7: a marked foe's rim takes the Flare's school hue while the marks are up: FlareFx.Family; a 0 none)
 global uniform vec4 flare_mark_rim;
@@ -252,14 +253,14 @@ void fragment() {
 		c = mix(c, vec3(lum) * vec3(0.9, 0.97, 1.08), fz * 0.3);
 		c = mix(c, ice, rime * 0.85);
 		rough = mix(rough, 0.22, rime);
-		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(TIME * 3.0)));
+		float glint = step(0.992, vat_hash(floor(vat_local * 16.0) + floor(WORLD_TIME * 3.0)));
 		e += vec3(0.28, 0.62, 1.0) * fz * pow(rim, 4.0) * 0.85 + vec3(0.55, 0.8, 1.0) * rime * glint * 0.8;
 	}
 	if (fx.w > 0.0) {
 		// Burning: thin tongues of fire licking up the body from its edges over char, soot where
 		// they have been; the flame is deep orange over near-black, so it stays orange (over a pale
 		// body's own light it read as peach). The rest of the body is its own colour.
-		float lick = vat_noise(vec3(vat_local.x * 4.5, vat_local.y * 1.6 - TIME * 3.4, vat_local.z * 4.5));
+		float lick = vat_noise(vec3(vat_local.x * 4.5, vat_local.y * 1.6 - WORLD_TIME * 3.4, vat_local.z * 4.5));
 		float tongue = smoothstep(0.52, 0.8, lick * 0.75 + rim * 0.5) * fx.w;
 		float soot = smoothstep(0.28, 0.56, lick * 0.75 + rim * 0.35) * fx.w;
 		if (flare_lc.x > 0.0) {

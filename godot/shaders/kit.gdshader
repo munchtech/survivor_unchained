@@ -12,6 +12,7 @@
 // whole instead (the house fade, below; E9c).
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+#include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -430,7 +431,7 @@ void vertex() {
 	v_jit = fract(sin(dot(ip.xz, vec2(12.9898, 78.233))) * 43758.5453);
 	v_y = VERTEX.y;
 	float h = max(VERTEX.y, 0.0);
-	float ph = TIME * 1.1 + ip.x * 0.23 + ip.z * 0.19;
+	float ph = WORLD_TIME * 1.1 + ip.x * 0.23 + ip.z * 0.19;
 	float sway = (sin(ph) * 0.65 + sin(ph * 2.3 + 1.7) * 0.25 + sin(ph * 5.1 + ip.x) * 0.1) * wind * h * h * 0.02;
 #ifdef OWN_FOLIAGE
 	// (our own trees, env_trees.py: each branch's needles flutter on their own, more toward
@@ -438,8 +439,8 @@ void vertex() {
 	// (a broadleaf's leaves, flutter > 1, flutter faster and every way, not only up and down)
 	if (UV.x < 0.75) {
 		float fr = length(VERTEX.xz) * wind;
-		VERTEX.y += sin(TIME * (2.7 + 1.6 * (flutter - 1.0)) + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * flutter * fr;
-		VERTEX.xz += vec2(sin(TIME * 4.3 + dot(VERTEX, vec3(2.1, 1.3, 0.9))), cos(TIME * 3.7 + dot(VERTEX, vec3(0.8, 1.9, 1.7)))) * 0.02 * max(flutter - 1.0, 0.0) * fr;
+		VERTEX.y += sin(WORLD_TIME * (2.7 + 1.6 * (flutter - 1.0)) + dot(VERTEX, vec3(1.3, 0.7, 1.1)) + ip.x * 0.5) * 0.035 * flutter * fr;
+		VERTEX.xz += vec2(sin(WORLD_TIME * 4.3 + dot(VERTEX, vec3(2.1, 1.3, 0.9))), cos(WORLD_TIME * 3.7 + dot(VERTEX, vec3(0.8, 1.9, 1.7)))) * 0.02 * max(flutter - 1.0, 0.0) * fr;
 	}
 	// (Env 23 r2) the copy's own hashes, its stretch, leader and lean: a sin hash of its place, unless its custom data's a
 	// carries them (1 + four 6-bit values, CanopyFader's trees: the GPU's sin of a large angle is not the CPU's, so the CPU

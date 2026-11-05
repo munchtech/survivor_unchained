@@ -58,6 +58,15 @@ public partial class FlareFx
         bandA = o; bandB = end; bandOn = !BandOff; // (--flare-band-off: an ablation, the band never drawn)
         Cue("boom", cueAt, 1);
         Rumble(1, 0.6f, 0.14f);
+        // The plain Strikes' Spend (its light, the world's ring) on this same frame (FLARE_LOOK §1.2), sized with the
+        // band so the frame stays in §1.6's budget (flare_family.json beat.spendLight).
+        if (id != "burns_twice" && !IsLongCut)
+        {
+            spendLightReal = true;
+            spendAt = t;
+            var bt = FlareFamily.Beat;
+            SpendLight(cueAt + Vector3.Up * 2.5f, new Color(1f, 0.75f, 0.4f), (float)(Night ? bt.SpendLight : bt.SpendLightDay));
+        }
         Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
         ResolvePending();
         if (Args.Has("clip") || Args.Has("shot"))

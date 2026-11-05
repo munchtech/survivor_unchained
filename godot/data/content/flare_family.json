@@ -45,13 +45,14 @@
   // glow, linear); wake: how much the ground behind it darkens. Through flare_world's ground hook: no draw of its own.
   "band": {
     "reach": 30, "time": 0.3, "ease": 1.6, "lead": 0.9, "wake": 2.4, "fade": 0.35,
-    "night": { "gain": 0.3, "wake": 0.3 },
+    "night": { "gain": 0.15, "wake": 0.3 },
     "day":   { "gain": 0.45, "wake": 0.22 }
   },
   // The beat: the camera's kick on the main blow (px at 1080p, the first swing, FollowCamera.JoltPx); a drop lands
   // dropLag s after the band passes it, scaled in over dropGrow; a decision-marked hit's death and number wait
   // decisionFrames frames after its mark shows; the Flare's numbers come numberLag s after the band passes each foe.
-  "beat": { "kickPx": 3, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02 },
+  // spendLight(Day): the plain Strikes' Spend light on the main blow (an omni's energy, on real time: 2-3 frames at its peak).
+  "beat": { "kickPx": 3, "dropLag": 0.05, "dropGrow": 0.3, "decisionFrames": 2, "numberLag": 0.02, "spendLight": 5, "spendLightDay": 6 },
   // The recovery: the grade eases back over grade.out from the main blow; her ember's pool at pool x for hold s, then
   // back over out s.
   "recovery": { "pool": 1.3, "hold": 2.0, "out": 0.4 },

@@ -140,7 +140,8 @@ public partial class FlareFx : Node3D
                 ramp = 0.08;
                 releaseAt = t;
                 if (Args.Has("clip")) GD.Print($"flare release frame {Engine.GetFramesDrawn()} at +{t:0.000} s real");
-                if (id != "burns_twice" && !IsLongCut) Spend(e.X, e.Z, 1);
+                // (H7: a Strike's Spend, its light and the world's ring, lands on its main blow, FLARE_LOOK §1.2: FlareFx.Blow)
+                if (id != "burns_twice" && !IsLongCut && !familyOn) Spend(e.X, e.Z, 1);
                 break;
             case FlarePhase.Blow:
             {
@@ -155,7 +156,7 @@ public partial class FlareFx : Node3D
                     if (e.Part == "sweep") LongSweep(e);
                     else if (e.Part == "cleave") LongCleave(e);
                 }
-                else { Hitstop(e.Hitstop); StalkerBlow(e); if (e.Last) Spend(e.TX, e.TZ, 1); }
+                else { Hitstop(e.Hitstop); StalkerBlow(e); if (e.Last && !familyOn) Spend(e.TX, e.TZ, 1); }
                 if (main && id != "burns_twice") MainBlow(e);
                 else ResolvePending();
                 break;
@@ -238,6 +239,8 @@ public partial class FlareFx : Node3D
 
     double spendLightT = -1;
     float spendLightPeak;
+    // (H7: a Strike's Spend light, on its main blow, runs on real time, so the blow's hitstop does not hold its peak)
+    bool spendLightReal;
 
     void SpendLight(Vector3 p, Color c, float energy)
     {
@@ -245,7 +248,7 @@ public partial class FlareFx : Node3D
         spendLight.LightColor = c;
         spendLight.OmniRange = reach * 0.9f;
         spendLightPeak = energy * (LessFlash ? 0.5f : 1);
-        spendLightT = t;
+        spendLightT = spendLightReal ? rt : t;
     }
 
     void Hitstop(int frames)
@@ -283,7 +286,7 @@ public partial class FlareFx : Node3D
             else if (IsLongCut) LongTick(fdt);
             else Plain();
             // The Flare's light at the Spend: 2-4 frames at its peak, then down over 0.4 s.
-            float sl = spendLightT < 0 ? 0 : (float)(t - spendLightT);
+            float sl = spendLightT < 0 ? 0 : (float)((spendLightReal ? rt : t) - spendLightT);
             // (the Long Cut rides its light itself: FlareFx.LongCut)
             if (!IsLongCut) spendLight.LightEnergy = spendLightT < 0 ? 0 : sl < 0.05f ? spendLightPeak : spendLightPeak * Mathf.Exp(-(sl - 0.05f) * 12f); // halved by the 5th frame (§1.6: 1.5x for 4 frames at most)
             if (!IsLongCut) spendLight.Visible = SpendLightOld || spendLight.LightEnergy > 0;
@@ -406,6 +409,7 @@ public partial class FlareFx : Node3D
         BoomClear();
         LongClear();
         spendLightT = -1;
+        spendLightReal = false;
         foreach (var em in embers) if (em.Light != null && IsInstanceValid(em.Light)) em.Light.QueueFree();
         embers.Clear();
         embersLit = 0;

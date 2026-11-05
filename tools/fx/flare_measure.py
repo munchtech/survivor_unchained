@@ -111,6 +111,12 @@ def measure(name, pre):
         r0, r1 = 6 + 7, 6 + int(round(float(rl.group(2)) * 60)) - 2
         steps = [np.abs(fr[i].astype(np.int16) - fr[i - 1]).mean(axis=2)[hh].mean() for i in range(r0 + 1, min(r1 + 1, len(fr)))]
         if steps: print(f"     frame-to-frame in the stop (press+8..release-2): mean {np.mean(steps):.2f}, max {np.max(steps):.2f}")
+        # (after the camera's push-in, 0.18 s, FLARE_LOOK §1.4: what still moves while the world is held; the pre-press
+        # frame-to-frame is the floor, TAA's and the fight's)
+        h0 = 6 + 12
+        held = [np.abs(fr[i].astype(np.int16) - fr[i - 1]).mean(axis=2)[hh].mean() for i in range(h0 + 1, min(r1 + 1, len(fr)))]
+        pre_s = [np.abs(fr[i].astype(np.int16) - fr[i - 1]).mean(axis=2)[hh].mean() for i in range(1, 6)]
+        if held: print(f"     held (press+12..release-2, after the push): frame-to-frame mean {np.mean(held):.2f}, max {np.max(held):.2f}; before the press {np.mean(pre_s):.2f}")
     # (e) loudness (long.wav: 4 s of fight before the press): short-term (3 s) LUFS max of the fight before the press against
     # the blow's (windows starting from the press), the stop's momentary (0.4 s) loudness of the flare stem and of the rest,
     # and the sample peak from the press on

@@ -9,6 +9,7 @@
 // noise climbing it), with no atlas.
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+#include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D mv_atlas : filter_linear_mipmap, repeat_disable;
@@ -82,7 +83,7 @@ vec2 cell_uv(int i, vec2 uv) {
 
 float sim_heat(vec2 uv) {
 	float n = float(frames);
-	float f = mod(TIME * fps + phase * n, n);
+	float f = mod(WORLD_TIME * fps + phase * n, n);
 	int a = int(floor(f));
 	int b = (a + 1) % frames;
 	float t = fract(f);
@@ -94,7 +95,7 @@ float sim_heat(vec2 uv) {
 
 float sim_heat_lod(vec2 uv, float lod) {
 	float n = float(frames);
-	float f = mod(TIME * fps + phase * n, n);
+	float f = mod(WORLD_TIME * fps + phase * n, n);
 	int a = int(floor(f));
 	int b = (a + 1) % frames;
 	float t = fract(f);
@@ -102,7 +103,7 @@ float sim_heat_lod(vec2 uv, float lod) {
 }
 
 float proc_heat(vec2 uv) {
-	float tt = TIME + phase * 37.0;
+	float tt = WORLD_TIME + phase * 37.0;
 	// y up from the base, x from the middle.
 	vec2 p = vec2(uv.x - 0.5, 1.0 - uv.y);
 	float n1 = texture(noise_tex, vec2(p.x * 1.6 + phase, p.y * 1.2 - tt * 1.1)).r;
@@ -133,7 +134,7 @@ void fragment() {
 	vec2 uv = UV;
 	float up = 1.0 - uv.y;
 	// The tip sways, the base stays put.
-	float tt = TIME + phase * 17.0;
+	float tt = WORLD_TIME + phase * 17.0;
 	uv.x += (sin(tt * 1.7) * 0.6 + sin(tt * 2.9 + 1.3) * 0.4) * sway * up * up;
 	float h = procedural ? proc_heat(uv) : sim_heat(uv);
 	// Heat to light: the body's edge fades out, the body sits under 1, the core alone climbs to core_hdr.
