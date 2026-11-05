@@ -249,9 +249,9 @@
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "masses": {
     "colors": [
-     "#474f2e",
-     "#576034",
-     "#666b3b"
+     "#37432d",
+     "#445233",
+     "#505b3a"
     ],
     "split": [
      0.35,
@@ -272,23 +272,23 @@
       11
      ],
      "colors": [
-      "#616b37",
-      "#7a8142"
+      "#4c5b36",
+      "#606e41"
      ],
-     "under": "#3d4730",
+     "under": "#2f3c2f",
      "height": 0.85
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.602, 0.716, 0.972] per channel (linear) = the terrain grass anchor 'grass' target / its mean [0.106, 0.1244, 0.0373]; target = MB4_grass_day paint [0.2114, 0.2035, 0.0381] / the day key (day_play grass) [3.313, 2.284, 1.051] = [0.0638, 0.0891, 0.0362]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "litter_day": {
    "class": "soil",
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#493d30",
-     "#564835",
-     "#62513a"
+     "#241d24",
+     "#2c2328",
+     "#33282c"
     ],
     "split": [
      0.35,
@@ -305,24 +305,24 @@
       15
      ],
      "colors": [
-      "#765539",
-      "#846445",
-      "#664e36",
-      "#88764b"
+      "#3e2b2b",
+      "#463335",
+      "#352729",
+      "#483e3a"
      ],
      "height": 0.7
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "road": {
    "class": "road",
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "masses": {
     "colors": [
-     "#705645",
-     "#7f634e",
-     "#8c7058"
+     "#3b2b35",
+     "#43333c",
+     "#4b3a44"
     ],
     "split": [
      0.3,
@@ -339,22 +339,22 @@
       11
      ],
      "colors": [
-      "#8c8071",
-      "#7b7163"
+      "#4b4359",
+      "#413b4d"
      ],
      "height": 0.8
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "mud": {
    "class": "road",
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "masses": {
     "colors": [
-     "#45382d",
-     "#504134",
-     "#594a3a"
+     "#221a22",
+     "#281f27",
+     "#2d242c"
     ],
     "split": [
      0.4,
@@ -362,7 +362,7 @@
     ],
     "scale_m": 1.3
    },
-   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "cobble": {
    "class": "road",
@@ -388,7 +388,8 @@
      0.5
     ],
     "scale_m": 1.5
-   }
+   },
+   "w2": "L1 W2 ground, mark 6: kept at C1's colors (the town's stone layer is the town kit's, 07/13)"
   },
   "rock_moss": {
    "class": "rock",
@@ -429,9 +430,9 @@
    "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
    "masses": {
     "colors": [
-     "#2a2724",
-     "#34302b",
-     "#3d3832"
+     "#12101a",
+     "#181620",
+     "#1d1a26"
     ],
     "split": [
      0.35,
@@ -452,20 +453,21 @@
       80
      ],
      "colors": [
-      "#1f1c1a"
+      "#0c0a12"
      ],
      "height": 0.1
     }
-   ]
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "forest_floor": {
    "class": "soil",
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#63584c",
-     "#716353",
-     "#7d6d5b"
+     "#58504a",
+     "#655a51",
+     "#706459"
     ],
     "split": [
      0.33,
@@ -482,25 +484,25 @@
       17
      ],
      "colors": [
-      "#89674b",
-      "#957655",
-      "#785f48",
-      "#998762"
+      "#7b5e49",
+      "#856c53",
+      "#6b5746",
+      "#897c60"
      ],
      "height": 0.7
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.09 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
-   "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)"
+   "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)",
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "rot": {
    "class": "soil",
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "masses": {
     "colors": [
-     "#3e3a34",
-     "#47423c",
-     "#504840"
+     "#373533",
+     "#3f3c3a",
+     "#47423e"
     ],
     "split": [
      0.4,
@@ -517,21 +519,21 @@
       14
      ],
      "colors": [
-      "#5d4f3e",
-      "#685742"
+      "#53483c",
+      "#5d4f40"
      ],
      "height": 0.6
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.07 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "roots": {
    "class": "soil",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "masses": {
     "colors": [
-     "#463f37",
-     "#51473d"
+     "#3e3936",
+     "#48413b"
     ],
     "split": [
      0.5
@@ -551,23 +553,23 @@
       160
      ],
      "colors": [
-      "#6e5d4b",
-      "#615342"
+      "#625549",
+      "#564c40"
      ],
      "lit_edge": 0.05,
      "height": 0.9
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.07 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "den_mud": {
    "class": "soil",
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "masses": {
     "colors": [
-     "#39352f",
-     "#423b34",
-     "#494239"
+     "#32302e",
+     "#3a3633",
+     "#413c38"
     ],
     "split": [
      0.4,
@@ -575,7 +577,7 @@
     ],
     "scale_m": 1.4
    },
-   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "stream_bed": {
    "class": "rock",
@@ -609,9 +611,9 @@
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "masses": {
     "colors": [
-     "#655847",
-     "#72624e",
-     "#7d6d56"
+     "#5a5045",
+     "#665a4c",
+     "#706454"
     ],
     "split": [
      0.35,
@@ -632,14 +634,14 @@
       8
      ],
      "colors": [
-      "#8f7955",
-      "#816d4e"
+      "#806f53",
+      "#73644c"
      ],
-     "under": "#5c4f41",
+     "under": "#52483f",
      "height": 0.7
     }
    ],
-   "calib": "r1 (L1 C1, 5 Nov): +0.08 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "bank": {
    "class": "soil",
@@ -647,26 +649,26 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#5a5a50",
-     "#656556",
-     "#4f4f47"
+     "#50524e",
+     "#5a5c54",
+     "#464845"
     ],
-    "joint": "#3f3e39",
+    "joint": "#383838",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#3f3e39",
-     "#4a483e"
+     "#383838",
+     "#42423c"
     ],
     "split": [
      0.5
     ],
     "scale_m": 2.0
    },
-   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)"
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames)."
   },
   "verge": {
    "class": "grass",

@@ -1301,17 +1301,10 @@
      "roles": {"lit": "#774c3e"}
     },
     "albedo": {
-     "L": [0.3502, 0.3855, 0.3928],
-     "C": [0.0368, 0.0514, 0.0554],
-     "h": [33.8, -9.6, 3.9],
-     "mid": "#593831",
-     "n": 3810,
-     "roles": {"lit": "#5c3a32"},
-     "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
-     "samples": ["day lit"],
-     "linear": [0.1, 0.0401, 0.0303],
-     "fit_dE": 0.0022
+     "mid": "#665c52",
+     "linear": [0.134, 0.106, 0.084],
+     "v": 3,
+     "method": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): targets 09 and 10's moonlit floor (linear [0.0044,0.015,0.0566], [0.005,0.0202,0.0503]) / the arena moon's response (lookdev arena_play floor over the litter's mean: [0.035,0.166,0.638]), averaged; a division by the measured rig, no fit (look_l1/c/w2/ground/ground_colors.py). Was v2 #593831 (joint.py least squares)"
     }
    }
   },
@@ -1368,17 +1361,10 @@
      "roles": {"lit": "#a96847"}
     },
     "albedo": {
-     "L": [0.4275, 0.4929, 0.5047],
-     "C": [0.0723, 0.0953, 0.0984],
-     "h": [43.0, -3.7, 1.6],
-     "mid": "#874b32",
-     "n": 3498,
-     "roles": {"lit": "#8e4d32"},
-     "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
-     "samples": ["day lit"],
-     "linear": [0.2422, 0.0703, 0.0315],
-     "fit_dE": 0.003
+     "mid": "#43333d",
+     "linear": [0.0568, 0.0335, 0.0471],
+     "v": 3,
+     "method": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): MB4 road DAY paint (all, linear [0.1876,0.0762,0.0498]) / the final day key's response (day_play, [3.301,2.274,1.058]); a division by the measured rig, no fit (look_l1/c/w2/ground/ground_colors.py). Was v2 #874b32 (joint.py least squares)"
     }
    }
   },
@@ -1453,17 +1439,10 @@
      "roles": {"lit": "#aaa036", "lit_night": "#286770", "shade": "#1c374f"}
     },
     "albedo": {
-     "L": [0.4408, 0.5928, 0.6495],
-     "C": [0.0545, 0.0956, 0.1094],
-     "h": [116.7, -15.0, 23.1],
-     "mid": "#7b8144",
-     "n": 30003,
-     "roles": {"lit": "#7a853f", "shade": "#7a8043"},
-     "v": 2,
-     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
-     "samples": ["day lit", "day shade"],
-     "linear": [0.1964, 0.2203, 0.0583],
-     "fit_dE": 0.0658
+     "mid": "#475436",
+     "linear": [0.0638, 0.0891, 0.0363],
+     "v": 3,
+     "method": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): MB4 grass DAY paint (all, linear [0.2114,0.2035,0.0381]) / the final day key's response (day_play, [3.313,2.284,1.051]); a division by the measured rig, no fit (look_l1/c/w2/ground/ground_colors.py). Was v2 #7b8144 (joint.py least squares)"
     }
    }
   },
