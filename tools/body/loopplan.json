@@ -156,45 +156,64 @@
    "blend": {
     "step_lo": 0.4,
     "step_hi": 1.15,
-    "why": "(a) the curve root stands up to ~35 mm off its best-fit plane (the rise's top and the cleft above, the fold below), so the thigh's first rings are blend rings column by column from the root to the first planar station fully under it: n rings at steps within [step_lo, step_hi] x the limb spacing (lo: no edge under ~3 mm close, aspect under 2.5 at the fold; hi: no step over ~8.6 mm, the trunk's spacing); every column continues, so the blend adds no poles"
+    "why": "(a) the curve root stands up to ~35 mm off its best-fit plane (the rise's top and the cleft above, the fold below), so the thigh's first rings are blend rings column by column from the root to the first planar station fully under it: n rings at steps within [step_lo, step_hi] x the limb spacing (lo: no edge under ~3 mm close, aspect under 2.5 at the fold; hi: no step over ~8.6 mm, the trunk's spacing); every column continues, so the blend adds no poles",
+    "support_step": 0
    },
    "why_front": "(b) the front of the root at the groin crease's top: the reference's concave line per height (rays from the front) runs (20, 990, -4) (25, 1000, 14) (30, 1010, 23) (35, 1020, 30) (40, 1035, 38) mm: near-vertical on the canvas (theta 26-31 deg), which a row profile t(theta) cannot carry (the rows above would collapse onto it), so the crotch strip climbs the mons to y 1.035 at the midline and its outer line takes the crease's lower course; the row is level at 1.035 to theta 28 (the crease's top) and rises to side_y by theta 40 [theta deg, y]",
    "crotch": {
     "m": 3,
     "line": [
      [
-      30,
-      1010,
-      23
-     ],
-     [
-      25,
-      1000,
-      14
-     ],
-     [
-      21,
-      992,
+      29.6,
+      1007.0,
+      20.9,
       0
      ],
      [
-      19,
-      987,
-      -10
+      25.5,
+      999.3,
+      12.7,
+      3.75
      ],
      [
-      17,
-      983,
-      -20
+      22.2,
+      993.8,
+      3.8,
+      3.75
+     ],
+     [
+      19.3,
+      989.3,
+      -5.6,
+      3.75
+     ],
+     [
+      13.8,
+      985.0,
+      -17.2,
+      0
      ],
      [
       14,
       975,
-      -40
+      -40,
+      0
      ]
     ],
-    "why": "(b) the strip's outer line in the groin crease: the inguinal crease's lower course (rays from the front: the concave minimum per height) and the perineum's lateral edge (rays from below: where the flat perineum, y 983-992, drops onto the inner thigh: x 21 at z 0, 17 at z -20, 14 at z -40), [x, y, z] mm, between R0[m] and the fold's inner end R0[K - m]; (a) m = 3 quads a side: the strip's front edge (F row 0's first m edges, ~10.5 mm) reaches the crease's top (x ~32 of 40) and the perineum (15-17 mm a side) keeps ~5 mm across; the stopgap crotch_half_width is retired"
-   }
+    "why": "(b) the strip's outer line in the groin crease: the reference's own crease edges (hm08 vertices, dihedral 40-78 deg: (29.6, 1007, 20.9) (25.5, 999.3, 12.7) (22.2, 993.8, 3.8) (19.3, 989.3, -5.6) (13.8, 985, -17.2)) then the perineum's lateral edge (rays from below: where the flat perineum drops onto the inner thigh, x 14 at z -40), [x, y, z, h] mm, between R0[m] and the fold's inner end R0[K - m]; (a) m = 3 quads a side: the strip's front edge (F row 0's first m edges, ~10.5 mm) reaches toward the crease's top and the perineum (15-17 mm a side) keeps ~5 mm across; the stopgap crotch_half_width is retired",
+    "fracs": [
+     0.45,
+     0.8
+    ],
+    "why_fracs": "(a) the strip's two inner lines at 0.45 and 0.8 of the way from the midline to the outer line: the outer one the crease's support loop on the strip side (3-6 mm from the crease)",
+    "hold": true,
+    "why_offset": "(b) the reference's crease is a polygon edge at its lower course (hm08 dihedral 77.6 deg (19.3, 989.3, -5.6)-(22.2, 993.8, 3.8) and 75.5 deg on to (25.5, 999.3, 12.7); <= 48 deg elsewhere on the groin and perineum): a loop on that edge carries the whole turn, so there (h > 0, mm, interpolated along the line, 0 at its ends) the outer line steps h onto the perineum and the thigh's first ring h down the inner thigh's face, both held through the relax (hold): the edge lies mid-quad, its turn shared by two edges (close: crotch and groin folds 74 -> under 40 deg; h 3.5-4 measured clean, 3 and 4.5 not)"
+   },
+   "thigh_band_y": 0.8,
+   "why_thigh_band": "(a) the judge (pass 3b item 4): the thigh's reduction band (the kite strips, centred here) at the inner mid-thigh, y 780-820, clear of the hip zone's 40 mm and of the knee's bend zone (from y ~725); thigh_band_strips: the curve root's longer ring (~94 points close) leaves ~23 kites to the knee's 50, 4 strips keep them under 6 a strip inside the hidden sector",
+   "thigh_band_strips": 4,
+   "lobe_support_step": 0.5,
+   "why_lobe_support": "(a) the judge's support loop for the buttock: the lobe's row 1 at half a row's spacing over the gluteal fold (row 0), so the fold reads as a crease"
   }
  },
  "breast": {

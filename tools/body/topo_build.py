@@ -773,16 +773,25 @@ def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
     root ring is R0[m..K-m] and the outer line back to the front."""
     cp = plan["hip"]["root"]["crotch"]
     m = int(cp["m"])
-    q, _ = ref.project(ks, np.array(cp["line"], float) / 1000.0)
+    ln = np.array(cp["line"], float)
+    q, _ = ref.project(ks, ln[:, :3] / 1000.0)
     P = np.vstack([V[R0[m]], q, V[R0[K - m]]])
+    off = np.concatenate([[0.0], ln[:, 3] / 1000.0, [0.0]])
     a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(P, axis=0), axis=1))])
     f = g / g[-1]
     O = np.stack([np.interp(f * a[-1], a, P[:, k]) for k in range(3)], 1)
     O[1:-1] = ref.project(ks, O[1:-1])[0]
+    d = Mx[1:-1] - O[1:-1]                           # the crease's sharp edge mid-quad: the outer line h onto
+    d = d / np.linalg.norm(d, axis=1)[:, None]       # the perineum, the thigh's first ring h down the thigh
+    o_ = np.interp(f[1:-1] * a[-1], a, off)[:, None]
+    Oc = O[1:-1].copy()
+    O[1:-1] = ref.project(ks, Oc + o_ * d)[0]
+    T1 = ref.project(ks, Oc - o_ * np.array([0, 1.0, 0]))[0]       # down the inner thigh's face
     lines = [mid]
     for k in range(1, m + 1):
         if k < m:
-            X = ref.project(ks, (1 - k / m) * Mx[1:-1] + (k / m) * O[1:-1])[0]
+            fk = cp["fracs"][k - 1]
+            X = ref.project(ks, (1 - fk) * Mx[1:-1] + fk * O[1:-1])[0]
         else:
             X = O[1:-1]
         lines.append(np.concatenate([[R0[k]], M.add(X, "crotch", k, 1, FREE, REG["pelvis_glutes"], tuple(ks)),
@@ -793,6 +802,10 @@ def crotch_curve(M, ref, plan, R0, K, V, Mx, g, mid, ks, b, C, sl):
             M.quad(A[i], A[i + 1], B_[i + 1], B_[i], REG["pelvis_glutes"], "crotch")
     lat = lines[-1]
     root = np.concatenate([R0[m:K - m + 1], lat[1:-1][::-1]])
+    if cp.get("hold"):                               # the sharp crease's two loops hold their places (relax evens)
+        lo_ = np.where(np.interp(f[1:-1] * a[-1], a, off) > 0)[0]
+        M.hold = getattr(M, "hold", set()) | set(int(lat[1:-1][j]) for j in lo_)
+        C["crotch_hold_cols"] = {len(root) - 1 - int(j): T1[j] for j in lo_}
     C["b"] = int(b)
     C["crotch_m"] = m
     C["N_leg"] = int(len(root))
@@ -831,7 +844,8 @@ def hip_root(cv, plan, TH, BB):
     Bth = np.concatenate([[BB], bth[o]])
     Bt = np.concatenate([[tB0], bt[o]])
     cut = np.where(TH <= BB, tFS, np.interp(TH, Bth, Bt))
-    return {"tFS": tFS, "Bth": Bth, "Bt": Bt, "miter": 1, "cut": cut, "BB": BB, "t_side": tB0}
+    return {"tFS": tFS, "Bth": Bth, "Bt": Bt, "miter": 1, "cut": cut, "BB": BB, "t_side": tB0,
+            "support_step": hr.get("lobe_support_step", 0.0)}
 
 
 def relabel_hip(ref, cv, TH, cut):
@@ -878,6 +892,8 @@ def hip_lobe(M, cv, L, tp, C, hr, top_ids, i_reg):
     n_L = max(2, int(round(max(cols) / s)))
     nB = len(top_ids) - 1
     v = np.linspace(0, 1, n_L + 1)
+    if hr.get("support_step"):                        # the fold's support loop: row 1 close over the fold
+        v = np.concatenate([[0.0], hr["support_step"] / n_L + np.linspace(0, 1, n_L) * (1 - hr["support_step"] / n_L)])
     ub = np.linspace(0, 1, nB + 1)                                  # the fold's columns: even arc length
     ut = arc_fracs(V[top_ids])                                      # the top's own
     def on(th_, t_, a, f):
@@ -1022,7 +1038,7 @@ def blend_plan(ref, ks, R, stations, frames, phi, sense, w_even, warp):
     raise RuntimeError("no planar station fits the root's blend")
 
 
-def blend_rings(ref, ks, R, X, nb, ns=24, iters=3):
+def blend_rings(ref, ks, R, X, nb, s1=0.0, ns=24, iters=3):
     """nb rings between the warped root R and the planar ring X, column by column: each column a surface curve (the
     chord's points pulled onto the reference, then re-pulled from their neighbours' mean: the crotch's saddle turns
     the thigh's surface past the root, where rays from the axis would exit early), sampled at even arc length."""
@@ -1036,7 +1052,8 @@ def blend_rings(ref, ks, R, X, nb, ns=24, iters=3):
     out = np.zeros((nb, len(R), 3))
     for j in range(len(R)):
         a = np.concatenate([[0], np.cumsum(np.linalg.norm(np.diff(H[:, j], axis=0), axis=1))])
-        g = np.arange(1, nb + 1) / (nb + 1) * a[-1]
+        h1 = min(s1, a[-1] / (nb + 1)) if s1 > 0 else a[-1] / (nb + 1)    # the support loop's step, then even
+        g = h1 + np.arange(nb) / max(nb, 1) * (a[-1] - h1) if nb else np.zeros(0)
         out[:, j] = np.stack([np.interp(g, a, H[:, j, q]) for q in range(3)], 1)
     return out
 
@@ -1077,9 +1094,13 @@ def tube(M, ref, ks, top, stations, rim, hidden, C, name, n_rim_blend=5, w_even=
         if k < kb:
             continue
         if k == kb:                                  # the root's blend rings, then this planar ring
-            Bx = blend_rings(ref, ks, V[ids0], Xb, nbl)
+            Bx = blend_rings(ref, ks, V[ids0], Xb, nbl, warp.get("support_step", 0.0) * warp["s"])
             for i in range(nbl):
                 bid = M.add(Bx[i], part, i + 1, 0, FREE, reg, tuple(ks))
+                if i == 0 and C.get("crotch_hold_cols") and name == "leg":
+                    for j, x in C["crotch_hold_cols"].items():
+                        M.V[bid[j]] = x
+                    M.hold = M.hold | set(int(bid[j]) for j in C["crotch_hold_cols"])
                 M.strip(rings[-1], bid, reg, part, closed=True)
                 rings.append(bid)
             ids = M.add(Xb, part, k + koff, 0, FREE, reg, tuple(ks))
@@ -1203,7 +1224,7 @@ def slerp_n(a, b, w):
 
 
 def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end, part_reg, bands, ref=None, ks=None,
-                  u_hold=0.0):
+                  u_hold=0.0, band_u=None):
     """Stations of a two-segment limb: root (c0, n0) -> joint J -> end (the template rim's centre / normal).
     Spacing: tp limb_spacing, bend_spacing (s_b) inside the joint's bend zone (+-bend). The joint (a, pass 3): the
     crease ring C on the bisector, and either side of it one ring P / D on a plane turned about the hinge so that
@@ -1266,8 +1287,9 @@ def limb_stations(c0, n0, J, d_in, d_out, c_end, n_end, jp, tp, N0, N_mid, N_end
         r_tot = (Nf - Nt) // 2
         if r_tot <= 0:
             continue
-        nstr = int(min(bands["strips"], max(1, r_tot // bands["min_per_strip"])))
-        uc = ua + bands["at"] * (ub - ua)
+        n_s = bands.get("strips_upper", bands["strips"]) if ua == 0 else bands["strips"]
+        nstr = int(min(n_s, max(1, r_tot // bands["min_per_strip"])))
+        uc = ua + bands["at"] * (ub - ua) if (band_u is None or ua > 0) else band_u
         kc = int(np.argmin(np.abs(u_all - uc)))
         ksel = [kc + 2 * (q - (nstr - 1) // 2) for q in range(nstr)]
         per = [r_tot // nstr + (1 if q < r_tot % nstr else 0) for q in range(nstr)]
@@ -1372,6 +1394,8 @@ def relax(ref, M, VF, QF, src, n_left, iters, lam):
     deg = np.asarray(A.sum(1)).ravel()
     flag = np.array(M.flag)
     mov = np.where(np.isin(flag, [FREE, MID, PLANE]) & (deg[:n_left] > 0))[0]
+    if getattr(M, "hold", None):                     # (pass 3b) crease lines and their support loops keep their places
+        mov = np.setdiff1d(mov, np.array(sorted(M.hold)))
     deg = np.maximum(deg, 1)
     mid = np.intersect1d(np.where(flag == MID)[0], mov)
     pl = np.intersect1d(np.where(flag == PLANE)[0], mov)
@@ -1610,7 +1634,7 @@ def build(plan, tier, ref, cv, L):
         nl = nl if nl @ d_in < 0 else -nl
         warp = dict(plan["hip"]["root"]["blend"], s=tp["limb_spacing"])
     c_lg = L["hip"] + ((p - L["hip"]) @ nl) / (d_in @ nl) * d_in
-    u_hold = 0.0
+    u_hold, band_u, lg_bands = 0.0, None, tp["bands"]
     if warp is not None:                             # the blend's end estimated on the plane's normal: hold to it
         dj = (Rr - c_lg) @ -nl
         lo, hi = warp["step_lo"] * warp["s"], warp["step_hi"] * warp["s"]
@@ -1619,13 +1643,15 @@ def build(plan, tier, ref, cv, L):
             if g.min() > 0 and g.min() / np.ceil(g.max() / hi) >= lo:
                 break
         u_hold = float(u) + 2 * tp["limb_spacing"]
+        band_u = (c_lg[1] - plan["hip"]["root"]["thigh_band_y"]) / -d_in[1]
+        lg_bands = dict(tp["bands"], strips_upper=plan["hip"]["root"]["thigh_band_strips"])
     kl = [TRUNK, LEG, FOOT]
     circ = circ_len(ref, kl, J, U(d_in + d_out), np.array([0, 0, 1.0]))
     N_kn = int(np.clip(to_parity(circ / tp["ring_spacing"], C["N_leg"]), 22, C["N_leg"]))
     jp = dict(lim["knee"], **tp["knee"])
     st, joints["knee"] = limb_stations(c_lg, -nl, J, d_in, d_out, fc, fn, jp, tp, C["N_leg"], N_kn, 22,
                                        part_reg_fn(("thigh", "knee", "shin"), (REG["thighs"], REG["lower_legs"])),
-                                       tp["bands"], ref, kl, u_hold)
+                                       lg_bands, ref, kl, u_hold, band_u)
     tube(M, ref, kl, (cr["root"], c_lg, -nl, np.array([0, 0, 1.0])), st, (fid, fc, fn), hidden, C, "leg",
          joint=joints["knee"], warp=warp)
     C.update({"N_el": N_el, "N_kn": N_kn})
