@@ -62,7 +62,7 @@ from scipy.spatial import cKDTree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-VERSION = "uv1"
+VERSION = "uv2"   # (uv2: the right quads split on their left mirror's diagonal, mirror_diag)
 ISL = ["TORSO_FRONT", "TORSO_BACK", "ARM", "LEG", "HAND_BACK", "HAND_PALM", "FOOT_TOP", "FOOT_SOLE", "TOES_TOP", "TOES_SOLE", "THUMB_BACK", "THUMB_PALM"]
 DENS_KEY = {"TORSO_FRONT": "body", "TORSO_BACK": "body", "ARM": "body", "LEG": "body", "HAND_BACK": "hands", "HAND_PALM": "hands",
             "FOOT_TOP": "feet", "FOOT_SOLE": "feet", "TOES_TOP": "feet", "TOES_SOLE": "feet",
@@ -99,19 +99,72 @@ def vertex_normals(V, Q):
     return U(n)
 
 
-def quad_diag(V, Q):
+def quad_diag(V, Q, mirror_of=None, side=None):
     """(E2) per quad, True where it splits along 1-3 (else 0-2). (a) A concave or folded quad (its two splits' areas
     more than 2% apart) takes the diagonal whose triangles cover the least area: the outside diagonal folds the two
     triangles over each other (the nape's thin kite at the center line flipped in UV and stretched 21x on 0-2).
     Otherwise the shorter diagonal (the better-shaped pair: the measured best of min-area, shorter, max-min-angle on
-    the toes, palm and torso). Fixed per topology from its reference V, so every body on it splits the same way."""
+    the toes, palm and torso). Fixed per topology from its reference V, so every body on it splits the same way.
+    mirror_of and side given (the topology's): the right quads take their left mirror's diagonal (mirror_diag)."""
     P = V[Q]
 
     def ar(a, b, c):
         return 0.5 * np.linalg.norm(np.cross(P[:, b] - P[:, a], P[:, c] - P[:, a]), axis=1)
     a02, a13 = ar(0, 1, 2) + ar(0, 2, 3), ar(1, 2, 3) + ar(1, 3, 0)
     short13 = np.linalg.norm(P[:, 3] - P[:, 1], axis=1) < np.linalg.norm(P[:, 2] - P[:, 0], axis=1)
-    return np.where(np.abs(a13 - a02) > 0.02 * a02, a13 < a02, short13)
+    dg = np.where(np.abs(a13 - a02) > 0.02 * a02, a13 < a02, short13)
+    return dg if mirror_of is None else mirror_diag(Q, dg, mirror_of, side)
+
+
+def mirror_map(mirror_of):
+    """Each vertex's mirror (mirror_of: the right (x < 0) vertex's left one, -1 elsewhere; the center its own)."""
+    M = np.arange(len(mirror_of))
+    r = np.nonzero(mirror_of >= 0)[0]
+    M[r] = mirror_of[r]
+    M[mirror_of[r]] = r
+    return M
+
+
+def mirror_quads(Q, mirror_of):
+    """Each quad's mirror quad (the same corner set mirrored; -1 where none)."""
+    M = mirror_map(mirror_of)
+    key = {tuple(k): i for i, k in enumerate(np.sort(Q, 1).tolist())}
+    return np.array([key.get(tuple(k), -1) for k in np.sort(M[Q], 1).tolist()], np.int64), M
+
+
+def diag_pairs(Q, dg):
+    """Each quad's split diagonal as its two vertices (sorted)."""
+    return np.sort(np.where(dg[:, None], Q[:, [1, 3]], Q[:, [0, 2]]), 1)
+
+
+def mirror_diag(Q, dg, mirror_of, side):
+    """(P1 D2) The right quads (no corner on the left, side 1) take the diagonal of their left mirror: the split is
+    the left's chosen by quad_diag's rules, then mirrored, so the two halves triangulate as one mirror image (D2: every
+    right quad sat on the other diagonal from its mirror, hidden by smooth shading, seen in any faceted or deforming
+    view). Derivation: (c) the left's rules (quad_diag) inherited through the mirror; (a) a mirrored body shades and
+    bends the same on both sides."""
+    mq, M = mirror_quads(Q, mirror_of)
+    right = (side[Q].max(1) < 1) & (mq >= 0) & (mq != np.arange(len(Q)))
+    want = np.sort(M[diag_pairs(Q[mq[right]], dg[mq[right]])], 1)
+    on13 = (want == np.sort(Q[right][:, [1, 3]], 1)).all(1)
+    on02 = (want == np.sort(Q[right][:, [0, 2]], 1)).all(1)
+    assert (on13 | on02).all(), "a mirror quad's diagonal is not one of the quad's"
+    out = dg.copy()
+    out[right] = on13
+    return out
+
+
+def mirror_share(z, T, src):
+    """The share of mirrored quads (right quads with a left mirror) whose triangles' shared edge, mirrored, is the
+    mirror quad's (T: quad_tris order, rows t and t + nq quad t; src: glb vertex -> topology vertex). 1.0 = mirrored."""
+    Q = z["Q"]
+    nq = len(Q)
+    a, b = src[T[:nq]], src[T[nq:]]
+    shared = np.sort(np.array([sorted(set(x) & set(y)) for x, y in zip(a.tolist(), b.tolist())], np.int64), 1)
+    mq, M = mirror_quads(Q, z["mirror_of"])
+    right = (z["side"][Q].max(1) < 1) & (mq >= 0) & (mq != np.arange(nq))
+    ok = (np.sort(M[shared[mq[right]]], 1) == shared[right]).all(1)
+    return {"mirrored_quads": int(right.sum()), "share": round(float(ok.mean()), 6) if right.any() else 1.0}
 
 
 def quad_tris(C, diag):
@@ -999,7 +1052,7 @@ def assemble(z, cls, cv, nc, UVc, isl, left):
     assert (corner >= 0).all() and (src[corner] == Q).all(), "a corner's glb vertex is not its topology vertex"
     is_right = np.zeros(nxt, bool)
     is_right[gl_right] = True
-    T = quad_tris(corner, quad_diag(z["V"].astype(float), Q))
+    T = quad_tris(corner, quad_diag(z["V"].astype(float), Q, z["mirror_of"], z["side"]))
     gUV = UV.copy()
     gUV[:, 1] = 1.0 - gUV[:, 1]                       # glTF: v down (our math frame: y up)
     return {"src": src, "UV": gUV, "uv_math": UV, "corner": corner, "T": T, "is_right": is_right,
