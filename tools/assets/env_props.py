@@ -1614,9 +1614,13 @@ def fallen(parts, rng, n, xs, side_z, D, ch, bl, stone, at=Matrix.Identity(4), f
                               at @ T(x + rng(-0.6, 0.6), s * 0.2, z + rng(-0.4, 0.4)) @ R('Y', rng(0, 6.28)), cap='stone', jitter=0.0))
 
 
-def profile_fn(pts, H, rng, jag=0.0):
-    """keep(x) from [x, h-fraction] points (linear), a little ragged."""
+def profile_fn(pts, H, rng, jag=0.0, x0=None, L=None):
+    """keep(x) from [x, h-fraction] points (linear), a little ragged. (P9 set) x0, L: the points' x are fractions of the
+    piece's length (x measured from x0 over L), not metres."""
     def keep(x):
+        xj = x
+        if L is not None:
+            x = (x - x0) / L
         if x <= pts[0][0]:
             h = pts[0][1]
         elif x >= pts[-1][0]:
@@ -1626,7 +1630,7 @@ def profile_fn(pts, H, rng, jag=0.0):
                 if xa <= x <= xb:
                     h = ha + (hb - ha) * (x - xa) / max(xb - xa, 1e-6)
                     break
-        return H * h + jag * math.sin(x * 7.3 + 1.1)
+        return H * h + jag * math.sin(xj * 7.3 + 1.1)
     return keep
 
 
@@ -1638,7 +1642,7 @@ def wall(p):
     x0 = p.get('x0', -L / 2)
     stone, mortar = hexlin(p['stone']), hexlin(p['mortar'])
     parts = []
-    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05))
+    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05), *((x0, L) if p.get('top_frac') else ()))
     wall_parts(parts, rng, L, H, D, p.get('course', 0.44), p.get('block', 0.82), stone, mortar, keep, x0,
                crack=p.get('crack') and (x0 + p['crack'][0] * L, x0 + p['crack'][1] * L))
     fallen_heap(parts, rng, keep, x0, L, p.get('side', 1), D, p.get('course', 0.44), p.get('block', 0.82), stone,
@@ -4441,8 +4445,8 @@ def door(p):
         pa, pb = (cx + r_ * math.cos(a0), cy + r_ * math.sin(a0)), (cx + r_ * math.cos(a1), cy + r_ * math.sin(a1))
         face_toward(sg, [(pa[0], pa[1], zf), (pb[0], pb[1], zf), (pb[0], pb[1], zf - ds + 0.002), (pa[0], pa[1], zf - ds + 0.002)],
                     (cx - (pa[0] + pb[0]) / 2, cy - (pa[1] + pb[1]) / 2, 0))
-    MOVES.append(('vaultsigil', [Part(sg, 'stone', stone * 4, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
-    MOVE_MAT['vaultsigil'] = 'dial'
+    MOVES.append(('vaultdoor_sigil', [Part(sg, 'stone', stone * 4, Matrix.Identity(4), cap='stone', jitter=0.0)], (0.0, -4.8, 0.0)))
+    MOVE_MAT['vaultdoor_sigil'] = 'dial'
     return parts
 
 
@@ -4487,7 +4491,7 @@ def facade(p):
     x0 = -L / 2
     dw, dh = p.get('door_w', 1.75), p.get('door_h', 4.75)
     parts = []
-    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05))
+    keep = profile_fn(p['top'], H, rng, p.get('old', {}).get('jag_top', 0.05), x0, L)
     wall_parts(parts, rng, L, H, D, ch, bl, stone, mortar, keep, x0, holes=[(-dw, dw, 0.0, dh)])
     unit = p.get('unit', 1.0 / 0.85)
     for xa in (x0, L / 2 - 8.0):
@@ -4504,58 +4508,128 @@ def facade(p):
     return parts
 
 
+def break_ends(bm, L, ends, rng, depth=(0.06, 0.28), tilt=0.45):
+    """(P9 set) A piece lying along x (length L, centred): its ends broken off along rough planes (as broken_block's
+    fractures: each cut filled, poked, its rim roughened). ends: the signs (-1, +1) of the ends to break."""
+    for sgn in ends:
+        n = Vector((sgn, rng(-tilt, tilt), rng(-tilt, tilt))).normalized()
+        co = Vector((sgn * (L / 2 - rng(*depth)), 0, 0))
+        res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=co, plane_no=n, clear_outer=True)
+        ce = [e for e in res['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
+        if not ce:
+            continue
+        fill = bmesh.ops.holes_fill(bm, edges=ce, sides=0)['faces']
+        for v in {v for f in fill for v in f.verts}:
+            v.co += n * rng(-0.03, 0.03)
+        if fill:
+            for v in bmesh.ops.poke(bm, faces=fill)['verts']:
+                v.co += n * rng(-0.09, 0.05)
+    bm.normal_update()
+
+
+def knock_corner(bm, corner, size, rng):
+    """(P9 set) A corner knocked off: a plane cut across it `size` in, filled, poked."""
+    n = Vector(corner).normalized()
+    res = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=Vector(corner) - n * size, plane_no=n, clear_outer=True)
+    ce = [e for e in res['geom_cut'] if isinstance(e, bmesh.types.BMEdge)]
+    if ce:
+        fill = bmesh.ops.holes_fill(bm, edges=ce, sides=0)['faces']
+        for v in bmesh.ops.poke(bm, faces=fill)['verts']:
+            v.co += n * rng(-0.03, 0.02)
+    bm.normal_update()
+
+
+def profile_bar(pts, L, rng, bevel=0.012, jag=0.004):
+    """(P9 set) A bar along x, centred, of the section pts (z, y): an outline extruded the length L, its arrises beveled and
+    jittered (hand-cut). Built in the game frame (x along it, y up, z the section's first coordinate)."""
+    bm = prism([(z, y) for z, y in pts], L, bevel=bevel)
+    # prism: outline (u, y) about z = 0, depth along local z: turn it so u -> world z, depth -> world x
+    m = basis(Vector((0, 0, 1)), Vector((0, 1, 0)), Vector((-1, 0, 0)))
+    bm.transform(m)
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += Vector((rng(-jag, jag), rng(-jag, jag), rng(-jag, jag)))
+    return bm
+
+
 def beam(p):
-    """(P9 set) A fallen stone architrave lying along x: two broken pieces (the second tilted, its high end on a
-    chunk), rough ends, chips about. Within x +-2.1, z +-0.6, its top under 0.85 (the cover Vault.Cover's beams)."""
+    """(P9 set) A fallen Roman architrave lying along x: two broken pieces, each a rectangular section 0.7 high, 0.75 deep
+    with three stepped fascia bands on its +z face under a crowning moulding, the ends broken rough, the second tilted
+    with its high end on a chunk, chunks about. Within x +-2.1, z +-0.6, its top under 0.85 (the beams of Vault.Cover)."""
     rng = Rng(p['seed'])
     stone = hexlin(p['stone'])
     parts = []
-    H, Dp = 0.7, 0.75
-    b1 = broken_block(2.3, H, Dp, rng, cuts=2, chip=0.9)
-    parts.append(Part(b1, 'stone', stone * 0.95, bedded(b1, T(-0.93, H / 2, -0.06) @ R('Y', rng(-0.06, 0.06)), 0.03), cap='stone', jitter=0.0))
-    b2 = broken_block(1.9, H, Dp, rng, cuts=2, chip=0.9)
-    parts.append(Part(b2, 'stone', stone * 0.9, bedded(b2, T(1.13, H / 2, 0.1) @ R('Y', rng(-0.05, 0.05)) @ R('Z', math.radians(8)), 0.14), cap='stone', jitter=0.0))
+    # section (z, y), z back to front: back plain; the front stepped fascias (each band proud of the one below), a cornice on top
+    sec = [(-0.375, 0.0), (0.26, 0.0), (0.26, 0.21), (0.30, 0.21), (0.30, 0.40), (0.335, 0.40), (0.335, 0.58), (0.375, 0.58), (0.375, 0.70), (-0.375, 0.70)]
+    for (L, x, z, yaw, rz, sink, ends, tint) in ((2.3, -0.93, -0.06, rng(-0.06, 0.06), 0.0, 0.03, (-1, 1), 0.95),
+                                                  (1.9, 1.13, 0.1, rng(-0.05, 0.05), math.radians(8), 0.14, (-1, 1), 0.9)):
+        bm = profile_bar(sec, L, rng)
+        bmesh.ops.translate(bm, vec=(0, -0.35, 0), verts=bm.verts)
+        break_ends(bm, L, ends, rng)
+        parts.append(Part(bm, 'stone', stone * tint, bedded(bm, T(x, 0.35, z) @ R('Y', yaw) @ R('Z', rz), sink), cap='stone', jitter=0.0))
     for (x, z, s) in ((1.75, 0.0, 0.3), (-0.35, 0.42, 0.18), (0.45, -0.42, 0.16), (-1.6, -0.42, 0.14)):
-        cb = chunk(s, rng)
+        cb = broken_block(s * 1.1, s * 0.8, s, rng, cuts=1, chip=0.9, bevel=0.012)
         parts.append(Part(cb, 'stone', stone * rng(0.75, 0.95), bedded(cb, T(x, 0, z) @ R('Y', rng(0, 6.28)), s * 0.12 if s < 0.25 else -0.04), cap='stone', jitter=0.0))
     return parts
 
 
+def gable_lid(L, rng, ends=(), corner=None):
+    """(P9 set) A low gabled sarcophagus lid L x 1.05 x 0.14 (eaves 0.06, ridge 0.14), stub acroteria on its four corners
+    (added by the caller), broken at `ends` or a corner knocked off."""
+    bm = profile_bar([(-0.525, 0.0), (0.525, 0.0), (0.525, 0.06), (0.0, 0.14), (-0.525, 0.06)], L, rng, bevel=0.01, jag=0.003)
+    bmesh.ops.translate(bm, vec=(0, -0.07, 0), verts=bm.verts)
+    if ends:
+        break_ends(bm, L, ends, rng, depth=(0.03, 0.14), tilt=0.5)
+    if corner:
+        knock_corner(bm, corner, 0.3, rng)
+    return bm
+
+
 def sarcophagus(p):
-    """(P9 set) A stone sarcophagus: a plinth, a chest with three inset panels on each long face (a frame standing proud
-    of a recessed field), the lid. (a) the lid slid off askew and turned, a corner broken off; (b) the lid down beside
-    it at +z, broken in two. Within x +-1.3, z +-0.6 (the lid to 0.75), top 1.05 (Vault.Cover's sarcophagi)."""
+    """(P9 set) A stone sarcophagus: a plinth with a moulded base course, a chest with a moulded rim along its top edge and
+    three inset panels on each long face (a frame proud of a recessed field), a low gabled lid with stub corner
+    acroteria. (a) the lid slid off askew and turned, a corner broken off; (b) the lid down at +z, broken in two.
+    Within x +-1.3, z +-0.6 (the lid to 0.75), top 1.05 (the sarcophagi of Vault.Cover)."""
     rng = Rng(p['seed'])
     stone = hexlin(p['stone'])
     parts = []
     PL, PH, PD, CL, CH, CD, LH = 2.5, 0.12, 1.15, 2.3, 0.80, 1.0, 0.14
     root = T(0, -0.02, 0)
-    sblock(parts, (PL, PH, PD), root @ T(0, PH / 2, 0), stone * 0.88, rng, chip=0.4, drop=('-y',))
-    sblock(parts, (CL, CH, CD - 0.06), root @ T(0, PH + CH / 2, 0), stone, rng, chip=0.2, drop=('-y',))
+    sblock(parts, (PL, PH, PD), root @ T(0, PH / 2, 0), stone * 0.88, rng, chip=0.4, drop=('-y',), bevel=0.02)
+    sblock(parts, (CL + 0.08, 0.07, CD + 0.06), root @ T(0, PH + 0.035, 0), stone * 0.95, rng, chip=0.2, jag=0.004, bevel=0.015)       # the base moulding
+    sblock(parts, (CL, CH - 0.07, CD - 0.06), root @ T(0, PH + 0.07 + (CH - 0.07) / 2, 0), stone, rng, chip=0.2, drop=('-y',))
+    sblock(parts, (CL + 0.07, 0.04, CD + 0.05), root @ T(0, PH + CH - 0.09, 0), stone * 1.04, rng, chip=0.1, jag=0.004, bevel=0.01)  # the rim: a fillet
+    sblock(parts, (CL + 0.1, 0.07, CD + 0.1), root @ T(0, PH + CH - 0.035, 0), stone * 1.06, rng, chip=0.25, jag=0.004, bevel=0.015)  # and the cornice over it
     for sz in (-1, 1):
-        for y in (PH + 0.06, PH + CH - 0.06):
-            sblock(parts, (CL, 0.12, 0.04), root @ T(0, y, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
+        for y in (PH + 0.12, PH + CH - 0.21):
+            sblock(parts, (CL, 0.1, 0.04), root @ T(0, y, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
         x = -CL / 2
         for i in range(4):
-            sblock(parts, (0.14, CH - 0.2, 0.04), root @ T(x + 0.07, PH + CH / 2, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
+            sblock(parts, (0.14, CH - 0.4, 0.04), root @ T(x + 0.07, PH + CH / 2 - 0.02, sz * (CD / 2 - 0.03)), stone * 1.02, rng, chip=0.1, jag=0.004)
             x += 0.14 + (CL - 0.56) / 3
-    ly = PH + CH + LH / 2
+    ytop = PH + CH
+
+    def lid_parts(bm, at, tint, acro=True, L=2.35):
+        parts.append(Part(bm, 'stone', stone * tint, at, cap='stone', jitter=0.0))
+        if acro:
+            for sx in (-1, 1):
+                for sz in (-1, 1):
+                    parts.append(Part(stone_block(0.14, 0.09, 0.14, rng, bevel=0.012, chip=0.2), 'stone', stone * tint * 1.03,
+                                      at @ T(sx * (L / 2 - 0.1), 0.065 + 0.045 - 0.07 + 0.0, sz * 0.43), cap='stone', jitter=0.0))
     if p.get('lid') == 'off':
         sx, sz = p.get('slide', [0.07, 0.085])
-        lid = broken_block(2.35, LH, 1.05, rng, cuts=1, chip=0.9)
-        parts.append(Part(lid, 'stone', stone * 0.97, root @ T(sx, ly, sz) @ R('Y', math.radians(7)), cap='stone', jitter=0.0))
-        fr = chunk(0.2, rng)
+        lid_parts(gable_lid(2.35, rng, corner=(1.175, 0.07, 0.525)), root @ T(sx, ytop + LH / 2 - 0.03, sz) @ R('Y', math.radians(7)), 0.97)
+        fr = broken_block(0.22, 0.12, 0.18, rng, cuts=1, chip=0.9, bevel=0.01)
         parts.append(Part(fr, 'stone', stone * 0.85, bedded(fr, T(0.95, 0, 0.55) @ R('Y', 0.7), 0.04), cap='stone', jitter=0.0))
-    else:
-        sblock(parts, (2.35, LH, 1.05), root @ T(0, ly, 0), stone * 0.97, rng, chip=0.3)
-    if p.get('lid') == 'floor':
-        # the lid down at +z, broken in two across: halves lying flat, the break rough, a spall or two
-        for sgn, (cx, ln) in ((-1, (-0.62, 1.15)), (1, (0.62, 1.15))):
-            hb = broken_block(ln, LH, 1.05, rng, cuts=1, chip=0.9)
-            parts.append(Part(hb, 'stone', stone * 0.95, bedded(hb, T(cx + sgn * 0.04, 0, 0.5 + 0.1 + 0.53) @ R('Y', math.radians(sgn * 4 + 3)), 0.02), cap='stone', jitter=0.0))
+    elif p.get('lid') == 'floor':
+        for sgn in (-1, 1):
+            hb = gable_lid(1.17, rng, ends=(-sgn,))
+            lid_parts(hb, bedded(hb, T(sgn * 0.64, 0, 0.5 + 0.1 + 0.53) @ R('Y', math.radians(sgn * 4 + 3)), 0.02), 0.95, acro=False)
         for xx in (-0.1, 0.1):
             sp = gravel(0.12, rng)
             parts.append(Part(sp, 'stone', stone * 0.8, bedded(sp, T(xx, 0, 1.4) @ R('Y', rng(0, 6)), 0.02), cap='stone', jitter=0.0))
+    else:
+        lid_parts(gable_lid(2.35, rng), root @ T(0, ytop + LH / 2 - 0.03, 0), 0.97)
     return parts
 
 

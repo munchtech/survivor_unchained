@@ -42,11 +42,13 @@ public sealed class VaultOpened : StoryFight
             new("hall", Band(6.5, -20.5)),
             // The head of the stair: a landing 30 m wide before the stair's mouth in the north wall.
             new("stair", Band(-19.5, -38, 12)),
+            new("court", Band(40.5, 21.5, 11)),
         ],
         Gates =
         [
             new("south", -11, 6, 11, 6, "hall"),
             new("hall", -11, -20, 11, -20, "stair"),
+            new("door", -11, 22, 11, 22, "south"),
         ],
         Points = new()
         {
@@ -55,6 +57,13 @@ public sealed class VaultOpened : StoryFight
             ["hall_in"] = (0, 4), ["hall_w"] = (-8.5, -6), ["hall_e"] = (8.5, -6), ["scorpion"] = (0, -17.5),
             ["std_a"] = (-6, 0), ["std_b"] = (6, -7), ["std_c"] = (0, -14), ["signifer"] = (0, -16),
             ["boss_start"] = (0, -22.5), ["landing"] = (0, -29), ["boss_at"] = (0, -33), ["stair"] = (0, -37),
+            ["court_in"] = (0, 37), ["corvane"] = (0, 25),
+            // (P9 set) Down the stair (out of bounds; for the films): the ranks' treads, every third step from
+            // the third, a hand in from each riser (Maps/Arenas/Vault.cs: the ground is cut to the treads), and
+            // Jessop far down, on the 23rd.
+            ["stair_1"] = (0, -40.36), ["stair_2"] = (0, -42.22), ["stair_3"] = (0, -44.08), ["stair_4"] = (0, -45.94),
+            ["stair_5"] = (0, -47.80), ["stair_6"] = (0, -49.66), ["stair_7"] = (0, -51.52), ["stair_8"] = (0, -53.38),
+            ["jessop"] = (0.6, -52.76),
         },
     };
 
@@ -66,7 +75,17 @@ public sealed class VaultOpened : StoryFight
     ];
 
     public override StoryPlace Place => Ground;
-    public override string Arrive => "start";
+    /// <summary>Arena art built it (Maps/Arenas/Vault.cs).</summary>
+    public override bool PlaceBuilt => true;
+    /// <summary>The door's gate opens: the door is sunk and its sigil awake (as c13_door leaves them; at once in
+    /// play, so a night begun past the court has it so too).</summary>
+    public override void Opened(IStoryArena a, string gate)
+    {
+        if (gate != "door") return;
+        a.Shift("vaultsigil", 1);
+        a.Shift("vaultdoor", 1);
+    }
+    public override string Arrive => "court_in";
     public override Func<StoryBeat>[] Beats => [() => new SouthEnd(), () => new HallLength(), () => new Standards()];
     public override string Pull => "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step.";
     public override string[] Between =>
@@ -90,12 +109,11 @@ public sealed class VaultOpened : StoryFight
         foreach (var (x, z, hw, hd, beam) in Cover)
         {
             a.B.Collision.AddBox(x, z, hw, hd, 0, new ColliderOpts(Tag: "cover"));
-            // Stand-ins sized to the colliders until arena art builds the hall: a toppled column lying across
-            // the hall for a fallen beam, a broken grave for a sarcophagus.
-            var v = a.Piece(beam ? "dungeon/pillar" : "halloween/grave_A_destroyed", 1);
-            // (The column stands on its foot: laid over and turned, it runs four metres east of where it is put.)
-            v.Place(beam ? x - 2 : x, a.HeightAt(x, z) + (beam ? 0.75 : 0), z, beam ? Math.PI / 2 : 0, beam ? 1 : 1.15);
-            if (beam) v.Face(Math.PI / 2);
+            // Our own (tools/assets/env_props.py, the P9 set): a fallen architrave lying across the hall, a
+            // sarcophagus, each made to its collider's box (x along the hall's width).
+            int i = Array.IndexOf(Cover, (x, z, hw, hd, beam));
+            var v = a.Piece(beam ? (i % 2 == 0 ? "own/vault_beam_a" : "own/vault_beam_b") : (i % 2 == 0 ? "own/vault_sarcophagus_a" : "own/vault_sarcophagus_b"), 1);
+            v.Place(x, a.HeightAt(x, z), z, 0, 1);
             v.Visible = true;
         }
     }

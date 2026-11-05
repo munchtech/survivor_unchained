@@ -101,6 +101,7 @@ public static class ArenaGen
     static ArenaShape? StoryShapeFor(string story) => story switch
     {
         "hollow_by_night" => new Arenas.HollowNight(),
+        "vault_opened" => new Arenas.Vault(),
         _ => null,
     };
 
