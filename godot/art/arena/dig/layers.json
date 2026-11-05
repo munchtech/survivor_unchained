@@ -1,73 +1,91 @@
 {
+ "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
+ "painted": 1,
+ "inputs": "7a6b03aeab8e",
+ "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
  "layers": [
   {
    "name": "clay",
-   "source": "dry_ground_rocks",
-   "metres": 4.0,
+   "surface": "clay",
+   "metres": 5.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
    "mean": [
-    0.30252,
-    0.17493,
-    0.07819
+    0.19518,
+    0.10288,
+    0.04089
    ]
   },
   {
    "name": "spoil",
-   "source": "gray_rocks",
-   "metres": 1.8,
+   "surface": "spoil",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 rock (the spoil's coal lumps as chunky planes, a shade lighter than coal)",
    "mean": [
-    0.19301,
-    0.17018,
-    0.13271
+    0.055,
+    0.05206,
+    0.04836
    ]
   },
   {
    "name": "ballast",
-   "source": "stony_dirt_path",
-   "metres": 2.17,
+   "surface": "ballast",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 rock (broken stone, grey-brown over the clay)",
    "mean": [
-    0.0678,
-    0.03853,
-    0.01949
+    0.07404,
+    0.06261,
+    0.0479
    ]
   },
   {
    "name": "slurry",
-   "source": "brown_mud_03",
-   "metres": 1.3,
+   "surface": "slurry",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
    "mean": [
-    0.08915,
-    0.06973,
-    0.04545
+    0.10685,
+    0.07126,
+    0.0349
    ]
   },
   {
    "name": "rust",
-   "source": "red_dirt_mud_01",
-   "metres": 1.5,
+   "surface": "rust",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
    "mean": [
-    0.21101,
-    0.08934,
-    0.03665
+    0.22722,
+    0.09579,
+    0.03427
    ]
   },
   {
    "name": "burnt",
-   "source": "burned_ground_01",
-   "metres": 1.0,
+   "surface": "burnt",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) burnt ground, ash and char",
    "mean": [
-    0.12779,
-    0.09533,
-    0.06836
+    0.03115,
+    0.02565,
+    0.0205
    ]
   },
   {
    "name": "face",
-   "source": "excavated_soil_wall",
-   "metres": 2.0,
+   "surface": "clay_face",
+   "metres": 6.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 rock and road (the cut walls' ochre as big planes)",
    "mean": [
-    0.15083,
-    0.07502,
-    0.02366
+    0.14007,
+    0.08458,
+    0.03976
    ]
   }
  ]

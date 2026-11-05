@@ -15,6 +15,8 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #define CEL_NO_RIM
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
@@ -170,6 +172,15 @@ vec4 tex2(sampler2DArray s, vec2 uv, int i, Pick p) {
 	return mix(a, b, p.t);
 }
 
+// (L1 C1) The two copies cut, not crossfaded, where the noise crosses between them: the taller copy's painted shape
+// wins whole (a crossfade of two painted sheets shows every leaf and stone doubled, half see-through).
+Pick cut(vec2 uv, int i, Pick p) {
+	float ha = textureGrad(g_arh, vec3(uv + p.a, float(i)), p.dx, p.dy).b;
+	float hb = textureGrad(g_arh, vec3(uv + p.b, float(i)), p.dx, p.dy).b;
+	p.t = smoothstep(0.44, 0.56, p.t + (hb - ha) * 0.5);
+	return p;
+}
+
 vec3 nor2(vec2 uv, int i, Pick p) {
 	return normalize(tex2(g_nor, uv, i, p).xyz * 2.0 - 1.0);
 }
@@ -217,6 +228,7 @@ void fragment() {
 	// cut stone by stone reads as a pixelated one.
 	const float BLEND_DEPTH = 0.22;
 	float hs[NL];
+	float cut_t[NL];
 	vec4 arhs[NL];
 	float best = 0.0;
 	for (int k = 0; k < NL; k++) {
@@ -224,7 +236,8 @@ void fragment() {
 		if (gw[k] < 0.003) continue;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
-		Pick pk = pick(uv, w, k);
+		Pick pk = cut(uv, k, pick(uv, w, k));
+		cut_t[k] = pk.t;
 		arhs[k] = tex2(g_arh, uv, k, pk);
 		Pick coarse = pk;
 		coarse.dx *= 12.0;
@@ -247,6 +260,7 @@ void fragment() {
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
 		Pick p = pick(uv, w, k);
+		p.t = cut_t[k];
 		vec4 arh = arhs[k];
 		vec3 a = tex2(g_alb, uv, k, p).rgb;
 		float la = dot(a, vec3(0.2126, 0.7152, 0.0722));

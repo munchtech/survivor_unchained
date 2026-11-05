@@ -5,7 +5,7 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The zone's ground: a heightfield mesh from the exported heights, shaded by
-/// shaders/terrain.gdshader with the photoscanned materials in art/ground.
+/// shaders/terrain.gdshader with the painted layers in art/ground (L1 C1, tools/look/ground_paint.py).
 /// </summary>
 public static class Ground
 {

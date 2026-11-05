@@ -17,6 +17,8 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #define CEL_NO_RIM
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
@@ -467,7 +469,8 @@ void fragment() {
 		if (s < 2 && k != SETTS) {
 			vec4 a1, n1, h1;
 			fetch3(k, uv + off_b, ly, dx, dy, a1, n1, h1);
-			float b = smoothstep(0.2, 0.8, at_f + (h1.b - h0.b) * 0.5);
+			// (L1 C1: a cut, not a crossfade: the taller copy's painted shapes win whole, so no shape shows doubled)
+			float b = smoothstep(0.44, 0.56, at_f + (h1.b - h0.b) * 0.5);
 			a0 = mix(a0, a1, b); n0 = mix(n0, n1, b); h0 = mix(h0, h1, b);
 		}
 		A[s] = a0; Nn[s] = n0; H[s] = h0;

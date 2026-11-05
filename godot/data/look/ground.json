@@ -1,0 +1,1192 @@
+{
+ "what": "The painted ground (L1 C1): every zone's and arena's ground layers as painted surfaces, ours from nothing (no photo or scan). tools/look/ground_paint.py builds each set's texture arrays (godot/art/ground/, godot/art/arena/<place>/: albedo.png, normal.png, arh.png, seven 1K layers stacked in the order the shaders read them) and checks them (rule 9). A surface is two or three value masses at a large world scale plus big flat shapes (grass clumps, leaves, stones, ruts, chips), each shape one color inside its class's range. Colors are sRGB albedo, set by hand from the boards' and targets' lit and shade colors over the rig's light (the judge's method).",
+ "from": "(b) the Stage B judge, verdict_sb_r1 'B3's source' and Stage C's order 1 (5 Nov): 'The terrain gets its own painted splat: two or three value masses, big flat clumps, no photo noise'; LOOK_BIBLE rules 1, 4, 5, 8, 9; boards MB4 (wild) and MB3 (town); targets 01, 03, 04, 05, 07, 09, 10, 12. (a) the play camera: 5-8 px per 6-10 cm brush, nothing under about 3 cm.",
+ "light": [
+  -0.45,
+  -0.89
+ ],
+ "light_what": "the painted-in light's direction in the texture (u = world +x, v = world +z): from the screen's top, a little left (rule 9: the top-lit side, the lit bevel)",
+ "spread_L": 0.05,
+ "min_cm": 3.0,
+ "sets": {
+  "terrain": {
+   "dir": "godot/art/ground",
+   "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
+   "layers": [
+    {
+     "name": "grass",
+     "surface": "meadow",
+     "metres": 4.0
+    },
+    {
+     "name": "leaves",
+     "surface": "litter_day",
+     "metres": 4.0
+    },
+    {
+     "name": "dirt",
+     "surface": "road",
+     "metres": 5.0
+    },
+    {
+     "name": "mud",
+     "surface": "mud",
+     "metres": 4.0
+    },
+    {
+     "name": "stone",
+     "surface": "cobble",
+     "metres": 4.0
+    },
+    {
+     "name": "rock",
+     "surface": "rock_moss",
+     "metres": 4.0
+    },
+    {
+     "name": "blight",
+     "surface": "blight",
+     "metres": 3.0
+    }
+   ]
+  },
+  "hollow": {
+   "dir": "godot/art/arena/hollow",
+   "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
+   "layers": [
+    {
+     "name": "litter",
+     "surface": "forest_floor",
+     "metres": 5.0
+    },
+    {
+     "name": "rot",
+     "surface": "rot",
+     "metres": 4.0
+    },
+    {
+     "name": "roots",
+     "surface": "roots",
+     "metres": 4.0
+    },
+    {
+     "name": "mud",
+     "surface": "den_mud",
+     "metres": 4.0
+    },
+    {
+     "name": "bed",
+     "surface": "stream_bed",
+     "metres": 4.0
+    },
+    {
+     "name": "needles",
+     "surface": "needles",
+     "metres": 4.0
+    },
+    {
+     "name": "face",
+     "surface": "bank",
+     "metres": 6.0
+    }
+   ]
+  },
+  "ruts": {
+   "dir": "godot/art/arena/ruts",
+   "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
+   "layers": [
+    {
+     "name": "verge",
+     "surface": "verge",
+     "metres": 4.0
+    },
+    {
+     "name": "churn",
+     "surface": "churn",
+     "metres": 4.0
+    },
+    {
+     "name": "ruts",
+     "surface": "rut_mud",
+     "metres": 4.5
+    },
+    {
+     "name": "wet",
+     "surface": "wet",
+     "metres": 4.0
+    },
+    {
+     "name": "camp",
+     "surface": "chips",
+     "metres": 3.0
+    },
+    {
+     "name": "metal",
+     "surface": "gravel",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "cut_bank",
+     "metres": 6.0
+    }
+   ]
+  },
+  "barrow": {
+   "dir": "godot/art/arena/barrow",
+   "from": "(c) the Barrow's layers (turf, bare, way, grave, ash, rubble, face); (b) MB4 night, rock and grass",
+   "layers": [
+    {
+     "name": "turf",
+     "surface": "turf",
+     "metres": 4.0
+    },
+    {
+     "name": "bare",
+     "surface": "bare",
+     "metres": 4.0
+    },
+    {
+     "name": "way",
+     "surface": "slabs",
+     "metres": 5.0
+    },
+    {
+     "name": "grave",
+     "surface": "grave",
+     "metres": 4.0
+    },
+    {
+     "name": "ash",
+     "surface": "ash",
+     "metres": 3.0
+    },
+    {
+     "name": "rubble",
+     "surface": "rubble",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "barrow_face",
+     "metres": 6.0
+    }
+   ]
+  },
+  "dig": {
+   "dir": "godot/art/arena/dig",
+   "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
+   "layers": [
+    {
+     "name": "clay",
+     "surface": "clay",
+     "metres": 5.0
+    },
+    {
+     "name": "spoil",
+     "surface": "spoil",
+     "metres": 3.0
+    },
+    {
+     "name": "ballast",
+     "surface": "ballast",
+     "metres": 3.0
+    },
+    {
+     "name": "slurry",
+     "surface": "slurry",
+     "metres": 4.0
+    },
+    {
+     "name": "rust",
+     "surface": "rust",
+     "metres": 4.0
+    },
+    {
+     "name": "burnt",
+     "surface": "burnt",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "clay_face",
+     "metres": 6.0
+    }
+   ]
+  }
+ },
+ "surfaces": {
+  "meadow": {
+   "class": "grass",
+   "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
+   "masses": {
+    "colors": [
+     "#3c4424",
+     "#4c5529",
+     "#5b6030"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "clump",
+     "per_m2": 4.5,
+     "size_cm": [
+      26,
+      48
+     ],
+     "blades": [
+      7,
+      11
+     ],
+     "colors": [
+      "#56602c",
+      "#6e7536"
+     ],
+     "under": "#333c26",
+     "height": 0.85
+    }
+   ]
+  },
+  "litter_day": {
+   "class": "soil",
+   "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
+   "masses": {
+    "colors": [
+     "#3e3326",
+     "#4b3d2b",
+     "#57462f"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 26,
+     "size_cm": [
+      8,
+      15
+     ],
+     "colors": [
+      "#6a4a2e",
+      "#78593a",
+      "#5b432b",
+      "#7c6a40"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "road": {
+   "class": "road",
+   "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
+   "masses": {
+    "colors": [
+     "#5f4635",
+     "#6d523e",
+     "#7a5f47"
+    ],
+    "split": [
+     0.3,
+     0.68
+    ],
+    "scale_m": 1.8
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.2,
+     "size_cm": [
+      5,
+      11
+     ],
+     "colors": [
+      "#7a6e60",
+      "#6a6052"
+     ],
+     "height": 0.8
+    }
+   ]
+  },
+  "mud": {
+   "class": "road",
+   "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
+   "masses": {
+    "colors": [
+     "#3a2e23",
+     "#45372a",
+     "#4e3f30"
+    ],
+    "split": [
+     0.4,
+     0.78
+    ],
+    "scale_m": 1.3
+   }
+  },
+  "cobble": {
+   "class": "road",
+   "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
+   "cells": {
+    "size_cm": 26,
+    "colors": [
+     "#5c5850",
+     "#67625a",
+     "#545049"
+    ],
+    "joint": "#34302c",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#3a3630",
+     "#423d36"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   }
+  },
+  "rock_moss": {
+   "class": "rock",
+   "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
+   "cells": {
+    "size_cm": 55,
+    "colors": [
+     "#5a5b56",
+     "#64655e",
+     "#50524d"
+    ],
+    "joint": "#3a3b38",
+    "joint_cm": 3.5,
+    "lit": 0.06,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#3a3b38",
+     "#44453f"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   },
+   "patches": {
+    "colors": [
+     "#46502a",
+     "#525c30"
+    ],
+    "share": 0.28,
+    "scale_m": 0.9
+   }
+  },
+  "blight": {
+   "class": "soil",
+   "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
+   "masses": {
+    "colors": [
+     "#2a2724",
+     "#34302b",
+     "#3d3832"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.0
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 1.0,
+     "size_cm": [
+      3,
+      5
+     ],
+     "length_cm": [
+      30,
+      80
+     ],
+     "colors": [
+      "#1f1c1a"
+     ],
+     "height": 0.1
+    }
+   ]
+  },
+  "forest_floor": {
+   "class": "soil",
+   "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
+   "masses": {
+    "colors": [
+     "#4a4034",
+     "#574a3b",
+     "#635442"
+    ],
+    "split": [
+     0.33,
+     0.7
+    ],
+    "scale_m": 1.6
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 20,
+     "size_cm": [
+      9,
+      17
+     ],
+     "colors": [
+      "#6e4e32",
+      "#7a5c3c",
+      "#5e4630",
+      "#7e6c48"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "rot": {
+   "class": "soil",
+   "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
+   "masses": {
+    "colors": [
+     "#2c2823",
+     "#35302a",
+     "#3d362e"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 5,
+     "size_cm": [
+      8,
+      14
+     ],
+     "colors": [
+      "#4a3c2c",
+      "#544430"
+     ],
+     "height": 0.6
+    }
+   ]
+  },
+  "roots": {
+   "class": "soil",
+   "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
+   "masses": {
+    "colors": [
+     "#342d25",
+     "#3e352b"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 1.6,
+     "size_cm": [
+      4,
+      9
+     ],
+     "length_cm": [
+      60,
+      160
+     ],
+     "colors": [
+      "#5a4a38",
+      "#4e4030"
+     ],
+     "lit_edge": 0.05,
+     "height": 0.9
+    }
+   ]
+  },
+  "den_mud": {
+   "class": "soil",
+   "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
+   "masses": {
+    "colors": [
+     "#2a2620",
+     "#322c25",
+     "#39322a"
+    ],
+    "split": [
+     0.4,
+     0.8
+    ],
+    "scale_m": 1.4
+   }
+  },
+  "stream_bed": {
+   "class": "rock",
+   "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
+   "cells": {
+    "size_cm": 22,
+    "colors": [
+     "#5c5c56",
+     "#696860",
+     "#52524d"
+    ],
+    "joint": "#2e2c28",
+    "joint_cm": 4.0,
+    "lit": 0.06,
+    "round": 0.55
+   },
+   "masses": {
+    "colors": [
+     "#2e2c28",
+     "#36332e"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   }
+  },
+  "needles": {
+   "class": "soil",
+   "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
+   "masses": {
+    "colors": [
+     "#4f4232",
+     "#5b4c38",
+     "#665640"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.3
+   },
+   "stamps": [
+    {
+     "shape": "tuft",
+     "per_m2": 14,
+     "size_cm": [
+      10,
+      18
+     ],
+     "blades": [
+      5,
+      8
+     ],
+     "colors": [
+      "#77623f",
+      "#6a5638"
+     ],
+     "under": "#463a2c",
+     "height": 0.7
+    }
+   ]
+  },
+  "bank": {
+   "class": "soil",
+   "from": "MB4 rock (the banks and steep faces as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#4a4a40",
+     "#545446",
+     "#3f3f37"
+    ],
+    "joint": "#302f2a",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#302f2a",
+     "#3a382f"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   }
+  },
+  "verge": {
+   "class": "grass",
+   "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
+   "masses": {
+    "colors": [
+     "#383e22",
+     "#465028",
+     "#545a2e"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "clump",
+     "per_m2": 4.5,
+     "size_cm": [
+      26,
+      48
+     ],
+     "blades": [
+      7,
+      11
+     ],
+     "colors": [
+      "#4f5a2a",
+      "#666e34"
+     ],
+     "under": "#2e3622",
+     "height": 0.85
+    }
+   ]
+  },
+  "churn": {
+   "class": "road",
+   "from": "MB4 road (the churned earth: masses and a few clods)",
+   "masses": {
+    "colors": [
+     "#3c3226",
+     "#463a2c",
+     "#504232"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 3,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#544536",
+      "#5e4d3b"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "rut_mud": {
+   "class": "road",
+   "from": "MB4 road: ruts as long strokes, darker",
+   "masses": {
+    "colors": [
+     "#30271d",
+     "#3a2f23"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 0.9,
+     "size_cm": [
+      10,
+      20
+     ],
+     "length_cm": [
+      150,
+      300
+     ],
+     "along": true,
+     "colors": [
+      "#272018",
+      "#2c241b"
+     ],
+     "lit_edge": 0.04,
+     "height": 0.2
+    }
+   ]
+  },
+  "wet": {
+   "class": "road",
+   "from": "MB4 road (the wet earth by the puddles)",
+   "masses": {
+    "colors": [
+     "#332e28",
+     "#3c362e"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.3
+   }
+  },
+  "chips": {
+   "class": "soil",
+   "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
+   "masses": {
+    "colors": [
+     "#3e3226",
+     "#4a3c2c"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.9
+   },
+   "stamps": [
+    {
+     "shape": "chip",
+     "per_m2": 40,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#6a5236",
+      "#5a4430",
+      "#76603e"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "gravel": {
+   "class": "road",
+   "from": "MB4 road (the metalled way: small rounded stones in masses)",
+   "cells": {
+    "size_cm": 9,
+    "colors": [
+     "#5e544a",
+     "#6a6052",
+     "#52483e"
+    ],
+    "joint": "#3a3228",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.5
+   },
+   "masses": {
+    "colors": [
+     "#3a3228",
+     "#433a2f"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.8
+   }
+  },
+  "cut_bank": {
+   "class": "soil",
+   "from": "MB4 road (the cut bank's earth as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#4c4234",
+     "#56483a",
+     "#433a2e"
+    ],
+    "joint": "#342c23",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#342c23",
+     "#3c3329"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   }
+  },
+  "turf": {
+   "class": "grass",
+   "from": "MB4 grass (night: the barrow's grey-green turf as flat clumps)",
+   "masses": {
+    "colors": [
+     "#3c3f2e",
+     "#464a36",
+     "#50543c"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "clump",
+     "per_m2": 4.5,
+     "size_cm": [
+      26,
+      48
+     ],
+     "blades": [
+      7,
+      11
+     ],
+     "colors": [
+      "#4e5238",
+      "#5c6044"
+     ],
+     "under": "#32362a",
+     "height": 0.85
+    }
+   ]
+  },
+  "bare": {
+   "class": "soil",
+   "from": "(c) the barrow's bare earth: masses",
+   "masses": {
+    "colors": [
+     "#403a33",
+     "#4a433b",
+     "#544c42"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.5
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.5,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#5e5a52"
+     ],
+     "height": 0.8
+    }
+   ]
+  },
+  "slabs": {
+   "class": "rock",
+   "from": "MB4 rock and MB3 setts (the old way's slabs: chunky planes, warm tops, cool joints)",
+   "cells": {
+    "size_cm": 50,
+    "colors": [
+     "#5c5a54",
+     "#66645c",
+     "#53514c"
+    ],
+    "joint": "#33312d",
+    "joint_cm": 3.5,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#33312d",
+     "#3b3934"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   }
+  },
+  "grave": {
+   "class": "soil",
+   "from": "(c) the graves' turned earth, dark",
+   "masses": {
+    "colors": [
+     "#2c2824",
+     "#35302b",
+     "#3c3630"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.0
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 4,
+     "size_cm": [
+      5,
+      9
+     ],
+     "colors": [
+      "#403a33",
+      "#4a433a"
+     ],
+     "height": 0.7
+    }
+   ]
+  },
+  "ash": {
+   "class": "soil",
+   "from": "(c) ash, grey masses",
+   "masses": {
+    "colors": [
+     "#363432",
+     "#403e3b",
+     "#4a4744"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.0
+   }
+  },
+  "rubble": {
+   "class": "rock",
+   "from": "MB4 rock (rubble as rounded flat stones)",
+   "cells": {
+    "size_cm": 16,
+    "colors": [
+     "#5a5852",
+     "#64625a",
+     "#4e4d48"
+    ],
+    "joint": "#302e2a",
+    "joint_cm": 3.5,
+    "lit": 0.06,
+    "round": 0.5
+   },
+   "masses": {
+    "colors": [
+     "#302e2a",
+     "#383631"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   }
+  },
+  "barrow_face": {
+   "class": "rock",
+   "from": "MB4 rock (steep faces as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#3e3c38",
+     "#484640",
+     "#36342f"
+    ],
+    "joint": "#2a2925",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#2a2925",
+     "#32302c"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   }
+  },
+  "clay": {
+   "class": "soil",
+   "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
+   "masses": {
+    "colors": [
+     "#6e5032",
+     "#7a5a38",
+     "#866440"
+    ],
+    "split": [
+     0.33,
+     0.7
+    ],
+    "scale_m": 1.8
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.2,
+     "size_cm": [
+      5,
+      11
+     ],
+     "colors": [
+      "#7a6a56"
+     ],
+     "height": 0.8
+    }
+   ]
+  },
+  "spoil": {
+   "class": "rock",
+   "from": "MB4 rock (the spoil's coal lumps as chunky planes, a shade lighter than coal)",
+   "cells": {
+    "size_cm": 14,
+    "colors": [
+     "#4a4844",
+     "#54524e",
+     "#423f3c"
+    ],
+    "joint": "#2a2826",
+    "joint_cm": 3.0,
+    "lit": 0.06,
+    "round": 0.35
+   },
+   "masses": {
+    "colors": [
+     "#2a2826",
+     "#32302d"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   }
+  },
+  "ballast": {
+   "class": "rock",
+   "from": "MB4 rock (broken stone, grey-brown over the clay)",
+   "cells": {
+    "size_cm": 10,
+    "colors": [
+     "#5a5448",
+     "#645c50",
+     "#504a40"
+    ],
+    "joint": "#3a342c",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.4
+   },
+   "masses": {
+    "colors": [
+     "#3a342c",
+     "#423b32"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.8
+   }
+  },
+  "slurry": {
+   "class": "soil",
+   "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
+   "masses": {
+    "colors": [
+     "#54452f",
+     "#5e4d36",
+     "#66543b"
+    ],
+    "split": [
+     0.4,
+     0.8
+    ],
+    "scale_m": 1.4
+   }
+  },
+  "rust": {
+   "class": "soil",
+   "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
+   "masses": {
+    "colors": [
+     "#784e30",
+     "#845834",
+     "#8e6038"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.4
+   }
+  },
+  "burnt": {
+   "class": "soil",
+   "from": "(c) burnt ground, ash and char",
+   "masses": {
+    "colors": [
+     "#2a2622",
+     "#322d28",
+     "#3a342d"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.0
+   }
+  },
+  "clay_face": {
+   "class": "soil",
+   "from": "MB4 rock and road (the cut walls' ochre as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#6a5236",
+     "#765c3c",
+     "#5e4930"
+    ],
+    "joint": "#46382a",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#46382a",
+     "#4e3f2f"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   }
+  }
+ },
+ "grass_atlas": {
+  "kind": "meadow",
+  "out": "godot/art/world/flora/grass_meadow_atlas.png",
+  "from": "MB4 grass ('grass as big flat clumps': broad blades massed into a mound, a lit top and a cool underside, three flat values); rule 4 (olive and worn, never lime); replaces env_trees.py's thin-blade grass atlas (L1 C1)",
+  "colors": {
+   "under": "#24301f",
+   "body": "#475726",
+   "lit": "#6c7633"
+  },
+  "flowers": [
+   "#a39c7e",
+   "#857c95"
+  ],
+  "flower_cells": 2
+ }
+}

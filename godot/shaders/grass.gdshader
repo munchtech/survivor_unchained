@@ -10,6 +10,8 @@ render_mode cull_disabled, diffuse_burley, world_vertex_coords;
 #define CEL_NO_RIM
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
