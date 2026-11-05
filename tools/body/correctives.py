@@ -514,12 +514,15 @@ def run(out, only=None, tier="close", fresh=False):
         names, dirs = [], []
         strips = {}
         chain = {}
-        if jc.get("fold") == "stepped":          # the whole arc marched at once (contact_fold.py), stored per key
-            import contact_fold
+        if jc.get("fold") in ("stepped", "pair"):  # the whole arc marched at once (contact_fold.py, contact_pair.py)
+            if jc["fold"] == "pair":
+                import contact_pair as chain_mod
+            else:
+                import contact_fold as chain_mod
             st = key_strip(poser, rig, frame, jc["keys"][0][0], "l")
             strips[jc["keys"][0][0]] = st
             t = time.time()
-            for k_, Y, f, free, M, G, lg in contact_fold.solve_chain(mesh, st, jc, {**cf, **jc.get("solve", {})}):
+            for k_, Y, f, free, M, G, lg in chain_mod.solve_chain(mesh, st, jc, {**cf, **jc.get("solve", {})}):
                 chain[k_] = (Y, f, free, M, G, lg)
             print(f"  {jc['name']} march {round(time.time() - t, 1)} s", flush=True)
         for motion, deg in jc["keys"]:
