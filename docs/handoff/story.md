@@ -3,7 +3,7 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
-## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 5-14 in; <STATE_LINE> (writer 3)
+## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 5-14 in; MR READY story-s1@88f52de28 (writer 3)
 
 **The pick (the owner, 5 Nov:
 "Go, defaults."):** ending B retired, three endings (she lies down / Corvane
@@ -22,14 +22,14 @@ the two gone locks removed, 70 lines locked by prefix (583 locks, 0 broken;
 `tests.test_lock tests.test_lines` OK), `StoryRewriteTests.
 The_seven_chains_hold_in_act_one`, StoryLint seed `holloway.bed_seen`. The
 story subset (StoryLint, StoryRewrite, Quest, Cinema, Verge, StoryNight) was
-green at every step (110/0). Full suite: <SUITE>. Editor (8): <EDITOR>.
+green at every step (110/0). Full suite: 1534/0/10 full at ead3d777f (its one failure, the missing speaker definitions, fixed at e6a19e9dc); after that the subset with ContentTests 115/0 at every commit; a full run started at MR, tail in scratch `tests_full2.txt`. Editor (8): PASS WITH FIXES, distance medium (Haiku at xhigh), applied at 91f72d8cf; its one FAIL finding was the built bark "It's right this morning" from before S1, not new text, left as built; not applied 2/5/6/15/18/19 with the reasons in that commit's message.
 **Counts since dba76d016** (`tools/vo/locked.json` 527 -> 583): survived
 word for word 498; re-locked 27 (15 for the name by writer 1; 12 rewritten or
 re-indexed by writer 2: `chid.carried_chid.0-9`, `chid.cb_opened_vault.0`,
 `chid.cb_vault2.0`); new voiced lines 58 (plus 5 dawn reports and 2 journal
 pages, unvoiced); retired 2 (`dlg.cin_drowned_fire.prints.0`,
 `say.93b63298edc0`). Voice re-records 0. Slice 1 DONE (dba76d016);
-integration merged at e2bdeed4d <MERGE>.
+integration merged at e2bdeed4d and at d8b967a05 (writer 3; docs only incoming).
 
 **What is in, by node (so nothing is re-derived):**
 - *Beat 6, Vonnra's tale* (`vonnra`): rule `vonnra.sends` (day >= 3,
