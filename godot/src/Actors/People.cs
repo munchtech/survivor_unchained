@@ -97,7 +97,10 @@ public static class People
 
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
     {
-        lock (BuildLock) return BuildLocked(spec);
+        // (the main thread waits served: a worker holding it may wait on the rendering server's flush, MainPump)
+        MainPump.Enter(BuildLock);
+        try { return BuildLocked(spec); }
+        finally { System.Threading.Monitor.Exit(BuildLock); }
     }
 
     static Person BuildLocked(SurvivorUnchained.World.PersonSpec spec)

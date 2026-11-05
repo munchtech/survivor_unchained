@@ -188,6 +188,7 @@ public partial class Game
     Dictionary<string, Node3D>? TakeCast(string fileId)
     {
         if (!castAhead.Remove(fileId, out var t)) return null;
+        MainPump.Wait(t);
         try { return t.Result; }
         catch (Exception e) { GD.PushWarning($"cinema: the cast made ahead failed ({e.Message})"); return null; }
     }
@@ -197,7 +198,7 @@ public partial class Game
     {
         foreach (var t in castAhead.Values)
         {
-            try { t.Wait(10000); } catch (Exception) { }
+            MainPump.Wait(t, 10000);
             if (t.IsCompletedSuccessfully) foreach (var n in t.Result.Values) if (IsInstanceValid(n) && !n.IsInsideTree()) n.Free();
         }
         castAhead.Clear();
@@ -258,8 +259,8 @@ public partial class Game
     /// <summary>The game goes: her double made ahead, never added, goes with it (no leak reported at exit).</summary>
     public override void _ExitTree()
     {
-        if (doubleAhead is { } t) { try { t.Wait(5000); } catch (Exception) { } if (t.IsCompletedSuccessfully) t.Result.Free(); doubleAhead = null; }
-        foreach (var d in doublesDropped) { try { d.Wait(5000); } catch (Exception) { } if (d.IsCompletedSuccessfully) d.Result.Free(); }
+        if (doubleAhead is { } t) { MainPump.Wait(t, 5000); if (t.IsCompletedSuccessfully) t.Result.Free(); doubleAhead = null; }
+        foreach (var d in doublesDropped) { MainPump.Wait(d, 5000); if (d.IsCompletedSuccessfully) d.Result.Free(); }
         doublesDropped.Clear();
         DropCast();
     }
@@ -270,6 +271,7 @@ public partial class Game
         if (doubleAhead is not { } t || t.IsFaulted || t.IsCanceled || doubleKey != DoubleKey(lo)) return null;
         doubleAhead = null;
         doubleKey = null;
+        MainPump.Wait(t);
         try { return t.Result; }
         catch (Exception e) { GD.PushWarning($"cinema: her double made ahead failed ({e.Message})"); return null; }
     }
