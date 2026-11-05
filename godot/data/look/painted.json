@@ -1,0 +1,11 @@
+{
+  "_": "The world-side painted assets (tools/look/build.py reads it): the source mesh and how to bake it, and the lookdev stage node that wears the result (--b3-painted).",
+  "assets": {
+    "barrel": {"kind": "prop", "mesh": "godot/art/world/props/barrel.glb", "node": "barrel",
+               "stage": {"node": "own_barrel", "at": [0.1, 5.3, 20], "near": [0.95, 1.4, 20]}},
+    "boulder": {"kind": "prop", "mesh": "godot/art/world/flora/boulder.gltf", "node": "lod0", "variant": 1,
+                "stage": {"node": "own_boulder_b", "at": [6.8, 4.1, 30], "near": [-2.9, 3.6, 30]}},
+    "setts": {"kind": "setts", "tile": 4.0,
+              "stage": {"node": "LookSetts", "tile": 4.0, "name": "setts_b3"}}
+  }
+}

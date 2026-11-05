@@ -36,6 +36,8 @@ def opt(name, default, cast=str):
 PPM = opt("--ppm", 256, float)
 SEED = opt("--seed", 7, int)
 T0 = time.time()
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+LIB = os.path.join(ROOT, "godot", "data", "look", "materials.json")
 
 
 def reset():
@@ -277,15 +279,16 @@ def prop(mesh_path, out, node, variant, asset):
 def setts(out, T):
     sc = reset()
     rng = np.random.default_rng(SEED)
-    # courses of uneven height (summing to T, so the tile repeats), stones 1.2-2.2 courses long (MB3's chunky setts)
-    hs = rng.uniform(0.24, 0.34, 64); hs = hs[:max(1, int(np.searchsorted(np.cumsum(hs), T)))]; hs *= T / hs.sum()
-    joint = 0.035
+    # courses of uneven height (summing to T, so the tile repeats), stones l_lo-l_hi courses long (materials.json classes.setts.paint.layout)
+    lay = json.load(open(LIB, encoding="utf-8"))["classes"]["setts"]["paint"]["layout"]
+    c_lo, c_hi = lay["course_m"]; l_lo, l_hi = lay["length_courses"]; joint = float(lay["joint_m"])
+    hs = rng.uniform(c_lo, c_hi, 64); hs = hs[:max(1, int(np.searchsorted(np.cumsum(hs), T)))]; hs *= T / hs.sum()
     stones = []
     y0 = 0.0
     for rh in hs:
         x = rng.uniform(0, 0.5); xs = [x]
         while True:
-            L = rh * rng.uniform(1.2, 2.2)
+            L = rh * rng.uniform(l_lo, l_hi)
             if xs[-1] + L > x + T - 0.25: break
             xs.append(xs[-1] + L)
         xs.append(x + T)  # the last one closes the course (wraps onto the first)
@@ -343,15 +346,28 @@ def setts(out, T):
     maps['mask'] = np.ones((size, size), np.float32)
     maps['cls'] = np.zeros((size, size), np.float32)
     return finish(out, maps, dict(kind="setts", asset="setts", classes=["setts"], size=size, ppm=round(size / T, 1),
-                                  tile_m=T, stones=len(stones), layout=dict(row_h=round(row_h, 3), joint=joint, h=0.08, bevel=0.045, tilt_deg=3.5, yaw_deg=2.5)))
+                                  tile_m=T, stones=len(stones), layout=dict(course_m=[c_lo, c_hi], length_courses=[l_lo, l_hi], row_h=round(row_h, 3), joint=joint, h=0.08, bevel=0.045, tilt_deg=3.5, yaw_deg=2.5)))
+
+
+def save_npz(path, arrays):
+    """np.savez_compressed with a fixed zip date (it stamps each entry with the clock: two runs would differ)."""
+    import io, zipfile
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        for k, v in arrays.items():
+            b = io.BytesIO(); np.lib.format.write_array(b, np.asanyarray(v), allow_pickle=False)
+            zi = zipfile.ZipInfo(k + ".npy", date_time=(1980, 1, 1, 0, 0, 0)); zi.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(zi, b.getvalue())
 
 
 def finish(out, maps, meta):
     m = maps['mask'] > 0.5
     blk = np.where(m, np.round(maps['blk']), -1).astype(np.int32)
-    np.savez_compressed(os.path.join(out, "forms.npz"), mask=m, blk=blk, cls=np.round(maps['cls']).astype(np.int8),
-                        **{k: v.astype(np.float16) for k, v in maps.items() if k not in ('mask', 'blk', 'cls')})
-    meta.update(seed=SEED, blender=bpy.app.version_string, seconds=round(time.time() - T0, 1), blocks=int(blk.max()) + 1)
+    save_npz(os.path.join(out, "forms.npz"), dict(mask=m, blk=blk, cls=np.round(maps['cls']).astype(np.int8),
+                        **{k: v.astype(np.float16) for k, v in maps.items() if k not in ('mask', 'blk', 'cls')}))
+    meta.update(seed=SEED, blender=bpy.app.version_string, blocks=int(blk.max()) + 1)
+    if "source" in meta:  # (repo-relative with forward slashes: no absolute paths in the outputs)
+        meta["source"] = os.path.relpath(meta["source"], ROOT).replace(os.sep, "/")
+    json.dump({"seconds": round(time.time() - T0, 1)}, open(os.path.join(out, "timing.json"), "w"))
     json.dump(meta, open(os.path.join(out, "forms.json"), "w"), indent=1)
     print("B3 forms:", json.dumps(meta))
 

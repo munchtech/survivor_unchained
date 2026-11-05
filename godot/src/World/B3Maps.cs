@@ -7,6 +7,8 @@ namespace SurvivorUnchained.View;
 /// <summary>B3's bake-off hook (L1 texture authoring; tools/look/bakeoff.py): --b3-maps MANIFEST.json puts a painter
 /// arm's maps on named stage items, through the material library's loader (CelLib: each material keeps its
 /// "&lt;asset&gt;_&lt;class&gt;" name, so the assign rules give the class and its preset). Off unless the flag is given.
+/// <para>--b3-painted installs res://art/world/painted/maps.json (tools/look/build.py's output, data/look/painted.json) the same
+/// way; paths starting res:// are globalized. Off unless given (the art is not judged yet).</para>
 /// <para>Manifest: {"items": [{"node": "own_barrel", "mesh": "ABS/mesh.glb", "maps": {"plank": {"albedo": "ABS.png",
 /// "normal": "ABS.png", "rough": "ABS.png"}, ...}}, {"node": "LookSetts", "tile": 4.0, "name": "setts_b3", "maps":
 /// {"setts": {...}}}]}. A node with a mesh: its own drawn geometry is hidden and the mesh (the painter's re-unwrapped
@@ -20,8 +22,10 @@ public static class B3Maps
 
     public static void Install(SceneTree t)
     {
-        if (SurvivorUnchained.Args.Get("b3-maps") is not string path) return;
-        using var doc = JsonDocument.Parse(System.IO.File.ReadAllText(path));
+        var path = SurvivorUnchained.Args.Get("b3-maps") as string;
+        if (path == null && SurvivorUnchained.Args.Has("b3-painted")) path = "res://art/world/painted/maps.json";
+        if (path == null) return;
+        using var doc = JsonDocument.Parse(System.IO.File.ReadAllText(Abs(path)));
         foreach (var e in doc.RootElement.GetProperty("items").EnumerateArray())
         {
             var maps = new Dictionary<string, Dictionary<string, string>>();
@@ -59,9 +63,12 @@ public static class B3Maps
         GD.Print($"b3-maps: {d.Name} moved to stage ({near[0]}, {near[1]})");
     }
 
+    /// <summary>res:// paths (the painted build's manifest) to disk paths; others as given.</summary>
+    static string Abs(string p) => p.StartsWith("res://") ? ProjectSettings.GlobalizePath(p) : p;
+
     static Texture2D Tex(string p)
     {
-        var im = Image.LoadFromFile(p);
+        var im = Image.LoadFromFile(Abs(p));
         im.GenerateMipmaps();
         return ImageTexture.CreateFromImage(im);
     }
@@ -91,7 +98,7 @@ public static class B3Maps
             return;
         }
         var gd = new GltfDocument(); var st = new GltfState();
-        if (gd.AppendFromFile(it.Mesh, st) != Error.Ok || gd.GenerateScene(st) is not Node3D scene) { GD.PushWarning($"b3-maps: no mesh {it.Mesh}"); return; }
+        if (gd.AppendFromFile(Abs(it.Mesh), st) != Error.Ok || gd.GenerateScene(st) is not Node3D scene) { GD.PushWarning($"b3-maps: no mesh {it.Mesh}"); return; }
         foreach (var n in d.FindChildren("*", "GeometryInstance3D", true, false))
             if (n is GeometryInstance3D g) g.Visible = false;
         foreach (var n in scene.FindChildren("*", "MeshInstance3D", true, false))
