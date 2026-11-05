@@ -9,6 +9,8 @@ render_mode diffuse_burley, cull_disabled;
 #define CEL_NO_RIM
 // (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the soil class's cel_nmap 0, as the ground's: the Stage B judge, no orange peel)
+#define CEL_NMAP 0.0
 #include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
