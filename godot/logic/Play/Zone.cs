@@ -85,6 +85,10 @@ public interface IZoneHost
     /// stage says what came out in a line.</summary>
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
+    /// <summary>A conversation opened at one of its nodes (a story night's scene: door_night at go_home), the sim held
+    /// while it runs; `ended` is told the id of the last node shown (lie_down: she raised her weapon; go: she went).
+    /// A host without a screen runs it at once (SceneTalk: its chooser, or the first ending answer).</summary>
+    void Converse(string convo, string node, Action<string?> ended) => ended(SurvivorUnchained.World.SceneTalk.Run(Ctx, convo, node));
     void Travel(string zone, string? caption = null, string? sub = null);
     /// <summary>The place a journey will soon go to, built ahead of it while this one plays (a host that builds
     /// nothing does nothing).</summary>

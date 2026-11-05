@@ -489,6 +489,15 @@ public static class Enemies
             Elite = true, Loot = "elite", AttackEvery = 1.0,
             Note = "He takes a toll: your best weapon, for a while, and a runner to carry it off. Catch the runner. Lightning makes him drop it." },
 
+        // Corvane in the doorway (vault_opened's first stage, Play/Story/Corvane.cs): the keeper's lamp held up, violet,
+        // the court's key light. Chid's person (npcs.json chid: the npc_chid body, his tint a touch toward violet), a head
+        // taller than the crowd. Neutral and still until she raises her weapon; his health and bite are the stage's
+        // (teeth.json story.corvane).
+        new() { Id = "corvane", Name = "Corvane", Family = Family.Human, Faction = Faction.Town, Visual = "corvane", Scale = 1.15,
+            Tint = (0.88, 0.79, 0.8), Glow = 0.05, CarriedLight = new("#a77bff", 3.4, 11, 2.2),
+            Health = 420, Speed = 3.0, Damage = 18, Radius = 0.7, Mass = 14, Xp = 0, Behavior = Behavior.Chase,
+            Elite = true, AttackEvery = 1.2 },
+
         // The Lamplings' champion, until the Blasting-Cart has its art: a ganger of the Dig. Their
         // heralds were a lampling's body at twenty health, down in four seconds (every other people's
         // herald took twenty to forty), so their nights asked nothing of a draft's single-target reach.

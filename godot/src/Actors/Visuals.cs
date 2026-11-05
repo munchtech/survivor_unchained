@@ -91,6 +91,11 @@ public static class Visuals
             // An enforcer: a big man in a red hood with a greataxe.
             "kerchief_enforcer" => new(visual, P(Sex.Male, "bare", hood: true, beard: true, hairColor: "#1a1410", skin: "#e0a47c", cloth: Kerchief, under: KerchiefDark),
                 new Held { Right = "snake_axe" }, Fight("Jog_Fwd_Loop", "Sword_Idle", "Sword_Attack", "Sword_Idle"), 1.15),
+            // Corvane in the doorway (vault_opened): Chid's own person (npcs.json chid), the keeper's lamp held up in his
+            // left hand (Arms "keeper_lamp": the lamp-iron, its glass violet). His cast is the rally's arm thrust up (the
+            // lamp raised); his cuff, the plain blow.
+            "corvane" => new(visual, Lore.Person("chid")?.Person, new Held { Left = "keeper_lamp" },
+                Fight("Walk_Loop", "Idle_Loop", "Sword_Regular_A", "Idle_Loop")),
             // Long bodies read as spiders when a pack closes on you: smaller,
             // and centred on the body so the head does not reach through the survivor.
             "wolf" or "wolf_blighted" or "wolf_spirit" => Beast(visual, 0.82, new Vector3(0, 0, -0.22f)),

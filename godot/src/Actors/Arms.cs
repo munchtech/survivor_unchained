@@ -42,6 +42,9 @@ public static class Arms
         // (lower) fist's centre is 0.120 m (above the pommel), a lever gap between them.
         // Seated on her right fist's blade pocket (PocketR Blade2H = BladeAtR, its grip the Blade1H section; keyed.py WRAP["sunder"]; fistfit sunder; animation 59).
         ["sunder_blade"] = new("", 1.412f, 0.290f / 1.412f, Build: LampIron.SunderBlade, Lean: 35, Kind: WeaponKind.Blade2H, Seated: true),
+        // Corvane's keeper's lamp (vault_opened's doorway): the lamp-iron (LampIron.Make), its glass violet and lit, held
+        // by its top in his left fist. A stand-in until his own lamp is made.
+        ["keeper_lamp"] = new("", 0.42f, 0.92f, Build: KeeperLamp),
         ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30, Kind: WeaponKind.Blunt),
         ["viking_axe"] = new("viking_axe", 0.7702f, 0.15f, Roll: Mathf.Pi, Lean: 35, Kind: WeaponKind.Axe, Seated: true),  // haft conformed to her one-handed fist (anim-40: tapered haft, an oval wrap 34.7 x 21.7 mm over the fist, anchor_grip on the haft's line); seated on BladeAtR (PocketR Axe), Length keeps the old scale; fistfit axe
         ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30, Kind: WeaponKind.Axe2H),
@@ -57,6 +60,13 @@ public static class Arms
     };
 
     static Arms() => ArmsData.Merge(All);
+
+    static Node3D KeeperLamp()
+    {
+        var lamp = LampIron.Make();
+        LampIron.Glass(lamp, new Color("#a77bff").SrgbToLinear(), 1);
+        return lamp;
+    }
 
     /// <summary>Every weapon glb the table can load (res://assets/weapons and the rows' own res:// files), for prefetch.</summary>
     public static IEnumerable<string> Files()

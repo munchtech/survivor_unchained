@@ -41,6 +41,9 @@ public partial class BattleFx
             auras[e.Id] = a;
         }
         a.Seen = true;
+        // (read each frame: a boss's light may burn brighter as it goes on, its def swapped: Corvane's lamp below half)
+        a.Energy = (float)def.Energy;
+        a.Light.OmniRange = (float)def.Range;
         bool dying = e.State == EnemyState.Dying;
         a.K = dying ? Mathf.Max(0, a.K - fdt / AuraFadeOut) : Mathf.Min(1, a.K + fdt / AuraFadeIn);
         a.Light.Position = new Vector3((float)e.X, Y(e.X, e.Z) + (float)def.Height, (float)e.Z);
