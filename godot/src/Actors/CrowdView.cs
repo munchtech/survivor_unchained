@@ -343,6 +343,8 @@ public partial class CrowdView : Node3D
     /// <summary>H7 r2: a struck body's rim for 2 frames as the Flare's band crosses it (FlareFx.BandRim): 0 none. Over the
     /// marks' rim, under the hit kit's.</summary>
     public static Func<int, float>? FlareBandRim;
+    /// <summary>H7 r3: how high a held body is knocked up off the Long Cut's crack as the band crosses it (FlareFx.StatueLift, m).</summary>
+    public static Func<int, float>? FlareStatueLift;
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
@@ -832,7 +834,8 @@ public partial class CrowdView : Node3D
         g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
-        if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(flare, brm);
+        // (r3, judge r2 fix 6: the band's rim is edge only: no flash blend under it, the flat lilac-white fill)
+        if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
         crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
@@ -887,7 +890,8 @@ public partial class CrowdView : Node3D
             Audit(st.X, st.Z, 0, 1);
             censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, FlareBandRim?.Invoke(st.Id) ?? 0);
+            float brim = FlareBandRim?.Invoke(st.Id) ?? 0, lift = FlareStatueLift?.Invoke(st.Id) ?? 0;
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1);
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);

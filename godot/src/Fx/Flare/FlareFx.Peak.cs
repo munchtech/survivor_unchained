@@ -110,7 +110,8 @@ public partial class FlareFx
         if (peakFrame < 0) { if (peakColumnFx is { Visible: true } && rt - pressRt > 0.05) peakColumnFx.Visible = false; return; }
         var pk = FlareFamily.Peak;
         long f = (long)Engine.GetFramesDrawn() - peakFrame;
-        float env = f >= 0 && f < pk.Frames.Length ? (float)pk.Frames[f] : 0;
+        var fr = FlareFamily.Of(id).Peak.Frames ?? pk.Frames;
+        float env = f >= 0 && f < fr.Length ? (float)fr[f] : 0;
         env *= LessFlash ? 0.5f : 1f;
         var pl = pk.Of(Night);
         float gain = (float)FlareFamily.Of(id).Peak.Gain;
@@ -123,10 +124,25 @@ public partial class FlareFx
             return;
         }
         if (peakLine)
-            for (int i = 0; i < peakN; i++) { peakLights[i].LightEnergy = (float)pl.Light * gain * env; peakLights[i].Visible = true; }
+        {
+            // (r3, judge r2 fix 3: the light comes up out of the crack, so each of the rig's lights waits for the tear to reach
+            // it, and they are weighted from her (along[0]) to the far end (along[1]): brightest at her)
+            var al = FlareFamily.Of(id).Peak.Along;
+            float front = IsLongCut && lcCleaveT >= 0 && Tear ? TearFront((float)(t - lcCleaveT)) : float.MaxValue;
+            float len = (peakB - peakA).Length();
+            for (int i = 0; i < peakN; i++)
+            {
+                float u = i / (float)Math.Max(1, peakN - 1);
+                float w = al.Length >= 2 ? Mathf.Lerp((float)al[0], (float)al[1], u) : 1;
+                float gate = Mathf.SmoothStep(u * len - 3f, u * len, front);
+                peakLights[i].LightEnergy = (float)pl.Light * gain * env * w * gate;
+                peakLights[i].Visible = gate > 0.01f;
+            }
+        }
         else if (peakHeart != null) { peakHeart.LightEnergy = (float)pl.Light * gain * env; peakHeart.Visible = true; }
         RenderingServer.GlobalShaderParameterSet(PeakParam, new Vector4(peakA.X, peakA.Y, peakLine ? (float)FlareFamily.Of(id).Peak.Width : (float)FlareFamily.Of(id).Peak.Radius, env));
-        RenderingServer.GlobalShaderParameterSet(PeakLineParam, new Vector4(peakB.X, peakB.Y, peakLine ? 1 : 0, (float)FlareFamily.Of(id).Peak.HotWidth));
+        // (r3: a line's w is its crack's spill, x albedo; a disk's its hot heart's radius)
+        RenderingServer.GlobalShaderParameterSet(PeakLineParam, new Vector4(peakB.X, peakB.Y, peakLine ? 1 : 0, (float)(peakLine ? FlareFamily.Of(id).Peak.Spill : FlareFamily.Of(id).Peak.HotWidth)));
         float g = (float)pl.Ground * gain;
         RenderingServer.GlobalShaderParameterSet(PeakColParam, new Vector4(lin.R * g, lin.G * g, lin.B * g, 0));
         // (the hot core's and the wash's light over the shape's, so the shader's one colour carries all three; the wash's reach)
@@ -143,7 +159,7 @@ public partial class FlareFx
             LcStripDraw(peakColumnMesh, peakColumnMat, foot, foot + Vector3.Up * h, 0.38f);
             peakColumnFx.Visible = true;
         }
-        if (Args.Has("clip") && f < pk.Frames.Length) GD.Print($"flare peak frame {f}: light {env:0.00}, drawn {Engine.GetFramesDrawn()}");
+        if (Args.Has("clip") && f < fr.Length) GD.Print($"flare peak frame {f}: light {env:0.00}, drawn {Engine.GetFramesDrawn()}");
     }
 
     void PeakOff()

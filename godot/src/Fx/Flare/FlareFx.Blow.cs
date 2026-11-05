@@ -24,6 +24,12 @@ public partial class FlareFx
 {
     /// <summary>A Flare's damage number, released (BattleFx: Hits.Tally).</summary>
     public Action<int, Vector3, double, double, bool> Number = (_, _, _, _, _) => { };
+    /// <summary>One big number past the caps (Hits.Total): the Long Cut's line as one total at its far end (r3).</summary>
+    public Action<Vector3, double> Total = (_, _) => { };
+    double lineTotal, lineTotalDue = double.MaxValue;
+    int lineTotalN;
+    float lineTotalAlong;
+    Vector3 lineTotalAt;
     /// <summary>Her ember's pool (x her light; 1 none): PlayerView.FlarePool.</summary>
     public Action<float> EmberPool = _ => { };
 
@@ -39,7 +45,7 @@ public partial class FlareFx
     public static int KillsHeld { get; private set; }
     /// <summary>The struck rim's drawn frames as the band crosses a body (FLARE_LOOK §1.6: "a 2-frame rim in the calling's hue").</summary>
     const int BandRimFrames = 2;
-    static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col";
+    static readonly StringName BandParam = "flare_band", BandLineParam = "flare_band_line", BandColParam = "flare_band_col", BandEdgeParam = "flare_band_edge";
 
     void BlowPress()
     {
@@ -56,9 +62,10 @@ public partial class FlareFx
     {
         var from = FlareFamily.Of(id).From;
         var o = from == "point" ? new Vector2((float)e.TX, (float)e.TZ) : new Vector2((float)e.X, (float)e.Z);
-        var end = from == "line" ? new Vector2((float)e.TX, (float)e.TZ) : o;
+        bool line = from == "line" || from == "tear";
+        var end = line ? new Vector2((float)e.TX, (float)e.TZ) : o;
         var dir = end - o;
-        var axis = from == "line" && dir.LengthSquared() > 1e-4f ? new Vector3(dir.X, 0, dir.Y).Normalized() * 0.4f + Vector3.Up : Vector3.Up;
+        var axis = line && dir.LengthSquared() > 1e-4f ? new Vector3(dir.X, 0, dir.Y).Normalized() * 0.4f + Vector3.Up : Vector3.Up;
         MainBlowAt(o, end, new Vector3((float)e.TX, (float)HeightAt(e.TX, e.TZ), (float)e.TZ), axis, e.Part);
     }
 
@@ -66,7 +73,15 @@ public partial class FlareFx
     {
         if (!familyOn || blowT >= 0) return;
         blowT = t; blowRt = rt;
-        bandA = o; bandB = end; bandOn = !BandOff; // (--flare-band-off: an ablation, the band never drawn)
+        // (a "tear" Flare's band is a ring from her, its line tearing with it: FlareFx.LongCut TearAt)
+        bandA = o; bandB = FlareFamily.Of(id).From == "tear" ? o : end; bandOn = !BandOff; // (--flare-band-off: an ablation, the band never drawn)
+        // (r3: the main blow's hitstop holds the world, never the Flare's clock: the band, the tear and the deaths on it run
+        // through it as the peak's light does; at a tenth, the tear stood 0.3 m long on the peak's brightest frames)
+        hitstopRuns = HasPeak;
+        // (r3, judge r2 fix 6: the struck rims as the band crosses them are gold, the marks' hue handed over on the blow)
+        var rc = Color.FromHtml(FlareFamily.Band.RimColor).SrgbToLinear();
+        float rcm = Mathf.Max(rc.R, Mathf.Max(rc.G, rc.B));
+        RenderingServer.GlobalShaderParameterSet("flare_mark_rim", new Vector4(rc.R / rcm, rc.G / rcm, rc.B / rcm, 1));
         Cue("boom", cueAt, 1);
         Rumble(1, 0.6f, 0.14f);
         // The plain Strikes' Spend (its light, the world's ring) on this same frame (FLARE_LOOK §1.2), sized with the
@@ -98,14 +113,26 @@ public partial class FlareFx
     }
 
     /// <summary>When the band's front reaches this point (Flare time); Held before the main blow.</summary>
-    double BandTime(float x, float z)
+    double BandTime(float x, float z) => blowT < 0 ? Held : blowT + BandAfter(BandDist(x, z));
+
+    /// <summary>How long after the main blow (Flare time) the band's front stands this far out (m).</summary>
+    static double BandAfter(float dist)
     {
-        if (blowT < 0) return Held;
         var br = FlareFamily.Band;
-        float d = Mathf.Clamp(BandDist(x, z) / (float)Math.Max(1, br.Reach), 0, 1);
-        double k = 1 - Math.Pow(1 - d, 1 / Math.Max(0.2, br.Ease));
-        return blowT + br.Time * k;
+        float d = Mathf.Clamp(dist / (float)Math.Max(1, br.Reach), 0, 1);
+        return br.Time * (1 - Math.Pow(1 - d, 1 / Math.Max(0.2, br.Ease)));
     }
+
+    /// <summary>How far out the band's front stands this long after the main blow (Flare time, m).</summary>
+    static float BandFront(double since)
+    {
+        var br = FlareFamily.Band;
+        double x = Math.Clamp(since / Math.Max(br.Time, 1e-3), 0, 1);
+        return (float)(br.Reach * (1 - Math.Pow(1 - x, Math.Max(0.2, br.Ease))));
+    }
+
+    /// <summary>The main blow's hitstop lets the Flare's clock run (r3): set on the blow, cleared when the stop ends.</summary>
+    bool hitstopRuns;
 
     /// <summary>For the marks (FlareMarksView): when the band reaches this point, Flare time (Held before the main blow).</summary>
     public double BandReaches(float x, float z) => BandTime(x, z);
@@ -118,6 +145,7 @@ public partial class FlareFx
         if (bt >= Held) return Held;
         double left = bt - t;
         if (left <= 0) return 0;
+        if (hitstopRuns) return left;
         double stopFlare = Stop * 0.1;
         return left <= stopFlare ? left / 0.1 : Stop + (left - stopFlare);
     }
@@ -197,6 +225,7 @@ public partial class FlareFx
                 RenderingServer.GlobalShaderParameterSet(BandLineParam, new Vector4(bandB.X, bandB.Y, (float)br.Lead, (float)br.After));
                 RenderingServer.GlobalShaderParameterSet(BandColParam, new Vector4(c.R, c.G, c.B, (float)bl.Tail));
                 RenderingServer.GlobalShaderParameterSet(BandShapeParam, new Vector4((float)br.Reach, (float)br.Time, (float)br.Ease, 0));
+                RenderingServer.GlobalShaderParameterSet(BandEdgeParam, new Vector4((float)br.Edge, (float)br.Trough, (float)br.Dark, (float)bl.Glow * (LessFlash ? 0.6f : 1f)));
             }
         }
         RippleTick();
@@ -220,8 +249,29 @@ public partial class FlareFx
             {
                 var h = held[i];
                 if (t < BandTime(h.At.X, h.At.Z) + lag || MarkHolds(h.Target, h.BornRt)) continue;
-                Number(h.Target, h.At, h.Amount, h.MaxHp, h.Crit);
+                // (r3, judge r2 fix 2: the Long Cut's line victims, past the twelve on screen, are told as one total at the
+                // seam's far end as the band leaves the last of them; a crit, the Main's, keeps its own)
+                if (IsLongCut && !h.Crit && doomed.TryGetValue(h.Target, out var dm) && !dm.Ash && !dm.Pending)
+                {
+                    lineTotal += h.Amount; lineTotalN++;
+                    var (al, _) = SeamNear(h.At.X, h.At.Z);
+                    var sp = SeamPoint(Math.Min(lcLen, al + 1.2f));
+                    if (lineTotalN == 1 || al > lineTotalAlong) { lineTotalAt = sp; lineTotalAlong = al; }
+                    lineTotalDue = t;
+                }
+                else Number(h.Target, h.At, h.Amount, h.MaxHp, h.Crit);
                 held.RemoveAt(i--);
+            }
+        }
+        if (lineTotalN > 0 && t > lineTotalDue + 1e-6)
+        {
+            bool more = false;
+            foreach (var h in held) if (doomed.TryGetValue(h.Target, out var dm) && !dm.Ash && !h.Crit) { more = true; break; }
+            if (!more)
+            {
+                Total(lineTotalAt + Vector3.Up * 1.2f, lineTotal);
+                if (Args.Has("clip") || Args.Has("shot")) GD.Print($"flare line total {id}: {lineTotal:0} over {lineTotalN} on the line at +{rt - blowRt:0.000} s real from the blow, drawn {Engine.GetFramesDrawn()}");
+                lineTotalN = 0; lineTotal = 0;
             }
         }
         // Her ember's pool: up at the main blow, held, then back.
@@ -262,6 +312,8 @@ public partial class FlareFx
         held.Clear();
         blowT = blowRt = -1;
         bandOn = false;
+        hitstopRuns = false;
+        lineTotal = 0; lineTotalN = 0; lineTotalAt = Vector3.Zero; lineTotalDue = Held;
         rippleT = -1;
         bandStruck.Clear();
         KillsHeld = 0;

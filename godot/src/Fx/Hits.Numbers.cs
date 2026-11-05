@@ -144,6 +144,20 @@ public partial class Hits
         waiting.Clear();
     }
 
+    /// <summary>One big number past the caps (H7 r3: the Long Cut's line, told as one total at its far end once the band
+    /// has crossed it, its victims past the twelve on screen): heavy, white-gold, a size over a heavy blow's.</summary>
+    public void Total(Vector3 at, double amount)
+    {
+        int i = Show(at, "", Colors.White, 60);
+        var t = new Tallied { Target = int.MinValue + 1, Sum = amount, Born = clock, Heavy = true };
+        tallies[i] = t;
+        tallyOf[i] = int.MinValue + 1;
+        Restyle(i, t);
+        var l = numbers[i].Label;
+        l.FontSize = 96;
+        l.Modulate = new Color(1.25f, 1.05f, 0.7f);
+    }
+
     readonly List<Vector3> young = new();
 
     static bool Heavy(in Waiting w) => w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2 && w.Tint == null;

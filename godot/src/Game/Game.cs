@@ -713,6 +713,7 @@ public partial class Game : Node, IZoneHost
 
         CrowdView.FlareMarkRim = fl.MarkRim;
         CrowdView.FlareBandRim = fl.BandRim;
+        CrowdView.FlareStatueLift = fl.StatueLift;
         CrowdView.FlareChar = fl.CharAt;
         CrowdView.FlareRingPast = fl.RingPast;
         ApplySettings();

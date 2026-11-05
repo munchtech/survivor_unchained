@@ -69,7 +69,8 @@ public static class FlareFamily
     }
 
     /// <summary>A Flare's own: its stop; its main blow (the Blow event's Part, and when Last only its last such); where
-    /// its band runs from ("her", or "line": out from the blow's line, X/Z to TX/TZ).</summary>
+    /// its band runs from ("her", or "line": out from the blow's line, X/Z to TX/TZ; "tear": a line whose band runs from her
+    /// as a ring, its crack tearing along the line in step with it, the tip the band's front: the Long Cut, r3).</summary>
     public sealed class Own
     {
         public double? Stop; public string Blow = ""; public bool Last; public string From = "her";
@@ -85,7 +86,10 @@ public static class FlareFamily
 
     /// <summary>A Flare's peak shape: "disk" (Radius m, a Column m tall at its heart) or "line" (Width m either side of its
     /// line, its whole length).</summary>
-    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1, Hot, HotWidth = 0.25; }
+    /// <summary>r3: a line's Hot is its crack's white-hot core (HDR) and Spill its gold on the crack's lips (x albedo); Tip
+    /// the tear's white-hot tip (HDR, a "tear" Flare); its rig's lights weighted Along[0] at her to Along[1] at the far end,
+    /// each lit as the tear reaches it; Frames its own envelope by drawn frame (null: the family's).</summary>
+    public sealed class PeakShape { public string Shape = ""; public double Radius = 8, Width = 2.5, Column, Gain = 1, Hot, HotWidth = 0.25, Spill, Tip; public double[] Along = { 1, 1 }; public double[]? Frames; }
 
     public sealed class PeakLight { public double Light = 6, Ground = 1, Column = 3, Wash; }
 
@@ -107,7 +111,8 @@ public static class FlareFamily
     /// Dust lift of the ground's value (x, no light), Puffs dust puffs thrown out along it.</summary>
     public sealed class RippleRules { public double Reach = 10, Time = 0.25, Lead = 0.8, Dust = 0.35; public int Puffs = 28; }
 
-    public sealed class BandLight { public double Front = 1, Tail = 0.45; }
+    /// <summary>Glow: the leading edge's own light (HDR, x the front's colour), r3.</summary>
+    public sealed class BandLight { public double Front = 1, Tail = 0.45, Glow; }
 
     /// <summary>The band on the main blow, a lit FRONT: it runs Reach m in Time s (Flare time, eased out by Ease: at x of
     /// its run it stands at Reach (1 - (1 - x)^Ease)), its soft leading edge Lead m, the ground lit behind it for After s;
@@ -115,6 +120,10 @@ public static class FlareFamily
     public sealed class BandRules
     {
         public double Reach = 22, Time = 0.28, Ease = 1.35, Lead = 0.55, After = 0.15, Fade = 0.3;
+        /// <summary>r3 (judge r2 fix 4): the leading edge's depth behind the front (m), the darker trough's depth behind it (m)
+        /// and its dark (the ground's albedo x 1 - Dark); RimColor: the struck bodies' rim as it crosses them (sRGB).</summary>
+        public double Edge = 0.07, Trough = 0.7, Dark = 0.35;
+        public string RimColor = "#ffb84a";
         public BandLight Night = new(), Day = new();
         public BandLight Of(bool night) => night ? Night : Day;
     }

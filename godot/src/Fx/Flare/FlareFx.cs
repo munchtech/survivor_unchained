@@ -170,7 +170,7 @@ public partial class FlareFx : Node3D
     void Press(Ev.Flare e, Battle b)
     {
         Clear();
-        if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)} {PressCount(e, b)}");
+        if (Args.Has("clip")) GD.Print($"flare press frame {Engine.GetFramesDrawn()} battle_t {b.Time:0.00} foes_alive {System.Linq.Enumerable.Count(b.Enemies.Items, x => x.Alive)} kills {b.KillCount} {PressCount(e, b)}");
         // (--perf: the beats on the recording's clock, for tools/fx/flare_gpu.py --live)
         if (Perf.On) GD.Print($"flare perf press t {Perf.Now:0.0000}");
         id = e.Id;
@@ -273,19 +273,27 @@ public partial class FlareFx : Node3D
     Vector4 look, web, frost;
 
     /// <summary>A real-time step: the clocks, the envelope, the uniforms, the layers.</summary>
+    int hudKillsLogged = -1;
+
     public void Tick(double dt, Battle? b)
     {
         float fdt = (float)dt;
         rt += dt;
-        if (Stop > 0) Stop = Math.Max(0, Stop - dt);
+        if (Stop > 0) { Stop = Math.Max(0, Stop - dt); if (Stop <= 0) hitstopRuns = false; }
         if (!Frozen && ramp < 1) ramp = Math.Min(1, ramp + dt / 0.08 * 0.92);
         if (b != null && !Active) Ready(b, fdt);
         LcWarmStep();
         if (Active)
         {
-            t += Stop > 0 ? dt * 0.1 : dt;
+            t += Stop > 0 && !hitstopRuns ? dt * 0.1 : dt;
             Envelope();
             BlowTick();
+            // (--clip: the HUD's count as it steps, against the sim's and the band's hold: judge r2's "10 to 26" check)
+            if (b != null && Args.Has("clip") && rt - pressRt < 2.5 && b.KillCount - KillsHeld != hudKillsLogged)
+            {
+                hudKillsLogged = b.KillCount - KillsHeld;
+                GD.Print($"flare kills shown {hudKillsLogged} (sim {b.KillCount}, held {KillsHeld}, the Flare's {doomed.Count}) at +{rt - pressRt:0.000} s real, drawn {Engine.GetFramesDrawn()}");
+            }
             if (id == "burns_twice") BurnsTick(fdt);
             else if (IsLongCut) LongTick(fdt);
             else Plain();

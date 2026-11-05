@@ -173,7 +173,7 @@ public partial class FlareFx
         // (made now, in the Hold, not at the sweep: the first dust and chunks held a frame ~1 s)
         ChunkMeshes();
         Dust(Her + Vector3.Down * 50, 0.01f, 0.01f, 0.05f, Vector3.Zero, 0);
-        lcSweepT = lcCleaveT = -1;
+        lcSweepT = lcCleaveT = -1; lcEmberTo = 0; lcEmberN = 0;
         lcLen = 0;
         lcJetN = lcChunkN = 0;
         lcJetAt.Clear();
@@ -234,7 +234,15 @@ public partial class FlareFx
     double lcCleaveRt = -1;
 
     /// <summary>When the fuse reaches this far along the seam (Flare time).</summary>
-    double FuseAt(float along) => lcCleaveT + Math.Max(0, along) / FuseSpeed;
+    double FuseAt(float along) => lcCleaveT + (Tear ? BandAfter(Math.Max(0, along)) : Math.Max(0, along) / FuseSpeed);
+
+    /// <summary>r3 (judge r2 fix 3, "better still"): the crack tears from her in step with the family's band (its data's
+    /// from "tear"): the tip stands where the band's front crosses the line (FlareFx.Blow BandAfter/BandFront, the ring
+    /// from her), so the tear, the band and the deaths on it are one front. (r2: a fuse at 200 m/s, its own clock.)</summary>
+    bool Tear => familyOn && !BandOff && Content.FlareFamily.Of(id).From == "tear";
+
+    /// <summary>How far along the tear's tip stands this long after the cleave (Flare time, m).</summary>
+    float TearFront(float s) => Mathf.Min(lcLen, Tear ? BandFront(s) : s * FuseSpeed);
 
     /// <summary>How far across the seam's line a point lies (m; 0 when there is no seam).</summary>
     float SeamAcross(Vector3 w) => lcLen <= 0 ? 0 : (new Vector2(w.X, w.Z) - lcO).Dot(new Vector2(-lcDir.Y, lcDir.X));
@@ -256,8 +264,8 @@ public partial class FlareFx
                 var (along, off) = SeamNear(d.Where.X, d.Where.Z);
                 d.Across = off;
                 d.Ash = off > LcSeamBand;
-                if (d.RimAt < 0) d.RimAt = FuseAt(along);
-                d.At = DeathAt(along, off);
+                d.At = DeathAt(along, off, new Vector2(d.Where.X, d.Where.Z));
+                if (d.RimAt < 0) d.RimAt = Tear ? d.At : FuseAt(along);
             }
             else if (d.RimAt < 0)
             {
@@ -300,8 +308,12 @@ public partial class FlareFx
     /// <summary>When a death here begins (Flare time). The seam's: the fuse's arrival at its nearest point of the crack, plus
     /// 0.1 s a metre off it. The rest: after the seam's band (its last at +0.25 s past the fuse), then 0.1 s a metre on,
     /// eased so the farthest start by cleave +0.72 s.</summary>
-    double DeathAt(float along, float off)
+    double DeathAt(float along, float off, Vector2 p)
     {
+        // (r3, judge r2 fix 2: a tear Flare's every death is the band's: each dies the frame its front crosses it (the
+        // seam's: where the tip passes its nearest point of the crack; the rest: their own place), so the HUD's count, the
+        // gold rim and the knock-up land on it. r2: the seam's 0.1 s a metre off the crack, the rest up to +0.72 s.)
+        if (Tear) return off <= LcSeamBand ? FuseAt(along) : lcCleaveT + BandAfter((p - lcO).Length());
         if (off <= LcSeamBand) return FuseAt(along) + CharPerMetre * off;
         double s = FuseAt(along) + CharPerMetre * LcSeamBand + 0.05 + 0.4 * (1 - Math.Exp(-(off - LcSeamBand) * CharPerMetre / 0.4));
         return Math.Min(s, lcCleaveT + AshLatest);
@@ -531,7 +543,9 @@ public partial class FlareFx
             if (d.Pending && lcCleaveT < 0 && t > d.Born + 0.6) { d.Pending = false; d.At = t; }
     }
 
-    const int AshMax = 240, SootMax = 700;
+    const int AshMax = 240, SootMax = 700, EmberMax = 70;
+    float lcEmberTo;
+    int lcEmberN;
     int lcAshN, lcSootN, lcLogN, lcBehindN;
     readonly int[] lcClsN = new int[2];
     readonly double[] lcClsStart = new double[2], lcClsLast = new double[2], lcClsGone = new double[2];
@@ -543,8 +557,28 @@ public partial class FlareFx
     void SeamTick(float dt)
     {
         float s = (float)(t - lcCleaveT);
-        float run = lcLen / FuseSpeed;
-        float front = Mathf.Min(lcLen, s * FuseSpeed);
+        float run = Tear ? (float)BandAfter(lcLen) : lcLen / FuseSpeed;
+        float front = TearFront(s);
+        var tipK = Content.FlareFamily.Of(id).Peak;
+        var brT = Content.FlareFamily.Band;
+        RenderingServer.GlobalShaderParameterSet("flare_tear", Tear ? new Vector4((float)brT.Reach, (float)brT.Time, (float)brT.Ease, (float)tipK.Tip * (LessFlash ? 0.6f : 1f) * (1 - Mathf.SmoothStep(run, run + 0.1f, s))) : Vector4.Zero);
+        // (r3: light and embers rising out of the crack as it tears, the most at her)
+        if (Tear && front > lcEmberTo && lcEmberN < EmberMax)
+        {
+            for (float a = lcEmberTo; a < front && lcEmberN < EmberMax; a += 0.42f)
+            {
+                lcEmberN++;
+                var p = SeamPoint(a + R() * 0.4f);
+                float eh = Mathf.Lerp(1.3f, 0.7f, Mathf.Clamp(a / 12f, 0, 1));
+                glow.Spawn(new FlareBits.P
+                {
+                    Kind = FlareBits.Kind.Mote, At = p + new Vector3((R() - 0.5f) * 0.15f, 0.05f, (R() - 0.5f) * 0.15f),
+                    V = new Vector3((R() - 0.5f) * 0.6f, 1.6f + R() * 2.2f, (R() - 0.5f) * 0.6f), Life = 0.45f + R() * 0.5f, Size = 0.035f + R() * 0.03f, SizeEnd = 0.01f,
+                    Color = (Night ? new Color(1.1f, 0.72f, 0.3f) : new Color(1.4f, 0.95f, 0.45f)) * eh, ColorEnd = new Color(0.5f, 0.18f, 0.03f), Drag = 1.2f, Lift = 0.6f,
+                });
+            }
+            lcEmberTo = front;
+        }
         float fade = 1 - Mathf.SmoothStep(4.4f, 6.0f, s);
         RenderingServer.GlobalShaderParameterSet("flare_seam", new Vector4(lcO.X, lcO.Y, Mathf.Atan2(lcDir.Y, lcDir.X), lcLen));
         RenderingServer.GlobalShaderParameterSet("flare_seam_t", new Vector4(s, FuseSpeed, fade, Night ? 1 : 0));
@@ -770,7 +804,7 @@ public partial class FlareFx
         bool inSweep = new Vector2((float)x - at.X, (float)z - at.Z).Length() <= reach;
         bool onSeam = off <= Math.Max(lcHalf, LcSeamBand);
         if (!inSweep && !onSeam) return (-1, false);
-        double when = DeathAt(along, off);
+        double when = DeathAt(along, off, new Vector2((float)x, (float)z));
         return (t < when ? -1 : t - when, off > LcSeamBand);
     }
 
@@ -784,9 +818,21 @@ public partial class FlareFx
     /// <summary>The burn-up's length (Flare time), by class.</summary>
     public static float BurnTimeOf(bool ash) => ash ? AshLen : BurnLen;
 
+    /// <summary>For CrowdView (r3, judge r2 fix 2): how high a seam's death is knocked up off the crack as the band crosses
+    /// it (m; 0 none): thrown at 3.2 m/s against 16 m/s^2, at most ~0.32 m, as it burns away.</summary>
+    public float StatueLift(int enemy)
+    {
+        if (!IsLongCut || !Tear || !doomed.TryGetValue(enemy, out var d) || d.Pending || d.Ash || t < d.At) return 0;
+        float k = (float)(t - d.At);
+        return Mathf.Max(0, 3.2f * k - 8f * k * k);
+    }
+
     /// <summary>For CrowdView: a held body's struck flash, its rim for 3 frames (real time) as its moment comes.</summary>
     public float StatueFlash(int enemy)
     {
+        // (r3, judge r2 fix 6: a tear Flare's struck get the band's gold rim, edge only (BandRim); this 0.5 flash under it
+        // was the flat lilac-white fill on the blow's bodies)
+        if (Tear) return 0;
         // (the sweep's passing, or the fuse's for the seam's own: a warm rim, no lift of the paint)
         if (!IsLongCut || !doomed.TryGetValue(enemy, out var d) || d.RimRt < 0) return 0;
         return lcRt - d.RimRt < 3.2 / 60.0 ? 0.5f : 0;
@@ -863,7 +909,7 @@ public partial class FlareFx
 
     void LongClear()
     {
-        lcSweepT = lcCleaveT = -1;
+        lcSweepT = lcCleaveT = -1; RenderingServer.GlobalShaderParameterSet("flare_tear", Vector4.Zero);
         lcCleaveRt = -1;
         lcLen = 0;
         LcForeshadowOff();

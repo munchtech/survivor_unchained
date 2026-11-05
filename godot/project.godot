@@ -123,6 +123,14 @@ flare_band_shape={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+flare_band_edge={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+flare_tear={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 flare_peak={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
