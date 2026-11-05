@@ -37,15 +37,103 @@ def corner_shift(st, G, deg, nb):
     return float((off[0] * vw.ex + off[1] * vw.ey) @ nb)
 
 
+def skins_surface(mesh, st, G, X, sk):
+    """r5 (P1 ek): the contact surface from the two skins, not the bisector plane. In the plane's frame (e1 into the
+    crease, e2 the hinge, s along nb toward the proximal limb) the strip's skinned nodes X are binned on a `cell` grid
+    over (e1, e2): per cell the proximal skin's lower envelope s_p (its facing side) and the distal's upper s_d; where
+    they overlap (s_d > s_p: the skinning drove one limb into the other) the contact is the CORE, and its surface
+    h = s_p + share (s_d - s_p): each skin gives its share of the overlap (share 0.5: the like tissues of the two
+    limbs, biceps on the forearm's flexors, the hamstrings on the gastrocnemius, give alike). h is smoothed (a normalised
+    Gaussian, `sigma`) and held flat outward past the overlap by its nearest value; the footprint weight fp is 1 in
+    the core and fades over `rim` (a smoothstep of the distance outside it), so the contact's edge eases out (the
+    judge's knee kink: the flattening stopped short at the solve's sphere, 15 cm along a contact that runs 22 cm).
+    Returns the lookups and the contact's reach (the farthest core-or-rim point from the joint, m)."""
+    from scipy.ndimage import distance_transform_edt, gaussian_filter, map_coordinates
+    a_ = bends.unit(prox_dir(st, G))
+    b_ = st.d3(G)
+    nb = bends.unit(a_ - b_)
+    wv = bends.unit(a_ + b_)
+    hv = np.cross(nb, wv)
+    Oj = G[st.j][:3, 3]
+    gd = np.zeros(mesh.n, bool)
+    gd[mesh.rep[st.seg_d]] = True
+    gr = np.zeros(mesh.n, bool)
+    gr[mesh.rep[st.rend]] = True
+    rel = X - Oj
+    e1, e2, s = rel @ wv, rel @ hv, rel @ nb
+    c = sk.get("cell", 0.004)
+    m = gr & (e1 > 0) & (e1 < sk.get("e1_max", 0.4))
+    lo2 = float(e2[m].min())
+    n1 = int(np.ceil(e1[m].max() / c)) + 1
+    n2 = int(np.ceil((e2[m].max() - lo2) / c)) + 1
+    # each skin's facing envelope by rays square to the plane over the grid's cell centres: the proximal triangles
+    # hit from the distal side (its lower envelope s_p), the distal ones from the proximal side (s_d); exact where a
+    # node binning read a column's far skin when the facing one's nodes fell in the next column
+    Tr = mesh.rep[st.T_rend]
+    tri_d = gd[Tr].sum(1) >= 2
+    g1, g2 = np.meshgrid((np.arange(n1) + 0.5) * c, lo2 + (np.arange(n2) + 0.5) * c, indexing="ij")
+    base = Oj + g1.reshape(-1, 1) * wv + g2.reshape(-1, 1) * hv
+    far = 1.0
+    env = {}
+    for nm, Tc, sg in (("p", Tr[~tri_d], -1.0), ("d", Tr[tri_d], 1.0)):
+        sc = ray.scene(X, Tc)
+        org = base + sg * far * nb
+        pid, tf = ray.hits(sc, org, np.tile(-sg * nb, (len(org), 1)))
+        E = np.where(pid >= 0, sg * (far - tf), np.nan).reshape(n1, n2)
+        env[nm] = E
+    sp_ = np.where(np.isfinite(env["p"]), env["p"], np.inf)
+    sd_ = np.where(np.isfinite(env["d"]), env["d"], -np.inf)
+    both = np.isfinite(sp_) & np.isfinite(sd_)
+    ov = np.where(both, sd_ - sp_, -np.inf)
+    # the core from the smoothed overlap (the envelopes are one mesh row apart: a raw cell test left holes in the
+    # contact, and a node over a hole was let through by its partner), its holes filled
+    from scipy.ndimage import binary_fill_holes
+    wo = both.astype(float)
+    ovs = gaussian_filter(np.where(both, ov, 0.0), sk.get("sigma", 0.006) / c) / np.maximum(
+        gaussian_filter(wo, sk.get("sigma", 0.006) / c), 1e-12)
+    core = binary_fill_holes(both & (ovs > 0))
+    hc = np.where(both, sp_ + sk.get("share", 0.5) * np.where(both, ov, 0.0), 0.0)
+    sg = sk.get("sigma", 0.006) / c
+    wgt = (both & (ov > -sk.get("gap_data", 0.01))).astype(float)
+    num, den = gaussian_filter(hc * wgt, sg), gaussian_filter(wgt, sg)
+    ok = den > 1e-3
+    h = np.where(ok, num / np.maximum(den, 1e-12), 0.0)
+    if ok.any() and not ok.all():
+        _, (a1, a2) = distance_transform_edt(~ok, return_indices=True)
+        h = h[a1, a2]
+    dout = distance_transform_edt(~core) * c if core.any() else np.full(core.shape, np.inf)
+    fp = 1.0 - smooth01(dout / sk.get("rim", 0.02))
+    reach = 0.0
+    k = np.argwhere(fp > 0)
+    if len(k):
+        E1, E2 = (k[:, 0] + 0.5) * c, lo2 + (k[:, 1] + 0.5) * c
+        reach = float(np.sqrt(E1 ** 2 + E2 ** 2 + h[k[:, 0], k[:, 1]] ** 2).max())
+
+    def look(Yc, grid, mode, cval=0.0):
+        r_ = Yc - Oj
+        q = np.stack([(r_ @ wv) / c - 0.5, (r_ @ hv - lo2) / c - 0.5])
+        return map_coordinates(grid, q, order=1, mode=mode, cval=cval)
+    return {"h": lambda Yc: look(Yc, h, "nearest"), "fp": lambda Yc: look(Yc, fp, "constant"), "reach": reach,
+            "core_cells": int(core.sum()), "rim_cells": int(((fp > 0) & ~core).sum()),
+            "ov_max_mm": round(float(ov[core].max() * 1000) if core.any() else 0.0, 1)}
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     p = mesh.p
     I = p.index
     sub = lambda x: x.replace("{s}", st.s)
     c0 = p.rest[I[sub(jc["center"])]][:3, 3]
     d = np.linalg.norm(mesh.P0 - c0, axis=1)
-    f = 1 - smooth01((d - jc["r_in"]) / (jc["r_out"] - jc["r_in"]))
-    free = (d < jc["r_out"]) & ~mesh.held
-    if jc.get("free_rend"):                 # a girdle's sphere reaches the other limbs: solve only this strip's body
+    sk = None
+    r_in, r_out = jc["r_in"], jc["r_out"]
+    if jc.get("surface") == "skins":
+        # the solve holds the whole contact: its sphere grows to the contact's reach (+ the hold), the fade beyond
+        sk = skins_surface(mesh, st, G, V[mesh.first], jc.get("skins", {}))
+        r_in = max(r_in, sk["reach"] + jc.get("skins", {}).get("hold", 0.01))
+        r_out = r_in + (jc["r_out"] - jc["r_in"])
+    f = 1 - smooth01((d - r_in) / (r_out - r_in))
+    free = (d < r_out) & ~mesh.held
+    if jc.get("free_rend") or sk is not None:   # a girdle's sphere, or the skins' grown one, reaches the other limbs: solve only this strip's body
         rn = np.zeros(mesh.n, bool)
         rn[mesh.rep[st.rend]] = True
         free &= rn
@@ -83,6 +171,11 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     hv0 = np.cross(bends.unit(a_ - b_), bends.unit(a_ + b_))
     offn = lambda Yc: (shift * (smooth01(((Yc - Oj) @ wv) / ramp) if ramp > 0 else np.ones(len(Yc)))
                        + bow * ((Yc - Oj) @ hv0) ** 2)
+    fpn = lambda Yc: np.ones(len(Yc))
+    if sk is not None:                       # the skins' contact surface and its footprint (skins_surface)
+        offn, fpn = sk["h"], sk["fp"]
+        log_sk = {k: sk[k] for k in ("reach", "core_cells", "rim_cells", "ov_max_mm")}
+        log_sk["reach"] = round(log_sk["reach"], 4)
     # rest-space sideways: the swell's room (the sides, not the crease or the outer)
     je, jd = I[sub(jc["distal_end"])], I[sub(jc["distal"])]
     d_rest = bends.unit(p.rest[je][:3, 3] - p.rest[jd][:3, 3])
@@ -99,6 +192,9 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         side = np.where(gr, np.where(gd, -1.0, 1.0), side)
     active = np.zeros(mesh.n, bool)
     log = {"free": int(len(fi)), "iters": []}
+    if sk is not None:
+        log["skins"] = log_sk
+    close = jc.get("skins", {}).get("close", 0.0)
     vw = st.view(2 * bends.PX_CLOSE) if ref else None
     dense = (np.concatenate([bends.resample(ref[k]) for k in jc.get("pull", []) if k in ref])
              if ref and jc.get("pull") else None)
@@ -107,6 +203,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
     slabs = []
     O0 = p.rest[st.j][:3, 3]
     for sd_, ts in (jc.get("area") or {}).items():
+        if sk is not None and jc.get("skins", {}).get("area_step"):
+            # the tissue's section kept wherever the contact presses it: stations on to the contact's reach
+            stp = jc["skins"]["area_step"]
+            ts = sorted(set(list(ts) + [round(float(t), 4) for t in np.arange(max(ts) + stp, sk["reach"] + 1e-6, stp)]))
         sel = st.seg_p if sd_ == "p" else st.seg_d
         ax0 = st.p3 if sd_ == "p" else st.u_d0
         on = np.zeros(mesh.n, bool)
@@ -155,7 +255,11 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         rel = Y - Oj
         s = rel @ nb - offn(Y)
         inwedge = (rel @ wv > cf["wedge"]) & free & (f > 0.02)
-        viol = inwedge & (side * s < m_)
+        if sk is not None:                    # in the footprint: past the surface, or within `close` of it in the rim
+            fpY = fpn(Y)
+            viol = inwedge & (fpY > 0) & (side * s < m_ + close * (fpY < 1))
+        else:
+            viol = inwedge & (side * s < m_)
         if jc.get("footprint"):                # a girdle's plane is wide: contact only where the other part is across
             viol = viol & across(rel, inwedge, viol, jc["footprint"])
         active |= viol
@@ -219,6 +323,8 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
                 rel = Y - Oj
                 s = rel @ nb - offn(Y)
                 bad = (rel @ wv > cf["wedge"]) & free & (f > 0.02) & (side * s < m_)
+                if sk is not None:            # the wall over the footprint, its rim too: no skin crosses the surface
+                    bad &= fpn(Y) > 0
                 if jc.get("footprint"):
                     bad = bad & across(rel, (rel @ wv > cf["wedge"]) & free & (f > 0.02), bad, jc["footprint"])
                 Y[bad] += ((side[bad] * m_ - s[bad]))[:, None] * nb
@@ -246,8 +352,8 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         tgtF = tgt @ Fr.T                                   # in the plane's frame
         Wn = np.zeros(len(fi))
         ai = pos[np.nonzero(active & free)[0]]
-        Wn[ai] = cw
-        tgtF[ai, 2] += cw * (side[fi[ai]] * m_ + (Oj @ nb) + offn(Y)[fi[ai]])
+        Wn[ai] = cw * (fpn(Y[fi[ai]]) if sk is not None else 1.0)
+        tgtF[ai, 2] += Wn[ai] * (side[fi[ai]] * m_ + (Oj @ nb) + offn(Y)[fi[ai]])
         lus = [splu((Lg + sp.diags(Wi)).tocsc()), splu((Lg + sp.diags(Wi + Wn)).tocsc())]
         XfixF = Xfix @ Fr.T
         for _ in range(cf["arap"]):
@@ -281,8 +387,10 @@ def solve_key(mesh, st, V, G, jc, cf, ref):
         if cf.get("release", 1):
             sa = side * ((Y - Oj) @ nb - offn(Y)) - m_
             rel_ = active & (sa > cf.get("release_tol", 2e-5))
+            if sk is not None:                # two skins pressed together are not let go inside the footprint
+                rel_ &= fpn(Y) <= 0
             active &= ~rel_
         else:
             rel_ = np.zeros(mesh.n, bool)
-        log["iters"].append({"contact_pts": int(active.sum()), "released": int(rel_.sum()), "outline_pts": len(out_t)})
+        log["iters"].append({"contact_pts": int(active.sum()), "released": int(rel_.sum()), "outline_pts": len(out_t), "move_mm": round(float(np.linalg.norm(Y - X, axis=1).max() * 1000), 1)})
     return Y, f, free, M, log

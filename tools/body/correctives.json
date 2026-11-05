@@ -98,6 +98,24 @@
       "inner"
      ],
      "pressure": 0.0
+    },
+    "135": {
+     "surface": "skins",
+     "skins": {
+      "share": 0.5,
+      "sigma": 0.006,
+      "rim": 0.02,
+      "close": 0.0,
+      "hold": 0.01,
+      "area_step": 0.015
+     },
+     "pressure_to": {
+      "p": 1.0,
+      "d": 1.0
+     },
+     "solve": {
+      "margin": 0.00035
+     }
     }
    },
    "why": "P1 D (5 Nov), on OUR topology and weights v1 (wide crease band, 4b off). Keys 90 and 135 only: the 5 key (straightening from her 40.4 rest) is dropped, LBS there already holds (inside 0, girth .99-1.05, area .98-1.09), so below the rest the law holds the null. side 'geom': each node's side of the plane by the REST bisector plane (the check's seg_d), not the 0.5 distal weight: with the wide band the 0.5 line sits off the crease and the fold pinned 286 rounded-corner nodes to the wrong side (175 inside at 90 against LBS's 0). 90: the inner and outer curves pulled (cap 30 mm: the inner corner sits up to 27 px off, the sharpening the wide band needs), no pressure. 135: pressure, the section swell as a push along the skin normal (the edge-scaling swell grew girth to 1.2 for area .79: scaling stretches the skin round a pinned face), restoring the rest area per station to p 1.0 / d 0.88 of the rest (the forearm's girth is the bound: d 0.94 pushed d0.1 to 1.09), faded to none within 10 mm of the contact (the corner's normals converge: pushing there folded the skin, 11 inside); clamp: the plane as a hard wall after the last round."
@@ -176,7 +194,19 @@
      "pressure": 3.0,
      "pressure_to": {
       "p": 1.0,
-      "d": 0.88
+      "d": 1.0
+     },
+     "surface": "skins",
+     "skins": {
+      "share": 0.5,
+      "sigma": 0.006,
+      "rim": 0.02,
+      "close": 0.0,
+      "hold": 0.01,
+      "area_step": 0.015
+     },
+     "solve": {
+      "margin": 0.00035
      }
     }
    },
