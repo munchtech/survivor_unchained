@@ -75,6 +75,7 @@ public sealed class CorvaneStory : StoryBoss
         if (sigT <= 0 && B.KnockGraceLeft <= 0)
         {
             sigT = (low ? t.EveryLow : t.Every) * Cadence;
+            CourtTrace.Say("sig");
             Signature("Lie down.", SignatureLead, Cast, "chid");
             return true;
         }
@@ -89,6 +90,7 @@ public sealed class CorvaneStory : StoryBoss
         double core = k is { Core: > 0 } ? k.Core : 2.4;
         var bl = B.Tell("pull", e, e.X, e.Z, t.Slam / core, reach: Reach, damageMul: t.PullDamage, knocks: true);
         if (bl == null) return;
+        CourtTrace.Say("pull");
         // He holds the lamp up through the drag and the slam.
         Hold((k?.Windup ?? 1.6) + (k?.Follow ?? 0.7) + 0.1, null, _ =>
         {
@@ -103,6 +105,7 @@ public sealed class CorvaneStory : StoryBoss
     void Brighten(Enemy e)
     {
         low = true;
+        CourtTrace.Say("low");
         var def = e.Def.Clone();
         if (def.CarriedLight is { } cl) def.CarriedLight = cl with { Energy = t.LampEnergyLow, Range = cl.Range * 1.2 };
         def.Glow = t.GlowLow;

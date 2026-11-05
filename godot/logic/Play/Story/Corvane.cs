@@ -76,6 +76,7 @@ public sealed class Doorway : StoryBeat
             if (talking || corvane == null) return;
             if ((talkT += dt) < t.TalkAfter || !A.Settled) return;
             talking = true;
+            CourtTrace.Say("talk");
             A.Converse("door_night", "go_home", Answered);
             return;
         }
@@ -96,6 +97,7 @@ public sealed class Doorway : StoryBeat
     {
         var e = corvane!;
         raised = true;
+        CourtTrace.Say("raise");
         A.Mark(RaisedMark);
         e.Disposition = Disposition.Hostile;
         e.Boss = true;
@@ -111,6 +113,7 @@ public sealed class Doorway : StoryBeat
     void Fallen()
     {
         fallen = true;
+        CourtTrace.Say("down");
         var e = corvane!;
         KillSeconds = script?.FightT;
         A.Apply("""[{ "set": { "corvane.rose": true } }]""");
@@ -126,6 +129,8 @@ public sealed class Doorway : StoryBeat
             A.Converse("door_night", "gets_up", _ =>
             {
                 B.Events.Emit(new Ev.Cue { Id = "door_sigil" });
+                CourtTrace.Say("cue");
+                CourtTrace.Say("gone");
                 A.Converse("door_night", "gone", _ => Close());
             });
     }
@@ -142,5 +147,6 @@ public sealed class Doorway : StoryBeat
         lamp.Visible = true;
         A.Look.AddLight(x, 0.9, z, "#a77bff", 2.6, 9, 0.08, 0.1, "#c9a8ff");
         Done = true;
+        CourtTrace.Say("open");
     }
 }

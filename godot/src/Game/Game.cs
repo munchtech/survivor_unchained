@@ -142,6 +142,7 @@ public partial class Game : Node, IZoneHost
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
+        if (Args.Has("clip")) SurvivorUnchained.Play.Story.CourtTrace.On = ev => { GD.Print($"court {ev} frame {Engine.GetFramesDrawn()}"); if (ev == "open") courtOpen = Engine.GetFramesDrawn(); };
         Settings.Current.ApplyWindow();
         ApplySettings();
         if (Args.Get("load") is string loadFile) LoadFile(loadFile);
@@ -2006,8 +2007,14 @@ public partial class Game : Node, IZoneHost
             fb0.FlareMeter = Battle.FlareFull * fb0.FlareCharges;
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
+        // --court-tail N: the court clip quits N frames after the door opens (the movie then closes whole).
+        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) GetTree().Quit();
         // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
         // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
+        // --court-hold (the court clip, pictures only): the same, so the standing bot lives to the fight's end (the pull and the slam
+        // still land and knock her down; only her health is held).
+        if (Args.Has("clip") && Args.Has("court-hold") && Battle is { } holdB && holdB.Player.Alive)
+            holdB.Player.Hp = Math.Max(holdB.Player.Hp, holdB.MaxHp);
         if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
@@ -2214,6 +2221,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
     /// without a screen: Godot's --headless, --quit-after).</summary>
+    int courtOpen;
     ulong costFrom;
     int costFrames;
 

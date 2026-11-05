@@ -454,6 +454,9 @@ public partial class Game
         else EndDialogue();
     }
 
+    /// <summary>The choices the line on screen offers (the autopilot answers them), none on a plain line.</summary>
+    public List<PresentedChoice> LineChoices => lastLine?.Choices.Where(c => c.Enabled).ToList() ?? new();
+
     public void Advance()
     {
         var r = runner;
