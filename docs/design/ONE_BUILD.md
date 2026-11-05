@@ -142,4 +142,32 @@ Each skill's header lists its strands, the suggested strand (Light my way) and `
 
 ## 6. The harness note (H6's 45-60 s rule, on a full build)
 
-*(Filled from the run below: numbers only, no retune; the retune is the build lead's.)*
+Numbers only. No retuning here; that is the build lead's job.
+
+**The setup.** The harness switch `--onebuild` lives under godot/balance only (commit cbde3e259). It approximates the rule until the offer exists:
+- She starts with her slots' worth of her calling's skills at day rank, wicks lit by Light my way, and the board lit for her level.
+- Lamp sizes are in full by night.
+- The draft can only rank or hone what she carries. A rank still lights the next wick lamp, so the night still climbs.
+
+It is the Pack's board, tier 1 (a 10-minute table night). The numbers are won/fell %, across the four callings.
+
+| Run | Seeds | standing | idler | kiter | human (lowest life) | careless | deft | human's boss s |
+|---|---|---|---|---|---|---|---|---|
+| R0 rc3 at HEAD, level 1, the old draft | 16 | 0/100 | 28/72 | 9/91 | 84/16 (0.27) | 67/33 | 98/2 | 138 |
+| R1 one build, level 5 (3 skills, rank 2) | 32 | 0/100 | 3/97 | 4/96 | **61/39** (0.22) | 39/61 | **76/24** | 230 |
+| R2 one build, level 10 (4 skills, rank 4) | 16 | 0/100 | **61/39** | 27/73 | **100/0** (0.35) | 98/2 | 100/0 | 142 |
+| R3 one build, level 30, full board, tier 1 | 16 | 5/95 | | | 100/0 (0.54) | | 100/0 | 58 |
+| R3 the same, **tier 4** | 16 | **23/77** | | | **75/25** (0.41) | | **83/17** | 65 |
+
+Read against H6's gate (standing falls 80%+, idler 70%+, human wins 78-85%, deft 95%+):
+- **The 45-60 s rule holds on a full build.** Standing still falls on every tier-1 night at every level, even at level 30 with the full board (95%). Marks on her before the boss stay at 22-28 a night (R0: 23).
+- **The bands don't hold yet**, and they miss in both directions:
+  - At level 5 the first table night is too hard: human 61%, deft 76%. The reaver's human wins only 12%, against the warden's 91%, the stalker's 75% and the arcanist's 66%.
+  - At level 10 it is too easy: the human wins every night, and the idler wins 61%.
+  - A veteran at tier 4 sits under the band (human 75%, deft 83%), with standing just under the gate (falls 77%).
+  - The old night evened out every level by drafting from nothing. One build has to be tuned per level band and tier, which is §5 item 12's single balance band.
+- **What it doesn't measure:**
+  - the real offer (a choice of lamp, the new lead-ins, Turns always dealt, second Turns, Unions);
+  - chests, which still open by the old rules.
+  - The human's ember still reaches 25 by the end of a tier-1 night, so about 23-25 rises a night stands.
+- **The data:** scratch `classes_c2\h\r0-r3.jsonl` (backed up to `survivorsunchained_inputs\scratch_classes_c2\`), `run.sh`; `python tools/balance/danger.py <file> --by tier` or `--by calling`.
