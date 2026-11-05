@@ -16,7 +16,10 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 B3 = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\b3"
 BOARDS = r"C:\Users\munch\Desktop\survivorsunchained_inputs\look_l1\a2\r2"
 ARMS = ["today", "A", "B", "C"]  # (and "Alit": A from the boards' lit color, for the albedo question)
-ASSETS = {"barrel": dict(node="own_barrel", item="barrel"), "boulder": dict(node="own_boulder_b", item="boulder"),
+# at: the lookdev stage's own placement (GameLookdev: At(x, y, yaw)); near: where the bake-off moves it, beside her,
+# so the close view sees it too (the barrel at her right, the boulder behind her left)
+ASSETS = {"barrel": dict(node="own_barrel", item="barrel", at=[0.1, 5.3, 20], near=[0.95, 1.4, 20]),
+          "boulder": dict(node="own_boulder_b", item="boulder", at=[6.8, 4.1, 30], near=[-2.9, 3.6, 30]),
           "setts": dict(node="LookSetts", item="setts", tile=4.0, name="setts_b3")}
 # board crops for each asset (board, box in board px, the board's size of the thing in cm across the box)
 CROPS = {"barrel": ("MB3_town.png", (1450, 120, 1640, 440)), "boulder": ("MB4_wild_r3.png", (700, 150, 1000, 440)),
@@ -26,9 +29,10 @@ CROPS = {"barrel": ("MB3_town.png", (1450, 120, 1640, 440)), "boulder": ("MB4_wi
 def manifest(arm):
     items = []
     for a, it in ASSETS.items():
-        d = os.path.join(B3, arm, a); f = json.load(open(os.path.join(B3, "forms", a, "forms.json")))
+        d = os.path.join(B3, arm if arm != "today" else "A", a); f = json.load(open(os.path.join(B3, "forms", a, "forms.json")))
         maps = {c: {k: os.path.join(d, f"{k}.png") for k in ("albedo", "normal", "rough")} for c in f["classes"]}
-        e = dict(node=it["node"], maps=maps)
+        e = dict(node=it["node"], maps=maps if arm != "today" else {})
+        if "near" in it: e.update(at=it["at"], near=it["near"])
         if f["kind"] == "prop": e["mesh"] = os.path.join(B3, "forms", a, "mesh.glb")
         else: e.update(tile=it["tile"], name=it["name"])
         items.append(e)
@@ -40,7 +44,7 @@ def manifest(arm):
 def shoot(arms):
     for arm in arms:
         out = os.path.join(B3, "bakeoff", arm)
-        extra = [] if arm == "today" else ["--extra", f"--b3-maps {manifest(arm)}"]
+        extra = ["--extra", f"--b3-maps {manifest(arm)}"]
         subprocess.run([sys.executable, os.path.join(ROOT, "tools", "style", "lookdev.py"), "shoot", "--out", out, "--rigs", "day,night"] + extra, check=False)
 
 
@@ -66,6 +70,10 @@ def sheet():
                     x0, y0, x1, y1 = box; pad = 0.15
                     bx = [max(0, int((x0 - pad * (x1 - x0)) * W)), max(0, int((y0 - pad * (y1 - y0)) * H)),
                           min(W, int((x1 + pad * (x1 - x0)) * W)), min(H, int((y1 + pad * (y1 - y0)) * H))]
+                    if bx[2] - bx[0] > 900:  # (a ground patch wider than the frame: its middle 900 px)
+                        cx = (bx[0] + bx[2]) // 2; bx[0], bx[2] = max(0, cx - 450), min(W, cx + 450)
+                    if bx[3] - bx[1] > 600: bx[1] = bx[3] - 600
+                    if bx[2] - bx[0] < 8 or bx[3] - bx[1] < 8: row.append(None); continue  # (off this frame)
                     row.append((arm, im.crop(bx), (bx[2] - bx[0])))
                 cols.append((cam, row))
             # the sheet: per camera one row, at 1:1 (no scaling), arms left to right, the board crop scaled to the

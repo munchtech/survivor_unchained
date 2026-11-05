@@ -14,7 +14,7 @@ namespace SurvivorUnchained.View;
 /// 1/tile.</para></summary>
 public static class B3Maps
 {
-    record Item(string Node, string? Mesh, float Tile, string? Name, Dictionary<string, Dictionary<string, string>> Maps);
+    record Item(string Node, string? Mesh, float Tile, string? Name, Dictionary<string, Dictionary<string, string>> Maps, float[]? At, float[]? Near);
 
     static readonly Dictionary<string, Item> items = new();
 
@@ -32,11 +32,31 @@ public static class B3Maps
                 maps[c.Name] = m;
             }
             var it = new Item(e.GetProperty("node").GetString()!, e.TryGetProperty("mesh", out var me) ? me.GetString() : null,
-                e.TryGetProperty("tile", out var ti) ? ti.GetSingle() : 4f, e.TryGetProperty("name", out var nm) ? nm.GetString() : null, maps);
+                e.TryGetProperty("tile", out var ti) ? ti.GetSingle() : 4f, e.TryGetProperty("name", out var nm) ? nm.GetString() : null, maps, Floats(e, "at"), Floats(e, "near"));
             items[it.Node] = it;
         }
         GD.Print($"b3-maps: {items.Count} items from {path}");
         t.NodeAdded += n => { if (n is Node3D d && items.TryGetValue(d.Name, out var it)) Swap(d, it); };
+    }
+
+    static float[]? Floats(JsonElement e, string k)
+    {
+        if (!e.TryGetProperty(k, out var a)) return null;
+        var r = new List<float>();
+        foreach (var v in a.EnumerateArray()) r.Add(v.GetSingle());
+        return r.ToArray();
+    }
+
+    /// <summary>"near": the item moved in the stage's frame (x right, y away, on the ground) to where the close view
+    /// sees it beside her; the frame is read back from the item's own placement ("at": the stage's x, y, yaw for it).</summary>
+    static void Move(Node3D d, float[] at, float[] near)
+    {
+        var b = d.GlobalTransform.Basis * new Basis(Vector3.Up, Mathf.DegToRad(-at[2]));
+        Vector3 r = b.X.Normalized(), f = -b.Z.Normalized();
+        var p = d.GlobalPosition - r * at[0] - f * at[1];
+        var q = p + r * near[0] + f * near[1];
+        d.GlobalTransform = new Transform3D(b * new Basis(Vector3.Up, Mathf.DegToRad(near[2])), new Vector3(q.X, d.GlobalPosition.Y, q.Z));
+        GD.Print($"b3-maps: {d.Name} moved to stage ({near[0]}, {near[1]})");
     }
 
     static Texture2D Tex(string p)
@@ -58,6 +78,8 @@ public static class B3Maps
 
     static void Swap(Node3D d, Item it)
     {
+        if (it.At is { } at && it.Near is { } near) Callable.From(() => Move(d, at, near)).CallDeferred();
+        if (it.Maps.Count == 0) return;
         if (it.Mesh == null)
         {
             if (d is not MeshInstance3D mi) return;
