@@ -100,6 +100,24 @@ def measure(name, pre):
     rl = re.search(r"flare release frame (\d+) at \+([\d.]+) s", log)
     print(f"    over 1.5x at press+{bright[:12]}{'...' if len(bright) > 12 else ''} frames; over knee 3% at {knees[:12]}; "
           f"release +{float(rl.group(2)) * 60 if rl else float('nan'):.0f} f, main blow +{float(bm.group(1)) * 60 if bm else float('nan'):.0f} f")
+    # (c3) H7 r2, the PEAK: per frame from the main blow (-2..+8 f): mean vs pre-press, % over the knee; frames over 1.4x
+    # and 1.5x from the press on; the kick: the largest frame-to-frame image shift (px at 1080p, phase correlation) from the
+    # blow to +6 f, against the same before the press
+    if bm:
+        b0 = 6 + int(round(float(bm.group(1)) * 60))
+        row = [f"{i - b0:+d}:{ratio[i]:.2f}x/{knee[i]:.1%}" for i in range(max(0, b0 - 2), min(len(ratio), b0 + 9))]
+        print(f"(c3) peak by frame from the blow (+{b0 - 6} f): " + " ".join(row))
+        print(f"     frames over 1.4x {int((ratio[6:] > 1.4).sum())}, over 1.5x {int((ratio[6:] > 1.5).sum())}; frames over 2% knee {int((knee[6:] > 0.02).sum())}, max {knee[6:].max():.2%}")
+        def shift(a, c):
+            A = np.fft.fft2(lum(a)); C = np.fft.fft2(lum(c))
+            R = A * np.conj(C); R /= np.abs(R) + 1e-9
+            r = np.abs(np.fft.ifft2(R)); y, x = np.unravel_index(r.argmax(), r.shape)
+            y = y - h if y > h / 2 else y; x = x - w if x > w / 2 else x
+            return float(np.hypot(x, y)) * 4
+        ks = [shift(fr[i], fr[i - 1]) for i in range(b0, min(len(fr), b0 + 7))]
+        kp = [shift(fr[i], fr[i - 1]) for i in range(1, 6)]
+        print(f"     kick: max frame-to-frame shift {max(ks) if ks else 0:.0f} px from the blow (before the press {max(kp):.0f} px; 4 px steps)")
+    for line in re.findall(r"flare (?:press frame|peak \S+:|ripple|blow) .*", log)[:6]: print("    log:", line.strip())
     # (a2) the true hold: f+0.12 against the stop's last held frame (two before the release), and the frame-to-frame motion
     # inside the stop over clip.mp4 (480x270, outside 30 px round her, the HUD's bottom 40 px left out)
     if (d / "f_stop_end.png").exists() and rl:

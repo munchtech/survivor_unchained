@@ -35,4 +35,20 @@ public class FlareFamilyTests
         Assert.StartsWith("#", g.Night.Tint);
         Assert.True(FlareFamily.Marks.Main >= 1.8);
     }
+
+    [Fact]
+    public void ThePeakKeepsFlareLooksCaps()
+    {
+        // FLARE_LOOK §1.6: the Spend's peak for 4 frames at most; the judge's r1 fix 1: a 2-frame hitstop, a kick of 8-10 px.
+        var pk = FlareFamily.Peak;
+        Assert.Equal(2, pk.Hitstop);
+        Assert.True(System.Linq.Enumerable.Count(pk.Frames, f => f >= 0.75) <= 4);
+        Assert.InRange(FlareFamily.Beat.KickPx, 8, 10);
+        Assert.Equal("line", FlareFamily.Of("the_long_cut").Peak.Shape);
+        Assert.Equal("disk", FlareFamily.Of("bell_of_the_morning").Peak.Shape);
+        Assert.Equal(8, FlareFamily.Of("bell_of_the_morning").Peak.Radius);
+        Assert.Equal("toll", FlareFamily.Of("bell_of_the_morning").Ripple);
+        // The band crosses the frame in 0.25-0.3 s (§1.6: 0.25 to 0.4).
+        Assert.InRange(FlareFamily.Band.Time, 0.25, 0.3);
+    }
 }
