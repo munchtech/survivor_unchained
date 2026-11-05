@@ -5,7 +5,80 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## H8 rc2's bugs (seams-h8 lead 2, 4 Nov): HANDOFF READY (lead 3 takes the list below)
+## H8 rc2's bugs (seams-h8 lead 3, 4-5 Nov): MR READY seams-h8@COMMIT
+
+All seven items pass. Brief: `docs/team/hook/H8_rc2_bugs.md`. Integration merged at d9ab02f6d (docs only; the junction was removed and remade to our own `public\assets`). Sheets, runs and verdicts: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`r2\` judge round 2, `r3\` and `r4\` the x-ray, `r5\` the final b_path and suite).
+
+**Judges** (API, xhigh):
+- Round 2 (`r2\verdict.md`, $0.86): 4 PASS. N22, N24 and N23 B1 (her feet are never in frame; planted drift at most 5.7 cm). N36's PASS stood, but it still needed a frame with her actually hidden.
+- N36 closing frame (`r3\verdict.md`, $0.14): self-overdraw gone. But the x-ray's own look FAILED at 1:1: an opaque cream blob with grainy edges.
+- x-ray look round 2 (`r4\verdict.md`, $0.35): PASS.
+- Round 1 (lead 2) passed N20, N23, N25, N35 and N36.
+
+**What lead 3 built:**
+- **N22, the shut gate** (e07607b37, solver aab7f549):
+  - Leaf A was not lost. The gatehouse's kit tile stands 0.76 m over Low Ford's road, so the teeth stopped short.
+  - `Landmarks.Land` (from `Swap`) drops every portcullis leaf by the measured distance to the lowest ground under it (9 samples), converted into each leaf's parent space.
+  - Leaf B is now 3.2 m (`env_props.py gatehouse()`, re-exported), so the crown stays covered.
+  - The watchman stands 0.85 m behind the bars with the Watch's lit torch (`Prologue.Day.cs DayGate`).
+  - `Landmarks.Shift` logs the leaf positions (bounded).
+  - The rise runs 32.4-35.05 s; the exit waits for it.
+- **N24, the dawn card** (6f93abf46, worker ab019460):
+  - `tools/uiforge/paper.py make_card/build_card` writes `godot/art/ui/frames/dawn_paper.png` (760x480): untiled, the middle calmed through a soft mask, no step over 0.26 levels/px. Build group `dawn_paper`, separate from `paper`.
+  - `DawnCardView` uses it (falling back to paper.png), margins 44.
+  - "Your traits".
+  - No "The ember's skills" line when nothing was lent.
+- **N36, the x-ray look** (2df6a1a7c, solver a3478067):
+  - The grain came from her body and outfit layers each blending the overlay, 2-4 times per pixel.
+  - Now a stencil keeps one layer per pixel. The fill is dark slate at 50% (`her_xray.gdshader`), plus a thin moonlight outline as its next pass (`her_xray_rim.gdshader`, `rim_px` 1.6).
+  - The her_at capsule is kept. `PlayerView.XraySet` drives both passes.
+
+**Checks:**
+- Suite 1525/0/10 (r2, and again in r5 after the x-ray).
+- b_path: h8b_path4 1304 s, 0 exceptions, Warden fought 113 s, dawn card shot. After the x-ray: h8b_path5 1366 s, 0 exceptions, Warden fought 112 s, dawn card shot.
+- Day harness (64 seeds): human 61/64 reached, careless 63/64, 0 falls, median 120 s / 119 s. 4 stuck runs, at the road ambush and the gold, none at the gate.
+
+**Later lists (not H8):**
+- Sound: `gate.portcullis` is not banked (the rise is silent).
+- Combat/VFX:
+  - The wolves' howl telegraph ring is a flat, unshaded yellow screen line; the judge called it "a debug gizmo".
+  - The HOWL label is clipped behind the right HUD statue.
+- E8 art:
+  - The portcullis leaves read as rust-brown timber.
+  - The shut watchman is a pale smudge (a brighter torch).
+  - In C04b B1 the right-hand wall has blue marbled plaster.
+- UI:
+  - The dawn card's divider is a 70 px stub.
+  - "Q READY" blazes right after "The ember goes out".
+  - "Put out the lamps" should be the white main line in the Warden fight.
+- Cinematics: the b4a lantern cutaway.
+- Code:
+  - `Landmarks.Swap`'s `Ground()` assumes a kit piece is a direct child of the root (the same wrong frame Land hit).
+  - `demo_run`'s freshness check missed a stale import after a glb re-export.
+  - The gate shoot is luck-dependent (about 2 of 6 runs catch her in the passage).
+
+**PIPELINE ledger:** P6/P9: the app can now:
+- bar a day stretch with the zone's own moving pieces (props.json `moves`; `Landmarks.Movers/Shift/Land`: a kit mover landed on the terrain, driven by one 0-1 k);
+- give the dawn its own click-through card on an untiled painted parchment (`paper.make_card`);
+- draw her through occluders as a clean ARPG x-ray (stencil fill plus a rim pass).
+
+This item cost about 0.4M for lead 3's part (lead 2's ~0.52M and lead 1's before it), plus $2.67 of API judges. The next gate or mover costs about 30-50k: a props.json `moves` entry and a beat's bar line.
+
+**Derivation:**
+- Land: the game's need (a shut portcullis meets the road), computed from the terrain, no hand-tuned offset.
+- Leaf B, 3.2 m: the game's need; the look inherited from the E8 gatehouse.
+- The watchman's torch: inherited (Folk's Watch role).
+- dawn_paper: inherited (`paper.py` sheet plus the Krea paint-over, UI art 3 Oct), made for the card.
+- The x-ray: a named reference (the Diablo IV / Path of Exile wall x-ray) on H1 round 2C's overlay.
+- Undone, not kept: the stacked per-layer blend (the grain), and lead 2's invisible bar 5 m out.
+
+**Spend (lead 3):**
+- Lead ~130k.
+- Solvers: N22 ~108k, x-ray ~81k.
+- Worker ~36k; runner ~35k.
+- API $1.35 (round 2 $0.86, N36 $0.14, x-ray $0.35).
+
+## H8 rc2's bugs (seams-h8 lead 2, 4 Nov): history (lead 3 above closed the list)
 
 HANDOFF READY at ~245k (lead 2). Brief: `docs/team/hook/H8_rc2_bugs.md`. Report to main (the coordinator) only at MR READY, a HANDOFF or a block. Integration merged at d36a4cd19: the ten .import files are tracked now, and the junction was remade to our own `public\assets` (assume-unchanged). Sheets and runs are in `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\`: `n20\` (runs and strip), `judge1\` (the judge's inputs, brief and `verdict.md`), `n22\` (the gate solver's shots).
 **Note:** lead 1 woke after its handoff and committed 7588aef92 (two lines in its section). Its "88 s misread" is wrong: the 88 s run is real (n20a, on d36a4cd19).
