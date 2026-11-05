@@ -53,7 +53,7 @@ public partial class CrowdView : Node3D
     {
         public double Seed, Phase, Facing;
         /// <summary>When a body still in the fight's hands was laid down by its story (EnemyAnim.Die while alive), or -1.</summary>
-        public double LieAt = -1;
+        public double LieAt = -1, LieFrom, LieTo;
         public bool Walking;
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
@@ -739,10 +739,20 @@ public partial class CrowdView : Node3D
                 // Laid down by its story, still in the fight's hands (Corvane down in the doorway, CorvaneStory.Lie: alive at
                 // one, through gets_up and gone until the door's Close lets him go): his fall played once and held on its last
                 // pose where he lies. (Drawn standing in his idle, or not at all, he read as gone or getting up: P6 r4.)
-                if (e.Anim == EnemyAnim.Die && asset.Clips.ContainsKey("die"))
+                if ((e.Laid || e.Anim == EnemyAnim.Die) && asset.Clips.ContainsKey("die"))
                 {
-                    if (g.LieAt < 0) g.LieAt = time;
                     role = g.Death ??= "die";
+                    // Laid across the play camera's frame (its yaw is 0: east-west is the screen's width), turned to it over
+                    // the fall's first half second: lying along the view, head away and feet to the lens, he read as
+                    // standing from thirty metres up (P6 r5/r6).
+                    if (g.LieAt < 0)
+                    {
+                        g.LieAt = time;
+                        double h = g.Facing + (asset.FallOff?.GetValueOrDefault(role, Math.PI) ?? Math.PI);
+                        g.LieFrom = g.Facing;
+                        g.LieTo = g.Facing + Wrap((Math.Cos(h) >= 0 ? 0 : Math.PI) - h);
+                    }
+                    g.Facing = g.LieFrom + (g.LieTo - g.LieFrom) * Smooth(time - g.LieAt, 0, 0.5);
                     t = Math.Min((time - g.LieAt) * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62)), asset.Duration(role) * 0.999);
                     break;
                 }
@@ -793,7 +803,7 @@ public partial class CrowdView : Node3D
         double aim = !(g.Walking && free) ? e.Facing
             : speed >= 0.2 || g.DrawnSpeed < 0.2 ? (speed > 1e-6 ? Math.Atan2(e.Vz, e.Vx) : e.Facing)
             : g.Back ? e.Facing : Math.Atan2(g.DVz, g.DVx);
-        if (e.State != EnemyState.Dying)
+        if (e.State != EnemyState.Dying && g.LieAt < 0)
         {
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
             g.Facing += turn * Math.Min(1, dt * (free ? 9 : 18));

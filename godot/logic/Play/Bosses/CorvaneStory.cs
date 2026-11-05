@@ -164,6 +164,7 @@ public sealed class CorvaneStory : StoryBoss
         e.Provoked = false;
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Die;
+        e.Laid = true;
         return true;
     }
 

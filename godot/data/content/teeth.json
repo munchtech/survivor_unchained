@@ -47,8 +47,8 @@
       "floor": 30,
       "minSeconds": 60,
       "backstop": 0.05,
-      "lampEnergy": 2.4,
-      "lampEnergyLow": 4.2,
+      "lampEnergy": 1.2,
+      "lampEnergyLow": 2.1,
       "glow": 0.05,
       "glowLow": 0.05,
       "emberFloor": 4

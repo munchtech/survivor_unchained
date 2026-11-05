@@ -34,7 +34,7 @@ public partial class BattleFx
                 Seed = e.Seed, Energy = (float)def.Energy,
                 Light = new OmniLight3D
                 {
-                    LightColor = new Color(def.Color), OmniRange = (float)def.Range, OmniAttenuation = 1.4f,
+                    LightColor = new Color(def.Color), OmniRange = (float)def.Range, OmniAttenuation = (float)def.Decay,
                     LightEnergy = 0, ShadowEnabled = false, LightSpecular = 0.4f,
                 },
             };
@@ -50,7 +50,7 @@ public partial class BattleFx
         // Held where it is carried (EnemyLight Forward/Left: a lamp held out, not a light in his middle), on his drawn
         // facing; a story's body held down (EnemyAnim.Die while alive: Corvane lying where he fell) has it set on the ground
         // beside him.
-        bool lying = e.Anim == EnemyAnim.Die && !dying;
+        bool lying = (e.Laid || e.Anim == EnemyAnim.Die) && !dying;
         double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing), lx = fz, lz = -fx;
         double ox = lying ? fx * 0.6 + lx * 0.5 : fx * def.Forward + lx * def.Left, oz = lying ? fz * 0.6 + lz * 0.5 : fz * def.Forward + lz * def.Left;
         double px = e.X + ox, pz = e.Z + oz;

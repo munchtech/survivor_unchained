@@ -233,7 +233,7 @@ public partial class Voices : Node3D
         box.MouseFilter = Control.MouseFilterEnum.Ignore;
         // A named speaker's name over their words, small and gold; the words in the hand.
         if (w.Speaker != null)
-            box.AddChild(Style.Label(w.Speaker.ToUpperInvariant(), Style.UiHeavy, 15, new Color("#e0b868"), false, HorizontalAlignment.Center));
+            box.AddChild(Style.Label((SurvivorUnchained.World.Lore.Person(w.Speaker)?.Name is { Length: > 0 } nm ? nm : w.Speaker).ToUpperInvariant(), Style.UiHeavy, 15, new Color("#e0b868"), false, HorizontalAlignment.Center));
         var words = Style.Label(w.Text, Style.Ui, w.Alert ? 26 : 23, w.Alert ? new Color("#ffd07a") : new Color("#f0e6d2"), true, HorizontalAlignment.Center);
         words.AddThemeConstantOverride("outline_size", 7);
         words.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.92f));

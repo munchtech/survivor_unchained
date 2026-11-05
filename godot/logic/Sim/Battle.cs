@@ -1694,6 +1694,7 @@ public sealed partial class Battle
         e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
         e.Status.Clear();
         e.Flash = 0;
+        e.Laid = false;
         e.Anim = o.Style == SpawnStyle.Rise ? EnemyAnim.Rise : EnemyAnim.Move;
         e.AnimT = 0;
         e.DieT = 0;
