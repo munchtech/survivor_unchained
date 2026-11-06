@@ -23,7 +23,7 @@
   "leg_length": 0.4416,
   "neck_girth": 1.0,
   "neck_length": 1.0,
-  "shoulder_width": 0.3,
+  "shoulder_width": 0.0,
   "thigh_length": -0.01,
   "thighs": 0.8,
   "torso_length": -0.5041,
@@ -31,7 +31,8 @@
   "underbust": 0.15,
   "upperarm_length": -0.4525,
   "waist": -0.6,
-  "weight": -0.2762
+  "weight": -0.2762,
+  "shoulder_span": 0.3
  },
  "bake": null,
  "seam": {
