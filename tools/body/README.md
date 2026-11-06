@@ -225,5 +225,43 @@ A (`heroine.glb`) is not loaded; A without the flag is untouched.
 - **B's layer order** (children of her skeleton): HerPose (Baked: only LookArms, CineCurl, neck sliders, chin, head
   tries), Gestures, whatever PlayerView adds (HerCarriage, HerArmHold, HeadTurn, GazeCarry...), **P1Laws** (helpers at
   rest, `P1Rig.Drive` with rig.json, correctives; the play body's by play_rig.json; it re-sorts itself last on every
-  added modifier), HerJiggle, HerFaceLife. Not on B: HerShrug, HerRaise, HerScap, HerJoints, HerShoulder.
+  added modifier), **P1Jiggle** (B's springs, below; HerJiggle stays A's), HerFaceLife. Not on B: HerShrug, HerRaise, HerScap,
+  HerJoints, HerShoulder.
   `--p1-probe` prints the shoulder/clavicle/scap/trap numbers every 120 frames.
+
+## Springs (P1 R1 jiggle)
+
+B's soft tissue is data: `godot/data/body/springs.json` (per body, `bodies.p1`), run by `godot/logic/Play/P1Springs.cs`
+(pure C#, tested) and driven on B by `P1Jiggle` (after P1Laws, before HerFaceLife). Read by the game directly, not
+published into rig.json: it is game tuning and armor state, not a build output, so it neither churns with a republish
+nor sits in `body_p1/` (never committed).
+- **Per spring** (`breast_{s}` turns its bone toward a mass at `breast_tip_{s}`'s rest point; `breast_tip_{s}` shifts,
+  the follow-through riding the root; `glute_{s}` turns, mass 9 cm along it): `freq_hz` (mass-normalised stiffness
+  k = (2 pi f)^2), `zeta`, `reach`, `sag` (m along world gravity: the weight at rest), `press` (m toward the midline),
+  `tilt` (m per unit change of gravity in the chest's frame: she leans, it hangs), `limits` in/out/up/down/fwd/back (m,
+  her chest's frame), `stretch`; past 3/4 reach a stiffer, damped cushion, then a hard stop. Sized by the body:
+  `freq * (size_ref_m / len)^size_exp`, lengths `* len / size_ref_m` (len = bone to tip at rest: a smaller bust is
+  stiffer and moves less). The mass follows its point in the world (root motion included), damping on the velocity
+  relative to the point (a steady run carries no lag); each side on its own.
+- **Support** (0 bare .. 1 push-up), per group (`top` breasts, `bottom` glutes): lerps stiffness x2.6, damping x2.0,
+  reach x0.55, sag x-0.4 (lifted), press x1.8. Hook: `ArmorHold.support` in an armor index row (null: from its hold
+  amount, (1 - amount) / 0.45: plate's 0.55 is 1), set by HerWear on equip; or `P1Jiggle.SetSupport(skeleton, top, bottom)`.
+  Bottoms carry no hold yet (TODO P2 gear).
+- **Colliders**: `godot/data/body/p1_spring_samples.json` (`python tools/body/spring_samples.py`, rerun after a
+  republish that moves the bust or arms): every vertex breast_{s}/breast_tip_{s} move, farthest-point ordered, with its
+  skin, and each upper arm's radius. The game skins the first `colliders.samples` (96) each frame and keeps them out of
+  both upper-arm capsules and from crossing her midline beyond what the clip's own pose has (push, then draw back).
+- **Harness**: `dotnet test godot/tests --filter P1SpringsTests` (the Harness fact needs the bake's keys dump
+  `tools/body/out/clips`): B's baked clips with root motion (run 5 m/s and stop, town idle, sword_heavy, run + dash
+  27.5 m/s + landing), bare and support 1 -> `tools/body/out/springs_harness.{json,md}`; `P1_SPRINGS_JSON=file` tries
+  another table. Penetration is measured on all 391 samples per side. 5 Nov numbers (breast root / glute):
+
+| scenario | support | breast peak mm | Hz | settle s | glute peak mm | Hz | settle s | added pen. arm / mid mm |
+|---|---|---|---|---|---|---|---|---|
+| run, stop | 0 | 36.7 | 2.8 | 0.72 | 20.3 | 3.4 | 0.33 | 0 / 0 |
+| run, stop | 1 | 15.9 | 4.1 | 0.27 | 20.3 | 3.4 | 0.33 | 0 / 0 |
+| town idle (swing) | 0 / 1 | 3.4 / 1.0 | - | - | 2.3 | - | - | 0 / 0 |
+| sword_heavy | 0 | 43.1 | 2.6 | 0.88 | 22.0 | 3.2 | 0.43 | 0.45 / 0 |
+| sword_heavy | 1 | 22.1 | 3.7 | 0.38 | 22.0 | 3.2 | 0.43 | 0.10 / 0 |
+| dash landing | 0 | 37.8 | 3.2 | 0.75 | 23.9 | 4.0 | 0.35 | 0 / 0 |
+| dash landing | 1 | 20.2 | 4.3 | 0.32 | 23.9 | 4.0 | 0.35 | 0 / 0 |

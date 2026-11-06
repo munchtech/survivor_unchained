@@ -390,9 +390,10 @@ public static class People
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         if (p1)
         {
-            // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then the springs and her face
+            // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
+            // data/body/springs.json; HerJiggle stays A's) and her face
             skel.AddChild(new P1Laws());
-            skel.AddChild(new HerJiggle());
+            skel.AddChild(new P1Jiggle());
             skel.AddChild(new HerFaceLife());
         }
         else

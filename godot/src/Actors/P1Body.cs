@@ -235,7 +235,7 @@ public static class P1Body
 }
 
 /// <summary>
-/// B's own laws on B's skeleton, after every pose-writing modifier and before HerJiggle and HerFaceLife (kept so as
+/// B's own laws on B's skeleton, after every pose-writing modifier and before P1Jiggle and HerFaceLife (kept so as
 /// children are added: PlayerView's carriage, holds, head turns): B's helpers carried at rest from their parents,
 /// P1Rig.Drive (rig.json: the girdle from the arm, the helper rows, the correctives), the bones it changed written
 /// back as local poses, the corrective shape weights set on the close meshes (and on the play body by its own rig,
@@ -282,20 +282,21 @@ public partial class P1Laws : SkeletonModifier3D
 
     void OnChild(Node n)
     {
-        if (n is SkeletonModifier3D && n != this && n is not HerJiggle && n is not HerFaceLife && !reorderQueued)
+        if (n is SkeletonModifier3D && n != this && n is not HerJiggle && n is not P1Jiggle && n is not HerFaceLife && !reorderQueued)
         {
             reorderQueued = true;
             Callable.From(Reorder).CallDeferred();
         }
     }
 
-    /// <summary>P1Laws after every other modifier, then HerJiggle, then HerFaceLife.</summary>
+    /// <summary>P1Laws after every other modifier, then the springs (P1Jiggle; a HerJiggle if one was added), then HerFaceLife.</summary>
     void Reorder()
     {
         reorderQueued = false;
         if (sk == null || GetParent() != sk) return;
         sk.MoveChild(this, -1);
         foreach (var m in sk.GetChildren().OfType<HerJiggle>().ToList()) sk.MoveChild(m, -1);
+        foreach (var m in sk.GetChildren().OfType<P1Jiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<HerFaceLife>().ToList()) sk.MoveChild(m, -1);
     }
 
