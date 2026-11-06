@@ -91,14 +91,14 @@
      ],
      "why": "the apex stands well forward"
     },
-    "apex_axis_yaw_out_deg": {
+    "apex_normal_yaw_out_deg": {
      "band": [
       10,
       15
      ],
      "why": "the breast's axis aims slightly outward"
     },
-    "apex_axis_pitch_up_deg": {
+    "apex_normal_pitch_up_deg": {
      "band": [
       -3,
       3
