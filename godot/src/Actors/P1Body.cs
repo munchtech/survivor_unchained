@@ -53,6 +53,9 @@ public static class P1Body
         return herClips;
     }
 
+    /// <summary>The P4 gaits' own ground speeds (m/s at 1.0x) by the name the game asks for (P4Overlay.Speed).</summary>
+    public static readonly Dictionary<string, float> P4Speeds = new();
+
     /// <summary>P4 clips (SOMA motion retargeted onto B, tools/anim/p4.py + p4_pack.sh) over the bridge clips by
     /// P4Overlay's rules, and --p4-as target=p4clip[,...] (dev) applied here at load so the animation tree is untouched.</summary>
     static void OverlayP4(AnimationLibrary lib, AnimationLibrary p4)
@@ -62,7 +65,9 @@ public static class P1Body
         foreach (var (target, clip) in plan)
         {
             if (lib.HasAnimation(target)) lib.RemoveAnimation(target);
-            lib.AddAnimation(target, p4.GetAnimation(clip));
+            var a = p4.GetAnimation(clip);
+            lib.AddAnimation(target, a);
+            if (a.HasMeta("speed")) P4Speeds[target] = (float)a.GetMeta("speed");
         }
         if (Args.Has("p1-probe") || bad.Count > 0)
             GD.Print($"p4: {plan.Count} clips over her bridge clips ({string.Join(", ", plan.Select(kv => kv.Key == kv.Value ? kv.Key : $"{kv.Key}<-{kv.Value}"))})" +

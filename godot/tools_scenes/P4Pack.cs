@@ -64,6 +64,8 @@ public partial class P4Pack : Node
                     anim.PositionTrackInsertKey(tp, f++ / fps, new Vector3(v[0], v[1], v[2]));
                 }
             }
+            // A gait's ground speed at 1.0x (its locked stance's, m/s of B's skeleton): the game plays it at this on B.
+            if (r.TryGetProperty("speed_mps", out var sp) && sp.ValueKind == System.Text.Json.JsonValueKind.Number) anim.SetMeta("speed", sp.GetDouble());
             outLib.AddAnimation(name, anim);
             GD.Print($"p4-pack: {name}: {frames} frames, {bones} bones, {(loop ? "loop" : "once")}, {anim.Length:F3} s");
         }

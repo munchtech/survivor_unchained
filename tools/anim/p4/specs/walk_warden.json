@@ -1,0 +1,85 @@
+{
+ "kind": "gait",
+ "rules": "R7.1 armed: sword in the right hand, shield on the left forearm, carried relaxed, the weapon side's swing damped",
+ "bands": {
+  "steps_min": [
+   104,
+   110
+  ],
+  "list_pm_deg": [
+   5,
+   7
+  ],
+  "yaw_pm_deg": [
+   6,
+   8
+  ],
+  "thorax_counter_pm_deg": [
+   4,
+   6
+  ],
+  "sway_pm_cm": [
+   3.5,
+   5
+  ],
+  "feet_off_line_cm": [
+   0,
+   4
+  ],
+  "head_bob_cm": [
+   0,
+   2.5
+  ],
+  "speed_mps": [
+   1.09,
+   1.33
+  ],
+  "arm_swing_r_pm_deg": [
+   6,
+   14
+  ],
+  "elbow_r_deg": [
+   15,
+   40
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 7.0,
+  "takes": 6,
+  "seeds": [
+   51,
+   52
+  ],
+  "prompts": [
+   "A warrior woman walks forward calmly carrying a sword low in her right hand and a shield on her left forearm",
+   "A confident female knight walks forward at an easy pace with a shield on her left arm and a sword held loosely down in her right hand"
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 1.2,
+   "ramp": 0.8,
+   "every": 1
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   1.0,
+   2.4
+  ],
+  "gait": true,
+  "duty": 0.45,
+  "game_speed": 1.2,
+  "crop": [
+   30,
+   180
+  ]
+ },
+ "notes": "",
+ "source": "src/walk_warden.npz",
+ "bvh": "walk_warden__u_0.bvh",
+ "sha1": "b7348c03f30f0ad59431ca06e2b3f9f048e288d4",
+ "take_score": 3.84
+}

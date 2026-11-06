@@ -36,4 +36,9 @@ public static class P4Overlay
             if (kv.Length == 2 && kv[0].Trim() != "" && kv[1].Trim() != "") yield return (kv[0].Trim(), kv[1].Trim());
         }
     }
+
+    /// <summary>A clip's ground speed on B: the P4 clip's own (its locked stance, packed as the animation's "speed" meta)
+    /// where the plan lays one under that name, else the bridge clip's (heroine_clips.json).</summary>
+    public static float Speed(string clip, IReadOnlyDictionary<string, float> p4Speeds, float bridge)
+        => p4Speeds.TryGetValue(clip, out var v) && v > 0 ? v : bridge;
 }

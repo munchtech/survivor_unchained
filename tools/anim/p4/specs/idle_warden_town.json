@@ -1,0 +1,93 @@
+{
+ "kind": "idle",
+ "rules": "R2.1 contrapposto at the sway ends, R3.1 ease, R4.2/R4.3 the owner's sway (15.8 cm, 2.67 s, 7 deg roll, 12 deg yaw) rebuilt from the numbers, R5.2 whole cycles; s11 Warden: hand on the hip, the other on the pommel, sheathed",
+ "bands": {
+  "pelvis_travel_cm": [
+   12,
+   16
+  ],
+  "cycle_s": [
+   2.5,
+   2.85
+  ],
+  "roll_deg": [
+   5,
+   7.5
+  ],
+  "yaw_deg": [
+   8,
+   12
+  ],
+  "head_over_pelvis": [
+   0,
+   0.5
+  ],
+  "weight_share": [
+   0.75,
+   1.2
+  ],
+  "hip_out_cm": [
+   4,
+   7
+  ],
+  "pelvis_tilt_deg": [
+   5,
+   9
+  ],
+  "shoulder_lift_l_cm": [
+   -2,
+   0.5
+  ],
+  "shoulder_lift_r_cm": [
+   -2,
+   0.5
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 8.5,
+  "takes": 5,
+  "seeds": [
+   21,
+   22
+  ],
+  "prompts": [
+   "A confident woman stands at ease with her right hand on her hip and her left hand resting on the hilt of a sword at her left side, slowly swaying her hips from side to side as her weight shifts from one leg to the other",
+   "A relaxed warrior woman stands with one hand on her hip and the other resting on her sword hilt, rocking her weight slowly from one foot to the other with a lazy sway of her hips"
+  ],
+  "root2d": {
+   "kind": "sway",
+   "travel": 0.12,
+   "period": 2.67,
+   "ease": 0.95,
+   "overshoot": 0.015,
+   "start": 0.5,
+   "every": 1
+  },
+  "root2d_scales": [
+   0.3,
+   0.4,
+   0.55,
+   0.75,
+   1.0
+  ]
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   5.27,
+   5.4
+  ],
+  "gait": false,
+  "crop": [
+   15,
+   245
+  ]
+ },
+ "notes": "The sway path: 12 cm end to end eased over 0.95 s, 1.5 cm overshoot settling over 0.385 s (R4.3), 2.67 s a cycle; the loop is 2 whole cycles (5.33 s). Breath is not built in (left to Kimodo's own). PICKED BY HAND over the best score (idle_warden_town__uv0_2, 8.89): every text-free take (no prompt: the encoder never got RAM) raises a hand to her head or turns 26-68 deg; h_0 is the earlier text-conditioned 'hand on her hip' Kimodo take (kimodo_gen her_hip_idle_0): her hand on her hip, but almost no sway (1 cm). Re-run gen once the prompts are encoded.",
+ "source": "src/idle_warden_town.npz",
+ "bvh": "idle_warden_town__h_0.bvh",
+ "sha1": "772d839ab88478e6c1140489f17852959d652078",
+ "take_score": 10.74
+}

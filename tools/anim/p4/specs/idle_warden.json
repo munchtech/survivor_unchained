@@ -1,0 +1,77 @@
+{
+ "kind": "idle",
+ "rules": "R2.1/R3.1 ease, R4.2 pelvis travel >= 7 cm, R5.2 6-8 s loop, head still; s11 Warden fight-ready: the shield relaxed at chest height, the sword low by the hip",
+ "bands": {
+  "pelvis_travel_cm": [
+   7,
+   12
+  ],
+  "head_over_pelvis": [
+   0,
+   0.5
+  ],
+  "weight_share": [
+   0.7,
+   1.2
+  ],
+  "shoulder_lift_l_cm": [
+   -2,
+   0.5
+  ],
+  "shoulder_lift_r_cm": [
+   -2,
+   0.5
+  ],
+  "elbow_r_deg": [
+   10,
+   35
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 9.0,
+  "takes": 5,
+  "seeds": [
+   31,
+   32
+  ],
+  "prompts": [
+   "A calm warrior woman stands ready holding a shield relaxed at chest height on her left arm and a sword low by her right hip, slowly shifting her weight from one leg to the other",
+   "A relaxed female fighter waits in a guard with a shield on her left forearm and a sword hanging low in her right hand, her weight easing from foot to foot"
+  ],
+  "root2d": {
+   "kind": "sway",
+   "travel": 0.07,
+   "period": 3.5,
+   "ease": 1.2,
+   "overshoot": 0.01,
+   "start": 0.5,
+   "every": 1
+  },
+  "root2d_scales": [
+   0.25,
+   0.35,
+   0.55,
+   0.75,
+   1.0
+  ]
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   6.9,
+   7.1
+  ],
+  "gait": false,
+  "crop": [
+   15,
+   260
+  ]
+ },
+ "notes": "The sway path: 7 cm + 1 cm overshoot each end (9 cm), 3.5 s a cycle; the loop is 2 whole cycles (7.0 s).",
+ "source": "src/idle_warden.npz",
+ "bvh": "idle_warden__uv1_5.bvh",
+ "sha1": "3234eb6657c03edac57486a13daae3920b0479b2",
+ "take_score": 2.606
+}
