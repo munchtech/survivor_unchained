@@ -52,3 +52,4 @@ tools/body/forms/her_v1_target.npz
 
 # P4 clips built from tools/anim/p4/specs (tools/anim/p4.py build): rebuildable output
 /godot/art/people/body_p1/p4/
+godot/art/people/body_p1/p4_clips.res
