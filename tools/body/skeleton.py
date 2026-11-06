@@ -204,6 +204,10 @@ def _midline_profile(V, sign, y0, y1, step=0.002):
     return ys, np.interp(ys, ys[ok], zs[ok])
 
 
+C7_BAND_BELOW_TOP_M = (0.22, 0.12)   # C7's allowed height: 120-220 mm below the body's top (the head ring); her C7 is 170 mm
+                                     # below it (ANSUR II cervicale/stature ~0.857). The skull base is far above this band.
+
+
 def cervical_joint(V, r):
     """neck_01's head, the C7/T1 joint. The cervicale (C7's spinous process, the vertebra prominens) is the nape's
     corner on the back midline: where the upper back's forward slope turns into the neck's back line. Rule: the back
@@ -212,7 +216,11 @@ def cervical_joint(V, r):
     and its point farthest in front of the chord between those ends (the curve's knee). The joint is in front of it at
     the C7 body: r["depth"] of the horizontal midline depth (throat skin - nape skin) forward of the back skin (the
     cervical bodies sit just behind the neck's middle: the airway and larynx fill its front). Cross-check: ANSUR II
-    women's cervicale height / stature ~0.857 (README "skeleton")."""
+    women's cervicale height / stature ~0.857 (README "skeleton").
+    Bounded: the knee is only accepted inside the band C7_BAND_BELOW_TOP_M (120-220 mm under the top). Where the
+    curve has no clear knee (the chord-distance maximum falls outside the band, as on her smooth nape, where a 0.1 mm
+    wobble near the neck's top moved it 16 cm) or the throat sampling at the knee would be empty, the joint takes the
+    nape's deepest point (minimum z) inside the band, and info["cervical_fallback"] names the reason."""
     top = V[:, 1].max()
     yb, zb = _midline_profile(V, -1, top - 0.30, top - 0.004)
     i0 = int(np.argmin(zb))
@@ -221,12 +229,36 @@ def cervical_joint(V, r):
     g = np.arange(y0, yb[-1], 0.0005)
     f = np.polyval(c6, g - y0)
     j = int(np.argmax(f - (f[0] + (g - g[0]) / (g[-1] - g[0]) * (f[-1] - f[0]))))
+    band = (g >= top - C7_BAND_BELOW_TOP_M[0]) & (g <= top - C7_BAND_BELOW_TOP_M[1])
+    why = None
+    if not band.any():
+        why = "band_outside_profile"
+    elif not band[j]:
+        why = "no_knee_in_band"
+    if why is None:
+        y = float(g[j])
+        if not _throat_has_points(V, y):
+            why = "empty_throat_sample"
+    if why is not None:
+        if band.any():
+            jb = np.flatnonzero(band)
+            j = int(jb[np.argmin(f[jb])])
+        else:
+            j = int(np.argmin(np.abs(g - (top - 0.17))))
     y, zback = float(g[j]), float(f[j])
     yf, zf = _midline_profile(V, 1, y - 0.008, y + 0.008)
     zfront = float(np.interp(y, yf, zf))
     p = np.array([0.0, y, zback + r["depth"] * (zfront - zback)])
-    return p, {"cervicale_skin_mm": [0.0, round(y / MM, 1), round(zback / MM, 1)],
-               "throat_skin_z_mm": round(zfront / MM, 1), "joint_mm": np.round(p / MM, 1).tolist()}
+    info = {"cervicale_skin_mm": [0.0, round(y / MM, 1), round(zback / MM, 1)],
+            "throat_skin_z_mm": round(zfront / MM, 1), "joint_mm": np.round(p / MM, 1).tolist()}
+    if why:
+        info["cervical_fallback"] = why
+    return p, info
+
+
+def _throat_has_points(V, y):
+    m = (np.abs(V[:, 0]) < 0.006) & (V[:, 2] > 0) & (V[:, 1] >= y - 0.008) & (V[:, 1] < y + 0.008)
+    return bool(m.any())
 
 
 def occiput_joint(H, r):
