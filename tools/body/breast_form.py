@@ -26,6 +26,9 @@ leave a ledge across the upper pole, a deep flat shelf under it and faceted poin
                              height comes in where the hanging arm meets it, the side below keeps its reach.
                              R1b round 3: lat_up {"psi_deg": [p0, p1]} switches that radius by the direction from
                              the apex instead (each ray keeps its profile: no concave band, convex contours).
+                             P1 R1c (the owner, 6 Nov: round): c["globe"] makes the breast a GLOBE (globe_delta):
+                             an ellipsoid round a centre behind the wall, unioned with the chest wall by radial moves
+                             and C2 fillets by direction, pressed at the midline; the profile dome becomes its soft base.
   (route (b) is a stored target: tools/body/sculpt/breast_b.py; the support fields are rule "field" in the JSON)
 
 Coordinates: glTF metres, x her left (+), y up, z front (+); the right side is the left side mirrored (topology
@@ -284,5 +287,86 @@ def dome_delta(sl, c, V):
     return mirror_left(sl, D)
 
 
+def ramp(s):
+    """C2 soft ramp: 0 for s <= -1, s for s >= 1, between the integral of smoother((s + 1) / 2) (a soft max(s, 0))."""
+    s = np.asarray(s, float)
+    x = np.clip((s + 1.0) / 2.0, 0.0, 1.0)
+    inner = 2.0 * (x ** 6 - 3.0 * x ** 5 + 2.5 * x ** 4)      # 2 * int_0^x smoother
+    return np.where(s >= 1.0, s, inner)
+
+
+def globe_delta(sl, c, V, Va=None):
+    """P1 R1c (the owner, 6 Nov: "our tests so far are not round"): the breast as a ROUND GLOBE, a soft union of an
+    ellipsoid with the chest wall. Each candidate wall point moves RADIALLY from the globe's centre O (behind the
+    wall) out to the ellipsoid where the wall lies inside it: the union is exactly the ellipsoid there (every section
+    a circle / ellipse: round seen front, 3/4 and side, the upper pole full and rolling into the curve, the lower curve
+    tucking under, the outer side wrapping past the chest wall: a radial move can pass the wall's side line, which a
+    height field along one axis cannot), and blends into the wall over a C2 fillet of half-width k_m in radial
+    distance (the root, the fold, the outer side: soft, no crease). g = c["globe"]:
+      "o_off": O from the base point (anchor) in the base frame [lateral, up, along the axis] (m; the axis part
+               negative: O behind the wall);
+      "R": the ellipsoid's semi-axes from O {"lat", "med", "up", "low", "a"} (m), switched smoothly (C-inf, like the
+               footprint radii, over r_blend_m) across O's planes: one smooth convex surface;
+      "k_m": the fillet half-width; "press": {"x_m", ...}: the pressed inner face (see below).
+    The two globes may overlap across the midline (pressed together): the move's inward x part saturates smoothly
+    (tanh) at press.x_m from the midline, so the inner side flattens against its mirror into a narrow cleavage line
+    and nothing crosses; the midline fade (midline_fade_m on V0) holds the cleavage floor. Linear in v."""
+    X = extra(sl)
+    g = c["globe"]
+    a, up, lat = frame(c, 1.0)
+    c0 = anchor(sl, c, V if Va is None else Va)          # the base point on the wall (not on the mound under it)
+    o = np.asarray(g.get("o_off", [0.0, 0.0, -0.05]), float)
+    O = c0 + o[0] * lat + o[1] * up + o[2] * a
+    keep = [X["parts"].index(p) for p in ("trunk", "breast", "shoulder")]
+    cand = np.isin(X["part"], keep) & (sl.V0[:, 0] >= 0)
+    q = V - O
+    R = g["R"]
+    bw = c.get("r_blend_m", 0.03)
+    u, w, d = q @ lat, q @ up, q @ a
+    cand &= (d > -float(g.get("back_m", 0.08))) & (np.linalg.norm(q, axis=1) < 0.3)
+    u, w, d, qc = u[cand], w[cand], d[cand], q[cand]
+    Ru = smooth_r(u, R["med"], R["lat"], bw)
+    Rw = smooth_r(w, R["low"], R["up"], bw)
+    Ra = smooth_r(d, R.get("a_back", R["a"]), R["a"], bw)
+    rho = np.sqrt((u / Ru) ** 2 + (w / Rw) ** 2 + (d / Ra) ** 2)          # 1 on the ellipsoid
+    lv = np.linalg.norm(qc, axis=1)
+    ls = lv / np.maximum(rho, 1e-9)                                       # the ellipsoid's radius on this ray
+    k = g.get("k_m", 0.015)
+    if isinstance(k, dict):
+        # the fillet's half-width by direction from O (C-inf: the vertical pair switched across w = 0, the horizontal
+        # pair across u = 0, mixed by the direction's share): a long soft root up, a softer side, a tighter fold
+        sv, sh = (w / Rw) ** 2, (u / Ru) ** 2
+        wv = sv / (sv + sh + 1e-4)
+        k = wv * smooth_r(w, k["low"], k["up"], bw) + (1.0 - wv) * smooth_r(u, k["med"], k["lat"], bw)
+    else:
+        k = float(k)
+    ln = lv + k * ramp((ls - lv) / k)
+    D = np.zeros_like(V)
+    mv = (ln - lv)[:, None] * qc / np.maximum(lv, 1e-9)[:, None]
+    if c.get("midline_fade_m"):
+        # the cleavage floor: held within midline_hold_m of the midline, then the C2 fade (the floor's first quads
+        # stay low, so the pressed walls turn up off the floor over three quads, each fold under 60 deg)
+        hold = float(g.get("midline_hold_m", 0.0))
+        mv *= smoother((np.abs(sl.V0[cand, 0]) - hold) / (c["midline_fade_m"] - hold))[:, None]
+    pr = g.get("press")
+    if pr:
+        # the pressed inner face: the inward x move saturates (C-inf) at x_m from the midline (room = how far a point
+        # may still go in), so points flatten against the midline plane instead of crossing it
+        xc = V[cand, 0]
+        room = np.maximum(xc - float(pr.get("x_m", 0.003)), 0.0)
+        dx = mv[:, 0]
+        inw = dx < 0
+        sat = -room * np.tanh(-dx / np.maximum(room, 1e-6))
+        mv[:, 0] = np.where(inw, sat, dx)
+    D[cand] = mv
+    return mirror_left(sl, D)
+
+
 def dome(sl, c, v, V, values):
+    if c.get("globe"):
+        # P1 R1c: the profile dome (h_m > 0) is the globe's soft BASE (a mound on the chest wall: the wide base that
+        # reaches up the chest and round the side), the globe is unioned onto it (the round mass; where the mound
+        # rises toward the globe's rim the two meet at a shallow angle: a soft fillet, no ball-on-a-wall crease)
+        D = dome_delta(sl, c, V) if c.get("h_m") else np.zeros_like(V)
+        return V + v * (D + globe_delta(sl, c, V + D, V))
     return V + v * dome_delta(sl, c, V)

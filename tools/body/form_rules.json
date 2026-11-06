@@ -68,14 +68,14 @@
    }
   },
   "breast": {
-   "why": "very busty, high, full and round, deep cleavage; must look great bare and in push-up armor",
+   "why": "very busty, high, full and ROUND, deep cleavage; must look great bare and in push-up armor. The owner (6 Nov, \"our tests so far are not round\"; board: round globes, a full upper pole rolling into the curve, large with a wide base wrapping past the chest wall, set high and pressed into a deep narrow cleavage line even bare, the round lower curve on the ribcage over a slim waist): the roundness rules (formrules.breast_round) below the apex/pole rules",
    "rules": {
     "vol_added_mL_per_side": {
      "band": [
-      1350,
-      1450
+      1400,
+      1560
      ],
-     "why": "very busty: volume each side adds over the bare chest"
+     "why": "LARGE (owner 6 Nov: large, a wide base): the volume each side adds over the bare chest; the round globe carries it higher and wider than the old cone (very busty 1350-1450, +7%)"
     },
     "apex_y_mm": {
      "band": [
@@ -156,10 +156,10 @@
     },
     "gap_at_apex_z_minus_40mm": {
      "band": [
-      50,
-      80
+      null,
+      35
      ],
-     "why": "deep cleavage: the gap 4 cm behind the apex"
+     "why": "deep PRESSED cleavage (owner 6 Nov: pressed together even bare): the inner walls stay together 4 cm behind the apex (the old band 50-80 asked for an open 5 cm valley)"
     },
     "inside_at_rest_chest": {
      "band": [
@@ -174,6 +174,90 @@
       0
      ],
      "why": "no fold over 60 deg on the cleavage floor"
+    },
+    "side_round_resid_over_R": {
+     "band": [
+      null,
+      0.055
+     ],
+     "why": "ROUND seen from the side: the sagittal outline through the apex from the upper root to the fold within 5.5% of its radius of one circle (RMS; ~5 mm on a 90 mm radius, under what a cel band reads); a cone or teardrop's straight upper slope gives 0.08-0.09 (forms2_2: 0.088)"
+    },
+    "side_arc_deg": {
+     "band": [
+      180,
+      null
+     ],
+     "why": "the round outline turns through at least a half circle between the root and the fold: a globe that rolls in at the top and tucks under at the bottom, not a cap"
+    },
+    "upper_pole_fill": {
+     "band": [
+      0.55,
+      1.2
+     ],
+     "why": "a FULL upper pole rolling into the curve: the bulge between the root-to-apex chord and the outline at least 55% of a circular arc's of the fitted radius (0 = a straight slope; forms2_2: 0.31); over 1.2 a shelf"
+    },
+    "upper_pole_concave_mm_past_fillet": {
+     "band": [
+      null,
+      0
+     ],
+     "why": "no concave stretch on the upper pole after its root fillet (the lit lip or a ledge shows as convex-concave-convex)"
+    },
+    "front_round_resid_over_R": {
+     "band": [
+      null,
+      0.055
+     ],
+     "why": "ROUND seen from the front: the horizontal outline at apex height from the cleavage to the outer root within 5.5% of its radius of a circle (forms2_2: 0.135, a flat-faced cone)"
+    },
+    "lateral_wrap_mm": {
+     "band": [
+      6,
+      20
+     ],
+     "why": "a wide base WRAPPING past the chest wall: in front view the breast moves the torso's side line out by >= 6 mm (it reads in the silhouette; forms2_2: 4.8); <= 20 so the hanging arm stays clear"
+    },
+    "cleavage_gap_mm_at_apex": {
+     "band": [
+      null,
+      18
+     ],
+     "why": "pressed together even bare: the inner walls 10 mm in front of the cleavage floor <= 18 mm apart at apex height (a slot; forms2_2: 29, an open V). On our topology (6 mm columns at the midline) a floor that turns up in folds under 60 deg is ~15 mm wide"
+    },
+    "cleavage_gap_mm_apex_plus30": {
+     "band": [
+      null,
+      24
+     ],
+     "why": "the press carries 3 cm above the apex (forms2_2: 28)"
+    },
+    "cleavage_line_depth_mm": {
+     "band": [
+      25,
+      null
+     ],
+     "why": "a deep cleavage LINE: at some height the gap stays <= 20 mm for >= 25 mm in front of the floor (parallel pressed walls; forms2_2: an open V, ~4 mm)"
+    },
+    "waist_over_underbust_w": {
+     "band": [
+      null,
+      0.96
+     ],
+     "why": "a slim waist under it: the waist's front width >= 4% under the torso's at the fold, where the round lower curve sits on the ribcage (forms2_2: 0.975)"
+    },
+    "fold_to_waist_mm": {
+     "band": [
+      35,
+      null
+     ],
+     "why": "the lower curve sits on the ribcage, not on the waist: >= 3.5 cm of ribcage between the fold and the narrowest waist (forms2_2: 26)"
+    },
+    "bust_over_waist_w": {
+     "band": [
+      1.35,
+      1.6
+     ],
+     "why": "hourglass contrast: the front silhouette at apex height 1.35-1.6x the waist (believable, not a cartoon)"
     }
    }
   },

@@ -114,6 +114,181 @@ def _derived(spec_path, zero, keep, tmp):
     return str(p)
 
 
+def _circle(P):
+    """Least-squares circle through 2D points P: algebraic (Kasa) start, Gauss-Newton on the geometric residual.
+    Returns centre, radius, RMS residual (all in P's units)."""
+    A = np.c_[2 * P[:, 0], 2 * P[:, 1], np.ones(len(P))]
+    s = np.linalg.lstsq(A, (P ** 2).sum(1), rcond=None)[0]
+    c, R = s[:2].copy(), math.sqrt(max(s[2] + s[0] ** 2 + s[1] ** 2, 1e-12))
+    for _ in range(30):
+        d = P - c
+        r = np.maximum(np.linalg.norm(d, axis=1), 1e-12)
+        J = np.c_[-d / r[:, None], -np.ones(len(P))]
+        st = np.linalg.lstsq(J, -(r - R), rcond=None)[0]
+        c, R = c + st[:2], R + st[2]
+        if np.abs(st).max() < 1e-9:
+            break
+    res = np.linalg.norm(P - c, axis=1) - R
+    return c, abs(R), float(np.sqrt(np.mean(res ** 2)))
+
+
+def _arc_deg(P, c):
+    a = np.unwrap(np.arctan2(P[:, 1] - c[1], P[:, 0] - c[0]))
+    return float(abs(math.degrees(a[-1] - a[0])))
+
+
+def _loop(V, T, y, near=None, lim=0.2):
+    """The transverse section of the mesh at height y: the closed polyline nearest the 3D point `near` (default the
+    body's axis at that height: the torso, not an arm), or None."""
+    import breast_measure as bm
+    near = np.array([0.0, y, 0.0]) if near is None else near
+    best = None
+    for L in bm.section(V, T, 1, y):
+        d = float(np.linalg.norm(L - near, axis=1).min())
+        if best is None or d < best[0]:
+            best = (d, L)
+    return None if best is None or best[0] > lim else best[1]
+
+
+def _walk(L, i0, step, stop):
+    """Points of the closed polyline L from index i0 in direction step until stop(point) (exclusive)."""
+    n, out, i = len(L), [], i0
+    for _ in range(n):
+        q = L[i % n]
+        if stop(q):
+            break
+        out.append(q)
+        i += step
+    return np.array(out)
+
+
+def _inner_wall(L, xa):
+    """The left inner wall of a transverse loop: from the front midline crossing (the cleavage floor) toward +x up to
+    the breast's front (x <= xa), as (x, z) points; and the floor's z."""
+    x = L[:, 0]
+    n = len(L)
+    best = None
+    for k in range(n):
+        a, b = L[k], L[(k + 1) % n]
+        if (a[0] <= 0.0 < b[0]) or (b[0] <= 0.0 < a[0]):
+            t = -a[0] / (b[0] - a[0])
+            z = a[2] + t * (b[2] - a[2])
+            if best is None or z > best[0]:
+                best = (z, k, 1 if b[0] > a[0] else -1)
+    if best is None:
+        return None, None
+    zs, k, st = best
+    i0 = (k + 1) % n if st == 1 else k
+    W = _walk(L, i0, st, lambda q: q[0] > xa or q[0] < 0.0)
+    if len(W) < 2:
+        return None, zs
+    W = W[:int(np.argmax(W[:, 2])) + 1]                 # up to the front-most point of the wall
+    return np.r_[[[0.0, zs]], W[:, [0, 2]]], zs
+
+
+def breast_round(V, T, Vref, b):
+    """P1 R1c (the owner, 6 Nov: "our tests so far are not round"): the breast's ROUNDNESS as numbers, left breast,
+    rest body. b is breast_measure.measure's output (apex, the sagittal profile with its root / fold).
+      side: the sagittal outline through the apex from the upper root to the inframammary fold (where it leaves the
+        chest-wall reference by 3 mm): circle fit, RMS residual / radius, the arc angle the fit covers;
+      upper-pole fill: between the root and the apex, the area between the outline and the straight chord over the
+        circular segment of the fitted radius on that chord (0 = a straight slope, 1 = round); its concave mm past
+        the root fillet (after the first convex mm going up from the root to the apex);
+      front: the transverse outline at apex height from the cleavage (the inner wall within 6 mm of the midline, or
+        the reference) to the lateral root: circle fit residual / radius, arc angle; the lateral wrap: in front view
+        how far the breast moves the torso's side line out past the chest wall's (max over the breast's heights);
+      cleavage bare: at apex height and 30 / 60 mm above, the gap between the inner walls 10 mm in front of the
+        cleavage floor; the cleavage line's depth: from the floor forward while the gap stays <= 20 mm (a slot: on our
+        topology a floor turning in under 60 deg a quad is ~15 mm wide);
+      contrast: the torso's front-view width 15 mm under the fold (underbust) and its least width down to y 0.95
+        (the waist): waist / underbust."""
+    import breast_measure as bm
+    from scipy.spatial import cKDTree
+    out = {}
+    pr = b["_profile"]
+    Ps, ia, root, fold = np.asarray(pr["P"]), pr["apex"], pr["root"], pr["fold"]
+    p = np.asarray(b["apex_mm"]) / 1000.0
+    # -- side
+    S = Ps[root:fold + 1]
+    c, R, rms = _circle(S)
+    out["side_radius_mm"] = round(R * 1000, 1)
+    out["side_round_resid_over_R"] = round(rms / R, 4)
+    out["side_arc_deg"] = round(_arc_deg(S, c), 1)
+    # -- upper-pole fill
+    U = Ps[root:ia + 1]
+    a0, a1 = U[0], U[-1]
+    ch = a1 - a0
+    L = float(np.linalg.norm(ch))
+    e = ch / max(L, 1e-9)
+    nrm = np.array([-e[1], e[0]])
+    if nrm[1] < 0:                                      # toward the front (+z)
+        nrm = -nrm
+    s = (U - a0) @ e
+    d = (U - a0) @ nrm
+    area = float(np.sum(0.5 * (d[1:] + d[:-1]) * np.diff(s)))
+    th = 2 * math.asin(min(1.0, L / (2 * R)))
+    seg = R * R * (th - math.sin(th)) / 2
+    out["upper_pole_fill"] = round(area / max(seg, 1e-12), 3)
+    k = bm.curvature2(bm.gsmooth(Ps, 5.0))[root:ia + 1]
+    cv = np.nonzero(k > 2.0)[0]
+    out["upper_pole_concave_mm_past_fillet"] = int((k[cv[0]:] < -2.0).sum()) if len(cv) else len(k)
+    # -- front (transverse at apex height)
+    Lb, Lr = _loop(V, T, p[1]), _loop(Vref, T, p[1])
+    if Lb is not None and Lr is not None:
+        tr = cKDTree(bm.resample(Lr))
+        i0 = int(np.argmin(np.linalg.norm(Lb - p, axis=1)))
+        nb = len(Lb)
+        stp = 1 if Lb[(i0 + 3) % nb, 0] > Lb[i0, 0] else -1   # +1 walks lateral
+        off = lambda q: tr.query(q)[0] < 0.003
+        lat = _walk(Lb, i0, stp, off)
+        med = _walk(Lb, i0, -stp, lambda q: off(q) or q[0] < 0.006)
+        F = bm.resample(np.r_[med[::-1], lat[1:]][:, [0, 2]])
+        cf, Rf, rf = _circle(F)
+        out["front_radius_mm"] = round(Rf * 1000, 1)
+        out["front_round_resid_over_R"] = round(rf / Rf, 4)
+        out["front_arc_deg"] = round(_arc_deg(F, cf), 1)
+    wraps = []
+    for y in np.arange(Ps[fold][0] + 0.01, p[1] + 0.0301, 0.005):
+        lb, lr = _loop(V, T, y), _loop(Vref, T, y)
+        if lb is None or lr is None or lb[:, 0].max() > 0.25:
+            continue
+        wraps.append(float(lb[:, 0].max() - lr[:, 0].max()))
+    out["lateral_wrap_mm"] = round(max(wraps) * 1000, 1) if wraps else None
+    # -- cleavage, bare
+    depth = []
+    for dy in (0, 30, 60):
+        Lc = _loop(V, T, p[1] + dy / 1000.0)
+        W, zs = _inner_wall(Lc, p[0]) if Lc is not None else (None, None)
+        key = "cleavage_gap_mm_at_apex" if dy == 0 else "cleavage_gap_mm_apex_plus%d" % dy
+        if W is None:
+            out[key] = None
+            continue
+        zz = zs + 0.010
+        j = np.nonzero(W[:, 1] >= zz)[0]
+        out[key] = round(float(2 * np.interp(zz, W[j[0] - 1:j[0] + 1, 1], W[j[0] - 1:j[0] + 1, 0])) * 1000, 1) if len(j) and j[0] > 0 else None
+        wide = np.nonzero(W[:, 0] > 0.010)[0]
+        depth.append(float((W[wide[0], 1] if len(wide) else W[-1, 1]) - zs) * 1000)
+    out["cleavage_line_depth_mm"] = round(max(depth), 1) if depth else None
+    out["cleavage_line_depth_mm_by_height"] = [round(x, 1) for x in depth]
+    # -- the waist under it
+    def width(y):
+        lw = _loop(V, T, y)
+        return float(lw[:, 0].max() - lw[:, 0].min()) if lw is not None and lw[:, 0].max() < 0.25 else None
+    yf = Ps[fold][0]
+    ub, bw = width(yf), width(p[1])
+    ys = np.arange(0.95, yf, 0.0025)
+    ws = [(w, y) for w, y in ((width(y), y) for y in ys) if w]
+    if ub and ws:
+        w, y = min(ws)
+        out["underbust_w_mm"] = round(ub * 1000, 1)
+        out["waist_w_mm"] = round(w * 1000, 1)
+        out["waist_over_underbust_w"] = round(w / ub, 3)
+        out["fold_to_waist_mm"] = round((yf - y) * 1000, 1)
+        if bw:
+            out["bust_over_waist_w"] = round(bw / w, 3)
+    return out
+
+
 def spec_measures(spec_path, body_glb):
     """Breast and glute numbers on the spec's own body (formview.body): sections "breast" and "glutes"."""
     import tempfile
@@ -132,6 +307,7 @@ def spec_measures(spec_path, body_glb):
         else:
             Vref = Vb
     b = bm.measure(V, T, Vb, Vref, H, HT, "spec")
+    b.update(breast_round(V, T, Vref, b))
     b = {k: v for k, v in b.items() if not k.startswith("_")}
     g = gm.measure(spec_path, V=V, z=z, skel_glb=body_glb)
     g = {k: v for k, v in g.items() if not k.startswith("_")}
