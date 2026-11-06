@@ -880,33 +880,11 @@ class Solve:
             # the count and never raise it
             Fs_ = self.skinF
             if not hasattr(self, "_ccd_e"):
-                e_ = np.concatenate([Fs_[:, [0, 1]], Fs_[:, [1, 2]], Fs_[:, [2, 0]]])
-                self._ccd_e = np.unique(np.sort(e_, 1), axis=0)
+                self._ccd_e = skin_edges(Fs_)
             Es = self._ccd_e
 
             def crossings(xv):
-                Q = xv[:self.ns]
-                sc_ = ray.scene(Q, Fs_)
-                a_, b_ = Q[Es[:, 0]], Q[Es[:, 1]]
-                L_ = np.linalg.norm(b_ - a_, axis=1)
-                d_ = (b_ - a_) / np.maximum(L_, 1e-12)[:, None]
-                eps_ = 1e-5
-                n_ = 0
-                o_ = a_ + eps_ * d_
-                for _ in range(3):                       # past an incident face's hit, up to 3 hits along the edge
-                    pid_, tf_ = ray.hits(sc_, o_, d_)
-                    hit = (pid_ >= 0) & (tf_ < L_ - 2 * eps_)
-                    if not hit.any():
-                        break
-                    f_ = Fs_[np.maximum(pid_, 0)]
-                    inc = (f_ == Es[:, :1]).any(1) | (f_ == Es[:, 1:]).any(1)
-                    n_ += int((hit & ~inc).sum())
-                    go = hit & inc
-                    if not go.any():
-                        break
-                    o_ = np.where(go[:, None], o_ + (tf_[:, None] + eps_) * d_, o_)
-                    L_ = np.where(go, L_ - tf_ - eps_, 0.0)
-                return n_
+                return int(skin_crossings(xv[:self.ns], Fs_, Es)[0].sum())
             c_cur = crossings(x)
             log["cross0"] = c_cur
         nq = np.zeros((0, 3))
@@ -1086,6 +1064,39 @@ class Solve:
         return x
 
 
+def skin_edges(Fs):
+    e = np.concatenate([Fs[:, [0, 1]], Fs[:, [1, 2]], Fs[:, [2, 0]]])
+    return np.unique(np.sort(e, 1), axis=0)
+
+
+def skin_crossings(Q, Fs, Es, eps=1e-5):
+    """The skin's self-crossings (R5 lead 3, `ccd`): each edge of Es cast as a ray over its length, a hit on a face of
+    Fs that shares no corner with it (past up to 3 incident-face hits). Returns (edge mask, the hit face per edge)."""
+    sc = ray.scene(Q, Fs)
+    a, b = Q[Es[:, 0]], Q[Es[:, 1]]
+    L = np.linalg.norm(b - a, axis=1)
+    d = (b - a) / np.maximum(L, 1e-12)[:, None]
+    o = a + eps * d
+    bad = np.zeros(len(Es), bool)
+    hf = -np.ones(len(Es), np.int64)
+    for _ in range(3):
+        pid, tf = ray.hits(sc, o, d)
+        hit = (pid >= 0) & (tf < L - 2 * eps)
+        if not hit.any():
+            break
+        f = Fs[np.maximum(pid, 0)]
+        inc = (f == Es[:, :1]).any(1) | (f == Es[:, 1:]).any(1)
+        new = hit & ~inc & ~bad
+        hf[new] = pid[new]
+        bad |= hit & ~inc
+        go = hit & inc
+        if not go.any():
+            break
+        o = np.where(go[:, None], o + (tf[:, None] + eps) * d, o)
+        L = np.where(go, L - tf - eps, 0.0)
+    return bad, hf
+
+
 def solve_chain(mesh, st, jc, cf):
     S_ = Solve(mesh, st, jc, cf)
     print(f"    fem setup {S_.log}", flush=True)
@@ -1113,6 +1124,7 @@ def solve_chain(mesh, st, jc, cf):
             fx = S_.held_pos(X, M, G)
             dfix = fx[S_.fixed] - x[S_.fixed]
             x = x.copy()
+            x_prev0 = x.copy()
             if cf.get("init_prev") != 2:
                 lu0 = S_.factor((), np.zeros(len(S_.free)))
                 rhs = -(S_.Afd @ dfix)
@@ -1121,6 +1133,34 @@ def solve_chain(mesh, st, jc, cf):
             # held ones move (the cut bands and the femur, far from the crease): the linear carry crossed the crease's
             # skin through itself before the solve began (176 crossing edges at 112), which the guard can only keep
             x[S_.fixed] = fx[S_.fixed]
+            if cf.get("ccd") and cf.get("init_prev") != 2:
+                # `ccd`'s init (R5 lead 3): the linear carry crossed the crease's skin through itself before the
+                # solve (10-176 crossing edges at 101-112), which the guard can only keep. The nodes of each NEW
+                # crossing (its edge, its face) and their skin ring take half their carry, until none is new
+                Fs_ = S_.skinF
+                if not hasattr(S_, "_ccd_e"):
+                    S_._ccd_e = skin_edges(Fs_)
+                Es = S_._ccd_e
+                x_old = x_prev0
+                bad0, _ = skin_crossings(x_old[:S_.ns], Fs_, Es)
+                car = x[:S_.ns] - x_old[:S_.ns]
+                if not hasattr(S_, "_ring"):
+                    S_._ring = sp.coo_matrix((np.ones(2 * len(Es)), (np.r_[Es[:, 0], Es[:, 1]], np.r_[Es[:, 1], Es[:, 0]])),
+                                             shape=(S_.ns, S_.ns)).tocsr()
+                frac = np.ones(S_.ns)
+                for _ in range(12):
+                    bad, hf = skin_crossings(x[:S_.ns], Fs_, Es)
+                    new_ = bad & ~bad0
+                    if not new_.any():
+                        break
+                    nd = np.zeros(S_.ns, bool)
+                    nd[Es[new_].ravel()] = True
+                    nd[Fs_[hf[new_]].ravel()] = True
+                    nd |= (S_._ring @ nd.astype(float)) > 0
+                    nd &= S_.hold[:S_.ns] == 0
+                    frac[nd] *= 0.5
+                    x[:S_.ns] = x_old[:S_.ns] + frac[:, None] * car
+                S_._lg_init = {"init_new_cross": int((bad & ~bad0).sum()), "init_lag": int((frac < 1).sum())}
             xs = x
         elif x is not None:
             dev = np.einsum("nji,nj->ni", Mb0[:, :3, :3], x - xs0)          # into rest space (rotation part)
@@ -1128,6 +1168,7 @@ def solve_chain(mesh, st, jc, cf):
         x = xs
         Mb0 = Mb
         lg = {"deg": th}
+        lg.update(getattr(S_, "_lg_init", {}))
         x = (S_.step_nh if cf.get("method") == "nh" else S_.step)(x, X, M, G, lg)
         xs0 = S_.skinned(M)[1]
         Y = X.copy()
