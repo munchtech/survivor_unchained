@@ -305,7 +305,7 @@ def main(argv=None):
     ap.add_argument("--topo", help="the topology npz of --body (default: its glb extras body_base.topology); play: --play-topo")
     ap.add_argument("--play-topo")
     ap.add_argument("--hide-far", action="store_true", help="also draw strip_hip_flex_nofar.png: her own side of the midline only")
-    ap.add_argument("--only", default="contract,tris,weights,bends,silhouette,topology")
+    ap.add_argument("--only", default="contract,tris,weights,bends,silhouette,topology,forms")
     ap.add_argument("--spec", default=str(HERE / "check_spec.json"))
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
@@ -319,6 +319,9 @@ def main(argv=None):
     res = {"body": a.body, "ref": a.ref, "rig": a.rig}
     if "contract" in only and A is not None:
         res["contract"] = contract(B, A, a.same_head, spec.get("same_head_meshes", HEADS))
+    if "forms" in only:
+        import formrules
+        res["forms"] = formrules.measure(a.body)
     if "tris" in only:
         res["tris"] = tris({"close": a.body, "play": a.play, "far": a.far})
     if "weights" in only:
@@ -391,6 +394,8 @@ def summary(res, spec):
         diff = {k: v for k, v in c.items() if isinstance(v, dict) and (v.get("only_in_body") or v.get("only_in_ref"))}
         L.append(f"contract: {len(diff)} name groups differ ({', '.join(diff) or 'none'}); blend-shape diffs on "
                  f"{len(c.get('blend_shapes', {}))} meshes; same head: {c.get('same_head_ok', 'not asked')}")
+    if res.get("forms"):
+        L.append(res["forms"]["summary"])
     for tier, t in res.get("tris", {}).items():
         L.append(f"tris {tier}: body {t['body_only']}  whole {t['whole']}")
     w = res.get("weights")

@@ -1,0 +1,19 @@
+{
+ "about": "P1 R1 design sheet: her forms as rules, each a number on the built body at rest with a band (tools/body/formrules.py; check.py --only forms). The bar (the owner, 5 Nov): sexy and confident in painted cel, clean readable forms, a strong silhouette; A is information only. Distances in mm, angles in degrees, glTF axes (x her left, y up, z front).",
+ "sections": {
+  "neck": {"why": "A long elegant neck rising clean out of a sloped trapezius reads confident; MakeHuman's shrug under her head (the trapezius up at the jaw, a 20 cm wide neck base) read as a yoke at the Look and close-up (R2).",
+   "rules": {
+    "top_7cm_mm":  {"band": [-60, -35], "why": "the trapezius 7 cm out sits well under the chin: the neck's side wall shows (B before R1: -6)"},
+    "top_9cm_mm":  {"band": [-80, -50], "why": "the trapezius slope well under way at 9 cm (B before: -19)"},
+    "top_17cm_mm": {"band": [-105, -75], "why": "the shoulder's top (acromion) about a third of a head under the chin (head 228 mm)"},
+    "width_max_2_4cm_mm": {"band": [95, 135], "why": "a slim neck 2-4 cm under the chin (B before: 176-212)"},
+    "trap_slope_7_13_deg": {"band": [18, 40], "why": "a sloped trapezius, neither a shelf nor a drop"},
+    "profile_worst_rise_mm": {"band": [null, 2], "why": "the shoulder line only falls going out: no knob or shelf on it"}
+   }},
+  "seam": {"why": "the throat seam is ONE surface: a crease there is a line round the throat under a cel terminator (build_topo.seam_g1)",
+   "rules": {
+    "angle_mean_deg": {"band": [null, 5], "why": "body and head normals agree along the ring (B before R1: 36.5)"},
+    "angle_max_deg": {"band": [null, 15], "why": "no single point kinks"}
+   }}
+ }
+}
