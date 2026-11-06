@@ -383,3 +383,38 @@ def carry_to_tier(D_from, tier_from="close", tier_to="play", k=6):
     w = 1.0 / np.maximum(d, 1e-5) ** 2
     w /= w.sum(1, keepdims=True)
     return (np.asarray(D_from, float)[i] * w[..., None]).sum(1)
+
+
+def relax(sl, V, values):
+    """The designed sliders' "relax" (laid by build_topo last in stage 1): a field that moves a region a lot stretches
+    its quads (the neck's rows under the held ring); this evens them by tangential Laplacian smoothing on our quads'
+    graph (each step moves a point toward its neighbours' mean with the normal part taken off, so the surface keeps
+    its shape and only the points slide), weighted by the region's mask on V0; the open ring is pinned. Entry:
+    "relax": {"mask": [...], "iters": n, "step": 0..1}, active when the slider is non-zero."""
+    import numpy as np
+    jobs = [(n, c["relax"]) for n, c in sl.designed.items() if c.get("relax") and values.get(n, 0.0)]
+    if not jobs:
+        return V
+    t = sl.topo()
+    Q = t["Q"]
+    n = len(V)
+    e = np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]])
+    e = np.unique(np.sort(e, 1), axis=0)
+    import scipy.sparse as sp
+    A = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+    deg = np.asarray(A.sum(1)).ravel()
+    V = V.copy()
+    for name, r in jobs:
+        w = sl.mask(r["mask"], sl.V0) * float(r.get("step", 0.5))
+        w[t["ring"]] = 0.0
+        act = w > 1e-4
+        for _ in range(int(r.get("iters", 20))):
+            fn = np.cross(V[Q[:, 2]] - V[Q[:, 0]], V[Q[:, 3]] - V[Q[:, 1]])
+            N = np.zeros_like(V)
+            for k in range(4):
+                np.add.at(N, Q[:, k], fn)
+            N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+            L = (A @ V) / np.maximum(deg, 1)[:, None] - V
+            L -= (L * N).sum(1, keepdims=True) * N
+            V[act] += w[act, None] * L[act]
+    return V

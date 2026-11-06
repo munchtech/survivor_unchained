@@ -168,6 +168,8 @@ def stage_base(spec, tier, rep, pre=None):
         # P1 R1: the form library's post-join fields (the neck: its length lifts the ring with the head, head_move)
         V = V + post
         info["post_join"] = sorted(n for n in sliders if sl.designed.get(n, {}).get("post_join"))
+        from sliders import relax
+        V = relax(sl, V, sliders)
         info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
