@@ -45,7 +45,7 @@ KFPS = 30
 
 
 def specs(names):
-    allp = sorted((P4 / "specs").glob("*.json"))
+    allp = sorted(p for p in (P4 / "specs").glob("*.json") if not p.stem.endswith(".takes"))
     return [p for p in allp if not names or p.stem in names]
 
 
@@ -82,32 +82,87 @@ def measure(r, spec):
     fps = r.src.fps
     if spec.get("kind") == "gait":
         return measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
-    return measures.idle(r.P, r.rig, fps, loop=r.clip["loop"])
+    m = measures.idle(r.P, r.rig, fps, loop=r.clip["loop"])
+    m.update(hand_targets(r, spec))
+    return m
+
+
+def hand_targets(r, spec):
+    """The keyed hands' distance from their targets on B (cm; mean and worst over the clip): each target rides the
+    pelvis at its rest offset (gen.keys.hands, B meters from the pelvis head, her left/up/forward)."""
+    K = spec.get("gen", {}).get("keys")
+    if not K:
+        return {}
+    rig, out = r.rig, {}
+    pv = rig.index["pelvis"]
+    Rrel = r.G[:, pv] @ rig.R0[pv].T
+    for h, off in K["hands"].items():
+        b = rig.index["hand_l" if h.startswith("Left") else "hand_r"]
+        t = r.P[:, pv] + Rrel @ np.asarray(off)
+        d = np.linalg.norm(r.P[:, b] - t, axis=1) * 100
+        s = "l" if h.startswith("Left") else "r"
+        out[f"hand_{s}_target_cm"] = round(float(d.mean()), 2)
+        out[f"hand_{s}_target_max_cm"] = round(float(d.max()), 2)
+    return out
 
 
 def gen_specs(names):
     return [(p, json.loads(p.read_text())) for p in specs(names) if json.loads(p.read_text()).get("gen")]
 
 
+def soma_k(spec):
+    """B's size over SOMA's (the retarget's scale), from the clip's current source."""
+    return float(retarget.scale_of(retarget.Rig(RIG), soma.load_npz(P4 / spec["source"])))
+
+
+def path_of(g, sc):
+    r = dict(g["root2d"])
+    for k in ("travel", "overshoot"):
+        if k in r:
+            r[k] = r[k] * sc
+    return {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
+
+
 def jobs_of(names):
+    """Each prompt x each path scale (root2d_scales: Kimodo's hips swing past its smooth root, and not linearly, so
+    the path's amplitude is searched; the scale is in the job name, s<percent>). gen.keys: hand end-effector keys
+    (kimodo_run.hand_keys) taken from our own take {src: {prompt, scale, pick}} at the B offsets (meters from the
+    pelvis, her left/up/forward) mapped to SOMA's scale, regenerated per keys.prompts x keys.scales as __k<i>s<pct>."""
     jobs = []
     for p, sp in gen_specs(names):
         g = sp["gen"]
-        for i, pr in enumerate(g["prompts"]):
-            j = {"name": f"{p.stem}__p{i}", "prompt": pr, "seconds": g["seconds"], "seed": g["seeds"][i % len(g["seeds"])],
+        def job(i, sc, nm):
+            j = {"name": nm, "prompt": g["prompts"][i], "seconds": g["seconds"], "seed": g["seeds"][i % len(g["seeds"])],
                  "takes": g["takes"]}
-            if not g.get("root2d"):
-                jobs.append(j)
+            if g.get("root2d"):
+                j["root2d"] = path_of(g, sc)
+            return j
+        for i in range(len(g["prompts"])):
+            if not g.get("root2d") or "root2d_scales" not in g:
+                jobs.append(job(i, 1.0, f"{p.stem}__p{i}"))
                 continue
-            # root2d_scales: the path's amplitude scaled per variant (Kimodo's hips swing past its smooth root)
-            for v, sc in enumerate(g.get("root2d_scales", [1.0])):
-                r = dict(g["root2d"])
-                for k in ("travel", "overshoot"):
-                    if k in r:
-                        r[k] = r[k] * sc
-                jv = dict(j, name=j["name"] + (f"v{v}" if "root2d_scales" in g else ""))
-                jv["root2d"] = {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
-                jobs.append(jv)
+            for sc in g["root2d_scales"]:
+                jobs.append(job(i, sc, f"{p.stem}__p{i}s{round(sc * 100)}"))
+        if g.get("more"):              # (more takes of chosen prompts, new seeds: __m<i>)
+            for i in g["more"]["prompts"]:
+                j = job(i, 1.0, f"{p.stem}__m{i}")
+                j.update(takes=g["more"]["takes"], seed=j["seed"] + g["more"]["seed_add"])
+                jobs.append(j)
+        if g.get("keys"):
+            K = g["keys"]
+            k = soma_k(sp)
+            src = job(K["src"]["prompt"], K["src"].get("scale", 1.0), "src")
+            src = {kk: src[kk] for kk in ("prompt", "seconds", "seed", "takes", "root2d") if kk in src}
+            src["pick"] = K["src"].get("pick", 0)
+            # (aim: what is sent = the target minus the take's measured mean miss on B, in the pelvis frame: the
+            # retarget's arm calibration lands Kimodo's wrist a few cm from where it put SOMA's)
+            aim = K.get("aim", {})
+            hands = {h: [(x + a) / k for x, a in zip(off, aim.get(h, [0, 0, 0]))] for h, off in K["hands"].items()}
+            for i in K.get("prompts", [K["src"]["prompt"]]):
+                for sc in K.get("scales", [K["src"].get("scale", 1.0)]):
+                    j = job(i, sc, f"{p.stem}__k{K.get('tag', '')}{i}s{round(sc * 100)}")
+                    j["keys"] = {"src": src, "hands": hands, "start": K.get("start", 15), "every": K.get("every", 30)}
+                    jobs.append(j)
     return jobs
 
 
@@ -132,6 +187,10 @@ def cmd_takes(a):
     for p, sp in gen_specs(a.clips):
         bvhs = sorted(TAKES_DIR.glob(f"{p.stem}__*_*.bvh"))
         log = []
+        tl = P4 / "specs" / f"{p.stem}.takes.json"
+        if a.match and tl.exists():    # (score only the takes matching; the rest keep their logged scores)
+            log = [t for t in json.loads(tl.read_text()) if a.match not in t["take"]]
+            bvhs = [b for b in bvhs if a.match in b.name]
         for b in bvhs:
             try:
                 r = run_post(b, sp, p.stem)
@@ -143,7 +202,12 @@ def cmd_takes(a):
                 log.append({"take": b.name, "score": sc, "frames": r.clip["frames"], "crop": list(r.prep.crop), **m})
             except Exception as e:  # (a take the core cannot read is logged, not fatal)
                 log.append({"take": b.name, "score": 1e9, "error": str(e)})
-        log.sort(key=lambda x: x["score"])
+        for t in log:                  # (logged takes re-scored against the spec's bands as they are now)
+            if "error" not in t:
+                t["score"] = measures.score(t, sp["bands"])
+        # gate: bands a take must pass to be chosen at all (a run's cadence: playback scale cannot fix it)
+        gate = {k: sp["bands"][k] for k in sp.get("gate", [])}
+        log.sort(key=lambda x: (not all(k in x and lo <= x[k] <= hi for k, (lo, hi) in gate.items()), x["score"]))
         (P4 / "specs" / f"{p.stem}.takes.json").write_text(json.dumps(log, indent=1) + "\n")
         for t in log[:3]:
             print(f"{p.stem}: {t['take']} score {t['score']}")
@@ -241,6 +305,8 @@ def main():
     for nm in ("build", "check", "takes"):
         s = sub.add_parser(nm)
         s.add_argument("clips", nargs="*")
+        if nm == "takes":
+            s.add_argument("--match", default="")
     a = ap.parse_args()
     {"import": cmd_import, "build": cmd_build, "check": cmd_check, "gen": cmd_gen, "takes": cmd_takes}[a.cmd](a)
 

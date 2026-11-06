@@ -54,14 +54,16 @@
  "gen": {
   "engine": "kimodo",
   "seconds": 7.0,
-  "takes": 6,
+  "takes": 10,
   "seeds": [
-   41,
-   42
+   141,
+   142,
+   143
   ],
   "prompts": [
-   "A confident woman walks forward at an easy pace with her hips swaying and her arms swinging loosely",
-   "A woman strolls forward confidently with a relaxed sway of her hips and her arms swinging easily at her sides"
+   "A confident woman walks forward at an unhurried pace, her hips leading and swaying, her arms swinging loosely at her sides",
+   "A woman strolls forward slowly and confidently with a relaxed swing of her hips and arms",
+   "A relaxed woman walks forward with a calm, easy stride, her hips swaying and her arms swinging gently"
   ],
   "root2d": {
    "kind": "straight",
@@ -87,7 +89,10 @@
  },
  "notes": "",
  "source": "src/walk_warden_town.npz",
- "bvh": "walk_warden_town__u_5.bvh",
- "sha1": "040928d10a8f088870d2bbcf28d01552dcea3dbd",
- "take_score": 3.423
+ "bvh": "walk_warden_town__p1_1.bvh",
+ "sha1": "cd63cac437003c118ad254e90225f220ba6aa7a2",
+ "take_score": 3.623,
+ "gate": [
+  "steps_min"
+ ]
 }

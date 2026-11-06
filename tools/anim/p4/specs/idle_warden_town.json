@@ -41,19 +41,29 @@
   "shoulder_lift_r_cm": [
    -2,
    0.5
+  ],
+  "hand_l_target_cm": [
+   0,
+   5
+  ],
+  "hand_r_target_cm": [
+   0,
+   5
   ]
  },
  "gen": {
   "engine": "kimodo",
   "seconds": 8.5,
-  "takes": 5,
+  "takes": 6,
   "seeds": [
-   21,
-   22
+   121,
+   122,
+   123
   ],
   "prompts": [
-   "A confident woman stands at ease with her right hand on her hip and her left hand resting on the hilt of a sword at her left side, slowly swaying her hips from side to side as her weight shifts from one leg to the other",
-   "A relaxed warrior woman stands with one hand on her hip and the other resting on her sword hilt, rocking her weight slowly from one foot to the other with a lazy sway of her hips"
+   "A confident woman stands relaxed with her weight on one hip, her right hand resting on her right hip and her left hand resting on a sword hilt at her left hip, slowly shifting her weight from leg to leg",
+   "A woman stands at ease with her right hand on her hip and her left hand on the hilt of the sword at her left side, her hips swaying slowly from side to side as she shifts her weight between her feet",
+   "A relaxed woman stands with one hand on her hip and the other hand resting on a sword hilt at her side, lazily rocking her weight from one leg to the other"
   ],
   "root2d": {
    "kind": "sway",
@@ -65,12 +75,52 @@
    "every": 1
   },
   "root2d_scales": [
-   0.3,
-   0.4,
-   0.55,
-   0.75,
-   1.0
-  ]
+   0.45,
+   0.5,
+   0.52
+  ],
+  "keys": {
+   "src": {
+    "prompt": 0,
+    "scale": 0.55,
+    "pick": 3
+   },
+   "hands": {
+    "LeftHand": [
+     0.2,
+     0.31,
+     0.15
+    ],
+    "RightHand": [
+     -0.19,
+     0.09,
+     -0.05
+    ]
+   },
+   "prompts": [
+    0
+   ],
+   "scales": [
+    0.5,
+    0.52,
+    0.54
+   ],
+   "start": 15,
+   "every": 30,
+   "aim": {
+    "LeftHand": [
+     0.032,
+     0.05,
+     0.06
+    ],
+    "RightHand": [
+     -0.02,
+     0.035,
+     0.02
+    ]
+   },
+   "tag": "a"
+  }
  },
  "post": {
   "loop": true,
@@ -85,9 +135,9 @@
    245
   ]
  },
- "notes": "The sway path: 12 cm end to end eased over 0.95 s, 1.5 cm overshoot settling over 0.385 s (R4.3), 2.67 s a cycle; the loop is 2 whole cycles (5.33 s). Breath is not built in (left to Kimodo's own). PICKED BY HAND over the best score (idle_warden_town__uv0_2, 8.89): every text-free take (no prompt: the encoder never got RAM) raises a hand to her head or turns 26-68 deg; h_0 is the earlier text-conditioned 'hand on her hip' Kimodo take (kimodo_gen her_hip_idle_0): her hand on her hip, but almost no sway (1 cm). Re-run gen once the prompts are encoded.",
+ "notes": "Prompted (GPU-encoded) + hand keys: the left wrist over the sheathed sword's pommel (the game's HipBlade socket on B's pelvis), the right on the iliac crest; keys from our own take p0 s55 #3 at 1 s steps, aimed past the measured retarget miss (keys.aim). Path scale searched: the hips jump from ~1 cm to ~17 cm between path scale 0.45 and 0.55 (bimodal); 0.54 lands 13-15.5 cm. Loop: 2 whole cycles. Breath is Kimodo's own (not built).",
  "source": "src/idle_warden_town.npz",
- "bvh": "idle_warden_town__h_0.bvh",
- "sha1": "772d839ab88478e6c1140489f17852959d652078",
- "take_score": 10.74
+ "bvh": "idle_warden_town__ka0s54_2.bvh",
+ "sha1": "6287a4d3da208e7971ddb1559e7a548505072293",
+ "take_score": 1.248
 }

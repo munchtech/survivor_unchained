@@ -63,15 +63,13 @@ def main(argv):
     body = CC.Body(str(P1 / "body.glb"), json.loads((P1 / "rig.json").read_text()), rig.names,
                    p4.m44(rig.R0, rig.head), True)
     arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
-    arest = json.loads((REPO / "tools/anim/data/arms_rest_godot.json").read_text())
     pieces = {"sword": ("chevalier_sword@hand_r", "hand_r"), "shield": ("shield_round@lowerarm_l", "lowerarm_l")}
     pts = {}
     for k, (key, bone) in pieces.items():
         v = np.array(arms[key]["v"], float)
-        A = np.eye(4)
-        A[:3] = np.array(arest[bone])
-        B = p4.m44(rig.R0[rig.index[bone]], rig.head[rig.index[bone]])
-        M = np.linalg.inv(B) @ A                       # A's rest-world mount onto B's bone
+        # The game's mount on B: Arms.Hold puts the same bone-local MountTransform/Seat on B's own hand_r / lowerarm_l
+        # (PersonView.BoneOf; no B mapping, unlike HoldSheathed), so ArmsDump's bone-local points ride B's bone as they are
+        M = np.eye(4)
         sel = v[np.random.default_rng(1).choice(len(v), min(len(v), 1500), replace=False)]
         pts[k] = (np.c_[sel, np.ones(len(sel))] @ M.T)[:, :3]
     rows = []

@@ -46,14 +46,16 @@
  "gen": {
   "engine": "kimodo",
   "seconds": 7.0,
-  "takes": 6,
+  "takes": 10,
   "seeds": [
-   51,
-   52
+   151,
+   152,
+   153
   ],
   "prompts": [
-   "A warrior woman walks forward calmly carrying a sword low in her right hand and a shield on her left forearm",
-   "A confident female knight walks forward at an easy pace with a shield on her left arm and a sword held loosely down in her right hand"
+   "A confident woman walks forward at an unhurried pace carrying a sword in her right hand and a shield on her left arm, her hips swaying",
+   "A warrior woman walks forward calmly, a sword held low in her right hand and a shield on her left forearm, her left arm still and her right arm swinging a little",
+   "A relaxed woman strolls forward holding a sword down by her right side and a shield on her left arm"
   ],
   "root2d": {
    "kind": "straight",
@@ -79,7 +81,10 @@
  },
  "notes": "",
  "source": "src/walk_warden.npz",
- "bvh": "walk_warden__u_0.bvh",
- "sha1": "b7348c03f30f0ad59431ca06e2b3f9f048e288d4",
- "take_score": 3.84
+ "bvh": "walk_warden__p0_9.bvh",
+ "sha1": "a3ca932b4826a588801f5ece83291cf2170207ca",
+ "take_score": 3.974,
+ "gate": [
+  "steps_min"
+ ]
 }

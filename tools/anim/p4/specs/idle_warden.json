@@ -25,19 +25,29 @@
   "elbow_r_deg": [
    10,
    35
+  ],
+  "hand_l_target_cm": [
+   0,
+   5
+  ],
+  "hand_r_target_cm": [
+   0,
+   5
   ]
  },
  "gen": {
   "engine": "kimodo",
   "seconds": 9.0,
-  "takes": 5,
+  "takes": 6,
   "seeds": [
-   31,
-   32
+   131,
+   132,
+   133
   ],
   "prompts": [
-   "A calm warrior woman stands ready holding a shield relaxed at chest height on her left arm and a sword low by her right hip, slowly shifting her weight from one leg to the other",
-   "A relaxed female fighter waits in a guard with a shield on her left forearm and a sword hanging low in her right hand, her weight easing from foot to foot"
+   "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
+   "A warrior woman waits calmly in a ready stance, her left arm holding a shield in front of her chest and her right hand holding a sword low at her side, swaying gently as her weight shifts",
+   "A relaxed fighter stands with a shield raised on her left arm and a sword lowered in her right hand, breathing calmly and shifting her weight from leg to leg"
   ],
   "root2d": {
    "kind": "sway",
@@ -49,12 +59,53 @@
    "every": 1
   },
   "root2d_scales": [
-   0.25,
-   0.35,
-   0.55,
-   0.75,
-   1.0
-  ]
+   0.8,
+   0.85,
+   0.9
+  ],
+  "keys": {
+   "src": {
+    "prompt": 2,
+    "scale": 0.75,
+    "pick": 4
+   },
+   "hands": {
+    "LeftHand": [
+     0.06,
+     0.26,
+     0.3
+    ],
+    "RightHand": [
+     -0.2,
+     -0.08,
+     0.12
+    ]
+   },
+   "prompts": [
+    2,
+    1
+   ],
+   "scales": [
+    0.78,
+    0.82,
+    0.86
+   ],
+   "start": 15,
+   "every": 30,
+   "aim": {
+    "LeftHand": [
+     -0.04,
+     0.007,
+     0.055
+    ],
+    "RightHand": [
+     -0.03,
+     -0.075,
+     0.02
+    ]
+   },
+   "tag": "a"
+  }
  },
  "post": {
   "loop": true,
@@ -69,9 +120,9 @@
    260
   ]
  },
- "notes": "The sway path: 7 cm + 1 cm overshoot each end (9 cm), 3.5 s a cycle; the loop is 2 whole cycles (7.0 s).",
+ "notes": "Prompted + hand keys (shield wrist across the chest, sword wrist low by the right hip) from our own take p2 s75 #4; path scale searched 0.75-0.9 (bimodal like the town idle). Breath not built.",
  "source": "src/idle_warden.npz",
- "bvh": "idle_warden__uv1_5.bvh",
- "sha1": "3234eb6657c03edac57486a13daae3920b0479b2",
- "take_score": 2.606
+ "bvh": "idle_warden__ka2s78_1.bvh",
+ "sha1": "dc730148d7306457be5b2ab3336cc6dd99d1b933",
+ "take_score": 3.424
 }

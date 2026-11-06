@@ -37,6 +37,10 @@
   "elbow_r_deg": [
    30,
    100
+  ],
+  "slide_mm": [
+   0,
+   5
   ]
  },
  "gen": {
@@ -44,18 +48,32 @@
   "seconds": 6.0,
   "takes": 6,
   "seeds": [
-   71,
-   72
+   171,
+   172,
+   173,
+   181,
+   182
   ],
   "prompts": [
-   "A warrior woman runs forward fast holding a shield low in front of her on her left arm and a sword trailing low behind her in her right hand",
-   "A female knight sprints forward with a shield held in front on her left arm and a sword carried low and back in her right hand"
+   "A warrior woman runs forward smoothly holding a shield low in front of her on her left arm and a sword trailing low behind her in her right hand",
+   "A woman runs forward at a steady pace with a shield held low on her left forearm and a sword carried low and back in her right hand, her head level",
+   "A fighter runs forward with a shield in front of her and a sword held low in her right hand, her right arm swinging",
+   "A warrior woman runs forward with long, easy, bounding strides, a shield held low in front on her left arm and a sword trailing low in her right hand",
+   "A woman runs forward with long relaxed strides at a slow stride rate, a shield held low on her left arm and a sword low behind her in her right hand"
   ],
   "root2d": {
    "kind": "straight",
    "speed": 5.0,
    "ramp": 1.0,
    "every": 1
+  },
+  "more": {
+   "prompts": [
+    3,
+    4
+   ],
+   "takes": 12,
+   "seed_add": 50
   }
  },
  "post": {
@@ -66,16 +84,19 @@
    1.6
   ],
   "gait": true,
-  "duty": 0.35,
+  "duty": 0.27,
   "game_speed": 5.0,
   "crop": [
    36,
    140
   ]
  },
- "notes": "",
+ "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off.",
  "source": "src/run_warden.npz",
- "bvh": "run_warden__u_2.bvh",
- "sha1": "2164970e835fd632ff0fb48ea7ac93db535e8072",
- "take_score": 6.573
+ "bvh": "run_warden__p4_4.bvh",
+ "sha1": "99b4bbf8d837c07dcc3b446a54738000e5571961",
+ "take_score": 11.682,
+ "gate": [
+  "steps_min"
+ ]
 }

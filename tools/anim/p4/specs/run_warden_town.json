@@ -45,6 +45,10 @@
   "arm_swing_r_pm_deg": [
    35,
    50
+  ],
+  "slide_mm": [
+   0,
+   5
   ]
  },
  "gen": {
@@ -52,18 +56,32 @@
   "seconds": 6.0,
   "takes": 6,
   "seeds": [
-   61,
-   62
+   161,
+   162,
+   163,
+   171,
+   172
   ],
   "prompts": [
-   "A woman runs forward fast and smoothly with her head level, elbows bent and arms pumping",
-   "An athletic woman runs forward at a steady fast pace, leaning slightly forward with her arms swinging at her sides"
+   "A woman runs forward smoothly and steadily, her elbows bent at right angles and her arms swinging forward and back",
+   "A confident woman jogs forward at a quick, even pace with her arms bent and swinging, her head level",
+   "A woman runs forward at a steady pace, her left hand resting on a sword hilt at her left hip and her right arm bent and swinging",
+   "A woman runs forward with long, easy, bounding strides, her elbows bent at right angles and her arms swinging forward and back",
+   "A woman runs forward with long relaxed strides, a slow and smooth stride rate, her bent arms pumping"
   ],
   "root2d": {
    "kind": "straight",
    "speed": 5.0,
    "ramp": 1.0,
    "every": 1
+  },
+  "more": {
+   "prompts": [
+    3,
+    4
+   ],
+   "takes": 12,
+   "seed_add": 50
   }
  },
  "post": {
@@ -74,16 +92,19 @@
    1.6
   ],
   "gait": true,
-  "duty": 0.35,
+  "duty": 0.27,
   "game_speed": 5.0,
   "crop": [
    36,
    140
   ]
  },
- "notes": "",
+ "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off.",
  "source": "src/run_warden_town.npz",
- "bvh": "run_warden_town__u_1.bvh",
- "sha1": "36a83363c1719614cb45cc97d40d4f711f7d09b6",
- "take_score": 6.812
+ "bvh": "run_warden_town__p3_0.bvh",
+ "sha1": "832be36ae3c2ead2e5e761d50c40d392fcef7a09",
+ "take_score": 5.98,
+ "gate": [
+  "steps_min"
+ ]
 }
