@@ -472,6 +472,7 @@ class Solve:
         cand = np.nonzero(ins | prev)[0]
         cand = cand[self.hold[cand] == 0]
         if not len(cand):
+            self._cnq = np.zeros((0, 3))
             return cand, np.zeros((0, 3)), ins
         q, nq, ok = _closest(x, self.skinF, Q[cand], self.P0c, self.X0[cand], cf["far_m"], Nq=N[cand],
                              facing=cf.get("facing"))
@@ -482,6 +483,7 @@ class Solve:
         # both skins of a contact are pushed: each node `share` of the way to the other skin (the other side's
         # nodes take the rest, so the two meet between, not swap through each other), then the margin out
         sh = np.where(s < 0, cf.get("share", 0.5), 1.0)[:, None]
+        self._cnq = nq                                  # the partner's outward normal (method "nh": a one-sided plane)
         return cand, Q[cand] + sh * (q - Q[cand]) + cf["margin"] * nq, ins
 
     def local(self, x, cn, tgt, wc):
@@ -635,6 +637,180 @@ class Solve:
                        inv_thigh=round(float((self.mu[iv] != 1.0).mean()), 2))
         return x
 
+    # ------------------------------------------------------------ method "nh": a hyperelastic minimum, not PD --
+    def nh_energy(self, x, grad=True):
+        """Stable Neo-Hookean (Smith et al. 2018, the form without the log term): per tet vol mu [(|F|^2 - 3) / 2 +
+        lam / 2 (J - a)^2], a = 1 + 1 / lam (rest-stable), `lam` = lambda / mu (10: Poisson 0.45). Defined and restoring
+        through inversion (an inverted tet's J term pushes it back open), and its volume is a pressure, so a crushed
+        groin swells round the contact. Why not PD's volume targets (R5 lead 2, 6 Nov): the nearest-det-1 target
+        (sl3) converges but crumples the femoral triangle (90 deg: 51 inside, 579 tets inverted, 0.5 L lost); the even
+        swelling target (`iso`) is not a projection, so PD never settles under it (dx 1-3 mm after 200 iterations at
+        48 deg with no contact at all): e10's roll was a snapshot of a solve still moving. Returns E, grad [n,3], J."""
+        lam = self.cf.get("lam", 10.0)
+        a = 1.0 + 1.0 / lam
+        F = self.tets.F(x)
+        c0 = np.cross(F[:, :, 1], F[:, :, 2])
+        c1 = np.cross(F[:, :, 2], F[:, :, 0])
+        c2 = np.cross(F[:, :, 0], F[:, :, 1])
+        J = np.einsum("tc,tc->t", F[:, :, 0], c0)
+        w = self.tets.vol * self.mu
+        E = float((w * (0.5 * ((F * F).sum((1, 2)) - 3.0) + 0.5 * lam * (J - a) ** 2)).sum())
+        if not grad:
+            return E, None, J
+        P = F + (lam * (J - a))[:, None, None] * np.stack([c0, c1, c2], 2)      # dPsi/dF (the cofactor is dJ/dF)
+        return E, self.tets.rhs(w, P), J
+
+    def step_nh(self, x, X, M, G, log):
+        """The pose's hyperelastic rest: min over the free nodes of nh_energy + the skin's smoothness against the
+        skinning (1/2 smooth_w h |L x - L X|^2 over the skin's Laplacian: the solve's offset from LBS stays smooth, so
+        no element-scale wrinkle) + the contacts' penalty (1/2 w |x - target|^2, re-found every `contact_every`).
+        L-BFGS with the prefactored Laplacian-type matrix as its initial Hessian and an Armijo line search (Liu,
+        Bouaziz, Kavan 2017, "Quasi-Newton methods for real-time simulation of hyperelastic materials"): every
+        iterate lowers a true energy, so the march converges (`tol` the last step's largest move)."""
+        cf = self.cf
+        fr = self.free
+        fx = self.held_pos(X, M, G)
+        x = x.copy()
+        x[self.fixed] = fx[self.fixed]
+        pos = -np.ones(len(x), np.int64)
+        pos[fr] = np.arange(len(fr))
+        lam = cf.get("lam", 10.0)
+        dref, wb = None, None
+        if self.bend_w > 0:
+            xr = np.zeros_like(x)
+            xr[:self.ns] = X[self.sv]
+            dref = self.Ls @ xr
+            wb = cf.get("smooth_w", self.bend_w) * self.wb / self.bend_w
+        if getattr(self, "_h0", None) is None:
+            A = self.tets.matrix(self.tets.vol * self.mu * cf.get("h0_k", 1.0 + lam / 3.0))
+            if wb is not None:
+                A = A + self.Ls.T @ sp.diags(wb) @ self.Ls
+            A = A.tocsr()
+            self._h0 = (A[fr][:, fr].tocsc(), A.diagonal())
+            self._h0_key, self._h0_lu = None, None
+        Hff, Hd = self._h0
+
+        def total(xv, cn, tgt, wc):
+            E, g, J = self.nh_energy(xv)
+            if dref is not None:
+                r = self.Ls @ xv - dref
+                E += 0.5 * float((wb * (r * r).sum(1)).sum())
+                g = g + self.Ls.T @ (wb[:, None] * r)
+            if len(cn):
+                # a one-sided plane through each target, on the partner's normal: a node pushed out of its partner
+                # is held from going back in but never pulled on (a two-sided pull to a target re-found every few
+                # iterations kept the deep fold chattering: E rising at each refresh, dx 2.5 mm at 300 iterations)
+                ph = np.minimum(np.einsum("ij,ij->i", xv[cn] - tgt, nq), 0.0)
+                E += 0.5 * float((wc[pos[cn]] * ph * ph).sum())
+                g[cn] += (wc[pos[cn]] * ph)[:, None] * nq
+            return E, g[fr], J
+
+        prev = np.zeros(self.ns, bool)
+        cn, tgt = np.zeros(0, np.int64), np.zeros((0, 3))
+        wc = np.zeros(len(fr))
+        nq = np.zeros((0, 3))
+        Sh, Yh = [], []
+        m_h = int(cf.get("lbfgs_m", 8))
+        cap = cf.get("max_move", 0.005)
+        dx, it, nls, E = np.inf, 0, 0, None
+        J0 = np.linalg.det(self.tets.F(x))
+        log["inv0"] = int((J0 < 0).sum())
+        for it in range(int(cf["iters"])):
+            if it % int(cf["contact_every"]) == 0:
+                cn0 = cn
+                cn, tgt, ins = self.contacts(x, prev)
+                nq = self._cnq
+                prev = np.zeros(self.ns, bool)
+                prev[cn] = True
+                wc = np.zeros(len(fr))
+                if len(cn):
+                    wc[pos[cn]] = cf["contact"] * Hd[cn]
+                if E is None or len(cn) != len(cn0) or (cn != cn0).any():
+                    Sh, Yh = [], []
+                # always re-evaluated: the same nodes' targets moved with their partners, and a stale E, g made the
+                # line search fail (a stall at 94 deg, one contact node holding g 2.3)
+                E, g, J = total(x, cn, tgt, wc)
+            key = tuple(cn.tolist())
+            if self._h0_key != key:
+                self._h0_lu = splu((Hff + sp.diags(wc)).tocsc())
+                self._h0_key = key
+            lu = self._h0_lu
+            q = g.copy()
+            al = []
+            for s_, y_ in zip(reversed(Sh), reversed(Yh)):
+                r_ = 1.0 / float((y_ * s_).sum())
+                a_ = r_ * float((s_ * q).sum())
+                q -= a_ * y_
+                al.append((r_, a_))
+            z = np.stack([lu.solve(q[:, c]) for c in range(3)], 1)
+            for (s_, y_), (r_, a_) in zip(zip(Sh, Yh), reversed(al)):
+                z += s_ * (a_ - r_ * float((y_ * z).sum()))
+            d = -z
+            gd = float((g * d).sum())
+            if gd >= 0:
+                Sh, Yh = [], []
+                d = -np.stack([lu.solve(g[:, c]) for c in range(3)], 1)
+                gd = float((g * d).sum())
+            t = min(1.0, cap / max(float(np.abs(d).max()), 1e-12))
+            x0f = x[fr].copy()
+            while True:
+                x[fr] = x0f + t * d
+                E1, g1, J1 = total(x, cn, tgt, wc)
+                if E1 <= E + 1e-4 * t * gd:
+                    break
+                t *= 0.5
+                nls += 1
+                if t < 1e-5:
+                    if not Sh:
+                        break                        # the plain H0 step fails too: a true stall, stop here
+                    Sh, Yh = [], []                  # a stale history: restart from the H0 direction
+                    d = -np.stack([lu.solve(g[:, c]) for c in range(3)], 1)
+                    gd = float((g * d).sum())
+                    t = min(1.0, cap / max(float(np.abs(d).max()), 1e-12))
+            if E1 > E + 1e-4 * t * gd:
+                x[fr] = x0f
+                log["stalled"] = it
+                break
+            s = x[fr] - x0f
+            y = g1 - g
+            if float((s * y).sum()) > 1e-16:
+                Sh.append(s)
+                Yh.append(y)
+                if len(Sh) > m_h:
+                    Sh.pop(0)
+                    Yh.pop(0)
+            dx = float(np.abs(s).max())
+            E, g, J = E1, g1, J1
+            if cf.get("trace") and log.get("deg", 0) >= cf["trace"] and it % 10 == 9:
+                print(f"      it {it} E {E:.6e} dx {dx*1000:.3f} |g| {np.abs(g).max():.3e} t {t:.3g} ls {nls}", flush=True)
+            if it > cf["contact_every"] and dx < cf["tol"]:
+                break
+        cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
+        J = np.linalg.det(self.tets.F(x))
+        vl = self.tets.vol
+        log.update(iters=it + 1, last_dx_mm=round(dx * 1000, 3), contacts=int(len(cn)), inside=int(ins.sum()),
+                   backtracks=nls, g_max=float(np.abs(g).max()), dvol_cm3=round(float(((J - 1) * vl).sum() * 1e6)),
+                   dvol_neg_cm3=round(float((np.minimum(J - 1, 0) * vl).sum() * 1e6)), inverted=int((J < 0).sum()),
+                   J_p1=round(float(np.percentile(J, 1)), 3))
+        if cf.get("diag"):
+            # where the unsettled force sits: the free nodes with the largest gradient, their rest place (up, front,
+            # lat mm from the hip joint), skin or deep, in a contact, and how far the nearest held node is (mm)
+            gn = np.linalg.norm(g, axis=1)
+            top = np.argsort(-gn)[:12]
+            nd = fr[top]
+            Bf = np.stack([self.st.fr.up, self.st.fr.front, self.st.fr.lat]).T
+            dh, _ = cKDTree(self.X0[self.fixed]).query(self.X0[nd])
+            for k_, n_ in zip(top, nd):
+                print(f"      g {gn[k_]:.3e} node {n_} skin {n_ < self.ns} cn {n_ in set(cn.tolist())} rest "
+                      f"{np.round((self.X0[n_] - self.st.O) @ Bf * 1000).astype(int).tolist()} held_mm "
+                      f"{dh[list(nd).index(n_)] * 1000:.0f} hold_near {self.hold[self.fixed][_[list(nd).index(n_)]]}", flush=True)
+            Ji = np.nonzero(J < 0)[0]
+            if len(Ji):
+                c = (self.X0[self.tets.T[Ji]].mean(1) - self.st.O) @ Bf * 1000
+                print(f"      inverted at p10/50/90 {np.round(np.percentile(c, [10, 50, 90], 0)).astype(int).tolist()} "
+                      f"touch held {float((self.hold[self.tets.T[Ji]] > 0).any(1).mean()):.2f}", flush=True)
+        return x
+
 
 def solve_chain(mesh, st, jc, cf):
     S_ = Solve(mesh, st, jc, cf)
@@ -674,7 +850,7 @@ def solve_chain(mesh, st, jc, cf):
         x = xs
         Mb0 = Mb
         lg = {"deg": th}
-        x = S_.step(x, X, M, G, lg)
+        x = (S_.step_nh if cf.get("method") == "nh" else S_.step)(x, X, M, G, lg)
         xs0 = S_.skinned(M)[1]
         Y = X.copy()
         Y[S_.sv] = x[:S_.ns]
