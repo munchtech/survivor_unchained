@@ -289,6 +289,121 @@ def breast_round(V, T, Vref, b):
     return out
 
 
+def _path(V, T, p, psi_deg, up=0.17):
+    """The profile up a path from the apex p: the mesh cut by the plane through p that holds the forward axis (z) and
+    the direction d = (sin psi, cos psi, 0) (psi 0 straight up, + toward the left breast's outer side), from p up to
+    `up` along d: (s along d, z) points ordered top -> apex (m)."""
+    import breast_measure as bm
+    ps = math.radians(psi_deg)
+    d = np.array([math.sin(ps), math.cos(ps), 0.0])
+    n = np.array([math.cos(ps), -math.sin(ps), 0.0])
+    M = np.stack([n, d, [0.0, 0.0, 1.0]], 1)
+    Vr, pr = V @ M, p @ M
+    best = None
+    for L in bm.section(Vr, T, 0, pr[0]):
+        dd = float(np.linalg.norm(L - pr, axis=1).min())
+        if best is None or dd < best[0]:
+            best = (dd, L)
+    L = best[1]
+    nL = len(L)
+    i0 = int(np.argmin(np.linalg.norm(L - pr, axis=1)))
+    st = 1 if L[(i0 + 2) % nL, 1] > L[i0, 1] else -1
+    out, i = [], i0
+    for _ in range(nL):
+        q = L[i % nL]
+        if q[1] - pr[1] > up or q[2] < -0.02:
+            break
+        out.append(q)
+        i += st
+    P = np.array(out)[::-1]
+    return np.c_[P[:, 1] - pr[1], P[:, 2]]
+
+
+def root_blend(V, T, Vref, b):
+    """P1 R1c round 3 (milestone judge 2: "two spheres stuck onto a flat chest": a crisp line, a dark crease over a
+    lit rim, arcs over each breast top): the UPPER ROOT's blend as numbers, left breast, rest body, on three paths up
+    from the apex (_path: psi -28 inner, 0 centre, +28 outer third of the upper root; the clavicle side). On each
+    (1 mm, light smoothing) the root is where the outline leaves the chest-wall reference by 3 mm; from 25 mm above it to 45 mm below
+    the CONCAVE turn (curvature under -3/m, the mesh's facet noise below that):
+      width_mm: the arc over which the central 80 % of that turn happens (a fillet: small; a blend: wide);
+      depth_mm: the outline's deepest point behind the chord across the turn (5..95 %): how deep the concave part is;
+      turn_deg: the whole concave turn;
+      crease_deg_per_mm: the most the outline turns concave within any 6 mm (/ 6): the crease detector (a cel band
+        and the baked cavity draw a line where it is high).
+    Reported per path and as the worst (least width over the paths turning 15 deg or more, most depth, most
+    crease) over the three. The upper-pole fill
+    below the blend (upper_pole_fill_below_blend): breast_round's fill from the centre path's blend end (95 %) to
+    the apex instead of the 3 mm root (a wide blend is not the pole's slope).
+"""
+    import breast_measure as bm
+    from scipy.spatial import cKDTree
+    out = {}
+    p = np.asarray(b["apex_mm"]) / 1000.0
+    worst = {"width_mm": 1e9, "depth_mm": 0.0, "crease_deg_per_mm": 0.0}
+    for name, psi in (("inner", -28.0), ("centre", 0.0), ("outer", 28.0)):
+        Ps = bm.resample(_path(V, T, p, psi))
+        dref = cKDTree(bm.resample(_path(Vref, T, p, psi))).query(Ps)[0]
+        ia = len(Ps) - 1
+        root = next((j for j in range(ia, -1, -1) if dref[j] < 0.003), 0)
+        k2 = bm.curvature2(bm.gsmooth(Ps, 2.0))
+        k1 = bm.curvature2(bm.gsmooth(Ps, 1.0))
+        w0, w1 = max(root - 25, 2), min(root + 45, ia - 2)
+        jp = w0 + int(np.argmax(-k2[w0:w1]))                  # the main concave lobe's peak
+        j0, j1 = max(jp - 25, w0), min(jp + 26, w1)
+        cc = np.maximum(-k2[j0:j1] - 3.0, 0.0) * 1e-3          # rad per mm
+        C = np.cumsum(cc)
+        r = {"root_s_mm": round(float(Ps[root, 0]) * 1000, 1)}
+        if C[-1] > 1e-6:
+            q = lambda f: j0 + int(np.searchsorted(C, f * C[-1]))
+            a5, a95 = q(0.05), q(0.95)
+            r["width_mm"] = round(float(C[-1]) / max(float(cc.max()), 1e-9), 1)   # the lobe's equivalent width
+            ch = Ps[a95] - Ps[a5]
+            e = ch / max(float(np.linalg.norm(ch)), 1e-9)
+            nrm = np.array([e[1], -e[0]])                    # the chord's front side (+z for a top -> down chord)
+            if nrm[1] < 0:
+                nrm = -nrm
+            r["depth_mm"] = round(float(max(0.0, -((Ps[a5:a95 + 1] - Ps[a5]) @ nrm).min())) * 1000, 1)
+            r["turn_deg"] = round(math.degrees(float(C[-1])), 1)
+            if name == "centre":
+                out["_blend_end"] = a95
+        else:
+            r.update(width_mm=0.0, depth_mm=0.0, turn_deg=0.0)
+        c1 = np.maximum(-k1[w0:w1], 0.0) * 1e-3
+        w6 = np.convolve(c1, np.ones(6), "valid") if len(c1) >= 6 else c1
+        r["crease_deg_per_mm"] = round(math.degrees(float(w6.max())) / 6.0, 2)
+        out["root_blend_" + name] = r
+        if r["turn_deg"] >= 15.0:                              # a path that hardly turns has no blend to spread
+            worst["width_mm"] = min(worst["width_mm"], r["width_mm"])
+        worst["depth_mm"] = max(worst["depth_mm"], r["depth_mm"])
+        worst["crease_deg_per_mm"] = max(worst["crease_deg_per_mm"], r["crease_deg_per_mm"])
+    out["root_blend_width_mm"] = worst["width_mm"] if worst["width_mm"] < 1e8 else None
+    out["root_blend_width_mm_centre"] = out["root_blend_centre"]["width_mm"]
+    out["root_blend_depth_mm"] = worst["depth_mm"]
+    out["root_crease_deg_per_mm"] = worst["crease_deg_per_mm"]
+    # the upper-pole fill below the blend (as breast_round's, from the blend's end on the centre path)
+    pr = b["_profile"]
+    Pc = np.asarray(pr["P"])
+    if "_blend_end" in out:
+        Pa = bm.resample(_path(V, T, p, 0.0))
+        top = Pa[out.pop("_blend_end")]
+        y_top = p[1] + top[0]
+        j = int(np.argmin(np.abs(Pc[:pr["apex"] + 1, 0] - y_top)))
+        U = Pc[max(j, pr["root"]):pr["apex"] + 1]
+        c, R, _ = _circle(Pc[pr["root"]:pr["fold"] + 1])
+        a0, a1 = U[0], U[-1]
+        ch = a1 - a0
+        L = float(np.linalg.norm(ch))
+        e = ch / max(L, 1e-9)
+        nrm = np.array([-e[1], e[0]])
+        if nrm[1] < 0:
+            nrm = -nrm
+        s, d = (U - a0) @ e, (U - a0) @ nrm
+        area = float(np.sum(0.5 * (d[1:] + d[:-1]) * np.diff(s)))
+        th = 2 * math.asin(min(1.0, L / (2 * R)))
+        out["upper_pole_fill_below_blend"] = round(area / max(R * R * (th - math.sin(th)) / 2, 1e-12), 3)
+    return out
+
+
 def spec_measures(spec_path, body_glb):
     """Breast and glute numbers on the spec's own body (formview.body): sections "breast" and "glutes"."""
     import tempfile
@@ -308,6 +423,7 @@ def spec_measures(spec_path, body_glb):
             Vref = Vb
     b = bm.measure(V, T, Vb, Vref, H, HT, "spec")
     b.update(breast_round(V, T, Vref, b))
+    b.update(root_blend(V, T, Vref, b))
     b = {k: v for k, v in b.items() if not k.startswith("_")}
     g = gm.measure(spec_path, V=V, z=z, skel_glb=body_glb)
     g = {k: v for k, v in g.items() if not k.startswith("_")}

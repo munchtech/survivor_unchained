@@ -295,6 +295,17 @@ def ramp(s):
     return np.where(s >= 1.0, s, inner)
 
 
+def shear_up(g, w, bw):
+    """P1 R1c round 3: the globe's UPPER half leaned back into the chest: the ellipsoid's axis coordinate d is read as
+    d + shear_up * w for w > 0 (switched in C-inf over +-bw like the radii; 0 at and below the apex height, so the
+    apex and the lower curve keep their places): the upper half becomes a sheared (still elliptic) arc whose top, the
+    place where it faces straight up, sits back inside the receding upper chest instead of standing in front of it
+    as a level shelf (round 2: a 20-40 mm shelf at the top of each globe whose front edge read as a lit rim, the root
+    behind it as a dark crease). The pole rolls from the chest straight into the curve."""
+    s = float(g.get("shear_up", 0.0))
+    return s * w * 0.5 * (1.0 + np.tanh(w / bw)) if s else 0.0
+
+
 def globe_delta(sl, c, V, Va=None):
     """P1 R1c (the owner, 6 Nov: "our tests so far are not round"): the breast as a ROUND GLOBE, a soft union of an
     ellipsoid with the chest wall. Each candidate wall point moves RADIALLY from the globe's centre O (behind the
@@ -325,6 +336,7 @@ def globe_delta(sl, c, V, Va=None):
     u, w, d = q @ lat, q @ up, q @ a
     cand &= (d > -float(g.get("back_m", 0.08))) & (np.linalg.norm(q, axis=1) < 0.3)
     u, w, d, qc = u[cand], w[cand], d[cand], q[cand]
+    d = d + shear_up(g, w, bw)
     Ru = smooth_r(u, R["med"], R["lat"], bw)
     Rw = smooth_r(w, R["low"], R["up"], bw)
     Ra = smooth_r(d, R.get("a_back", R["a"]), R["a"], bw)
@@ -362,11 +374,137 @@ def globe_delta(sl, c, V, Va=None):
     return mirror_left(sl, D)
 
 
+def globe_coords(sl, c, P, Va):
+    """Points P in the globe's frame: (u, w, d) from its centre O (lateral, up, along the axis; left side) and the
+    ellipsoid's switched semi-axes there (Ru, Rw, Ra)."""
+    g = c["globe"]
+    a, up, lat = frame(c, 1.0)
+    c0 = anchor(sl, c, Va)
+    o = np.asarray(g.get("o_off", [0.0, 0.0, -0.05]), float)
+    O = c0 + o[0] * lat + o[1] * up + o[2] * a
+    R = g["R"]
+    bw = c.get("r_blend_m", 0.03)
+    q = P - O
+    u, w, d = q @ lat, q @ up, q @ a
+    d = d + shear_up(g, w, bw)
+    return u, w, d, smooth_r(u, R["med"], R["lat"], bw), smooth_r(w, R["low"], R["up"], bw), \
+        smooth_r(d, R.get("a_back", R["a"]), R["a"], bw), O, (a, up, lat)
+
+
+def root_band(sl, c, P, Va, rf):
+    """P1 R1c round 3: the weight (0..1, left side, C2) of the globe's ROOT band on the globed body P: in the globe's
+    frame, the footprint coordinate f = |(u / Ru, w / Rw)| (1 on the rim where the globe meets the chest) and the
+    elevation e = (d / Ra) / |(u / Ru, w / Rw, d / Ra)| (0 at the wall, 1 at the front pole). Full for f in
+    rf["f"][1..2], easing to 0 at f[0] (on the globe) and f[3] (up the chest); full below e[0], 0 above e[1] (the
+    globe's front never moves); the directions above the horizontal through O only (in-plane elevation sin, full
+    above rf["dir"][1], 0 below dir[0]: the upper root, from the cleavage top over the top to the armpit side); the
+    midline held (V0 |x| under mid[0], easing in to mid[1]: the pressed cleavage keeps its walls)."""
+    u, w, d, Ru, Rw, Ra = globe_coords(sl, c, P, Va)[:6]
+    xu, xw, xd = u / Ru, w / Rw, d / Ra
+    f = np.sqrt(xu * xu + xw * xw)
+    e = xd / np.maximum(np.sqrt(f * f + xd * xd), 1e-9)
+    f0, f1, f2, f3 = rf.get("f", [0.75, 0.95, 1.2, 1.7])
+    e0, e1 = rf.get("e", [0.25, 0.6])
+    s0, s1 = rf.get("dir", [-0.1, 0.45])
+    m0, m1 = rf.get("mid", [0.008, 0.03])
+    sn = xw / np.maximum(f, 1e-9)
+    W = smoother((f - f0) / (f1 - f0)) * smoother((f3 - f) / (f3 - f2)) * smoother((e1 - e) / (e1 - e0)) \
+        * smoother((sn - s0) / (s1 - s0)) * smoother((np.abs(sl.V0[:, 0]) - m0) / (m1 - m0))
+    return np.where(sl.V0[:, 0] >= 0, W, 0.0)
+
+
+def root_delta(sl, c, P, Va):
+    """P1 R1c round 3 (milestone judge 2: "two spheres stuck onto a flat chest": a crisp line over each breast top,
+    the profile turning 35-40 deg concave within ~12 mm where the globe meets the chest): the upper ROOT made one body
+    with the chest, on the globed body P, in the root band (root_band): "fill_m" a bell along the axis (the chest
+    under the root and up toward the collarbone brought forward: the slope rolls into the pole), then "fair": a masked
+    umbrella fairing (iters x lam x band; each step a point goes that share of the way to its neighbours' mean):
+    the concave turn spread over 25-35 mm (curvature continuous from the chest into the globe), the globe's front
+    untouched. Left side computed, both sides faired together, the move mirrored (exactly symmetric)."""
+    rf = c["globe"]["root"]
+    X = extra(sl)
+    a = frame(c, 1.0)[0]
+    W = root_band(sl, c, P, Va, rf)
+    Wm = W.copy()
+    mi = X["mirror"]
+    R = sl.V0[:, 0] < -1e-4
+    Wm[R] = W[mi[R]]
+    P1 = P.copy()
+    if rf.get("bridge"):
+        # the BRIDGE: the band (weight > cut) refilled by the biharmonic (thin-plate) surface of the uniform graph
+        # Laplacian with everything outside held (two rings: C1 at its edge; as wall_delta), blended in by the band's
+        # own C2 weight raised to rf["bridge"]["pow"]: the least-bending surface from the globe's upper side to the
+        # chest replaces the corner (the concave turn spread over the band, the chest under the root brought forward)
+        import scipy.sparse as sp
+        from scipy.sparse.linalg import splu
+        bc = rf["bridge"]
+        free = W > float(bc.get("cut", 0.02))
+        key = ("bridge", sl.path, np.packbits(free).tobytes())
+        if key not in _C:
+            n = len(P)
+            A = X["A"]
+            dg = np.asarray(A.sum(1)).ravel()
+            L = sp.identity(n, format="csr") - sp.diags(1.0 / dg) @ A
+            M = (L.T @ L).tocsr()
+            f, k = np.nonzero(free)[0], np.nonzero(~free)[0]
+            _C[key] = (f, k, splu(M[f][:, f].tocsc()), M[f][:, k].tocsr())
+        f, k, lu, Mfk = _C[key]
+        Wb = P1.copy()
+        Wb[f] = lu.solve(-(Mfk @ P1[k]))
+        m = np.clip(W, 0.0, 1.0) ** float(bc.get("pow", 1.0))
+        P1 = P1 + mirror_left(sl, (Wb - P1) * m[:, None])
+    tl = rf.get("tail")
+    if tl:
+        # the AXILLARY TAIL (judge 2: the outer base dies in a pocket at the armpit): the upper outer quarter carried
+        # toward the front armpit fold as a tapering ridge along the axis: h_m at the rim (footprint f = f[1]),
+        # tapering (C2) to 0 at f[2] up the side (40-50 mm past the rim) and eased in from the globe (f[0]); across,
+        # a C2 window round the in-plane direction psi_deg (lateral 0, up 90) of half-width half_deg; laid on the
+        # bridged body (inside the band the bridge would erase it), itself a C2 bell
+        u, w, d, Ru, Rw, Ra = globe_coords(sl, c, P, Va)[:6]
+        xu, xw = u / Ru, w / Rw
+        f = np.sqrt(xu * xu + xw * xw)
+        psi = np.degrees(np.arctan2(xw, xu))
+        g0, g1, g2 = tl["f"]
+        hf = smoother((f - g0) / (g1 - g0)) * smoother((g2 - f) / (g2 - g1))
+        ha = smoother(1.0 - np.abs(psi - float(tl["psi_deg"])) / float(tl["half_deg"]))
+        e = (d / Ra) / np.maximum(np.sqrt(f * f + (d / Ra) ** 2), 1e-9)
+        he = smoother((float(tl.get("e_max", 0.5)) - e) / float(tl.get("e_ease", 0.3)))
+        Ht = float(tl["h_m"]) * hf * ha * he * (sl.V0[:, 0] >= 0)
+        if tl.get("along") == "normal":
+            # along the bridged body's own normals (umbrella-averaged 8 steps): the side wall rises off itself, no
+            # sideways slide of the outer face
+            Nn = vnormals(P1, X["Q"])
+            A = X["A"]
+            dg = np.asarray(A.sum(1)).ravel()
+            for _ in range(8):
+                Nn = 0.5 * Nn + 0.5 * (A @ Nn) / dg[:, None]
+                Nn /= np.maximum(np.linalg.norm(Nn, axis=1, keepdims=True), 1e-12)
+            P1 = P1 + mirror_left(sl, Ht[:, None] * Nn)
+        else:
+            P1 = P1 + mirror_left(sl, Ht[:, None] * a)
+    if rf.get("fill_m"):
+        # the fill: a bell over the band's outer half (f2..f3, the chest above the rim), along the axis (left;
+        # mirrored below with the fairing's move)
+        Pf = float(rf["fill_m"]) * root_band(sl, c, P, Va, dict(rf, **rf.get("fill_band", {})))[:, None] * a
+        P1 = P1 + mirror_left(sl, Pf)
+    fr = rf.get("fair")
+    if fr:
+        A = X["A"]
+        deg = np.asarray(A.sum(1)).ravel()
+        lam = float(fr.get("lam", 0.5)) * Wm
+        for _ in range(int(fr.get("iters", 20))):
+            P1 = P1 + lam[:, None] * ((A @ P1) / deg[:, None] - P1)
+    return mirror_left(sl, P1 - P)
+
+
 def dome(sl, c, v, V, values):
     if c.get("globe"):
         # P1 R1c: the profile dome (h_m > 0) is the globe's soft BASE (a mound on the chest wall: the wide base that
         # reaches up the chest and round the side), the globe is unioned onto it (the round mass; where the mound
         # rises toward the globe's rim the two meet at a shallow angle: a soft fillet, no ball-on-a-wall crease)
         D = dome_delta(sl, c, V) if c.get("h_m") else np.zeros_like(V)
-        return V + v * (D + globe_delta(sl, c, V + D, V))
+        G = D + globe_delta(sl, c, V + D, V)
+        if c["globe"].get("root"):
+            G = G + root_delta(sl, c, V + G, V)
+        return V + v * G
     return V + v * dome_delta(sl, c, V)
