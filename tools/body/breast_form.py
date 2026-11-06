@@ -15,6 +15,13 @@ leave a ledge across the upper pole, a deep flat shelf under it and faceted poin
                              fold window over its last "fold" of the radius, so every profile meets the wall tangent
                              with zero curvature (C2: no crease) and all share one rounded cap at the apex.
                              The move is h(u, w) along the axis: linear in v (a blend target on any body).
+                             P1 R1b: a profile may use the ROUND law instead ("law": "arc", arc_table: a circle
+                             of radius R_m from the apex into a solved C2 fold; her lower pole), the cap may keep
+                             each pole's own curvature ("cap": "axes", a C-inf switched quadratic form, so a
+                             round lower pole and a soft upper turn meet at a C2 apex), and the lower pole's move
+                             may turn down with the receding chest wall (axis "pitch_low_deg", C2 ramp from 0 at
+                             the apex). The JSON's "relax" (sliders.relax) evens the medial column the midline
+                             fade stretches.
   (route (b) is a stored target: tools/body/sculpt/breast_b.py; the support fields are rule "field" in the JSON)
 
 Coordinates: glTF metres, x her left (+), y up, z front (+); the right side is the left side mirrored (topology
@@ -108,6 +115,38 @@ def profile_table(p, n=4001):
     return t, 1.0 - cum / cum[-1]
 
 
+def arc_table(p, H, r, n=4001):
+    """The ROUND law (p["law"] = "arc", P1 R1b: the lower pole): a profile whose tangent turns by phi with
+    sin(phi) = t / k * smoother((1 - t) / f), k = R / r. On a profile h(w) the curvature is exactly d sin(phi) / dw,
+    so over the arc it is 1 / R (p["R_m"]: a circle from the apex down, the round full lower pole that carries the
+    weight); in the window over the last f of the radius it turns negative (the soft fold) and eases to 0 at t = 1
+    (the profile meets the wall tangent with zero curvature: C2). f is solved (bisection) so the profile drops exactly
+    the projection H over the footprint radius r: the arc and the fold share the footprint, so a rounder arc (smaller
+    R) gets a longer, softer fold and a larger R a tighter one. Returns t, P (P = h / H) like profile_table."""
+    key = ("arc", float(p["R_m"]), float(H), float(r), n)
+    if key in _C:
+        return _C[key]
+    t = np.linspace(0.0, 1.0, n)
+    k = float(p["R_m"]) / float(r)
+
+    def drop(f):
+        S = t / k * smoother((1.0 - t) / f)
+        if S.max() >= 0.995:                              # the arc would turn past ~84 deg: no height field
+            return np.inf, None
+        tp = S / np.sqrt(1.0 - S * S)
+        cum = np.concatenate([[0.0], np.cumsum(0.5 * (tp[1:] + tp[:-1]) * np.diff(t))])
+        return cum[-1] * r, cum                           # metres dropped over the radius
+    lo, hi = 0.02, 0.95                                   # the drop falls as the fold window f grows
+    assert drop(hi)[0] <= H <= drop(lo)[0], ("arc law: no fold fits R_m %.3f with h %.3f over r %.3f" % (k * r, H, r))
+    for _ in range(60):
+        m = 0.5 * (lo + hi)
+        lo, hi = (m, hi) if drop(m)[0] > H else (lo, m)
+    d, cum = drop(hi)
+    out = (t, 1.0 - cum / cum[-1], hi)
+    _C[key] = out
+    return out
+
+
 def frame(c, side=1.0):
     """The breast axis a (unit, glTF) and the base plane up / lateral directions for a side (+1 left)."""
     yaw, pit = np.radians(c["axis"]["yaw_deg"]), np.radians(c["axis"].get("pitch_deg", 0.0))
@@ -148,18 +187,25 @@ def dome_height(c, u, w):
     tot = sum(cw.values()) + 1e-12
     iso = reg * reg / (rho * rho + reg * reg)            # at the apex the direction is undefined: an even mix
     h = np.zeros_like(u)
-    caps, tabs = [], {}
+    caps, tabs = {}, {}
     for k in ("up", "low", "med", "lat"):
-        t, P = profile_table(c["profiles"][k])
+        p = c["profiles"][k]
+        t, P = arc_table(p, c["h_m"], r[k])[:2] if p.get("law") == "arc" else profile_table(p)
         tabs[k] = (t, P)
-        caps.append((1.0 - P[40]) / t[40] ** 2)          # the profile own cap curvature (1 - P ~ kappa t^2)
-    kap = float(np.mean(caps))
+        caps[k] = (1.0 - P[40]) / t[40] ** 2             # the profile own cap curvature (1 - P ~ kappa t^2)
+    if c.get("cap") == "axes":
+        # P1 R1b: the cap keeps each pole's own curvature (the lower pole's round arc starts AT the apex, the upper
+        # pole turns into its straight slope sooner): a quadratic form whose two coefficients switch smoothly (C-inf,
+        # like the radii) from medial to lateral and from low to up, so the apex stays C2
+        cap = 1.0 - smooth_r(u, caps["med"], caps["lat"], bw) * xi * xi - smooth_r(w, caps["low"], caps["up"], bw) * eta * eta
+    else:
+        cap = 1.0 - float(np.mean(list(caps.values()))) * rho * rho     # one shared cap 1 - kappa rho^2 (C2 there)
     rc = c.get("cap_rho", 0.25)
-    blend = 1.0 - smoother(rho / rc)                     # one shared cap 1 - kappa rho^2 near the apex (C2 there)
+    blend = 1.0 - smoother(rho / rc)                     # the cap near the apex, eased into the four profiles
     for k in ("up", "low", "med", "lat"):
         t, P = tabs[k]
         Pk = np.interp(np.minimum(rho, 1.0), t, P) * (rho < 1.0)
-        Pk = blend * (1.0 - kap * rho * rho) + (1.0 - blend) * Pk
+        Pk = blend * cap + (1.0 - blend) * Pk
         wk = (1.0 - iso) * cw[k] / tot + iso * 0.25
         h += wk * Pk
     return float(c["h_m"]) * np.clip(h, 0.0, None), rho
@@ -186,8 +232,12 @@ def dome_delta(sl, c, V):
     # the medial flank and out on the lateral (c["axis"]["fan_deg_per_m"] per metre of u): the apex points out
     # while the inner flank rises straight forward (a natural cleavage, no splay)
     yaw = np.radians(c["axis"]["yaw_deg"] + c["axis"].get("fan_deg_per_m", 0.0) * u)
-    pit = np.radians(c["axis"].get("pitch_deg", 0.0))
-    av = np.stack([np.sin(yaw) * np.cos(pit), np.full_like(yaw, np.sin(pit)), np.cos(yaw) * np.cos(pit)], 1)
+    # P1 R1b: under the apex the chest wall recedes (her rib cage, ~15 deg); a level move shears the lower pole's
+    # round arc flat against it, so the lower pole's move turns down with the wall: c["axis"]["pitch_low_deg"]
+    # reached at the bottom of the footprint, eased in from 0 at the apex (smoother: C2; the upper pole unchanged)
+    pit = np.radians(c["axis"].get("pitch_deg", 0.0)
+                     + c["axis"].get("pitch_low_deg", 0.0) * smoother(-w / c["r"]["low"]))
+    av = np.stack([np.sin(yaw) * np.cos(pit), np.sin(pit) * np.ones_like(yaw), np.cos(yaw) * np.cos(pit)], 1)
     D = np.zeros_like(V)
     D[cand] = h[:, None] * av
     return mirror_left(sl, D)
