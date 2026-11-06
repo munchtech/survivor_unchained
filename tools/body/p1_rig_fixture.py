@@ -73,6 +73,9 @@ def main():
                              I["calf_l"]: rot([1, 0, 0], 60), I["calf_r"]: rot([1, 0, 0], 60)},
         "arm_up_twist": {I["upperarm_l"]: rot([0, 0, 1], -80), I["hand_l"]: rot([0, 1, 0], 60),
                          I["upperarm_r"]: rot([1, 0, 1], 70), I["lowerarm_r"]: rot([0, 1, 0], -50)},
+        # the hanging branch (A below the rest's ~43): both upper arms turned down toward the torso, one reaching
+        # forward (protraction and glide)
+        "arms_hang": {I["upperarm_l"]: rot([0, 0, 1], -38), I["upperarm_r"]: rot([0, 0, 1], 30) @ rot([1, 0, 0], 25)},
         "hips": {I["thigh_l"]: rot([1, 0, 0], -50), I["thigh_r"]: rot([0, 0, 1], 25), I["calf_l"]: rot([1, 0, 0], 100),
                  I["foot_r"]: rot([0, 1, 0], 40)},
     }
@@ -84,6 +87,8 @@ def main():
     for name, loc in poses.items():
         G = fk(sk, loc)
         G2, w = rd.drive(sk, G, rig)
+        if name == "rest":      # the rest is exactly neutral (the girdle's tables are relative to the rest)
+            assert np.abs(G2 - G).max() < 1e-9, f"rest not identity: {np.abs(G2 - G).max()}"
         out["poses"].append({"name": name, "G": [m.tolist() for m in G], "driven": [m.tolist() for m in G2],
                              "weights": w})
         print(name, "max weight", max(w.values()) if w else 0, {k: round(v, 3) for k, v in w.items() if v > 0.01})

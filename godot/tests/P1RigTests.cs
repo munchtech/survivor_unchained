@@ -37,6 +37,9 @@ public class P1RigTests
             var G = pose.GetProperty("G").EnumerateArray().Select(M).ToArray();
             var want = pose.GetProperty("driven").EnumerateArray().Select(M).ToArray();
             var (got, w) = rig.Drive(G);
+            if (pose.GetProperty("name").GetString() == "rest")     // the girdle's tables are relative to the rest
+                for (int j = 0; j < got.Length; j++)
+                    for (int i = 0; i < 16; i++) Assert.True(Math.Abs(got[j].A[i] - G[j].A[i]) < 1e-9, "rest is not identity");
             for (int j = 0; j < got.Length; j++)
                 for (int i = 0; i < 16; i++) worstG = Math.Max(worstG, Math.Abs(got[j].A[i] - want[j].A[i]));
             foreach (var kv in pose.GetProperty("weights").EnumerateObject())

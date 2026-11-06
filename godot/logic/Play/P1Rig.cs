@@ -150,43 +150,69 @@ public sealed class P1Rig
     }
 
     // ------------------------------------------------------------- helpers --
-    static double Ramp(double x, double a0, double ease)
+    /// <summary>rig_drive.table: a table's monotone C1 curve at x (Hermite cubics, Fritsch-Butland slopes, 0 slope at
+    /// the end nodes, held flat past them).</summary>
+    public static double Table(double x, JsonElement T)
     {
-        x -= a0;
-        if (x <= 0) return 0;
-        return x < ease ? x * x / (2 * ease) : x - ease / 2;
+        var rows = T.EnumerateArray().Select(r => (X: r[0].GetDouble(), Y: r[1].GetDouble())).ToArray();
+        int n = rows.Length;
+        if (x <= rows[0].X) return rows[0].Y;
+        if (x >= rows[n - 1].X) return rows[n - 1].Y;
+        var h = new double[n - 1]; var dl = new double[n - 1];
+        for (int k = 0; k < n - 1; k++) { h[k] = rows[k + 1].X - rows[k].X; dl[k] = (rows[k + 1].Y - rows[k].Y) / h[k]; }
+        var m = new double[n];
+        for (int k = 1; k < n - 1; k++)
+            if (dl[k - 1] * dl[k] > 0)
+            {
+                double w1 = 2 * h[k] + h[k - 1], w2 = h[k] + 2 * h[k - 1];
+                m[k] = (w1 + w2) / (w1 / dl[k - 1] + w2 / dl[k]);
+            }
+        int i = 0;
+        while (x > rows[i + 1].X) i++;
+        double t = (x - rows[i].X) / h[i], t2 = t * t, t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * rows[i].Y + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * rows[i + 1].Y
+            + (t3 - t2) * h[i] * m[i + 1];
     }
 
+    /// <summary>rig_drive.girdle: the scapulohumeral rhythm by tables of the arm's elevation and its forward reach,
+    /// relative to the rest.</summary>
     double Girdle(P1M4[] G, string s)
     {
         var R0 = Rest;
         var gd = rig.GetProperty("girdle");
         double sg = s == "l" ? 1 : -1;
         int cl = Index[Sub(gd.GetProperty("clavicle"), s)], sc = Index[Sub(gd.GetProperty("scap"), s)], arm = Index[Sub(gd.GetProperty("arm"), s)];
+        int end = Index[Sub(gd.GetProperty("arm_end"), s)];
         double A = Elevation(G, s), A0 = Elevation(R0, s);
         var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
         var front = Rt * Vec(gd.GetProperty("front"));
-        double a0 = gd.GetProperty("clav_A")[0].GetDouble(), a1 = gd.GetProperty("clav_A")[1].GetDouble();
-        double S(double a) => Smooth((a - a0) / (a1 - a0));
-        double thc = gd.GetProperty("clav_max").GetDouble() * (S(A) - S(A0));
+        var up = Rt * Vec(gd.GetProperty("up"));
+        var side = Rt * Vec(gd.GetProperty("side"));
+        var d = N(Head(G, end) - Head(G, arm));
+        var d0 = N(Head(R0, end) - Head(R0, arm));
+        double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
+        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
+        double thr = Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract"))
+            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
         var armOld = G[arm];
-        if (Math.Abs(thc) > 1e-9)
+        if (Math.Abs(the) > 1e-9 || Math.Abs(thr) > 1e-9)
         {
-            Apply(G, cl, About(Head(G, cl), Expm(front * (sg * Rad(thc)))));
-            // the upper arm keeps its world turn (the clip's aim), riding the lifted clavicle
+            var Rc = Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
+            Apply(G, cl, About(Head(G, cl), Rc));
+            // the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
             var nw = armOld.WithT(G[arm].T());
             Apply(G, arm, nw * G[arm].Inverse());
         }
-        double k = gd.GetProperty("scap_per_deg").GetDouble(), b0 = gd.GetProperty("scap_from").GetDouble(),
-            ease = gd.GetProperty("scap_ease").GetDouble(), mx = gd.GetProperty("scap_max").GetDouble();
-        double ths = k * (Math.Min(Ramp(A, b0, ease), mx / k) - Math.Min(Ramp(A0, b0, ease), mx / k));
-        var ax = Vec(gd.GetProperty("scap_axis"));
-        var n = Rt * N(new P1V(ax.X * sg, ax.Y, ax.Z));
-        if (Math.Abs(ths) > 1e-9) Apply(G, sc, About(Head(G, sc), Expm(n * (sg * Rad(ths)))));
-        int end = Index[Sub(gd.GetProperty("arm_end"), s)];
-        var d = N(Head(G, end) - Head(G, arm));
-        var d0 = N(Head(R0, end) - Head(R0, arm));
-        double glide = gd.GetProperty("glide_m").GetDouble() * (P1V.Dot(d, front) - P1V.Dot(Rt * d0, front));
+        double thu = Table(A, gd.GetProperty("scap_up")) - Table(A0, gd.GetProperty("scap_up"));
+        double thp = Table(A, gd.GetProperty("scap_tilt")) - Table(A0, gd.GetProperty("scap_tilt"));
+        if (Math.Abs(thu) > 1e-9 || Math.Abs(thp) > 1e-9)
+        {
+            var ax = Vec(gd.GetProperty("scap_axis"));
+            var n = Rt * N(new P1V(ax.X * sg, ax.Y, ax.Z));
+            var Rs = Expm(side * (-Rad(thp))) * Expm(n * (sg * Rad(thu)));
+            Apply(G, sc, About(Head(G, sc), Rs));
+        }
+        double glide = gd.GetProperty("glide_m").GetDouble() * reach;
         if (Math.Abs(glide) > 1e-12) Apply(G, sc, P1M4.From(P1M3.Id, front * glide));
         return A;
     }

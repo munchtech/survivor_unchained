@@ -6,12 +6,12 @@ each law a small formula driven by rig.json data, so the check, the build and th
     poser: names, index, parent, rest [B,4,4] (bone rest worlds), subtree(j);  G [B,4,4] the posed bone worlds.
 
 Order (rig.json "helpers" rows run in list order, after "girdle"):
-  girdle        per side, from the arm's elevation A (the humerus' angle from the torso's down axis, deg):
-                  clavicle elevation  c_max * (S(A) - S(A_rest)),  S a smoothstep over [a0, a1]   (about her front)
-                  scapula upward rot  k * (r(A) - r(A_rest)), r(A) = A - a0 eased (quadratic over `ease`), <= max
-                                      (about the scapular plane's normal, at the scap's head)
-                  scap glide          glide_m * (d . front)  (protraction forward as the arm flexes)
-                the upper arm keeps its world turn (the clip's aim), riding the lifted clavicle.
+  girdle        per side, the scapulohumeral rhythm from the arm's elevation A (the humerus' angle from the torso's
+                down axis, deg) and its forward reach f (its direction . the torso's front), by tables (monotone C1
+                cubics, flat past the ends), all relative to the rest (A0 ~43, f0): the clavicle's elevation and
+                retraction (less a protraction per unit of reach) about its head, the scapula's upward rotation and
+                posterior tilt about its head and its forward glide; the upper arm keeps its world turn (the clip's
+                aim), riding the moved clavicle. girdle() has the formulas.
   unroll        the bone's own roll about its line (beyond its parent's) handed to its child: forearm (ulna on a
                 hinge) and calf; the child keeps its world turn.
   counter_twist the follow bone's roll about the helper's line (beyond its parent's), undone by `amount`
@@ -167,46 +167,79 @@ def direction(poser, G, bone, end, frame):
 
 
 # ------------------------------------------------------------------- helpers --
-def _ramp(x, a0, ease):
-    x = x - a0
-    if x <= 0:
-        return 0.0
-    return x * x / (2 * ease) if x < ease else x - ease / 2
+def table(x, T):
+    """A table's monotone C1 curve at x: T [[x_k, y_k], ...] (x_k rising); Hermite cubics with Fritsch-Butland slopes
+    (0 where the neighbouring secants differ in sign: no overshoot), 0 slope at both end nodes and held flat past them
+    (C1 everywhere)."""
+    xs = [float(r[0]) for r in T]
+    ys = [float(r[1]) for r in T]
+    n = len(xs)
+    if x <= xs[0]:
+        return ys[0]
+    if x >= xs[-1]:
+        return ys[-1]
+    h = [xs[k + 1] - xs[k] for k in range(n - 1)]
+    dl = [(ys[k + 1] - ys[k]) / h[k] for k in range(n - 1)]
+    m = [0.0] * n
+    for k in range(1, n - 1):
+        if dl[k - 1] * dl[k] > 0:
+            w1, w2 = 2 * h[k] + h[k - 1], h[k] + 2 * h[k - 1]
+            m[k] = (w1 + w2) / (w1 / dl[k - 1] + w2 / dl[k])
+    i = 0
+    while x > xs[i + 1]:
+        i += 1
+    t = (x - xs[i]) / h[i]
+    t2, t3 = t * t, t * t * t
+    return ((2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h[i] * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1]
+            + (t3 - t2) * h[i] * m[i + 1])
 
 
 def girdle(poser, G, rig, s):
+    """The scapulohumeral rhythm (rig.json "girdle", base_drive.json has the tables and their sources): per side, from
+    the arm's elevation A and its forward reach f = d . front (d the upper arm's direction, front the torso's), all
+    relative to the rest (A0, f0: the rest is exactly neutral):
+      clavicle  elevation e = clav_elev(A) - clav_elev(A0)                    about the torso's front (per-side sign)
+                retraction r = clav_retract(A) - clav_retract(A0) - protract_per_reach (f - f0)   about its up (+ back)
+                (both about the clavicle's head); the upper arm then keeps its world turn (the clip's aim)
+      scapula   upward rotation u = scap_up(A) - scap_up(A0)                  about scap_axis (mirrored per side)
+                posterior tilt p = scap_tilt(A) - scap_tilt(A0)               about the torso's side (+ top back)
+                (both about the scapula's head, after the clavicle carried it); glide glide_m (f - f0) forward."""
     gd = rig["girdle"]
     I = poser.index
     sg = 1.0 if s == "l" else -1.0
     cl, sc, arm = (I[gd[k].replace("{s}", s)] for k in ("clavicle", "scap", "arm"))
+    end = I[gd["arm_end"].replace("{s}", s)]
     A = elevation(poser, G, s, rig)
     A0 = elevation(poser, poser.rest, s, rig)
     Rt = _turn(G, poser.rest, I[gd["torso"]])
     front = Rt @ np.asarray(gd["front"], float)
-    a0, a1 = gd["clav_A"]
-    S = lambda a: smooth((a - a0) / (a1 - a0))
-    th_c = gd["clav_max"] * (S(A) - S(A0))
+    up = Rt @ np.asarray(gd["up"], float)
+    side = Rt @ np.asarray(gd["side"], float)
+    d = _n(head(G, end) - head(G, arm))
+    d0 = _n(head(poser.rest, end) - head(poser.rest, arm))
+    reach = float(d @ front - (Rt @ d0) @ front)
+    th_e = table(A, gd["clav_elev"]) - table(A0, gd["clav_elev"])
+    th_r = table(A, gd["clav_retract"]) - table(A0, gd["clav_retract"]) - gd["protract_per_reach"] * reach
     arm_old = G[arm].copy()
-    if abs(th_c) > 1e-9:
-        _apply(poser, G, cl, _about(head(G, cl), _expm(front * sg * math.radians(th_c))))
-        # the upper arm keeps its world turn (the clip's aim), riding the lifted clavicle
+    if abs(th_e) > 1e-9 or abs(th_r) > 1e-9:
+        Rc = _expm(up * sg * math.radians(th_r)) @ _expm(front * sg * math.radians(th_e))
+        _apply(poser, G, cl, _about(head(G, cl), Rc))
+        # the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
         new = arm_old.copy()
         new[:3, 3] = G[arm][:3, 3]
         _apply(poser, G, arm, new @ np.linalg.inv(G[arm]))
-    k, b0, ease, mx = gd["scap_per_deg"], gd["scap_from"], gd["scap_ease"], gd["scap_max"]
-    th_s = k * (min(_ramp(A, b0, ease), mx / k) - min(_ramp(A0, b0, ease), mx / k))
-    n = np.asarray(gd["scap_axis"], float) * np.array([sg, 1.0, 1.0])
-    n = Rt @ _n(n)
-    if abs(th_s) > 1e-9:
-        _apply(poser, G, sc, _about(head(G, sc), _expm(n * sg * math.radians(th_s))))
-    d = _n(head(G, I[gd["arm_end"].replace("{s}", s)]) - head(G, arm))
-    d0 = _n(head(poser.rest, I[gd["arm_end"].replace("{s}", s)]) - head(poser.rest, arm))
-    glide = gd["glide_m"] * (d @ front - (Rt @ d0) @ front)
+    th_u = table(A, gd["scap_up"]) - table(A0, gd["scap_up"])
+    th_p = table(A, gd["scap_tilt"]) - table(A0, gd["scap_tilt"])
+    if abs(th_u) > 1e-9 or abs(th_p) > 1e-9:
+        n = Rt @ _n(np.asarray(gd["scap_axis"], float) * np.array([sg, 1.0, 1.0]))
+        Rs = _expm(-side * math.radians(th_p)) @ _expm(n * sg * math.radians(th_u))
+        _apply(poser, G, sc, _about(head(G, sc), Rs))
+    glide = gd["glide_m"] * reach
     if abs(glide) > 1e-12:
         T = np.eye(4)
         T[:3, 3] = front * glide
         _apply(poser, G, sc, T)
-    return {"A": A, "clav_deg": th_c, "scap_deg": th_s}
+    return {"A": A, "clav_elev_deg": th_e, "clav_retract_deg": th_r, "scap_up_deg": th_u, "scap_tilt_deg": th_p}
 
 
 def _rel(G, R0, j, p):
