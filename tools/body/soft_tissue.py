@@ -689,9 +689,19 @@ class Solve:
         J = np.einsum("tc,tc->t", F[:, :, 0], c0)
         w = self.tets.vol * self.mu
         E = float((w * (0.5 * ((F * F).sum((1, 2)) - 3.0) + 0.5 * lam * (J - a) ** 2)).sum())
+        # `j_min` (R5 lead 3): an inversion barrier, 1/2 j_k lam (j_min - J)^2 under j_min (C1, zero above): the
+        # stable NH's own J term is only quadratic, so a crease pressed hard still crushes its tets through (74
+        # inverted at 135 in g2) and the skin row on them dives under its own lips (the self-fold's inside nodes)
+        jm = self.cf.get("j_min", 0.0)
+        dJ = lam * (J - a)
+        if jm > 0:
+            u = np.maximum(jm - J, 0.0)
+            kb = self.cf.get("j_k", 10.0) * lam
+            E += float((w * 0.5 * kb * u * u).sum())
+            dJ = dJ - kb * u
         if not grad:
             return E, None, J
-        P = F + (lam * (J - a))[:, None, None] * np.stack([c0, c1, c2], 2)      # dPsi/dF (the cofactor is dJ/dF)
+        P = F + dJ[:, None, None] * np.stack([c0, c1, c2], 2)      # dPsi/dF (the cofactor is dJ/dF)
         return E, self.tets.rhs(w, P), J
 
     def pairs(self, x):
@@ -776,6 +786,13 @@ class Solve:
             xr = np.zeros_like(x)
             xr[:self.ns] = X[self.sv]
             dref = self.Ls @ xr
+            if cf.get("bend_ref") == "rest":
+                # R5 lead 3: the skin's rest Laplacian turned by each node's blended skinning matrix (Mb L X0), not the
+                # skinning's own Laplacian (L X_lbs): where the blend changes fast across the crease, L X_lbs carries
+                # the skinning's element-scale pleat (the gradient of Mb times X0), and the smoothness kept it
+                Mb, _ = self.skinned(M)
+                d0 = np.asarray(self.d0)[:self.ns]
+                dref = np.einsum("nij,nj->ni", Mb[:self.ns, :3, :3], d0)
             wb = cf.get("smooth_w", self.bend_w) * self.wb / self.bend_w
         if getattr(self, "_h0", None) is None:
             A = self.tets.matrix(self.tets.vol * self.mu * cf.get("h0_k", 1.0 + lam / 3.0))
