@@ -135,10 +135,10 @@
     },
     "lower_pole_radius_mm": {
      "band": [
-      80,
+      100,
       140
      ],
-     "why": "round full lower pole; band provisional, a solver is setting it"
+     "why": "a round full lower pole: under 100 reads as a sphere or implant, over 140 reads flat (R1b solver)"
     },
     "fold_min_radius_mm": {
      "band": [

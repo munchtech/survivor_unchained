@@ -222,10 +222,14 @@ def measure(V, T, Vb, Vref, H=None, HT=None, label=""):
     zs = float(mid[:, 2].max()) if len(mid) else float("nan")
     out["cleavage_sternum_z_mm"] = round(zs * 1000, 1)
     out["cleavage_depth_mm"] = round((p[2] - zs) * 1000, 1)
+    # the inner wall between the sternum and the apex, as x over z (edge crossings are sparse where the wall is
+    # steep, so interpolate between the nearest crossings above and below instead of a +-3 mm window)
+    inner = pts[(pts[:, 0] > 0) & (pts[:, 0] < p[0])]
+    inner = inner[np.argsort(inner[:, 2])]
     for dz in (0.02, 0.04, 0.06):
         zz = p[2] - dz
-        sel = pts[(np.abs(pts[:, 2] - zz) < 0.003) & (pts[:, 0] > 0) & (pts[:, 0] < p[0])]
-        out["gap_at_apex_z_minus_%dmm" % int(dz * 1000)] = round(float(2 * sel[:, 0].min()) * 1000, 1) if len(sel) and zz > zs else None
+        ok = len(inner) > 1 and zz > zs and inner[0, 2] <= zz <= inner[-1, 2]
+        out["gap_at_apex_z_minus_%dmm" % int(dz * 1000)] = round(float(2 * np.interp(zz, inner[:, 2], inner[:, 0])) * 1000, 1) if ok else None
     import ray
     if H is not None:
         VV, TT = np.concatenate([V, H]), np.concatenate([T, HT + len(V)])
