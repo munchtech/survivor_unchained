@@ -213,6 +213,42 @@ public static class WeaponSockets
     /// mirror image (its head away from her fingers). keyed.py TILT_AXIS_L is the same.</summary>
     public static Vector3 TiltAxisL => Vector3.Normalize(-ToLeft(Vector3.UnitX));
 
+    /// <summary>B's (P1) right fist, by the grip standard: the piece's axis through the fist's grip line, the guard at the
+    /// index side. B's hand_r frame is not A's: its knuckle frame (the index_01 -> pinky_01 line and the knuckles' reach,
+    /// tools/body/rig/b_skeleton.json at rest) sits 13.7 deg off A's (a_skeleton.json), so A's fitted blade pocket
+    /// (BladeAtR / BladeDirR, 20.9 deg off A's knuckle line) is carried onto B's knuckle frame by that turn: the same
+    /// diagonal grip on B's fist. (Measured A1 round 3; the upright blade in the run and the fight idle was mostly the
+    /// clips' hand roll, keyed now in the clips: Marionette motion/fit.py `blade`.)</summary>
+    public static readonly Vector3 BladeAtRB = new(-0.0416f, 0.0810f, -0.0080f);
+    public static readonly Vector3 BladeDirRB = new(0.206402f, 0.624985f, 0.752856f);
+
+    /// <summary>B's knuckle line in its hand_r space (pinky_01 toward index_01: the guard side), what BladeDirRB is laid
+    /// against (the tests pin the angle to A's 20.9 deg).</summary>
+    public static readonly Vector3 KnuckleLineRB = new(0.1056f, 0.3302f, 0.9380f);
+    /// <summary>A's knuckle line in its hand_r space (a_skeleton.json), the same measure.</summary>
+    public static readonly Vector3 KnuckleLineRA = new(-0.1209f, 0.2613f, 0.9577f);
+
+    /// <summary>A fist's pocket on B: B's own where it is measured (the one-handed blade's fist: blade, wand, axe, the
+    /// greatsword's upper hand), else A's.</summary>
+    public static (Vector3 At, Vector3 Dir)? Pocket(WeaponKind kind, string bone, bool isB) =>
+        isB && bone == "hand_r" && PocketR(kind) is { } p && p.At == BladeAtR ? (BladeAtRB, BladeDirRB) : Pocket(kind, bone);
+
+    /// <summary>The sheathed one-handed blade's socket point (skeleton space at rest: +Y up, +Z her front, +X her left; the
+    /// piece's sheath point, its shaft along HipBladeShaft): A's, and B's own. On B the hilt hangs 15 cm lower (MOTION_BIBLE
+    /// s11, the Warden's town idle: her pommel arm rests long), its pommel at B's hip bone (HipBoneYB), and 2 cm further
+    /// out, so the scabbard's axis clears B's wider hip and thigh by 3.4 cm at rest (B's mesh, A1 round 3).</summary>
+    public static readonly Vector3 HipBladeAtA = new(0.21f, 1.20f, 0.10f);
+    public static readonly Vector3 HipBladeAtB = new(0.23f, 1.05f, 0.10f);
+    public static readonly Vector3 HipBladeShaft = new(0.08f, -0.87f, -0.50f);
+    /// <summary>The pommel's distance up the hilt from the sheath point (the chevalier sword), m.</summary>
+    public const float HiltToPommel = 0.17f;
+    /// <summary>B's hip bone (iliac crest) height at rest: where B's waist (11.7 cm half-width at 1.25 m) starts to flare to
+    /// the hip (20.7 cm at 1.02 m), from B's mesh.</summary>
+    public const float HipBoneYB = 1.20f;
+
+    /// <summary>The sheathed blade's pommel at rest (skeleton space) for a socket point.</summary>
+    public static Vector3 PommelAt(Vector3 at) => at - Vector3.Normalize(HipBladeShaft) * HiltToPommel;
+
     /// <summary>The fitted pocket of a fist by its bone (hand_r: PocketR, hand_l: PocketL), else none.</summary>
     public static (Vector3 At, Vector3 Dir)? Pocket(WeaponKind kind, string bone) => bone switch
     {

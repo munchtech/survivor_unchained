@@ -62,14 +62,61 @@ def cmd_import(a):
     print(f"{a.clip}: {s.frames} frames from {os.path.basename(a.bvh)} -> src/{a.clip}.npz, specs/{a.clip}.json")
 
 
+def _cs_vec(name):
+    """A Vector3 constant from godot/logic/Play/WeaponSockets.cs (the game's data, one source)."""
+    import re
+    src = (REPO / "godot/logic/Play/WeaponSockets.cs").read_text(encoding="utf-8")
+    m = re.search(name + r"\s*=\s*new\(([^)]*)\)", src)
+    return [float(x.strip().rstrip("f")) for x in m.group(1).split(",")]
+
+
+def pieces():
+    """B's held pieces in their bones' spaces, as the game seats them on B: the sword's points (ArmsDump's, A's hand
+    space, seated on A's fist pocket) moved onto B's own pocket (WeaponSockets.BladeAtRB / BladeDirRB, the least turn,
+    as FistSeat lays it), the shield's as they are (lowerarm_l, the same bone-local mount). And the pockets the fit aims
+    by: the blade's axis and grip, the shield's boss (its points' centroid) and face (its thin axis, out of the arm)."""
+    if "_pc" in globals():
+        return _pc
+    from motion import quat as Q
+    arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
+    atA, dirA = np.array(_cs_vec("BladeAtR")), np.array(_cs_vec("BladeDirR"))
+    atB, dirB = np.array(_cs_vec("BladeAtRB")), np.array(_cs_vec("BladeDirRB"))
+    dirA, dirB = dirA / np.linalg.norm(dirA), dirB / np.linalg.norm(dirB)
+    R = Q.arc(dirA, dirB)
+    sw = np.array(arms["chevalier_sword@hand_r"]["v"], float)
+    sw = atB + (sw - atA) @ R.T
+    tip = float(np.max((sw - atB) @ dirB))
+    sh = np.array(arms["shield_round@lowerarm_l"]["v"], float)
+    c = sh.mean(0)
+    _, _, vt = np.linalg.svd(sh - c)
+    face = vt[2] if vt[2] @ np.array([-1.0, 0, 0]) > 0 else -vt[2]
+    rad = float(np.max(np.linalg.norm((sh - c) - np.outer((sh - c) @ face, face), axis=1)))
+    globals()["_pc"] = {"sword": sw, "shield": sh, "blade": {"dir": dirB.tolist(), "at": atB.tolist(), "tip": tip},
+                        "shieldp": {"at": c.tolist(), "face": face.tolist(), "radius": rad}}
+    return _pc
+
+
+def fit_of(spec):
+    """The spec's fit block with the game's pocket data filled in."""
+    f = spec.get("fit")
+    if not f:
+        return None
+    f = json.loads(json.dumps(f))
+    if "blade" in f:
+        f["blade"]["pocket"] = pieces()["blade"]
+    if "shield" in f:
+        f["shield"]["pocket"] = pieces()["shieldp"]
+    return f
+
+
 def run_post(src, spec, name):
-    """The core on one source with the spec's post steps (loop, in place, whole cycles, the gait lock)."""
+    """The core on one source with the spec's post steps (loop, in place, whole cycles, the gait lock) and its fit."""
     po = spec.get("post", {})
     cyc = po.get("cycle_s")
     return MC.run(src, RIG, loop=po.get("loop", spec.get("loop", False)), inplace=po.get("inplace", spec.get("inplace", False)),
                   name=name, gait=po.get("gait", False), duty=po.get("duty"),
                   cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
-                  crop=tuple(po["crop"]) if po.get("crop") else None)
+                  crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec))
 
 
 def build_one(p):
@@ -81,10 +128,47 @@ def measure(r, spec):
     """The bible's numbers on a core result (B's side), per the spec's kind."""
     fps = r.src.fps
     if spec.get("kind") == "gait":
-        return measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
+        m = measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
+        m.update(held(r, spec))
+        return m
     m = measures.idle(r.P, r.rig, fps, loop=r.clip["loop"])
     m.update(hand_targets(r, spec))
+    m.update(held(r, spec))
     return m
+
+
+def held(r, spec):
+    """The held pieces' numbers on B (the game's seat on B: pieces()): the blade's angle below the horizontal (mean, and
+    its pitch swing peak to peak), its heading off her forward (+ her left), its tip's height; the shield's boss in her
+    pelvis frame (cm: left, up, forward of the pelvis head), its top edge's height and its face's heading (+ open)."""
+    out = {}
+    rig, G, P = r.rig, r.G, r.P
+    n = r.m
+    pv = rig.index["pelvis"]
+    Rp = G[:n, pv] @ rig.R0[pv].T
+    pc = pieces()
+    def local(v):
+        return np.einsum("fji,fj->fi", Rp, v)
+    if "sword" in spec.get("held", []):
+        h = rig.index["hand_r"]
+        d = local(np.einsum("fij,j->fi", G[:n, h], pc["blade"]["dir"]))
+        below = np.degrees(np.arctan2(-d[:, 1], np.hypot(d[:, 0], d[:, 2])))
+        out["blade_below_deg"] = round(float(below.mean()), 1)
+        out["blade_swing_deg"] = round(float(np.ptp(below)), 1)
+        out["blade_heading_deg"] = round(float(np.degrees(np.arctan2(d[:, 0], d[:, 2])).mean()), 1)
+        grip = P[:n, h] + np.einsum("fij,j->fi", G[:n, h], pc["blade"]["at"])
+        tip = grip + np.einsum("fij,j->fi", G[:n, h], pc["blade"]["dir"]) * pc["blade"]["tip"]
+        out["blade_tip_cm"] = round(100 * float(tip[:, 1].mean()), 1)
+    if "shield" in spec.get("held", []):
+        la = rig.index["lowerarm_l"]
+        boss = P[:n, la] + np.einsum("fij,j->fi", G[:n, la], pc["shieldp"]["at"])
+        b = local(boss - P[:n, pv]).mean(0)
+        out["boss_l_cm"], out["boss_up_cm"], out["boss_fwd_cm"] = (round(100 * float(x), 1) for x in b)
+        pts = np.einsum("fij,kj->fki", G[:n, la], pc["shield"]) + P[:n, la][:, None]
+        out["shield_top_cm"] = round(100 * float(pts[:, :, 1].max(1).mean()), 1)
+        f = local(np.einsum("fij,j->fi", G[:n, la], pc["shieldp"]["face"]))
+        out["shield_open_deg"] = round(float(np.degrees(np.arctan2(f[:, 0], f[:, 2])).mean()), 1)
+    return out
 
 
 def hand_targets(r, spec):
@@ -229,6 +313,8 @@ def cmd_build(a):
             m = measure(r, sp)
             ok = measures.passes(m, sp["bands"])
             print(f"  {p.stem}: " + ", ".join(f"{k} {m.get(k)}{'' if ok[k] else ' MISS'}" for k in sp["bands"]))
+        for L in r.fitlog or []:
+            print(f"  fit {L['layer']}: " + ", ".join(f"{k} {v}" for k, v in L.items() if k != "layer"))
         print(f"{p.stem}: {r.clip['frames']} frames, source crop {r.prep.crop}, yaw {r.prep.yaw_deg:.1f} deg, "
               f"windows L {len(r.wins[0])} R {len(r.wins[1])} -> {OUT.relative_to(REPO).as_posix()}/{p.stem}.json")
 

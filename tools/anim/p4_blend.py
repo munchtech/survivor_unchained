@@ -54,6 +54,10 @@ def ang(Ra, Rb):
 
 def main(argv):
     names = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] != "--phases")] or ["walk_warden", "run_warden"]
+    if len(names) == 1:                # (one clip alone: its own pieces against her, weight 0)
+        names = names * 2
+        global WEIGHTS
+        WEIGHTS = (0,)
     nph = int(argv[argv.index("--phases") + 1]) if "--phases" in argv else 12
     rig = Rig(p4.RIG)
     cw, cr = (MC.read(p4.OUT / f"{n}.json") for n in names)
@@ -65,17 +69,17 @@ def main(argv):
     arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
     pieces = {"sword": ("chevalier_sword@hand_r", "hand_r"), "shield": ("shield_round@lowerarm_l", "lowerarm_l")}
     pts = {}
+    pc = p4.pieces()
     for k, (key, bone) in pieces.items():
-        v = np.array(arms[key]["v"], float)
-        # The game's mount on B: Arms.Hold puts the same bone-local MountTransform/Seat on B's own hand_r / lowerarm_l
-        # (PersonView.BoneOf; no B mapping, unlike HoldSheathed), so ArmsDump's bone-local points ride B's bone as they are
-        M = np.eye(4)
-        sel = v[np.random.default_rng(1).choice(len(v), min(len(v), 1500), replace=False)]
-        pts[k] = (np.c_[sel, np.ones(len(sel))] @ M.T)[:, :3]
+        # The game's mount on B: Arms.Hold on B's own hand_r / lowerarm_l, the sword seated on B's own fist pocket
+        # (WeaponSockets.BladeAtRB / BladeDirRB: p4.pieces()), the shield's bone-local points as they are
+        v = pc[k]
+        pts[k] = v[np.random.default_rng(1).choice(len(v), min(len(v), 1500), replace=False)]
     rows = []
     for w in WEIGHTS:
         dev = {"sword": 0.0, "shield": 0.0}
         depth = {"sword": 0.0, "shield": 0.0}
+        clear = {"sword": 1e9, "shield": 1e9}
         for i in range(nph):
             u = i / nph
             (rw, pw), (rr, pr) = locals_at(cw, rig, u), locals_at(cr, rig, u)
@@ -99,8 +103,11 @@ def main(argv):
                 s, d, _ = CC.signed(Vb, Nb, tr, body.tidx, Pg)
                 inside = s[(s < 0) & (d < 0.03)]
                 depth[k] = max(depth[k], float(-inside.min() * 1000) if len(inside) else 0.0)
+                near = s[d < 0.10]
+                clear[k] = min(clear[k], float(near.min() * 1000) if len(near) else 1e9)   # (the nearest gap, mm: + outside)
         rows.append({"w": w, "sword_dev_deg": round(dev["sword"], 2), "shield_dev_deg": round(dev["shield"], 2),
-                     "sword_in_mm": round(depth["sword"], 1), "shield_in_mm": round(depth["shield"], 1)})
+                     "sword_in_mm": round(depth["sword"], 1), "shield_in_mm": round(depth["shield"], 1),
+                     "sword_gap_mm": round(clear["sword"], 1), "shield_gap_mm": round(clear["shield"], 1)})
         print(rows[-1], flush=True)
     out = REPO / "tools/body/out"
     out.mkdir(parents=True, exist_ok=True)

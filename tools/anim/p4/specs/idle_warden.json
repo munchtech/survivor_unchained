@@ -22,17 +22,41 @@
    -2,
    0.5
   ],
-  "elbow_r_deg": [
+  "shoulder_level_cm": [
+   -0.5,
+   0.5
+  ],
+  "weight_r_share": [
+   0.75,
+   1.0
+  ],
+  "knee_l_deg": [
    10,
-   35
+   20
   ],
-  "hand_l_target_cm": [
-   0,
-   5
+  "foot_l_fwd_cm": [
+   10,
+   15
   ],
-  "hand_r_target_cm": [
-   0,
-   5
+  "blade_below_deg": [
+   30,
+   45
+  ],
+  "blade_tip_cm": [
+   20,
+   30
+  ],
+  "boss_up_cm": [
+   10,
+   16
+  ],
+  "shield_open_deg": [
+   15,
+   25
+  ],
+  "hip_out_cm": [
+   4,
+   7
   ]
  },
  "gen": {
@@ -124,5 +148,73 @@
  "source": "src/idle_warden.npz",
  "bvh": "idle_warden__ka2s78_1.bvh",
  "sha1": "dc730148d7306457be5b2ab3336cc6dd99d1b933",
- "take_score": 3.424
+ "take_score": 3.424,
+ "fit": {
+  "stance": {
+   "shift_cm": -10,
+   "drop_cm": -5,
+   "roll_deg": -5,
+   "foot_r": [
+    0.2,
+    0,
+    0
+   ],
+   "foot_l": [
+    -0.3,
+    0,
+    0.21
+   ]
+  },
+  "shoulders": {
+   "level_cm": 0
+  },
+  "head": {
+   "ratio": 0.45,
+   "bones": "neck"
+  },
+  "limbs": {
+   "hand_r": {
+    "at": [
+     -0.29,
+     -0.12,
+     0.09
+    ],
+    "pole": [
+     -0.5,
+     0,
+     -0.85
+    ]
+   }
+  },
+  "blade": {
+   "dir": [
+    -0.2425,
+    -0.6739,
+    0.6979
+   ],
+   "keep": 0
+  },
+  "shield": {
+   "boss": [
+    0.1,
+    0.13,
+    0.37
+   ],
+   "open_deg": 16,
+   "pole": [
+    1,
+    0.5,
+    -0.3
+   ]
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
 }

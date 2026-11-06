@@ -15,7 +15,7 @@
    14
   ],
   "lean_deg": [
-   5,
+   6,
    8
   ],
   "pelvis_vertical_cm": [
@@ -49,6 +49,22 @@
   "slide_mm": [
    0,
    5
+  ],
+  "knee_swing_l_deg": [
+   90,
+   110
+  ],
+  "knee_swing_r_deg": [
+   90,
+   110
+  ],
+  "thigh_trail_l_deg": [
+   0,
+   20
+  ],
+  "thigh_trail_r_deg": [
+   0,
+   20
   ]
  },
  "gen": {
@@ -106,5 +122,34 @@
  "take_score": 5.98,
  "gate": [
   "steps_min"
- ]
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 10
+  },
+  "thorax": {
+   "counter_pm": 12
+  },
+  "lean": {
+   "deg": 7
+  },
+  "bob": {
+   "pelvis_cm": 5.5,
+   "head_cm": 4.8,
+   "pelvis_min_cm": 5.0
+  },
+  "knee": {
+   "swing_deg": 100
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {
+    "foot_l": 10,
+    "foot_r": 10,
+    "ball_l": 10,
+    "ball_r": 10
+   }
+  }
+ }
 }

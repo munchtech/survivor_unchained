@@ -41,6 +41,10 @@
   "elbow_r_deg": [
    15,
    40
+  ],
+  "blade_below_deg": [
+   72,
+   82
   ]
  },
  "gen": {
@@ -86,5 +90,43 @@
  "take_score": 3.974,
  "gate": [
   "steps_min"
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 7,
+   "list_pm": 6
+  },
+  "thorax": {
+   "counter_pm": 5
+  },
+  "bob": {
+   "head_cm": 2.2
+  },
+  "blade": {
+   "dir": [
+    -0.2078,
+    -0.9777,
+    0.03
+   ],
+   "keep": 1.0
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "limbs": {
+   "hand_r": {
+    "by": [
+     -0.05,
+     0,
+     0
+    ]
+   }
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
  ]
 }
