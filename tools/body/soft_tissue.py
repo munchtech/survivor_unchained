@@ -883,10 +883,9 @@ class Solve:
                 self._ccd_e = skin_edges(Fs_)
             Es = self._ccd_e
 
-            def crossings(xv):
-                return int(skin_crossings(xv[:self.ns], Fs_, Es)[0].sum())
-            c_cur = crossings(x)
-            log["cross0"] = c_cur
+            bad_cur = skin_crossings(x[:self.ns], Fs_, Es)[0]
+            log["cross0"] = int(bad_cur.sum())
+            nblk = 0
         nq = np.zeros((0, 3))
         Sh, Yh = [], []
         m_h = int(cf.get("lbfgs_m", 8))
@@ -997,10 +996,22 @@ class Solve:
                 if E1 <= E + 1e-4 * t * gd:
                     if not ccd:
                         break
-                    c_new = crossings(x)
-                    if c_new <= c_cur:
-                        c_cur = c_new
+                    bad_n, hf_n = skin_crossings(x[:self.ns], Fs_, Es)
+                    new_ = bad_n & ~bad_cur
+                    if not new_.any():
+                        bad_cur = bad_n
                         break
+                    # the active set: a new crossing's nodes (its edge's, its face's) take no move this iteration and
+                    # the rest go on (halving the whole step for them stalled every step past 112 in 5-20 iterations)
+                    nd = np.unique(np.r_[Es[new_].ravel(), Fs_[hf_n[new_]].ravel()])
+                    pz = pos[nd]
+                    pz = pz[pz >= 0]
+                    if len(pz) and np.abs(d[pz]).max() > 0:
+                        d[pz] = 0.0
+                        gd = float((g * d).sum())
+                        nblk += len(pz)
+                        if gd < 0:
+                            continue
                     E1 = np.inf                      # a step that crosses the skin through itself: shorter
                 t *= 0.5
                 nls += 1
@@ -1034,9 +1045,10 @@ class Solve:
         if pair:
             ph = self.pair_phi(x, PR)
             log.update(getattr(self, "_pairs_log", {}), pen_max_mm=round(-float(ph.min()) * 1000, 3) if len(ph) else 0.0)
-            self._pid = pid + 1
+            self._pid = pid + 1                      # the next step's first pairing refactors
         if ccd:
-            log["cross"] = c_cur                      # the next step's first pairing refactors
+            log["cross"] = int(bad_cur.sum())
+            log["ccd_blocked"] = nblk
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
         J = np.linalg.det(self.tets.F(x))
         vl = self.tets.vol
