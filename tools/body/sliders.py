@@ -279,9 +279,32 @@ class OurSliders:
             self._fields[key] = t * t * (3.0 - 2.0 * t)
         return self._fields[key]
 
+    def target_delta(self, c):
+        """Rule "target": a form SCULPTED ONCE as a source file on our topology (like base/hand_l.obj): "file" a path
+        from the repo with {tier} -> an npz with "D" [n, 3] (the move at v = 1, glTF m) and "topology" (topo_sha of the
+        tier it was made on, asserted). Each tier's file is made by the target's own generator (its "made_by"); a
+        close-only source reaches play by sliders.carry_to_tier."""
+        np = self.np
+        key = ("target", c["file"])
+        if key not in self._fd:
+            p = os.path.join(REPO, c["file"].format(tier=self.topo()["tier"]))
+            z = np.load(p)
+            D = z["D"].astype(np.float64)
+            assert D.shape == self.V0.shape, ("target size", p, D.shape)
+            self._fd[key] = D
+        return self._fd[key]
+
     def _designed(self, c, v, V, values=None):
         if c["rule"] == "field":
             return V + v * self.field_delta(next(k for k, x in self.designed.items() if x is c))
+        if c["rule"] == "target":
+            return V + v * self.target_delta(c)
+        if c["rule"].startswith("py:"):
+            # a designed rule in its own module (tools/body/<module>.py, function f(sl, c, v, V, values) -> new V):
+            # the form library's richer fields (a breast volume by its profile curves...), its numbers in the JSON
+            import importlib
+            mod, fn = c["rule"][3:].rsplit(".", 1)
+            return getattr(importlib.import_module(mod), fn)(self, c, v, V, values or {})
         if c["rule"] == "growth_turn":
             return V + v * self._growth_turn(c, float((values or {}).get(c["field"], 0.0)))
         """rule "mass_lift": each side's mass (the field) is carried up toward its root, more the lower it sits (0 at
@@ -346,3 +369,17 @@ class OurSliders:
         out[:, 1] = k * (g[:, 1] * np.cos(th) + g[:, 2] * np.sin(th)) - g[:, 1]
         out[:, 2] = k * (-g[:, 1] * np.sin(th) + g[:, 2] * np.cos(th)) - g[:, 2]
         return out
+
+
+def carry_to_tier(D_from, tier_from="close", tier_to="play", k=6):
+    """A per-vertex move made on one tier (a sculpted target's D) carried to another: both tiers' reference V0 lie on
+    the same reference surface, so each target vertex takes the inverse-distance blend of its k nearest source
+    vertices' moves (smooth: the source's spacing is under the target's). Returns D on tier_to's vertices."""
+    import numpy as np
+    from scipy.spatial import cKDTree
+    a = np.load(os.path.join(HERE, "base", f"sliders_{tier_from}.npz"))["V0"].astype(np.float64)
+    b = np.load(os.path.join(HERE, "base", f"sliders_{tier_to}.npz"))["V0"].astype(np.float64)
+    d, i = cKDTree(a).query(b, k=k)
+    w = 1.0 / np.maximum(d, 1e-5) ** 2
+    w /= w.sum(1, keepdims=True)
+    return (np.asarray(D_from, float)[i] * w[..., None]).sum(1)
