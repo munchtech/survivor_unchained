@@ -392,8 +392,11 @@ def mirror_vertex(z, i):
 
 
 # ------------------------------------------------------------------------------------------------------ run --
-def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None):
-    """carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
+def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None):
+    """carry (None = A's paint, relief and roughness as carried; {"mode": "neutral", "band_m": [a, b],
+    "keep_regions": [names]}: a neutral placeholder skin, A's carried maps kept only within a of the open neck ring
+    (eased out to 0 at b: the head seam) and on the keep_regions' texels (hands, feet: the nails); see neutral_keep).
+    carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
     built): A's paint, relief, roughness and freckles are read at each texel's point on the CARRIER, so every texel
     keeps the anatomical point it was painted at whatever shape the sliders give this body (our UVs are shared; the
     maps are a per-UV asset); B's own maps (AO, thickness, curvature, zones) are this build's surface. Without it a
@@ -472,21 +475,38 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         return fill_gutters(a.reshape(size, size, ch), covered)
     avg = lambda k: 0.5 * (res["l"][k] + res["r"][k])          # noqa: E731
     files = {}
-    alb = img(avg("albedo"), 3)
+    rq = tu.region_of_quads(z, uvd["isl"])
+    nq = len(z["Q"])
+    tri_q = np.nonzero(~uvd["is_right"][uvd["T"]].all(1))[0][tri] % nq
+    a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
+    keep_fn = None
+    if carry:
+        assert carry.get("mode") == "neutral", carry
+        keep_fn = neutral_keep(z, Vb, rq, carry)
+        k_ring, k = keep_fn(Xl, tri_q)
+        mid = (k_ring >= 0.5) & (k_ring < 1)
+        assert mid.any(), "no texel in the neck band"
+        n_alb = np.median(a_alb[mid], axis=0)
+        n_rgh = float(np.median(a_rgh))
+        a_alb = k[:, None] * a_alb + (1 - k[:, None]) * n_alb
+        a_rgh = k * a_rgh + (1 - k) * n_rgh
+        a_nrm = k[:, None] * a_nrm + (1 - k[:, None]) * np.array([0.0, 0.0, 1.0])
+        a_frk = k[:, None] * a_frk
+        rep["carry"] = {"mode": "neutral", "band_m": list(carry["band_m"]), "keep_regions": list(carry["keep_regions"]),
+                        "albedo_rgb": [round(float(x), 5) for x in n_alb], "roughness": round(n_rgh, 5),
+                        "kept_fraction": round(float((k > 0.5).mean()), 4)}
+    alb = img(a_alb, 3)
     save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
-    nrm = U(avg("normal"))
+    nrm = U(a_nrm)
     rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
     rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
     save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
     fnm = U(avg("form"))
     save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
-    rgh = np.stack([np.zeros(len(tix)), avg("rough"), np.zeros(len(tix))], 1)
+    rgh = np.stack([np.zeros(len(tix)), a_rgh, np.zeros(len(tix))], 1)
     save(os.path.join(maps_dir, "roughness.png"), img(rgh, 3), "RGB")
-    save(os.path.join(maps_dir, "freckles.png"), img(avg("freckles"), 4), "RGBA")
+    save(os.path.join(maps_dir, "freckles.png"), img(a_frk, 4), "RGBA")
     # regions
-    rq = tu.region_of_quads(z, uvd["isl"])
-    nq = len(z["Q"])
-    tri_q = np.nonzero(~uvd["is_right"][uvd["T"]].all(1))[0][tri] % nq
     rid = np.zeros((size * size, 1))
     rid[tix, 0] = rq[tri_q]
     rid = fill_gutters(rid.reshape(size, size, 1), covered)[:, :, 0]
@@ -523,11 +543,32 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
-    rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered)
+    rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered, keep_fn=keep_fn, Vown=Vb, rq=rq)
     print("BAKE gates", rep["gates"]["pass"], round(time.time() - t0, 1), flush=True)
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
     return rep, {"alb": alb, "covered": covered, "A": A, "Vb": Vb}
+
+
+def neutral_keep(z, Vb, rq, carry):
+    """(carry neutral) f(X, q) -> (k_ring, k): X the points on B, q their quads. k_ring: 1 within band_m[0] of B's open
+    neck ring (the boundary vertices of the topology, build_topo.boundary_ring: the baked head's ring), smoothstep to 0
+    at band_m[1]; k: max(k_ring, 1 on the keep_regions' quads, regions named in base/her_paint_regions.json)."""
+    Q = z["Q"]
+    e = np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1)
+    u, c = np.unique(e, axis=0, return_counts=True)
+    ring = np.unique(u[c == 1])
+    tree = cKDTree(Vb[ring])
+    a, b = carry["band_m"]
+    ids = {r["name"]: r["id"] for r in tu.regions_json()["regions"]}
+    keep_ids = [ids[n] for n in carry["keep_regions"]]
+
+    def f(X, q):
+        d, _ = tree.query(X)
+        t = np.clip((b - d) / (b - a), 0, 1)
+        kr = t * t * (3 - 2 * t)
+        return kr, np.where(np.isin(rq[q], keep_ids), 1.0, kr)
+    return f
 
 
 def frame_mismatch(UV, T, w):
@@ -605,7 +646,7 @@ def uv_seams(T, src, n, left):
     return lo[i1], hi[i1], lo[i2], hi[i2]
 
 
-def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
+def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11, keep_fn=None, Vown=None, rq=None):
     """The bake's three gate numbers, measured on the SAVED albedo (8-bit, gutters filled, as the game reads it):
     albedo: random points on our left triangles (area-weighted on our body) and their mirrors; ours = the albedo at
       the point's UV (bilinear), A's = A's paint at the point's own projection (Source.project); dE00 per side (the
@@ -641,6 +682,12 @@ def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
         t, bw, _, _ = A.project(X, Nn)
         sides[nm] = srgb_lab(A.sample(t, bw)["albedo"])
     dl, dr = de2000(ours, sides["l"]), de2000(ours, sides["r"])
+    kept = np.ones(n, bool)
+    if keep_fn is not None:           # carry neutral: A's paint is kept (and must match A) only where k == 1
+        qi = np.nonzero(left)[0][ti] % len(z["Q"])
+        _, k = keep_fn((w[:, :, None] * Vown[vl]).sum(1), qi)
+        kept = k >= 1.0
+    away = away & kept
     de = np.r_[dl[away], dr[away]]
     mirror_part = de2000(sides["l"], sides["r"])[away]
     a1, b1, a2, b2 = uv_seams(T, src, len(Vb), left)
@@ -659,6 +706,8 @@ def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
            "seam_step_dE_p95": _pct(step[moved]), "seam_step_dE_p99": _pct(step[moved], 99),
            "seam_step_dE_max": round(float(step[moved].max()), 3) if moved.any() else 0.0,
            "seam_edges": int(len(a1)), "seam_samples": int(moved.sum()), "frame_mismatch": fm, "limits": GATES}
+    if keep_fn is not None:
+        res["albedo_dE_scope"] = "kept"
     res["pass"] = bool(res["albedo_dE_p95"] <= GATES["albedo_dE_p95"]
                        and res["seam_step_dE_p95"] <= GATES["seam_step_dE_p95"] and fm <= GATES["frame_mismatch"])
     return res

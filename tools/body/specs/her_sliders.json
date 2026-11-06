@@ -38,6 +38,8 @@
   "size": 2048,
   "pose": "tools/body/forms/her_topo_target_bones.json",
   "carrier": "tools/body/out/her_ek2_final",
+  "carry": {"mode": "neutral", "band_m": [0.02, 0.08], "keep_regions": []},
+  "carry_why": "P1 R1c milestone judge: A's carried paint and normal detail drew A's creases on B's new forms; B wears a neutral placeholder skin (A's paint only in the neck band for the head seam; hands and feet neutral too: their kept paint met the neutral in a hard wrist and ankle step, and the nails wait for R4) until R4's painted-cel skin",
   "carrier_why": "A's paint read on her_topo.json's fit build (python tools/body/build_topo.py tools/body/specs/her_topo.json tools/body/out/her_ek2_final), the surface on A; this body's own maps from its own surface (topo_bake.run)"
  }
 }
