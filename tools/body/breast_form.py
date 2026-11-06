@@ -497,6 +497,151 @@ def root_delta(sl, c, P, Va):
     return mirror_left(sl, P1 - P)
 
 
+# ------------------------------------------------------------------------- P1 R1c round 4: the soft union --
+def smin_c2(a, b, k):
+    """The C2 smooth minimum (the cubic polynomial one): min(a, b) - k h^3 / 6, h = max(k - |a - b|, 0) / k, k per
+    point. Exactly min(a, b) where |a - b| >= k (the globe's front and the chest away from it are untouched); the
+    curvature is continuous through the blend and at its ends (the quadratic smin is only C1: its curvature jumps where
+    the blend ends, which a cel terminator draws as a kink)."""
+    k = np.maximum(np.asarray(k, float), 1e-9)
+    h = np.maximum(k - np.abs(a - b), 0.0) / k
+    return np.minimum(a, b) - k * h * h * h / 6.0
+
+
+def periodic_c2(psi_deg, ctrl):
+    """A periodic C2 function of a direction psi (deg): the periodic cubic spline through ctrl = [[psi_deg...],
+    [value...]] (increasing psi, one turn)."""
+    from scipy.interpolate import CubicSpline
+    xs, ys = np.asarray(ctrl[0], float), np.asarray(ctrl[1], float)
+    key = ("pc2", tuple(xs), tuple(ys))
+    if key not in _C:
+        _C[key] = CubicSpline(np.r_[xs, xs[0] + 360.0], np.r_[ys, ys[0]], bc_type="periodic")
+    return _C[key]((np.asarray(psi_deg, float) - xs[0]) % 360.0 + xs[0])
+
+
+def ell_sdf(u, w, d, Ru, Rw, Ra):
+    """The signed distance (m, + outside) to the ellipsoid (u / Ru)^2 + (w / Rw)^2 + (d / Ra)^2 = 1 (Quilez's bound
+    k0 (k0 - 1) / k1: exact for a sphere, first-order exact at the surface, smooth away from the centre)."""
+    k0 = np.sqrt((u / Ru) ** 2 + (w / Rw) ** 2 + (d / Ra) ** 2)
+    k1 = np.sqrt((u / Ru ** 2) ** 2 + (w / Rw ** 2) ** 2 + (d / Ra ** 2) ** 2)
+    return k0 * (k0 - 1.0) / np.maximum(k1, 1e-12)
+
+
+def chest_field(sl, Vb, hm, key):
+    """The chest's signed distance (m, + outside) as an implicit moving-least-squares surface of the base body Vb
+    (the body under the globe; trunk, breast, shoulder and neck parts, the front half): d(x) = sum_i w_i (x - p_i) . n_i
+    / sum_i w_i, w_i = exp(-|x - p_i|^2 / h^2) over the 16 nearest points (h ~ the quad size: C-inf, and on our
+    smooth chest within ~0.2 mm of the mesh). Returns a function X -> d."""
+    if key in _C:
+        return _C[key]
+    from scipy.spatial import cKDTree
+    X = extra(sl)
+    keep = [X["parts"].index(p) for p in ("trunk", "breast", "shoulder", "neck")]
+    N = vnormals(Vb, X["Q"])
+    sel = np.isin(X["part"], keep) & (Vb[:, 2] > -0.06) & (Vb[:, 1] > 1.05) & (Vb[:, 1] < 1.75) & (np.abs(Vb[:, 0]) < 0.3)
+    Pp, Np = Vb[sel], N[sel]
+    tree = cKDTree(Pp)
+
+    def d(Xq):
+        dist, idx = tree.query(Xq, k=16)
+        wq = np.exp(-(dist * dist - dist[:, :1] ** 2) / (hm * hm))
+        pd = np.einsum("ijk,ijk->ij", Xq[:, None, :] - Pp[idx], Np[idx])
+        return (wq * pd).sum(1) / wq.sum(1)
+    _C.clear() if len(_C) > 64 else None
+    _C[key] = d
+    return d
+
+
+def union_field(sl, c, Va, chest, bias):
+    """F(X, i) for the candidate points: the breast region as ONE implicit form (P1 R1c round 4, the lead: build the
+    junction into the form). F = smin(chest - bias_i, smin(globe_L, globe_R, k_mid), tail; k(psi)): the chest field
+    (chest_field, shifted per point by its own value at the point's base position, so a point the union does not
+    reach stays exactly where it was), the left globe (globe_delta's ellipsoid: same centre, radii, yaw, pitch) and
+    its mirror (the pressed midline, small k_mid), the axillary tail (an ellipsoid from the globe's upper outer quarter
+    toward the front armpit fold, its own blend k_tail into the globe), all joined by smin_c2 with the chest blend
+    radius k by the direction psi from the globe's centre (periodic C2: large over the upper pole so the collarbone's
+    slope rolls into the pole, small at the fold, medium at the side)."""
+    g = c["globe"]
+    un = g["union"]
+    a, up, lat = frame(c, 1.0)
+    c0 = anchor(sl, c, Va)
+    o = np.asarray(g.get("o_off", [0.0, 0.0, -0.05]), float)
+    O = c0 + o[0] * lat + o[1] * up + o[2] * a
+    R = g["R"]
+    bw = c.get("r_blend_m", 0.03)
+    tl = un.get("tail")
+    if tl:
+        tc = O + np.asarray(tl["c"], float) @ np.stack([lat, up, a])
+        ax = np.asarray(tl["axis"], float) @ np.stack([lat, up, a])
+        ax /= np.linalg.norm(ax)
+        e2 = np.cross(a, ax)
+        e2 /= np.linalg.norm(e2)
+        e3 = np.cross(ax, e2)
+        TR = np.asarray(tl["R"], float)
+
+    def globe(Xq):
+        q = Xq - O
+        u, w, d = q @ lat, q @ up, q @ a
+        d = d + shear_up(g, w, bw)
+        Ru = smooth_r(u, R["med"], R["lat"], bw)
+        Rw = smooth_r(w, R["low"], R["up"], bw)
+        Ra = smooth_r(d, R.get("a_back", R["a"]), R["a"], bw)
+        return ell_sdf(u, w, d, Ru, Rw, Ra), np.degrees(np.arctan2(w / Rw, u / Ru))
+
+    def F(Xq, bi):
+        gl, psi = globe(Xq)
+        Xm = Xq * np.array([-1.0, 1.0, 1.0])
+        gr = globe(Xm)[0]
+        gg = smin_c2(gl, gr, float(un.get("k_mid_m", 0.006)))
+        if tl:
+            q = Xq - tc
+            dt = ell_sdf(q @ ax, q @ e2, q @ e3, TR[0], TR[1], TR[2])
+            qm = Xm - tc
+            dtm = ell_sdf(qm @ ax, qm @ e2, qm @ e3, TR[0], TR[1], TR[2])
+            gg = smin_c2(gg, np.minimum(dt, dtm), float(tl.get("k_m", 0.03)))
+        k = np.maximum(periodic_c2(psi, un["k"]), 1e-3)
+        return smin_c2(chest(Xq) - bi, gg, k), psi
+    return F, O
+
+
+def union_delta(sl, c, P, Vb, Va):
+    """P1 R1c round 4: the breast region's vertices (left side, on the globed body P) moved onto the union's iso-surface
+    F = 0 (union_field) by a few Newton projection steps along grad F (central differences): each point goes the
+    shortest way onto the one blended form, so the root's corner is filled by the union's own fillet (the radial globe
+    slid the chest's points along rays that graze the upper chest, so no radial fillet could fill it). The move is
+    weighted by w(psi) (periodic C2 on the point's direction from the globe's centre, through smoother: 0 keeps the
+    radial globe, the pressed cleavage slot) and held at the midline; mirrored, so both sides are exactly symmetric."""
+    un = c["globe"]["union"]
+    X = extra(sl)
+    hm = float(un.get("imls_h_m", 0.007))
+    chest = chest_field(sl, Vb, hm, ("chest", sl.path, hm, float(np.round(Vb[::97].sum(), 9))))
+    F, O = union_field(sl, c, Va, chest, None)
+    keep = [X["parts"].index(p) for p in ("trunk", "breast", "shoulder")]
+    q = P - O
+    cand = np.isin(X["part"], keep) & (sl.V0[:, 0] >= 0) & (np.linalg.norm(q, axis=1) < float(un.get("reach_m", 0.22)))
+    cand &= (q @ frame(c, 1.0)[0]) > -float(un.get("back_m", 0.06))
+    idx = np.nonzero(cand)[0]
+    x = P[idx].copy()
+    bias = chest(Vb[idx])
+    hstep = 2e-4
+    E = np.eye(3) * hstep
+    for _ in range(int(un.get("steps", 6))):
+        f = F(x, bias)[0]
+        gr = np.stack([(F(x + E[j], bias)[0] - F(x - E[j], bias)[0]) / (2 * hstep) for j in range(3)], 1)
+        g2 = np.maximum((gr * gr).sum(1), 1e-6)
+        st = -(f / g2)[:, None] * gr
+        sn = np.linalg.norm(st, axis=1, keepdims=True)
+        x = x + st * np.minimum(1.0, 0.02 / np.maximum(sn, 1e-12))
+    psi = F(x, bias)[1]
+    wv = smoother(periodic_c2(psi, un["w"])) if un.get("w") else np.ones(len(idx))
+    m0, m1 = un.get("mid", [0.0, 0.0])
+    if m1 > m0:
+        wv = wv * smoother((np.abs(sl.V0[idx, 0]) - m0) / (m1 - m0))
+    D = np.zeros_like(P)
+    D[idx] = (x - P[idx]) * wv[:, None]
+    return mirror_left(sl, D)
+
+
 def dome(sl, c, v, V, values):
     if c.get("globe"):
         # P1 R1c: the profile dome (h_m > 0) is the globe's soft BASE (a mound on the chest wall: the wide base that
@@ -506,5 +651,8 @@ def dome(sl, c, v, V, values):
         G = D + globe_delta(sl, c, V + D, V)
         if c["globe"].get("root"):
             G = G + root_delta(sl, c, V + G, V)
+        if c["globe"].get("union"):
+            base = V + D if c["globe"]["union"].get("chest", "base") == "base" else V
+            G = G + union_delta(sl, c, V + G, base, V)
         return V + v * G
     return V + v * dome_delta(sl, c, V)
