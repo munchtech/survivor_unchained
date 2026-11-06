@@ -484,7 +484,11 @@ class Solve:
         # nodes take the rest, so the two meet between, not swap through each other), then the margin out
         sh = np.where(s < 0, cf.get("share", 0.5), 1.0)[:, None]
         self._cnq = nq                                  # the partner's outward normal (method "nh": a one-sided plane)
-        return cand, Q[cand] + sh * (q - Q[cand]) + cf["margin"] * nq, ins
+        # `touch_margin`: a touching node's (outside, within `release`) plane offset. Both skins of a touch each held
+        # `margin` out of the other walked apart forever under one-sided planes (each re-found plane 0.8 mm past the
+        # other side's new place: the contact set never settled); "nh" sets 0, the plane at the partner's skin
+        mg = np.where(s < 0, cf["margin"], cf.get("touch_margin", cf["margin"]))[:, None]
+        return cand, Q[cand] + sh * (q - Q[cand]) + mg * nq, ins
 
     def local(self, x, cn, tgt, wc):
         """The local step at x: the per-tet targets P, the right-hand side (free rows), and the energy at x."""
@@ -715,10 +719,13 @@ class Solve:
         dx, it, nls, E = np.inf, 0, 0, None
         J0 = np.linalg.det(self.tets.F(x))
         log["inv0"] = int((J0 < 0).sum())
+        settle = bool(cf.get("settle", 0))
+        refresh, t0_, nref = False, None, 0
         for it in range(int(cf["iters"])):
-            if it % int(cf["contact_every"]) == 0:
-                cn0 = cn
+            if it % int(cf["contact_every"]) == 0 or refresh:
+                cn0, tgt0 = cn, tgt
                 cn, tgt, ins = self.contacts(x, prev)
+                nref += 1
                 nq = self._cnq
                 prev = np.zeros(self.ns, bool)
                 prev[cn] = True
@@ -730,6 +737,14 @@ class Solve:
                 # always re-evaluated: the same nodes' targets moved with their partners, and a stale E, g made the
                 # line search fail (a stall at 94 deg, one contact node holding g 2.3)
                 E, g, J = total(x, cn, tgt, wc)
+                if refresh:
+                    # `settle`: the planes were re-found after the solve settled on the last ones; the same nodes on
+                    # planes within `settle_mm` of the last: the contact set is settled too, done
+                    same = len(cn) == len(cn0) and (cn == cn0).all() and                         (not len(cn) or float(np.abs(tgt - tgt0).max()) < cf.get("settle_mm", 0.05) * 1e-3)
+                    refresh = False
+                    if same:
+                        log["settled"] = it
+                        break
             key = tuple(cn.tolist())
             if self._h0_key != key:
                 self._h0_lu = splu((Hff + sp.diags(wc)).tocsc())
@@ -784,12 +799,14 @@ class Solve:
             if cf.get("trace") and log.get("deg", 0) >= cf["trace"] and it % 10 == 9:
                 print(f"      it {it} E {E:.6e} dx {dx*1000:.3f} |g| {np.abs(g).max():.3e} t {t:.3g} ls {nls}", flush=True)
             if it > cf["contact_every"] and dx < cf["tol"]:
-                break
+                if not settle:
+                    break
+                refresh = True                       # settled on these planes: re-find them, stop if they hold
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
         J = np.linalg.det(self.tets.F(x))
         vl = self.tets.vol
         log.update(iters=it + 1, last_dx_mm=round(dx * 1000, 3), contacts=int(len(cn)), inside=int(ins.sum()),
-                   backtracks=nls, g_max=float(np.abs(g).max()), dvol_cm3=round(float(((J - 1) * vl).sum() * 1e6)),
+                   backtracks=nls, refreshes=nref, g_max=float(np.abs(g).max()), dvol_cm3=round(float(((J - 1) * vl).sum() * 1e6)),
                    dvol_neg_cm3=round(float((np.minimum(J - 1, 0) * vl).sum() * 1e6)), inverted=int((J < 0).sum()),
                    J_p1=round(float(np.percentile(J, 1)), 3))
         if cf.get("diag"):
