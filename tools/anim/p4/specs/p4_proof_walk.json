@@ -1,0 +1,8 @@
+{
+ "notes": "",
+ "loop": true,
+ "inplace": true,
+ "source": "src/p4_proof_walk.npz",
+ "bvh": "her_walk_0.bvh",
+ "sha1": "1b14361af5c14ab288a82993eb360b3266e99421"
+}

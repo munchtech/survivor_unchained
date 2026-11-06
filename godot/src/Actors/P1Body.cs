@@ -45,7 +45,29 @@ public static class P1Body
     }
 
     /// <summary>Her own clips baked onto B (OwnClips.Her's names; its meta stays heroine_clips.json).</summary>
-    public static AnimationLibrary? HerClips() => herClips ??= ResourceLoader.Exists(Dir + "her_clips.res") ? GD.Load<AnimationLibrary>(Dir + "her_clips.res") : null;
+    public static AnimationLibrary? HerClips()
+    {
+        if (herClips != null) return herClips;
+        herClips = ResourceLoader.Exists(Dir + "her_clips.res") ? GD.Load<AnimationLibrary>(Dir + "her_clips.res") : null;
+        if (herClips != null && ResourceLoader.Exists(Dir + "p4_clips.res")) OverlayP4(herClips, GD.Load<AnimationLibrary>(Dir + "p4_clips.res"));
+        return herClips;
+    }
+
+    /// <summary>P4 clips (SOMA motion retargeted onto B, tools/anim/p4.py + p4_pack.sh) over the bridge clips by
+    /// P4Overlay's rules, and --p4-as target=p4clip[,...] (dev) applied here at load so the animation tree is untouched.</summary>
+    static void OverlayP4(AnimationLibrary lib, AnimationLibrary p4)
+    {
+        var bad = new List<string>();
+        var plan = P4Overlay.Plan(lib.GetAnimationList().Select(n => (string)n), p4.GetAnimationList().Select(n => (string)n), Args.Get("p4-as"), bad);
+        foreach (var (target, clip) in plan)
+        {
+            if (lib.HasAnimation(target)) lib.RemoveAnimation(target);
+            lib.AddAnimation(target, p4.GetAnimation(clip));
+        }
+        if (Args.Has("p1-probe") || bad.Count > 0)
+            GD.Print($"p4: {plan.Count} clips over her bridge clips ({string.Join(", ", plan.Select(kv => kv.Key == kv.Value ? kv.Key : $"{kv.Key}<-{kv.Value}"))})" +
+                     (bad.Count > 0 ? $"; --p4-as ignored (no such P4 clip): {string.Join(", ", bad)}" : ""));
+    }
 
     // ------------------------------------------------------------------ A's skeleton and the role map --
     /// <summary>A's skeleton as a_skeleton.json has it (the clip bridge writes it from heroine.glb).</summary>
