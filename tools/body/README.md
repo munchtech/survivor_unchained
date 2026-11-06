@@ -265,3 +265,7 @@ nor sits in `body_p1/` (never committed).
 | sword_heavy | 1 | 22.1 | 3.7 | 0.38 | 22.0 | 3.2 | 0.43 | 0.10 / 0 |
 | dash landing | 0 | 37.8 | 3.2 | 0.75 | 23.9 | 4.0 | 0.35 | 0 / 0 |
 | dash landing | 1 | 20.2 | 4.3 | 0.32 | 23.9 | 4.0 | 0.35 | 0 / 0 |
+
+## Form rules (the design sheet as numbers)
+
+`tools/body/form_rules.json` holds each form rule as a number with a band; `formrules.py` measures them (`check.py --only forms`). Sections: `neck` and `seam` (read from the built glb), and `breast` and `glutes`, measured on the spec's own body (`sculpt/breast_measure.py` against the spec with every breast slider at 0, `sculpt/glute_measure.py`). They need the spec: `python tools/body/formrules.py BODY.glb --spec SPEC.json` (default: `spec` in the `build.json` beside the glb; without one the two sections are skipped and the summary says so). In `check.py` the flag is `--body-spec` (`--spec` there is the check config).

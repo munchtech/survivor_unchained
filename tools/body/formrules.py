@@ -1,11 +1,12 @@
 """P1 R1: the design sheet's rules, measured (tools/body/form_rules.json). The judge reads rules, not a copy of A:
 every rule is a number on the built body at rest with a band, and A's number is information only.
 
-    python tools/body/formrules.py BODY.glb [--out DIR]          (also check.py --only forms)
+    python tools/body/formrules.py BODY.glb [--spec SPEC.json] [--out DIR]   (also check.py --only forms)
 
 Sections: "neck" (the trapezius line under the chin, the neck's girth, the slope), "seam" (the throat seam as one
-surface), and the breast and glute sections the form solvers add (their measure functions live here too). Each
-rule: {"value", "band": [lo, hi], "ok"}; summary "forms: N of M rules in band" plus the misses.
+surface), and, given the build's spec (--spec, else build.json beside the glb), "breast" (sculpt/breast_measure.py)
+and "glutes" (sculpt/glute_measure.py), measured on formview.body(spec) and the spec with the breast sliders at 0.
+Each rule: {"value", "band": [lo, hi], "ok"}; summary "forms: N of M rules in band" plus the misses.
 """
 from __future__ import annotations
 
@@ -95,28 +96,87 @@ def seam(V, T, H, HT):
 MEASURES = {"neck": lambda ctx: neck(ctx["V"], ctx["H"]), "seam": lambda ctx: seam(ctx["V"], ctx["T"], ctx["H"], ctx["HT"])}
 
 
-def measure(body_glb, rules=None):
+BREAST_SLIDERS = ["bust_firmness", "bust_lift", "bust_point", "bust_set", "bust_size", "bust_spacing", "chest_wall",
+                  "breast_a", "breast_b", "support_lift", "support_press", "support_fill"]
+
+
+def _derived(spec_path, zero, keep, tmp):
+    """A flat copy of the spec (base merged, as sliders.load_spec) with the `zero` sliders at 0 (the `keep` ones
+    restored to the spec's value), written to tmp."""
+    from sliders import load_spec
+    sp = load_spec(spec_path)
+    sl = dict(sp.get("sliders", {}))
+    for k in zero:
+        sl[k] = sp.get("sliders", {}).get(k, 0.0) if k in keep else 0.0
+    sp["sliders"] = sl
+    p = Path(tmp) / f"derived_{abs(hash((tuple(sorted(sl.items())), spec_path)))}.json"
+    p.write_text(json.dumps(sp))
+    return str(p)
+
+
+def spec_measures(spec_path, body_glb):
+    """Breast and glute numbers on the spec's own body (formview.body): sections "breast" and "glutes"."""
+    import tempfile
+    sys.path.insert(0, str(HERE / "sculpt"))
+    import formview
+    import breast_measure as bm
+    import glute_measure as gm
+    from sliders import load_spec
+    V, T, H, HT, z, rep = formview.body(spec_path)
+    sl = load_spec(spec_path).get("sliders", {})
+    with tempfile.TemporaryDirectory() as tmp:
+        bare = _derived(spec_path, BREAST_SLIDERS, (), tmp)
+        Vb = formview.body(bare)[0]
+        if sl.get("breast_a", 0) > 0 or sl.get("breast_b", 0) > 0:
+            Vref = formview.body(_derived(spec_path, BREAST_SLIDERS, ("chest_wall",), tmp))[0]
+        else:
+            Vref = Vb
+    b = bm.measure(V, T, Vb, Vref, H, HT, "spec")
+    b = {k: v for k, v in b.items() if not k.startswith("_")}
+    g = gm.measure(spec_path, V=V, z=z, skel_glb=body_glb)
+    g = {k: v for k, v in g.items() if not k.startswith("_")}
+    for k in ("apex_y_mm", "apex_z_mm"):
+        b[k] = None
+    b["apex_y_mm"], b["apex_z_mm"] = b["apex_mm"][1], b["apex_mm"][2]
+    b["cleavage_floor_over60"] = g.get("cleavage_floor_over60")
+    return {"breast": b, "glutes": g}
+
+
+def measure(body_glb, rules=None, spec=None):
     rules = rules or json.loads(RULES.read_text())
+    if spec is None and (Path(body_glb).parent / "build.json").exists():
+        sp = json.loads((Path(body_glb).parent / "build.json").read_text()).get("spec")
+        if sp:
+            spec = str(HERE.parents[1] / sp)
     B = Glb(body_glb)
     from posers import guess_body
     V, T = rest(B, guess_body(B))
     H, HT = rest(B, "HeroineHead")
     ctx = {"V": V, "T": T, "H": H, "HT": HT, "B": B}
-    out, miss, n = {}, [], 0
+    out, miss, n, skipped = {}, [], 0, []
+    extra = spec_measures(spec, body_glb) if spec else {}
     for sec, rs in rules["sections"].items():
-        if sec not in MEASURES:
+        if sec in ("breast", "glutes") and not spec:
+            skipped.append(sec)
             continue
-        m = MEASURES[sec](ctx)
+        if sec not in MEASURES and sec not in extra:
+            continue
+        m = MEASURES[sec](ctx) if sec in MEASURES else extra[sec]
         out[sec] = {"measured": m, "rules": {}}
         for key, r in rs["rules"].items():
-            v = m[key]
+            v = m.get(key)
+            if v is None:
+                miss.append(f"{sec}.{key} not measured")
+                out[sec]["rules"][key] = {"value": None, "band": r["band"], "ok": False}
+                n += 1
+                continue
             lo, hi = r["band"]
             ok = (lo is None or v >= lo) and (hi is None or v <= hi)
             out[sec]["rules"][key] = {"value": v, "band": r["band"], "ok": bool(ok)}
             n += 1
             if not ok:
                 miss.append(f"{sec}.{key} {v} not in {r['band']}")
-    out["summary"] = f"forms: {n - len(miss)} of {n} rules in band" + (f"; MISS {'; '.join(miss)}" if miss else "")
+    out["summary"] = f"forms: {n - len(miss)} of {n} rules in band" + (f"; MISS {'; '.join(miss)}" if miss else "") + (f" (skipped {','.join(skipped)}: no spec)" if skipped else "")
     return out
 
 
@@ -124,10 +184,14 @@ def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("body")
+    ap.add_argument("--spec", help="the body's spec (default: build.json's, beside the glb)")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
-    r = measure(a.body)
+    r = measure(a.body, spec=a.spec)
     print(r["summary"])
+    for sec in ("breast", "glutes"):
+        if sec in r:
+            print(sec, json.dumps(r[sec]["measured"]))
     if a.out:
         Path(a.out).mkdir(parents=True, exist_ok=True)
         (Path(a.out) / "forms.json").write_text(json.dumps(r, indent=1))

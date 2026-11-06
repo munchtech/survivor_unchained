@@ -307,6 +307,7 @@ def main(argv=None):
     ap.add_argument("--hide-far", action="store_true", help="also draw strip_hip_flex_nofar.png: her own side of the midline only")
     ap.add_argument("--only", default="contract,tris,weights,bends,silhouette,topology,forms")
     ap.add_argument("--spec", default=str(HERE / "check_spec.json"))
+    ap.add_argument("--body-spec", help="forms: the body's spec for the breast and glute rules (default: build.json beside the glb)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     out = Path(a.out)
@@ -321,7 +322,7 @@ def main(argv=None):
         res["contract"] = contract(B, A, a.same_head, spec.get("same_head_meshes", HEADS))
     if "forms" in only:
         import formrules
-        res["forms"] = formrules.measure(a.body)
+        res["forms"] = formrules.measure(a.body, spec=a.body_spec)
     if "tris" in only:
         res["tris"] = tris({"close": a.body, "play": a.play, "far": a.far})
     if "weights" in only:
